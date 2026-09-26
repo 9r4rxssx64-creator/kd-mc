@@ -1,33 +1,50 @@
 {
-  "ts": "2026-09-26T18:40:03.860Z",
-  "attendue": "v1.55",
-  "versionFichier": "v1.55",
-  "appVer": "v1.55",
-  "badge": "v1.55",
+  "ts": "2026-09-26T21:42:59.619Z",
+  "attendue": "v1.56",
+  "versionFichier": "v1.56",
+  "appVer": "v1.56",
+  "badge": "v1.56",
   "sourceLue": "domaine (cmcteams.kd-mc.com)",
-  "echecs": 3,
+  "echecs": 0,
   "navigateur": {
     "fait": true,
     "p1": {
-      "badge": "v1.55",
+      "badge": "v1.56",
       "equipe": "Septembre 2026 — BJ Éq.3 (16/22)",
-      "surMoisCourant": false,
+      "surMoisCourant": true,
       "jySuis": true,
-      "miroir": null,
-      "miroirMoisCourant": null,
-      "boardPasse": "2026-09-3",
-      "boardPasseLib": "Septembre 2026 — BJ Éq.3 (16/22)"
+      "miroir": "Septembre 2026 — BJ Éq.9 (16/3)",
+      "miroirMoisCourant": true,
+      "boardPasse": "2026-08-8",
+      "boardPasseLib": "Août 2026 — BJ Éq.8 (19/4)",
+      "diag": "BID=2026-09-3 · mois Firebase= · miroir=2026-09-9"
     },
     "p2": {
-      "badge": "v1.55",
+      "badge": "v1.56",
       "equipe": "Septembre 2026 — BJ Éq.3 (16/22)",
-      "surMoisCourant": false,
+      "surMoisCourant": true,
       "jySuis": true,
-      "miroir": null,
-      "miroirMoisCourant": null,
-      "boardPasse": "2026-09-3",
-      "boardPasseLib": "Septembre 2026 — BJ Éq.3 (16/22)"
+      "miroir": "Septembre 2026 — BJ Éq.9 (16/3)",
+      "miroirMoisCourant": true,
+      "boardPasse": "2026-08-8",
+      "boardPasseLib": "Août 2026 — BJ Éq.8 (19/4)",
+      "diag": "BID=2026-09-3 · mois Firebase= · miroir=2026-09-9"
     },
     "errs": []
+  },
+  "cmcteams": {
+    "fait": true,
+    "mois": "2026-9",
+    "personnes": 83,
+    "ok": 83,
+    "badges": 140,
+    "faux": 0,
+    "absents": 0,
+    "couleurs": 0,
+    "deborde": 0,
+    "pdfSeul": 30,
+    "pdfPerdus": 0,
+    "coupees": 325,
+    "errs": 0
   }
 }

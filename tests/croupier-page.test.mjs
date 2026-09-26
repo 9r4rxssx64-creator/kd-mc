@@ -45,6 +45,29 @@ verifie('blackjack paie 3 : 2', /Blackjack du joueur<\/td>\s*<td>3\s*:\s*2<\/td>
 verifie('assurance paie 2 : 1', /Assurance<\/td>\s*<td>2\s*:\s*1<\/td>/.test(h));
 verifie('commission banco 5 %', h.includes('1 : 1 − 5 %'));
 
+/* 3 bis. Kevin 26.09 : « Rectifie les horaires, les jeux… vérifie toutes les informations ».
+   Les faits du métier viennent de NOS documents, jamais d'une supposition : horaires = codes
+   des plannings des jeux de table (14/19, 16/22, 16/3, 19/4, 20/5, 22/6) ; pauses, collation,
+   âge, contrat, écoles, promotions = convention collective du 1er avril 2015 (art. 4, 5, 6,
+   10, 11, 13, 17.8, 17.9). La page disait « prise de service 20:30 · fermeture 04:00 » (inventé),
+   « après un certain âge », et oubliait le Texas Hold'em et le poker cash game. */
+const texte = h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+for (const [a, b] of [['14 h', '19 h'], ['16 h', '22 h'], ['16 h', '3 h'], ['19 h', '4 h'], ['20 h', '5 h'], ['22 h', '6 h']]) {
+  verifie(`service ${a} → ${b} cité (plannings réels)`, texte.includes(`${a} → ${b}`));
+}
+verifie('plus d\'horaire inventé (20:30 / 04:00 fermeture)', !/<b>20:30<\/b>|<b>04:00<\/b>/.test(h));
+verifie('55 ans et femmes enceintes : pause toutes les 40 minutes (art. 17.8)',
+  /55 ans/.test(texte) && /femmes enceintes/.test(texte) && /40 minutes/.test(texte) && /17\.8/.test(texte));
+verifie('collation de nuit entre 3 h et 7 h (art. 17.9)', texte.includes('entre 3 h et 7 h'));
+for (const jeu of ['blackjack', 'roulette anglaise', "Texas Hold'em", 'punto banco', 'roulette européenne', 'craps', 'poker cash game']) {
+  verifie(`jeu cité : ${jeu}`, texte.includes(jeu));
+}
+verifie('niveaux 1 à 7 selon les jeux validés (art. 10)', /de 1 \(un jeu\) à 7/.test(texte));
+verifie('âge minimum 21 ans (art. 4)', texte.includes('21 ans'));
+verifie('contrat 12 mois dont 3 d\'essai, décision à 18 mois (art. 6)', /12 mois/.test(texte) && /3 mois d'essai/.test(texte) && /18 mois/.test(texte));
+verifie('écoles : jusqu\'à 5 dans les 9 ans, un an entre deux (art. 5)', /jusqu'à 5 dans les 9 ans/.test(texte) && /au moins un an entre deux/.test(texte));
+verifie('école d\'intégration : 8 sur 20 éliminatoire, 3 mois minimum (art. 5.1)', /8 sur 20/.test(texte) && /au moins 3 mois/.test(texte));
+
 /* 4. Système de design « editorial » : les jetons restent ceux du système. */
 verifie('système nommé cité en commentaire', h.includes('awesome-design-skills/skills/editorial'));
 verifie('primaire du système conservé', h.includes('--primaire:#111111'));

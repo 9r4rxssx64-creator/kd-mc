@@ -1,5 +1,27 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (23 h) — croupier.kd-mc.com rectifié d'après NOS documents + vérif LIVE de CMCteams
+
+- **Kevin (capture iPhone 23:14)** : « Rectifie les horaires, les jeux, consulte tes documents tu as
+  tout. Vérifie toutes les informations. » La page disait « prise de service 20:30 · ouverture 21:00 ·
+  fermeture 04:00 » : **inventé**. Réécrit à partir de nos sources :
+  - horaires = codes des plannings des jeux de table (14/19, 16/22, 16/3 coupure, 19/4, 20/5, 22/6),
+    exemple d'un service 20 h → 5 h, tours 20/40/60 + pause 20, collation 3 h–7 h (convention art. 17.9) ;
+  - « après un certain âge » → **55 ans et femmes enceintes : pause toutes les 40 min** (art. 17.8) ;
+  - jeux : il manquait le **Texas Hold'em** et le **poker cash game** ; niveaux 1 à 7 selon les jeux
+    validés (art. 10, 13) ; parcours d'après les compétences BRTP puis E, C, K (NOTES_USER) ;
+  - entrée : école d'intégration (8/20 éliminatoire, 3 mois min), 21 ans, casier + agrément,
+    contrat 12 mois dont 3 d'essai, décision à 18 mois, 5 écoles en 9 ans (art. 4, 5, 6) ;
+    hiérarchie complète (expert, sous-chef, chef, inspecteur, sous-directeur, directeur ; art. 11).
+  - Garde `test:croupier` (déjà dans `test:ci`) : 25 faits ajoutés ; ancienne page → **15 échecs**.
+    Rendu mesuré 375/390/412 px : 0 défilement horizontal, 0 texte coupé.
+- **Vérif LIVE étendue à CMCteams** (`tests/verif-live-rapport.mjs`, section 4) : la VRAIE page, la
+  VRAIE base, chaque inscrit aux séances, « Mon planning » du mois des séances à 390 px ; badges
+  aux jours exacts, couleurs identiques avec/sans séances, 7 jours visibles, les 30 personnes du seul
+  PDF présentes. **Lecture seule** : toute requête non-GET est coupée (325 coupées à l'essai). Le
+  rapport ne porte que des nombres ; les noms ne vont que dans le journal CI. Essai sur copie locale :
+  83/83, 140 badges. Piège : `sv('monplanning')` ramène au mois COURANT → reposer le mois puis `dc()`.
+
 ## 2026-09-26 (nuit) — Séances dans CHAQUE planning individuel (CMCteams v9.920 · light v1.56)
 
 - Kevin : « Intègre dans les plannings individuellement. Vérifie réel pour chaque personne toutes

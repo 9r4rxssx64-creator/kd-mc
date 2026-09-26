@@ -1,4 +1,4 @@
-# Vérif LIVE — page Départs (2026-09-26 18:16 UTC)
+# Vérif LIVE — page Départs (2026-09-26 18:40 UTC)
 
 > Contrôle exécuté par la CI (réseau ouvert) sur le VRAI domaine, puis écrit ici pour être
 > relu depuis la session (le domaine est injoignable depuis l'agent). Lecture seule.

@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (19h30) — BASCULE FAITE : dépôt public kd-mc créé, site 40/40, budget à remettre à 0
+
+- Audit LIVE 36259402798 après correctif du faux rouge : **rc=0, 40 OK, 0 bloquante** (admin : « verrou affiché »).
+- Bascule `basculer` (run 36259782148) : toutes étapes vertes — dépôt créé robots coupés, clé de lecture du coffre,
+  clés posées avant le code, code en UN envoi sans historique, verrouillage puis robots rallumés, passage de main.
+  Vérifié par la page publique : **Public, 1 commit**, pas de `arbre/`, `index.html`, `tools/departs`, `tools/shared`,
+  `tools/patrimoine`. Annotation : « code déjà déposé par une bascule précédente — rien à renvoyer » (étape idempotente).
+- Routine `trig_01U8qNTJM5PnhGt1fmgg1kEj` (bascule du 1.10) **désactivée**. Routine `trig_015JXFAPmmxR2vPD161g1tvT`
+  (règles boutiques, 1.10 09:00 UTC) **gardée** : elle choisit elle-même kd-mc ou le coffre.
+- Kevin : remettre les 2 budgets Actions à 0 $ (TODO en tête).
+
 ## 2026-09-26 (18 h) — la passe LIVE a parlé : le domaine servait la VIEILLE page, et 3 pannes derrière
 
 - **Kevin ne voyait PAS ses tuiles.** Mesuré sur le vrai domaine par la machine GitHub

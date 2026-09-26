@@ -35,20 +35,14 @@ dans la nuit, et GitHub a tout coupé.
 *Honnêteté : je ne peux pas lire ta page de facturation depuis ici (mon jeton ne voit que le
 dépôt). C'est l'explication qui colle à tout ce que j'ai mesuré, ce n'est pas une lecture directe.*
 
-### 💳 TON CHOIX DU 26.09 : « Je paie une fois pour remettre en route tout, et après je paie plus rien » 👆 — 3 minutes
+### ✅ FAIT le 26.09 : tu as payé une fois, tout est reparti — dernier geste : remettre le budget à 0 $ 👆 (1 minute)
 
-1. Ouvre [Facturation GitHub](https://github.com/settings/billing) (connecté à ton compte).
-2. **Payment information** → ajoute ou vérifie ta carte.
-3. **Budgets and alerts** → le budget **Actions** est à **0 $** (c'est lui qui bloque tout) → **Edit** →
-   mets **20 $** → laisse coché **« Stop usage when budget limit is reached »** → **Save**.
-   *Pourquoi 20 $* : mesuré 22–24.09 = 980 min/jour, moins les 44 % déjà coupés ≈ 550 min/jour × 0,006 $ ≈
-   3,30 $/jour. Et dès que tu me dis « payé », je lance la bascule vers le dépôt public **le jour même** :
-   à partir de là presque tout redevient gratuit. Tu ne paieras que quelques jours de coffre.
-   *Honnêteté (doc GitHub)* : « vous pouvez dépasser votre budget lors du premier cycle de facturation
-   après sa création » — le plafond n'est pas absolu le premier mois, d'où une marge plutôt qu'un 1 $.
-4. Écris-moi **« payé »**. Je lance la bascule + la publication des règles fermées + la réparation des 3 boutiques
-   dans la foulée, et je te dis quand **remettre le budget à 0 $** (alors plus jamais un centime : le dépôt public
-   est illimité, le coffre tient sous les 2 000 minutes offertes).
+Mesuré le soir même : automatisations reparties, site republié, **40/40 pages** du domaine vertes (les 3
+boutiques réparées), dépôt public `kd-mc` créé et vérifié (aucune donnée privée dedans).
+
+**Dernier geste** : [Budgets](https://github.com/settings/billing) → **Budgets and alerts** → sur les **deux**
+lignes Actions (celle du compte ET celle du dépôt CMCteams) → **Edit** → **0** → **Save**. Ensuite plus un centime :
+le public est illimité, le coffre tient dans les 2 000 minutes offertes (remises à zéro le 1er octobre).
 
 ### ✅ RIEN À FAIRE : ÇA REPART TOUT SEUL LE 1er OCTOBRE (Kevin 25.09 : « Trop compliqué. Trouve d'autres solutions auto »)
 

@@ -1,18 +1,18 @@
-# Diagnostic auto-merge — PR #3823 (claude/persona-personnage-javis-hqd55e)
+# Diagnostic auto-merge — PR #4024 (claude/persona-personnage-javis-hqd55e)
 
-Généré le 2026-09-16 21:36 UTC par auto-merge-claude.yml.
+Généré le 2026-09-26 17:12 UTC par auto-merge-claude.yml.
 Ce fichier existe parce que le merge automatique a été REFUSÉ.
 
 ## Cause exacte renvoyée par GitHub
 ```
-X Pull request 9r4rxssx64-creator/CMCteams#3823 is not mergeable: the merge commit cannot be cleanly created.
+X Pull request 9r4rxssx64-creator/CMCteams#4024 is not mergeable: the merge commit cannot be cleanly created.
 To have the pull request merged after all the requirements have been met, add the `--auto` flag.
 Run the following to resolve the merge conflicts locally:
-  gh pr checkout 3823 && git fetch origin main && git merge origin/main
-X Pull request 9r4rxssx64-creator/CMCteams#3823 is not mergeable: the merge commit cannot be cleanly created.
+  gh pr checkout 4024 && git fetch origin main && git merge origin/main
+X Pull request 9r4rxssx64-creator/CMCteams#4024 is not mergeable: the merge commit cannot be cleanly created.
 To have the pull request merged after all the requirements have been met, add the `--auto` flag.
 Run the following to resolve the merge conflicts locally:
-  gh pr checkout 3823 && git fetch origin main && git merge origin/main
+  gh pr checkout 4024 && git fetch origin main && git merge origin/main
 ```
 
 ## État de la PR vu par GitHub

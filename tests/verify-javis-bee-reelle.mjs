@@ -498,8 +498,15 @@ if (FFMPEG) {
   });
   if (!m) { chk(false, 'clignement : Bee introuvable pour la mesure'); }
   else {
-    chk(m.cachee <= 2,
-      `page pas regardée : elle s'arrête (${m.cachee} battement(s) en 9 s au lieu d'environ 8)`);
+    /* Ce qu'on veut prouver : page pas regardée, elle bat FRANCHEMENT moins.
+       Le seuil absolu « ≤ 2 » a donné un FAUX ROUGE le 26.09 sur une machine chargée
+       (3 battements mesurés) : quand le processeur est occupé, les minuteurs retardés
+       repartent en rafale au retour de tâche. On compare donc les deux mesures entre
+       elles — un rapport tient même sur une machine lente. La garde reste
+       discriminante : sans elle, le sabotage donne 5 cachée contre 4 visible, et ce
+       rapport-là échoue. */
+    chk(m.cachee <= 2 || m.cachee * 2 <= m.visible,
+      `page pas regardée : elle s'arrête (${m.cachee} battement(s) en 9 s contre ${m.visible} page regardée)`);
     chk(m.visible > m.cachee,
       `page regardée : elle recligne aussitôt (${m.visible} battement(s) en 9 s contre ${m.cachee} cachée)`);
   }

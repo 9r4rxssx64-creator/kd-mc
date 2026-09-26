@@ -1,5 +1,92 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (18 h) — la passe LIVE a parlé : le domaine servait la VIEILLE page, et 3 pannes derrière
+
+- **Kevin ne voyait PAS ses tuiles.** Mesuré sur le vrai domaine par la machine GitHub
+  (`audit/verif-live/tuiles.md`, 17:53 UTC) : `kd-mc.com` servait **v1.0.33** quand `main` était
+  en **v1.0.34**, `shops` **v1.0.2** contre **v1.0.3**, et le widget Javis en ligne **69 857 o**
+  contre **72 270 o**. Les 4 tuiles neuves + EcoCraft étaient **absentes de la page servie**, alors
+  que `test:tuiles-apps` était vert : **un garde de fichier ne voit pas ce que l'iPhone reçoit.**
+  Ce qui allait bien, mesuré aussi : les **41 destinations** de tuiles répondent, 0 tuile morte.
+- **La cause, dans UN journal, à une seconde d'intervalle** (run 36259584640) : l'adresse
+  **éphémère** du déploiement servait la page neuve (26 502 car.), l'adresse **stable** — la seule
+  que le routeur lit — la vieille (24 961 car.). Et la sonde a écrit « alias de production
+  vérifié ✅ » : elle regarde le code HTTP et la taille, **jamais** si c'est le paquet qu'on vient
+  d'envoyer. Le repère `__paquet.txt` était **constant** : rien ne pouvait distinguer une
+  publication arrivée d'une publication perdue. **17 minutes de domaine périmé, 0 rouge.**
+  → `__paquet.txt` porte maintenant l'**empreinte du contenu** (1 864 fichiers, aucune horloge :
+  deux fabrications d'affilée `cb8ed9f6334bb059`, un octet changé `7763a7af958a9d99`), et la
+  publication **attend** que l'adresse stable la serve — fail-CLOSED sur les **trois** issues
+  (correspond / diffère / illisible).
+- **`npm install` était cassé pour TOUT le dépôt — 82 robots morts.** `Cannot read properties of
+  null (reading 'edgesOut')`, identique dans mon conteneur et sur la machine GitHub → le dépôt.
+  Cause : `@vitest/coverage-v8` **orphelin** dans le `package.json` de la racine (vitest vit dans
+  les sous-projets, en `^3` et `^5`). Bissection : sans lui sortie 0 · avec lui + `vitest` sortie 1
+  · retiré, vraie installation **150 paquets, 145 modules** (il y en avait **6**). C'était aussi la
+  vraie cause des arrêts de `test:ci` que j'avais mis sur le compte de « l'environnement ».
+  Garde `test:paquets-racine` (11/0, dans `test:ci`), 3 sabotages.
+- **3 robots Face ID rouges à chaque exécution depuis le 23.09** (12 runs, 12 rouges) : ils lisaient
+  un secret `KDMC_ADMIN_CODE` que le workflow ne pose nulle part → code vide → « timeout sur le
+  bouton #pk-go », qui ne dit rien de la cause. **Le remède existait depuis le 22.09… appliqué à
+  1 fichier sur 4.** Propagé : **8 + 15 + 7 + 3 = 33 contrôles verts**, dont 25 qui ne protégeaient
+  plus rien (Face ID virtuel, session forte, admin auto pour Kevin seul, auto-login CMCteams).
+- **Un garde réclamait une adresse MORTE** et rendait `test:ci` rouge pour toutes les sessions :
+  `verify-router-secours.mjs` (H-bis) exigeait `github.io`, éteint depuis le dépôt privé — **59 OK /
+  1 FAIL, exit 1, sur `main`**. Le défaut attendu est désormais **lu** dans le code du routeur → 62/0.
+- **Deux pièges payés sur MES propres gardes, avant de les annoncer** : l'une se prouvait
+  elle-même (le nom d'un paquet figure dans son `package.json`, donc `left-pad` ajouté au hasard
+  passait **vert**) ; l'autre sautait le dossier `build` et **accusait `terser`** d'être inutilisé
+  alors qu'il est `require`. Et une fausse alerte de ma part : `test:ci` s'est arrêtée à l'étape 79
+  sur `test:finances-docfiche` parce que je lançais 4 tests navigateur **en parallèle** — relancé
+  machine au repos : **18/0**. Un seuil en millisecondes mesure la charge autant que le produit.
+- Leçons **#334** et **#335** · message **m132** à toutes les sessions · `ETAT-DU-MOMENT.md` à jour ·
+  Routine quotidienne réorientée : « le domaine sert-il bien la dernière version ? » (elle ne parle
+  que s'il y a un écart).
+
+
+## 2026-09-26 — audit complet : les tuiles de TOUTES les surfaces, Javis durci, un rouge qui bloquait tout le monde
+
+- **Tuiles, l'inventaire poussé partout** (plus seulement le portail). Trouvé et corrigé :
+  · `kd-mc.com/empreinte/` — la page qui calcule l'empreinte du **nouveau code admin**, celle
+    dont Kevin a besoin pour le changer — avait **0 lien entrant dans tout le domaine** ;
+  · `shops/ecocraft/` (116 Ko) absente du portail boutiques alors que ses 3 sœurs y étaient ;
+  · `rotaplan` / `kit` / `croupier` : **belles adresses jamais montrées** sur kd-mc.com ;
+  · l'admin du domaine montrait **7 apps sur 26** et **1 produit vendu sur 3** → +4 tuiles (14 au total) ;
+  · `APPS` du routeur déclarait `rotaplan` et `croupier` **deux fois** (la 2ᵉ écrase la 1ʳᵉ en silence).
+  **Écarté avec preuve** : `shops/sourcing/` reste hors vitrine (back-office privé), exception écrite.
+- **Garde `test:tuiles-apps` : 70 → 91 contrôles, 0 échec.** Elle couvre maintenant les
+  **sous-chemins** de kd-mc.com (la cause qui rendait `/empreinte/` invisible), les **dossiers de
+  boutiques**, et les **adresses déclarées deux fois**. Sabotages : empreinte → 1 échec ·
+  ecocraft → 1 échec · doublon → 1 échec.
+- **Javis (Bee) — 6 fragilités mesurées, corrigées** : `npm run sync:javis` (la recopie ne tient
+  plus sur la mémoire) · la garde **trouve** les pages porteuses au lieu de les lire dans une liste
+  (sabotage : page à CSP nue → **4 échecs**) · **délai de 4 s** sur `/__sso/whoami` (un whoami qui
+  *pend* donnait un **écran noir sans message**) · réveil audio **derrière le gate** et retiré au
+  départ (4 écouteurs que portait tout visiteur anonyme) · `sw.js` aligné `v1.3 → v1.6` + garde de
+  cohérence · icône **192** générée (installabilité Android). Gardes : `test:javis-bee` **58/0**,
+  `test:javis-bee-reelle` **45/0**, admin en vrai navigateur **15/0**.
+- **Un rouge de `test:ci` qui bloquait TOUTES les sessions** : la chaîne s'arrêtait à sa **2ᵉ étape
+  sur 214**. `coffre-previent-public.yml` (24.09) avait un `concurrency.group` **sans la branche**
+  + `cancel-in-progress: true` → un commit sur `main` annulait les vérifications d'une autre branche.
+  Corrigé ; sabotage prouvé.
+- **Publication toujours à l'arrêt, mesuré aujourd'hui** : `audit-live.yml` déclenché à 16h36:13 →
+  **échoué en 6 secondes**, sans log (run 36256042810). Donc la passe LIVE et le second avis
+  indépendant de l'audit **n'ont pas pu tourner** : cet audit est local, et c'est écrit.
+  **Nouvelle Routine** « Reprise publication site » (`trig_01CDtLYtNTH6jVWmkA3xxAEt`, chaque jour
+  8h52 Monaco) : elle retente la publication, vérifie en vrai quand ça repart, et prévient Kevin —
+  sans spam (au plus 1 message par semaine tant que c'est bloqué). ⚠ Elle n'a **pas** les
+  connecteurs MCP : elle passe par l'API REST avec le jeton de l'environnement.
+- **Le vrai résultat de l'audit : 4 mesures FAUSSES** (leçon #333). Sur 6 entrées du backlog
+  d'amélioration, **2 n'existaient pas** : les « 9 fonctions qui s'écrasent » (mesuré : **0 au
+  niveau global** — 7 des 9 noms absents de `window` dans un vrai navigateur, toutes les
+  définitions imbriquées entre les profondeurs 5 et 59) et les « 37 vues non testées » (mesuré :
+  **95 routes reconnues, 95 testées = 100 %** ; les autres `vXxx` sont des fragments, pas des
+  pages — déjà faux à 85 le 09.08). Plus **un faux rouge permanent** : `test:maj-tout` comparait
+  un bloc contenant « Branches dans le dépôt » (249 écrit contre 250 mesuré), donc `test:ci`
+  s'arrêtait à l'étape **138/214** pour **toutes** les sessions. Et le test de Bee était rendu
+  instable par un seuil absolu. **Dans les 4 cas : corriger la mesure, jamais le code sain** —
+  4 sabotages prouvent que les nouveaux contrôles mordent toujours.
+- **Rapport complet + auto-critique** : `audit/2026-09-26/RAPPORT.md`.
 ## 2026-09-26 (19h30) — Apex Chat : F30 déployé et VÉRIFIÉ EN PROD
 
 - Actions revenues (budget compte monté par Kevin) → déploiement Apex Chat relancé sur `main` : **réussi** (run 36258213403).

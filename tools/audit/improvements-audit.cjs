@@ -69,14 +69,60 @@ if (orphans.length) {
     'Câbler ou supprimer. Chaque orpheline est du poids mort dans un fichier déjà lourd.');
 }
 
-/* ─────────── 2. Doublons de définition (2 implémentations du même nom = bug de maintenance) ─────── */
+/* ─────────── 2. Doublons de définition ──────────────────────────────────────────
+   ⚠ MESURE CORRIGÉE le 26.09.2026. Ce compteur annonçait « la 2e écrase la 1re en
+   silence » pour 9 noms — c'était FAUX pour les 9. Vérifié de deux façons :
+     · dans un vrai navigateur, 7 des 9 noms n'existent même pas sur `window`
+       (normName, _norm, norm, _calcCycle, fmtD, fmtDur, isPosteToken = undefined) ;
+     · en mesurant la profondeur d'accolades de chaque définition : elles sont TOUTES
+       imbriquées (profondeurs 5 à 59), AUCUNE au niveau global.
+   Ce sont donc des fonctions locales à des portées différentes : elles ne s'écrasent
+   pas. Une mesure fausse est pire que pas de mesure (elle fait « corriger » du code
+   sain et noie le vrai risque). On garde donc DEUX compteurs :
+     · duplicate_functions        = même nom à plusieurs endroits (signal de maintenance)
+     · duplicate_functions_global = même nom DEUX FOIS AU NIVEAU GLOBAL (là, ça écrase
+                                    vraiment — c'est le seul cas dangereux) */
 const dupes = [...decl.entries()].filter(([, c]) => c > 1).map(([n, c]) => n + '×' + c);
 measured.duplicate_functions = dupes.length;
-console.log('\n[2] Fonctions définies plusieurs fois (la 2e écrase la 1re en silence)');
-console.log('     doublons : ' + dupes.length + (dupes.length ? ' → ' + dupes.slice(0, 10).join(', ') : ''));
-if (dupes.length) {
-  add('P1', 'Même fonction définie plusieurs fois', dupes.length + ' nom(s) : ' + dupes.slice(0, 6).join(', '),
-    'Fusionner. La dernière définition gagne → un correctif appliqué à la 1re est invisible.');
+
+/* profondeur d'accolades, en ignorant chaînes, gabarits et commentaires */
+function profondeurA(code, pos) {
+  let d = 0, i = 0, etat = null;
+  while (i < pos) {
+    const c = code[i], n = code[i + 1] || '';
+    if (etat === null) {
+      if (c === '/' && n === '/') { etat = '//'; i += 2; continue; }
+      if (c === '/' && n === '*') { etat = '/*'; i += 2; continue; }
+      if (c === '"' || c === "'" || c === '`') { etat = c; i++; continue; }
+      if (c === '{') d++; else if (c === '}') d--;
+    } else if (etat === '//') { if (c === '\n') etat = null; }
+    else if (etat === '/*') { if (c === '*' && n === '/') { etat = null; i += 2; continue; } }
+    else { if (c === '\\') { i += 2; continue; } if (c === etat) etat = null; }
+    i++;
+  }
+  return d;
+}
+const globales = new Map();
+for (const m of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+  const code = m[1];
+  for (const f of code.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)) {
+    if (profondeurA(code, f.index) === 0) globales.set(f[1], (globales.get(f[1]) || 0) + 1);
+  }
+}
+const dupesGlobales = [...globales.entries()].filter(([, c]) => c > 1).map(([n, c]) => n + '×' + c);
+measured.duplicate_functions_global = dupesGlobales.length;
+
+console.log('\n[2] Même nom de fonction défini plusieurs fois');
+console.log('     même nom, endroits différents : ' + dupes.length + (dupes.length ? ' → ' + dupes.slice(0, 10).join(', ') : ''));
+console.log('     dont AU NIVEAU GLOBAL (là, la 2e écrase vraiment la 1re) : ' + dupesGlobales.length +
+  (dupesGlobales.length ? ' → ' + dupesGlobales.slice(0, 10).join(', ') : ' ✅'));
+if (dupesGlobales.length) {
+  add('P1', 'Même fonction définie deux fois AU NIVEAU GLOBAL', dupesGlobales.length + ' nom(s) : ' + dupesGlobales.slice(0, 6).join(', '),
+    'Fusionner : la dernière définition gagne → un correctif appliqué à la 1re est invisible.');
+} else if (dupes.length) {
+  add('P3', 'Même nom réutilisé dans des portées différentes', dupes.length + ' nom(s) : ' + dupes.slice(0, 6).join(', ') +
+    ' (0 au niveau global — elles ne s\'écrasent pas)',
+    'Aucun bug : c\'est de la lisibilité. Renommer quand on passe dessus, pas avant.');
 }
 
 /* ─────────── 3. Dette mesurable (ratchet : on bloque la HAUSSE, pas l'existant) ─────────── */
@@ -159,12 +205,46 @@ const untested = views.filter((v) => {
 });
 measured.views_total = views.length;
 measured.views_untested = untested.length;
-console.log('\n[5] Couverture des vues par les tests (par nom de fonction OU par route)');
-console.log('     vues : ' + views.length + ' · non couvertes : ' + untested.length +
-  (untested.length ? ' → ' + untested.slice(0, 10).join(', ') : ''));
-if (untested.length) {
-  add('P2', 'Vues jamais couvertes par un test', untested.length + '/' + views.length + ' vues',
-    'Les ajouter au smoke test:render-views — une vue non listée est une vue non testée (règle audit §4).');
+
+/* ⚠ MESURE COMPLÉTÉE le 26.09.2026 — deuxième correction de ce compteur.
+   Le 09.08 il annonçait « 85 vues non testées » : faux, il comparait des NOMS de
+   fonctions à des ROUTES. Corrigé à 41, puis 37. Mais 37 était encore trompeur : la
+   moitié de ces `vXxx` ne sont PAS des vues routées, ce sont des FRAGMENTS appelés
+   par d'autres vues. Mesuré : `_vMainImpl` reconnaît 95 routes, et le smoke
+   `render-views` en teste exactement 95 — 0 manquante, 0 fantôme, soit 100 % des
+   vues réellement atteignables. C'est CE chiffre qui dit la vérité ; l'autre reste
+   affiché comme indicateur, sans priorité, pour ne pas laisser un P2 fantôme au
+   backlog pendant des semaines. */
+const implI = html.indexOf('function _vMainImpl');
+const impl = implI >= 0 ? html.slice(implI, implI + 60_000) : '';
+const routesApp = new Set();
+for (const m of impl.matchAll(/(?:A\.view|\bv)\s*===?\s*["']([a-z0-9_-]+)["']/g)) routesApp.add(m[1]);
+for (const m of impl.matchAll(/case\s*["']([a-z0-9_-]+)["']/g)) routesApp.add(m[1]);
+/* On compare à la liste du SMOKE, pas à « cité quelque part dans les tests » :
+   une route nommée dans un test de données n'est pas une route RENDUE. Sinon le
+   contrôle passerait au vert sans rien prouver (vérifié par sabotage). */
+let smokeRoutes = new Set();
+try {
+  const sm = fs.readFileSync(path.join(ROOT, 'tests/runtime-audit-render-all-views.mjs'), 'utf8');
+  smokeRoutes = new Set((sm.match(/const ROUTES = \[([^\]]*)\]/) || [, ''])[1]
+    .split(',').map((x) => x.replace(/['"\s]/g, '')).filter(Boolean));
+} catch { /* smoke absent : on ne prétend rien */ }
+const routesNonTestees = smokeRoutes.size
+  ? [...routesApp].filter((r) => !smokeRoutes.has(r)).sort()
+  : [];
+measured.routes_total = routesApp.size;
+measured.routes_untested = routesNonTestees.length;
+
+console.log('\n[5] Couverture des vues par les tests');
+console.log('     ROUTES de l\'app (ce que Kevin peut vraiment ouvrir) : ' + routesApp.size +
+  ' · non testées : ' + routesNonTestees.length +
+  (routesNonTestees.length ? ' → ' + routesNonTestees.slice(0, 10).join(', ') : ' ✅'));
+console.log('     (indicateur) fonctions vXxx sans mention dans les tests : ' + untested.length +
+  '/' + views.length + ' — beaucoup sont des FRAGMENTS, pas des vues routées');
+if (routesNonTestees.length) {
+  add('P2', 'Route de l\'app jamais rendue par un test', routesNonTestees.length + '/' + routesApp.size + ' routes : ' +
+    routesNonTestees.slice(0, 8).join(', '),
+    'Les ajouter à ROUTES du smoke test:render-views — une route non listée est une page non testée.');
 }
 
 /* ─────────── 6. Dépendances (réseau requis → honnête si non mesuré) ─────────── */
@@ -194,8 +274,8 @@ if (WITH_DEPS) {
 }
 
 /* ─────────── 7. Ratchet ─────────── */
-const RATCHETED = ['orphan_functions', 'orphan_views', 'duplicate_functions', 'innerhtml_no_esc',
-  'todo_markers', 'console_log', 'views_untested'];
+const RATCHETED = ['orphan_functions', 'orphan_views', 'duplicate_functions', 'duplicate_functions_global', 'innerhtml_no_esc',
+  'todo_markers', 'console_log', 'views_untested', 'routes_untested'];
 let fails = 0;
 if (UPDATE) {
   fs.writeFileSync(BASELINE, JSON.stringify({

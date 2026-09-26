@@ -65,6 +65,7 @@ const REGISTRE = [
   // TROISIEME fois que ce scenario se produit (cf. Qwen et « j'ai internet » ci-dessus) :
   // ajouter une regle a CLAUDE.md = ajouter son entree ICI dans le MEME commit.
   [/CHAQUE APP DISTINCTE/i, ['npm:test:perimetre-apps', 'npm:test:perimetre-page']],
+  [/UNE SEULE V[ÉE]RIT[ÉE] DU MOMENT/i, ['npm:test:etat-du-moment']],
   // Règle « J'ai internet et des outils » (CLAUDE.md, Kevin 14.08.2026) : sa garde EXISTE
   // depuis le 6.09 (tools/audit/liens-check.mjs, joué par le job GitLab « liens-reels » —
   // pinguer des sites tiers n'a pas sa place sur GitHub, cf. règle des destinations), mais

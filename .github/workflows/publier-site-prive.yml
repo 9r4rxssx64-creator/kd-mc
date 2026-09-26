@@ -186,6 +186,61 @@ jobs:
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           echo "branche=$BRANCHE" >> "$GITHUB_OUTPUT"
 
+      # ── LA GARDE QUI MANQUAIT VRAIMENT (26.09.2026) ────────────────────────
+      # Mesuré ce jour-là, dans UN SEUL journal, à une seconde d'intervalle :
+      #   · adresse ÉPHÉMÈRE du déploiement  → kd-mc.com = 26 502 car. (la page NEUVE)
+      #   · adresse STABLE lue par le routeur → kd-mc.com = 24 961 car. (la VIEILLE)
+      # Et la sonde a conclu « alias de production vérifié ✅ », parce qu'elle regarde le
+      # code HTTP et la taille, jamais si c'est LE paquet qu'on vient d'envoyer. Résultat :
+      # publication « réussie », Kevin sans ses tuiles, et RIEN de rouge pendant 17 minutes.
+      # Le repère __paquet.txt était constant : il ne pouvait pas servir à ça. Il porte
+      # maintenant l'EMPREINTE du contenu (prepare-secours.mjs) — reproductible, sans horloge.
+      # On attend donc que l'adresse stable serve CETTE empreinte. Fail-CLOSED sur les TROIS
+      # issues : elle correspond (on continue), elle diffère (on crie), on n'arrive pas à la
+      # lire (on crie aussi — « pas de réponse » n'est pas « tout va bien »).
+      - name: Attendre que l'adresse STABLE serve LE paquet qu'on vient d'envoyer
+        if: github.ref_name == 'main'
+        shell: bash -eo pipefail {0}
+        run: |
+          ATTENDUE=$(sed -n 's/^empreinte: *//p' services/kdmc-router/pages-upload/__paquet.txt | head -1)
+          [ -n "$ATTENDUE" ] || { echo "::error::le paquet n'a pas d'empreinte — prepare-secours.mjs doit l'écrire dans __paquet.txt"; exit 1; }
+          SD='${{ steps.publier.outputs.sous_domaine }}'
+          if [ -n "$SD" ]; then A="https://$SD.pages.dev"
+          else A="https://$(echo '${{ steps.publier.outputs.url }}' | sed -E 's#^https://##' | cut -d. -f2-)"; fi
+          echo "empreinte envoyée : $ATTENDUE"
+          echo "adresse stable    : $A"
+          SERVIE=''
+          REPERE=''
+          for i in $(seq 1 20); do
+            REPERE=$(curl -sS --max-time 15 "$A/__paquet.txt" 2>/dev/null || true)
+            SERVIE=$(printf '%s' "$REPERE" | sed -n 's/^empreinte: *//p' | head -1)
+            echo "tentative $i : servie = '${SERVIE:-aucune empreinte}'"
+            [ "$SERVIE" = "$ATTENDUE" ] && break
+            sleep 15
+          done
+          if [ "$SERVIE" = "$ATTENDUE" ]; then
+            echo "✅ l'adresse stable sert bien le paquet publié ($ATTENDUE) — le domaine servira la nouvelle version"
+            exit 0
+          fi
+          # Trois issues, et chacune dit LA vérité qui la distingue (leçon du 26.09 : « pas de
+          # réponse » et « réponse d'un paquet trop vieux pour avoir une empreinte » ne sont pas
+          # la même panne, et les confondre envoie chercher au mauvais endroit).
+          if printf '%s' "$REPERE" | grep -q '^paquet-applications-kdmc'; then
+            if [ -z "$SERVIE" ]; then
+              echo "::error::après 5 minutes, $A sert un repère de paquet SANS empreinte : c'est un paquet publié AVANT cette amélioration (26.09.2026). Ce n'est donc pas celui qu'on vient d'envoyer. Relancer cette publication une fois : à partir de la 2e, la comparaison sera exacte."
+              exit 1
+            fi
+          elif [ -z "$SERVIE" ]; then
+            echo "::error::après 5 minutes, $A/__paquet.txt n'est pas lisible comme un repère de paquet (Cloudflare Pages répond la page d'accueil, en 200, pour toute adresse inconnue quand il n'y a pas de 404.html). Impossible de prouver ce que le domaine sert : on ne déclare pas une publication réussie sans cette preuve."
+            exit 1
+          fi
+          if [ -z "$SERVIE" ]; then
+            echo "::error::après 5 minutes, impossible de lire l'empreinte servie par $A."
+          else
+            echo "::error::après 5 minutes, l'adresse stable $A sert encore l'empreinte '$SERVIE' alors qu'on vient de publier '$ATTENDUE'. Le déploiement est bon (adresse éphémère), mais l'alias de production ne l'a pas suivi : kd-mc.com continue de servir l'ANCIENNE version. Vérifier dans Cloudflare Pages que le déploiement $GITHUB_SHA est bien celui de l'environnement « production » du projet kdmc-site."
+          fi
+          exit 1
+
       # ── Vérification RÉELLE : les 26 adresses sont-elles servies ? ─────────
       # Le runner a le réseau ouvert (l'agent, non). C'est ici, et seulement ici,
       # qu'on peut dire « ça marche » sans mentir.
@@ -312,6 +367,41 @@ jobs:
                 console.log('  dernier déploiement:', d.id, '| env', d.environment, '| branche', d.deployment_trigger&&d.deployment_trigger.metadata&&d.deployment_trigger.metadata.branch);
                 console.log('  déclenché par     :', d.deployment_trigger&&d.deployment_trigger.type);
               });"
+
+      # ── SUR QUOI L'ALIAS POINTE-T-IL VRAIMENT ? (26.09.2026) ───────────────
+      # Mesuré ce jour-là : l'adresse stable servait l'ancien paquet 38 MINUTES après une
+      # publication réussie, et un paramètre inédit (donc hors cache) donnait la même
+      # ancienne version — ce n'était donc NI la propagation, NI le cache du bord.
+      # Cloudflare disait pourtant « dernier déploiement : le nôtre, env production ».
+      # Quand deux faits se contredisent, on arrête de supposer et on demande la LISTE
+      # des déploiements avec leurs alias : c'est elle qui dit ce que sert l'adresse stable.
+      - name: Sur quoi l'adresse stable pointe-t-elle ? (liste des déploiements)
+        if: always()
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          exec > >(tee -a "$GITHUB_STEP_SUMMARY") 2>&1
+          echo "### Les 8 derniers déploiements du projet kdmc-site"
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/kdmc-site/deployments?per_page=8"
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API" | node -e "
+            let t='';process.stdin.on('data',d=>t+=d).on('end',()=>{
+              let j;try{j=JSON.parse(t)}catch(e){console.log('réponse illisible');process.exit(0)}
+              if(!j.success){console.log('Cloudflare a refusé :',JSON.stringify(j.errors||[]).slice(0,300));process.exit(0)}
+              for(const d of (j.result||[])){
+                console.log('  '+String(d.id||'').slice(0,8)
+                  +' | '+String(d.created_on||'').slice(0,19)
+                  +' | env '+String(d.environment||'?').padEnd(10)
+                  +' | branche '+String((d.deployment_trigger&&d.deployment_trigger.metadata&&d.deployment_trigger.metadata.branch)||'?').padEnd(10)
+                  +' | étape '+String((d.latest_stage&&(d.latest_stage.name+':'+d.latest_stage.status))||'?').padEnd(18)
+                  +' | alias '+JSON.stringify(d.aliases||[])
+                  +' | '+String(d.url||''));
+              }
+              console.log('');
+              console.log('Lire ainsi : l\'adresse stable sert le déploiement de PRODUCTION le plus récent dont');
+              console.log('l\'étape vaut deploy:success. Si ce n\'est pas celui de ce run, la cause est ICI.');
+            });"
 
       - name: Vérifier l'adresse STABLE (celle qu'attend le routeur)
         id: stable

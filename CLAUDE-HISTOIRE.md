@@ -269,6 +269,29 @@ futurs qui parlent directement à Kevin ou à un utilisateur final.
     Un Chromium de CI ne décode pas le H.264 : le test **rejoue les vraies images en VP9**
     avec ffmpeg plutôt que de sauter le contrôle ; sans ffmpeg il l'annonce
     **« NON VÉRIFIÉ ICI »** au lieu d'un vert trompeur (leçon #103, le faux vert).
+- **Durcie le 26.09 (Kevin « vérifie la qualité du Javis, où on en est · fais ton audit »)** —
+  six fragilités **mesurées** puis corrigées, aucune inventée : (1) **aucun outil de recopie** :
+  les 3 copies tenaient sur la mémoire de celui qui modifie (oubli réel le 16.09) →
+  `npm run sync:javis`, dont la liste de pages est **déduite du dépôt** ; (2) la garde listait
+  les pages porteuses **à la main** : ajouter Bee à une page dont la CSP n'a pas `media-src`
+  (le cas de `kdmc-home`) passait les 51 contrôles **sans un mot** → elles sont maintenant
+  **trouvées**, et leur CSP exigée (sabotage : page à CSP nue → **4 échecs**) ; (3) **0
+  `AbortController`** : un `/__sso/whoami` qui *pend* ne rappelait jamais le callback, et
+  l'écran « Bee arrive… » disparaît à 900 ms → **écran noir sans message** ; corrigé par un
+  délai de 4 s qui tranche comme un refus (même chemin, même message) ; (4) les **4 écouteurs
+  de réveil audio** étaient posés **avant le gate** — tout visiteur anonyme les portait et
+  créait un `AudioContext` au premier toucher, sans jamais les retirer → armés après le gate,
+  retirés au départ ; (5) `javis/sw.js` figé sur `javis-v1.3` alors que le widget est en
+  `v1.6` — **une étiquette qui mentait depuis 3 versions** → aligné + garde de cohérence ;
+  (6) manifest sans icône **192** → générée (via un canvas Chromium, ffmpeg refusant ce PNG).
+  Gardes : `test:javis-bee` **51 → 58/0**, `test:javis-bee-reelle` **45/0** en vrai Chromium.
+  **La vraie dette #142 n'est pas où ce document la regardait** : les *assets* ne sont pas
+  dupliqués (17 fichiers cités, 17 présents chez Lingua), mais le **code** l'est — et il a
+  **divergé** : le widget est à `fftSize 2048` + voyelles + consonnes, `lingua/app.js` est
+  resté à `fftSize 256`, amplitude seule, **0 occurrence de voyelle** (mesuré). La mascotte
+  d'origine est **aujourd'hui la moins bonne des deux**, et sa garde ne lit que son propre
+  fichier : elle ne peut pas voir la divergence. Et Bee n'est embarquée que sur **2 pages sur
+  32** (`arbre`, `javis`) — pas « sur le domaine ». Leçons #331 et #332.
 - **Elle a enfin une TUILE (25.09, Kevin « il manque la tuile dans mon domaine »)** : Javis
   tournait, son adresse répondait, son nom et son emoji étaient dans `apps.json`, dans
   `kdmc-portal.js` **et** dans l'admin… mais `kdmc-home/index.html` — le seul fichier qui

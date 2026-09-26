@@ -29,27 +29,26 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **43** | `pipeline/sessions.json` |
-| Branches dans le dépôt | **0** | `git ls-remote --heads origin` |
+| Chantiers suivis (sessions) | **44** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
 | Automatisations actives | **134** (+ 37 rangées) | `.github/workflows/` |
-| Gardes / tests | **106** fichiers, **149** commandes `npm run` | `tests/` + `package.json` |
+| Gardes / tests | **109** fichiers, **153** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **106** | `grep secrets.` sur les workflows |
-| Discussions entre sessions | **130** dont **61** ouvertes | `pipeline/sessions.json` |
+| Discussions entre sessions | **133** dont **64** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **67 662 o ≈ 19 332 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **597 388 o** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **599 573 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
 
 <!-- MAJ-AUTO:debut etat-live -->
-| Ce qui bouge | État au 2026-09-24 | Mesuré par |
+| Ce qui bouge | État au 2026-09-26 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **240** | `git ls-remote` |
+| Branches dans le dépôt | **252** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
-| État de la CI | 🟢 **elle tourne** — 11/30 échecs immédiats | API GitHub |
+| État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
 
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)

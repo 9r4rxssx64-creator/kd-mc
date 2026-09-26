@@ -39,6 +39,10 @@
     return '<h2 class="cat">🚀 Mon business</h2><div class="grid">'
       + card('🛒', 'Commerce — Tableau de bord', 'Ventes, file à valider, produits, vidéos, commandes', '/admin/commerce.html')
       + card('🛍', 'Kit IA — ma page de vente', 'Ce que voient mes clients — kit.kd-mc.com', 'https://kit.kd-mc.com/')
+      /* Les deux autres produits en vente manquaient ici alors que Kit y etait :
+         l'admin ne montrait qu'un tiers de ce que Kevin vend (mesure 26.09). */
+      + card('🗓', 'Rotaplan — ma page de vente', 'Planning des equipes qui tournent — rotaplan.kd-mc.com', 'https://rotaplan.kd-mc.com/')
+      + card('🃏', 'Devenir croupier — ma page', 'Le guide du metier — croupier.kd-mc.com', 'https://croupier.kd-mc.com/')
       + '</div>'
       + '<h2 class="cat">🧩 Fonctions communes — tous les projets</h2><div class="grid">'
       + card('📅', 'CMCteams — Admin', 'Plannings, équipes, employés', 'https://cmcteams.kd-mc.com/')
@@ -47,6 +51,13 @@
       + card('📊', 'Boutiques — Dashboard', 'Commandes, produits, finances', 'https://dashboard.kd-mc.com/')
       + card('💶', 'OpenAI — ce qui consomme', 'Chiffres reels + ecouter la voix gratuite', '/admin/openai.html')
       + card('🩺', 'Santé des workers', 'État live de tous les services', 'https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/health/workers-status.json')
+      + '</div>'
+      /* Deux pages d'administration du domaine n'etaient citees NULLE PART dans l'admin :
+         on y arrivait seulement par le portail. Une fonction qu'on ne voit pas n'existe
+         pas (mesure 26.09 : l'admin montrait 7 apps sur 26). */
+      + '<h2 class="cat">🎛️ Piloter le domaine</h2><div class="grid">'
+      + card('🗂️', 'Qui se connecte', 'Historique de chaque personne : apps, appareils, en ligne', 'https://admin.kd-mc.com/')
+      + card('🎛️', 'Centre de contrôle', 'Tous mes liens 1-clic : apps, clés, workers, Firebase', '/liens/')
       + '</div>'
       + '<h2 class="cat">🎨 Studios de création</h2><div class="grid">'
       + card('🎨', 'Studio — La Détente', 'Créer logos & produits (POD)', 'https://shops.kd-mc.com/la-detente/studio.html')

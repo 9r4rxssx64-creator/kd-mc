@@ -1,2 +1,4 @@
 Toucher ce fichier relance la vérification LIVE (voir .github/workflows/verif-live-rapport.yml).
 Demande du 05/09/2026 16:37 UTC
+Relance demandée le 2026-09-26 17:51 UTC — npm install réparé (cause racine : @vitest/coverage-v8 orphelin à la racine, 82 workflows morts).
+Objet : prouver EN VRAI que les tuiles ajoutées le 26.09 sont servies par le domaine.

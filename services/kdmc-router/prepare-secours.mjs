@@ -21,8 +21,8 @@
      node services/kdmc-router/prepare-secours.mjs --leger    # apps seules (rapide)
    ========================================================================== */
 
-import { cpSync, existsSync, mkdirSync, rmSync, statSync, readdirSync, writeFileSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { cpSync, existsSync, mkdirSync, rmSync, statSync, readdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
@@ -309,8 +309,39 @@ if (POUR_PAGES) {
    paquet, et son CONTENU se vérifie (une page d'accueil ne ressemble pas à ça).
    Il ne révèle rien : ni chemin interne, ni version, ni nom de fichier. */
 if (POUR_PAGES) {
+  /* ── L'EMPREINTE, ajoutée le 26.09.2026 ──────────────────────────────────
+     Le repère était CONSTANT : il prouvait « c'est un paquet trié », jamais
+     « c'est LE paquet que je viens d'envoyer ». Conséquence mesurée ce jour-là :
+     la publication a déposé la bonne page sur l'adresse éphémère du déploiement
+     (kd-mc.com = 26 502 car., la neuve) tandis que l'adresse STABLE — la seule que
+     le routeur lit — servait encore 24 961 car., la vieille. Les deux chiffres
+     figurent dans le MÊME journal, à une seconde d'intervalle, et la sonde a
+     conclu « alias de production vérifié ✅ » : elle regardait le code HTTP, pas
+     le contenu. Kevin ne voyait pas ses tuiles, et rien n'était rouge.
+     Avec une empreinte du CONTENU, la publication peut attendre que l'adresse
+     stable serve vraiment ce qu'elle vient d'envoyer — et le dire si ça n'arrive pas.
+     Calculée sur le contenu seul (aucune horloge) : deux paquets identiques donnent
+     la même empreinte, comme l'exige la règle des générateurs reproductibles. */
+  const { createHash } = await import('node:crypto');
+  const listerTout = (d, base = d, out = []) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const abs = join(d, e.name);
+      if (e.isDirectory()) listerTout(abs, base, out);
+      else out.push(relative(base, abs).split(sep).join('/'));
+    }
+    return out;
+  };
+  const fichiers = listerTout(SORTIE).filter((f) => f !== '__paquet.txt').sort();
+  const somme = createHash('sha256');
+  for (const f of fichiers) {
+    somme.update(f);
+    somme.update(createHash('sha256').update(readFileSync(join(SORTIE, f))).digest());
+  }
+  const empreinte = somme.digest('hex').slice(0, 16);
   writeFileSync(join(SORTIE, '__paquet.txt'),
     'paquet-applications-kdmc\n'
-    + 'Ce fichier prouve que le site servi est le paquet trie (applications seules).\n');
-  console.log('   repère du paquet : __paquet.txt');
+    + 'Ce fichier prouve que le site servi est le paquet trie (applications seules).\n'
+    + 'empreinte: ' + empreinte + '\n'
+    + 'fichiers: ' + fichiers.length + '\n');
+  console.log('   repère du paquet : __paquet.txt (empreinte ' + empreinte + ' · ' + fichiers.length + ' fichiers)');
 }

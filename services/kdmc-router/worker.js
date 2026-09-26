@@ -148,7 +148,6 @@ const APPS = {
   'shops.kd-mc.com': 'shops',
   'kit.kd-mc.com': 'kit',
   'dossiers.kd-mc.com': 'dossiers',
-  'rotaplan.kd-mc.com': 'rotaplan', 'croupier.kd-mc.com': 'croupier', /* manquaient depuis le 15.09 : garde périmètre rouge (mesuré 16.09) */
   'tor.kd-mc.com': 'tor',
   'rotaplan.kd-mc.com': 'rotaplan',
   'croupier.kd-mc.com': 'croupier',

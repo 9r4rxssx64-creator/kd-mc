@@ -111,15 +111,33 @@
   }
 
   function checkAdmin(cb) {
+    /* Un /__sso/whoami qui ECHOUE est deja traite (fail-CLOSED). Mais un whoami qui
+       PEND -- ni reponse ni erreur, reseau qui traine -- ne rappelait JAMAIS cb :
+       en mode app, l'ecran « Bee arrive... » est retire a load+900 ms, donc on
+       obtenait un ecran noir SANS explication. Au bout de 4 s on tranche comme un
+       refus : meme chemin que le refus rapide, donc meme message. */
+    var fini = false;
+    var fin = function (ok) { if (!fini) { fini = true; cb(ok); } };
     try {
       var tok = ssoToken();
       var hdr = {};
       if (tok) hdr.Authorization = 'Bearer ' + tok;
-      fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store', headers: hdr })
+      var ctrl = null;
+      try { ctrl = new AbortController(); } catch (_) {}
+      var minuteur = setTimeout(function () {
+        try { if (ctrl) ctrl.abort(); } catch (_) {}
+        fin(false);
+      }, 4000);
+      var opts = { credentials: 'include', cache: 'no-store', headers: hdr };
+      if (ctrl) opts.signal = ctrl.signal;
+      fetch('/__sso/whoami', opts)
         .then(function (r) { return r && r.ok ? r.json() : null; })
-        .then(function (j) { cb(!!(j && j.ok && j.verified === true && j.admin === true)); })
-        .catch(function () { cb(false); });
-    } catch (_) { cb(false); }
+        .then(function (j) {
+          clearTimeout(minuteur);
+          fin(!!(j && j.ok && j.verified === true && j.admin === true));
+        })
+        .catch(function () { clearTimeout(minuteur); fin(false); });
+    } catch (_) { fin(false); }
   }
 
   /* ============================================================
@@ -406,6 +424,7 @@
         window.removeEventListener('resize', majRect);
         window.removeEventListener('orientationchange', majRect);
         document.removeEventListener('visibilitychange', onVisible);
+        desarmerAudio();
         try { clearTimeout(tBlink); } catch (_) {}
         if (pend) { try { cancelAnimationFrame(pend); } catch (_) {} pend = 0; }
         return;
@@ -637,11 +656,22 @@
       s.buffer = b; s.connect(AC.destination); (s.start || s.noteOn).call(s, 0);
     } catch (_) {}
   }
-  try {
-    ['touchend', 'click', 'pointerdown', 'keydown'].forEach(function (ev) {
-      document.addEventListener(ev, audioUnlock, { passive: true });
-    });
-  } catch (_) {}
+  /* ⚠ Ces 4 ecouteurs etaient poses AU CHARGEMENT, donc AVANT le gate admin : tout
+     visiteur anonyme d'une page qui embarque Bee les portait, et son premier toucher
+     creait un AudioContext pour rien. Ils s'arment maintenant SEULEMENT quand Bee est
+     montee (donc pour Kevin), et se retirent quand elle quitte la page. */
+  var AUDIO_EV = ['touchend', 'click', 'pointerdown', 'keydown'];
+  var audioArme = false;
+  function armerAudio() {
+    if (audioArme) return;
+    audioArme = true;
+    try { AUDIO_EV.forEach(function (ev) { document.addEventListener(ev, audioUnlock, { passive: true }); }); } catch (_) {}
+  }
+  function desarmerAudio() {
+    if (!audioArme) return;
+    audioArme = false;
+    try { AUDIO_EV.forEach(function (ev) { document.removeEventListener(ev, audioUnlock); }); } catch (_) {}
+  }
 
   /* La bouche s'ouvre sur l'AMPLITUDE du son reel (RMS), image par image.
      Rend une fonction d'arret, ou null si l'analyse est impossible (-> repli CSS). */
@@ -1212,6 +1242,7 @@
         }
         return;
       }
+      armerAudio();
       mount();
     });
   }

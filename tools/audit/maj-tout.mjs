@@ -103,11 +103,17 @@ function mesurer() {
 function blocs(m) {
   const b = {};
 
+  /* ⚠ « Branches dans le dépôt » N'EST PLUS ICI (26.09.2026). Ce bloc est COMPARÉ par
+     le garde, et le nombre de branches change tout seul (robots, autres sessions) :
+     le document disait 249 pendant que la mesure disait 250 → `test:maj-tout` rouge,
+     donc `test:ci` bloqué pour TOUT LE MONDE, sans qu'aucun code soit en cause.
+     C'est le piège de la valeur volatile (leçon #94), que le commentaire ci-dessous
+     décrivait déjà… tout en la laissant dans le bloc comparé. Elle reste affichée dans
+     `etat-live`, qui n'est jamais comparé. */
   b['chiffres'] = [
     `| Ce qu'on a | Combien | Mesuré par |`,
     `|---|---|---|`,
     `| Chantiers suivis (sessions) | **${m.sessions}** | \`pipeline/sessions.json\` |`,
-    `| Branches dans le dépôt | **${m.branches}** | \`git ls-remote --heads origin\` |`,
     `| Applications / pages | **${m.pages}** | \`find -maxdepth 3 -name index.html\` |`,
     `| Adresses du domaine kd-mc.com | **${m.adresses}** | \`services/kdmc-router/worker.js\` |`,
     `| Serveurs Cloudflare (workers) | **${m.workers}** | \`find -name wrangler.toml\` |`,

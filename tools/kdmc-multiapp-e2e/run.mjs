@@ -18,7 +18,25 @@
 import http from 'http';
 import { readFileSync } from 'fs';
 import { createRequire } from 'module';
-const ADMIN_CODE = process.env.KDMC_ADMIN_CODE || ''; // code de TEST ; en CI → secret KDMC_ADMIN_CODE (le vrai code ne s'écrit jamais ici)
+/* CODE DE TEST — surtout PAS le vrai code de Kevin.
+ *
+ * PROPAGÉ LE 26.09.2026. Cette ligne lisait un secret `KDMC_ADMIN_CODE` que le workflow
+ * kdmc-sso-e2e.yml ne pose NULLE PART (vérifié : 0 occurrence). Le code arrivait donc
+ * VIDE, le portail répondait « Code trop court (6 chiffres minimum) » et abandonnait avant
+ * la suite — et l'échec se présentait comme « timeout en attendant le bouton #pk-go », qui
+ * ne dit rien de la vraie cause. Résultat mesuré : ce robot échouait à CHAQUE exécution
+ * depuis au moins le 23.09, sur `main` comme sur toutes les branches (12 runs consultés,
+ * 12 rouges) — un rouge permanent qui apprend à tout le monde à l'ignorer.
+ *
+ * Le diagnostic et le remède existaient DÉJÀ, écrits le 22.09 en tête de
+ * tools/kdmc-sso-e2e/run.mjs… et n'avaient été appliqués qu'à CE fichier sur quatre.
+ * Une correction posée sur une copie sur quatre n'est pas une correction.
+ *
+ * Aucun de ces contrôles n'a besoin du VRAI code : ils créent un compte de test et
+ * portent sur le passkey, la session forte et le rangement du pass — que le domaine
+ * décide à partir du NOM. Règle absolue : le code admin ne s'écrit nulle part, pas même
+ * en secret de test. */
+const ADMIN_CODE = '123456';
 
 const ROOT = process.cwd();
 function loadPlaywright() {

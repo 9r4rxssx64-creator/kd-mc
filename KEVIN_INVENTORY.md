@@ -1,5 +1,21 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔍 Audit du 26.09 : les tuiles partout, Javis durci (26.09.2026)
+
+- ▶️ **Le rapport d'audit** (mesures, sabotages, auto-critique) : [audit/2026-09-26/RAPPORT.md](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/2026-09-26/RAPPORT.md)
+- 🔑 **Changer ton code admin** — la page existait mais **rien ne la montrait** : elle est maintenant dans ton espace privé sur [kd-mc.com](https://kd-mc.com/) → « Changer mon code admin »
+- 🛍 Tes 3 produits ont enfin leur tuile : [rotaplan.kd-mc.com](https://rotaplan.kd-mc.com/) · [kit.kd-mc.com](https://kit.kd-mc.com/) · [croupier.kd-mc.com](https://croupier.kd-mc.com/)
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `audit/verif-live/tuiles.md` | **Ce que ton domaine sert VRAIMENT** — écrit par la machine GitHub : version servie contre version du dépôt, chaque tuile, chaque destination. C'est ce rapport qui a montré que tu ne voyais pas tes nouvelles tuiles. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/verif-live/tuiles.md) |
+| `tests/verif-tuiles-live.mjs` | Le contrôle qui produit ce rapport. Il tourne sur la machine GitHub (depuis ma session, ton domaine est injoignable). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verif-tuiles-live.mjs) |
+| `tests/verify-paquets-racine.mjs` | La garde qui empêche un paquet inutile de re-casser `npm install` — et donc **82 robots** d'un coup. **11 contrôles.** | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-paquets-racine.mjs) |
+| `tools/javis/sync.mjs` | **Recopie Bee** vers les pages qui l'embarquent (`npm run sync:javis`). La liste des pages est trouvée toute seule — plus d'oubli possible. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/javis/sync.mjs) |
+| `tests/verify-tuiles-apps.mjs` | La garde des tuiles, élargie : sous-chemins de kd-mc.com, dossiers de boutiques, adresses en double, **et le contrôle en vrai sur le domaine est bien lancé et son rapport déposé**. **94 contrôles.** | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-tuiles-apps.mjs) |
+| `tests/verify-javis-bee.mjs` | La garde de Bee : elle **trouve** les pages porteuses (plus de liste à la main) et exige leur CSP. **58 contrôles.** | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-javis-bee.mjs) |
+| `javis/icon-192.png` | L'icône qui manquait pour installer Bee proprement sur Android. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/javis/icon-192.png) |
+| `kdmc-home/admin/admin.js` | Ton admin : + Rotaplan, + Devenir croupier, + « Qui se connecte », + Centre de contrôle (14 tuiles). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/kdmc-home/admin/admin.js) |
 ### 🔒 Boutiques fermées à l'écriture anonyme + production déployée depuis `main` seulement (26.09.2026)
 
 | Fichier | À quoi il sert | Lien |

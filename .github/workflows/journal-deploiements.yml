@@ -24,6 +24,7 @@ name: 🧾 Journal des déploiements ratés
 on:
   workflow_run:
     workflows:
+      - "Deploy to GitHub Pages"
       - "Deploy cmc-parser-proxy (Cloudflare Worker)"
       - "Deploy apex-auth-worker"
       - "Deploy Apex Chat (Cloudflare Workers)"

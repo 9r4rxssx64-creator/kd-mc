@@ -81,6 +81,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Ménage — vérification de la levée | `claude/menage-verif-suppression` | ⚫ épuisée : fusionnée (PR #3746) avant mon dernier commit, contenu repris dans la ligne au-dessus |
 | CMCteams — Départs light (miroir pour chaque) | `claude/miroir-pour-chaque` | 🟢 Départs v1.39 + vérif LIVE écrite dans le dépôt (5.09) |
 | CMCteams — fidélité au PDF (planning/équipes/départs) | `claude/verify-cmcteams-light-data-rzlvau` | 🟢 septembre 2026 : 248/248 personnes et 7 440/7 440 cellules identiques au PDF, des deux côtés (6.09) |
+| Coffre, quota GitHub, état du moment (`coffre-etat`) | `claude/etat-du-moment` | 🟢 ETAT-DU-MOMENT.md servi à chaque réveil de session (26.09) |
 
 ## 📅 État RÉEL mesuré le 10.09.2026 — `git for-each-ref` + `git rev-list origin/main..<branche>`
 

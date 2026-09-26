@@ -1,5 +1,71 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (nuit) — Séances dans CHAQUE planning individuel (CMCteams v9.920 · light v1.56)
+
+- Kevin : « Intègre dans les plannings individuellement. Vérifie réel pour chaque personne toutes
+  les informations par rapport à l'import. Aucune erreur. Vérifie l'affichage CMCteams et light,
+  les couleurs. » → badge violet **🎓 + créneau** sous le code du PDF, le jour exact : tuile de
+  « Mon planning » + détail du jour, coin de case du planning général, grille light (+ légende),
+  export .ics (rappels -12 h / -1 h, texte ICS échappé — bug de virgule trouvé par le test).
+- Code dans `tools/shared/seances-ui.js` (index par mois : matricule puis nom exact) ; index.html
+  ne reçoit que 5 crochets (3 438 805 o, plafond 3 439 007). Light : `_seJours` / `_seBadge`.
+- **Mesuré dans un vrai navigateur, 375 px** (`test:seances-individuel`, 19/0) : 83 personnes,
+  2 573 cases = le PDF, badges aux jours exacts, couleurs identiques avec/sans séances, 0 badge
+  rogné ; planning général 251 personnes / 7 781 cases / 123 badges ; 140 séances dans les .ics ;
+  light 39 équipes / 8 742 cases / 123 badges, 66/66 inscrits. Sabotage (séance décalée d'un jour
+  + badges light vides) → 4 échecs. Contraste blanc sur #8e5cc9 = 4,64 (≥ 4,5).
+- **Matricule changé par la base EN DIRECT** (CI réseau ouvert, 26.09 19h57) : la synchro Firebase
+  remplace en cours de route le matricule provisoire (U_TMP_…) de 3 inscrits (CASSINI A, GRAUSS A,
+  FILIPPI F) ; le test les cherchait par matricule seul → « calendrier vide ». L'app, elle, les
+  retrouve par le nom. Test aligné sur l'app (matricule puis nom) + contrôle neuf qui reproduit le
+  cas sans réseau (22/0) ; sabotage (repli par nom retiré de l'app) → 1 échec.
+- **Relance CI (20h16) : ce n'était PAS que le test.** Mêmes personnes introuvables même par le nom :
+  la liste des employés de la base (`cmc_e`) REMPLACE celle de l'app et n'a pas les 30 personnes
+  du seul PDF d'octobre (U_TMP_…). Rien ne les remettait (le seed n'était ré-appliqué que sur
+  `cmc_ov`). Correctif `tools/shared/planning-seed-emps.js` (+ 2 crochets dans index.html :
+  réception Firebase et autre onglet) ; contrôle neuf par le vrai chemin `fbApplyData` : 30/30
+  reviennent avec cases et séances ; sabotage (crochets retirés) → 30 perdues. LESSONS #341.
+- Honnête : 17 cadres inscrits n'ont pas de planning de table en octobre (badges sur jours vides) ;
+  14 noms du PDF CMS n'existent pas dans les apps (page « Séances » seulement).
+- **Trouvé en vérifiant l'affichage réel** (et corrigé) : « Mon planning » EN LIGNE ne montrait
+  que dimanche → mercredi sur iPhone (grille 582 px dans 341, leçon #338). Maintenant 7 jours à
+  375/390/412 px, 0 texte coupé sur 562 plannings (sept + oct), codes du PDF entiers (libellés
+  secondaires masqués sous 480 px, ils restent dans le détail du jour). Badge « 🎓18h » sur iPhone,
+  « 🎓18-20h » en grand écran. Sur tablette (768 px) 162 libellés longs (« Coupure CDP »…)
+  restent tronqués dans la case, comme avant — le code, lui, est entier.
+- **Et un plantage admin** : `cmc_audit` rendu en objet par Firebase (liste à trous) → écran
+  « Employés » cassé (`log.filter`). Corrigé dans `lg()` (leçon #339, `test:lg-liste`).
+- **Vérif LIVE (CI) : sur la light en ligne, le miroir de Kevin avait disparu** (« aucun », 3 rapports
+  de suite sur `main` avant cette PR). Cause : quand Firebase porte un mois (live), la page jetait les
+  miroirs du PDF et ne gardait que `cmc_team_mirror_<mois>` de Firebase — absent pour septembre →
+  36/36 équipes sans miroir. Corrigé (light v1.56) : on ne jette les miroirs du PDF que si Firebase
+  en fournit pour ce mois. Reproduit puis prouvé dans `test:light-firebase` (échec avant, vert après).
+  Le vérificateur live jugeait aussi « mois courant » = le plus récent des données (octobre, importé en
+  avance) → corrigé sur le mois du calendrier, + diagnostic (BID, mois Firebase) dans le rapport pour
+  le symptôme « équipe undefined » que je n'ai pas pu reproduire hors du vrai Firebase.
+- index.html : 3 438 737 o (plafond 3 439 007) — 726 o gagnés en condensant 3 de mes anciens
+  commentaires (v9.896/899/901 ; leur récit complet est dans MEMO_RESUME et LESSONS).
+
+## 2026-09-26 (soir) — Actions reparties : v9.919 / light v1.55 EN LIGNE, 3 rouges de `main` réparés
+
+- **Vérifié en ligne** (Firecrawl, le proxy de l'agent bloque le domaine) : cmcteams.kd-mc.com
+  `APP_VER v9.919`, `sw.js` `cmcteams-v9.919` (MAJ forcée), departs.kd-mc.com `v1.55`,
+  `seances-ui.js` et `seances-gen.js` servis (200). Publication = run n°308 vert sur 0da9077.
+- **GitHub Actions et le bot auto-merge refonctionnent** depuis ~17:12 UTC (25+ runs verts,
+  auto-merge n°4510 a fusionné #4023) → `ETAT-DU-MOMENT.md` + mémoire compacte corrigés.
+- 3 rouges trouvés sur `main` et réparés : `coffre-previent-public.yml` sans branche dans son
+  groupe de file (`test:ci-no-stampede` 4/1 → 5/0) ; règle « une seule vérité du moment » pas
+  inscrite au registre alors que son garde existe (`test:improvements-guard` 20 → 19) ;
+  `maj-tout` mettait le nombre de branches (réseau en écriture, clone local en vérification)
+  dans un bloc COMPARÉ → faux rouge garanti après chaque `npm run maj-tout` (déplacé dans le
+  bloc volatil, jamais comparé — même piège que la leçon #94).
+- Et 4 autres rouges de `main` (tous mesurés rouges sur `main` intact, dans un worktree) :
+  `test:ios-config` — l'app iPhone n'embarquait pas `seances-seed.js`/`seances-ui.js` (mon oubli
+  du v9.918, `mobile/apps.json`) ; `test:deploiement-declenche` exigeait encore des déploiements
+  sur `claude/**` alors que Kevin a tranché « main seulement » (les deux gardes se contredisaient)
+  + « Deploy to GitHub Pages » ajouté au journal des déploiements ratés ; `test:router-secours`
+  et `test:bascule` attendaient github.io / l'ancien préfixe alors que le routeur choisit seul
+  le préfixe depuis f497c3b87 (20 échecs) ; `SESSIONS-ET-BRANCHES.md` sans `claude/etat-du-moment`.
 ## 2026-09-26 (19 h 45) — « Accès Cloudflare ? » : plus rien à faire, 2 lignes retirées de la liste de Kevin
 
 - **Le compte Cloudflare « 9r4 » n'est plus verrouillé.** Le blocage venait de la suspension de GitHub

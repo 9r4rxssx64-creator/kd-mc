@@ -143,6 +143,9 @@ const REGISTRE = [
   [/DÉPÔT PUBLIC|PUBLIC MAIS SÉCURISÉ/i, ['npm:test:depot-public-sain']],
   [/DESTINATION ÉCRITE|GITHUB, GITLAB, WORKER/i, ['npm:test:destinations-workflows']],
   [/DOCUMENTS? DE TRAVAIL|NE PUBLIE PLUS/i, ['npm:test:documents-travail']],
+  /* 26.09 : la règle « une seule vérité du moment » a son garde depuis sa création
+     (test:etat-du-moment, dans test:ci) ; il manquait seulement son entrée ici. */
+  [/SEULE VÉRITÉ DU MOMENT/i, ['npm:test:etat-du-moment']],
 ];
 
 /* ─── 2-bis. Règles COMPORTEMENTALES : elles portent sur MA façon de travailler (ton, autonomie,

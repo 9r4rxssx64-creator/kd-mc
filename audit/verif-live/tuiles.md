@@ -1,6 +1,6 @@
 # Vérif LIVE des tuiles — ce que Kevin voit vraiment sur son iPhone
 
-_2026-09-26 18:40 UTC · lecture seule sur le domaine · rapport écrit par la machine GitHub_
+_2026-09-26 19:15 UTC · lecture seule sur le domaine · rapport écrit par la machine GitHub_
 
 ## Portail kd-mc.com
 - ✅ kd-mc.com répond — HTTP 200, 26502 octets

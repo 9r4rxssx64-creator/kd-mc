@@ -17,7 +17,8 @@
         "tools/shared/planning-seed.js",
         "tools/shared/convention-sbm.js",
         "tools/shared/seances-seed.js",
-        "tools/shared/seances-ui.js"
+        "tools/shared/seances-ui.js",
+        "tools/shared/planning-seed-emps.js"
       ],
       "icon": "icon.svg",
       "site": "https://cmcteams.kd-mc.com",

@@ -9,7 +9,7 @@
  */
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { chromium } from 'playwright';
 
@@ -104,6 +104,30 @@ for (const [nom, l] of [['Commerce', commerce], ['page de vente', vente]]) {
 const texte = async (l) => { try { return await l.first().innerText({ timeout: 2000 }); } catch { return ''; } };
 chk((await texte(commerce.locator('.n'))).trim().length > 2, 'tuile Commerce : libellé non vide');
 chk((await texte(vente.locator('.d'))).includes('kit.kd-mc.com'), 'tuile page de vente : l\'adresse est dite');
+
+/* ── Kevin 26.09 : « je ne vois pas la tuile dans mon domaine admin » ──────────
+   Il cherchait Tor. Le HTML ne suffit pas à le prouver : une tuile peut être
+   dans le source et invisible à l'écran (masquée, hors cadre, hauteur nulle).
+   On l'exige donc VISIBLE, tactile (≥ 44 px) et à la bonne adresse. */
+const tor = page.locator('a.cardrow[href="https://tor.kd-mc.com/"]');
+chk(await tor.count() === 1, 'tuile « Tor en clair » : exactement une');
+chk(await tor.isVisible().catch(() => false), 'tuile Tor VISIBLE à l\'écran');
+const bTor = await boite(tor);
+chk(!!bTor && bTor.height >= 44, 'tuile Tor : hauteur ' + Math.round(bTor?.height || 0) + ' px (≥ 44)');
+
+/* Et, plus large que Tor : aucune app du registre ne doit être introuvable ici. */
+const registre = JSON.parse(readFileSync(new URL('../kdmc-home/apps.json', import.meta.url), 'utf8')).apps;
+const rendus = (await page.locator('a.cardrow').evaluateAll((els) => els.map((e) => e.getAttribute('href') || ''))).join(' ');
+const parNom = new Map();
+for (const [host, a] of Object.entries(registre)) {
+  if (/^(www\.)?kd-mc\.com$/.test(host)) continue;
+  const nom = (a.icon ? a.icon + ' ' : '') + (a.name || host);
+  parNom.set(nom, [...(parNom.get(nom) || []), host]);
+}
+const orphelines = [...parNom].filter(([, hosts]) => !hosts.some((h) => rendus.includes(h))).map(([n]) => n);
+chk(orphelines.length === 0, orphelines.length
+  ? orphelines.length + ' app(s) INTROUVABLES depuis l\'admin : ' + orphelines.join(' · ')
+  : 'les ' + parNom.size + ' apps du domaine sont toutes joignables depuis l\'admin');
 
 /* Pas de doublon de destination dans toute la page */
 const hrefs = await page.locator('a.cardrow').evaluateAll((els) => els.map((e) => e.getAttribute('href')));

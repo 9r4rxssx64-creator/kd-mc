@@ -1,5 +1,35 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (20h45) — Kevin : « Fais tout ce qui était prévu le 1er, inutile d'attendre » → FAIT
+
+- **Règles boutiques** : `deploy-cmcteams-rules.yml` était « disabled_manually » dans le coffre (pause posée par la
+  bascule : robot en double avec le public). Activé → lancé (`shops_lock=on`, run 36264927425, guichet admin OK,
+  publication OK) → remis en pause. **Test réel depuis la CI** (sonde jetable, branche supprimée) : logo / produit /
+  sélection / push_sub / ld_wiped_v1 anonymes → **401** ; lecture produits → **200** ; commande client → **200**.
+  ⚠️ Une commande test reste dans `shops_admin_v1/orders/la-detente/test-verrou-1790449723` (total 0, « TEST verrou
+  26.09 a ignorer ») : les commandes sont en création seule, suppression anonyme refusée (401) — c'est voulu.
+- **Versions en ligne** : cmcteams.kd-mc.com `APP_VER="v9.919"` + `sw.js` `cmcteams-v9.919` ; Départs / light v1.54
+  (audit LIVE) ; `seances-seed.js` et `seances-gen.js` servis (200, 9 833 octets = fichiers du dépôt).
+- **MAJ forcée** : `verifier-maj-auto.yml` lancé automatiquement après la publication (17:33 UTC) → **success**
+  (chaque adresse annonce la même version). Le passage d'un vrai appareil v9.916 → v9.919 n'a pas été rejoué.
+- Routines du 1.10 (`trig_01U8…`, `trig_015J…`) **désactivées** : tout est fait.
+
+## 2026-09-26 (20h30) — « Je ne vois pas la tuile dans mon domaine admin » : 21 apps sur 30 étaient introuvables
+
+- Kevin cherchait **Tor en clair** dans `kd-mc.com/admin/`. Mesuré endroit par endroit : routée ✅, périmètre ✅,
+  `custom_domain` ✅, sonde uptime ✅, tuile du **portail** ✅ — **admin : 0**. Puis, en exécutant `hub()` :
+  **21 des 30 apps** du registre (27 sites) n'avaient **aucune** tuile dans l'admin, 9 seulement joignables.
+- Cause : `hub()` était une **liste écrite à la main** alors qu'`apps.json` se déclare source unique « consommé
+  par le portail ET l'admin » — l'admin ne s'en servait que pour NOMMER les sites dans l'historique. Leçon #142
+  à l'identique, et le trou du message m128 resté ouvert pour deux tiers du domaine.
+- Fix : `hub()` = `hubHaut()` (favoris à la main, ordre de Kevin) + `toutesLesApps()` **déduite** d'`APP_NAMES`
+  → une app ajoutée demain apparaît toute seule. Zéro doublon (exclusion sur la **racine** `href="https://host/"`,
+  pas sur le nom d'hôte : `shops.kd-mc.com` n'était présent que via `.../studio.html`), alias fusionnés.
+- **Mesuré après** : 34 tuiles, 0 doublon. Gardes : `test:admin-tuiles` +2 (3 sabotages → 2/1/1 échecs, restauré 7/7)
+  et `test:admin-tuiles-reel` **en vrai navigateur iPhone 375 px** : Tor **VISIBLE**, **72 px** (≥ 44), les 27 sites
+  joignables → **19 OK / 0 KO** ; sabotage → **4 KO** nommant les 18 sites disparus. Leçon **#337**.
+- Chemin de mise en ligne vérifié (bascule faite ce soir) : push `main` → `coffre-synchronise-public.yml` → dépôt
+  public `kd-mc` → publication. Rien à faire de plus, mais le run se vérifie après la fusion.
 ## 2026-09-26 (18 h 40) — LA CAUSE RACINE : le site était GELÉ, plus personne ne pouvait publier
 
 - **La bascule vers le dépôt public a tourné AUJOURD'HUI** (runs 5 et 6 de
@@ -184,7 +214,7 @@ exécuté** (`-- --simule` → 16/20, avec son avertissement « ces chiffres ne 
 page **v1.7**. **Garde** : `test:tor` 35 → **36** — chaque `npm run …` cité dans la page doit
 exister dans `package.json`, et celui de « pour les ouvrir toi-même » doit pointer sur
 `verif-onion.mjs`. **Prouvée par 3 sabotages** (faute d'origine remise, commande inventée,
-script retiré) → 3 échecs ; restauré → 36/0. Leçon **#329**.
+script retiré) → 3 échecs ; restauré → 36/0. Leçon **#338**.
 
 **2. Le jeton GitLab répond HTTP 401 — il est mort** (run 36258454184). Bon côté : le jeton qui
 portait `api` et **lisait les 35 secrets de CI** ne marche plus. Mauvais côté : l'aller-retour

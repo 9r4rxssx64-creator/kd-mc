@@ -30,7 +30,8 @@
   function card(i, n, d, h) {
     return '<a class="kdmc-card kdmc-in cardrow" href="' + h + '"><span class="i">' + i + '</span><span class="ct"><span class="n">' + esc(n) + '</span><span class="d">' + esc(d) + '</span></span><span class="arr">›</span></a>';
   }
-  function hub() {
+  /* Les sections choisies à la main : ce que Kevin ouvre le plus souvent, dans son ordre. */
+  function hubHaut() {
     /* En premier, les deux pages que Kevin ouvre le plus souvent (demandé le
        24.09.2026) : celle d'où il PILOTE son business, et celle que ses clients
        VOIENT. Le tableau de bord Commerce a été retiré de la section commune
@@ -62,7 +63,40 @@
       + '<h2 class="cat">🎨 Studios de création</h2><div class="grid">'
       + card('🎨', 'Studio — La Détente', 'Créer logos & produits (POD)', 'https://shops.kd-mc.com/la-detente/studio.html')
       + card('🎨', 'Studio — Chez Lolo', 'Créer logos & produits (POD)', 'https://chez-lolo.kd-mc.com/studio.html')
-      + '</div>';
+      + '</div>'
+      /* Kevin 26.09.2026 : « je ne vois pas la tuile dans mon domaine admin » (il cherchait
+         Tor en clair). MESURE du jour : 21 des 30 apps du registre étaient ABSENTES de cette
+         page — Tor était routée, dans le périmètre, dans le custom_domain, surveillée par la
+         sonde, et affichée sur le portail… mais pas ici. Même trou que la leçon #142/m128 :
+         une liste écrite à la main finit toujours par diverger de la réalité.
+         Donc : cette dernière section n'est PAS écrite à la main. Elle se déduit d'APP_NAMES
+         — la même liste, déjà tenue à jour depuis /apps.json (source unique) et gardée par
+         apps-consistency. Une app ajoutée demain apparaîtra ici TOUTE SEULE, sans que
+         personne y pense. */
+      ;
+  }
+  function hub() { return hubHaut() + toutesLesApps(); }
+  /* Les apps du registre qui ne sont pas déjà citées plus haut (règle « zéro doublon UX » :
+     une destination, une tuile) et sans les alias (cocina/cujina = la même cuisine). */
+  function toutesLesApps() {
+    var dejaCite = hubHaut();   /* on lit le HTML rendu : rien à tenir à jour en double */
+    var vus = {}, tuiles = [];
+    Object.keys(APP_NAMES).forEach(function (host) {
+      if (/^(www\.)?kd-mc\.com$/.test(host)) return;          /* le portail, pas une app */
+      /* « Déjà cité » = la RACINE de l'app est citée en haut. Chercher juste le nom
+         d'hôte quelque part dirait à tort « couvert » pour une app dont seule une
+         sous-page est citée (mesuré : shops.kd-mc.com n'était présent QUE via
+         .../la-detente/studio.html — le portail boutiques n'avait donc aucune tuile). */
+      if (dejaCite.indexOf('href="https://' + host + '/"') >= 0) return;
+      var nom = APP_NAMES[host];
+      if (vus[nom]) return;                                     /* alias du même site */
+      vus[nom] = 1;
+      var ic = nom.split(' ')[0], lib = nom.slice(ic.length).trim() || host;
+      tuiles.push(card(ic, lib, host, 'https://' + host + '/'));
+    });
+    if (!tuiles.length) return '';
+    return '<h2 class="cat">🌐 Toutes mes apps du domaine</h2><div class="grid">'
+      + tuiles.join('') + '</div>';
   }
   if (typeof module === 'object' && module && module.exports) module.exports = { hub: hub };
 

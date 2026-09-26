@@ -56,3 +56,36 @@ test('chaque tuile a un libellé et une description non vides', () => {
     assert.ok(d.trim().length > 4, 'description vide pour « ' + n + ' »');
   }
 });
+
+/* ── Kevin 26.09.2026 : « je ne vois pas la tuile dans mon domaine admin » ──────
+ * Il cherchait « Tor en clair ». MESURE du jour : 21 des 30 apps du registre
+ * n'avaient AUCUNE tuile ici. Tor était pourtant routée, dans le périmètre, dans
+ * le custom_domain, surveillée par la sonde et affichée sur le portail — mais pas
+ * dans l'admin. Les tests d'avant ne pouvaient pas le voir : ils vérifiaient les
+ * tuiles NOMMÉES une par une, jamais que le registre était couvert.
+ * Ces deux gardes ferment ça pour toutes les apps futures, pas seulement Tor.  */
+test('« Tor en clair » a sa tuile (le cas signalé par Kevin le 26.09)', () => {
+  assert.ok(/href="https:\/\/tor\.kd-mc\.com\/"/.test(html),
+    'la tuile Tor a disparu de l\'admin — c\'est exactement ce que Kevin ne voyait pas');
+});
+
+test('aucune app du registre n\'est orpheline de l\'admin', () => {
+  const registre = require('../kdmc-home/apps.json').apps;
+  /* Un même site a parfois plusieurs adresses (cuisine/cocina/cujina,
+     cmcteams-light/departs) : on exige que chaque SITE soit joignable, pas
+     chaque alias — sinon on demanderait des tuiles en double. */
+  const parNom = new Map();
+  for (const [host, a] of Object.entries(registre)) {
+    if (/^(www\.)?kd-mc\.com$/.test(host)) continue;            /* le portail lui-même */
+    const nom = (a.icon ? a.icon + ' ' : '') + (a.name || host);
+    if (!parNom.has(nom)) parNom.set(nom, []);
+    parNom.get(nom).push(host);
+  }
+  const orphelines = [];
+  for (const [nom, hosts] of parNom) {
+    if (!hosts.some((h) => html.includes(h))) orphelines.push(nom + ' (' + hosts.join(', ') + ')');
+  }
+  assert.deepEqual(orphelines, [],
+    orphelines.length + ' app(s) du domaine sont INTROUVABLES depuis l\'admin : '
+    + orphelines.join(' · ') + '. Une app qu\'on ne voit pas n\'existe pas.');
+});

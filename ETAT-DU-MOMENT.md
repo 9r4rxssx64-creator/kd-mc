@@ -29,6 +29,7 @@
 | **Bot auto-merge** | Les Actions tournent de nouveau : il peut refusionner. Vérifier avant de compter dessus. |
 | **Routeur du domaine (`services/kdmc-router`)** | ⚠️ **Fusionne `main` AVANT tout push qui le touche** : déployé depuis une branche dont `wrangler.toml` n'a pas `UPSTREAM_BASE`, le routeur renvoie sur `github.io` (mort) et le déploiement reste VERT (message m123, 23.09 : kit.kd-mc.com 12 adresses en 404 pendant 5 min). Correctif dans `main` depuis le commit f497c3b87. |
 | **Déployer la production** | **Depuis `main` seulement** (Kevin 26.09 « limité ») : les 25 workflows de déploiement ne partent plus sur un push `claude/**`. Une branche de travail ne déploie rien ; on fusionne, `main` déploie. Manuel : `workflow_dispatch`. Garde `test:deploiement-main`. |
+| **Règles des boutiques** | **FERMÉES le 26.09** (run 36264927425, `shops_lock=on`) : écriture de produits, logos, sélection sourcing, abonnement d'alertes = admin seulement ; commandes clients toujours ouvertes. Testé en vrai (5 refus 401, lecture 200, commande 200). Le robot des règles est **en pause dans le coffre** (il vit au public) : pour le relancer d'ici, l'activer, le lancer, le remettre en pause. |
 | **Sessions Claude entre elles** | Registre + boîte aux lettres = `pipeline/sessions.json` sur **GitHub `main`** (pas GitLab). Se déclarer : `node tools/pipeline/pipeline.mjs enregistrer --id <slug> --titre … --branche … --sujet …`. Lire son courrier : `… etat --id <slug>`. |
 
 ## 🚫 Plus vrai — ne le redis plus à Kevin, ne le relis pas comme actuel

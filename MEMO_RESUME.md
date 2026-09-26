@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (20h) — Bascule avancée (Kevin « avant le 1 octobre fais ») : 2 pannes du robot corrigées
+
+- 1er essai (36259147370) arrêté à « Poser les clés » : npm plantait à la racine → libsodium absent. 2e essai (36259386876)
+  arrêté au verrouillage : relecture `grep` sur un JSON multi-lignes. Corrigés (#4034, #4035), 3e essai **36259546025 vert**
+  (12 étapes), puis l'autre session l'a relancé (36259782148, vert, « code déjà déposé »).
+- Vérifié moi-même : `git clone` anonyme de kd-mc → public, **1 commit**, 4 303 fichiers ; `verifier.mjs` sur le clone
+  → « RIEN de sensible » ; verif-reelle 36259844833 **verte**.
+- Ajouté : garde « bascule déjà faite » dans le robot (`PUBLICATION_PAR=public` → refus). Réveil du 1.10 renommé.
+- ⚠ Après la bascule : les pages PUBLIQUES (dont Apex Chat `messaging-app/`) se modifient dans **kd-mc**, plus au coffre.
+
 ## 2026-09-26 (19h30) — BASCULE FAITE : dépôt public kd-mc créé, site 40/40, budget à remettre à 0
 
 - Audit LIVE 36259402798 après correctif du faux rouge : **rc=0, 40 OK, 0 bloquante** (admin : « verrou affiché »).

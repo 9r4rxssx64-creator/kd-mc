@@ -35,6 +35,18 @@ dans la nuit, et GitHub a tout coupé.
 *Honnêteté : je ne peux pas lire ta page de facturation depuis ici (mon jeton ne voit que le
 dépôt). C'est l'explication qui colle à tout ce que j'ai mesuré, ce n'est pas une lecture directe.*
 
+### 📌 POUR PLUS TARD (noté le 26.09 au soir, Kevin : « Note pour plus tard ») — rien ne casse en attendant
+
+1. 👆 **Remettre les 2 budgets Actions à 0 $** (1 min) : [Budgets](https://github.com/settings/billing) → **Budgets and alerts**
+   → ligne Actions du **compte** ET ligne Actions du **dépôt CMCteams** → **Edit** → **0** → **Save**.
+   Tant que ce n'est pas fait, le plafond reste à 20 $ (jamais dépassé : « Stop usage » est coché).
+2. 👆 **Commande test à ignorer ou supprimer** dans les commandes de La Détente : `test-verrou-1790449723`,
+   total 0 €, « TEST verrou 26.09 a ignorer ». Un inconnu ne peut pas l'effacer (c'est la protection) ; toi, depuis
+   ton tableau de bord admin, oui.
+3. 🤖 **Branche jetable `claude/zz-sonde-1er-octobre`** : le pare-feu m'a interdit de la supprimer. Inoffensive
+   (elle ne se déclenche que sur elle-même) ; le ménage automatique des branches l'effacera, sinon une session
+   qui a le droit de suppression le fera.
+
 ### ✅ FAIT le 26.09 : tu as payé une fois, tout est reparti — dernier geste : remettre le budget à 0 $ 👆 (1 minute)
 
 Mesuré le soir même : automatisations reparties, site republié, **40/40 pages** du domaine vertes (les 3
@@ -161,6 +173,7 @@ Seules les **automatisations** sont bloquées.
 - 👤 **changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…**  `arbre`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
+- 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
 <!-- MAJ-AUTO:fin attentes-kevin -->
 
 ---

@@ -515,8 +515,9 @@
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-26",
-      "attend_kevin": null,
-      "attend_session": null
+      "attend_kevin": "remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723",
+      "attend_session": null,
+      "note": "26.09 soir : tout fait (bascule, 40/40, règles boutiques). Reste pour plus tard : budgets Actions à 0 (Kevin), commande test-verrou-1790449723, branche claude/zz-sonde-1er-octobre à supprimer."
     },
     "etat-infra-quota": {
       "titre": "Etat infra — quota Actions",

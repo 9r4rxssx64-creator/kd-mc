@@ -57,6 +57,7 @@
 - 👤 **changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…**  `arbre`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
+- 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
 <!-- MAJ-AUTO:fin attentes-kevin -->
 
 ⚠️ **Honnêteté sur l'historique git** : le dépôt est cloné en « superficiel » (*shallow*) dans

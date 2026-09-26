@@ -2,11 +2,21 @@
  * ====================================================================
  * Kevin 2026-09-06 : « Pourquoi tu es bloqué par GitHub ? Trouve des solutions. »
  *
- * Mesuré ce jour-là : depuis l'agent, l'API GitHub refuse TOUS les chemins du dépôt
+ * Mesuré ce jour-là : depuis l'agent, l'API GitHub refusait TOUS les chemins du dépôt
  * (« GitHub access is not enabled for this session ») → impossible de lancer un
- * déploiement à la main. Seul `git push` fonctionne. Donc la seule voie fiable est
- * le déclencheur `push` sur `claude/**` — c'est pour ça qu'Apex Chat s'était bien
- * déployé et que le relais Apex + World Monitor étaient restés en arrière.
+ * déploiement à la main. Seule voie fiable alors : le déclencheur `push` sur `claude/**`.
+ *
+ * ⚠️ PRÉMISSE RENVERSÉE, mesuré le 26.09.2026. Deux faits nouveaux :
+ *   · l'API GitHub RÉPOND : ce jour-là j'ai déclenché des workflows par
+ *     POST /actions/workflows/{f}/dispatches et fusionné une PR par l'API. Un
+ *     `workflow_dispatch` suffit donc pour partir sans clic de Kevin.
+ *   · Kevin a décidé (26.09, « limité ») que la PRODUCTION ne part plus que de `main` :
+ *     les déclencheurs `claude/**` ont été retirés des workflows de déploiement, et
+ *     `npm run test:deploiement-main` (28/0) l'exige désormais.
+ * Cette garde continuait d'exiger l'inverse (« ≥ 20 mises en ligne partent de claude/** ») :
+ * elle CONTREDISAIT l'autre garde et rendait `test:ci` rouge à son étape 156/214 pour
+ * TOUTES les sessions. On garde la RÈGLE — un déploiement doit pouvoir partir sans clic —
+ * et on arrête d'imposer UNE façon de la satisfaire, puisque Kevin en a choisi une autre.
  *
  * Deux pièges attrapés ici, définitivement :
  *   1. un worker de la chaîne IA dont le déploiement n'écoute PAS `claude/**`
@@ -35,11 +45,37 @@ const IA = [
   { nom: 'Apex Chat', src: 'messaging-app/workers/api-worker.js', wf: 'deploy-apex-chat' },
 ];
 
-console.log('— 1. Chaque déploiement IA part-il sur un push claude/** ? (sinon : bloqué) —');
+/* « Lançable sans clic de Kevin » = l'agent peut le faire partir. Deux façons, les deux
+   mesurées le 26.09 : `workflow_dispatch` (POST …/dispatches par l'API) ou un déclencheur
+   `push` sur `main` (la fusion de la PR le déclenche). On n'impose plus `claude/**`.
+
+   Écrit d'abord avec un motif large (« le mot main dans les 160 caractères après branches: »),
+   il a passé VERT sur un sabotage qui retirait POURTANT workflow_dispatch ET la branche main :
+   le mot « main » traînait ailleurs. On regarde donc la STRUCTURE : une clé
+   `workflow_dispatch:` non commentée, ou un élément de liste qui vaut exactement « main »
+   sous un `branches:`. Un motif approximatif ne prouve rien (leçon #335). */
+function lancable(y) {
+  if (/^[ \t]*(workflow_dispatch|repository_dispatch):/m.test(y)) return true;
+  const lignes = y.split('\n');
+  for (let i = 0; i < lignes.length; i++) {
+    if (!/^[ \t]*branches:/.test(lignes[i])) continue;
+    /* forme courte : branches: [main, ...] */
+    if (/branches:\s*\[[^\]]*\bmain\b/.test(lignes[i])) return true;
+    for (let j = i + 1; j < lignes.length; j++) {
+      const l = lignes[j].replace(/#.*$/, '');
+      if (!/^[ \t]*-/.test(l)) { if (l.trim()) break; else continue; }
+      if (/^[ \t]*-[ \t]*['"]?main['"]?[ \t]*$/.test(l)) return true;
+    }
+  }
+  return false;
+}
+const LANCABLE = { test: lancable };
+console.log('— 1. Chaque déploiement IA peut-il partir SANS un clic de Kevin ? —');
 for (const { nom, wf } of IA) {
   const y = lire(`.github/workflows/${wf}.yml`);
   chk(y.length > 0, `${nom} : le workflow ${wf}.yml existe`);
-  chk(/branches:[\s\S]{0,120}?'claude\/\*\*'/.test(y), `${nom} : déclenché par un push sur claude/** (déploiement sans API GitHub ni clic)`);
+  chk(LANCABLE.test(y),
+    `${nom} : ne peut partir NI par l'API (workflow_dispatch) NI sur un push de main — il faudrait un clic de Kevin`);
 }
 
 console.log('— 2. Un workflow surveille-t-il son PROPRE fichier ? —');
@@ -123,16 +159,19 @@ const PUBLIE = /wrangler\s+(deploy|pages\s+deploy|versions\s+upload)|wrangler-ac
   let vus = 0;
   for (const f of tous) {
     const y = lire(`.github/workflows/${f}`);
-    if (!/branches:[\s\S]{0,160}?claude\/\*\*/.test(y)) continue;
     if (!PUBLIE.test(y)) continue;
+    if (!LANCABLE.test(y)) continue;     /* ce qu'on compte : ce qui peut PARTIR sans clic */
     vus++;
+    /* Le faux vert reste surveillé, mais il ne concerne que ceux qui écoutent VRAIMENT
+       une branche de travail : écouter claude/** et déployer main, c'est un faux vert. */
+    if (!/branches:[\s\S]{0,160}?claude\/\*\*/.test(y)) continue;
     const bloc = (y.match(/uses:\s*actions\/checkout@[^\n]*\n(?:[^\n]*\n){0,6}/) || [''])[0];
     const sansCom = bloc.split('\n').map((l) => l.replace(/#.*$/, '')).join('\n');
     if (/ref:\s*main\b/.test(sansCom)) {
       chk(false, `${f} : écoute claude/** MAIS met en ligne main (faux vert, leçon #231)`);
     }
   }
-  chk(vus >= 20, `au moins 20 mises en ligne partent depuis une branche claude/** (vu : ${vus})`);
+  chk(vus >= 20, `au moins 20 mises en ligne peuvent partir SANS un clic de Kevin (API ou push de main) — vu : ${vus}`);
 }
 
 console.log('— 4. La preuve live existe-t-elle ? (un déploiement vert ne prouve rien, leçon #95) —');

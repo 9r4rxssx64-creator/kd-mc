@@ -1,5 +1,34 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (18 h 40) — LA CAUSE RACINE : le site était GELÉ, plus personne ne pouvait publier
+
+- **La bascule vers le dépôt public a tourné AUJOURD'HUI** (runs 5 et 6 de
+  `depot-public-bascule.yml`, 17:35 et 17:39 UTC), **pas le 1er octobre**. Elle pose
+  `PUBLICATION_PAR=public`, **met en pause** le robot de publication du coffre
+  (`disabled_manually`, changé à **17:36:15**) et confie la production au dépôt public `kd-mc`.
+- **Le trou** : le coffre savait seulement **faire signe** au dépôt public ; celui-ci republiait
+  **sa** copie du code, figée — l'étape de dépôt « refuse un dépôt déjà rempli ». Le dépôt public
+  cloné contenait **v1.0.33**, sans aucune tuile de Kevin. Et `kdmc-home/`, `shops/`, `javis/`,
+  `lingua/`, `la-detente/` ne sont pas dans `prive_toujours` : ils ne peuvent arriver que par là.
+  **Personne ne POUVAIT publier la bonne version, et rien n'était rouge.**
+- **Trois mesures pour y arriver** : le domaine servait v1.0.33 à 17:53, 18:14 **et** 18:16
+  (24 961 o au octet près, 38 min après une publication « réussie ») → pas la propagation ; la
+  même page avec un paramètre inédit rendait la même vieille version → **pas le cache**, c'est
+  l'origine ; et l'API GitHub disait le robot du coffre éteint.
+- **La question de la branche « domaine » est tranchée.** Elle avait écrit : *« si la branche de
+  production est déjà main, ce correctif ne changera rien — la prochaine publication tranche »*.
+  Journal du run 36259584640 : `branche de production : 'main'`, `le routeur lit bien cette
+  adresse ✅` — ses deux gardes passent, et l'adresse stable servait quand même la vieille page.
+  Ses gardes comparent des **adresses**, jamais des **contenus**.
+- **Posé** : `coffre-synchronise-public.yml` (export + `verifier.mjs` fail-closed, plancher 80 %
+  contre un export tronqué, jamais `--force`, et il **crie** si personne ne publie — trois issues,
+  pas deux) + garde `test:sync-public` **14/0, 7 sabotages**.
+- **Vérifié après fusion** : le dépôt public est passé à **v1.0.34**, tuiles présentes, widget
+  Javis **72 270 o** (commit « Synchronisation depuis le coffre (5bea46c67) », 18:35:48 UTC).
+- ⚠️ **Ne rallume PAS `publier-site-prive.yml` au coffre** sans retirer `PUBLICATION_PAR` : deux
+  éditeurs pour une même production.
+- Message **m133** à toutes les sessions · `ETAT-DU-MOMENT.md` dit maintenant **qui** publie.
+
 ## 2026-09-26 (20h) — Bascule avancée (Kevin « avant le 1 octobre fais ») : 2 pannes du robot corrigées
 
 - 1er essai (36259147370) arrêté à « Poser les clés » : npm plantait à la racine → libsodium absent. 2e essai (36259386876)

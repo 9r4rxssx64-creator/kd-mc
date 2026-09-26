@@ -109,6 +109,51 @@ aucun test (règle absolue) : un code de test suffit, le domaine décide l'ident
 Relancé machine au repos : **18 OK / 0 FAIL**. Même piège que le clignotement de Bee ce matin —
 un seuil en millisecondes mesure la charge de la machine autant que le produit.
 
+<<<<<<< HEAD
+### 0.8 ✅ LA CAUSE RACINE : le site était GELÉ — plus personne ne pouvait publier
+
+La section 0.2 accusait « l'alias de production ne suit pas le déploiement ». C'était vrai en
+surface, et **faux en cause**. Trois mesures ont tranché.
+
+1. **Ce n'est pas la propagation.** `kd-mc.com` servait `v1.0.33` à 17:53, 18:14 **et** 18:16 UTC
+   — 24 961 o, au octet près, 38 minutes après une publication « réussie ».
+2. **Ce n'est pas le cache du bord.** La même page demandée avec un paramètre inédit (donc hors
+   cache) rendait la **même** ancienne version. C'est donc l'**origine** qui est périmée. Ce
+   contrôle n'existait pas : je l'ai ajouté, parce que les deux causes ne se réparent pas pareil
+   et qu'on aurait réparé au hasard.
+3. **Le robot de publication du coffre est éteint.** L'API GitHub dit
+   `state: disabled_manually`, changé à **17:36:15 UTC**.
+
+**Pourquoi** : la bascule vers le dépôt public a tourné **aujourd'hui** (runs 5 et 6 de
+`depot-public-bascule.yml`, 17:35 et 17:39 UTC — *pas* le 1er octobre comme prévu). Elle pose
+`PUBLICATION_PAR=public`, met le robot du coffre en pause, et confie la production au dépôt
+public `kd-mc`.
+
+**Le trou** : le coffre savait seulement **faire signe** au dépôt public. Celui-ci republiait
+**sa** copie du code, plus les fichiers privés qu'il va chercher au coffre. Or sa copie était
+**figée** : l'étape de dépôt de la bascule « refuse un dépôt déjà rempli » — protection juste
+pour le premier envoi, piège ensuite. Vérifié dans le dépôt public **cloné** : `v1.0.33`, aucune
+tuile de Kevin. Et `kdmc-home/`, `shops/`, `javis/`, `lingua/`, `la-detente/` ne sont **pas** dans
+`prive_toujours` : ils ne peuvent atteindre le site que par là. **Personne ne POUVAIT publier la
+bonne version, et rien n'était rouge.**
+
+**Ce que la branche « domaine » avait trouvé** (commits `ee18f44eb`, `d132f8322`) : le piège
+« `--branch=main` publie un aperçu si la branche de production n'est pas `main` ». Elle a écrit
+elle-même : *« si la branche de production est déjà main, ce correctif ne changera rien — la
+prochaine publication tranche »*. **Tranché** par le journal du run `36259584640` :
+`branche de production : 'main'` et `le routeur lit bien cette adresse ✅`. Ses deux gardes
+passent ; elles comparent des **adresses**, jamais des **contenus**.
+
+**Posé** : `.github/workflows/coffre-synchronise-public.yml` (export + `verifier.mjs` fail-closed,
+plancher anti-export-tronqué à 80 %, jamais `--force`, et il **crie** si personne ne publie) +
+garde `test:sync-public` (14 contrôles, **7 sabotages**). Plus l'empreinte de contenu dans
+`__paquet.txt` et l'attente de l'adresse stable à la publication.
+
+**Vérifié après la fusion** : le dépôt public est passé à `v1.0.34`, tuiles présentes, widget
+Javis à 72 270 o (commit « Synchronisation depuis le coffre (5bea46c67) », 18:35:48 UTC).
+
+=======
+>>>>>>> origin/main
 ### 0.5 🔴 Ce qui reste non vérifié
 
 Le **second avis indépendant** (Qodo/GPT, Semgrep, gitleaks) n'a pas été relancé : les machines

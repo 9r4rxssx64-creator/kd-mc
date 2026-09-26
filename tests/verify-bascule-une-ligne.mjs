@@ -16,7 +16,9 @@
  *
  * Ce que ce test prouve AUJOURD'HUI, sur le code réellement déployé :
  *   1. le routeur en ligne lit bien les deux variables de la consigne ;
- *   2. rangement A (paquet dans un dossier CMCteams/) → UPSTREAM_BASE seule suffit ;
+ *   2. rangement A (paquet dans un dossier CMCteams/) → UPSTREAM_BASE + UPSTREAM_PREFIX
+ *      « /CMCteams » (depuis le 23.09, le routeur déduit la racine pour tout hébergeur qui
+ *      n'est pas github.io : le préfixe se dit donc expressément) ;
  *   3. rangement B (paquet à la RACINE — le cas réel Cloudflare Pages) → UPSTREAM_BASE
  *      + UPSTREAM_PREFIX vide ; les 8 sous-domaines rendent LEUR page ;
  *   4. discriminants : B sans UPSTREAM_PREFIX ne marche PAS ; une mauvaise adresse
@@ -54,8 +56,15 @@ const gitShow = (chemin) => execFileSync('git', ['show', `${REF}:${chemin}`], { 
 
 /* --- les deux rangements possibles du même paquet -------------------------- */
 const RANGEMENTS = {
+  /* ⚠️ Mis à jour le 26.09.2026. Ce rangement demandait UPSTREAM_BASE SEULE, parce que le
+     défaut du routeur était alors le préfixe « /CMCteams ». Depuis le 23.09 (correctif de la
+     panne du domaine, commit f497c3b87), le routeur DÉDUIT son préfixe de l'hébergeur :
+     /CMCteams si c'est github.io, la racine sinon — parce que GitHub Pages est éteint et que
+     Cloudflare Pages sert à la racine. Le test exigeait donc l'ANCIEN comportement et rendait
+     test:ci rouge à son étape 156/214 pour toutes les sessions (26 OK / 20 FAIL). Pour un
+     hébergeur qui sert sous un dossier CMCteams/, le préfixe se dit maintenant EXPRÈS. */
   A: { racine: 'services/kdmc-router/public', quoi: 'dans un dossier CMCteams/', args: ['--leger'],
-    env: (pages) => ({ UPSTREAM_BASE: pages }) },
+    env: (pages) => ({ UPSTREAM_BASE: pages, UPSTREAM_PREFIX: '/CMCteams' }) },
   B: { racine: 'services/kdmc-router/pages-upload', quoi: 'à la RACINE (cas réel Cloudflare Pages)', args: ['--pages', '--leger'],
     env: (pages) => ({ UPSTREAM_BASE: pages, UPSTREAM_PREFIX: '' }) },
 };
@@ -138,11 +147,14 @@ for (const cle of ['A', 'B']) {
   }
 }
 
-/* --- DISCRIMINANT 1 : à la RACINE, UPSTREAM_BASE seule ne suffit PAS -------- */
+/* --- DISCRIMINANT 1 : à la RACINE, le préfixe /CMCteams casse tout ---------- */
+/* Réécrit le 26.09 : la phrase d'avant (« UPSTREAM_BASE seule ne suffit pas ») visait
+   l'ancien défaut du routeur. L'énoncé symétrique, lui, reste vrai et dit la même chose à
+   Kevin : si le paquet est à la RACINE et qu'on garde le préfixe /CMCteams, rien ne sort. */
 RACINE_SERVIE = RANGEMENTS.B.racine;
-const rSansPrefixe = await essai(RANGEMENTS.A.env(PAGES), 'kd-mc.com');
+const rSansPrefixe = await essai({ UPSTREAM_BASE: PAGES, UPSTREAM_PREFIX: '/CMCteams' }, 'kd-mc.com');
 chk(rSansPrefixe.statut !== 200,
-  `DISCRIMINANT : paquet à la RACINE + UPSTREAM_BASE seule (préfixe /CMCteams conservé) → ne marche PAS (${rSansPrefixe.statut}) — c'est pourquoi UPSTREAM_PREFIX vide fait partie de la consigne`);
+  `DISCRIMINANT : paquet à la RACINE + préfixe /CMCteams → ne marche PAS (${rSansPrefixe.statut}) — c'est pourquoi UPSTREAM_PREFIX vide fait partie de la consigne`);
 
 /* --- DISCRIMINANT 2 : une mauvaise adresse ne marche PAS -------------------- */
 const rRien = await essai({ UPSTREAM_BASE: 'http://127.0.0.1:1', UPSTREAM_PREFIX: '' }, 'kd-mc.com');

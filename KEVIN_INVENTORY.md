@@ -8,6 +8,9 @@
 
 | Fichier | À quoi ça sert | Ouvrir |
 |---|---|---|
+| `.github/workflows/coffre-synchronise-public.yml` | **Le maillon qui manquait** : il envoie ton code au dépôt public (celui qui publie le site depuis le 26.09). Sans lui, ton site restait figé. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/coffre-synchronise-public.yml) |
+| `.github/workflows/coffre-chaine-privee.yml` | Le robot qui revérifie **CMCteams, la Light, les plannings et l'arbre** — 109 contrôles que le dépôt public ne peut pas faire (il n'a pas ces fichiers). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/coffre-chaine-privee.yml) |
+| `tools/depot-public/chaine-privee.mjs` | L'outil qui **trouve tout seul** lesquels de tes contrôles ne tournent qu'ici (`npm run test:ci-prive`). La liste n'est jamais recopiée à la main. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/depot-public/chaine-privee.mjs) |
 | `audit/verif-live/tuiles.md` | **Ce que ton domaine sert VRAIMENT** — écrit par la machine GitHub : version servie contre version du dépôt, chaque tuile, chaque destination. C'est ce rapport qui a montré que tu ne voyais pas tes nouvelles tuiles. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/verif-live/tuiles.md) |
 | `tests/verif-tuiles-live.mjs` | Le contrôle qui produit ce rapport. Il tourne sur la machine GitHub (depuis ma session, ton domaine est injoignable). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verif-tuiles-live.mjs) |
 | `tests/verify-paquets-racine.mjs` | La garde qui empêche un paquet inutile de re-casser `npm install` — et donc **82 robots** d'un coup. **11 contrôles.** | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-paquets-racine.mjs) |

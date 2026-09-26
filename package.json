@@ -156,7 +156,8 @@
     "test:sous-domaine-pages": "node tests/verify-sous-domaine-pages.mjs",
     "verif:tuiles-live": "node tests/verif-tuiles-live.mjs",
     "test:paquets-racine": "node tests/verify-paquets-racine.mjs",
-    "test:sync-public": "node tests/verify-sync-public.mjs"
+    "test:sync-public": "node tests/verify-sync-public.mjs",
+    "test:ci-prive": "node tools/depot-public/chaine-privee.mjs"
   },
   "repository": {
     "type": "git",

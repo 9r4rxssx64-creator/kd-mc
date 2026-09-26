@@ -1,0 +1,82 @@
+name: Branch Deployment Watch (Apex anti-PR-fantome)
+
+# Sentinelle anti-recidive erreur #33 / #45 CLAUDE.md.
+# Detecte les branches claude/* qui ont divergé de main de >5 commits sans merge,
+# ouvre une GitHub Issue auto avec label "auto-merge-needed".
+# Cron 2h : assure qu'aucune session Claude Code ne laisse une branche fantome >24h.
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect divergence on claude/* branches
+        id: detect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          git fetch origin --prune
+          # Liste les branches remote commencant par claude/
+          BRANCHES=$(git branch -r | grep -E "origin/claude/" | sed 's|origin/||' | tr -d ' ')
+          REPORT=""
+          STATUS="ok"
+          for b in $BRANCHES; do
+            COUNT=$(git log --oneline "origin/main..origin/$b" 2>/dev/null | wc -l || echo 0)
+            if [ "$COUNT" -gt 5 ]; then
+              REPORT="$REPORT\n- 🚨 \`$b\` : $COUNT commits non mergés"
+              STATUS="alert"
+            elif [ "$COUNT" -gt 0 ]; then
+              REPORT="$REPORT\n- ⏳ \`$b\` : $COUNT commits non mergés"
+            fi
+          done
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          # Echappement multiline pour GITHUB_OUTPUT
+          {
+            echo "report<<EOF"
+            echo -e "$REPORT"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Open issue if divergence > 5 commits
+        if: steps.detect.outputs.status == 'alert'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Cherche issue ouverte existante avec ce label pour eviter doublon
+          EXISTING=$(gh issue list --label "auto-merge-needed" --state open --json number --jq '.[0].number' || echo "")
+          BODY="🚨 Branche divergente détectée — risque erreur #33 / #45 CLAUDE.md (PR fantôme).
+
+          ${{ steps.detect.outputs.report }}
+
+          **Action requise** : merger ces branches dans main pour permettre déploiement GitHub Pages.
+
+          Si > 10 commits non mergés → bloquant production. Si Apex est en cours d'utilisation,
+          Kevin reste bloqué sur l'ancienne version même avec cache vidé.
+
+          🤖 Auto-généré par .github/workflows/branch-deployment-watch.yml"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY" || true
+          else
+            gh issue create \
+              --title "Branches claude/* non mergées dans main (recidive #33/#45)" \
+              --body "$BODY" \
+              --label "auto-merge-needed" || true
+          fi

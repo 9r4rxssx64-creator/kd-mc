@@ -1,0 +1,20 @@
+name = "kdmc-crea-ai"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Worker IA de Créa Studio (détourage / cartoon / upscale / fond IA / photo→vidéo).
+# Servi sur https://crea-ai.kd-mc.com (custom_domain = DNS + SSL auto sur la zone
+# kd-mc.com, même mécanisme fiable que les autres apps — évite les soucis workers.dev).
+# workers_dev reste actif en repli. Le secret REPLICATE_API_TOKEN est injecté par
+# deploy-kdmc-crea-ai.yml (depuis AX_REPLICATE_KEY) — jamais dans ce fichier ni client.
+routes = [
+  { pattern = "crea-ai.kd-mc.com", custom_domain = true }
+]
+workers_dev = true
+
+# Cloudflare Workers AI — 2e moteur GRATUIT (free tier quotidien du compte, déjà
+# actif pour kdmc-rag/kdmc-apis). Aucune clé à gérer : binding direct.
+# Sert de SECOURS RÉEL (le secours Replicate était mort : crédit épuisé = 402)
+# et de renfort en PARALLÈLE quand deux moteurs valent mieux qu'un.
+[ai]
+binding = "AI"

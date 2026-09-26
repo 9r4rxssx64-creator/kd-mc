@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.env.local
+bridge/data/
+bridge/auth-token.txt
+.vscode/
+.idea/
+*.iml
+coverage/
+dist/
+build/

@@ -1,0 +1,93 @@
+name: Auto-bump APP_VER si modif sans bump
+
+# Si un push sur main change index.html ou apex-ai/index.html mais pas APP_VER,
+# auto-bump le patch + sync sw.js. Evite oublis de bump qui invalident pas le SW.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'apex-ai/index.html'
+      - 'sw.js'
+      - 'apex-ai/sw.js'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-bump-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check + bump CMCteams
+        run: |
+          set -e
+          if git diff HEAD~1 HEAD --name-only | grep -q "^index.html$"; then
+            CUR=$(grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
+            PREV=$(git show HEAD~1:index.html 2>/dev/null | grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' | head -1 | grep -oE 'v[0-9]+\.[0-9]+' || echo "")
+            if [ -n "$CUR" ] && [ "$CUR" = "$PREV" ]; then
+              # Bump patch
+              MAJOR=$(echo "$CUR" | sed 's/^v\([0-9]*\)\..*/\1/')
+              MINOR=$(echo "$CUR" | sed 's/^v[0-9]*\.\([0-9]*\)/\1/')
+              NEW_MINOR=$((MINOR+1))
+              NEW="v$MAJOR.$NEW_MINOR"
+              echo "Auto-bump CMCteams: $CUR -> $NEW"
+              sed -i "s/var APP_VER=\"$CUR\"/var APP_VER=\"$NEW\"/" index.html
+              # Sync sw.js
+              if [ -f sw.js ]; then
+                sed -i "s/cmcteams-v[0-9]\+\.[0-9]\+/cmcteams-$NEW/g" sw.js
+              fi
+              echo "cmc_bumped=true" >> $GITHUB_ENV
+              echo "cmc_new=$NEW" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Check + bump Apex
+        run: |
+          set -e
+          if git diff HEAD~1 HEAD --name-only | grep -q "^apex-ai/index.html$"; then
+            CUR=$(grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' apex-ai/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
+            PREV=$(git show HEAD~1:apex-ai/index.html 2>/dev/null | grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' | head -1 | grep -oE 'v[0-9]+\.[0-9]+' || echo "")
+            if [ -n "$CUR" ] && [ "$CUR" = "$PREV" ]; then
+              MAJOR=$(echo "$CUR" | sed 's/^v\([0-9]*\)\..*/\1/')
+              MINOR=$(echo "$CUR" | sed 's/^v[0-9]*\.\([0-9]*\)/\1/')
+              NEW_MINOR=$((MINOR+1))
+              NEW="v$MAJOR.$NEW_MINOR"
+              echo "Auto-bump Apex: $CUR -> $NEW"
+              sed -i "s/var APP_VER=\"$CUR\"/var APP_VER=\"$NEW\"/" apex-ai/index.html
+              if [ -f apex-ai/sw.js ]; then
+                sed -i "s/apex-v[0-9]\+\.[0-9]\+/apex-$NEW/g" apex-ai/sw.js
+              fi
+              echo "apex_bumped=true" >> $GITHUB_ENV
+              echo "apex_new=$NEW" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Commit + push if bumped
+        run: |
+          if [ "$cmc_bumped" = "true" ] || [ "$apex_bumped" = "true" ]; then
+            git add index.html apex-ai/index.html sw.js apex-ai/sw.js 2>/dev/null
+            MSG="chore: auto-bump APP_VER"
+            [ "$cmc_bumped" = "true" ] && MSG="$MSG CMC->$cmc_new"
+            [ "$apex_bumped" = "true" ] && MSG="$MSG Apex->$apex_new"
+            git commit -m "$MSG (Pages cache invalidation) [skip ci]"
+            git push origin HEAD || (sleep 3 && git pull --rebase origin main && git push origin HEAD)
+          else
+            echo "No bump needed"
+          fi

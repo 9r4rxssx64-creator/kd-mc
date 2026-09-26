@@ -1,0 +1,11 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "kv-backups": false
+    }
+  },
+  "ignoreCommand": "bash tools/vercel/ignore-racine.sh",
+  "installCommand": "echo 'skip npm install — site statique, pas de build (prod = GitHub Pages)'",
+  "buildCommand": "echo 'skip build — index.html servi tel quel'",
+  "outputDirectory": "."
+}

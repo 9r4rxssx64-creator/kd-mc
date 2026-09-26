@@ -1,0 +1,44 @@
+name: La Détente — Connexion Printify (test clé + shop_id)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'shops/la-detente/scripts/ld-printify-connect.mjs'
+      - '.github/workflows/la-detente-printify-connect.yml'
+
+permissions:
+  contents: write
+  pull-requests: write   # publier-config : PR vers main
+  actions: write         # publier-config : relance deploy.yml après fusion
+
+jobs:
+  printify-connect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Test clé Printify + récupération shop_id
+        env:
+          PRINTIFY_API_KEY: ${{ secrets.PRINTIFY_API_KEY }}
+        run: |
+          echo "Clé présente : $([ -n "$PRINTIFY_API_KEY" ] && echo oui || echo NON)"
+          node shops/la-detente/scripts/ld-printify-connect.mjs
+      - name: Publier printify-config.json dans main (PR fusionnée par le robot)
+        # Jusqu'au 10.09.2026 : branche claude/printify-connect-<run_id> poussée « pour auto-merge »
+        # — jamais fusionnée (push GITHUB_TOKEN + [skip ci] = invisible pour le robot). Leçon #243.
+        if: hashFiles('shops/la-detente/printify-config.json') != ''
+        uses: ./.github/actions/publier-config
+        with:
+          fichiers: shops/la-detente/printify-config.json
+          message: "La Détente — config Printify (shop_id)"
+          prefixe: printify-connect

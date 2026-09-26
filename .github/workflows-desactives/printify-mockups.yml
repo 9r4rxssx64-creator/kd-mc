@@ -1,0 +1,73 @@
+name: Printify — récupère les vraies photos produits (mockups studio)
+
+# Récupère les photos officielles des vêtements Printify et les dépose dans
+# shops/la-detente/img/mockups/<garment>.png pour que le Studio affiche le VRAI produit.
+# Nécessite le secret PRINTIFY_API_KEY (créé par Kevin dans son compte Printify).
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/la-detente-gun-heart-logos-8HwIP
+
+      - name: Vérifier le token
+        run: |
+          if [ -z "${{ secrets.PRINTIFY_API_KEY }}" ]; then
+            echo "::error::Secret PRINTIFY_API_KEY absent. Crée-le dans Printify (Settings > Connections > API) puis ajoute-le dans les secrets GitHub."
+            exit 1
+          fi
+
+      - name: Récupérer les photos produits Printify
+        env:
+          PRINTIFY_API_KEY: ${{ secrets.PRINTIFY_API_KEY }}
+        run: |
+          mkdir -p shops/la-detente/img/mockups
+          node <<'NODE'
+          const fs=require('fs');
+          const TOKEN=process.env.PRINTIFY_API_KEY;
+          // garment -> mots-clés de titre Printify (premier blueprint qui matche gagne)
+          const MAP={
+            tee:['unisex','t-shirt','tee'], hoodie:['hoodie','hooded'], polo:['polo'],
+            cap:['cap','dad hat','snapback','trucker'], tote:['tote'], tank:['tank'],
+            shirt:['long sleeve','sweatshirt','crewneck'], zip:['zip'],
+            bandana:['bandana'], jogger:['jogger','sweatpant'], short:['short']
+          };
+          function api(path){return fetch('https://api.printify.com/v1'+path,{headers:{Authorization:'Bearer '+TOKEN,'User-Agent':'la-detente-mockups'}}).then(r=>{if(!r.ok)throw new Error(path+' HTTP '+r.status);return r.json()});}
+          async function dl(url,out){const r=await fetch(url);if(!r.ok)throw new Error('img HTTP '+r.status);const buf=Buffer.from(await r.arrayBuffer());fs.writeFileSync(out,buf);return buf.length;}
+          (async()=>{
+            const bps=await api('/catalog/blueprints.json');
+            console.log('blueprints:',bps.length);
+            let ok=0;
+            for(const g of Object.keys(MAP)){
+              const kws=MAP[g];
+              const bp=bps.find(b=>{const t=(b.title||'').toLowerCase();return kws.some(k=>t.includes(k));});
+              if(!bp){console.log('  ✗ '+g+' : aucun blueprint trouvé');continue;}
+              const img=(bp.images&&bp.images[0])||null;
+              if(!img){console.log('  ✗ '+g+' : pas d\'image pour "'+bp.title+'"');continue;}
+              try{const n=await dl(img,'shops/la-detente/img/mockups/'+g+'.png');console.log('  ✓ '+g+' ← "'+bp.title+'" ('+n+' o)');ok++;}
+              catch(e){console.log('  ✗ '+g+' : '+e.message);}
+            }
+            console.log('Photos récupérées:',ok+'/'+Object.keys(MAP).length);
+            if(!ok)process.exit(2);
+          })().catch(e=>{console.error(e.message);process.exit(3);});
+          NODE
+
+      - name: Commit des photos
+        run: |
+          git config user.name "kdmc-bot"
+          git config user.email "bot@kdmc.local"
+          git add shops/la-detente/img/mockups/*.png || true
+          if git diff --cached --quiet; then
+            echo "Aucune nouvelle photo."
+          else
+            git commit -m "chore(la-detente): photos produits Printify pour le studio [skip ci]"
+            git push origin claude/la-detente-gun-heart-logos-8HwIP
+          fi

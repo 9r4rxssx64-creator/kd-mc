@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6d97a"/>
+      <stop offset="1" stop-color="#e8b830"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0b1409"/>
+  <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-weight="700"
+        font-size="190" fill="url(#g)" letter-spacing="4">KD</text>
+  <text x="50%" y="76%" text-anchor="middle" dominant-baseline="middle"
+        font-family="-apple-system, Arial, sans-serif" font-weight="700"
+        font-size="58" fill="#9fb0a0" letter-spacing="10">APEX</text>
+</svg>

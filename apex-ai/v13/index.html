@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="fr" data-theme="dark" data-app-ver="v13.4.364">
+<head>
+  <meta charset="utf-8">
+  <!-- v13.4.248 a11y : zoom utilisateur réactivé (Apple HIG + skill apex-ui-ux-pro-max).
+       Le double-tap-zoom reste neutralisé via CSS touch-action:manipulation
+       (base.css/rescue.css) — seul le pinch-zoom accessibilité est rétabli. -->
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+  <meta name="theme-color" content="#08080f">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="APEX">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="APEX AI v13 — Assistant IA personnel niveau entreprise commercialisable. Multi-providers, voice, studios créatifs, modules pro, vault chiffré.">
+
+  <!-- SEO + GEO (vitrine publique indexable) — audit SEO 2026-05-30 -->
+  <link rel="canonical" href="https://apex-ai.kd-mc.com/">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="Kevin DESARZENS">
+  <meta name="keywords" content="assistant IA, IA personnelle, multi-providers, Claude, GPT, Gemini, studios créatifs, vault chiffré, PWA, reconnaissance vocale">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="APEX AI">
+  <meta property="og:title" content="APEX AI — Assistant IA personnel multi-providers & studios créatifs">
+  <meta property="og:description" content="Assistant IA personnel niveau entreprise : multi-providers (Claude, GPT, Gemini…), voix, studios créatifs, modules pro, vault chiffré. PWA installable.">
+  <meta property="og:url" content="https://apex-ai.kd-mc.com/">
+  <meta property="og:image" content="https://apex-ai.kd-mc.com/og-image.png">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="APEX AI — Assistant IA personnel multi-providers & studios">
+  <meta name="twitter:description" content="Assistant IA : multi-providers, voix, studios créatifs, modules pro, vault chiffré. PWA installable.">
+  <meta name="twitter:image" content="https://apex-ai.kd-mc.com/og-image.png">
+
+  <!-- CSP Jet 2 : nonce dynamique (regen à chaque build via vite-csp-nonce-plugin) -->
+  <!-- 'strict-dynamic' permet aux scripts trustés (avec nonce) d'en charger d'autres -->
+  <!-- v13.3.71 (audit Apex 2026-05-08) : whitelist exhaustive endpoints legit pour
+       réduire violations CSP de 100/h à <5/h (cf csp-monitor.ts pour escalade auto). -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+             script-src 'self' 'nonce-APEX_BOOT_NONCE' 'strict-dynamic' https://cdn.jsdelivr.net https://browser.sentry-cdn.com;
+             style-src 'self' 'nonce-APEX_BOOT_NONCE';
+             style-src-attr 'unsafe-inline';
+             img-src 'self' data: blob: https:;
+             font-src 'self' data:;
+             connect-src 'self'
+                          https://admin.kd-mc.com
+                          https://*.firebaseio.com
+                          https://*.firebasedatabase.app
+                          https://api.anthropic.com
+                          https://api.openai.com
+                          https://api.groq.com
+                          https://generativelanguage.googleapis.com
+                          https://identitytoolkit.googleapis.com
+                          https://securetoken.googleapis.com
+                          https://openrouter.ai
+                          https://api.cohere.com
+                          https://api.cohere.ai
+                          https://api.mistral.ai
+                          https://api.deepseek.com
+                          https://api.perplexity.ai
+                          https://api.x.ai
+                          https://api.together.xyz
+                          https://api.fireworks.ai
+                          https://api.huggingface.co
+                          https://api-inference.huggingface.co
+                          https://api.scaleway.ai
+                          https://api.runpod.io
+                          https://api.openai.azure.com
+                          https://*.openai.azure.com
+                          https://*.workers.dev
+                          https://*.vercel.app
+                          https://api.elevenlabs.io
+                          https://api.replicate.com
+                          https://api.bfl.ai
+                          https://api.ideogram.ai
+                          https://api.runwayml.com
+                          https://api.lumalabs.ai
+                          https://api.klingai.com
+                          https://api.pika.art
+                          https://api.suno.ai
+                          https://api.udio.com
+                          https://api.heygen.com
+                          https://api.d-id.com
+                          https://api.topazlabs.com
+                          https://api.midjourney.com
+                          https://*.ingest.sentry.io
+                          https://browser.sentry-cdn.com
+                          https://api.github.com
+                          https://raw.githubusercontent.com
+                          https://api.cloudflare.com
+                          https://*.r2.cloudflarestorage.com
+                          https://api.stripe.com
+                          https://api.brevo.com
+                          https://api.resend.com
+                          https://api.telegram.org
+                          https://discord.com
+                          https://discordapp.com
+                          https://api.notion.com
+                          https://api.airtable.com
+                          https://hooks.slack.com
+                          https://slack.com
+                          https://api.slack.com
+                          https://api.deepl.com
+                          https://api-free.deepl.com
+                          https://www.googleapis.com
+                          https://photoslibrary.googleapis.com
+                          https://accounts.google.com
+                          https://oauth2.googleapis.com
+                          https://api-m.paypal.com
+                          https://api.vercel.com
+                          https://ipapi.co
+                          https://api.dropboxapi.com
+                          https://content.dropboxapi.com
+                          https://web.archive.org
+                          https://r.jina.ai
+                          https://api.duckduckgo.com
+                          https://api.search.brave.com
+                          https://api.tavily.com
+                          https://api.pinecone.io
+                          https://*.pinecone.io
+                          https://api.qdrant.io
+                          https://*.qdrant.io
+                          https://api.weaviate.io
+                          https://*.weaviate.io
+                          https://api.open-meteo.com https://geocoding-api.open-meteo.com https://nominatim.openstreetmap.org
+                          https://api.exchangerate.host
+                          https://api.coingecko.com
+                          https://api.qrserver.com
+                          https://api.stackexchange.com
+                          https://api.spotify.com
+                          https://accounts.spotify.com
+                          https://api.meethue.com
+                          https://api.sonos.com
+                          https://api.ws.sonos.com
+                          https://api.ibroadlink.com
+                          https://api.pushcut.io
+                          https://as-apia.coolkit.cc
+                          https://cn-apia.coolkit.cc
+                          https://cdn.jsdelivr.net
+                          https://1.1.1.1
+                          https://www.cloudflare.com
+                          https://api.openclaw.io
+                          https://api.linkedin.com
+                          https://api.twitter.com
+                          https://api.instagram.com;
+             worker-src 'self' blob:;
+             frame-src 'self' https://web.archive.org https://www.google.com https://www.youtube.com https://accounts.google.com https://checkout.stripe.com;
+             media-src 'self' blob: data: https:;
+             object-src 'none';
+             base-uri 'self';
+             form-action 'self';
+             upgrade-insecure-requests;">
+
+  <title>APEX AI — Assistant IA personnel multi-providers & studios</title>
+  <script type="application/ld+json" nonce="APEX_BOOT_NONCE">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"APEX AI","applicationCategory":"BusinessApplication","operatingSystem":"Web, iOS, Android (PWA)","description":"Assistant IA personnel niveau entreprise : multi-providers (Claude, GPT, Gemini, Groq, Mistral…), reconnaissance vocale, studios créatifs, modules pro, vault chiffré AES-GCM-256.","url":"https://apex-ai.kd-mc.com/","image":"https://apex-ai.kd-mc.com/og-image.png","author":{"@type":"Person","name":"Kevin DESARZENS"},"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"featureList":["Multi-providers IA avec failover","Reconnaissance vocale Dis Apex","Studios créatifs (musique, vidéo, image, CV, facture)","Modules experts (juridique, finance, médical)","Vault chiffré AES-GCM-256","Mode hors-ligne PWA"]}</script>
+
+  <!-- v13.4.222 (Kevin "100/100 réel Performance LCP") :
+       Critical CSS inline pour 1st paint INSTANTANÉ (avant chargement des
+       link CSS externes). Réduit LCP ~150-250ms iPhone Safari.
+       INTERVENTION ADDITIVE : aucun fichier existant modifié, juste ajout.
+       Validation auto-test au boot v13.4.204 testVisualRender + Layout. -->
+  <style nonce="APEX_BOOT_NONCE">
+    html { background: #08080f; color: #e8b830; color-scheme: dark; }
+    body { margin: 0; padding: 0; min-height: 100vh; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background: #08080f; color: #f0e8d8; -webkit-text-size-adjust: 100%; }
+    #apex-root { min-height: 100vh; position: relative; }
+    #apex-splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #08080f; z-index: 1000; transition: opacity 0.3s; }
+    #apex-splash[aria-hidden="true"] { pointer-events: none; }
+    .apex-splash-logo { font-size: 64px; color: #e8b830; line-height: 1; margin-bottom: 8px; }
+    .apex-splash-name { font-size: 20px; font-weight: 700; letter-spacing: 4px; color: #e8b830; margin-bottom: 16px; }
+    .apex-splash-bar { width: 120px; height: 3px; background: rgba(232, 184, 48, 0.15); border-radius: 2px; overflow: hidden; }
+    .apex-splash-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #c9a227, #e8b830, #f5cc4a); animation: apex-splash-pulse 1.4s ease-in-out infinite; }
+    @keyframes apex-splash-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .ax-skip-link { position: absolute; left: -9999px; top: 0; z-index: 9999; padding: 12px 20px; background: #e8b830; color: #08080f; border-radius: 0 0 8px 0; font-weight: 700; text-decoration: none; }
+    .ax-skip-link:focus { left: 0; }
+    /* Anti-FOUC PWA iOS standalone */
+    @media (display-mode: standalone) { body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); } }
+  </style>
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/apex-logo.svg">
+  <link rel="apple-touch-icon" href="./assets/icons/apex-logo-192.png">
+
+  <link rel="preload" href="./assets/css/tokens.css" as="style">
+  <link rel="preload" href="./assets/css/base.css" as="style">
+  <link rel="preload" href="./assets/css/components.css" as="style">
+  <link rel="preload" href="./assets/css/animations.css" as="style">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <link rel="stylesheet" href="./assets/css/base.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/animations.css">
+  <link rel="stylesheet" href="./assets/css/rescue.css">
+  <link rel="stylesheet" href="./assets/css/financial-bilan.css">
+  <link rel="stylesheet" href="./assets/css/laurence.css">
+  <link rel="stylesheet" href="./assets/css/ux-premium.css">
+
+  <!-- Preconnect critical providers -->
+  <link rel="preconnect" href="https://api.anthropic.com" crossorigin>
+  <link rel="preconnect" href="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+
+  <!-- v13.4.224 (LCP optim) — DNS prefetch CDN secondaires + apple-touch-icon
+       preload pour PWA iOS standalone (réduit FCP ~80ms iPhone Safari) :
+       jsdelivr (CDN libs lazy : libsodium, jsPDF, Chart.js, Tesseract, etc.)
+       sentry-cdn (error capture)
+       Cloudflare 1.1.1.1 (DNS over HTTPS si Apex utilise) -->
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://browser.sentry-cdn.com">
+  <link rel="dns-prefetch" href="https://api.openai.com">
+  <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com
+                          https://identitytoolkit.googleapis.com
+                          https://securetoken.googleapis.com">
+  <link rel="preload" href="./assets/icons/apex-logo-192.png" as="image" fetchpriority="high">
+</head>
+<body>
+  <a href="https://kd-mc.com/" aria-label="Retour au portail KDMC" style="position:fixed;right:10px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:99999;background:rgba(10,10,12,.72);color:#fff;text-decoration:none;padding:11px 14px;border-radius:999px;font:600 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;border:1px solid rgba(232,184,48,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)">← KDMC</a>
+  <!-- Splash minimal (visible <1s avant boot bundle) -->
+  <div id="apex-splash" aria-hidden="true">
+    <div class="apex-splash-logo">◆</div>
+    <div class="apex-splash-name">APEX</div>
+    <div class="apex-splash-bar"><div class="apex-splash-bar-fill"></div></div>
+  </div>
+
+  <!-- Skip-link a11y (visible focus, hidden otherwise) — v13.3.74 a11y fix.
+       Note : on évite href="#apex-root" qui collisionne avec hash router.
+       Le skip-link met le focus programmatique sur #apex-root via JS rescue handler. -->
+  <a href="#main-content" class="ax-skip-link" data-ax-skip-target="apex-root">Aller au contenu principal</a>
+
+  <!-- Root mount point -->
+  <div id="apex-root" role="main" aria-label="APEX AI" tabindex="-1"></div>
+
+  <!-- Fallback statique si bundle JS crash (ne JAMAIS reproduire l'erreur "écran blanc") -->
+  <noscript>
+    <div class="apex-noscript-fallback" style="max-width:760px;margin:0 auto;padding:32px 20px;color:#f0e8d8;line-height:1.6;font-family:system-ui,-apple-system,sans-serif">
+      <h1>APEX AI — Assistant IA personnel multi-providers</h1>
+      <p><strong>APEX AI</strong> est un assistant IA personnel de niveau entreprise, commercialisable, accessible comme application web (PWA installable sur iOS et Android). Il agrège plusieurs fournisseurs d'intelligence artificielle en un assistant unifié, avec bascule automatique (failover) si l'un d'eux est indisponible.</p>
+      <h2>Fonctionnalités principales</h2>
+      <ul>
+        <li><strong>Multi-providers IA</strong> : Claude, GPT, Gemini, Groq, Mistral, DeepSeek, Perplexity et plus — avec failover automatique.</li>
+        <li><strong>Reconnaissance vocale</strong> : commande « Dis Apex » et synthèse vocale multi-voix.</li>
+        <li><strong>Studios créatifs</strong> : musique, montage vidéo, image, logo, CV, facture, contrat, présentation.</li>
+        <li><strong>Modules experts</strong> : juridique, finance et fiscalité, médical, cuisine, architecture, traduction 30+ langues.</li>
+        <li><strong>Vault chiffré</strong> AES-GCM-256, mémoire long terme, et mode hors-ligne PWA.</li>
+      </ul>
+      <h2>Sécurité &amp; confidentialité</h2>
+      <p>Génération 100&nbsp;% côté client, vault chiffré AES-GCM-256, authentification biométrique (Face ID / Touch ID) après la première connexion. Aucune donnée personnelle envoyée à un serveur tiers.</p>
+      <p><em>Activez JavaScript dans votre navigateur pour lancer l'application complète.</em></p>
+    </div>
+  </noscript>
+
+  <!-- Bouton SOS rescue permanent (HTML pur, indépendant framework) -->
+  <!-- Préservé v12.771-779 — règle Kevin : "qu'au minimum 1 bouton fonctionne TOUJOURS" -->
+  <!-- v13.0.13 : onclick + style externalisés vers rescue.js + rescue.css (CSP strict) -->
+  <button id="apex-rescue-btn" type="button"
+    title="Reset Apex (preserve donnees)" aria-label="Reset Apex">SOS</button>
+
+  <!-- v13.4.80 (Kevin 2026-05-14 "pas de bouton etc / tjs pas de coffre") :
+       Toolbar rescue permanente HTML pur. Accès direct Coffre/Admin/Login/Chat
+       même si le framework Apex est cassé ou si la nav n'est pas rendue.
+       Indépendant React/Vue/Apex bundle — addEventListener depuis rescue.js. -->
+  <div id="apex-rescue-toolbar" aria-label="Accès rapide Apex">
+    <button id="apex-rescue-coffre" type="button" title="Ouvrir le Coffre" aria-label="Coffre">🔐</button>
+    <button id="apex-rescue-dashboard" type="button" title="Dashboard personnel" aria-label="Dashboard">📊</button>
+    <button id="apex-rescue-admin" type="button" title="Ouvrir Admin (login si besoin)" aria-label="Admin">⚙️</button>
+    <button id="apex-rescue-chat" type="button" title="Retour Chat" aria-label="Chat">💬</button>
+    <button id="apex-rescue-login" type="button" title="Login admin / utilisateur" aria-label="Login">🔑</button>
+  </div>
+
+  <!-- Boot loader minimal — charge le bundle ES module Vite -->
+  <script type="module" nonce="APEX_BOOT_NONCE" src="./core/bootstrap.js"></script>
+
+  <!-- Rescue handler + fail-safe (externalisé pour CSP strict, nonce required) -->
+  <script nonce="APEX_BOOT_NONCE" src="./js/rescue.js"></script>
+
+  <!-- v13.4.225 (Kevin "intègre le système MAJ auto forcé de CMCteams qui marche") :
+       Defense-in-depth — auto-MAJ inline indépendant du bundle Vite, copie 1:1
+       du système CMCteams v9.615 qui fonctionne. Si bundle bootstrap.js échoue
+       ou tarde, ce script garantit MAJ auto en standalone (même logique).
+       Anti-récidive Erreur #54 + Kevin "tjs v207 sur iPhone". -->
+  <script nonce="APEX_BOOT_NONCE">
+    (function(){
+      var APX_VER = document.documentElement.getAttribute('data-app-ver') || 'v0';
+      var inProgress = false;
+      async function autoForceUpdate(){
+        if(inProgress || !navigator.onLine) return;
+        var lastAuto = parseInt(localStorage.getItem('apex_v13_inline_maj_last') || '0', 10);
+        if(Date.now() - lastAuto < 10000) return; /* throttle 10s */
+        var active = document.activeElement;
+        var tag = active && active.tagName && active.tagName.toLowerCase();
+        if(tag === 'textarea' || tag === 'input' ||
+           (active && active.getAttribute && active.getAttribute('contenteditable') === 'true')) return;
+        /* skip si modal ouvert */
+        if(document.querySelector('.ax-modal[style*="display:flex"],[role="dialog"]:not([hidden])')) return;
+        /* skip si streaming IA actif (flag posé par chat) */
+        if(window.__apexActiveStream === true) return;
+        inProgress = true;
+        try {
+          var res = await fetch('./index.html?_v=' + Date.now(), {
+            cache: 'reload',
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' },
+          });
+          if(!res.ok){ inProgress = false; return; }
+          var html = await res.text();
+          var m = html.match(/data-app-ver="([^"]+)"/);
+          var remoteVer = m && m[1] ? m[1] : null;
+          if(!remoteVer || remoteVer === APX_VER){ inProgress = false; return; }
+          console.info('[Apex v13.4.225 inline auto-maj]', APX_VER, '→', remoteVer);
+          localStorage.setItem('apex_v13_inline_maj_last', String(Date.now()));
+          /* NUCLEAR : unregister SW + clear caches + reload */
+          if('serviceWorker' in navigator){
+            try {
+              var regs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(regs.map(function(r){ return r.unregister().catch(function(){}); }));
+            } catch(_){}
+          }
+          if(typeof caches !== 'undefined'){
+            try {
+              var keys = await caches.keys();
+              await Promise.all(keys.map(function(k){ return caches.delete(k).catch(function(){}); }));
+            } catch(_){}
+          }
+          setTimeout(function(){
+            location.replace(location.pathname + '?_force_upd_' + Date.now());
+          }, 300);
+        } catch(e){
+          console.warn('[Apex inline auto-maj]', e && e.message);
+          inProgress = false;
+        }
+      }
+      /* Boot 2s delay + recurrent 60s + focus/visibility */
+      setTimeout(autoForceUpdate, 2000);
+      setInterval(autoForceUpdate, 60000);
+      document.addEventListener('visibilitychange', function(){
+        if(document.visibilityState === 'visible') autoForceUpdate();
+      });
+      window.addEventListener('focus', autoForceUpdate);
+    })();
+  </script>
+  <script nonce="APEX_BOOT_NONCE">
+  /* KDMC — battement de présence domaine : garde la session "verte" dans l'Admin
+     domaine tant que l'app est ouverte+visible. Autonome, fail-open, économe :
+     coupé en arrière-plan, s'arrête seul si pas de session, no-op hors *.kd-mc.com. */
+  (function(){
+    if(window.__kdmcBeat)return; window.__kdmcBeat=1; var t=null;
+    function tick(){
+      if(document.visibilityState!=="visible")return;
+      var tok=""; try{tok=localStorage.getItem("kdmc_sso_token")||"";}catch(e){}
+      var h={}; if(tok)h.Authorization="Bearer "+tok;
+      fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:h})
+        .then(function(r){return r.ok?r.json():null;})
+        .then(function(j){ if((!j||!j.ok)&&t){clearInterval(t);t=null;} })
+        .catch(function(){});
+    }
+    function start(){ if(!t){ try{t=setInterval(tick,60000);}catch(e){} } }
+    try{document.addEventListener("visibilitychange",function(){
+      if(document.visibilityState==="visible"){tick();start();} else if(t){clearInterval(t);t=null;}
+    });}catch(e){}
+    tick(); start();
+  })();
+  </script>
+</body>
+</html>

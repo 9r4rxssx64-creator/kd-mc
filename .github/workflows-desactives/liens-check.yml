@@ -1,0 +1,65 @@
+name: Liens — vérification RÉELLE (OSINT & World Monitor)
+
+# POURQUOI : dans l'agent, la sortie réseau est bloquée → impossible de pinguer un lien.
+# Ici, le runner GitHub A internet. Donc c'est LUI qui vérifie vraiment, et je lis le
+# résultat. Plus jamais « je n'ai pas pu vérifier » (Kevin, 2026-08-14).
+
+on:
+  workflow_dispatch:
+    inputs:
+      fichiers:
+        description: "Pages à vérifier (vide = OSINT + World Monitor)"
+        required: false
+        default: ""
+      bloquant:
+        description: "Échouer si un lien est mort ?"
+        type: boolean
+        default: true
+  schedule:
+    - cron: "0 4 1 * *"   # 1× par mois, 4h UTC (anti-spam mails Kevin)
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Pinguer tous les liens
+        id: run
+        run: |
+          set -o pipefail
+          ARGS="${{ github.event.inputs.fichiers }}"
+          BLOQ="${{ github.event.inputs.bloquant }}"
+          MODE=""
+          if [ "$BLOQ" = "false" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            MODE="--report-only"
+          fi
+          node tools/audit/liens-check.mjs $ARGS --json liens-rapport.json $MODE 2>&1 | tee liens-sortie.txt
+
+      - name: Résumé lisible
+        if: always()
+        run: |
+          {
+            echo "## 🔗 Vérification réelle des liens"
+            echo ""
+            echo '```'
+            tail -40 liens-sortie.txt || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: liens-rapport
+          path: |
+            liens-rapport.json
+            liens-sortie.txt
+          retention-days: 30

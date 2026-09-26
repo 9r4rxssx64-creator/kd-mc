@@ -1,0 +1,114 @@
+<!doctype html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Apex Visual Inspector — Voir comme Kevin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: ui-sans-serif, -apple-system, system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 16px; }
+  h1 { color: #c9a227; font-size: 18px; margin-bottom: 12px; }
+  .controls { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  button { padding: 8px 14px; background: #c9a227; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px; }
+  button.alt { background: rgba(201,162,39,0.2); color: #c9a227; border: 1px solid #c9a227; }
+  .frames { display: flex; gap: 16px; flex-wrap: wrap; }
+  .frame-wrap { display: flex; flex-direction: column; align-items: center; }
+  .frame-label { color: #c9a227; font-size: 12px; margin-bottom: 6px; font-weight: 700; }
+  .frame-meta { color: #888; font-size: 10px; margin-top: 4px; font-family: monospace; }
+  iframe { background: #08080f; border: 2px solid #c9a227; border-radius: 12px; }
+  .status { margin-top: 12px; padding: 10px; background: rgba(201,162,39,0.1); border: 1px solid #c9a227; border-radius: 6px; color: #fff; font-size: 12px; font-family: monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>🔍 Apex Visual Inspector — Voir l'app comme Kevin sur iPhone</h1>
+<div class="controls">
+  <button onclick="loadAll()">🔄 Recharger tous</button>
+  <button class="alt" onclick="probeOverflow()">📏 Détecter overflow horizontal</button>
+  <button class="alt" onclick="captureMetrics()">📊 Métriques layout</button>
+  <button class="alt" onclick="window.open('https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/', '_blank')">🌐 Ouvrir live</button>
+</div>
+<div class="frames">
+  <div class="frame-wrap">
+    <div class="frame-label">📱 iPhone SE (375×667)</div>
+    <iframe id="f1" src="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/" width="375" height="667"></iframe>
+    <div class="frame-meta" id="m1">—</div>
+  </div>
+  <div class="frame-wrap">
+    <div class="frame-label">📱 iPhone 14 Pro (390×844)</div>
+    <iframe id="f2" src="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/" width="390" height="844"></iframe>
+    <div class="frame-meta" id="m2">—</div>
+  </div>
+  <div class="frame-wrap">
+    <div class="frame-label">📱 iPhone 16 Pro Max (440×956)</div>
+    <iframe id="f3" src="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/" width="440" height="956"></iframe>
+    <div class="frame-meta" id="m3">—</div>
+  </div>
+</div>
+<div class="status" id="status">Charge les iframes puis clique "Détecter overflow" pour voir les éléments qui débordent.</div>
+<script>
+function loadAll() {
+  ['f1','f2','f3'].forEach(id => {
+    const f = document.getElementById(id);
+    f.src = f.src.split('?')[0] + '?_t=' + Date.now();
+  });
+  document.getElementById('status').textContent = 'Reload en cours…';
+}
+function probeOverflow() {
+  const out = [];
+  ['f1','f2','f3'].forEach((id, idx) => {
+    try {
+      const doc = document.getElementById(id).contentDocument;
+      if (!doc) { out.push(`[${id}] iframe inaccessible (CORS)`); return; }
+      const w = doc.documentElement.clientWidth;
+      const overflows = [];
+      doc.querySelectorAll('*').forEach(el => {
+        if (el.scrollWidth > el.clientWidth + 1 && el.scrollWidth > 50) {
+          const tag = el.tagName.toLowerCase();
+          const cls = (el.className && typeof el.className === 'string') ? el.className.slice(0, 40) : '';
+          overflows.push(`  ${tag}.${cls} : scrollWidth=${el.scrollWidth} clientWidth=${el.clientWidth}`);
+        }
+      });
+      out.push(`[${id} viewport=${w}px]\n` + (overflows.length ? overflows.slice(0, 20).join('\n') : '  ✅ aucun overflow détecté'));
+    } catch (e) {
+      out.push(`[${id}] erreur : ${e.message}`);
+    }
+  });
+  document.getElementById('status').textContent = out.join('\n\n');
+}
+function captureMetrics() {
+  const out = [];
+  ['f1','f2','f3'].forEach(id => {
+    try {
+      const win = document.getElementById(id).contentWindow;
+      const doc = win.document;
+      const root = doc.getElementById('apex-root');
+      const m = {
+        viewport: doc.documentElement.clientWidth + 'x' + doc.documentElement.clientHeight,
+        body_scrollWidth: doc.body.scrollWidth,
+        body_clientWidth: doc.body.clientWidth,
+        root_scrollWidth: root ? root.scrollWidth : 'n/a',
+        root_clientWidth: root ? root.clientWidth : 'n/a',
+        root_position: root ? getComputedStyle(root).position : 'n/a',
+        html_fontsize: getComputedStyle(doc.documentElement).fontSize,
+        body_fontsize: getComputedStyle(doc.body).fontSize,
+        visualViewport_scale: win.visualViewport ? win.visualViewport.scale : 'n/a',
+      };
+      out.push(`[${id}]\n` + Object.entries(m).map(([k,v]) => `  ${k}: ${v}`).join('\n'));
+      document.getElementById('m' + id.slice(1)).textContent = `vp:${m.viewport} root:${m.root_scrollWidth}/${m.root_clientWidth}`;
+    } catch (e) {
+      out.push(`[${id}] erreur : ${e.message}`);
+    }
+  });
+  document.getElementById('status').textContent = out.join('\n\n');
+}
+window.addEventListener('load', () => setTimeout(captureMetrics, 3000));
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="apex-visual-inspector"
+        data-version="v1.0.0"
+        data-color="#c9a227"
+        defer></script>
+</body>
+</html>

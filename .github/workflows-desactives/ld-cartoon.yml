@@ -1,0 +1,72 @@
+name: LD Cartoon (Replicate face-to-many)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'shops/la-detente/.cartoon-request.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ld-cartoon-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cartoon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Cartooniser via Replicate face-to-many
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.AX_REPLICATE_KEY }}
+        run: |
+          REQ=shops/la-detente/.cartoon-request.json
+          LOG=shops/la-detente/.cartoon-log.txt
+          echo "cartoon $(date -u +%FT%TZ)" > "$LOG"
+          VER=$(curl -s -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+            https://api.replicate.com/v1/models/fofr/face-to-many | jq -r '.latest_version.id // empty')
+          echo "version: $VER" >> "$LOG"
+          if [ -z "$VER" ]; then echo "PAS DE VERSION (token/modele)" >> "$LOG"; fi
+          N=$(jq '.jobs | length' "$REQ"); k=0
+          while [ "$k" -lt "$N" ]; do
+            FILE=$(jq -r ".jobs[$k].file" "$REQ"); OUT=$(jq -r ".jobs[$k].outfile" "$REQ")
+            STYLE=$(jq -r ".jobs[$k].style // \"3D\"" "$REQ"); PROMPT=$(jq -r ".jobs[$k].prompt // \"a person\"" "$REQ")
+            if [ ! -f "$FILE" ]; then echo "$OUT : FICHIER ABSENT $FILE" >> "$LOG"; k=$((k+1)); continue; fi
+            if [ -z "$VER" ]; then k=$((k+1)); continue; fi
+            MIME=$(file -b --mime-type "$FILE")
+            DATAURL="data:$MIME;base64,$(base64 -w0 "$FILE")"
+            PAYLOAD=$(jq -n --arg v "$VER" --arg img "$DATAURL" --arg st "$STYLE" --arg p "$PROMPT" \
+              '{version:$v, input:{image:$img, style:$st, prompt:$p, prompt_strength:4.5, denoising_strength:0.65, instant_id_strength:0.9}}')
+            RESP=$(curl -s -X POST https://api.replicate.com/v1/predictions \
+              -H "Authorization: Bearer $REPLICATE_API_TOKEN" -H "Content-Type: application/json" \
+              -H "Prefer: wait" -d "$PAYLOAD")
+            STATUS=$(echo "$RESP" | jq -r '.status // empty')
+            if [ -z "$STATUS" ]; then echo "$OUT : NO-STATUS $(echo "$RESP"|head -c 200)" >> "$LOG"; k=$((k+1)); continue; fi
+            if [ "$STATUS" != "succeeded" ]; then
+              GET=$(echo "$RESP" | jq -r '.urls.get // empty')
+              for i in $(seq 1 75); do
+                sleep 4; RESP=$(curl -s -H "Authorization: Bearer $REPLICATE_API_TOKEN" "$GET")
+                STATUS=$(echo "$RESP" | jq -r '.status // empty')
+                [ "$STATUS" = "succeeded" ] && break
+                if [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then echo "$OUT : $STATUS — $(echo "$RESP"|jq -r '.error')" >> "$LOG"; break; fi
+              done
+            fi
+            URL=$(echo "$RESP" | jq -r 'if (.output|type)=="array" then .output[0] else .output end')
+            if [ -z "$URL" ] || [ "$URL" = "null" ]; then echo "$OUT : NO-URL ($STATUS)" >> "$LOG"; k=$((k+1)); continue; fi
+            mkdir -p "$(dirname "$OUT")"; curl -s -L "$URL" -o "$OUT"
+            echo "$OUT : OK" >> "$LOG"
+            k=$((k+1)); sleep 4
+          done
+          echo "=== LOG ==="; cat "$LOG"
+      - name: Committer
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "LD cartoons + log [skip ci]" || { echo "rien"; exit 0; }
+          git push origin HEAD:${{ github.ref_name }} || echo "push KO"

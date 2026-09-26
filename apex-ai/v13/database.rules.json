@@ -1,0 +1,45 @@
+{
+  "_comment_apex": "APEX v13 — Règles Firebase Realtime Database (versionnées pour audit trail, P1 sécu ultra-review v13.4.290). Base: cmcteams-c16ab RTDB. Données sous /apex/*.",
+  "_comment_deploiement": "⚠️ NE PAS DÉPLOYER CES RÈGLES STRICTES tant que firebase.ts n'attache pas le token `?auth=` à CHAQUE requête RTDB (actuellement il ne le fait PAS → la base est accédée sans auth, donc les règles prod sont forcément ouvertes). Migration coordonnée requise: (1) wire `?auth=<idToken>` dans firebase.ts via firebaseAuthBridge.getToken(), (2) tester read/write OK en prod, (3) SEULEMENT ensuite déployer ces règles via `firebase deploy --only database`. Sinon = 100% des sync cassées + perte de données (peur n°1 Kevin).",
+  "_comment_audit": "Cible: principe du moindre privilège. Per-user paths scopés à auth.uid. Paths partagés cross-app en lecture/écriture authentifiée. Aucun `.read/.write: true` global (interdit CLAUDE.md règle SÉCU MAX).",
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "apex": {
+      "users": {
+        "$uid": {
+          "_comment": "Données per-user (vault, persistent_memory, memory_bridge_backup). Lecture/écriture uniquement par le propriétaire authentifié.",
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      },
+      "vault_backup": {
+        "$uid": {
+          "_comment": "Backup chiffré du coffre par utilisateur (AES-GCM côté client). Scopé propriétaire.",
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      },
+      "telemetry_in": {
+        "_comment": "Pipeline self-healing cross-app: tout user authentifié peut pousser une télémétrie; lecture réservée admin.",
+        ".read": "auth != null && auth.token.role === 'admin'",
+        ".write": "auth != null"
+      },
+      "lessons_learned": {
+        "_comment": "Leçons partagées cross-session/cross-app. Lecture authentifiée, écriture authentifiée.",
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "claude_todo": {
+        "_comment": "Escalades vers Claude Code. Écriture authentifiée, lecture admin.",
+        ".read": "auth != null && auth.token.role === 'admin'",
+        ".write": "auth != null"
+      },
+      "$shared_key": {
+        "_comment": "Clés FB_FIX partagées app (settings, registres non-secrets). Lecture/écriture authentifiée par défaut. NB: ax_user/ax_uid NE doivent JAMAIS être ici (FB_LOCAL strict, erreur #40 CLAUDE.md).",
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
+  }
+}

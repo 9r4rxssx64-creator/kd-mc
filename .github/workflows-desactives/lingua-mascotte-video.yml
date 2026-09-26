@@ -1,0 +1,174 @@
+name: "KDMC Lingua — Anime une mascotte en VIDÉO (IA image→vidéo, à la demande)"
+
+# Un SEUL atelier vidéo pour les deux mascottes (Bee et Bourricot). Replicate
+# (AX_REPLICATE_KEY, modèle minimax/video-01-live) anime l'image de la mascotte.
+# L'image de départ DOIT être publiquement joignable → on part de son fichier sur main.
+#
+# Il remplace lingua-bee-video.yml, qui déposait ses clips dans lingua/bee-live/ alors que
+# l'app lit lingua/bee/live/ : un piège qui obligeait à recopier les fichiers à la main.
+# Ici on écrit directement dans lingua/<mascotte>/live/, le chemin réellement lu.
+# Les prompts s'adaptent : une abeille bat des AILES, un âne remue les OREILLES et la queue.
+# Manuel uniquement (workflow_dispatch) — zéro cron, zéro mail (règle anti-spam).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mascotte:
+        description: "Quelle mascotte animer (bee ou donkey)"
+        default: "donkey"
+        required: true
+      clips:
+        description: "Clips à générer (idle hello dance jump fly walk)"
+        default: "idle hello dance jump fly walk"
+        required: false
+      attendre_credit:
+        description: "Attendre que le crédit Replicate arrive (recharge en cours) — oui/non"
+        default: "oui"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350   # attente du crédit (jusqu'à ~4 h) + génération des clips
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Génère les boucles vidéo de l'âne
+        env:
+          REPLICATE_KEY: ${{ secrets.AX_REPLICATE_KEY }}
+          MASC: ${{ github.event.inputs.mascotte }}
+        run: |
+          set -e
+          if [ -z "${REPLICATE_KEY:-}" ]; then echo "::error::AX_REPLICATE_KEY absente"; exit 1; fi
+          mkdir -p /tmp/vid
+          case "$MASC" in bee|donkey) ;; *) echo "::error::mascotte inconnue : $MASC"; exit 1 ;; esac
+          IMG_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/lingua/$MASC/rig/base.webp"
+          echo "Image de départ : $IMG_URL"
+          # Garde-fou : si l'image n'est pas joignable publiquement, Replicate échouera sur
+          # les 6 clips l'un après l'autre — autant le dire tout de suite.
+          CODE=$(curl -sS -o /dev/null -w "%{http_code}" "$IMG_URL" || echo 000)
+          [ "$CODE" = "200" ] || { echo "::error::image de départ injoignable (http=$CODE) — la mascotte doit être sur main"; exit 1; }
+
+          if [ "$MASC" = "bee" ]; then
+            KEEP="Keep the exact same cute cartoon bee character design, same golden-yellow fuzzy head, same brown antennae, same fluffy collar with honey pendant, same striped body, same translucent wings, same big glossy eyes, same colours and same plain cream background."
+            A_IDLE="stands calmly in place, breathing softly, blinking naturally, wings fluttering gently, tiny head tilts"
+            A_HELLO="waves hello warmly with one raised arm, wings fluttering, blinking, joyful"
+            A_DANCE="dances happily in place, swaying side to side with rhythm, bouncing, wings beating to the beat, joyful expression"
+            A_JUMP="jumps up with excitement and lands softly, then jumps again, celebratory hops, wings flapping"
+            A_FLY="flies up gently and hovers, wings beating fast, does a small playful loop and comes back to the centre facing the viewer"
+            A_WALK="walks cheerfully in place with a bouncy little march, wings fluttering, adorable strut"
+          else
+            KEEP="Keep the exact same cute cartoon donkey character design, same warm caramel fur, same cream muzzle, same long ears with pink inside, same mane tuft, same golden pendant, same big glossy eyes, same colours and same plain cream background."
+            A_IDLE="stands calmly in place, breathing softly, blinking naturally, its long ears twitching gently, tiny head tilts"
+            A_HELLO="waves hello warmly with one raised front hoof, ears perking up, blinking, joyful"
+            A_DANCE="dances happily in place, swaying side to side with rhythm, bouncing, long ears flopping to the beat, tail swishing"
+            A_JUMP="jumps up with excitement and lands softly, then jumps again, celebratory hops, ears bouncing"
+            A_FLY="gallops joyfully in a small playful circle, kicking up its hooves, ears flapping, tail swishing, returns to the centre facing the viewer"
+            A_WALK="walks cheerfully in place with a bouncy little march, hooves stepping, ears bobbing, adorable strut"
+          fi
+          gen_vid () {
+            NAME="$1"; PROMPT="$2"
+            echo "== $NAME =="
+            CREATE=$(curl -sS https://api.replicate.com/v1/models/minimax/video-01-live/predictions \
+              -H "Authorization: Bearer $REPLICATE_KEY" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg p "$PROMPT" --arg img "$IMG_URL" '{input:{prompt:$p, first_frame_image:$img, prompt_optimizer:true}}')")
+            ID=$(printf '%s' "$CREATE" | jq -r '.id // empty')
+            if [ -z "$ID" ]; then
+              DET=$(printf '%s' "$CREATE" | jq -r '.detail // .title // "?"' | head -c 200)
+              # Crédit épuisé : inutile d'enchaîner les clips suivants, ils échoueront tous
+              # (et le throttle « moins de 5 $ » brouille le message). On le dit une fois, clairement.
+              case "$DET" in *"insufficient credit"*) echo "NOCREDIT" > /tmp/vid/.nocredit ;; esac
+              echo "::warning::$NAME création échouée : $DET"; return 1
+            fi
+            for i in $(seq 1 60); do
+              sleep 10
+              ST=$(curl -sS -H "Authorization: Bearer $REPLICATE_KEY" "https://api.replicate.com/v1/predictions/$ID")
+              STATUS=$(printf '%s' "$ST" | jq -r '.status')
+              if [ "$STATUS" = "succeeded" ]; then
+                URL=$(printf '%s' "$ST" | jq -r 'if (.output|type)=="array" then .output[0] else .output end')
+                curl -sSL "$URL" -o "/tmp/vid/$NAME.mp4"
+                echo "  OK ($(wc -c < /tmp/vid/$NAME.mp4) octets)"; return 0
+              fi
+              if [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then
+                echo "::warning::$NAME $STATUS : $(printf '%s' "$ST" | jq -r '.error // "?"' | head -c 200)"; return 1
+              fi
+              [ $((i % 6)) -eq 0 ] && echo "  …$STATUS (${i}0s)"
+            done
+            echo "::warning::$NAME timeout (~10 min)"; return 1
+          }
+
+          # ATTENTE AUTOMATIQUE DU CRÉDIT (Kevin 2026-08-11 : « le paiement est en cours,
+          # vérifie auto régulier »). Une seule exécution qui réessaie toute seule toutes les
+          # 5 min pendant ~4 h : zéro cron, zéro mail d'échec, zéro clic. Dès que le crédit
+          # arrive, elle enchaîne sur la génération des clips.
+          ATTENDRE="${{ github.event.inputs.attendre_credit || 'oui' }}"
+          if [ "$ATTENDRE" = "oui" ]; then
+            for T in $(seq 1 48); do
+              PING=$(curl -sS https://api.replicate.com/v1/models/minimax/video-01-live/predictions \
+                -H "Authorization: Bearer $REPLICATE_KEY" -H "Content-Type: application/json" \
+                -d "$(jq -n --arg img "$IMG_URL" '{input:{prompt:"test", first_frame_image:$img}}')" || echo '{}')
+              DET=$(printf '%s' "$PING" | jq -r '.detail // ""')
+              PID=$(printf '%s' "$PING" | jq -r '.id // empty')
+              if [ -n "$PID" ]; then
+                # Le crédit est là : on annule ce test pour ne rien gaspiller, et on démarre.
+                curl -sS -X POST -H "Authorization: Bearer $REPLICATE_KEY" "https://api.replicate.com/v1/predictions/$PID/cancel" >/dev/null || true
+                echo "✅ Crédit disponible (après $(( (T-1)*5 )) min d'attente) — génération lancée."
+                break
+              fi
+              case "$DET" in
+                *"insufficient credit"*) echo "  ⏳ crédit pas encore arrivé (essai $T/48, ~$(( (T-1)*5 )) min)"; sleep 300 ;;
+                *"throttled"*)           echo "  ⏳ limité par le débit (crédit encore bas) — essai $T/48"; sleep 300 ;;
+                "")                      echo "::warning::réponse inattendue de Replicate, on tente quand même"; break ;;
+                *)                       echo "::warning::Replicate dit : $(printf '%s' "$DET" | head -c 160)"; break ;;
+              esac
+              if [ "$T" = "48" ]; then echo "::warning::toujours pas de crédit après 4 h — rien généré, relance quand la recharge est passée"; exit 0; fi
+            done
+          fi
+
+          OK=0
+          for C in ${{ github.event.inputs.clips || 'idle hello dance jump fly walk' }}; do
+            if [ -f /tmp/vid/.nocredit ]; then echo "::warning::$C sauté — crédit Replicate épuisé"; continue; fi
+            sleep 12   # débit limité tant que le solde est bas : on espace les créations
+            case "$C" in
+              idle) gen_vid idle  "$KEEP The character $A_IDLE, subtle seamless loop, nothing else changes" && OK=$((OK+1)) ;;
+              hello) gen_vid hello  "$KEEP The character $A_HELLO, subtle seamless loop, nothing else changes" && OK=$((OK+1)) ;;
+              dance) gen_vid dance  "$KEEP The character $A_DANCE, subtle seamless loop, nothing else changes" && OK=$((OK+1)) ;;
+              jump) gen_vid jump  "$KEEP The character $A_JUMP, subtle seamless loop, nothing else changes" && OK=$((OK+1)) ;;
+              fly) gen_vid fly  "$KEEP The character $A_FLY, subtle seamless loop, nothing else changes" && OK=$((OK+1)) ;;
+              walk) gen_vid walk  "$KEEP The character $A_WALK, subtle seamless loop, nothing else changes" && OK=$((OK+1)) ;;
+              *) echo "::warning::clip inconnu : $C" ;;
+            esac
+          done
+          echo "Vidéos générées : $OK"
+          if [ -f /tmp/vid/.nocredit ]; then
+            # On sort en SUCCÈS : pendant une recharge en cours, un échec enverrait un mail
+            # à Kevin à chaque tentative (règle anti-spam). Le message suffit.
+            echo "::warning::Crédit Replicate épuisé — recharge sur https://replicate.com/account/billing puis relance ce bouton."
+            exit 0
+          fi
+          [ "$OK" -ge 1 ] || { echo "::error::aucune vidéo générée"; exit 1; }
+
+      - name: Commit dans le dossier que l'app lit vraiment
+        env:
+          MASC: ${{ github.event.inputs.mascotte }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="claude/lingua-video-$MASC-${{ github.run_number }}"
+          git checkout -b "$BR"
+          mkdir -p "lingua/$MASC/live"
+          cp /tmp/vid/*.mp4 "lingua/$MASC/live/" 2>/dev/null || true
+          ls -la "lingua/$MASC/live"
+          git add "lingua/$MASC/live"
+          git commit -m "Lingua : boucles vidéo de la mascotte $MASC (Replicate) [skip ci]" \
+            -m "Animées depuis son image de base. Déposées directement dans lingua/donkey/live/, le chemin que l'app lit — aucune recopie manuelle ensuite." || { echo "rien à committer"; exit 0; }
+          for i in 1 2 3 4; do git push -u origin "$BR" && break || sleep $((2**i)); done
+
+      - name: Artefact (trace)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: mascotte-video, path: /tmp/vid/, retention-days: 30 }

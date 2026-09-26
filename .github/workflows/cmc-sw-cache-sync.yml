@@ -1,0 +1,68 @@
+name: CMC SW Cache Version Sync
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Auto-fix sw.js CACHE pour qu'il match toujours APP_VER de index.html
+# Empeche Kevin de devoir force-refresh : si APP_VER bumpe sans que sw.js suive,
+# ce workflow le rattrape automatiquement et commit le fix.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Verifier sync APP_VER <-> CACHE
+        id: check
+        run: |
+          APP_VER=$(grep -oE 'var APP_VER\s*=\s*"v[0-9]+\.[0-9]+"' index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
+          SW_VER=$(grep -oE "CACHE\s*=\s*'cmcteams-v[0-9]+\.[0-9]+'" sw.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
+          echo "APP_VER=$APP_VER"
+          echo "SW_VER=$SW_VER"
+          echo "app_ver=$APP_VER" >> $GITHUB_OUTPUT
+          echo "sw_ver=$SW_VER" >> $GITHUB_OUTPUT
+          if [ -z "$APP_VER" ]; then
+            echo "::warning::APP_VER non trouve dans index.html"
+            echo "drift=false" >> $GITHUB_OUTPUT
+          elif [ "$APP_VER" != "$SW_VER" ]; then
+            echo "drift=true" >> $GITHUB_OUTPUT
+            echo "::warning::Drift detecte: APP_VER=$APP_VER vs SW_VER=$SW_VER"
+          else
+            echo "drift=false" >> $GITHUB_OUTPUT
+            echo "Versions OK ($APP_VER)"
+          fi
+
+      - name: Auto-fix sw.js si drift
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          APP_VER="${{ steps.check.outputs.app_ver }}"
+          sed -i "s/CACHE\s*=\s*'cmcteams-v[0-9]\+\.[0-9]\+'/CACHE='cmcteams-${APP_VER}'/" sw.js
+          echo "Fix applique : sw.js -> cmcteams-${APP_VER}"
+          grep "CACHE=" sw.js | head -1
+
+      - name: Commit + push fix
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sw.js
+          git commit -m "chore: sync sw.js CACHE -> ${{ steps.check.outputs.app_ver }} (auto) [skip ci]"
+          git push origin main

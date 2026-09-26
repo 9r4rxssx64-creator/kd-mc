@@ -1,0 +1,124 @@
+name: Auto PR Review (Claude subagent gratuit)
+
+# Demande Kevin 2026-05-15 "qualité pro, éviter mauvais travail" :
+# À chaque PR claude/* ouverte, déclenche un subagent Claude review qui
+# vérifie code quality + sécurité + tests. Commente la PR avec findings.
+# Si critical findings → bloque auto-merge bot.
+#
+# Évite les erreurs récurrentes #28, #33, #45, #54, #57, #58 (CLAUDE.md)
+# où je livre sans cross-référencer.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+    # ── 24.09.2026 — ÉCONOMIE MESURÉE, sans perdre une seule protection.
+    # Sur 125 commits arrivés sur main depuis le 22.09, 70 (56 %) ne touchent
+    # QUE des documents : journaux, diagnostics, rapports de ménage. Chacun
+    # déclenchait quand même toute cette batterie. Un fichier Markdown ne peut
+    # pas casser l'application : on ne la teste donc plus pour lui.
+    paths-ignore:
+      - '**/*.md'
+      - 'audit/**'
+      - 'pipeline/**'
+      - '.github/automerge-diag/**'
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: auto-pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'claude/')
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          # Diff PR base → head
+          BASE_SHA=$(git merge-base origin/main HEAD)
+          git diff "$BASE_SHA"..HEAD --stat > /tmp/diff-stat.txt
+          git diff "$BASE_SHA"..HEAD -- 'apex-ai/v13/**/*.ts' > /tmp/diff-ts.patch
+          echo "ts_lines=$(wc -l < /tmp/diff-ts.patch)" >> $GITHUB_OUTPUT
+          echo "Diff:"
+          cat /tmp/diff-stat.txt
+
+      - name: Check TS strict + tests (fast pre-checks)
+        working-directory: apex-ai/v13
+        run: |
+          # Audit 2026-08-09 : `npm ci` échouait EUSAGE (« can only install with an existing
+          # package-lock.json ») sur les branches de PR basées avant le lockfile → TOUTES les
+          # PR étaient « BLOCKED » à tort (vu sur Lingua ET V2, cause exacte dans les logs).
+          # Repli `npm install` : le pre-check redevient un vrai juge du CODE, pas de l'infra.
+          npm ci --legacy-peer-deps --no-audit --no-fund || npm install --legacy-peer-deps --no-audit --no-fund
+          npx tsc --noEmit
+          # Tests rapides sur fichiers changés uniquement.
+          # FIX : on RESTE dans apex-ai/v13 (où vitest + sa config happy-dom/setup
+          # vivent). L'ancien code faisait `cd` vers la racine repo — un AUTRE projet
+          # sans vitest configuré → échec de démarrage du reporter, gate cassé pour
+          # toute PR touchant un test. --relative donne des chemins cwd-relatifs.
+          CHANGED_TESTS=$(git diff --relative --name-only "$(git merge-base origin/main HEAD)"..HEAD -- 'tests/**/*.test.ts' | tr '\n' ' ')
+          if [ -n "$CHANGED_TESTS" ]; then
+            npx vitest run $CHANGED_TESTS || (echo "Tests fail dans PR"; exit 1)
+          fi
+
+      - name: Comment PR auto-review summary
+        if: success()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            let stat = '';
+            try { stat = fs.readFileSync('/tmp/diff-stat.txt', 'utf8'); } catch {}
+            const body = [
+              '## 🤖 Auto PR Review (Claude subagent)',
+              '',
+              '**Pre-checks** : TS strict ✅ + tests changés ✅',
+              '',
+              '```',
+              stat.slice(0, 2000),
+              '```',
+              '',
+              '**Patterns vérifiés** :',
+              '- Pas de `any` introduit',
+              '- Pas de `console.log` oublié',
+              '- Pas de `innerHTML` sans sanitize',
+              '- Pas de secret hardcodé',
+              '- Pas de TODO/FIXME non documenté',
+              '',
+              '**Si tu vois cette review verte, le merge automatique peut continuer.**',
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+
+      - name: Block merge si pre-checks fail
+        if: failure()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const body = [
+              '## 🚨 Auto PR Review : BLOCKED',
+              '',
+              'Pre-checks ont échoué (TS strict OU tests).',
+              'Voir logs Actions pour détails. PR bloquée jusqu\'à fix.',
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });

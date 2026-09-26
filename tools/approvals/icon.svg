@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141b11"/>
+      <stop offset="1" stop-color="#080c07"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8c766"/>
+      <stop offset="1" stop-color="#c9a94a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- bouclier -->
+  <path d="M256 92 L392 140 V262 c0 92 -64 138 -136 170 c-72 -32 -136 -78 -136 -170 V140 Z"
+        fill="none" stroke="url(#gold)" stroke-width="20" stroke-linejoin="round"/>
+  <!-- empreinte / Face ID stylisé -->
+  <g fill="none" stroke="url(#gold)" stroke-width="16" stroke-linecap="round">
+    <path d="M212 214 a44 44 0 0 1 88 0 v44"/>
+    <path d="M182 236 a74 74 0 0 1 148 0 v30 a30 30 0 0 1 -30 30"/>
+    <path d="M242 258 v40 a26 26 0 0 0 26 26"/>
+    <path d="M212 300 v16"/>
+  </g>
+</svg>

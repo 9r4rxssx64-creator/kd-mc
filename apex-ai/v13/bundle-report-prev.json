@@ -1,0 +1,847 @@
+{
+  "ts": 1778192666724,
+  "totalRaw": 2283689,
+  "totalGzip": 721206,
+  "chunks": [
+    {
+      "file": "chunks/apex-tools-dispatch-DkTuwZwG.js",
+      "rawBytes": 107139,
+      "gzipBytes": 27535
+    },
+    {
+      "file": "chunks/auto-improvement-CVfxyFZ3.js",
+      "rawBytes": 79551,
+      "gzipBytes": 19333
+    },
+    {
+      "file": "chunks/index-CHMgyXez.js",
+      "rawBytes": 78586,
+      "gzipBytes": 24441
+    },
+    {
+      "file": "chunks/apex-plugins-marketplace-BGuopztJ.js",
+      "rawBytes": 75036,
+      "gzipBytes": 13262
+    },
+    {
+      "file": "core/main-BqoKC8cR.js",
+      "rawBytes": 61423,
+      "gzipBytes": 22486
+    },
+    {
+      "file": "chunks/apex-tools-registry-CykW5Qqa.js",
+      "rawBytes": 57158,
+      "gzipBytes": 15867
+    },
+    {
+      "file": "assets/css/main-CYtYG7GU.css",
+      "rawBytes": 53356,
+      "gzipBytes": 10794
+    },
+    {
+      "file": "chunks/index-DVKfqjYU.js",
+      "rawBytes": 48826,
+      "gzipBytes": 13648
+    },
+    {
+      "file": "chunks/voice-B4KnG5Rf.js",
+      "rawBytes": 48185,
+      "gzipBytes": 12304
+    },
+    {
+      "file": "chunks/apex-meta-marketplace-2ZmVLNn-.js",
+      "rawBytes": 38351,
+      "gzipBytes": 9076
+    },
+    {
+      "file": "chunks/index-D8j8BiDx.js",
+      "rawBytes": 36025,
+      "gzipBytes": 13265
+    },
+    {
+      "file": "chunks/index-CKltRDpA.js",
+      "rawBytes": 35139,
+      "gzipBytes": 10162
+    },
+    {
+      "file": "chunks/index-AeXNaJLD.js",
+      "rawBytes": 32386,
+      "gzipBytes": 9517
+    },
+    {
+      "file": "chunks/index-CCXhO_8X.js",
+      "rawBytes": 31844,
+      "gzipBytes": 9427
+    },
+    {
+      "file": "chunks/index-DoekSF2c.js",
+      "rawBytes": 31495,
+      "gzipBytes": 9581
+    },
+    {
+      "file": "chunks/apex-kb-Bba9xZXl.js",
+      "rawBytes": 30353,
+      "gzipBytes": 10097
+    },
+    {
+      "file": "chunks/index-DjgPeESq.js",
+      "rawBytes": 29330,
+      "gzipBytes": 8493
+    },
+    {
+      "file": "chunks/device-control-Khb8_aPW.js",
+      "rawBytes": 28235,
+      "gzipBytes": 8104
+    },
+    {
+      "file": "chunks/index-CVTRWnVN.js",
+      "rawBytes": 27828,
+      "gzipBytes": 9733
+    },
+    {
+      "file": "chunks/sentinels-50FvdDDK.js",
+      "rawBytes": 27334,
+      "gzipBytes": 8839
+    },
+    {
+      "file": "chunks/index-BMN0KQJh.js",
+      "rawBytes": 25982,
+      "gzipBytes": 8959
+    },
+    {
+      "file": "chunks/personal-assistant-PZWf7goU.js",
+      "rawBytes": 25308,
+      "gzipBytes": 6139
+    },
+    {
+      "file": "chunks/index-C5S0i2S1.js",
+      "rawBytes": 25125,
+      "gzipBytes": 8368
+    },
+    {
+      "file": "chunks/index-DHmdx8g9.js",
+      "rawBytes": 25047,
+      "gzipBytes": 8159
+    },
+    {
+      "file": "chunks/index-C3b8gkW2.js",
+      "rawBytes": 24754,
+      "gzipBytes": 8000
+    },
+    {
+      "file": "chunks/index-CMp_-G3I.js",
+      "rawBytes": 23647,
+      "gzipBytes": 9068
+    },
+    {
+      "file": "chunks/services-bootstrap-CJbCP6bX.js",
+      "rawBytes": 23646,
+      "gzipBytes": 6285
+    },
+    {
+      "file": "chunks/iot-providers-registry-ygVmhHRI.js",
+      "rawBytes": 23580,
+      "gzipBytes": 6220
+    },
+    {
+      "file": "css/components.css",
+      "rawBytes": 22410,
+      "gzipBytes": 4541
+    },
+    {
+      "file": "chunks/links-registry-EE7iUfGk.js",
+      "rawBytes": 21984,
+      "gzipBytes": 4644
+    },
+    {
+      "file": "chunks/index-DVr0gOqj.js",
+      "rawBytes": 21533,
+      "gzipBytes": 5688
+    },
+    {
+      "file": "chunks/index-AjcQVWWf.js",
+      "rawBytes": 20854,
+      "gzipBytes": 6229
+    },
+    {
+      "file": "chunks/index-Boiq5jJ1.js",
+      "rawBytes": 20263,
+      "gzipBytes": 9207
+    },
+    {
+      "file": "chunks/index-BIUrsOYM.js",
+      "rawBytes": 20220,
+      "gzipBytes": 6701
+    },
+    {
+      "file": "chunks/index-BSOqOM29.js",
+      "rawBytes": 19753,
+      "gzipBytes": 7060
+    },
+    {
+      "file": "chunks/index-laxOoN0l.js",
+      "rawBytes": 19710,
+      "gzipBytes": 7537
+    },
+    {
+      "file": "chunks/index-CNHyQMbN.js",
+      "rawBytes": 19171,
+      "gzipBytes": 5719
+    },
+    {
+      "file": "chunks/index-BqqTKUUb.js",
+      "rawBytes": 19007,
+      "gzipBytes": 6063
+    },
+    {
+      "file": "chunks/apex-execute-CFWR4yG9.js",
+      "rawBytes": 18014,
+      "gzipBytes": 5872
+    },
+    {
+      "file": "chunks/credential-patterns-DqicUg9o.js",
+      "rawBytes": 16907,
+      "gzipBytes": 4084
+    },
+    {
+      "file": "chunks/apex-self-audit-DD40-Jom.js",
+      "rawBytes": 16772,
+      "gzipBytes": 5776
+    },
+    {
+      "file": "chunks/apex-claude-code-parity-bD0iCRum.js",
+      "rawBytes": 16668,
+      "gzipBytes": 4904
+    },
+    {
+      "file": "chunks/sentinels-registry-XnCj7FIi.js",
+      "rawBytes": 16595,
+      "gzipBytes": 5516
+    },
+    {
+      "file": "chunks/index-DRg6MQ_W.js",
+      "rawBytes": 16452,
+      "gzipBytes": 4950
+    },
+    {
+      "file": "chunks/ai-router-DJZoe0bo.js",
+      "rawBytes": 16283,
+      "gzipBytes": 5738
+    },
+    {
+      "file": "chunks/index-BI-scUpo.js",
+      "rawBytes": 15967,
+      "gzipBytes": 6225
+    },
+    {
+      "file": "chunks/index-BPtFR79i.js",
+      "rawBytes": 15534,
+      "gzipBytes": 4445
+    },
+    {
+      "file": "chunks/feature-toggles-m5LmFfHb.js",
+      "rawBytes": 15415,
+      "gzipBytes": 4243
+    },
+    {
+      "file": "chunks/index-J3WHi4FR.js",
+      "rawBytes": 15407,
+      "gzipBytes": 6264
+    },
+    {
+      "file": "css/animations.css",
+      "rawBytes": 15282,
+      "gzipBytes": 3607
+    },
+    {
+      "file": "chunks/financial-bilan-Dzmta4sx.js",
+      "rawBytes": 14304,
+      "gzipBytes": 4752
+    },
+    {
+      "file": "chunks/auto-discover-links-B0Dgn_Nj.js",
+      "rawBytes": 13879,
+      "gzipBytes": 4455
+    },
+    {
+      "file": "chunks/index-BnknMcF_.js",
+      "rawBytes": 13874,
+      "gzipBytes": 4989
+    },
+    {
+      "file": "chunks/monitoring-BAiQJoxJ.js",
+      "rawBytes": 13835,
+      "gzipBytes": 4896
+    },
+    {
+      "file": "chunks/index-lRXzt3CL.js",
+      "rawBytes": 13788,
+      "gzipBytes": 4418
+    },
+    {
+      "file": "chunks/network-scan-BgijooZL.js",
+      "rawBytes": 13730,
+      "gzipBytes": 4373
+    },
+    {
+      "file": "chunks/index-BZ3uTstD.js",
+      "rawBytes": 13437,
+      "gzipBytes": 4550
+    },
+    {
+      "file": "chunks/index-BZDButed.js",
+      "rawBytes": 13131,
+      "gzipBytes": 4941
+    },
+    {
+      "file": "chunks/multi-key-vault-BzdXL9cK.js",
+      "rawBytes": 12994,
+      "gzipBytes": 4206
+    },
+    {
+      "file": "chunks/index-CijnlnaO.js",
+      "rawBytes": 12483,
+      "gzipBytes": 4432
+    },
+    {
+      "file": "chunks/index-BdqHCfhp.js",
+      "rawBytes": 12377,
+      "gzipBytes": 3894
+    },
+    {
+      "file": "chunks/index-B-k1DHBp.js",
+      "rawBytes": 12053,
+      "gzipBytes": 3623
+    },
+    {
+      "file": "chunks/index-C5r1LBma.js",
+      "rawBytes": 11925,
+      "gzipBytes": 4766
+    },
+    {
+      "file": "chunks/unknown-credential-resolver-CLAxn9sd.js",
+      "rawBytes": 11266,
+      "gzipBytes": 3643
+    },
+    {
+      "file": "chunks/innovation-watch-dD_zRIbL.js",
+      "rawBytes": 11247,
+      "gzipBytes": 4051
+    },
+    {
+      "file": "chunks/preflight-hDyP3kF_.js",
+      "rawBytes": 10853,
+      "gzipBytes": 2933
+    },
+    {
+      "file": "chunks/card-emulator-BE4n7D1K.js",
+      "rawBytes": 10806,
+      "gzipBytes": 2963
+    },
+    {
+      "file": "chunks/media-studio-DPkSoznl.js",
+      "rawBytes": 10693,
+      "gzipBytes": 2911
+    },
+    {
+      "file": "chunks/index-RlqB6b2c.js",
+      "rawBytes": 10529,
+      "gzipBytes": 3921
+    },
+    {
+      "file": "chunks/memory-bridge-__BytNlo.js",
+      "rawBytes": 10463,
+      "gzipBytes": 3513
+    },
+    {
+      "file": "chunks/index-Cpwk03tz.js",
+      "rawBytes": 10350,
+      "gzipBytes": 4537
+    },
+    {
+      "file": "chunks/index-BUH3bp-A.js",
+      "rawBytes": 10159,
+      "gzipBytes": 3466
+    },
+    {
+      "file": "chunks/index-BnRMy4WX.js",
+      "rawBytes": 10142,
+      "gzipBytes": 3295
+    },
+    {
+      "file": "chunks/smart-tools-suggester-D1x0mmeZ.js",
+      "rawBytes": 9212,
+      "gzipBytes": 3067
+    },
+    {
+      "file": "css/financial-bilan.css",
+      "rawBytes": 9169,
+      "gzipBytes": 2454
+    },
+    {
+      "file": "chunks/capabilities-CVt3JpKb.js",
+      "rawBytes": 9005,
+      "gzipBytes": 3622
+    },
+    {
+      "file": "chunks/auto-backup-C2XV5VOJ.js",
+      "rawBytes": 8898,
+      "gzipBytes": 3103
+    },
+    {
+      "file": "chunks/consumption-monitor-Cw2uAKVx.js",
+      "rawBytes": 8686,
+      "gzipBytes": 2936
+    },
+    {
+      "file": "chunks/sos-rescue-BQkvhOet.js",
+      "rawBytes": 8682,
+      "gzipBytes": 3079
+    },
+    {
+      "file": "chunks/index-CoYrgtvJ.js",
+      "rawBytes": 8386,
+      "gzipBytes": 3164
+    },
+    {
+      "file": "chunks/auth-DcZQwJPG.js",
+      "rawBytes": 8010,
+      "gzipBytes": 2888
+    },
+    {
+      "file": "chunks/index-C7oyEsR7.js",
+      "rawBytes": 7947,
+      "gzipBytes": 3162
+    },
+    {
+      "file": "chunks/multi-source-analyze-CO5eY8-8.js",
+      "rawBytes": 7856,
+      "gzipBytes": 3141
+    },
+    {
+      "file": "chunks/index-ClZ63gEv.js",
+      "rawBytes": 7680,
+      "gzipBytes": 3016
+    },
+    {
+      "file": "chunks/smart-router-DwgsL5Nz.js",
+      "rawBytes": 7585,
+      "gzipBytes": 2823
+    },
+    {
+      "file": "chunks/file-converter-De4twvk3.js",
+      "rawBytes": 7516,
+      "gzipBytes": 3169
+    },
+    {
+      "file": "css/ux-premium.css",
+      "rawBytes": 7364,
+      "gzipBytes": 2284
+    },
+    {
+      "file": "chunks/index-DMc6MjiL.js",
+      "rawBytes": 7222,
+      "gzipBytes": 2597
+    },
+    {
+      "file": "chunks/stripe-billing-Ca2NcSGV.js",
+      "rawBytes": 7221,
+      "gzipBytes": 2725
+    },
+    {
+      "file": "chunks/chat-realtime-CcabMITA.js",
+      "rawBytes": 7083,
+      "gzipBytes": 2158
+    },
+    {
+      "file": "chunks/business-intelligence-BK9vM2a8.js",
+      "rawBytes": 7051,
+      "gzipBytes": 2622
+    },
+    {
+      "file": "chunks/smart-camera-Bk0hGjpo.js",
+      "rawBytes": 6959,
+      "gzipBytes": 2376
+    },
+    {
+      "file": "chunks/kdmc-projects-registry-sRmoyobO.js",
+      "rawBytes": 6955,
+      "gzipBytes": 2546
+    },
+    {
+      "file": "chunks/rgpd-DDoVPOQB.js",
+      "rawBytes": 6922,
+      "gzipBytes": 2531
+    },
+    {
+      "file": "chunks/index-CTHRX_nA.js",
+      "rawBytes": 6769,
+      "gzipBytes": 2251
+    },
+    {
+      "file": "chunks/claude-bridge-CylAnrwu.js",
+      "rawBytes": 6571,
+      "gzipBytes": 2572
+    },
+    {
+      "file": "chunks/vision-device-analyze-BNTWFnLR.js",
+      "rawBytes": 6320,
+      "gzipBytes": 2231
+    },
+    {
+      "file": "chunks/ai-safety-DeuaBd-e.js",
+      "rawBytes": 6318,
+      "gzipBytes": 2795
+    },
+    {
+      "file": "css/laurence.css",
+      "rawBytes": 6292,
+      "gzipBytes": 1898
+    },
+    {
+      "file": "chunks/vision-DL_UTnWQ.js",
+      "rawBytes": 6235,
+      "gzipBytes": 2542
+    },
+    {
+      "file": "css/tokens.css",
+      "rawBytes": 6190,
+      "gzipBytes": 2155
+    },
+    {
+      "file": "chunks/index-dFikhBfr.js",
+      "rawBytes": 6061,
+      "gzipBytes": 2440
+    },
+    {
+      "file": "chunks/external-integrations-t6Pif4Wn.js",
+      "rawBytes": 6026,
+      "gzipBytes": 2171
+    },
+    {
+      "file": "chunks/index-CbRhi4UY.js",
+      "rawBytes": 6005,
+      "gzipBytes": 2792
+    },
+    {
+      "file": "chunks/credentials-audit-DD3gtKTD.js",
+      "rawBytes": 5910,
+      "gzipBytes": 2412
+    },
+    {
+      "file": "chunks/index-CJC1o3Uh.js",
+      "rawBytes": 5906,
+      "gzipBytes": 2475
+    },
+    {
+      "file": "chunks/device-context-AXH9yb4z.js",
+      "rawBytes": 5798,
+      "gzipBytes": 2298
+    },
+    {
+      "file": "chunks/auto-test-runner-CKfE82u8.js",
+      "rawBytes": 5731,
+      "gzipBytes": 1702
+    },
+    {
+      "file": "chunks/push-notifications-DZDrWYr8.js",
+      "rawBytes": 5634,
+      "gzipBytes": 1996
+    },
+    {
+      "file": "chunks/broadlink-bridge-BRZvstx6.js",
+      "rawBytes": 5567,
+      "gzipBytes": 2221
+    },
+    {
+      "file": "chunks/study-service-BuE8r7BY.js",
+      "rawBytes": 5445,
+      "gzipBytes": 2123
+    },
+    {
+      "file": "chunks/subscription-tiers-D_q-buha.js",
+      "rawBytes": 5407,
+      "gzipBytes": 2185
+    },
+    {
+      "file": "chunks/tenant-BHh-eOJU.js",
+      "rawBytes": 5390,
+      "gzipBytes": 1997
+    },
+    {
+      "file": "chunks/auth-gate-DoTWtD-G.js",
+      "rawBytes": 5380,
+      "gzipBytes": 1951
+    },
+    {
+      "file": "chunks/index-CoktMmhv.js",
+      "rawBytes": 5338,
+      "gzipBytes": 2051
+    },
+    {
+      "file": "chunks/push-auto-init-CbzlLz9O.js",
+      "rawBytes": 5285,
+      "gzipBytes": 2047
+    },
+    {
+      "file": "chunks/agent-watches-w6I-sLVl.js",
+      "rawBytes": 5261,
+      "gzipBytes": 1942
+    },
+    {
+      "file": "chunks/vision-recognition-CyA5Md_o.js",
+      "rawBytes": 5141,
+      "gzipBytes": 2392
+    },
+    {
+      "file": "chunks/ai-routing-policy-BXWjPY-t.js",
+      "rawBytes": 4946,
+      "gzipBytes": 2005
+    },
+    {
+      "file": "chunks/index-C_VPGtBy.js",
+      "rawBytes": 4923,
+      "gzipBytes": 2143
+    },
+    {
+      "file": "chunks/image-transform-Cgs_J0w7.js",
+      "rawBytes": 4901,
+      "gzipBytes": 2141
+    },
+    {
+      "file": "chunks/agent-system-CKhPBlY8.js",
+      "rawBytes": 4689,
+      "gzipBytes": 1885
+    },
+    {
+      "file": "chunks/wake-word-B10asgwy.js",
+      "rawBytes": 4467,
+      "gzipBytes": 1782
+    },
+    {
+      "file": "css/base.css",
+      "rawBytes": 4451,
+      "gzipBytes": 1619
+    },
+    {
+      "file": "chunks/hud-debug-b5SJsNCP.js",
+      "rawBytes": 4345,
+      "gzipBytes": 2004
+    },
+    {
+      "file": "chunks/contacts-BvtD2V1u.js",
+      "rawBytes": 4211,
+      "gzipBytes": 1664
+    },
+    {
+      "file": "chunks/persistent-memory-store-DkhzGGzF.js",
+      "rawBytes": 4174,
+      "gzipBytes": 1748
+    },
+    {
+      "file": "chunks/chat-fallback-BilwF5a1.js",
+      "rawBytes": 4082,
+      "gzipBytes": 1848
+    },
+    {
+      "file": "chunks/self-healing-CP6JHxE-.js",
+      "rawBytes": 4065,
+      "gzipBytes": 1768
+    },
+    {
+      "file": "chunks/consumption-anomaly-detector-DKRLOV8A.js",
+      "rawBytes": 3972,
+      "gzipBytes": 1480
+    },
+    {
+      "file": "chunks/badge-cloner-DZss3aH3.js",
+      "rawBytes": 3844,
+      "gzipBytes": 1681
+    },
+    {
+      "file": "chunks/secure-storage-Cw0H_77r.js",
+      "rawBytes": 3840,
+      "gzipBytes": 1521
+    },
+    {
+      "file": "chunks/modal-sheet-Pqfkse7W.js",
+      "rawBytes": 3802,
+      "gzipBytes": 1728
+    },
+    {
+      "file": "chunks/feature-deployment-pC7Y-iwc.js",
+      "rawBytes": 3732,
+      "gzipBytes": 1531
+    },
+    {
+      "file": "chunks/storage-compressor-CqIatTpH.js",
+      "rawBytes": 3674,
+      "gzipBytes": 1418
+    },
+    {
+      "file": "chunks/admin-prompt-l9DlfUrH.js",
+      "rawBytes": 3572,
+      "gzipBytes": 1664
+    },
+    {
+      "file": "chunks/kevin-alerts-C9kC3C3c.js",
+      "rawBytes": 3510,
+      "gzipBytes": 1399
+    },
+    {
+      "file": "chunks/ads-DRdQ-gOQ.js",
+      "rawBytes": 3433,
+      "gzipBytes": 1520
+    },
+    {
+      "file": "chunks/consumption-dashboard-BIQvE4Am.js",
+      "rawBytes": 3403,
+      "gzipBytes": 1383
+    },
+    {
+      "file": "chunks/theme-switcher-6pT4TIF5.js",
+      "rawBytes": 3373,
+      "gzipBytes": 1480
+    },
+    {
+      "file": "chunks/context-loader-tr1W9oj1.js",
+      "rawBytes": 3218,
+      "gzipBytes": 1651
+    },
+    {
+      "file": "chunks/session-logger-CpiJVJre.js",
+      "rawBytes": 3213,
+      "gzipBytes": 1382
+    },
+    {
+      "file": "chunks/toast-Dgg9rcIP.js",
+      "rawBytes": 3034,
+      "gzipBytes": 1436
+    },
+    {
+      "file": "chunks/predictive-engine-CaDrnvZP.js",
+      "rawBytes": 2999,
+      "gzipBytes": 1351
+    },
+    {
+      "file": "chunks/perf-metrics-BnMgZyJ7.js",
+      "rawBytes": 2815,
+      "gzipBytes": 1326
+    },
+    {
+      "file": "chunks/commerce-WnrXIumx.js",
+      "rawBytes": 2781,
+      "gzipBytes": 1313
+    },
+    {
+      "file": "chunks/easter-eggs-B-Ny8ylX.js",
+      "rawBytes": 2516,
+      "gzipBytes": 1140
+    },
+    {
+      "file": "js/rescue.js",
+      "rawBytes": 2514,
+      "gzipBytes": 1061
+    },
+    {
+      "file": "chunks/soc2-compliance-CInQnABY.js",
+      "rawBytes": 2490,
+      "gzipBytes": 1202
+    },
+    {
+      "file": "chunks/telemetry-DyCHHxUp.js",
+      "rawBytes": 2474,
+      "gzipBytes": 1061
+    },
+    {
+      "file": "chunks/tokens-dashboard-C5ZzZyK6.js",
+      "rawBytes": 2288,
+      "gzipBytes": 878
+    },
+    {
+      "file": "chunks/permissions-dfc_YVQf.js",
+      "rawBytes": 2272,
+      "gzipBytes": 646
+    },
+    {
+      "file": "chunks/firebase-queue-BOyO6tdt.js",
+      "rawBytes": 2242,
+      "gzipBytes": 1097
+    },
+    {
+      "file": "chunks/index-D3dHJ5jj.js",
+      "rawBytes": 2109,
+      "gzipBytes": 643
+    },
+    {
+      "file": "chunks/service-lifecycle-DQNYYwxn.js",
+      "rawBytes": 2021,
+      "gzipBytes": 791
+    },
+    {
+      "file": "chunks/index-B5_q2HV0.js",
+      "rawBytes": 1959,
+      "gzipBytes": 736
+    },
+    {
+      "file": "chunks/secret-scanner-BjUe6XiW.js",
+      "rawBytes": 1799,
+      "gzipBytes": 966
+    },
+    {
+      "file": "chunks/backend-C8G6U96C.js",
+      "rawBytes": 1761,
+      "gzipBytes": 777
+    },
+    {
+      "file": "chunks/index-C7VbJn27.js",
+      "rawBytes": 1761,
+      "gzipBytes": 735
+    },
+    {
+      "file": "chunks/cmc-planning-bridge-B7E_CrXm.js",
+      "rawBytes": 1747,
+      "gzipBytes": 954
+    },
+    {
+      "file": "chunks/bodyguard-CvG-zrbv.js",
+      "rawBytes": 1645,
+      "gzipBytes": 766
+    },
+    {
+      "file": "css/rescue.css",
+      "rawBytes": 1404,
+      "gzipBytes": 782
+    },
+    {
+      "file": "chunks/migrate-v12-to-v13-DyiDmMJj.js",
+      "rawBytes": 1360,
+      "gzipBytes": 671
+    },
+    {
+      "file": "chunks/pro-fun-mode-87ImB-K2.js",
+      "rawBytes": 1271,
+      "gzipBytes": 605
+    },
+    {
+      "file": "chunks/haptic-BUEqXK0N.js",
+      "rawBytes": 970,
+      "gzipBytes": 454
+    },
+    {
+      "file": "chunks/listener-cleanup-Y2rGGxxX.js",
+      "rawBytes": 819,
+      "gzipBytes": 379
+    },
+    {
+      "file": "chunks/html-safe-CCp1QaJu.js",
+      "rawBytes": 220,
+      "gzipBytes": 165
+    },
+    {
+      "file": "chunks/vendor-dompurify-l0sNRNKZ.js",
+      "rawBytes": 1,
+      "gzipBytes": 21
+    }
+  ]
+}

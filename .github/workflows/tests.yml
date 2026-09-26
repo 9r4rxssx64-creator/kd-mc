@@ -1,0 +1,167 @@
+name: Tests E2E + Validation
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Validate index.html JS syntax
+        run: |
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            // Extraction CORRECTE : TOUS les blocs <script> inline JS uniquement.
+            // - hors src= (script externe)
+            // - hors type non-JS (application/ld+json SEO, importmap, application/json,
+            //   text/template…) sinon node --check plante sur du JSON valide (CLAUDE.md #29).
+            // Garde uniquement : pas de type, text/javascript, application/javascript, module.
+            const blocks = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+              .filter(m => {
+                if (/\bsrc=/.test(m[0])) return false;
+                const open = m[0].slice(0, m[0].indexOf('>') + 1);
+                const tm = open.match(/\btype\s*=\s*[\x22\x27]?([^\x22\x27\s>]+)/i);
+                const type = tm ? tm[1].toLowerCase() : '';
+                return !type || type === 'text/javascript' || type === 'application/javascript' || type === 'module';
+              })
+              .map(m => m[1]);
+            fs.writeFileSync('/tmp/test.js', blocks.join('\n;\n'));
+          "
+          node --check /tmp/test.js
+          echo "✅ JS syntax OK"
+
+      - name: Validate JSON files
+        run: |
+          for f in manifest.json firebase-rules-apex.json; do
+            if [ -f "$f" ]; then
+              node -e "JSON.parse(require('fs').readFileSync('$f'))" && echo "✅ $f valide"
+            fi
+          done
+
+      - name: Check no conflict markers
+        run: |
+          # Marqueurs Git RÉELS uniquement : '<<<<<<< ' / '=======' (exactement
+          # 7, seul sur la ligne) / '>>>>>>> '. Évite les faux positifs sur les
+          # séparateurs de commentaires type '==========' (8+ signes).
+          if grep -rEn "^(<<<<<<< |={7}$|>>>>>>> )" --include="*.html" --include="*.md" --include="*.json" .; then
+            echo "❌ Marqueurs de conflit Git trouvés"
+            exit 1
+          fi
+          echo "✅ Aucun marqueur de conflit"
+
+      - name: Check file sizes (sanity)
+        run: |
+          size=$(wc -c < index.html)
+          echo "📏 index.html = $size octets ($(($size / 1024)) KB)"
+          if [ $size -gt 2000000 ]; then
+            echo "⚠️  index.html > 2 MB, surveiller la dérive"
+          fi
+
+  # GARDES DU DÉPÔT PUBLIC — mesuré le 7.09 par cmcteams-pdf (m049) : `npm run test:ci` ne
+  # tourne dans AUCUN workflow GitHub, seulement dans le job « tests » de GitLab, qui ne voit
+  # les branches qu'à une remise à niveau occasionnelle. Donc les gardes écrites le 5.09
+  # (code admin en clair, pull_request_target, action tierce sur @main, secret persisté,
+  # documents de travail publiés, destination des automatisations, assets wrangler à fabriquer,
+  # registre des sessions) étaient « câblées » sans jamais tourner sur une PR. Elles tournent
+  # ici : 0 dépendance npm (node seul), ~20 s, à chaque PR vers main et sur main.
+  # AJOUT 17.09 (tor-securite) : `test:tor` était câblée « dans test:ci »… mais test:ci
+  # n'est exécuté par AUCUN workflow GitHub (mesuré : les occurrences sont des commentaires),
+  # seulement par le job « tests » de GitLab, injoignable sans jeton. Une garde qui ne tourne
+  # nulle part est un faux vert (leçon #103). Elle rejoint donc ce job : 0 dépendance npm,
+  # node seul — vérifié en local avec node_modules absent.
+  gardes-depot-public:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read   # lire la DATE des derniers deploiements (test:code-admin-a-jour)
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Gardes (node seul, sans npm install)
+        shell: bash -eo pipefail {0}
+        # L'empreinte du code admin n'est PLUS dans le dépôt (elle s'y cassait en une
+        # seconde — le code fait 6 chiffres). Elle arrive ici par le secret ; sans lui,
+        # test:no-pin-leak annonce « NON VÉRIFIÉ ICI » au lieu d'un vert trompeur.
+        env:
+          APEX_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          # Lecture seule : sert a demander a GitHub la DATE du dernier deploiement
+          # reussi de chaque service qui porte le code admin. Aucune valeur de secret
+          # n'est lue — uniquement des dates (test:code-admin-a-jour).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          # ⚠️ Ce job n'installe PAS de navigateur : n'ajouter ici QUE des gardes en Node pur.
+          #    test:paquet-pages a été essayé le 22.09 et a échoué (« Cannot find package
+          #    'playwright' ») — il vit dans test:ci, où le navigateur est installé.
+          for g in test:no-pin-leak test:depot-public-sain test:secret-jamais-persiste \
+                   test:documents-travail test:destinations-workflows test:wrangler-assets \
+                   test:pipeline-sessions test:workflows-valides test:tor \
+                   test:amont-404 test:messages-suivis test:apps-domaine \
+                   test:cuisine-chemin test:redirection-amont \
+                   test:depot-relais test:code-admin-a-jour test:memoire-apex \
+                   test:lingua-cout test:lingua-tts test:lingua-antonin; do
+            echo "::group::$g"
+            if npm run -s "$g"; then echo "::endgroup::"; else
+              echo "::endgroup::"; echo "::error title=$g::garde en échec — voir le groupe $g ci-dessus"; exit 1
+            fi
+          done
+          echo "✅ toutes les gardes du dépôt public sont vertes"
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: syntax-check
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install Puppeteer
+        # 06/09/2026 — ce job échouait sur main ET sur chaque PR depuis au moins le 5.09,
+        # et PERSONNE ne pouvait voir pourquoi : « --silent » masquait le message d'erreur
+        # de npm, le job sortait en code 1 après 9 s sans une ligne utile. Deux correctifs :
+        #   1) plus de --silent → la vraie raison apparaît dans les logs ET en annotation ;
+        #   2) --legacy-peer-deps : à la racine de ce dépôt (package.json volumineux, PAS de
+        #      package-lock), la résolution des dépendances par npm échoue — mesuré et
+        #      documenté par la session « domaine-audit » sur playwright (message m033),
+        #      même symptôme ici avec puppeteer. --no-audit --no-fund : rien à voir avec
+        #      l'installation, juste du bruit.
+        run: |
+          npm init -y > /dev/null 2>&1 || true
+          npm install puppeteer@latest --no-save --no-audit --no-fund --legacy-peer-deps
+
+      - name: Run E2E tests
+        run: node tools/tests/e2e.test.js
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-failures
+          path: |
+            index.html
+            tools/tests/e2e.test.js
+          retention-days: 7

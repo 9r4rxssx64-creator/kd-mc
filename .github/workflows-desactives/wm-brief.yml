@@ -1,0 +1,101 @@
+name: World Monitor — brief IA de la situation mondiale
+
+# Kevin 2026-07-07 (« Go tout », amélioration n°4) : un résumé IA de la situation
+# mondiale (catastrophes + séismes + actu chaude), généré toutes les 6 h
+# (règle ANTI-SPAM : cron ≥ 6 h) + à la demande, écrit dans Firebase
+# /apex/ax_wm_brief — la page World Monitor le lit (bouton 🧠) via auth anonyme.
+# La clé Anthropic reste un secret GitHub, JAMAIS exposée à la page.
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch: {}
+
+concurrency:
+  group: wm-brief
+  cancel-in-progress: false
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: tools/firebase
+
+      - name: Collecter le live + générer le brief + publier
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set +e
+          FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          TOKEN=$(node tools/firebase/gauth.cjs); QS=""
+          [ -n "$TOKEN" ] && QS="?access_token=${TOKEN}"
+
+          curl -sS --max-time 20 "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/5.5_day.geojson" -o /tmp/usgs.json || echo '{}' > /tmp/usgs.json
+          curl -sS --max-time 20 "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP" -o /tmp/gdacs.json || echo '{}' > /tmp/gdacs.json
+          curl -sS --max-time 25 "https://api.gdeltproject.org/api/v2/doc/doc?query=(war%20OR%20crisis%20OR%20breaking)%20sourcelang:eng&mode=artlist&maxrecords=25&sort=datedesc&format=json&timespan=6h" -o /tmp/news.json || echo '{}' > /tmp/news.json
+
+          python3 - <<'PYEOF'
+          import json, os, time, urllib.request
+
+          def load(p):
+              try:
+                  with open(p) as f: return json.load(f)
+              except Exception: return {}
+
+          usgs, gdacs, news = load('/tmp/usgs.json'), load('/tmp/gdacs.json'), load('/tmp/news.json')
+          lines = []
+          for f in (usgs.get('features') or [])[:8]:
+              p = f.get('properties') or {}
+              lines.append('SEISME M%.1f %s' % (p.get('mag') or 0, p.get('place') or '?'))
+          for f in (gdacs.get('features') or [])[:12]:
+              p = f.get('properties') or {}
+              lines.append('GDACS %s %s %s' % (p.get('alertlevel', '?'), p.get('eventtype', '?'), (p.get('eventname') or '')[:80]))
+          seen_titles = set()
+          for a in (news.get('articles') or [])[:20]:
+              t = (a.get('title') or '')[:110]
+              if t and t not in seen_titles:
+                  seen_titles.add(t); lines.append('ACTU ' + t)
+          data = '\n'.join(lines[:40]) or '(aucune donnée disponible)'
+
+          key = os.environ.get('ANTHROPIC_API_KEY', '')
+          if not key:
+              print('❌ ANTHROPIC_API_KEY absent — brief non généré (fail-open)'); raise SystemExit(0)
+          prompt = ("Voici les données brutes en direct (séismes USGS, alertes GDACS/ONU, titres d'actualité des 6 dernières heures) :\n\n"
+                    + data +
+                    "\n\nÉcris un BRIEF de la situation mondiale en FRANÇAIS SIMPLE : 6 à 10 lignes maximum, "
+                    "phrases courtes, pas de jargon, regroupé par thème (conflits/actu chaude, catastrophes naturelles, à surveiller). "
+                    "Commence directement par le contenu (pas d'introduction). Si les données sont maigres, dis-le honnêtement.")
+          req = urllib.request.Request('https://api.anthropic.com/v1/messages',
+              data=json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 700,
+                               'messages': [{'role': 'user', 'content': prompt}]}).encode(),
+              headers={'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01'}, method='POST')
+          try:
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  resp = json.load(r)
+              text = ''.join(b.get('text', '') for b in resp.get('content', []))
+          except Exception as e:
+              print('❌ Anthropic KO (cause exacte):', repr(e)[:300]); raise SystemExit(0)
+          if not text.strip():
+              print('❌ brief vide'); raise SystemExit(0)
+          with open('/tmp/brief.json', 'w') as f:
+              json.dump({'text': text.strip()[:4000], 'ts': int(time.time() * 1000), 'model': 'haiku', 'sources': 'USGS + GDACS + GDELT'}, f, ensure_ascii=False)
+          print('brief généré,', len(text), 'caractères')
+          PYEOF
+
+          if [ -f /tmp/brief.json ]; then
+            HTTP=$(curl -sS -o /tmp/fb_resp.txt -w "%{http_code}" -X PUT "${FB_URL}/apex/ax_wm_brief.json${QS}" \
+              -H "Content-Type: application/json" --data-binary @/tmp/brief.json || echo 000)
+            echo "Firebase PUT ax_wm_brief → HTTP $HTTP $(head -c 150 /tmp/fb_resp.txt)"
+          fi
+          exit 0

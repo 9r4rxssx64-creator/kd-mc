@@ -1,0 +1,763 @@
+/* APEX v13 — Animations premium repensées
+ * Toast slide-down, Modal half-sheet slide-up, ripple, glow pulse, fade
+ * Pour DÉPASSER Claude.ai/ChatGPT en mobile-first iPhone PWA.
+ */
+
+/* ───────── Keyframes ───────── */
+@keyframes ax-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ax-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ax-slide-down {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ax-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes ax-slide-up-fade {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ax-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(232, 184, 48, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 24px 8px rgba(232, 184, 48, 0);
+  }
+}
+
+@keyframes ax-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes ax-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ax-bounce-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ax-typing-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+
+/* ───────── Toast ───────── */
+.ax-toast-container {
+  position: fixed;
+  top: calc(var(--ax-safe-t) + var(--ax-s-3));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--ax-z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ax-s-2);
+  pointer-events: none;
+  width: min(420px, calc(100vw - var(--ax-s-6)));
+}
+
+.ax-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ax-s-3);
+  padding: var(--ax-s-3) var(--ax-s-4);
+  background: var(--ax-bg-glass);
+  backdrop-filter: var(--ax-blur);
+  -webkit-backdrop-filter: var(--ax-blur);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r-md);
+  box-shadow: var(--ax-shadow-lg);
+  color: var(--ax-text);
+  font-size: var(--ax-text-sm);
+  cursor: pointer;
+  min-height: 44px;
+  transform: translateY(-20px);
+  opacity: 0;
+  transition:
+    transform var(--ax-d-normal) var(--ax-ease-spring),
+    opacity var(--ax-d-fast) var(--ax-ease);
+}
+
+.ax-toast-visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.ax-toast-leaving {
+  transform: translateY(-20px) scale(0.95);
+  opacity: 0;
+}
+
+.ax-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.ax-toast-info .ax-toast-icon {
+  background: var(--ax-blue-soft);
+  color: var(--ax-blue);
+}
+
+.ax-toast-success .ax-toast-icon {
+  background: var(--ax-green-soft);
+  color: var(--ax-green);
+}
+
+.ax-toast-warn .ax-toast-icon {
+  background: var(--ax-orange-soft);
+  color: var(--ax-orange);
+}
+
+.ax-toast-error .ax-toast-icon {
+  background: var(--ax-red-soft);
+  color: var(--ax-red);
+}
+
+.ax-toast-text {
+  flex: 1;
+  line-height: var(--ax-lh-snug);
+}
+
+.ax-toast-close {
+  background: transparent;
+  border: none;
+  color: var(--ax-text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  /* P0 audit UX : 44x44 min Apple HIG (était 28×28) */
+  width: var(--ax-touch-min);
+  height: var(--ax-touch-min);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--ax-d-fast) var(--ax-ease);
+}
+
+.ax-toast-close:hover {
+  background: var(--ax-bg-flat);
+  color: var(--ax-text);
+}
+
+/* ───────── Modal half-sheet ───────── */
+.ax-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--ax-bg-overlay);
+  backdrop-filter: var(--ax-blur-sm);
+  -webkit-backdrop-filter: var(--ax-blur-sm);
+  z-index: var(--ax-z-modal);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--ax-d-normal) var(--ax-ease);
+}
+
+.ax-sheet-overlay.ax-sheet-visible {
+  opacity: 1;
+}
+
+.ax-sheet {
+  width: min(640px, 100%);
+  max-height: 90vh;
+  background: var(--ax-bg-card);
+  border-radius: var(--ax-r-xl) var(--ax-r-xl) 0 0;
+  border-top: 1px solid var(--ax-border);
+  box-shadow: var(--ax-shadow-xl);
+  padding: var(--ax-s-3) var(--ax-s-5) calc(var(--ax-safe-b) + var(--ax-s-5));
+  transform: translateY(100%);
+  transition: transform var(--ax-d-normal) var(--ax-ease-spring);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ax-sheet.ax-sheet-up {
+  transform: translateY(0);
+}
+
+.ax-sheet.ax-sheet-down {
+  transform: translateY(100%);
+}
+
+.ax-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--ax-border-strong);
+  border-radius: 2px;
+  margin: var(--ax-s-1) auto var(--ax-s-3);
+  flex-shrink: 0;
+}
+
+.ax-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--ax-s-3);
+  border-bottom: 1px solid var(--ax-border);
+  margin-bottom: var(--ax-s-4);
+  flex-shrink: 0;
+}
+
+.ax-sheet-title {
+  font-size: var(--ax-text-xl);
+  font-weight: 700;
+  margin: 0;
+  color: var(--ax-text);
+}
+
+.ax-sheet-close {
+  background: var(--ax-bg-flat);
+  border: 1px solid var(--ax-border);
+  color: var(--ax-text);
+  font-size: 18px;
+  /* P0 audit UX : 44x44 min Apple HIG (était 36×36) */
+  width: var(--ax-touch-min);
+  height: var(--ax-touch-min);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--ax-d-fast) var(--ax-ease);
+}
+
+.ax-sheet-close:hover {
+  background: var(--ax-bg-input);
+}
+
+.ax-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  color: var(--ax-text);
+  line-height: var(--ax-lh-normal);
+  /* P0 audit UX : padding-bottom adaptive iOS keyboard pour ne pas masquer input */
+  padding-bottom: max(var(--ax-s-3), env(safe-area-inset-bottom));
+  scroll-padding-bottom: 200px;
+}
+
+.ax-sheet-body input,
+.ax-sheet-body textarea {
+  /* iOS Safari : empêcher zoom auto si font-size < 16px */
+  font-size: max(16px, var(--ax-text-base));
+}
+
+.ax-sheet-actions {
+  display: flex;
+  gap: var(--ax-s-3);
+  margin-top: var(--ax-s-5);
+  padding-top: var(--ax-s-4);
+  border-top: 1px solid var(--ax-border);
+  flex-shrink: 0;
+}
+
+.ax-sheet-actions .ax-btn {
+  flex: 1;
+}
+
+/* ───────── Skeleton loading ───────── */
+.ax-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ax-bg-flat) 0%,
+    var(--ax-bg-card) 50%,
+    var(--ax-bg-flat) 100%
+  );
+  background-size: 200% 100%;
+  animation: ax-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--ax-r-sm);
+  height: 16px;
+}
+
+.ax-skeleton-line {
+  height: 14px;
+  margin-bottom: var(--ax-s-2);
+}
+
+.ax-skeleton-line:nth-child(2) {
+  width: 80%;
+}
+.ax-skeleton-line:nth-child(3) {
+  width: 60%;
+}
+
+.ax-skeleton-card {
+  padding: var(--ax-s-4);
+  background: var(--ax-bg-card);
+  border-radius: var(--ax-r);
+  border: 1px solid var(--ax-border);
+}
+
+/* ───────── Typing indicator ───────── */
+.ax-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--ax-s-2) var(--ax-s-3);
+}
+
+.ax-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ax-gold);
+  animation: ax-typing-dot 1.2s ease-in-out infinite;
+}
+
+.ax-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ax-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* ───────── Glow pulse — utilisation purposeful uniquement
+ * Reservé aux états attention requise (CTA bloquant, erreur récupérable, offline indicator)
+ * NE PAS utiliser cosmétiquement (audit UX règle anti-théâtre) */
+.ax-glow-pulse {
+  animation: ax-pulse-glow 2.4s ease-in-out infinite;
+}
+
+/* ───────── Status indicators ───────── */
+.ax-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--ax-s-2);
+}
+
+.ax-status-online {
+  background: var(--ax-green);
+  box-shadow: 0 0 8px var(--ax-green);
+}
+
+.ax-status-offline {
+  background: var(--ax-text-muted);
+}
+
+.ax-status-error {
+  background: var(--ax-red);
+  animation: ax-pulse-glow 1.6s ease-in-out infinite;
+}
+
+/* ───────── Bounce-in (entrance) ───────── */
+.ax-bounce-in {
+  animation: ax-bounce-in var(--ax-d-normal) var(--ax-ease-spring) both;
+}
+
+/* ───────── Slide-up-fade (cards entrance) ───────── */
+.ax-slide-up-fade {
+  animation: ax-slide-up-fade var(--ax-d-normal) var(--ax-ease-out) both;
+}
+
+/* ───────── Spinner ───────── */
+.ax-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--ax-border);
+  border-top-color: var(--ax-gold);
+  border-radius: 50%;
+  animation: ax-spin 0.8s linear infinite;
+}
+
+/* ───────── PREMIUM v13 Kevin redesign UX ───────── */
+
+/* Success burst (confetti style) */
+@keyframes ax-success-burst {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.ax-success-burst {
+  animation: ax-success-burst var(--ax-d-normal) var(--ax-ease-spring) both;
+}
+
+/* Error shake (invalid input) */
+@keyframes ax-error-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.ax-error-shake {
+  animation: ax-error-shake 0.4s var(--ax-ease) both;
+}
+
+/* Slide-up-fade premium (entrance card) */
+@keyframes ax-slide-up-fade-premium {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ax-slide-up-fade-premium {
+  animation: ax-slide-up-fade-premium var(--ax-d-normal) var(--ax-ease-out) both;
+}
+
+/* Stagger entrance (cards en cascade) */
+.ax-stagger > * {
+  animation: ax-slide-up-fade-premium var(--ax-d-normal) var(--ax-ease-out) both;
+}
+.ax-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.ax-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.ax-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.ax-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.ax-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.ax-stagger > *:nth-child(6) { animation-delay: 300ms; }
+.ax-stagger > *:nth-child(7) { animation-delay: 360ms; }
+.ax-stagger > *:nth-child(8) { animation-delay: 420ms; }
+.ax-stagger > *:nth-child(n+9) { animation-delay: 480ms; }
+
+/* Float (background subtle) */
+@keyframes ax-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+
+.ax-float {
+  animation: ax-float 4s ease-in-out infinite;
+}
+
+/* Gradient shift (premium gold animated) */
+@keyframes ax-gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.ax-gradient-animate {
+  background-size: 200% 200%;
+  animation: ax-gradient-shift 8s var(--ax-ease) infinite;
+}
+
+/* Reveal (slide depuis cote) */
+@keyframes ax-reveal-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes ax-reveal-right {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.ax-reveal-left {
+  animation: ax-reveal-left var(--ax-d-normal) var(--ax-ease-out) both;
+}
+
+.ax-reveal-right {
+  animation: ax-reveal-right var(--ax-d-normal) var(--ax-ease-out) both;
+}
+
+/* Scale-in (modal entrance) */
+@keyframes ax-scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ax-scale-in {
+  animation: ax-scale-in var(--ax-d-fast) var(--ax-ease-spring) both;
+}
+
+/* Lift hover effect */
+.ax-lift {
+  transition:
+    transform var(--ax-d-fast) var(--ax-ease-out),
+    box-shadow var(--ax-d-fast) var(--ax-ease-out);
+}
+
+.ax-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ax-shadow-lg);
+}
+
+.ax-lift:active {
+  transform: translateY(0);
+  box-shadow: var(--ax-shadow-sm);
+}
+
+/* ───────── Reduced motion : skip animations ───────── */
+@media (prefers-reduced-motion: reduce) {
+  .ax-toast,
+  .ax-sheet,
+  .ax-skeleton,
+  .ax-typing-dot,
+  .ax-glow-pulse,
+  .ax-bounce-in,
+  .ax-slide-up-fade,
+  .ax-slide-up-fade-premium,
+  .ax-stagger > *,
+  .ax-spinner,
+  .ax-success-burst,
+  .ax-error-shake,
+  .ax-float,
+  .ax-gradient-animate,
+  .ax-reveal-left,
+  .ax-reveal-right,
+  .ax-scale-in {
+    animation: none !important;
+    transition: none !important;
+  }
+  .ax-lift:hover {
+    transform: none !important;
+  }
+}
+
+/* ─── v13.3.29 — Stagger animation cascade (UX Premium) ─── */
+.ax-stagger-item {
+  opacity: 0;
+  animation: ax-stagger-fade 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ax-stagger-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── v13.3.29 — Confetti easter egg ─── */
+.ax-confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999999;
+  overflow: hidden;
+}
+
+.ax-confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 16px;
+  top: -20px;
+  border-radius: 1px;
+  opacity: 0.9;
+  animation: ax-confetti-fall ease-in forwards;
+}
+
+@keyframes ax-confetti-fall {
+  to {
+    top: 110vh;
+    transform: rotate(720deg);
+  }
+}
+
+/* ─── v13.3.29 — Mode rétro 8-bit (Konami code) ─── */
+:root.ax-retro-8bit {
+  font-family: 'Courier New', 'VT323', monospace !important;
+  filter: contrast(1.2) saturate(1.4) hue-rotate(20deg);
+  image-rendering: pixelated;
+  --ax-theme-accent: #00ff41;
+  --ax-theme-bg: #001a00;
+  --ax-theme-fg: #00ff41;
+}
+
+:root.ax-retro-8bit * {
+  image-rendering: pixelated;
+  text-shadow: 1px 1px 0 #003300;
+  letter-spacing: 0.05em;
+}
+
+:root.ax-retro-8bit button:hover {
+  filter: invert(1);
+}
+
+/* ─── v13.3.29 — Mode FUN (palette néon, micro-animations) ─── */
+:root.ax-mode-fun {
+  --ax-bounce-scale: 1.08;
+}
+
+:root.ax-mode-fun button {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root.ax-mode-fun button:active {
+  transform: scale(0.92);
+}
+
+:root.ax-mode-fun .ax-emoji-decoration {
+  display: inline;
+  animation: ax-emoji-wiggle 2.5s ease-in-out infinite;
+}
+
+@keyframes ax-emoji-wiggle {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-8deg) scale(1.05);
+  }
+  75% {
+    transform: rotate(8deg) scale(1.05);
+  }
+}
+
+:root.ax-mode-pro .ax-emoji-decoration {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-stagger-item,
+  .ax-confetti-piece,
+  :root.ax-mode-fun button,
+  :root.ax-mode-fun .ax-emoji-decoration {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* v13.4.126 (Kevin "qualité pro App Store-ready" — Audit P1 a11y WCAG 2.3.3) :
+   Global reduced-motion guard — désactive TOUTES animations/transitions pour
+   users avec prefers-reduced-motion: reduce (option iOS Réglages > Accessibilité
+   > Réduire les animations). Couvre les 30+ animation refs détectées par audit
+   sans avoir à patcher chaque sélecteur individuellement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* v13.4.192 (Kevin "Dis Apex comme Siri") — Pulse écoute passive wake word.
+ * Indicateur visuel discret : ondulation verte lente sur le bouton 👂 quand
+ * wake word actif. PAS d'écriture interim placeholder (Kevin "permanence"). */
+@keyframes ax-wake-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 204, 119, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px 6px rgba(34, 204, 119, 0);
+    transform: scale(1.08);
+  }
+}
+
+/* v13.4.194 — Banner slide-in (Cloudflare infra status). */
+@keyframes ax-banner-slide-in {
+  from { transform: translate(-50%, -100%); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}

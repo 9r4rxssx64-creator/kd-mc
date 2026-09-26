@@ -1,0 +1,4 @@
+broadlink>=0.18.3
+flask>=2.3.0
+flask-cors>=4.0.0
+gunicorn>=21.0.0

@@ -1,0 +1,13 @@
+{
+  "name": "kdmc-telegram",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Module Telegram Bot pour CMCteams (KDMC)",
+  "main": "client.js",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "author": "Kevin DESARZENS (U11804)",
+  "license": "UNLICENSED",
+  "private": true
+}

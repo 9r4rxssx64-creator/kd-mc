@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>📋 Mon plan iPhone — Apex+CMCteams</title>
+<style>
+:root{--gold:#c9a227;--gold2:#e8b830;--bg:#08080f;--bg2:#0a0a14;--text:#fff;--dim:#a0a4c0;--ok:#4cd080;--warn:#ffb84a;--err:#ff5858}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.5;padding-top:env(safe-area-inset-top,0)}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+header{text-align:center;margin-bottom:24px}
+h1{font-size:28px;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0 0 6px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:16px}
+.print-btn{display:inline-block;padding:14px 28px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-weight:800;border:none;border-radius:24px;font-size:15px;cursor:pointer;text-decoration:none;min-height:48px}
+.print-btn:active{transform:scale(.96)}
+.toc{background:var(--bg2);border:1px solid rgba(201,162,39,.2);border-radius:12px;padding:16px;margin-bottom:24px}
+.toc h3{margin:0 0 10px;color:var(--gold);font-size:14px;text-transform:uppercase;letter-spacing:1px}
+.toc ol{margin:0;padding-left:24px}
+.toc li{margin:4px 0}
+.toc a{color:var(--text);text-decoration:none}
+.toc a:hover{color:var(--gold)}
+.priority{background:var(--bg2);border:1px solid rgba(201,162,39,.2);border-radius:14px;padding:18px;margin-bottom:18px;page-break-inside:avoid}
+.priority-num{display:inline-block;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-weight:800;padding:4px 12px;border-radius:12px;font-size:13px;margin-bottom:8px}
+.priority h2{margin:8px 0;font-size:20px;color:var(--text)}
+.time{color:var(--gold);font-size:13px;font-weight:700;margin-bottom:8px}
+.why{color:var(--dim);font-size:13px;font-style:italic;margin-bottom:12px;padding-left:12px;border-left:3px solid var(--gold)}
+.case{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin:10px 0}
+.case-title{font-weight:700;color:var(--gold);margin-bottom:8px;font-size:14px}
+ol.steps{padding-left:22px;margin:8px 0}
+ol.steps li{margin:8px 0;line-height:1.6}
+code{background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--gold)}
+.verif{background:rgba(76,208,128,.08);border-left:3px solid var(--ok);padding:8px 12px;margin-top:10px;border-radius:6px;font-size:13px}
+.warn{background:rgba(255,184,74,.08);border-left:3px solid var(--warn);padding:8px 12px;margin-top:10px;border-radius:6px;font-size:13px}
+.check{display:flex;align-items:center;gap:10px;margin-top:12px}
+.check input{width:24px;height:24px;accent-color:var(--gold);cursor:pointer}
+.check label{cursor:pointer;font-size:14px}
+.footer{margin-top:30px;padding:16px;background:var(--bg2);border-radius:12px;text-align:center;font-size:13px;color:var(--dim)}
+.footer a{color:var(--gold);text-decoration:none}
+@media print{
+  body{background:#fff;color:#000;font-size:11pt}
+  h1{color:#c9a227 !important;-webkit-text-fill-color:#c9a227 !important}
+  .priority,.toc{background:#fff;border:1px solid #ccc;page-break-inside:avoid}
+  .case{background:#f5f5f5;border:1px solid #ddd}
+  .why{color:#444;border-left-color:#c9a227}
+  .verif{background:#e8f5e8;color:#000}
+  .warn{background:#fff4e0;color:#000}
+  code{background:#f0f0f0;color:#a87d0e}
+  .priority-num{background:#c9a227;color:#000}
+  .print-btn,.check{display:none !important}
+  .footer{background:#f5f5f5;color:#333}
+  a{color:#c9a227 !important}
+  .dim,.sub{color:#555}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+<h1>📋 Mon plan d'action — iPhone</h1>
+<p class="sub">Pas-à-pas testable · Apex v12.272+ · CMCteams v9.544+ · 30 min total</p>
+<button class="print-btn" onclick="window.print()">📄 Imprimer en PDF</button>
+</header>
+
+<div class="toc">
+<h3>Sommaire (touche pour aller à la priorité)</h3>
+<ol>
+<li><a href="#p1">Tester ton login admin (5 min)</a></li>
+<li><a href="#p2">Configurer Laurence (5 min)</a></li>
+<li><a href="#p3">Tester upload photo (2 min)</a></li>
+<li><a href="#p4">Tester convertisseur fichiers (2 min)</a></li>
+<li><a href="#p5">Activer notifications push iOS (3 min)</a></li>
+<li><a href="#p6">Activer FaceID (1 min)</a></li>
+<li><a href="#p7">Tester visioconférence Jitsi (3 min)</a></li>
+<li><a href="#p8">Camera Studio 4K (2 min)</a></li>
+<li><a href="#bonus">Optionnel : OpenRouter / Album Laurence</a></li>
+</ol>
+</div>
+
+<!-- ============ PRIORITY 1 ============ -->
+<section class="priority" id="p1">
+<span class="priority-num">PRIORITÉ 1</span>
+<h2>🔐 Tester ton login admin</h2>
+<div class="time">⏱ 5 min</div>
+<div class="why">Vérifier que le bug "Kevin reconnu Laurence" est bien corrigé en v12.272 (la cause racine — <code>ax_user</code> dans Firebase sync — est maintenant en local-only).</div>
+
+<div class="case">
+<div class="case-title">CAS A — Tu te souviens de ton PIN admin</div>
+<ol class="steps">
+<li>Ouvre <strong>Apex</strong> (icône écran d'accueil ou Safari)</li>
+<li>Tire vers le bas pour <strong>rafraîchir</strong> (auto-update v12.272+)</li>
+<li>Si écran connexion : tape <code>Kevin DESARZENS</code> (nom + prénom obligatoires)</li>
+<li>Tape ton <strong>PIN admin</strong></li>
+<li>Touche <strong>🔓 Connexion</strong></li>
+</ol>
+<div class="verif">✅ Tu dois voir : Dashboard normal · <strong>AUCUN cœur rose</strong> · Navbar admin complète (CMC, Coffre, Live, Clients, Stats…)</div>
+</div>
+
+<div class="case">
+<div class="case-title">CAS B — Le bug Kevin=Laurence revient</div>
+<ol class="steps">
+<li>Logout via la croix <strong>✕</strong> en haut à droite</li>
+<li>Réglages → <strong>"🚀 Optimiser maintenant"</strong> (force cleanup)</li>
+<li>Reconnecte avec nom complet <code>Kevin DESARZENS</code></li>
+</ol>
+<div class="warn">⚠ Si toujours bug : dis-le moi, c'est un nouveau cas à débugger.</div>
+</div>
+
+<div class="check">
+<input type="checkbox" id="c1" onchange="localStorage.setItem('kevin_p1',this.checked)">
+<label for="c1">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ PRIORITY 2 ============ -->
+<section class="priority" id="p2">
+<span class="priority-num">PRIORITÉ 2</span>
+<h2>💕 Configurer Laurence</h2>
+<div class="time">⏱ 5 min</div>
+<div class="why">Laurence doit avoir son propre compte sur SON iPhone, avec son PIN à elle (pas le tien).</div>
+
+<div class="case">
+<div class="case-title">CAS A — Sur l'iPhone de Laurence (idéal)</div>
+<ol class="steps">
+<li>Sur l'iPhone de Laurence, ouvre <strong>Apex</strong></li>
+<li>Tape : <code>Laurence</code> (ou <code>Laurence SAINT-POLIT</code>)</li>
+<li>Tape PIN : <code>1234</code> (PIN par défaut)</li>
+<li>L'app demande "Choisis ton PIN secret" → elle tape ce qu'elle veut (4 chiffres min)</li>
+</ol>
+<div class="verif">✅ Elle doit voir : UX simplifié famille (3 onglets : Menu, Discussion, Réglages) + cœurs roses qui flottent + photos diaporama</div>
+</div>
+
+<div class="case">
+<div class="case-title">CAS B — Sur ton iPhone (test démo)</div>
+<ol class="steps">
+<li>Logout admin (croix <strong>✕</strong>)</li>
+<li>Login <code>Laurence</code> + PIN <code>1234</code></li>
+<li>Visite l'UX simplifié</li>
+<li>Logout puis re-login admin Kevin</li>
+</ol>
+</div>
+
+<div class="check">
+<input type="checkbox" id="c2" onchange="localStorage.setItem('kevin_p2',this.checked)">
+<label for="c2">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ PRIORITY 3 ============ -->
+<section class="priority" id="p3">
+<span class="priority-num">PRIORITÉ 3</span>
+<h2>📸 Tester upload photo</h2>
+<div class="time">⏱ 2 min</div>
+<div class="why">Vérifier que le bug "photo retourne du texte JSON" est fixé en v12.270.</div>
+
+<div class="case">
+<div class="case-title">CAS A — Photo simple</div>
+<ol class="steps">
+<li>Ouvre <strong>Chat</strong> (Apex)</li>
+<li>Touche <strong>📷</strong> (caméra) ou <strong>+</strong> (menu) → "Photothèque"</li>
+<li>Sélectionne 1 photo</li>
+<li>Attends que Claude analyse</li>
+</ol>
+<div class="verif">✅ Tu dois voir : <strong>la photo elle-même</strong> (pas du JSON brut comme avant) + analyse Claude Vision en dessous (description, objets identifiés)</div>
+</div>
+
+<div class="case">
+<div class="case-title">CAS B — Vidéo / Audio / Document</div>
+<ol class="steps">
+<li>Touche <strong>+</strong> (menu chat)</li>
+<li>Sélectionne "Choisir un fichier"</li>
+<li>Vidéo MP4 / Audio MP3 / PDF / .csv etc.</li>
+</ol>
+<div class="verif">✅ Vidéo : preview avec contrôles · Audio : hint Whisper · PDF : extraction texte · Word/Excel : message clair "convertis en PDF d'abord"</div>
+</div>
+
+<div class="check">
+<input type="checkbox" id="c3" onchange="localStorage.setItem('kevin_p3',this.checked)">
+<label for="c3">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ PRIORITY 4 ============ -->
+<section class="priority" id="p4">
+<span class="priority-num">PRIORITÉ 4</span>
+<h2>🔄 Tester convertisseur</h2>
+<div class="time">⏱ 2 min</div>
+<div class="why">Nouveau module v12.271 : convertir n'importe quoi en n'importe quel format (JPG/PNG/WebP, CSV/JSON, MD/HTML).</div>
+
+<div class="case">
+<div class="case-title">Test image PNG → JPG</div>
+<ol class="steps">
+<li>Apex → écris dans le chat : <code>convertisseur</code> (ou navigue via Plus → Convertisseur)</li>
+<li>Touche "Sélectionne fichier" → choisis une photo PNG</li>
+<li>Format cible : <strong>JPG</strong></li>
+<li>Touche <strong>🔄 Convertir + Télécharger</strong></li>
+</ol>
+<div class="verif">✅ Le fichier converti se télécharge (Files iOS → Téléchargements)</div>
+</div>
+
+<div class="check">
+<input type="checkbox" id="c4" onchange="localStorage.setItem('kevin_p4',this.checked)">
+<label for="c4">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ PRIORITY 5 ============ -->
+<section class="priority" id="p5">
+<span class="priority-num">PRIORITÉ 5</span>
+<h2>🔔 Activer notifications push iOS</h2>
+<div class="time">⏱ 3 min</div>
+<div class="why">Cloudflare Push Worker est configuré (5 secrets OK). Faut autoriser iOS pour recevoir.</div>
+
+<div class="case">
+<div class="case-title">Activation</div>
+<ol class="steps">
+<li>Apex → <strong>⚙️ Réglages</strong></li>
+<li>Section <strong>🔔 Notifications</strong> → "Activer"</li>
+<li>iOS demande permission → <strong>"Autoriser"</strong></li>
+<li>Test : bouton "Test push" si dispo en admin</li>
+<li>Mets Apex en arrière-plan (Home)</li>
+</ol>
+<div class="verif">✅ Tu reçois la notif test sur écran verrouillé</div>
+</div>
+
+<div class="case">
+<div class="case-title">CAS B — Pas de notif</div>
+<ol class="steps">
+<li>iOS Réglages → Notifications → Apex → vérifie autorisations actives</li>
+<li>Vérifie le worker Cloudflare en Safari : <code>apex-push-worker.desarzens-kevin.workers.dev/health</code> → doit afficher <code>"configured":true</code></li>
+</ol>
+</div>
+
+<div class="check">
+<input type="checkbox" id="c5" onchange="localStorage.setItem('kevin_p5',this.checked)">
+<label for="c5">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ PRIORITY 6 ============ -->
+<section class="priority" id="p6">
+<span class="priority-num">PRIORITÉ 6</span>
+<h2>👤 Activer FaceID</h2>
+<div class="time">⏱ 1 min</div>
+<div class="why">Login en 0.5 sec sans taper PIN.</div>
+
+<ol class="steps">
+<li>⚙️ Réglages → Sécurité → <strong>🔐 Biométrie (Face/Touch ID)</strong> → "Configurer"</li>
+<li>iOS demande FaceID → regarde la caméra</li>
+</ol>
+<div class="verif">✅ Prochain login : bouton "👤 Face ID" dispo (priorité)</div>
+
+<div class="check">
+<input type="checkbox" id="c6" onchange="localStorage.setItem('kevin_p6',this.checked)">
+<label for="c6">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ PRIORITY 7 ============ -->
+<section class="priority" id="p7">
+<span class="priority-num">PRIORITÉ 7</span>
+<h2>📹 Tester visioconférence (Jitsi multi-personnes)</h2>
+<div class="time">⏱ 3 min</div>
+<div class="why">Module v12.256 : Jitsi gratuit, multi-participants, iOS Safari OK.</div>
+
+<ol class="steps">
+<li>Apex → <strong>Chat</strong></li>
+<li>Touche <strong>📹 Visio</strong> dans la barre menu (ou +)</li>
+<li>Tu peux soit créer une nouvelle visio, soit rejoindre via lien</li>
+<li>Partage le lien avec un autre device pour test multi-personnes</li>
+</ol>
+<div class="verif">✅ Tu te vois en caméra HD + micro + tu peux partager écran. Multi-personnes : ils rejoignent via le lien.</div>
+
+<div class="check">
+<input type="checkbox" id="c7" onchange="localStorage.setItem('kevin_p7',this.checked)">
+<label for="c7">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ PRIORITY 8 ============ -->
+<section class="priority" id="p8">
+<span class="priority-num">PRIORITÉ 8</span>
+<h2>📷 Camera Studio 4K</h2>
+<div class="time">⏱ 2 min</div>
+<div class="why">Module v12.260 : caméra 4K + scan QR/barcode + OCR Tesseract + Vision IA.</div>
+
+<ol class="steps">
+<li>Chat Apex → tape <code>camera studio</code> (ou navigue)</li>
+<li>Touche <strong>📸 Capturer HD</strong> → photo 4K</li>
+<li>Ou scan QR / barcode</li>
+<li>Ou OCR multilingue (FR/EN/IT)</li>
+</ol>
+<div class="verif">✅ Photo HD 4K + analyse Vision IA + extraction texte si OCR</div>
+
+<div class="check">
+<input type="checkbox" id="c8" onchange="localStorage.setItem('kevin_p8',this.checked)">
+<label for="c8">✅ Marquer fait</label>
+</div>
+</section>
+
+<!-- ============ BONUS ============ -->
+<section class="priority" id="bonus">
+<span class="priority-num">OPTIONNEL</span>
+<h2>🎁 Bonus à explorer</h2>
+
+<div class="case">
+<div class="case-title">OpenRouter (200+ modèles IA via 1 clé, 1$ free)</div>
+<ol class="steps">
+<li>Va sur <code>openrouter.ai/keys</code> → crée compte → crée clé</li>
+<li>Apex → Coffre → "✨ OpenRouter Clé API" → colle</li>
+<li>Réglages → Provider IA → "OpenRouter" ou "Auto-failover"</li>
+</ol>
+</div>
+
+<div class="case">
+<div class="case-title">Album Laurence (photos diaporama)</div>
+<ol class="steps">
+<li>Safari : <code>tools/album-laurence.html</code></li>
+<li>Choisis 5-10 photos d'elle</li>
+<li>Touche "Sauvegarder + activer"</li>
+</ol>
+<div class="verif">✅ Au prochain login Laurence : diaporama tourne dans son thème girly</div>
+</div>
+
+<div class="case">
+<div class="case-title">Import PDF planning CMCteams</div>
+<ol class="steps">
+<li>CMCteams admin → Import PDF</li>
+<li>Drop un PDF planning SBM</li>
+<li>Observer parser auto-learn (v9.529+)</li>
+</ol>
+</div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<div class="footer">
+<p><strong>🆘 Si bug</strong> : tire vers le bas pour rafraîchir l'app, ou demande à Claude via "Dis Apex j'ai un souci avec X"</p>
+<p><strong>📋 Imprimer ce doc en PDF</strong> : bouton en haut, ou Safari → Partager → Imprimer → pinch-zoom → Sauver PDF</p>
+<p>
+<a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/">📱 Apex live</a> ·
+<a href="https://9r4rxssx64-creator.github.io/CMCteams/">🎰 CMCteams live</a> ·
+Apex <strong>v12.272+</strong> · CMCteams <strong>v9.544+</strong>
+</p>
+</div>
+
+</div>
+<script>
+// Restaurer cases cochées
+document.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+  if(localStorage.getItem(cb.id)==="true")cb.checked=true;
+});
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="kevin-todo-iphone"
+        data-version="v1.0.0"
+        data-color="#22cc77"
+        defer></script>
+</body>
+</html>

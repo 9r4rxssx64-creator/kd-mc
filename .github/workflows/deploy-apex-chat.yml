@@ -1,0 +1,360 @@
+name: Deploy Apex Chat (Cloudflare Workers)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Déclenche automatiquement quand messaging-app/workers/** change
+# OU manuellement via GitHub Actions UI (workflow_dispatch)
+
+on:
+  push:
+    # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main.
+    # Une branche de travail ne déploie plus rien (incident m122 du 23.09 : un routeur
+    # déployé depuis une branche en retard a éteint kit.kd-mc.com). Manuel : workflow_dispatch.
+    branches:
+      - main
+    paths:
+      - 'messaging-app/workers/**'
+      - 'services/_shared/ia-route.js'   # routage IA commun : le worker l'importe → doit redéployer
+      - 'messaging-app/d1-migrations/**'
+      - 'messaging-app/deploy.sh'
+      - '.github/workflows/deploy-apex-chat.yml'
+  workflow_dispatch:
+    inputs:
+      apply_migrations:
+        description: 'Appliquer migrations D1 (yes/no)'
+        required: false
+        default: 'yes'
+
+jobs:
+  deploy:
+    name: Deploy Cloudflare Workers + Infra
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 20
+
+      - name: Install Wrangler
+        # Majeure épinglée (triage sécu 10/09, zizmor « adhoc-packages ») : sans
+        # version, « wrangler » = ce que npm publiera demain, avec le jeton Cloudflare
+        # en main. 4.x est ce qui tourne déjà ici (dernier déploiement vert 34520637740).
+        run: npm install -g wrangler@4
+
+      - name: Verify token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Secret CLOUDFLARE_API_TOKEN manquant"
+            echo "Ajoute-le dans Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | tee /tmp/verify.json
+          if ! grep -q '"success":true' /tmp/verify.json; then
+            echo "::error::Token invalide"
+            exit 1
+          fi
+          echo "::notice::✅ Token Cloudflare valide"
+
+      - name: Get Account ID
+        id: account
+        env:
+          KEVIN_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # v1.1.126 fix : si secret CLOUDFLARE_ACCOUNT_ID dispo, l'utiliser (token
+          # "Edit Cloudflare Workers" n'a pas la permission de lister tous comptes).
+          # Sinon fallback API (avec token "Memberships:Read").
+          if [ -n "$KEVIN_ACCOUNT_ID" ]; then
+            ACC="$KEVIN_ACCOUNT_ID"
+            echo "::notice::Account ID depuis secret CLOUDFLARE_ACCOUNT_ID: $ACC"
+          else
+            # 10/09/2026 : jq à la place de `| python3 -c` (Semgrep gha-curl-pipe-shell — la réponse est
+            # une donnée parsée, jamais exécutée ; jq rend ça explicite). `-e` : exit 1 si résultat vide.
+            ACC=$(curl -s -X GET "https://api.cloudflare.com/client/v4/accounts" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | \
+              jq -er '.result[0].id' 2>/dev/null) || {
+              echo "::error::Secret CLOUDFLARE_ACCOUNT_ID manquant ET token sans Memberships:Read"
+              echo "Solution : ajoute secret CLOUDFLARE_ACCOUNT_ID dans Settings > Secrets"
+              exit 1
+            }
+            echo "::notice::Account ID depuis API: $ACC"
+          fi
+          echo "id=$ACC" >> $GITHUB_OUTPUT
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACC" >> $GITHUB_ENV
+
+      - name: DIAG token + account match
+        run: |
+          echo "=== Token prefix ==="
+          echo "Token prefix: ${CLOUDFLARE_API_TOKEN:0:10}..."
+          echo "Account ID: $CLOUDFLARE_ACCOUNT_ID"
+          echo ""
+          echo "=== Verify token ==="
+          VERIFY=$(curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          echo "$VERIFY" | jq . || echo "$VERIFY"
+          TOKEN_ID=$(echo "$VERIFY" | jq -r '.result.id // empty')
+          echo "Token ID: $TOKEN_ID"
+          echo ""
+          echo "=== Full token policies (DEFINITIVE proof of permissions) ==="
+          # 10/09/2026 : jq à la place de `| python3 -m json.tool` (Semgrep gha-curl-pipe-shell).
+          curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/$TOKEN_ID" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq . || true
+          echo ""
+          echo "=== Test list Workers (le token a Workers Scripts:Edit?) ==="
+          curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | python3 -m json.tool || true
+          echo ""
+          echo "=== Test D1 list ==="
+          curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | python3 -m json.tool || true
+
+      - name: Verify D1 database (hardcoded in wrangler.toml)
+        working-directory: messaging-app/workers
+        run: |
+          # v1.1.131 : D1 ID hardcoded dans wrangler.toml (Kevin créé manuellement).
+          # Pas besoin de créer via API (token CF rejette pour raisons inconnues).
+          echo "::notice::D1 ID hardcoded:"
+          grep "database_id" wrangler.toml | head -1
+
+      - name: Apply D1 migrations (toutes — glob auto)
+        if: github.event.inputs.apply_migrations != 'no'
+        working-directory: messaging-app/workers
+        run: |
+          # v1.1.135 : glob auto de TOUTES les migrations (toute nouvelle 000N reprise auto).
+          # Audit 17/09/2026 (P1) : `wrangler … | tail -8 || warning` sans pipefail = le code de
+          # retour était celui de `tail` → un échec de migration ne se voyait JAMAIS. Désormais :
+          # « colonne/table déjà là » = normal (ALTER TABLE n'est pas idempotent en SQLite),
+          # toute AUTRE erreur fait échouer le déploiement, avec la sortie complète.
+          set -o pipefail
+          echec=0
+          for mig in $(ls ../d1-migrations/0*.sql | sort); do
+            [ -f "$mig" ] || continue
+            echo "=== Migration: $mig ==="
+            if out=$(wrangler d1 execute apex-chat-main --file="$mig" --remote 2>&1); then
+              echo "$out" | tail -4
+            elif echo "$out" | grep -qiE "duplicate column|already exists"; then
+              echo "déjà appliquée (colonne/table existante) — ok"
+            else
+              echo "$out" | tail -40
+              echo "::error::Migration $mig ÉCHOUÉE (voir la sortie ci-dessus)"
+              echec=1
+            fi
+          done
+          [ "$echec" = "0" ] || exit 1
+          echo "=== Vérif tables créées ==="
+          wrangler d1 execute apex-chat-main --remote --command "SELECT name FROM sqlite_master WHERE type='table'" 2>&1 | tail -20
+          echo "::notice::Migrations D1 appliquées"
+
+      - name: Create R2 bucket (idempotent)
+        run: |
+          wrangler r2 bucket create apex-chat-media || echo "(bucket existe déjà)"
+          echo "::notice::R2 bucket apex-chat-media OK"
+
+      - name: Verify KV namespace (hardcoded in wrangler.toml)
+        working-directory: messaging-app/workers
+        run: |
+          # v1.1.131 : KV ID hardcoded dans wrangler.toml (Kevin créé manuellement).
+          echo "::notice::KV ID hardcoded:"
+          grep -A1 "APEX_CHAT_CACHE" wrangler.toml | head -3
+
+      - name: Create Cloudflare Queues (idempotent)
+        run: |
+          for queue in apex-chat-telemetry apex-chat-pipeline-fix apex-chat-letters-deliver apex-chat-timecapsule-open apex-chat-memory-lane; do
+            wrangler queues create "$queue" 2>&1 | tail -1 || echo "(  $queue existe déjà)"
+          done
+          echo "::notice::5 Queues OK"
+
+      - name: Deploy api-worker (official Cloudflare action)
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'messaging-app/workers'
+          command: deploy
+
+      - name: Generate + put secrets (after Worker exists)
+        working-directory: messaging-app/workers
+        run: |
+          # Liste des secrets déjà présents sur le Worker (évite régénération destructrice)
+          EXISTING=$(wrangler secret list 2>/dev/null || echo '[]')
+          has_secret() { echo "$EXISTING" | grep -q "\"$1\""; }
+
+          # printf '%s' (PAS echo) : echo ajoute un \n qui corrompt les secrets
+          # comparés caractère par caractère (ex KEVIN_PHONE_E164 → "+33...\n" ne matche jamais)
+          put_secret() { printf '%s' "$2" | wrangler secret put "$1"; }
+
+          # JWT_SIGN_KEY : STABLE entre déploiements (régénérer invaliderait tous les JWT existants).
+          # Généré une seule fois, conservé tant qu'il existe sur le Worker.
+          if has_secret "JWT_SIGN_KEY"; then
+            echo "::notice::JWT_SIGN_KEY déjà présent — conservé (pas de régénération)"
+          else
+            put_secret "JWT_SIGN_KEY" "$(openssl rand -hex 64)"
+            echo "::notice::JWT_SIGN_KEY généré (première fois)"
+          fi
+          # v1.1.163 : si secret GitHub APEX_CHAT_ADMIN_TOKEN défini, on l'aligne
+          # côté Cloudflare (force-push). Sinon : conserve l'existant CF ou auto-génère.
+          # Permet au workflow apex-chat-auto-force-update.yml d'utiliser la même valeur
+          # que celle reconnue par le Worker (cohérence GitHub Secret ↔ env Cloudflare).
+          if [ -n "${{ secrets.APEX_CHAT_ADMIN_TOKEN }}" ]; then
+            put_secret "APEX_CHAT_ADMIN_TOKEN" "${{ secrets.APEX_CHAT_ADMIN_TOKEN }}"
+            echo "::notice::APEX_CHAT_ADMIN_TOKEN aligné depuis GitHub Secret"
+          elif has_secret "APEX_CHAT_ADMIN_TOKEN"; then
+            echo "::notice::APEX_CHAT_ADMIN_TOKEN déjà présent côté Cloudflare — conservé"
+          else
+            put_secret "APEX_CHAT_ADMIN_TOKEN" "$(openssl rand -hex 32)"
+            echo "::notice::APEX_CHAT_ADMIN_TOKEN auto-généré (1ère fois)"
+          fi
+          if has_secret "APEX_HANDOFF_TOKEN"; then
+            echo "::notice::APEX_HANDOFF_TOKEN déjà présent — conservé"
+          else
+            put_secret "APEX_HANDOFF_TOKEN" "$(openssl rand -hex 32)"
+          fi
+
+          # Helper : push secret seulement si valeur définie (printf, jamais echo)
+          push_if_set() {
+            local name=$1
+            local value=$2
+            if [ -n "$value" ]; then
+              put_secret "$name" "$value"
+              echo "::notice::✓ $name configuré"
+            fi
+          }
+
+          # === IA (4 providers actifs côté Kevin) ===
+          push_if_set "ANTHROPIC_API_KEY" "${{ secrets.ANTHROPIC_API_KEY }}"
+          push_if_set "GROQ_API_KEY" "${{ secrets.GROQ_API_KEY }}"
+          push_if_set "GEMINI_API_KEY" "${{ secrets.GEMINI_API_KEY }}"
+          push_if_set "DEEPSEEK_API_KEY" "${{ secrets.DEEPSEEK_API_KEY }}"
+
+          # === IA failover (optionnels) ===
+          push_if_set "OPENROUTER_API_KEY" "${{ secrets.OPENROUTER_API_KEY }}"
+          push_if_set "OPEN_AI_API_KEY" "${{ secrets.OPEN_AI_API_KEY }}"
+          push_if_set "PERPLEXITI_API_KEY" "${{ secrets.PERPLEXITI_API_KEY }}"
+
+          # === GIF (Giphy) — clé gratuite, optionnelle. Sans elle, /api/gif
+          #     répond { disabled:true } et le sélecteur GIF se désactive proprement.
+          push_if_set "GIPHY_KEY" "${{ secrets.GIPHY_KEY }}"
+
+          # === SMS Vonage ===
+          push_if_set "VONAGE_API_KEY" "${{ secrets.VONAGE_API_KEY }}"
+          push_if_set "VONAGE_API_SECRET" "${{ secrets.VONAGE_API_SECRET }}"
+
+          # === Web Push VAPID ===
+          push_if_set "VAPID_PRIVATE_KEY" "${{ secrets.VAPID_PRIVATE_KEY }}"
+
+          # === Communications ===
+          push_if_set "TELEGRAM_API_KEY" "${{ secrets.TELEGRAM_API_KEY }}"
+          push_if_set "EMAILJS_PRIVATE_KEY" "${{ secrets.EMAILJS_PRIVATE_KEY }}"
+
+          # === Recherche & vector DB ===
+          push_if_set "TAVILY_API_KEY" "${{ secrets.TAVILY_API_KEY }}"
+          push_if_set "PINECONE_API_KEY" "${{ secrets.PINECONE_API_KEY }}"
+
+          # === Auth/Infra ===
+          push_if_set "FIREBASE_API_KEY" "${{ secrets.FIREBASE_API_KEY }}"
+          push_if_set "FIREBASE_PROJECT_ID" "cmcteams-c16ab"
+          push_if_set "FIREBASE_AUTH_DOMAIN" "cmcteams-c16ab.firebaseapp.com"
+
+          # === Reconnaissance Kevin admin via numéro téléphone E.164 ===
+          # Audit 17/09/2026 (P0 vie privée) : le numéro était écrit EN CLAIR ici, dans un
+          # dépôt PUBLIC, sous un commentaire qui affirmait le contraire. Il vit désormais
+          # dans le secret GitHub KEVIN_PHONE_E164 ; s'il est vide, on ne touche pas au
+          # secret Cloudflare déjà en place (push_if_set saute) → zéro régression.
+          push_if_set "KEVIN_PHONE_E164" "${{ secrets.KEVIN_PHONE_E164 }}"
+
+          # === Cercle de confiance (login SANS SMS) — v1.1.216 ===
+          # Numéros lus depuis des SECRETS GitHub (privés, jamais dans le repo).
+          # LAURENCE_PHONE_E164 = numéro de Laurence ; TRUSTED_CIRCLE_PHONES =
+          # liste CSV (famille/amis). Skip silencieux tant que le secret est vide.
+          push_if_set "LAURENCE_PHONE_E164" "${{ secrets.LAURENCE_PHONE_E164 }}"
+          push_if_set "TRUSTED_CIRCLE_PHONES" "${{ secrets.TRUSTED_CIRCLE_PHONES }}"
+
+          echo "::notice::Secrets configurés (skip silencieux si vide). Worker prêt à recevoir des requêtes."
+
+      - name: Provision Cloudflare TURN (appels P2P cross-réseau) — idempotent
+        working-directory: messaging-app/workers
+        run: |
+          # v1.1.229 — appels fiables sur réseaux différents (cellulaire/NAT symétrique).
+          # Le TURN gratuit OpenRelay est mort. On crée UNE clé TURN Cloudflare Realtime
+          # (idempotent : on ne recrée pas si le secret existe déjà) et on pousse
+          # CF_TURN_KEY_ID + CF_TURN_TOKEN comme secrets du Worker. Le Worker mint ensuite
+          # des credentials éphémères via /api/turn (le token ne sort JAMAIS au client).
+          EXISTING=$(wrangler secret list 2>/dev/null || echo '[]')
+          if echo "$EXISTING" | grep -q '"CF_TURN_KEY_ID"'; then
+            echo "::notice::CF_TURN_KEY_ID déjà présent — TURN conservé (pas de nouvelle clé)"
+          else
+            echo "Création d'une clé TURN Cloudflare Realtime…"
+            RESP=$(curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/calls/turn_keys" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+              -d '{"name":"apex-chat-turn"}')
+            echo "$RESP" | python3 -m json.tool 2>/dev/null || echo "$RESP"
+            OK=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('success'))" 2>/dev/null || echo "False")
+            if [ "$OK" != "True" ]; then
+              echo "::warning::Création clé TURN ÉCHOUÉE — les appels retomberont en STUN (peuvent ne pas se connecter cross-réseau)."
+              echo "::warning::Cause probable : le token CLOUDFLARE_API_TOKEN n'a pas la permission 'Calls' (Account > Cloudflare Calls > Edit). Réponse API ci-dessus."
+            else
+              KID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['result']['uid'])")
+              # Le bearer de la clé TURN est dans result.key (doc Cloudflare), PAS result.token.
+              KTOK=$(echo "$RESP" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']; print(r.get('key') or r.get('token') or '')")
+              if [ -n "$KID" ] && [ -n "$KTOK" ]; then
+                printf '%s' "$KID" | wrangler secret put CF_TURN_KEY_ID
+                printf '%s' "$KTOK" | wrangler secret put CF_TURN_TOKEN
+                echo "::notice::✅ Clé TURN Cloudflare créée + secrets poussés — appels cross-réseau actifs"
+              else
+                echo "::warning::Réponse TURN sans uid/token — STUN seul. Réponse : $RESP"
+              fi
+            fi
+          fi
+
+      - name: Vérification LIVE après déploiement (santé + version)
+        env:
+          ATTENDU: ${{ github.sha }}
+        run: |
+          # Audit 17/09/2026 (P2) : un « deploy success » ne prouvait rien (leçon #95). On
+          # interroge le worker réellement en ligne : santé, puis version de package.json.
+          BASE="https://apex-chat-api.9r4rxssx64.workers.dev"
+          VERSION=$(jq -r .version messaging-app/package.json)
+          ok=0
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/health.json -w '%{http_code}' "$BASE/api/health" || true)
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            echo "tentative $i : HTTP $code — nouvel essai dans 10 s"; sleep 10
+          done
+          [ "$ok" = "1" ] || { echo "::error::/api/health ne répond pas 200 après déploiement"; exit 1; }
+          echo "santé : $(cat /tmp/health.json)"
+          live=$(curl -s "$BASE/api/system/config" | jq -r '.version // .config.version // empty' 2>/dev/null || true)
+          if [ -n "$live" ]; then
+            echo "version annoncée par le worker : $live (dépôt : $VERSION)"
+            [ "$live" = "$VERSION" ] || echo "::warning::Le worker annonce $live, le dépôt est en $VERSION"
+          else
+            echo "::notice::Le worker n'expose pas de version dans /api/system/config — comparaison impossible (santé OK)"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 🎉 Apex Chat déployé sur Cloudflare" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Infrastructure créée :**" >> $GITHUB_STEP_SUMMARY
+          echo "- D1 database \`apex-chat-main\` (ID : voir wrangler.toml)" >> $GITHUB_STEP_SUMMARY
+          echo "- R2 bucket \`apex-chat-media\`" >> $GITHUB_STEP_SUMMARY
+          echo "- KV namespace \`APEX_CHAT_CACHE\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 5 Cloudflare Queues" >> $GITHUB_STEP_SUMMARY
+          echo "- Worker \`apex-chat-api\` avec 3 Durable Objects" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL backend :**" >> $GITHUB_STEP_SUMMARY
+          echo "https://apex-chat-api.${{ steps.account.outputs.id }}.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL frontend :**" >> $GITHUB_STEP_SUMMARY
+          echo "https://9r4rxssx64-creator.github.io/CMCteams/messaging-app/" >> $GITHUB_STEP_SUMMARY

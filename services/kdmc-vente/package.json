@@ -1,0 +1,6 @@
+{
+  "name": "kdmc-vente",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test vente.test.mjs" }
+}

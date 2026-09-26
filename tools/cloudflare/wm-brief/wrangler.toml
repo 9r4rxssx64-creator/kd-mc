@@ -1,0 +1,9 @@
+name = "wm-brief"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+# account_id injecté par le workflow via CLOUDFLARE_ACCOUNT_ID (jamais commité)
+
+# Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
+# Workers AI (binding AI, 0 clé) fait la synthèse ; Anthropic reste le secours.
+[ai]
+binding = "AI"

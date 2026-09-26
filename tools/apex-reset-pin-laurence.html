@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Apex — Reset PIN Laurence</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#08080f;color:#fff;font-family:-apple-system,'Helvetica Neue',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.box{max-width:420px;width:100%;text-align:center}
+h1{font-family:Georgia,serif;color:#c9a227;font-size:32px;margin:0 0 8px;letter-spacing:2px}
+.sub{color:#a0a4b8;font-size:14px;margin:0 0 24px;line-height:1.5}
+.step{background:#12121d;border:1px solid #2a2a3a;border-radius:14px;padding:14px 16px;margin:10px 0;text-align:left;font-size:14px;line-height:1.5}
+.step.done{border-color:#3acc5e;background:#0e1a14}
+.step.err{border-color:#cc3a3a;background:#1a0e0e}
+.step-title{font-weight:700;color:#c9a227;margin-bottom:4px}
+.step-msg{color:#a0a4b8;font-size:13px}
+.btn{display:inline-block;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;padding:16px 32px;border-radius:28px;text-decoration:none;font-weight:700;font-size:16px;border:0;cursor:pointer;margin:16px 8px;min-height:54px;min-width:200px}
+.btn:active{transform:scale(.96)}
+.btn-2{background:#2a2a3a;color:#fff}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.warning{background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;padding:12px 16px;border-radius:10px;margin:16px 0;font-size:13px;line-height:1.5;text-align:left}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>APEX</h1>
+  <p class="sub">Reset PIN — Laurence</p>
+
+  <div class="warning">
+    <strong>⚠ À ouvrir UNIQUEMENT depuis l'iPhone de Laurence</strong> (pas Kevin). Cet outil efface le PIN actuel de Laurence pour qu'elle puisse en choisir un nouveau.
+  </div>
+
+  <p style="color:#a0a4b8;font-size:14px;line-height:1.5;margin:16px 0">
+    Cet outil va :<br>
+    1. Effacer le PIN Laurence (`apex_v13_pin_laurence_sp`)<br>
+    2. Effacer les compteurs de fails (rate-limit débloqué)<br>
+    3. Re-ouvrir Apex pour que Laurence choisisse un nouveau PIN
+  </p>
+
+  <div id="status"></div>
+
+  <button id="go" class="btn">🔓 Reset PIN Laurence</button>
+  <a id="open" class="btn btn-2" style="display:none" href="../apex-ai-v13/?fresh_pin=1">Ouvrir Apex →</a>
+</div>
+
+<script>
+var S = document.getElementById('status');
+var btnGo = document.getElementById('go');
+var btnOpen = document.getElementById('open');
+
+function step(title, status, msg){
+  var d = document.createElement('div');
+  d.className = 'step ' + (status === 'ok' ? 'done' : status === 'err' ? 'err' : '');
+  d.innerHTML = '<div class="step-title">' + (status === 'ok' ? '✅' : status === 'err' ? '❌' : '<span class="spinner"></span>') + ' ' + title + '</div><div class="step-msg">' + (msg || '...') + '</div>';
+  S.appendChild(d);
+  return d;
+}
+
+async function reset(){
+  btnGo.disabled = true;
+  btnGo.textContent = 'Reset en cours…';
+  btnGo.style.opacity = '0.6';
+  S.innerHTML = '';
+
+  // Step 1 — Effacer PIN Laurence
+  var s1 = step('Effacer PIN Laurence', 'progress');
+  try {
+    var keysCleared = [];
+    var laurenceKeys = [
+      'apex_v13_pin_laurence_sp',
+      'apex_v13_pin_fails_laurence_sp',
+      'apex_v13_pin_lockout_laurence_sp',
+      'ax_pin_laurence_sp',  // legacy
+      'cmc_pin_laurence_sp', // legacy
+    ];
+    for (var i = 0; i < laurenceKeys.length; i++) {
+      if (localStorage.getItem(laurenceKeys[i]) !== null) {
+        localStorage.removeItem(laurenceKeys[i]);
+        keysCleared.push(laurenceKeys[i]);
+      }
+    }
+    s1.className = 'step done';
+    s1.querySelector('.step-title').innerHTML = '✅ PIN Laurence effacé';
+    s1.querySelector('.step-msg').textContent = keysCleared.length + ' clés effacées : ' + (keysCleared.join(', ') || 'aucune (déjà vide)');
+  } catch(e) {
+    s1.className = 'step err';
+    s1.querySelector('.step-title').innerHTML = '❌ Erreur';
+    s1.querySelector('.step-msg').textContent = e.message;
+  }
+
+  // Step 2 — Effacer caches PWA pour rafraîchir
+  var s2 = step('Vider caches Apex', 'progress');
+  try {
+    if ('caches' in window) {
+      var keys = await caches.keys();
+      for (var j = 0; j < keys.length; j++) {
+        if (keys[j].includes('apex')) await caches.delete(keys[j]);
+      }
+    }
+    s2.className = 'step done';
+    s2.querySelector('.step-title').innerHTML = '✅ Caches Apex vidés';
+    s2.querySelector('.step-msg').textContent = 'Apex va recharger en propre';
+  } catch(e) {
+    s2.className = 'step err';
+    s2.querySelector('.step-title').innerHTML = '⚠ Cache erreur';
+  }
+
+  // Step 3 — Instructions
+  step('Reset terminé', 'ok', 'Laurence peut maintenant ouvrir Apex et choisir un NOUVEAU PIN à 6 chiffres. Le PIN sera enregistré au premier login.');
+
+  btnGo.style.display = 'none';
+  btnOpen.style.display = 'inline-block';
+  btnOpen.textContent = '✅ Ouvrir Apex pour Laurence →';
+
+  // Auto-redirect après 3s
+  setTimeout(function(){
+    location.href = '../apex-ai-v13/?fresh_pin=1&user=laurence';
+  }, 3000);
+}
+
+btnGo.addEventListener('click', reset);
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="apex-reset-pin-laurence"
+        data-version="v1.0.0"
+        data-color="#c9a227"
+        defer></script>
+</body>
+</html>

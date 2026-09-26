@@ -1,0 +1,5369 @@
+{
+ "date": "2026-09-24",
+ "total": 452,
+ "par_famille": {
+  "Régression critique": 8,
+  "Apex v13 deploy drift": 90,
+  "Auto-rollback": 12,
+  "Ultra Audit Crew": 17,
+  "APIs Health": 322,
+  "CDN": 1,
+  "Centre de contrôle": 1,
+  "Uptime": 1
+ },
+ "fiches": [
+  {
+   "numero": 242,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-10T12:45:08Z",
+   "fermee_le": "2026-09-24T13:54:53Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/242"
+  },
+  {
+   "numero": 243,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-10T12:46:03Z",
+   "fermee_le": "2026-09-24T13:54:51Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/243"
+  },
+  {
+   "numero": 244,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-10T12:46:49Z",
+   "fermee_le": "2026-09-24T13:54:49Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/244"
+  },
+  {
+   "numero": 245,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-11T01:24:03Z",
+   "fermee_le": "2026-09-24T13:54:47Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/245"
+  },
+  {
+   "numero": 246,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-11T01:26:26Z",
+   "fermee_le": "2026-09-24T13:54:45Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/246"
+  },
+  {
+   "numero": 251,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-16T10:22:04Z",
+   "fermee_le": "2026-09-24T13:54:42Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/251"
+  },
+  {
+   "numero": 264,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-16T22:52:39Z",
+   "fermee_le": "2026-09-24T13:54:40Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/264"
+  },
+  {
+   "numero": 265,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-17T10:26:23Z",
+   "fermee_le": "2026-09-24T13:54:38Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/265"
+  },
+  {
+   "numero": 269,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-18T12:40:44Z",
+   "fermee_le": "2026-09-24T13:54:36Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/269"
+  },
+  {
+   "numero": 272,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-18T22:52:57Z",
+   "fermee_le": "2026-09-24T13:54:34Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/272"
+  },
+  {
+   "numero": 275,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-19T12:17:12Z",
+   "fermee_le": "2026-09-24T13:54:31Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/275"
+  },
+  {
+   "numero": 282,
+   "titre": "🚨 RÉGRESSION CRITIQUE détectée sur main",
+   "famille": "Régression critique",
+   "ouverte_le": "2026-05-20T09:32:26Z",
+   "fermee_le": "2026-09-24T13:54:29Z",
+   "etiquettes": [
+    "regression",
+    "critical",
+    "apex-v13"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/282"
+  },
+  {
+   "numero": 283,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-20T11:53:53Z",
+   "fermee_le": "2026-09-24T13:54:27Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/283"
+  },
+  {
+   "numero": 302,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-21T12:22:34Z",
+   "fermee_le": "2026-09-24T13:54:25Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/302"
+  },
+  {
+   "numero": 309,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-05-22T00:27:38Z",
+   "fermee_le": "2026-09-24T13:54:23Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/309"
+  },
+  {
+   "numero": 311,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-05-22T00:35:58Z",
+   "fermee_le": "2026-09-24T13:54:20Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/311"
+  },
+  {
+   "numero": 316,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-22T11:50:34Z",
+   "fermee_le": "2026-09-24T13:54:18Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/316"
+  },
+  {
+   "numero": 320,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-05-22T14:55:32Z",
+   "fermee_le": "2026-09-24T13:54:16Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/320"
+  },
+  {
+   "numero": 325,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-23T10:40:28Z",
+   "fermee_le": "2026-09-24T13:54:12Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/325"
+  },
+  {
+   "numero": 372,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-24T10:46:30Z",
+   "fermee_le": "2026-09-24T13:54:10Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/372"
+  },
+  {
+   "numero": 378,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-25T12:38:12Z",
+   "fermee_le": "2026-09-24T13:54:08Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/378"
+  },
+  {
+   "numero": 406,
+   "titre": "[Ultra Audit Crew] 2026-05-26 15:08 UTC — Run #26456444604",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-05-26T15:08:03Z",
+   "fermee_le": "2026-09-24T13:54:06Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/406"
+  },
+  {
+   "numero": 411,
+   "titre": "[Ultra Audit Crew] 2026-05-26 17:38 UTC — Run #26464455649",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-05-26T17:38:45Z",
+   "fermee_le": "2026-09-24T13:54:04Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/411"
+  },
+  {
+   "numero": 415,
+   "titre": "[Ultra Audit Crew] 2026-05-26 19:00 UTC — Run #26468577758",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-05-26T19:00:31Z",
+   "fermee_le": "2026-09-24T13:54:01Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/415"
+  },
+  {
+   "numero": 419,
+   "titre": "[Ultra Audit Crew] 2026-05-26 19:14 UTC — Run #26469148356",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-05-26T19:14:25Z",
+   "fermee_le": "2026-09-24T13:53:59Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/419"
+  },
+  {
+   "numero": 422,
+   "titre": "[APIs Health] 2026-05-26T20:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-26T20:42:33Z",
+   "fermee_le": "2026-09-24T13:34:44Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/422"
+  },
+  {
+   "numero": 427,
+   "titre": "[APIs Health] 2026-05-27T00:18 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-27T00:18:02Z",
+   "fermee_le": "2026-09-24T13:34:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/427"
+  },
+  {
+   "numero": 428,
+   "titre": "[APIs Health] 2026-05-27T02:29 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-27T02:29:53Z",
+   "fermee_le": "2026-09-24T13:34:47Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/428"
+  },
+  {
+   "numero": 429,
+   "titre": "[APIs Health] 2026-05-27T09:00 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-27T09:00:59Z",
+   "fermee_le": "2026-09-24T13:34:49Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/429"
+  },
+  {
+   "numero": 430,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-27T12:27:00Z",
+   "fermee_le": "2026-09-24T13:53:57Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/430"
+  },
+  {
+   "numero": 431,
+   "titre": "[APIs Health] 2026-05-27T14:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-27T14:54:30Z",
+   "fermee_le": "2026-09-24T13:34:51Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/431"
+  },
+  {
+   "numero": 443,
+   "titre": "[APIs Health] 2026-05-27T19:59 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-27T19:59:24Z",
+   "fermee_le": "2026-09-24T13:34:52Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/443"
+  },
+  {
+   "numero": 458,
+   "titre": "[APIs Health] 2026-05-28T02:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-28T02:03:26Z",
+   "fermee_le": "2026-09-24T13:34:54Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/458"
+  },
+  {
+   "numero": 459,
+   "titre": "[APIs Health] 2026-05-28T09:44 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-28T09:44:42Z",
+   "fermee_le": "2026-09-24T13:34:55Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/459"
+  },
+  {
+   "numero": 467,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-28T12:36:56Z",
+   "fermee_le": "2026-09-24T13:53:55Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/467"
+  },
+  {
+   "numero": 470,
+   "titre": "[APIs Health] 2026-05-28T15:26 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-28T15:26:55Z",
+   "fermee_le": "2026-09-24T13:34:57Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/470"
+  },
+  {
+   "numero": 473,
+   "titre": "[APIs Health] 2026-05-28T20:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-28T20:08:44Z",
+   "fermee_le": "2026-09-24T13:34:59Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/473"
+  },
+  {
+   "numero": 479,
+   "titre": "[APIs Health] 2026-05-29T02:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-29T02:08:52Z",
+   "fermee_le": "2026-09-24T13:35:00Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/479"
+  },
+  {
+   "numero": 480,
+   "titre": "[APIs Health] 2026-05-29T09:35 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-29T09:35:06Z",
+   "fermee_le": "2026-09-24T13:35:02Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/480"
+  },
+  {
+   "numero": 485,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-29T12:23:01Z",
+   "fermee_le": "2026-09-24T13:53:53Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/485"
+  },
+  {
+   "numero": 487,
+   "titre": "[APIs Health] 2026-05-29T14:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-29T14:39:25Z",
+   "fermee_le": "2026-09-24T13:35:03Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/487"
+  },
+  {
+   "numero": 493,
+   "titre": "[APIs Health] 2026-05-29T20:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-29T20:08:26Z",
+   "fermee_le": "2026-09-24T13:35:06Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/493"
+  },
+  {
+   "numero": 497,
+   "titre": "[APIs Health] 2026-05-30T02:04 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-30T02:04:13Z",
+   "fermee_le": "2026-09-24T13:35:08Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/497"
+  },
+  {
+   "numero": 498,
+   "titre": "[APIs Health] 2026-05-30T08:16 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-30T08:16:03Z",
+   "fermee_le": "2026-09-24T13:35:10Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/498"
+  },
+  {
+   "numero": 499,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-30T10:49:54Z",
+   "fermee_le": "2026-09-24T13:53:50Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/499"
+  },
+  {
+   "numero": 500,
+   "titre": "[APIs Health] 2026-05-30T13:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-30T13:02:35Z",
+   "fermee_le": "2026-09-24T13:35:11Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/500"
+  },
+  {
+   "numero": 505,
+   "titre": "[APIs Health] 2026-05-30T18:58 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-30T18:58:34Z",
+   "fermee_le": "2026-09-24T13:35:13Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/505"
+  },
+  {
+   "numero": 510,
+   "titre": "[APIs Health] 2026-05-31T02:31 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-31T02:31:10Z",
+   "fermee_le": "2026-09-24T13:35:15Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/510"
+  },
+  {
+   "numero": 511,
+   "titre": "[APIs Health] 2026-05-31T08:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-31T08:34:16Z",
+   "fermee_le": "2026-09-24T13:35:17Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/511"
+  },
+  {
+   "numero": 514,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-05-31T10:55:14Z",
+   "fermee_le": "2026-09-24T13:53:48Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/514"
+  },
+  {
+   "numero": 516,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-05-31T11:04:11Z",
+   "fermee_le": "2026-09-24T13:53:46Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/516"
+  },
+  {
+   "numero": 519,
+   "titre": "[APIs Health] 2026-05-31T13:13 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-31T13:13:49Z",
+   "fermee_le": "2026-09-24T13:53:43Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/519"
+  },
+  {
+   "numero": 522,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-05-31T15:49:41Z",
+   "fermee_le": "2026-09-24T13:53:41Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/522"
+  },
+  {
+   "numero": 524,
+   "titre": "[APIs Health] 2026-05-31T19:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-05-31T19:02:50Z",
+   "fermee_le": "2026-09-24T13:53:39Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/524"
+  },
+  {
+   "numero": 525,
+   "titre": "[APIs Health] 2026-06-01T02:40 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-01T02:40:24Z",
+   "fermee_le": "2026-09-24T13:53:36Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/525"
+  },
+  {
+   "numero": 526,
+   "titre": "[Ultra Audit Crew] 2026-06-01 08:28 UTC — Run #26743583664",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-06-01T08:28:50Z",
+   "fermee_le": "2026-09-24T13:53:34Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/526"
+  },
+  {
+   "numero": 528,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-06-01T10:33:00Z",
+   "fermee_le": "2026-09-24T13:53:32Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/528"
+  },
+  {
+   "numero": 529,
+   "titre": "[APIs Health] 2026-06-01T11:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-01T11:08:39Z",
+   "fermee_le": "2026-09-24T13:53:29Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/529"
+  },
+  {
+   "numero": 534,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-01T15:29:57Z",
+   "fermee_le": "2026-09-24T13:53:27Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/534"
+  },
+  {
+   "numero": 536,
+   "titre": "[APIs Health] 2026-06-01T17:16 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-01T17:16:10Z",
+   "fermee_le": "2026-09-24T13:53:25Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/536"
+  },
+  {
+   "numero": 538,
+   "titre": "[APIs Health] 2026-06-01T21:21 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-01T21:21:14Z",
+   "fermee_le": "2026-09-24T13:53:22Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/538"
+  },
+  {
+   "numero": 553,
+   "titre": "[APIs Health] 2026-06-02T02:38 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-02T02:38:40Z",
+   "fermee_le": "2026-09-24T13:53:20Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/553"
+  },
+  {
+   "numero": 554,
+   "titre": "[APIs Health] 2026-06-02T10:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-02T10:03:34Z",
+   "fermee_le": "2026-09-24T13:53:19Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/554"
+  },
+  {
+   "numero": 556,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-06-02T11:19:23Z",
+   "fermee_le": "2026-09-24T13:53:16Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/556"
+  },
+  {
+   "numero": 557,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-02T12:48:19Z",
+   "fermee_le": "2026-09-24T13:53:14Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/557"
+  },
+  {
+   "numero": 558,
+   "titre": "[APIs Health] 2026-06-02T15:59 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-02T15:59:19Z",
+   "fermee_le": "2026-09-24T13:53:12Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/558"
+  },
+  {
+   "numero": 564,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-06-02T17:23:28Z",
+   "fermee_le": "2026-09-24T13:53:10Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/564"
+  },
+  {
+   "numero": 569,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-06-02T17:38:08Z",
+   "fermee_le": "2026-09-24T13:53:08Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/569"
+  },
+  {
+   "numero": 572,
+   "titre": "[APIs Health] 2026-06-02T20:35 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-02T20:35:11Z",
+   "fermee_le": "2026-09-24T13:53:06Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/572"
+  },
+  {
+   "numero": 600,
+   "titre": "[APIs Health] 2026-06-03T02:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-03T02:46:40Z",
+   "fermee_le": "2026-09-24T13:53:04Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/600"
+  },
+  {
+   "numero": 625,
+   "titre": "[APIs Health] 2026-06-03T10:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-03T10:42:53Z",
+   "fermee_le": "2026-09-24T13:53:02Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/625"
+  },
+  {
+   "numero": 632,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-03T13:22:04Z",
+   "fermee_le": "2026-09-24T13:53:00Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/632"
+  },
+  {
+   "numero": 639,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-06-03T15:03:51Z",
+   "fermee_le": "2026-09-24T13:52:58Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/639"
+  },
+  {
+   "numero": 640,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-06-03T15:04:12Z",
+   "fermee_le": "2026-09-24T13:52:56Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/640"
+  },
+  {
+   "numero": 641,
+   "titre": "🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle",
+   "famille": "Auto-rollback",
+   "ouverte_le": "2026-06-03T15:08:13Z",
+   "fermee_le": "2026-09-24T13:52:54Z",
+   "etiquettes": [
+    "auto-rollback",
+    "P0",
+    "manual-intervention"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/641"
+  },
+  {
+   "numero": 654,
+   "titre": "[APIs Health] 2026-06-03T16:16 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-03T16:16:41Z",
+   "fermee_le": "2026-09-24T13:52:52Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/654"
+  },
+  {
+   "numero": 700,
+   "titre": "[APIs Health] 2026-06-03T20:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-03T20:46:59Z",
+   "fermee_le": "2026-09-24T13:52:50Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/700"
+  },
+  {
+   "numero": 733,
+   "titre": "[APIs Health] 2026-06-04T02:41 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-04T02:41:32Z",
+   "fermee_le": "2026-09-24T13:52:48Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/733"
+  },
+  {
+   "numero": 749,
+   "titre": "[APIs Health] 2026-06-04T09:43 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-04T09:43:02Z",
+   "fermee_le": "2026-09-24T13:52:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/749"
+  },
+  {
+   "numero": 750,
+   "titre": "[cdn] Une dependance externe est down",
+   "famille": "CDN",
+   "ouverte_le": "2026-06-04T10:07:41Z",
+   "fermee_le": "2026-09-24T13:52:44Z",
+   "etiquettes": [
+    "bug",
+    "cdn",
+    "auto"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/750"
+  },
+  {
+   "numero": 755,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-04T12:08:24Z",
+   "fermee_le": "2026-09-24T13:52:42Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/755"
+  },
+  {
+   "numero": 762,
+   "titre": "[APIs Health] 2026-06-04T14:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-04T14:34:25Z",
+   "fermee_le": "2026-09-24T13:52:40Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/762"
+  },
+  {
+   "numero": 776,
+   "titre": "[APIs Health] 2026-06-04T19:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-04T19:54:13Z",
+   "fermee_le": "2026-09-24T13:52:38Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/776"
+  },
+  {
+   "numero": 791,
+   "titre": "[APIs Health] 2026-06-05T02:28 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-05T02:28:43Z",
+   "fermee_le": "2026-09-24T13:52:36Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/791"
+  },
+  {
+   "numero": 794,
+   "titre": "[APIs Health] 2026-06-05T09:30 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-05T09:30:18Z",
+   "fermee_le": "2026-09-24T13:52:34Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/794"
+  },
+  {
+   "numero": 800,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-05T12:15:20Z",
+   "fermee_le": "2026-09-24T13:52:32Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/800"
+  },
+  {
+   "numero": 805,
+   "titre": "[APIs Health] 2026-06-05T14:24 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-05T14:24:55Z",
+   "fermee_le": "2026-09-24T13:52:30Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/805"
+  },
+  {
+   "numero": 809,
+   "titre": "[APIs Health] 2026-06-05T19:41 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-05T19:41:34Z",
+   "fermee_le": "2026-09-24T13:52:28Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/809"
+  },
+  {
+   "numero": 813,
+   "titre": "[APIs Health] 2026-06-06T02:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-06T02:07:44Z",
+   "fermee_le": "2026-09-24T13:52:26Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/813"
+  },
+  {
+   "numero": 816,
+   "titre": "[APIs Health] 2026-06-06T08:23 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-06T08:23:30Z",
+   "fermee_le": "2026-09-24T13:52:24Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/816"
+  },
+  {
+   "numero": 818,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-06T10:57:22Z",
+   "fermee_le": "2026-09-24T13:52:22Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/818"
+  },
+  {
+   "numero": 820,
+   "titre": "[APIs Health] 2026-06-06T13:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-06T13:07:10Z",
+   "fermee_le": "2026-09-24T13:52:20Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/820"
+  },
+  {
+   "numero": 829,
+   "titre": "[APIs Health] 2026-06-06T19:04 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-06T19:04:46Z",
+   "fermee_le": "2026-09-24T13:52:18Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/829"
+  },
+  {
+   "numero": 870,
+   "titre": "[APIs Health] 2026-06-07T02:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-07T02:34:30Z",
+   "fermee_le": "2026-09-24T13:52:16Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/870"
+  },
+  {
+   "numero": 884,
+   "titre": "[APIs Health] 2026-06-07T08:44 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-07T08:44:09Z",
+   "fermee_le": "2026-09-24T13:52:14Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/884"
+  },
+  {
+   "numero": 888,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-07T11:12:39Z",
+   "fermee_le": "2026-09-24T13:52:12Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/888"
+  },
+  {
+   "numero": 890,
+   "titre": "[APIs Health] 2026-06-07T13:20 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-07T13:20:43Z",
+   "fermee_le": "2026-09-24T13:52:10Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/890"
+  },
+  {
+   "numero": 894,
+   "titre": "[APIs Health] 2026-06-07T19:05 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-07T19:05:36Z",
+   "fermee_le": "2026-09-24T13:52:08Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/894"
+  },
+  {
+   "numero": 899,
+   "titre": "[APIs Health] 2026-06-08T02:38 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-08T02:38:51Z",
+   "fermee_le": "2026-09-24T13:52:06Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/899"
+  },
+  {
+   "numero": 901,
+   "titre": "[Ultra Audit Crew] 2026-06-08 07:27 UTC — Run #27122214600",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-06-08T07:27:56Z",
+   "fermee_le": "2026-09-24T13:52:03Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/901"
+  },
+  {
+   "numero": 908,
+   "titre": "[APIs Health] 2026-06-08T10:16 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-08T10:16:54Z",
+   "fermee_le": "2026-09-24T13:52:01Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/908"
+  },
+  {
+   "numero": 909,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-08T13:12:43Z",
+   "fermee_le": "2026-09-24T13:51:59Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/909"
+  },
+  {
+   "numero": 925,
+   "titre": "[APIs Health] 2026-06-08T15:28 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-08T15:28:33Z",
+   "fermee_le": "2026-09-24T13:51:56Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/925"
+  },
+  {
+   "numero": 979,
+   "titre": "[APIs Health] 2026-06-08T20:00 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-08T20:00:37Z",
+   "fermee_le": "2026-09-24T13:51:55Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/979"
+  },
+  {
+   "numero": 1043,
+   "titre": "[APIs Health] 2026-06-09T02:04 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-09T02:04:39Z",
+   "fermee_le": "2026-09-24T13:51:53Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1043"
+  },
+  {
+   "numero": 1046,
+   "titre": "[APIs Health] 2026-06-09T08:59 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-09T08:59:56Z",
+   "fermee_le": "2026-09-24T13:51:51Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1046"
+  },
+  {
+   "numero": 1049,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-09T12:11:06Z",
+   "fermee_le": "2026-09-24T13:51:49Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1049"
+  },
+  {
+   "numero": 1068,
+   "titre": "[APIs Health] 2026-06-09T14:24 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-09T14:24:29Z",
+   "fermee_le": "2026-09-24T13:51:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1068"
+  },
+  {
+   "numero": 1102,
+   "titre": "[APIs Health] 2026-06-09T19:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-09T19:55:59Z",
+   "fermee_le": "2026-09-24T13:51:44Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1102"
+  },
+  {
+   "numero": 1150,
+   "titre": "[APIs Health] 2026-06-10T02:29 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-10T02:29:06Z",
+   "fermee_le": "2026-09-24T13:51:42Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1150"
+  },
+  {
+   "numero": 1159,
+   "titre": "[APIs Health] 2026-06-10T09:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-10T09:39:53Z",
+   "fermee_le": "2026-09-24T13:51:40Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1159"
+  },
+  {
+   "numero": 1172,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-10T12:30:49Z",
+   "fermee_le": "2026-09-24T13:51:38Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1172"
+  },
+  {
+   "numero": 1174,
+   "titre": "[APIs Health] 2026-06-10T14:52 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-10T14:52:28Z",
+   "fermee_le": "2026-09-24T13:51:36Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1174"
+  },
+  {
+   "numero": 1183,
+   "titre": "[APIs Health] 2026-06-10T20:10 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-10T20:10:56Z",
+   "fermee_le": "2026-09-24T13:51:33Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1183"
+  },
+  {
+   "numero": 1216,
+   "titre": "[APIs Health] 2026-06-11T02:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-11T02:39:07Z",
+   "fermee_le": "2026-09-24T13:51:31Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1216"
+  },
+  {
+   "numero": 1227,
+   "titre": "[APIs Health] 2026-06-11T10:05 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-11T10:05:17Z",
+   "fermee_le": "2026-09-24T13:51:29Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1227"
+  },
+  {
+   "numero": 1228,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-11T12:51:01Z",
+   "fermee_le": "2026-09-24T13:51:27Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1228"
+  },
+  {
+   "numero": 1230,
+   "titre": "[APIs Health] 2026-06-11T15:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-11T15:34:20Z",
+   "fermee_le": "2026-09-24T13:51:25Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1230"
+  },
+  {
+   "numero": 1233,
+   "titre": "[APIs Health] 2026-06-11T20:09 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-11T20:09:42Z",
+   "fermee_le": "2026-09-24T13:51:23Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1233"
+  },
+  {
+   "numero": 1262,
+   "titre": "[APIs Health] 2026-06-12T02:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-12T02:34:31Z",
+   "fermee_le": "2026-09-24T13:51:19Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1262"
+  },
+  {
+   "numero": 1266,
+   "titre": "[Ultra Audit Crew] 2026-06-12 05:48 UTC — Run #27397101812",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-06-12T05:48:30Z",
+   "fermee_le": "2026-09-24T13:51:17Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1266"
+  },
+  {
+   "numero": 1281,
+   "titre": "[APIs Health] 2026-06-12T09:56 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-12T09:56:20Z",
+   "fermee_le": "2026-09-24T13:51:15Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1281"
+  },
+  {
+   "numero": 1282,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-12T12:24:59Z",
+   "fermee_le": "2026-09-24T13:51:13Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1282"
+  },
+  {
+   "numero": 1288,
+   "titre": "[APIs Health] 2026-06-12T14:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-12T14:34:05Z",
+   "fermee_le": "2026-09-24T13:51:11Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1288"
+  },
+  {
+   "numero": 1291,
+   "titre": "[APIs Health] 2026-06-12T19:52 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-12T19:52:26Z",
+   "fermee_le": "2026-09-24T13:51:09Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1291"
+  },
+  {
+   "numero": 1295,
+   "titre": "[APIs Health] 2026-06-13T02:15 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-13T02:15:47Z",
+   "fermee_le": "2026-09-24T13:51:07Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1295"
+  },
+  {
+   "numero": 1298,
+   "titre": "[APIs Health] 2026-06-13T08:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-13T08:46:23Z",
+   "fermee_le": "2026-09-24T13:51:05Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1298"
+  },
+  {
+   "numero": 1306,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-13T11:21:24Z",
+   "fermee_le": "2026-09-24T13:51:03Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1306"
+  },
+  {
+   "numero": 1309,
+   "titre": "[APIs Health] 2026-06-13T13:24 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-13T13:24:55Z",
+   "fermee_le": "2026-09-24T13:51:01Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1309"
+  },
+  {
+   "numero": 1329,
+   "titre": "[APIs Health] 2026-06-13T19:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-13T19:07:30Z",
+   "fermee_le": "2026-09-24T13:50:59Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1329"
+  },
+  {
+   "numero": 1356,
+   "titre": "[APIs Health] 2026-06-14T02:38 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-14T02:38:49Z",
+   "fermee_le": "2026-09-24T13:50:57Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1356"
+  },
+  {
+   "numero": 1358,
+   "titre": "[APIs Health] 2026-06-14T09:18 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-14T09:18:21Z",
+   "fermee_le": "2026-09-24T13:50:54Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1358"
+  },
+  {
+   "numero": 1360,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-14T11:33:55Z",
+   "fermee_le": "2026-09-24T13:50:52Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1360"
+  },
+  {
+   "numero": 1363,
+   "titre": "[APIs Health] 2026-06-14T13:27 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-14T13:27:45Z",
+   "fermee_le": "2026-09-24T13:50:50Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1363"
+  },
+  {
+   "numero": 1381,
+   "titre": "[APIs Health] 2026-06-14T19:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-14T19:08:35Z",
+   "fermee_le": "2026-09-24T13:50:48Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1381"
+  },
+  {
+   "numero": 1398,
+   "titre": "[APIs Health] 2026-06-15T02:43 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-15T02:43:48Z",
+   "fermee_le": "2026-09-24T13:50:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1398"
+  },
+  {
+   "numero": 1400,
+   "titre": "[Ultra Audit Crew] 2026-06-15 08:52 UTC — Run #27534736682",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-06-15T08:52:25Z",
+   "fermee_le": "2026-09-24T13:50:43Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1400"
+  },
+  {
+   "numero": 1401,
+   "titre": "[APIs Health] 2026-06-15T11:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-15T11:45:06Z",
+   "fermee_le": "2026-09-24T13:50:41Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1401"
+  },
+  {
+   "numero": 1403,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-15T15:21:55Z",
+   "fermee_le": "2026-09-24T13:50:39Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1403"
+  },
+  {
+   "numero": 1406,
+   "titre": "[APIs Health] 2026-06-15T16:56 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-15T16:56:35Z",
+   "fermee_le": "2026-09-24T13:50:37Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1406"
+  },
+  {
+   "numero": 1419,
+   "titre": "[APIs Health] 2026-06-15T20:44 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-15T20:44:48Z",
+   "fermee_le": "2026-09-24T13:50:35Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1419"
+  },
+  {
+   "numero": 1423,
+   "titre": "[APIs Health] 2026-06-16T02:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-16T02:46:28Z",
+   "fermee_le": "2026-09-24T13:50:33Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1423"
+  },
+  {
+   "numero": 1425,
+   "titre": "[APIs Health] 2026-06-16T10:53 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-16T10:53:25Z",
+   "fermee_le": "2026-09-24T13:50:32Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1425"
+  },
+  {
+   "numero": 1427,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-16T14:22:38Z",
+   "fermee_le": "2026-09-24T13:50:29Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1427"
+  },
+  {
+   "numero": 1433,
+   "titre": "[APIs Health] 2026-06-16T16:23 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-16T16:23:20Z",
+   "fermee_le": "2026-09-24T13:50:27Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1433"
+  },
+  {
+   "numero": 1435,
+   "titre": "[APIs Health] 2026-06-16T20:37 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-16T20:37:38Z",
+   "fermee_le": "2026-09-24T13:50:25Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1435"
+  },
+  {
+   "numero": 1443,
+   "titre": "[APIs Health] 2026-06-17T02:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-17T02:42:20Z",
+   "fermee_le": "2026-09-24T13:50:23Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1443"
+  },
+  {
+   "numero": 1445,
+   "titre": "[APIs Health] 2026-06-17T10:25 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-17T10:25:26Z",
+   "fermee_le": "2026-09-24T13:50:21Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1445"
+  },
+  {
+   "numero": 1447,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-17T12:55:27Z",
+   "fermee_le": "2026-09-24T13:50:19Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1447"
+  },
+  {
+   "numero": 1448,
+   "titre": "[APIs Health] 2026-06-17T14:50 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-17T14:50:11Z",
+   "fermee_le": "2026-09-24T13:50:17Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1448"
+  },
+  {
+   "numero": 1451,
+   "titre": "[APIs Health] 2026-06-17T19:59 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-17T19:59:17Z",
+   "fermee_le": "2026-09-24T13:50:16Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1451"
+  },
+  {
+   "numero": 1483,
+   "titre": "[APIs Health] 2026-06-18T02:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-18T02:39:17Z",
+   "fermee_le": "2026-09-24T13:50:14Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1483"
+  },
+  {
+   "numero": 1491,
+   "titre": "[APIs Health] 2026-06-18T10:04 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-18T10:04:19Z",
+   "fermee_le": "2026-09-24T13:50:10Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1491"
+  },
+  {
+   "numero": 1493,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-18T12:30:10Z",
+   "fermee_le": "2026-09-24T13:50:08Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1493"
+  },
+  {
+   "numero": 1495,
+   "titre": "[APIs Health] 2026-06-18T14:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-18T14:46:06Z",
+   "fermee_le": "2026-09-24T13:50:06Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1495"
+  },
+  {
+   "numero": 1500,
+   "titre": "[APIs Health] 2026-06-18T20:10 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-18T20:10:32Z",
+   "fermee_le": "2026-09-24T13:50:04Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1500"
+  },
+  {
+   "numero": 1530,
+   "titre": "[APIs Health] 2026-06-19T02:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-19T02:55:40Z",
+   "fermee_le": "2026-09-24T13:50:02Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1530"
+  },
+  {
+   "numero": 1533,
+   "titre": "[APIs Health] 2026-06-19T10:11 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-19T10:11:53Z",
+   "fermee_le": "2026-09-24T13:50:00Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1533"
+  },
+  {
+   "numero": 1543,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-19T12:52:18Z",
+   "fermee_le": "2026-09-24T13:49:58Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1543"
+  },
+  {
+   "numero": 1548,
+   "titre": "[APIs Health] 2026-06-19T14:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-19T14:42:45Z",
+   "fermee_le": "2026-09-24T13:49:56Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1548"
+  },
+  {
+   "numero": 1561,
+   "titre": "[APIs Health] 2026-06-19T19:25 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-19T19:25:14Z",
+   "fermee_le": "2026-09-24T13:49:54Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1561"
+  },
+  {
+   "numero": 1571,
+   "titre": "[APIs Health] 2026-06-20T02:27 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-20T02:27:54Z",
+   "fermee_le": "2026-09-24T13:49:52Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1571"
+  },
+  {
+   "numero": 1574,
+   "titre": "[APIs Health] 2026-06-20T08:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-20T08:39:59Z",
+   "fermee_le": "2026-09-24T13:49:50Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1574"
+  },
+  {
+   "numero": 1576,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-20T11:22:55Z",
+   "fermee_le": "2026-09-24T13:49:48Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1576"
+  },
+  {
+   "numero": 1583,
+   "titre": "[APIs Health] 2026-06-20T13:26 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-20T13:26:44Z",
+   "fermee_le": "2026-09-24T13:49:46Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1583"
+  },
+  {
+   "numero": 1603,
+   "titre": "[APIs Health] 2026-06-20T19:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-20T19:08:44Z",
+   "fermee_le": "2026-09-24T13:49:44Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1603"
+  },
+  {
+   "numero": 1613,
+   "titre": "[APIs Health] 2026-06-21T02:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-21T02:42:19Z",
+   "fermee_le": "2026-09-24T13:49:42Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1613"
+  },
+  {
+   "numero": 1615,
+   "titre": "[APIs Health] 2026-06-21T09:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-21T09:34:51Z",
+   "fermee_le": "2026-09-24T13:49:40Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1615"
+  },
+  {
+   "numero": 1617,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-21T11:48:41Z",
+   "fermee_le": "2026-09-24T13:49:37Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1617"
+  },
+  {
+   "numero": 1619,
+   "titre": "[APIs Health] 2026-06-21T13:47 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-21T13:47:13Z",
+   "fermee_le": "2026-09-24T13:49:35Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1619"
+  },
+  {
+   "numero": 1623,
+   "titre": "[APIs Health] 2026-06-21T19:14 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-21T19:14:29Z",
+   "fermee_le": "2026-09-24T13:49:33Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1623"
+  },
+  {
+   "numero": 1627,
+   "titre": "[APIs Health] 2026-06-22T02:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-22T02:45:00Z",
+   "fermee_le": "2026-09-24T13:49:31Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1627"
+  },
+  {
+   "numero": 1629,
+   "titre": "[Ultra Audit Crew] 2026-06-22 08:52 UTC — Run #27940681873",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-06-22T08:52:44Z",
+   "fermee_le": "2026-09-24T13:49:29Z",
+   "etiquettes": [
+    "Stale",
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1629"
+  },
+  {
+   "numero": 1631,
+   "titre": "[APIs Health] 2026-06-22T11:34 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-22T11:34:17Z",
+   "fermee_le": "2026-09-24T13:49:27Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1631"
+  },
+  {
+   "numero": 1636,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-22T14:47:46Z",
+   "fermee_le": "2026-09-24T13:49:25Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1636"
+  },
+  {
+   "numero": 1638,
+   "titre": "[APIs Health] 2026-06-22T16:27 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-22T16:27:46Z",
+   "fermee_le": "2026-09-24T13:49:23Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1638"
+  },
+  {
+   "numero": 1644,
+   "titre": "[APIs Health] 2026-06-22T20:33 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-22T20:33:50Z",
+   "fermee_le": "2026-09-24T13:49:20Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1644"
+  },
+  {
+   "numero": 1647,
+   "titre": "[APIs Health] 2026-06-23T02:11 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-23T02:11:26Z",
+   "fermee_le": "2026-09-24T13:49:19Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1647"
+  },
+  {
+   "numero": 1649,
+   "titre": "[APIs Health] 2026-06-23T08:57 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-23T08:57:55Z",
+   "fermee_le": "2026-09-24T13:49:17Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1649"
+  },
+  {
+   "numero": 1652,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-23T12:11:27Z",
+   "fermee_le": "2026-09-24T13:49:15Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1652"
+  },
+  {
+   "numero": 1654,
+   "titre": "[APIs Health] 2026-06-23T14:26 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-23T14:26:40Z",
+   "fermee_le": "2026-09-24T13:49:12Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1654"
+  },
+  {
+   "numero": 1674,
+   "titre": "[APIs Health] 2026-06-23T19:49 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-23T19:49:10Z",
+   "fermee_le": "2026-09-24T13:49:10Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1674"
+  },
+  {
+   "numero": 1678,
+   "titre": "[APIs Health] 2026-06-24T02:13 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-24T02:13:05Z",
+   "fermee_le": "2026-09-24T13:49:08Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1678"
+  },
+  {
+   "numero": 1682,
+   "titre": "[APIs Health] 2026-06-24T08:52 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-24T08:52:36Z",
+   "fermee_le": "2026-09-24T13:49:05Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1682"
+  },
+  {
+   "numero": 1684,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-24T11:50:26Z",
+   "fermee_le": "2026-09-24T13:49:02Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1684"
+  },
+  {
+   "numero": 1687,
+   "titre": "[APIs Health] 2026-06-24T14:05 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-24T14:05:34Z",
+   "fermee_le": "2026-09-24T13:49:00Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1687"
+  },
+  {
+   "numero": 1690,
+   "titre": "[APIs Health] 2026-06-24T19:25 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-24T19:25:39Z",
+   "fermee_le": "2026-09-24T13:48:58Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1690"
+  },
+  {
+   "numero": 1695,
+   "titre": "[APIs Health] 2026-06-25T02:13 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-25T02:13:05Z",
+   "fermee_le": "2026-09-24T13:48:56Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1695"
+  },
+  {
+   "numero": 1698,
+   "titre": "[APIs Health] 2026-06-25T08:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-25T08:46:23Z",
+   "fermee_le": "2026-09-24T13:48:54Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1698"
+  },
+  {
+   "numero": 1700,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-25T11:45:22Z",
+   "fermee_le": "2026-09-24T13:48:52Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1700"
+  },
+  {
+   "numero": 1702,
+   "titre": "[APIs Health] 2026-06-25T14:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-25T14:03:07Z",
+   "fermee_le": "2026-09-24T13:48:50Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1702"
+  },
+  {
+   "numero": 1705,
+   "titre": "[APIs Health] 2026-06-25T19:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-25T19:45:01Z",
+   "fermee_le": "2026-09-24T13:48:47Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1705"
+  },
+  {
+   "numero": 1709,
+   "titre": "[APIs Health] 2026-06-26T02:14 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-26T02:14:23Z",
+   "fermee_le": "2026-09-24T13:48:45Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1709"
+  },
+  {
+   "numero": 1712,
+   "titre": "[APIs Health] 2026-06-26T08:49 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-26T08:49:29Z",
+   "fermee_le": "2026-09-24T13:48:43Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1712"
+  },
+  {
+   "numero": 1714,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-26T11:48:19Z",
+   "fermee_le": "2026-09-24T13:48:41Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1714"
+  },
+  {
+   "numero": 1715,
+   "titre": "[APIs Health] 2026-06-26T14:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-26T14:02:19Z",
+   "fermee_le": "2026-09-24T13:48:39Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1715"
+  },
+  {
+   "numero": 1719,
+   "titre": "[APIs Health] 2026-06-26T19:27 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-26T19:27:39Z",
+   "fermee_le": "2026-09-24T13:48:37Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1719"
+  },
+  {
+   "numero": 1723,
+   "titre": "[APIs Health] 2026-06-27T02:09 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-27T02:10:00Z",
+   "fermee_le": "2026-09-24T13:48:35Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1723"
+  },
+  {
+   "numero": 1726,
+   "titre": "[APIs Health] 2026-06-27T08:25 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-27T08:25:30Z",
+   "fermee_le": "2026-09-24T13:48:33Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1726"
+  },
+  {
+   "numero": 1728,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-27T11:01:46Z",
+   "fermee_le": "2026-09-24T13:48:31Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1728"
+  },
+  {
+   "numero": 1731,
+   "titre": "[APIs Health] 2026-06-27T13:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-27T13:08:34Z",
+   "fermee_le": "2026-09-24T13:48:28Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1731"
+  },
+  {
+   "numero": 1735,
+   "titre": "[APIs Health] 2026-06-27T19:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-27T19:03:42Z",
+   "fermee_le": "2026-09-24T13:48:26Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1735"
+  },
+  {
+   "numero": 1740,
+   "titre": "[APIs Health] 2026-06-28T02:31 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-28T02:31:27Z",
+   "fermee_le": "2026-09-24T13:48:24Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1740"
+  },
+  {
+   "numero": 1743,
+   "titre": "[APIs Health] 2026-06-28T08:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-28T08:39:46Z",
+   "fermee_le": "2026-09-24T13:48:22Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1743"
+  },
+  {
+   "numero": 1745,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-28T11:12:40Z",
+   "fermee_le": "2026-09-24T13:48:20Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1745"
+  },
+  {
+   "numero": 1747,
+   "titre": "[APIs Health] 2026-06-28T13:15 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-28T13:15:16Z",
+   "fermee_le": "2026-09-24T13:48:18Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1747"
+  },
+  {
+   "numero": 1756,
+   "titre": "[APIs Health] 2026-06-28T19:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-28T19:02:03Z",
+   "fermee_le": "2026-09-24T13:48:15Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1756"
+  },
+  {
+   "numero": 1762,
+   "titre": "🔗 Centre de contrôle à mettre à jour",
+   "famille": "Centre de contrôle",
+   "ouverte_le": "2026-06-28T19:28:49Z",
+   "fermee_le": "2026-09-24T13:48:13Z",
+   "etiquettes": [
+    "liens-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1762"
+  },
+  {
+   "numero": 1782,
+   "titre": "[APIs Health] 2026-06-29T02:31 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-29T02:31:29Z",
+   "fermee_le": "2026-09-24T13:48:11Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1782"
+  },
+  {
+   "numero": 1784,
+   "titre": "[Ultra Audit Crew] 2026-06-29 07:25 UTC — Run #28355391335",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-06-29T07:25:55Z",
+   "fermee_le": "2026-09-24T13:48:09Z",
+   "etiquettes": [
+    "Stale",
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1784"
+  },
+  {
+   "numero": 1785,
+   "titre": "[APIs Health] 2026-06-29T10:21 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-29T10:21:07Z",
+   "fermee_le": "2026-09-24T13:48:07Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1785"
+  },
+  {
+   "numero": 1789,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-29T13:12:11Z",
+   "fermee_le": "2026-09-24T13:48:04Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1789"
+  },
+  {
+   "numero": 1790,
+   "titre": "[APIs Health] 2026-06-29T15:30 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-29T15:30:02Z",
+   "fermee_le": "2026-09-24T13:48:02Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1790"
+  },
+  {
+   "numero": 1803,
+   "titre": "[APIs Health] 2026-06-29T19:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-29T19:42:01Z",
+   "fermee_le": "2026-09-24T13:48:00Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1803"
+  },
+  {
+   "numero": 1818,
+   "titre": "[APIs Health] 2026-06-30T02:26 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-30T02:26:29Z",
+   "fermee_le": "2026-09-24T13:47:57Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1818"
+  },
+  {
+   "numero": 1821,
+   "titre": "[APIs Health] 2026-06-30T08:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-30T08:55:38Z",
+   "fermee_le": "2026-09-24T13:47:55Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1821"
+  },
+  {
+   "numero": 1823,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-06-30T11:47:43Z",
+   "fermee_le": "2026-09-24T13:47:53Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1823"
+  },
+  {
+   "numero": 1824,
+   "titre": "[APIs Health] 2026-06-30T13:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-30T13:54:43Z",
+   "fermee_le": "2026-09-24T13:47:51Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1824"
+  },
+  {
+   "numero": 1835,
+   "titre": "[APIs Health] 2026-06-30T19:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-06-30T19:42:05Z",
+   "fermee_le": "2026-09-24T13:47:49Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1835"
+  },
+  {
+   "numero": 1843,
+   "titre": "[APIs Health] 2026-07-01T02:32 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-01T02:32:34Z",
+   "fermee_le": "2026-09-24T13:47:47Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1843"
+  },
+  {
+   "numero": 1846,
+   "titre": "[APIs Health] 2026-07-01T09:28 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-01T09:28:36Z",
+   "fermee_le": "2026-09-24T13:47:45Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1846"
+  },
+  {
+   "numero": 1848,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-01T12:13:12Z",
+   "fermee_le": "2026-09-24T13:47:43Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1848"
+  },
+  {
+   "numero": 1857,
+   "titre": "[APIs Health] 2026-07-01T14:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-01T14:07:00Z",
+   "fermee_le": "2026-09-24T13:47:41Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1857"
+  },
+  {
+   "numero": 1882,
+   "titre": "[APIs Health] 2026-07-01T19:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-01T19:39:04Z",
+   "fermee_le": "2026-09-24T13:47:39Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1882"
+  },
+  {
+   "numero": 1909,
+   "titre": "[APIs Health] 2026-07-02T02:12 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-02T02:12:01Z",
+   "fermee_le": "2026-09-24T13:47:36Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1909"
+  },
+  {
+   "numero": 1912,
+   "titre": "[APIs Health] 2026-07-02T08:41 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-02T08:41:18Z",
+   "fermee_le": "2026-09-24T13:47:34Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1912"
+  },
+  {
+   "numero": 1914,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-02T11:39:09Z",
+   "fermee_le": "2026-09-24T13:47:32Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1914"
+  },
+  {
+   "numero": 1916,
+   "titre": "[APIs Health] 2026-07-02T13:28 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-02T13:28:39Z",
+   "fermee_le": "2026-09-24T13:47:29Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1916"
+  },
+  {
+   "numero": 1921,
+   "titre": "[APIs Health] 2026-07-02T19:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-02T19:08:21Z",
+   "fermee_le": "2026-09-24T13:47:27Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1921"
+  },
+  {
+   "numero": 1950,
+   "titre": "[APIs Health] 2026-07-03T01:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-03T01:55:52Z",
+   "fermee_le": "2026-09-24T13:47:25Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1950"
+  },
+  {
+   "numero": 1971,
+   "titre": "[APIs Health] 2026-07-03T08:48 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-03T08:48:10Z",
+   "fermee_le": "2026-09-24T13:47:22Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1971"
+  },
+  {
+   "numero": 1985,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-03T11:37:45Z",
+   "fermee_le": "2026-09-24T13:47:20Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1985"
+  },
+  {
+   "numero": 1991,
+   "titre": "[APIs Health] 2026-07-03T13:41 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-03T13:41:24Z",
+   "fermee_le": "2026-09-24T13:47:18Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1991"
+  },
+  {
+   "numero": 1999,
+   "titre": "[APIs Health] 2026-07-03T19:01 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-03T19:01:05Z",
+   "fermee_le": "2026-09-24T13:47:16Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/1999"
+  },
+  {
+   "numero": 2020,
+   "titre": "[APIs Health] 2026-07-04T01:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-04T01:55:17Z",
+   "fermee_le": "2026-09-24T13:47:14Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2020"
+  },
+  {
+   "numero": 2033,
+   "titre": "[APIs Health] 2026-07-04T08:23 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-04T08:23:20Z",
+   "fermee_le": "2026-09-24T13:47:11Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2033"
+  },
+  {
+   "numero": 2036,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-04T10:57:08Z",
+   "fermee_le": "2026-09-24T13:47:09Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2036"
+  },
+  {
+   "numero": 2042,
+   "titre": "[APIs Health] 2026-07-04T12:59 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-04T12:59:06Z",
+   "fermee_le": "2026-09-24T13:47:07Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2042"
+  },
+  {
+   "numero": 2060,
+   "titre": "[APIs Health] 2026-07-04T18:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-04T18:55:50Z",
+   "fermee_le": "2026-09-24T13:47:05Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2060"
+  },
+  {
+   "numero": 2067,
+   "titre": "[APIs Health] 2026-07-05T02:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-05T02:02:46Z",
+   "fermee_le": "2026-09-24T13:47:02Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2067"
+  },
+  {
+   "numero": 2071,
+   "titre": "[APIs Health] 2026-07-05T08:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-05T08:39:44Z",
+   "fermee_le": "2026-09-24T13:47:00Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2071"
+  },
+  {
+   "numero": 2073,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-05T11:08:04Z",
+   "fermee_le": "2026-09-24T13:46:58Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2073"
+  },
+  {
+   "numero": 2075,
+   "titre": "[APIs Health] 2026-07-05T13:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-05T13:06:41Z",
+   "fermee_le": "2026-09-24T13:46:55Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2075"
+  },
+  {
+   "numero": 2142,
+   "titre": "[APIs Health] 2026-07-05T19:01 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-05T19:01:25Z",
+   "fermee_le": "2026-09-24T13:46:53Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2142"
+  },
+  {
+   "numero": 2185,
+   "titre": "[APIs Health] 2026-07-06T02:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-06T02:08:09Z",
+   "fermee_le": "2026-09-24T13:46:51Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2185"
+  },
+  {
+   "numero": 2187,
+   "titre": "[Ultra Audit Crew] 2026-07-06 07:04 UTC — Run #28773684838",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-07-06T07:04:45Z",
+   "fermee_le": "2026-09-24T13:46:49Z",
+   "etiquettes": [
+    "Stale",
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2187"
+  },
+  {
+   "numero": 2189,
+   "titre": "[APIs Health] 2026-07-06T09:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-06T09:54:58Z",
+   "fermee_le": "2026-09-24T13:46:47Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2189"
+  },
+  {
+   "numero": 2198,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-06T12:54:49Z",
+   "fermee_le": "2026-09-24T13:46:44Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2198"
+  },
+  {
+   "numero": 2200,
+   "titre": "[APIs Health] 2026-07-06T14:57 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-06T14:57:53Z",
+   "fermee_le": "2026-09-24T13:46:42Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2200"
+  },
+  {
+   "numero": 2203,
+   "titre": "[APIs Health] 2026-07-06T19:41 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-06T19:41:14Z",
+   "fermee_le": "2026-09-24T13:46:40Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2203"
+  },
+  {
+   "numero": 2208,
+   "titre": "[APIs Health] 2026-07-07T02:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-07T02:03:36Z",
+   "fermee_le": "2026-09-24T13:46:38Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2208"
+  },
+  {
+   "numero": 2210,
+   "titre": "[APIs Health] 2026-07-07T09:22 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-07T09:22:44Z",
+   "fermee_le": "2026-09-24T13:46:36Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2210"
+  },
+  {
+   "numero": 2212,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-07T11:59:04Z",
+   "fermee_le": "2026-09-24T13:46:33Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2212"
+  },
+  {
+   "numero": 2216,
+   "titre": "[APIs Health] 2026-07-07T14:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-07T14:06:09Z",
+   "fermee_le": "2026-09-24T13:46:31Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2216"
+  },
+  {
+   "numero": 2229,
+   "titre": "[APIs Health] 2026-07-07T19:40 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-07T19:40:12Z",
+   "fermee_le": "2026-09-24T13:46:29Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2229"
+  },
+  {
+   "numero": 2251,
+   "titre": "[APIs Health] 2026-07-08T01:44 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-08T01:44:35Z",
+   "fermee_le": "2026-09-24T13:46:26Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2251"
+  },
+  {
+   "numero": 2264,
+   "titre": "[APIs Health] 2026-07-08T08:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-08T08:07:13Z",
+   "fermee_le": "2026-09-24T13:46:24Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2264"
+  },
+  {
+   "numero": 2266,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-08T11:09:55Z",
+   "fermee_le": "2026-09-24T13:46:22Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2266"
+  },
+  {
+   "numero": 2270,
+   "titre": "[APIs Health] 2026-07-08T13:29 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-08T13:29:47Z",
+   "fermee_le": "2026-09-24T13:46:19Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2270"
+  },
+  {
+   "numero": 2289,
+   "titre": "[APIs Health] 2026-07-08T19:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-08T19:06:28Z",
+   "fermee_le": "2026-09-24T13:46:17Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2289"
+  },
+  {
+   "numero": 2290,
+   "titre": "[uptime] Site DOWN - 2 fails consecutifs",
+   "famille": "Uptime",
+   "ouverte_le": "2026-07-08T19:23:18Z",
+   "fermee_le": "2026-09-24T13:46:14Z",
+   "etiquettes": [
+    "bug",
+    "auto",
+    "Stale",
+    "uptime"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2290"
+  },
+  {
+   "numero": 2294,
+   "titre": "[APIs Health] 2026-07-09T01:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-09T01:55:45Z",
+   "fermee_le": "2026-09-24T13:46:11Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2294"
+  },
+  {
+   "numero": 2296,
+   "titre": "[APIs Health] 2026-07-09T09:20 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-09T09:20:27Z",
+   "fermee_le": "2026-09-24T13:46:07Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2296"
+  },
+  {
+   "numero": 2298,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-09T12:11:28Z",
+   "fermee_le": "2026-09-24T13:46:05Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2298"
+  },
+  {
+   "numero": 2302,
+   "titre": "[APIs Health] 2026-07-09T14:29 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-09T14:29:43Z",
+   "fermee_le": "2026-09-24T13:46:03Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2302"
+  },
+  {
+   "numero": 2306,
+   "titre": "[APIs Health] 2026-07-09T19:21 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-09T19:21:44Z",
+   "fermee_le": "2026-09-24T13:46:01Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2306"
+  },
+  {
+   "numero": 2320,
+   "titre": "[APIs Health] 2026-07-10T01:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-10T01:54:30Z",
+   "fermee_le": "2026-09-24T13:45:59Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2320"
+  },
+  {
+   "numero": 2322,
+   "titre": "[APIs Health] 2026-07-10T09:17 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-10T09:17:56Z",
+   "fermee_le": "2026-09-24T13:45:57Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2322"
+  },
+  {
+   "numero": 2328,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-10T12:03:58Z",
+   "fermee_le": "2026-09-24T13:45:54Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2328"
+  },
+  {
+   "numero": 2341,
+   "titre": "[APIs Health] 2026-07-10T13:57 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-10T13:57:52Z",
+   "fermee_le": "2026-09-24T13:45:52Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2341"
+  },
+  {
+   "numero": 2360,
+   "titre": "[APIs Health] 2026-07-10T19:15 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-10T19:15:10Z",
+   "fermee_le": "2026-09-24T13:45:50Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2360"
+  },
+  {
+   "numero": 2387,
+   "titre": "[APIs Health] 2026-07-11T01:43 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-11T01:43:22Z",
+   "fermee_le": "2026-09-24T13:45:47Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2387"
+  },
+  {
+   "numero": 2389,
+   "titre": "[APIs Health] 2026-07-11T07:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-11T07:39:17Z",
+   "fermee_le": "2026-09-24T13:45:45Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2389"
+  },
+  {
+   "numero": 2397,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-11T10:22:45Z",
+   "fermee_le": "2026-09-24T13:45:42Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2397"
+  },
+  {
+   "numero": 2402,
+   "titre": "[APIs Health] 2026-07-11T12:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-11T12:54:17Z",
+   "fermee_le": "2026-09-24T13:45:40Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2402"
+  },
+  {
+   "numero": 2406,
+   "titre": "[APIs Health] 2026-07-11T18:44 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-11T18:44:10Z",
+   "fermee_le": "2026-09-24T13:45:38Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2406"
+  },
+  {
+   "numero": 2412,
+   "titre": "[APIs Health] 2026-07-12T01:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-12T01:45:32Z",
+   "fermee_le": "2026-09-24T13:45:34Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2412"
+  },
+  {
+   "numero": 2414,
+   "titre": "[APIs Health] 2026-07-12T07:58 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-12T07:58:40Z",
+   "fermee_le": "2026-09-24T13:45:31Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2414"
+  },
+  {
+   "numero": 2416,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-12T10:38:51Z",
+   "fermee_le": "2026-09-24T13:45:29Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2416"
+  },
+  {
+   "numero": 2417,
+   "titre": "[APIs Health] 2026-07-12T12:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-12T12:55:03Z",
+   "fermee_le": "2026-09-24T13:45:27Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2417"
+  },
+  {
+   "numero": 2419,
+   "titre": "[APIs Health] 2026-07-12T18:49 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-12T18:49:47Z",
+   "fermee_le": "2026-09-24T13:45:25Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2419"
+  },
+  {
+   "numero": 2428,
+   "titre": "[APIs Health] 2026-07-13T01:48 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-13T01:48:13Z",
+   "fermee_le": "2026-09-24T13:45:23Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2428"
+  },
+  {
+   "numero": 2432,
+   "titre": "[Ultra Audit Crew] 2026-07-13 06:03 UTC — Run #29227574180",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-07-13T06:03:03Z",
+   "fermee_le": "2026-09-24T13:45:20Z",
+   "etiquettes": [
+    "Stale",
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2432"
+  },
+  {
+   "numero": 2433,
+   "titre": "[APIs Health] 2026-07-13T08:47 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-13T08:47:18Z",
+   "fermee_le": "2026-09-24T13:45:18Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2433"
+  },
+  {
+   "numero": 2435,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-13T12:12:56Z",
+   "fermee_le": "2026-09-24T13:45:16Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2435"
+  },
+  {
+   "numero": 2440,
+   "titre": "[APIs Health] 2026-07-13T14:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-13T14:03:53Z",
+   "fermee_le": "2026-09-24T13:45:14Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2440"
+  },
+  {
+   "numero": 2462,
+   "titre": "[APIs Health] 2026-07-13T19:11 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-13T19:11:01Z",
+   "fermee_le": "2026-09-24T13:45:12Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2462"
+  },
+  {
+   "numero": 2500,
+   "titre": "[APIs Health] 2026-07-14T01:24 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-14T01:24:59Z",
+   "fermee_le": "2026-09-24T13:45:10Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2500"
+  },
+  {
+   "numero": 2518,
+   "titre": "[APIs Health] 2026-07-14T07:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-14T07:46:27Z",
+   "fermee_le": "2026-09-24T13:45:06Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2518"
+  },
+  {
+   "numero": 2520,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-14T10:52:37Z",
+   "fermee_le": "2026-09-24T13:45:04Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift",
+    "Stale"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2520"
+  },
+  {
+   "numero": 2521,
+   "titre": "[APIs Health] 2026-07-14T13:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-14T13:06:36Z",
+   "fermee_le": "2026-09-24T13:45:01Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2521"
+  },
+  {
+   "numero": 2535,
+   "titre": "[APIs Health] 2026-07-14T19:01 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-14T19:01:22Z",
+   "fermee_le": "2026-09-24T13:44:59Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2535"
+  },
+  {
+   "numero": 2559,
+   "titre": "[APIs Health] 2026-07-15T01:21 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-15T01:21:36Z",
+   "fermee_le": "2026-09-24T13:44:57Z",
+   "etiquettes": [
+    "Stale",
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2559"
+  },
+  {
+   "numero": 2562,
+   "titre": "[APIs Health] 2026-07-15T07:49 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-15T07:49:38Z",
+   "fermee_le": "2026-09-24T13:44:55Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2562"
+  },
+  {
+   "numero": 2564,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-15T10:56:37Z",
+   "fermee_le": "2026-09-24T13:44:53Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2564"
+  },
+  {
+   "numero": 2565,
+   "titre": "[APIs Health] 2026-07-15T13:10 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-15T13:10:38Z",
+   "fermee_le": "2026-09-24T13:44:51Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2565"
+  },
+  {
+   "numero": 2577,
+   "titre": "[APIs Health] 2026-07-15T18:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-15T18:54:12Z",
+   "fermee_le": "2026-09-24T13:44:49Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2577"
+  },
+  {
+   "numero": 2583,
+   "titre": "[APIs Health] 2026-07-16T01:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-16T01:42:09Z",
+   "fermee_le": "2026-09-24T13:44:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2583"
+  },
+  {
+   "numero": 2587,
+   "titre": "[APIs Health] 2026-07-16T07:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-16T07:54:48Z",
+   "fermee_le": "2026-09-24T13:44:44Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2587"
+  },
+  {
+   "numero": 2592,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-16T11:05:33Z",
+   "fermee_le": "2026-09-24T13:44:41Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2592"
+  },
+  {
+   "numero": 2593,
+   "titre": "[APIs Health] 2026-07-16T13:18 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-16T13:18:47Z",
+   "fermee_le": "2026-09-24T13:44:39Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2593"
+  },
+  {
+   "numero": 2596,
+   "titre": "[Ultra Audit Crew] 2026-07-16 16:51 UTC — Run #29516859255",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-07-16T16:51:47Z",
+   "fermee_le": "2026-09-24T13:44:36Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2596"
+  },
+  {
+   "numero": 2603,
+   "titre": "[APIs Health] 2026-07-16T18:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-16T18:55:11Z",
+   "fermee_le": "2026-09-24T13:44:34Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2603"
+  },
+  {
+   "numero": 2615,
+   "titre": "[APIs Health] 2026-07-17T01:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-17T01:45:19Z",
+   "fermee_le": "2026-09-24T13:44:32Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2615"
+  },
+  {
+   "numero": 2620,
+   "titre": "[APIs Health] 2026-07-17T07:51 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-17T07:51:20Z",
+   "fermee_le": "2026-09-24T13:44:29Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2620"
+  },
+  {
+   "numero": 2622,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-17T10:52:49Z",
+   "fermee_le": "2026-09-24T13:44:27Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2622"
+  },
+  {
+   "numero": 2623,
+   "titre": "[APIs Health] 2026-07-17T13:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-17T13:03:08Z",
+   "fermee_le": "2026-09-24T13:44:25Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2623"
+  },
+  {
+   "numero": 2625,
+   "titre": "[APIs Health] 2026-07-17T18:52 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-17T18:52:27Z",
+   "fermee_le": "2026-09-24T13:44:22Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2625"
+  },
+  {
+   "numero": 2630,
+   "titre": "[APIs Health] 2026-07-18T01:26 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-18T01:26:05Z",
+   "fermee_le": "2026-09-24T13:44:20Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2630"
+  },
+  {
+   "numero": 2634,
+   "titre": "[APIs Health] 2026-07-18T07:26 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-18T07:26:18Z",
+   "fermee_le": "2026-09-24T13:44:18Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2634"
+  },
+  {
+   "numero": 2636,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-18T10:23:23Z",
+   "fermee_le": "2026-09-24T13:44:16Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2636"
+  },
+  {
+   "numero": 2638,
+   "titre": "[APIs Health] 2026-07-18T12:50 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-18T12:50:59Z",
+   "fermee_le": "2026-09-24T13:44:14Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2638"
+  },
+  {
+   "numero": 2640,
+   "titre": "[APIs Health] 2026-07-18T18:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-18T18:45:29Z",
+   "fermee_le": "2026-09-24T13:44:12Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2640"
+  },
+  {
+   "numero": 2642,
+   "titre": "[APIs Health] 2026-07-19T01:43 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-19T01:43:11Z",
+   "fermee_le": "2026-09-24T13:44:10Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2642"
+  },
+  {
+   "numero": 2644,
+   "titre": "[APIs Health] 2026-07-19T07:57 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-19T07:57:55Z",
+   "fermee_le": "2026-09-24T13:44:08Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2644"
+  },
+  {
+   "numero": 2646,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-19T10:39:03Z",
+   "fermee_le": "2026-09-24T13:44:05Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2646"
+  },
+  {
+   "numero": 2647,
+   "titre": "[APIs Health] 2026-07-19T12:53 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-19T12:53:29Z",
+   "fermee_le": "2026-09-24T13:44:03Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2647"
+  },
+  {
+   "numero": 2649,
+   "titre": "[APIs Health] 2026-07-19T18:50 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-19T18:50:17Z",
+   "fermee_le": "2026-09-24T13:44:01Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2649"
+  },
+  {
+   "numero": 2651,
+   "titre": "[APIs Health] 2026-07-20T01:58 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-20T01:58:58Z",
+   "fermee_le": "2026-09-24T13:43:59Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2651"
+  },
+  {
+   "numero": 2653,
+   "titre": "[Ultra Audit Crew] 2026-07-20 06:04 UTC — Run #29720364677",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-07-20T06:04:39Z",
+   "fermee_le": "2026-09-24T13:43:57Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2653"
+  },
+  {
+   "numero": 2654,
+   "titre": "[APIs Health] 2026-07-20T08:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-20T08:39:17Z",
+   "fermee_le": "2026-09-24T13:43:55Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2654"
+  },
+  {
+   "numero": 2656,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-20T11:51:39Z",
+   "fermee_le": "2026-09-24T13:43:53Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2656"
+  },
+  {
+   "numero": 2657,
+   "titre": "[APIs Health] 2026-07-20T13:47 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-20T13:47:22Z",
+   "fermee_le": "2026-09-24T13:43:51Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2657"
+  },
+  {
+   "numero": 2661,
+   "titre": "[APIs Health] 2026-07-20T19:24 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-20T19:24:06Z",
+   "fermee_le": "2026-09-24T13:43:49Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2661"
+  },
+  {
+   "numero": 2683,
+   "titre": "[APIs Health] 2026-07-21T01:43 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-21T01:43:26Z",
+   "fermee_le": "2026-09-24T13:43:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2683"
+  },
+  {
+   "numero": 2689,
+   "titre": "[APIs Health] 2026-07-21T08:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-21T08:07:05Z",
+   "fermee_le": "2026-09-24T13:43:44Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2689"
+  },
+  {
+   "numero": 2691,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-21T11:12:49Z",
+   "fermee_le": "2026-09-24T13:43:42Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2691"
+  },
+  {
+   "numero": 2709,
+   "titre": "[APIs Health] 2026-07-21T13:15 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-21T13:15:46Z",
+   "fermee_le": "2026-09-24T13:43:40Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2709"
+  },
+  {
+   "numero": 2711,
+   "titre": "[APIs Health] 2026-07-21T19:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-21T19:02:40Z",
+   "fermee_le": "2026-09-24T13:43:38Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2711"
+  },
+  {
+   "numero": 2713,
+   "titre": "[APIs Health] 2026-07-22T01:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-22T01:42:33Z",
+   "fermee_le": "2026-09-24T13:43:36Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2713"
+  },
+  {
+   "numero": 2715,
+   "titre": "[APIs Health] 2026-07-22T08:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-22T08:07:43Z",
+   "fermee_le": "2026-09-24T13:43:34Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2715"
+  },
+  {
+   "numero": 2717,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-22T11:13:36Z",
+   "fermee_le": "2026-09-24T13:43:32Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2717"
+  },
+  {
+   "numero": 2718,
+   "titre": "[APIs Health] 2026-07-22T13:20 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-22T13:20:45Z",
+   "fermee_le": "2026-09-24T13:43:30Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2718"
+  },
+  {
+   "numero": 2720,
+   "titre": "[APIs Health] 2026-07-22T18:56 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-22T18:56:40Z",
+   "fermee_le": "2026-09-24T13:43:28Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2720"
+  },
+  {
+   "numero": 2722,
+   "titre": "[APIs Health] 2026-07-23T01:50 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-23T01:50:01Z",
+   "fermee_le": "2026-09-24T13:43:26Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2722"
+  },
+  {
+   "numero": 2724,
+   "titre": "[APIs Health] 2026-07-23T08:10 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-23T08:10:45Z",
+   "fermee_le": "2026-09-24T13:43:24Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2724"
+  },
+  {
+   "numero": 2726,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-23T11:15:37Z",
+   "fermee_le": "2026-09-24T13:43:22Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2726"
+  },
+  {
+   "numero": 2727,
+   "titre": "[APIs Health] 2026-07-23T13:23 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-23T13:23:07Z",
+   "fermee_le": "2026-09-24T13:43:20Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2727"
+  },
+  {
+   "numero": 2731,
+   "titre": "[APIs Health] 2026-07-23T18:58 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-23T18:58:01Z",
+   "fermee_le": "2026-09-24T13:43:18Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2731"
+  },
+  {
+   "numero": 2733,
+   "titre": "[APIs Health] 2026-07-24T01:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-24T01:45:45Z",
+   "fermee_le": "2026-09-24T13:43:17Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2733"
+  },
+  {
+   "numero": 2735,
+   "titre": "[APIs Health] 2026-07-24T08:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-24T08:06:26Z",
+   "fermee_le": "2026-09-24T13:43:15Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2735"
+  },
+  {
+   "numero": 2737,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-24T11:06:35Z",
+   "fermee_le": "2026-09-24T13:43:13Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2737"
+  },
+  {
+   "numero": 2738,
+   "titre": "[APIs Health] 2026-07-24T13:16 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-24T13:16:36Z",
+   "fermee_le": "2026-09-24T13:43:11Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2738"
+  },
+  {
+   "numero": 2740,
+   "titre": "[APIs Health] 2026-07-24T19:11 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-24T19:11:33Z",
+   "fermee_le": "2026-09-24T13:43:09Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2740"
+  },
+  {
+   "numero": 2743,
+   "titre": "[APIs Health] 2026-07-25T01:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-25T01:45:56Z",
+   "fermee_le": "2026-09-24T13:43:07Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2743"
+  },
+  {
+   "numero": 2751,
+   "titre": "[APIs Health] 2026-07-25T07:49 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-25T07:49:30Z",
+   "fermee_le": "2026-09-24T13:43:05Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2751"
+  },
+  {
+   "numero": 2753,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-25T10:38:57Z",
+   "fermee_le": "2026-09-24T13:43:03Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2753"
+  },
+  {
+   "numero": 2754,
+   "titre": "[APIs Health] 2026-07-25T12:59 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-25T12:59:32Z",
+   "fermee_le": "2026-09-24T13:43:01Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2754"
+  },
+  {
+   "numero": 2758,
+   "titre": "[APIs Health] 2026-07-25T18:51 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-25T18:52:00Z",
+   "fermee_le": "2026-09-24T13:42:58Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2758"
+  },
+  {
+   "numero": 2760,
+   "titre": "[APIs Health] 2026-07-26T01:48 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-26T01:48:40Z",
+   "fermee_le": "2026-09-24T13:42:56Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2760"
+  },
+  {
+   "numero": 2762,
+   "titre": "[APIs Health] 2026-07-26T08:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-26T08:07:15Z",
+   "fermee_le": "2026-09-24T13:42:54Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2762"
+  },
+  {
+   "numero": 2764,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-26T10:47:18Z",
+   "fermee_le": "2026-09-24T13:42:52Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2764"
+  },
+  {
+   "numero": 2765,
+   "titre": "[APIs Health] 2026-07-26T12:57 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-26T12:57:03Z",
+   "fermee_le": "2026-09-24T13:42:49Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2765"
+  },
+  {
+   "numero": 2767,
+   "titre": "[APIs Health] 2026-07-26T18:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-26T18:55:46Z",
+   "fermee_le": "2026-09-24T13:42:47Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2767"
+  },
+  {
+   "numero": 2769,
+   "titre": "[APIs Health] 2026-07-27T01:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-27T01:55:58Z",
+   "fermee_le": "2026-09-24T13:42:45Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2769"
+  },
+  {
+   "numero": 2771,
+   "titre": "[Ultra Audit Crew] 2026-07-27 06:22 UTC — Run #30242154455",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-07-27T06:22:34Z",
+   "fermee_le": "2026-09-24T13:42:43Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2771"
+  },
+  {
+   "numero": 2772,
+   "titre": "[APIs Health] 2026-07-27T09:29 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-27T09:29:18Z",
+   "fermee_le": "2026-09-24T13:42:41Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2772"
+  },
+  {
+   "numero": 2774,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-27T12:31:34Z",
+   "fermee_le": "2026-09-24T13:42:39Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2774"
+  },
+  {
+   "numero": 2775,
+   "titre": "[APIs Health] 2026-07-27T14:09 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-27T14:09:38Z",
+   "fermee_le": "2026-09-24T13:42:35Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2775"
+  },
+  {
+   "numero": 2777,
+   "titre": "[APIs Health] 2026-07-27T19:11 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-27T19:11:21Z",
+   "fermee_le": "2026-09-24T13:42:33Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2777"
+  },
+  {
+   "numero": 2779,
+   "titre": "[APIs Health] 2026-07-28T01:30 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-28T01:30:24Z",
+   "fermee_le": "2026-09-24T13:42:31Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2779"
+  },
+  {
+   "numero": 2781,
+   "titre": "[APIs Health] 2026-07-28T08:13 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-28T08:13:35Z",
+   "fermee_le": "2026-09-24T13:42:28Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2781"
+  },
+  {
+   "numero": 2783,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-28T11:24:07Z",
+   "fermee_le": "2026-09-24T13:42:26Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2783"
+  },
+  {
+   "numero": 2784,
+   "titre": "[APIs Health] 2026-07-28T13:29 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-28T13:29:14Z",
+   "fermee_le": "2026-09-24T13:42:23Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2784"
+  },
+  {
+   "numero": 2786,
+   "titre": "[APIs Health] 2026-07-28T19:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-28T19:06:28Z",
+   "fermee_le": "2026-09-24T13:42:20Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2786"
+  },
+  {
+   "numero": 2788,
+   "titre": "[APIs Health] 2026-07-29T01:41 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-29T01:41:06Z",
+   "fermee_le": "2026-09-24T13:42:18Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2788"
+  },
+  {
+   "numero": 2790,
+   "titre": "[APIs Health] 2026-07-29T08:19 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-29T08:19:01Z",
+   "fermee_le": "2026-09-24T13:42:16Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2790"
+  },
+  {
+   "numero": 2792,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-29T11:30:24Z",
+   "fermee_le": "2026-09-24T13:42:13Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2792"
+  },
+  {
+   "numero": 2793,
+   "titre": "[APIs Health] 2026-07-29T13:44 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-29T13:44:34Z",
+   "fermee_le": "2026-09-24T13:42:11Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2793"
+  },
+  {
+   "numero": 2795,
+   "titre": "[APIs Health] 2026-07-29T18:56 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-29T18:56:19Z",
+   "fermee_le": "2026-09-24T13:42:09Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2795"
+  },
+  {
+   "numero": 2797,
+   "titre": "[APIs Health] 2026-07-30T01:23 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-30T01:23:24Z",
+   "fermee_le": "2026-09-24T13:42:06Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2797"
+  },
+  {
+   "numero": 2799,
+   "titre": "[APIs Health] 2026-07-30T08:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-30T08:06:28Z",
+   "fermee_le": "2026-09-24T13:42:04Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2799"
+  },
+  {
+   "numero": 2801,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-30T11:14:26Z",
+   "fermee_le": "2026-09-24T13:42:02Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2801"
+  },
+  {
+   "numero": 2802,
+   "titre": "[APIs Health] 2026-07-30T13:25 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-30T13:25:55Z",
+   "fermee_le": "2026-09-24T13:42:00Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2802"
+  },
+  {
+   "numero": 2811,
+   "titre": "[APIs Health] 2026-07-30T19:08 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-30T19:08:45Z",
+   "fermee_le": "2026-09-24T13:41:57Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2811"
+  },
+  {
+   "numero": 2813,
+   "titre": "[APIs Health] 2026-07-31T01:50 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-31T01:50:16Z",
+   "fermee_le": "2026-09-24T13:41:55Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2813"
+  },
+  {
+   "numero": 2815,
+   "titre": "[APIs Health] 2026-07-31T08:32 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-31T08:32:59Z",
+   "fermee_le": "2026-09-24T13:41:53Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2815"
+  },
+  {
+   "numero": 2817,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-07-31T11:32:21Z",
+   "fermee_le": "2026-09-24T13:41:51Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2817"
+  },
+  {
+   "numero": 2818,
+   "titre": "[APIs Health] 2026-07-31T13:38 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-31T13:38:37Z",
+   "fermee_le": "2026-09-24T13:41:48Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2818"
+  },
+  {
+   "numero": 2820,
+   "titre": "[APIs Health] 2026-07-31T19:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-07-31T19:07:00Z",
+   "fermee_le": "2026-09-24T13:41:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2820"
+  },
+  {
+   "numero": 2822,
+   "titre": "[APIs Health] 2026-08-01T01:51 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-01T01:51:05Z",
+   "fermee_le": "2026-09-24T13:41:44Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2822"
+  },
+  {
+   "numero": 2824,
+   "titre": "[APIs Health] 2026-08-01T08:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-01T08:02:33Z",
+   "fermee_le": "2026-09-24T13:41:41Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2824"
+  },
+  {
+   "numero": 2826,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-01T10:44:39Z",
+   "fermee_le": "2026-09-24T13:41:37Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2826"
+  },
+  {
+   "numero": 2827,
+   "titre": "[APIs Health] 2026-08-01T12:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-01T12:55:44Z",
+   "fermee_le": "2026-09-24T13:41:35Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2827"
+  },
+  {
+   "numero": 2829,
+   "titre": "[APIs Health] 2026-08-01T18:53 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-01T18:53:31Z",
+   "fermee_le": "2026-09-24T13:41:31Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2829"
+  },
+  {
+   "numero": 2831,
+   "titre": "[APIs Health] 2026-08-02T01:47 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-02T01:47:56Z",
+   "fermee_le": "2026-09-24T13:41:29Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2831"
+  },
+  {
+   "numero": 2833,
+   "titre": "[APIs Health] 2026-08-02T08:04 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-02T08:04:16Z",
+   "fermee_le": "2026-09-24T13:41:26Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2833"
+  },
+  {
+   "numero": 2835,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-02T10:44:40Z",
+   "fermee_le": "2026-09-24T13:41:24Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2835"
+  },
+  {
+   "numero": 2836,
+   "titre": "[APIs Health] 2026-08-02T12:57 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-02T12:57:50Z",
+   "fermee_le": "2026-09-24T13:41:21Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2836"
+  },
+  {
+   "numero": 2838,
+   "titre": "[APIs Health] 2026-08-02T18:53 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-02T18:53:50Z",
+   "fermee_le": "2026-09-24T13:41:18Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2838"
+  },
+  {
+   "numero": 2840,
+   "titre": "[APIs Health] 2026-08-03T01:50 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-03T01:50:20Z",
+   "fermee_le": "2026-09-24T13:41:16Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2840"
+  },
+  {
+   "numero": 2847,
+   "titre": "[Ultra Audit Crew] 2026-08-03 06:19 UTC — Run #30789185282",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-08-03T06:19:16Z",
+   "fermee_le": "2026-09-24T13:41:14Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2847"
+  },
+  {
+   "numero": 2848,
+   "titre": "[APIs Health] 2026-08-03T09:19 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-03T09:19:54Z",
+   "fermee_le": "2026-09-24T13:41:11Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2848"
+  },
+  {
+   "numero": 2864,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-03T12:31:31Z",
+   "fermee_le": "2026-09-24T13:41:09Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2864"
+  },
+  {
+   "numero": 2868,
+   "titre": "[APIs Health] 2026-08-03T14:14 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-03T14:14:42Z",
+   "fermee_le": "2026-09-24T13:41:06Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2868"
+  },
+  {
+   "numero": 2874,
+   "titre": "[APIs Health] 2026-08-03T19:18 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-03T19:18:05Z",
+   "fermee_le": "2026-09-24T13:41:04Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2874"
+  },
+  {
+   "numero": 2890,
+   "titre": "[APIs Health] 2026-08-04T01:25 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-04T01:25:28Z",
+   "fermee_le": "2026-09-24T13:41:01Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2890"
+  },
+  {
+   "numero": 2892,
+   "titre": "[APIs Health] 2026-08-04T08:19 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-04T08:19:03Z",
+   "fermee_le": "2026-09-24T13:40:59Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2892"
+  },
+  {
+   "numero": 2894,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-04T11:29:36Z",
+   "fermee_le": "2026-09-24T13:40:57Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2894"
+  },
+  {
+   "numero": 2904,
+   "titre": "[APIs Health] 2026-08-04T13:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-04T13:46:34Z",
+   "fermee_le": "2026-09-24T13:40:55Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2904"
+  },
+  {
+   "numero": 2970,
+   "titre": "[APIs Health] 2026-08-04T19:17 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-04T19:17:50Z",
+   "fermee_le": "2026-09-24T13:40:53Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2970"
+  },
+  {
+   "numero": 2990,
+   "titre": "[APIs Health] 2026-08-05T01:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-05T01:39:47Z",
+   "fermee_le": "2026-09-24T13:40:51Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2990"
+  },
+  {
+   "numero": 2992,
+   "titre": "[APIs Health] 2026-08-05T08:15 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-05T08:15:21Z",
+   "fermee_le": "2026-09-24T13:40:48Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2992"
+  },
+  {
+   "numero": 2994,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-05T11:25:20Z",
+   "fermee_le": "2026-09-24T13:40:46Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2994"
+  },
+  {
+   "numero": 2997,
+   "titre": "[APIs Health] 2026-08-05T13:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-05T13:42:00Z",
+   "fermee_le": "2026-09-24T13:40:44Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/2997"
+  },
+  {
+   "numero": 3029,
+   "titre": "[APIs Health] 2026-08-05T19:13 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-05T19:13:32Z",
+   "fermee_le": "2026-09-24T13:40:42Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3029"
+  },
+  {
+   "numero": 3062,
+   "titre": "[APIs Health] 2026-08-06T01:28 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-06T01:28:20Z",
+   "fermee_le": "2026-09-24T13:40:40Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3062"
+  },
+  {
+   "numero": 3069,
+   "titre": "[APIs Health] 2026-08-06T08:14 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-06T08:14:02Z",
+   "fermee_le": "2026-09-24T13:40:37Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3069"
+  },
+  {
+   "numero": 3071,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-06T11:28:30Z",
+   "fermee_le": "2026-09-24T13:40:35Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3071"
+  },
+  {
+   "numero": 3081,
+   "titre": "[APIs Health] 2026-08-06T13:40 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-06T13:40:13Z",
+   "fermee_le": "2026-09-24T13:40:33Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3081"
+  },
+  {
+   "numero": 3127,
+   "titre": "[APIs Health] 2026-08-07T00:21 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-07T00:21:39Z",
+   "fermee_le": "2026-09-24T13:40:31Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3127"
+  },
+  {
+   "numero": 3132,
+   "titre": "[APIs Health] 2026-08-07T02:05 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-07T02:05:58Z",
+   "fermee_le": "2026-09-24T13:40:29Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3132"
+  },
+  {
+   "numero": 3145,
+   "titre": "[APIs Health] 2026-08-07T06:59 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-07T06:59:21Z",
+   "fermee_le": "2026-09-24T13:40:26Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3145"
+  },
+  {
+   "numero": 3147,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-07T10:05:15Z",
+   "fermee_le": "2026-09-24T13:40:24Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3147"
+  },
+  {
+   "numero": 3148,
+   "titre": "[APIs Health] 2026-08-07T12:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-07T12:39:05Z",
+   "fermee_le": "2026-09-24T13:40:21Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3148"
+  },
+  {
+   "numero": 3163,
+   "titre": "[APIs Health] 2026-08-07T18:38 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-07T18:38:54Z",
+   "fermee_le": "2026-09-24T13:40:19Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3163"
+  },
+  {
+   "numero": 3190,
+   "titre": "[APIs Health] 2026-08-08T00:51 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-08T00:51:23Z",
+   "fermee_le": "2026-09-24T13:40:17Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3190"
+  },
+  {
+   "numero": 3202,
+   "titre": "[APIs Health] 2026-08-08T06:33 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-08T06:33:21Z",
+   "fermee_le": "2026-09-24T13:40:15Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3202"
+  },
+  {
+   "numero": 3204,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-08T09:44:40Z",
+   "fermee_le": "2026-09-24T13:40:13Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3204"
+  },
+  {
+   "numero": 3211,
+   "titre": "[APIs Health] 2026-08-08T12:25 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-08T12:25:15Z",
+   "fermee_le": "2026-09-24T13:40:11Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3211"
+  },
+  {
+   "numero": 3229,
+   "titre": "[APIs Health] 2026-08-08T18:21 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-08T18:21:35Z",
+   "fermee_le": "2026-09-24T13:40:09Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3229"
+  },
+  {
+   "numero": 3257,
+   "titre": "[APIs Health] 2026-08-09T00:54 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-09T00:54:23Z",
+   "fermee_le": "2026-09-24T13:40:07Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3257"
+  },
+  {
+   "numero": 3285,
+   "titre": "[APIs Health] 2026-08-09T06:37 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-09T06:37:09Z",
+   "fermee_le": "2026-09-24T13:40:05Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3285"
+  },
+  {
+   "numero": 3289,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-09T09:47:54Z",
+   "fermee_le": "2026-09-24T13:40:03Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3289"
+  },
+  {
+   "numero": 3304,
+   "titre": "[APIs Health] 2026-08-09T12:27 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-09T12:27:30Z",
+   "fermee_le": "2026-09-24T13:40:01Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3304"
+  },
+  {
+   "numero": 3315,
+   "titre": "[APIs Health] 2026-08-09T18:23 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-09T18:23:56Z",
+   "fermee_le": "2026-09-24T13:39:59Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3315"
+  },
+  {
+   "numero": 3349,
+   "titre": "[APIs Health] 2026-08-10T00:56 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-10T00:56:30Z",
+   "fermee_le": "2026-09-24T13:39:57Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3349"
+  },
+  {
+   "numero": 3351,
+   "titre": "[Ultra Audit Crew] 2026-08-10 04:27 UTC — Run #31355165481",
+   "famille": "Ultra Audit Crew",
+   "ouverte_le": "2026-08-10T04:27:11Z",
+   "fermee_le": "2026-09-24T13:39:55Z",
+   "etiquettes": [
+    "audit-report"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3351"
+  },
+  {
+   "numero": 3352,
+   "titre": "[APIs Health] 2026-08-10T07:09 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-10T07:09:06Z",
+   "fermee_le": "2026-09-24T13:39:52Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3352"
+  },
+  {
+   "numero": 3354,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-10T10:23:17Z",
+   "fermee_le": "2026-09-24T13:39:50Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3354"
+  },
+  {
+   "numero": 3359,
+   "titre": "[APIs Health] 2026-08-10T12:43 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-10T12:43:08Z",
+   "fermee_le": "2026-09-24T13:39:48Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3359"
+  },
+  {
+   "numero": 3384,
+   "titre": "[APIs Health] 2026-08-10T18:41 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-10T18:41:28Z",
+   "fermee_le": "2026-09-24T13:39:46Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3384"
+  },
+  {
+   "numero": 3427,
+   "titre": "[APIs Health] 2026-08-11T00:55 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-11T00:55:56Z",
+   "fermee_le": "2026-09-24T13:39:44Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3427"
+  },
+  {
+   "numero": 3432,
+   "titre": "[APIs Health] 2026-08-11T06:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-11T06:46:28Z",
+   "fermee_le": "2026-09-24T13:39:42Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3432"
+  },
+  {
+   "numero": 3438,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-11T10:04:30Z",
+   "fermee_le": "2026-09-24T13:39:40Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3438"
+  },
+  {
+   "numero": 3446,
+   "titre": "[APIs Health] 2026-08-11T12:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-11T12:39:34Z",
+   "fermee_le": "2026-09-24T13:39:38Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3446"
+  },
+  {
+   "numero": 3462,
+   "titre": "[APIs Health] 2026-08-11T18:45 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-11T18:45:44Z",
+   "fermee_le": "2026-09-24T13:39:36Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3462"
+  },
+  {
+   "numero": 3497,
+   "titre": "[APIs Health] 2026-08-12T01:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-12T01:02:32Z",
+   "fermee_le": "2026-09-24T13:39:34Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3497"
+  },
+  {
+   "numero": 3499,
+   "titre": "[APIs Health] 2026-08-12T07:06 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-12T07:06:54Z",
+   "fermee_le": "2026-09-24T13:39:32Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3499"
+  },
+  {
+   "numero": 3501,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-12T10:13:12Z",
+   "fermee_le": "2026-09-24T13:39:30Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3501"
+  },
+  {
+   "numero": 3503,
+   "titre": "[APIs Health] 2026-08-12T12:42 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-12T12:42:38Z",
+   "fermee_le": "2026-09-24T13:39:27Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3503"
+  },
+  {
+   "numero": 3519,
+   "titre": "[APIs Health] 2026-08-12T18:46 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-12T18:46:53Z",
+   "fermee_le": "2026-09-24T13:39:25Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3519"
+  },
+  {
+   "numero": 3524,
+   "titre": "[APIs Health] 2026-08-13T01:03 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-13T01:03:41Z",
+   "fermee_le": "2026-09-24T13:39:23Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3524"
+  },
+  {
+   "numero": 3526,
+   "titre": "[APIs Health] 2026-08-13T07:10 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-13T07:11:00Z",
+   "fermee_le": "2026-09-24T13:39:20Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3526"
+  },
+  {
+   "numero": 3528,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-13T10:14:50Z",
+   "fermee_le": "2026-09-24T13:39:18Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3528"
+  },
+  {
+   "numero": 3549,
+   "titre": "[APIs Health] 2026-08-13T12:43 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-13T12:43:53Z",
+   "fermee_le": "2026-09-24T13:39:16Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3549"
+  },
+  {
+   "numero": 3593,
+   "titre": "[APIs Health] 2026-08-13T18:47 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-13T18:47:35Z",
+   "fermee_le": "2026-09-24T13:39:13Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3593"
+  },
+  {
+   "numero": 3598,
+   "titre": "[APIs Health] 2026-08-14T01:02 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-14T01:02:40Z",
+   "fermee_le": "2026-09-24T13:39:11Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3598"
+  },
+  {
+   "numero": 3616,
+   "titre": "[APIs Health] 2026-08-14T07:07 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-14T07:07:56Z",
+   "fermee_le": "2026-09-24T13:39:09Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3616"
+  },
+  {
+   "numero": 3618,
+   "titre": "🚨 Apex v13 deploy drift detected (Erreur #54)",
+   "famille": "Apex v13 deploy drift",
+   "ouverte_le": "2026-08-14T10:10:59Z",
+   "fermee_le": "2026-09-24T13:39:07Z",
+   "etiquettes": [
+    "bug",
+    "apex-v13",
+    "deploy-drift"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3618"
+  },
+  {
+   "numero": 3623,
+   "titre": "[APIs Health] 2026-08-14T12:39 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-14T12:39:53Z",
+   "fermee_le": "2026-09-24T13:39:05Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3623"
+  },
+  {
+   "numero": 3628,
+   "titre": "[APIs Health] 2026-08-14T18:40 — ≥1 service KO",
+   "famille": "APIs Health",
+   "ouverte_le": "2026-08-14T18:40:04Z",
+   "fermee_le": "2026-09-24T13:39:03Z",
+   "etiquettes": [
+    "apis-status"
+   ],
+   "lien": "https://github.com/9r4rxssx64-creator/CMCteams/issues/3628"
+  }
+ ]
+}

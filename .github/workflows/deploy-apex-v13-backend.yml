@@ -1,0 +1,44 @@
+name: Deploy Apex v13 Backend Worker
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'services/apex-v13-backend/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/apex-v13-backend
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler
+        run: npm install --no-audit --no-fund
+
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        continue-on-error: true
+        # continue-on-error pour Jet 6.5 : Kevin doit configurer secrets GitHub
+        # CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID avant que ce workflow réussisse.
+        # Tant qu'ils ne sont pas configurés, deploy échoue mais ne bloque pas main.

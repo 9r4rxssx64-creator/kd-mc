@@ -1,0 +1,17 @@
+{
+  "name": "A Cüjina de Mùnegu — Répertoire de la Riviera",
+  "short_name": "Cüjina",
+  "description": "Le Grand Répertoire culinaire de Monaco et de la Riviera : 128 recettes, 11 tomes, en français et en munegascu.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#CE1126",
+  "theme_color": "#CE1126",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Apex Push Worker — Deploy Tool</title>
+<style>
+:root{--gold:#c9a227;--gold2:#e8b830;--bg:#0e1530;--bg2:#080c1a;--border:rgba(232,184,48,.3);--text:#f8f8ff;--dim:#9ba8c4;--green:#5cd882;--red:#ff5858;--blue:#5aa8ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;padding:0;background:radial-gradient(ellipse at 50% 30%,var(--bg) 0%,var(--bg2) 60%,#040608 100%);color:var(--text);font-family:-apple-system,system-ui,sans-serif;min-height:100vh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+.wrap{max-width:520px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:32px;font-weight:900;letter-spacing:4px;margin:0 0 6px;background:linear-gradient(135deg,var(--gold),var(--gold2),#ffd860);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+.sub{text-align:center;color:var(--dim);font-size:14px;margin-bottom:24px}
+.diamond{font-size:48px;text-align:center;margin-bottom:8px;color:var(--gold)}
+.card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px;margin:14px 0}
+.card.recommended{border-color:var(--green);background:linear-gradient(135deg,rgba(92,216,130,.06),rgba(255,255,255,.02))}
+.card.alternative{border-color:var(--blue);background:linear-gradient(135deg,rgba(90,168,255,.04),rgba(255,255,255,.02))}
+.card.warn{border-color:var(--gold);background:linear-gradient(135deg,rgba(232,184,48,.05),rgba(255,255,255,.02))}
+.step-title{font-size:14px;font-weight:800;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.badge-green{background:rgba(92,216,130,.2);color:var(--green)}
+.badge-blue{background:rgba(90,168,255,.2);color:var(--blue)}
+.badge-gold{background:rgba(232,184,48,.2);color:var(--gold)}
+.help{font-size:12px;color:var(--dim);line-height:1.5;margin-bottom:10px}
+.input-row{position:relative;margin-bottom:8px}
+input[type="text"],input[type="password"],input[type="email"]{width:100%;padding:14px 48px 14px 14px;font-size:14px;background:rgba(0,0,0,.3);color:var(--text);border:1px solid var(--border);border-radius:10px;font-family:ui-monospace,monospace;-webkit-appearance:none}
+input:focus{outline:none;border-color:var(--gold)}
+.eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(232,184,48,.15);border:1px solid var(--border);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
+.eye:active{transform:translateY(-50%) scale(.92)}
+button{width:100%;padding:16px 20px;font-size:16px;font-weight:800;letter-spacing:.5px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#040608;border:none;border-radius:12px;cursor:pointer;min-height:56px;margin-top:10px;transition:transform .1s ease}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+button.green{background:linear-gradient(135deg,var(--green),#7adda1);color:#0a3318}
+.ok{color:var(--green)}
+.err{color:var(--red)}
+.log{background:rgba(0,0,0,.4);padding:12px;border-radius:8px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;max-height:280px;overflow-y:auto;border:1px solid var(--border);white-space:pre-wrap;word-break:break-word}
+a{color:var(--gold2);text-decoration:none}
+a:hover{text-decoration:underline}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(232,184,48,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.account-pick{padding:10px 12px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;font-size:14px;margin:6px 0;cursor:pointer}
+.account-pick.active{background:rgba(232,184,48,.2);border-color:var(--gold)}
+.note-warn{font-size:11px;color:var(--gold);background:rgba(232,184,48,.08);padding:8px 12px;border-radius:8px;margin-top:6px;border-left:3px solid var(--gold)}
+.note-info{font-size:11px;color:var(--blue);background:rgba(90,168,255,.06);padding:8px 12px;border-radius:8px;margin-top:6px;border-left:3px solid var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="diamond">✦</div>
+  <h1>APEX</h1>
+  <div class="sub">Déployeur Push Worker — 1 clic</div>
+
+  <div style="text-align:center;font-size:13px;color:var(--dim);margin-bottom:20px;line-height:1.6">
+    Remplis <b>UNE SEULE</b> des 3 cases ci-dessous selon ce que tu as.<br>
+    L'outil prendra automatiquement la bonne.
+  </div>
+
+  <!-- Choix 1 : Token API -->
+  <div class="card recommended">
+    <div class="step-title">
+      🔑 Choix 1 — Token API <span class="badge badge-green">RECOMMANDÉ</span>
+    </div>
+    <div class="help">
+      Le jeton scoped que tu viens de créer "Modifier Cloudflare Workers".<br>
+      Source : <a rel="noopener noreferrer" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare → Jetons d'API</a>
+    </div>
+    <div class="input-row">
+      <input type="password" id="cfToken" placeholder="Colle ici ton Token API (commence par...)" autocomplete="off">
+      <div class="eye" onclick="toggleEye('cfToken',this)">👁</div>
+    </div>
+    <div class="note-info">💡 C'est le choix sécurisé : le token n'a accès QU'aux Workers, rien d'autre.</div>
+  </div>
+
+  <!-- Choix 2 : Global API Key -->
+  <div class="card alternative">
+    <div class="step-title">
+      🌍 Choix 2 — Global API Key <span class="badge badge-blue">SI PAS CRÉÉ DE TOKEN</span>
+    </div>
+    <div class="help">
+      Ta clé legacy avec accès TOTAL au compte Cloudflare.<br>
+      Source : <a rel="noopener noreferrer" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare → Clés API → "Affichage" sur Global API Key</a>
+    </div>
+    <div class="input-row">
+      <input type="email" id="cfEmail" placeholder="Email Cloudflare" value="Desarzens.kevin@gmail.com" autocomplete="off">
+    </div>
+    <div class="input-row">
+      <input type="password" id="cfGlobalKey" placeholder="Colle ici la Global API Key" autocomplete="off">
+      <div class="eye" onclick="toggleEye('cfGlobalKey',this)">👁</div>
+    </div>
+    <div class="note-warn">⚠️ Cette clé donne accès à TOUT ton compte. À utiliser uniquement si tu n'as pas de Token API.</div>
+  </div>
+
+  <!-- Choix 3 : Origin CA Key (info) -->
+  <div class="card warn">
+    <div class="step-title">
+      🛡 Choix 3 — Origin CA Key <span class="badge badge-gold">PAS UTILE ICI</span>
+    </div>
+    <div class="help">
+      Cette clé sert à signer des certificats SSL Cloudflare → ton serveur.<br>
+      <b>Elle ne permet PAS de déployer un Worker.</b> Tu peux l'ignorer pour cet outil.
+    </div>
+  </div>
+
+  <button onclick="loadFromApex()" id="btnFromApex" class="outline" style="background:rgba(232,184,48,.1);border-color:var(--gold);color:var(--gold);margin-bottom:8px">📋 Charger depuis Apex Coffre</button>
+<button onclick="loadAccounts()" id="btnLoad">Vérifier mon accès Cloudflare</button>
+
+  <div class="card" id="accountsCard" style="display:none">
+    <div class="step-title">📋 Choisis ton compte</div>
+    <div id="accountsList"></div>
+  </div>
+
+  <div class="card" id="deployCard" style="display:none">
+    <div class="step-title">🚀 Déployer le code Apex Push Worker</div>
+    <div class="help">
+      Le code <b>apex-push-worker.js</b> sera téléchargé depuis GitHub et déployé sur ton Worker <b>apex-push-worker</b>.<br>
+      Tes 5 variables d'env (VAPID_*, FIREBASE_URL, ADMIN_TOKEN) sont préservées.
+    </div>
+    <button onclick="deployWorker()" id="btnDeploy">🚀 Déployer maintenant</button>
+    <button onclick="testHealth()" class="green" id="btnTest" style="display:none">✅ Tester /health</button>
+  </div>
+
+  <div class="card" id="logCard" style="display:none">
+    <div class="step-title">📋 Journal</div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div style="text-align:center;margin-top:24px;font-size:11px;color:var(--dim)">
+    Aucune donnée sauvegardée · Tout reste en local navigateur · APEX ✦
+  </div>
+</div>
+
+<script>
+let TOKEN='', EMAIL='', AUTH_MODE='', ACCOUNT_ID='', ACCOUNTS=[];
+const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app';
+
+// Auto-load saved values
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('apex_deploy_creds') || '{}');
+    if(saved.token) document.getElementById('cfToken').value = saved.token;
+    if(saved.global) document.getElementById('cfGlobalKey').value = saved.global;
+    if(saved.email) document.getElementById('cfEmail').value = saved.email;
+  } catch(_){}
+});
+
+function saveCreds(){
+  try {
+    localStorage.setItem('apex_deploy_creds', JSON.stringify({
+      token: document.getElementById('cfToken').value,
+      global: document.getElementById('cfGlobalKey').value,
+      email: document.getElementById('cfEmail').value,
+      ts: Date.now()
+    }));
+  } catch(_){}
+}
+
+async function loadFromApex(){
+  const btn = document.getElementById('btnFromApex');
+  btn.innerHTML = '<span class="spinner"></span> Chargement Apex...';
+  btn.disabled = true;
+  log('→ Récupération depuis Apex Coffre Firebase...');
+  let found = false;
+  // Try each known key
+  const keys = ['ax_cloudflare_token', 'ax_cloudflare_api_token'];
+  for(const k of keys){
+    try {
+      const r = await fetch(FB_URL + '/apex/' + k + '.json');
+      if(r.ok){
+        const v = await r.json();
+        if(v && typeof v === 'string' && v.length > 20){
+          document.getElementById('cfToken').value = v;
+          log('✅ Token chargé depuis ' + k, 'ok');
+          found = true;
+          break;
+        }
+      }
+    } catch(_){}
+  }
+  if(!found){
+    log('⚠️ Aucun token trouvé dans ton Coffre Apex.', 'err');
+    log('Pour la prochaine fois : sauvegarde-le dans Apex Coffre catégorie Infrastructure → champ "Cloudflare Token".');
+  }
+  btn.innerHTML = '📋 Charger depuis Apex Coffre';
+  btn.disabled = false;
+}
+const RAW_URL = 'https://raw.githubusercontent.com/9r4rxssx64-creator/cmcteams/main/tools/cloudflare/apex-push-worker.js';
+const SCRIPT_NAME = 'apex-push-worker';
+
+function toggleEye(id, btn){
+  const el = document.getElementById(id);
+  if(el.type === 'password'){el.type = 'text'; btn.textContent = '🙈';}
+  else {el.type = 'password'; btn.textContent = '👁';}
+}
+
+function log(msg, cls){
+  const logCard = document.getElementById('logCard');
+  const logEl = document.getElementById('log');
+  logCard.style.display='block';
+  const span = cls ? `<span class="${cls}">${msg}</span>` : msg;
+  logEl.innerHTML += span + '\n';
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function authHeaders(){
+  if(AUTH_MODE === 'global'){
+    return {'X-Auth-Email': EMAIL, 'X-Auth-Key': TOKEN};
+  }
+  return {'Authorization': 'Bearer ' + TOKEN};
+}
+
+async function loadAccounts(){
+  const tokenVal = document.getElementById('cfToken').value.trim();
+  const globalVal = document.getElementById('cfGlobalKey').value.trim();
+  const emailVal = document.getElementById('cfEmail').value.trim();
+
+  if(tokenVal){
+    TOKEN = tokenVal;
+    AUTH_MODE = 'token';
+    log('→ Mode Token API détecté');
+  } else if(globalVal && emailVal){
+    TOKEN = globalVal;
+    EMAIL = emailVal;
+    AUTH_MODE = 'global';
+    log('→ Mode Global API Key détecté (' + emailVal + ')');
+  } else if(globalVal && !emailVal){
+    alert('Tu as collé une Global API Key, ajoute aussi ton email Cloudflare.');
+    return;
+  } else {
+    alert('Colle ton Token API (Choix 1) OU ta Global API Key + email (Choix 2).');
+    return;
+  }
+
+  const btn = document.getElementById('btnLoad');
+  btn.innerHTML = '<span class="spinner"></span> Vérification...';
+  btn.disabled = true;
+  log('→ Connexion à Cloudflare...');
+
+  try {
+    const r = await fetch('https://api.cloudflare.com/client/v4/accounts', {
+      headers: authHeaders()
+    });
+    const data = await r.json();
+    if(!data.success){
+      log('❌ Authentification échouée : ' + (data.errors?.[0]?.message || 'inconnu'), 'err');
+      log(JSON.stringify(data.errors||{}, null, 2));
+      btn.innerHTML = 'Réessayer';
+      btn.disabled = false;
+      return;
+    }
+    ACCOUNTS = data.result || [];
+    if(!ACCOUNTS.length){
+      log('❌ Aucun compte trouvé', 'err');
+      btn.innerHTML = 'Réessayer';
+      btn.disabled = false;
+      return;
+    }
+    log('✅ Authentification OK · ' + ACCOUNTS.length + ' compte(s) trouvé(s)', 'ok');
+    saveCreds();
+    const list = document.getElementById('accountsList');
+    list.innerHTML = '';
+    ACCOUNTS.forEach((a, i) => {
+      const div = document.createElement('div');
+      div.className = 'account-pick' + (i===0 ? ' active' : '');
+      div.innerHTML = '<b>' + a.name + '</b><br><small style="color:var(--dim)">ID: ' + a.id + '</small>';
+      div.onclick = () => pickAccount(a.id, div);
+      list.appendChild(div);
+    });
+    if(ACCOUNTS.length === 1) pickAccount(ACCOUNTS[0].id, list.querySelector('.account-pick'));
+    document.getElementById('accountsCard').style.display = 'block';
+    btn.innerHTML = '✅ Compte chargé';
+  } catch(e){
+    log('❌ Erreur réseau : ' + e.message, 'err');
+    btn.innerHTML = 'Réessayer';
+    btn.disabled = false;
+  }
+}
+
+function pickAccount(id, el){
+  ACCOUNT_ID = id;
+  document.querySelectorAll('.account-pick').forEach(d => d.classList.remove('active'));
+  el.classList.add('active');
+  log('→ Compte sélectionné : ' + id);
+  document.getElementById('deployCard').style.display = 'block';
+  checkWorker();
+}
+
+async function checkWorker(){
+  log('→ Vérification du worker apex-push-worker...');
+  const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}`, {
+    headers: authHeaders()
+  });
+  if(r.ok || r.status === 200){
+    log('✅ Worker apex-push-worker trouvé', 'ok');
+  } else {
+    log('⚠️ Worker introuvable (' + r.status + '). Crée-le dans Cloudflare Dashboard d\'abord.', 'err');
+  }
+}
+
+async function deployWorker(){
+  if(!ACCOUNT_ID){alert('Choisis un compte');return;}
+  const btn = document.getElementById('btnDeploy');
+  btn.innerHTML = '<span class="spinner"></span> Déploiement...';
+  btn.disabled = true;
+  log('→ Téléchargement du code depuis GitHub...');
+
+  try {
+    const codeR = await fetch(RAW_URL + '?_t=' + Date.now());
+    if(!codeR.ok) throw new Error('Impossible de récupérer le code GitHub : ' + codeR.status);
+    const code = await codeR.text();
+    log('✅ Code téléchargé (' + code.length + ' caractères)', 'ok');
+    log('→ Upload vers Cloudflare...');
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}`;
+    const metadata = {
+      main_module: 'worker.js',
+      compatibility_date: new Date().toISOString().slice(0, 10)
+    };
+    const fd = new FormData();
+    fd.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+    fd.append('worker.js', new Blob([code], {type: 'application/javascript+module'}), 'worker.js');
+
+    const r = await fetch(url, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: fd
+    });
+    const result = await r.json();
+    if(result.success){
+      log('✅ Déploiement réussi !', 'ok');
+      log('→ ID : ' + (result.result?.id || '?'));
+      log('→ Created : ' + (result.result?.created_on || '?'));
+      log('');
+      log('🎉 Tu peux maintenant tester le worker :', 'ok');
+      log('https://apex-push-worker.9r4rxssx64.workers.dev/health');
+      document.getElementById('btnTest').style.display = 'block';
+      btn.innerHTML = '✅ Déployé avec succès';
+    } else {
+      log('❌ Échec : ' + (result.errors?.[0]?.message || 'inconnu'), 'err');
+      log(JSON.stringify(result.errors || result, null, 2));
+      btn.innerHTML = 'Réessayer';
+      btn.disabled = false;
+    }
+  } catch(e){
+    log('❌ Erreur : ' + e.message, 'err');
+    btn.innerHTML = 'Réessayer';
+    btn.disabled = false;
+  }
+}
+
+async function testHealth(){
+  log('→ Test /health...');
+  try {
+    const r = await fetch('https://apex-push-worker.9r4rxssx64.workers.dev/health');
+    const data = await r.json();
+    log('Réponse : ' + JSON.stringify(data, null, 2));
+    if(data.ok && data.configured){
+      log('✅ TOUT FONCTIONNE ! Notifications push prêtes.', 'ok');
+    } else if(data.ok){
+      log('⚠️ Worker répond mais pas configuré. Vérifie les variables.', 'err');
+    }
+  } catch(e){
+    log('❌ Erreur : ' + e.message, 'err');
+  }
+}
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="deploy-worker" data-version="v1.0" data-color="#c9a227" defer></script>
+</body>
+</html>

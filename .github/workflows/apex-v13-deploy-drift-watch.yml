@@ -1,0 +1,114 @@
+name: Apex v13 deploy drift watch (anti-récidive Erreur #54)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# v13.4.168 (Kevin 2026-05-15) : sentinelle drift watch.
+#
+# CAUSE RACINE : Erreur #54 du CLAUDE.md s'est REPRODUITE 4 fois car aucun
+# alerte automatique ne détectait quand source > deployed.
+#
+# Ce workflow tourne :
+# - Sur CHAQUE PR touchant apex-ai/v13/
+# - Tous les jours à 09:00 UTC (heartbeat)
+# - On-demand via workflow_dispatch
+#
+# Compare data-app-ver entre source et apex-ai-v13/. Si drift > 0 versions
+# détecté → FAIL le job + créé issue GitHub automatique pour escalade.
+
+on:
+  pull_request:
+    paths:
+      - 'apex-ai/v13/**'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract versions
+        id: ver
+        run: |
+          SRC=$(grep -oE 'data-app-ver="[^"]*"' apex-ai/v13/index.html | head -1 | sed 's/.*="\([^"]*\)"/\1/')
+          DEPLOYED=$(grep -oE 'data-app-ver="[^"]*"' apex-ai-v13/index.html 2>/dev/null | head -1 | sed 's/.*="\([^"]*\)"/\1/' || echo "ABSENT")
+          [ -z "$DEPLOYED" ] && DEPLOYED="ABSENT"
+          BOOTSTRAP=$(grep "APP_VER = '" apex-ai/v13/core/bootstrap.ts | head -1 | sed "s/.*APP_VER = '\([^']*\)'.*/\1/")
+          SW=$(grep "CACHE_VERSION" apex-ai/v13/sw.js | head -1 | sed "s/.*'apex-\([^']*\)'.*/\1/")
+          PKG=$(grep '"version"' apex-ai/v13/package.json | head -1 | sed 's/.*"version": *"\([^"]*\)".*/v\1/')
+          echo "src=$SRC" >> $GITHUB_OUTPUT
+          echo "deployed=$DEPLOYED" >> $GITHUB_OUTPUT
+          echo "bootstrap=$BOOTSTRAP" >> $GITHUB_OUTPUT
+          echo "sw=$SW" >> $GITHUB_OUTPUT
+          echo "pkg=$PKG" >> $GITHUB_OUTPUT
+          echo "=== Apex v13 versions ==="
+          echo "Source index.html : $SRC"
+          echo "Deployed apex-ai-v13/ : $DEPLOYED"
+          echo "Bootstrap APP_VER : $BOOTSTRAP"
+          echo "sw.js CACHE_VERSION : $SW"
+          echo "package.json : $PKG"
+
+      - name: Check version coherence (5 way)
+        run: |
+          SRC="${{ steps.ver.outputs.src }}"
+          DEPLOYED="${{ steps.ver.outputs.deployed }}"
+          BOOTSTRAP="${{ steps.ver.outputs.bootstrap }}"
+          SW="${{ steps.ver.outputs.sw }}"
+          PKG="${{ steps.ver.outputs.pkg }}"
+          DRIFT=0
+          if [ "$SRC" != "$DEPLOYED" ]; then
+            echo "::error::DRIFT source≠deployed : $SRC vs $DEPLOYED"
+            DRIFT=1
+          fi
+          if [ "$SRC" != "$BOOTSTRAP" ]; then
+            echo "::error::DRIFT source≠bootstrap : $SRC vs $BOOTSTRAP"
+            DRIFT=1
+          fi
+          if [ "$SRC" != "$SW" ]; then
+            echo "::error::DRIFT source≠sw.js : $SRC vs $SW"
+            DRIFT=1
+          fi
+          if [ "$SRC" != "$PKG" ]; then
+            echo "::error::DRIFT source≠package.json : $SRC vs $PKG"
+            DRIFT=1
+          fi
+          if [ "$DRIFT" -eq 1 ]; then
+            echo "❌ Drift détecté — voir détails ci-dessus."
+            echo "Fix : (1) bump tous les fichiers à la même version, (2) npm run build, (3) sync apex-ai-v13/"
+            exit 1
+          fi
+          echo "✅ Cohérence parfaite : $SRC partout"
+
+      - name: Create issue if drift detected (cron only)
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const versions = {
+              source: '${{ steps.ver.outputs.src }}',
+              deployed: '${{ steps.ver.outputs.deployed }}',
+              bootstrap: '${{ steps.ver.outputs.bootstrap }}',
+              sw: '${{ steps.ver.outputs.sw }}',
+              pkg: '${{ steps.ver.outputs.pkg }}'
+            };
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Apex v13 deploy drift detected (Erreur #54)',
+              body: `Drift détecté entre versions Apex v13 :\n\n\`\`\`\n${JSON.stringify(versions, null, 2)}\n\`\`\`\n\nFix : Claude Code doit (1) bump tous fichiers même version, (2) npm run build, (3) sync apex-ai-v13/.\n\nRègle CLAUDE.md Erreur #54 — anti-régression.`,
+              labels: ['bug', 'apex-v13', 'deploy-drift']
+            });

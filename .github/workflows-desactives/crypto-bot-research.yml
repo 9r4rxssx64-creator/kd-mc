@@ -1,0 +1,40 @@
+# Recherche de stratégie sur DONNÉES RÉELLES Binance (bougies publiques, aucune clé).
+# Déclenchement : manuel uniquement. Lecture seule — ne déploie rien, ne trade pas.
+# Compare toutes les stratégies candidates et affiche le GAGNANT MESURÉ.
+
+name: Crypto Bot Research (données réelles)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comparer les stratégies sur vraies bougies Binance
+        working-directory: crypto-bot
+        run: |
+          set +e
+          python3 research.py | tee /tmp/research.out
+          RC=${PIPESTATUS[0]}
+          [ $RC -ne 0 ] && { echo "::error::research.py a échoué (rc=$RC) — détails ci-dessus."; exit 1; }
+
+          WINNER=$(grep -E '^WINNER=' /tmp/research.out | cut -d= -f2)
+          WAVG=$(grep -E '^WINNER_AVG=' /tmp/research.out | cut -d= -f2)
+          {
+            echo "## 🔬 Recherche stratégie — données RÉELLES Binance"
+            echo ""
+            echo "- 🏆 Gagnant mesuré : **${WINNER:-?}** (rendement moyen ${WAVG:-?})"
+            echo ""
+            echo '```'
+            sed -n '/══ MOYENNE SUR TOUS LES MARCHÉS RÉELS ══/,$p' /tmp/research.out
+            echo '```'
+            echo ""
+            echo "_Passé ≠ futur : le gagnant est un filtre mesuré, la validation finale reste le testnet._"
+          } >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,12 @@
+{
+  "name": "apex-chat-e2e",
+  "version": "1.0.0",
+  "description": "E2E Playwright tests Apex Chat sur prod live",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0"
+  }
+}

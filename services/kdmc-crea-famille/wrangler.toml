@@ -1,0 +1,17 @@
+name = "kdmc-crea-famille"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Le lien privé entre les téléphones de la famille (Créa Studio).
+# Isolé de tout le reste : son propre worker, son propre stockage. Une panne ici
+# ne peut casser AUCUNE autre app de kd-mc.com.
+routes = [
+  { pattern = "crea-famille.kd-mc.com", custom_domain = true }
+]
+workers_dev = true
+
+# Stockage KV — l'identifiant est écrit automatiquement par le workflow de
+# déploiement (il crée l'espace s'il n'existe pas). Rien à faire à la main.
+[[kv_namespaces]]
+binding = "FAMILLE"
+id = "REMPLACE_PAR_LE_WORKFLOW"

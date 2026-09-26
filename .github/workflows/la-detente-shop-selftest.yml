@@ -1,0 +1,111 @@
+name: La Détente — Boutique self-test (cloud)
+
+# Vérifie tout seul que le modèle de sécurité boutique est correct :
+#   (a) un client LIT toujours le catalogue (GET 200)
+#   (b) une écriture ANONYME est BLOQUÉE (PUT 401) → le verrou shops_lock=on marche
+#   (c) une écriture ADMIN authentifiée (id_token role:admin, comme le Studio via le
+#       grant domaine) RÉUSSIT (PUT 200) → publier reste possible pour Kevin/Lolo
+# N'alerte QUE si le modèle casse. Si les secrets FB manquent, l'étape (c) est un
+# skip (warning) — pas un échec — pour ne pas devenir chroniquement rouge (leçon #109).
+
+on:
+  push:
+    paths:
+      - 'shops/la-detente/**'
+      - 'shops/_shared/firebase-orders.js'
+      - 'shops/_shared/firebase-orders-auth.test.mjs'
+      - 'services/kdmc-router/fb-token.js'
+      - '.github/workflows/la-detente-shop-selftest.yml'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ld-shop-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Client — le writer partagé attache le token admin (fail-open) + ordres/lectures anonymes
+        run: node shops/_shared/firebase-orders-auth.test.mjs
+
+      - name: Sécurité boutique — lecture client / anon bloqué / admin autorisé
+        env:
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: |
+          set -e
+          FB="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          P="shops_admin_v1/products/la-detente"
+          KEY="_selftest_${GITHUB_RUN_ID}"
+
+          echo "1) Lecture catalogue (ce que voit un CLIENT)…"
+          code=$(curl -s -m 25 -o /tmp/prods.json -w "%{http_code}" "$FB/$P.json")
+          echo "   GET produits -> HTTP $code"
+          [ "$code" = "200" ] || { echo "::error::Lecture catalogue KO (HTTP $code) — les clients ne peuvent pas charger les produits."; exit 1; }
+          N=$(node -e "let d={};try{d=JSON.parse(require('fs').readFileSync('/tmp/prods.json','utf8'))||{}}catch(e){};console.log(d&&typeof d==='object'?Object.keys(d).filter(k=>!k.startsWith('_selftest')).length:0)")
+          echo "   produits publiés actuellement: $N"
+
+          echo "2) Écriture ANONYME (doit être BLOQUÉE par le verrou)…"
+          anon=$(curl -s -m 25 -o /dev/null -w "%{http_code}" -X PUT -H "Content-Type: application/json" \
+            -d "{\"id\":\"${KEY}_anon\",\"name\":\"anon must fail\",\"price\":1}" "$FB/$P/${KEY}_anon.json")
+          echo "   PUT anonyme -> HTTP $anon"
+          if [ "$anon" = "200" ]; then
+            curl -s -m 25 -X DELETE "$FB/$P/${KEY}_anon.json" >/dev/null || true
+            echo "::error::TROU DE SÉCURITÉ : écriture produit anonyme ACCEPTÉE (HTTP 200). Le verrou shops_lock=on n'est pas appliqué (règle products .write ouverte)."
+            exit 1
+          fi
+          echo "   ✅ anon bloqué (HTTP $anon) — le verrou fonctionne."
+
+          echo "3) Mint d'un id_token role:admin (chemin réel du Studio via le grant)…"
+          cat > mint.mjs <<'EOF'
+          import { mintShopsAdminIdToken } from './services/kdmc-router/fb-token.js';
+          const r = await mintShopsAdminIdToken(process.env);
+          if (r && r.ok && r.id_token) { process.stdout.write(r.id_token); }
+          else { process.stderr.write('mint_failed:' + JSON.stringify(r)); }
+          EOF
+          IDT=$(node mint.mjs 2>/tmp/mint.err || true)
+          if [ -z "$IDT" ]; then
+            echo "::warning::Étape admin non exécutée — mint id_token indisponible ($(cat /tmp/mint.err 2>/dev/null)). Secrets FB (FIREBASE_PRIVATE_KEY/CLIENT_EMAIL/WEB_API_KEY) posés ? Sécurité (anon bloqué) OK ; publication admin non re-prouvée ce run."
+            echo "✅ Sécurité boutique OK (client lit, anon bloqué). Étape admin skip (secrets FB)."
+            exit 0
+          fi
+          echo "   id_token role:admin obtenu."
+
+          echo "4) Publication ADMIN authentifiée (comme « Ajouter à la boutique » du Studio)…"
+          put=$(curl -s -m 25 -o /dev/null -w "%{http_code}" -X PUT -H "Content-Type: application/json" \
+            -d "{\"id\":\"$KEY\",\"name\":\"selftest CI\",\"price\":1,\"cat\":\"tshirts\"}" "$FB/$P/$KEY.json?auth=$IDT")
+          echo "   PUT admin -> HTTP $put"
+          if [ "$put" != "200" ]; then
+            echo "::error::Publication ADMIN KO (HTTP $put). Un admin authentifié (role:admin) ne peut PAS écrire → le Studio ne publiera pas. Vérifier _phase_shops_rolelock / le mint router."
+            exit 1
+          fi
+
+          echo "5) Re-lecture du produit test (le client le verrait-il ?)…"
+          got=$(curl -s -m 25 "$FB/$P/$KEY.json")
+          if ! echo "$got" | grep -q "selftest CI"; then
+            curl -s -m 25 -X DELETE "$FB/$P/$KEY.json?auth=$IDT" >/dev/null || true
+            echo "::error::Produit publié introuvable au re-fetch — publication non persistée."
+            exit 1
+          fi
+
+          echo "6) Nettoyage (suppression authentifiée du produit test)…"
+          del=$(curl -s -m 25 -o /dev/null -w "%{http_code}" -X DELETE "$FB/$P/$KEY.json?auth=$IDT")
+          echo "   DELETE -> HTTP $del"
+
+          echo "✅ Boutique OK : client lit · anon BLOQUÉ · admin authentifié publie & nettoie."

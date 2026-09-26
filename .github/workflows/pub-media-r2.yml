@@ -1,0 +1,188 @@
+name: Pub — héberge les vidéos sur R2 (le dépôt est privé)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POURQUOI CE WORKFLOW EXISTE — mesuré, pas supposé
+#
+# Le 15.09 Kevin a demandé « passe tout en privé ». Le dépôt est privé depuis le
+# 23.09. Ce jour-là, TOUTES les adresses de la release « pub-videos » sont
+# devenues 404 pour le monde entier :
+#     immo-05.mp4  →  HTTP 200, 428 479 octets   (21.09, dépôt public)
+#     immo-05.mp4  →  HTTP 404                   (23.09, dépôt privé)
+# alors que le fichier est toujours là (l'API le voit, « uploaded »).
+#
+# Conséquence : Metricool ne peut plus aller chercher les MP4 et refuse de
+# programmer (« Failed to normalize media »). RIEN n'était rouge : la chaîne de
+# pub s'arrêtait en silence. Les vidéos DÉJÀ programmées ne risquent rien —
+# Metricool en avait fait une copie sur static.metricool.com.
+#
+# Donc les vidéos déménagent dans un seau Cloudflare R2 PUBLIC, chez Kevin, qui
+# ne dépend plus de la visibilité du dépôt. Ce qui part dedans : les MP4 de pub
+# et leur index. Rien d'autre, jamais — un seau public ne contient que ce qui
+# est fait pour être vu.
+#
+# Honnêteté : l'adresse « r2.dev » est le domaine géré de Cloudflare, limité en
+# débit et déconseillé pour du gros trafic. Ici le consommateur est Metricool,
+# qui lit chaque vidéo UNE fois puis la recopie chez lui — c'est exactement
+# l'usage prévu. Si un jour le domaine doit servir les vidéos lui-même, on lui
+# mettra un domaine personnalisé.
+#
+# ZÉRO tâche programmée (règle absolue du dépôt) : bouton uniquement.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      miroir:
+        description: "Recopier dans R2 les vidéos déjà rendues (release « pub-videos »)"
+        type: choice
+        options: ["oui", "non"]
+        default: "oui"
+      branche:
+        description: "Branche où écrire tools/pub/media.json (vide = claude/pub-media-r2)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pub-media-r2
+  cancel-in-progress: false
+
+jobs:
+  r2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20   # borne : un job sans limite peut tourner 6 h et vider le quota
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installe wrangler
+        run: npm i -g wrangler@4
+
+      - name: Le seau existe (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -uo pipefail
+          wrangler r2 bucket create kdmc-pub-videos 2>&1 | tee /tmp/r2.log || true
+          if grep -qiE "already (exists|owned)|exists" /tmp/r2.log; then
+            echo "Seau déjà présent — OK"
+          fi
+
+      - name: Adresse publique du seau (domaine géré)
+        id: base
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          # Le jeton n'est JAMAIS affiché : pas de set -x sur cette étape.
+          curl -sS -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/r2/buckets/kdmc-pub-videos/domains/managed" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"enabled":true}' -o /tmp/managed.json
+          node -e '
+            const j = require("/tmp/managed.json");
+            if (!j.success) { console.error("ÉCHEC domaine géré : " + JSON.stringify(j.errors)); process.exit(1); }
+            const d = j.result && j.result.domain;
+            if (!d) { console.error("pas de domaine dans la réponse"); process.exit(1); }
+            console.log("ADRESSE PUBLIQUE https://" + d + "/");
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "base=https://" + d + "/\n");
+          '
+
+      - name: Miroir des vidéos déjà rendues
+        if: ${{ inputs.miroir == 'oui' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -sS -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/pub-videos" -o /tmp/rel.json
+          node -e '
+            const j = require("/tmp/rel.json");
+            const l = (j.assets || []).map(a => a.id + "\t" + a.name).join("\n");
+            require("fs").writeFileSync("/tmp/assets.txt", l + "\n");
+            console.log("assets à recopier : " + (j.assets || []).length);
+          '
+          mkdir -p /tmp/mp4
+          while IFS=$'\t' read -r id nom; do
+            [ -n "$nom" ] || continue
+            curl -sSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/octet-stream" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/assets/${id}" -o "/tmp/mp4/${nom}"
+            case "$nom" in
+              *.mp4)  TYPE="video/mp4" ;;
+              *.json) TYPE="application/json" ;;
+              *)      echo "type inattendu, ignoré : $nom" ; continue ;;
+            esac
+            wrangler r2 object put "kdmc-pub-videos/${nom}" --file="/tmp/mp4/${nom}" --content-type="$TYPE" --remote
+            echo "→ $nom ($(wc -c < "/tmp/mp4/${nom}") octets)"
+          done < /tmp/assets.txt
+
+      - name: Contrôle RÉEL — l'adresse publique répond
+        env:
+          BASE: ${{ steps.base.outputs.base }}
+        run: |
+          set -euo pipefail
+          CODE=$(curl -sS -o /tmp/essai.mp4 -w "%{http_code}" -L "${BASE}immo-05.mp4" || true)
+          TAILLE=$(wc -c < /tmp/essai.mp4 || echo 0)
+          echo "ESSAI ${BASE}immo-05.mp4 → HTTP ${CODE}, ${TAILLE} octets"
+          if [ "$CODE" != "200" ] || [ "$TAILLE" -lt 10000 ]; then
+            echo "L'adresse publique ne sert pas la vidéo — on n'écrit rien."
+            exit 1
+          fi
+
+      - name: Écrit tools/pub/media.json et pousse
+        env:
+          BASE: ${{ steps.base.outputs.base }}
+          BRANCHE: ${{ inputs.branche }}
+        shell: bash -eo pipefail {0}
+        run: |
+          set -x
+          BR="${BRANCHE}"
+          if [ -z "$BR" ]; then BR="claude/pub-media-r2"; fi
+          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("tools/pub/media.json","utf8"));j.base=process.env.BASE;j.ecrit=new Date().toISOString();fs.writeFileSync("tools/pub/media.json",JSON.stringify(j,null,2)+"\n");console.log("media.json -> "+j.base);'
+          git config user.name "kdmc-bot"
+          git config user.email "bot@kd-mc.com"
+          git checkout -B "$BR"
+          git add tools/pub/media.json
+          git commit -m "Pub : adresse publique des videos, hors GitHub (depot prive) [skip ci]"
+          git push -u origin "$BR"
+          echo "MEDIA R2 POUSSE : $BR"
+
+      # Les journaux d'Actions sont servis par un hébergeur que l'agent ne peut pas
+      # joindre. Sans ça, un échec ici est un mur muet : on écrit donc la cause
+      # exacte dans une issue, qui se lit par l'API (règle « détailler les erreurs »).
+      - name: Si ça rate, dire pourquoi sans les journaux
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ steps.base.outputs.base }}
+        shell: bash -eo pipefail {0}
+        run: |
+          {
+            echo "### Échec de « Pub — héberge les vidéos sur R2 »"
+            echo
+            echo "- run : $GITHUB_RUN_ID"
+            echo "- adresse publique calculée : \`${BASE:-(vide)}\`"
+            echo
+            echo '```'
+            echo "git status :"; git status --porcelain=v1 2>&1 | head -20
+            echo "branche : $(git rev-parse --abbrev-ref HEAD 2>&1)"
+            echo "media.json :"; cat tools/pub/media.json 2>&1 | head -20
+            echo "essai de push :"; git push -u origin "HEAD:${BRANCHE:-claude/pub-media-r2}" 2>&1 | head -20
+            echo '```'
+          } > /tmp/rapport.md
+          node -e 'const fs=require("fs");fs.writeFileSync("/tmp/issue.json",JSON.stringify({title:"Pub R2 : echec d ecriture de l adresse (run "+process.env.GITHUB_RUN_ID+")",body:fs.readFileSync("/tmp/rapport.md","utf8")}))'
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues" --data-binary @/tmp/issue.json -o /tmp/issue_out.json
+          node -e 'const j=require("/tmp/issue_out.json");console.log("RAPPORT : issue #"+(j.number||"?"))'

@@ -1,0 +1,266 @@
+name: Compact stale claude/* branches
+
+# Règle CLAUDE.md "COMPACT BRANCHES AUTONOME PERMANENT" (Kevin 2026-05-14).
+# Auto-cleanup branches claude/* mergées dans main + branches stale > 30j.
+#
+# Sécurité absolue : ne touche QUE les branches commençant par "claude/".
+# Jamais main, master, develop, production, ni branches avec commits inédits.
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (preview, pas de delete)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+  # v13.4.194 Kevin "compact toutes branches en parallèle" :
+  # Trigger immédiat via modification du yml lui-même → permet d'invoquer
+  # le cleanup quand Kevin demande sans attendre le cron quotidien.
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cleanup-stale-branches.yml']
+  # Kevin 2026-05-20 "branches propres autonome" : le push de l'auto-merge bot
+  # utilise GITHUB_TOKEN → ne déclenche pas les workflows push. workflow_run
+  # se déclenche APRÈS chaque auto-merge → cleanup vraiment automatique.
+  workflow_run:
+    workflows: ["Auto-merge Claude branches into main"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cleanup-branches
+  cancel-in-progress: false
+
+jobs:
+  cleanup-merged:
+    name: Delete merged claude/* branches
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 4 * * *' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'workflow_run'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch all branches
+        run: |
+          # CAUSE RACINE du nettoyage qui ne nettoyait rien (trouvée 2026-09-06) :
+          # `actions/checkout` pose un refspec MONO-BRANCHE
+          # (+refs/heads/main:refs/remotes/origin/main). Un simple
+          # `git fetch origin --prune` ne ramène donc QUE main : la ligne
+          # suivante, `git branch -r --merged origin/main | grep origin/claude/`,
+          # ne voit AUCUNE branche, le compteur vaut 0, et le job se termine en
+          # vert sans avoir rien supprimé. C'est pour ça que 370 branches
+          # claude/* s'étaient accumulées dont 240 déjà fusionnées.
+          # `fetch-depth: 0` ne corrige PAS ça : il donne l'historique complet
+          # de la branche cochée, pas les autres branches.
+          git remote set-branches origin '*'
+          git fetch origin --prune '+refs/heads/*:refs/remotes/origin/*'
+          TOTAL=$(git branch -r | grep -c 'origin/claude/' || true); TOTAL=${TOTAL:-0}
+          echo "Branches claude/* réellement visibles après fetch : $TOTAL"
+          # Garde anti-« faux vert » : 0 branche visible = le fetch a échoué,
+          # ce n'est PAS « rien à nettoyer ». On échoue bruyamment.
+          if [ "$TOTAL" = "0" ]; then
+            echo "::error::0 branche claude/* visible — le fetch n'a pas ramené les branches distantes. Nettoyage abandonné (ne pas conclure « rien à faire »)."
+            exit 1
+          fi
+
+      - name: Find merged claude/* branches (incl. squash-merged detection)
+        id: find
+        run: |
+          # v13.4.194 Kevin "compact toutes branches" : détection PR mergées
+          # par squash (que git --merged ne détecte pas) via gh CLI.
+          echo "[1/3] Branches détectées via git --merged origin/main :"
+          MERGED_DIRECT=$(git branch -r --merged origin/main | grep "origin/claude/" | sed 's|origin/||' | grep -v "claude/test-699LQ" || true)
+          echo "$MERGED_DIRECT"
+
+          echo "[2/3] Branches qui avaient PR fermée+mergée (squash detection) :"
+          # Récupère toutes branches claude/* qui ont une PR fermée+mergée vers main
+          MERGED_SQUASH=$(gh pr list --state merged --base main --limit 500 \
+            --json headRefName --jq '.[].headRefName' \
+            | grep -E "^claude/" | grep -v "claude/test-699LQ" || true)
+          echo "$MERGED_SQUASH"
+
+          echo "[3/3] Branches Kevin demande explicit delete (multi) :"
+          # Kevin 2026-05-16 :
+          # - "Et de loque cette branche elle bug claude/continue-perfection-work-46Oic"
+          # - "Celle là aussi debug claude/continue-perfection-work-T47uI"
+          # Kevin 2026-05-20 — rangement branches : 4 projets renommés en
+          # project/* + archive/* (anciens noms claude/* à supprimer, le
+          # nouveau nom a déjà été créé pointant sur le même commit).
+          # Si la branche n'existe pas → ignore silencieusement (push --delete OK).
+          # Kevin 2026-05-20 — 4 branches apex-chat mergées dans main mais non
+          # détectées par git branch -r --merged (merge --no-ff auto-merge bot).
+          EXPLICIT=$(printf "%s\n" \
+            "claude/continue-perfection-work-46Oic" \
+            "claude/continue-perfection-work-T47uI" \
+            "claude/iphone-device-remote-control-Nam26" \
+            "claude/universal-password-cracker-o2mbo" \
+            "claude/ecommerce-automation-platform-Gprjk" \
+            "claude/evaluate-resources-shZBa" \
+            "claude/apex-chat-deploy-acctid" \
+            "claude/apex-chat-migrations" \
+            "claude/apex-chat-v133-merge" \
+            "claude/apex-chat-v134-merge")
+          echo "$EXPLICIT"
+
+          # Combine + dedupe
+          CANDIDATES=$(printf "%s\n%s\n%s\n" "$MERGED_DIRECT" "$MERGED_SQUASH" "$EXPLICIT" | sort -u | grep -E "^claude/" || true)
+
+          # 2026-09-10 — GARDE « UNE PR MERGÉE HIER NE PROUVE PAS QUE LA BRANCHE D'AUJOURD'HUI L'EST ».
+          # La détection [2/3] cherche les NOMS de branches qui ont eu une PR fusionnée. Or une
+          # session réutilise le même nom pendant des jours : `claude/apex-chat-mfa-faceid` a eu
+          # 5 PR fusionnées (#3717 … #3739), puis a reçu de NOUVEAUX commits. Ce job, déclenché
+          # à la fin de CHAQUE auto-merge (le sien ou celui d'une autre session), la supprimait
+          # dans la minute qui suivait le push — mesuré 2× le même soir : run 34525737963
+          # (PR #3744 « dirty », branche disparue) puis 34526845652 (« Rattraper main » en
+          # échec : `git fetch origin <branche>` sur une branche déjà effacée). Le correctif CORS
+          # des iPhone est resté hors de main pendant tout ce temps.
+          # Règle : on ne supprime QUE si la pointe ACTUELLE de la branche est déjà dans main
+          # (`merge-base --is-ancestor`). Une branche absente d'origin est ignorée (rien à faire).
+          ALL=""
+          for b in $CANDIDATES; do
+            if ! git show-ref --verify --quiet "refs/remotes/origin/$b"; then
+              echo "[ABSENTE] $b — déjà supprimée, rien à faire"; continue
+            fi
+            if git merge-base --is-ancestor "origin/$b" origin/main; then
+              ALL="$ALL$b"$'\n'
+            else
+              echo "[GARDÉE] $b — $(git rev-list --count origin/main.."origin/$b") commit(s) pas encore dans main (nom réutilisé après une PR fusionnée)"
+            fi
+          done
+          ALL=$(printf "%s" "$ALL" | sort -u | grep -E "^claude/" || true)
+          echo ""
+          echo "=== TOTAL UNIQUE branches à delete ==="
+          echo "$ALL"
+          # « grep -c ... || echo 0 » est un PIEGE : quand rien ne matche, grep AFFICHE
+          # deja « 0 » ET sort en erreur, donc le repli en ajoute un second -> la variable
+          # vaut « 0\n0 ». Ecrite dans GITHUB_OUTPUT, la 2e ligne n'a pas de « = » et
+          # GitHub rejette l'etape : « Invalid format '0' » (mesure : run 35459010788).
+          COUNT=$(printf '%s\n' "$ALL" | grep -c "^claude/" || true); COUNT=${COUNT:-0}
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "$ALL" > /tmp/merged_branches.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete merged branches (skip dry run)
+        if: steps.find.outputs.count != '0' && github.event.inputs.dry_run != 'true'
+        run: |
+          while IFS= read -r branch; do
+            branch=$(echo "$branch" | xargs)  # trim
+            if [ -z "$branch" ]; then continue; fi
+            # Garde-fous absolus : jamais main/master/develop/production/test-699LQ
+            case "$branch" in
+              main|master|develop|production|claude/test-699LQ)
+                echo "[SKIP PROTECTED] $branch"
+                continue
+                ;;
+            esac
+            echo "[DELETE] $branch"
+            git push origin --delete "$branch" || echo "[WARN] delete failed for $branch"
+          done < /tmp/merged_branches.txt
+
+      - name: Summary
+        run: |
+          echo "::notice::Cleanup terminé — ${{ steps.find.outputs.count }} branches mergées détectées."
+
+  cleanup-stale:
+    name: Delete stale claude/* branches > 30 days no activity
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 4 * * 0' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch all branches
+        run: |
+          # CAUSE RACINE du nettoyage qui ne nettoyait rien (trouvée 2026-09-06) :
+          # `actions/checkout` pose un refspec MONO-BRANCHE
+          # (+refs/heads/main:refs/remotes/origin/main). Un simple
+          # `git fetch origin --prune` ne ramène donc QUE main : la ligne
+          # suivante, `git branch -r --merged origin/main | grep origin/claude/`,
+          # ne voit AUCUNE branche, le compteur vaut 0, et le job se termine en
+          # vert sans avoir rien supprimé. C'est pour ça que 370 branches
+          # claude/* s'étaient accumulées dont 240 déjà fusionnées.
+          # `fetch-depth: 0` ne corrige PAS ça : il donne l'historique complet
+          # de la branche cochée, pas les autres branches.
+          git remote set-branches origin '*'
+          git fetch origin --prune '+refs/heads/*:refs/remotes/origin/*'
+          TOTAL=$(git branch -r | grep -c 'origin/claude/' || true); TOTAL=${TOTAL:-0}
+          echo "Branches claude/* réellement visibles après fetch : $TOTAL"
+          # Garde anti-« faux vert » : 0 branche visible = le fetch a échoué,
+          # ce n'est PAS « rien à nettoyer ». On échoue bruyamment.
+          if [ "$TOTAL" = "0" ]; then
+            echo "::error::0 branche claude/* visible — le fetch n'a pas ramené les branches distantes. Nettoyage abandonné (ne pas conclure « rien à faire »)."
+            exit 1
+          fi
+
+      - name: Find stale claude/* branches (> 30 days)
+        id: stale
+        run: |
+          THIRTY_DAYS_AGO=$(date -d '30 days ago' +%s 2>/dev/null || date -v -30d +%s)
+          STALE_BRANCHES=()
+          while IFS= read -r branch; do
+            branch=$(echo "$branch" | xargs | sed 's|origin/||')
+            if [ -z "$branch" ]; then continue; fi
+            # Skip protected
+            case "$branch" in
+              main|master|develop|production|claude/test-699LQ)
+                continue
+                ;;
+            esac
+            LAST_COMMIT=$(git log -1 --format=%ct "origin/$branch" 2>/dev/null || echo "0")
+            if [ "$LAST_COMMIT" -lt "$THIRTY_DAYS_AGO" ] && [ "$LAST_COMMIT" -gt "0" ]; then
+              STALE_BRANCHES+=("$branch")
+            fi
+          done < <(git branch -r | grep "origin/claude/")
+          printf "Stale > 30j : %d branches\n" "${#STALE_BRANCHES[@]}"
+          printf '%s\n' "${STALE_BRANCHES[@]}" > /tmp/stale_branches.txt
+          echo "count=${#STALE_BRANCHES[@]}" >> $GITHUB_OUTPUT
+
+      - name: Delete stale branches (skip dry run)
+        if: steps.stale.outputs.count != '0' && github.event.inputs.dry_run != 'true'
+        run: |
+          while IFS= read -r branch; do
+            branch=$(echo "$branch" | xargs)
+            if [ -z "$branch" ]; then continue; fi
+            # Triple garde-fou
+            case "$branch" in
+              main|master|develop|production|claude/test-699LQ)
+                echo "[SKIP PROTECTED] $branch"
+                continue
+                ;;
+            esac
+            echo "[DELETE STALE] $branch (last commit > 30 days)"
+            git push origin --delete "$branch" || echo "[WARN] delete failed for $branch"
+          done < /tmp/stale_branches.txt
+
+      - name: Summary
+        run: |
+          echo "::notice::Stale cleanup terminé — ${{ steps.stale.outputs.count }} branches > 30j détectées."

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Apex — Setup Laurence</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#08080f;color:#fff;font-family:-apple-system,'Helvetica Neue',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.box{max-width:460px;width:100%;text-align:center}
+h1{font-family:Georgia,serif;color:#c9a227;font-size:30px;margin:0 0 8px;letter-spacing:1px}
+.sub{color:#a0a4b8;font-size:14px;margin:0 0 16px;line-height:1.5}
+.info{background:rgba(201,162,39,0.1);border:1px solid rgba(201,162,39,0.3);color:#ffd166;padding:14px 16px;border-radius:12px;margin:16px 0;font-size:13px;line-height:1.6;text-align:left}
+.step{background:#12121d;border:1px solid #2a2a3a;border-radius:14px;padding:14px 16px;margin:8px 0;text-align:left;font-size:13px;line-height:1.4}
+.step.done{border-color:#3acc5e;background:#0e1a14}
+.step.err{border-color:#cc3a3a;background:#1a0e0e}
+.step-title{font-weight:700;color:#c9a227;margin-bottom:2px;font-size:13px}
+.step-msg{color:#a0a4b8;font-size:12px}
+.btn{display:inline-block;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;padding:18px 32px;border-radius:28px;text-decoration:none;font-weight:700;font-size:16px;border:0;cursor:pointer;margin:16px 8px;min-height:54px;min-width:240px}
+.btn:active{transform:scale(.96)}
+.btn-2{background:linear-gradient(135deg,#3acc5e,#28a745);color:#fff}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid #c9a227;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pin-display{background:rgba(0,0,0,0.5);border-radius:10px;padding:14px;text-align:center;font-family:'Courier New',monospace;font-size:32px;color:#c9a227;letter-spacing:6px;margin:8px 0;font-weight:700}
+.log{font-family:SF Mono,Menlo,monospace;font-size:10px;color:#6a6f8a;margin-top:16px;text-align:left;max-height:120px;overflow-y:auto;background:#0a0a13;padding:8px;border-radius:8px;white-space:pre-wrap;word-break:break-word;display:none}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>👋 Apex pour Laurence</h1>
+  <p class="sub">Configuration en 1 clic.<br>Tout sera prêt en 5 secondes.</p>
+
+  <div class="info">
+    <strong>Comment ça marche :</strong><br>
+    1. Cet outil efface l'ancienne version d'Apex<br>
+    2. Pré-configure ton compte (Laurence Saint-Polit)<br>
+    3. Te donne ton code PIN initial (à changer après)<br>
+    4. Ouvre Apex frais, prêt à l'emploi
+  </div>
+
+  <div id="status"></div>
+
+  <button id="go" class="btn">✨ Configurer Apex pour moi</button>
+  <a id="open" class="btn btn-2" style="display:none" href="../apex-ai-v13/?_laurence=1">✅ Ouvrir Apex →</a>
+
+  <div id="log" class="log"></div>
+</div>
+
+<script>
+var L = document.getElementById('log');
+var S = document.getElementById('status');
+var btnGo = document.getElementById('go');
+var btnOpen = document.getElementById('open');
+
+/* PIN initial Laurence : "131517" (à changer après premier login).
+ * Hash PBKDF2 200k ne peut être pré-calculé en JS pur sans Web Crypto async.
+ * On stocke le PIN en clair dans une variable + on calcule le hash au runtime. */
+var INITIAL_PIN = '131517';
+
+function log(msg){
+  console.log(msg);
+  L.style.display = 'block';
+  L.textContent += msg + '\n';
+  L.scrollTop = L.scrollHeight;
+}
+
+function step(title, status, msg){
+  var d = document.createElement('div');
+  d.className = 'step ' + (status === 'ok' ? 'done' : status === 'err' ? 'err' : '');
+  d.innerHTML = '<div class="step-title">' + (status === 'ok' ? '✅' : status === 'err' ? '⚠' : '<span class="spinner"></span>') + ' ' + title + '</div><div class="step-msg">' + (msg || '...') + '</div>';
+  S.appendChild(d);
+  return d;
+}
+
+async function hashPin(pin, salt){
+  var enc = new TextEncoder();
+  var keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(pin),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+  var bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(salt), iterations: 200000, hash: 'SHA-256' },
+    keyMaterial,
+    256
+  );
+  return Array.from(new Uint8Array(bits)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+async function setupLaurence(){
+  btnGo.disabled = true;
+  btnGo.textContent = '⏳ Configuration en cours…';
+  btnGo.style.opacity = '0.6';
+  S.innerHTML = '';
+
+  /* 1. Unregister TOUS SW */
+  var s1 = step('Désinstaller anciennes versions', 'progress');
+  try {
+    if ('serviceWorker' in navigator) {
+      var regs = await navigator.serviceWorker.getRegistrations();
+      log('SW trouvés: ' + regs.length);
+      for (var i = 0; i < regs.length; i++) {
+        await regs[i].unregister();
+      }
+      s1.className = 'step done';
+      s1.querySelector('.step-title').innerHTML = '✅ ' + regs.length + ' versions supprimées';
+    }
+  } catch(e) { s1.className = 'step err'; log('SW err: ' + e.message); }
+
+  /* 2. Clear ALL caches */
+  var s2 = step('Vider mémoire cache', 'progress');
+  try {
+    if ('caches' in window) {
+      var keys = await caches.keys();
+      for (var j = 0; j < keys.length; j++) await caches.delete(keys[j]);
+      s2.className = 'step done';
+      s2.querySelector('.step-title').innerHTML = '✅ Cache vidé (' + keys.length + ' entrées)';
+    }
+  } catch(e) { s2.className = 'step err'; log('Cache err: ' + e.message); }
+
+  /* 3. Clear localStorage Apex */
+  var s3 = step('Effacer ancien profil Apex', 'progress');
+  try {
+    var apexKeys = [];
+    for (var k = 0; k < localStorage.length; k++) {
+      var key = localStorage.key(k);
+      if (key && (key.startsWith('apex_v13_') || key.startsWith('ax_'))) {
+        apexKeys.push(key);
+      }
+    }
+    for (var m = 0; m < apexKeys.length; m++) localStorage.removeItem(apexKeys[m]);
+    s3.className = 'step done';
+    s3.querySelector('.step-title').innerHTML = '✅ Ancien profil effacé';
+  } catch(e) { s3.className = 'step err'; log('LS err: ' + e.message); }
+
+  /* 4. Clear IndexedDB */
+  var s4 = step('Effacer données locales', 'progress');
+  try {
+    if ('indexedDB' in window && indexedDB.databases) {
+      var dbs = await indexedDB.databases();
+      for (var n = 0; n < dbs.length; n++) {
+        if (dbs[n].name && (dbs[n].name.includes('apex') || dbs[n].name.includes('cmc'))) {
+          await new Promise(function(res){
+            var req = indexedDB.deleteDatabase(dbs[n].name);
+            req.onsuccess = req.onerror = req.onblocked = function(){res();};
+          });
+        }
+      }
+    }
+    s4.className = 'step done';
+    s4.querySelector('.step-title').innerHTML = '✅ Données locales nettoyées';
+  } catch(e) { s4.className = 'step err'; log('IDB err: ' + e.message); }
+
+  /* 5. Pré-configurer compte Laurence + PIN initial hashé */
+  var s5 = step('Configurer ton compte', 'progress');
+  try {
+    var laurenceUid = 'laurence_sp';
+    var laurenceName = 'Laurence Saint-Polit';
+
+    /* Hash du PIN avec uid comme salt (parité auth.ts) */
+    var pinHash = await hashPin(INITIAL_PIN, laurenceUid);
+
+    /* Stocke PIN dans la clé per-user (anti-pattern v12.240 évité) */
+    localStorage.setItem('apex_v13_pin_' + laurenceUid, pinHash);
+
+    /* Pré-remplit le nom pour faciliter le login (input pré-rempli) */
+    localStorage.setItem('apex_v13_last_known_uid', laurenceUid);
+    localStorage.setItem('apex_v13_last_known_name', laurenceName);
+    localStorage.setItem('apex_v13_setup_by', 'kevin_admin_via_setup_tool');
+    localStorage.setItem('apex_v13_setup_ts', String(Date.now()));
+
+    s5.className = 'step done';
+    s5.querySelector('.step-title').innerHTML = '✅ Compte configuré : ' + laurenceName;
+    s5.querySelector('.step-msg').textContent = 'PIN initial enregistré (à changer après premier login)';
+  } catch(e) { s5.className = 'step err'; log('Setup err: ' + e.message); }
+
+  /* 6. Test version distante */
+  var s6 = step('Télécharger nouvelle version', 'progress');
+  try {
+    var bust = '?_t=' + Date.now() + '&_laurence=1';
+    var r = await fetch('../apex-ai-v13/index.html' + bust, { cache: 'no-store', headers: {'Cache-Control': 'no-cache'} });
+    var html = await r.text();
+    var m = html.match(/data-app-ver="(v[\d.]+)"/);
+    var ver = m ? m[1] : 'inconnu';
+    log('Version Apex: ' + ver);
+    s6.className = 'step done';
+    s6.querySelector('.step-title').innerHTML = '✅ Version ' + ver + ' téléchargée';
+  } catch(e) { s6.className = 'step err'; log('Fetch err: ' + e.message); }
+
+  /* Affichage PIN à mémoriser */
+  var pinBox = document.createElement('div');
+  pinBox.style.cssText = 'margin:20px 0;padding:16px;background:rgba(58,204,94,0.1);border:1px solid rgba(58,204,94,0.4);border-radius:14px';
+  pinBox.innerHTML = '<div style="color:#3acc5e;font-weight:700;margin-bottom:8px">🔐 Ton code PIN Apex (mémorise-le)</div>' +
+    '<div class="pin-display">' + INITIAL_PIN + '</div>' +
+    '<div style="color:#a0a4b8;font-size:12px">Tu pourras le changer dans Réglages dès la première connexion.</div>' +
+    '<div style="color:#ffd166;font-size:11px;margin-top:8px">⚠️ Tape "Laurence Saint-Polit" + ce PIN pour te connecter.</div>';
+  S.appendChild(pinBox);
+
+  btnGo.style.display = 'none';
+  btnOpen.style.display = 'inline-block';
+  btnOpen.href = '../apex-ai-v13/?_laurence=1&_t=' + Date.now();
+}
+
+btnGo.addEventListener('click', setupLaurence);
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="apex-laurence-setup"
+        data-version="v1.0.0"
+        data-color="#c9a227"
+        defer></script>
+</body>
+</html>

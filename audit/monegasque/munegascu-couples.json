@@ -1,0 +1,6149 @@
+{
+  "site": "munegascu.free.fr",
+  "racine": "http://munegascu.free.fr/index_uk.htm",
+  "parcouru_le": "2026-08-13T12:01:35.760Z",
+  "pages_visitees": 33,
+  "pages": [
+    {
+      "url": "http://munegascu.free.fr/animal.htm",
+      "octets": 11454,
+      "couples": 109
+    },
+    {
+      "url": "http://munegascu.free.fr/corps.htm",
+      "octets": 7227,
+      "couples": 75
+    },
+    {
+      "url": "http://munegascu.free.fr/maison.htm",
+      "octets": 6952,
+      "couples": 72
+    },
+    {
+      "url": "http://munegascu.free.fr/nature.htm",
+      "octets": 6525,
+      "couples": 72
+    },
+    {
+      "url": "http://munegascu.free.fr/aliment.htm",
+      "octets": 7294,
+      "couples": 66
+    },
+    {
+      "url": "http://munegascu.free.fr/ville.htm",
+      "octets": 6654,
+      "couples": 57
+    },
+    {
+      "url": "http://munegascu.free.fr/temps.htm",
+      "octets": 4686,
+      "couples": 41
+    },
+    {
+      "url": "http://munegascu.free.fr/transport.htm",
+      "octets": 4031,
+      "couples": 38
+    },
+    {
+      "url": "http://munegascu.free.fr/habits.htm",
+      "octets": 3931,
+      "couples": 36
+    },
+    {
+      "url": "http://munegascu.free.fr/sport.htm",
+      "octets": 4420,
+      "couples": 33
+    },
+    {
+      "url": "http://munegascu.free.fr/geographie.htm",
+      "octets": 3884,
+      "couples": 32
+    },
+    {
+      "url": "http://munegascu.free.fr/climat.htm",
+      "octets": 3481,
+      "couples": 31
+    },
+    {
+      "url": "http://munegascu.free.fr/famille.htm",
+      "octets": 3232,
+      "couples": 29
+    },
+    {
+      "url": "http://munegascu.free.fr/bienvenue.htm",
+      "octets": 2847,
+      "couples": 24
+    },
+    {
+      "url": "http://munegascu.free.fr/poste.htm",
+      "octets": 2844,
+      "couples": 20
+    },
+    {
+      "url": "http://munegascu.free.fr/mois.htm",
+      "octets": 2241,
+      "couples": 17
+    },
+    {
+      "url": "http://munegascu.free.fr/question.htm",
+      "octets": 1639,
+      "couples": 11
+    },
+    {
+      "url": "http://munegascu.free.fr/jours.htm",
+      "octets": 1325,
+      "couples": 8
+    },
+    {
+      "url": "http://munegascu.free.fr/pronoms_personnels.htm",
+      "octets": 1268,
+      "couples": 7
+    },
+    {
+      "url": "http://munegascu.free.fr/couleurs.htm",
+      "octets": 2396,
+      "couples": 3
+    },
+    {
+      "url": "http://munegascu.free.fr/nombres.htm",
+      "octets": 5701,
+      "couples": 3
+    },
+    {
+      "url": "http://munegascu.free.fr/geometrie.htm",
+      "octets": 2474,
+      "couples": 2
+    },
+    {
+      "url": "http://munegascu.free.fr/index_uk.htm",
+      "octets": 652,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/index.htm",
+      "octets": 697,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/banner.htm",
+      "octets": 13006,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/menu_uk.htm",
+      "octets": 2734,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/banniere.htm",
+      "octets": 11876,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/menu.htm",
+      "octets": 2822,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/liens.htm",
+      "octets": 29043,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/fruits.htm",
+      "octets": 6775,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/legumes.htm",
+      "octets": 7768,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/stats_see.php",
+      "octets": 54,
+      "couples": 0
+    },
+    {
+      "url": "http://munegascu.free.fr/index.php",
+      "octets": 689,
+      "couples": 0
+    }
+  ],
+  "couples_bruts": 786,
+  "couples_uniques": 744,
+  "note": "Couples de mots extraits (faits) + adresse de la page d'origine. Les pages complètes ne sont PAS republiées : elles restent en pièce jointe de l'exécution. Le site et son auteur sont cités dans l'application.",
+  "couples": [
+    {
+      "a": "Munegascu",
+      "b": "français",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm",
+        "http://munegascu.free.fr/famille.htm",
+        "http://munegascu.free.fr/maison.htm",
+        "http://munegascu.free.fr/ville.htm",
+        "http://munegascu.free.fr/transport.htm",
+        "http://munegascu.free.fr/poste.htm",
+        "http://munegascu.free.fr/geographie.htm",
+        "http://munegascu.free.fr/climat.htm",
+        "http://munegascu.free.fr/nature.htm",
+        "http://munegascu.free.fr/animal.htm",
+        "http://munegascu.free.fr/aliment.htm",
+        "http://munegascu.free.fr/corps.htm",
+        "http://munegascu.free.fr/habits.htm",
+        "http://munegascu.free.fr/sport.htm",
+        "http://munegascu.free.fr/couleurs.htm",
+        "http://munegascu.free.fr/temps.htm",
+        "http://munegascu.free.fr/jours.htm",
+        "http://munegascu.free.fr/mois.htm",
+        "http://munegascu.free.fr/pronoms_personnels.htm",
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "benvegnüu",
+      "b": "bienvenu(e)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "ciau",
+      "b": "salut",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "bon giurnu, bungiurnu",
+      "b": "bonjour",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "bona sera",
+      "b": "bonsoir",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "a se revede, ciau",
+      "b": "au revoir",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "u baiju, baijìn",
+      "b": "le bisou",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "u surisu",
+      "b": "le sourire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "u prenume",
+      "b": "le prénom",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "u nume, nome",
+      "b": "le nom",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "madumaijela",
+      "b": "mademoiselle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "madama, scià, signura",
+      "b": "madame",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "munsü, sciü, signuru",
+      "b": "monsieur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "Üncantau",
+      "b": "Enchanté",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "Ben",
+      "b": "Bien",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "per pieijè",
+      "b": "s'il te/vous plaît",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "merçì (tantu)",
+      "b": "merci (beaucoup)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "Feliçitaçiun ! Cungratülaçiun !",
+      "b": "Félicitations !",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "sci",
+      "b": "oui",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "nun",
+      "b": "non",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "desulau",
+      "b": "désolé",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "scüse-me",
+      "b": "excusez-moi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "pardun",
+      "b": "pardon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "Agiütu !",
+      "b": "À l'aide ! Au secours !",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/bienvenue.htm"
+      ]
+    },
+    {
+      "a": "u paire-gran, paigran",
+      "b": "le grand-père, papy",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a maire-gran, maigran,\na n&oelig;na",
+      "b": "la grand-mère,\nmamie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u paire",
+      "b": "le père, papa",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a maire",
+      "b": "la mère, maman",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u veyu",
+      "b": "le vieil homme",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u zuvenu",
+      "b": "le jeune homme",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "l'omu",
+      "b": "l'homme",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a dona, fümela",
+      "b": "la femme",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u mariu, spusu",
+      "b": "l'époux, le mari",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a muyè, spusa",
+      "b": "l'épouse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "barba",
+      "b": "l'oncle, (le tonton)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a tanta",
+      "b": "la tante, (la tatie)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u nevu",
+      "b": "le neveu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u cuju, cujin",
+      "b": "le cousin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u garçun",
+      "b": "le garçon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u fiyu",
+      "b": "le fils",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a fiya",
+      "b": "la fille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u frai",
+      "b": "le frère",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a s&oelig;",
+      "b": "la s&oelig;ur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u bessun / bessunà\na bessuna",
+      "b": "jumeau(x)\nla jumelle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u fiy&oelig;",
+      "b": "l'enfant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u ninin, u bambin",
+      "b": "le bébé",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "l'oste, (invitau)",
+      "b": "l'hôte, l'invité",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "l'amigu\nl'amiga",
+      "b": "l'ami\nl'amie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u nemigu",
+      "b": "l'ennemi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u vijin\na vijina",
+      "b": "le voisin\nla voisine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "a persuna",
+      "b": "la personne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "gente",
+      "b": "les gens",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/famille.htm"
+      ]
+    },
+    {
+      "a": "u cabanun",
+      "b": "le cabanon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u giardin\nu giardiniè",
+      "b": "le jardin\nle jardinier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a curte",
+      "b": "la cour",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a barriera",
+      "b": "la barrière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a scültüra",
+      "b": "la sculpture",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a statüa",
+      "b": "la statue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a funtana, fonte",
+      "b": "la fontaine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a ciamineia",
+      "b": "la cheminée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u fügairun",
+      "b": "le foyer, l'âtre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u tetu, u cüvertu",
+      "b": "le toit",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u surà mortu, granè",
+      "b": "le grenier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a cava",
+      "b": "la cave, le cellier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u müru",
+      "b": "le mur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a terrassa",
+      "b": "la terrasse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u barcun",
+      "b": "le balcon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a fenestra / fenestre",
+      "b": "fenêtre(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u ridò",
+      "b": "le rideau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a porta",
+      "b": "la porte",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a serraya",
+      "b": "la serrure",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a ciave",
+      "b": "la clé, la clef",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a scara",
+      "b": "l'échelle\nl'escalier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "l'ascensù",
+      "b": "l'ascenseur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u cian",
+      "b": "l'étage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a sala",
+      "b": "le salon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u büreu\nu bürò",
+      "b": "le bureau [immeuble]\n[meuble]",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u cadru, u qadru, a pintüra",
+      "b": "la peinture, le tableau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a televisiun",
+      "b": "la télévision",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a radiò",
+      "b": "la radio",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a sala",
+      "b": "la salle, la pièce",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a cambera, camera",
+      "b": "la chambre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u letu",
+      "b": "le lit",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u tapissu",
+      "b": "le tapis",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a tapissaria",
+      "b": "la tapisserie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "alümete",
+      "b": "les allumettes",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a bujia, a bugia,\na candera",
+      "b": "la bougie,\nla chandelle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a lampa, a lümera",
+      "b": "la lampe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a cujina, a cüjina",
+      "b": "la cuisine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u furnu",
+      "b": "le four",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u refrigeratù",
+      "b": "le réfrigérateur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u cungelatù",
+      "b": "le congélateur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u lavandin",
+      "b": "l'évier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a sala da pastu",
+      "b": "la salle à manger",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a tora",
+      "b": "la table",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u bancu",
+      "b": "le banc",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u taburè, taburelu,\nu sgabelu",
+      "b": "le tabouret",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a carrega / carreghe",
+      "b": "chaise(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a putruna",
+      "b": "le fauteuil",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u canapé",
+      "b": "le canapé, le divan",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u mobilu / a mubilia",
+      "b": "le meuble / le mobilier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "l'armari",
+      "b": "l'armoire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u placar",
+      "b": "le placard",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a stagera",
+      "b": "l'étagère",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u bagnu",
+      "b": "la salle de bain,\nla baignoire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a ducia",
+      "b": "la douche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u lavaman",
+      "b": "le lavabo",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a servieta, a tuayeta",
+      "b": "la serviette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a spungia",
+      "b": "l'éponge",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u savun,\na savuneta",
+      "b": "le savon,\nla savonnette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u rasù",
+      "b": "le rasoir",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u pience",
+      "b": "le peigne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a brossa",
+      "b": "la brosse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u dentifriçi",
+      "b": "le dentifrice",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u russu",
+      "b": "le rouge à lèvres",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u speyu",
+      "b": "le miroir",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u parfümu\na parfümeria",
+      "b": "le parfum\nla parfumerie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a tualeta",
+      "b": "les toilettes",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u buy&oelig;",
+      "b": "le seau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a ramassa, scuba",
+      "b": "le balai",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "l'aspiratù",
+      "b": "l'aspirateur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "a vessela, e siete",
+      "b": "la vaisselle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u ferru da stirà",
+      "b": "le fer à repasser",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/maison.htm"
+      ]
+    },
+    {
+      "a": "u vilage",
+      "b": "le village",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u campagnolu, u cuntadin",
+      "b": "le villageois",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a meria, a cumüna",
+      "b": "la mairie, la commune",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "mera",
+      "b": "le maire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u carrugiu / i carrugi",
+      "b": "rue(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a piaça",
+      "b": "la place",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a geija",
+      "b": "l'église",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a sinagoga",
+      "b": "la synagogue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a musqea",
+      "b": "la mosquée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u tempiu",
+      "b": "le temple",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u castelu",
+      "b": "le château",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a turre",
+      "b": "la tour",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u palaçi",
+      "b": "le palais",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "l'otel\nl'uteliè",
+      "b": "l'hôtel\nl'hôtelier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u resturante\nu resturatù",
+      "b": "le restaurant\nle restaurateur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u cujinè, u cüjinè",
+      "b": "le cuisinier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u garçun\na servante",
+      "b": "le serveur\nla serveuse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u cafè\nu cafetiè",
+      "b": "le café\nle cafetier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a sch&oelig;ra",
+      "b": "l'école",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u scularu, l'eculiè\nl'alievu",
+      "b": "l'écolier\nl'élève",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u maistru, u mestre\na maistra, a mestressa",
+      "b": "le maître d'école\nla maîtresse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u prufessù\na prufessuressa",
+      "b": "le,la professeur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u stüdiente",
+      "b": "l'étudiant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "l'üniversità",
+      "b": "l'université",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u giurnalista\nu giurnale",
+      "b": "le journaliste\nle journal",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u diçiunari",
+      "b": "le dictionnaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u libru / i libri",
+      "b": "livre(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a bibliuteca\nu bibliutecari",
+      "b": "la bibliothèque\nle bibliothécaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a libraria\nu librari",
+      "b": "la librairie\nle libraire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a butiga\nu negoçi",
+      "b": "la boutique\nle magasin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u marcau",
+      "b": "le marché",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u marcante, u neguçiante",
+      "b": "le marchand, le négociant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a paneteria, a bulangeria",
+      "b": "la boulangerie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u panatè, u bulangè\na panatera",
+      "b": "le boulanger\nla boulangère",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u perrüchè",
+      "b": "le coiffeur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u teatru",
+      "b": "le théâtre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u çinemà",
+      "b": "le cinéma",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "l'atù\nl'atrice",
+      "b": "l'acteur\nl'actrice",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u cuncertu, u cunçer",
+      "b": "le concert",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u cantante, u cantaire\na cantüsa",
+      "b": "le chanteur\nla chanteuse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u müsicante\nu \"sunadù\"",
+      "b": "le musicien\n[mauvais]",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u müseu",
+      "b": "le musée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u diretù",
+      "b": "le directeur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "secretari",
+      "b": "la secrétaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a banca\nu banchiè",
+      "b": "la banque\nle banquier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u biyetu",
+      "b": "le billet",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "l'assegnu",
+      "b": "le chèque",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u sou, dinari\na munea, a pecünia",
+      "b": "l'argent, les sous",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u burdelu",
+      "b": "le bordel",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a \"grula\"",
+      "b": "la prostituée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u ladru, u ladrun / i ladri",
+      "b": "voleur(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u puliçiè",
+      "b": "le policier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u cumissarià, u cumissariatu",
+      "b": "le commissariat",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a prejun\nu prejunè",
+      "b": "la prison\nle prisonnier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u çementeri,\nu campu santu",
+      "b": "le cimetière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "a tumba,\nu sepülcru",
+      "b": "la tombe,\nla sépulture",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/ville.htm"
+      ]
+    },
+    {
+      "a": "u viagiu\nu viagiatù",
+      "b": "le voyage\nle voyageur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u bagagiu",
+      "b": "les bagages",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a valisa",
+      "b": "la valise",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a duana\nu duaniè",
+      "b": "la douane\nle douanier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u passaportu",
+      "b": "le passeport",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "l'aeruportu",
+      "b": "l'aéroport",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "l'aviun",
+      "b": "l'avion",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "l'aviatù",
+      "b": "l'aviateur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u pilota",
+      "b": "le pilote",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "l'elicoteru",
+      "b": "l'hélicoptère",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u portu",
+      "b": "le port",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u bastimentu, u barcu",
+      "b": "le navire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u batelu",
+      "b": "le bateau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u sutamarin",
+      "b": "le sous-marin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u tren",
+      "b": "le train",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a staçiun, a gara",
+      "b": "la gare",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u biyetu",
+      "b": "le titre de transport",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a partença",
+      "b": "le départ",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "l'arriva",
+      "b": "l'arrivée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u camin, a via",
+      "b": "le chemin, la voie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a strada",
+      "b": "la route",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "l'autustrada",
+      "b": "l'autoroute",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u cundütù",
+      "b": "le conducteur, le chauffeur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u camiun",
+      "b": "le camion",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a camiuneta",
+      "b": "la camionnette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u büs",
+      "b": "l'autobus",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u taxi",
+      "b": "le taxi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a vuatüra, u carru,\nl'autumobile",
+      "b": "la voiture,\nl'automobile",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u garage\nu garagista",
+      "b": "le garage\nle garagiste",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "l'essença, a benzina",
+      "b": "l'essence",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u moteur",
+      "b": "le moteur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u volan, u vulante",
+      "b": "le volant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a roda",
+      "b": "la roue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "a motò",
+      "b": "la moto",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u velò",
+      "b": "le vélo, la bicyclette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u pedun",
+      "b": "le piéton",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u pedunale",
+      "b": "le trottoir",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/transport.htm"
+      ]
+    },
+    {
+      "a": "u pustiè",
+      "b": "le postier, le facteur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "u bulu",
+      "b": "le timbre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "a cartulina",
+      "b": "la carte postale",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "a letra, (l'epistula)",
+      "b": "la lettre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "l'ünvelopa",
+      "b": "l'enveloppe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "u pachetu, colì",
+      "b": "le paquet, le colis",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "a carta, u papè",
+      "b": "le papier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "u stilò\nu creyun, u creiyun",
+      "b": "le stylo\nle crayon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "l'adressa",
+      "b": "l'adresse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "u telefunu\na telefunada",
+      "b": "le téléphone\nle coup de téléphone",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "u nümeru",
+      "b": "le numéro",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "l'anüari",
+      "b": "l'annuaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "a re",
+      "b": "le réseau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "l'ecran",
+      "b": "l'écran",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "a tastiera",
+      "b": "le clavier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "a rateta",
+      "b": "la souris",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "u cuntatu",
+      "b": "le contact",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "u messagiu\na messageria",
+      "b": "le message\nla messagerie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/poste.htm"
+      ]
+    },
+    {
+      "a": "a fruntiera",
+      "b": "la frontière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "u drapeu, (u pavayun)",
+      "b": "le drapeau, (le pavillon)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "a França",
+      "b": "la France",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "Múnegu",
+      "b": "Monaco",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "u paise",
+      "b": "le pays",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "a capitala",
+      "b": "la capitale",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "a vila, cità",
+      "b": "la ville",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "a lenga, l'idioma",
+      "b": "la langue, le langage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "u dialetu, patuà",
+      "b": "le dialecte, le patois",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "u principu\na principëssa",
+      "b": "le prince\nla princesse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "u populu",
+      "b": "le peuple",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "Nord, Setentriun",
+      "b": "le Nord",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "Süd",
+      "b": "le Sud",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "Est, Levante",
+      "b": "l'Est",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "Uest, Punente",
+      "b": "l'Ouest",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "a bussola",
+      "b": "la boussole",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "a carta geugrafica",
+      "b": "la carte géographique",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "lasciû, ünsciû",
+      "b": "en haut",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "dabassu",
+      "b": "en bas",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "suvra",
+      "b": "sur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "suta",
+      "b": "sous",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "ünte, drüntu",
+      "b": "dans",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "drita, dritu",
+      "b": "la droite",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "seneca, senecu",
+      "b": "la gauche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "u mesu",
+      "b": "le milieu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "aiçì",
+      "b": "ici",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "ailì, ailà",
+      "b": "là, là-bas",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "pressu, d'arrente a\na cantu, a custà",
+      "b": "près, proche\nà côté de",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "lonzi, luntan",
+      "b": "loin, lointain",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geographie.htm"
+      ]
+    },
+    {
+      "a": "u Mundu, l'üniversu",
+      "b": "le Monde, l'univers",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a lüna",
+      "b": "la lune",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a pianeta",
+      "b": "la planète",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a stela",
+      "b": "l'étoile",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u suriyu",
+      "b": "le soleil",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a lüje, (a lüme)",
+      "b": "la lumière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "l'umbra",
+      "b": "l'ombre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u celu",
+      "b": "le ciel",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a nivura",
+      "b": "le nuage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u garbin",
+      "b": "le brouillard, la brume",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "l'aria",
+      "b": "l'air",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u ventu",
+      "b": "le vent",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u tempurale, l'urage\na burrasca",
+      "b": "la tempête, l'orage\nla bourrasque",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u tron",
+      "b": "le tonnerre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u laussu, u lampu",
+      "b": "l'éclair",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "l'arcüncelu",
+      "b": "l'arc-en-ciel",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a guta",
+      "b": "la goutte",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "l'aigada",
+      "b": "la pluie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "paraiga",
+      "b": "le parapluie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a neve\na nevada",
+      "b": "la neige\nla chute de neige",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u fiocu",
+      "b": "le flocon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "u zeru",
+      "b": "le gel",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a gragn&oelig;ra",
+      "b": "la grêle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a glaça",
+      "b": "la glace",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "fridu",
+      "b": "froid",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "frescu",
+      "b": "frais",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "ümidu\nl'ümidità",
+      "b": "humide\nl'humidité",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "secu\na secaressa",
+      "b": "sec\nla sécheresse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "caudu",
+      "b": "chaud",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/climat.htm"
+      ]
+    },
+    {
+      "a": "a terra",
+      "b": "la terre, le sol",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a terrarzia, l'arzia",
+      "b": "l'argile",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a pauta",
+      "b": "la boue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a pussiera",
+      "b": "la poussière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'erba",
+      "b": "l'herbe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u fen",
+      "b": "le foin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a paya",
+      "b": "la paille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a cianta",
+      "b": "la plante",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a raije, a raçina",
+      "b": "la racine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a f&oelig;ya / feye",
+      "b": "feuille(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a sciura",
+      "b": "la fleur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u girasuriyu",
+      "b": "le tournesol",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a r&oelig;sa, (a rosa)",
+      "b": "la rose",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'abeu",
+      "b": "le sapin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u pin",
+      "b": "le pin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'arburu",
+      "b": "l'arbre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u boscu",
+      "b": "le bois",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a furesta",
+      "b": "la forêt",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u parcu",
+      "b": "le parc",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u f&oelig;gu",
+      "b": "le feu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u fümu, a fümada",
+      "b": "la fumée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a çene",
+      "b": "la cendre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u vurcan",
+      "b": "le volcan",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a muntagna",
+      "b": "la montagne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a culina",
+      "b": "la colline",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a grota, a spelüga,\na caverna",
+      "b": "la grotte,\nla caverne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u valun",
+      "b": "la vallée, le vallon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u sbarramentu",
+      "b": "le barrage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a cascada",
+      "b": "la cascade",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u lagu",
+      "b": "le lac",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u laghetu, (u stagnu)",
+      "b": "l'étang",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a palüde",
+      "b": "le marais, le marécage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a basciüra, a cianüra",
+      "b": "la plaine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u prau",
+      "b": "le pré, la prairie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a pastüra",
+      "b": "le pâturage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u campu",
+      "b": "le champ",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u murin",
+      "b": "le moulin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u pussu",
+      "b": "le puits",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u ponte",
+      "b": "le pont",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a riana, a riviera",
+      "b": "la rivière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'uçean",
+      "b": "l'océan",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a marina, mar",
+      "b": "la mer",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'arga",
+      "b": "l'algue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'unda, a vaga",
+      "b": "la vague",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a scüma",
+      "b": "l'écume",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a vapù, vapur",
+      "b": "la vapeur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'isura",
+      "b": "l'île",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a spiagia, (grava)",
+      "b": "la plage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u desertu",
+      "b": "le désert",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a sabia, l'arena",
+      "b": "le sable",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a peira smussà",
+      "b": "le galet",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a peira, a lapida",
+      "b": "la pierre, le caillou",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "a roca",
+      "b": "la roche, (le rocher)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u marmaru",
+      "b": "le marbre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u diamante, brilante",
+      "b": "le diamant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u rübì",
+      "b": "le rubis",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u zafiru",
+      "b": "le saphir",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u smeraldu",
+      "b": "l'émeraude",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'ambra",
+      "b": "l'ambre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u carbun",
+      "b": "le charbon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u petroli",
+      "b": "le pétrole",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u gaz",
+      "b": "le gaz",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u ciungiu",
+      "b": "le plomb",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u stagnu",
+      "b": "l'étain",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u ferru",
+      "b": "le fer",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'açaru",
+      "b": "l'acier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'aramu",
+      "b": "le cuivre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u lutun",
+      "b": "le laiton",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'argentu",
+      "b": "l'argent",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "l'oru",
+      "b": "l'or",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nature.htm"
+      ]
+    },
+    {
+      "a": "u can / cai\na cagna",
+      "b": "chien(s)\nla chienne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u gatu",
+      "b": "le chat",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u ratetu",
+      "b": "le petit rat",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a ratëta",
+      "b": "la souris",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'ase",
+      "b": "l'âne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u cavalu\na cavala",
+      "b": "le cheval\nla jument",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u pulin, u cavalotu\na pulena",
+      "b": "le poulain\nla pouliche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u b&oelig; / b&oelig;i",
+      "b": "b&oelig;uf(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u toru",
+      "b": "le taureau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a vaca",
+      "b": "la vache",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u vitelu",
+      "b": "le veau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u mutun",
+      "b": "le mouton",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a fea",
+      "b": "la brebis",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'agnelu",
+      "b": "l'agneau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u becu\na crava",
+      "b": "le bouc\nla chèvre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u cravin",
+      "b": "le chevreau, le cabri",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u porcu",
+      "b": "le porc, le cochon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a troia",
+      "b": "la truie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u lapin [m]\na lapina [ f ]",
+      "b": "le lapin\nla lapine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u levre",
+      "b": "le lièvre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a tana",
+      "b": "la tanière, le terrier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a tarpa",
+      "b": "la taupe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u riciu",
+      "b": "le hérisson",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u schirotu",
+      "b": "l'écureuil",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u rainà, a vurpe",
+      "b": "le renard",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u luvu\na luva",
+      "b": "le loup\nla louve",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'ursu\nl'ursa",
+      "b": "l'ours\nl'ourse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u çervu\na çervaneta",
+      "b": "le cerf\nla biche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u camus, u camussu",
+      "b": "le chamois",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u niu",
+      "b": "le nid",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'aigla",
+      "b": "l'aigle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u farcun",
+      "b": "le faucon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u crovu\na curnaya",
+      "b": "le corbeau\nla corneille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u curumbu, u pigiun\na curumba",
+      "b": "le pigeon\nla colombe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u fagian",
+      "b": "le faisan",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a pernije",
+      "b": "la perdrix",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u dindun\na dinda",
+      "b": "le dindon\nla dinde",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u paun",
+      "b": "le paon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u galu",
+      "b": "le coq",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a galina, a pula",
+      "b": "la poule",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u pulin",
+      "b": "le poussin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u canar",
+      "b": "le canard",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'auca",
+      "b": "l'oie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a furmiga, a furmigura\na furmigà",
+      "b": "la fourmi\nla fourmilière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a çigala",
+      "b": "la cigale",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u grilu\nu cantarelu",
+      "b": "le criquet\nle grillon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u sautarelu",
+      "b": "la sauterelle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a biscia cumaira",
+      "b": "le mille-pattes",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u vermu",
+      "b": "le ver",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u lumbrigu",
+      "b": "le ver de terre,\nle lombric",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u muschiyun",
+      "b": "le moucheron",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a musca",
+      "b": "la mouche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u tavan",
+      "b": "le taon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a parpayeta",
+      "b": "le papillon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u rumpe gotu",
+      "b": "la libellule",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a lüjerneta",
+      "b": "la luciole",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a catarineta",
+      "b": "la coccinelle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'abiyè",
+      "b": "la ruche, le rucher",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'abiya",
+      "b": "l'abeille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a vespa\nvespè",
+      "b": "la guêpe\nle guêpier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u tabardun",
+      "b": "le frelon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a zinzara, a sinçara\na zinzariera, a sinçariera",
+      "b": "le moustique\nla moustiquaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a babarota",
+      "b": "la blatte, le cafard",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'aragna\na taragnina",
+      "b": "l'araignée\nla toile d'araignée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u pregadiu",
+      "b": "la mante religieuse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u scurpiun",
+      "b": "le scorpion",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u tunu",
+      "b": "le thon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u mungu, u pisciucan",
+      "b": "le requin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u derfin",
+      "b": "le dauphin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a balena",
+      "b": "la baleine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a foca",
+      "b": "le phoque",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u purpu",
+      "b": "la pieuvre, le poulpe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u totanu",
+      "b": "le calmar, (calamar)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a medüsa",
+      "b": "la méduse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a stela marina",
+      "b": "l'étoile de mer",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u zenzin",
+      "b": "l'oursin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a tartüga",
+      "b": "la tortue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u cuchiyage\na cuchiya",
+      "b": "le coquillage\nla coquille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a limaça, a lignita",
+      "b": "l'escargot",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a limaça, a bavusa\nu limaçun",
+      "b": "la limace\nle limaçon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a sansüga",
+      "b": "la sangsue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u serpente, (a biscia)",
+      "b": "le serpent",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u cameleun",
+      "b": "le caméléon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a ratabrüna ciata",
+      "b": "le gecko",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a ratabrüna\nl'ajibertu",
+      "b": "le lézard\n[vert]",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u bagiu / bagi",
+      "b": "crapaud(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a granuya",
+      "b": "la grenouille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a munina, a scimia",
+      "b": "le singe, (la guenon)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a ratapignata",
+      "b": "la chauve-souris",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u papagalu",
+      "b": "le perroquet",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a cucurita",
+      "b": "la perruche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u strüçi",
+      "b": "l'autruche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u liun",
+      "b": "le lion",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u leupardu",
+      "b": "le léopard",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a pantera",
+      "b": "la panthère",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u tigre\na tigressa",
+      "b": "le tigre\nla tigresse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u camelu\nu drumadari",
+      "b": "le chameau\nle dromadaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u zebru",
+      "b": "le zèbre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a girafa",
+      "b": "la girafe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'elefante",
+      "b": "l'éléphant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "l'ipupotamu",
+      "b": "l'hippopotame",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "u cucudrilu",
+      "b": "le crocodile",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/animal.htm"
+      ]
+    },
+    {
+      "a": "a fame",
+      "b": "la faim",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "afamau",
+      "b": "affamé",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u pastu",
+      "b": "le repas",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a culaçiun, u dernà",
+      "b": "le (petit) déjeuner",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a çena",
+      "b": "le dîner\nle souper",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a servieta",
+      "b": "la serviette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "l'assieta, la sieta",
+      "b": "l'assiette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a cüyà\na cüyarin",
+      "b": "la cuillère\nla petite cuillère",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a furcina",
+      "b": "la fourchette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u cutelu\nu cutelassu",
+      "b": "le couteau\nle coutelas",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a butiya",
+      "b": "la bouteille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a garafa",
+      "b": "la carafe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u veiru",
+      "b": "le verre [matière]",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u gotu",
+      "b": "le verre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a tassa",
+      "b": "la tasse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a bola",
+      "b": "le bol",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a sen",
+      "b": "la soif",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "l'aiga",
+      "b": "l'eau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a supa\nu brodu",
+      "b": "la soupe\nle bouillon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "l'alcol, u spiritu",
+      "b": "l'alcool",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a biera, a çervisia",
+      "b": "la bière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u vin\na vinassa",
+      "b": "le vin\nla \"vinasse\"",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u sügu, u giü",
+      "b": "le jus",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a limunada, (a gazüsa)",
+      "b": "la limonade",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a teiera",
+      "b": "la théière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u te",
+      "b": "le thé",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a ciculata",
+      "b": "le chocolat",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a cafetiera",
+      "b": "la cafetière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u cafè",
+      "b": "le café",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u cafelaite",
+      "b": "le café au lait",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u laite",
+      "b": "le lait",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u bürru",
+      "b": "le beurre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u furmagiu, u frumagiu",
+      "b": "le fromage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "l'&oelig;ri",
+      "b": "l'huile",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u vinagru",
+      "b": "le vinaigre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a vinegreta",
+      "b": "la vinaigrette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a maiunesa, a mayunesa",
+      "b": "la mayonnaise",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a mustarda",
+      "b": "la moutarde",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a speçia",
+      "b": "l'épice",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u püve\na püverera",
+      "b": "le poivre\nla poivrière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a sa\na saliera",
+      "b": "le sel\nla salière",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "l'&oelig;vu",
+      "b": "l'&oelig;uf",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a farina",
+      "b": "la farine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "i tayarin\na pasta fresca",
+      "b": "les nouilles\nles pâtes fraîches",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u pan",
+      "b": "le pain",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u pan bagnau",
+      "b": "le sandwich",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u pastissun",
+      "b": "le gâteau\nles biscuits",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a tarta, turta",
+      "b": "la tarte, tourte",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a crema",
+      "b": "la crème",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a glaça",
+      "b": "la crème glacée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u sciürbetu",
+      "b": "le sorbet",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a cunfitüra",
+      "b": "la confiture",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a marmelada",
+      "b": "la marmelade",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "l'amè",
+      "b": "le miel",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u sücaru\nu sücriè",
+      "b": "le sucre\nle sucrier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u cunfetu",
+      "b": "le bonbon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "l'adiçiun",
+      "b": "l'addition",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "u preiju, u custu",
+      "b": "le prix, le coût",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "caru, custusu",
+      "b": "cher, coûteux",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a bon pati",
+      "b": "à bon marché",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a bonaman, a mancia",
+      "b": "le pourboire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/aliment.htm"
+      ]
+    },
+    {
+      "a": "a pele",
+      "b": "la peau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u caviyu, u cavigliu",
+      "b": "le cheveu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a testa",
+      "b": "la tête",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u fronte",
+      "b": "le front",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u craniu",
+      "b": "le crâne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u çervelu\na çervela",
+      "b": "le cerveau\nla cervelle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'árima",
+      "b": "l'âme",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a facia",
+      "b": "le visage",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'&oelig;yu, &oelig;gliu",
+      "b": "l'&oelig;il",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'auriya, auriglia",
+      "b": "l'oreille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u nasu\na narrina, narrije",
+      "b": "le nez\nla narine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "mustassi",
+      "b": "la moustache",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a barba",
+      "b": "la barbe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a ganascia, mascela",
+      "b": "la joue, mâchoire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a labra / labre",
+      "b": "lèvre(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a buca",
+      "b": "la bouche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a lenga",
+      "b": "la langue",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u dente",
+      "b": "la dent",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u mentun",
+      "b": "le menton",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u colu",
+      "b": "le cou",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a nüca",
+      "b": "la nuque",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a gura, a gargamela",
+      "b": "la gorge",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u petu",
+      "b": "la poitrine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u sen\n(a mamela)",
+      "b": "le sein\n(la mamelle)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u capüçu",
+      "b": "le mamelon, le téton",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "ch&oelig;",
+      "b": "le c&oelig;ur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u sanghe",
+      "b": "le sang",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u purmun",
+      "b": "le poumon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'amburigu",
+      "b": "le nombril, (l'ombilic)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u ventre, a pansa",
+      "b": "le ventre, (la \"panse\")",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u st&oelig;megu",
+      "b": "l'estomac",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u figaretu",
+      "b": "le foie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "rene",
+      "b": "les reins",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u nervu",
+      "b": "le nerf",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u müscülu",
+      "b": "le muscle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'osciu",
+      "b": "l'os",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u scheletru",
+      "b": "le squelette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a schina",
+      "b": "le dos, (l'échine)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a costa",
+      "b": "la côte",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a spala",
+      "b": "l'épaule",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u brassu",
+      "b": "le bras",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u gumiu",
+      "b": "le coude, [le cubitus]",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u pussu",
+      "b": "le poignet",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u pügnu",
+      "b": "le poing",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a man",
+      "b": "la main",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "sciaca püghgliu",
+      "b": "le pouce",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u diu, di",
+      "b": "le doigt",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'ungia",
+      "b": "l'ongle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u belin, bicu",
+      "b": "le pénis",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a mussa",
+      "b": "le vagin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'anüs",
+      "b": "l'anus",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "scciape d'ucü",
+      "b": "les fesses",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a ch&oelig;scia",
+      "b": "la cuisse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a gamba",
+      "b": "la jambe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u zenuyu, u zenugliu",
+      "b": "le genou",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a nujëta",
+      "b": "la rotule",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a caviya, a caviglia",
+      "b": "la cheville",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u talun",
+      "b": "le talon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u pen / pei",
+      "b": "pied(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a salüte, sanità",
+      "b": "la santé",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a marutia / marutie",
+      "b": "maladie(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "marotu [m], marota [ f ]",
+      "b": "malade",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "matu",
+      "b": "fou",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'ambülança",
+      "b": "l'ambulance",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'uspità",
+      "b": "l'hôpital",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a clinica",
+      "b": "la clinique",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "l'infirmiè",
+      "b": "l'infirmier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u medicu, u dutù",
+      "b": "le médecin, le docteur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u dentista",
+      "b": "le dentiste",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u chirürgu, u scirürjien",
+      "b": "le chirurgien",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "a farmaçia, a speçiaria\nu farmaçien, speçià",
+      "b": "la pharmacie\nle pharmacien",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u medicamentu",
+      "b": "le médicament",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "u preservativu,\na capota",
+      "b": "le préservatif,\nla \"capote\" [pop.]",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/corps.htm"
+      ]
+    },
+    {
+      "a": "belicri, speyeti",
+      "b": "les lunettes",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u capelu",
+      "b": "le chapeau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a cascheta",
+      "b": "la casquette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u fular",
+      "b": "le foulard",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a sciarpa",
+      "b": "l'écharpe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u mandiyu",
+      "b": "le mouchoir",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u gantu",
+      "b": "le gant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u mantelu",
+      "b": "le manteau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "l'impermeabile",
+      "b": "l'imperméable",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a camij&oelig;ra, vesta",
+      "b": "la veste",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a camija",
+      "b": "la chemise",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a cravata",
+      "b": "la cravate",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "cravata a parpayeta",
+      "b": "le n&oelig;ud-papillon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a bertela, a bretela",
+      "b": "les bretelles",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a çenta, a çentüra",
+      "b": "la ceinture",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a braga / braghe",
+      "b": "le pantalon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a bragheta",
+      "b": "la culotte, (le slip)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a roba",
+      "b": "la robe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a gunela, u cutiyun\nu gunelin, cutiyun de suta",
+      "b": "la jupe\nle jupon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u sacu, a sacocia",
+      "b": "le sac",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u bijù, ori",
+      "b": "bijou(x)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u culiè",
+      "b": "le collier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u pendin",
+      "b": "la boucle d'oreille",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a baga, (l'anelu)",
+      "b": "la bague, (l'anneau)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u braçeletu",
+      "b": "le bracelet",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u rese sen",
+      "b": "le soutien-gorge",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a caussa, a causseta",
+      "b": "la chaussette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a bota",
+      "b": "la botte",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a caussaüra, a scarpa",
+      "b": "la chaussure",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a pantufla",
+      "b": "la pantoufle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "pijamà",
+      "b": "le pyjama",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a sea",
+      "b": "la soie",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "u cutun",
+      "b": "le coton",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "a lana",
+      "b": "la laine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/habits.htm"
+      ]
+    },
+    {
+      "a": "l'atletismu\nl'atleta, u spurtivu",
+      "b": "l'athlétisme\nl'athlète, le sportif",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a ginastica\nu ginastu",
+      "b": "la gymnastique\nle gymnaste",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a dansa",
+      "b": "la danse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u balarin\na balarina, a dansüsa",
+      "b": "le danseur\nla danseuse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a lüta\nu lütù",
+      "b": "la lutte\nle lutteur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a bataya a pügni",
+      "b": "la boxe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u balun, a bala",
+      "b": "le ballon, la balle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u fut",
+      "b": "le football",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "l'arbitru",
+      "b": "l'arbitre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "l'eqipa",
+      "b": "l'équipe",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u tennis",
+      "b": "le tennis",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u ski\nu skieur",
+      "b": "le ski\nle skieur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a piscina",
+      "b": "la piscine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u n&oelig;u\nu nageur",
+      "b": "la natation, la nage\nle nageur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a ciungiada\nu plongeur",
+      "b": "la plongée\nle plongeur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u marinà, u matalò",
+      "b": "le marin, le matelot",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a pesca",
+      "b": "la pêche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u pescaire, u pescaù",
+      "b": "le pêcheur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a cacia",
+      "b": "la chasse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u caciaire, u caciaù",
+      "b": "le chasseur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "l'eqitaçiun",
+      "b": "l'équitation",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u cavaliè",
+      "b": "le cavalier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a bügata,\nu pupun",
+      "b": "la poupée,\nle poupon",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a mariuneta",
+      "b": "la marionnette",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u giügaire",
+      "b": "le joueur",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a biya / biye",
+      "b": "bille(s)",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "u dadu",
+      "b": "le dé",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "a dama",
+      "b": "les dames",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "scachi",
+      "b": "les échecs",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/sport.htm"
+      ]
+    },
+    {
+      "a": "ciairu",
+      "b": "clair",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/couleurs.htm"
+      ]
+    },
+    {
+      "a": "scüru, funçau",
+      "b": "foncé",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/couleurs.htm"
+      ]
+    },
+    {
+      "a": "1 o",
+      "b": "primu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nombres.htm"
+      ]
+    },
+    {
+      "a": "2 o",
+      "b": "segundu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nombres.htm"
+      ]
+    },
+    {
+      "a": "3 o",
+      "b": "terçu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/nombres.htm"
+      ]
+    },
+    {
+      "a": "u pentagunu\n\r\n le pentagone",
+      "b": "l'esagunu\n\r\n l'hexagone",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geometrie.htm"
+      ]
+    },
+    {
+      "a": "a piramida\n\r\n la pyramide",
+      "b": "u conu\n\r\n le cône",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/geometrie.htm"
+      ]
+    },
+    {
+      "a": "Che ura è ?",
+      "b": "Quelle heure est-il ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "l'urlogiu\nl'urlugè",
+      "b": "l'horloge\nl'horloger",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a mustra",
+      "b": "la montre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "l'ura",
+      "b": "l'heure",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a minüta",
+      "b": "la minute",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a segunda",
+      "b": "la seconde",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "u matin,\na matinà, a matinada",
+      "b": "le matin,\nla matinée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "mesugiurnu",
+      "b": "midi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "dopudernà",
+      "b": "l'après-midi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "u giurnu,\na giurnà",
+      "b": "le jour,\nla journée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a sera",
+      "b": "le soir, la soirée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a n&oelig;te\na n&oelig;tà",
+      "b": "la nuit\nla nuitée",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a mesan&oelig;te",
+      "b": "minuit",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "ieri l'autru",
+      "b": "avant-hier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "ieri, aieri",
+      "b": "hier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "anch&oelig;i",
+      "b": "aujourd'hui",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "deman",
+      "b": "demain",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "dopudeman, passaudeman",
+      "b": "après-demain",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a semana",
+      "b": "la semaine",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "vacançe",
+      "b": "les vacances",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "u mese",
+      "b": "le mois",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "a stagiun",
+      "b": "la saison",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "l'anu,\nl'anà",
+      "b": "l'an,\nl'année",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "l'aniversari",
+      "b": "l'anniversaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "Natale",
+      "b": "la Noël",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "Pasca",
+      "b": "Pâques",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "u regalu, u cadò",
+      "b": "le cadeau",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "u calendari, u calandriè",
+      "b": "le calendrier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "u seculu",
+      "b": "le siècle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "u milenari",
+      "b": "le millénaire",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "avanti, primu",
+      "b": "avant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "dopu, p&oelig;i",
+      "b": "après",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "aura",
+      "b": "maintenant",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "tostu",
+      "b": "tôt",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "tardi",
+      "b": "tard",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "mai, giamai",
+      "b": "jamais",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "suven",
+      "b": "souvent",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "sempre, tugiù",
+      "b": "toujours",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/temps.htm"
+      ]
+    },
+    {
+      "a": "lünesdi",
+      "b": "lundi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/jours.htm"
+      ]
+    },
+    {
+      "a": "metesdi",
+      "b": "mardi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/jours.htm"
+      ]
+    },
+    {
+      "a": "mercuredi",
+      "b": "mercredi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/jours.htm"
+      ]
+    },
+    {
+      "a": "zoegia",
+      "b": "jeudi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/jours.htm"
+      ]
+    },
+    {
+      "a": "venardi",
+      "b": "vendredi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/jours.htm"
+      ]
+    },
+    {
+      "a": "sabu",
+      "b": "samedi",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/jours.htm"
+      ]
+    },
+    {
+      "a": "dumenëga",
+      "b": "dimanche",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/jours.htm"
+      ]
+    },
+    {
+      "a": "zena",
+      "b": "janvier",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "fevra",
+      "b": "février",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "marsu",
+      "b": "mars",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "avri",
+      "b": "avril",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "magiu",
+      "b": "mai",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "giugnu",
+      "b": "juin",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "luyu",
+      "b": "juillet",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "austru",
+      "b": "août",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "utubre",
+      "b": "octobre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "nuvembre",
+      "b": "novembre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "deçembre",
+      "b": "décembre",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "a primavera, a prima",
+      "b": "le printemps",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "l'estae",
+      "b": "l'été",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "l'autunu",
+      "b": "l'automne",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "l'invernu",
+      "b": "l'hiver",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/mois.htm"
+      ]
+    },
+    {
+      "a": "min",
+      "b": "je",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/pronoms_personnels.htm"
+      ]
+    },
+    {
+      "a": "tü",
+      "b": "tu",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/pronoms_personnels.htm"
+      ]
+    },
+    {
+      "a": "ëlu\nëla",
+      "b": "il\nelle",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/pronoms_personnels.htm"
+      ]
+    },
+    {
+      "a": "nui",
+      "b": "nous",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/pronoms_personnels.htm"
+      ]
+    },
+    {
+      "a": "vui",
+      "b": "vous",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/pronoms_personnels.htm"
+      ]
+    },
+    {
+      "a": "ëli\nële",
+      "b": "ils\nelles",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/pronoms_personnels.htm"
+      ]
+    },
+    {
+      "a": "Qü ?",
+      "b": "Qui ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Qale ?",
+      "b": "Quel ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Che ?",
+      "b": "Quoi ? Que ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Cuma ?",
+      "b": "Comment ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Qantu ?",
+      "b": "Combien ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Qandu ?",
+      "b": "Quand ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Unde ?",
+      "b": "Où ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Perchè ?",
+      "b": "Pourquoi ?",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "Perchè ...\nVistu che",
+      "b": "Parce que",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    },
+    {
+      "a": "a resposta",
+      "b": "la réponse",
+      "forme": "tableau",
+      "sources": [
+        "http://munegascu.free.fr/question.htm"
+      ]
+    }
+  ]
+}

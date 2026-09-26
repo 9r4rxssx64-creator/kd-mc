@@ -1,0 +1,68 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bibliothèque — Studio Chez Lolo</title>
+<meta name="theme-color" content="#0e1012">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+<style>
+:root{--bg:#0e1012;--card:#16181b;--card2:#1d2024;--text:#f2efe9;--muted:#9aa0a6;--border:#2a2e33;--p:#dc2626;--rs:12px}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));background:rgba(14,16,18,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.brand{font-weight:800;font-size:18px;display:flex;align-items:center;gap:8px}
+.tag{font-size:11px;font-weight:700;color:var(--p);border:1px solid var(--p);border-radius:20px;padding:2px 8px}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:var(--rs);border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px;font-weight:600;text-decoration:none;cursor:pointer}
+.btn.primary{background:var(--p);border-color:var(--p);color:#fff}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+h2{font-size:16px;margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+.count{font-size:12px;color:var(--muted);font-weight:600;border:1px solid var(--border);border-radius:20px;padding:2px 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.item{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.item .ph{aspect-ratio:1;background:var(--card2) center/contain no-repeat;display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--muted)}
+.item .ph img{width:100%;height:100%;object-fit:contain}
+.item .meta{padding:10px}
+.item .nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.empty{text-align:center;color:var(--muted);padding:48px 16px;border:1px dashed var(--border);border-radius:var(--rs)}
+.empty .ico{font-size:40px;display:block;margin-bottom:10px}
+.empty .btn{margin-top:14px}
+</style></head><body>
+<header>
+  <div class="brand">📚 Bibliothèque<span class="tag">CHEZ LOLO</span></div>
+  <div class="sp"></div>
+  <a class="btn" href="studio.html">🎨 Studio</a>
+  <a class="btn primary" href="index.html">← Boutique</a>
+</header>
+<main id="app"><p style="color:var(--muted)">Chargement…</p></main>
+<script>
+function esc(s){return s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&quot;").replace(/"/g,"&quot;")}
+function ls(k){try{return JSON.parse(localStorage.getItem(k)||"[]")||[]}catch(e){return[]}}
+function fmt(p){return p==null?"":Number(p).toFixed(2).replace(".",",")+" €"}
+function ph(img,fallback){return img?'<img src="'+esc(img)+'" alt="" loading="lazy">':(fallback||"🖼️")}
+function render(){
+  var logos=ls("cl_logos_cache"), prods=ls("cl_custom_products"), projs=ls("cl_studio_projects");
+  var h="";
+  // Créations (produits)
+  h+='<h2>🛍️ Mes créations <span class="count">'+prods.length+'</span></h2>';
+  h+=prods.length
+    ? '<div class="grid">'+prods.map(function(p){return '<div class="item"><div class="ph">'+ph(p.img,"👕")+'</div><div class="meta"><div class="nm">'+esc(p.name||"Création")+'</div><div class="sub">'+esc(p.cat||"")+(p.price?" · "+fmt(p.price):"")+'</div></div></div>'}).join("")+'</div>'
+    : '<div class="empty"><span class="ico">👕</span>Aucune création pour l\'instant.<br>Crée un design et clique « Ajouter à la boutique » dans le Studio.<a class="btn primary" href="studio.html">🎨 Ouvrir le Studio</a></div>';
+  // Logos
+  h+='<h2>🏷️ Mes logos <span class="count">'+logos.length+'</span></h2>';
+  h+=logos.length
+    ? '<div class="grid">'+logos.map(function(l){return '<div class="item"><div class="ph">'+ph(l.img,"🏷️")+'</div><div class="meta"><div class="nm">'+esc(l.name||"Logo")+'</div></div></div>'}).join("")+'</div>'
+    : '<div class="empty"><span class="ico">🏷️</span>Aucun logo sauvegardé.</div>';
+  // Projets
+  h+='<h2>📁 Mes projets <span class="count">'+projs.length+'</span></h2>';
+  h+=projs.length
+    ? '<div class="grid">'+projs.map(function(p){var d=p.ts?new Date(p.ts).toLocaleDateString("fr-FR"):"";return '<div class="item"><div class="ph">📁</div><div class="meta"><div class="nm">'+esc(p.name||"Projet")+'</div><div class="sub">'+esc(d)+(p.data&&p.data.garment?" · "+esc(p.data.garment):"")+'</div></div></div>'}).join("")+'</div>'
+    : '<div class="empty"><span class="ico">📁</span>Aucun projet enregistré. Sauvegarde tes designs depuis le Studio.</div>';
+  document.getElementById("app").innerHTML=h;
+}
+render();
+window.addEventListener("focus",render);
+</script>
+</body></html>

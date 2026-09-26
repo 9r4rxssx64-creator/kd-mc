@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Apex AI — Ton assistant IA personnel autonome. 105 outils, 60 voix, multi-provider, cross-platform. Chiffrement local-first, RGPD compliant.">
+  <meta name="theme-color" content="#08080f">
+  <meta property="og:title" content="Apex AI — Assistant IA personnel autonome">
+  <meta property="og:description" content="105 outils + 60 voix + multi-provider IA. Local-first, zero tracking, chiffrement AES-GCM 256.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/v13/assets/apex-og.png">
+  <title>Apex AI — Ton assistant IA personnel autonome</title>
+  <link rel="canonical" href="https://9r4rxssx64-creator.github.io/CMCteams/apex-landing">
+  <style>
+    /* ===== Tokens ===== */
+    :root {
+      --gold: #c9a227;
+      --gold-bright: #e9bd45;
+      --bg: #08080f;
+      --bg-card: rgba(20, 20, 35, 0.7);
+      --bg-card-hover: rgba(28, 28, 42, 0.85);
+      --text: #f5f5f7;
+      --text-dim: #a0a0b0;
+      --text-muted: #6a6a78;
+      --border: rgba(201, 162, 39, 0.25);
+      --border-strong: rgba(201, 162, 39, 0.6);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      --radius: 16px;
+      --radius-lg: 24px;
+    }
+
+    /* ===== Base ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    a { color: var(--gold); text-decoration: none; }
+    a:hover { color: var(--gold-bright); }
+    button { font-family: inherit; cursor: pointer; }
+    img { max-width: 100%; height: auto; }
+
+    /* ===== Layout ===== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ===== Header ===== */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8, 8, 15, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 2px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .nav-links a { font-size: 14px; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+      color: #0a0a14;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(201, 162, 39, 0.4);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      padding: 10px 18px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .btn-ghost:hover { border-color: var(--border-strong); background: rgba(201, 162, 39, 0.05); }
+
+    /* ===== Hero ===== */
+    .hero {
+      min-height: calc(100vh - 64px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 30%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(201, 162, 39, 0.15), transparent 70%);
+      filter: blur(40px);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 800px; }
+    .hero h1 {
+      font-size: clamp(36px, 7vw, 72px);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, var(--text), var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: clamp(16px, 2.5vw, 22px);
+      color: var(--text-dim);
+      margin-bottom: 36px;
+      max-width: 640px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 14px;
+      background: rgba(201, 162, 39, 0.15);
+      border: 1px solid var(--border-strong);
+      border-radius: 100px;
+      font-size: 13px;
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+
+    /* ===== Sections ===== */
+    section {
+      padding: 80px 0;
+      position: relative;
+    }
+    .section-title {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .section-title h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .section-title p {
+      color: var(--text-dim);
+      font-size: 17px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ===== Features grid ===== */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      padding: 28px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      background: var(--bg-card-hover);
+    }
+    .feature-icon {
+      font-size: 36px;
+      margin-bottom: 14px;
+      display: block;
+    }
+    .feature-card h3 {
+      font-size: 19px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    /* ===== Pricing ===== */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .price-card {
+      padding: 36px 28px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .price-card.featured {
+      border-color: var(--border-strong);
+      box-shadow: 0 0 0 1px var(--gold), 0 20px 40px rgba(201, 162, 39, 0.15);
+      transform: scale(1.02);
+    }
+    .price-card.featured::before {
+      content: 'Recommandé';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: #0a0a14;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .price-card h3 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .price-amount {
+      font-size: 44px;
+      font-weight: 800;
+      color: var(--gold);
+      margin: 16px 0;
+    }
+    .price-amount small {
+      font-size: 16px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+    .price-features {
+      list-style: none;
+      margin: 24px 0 32px;
+      flex: 1;
+    }
+    .price-features li {
+      padding: 8px 0;
+      font-size: 14px;
+      color: var(--text);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .price-features li::before {
+      content: '✓ ';
+      color: var(--gold);
+      margin-right: 6px;
+      font-weight: 700;
+    }
+    .price-features li.muted {
+      color: var(--text-muted);
+    }
+    .price-features li.muted::before {
+      content: '○ ';
+      color: var(--text-muted);
+    }
+
+    /* ===== FAQ ===== */
+    .faq {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 12px;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--text);
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+';
+      color: var(--gold);
+      font-size: 20px;
+      transition: transform 0.2s;
+    }
+    .faq-item[open] summary::after { transform: rotate(45deg); }
+    .faq-item p {
+      margin-top: 14px;
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      padding: 48px 0 80px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    footer a { color: var(--text-dim); margin: 0 12px; }
+
+    /* ===== Mobile ===== */
+    @media (max-width: 640px) {
+      .nav-links a:not(.btn-primary):not(.btn-ghost) { display: none; }
+      .hero { padding: 48px 16px; min-height: auto; }
+      section { padding: 56px 0; }
+      .price-card.featured { transform: none; }
+      .container { padding: 0 16px; }
+    }
+
+    /* ===== Animations ===== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.6s ease-out backwards; }
+    .fade-up:nth-child(2) { animation-delay: 0.1s; }
+    .fade-up:nth-child(3) { animation-delay: 0.2s; }
+    .fade-up:nth-child(4) { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo">APEX</div>
+      <nav class="nav-links">
+        <a href="#features">Capacités</a>
+        <a href="#pricing">Tarifs</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/v13/" class="btn-primary">Essayer gratuit</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-content">
+      <span class="badge">🚀 Bêta ouverte — 100% gratuit pour les premiers users</span>
+      <h1>Ton assistant IA personnel,<br>vraiment autonome.</h1>
+      <p>
+        Apex est l'IA qui agit pour toi : 105 outils, 60 voix, multi-provider, cross-platform.
+        Local-first, chiffré, sans tracking. Tes données restent <em>chez toi</em>.
+      </p>
+      <div class="hero-cta">
+        <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/v13/?signup=1" class="btn-primary">
+          ▶ Essayer gratuitement
+        </a>
+        <a href="#features" class="btn-ghost">Voir les capacités</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <div class="section-title">
+        <h2>105 outils, 1 assistant</h2>
+        <p>Apex sort automatiquement le bon outil selon ce que tu lui demandes. Pas de menus, pas de configuration.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card fade-up">
+          <span class="feature-icon">🎙</span>
+          <h3>Voix premium</h3>
+          <p>60+ voix : Web Speech, ElevenLabs, OpenAI, Azure. Effets temps réel : robot, vieux, fantôme, super-héros.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">🤖</span>
+          <h3>Multi-provider IA</h3>
+          <p>Anthropic Claude, OpenAI, Gemini, Groq, Mistral. Failover auto, jamais bloqué.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">🎨</span>
+          <h3>15 studios créatifs</h3>
+          <p>Music Mix Pro, Video Editor, CV, Facture, Logo, Présentation, Architecture, Photo.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">💼</span>
+          <h3>8 modules pro experts</h3>
+          <p>Cuisine pro, Médical Vidal, Finance fiscale FR, Légal 18+ codes français, Traducteur 30 langues.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">🔐</span>
+          <h3>Coffre chiffré</h3>
+          <p>Tes clés API, tokens, paiements. AES-GCM 256 + PBKDF2 100k. Local + IDB shadow + Firebase optionnel.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">📱</span>
+          <h3>Cross-platform</h3>
+          <p>iOS Safari PWA, Android Chrome, Desktop. NFC, Bluetooth, capteurs. Mêmes capacités partout.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">🛡</span>
+          <h3>27 sentinelles 24/7</h3>
+          <p>Auto-fix permanent. Tokens, backup, sync, mémoire, sécurité. Jamais besoin de redémarrer.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">🧠</span>
+          <h3>Mémoire long terme</h3>
+          <p>Apex retient tes anniv, allergies, projets. Apprend de chaque conversation. Per-user, jamais oublié.</p>
+        </div>
+        <div class="feature-card fade-up">
+          <span class="feature-icon">🌐</span>
+          <h3>Browser intégré</h3>
+          <p>Naviguer, scanner QR, extraire texte sans quitter Apex. Anti-blocage automatique cache/archive.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="container">
+      <div class="section-title">
+        <h2>Tarifs simples</h2>
+        <p>Commence gratuit. Upgrade quand tu en veux plus.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <h3>Free</h3>
+          <div class="price-amount">0€<small>/mois</small></div>
+          <p style="color: var(--text-dim); font-size: 13px">Pour découvrir Apex</p>
+          <ul class="price-features">
+            <li>50 messages IA par jour</li>
+            <li>1 studio au choix</li>
+            <li>Voix Web Speech</li>
+            <li>Coffre chiffré</li>
+            <li>Mémoire long terme</li>
+            <li class="muted">Voix premium</li>
+            <li class="muted">Tous les studios</li>
+          </ul>
+          <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/v13/?signup=1&plan=free" class="btn-ghost" style="text-align:center; padding: 12px;">Commencer gratuit</a>
+        </div>
+        <div class="price-card featured">
+          <h3>Basic</h3>
+          <div class="price-amount">9€<small>/mois</small></div>
+          <p style="color: var(--text-dim); font-size: 13px">Usage régulier</p>
+          <ul class="price-features">
+            <li>500 messages IA par jour</li>
+            <li>5 studios</li>
+            <li>Voix premium (ElevenLabs)</li>
+            <li>Browser intégré</li>
+            <li>Sentinelles auto-fix</li>
+            <li>Multi-provider failover</li>
+            <li class="muted">Tous studios + pro</li>
+          </ul>
+          <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/v13/?signup=1&plan=basic" class="btn-primary" style="text-align:center; padding: 12px;">Choisir Basic</a>
+        </div>
+        <div class="price-card">
+          <h3>Pro</h3>
+          <div class="price-amount">29€<small>/mois</small></div>
+          <p style="color: var(--text-dim); font-size: 13px">Usage intensif + pro</p>
+          <ul class="price-features">
+            <li>Messages IA illimités</li>
+            <li>Tous les 15 studios + 8 pro</li>
+            <li>60 voix premium</li>
+            <li>API publique</li>
+            <li>Marketplace plugins</li>
+            <li>Priorité support</li>
+            <li>Workflows automatiques</li>
+          </ul>
+          <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/v13/?signup=1&plan=pro" class="btn-ghost" style="text-align:center; padding: 12px;">Choisir Pro</a>
+        </div>
+      </div>
+      <p style="text-align: center; color: var(--text-muted); margin-top: 32px; font-size: 13px;">
+        💳 Annulation possible à tout moment. Pas d'engagement. Garantie 14 jours satisfait/remboursé.
+      </p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="container">
+      <div class="section-title">
+        <h2>Questions fréquentes</h2>
+        <p>Tout ce que tu dois savoir avant de commencer.</p>
+      </div>
+      <div class="faq">
+        <details class="faq-item">
+          <summary>Mes données sont-elles privées ?</summary>
+          <p>Oui. Apex est local-first : tout est stocké sur ton appareil par défaut. Le coffre est chiffré AES-GCM 256 avec ta passphrase. Firebase est optionnel pour la sync cross-device — tu peux désactiver.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Faut-il une clé API ?</summary>
+          <p>Oui pour utiliser tes propres providers IA (Anthropic, OpenAI, etc.). Apex te guide pour les créer. Plan Pro inclut un quota partagé sans clé requise.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Compatible iPhone ?</summary>
+          <p>Oui, Apex est une PWA installable sur iPhone (Safari ≥ 16.4). Mêmes capacités que sur desktop : voix, dictée, NFC, scan QR, push notifications.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Comment annuler mon abonnement ?</summary>
+          <p>1 clic dans Réglages → Abonnement → Annuler. Effet immédiat. Tes données restent intactes.</p>
+        </details>
+        <details class="faq-item">
+          <summary>RGPD ?</summary>
+          <p>Apex est RGPD compliant. Tu peux exporter toutes tes données en JSON via Réglages → RGPD → Export. Suppression compte = effacement total local + cloud sous 24h.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Open source ?</summary>
+          <p>Le code complet est sur GitHub : <a href="https://github.com/9r4rxssx64-creator/cmcteams" target="_blank" rel="noopener">github.com/9r4rxssx64-creator/cmcteams</a>. Audit communautaire bienvenu.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p style="margin-bottom: 12px;">Apex AI © 2026 — Local-first · End-to-end · Zero tracking</p>
+      <p>
+        <a href="https://github.com/9r4rxssx64-creator/cmcteams">GitHub</a>
+        <a href="#pricing">Tarifs</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/v13/?view=rgpd">RGPD</a>
+        <a href="mailto:kevin.desarzens@gmail.com">Contact</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Tracking minimal anonyme (visites uniquement, RGPD-friendly).
+    (function () {
+      try {
+        var visited = sessionStorage.getItem('apex_landing_visited');
+        if (!visited) {
+          sessionStorage.setItem('apex_landing_visited', '1');
+          // Could call analytics endpoint — pour l'instant log local seulement
+          console.log('[apex-landing] First visit this session');
+        }
+      } catch (_) { /* ignore */ }
+    })();
+
+    // Auto-redirect signup links to add UTM tracking
+    document.querySelectorAll('a[href*="signup=1"]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        try {
+          var ref = document.referrer || 'direct';
+          sessionStorage.setItem('apex_signup_ref', ref);
+        } catch (_) { /* ignore */ }
+      });
+    });
+  </script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="apex-landing"
+        data-version="v1.0.0"
+        data-color="#c9a227"
+        defer></script>
+</body>
+</html>

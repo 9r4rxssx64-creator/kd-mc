@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<!-- v1.0.1 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KDMC Shops — 5 boutiques en ligne · Monaco</title>
+<meta name="description" content="KDMC Shops — 5 boutiques en ligne : Tech Hub, CHEZ LOLO, La Détente, Digital Vault, Pawsome. 500 produits, livraison soignée, paiement sécurisé.">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://shops.kd-mc.com/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="KDMC Shops — 5 boutiques en ligne · Monaco">
+<meta property="og:description" content="500 produits sélectionnés, livraison soignée, paiement sécurisé. Tech, cosmétiques naturels, éco-responsable, produits digitaux et animalerie.">
+<meta property="og:url" content="https://shops.kd-mc.com/">
+<meta property="og:site_name" content="KDMC Shops">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="KDMC Shops — 5 boutiques en ligne · Monaco">
+<meta name="twitter:description" content="500 produits sélectionnés, livraison soignée, paiement sécurisé.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "OnlineStore",
+  "name": "KDMC Shops",
+  "url": "https://shops.kd-mc.com/",
+  "description": "5 boutiques en ligne (Tech Hub, CHEZ LOLO, La Détente, Digital Vault, Pawsome) — 500 produits sélectionnés, livraison soignée, paiement sécurisé.",
+  "inLanguage": "fr",
+  "currenciesAccepted": "EUR",
+  "paymentAccepted": "Carte bancaire, Apple Pay",
+  "areaServed": { "@type": "Country", "name": "Monaco" },
+  "department": [
+    { "@type": "Store", "name": "Tech Hub", "description": "Produits high-tech et électronique." },
+    { "@type": "Store", "name": "CHEZ LOLO", "description": "Cosmétiques naturels." },
+    { "@type": "Store", "name": "La Détente", "description": "Textile entre amis — motif AR15 et cœur rouge, designs personnalisables." },
+    { "@type": "Store", "name": "Digital Vault", "description": "Produits digitaux." },
+    { "@type": "Store", "name": "Pawsome", "description": "Animalerie." }
+  ]
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%92%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0b;--bg-2:#101013;
+  --card:#141418;--card-h:#1a1a20;
+  --border:#23232a;--border-h:#36363f;
+  --text:#f4f4f5;--muted:#a4a4ad;--faint:#6c6c75;
+  --gold:#e8b830;--gold-2:#d9b15c;--gold-soft:rgba(232,184,48,.10);
+  --r:18px;--r-sm:12px;--r-pill:100px;
+  --shadow:0 22px 60px rgba(0,0,0,.5);
+  --shadow-card:0 14px 40px rgba(0,0,0,.35);
+  --ease:cubic-bezier(.22,.78,.32,1);
+  --maxw:1100px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  font-family:"Inter",-apple-system,system-ui,"Segoe UI",sans-serif;
+  font-feature-settings:"ss01","cv11","cv02";
+  background:
+    radial-gradient(ellipse 90% 50% at 50% -10%,rgba(232,184,48,.08),transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 110%,rgba(124,140,60,.05),transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+  color:var(--text);min-height:100vh;line-height:1.55;
+  padding:max(40px,env(safe-area-inset-top)) 18px calc(56px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--maxw);margin:0 auto}
+.serif{font-family:"Instrument Serif","Cormorant Garamond",Georgia,serif;font-weight:400}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:2.5px;color:var(--gold);text-transform:uppercase}
+
+/* HERO */
+header{text-align:center;padding:8px 0 12px}
+.brand{margin:14px 0 16px}
+.brand h1{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:clamp(46px,11vw,96px);line-height:.96;letter-spacing:-.02em;color:var(--text)}
+.brand h1 em{font-style:italic;color:var(--gold)}
+.tagline{color:var(--muted);font-size:clamp(15px,1.6vw,17px);max-width:520px;margin:6px auto 0;line-height:1.55}
+.tagline strong{color:var(--text);font-weight:500}
+
+/* STATS */
+.stats{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;
+  max-width:480px;margin:36px auto 8px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;
+}
+.stat{background:var(--bg-2);padding:16px 18px;text-align:center}
+.stat b{display:block;font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:34px;color:var(--gold);line-height:1.05}
+.stat span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-weight:500}
+
+/* RULE */
+.rule{display:flex;align-items:center;gap:14px;margin:48px auto 22px;color:var(--faint)}
+.rule::before,.rule::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+.rule span{font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--faint)}
+
+/* GRID */
+.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.card{
+  --accent:var(--gold);
+  position:relative;display:flex;flex-direction:column;text-decoration:none;color:inherit;
+  background:linear-gradient(180deg,var(--card),var(--bg-2));
+  border:1px solid var(--border);border-radius:var(--r);
+  padding:28px 24px 22px;overflow:hidden;min-height:240px;
+  transition:transform .5s var(--ease),border-color .5s var(--ease),box-shadow .5s var(--ease),background .5s var(--ease);
+  animation:fadeUp .65s var(--ease) both;
+  will-change:transform;
+}
+.card::before{
+  content:"";position:absolute;inset:0 0 auto 0;height:2px;
+  background:linear-gradient(90deg,transparent 0%,var(--accent) 50%,transparent 100%);
+  opacity:.55;transition:opacity .5s var(--ease)
+}
+.card::after{
+  content:"";position:absolute;inset:auto -40% -50% auto;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 18%,transparent),transparent 65%);
+  filter:blur(40px);opacity:0;transition:opacity .6s var(--ease);pointer-events:none;
+}
+.card:hover,.card:focus-visible{
+  transform:translateY(-6px);background:linear-gradient(180deg,var(--card-h),var(--card));
+  border-color:color-mix(in srgb,var(--accent) 55%,var(--border));
+  box-shadow:var(--shadow-card);outline:none;
+}
+.card:hover::before,.card:focus-visible::before{opacity:1}
+.card:hover::after,.card:focus-visible::after{opacity:1}
+.card:active{transform:translateY(-2px)}
+.card-icon{
+  position:relative;width:58px;height:58px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:18px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
+}
+.card-title{font-family:"Instrument Serif",Georgia,serif;font-size:24px;font-weight:400;letter-spacing:-.01em;margin-bottom:6px;color:var(--text)}
+.card-desc{font-size:13.5px;color:var(--muted);line-height:1.6;flex:1;margin-bottom:18px}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:var(--r-pill);
+  font-size:11.5px;font-weight:600;letter-spacing:.3px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);
+}
+.go{
+  font-size:13px;font-weight:600;color:var(--accent);
+  display:inline-flex;align-items:center;gap:6px;
+  transition:gap .35s var(--ease);
+}
+.card:hover .go,.card:focus-visible .go{gap:10px}
+.go::after{content:"→";display:inline-block;transition:transform .35s var(--ease)}
+.card:hover .go::after,.card:focus-visible .go::after{transform:translateX(2px)}
+.admin{background:linear-gradient(180deg,var(--card),rgba(232,184,48,.05))}
+
+/* VALUES */
+.values{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:18px}
+.value{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:24px 22px;
+  transition:border-color .35s var(--ease),transform .35s var(--ease);
+}
+.value:hover{border-color:var(--border-h);transform:translateY(-2px)}
+.value .vi{font-size:24px;margin-bottom:10px;display:block}
+.value h3{font-family:"Instrument Serif",Georgia,serif;font-size:20px;font-weight:400;letter-spacing:-.01em;margin-bottom:6px}
+.value p{font-size:13.5px;color:var(--muted);line-height:1.6}
+
+/* FOOTER */
+footer{margin-top:64px;text-align:center;color:var(--faint);font-size:13px;line-height:1.85}
+footer .made{font-family:"Instrument Serif",Georgia,serif;font-size:17px;color:var(--text);margin-bottom:6px}
+footer .made em{font-style:italic;color:var(--gold)}
+footer a{color:var(--muted);text-decoration:none;transition:color .25s var(--ease)}
+footer a:hover{color:var(--gold)}
+.legal{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;font-size:13px}
+.legal a{position:relative}
+.legal a:not(:last-child)::after{content:"·";position:absolute;right:-12px;color:var(--border-h);font-weight:700}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.card:nth-child(2){animation-delay:.08s}
+.card:nth-child(3){animation-delay:.16s}
+.card:nth-child(4){animation-delay:.24s}
+.card:nth-child(5){animation-delay:.32s}
+.card:nth-child(6){animation-delay:.40s}
+
+/* RESPONSIVE */
+@media (min-width:640px){
+  .stats{grid-template-columns:repeat(4,1fr);max-width:none}
+}
+@media (min-width:880px){
+  body{padding:max(56px,env(safe-area-inset-top)) 24px calc(72px + env(safe-area-inset-bottom))}
+}
+
+/* A11Y */
+a:focus-visible,.card:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:var(--r-sm)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  body{background-attachment:scroll}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Kevin Desarzens · Monaco</div>
+  <div class="brand">
+    <h1 class="serif">KDMC <em>Shops</em></h1>
+  </div>
+  <p class="tagline">Cinq boutiques en ligne, un seul portail. <strong>500 produits sélectionnés</strong>, livraison soignée, paiement sécurisé.</p>
+  <div class="stats" role="list" aria-label="Indicateurs">
+    <div class="stat" role="listitem"><b>5</b><span>Boutiques</span></div>
+    <div class="stat" role="listitem"><b>500</b><span>Produits</span></div>
+    <div class="stat" role="listitem"><b>43</b><span>Catégories</span></div>
+    <div class="stat" role="listitem"><b>24/7</b><span>Disponible</span></div>
+  </div>
+</header>
+
+<main>
+
+<div class="rule"><span>Nos boutiques</span></div>
+<div class="grid">
+
+  <!-- Boutiques fonctionnelles d'abord -->
+  <a href="chez-lolo/" class="card" style="--accent:#7c8c3c" aria-label="CHEZ LOLO — cosmétiques naturels et artisanaux">
+    <div class="card-icon">🫒</div>
+    <div class="card-title">CHEZ LOLO</div>
+    <div class="card-desc">Cosmétiques naturels &amp; artisanaux : huile d'olive, lavande, amande douce, soins bio.</div>
+    <div class="card-foot"><span class="badge">Boutique</span><span class="go">Visiter</span></div>
+  </a>
+
+  <a href="la-detente/" class="card" style="--accent:#dc2626" aria-label="La Détente — textile entre amis, motif AR15 et cœur rouge">
+    <div class="card-icon">❤️</div>
+    <div class="card-title">La Détente</div>
+    <div class="card-desc">Textile entre amis : t-shirts, sweats, polos &amp; casquettes — motif AR15 + cœur rouge, tir, précision, chasse, ball-trap. Designs personnalisables.</div>
+    <div class="card-foot"><span class="badge">Boutique</span><span class="go">Visiter</span></div>
+  </a>
+
+  <!-- Produits neufs (rotaplan / kit-ia / croupier). Ils existaient sur le domaine
+       (routeur + apps.json) mais AUCUN portail ne les montrait : personne ne pouvait
+       les trouver. Une page sans tuile n'existe pas (mesuré 2026-09-17). -->
+  <a href="rotaplan/" class="card" style="--accent:#3b82f6" aria-label="Rotaplan — le planning des équipes qui tournent">
+    <div class="card-icon">🗓️</div>
+    <div class="card-title">Rotaplan</div>
+    <div class="card-desc">Le planning conçu pour les rotations complexes : équipes miroir, cycles variables, ordres de passage, repos légaux. Prix fixe, utilisateurs illimités.</div>
+    <div class="card-foot"><span class="badge">Logiciel</span><span class="go">Découvrir</span></div>
+  </a>
+
+  <a href="kit-ia/" class="card" style="--accent:#8b5cf6" aria-label="Kit IA de l'indépendant — 7 modules et 57 consignes prêtes à copier">
+    <div class="card-icon">🧰</div>
+    <div class="card-title">Kit IA de l'indépendant</div>
+    <div class="card-desc">7 modules et 57 consignes prêtes à copier pour que ChatGPT, Claude ou Gemini écrivent tes devis, relances, posts et courriers. Depuis ton téléphone, sans coder.</div>
+    <div class="card-foot"><span class="badge">Produit</span><span class="go">Découvrir</span></div>
+  </a>
+
+  <a href="croupier/" class="card" style="--accent:#059669" aria-label="Devenir croupier — le métier, sans le folklore">
+    <div class="card-icon">🃏</div>
+    <div class="card-title">Devenir croupier</div>
+    <div class="card-desc">Ce que fait vraiment un croupier, une nuit heure par heure, les jeux à apprendre et dans quel ordre, comment on entre. Écrit par quelqu'un qui travaille aux tables à Monaco.</div>
+    <div class="card-foot"><span class="badge">Guide</span><span class="go">Lire</span></div>
+  </a>
+
+  <!-- Démos : en construction (grisées, non cliquables) -->
+  <a href="tech-hub/" class="card" aria-disabled="true" tabindex="-1" style="--accent:#3b82f6;opacity:.5;filter:grayscale(.8);pointer-events:none" aria-label="Tech Hub — en construction">
+    <div class="card-icon">💻</div>
+    <div class="card-title">Tech Hub</div>
+    <div class="card-desc">Smartphones, audio, gaming, maison connectée, wearables et accessoires de pointe.</div>
+    <div class="card-foot"><span class="badge">🚧 En construction</span><span class="go">Bientôt</span></div>
+  </a>
+
+  <a href="digital-vault/" class="card" aria-disabled="true" tabindex="-1" style="--accent:#d4af37;opacity:.5;filter:grayscale(.8);pointer-events:none" aria-label="Digital Vault — en construction">
+    <div class="card-icon">🔐</div>
+    <div class="card-title">Digital Vault</div>
+    <div class="card-desc">Logiciels, formations, templates, ebooks et assets créatifs en téléchargement immédiat.</div>
+    <div class="card-foot"><span class="badge">🚧 En construction</span><span class="go">Bientôt</span></div>
+  </a>
+
+  <a href="pawsome/" class="card" aria-disabled="true" tabindex="-1" style="--accent:#f97316;opacity:.5;filter:grayscale(.8);pointer-events:none" aria-label="Pawsome — en construction">
+    <div class="card-icon">🐾</div>
+    <div class="card-title">Pawsome</div>
+    <div class="card-desc">Alimentation, jouets, accessoires, santé et confort pour vos compagnons.</div>
+    <div class="card-foot"><span class="badge">🚧 En construction</span><span class="go">Bientôt</span></div>
+  </a>
+
+  <a href="dashboard/" class="card admin" style="--accent:#e8b830" aria-label="Dashboard administrateur — accès protégé par PIN">
+    <div class="card-icon">📊</div>
+    <div class="card-title">Dashboard</div>
+    <div class="card-desc">Commandes en temps réel, statistiques, paramètres — réservé administrateur.</div>
+    <div class="card-foot"><span class="badge">🔒 Accès admin</span><span class="go">Ouvrir</span></div>
+  </a>
+
+</div>
+
+<div class="rule"><span>Pourquoi KDMC Shops</span></div>
+<div class="values">
+  <article class="value">
+    <span class="vi" aria-hidden="true">🔒</span>
+    <h3>Paiement sécurisé</h3>
+    <p>PayPal &amp; Revolut. Aucun stockage de carte bancaire — vous payez directement chez l'établissement de confiance.</p>
+  </article>
+  <article class="value">
+    <span class="vi" aria-hidden="true">🚚</span>
+    <h3>Livraison soignée</h3>
+    <p>Suivi en temps réel, emballage minimaliste, retours sans frais sous 30 jours partout en Europe.</p>
+  </article>
+  <article class="value">
+    <span class="vi" aria-hidden="true">✉️</span>
+    <h3>Service personnel</h3>
+    <p>Une question, un conseil, un avis ? Réponse sous 24 heures, en français, par une vraie personne.</p>
+  </article>
+</div>
+
+</main>
+
+<footer>
+  <p class="made">Pensé &amp; conçu à <em>Monaco</em> 🇲🇨</p>
+  <p>Paiement sécurisé PayPal &amp; Revolut · Livraison suivie · Service client réactif</p>
+  <nav class="legal" aria-label="Pages légales">
+    <a href="legal/cgv.html">CGV</a>
+    <a href="legal/mentions.html">Mentions légales</a>
+    <a href="legal/confidentialite.html">Confidentialité</a>
+    <a href="legal/livraison.html">Livraison</a>
+    <a href="legal/retours.html">Retours</a>
+    <a href="legal/faq.html">FAQ</a>
+  </nav>
+</footer>
+</div>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-shops" data-version="v1.0.2" data-color="#c9a227" defer></script>
+</body>
+</html>

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<!-- v2.0.4 — Cloud connected admin + lecture commandes token admin (fail-open) -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net https://analytics.tiktok.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://api.emailjs.com https://*.workers.dev https://api.printify.com https://images.printify.com https://www.googletagmanager.com https://analytics.tiktok.com https://connect.facebook.net; frame-src 'self' https://www.paypal.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KDMC Dashboard — Admin</title>
+<meta name="theme-color" content="#0a0a0b">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+<style>
+:root{
+  --p:#e8b830;--p2:#d9b15c;
+  --bg:#0a0a0b;--bg2:#101013;--card:#141418;--card-h:#1a1a20;
+  --border:#23232a;--border-h:#36363f;
+  --text:#f4f4f5;--muted:#a4a4ad;--faint:#6c6c75;
+  --ok:#22c55e;--err:#ef4444;--warn:#f59e0b;--info:#3b82f6;
+  --r:14px;--r-sm:10px;--r-pill:100px;
+  --ease:cubic-bezier(.22,.78,.32,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:"Inter",-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+.serif{font-family:"Instrument Serif",Georgia,serif;font-weight:400}
+input,select,textarea,button{font:inherit;font-size:16px}
+button{cursor:pointer;border:none;background:none;color:inherit}
+
+/* AUTH SCREEN */
+.auth{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(232,184,48,.08),transparent 60%),var(--bg);z-index:200}
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:40px 32px;width:100%;max-width:380px;text-align:center;box-shadow:0 22px 60px rgba(0,0,0,.5)}
+.auth-logo{font-size:32px;margin-bottom:8px}
+.auth-box h1{font-family:"Instrument Serif",serif;font-weight:400;font-size:34px;letter-spacing:-.01em;margin-bottom:6px}
+.auth-box h1 em{font-style:italic;color:var(--p)}
+.auth-sub{color:var(--muted);font-size:14px;margin-bottom:28px}
+.auth-pin{width:100%;padding:16px 18px;font-size:22px;letter-spacing:8px;text-align:center;border-radius:12px;border:1px solid var(--border);background:var(--bg2);color:var(--text);outline:none;font-variant-numeric:tabular-nums}
+.auth-pin:focus{border-color:var(--p)}
+.auth-btn{margin-top:16px;width:100%;padding:14px;border-radius:12px;background:var(--p);color:#000;font-weight:700;font-size:15px;letter-spacing:.3px;transition:transform .2s,opacity .2s}
+.auth-btn:hover{opacity:.92}
+.auth-btn:active{transform:scale(.98)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-err{margin-top:12px;color:var(--err);font-size:13px;min-height:18px}
+.auth-foot{margin-top:24px;font-size:12px;color:var(--faint)}
+
+/* APP */
+.app{display:none}
+.app.on{display:block}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--bg2);border-right:1px solid var(--border);padding:18px 14px;display:flex;flex-direction:column;z-index:50;overflow-y:auto}
+.sb-logo{font-family:"Instrument Serif",serif;font-size:24px;font-weight:400;color:var(--text);margin:6px 6px 4px;letter-spacing:-.01em}
+.sb-logo em{font-style:italic;color:var(--p)}
+.sb-sub{font-size:11px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase;margin:0 6px 22px}
+.sb-section{font-size:11px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase;margin:18px 6px 8px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;font-size:13.5px;cursor:pointer;color:var(--muted);transition:all .2s var(--ease);margin-bottom:2px;min-height:38px;text-decoration:none}
+.nav-item:hover{background:rgba(232,184,48,.06);color:var(--text)}
+.nav-item.active{background:rgba(232,184,48,.12);color:var(--p);font-weight:600}
+.nav-item .ico{font-size:16px;width:20px;text-align:center}
+.sb-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--faint)}
+.sb-foot button{font-size:13px;color:var(--muted);padding:8px 12px;border-radius:8px;width:100%;text-align:left;display:flex;align-items:center;gap:10px;min-height:40px}
+.sb-foot button:hover{background:rgba(239,68,68,.08);color:var(--err)}
+
+/* MAIN */
+.main{margin-left:240px;padding:28px 32px calc(40px + env(safe-area-inset-bottom));max-width:1400px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:16px;flex-wrap:wrap}
+.topbar h1{font-family:"Instrument Serif",serif;font-weight:400;font-size:34px;letter-spacing:-.01em}
+.topbar-r{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px}
+.conn-pill{padding:5px 12px;border-radius:var(--r-pill);font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
+.conn-pill.live{background:rgba(34,197,94,.12);color:var(--ok)}
+.conn-pill.off{background:rgba(239,68,68,.12);color:var(--err)}
+.conn-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--border);transition:border-color .25s}
+.kpi:hover{border-color:var(--border-h)}
+.kpi-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px}
+.kpi-val{font-family:"Instrument Serif",serif;font-weight:400;font-size:36px;color:var(--p);line-height:1.05}
+.kpi-sub{font-size:12px;color:var(--faint);margin-top:6px}
+
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:22px;margin-bottom:16px}
+.card h3{font-family:"Instrument Serif",serif;font-weight:400;font-size:22px;margin-bottom:14px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+
+.table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.table th{text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--border);font-weight:600;letter-spacing:.5px}
+.table td{padding:11px 14px;font-size:13.5px;border-bottom:1px solid var(--border)}
+.table tr:hover td{background:rgba(255,255,255,.018)}
+.table .right{text-align:right}
+.amt{color:var(--p);font-weight:700}
+
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:var(--r-pill);font-size:11px;font-weight:700;letter-spacing:.3px}
+.badge-ok{background:rgba(34,197,94,.14);color:var(--ok)}
+.badge-warn{background:rgba(245,158,11,.14);color:var(--warn)}
+.badge-err{background:rgba(239,68,68,.14);color:var(--err)}
+.badge-info{background:rgba(59,130,246,.14);color:var(--info)}
+.badge-muted{background:rgba(164,164,173,.10);color:var(--muted)}
+
+.empty{text-align:center;padding:48px 16px;color:var(--muted)}
+.empty .em-ico{font-size:42px;margin-bottom:12px;opacity:.6}
+
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.input,.select{padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:16px;outline:none;min-height:46px;caret-color:var(--p)}
+.input:focus,.select:focus{border-color:var(--p)}
+#ordQ{flex:1 1 100%;min-width:240px;width:100%}
+.btn{padding:10px 18px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-size:13.5px;font-weight:600;transition:all .2s;min-height:40px}
+.btn:hover{background:var(--card-h);border-color:var(--border-h)}
+.btn-primary{background:var(--p);color:#000;border-color:var(--p)}
+.btn-primary:hover{opacity:.9;background:var(--p)}
+
+.bar{height:8px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:8px}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--p),var(--p2));transition:width .6s var(--ease)}
+
+.toast{position:fixed;bottom:-80px;left:50%;transform:translateX(-50%);z-index:300;padding:12px 22px;border-radius:12px;background:var(--card);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:14px;transition:bottom .3s;border:1px solid var(--border);max-width:90vw}
+.toast.show{bottom:24px}
+
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--p);outline-offset:2px;border-radius:8px}
+
+@media(max-width:840px){
+  .sidebar{position:relative;width:100%;height:auto;flex-direction:row;flex-wrap:wrap;padding:12px;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border)}
+  .sb-logo,.sb-sub,.sb-section,.sb-foot{display:none}
+  .nav-item{padding:8px 12px;min-height:36px;white-space:nowrap;font-size:12.5px}
+  .main{margin-left:0;padding:18px}
+  .kpi-val{font-size:30px}
+  .topbar h1{font-size:26px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth" id="auth">
+  <div class="auth-box">
+    <div class="auth-logo">🔒</div>
+    <h1 class="serif">KDMC <em>Dashboard</em></h1>
+    <p class="auth-sub" id="authSub">Accès administrateur</p>
+    <input type="password" inputmode="numeric" autocomplete="off" maxlength="12" class="auth-pin" id="pin" placeholder="Ton code" autofocus>
+    <input type="password" inputmode="numeric" autocomplete="off" maxlength="12" class="auth-pin" id="pin2" placeholder="Confirme ton code" style="display:none;margin-top:10px">
+    <button class="auth-btn" id="loginBtn">Se connecter</button>
+    <div class="auth-err" id="authErr"></div>
+    <a href="#" class="auth-foot" id="forgotLink" style="text-decoration:underline">Code oublié ? Le redéfinir sur cet appareil</a>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main" id="main"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Auth admin partagée (kdmcAdminAuthQS / kdmcAdminLogin, role:admin, fail-open).
+     Chemin ABSOLU /CMCteams/… (passthrough router, leçon #102). Chargé AVANT le
+     script du dashboard → window.kdmcAdminAuthQS défini avant tout appel Firebase. -->
+<script src="/CMCteams/shops/_shared/firebase-orders.js"></script>
+
+<script>
+/* ============================================================
+   KDMC Dashboard v2 — connecté Firebase, auth PIN, live SSE
+   Isolation : path 'shops_admin_v1/*' strict.
+   LECTURE des commandes = token admin (role:admin) via ?auth=, fail-open à
+   la lecture anonyme (marche tant que orders/.read reste ouvert ; une fois le
+   verrou posé, un code admin unique par appareil réactive l'accès — 0 lockout).
+   ============================================================ */
+
+var FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app";
+var FB_BASE="shops_admin_v1";
+var SHOPS=[
+  {id:"tech-hub",name:"Tech Hub",icon:"💻",color:"#3b82f6"},
+  {id:"chez-lolo",name:"CHEZ LOLO",icon:"🫒",color:"#7c8c3c"},
+  {id:"la-detente",name:"La Détente",icon:"🎯",color:"#dc2626"},
+  {id:"ecocraft",name:"EcoCraft",icon:"🌿",color:"#16a34a"},
+  {id:"digital-vault",name:"Digital Vault",icon:"🔐",color:"#d4af37"},
+  {id:"pawsome",name:"Pawsome",icon:"🐾",color:"#f97316"}
+];
+var SESSION_TTL=8*3600*1000; // 8 h
+var SK={ // localStorage keys (scopées)
+  pinHash:"shops_admin_pin_hash",
+  pinSalt:"shops_admin_pin_salt",
+  lastact:"shops_admin_lastact",
+  fails:"shops_admin_fails",
+  view:"shops_admin_view"
+};
+
+/* --- utils --- */
+function esc(s){return s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function fmtP(n){n=Number(n)||0;return n.toFixed(2).replace(".",",")+" €"}
+function fmtN(n){return new Intl.NumberFormat("fr-FR").format(Number(n)||0)}
+function fmtD(ts){if(!ts)return"—";var d=new Date(ts);return d.toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
+function toast(m,d){var e=document.getElementById("toast");e.textContent=m;e.className="toast show";clearTimeout(toast._t);toast._t=setTimeout(function(){e.className="toast"},d||3200)}
+function lg(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(_){return d}}
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
+function rm(k){try{localStorage.removeItem(k)}catch(_){}}
+function shopFromId(id){for(var i=0;i<SHOPS.length;i++)if(SHOPS[i].id===id)return SHOPS[i];return{id:id,name:id,icon:"🏪",color:"#888"}}
+
+/* --- crypto PIN (PBKDF2 200k) --- */
+async function hashPin(pin,salt){
+  var enc=new TextEncoder();
+  var key=await crypto.subtle.importKey("raw",enc.encode(String(pin)),{name:"PBKDF2"},false,["deriveBits"]);
+  var bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:enc.encode(salt),iterations:200000,hash:"SHA-256"},key,256);
+  return Array.from(new Uint8Array(bits)).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+}
+function randSalt(){var a=new Uint8Array(16);crypto.getRandomValues(a);return Array.from(a).map(function(b){return b.toString(16).padStart(2,"0")}).join("")}
+
+/* --- auth --- */
+var _authMode="login"; // "create" au 1er lancement (aucun code par défaut)
+async function initAuth(){
+  // session encore valide ?
+  var last=lg(SK.lastact,0);
+  if(last && (Date.now()-last)<SESSION_TTL){enterApp();return}
+  // Compte unique kd-mc.com : déverrouillage AUTO si le domaine PROUVE l'identité par
+  // Face ID (whoami.verified===true) ET autorisé : admin (Kevin) OU Laurence (nom).
+  // Placé AVANT le PIN local pour que Laurence entre par Face ID sans créer de code.
+  // Un inconnu qui tape "Laurence" SANS Face ID n'est PAS verified → exclu (leçon #99).
+  // Additif + fail-open : SSO injoignable (servi hors *.kd-mc.com) → on retombe sur le PIN.
+  try{
+    var hsh=location.hash||"";var mm=hsh.match(/[#&]kdmc_sso=([^&]+)/);
+    if(mm){try{localStorage.setItem("kdmc_sso_token",decodeURIComponent(mm[1]));}catch(_){}
+           try{history.replaceState(null,"",location.pathname+location.search);}catch(_){}}
+    var tok="";try{tok=localStorage.getItem("kdmc_sso_token")||"";}catch(_){}
+    var hdr={};if(tok)hdr.Authorization="Bearer "+tok;
+    var rs=await fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hdr});
+    var j=rs&&rs.ok?await rs.json():null;
+    var allowed=j&&(j.admin===true||/laurence|lolo|saint.?polit|kevin|desarzens/i.test(j.name||""));
+    if(j&&j.ok&&j.verified===true&&allowed){enterApp();return}
+  }catch(_){/* fail-open → PIN */}
+  // Anti-lockout : un code local DÉJÀ défini (appareil déjà configuré par une identité
+  // prouvée) reste accepté même si le SSO est momentanément injoignable.
+  if(lg(SK.pinHash)){showAuth();return}
+  // Sinon : aucune identité prouvée + aucun code local → VERROUILLÉ. La 1ʳᵉ entrée se
+  // fait TOUJOURS via le portail (prénom+nom+code OU Face ID). Jamais de code sans nom.
+  showLocked();
+}
+function showLocked(){
+  _authMode="locked";
+  document.getElementById("authSub").textContent="Connecte-toi sur le portail kd-mc.com (prénom + nom + code, ou Face ID).";
+  document.getElementById("pin").style.display="none";
+  document.getElementById("pin2").style.display="none";
+  document.getElementById("loginBtn").textContent="Aller au portail kd-mc.com";
+  document.getElementById("forgotLink").style.display="none";
+  document.getElementById("authErr").textContent="";
+  document.getElementById("auth").style.display="flex";document.getElementById("app").classList.remove("on");
+}
+function showAuth(){
+  _authMode="login";
+  document.getElementById("authSub").textContent="Accès administrateur";
+  document.getElementById("pin").style.display="";
+  document.getElementById("pin").placeholder="Ton code";document.getElementById("pin").value="";
+  document.getElementById("pin2").style.display="none";document.getElementById("pin2").value="";
+  document.getElementById("loginBtn").textContent="Se connecter";
+  document.getElementById("authErr").textContent="";
+  document.getElementById("forgotLink").style.display="";
+  document.getElementById("auth").style.display="flex";document.getElementById("app").classList.remove("on");
+  setTimeout(function(){document.getElementById("pin").focus()},50);
+}
+function showCreate(){
+  _authMode="create";
+  document.getElementById("authSub").textContent="Choisis ton code (4 à 12 chiffres)";
+  document.getElementById("pin").placeholder="Nouveau code";document.getElementById("pin").value="";
+  document.getElementById("pin2").placeholder="Confirme ton code";document.getElementById("pin2").style.display="";document.getElementById("pin2").value="";
+  document.getElementById("loginBtn").textContent="Valider mon code";
+  document.getElementById("authErr").textContent="";
+  document.getElementById("forgotLink").style.display="none";
+  document.getElementById("auth").style.display="flex";document.getElementById("app").classList.remove("on");
+  setTimeout(function(){document.getElementById("pin").focus()},50);
+}
+function enterApp(){
+  document.getElementById("auth").style.display="none";
+  document.getElementById("app").classList.add("on");
+  ls(SK.lastact,Date.now());
+  D.view=lg(SK.view,"home");
+  renderSidebar();
+  dc();
+  startFbListener();
+}
+function logout(){
+  rm(SK.lastact);
+  if(_es){try{_es.close()}catch(_){}_es=null;_connected=false}
+  showAuth();
+  document.getElementById("pin").value="";
+}
+async function doLogin(){
+  // Mode verrouillé : aucune identité prouvée → on renvoie au portail (jamais d'entrée
+  // par code sans nom). Le portail prouve l'identité (prénom+nom+code OU Face ID).
+  if(_authMode==="locked"){location.href="https://kd-mc.com/?return="+encodeURIComponent(location.href);return;}
+  var btn=document.getElementById("loginBtn"),err=document.getElementById("authErr"),pin=document.getElementById("pin").value.trim();
+  err.textContent="";
+  // 1er lancement / réinit : Kevin définit SON code
+  if(_authMode==="create"){
+    var pin2=document.getElementById("pin2").value.trim();
+    if(!/^\d{4,12}$/.test(pin)){err.textContent="Code : 4 à 12 chiffres.";return}
+    if(pin!==pin2){err.textContent="Les deux codes ne sont pas identiques.";return}
+    btn.disabled=true;btn.textContent="…";
+    try{await changePin(pin);ls(SK.fails,{n:0,until:0});enterApp();}
+    catch(e){err.textContent=e.message||"Erreur.";}
+    btn.disabled=false;btn.textContent="Valider mon code";
+    return;
+  }
+  if(!pin){err.textContent="Saisis ton code.";return}
+  // rate-limit
+  var fails=lg(SK.fails,{n:0,until:0});
+  if(fails.until && Date.now()<fails.until){
+    var remain=Math.ceil((fails.until-Date.now())/1000);
+    err.textContent="Trop d'essais. Réessaie dans "+remain+" s.";return;
+  }
+  btn.disabled=true;btn.textContent="Vérification…";
+  var salt=lg(SK.pinSalt),expected=lg(SK.pinHash);
+  var h=await hashPin(pin,salt);
+  btn.disabled=false;btn.textContent="Se connecter";
+  if(h===expected){
+    ls(SK.fails,{n:0,until:0});
+    enterApp();
+  }else{
+    fails.n=(fails.n||0)+1;
+    var wait=fails.n>=8?86400:fails.n>=7?3600:fails.n>=6?600:fails.n>=5?120:fails.n>=4?30:0;
+    fails.until=wait?Date.now()+wait*1000:0;
+    ls(SK.fails,fails);
+    err.textContent="PIN incorrect"+(wait?" — bloqué "+wait+" s.":".");
+  }
+}
+async function changePin(newPin){
+  if(!/^\d{4,12}$/.test(newPin))throw new Error("PIN : 4 à 12 chiffres");
+  var salt=randSalt();ls(SK.pinSalt,salt);
+  var h=await hashPin(newPin,salt);ls(SK.pinHash,h);
+}
+
+/* --- Firebase REST + SSE --- */
+var _es=null,_connected=false,_orders={},_lastEvt=0;
+var _secured=false,_promptingSec=false;
+
+/* ?auth=<id_token role:admin> ou "" (fail-open). Jamais de rejet. */
+function _ordersAuthQS(){
+  try{ return window.kdmcAdminAuthQS?window.kdmcAdminAuthQS():Promise.resolve(""); }
+  catch(_){ return Promise.resolve(""); }
+}
+/* Lecture bloquée (verrou posé + pas de grant) → demande le code admin UNE fois
+   (unique par appareil, modèle « reconnu auto »), puis relance le listener avec le
+   token frais. Fail-open total : firebase-orders absent / code annulé → rien ne casse. */
+function _ordersBlocked(){
+  if(_secured||_promptingSec||!window.kdmcAdminLogin)return;
+  _promptingSec=true;
+  _askDashCode().then(function(pin){
+    _promptingSec=false;
+    if(!pin)return;
+    window.kdmcAdminLogin(pin).then(function(ok){
+      if(ok){_secured=true;toast("🔐 Accès admin validé");startFbListener();}
+      else toast("Code admin incorrect");
+    });
+  });
+}
+function secureDashboard(){ _secured=false; _ordersBlocked(); }
+/* Modale code admin du DOMAINE (≠ PIN local du dashboard). Vanilla DOM, 16px = pas
+   de zoom iOS, sans re-render → pas de « clavier qui saute ». */
+function _askDashCode(){
+  return new Promise(function(res){
+    var ov=document.createElement("div");
+    ov.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px";
+    ov.innerHTML='<div style="background:#fff;color:#111;border-radius:14px;padding:20px;max-width:320px;width:100%;font-family:system-ui,-apple-system,sans-serif"><div style="font-weight:700;margin-bottom:8px">🔐 Code admin</div><div style="font-size:13px;color:#555;margin-bottom:12px">Pour voir les commandes (une seule fois sur cet appareil).</div><input id="_dc_in" type="password" inputmode="numeric" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:16px;padding:12px;border:1px solid #ccc;border-radius:10px;margin-bottom:12px"><div style="display:flex;gap:8px"><button id="_dc_ok" type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#111;color:#fff;font-size:15px">Valider</button><button id="_dc_no" type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#eee;color:#111;font-size:15px">Annuler</button></div></div>';
+    document.body.appendChild(ov);
+    var inp=ov.querySelector("#_dc_in");
+    try{setTimeout(function(){try{inp.focus();}catch(_){}}, 50);}catch(_){}
+    function done(v){try{document.body.removeChild(ov);}catch(_){}res(v);}
+    ov.querySelector("#_dc_ok").onclick=function(){done(inp.value||null);};
+    ov.querySelector("#_dc_no").onclick=function(){done(null);};
+    inp.onkeydown=function(e){if(e.key==="Enter")done(inp.value||null);};
+  });
+}
+
+function fbGetAll(){
+  return _ordersAuthQS().then(function(qs){
+    return fetch(FB_URL+"/"+FB_BASE+"/orders.json"+qs).then(function(r){
+      if(r.ok)return r.json();
+      if(r.status===401||r.status===403)_ordersBlocked(); /* verrou posé, pas de grant */
+      return null;
+    });
+  }).catch(function(){return null});
+}
+function startFbListener(){
+  fbGetAll().then(function(d){if(d){applyAllOrders(d)}});
+  if(_es)try{_es.close()}catch(_){}
+  _ordersAuthQS().then(function(qs){
+    try{
+      _es=new EventSource(FB_URL+"/"+FB_BASE+"/orders.json"+(qs||"?"),{withCredentials:false});
+      _es.addEventListener("put",function(e){onFbEvent(e)});
+      _es.addEventListener("patch",function(e){onFbEvent(e)});
+      _es.addEventListener("keep-alive",function(){_connected=true;updateConn()});
+      _es.addEventListener("auth_revoked",function(){_connected=false;updateConn()});
+      _es.onopen=function(){_connected=true;updateConn()};
+      _es.onerror=function(){_connected=false;updateConn();setTimeout(function(){if(!_connected)startFbListener()},10000)};
+    }catch(_){}
+  });
+}
+function onFbEvent(e){
+  try{
+    var d=JSON.parse(e.data);
+    if(!d)return;
+    var path=d.path||"/",data=d.data;
+    if(path==="/"){applyAllOrders(data||{})}
+    else{
+      // path = /<shop> ou /<shop>/<orderId>
+      var parts=path.split("/").filter(Boolean);
+      if(parts.length===1){_orders[parts[0]]=data||{}}
+      else if(parts.length===2){_orders[parts[0]]=_orders[parts[0]]||{};if(data==null)delete _orders[parts[0]][parts[1]];else _orders[parts[0]][parts[1]]=data;
+        if(D.view==="home"||D.view==="orders")toast("Nouvelle commande : "+esc(parts[0])+" / "+esc(parts[1]));
+      }
+    }
+    _connected=true;_lastEvt=Date.now();updateConn();
+    if(D.view==="home"||D.view==="orders"||D.view==="boutiques")dc();
+  }catch(err){}
+}
+function applyAllOrders(d){_orders=d||{};_connected=true;updateConn();if(D.view==="home"||D.view==="orders"||D.view==="boutiques")dc()}
+function updateConn(){var el=document.getElementById("conn");if(!el)return;el.className="conn-pill "+(_connected?"live":"off");el.textContent=_connected?"Live":"Hors-ligne"}
+
+/* --- agrégation orders --- */
+function allOrdersFlat(){
+  var arr=[];
+  Object.keys(_orders||{}).forEach(function(shop){
+    var ords=_orders[shop]||{};
+    Object.keys(ords).forEach(function(id){
+      var o=ords[id]||{};
+      arr.push({orderId:o.orderId||id,shop:shop,total:Number(o.total)||0,method:o.method||"",items_count:Number(o.items_count)||0,items_summary:o.items_summary||"",status:o.status||"new",ts:Number(o.ts)||0,ts_iso:o.ts_iso||""});
+    });
+  });
+  return arr;
+}
+function statsAll(){
+  var f=allOrdersFlat(),tot=0,n=f.length;
+  f.forEach(function(o){tot+=o.total});
+  return {total:tot,count:n,avg:n?tot/n:0,byShop:groupByShop(f)};
+}
+function groupByShop(f){
+  var g={};SHOPS.forEach(function(s){g[s.id]={shop:s,total:0,count:0,items:0}});
+  f.forEach(function(o){if(!g[o.shop])g[o.shop]={shop:shopFromId(o.shop),total:0,count:0,items:0};g[o.shop].total+=o.total;g[o.shop].count++;g[o.shop].items+=o.items_count});
+  return g;
+}
+
+/* --- export CSV --- */
+function exportCSV(){
+  var rows=[["Date","ID","Boutique","Total (€)","Méthode","Articles","Détail","Statut"]];
+  allOrdersFlat().sort(function(a,b){return b.ts-a.ts}).forEach(function(o){
+    rows.push([new Date(o.ts||0).toISOString(),o.orderId,o.shop,String(o.total).replace(".",","),o.method,o.items_count,o.items_summary.replace(/"/g,"'"),o.status]);
+  });
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"'}).join(",")}).join("\n");
+  var blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");a.href=url;a.download="kdmc-commandes-"+new Date().toISOString().slice(0,10)+".csv";a.click();
+  URL.revokeObjectURL(url);
+  toast("Export CSV téléchargé ✅");
+}
+
+/* --- routing --- */
+var D={view:"home",shopFilter:"all",searchQ:""};
+var NAV=[
+  {id:"home",ico:"📊",label:"Vue d'ensemble"},
+  {id:"orders",ico:"📦",label:"Commandes"},
+  {id:"boutiques",ico:"🏪",label:"Boutiques"},
+  {id:"analytics",ico:"📈",label:"Analytiques"},
+  {id:"settings",ico:"⚙️",label:"Paramètres"}
+];
+function sv(v){D.view=v;ls(SK.view,v);ls(SK.lastact,Date.now());renderSidebar();dc()}
+function renderSidebar(){
+  var sb=document.getElementById("sidebar"),h="";
+  h+='<div class="sb-logo">KDMC <em>Admin</em></div>';
+  h+='<div class="sb-sub">Dashboard v2</div>';
+  h+='<div class="sb-section">Gestion</div>';
+  NAV.forEach(function(n){h+='<button class="nav-item'+(D.view===n.id?" active":"")+'" onclick="sv(\''+n.id+'\')"><span class="ico">'+n.ico+'</span> '+esc(n.label)+'</button>'});
+  h+='<div class="sb-section">Mes boutiques</div>';
+  SHOPS.forEach(function(s){h+='<a class="nav-item" href="../'+s.id+'/" target="_blank" rel="noopener"><span class="ico">'+s.icon+'</span> '+esc(s.name)+'</a>'});
+  h+='<a class="nav-item" href="../" target="_blank" rel="noopener"><span class="ico">🛒</span> Portail public</a>';
+  h+='<div class="sb-foot"><button onclick="logout()"><span style="font-size:16px">🚪</span> Déconnexion</button></div>';
+  sb.innerHTML=h;
+}
+function dc(){
+  var fn={home:vHome,orders:vOrders,boutiques:vBoutiques,analytics:vAnalytics,settings:vSettings}[D.view]||vHome;
+  document.getElementById("main").innerHTML=fn();
+}
+
+/* --- vues --- */
+function topbar(title){
+  return '<div class="topbar"><h1>'+esc(title)+'</h1><div class="topbar-r"><button type="button" onclick="secureDashboard()" title="Débloquer l\'accès aux commandes avec le code admin" style="background:none;border:1px solid var(--muted);color:var(--muted);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer">🔐 Code admin</button><span id="conn" class="conn-pill '+(_connected?"live":"off")+'">'+(_connected?"Live":"Hors-ligne")+'</span><span>'+new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})+'</span></div></div>';
+}
+
+function vHome(){
+  var s=statsAll(),max=0;Object.keys(s.byShop).forEach(function(k){if(s.byShop[k].total>max)max=s.byShop[k].total});
+  var recent=allOrdersFlat().sort(function(a,b){return b.ts-a.ts}).slice(0,8);
+  return topbar("Vue d'ensemble")+
+    '<div class="kpi-grid">'+
+    '<div class="kpi"><div class="kpi-label">Revenu total</div><div class="kpi-val">'+fmtP(s.total)+'</div><div class="kpi-sub">depuis le lancement</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Commandes</div><div class="kpi-val">'+fmtN(s.count)+'</div><div class="kpi-sub">cumul</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Panier moyen</div><div class="kpi-val">'+fmtP(s.avg)+'</div><div class="kpi-sub">par commande</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Boutiques actives</div><div class="kpi-val">'+SHOPS.length+'</div><div class="kpi-sub">5 e-shops</div></div>'+
+    '</div>'+
+    '<div class="card"><h3>🏪 Performance par boutique</h3>'+
+    SHOPS.map(function(sh){
+      var g=s.byShop[sh.id]||{total:0,count:0,items:0};
+      var pct=max?Math.round(g.total/max*100):0;
+      return '<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)">'+
+        '<span style="font-size:22px;width:32px;text-align:center">'+sh.icon+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;margin-bottom:4px">'+esc(sh.name)+'</div><div class="bar"><div class="bar-fill" style="width:'+pct+'%;background:'+sh.color+'"></div></div></div>'+
+        '<div style="text-align:right;min-width:140px"><div class="amt">'+fmtP(g.total)+'</div><div style="font-size:12px;color:var(--muted)">'+g.count+' cmd · '+g.items+' articles</div></div>'+
+      '</div>';
+    }).join("")+
+    '</div>'+
+    '<div class="card"><h3>📦 Dernières commandes</h3>'+
+    (recent.length?
+      '<table class="table"><thead><tr><th>Date</th><th>ID</th><th>Boutique</th><th class="right">Montant</th><th>Paiement</th></tr></thead><tbody>'+
+      recent.map(function(o){var sh=shopFromId(o.shop);return '<tr><td style="color:var(--muted)">'+fmtD(o.ts)+'</td><td style="font-weight:600">'+esc(o.orderId)+'</td><td>'+sh.icon+' '+esc(sh.name)+'</td><td class="right amt">'+fmtP(o.total)+'</td><td><span class="badge badge-info">'+esc(o.method||"—")+'</span></td></tr>'}).join("")+
+      '</tbody></table>':
+      '<div class="empty"><div class="em-ico">📭</div><div>Aucune commande pour le moment.</div><div style="font-size:13px;margin-top:8px;color:var(--faint)">Les ventes apparaîtront ici en temps réel dès qu\'un client passe commande.</div></div>'
+    )+
+    '</div>';
+}
+
+function vOrders(){
+  var all=allOrdersFlat().sort(function(a,b){return b.ts-a.ts});
+  var f=all.filter(function(o){
+    if(D.shopFilter!=="all"&&o.shop!==D.shopFilter)return false;
+    if(D.searchQ){var q=D.searchQ.toLowerCase();if((o.orderId+" "+o.shop+" "+o.method+" "+o.items_summary).toLowerCase().indexOf(q)<0)return false}
+    return true;
+  });
+  return topbar("Commandes ("+fmtN(f.length)+")")+
+    '<div class="filters">'+
+    '<input class="input" id="ordQ" placeholder="🔎 Rechercher (ID, boutique, paiement, produit)…" value="'+esc(D.searchQ)+'" oninput="D.searchQ=this.value;dc();setTimeout(function(){var i=document.getElementById(\'ordQ\');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},0)" style="flex:1 1 100%;min-width:240px">'+
+    '<select class="select" onchange="D.shopFilter=this.value;dc()"><option value="all"'+(D.shopFilter==="all"?" selected":"")+'>Toutes boutiques</option>'+
+    SHOPS.map(function(s){return '<option value="'+s.id+'"'+(D.shopFilter===s.id?" selected":"")+'>'+s.icon+' '+esc(s.name)+'</option>'}).join("")+
+    '</select>'+
+    '<button class="btn" onclick="exportCSV()">📥 Export CSV</button>'+
+    '</div>'+
+    '<div class="card" style="padding:0;overflow:hidden">'+
+    (f.length?
+      '<table class="table"><thead><tr><th>Date</th><th>ID</th><th>Boutique</th><th>Articles</th><th class="right">Total</th><th>Paiement</th><th>Détail</th></tr></thead><tbody>'+
+      f.map(function(o){var sh=shopFromId(o.shop);return '<tr><td style="color:var(--muted);white-space:nowrap">'+fmtD(o.ts)+'</td><td style="font-weight:600">'+esc(o.orderId)+'</td><td>'+sh.icon+' '+esc(sh.name)+'</td><td>'+o.items_count+'</td><td class="right amt">'+fmtP(o.total)+'</td><td><span class="badge badge-info">'+esc(o.method||"—")+'</span></td><td style="font-size:12px;color:var(--muted);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(o.items_summary)+'">'+esc(o.items_summary||"—")+'</td></tr>'}).join("")+
+      '</tbody></table>':
+      '<div class="empty"><div class="em-ico">📭</div><div>'+(all.length?"Aucune commande ne correspond aux filtres.":"Aucune commande pour le moment.")+'</div></div>'
+    )+
+    '</div>';
+}
+
+function vBoutiques(){
+  var s=statsAll();
+  return topbar("Boutiques")+
+    '<div class="kpi-grid">'+
+    SHOPS.map(function(sh){
+      var g=s.byShop[sh.id]||{total:0,count:0,items:0};
+      return '<div class="kpi" style="border-top:3px solid '+sh.color+'">'+
+        '<div class="kpi-label">'+sh.icon+' '+esc(sh.name)+'</div>'+
+        '<div class="kpi-val" style="color:'+sh.color+'">'+fmtP(g.total)+'</div>'+
+        '<div class="kpi-sub">'+g.count+' commandes · '+g.items+' articles</div>'+
+        '<div style="margin-top:14px;display:flex;gap:8px"><a class="btn" href="../'+sh.id+'/" target="_blank" rel="noopener" style="flex:1;text-align:center">🌐 Voir la boutique</a></div>'+
+      '</div>';
+    }).join("")+
+    '</div>';
+}
+
+function vAnalytics(){
+  var f=allOrdersFlat();
+  // par jour sur 30 derniers jours
+  var today=new Date();today.setHours(0,0,0,0);
+  var days=[];
+  for(var i=29;i>=0;i--){var d=new Date(today);d.setDate(d.getDate()-i);days.push({k:d.toISOString().slice(0,10),lbl:d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}),total:0,count:0})}
+  var idx={};days.forEach(function(d,i){idx[d.k]=i});
+  f.forEach(function(o){var k=new Date(o.ts||0).toISOString().slice(0,10);if(idx[k]!=null){days[idx[k]].total+=o.total;days[idx[k]].count++}});
+  var max=Math.max.apply(null,days.map(function(d){return d.total}))||1;
+  return topbar("Analytiques")+
+    '<div class="card"><h3>📈 Revenu — 30 derniers jours</h3>'+
+    '<div style="display:flex;gap:3px;align-items:flex-end;height:160px;padding:8px 0 16px">'+
+    days.map(function(d){var pct=Math.max(2,Math.round(d.total/max*100));return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div title="'+d.lbl+' : '+fmtP(d.total)+' ('+d.count+' cmd)" style="width:100%;height:'+pct+'%;background:linear-gradient(180deg,var(--p),var(--p2));border-radius:3px 3px 0 0;min-height:2px"></div></div>'}).join("")+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--faint)"><span>'+days[0].lbl+'</span><span>'+days[Math.floor(days.length/2)].lbl+'</span><span>'+days[days.length-1].lbl+'</span></div>'+
+    '</div>'+
+    '<div class="card"><h3>🏪 Part de marché</h3>'+
+    (function(){var g=statsAll().byShop,tot=0;Object.keys(g).forEach(function(k){tot+=g[k].total});
+    return SHOPS.map(function(sh){var v=g[sh.id]||{total:0};var pct=tot?Math.round(v.total/tot*100):0;
+      return '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="width:160px;font-size:14px">'+sh.icon+' '+esc(sh.name)+'</span><div style="flex:1"><div class="bar"><div class="bar-fill" style="width:'+pct+'%;background:'+sh.color+'"></div></div></div><span style="width:80px;text-align:right;font-weight:700;color:'+sh.color+'">'+pct+'%</span></div>'}).join("")})()+
+    '</div>';
+}
+
+function vSettings(){
+  return topbar("Paramètres")+
+    '<div class="card"><h3>🔑 Changer le PIN admin</h3>'+
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">PIN actuel = celui que tu utilises pour te connecter. 4 à 12 chiffres.</p>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;max-width:500px"><input class="input" type="password" inputmode="numeric" id="pinCur" placeholder="PIN actuel" style="flex:1;min-width:140px"><input class="input" type="password" inputmode="numeric" id="pinNew" placeholder="Nouveau PIN" style="flex:1;min-width:140px"><button class="btn btn-primary" onclick="doChangePin()">Changer</button></div>'+
+    '</div>'+
+    '<div class="card"><h3>☁️ Connexion Firebase</h3>'+
+    '<div style="font-size:13px;color:var(--muted);line-height:1.7"><div><strong>Base :</strong> '+esc(FB_URL)+'</div><div><strong>Chemin isolé :</strong> <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">'+esc(FB_BASE)+'/orders/*</code></div><div><strong>État :</strong> <span id="conn2" class="conn-pill '+(_connected?"live":"off")+'">'+(_connected?"Live":"Hors-ligne")+'</span></div></div>'+
+    '<p style="font-size:12px;color:var(--faint);margin-top:14px">Les commandes des 5 boutiques remontent ici en temps réel. Aucune donnée client (email, adresse, CB) n\'est stockée — uniquement les méta-commandes (ID, boutique, total, articles).</p>'+
+    '</div>'+
+    '<div class="card"><h3>📋 Règles Firebase à déployer</h3>'+
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Pour sécuriser le chemin <code>'+esc(FB_BASE)+'</code>, déploie ces règles dans la console Firebase (une seule fois). Voir <code>shops/FIREBASE_RULES.md</code> dans le repo.</p>'+
+    '<button class="btn" onclick="window.open(\'https://console.firebase.google.com\',\'_blank\')">🔗 Ouvrir la console Firebase</button>'+
+    '</div>'+
+    '<div class="card"><h3>📦 Données locales</h3>'+
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">PIN hashé (PBKDF2 200k) + session 8 h stockés en localStorage isolé (préfixe <code>shops_admin_</code>).</p>'+
+    '<button class="btn" onclick="if(confirm(\'Effacer ton code sur cet appareil et en redéfinir un ?\')){Object.values(SK).forEach(rm);location.reload()}">↩ Redéfinir mon code</button>'+
+    '</div>';
+}
+
+async function doChangePin(){
+  var cur=document.getElementById("pinCur").value.trim(),nw=document.getElementById("pinNew").value.trim();
+  var salt=lg(SK.pinSalt),h=await hashPin(cur,salt);
+  if(h!==lg(SK.pinHash))return toast("PIN actuel incorrect ❌");
+  try{await changePin(nw);toast("PIN mis à jour ✅");document.getElementById("pinCur").value="";document.getElementById("pinNew").value=""}
+  catch(e){toast(e.message)}
+}
+
+/* --- bind --- */
+document.getElementById("loginBtn").addEventListener("click",doLogin);
+document.getElementById("pin").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin()});
+document.getElementById("pin2").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin()});
+document.getElementById("forgotLink").addEventListener("click",function(e){
+  e.preventDefault();
+  // Code oublié : on NE permet PAS de réinitialiser librement (sinon contournement du
+  // code sans identité). On reprouve l'identité via le portail (Face ID OU prénom+nom+code),
+  // qui rouvre le Dashboard automatiquement ; le code se redéfinit ensuite dans Réglages.
+  location.href="https://kd-mc.com/?return="+encodeURIComponent(location.href);
+});
+// auto-extend session sur activité
+document.addEventListener("click",function(){if(document.getElementById("app").classList.contains("on"))ls(SK.lastact,Date.now())});
+
+initAuth();
+</script>
+<script>
+/* KDMC — battement de présence domaine (garde la session "verte" dans l'Admin
+   domaine tant que l'app est ouverte+visible). Autonome, fail-open, économe. */
+(function(){
+  if(window.__kdmcBeat)return; window.__kdmcBeat=1; var t=null;
+  function tick(){
+    if(document.visibilityState!=="visible")return;
+    var tok=""; try{tok=localStorage.getItem("kdmc_sso_token")||"";}catch(e){}
+    var h={}; if(tok)h.Authorization="Bearer "+tok;
+    fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:h})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(j){ if((!j||!j.ok)&&t){clearInterval(t);t=null;} })
+      .catch(function(){});
+  }
+  function start(){ if(!t){ try{t=setInterval(tick,60000);}catch(e){} } }
+  try{document.addEventListener("visibilitychange",function(){
+    if(document.visibilityState==="visible"){tick();start();} else if(t){clearInterval(t);t=null;}
+  });}catch(e){}
+  tick(); start();
+})();
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-dashboard" data-version="v2.0.4" data-color="#c9a227" defer></script>
+</body>
+</html>

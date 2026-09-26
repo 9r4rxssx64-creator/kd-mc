@@ -1,0 +1,20 @@
+name = "kdmc-apis"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# ⚠️ TOML SCOPING (leçon kdmc-router) : `routes` DOIT rester AVANT toute [[table]]/[table].
+# apis.kd-mc.com n'est PAS revendiqué par kdmc-router → ce worker peut le prendre en
+# custom_domain (auto-provisionne DNS + certificat SSL sur la zone kd-mc.com, 0 manip).
+routes = [
+  { pattern = "apis.kd-mc.com", custom_domain = true },
+]
+
+# Binding Workers AI : LLM (Llama 3.3…) SANS aucun compte provider externe ni KYC.
+# Fallback ultime de /ai → l'IA marche même avec zéro clé externe configurée.
+# [ai] est une TABLE → placée APRÈS `routes` (règle TOML scoping kdmc-router).
+[ai]
+binding = "AI"
+
+# Pas de KV/D1 : worker = pur relais sans état. Rate-limit best-effort via quotas
+# upstream. Les clés externes sont posées en secrets par deploy-kdmc-apis.yml.

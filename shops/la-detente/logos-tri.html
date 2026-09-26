@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>La Détente — Trier mes logos</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#dc2626">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:#0e1012;color:#f1f2f3;padding:0 0 90px}
+  header{position:sticky;top:0;z-index:10;background:#15171a;border-bottom:1px solid #2a2d31;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0))}
+  h1{font-size:18px;font-weight:800}.sub{font-size:12.5px;color:#aab;margin-top:2px;line-height:1.45}
+  .cat{margin:18px 14px 8px;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#e8b830;font-weight:800}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:0 12px}
+  .tile{position:relative;background:#f6f6f8;border-radius:14px;overflow:hidden;cursor:pointer;border:3px solid transparent;aspect-ratio:1;display:flex;align-items:center;justify-content:center;transition:.12s}
+  .tile img{width:100%;height:100%;object-fit:contain;padding:6px}
+  .tile .id{position:absolute;left:6px;bottom:5px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px}
+  .tile.removed{border-color:#dc2626;opacity:.32;filter:grayscale(.6)}
+  .tile.removed::after{content:"✕";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:900;color:#dc2626;text-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .tile.kept{border-color:#16a34a}
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#15171a;border-top:1px solid #2a2d31;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0))}
+  .bar button{flex:1;padding:13px;border:none;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer}
+  .b1{background:#1f2227;color:#f1f2f3;border:1px solid #2a2d31!important}
+  .b2{background:linear-gradient(135deg,#ff5d5d,#dc2626);color:#fff}
+  .count{position:fixed;left:50%;transform:translateX(-50%);bottom:74px;z-index:21;background:#0b0d0f;border:1px solid #2a2d31;border-radius:100px;padding:7px 16px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(120px);bottom:130px;background:#16a34a;color:#fff;padding:11px 18px;border-radius:100px;font-weight:700;font-size:13px;transition:.3s;z-index:30}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .hint{margin:6px 14px 0;font-size:12px;color:#8a9;background:#10231a;border:1px solid #1d3a2a;border-radius:10px;padding:9px 12px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎯 La Détente — trier mes logos</h1>
+  <div class="sub">Touche un logo pour l'<b>effacer</b> (✕ rouge = retiré). Re‑touche pour le garder. Puis « <b>Copier ma sélection</b> » et envoie‑la moi.</div>
+</header>
+<div class="hint">Tout est <b>gardé</b> par défaut (bordure verte). Tu enlèves juste ceux que tu ne veux pas.</div>
+<div id="app"></div>
+<div class="count" id="count">—</div>
+<div class="bar">
+  <button class="b1" onclick="reset()">↺ Tout garder</button>
+  <button class="b2" onclick="copySel()">📋 Copier ma sélection</button>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var GROUPS=[
+  {t:"⭐ Standards (cœur + AR-15/ball-trap + plateau)",ids:["g1","g01","g02","g03","g04","g05","g06","g07","g08","g09","g10"].concat(Array.from({length:40},(_,i)=>"r"+String(i+1).padStart(2,"0")))},
+  {t:"🖼️ À partir de tes images",ids:Array.from({length:10},(_,i)=>"i"+String(i+1).padStart(2,"0"))},
+  {t:"🇲🇨 Monaco (losanges, Palais, couronne)",ids:Array.from({length:20},(_,i)=>"m"+String(i+1).padStart(2,"0"))},
+  {t:"👑 Blasons royaux",ids:Array.from({length:12},(_,i)=>"h"+String(i+1).padStart(2,"0"))}
+];
+var KEY="ld_logo_tri_v1";
+function removed(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
+function setRemoved(a){localStorage.setItem(KEY,JSON.stringify(a))}
+function allIds(){var a=[];GROUPS.forEach(g=>a=a.concat(g.ids));return a}
+function render(){
+  var rm=removed(),app=document.getElementById("app"),h="";
+  GROUPS.forEach(function(g){
+    h+='<div class="cat">'+g.t+'</div><div class="grid">';
+    g.ids.forEach(function(id){
+      var off=rm.indexOf(id)>=0;
+      h+='<div class="tile '+(off?"removed":"kept")+'" data-id="'+id+'" onclick="tog(\''+id+'\')">'
+       +'<img src="img/designs/logo_'+id+'.png" loading="lazy" onerror="this.closest(\'.tile\').style.display=\'none\'">'
+       +'<span class="id">'+id+'</span></div>';
+    });
+    h+='</div>';
+  });
+  app.innerHTML=h;upd();
+}
+function tog(id){var rm=removed();var i=rm.indexOf(id);if(i>=0)rm.splice(i,1);else rm.push(id);setRemoved(rm);
+  var el=document.querySelector('.tile[data-id="'+id+'"]');if(el){el.className="tile "+(rm.indexOf(id)>=0?"removed":"kept")}upd();}
+function upd(){var rm=removed(),tot=allIds().length;document.getElementById("count").textContent="✅ "+(tot-rm.length)+" gardés · "+rm.length+" retirés";}
+function reset(){setRemoved([]);render();toast("Tout gardé ✅");}
+function toast(m){var t=document.getElementById("toast");t.textContent=m;t.className="toast show";clearTimeout(toast._t);toast._t=setTimeout(function(){t.className="toast"},2000);}
+function copySel(){
+  var rm=removed();var kept=allIds().filter(function(x){return rm.indexOf(x)<0});
+  var txt="Logos La Détente à GARDER ("+kept.length+") : "+kept.join(", ")+(rm.length?("\nÀ effacer ("+rm.length+") : "+rm.join(", ")):"");
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast("Sélection copiée — colle‑la dans le chat ✅")},function(){prompt("Copie ceci :",txt)})}
+  else{prompt("Copie ceci :",txt)}
+}
+render();
+</script>
+</body>
+</html>

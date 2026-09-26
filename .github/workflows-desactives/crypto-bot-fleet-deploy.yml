@@ -1,0 +1,99 @@
+# Déploie la FLOTTE de 5 bots PAPIER (portefeuille virtuel) sur Railway.
+# ZÉRO action Kevin : aucun compte Binance, aucune clé — les bots lisent les prix
+# publics et simulent leurs ordres avec 10 000 faux USDT chacun.
+# 5 configurations différentes → tournoi : on verra qui performe le mieux
+# (classement automatique dans "Crypto Bot Status").
+# Déclenchement : manuel uniquement. Seul secret utilisé : RAILWAY_TOKEN (déjà présent).
+
+name: Crypto Bot Fleet Deploy (5 bots papier)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier RAILWAY_TOKEN
+        run: |
+          [ -z "$RAILWAY_TOKEN" ] && { echo "::error::RAILWAY_TOKEN manquant."; exit 1; }
+          echo "✅ Token présent."
+
+      - name: Installer Railway CLI
+        run: |
+          npm i -g @railway/cli
+          railway --version
+
+      - name: Déployer les 5 bots papier (configs différentes)
+        working-directory: crypto-bot
+        run: |
+          set +e
+          # Variables COMMUNES à toute la flotte (papier = aucune clé requise).
+          COMMON='--set PAPER=true --set TESTNET=true --set BOT_KILL=0
+                  --set SYMBOLS=BTC/USDT,ETH/USDT,SOL/USDT,BNB/USDT,XRP/USDT
+                  --set TIMEFRAME=5m --set LOOP_SECONDS=30'
+
+          deploy_one() {
+            SVC="$1"; shift
+            echo "════ $SVC ════"
+            OUT=$(railway add --service "$SVC" 2>&1); echo "railway add: $OUT" | head -2
+            OUT=$(railway variables --service "$SVC" --skip-deploys $COMMON --set "BOT_NAME=$SVC" "$@" 2>&1)
+            RC=$?
+            echo "railway variables rc=$RC"
+            [ $RC -ne 0 ] && { echo "::error::$SVC variables KO : $OUT"; return 1; }
+            OUT=$(railway up --service "$SVC" --detach 2>&1)
+            RC=$?
+            echo "railway up rc=$RC : $(echo "$OUT" | tail -1)"
+            [ $RC -ne 0 ] && { echo "::error::$SVC déploiement KO : $OUT"; return 1; }
+            echo "✅ $SVC lancé."
+          }
+
+          FAIL=0
+          # P1 — Tendance champion (le meilleur mesuré au backtest)
+          deploy_one crypto-bot-p1 \
+            --set "STRATEGY=ema" --set "EMA_FAST=8" --set "EMA_SLOW=21" \
+            --set "RSI_MAX=78" --set "ATR_STOP_MULT=2.0" || FAIL=1
+          # P2 — Tendance lente (moins de trades, plus sélectif)
+          deploy_one crypto-bot-p2 \
+            --set "STRATEGY=ema" --set "EMA_FAST=12" --set "EMA_SLOW=26" \
+            --set "RSI_MAX=70" --set "ATR_STOP_MULT=2.5" || FAIL=1
+          # P3 — Achat de creux en tendance haussière (buy the dip)
+          deploy_one crypto-bot-p3 \
+            --set "STRATEGY=dipup" --set "DU_TREND_PERIOD=50" \
+            --set "DU_RSI_BUY=40" --set "DU_RSI_SELL=65" || FAIL=1
+          # P4 — Retour à la moyenne (marchés plats)
+          deploy_one crypto-bot-p4 \
+            --set "STRATEGY=meanrev" --set "MR_PERIOD=20" --set "MR_STD_MULT=2.0" \
+            --set "MR_RSI_BUY=35" --set "MR_RSI_SELL=60" || FAIL=1
+          # P5 — Réactif rapide (beaucoup de trades, stop serré)
+          deploy_one crypto-bot-p5 \
+            --set "STRATEGY=ema" --set "EMA_FAST=5" --set "EMA_SLOW=13" \
+            --set "RSI_MAX=78" --set "ATR_STOP_MULT=1.5" || FAIL=1
+
+          exit $FAIL
+
+      - name: Récapitulatif
+        run: |
+          {
+            echo "## 🤖 Flotte de 5 bots PAPIER — tournoi des stratégies"
+            echo ""
+            echo "| bot | stratégie | esprit |"
+            echo "|---|---|---|"
+            echo "| crypto-bot-p1 | EMA 8/21 + stop | 🏆 champion mesuré au backtest |"
+            echo "| crypto-bot-p2 | EMA 12/26 + stop large | 🐢 lent et sélectif |"
+            echo "| crypto-bot-p3 | Creux en tendance haussière | 🎯 buy the dip |"
+            echo "| crypto-bot-p4 | Retour à la moyenne | 🔄 marchés plats |"
+            echo "| crypto-bot-p5 | EMA 5/13 + stop serré | ⚡ réactif rapide |"
+            echo ""
+            echo "- 💰 Chacun démarre avec **10 000 faux USDT virtuels** (aucun compte, aucune clé)"
+            echo "- 🏁 Classement : lancer **Crypto Bot Status** → tableau des performances"
+            echo "- ⚠️ Portefeuille virtuel remis à 10 000 à chaque redéploiement (mémoire éphémère)"
+          } >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,85 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: WorldMonitor cadastre smoke (IGN réel)
+
+# Vérifie que les sources IGN/DVF/Géorisques/BAN câblées dans World Monitor répondent
+# RÉELLEMENT (leçon #134 : prouver les couches/endpoints, jamais supposer). Réseau ouvert.
+on:
+  workflow_dispatch:
+
+# Droits minimum (24.09.2026) : ce robot ne fait que lire. Explicite, pour ne jamais dépendre du
+# réglage par défaut du dépôt (le dépôt public est réglé en lecture seule).
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sonder les endpoints IGN / DVF / Géorisques / BAN
+        run: |
+          set +e
+          FAIL=0
+          LON=2.3488; LAT=48.8534; Z=16
+          TX=$(python3 -c "import math;n=2**$Z;print(int(($LON+180)/360*n))")
+          TY=$(python3 -c "import math;lat=math.radians($LAT);n=2**$Z;print(int((1-math.log(math.tan(lat)+1/math.cos(lat))/math.pi)/2*n))")
+          GEOM=$(python3 -c "import urllib.parse,json;print(urllib.parse.quote(json.dumps({'type':'Point','coordinates':[$LON,$LAT]})))")
+          echo "Tuile z=$Z col=$TX row=$TY"
+
+          check_img() {
+            CT=$(curl -sS -m 25 -o /tmp/t.bin -w '%{content_type}|%{http_code}' "$2")
+            SZ=$(wc -c </tmp/t.bin)
+            echo ">>> $1 : $CT · ${SZ} octets"
+            case "$CT" in image/*) echo "   OK image";; *) echo "   KO (corps: $(head -c 180 /tmp/t.bin))"; FAIL=1;; esac
+          }
+          check_json() {
+            OUT=$(curl -sS -m 30 -w '\n__HTTP:%{http_code}__' "$2")
+            CODE=$(printf '%s' "$OUT" | grep -o '__HTTP:[0-9]*__' | tr -dc 0-9)
+            BODY=$(printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//')
+            echo ">>> $1 : HTTP $CODE"
+            echo "$BODY" | head -c 600; echo
+            if [ "$CODE" != "200" ]; then echo "   KO HTTP != 200"; FAIL=1; return; fi
+            if [ -n "$3" ] && ! echo "$BODY" | grep -q "$3"; then echo "   (motif '$3' absent)"; fi
+            echo "   OK repond"
+          }
+
+          echo "== 1) Cadastre WMTS (PARCELLAIRE_EXPRESS) =="
+          check_img "cadastre" "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=CADASTRALPARCELS.PARCELLAIRE_EXPRESS&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=$Z&TILEROW=$TY&TILECOL=$TX"
+
+          echo "== 2) Plan IGN WMTS (PLANIGNV2) =="
+          check_img "planign" "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=$Z&TILEROW=$TY&TILECOL=$TX"
+
+          echo "== 3) Photo aerienne IGN (ORTHOPHOTOS jpeg) =="
+          check_img "ortho" "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=$Z&TILEROW=$TY&TILECOL=$TX"
+
+          echo "== 4) API Carto parcelle (tap) =="
+          check_json "parcelle" "https://apicarto.ign.fr/api/cadastre/parcelle?geom=$GEOM" '"numero"'
+
+          echo "== 5) API Carto zonage PLU (GPU) =="
+          check_json "zone-urba" "https://apicarto.ign.fr/api/gpu/zone-urba?geom=$GEOM" '"libelle"'
+
+          echo "== 6) Adresse BAN (reverse) =="
+          check_json "ban" "https://api-adresse.data.gouv.fr/reverse/?lon=$LON&lat=$LAT" '"label"'
+
+          echo "== 7) Georisques (risques par point, imbrique data[].risques_detail[]) =="
+          check_json "georisques" "https://georisques.gouv.fr/api/v1/gaspar/risques?latlon=$LON%2C$LAT&rayon=1000" "libelle_risque_long"
+
+          echo "== 8) Relief 3D — tuile terrain AWS terrarium (globe 3D) =="
+          check_img "terrain-3d" "https://elevation-tiles-prod.s3.amazonaws.com/terrarium/2/2/1.png"
+
+          echo "== 9) CDN MapLibre GL (moteur globe 3D) =="
+          MLCT=$(curl -sS -m 20 -o /tmp/ml.js -w '%{http_code}' "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js")
+          MLSZ=$(wc -c </tmp/ml.js)
+          echo ">>> maplibre-cdn : HTTP $MLCT · ${MLSZ} octets"
+          if [ "$MLCT" != "200" ] || [ "$MLSZ" -lt 100000 ]; then echo "   KO"; FAIL=1; else echo "   OK"; fi
+
+          echo "======================================"
+          if [ "$FAIL" = "0" ]; then echo "SMOKE OK — images verifiees ; JSON dumps ci-dessus = forme reelle"; else echo "au moins une IMAGE KO — voir ci-dessus"; fi
+          exit $FAIL

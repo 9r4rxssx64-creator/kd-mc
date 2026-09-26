@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Options export Xcode pour Apex iOS via GitHub Actions (Kevin sans Mac).
+  Méthode app-store-connect = TestFlight upload, automatic signing avec
+  certificat + provisioning profile fournis via Secrets GitHub.
+-->
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store-connect</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>compileBitcode</key>
+    <false/>
+    <key>destination</key>
+    <string>export</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.kdmc.apex</key>
+        <string>Apex App Store</string>
+    </dict>
+</dict>
+</plist>

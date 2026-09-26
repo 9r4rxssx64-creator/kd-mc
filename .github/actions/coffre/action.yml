@@ -1,0 +1,41 @@
+name: "Récupérer les fichiers privés du coffre"
+description: >
+  Dans le dépôt PUBLIC seulement : ouvre le coffre privé (clé de déploiement en LECTURE SEULE),
+  y recalcule la liste des fichiers privés (CMCteams, Light, données, arbre…) et les dépose dans
+  l'espace de travail, pour que le site publié reste identique. N'affiche QUE des nombres : dans
+  un dépôt public, ce journal est lisible par tous. Dans le coffre lui-même : ne fait rien.
+inputs:
+  cle:
+    description: "Clé SSH de déploiement du coffre, en lecture seule (secret COFFRE_CLE_LECTURE)"
+    required: true
+  coffre:
+    description: "Dépôt privé qui garde les fichiers sensibles"
+    required: false
+    default: "9r4rxssx64-creator/CMCteams"
+runs:
+  using: composite
+  steps:
+    - name: Déposer les fichiers privés
+      shell: bash
+      env:
+        CLE: ${{ inputs.cle }}
+        COFFRE: ${{ inputs.coffre }}
+      run: |
+        set -euo pipefail
+        if [ "$GITHUB_REPOSITORY" = "$COFFRE" ]; then
+          echo "On est dans le coffre : les fichiers privés sont déjà là."
+          exit 0
+        fi
+        if [ -z "$CLE" ]; then
+          echo "::error::Clé du coffre absente (secret COFFRE_CLE_LECTURE) — sans elle, CMCteams et Light ne seraient pas publiés."
+          exit 1
+        fi
+        install -m 700 -d ~/.ssh
+        printf '%s\n' "$CLE" > ~/.ssh/coffre
+        chmod 600 ~/.ssh/coffre
+        ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+        GIT_SSH_COMMAND="ssh -i $HOME/.ssh/coffre -o IdentitiesOnly=yes" \
+          git clone -q --depth 1 "git@github.com:${COFFRE}.git" /tmp/coffre
+        rm -f ~/.ssh/coffre
+        ( cd /tmp/coffre && node tools/depot-public/exporter.mjs --copier-prives-vers "$GITHUB_WORKSPACE" | tail -1 )
+        rm -rf /tmp/coffre

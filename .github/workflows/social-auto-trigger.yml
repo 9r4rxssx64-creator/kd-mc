@@ -1,0 +1,43 @@
+name: Social — Auto First Run
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/social-auto-trigger.yml'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  trigger-social-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger social-publish workflow
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'social-publish.yml',
+              ref: 'main',
+              inputs: {
+                niche: 'betrayal-revenge',
+                format: 'long',
+                publish_platforms: 'youtube'
+              }
+            });
+            console.log('✅ social-publish.yml triggered');

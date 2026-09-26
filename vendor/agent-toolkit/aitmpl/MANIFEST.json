@@ -1,0 +1,133 @@
+{
+  "source_repo": "https://github.com/davila7/claude-code-templates",
+  "source_name": "AITMPL / claude-code-templates",
+  "license": "MIT",
+  "fetched_via": "GitHub Actions CI (aitmpl-fetch-picks.yml) — shallow read-only clone",
+  "installer_run": false,
+  "note": "Fichiers Markdown de definition d'agent UNIQUEMENT. Jamais execute `npx claude-code-templates` (son installeur embarque express+ws+supabase+postgres+discord = trop de surface). Chaque fichier lu integralement + scanne (secrets/exec/exfil/injection) AVANT vendorisation.",
+  "excluded": [
+    "legal (legal-advisor/accessibility-tester/ai-ethics-advisor) — Kevin a deja la skill officielle `legal` (claude-for-legal)"
+  ],
+  "count": 13,
+  "components": [
+    {
+      "name": "api-architect",
+      "type": "agent",
+      "vendored_path": "agents/api-architect.md",
+      "vendored_sha256": "0c8a3100b4035ba4a6187118084d830820ecbc2b896626886a171cc1580690bc",
+      "vendored_bytes": 10608,
+      "upstream_path": "cli-tool/components/agents/backend-architecture/api-architect.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "competitive-analyst",
+      "type": "agent",
+      "vendored_path": "agents/competitive-analyst.md",
+      "vendored_sha256": "2a9f9fc73914726990a8711143bfd83721e83904e2d1d311fa853c07c0345a56",
+      "vendored_bytes": 9759,
+      "upstream_path": "cli-tool/components/agents/business-finance/competitive-analyst.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "content-marketer",
+      "type": "agent",
+      "vendored_path": "agents/content-marketer.md",
+      "vendored_sha256": "41833a9357bd30d6bad1720acacc51eabfeca224877fa8a6e8a9c191d956b431",
+      "vendored_bytes": 11572,
+      "upstream_path": "cli-tool/components/agents/business-finance/content-marketer.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "customer-support",
+      "type": "agent",
+      "vendored_path": "agents/customer-support.md",
+      "vendored_sha256": "40fd61cdce16ec2c8b2fdc166684e3bc53641c8f8fa2016c009bb9ab511ec95a",
+      "vendored_bytes": 4925,
+      "upstream_path": "cli-tool/components/agents/business-finance/customer-support.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "graphql-security-specialist",
+      "type": "agent",
+      "vendored_path": "agents/graphql-security-specialist.md",
+      "vendored_sha256": "aed70ecbb0a2e726515445d8ff2298b142afcb2d5608e764b6e20c8416000049",
+      "vendored_bytes": 21290,
+      "upstream_path": "cli-tool/components/agents/security-audit/graphql-security-specialist.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "llm-architect",
+      "type": "agent",
+      "vendored_path": "agents/llm-architect.md",
+      "vendored_sha256": "f4454f33fe0ad9f5b80aaf2f1abc5de23e6f97827800f9858471b6d70e14948e",
+      "vendored_bytes": 18069,
+      "upstream_path": "cli-tool/components/agents/ai-specialists/llm-architect.md",
+      "upstream_sha256": "c2eb0f89b0700657cf5bc134ca5fe63a04d873c13c3f3eb63d295dbde0929d6f",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "market-researcher",
+      "type": "agent",
+      "vendored_path": "agents/market-researcher.md",
+      "vendored_sha256": "b4d6830de356efe35393e995f1836ee85b1b7b0dd7df393fc2361d2752e56ce3",
+      "vendored_bytes": 10284,
+      "upstream_path": "cli-tool/components/agents/business-finance/market-researcher.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "model-evaluator",
+      "type": "agent",
+      "vendored_path": "agents/model-evaluator.md",
+      "vendored_sha256": "ca0c445458a80783b71cc6a665c6dbfd344a906fbe57bc9cf51cd024c37d0e55",
+      "vendored_bytes": 12881,
+      "upstream_path": "cli-tool/components/agents/data-ai/model-evaluator.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "prompt-engineer",
+      "type": "agent",
+      "vendored_path": "agents/prompt-engineer.md",
+      "vendored_sha256": "f8839452d0d16843115ae1645934b0fb708c50a5f8c8d9f1fdcc08647ae15e3f",
+      "vendored_bytes": 8277,
+      "upstream_path": "cli-tool/components/agents/data-ai/prompt-engineer.md",
+      "upstream_sha256": "f8839452d0d16843115ae1645934b0fb708c50a5f8c8d9f1fdcc08647ae15e3f",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "search-specialist",
+      "type": "agent",
+      "vendored_path": "agents/search-specialist.md",
+      "vendored_sha256": "c16d5c46a10ecb03625cd0749108e3d033c30b67c7607d90aefda5df58fb38ee",
+      "vendored_bytes": 9537,
+      "upstream_path": "cli-tool/components/agents/data-ai/search-specialist.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "shopify-expert",
+      "type": "agent",
+      "vendored_path": "agents/shopify-expert.md",
+      "vendored_sha256": "cd8ad38b036f6899b4d16b0dcb0a52f39754f61835c97b7c6c7bd4ff697975e0",
+      "vendored_bytes": 27772,
+      "upstream_path": "cli-tool/components/agents/programming-languages/shopify-expert.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "smart-contract-auditor",
+      "type": "agent",
+      "vendored_path": "agents/smart-contract-auditor.md",
+      "vendored_sha256": "bc219fc9ad86c3420c9c59a5be718348d38e27d6492ebbeece64f6315fff2cc2",
+      "vendored_bytes": 4932,
+      "upstream_path": "cli-tool/components/agents/blockchain-web3/smart-contract-auditor.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    },
+    {
+      "name": "task-decomposition-expert",
+      "type": "agent",
+      "vendored_path": "agents/task-decomposition-expert.md",
+      "vendored_sha256": "8e5836304a78f03039565ac010d0c55969b180a5ca6471e1d63d619d8a34fd23",
+      "vendored_bytes": 9884,
+      "upstream_path": "cli-tool/components/agents/data-ai/task-decomposition-expert.md",
+      "scan": "clean (no secret/exec/exfil/injection)"
+    }
+  ]
+}

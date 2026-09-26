@@ -1,0 +1,1801 @@
+{
+  "genere_le": "2026-08-13T12:01:17.912Z",
+  "sources": [
+    {
+      "categorie": "Catégorie:monégasque",
+      "entrees": 429
+    },
+    {
+      "categorie": "Catégorie:ligure",
+      "entrees": 228
+    }
+  ],
+  "pages_trouvees": [
+    {
+      "hote": "fr.wikipedia.org",
+      "titre": "Monégasque",
+      "octets": 34143,
+      "fichier": "audit/monegasque/wikipedia-monégasque.wiki"
+    },
+    {
+      "hote": "fr.wikipedia.org",
+      "titre": "Culture monégasque",
+      "octets": 5310,
+      "fichier": "audit/monegasque/wikipedia-culture-monégasque.wiki"
+    },
+    {
+      "hote": "fr.wikipedia.org",
+      "titre": "Comité national des traditions monégasques",
+      "octets": 7142,
+      "fichier": "audit/monegasque/wikipedia-comité-national-des-traditions-monégasques.wiki"
+    },
+    {
+      "hote": "fr.wikipedia.org",
+      "titre": "Louis Notari",
+      "octets": 9605,
+      "fichier": "audit/monegasque/wikipedia-louis-notari.wiki"
+    }
+  ],
+  "pages_absentes": [
+    {
+      "hote": "fr.wikipedia.org",
+      "titre": "Liste Swadesh du monégasque"
+    },
+    {
+      "hote": "fr.wikipedia.org",
+      "titre": "Ligure (langue)"
+    },
+    {
+      "hote": "fr.wikipedia.org",
+      "titre": "Liste Swadesh du ligure"
+    },
+    {
+      "hote": "fr.wiktionary.org",
+      "titre": "Annexe:Liste Swadesh en monégasque"
+    },
+    {
+      "hote": "fr.wiktionary.org",
+      "titre": "Annexe:Liste Swadesh du monégasque"
+    },
+    {
+      "hote": "fr.wiktionary.org",
+      "titre": "Wiktionnaire:Liste Swadesh/monégasque"
+    },
+    {
+      "hote": "fr.wiktionary.org",
+      "titre": "Annexe:Liste Swadesh en ligure"
+    }
+  ],
+  "mots_wiktionnaire": [
+    {
+      "mot": "Adela",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Adèle."
+      ]
+    },
+    {
+      "mot": "Agata",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Agathe."
+      ]
+    },
+    {
+      "mot": "Agnese",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Agnès."
+      ]
+    },
+    {
+      "mot": "a̍iga",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Eau."
+      ]
+    },
+    {
+      "mot": "Albertu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Albert."
+      ]
+    },
+    {
+      "mot": "Albinu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Albin."
+      ]
+    },
+    {
+      "mot": "Alemania",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Allemagne."
+      ]
+    },
+    {
+      "mot": "Alida",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Alde, Alda ou Alida."
+      ]
+    },
+    {
+      "mot": "Ana",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Anne."
+      ]
+    },
+    {
+      "mot": "Anastasi",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Anastase."
+      ]
+    },
+    {
+      "mot": "Andora",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Andorre."
+      ]
+    },
+    {
+      "mot": "Andrea",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à André."
+      ]
+    },
+    {
+      "mot": "aniversari",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Anniversaire."
+      ]
+    },
+    {
+      "mot": "ave̍",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Avoir."
+      ]
+    },
+    {
+      "mot": "Balança",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Balance (constellation et signe zodiacal)."
+      ]
+    },
+    {
+      "mot": "Beausoleil",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Beausoleil (commune de France)."
+      ]
+    },
+    {
+      "mot": "Belgica",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Belgique."
+      ]
+    },
+    {
+      "mot": "Berli̍n",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Berlin (capitale de l’Allemagne)."
+      ]
+    },
+    {
+      "mot": "Bernabeu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Barnabé."
+      ]
+    },
+    {
+      "mot": "Bori̍s",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin transcrivant le prénom russe Boris."
+      ]
+    },
+    {
+      "mot": "Bretagna",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Bretagne (région française)."
+      ]
+    },
+    {
+      "mot": "Carina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Carine ou Karina."
+      ]
+    },
+    {
+      "mot": "Carlota",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Charlotte."
+      ]
+    },
+    {
+      "mot": "Carlu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Charles."
+      ]
+    },
+    {
+      "mot": "Catane",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Catane."
+      ]
+    },
+    {
+      "mot": "Caterina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Catherine."
+      ]
+    },
+    {
+      "mot": "China",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Chine."
+      ]
+    },
+    {
+      "mot": "Clara",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Claire ou Clara."
+      ]
+    },
+    {
+      "mot": "Claudia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Claude."
+      ]
+    },
+    {
+      "mot": "Clemença",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Clémence."
+      ]
+    },
+    {
+      "mot": "Cristina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Christine."
+      ]
+    },
+    {
+      "mot": "Cunegunda",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Cunégonde."
+      ]
+    },
+    {
+      "mot": "Daniele",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Daniel."
+      ]
+    },
+    {
+      "mot": "Delfina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Delphine."
+      ]
+    },
+    {
+      "mot": "Diana",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Diane."
+      ]
+    },
+    {
+      "mot": "Diu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Dieu."
+      ]
+    },
+    {
+      "mot": "e̍",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Troisième personne du singulier de l’indicatif présent de esse."
+      ]
+    },
+    {
+      "mot": "Edita",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Edith."
+      ]
+    },
+    {
+      "mot": "Elena",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Hélène."
+      ]
+    },
+    {
+      "mot": "Ema",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Emma."
+      ]
+    },
+    {
+      "mot": "Emelina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Émeline."
+      ]
+    },
+    {
+      "mot": "esse",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Être."
+      ]
+    },
+    {
+      "mot": "Estela",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Estelle."
+      ]
+    },
+    {
+      "mot": "Eva",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Ève."
+      ]
+    },
+    {
+      "mot": "Eza",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Èze (commune de France)."
+      ]
+    },
+    {
+      "mot": "fa̍",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Faire."
+      ]
+    },
+    {
+      "mot": "famiya",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Famille."
+      ]
+    },
+    {
+      "mot": "Fedele",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Fidèle."
+      ]
+    },
+    {
+      "mot": "Finla̍ndia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Finlande (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Flora",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Flore."
+      ]
+    },
+    {
+      "mot": "fora",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Fable"
+      ]
+    },
+    {
+      "mot": "França",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "France (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Francesca",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Françoise."
+      ]
+    },
+    {
+      "mot": "Germana",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Germaine."
+      ]
+    },
+    {
+      "mot": "Germa̍nia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Allemagne (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Germanu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Germain."
+      ]
+    },
+    {
+      "mot": "gia̍",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Déjà."
+      ]
+    },
+    {
+      "mot": "Giorgi",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Georges."
+      ]
+    },
+    {
+      "mot": "Gisela",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Gisèle."
+      ]
+    },
+    {
+      "mot": "Giuliana",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Julienne."
+      ]
+    },
+    {
+      "mot": "Graçia̍n",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Gratien."
+      ]
+    },
+    {
+      "mot": "Ida",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Ide ou Ida."
+      ]
+    },
+    {
+      "mot": "identita̍",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Identité."
+      ]
+    },
+    {
+      "mot": "Ine̍s",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Inès."
+      ]
+    },
+    {
+      "mot": "Ira̍n",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Iran (pays d’Asie)."
+      ]
+    },
+    {
+      "mot": "Irene",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Irène."
+      ]
+    },
+    {
+      "mot": "Irlanda",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Irlande (île).",
+        "Irlande."
+      ]
+    },
+    {
+      "mot": "Kevi̍n",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Kevin."
+      ]
+    },
+    {
+      "mot": "Kirov",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Kirov (ville de Russie)."
+      ]
+    },
+    {
+      "mot": "Landry",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Landry."
+      ]
+    },
+    {
+      "mot": "Larissa",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Larissa.",
+        "(1162) Larissa, planète mineure."
+      ]
+    },
+    {
+      "mot": "lenga",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Langue."
+      ]
+    },
+    {
+      "mot": "Liu̍n",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Lion.",
+        "Lion.",
+        "Lyon (commune de France)."
+      ]
+    },
+    {
+      "mot": "Lundra",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Londres (capitale du Royaume-Uni)."
+      ]
+    },
+    {
+      "mot": "Malta",
+      "code_langue": "lij",
+      "definitions": [
+        "Malte (en Méditerranée)."
+      ]
+    },
+    {
+      "mot": "Malta",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Malte (en Méditerranée)."
+      ]
+    },
+    {
+      "mot": "Marcu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Marc."
+      ]
+    },
+    {
+      "mot": "Margarita",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin, correspondant à Marguerite."
+      ]
+    },
+    {
+      "mot": "Mariü̍s",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Marius."
+      ]
+    },
+    {
+      "mot": "Marta",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Marthe."
+      ]
+    },
+    {
+      "mot": "Martina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Martine."
+      ]
+    },
+    {
+      "mot": "Melania",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Mélanie ou Melania."
+      ]
+    },
+    {
+      "mot": "Melu̍n",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Melun (commune de France)."
+      ]
+    },
+    {
+      "mot": "Mila̍n",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Milan (commune d’Italie)."
+      ]
+    },
+    {
+      "mot": "mistrau",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Mistral."
+      ]
+    },
+    {
+      "mot": "Mu̍negu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Monaco (principauté européenne)."
+      ]
+    },
+    {
+      "mot": "Murmansk",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Mourmansk (ville de Russie)."
+      ]
+    },
+    {
+      "mot": "Natalia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Nathalie."
+      ]
+    },
+    {
+      "mot": "Niça",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Nice (commune de France)."
+      ]
+    },
+    {
+      "mot": "Nina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Nina."
+      ]
+    },
+    {
+      "mot": "Omsk",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Omsk (ville de Russie)."
+      ]
+    },
+    {
+      "mot": "omu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Homme."
+      ]
+    },
+    {
+      "mot": "Palana",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Palana (ville de Russie)."
+      ]
+    },
+    {
+      "mot": "Pari̍s",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Paris (capitale de la France)."
+      ]
+    },
+    {
+      "mot": "Pascale",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Pascal."
+      ]
+    },
+    {
+      "mot": "Paternu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Paterne."
+      ]
+    },
+    {
+      "mot": "Pisa",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Pise (commune d’Italie)."
+      ]
+    },
+    {
+      "mot": "Polo̍nia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Pologne (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Pons",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Pons."
+      ]
+    },
+    {
+      "mot": "pre-",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Pré-."
+      ]
+    },
+    {
+      "mot": "Prisca",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Prisque, Priscille ou Prisca."
+      ]
+    },
+    {
+      "mot": "Pskov",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Pskov (ville de Russie)."
+      ]
+    },
+    {
+      "mot": "Raissa",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Raïssa."
+      ]
+    },
+    {
+      "mot": "Regina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Reine ou Renne."
+      ]
+    },
+    {
+      "mot": "Reparata",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Réparate."
+      ]
+    },
+    {
+      "mot": "Romaric",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom masculin correspondant à Romaric."
+      ]
+    },
+    {
+      "mot": "Rosa",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Rose."
+      ]
+    },
+    {
+      "mot": "Ruma",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Rome (capitale de l’Italie)."
+      ]
+    },
+    {
+      "mot": "Rusina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Rosine."
+      ]
+    },
+    {
+      "mot": "Sabina",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Sabine."
+      ]
+    },
+    {
+      "mot": "sabu",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Samedi."
+      ]
+    },
+    {
+      "mot": "Sagitari",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Sagittaire (constellation et signe zodiacal)."
+      ]
+    },
+    {
+      "mot": "Samara",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Samara (ville de Russie)."
+      ]
+    },
+    {
+      "mot": "Saratov",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Saratov (ville de Russie)."
+      ]
+    },
+    {
+      "mot": "Sardegna",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Sardaigne."
+      ]
+    },
+    {
+      "mot": "scalin",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Escalier."
+      ]
+    },
+    {
+      "mot": "sciença",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Science."
+      ]
+    },
+    {
+      "mot": "Se̍rbia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Serbie (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Si̍lvia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Sylvie."
+      ]
+    },
+    {
+      "mot": "Slove̍nia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Slovénie (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Soci",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Sotchi (ville en Russie)."
+      ]
+    },
+    {
+      "mot": "Sofia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Sophie."
+      ]
+    },
+    {
+      "mot": "Spagna",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Espagne."
+      ]
+    },
+    {
+      "mot": "sta̍",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Être, rester, demeurer, habiter."
+      ]
+    },
+    {
+      "mot": "Svi̍ssera",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Suisse (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Tatiana",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Tatiana."
+      ]
+    },
+    {
+      "mot": "Tecla",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Thècle."
+      ]
+    },
+    {
+      "mot": "Teresa",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Thérèse."
+      ]
+    },
+    {
+      "mot": "Turchia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Turquie."
+      ]
+    },
+    {
+      "mot": "ün",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Un.",
+        "Un.",
+        "Un."
+      ]
+    },
+    {
+      "mot": "Viena",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Vienne (capitale de l’Autriche)."
+      ]
+    },
+    {
+      "mot": "Wikime̍dia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Wikimédia."
+      ]
+    },
+    {
+      "mot": "Wikipe̍dia",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Wikipédia."
+      ]
+    },
+    {
+      "mot": "Zita",
+      "code_langue": "lij-mc",
+      "definitions": [
+        "Prénom féminin correspondant à Zite ou Zita."
+      ]
+    },
+    {
+      "mot": "agustu",
+      "code_langue": "lij",
+      "definitions": [
+        "Août."
+      ]
+    },
+    {
+      "mot": "amê",
+      "code_langue": "lij",
+      "definitions": [
+        "Miel."
+      ]
+    },
+    {
+      "mot": "arví",
+      "code_langue": "lij",
+      "definitions": [
+        "Avril."
+      ]
+    },
+    {
+      "mot": "avéi",
+      "code_langue": "lij",
+      "definitions": [
+        "Avoir."
+      ]
+    },
+    {
+      "mot": "Botswana",
+      "code_langue": "lij",
+      "definitions": [
+        "Botswana (pays africain)."
+      ]
+    },
+    {
+      "mot": "Canada",
+      "code_langue": "lij",
+      "definitions": [
+        "Canada (pays d’Amérique du Nord)."
+      ]
+    },
+    {
+      "mot": "çento",
+      "code_langue": "lij",
+      "definitions": [
+        "Cent."
+      ]
+    },
+    {
+      "mot": "Ceuta",
+      "code_langue": "lij",
+      "definitions": [
+        "Ceuta."
+      ]
+    },
+    {
+      "mot": "çinquanta",
+      "code_langue": "lij",
+      "definitions": [
+        "Cinquante."
+      ]
+    },
+    {
+      "mot": "çinque",
+      "code_langue": "lij",
+      "definitions": [
+        "Cinq."
+      ]
+    },
+    {
+      "mot": "çinqueçento",
+      "code_langue": "lij",
+      "definitions": [
+        "Cinq-cents."
+      ]
+    },
+    {
+      "mot": "Copenaghen",
+      "code_langue": "lij",
+      "definitions": [
+        "Copenhague."
+      ]
+    },
+    {
+      "mot": "dïsette",
+      "code_langue": "lij",
+      "definitions": [
+        "Dix-sept."
+      ]
+    },
+    {
+      "mot": "doì",
+      "code_langue": "lij",
+      "definitions": [
+        "Deux."
+      ]
+    },
+    {
+      "mot": "Dublin",
+      "code_langue": "lij",
+      "definitions": [
+        "Dublin, capitale de la république d’Irlande."
+      ]
+    },
+    {
+      "mot": "ê",
+      "code_langue": "lij",
+      "definitions": [
+        "Troisième personne du singulier du présent de l’indicatif du verbe êse."
+      ]
+    },
+    {
+      "mot": "ee",
+      "code_langue": "lij",
+      "definitions": [
+        "Deuxième personne du singulier du présent de l’indicatif du verbe êse."
+      ]
+    },
+    {
+      "mot": "êse",
+      "code_langue": "lij",
+      "definitions": [
+        "Être."
+      ]
+    },
+    {
+      "mot": "Fransa",
+      "code_langue": "lij",
+      "definitions": [
+        "France (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Gaborone",
+      "code_langue": "lij",
+      "definitions": [
+        "Gaborone, capitale du Botswana."
+      ]
+    },
+    {
+      "mot": "Ghana",
+      "code_langue": "lij",
+      "definitions": [
+        "République du Ghana."
+      ]
+    },
+    {
+      "mot": "Guam",
+      "code_langue": "lij",
+      "definitions": [
+        "Guam (île de l’océan Pacifique)."
+      ]
+    },
+    {
+      "mot": "Guatemala",
+      "code_langue": "lij",
+      "definitions": [
+        "Guatemala (pays d’Amérique centrale)."
+      ]
+    },
+    {
+      "mot": "Guinea",
+      "code_langue": "lij",
+      "definitions": [
+        "Guinée (pays d’Afrique)."
+      ]
+    },
+    {
+      "mot": "Guyana",
+      "code_langue": "lij",
+      "definitions": [
+        "Guyana, pays d’Amérique du Sud."
+      ]
+    },
+    {
+      "mot": "ha",
+      "code_langue": "lij",
+      "definitions": [
+        "Troisième personne du singulier du présent de l’indicatif de avéi."
+      ]
+    },
+    {
+      "mot": "Haiti",
+      "code_langue": "lij",
+      "definitions": [
+        "Haïti (pays des Antilles)."
+      ]
+    },
+    {
+      "mot": "Helsinki",
+      "code_langue": "lij",
+      "definitions": [
+        "Helsinki, capitale de la Finlande."
+      ]
+    },
+    {
+      "mot": "Honduras",
+      "code_langue": "lij",
+      "definitions": [
+        "Honduras (pays d’Amérique)."
+      ]
+    },
+    {
+      "mot": "India",
+      "code_langue": "lij",
+      "definitions": [
+        "Inde."
+      ]
+    },
+    {
+      "mot": "isoe",
+      "code_langue": "lij",
+      "definitions": [
+        "île."
+      ]
+    },
+    {
+      "mot": "Jersey",
+      "code_langue": "lij",
+      "definitions": [
+        "Jersey (île de la Manche)."
+      ]
+    },
+    {
+      "mot": "Kenya",
+      "code_langue": "lij",
+      "definitions": [
+        "Kenya (pays d’Afrique)."
+      ]
+    },
+    {
+      "mot": "Kiribati",
+      "code_langue": "lij",
+      "definitions": [
+        "Kiribati (archipel d’Océanie).",
+        "Kiribati (pays d’Océanie)."
+      ]
+    },
+    {
+      "mot": "Liechtenstein",
+      "code_langue": "lij",
+      "definitions": [
+        "Liechtenstein."
+      ]
+    },
+    {
+      "mot": "Liguria",
+      "code_langue": "lij",
+      "definitions": [
+        "Ligurie."
+      ]
+    },
+    {
+      "mot": "mä",
+      "code_langue": "lij",
+      "definitions": [
+        "Mer."
+      ]
+    },
+    {
+      "mot": "Madagascar",
+      "code_langue": "lij",
+      "definitions": [
+        "Madagascar (pays d’Afrique).",
+        "Madagascar (île)."
+      ]
+    },
+    {
+      "mot": "Malawi",
+      "code_langue": "lij",
+      "definitions": [
+        "Malawi (pays africain)."
+      ]
+    },
+    {
+      "mot": "Malaysia",
+      "code_langue": "lij",
+      "definitions": [
+        "Malaisie (pays asiatique)."
+      ]
+    },
+    {
+      "mot": "Mali",
+      "code_langue": "lij",
+      "definitions": [
+        "Mali (pays africain)."
+      ]
+    },
+    {
+      "mot": "Marche",
+      "code_langue": "lij",
+      "definitions": [
+        "Marches, région italienne."
+      ]
+    },
+    {
+      "mot": "Maròcco",
+      "code_langue": "lij",
+      "definitions": [
+        "Maroc (pays d’Afrique)."
+      ]
+    },
+    {
+      "mot": "marsu",
+      "code_langue": "lij",
+      "definitions": [
+        "Le mois de mars."
+      ]
+    },
+    {
+      "mot": "Marte",
+      "code_langue": "lij",
+      "definitions": [
+        "Planète Mars."
+      ]
+    },
+    {
+      "mot": "Martinica",
+      "code_langue": "lij",
+      "definitions": [
+        "Martinique, département d’outre-mer."
+      ]
+    },
+    {
+      "mot": "Mauritius",
+      "code_langue": "lij",
+      "definitions": [
+        "Maurice.",
+        "Maurice (île de l’océan Indien)."
+      ]
+    },
+    {
+      "mot": "mazzu",
+      "code_langue": "lij",
+      "definitions": [
+        "Mai."
+      ]
+    },
+    {
+      "mot": "Melilla",
+      "code_langue": "lij",
+      "definitions": [
+        "Melilla."
+      ]
+    },
+    {
+      "mot": "Milan",
+      "code_langue": "lij",
+      "definitions": [
+        "Milan, en Italie."
+      ]
+    },
+    {
+      "mot": "mille",
+      "code_langue": "lij",
+      "definitions": [
+        "Mille."
+      ]
+    },
+    {
+      "mot": "Múnegu",
+      "code_langue": "lij",
+      "definitions": [
+        "Monaco (principauté européenne)."
+      ]
+    },
+    {
+      "mot": "Myanmar",
+      "code_langue": "lij",
+      "definitions": [
+        "Myanmar (pays d’Asie)."
+      ]
+    },
+    {
+      "mot": "Nauru",
+      "code_langue": "lij",
+      "definitions": [
+        "Nauru (pays d’Océanie).",
+        "Nauru (île d’Océanie)."
+      ]
+    },
+    {
+      "mot": "Nepal",
+      "code_langue": "lij",
+      "definitions": [
+        "Népal, pays himalayen."
+      ]
+    },
+    {
+      "mot": "neuve",
+      "code_langue": "lij",
+      "definitions": [
+        "Neuf."
+      ]
+    },
+    {
+      "mot": "Nicaragua",
+      "code_langue": "lij",
+      "definitions": [
+        "Nicaragua (pays d’Amérique centrale)."
+      ]
+    },
+    {
+      "mot": "Niger",
+      "code_langue": "lij",
+      "definitions": [
+        "Niger (pays d’Afrique)."
+      ]
+    },
+    {
+      "mot": "Niue",
+      "code_langue": "lij",
+      "definitions": [
+        "Niue (pays d’Océanie)."
+      ]
+    },
+    {
+      "mot": "novanta",
+      "code_langue": "lij",
+      "definitions": [
+        "Quatre-vingt-dix."
+      ]
+    },
+    {
+      "mot": "novantedoì",
+      "code_langue": "lij",
+      "definitions": [
+        "Quatre-vingt-douze."
+      ]
+    },
+    {
+      "mot": "nuvembre",
+      "code_langue": "lij",
+      "definitions": [
+        "Novembre."
+      ]
+    },
+    {
+      "mot": "onze",
+      "code_langue": "lij",
+      "definitions": [
+        "Onze."
+      ]
+    },
+    {
+      "mot": "öo",
+      "code_langue": "lij",
+      "definitions": [
+        "Or."
+      ]
+    },
+    {
+      "mot": "osmio",
+      "code_langue": "lij",
+      "definitions": [
+        "Osmium."
+      ]
+    },
+    {
+      "mot": "ottanta",
+      "code_langue": "lij",
+      "definitions": [
+        "Quatre-vingts."
+      ]
+    },
+    {
+      "mot": "Pakistan",
+      "code_langue": "lij",
+      "definitions": [
+        "Pakistan."
+      ]
+    },
+    {
+      "mot": "Panamá",
+      "code_langue": "lij",
+      "definitions": [
+        "Panama."
+      ]
+    },
+    {
+      "mot": "Paraguay",
+      "code_langue": "lij",
+      "definitions": [
+        "Paraguay, pays d’Amérique du Sud."
+      ]
+    },
+    {
+      "mot": "Piemonte",
+      "code_langue": "lij",
+      "definitions": [
+        "Piémont, région italienne."
+      ]
+    },
+    {
+      "mot": "Pòrtogallo",
+      "code_langue": "lij",
+      "definitions": [
+        "Portugal (pays d’Europe)."
+      ]
+    },
+    {
+      "mot": "Qatar",
+      "code_langue": "lij",
+      "definitions": [
+        "Qatar (pays arabe)."
+      ]
+    },
+    {
+      "mot": "quaranta",
+      "code_langue": "lij",
+      "definitions": [
+        "Quarante."
+      ]
+    },
+    {
+      "mot": "quattro",
+      "code_langue": "lij",
+      "definitions": [
+        "Quatre."
+      ]
+    },
+    {
+      "mot": "quattroçento",
+      "code_langue": "lij",
+      "definitions": [
+        "Quatre-cents."
+      ]
+    },
+    {
+      "mot": "Réunion",
+      "code_langue": "lij",
+      "definitions": [
+        "Réunion (département français d’outre-mer).",
+        "Réunion (l’île)."
+      ]
+    },
+    {
+      "mot": "rœntgenio",
+      "code_langue": "lij",
+      "definitions": [
+        "Roentgenium."
+      ]
+    },
+    {
+      "mot": "Ruanda",
+      "code_langue": "lij",
+      "definitions": [
+        "Rwanda (pays d’Afrique)."
+      ]
+    },
+    {
+      "mot": "rutherfordio",
+      "code_langue": "lij",
+      "definitions": [
+        "Rutherfordium."
+      ]
+    },
+    {
+      "mot": "Samoa",
+      "code_langue": "lij",
+      "definitions": [
+        "Samoa (archipel de Polynésie).",
+        "Samoa (État de Polynésie)."
+      ]
+    },
+    {
+      "mot": "San Marin",
+      "code_langue": "lij",
+      "definitions": [
+        "Saint-Marin (État d’Europe)."
+      ]
+    },
+    {
+      "mot": "Santa Luçia",
+      "code_langue": "lij",
+      "definitions": [
+        "Sainte-Lucie (état des Caraïbes)."
+      ]
+    },
+    {
+      "mot": "seabörgio",
+      "code_langue": "lij",
+      "definitions": [
+        "Seaborgium."
+      ]
+    },
+    {
+      "mot": "sei",
+      "code_langue": "lij",
+      "definitions": [
+        "Six."
+      ]
+    },
+    {
+      "mot": "seiçento",
+      "code_langue": "lij",
+      "definitions": [
+        "Six-cents."
+      ]
+    },
+    {
+      "mot": "Senegal",
+      "code_langue": "lij",
+      "definitions": [
+        "Sénégal (pays d’Afrique)."
+      ]
+    },
+    {
+      "mot": "Serbia",
+      "code_langue": "lij",
+      "definitions": [
+        "Serbie."
+      ]
+    },
+    {
+      "mot": "settanta",
+      "code_langue": "lij",
+      "definitions": [
+        "Soixante-dix."
+      ]
+    },
+    {
+      "mot": "sette",
+      "code_langue": "lij",
+      "definitions": [
+        "Sept."
+      ]
+    },
+    {
+      "mot": "setteçento",
+      "code_langue": "lij",
+      "definitions": [
+        "Sept-cents."
+      ]
+    },
+    {
+      "mot": "settembre",
+      "code_langue": "lij",
+      "definitions": [
+        "Septembre."
+      ]
+    },
+    {
+      "mot": "sezze",
+      "code_langue": "lij",
+      "definitions": [
+        "Seize."
+      ]
+    },
+    {
+      "mot": "Sri Lanka",
+      "code_langue": "lij",
+      "definitions": [
+        "Sri Lanka (île d’Asie).",
+        "Sri Lanka (pays d’Asie)."
+      ]
+    },
+    {
+      "mot": "sun",
+      "code_langue": "lij",
+      "definitions": [
+        "Première personne du singulier du présent de l’indicatif du verbe êse.",
+        "Troisième personne du pluriel du présent de l’indicatif du verbe êse."
+      ]
+    },
+    {
+      "mot": "Suriname",
+      "code_langue": "lij",
+      "definitions": [
+        "Suriname (pays d’Amérique du Sud)."
+      ]
+    },
+    {
+      "mot": "Tajikistan",
+      "code_langue": "lij",
+      "definitions": [
+        "Tadjikistan (pays d’Asie)."
+      ]
+    },
+    {
+      "mot": "terbio",
+      "code_langue": "lij",
+      "definitions": [
+        "Terbium."
+      ]
+    },
+    {
+      "mot": "Torin",
+      "code_langue": "lij",
+      "definitions": [
+        "Turin (ville d’Italie)."
+      ]
+    },
+    {
+      "mot": "trei",
+      "code_langue": "lij",
+      "definitions": [
+        "Trois."
+      ]
+    },
+    {
+      "mot": "tremïa",
+      "code_langue": "lij",
+      "definitions": [
+        "Trois-mille."
+      ]
+    },
+    {
+      "mot": "trenta",
+      "code_langue": "lij",
+      "definitions": [
+        "Trente."
+      ]
+    },
+    {
+      "mot": "trentedoì",
+      "code_langue": "lij",
+      "definitions": [
+        "Trente-deux."
+      ]
+    },
+    {
+      "mot": "trentetrei",
+      "code_langue": "lij",
+      "definitions": [
+        "Trente-trois."
+      ]
+    },
+    {
+      "mot": "trentun",
+      "code_langue": "lij",
+      "definitions": [
+        "Trente-et-un."
+      ]
+    },
+    {
+      "mot": "un",
+      "code_langue": "lij",
+      "definitions": [
+        "Un."
+      ]
+    },
+    {
+      "mot": "Vatican",
+      "code_langue": "lij",
+      "definitions": [
+        "Vatican (État)."
+      ]
+    },
+    {
+      "mot": "Venere",
+      "code_langue": "lij",
+      "definitions": [
+        "Vénus."
+      ]
+    },
+    {
+      "mot": "vinti",
+      "code_langue": "lij",
+      "definitions": [
+        "Vingt."
+      ]
+    },
+    {
+      "mot": "vintun",
+      "code_langue": "lij",
+      "definitions": [
+        "Vingt-et-un."
+      ]
+    },
+    {
+      "mot": "Wikipedia",
+      "code_langue": "lij",
+      "definitions": [
+        "Wikipédia."
+      ]
+    },
+    {
+      "mot": "zero",
+      "code_langue": "lij",
+      "definitions": [
+        "Zéro."
+      ]
+    }
+  ],
+  "note_licence": "Wikipédia et le Wiktionnaire sont sous licence CC BY-SA : toute reprise doit citer la source. Aucun lexique édité sous droit d'auteur n'est collecté."
+}

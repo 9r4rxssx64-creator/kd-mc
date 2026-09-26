@@ -1,0 +1,168 @@
+name: 🧾 Journal des déploiements ratés
+
+# POURQUOI CE FICHIER EXISTE (Kevin 2026-09-06, « Go »)
+#   Depuis l'agent je ne peux PAS lire les journaux de la CI : le connecteur
+#   GitHub Actions a été essayé deux fois le 2026-09-06 et GitHub l'a refusé
+#   (« l'enregistrement automatique du client n'est pas pris en charge »).
+#   Résultat : quand un déploiement échoue, je vois du ROUGE sans savoir POURQUOI.
+#
+#   Ce workflow lit le journal À MA PLACE et écrit la cause exacte DANS le dépôt.
+#   Un simple « git pull » me la rend lisible à la session suivante — et Kevin
+#   l'a sous les yeux dans audit/deploiements-rates.md.
+#   C'est exactement le mécanisme qui a résolu la panne des poses de danse
+#   (verifie-ia-gratuites.yml écrit son verdict dans le dépôt — leçon #229).
+#
+# VOLUME : il ne tourne QUE lorsqu'un déploiement ÉCHOUE (`conclusion == failure`).
+#   Zéro exécution programmée, zéro exécution quand tout va bien. Le compte a été
+#   suspendu le 15/08 pour du VOLUME — ce workflow n'en ajoute pas.
+#
+# AUCUNE MODIFICATION des 23 déploiements : `workflow_run` les écoute de
+#   l'extérieur. Un seul fichier à maintenir (leçon #142 : une logique recopiée
+#   23 fois diverge). La garde test:deploiement-declenche vérifie que la liste
+#   ci-dessous couvre bien TOUTES les mises en ligne autonomes.
+
+on:
+  workflow_run:
+    workflows:
+      - "Deploy cmc-parser-proxy (Cloudflare Worker)"
+      - "Deploy apex-auth-worker"
+      - "Deploy Apex Chat (Cloudflare Workers)"
+      - "Deploy Apex v13 Backend Worker"
+      - "Deploy Coffre R2 Worker"
+      - "Deploy kdmc-access (journal « qui se connecte »)"
+      - "Deploy kdmc-apis (passerelle APIs gratuites domaine)"
+      - "Deploy kdmc-balances Worker"
+      - "Deploy KDMC Clone Worker"
+      - "KDMC — Déploie le worker IA de Créa Studio (autonome)"
+      - "KDMC — Déploie le lien famille de Créa Studio (autonome)"
+      - "KDMC — Déploie le worker mail (factures@kd-mc.com)"
+      - "KDMC — Déploie le connecteur Monaco Telecom (IMAP → factures)"
+      - "KDMC — Déploie le worker Outlook (récup auto des factures)"
+      - "Deploy KDMC RAG (mémoire Apex)"
+      - "KDMC — Déploie le routeur de domaine kd-mc.com (autonome)"
+      - "Deploy KDMC Uptime (surveillance domaine)"
+      - "Deploy Apex Push Worker"
+      - "Deploy WM Brief Worker"
+      - "Deploy WM Quotes Worker"
+      - "La Détente — Déploie le Worker de commande Printify"
+      - "La Détente — Déploie le Worker Gemini (autonome)"
+      - "Sync Apex Secrets to Cloudflare Worker"
+      # ⬇️ Ajoutés le 22.09 : ils publient eux aussi, tout seuls, sur un push
+      #    claude/** — mais personne ne notait leur cause en cas de panne. La
+      #    garde test:deploiement-declenche les a désignés nommément.
+      - "Deploy kdmc-social Worker"
+      - "Deploy kdmc-vente Worker"
+      # ⬇️ La PUBLICATION DU SITE elle-même (Kevin 2026-09-15 : dépôt en privé).
+      #    Depuis que le dépôt peut être privé, GitHub Pages ne sert plus rien :
+      #    c'est CE workflow qui met kd-mc.com en ligne. Sa panne = le site fige
+      #    sur la version précédente, en silence. Il doit donc laisser sa cause
+      #    exacte dans le dépôt comme les autres.
+      - "KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ)"
+      # ⬇️ PAS un déploiement, mais le maillon dont la panne BLOQUE TOUT.
+      #    Vécu le 2026-09-06 → 09-10 : la fusion automatique n'a pas créé de PR
+      #    pour mon dernier push, et le travail est resté DEHORS de `main`
+      #    pendant 4 jours — sans que je puisse savoir pourquoi (c'est justement
+      #    le journal de la CI que je ne peux pas lire). Le comble : le filet que
+      #    je venais d'écrire pour ça était lui-même coincé dehors.
+      #    Désormais, si la fusion rate, la raison exacte atterrit dans le dépôt.
+      - "Auto-merge Claude branches into main"
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Numéro d'un run raté à consigner à la main (optionnel)"
+        required: false
+        default: ''
+
+permissions:
+  contents: write   # écrire le journal dans le dépôt
+  actions: read     # lire le journal du run qui a échoué
+
+concurrency:
+  group: journal-deploiements
+  cancel-in-progress: false
+
+jobs:
+  consigner:
+    # Uniquement les ÉCHECS. Un déploiement réussi n'écrit rien.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        # `ref: main` VOULU ici : ce workflow n'est pas un déploiement, il ÉCRIT
+        # le journal dans main. Ce n'est donc pas le « faux vert » de la leçon #231.
+        with: { ref: main, fetch-depth: 1 }
+
+      - name: Récupérer la cause exacte auprès de GitHub
+        id: cause
+        env:
+          # Tout passe par des variables : jamais de ${{ }} collé dans le shell
+          # (un message de commit peut contenir n'importe quel caractère).
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.event.workflow_run.id || inputs.run_id }}
+        run: |
+          set -u
+          mkdir -p /tmp/j
+          : > /tmp/j/log.txt
+          : > /tmp/j/etape.txt
+          if [ -z "${RUN:-}" ]; then
+            echo "aucun_run_id" > /tmp/j/etape.txt
+            exit 0
+          fi
+          # Quel job, quelle étape — pas seulement « ça a raté ».
+          if gh run view "$RUN" --repo "$REPO" --json jobs > /tmp/j/jobs.json 2>/tmp/j/gh.err; then
+            jq -r '
+              [ .jobs[]
+                | select(.conclusion == "failure")
+                | .name as $j
+                | ( [ .steps[] | select(.conclusion == "failure") | .name ] | join(", ") ) as $s
+                | "\($j) › \(if $s == "" then "(étape non nommée)" else $s end)"
+              ] | join(" | ")
+            ' /tmp/j/jobs.json > /tmp/j/etape.txt || echo "lecture_jobs_impossible" > /tmp/j/etape.txt
+          else
+            echo "gh_jobs_echec: $(head -c 200 /tmp/j/gh.err)" > /tmp/j/etape.txt
+          fi
+          # Les lignes du journal de l'étape ratée (les journaux expirent au bout
+          # de 90 jours : si c'est vide, on le DIT au lieu de laisser un blanc).
+          if ! gh run view "$RUN" --repo "$REPO" --log-failed > /tmp/j/log.txt 2>/tmp/j/log.err; then
+            printf 'journal illisible : %s\n' "$(head -c 300 /tmp/j/log.err)" > /tmp/j/log.txt
+          fi
+          if [ ! -s /tmp/j/log.txt ]; then
+            echo "journal vide (expiré, ou job annulé avant de produire une sortie)" > /tmp/j/log.txt
+          fi
+
+      - name: Écrire l'entrée dans audit/deploiements-rates.md
+        env:
+          NOM: ${{ github.event.workflow_run.name || 'lancement manuel' }}
+          BRANCHE: ${{ github.event.workflow_run.head_branch || '—' }}
+          SHA: ${{ github.event.workflow_run.head_sha || '' }}
+          URL: ${{ github.event.workflow_run.html_url || '' }}
+          RUN: ${{ github.event.workflow_run.id || inputs.run_id }}
+        run: python3 tools/audit/journal-deploiement.py
+
+      - name: Publier le journal (c'est mon seul moyen de le lire)
+        run: |
+          set -e
+          git config user.name  "kdmc-bot"
+          git config user.email "bot@kd-mc.com"
+          git add audit/deploiements-rates.md
+          if git diff --cached --quiet; then
+            echo "Rien de nouveau à consigner."
+            exit 0
+          fi
+          # [skip ci] OBLIGATOIRE : sinon ce commit relance des workflows en
+          # cascade et sature la boîte mail de Kevin (règle anti-spam).
+          git commit -m "🧾 Déploiement raté consigné : $(date -u '+%d/%m/%Y %H:%M') UTC [skip ci]"
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            echo "push raté, nouvelle tentative dans $((2**i))s"
+            sleep $((2**i))
+          done
+          echo "::error::impossible de publier le journal après 4 tentatives"
+          exit 1
+
+      - name: Résumé lisible dans l'onglet Actions
+        if: always()
+        run: head -60 audit/deploiements-rates.md >> "$GITHUB_STEP_SUMMARY" || true

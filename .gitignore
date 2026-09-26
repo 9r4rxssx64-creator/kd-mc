@@ -1,0 +1,59 @@
+# Dépendances Node.js
+node_modules/
+package-lock.json
+
+# Artefacts vidéo intermédiaires
+tools/video/frames/
+tools/video/output/_palette.png
+tools/video/assets/*.png
+
+# v13.4.225 — dist/ racine = build artifacts non versionnés
+/dist/
+
+# Worktrees éphémères des sub-agents Claude Code (copies internes du repo, jamais versionnées)
+.claude/worktrees/
+
+# Rapports d'audit générés localement (préfixe _ = output, pas source)
+tests/_audit-*.txt
+tests/_audit-*.json
+
+# SEO skill — venv (recreated locally) + local Google API config (never commit keys)
+.claude/skills/seo/.venv/
+.claude/skills/**/.venv/
+google-api.json
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Copie de secours du domaine : fabriquée par prepare-secours.mjs, jamais commitée
+services/kdmc-router/public/
+services/kdmc-router/pages-upload/
+audit/captures-paquet/
+audit/captures-commerce/
+services/kdmc-router/app-*/
+
+# curseur de rotation du rappel (etat local a chaque session, pas a partager)
+pipeline/rappel-etat.json
+
+# dossiers patrimoine : donnees personnelles de la famille, JAMAIS publiees
+# (le depot entier est servi publiquement par Cloudflare Pages)
+/patrimoine/
+
+# resultats des recherches Ciclade : donnees personnelles, artefact CI seulement
+/patrimoine-resultats/
+mobile/build/
+tools/pub/out/
+audit/captures-commerce/
+# Même raison que les deux dossiers ci-dessus : cette capture est REFAITE sur la
+# vraie page à chaque passage du contrôle, et deux captures d'une page vivante ne
+# sont jamais identiques à l'octet près. Suivie dans git, elle salissait l'arbre de
+# travail de TOUTES les sessions à chaque lancement de la chaîne (22.09.2026).
+# Elle reste produite et lisible à la demande — c'est son suivi qui est inutile.
+audit/captures-perimetre/
+# Idem : capture des tuiles de l'admin, refaite à chaque contrôle (24.09.2026).
+audit/captures-admin/
+
+# Paquet de reprise (fabrique par npm run transfert — copie locale, pas a versionner)
+/transfert/
+/transfert-kdmc-*.tgz

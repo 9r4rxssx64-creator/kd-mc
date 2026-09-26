@@ -1,0 +1,54 @@
+name: Gitleaks (secrets en clair dans commits)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Demande Kevin 2026-05-15 "qualité pro sans gros coûts" :
+# Gitleaks détecte tokens API/secrets en clair pushés par accident.
+# Bloquant sur PR. Évite leak gros préjudice (rotate tous les secrets en panic).
+#
+# Gratuit illimité (Gitleaks open source).
+
+on:
+  pull_request:
+    branches: [main]
+    # ── 24.09.2026 — ÉCONOMIE MESURÉE, sans perdre une seule protection.
+    # Sur 125 commits arrivés sur main depuis le 22.09, 70 (56 %) ne touchent
+    # QUE des documents : journaux, diagnostics, rapports de ménage. Chacun
+    # déclenchait quand même toute cette batterie. Un fichier Markdown ne peut
+    # pas casser l'application : on ne la teste donc plus pour lui.
+    paths-ignore:
+      - '**/*.md'
+      - 'audit/**'
+      - 'pipeline/**'
+      - '.github/automerge-diag/**'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan:
+    name: Gitleaks secrets scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history pour scan profond)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+        with:
+          # Échoue le job si secret trouvé
+          args: detect --redact --verbose --exit-code 1

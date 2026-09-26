@@ -1,0 +1,57 @@
+name: KDMC — Déploie le worker mail (factures@kd-mc.com)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Déploie le worker "kdmc-mail" : il reçoit les mails (Cloudflare Email Routing) envoyés
+# à factures@kd-mc.com, extrait les pièces jointes PDF/photo et les met en attente dans
+# le KV partagé (ACCOUNTS). L'app Finances les récupère via le routeur (/__mail/*).
+#
+# Action Kevin UNIQUE (une fois) : dans Cloudflare → Email → Email Routing sur kd-mc.com,
+# activer, puis créer une adresse "factures@kd-mc.com" avec pour destination le Worker
+# « kdmc-mail ». Ensuite : transférer / faire suivre auto ses factures à cette adresse.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'services/kdmc-mail/**'
+      - '.github/workflows/deploy-kdmc-mail.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Install wrangler
+        run: npm i -g wrangler@3
+
+      - name: Déploiement du worker mail
+        working-directory: services/kdmc-mail
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee deploy.log
+
+      - name: Smoke /health
+        run: |
+          sleep 4
+          URL="https://kdmc-mail.9r4rxssx64.workers.dev/health"
+          echo "GET $URL"
+          curl -fsS "$URL" && echo "  ✅ kdmc-mail vivant" || echo "::warning::/health non joignable (workers_dev peut être désactivé)"

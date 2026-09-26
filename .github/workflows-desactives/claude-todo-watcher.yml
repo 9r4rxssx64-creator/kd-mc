@@ -1,0 +1,227 @@
+name: Claude Todo Watcher (escalade autonome temps-réel)
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:        # Déclenchement manuel + par Apex via API
+  repository_dispatch:      # Apex peut déclencher via event apex_escalation
+    types: [apex_escalation, critical_issue]
+
+# Concurrency : éviter overlap si run précédent encore en cours (5min cron très court)
+concurrency:
+  group: claude-todo-watcher
+  cancel-in-progress: false
+
+jobs:
+  check-escalations:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write  # contents:write pour pouvoir POST /apex/ax_claude_alerts.json via API REST
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect trigger source
+        id: trigger
+        run: |
+          echo "event=${{ github.event_name }}" >> $GITHUB_OUTPUT
+          echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "is_immediate=true" >> $GITHUB_OUTPUT
+            echo "📥 Trigger immédiat via repository_dispatch (Apex escalation)"
+          else
+            echo "is_immediate=false" >> $GITHUB_OUTPUT
+            echo "⏰ Trigger via cron 5min"
+          fi
+
+      - name: Fetch Apex claude_todo queue
+        id: fetch
+        env:
+          FB_URL: https://kdmc-clients-default-rtdb.firebaseio.com
+          # Règles /apex durcies auth != null (2026-07-04) → lecture par service
+          # account (leçon #109 : un lecteur serveur anonyme = 401 en boucle).
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        run: |
+          TOKEN=$(node tools/firebase/gauth.cjs || true)
+          QS=""
+          if [ -n "$TOKEN" ]; then QS="?access_token=${TOKEN}"; echo "Auth service account OK"; else echo "::warning::pas de token — lecture non authentifiée (Permission denied attendu sur /apex durci)"; fi
+          curl -s "${FB_URL}/apex/ax_claude_todo.json${QS}" -o todo.json || echo '[]' > todo.json
+          curl -s "${FB_URL}/apex/ax_lessons_learned.json${QS}" -o lessons.json || echo '[]' > lessons.json
+          curl -s "${FB_URL}/apex/ax_handoff_journal.json${QS}" -o journal.json || echo '[]' > journal.json
+          echo "todo_size=$(wc -c < todo.json)" >> $GITHUB_OUTPUT
+          echo "Total queue size: $(wc -c < todo.json) bytes"
+
+      - name: Analyze pending items
+        id: analyze
+        env:
+          DISPATCH_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: |
+          python3 << 'EOF'
+          import json, os, time
+          try:
+              with open('todo.json') as f:
+                  data = json.load(f)
+              # Une réponse d'erreur RTDB ({"error":"Permission denied"}) est un dict
+              # de STRINGS → l'ancien code la transformait en ["Permission denied"] et
+              # plantait sur t.get() (AttributeError). Condition d'infra = log, pas crash.
+              if isinstance(data, dict) and isinstance(data.get('error'), str):
+                  print(f"::warning::Lecture Firebase refusée/erronée : {data} — file traitée comme vide (auth service account manquante ?)")
+                  data = []
+              if not isinstance(data, list):
+                  data = list(data.values()) if isinstance(data, dict) else []
+              data = [t for t in data if isinstance(t, dict)]
+          except Exception:
+              data = []
+
+          now = int(time.time() * 1000)
+          pending = [t for t in data if t.get('status') == 'pending']
+          # Critical = severity critical OU pending >2h
+          critical_sev = [t for t in pending if t.get('severity') == 'critical']
+          critical_old = [t for t in pending if (now - t.get('ts', 0)) > 7200000]
+          critical = list({t.get('id', str(i)): t for i, t in enumerate(critical_sev + critical_old)}.values())
+          recurrent = {}
+          for t in pending:
+              key = str(t.get('reason', t.get('title', '')))[:80]
+              recurrent[key] = recurrent.get(key, 0) + 1
+          top_recurrent = sorted(recurrent.items(), key=lambda x: -x[1])[:5]
+
+          dispatch_payload = {}
+          try:
+              dispatch_payload = json.loads(os.environ.get('DISPATCH_PAYLOAD', 'null') or '{}')
+              if not isinstance(dispatch_payload, dict):
+                  dispatch_payload = {}
+          except Exception:
+              dispatch_payload = {}
+
+          with open('/tmp/report.json', 'w') as f:
+              json.dump({
+                  'pending_total': len(pending),
+                  'critical_total': len(critical),
+                  'top_recurrent': top_recurrent,
+                  'critical_items': critical[:10],
+                  'dispatch_payload': dispatch_payload,
+              }, f, indent=2)
+
+          should_alert = (len(critical) > 0) or (len(pending) > 20) or bool(dispatch_payload.get('todo_id'))
+          with open(os.environ.get('GITHUB_OUTPUT', '/tmp/out'), 'a') as out:
+              out.write(f"pending={len(pending)}\n")
+              out.write(f"critical={len(critical)}\n")
+              out.write(f"should_alert={'true' if should_alert else 'false'}\n")
+              out.write(f"has_critical={'true' if len(critical) > 0 else 'false'}\n")
+          print(f"Pending: {len(pending)}, Critical: {len(critical)}, Dispatch: {bool(dispatch_payload)}")
+          EOF
+
+      - name: Push alert to Firebase ax_claude_alerts (visible Apex)
+        if: steps.analyze.outputs.has_critical == 'true'
+        env:
+          FB_URL: https://kdmc-clients-default-rtdb.firebaseio.com
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        run: |
+          FB_QS="?access_token=$(node tools/firebase/gauth.cjs || true)"
+          [ "$FB_QS" = "?access_token=" ] && FB_QS=""
+          export FB_QS
+          python3 << 'EOF'
+          import json, os, time, urllib.request
+          with open('/tmp/report.json') as f:
+              report = json.load(f)
+          alert = {
+              'id': f"alert_{int(time.time()*1000)}",
+              'ts': int(time.time() * 1000),
+              'critical_count': report['critical_total'],
+              'pending_count': report['pending_total'],
+              'critical_items': report['critical_items'][:5],
+              'top_recurrent': report['top_recurrent'],
+              'workflow_run': f"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              'trigger_event': '${{ steps.trigger.outputs.event }}',
+              'status': 'pending_review',
+          }
+          fb = os.environ['FB_URL']
+          qs = os.environ.get('FB_QS', '')  # ?access_token=… (règles /apex durcies)
+          req = urllib.request.Request(
+              f"{fb}/apex/ax_claude_alerts/{alert['id']}.json{qs}",
+              data=json.dumps(alert).encode('utf-8'),
+              method='PUT',
+              headers={'Content-Type': 'application/json'},
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=10) as resp:
+                  print(f"✅ Alert pushed Firebase: {alert['id']} (HTTP {resp.status})")
+          except Exception as e:
+              print(f"⚠ Firebase push failed: {e}")
+          EOF
+
+      - name: Create GitHub Issue if critical
+        if: steps.analyze.outputs.should_alert == 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('/tmp/report.json', 'utf8'));
+            const isImmediate = '${{ steps.trigger.outputs.is_immediate }}' === 'true';
+
+            const title = isImmediate
+              ? `[APEX-IMMEDIATE] ${report.critical_total} critique(s) — escalation directe`
+              : `[AUTO] ${report.critical_total} escalades critiques + ${report.pending_total} pending`;
+            const body = [
+              '## 🚨 Escalade ' + (isImmediate ? '**IMMÉDIATE**' : 'auto') + ' depuis Apex AI', '',
+              '**Trigger** : ' + (isImmediate ? '`repository_dispatch` (Apex push direct)' : '`cron */5min`'),
+              '**Total pending** : ' + report.pending_total,
+              '**Critique** : ' + report.critical_total, '',
+              '### Top 5 récurrents',
+              (report.top_recurrent.map(([r, c]) => '- (' + c + 'x) ' + r).join('\n') || '_aucun_'), '',
+              '### Items critiques (top 10)',
+              '```json', JSON.stringify(report.critical_items, null, 2), '```', '',
+              '### Dispatch payload (si trigger Apex direct)',
+              '```json', JSON.stringify(report.dispatch_payload || {}, null, 2), '```', '',
+              '---',
+              '**Action requise** : Claude Code investigue + fix + écrit dans `/apex/ax_handoff_journal` (Apex auto-resolve).',
+              'Source Firebase : `/apex/ax_claude_todo`',
+              'Workflow : `.github/workflows/claude-todo-watcher.yml`',
+            ].join('\n');
+
+            // Évite spam : max 5 issues open (au lieu de 3 — plus tolérant avec cron 5min)
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'auto-escalation',
+              state: 'open'
+            });
+            if (existing.data.length >= 5) {
+              console.log('Already 5+ open auto-escalations, skip creation');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['auto-escalation', 'claude-code', isImmediate ? 'priority-critical' : 'priority-high']
+            });
+
+      - name: Send Telegram alert (optional)
+        if: steps.analyze.outputs.should_alert == 'true' && env.TELEGRAM_BOT_TOKEN != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          MSG="🚨 Apex AI: ${{ steps.analyze.outputs.critical }} critiques (${{ steps.trigger.outputs.event }}). Issue GitHub créée."
+          curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MSG}" || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: claude-todo-analysis-${{ github.run_number }}
+          path: |
+            todo.json
+            lessons.json
+            journal.json
+            /tmp/report.json
+          retention-days: 7

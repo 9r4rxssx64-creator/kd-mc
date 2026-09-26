@@ -1,0 +1,138 @@
+name: Publier une config dans main
+description: >
+  Un workflow de déploiement vient d'écrire un fichier de configuration (URL de worker,
+  clé publique, catalogue). Cette action le fait ARRIVER dans main — ce que « pousser une
+  branche claude/* » n'a jamais fait.
+
+  Pourquoi elle existe (mesuré le 10.09.2026, leçon #243) : dix workflows poussaient une branche
+  `claude/<nom>-<run_id>` en écrivant « (auto-merge) » dans leur journal. Or un push signé par
+  GITHUB_TOKEN ne déclenche JAMAIS un autre workflow, et le message portait `[skip ci]` : la
+  fusion automatique ne les a jamais vues. Résultat : 73 branches orphelines depuis juin, et la
+  boutique La Détente qui demande un fichier `push-config.json` que main n'a jamais reçu.
+
+  Ce que fait l'action, dans l'ordre :
+    1. compare le fichier à celui de HEAD en IGNORANT les lignes d'horodatage → si rien d'autre
+       n'a changé, elle n'écrit RIEN (avant : une branche par déploiement pour un simple `updated_at`) ;
+    2. refuse de publier si le workflow ne tourne pas sur main (une branche claude/* ne doit
+       jamais entrer dans main par cette porte : c'est le rôle de auto-merge-claude.yml) ;
+    3. commit sur une branche `claude/<prefixe>-<run_id>`, PR vers main, fusion par le robot
+       (mêmes options que auto-merge-claude.yml), branche supprimée si le dépôt l'autorise ;
+    4. relance deploy.yml (un merge par GITHUB_TOKEN ne déclenche pas Pages tout seul) ;
+    5. si la fusion est refusée : la CAUSE EXACTE est imprimée et l'étape est ROUGE — un échec
+       invisible n'existe pas (leçon #214).
+inputs:
+  fichiers:
+    description: Chemins des fichiers à publier, séparés par des espaces.
+    required: true
+  message:
+    description: Message du commit et titre de la PR (sans « [skip ci] », il est ajouté).
+    required: true
+  prefixe:
+    description: Préfixe de la branche éphémère, ex. `worker-config` → `claude/worker-config-<run_id>`.
+    required: true
+  ignorer:
+    description: Expression régulière des lignes à ignorer pour décider si la config a vraiment changé.
+    required: false
+    default: '^[[:space:]]*"updated_at"[[:space:]]*:'
+  redeployer:
+    description: "'true' pour relancer deploy.yml après la fusion (le fichier doit être servi)."
+    required: false
+    default: 'true'
+  token:
+    description: Jeton pour gh (contents + pull-requests + actions en écriture).
+    required: false
+    default: ${{ github.token }}
+outputs:
+  publie:
+    description: "'true' si une PR a été créée ET fusionnée, 'false' sinon."
+    value: ${{ steps.pub.outputs.publie }}
+  pr:
+    description: Numéro de la PR créée (vide si rien n'a changé).
+    value: ${{ steps.pub.outputs.pr }}
+runs:
+  using: composite
+  steps:
+    - id: pub
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        FICHIERS: ${{ inputs.fichiers }}
+        MESSAGE: ${{ inputs.message }}
+        PREFIXE: ${{ inputs.prefixe }}
+        IGNORER: ${{ inputs.ignorer }}
+        REDEPLOYER: ${{ inputs.redeployer }}
+      run: |
+        set -euo pipefail
+        echo "publie=false" >> "$GITHUB_OUTPUT"
+        echo "pr=" >> "$GITHUB_OUTPUT"
+
+        # 1) Y a-t-il un VRAI changement (hors horodatage) ?
+        change=0
+        for f in $FICHIERS; do
+          if [ ! -f "$f" ]; then
+            echo "::error::fichier attendu absent : $f (l'étape précédente ne l'a pas écrit)"; exit 1
+          fi
+          if git cat-file -e "HEAD:$f" 2>/dev/null; then
+            if ! diff -q <(git show "HEAD:$f" | grep -Ev "$IGNORER" || true) \
+                        <(grep -Ev "$IGNORER" "$f" || true) >/dev/null; then
+              echo "changé : $f"; change=1
+            else
+              echo "identique (hors horodatage) : $f"
+            fi
+          else
+            echo "nouveau : $f"; change=1
+          fi
+        done
+        if [ "$change" = "0" ]; then
+          echo "::notice::Config inchangée (seul l'horodatage bouge) → aucune branche, aucune PR."
+          git checkout -q -- $FICHIERS 2>/dev/null || true
+          exit 0
+        fi
+
+        # 2) Jamais depuis une branche claude/* : main est la seule base légitime ici.
+        if [ "${GITHUB_REF_NAME:-}" != "main" ]; then
+          echo "::warning::Déploiement lancé depuis « ${GITHUB_REF_NAME:-?} », pas depuis main : la config n'est PAS publiée par cette porte (elle le sera au prochain déploiement depuis main)."
+          exit 0
+        fi
+
+        # 3) Branche éphémère → PR → fusion par le robot.
+        git config user.name "kdmc-bot"
+        git config user.email "bot@kdmc.local"
+        BR="claude/${PREFIXE}-${GITHUB_RUN_ID}"
+        git checkout -q -b "$BR"
+        git add -- $FICHIERS
+        git commit -q -m "$MESSAGE [skip ci]"
+        git push -u origin "$BR"
+
+        gh pr create --base main --head "$BR" \
+          --title "$MESSAGE" \
+          --body "Config écrite par le workflow \`${GITHUB_WORKFLOW}\` (run ${GITHUB_RUN_ID}). Publiée par \`.github/actions/publier-config\` : PR + fusion par le robot, parce qu'un push par GITHUB_TOKEN ne réveille jamais l'auto-merge (leçon #243)." \
+          >/dev/null
+        PR=$(gh pr view "$BR" --json number --jq .number)
+        echo "PR #$PR créée pour $BR"
+
+        MERGE_LOG=$(mktemp)
+        if gh pr merge "$PR" --merge --admin --delete-branch=false >"$MERGE_LOG" 2>&1 \
+           || gh pr merge "$PR" --merge --delete-branch=false >>"$MERGE_LOG" 2>&1; then
+          echo "✅ PR #$PR fusionnée dans main"
+          echo "publie=true" >> "$GITHUB_OUTPUT"
+          echo "pr=$PR" >> "$GITHUB_OUTPUT"
+          # Ménage : la branche éphémère n'a plus de raison d'exister. Une règle du dépôt peut
+          # refuser la suppression (GH013) — ce n'est pas une erreur, on le dit.
+          git push origin --delete "$BR" 2>/dev/null \
+            && echo "branche $BR supprimée" \
+            || echo "::notice::branche $BR non supprimée (règle du dépôt) — le ménage automatique la reprendra."
+        else
+          echo "::error::PR #$PR créée mais la fusion automatique est REFUSÉE. Cause exacte renvoyée par GitHub :"
+          cat "$MERGE_LOG" || true
+          echo "pr=$PR" >> "$GITHUB_OUTPUT"
+          exit 1
+        fi
+
+        # 4) Sans ça, le fichier fusionné n'est pas servi : un merge par GITHUB_TOKEN ne
+        #    déclenche pas deploy.yml (même raison que dans auto-merge-claude.yml).
+        if [ "$REDEPLOYER" = "true" ]; then
+          gh workflow run deploy.yml --ref main \
+            && echo "✅ deploy.yml relancé : la config sera servie" \
+            || echo "::warning::deploy.yml n'a pas pu être relancé — la config sera servie au prochain déploiement."
+        fi

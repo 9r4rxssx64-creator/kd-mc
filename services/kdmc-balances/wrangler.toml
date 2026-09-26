@@ -1,0 +1,15 @@
+name = "kdmc-balances"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+# Worker ISOLÉ (règle d'isolation Kevin) : lit les SOLDES des fournisseurs IA qui
+# exposent réellement un endpoint de solde. Ne peut RIEN dépenser (lecture seule).
+# Ne touche jamais le routeur SSO ni aucune autre app — s'il casse, rien d'autre ne casse.
+#
+# Secrets (poussés par .github/workflows/deploy-kdmc-balances.yml via `wrangler secret put`) :
+#   DEEPSEEK_API_KEY   (seul fournisseur des secrets Kevin avec une API de solde réelle)
+# Ajouter un fournisseur = 1 entrée dans PROVIDERS (src/index.js) + son secret ici.
+#
+# Auth : /balances exige une session ADMIN vérifiée (Face ID) — le worker valide le
+# pass SSO en appelant https://kd-mc.com/__sso/whoami. Aucun secret partagé avec le routeur.

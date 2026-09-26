@@ -1,0 +1,20 @@
+{
+ "_note": "Pousser ce fichier publie ces PNG comme logos/modèles dans Firebase (Studio « Mes logos créés »).",
+ "rev": 3,
+ "logos": [
+  {
+   "store": "la-detente",
+   "file": "shops/la-detente/img/designs/logo_t03.png",
+   "name": "Cœur AR-15 & ball-trap",
+   "id": "logo_t03",
+   "cat": "Armes & Tir"
+  },
+  {
+   "store": "la-detente",
+   "file": "shops/la-detente/img/designs/logo_t10b.png",
+   "name": "Cœur AR-15",
+   "id": "logo_t10b",
+   "cat": "Cœur & Entre amis"
+  }
+ ]
+}

@@ -1,0 +1,248 @@
+name: Apex Execute (autonome IA → Claude Code)
+
+# Demande Kevin 2026-05-04 :
+# Apex IA call apex-execute.ts → POST repository_dispatch event_type=apex-execute
+# → ce workflow se declenche → utilise Claude Code Action pour vraiment executer
+# → commit + push + comment Issue tracker
+#
+# Whitelist 8 taches autorisees (sécurité Kevin) :
+# modify_file, create_file, run_test, run_lint, audit_repo,
+# deploy_canary, backup_user_data, restore_from_backup
+#
+# 4 INTERDITES (security gate) :
+# delete_file, force_push, modify_user_credentials_external,
+# send_external_email_without_consent
+
+on:
+  repository_dispatch:
+    types: [apex-execute]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Tâche (whitelist)'
+        required: true
+        type: choice
+        options:
+          - modify_file
+          - create_file
+          - run_test
+          - run_lint
+          - audit_repo
+          - deploy_canary
+          - backup_user_data
+          - restore_from_backup
+      params_json:
+        description: 'Paramètres JSON (path, content, env, depth, uid, ts...)'
+        required: false
+        default: '{}'
+      exec_id:
+        description: 'ID exécution (pour callback Apex)'
+        required: false
+        default: ''
+
+jobs:
+  validate-and-execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Parse payload
+        id: parse
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            TASK="${{ github.event.client_payload.task }}"
+            EXEC_ID="${{ github.event.client_payload.exec_id }}"
+            SRC="${{ github.event.client_payload.src }}"
+            SRC_VERSION="${{ github.event.client_payload.src_version }}"
+            # v13.4.38 Kevin "Donne accès apex à ta branche" — extraire target_branch
+            TARGET_BRANCH="${{ github.event.client_payload.params.target_branch }}"
+            echo "params_json=$(echo '${{ toJSON(github.event.client_payload.params) }}' | jq -c .)" >> $GITHUB_OUTPUT
+          else
+            TASK="${{ github.event.inputs.task }}"
+            EXEC_ID="${{ github.event.inputs.exec_id }}"
+            SRC="manual"
+            SRC_VERSION=""
+            TARGET_BRANCH=""
+            echo "params_json=${{ github.event.inputs.params_json }}" >> $GITHUB_OUTPUT
+          fi
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          echo "exec_id=$EXEC_ID" >> $GITHUB_OUTPUT
+          echo "src=$SRC" >> $GITHUB_OUTPUT
+          echo "src_version=$SRC_VERSION" >> $GITHUB_OUTPUT
+          echo "target_branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          echo "Task: $TASK | Exec: $EXEC_ID | Src: $SRC | Target: $TARGET_BRANCH"
+
+      - name: Security gate (whitelist + forbidden check)
+        id: gate
+        run: |
+          TASK="${{ steps.parse.outputs.task }}"
+          # v13.4.40 PARITÉ APEX Kevin 2026-05-14 — extensions tools Claude Code
+          ALLOWED="modify_file create_file run_test run_lint audit_repo deploy_canary backup_user_data restore_from_backup create_skill modify_skill create_hook modify_hook modify_workflow register_sentinel unregister_sentinel modify_script create_script append_to_memory append_to_top_rules self_audit_and_fix rotate_credentials sync_memory_bridge release_version read_file list_files grep_code glob_pattern bash_safe web_fetch web_search spawn_subagent create_pr comment_on_pr merge_pr_safe create_issue close_issue_safe list_branches get_file_contents search_code"
+          FORBIDDEN="delete_file force_push modify_user_credentials_external send_external_email_without_consent delete_skill delete_workflow modify_admin_kevin modify_top_rules_replace execute_shell_arbitrary disable_sentinel_security modify_csp_meta"
+
+          # Forbidden check first (paranoia)
+          for f in $FORBIDDEN; do
+            if [ "$TASK" = "$f" ]; then
+              echo "❌ FORBIDDEN task blocked: $TASK"
+              echo "result=forbidden" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          done
+
+          # Whitelist check
+          ALLOWED_OK=0
+          for a in $ALLOWED; do
+            if [ "$TASK" = "$a" ]; then
+              ALLOWED_OK=1
+              break
+            fi
+          done
+
+          if [ "$ALLOWED_OK" = "0" ]; then
+            echo "❌ Task NOT in whitelist: $TASK"
+            echo "result=not_whitelisted" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "✅ Task allowed: $TASK"
+          echo "result=allowed" >> $GITHUB_OUTPUT
+
+      - name: Setup Node
+        if: steps.gate.outputs.result == 'allowed'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (apex-v13)
+        if: steps.gate.outputs.result == 'allowed'
+        working-directory: apex-ai/v13
+        run: if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+
+      # Claude Code Action — execute la tache reellement
+      # https://github.com/anthropics/claude-code-base-action
+      - name: Run Claude Code Action
+        if: steps.gate.outputs.result == 'allowed'
+        id: claude
+        uses: anthropics/claude-code-base-action@v1
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          prompt: |
+            Tâche apex-execute autonome : ${{ steps.parse.outputs.task }}
+
+            Paramètres : ${{ steps.parse.outputs.params_json }}
+
+            Source : ${{ steps.parse.outputs.src }} (version ${{ steps.parse.outputs.src_version }})
+            Exec ID : ${{ steps.parse.outputs.exec_id }}
+
+            Instructions :
+            - Tâches autorisées : modify_file, create_file, run_test, run_lint,
+              audit_repo, deploy_canary, backup_user_data, restore_from_backup
+            - JAMAIS : delete_file, force_push, modify_user_credentials_external,
+              send_external_email_without_consent
+            - Pour modify_file/create_file : zone autorisée = apex-ai/, services/,
+              features/, modules/, ui/, tools/, tests/. Pas .github/workflows/, pas package-lock.json.
+            - Pour run_test : `cd apex-ai/v13 && npx vitest run`
+            - Pour run_lint : `cd apex-ai/v13 && npx eslint . --ext .ts --max-warnings=0`
+            - Pour audit_repo : analyse + retour findings, pas de modif
+
+            Suis les règles Kevin CLAUDE.md (esc(), guards, mobile-first, etc.).
+            Exécute la tâche puis écris un résumé court (3-10 lignes).
+          allowed_tools: Bash,Read,Write,Edit,Grep,Glob
+
+      - name: Auto-commit changes (if any)
+        if: steps.gate.outputs.result == 'allowed' && steps.claude.outcome == 'success'
+        id: commit
+        run: |
+          git config user.name "apex-execute[bot]"
+          git config user.email "apex-execute@kdmc.dev"
+
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "Pas de modifications à commit"
+            echo "committed=false" >> $GITHUB_OUTPUT
+          else
+            # v13.4.38 Kevin "Donne accès à apex à ta branche claude/test-699LQ" :
+            # par défaut Apex push directement sur claude/test-699LQ (auto-merge bot
+            # va merger dans main). Override possible via target_branch param.
+            TARGET_BRANCH="${{ steps.parse.outputs.target_branch }}"
+            if [ -z "$TARGET_BRANCH" ]; then
+              TARGET_BRANCH="claude/test-699LQ"
+            fi
+            git fetch origin "$TARGET_BRANCH" || true
+            git checkout "$TARGET_BRANCH" 2>/dev/null || git checkout -b "$TARGET_BRANCH"
+            git add -A
+            git commit -m "apex-execute: ${{ steps.parse.outputs.task }} (exec_id=${{ steps.parse.outputs.exec_id }})" \
+              -m "Source: ${{ steps.parse.outputs.src }} ${{ steps.parse.outputs.src_version }} | Target: $TARGET_BRANCH | Auto-generated via Claude Code Action."
+            git push origin "$TARGET_BRANCH" || echo "Push failed (non fatal)"
+            echo "committed=true" >> $GITHUB_OUTPUT
+            echo "branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment Issue tracker (callback Apex)
+        if: always() && steps.parse.outputs.exec_id != ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const exec_id = '${{ steps.parse.outputs.exec_id }}';
+            const task = '${{ steps.parse.outputs.task }}';
+            const result = '${{ steps.gate.outputs.result }}';
+            const claudeStatus = '${{ steps.claude.outcome }}';
+            const committed = '${{ steps.commit.outputs.committed }}';
+            const branch = '${{ steps.commit.outputs.branch }}';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            // Cherche issue existante apex-execute
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'apex-execute,tracker',
+              state: 'open'
+            });
+
+            const body = [
+              '## apex-execute callback', '',
+              '- **Exec ID** : `' + exec_id + '`',
+              '- **Task** : `' + task + '`',
+              '- **Gate** : ' + result,
+              '- **Claude status** : ' + claudeStatus,
+              '- **Committed** : ' + (committed === 'true' ? 'oui (branche `' + branch + '`)' : 'non'),
+              '- **Workflow** : ' + runUrl,
+              '', '_Auto-generated by .github/workflows/apex-execute.yml_',
+            ].join('\n');
+
+            if (issues.data.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '[tracker] apex-execute callbacks',
+                body,
+                labels: ['apex-execute', 'tracker']
+              });
+            }
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: apex-execute-${{ steps.parse.outputs.exec_id || github.run_number }}
+          path: |
+            /tmp/apex-execute-*.log
+          retention-days: 7
+          if-no-files-found: ignore

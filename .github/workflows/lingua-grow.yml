@@ -1,0 +1,62 @@
+name: Lingua — enrichit les histoires automatiquement (au fur et à mesure)
+
+# « Ajoute encore des histoires au fur et à mesure de l'évolution » (Kevin 2026-08-09).
+# Une fois par semaine, Bee écrit UNE nouvelle mini-histoire (6 langues + quiz). Un SECOND
+# modèle indépendant juge les traductions : on ne garde l'histoire QUE si tout est correct,
+# sinon on ne commit rien (jamais de contenu douteux, jamais de spam). Si une histoire est
+# validée → branche claude/* → le bot auto-merge → déploiement automatique sur lingua.kd-mc.com.
+
+on:
+  workflow_dispatch: {}
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+concurrency:
+  group: lingua-grow
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  grow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: "Génère + juge une nouvelle histoire (sûr : rejet silencieux si douteux)"
+        id: grow
+        shell: bash -eo pipefail {0}   # sans pipefail, un `node … | tee` échoué ressort VERT (garde workflows-pipefail)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          node tools/lingua/grow-content.mjs lingua | tee /tmp/grow.log
+          echo "changed=$(git status --porcelain lingua | grep -c . || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Garde-fou syntaxe (l'app ne doit JAMAIS casser)
+        if: steps.grow.outputs.changed != '0'
+        run: node --check lingua/data.js && node --check lingua/app.js
+
+      - name: Publie l'histoire (branche claude/* → auto-merge → déploiement)
+        if: steps.grow.outputs.changed != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="claude/lingua-grow-${{ github.run_number }}"
+          git checkout -b "$BR"
+          git add lingua/data.js lingua/app.js lingua/sw.js
+          MSG=$(grep '^OK:' /tmp/grow.log || echo 'Lingua : nouvelle histoire automatique')
+          git commit -m "Lingua : nouvelle histoire automatique — ${MSG#OK: }" -m "Générée puis validée par un second modèle indépendant (0 problème). Auto au fur et à mesure."
+          for i in 1 2 3 4; do git push -u origin "$BR" && break || sleep $((2**i)); done
+
+      - name: Rien à ajouter cette semaine
+        if: steps.grow.outputs.changed == '0'
+        run: echo "Aucune histoire validée cette semaine (rejet du garde-qualité ou IA indisponible) — c'est normal, on réessaie la semaine prochaine."

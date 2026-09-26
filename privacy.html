@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Politique de confidentialite — CMC Teams</title>
+<meta name="description" content="Politique de confidentialite de CMC Teams, conforme RGPD (UE) et Loi 1.165 (Monaco).">
+<meta name="theme-color" content="#0a1408">
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:760px;margin:0 auto;padding:24px;line-height:1.65;color:#e6e6df;background:#0a1408;min-height:100vh}
+h1{color:#c9a227;border-bottom:2px solid #c9a227;padding-bottom:10px;font-family:Georgia,serif}
+h2{color:#7aaa80;margin-top:32px;font-size:1.15em}
+ul{padding-left:22px}
+li{margin:6px 0}
+a{color:#c9a227}
+.note{background:rgba(201,162,39,.08);padding:14px;border-left:4px solid #c9a227;margin:18px 0;border-radius:6px;color:#f0e6c8}
+.back{display:inline-block;margin-top:32px;padding:12px 22px;background:#c9a227;color:#0a1408;text-decoration:none;border-radius:8px;font-weight:700;min-height:44px;line-height:20px}
+.back:hover{background:#ffdc40}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:13px}
+th,td{border:1px solid rgba(255,255,255,.12);padding:10px;text-align:left;vertical-align:top}
+th{background:rgba(122,170,128,.15);color:#7aaa80}
+td{background:rgba(255,255,255,.02)}
+hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:24px 0}
+.tag{display:inline-block;padding:2px 10px;background:rgba(122,170,128,.12);border:1px solid rgba(122,170,128,.4);border-radius:12px;font-size:11px;color:#7aaa80;margin-left:6px}
+@media(max-width:480px){body{padding:16px}h1{font-size:1.5em}h2{font-size:1.05em}table{font-size:12px}th,td{padding:6px}}
+</style>
+</head>
+<body>
+<h1>Politique de confidentialite</h1>
+<p><strong>CMC Teams</strong> <span class="tag">Casino de Monte-Carlo</span><br>
+<strong>Derniere mise a jour</strong> : 25 avril 2026</p>
+
+<div class="note">
+  <strong>En bref</strong> : Tes donnees sont stockees principalement <strong>en local sur ton iPhone/navigateur</strong> et synchronisees via Firebase chiffre (region UE). Aucune donnee n'est vendue a des tiers. Tu controles tout : tu peux exporter ou effacer tes donnees a tout moment depuis l'app.
+</div>
+
+<h2>1. Responsable du traitement</h2>
+<ul>
+  <li><strong>Responsable</strong> : Kevin DESARZENS, Casino de Monte-Carlo (SBM)</li>
+  <li><strong>Adresse</strong> : Place du Casino, 98000 Monaco</li>
+  <li><strong>Contact DPO</strong> : <a href="mailto:kevin.desarzens@sbm.mc">kevin.desarzens@sbm.mc</a></li>
+</ul>
+
+<h2>2. Donnees collectees</h2>
+<table>
+  <tr><th>Categorie</th><th>Donnees</th><th>Finalite</th><th>Duree</th></tr>
+  <tr><td>Identite professionnelle</td><td>Nom, prenom, matricule SBM (ex : U11804), equipe, poste</td><td>Authentification, planning</td><td>Duree contrat + 3 ans</td></tr>
+  <tr><td>Authentification</td><td>PIN (hashe), Face ID (token WebAuthn)</td><td>Securite compte</td><td>Session</td></tr>
+  <tr><td>Profil employe</td><td>Email, adresse, date de naissance, USBM</td><td>Fonctionnement RH</td><td>Duree contrat</td></tr>
+  <tr><td>Planning</td><td>Horaires, codes de paie, conges, absences</td><td>Affichage et calculs</td><td>5 ans (obligation comptable)</td></tr>
+  <tr><td>Chat interne</td><td>Messages publics et prives entre collegues</td><td>Communication equipe</td><td>500 derniers messages</td></tr>
+  <tr><td>Connexion</td><td>Date/heure connexion, navigateur, IP locale</td><td>Securite (audit admin)</td><td>500 derniers evenements</td></tr>
+  <tr><td>Presence</td><td>En ligne / hors ligne, derniere action</td><td>Fonctionnement live</td><td>10 minutes (TTL)</td></tr>
+</table>
+
+<h2>3. Destinataires</h2>
+<ul>
+  <li><strong>Toi-meme</strong> : tu vois ton planning, ton profil, tes messages</li>
+  <li><strong>Tes collegues</strong> : voient ton planning d'equipe et tes messages publics du chat</li>
+  <li><strong>L'administrateur (Kevin DESARZENS)</strong> : voit tout pour gerer planning et anomalies</li>
+  <li><strong>Firebase / Google</strong> (UE, europe-west1) : synchronisation cross-device chiffree. <strong>Tes donnees n'entrent pas dans Google Ads.</strong></li>
+  <li><strong>GitHub Pages</strong> (USA) : hebergement statique de l'app (aucune donnee personnelle stockee la-bas)</li>
+  <li><strong>Aucun autre tiers</strong> : pas de pub, pas d'analytics tiers, pas de tracker</li>
+</ul>
+
+<h2>4. Transferts hors UE</h2>
+<p>Les transferts vers les USA (GitHub) sont couverts par les clauses contractuelles types de l'UE et le Data Privacy Framework. Monaco adhere aux decisions d'adequation UE.</p>
+
+<h2>5. Securite</h2>
+<ul>
+  <li><strong>HTTPS</strong> obligatoire sur toute l'app</li>
+  <li><strong>PIN hashe</strong> (10 000 iterations + sel) — jamais stocke en clair</li>
+  <li><strong>Donnees critiques chiffrees</strong> AES-GCM 256 cote client (cmcEncryptSecret)</li>
+  <li><strong>Session TTL 8h</strong> avec auto-deconnexion</li>
+  <li><strong>Rate-limiting PIN</strong> (5 echecs = verrouillage progressif)</li>
+  <li><strong>Audit log</strong> : chaque modification admin tracee</li>
+  <li><strong>Firebase rules restrictives</strong> (lecture/ecriture authentifiee)</li>
+  <li><strong>Backup quotidien automatique</strong> Firebase</li>
+  <li><strong>Service Worker</strong> offline-capable (cache local chiffre)</li>
+</ul>
+
+<h2>6. Tes droits RGPD &amp; Loi 1.165 (Monaco)</h2>
+<p>Tu peux a tout moment exercer les droits suivants :</p>
+<ul>
+  <li><strong>Acces</strong> : consulter ton profil dans l'app (onglet Profil)</li>
+  <li><strong>Portabilite</strong> : bouton "Exporter mes donnees" (JSON complet)</li>
+  <li><strong>Rectification</strong> : modifier email/adresse/date naissance directement dans l'app</li>
+  <li><strong>Effacement</strong> : bouton "Supprimer mes donnees" (efface PIN + profil)</li>
+  <li><strong>Opposition</strong> : desactiver geolocalisation, microphone, notifications dans Reglages</li>
+  <li><strong>Limitation</strong> : ne plus se connecter, demander suspension du compte</li>
+  <li><strong>Plainte</strong> : APDP Monaco (<a href="https://www.apdp.mc" target="_blank">apdp.mc</a>) ou CNIL France si tu consideres tes droits violes</li>
+</ul>
+<p>Pour exercer ces droits par email : <a href="mailto:kevin.desarzens@sbm.mc">kevin.desarzens@sbm.mc</a> — reponse sous 30 jours.</p>
+
+<h2>7. Cookies / Tracking</h2>
+<p>CMC Teams n'utilise <strong>aucun cookie tiers</strong> (pas de Google Analytics, pas de publicite, pas de Facebook Pixel). Seul le <strong>localStorage navigateur</strong> est utilise pour le fonctionnement de l'app — c'est techniquement requis pour la PWA et n'est pas un tracker. Un bandeau RGPD informatif s'affiche a la premiere visite.</p>
+
+<h2>8. Geolocalisation, microphone, camera</h2>
+<p>Ces capteurs ne sont utilises <strong>qu'avec ton consentement explicite</strong> (popup autorisation), uniquement pour les fonctions qui les requierent (dictee vocale, scan QR, photo profil). Aucun audio ou video n'est envoye a un serveur sans ton action explicite.</p>
+
+<h2>9. Conservation et suppression automatique</h2>
+<ul>
+  <li>Chat : seuls les <strong>500 derniers messages</strong> sont conserves</li>
+  <li>Audit : 500 evenements max, rotation FIFO</li>
+  <li>Connexions : 500 evenements max</li>
+  <li>Planning : 36 mois (3 ans glissants)</li>
+  <li>Profils inactifs &gt; 12 mois : signales pour suppression manuelle par admin</li>
+</ul>
+
+<h2>10. Modifications</h2>
+<p>Cette politique peut etre modifiee. Les utilisateurs sont notifies via le chat et le bandeau "Message du jour" 30 jours avant toute modification substantielle.</p>
+
+<h2>11. Contact</h2>
+<p>Pour toute question RGPD, demande d'acces, de rectification ou de suppression :<br>
+<a href="mailto:kevin.desarzens@sbm.mc">kevin.desarzens@sbm.mc</a></p>
+
+<hr>
+<a href="./index.html" class="back">&larr; Retour a l'app</a>
+
+</body>
+</html>

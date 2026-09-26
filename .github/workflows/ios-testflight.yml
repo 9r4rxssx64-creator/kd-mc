@@ -1,0 +1,138 @@
+name: iPhone — construire l'app et l'envoyer sur TestFlight
+
+# Kevin 2026-08-13 : « Go tout. Va plus loin. »
+#
+# Transforme une app web du domaine en VRAIE app iPhone, puis l'envoie sur TestFlight
+# (la bêta privée d'Apple : elle s'installe sur l'iPhone de Kevin comme une vraie app,
+# SANS passer par la validation de l'App Store).
+#
+# Pourquoi ici et pas chez moi : compiler une app iOS exige un Mac + Xcode. L'agent n'en a
+# pas ; GitHub en prête un (`macos-latest`). C'est la même logique que la vérif RÉELLE.
+#
+# JAMAIS automatique : bouton uniquement. Une soumission Apple est irréversible, et un
+# build macOS coûte 10× un build Linux — on ne le déclenche pas dans le dos de Kevin.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Quelle app ?"
+        type: choice
+        options: [cmcteams, apex-chat, lingua]
+        default: cmcteams
+      envoyer:
+        description: "Envoyer sur TestFlight ? (non = on construit seulement, pour vérifier)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight-${{ inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ── 1. Prérequis : dire TOUT DE SUITE et CLAIREMENT ce qui manque ──────────────
+      # Un échec 30 minutes plus tard au moment de l'envoi serait une perte de temps et
+      # un message incompréhensible. On vérifie avant de compiler quoi que ce soit.
+      - name: Vérifier ce que Kevin doit avoir fourni
+        id: prereq
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        shell: bash -eo pipefail {0}
+        run: |
+          manque=""
+          [ -z "${ASC_KEY_ID:-}" ]      && manque="$manque ASC_KEY_ID"
+          [ -z "${ASC_ISSUER_ID:-}" ]   && manque="$manque ASC_ISSUER_ID"
+          [ -z "${ASC_PRIVATE_KEY:-}" ] && manque="$manque ASC_PRIVATE_KEY"
+          if [ -n "$manque" ]; then
+            echo "pret=non" >> "$GITHUB_OUTPUT"
+            {
+              echo "## ⏸️ Il manque la clé Apple"
+              echo ""
+              echo "Secrets absents :\`$manque\`"
+              echo ""
+              echo "**Ce qu'il te reste à faire, une seule fois :**"
+              echo "1. Compte **Apple Developer** (99 €/an) — [s'inscrire](https://developer.apple.com/programs/enroll/)"
+              echo "2. Créer une **clé API** — [App Store Connect → Intégrations](https://appstoreconnect.apple.com/access/integrations/api)"
+              echo "   → note l'**Issuer ID**, le **Key ID**, et télécharge le fichier **.p8** (téléchargeable UNE seule fois)"
+              echo "3. Me les donner : je les range en secrets GitHub, jamais dans le code."
+              echo ""
+              echo "La construction de l'app, elle, va se faire quand même ci-dessous :"
+              echo "on vérifie que tout compile, sans rien envoyer à Apple."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "pret=oui" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 2. Préparer le contenu web (contrôle des chemins absolus inclus) ───────────
+      - name: Préparer le contenu de l'app
+        shell: bash -eo pipefail {0}
+        run: node mobile/build-ios.mjs "${{ inputs.app }}"
+
+      # ── 3. Fabriquer le projet iOS ────────────────────────────────────────────────
+      - name: Créer le projet iOS (Capacitor)
+        working-directory: mobile/build/${{ inputs.app }}
+        shell: bash -eo pipefail {0}
+        run: |
+          npm install --no-audit --no-fund
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Compiler (archive Xcode, sans signature)
+        working-directory: mobile/build/${{ inputs.app }}/ios/App
+        shell: bash -eo pipefail {0}
+        run: |
+          # Sans la clé Apple on ne peut pas SIGNER, mais on peut PROUVER que ça compile.
+          # C'est le contrôle utile tant que Kevin n'a pas encore son compte développeur.
+          xcodebuild -workspace App.xcworkspace -scheme App \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            archive | tail -25
+
+      # ── 4. Envoi TestFlight (uniquement si demandé ET si la clé est là) ────────────
+      - name: Installer le CLI asc
+        if: inputs.envoyer && steps.prereq.outputs.pret == 'oui'
+        shell: bash -eo pipefail {0}
+        run: brew install rorkai/tap/asc || go install github.com/rorkai/App-Store-Connect-CLI/cmd/asc@latest
+
+      - name: Envoyer sur TestFlight
+        if: inputs.envoyer && steps.prereq.outputs.pret == 'oui'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        shell: bash -eo pipefail {0}
+        run: |
+          # La clé .p8 n'existe QUE en mémoire du runner, jamais journalisée.
+          umask 077; printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc.p8"
+          asc auth login --key-id "$ASC_KEY_ID" --issuer-id "$ASC_ISSUER_ID" --private-key "$RUNNER_TEMP/asc.p8"
+          asc testflight upload --ipa "$RUNNER_TEMP/App.ipa" --json | tail -20
+          rm -f "$RUNNER_TEMP/asc.p8"
+
+      - name: Bilan lisible
+        if: always()
+        shell: bash -eo pipefail {0}
+        run: |
+          {
+            echo "## iPhone — ${{ inputs.app }}"
+            echo "- Clé Apple fournie : **${{ steps.prereq.outputs.pret }}**"
+            echo "- Envoi TestFlight demandé : **${{ inputs.envoyer }}**"
+            echo ""
+            echo "Le contenu web est **embarqué** dans l'app : elle fonctionne hors-ligne,"
+            echo "ce n'est pas un simple raccourci vers le site (Apple refuse ces coquilles vides)."
+          } >> "$GITHUB_STEP_SUMMARY"

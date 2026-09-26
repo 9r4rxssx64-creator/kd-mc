@@ -1,0 +1,311 @@
+name: KDMC — Déploie le worker IA de Créa Studio (autonome)
+
+# Déploie "kdmc-crea-ai" (proxy Replicate : détourage / cartoon / upscale IA)
+# et injecte le secret REPLICATE_API_TOKEN depuis AX_REPLICATE_KEY.
+# 100% auto. Servi sur kdmc-crea-ai.9r4rxssx64.workers.dev (clé jamais exposée client).
+# Kevin 2026-09-06 « pourquoi tu es bloqué par GitHub ? trouve des solutions » :
+# l'API GitHub est fermée à cette session (app non connectée pour l'organisation) →
+# impossible de lancer un déploiement à la main depuis l'agent. La voie qui MARCHE est
+# le push sur claude/** (schéma déjà éprouvé par deploy-apex-chat.yml). Un push =
+# un déploiement, sans API, sans clic, sans attendre la fusion (leçon #213).
+on:
+  workflow_dispatch:
+    inputs:
+      selftest:
+        description: "Auto-test approfondi (appelle réellement l'IA — coûte quelques crédits Replicate)"
+        type: boolean
+        default: false
+  push:
+    # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main.
+    # Une branche de travail ne déploie plus rien (incident m122 du 23.09 : un routeur
+    # déployé depuis une branche en retard a éteint kit.kd-mc.com). Manuel : workflow_dispatch.
+    branches:
+      - main
+    paths:
+      - 'services/kdmc-crea-ai/**'
+      - '.github/workflows/deploy-kdmc-crea-ai.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kdmc-crea-ai
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }   # on NE fige PAS la branche : un push sur claude/** deploie CETTE branche
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Install wrangler
+        run: npm i -g wrangler@3
+
+      - name: Déploiement du worker IA
+        working-directory: services/kdmc-crea-ai
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee deploy.log
+
+      # IA GRATUITE EN PREMIER (Gemini 2.5 Flash Image + Together FLUX-Free).
+      # Ces clés existent déjà dans les secrets de Kevin → aucune carte, aucun crédit.
+      - name: Injecte les clés IA GRATUITES (Gemini + Together)
+        working-directory: services/kdmc-crea-ai
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          TOGETHER_KEY: ${{ secrets.TOGETHER_API_KEY }}
+        run: |
+          if [ -n "${GEMINI_KEY:-}" ]; then
+            printf '%s' "$GEMINI_KEY" | wrangler secret put GEMINI_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::GEMINI_API_KEY non posée"
+          elif [ -n "${GOOGLE_KEY:-}" ]; then
+            printf '%s' "$GOOGLE_KEY" | wrangler secret put GEMINI_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::GOOGLE_API_KEY non posée"
+          else
+            echo "::warning::Ni GEMINI_API_KEY ni GOOGLE_API_KEY → l'IA gratuite est indisponible."
+          fi
+          if [ -n "${TOGETHER_KEY:-}" ]; then
+            printf '%s' "$TOGETHER_KEY" | wrangler secret put TOGETHER_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::TOGETHER_API_KEY non posée (repli gratuit texte→image absent)"
+          fi
+
+      # TOUTES les IA GRATUITES de Kevin. Les noms de secrets sont EXACTS
+      # (règle « noms secrets GitHub doivent matcher », dont la typo PERPLEXITI).
+      # Une clé absente n'est pas une erreur : la chaîne saute simplement ce moteur.
+      - name: Injecte TOUTES les autres IA gratuites (Groq, Mistral, Cohere, DeepSeek, OpenRouter)
+        working-directory: services/kdmc-crea-ai
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # Clés que Kevin POSSÈDE DÉJÀ mais qui ne servaient pas ici (noms
+          # EXACTS, dont la typo PERPLEXITI — cf. règle « noms de secrets »).
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          PERPLEXITI_API_KEY: ${{ secrets.PERPLEXITI_API_KEY }}
+          OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          # Nouveaux paliers gratuits : absents aujourd'hui → simplement ignorés,
+          # il suffira d'ajouter le secret pour qu'ils entrent en service.
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SCALEWAY_API_KEY: ${{ secrets.SCALEWAY_API_KEY }}
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          set +e
+          for N in GROQ_API_KEY MISTRAL_API_KEY COHERE_API_KEY DEEPSEEK_API_KEY OPENROUTER_API_KEY \
+                   XAI_API_KEY PERPLEXITI_API_KEY OPEN_AI_API_KEY \
+                   CEREBRAS_API_KEY NVIDIA_API_KEY SAMBANOVA_API_KEY HF_TOKEN \
+                   SCALEWAY_API_KEY NEBIUS_API_KEY GLM_API_KEY DASHSCOPE_API_KEY; do
+            V="${!N}"
+            if [ -n "$V" ]; then
+              printf '%s' "$V" | wrangler secret put "$N" 2>&1 | tail -1 \
+                && echo "  ✅ $N posée" || echo "::warning::$N non posée"
+            else
+              echo "  ⚪ $N absente des secrets → ce moteur sera simplement ignoré"
+            fi
+          done
+
+      - name: Injecte la clé Replicate (SECOURS payant, depuis AX_REPLICATE_KEY)
+        working-directory: services/kdmc-crea-ai
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REPLICATE_KEY: ${{ secrets.AX_REPLICATE_KEY }}
+        run: |
+          if [ -n "${REPLICATE_KEY:-}" ]; then
+            printf '%s' "$REPLICATE_KEY" | wrangler secret put REPLICATE_API_TOKEN 2>&1 | tail -3 \
+              || echo "::warning::clé Replicate non posée (secours payant absent — l'IA gratuite reste active)"
+          else
+            echo "::warning::AX_REPLICATE_KEY absent → secours payant désactivé (l'IA gratuite reste active)."
+          fi
+
+      - name: Smoke /health (custom domain + workers.dev, avec attente propagation)
+        run: |
+          set +e
+          BASE="https://crea-ai.kd-mc.com"
+          ALT="https://kdmc-crea-ai.9r4rxssx64.workers.dev"
+          ok=""
+          for i in $(seq 1 20); do
+            R=$(curl -sS -m 15 "$BASE/health"); echo "[$i] $BASE/health -> $R"
+            echo "$R" | grep -q '"ok":true' && { ok="$BASE"; break; }
+            R2=$(curl -sS -m 15 "$ALT/health"); echo "[$i] $ALT/health -> $R2"
+            echo "$R2" | grep -q '"ok":true' && { ok="$ALT"; break; }
+            sleep 15
+          done
+          if [ -z "$ok" ]; then echo "::warning::/health pas encore OK (propagation DNS/SSL du custom domain peut prendre quelques minutes)"; else echo "HEALTH OK via $ok"; fi
+          echo "HEALTH_BASE=$ok" >> "$GITHUB_ENV"
+
+      - name: Auto-test IA approfondi (appelle réellement les modèles gratuits)
+        if: ${{ inputs.selftest == true }}
+        run: |
+          set +e
+          BASE="${HEALTH_BASE:-https://crea-ai.kd-mc.com}"
+          echo "== Base testée : $BASE =="
+          echo "----- /health (quelles IA sont dispo) -----"
+          curl -sS -m 20 "$BASE/health" -o /tmp/h.json; cat /tmp/h.json; echo
+          python3 - <<'PY'
+          import json
+          try: d=json.load(open('/tmp/h.json'))
+          except Exception: raise SystemExit
+          e=d.get('engines') or []
+          print('  → %d IA branchée(s) : %s'%(len(e), ', '.join(e) or 'AUCUNE'))
+          PY
+          # Vraie image de test 96x96 (sujet clair sur fond uni) — un pixel 1x1 ne prouve rien.
+          python3 - <<'PY' > /tmp/img.txt
+          import zlib, struct, base64
+          W=H=96
+          rows=b''
+          for y in range(H):
+              row=b'\x00'
+              for x in range(W):
+                  dx,dy=x-W/2,y-H/2
+                  inside = dx*dx+dy*dy < (W*0.3)**2
+                  row += bytes((230,80,60) if inside else (30,90,200))
+              rows+=row
+          def chunk(t,d):
+              c=struct.pack('>I',len(d))+t+d
+              return c+struct.pack('>I',zlib.crc32(t+d)&0xffffffff)
+          png=(b'\x89PNG\r\n\x1a\n'
+               +chunk(b'IHDR',struct.pack('>IIBBBBB',W,H,8,2,0,0,0))
+               +chunk(b'IDAT',zlib.compress(rows,9))
+               +chunk(b'IEND',b''))
+          print('data:image/png;base64,'+base64.b64encode(png).decode())
+          PY
+          PNG=$(cat /tmp/img.txt)
+          echo "image de test : ${#PNG} caractères"
+          for EP in cutout cartoon; do
+            echo "----- /$EP -----"
+            curl -sS -m 150 -X POST "$BASE/$EP" -H 'content-type: application/json' \
+              -d "{\"image\":\"$PNG\"}" -o /tmp/out.bin -D /tmp/out.hdr \
+              -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"
+            grep -i "^x-crea-provider" /tmp/out.hdr 2>/dev/null || true
+            case "$(file -b --mime-type /tmp/out.bin 2>/dev/null)" in
+              image/*) echo "  ✅ IMAGE reçue → l'IA fonctionne";;
+              *) echo "  ❌ pas une image :"; head -c 400 /tmp/out.bin | tr -d '\0'; echo;;
+            esac
+          done
+          echo "----- /bg (texte → image) -----"
+          curl -sS -m 150 -X POST "$BASE/bg" -H 'content-type: application/json' \
+            -d '{"prompt":"a calm blue sky with soft clouds","ratio":"1:1"}' -o /tmp/bg.bin -D /tmp/bg.hdr \
+            -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"
+          grep -i "^x-crea-provider" /tmp/bg.hdr 2>/dev/null || true
+          case "$(file -b --mime-type /tmp/bg.bin 2>/dev/null)" in
+            image/*) echo "  ✅ IMAGE reçue → fond IA gratuit fonctionne";;
+            *) echo "  ❌ pas une image :"; head -c 400 /tmp/bg.bin | tr -d '\0'; echo;;
+          esac
+          # Kevin 2026-08-12 : « les figurines… ce n'est pas moi ». Ce test dit
+          # si /magic ÉDITE vraiment la photo envoyée, ou s'il en invente une.
+          echo "----- /magic (figurine — DOIT partir de la photo envoyée) -----"
+          curl -sS -m 200 -X POST "$BASE/magic" -H 'content-type: application/json' \
+            -d "{\"image\":\"$PNG\",\"preset\":\"figurine\",\"keep_face\":true}" \
+            -o /tmp/mg.bin -D /tmp/mg.hdr \
+            -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"
+          grep -i "^x-crea-" /tmp/mg.hdr 2>/dev/null || true
+          if grep -qi '^x-crea-fallback: *recreated' /tmp/mg.hdr 2>/dev/null; then
+            echo "::error::/magic a INVENTÉ une image au lieu d'éditer la photo (ce ne serait PAS Kevin)"
+          elif [ "$(file -b --mime-type /tmp/mg.bin 2>/dev/null | cut -d/ -f1)" = "image" ]; then
+            echo "  ✅ la photo a bien été ÉDITÉE (l'identité est gardée) — $(grep -i '^x-crea-provider' /tmp/mg.hdr | tr -d '\r')"
+          else
+            echo "  ⚠️ pas d'image : le serveur a REFUSÉ d'inventer quelqu'un d'autre. Motif :"
+            head -c 400 /tmp/mg.bin | tr -d '\0'; echo
+          fi
+          echo "----- /frames (photo → poses de danse, GRATUIT) -----"
+          curl -sS -m 220 -X POST "$BASE/frames" -H 'content-type: application/json' \
+            -d "{\"image\":\"$PNG\",\"n\":2}" -o /tmp/fr.json \
+            -w "HTTP %{http_code} | size=%{size_download}\n"
+          python3 - <<'PY'
+          import json
+          try:
+              d=json.load(open('/tmp/fr.json'))
+          except Exception as e:
+              print('  ❌ réponse illisible:',e); raise SystemExit
+          if d.get('frames'):
+              print('  ✅ %d pose(s) générée(s) par %s → photo→vidéo GRATUITE OK'%(len(d['frames']),d.get('provider')))
+              if d.get('errors'): print('  (erreurs partielles:',d['errors'],')')
+          else:
+              print('  ❌ pas de poses — cause exacte:',str(d)[:400])
+          PY
+          echo "== Fin auto-test =="
+
+      - name: Sonde modèles Workers AI (quels modèles répondent VRAIMENT aujourd'hui)
+        if: ${{ inputs.selftest == true }}
+        run: |
+          set +e
+          BASE="${HEALTH_BASE:-https://crea-ai.kd-mc.com}"
+          echo "== SONDE : je n'atteins pas Cloudflare depuis l'agent, la CI teste pour moi =="
+          curl -sS -m 220 -X POST "$BASE/aidiag" -H 'content-type: application/json' -d '{}' -o /tmp/diag.json \
+            -w "HTTP %{http_code} | size=%{size_download}\n"
+          python3 - <<'PY'
+          import json
+          try: d=json.load(open('/tmp/diag.json'))
+          except Exception as e: print('  ❌ sonde illisible:',e); raise SystemExit
+          if d.get('error'): print('  ❌',d['error']); raise SystemExit
+          for cat,label in (('text','TEXTE (paroles + partition)'),('tts','VOIX'),('img','IMAGE')):
+              print('  --',label)
+              for r in d.get(cat,[]):
+                  mark='✅' if r.get('ok') else '❌'
+                  extra=r.get('sample') or ('%s octets'%r.get('size') if r.get('size') else '') or r.get('err','')
+                  shape=(' ['+r['shape']+']') if r.get('shape') else ''
+                  print('     %s %s%s  %s'%(mark,r.get('m'),shape,str(extra)[:100]))
+              ok=[r for r in d.get(cat,[]) if r.get('ok')]
+              print('     → %d/%d modèle(s) utilisable(s)'%(len(ok),len(d.get(cat,[]))))
+          PY
+
+      - name: Auto-test STUDIO (partition + voix chantée, Workers AI gratuit)
+        if: ${{ inputs.selftest == true }}
+        run: |
+          set +e
+          BASE="${HEALTH_BASE:-https://crea-ai.kd-mc.com}"
+          echo "== STUDIO — les 2 briques du morceau =="
+
+          echo "----- /compose (l'IA écrit la partition) -----"
+          curl -sS -m 90 -X POST "$BASE/compose" -H 'content-type: application/json' \
+            -d '{"style":"pop","mood":"une soiree entre amis"}' -o /tmp/sc.json \
+            -w "HTTP %{http_code} | size=%{size_download}\n"
+          python3 - <<'PY'
+          import json
+          try: d=json.load(open('/tmp/sc.json'))
+          except Exception as e: print('  ❌ réponse illisible:',e); raise SystemExit
+          s=d.get('score') or {}
+          need=['bpm','progression','melody','drums']
+          missing=[k for k in need if not s.get(k)]
+          if s and not missing:
+              print('  ✅ partition OK — %s bpm, %d accords, %d notes de mélodie (source: %s)'
+                    %(s.get('bpm'),len(s.get('progression') or []),len(s.get('melody') or []),d.get('provider','?')))
+          else:
+              print('  ❌ partition incomplète, manque %s — brut: %s'%(missing,str(d)[:300]))
+          PY
+
+          echo "----- /voice (Workers AI chante — LE SECOURS GRATUIT) -----"
+          curl -sS -m 120 -X POST "$BASE/voice" -H 'content-type: application/json' \
+            -d '{"text":"une soiree entre amis, on chante tous ensemble","lang":"fr"}' \
+            -o /tmp/v.bin -D /tmp/v.hdr \
+            -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"
+          case "$(file -b --mime-type /tmp/v.bin 2>/dev/null)" in
+            audio/*|application/octet-stream)
+              SZ=$(stat -c%s /tmp/v.bin)
+              if [ "$SZ" -gt 2000 ]; then echo "  ✅ AUDIO reçu ($SZ octets) → Workers AI répond, la voix marche";
+              else echo "  ❌ audio trop petit ($SZ octets)"; head -c 300 /tmp/v.bin; echo; fi;;
+            *) echo "  ❌ pas de l'audio — cause exacte :"; head -c 400 /tmp/v.bin | tr -d '\0'; echo;;
+          esac
+          echo "== Fin auto-test STUDIO =="

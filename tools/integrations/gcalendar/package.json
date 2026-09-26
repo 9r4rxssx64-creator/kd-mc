@@ -1,0 +1,16 @@
+{
+  "name": "kdmc-gcalendar",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Module Google Calendar OAuth 2.0 pour CMCteams (KDMC) — events CRUD + agenda SBM",
+  "main": "client.js",
+  "scripts": {
+    "test": "node -e \"import('./client.js').then(m=>console.log(Object.keys(m)))\""
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "author": "Kevin DESARZENS (U11804)",
+  "license": "UNLICENSED",
+  "private": true
+}

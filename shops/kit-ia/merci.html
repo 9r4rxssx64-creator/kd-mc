@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://kdmc-vente.9r4rxssx64.workers.dev; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ton accès — kd-mc.com</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D0F14" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="kit.css">
+</head>
+<body>
+<main>
+  <p class="sur">kd-mc.com</p>
+  <h1 id="titre">On finalise ton accès…</h1>
+  <div id="etat" class="carte"><p id="msg">Un instant, on vérifie le paiement auprès de PayPal.</p></div>
+
+  <div id="ok" hidden>
+    <p>Voici ton code d'accès. <strong>Garde-le</strong> : il ouvre ton accès sur tous tes appareils.</p>
+    <code class="code" id="code"></code>
+    <p><a class="btn btn-primaire" id="ouvrir" href="lire.html">Ouvrir mon accès maintenant</a></p>
+    <p class="petit" id="mail"></p>
+    <p class="petit" id="recu"></p>
+  </div>
+
+  <div id="rate" hidden>
+    <p>Pas de panique : <strong>si tu as payé, ton accès est à toi.</strong></p>
+    <p><a class="btn btn-primaire" href="index.html#recuperer">Récupérer mon accès avec mon e-mail</a></p>
+    <p class="petit">Si ça ne marche toujours pas, écris à <a href="mailto:kevind@monaco.mc">kevind@monaco.mc</a> en donnant la référence ci-dessous — on ouvre ton accès à la main, tu n'as rien à repayer.</p>
+    <p class="petit">Référence : <strong id="ref"></strong></p>
+  </div>
+
+  <footer>
+    <p><a href="index.html">Retour</a> · <a href="cgv.html">Conditions de vente</a> · <a href="mentions.html">Mentions légales</a> · <a href="mailto:kevind@monaco.mc">kevind@monaco.mc</a></p>
+  </footer>
+</main>
+<script src="merci.js"></script>
+</body>
+</html>

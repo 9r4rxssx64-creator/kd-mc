@@ -1,0 +1,302 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: ClayScore → dépôt PRIVÉ (extraction avec historique)
+
+# Pourquoi ce workflow existe
+# ---------------------------
+# ClayScore porte la mention « code privé, tous droits réservés — ne pas
+# publier », mais il vit dans CMCteams, qui est un dépôt PUBLIC (kd-mc.com est
+# servi par GitHub Pages, ce qui l'exige sur un compte gratuit). 128 fichiers,
+# dont les 28 documents du dossier commercial, sont donc lisibles par tous.
+#
+# Ce workflow déplace ClayScore dans son propre dépôt PRIVÉ, en gardant tout
+# son historique de développement.
+#
+# Pourquoi en CI et pas depuis l'agent : créer un dépôt exige un jeton avec le
+# droit `repo`. Le jeton de l'agent ne l'a pas (403). Le runner, lui, a le
+# secret APEX_GITHUB_PAT.
+#
+# ⚠️ Ce workflow NE SUPPRIME RIEN de CMCteams. Il ne fait que créer et
+# remplir le dépôt privé. La suppression côté public est une étape séparée,
+# faite seulement APRÈS vérification que tout est bien arrivé.
+
+on:
+  workflow_dispatch:
+    inputs:
+      nom_depot:
+        description: "Nom du dépôt privé à créer"
+        default: "clayscore"
+        required: true
+      dry_run:
+        description: "true = simuler sans rien créer ni pousser"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  extraire:
+    runs-on: ubuntu-latest
+    steps:
+      # ⚠️ PAS `actions/checkout` ici, et c'est VOLONTAIRE — deux raisons
+      # mesurées :
+      #
+      # 1. LENTEUR. `actions/checkout` avec tout l'historique récupère TOUTES
+      #    les branches. Ce dépôt en a des milliers (une par session
+      #    `claude/*`). Mesuré le 2026-08-12 : le clonage tournait encore
+      #    après 20 MINUTES sans avoir fini, alors que ClayScore ne vit que
+      #    sur une seule branche. On ne prend donc QUE celle-là.
+      #
+      # 2. LE JETON QUI S'IMPOSE. `actions/checkout` installe un en-tête
+      #    d'autorisation permanent dans la configuration git, qui écrase les
+      #    identifiants de l'envoi vers le dépôt privé. C'est ce qui a fait
+      #    échouer trois tentatives avec un « Repository not found »
+      #    trompeur. En clonant à la main, le problème n'existe plus du tout.
+      - name: Récupérer UNIQUEMENT la branche utile, avec son historique
+        env:
+          JETON: ${{ github.token }}
+        run: |
+          set -e
+          debut=$(date +%s)
+          git clone --quiet --single-branch --branch "${{ github.ref_name }}" \
+            "https://x-access-token:${JETON}@github.com/${{ github.repository }}.git" source
+          cd source
+          git remote remove origin        # plus aucun identifiant qui traîne
+          echo "Cloné en $(( $(date +%s) - debut )) s — $(git rev-list --count HEAD) commits."
+
+      - name: Vérifier que le jeton existe et peut créer un dépôt
+        id: jeton
+        env:
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+        run: |
+          if [ -z "$PAT" ]; then
+            echo "::error::Le secret APEX_GITHUB_PAT est absent."
+            echo "Il faut un jeton personnel GitHub avec le droit 'repo'."
+            echo "→ https://github.com/settings/tokens  puis l'ajouter en secret"
+            echo "   APEX_GITHUB_PAT dans Settings ▸ Secrets ▸ Actions."
+            exit 1
+          fi
+          # On demande à l'API qui nous sommes : ça valide le jeton d'un coup.
+          CODE=$(curl -sS -o /tmp/me.json -w '%{http_code}' \
+            -H "Authorization: Bearer $PAT" https://api.github.com/user)
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Jeton refusé par GitHub (HTTP $CODE)."
+            exit 1
+          fi
+          echo "utilisateur=$(python3 -c "import json;print(json.load(open('/tmp/me.json'))['login'])")" >> "$GITHUB_OUTPUT"
+
+      - name: Extraire clayscore/ AVEC son historique
+        id: extraction
+        run: |
+          set -e
+          # `git filter-repo` plutôt que `git subtree split` : le second
+          # rejoue l'historique commit par commit (très lent sur un gros
+          # dépôt), le premier fait une seule passe. Résultat identique :
+          # on garde QUI a fait QUOI et QUAND, au lieu d'un commit initial
+          # anonyme qui effacerait tout le travail.
+          python3 -m pip install --quiet git-filter-repo
+          cd source
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          debut=$(date +%s)
+          python3 -m git_filter_repo --subdirectory-filter clayscore --force
+          echo "Extrait en $(( $(date +%s) - debut )) s."
+          # Un dépôt vide serait le pire des cas : on pousserait du vide, la
+          # vérification ne verrait rien, et on croirait avoir déménagé.
+          test "$(git ls-files | wc -l)" -gt 50 || {
+            echo "::error::Extraction quasi vide — on n'envoie rien."; exit 1; }
+          echo "commits=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+          echo "fichiers_avant_ci=$(git ls-files | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "docs=$(git ls-files 'docs/*.md' | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "tests=$(git ls-files 'tests/test_*.py' | wc -l)" >> "$GITHUB_OUTPUT"
+
+      - name: Donner au nouveau dépôt sa propre vérification
+        id: ci
+        run: |
+          set -e
+          cd source
+          # Pourquoi cette étape : la vérification des prix et les tests
+          # vivaient dans `.github/workflows/` de CMCteams, donc HORS du
+          # dossier clayscore/ — ils n'ont pas suivi le déménagement.
+          # Sans ça, supprimer l'original casserait la vérification des prix
+          # sans que personne ne s'en aperçoive : le dépôt privé n'aurait
+          # AUCUN contrôle. On lui en donne un, adapté à sa nouvelle
+          # disposition (plus de préfixe `clayscore/`).
+          mkdir -p .github/workflows
+          cat > .github/workflows/verification.yml <<'YML'
+          name: Vérification ClayScore
+
+          on:
+            push:
+            pull_request:
+            workflow_dispatch:
+            # ⛔ retiré 5.09 — schedule:
+              # - cron: "0 4 * * 1"   # lundi 4 h UTC — les prix bougent
+
+          permissions:
+            contents: read
+
+          jobs:
+            tests:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v6
+                - uses: actions/setup-python@v5
+                  with:
+                    python-version: "3.12"
+                - run: python3 -m pip install --quiet -r requirements.txt
+                - name: Les tests passent-ils ?
+                  run: |
+                    set -o pipefail   # sinon le code de sortie serait celui du tuyau
+                    python3 -m pytest -q 2>&1 | tail -8
+                - name: La porte d'audit tient-elle ?
+                  run: bash tools/audit_externe.sh --gate
+
+            prix:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v6
+                - uses: actions/setup-python@v5
+                  with:
+                    python-version: "3.12"
+                - name: Les liens et les prix du devis sont-ils encore bons ?
+                  run: python3 tools/verif_prix.py --rapport rapport-prix.md || true
+                - uses: actions/upload-artifact@v4
+                  with:
+                    name: rapport-prix
+                    path: rapport-prix.md
+                    if-no-files-found: ignore
+          YML
+          git add .github/workflows/verification.yml
+          git commit -q -m "Sa propre vérification : tests, porte d'audit, contrôle des prix"
+          echo "Vérification ajoutée au dépôt privé."
+          # Le compte définitif se fait ICI, après le dernier ajout. Le compter
+          # plus tôt le rendrait périmé d'un fichier — et la vérification
+          # échouerait en annonçant une perte qui n'existe pas. Une alerte
+          # fausse use la confiance autant qu'une alerte manquée.
+          echo "fichiers=$(git ls-files | wc -l)" >> "$GITHUB_OUTPUT"
+
+      - name: Créer le dépôt PRIVÉ (s'il n'existe pas déjà)
+        if: ${{ !inputs.dry_run }}
+        env:
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+          NOM: ${{ inputs.nom_depot }}
+          MOI: ${{ steps.jeton.outputs.utilisateur }}
+        run: |
+          set -e
+          CODE=$(curl -sS -o /tmp/r.json -w '%{http_code}' \
+            -H "Authorization: Bearer $PAT" \
+            "https://api.github.com/repos/${MOI}/${NOM}")
+          if [ "$CODE" = "200" ]; then
+            PRIVE=$(python3 -c "import json;print(json.load(open('/tmp/r.json'))['private'])")
+            echo "Le dépôt existe déjà (privé=$PRIVE) — on ne le recrée pas."
+            if [ "$PRIVE" != "True" ]; then
+              echo "::error::${MOI}/${NOM} existe mais il est PUBLIC. Arrêt."
+              exit 1
+            fi
+          else
+            echo "Création de ${MOI}/${NOM} en PRIVÉ…"
+            CODE=$(curl -sS -o /tmp/c.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $PAT" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/user/repos \
+              -d "{\"name\":\"${NOM}\",\"private\":true,\"has_issues\":true,
+                   \"description\":\"ClayScore — arbitre electronique de ball-trap. Code prive, tous droits reserves.\"}")
+            if [ "$CODE" != "201" ]; then
+              echo "::error::Création refusée (HTTP $CODE) :"; cat /tmp/c.json
+              echo "Cause la plus probable : le jeton n'a pas le droit 'repo'."
+              exit 1
+            fi
+          fi
+
+      - name: Pousser ClayScore dans le dépôt privé
+        if: ${{ !inputs.dry_run }}
+        env:
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+          NOM: ${{ inputs.nom_depot }}
+          MOI: ${{ steps.jeton.outputs.utilisateur }}
+        run: |
+          set -e
+          cd source
+          # Le clone a été fait à la main et son « origin » retiré : il n'y a
+          # donc AUCUN identifiant hérité pour écraser celui-ci. C'est ce qui
+          # faisait échouer les tentatives précédentes avec un « Repository
+          # not found » trompeur (GitHub ne dit jamais « accès refusé » sur un
+          # dépôt privé, pour ne pas révéler son existence).
+          git remote add prive "https://${MOI}:${PAT}@github.com/${MOI}/${NOM}.git"
+          # Pas de --force : si le dépôt contient déjà autre chose, on veut le
+          # savoir plutôt que de l'écraser.
+          git push prive HEAD:main
+
+      - name: VÉRIFIER que tout est bien arrivé (rien n'est supprimé sans ça)
+        if: ${{ !inputs.dry_run }}
+        env:
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+          NOM: ${{ inputs.nom_depot }}
+          MOI: ${{ steps.jeton.outputs.utilisateur }}
+          ATTENDU_FICHIERS: ${{ steps.ci.outputs.fichiers }}
+        run: |
+          set -e
+          cd "$(mktemp -d)"
+          git clone --quiet "https://${MOI}:${PAT}@github.com/${MOI}/${NOM}.git" verif
+          cd verif
+          RECU=$(git ls-files | wc -l)
+          echo "Fichiers attendus : $ATTENDU_FICHIERS — reçus : $RECU"
+          if [ "$RECU" != "$ATTENDU_FICHIERS" ]; then
+            echo "::error::Le compte de fichiers ne correspond pas. NE RIEN SUPPRIMER."
+            exit 1
+          fi
+          # Les pièces qui comptent vraiment doivent être là.
+          for f in clayscore/vision/verdict.py docs/DEVIS_COMPARATIF.md \
+                   docs/AUDIT_EXTERIEUR.md tools/audit_externe.sh pyproject.toml; do
+            [ -f "$f" ] || { echo "::error::MANQUANT : $f"; exit 1; }
+          done
+          echo "✅ Contenu vérifié fichier par fichier."
+
+      - name: Le logiciel tourne-t-il depuis le NOUVEAU dépôt ?
+        if: ${{ !inputs.dry_run }}
+        env:
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+          NOM: ${{ inputs.nom_depot }}
+          MOI: ${{ steps.jeton.outputs.utilisateur }}
+        run: |
+          set -e
+          cd "$(mktemp -d)"
+          git clone --quiet --depth 1 \
+            "https://${MOI}:${PAT}@github.com/${MOI}/${NOM}.git" essai
+          cd essai
+          python3 -m pip install --quiet -r requirements.txt
+          # ⚠️ `pytest | tail` renverrait le code de `tail`, pas celui de
+          # pytest : l'étape serait VERTE même avec des tests en échec. C'est
+          # le pire des faux verts — celui qui donne le feu vert pour
+          # supprimer l'original. On garde donc le vrai code de sortie.
+          set -o pipefail
+          python3 -m pytest -q 2>&1 | tail -8
+          echo "Code de sortie de pytest : $? (0 = tous verts)"
+
+      - name: Ce qu'il faut retenir
+        run: |
+          {
+            echo "## ClayScore → dépôt privé"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Dépôt | \`${{ steps.jeton.outputs.utilisateur }}/${{ inputs.nom_depot }}\` (**privé**) |"
+            echo "| Commits repris | ${{ steps.extraction.outputs.commits }} |"
+            echo "| Fichiers | ${{ steps.ci.outputs.fichiers }} |"
+            echo "| Documents du dossier | ${{ steps.extraction.outputs.docs }} |"
+            echo "| Fichiers de tests | ${{ steps.extraction.outputs.tests }} |"
+            echo
+            echo "⚠️ **Rien n'a été supprimé de CMCteams.** La suppression est une"
+            echo "étape séparée, à faire seulement maintenant que le contenu est"
+            echo "vérifié — et elle n'efface PAS ce qui est déjà dans l'historique"
+            echo "public. Ce qui est sorti est sorti."
+          } >> "$GITHUB_STEP_SUMMARY"

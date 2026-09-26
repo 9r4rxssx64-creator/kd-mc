@@ -1,0 +1,258 @@
+name: iOS — Apps du domaine → TestFlight (sans Mac, sécurisé)
+
+# Emballe une app WEB du domaine kd-mc.com (Créa Studio, Départs, CMCteams…) en
+# VRAIE appli iPhone via Capacitor, la SIGNE avec la clé App Store Connect API
+# (signature automatique — AUCUN certificat .p12 à stocker/fuiter) et l'envoie
+# sur TestFlight. Tourne sur un Mac du cloud GitHub → Kevin n'a jamais besoin de Mac.
+#
+# La liste des apps vit dans tools/ios/apps.json (ajouter une app = 1 entrée, 0 secret).
+# Secrets Apple réutilisés (déjà définis pour Apex, rien de nouveau) :
+#   APPLE_TEAM_ID · APPSTORE_API_KEY_ID · APPSTORE_API_ISSUER_ID · APPSTORE_API_KEY_BASE64
+#
+# Sécurité au max : signature auto par clé API (révocable, pas de cert long à fuiter),
+# HTTPS strict (App Transport Security), domaines associés limités à kd-mc.com,
+# aucune clé applicative embarquée, entitlements minimaux, secrets jamais journalisés.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Clé de l'app dans tools/ios/apps.json (ex: crea-studio)"
+        required: true
+        type: string
+        default: crea-studio
+      release_type:
+        description: "testflight = signe + envoie · dry_run = build seul (sans secrets)"
+        required: true
+        type: choice
+        default: dry_run
+        options:
+          - dry_run
+          - testflight
+
+concurrency:
+  group: ios-apps-testflight-${{ github.event.inputs.app }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Lire l'app choisie dans le registre
+        id: app
+        run: |
+          set -e
+          KEY='${{ github.event.inputs.app }}'
+          node -e '
+            const fs=require("fs");
+            const r=JSON.parse(fs.readFileSync("tools/ios/apps.json","utf8"));
+            const k=process.env.KEY, a=(r.apps||{})[k];
+            const isTF=process.env.RT==="testflight";
+            if(!a){console.error("::error::app inconnue: "+k+" (voir tools/ios/apps.json)");process.exit(1);}
+            // En dry-run on autorise une app pas encore active (pour la PROUVER avant activation).
+            // Seul TestFlight exige actif:true.
+            if(isTF && a.actif!==true){console.error("::error::app \""+k+"\" pas encore activee (actif:false) — fais un dry-run avant");process.exit(1);}
+            if(!a.url){console.error("::error::url manquante pour "+k);process.exit(1);}
+            const out=process.env.GITHUB_OUTPUT;
+            fs.appendFileSync(out,"name="+a.name+"\n");
+            fs.appendFileSync(out,"appId="+a.appId+"\n");
+            fs.appendFileSync(out,"url="+a.url+"\n");
+            fs.appendFileSync(out,"mode="+(a.mode||"server")+"\n");
+            fs.appendFileSync(out,"icon="+(a.icon||"")+"\n");
+            fs.appendFileSync(out,"iconColor="+(a.iconColor||"#0b1020")+"\n");
+            fs.appendFileSync(out,"appBound="+(a.appBound===false?"false":"true")+"\n");
+            try{ fs.appendFileSync(out,"host="+new URL(a.url).host+"\n"); }catch(e){ fs.appendFileSync(out,"host=kd-mc.com\n"); }
+            console.log("→ "+a.name+" ("+a.appId+") appBound="+(a.appBound===false?"false":"true")+" url="+a.url);
+          '
+        env:
+          KEY: ${{ github.event.inputs.app }}
+          RT: ${{ github.event.inputs.release_type }}
+
+      - name: Vérifier les secrets (fail-closed si TestFlight sans secrets)
+        if: ${{ github.event.inputs.release_type == 'testflight' }}
+        env:
+          T: ${{ secrets.APPLE_TEAM_ID }}
+          KID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          ISS: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          P8: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
+        run: |
+          MISS=""
+          [ -z "$T" ]   && MISS="$MISS APPLE_TEAM_ID"
+          [ -z "$KID" ] && MISS="$MISS APPSTORE_API_KEY_ID"
+          [ -z "$ISS" ] && MISS="$MISS APPSTORE_API_ISSUER_ID"
+          [ -z "$P8" ]  && MISS="$MISS APPSTORE_API_KEY_BASE64"
+          if [ -n "$MISS" ]; then
+            echo "::error::Secrets manquants :$MISS — Kevin : crée-les dans GitHub après ton inscription Apple (voir tools/ios/README.md). Rien d'autre à faire."
+            exit 1
+          fi
+          echo "✅ Secrets Apple présents (valeurs jamais affichées)."
+
+      - name: Fabriquer l'enveloppe native (Capacitor)
+        id: cap
+        env:
+          APP_ID: ${{ steps.app.outputs.appId }}
+          APP_NAME: ${{ steps.app.outputs.name }}
+          APP_URL: ${{ steps.app.outputs.url }}
+          APP_HOST: ${{ steps.app.outputs.host }}
+          APP_ICON: ${{ steps.app.outputs.icon }}
+          ICON_COLOR: ${{ steps.app.outputs.iconColor }}
+          APP_BOUND: ${{ steps.app.outputs.appBound }}
+          BUILD_NUM: ${{ github.run_number }}
+        run: |
+          set -e
+          WORK="$RUNNER_TEMP/native"; mkdir -p "$WORK/www"; cd "$WORK"
+          # petite page de repli (le vrai contenu vient de APP_URL via server.url)
+          printf '<!doctype html><meta charset=utf-8><title>%s</title><body style="font-family:-apple-system;text-align:center;padding:3rem">Chargement…</body>' "$APP_NAME" > www/index.html
+          npm init -y >/dev/null 2>&1
+          npm i -D @capacitor/cli@6 >/dev/null 2>&1
+          npm i @capacitor/core@6 @capacitor/ios@6 >/dev/null 2>&1
+          # Config Capacitor — server.url = vrai site https (même origine → SSO OK),
+          # cleartext:false (HTTPS OBLIGATOIRE), pas de trafic en clair.
+          cat > capacitor.config.json <<JSON
+          {
+            "appId": "${APP_ID}",
+            "appName": "${APP_NAME}",
+            "webDir": "www",
+            "server": { "url": "${APP_URL}", "cleartext": false },
+            "ios": { "contentInset": "always", "limitsNavigationsToAppBoundDomains": ${APP_BOUND} }
+          }
+          JSON
+          npx cap add ios
+          npx cap sync ios
+
+          # ── ICÔNE DE L'APP (obligatoire pour TestFlight, sinon refus) ──
+          # Source = icône du registre, sinon icône par défaut. On force 1024 (sips)
+          # puis @capacitor/assets aplati l'alpha (interdit par l'App Store) + génère
+          # toutes les tailles dans le catalogue d'assets iOS.
+          SRC="$GITHUB_WORKSPACE/${APP_ICON:-}"
+          if [ -z "${APP_ICON:-}" ] || [ ! -f "$SRC" ]; then
+            # pas d'icône fournie → on en génère une, couleur propre à l'app
+            python3 "$GITHUB_WORKSPACE/tools/ios/make-icon.py" "$RUNNER_TEMP/deficon.png" "${ICON_COLOR:-#0b1020}"
+            SRC="$RUNNER_TEMP/deficon.png"
+          fi
+          echo "Icône source : $SRC (couleur ${ICON_COLOR})"
+          mkdir -p assets
+          sips -s format png -z 1024 1024 "$SRC" --out assets/icon.png
+          npm i -D @capacitor/assets@3 >/dev/null 2>&1
+          npx capacitor-assets generate --ios \
+            --iconBackgroundColor '#0b1020' --iconBackgroundColorDark '#0b1020'
+          npx cap sync ios
+
+          PLIST="ios/App/App/Info.plist"
+          # ── VERSION + NUMÉRO DE BUILD UNIQUE (sinon TestFlight refuse un doublon) ──
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUM}" "$PLIST" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUM}" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.${BUILD_NUM}" "$PLIST" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.${BUILD_NUM}" "$PLIST"
+
+          # ── DURCISSEMENT Info.plist : HTTPS strict + domaines liés à l'app ──
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity dict" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool false" "$PLIST" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c "Set :NSAppTransportSecurity:NSAllowsArbitraryLoads false" "$PLIST"
+          # App-Bound Domains = verrou de navigation au domaine (sécu max). Seulement
+          # pour les apps autonomes (appBound:true). Les boutiques (appBound:false) doivent
+          # pouvoir aller vers un paiement externe → on ne verrouille pas (ATS HTTPS reste actif).
+          /usr/libexec/PlistBuddy -c "Delete :WKAppBoundDomains" "$PLIST" 2>/dev/null || true
+          if [ "${APP_BOUND}" = "true" ]; then
+            /usr/libexec/PlistBuddy -c "Add :WKAppBoundDomains array" "$PLIST"
+            /usr/libexec/PlistBuddy -c "Add :WKAppBoundDomains:0 string kd-mc.com" "$PLIST"
+            if [ -n "${APP_HOST:-}" ] && [ "${APP_HOST}" != "kd-mc.com" ]; then
+              /usr/libexec/PlistBuddy -c "Add :WKAppBoundDomains:1 string ${APP_HOST}" "$PLIST"
+            fi
+            echo "🔒 Navigation verrouillée au domaine (App-Bound)."
+          else
+            echo "🌐 Navigation externe autorisée (boutique) — ATS HTTPS strict maintenu."
+          fi
+          echo "work=$WORK" >> "$GITHUB_OUTPUT"
+
+      - name: Pods
+        working-directory: ${{ steps.cap.outputs.work }}/ios/App
+        run: |
+          gem install cocoapods --no-document >/dev/null 2>&1 || sudo gem install cocoapods --no-document
+          pod install --repo-update
+
+      # ── DRY RUN : build sans signature (prouve que ça compile, 0 secret) ──
+      - name: Build dry-run (sans signature)
+        if: ${{ github.event.inputs.release_type == 'dry_run' }}
+        working-directory: ${{ steps.cap.outputs.work }}/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO archive
+
+      # ── TESTFLIGHT : signature automatique (clé ASC API) + envoi ──
+      - name: Clé App Store Connect API
+        if: ${{ github.event.inputs.release_type == 'testflight' }}
+        env:
+          KID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          P8: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys "$RUNNER_TEMP/asc"
+          KEYF="$RUNNER_TEMP/asc/AuthKey_${KID}.p8"
+          # On accepte le fichier .p8 COLLÉ TEL QUEL (le plus simple sur iPhone)
+          # OU encodé en base64 (compat avec le build Apex existant). Auto-détection.
+          if printf '%s' "$P8" | grep -q "BEGIN PRIVATE KEY"; then
+            printf '%s' "$P8" > "$KEYF"
+          else
+            printf '%s' "$P8" | base64 --decode > "$KEYF"
+          fi
+          cp "$KEYF" ~/.appstoreconnect/private_keys/
+
+      - name: Build signé (signature automatique) + export
+        if: ${{ github.event.inputs.release_type == 'testflight' }}
+        working-directory: ${{ steps.cap.outputs.work }}/ios/App
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          ISS: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: |
+          KEYP="$RUNNER_TEMP/asc/AuthKey_${KID}.p8"
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEYP" -authenticationKeyID "$KID" -authenticationKeyIssuerID "$ISS" \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic \
+            archive
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>${TEAM}</string>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build/ \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEYP" -authenticationKeyID "$KID" -authenticationKeyIssuerID "$ISS"
+
+      - name: Envoi TestFlight
+        if: ${{ github.event.inputs.release_type == 'testflight' }}
+        working-directory: ${{ steps.cap.outputs.work }}/ios/App
+        env:
+          KID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          ISS: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: |
+          IPA=$(ls build/*.ipa | head -1)
+          echo "Envoi de $IPA vers TestFlight…"
+          xcrun altool --upload-app --type ios --file "$IPA" \
+            --apiKey "$KID" --apiIssuer "$ISS"
+
+      - name: Récupérer le .ipa (téléchargeable depuis l'iPhone)
+        if: ${{ github.event.inputs.release_type == 'testflight' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ github.event.inputs.app }}-${{ github.run_number }}
+          path: ${{ steps.cap.outputs.work }}/ios/App/build/*.ipa
+          retention-days: 14

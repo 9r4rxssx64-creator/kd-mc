@@ -1,0 +1,32 @@
+# robots.txt — Portfolio KDMC (Kevin DESARZENS) — github.io/CMCteams
+# Les applications sont protégées par authentification (login + PIN + Face ID).
+# Le crawl de la page de connexion / vitrine est autorisé ; aucune donnée privée n'est exposée sans auth.
+
+User-agent: *
+Allow: /
+
+# Pas de zones techniques à indexer
+Disallow: /tests/
+Disallow: /node_modules/
+Disallow: /coverage/
+Disallow: /patches/
+Disallow: /_archive_v12/
+Disallow: /scripts/
+
+# Crawlers IA explicitement autorisés (GEO — AI Overviews, ChatGPT, Perplexity, Claude)
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-Web
+Allow: /
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://cmcteams.kd-mc.com/sitemap.xml

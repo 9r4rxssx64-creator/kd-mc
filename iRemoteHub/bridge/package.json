@@ -1,0 +1,39 @@
+{
+  "name": "iremotehub-bridge",
+  "version": "0.1.0",
+  "description": "Bridge LAN pour iRemoteHub — scan mDNS/SSDP/BLE et contrôle multi-protocoles",
+  "main": "server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0",
+    "cors": "^2.8.5",
+    "bonjour-service": "^1.2.1",
+    "node-ssdp": "^4.0.1",
+    "roku-client": "^4.1.0",
+    "sonos": "^1.15.0",
+    "node-hue-api": "^5.0.0-beta.17",
+    "tplink-smarthome-api": "^5.0.0",
+    "wake_on_lan": "^1.0.0",
+    "broadlinkjs-rm": "^0.9.28",
+    "node-fetch": "^2.7.0",
+    "@anthropic-ai/sdk": "^0.32.0"
+  },
+  "optionalDependencies": {
+    "@abandonware/noble": "^1.9.2-25",
+    "lgtv2": "^1.5.0",
+    "samsung-tv-control": "^2.0.0",
+    "bravia-auth-and-remote": "^1.0.0",
+    "castv2-client": "^1.2.0",
+    "hap-controller": "^0.7.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app https://identitytoolkit.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>📨 Messages — Apex</title>
+<style>
+  :root{ --bg:#0b0f0c; --card:#121a13; --card2:#0f150f; --gold:#e8b830; --txt:#eaf3e2; --dim:#9fb59a; --line:#22331f; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    max-width:100vw; overflow-x:hidden; }
+  a{ color:var(--gold); }
+  .top{ position:sticky; top:0; z-index:5; background:linear-gradient(180deg,#101710,#0b0f0c);
+    border-bottom:1px solid var(--line); padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;
+    display:flex; align-items:center; gap:10px; }
+  .top h1{ font-size:16px; margin:0; font-weight:700; letter-spacing:.2px; flex:1; }
+  .top .sub{ font-size:11px; color:var(--dim); font-weight:400; }
+  .kpill{ font-size:11px; color:#0b0f0c; background:var(--gold); border-radius:12px; padding:3px 9px; font-weight:700; }
+  .btn{ background:#1b2a1a; color:var(--txt); border:1px solid var(--line); border-radius:10px;
+    padding:9px 12px; font-size:14px; cursor:pointer; min-height:44px; }
+  .btn:active{ transform:translateY(1px); }
+  .btn.gold{ background:linear-gradient(135deg,#e8b830,#c99417); color:#161200; border-color:#a67c10; font-weight:700; }
+  .wrap{ padding:10px 12px 90px; }
+  .empty{ text-align:center; color:var(--dim); padding:48px 16px; }
+  .empty .ic{ font-size:40px; display:block; margin-bottom:8px; }
+  /* conversation list */
+  .conv{ display:flex; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:12px; margin-bottom:8px; cursor:pointer; }
+  .conv:active{ background:#182317; }
+  .conv .av{ width:42px; height:42px; border-radius:50%; background:#20301d; color:var(--gold);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex-shrink:0; }
+  .conv .mid{ flex:1; min-width:0; }
+  .conv .nm{ font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .conv .tm{ font-size:11px; color:var(--dim); }
+  .conv .pv{ font-size:13px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  .conv .rt{ text-align:right; flex-shrink:0; }
+  .conv .ago{ font-size:11px; color:var(--dim); }
+  .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--gold); margin-top:6px; }
+  /* thread */
+  .thead{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .thead .back{ font-size:22px; cursor:pointer; min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+  .thead .ti{ flex:1; }
+  .thead .tn{ font-weight:700; font-size:16px; }
+  .thead .tt{ font-size:12px; color:var(--dim); }
+  .msgs{ display:flex; flex-direction:column; gap:8px; }
+  .b{ max-width:82%; padding:9px 12px; border-radius:14px; font-size:14px; word-break:break-word; white-space:pre-wrap; }
+  .b .t{ font-size:10px; margin-top:4px; opacity:.8; }
+  .emp{ align-self:flex-start; background:#1f2f19; color:#eaf3e2; border:1px solid #33502b; border-bottom-left-radius:4px; }
+  .emp .t{ color:#a8c8a0; }
+  .kev{ align-self:flex-end; background:linear-gradient(135deg,#3a2e08,#2b2206); color:#ffe9a8; border:1px solid #7a5f12; border-bottom-right-radius:4px; }
+  .kev .t{ color:#e8cf86; }
+  .photo{ display:inline-block; margin-top:6px; font-size:12px; color:var(--gold); cursor:pointer;
+    border:1px solid #7a5f12; border-radius:8px; padding:4px 8px; background:#241c05; }
+  .replybar{ position:fixed; left:0; right:0; bottom:0; z-index:6; background:#0d130c;
+    border-top:1px solid var(--line); padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);
+    display:flex; gap:8px; align-items:flex-end; }
+  .replybar textarea{ flex:1; resize:none; background:#101710; color:var(--txt); border:1px solid var(--line);
+    border-radius:12px; padding:10px 12px; font-size:16px; max-height:120px; min-height:44px; font-family:inherit; }
+  /* gate */
+  .gate{ position:fixed; inset:0; z-index:20; background:#0b0f0c; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .gate .card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:26px 22px; max-width:340px; width:100%; text-align:center; }
+  .gate .ic{ font-size:44px; }
+  .gate h2{ margin:10px 0 4px; font-size:19px; }
+  .gate p{ color:var(--dim); font-size:13px; margin:0 0 16px; }
+  .gate input{ width:100%; text-align:center; font-size:22px; letter-spacing:6px; padding:12px;
+    background:#0d130c; border:1px solid var(--line); border-radius:12px; color:var(--txt); }
+  .gate .err{ color:#ff8a7a; font-size:12px; min-height:16px; margin-top:8px; }
+  .ver{ position:fixed; left:8px; bottom:calc(env(safe-area-inset-bottom,0px) + 6px); z-index:4;
+    font-size:10px; color:#5f7458; background:rgba(10,15,10,.7); border-radius:8px; padding:2px 6px; cursor:pointer; }
+  .imgov{ position:fixed; inset:0; z-index:30; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:16px; }
+  .imgov img{ max-width:100%; max-height:90vh; border-radius:10px; }
+  .imgov .x{ position:absolute; top:calc(env(safe-area-inset-top,0px) + 10px); right:14px; font-size:30px; color:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="top">
+  <div>
+    <h1>📨 Messages <span class="kpill">Apex</span></h1>
+    <div class="sub" id="subline">Connexion…</div>
+  </div>
+  <button class="btn" id="refreshBtn" title="Rafraîchir">↻</button>
+</div>
+
+<div class="wrap" id="view"></div>
+
+<div class="ver" id="ver" title="Toucher pour forcer la mise à jour">Apex Messages v1.4</div>
+
+<div class="imgov" id="imgov"><span class="x" id="imgx">✕</span><img id="imgel" alt="photo"></div>
+
+<div class="gate" id="gate">
+  <div class="card">
+    <div class="ic">🔐</div>
+    <h2>Messages</h2>
+    <p>Espace réservé. Entre ton code admin.</p>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••••" maxlength="64">
+    <div class="err" id="gerr"></div>
+    <button class="btn gold" id="gbtn" style="width:100%;margin-top:14px">Entrer</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var FBURL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app";
+  var FBPATH="/cmcteams";
+  var FBKEY="AIzaSyDciW-0sIIg9msdmgZjQHBksqzsfA6DCMs";
+  // v1.4 — plus AUCUNE empreinte du code admin dans la page (dépôt public : l'empreinte d'un
+  // code à 6 chiffres = le code). Le code est vérifié par le domaine : POST /__admin/login
+  // (routeur kd-mc.com, secret Cloudflare, essais limités, journalisé).
+  var ADMIN_LOGIN_URL=/^https?:$/.test(location.protocol)?"/__admin/login":"https://kd-mc.com/__admin/login";
+  var _tok=null,_timer=null,_esInbox=null,_esReply=null;
+  function _qs(){ return _tok?("?auth="+encodeURIComponent(_tok)):""; }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+
+  function _auth(cb){
+    fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+encodeURIComponent(FBKEY),
+      {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({returnSecureToken:true})})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.idToken){ _tok=d.idToken;
+          var ms=(parseInt(d.expiresIn||"3600",10)*1000)-120000;
+          if(_timer)clearTimeout(_timer); _timer=setTimeout(function(){_auth(function(){_sse();});},Math.max(60000,ms));
+        } else _tok=null; if(cb)cb(); })
+      .catch(function(){ _tok=null; if(cb)cb(); }); // fail-open : règles ouvertes
+  }
+  // Encode CHAQUE segment séparément : une clé imbriquée ("cmc_dep_img/<id>") doit rester un
+  // CHEMIN. Un encodeURIComponent global transforme le "/" en "%2F" → Firebase cherche alors une
+  // clé unique nommée "cmc_dep_img/<id>" à la racine, qui n'existe pas → réponse vide.
+  // (bug « je ne vois pas la photo » : c'était le seul appel à clé imbriquée de cette page)
+  function _enc(k){ return String(k==null?"":k).split("/").map(encodeURIComponent).join("/"); }
+  function _get(k,cb){ fetch(FBURL+FBPATH+"/"+_enc(k)+".json"+_qs())
+      .then(function(r){return r.ok?r.json():null;}).then(function(d){cb(d);}).catch(function(){cb(null);}); }
+  function _put(k,v,cb){ fetch(FBURL+FBPATH+"/"+_enc(k)+".json"+_qs(),
+      {method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)})
+      .then(function(r){if(cb)cb(r.ok);}).catch(function(){if(cb)cb(false);}); }
+
+  // ---- state ----
+  var INBOX=[], REPLY={}, READ={}, CUR=null; // CUR = dkey en cours d'affichage
+  function relTime(ts){ if(!ts)return""; var s=Math.floor((Date.now()-ts)/1000);
+    if(s<60)return"à l'instant"; if(s<3600)return"il y a "+Math.floor(s/60)+" min";
+    if(s<86400)return"il y a "+Math.floor(s/3600)+" h"; var d=Math.floor(s/86400);
+    if(d<7)return"il y a "+d+" j"; var dt=new Date(ts); return dt.getDate()+"/"+(dt.getMonth()+1); }
+  function fmtTime(ts){ if(!ts)return""; var d=new Date(ts);
+    return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2); }
+
+  // Regroupe l'inbox par employé (dkey). Un message peut être ancien sans dkey → clé de repli.
+  function groups(){
+    var g={}; // dkey -> {dkey,name,team,msgs:[]}
+    (INBOX||[]).forEach(function(m){
+      if(!m||typeof m!=="object")return;
+      var dk=String(m.dkey||m.from||("?"+(m.name||""))).trim()||"?";
+      if(!g[dk])g[dk]={dkey:dk,name:m.name||dk,team:m.team||"",msgs:[]};
+      if(m.name&&!g[dk].name)g[dk].name=m.name;
+      if(m.team&&!g[dk].team)g[dk].team=m.team;
+      g[dk].msgs.push({who:"emp",text:m.text||"",ts:m.ts||0,hasImg:!!m.hasImg,imgId:m.imgId||null,id:m.id});
+    });
+    // fusionne les réponses Kevin dans chaque fil
+    Object.keys(REPLY||{}).forEach(function(dk){
+      var arr=REPLY[dk]; if(!Array.isArray(arr))return;
+      if(!g[dk])g[dk]={dkey:dk,name:dk,team:"",msgs:[]};
+      arr.forEach(function(r){ if(r&&r.text)g[dk].msgs.push({who:"kev",text:r.text,ts:r.ts||0,id:r.id}); });
+    });
+    var list=Object.keys(g).map(function(dk){ var c=g[dk];
+      c.msgs.sort(function(a,b){return (a.ts||0)-(b.ts||0);});
+      c.last=c.msgs.length?c.msgs[c.msgs.length-1]:null;
+      var lastEmp=0; c.msgs.forEach(function(m){ if(m.who==="emp"&&m.ts>lastEmp)lastEmp=m.ts; });
+      c.unread=lastEmp>(parseInt((READ||{})[dk]||0,10)||0);
+      return c; });
+    list.sort(function(a,b){ return ((b.last&&b.last.ts)||0)-((a.last&&a.last.ts)||0); });
+    return list;
+  }
+
+  function renderList(){
+    var list=groups(), n=list.length, un=list.filter(function(c){return c.unread;}).length;
+    document.getElementById("subline").textContent = n? (n+" conversation"+(n>1?"s":"")+(un?(" · "+un+" à lire"):"")) : "Aucun message";
+    var v=document.getElementById("view");
+    if(!n){ v.innerHTML='<div class="empty"><span class="ic">📭</span>Aucun message pour l\'instant.<br>Les messages envoyés par les employés depuis la page CMCteams arriveront ici.</div>'; return; }
+    var h="";
+    h+='<div style="text-align:right;margin:0 2px 8px"><button class="btn" id="clearAllBtn" style="font-size:12px;padding:6px 10px;min-height:44px">🗑 Effacer tout l\'historique</button></div>';
+    list.forEach(function(c){
+      var init=(c.name||"?").trim().split(/\s+/).map(function(w){return w[0]||"";}).join("").slice(0,2).toUpperCase()||"?";
+      var pv=c.last? ((c.last.who==="kev"?"Vous : ":"")+(c.last.hasImg&&!c.last.text?"📷 Photo":c.last.text)) : "";
+      h+='<div class="conv" data-dk="'+esc(c.dkey)+'">'
+        +'<div class="av">'+esc(init)+'</div>'
+        +'<div class="mid"><div class="nm">'+esc(c.name)+(c.team?' <span class="tm">· '+esc(c.team)+'</span>':'')+'</div>'
+        +'<div class="pv">'+esc(pv)+'</div></div>'
+        +'<div class="rt"><div class="ago">'+esc(relTime(c.last&&c.last.ts))+'</div>'+(c.unread?'<span class="dot"></span>':'')+'</div>'
+        +'</div>';
+    });
+    v.innerHTML=h;
+    Array.prototype.forEach.call(v.querySelectorAll(".conv"),function(el){
+      el.addEventListener("click",function(){ openThread(el.getAttribute("data-dk")); });
+    });
+    var ca=document.getElementById("clearAllBtn"); if(ca)ca.addEventListener("click",delAll);
+  }
+
+  function renderThread(){
+    var list=groups(), c=null; for(var i=0;i<list.length;i++)if(list[i].dkey===CUR){c=list[i];break;}
+    if(!c){ CUR=null; renderList(); return; }
+    document.getElementById("subline").textContent=esc(c.name);
+    var v=document.getElementById("view");
+    var h='<div class="thead"><span class="back" id="backBtn">←</span>'
+      +'<div class="ti"><div class="tn">'+esc(c.name)+'</div>'
+      +'<div class="tt">'+(c.team?esc(c.team)+' · ':'')+c.msgs.length+' message'+(c.msgs.length>1?'s':'')+'</div></div>'
+      +'<button class="btn" id="delConvBtn" title="Effacer cette conversation" style="font-size:16px;padding:6px 10px;min-height:44px">🗑</button></div>'
+      +'<div class="msgs">';
+    c.msgs.forEach(function(m){
+      var cls=m.who==="kev"?"kev":"emp";
+      h+='<div class="b '+cls+'">'+esc(m.text||"")
+        +(m.hasImg&&m.imgId?'<br><span class="photo" data-img="'+esc(m.imgId)+'">📷 Voir la photo</span>':'')
+        +'<div class="t">'+esc(fmtTime(m.ts))+'</div></div>';
+    });
+    h+='</div>';
+    v.innerHTML=h;
+    document.getElementById("backBtn").addEventListener("click",function(){ CUR=null; renderList(); markRead(c.dkey); });
+    document.getElementById("delConvBtn").addEventListener("click",function(){ delConv(c.dkey,c.name); });
+    Array.prototype.forEach.call(v.querySelectorAll(".photo"),function(el){
+      el.addEventListener("click",function(){ viewImg(el.getAttribute("data-img")); });
+    });
+    document.getElementById("replybar").style.display="flex";
+    setTimeout(function(){ window.scrollTo(0,document.body.scrollHeight); },40);
+    markRead(c.dkey);
+  }
+
+  function render(){ document.getElementById("replybar").style.display= CUR?"flex":"none"; if(CUR)renderThread(); else renderList(); }
+  function openThread(dk){ CUR=dk; render(); }
+
+  // Accusé de lecture : cmc_dep_read[dkey]=now → « ✓ Lu » côté employé. GET frais → set → PUT.
+  function markRead(dk){ if(!dk)return; _get("cmc_dep_read",function(cur){
+    var map=(cur&&typeof cur==="object"&&!Array.isArray(cur))?cur:{}; map[dk]=Date.now();
+    READ=map; _put("cmc_dep_read",map); }); }
+
+  // Réponse : écrit dans cmc_dep_reply[dkey] (GET frais → append → PUT le node ENTIER, anti-clobber).
+  // Même node que CMCteams → une réponse d'ici OU de CMCteams se propage partout (employé inclus).
+  function sendReply(dk,text){
+    text=String(text||"").trim(); if(!dk||!text)return; if(text.length>2000)text=text.slice(0,2000);
+    var rid="r_"+Date.now()+"_"+Math.random().toString(36).slice(2,6);
+    _get("cmc_dep_reply",function(cur){
+      var all=(cur&&typeof cur==="object"&&!Array.isArray(cur))?cur:{};
+      var arr=Array.isArray(all[dk])?all[dk]:[];
+      arr.push({id:rid,text:text,ts:Date.now()}); if(arr.length>50)arr=arr.slice(-50);
+      all[dk]=arr; REPLY=all; _put("cmc_dep_reply",all,function(){ markRead(dk); render(); });
+    });
+  }
+
+  // Effacer UNE conversation : retire ses messages de cmc_kevin_inbox (+ miroir Apex) et
+  // ses réponses de cmc_dep_reply/cmc_dep_read. GET frais → filtre → PUT (anti-clobber).
+  function delConv(dk,name){
+    if(!dk)return;
+    if(!window.confirm("Effacer la conversation avec "+(name||dk)+" ? (messages + réponses)"))return;
+    function filterInbox(k){ _get(k,function(cur){ var a=Array.isArray(cur)?cur:[];
+      a=a.filter(function(m){ return !m || String(m.dkey||m.from||"")!==dk; }); _put(k,a); }); }
+    filterInbox("cmc_kevin_inbox"); filterInbox("ax_cmc_kevin_inbox");
+    _get("cmc_dep_reply",function(cur){ var all=(cur&&typeof cur==="object"&&!Array.isArray(cur))?cur:{}; delete all[dk]; REPLY=all; _put("cmc_dep_reply",all); });
+    _get("cmc_dep_read",function(cur){ var all=(cur&&typeof cur==="object"&&!Array.isArray(cur))?cur:{}; delete all[dk]; READ=all; _put("cmc_dep_read",all); });
+    // maj UI immédiate
+    INBOX=(INBOX||[]).filter(function(m){ return !m || String(m.dkey||m.from||"")!==dk; });
+    if(REPLY&&REPLY[dk])delete REPLY[dk]; if(READ&&READ[dk])delete READ[dk];
+    CUR=null; render();
+  }
+  // Effacer TOUT l'historique (les 2 surfaces).
+  function delAll(){
+    if(!window.confirm("Effacer TOUT l'historique des messages ? Cette action est définitive."))return;
+    _put("cmc_kevin_inbox",[]); _put("ax_cmc_kevin_inbox",[]);
+    _put("cmc_dep_reply",{}); _put("cmc_dep_read",{}); _put("cmc_dep_msgs",null);
+    INBOX=[]; REPLY={}; READ={}; CUR=null; render();
+  }
+
+  function viewImg(imgId){ if(!imgId)return;
+    var ov=document.getElementById("imgov"), el=document.getElementById("imgel");
+    el.removeAttribute("src"); ov.style.display="flex";
+    _get("cmc_dep_img/"+imgId,function(url){
+      // seule une vraie adresse d'image entre dans un src (parité avec _okImgUrl de la page Départs)
+      var ok=(typeof url==="string")&&(url.indexOf("data:image/")===0||url.indexOf("https://")===0);
+      if(ok){ el.src=url; }
+      else { ov.style.display="none"; alert("Photo introuvable."); } });
+  }
+  document.getElementById("imgx").addEventListener("click",function(){ document.getElementById("imgov").style.display="none"; });
+  document.getElementById("imgov").addEventListener("click",function(e){ if(e.target.id==="imgov")e.target.style.display="none"; });
+
+  // ---- data pull + SSE ----
+  var _pt=null;
+  function pullAll(){
+    _get("cmc_kevin_inbox",function(d){ INBOX=Array.isArray(d)?d:[]; scheduleRender(); });
+    _get("cmc_dep_reply",function(d){ REPLY=(d&&typeof d==="object"&&!Array.isArray(d))?d:{}; scheduleRender(); });
+    _get("cmc_dep_read",function(d){ READ=(d&&typeof d==="object"&&!Array.isArray(d))?d:{}; scheduleRender(); });
+  }
+  function scheduleRender(){ if(_pt)clearTimeout(_pt); _pt=setTimeout(render,120); }
+  function _sse(){
+    try{ if(_esInbox){_esInbox.close();} _esInbox=new EventSource(FBURL+FBPATH+"/cmc_kevin_inbox.json"+_qs());
+      var b1=function(){ _get("cmc_kevin_inbox",function(d){ INBOX=Array.isArray(d)?d:[]; scheduleRender(); }); };
+      _esInbox.addEventListener("put",b1); _esInbox.addEventListener("patch",b1); }catch(_){}
+    try{ if(_esReply){_esReply.close();} _esReply=new EventSource(FBURL+FBPATH+"/cmc_dep_reply.json"+_qs());
+      var b2=function(){ _get("cmc_dep_reply",function(d){ REPLY=(d&&typeof d==="object"&&!Array.isArray(d))?d:{}; scheduleRender(); }); };
+      _esReply.addEventListener("put",b2); _esReply.addEventListener("patch",b2); }catch(_){}
+  }
+
+  // reply bar (créée dynamiquement pour rester hors flux quand liste affichée)
+  var bar=document.createElement("div"); bar.className="replybar"; bar.id="replybar"; bar.style.display="none";
+  bar.innerHTML='<textarea id="rin" rows="1" placeholder="Répondre…"></textarea><button class="btn gold" id="rsend">Envoyer</button>';
+  document.body.appendChild(bar);
+  var rin=document.getElementById("rin");
+  rin.addEventListener("input",function(){ rin.style.height="auto"; rin.style.height=Math.min(120,rin.scrollHeight)+"px"; });
+  function doSend(){ var t=rin.value; if(!t.trim()||!CUR)return; rin.value=""; rin.style.height="auto"; sendReply(CUR,t); }
+  document.getElementById("rsend").addEventListener("click",doSend);
+  rin.addEventListener("keydown",function(e){ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doSend(); } });
+
+  document.getElementById("refreshBtn").addEventListener("click",pullAll);
+  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible")pullAll(); });
+  window.addEventListener("focus",pullAll);
+
+  // ---- MAJ auto force (règle « toujours partout ») + 1-tap (lesson #102) ----
+  var APP_VER="v1.4";
+  function forceUpd(){
+    try{ if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});}); }catch(_){}
+    try{ if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}); }catch(_){}
+    location.replace(location.pathname+"?_force_upd_"+Date.now());
+  }
+  document.getElementById("ver").addEventListener("click",forceUpd);
+  document.getElementById("ver").textContent="Apex Messages "+APP_VER;
+  // Sonde : re-fetch ce fichier (cache-busté) → compare le badge distant à APP_VER local.
+  // Si différent → MAJ dispo → force reload. Boot + intervalle + focus/visibilité.
+  function checkUpd(){
+    fetch(location.pathname+"?_v="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";})
+      .then(function(t){ var m=t.match(/Apex Messages (v[0-9.]+)/); if(m&&m[1]&&m[1]!==APP_VER)forceUpd(); }).catch(function(){});
+  }
+  setTimeout(checkUpd,5000); setInterval(checkUpd,90000);
+  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible")checkUpd(); });
+  window.addEventListener("focus",checkUpd);
+
+  // ---- gate ----
+  function boot(){
+    document.getElementById("gate").style.display="none";
+    document.getElementById("subline").textContent="Connexion…";
+    _auth(function(){ pullAll(); _sse(); render(); });
+  }
+  var pin=document.getElementById("pin"), gbtn=document.getElementById("gbtn"), gerr=document.getElementById("gerr");
+  async function tryPin(){
+    var v=(pin.value||"").trim(); if(!v){ gerr.textContent="Entre ton code."; return; }
+    var body=/^[0-9a-f]{64}$/i.test(v)?{hash:v.toLowerCase()}:{code:v};
+    var j=null;
+    try{ var r=await fetch(ADMIN_LOGIN_URL,{method:"POST",credentials:"include",cache:"no-store",
+          headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      j=r&&r.ok?await r.json().catch(function(){return null;}):null;
+    }catch(_){ j=null; }
+    if(j&&j.ok){ try{ sessionStorage.setItem("apex_msg_ok","1"); }catch(_){} boot(); return; }
+    if(!j){ gerr.textContent="Vérification impossible ici — ouvre cette page sur kd-mc.com."; return; }
+    if(j.reason==="rate_limited"){ gerr.textContent="Trop d'essais — réessaie dans "+(j.wait||60)+" s."; return; }
+    if(j.reason==="admin_pin_not_configured"){ gerr.textContent="Code admin non configuré côté serveur."; return; }
+    gerr.textContent="Code incorrect."; pin.value=""; pin.focus();
+  }
+  gbtn.addEventListener("click",tryPin);
+  pin.addEventListener("keydown",function(e){ if(e.key==="Enter")tryPin(); });
+  // reconnu sur cette session (onglet) → pas de re-saisie
+  try{ if(sessionStorage.getItem("apex_msg_ok")==="1"){ boot(); } else { setTimeout(function(){pin.focus();},200); } }catch(_){ setTimeout(function(){pin.focus();},200); }
+})();
+</script>
+</body>
+</html>

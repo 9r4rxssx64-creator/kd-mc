@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="36" fill="#08080f"/>
+  <rect x="6" y="6" width="180" height="180" rx="32" fill="none" stroke="#c9a227" stroke-width="2" opacity="0.4"/>
+  <text x="96" y="118" text-anchor="middle" font-size="100" fill="#c9a227">💬</text>
+  <text x="96" y="158" text-anchor="middle" font-size="20" font-weight="800" fill="#c9a227" font-family="system-ui" letter-spacing="3">APEX</text>
+  <text x="96" y="178" text-anchor="middle" font-size="13" fill="#6a8aff" font-family="system-ui" letter-spacing="4">CHAT</text>
+</svg>

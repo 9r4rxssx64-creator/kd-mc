@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>CMCteams - Force MAJ</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#0a0a14;color:#fff;font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;min-height:100vh}
+.wrap{max-width:480px;margin:0 auto;padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
+h1{font-family:Georgia,serif;color:#e8b830;font-size:32px;margin:0 0 8px;text-align:center;letter-spacing:2px}
+.sub{color:#a0a4c0;font-size:13px;text-align:center;margin:0 0 24px}
+.card{background:rgba(232,184,48,.05);border:1px solid rgba(232,184,48,.2);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h3{margin:0 0 8px;color:#e8b830;font-size:16px}
+.card p{margin:0;font-size:14px;line-height:1.5;color:#cfcfdf}
+.btn{display:block;width:100%;min-height:56px;background:linear-gradient(135deg,#e8b830,#c9a227);color:#000;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin:18px 0;padding:0 16px;letter-spacing:.5px;box-shadow:0 4px 16px rgba(232,184,48,.3)}
+.btn:active{transform:scale(.97)}
+.log{background:#0d0d18;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:12px;color:#9ca3af;min-height:120px;max-height:240px;overflow-y:auto;white-space:pre-wrap;line-height:1.4;margin-top:14px}
+.log .ok{color:#4cd080}.log .err{color:#ff5858}.log .warn{color:#ffb84a}
+.steps{list-style:none;padding:0;margin:0}
+.steps li{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;color:#cfcfdf}
+.steps li:last-child{border:none}
+.steps b{color:#e8b830}
+.icon{font-size:48px;text-align:center;display:block;margin-bottom:8px}
+.versions{font-size:12px;color:#6b7280;text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="icon">🔄</span>
+<h1>FORCE MAJ CMCTEAMS</h1>
+<p class="sub">Outil pour debloquer une PWA iPhone bloquee sur ancienne version</p>
+
+<div class="card">
+<h3>Que fait ce bouton ?</h3>
+<p>1. Desinscrit tous les Service Workers CMCteams<br>2. Efface TOUS les caches PWA<br>3. Garde tes donnees user (localStorage intact)<br>4. Recharge CMCteams en version la plus recente</p>
+</div>
+
+<button class="btn" onclick="forceUpdate()" id="btnFix">⚡ Forcer la mise a jour maintenant</button>
+
+<div class="card" style="background:rgba(255,88,88,.05);border-color:rgba(255,88,88,.3)">
+<h3 style="color:#ff5858">Si ca ne suffit pas</h3>
+<p>Sur iPhone, une PWA installee garde parfois un cache extrement tenace :</p>
+<ul class="steps" style="margin-top:8px">
+<li><b>1.</b> Reglages iPhone</li>
+<li><b>2.</b> Safari</li>
+<li><b>3.</b> Avance &gt; Donnees de sites web</li>
+<li><b>4.</b> Cherche "github.io" ou "cmcteams"</li>
+<li><b>5.</b> Glisse a gauche &gt; Supprimer</li>
+<li><b>6.</b> Reinstalle CMCteams via Safari (icone partage &gt; Sur l ecran d accueil)</li>
+</ul>
+</div>
+
+<div class="log" id="log">[Pret] Touche le bouton dore pour demarrer</div>
+
+<div class="versions">
+Version cible : <strong>v9.551+</strong><br>
+URL canon : <a href="./" style="color:#e8b830">github.io/CMCteams/</a>
+</div>
+
+</div>
+
+<script>
+var log = document.getElementById("log");
+function L(msg, cls){
+  var line = document.createElement("div");
+  if(cls) line.className = cls;
+  line.textContent = "[" + new Date().toTimeString().slice(0,8) + "] " + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function forceUpdate(){
+  var btn = document.getElementById("btnFix");
+  btn.disabled = true;
+  btn.textContent = "⏳ Nettoyage en cours...";
+  log.innerHTML = "";
+  L("Demarrage force MAJ CMCteams");
+
+  var p = Promise.resolve();
+
+  if("serviceWorker" in navigator){
+    p = p.then(function(){
+      return navigator.serviceWorker.getRegistrations().then(function(regs){
+        L("Service Workers trouves : " + regs.length);
+        return Promise.all(regs.map(function(r){
+          L("Desinscription : " + (r.scope || "[?]"));
+          return r.unregister().then(function(ok){
+            L("  -> " + (ok ? "OK" : "ECHEC"), ok ? "ok" : "err");
+          });
+        }));
+      });
+    });
+  }
+
+  if("caches" in window){
+    p = p.then(function(){
+      return caches.keys().then(function(keys){
+        L("Caches trouves : " + keys.length);
+        return Promise.all(keys.map(function(k){
+          L("Efface cache : " + k);
+          return caches.delete(k).then(function(ok){
+            L("  -> " + (ok ? "OK" : "ECHEC"), ok ? "ok" : "err");
+          });
+        }));
+      });
+    });
+  }
+
+  p = p.then(function(){
+    L("Donnees user preservees (localStorage intact)", "ok");
+    L("Redirection forcee dans 2s...", "ok");
+    btn.textContent = "✅ Termine ! Rechargement...";
+    setTimeout(function(){
+      var url = "./?_force=" + Date.now();
+      try { window.location.replace(url); } catch(_){ window.location.href = url; }
+    }, 2000);
+  });
+
+  p.catch(function(err){
+    L("Erreur : " + (err && err.message ? err.message : err), "err");
+    btn.disabled = false;
+    btn.textContent = "🔄 Reessayer";
+  });
+}
+
+window.addEventListener("load", function(){
+  L("Audit cache PWA...");
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      L("Service Workers actifs : " + regs.length, regs.length > 0 ? "warn" : "ok");
+    });
+  }
+  if("caches" in window){
+    caches.keys().then(function(keys){
+      L("Caches PWA : " + keys.length + (keys.length ? " (" + keys.join(", ") + ")" : ""), keys.length > 0 ? "warn" : "ok");
+    });
+  }
+  try { L("localStorage : " + localStorage.length + " cles (preservees)", "ok"); }
+  catch(_){ L("localStorage indisponible", "err"); }
+});
+</script>
+</body>
+</html>

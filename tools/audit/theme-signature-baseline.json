@@ -1,0 +1,18 @@
+{
+  "mesure": {
+    "index.html": {
+      "#c9a227 (or Monaco)": 707,
+      "#ffdc40 (or vif)": 99,
+      "#0a1408 (fond vert nuit)": 40,
+      "#ce1126 (rouge du drapeau monégasque)": 3,
+      "#3a8a50 (vert Monaco)": 77,
+      "rgba(201,162,39,…) — or en transparence": 728
+    },
+    "tools/departs/index.html": {
+      "#c9a227 (or Monaco)": 5,
+      "rgba(201,162,39,…) — or en transparence": 21
+    }
+  },
+  "total": 1680,
+  "le": "2026-09-15"
+}

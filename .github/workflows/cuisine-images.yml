@@ -1,0 +1,88 @@
+name: Cuisine — Illustrations IA (Répertoire de la Riviera)
+
+# Génère les illustrations des recettes. Multi-fournisseurs : prend la 1re clé
+# image des secrets qui a du crédit (Together/Replicate/OpenAI/Gemini).
+# Commit des IMAGES SEULES directement sur main (diff = jpg → pas de blocage
+# "workflows permission", et deploy.yml republie Pages). Idempotent + relançable.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Sous-lot d'IDs (ex: 0,1,2) — vide = toutes les manquantes"
+        required: false
+        type: string
+      force:
+        description: "1 = re-télécharger TOUTES les images (sinon seulement les manquantes)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cuisine-images
+  cancel-in-progress: false
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install sharp
+        run: npm i sharp@0.33.5 --no-save
+
+      - name: Purge si force
+        if: ${{ github.event.inputs.force == '1' }}
+        run: rm -f tools/cuisine/img/*.jpg && echo "Images purgées (force) — re-téléchargement complet."
+
+      - name: Génération des illustrations (photos libres de droits + repli IA)
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+          AX_REPLICATE_KEY: ${{ secrets.AX_REPLICATE_KEY }}
+          OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node tools/cuisine/gen-images.mjs "${{ github.event.inputs.only }}"
+
+      - name: Commit des images directement sur main
+        run: |
+          git config user.name "kdmc-bot"
+          git config user.email "bot@kdmc.local"
+          git add tools/cuisine/img
+          if git diff --cached --quiet; then
+            echo "Aucune nouvelle image à committer."
+            exit 0
+          fi
+          git commit -m "Cuisine — illustrations générées ($(ls tools/cuisine/img/*.jpg 2>/dev/null | wc -l) images)"
+          for i in 1 2 3 4 5; do
+            git fetch origin main -q
+            git rebase origin/main && git push origin HEAD:main && { echo "Poussé sur main → Pages se redéploie."; exit 0; }
+            echo "retry push $i…"; git rebase --abort 2>/dev/null || true; sleep 5
+          done
+          echo "Échec push après retries"; exit 1
+
+      - name: Garde-fou — aucune photo en double (chaque recette = photo distincte)
+        if: always()
+        run: |
+          node -e "
+          const fs=require('fs'),cp=require('crypto');
+          const dir='tools/cuisine/img';
+          const files=fs.readdirSync(dir).filter(f=>/^\d+\.jpg$/.test(f));
+          const seen={};
+          for(const f of files){const h=cp.createHash('md5').update(fs.readFileSync(dir+'/'+f)).digest('hex');(seen[h]=seen[h]||[]).push(f);}
+          const groups=Object.values(seen).filter(a=>a.length>1);
+          const uniq=Object.keys(seen).length;
+          console.log(files.length+' images · '+uniq+' uniques · '+groups.length+' groupes en double');
+          for(const g of groups) console.log('::warning::doublon ('+g.length+') : '+g.join(' '));
+          if(groups.length>0){console.error('ÉCHEC : des recettes partagent la même photo. Relancer la génération (chaque recette doit avoir une photo distincte).');process.exit(1);}
+          console.log('✅ 128 photos distinctes — chaque recette a la sienne.');
+          "

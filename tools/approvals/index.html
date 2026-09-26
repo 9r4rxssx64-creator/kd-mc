@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="fr" data-app-ver="v1.3">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app https://identitytoolkit.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'; worker-src 'self'">
+<title>Coffre d'autorisations — Apex</title>
+<!-- PWA installable : iOS + Android + desktop -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f0a">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Autorisations">
+<style>
+  :root{--bg:#0b0f0a;--card:#141b11;--card2:#1b2415;--gold:#e8c766;--gold2:#c9a94a;--txt:#f2efe0;--dim:#a9b39a;--ok:#3fbf6a;--no:#d8574e;--line:#2a331f;--warn:#e0a83a}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;max-width:100vw;overflow-x:hidden}
+  body{background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 84px)}
+  h1{font-size:19px;margin:2px 0 2px;letter-spacing:.2px}
+  h1 .g{background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--dim);font-size:12.5px;margin:0 0 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px}
+  .sec-t{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--gold2);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .req{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;margin:0 0 10px}
+  .req .top{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+  .req .ico{width:34px;height:34px;flex:0 0 34px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:#0e150a;border:1px solid var(--line)}
+  .req .ttl{font-weight:600;font-size:14.5px}
+  .req .det{color:var(--dim);font-size:13px;margin:2px 0 4px;word-break:break-word}
+  .req .pay{font:11.5px/1.4 ui-monospace,Menlo,monospace;color:#cfe0bd;background:#0b1108;border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin:6px 0;max-height:110px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+  .btns{display:flex;gap:8px;margin-top:8px}
+  button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 14px;min-height:46px;cursor:pointer;flex:1;color:#0b0f0a}
+  .b-ok{background:linear-gradient(135deg,#57d987,var(--ok))}
+  .b-no{background:#2a331f;color:var(--no);border:1px solid var(--line)}
+  .b-gold{background:linear-gradient(135deg,var(--gold),var(--gold2))}
+  .b-ghost{background:transparent;color:var(--gold);border:1px solid var(--line)}
+  .empty{color:var(--dim);text-align:center;padding:20px 8px;font-size:14px}
+  input,textarea,select{width:100%;font:inherit;background:#0b1108;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:11px 12px;margin:5px 0}
+  label{font-size:12px;color:var(--dim);display:block;margin-top:8px}
+  .row{display:flex;gap:8px}.row>*{flex:1}
+  .pill{display:inline-block;font-size:11px;padding:3px 8px;border-radius:999px;background:#0e150a;border:1px solid var(--line);color:var(--dim)}
+  .hist{font-size:12.5px;border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;gap:10px}
+  .hist:last-child{border-bottom:0}
+  .hist .s-ok{color:var(--ok)}.hist .s-no{color:var(--no)}
+  .warn{background:#231a06;border:1px solid #4a3a10;color:var(--warn);border-radius:10px;padding:9px 11px;font-size:12.5px;margin:8px 0}
+  .lock{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:50;padding:24px}
+  .lock .box{max-width:360px;width:100%;text-align:center}
+  .lock .big{font-size:52px;margin-bottom:6px}
+  #sigwrap{position:relative}
+  canvas#sig{width:100%;height:150px;background:#0b1108;border:1px solid var(--line);border-radius:12px;touch-action:none;display:block}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 96px);background:#0e150a;border:1px solid var(--gold2);color:var(--txt);padding:11px 16px;border-radius:12px;font-size:13.5px;z-index:60;max-width:90vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .tabs{display:flex;gap:6px;margin:0 0 12px;overflow-x:auto}
+  .tab{white-space:nowrap;padding:9px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--dim);font-size:13px;font-weight:600;cursor:pointer}
+  .tab.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0b0f0a;border-color:transparent}
+  .muted{color:var(--dim);font-size:12px}
+  a{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<!-- ÉCRAN DE VERROUILLAGE (Face ID / PIN) — l'autorisation forte est le cœur -->
+<div class="lock" id="lock">
+  <div class="box">
+    <div class="big">🔐</div>
+    <h1><span class="g">Coffre d'autorisations</span></h1>
+    <p class="sub">Chaque acte sensible (connexion, paiement, signature, KYC) exige TON autorisation — un seul geste Face ID. Rien n'est fait sans toi.</p>
+    <div id="lock-msg" class="muted" style="margin:10px 0"></div>
+    <button class="b-gold" id="unlock" style="width:100%">🆔 Déverrouiller (Face ID)</button>
+    <button class="b-ghost" id="unlock-pin" style="width:100%;margin-top:8px">Utiliser mon code</button>
+    <div id="pinbox" style="display:none;margin-top:10px">
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Code (6 chiffres)" maxlength="12">
+      <button class="b-gold" id="pin-go" style="width:100%">Valider</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <h1><span class="g">Coffre d'autorisations</span> <span class="pill" id="who">Kevin</span></h1>
+  <p class="sub">Je fais tout à ta place. Il ne reste que ton feu vert — 1 tap. <span id="conn" class="pill">…</span></p>
+
+  <!-- Bannière d'installation (Android : bouton natif ; iOS : instructions ; caché si déjà installé) -->
+  <div id="install-bar" class="card" style="display:none;border-color:var(--gold2)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:24px">📲</span>
+      <div style="flex:1"><b>Installer l'app</b><div class="muted" id="install-txt">Ajoute le Coffre à ton écran d'accueil (iOS + Android + ordi).</div></div>
+      <button class="b-gold" id="install-go" style="flex:0 0 auto">Installer</button>
+      <button class="b-no" id="install-x" style="flex:0 0 auto;max-width:44px">✕</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" data-tab="pending">🔔 À autoriser <span id="cnt"></span></div>
+    <div class="tab" data-tab="account">🆕 Compte</div>
+    <div class="tab" data-tab="vault">🗝 Coffre</div>
+    <div class="tab" data-tab="sign">✍️ Signature</div>
+    <div class="tab" data-tab="hist">📜 Historique</div>
+  </div>
+
+  <!-- ONGLET : demandes en attente -->
+  <div class="pane" id="pane-pending">
+    <div class="card">
+      <div class="sec-t">🔔 Demandes d'autorisation</div>
+      <div id="reqs"><div class="empty">Aucune demande en attente. Quand Apex (ou Claude) a besoin de ton feu vert pour agir à ta place, ça apparaît ici.</div></div>
+    </div>
+    <div class="card">
+      <div class="sec-t">🧪 Simuler une demande (test)</div>
+      <p class="muted">Pour vérifier le flux end-to-end : crée une demande factice puis autorise-la avec Face ID.</p>
+      <div class="row">
+        <select id="sim-type">
+          <option value="oauth">🔗 Connexion (OAuth)</option>
+          <option value="cb">💳 Paiement (CB / Apple Pay)</option>
+          <option value="signature">✍️ Signature</option>
+          <option value="kyc">🪪 KYC (vérif identité)</option>
+          <option value="custom">⚙️ Autre</option>
+        </select>
+        <button class="b-ghost" id="sim-go" style="flex:0 0 auto">Créer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONGLET : créer un compte (je prépare tout, tu fais le geste anti-robot) -->
+  <div class="pane" id="pane-account" style="display:none">
+    <div class="card">
+      <div class="sec-t">🆕 Créer un compte</div>
+      <p class="muted">Je génère un mot de passe fort, prépare tout, et j'ouvre la page d'inscription. Le seul geste que toi seul peux faire (le CAPTCHA + le code reçu par SMS/email) reste à toi — c'est voulu par les sites (anti-robot). Tout est stocké chiffré ici.</p>
+      <label>Service (ex. « Google », « Notion »)</label>
+      <input id="ac-service" placeholder="Nom du service">
+      <label>Page d'inscription (optionnel)</label>
+      <input id="ac-url" inputmode="url" placeholder="https://… (laisser vide si tu ne l'as pas)">
+      <label>Email à utiliser (optionnel)</label>
+      <input id="ac-email" inputmode="email" placeholder="ton email pour ce compte">
+      <label>Identifiant / pseudo (optionnel)</label>
+      <input id="ac-user" placeholder="nom d'utilisateur">
+      <label>Mot de passe fort (généré)</label>
+      <div class="row" style="align-items:stretch">
+        <input id="ac-pass" type="text" readonly style="font:13px ui-monospace,Menlo,monospace">
+        <button class="b-ghost" id="ac-regen" style="flex:0 0 auto" title="Régénérer">🎲</button>
+      </div>
+      <button class="b-gold" id="ac-prepare" style="width:100%;margin-top:10px">🔐 Préparer + ouvrir l'inscription</button>
+      <div id="ac-status" class="muted" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="sec-t">📇 Comptes préparés</div>
+      <div id="ac-list"><div class="empty">Aucun compte préparé.</div></div>
+    </div>
+  </div>
+
+  <!-- ONGLET : coffre chiffré -->
+  <div class="pane" id="pane-vault" style="display:none">
+    <div class="card">
+      <div class="sec-t">🗝 Secrets chiffrés (AES-GCM)</div>
+      <div class="warn">⚠️ Ne mets JAMAIS ici : numéro de carte complet + CVV, ni phrase de récupération crypto (12/24 mots). L'app ne les stocke jamais — pour payer, on passe par Apple Pay / un lien sécurisé où tu valides d'un Face ID.</div>
+      <label>Nom (ex. « Token Google », « Carte membre »)</label>
+      <input id="v-name" placeholder="Étiquette">
+      <label>Valeur secrète</label>
+      <input id="v-val" type="password" placeholder="Collée ici, chiffrée localement">
+      <button class="b-gold" id="v-add" style="width:100%;margin-top:8px">🔐 Chiffrer et stocker</button>
+      <div id="vlist" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- ONGLET : signature -->
+  <div class="pane" id="pane-sign" style="display:none">
+    <div class="card">
+      <div class="sec-t">✍️ Ma signature</div>
+      <p class="muted">Dessine ta signature une fois. Apex la prépare et la positionne sur les documents ; tu valides d'un Face ID au moment de signer (ton consentement reste le tien — eIDAS).</p>
+      <div id="sigwrap"><canvas id="sig"></canvas></div>
+      <div class="btns">
+        <button class="b-ghost" id="sig-clear">Effacer</button>
+        <button class="b-gold" id="sig-save">💾 Enregistrer (chiffré)</button>
+      </div>
+      <div id="sig-status" class="muted" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-t">📄 Signer un PDF (à ta place)</div>
+      <p class="muted">Je pose ta signature enregistrée sur le document et te rends le PDF signé. Tu valides d'un Face ID — ton consentement reste le tien (eIDAS). Tout se passe sur ton iPhone, aucun document n'est envoyé ailleurs.</p>
+      <label>Document PDF</label>
+      <input id="pdf-file" type="file" accept="application/pdf,.pdf">
+      <div id="pdf-info" class="muted" style="margin-top:6px"></div>
+      <div id="pdf-opts" style="display:none">
+        <div class="row">
+          <div><label>Page</label><select id="pdf-page"></select></div>
+          <div><label>Position</label><select id="pdf-pos">
+            <option value="br">Bas droite</option><option value="bl">Bas gauche</option>
+            <option value="tr">Haut droite</option><option value="tl">Haut gauche</option>
+          </select></div>
+        </div>
+        <button class="b-gold" id="pdf-sign" style="width:100%;margin-top:10px">🆔 Signer le PDF (Face ID)</button>
+      </div>
+      <div id="pdf-status" class="muted" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- ONGLET : historique -->
+  <div class="pane" id="pane-hist" style="display:none">
+    <div class="card">
+      <div class="sec-t">📜 Journal des autorisations</div>
+      <div id="histlist"><div class="empty">Aucune décision pour l'instant.</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" defer></script>
+<script>
+"use strict";
+(function(){
+  /* ============================================================
+   * Coffre d'autorisations Apex — broker 1-tap.
+   * Kevin autorise CHAQUE acte sensible d'un geste Face ID (WebAuthn = preuve
+   * cryptographique que c'est bien lui, sur son appareil). L'app fait tout le
+   * reste. Aucun contournement : le geste d'autorisation reste le sien (par
+   * conception — SCA/PSD2, liveness KYC, consentement eIDAS, consent OAuth).
+   * Node Firebase dédié `apex_approvals` (isolation, ne touche jamais cmc_ov).
+   * ============================================================ */
+  var UID = "kdmc_admin";                 /* le coffre de Kevin */
+  var FBURL = "https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app";
+  var WEB_KEY = "AIzaSyB-cmcteams-public-web-key-placeholder"; /* clé Web publique (auth anon) — renseignée par workflow */
+  var RP_ID = location.hostname;
+  var LS = {
+    cred: "apx_appr_webauthn_cred",       /* credId WebAuthn (Face ID) */
+    salt: "apx_appr_salt",
+    pin:  "apx_appr_pin",                 /* hash PIN fallback */
+    vault:"apx_appr_vault_v1",            /* secrets chiffrés (blob) */
+    sig:  "apx_appr_sig_v1",              /* signature chiffrée */
+    hist: "apx_appr_hist_v1",             /* journal local immuable */
+    tok:  "apx_appr_fbtok"
+  };
+  var $ = function(id){return document.getElementById(id);};
+  var enc = new TextEncoder();
+  var _fbtok = "";
+  var _sessionKey = null;                 /* clé AES dérivée après unlock (RAM only) */
+
+  function toast(m,ms){ var t=document.createElement("div"); t.className="toast"; t.textContent=m; document.body.appendChild(t); setTimeout(function(){t.remove();}, ms||2600); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+  function hex(buf){ return [].map.call(new Uint8Array(buf),function(b){return b.toString(16).padStart(2,"0");}).join(""); }
+  function b64(buf){ return btoa(String.fromCharCode.apply(null,new Uint8Array(buf))); }
+  function unb64(s){ var bin=atob(s); var u=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i); return u; }
+  async function sha256(s){ return hex(await crypto.subtle.digest("SHA-256", enc.encode(s))); }
+
+  /* ---------- Crypto coffre (AES-GCM + PBKDF2 200k) ---------- */
+  function getSalt(){ var s=localStorage.getItem(LS.salt); if(!s){ var u=crypto.getRandomValues(new Uint8Array(16)); s=b64(u); localStorage.setItem(LS.salt,s);} return unb64(s); }
+  async function deriveKey(secret){
+    var base = await crypto.subtle.importKey("raw", enc.encode(secret), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({name:"PBKDF2",salt:getSalt(),iterations:200000,hash:"SHA-256"},
+      base, {name:"AES-GCM",length:256}, false, ["encrypt","decrypt"]);
+  }
+  async function encJSON(obj){
+    if(!_sessionKey) throw new Error("locked");
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    var ct=await crypto.subtle.encrypt({name:"AES-GCM",iv:iv}, _sessionKey, enc.encode(JSON.stringify(obj)));
+    return b64(iv)+"."+b64(ct);
+  }
+  async function decJSON(blob){
+    if(!_sessionKey||!blob) return null;
+    try{ var p=blob.split("."); var iv=unb64(p[0]); var ct=unb64(p[1]);
+      var pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:iv}, _sessionKey, ct);
+      return JSON.parse(new TextDecoder().decode(pt)); }catch(e){ return null; }
+  }
+
+  /* ---------- WebAuthn (Face ID / Touch ID) ---------- */
+  function waSupported(){ return !!(window.PublicKeyCredential && navigator.credentials); }
+  async function waEnroll(){
+    var cid=crypto.getRandomValues(new Uint8Array(16));
+    var pub={ challenge:crypto.getRandomValues(new Uint8Array(32)),
+      rp:{name:"Coffre Apex",id:RP_ID}, user:{id:cid,name:"kevin",displayName:"Kevin"},
+      pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"preferred"},
+      timeout:60000, attestation:"none" };
+    var c=await navigator.credentials.create({publicKey:pub});
+    localStorage.setItem(LS.cred, b64(c.rawId));
+    return c;
+  }
+  async function waAssert(){
+    var raw=localStorage.getItem(LS.cred);
+    var pub={ challenge:crypto.getRandomValues(new Uint8Array(32)), rpId:RP_ID, userVerification:"required", timeout:60000 };
+    if(raw) pub.allowCredentials=[{type:"public-key",id:unb64(raw)}];
+    var a=await navigator.credentials.get({publicKey:pub});
+    return b64(a.rawId); /* preuve : credId assertion */
+  }
+
+  /* ---------- Firebase (auth anon + REST, node isolé apex_approvals) ---------- */
+  async function fbAuth(){
+    try{ var t=localStorage.getItem(LS.tok); if(t) { _fbtok=t; }
+      var r=await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+encodeURIComponent(WEB_KEY),
+        {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({returnSecureToken:true})});
+      if(r.ok){ var j=await r.json(); if(j.idToken){ _fbtok=j.idToken; localStorage.setItem(LS.tok,_fbtok); } }
+    }catch(e){ /* fail-open : la DB CMCteams accepte auth!=null OU ouverte selon règles */ }
+    setConn();
+  }
+  function fbUrl(path){ return FBURL+"/"+path+".json"+(_fbtok?("?auth="+encodeURIComponent(_fbtok)):""); }
+  async function fbGet(path){ try{ var r=await fetch(fbUrl(path)); if(!r.ok) return null; return await r.json(); }catch(e){ return null; } }
+  async function fbPut(path,val){ try{ var r=await fetch(fbUrl(path),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(val)}); return r.ok; }catch(e){ return false; } }
+  function setConn(){ var el=$("conn"); if(el) el.textContent=_fbtok?"🟢 synchronisé":"🟡 local"; }
+
+  /* ---------- Rendu des demandes en attente ---------- */
+  var TYPE_META={ oauth:["🔗","Connexion"], cb:["💳","Paiement"], signature:["✍️","Signature"], kyc:["🪪","Vérif identité (KYC)"], custom:["⚙️","Action"] };
+  var _pending={};
+  function renderReqs(){
+    var box=$("reqs"); var ids=Object.keys(_pending);
+    $("cnt").textContent = ids.length ? "("+ids.length+")" : "";
+    if(!ids.length){ box.innerHTML='<div class="empty">Aucune demande en attente. Quand Apex (ou Claude) a besoin de ton feu vert pour agir à ta place, ça apparaît ici.</div>'; return; }
+    box.innerHTML = ids.map(function(id){
+      var r=_pending[id]||{}; var m=TYPE_META[r.type]||TYPE_META.custom;
+      var pay = r.payload ? '<div class="pay">'+esc(typeof r.payload==="string"?r.payload:JSON.stringify(r.payload,null,1)).slice(0,600)+'</div>' : '';
+      return '<div class="req" data-id="'+esc(id)+'">'+
+        '<div class="top"><div class="ico">'+m[0]+'</div><div><div class="ttl">'+esc(r.title||m[1])+'</div>'+
+        '<div class="muted">'+m[1]+(r.requested_by?' • demandé par '+esc(r.requested_by):'')+'</div></div></div>'+
+        (r.detail?'<div class="det">'+esc(r.detail)+'</div>':'')+ pay +
+        '<div class="btns"><button class="b-ok" data-act="ok" data-id="'+esc(id)+'">🆔 Autoriser (Face ID)</button>'+
+        '<button class="b-no" data-act="no" data-id="'+esc(id)+'">Refuser</button></div></div>';
+    }).join("");
+  }
+  async function loadPending(){
+    var d=await fbGet("apex_approvals/"+UID+"/pending");
+    _pending = d && typeof d==="object" ? d : {};
+    renderReqs();
+  }
+
+  /* ---------- Décision (autoriser / refuser) avec preuve WebAuthn ---------- */
+  async function decide(id, ok){
+    var r=_pending[id]; if(!r) return;
+    var proof="";
+    if(ok){
+      try{ proof = waSupported() ? await waAssert() : ("pin:"+Date.now()); }
+      catch(e){ toast("Autorisation annulée"); return; }
+    }
+    var res={ status: ok?"approved":"rejected", ts:Date.now(), proof: proof?("wa:"+proof.slice(0,24)):"", type:r.type, title:r.title||"" };
+    await fbPut("apex_approvals/"+UID+"/resolved/"+id, res);
+    await fbPut("apex_approvals/"+UID+"/pending/"+id, null); /* retire de la file */
+    delete _pending[id];
+    await addHist(res);
+    renderReqs();
+    toast(ok?"✅ Autorisé — Apex reprend la main":"❌ Refusé");
+  }
+
+  /* ---------- Journal immuable (chain hash) ---------- */
+  async function loadHist(){
+    var h=[]; try{ h=JSON.parse(localStorage.getItem(LS.hist)||"[]"); }catch(e){}
+    var box=$("histlist");
+    if(!h.length){ box.innerHTML='<div class="empty">Aucune décision pour l\'instant.</div>'; return; }
+    box.innerHTML = h.slice().reverse().slice(0,80).map(function(e){
+      var m=TYPE_META[e.type]||TYPE_META.custom; var d=new Date(e.ts);
+      var when=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      return '<div class="hist"><span>'+m[0]+' '+esc(e.title||m[1])+'</span>'+
+        '<span class="'+(e.status==="approved"?"s-ok":"s-no")+'">'+(e.status==="approved"?"✅ autorisé":"❌ refusé")+' · '+when+'</span></div>';
+    }).join("");
+  }
+  async function addHist(res){
+    var h=[]; try{ h=JSON.parse(localStorage.getItem(LS.hist)||"[]"); }catch(e){}
+    var prev = h.length ? h[h.length-1].chain : "genesis";
+    res.chain = await sha256(prev+"|"+res.ts+"|"+res.status+"|"+res.type);
+    h.push(res); if(h.length>500) h=h.slice(-500);
+    localStorage.setItem(LS.hist, JSON.stringify(h));
+    loadHist();
+  }
+
+  /* ---------- Coffre secrets ---------- */
+  async function loadVault(){
+    var blob=localStorage.getItem(LS.vault); var arr = blob ? (await decJSON(blob)) : [];
+    if(!Array.isArray(arr)) arr=[];
+    var box=$("vlist");
+    box.innerHTML = arr.length ? arr.map(function(it,i){
+      return '<div class="hist"><span>🔐 '+esc(it.name)+'</span><span><button class="b-no" data-vdel="'+i+'" style="min-height:34px;padding:6px 10px">Suppr.</button></span></div>';
+    }).join("") : '<div class="empty">Coffre vide.</div>';
+  }
+  async function vaultArr(){ var blob=localStorage.getItem(LS.vault); var a= blob?await decJSON(blob):[]; return Array.isArray(a)?a:[]; }
+  async function vaultSave(arr){ localStorage.setItem(LS.vault, await encJSON(arr)); }
+
+  /* ---------- Signature (canvas) ---------- */
+  var _sigResizeFn=null;
+  function initSig(){
+    var c=$("sig"); if(!c) return; var ctx=c.getContext("2d");
+    function resize(){ var r=c.getBoundingClientRect(); if(r.width<2) return; c.width=r.width*devicePixelRatio; c.height=r.height*devicePixelRatio; ctx.setTransform(1,0,0,1,0,0); ctx.scale(devicePixelRatio,devicePixelRatio); ctx.lineWidth=2.4; ctx.lineCap="round"; ctx.strokeStyle="#f2efe0"; }
+    _sigResizeFn=resize;
+    resize();
+    var drawing=false,last=null;
+    function pos(e){ var r=c.getBoundingClientRect(); var t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+    function down(e){ drawing=true; last=pos(e); e.preventDefault(); }
+    function move(e){ if(!drawing)return; var p=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; e.preventDefault(); }
+    function up(){ drawing=false; }
+    c.addEventListener("mousedown",down); c.addEventListener("mousemove",move); window.addEventListener("mouseup",up);
+    c.addEventListener("touchstart",down,{passive:false}); c.addEventListener("touchmove",move,{passive:false}); c.addEventListener("touchend",up);
+    $("sig-clear").onclick=function(){ ctx.clearRect(0,0,c.width,c.height); $("sig-status").textContent=""; };
+    $("sig-save").onclick=async function(){
+      try{ var png=c.toDataURL("image/png"); localStorage.setItem(LS.sig, await encJSON({png:png,ts:Date.now()}));
+        $("sig-status").textContent="✅ Signature enregistrée (chiffrée). Apex l'utilisera après ton Face ID."; toast("Signature enregistrée"); }
+      catch(e){ $("sig-status").textContent="Erreur : "+e.message; }
+    };
+    initPdfSign();
+  }
+
+  /* ---------- Signer un PDF (pdf-lib vendorisé, chargé à la demande, 0 tiers) ---------- */
+  var _pdfBytes=null, _pdfDoc=null, _pdfName="";
+  function loadPdfLib(){
+    return new Promise(function(res,rej){
+      if(window.PDFLib) return res(window.PDFLib);
+      var s=document.createElement("script"); s.src="vendor/pdf-lib.min.js";
+      s.onload=function(){ window.PDFLib ? res(window.PDFLib) : rej(new Error("pdf-lib KO")); };
+      s.onerror=function(){ rej(new Error("chargement pdf-lib échoué")); };
+      document.head.appendChild(s);
+    });
+  }
+  function initPdfSign(){
+    var fin=$("pdf-file"); if(!fin) return;
+    fin.onchange=async function(){
+      var f=fin.files&&fin.files[0]; if(!f) return;
+      $("pdf-status").textContent="Chargement du document…";
+      try{
+        var PDFLib=await loadPdfLib();
+        _pdfBytes=new Uint8Array(await f.arrayBuffer()); _pdfName=f.name||"document.pdf";
+        _pdfDoc=await PDFLib.PDFDocument.load(_pdfBytes,{ignoreEncryption:true});
+        var n=_pdfDoc.getPageCount();
+        var sel=$("pdf-page"); sel.innerHTML="";
+        for(var i=0;i<n;i++){ var o=document.createElement("option"); o.value=i; o.textContent="Page "+(i+1); sel.appendChild(o); }
+        sel.value=n-1; /* dernière page par défaut */
+        $("pdf-info").textContent="📄 "+esc(_pdfName)+" — "+n+" page"+(n>1?"s":"");
+        $("pdf-opts").style.display=""; $("pdf-status").textContent="";
+      }catch(e){ $("pdf-status").textContent="Erreur : "+e.message; $("pdf-opts").style.display="none"; }
+    };
+    $("pdf-sign").onclick=async function(){
+      if(!_pdfDoc){ toast("Choisis un PDF d'abord"); return; }
+      var sigBlob=localStorage.getItem(LS.sig); var sig= sigBlob?await decJSON(sigBlob):null;
+      if(!sig||!sig.png){ $("pdf-status").textContent="⚠️ Enregistre d'abord ta signature (ci-dessus)."; return; }
+      /* Autorisation FORTE : Face ID avant d'apposer la signature (consentement eIDAS = ton geste) */
+      try{ if(waSupported()) await waAssert(); }
+      catch(e){ toast("Signature annulée"); return; }
+      try{
+        var PDFLib=await loadPdfLib();
+        /* data URL → octets bruts (embedPng est fiable sur des bytes, pas sur la string data:) */
+        var sigBytes=unb64(String(sig.png).split(",")[1]||"");
+        var png=await _pdfDoc.embedPng(sigBytes);
+        var idx=parseInt($("pdf-page").value,10)||0; var page=_pdfDoc.getPages()[idx];
+        var ps=page.getSize(); var w=Math.min(150, ps.width*0.32); var h=w*(png.height/png.width);
+        var m=24, pos=$("pdf-pos").value;
+        var x = (pos==="br"||pos==="tr") ? ps.width-w-m : m;
+        var y = (pos==="br"||pos==="bl") ? m : ps.height-h-m;
+        page.drawImage(png,{x:x,y:y,width:w,height:h});
+        /* horodatage discret sous la signature */
+        try{ var font=await _pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+          page.drawText("Signé le "+new Date().toLocaleString("fr-FR"),{x:x,y:Math.max(4,y-11),size:7,font:font,color:PDFLib.rgb(0.4,0.4,0.4)}); }catch(_){}
+        var out=await _pdfDoc.save();
+        var blob=new Blob([out],{type:"application/pdf"});
+        var url=URL.createObjectURL(blob); var a=document.createElement("a");
+        a.href=url; a.download=_pdfName.replace(/\.pdf$/i,"")+"-signe.pdf"; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){URL.revokeObjectURL(url);},4000);
+        await addHist({status:"approved",ts:Date.now(),proof:"wa:pdf",type:"signature",title:"PDF signé : "+_pdfName});
+        $("pdf-status").textContent="✅ PDF signé et téléchargé. (Recharge le document pour re-signer.)";
+        toast("📄 PDF signé");
+        /* reset doc (le save() a pu détacher le buffer) */
+        _pdfDoc=null; $("pdf-opts").style.display="none"; $("pdf-file").value="";
+      }catch(e){ $("pdf-status").textContent="Erreur signature : "+(e&&(e.message||e.name)||String(e)); }
+    };
+  }
+
+  /* ---------- Onglets ---------- */
+  function initTabs(){
+    document.querySelectorAll(".tab").forEach(function(t){
+      t.onclick=function(){
+        document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("on");}); t.classList.add("on");
+        document.querySelectorAll(".pane").forEach(function(p){p.style.display="none";});
+        var pane=$("pane-"+t.dataset.tab); if(pane) pane.style.display="";
+        if(t.dataset.tab==="vault") loadVault();
+        if(t.dataset.tab==="hist") loadHist();
+        if(t.dataset.tab==="account") loadAccounts();
+        if(t.dataset.tab==="sign" && _sigResizeFn) _sigResizeFn(); /* canvas mesuré une fois visible (sinon 0×0) */
+      };
+    });
+  }
+
+  /* ---------- Déverrouillage (Face ID / PIN) ---------- */
+  async function unlockWith(secret){
+    _sessionKey = await deriveKey(secret);
+    /* sanity : si un coffre existe, vérifie qu'on peut le lire */
+    var blob=localStorage.getItem(LS.vault);
+    if(blob){ var ok=await decJSON(blob); if(ok===null){ _sessionKey=null; return false; } }
+    return true;
+  }
+  function openApp(){
+    $("lock").style.display="none"; $("app").style.display="";
+    fbAuth().then(loadPending); loadHist(); initSig(); initTabs(); refreshInstallBar();
+    /* rafraîchit la file toutes les 20 s + au focus (leçon temps réel) */
+    setInterval(loadPending, 20000);
+    window.addEventListener("focus", loadPending);
+    document.addEventListener("visibilitychange", function(){ if(!document.hidden) loadPending(); });
+  }
+
+  function initLock(){
+    var msg=$("lock-msg");
+    if(!waSupported()) msg.textContent="Face ID indisponible sur cet appareil — un code protège le coffre.";
+    $("unlock").onclick=async function(){
+      if(!waSupported()){ $("pinbox").style.display=""; return; }
+      try{
+        if(!localStorage.getItem(LS.cred)){ await waEnroll(); }
+        else { await waAssert(); }
+        /* clé de session = credId (device-bound) + salt : le déverrouillage exige le vrai device + Face ID */
+        var seed = localStorage.getItem(LS.cred)+":"+RP_ID;
+        if(await unlockWith(seed)) openApp(); else { toast("Coffre illisible — réessaie"); }
+      }catch(e){ msg.textContent="Face ID annulé. "+(e && e.message?"":""); $("pinbox").style.display=""; }
+    };
+    $("unlock-pin").onclick=function(){ $("pinbox").style.display=""; };
+    $("pin-go").onclick=async function(){
+      var p=$("pin").value.trim(); if(p.length<4){ toast("Code trop court"); return; }
+      var stored=localStorage.getItem(LS.pin); var h=await sha256(p+":"+RP_ID);
+      if(!stored){ localStorage.setItem(LS.pin,h); }          /* 1ère fois : crée le code */
+      else if(stored!==h){ toast("Code incorrect"); return; }
+      if(await unlockWith("pin:"+h)) openApp(); else toast("Coffre illisible");
+    };
+  }
+
+  /* ---------- Créer un compte (générateur + kit pré-rempli, 0 tiers) ---------- */
+  var ACC_KEY="apx_appr_accounts_v1", _accCache=[];
+  function _rand(n){ var m=Math.floor(0xFFFFFFFF/n)*n,x; do{ x=crypto.getRandomValues(new Uint32Array(1))[0]; }while(x>=m); return x%n; }
+  function genPassword(len){
+    len=len||20;
+    var sets=["ABCDEFGHJKLMNPQRSTUVWXYZ","abcdefghijkmnpqrstuvwxyz","23456789","!@#$%^&*-_=+?."];
+    var all=sets.join(""), out=[];
+    sets.forEach(function(s){ out.push(s.charAt(_rand(s.length))); });
+    while(out.length<len) out.push(all.charAt(_rand(all.length)));
+    for(var i=out.length-1;i>0;i--){ var j=_rand(i+1),t=out[i]; out[i]=out[j]; out[j]=t; }
+    return out.join("");
+  }
+  async function copyText(s){
+    try{ if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(s); return true; } }catch(e){}
+    try{ var ta=document.createElement("textarea"); ta.value=s; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); var ok=document.execCommand("copy"); ta.remove(); return ok; }catch(e){ return false; }
+  }
+  async function accArr(){ var b=localStorage.getItem(ACC_KEY); var a= b?await decJSON(b):[]; return Array.isArray(a)?a:[]; }
+  async function accSave(a){ localStorage.setItem(ACC_KEY, await encJSON(a)); }
+  async function loadAccounts(){
+    var a=await accArr(); _accCache=a; var box=$("ac-list");
+    if(!a.length){ box.innerHTML='<div class="empty">Aucun compte préparé.</div>'; return; }
+    box.innerHTML=a.map(function(r,i){
+      var mask=r.pass?(r.pass.slice(0,3)+"•••••"):"—";
+      return '<div class="req"><div class="top"><div class="ico">🆕</div><div style="flex:1"><div class="ttl">'+esc(r.service)+'</div>'+
+        '<div class="muted">'+esc(r.email||r.user||"")+' · '+esc(mask)+'</div></div></div>'+
+        '<div class="btns" style="flex-wrap:wrap">'+
+        (r.email?'<button class="b-ghost" data-acc="email:'+i+'" style="min-height:40px">📋 Email</button>':'')+
+        '<button class="b-ghost" data-acc="pass:'+i+'" style="min-height:40px">📋 Mot de passe</button>'+
+        (r.url?'<button class="b-ghost" data-acc="open:'+i+'" style="min-height:40px">🌐 Ouvrir</button>':'')+
+        '<button class="b-no" data-acc="del:'+i+'" style="min-height:40px;max-width:60px">🗑</button>'+
+        '</div></div>';
+    }).join("");
+  }
+  function initAccount(){
+    var pf=$("ac-pass"); if(pf && !pf.value) pf.value=genPassword(20);
+    $("ac-regen") && ($("ac-regen").onclick=function(){ $("ac-pass").value=genPassword(20); });
+    $("ac-prepare") && ($("ac-prepare").onclick=async function(){
+      var service=$("ac-service").value.trim(); if(!service){ toast("Nom du service requis"); return; }
+      if(!$("ac-pass").value) $("ac-pass").value=genPassword(20);
+      var url=$("ac-url").value.trim();
+      var rec={ service:service, url:url, email:$("ac-email").value.trim(), user:$("ac-user").value.trim(), pass:$("ac-pass").value, ts:Date.now() };
+      var a=await accArr(); a.push(rec); await accSave(a);
+      await addHist({status:"approved",ts:Date.now(),proof:"",type:"custom",title:"Compte préparé : "+service});
+      loadAccounts();
+      var opened=false;
+      if(/^https?:\/\//i.test(url)){ try{ window.open(url,"_blank","noopener"); opened=true; }catch(e){} }
+      $("ac-status").textContent="✅ Préparé + stocké chiffré. "+(opened?"Page d'inscription ouverte — colle les infos (boutons « Comptes préparés »).":"Ajoute la page d'inscription pour l'ouvrir en 1 tap.");
+      $("ac-service").value="";$("ac-url").value="";$("ac-email").value="";$("ac-user").value="";$("ac-pass").value=genPassword(20);
+      toast("🆕 Compte préparé");
+    });
+  }
+
+  /* ---------- PWA : installable iOS / Android / desktop ---------- */
+  var _deferredPrompt=null;
+  function isStandalone(){ return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone===true; }
+  function isIOS(){ return /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream; }
+  function initPwa(){
+    if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js").catch(function(){}); }catch(e){} }
+    window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); _deferredPrompt=e; refreshInstallBar(); });
+    window.addEventListener("appinstalled", function(){ _deferredPrompt=null; var b=$("install-bar"); if(b) b.style.display="none"; toast("✅ App installée"); });
+  }
+  function refreshInstallBar(){
+    var bar=$("install-bar"); if(!bar) return;
+    if(isStandalone() || localStorage.getItem("apx_appr_install_dismissed")==="1"){ bar.style.display="none"; return; }
+    if(_deferredPrompt){ $("install-txt").textContent="Ajoute le Coffre à ton écran d'accueil, en 1 tap."; bar.style.display=""; return; }
+    if(isIOS()){ $("install-txt").textContent="iPhone : bouton Partager ⬆️ puis « Sur l'écran d'accueil »."; $("install-go").textContent="Comment ?"; bar.style.display=""; return; }
+    bar.style.display="none"; /* desktop sans prompt dispo : rien */
+  }
+
+  /* ---------- Actions déléguées ---------- */
+  document.addEventListener("click", async function(e){
+    var b=e.target.closest("[data-act]");
+    if(b){ decide(b.dataset.id, b.dataset.act==="ok"); return; }
+    var vd=e.target.closest("[data-vdel]");
+    if(vd){ var a=await vaultArr(); a.splice(+vd.dataset.vdel,1); await vaultSave(a); loadVault(); return; }
+    var ac=e.target.closest("[data-acc]");
+    if(ac){ var pp=ac.dataset.acc.split(":"), act=pp[0], idx=+pp[1], r=_accCache[idx]; if(!r) return;
+      if(act==="email"){ await copyText(r.email||""); toast("Email copié"); }
+      else if(act==="pass"){ await copyText(r.pass||""); toast("Mot de passe copié"); }
+      else if(act==="open"){ try{ window.open(r.url,"_blank","noopener"); }catch(e){} }
+      else if(act==="del"){ var aa=await accArr(); aa.splice(idx,1); await accSave(aa); loadAccounts(); }
+      return;
+    }
+  });
+  document.addEventListener("DOMContentLoaded", function(){
+    $("v-add") && ($("v-add").onclick=async function(){
+      var n=$("v-name").value.trim(), v=$("v-val").value;
+      if(!n||!v){ toast("Nom + valeur requis"); return; }
+      /* garde-fou : refuse CB complète (PAN 13-19 chiffres) + seed phrase */
+      if(/\b\d{13,19}\b/.test(v.replace(/\s/g,""))){ toast("⛔ Numéro de carte détecté — jamais stocké ici"); return; }
+      if(v.trim().split(/\s+/).length>=12 && /^[a-z ]+$/i.test(v.trim())){ toast("⛔ Ça ressemble à une phrase de récupération — jamais ici"); return; }
+      var a=await vaultArr(); a.push({name:n,val:v,ts:Date.now()}); await vaultSave(a);
+      $("v-name").value=""; $("v-val").value=""; loadVault(); toast("🔐 Chiffré et stocké");
+    });
+    $("sim-go") && ($("sim-go").onclick=async function(){
+      var t=$("sim-type").value; var id="req_"+Date.now();
+      var demo={ oauth:{title:"Se connecter à Google",detail:"Autoriser Apex à lire ton agenda",payload:{scope:"calendar.readonly"}},
+        cb:{title:"Payer 12,90 € — Abonnement",detail:"Via Apple Pay (tu valides d'un Face ID, aucune carte stockée)",payload:{amount:"12.90 EUR",method:"apple_pay"}},
+        signature:{title:"Signer le contrat NDA",detail:"Document préparé par Apex, champs positionnés",payload:{doc:"nda_2026.pdf",pages:3}},
+        kyc:{title:"Vérifier ton identité",detail:"Documents pré-remplis ; le selfie en direct reste toi (liveness)",payload:{provider:"stripe_identity"}},
+        custom:{title:"Action personnalisée",detail:"Exemple d'acte nécessitant ton feu vert",payload:{}} }[t];
+      var req={ type:t, title:demo.title, detail:demo.detail, payload:demo.payload, requested_by:"test", ts:Date.now() };
+      _pending[id]=req; renderReqs();
+      await fbPut("apex_approvals/"+UID+"/pending/"+id, req);
+      toast("Demande créée — autorise-la 👆");
+    });
+    $("install-go") && ($("install-go").onclick=async function(){
+      if(_deferredPrompt){ _deferredPrompt.prompt(); try{ await _deferredPrompt.userChoice; }catch(e){} _deferredPrompt=null; refreshInstallBar(); return; }
+      if(isIOS()){ toast("Touche le bouton Partager ⬆️ en bas, puis « Sur l'écran d'accueil »",5000); return; }
+      toast("Menu du navigateur → « Installer l'application »",4500);
+    });
+    $("install-x") && ($("install-x").onclick=function(){ localStorage.setItem("apx_appr_install_dismissed","1"); var b=$("install-bar"); if(b) b.style.display="none"; });
+    initAccount();
+    initPwa();
+    initLock();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+/* APEX v13 — Styles inline sortis pour CSP strict (P0 sécu fix v13.0.13).
+   Avant : style="..." inline sur rescue + noscript = besoin unsafe-inline CSP.
+   Après : CSS externe avec nonce-protégé = CSP strict zero unsafe-*. */
+
+/* Rescue button SOS — bouton permanent indépendant framework */
+#apex-rescue-btn {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  right: 16px;
+  z-index: 2147483647;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #cc3030, #aa1010);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(204, 48, 48, 0.4);
+  font-size: 20px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  font-weight: 700;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  touch-action: manipulation;
+  font-family: system-ui, sans-serif;
+}
+
+#apex-rescue-btn.visible {
+  display: flex;
+}
+
+/* Hint de chargement long */
+.apex-splash-hint {
+  margin-top: 16px;
+  color: #a0a4c0;
+  font-size: 13px;
+  text-align: center;
+  max-width: 300px;
+  padding: 0 20px;
+}
+
+/* noscript fallback (pas affecté par CSP en pratique mais cohérence) */
+.apex-noscript-fallback {
+  padding: 40px;
+  text-align: center;
+  color: #fff;
+  background: #08080f;
+  min-height: 100vh;
+}
+
+.apex-noscript-fallback h1 {
+  color: #c9a227;
+  font-family: Georgia, serif;
+}
+
+/* v13.4.7 (Kevin "pas de badge visible") — badge version STATIQUE HTML pur.
+ * Garanti visible même si bundle JS crash. Indépendant de tout framework. */
+#apex-version-badge-static {
+  position: fixed;
+  bottom: max(6px, env(safe-area-inset-bottom, 6px));
+  right: 6px;
+  z-index: 9999;
+  padding: 3px 7px;
+  background: linear-gradient(135deg, rgba(232,184,48,0.18), rgba(232,184,48,0.08));
+  border: 1px solid rgba(232,184,48,0.4);
+  color: rgba(232,184,48,0.9);
+  font-size: 10px;
+  font-family: 'SF Mono', Menlo, ui-monospace, monospace;
+  font-weight: 700;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  transition: opacity 200ms ease;
+}
+#apex-version-badge-static:hover {
+  opacity: 1;
+}
+@media (max-width: 480px) {
+  #apex-version-badge-static {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+}
+
+/* ============================================================
+   v13.4.93 — Toolbar rescue permanente (Kevin 2026-05-14)
+   FIX: "boutons chevauchent contenu / zoom" iPhone Kevin
+   - Réduit taille 38→32px
+   - bottom positionné au-dessus barre nav iOS Safari
+   - body padding-right libère 44px à droite pour content
+   - Collapsible quand admin tap ailleurs (auto-fade 70% opacity)
+   ============================================================ */
+/* v13.4.176 (Kevin "Toujours superposition de commandes") :
+ * Auto-hide rescue toolbar dès que l'app principale est rendue avec succès.
+ * La toolbar rescue est conçue POUR le mode rescue (app blanche, framework cassé).
+ * Quand #apex-root a du contenu (= app rendue), elle ne sert plus et chevauche
+ * le bouton Envoyer chat + nav bottom + SOS → confusion visuelle.
+ *
+ * Pattern : opacity 0 + pointer-events none par défaut, sauf si <body data-apex-rescue="1">
+ * (set par rescue.js au boot quand framework KO ou via long-press SOS).
+ */
+#apex-rescue-toolbar {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+body[data-apex-rescue="1"] #apex-rescue-toolbar,
+body[data-apex-rescue-show="1"] #apex-rescue-toolbar {
+  opacity: 0.72 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
+body[data-apex-rescue="1"] #apex-rescue-toolbar:hover,
+body[data-apex-rescue="1"] #apex-rescue-toolbar:focus-within,
+body[data-apex-rescue-show="1"] #apex-rescue-toolbar:hover,
+body[data-apex-rescue-show="1"] #apex-rescue-toolbar:focus-within {
+  opacity: 1 !important;
+}
+
+/* v13.4.176 — Protection anti-zoom complémentaire :
+ * body { max-width:100vw + overflow-x:hidden } v13.4.112 garantit le viewport,
+ * mais un enfant direct peut quand même déclencher un layout horizontal qui
+ * provoque fit-to-content sur Safari iOS. On force max-width:100% sur tous
+ * les enfants directs de body (sans casser position:fixed/absolute existants). */
+body > *:not([style*="position:fixed"]):not([style*="position:absolute"]) {
+  max-width: 100%;
+}
+
+#apex-rescue-toolbar {
+  position: fixed;
+  bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 9998;
+  opacity: 0.72;
+  transition: opacity 200ms ease;
+}
+#apex-rescue-toolbar:hover,
+#apex-rescue-toolbar:focus-within {
+  opacity: 1;
+}
+#apex-rescue-toolbar button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(20, 20, 35, 0.82);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  color: #c9a227;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 120ms ease, background 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px; /* Apple HIG ≥44px (v13.4.359) */
+}
+#apex-rescue-toolbar button:active {
+  transform: scale(0.92);
+  background: rgba(201, 162, 39, 0.25);
+}
+#apex-rescue-toolbar #apex-rescue-coffre {
+  background: linear-gradient(135deg, rgba(201, 162, 39, 0.85), rgba(232, 184, 48, 0.85));
+  border-color: rgba(232, 184, 48, 0.9);
+  color: #1a1408;
+  font-weight: 700;
+}
+@media (max-width: 380px) {
+  #apex-rescue-toolbar button {
+    width: 44px;
+    height: 44px;
+    font-size: 12px;
+  }
+}
+
+/* v13.4.112 (Kevin DAA "zoom permanent viewport entier toutes vues") :
+   CAUSE RACINE IDENTIFIEE : body { padding-right: 42px } global cause overflow
+   horizontal sur certaines vues → iPhone Safari fit-to-content zoom permanent.
+
+   FIX : retire le padding-right global. La toolbar rescue position:fixed
+   ne consomme PAS d'espace dans le flow, donc pas besoin de padding global.
+   Au cas où un contenu dépasserait, on garantit max-width:100vw + overflow-x:hidden
+   sur html/body pour empêcher tout débordement.
+
+   Erreur #56 documentée enfin résolue par diagnostic Kevin précis (DAA). */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* v13.4.179 (Kevin "Il manque à droite, ça déborde, c'est caché") :
+ * 3 screenshots prouvent overflow horizontal portrait iPhone :
+ * - Vue Chat : bouton Envoyer coupé, "Ultra" tronqué, nav bas tronquée
+ * - Vue Mémoire : cards "Scanner..." + "Zoom Inspector live (debug UX zoom Kevi..."
+ *   tronquées à droite + cards voix sans bouton visible
+ *
+ * CAUSE : flex children sans `min-width: 0` (default `min-width: auto`)
+ * gardent leur largeur intrinsèque (placeholder, label long, contenu) et
+ * poussent les autres enfants HORS viewport. Le `overflow-x:hidden` body
+ * masque visuellement mais le contenu reste inaccessible.
+ *
+ * FIX : force `min-width: 0` sur tous les flex/grid children potentiels
+ * + max-width: 100% sur cards/sections + safe-area-inset-right respect. */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Tous les containers principaux : respectent strict viewport + safe-area */
+#apex-root,
+.ax-page,
+.ax-chat,
+.ax-admin,
+.ax-settings,
+.ax-vault-page,
+.ax-modal,
+.ax-modal-content,
+main,
+[role="main"] {
+  max-width: 100%;
+  padding-right: env(safe-area-inset-right, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  box-sizing: border-box;
+}
+
+/* Flex/grid items : autorisent réduction quand espace manque (anti-push) */
+/* v13.4.260 (Kevin screenshot Centre Admin tronqué à droite) : #apex-root est
+ * un flex container (flex-direction:column). Ses enfants directs (vues :
+ * .ax-admin, .ax-settings, vue Commandes…) gardaient min-width:auto → forcés
+ * à leur largeur min-content (barre d'onglets nowrap ~599px) → débordent le
+ * viewport, max-width:100vw défait. `#apex-root > *` manquait dans cette liste. */
+#apex-root > *,
+.ax-chat-input > *,
+.ax-chat-nav > *,
+.ax-row > *,
+.ax-actions > *,
+.ax-tabs > *,
+.ax-card > *,
+.ax-section > *,
+nav > *,
+form > *,
+[class*="ax-flex"] > * {
+  min-width: 0;
+}
+
+/* Textarea/input dans flex : doit pouvoir se rétracter (sinon placeholder pousse) */
+.ax-chat-input textarea,
+.ax-chat-input input,
+.ax-input,
+form textarea,
+form input[type="text"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Texts longs : break-word pour ne pas pousser horizontalement */
+.ax-card,
+.ax-pill,
+.ax-suggestion,
+.ax-suggestion-pill,
+.ax-section-title,
+.ax-msg,
+.ax-modal h1,
+.ax-modal h2,
+.ax-modal h3 {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+/* Très petits viewports (iPhone SE 375, iPhone mini 360) : nav bas + boutons compactés */
+@media (max-width: 400px) {
+  .ax-chat-nav .ax-btn-sm {
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+    min-height: 28px !important;
+  }
+  .ax-chat-input .ax-btn-icon,
+  .ax-icon-compact {
+    min-width: 36px !important;
+    min-height: 36px !important;
+    padding: 4px !important;
+  }
+  /* v13.4.344 audit UX : les icônes du TOPBAR (📜🗑☰) étaient écrasées à 24px de
+   * large par le flex du header (< cible Apple HIG). Header-scoped = prioritaire. */
+  .ax-chat-header .ax-btn-icon {
+    min-width: 44px !important;
+    width: 44px !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* v13.4.94 — FIX iOS Safari auto-zoom triple stack (Kevin "Zoom tjs UX") :
+   1. -webkit-text-size-adjust:100% sur html : empêche Safari iOS de zoomer le texte
+      automatiquement quand l'écran tourne ou quand un input prend le focus.
+   2. touch-action: manipulation : désactive double-tap-to-zoom Safari iOS.
+   3. font-size 16px FORCÉ sur tous inputs/selects/textarea (Safari iOS zoom dès <16px). */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+body {
+  touch-action: manipulation;
+}
+input, select, textarea {
+  font-size: 16px !important; /* iOS Safari zoom trigger < 16px */
+  -webkit-text-size-adjust: 100%;
+}
+button {
+  font-size: max(14px, 1em);
+  touch-action: manipulation;
+}
+/* Anti-zoom sur double-tap pour TOUS éléments interactifs */
+a, button, [role="button"], [data-route], [data-nav-route] {
+  touch-action: manipulation;
+}

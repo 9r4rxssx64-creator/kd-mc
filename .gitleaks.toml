@@ -1,0 +1,55 @@
+# Gitleaks config — Apex v13 (Kevin "éviter gros coûts, qualité pro")
+#
+# Détecte tokens API + secrets dans commits. Allowlist pour les valeurs
+# legit dans tests / mock / patterns regex (pas de leak réel).
+
+title = "Apex v13 Gitleaks config"
+
+[extend]
+# Utilise les rules par défaut Gitleaks (AWS, GCP, Stripe, Anthropic, OpenAI, etc.)
+useDefault = true
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API key sk-ant-api03-*"
+regex = '''sk-ant-api\d{2}-[A-Za-z0-9_\-]{40,}'''
+keywords = ["sk-ant-api"]
+
+[[rules]]
+id = "openai-project-key"
+description = "OpenAI Project key sk-proj-*"
+regex = '''sk-proj-[A-Za-z0-9_\-]{40,}'''
+keywords = ["sk-proj"]
+
+[[rules]]
+id = "github-pat-fine-grained"
+description = "GitHub Personal Access Token fine-grained"
+regex = '''github_pat_[A-Za-z0-9_]{82,}'''
+keywords = ["github_pat"]
+
+[allowlist]
+description = "Allowlist false-positives (patterns regex dans code source + tests fixtures)"
+paths = [
+  '''apex-ai/v13/services/credential-patterns\.ts''',
+  '''apex-ai/v13/tests/.*\.test\.ts''',
+  '''apex-ai/v13/services/apex-smart-classifier\.ts''',
+  # Build output mirror déployé (généré depuis apex-ai/v13/dist/ — la source
+  # reste scannée). Les chunks minifiés embarquent les regex de détection de
+  # credentials (credential-patterns.ts, déjà allowlisté) + haute entropie de
+  # minification → faux positifs. La source apex-ai/v13/ attrape les vrais leaks.
+  '''apex-ai-v13/.*''',
+  '''CLAUDE\.md''',
+  '''KEVIN_INVENTORY\.md''',
+  '''MEMO_RESUME\.md''',
+  '''.gitleaks\.toml''',
+  '''apex-ai/v13/IOS_NATIVE.*\.md''',
+]
+regexes = [
+  # Valeurs de test ${'A'.repeat(95)} etc.
+  '''A{50,}|B{50,}|C{50,}|D{50,}|E{50,}|R{50,}''',
+  # Documentation patterns avec * et placeholders
+  '''sk-ant-api03-\$\{''',
+  '''sk-proj-\$\{''',
+  # Mock test patterns
+  '''sk-ant-test|sk-test|sk-already-local|sk-mock|sk-fake''',
+]

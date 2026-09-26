@@ -1,0 +1,71 @@
+{
+  "youtube": {
+    "name": "YouTube",
+    "envKeys": ["YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN"],
+    "formats": {
+      "long": { "aspect": "16:9", "width": 1920, "height": 1080, "maxDurationSec": 43200 },
+      "short": { "aspect": "9:16", "width": 1080, "height": 1920, "maxDurationSec": 60 }
+    },
+    "maxFileSizeMB": 131072,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "rateLimit": { "perDay": 6, "perRequest": "10000 quota units" }
+  },
+  "tiktok": {
+    "name": "TikTok",
+    "envKeys": ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET", "TIKTOK_ACCESS_TOKEN"],
+    "formats": {
+      "short": { "aspect": "9:16", "width": 1080, "height": 1920, "maxDurationSec": 600 }
+    },
+    "maxFileSizeMB": 287,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "rateLimit": { "perDay": 6, "note": "Sandbox mode, post to inbox" }
+  },
+  "instagram": {
+    "name": "Instagram",
+    "envKeys": ["IG_USER_ID", "IG_ACCESS_TOKEN"],
+    "formats": {
+      "reel": { "aspect": "9:16", "width": 1080, "height": 1920, "maxDurationSec": 90 },
+      "post": { "aspect": "1:1", "width": 1080, "height": 1080, "maxDurationSec": 60 }
+    },
+    "maxFileSizeMB": 100,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "requiresPublicUrl": true,
+    "rateLimit": { "perHour": 25 }
+  },
+  "facebook": {
+    "name": "Facebook",
+    "envKeys": ["FB_PAGE_ID", "FB_PAGE_TOKEN"],
+    "formats": {
+      "reel": { "aspect": "9:16", "width": 1080, "height": 1920, "maxDurationSec": 90 },
+      "video": { "aspect": "16:9", "width": 1920, "height": 1080, "maxDurationSec": 14400 }
+    },
+    "maxFileSizeMB": 1024,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "rateLimit": { "perHour": 200 }
+  },
+  "twitter": {
+    "name": "X (Twitter)",
+    "envKeys": ["TWITTER_API_KEY", "TWITTER_API_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_SECRET"],
+    "formats": {
+      "video": { "aspect": "16:9", "width": 1920, "height": 1080, "maxDurationSec": 140 }
+    },
+    "maxFileSizeMB": 512,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "rateLimit": { "per3h": 300 }
+  },
+  "telegram": {
+    "name": "Telegram (delivery)",
+    "envKeys": ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
+    "formats": {
+      "video": { "aspect": "any", "width": 0, "height": 0, "maxDurationSec": 3600 }
+    },
+    "maxFileSizeMB": 50,
+    "rateLimit": { "perSec": 30 },
+    "purpose": "Internal: deliver generated videos to Kevin for review before publish"
+  }
+}

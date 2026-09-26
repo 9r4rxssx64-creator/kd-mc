@@ -1,0 +1,2049 @@
+/* APEX v13 — Components
+ * Chat, admin, landing, forms, buttons, badges, modals
+ * Repensé pour dépasser Claude.ai/ChatGPT en mobile-first iPhone PWA
+ */
+
+/* ───────── Buttons ───────── */
+.ax-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ax-s-2);
+  padding: var(--ax-s-3) var(--ax-s-5);
+  background: var(--ax-bg-flat);
+  color: var(--ax-text);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r);
+  font-weight: 600;
+  font-size: var(--ax-text-sm);
+  transition: background var(--ax-d-fast) var(--ax-ease), transform var(--ax-d-fast) var(--ax-ease);
+  min-height: var(--ax-touch-min);
+}
+
+.ax-btn:hover {
+  background: var(--ax-bg-card);
+}
+
+.ax-btn:active {
+  transform: scale(0.97);
+}
+
+.ax-btn-primary {
+  background: linear-gradient(135deg, var(--ax-gold) 0%, var(--ax-gold-bright) 100%);
+  color: #08080f;
+  border: none;
+  box-shadow: var(--ax-shadow-md);
+}
+
+.ax-btn-primary:hover {
+  background: linear-gradient(135deg, var(--ax-gold-bright) 0%, var(--ax-gold) 100%);
+  box-shadow: var(--ax-shadow-lg);
+}
+
+.ax-btn-block {
+  width: 100%;
+}
+
+.ax-btn-ghost {
+  background: transparent;
+  color: var(--ax-text-dim);
+  border-color: var(--ax-border);
+}
+
+.ax-btn-ghost:hover {
+  background: var(--ax-bg-flat);
+  color: var(--ax-text);
+}
+
+.ax-btn-danger {
+  background: linear-gradient(135deg, #cc3030 0%, #aa2020 100%);
+  color: #fff;
+  border: none;
+  box-shadow: var(--ax-shadow-md);
+}
+
+.ax-btn-danger:hover {
+  background: linear-gradient(135deg, #dd4040 0%, #cc3030 100%);
+  box-shadow: var(--ax-shadow-lg);
+}
+
+.ax-btn-sm {
+  padding: var(--ax-s-2) var(--ax-s-3);
+  font-size: var(--ax-text-xs);
+  /* v13.3.74 a11y fix : Apple HIG min 44px touch target */
+  min-height: var(--ax-touch-min);
+  min-width: var(--ax-touch-min);
+}
+
+.ax-btn-icon {
+  width: var(--ax-touch-min);
+  height: var(--ax-touch-min);
+  /* v13.4.344 audit UX : min-width/height 44px — sans ça, un parent flex (topbar)
+   * écrasait les icônes 📜🗑☰ à 24px de large (< cible tactile Apple HIG 44px). */
+  min-width: var(--ax-touch-min);
+  min-height: var(--ax-touch-min);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--ax-r-full);
+}
+
+/* v13.4.344 audit UX : plancher tactile Apple HIG 44px sur les boutons (les cibles
+ * < 36px repérées dans les tables admin denses avaient font-size:10-11px sans
+ * min-height). N'affecte pas la largeur (texte libre). Exceptions : liens inline
+ * markdown, chips de nav scrollables, badge version → gardent leur flow. */
+button, [role="button"], .ax-btn, .ax-btn-sm {
+  min-height: 44px;
+}
+.ax-md-body a, .ax-message a, .ax-msg-body a, .ax-result a,
+.ax-tabs a, .ax-tabs button, .ax-nav-item, .ax-chip, .ax-badge,
+.ax-version-badge, .ax-md-body button {
+  min-height: 0;
+}
+
+/* ───────── Forms ───────── */
+.ax-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ax-s-4);
+}
+
+.ax-form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ax-s-2);
+  font-size: var(--ax-text-sm);
+  color: var(--ax-text-dim);
+  font-weight: 500;
+}
+
+.ax-form input,
+.ax-form select,
+.ax-form textarea {
+  padding: var(--ax-s-3) var(--ax-s-4);
+  background: var(--ax-bg-input);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r);
+  color: var(--ax-text);
+  font-size: max(16px, var(--ax-text-base));
+  transition: border-color var(--ax-d-fast) var(--ax-ease);
+}
+
+.ax-form input:focus,
+.ax-form select:focus,
+.ax-form textarea:focus {
+  border-color: var(--ax-gold);
+  outline: none;
+}
+
+/* ───────── Landing ───────── */
+.ax-landing {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ax-s-6);
+  background: radial-gradient(ellipse at top, rgba(201, 162, 39, 0.08) 0%, transparent 60%), var(--ax-bg);
+}
+
+.ax-landing-card {
+  background: var(--ax-bg-glass);
+  backdrop-filter: var(--ax-blur);
+  -webkit-backdrop-filter: var(--ax-blur);
+  border: 1px solid var(--ax-border-strong);
+  border-radius: var(--ax-r-xl);
+  padding: var(--ax-s-10) var(--ax-s-8);
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--ax-shadow-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.ax-landing-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(232, 184, 48, 0.06) 0%,
+    transparent 40%
+  );
+  pointer-events: none;
+}
+
+.ax-landing-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ax-s-1);
+  margin-bottom: var(--ax-s-2);
+  position: relative;
+}
+
+.ax-landing-logo {
+  font-family: var(--ax-font-serif);
+  font-size: clamp(40px, 12vw, 56px);
+  font-weight: 900;
+  letter-spacing: 8px;
+  text-align: center;
+  background: linear-gradient(90deg, var(--ax-gold-deep), var(--ax-gold-bright), var(--ax-gold-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  text-shadow: 0 0 60px rgba(232, 184, 48, 0.3);
+}
+
+.ax-landing-version {
+  font-size: var(--ax-text-xs);
+  color: var(--ax-gold);
+  font-family: var(--ax-font-mono);
+  letter-spacing: 2px;
+  opacity: 0.8;
+}
+
+.ax-landing-tagline {
+  text-align: center;
+  color: var(--ax-text-dim);
+  margin-bottom: var(--ax-s-8);
+  font-size: var(--ax-text-base);
+  line-height: var(--ax-lh-snug);
+}
+
+.ax-landing-footer {
+  text-align: center;
+  margin-top: var(--ax-s-6);
+  font-size: var(--ax-text-xs);
+  letter-spacing: 0.5px;
+}
+
+.ax-form-label {
+  display: block;
+  font-size: var(--ax-text-sm);
+  color: var(--ax-text-dim);
+  margin-bottom: var(--ax-s-2);
+  font-weight: 600;
+}
+
+.ax-btn[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ax-btn .ax-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* ───────── Chat ───────── */
+.ax-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 800px;
+  margin: 0 auto;
+  /* v13.3.22 iOS PWA Kevin "on voit plus le bas" : scroll restreint au .ax-chat-scroll
+   * pour que header/input/nav/footer ne disparaissent jamais (safe-areas respectées). */
+  overflow: hidden;
+}
+
+.ax-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ax-s-1) var(--ax-s-3);
+  border-bottom: 1px solid var(--ax-border);
+  background: var(--ax-bg-glass);
+  backdrop-filter: var(--ax-blur);
+  flex-shrink: 0;
+  /* iOS notch/dynamic-island */
+  padding-top: max(var(--ax-s-1), env(safe-area-inset-top, 0px));
+  /* v13.3.78 Kevin: bandeau haut MINIMAL pour max visibilité chat */
+  min-height: 32px;
+}
+
+.ax-chat-header h1 {
+  font-family: var(--ax-font-serif);
+  font-size: var(--ax-text-base);
+  letter-spacing: 1.5px;
+  color: var(--ax-gold);
+  margin: 0;
+  /* v13.3.78 ultra-compact */
+  line-height: 1;
+}
+
+.ax-chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ax-s-1) var(--ax-s-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ax-s-1);
+  font-size: 12.5px;
+  line-height: 1.35;
+  scroll-behavior: smooth;
+  /* v13.3.80 Kevin 19:55 "écrire un peu plus petit aussi pour en voir encore plus" */
+}
+
+.ax-chat-greeting {
+  /* v13.3.99 Kevin "greeting prend trop de place" — ultra-discret */
+  text-align: center;
+  color: var(--ax-text-dim);
+  font-size: 10px;
+  padding: 2px 8px 1px;
+  font-family: var(--ax-font);
+  line-height: 1.15;
+  opacity: 0.45;
+}
+
+.ax-msg {
+  max-width: 95%;
+  padding: 6px 10px;
+  border-radius: var(--ax-r-md);
+  word-wrap: break-word;
+  line-height: 1.35;
+  font-size: 12.5px;
+  animation: ax-msg-in var(--ax-d-fast) var(--ax-ease-out);
+}
+
+@keyframes ax-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ax-msg-user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--ax-gold-soft), rgba(201, 162, 39, 0.05));
+  border: 1px solid var(--ax-border-gold);
+  color: var(--ax-text);
+}
+
+.ax-msg-assistant {
+  align-self: flex-start;
+  background: var(--ax-bg-card);
+  border: 1px solid var(--ax-border);
+  color: var(--ax-text);
+}
+
+.ax-msg-tool {
+  align-self: stretch;
+  margin: var(--ax-s-2) var(--ax-s-3);
+}
+
+.ax-tool-card {
+  display: flex;
+  align-items: center;
+  gap: var(--ax-s-3);
+  padding: var(--ax-s-3) var(--ax-s-4);
+  background: linear-gradient(135deg, var(--ax-gold-soft), rgba(232, 184, 48, 0.05));
+  border: 1px solid var(--ax-border-gold);
+  border-radius: var(--ax-r-md);
+  box-shadow: var(--ax-shadow-md);
+}
+
+.ax-tool-icon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ax-tool-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ax-tool-info strong {
+  color: var(--ax-gold-bright);
+  font-size: var(--ax-text-base);
+}
+
+.ax-tool-card .ax-btn {
+  flex-shrink: 0;
+}
+
+.ax-cursor {
+  display: inline-block;
+  color: var(--ax-gold);
+  animation: ax-cursor-blink 1s steps(2) infinite;
+}
+
+@keyframes ax-cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.ax-code {
+  background: var(--ax-bg);
+  padding: var(--ax-s-3);
+  border-radius: var(--ax-r-sm);
+  overflow-x: auto;
+  font-family: var(--ax-font-mono);
+  font-size: var(--ax-text-sm);
+  border: 1px solid var(--ax-border);
+}
+
+.ax-code-inline {
+  background: var(--ax-bg-input);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--ax-font-mono);
+  font-size: 0.9em;
+}
+
+.ax-chat-input {
+  display: flex;
+  gap: var(--ax-s-2);
+  /* v13.4.44 fix Kevin "bouton envoyer jaune inaccessible" iPhone PWA :
+   * safe-area-inset-bottom empêche le bouton d'être caché derrière home indicator iOS. */
+  padding: var(--ax-s-3) var(--ax-s-3) var(--ax-s-3) var(--ax-s-3);
+  /* v13.4.237 — input bar premium : glassmorphism renforcé + accent gold subtil */
+  border-top: 1px solid rgba(232, 184, 48, 0.14);
+  background: linear-gradient(180deg, rgba(20, 20, 35, 0.78), rgba(14, 14, 24, 0.92));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+/* v13.4.44 fix Kevin "bouton envoyer jaune inaccessible" :
+ * Force touch target ≥ 44px (Apple HIG) + z-index assure click-through. */
+.ax-chat-send {
+  min-width: 44px !important;
+  min-height: 44px !important;
+  position: relative;
+  z-index: 10;
+}
+
+.ax-chat-input textarea {
+  flex: 1;
+  resize: none;
+  padding: var(--ax-s-3) var(--ax-s-4);
+  /* v13.4.237 — textarea premium : fond plus profond + bordure focus gold */
+  background: rgba(8, 8, 15, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--ax-r-md);
+  color: var(--ax-text);
+  font-size: max(16px, var(--ax-text-base));
+  font-family: var(--ax-font);
+  max-height: 200px;
+  min-height: 44px;
+  line-height: var(--ax-lh-normal);
+  transition: border-color 200ms var(--ax-ease-out), box-shadow 200ms var(--ax-ease-out);
+}
+.ax-chat-input textarea:focus {
+  outline: none;
+  border-color: var(--ax-border-gold);
+  box-shadow: 0 0 0 3px rgba(232, 184, 48, 0.12);
+}
+
+/* v13.4.3 Kevin 2026-05-09 — UX final compact (TikTok 2 vidéos) :
+ * boutons icônes petits 38px + send rond doré "↑". */
+.ax-icon-compact {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.ax-chat-send {
+  background: linear-gradient(135deg, #c9a227, #e8b830);
+  color: #000;
+  font-weight: 800;
+  min-width: 38px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease;
+}
+
+.ax-chat-send:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(232, 184, 48, 0.35);
+}
+
+.ax-chat-send:active {
+  transform: scale(0.95);
+}
+
+/* Suggestion chips state vide */
+.ax-chat-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 12px 16px;
+}
+
+.ax-chat-chip {
+  padding: 8px 14px;
+  border: 1px solid var(--ax-border);
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--ax-text);
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 180ms ease, transform 120ms ease;
+}
+
+.ax-chat-chip:hover {
+  background: rgba(201, 162, 39, 0.18);
+}
+
+.ax-chat-chip:active {
+  transform: scale(0.97);
+}
+
+/* ───────── Admin ───────── */
+.ax-admin {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--ax-s-4);
+}
+
+.ax-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--ax-s-6);
+}
+
+.ax-tabs {
+  display: flex;
+  gap: var(--ax-s-2);
+  margin-bottom: var(--ax-s-6);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--ax-border);
+  padding-bottom: var(--ax-s-2);
+  scroll-snap-type: x proximity;
+}
+
+.ax-tab {
+  padding: var(--ax-s-3) var(--ax-s-4);
+  background: transparent;
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r);
+  color: var(--ax-text-dim);
+  font-weight: 500;
+  white-space: nowrap;
+  min-height: var(--ax-touch-min);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition:
+    background var(--ax-d-fast) var(--ax-ease),
+    color var(--ax-d-fast) var(--ax-ease),
+    border-color var(--ax-d-fast) var(--ax-ease),
+    transform var(--ax-d-fast) var(--ax-ease);
+}
+
+.ax-tab:active {
+  transform: scale(0.96);
+}
+
+.ax-tab-active {
+  background: var(--ax-gold-soft);
+  color: var(--ax-gold-bright);
+  border-color: var(--ax-border-gold);
+  box-shadow: 0 0 0 1px var(--ax-border-gold), 0 4px 12px rgba(232, 184, 48, 0.1);
+}
+
+.ax-admin-section {
+  background: var(--ax-bg-card);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r-md);
+  padding: var(--ax-s-6);
+}
+
+.ax-admin-section h2 {
+  margin: 0 0 var(--ax-s-4);
+  color: var(--ax-gold);
+}
+
+.ax-admin-section h3 {
+  margin: var(--ax-s-4) 0 var(--ax-s-2);
+  font-size: var(--ax-text-base);
+  color: var(--ax-text);
+}
+
+/* ───────── Toggle switch ───────── */
+.ax-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ax-s-3);
+  cursor: pointer;
+}
+
+.ax-toggle input {
+  display: none;
+}
+
+.ax-toggle-slider {
+  width: 56px;
+  height: 32px;
+  background: var(--ax-bg-input);
+  border-radius: var(--ax-r-full);
+  position: relative;
+  transition: background var(--ax-d-fast) var(--ax-ease);
+  border: 1px solid var(--ax-border);
+}
+
+.ax-toggle-slider::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: var(--ax-text);
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform var(--ax-d-fast) var(--ax-ease-spring);
+}
+
+.ax-toggle input:checked + .ax-toggle-slider {
+  background: var(--ax-gold);
+}
+
+.ax-toggle input:checked + .ax-toggle-slider::after {
+  transform: translateX(24px);
+  background: #08080f;
+}
+
+.ax-toggle-row {
+  margin: var(--ax-s-4) 0;
+}
+
+.ax-toggle-label {
+  font-size: var(--ax-text-base);
+  color: var(--ax-text);
+}
+
+/* ───────── Lists & Badges ───────── */
+.ax-user-list,
+.ax-pending-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--ax-s-3) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ax-s-2);
+}
+
+.ax-user-row,
+.ax-pending-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ax-s-3);
+  padding: var(--ax-s-3) var(--ax-s-4);
+  background: var(--ax-bg-flat);
+  border-radius: var(--ax-r);
+  flex-wrap: wrap;
+}
+
+.ax-tier-badge,
+.ax-badge {
+  padding: 2px 8px;
+  border-radius: var(--ax-r-full);
+  font-size: var(--ax-text-xs);
+  font-weight: 600;
+}
+
+.ax-tier-family {
+  background: var(--ax-purple-soft);
+  color: var(--ax-purple);
+}
+.ax-tier-client_pro {
+  background: var(--ax-gold-soft);
+  color: var(--ax-gold-bright);
+}
+.ax-tier-client_free {
+  background: var(--ax-bg-input);
+  color: var(--ax-text-muted);
+}
+
+.ax-badge-ok {
+  background: var(--ax-green-soft);
+  color: var(--ax-green);
+}
+.ax-badge-pending {
+  background: var(--ax-orange-soft);
+  color: var(--ax-orange);
+}
+
+.ax-otp {
+  background: var(--ax-bg);
+  color: var(--ax-gold);
+  padding: 4px 8px;
+  border-radius: var(--ax-r-sm);
+  font-size: var(--ax-text-base);
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+/* ───────── Feedback messages ───────── */
+.ax-info,
+.ax-error,
+.ax-success {
+  padding: var(--ax-s-3) var(--ax-s-4);
+  border-radius: var(--ax-r);
+  margin: var(--ax-s-3) 0;
+  font-size: var(--ax-text-sm);
+}
+
+.ax-info {
+  background: var(--ax-blue-soft);
+  color: var(--ax-blue);
+  border: 1px solid var(--ax-blue);
+}
+
+.ax-error {
+  background: var(--ax-red-soft);
+  color: var(--ax-red);
+  border: 1px solid var(--ax-red);
+}
+
+.ax-success {
+  background: var(--ax-green-soft);
+  color: var(--ax-green);
+  border: 1px solid var(--ax-green);
+}
+
+.ax-info-card {
+  background: var(--ax-bg-flat);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r);
+  padding: var(--ax-s-4);
+  margin: var(--ax-s-4) 0;
+}
+
+.ax-info-card ul {
+  margin: var(--ax-s-2) 0 0;
+  padding-left: var(--ax-s-5);
+  color: var(--ax-text-dim);
+}
+
+.ax-muted {
+  color: var(--ax-text-muted);
+  font-size: var(--ax-text-sm);
+}
+
+.ax-empty {
+  text-align: center;
+  padding: var(--ax-s-12) var(--ax-s-4);
+  color: var(--ax-text-dim);
+}
+
+.ax-select-sm {
+  padding: var(--ax-s-1) var(--ax-s-2);
+  background: var(--ax-bg-input);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r-sm);
+  color: var(--ax-text);
+  font-size: var(--ax-text-sm);
+}
+
+/* ───────── PREMIUM v13 (Kevin redesign UX) ─────────
+ * Glassmorphism buttons + elevated cards + premium inputs
+ * Inspiration : Claude.ai, Anthropic Console, Linear, Vercel, Apple Watch UI
+ */
+
+/* Premium glass button */
+.ax-btn-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ax-s-2);
+  padding: var(--ax-s-3) var(--ax-s-5);
+  background: var(--ax-glass);
+  backdrop-filter: var(--ax-glass-blur);
+  -webkit-backdrop-filter: var(--ax-glass-blur);
+  color: var(--ax-text);
+  border: var(--ax-glass-border);
+  border-radius: var(--ax-r);
+  font-weight: 600;
+  font-size: var(--ax-text-sm);
+  font-family: var(--ax-font);
+  min-height: var(--ax-touch-min);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--ax-d-fast) var(--ax-ease),
+    background var(--ax-d-fast) var(--ax-ease),
+    border-color var(--ax-d-fast) var(--ax-ease),
+    box-shadow var(--ax-d-fast) var(--ax-ease);
+  will-change: transform;
+}
+
+.ax-btn-glass:hover {
+  background: var(--ax-glass-strong);
+  border-color: var(--ax-border-gold);
+  box-shadow: var(--ax-shadow-md);
+  transform: translateY(-1px);
+}
+
+.ax-btn-glass:active {
+  transform: scale(0.97);
+}
+
+.ax-btn-glass:focus-visible {
+  outline: 2px solid var(--ax-gold);
+  outline-offset: 2px;
+}
+
+.ax-btn-glass-gold {
+  background: var(--ax-gold-gradient);
+  color: #08080f;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(201, 162, 39, 0.35);
+}
+
+.ax-btn-glass-gold:hover {
+  background: var(--ax-gold-gradient-rev);
+  box-shadow: 0 6px 20px rgba(232, 184, 48, 0.5), var(--ax-gold-glow);
+  transform: translateY(-2px);
+}
+
+/* Elevated card with hover lift */
+.ax-card-elevated {
+  background: var(--ax-bg-card);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r-md);
+  padding: var(--ax-s-5);
+  box-shadow: var(--ax-shadow-md);
+  transition:
+    transform var(--ax-d-normal) var(--ax-ease-out),
+    box-shadow var(--ax-d-normal) var(--ax-ease-out),
+    border-color var(--ax-d-normal) var(--ax-ease-out);
+  will-change: transform;
+}
+
+.ax-card-elevated:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ax-shadow-lg);
+  border-color: var(--ax-border-strong);
+}
+
+.ax-card-elevated-gold:hover {
+  border-color: var(--ax-border-gold);
+  box-shadow: var(--ax-shadow-lg), 0 0 32px rgba(201, 162, 39, 0.15);
+}
+
+.ax-card-glass {
+  background: var(--ax-glass-soft);
+  backdrop-filter: var(--ax-glass-blur);
+  -webkit-backdrop-filter: var(--ax-glass-blur);
+  border: var(--ax-glass-border);
+  border-radius: var(--ax-r-md);
+  padding: var(--ax-s-5);
+  box-shadow: var(--ax-shadow-md);
+}
+
+/* Premium input with focus ring gold */
+.ax-input-premium {
+  display: block;
+  width: 100%;
+  padding: var(--ax-s-3) var(--ax-s-4);
+  background: var(--ax-bg-input);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r);
+  color: var(--ax-text);
+  font-family: var(--ax-font);
+  /* iOS Safari : éviter zoom auto si < 16px */
+  font-size: max(16px, var(--ax-text-base));
+  line-height: var(--ax-lh-normal);
+  transition:
+    border-color var(--ax-d-fast) var(--ax-ease),
+    box-shadow var(--ax-d-fast) var(--ax-ease),
+    background var(--ax-d-fast) var(--ax-ease);
+}
+
+.ax-input-premium::placeholder {
+  color: var(--ax-text-muted);
+}
+
+.ax-input-premium:hover {
+  border-color: var(--ax-border-strong);
+}
+
+.ax-input-premium:focus {
+  outline: none;
+  border-color: var(--ax-gold);
+  background: var(--ax-bg-flat);
+  box-shadow: 0 0 0 3px rgba(232, 184, 48, 0.18);
+}
+
+.ax-input-premium:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Shimmer skeleton (loading state) */
+.ax-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--ax-bg-flat);
+  border-radius: var(--ax-r-sm);
+}
+
+.ax-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: ax-shimmer-loading 1.4s linear infinite;
+}
+
+@keyframes ax-shimmer-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Confetti burst (success) */
+.ax-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--ax-z-toast);
+  overflow: hidden;
+}
+
+.ax-confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  top: -20px;
+  border-radius: 1px;
+  animation: ax-confetti-fall 1.4s var(--ax-ease-out) forwards;
+}
+
+@keyframes ax-confetti-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Premium toast (colored borders) */
+.ax-toast-premium {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ax-s-3);
+  padding: var(--ax-s-3) var(--ax-s-4);
+  background: var(--ax-glass-strong);
+  backdrop-filter: var(--ax-glass-blur);
+  -webkit-backdrop-filter: var(--ax-glass-blur);
+  border-radius: var(--ax-r-md);
+  border-left: 4px solid var(--ax-border);
+  box-shadow: var(--ax-shadow-lg);
+  color: var(--ax-text);
+  font-size: var(--ax-text-sm);
+}
+
+.ax-toast-premium.ax-toast-info {
+  border-left-color: var(--ax-blue);
+}
+.ax-toast-premium.ax-toast-success {
+  border-left-color: var(--ax-success);
+}
+.ax-toast-premium.ax-toast-warn {
+  border-left-color: var(--ax-warning);
+}
+.ax-toast-premium.ax-toast-error {
+  border-left-color: var(--ax-error);
+}
+
+/* Logo glow pulse (login screen) */
+.ax-logo-pulse {
+  animation: ax-logo-pulse 3.6s var(--ax-ease) infinite;
+}
+
+@keyframes ax-logo-pulse {
+  0%, 100% {
+    text-shadow: 0 0 60px rgba(232, 184, 48, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 80px rgba(232, 184, 48, 0.6), 0 0 120px rgba(201, 162, 39, 0.3);
+    transform: scale(1.02);
+  }
+}
+
+/* Status dot pulse (connected indicator) */
+.ax-dot-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ax-success);
+  position: relative;
+}
+
+.ax-dot-pulse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ax-success);
+  animation: ax-dot-ping 2s ease-out infinite;
+}
+
+@keyframes ax-dot-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  80%, 100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Spinner premium */
+.ax-spinner-premium {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 0deg, transparent 0%, var(--ax-gold) 100%);
+  -webkit-mask: radial-gradient(circle, transparent 8px, #000 9px);
+  mask: radial-gradient(circle, transparent 8px, #000 9px);
+  animation: ax-spin 0.9s linear infinite;
+}
+
+.ax-spinner-premium-sm {
+  width: 18px;
+  height: 18px;
+  -webkit-mask: radial-gradient(circle, transparent 5px, #000 6px);
+  mask: radial-gradient(circle, transparent 5px, #000 6px);
+}
+
+.ax-spinner-premium-lg {
+  width: 48px;
+  height: 48px;
+  -webkit-mask: radial-gradient(circle, transparent 14px, #000 15px);
+  mask: radial-gradient(circle, transparent 14px, #000 15px);
+}
+
+/* Apex thinking 3 dots */
+.ax-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--ax-s-2) var(--ax-s-4);
+  background: var(--ax-bg-card);
+  border-radius: var(--ax-r-full);
+  border: 1px solid var(--ax-border);
+  font-size: var(--ax-text-sm);
+  color: var(--ax-text-dim);
+}
+
+.ax-thinking-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.ax-thinking-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ax-gold);
+  animation: ax-thinking-bounce 1.4s ease-in-out infinite;
+}
+
+.ax-thinking-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.ax-thinking-dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes ax-thinking-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .ax-shimmer::before,
+  .ax-confetti-piece,
+  .ax-logo-pulse,
+  .ax-dot-pulse::before,
+  .ax-spinner-premium,
+  .ax-thinking-dot {
+    animation: none !important;
+  }
+  .ax-card-elevated:hover,
+  .ax-btn-glass:hover,
+  .ax-btn-glass-gold:hover {
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * v13.4.207 (Kevin "100/100 réel") — Markdown rendering classes.
+ * Extrait des styles inline `style=""` dans ui/markdown.ts vers classes CSS
+ * pour réduire surface CSP `style-src-attr unsafe-inline` (gain Sécurité).
+ * Les styles dynamiques (text-align cells table) restent inline car
+ * dépendent du contenu PDF (alignement marqueur :---:).
+ * ═══════════════════════════════════════════════════════════════════ */
+.ax-codeblock {
+  margin: 12px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0d0d1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ax-codeblock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
+.ax-codeblock-copy {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ax-codeblock pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
+.ax-md-table {
+  overflow-x: auto;
+  margin: 10px 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.ax-md-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ax-md-table th {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+}
+.ax-md-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.ax-code-inline {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 0.92em;
+}
+.ax-md-link {
+  color: #e8b830;
+  text-decoration: underline;
+}
+
+/* v13.4.213 (Kevin "100/100 réel") — text-align classes pour tables Markdown.
+ * Remplacent les style="text-align:${align}" inline qui nécessitaient
+ * `style-src-attr 'unsafe-inline'` CSP. Maintenant valeurs whitelist : left,
+ * center, right (depuis marqueur :---: parsé dans renderTable). */
+.ax-ta-left { text-align: left; }
+.ax-ta-center { text-align: center; }
+.ax-ta-right { text-align: right; }
+.ax-md-link { color: var(--ax-gold); }
+.ax-md-table th, .ax-md-table td {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* v13.4.232 (étape 3-4 refonte design system massive) — Composants atomiques
+ * réutilisables pour éliminer doublons + hardcoded colors + touch targets garantis.
+ * Source de vérité : subagent UX audit 15 findings P0/P1/P2 */
+
+/* Page title standardisé (h1 cohérent dashboard + admin + autres) */
+.ax-page-title {
+  font-size: clamp(26px, 5.5vw, 32px);
+  font-family: var(--ax-font-serif);
+  letter-spacing: -0.025em;
+  color: var(--ax-text);
+  margin: 0 0 var(--ax-s-6) 0;
+  font-weight: 700;
+  line-height: var(--ax-lh-tight);
+}
+
+/* Section title h3 standardisé (lisible, hiérarchie nette) */
+.ax-section-title {
+  font-size: 15px;
+  color: var(--ax-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: var(--ax-s-6) 0 var(--ax-s-2) 0;
+  font-weight: 600;
+}
+
+/* Voice button (touch target 44px garanti via class, pas inline) */
+.ax-voice-btn {
+  min-width: var(--ax-touch-min);
+  min-height: var(--ax-touch-min);
+  padding: var(--ax-s-2) var(--ax-s-3);
+  background: var(--ax-bg-flat);
+  color: var(--ax-text);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r);
+  font-size: var(--ax-text-sm);
+  cursor: pointer;
+  transition: background var(--ax-d-fast) var(--ax-ease), transform var(--ax-d-fast) var(--ax-ease);
+}
+.ax-voice-btn:hover { background: var(--ax-bg-card); }
+.ax-voice-btn:active { transform: scale(0.96); }
+.ax-voice-btn[aria-pressed='true'],
+.ax-voice-btn.is-active {
+  background: var(--ax-gold-soft);
+  border-color: var(--ax-border-gold);
+  color: var(--ax-gold);
+}
+
+/* Health/Admin grid buttons (élimine 15+ hex hardcoded admin/index.ts:180-225) */
+.ax-btn-health {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ax-s-2);
+  padding: var(--ax-s-2) var(--ax-s-4);
+  min-height: var(--ax-touch-min);
+  max-width: 100%;
+  /* v13.4.241 fix Kevin "boutons coupés à droite, 30 cachés off-viewport" :
+   * white-space:nowrap faisait déborder les boutons à texte long ("Zoom
+   * Inspector live...", "Voir dashboard santé live") au-delà du viewport.
+   * → normal + word-break : le texte passe à la ligne, le bouton rentre. */
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: center;
+  background: var(--ax-bg-flat);
+  color: var(--ax-text);
+  border: 1px solid var(--ax-border);
+  border-radius: var(--ax-r);
+  font-size: var(--ax-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--ax-d-fast) var(--ax-ease), transform var(--ax-d-fast) var(--ax-ease), box-shadow var(--ax-d-fast) var(--ax-ease);
+}
+.ax-btn-health:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--ax-shadow-md);
+}
+.ax-btn-health:active { transform: scale(0.97); }
+.ax-btn-health-primary {
+  background: var(--ax-gold-gradient);
+  color: #08080f;
+  border: none;
+}
+.ax-btn-health-eco {
+  background: var(--ax-green-soft);
+  color: var(--ax-green-bright);
+  border-color: rgba(34, 204, 119, 0.3);
+}
+.ax-btn-health-blue {
+  background: var(--ax-blue-soft);
+  color: var(--ax-blue-bright);
+  border-color: rgba(106, 138, 255, 0.3);
+}
+.ax-btn-health-purple {
+  background: var(--ax-purple-soft);
+  color: var(--ax-purple);
+  border-color: rgba(160, 96, 255, 0.3);
+}
+.ax-btn-health-danger {
+  background: var(--ax-red-soft);
+  color: var(--ax-red-bright);
+  border-color: rgba(255, 91, 91, 0.3);
+}
+
+/* Severity badges (Apple HIG : critical=red, high=orange, medium=yellow, low=blue) */
+.ax-sev {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ax-s-1);
+  padding: 2px 8px;
+  border-radius: var(--ax-r-full);
+  font-size: var(--ax-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.ax-sev-critical { background: var(--ax-red-soft); color: var(--ax-sev-critical); }
+.ax-sev-high { background: rgba(255, 153, 68, 0.12); color: var(--ax-sev-high); }
+.ax-sev-medium { background: var(--ax-yellow-soft); color: var(--ax-sev-medium); }
+.ax-sev-low { background: var(--ax-blue-soft); color: var(--ax-sev-low); }
+
+/* Suggestion chips (empty state chat — finding P1.4) */
+.ax-suggestion-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ax-s-1);
+  padding: var(--ax-s-2) var(--ax-s-3);
+  background: var(--ax-glass);
+  backdrop-filter: var(--ax-glass-blur-soft);
+  -webkit-backdrop-filter: var(--ax-glass-blur-soft);
+  border: 1px solid var(--ax-border-gold);
+  border-radius: var(--ax-r-full);
+  color: var(--ax-text);
+  font-size: var(--ax-text-sm);
+  cursor: pointer;
+  transition: transform var(--ax-d-fast) var(--ax-ease), background var(--ax-d-fast) var(--ax-ease), box-shadow var(--ax-d-fast) var(--ax-ease);
+  min-height: var(--ax-touch-min);
+}
+.ax-suggestion-chip:hover {
+  transform: translateY(-2px);
+  background: var(--ax-gold-soft);
+  box-shadow: var(--ax-gold-glow);
+}
+.ax-suggestion-chip:active { transform: scale(0.96); }
+
+/* Empty banner (chat/coffre vide guidé — findings P1.4 & P1.5) */
+.ax-empty-banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ax-s-3);
+  padding: var(--ax-s-5);
+  margin: var(--ax-s-4) 0;
+  background: var(--ax-glass);
+  backdrop-filter: var(--ax-glass-blur-soft);
+  -webkit-backdrop-filter: var(--ax-glass-blur-soft);
+  border: var(--ax-glass-border-gold);
+  border-radius: var(--ax-r-lg);
+  box-shadow: var(--ax-shadow-md);
+  animation: ax-fade-up 360ms var(--ax-ease-out) backwards;
+}
+.ax-empty-banner-title {
+  font-size: var(--ax-text-lg);
+  font-weight: 700;
+  color: var(--ax-text);
+  margin: 0;
+}
+.ax-empty-banner-body {
+  font-size: var(--ax-text-sm);
+  color: var(--ax-text-dim);
+  line-height: var(--ax-lh-normal);
+  margin: 0;
+}
+.ax-empty-banner-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ax-s-2);
+  margin-top: var(--ax-s-2);
+}
+
+/* Modal glassmorphism (lightbox + modals — finding P1.10) */
+.ax-modal-glass {
+  background: linear-gradient(180deg, rgba(8, 8, 15, 0.92) 0%, rgba(8, 8, 15, 0.88) 100%);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border-top: 1px solid var(--ax-border-gold);
+}
+
+/* Accordion chevron (finding P2.14) */
+.ax-accordion-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ax-s-2);
+  background: transparent;
+  border: none;
+  color: var(--ax-text);
+  cursor: pointer;
+  font-size: var(--ax-text-base);
+  font-weight: 600;
+  padding: var(--ax-s-2) 0;
+  min-height: var(--ax-touch-min);
+}
+.ax-accordion-chevron {
+  display: inline-block;
+  transition: transform var(--ax-d-fast) var(--ax-ease);
+  font-size: 12px;
+  color: var(--ax-text-dim);
+}
+.ax-accordion-toggle[aria-expanded='true'] .ax-accordion-chevron {
+  transform: rotate(90deg);
+}
+
+/* Admin tabs container responsive (finding P1.6) */
+.ax-tabs-scroll {
+  display: flex;
+  gap: var(--ax-s-2);
+  overflow-x: auto;
+  scroll-padding-left: var(--ax-s-4);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--ax-s-1);
+}
+@media (max-width: 420px) {
+  .ax-tabs-scroll {
+    gap: var(--ax-s-1);
+  }
+  .ax-tabs-scroll > * {
+    flex: 0 0 auto;
+  }
+}
+
+/* KPI card stagger refined (finding P1.8 — spring easing, 20ms stagger) */
+@keyframes ax-fade-up-spring {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.ax-kpi-card {
+  animation: ax-fade-up-spring 320ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+/* v13.4.235 (audit POST-FIX — extraction styles inline → classes CSS, DRY) */
+
+/* Voice item row (settings) — remplace style inline répété 60+ fois */
+.ax-voice-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ax-s-2);
+  padding: var(--ax-s-3);
+  margin-bottom: var(--ax-s-1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--ax-r-sm);
+  background: rgba(255, 255, 255, 0.03);
+  transition: background var(--ax-d-fast) var(--ax-ease), border-color var(--ax-d-fast) var(--ax-ease);
+}
+.ax-voice-item.is-active {
+  background: var(--ax-gold-soft);
+  border-color: var(--ax-border-gold);
+}
+.ax-voice-item__name {
+  color: var(--ax-text);
+  font-size: var(--ax-text-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax-voice-item__meta {
+  color: var(--ax-text-muted);
+  font-size: var(--ax-text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax-voice-item__action {
+  min-width: var(--ax-touch-min);
+  min-height: var(--ax-touch-min);
+  width: var(--ax-touch-min);
+  height: var(--ax-touch-min);
+  border-radius: var(--ax-r-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform var(--ax-d-fast) var(--ax-ease);
+}
+.ax-voice-item__action:active { transform: scale(0.94); }
+.ax-voice-item__action--test {
+  background: var(--ax-green-soft);
+  color: var(--ax-green);
+  border: 1px solid rgba(34, 204, 119, 0.3);
+}
+.ax-voice-item__action--set {
+  background: var(--ax-gold-soft);
+  color: var(--ax-gold);
+  border: 1px solid var(--ax-border-gold);
+}
+
+/* Admin tab pill — remplace baseStyle inline (admin/index.ts renderTabs) */
+.ax-tab-pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-height: var(--ax-touch-min);
+  padding: var(--ax-s-2) var(--ax-s-3);
+  font-size: var(--ax-text-sm);
+  line-height: var(--ax-lh-tight);
+  border-radius: var(--ax-r-full);
+  cursor: pointer;
+  transition: background var(--ax-d-fast) var(--ax-ease-out), color var(--ax-d-fast) var(--ax-ease-out), box-shadow var(--ax-d-fast) var(--ax-ease-out);
+  border: 1px solid var(--ax-border);
+  -webkit-tap-highlight-color: transparent;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ax-s-1);
+  scroll-snap-align: start;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ax-text-dim);
+}
+.ax-tab-pill.is-active {
+  background: var(--ax-gold-gradient);
+  color: #000;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(232, 184, 48, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* === ax-gs : styles inline extraits (chantier 2, généré) === */
+/* 179 classes — extraction prouvée sans régression
+   (cibles <div|span> à attribut style unique). Voir scripts/extract-inline-styles.cjs */
+.ax-gs-1 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:14px;margin-bottom:16px; }
+.ax-gs-2 { font-size:11px;color:var(--ax-text-dim); }
+.ax-gs-3 { color:var(--ax-text-dim);font-size:13px; }
+.ax-gs-4 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:14px;margin-bottom:12px; }
+.ax-gs-5 { font-size:12px;color:var(--ax-text-dim); }
+.ax-gs-6 { flex:1;min-width:0; }
+.ax-gs-7 { display:flex;gap:8px;flex-wrap:wrap; }
+.ax-gs-8 { font-size:10px;color:var(--ax-text-dim); }
+.ax-gs-9 { background:rgba(20,20,35,0.5);padding:12px;border-radius:8px; }
+.ax-gs-10 { color:var(--ax-text-dim); }
+.ax-gs-11 { flex:1;min-width:200px; }
+.ax-gs-12 { font-family:system-ui;padding:14px 4px; }
+.ax-gs-13 { color:#ff5b5b; }
+.ax-gs-14 { color:#22cc77; }
+.ax-gs-15 { font-size:13px;color:#cbd5e1;display:block;margin-bottom:6px;font-weight:600; }
+.ax-gs-16 { font-size:12px;color:#94a3b8;display:block;margin-bottom:4px; }
+.ax-gs-17 { font-size:18px; }
+.ax-gs-18 { color:#c00; }
+.ax-gs-19 { font-size:14px;-webkit-text-fill-color:initial; }
+.ax-gs-20 { display:flex;gap:6px;flex-wrap:wrap; }
+.ax-gs-21 { padding:40px;text-align:center;color:#999; }
+.ax-gs-22 { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px; }
+.ax-gs-23 { font-size:11px;color:rgba(255,255,255,0.5); }
+.ax-gs-24 { font-size:12px; }
+.ax-gs-25 { color:#888; }
+.ax-gs-26 { flex:1; }
+.ax-gs-27 { padding:8px; }
+.ax-gs-28 { font-size:32px; }
+.ax-gs-29 { display:flex;flex-direction:column;gap:6px; }
+.ax-gs-30 { margin-bottom:16px; }
+.ax-gs-31 { font-size:13px;color:#fff; }
+.ax-gs-32 { opacity:.7;font-size:.85em; }
+.ax-gs-33 { border:1px solid #2a2f48;border-radius:8px;padding:10px;background:#13162a;font-size:13px; }
+.ax-gs-34 { padding:16px;max-width:900px;margin:0 auto;color:var(--ax-text,#eee); }
+.ax-gs-35 { display:block;color:#c9a227;font-size:12px;margin-bottom:4px; }
+.ax-gs-36 { font-size:11px;color:rgba(255,255,255,0.5);margin-top:6px; }
+.ax-gs-37 { padding:24px;text-align:center;color:#94a3b8; }
+.ax-gs-38 { padding:10px;background:rgba(0,0,0,0.25);border-radius:10px; }
+.ax-gs-39 { background:rgba(255,255,255,0.04);border-radius:10px;padding:10px; }
+.ax-gs-40 { font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em; }
+.ax-gs-41 { color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.5px; }
+.ax-gs-42 { background:rgba(20,20,35,0.5);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid rgba(201,162,39,0.2); }
+.ax-gs-43 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:16px;text-align:center; }
+.ax-gs-44 { color:#f0c020; }
+.ax-gs-45 { background:rgba(0,0,0,0.3);padding:8px;border-radius:6px; }
+.ax-gs-46 { border:1px solid #2a2f48;border-radius:8px;padding:12px;background:#13162a; }
+.ax-gs-47 { background:#0f172a;border:1px solid #10b981;border-radius:12px;padding:16px;text-align:center; }
+.ax-gs-48 { padding:8px;background:rgba(255,88,88,.1);color:var(--ax-error);border-radius:8px; }
+.ax-gs-49 { color:#888;font-size:11px;text-transform:uppercase;letter-spacing:.5px; }
+.ax-gs-50 { color:#fff;font-size:22px;font-weight:700; }
+.ax-gs-51 { color:#888;font-size:11px;text-transform:uppercase; }
+.ax-gs-52 { background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px; }
+.ax-gs-53 { font-size:22px;font-weight:600; }
+.ax-gs-54 { color:rgba(255,255,255,0.5);font-size:12px;padding:24px;text-align:center; }
+.ax-gs-55 { color:rgba(255,255,255,0.55);font-size:11px;margin-top:2px; }
+.ax-gs-56 { font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px; }
+.ax-gs-57 { padding:40px;text-align:center;color:var(--ax-text-dim); }
+.ax-gs-58 { font-size:24px;color:#ff6b6b;font-weight:600; }
+.ax-gs-59 { max-width:760px;margin:0 auto;padding:20px; }
+.ax-gs-60 { color:#0d8a3e; }
+.ax-gs-61 { color:#ffaa00; }
+.ax-gs-62 { padding:40px;text-align:center;color:#888;font-family:system-ui,-apple-system,sans-serif; }
+.ax-gs-63 { font-size:11px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;font-weight:600; }
+.ax-gs-64 { color:#666; }
+.ax-gs-65 { display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap; }
+.ax-gs-66 { font-size:1.5em;font-weight:600; }
+.ax-gs-67 { display:flex;gap:8px;margin-bottom:12px; }
+.ax-gs-68 { padding:12px;background:rgba(0,0,0,0.2);border-radius:10px; }
+.ax-gs-69 { color:var(--ax-text-dim,#888);font-size:12px;margin-top:4px; }
+.ax-gs-70 { font-size:12px;color:var(--ax-text-dim,#aaa);margin-top:4px; }
+.ax-gs-71 { padding:14px;background:rgba(0,0,0,0.25);border-radius:12px;border-left:3px solid #c9a227; }
+.ax-gs-72 { color:var(--ax-text-dim,#aaa);font-size:13px;margin-top:4px; }
+.ax-gs-73 { margin-top:16px;background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:16px; }
+.ax-gs-74 { font-size:10px;color:#a0a4c0; }
+.ax-gs-75 { margin-top:6px;color:var(--ax-gold-deep); }
+.ax-gs-76 { color:var(--ax-error); }
+.ax-gs-77 { display:flex;align-items:center;gap:8px;margin-bottom:6px; }
+.ax-gs-78 { overflow-x:auto; }
+.ax-gs-79 { font-weight:700;color:#c9a227;font-size:13px; }
+.ax-gs-80 { display:flex;gap:6px;margin-top:8px;flex-wrap:wrap; }
+.ax-gs-81 { background:rgba(20,20,35,0.5);border:1px solid rgba(201,162,39,0.2);border-radius:12px;padding:18px;margin-bottom:14px; }
+.ax-gs-82 { font-size:10px;color:#888;margin-top:4px; }
+.ax-gs-83 { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.ax-gs-84 { font-size:24px;font-weight:800;color:#fff; }
+.ax-gs-85 { font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px; }
+.ax-gs-86 { color:#fff; }
+.ax-gs-87 { font-size:14px; }
+.ax-gs-88 { display:flex;gap:6px; }
+.ax-gs-89 { display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px; }
+.ax-gs-90 { height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:6px;overflow:hidden; }
+.ax-gs-91 { color:rgba(255,255,255,0.4); }
+.ax-gs-92 { color:#4caf50; }
+.ax-gs-93 { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px; }
+.ax-gs-94 { font-size:11px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,0.05);color:var(--ax-text-dim);margin-left:8px; }
+.ax-gs-95 { padding:20px;max-width:900px;margin:0 auto; }
+.ax-gs-96 { display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px; }
+.ax-gs-97 { background:rgba(201,162,39,0.1);border:1px solid rgba(201,162,39,0.3);border-radius:10px;padding:14px; }
+.ax-gs-98 { font-size:24px;color:#c9a227;font-weight:600; }
+.ax-gs-99 { background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:10px;padding:14px; }
+.ax-gs-100 { display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap; }
+.ax-gs-101 { padding:40px;text-align:center;color:#ff6b6b; }
+.ax-gs-102 { font-size:13px;color:#e8b830;font-weight:700; }
+.ax-gs-103 { display:flex;align-items:center;gap:8px; }
+.ax-gs-104 { font-size:18px;color:#fff;font-weight:700;margin-top:2px; }
+.ax-gs-105 { font-size:11px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.06em;margin:8px 0; }
+.ax-gs-106 { min-width:0;flex:1; }
+.ax-gs-107 { color:rgba(255,255,255,0.5);font-size:11px; }
+.ax-gs-108 { font-size:16px;font-weight:600;color:#f1f5f9; }
+.ax-gs-109 { font-size:12px;color:#94a3b8;margin-top:2px; }
+.ax-gs-110 { color:#ef4444; }
+.ax-gs-111 { margin-top:12px;padding:10px;background:rgba(201,162,39,0.08);border-left:3px solid #c9a227;font-size:13px; }
+.ax-gs-112 { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px; }
+.ax-gs-113 { background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px;margin-bottom:16px; }
+.ax-gs-114 { margin-top:8px; }
+.ax-gs-115 { max-width:800px;margin:0 auto;padding:20px; }
+.ax-gs-116 { margin-top:24px;padding:16px;background:#0f172a;border-radius:8px;font-size:12px;color:#94a3b8;line-height:1.6; }
+.ax-gs-117 { font-size:12px;color:#94a3b8;margin-bottom:4px; }
+.ax-gs-118 { font-size:14px;color:#f1f5f9; }
+.ax-gs-119 { font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px; }
+.ax-gs-120 { display:flex;align-items:center;gap:10px; }
+.ax-gs-121 { color:#888;font-size:12px; }
+.ax-gs-122 { display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap; }
+.ax-gs-123 { display:flex;flex-direction:column;gap:8px; }
+.ax-gs-124 { font-size:11px;color:#888; }
+.ax-gs-125 { flex:1;color:#fff;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.ax-gs-126 { padding:8px 0;color:var(--ax-text); }
+.ax-gs-127 { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
+.ax-gs-128 { font-size:13px;color:var(--ax-text-dim); }
+.ax-gs-129 { display:flex;gap:6px;margin-top:10px;flex-wrap:wrap; }
+.ax-gs-130 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:16px;margin-top:16px; }
+.ax-gs-131 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:16px;margin-top:12px; }
+.ax-gs-132 { display:flex;align-items:center;gap:12px;padding:16px;background:linear-gradient(135deg,rgba(34,204,119,0.08),rgba(34,204,119,0.03));border:1px solid rgba(34,204,119,0.15);border-radius:12px; }
+.ax-gs-133 { font-size:20px;filter:drop-shadow(0 2px 6px rgba(34,204,119,0.4)); }
+.ax-gs-134 { color:rgba(255,255,255,0.85);font-size:14px;font-weight:500; }
+.ax-gs-135 { display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--ax-border); }
+.ax-gs-136 { color:var(--ax-text-dim);font-size:11px; }
+.ax-gs-137 { font-size:18px;color:#22cc77; }
+.ax-gs-138 { background:rgba(168,120,255,.1);color:#a878ff;font-size:10px;padding:2px 6px;border-radius:4px; }
+.ax-gs-139 { color:#9aa; }
+.ax-gs-140 { padding:24px;text-align:center;opacity:.7; }
+.ax-gs-141 { display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:16px; }
+.ax-gs-142 { font-size:20px;color:#c9a227; }
+.ax-gs-143 { font-size:20px;color:#22cc77; }
+.ax-gs-144 { font-size:20px;color:#fff; }
+.ax-gs-145 { font-size:20px;color:#ff5b5b; }
+.ax-gs-146 { display:flex;gap:8px;margin:16px 0 12px;flex-wrap:wrap;align-items:center; }
+.ax-gs-147 { display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px; }
+.ax-gs-148 { background:rgba(20,20,35,0.5);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.05); }
+.ax-gs-149 { display:flex;justify-content:space-between;align-items:start;gap:6px;margin-bottom:6px; }
+.ax-gs-150 { display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap; }
+.ax-gs-151 { font-size:9px;color:var(--ax-text-dim); }
+.ax-gs-152 { font-size:11px;color:var(--ax-text-dim);min-height:32px;margin-bottom:6px; }
+.ax-gs-153 { display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:6px; }
+.ax-gs-154 { margin-top:6px; }
+.ax-gs-155 { font-size:14px;color:#fff;font-weight:600; }
+.ax-gs-156 { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:14px; }
+.ax-gs-157 { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px; }
+.ax-gs-158 { background:rgba(201,162,39,0.05);border-left:4px solid #ff5858;border-radius:12px;padding:14px;margin-bottom:12px; }
+.ax-gs-159 { margin-top:18px;padding:14px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:10px;font-size:12px;color:#ffd699;text-align:center; }
+.ax-gs-160 { font-size:13px; }
+.ax-gs-161 { display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px; }
+.ax-gs-162 { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.ax-gs-163 { font-size:10px;color:#888;margin-left:auto; }
+.ax-gs-164 { color:rgba(255,255,255,0.7);font-size:14px; }
+.ax-gs-165 { font-size:12px;color:var(--ax-text-dim);margin-top:4px; }
+.ax-gs-166 { font-weight:700;margin-bottom:6px; }
+.ax-gs-167 { margin-top:8px;font-size:11px;color:rgba(255,255,255,0.5); }
+.ax-gs-168 { color:var(--ax-warning); }
+.ax-gs-169 { max-width:720px;margin:0 auto;padding:20px; }
+.ax-gs-170 { font-size:22px; }
+.ax-gs-171 { font-size:64px; }
+.ax-gs-172 { font-size:24px; }
+.ax-gs-173 { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:16px; }
+.ax-gs-174 { padding:8px;background:rgba(240,192,32,.1);color:var(--ax-gold);border-radius:8px; }
+.ax-gs-175 { display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; }
+.ax-gs-176 { display:flex;gap:8px;flex-wrap:wrap;margin-top:14px; }
+.ax-gs-177 { display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:16px; }
+.ax-gs-178 { color:#fff;font-size:14px;font-weight:600; }
+.ax-gs-179 { color:#fff;font-weight:600; }
+/* === fin ax-gs === */
+
+/* === ax-gs-2 : tranche cascade-vérifiée (chantier 2) === */
+/* 83 classes — extraction prouvée sans conflit de cascade.
+   Voir scripts/extract-inline-styles-2.cjs */
+.ax-gs-180 { margin-bottom:24px; }
+.ax-gs-181 { margin-bottom:20px; }
+.ax-gs-182 { color:rgba(255,255,255,0.6); }
+.ax-gs-183 { color:rgba(255,255,255,0.5);font-size:12px; }
+.ax-gs-184 { border-bottom:1px solid rgba(255,255,255,0.05); }
+.ax-gs-185 { padding:14px;margin-bottom:16px; }
+.ax-gs-186 { margin-top:8px; }
+.ax-gs-187 { margin-top:14px; }
+.ax-gs-188 { padding:40px 20px;text-align:center;color:rgba(255,255,255,0.6); }
+.ax-gs-189 { font-size:12px; }
+.ax-gs-190 { font-size:11px;color:var(--ax-text-dim);font-family:monospace; }
+.ax-gs-191 { color:var(--ax-text-dim);text-align:center;padding:20px; }
+.ax-gs-192 { font-size:36px; }
+.ax-gs-193 { width:100%; }
+.ax-gs-194 { color:#94a3b8;margin-bottom:24px; }
+.ax-gs-195 { padding:16px;margin-bottom:16px; }
+.ax-gs-196 { margin-top:12px;font-size:13px; }
+.ax-gs-197 { padding:16px; }
+.ax-gs-198 { color:#c9a227; }
+.ax-gs-199 { color:#94a3b8;margin-bottom:20px; }
+.ax-gs-200 { color:#3b82f6; }
+.ax-gs-201 { font-size:28px; }
+.ax-gs-202 { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06); }
+.ax-gs-203 { display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px; }
+.ax-gs-204 { display:flex;align-items:center;justify-content:space-between;gap:8px; }
+.ax-gs-205 { color:#22cc77; }
+.ax-gs-206 { padding:14px;border-bottom:1px solid rgba(201,162,39,0.3);display:flex;justify-content:space-between;align-items:center; }
+.ax-gs-207 { padding:40px;text-align:center;color:#999; }
+.ax-gs-208 { color:#888;font-size:11px; }
+.ax-gs-209 { text-align:center;padding:30px;color:#888; }
+.ax-gs-210 { display:flex;justify-content:space-between;align-items:center;margin-bottom:16px; }
+.ax-gs-211 { margin-top:16px; }
+.ax-gs-212 { margin-top:24px;text-align:center; }
+.ax-gs-213 { color:var(--ax-text-dim);text-align:center;padding:24px; }
+.ax-gs-214 { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px; }
+.ax-gs-215 { font-size:12px;padding:6px 10px; }
+.ax-gs-216 { color:#aaa; }
+.ax-gs-217 { margin-bottom:16px; }
+.ax-gs-218 { margin-top:24px; }
+.ax-gs-219 { display:flex;justify-content:space-between;align-items:center; }
+.ax-gs-220 { margin:4px 0; }
+.ax-gs-221 { color:var(--ax-gold-deep); }
+.ax-gs-222 { color:var(--ax-green); }
+.ax-gs-223 { margin:0 0 6px;color:var(--ax-gold-deep); }
+.ax-gs-224 { color:#666; }
+.ax-gs-225 { font-size:11px; }
+.ax-gs-226 { color:var(--ax-text-dim); }
+.ax-gs-227 { font-size:13px;color:rgba(255,255,255,0.55); }
+.ax-gs-228 { margin-bottom:32px; }
+.ax-gs-229 { display:block;margin-top:8px; }
+.ax-gs-230 { min-height:44px;padding:10px 14px; }
+.ax-gs-231 { text-align:center;color:var(--ax-text-dim);padding:32px; }
+.ax-gs-232 { border-bottom:1px solid #2a2a2a; }
+.ax-gs-233 { color:#c00; }
+.ax-gs-234 { display:none; }
+.ax-gs-235 { margin-top:32px;text-align:center; }
+.ax-gs-236 { color:#ff6b6b; }
+.ax-gs-237 { font-size:10px;color:#7aa3ff; }
+.ax-gs-238 { font-weight:700;color:#c9a227;margin-top:8px; }
+.ax-gs-239 { font-size:12px;color:var(--ax-text-dim);margin-top:4px; }
+.ax-gs-240 { color:#6a6f8a; }
+.ax-gs-241 { margin-top:10px;font-size:13px; }
+.ax-gs-242 { margin-top:10px;font-size:13px;line-height:1.7; }
+.ax-gs-243 { color:#888; }
+.ax-gs-244 { color:#5aa8ff; }
+.ax-gs-245 { color:#ff5858; }
+.ax-gs-246 { color:#999; }
+.ax-gs-247 { display:flex;flex-wrap:wrap;gap:6px; }
+.ax-gs-248 { margin-top:12px; }
+.ax-gs-249 { margin-top:8px;font-size:12px; }
+.ax-gs-250 { color:var(--ax-sev-high);font-size:11px; }
+.ax-gs-251 { display:grid;gap:8px; }
+.ax-gs-252 { margin-top:2px;accent-color:#c9a227; }
+.ax-gs-253 { margin-top:8px;color:#c9a227; }
+.ax-gs-254 { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px; }
+.ax-gs-255 { color:#6a6f8a;grid-column:1/-1;text-align:center;padding:20px; }
+.ax-gs-256 { margin-top:20px; }
+.ax-gs-257 { color:#ef4444; }
+.ax-gs-258 { display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px; }
+.ax-gs-259 { width:100%;min-height:32px; }
+.ax-gs-260 { color:#cbd5e1;font-size:13px; }
+.ax-gs-261 { border-top:1px solid rgba(255,255,255,0.05); }
+.ax-gs-262 { color:#888;font-size:11px;text-transform:uppercase; }
+
+/* === ax-gs-3 : tranche cascade (chantier 2, spécificité calculée) === */
+/* 225 classes. Sélecteur double :
+   - "#apex-root .cls.cls" (spéc. 120) : élément dans la racine SPA
+   - ".cls…" (spéc. calculée) : repli pour élément porté hors racine
+     (modale document.body.appendChild) — dimensionné aux règles sans #id.
+   Reproduit exactement la priorité de l'ancien style inline.
+   Voir scripts/extract-inline-styles-3.cjs */
+#apex-root .ax-gs-263.ax-gs-263, .ax-gs-263.ax-gs-263 { padding:6px 10px;font-size:12px;min-height:36px; }
+#apex-root .ax-gs-264.ax-gs-264, .ax-gs-264.ax-gs-264 { padding:8px 14px;font-size:12px;min-height:40px; }
+#apex-root .ax-gs-265.ax-gs-265, .ax-gs-265.ax-gs-265 { text-align:center;color:#666;font-size:11px;margin-top:24px; }
+#apex-root .ax-gs-266.ax-gs-266, .ax-gs-266.ax-gs-266 { color:#c9a227; }
+#apex-root .ax-gs-267.ax-gs-267, .ax-gs-267.ax-gs-267 { padding:6px 8px; }
+#apex-root .ax-gs-268.ax-gs-268, .ax-gs-268.ax-gs-268.ax-gs-268.ax-gs-268.ax-gs-268.ax-gs-268.ax-gs-268 { padding:16px;max-width:1100px;margin:0 auto; }
+#apex-root .ax-gs-269.ax-gs-269, .ax-gs-269.ax-gs-269 { margin:0 0 10px;color:#fff;font-size:14px; }
+#apex-root .ax-gs-270.ax-gs-270, .ax-gs-270.ax-gs-270 { font-size:12px; }
+#apex-root .ax-gs-271.ax-gs-271, .ax-gs-271.ax-gs-271 { width:100%;border-collapse:collapse;font-size:12px; }
+#apex-root .ax-gs-272.ax-gs-272, .ax-gs-272.ax-gs-272 { text-align:left;padding:8px 8px;font-size:11px;color:rgba(255,255,255,0.7); }
+#apex-root .ax-gs-273.ax-gs-273, .ax-gs-273.ax-gs-273.ax-gs-273 { margin:0;font-size:11px;text-transform:uppercase;color:rgba(255,255,255,0.5);letter-spacing:0.5px; }
+#apex-root .ax-gs-274.ax-gs-274, .ax-gs-274.ax-gs-274 { margin:4px 0 0;font-size:18px;font-weight:700; }
+#apex-root .ax-gs-275.ax-gs-275, .ax-gs-275.ax-gs-275 { cursor:pointer;font-weight:600;color:rgba(255,255,255,0.75);padding:8px 0;font-size:13px; }
+#apex-root .ax-gs-276.ax-gs-276, .ax-gs-276.ax-gs-276 { padding:8px 6px; }
+#apex-root .ax-gs-277.ax-gs-277, .ax-gs-277.ax-gs-277 { padding:8px 6px;font-size:11px;text-align:right; }
+#apex-root .ax-gs-278.ax-gs-278, .ax-gs-278.ax-gs-278 { padding:8px 6px;text-align:right; }
+#apex-root .ax-gs-279.ax-gs-279, .ax-gs-279.ax-gs-279 { color:#22cc77; }
+#apex-root .ax-gs-280.ax-gs-280, .ax-gs-280.ax-gs-280 { font-size:11px;padding:4px 10px;text-decoration:none; }
+#apex-root .ax-gs-281.ax-gs-281, .ax-gs-281.ax-gs-281 { margin:0 0 6px;color:#c9a227; }
+#apex-root .ax-gs-282.ax-gs-282, .ax-gs-282.ax-gs-282 { color:var(--ax-text-dim);font-size:13px;margin:0; }
+#apex-root .ax-gs-283.ax-gs-283, .ax-gs-283.ax-gs-283 { padding:8px 14px;font-size:13px; }
+#apex-root .ax-gs-284.ax-gs-284, .ax-gs-284.ax-gs-284 { color:var(--ax-text-dim);font-size:12px;margin:0 0 10px; }
+#apex-root .ax-gs-285.ax-gs-285, .ax-gs-285.ax-gs-285 { font-size:16px;color:#ff6b6b;margin:0 0 10px; }
+#apex-root .ax-gs-286.ax-gs-286, .ax-gs-286.ax-gs-286 { list-style:none;padding:0;margin:0; }
+#apex-root .ax-gs-287.ax-gs-287, .ax-gs-287.ax-gs-287.ax-gs-287 { background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.2);border-radius:12px;padding:16px;margin-bottom:16px; }
+#apex-root .ax-gs-288.ax-gs-288, .ax-gs-288.ax-gs-288 { margin:2px 0 0;color:rgba(255,255,255,0.5);font-size:11px; }
+#apex-root .ax-gs-289.ax-gs-289, .ax-gs-289.ax-gs-289 { font-size:24px;margin-bottom:8px;color:#f1f5f9; }
+#apex-root .ax-gs-290.ax-gs-290, .ax-gs-290.ax-gs-290.ax-gs-290 { width:100%;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#f1f5f9;margin-bottom:8px;font-size:14px; }
+#apex-root .ax-gs-291.ax-gs-291, .ax-gs-291.ax-gs-291 { width:100%;font-size:13px; }
+#apex-root .ax-gs-292.ax-gs-292, .ax-gs-292.ax-gs-292 { padding:4px 8px;color:var(--ax-text-dim); }
+#apex-root .ax-gs-293.ax-gs-293, .ax-gs-293.ax-gs-293 { margin:0 0 12px;font-size:1.05em; }
+#apex-root .ax-gs-294.ax-gs-294, .ax-gs-294.ax-gs-294 { font-size:16px;color:#f1f5f9;margin-bottom:12px; }
+#apex-root .ax-gs-295.ax-gs-295, .ax-gs-295.ax-gs-295.ax-gs-295 { background:linear-gradient(135deg,rgba(20,20,35,0.85),rgba(14,14,28,0.65));border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;transition:transform 200ms cubic-bezier(0.16,1,0.3,1); }
+#apex-root .ax-gs-296.ax-gs-296, .ax-gs-296.ax-gs-296.ax-gs-296 { margin:0;font-size:16px;color:#fff;font-weight:700;letter-spacing:-0.015em; }
+#apex-root .ax-gs-297.ax-gs-297, .ax-gs-297.ax-gs-297 { margin:0;color:rgba(255,255,255,0.6);font-size:13px;line-height:1.5; }
+#apex-root .ax-gs-298.ax-gs-298, .ax-gs-298.ax-gs-298.ax-gs-298 { margin-top:6px;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;border:none;padding:11px 18px;border-radius:22px;font-weight:700;cursor:pointer;font-size:13px;min-height:44px;-webkit-tap-highlight-color:transparent;transition:all 180ms cubic-bezier(0.16,1,0.3,1); }
+#apex-root .ax-gs-299.ax-gs-299, .ax-gs-299.ax-gs-299.ax-gs-299.ax-gs-299.ax-gs-299.ax-gs-299.ax-gs-299 { padding:max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)) 16px;max-width:1100px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; }
+#apex-root .ax-gs-300.ax-gs-300, .ax-gs-300.ax-gs-300.ax-gs-300 { margin:0;font-size:clamp(22px,5.5vw,30px);font-weight:700;background:linear-gradient(135deg,#c9a227,#e8b830);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:Georgia,serif;letter-spacing:-0.025em;line-height:1.15; }
+#apex-root .ax-gs-301.ax-gs-301, .ax-gs-301.ax-gs-301 { margin:6px 0 0;color:rgba(255,255,255,0.55);font-size:12px; }
+#apex-root .ax-gs-302.ax-gs-302, .ax-gs-302.ax-gs-302.ax-gs-302 { flex-shrink:0;padding:9px 16px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.1);border-radius:24px;font-size:13px;font-weight:600;cursor:pointer;min-height:40px;white-space:nowrap; }
+#apex-root .ax-gs-303.ax-gs-303, .ax-gs-303.ax-gs-303 { color:rgba(255,255,255,0.7);font-size:13px;margin-bottom:10px; }
+#apex-root .ax-gs-304.ax-gs-304, .ax-gs-304.ax-gs-304.ax-gs-304 { background:rgba(255,255,255,0.03);padding:10px 12px;border-radius:10px;margin-bottom:6px; }
+#apex-root .ax-gs-305.ax-gs-305, .ax-gs-305.ax-gs-305 { color:#e8b830; }
+#apex-root .ax-gs-306.ax-gs-306, .ax-gs-306.ax-gs-306 { color:rgba(255,255,255,0.55);font-size:12px;margin:4px 0 0; }
+#apex-root .ax-gs-307.ax-gs-307, .ax-gs-307.ax-gs-307 { list-style:none;padding:0;margin:0;max-height:50vh;overflow-y:auto; }
+#apex-root .ax-gs-308.ax-gs-308, .ax-gs-308.ax-gs-308 { font-size:13px;color:#e8b830;text-transform:uppercase;margin:0 0 8px; }
+#apex-root .ax-gs-309.ax-gs-309, .ax-gs-309.ax-gs-309.ax-gs-309 { background:rgba(0,0,0,0.4);color:rgba(255,255,255,0.85);padding:12px;border-radius:10px;font-size:12px;white-space:pre-wrap;max-height:30vh;overflow-y:auto; }
+#apex-root .ax-gs-310.ax-gs-310, .ax-gs-310.ax-gs-310 { margin:0 0 8px;font-size:14px;color:#e8b830; }
+#apex-root .ax-gs-311.ax-gs-311, .ax-gs-311.ax-gs-311 { color:rgba(255,255,255,0.7);font-size:13px;margin-bottom:14px; }
+#apex-root .ax-gs-312.ax-gs-312, .ax-gs-312.ax-gs-312.ax-gs-312 { background:rgba(0,0,0,0.4);color:rgba(255,255,255,0.85);padding:12px;border-radius:10px;font-size:12px;white-space:pre-wrap;max-height:40vh;overflow-y:auto; }
+#apex-root .ax-gs-313.ax-gs-313, .ax-gs-313.ax-gs-313 { display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:14px;background:rgba(20,20,35,0.95);border-bottom:1px solid rgba(201,162,39,0.3);position:sticky;top:0;z-index:10; }
+#apex-root .ax-gs-314.ax-gs-314, .ax-gs-314.ax-gs-314 { margin:0;color:#c9a227;font-size:18px;flex:1;min-width:160px; }
+#apex-root .ax-gs-315.ax-gs-315, .ax-gs-315.ax-gs-315.ax-gs-315 { padding:8px 14px;background:transparent;border:1px solid rgba(201,162,39,0.4);color:#c9a227;border-radius:6px;cursor:pointer;font-size:12px;min-height:40px; }
+#apex-root .ax-gs-316.ax-gs-316, .ax-gs-316.ax-gs-316 { padding:10px; }
+#apex-root .ax-gs-317.ax-gs-317, .ax-gs-317.ax-gs-317 { padding:10px;text-align:right; }
+#apex-root .ax-gs-318.ax-gs-318, .ax-gs-318.ax-gs-318.ax-gs-318 { padding:10px;text-align:left;color:#c9a227;font-size:12px;text-transform:uppercase;letter-spacing:0.5px; }
+#apex-root .ax-gs-319.ax-gs-319, .ax-gs-319.ax-gs-319 { margin:0;color:#c9a227;font-size:15px; }
+#apex-root .ax-gs-320.ax-gs-320, .ax-gs-320.ax-gs-320.ax-gs-320 { padding:6px 10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#999;border-radius:6px;cursor:pointer; }
+#apex-root .ax-gs-321.ax-gs-321, .ax-gs-321.ax-gs-321 { padding:10px 14px;background:rgba(201,162,39,0.05);font-size:11px;color:#888;text-align:center; }
+#apex-root .ax-gs-322.ax-gs-322, .ax-gs-322.ax-gs-322 { background:#0a0a14;color:#fff;min-height:100vh;font-family:system-ui,-apple-system,sans-serif; }
+#apex-root .ax-gs-323.ax-gs-323, .ax-gs-323.ax-gs-323.ax-gs-323 { padding:6px 12px;background:transparent;border:1px solid rgba(201,162,39,0.3);color:#c9a227;border-radius:6px;cursor:pointer;font-size:12px; }
+#apex-root .ax-gs-324.ax-gs-324, .ax-gs-324.ax-gs-324 { margin:0 0 4px;color:#c9a227;font-size:28px; }
+#apex-root .ax-gs-325.ax-gs-325, .ax-gs-325.ax-gs-325 { color:#a0a4c0;margin:0;font-size:13px; }
+#apex-root .ax-gs-326.ax-gs-326, .ax-gs-326.ax-gs-326 { margin:0 0 10px;color:#c9a227;font-size:13px;text-transform:uppercase; }
+#apex-root .ax-gs-327.ax-gs-327, .ax-gs-327.ax-gs-327 { color:#fff; }
+#apex-root .ax-gs-328.ax-gs-328, .ax-gs-328.ax-gs-328 { color:#ffaa00; }
+#apex-root .ax-gs-329.ax-gs-329, .ax-gs-329.ax-gs-329 { color:#ff5858; }
+#apex-root .ax-gs-330.ax-gs-330, .ax-gs-330.ax-gs-330.ax-gs-330 { background:rgba(0,0,0,.3);color:#fff;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px;font-size:12px; }
+#apex-root .ax-gs-331.ax-gs-331, .ax-gs-331.ax-gs-331 { text-align:center;color:#666;font-size:11px; }
+#apex-root .ax-gs-332.ax-gs-332, .ax-gs-332.ax-gs-332.ax-gs-332.ax-gs-332.ax-gs-332.ax-gs-332.ax-gs-332 { padding:16px;max-width:760px;margin:0 auto; }
+#apex-root .ax-gs-333.ax-gs-333, .ax-gs-333.ax-gs-333 { margin:0;color:#c9a227; }
+#apex-root .ax-gs-334.ax-gs-334, .ax-gs-334.ax-gs-334 { color:var(--ax-text-dim);font-size:13px;margin-bottom:16px; }
+#apex-root .ax-gs-335.ax-gs-335, .ax-gs-335.ax-gs-335.ax-gs-335 { width:100%;padding:10px;margin-bottom:16px;background:#0a0a14;border:1px solid #333;color:#fff;border-radius:6px; }
+#apex-root .ax-gs-336.ax-gs-336, .ax-gs-336.ax-gs-336.ax-gs-336 { font-size:12px;padding:8px 12px; }
+#apex-root .ax-gs-337.ax-gs-337, .ax-gs-337.ax-gs-337 { color:#c9a227;font-size:15px;margin:8px 0 12px; }
+#apex-root .ax-gs-338.ax-gs-338, .ax-gs-338.ax-gs-338.ax-gs-338 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:14px;margin-bottom:8px; }
+#apex-root .ax-gs-339.ax-gs-339, .ax-gs-339.ax-gs-339.ax-gs-339 { font-size:12px;padding:6px 10px; }
+#apex-root .ax-gs-340.ax-gs-340, .ax-gs-340.ax-gs-340 { color:#aaa;line-height:1.5;font-size:14px; }
+#apex-root .ax-gs-341.ax-gs-341, .ax-gs-341.ax-gs-341 { margin-top:0;color:#c9a227;font-size:16px; }
+#apex-root .ax-gs-342.ax-gs-342, .ax-gs-342.ax-gs-342 { margin:6px 0; }
+#apex-root .ax-gs-343.ax-gs-343, .ax-gs-343.ax-gs-343.ax-gs-343 { margin:20px 0;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:18px; }
+#apex-root .ax-gs-344.ax-gs-344, .ax-gs-344.ax-gs-344.ax-gs-344 { padding:12px;border-radius:8px;border:1px solid rgba(201,162,39,0.3);background:rgba(0,0,0,0.4);color:#fff;font-size:14px;min-height:44px; }
+#apex-root .ax-gs-345.ax-gs-345, .ax-gs-345.ax-gs-345.ax-gs-345 { padding:14px;background:rgba(201,162,39,0.15);border:1px solid #c9a227;color:#c9a227;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600; }
+#apex-root .ax-gs-346.ax-gs-346, .ax-gs-346.ax-gs-346.ax-gs-346 { flex:1;padding:10px;background:transparent;border:1px solid transparent;color:rgba(255,255,255,0.55);cursor:pointer;font-size:12px;border-radius:8px;-webkit-tap-highlight-color:transparent;min-height:40px;transition:all 160ms; }
+#apex-root .ax-gs-347.ax-gs-347, .ax-gs-347.ax-gs-347 { color:var(--ax-text-dim,#999);text-align:center;padding:14px;font-size:13px; }
+#apex-root .ax-gs-348.ax-gs-348, .ax-gs-348.ax-gs-348.ax-gs-348 { padding:8px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(201,162,39,0.1); }
+#apex-root .ax-gs-349.ax-gs-349, .ax-gs-349.ax-gs-349 { font-size:11px;padding:4px 8px;color:#ff6666; }
+#apex-root .ax-gs-350.ax-gs-350, .ax-gs-350.ax-gs-350.ax-gs-350 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:14px;margin-bottom:16px; }
+#apex-root .ax-gs-351.ax-gs-351, .ax-gs-351.ax-gs-351.ax-gs-351 { width:100%;padding:10px;margin-bottom:8px;background:#0a0a14;border:1px solid #333;color:#fff;border-radius:6px; }
+#apex-root .ax-gs-352.ax-gs-352, .ax-gs-352.ax-gs-352.ax-gs-352 { width:100%;min-height:44px; }
+#apex-root .ax-gs-353.ax-gs-353, .ax-gs-353.ax-gs-353 { margin:0 0 12px; }
+#apex-root .ax-gs-354.ax-gs-354, .ax-gs-354.ax-gs-354 { margin:0 0 12px;color:var(--ax-text-muted);font-size:14px; }
+#apex-root .ax-gs-355.ax-gs-355, .ax-gs-355.ax-gs-355 { margin:0 0 8px;font-size:14px; }
+#apex-root .ax-gs-356.ax-gs-356, .ax-gs-356.ax-gs-356.ax-gs-356 { width:100%;padding:14px;font-weight:700; }
+#apex-root .ax-gs-357.ax-gs-357, .ax-gs-357.ax-gs-357 { width:100%;padding:12px; }
+#apex-root .ax-gs-358.ax-gs-358, .ax-gs-358.ax-gs-358.ax-gs-358 { min-width:36px;width:36px;flex:0 0 36px; }
+#apex-root .ax-gs-359.ax-gs-359, .ax-gs-359.ax-gs-359 { display:none; }
+#apex-root .ax-gs-360.ax-gs-360, .ax-gs-360.ax-gs-360.ax-gs-360 { width:100%;text-align:left;padding:14px; }
+#apex-root .ax-gs-361.ax-gs-361, .ax-gs-361.ax-gs-361.ax-gs-361 { width:100%; }
+#apex-root .ax-gs-362.ax-gs-362, .ax-gs-362.ax-gs-362 { margin:0;padding-left:18px;font-size:13px; }
+#apex-root .ax-gs-363.ax-gs-363, .ax-gs-363.ax-gs-363 { margin:0 0 12px;color:var(--ax-text-dim); }
+#apex-root .ax-gs-364.ax-gs-364, .ax-gs-364.ax-gs-364.ax-gs-364.ax-gs-364.ax-gs-364.ax-gs-364.ax-gs-364 { padding:16px;max-width:960px;margin:0 auto; }
+#apex-root .ax-gs-365.ax-gs-365, .ax-gs-365.ax-gs-365 { margin:0 0 8px;color:#c9a227; }
+#apex-root .ax-gs-366.ax-gs-366, .ax-gs-366.ax-gs-366 { padding:8px 14px; }
+#apex-root .ax-gs-367.ax-gs-367, .ax-gs-367.ax-gs-367 { padding:4px;color:var(--ax-text-dim); }
+#apex-root .ax-gs-368.ax-gs-368, .ax-gs-368.ax-gs-368.ax-gs-368.ax-gs-368.ax-gs-368.ax-gs-368.ax-gs-368 { padding:16px;max-width:600px;margin:0 auto; }
+#apex-root .ax-gs-369.ax-gs-369, .ax-gs-369.ax-gs-369 { margin:0 0 16px;color:#c9a227; }
+#apex-root .ax-gs-370.ax-gs-370, .ax-gs-370.ax-gs-370 { margin:0 0 12px;font-size:16px; }
+#apex-root .ax-gs-371.ax-gs-371, .ax-gs-371.ax-gs-371.ax-gs-371 { width:100%;padding:10px;border-radius:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(201,162,39,0.3);color:#fff;font-family:monospace;font-size:13px; }
+#apex-root .ax-gs-372.ax-gs-372, .ax-gs-372.ax-gs-372 { color:var(--ax-gold-deep); }
+#apex-root .ax-gs-373.ax-gs-373, .ax-gs-373.ax-gs-373.ax-gs-373 { font-size:12px;color:rgba(232,184,48,0.85);margin:0 0 14px;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;display:flex;align-items:center;gap:6px; }
+#apex-root .ax-gs-374.ax-gs-374, .ax-gs-374.ax-gs-374.ax-gs-374 { font-size:12px;color:rgba(232,184,48,0.85);margin:0 0 14px;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;display:flex;align-items:center;gap:8px; }
+#apex-root .ax-gs-375.ax-gs-375, .ax-gs-375.ax-gs-375.ax-gs-375 { background:#1e293b;border:1px solid #c9a22755;color:#c9a227;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;min-height:36px;touch-action:manipulation; }
+#apex-root .ax-gs-376.ax-gs-376, .ax-gs-376.ax-gs-376.ax-gs-376.ax-gs-376.ax-gs-376.ax-gs-376.ax-gs-376 { padding:16px;max-width:900px;margin:0 auto; }
+#apex-root .ax-gs-377.ax-gs-377, .ax-gs-377.ax-gs-377 { color:var(--ax-text-dim);margin:0 0 16px;font-size:14px; }
+#apex-root .ax-gs-378.ax-gs-378, .ax-gs-378.ax-gs-378 { margin:0 0 12px;font-size:16px;color:#c9a227; }
+#apex-root .ax-gs-379.ax-gs-379, .ax-gs-379 { margin-top:8px;width:100%; }
+#apex-root .ax-gs-380.ax-gs-380, .ax-gs-380.ax-gs-380 { min-height:36px;padding:6px 10px;font-size:11px; }
+#apex-root .ax-gs-381.ax-gs-381, .ax-gs-381.ax-gs-381 { min-height:44px;padding:10px 14px; }
+#apex-root .ax-gs-382.ax-gs-382, .ax-gs-382.ax-gs-382.ax-gs-382 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:14px;margin-bottom:12px; }
+#apex-root .ax-gs-383.ax-gs-383, .ax-gs-383.ax-gs-383 { margin:0 0 8px 0;color:#c9a227; }
+#apex-root .ax-gs-384.ax-gs-384, .ax-gs-384.ax-gs-384.ax-gs-384 { min-height:36px;padding:6px 12px;font-size:12px; }
+#apex-root .ax-gs-385.ax-gs-385, .ax-gs-385.ax-gs-385 { color:var(--ax-text-dim);margin:0 0 12px;font-size:14px; }
+#apex-root .ax-gs-386.ax-gs-386, .ax-gs-386.ax-gs-386 { margin:24px 0 8px;color:#c9a227;font-size:16px; }
+#apex-root .ax-gs-387.ax-gs-387, .ax-gs-387.ax-gs-387 { background:rgba(201,162,39,0.1); }
+#apex-root .ax-gs-388.ax-gs-388, .ax-gs-388.ax-gs-388 { padding:8px;text-align:left;font-size:11px;color:#c9a227; }
+#apex-root .ax-gs-389.ax-gs-389, .ax-gs-389.ax-gs-389 { padding:4px 8px;font-size:11px; }
+#apex-root .ax-gs-390.ax-gs-390, .ax-gs-390.ax-gs-390.ax-gs-390 { background:#1a1a1a;border-radius:12px;padding:16px;margin-bottom:16px; }
+#apex-root .ax-gs-391.ax-gs-391, .ax-gs-391.ax-gs-391 { color:#c9a227;font-size:16px;margin:0 0 12px; }
+#apex-root .ax-gs-392.ax-gs-392, .ax-gs-392.ax-gs-392 { width:100%;border-collapse:collapse;font-size:13px; }
+#apex-root .ax-gs-393.ax-gs-393, .ax-gs-393.ax-gs-393 { padding:8px; }
+#apex-root .ax-gs-394.ax-gs-394, .ax-gs-394.ax-gs-394 { width:100%;font-size:0.9em; }
+#apex-root .ax-gs-395.ax-gs-395, .ax-gs-395.ax-gs-395 { color:#fff;font-size:12px; }
+#apex-root .ax-gs-396.ax-gs-396, .ax-gs-396.ax-gs-396 { margin:2px 0 0;color:#a0a4c0;font-size:11px;line-height:1.4; }
+#apex-root .ax-gs-397.ax-gs-397, .ax-gs-397.ax-gs-397 { font-size:12px;margin-top:8px; }
+#apex-root .ax-gs-398.ax-gs-398, .ax-gs-398.ax-gs-398 { font-size:13px; }
+#apex-root .ax-gs-399.ax-gs-399, .ax-gs-399.ax-gs-399 { color:rgba(255,255,255,0.55);margin:0;font-size:14px; }
+#apex-root .ax-gs-400.ax-gs-400, .ax-gs-400.ax-gs-400.ax-gs-400 { background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:14px;margin-bottom:10px; }
+#apex-root .ax-gs-401.ax-gs-401, .ax-gs-401.ax-gs-401.ax-gs-401 { min-height:44px; }
+#apex-root .ax-gs-402.ax-gs-402, .ax-gs-402.ax-gs-402 { min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#08080f 0%,#181820 100%); }
+#apex-root .ax-gs-403.ax-gs-403, .ax-gs-403.ax-gs-403 { display:block;margin-bottom:16px; }
+#apex-root .ax-gs-404.ax-gs-404, .ax-gs-404.ax-gs-404 { margin:0 0 8px;color:#c9a227;font-size:24px; }
+#apex-root .ax-gs-405.ax-gs-405, .ax-gs-405.ax-gs-405 { color:var(--ax-text-dim,#aaa);margin:0 0 16px;font-size:14px; }
+#apex-root .ax-gs-406.ax-gs-406, .ax-gs-406.ax-gs-406 { color:#fff;font-size:14px; }
+#apex-root .ax-gs-407.ax-gs-407, .ax-gs-407.ax-gs-407 { color:var(--ax-text-dim,#aaa);margin:0 0 20px;font-size:14px; }
+#apex-root .ax-gs-408.ax-gs-408, .ax-gs-408.ax-gs-408 { font-size:16px; }
+#apex-root .ax-gs-409.ax-gs-409, .ax-gs-409.ax-gs-409 { color:#fff;font-size:15px; }
+#apex-root .ax-gs-410.ax-gs-410, .ax-gs-410.ax-gs-410.ax-gs-410 { padding:6px 12px;background:#c9a227;color:#000;font-weight:600;border:none;border-radius:6px;font-size:12px;cursor:pointer; }
+#apex-root .ax-gs-411.ax-gs-411, .ax-gs-411.ax-gs-411.ax-gs-411 { padding:6px 12px;background:rgba(20,20,35,0.7);color:#fff;border:1px solid #444;border-radius:6px;font-size:12px;cursor:pointer; }
+#apex-root .ax-gs-412.ax-gs-412, .ax-gs-412.ax-gs-412.ax-gs-412 { flex:1 1 240px;background:rgba(20,20,35,0.7);border:1px solid #444;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px; }
+#apex-root .ax-gs-413.ax-gs-413, .ax-gs-413.ax-gs-413.ax-gs-413 { background:rgba(20,20,35,0.7);border:1px solid #444;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px; }
+#apex-root .ax-gs-414.ax-gs-414, .ax-gs-414.ax-gs-414 { font-size:12px;color:var(--ax-text-dim);display:flex;align-items:center;gap:4px;cursor:pointer; }
+#apex-root .ax-gs-415.ax-gs-415, .ax-gs-415.ax-gs-415 { margin:16px 0 8px;color:#c9a227;font-size:16px; }
+#apex-root .ax-gs-416.ax-gs-416, .ax-gs-416.ax-gs-416.ax-gs-416 { cursor:pointer;background:rgba(201,162,39,0.05);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:16px;transition:transform 0.15s; }
+#apex-root .ax-gs-417.ax-gs-417, .ax-gs-417.ax-gs-417 { color:#a0a4c0;font-size:13px;margin:0 0 16px; }
+#apex-root .ax-gs-418.ax-gs-418, .ax-gs-418.ax-gs-418 { color:#79c0ff;font-size:15px; }
+#apex-root .ax-gs-419.ax-gs-419, .ax-gs-419.ax-gs-419 { font-size:13px;color:#ddd; }
+#apex-root .ax-gs-420.ax-gs-420, .ax-gs-420.ax-gs-420 { color:#79c0ff;font-size:15px;margin-top:16px; }
+#apex-root .ax-gs-421.ax-gs-421, .ax-gs-421.ax-gs-421 { color:var(--ax-text-dim,#999);font-size:13px;margin-bottom:16px; }
+#apex-root .ax-gs-422.ax-gs-422, .ax-gs-422.ax-gs-422 { color:#ffb56b;margin:0 0 10px; }
+#apex-root .ax-gs-423.ax-gs-423, .ax-gs-423.ax-gs-423.ax-gs-423 { width:100%;padding:11px;font-size:14px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:#eee;border-radius:8px;min-height:44px; }
+#apex-root .ax-gs-424.ax-gs-424, .ax-gs-424.ax-gs-424 { color:#c9a227;margin:0 0 10px; }
+#apex-root .ax-gs-425.ax-gs-425, .ax-gs-425.ax-gs-425.ax-gs-425 { width:100%;padding:11px;font-size:14px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:#eee;border-radius:8px;margin-bottom:6px;min-height:44px; }
+#apex-root .ax-gs-426.ax-gs-426, .ax-gs-426.ax-gs-426 { color:#ff5858;margin:0 0 10px; }
+#apex-root .ax-gs-427.ax-gs-427, .ax-gs-427.ax-gs-427.ax-gs-427 { width:100%;margin-top:8px;padding:12px;background:rgba(255,88,88,0.2);color:#ff8080;border:1px solid #ff5858;border-radius:8px;font-weight:600;cursor:pointer;min-height:44px; }
+#apex-root .ax-gs-428.ax-gs-428, .ax-gs-428.ax-gs-428 { margin-top:14px;text-align:center;font-size:11px;color:#666; }
+#apex-root .ax-gs-429.ax-gs-429, .ax-gs-429.ax-gs-429 { display:block;padding:9px 12px;color:#5aa8ff;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.06); }
+#apex-root .ax-gs-430.ax-gs-430, .ax-gs-430.ax-gs-430 { color:#ff8080;margin:0 0 10px; }
+#apex-root .ax-gs-431.ax-gs-431, .ax-gs-431.ax-gs-431.ax-gs-431 { flex:1;padding:11px;background:rgba(255,255,255,0.05);color:#eee;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:13px;cursor:pointer;min-height:44px; }
+#apex-root .ax-gs-432.ax-gs-432, .ax-gs-432.ax-gs-432 { margin:0 0 8px;font-size:16px; }
+#apex-root .ax-gs-433.ax-gs-433, .ax-gs-433.ax-gs-433 { margin:0 0 12px;color:var(--ax-text-dim);font-size:13px; }
+#apex-root .ax-gs-434.ax-gs-434, .ax-gs-434.ax-gs-434.ax-gs-434 { width:100%;border-collapse:collapse;background:rgba(20,20,35,0.5);border-radius:12px;overflow:hidden; }
+#apex-root .ax-gs-435.ax-gs-435, .ax-gs-435.ax-gs-435 { padding:10px;text-align:left;font-size:12px;color:#c9a227;border-bottom:1px solid rgba(201,162,39,0.3); }
+#apex-root .ax-gs-436.ax-gs-436, .ax-gs-436.ax-gs-436 { padding:10px;font-size:13px; }
+#apex-root .ax-gs-437.ax-gs-437, .ax-gs-437.ax-gs-437 { margin:0 0 14px;color:rgba(255,255,255,0.6);font-size:13px;line-height:1.5; }
+#apex-root .ax-gs-438.ax-gs-438, .ax-gs-438.ax-gs-438.ax-gs-438 { margin:10px 0;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.6);font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+#apex-root .ax-gs-439.ax-gs-439, .ax-gs-439.ax-gs-439 { width:20px;height:20px;cursor:pointer; }
+#apex-root .ax-gs-440.ax-gs-440, .ax-gs-440.ax-gs-440 { margin:2px 0 0 16px;padding:0; }
+#apex-root .ax-gs-441.ax-gs-441, .ax-gs-441.ax-gs-441.ax-gs-441.ax-gs-441.ax-gs-441.ax-gs-441.ax-gs-441 { max-width:560px;width:100%;background:rgba(20,20,35,0.92);backdrop-filter:blur(20px);border:1px solid rgba(201,162,39,0.3);border-radius:20px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+#apex-root .ax-gs-442.ax-gs-442, .ax-gs-442.ax-gs-442 { color:var(--ax-text-dim,#aaa);margin:0;font-size:14px; }
+#apex-root .ax-gs-443.ax-gs-443, .ax-gs-443.ax-gs-443.ax-gs-443 { width:100%;padding:11px;background:rgba(0,0,0,0.3);border:1px solid rgba(201,162,39,0.3);border-radius:8px;color:#fff;font-size:14px; }
+#apex-root .ax-gs-444.ax-gs-444, .ax-gs-444.ax-gs-444 { display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--ax-text-dim,#aaa); }
+#apex-root .ax-gs-445.ax-gs-445, .ax-gs-445.ax-gs-445 { color:#c9a227;text-decoration:underline; }
+#apex-root .ax-gs-446.ax-gs-446, .ax-gs-446.ax-gs-446 { color:#fff;font-size:16px;margin:0 0 12px; }
+#apex-root .ax-gs-447.ax-gs-447, .ax-gs-447.ax-gs-447 { padding:10px;text-align:left;font-size:11px;color:#c9a227; }
+#apex-root .ax-gs-448.ax-gs-448, .ax-gs-448.ax-gs-448 { padding:10px;text-align:right;font-size:11px;color:#c9a227; }
+#apex-root .ax-gs-449.ax-gs-449, .ax-gs-449.ax-gs-449 { padding:10px;text-align:right;font-size:12px; }
+#apex-root .ax-gs-450.ax-gs-450, .ax-gs-450.ax-gs-450 { padding:10px;text-align:right;font-size:11px;color:var(--ax-text-dim); }
+#apex-root .ax-gs-451.ax-gs-451, .ax-gs-451.ax-gs-451.ax-gs-451.ax-gs-451.ax-gs-451.ax-gs-451.ax-gs-451 { padding:16px;max-width:780px;margin:0 auto; }
+#apex-root .ax-gs-452.ax-gs-452, .ax-gs-452.ax-gs-452 { margin:0 0 10px 0;font-size:15px;color:#c9a227; }
+#apex-root .ax-gs-453.ax-gs-453, .ax-gs-453.ax-gs-453.ax-gs-453 { width:100%;padding:10px;background:#0a0a14;border:1px solid #333;color:#fff;border-radius:6px;min-height:44px; }
+#apex-root .ax-gs-454.ax-gs-454, .ax-gs-454.ax-gs-454.ax-gs-454 { margin-top:8px;min-height:44px; }
+#apex-root .ax-gs-455.ax-gs-455, .ax-gs-455.ax-gs-455.ax-gs-455 { width:100%;padding:10px;margin-bottom:8px;background:#0a0a14;border:1px solid #333;color:#fff;border-radius:6px;min-height:44px; }
+#apex-root .ax-gs-456.ax-gs-456, .ax-gs-456.ax-gs-456 { margin-top:8px;color:#c9a227;white-space:pre-wrap;font-size:13px; }
+#apex-root .ax-gs-457.ax-gs-457, .ax-gs-457.ax-gs-457 { text-align:left;padding:6px 10px; }
+#apex-root .ax-gs-458.ax-gs-458, .ax-gs-458.ax-gs-458 { font-size:11px;padding:6px 10px;min-height:36px; }
+#apex-root .ax-gs-459.ax-gs-459, .ax-gs-459.ax-gs-459 { font-size:11px;padding:6px 10px;color:#ff6666;min-height:36px; }
+#apex-root .ax-gs-460.ax-gs-460, .ax-gs-460.ax-gs-460 { min-height:44px;color:#ff6666; }
+#apex-root .ax-gs-461.ax-gs-461, .ax-gs-461.ax-gs-461 { display:block;margin-bottom:8px; }
+#apex-root .ax-gs-462.ax-gs-462, .ax-gs-462.ax-gs-462.ax-gs-462 { width:100%;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#f1f5f9;font-size:14px;resize:vertical; }
+#apex-root .ax-gs-463.ax-gs-463, .ax-gs-463.ax-gs-463.ax-gs-463 { width:100%;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#f1f5f9;font-size:14px; }
+#apex-root .ax-gs-464.ax-gs-464, .ax-gs-464.ax-gs-464.ax-gs-464 { width:100%;padding:12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#f1f5f9;font-size:15px; }
+#apex-root .ax-gs-465.ax-gs-465, .ax-gs-465.ax-gs-465.ax-gs-465 { width:100%;padding:14px;background:#10b981;color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;min-height:48px; }
+#apex-root .ax-gs-466.ax-gs-466, .ax-gs-466.ax-gs-466 { color:#10b981;font-size:14px;margin-bottom:12px; }
+#apex-root .ax-gs-467.ax-gs-467, .ax-gs-467.ax-gs-467.ax-gs-467 { display:inline-block;padding:12px 20px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:600; }
+#apex-root .ax-gs-468.ax-gs-468, .ax-gs-468.ax-gs-468 { margin:0 0 8px 0;font-size:13px;color:var(--ax-text-dim); }
+#apex-root .ax-gs-469.ax-gs-469, .ax-gs-469.ax-gs-469 { font-size:11px;color:#666;text-align:center; }
+#apex-root .ax-gs-470.ax-gs-470, .ax-gs-470.ax-gs-470 { display:block;font-size:12px;color:var(--ax-text-dim); }
+#apex-root .ax-gs-471.ax-gs-471, .ax-gs-471.ax-gs-471 { display:block;font-size:12px;color:var(--ax-text-dim);margin-top:6px; }
+#apex-root .ax-gs-472.ax-gs-472, .ax-gs-472.ax-gs-472 { display:block;margin-bottom:10px; }
+#apex-root .ax-gs-473.ax-gs-473, .ax-gs-473.ax-gs-473 { display:block;margin-bottom:12px; }
+#apex-root .ax-gs-474.ax-gs-474, .ax-gs-474.ax-gs-474.ax-gs-474 { flex:1;padding:6px;background:#0a0a14;border:1px solid #333;color:#fff;border-radius:6px;min-height:36px; }
+#apex-root .ax-gs-475.ax-gs-475, .ax-gs-475.ax-gs-475 { margin:0;font-size:18px;color:var(--ax-gold); }
+#apex-root .ax-gs-476.ax-gs-476, .ax-gs-476.ax-gs-476 { background:transparent;border:0;color:var(--ax-text-dim);font-size:24px;cursor:pointer;min-height:32px;min-width:32px; }
+#apex-root .ax-gs-477.ax-gs-477, .ax-gs-477.ax-gs-477 { display:block;margin-bottom:10px;font-size:13px;color:rgba(255,255,255,0.7); }
+#apex-root .ax-gs-478.ax-gs-478, .ax-gs-478.ax-gs-478.ax-gs-478 { width:100%;margin-top:4px;padding:10px;background:rgba(255,255,255,0.04);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:14px;min-height:44px;box-sizing:border-box;-webkit-appearance:none; }
+#apex-root .ax-gs-479.ax-gs-479, .ax-gs-479.ax-gs-479.ax-gs-479 { width:100%;margin-top:4px;padding:10px;background:rgba(0,0,0,0.4);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:13px;min-height:80px;font-family:'SF Mono',Menlo,monospace;box-sizing:border-box;-webkit-appearance:none;resize:vertical; }
+#apex-root .ax-gs-480.ax-gs-480, .ax-gs-480.ax-gs-480 { color:#c9a227;margin-top:0;margin-bottom:10px; }
+#apex-root .ax-gs-481.ax-gs-481, .ax-gs-481.ax-gs-481 { color:#ccc;font-size:13px;line-height:1.5; }
+#apex-root .ax-gs-482.ax-gs-482, .ax-gs-482.ax-gs-482 { padding:6px;color:#aaa; }
+#apex-root .ax-gs-483.ax-gs-483, .ax-gs-483.ax-gs-483 { padding:14px;color:#666;text-align:center; }
+#apex-root .ax-gs-484.ax-gs-484, .ax-gs-484.ax-gs-484 { padding:8px 6px;text-align:left; }
+#apex-root .ax-gs-485.ax-gs-485, .ax-gs-485.ax-gs-485 { padding:6px;text-align:left; }
+#apex-root .ax-gs-486.ax-gs-486, .ax-gs-486.ax-gs-486 { color:#c9a227;margin-top:0; }
+#apex-root .ax-gs-487.ax-gs-487, .ax-gs-487.ax-gs-487 { text-align:left;padding:12px; }
+
+/* v13.4.352 — Affichage repliable de la réflexion (thinking display) */
+.ax-thinking { margin: 4px 0 10px; border: 1px solid rgba(99,102,241,.35); border-radius: 10px; background: rgba(99,102,241,.06); overflow: hidden; }
+.ax-thinking-sum { cursor: pointer; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #a5b4fc; list-style: none; user-select: none; min-height: 44px; display: flex; align-items: center; }
+.ax-thinking-sum::-webkit-details-marker { display: none; }
+.ax-thinking-sum::before { content: '▸'; margin-right: 8px; transition: transform .15s ease; }
+.ax-thinking[open] .ax-thinking-sum::before { transform: rotate(90deg); }
+.ax-thinking-body { padding: 4px 12px 12px; font-size: 13px; line-height: 1.5; color: var(--ax-text-dim, #b8b8c8); white-space: pre-wrap; word-break: break-word; font-style: italic; }

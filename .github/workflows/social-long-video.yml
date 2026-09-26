@@ -1,0 +1,203 @@
+name: Social — Generate Long Video (chunked jobs)
+
+on:
+  workflow_dispatch:
+    inputs:
+      story_id:
+        description: "Story ID (ou vide = au hasard)"
+        required: false
+        default: ""
+      niche:
+        description: "Niche filter"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      story_id: ${{ steps.pick.outputs.story_id }}
+      story_title: ${{ steps.pick.outputs.story_title }}
+      chunks: ${{ steps.pick.outputs.chunks }}
+      chunk_count: ${{ steps.pick.outputs.chunk_count }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Pick story and split
+        id: pick
+        working-directory: tools/social
+        run: |
+          node --input-type=module -e "
+          import fs from 'fs';
+          const lib = JSON.parse(fs.readFileSync('config/content-library.json','utf8'));
+          const cats = Object.keys(lib).filter(k=>!k.startsWith('_'));
+          const inputId = '${{ github.event.inputs.story_id }}'.trim();
+          const niche = '${{ github.event.inputs.niche }}'.trim();
+          let story = null;
+          if (inputId) {
+            for (const cat of cats) { const f = lib[cat].find(s=>s.id===inputId); if(f){story=f;break;} }
+          } else {
+            for (const cat of cats) {
+              if (niche && !cat.includes(niche)) continue;
+              const unused = lib[cat].filter(s=>!s.used);
+              if (unused.length) { story = unused[Math.floor(Math.random()*unused.length)]; break; }
+            }
+          }
+          if (!story) { console.error('No story found'); process.exit(1); }
+          const words = story.script.split(/\s+/);
+          const chunkSize = 100;
+          const chunks = [];
+          for (let i = 0; i < words.length; i += chunkSize) {
+            chunks.push(words.slice(i, i + chunkSize).join(' '));
+          }
+          const output = {
+            story_id: story.id,
+            story_title: story.title,
+            chunks: JSON.stringify(chunks),
+            chunk_count: String(chunks.length),
+          };
+          for (const [k,v] of Object.entries(output)) {
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, k + '=' + v + '\n');
+          }
+          console.log(story.id + ' — ' + words.length + ' words → ' + chunks.length + ' chunks');
+          "
+
+  generate-chunk:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      max-parallel: 1
+      matrix:
+        chunk_index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    if: ${{ fromJson(needs.prepare.outputs.chunk_count) > 0 }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: sudo apt-get update -qq && sudo apt-get install -y espeak-ng ffmpeg
+      - run: cd tools/social && npm install --no-audit --no-fund
+      - name: Generate chunk ${{ matrix.chunk_index }}
+        if: ${{ matrix.chunk_index < fromJson(needs.prepare.outputs.chunk_count) }}
+        working-directory: tools/social
+        run: |
+          CHUNKS='${{ needs.prepare.outputs.chunks }}'
+          IDX=${{ matrix.chunk_index }}
+          STORY_ID="${{ needs.prepare.outputs.story_id }}"
+          TITLE="${{ needs.prepare.outputs.story_title }}"
+          node --input-type=module -e "
+          import fs from 'fs';
+          import { execSync } from 'child_process';
+          const chunks = JSON.parse(process.argv[1]);
+          const idx = parseInt(process.argv[2]);
+          const storyId = process.argv[3];
+          const title = process.argv[4];
+          if (idx >= chunks.length) { console.log('Skip chunk ' + idx); process.exit(0); }
+          const chunk = chunks[idx];
+          console.log('Chunk ' + idx + '/' + chunks.length + ' (' + chunk.split(/\s+/).length + ' words)');
+          const cd = 'output/' + storyId + '/chunk_' + idx;
+          fs.mkdirSync(cd + '/f', {recursive:true});
+          const wavP = cd + '/a.wav';
+          const mp3P = cd + '/a.mp3';
+          const safe = chunk.replace(/[\\\\\"]/g,'').slice(0,3000);
+          execSync('espeak-ng -v en -s 155 -p 35 -w ' + wavP + ' \"' + safe + '\"', {timeout:30000});
+          execSync('ffmpeg -y -i ' + wavP + ' -codec:a libmp3lame -b:a 128k ' + mp3P, {stdio:'pipe', timeout:15000});
+          try{fs.unlinkSync(wavP)}catch{}
+          const sz = fs.statSync(mp3P).size;
+          const dur = Math.round(sz / 6000 * 1000);
+          const { segmentScript, groupIntoSubtitles } = await import('./engine/subtitle-engine.js');
+          const segs = segmentScript(chunk, dur);
+          const subs = groupIntoSubtitles(segs, {wordsPerLine:5, maxCharsPerLine:40, breakOnPunct:true});
+          const sr = subs.map(g=>({text:g.text,startMs:g.startMs,endMs:g.endMs,words:g.words.map(w=>({word:w.word,startMs:w.startMs,endMs:w.endMs}))}));
+          const scene = {width:960,height:540,fps:8,durationMs:dur+200,bg:{type:'cinematic'},style:'narrative',subtitles:sr,title:idx===0?title:'',watermark:'',showProgress:false};
+          const { generateFrames } = await import('./engine/frame-generator.js');
+          await generateFrames(scene, cd+'/f', {onProgress:(c,t)=>{if(c%10===0)process.stdout.write('.')}});
+          console.log(' Compile...');
+          execSync('ffmpeg -y -framerate 8 -i '+cd+'/f/frame_%06d.png -i '+mp3P+' -map 0:v -map 1:a -vf scale=1920:1080:flags=lanczos -c:v libx264 -preset ultrafast -crf 26 -pix_fmt yuv420p -r 30 -c:a aac -b:a 128k -shortest -movflags +faststart '+cd+'/chunk.mp4', {stdio:'pipe', timeout:180000});
+          console.log('Chunk ' + idx + ': ' + (fs.statSync(cd+'/chunk.mp4').size/1024/1024).toFixed(1) + 'MB');
+          // Cleanup frames
+          try{fs.readdirSync(cd+'/f').forEach(f=>fs.unlinkSync(cd+'/f/'+f));fs.rmdirSync(cd+'/f')}catch{}
+          try{fs.unlinkSync(mp3P)}catch{}
+          " -- "'$CHUNKS'" "$IDX" "$STORY_ID" "$TITLE"
+      - name: Upload chunk
+        if: ${{ matrix.chunk_index < fromJson(needs.prepare.outputs.chunk_count) }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: chunk-${{ matrix.chunk_index }}
+          path: tools/social/output/${{ needs.prepare.outputs.story_id }}/chunk_${{ matrix.chunk_index }}/chunk.mp4
+          retention-days: 1
+
+  assemble:
+    needs: [prepare, generate-chunk]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - name: Download all chunks
+        uses: actions/download-artifact@v4
+        with:
+          path: chunks
+          pattern: chunk-*
+      - name: Assemble final video
+        working-directory: tools/social
+        run: |
+          STORY_ID="${{ needs.prepare.outputs.story_id }}"
+          mkdir -p "output/$STORY_ID"
+          # Build concat file
+          echo "" > /tmp/concat.txt
+          for i in $(seq 0 9); do
+            CHUNK="$GITHUB_WORKSPACE/chunks/chunk-$i/chunk.mp4"
+            if [ -f "$CHUNK" ]; then
+              echo "file '$CHUNK'" >> /tmp/concat.txt
+              echo "Found chunk $i"
+            fi
+          done
+          FINAL="output/$STORY_ID/${STORY_ID}_long.mp4"
+          ffmpeg -y -f concat -safe 0 -i /tmp/concat.txt -c copy "$FINAL"
+          ls -lh "$FINAL"
+          echo "FINAL_VIDEO=$FINAL" >> $GITHUB_ENV
+
+      - name: Publish to YouTube
+        if: env.FINAL_VIDEO != ''
+        working-directory: tools/social
+        run: |
+          npm install --no-audit --no-fund
+          if [ -n "$YOUTUBE_CLIENT_ID" ]; then
+            node cli.js publish --platform youtube --video "$FINAL_VIDEO" --privacy private || echo "YouTube skipped"
+          fi
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+
+      - name: Mark story used + commit
+        run: |
+          cd tools/social
+          node --input-type=module -e "
+          import fs from 'fs';
+          const lib = JSON.parse(fs.readFileSync('config/content-library.json','utf8'));
+          for (const cat of Object.keys(lib)) {
+            if (cat.startsWith('_')) continue;
+            for (const s of lib[cat]) {
+              if (s.id === '${{ needs.prepare.outputs.story_id }}') { s.used = true; break; }
+            }
+          }
+          fs.writeFileSync('config/content-library.json', JSON.stringify(lib,null,2));
+          "
+          cd ../..
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tools/social/config/content-library.json
+          if ! git diff --staged --quiet; then
+            git commit -m "auto: long video ${{ needs.prepare.outputs.story_id }} generated [skip ci]"
+            git push
+          fi

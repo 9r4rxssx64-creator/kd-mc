@@ -1,0 +1,136 @@
+name: SW Cache Version Sync
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Auto-fix sw.js CACHE_VERSION pour qu'il match toujours APP_VER (v12 et v13).
+# Empeche Kevin de devoir force-refresh : si APP_VER bumpe sans que sw.js suive,
+# ce workflow le rattrape automatiquement et commit le fix.
+#
+# v13.3.56 : extension support apex-ai/v13/ (bootstrap.ts + sw.js + index.html data-app-ver)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/index.html'
+      - 'apex-ai/sw.js'
+      - 'apex-ai/v13/index.html'
+      - 'apex-ai/v13/sw.js'
+      - 'apex-ai/v13/core/bootstrap.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-v12:
+    name: Sync v12 (apex-ai/sw.js <-> apex-ai/index.html)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Verifier sync v12
+        id: check
+        run: |
+          APP_VER=$(grep -oE 'APP_VER\s*=\s*"v[0-9]+\.[0-9]+"' apex-ai/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
+          SW_VER=$(grep -oE "CACHE_VERSION\s*=\s*'apex-v[0-9]+\.[0-9]+'" apex-ai/sw.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
+          echo "APP_VER=$APP_VER"
+          echo "SW_VER=$SW_VER"
+          echo "app_ver=$APP_VER" >> $GITHUB_OUTPUT
+          echo "sw_ver=$SW_VER" >> $GITHUB_OUTPUT
+          if [ -z "$APP_VER" ] || [ -z "$SW_VER" ]; then
+            echo "drift=false" >> $GITHUB_OUTPUT
+            echo "Pas de version detectee, skip"
+          elif [ "$APP_VER" != "$SW_VER" ]; then
+            echo "drift=true" >> $GITHUB_OUTPUT
+            echo "::warning::v12 drift: APP_VER=$APP_VER vs SW_VER=$SW_VER"
+          else
+            echo "drift=false" >> $GITHUB_OUTPUT
+            echo "v12 OK ($APP_VER)"
+          fi
+
+      - name: Auto-fix v12
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          APP_VER="${{ steps.check.outputs.app_ver }}"
+          sed -i "s/CACHE_VERSION\s*=\s*'apex-v[0-9]\+\.[0-9]\+'/CACHE_VERSION  = 'apex-${APP_VER}'/" apex-ai/sw.js
+          echo "Fix v12 : sw.js -> apex-${APP_VER}"
+
+      - name: Commit + push v12
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add apex-ai/sw.js
+          git commit -m "chore(v12): sync sw.js CACHE_VERSION -> ${{ steps.check.outputs.app_ver }} (auto) [skip ci]" || echo "Nothing to commit"
+          git push origin main
+
+  sync-v13:
+    name: Sync v13 (apex-ai/v13/ — bootstrap.ts <-> sw.js <-> index.html)
+    runs-on: ubuntu-latest
+    needs: sync-v12
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+          ref: main
+
+      - name: Verifier sync v13
+        id: check
+        run: |
+          # Source de verite : APP_VER de bootstrap.ts (canonical)
+          APP_VER=$(grep -oE "APP_VER\s*=\s*'v[0-9]+\.[0-9]+\.[0-9]+'" apex-ai/v13/core/bootstrap.ts | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          SW_VER=$(grep -oE "CACHE_VERSION\s*=\s*'apex-v[0-9]+\.[0-9]+\.[0-9]+'" apex-ai/v13/sw.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          IDX_VER=$(grep -oE 'data-app-ver="v[0-9]+\.[0-9]+\.[0-9]+"' apex-ai/v13/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          echo "APP_VER (bootstrap.ts) = $APP_VER"
+          echo "SW_VER (sw.js)         = $SW_VER"
+          echo "IDX_VER (index.html)   = $IDX_VER"
+          echo "app_ver=$APP_VER" >> $GITHUB_OUTPUT
+          echo "sw_ver=$SW_VER" >> $GITHUB_OUTPUT
+          echo "idx_ver=$IDX_VER" >> $GITHUB_OUTPUT
+          if [ -z "$APP_VER" ]; then
+            echo "drift=false" >> $GITHUB_OUTPUT
+            echo "Pas de APP_VER v13 detecte, skip"
+          elif [ "$APP_VER" != "$SW_VER" ] || [ "$APP_VER" != "$IDX_VER" ]; then
+            echo "drift=true" >> $GITHUB_OUTPUT
+            echo "::warning::v13 drift detecte"
+          else
+            echo "drift=false" >> $GITHUB_OUTPUT
+            echo "v13 OK ($APP_VER)"
+          fi
+
+      - name: Auto-fix v13 sw.js
+        if: steps.check.outputs.drift == 'true' && steps.check.outputs.app_ver != steps.check.outputs.sw_ver
+        run: |
+          APP_VER="${{ steps.check.outputs.app_ver }}"
+          sed -i "s/CACHE_VERSION\s*=\s*'apex-v[0-9]\+\.[0-9]\+\.[0-9]\+'/CACHE_VERSION  = 'apex-${APP_VER}'/" apex-ai/v13/sw.js
+          echo "Fix v13 sw.js -> apex-${APP_VER}"
+          grep "CACHE_VERSION" apex-ai/v13/sw.js | head -1
+
+      - name: Auto-fix v13 index.html
+        if: steps.check.outputs.drift == 'true' && steps.check.outputs.app_ver != steps.check.outputs.idx_ver
+        run: |
+          APP_VER="${{ steps.check.outputs.app_ver }}"
+          sed -i "s/data-app-ver=\"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/data-app-ver=\"${APP_VER}\"/" apex-ai/v13/index.html
+          echo "Fix v13 index.html -> ${APP_VER}"
+          grep "data-app-ver" apex-ai/v13/index.html | head -1
+
+      - name: Commit + push v13
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add apex-ai/v13/sw.js apex-ai/v13/index.html
+          git commit -m "chore(v13): sync sw.js + index.html -> ${{ steps.check.outputs.app_ver }} (auto) [skip ci]" || echo "Nothing to commit"
+          git push origin main

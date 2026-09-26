@@ -1,0 +1,59 @@
+name: iRemoteHub CI
+
+on:
+  push:
+    paths: ['iRemoteHub/**']
+  pull_request:
+    paths: ['iRemoteHub/**']
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: iRemoteHub
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate JSON files
+        run: |
+          for f in manifest.webmanifest bridge/package.json bridge/ia/kb-seed.json; do
+            node -e "JSON.parse(require('fs').readFileSync('$f', 'utf8'))" && echo "✅ $f valid"
+          done
+
+      - name: Validate all JS syntax
+        run: |
+          FAIL=0
+          for f in $(find bridge sw.js -name "*.js" -type f 2>/dev/null); do
+            node --check "$f" || { echo "❌ $f"; FAIL=1; }
+          done
+          # Extract PWA inline JS
+          node -e "
+            const fs = require('fs');
+            const h = fs.readFileSync('index.html', 'utf8');
+            const s = h.lastIndexOf('<script>');
+            const e = h.lastIndexOf('</script>');
+            fs.writeFileSync('/tmp/pwa.js', h.slice(s+8, e));
+          "
+          node --check /tmp/pwa.js || { echo "❌ index.html JS"; FAIL=1; }
+          [ $FAIL -eq 0 ] && echo "✅ Tous JS valides"
+          exit $FAIL
+
+      - name: Check file size limits
+        run: |
+          MAX_PWA=80000
+          PWA_SIZE=$(wc -c < index.html)
+          echo "PWA size: $PWA_SIZE / $MAX_PWA bytes"
+          [ $PWA_SIZE -lt $MAX_PWA ] && echo "✅ PWA under limit" || { echo "❌ PWA too big"; exit 1; }
+
+      - name: Smoke tests
+        run: |
+          if [ -f tests/smoke.test.js ]; then
+            node tests/smoke.test.js
+          fi

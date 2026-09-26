@@ -1,0 +1,72 @@
+{
+  "_comment": "Configuration MCP pour Claude Code local. Copie ce fichier vers ~/.claude/mcp_settings.json et remplis les tokens.",
+
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/user/CMCteams",
+        "/home/user/IA-KDMC",
+        "/home/user/e-KDMC"
+      ]
+    },
+
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {
+        "MEMORY_FILE_PATH": "/home/user/.claude/memory.jsonl"
+      }
+    },
+
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_REMPLACE_MOI"
+      }
+    },
+
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+
+    "gmail": {
+      "command": "node",
+      "args": ["/home/user/CMCteams/tools/integrations/gmail/mcp-server.js"],
+      "env": {
+        "GMAIL_REFRESH_TOKEN": "REMPLACE_MOI",
+        "GMAIL_CLIENT_ID": "REMPLACE_MOI",
+        "GMAIL_CLIENT_SECRET": "REMPLACE_MOI"
+      }
+    },
+
+    "telegram": {
+      "command": "node",
+      "args": ["/home/user/CMCteams/tools/integrations/telegram/mcp-server.js"],
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "REMPLACE_MOI",
+        "TELEGRAM_CHAT_ID": "REMPLACE_MOI"
+      }
+    },
+
+    "gdrive": {
+      "command": "node",
+      "args": ["/home/user/CMCteams/tools/integrations/gdrive/mcp-server.js"],
+      "env": {
+        "GOOGLE_OAUTH_TOKEN": "REMPLACE_MOI"
+      }
+    },
+
+    "kdmc-firebase": {
+      "command": "node",
+      "args": ["/home/user/CMCteams/tools/agent/lib/firebase-mcp.js"],
+      "env": {
+        "FB_URL": "https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+      }
+    }
+  }
+}

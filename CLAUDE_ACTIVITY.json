@@ -1,0 +1,971 @@
+{
+  "updated_at": 1789135615546,
+  "total_commits": 907,
+  "projects": [
+    "apex",
+    "cmcteams",
+    "multi"
+  ],
+  "commits": [
+    {
+      "sha": "af803cc2",
+      "ts": 1789134158000,
+      "msg": "v9.902 / light v1.43: MAJ forcée prouvée en vrai navigateur sur les deux surfaces — 4 écarts corrigés, plus de boucle ni de rechargement en trop",
+      "project": "cmcteams",
+      "ver": "9.902",
+      "author": "claude-code"
+    },
+    {
+      "sha": "9fb13afd",
+      "ts": 1789132650000,
+      "msg": "v9.901: équipes et familles DU MOIS dans toutes les vues — « toutes les équipes sont mélangées » corrigé, mesuré, gardé",
+      "project": "cmcteams",
+      "ver": "9.901",
+      "author": "claude-code"
+    },
+    {
+      "sha": "4143516e",
+      "ts": 1789131561000,
+      "msg": "Merge remote-tracking branch 'origin/claude/verify-cmcteams-light-data-rzlvau' into claude/verify-cmcteams-light-data-rzlvau",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "28ba37a0",
+      "ts": 1789131553000,
+      "msg": "voir: branche de relecture orpheline (captures seules) — le jeton du job ne peut pas pousser un historique portant un workflow",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "f92b14a2",
+      "ts": 1789131343000,
+      "msg": "Fusion de main dans claude/verify-cmcteams-light-data-rzlvau (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "f039f50a",
+      "ts": 1789131234000,
+      "msg": "Merge remote-tracking branch 'origin/claude/verify-cmcteams-light-data-rzlvau' into claude/verify-cmcteams-light-data-rzlvau",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "61b98162",
+      "ts": 1789131224000,
+      "msg": "voir: tout ouvrir avant capture + relevé equipes.json (équipe/famille réelles de chaque employé)",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "66680c05",
+      "ts": 1789126428000,
+      "msg": "🧾 Déploiement raté consigné : 11/09/2026 11:33 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "a26e5675",
+      "ts": 1789126402000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "306b40c7",
+      "ts": 1789126341000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "e43863ce",
+      "ts": 1789126330000,
+      "msg": "Merge pull request #3771 from 9r4rxssx64-creator/claude/apex-chat-suite-2210",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "af3aaa78",
+      "ts": 1789125981000,
+      "msg": "Journal d'audit : preuves de déploiement des correctifs Strix (runs routeur, Pages, e2e)",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "b8d0a5ab",
+      "ts": 1789125898000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d01fc52f",
+      "ts": 1789125885000,
+      "msg": "Merge pull request #3770 from 9r4rxssx64-creator/claude/apex-chat-suite-2210",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "b57da167",
+      "ts": 1789125751000,
+      "msg": "SSO : même origine toujours acceptée sur /__sso/issue ; test navigateur réveillé, contrôle périmé depuis le 05/08 corrigé",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4edb4244",
+      "ts": 1789125460000,
+      "msg": "kdmc-sso-e2e : l'installation de Playwright passait plus (peer deps racine), même correctif que audit-live",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "1a07ca16",
+      "ts": 1789125268000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "7908e0f9",
+      "ts": 1789125255000,
+      "msg": "Merge pull request #3769 from 9r4rxssx64-creator/claude/apex-chat-suite-2210",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "caff9ce8",
+      "ts": 1789124633000,
+      "msg": "Copie de secours du routeur : cuisine + portail boutiques prévus, parité ROUTES rétablie (garde rouge sur main)",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "8e3547e8",
+      "ts": 1789124792000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "ad412486",
+      "ts": 1789124781000,
+      "msg": "Merge pull request #3768 from 9r4rxssx64-creator/claude/apex-chat-suite-2210",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "dc427525",
+      "ts": 1789124406000,
+      "msg": "Fusion de main dans claude/apex-chat-suite-2210 (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "b339ed63",
+      "ts": 1789124360000,
+      "msg": "Strix lu et trié : session SSO forgée (Face ID exigé + Origin), Premium par lien confirmé (v1.1.289)",
+      "project": "multi",
+      "ver": "1.1",
+      "author": "claude-code"
+    },
+    {
+      "sha": "1dbb8f06",
+      "ts": 1789122469000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "ca8d8e77",
+      "ts": 1789122459000,
+      "msg": "Merge pull request #3767 from 9r4rxssx64-creator/claude/apex-chat-suite-2210",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "60205754",
+      "ts": 1789122088000,
+      "msg": "Fusion de main dans claude/apex-chat-suite-2210 (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "5984eae3",
+      "ts": 1789122066000,
+      "msg": "🧾 Déploiement raté consigné : 11/09/2026 10:21 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "e9d8d2a5",
+      "ts": 1789122039000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "5a2b86ba",
+      "ts": 1789122031000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d3c86f10",
+      "ts": 1789122020000,
+      "msg": "Merge pull request #3766 from 9r4rxssx64-creator/claude/cuisine-voix-silencieux",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "c3c35033",
+      "ts": 1789121994000,
+      "msg": "Audit live : la sonde Lingua remplissait un champ disparu le 05/09 (prénom + nom depuis)",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "39b2d744",
+      "ts": 1789121553000,
+      "msg": "Apex Chat : api-worker couvert à 100 % de fonctions, Strix lisible, actions épinglées, verdict live en check-run",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "661cfa23",
+      "ts": 1789121504000,
+      "msg": "🔊 Cuisine : la voix passe même avec l'iPhone en mode silencieux (session audio « lecture »)",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "7ed3530d",
+      "ts": 1789078932000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 22:22 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4459ab97",
+      "ts": 1789078910000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "2111b640",
+      "ts": 1789078902000,
+      "msg": "diag: pourquoi l'auto-merge de claude/verify-cmcteams-light-data-rzlvau est refusé [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "15544f5c",
+      "ts": 1789078562000,
+      "msg": "menage: 36 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "648cab54",
+      "ts": 1789078528000,
+      "msg": "Fusion de main dans claude/verify-cmcteams-light-data-rzlvau (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "b6de80b8",
+      "ts": 1789078503000,
+      "msg": "Merge pull request #3764 from 9r4rxssx64-creator/claude/apex-chat-couverture-vitest5-2201",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "a40d6930",
+      "ts": 1789078479000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "1822e08a",
+      "ts": 1789078469000,
+      "msg": "Merge pull request #3748 from 9r4rxssx64-creator/claude/verify-cmcteams-light-data-rzlvau",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "58afc889",
+      "ts": 1789078128000,
+      "msg": "Fusion de main dans claude/apex-chat-couverture-vitest5-2201 (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4491f54c",
+      "ts": 1789078024000,
+      "msg": "Merge remote-tracking branch 'origin/main' into claude/verify-cmcteams-light-data-rzlvau",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "944f3b8c",
+      "ts": 1789078015000,
+      "msg": "tests(apex-chat): couverture vitest 5 mesurée par fichier (cliquet), CI verte sur main ; scan sécu lu ligne par ligne",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "36140ea6",
+      "ts": 1789075372000,
+      "msg": "menage: 60 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "f5c20600",
+      "ts": 1789075278000,
+      "msg": "Merge pull request #3763 from 9r4rxssx64-creator/claude/lingua-parcours-garde",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "2f901664",
+      "ts": 1789074902000,
+      "msg": "Fusion de main dans claude/lingua-parcours-garde (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "7459856e",
+      "ts": 1789074352000,
+      "msg": "Lingua : le P0 live (page vide sur le vrai domaine) est ferme, et une garde empeche son retour",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d8b39212",
+      "ts": 1789074080000,
+      "msg": "menage: 60 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d023a18a",
+      "ts": 1789073980000,
+      "msg": "Merge pull request #3762 from 9r4rxssx64-creator/claude/lingua-voix-rectifiee",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "fd4a418c",
+      "ts": 1789073604000,
+      "msg": "Fusion de main dans claude/lingua-voix-rectifiee (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "97253ebd",
+      "ts": 1789073555000,
+      "msg": "Lingua : ecran blanc sans progression, mot dit deux fois, voix de secours nommee",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4c456507",
+      "ts": 1789073383000,
+      "msg": "menage: 60 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "1f3be84f",
+      "ts": 1789073287000,
+      "msg": "Merge pull request #3761 from 9r4rxssx64-creator/claude/apex-chat-audit-secu-1009",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "fdf826b5",
+      "ts": 1789073134000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 20:45 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "8b90276a",
+      "ts": 1789073107000,
+      "msg": "menage: 60 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "7a443e27",
+      "ts": 1789072986000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 20:43 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "dacb50ad",
+      "ts": 1789072947000,
+      "msg": "menage: 60 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "b1de885e",
+      "ts": 1789072915000,
+      "msg": "Fusion de main dans claude/apex-chat-audit-secu-1009 (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "535f032a",
+      "ts": 1789072877000,
+      "msg": "Merge pull request #3760 from 9r4rxssx64-creator/claude/apex-chat-audit-secu-1009",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "a1a7ecc8",
+      "ts": 1789072736000,
+      "msg": "menage: 60 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "a0cc590c",
+      "ts": 1789072729000,
+      "msg": "sécu(apex-chat): scan trié avec preuves + 3 durcissements ; ménage des branches : ne plus effacer une branche vivante au nom réutilisé",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d6ce63ea",
+      "ts": 1789072628000,
+      "msg": "Merge pull request #3759 from 9r4rxssx64-creator/claude/menage-autodeploy-cloture",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "00cea0b4",
+      "ts": 1789072553000,
+      "msg": "Merge remote-tracking branch 'origin/main' into claude/apex-chat-mfa-faceid",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "e0c9a990",
+      "ts": 1789072403000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 20:33 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "58ab43bc",
+      "ts": 1789072376000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "af74c2b7",
+      "ts": 1789072347000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 20:32 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d308be32",
+      "ts": 1789072323000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "c95c9ea7",
+      "ts": 1789072278000,
+      "msg": "menage: 60 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "1b97d0a1",
+      "ts": 1789072254000,
+      "msg": "Fusion de main dans claude/menage-autodeploy-cloture (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "b96dac1b",
+      "ts": 1789072234000,
+      "msg": "Merge remote-tracking branch 'origin/main' into claude/apex-chat-mfa-faceid",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "435d9de2",
+      "ts": 1789072228000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 20:30 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "26e57fd5",
+      "ts": 1789072204000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "9392997e",
+      "ts": 1789072201000,
+      "msg": "Cloture menage auto-deploy + declenchement du 1er passage etendu",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "63a98151",
+      "ts": 1789072154000,
+      "msg": "Merge pull request #3758 from 9r4rxssx64-creator/claude/menage-auto-deploy",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "ce84803e",
+      "ts": 1789072052000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 20:27 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "a75e3d83",
+      "ts": 1789072025000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "dae78cb7",
+      "ts": 1789071529000,
+      "msg": "docs: renumerote mes 3 lecons (251-253) — 240/241/242 etaient deja pris sur main",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "dcc3faf3",
+      "ts": 1789071498000,
+      "msg": "Menage : regarder aussi les auto-deploy/* — 452 branches de build supprimables",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "3f2faec2",
+      "ts": 1789071434000,
+      "msg": "Fusion de main dans claude/apex-chat-mfa-faceid (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "3822ff77",
+      "ts": 1789071417000,
+      "msg": "audit(apex-chat): preuve live — 4 voies e2e vertes (run 34520911544), premiere fois depuis le 6.09",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "55112c49",
+      "ts": 1789070660000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 20:04 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "815a1c31",
+      "ts": 1789070567000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "62f15f35",
+      "ts": 1789070223000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:57 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d37ab824",
+      "ts": 1789070198000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "ee9d5778",
+      "ts": 1789070141000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:55 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d898a8b0",
+      "ts": 1789070123000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4eafe223",
+      "ts": 1789070113000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "6e9b09ca",
+      "ts": 1789070111000,
+      "msg": "Merge pull request #3756 from 9r4rxssx64-creator/claude/cuisine-lire-etapes",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "44496bcc",
+      "ts": 1789069924000,
+      "msg": "Merge branch 'claude/cuisine-lire-etapes' of https://github.com/9r4rxssx64-creator/cmcteams into claude/cuisine-lire-etapes",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "c27b3fac",
+      "ts": 1789069916000,
+      "msg": "🇲🇨 Cuisine : icône d'écran d'accueil aux couleurs du drapeau de Monaco",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "bb5eabf6",
+      "ts": 1789069859000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "c3cd2c87",
+      "ts": 1789069849000,
+      "msg": "Merge pull request #3755 from 9r4rxssx64-creator/claude/registre-clore-menage",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "c05a0107",
+      "ts": 1789069801000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:50 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "69d314a4",
+      "ts": 1789069770000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4c972277",
+      "ts": 1789069736000,
+      "msg": "Fusion de main dans claude/cuisine-lire-etapes (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "8e3ed0bf",
+      "ts": 1789069716000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:48 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4cd05a09",
+      "ts": 1789069688000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "75da6b47",
+      "ts": 1789069621000,
+      "msg": "🔊 Cuisine : « Lire les étapes » lit enfin — une phrase par étape, enchaînée, surlignée, erreurs dites",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "48d1175e",
+      "ts": 1789069415000,
+      "msg": "Cloture du chantier menage",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d8d60b78",
+      "ts": 1789069374000,
+      "msg": "Décision Kevin 10.09 : les plannings CMCteams ne passent PAS derrière le SSO du domaine — gravée (#3753)",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "1916d1f4",
+      "ts": 1789069371000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "57f01da1",
+      "ts": 1789069360000,
+      "msg": "Merge pull request #3751 from 9r4rxssx64-creator/claude/registre-branche-fusionnee-regle",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "0d4f001f",
+      "ts": 1789069278000,
+      "msg": "Studio créa v9.18.2 : la caméra ne perd plus un film en silence (archive d'abord, onerror qui dit la cause) + test caméra parlant (#3752)",
+      "project": "multi",
+      "ver": "9.18",
+      "author": "claude-code"
+    },
+    {
+      "sha": "8952e8fa",
+      "ts": 1789068997000,
+      "msg": "apex-chat: P3 vie privee — plus aucun numero reel dans le depot (113 → 0), garde par classe",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "ee5cb1c5",
+      "ts": 1789068985000,
+      "msg": "Fusion de main dans claude/registre-branche-fusionnee-regle (journaux : les deux côtés gardés) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "0919b841",
+      "ts": 1789068936000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:35 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "4b6f83a3",
+      "ts": 1789068847000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:34 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "dab408f4",
+      "ts": 1789068841000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "dbea6112",
+      "ts": 1789068804000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "0fdc7fd2",
+      "ts": 1789068776000,
+      "msg": "Regle : une branche fusionnee est supprimee — comment repartir, et les 2 pieges",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "20800870",
+      "ts": 1789068702000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "d7faa3c1",
+      "ts": 1789068691000,
+      "msg": "Merge pull request #3750 from 9r4rxssx64-creator/claude/registre-branches-supprimees",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "de5bae13",
+      "ts": 1789068652000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:30 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "19d94fcc",
+      "ts": 1789068628000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "c6a54661",
+      "ts": 1789068597000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:29 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "cbf93446",
+      "ts": 1789068576000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "2f7485fc",
+      "ts": 1789068570000,
+      "msg": "menage: 0 branche(s), 0 annulation(s) fermee(s) [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "66bed938",
+      "ts": 1789068539000,
+      "msg": "🧾 Déploiement raté consigné : 10/09/2026 19:28 UTC [skip ci]",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    },
+    {
+      "sha": "732bf446",
+      "ts": 1789068522000,
+      "msg": "apex-chat: voies iPhone des tests e2e rouges depuis le 6.09 — CORS local https + garde specs-lances",
+      "project": "multi",
+      "ver": null,
+      "author": "claude-code"
+    }
+  ]
+}

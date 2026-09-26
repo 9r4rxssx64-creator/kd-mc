@@ -1,0 +1,6554 @@
+{
+ "genere_le": "2026-08-13T12:13:49.256Z",
+ "langue": {
+  "code": "mc",
+  "code_wiktionnaire": "lij-mc",
+  "nom": "Monégasque",
+  "endonyme": "munegascu"
+ },
+ "avertissement": "Chaque entrée vient d'une source citée. Le ligure (lij) est une AUTRE langue et n'est jamais mélangé au monégasque (lij-mc).",
+ "credits": [
+  "Wiktionnaire francophone et Wikipédia (CC BY-SA)",
+  "munegascu.free.fr"
+ ],
+ "total": 650,
+ "double_source": 5,
+ "entrees": {
+  "eau": {
+   "mc": "a̍iga",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/a%CC%8Diga"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "allemagne": {
+   "mc": "Alemania",
+   "variantes": [
+    "Germa̍nia"
+   ],
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Alemania",
+    "https://fr.wiktionary.org/wiki/Germa%CC%8Dnia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "andorre": {
+   "mc": "Andora",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Andora"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "anniversaire": {
+   "mc": "aniversari",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/aniversari"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "avoir": {
+   "mc": "ave̍",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/ave%CC%8D"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "balance": {
+   "mc": "Balança",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Balan%C3%A7a"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "belgique": {
+   "mc": "Belgica",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Belgica"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "berlin": {
+   "mc": "Berli̍n",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Berli%CC%8Dn"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "bretagne": {
+   "mc": "Bretagna",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Bretagna"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "chine": {
+   "mc": "China",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/China"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "dieu": {
+   "mc": "Diu",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Diu"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "être": {
+   "mc": "esse",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/esse"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "èze": {
+   "mc": "Eza",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Eza"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "faire": {
+   "mc": "fa̍",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/fa%CC%8D"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "famille": {
+   "mc": "famiya",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/famiya"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "finlande": {
+   "mc": "Finla̍ndia",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Finla%CC%8Dndia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "fable": {
+   "mc": "fora",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/fora"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "france": {
+   "mc": "França",
+   "variantes": [
+    "a França"
+   ],
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Fran%C3%A7a",
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "wiktionnaire",
+    "munegascu.free.fr"
+   ],
+   "confiance": "double"
+  },
+  "déjà": {
+   "mc": "gia̍",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/gia%CC%8D"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "gratien": {
+   "mc": "Graçia̍n",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Gra%C3%A7ia%CC%8Dn"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "identité": {
+   "mc": "identita̍",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/identita%CC%8D"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "iran": {
+   "mc": "Ira̍n",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Ira%CC%8Dn"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "irlande": {
+   "mc": "Irlanda",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Irlanda"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "langue": {
+   "mc": "lenga",
+   "variantes": [
+    "a lenga"
+   ],
+   "sources": [
+    "https://fr.wiktionary.org/wiki/lenga",
+    "http://munegascu.free.fr/geographie.htm",
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "wiktionnaire",
+    "munegascu.free.fr"
+   ],
+   "confiance": "double"
+  },
+  "lion": {
+   "mc": "Liu̍n",
+   "variantes": [
+    "u liun"
+   ],
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Liu%CC%8Dn",
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "wiktionnaire",
+    "munegascu.free.fr"
+   ],
+   "confiance": "double"
+  },
+  "londres": {
+   "mc": "Lundra",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Lundra"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "malte": {
+   "mc": "Malta",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Malta"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "marc": {
+   "mc": "Marcu",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Marcu"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "melun": {
+   "mc": "Melu̍n",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Melu%CC%8Dn"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "milan": {
+   "mc": "Mila̍n",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Mila%CC%8Dn"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "mistral": {
+   "mc": "mistrau",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/mistrau"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "monaco": {
+   "mc": "Mu̍negu",
+   "variantes": [
+    "Múnegu"
+   ],
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Mu%CC%8Dnegu",
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "wiktionnaire",
+    "munegascu.free.fr"
+   ],
+   "confiance": "double"
+  },
+  "mourmansk": {
+   "mc": "Murmansk",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Murmansk"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "nice": {
+   "mc": "Niça",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Ni%C3%A7a"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "homme": {
+   "mc": "omu",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/omu"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "paris": {
+   "mc": "Pari̍s",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Pari%CC%8Ds"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "pise": {
+   "mc": "Pisa",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Pisa"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "pologne": {
+   "mc": "Polo̍nia",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Polo%CC%8Dnia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "pré-": {
+   "mc": "pre-",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/pre-"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "rome": {
+   "mc": "Ruma",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Ruma"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "samedi": {
+   "mc": "sabu",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/sabu",
+    "http://munegascu.free.fr/jours.htm"
+   ],
+   "via": [
+    "wiktionnaire",
+    "munegascu.free.fr"
+   ],
+   "confiance": "double"
+  },
+  "sagittaire": {
+   "mc": "Sagitari",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Sagitari"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "sardaigne": {
+   "mc": "Sardegna",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Sardegna"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "escalier": {
+   "mc": "scalin",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/scalin"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "science": {
+   "mc": "sciença",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/scien%C3%A7a"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "serbie": {
+   "mc": "Se̍rbia",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Se%CC%8Drbia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "slovénie": {
+   "mc": "Slove̍nia",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Slove%CC%8Dnia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "sotchi": {
+   "mc": "Soci",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Soci"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "espagne": {
+   "mc": "Spagna",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Spagna"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "suisse": {
+   "mc": "Svi̍ssera",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Svi%CC%8Dssera"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "thérèse": {
+   "mc": "Teresa",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Teresa"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "turquie": {
+   "mc": "Turchia",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Turchia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "un": {
+   "mc": "ün",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/%C3%BCn"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "vienne": {
+   "mc": "Viena",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Viena"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "wikimédia": {
+   "mc": "Wikime̍dia",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Wikime%CC%8Ddia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "wikipédia": {
+   "mc": "Wikipe̍dia",
+   "sources": [
+    "https://fr.wiktionary.org/wiki/Wikipe%CC%8Ddia"
+   ],
+   "via": [
+    "wiktionnaire"
+   ],
+   "confiance": "simple"
+  },
+  "français": {
+   "mc": "Munegascu",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bienvenu": {
+   "mc": "benvegnüu",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "salut": {
+   "mc": "ciau",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bonjour": {
+   "mc": "bon giurnu",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bonsoir": {
+   "mc": "bona sera",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "au revoir": {
+   "mc": "a se revede",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bisou": {
+   "mc": "u baiju",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sourire": {
+   "mc": "u surisu",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "prénom": {
+   "mc": "u prenume",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "nom": {
+   "mc": "u nume",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mademoiselle": {
+   "mc": "madumaijela",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "madame": {
+   "mc": "madama",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "monsieur": {
+   "mc": "munsü",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "enchanté": {
+   "mc": "Üncantau",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bien": {
+   "mc": "Ben",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "s'il te": {
+   "mc": "per pieijè",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "merci": {
+   "mc": "merçì",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "oui": {
+   "mc": "sci",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "non": {
+   "mc": "nun",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "désolé": {
+   "mc": "desulau",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "excusez-moi": {
+   "mc": "scüse-me",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pardon": {
+   "mc": "pardun",
+   "sources": [
+    "http://munegascu.free.fr/bienvenue.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "grand-père": {
+   "mc": "u paire-gran",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "grand-mère": {
+   "mc": "a maire-gran",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "père": {
+   "mc": "u paire",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mère": {
+   "mc": "a maire",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vieil homme": {
+   "mc": "u veyu",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "jeune homme": {
+   "mc": "u zuvenu",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'homme": {
+   "mc": "l'omu",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "femme": {
+   "mc": "a dona",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'époux": {
+   "mc": "u mariu",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'épouse": {
+   "mc": "a muyè",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'oncle": {
+   "mc": "barba",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tante": {
+   "mc": "a tanta",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "neveu": {
+   "mc": "u nevu",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cousin": {
+   "mc": "u cuju",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "garçon": {
+   "mc": "u garçun",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fils": {
+   "mc": "u fiyu",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fille": {
+   "mc": "a fiya",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "frère": {
+   "mc": "u frai",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bébé": {
+   "mc": "u ninin",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'hôte": {
+   "mc": "l'oste",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'ennemi": {
+   "mc": "u nemigu",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "personne": {
+   "mc": "a persuna",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gens": {
+   "mc": "gente",
+   "sources": [
+    "http://munegascu.free.fr/famille.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cabanon": {
+   "mc": "u cabanun",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cour": {
+   "mc": "a curte",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "barrière": {
+   "mc": "a barriera",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sculpture": {
+   "mc": "a scültüra",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "statue": {
+   "mc": "a statüa",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fontaine": {
+   "mc": "a funtana",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cheminée": {
+   "mc": "a ciamineia",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "foyer": {
+   "mc": "u fügairun",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "toit": {
+   "mc": "u tetu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "grenier": {
+   "mc": "u surà mortu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cave": {
+   "mc": "a cava",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mur": {
+   "mc": "u müru",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "terrasse": {
+   "mc": "a terrassa",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "balcon": {
+   "mc": "u barcun",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fenêtre": {
+   "mc": "a fenestra",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "rideau": {
+   "mc": "u ridò",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "porte": {
+   "mc": "a porta",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "serrure": {
+   "mc": "a serraya",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "clé": {
+   "mc": "a ciave",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'ascenseur": {
+   "mc": "l'ascensù",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'étage": {
+   "mc": "u cian",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "salon": {
+   "mc": "a sala",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "peinture": {
+   "mc": "u cadru",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "télévision": {
+   "mc": "a televisiun",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "radio": {
+   "mc": "a radiò",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "salle": {
+   "mc": "a sala",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chambre": {
+   "mc": "a cambera",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lit": {
+   "mc": "u letu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tapis": {
+   "mc": "u tapissu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tapisserie": {
+   "mc": "a tapissaria",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "allumettes": {
+   "mc": "alümete",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bougie": {
+   "mc": "a bujia",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lampe": {
+   "mc": "a lampa",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cuisine": {
+   "mc": "a cujina",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "four": {
+   "mc": "u furnu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "réfrigérateur": {
+   "mc": "u refrigeratù",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "congélateur": {
+   "mc": "u cungelatù",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'évier": {
+   "mc": "u lavandin",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "salle à manger": {
+   "mc": "a sala da pastu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "table": {
+   "mc": "a tora",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "banc": {
+   "mc": "u bancu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tabouret": {
+   "mc": "u taburè",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chaise": {
+   "mc": "a carrega",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fauteuil": {
+   "mc": "a putruna",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "canapé": {
+   "mc": "u canapé",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "meuble": {
+   "mc": "u mobilu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'armoire": {
+   "mc": "l'armari",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "placard": {
+   "mc": "u placar",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'étagère": {
+   "mc": "a stagera",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "salle de bain": {
+   "mc": "u bagnu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "douche": {
+   "mc": "a ducia",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lavabo": {
+   "mc": "u lavaman",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "serviette": {
+   "mc": "a servieta",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm",
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'éponge": {
+   "mc": "a spungia",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "savon": {
+   "mc": "u savun",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "rasoir": {
+   "mc": "u rasù",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "peigne": {
+   "mc": "u pience",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "brosse": {
+   "mc": "a brossa",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dentifrice": {
+   "mc": "u dentifriçi",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "rouge à lèvres": {
+   "mc": "u russu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "miroir": {
+   "mc": "u speyu",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "toilettes": {
+   "mc": "a tualeta",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "balai": {
+   "mc": "a ramassa",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'aspirateur": {
+   "mc": "l'aspiratù",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vaisselle": {
+   "mc": "a vessela",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fer à repasser": {
+   "mc": "u ferru da stirà",
+   "sources": [
+    "http://munegascu.free.fr/maison.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "village": {
+   "mc": "u vilage",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "villageois": {
+   "mc": "u campagnolu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mairie": {
+   "mc": "a meria",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "maire": {
+   "mc": "mera",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "rue": {
+   "mc": "u carrugiu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "place": {
+   "mc": "a piaça",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'église": {
+   "mc": "a geija",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "synagogue": {
+   "mc": "a sinagoga",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mosquée": {
+   "mc": "a musqea",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "temple": {
+   "mc": "u tempiu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "château": {
+   "mc": "u castelu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tour": {
+   "mc": "a turre",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "palais": {
+   "mc": "u palaçi",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cuisinier": {
+   "mc": "u cujinè",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'étudiant": {
+   "mc": "u stüdiente",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'université": {
+   "mc": "l'üniversità",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dictionnaire": {
+   "mc": "u diçiunari",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "livre": {
+   "mc": "u libru",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "marché": {
+   "mc": "u marcau",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "marchand": {
+   "mc": "u marcante",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "boulangerie": {
+   "mc": "a paneteria",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "coiffeur": {
+   "mc": "u perrüchè",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "théâtre": {
+   "mc": "u teatru",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cinéma": {
+   "mc": "u çinemà",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "concert": {
+   "mc": "u cuncertu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "musée": {
+   "mc": "u müseu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "directeur": {
+   "mc": "u diretù",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "secrétaire": {
+   "mc": "secretari",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "billet": {
+   "mc": "u biyetu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chèque": {
+   "mc": "l'assegnu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'argent": {
+   "mc": "u sou",
+   "variantes": [
+    "l'argentu"
+   ],
+   "sources": [
+    "http://munegascu.free.fr/ville.htm",
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bordel": {
+   "mc": "u burdelu",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "voleur": {
+   "mc": "u ladru",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "policier": {
+   "mc": "u puliçiè",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "commissariat": {
+   "mc": "u cumissarià",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cimetière": {
+   "mc": "u çementeri",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tombe": {
+   "mc": "a tumba",
+   "sources": [
+    "http://munegascu.free.fr/ville.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bagages": {
+   "mc": "u bagagiu",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "valise": {
+   "mc": "a valisa",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "passeport": {
+   "mc": "u passaportu",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'aéroport": {
+   "mc": "l'aeruportu",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'avion": {
+   "mc": "l'aviun",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'aviateur": {
+   "mc": "l'aviatù",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pilote": {
+   "mc": "u pilota",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'hélicoptère": {
+   "mc": "l'elicoteru",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "port": {
+   "mc": "u portu",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "navire": {
+   "mc": "u bastimentu",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bateau": {
+   "mc": "u batelu",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sous-marin": {
+   "mc": "u sutamarin",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "train": {
+   "mc": "u tren",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gare": {
+   "mc": "a staçiun",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "titre de transport": {
+   "mc": "u biyetu",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "départ": {
+   "mc": "a partença",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'arrivée": {
+   "mc": "l'arriva",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chemin": {
+   "mc": "u camin",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "route": {
+   "mc": "a strada",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'autoroute": {
+   "mc": "l'autustrada",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "conducteur": {
+   "mc": "u cundütù",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "camion": {
+   "mc": "u camiun",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "camionnette": {
+   "mc": "a camiuneta",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'autobus": {
+   "mc": "u büs",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "taxi": {
+   "mc": "u taxi",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "voiture": {
+   "mc": "a vuatüra",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'essence": {
+   "mc": "l'essença",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "moteur": {
+   "mc": "u moteur",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "volant": {
+   "mc": "u volan",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "roue": {
+   "mc": "a roda",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "moto": {
+   "mc": "a motò",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vélo": {
+   "mc": "u velò",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "piéton": {
+   "mc": "u pedun",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "trottoir": {
+   "mc": "u pedunale",
+   "sources": [
+    "http://munegascu.free.fr/transport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "postier": {
+   "mc": "u pustiè",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "timbre": {
+   "mc": "u bulu",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "carte postale": {
+   "mc": "a cartulina",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lettre": {
+   "mc": "a letra",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'enveloppe": {
+   "mc": "l'ünvelopa",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "paquet": {
+   "mc": "u pachetu",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "papier": {
+   "mc": "a carta",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'adresse": {
+   "mc": "l'adressa",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "numéro": {
+   "mc": "u nümeru",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'annuaire": {
+   "mc": "l'anüari",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "réseau": {
+   "mc": "a re",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'écran": {
+   "mc": "l'ecran",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "clavier": {
+   "mc": "a tastiera",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "souris": {
+   "mc": "a rateta",
+   "variantes": [
+    "a ratëta"
+   ],
+   "sources": [
+    "http://munegascu.free.fr/poste.htm",
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "contact": {
+   "mc": "u cuntatu",
+   "sources": [
+    "http://munegascu.free.fr/poste.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "frontière": {
+   "mc": "a fruntiera",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "drapeau": {
+   "mc": "u drapeu",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pays": {
+   "mc": "u paise",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "capitale": {
+   "mc": "a capitala",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ville": {
+   "mc": "a vila",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dialecte": {
+   "mc": "u dialetu",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "peuple": {
+   "mc": "u populu",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sud": {
+   "mc": "Süd",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'est": {
+   "mc": "Est",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'ouest": {
+   "mc": "Uest",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "boussole": {
+   "mc": "a bussola",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "carte géographique": {
+   "mc": "a carta geugrafica",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "en haut": {
+   "mc": "lasciû",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "en bas": {
+   "mc": "dabassu",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sur": {
+   "mc": "suvra",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sous": {
+   "mc": "suta",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dans": {
+   "mc": "ünte",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "droite": {
+   "mc": "drita",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gauche": {
+   "mc": "seneca",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "milieu": {
+   "mc": "u mesu",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ici": {
+   "mc": "aiçì",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "là": {
+   "mc": "ailì",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "près": {
+   "mc": "pressu",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "loin": {
+   "mc": "lonzi",
+   "sources": [
+    "http://munegascu.free.fr/geographie.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "monde": {
+   "mc": "u Mundu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lune": {
+   "mc": "a lüna",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "planète": {
+   "mc": "a pianeta",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'étoile": {
+   "mc": "a stela",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "soleil": {
+   "mc": "u suriyu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lumière": {
+   "mc": "a lüje",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'ombre": {
+   "mc": "l'umbra",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ciel": {
+   "mc": "u celu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "nuage": {
+   "mc": "a nivura",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "brouillard": {
+   "mc": "u garbin",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'air": {
+   "mc": "l'aria",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vent": {
+   "mc": "u ventu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tempête": {
+   "mc": "u tempurale",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tonnerre": {
+   "mc": "u tron",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'éclair": {
+   "mc": "u laussu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'arc-en-ciel": {
+   "mc": "l'arcüncelu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "goutte": {
+   "mc": "a guta",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pluie": {
+   "mc": "l'aigada",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "parapluie": {
+   "mc": "paraiga",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "flocon": {
+   "mc": "u fiocu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gel": {
+   "mc": "u zeru",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "glace": {
+   "mc": "a glaça",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "froid": {
+   "mc": "fridu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "frais": {
+   "mc": "frescu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chaud": {
+   "mc": "caudu",
+   "sources": [
+    "http://munegascu.free.fr/climat.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "terre": {
+   "mc": "a terra",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'argile": {
+   "mc": "a terrarzia",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "boue": {
+   "mc": "a pauta",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poussière": {
+   "mc": "a pussiera",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'herbe": {
+   "mc": "l'erba",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "foin": {
+   "mc": "u fen",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "paille": {
+   "mc": "a paya",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "plante": {
+   "mc": "a cianta",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "racine": {
+   "mc": "a raije",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fleur": {
+   "mc": "a sciura",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tournesol": {
+   "mc": "u girasuriyu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sapin": {
+   "mc": "l'abeu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pin": {
+   "mc": "u pin",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'arbre": {
+   "mc": "l'arburu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bois": {
+   "mc": "u boscu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "forêt": {
+   "mc": "a furesta",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "parc": {
+   "mc": "u parcu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fumée": {
+   "mc": "u fümu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cendre": {
+   "mc": "a çene",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "volcan": {
+   "mc": "u vurcan",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "montagne": {
+   "mc": "a muntagna",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "colline": {
+   "mc": "a culina",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "grotte": {
+   "mc": "a grota",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vallée": {
+   "mc": "u valun",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "barrage": {
+   "mc": "u sbarramentu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cascade": {
+   "mc": "a cascada",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lac": {
+   "mc": "u lagu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'étang": {
+   "mc": "u laghetu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "marais": {
+   "mc": "a palüde",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "plaine": {
+   "mc": "a basciüra",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pré": {
+   "mc": "u prau",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pâturage": {
+   "mc": "a pastüra",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "champ": {
+   "mc": "u campu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "moulin": {
+   "mc": "u murin",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "puits": {
+   "mc": "u pussu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pont": {
+   "mc": "u ponte",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "rivière": {
+   "mc": "a riana",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'océan": {
+   "mc": "l'uçean",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mer": {
+   "mc": "a marina",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'algue": {
+   "mc": "l'arga",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vague": {
+   "mc": "l'unda",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'écume": {
+   "mc": "a scüma",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vapeur": {
+   "mc": "a vapù",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'île": {
+   "mc": "l'isura",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "plage": {
+   "mc": "a spiagia",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "désert": {
+   "mc": "u desertu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sable": {
+   "mc": "a sabia",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "galet": {
+   "mc": "a peira smussà",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pierre": {
+   "mc": "a peira",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "roche": {
+   "mc": "a roca",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "marbre": {
+   "mc": "u marmaru",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "diamant": {
+   "mc": "u diamante",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "rubis": {
+   "mc": "u rübì",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "saphir": {
+   "mc": "u zafiru",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'émeraude": {
+   "mc": "u smeraldu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'ambre": {
+   "mc": "l'ambra",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "charbon": {
+   "mc": "u carbun",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pétrole": {
+   "mc": "u petroli",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gaz": {
+   "mc": "u gaz",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "plomb": {
+   "mc": "u ciungiu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'étain": {
+   "mc": "u stagnu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fer": {
+   "mc": "u ferru",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'acier": {
+   "mc": "l'açaru",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cuivre": {
+   "mc": "l'aramu",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "laiton": {
+   "mc": "u lutun",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'or": {
+   "mc": "l'oru",
+   "sources": [
+    "http://munegascu.free.fr/nature.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chat": {
+   "mc": "u gatu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "petit rat": {
+   "mc": "u ratetu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'âne": {
+   "mc": "l'ase",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "taureau": {
+   "mc": "u toru",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vache": {
+   "mc": "a vaca",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "veau": {
+   "mc": "u vitelu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mouton": {
+   "mc": "u mutun",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "brebis": {
+   "mc": "a fea",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'agneau": {
+   "mc": "l'agnelu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chevreau": {
+   "mc": "u cravin",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "porc": {
+   "mc": "u porcu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "truie": {
+   "mc": "a troia",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lièvre": {
+   "mc": "u levre",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tanière": {
+   "mc": "a tana",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "taupe": {
+   "mc": "a tarpa",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "hérisson": {
+   "mc": "u riciu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'écureuil": {
+   "mc": "u schirotu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "renard": {
+   "mc": "u rainà",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chamois": {
+   "mc": "u camus",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "nid": {
+   "mc": "u niu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'aigle": {
+   "mc": "l'aigla",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "faucon": {
+   "mc": "u farcun",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "faisan": {
+   "mc": "u fagian",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "perdrix": {
+   "mc": "a pernije",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "paon": {
+   "mc": "u paun",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "coq": {
+   "mc": "u galu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poule": {
+   "mc": "a galina",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poussin": {
+   "mc": "u pulin",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "canard": {
+   "mc": "u canar",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'oie": {
+   "mc": "l'auca",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cigale": {
+   "mc": "a çigala",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sauterelle": {
+   "mc": "u sautarelu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mille-pattes": {
+   "mc": "a biscia cumaira",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ver": {
+   "mc": "u vermu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ver de terre": {
+   "mc": "u lumbrigu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "moucheron": {
+   "mc": "u muschiyun",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mouche": {
+   "mc": "a musca",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "taon": {
+   "mc": "u tavan",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "papillon": {
+   "mc": "a parpayeta",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "libellule": {
+   "mc": "u rumpe gotu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "luciole": {
+   "mc": "a lüjerneta",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "coccinelle": {
+   "mc": "a catarineta",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ruche": {
+   "mc": "l'abiyè",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'abeille": {
+   "mc": "l'abiya",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "frelon": {
+   "mc": "u tabardun",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "blatte": {
+   "mc": "a babarota",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mante religieuse": {
+   "mc": "u pregadiu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "scorpion": {
+   "mc": "u scurpiun",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "thon": {
+   "mc": "u tunu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "requin": {
+   "mc": "u mungu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dauphin": {
+   "mc": "u derfin",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "baleine": {
+   "mc": "a balena",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "phoque": {
+   "mc": "a foca",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pieuvre": {
+   "mc": "u purpu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "calmar": {
+   "mc": "u totanu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "méduse": {
+   "mc": "a medüsa",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'étoile de mer": {
+   "mc": "a stela marina",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'oursin": {
+   "mc": "u zenzin",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tortue": {
+   "mc": "a tartüga",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'escargot": {
+   "mc": "a limaça",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sangsue": {
+   "mc": "a sansüga",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "serpent": {
+   "mc": "u serpente",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "caméléon": {
+   "mc": "u cameleun",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gecko": {
+   "mc": "a ratabrüna ciata",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "crapaud": {
+   "mc": "u bagiu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "grenouille": {
+   "mc": "a granuya",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "singe": {
+   "mc": "a munina",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chauve-souris": {
+   "mc": "a ratapignata",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "perroquet": {
+   "mc": "u papagalu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "perruche": {
+   "mc": "a cucurita",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'autruche": {
+   "mc": "u strüçi",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "léopard": {
+   "mc": "u leupardu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "panthère": {
+   "mc": "a pantera",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "zèbre": {
+   "mc": "u zebru",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "girafe": {
+   "mc": "a girafa",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'éléphant": {
+   "mc": "l'elefante",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'hippopotame": {
+   "mc": "l'ipupotamu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "crocodile": {
+   "mc": "u cucudrilu",
+   "sources": [
+    "http://munegascu.free.fr/animal.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "faim": {
+   "mc": "a fame",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "affamé": {
+   "mc": "afamau",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "repas": {
+   "mc": "u pastu",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "déjeuner": {
+   "mc": "a culaçiun",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'assiette": {
+   "mc": "l'assieta",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fourchette": {
+   "mc": "a furcina",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bouteille": {
+   "mc": "a butiya",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "carafe": {
+   "mc": "a garafa",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "verre": {
+   "mc": "u gotu",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tasse": {
+   "mc": "a tassa",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bol": {
+   "mc": "a bola",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "soif": {
+   "mc": "a sen",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'eau": {
+   "mc": "l'aiga",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'alcool": {
+   "mc": "l'alcol",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bière": {
+   "mc": "a biera",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "jus": {
+   "mc": "u sügu",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "limonade": {
+   "mc": "a limunada",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "théière": {
+   "mc": "a teiera",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "thé": {
+   "mc": "u te",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chocolat": {
+   "mc": "a ciculata",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cafetière": {
+   "mc": "a cafetiera",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "café": {
+   "mc": "u cafè",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "café au lait": {
+   "mc": "u cafelaite",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lait": {
+   "mc": "u laite",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "beurre": {
+   "mc": "u bürru",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fromage": {
+   "mc": "u furmagiu",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vinaigre": {
+   "mc": "u vinagru",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vinaigrette": {
+   "mc": "a vinegreta",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mayonnaise": {
+   "mc": "a maiunesa",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "moutarde": {
+   "mc": "a mustarda",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'épice": {
+   "mc": "a speçia",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "farine": {
+   "mc": "a farina",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pain": {
+   "mc": "u pan",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sandwich": {
+   "mc": "u pan bagnau",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tarte": {
+   "mc": "a tarta",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "crème": {
+   "mc": "a crema",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "crème glacée": {
+   "mc": "a glaça",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sorbet": {
+   "mc": "u sciürbetu",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "confiture": {
+   "mc": "a cunfitüra",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "marmelade": {
+   "mc": "a marmelada",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "miel": {
+   "mc": "l'amè",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bonbon": {
+   "mc": "u cunfetu",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'addition": {
+   "mc": "l'adiçiun",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "prix": {
+   "mc": "u preiju",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cher": {
+   "mc": "caru",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "à bon marché": {
+   "mc": "a bon pati",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pourboire": {
+   "mc": "a bonaman",
+   "sources": [
+    "http://munegascu.free.fr/aliment.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "peau": {
+   "mc": "a pele",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cheveu": {
+   "mc": "u caviyu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tête": {
+   "mc": "a testa",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "front": {
+   "mc": "u fronte",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "crâne": {
+   "mc": "u craniu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'âme": {
+   "mc": "l'árima",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "visage": {
+   "mc": "a facia",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'oreille": {
+   "mc": "l'auriya",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "moustache": {
+   "mc": "mustassi",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "barbe": {
+   "mc": "a barba",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "joue": {
+   "mc": "a ganascia",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lèvre": {
+   "mc": "a labra",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bouche": {
+   "mc": "a buca",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dent": {
+   "mc": "u dente",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "menton": {
+   "mc": "u mentun",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cou": {
+   "mc": "u colu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "nuque": {
+   "mc": "a nüca",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gorge": {
+   "mc": "a gura",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poitrine": {
+   "mc": "u petu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sein": {
+   "mc": "u sen",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mamelon": {
+   "mc": "u capüçu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sang": {
+   "mc": "u sanghe",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poumon": {
+   "mc": "u purmun",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "nombril": {
+   "mc": "l'amburigu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ventre": {
+   "mc": "u ventre",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "foie": {
+   "mc": "u figaretu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "reins": {
+   "mc": "rene",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "nerf": {
+   "mc": "u nervu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "muscle": {
+   "mc": "u müscülu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'os": {
+   "mc": "l'osciu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "squelette": {
+   "mc": "u scheletru",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dos": {
+   "mc": "a schina",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "côte": {
+   "mc": "a costa",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'épaule": {
+   "mc": "a spala",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bras": {
+   "mc": "u brassu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "coude": {
+   "mc": "u gumiu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poignet": {
+   "mc": "u pussu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poing": {
+   "mc": "u pügnu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "main": {
+   "mc": "a man",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pouce": {
+   "mc": "sciaca püghgliu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "doigt": {
+   "mc": "u diu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'ongle": {
+   "mc": "l'ungia",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pénis": {
+   "mc": "u belin",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vagin": {
+   "mc": "a mussa",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'anus": {
+   "mc": "l'anüs",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fesses": {
+   "mc": "scciape d'ucü",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "jambe": {
+   "mc": "a gamba",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "genou": {
+   "mc": "u zenuyu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "rotule": {
+   "mc": "a nujëta",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cheville": {
+   "mc": "a caviya",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "talon": {
+   "mc": "u talun",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pied": {
+   "mc": "u pen",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "santé": {
+   "mc": "a salüte",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "maladie": {
+   "mc": "a marutia",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "fou": {
+   "mc": "matu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'ambulance": {
+   "mc": "l'ambülança",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'hôpital": {
+   "mc": "l'uspità",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "clinique": {
+   "mc": "a clinica",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'infirmier": {
+   "mc": "l'infirmiè",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "médecin": {
+   "mc": "u medicu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dentiste": {
+   "mc": "u dentista",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chirurgien": {
+   "mc": "u chirürgu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "médicament": {
+   "mc": "u medicamentu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "préservatif": {
+   "mc": "u preservativu",
+   "sources": [
+    "http://munegascu.free.fr/corps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lunettes": {
+   "mc": "belicri",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chapeau": {
+   "mc": "u capelu",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "casquette": {
+   "mc": "a cascheta",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "foulard": {
+   "mc": "u fular",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'écharpe": {
+   "mc": "a sciarpa",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mouchoir": {
+   "mc": "u mandiyu",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "gant": {
+   "mc": "u gantu",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "manteau": {
+   "mc": "u mantelu",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'imperméable": {
+   "mc": "l'impermeabile",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chemise": {
+   "mc": "a camija",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cravate": {
+   "mc": "a cravata",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bretelles": {
+   "mc": "a bertela",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ceinture": {
+   "mc": "a çenta",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pantalon": {
+   "mc": "a braga",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "culotte": {
+   "mc": "a bragheta",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "robe": {
+   "mc": "a roba",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "sac": {
+   "mc": "u sacu",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bijou": {
+   "mc": "u bijù",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "collier": {
+   "mc": "u culiè",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "boucle d'oreille": {
+   "mc": "u pendin",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bague": {
+   "mc": "a baga",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bracelet": {
+   "mc": "u braçeletu",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "soutien-gorge": {
+   "mc": "u rese sen",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chaussette": {
+   "mc": "a caussa",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "botte": {
+   "mc": "a bota",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chaussure": {
+   "mc": "a caussaüra",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pantoufle": {
+   "mc": "a pantufla",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pyjama": {
+   "mc": "pijamà",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "soie": {
+   "mc": "a sea",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "coton": {
+   "mc": "u cutun",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "laine": {
+   "mc": "a lana",
+   "sources": [
+    "http://munegascu.free.fr/habits.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "danse": {
+   "mc": "a dansa",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "boxe": {
+   "mc": "a bataya a pügni",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "ballon": {
+   "mc": "u balun",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "football": {
+   "mc": "u fut",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'arbitre": {
+   "mc": "l'arbitru",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'équipe": {
+   "mc": "l'eqipa",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tennis": {
+   "mc": "u tennis",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "piscine": {
+   "mc": "a piscina",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "marin": {
+   "mc": "u marinà",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pêche": {
+   "mc": "a pesca",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pêcheur": {
+   "mc": "u pescaire",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chasse": {
+   "mc": "a cacia",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "chasseur": {
+   "mc": "u caciaire",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'équitation": {
+   "mc": "l'eqitaçiun",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cavalier": {
+   "mc": "u cavaliè",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "poupée": {
+   "mc": "a bügata",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "marionnette": {
+   "mc": "a mariuneta",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "joueur": {
+   "mc": "u giügaire",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "bille": {
+   "mc": "a biya",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dé": {
+   "mc": "u dadu",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dames": {
+   "mc": "a dama",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "échecs": {
+   "mc": "scachi",
+   "sources": [
+    "http://munegascu.free.fr/sport.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "montre": {
+   "mc": "a mustra",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'heure": {
+   "mc": "l'ura",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "minute": {
+   "mc": "a minüta",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "seconde": {
+   "mc": "a segunda",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "matin": {
+   "mc": "u matin",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "midi": {
+   "mc": "mesugiurnu",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'après-midi": {
+   "mc": "dopudernà",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "jour": {
+   "mc": "u giurnu",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "soir": {
+   "mc": "a sera",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "avant-hier": {
+   "mc": "ieri l'autru",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "hier": {
+   "mc": "ieri",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "demain": {
+   "mc": "deman",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "après-demain": {
+   "mc": "dopudeman",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "semaine": {
+   "mc": "a semana",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vacances": {
+   "mc": "vacançe",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mois": {
+   "mc": "u mese",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "saison": {
+   "mc": "a stagiun",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'an": {
+   "mc": "l'anu",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "l'anniversaire": {
+   "mc": "l'aniversari",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "noël": {
+   "mc": "Natale",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "pâques": {
+   "mc": "Pasca",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "cadeau": {
+   "mc": "u regalu",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "calendrier": {
+   "mc": "u calendari",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "siècle": {
+   "mc": "u seculu",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "millénaire": {
+   "mc": "u milenari",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "avant": {
+   "mc": "avanti",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "après": {
+   "mc": "dopu",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "maintenant": {
+   "mc": "aura",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tôt": {
+   "mc": "tostu",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "tard": {
+   "mc": "tardi",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "jamais": {
+   "mc": "mai",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "souvent": {
+   "mc": "suven",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "toujours": {
+   "mc": "sempre",
+   "sources": [
+    "http://munegascu.free.fr/temps.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "lundi": {
+   "mc": "lünesdi",
+   "sources": [
+    "http://munegascu.free.fr/jours.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mardi": {
+   "mc": "metesdi",
+   "sources": [
+    "http://munegascu.free.fr/jours.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "mercredi": {
+   "mc": "mercuredi",
+   "sources": [
+    "http://munegascu.free.fr/jours.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "jeudi": {
+   "mc": "zoegia",
+   "sources": [
+    "http://munegascu.free.fr/jours.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "vendredi": {
+   "mc": "venardi",
+   "sources": [
+    "http://munegascu.free.fr/jours.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "dimanche": {
+   "mc": "dumenëga",
+   "sources": [
+    "http://munegascu.free.fr/jours.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  },
+  "réponse": {
+   "mc": "a resposta",
+   "sources": [
+    "http://munegascu.free.fr/question.htm"
+   ],
+   "via": [
+    "munegascu.free.fr"
+   ],
+   "confiance": "simple"
+  }
+ }
+}

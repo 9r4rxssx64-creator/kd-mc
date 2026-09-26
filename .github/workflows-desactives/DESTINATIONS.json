@@ -1,0 +1,328 @@
+{
+  "_pourquoi": "Où va CHAQUE automatisation rangée le 15/08/2026, et POURQUOI. La règle de GitHub, mot pour mot : une automatisation n'a le droit d'exister sur GitHub Actions que si elle concerne « the production, testing, deployment, or publication of the software project associated with the repository ». Ce n'est pas une question de fréquence, c'est la NATURE de l'activité. GitLab, lui, n'interdit pas l'activité « sans rapport », mais ne donne que 400 minutes par mois. Une automatisation sans destination écrite finit par revenir au hasard : ce fichier existe pour que ça n'arrive pas, et la garde tests/verify-destinations-workflows.mjs vérifie qu'il reste complet et cohérent.",
+  "_destinations": {
+    "github": "Rapatrié dans .github/workflows/ — teste, déploie ou publie CE dépôt. TOUJOURS déclenchable À LA MAIN uniquement (workflow_dispatch), jamais de cron : c'est le VOLUME automatique (~97 exécutions/jour) qui a fait suspendre le compte. Le bouton, c'est moi qui l'appuie via l'API — Kevin ne clique rien.",
+    "gitlab": "Sa place est GitLab CI : il appelle des services tiers, ou il doit tourner périodiquement — les deux choses que GitHub interdit ici. Coût à compter sur les 400 min/mois.",
+    "worker": "Sa place est un Cloudflare Worker avec son propre déclencheur : périodique et permanent, hors quota CI.",
+    "jamais": "Ne revient nulle part. Les conditions GitHub nomment explicitement « Cryptomining » et les opérations de cryptomonnaie."
+  },
+  "workflows": [
+    {
+      "f": "smoke-test-deploy.yml",
+      "vers": "github",
+      "quoi": "smoke test après un déploiement du site",
+      "raison": "test de CE dépôt, juste après sa publication"
+    },
+    {
+      "f": "worldmonitor-cadastre-smoke.yml",
+      "vers": "github",
+      "quoi": "smoke test d'une page du site (cadastre IGN)",
+      "raison": "test d'une page que CE dépôt publie"
+    },
+    {
+      "f": "live-check-studio.yml",
+      "vers": "github",
+      "quoi": "vérifie qu'un sous-domaine du site répond",
+      "raison": "vérification de NOTRE publication"
+    },
+    {
+      "f": "lingua-rt-check.yml",
+      "vers": "github",
+      "quoi": "vérifie l'appel en direct de l'app Lingua",
+      "raison": "test d'une app de CE dépôt, en conditions réelles"
+    },
+    {
+      "f": "lingua-voix-check.yml",
+      "vers": "github",
+      "quoi": "vérifie voix + coach Lingua en vrai",
+      "raison": "test d'une app de CE dépôt"
+    },
+    {
+      "f": "deces-live-check.yml",
+      "vers": "github",
+      "quoi": "vérifie la page /__deces de l'arbre",
+      "raison": "test d'une page que CE dépôt publie"
+    },
+    {
+      "f": "deces-cors-check.yml",
+      "vers": "github",
+      "quoi": "vérifie les en-têtes CORS que notre page reçoit",
+      "raison": "test de NOTRE intégration, lancé à la main"
+    },
+    {
+      "f": "apex-chat-auto-force-update.yml",
+      "vers": "github",
+      "quoi": "pousse la mise à jour d'Apex Chat chez les utilisateurs",
+      "raison": "déploiement d'une app de CE dépôt"
+    },
+    {
+      "f": "apex-proxy-diag.yml",
+      "vers": "github",
+      "quoi": "diagnostic du worker proxy d'Apex",
+      "raison": "test d'un service de CE dépôt"
+    },
+    {
+      "f": "strix-scan.yml",
+      "vers": "github",
+      "quoi": "pentest IA de NOS apps",
+      "raison": "test de sécurité du projet lui-même"
+    },
+    {
+      "f": "seo-audit.yml",
+      "vers": "github",
+      "quoi": "audit SEO de notre propre site",
+      "raison": "qualité de NOTRE publication"
+    },
+    {
+      "f": "clayscore-extract-private.yml",
+      "vers": "github",
+      "quoi": "extrait ClayScore vers un dépôt privé",
+      "raison": "opération sur le CODE du projet (son cron a été retiré)"
+    },
+    {
+      "f": "auto-deploy-vercel.yml",
+      "vers": "github",
+      "quoi": "déploie l'agent KDMC sur Vercel",
+      "raison": "déploiement de CE projet chez un hébergeur"
+    },
+    {
+      "f": "sync-agent-firebase-to-vercel.yml",
+      "vers": "github",
+      "quoi": "pose les identifiants du déploiement Vercel",
+      "raison": "fait partie du même déploiement"
+    },
+    {
+      "f": "liens-check.yml",
+      "vers": "gitlab",
+      "quoi": "pingue pour de vrai les 198 liens du domaine",
+      "raison": "interroge des centaines de sites tiers",
+      "job_gitlab": "liens-reels"
+    },
+    {
+      "f": "workers-health-check.yml",
+      "vers": "worker",
+      "quoi": "état de santé des Workers",
+      "raison": "repris par le même worker services/kdmc-uptime, qui sonde déjà le /health des workers critiques dans le même passage horaire — un second job n'apporterait rien et coûterait des minutes"
+    },
+    {
+      "f": "external-apis-health.yml",
+      "vers": "gitlab",
+      "quoi": "état des API externes (Finnhub, Railway…)",
+      "raison": "sonde des services tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "uptime-monitor.yml",
+      "vers": "worker",
+      "quoi": "surveillance de disponibilité",
+      "raison": "une sonde horaire coûterait ~360 min/mois sur les 400 de GitLab (175 déjà prises en 4 jours) : impossible. Le cron Cloudflare est hors quota → services/kdmc-uptime, qui couvre les 26 sous-domaines (l'ancienne sonde n'en voyait que 13)"
+    },
+    {
+      "f": "cdn-dependency-watch.yml",
+      "vers": "gitlab",
+      "quoi": "veille sur les bibliothèques CDN",
+      "raison": "sonde des CDN tiers",
+      "job_gitlab": "cdn-dependances"
+    },
+    {
+      "f": "qui-se-connecte.yml",
+      "vers": "gitlab",
+      "quoi": "lit le journal des connexions du domaine",
+      "raison": "interroge un service externe (admin.kd-mc.com)",
+      "job_gitlab": null
+    },
+    {
+      "f": "monaco-sync.yml",
+      "vers": "gitlab",
+      "quoi": "récupère les factures Monaco Telecom",
+      "raison": "aucun rapport avec le code : c'est de l'administratif",
+      "job_gitlab": null
+    },
+    {
+      "f": "kdmc-kv-backup.yml",
+      "vers": "gitlab",
+      "quoi": "sauvegarde chiffrée du registre clients (KV)",
+      "raison": "sauvegarde de DONNÉES externes, pas du code",
+      "job_gitlab": null
+    },
+    {
+      "f": "kdmc-kv-backup-all.yml",
+      "vers": "gitlab",
+      "quoi": "sauvegarde de tous les KV",
+      "raison": "idem",
+      "job_gitlab": null
+    },
+    {
+      "f": "wm-alerts.yml",
+      "vers": "worker",
+      "quoi": "alertes séismes / ONU",
+      "raison": "doit tourner en continu : c'est un service, pas du CI"
+    },
+    {
+      "f": "wm-brief.yml",
+      "vers": "worker",
+      "quoi": "brief IA de la situation mondiale",
+      "raison": "périodique et permanent"
+    },
+    {
+      "f": "agent-cron.yml",
+      "vers": "worker",
+      "quoi": "agent KDMC 24/7",
+      "raison": "24/7 par définition : c'est un service"
+    },
+    {
+      "f": "apex-autonomous-watcher.yml",
+      "vers": "worker",
+      "quoi": "sentinelle Apex",
+      "raison": "surveillance permanente"
+    },
+    {
+      "f": "claude-todo-watcher.yml",
+      "vers": "worker",
+      "quoi": "escalade des tâches vers Claude Code",
+      "raison": "surveillance permanente d'une base externe"
+    },
+    {
+      "f": "agent-reach.yml",
+      "vers": "gitlab",
+      "quoi": "accès internet étendu pour les agents",
+      "raison": "son travail EST d'appeler des sites tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "lingua-lsf.yml",
+      "vers": "gitlab",
+      "quoi": "récolte la langue des signes depuis des sources officielles",
+      "raison": "moissonne des sites tiers",
+      "job_gitlab": "lingua-lsf"
+    },
+    {
+      "f": "lingua-sources.yml",
+      "vers": "gitlab",
+      "quoi": "teste les sources officielles des langues",
+      "raison": "sonde des sites tiers",
+      "job_gitlab": "lingua-sources"
+    },
+    {
+      "f": "lingua-auto-verif.yml",
+      "vers": "gitlab",
+      "quoi": "vérification + correction automatiques de Lingua",
+      "raison": "tournait en cron et écrit dans le dépôt",
+      "job_gitlab": null
+    },
+    {
+      "f": "arbre-tree-photo.yml",
+      "vers": "gitlab",
+      "quoi": "photo d'arbre libre de droit (Pexels)",
+      "raison": "récupère un média chez un tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "arbre-tree-candidates.yml",
+      "vers": "gitlab",
+      "quoi": "planche-contact de photos d'olivier",
+      "raison": "idem",
+      "job_gitlab": null
+    },
+    {
+      "f": "antonin-voice-clone.yml",
+      "vers": "gitlab",
+      "quoi": "clonage de voix (Replicate)",
+      "raison": "génération de contenu chez un tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "ld-cartoon.yml",
+      "vers": "gitlab",
+      "quoi": "portraits cartoon (Replicate)",
+      "raison": "génération d'images chez un tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "ld-logo-gen.yml",
+      "vers": "gitlab",
+      "quoi": "logos (Replicate FLUX)",
+      "raison": "génération d'images chez un tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "ld-logo-publish.yml",
+      "vers": "gitlab",
+      "quoi": "publie les logos dans Firebase",
+      "raison": "écrit dans un service externe",
+      "job_gitlab": null
+    },
+    {
+      "f": "lingua-bee-art.yml",
+      "vers": "gitlab",
+      "quoi": "mascotte Bee (images IA)",
+      "raison": "génération d'images chez un tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "lingua-donkey-art.yml",
+      "vers": "gitlab",
+      "quoi": "mascotte Âne (images IA)",
+      "raison": "idem",
+      "job_gitlab": null
+    },
+    {
+      "f": "lingua-mascotte-hq.yml",
+      "vers": "gitlab",
+      "quoi": "mascotte haute qualité",
+      "raison": "idem",
+      "job_gitlab": null
+    },
+    {
+      "f": "lingua-mascotte-video.yml",
+      "vers": "gitlab",
+      "quoi": "mascotte animée (image→vidéo)",
+      "raison": "idem",
+      "job_gitlab": null
+    },
+    {
+      "f": "printify-mockups.yml",
+      "vers": "gitlab",
+      "quoi": "photos produits Printify",
+      "raison": "récupère des médias chez un tiers",
+      "job_gitlab": null
+    },
+    {
+      "f": "crypto-bot-analysis.yml",
+      "vers": "jamais",
+      "quoi": "analyse crypto",
+      "raison": "les conditions GitHub nomment explicitement les opérations de cryptomonnaie"
+    },
+    {
+      "f": "crypto-bot-deploy.yml",
+      "vers": "jamais",
+      "quoi": "déploiement du bot (Railway)",
+      "raison": "idem"
+    },
+    {
+      "f": "crypto-bot-fleet-deploy.yml",
+      "vers": "jamais",
+      "quoi": "déploiement de 5 bots papier",
+      "raison": "idem"
+    },
+    {
+      "f": "crypto-bot-research.yml",
+      "vers": "jamais",
+      "quoi": "recherche de données crypto",
+      "raison": "idem"
+    },
+    {
+      "f": "crypto-bot-status.yml",
+      "vers": "jamais",
+      "quoi": "état des bots",
+      "raison": "idem"
+    },
+    {
+      "f": "crypto-bot-verify.yml",
+      "vers": "jamais",
+      "quoi": "contrôle autonome des bots",
+      "raison": "idem"
+    }
+  ],
+  "_porte": "Pour une destination « gitlab », `job_gitlab` nomme le job qui la remplace VRAIMENT dans .gitlab-ci.yml. `null` = la destination est décidée mais le portage reste à faire — c'est un reste à faire, pas une panne : le dire est plus utile que le laisser deviner. La garde AFFICHE ce compte à chaque exécution pour qu'il ne se perde pas."
+}

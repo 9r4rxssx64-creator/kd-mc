@@ -1,0 +1,26 @@
+# CODEOWNERS — Apex / CMCteams / Apex Chat
+
+# Kevin DESARZENS est l'unique propriétaire de tout le code.
+# Si une protection de branche `Require review from Code Owners` est activée
+# côté GitHub (Settings → Branches → main), seul Kevin peut approuver.
+
+* @9r4rxssx64-creator
+
+# Fichiers critiques sécurité — review Kevin obligatoire même sans branch protection
+/.github/                              @9r4rxssx64-creator
+/apex-ai/v13/services/auth/            @9r4rxssx64-creator
+/apex-ai/v13/services/vault/           @9r4rxssx64-creator
+/apex-ai/v13/services/storage/firebase.ts  @9r4rxssx64-creator
+/firebase-rules.json                   @9r4rxssx64-creator
+/firebase-rules-apex.json              @9r4rxssx64-creator
+/messaging-app/workers/                @9r4rxssx64-creator
+/CLAUDE.md                             @9r4rxssx64-creator
+
+# Fichiers critiques CMCteams — cœur de l'app + Service Worker + page Départs
+# autonome + données partagées (synchro app⇄page) + config/tests.
+/index.html                            @9r4rxssx64-creator
+/sw.js                                 @9r4rxssx64-creator
+/tools/departs/                        @9r4rxssx64-creator
+/tools/shared/                         @9r4rxssx64-creator
+/tests/                                @9r4rxssx64-creator
+/package.json                          @9r4rxssx64-creator

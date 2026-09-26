@@ -1,0 +1,80 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "STDIN=$(cat); CMD=$(echo \"$STDIN\" | jq -r '.tool_input.command // \"\"'); if echo \"$CMD\" | grep -q 'git commit'; then DATE=$(date \"+%Y-%m-%d %H:%M\"); cd \"$CLAUDE_PROJECT_DIR\"; HASH=$(git log -1 --format=\"%h\" 2>/dev/null); MSG=$(git log -1 --format=\"%s\" 2>/dev/null); ENTRY=\"- **[$DATE]** \\`$HASH\\` — $MSG\"; echo \"$ENTRY\" >> \"$CLAUDE_PROJECT_DIR/.claude_journal.md\"; fi",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "STDIN=$(cat); FILE=$(echo \"$STDIN\" | jq -r '.tool_input.file_path // .tool_response.filePath // \"\"'); if echo \"$FILE\" | grep -qE 'index\\.html$'; then node --input-type=module <<'JSEOF' 2>&1 | grep -E '(SyntaxError|Error|error)' | head -5 || true\nimport { readFileSync } from 'fs';\nconst src = readFileSync(process.env.CLAUDE_PROJECT_DIR + '/index.html','utf8');\nconst m = src.match(/<script>([\\s\\S]*?)<\\/script>/g);\nif(m){const js=m.map(s=>s.replace(/<script>/,'').replace(/<\\/script>/,'')).join(''); new Function(js);}\nconsole.log('JS OK');\nJSEOF\nfi",
+            "timeout": 20,
+            "statusMessage": "Validation JS index.html..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"Rappel workflow expert : 1) esc() sur toutes données user avant innerHTML, 2) Guard A.user.id===AID sur fonctions admin, 3) sw.js CACHE version = APP_VER, 4) fbWrite avec retry backoff, 5) Mettre à jour CLAUDE.md + committer sur branche feature.\"}'",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node tools/audit/maj-tout.mjs --rapide --silencieux 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh",
+            "timeout": 300,
+            "statusMessage": "Préparation environnement (deps CMCteams + Apex v13 + Apex Chat)..."
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/mem-context.sh",
+            "timeout": 10,
+            "statusMessage": "Chargement mémoire compacte..."
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node tools/pipeline/rappel.mjs --court 2>/dev/null || true",
+            "timeout": 15,
+            "statusMessage": "Rappel : ce que je dois, ce que j’ai…"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/etat-du-moment.sh",
+            "timeout": 45,
+            "statusMessage": "État du moment (depuis main)…"
+          }
+        ]
+      }
+    ]
+  }
+}

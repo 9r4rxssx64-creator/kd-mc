@@ -1,0 +1,31 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "git": {
+    "deploymentEnabled": {
+      "kv-backups": false,
+      "d1-backups": false,
+      "claude/voir-*": false
+    }
+  },
+  "ignoreCommand": "bash -c '[ \"$VERCEL_GIT_COMMIT_REF\" = main ] || exit 0; git rev-parse -q --verify HEAD^ >/dev/null 2>&1 && git diff --quiet HEAD^ HEAD -- . && exit 0; exit 1'",
+  "crons": [
+    {
+      "path": "/api/cron?trigger=cron:0 3 * * *",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron?trigger=cron:0 8 * * *",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron?trigger=cron:0 9 * * 1",
+      "schedule": "0 9 * * 1"
+    }
+  ],
+  "functions": {
+    "api/cron.js": {
+      "maxDuration": 60
+    }
+  }
+}

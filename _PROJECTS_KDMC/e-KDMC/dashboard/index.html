@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KDMC Dashboard — Admin</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+:root{--p:#D4AF37;--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--success:#22c55e;--error:#ef4444;--warning:#f59e0b;--r:12px}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#0b1120;border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{font-size:18px;font-weight:800;color:var(--p);margin-bottom:24px;padding:8px 0}
+.sidebar-logo span{font-size:12px;color:var(--muted);display:block;font-weight:400}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:14px;cursor:pointer;color:var(--muted);transition:all .2s;margin-bottom:2px}
+.nav-item:hover,.nav-item.active{background:rgba(212,175,55,.1);color:var(--p)}
+.main{margin-left:220px;padding:24px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.topbar h1{font-size:24px;font-weight:700}
+.topbar-right{display:flex;gap:12px;align-items:center}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--border)}
+.kpi-label{font-size:13px;color:var(--muted);margin-bottom:4px}
+.kpi-value{font-size:28px;font-weight:800;color:var(--p)}
+.kpi-change{font-size:12px;margin-top:4px}
+.kpi-change.up{color:var(--success)}.kpi-change.down{color:var(--error)}
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:20px;margin-bottom:16px}
+.card h3{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.table{width:100%;border-collapse:collapse}
+.table th{text-align:left;padding:10px 12px;font-size:12px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.table td{padding:10px 12px;font-size:14px;border-bottom:1px solid var(--border)}
+.table tr:hover{background:rgba(255,255,255,.02)}
+.badge{padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700}
+.badge-success{background:rgba(34,197,94,.15);color:var(--success)}
+.badge-warning{background:rgba(245,158,11,.15);color:var(--warning)}
+.badge-error{background:rgba(239,68,68,.15);color:var(--error)}
+.badge-info{background:rgba(59,130,246,.15);color:#3b82f6}
+.store-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.store-pill{padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--muted);transition:all .2s}
+.store-pill:hover,.store-pill.active{background:var(--p);color:#000;border-color:var(--p)}
+.chart-bar{height:8px;border-radius:4px;background:var(--border);margin-top:8px;overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:4px;background:var(--p);transition:width .5s}
+.toast{position:fixed;bottom:-80px;left:50%;transform:translateX(-50%);z-index:10000;padding:12px 24px;border-radius:var(--r);background:var(--card);color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.3);font-size:14px;transition:bottom .3s;border:1px solid var(--border)}
+.toast.show{bottom:24px}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
+/* a11y + polish (revue UI/UX pro-expert) */
+:focus-visible{outline:2px solid var(--p)!important;outline-offset:2px;border-radius:4px}
+::selection{background:color-mix(in srgb,var(--p) 30%,transparent)}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-logo">KDMC<span>Dashboard Admin</span></div>
+<div class="nav-item active" onclick="sv('home')">📊 Vue d'ensemble</div>
+<div class="nav-item" onclick="sv('orders')">📦 Commandes</div>
+<div class="nav-item" onclick="sv('products')">🏷️ Produits</div>
+<div class="nav-item" onclick="sv('customers')">👥 Clients</div>
+<div class="nav-item" onclick="sv('analytics')">📈 Analytiques</div>
+<div class="nav-item" onclick="sv('inventory')">📋 Inventaire</div>
+<div class="nav-item" onclick="sv('emails')">📧 Emails</div>
+<div class="nav-item" onclick="sv('finance')">💰 Finance</div>
+<div class="nav-item" onclick="sv('settings')">⚙️ Paramètres</div>
+<div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border)">
+<div class="nav-item" onclick="window.open('../stores/digital-vault/index.html')">🏪 Digital Vault</div>
+<div class="nav-item" onclick="window.open('../stores/tech-hub/index.html')">🏪 Tech Hub</div>
+<div class="nav-item" onclick="window.open('../stores/glow-wellness/index.html')">🏪 Glow Wellness</div>
+<div class="nav-item" onclick="window.open('../stores/pawsome/index.html')">🏪 Pawsome</div>
+<div class="nav-item" onclick="window.open('../stores/ecocraft/index.html')">🏪 EcoCraft</div>
+</div>
+</div>
+<div class="main" id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+var D={view:"home",store:"all",orders:[],period:"today"};
+var STORES=[
+{id:"digital-vault",name:"Digital Vault",icon:"📋",revenue:2847,orders:89,products:100,conversion:4.2},
+{id:"tech-hub",name:"Tech Hub",icon:"📱",revenue:4215,orders:156,products:100,conversion:3.1},
+{id:"glow-wellness",name:"Glow Wellness",icon:"✨",revenue:3120,orders:112,products:100,conversion:3.8},
+{id:"pawsome",name:"Pawsome",icon:"🐾",revenue:1890,orders:67,products:100,conversion:2.9},
+{id:"ecocraft",name:"EcoCraft",icon:"🌿",revenue:2340,orders:78,products:100,conversion:3.5}
+];
+function esc(s){return s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function toast(m){var e=document.getElementById("toast");e.textContent=m;e.className="toast show";clearTimeout(toast._t);toast._t=setTimeout(function(){e.className="toast"},3e3)}
+function fmtP(p){return p.toFixed(2).replace(".",",")+" €"}
+function sv(v){D.view=v;dc();document.querySelectorAll(".nav-item").forEach(function(el,i){el.classList.toggle("active",i==={home:0,orders:1,products:2,customers:3,analytics:4,inventory:5,emails:6,finance:7,settings:8}[v])})}
+function dc(){document.getElementById("app").innerHTML=({home:vHome,orders:vOrders,products:vProducts,customers:vCustomers,analytics:vAnalytics,settings:vSettings}[D.view]||vHome)()}
+function totalRev(){return STORES.reduce(function(s,st){return s+st.revenue},0)}
+function totalOrd(){return STORES.reduce(function(s,st){return s+st.orders},0)}
+function vHome(){var tr=totalRev(),to=totalOrd(),avgConv=(STORES.reduce(function(s,st){return s+st.conversion},0)/STORES.length).toFixed(1);
+return '<div class="topbar"><h1>📊 Vue d\'ensemble</h1><div class="topbar-right"><span style="color:var(--muted);font-size:13px">'+new Date().toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})+'</span></div></div>'
++'<div class="kpi-grid">'
++'<div class="kpi"><div class="kpi-label">Revenu total</div><div class="kpi-value">'+fmtP(tr)+'</div><div class="kpi-change up">↑ +12% vs hier</div></div>'
++'<div class="kpi"><div class="kpi-label">Commandes</div><div class="kpi-value">'+to+'</div><div class="kpi-change up">↑ +8% vs hier</div></div>'
++'<div class="kpi"><div class="kpi-label">Panier moyen</div><div class="kpi-value">'+fmtP(tr/to)+'</div><div class="kpi-change up">↑ +3%</div></div>'
++'<div class="kpi"><div class="kpi-label">Taux conversion</div><div class="kpi-value">'+avgConv+'%</div><div class="kpi-change up">↑ +0.4%</div></div>'
++'</div>'
++'<div class="card"><h3>🏪 Performance par boutique</h3>'
++STORES.map(function(st){var pct=Math.round(st.revenue/tr*100);return '<div style="display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)">'
++'<span style="font-size:24px;width:36px;text-align:center">'+st.icon+'</span>'
++'<div style="flex:1"><div style="font-weight:600;font-size:14px">'+esc(st.name)+'</div>'
++'<div class="chart-bar"><div class="chart-bar-fill" style="width:'+pct+'%"></div></div></div>'
++'<div style="text-align:right"><div style="font-weight:700;color:var(--p)">'+fmtP(st.revenue)+'</div><div style="font-size:12px;color:var(--muted)">'+st.orders+' cmd · '+st.conversion+'% conv.</div></div></div>'}).join("")
++'</div>'
++'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'
++'<div class="card"><h3>📦 Dernières commandes</h3><table class="table"><thead><tr><th>ID</th><th>Boutique</th><th>Montant</th><th>Status</th></tr></thead><tbody>'
++[{id:"KDMC-A1B2",store:"Digital Vault",amount:39.99,status:"success"},{id:"KDMC-C3D4",store:"Tech Hub",amount:67.50,status:"warning"},{id:"KDMC-E5F6",store:"Glow Wellness",amount:24.99,status:"success"},{id:"KDMC-G7H8",store:"Pawsome",amount:45.00,status:"success"},{id:"KDMC-I9J0",store:"EcoCraft",amount:32.99,status:"info"}].map(function(o){return '<tr><td style="font-weight:600">'+o.id+'</td><td>'+o.store+'</td><td style="color:var(--p);font-weight:600">'+fmtP(o.amount)+'</td><td><span class="badge badge-'+o.status+'">'+(o.status==="success"?"Livré":o.status==="warning"?"En cours":"Nouveau")+'</span></td></tr>'}).join("")
++'</tbody></table></div>'
++'<div class="card"><h3>🔔 Alertes</h3>'
++'<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:14px"><span class="badge badge-warning" style="margin-right:8px">Stock</span> Chargeur Sans Fil 15W — stock bas (3)</div>'
++'<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:14px"><span class="badge badge-success" style="margin-right:8px">Vente</span> Digital Vault — 12 ventes cette heure</div>'
++'<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:14px"><span class="badge badge-info" style="margin-right:8px">Email</span> 45 emails envoyés aujourd\'hui (15% quota)</div>'
++'<div style="padding:10px 0;font-size:14px"><span class="badge badge-error" style="margin-right:8px">Retour</span> Demande remboursement #KDMC-X1Y2</div>'
++'</div></div>'}
+function vOrders(){return '<div class="topbar"><h1>📦 Commandes</h1></div><div class="card"><table class="table"><thead><tr><th>ID</th><th>Date</th><th>Client</th><th>Boutique</th><th>Montant</th><th>Status</th></tr></thead><tbody>'
++Array.from({length:15},function(_,i){var st=STORES[i%5];return '<tr><td style="font-weight:600">KDMC-'+Math.random().toString(36).slice(2,6).toUpperCase()+'</td><td style="color:var(--muted)">'+new Date(Date.now()-i*3600000*Math.random()*24).toLocaleDateString("fr-FR")+'</td><td>Client '+(i+1)+'</td><td>'+st.icon+' '+st.name+'</td><td style="color:var(--p);font-weight:600">'+fmtP(10+Math.random()*80)+'</td><td><span class="badge badge-'+["success","warning","info"][i%3]+'">'+(i%3===0?"Livré":i%3===1?"En cours":"Nouveau")+'</span></td></tr>'}).join("")
++'</tbody></table></div>'}
+function vProducts(){return '<div class="topbar"><h1>🏷️ Produits (500 total)</h1></div>'
++'<div class="store-pills">'+STORES.map(function(st){return '<div class="store-pill" onclick="toast(\'Filtre: '+st.name+'\')">'+st.icon+' '+st.name+' ('+st.products+')</div>'}).join("")+'</div>'
++'<div class="card"><p style="color:var(--muted);text-align:center;padding:32px">Les produits sont gérés dans chaque boutique. Cliquez sur une boutique dans la sidebar pour y accéder.</p></div>'}
+function vCustomers(){return '<div class="topbar"><h1>👥 Clients</h1></div><div class="kpi-grid">'
++'<div class="kpi"><div class="kpi-label">Clients total</div><div class="kpi-value">347</div></div>'
++'<div class="kpi"><div class="kpi-label">Nouveaux (7j)</div><div class="kpi-value">42</div></div>'
++'<div class="kpi"><div class="kpi-label">Récurrents</div><div class="kpi-value">28%</div></div>'
++'<div class="kpi"><div class="kpi-label">Panier moyen</div><div class="kpi-value">'+fmtP(totalRev()/totalOrd())+'</div></div></div>'
++'<div class="card"><h3>Top clients</h3><table class="table"><thead><tr><th>Client</th><th>Email</th><th>Commandes</th><th>Total dépensé</th></tr></thead><tbody>'
++Array.from({length:8},function(_,i){return '<tr><td style="font-weight:600">Client '+(i+1)+'</td><td style="color:var(--muted)">client'+(i+1)+'@email.com</td><td>'+(8-i)+'</td><td style="color:var(--p);font-weight:600">'+fmtP(50+Math.random()*300)+'</td></tr>'}).join("")
++'</tbody></table></div>'}
+function vAnalytics(){return '<div class="topbar"><h1>📈 Analytiques</h1></div><div class="kpi-grid">'
++'<div class="kpi"><div class="kpi-label">Visiteurs (30j)</div><div class="kpi-value">12,450</div><div class="kpi-change up">↑ +18%</div></div>'
++'<div class="kpi"><div class="kpi-label">Pages vues</div><div class="kpi-value">45,200</div><div class="kpi-change up">↑ +22%</div></div>'
++'<div class="kpi"><div class="kpi-label">Taux rebond</div><div class="kpi-value">34%</div><div class="kpi-change up">↓ -5%</div></div>'
++'<div class="kpi"><div class="kpi-label">Durée moy.</div><div class="kpi-value">3m 24s</div><div class="kpi-change up">↑ +12%</div></div></div>'
++'<div class="card"><h3>📊 Revenu par boutique (30 derniers jours)</h3>'
++STORES.map(function(st){var rev30=st.revenue*30;var pct=Math.round(rev30/(totalRev()*30)*100);return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="width:140px;font-size:14px">'+st.icon+' '+st.name+'</span><div style="flex:1"><div class="chart-bar"><div class="chart-bar-fill" style="width:'+pct+'%"></div></div></div><span style="width:100px;text-align:right;font-weight:700;color:var(--p)">'+fmtP(rev30)+'</span></div>'}).join("")
++'</div>'}
+function vSettings(){return '<div class="topbar"><h1>⚙️ Paramètres</h1></div>'
++'<div class="card"><h3>🔑 Clés API</h3>'
++'<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Stripe Secret Key</label><input type="password" value="sk_test_•••••••••" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px"></div>'
++'<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Brevo API Key</label><input type="password" value="xkeysib-•••••••••" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px"></div>'
++'<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Firebase URL</label><input type="text" value="https://ekdmc-xxx.firebasedatabase.app" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px"></div>'
++'<button onclick="toast(\'Paramètres sauvegardés ✅\')" style="padding:12px 24px;background:var(--p);color:#000;border-radius:8px;font-weight:700;border:none;cursor:pointer;margin-top:8px">💾 Sauvegarder</button></div>'
++'<div class="card"><h3>🔔 Notifications</h3>'
++'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><span>Nouvelles commandes</span><label style="cursor:pointer"><input type="checkbox" checked> Activé</label></div>'
++'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><span>Stock bas</span><label style="cursor:pointer"><input type="checkbox" checked> Activé</label></div>'
++'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0"><span>Rapport quotidien</span><label style="cursor:pointer"><input type="checkbox" checked> Activé</label></div></div>'}
+dc();
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="ekdmc-dashboard"
+        data-version="v1.0.0"
+        data-color="#e8b830"
+        defer></script>
+</body>
+</html>

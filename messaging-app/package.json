@@ -1,0 +1,29 @@
+{
+  "name": "apex-chat-messaging",
+  "version": "1.1.291",
+  "private": true,
+  "type": "module",
+  "description": "Apex Chat — PWA messagerie chiffrée privée Kevin DESARZENS",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "lint": "echo 'no eslint config yet'",
+    "validate": "node --check sw.js && node --check crypto.js && node --check workers/api-worker.js",
+    "test:e2e": "playwright test",
+    "test:e2e:iphone": "playwright test --project=iphone-safari",
+    "test:e2e:install": "playwright install --with-deps",
+    "test:all": "npm run test && npm run test:e2e",
+    "test:runtime-admin": "node tests/runtime-admin-server-only.mjs",
+    "test:fonctions-reelles": "node tools/fonctions-reelles.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/ui": "^5.0.0",
+    "happy-dom": "^20.14.3",
+    "http-server": "^14.1.1",
+    "vitest": "^5.0.0"
+  }
+}

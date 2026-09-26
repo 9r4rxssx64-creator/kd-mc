@@ -1,0 +1,73 @@
+name: KDMC SSO — test navigateur réel (Chromium)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Pilote un vrai Chromium (Playwright) contre le VRAI worker kdmc-router + le
+# VRAI portail, pour prouver le parcours "compte unique" / "pass signé" :
+# - section Administration visible pour l'admin, cachée pour les clients
+# - pass consommé depuis le lien (#kdmc_sso=) → whoami via Bearer SANS cookie
+#   (simule l'isolation des PWA iOS) → reconnu
+# - anti-boucle si pass invalide. Aucune dépendance réseau externe.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kdmc-home/**'
+      - 'services/kdmc-router/**'
+      - 'tools/kdmc-sso-e2e/**'
+      - 'tools/kdmc-passkey-e2e/**'
+      - 'tools/kdmc-multiapp-e2e/**'
+      - 'tools/kdmc-cmcteams-sso-e2e/**'
+      - '.github/workflows/kdmc-sso-e2e.yml'
+  pull_request:
+    paths:
+      - 'kdmc-home/**'
+      - 'services/kdmc-router/**'
+      - 'tools/kdmc-sso-e2e/**'
+      - 'tools/kdmc-passkey-e2e/**'
+      - 'tools/kdmc-multiapp-e2e/**'
+      - 'tools/kdmc-cmcteams-sso-e2e/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Tests unitaires worker (SSO + admin + WebAuthn IdP)
+        working-directory: services/kdmc-router
+        run: |
+          node sso.test.mjs
+          node admin.test.mjs
+          node webauthn.test.mjs
+          node webauthn-endpoints.test.mjs
+          node self-service.test.mjs
+          node apps-consistency.test.mjs
+          node fb-token.test.mjs
+          node beatbot-gate.test.mjs
+          node approvals-gate.test.mjs
+      - name: Install Playwright + Chromium
+        run: |
+          # 11/09/2026 : ce workflow échouait à CETTE étape à chaque exécution (5 runs d'affilée,
+          # dont celles lancées après chaque fusion) — même cause que audit-live.yml le 05/09 :
+          # le package.json de la racine fait planter npm (résolution des peer deps). Avec
+          # --legacy-peer-deps, l'installation passe ; la version reste celle des devDependencies.
+          npm i --no-save --no-audit --no-fund --legacy-peer-deps playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: KDMC SSO E2E (vrai Chromium)
+        run: node tools/kdmc-sso-e2e/run.mjs
+      - name: KDMC Passkey E2E (Face ID — authentificateur virtuel)
+        run: node tools/kdmc-passkey-e2e/run.mjs
+      - name: KDMC Multi-app E2E (plusieurs identités × plusieurs apps — Admin auto toi seul)
+        run: node tools/kdmc-multiapp-e2e/run.mjs
+      - name: KDMC × CMCteams auto-login E2E (vraie app, Face ID → admin auto)
+        run: node tools/kdmc-cmcteams-sso-e2e/run.mjs

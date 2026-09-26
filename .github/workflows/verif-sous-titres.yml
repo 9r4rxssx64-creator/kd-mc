@@ -1,0 +1,35 @@
+# Vérifie EN VRAI que les sous-titres du « Montage auto » fonctionnent.
+# Depuis l'agent, aucun service de Kevin n'est joignable ; ici, le réseau est
+# ouvert. On fait dire une phrase au worker (IA gratuite), on lui renvoie le
+# son, et on vérifie qu'il retrouve les mots. Zéro clic Kevin, zéro clé.
+name: Vérif sous-titres (voix → texte, vrai worker)
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Adresse du worker (laisser vide = celle par défaut)"
+        required: false
+        default: ""
+
+# Une seule exécution à la fois par branche (règle anti-embouteillage).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verif:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Voix → texte (bout en bout, vrai worker)
+        env:
+          CREA_AI_URL: ${{ inputs.url }}
+        run: node tools/smoke/verif-sous-titres.mjs

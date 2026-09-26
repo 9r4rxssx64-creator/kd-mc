@@ -1,0 +1,253 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: Strix — pentest IA autonome (sécurité)
+
+# Kevin 2026-07-07 (« Install aussi ce qu'il y a sur la photo ») : Strix
+# (github.com/usestrix/strix, Apache-2.0) = hackers IA autonomes qui trouvent ET
+# valident (PoC) les failles d'une app, sans faux positifs. Aligné règle
+# « SÉCURITÉ MAXIMALE ». S'installe où le réseau + Docker sont dispo : le runner CI.
+#
+# ⚠️ COÛT : Strix lance des agents IA qui bouclent (beaucoup d'appels LLM) →
+# workflow_dispatch UNIQUEMENT (à la demande), JAMAIS on:push/cron (règle anti-spam
+# + maîtrise du budget). Timeout borné. Le modèle + la cible sont des inputs.
+#
+# Déclencheurs :
+#  - workflow_dispatch : Kevin ou moi (Claude Code via MCP)
+#  - repository_dispatch [strix-scan] : Apex (même canal qu'apex-execute / agent-reach)
+#
+# Résultat : rapport en artifact + résumé Firebase /apex/ax_strix_last (Apex lit).
+#
+# Sécurité : permissions contents:read ; la clé LLM (secret) n'est montée QUE sur
+# le step de scan ; les secrets Firebase QUE sur le step de push.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Cible : chemin repo (ex "kdmc-home/worldmonitor") ou URL (ex https://kd-mc.com/worldmonitor/)'
+        required: true
+        default: 'kdmc-home/worldmonitor'
+      model:
+        description: 'Modèle LLM (format litellm, ex openai/gpt-5.4)'
+        required: false
+        default: 'openai/gpt-5.4'
+      scan_mode:
+        description: 'Profondeur Strix : quick (CI rapide) · standard (routine) · deep (revue complète, long)'
+        required: false
+        default: 'standard'
+        type: choice
+        options: [quick, standard, deep]
+      max_budget_usd:
+        description: 'Plafond de dépense LLM en dollars (Strix s arrête proprement et ÉCRIT son rapport)'
+        required: false
+        default: '15'
+      exec_id:
+        description: 'ID exécution (callback Apex, optionnel)'
+        required: false
+        default: ''
+  repository_dispatch:
+    types: [strix-scan]
+
+concurrency:
+  group: strix-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    # 11/09/2026 : 30 min était trop court — le run 34527892077 (rc=124, 13,77 $) a été coupé
+    # AVANT que Strix n'écrive son rapport final : 1 MEDIUM illisible, journal saturé de
+    # « Error streaming response ». Strix 1.6 écrit `strix_runs/<run>/` (rapport, vulnérabilités,
+    # run.json) aussi quand il reçoit SIGTERM (status « interrupted ») : on lui laisse le temps,
+    # on borne la DÉPENSE (--max-budget-usd) plutôt que le temps, et on copie le bon dossier.
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      checks: write     # « check-run » de fin = rapport lisible par l'API (voir dernière étape)
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Parse payload
+        id: p
+        env:
+          RD_TARGET: ${{ github.event.client_payload.target }}
+          RD_MODEL: ${{ github.event.client_payload.model }}
+          RD_EXEC: ${{ github.event.client_payload.exec_id }}
+          WD_TARGET: ${{ inputs.target }}
+          WD_MODEL: ${{ inputs.model }}
+          WD_EXEC: ${{ inputs.exec_id }}
+          WD_MODE: ${{ inputs.scan_mode }}
+          WD_BUDGET: ${{ inputs.max_budget_usd }}
+          RD_MODE: ${{ github.event.client_payload.scan_mode }}
+          RD_BUDGET: ${{ github.event.client_payload.max_budget_usd }}
+        run: |
+          TARGET="${WD_TARGET:-$RD_TARGET}"; MODEL="${WD_MODEL:-${RD_MODEL:-openai/gpt-5.4}}"; EXEC="${WD_EXEC:-$RD_EXEC}"
+          MODE="${WD_MODE:-${RD_MODE:-standard}}"; BUDGET="${WD_BUDGET:-${RD_BUDGET:-15}}"
+          case "$MODE" in quick|standard|deep) : ;; *) MODE=standard ;; esac
+          printf '%s' "$BUDGET" | grep -Eq '^[0-9]+([.][0-9]+)?$' || BUDGET=15
+          echo "mode=$MODE"     >> "$GITHUB_OUTPUT"
+          echo "budget=$BUDGET" >> "$GITHUB_OUTPUT"
+          [ -n "$TARGET" ] || { echo "cible vide"; exit 1; }
+          TARGET=$(printf '%s' "$TARGET" | tr -d '\r\n' | head -c 400)
+          # Sécurité : refuse de scanner une cible hors périmètre Kevin (anti-abus / anti-scan d'un tiers)
+          case "$TARGET" in
+            http*://kd-mc.com*|http*://*.kd-mc.com*|http*://9r4rxssx64-creator.github.io*) : ;;
+            http*://*) echo "::error::URL hors périmètre kd-mc.com refusée : $TARGET"; exit 1 ;;
+            *) : ;; # chemin repo local : OK
+          esac
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "model=$MODEL"   >> "$GITHUB_OUTPUT"
+          echo "exec=${EXEC:-run_${{ github.run_id }}}" >> "$GITHUB_OUTPUT"
+
+      - name: Installer Strix
+        run: |
+          python3 -m pip install --quiet strix-agent
+          strix --help >/dev/null 2>&1 && echo "✅ strix installé" || echo "⚠️ strix --help KO (vérifié au scan)"
+
+      - name: Scan Strix (non-interactif)
+        id: scan
+        env:
+          STRIX_LLM: ${{ steps.p.outputs.model }}
+          LLM_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITI_API_KEY }}
+          TARGET: ${{ steps.p.outputs.target }}
+          MODE: ${{ steps.p.outputs.mode }}
+          BUDGET: ${{ steps.p.outputs.budget }}
+        run: |
+          set +e
+          if [ -z "$LLM_API_KEY" ]; then
+            echo "::error::OPEN_AI_API_KEY absent — Strix a besoin d'une clé LLM. Ajoute le secret puis relance."
+            echo "no_key=1" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          mkdir -p /tmp/strix-out
+          echo "🔒 Strix scan : cible=$TARGET modèle=$STRIX_LLM mode=$MODE plafond=${BUDGET}\$"
+          strix --version 2>/dev/null | head -1 | tee /tmp/strix-out/version.txt || true
+          # -n = non-interactif (CI). --max-budget-usd = Strix s'arrête SEUL et écrit son rapport ;
+          # le `timeout` (68 min, sous les 75 du job) n'est plus que le filet : SIGTERM → Strix
+          # enregistre l'état « interrupted » dans strix_runs/ avant de sortir (cli.py signal_handler).
+          timeout -k 30s 68m strix -n --target "$TARGET" --scan-mode "$MODE" --max-budget-usd "$BUDGET" 2>&1 | tee /tmp/strix-out/strix.log
+          RC=${PIPESTATUS[0]}
+          echo "rc=$RC" >> "$GITHUB_OUTPUT"
+          # Rapports : Strix ≥ 1.6 écrit `strix_runs/<run>/{penetration_test_report.md,
+          # vulnerabilities/*.md, vulnerabilities.csv|json, run.json, coverage.json}` dans le cwd ;
+          # les versions plus anciennes écrivaient `agent_runs/`. On copie les deux si présents.
+          for d in strix_runs agent_runs; do
+            find . -type d -name "$d" -not -path "*/node_modules/*" -exec cp -r {} /tmp/strix-out/ \; 2>/dev/null || true
+          done
+          find . -maxdepth 3 \( -name "strix*.md" -o -name "strix*.json" \) -not -path "*/node_modules/*" 2>/dev/null | while read f; do cp "$f" /tmp/strix-out/ 2>/dev/null || true; done
+          # Inventaire lisible + compte des erreurs de flux (pour distinguer « scan coupé »
+          # de « scan fini ») — écrit AUSSI dans le check-run (étape suivante).
+          { echo "rc=$RC mode=$MODE plafond=${BUDGET}\$ strix=$(cat /tmp/strix-out/version.txt 2>/dev/null)";
+            _ERRS=$(grep -c 'Error streaming response' /tmp/strix-out/strix.log 2>/dev/null || true); _ERRS=${_ERRS:-0}
+            echo "erreurs de flux LLM : $_ERRS";
+            echo "fichiers produits :"; find /tmp/strix-out -type f -not -name strix.log -printf '  %P (%s octets)\n' | sort; } > /tmp/strix-out/inventaire.txt
+          cat /tmp/strix-out/inventaire.txt
+          {
+            echo "## 🔒 Strix — pentest IA"
+            echo "Cible \`$TARGET\` · modèle \`$STRIX_LLM\` · mode \`$MODE\` · plafond ${BUDGET}\$ · rc=$RC"
+            echo '```'; cat /tmp/strix-out/inventaire.txt; echo '```'
+            echo '```'
+            tail -c 4000 /tmp/strix-out/strix.log
+            echo; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Rapport en artifact
+        if: steps.scan.outputs.no_key != '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: strix-report-${{ github.run_id }}
+          path: /tmp/strix-out/
+          retention-days: 14
+
+      # Même raison que dans security-suite.yml (mesuré 2026-09-10) : l'artifact et
+      # le résumé sont inatteignables depuis une session d'agent (proxy 403), seule
+      # `api.github.com` passe. Le rapport Strix (fichiers .md produits par l'agent
+      # + fin du journal) est donc AUSSI posé dans un check-run → lu par
+      # `node tools/ci/ci.mjs report <run_id>`. Contenu identique à ce que le
+      # résumé et l'artifact exposent déjà — rien de plus.
+      - name: Résumé → check-run (lisible par l'API depuis une session d'agent)
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          RUN_ID: ${{ github.run_id }}
+          TARGET: ${{ steps.p.outputs.target }}
+          MODEL: ${{ steps.p.outputs.model }}
+          RC: ${{ steps.scan.outputs.rc }}
+          NOKEY: ${{ steps.scan.outputs.no_key }}
+        with:
+          script: |
+            const fs = require('fs'), path = require('path');
+            const rd = p => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
+            const walk = (d, out = []) => {
+              let ents = []; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return out; }
+              for (const e of ents) { const p = path.join(d, e.name); e.isDirectory() ? walk(p, out) : out.push(p); }
+              return out;
+            };
+            const { TARGET, MODEL, RC, NOKEY, RUN_ID } = process.env;
+            let summary = `Cible \`${TARGET}\` · modèle \`${MODEL}\` · rc=${RC || '?'}`;
+            if (NOKEY === '1') summary += '\n\n❌ OPEN_AI_API_KEY absent — le scan n\'a PAS eu lieu.';
+            else if (RC === '124') summary += '\n\n⏱ rc=124 : coupé par le délai (le rapport ci-dessous est celui écrit à l\'interruption).';
+            summary += '\n\n```\n' + rd('/tmp/strix-out/inventaire.txt').slice(0, 6000) + '\n```';
+            // Ordre de lecture : rapport final → fiches de vulnérabilités → index csv → run.json → le reste.
+            const rang = p => /penetration_test_report\.md$/.test(p) ? 0 : /\/vulnerabilities\/.*\.md$/.test(p) ? 1
+              : /vulnerabilities\.(csv|json)$/.test(p) ? 2 : /run\.json$/.test(p) ? 3 : 4;
+            const rapports = walk('/tmp/strix-out')
+              .filter(p => /\.(md|json|csv)$/i.test(p) && !p.endsWith('strix.log') && !/coverage\.json$|\.sarif$/.test(p))
+              .sort((a, b) => rang(a) - rang(b) || a.localeCompare(b));
+            let text = '';
+            for (const p of rapports) {
+              text += `\n\n===== ${p.replace('/tmp/strix-out/', '')} =====\n` + rd(p).slice(0, 20000);
+              if (text.length > 50000) break;
+            }
+            text += '\n\n===== fin du journal strix.log (4000 derniers caractères) =====\n' + rd('/tmp/strix-out/strix.log').slice(-4000);
+            await github.rest.checks.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              name: `strix-scan — rapport (run ${RUN_ID})`,
+              head_sha: context.sha,
+              status: 'completed', conclusion: 'neutral',   // rapport, pas un gate
+              output: { title: 'Strix — pentest IA', summary: summary.slice(0, 60000), text: text.slice(0, 65000) },
+            });
+            core.info(`check-run créé (${rapports.length} fichier(s) de rapport)`);
+
+      - name: Résumé → Firebase (Apex lit ax_strix_last)
+        if: always()
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          TARGET: ${{ steps.p.outputs.target }}
+          EXEC: ${{ steps.p.outputs.exec }}
+          RC: ${{ steps.scan.outputs.rc }}
+          NOKEY: ${{ steps.scan.outputs.no_key }}
+        run: |
+          # gauth.cjs peut être absent du checkout complet ? non, checkout complet ici.
+          FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          TOKEN=$(node tools/firebase/gauth.cjs 2>/dev/null); QS=""
+          [ -n "$TOKEN" ] && QS="?access_token=${TOKEN}"
+          python3 - <<'PYEOF'
+          import json, os, time
+          log = ''
+          try: log = open('/tmp/strix-out/strix.log', errors='replace').read()[-6000:]
+          except Exception: pass
+          body = {
+            'exec_id': os.environ['EXEC'], 'target': os.environ['TARGET'],
+            'no_key': os.environ.get('NOKEY') == '1', 'rc': os.environ.get('RC', ''),
+            'ts': int(time.time()*1000), 'run_id': os.environ.get('GITHUB_RUN_ID',''),
+            'excerpt': log,
+          }
+          open('/tmp/strix_fb.json','w').write(json.dumps(body, ensure_ascii=False))
+          PYEOF
+          HTTP=$(curl -sS -o /tmp/r.txt -w "%{http_code}" -X PUT "${FB_URL}/apex/ax_strix_last.json${QS}" \
+            -H "Content-Type: application/json" --data-binary @/tmp/strix_fb.json || echo 000)
+          echo "Firebase PUT ax_strix_last → HTTP $HTTP $(head -c 150 /tmp/r.txt)"

@@ -1,0 +1,4 @@
+name = "kdmc-clone"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+# account_id injecté par le workflow via CLOUDFLARE_ACCOUNT_ID (jamais commité)

@@ -1,0 +1,42 @@
+name: La Détente — Catalogue Printify (blueprint/variant IDs)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'shops/la-detente/scripts/ld-printify-catalog.mjs'
+      - '.github/workflows/la-detente-printify-catalog.yml'
+
+permissions:
+  contents: write
+  pull-requests: write   # publier-config : PR vers main
+  actions: write         # publier-config : relance deploy.yml après fusion
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Découverte catalogue Printify
+        env:
+          PRINTIFY_API_KEY: ${{ secrets.PRINTIFY_API_KEY }}
+        run: node shops/la-detente/scripts/ld-printify-catalog.mjs
+      - name: Publier printify-catalog.json dans main (PR fusionnée par le robot)
+        # Jusqu'au 10.09.2026 : 3 branches claude/printify-catalog-<run_id> poussées « pour
+        # auto-merge » — jamais fusionnées, et printify-catalog.json ABSENT de main. Leçon #243.
+        if: hashFiles('shops/la-detente/printify-catalog.json') != ''
+        uses: ./.github/actions/publier-config
+        with:
+          fichiers: shops/la-detente/printify-catalog.json
+          message: "La Détente — catalogue Printify (blueprint/variant IDs)"
+          prefixe: printify-catalog

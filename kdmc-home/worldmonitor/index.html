@@ -1,0 +1,1888 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="World Monitor">
+<title>World Monitor — kd-mc.com</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/satellite.js@5.0.0/dist/satellite.min.js" crossorigin=""></script>
+<style>
+  :root{
+    --bg:#05070d; --panel:rgba(14,20,34,.72); --line:rgba(120,150,210,.16);
+    --txt:#dfe7f5; --dim:#8fa0c4; --gold:#e8b830;
+    --cyan:#35d6e6; --red:#ff5a4d; --amber:#ffb84d; --green:#4fd18b; --violet:#b992ff; --orange:#ff8a3d;
+    --radius:16px; font-synthesis:none;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; max-width:100vw; overflow-x:hidden}
+  body{
+    background:
+      radial-gradient(1200px 700px at 72% -12%, rgba(40,70,140,.22), transparent 60%),
+      radial-gradient(900px 600px at 8% 112%, rgba(120,40,90,.16), transparent 55%),
+      var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+    min-height:100vh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 14px) env(safe-area-inset-left);
+  }
+  a{color:inherit}
+  .wrap{max-width:1220px; margin:0 auto; padding:14px}
+  header.top{display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:6px 4px 14px}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.14em; font-size:18px}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+  @media (prefers-reduced-motion:reduce){.logo .dot,.blink{animation:none!important}}
+  .clock{margin-left:auto; font-variant-numeric:tabular-nums; font-size:13px; color:var(--dim); letter-spacing:.06em; text-align:right}
+  .clock b{display:block; color:var(--txt); font-size:15px; letter-spacing:.1em}
+  .grid{display:grid; grid-template-columns:1fr; gap:14px}
+  @media(min-width:860px){.grid{grid-template-columns:1.4fr 1fr}}
+  .col{display:flex; flex-direction:column; gap:14px; min-width:0}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%); overflow:hidden}
+  .card h2{margin:0; padding:12px 15px; font-size:12px; letter-spacing:.15em; text-transform:uppercase; color:var(--dim);
+    border-bottom:1px solid var(--line); display:flex; align-items:center; gap:9px}
+  .card h2 .k{margin-left:auto; font-size:11px; color:var(--gold); letter-spacing:.06em}
+  .globe-card{position:relative; min-height:360px}
+  #map{width:100%; height:430px; background:#0a1020}
+  #map.hidden,#globe.hidden,#g3d.hidden{display:none}
+  #g3d{width:100%;height:520px;border-radius:12px;overflow:hidden;background:#0a0f1e}
+  #g3d .maplibregl-ctrl-attrib{font-size:10px}
+  .leaflet-container{background:#0a1020!important; font-family:inherit}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0e1424; color:var(--txt); border:1px solid var(--line)}
+  .leaflet-popup-content{margin:9px 12px; font-size:12px; line-height:1.5}
+  .leaflet-bar a{background:#0e1424; color:var(--txt); border-color:var(--line)}
+  #map:fullscreen{height:100%!important;width:100%!important}
+  .leaflet-control-layers{background:#0e1424e6!important; color:var(--txt); border:1px solid var(--line)!important; border-radius:10px!important; box-shadow:0 4px 16px #0008}
+  .leaflet-control-layers-list{padding:4px 8px}
+  .leaflet-control-layers label{font-size:12px; margin:3px 0; cursor:pointer}
+  .leaflet-control-layers-selector{margin-right:6px}
+  #vFull{font-size:15px;line-height:1}
+  .camopen{display:block;text-align:center;font-size:11px;color:var(--cyan);padding:5px;text-decoration:none;background:#0a1220;border-top:1px solid var(--line)}
+  .leaflet-bar a:hover{background:#16203a}
+  .plane{font-size:15px; line-height:15px; text-shadow:0 0 3px #000}
+  .vswitch{display:flex; gap:6px; margin-left:auto}
+  .vswitch button{border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--dim); border-radius:9px; padding:5px 10px; font-size:12px; cursor:pointer; min-height:32px}
+  .vswitch button[aria-pressed="true"]{color:var(--txt); border-color:rgba(120,200,255,.5); background:rgba(60,140,240,.14)}
+  .maphint{position:absolute; z-index:500; left:12px; bottom:12px; background:rgba(8,12,22,.8); border:1px solid var(--line); border-radius:9px; padding:5px 9px; font-size:11px; color:var(--dim); pointer-events:none}
+  #globe{display:block; width:100%; height:auto; touch-action:pan-y}
+  .toggles{display:flex; gap:7px; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid var(--line)}
+  .tg{border:1px solid var(--line); background:rgba(255,255,255,.03); color:var(--dim); border-radius:20px;
+    padding:7px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; min-height:34px}
+  .tg .i{width:9px;height:9px;border-radius:50%}
+  .tg[aria-pressed="true"]{color:var(--txt); border-color:rgba(160,190,240,.45); background:rgba(120,160,240,.10)}
+  .tg[aria-pressed="false"]{opacity:.5}
+  .stat-row{display:flex; border-top:1px solid var(--line); flex-wrap:wrap}
+  .stat{flex:1 1 25%; min-width:80px; padding:11px 8px; text-align:center; border-right:1px solid var(--line); border-top:1px solid var(--line)}
+  .stat .n{font-size:20px; font-weight:800; font-variant-numeric:tabular-nums}
+  .stat .l{font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px}
+  .list{max-height:320px; overflow-y:auto; -webkit-overflow-scrolling:touch}
+  .list.sm{max-height:250px}
+  .row{display:flex; align-items:center; gap:11px; padding:10px 15px; border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .badge{min-width:42px; text-align:center; font-weight:800; font-size:13px; border-radius:9px; padding:6px 4px; font-variant-numeric:tabular-nums}
+  .row .main{flex:1; min-width:0}
+  .row .t1{font-size:14px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .row .t2{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .row .when{font-size:11px; color:var(--dim); white-space:nowrap}
+  .empty{padding:20px 15px; color:var(--dim); font-size:13px; text-align:center}
+  .newsrow{display:block; padding:10px 15px; border-bottom:1px solid var(--line); text-decoration:none}
+  .newsrow:last-child{border-bottom:0}
+  .newsrow .t1{font-size:13.5px; line-height:1.3}
+  .newsrow .t2{font-size:11px; color:var(--dim); margin-top:3px}
+  /* Monaco */
+  .mc{border:1px solid rgba(232,184,48,.32); box-shadow:0 0 0 1px rgba(232,184,48,.06) inset}
+  .mc h2{color:var(--gold)}
+  .mcgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line)}
+  @media(min-width:520px){.mcgrid{grid-template-columns:repeat(3,1fr)}}
+  .mccell{background:var(--panel); padding:13px 14px}
+  .mccell .l{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+  .mccell .v{font-size:19px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums}
+  .mccell .s{font-size:11px; color:var(--dim); margin-top:2px}
+  .mkt{display:flex; align-items:center; gap:11px; padding:11px 15px; border-bottom:1px solid var(--line)}
+  .mkt:last-child{border-bottom:0}
+  .mkt .sym{font-weight:800; min-width:60px}
+  .mkt .px{margin-left:auto; font-variant-numeric:tabular-nums; font-weight:700}
+  .up{color:var(--green)} .down{color:var(--red)}
+  /* webcams */
+  .camgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:12px}
+  @media(min-width:640px){.camgrid{grid-template-columns:repeat(3,1fr)}}
+  .osintlinks{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:12px}
+  @media(min-width:640px){.osintlinks{grid-template-columns:repeat(3,1fr)}}
+  .osintlinks a{display:flex; align-items:center; gap:7px; text-decoration:none; color:var(--txt); background:#0a101e; border:1px solid var(--line); border-radius:10px; padding:9px 11px; font-size:13px; font-weight:600; min-height:44px; transition:border-color .12s}
+  .osintlinks a:hover{border-color:var(--blue)}
+  .osintlinks a .em{font-size:15px}
+  .osintbox{margin:0 12px 12px}
+  .osintbox>summary{cursor:pointer; list-style:none; padding:10px 12px; background:#0a101e; border:1px solid var(--line); border-radius:10px; font-size:13px; font-weight:600; color:var(--txt); min-height:44px; display:flex; align-items:center}
+  .osintbox>summary::-webkit-details-marker{display:none}
+  .osintbox>summary::before{content:"▸"; margin-right:8px; color:var(--cyan); transition:transform .12s}
+  .osintbox[open]>summary::before{transform:rotate(90deg)}
+  .osintbox>summary b{color:var(--cyan); font-weight:600; margin-left:4px}
+  .osintsearch{width:100%; background:#0a1220; border:1px solid var(--line); border-radius:10px; color:var(--txt); padding:11px 13px; font-size:16px; margin:10px 0 4px}
+  .osintsearch:focus{outline:none; border-color:var(--cyan)}
+  .ocat{margin:12px 0 4px}
+  .ocat h3{font-size:13px; margin:0 0 8px; display:flex; align-items:center; gap:7px; color:#cfe0ff; font-weight:600}
+  .ocat h3 .n{color:var(--dim); font-weight:400; font-size:11px}
+  .ocat h3 .lv{font-size:10px; color:var(--green); border:1px solid #2b5a44; background:#0e2018; border-radius:999px; padding:2px 7px; letter-spacing:.05em}
+  .ogrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px}
+  a.otool{display:block; background:#0a101e; border:1px solid var(--line); border-radius:10px; padding:10px 12px; text-decoration:none; color:var(--txt); transition:border-color .12s,transform .12s; min-height:44px}
+  a.otool:hover,a.otool:focus{border-color:var(--cyan); transform:translateY(-2px)}
+  a.otool .t{font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:space-between; gap:6px}
+  a.otool .t .arr{color:var(--dim); font-size:11px}
+  a.otool .h{font-size:11px; color:var(--dim); margin-top:3px; word-break:break-all}
+  a.otool .no{font-size:11px; color:var(--amber); margin-top:4px; line-height:1.35}
+  .osintempty{color:var(--dim); font-size:13px; padding:8px 2px}
+  @media (max-width:520px){.ogrid{grid-template-columns:1fr 1fr} a.otool .h{display:none}}
+  .cam{position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0a101e; cursor:pointer; min-height:44px}
+  .cam .ph{aspect-ratio:16/9; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center; padding:8px}
+  .cam .ph .e{font-size:26px}
+  .cam .ph .n{font-size:12px; font-weight:700; line-height:1.25}
+  .cam .ph .live{font-size:9px; letter-spacing:.14em; color:var(--red); font-weight:800}
+  .cam .ph .live::before{content:"●"; margin-right:4px; animation:pulse 1.6s infinite}
+  .cam iframe{display:block; width:100%; aspect-ratio:16/9; border:0}
+  .cam .close{position:absolute; top:6px; right:6px; z-index:2; background:rgba(0,0,0,.65); color:#fff; border:1px solid var(--line); border-radius:50%; width:30px; height:30px; font-size:13px; cursor:pointer}
+  .tfl{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:12px}
+  @media(min-width:640px){.tfl{grid-template-columns:repeat(4,1fr)}}
+  .tfl figure{margin:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0a101e}
+  .tfl img{display:block; width:100%; aspect-ratio:4/3; object-fit:cover}
+  .tfl figcaption{font-size:10px; color:var(--dim); padding:6px 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .btnrow{display:flex; gap:8px; padding:0 12px 12px; flex-wrap:wrap}
+  .btn{border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--txt); border-radius:12px; padding:10px 14px; font-size:13px; cursor:pointer; min-height:44px; text-decoration:none; display:inline-flex; align-items:center; gap:7px}
+  .btn:active{transform:scale(.98)}
+  footer{max-width:1220px; margin:16px auto 0; padding:0 14px; color:var(--dim); font-size:11px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .ver{border:1px solid var(--line); border-radius:20px; padding:4px 11px; color:var(--gold); letter-spacing:.05em; cursor:pointer}
+  .src{opacity:.72; line-height:1.5}
+  .tgroup{border:1px solid var(--line);border-radius:10px;margin:5px 0;overflow:hidden;background:rgba(10,16,30,.35)}
+  .tgsum{list-style:none;cursor:pointer;padding:10px 12px;font-size:13px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:8px;min-height:44px;user-select:none}
+  .tgsum::-webkit-details-marker{display:none}
+  .tgsum::after{content:"▾";margin-left:auto;opacity:.55;transition:transform .18s}
+  .tgroup[open] .tgsum::after{transform:rotate(180deg)}
+  .tgsum:hover{background:rgba(120,150,210,.08)}
+  .tgn{font-size:11px;font-weight:500;color:var(--dim);background:rgba(120,150,210,.14);border-radius:20px;padding:1px 8px}
+  .tgwrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 11px}
+  #btnInstall{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo"><span class="dot"></span> 🌍 WORLD&nbsp;MONITOR</div>
+    <div style="display:flex;align-items:center;gap:10px"><button id="btnInstall" class="tg" style="min-height:38px" title="Ajouter World Monitor à ton écran d'accueil">📲 Installer</button><button id="btnBrief" class="tg" style="min-height:38px" title="Résumé IA de la situation mondiale (généré toutes les 6 h : conflits, catastrophes, à surveiller)">🧠 Brief IA</button><div class="clock"><b id="utc">—</b><span id="local">—</span></div></div>
+  </header>
+
+  <div class="grid">
+    <!-- COLONNE GAUCHE -->
+    <div class="col">
+      <section class="card globe-card">
+        <h2>🛰️ Vue Terre <span class="k" id="globeState">chargement…</span>
+          <span class="vswitch"><button id="vMap" aria-pressed="true">🗺️ Carte</button><button id="vGlobe" aria-pressed="false">🌍 Globe</button><button id="vG3D" aria-pressed="false" title="Globe 3D navigable (relief + satellite) — comme Google Earth : glisse pour tourner, 2 doigts pour incliner">🏔️ 3D</button><button id="vFull" title="Plein écran" aria-pressed="false">⛶</button></span>
+        </h2>
+        <div style="position:relative"><div id="map"></div><div id="mapLive" style="position:absolute;top:8px;right:8px;z-index:800;background:rgba(8,12,24,.78);border:1px solid rgba(120,150,210,.25);border-radius:8px;padding:4px 9px;font-size:11px;letter-spacing:.4px;display:flex;align-items:center;gap:6px;pointer-events:none"><span style="width:7px;height:7px;border-radius:50%;background:#ff3b30;animation:pulseDot 1.6s ease-in-out infinite"></span><b>LIVE</b><span id="mapClock" style="font-variant-numeric:tabular-nums;opacity:.85">—</span></div><div class="maphint" id="mapHint">✈️ avions en direct · 🔴 séismes · pince pour zoomer</div></div>
+        <div id="g3d" class="hidden" aria-label="Globe 3D navigable : relief et satellite, comme Google Earth"></div>
+        <div id="wmSearch" style="display:flex;gap:6px;margin:8px 0 2px">
+          <input id="wmQ" type="search" placeholder="🔍 Aller à… (ville, pays, lieu)" autocomplete="off" style="flex:1;min-width:0;background:rgba(10,16,30,.7);border:1px solid var(--line);border-radius:9px;color:var(--fg);padding:9px 12px;font:inherit;font-size:14px">
+          <button id="wmGo" class="tg" style="min-height:40px" title="Voler vers ce lieu">➜</button>
+          <span id="wmQState" style="align-self:center;color:var(--dim);font-size:11px"></span>
+        </div>
+        <div class="toggles" id="toggles">
+          <details class="tgroup" open><summary class="tgsum">🚨 Alertes & catastrophes <span class="tgn">8</span></summary><div class="tgwrap"><button class="tg" id="alertsChip" data-alerts="1" aria-pressed="false" title="Alertes locales sur cet appareil : notification si séisme M6+, alerte GDACS ROUGE, ou tempête solaire Kp≥7 (app ouverte ou PWA installée). Anti-doublon automatique."><span class="i" style="background:#ffd24d"></span>🔔 Alertes</button><button class="tg" data-layer="quakes" aria-pressed="true"><span class="i" style="background:var(--amber)"></span>🔴 Séismes</button><button class="tg" data-layer="gdacs" aria-pressed="true" title="Alertes catastrophes MONDIALES en direct (GDACS/ONU) : cyclones, inondations, séismes majeurs — niveau vert/orange/rouge, maj ~15 min"><span class="i" style="background:#ff5a4d"></span>🚨 Alertes ONU</button><button class="tg" data-layer="cyclones" aria-pressed="false" title="Cyclones/ouragans ACTIFS — trajectoires officielles NOAA/NHC (maj ~10 min)"><span class="i" style="background:#b992ff"></span>🌀 Cyclones NHC</button><button class="tg" data-layer="storms" aria-pressed="true"><span class="i" style="background:var(--violet)"></span>🌀 Tempêtes</button><button class="tg" data-layer="volcano" aria-pressed="true"><span class="i" style="background:var(--red)"></span>🌋 Volcans</button><button class="tg" data-layer="lightning" aria-pressed="false" title="Foudre MONDIALE en temps réel — réseau Blitzortung (impacts des dernières minutes, maj ~40 s)"><span class="i" style="background:#ffe14d"></span>⚡ Foudre</button><button class="tg" data-layer="crues" aria-pressed="false" title="Crues des grandes rivières du monde — débit du jour vs son pic des 30 j (Open-Meteo Flood/GloFAS, sans clé). Rouge = niveau de crue."><span class="i" style="background:#4db8ff"></span>🌊 Crues</button></div></details>
+          <details class="tgroup"><summary class="tgsum">🔥 Feux & fumées <span class="tgn">4</span></summary><div class="tgwrap"><button class="tg" data-layer="fires" aria-pressed="true"><span class="i" style="background:var(--orange)"></span>🔥 Feux</button><button class="tg" data-layer="firesat" aria-pressed="false" title="Détections thermiques VUES PAR SATELLITE — NASA VIIRS (image d'hier)"><span class="i" style="background:#ff8a5a"></span>🔥 Feux sat.</button><button class="tg" data-layer="firms" aria-pressed="false" title="Feux ACTIFS vus par satellite — NASA FIRMS VIIRS (dernières 24 h ; nécessite la clé FIRMS)"><span class="i" style="background:#ff6a2a"></span>🔥 Feux FIRMS</button><button class="tg" data-layer="smoke" aria-pressed="false" title="Fumées & poussières VUES PAR SATELLITE — indice d'aérosols OMPS/NASA (feux, sable, éruptions ; image la plus récente)"><span class="i" style="background:#c9a06a"></span>🌫️ Fumées sat.</button></div></details>
+          <details class="tgroup"><summary class="tgsum">✈️ Trafic <span class="tgn">3</span></summary><div class="tgwrap"><button class="tg" data-layer="flights" aria-pressed="true"><span class="i" style="background:var(--green)"></span>✈️ Vols</button><button class="tg" data-layer="ships" aria-pressed="true"><span class="i" style="background:#35d6e6"></span>🚢 Navires</button><button class="tg" data-layer="detroits" aria-pressed="true"><span class="i" style="background:#5aa9ff"></span>⚓ Détroits</button></div></details>
+          <details class="tgroup"><summary class="tgsum">🛰️ Espace <span class="tgn">2</span></summary><div class="tgwrap"><button class="tg" data-layer="iss" aria-pressed="true"><span class="i" style="background:var(--cyan)"></span>🛰️ ISS</button><button class="tg" data-layer="sats" aria-pressed="true" title="Positions RÉELLES des ~150 satellites les plus brillants — données orbitales Celestrak, calcul SGP4 recalculé toutes les 5 s"><span class="i" style="background:#ffe9b8"></span>🛰️ Satellites</button></div></details>
+          <details class="tgroup"><summary class="tgsum">🌦️ Météo & ciel <span class="tgn">5</span></summary><div class="tgwrap"><button class="tg" data-layer="radar" aria-pressed="false" title="Radar de précipitations MONDIAL en direct (RainViewer, maj ~10 min)"><span class="i" style="background:#61c8ff"></span>🌧️ Pluie radar</button><button class="tg" data-layer="aurora" aria-pressed="false" title="Aurores boréales/australes EN DIRECT — prévision NOAA OVATION maj ~5 min (probabilité d'aurore visible)"><span class="i" style="background:#7fffc9"></span>🌌 Aurores</button><button class="tg" data-layer="air" aria-pressed="false" title="Qualité de l'air EN DIRECT dans ~34 grandes villes (Open-Meteo, indice européen) — Monaco inclus"><span class="i" style="background:#a8e05f"></span>🌫️ Air</button><button class="tg" data-layer="waves" aria-pressed="false" title="Vagues & houle EN DIRECT sur ~28 points d'océans et mers (Open-Meteo Marine) — Méditerranée/Monaco inclus"><span class="i" style="background:#4db8ff"></span>🌊 Vagues</button><button class="tg" data-layer="night" aria-pressed="true" title="Ombre jour/nuit RÉELLE — position du soleil calculée en direct (maj 1 min)"><span class="i" style="background:#26304a"></span>🌓 Jour/Nuit</button></div></details>
+          <details class="tgroup"><summary class="tgsum">🗺️ Fond de carte <span class="tgn">8</span></summary><div class="tgwrap"><button class="tg" data-base="dark" aria-pressed="true" title="Carte sombre (par défaut)"><span class="i" style="background:#5a6a8a"></span>🌙 Carte</button><button class="tg" data-base="sat" aria-pressed="false" title="Satellite haute résolution (Esri)"><span class="i" style="background:#8fd18f"></span>🛰️ Satellite HD</button><button class="tg" data-base="live" aria-pressed="false" title="Vue satellite LIVE — VIIRS/NASA, image d'hier (nuages, feux, tempêtes vus de l'espace)"><span class="i" style="background:#7fd6ff"></span>🛰️ Live NASA</button><button class="tg" data-base="night" aria-pressed="false" title="Terre de nuit LIVE — VIIRS Day/Night Band (lumières des villes, image d'hier)"><span class="i" style="background:#ffd27f"></span>🌃 Terre nuit</button><button class="tg" data-base="geo" aria-pressed="false" title="Vue géostationnaire quasi TEMPS RÉEL (~10-20 min) — GOES-East/West GeoColor + Himawari IR (NASA GIBS, vérifiés CI) : nuages et tempêtes en continu"><span class="i" style="background:#9be47f"></span>🌎 Géo LIVE</button><button class="tg" data-base="ign" aria-pressed="false" title="Plan IGN officiel (cartes topographiques France, Géoplateforme — sans clé)"><span class="i" style="background:#b7d3a8"></span>🗺️ Plan IGN</button><button class="tg" data-base="relief" aria-pressed="false" title="Relief ombré mondial (hillshade Esri) — montagnes, vallées, comme en 3D"><span class="i" style="background:#c9b79a"></span>🏔️ Relief</button><button class="tg" data-base="ortho" aria-pressed="false" title="Photographies aériennes IGN — vraie vue aérienne haute résolution sur la France (comme Google Earth)"><span class="i" style="background:#9ec4e0"></span>🛰️ Photo France</button></div></details>
+          <details class="tgroup"><summary class="tgsum">🇫🇷 Cadastre France <span class="tgn">2</span></summary><div class="tgwrap"><button class="tg" data-layer="cadastre" aria-pressed="false" title="Parcelles cadastrales officielles IGN (Parcellaire Express) — zoome sur la France puis tape une parcelle : n° + surface + commune"><span class="i" style="background:#e8b830"></span>🗺️ Parcelles</button><button class="tg" data-layer="plu" aria-pressed="false" title="Zonage d'urbanisme (PLU) — Géoportail de l'Urbanisme : zones U/AU/A/N (ex. « Campagne »)"><span class="i" style="background:#7fd6a8"></span>🏞️ Zonage PLU</button></div></details>
+          <details class="tgroup"><summary class="tgsum">🎯 Aller à <span class="tgn">3</span></summary><div class="tgwrap"><button class="tg" data-view="world" aria-pressed="false" title="Recentrer sur le monde entier"><span class="i" style="background:#5aa9ff"></span>🌍 Monde</button><button class="tg" data-view="mc" aria-pressed="false" title="Recentrer sur Monaco"><span class="i" style="background:#e8b830"></span>📍 Monaco</button><button class="tg" data-layer="pos" aria-pressed="false" title="Ta position EN DIRECT sur la carte (point bleu + cercle de précision, suivi GPS live). VIE PRIVÉE : ta position GPS reste sur CET appareil (la couche ne l&#39;envoie nulle part) ; les couches live (vols…) chargent la zone affichée, comme quand tu déplaces la carte."><span class="i" style="background:#2f7fff"></span>📍 Ma position</button></div></details>
+        </div>
+        <div id="radarBar" style="display:none;align-items:center;gap:10px;margin:6px 0 2px;font-size:12px;color:var(--dim)">
+          <span>⏪ Replay pluie 2h</span>
+          <input id="radarRange" type="range" min="0" max="12" value="12" step="1" style="flex:1;accent-color:#61c8ff">
+          <b id="radarT" style="color:var(--fg);font-variant-numeric:tabular-nums;min-width:72px">maintenant</b>
+        </div>
+        <div id="histBar" style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;font-size:12px;color:var(--dim);flex-wrap:wrap">
+          <span title="Voir la Terre vue de l'espace à une date passée — satellite NASA VIIRS, jusqu'à ~10 ans en arrière">🕰️ Satellite dans le temps</span>
+          <input id="histDate" type="date" style="background:rgba(10,16,30,.7);border:1px solid var(--line);border-radius:8px;color:var(--fg);padding:5px 8px;font:inherit;font-size:13px">
+          <button id="histNow" class="tg" style="min-height:34px" title="Revenir au temps réel">⏱️ Actuel</button>
+          <b id="histLbl" style="color:var(--fg)">⏱️ Temps réel</b>
+        </div>
+        <canvas id="globe" class="hidden" width="760" height="600" aria-label="Globe animé : séismes, feux, volcans, tempêtes, vols et ISS en direct"></canvas>
+        <div class="stat-row" id="stats">
+          <div class="stat"><div class="n" id="sQuakes">—</div><div class="l">Séismes 24h</div></div>
+          <div class="stat" title="Météo spatiale EN DIRECT — indice Kp NOAA (activité géomagnétique) : ≤3 calme · 4 agité · ≥5 tempête G1-G5 (aurores, radio)"><div class="n" id="sKp">—</div><div class="l" id="sKpL">Météo spatiale</div></div>
+          <div class="stat"><div class="n" id="sEvents">—</div><div class="l">Événements</div></div>
+          <div class="stat"><div class="n" id="sFlights">—</div><div class="l">Vols Europe</div></div>
+          <div class="stat"><div class="n" id="sIss">—</div><div class="l">ISS km/h</div></div>
+        </div>
+      </section>
+
+      <!-- MONACO -->
+      <section class="card mc">
+        <h2>🇲🇨 Monaco — en direct <span class="k" id="mcState">…</span></h2>
+        <div class="mcgrid" id="mcGrid">
+          <div class="mccell"><div class="l">Météo</div><div class="v" id="mcWx">—</div><div class="s" id="mcWxS">chargement…</div></div>
+          <div class="mccell"><div class="l">Ressenti</div><div class="v" id="mcFeel">—</div><div class="s" id="mcHum">—</div></div>
+          <div class="mccell"><div class="l">Vent</div><div class="v" id="mcWind">—</div><div class="s">km/h</div></div>
+          <div class="mccell"><div class="l">Mer</div><div class="v" id="mcSea">—</div><div class="s" id="mcWave">—</div></div>
+          <div class="mccell"><div class="l">Air (AQI)</div><div class="v" id="mcAqi">—</div><div class="s" id="mcPm">—</div></div>
+          <div class="mccell"><div class="l">Soleil</div><div class="v" id="mcSun">—</div><div class="s" id="mcSunS">lever / coucher</div></div>
+        </div>
+        <div class="btnrow" style="padding-top:12px">
+          <a class="btn" href="https://www.windy.com/webcams/1369259377" target="_blank" rel="noopener noreferrer">📷 Webcam Port Hercule</a>
+          <a class="btn" href="https://www.windy.com/webcams/1234952621" target="_blank" rel="noopener noreferrer">📷 Webcam Place du Casino</a>
+        </div>
+      </section>
+
+      <!-- CAMÉRAS LIVE -->
+      <section class="card">
+        <h2>🎥 Caméras live — chaînes 24/7 <span class="k">tape pour lancer</span></h2>
+        <div class="camgrid" id="cams"></div>
+      </section>
+
+      <!-- IMAGES DES ACTUS EN DIRECT (GDELT — guerres, crises, breaking) -->
+      <section class="card">
+        <h2>🖼️ Images des actus en direct <span class="k" id="niState">dernières heures · GDELT</span></h2>
+        <div class="btnrow" id="niTopics" style="margin-bottom:8px">
+          <button class="btn ni-t" data-q="(breaking OR urgent)" aria-pressed="true">🌍 Monde</button>
+          <button class="btn ni-t" data-q="(ukraine AND (war OR strike OR drone OR front))" aria-pressed="false">🇺🇦 Ukraine</button>
+          <button class="btn ni-t" data-q="((israel OR gaza) AND (strike OR war OR hostage))" aria-pressed="false">🇮🇱 Israël/Gaza</button>
+          <button class="btn ni-t" data-q="(taiwan AND (military OR navy OR strait))" aria-pressed="false">🌏 Taïwan</button>
+          <button class="btn ni-t" data-q="((sahel OR sudan OR congo) AND (conflict OR attack))" aria-pressed="false">🌍 Afrique</button>
+          <button class="btn ni-t" data-q="(earthquake OR wildfire OR hurricane OR flood)" aria-pressed="false">🌀 Catastrophes</button>
+        </div>
+        <div id="newsImgs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px"><div class="empty" style="grid-column:1/-1">Chargement…</div></div>
+        <div style="font-size:11px;opacity:.6;margin-top:6px">Images des articles publiés ces dernières heures (GDELT, maj continue). Tape une image → l'article s'ouvre.</div>
+      </section>
+
+      <section class="card">
+        <h2>🚦 Londres — caméras trafic (TfL) <span class="k" id="tflState">…</span></h2>
+        <div class="tfl" id="tfl"><div class="empty" style="grid-column:1/-1">Chargement…</div></div>
+        <div class="btnrow"><button class="btn" id="tflShuffle">🔀 Autres caméras</button></div>
+      </section>
+
+      <section class="card">
+        <h2>🚗 Trafic routier en direct — Waze <span class="k" id="wazeCity">Monaco</span></h2>
+        <div class="btnrow" style="padding-top:12px" id="wazeChips">
+          <button class="btn" data-c="43.7396,7.4263,13,Monaco">🇲🇨 Monaco</button>
+          <button class="btn" data-c="43.7009,7.2683,12,Nice">Nice</button>
+          <button class="btn" data-c="48.8566,2.3522,11,Paris">Paris</button>
+          <button class="btn" data-c="43.2965,5.3698,12,Marseille">Marseille</button>
+          <button class="btn" data-c="51.5072,-0.1276,11,Londres">Londres</button>
+        </div>
+        <div id="wazeBox" class="cam" style="margin:0 12px 12px">
+          <div class="ph"><span class="e">🚗</span><span class="n">Carte des bouchons en temps réel</span><span class="live">TAP POUR CHARGER</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>📈 Séismes — 24h <span class="k" id="quakeState">…</span></h2>
+        <div id="quakes" class="list"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>🌪️ Événements naturels (NASA) <span class="k" id="eonetState">…</span></h2>
+        <div id="eonet" class="list"><div class="empty">Chargement…</div></div>
+      </section>
+    </div>
+
+    <!-- COLONNE DROITE -->
+    <div class="col">
+      <section class="card">
+        <h2>🌐 Actualité monde <span class="k" id="newsState">…</span></h2>
+        <div id="news" class="list"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>🧭 Synthèse actu <span class="k" id="briefState">auto</span></h2>
+        <div id="brief" class="list sm"><div class="empty">Analyse des flux…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>🛡️ Cyber — vulnérabilités <span class="k" id="cveState">…</span></h2>
+        <div id="cve" class="list sm"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>🔥 Incendies actifs (NASA) <span class="k" id="firesState">…</span></h2>
+        <div id="fires" class="list sm"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>⚓ Points stratégiques &amp; tensions <span class="k" id="chokeState">carte</span></h2>
+        <div id="choke" class="list sm"><div class="empty">…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>💹 Marchés <span class="k" id="mktState">…</span></h2>
+        <div id="markets"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>📊 Bourse <span class="k" id="bourseState">…</span></h2>
+        <div id="bourse"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>🔥 Tendances Wikipédia FR <span class="k" id="wikiState">…</span></h2>
+        <div id="wiki" class="list sm"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>💻 Tech — Hacker News <span class="k" id="hnState">…</span></h2>
+        <div id="hn" class="list sm"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>📡 Station Spatiale (ISS) <span class="k" id="issState">…</span></h2>
+        <div class="row" style="border-bottom:1px solid var(--line)"><div class="badge" style="background:#35d6e622;color:#35d6e6;border:1px solid #35d6e655;font-size:18px">🛰️</div><div class="main co" id="issInfo" style="font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px;line-height:1.5">Localisation…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>🌌 Météo spatiale <span class="k" id="spaceState">…</span></h2>
+        <div class="row"><div class="badge" style="background:#b992ff22;color:#b992ff;border:1px solid #b992ff55;font-size:16px" id="kpBadge">Kp</div>
+          <div class="main"><div class="t1" id="kpTxt">Indice géomagnétique…</div><div class="t2" id="kpSub">Aurores boréales</div></div></div>
+      </section>
+
+      <section class="card">
+        <h2>🚀 Prochains lancements <span class="k" id="launchState">…</span></h2>
+        <div id="launches" class="list sm"><div class="empty">Chargement…</div></div>
+      </section>
+
+      <section class="card">
+        <h2>🔎 OSINT — accès rapide <a class="k" href="/osint/" style="color:var(--cyan);text-decoration:none">hub complet ›</a></h2>
+        <div class="osintlinks" id="osintLinks"></div>
+        <details class="osintbox">
+          <summary>🧰 Boîte à outils complète — <b id="osintCount">64 outils</b></summary>
+          <input class="osintsearch" id="osintQ" type="search" placeholder="Rechercher un outil, un site…" aria-label="Rechercher un outil OSINT">
+          <div id="osintCats"></div>
+          <p class="osintempty" id="osintEmpty" style="display:none">Aucun outil pour cette recherche.</p>
+        </details>
+      </section>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="ver" id="ver" title="Forcer la mise à jour">World Monitor v2.40</span>
+  <span class="src">Sources publiques gratuites, aucune clé exposée : USGS · NASA EONET · Open-Meteo · wheretheiss.at · OpenSky · NOAA SWPC · The Space Devs · GDELT (actus géolocalisées live + images d'articles) · CoinGecko · TfL JamCams (Londres) · lives YouTube · Wikimedia · Hacker News · alternative.me · Finnhub (clé protégée par worker Cloudflare) · adsb.lol/airplanes.live (avions) · Digitraffic (navires AIS Baltique) · Esri World Imagery (satellite HD) · NASA GIBS/EOSDIS VIIRS (vues satellite LIVE jour/nuit + feux thermiques) · GOES-East/West + Himawari GeoColor (géostationnaire quasi temps réel) · Celestrak + satellite.js SGP4 (positions satellites en direct) · RainViewer (radar pluie mondial live) · GDACS/ONU (alertes catastrophes mondiales live) · NOAA OVATION (aurores live) · Open-Meteo Air Quality (qualité de l'air live) · Open-Meteo Marine (vagues/houle live) · NASA OMPS Aerosol Index (fumées/poussières satellites) · Waze livemap (trafic) · Natural Earth (continents) · Leaflet + CARTO/OpenStreetMap (vraie carte live, ombre jour/nuit solaire calculée en direct, ISS + orbite temps réel). Boîte à outils OSINT (64 outils, 10 catégories, recherche) intégrée. Inspiré d'Osiris / WorldMonitor.</span>
+</footer>
+
+<script>
+"use strict";
+var VER="v2.42";
+document.getElementById("ver").textContent="World Monitor "+VER;
+document.getElementById("ver").onclick=function(){ try{location.replace(location.pathname+"?_v="+Date.now());}catch(e){location.reload();} };
+
+function $(id){return document.getElementById(id);}
+
+/* OSINT accès rapide (statique, sous-ensemble live du hub /osint/) */
+(function(){var OS=[
+ ["🗺️","Carte live","https://zoom.earth/"],["✈️","Vols","https://globe.adsbexchange.com/"],
+ ["🚢","Navires","https://www.marinetraffic.com/"],["📷","Webcams","https://www.windy.com/-Webcams/webcams"],
+ ["🛰️","Satellite","https://apps.sentinel-hub.com/eo-browser/"],["🌐","Shodan","https://www.shodan.io/"],
+ ["🔓","Fuites e-mail","https://haveibeenpwned.com/"],["🖼️","Image inversée","https://yandex.com/images/"],
+ ["🕰️","Archive web","https://web.archive.org/"]];
+ var el=$("osintLinks");if(el)el.innerHTML=OS.map(function(o){return '<a href="'+o[2]+'" target="_blank" rel="noopener noreferrer"><span class="em">'+o[0]+'</span>'+o[1]+'</a>';}).join("");
+
+ /* Boîte à outils complète (même annuaire que le hub /osint/) */
+ function onorm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");}
+ function ohost(u){try{return new URL(u).hostname.replace(/^www\./,"");}catch(e){return u;}}
+ var CATS=[
+  {i:"🗺️",n:"Cartes & Satellite",live:1,t:[
+    {n:"Google Maps",u:"https://www.google.com/maps"},{n:"OpenStreetMap",u:"https://www.openstreetmap.org/"},
+    {n:"Google Earth",u:"https://earth.google.com/web/"},{n:"Bing Maps (oblique)",u:"https://www.bing.com/maps"},
+    {n:"Sentinel Hub (satellite)",u:"https://apps.sentinel-hub.com/eo-browser/"},{n:"Zoom Earth (live)",u:"https://zoom.earth/"},
+    {n:"Mapillary (rue)",u:"https://www.mapillary.com/app/"},{n:"SunCalc (ombres/soleil)",u:"https://www.suncalc.org/"},
+    {n:"Wikimapia",u:"http://wikimapia.org/"},{n:"Living Atlas (ArcGIS)",u:"https://livingatlas.arcgis.com/en/browse/"}]},
+  {i:"✈️",n:"Vols & Aviation",live:1,t:[
+    {n:"Flightradar24",u:"https://www.flightradar24.com/"},{n:"ADS-B Exchange",u:"https://globe.adsbexchange.com/"},
+    {n:"FlightAware",u:"https://flightaware.com/"},{n:"adsb.lol",u:"https://globe.adsb.lol/"},
+    {n:"RadarBox",u:"https://www.radarbox.com/"},{n:"Planespotters",u:"https://www.planespotters.net/"}]},
+  {i:"🚢",n:"Navires & Maritime",live:1,t:[
+    {n:"MarineTraffic",u:"https://www.marinetraffic.com/"},{n:"VesselFinder",u:"https://www.vesselfinder.com/"},
+    {n:"ShipFinder",u:"https://www.shipfinder.com/Monitor/Index"},{n:"FleetMon",u:"https://www.fleetmon.com/"},
+    {n:"ShipAIS.uk",u:"https://shipais.uk/"},{n:"Cruise Ship Tracker",u:"https://www.livecruiseshiptracker.com/"}]},
+  {i:"📷",n:"Webcams live",live:1,t:[
+    {n:"Windy Webcams",u:"https://www.windy.com/-Webcams/webcams"},{n:"EarthCam",u:"https://www.earthcam.com/"},
+    {n:"WorldCam",u:"https://worldcam.eu/"},{n:"Airport Webcams",u:"https://airportwebcams.net/"},
+    {n:"Skyline Webcams",u:"https://www.skylinewebcams.com/"},{n:"Opentopia",u:"http://www.opentopia.com/"}]},
+  {i:"👤",n:"Pseudos & Personnes",t:[
+    {n:"WhatsMyName",u:"https://whatsmyname.app/"},{n:"Sherlock (GitHub)",u:"https://github.com/sherlock-project/sherlock"},
+    {n:"Maigret",u:"https://pypi.org/project/maigret/"},{n:"IDCrawl",u:"https://www.idcrawl.com/"},
+    {n:"WebMii",u:"https://webmii.com/"},{n:"TruePeopleSearch (US)",u:"https://www.truepeoplesearch.com/"}]},
+  {i:"🌐",n:"Domaines · IP · Infra",t:[
+    {n:"Shodan",u:"https://www.shodan.io/"},{n:"Censys",u:"https://search.censys.io/"},
+    {n:"urlscan.io",u:"https://urlscan.io/"},{n:"DNSDumpster",u:"https://dnsdumpster.com/"},
+    {n:"ViewDNS.info",u:"https://viewdns.info/"},{n:"crt.sh (certificats)",u:"https://crt.sh/"},
+    {n:"SecurityTrails",u:"https://securitytrails.com/"},{n:"WHOIS (ICANN)",u:"https://lookup.icann.org/"}]},
+  {i:"🖼️",n:"Image inversée",t:[
+    {n:"Google Images",u:"https://images.google.com/"},{n:"Yandex Images",u:"https://yandex.com/images/"},
+    {n:"TinEye",u:"https://tineye.com/"},{n:"Bing Visual",u:"https://www.bing.com/images"},
+    {n:"Jimpl (EXIF/GPS)",u:"https://jimpl.com/"},{n:"PimEyes (faciale)",u:"https://pimeyes.com/en/",no:"Reconnaissance faciale — cadre légal strict."}]},
+  {i:"💬",n:"Réseaux sociaux",t:[
+    {n:"Social-Searcher",u:"https://www.social-searcher.com/"},{n:"Mentionmapp",u:"https://mentionmapp.com/"},
+    {n:"Socialbearing",u:"https://socialbearing.com/"},{n:"Nitter (X mirror)",u:"https://nitter.net/"},
+    {n:"Bluesky search",u:"https://bsky.app/search"},{n:"Intelligence X",u:"https://intelx.io/"}]},
+  {i:"🔓",n:"Fuites & compromissions",t:[
+    {n:"Have I Been Pwned",u:"https://haveibeenpwned.com/"},{n:"DeHashed",u:"https://dehashed.com/",no:"Base de fuites — usage légitime uniquement."},
+    {n:"Intelligence X",u:"https://intelx.io/"},{n:"DDoSecrets",u:"https://ddosecrets.com/",no:"Documents sensibles — attention légale."}]},
+  {i:"📰",n:"Vérification d'actualité",live:1,t:[
+    {n:"Wayback Machine",u:"https://web.archive.org/"},{n:"archive.today",u:"https://archive.ph/"},
+    {n:"Hoaxy (propagation)",u:"https://hoaxy.osome.iu.edu/"},{n:"Snopes",u:"https://www.snopes.com/"},
+    {n:"Google News",u:"https://news.google.com/"},{n:"GDELT (événements)",u:"https://www.gdeltproject.org/"},
+    {n:"Liveuamap Ukraine (carte guerre live)",u:"https://liveuamap.com/"},{n:"Liveuamap Israël",u:"https://israelpalestine.liveuamap.com/"},
+    {n:"Liveuamap Syrie",u:"https://syria.liveuamap.com/"},{n:"Liveuamap Soudan",u:"https://sudan.liveuamap.com/"},
+    {n:"UCDP (conflits, université d'Uppsala)",u:"https://ucdp.uu.se/"},{n:"ACLED (données conflits)",u:"https://acleddata.com/explorer/"}]}
+ ];
+ function osintRender(f){
+   f=onorm(f||"");var box=$("osintCats");if(!box)return;var html="",shown=0,total=0;
+   for(var c=0;c<CATS.length;c++){
+     var cat=CATS[c],rows="",catMatch=onorm(cat.n).indexOf(f)>=0;
+     for(var i=0;i<cat.t.length;i++){
+       var tool=cat.t[i];total++;
+       if(f&&!catMatch&&onorm(tool.n+" "+ohost(tool.u)).indexOf(f)<0)continue;
+       shown++;
+       rows+='<a class="otool" href="'+esc(tool.u)+'" target="_blank" rel="noopener noreferrer"><span class="t">'+esc(tool.n)+'<span class="arr">↗</span></span><span class="h">'+esc(ohost(tool.u))+'</span>'+(tool.no?'<span class="no">⚠ '+esc(tool.no)+'</span>':'')+'</a>';
+     }
+     if(rows)html+='<div class="ocat"><h3>'+cat.i+' '+esc(cat.n)+' <span class="n">'+cat.t.length+'</span>'+(cat.live?'<span class="lv">● live plus haut</span>':'')+'</h3><div class="ogrid">'+rows+'</div></div>';
+   }
+   box.innerHTML=html;
+   var em=$("osintEmpty");if(em)em.style.display=shown?"none":"block";
+   var ct=$("osintCount");if(ct)ct.textContent=(f?shown+" / ":"")+total+" outils";
+ }
+ osintRender("");
+ var oq=$("osintQ");if(oq)oq.addEventListener("input",function(){osintRender(this.value);});
+})();
+function setText(el,v){ if(el&&el.textContent!==v) el.textContent=v; }
+function setHTML(el,v){ if(el&&el.innerHTML!==v) el.innerHTML=v; }
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function ago(ms){var s=Math.max(0,(Date.now()-ms)/1000);if(s<60)return Math.floor(s)+"s";if(s<3600)return Math.floor(s/60)+"min";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"j";}
+function reduceMotion(){try{return matchMedia("(prefers-reduced-motion:reduce)").matches;}catch(e){return false;}}
+async function getJSON(url,ms){var c=new AbortController();var t=setTimeout(function(){c.abort();},ms||9000);
+  try{var r=await fetch(url,{signal:c.signal,cache:"no-store"});if(!r.ok)throw 0;return await r.json();}finally{clearTimeout(t);}}
+
+/* horloge */
+function tickClock(){var d=new Date();
+  setText($("utc"),d.toISOString().slice(11,19)+" UTC");
+  setText($("local"),d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})+" · "+d.toLocaleTimeString("fr-FR").slice(0,5)+" local");}
+tickClock();setInterval(tickClock,1000);
+
+/* ============ GLOBE ============ */
+var cv=$("globe"),ctx=cv.getContext("2d"),rot=0,spin=!reduceMotion();
+var DL={quakes:[],fires:[],volcano:[],storms:[],flights:[],ships:[],sats:[],gdacs:[],aurora:[],air:[],waves:[],crues:[],iss:null};
+var ON={quakes:1,fires:1,volcano:1,storms:1,flights:1,ships:1,detroits:1,iss:1,sats:1,radar:0,firesat:0,gdacs:1,aurora:0,air:0,waves:0,smoke:0,night:1,lightning:0,cyclones:0,firms:0,crues:0,cadastre:0,plu:0,pos:0};
+/* 🧠 Mémoire des réglages (Kevin n°13) : couches/fond/vue persistés par appareil */
+var _PREFS_K="wm_prefs_v1",_lastView="",_wantBase="";
+try{var _pf=JSON.parse(localStorage.getItem(_PREFS_K)||"{}");
+  if(_pf&&_pf.on)Object.keys(ON).forEach(function(k){if(typeof _pf.on[k]!=="undefined")ON[k]=_pf.on[k]?1:0;});
+  _wantBase=_pf&&_pf.base||"";_lastView=_pf&&_pf.view||"";
+}catch(_e){}
+function _savePrefs(){try{localStorage.setItem(_PREFS_K,JSON.stringify({on:ON,base:_wantBase,view:_lastView}));}catch(_e){}}
+/* synchronise l'état visuel des puces couches avec ON restauré (idempotent) */
+(function(){var bs=document.querySelectorAll("[data-layer]");for(var i=0;i<bs.length;i++){var k=bs[i].getAttribute("data-layer"),w=String(!!ON[k]);if(bs[i].getAttribute("aria-pressed")!==w)bs[i].setAttribute("aria-pressed",w);}})();
+
+/* 🔔 v2.33 — MOTEUR D'ALERTES LOCAL (audit amélioration Top #4).
+   Avant : le brief affichait « alertes push actives » alors qu'AUCUN code d'alerte
+   n'existait (mensonge d'UI). Ici : vraies notifications LOCALES sur cet appareil,
+   déclenchées par les données déjà chargées (séisme M6+, GDACS ROUGE, Kp≥7),
+   anti-doublon persistant (200 IDs FIFO), opt-in via la puce 🔔 (permission notif).
+   Limite honnête : app ouverte (ou PWA installée) — le vrai push serveur app-fermée
+   est un chantier séparé (VAPID worker). iOS : notifications en PWA installée. */
+var _AL_ON="wm_alerts_on",_AL_SEEN="wm_alerts_seen_v1";
+function wmAlertsOn(){try{return localStorage.getItem(_AL_ON)==="1"&&typeof Notification!=="undefined"&&Notification.permission==="granted";}catch(e){return false;}}
+function _alMark(id){try{var s=JSON.parse(localStorage.getItem(_AL_SEEN)||"[]");if(s.indexOf(id)>=0)return false;s.push(id);if(s.length>200)s=s.slice(-200);localStorage.setItem(_AL_SEEN,JSON.stringify(s));return true;}catch(e){return false;}}
+function wmNotify(title,body,id){
+  if(!wmAlertsOn()||!_alMark(id))return;
+  var opts={body:body,tag:id,icon:"icons/icon-192.png"};
+  try{
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){
+      navigator.serviceWorker.getRegistration().then(function(r){
+        if(r&&r.showNotification){r.showNotification(title,opts);}
+        else{try{new Notification(title,opts);}catch(e){}}
+      }).catch(function(){try{new Notification(title,opts);}catch(e){}});
+    }else{new Notification(title,opts);}
+  }catch(e){}
+}
+function wmAlertsSyncChip(){var b=document.getElementById("alertsChip");if(b){var w=String(wmAlertsOn());if(b.getAttribute("aria-pressed")!==w)b.setAttribute("aria-pressed",w);}}
+function wmToggleAlerts(b){
+  if(wmAlertsOn()){try{localStorage.setItem(_AL_ON,"0");}catch(e){}wmAlertsSyncChip();return;}
+  if(typeof Notification==="undefined"){b.title="Notifications non supportées par ce navigateur (iPhone : installe la page sur l'écran d'accueil).";b.setAttribute("aria-pressed","false");return;}
+  Notification.requestPermission().then(function(p){
+    if(p==="granted"){try{localStorage.setItem(_AL_ON,"1");}catch(e){}wmAlertsSyncChip();
+      wmNotify("🔔 Alertes World Monitor actives","Tu seras prévenu : séisme M6+, alerte GDACS rouge, tempête solaire Kp≥7.","al_on_"+new Date().toISOString().slice(0,10));}
+    else{try{localStorage.setItem(_AL_ON,"0");}catch(e){}wmAlertsSyncChip();}
+  }).catch(function(){wmAlertsSyncChip();});
+}
+wmAlertsSyncChip();
+$("toggles").addEventListener("click",function(e){var b=e.target.closest(".tg");if(!b)return;
+  if(b.dataset.alerts){wmToggleAlerts(b);return;}
+  if(b.dataset.view){_lastView=b.dataset.view;_savePrefs();if(typeof setMapView==="function")setMapView(b.dataset.view);return;}
+  var v=b.getAttribute("aria-pressed")==="true"?false:true;
+  b.setAttribute("aria-pressed",String(v));
+  if(b.dataset.base){_wantBase=b.dataset.base;_savePrefs();if(typeof setBase==="function")setBase(b.dataset.base);return;}
+  var k=b.dataset.layer;ON[k]=v?1:0;_savePrefs();
+  if(typeof applyLeafToggle==="function")applyLeafToggle(k,v);});
+function resizeGlobe(){var w=cv.parentElement.clientWidth,h=Math.max(320,Math.min(600,Math.round(w*0.8)));
+  var dpr=Math.min(2,window.devicePixelRatio||1);cv.style.width=w+"px";cv.style.height=h+"px";
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);cv._w=w;cv._h=h;}
+window.addEventListener("resize",resizeGlobe);
+function proj(lat,lon){var phi=lat*Math.PI/180,lam=lon*Math.PI/180+rot;
+  return {x:Math.cos(phi)*Math.sin(lam),y:Math.sin(phi),z:Math.cos(phi)*Math.cos(lam)};}
+function dot(cx,cy,R,lat,lon,rad,col,alpha){var p=proj(lat,lon);if(p.z<0)return;
+  var sx=cx+p.x*R,sy=cy-p.y*R;ctx.beginPath();ctx.arc(sx,sy,rad,0,7);ctx.fillStyle=col;ctx.globalAlpha=alpha||.85;ctx.fill();ctx.globalAlpha=1;return {sx:sx,sy:sy};}
+var LAND=[-540,-720,-540,-700,-540,-680,-520,-740,-520,-720,-520,-700,-500,-740,-500,-720,-500,-700,-480,-740,-480,-720,-480,-700,-480,-680,-480,-660,-460,-740,-460,-720,-460,-700,-460,-680,-460,1680,-460,1700,-440,-720,-440,-700,-440,-680,-440,-660,-440,1700,-440,1720,-420,-740,-420,-720,-420,-700,-420,-680,-420,-660,-420,1460,-420,1480,-420,1720,-420,1740,-400,-720,-400,-700,-400,-680,-400,-660,-400,-640,-400,1760,-380,-720,-380,-700,-380,-680,-380,-660,-380,-640,-380,-620,-380,-600,-380,-580,-380,1420,-380,1440,-380,1460,-380,1760,-380,1780,-360,-720,-360,-700,-360,-680,-360,-660,-360,-640,-360,-620,-360,-600,-360,-580,-360,1400,-360,1420,-360,1440,-360,1460,-360,1480,-360,1500,-360,1740,-340,-700,-340,-680,-340,-660,-340,-640,-340,-620,-340,-600,-340,-580,-340,-560,-340,-540,-340,200,-340,220,-340,1160,-340,1180,-340,1360,-340,1380,-340,1400,-340,1420,-340,1440,-340,1460,-340,1480,-340,1500,-320,-700,-320,-680,-320,-660,-320,-640,-320,-620,-320,-600,-320,-580,-320,-560,-320,-540,-320,-520,-320,200,-320,220,-320,240,-320,260,-320,280,-320,1160,-320,1180,-320,1200,-320,1220,-320,1240,-320,1260,-320,1280,-320,1340,-320,1360,-320,1380,-320,1400,-320,1420,-320,1440,-320,1460,-320,1480,-320,1500,-320,1520,-300,-700,-300,-680,-300,-660,-300,-640,-300,-620,-300,-600,-300,-580,-300,-560,-300,-540,-300,-520,-300,180,-300,200,-300,220,-300,240,-300,260,-300,280,-300,300,-300,1160,-300,1180,-300,1200,-300,1220,-300,1240,-300,1260,-300,1280,-300,1300,-300,1320,-300,1340,-300,1360,-300,1380,-300,1400,-300,1420,-300,1440,-300,1460,-300,1480,-300,1500,-300,1520,-280,-700,-280,-680,-280,-660,-280,-640,-280,-620,-280,-600,-280,-580,-280,-560,-280,-540,-280,-520,-280,-500,-280,160,-280,180,-280,200,-280,220,-280,240,-280,260,-280,280,-280,300,-280,320,-280,1160,-280,1180,-280,1200,-280,1220,-280,1240,-280,1260,-280,1280,-280,1300,-280,1320,-280,1340,-280,1360,-280,1380,-280,1400,-280,1420,-280,1440,-280,1460,-280,1480,-280,1500,-280,1520,-260,-700,-260,-680,-260,-660,-260,-640,-260,-620,-260,-600,-260,-580,-260,-560,-260,-540,-260,-520,-260,-500,-260,160,-260,180,-260,200,-260,220,-260,240,-260,260,-260,280,-260,300,-260,320,-260,1160,-260,1180,-260,1200,-260,1220,-260,1240,-260,1260,-260,1280,-260,1300,-260,1320,-260,1340,-260,1360,-260,1380,-260,1400,-260,1420,-260,1440,-260,1460,-260,1480,-260,1500,-260,1520,-240,-700,-240,-680,-240,-660,-240,-640,-240,-620,-240,-600,-240,-580,-240,-560,-240,-540,-240,-520,-240,-500,-240,-480,-240,160,-240,180,-240,200,-240,220,-240,240,-240,260,-240,280,-240,300,-240,320,-240,340,-240,440,-240,460,-240,1140,-240,1160,-240,1180,-240,1200,-240,1220,-240,1240,-240,1260,-240,1280,-240,1300,-240,1320,-240,1340,-240,1360,-240,1380,-240,1400,-240,1420,-240,1440,-240,1460,-240,1480,-240,1500,-220,-700,-220,-680,-220,-660,-220,-640,-220,-620,-220,-600,-220,-580,-220,-560,-220,-540,-220,-520,-220,-500,-220,-480,-220,-460,-220,-440,-220,-420,-220,160,-220,180,-220,200,-220,220,-220,240,-220,260,-220,280,-220,300,-220,320,-220,340,-220,440,-220,460,-220,480,-220,1160,-220,1180,-220,1200,-220,1220,-220,1240,-220,1260,-220,1280,-220,1300,-220,1320,-220,1340,-220,1360,-220,1380,-220,1400,-220,1420,-220,1440,-220,1460,-220,1480,-220,1660,-200,-700,-200,-680,-200,-660,-200,-640,-200,-620,-200,-600,-200,-580,-200,-560,-200,-540,-200,-520,-200,-500,-200,-480,-200,-460,-200,-440,-200,-420,-200,140,-200,160,-200,180,-200,200,-200,220,-200,240,-200,260,-200,280,-200,300,-200,320,-200,340,-200,460,-200,480,-200,1200,-200,1220,-200,1240,-200,1260,-200,1280,-200,1300,-200,1320,-200,1340,-200,1360,-200,1380,-200,1400,-200,1420,-200,1440,-200,1460,-200,1480,-180,-700,-180,-680,-180,-660,-180,-640,-180,-620,-180,-600,-180,-580,-180,-560,-180,-540,-180,-520,-180,-500,-180,-480,-180,-460,-180,-440,-180,-420,-180,-400,-180,120,-180,140,-180,160,-180,180,-180,200,-180,220,-180,240,-180,260,-180,280,-180,300,-180,320,-180,340,-180,360,-180,460,-180,480,-180,1240,-180,1260,-180,1280,-180,1300,-180,1320,-180,1340,-180,1360,-180,1380,-180,1400,-180,1420,-180,1440,-180,1460,-180,1780,-160,-740,-160,-720,-160,-700,-160,-680,-160,-660,-160,-640,-160,-620,-160,-600,-160,-580,-160,-560,-160,-540,-160,-520,-160,-500,-160,-480,-160,-460,-160,-440,-160,-420,-160,-400,-160,120,-160,140,-160,160,-160,180,-160,200,-160,220,-160,240,-160,260,-160,280,-160,300,-160,320,-160,340,-160,360,-160,380,-160,400,-160,460,-160,480,-160,1260,-160,1280,-160,1300,-160,1320,-160,1340,-160,1360,-160,1420,-160,1440,-140,-760,-140,-740,-140,-720,-140,-700,-140,-680,-140,-660,-140,-640,-140,-620,-140,-600,-140,-580,-140,-560,-140,-540,-140,-520,-140,-500,-140,-480,-140,-460,-140,-440,-140,-420,-140,-400,-140,140,-140,160,-140,180,-140,200,-140,220,-140,240,-140,260,-140,280,-140,300,-140,320,-140,340,-140,360,-140,380,-140,400,-140,480,-140,500,-140,1300,-140,1320,-140,1340,-140,1420,-120,-760,-120,-740,-120,-720,-120,-700,-120,-680,-120,-660,-120,-640,-120,-620,-120,-600,-120,-580,-120,-560,-120,-540,-120,-520,-120,-500,-120,-480,-120,-460,-120,-440,-120,-420,-120,-400,-120,-380,-120,140,-120,160,-120,180,-120,200,-120,220,-120,240,-120,260,-120,280,-120,300,-120,320,-120,340,-120,360,-120,380,-120,400,-120,1340,-120,1420,-100,-780,-100,-760,-100,-740,-100,-720,-100,-700,-100,-680,-100,-660,-100,-640,-100,-620,-100,-600,-100,-580,-100,-560,-100,-540,-100,-520,-100,-500,-100,-480,-100,-460,-100,-440,-100,-420,-100,-400,-100,-380,-100,-360,-100,140,-100,160,-100,180,-100,200,-100,220,-100,240,-100,260,-100,280,-100,300,-100,320,-100,340,-100,360,-100,380,-100,1200,-100,1240,-100,1480,-100,1500,-80,-780,-80,-760,-80,-740,-80,-720,-80,-700,-80,-680,-80,-660,-80,-640,-80,-620,-80,-600,-80,-580,-80,-560,-80,-540,-80,-520,-80,-500,-80,-480,-80,-460,-80,-440,-80,-420,-80,-400,-80,-380,-80,-360,-80,140,-80,160,-80,180,-80,200,-80,220,-80,240,-80,260,-80,280,-80,300,-80,320,-80,340,-80,360,-80,380,-80,1120,-80,1140,-80,1380,-80,1400,-80,1420,-80,1460,-80,1480,-60,-800,-60,-780,-60,-760,-60,-740,-60,-720,-60,-700,-60,-680,-60,-660,-60,-640,-60,-620,-60,-600,-60,-580,-60,-560,-60,-540,-60,-520,-60,-500,-60,-480,-60,-460,-60,-440,-60,-420,-60,-400,-60,-380,-60,-360,-60,140,-60,160,-60,180,-60,200,-60,220,-60,240,-60,260,-60,280,-60,300,-60,320,-60,340,-60,360,-60,380,-60,1060,-60,1400,-60,1420,-60,1440,-60,1460,-60,1500,-40,-800,-40,-780,-40,-760,-40,-740,-40,-720,-40,-700,-40,-680,-40,-660,-40,-640,-40,-620,-40,-600,-40,-580,-40,-560,-40,-540,-40,-520,-40,-500,-40,-480,-40,-460,-40,-440,-40,-420,-40,-400,-40,120,-40,140,-40,160,-40,180,-40,200,-40,220,-40,240,-40,260,-40,280,-40,300,-40,320,-40,340,-40,360,-40,380,-40,1040,-40,1200,-40,1220,-40,1360,-40,1380,-40,1400,-40,1420,-40,1440,-20,-800,-20,-780,-20,-760,-20,-740,-20,-720,-20,-700,-20,-680,-20,-660,-20,-640,-20,-620,-20,-600,-20,-580,-20,-560,-20,-540,-20,-520,-20,-500,-20,-480,-20,-460,-20,100,-20,120,-20,140,-20,160,-20,180,-20,200,-20,220,-20,240,-20,260,-20,280,-20,300,-20,320,-20,340,-20,360,-20,380,-20,400,-20,1020,-20,1040,-20,1120,-20,1140,-20,1160,-20,1200,-20,1340,-20,1380,0,-800,0,-780,0,-760,0,-740,0,-720,0,-700,0,-680,0,-660,0,-640,0,-620,0,-600,0,-580,0,-560,0,-540,0,-520,0,100,0,120,0,140,0,160,0,180,0,200,0,220,0,240,0,260,0,280,0,300,0,320,0,340,0,360,0,380,0,400,0,420,0,1000,0,1020,0,1100,0,1120,0,1140,0,1160,0,1200,0,1280,20,-780,20,-760,20,-740,20,-720,20,-700,20,-680,20,-660,20,-640,20,-620,20,-600,20,-580,20,-560,20,-540,20,-520,20,100,20,120,20,140,20,160,20,180,20,200,20,220,20,240,20,260,20,280,20,300,20,320,20,340,20,360,20,380,20,400,20,420,20,440,20,1000,20,1040,20,1120,20,1140,20,1160,40,-760,40,-740,40,-720,40,-700,40,-680,40,-660,40,-640,40,-620,40,-600,40,-580,40,-560,40,-540,40,-520,40,100,40,120,40,140,40,160,40,180,40,200,40,220,40,240,40,260,40,280,40,300,40,320,40,340,40,360,40,380,40,400,40,420,40,440,40,460,40,980,40,1020,40,1140,40,1160,60,-760,60,-740,60,-720,60,-700,60,-680,60,-660,60,-640,60,-620,60,-600,60,-580,60,-100,60,-80,60,-60,60,-40,60,-20,60,0,60,60,60,80,60,100,60,120,60,140,60,160,60,180,60,200,60,220,60,240,60,260,60,280,60,300,60,320,60,340,60,360,60,380,60,400,60,420,60,440,60,460,60,480,60,1020,80,-780,80,-760,80,-740,80,-720,80,-700,80,-680,80,-660,80,-640,80,-620,80,-600,80,-120,80,-100,80,-80,80,-60,80,-40,80,-20,80,0,80,20,80,40,80,60,80,80,80,100,80,120,80,140,80,160,80,180,80,200,80,220,80,240,80,260,80,280,80,300,80,320,80,340,80,360,80,380,80,400,80,420,80,440,80,460,80,480,80,500,80,800,80,1000,80,1240,80,1260,100,-840,100,-740,100,-720,100,-700,100,-680,100,-660,100,-640,100,-140,100,-120,100,-100,100,-80,100,-60,100,-40,100,-20,100,0,100,20,100,40,100,60,100,80,100,100,100,120,100,140,100,160,100,180,100,200,100,220,100,240,100,260,100,280,100,300,100,320,100,340,100,360,100,380,100,400,100,420,100,440,100,460,100,480,100,500,100,780,100,1060,120,-860,120,-840,120,-720,120,-700,120,-160,120,-140,120,-120,120,-100,120,-80,120,-60,120,-40,120,-20,120,0,120,20,120,40,120,60,120,80,120,100,120,120,120,140,120,160,120,180,120,200,120,220,120,240,120,260,120,280,120,300,120,320,120,340,120,360,120,380,120,400,120,420,120,760,120,780,120,1040,120,1060,120,1080,140,-900,140,-880,140,-860,140,-840,140,-160,140,-140,140,-120,140,-100,140,-80,140,-60,140,-40,140,-20,140,0,140,20,140,40,140,60,140,80,140,100,140,120,140,140,140,160,140,180,140,200,140,220,140,240,140,260,140,280,140,300,140,320,140,340,140,360,140,380,140,400,140,440,140,460,140,480,140,760,140,780,140,800,140,980,140,1000,140,1020,140,1040,140,1060,140,1080,140,1220,160,-960,160,-940,160,-920,160,-900,160,-160,160,-140,160,-120,160,-100,160,-80,160,-60,160,-40,160,-20,160,0,160,20,160,40,160,60,160,80,160,100,160,120,160,140,160,160,160,180,160,200,160,220,160,240,160,260,160,280,160,300,160,320,160,340,160,360,160,380,160,440,160,460,160,480,160,500,160,520,160,740,160,760,160,780,160,800,160,980,160,1000,160,1020,160,1040,160,1060,160,1080,160,1200,180,-1020,180,-1000,180,-980,180,-960,180,-940,180,-920,180,-900,180,-780,180,-660,180,-160,180,-140,180,-120,180,-100,180,-80,180,-60,180,-40,180,-20,180,0,180,20,180,40,180,60,180,80,180,100,180,120,180,140,180,160,180,180,180,200,180,220,180,240,180,260,180,280,180,300,180,320,180,340,180,360,180,380,180,420,180,440,180,460,180,480,180,500,180,520,180,540,180,560,180,740,180,760,180,780,180,800,180,820,180,960,180,980,180,1000,180,1020,180,1040,180,1060,180,1220,200,-1040,200,-1020,200,-1000,200,-980,200,-900,200,-880,200,-760,200,-160,200,-140,200,-120,200,-100,200,-80,200,-60,200,-40,200,-20,200,0,200,20,200,40,200,60,200,80,200,100,200,120,200,140,200,160,200,180,200,200,200,220,200,240,200,260,200,280,200,300,200,320,200,340,200,360,200,420,200,440,200,460,200,480,200,500,200,520,200,540,200,560,200,740,200,760,200,780,200,800,200,820,200,840,200,860,200,940,200,960,200,980,200,1000,200,1020,200,1040,200,1060,200,1100,220,-1040,220,-1020,220,-1000,220,-980,220,-800,220,-780,220,-160,220,-140,220,-120,220,-100,220,-80,220,-60,220,-40,220,-20,220,0,220,20,220,40,220,60,220,80,220,100,220,120,220,140,220,160,220,180,220,200,220,220,220,240,220,260,220,280,220,300,220,320,220,340,220,360,220,400,220,420,220,440,220,460,220,480,220,500,220,520,220,540,220,560,220,580,220,700,220,720,220,740,220,760,220,780,220,800,220,820,220,840,220,860,220,880,220,900,220,920,220,940,220,960,220,980,220,1000,220,1020,220,1040,220,1060,220,1080,220,1100,220,1120,240,-1100,240,-1060,240,-1040,240,-1020,240,-1000,240,-980,240,-140,240,-120,240,-100,240,-80,240,-60,240,-40,240,-20,240,0,240,20,240,40,240,60,240,80,240,100,240,120,240,140,240,160,240,180,240,200,240,220,240,240,240,260,240,280,240,300,240,320,240,340,240,400,240,420,240,440,240,460,240,480,240,500,240,520,240,540,240,560,240,680,240,700,240,720,240,740,240,760,240,780,240,800,240,820,240,840,240,860,240,880,240,900,240,920,240,940,240,960,240,980,240,1000,240,1020,240,1040,240,1060,240,1080,240,1100,240,1120,240,1140,240,1160,260,-1120,260,-1080,260,-1060,260,-1040,260,-1020,260,-1000,260,-980,260,-140,260,-120,260,-100,260,-80,260,-60,260,-40,260,-20,260,0,260,20,260,40,260,60,260,80,260,100,260,120,260,140,260,160,260,180,260,200,260,220,260,240,260,260,260,280,260,300,260,320,260,340,260,380,260,400,260,420,260,440,260,460,260,480,260,500,260,580,260,600,260,620,260,640,260,660,260,680,260,700,260,720,260,740,260,760,260,780,260,800,260,820,260,840,260,860,260,880,260,900,260,920,260,940,260,960,260,980,260,1000,260,1020,260,1040,260,1060,260,1080,260,1100,260,1120,260,1140,260,1160,260,1180,280,-1140,280,-1100,280,-1080,280,-1060,280,-1040,280,-1020,280,-1000,280,-980,280,-820,280,-120,280,-100,280,-80,280,-60,280,-40,280,-20,280,0,280,20,280,40,280,60,280,80,280,100,280,120,280,140,280,160,280,180,280,200,280,220,280,240,280,260,280,280,280,300,280,320,280,340,280,360,280,380,280,400,280,420,280,440,280,460,280,480,280,520,280,540,280,560,280,580,280,600,280,620,280,640,280,660,280,680,280,700,280,720,280,740,280,760,280,780,280,800,280,820,280,840,280,860,280,880,280,900,280,920,280,940,280,960,280,980,280,1000,280,1020,280,1040,280,1060,280,1080,280,1100,280,1120,280,1140,280,1160,280,1180,280,1200,300,-1120,300,-1100,300,-1080,300,-1060,300,-1040,300,-1020,300,-1000,300,-980,300,-960,300,-940,300,-920,300,-900,300,-820,300,-80,300,-60,300,-40,300,-20,300,0,300,20,300,40,300,60,300,80,300,100,300,120,300,140,300,160,300,180,300,200,300,220,300,240,300,260,300,280,300,300,300,320,300,340,300,360,300,380,300,400,300,420,300,440,300,460,300,480,300,520,300,540,300,560,300,580,300,600,300,620,300,640,300,660,300,680,300,700,300,720,300,740,300,760,300,780,300,800,300,820,300,840,300,860,300,880,300,900,300,920,300,940,300,960,300,980,300,1000,300,1020,300,1040,300,1060,300,1080,300,1100,300,1120,300,1140,300,1160,300,1180,300,1200,320,-1160,320,-1140,320,-1120,320,-1100,320,-1080,320,-1060,320,-1040,320,-1020,320,-1000,320,-980,320,-960,320,-940,320,-920,320,-900,320,-880,320,-860,320,-840,320,-820,320,-80,320,-60,320,-40,320,-20,320,0,320,20,320,40,320,60,320,80,320,100,320,120,320,140,320,200,320,220,320,360,320,380,320,400,320,420,320,440,320,460,320,480,320,500,320,520,320,540,320,560,320,580,320,600,320,620,320,640,320,660,320,680,320,700,320,720,320,740,320,760,320,780,320,800,320,820,320,840,320,860,320,880,320,900,320,920,320,940,320,960,320,980,320,1000,320,1020,320,1040,320,1060,320,1080,320,1100,320,1120,320,1140,320,1160,320,1180,320,1200,340,-1180,340,-1160,340,-1140,340,-1120,340,-1100,340,-1080,340,-1060,340,-1040,340,-1020,340,-1000,340,-980,340,-960,340,-940,340,-920,340,-900,340,-880,340,-860,340,-840,340,-820,340,-800,340,-780,340,-60,340,-40,340,-20,340,0,340,20,340,40,340,60,340,80,340,100,340,360,340,380,340,400,340,420,340,440,340,460,340,480,340,500,340,520,340,540,340,560,340,580,340,600,340,620,340,640,340,660,340,680,340,700,340,720,340,740,340,760,340,780,340,800,340,820,340,840,340,860,340,880,340,900,340,920,340,940,340,960,340,980,340,1000,340,1020,340,1040,340,1060,340,1080,340,1100,340,1120,340,1140,340,1160,340,1180,340,1200,340,1320,340,1340,340,1360,360,-1200,360,-1180,360,-1160,360,-1140,360,-1120,360,-1100,360,-1080,360,-1060,360,-1040,360,-1020,360,-1000,360,-980,360,-960,360,-940,360,-920,360,-900,360,-880,360,-860,360,-840,360,-820,360,-800,360,-780,360,-760,360,20,360,40,360,60,360,80,360,100,360,360,360,380,360,400,360,420,360,440,360,460,360,480,360,500,360,520,360,540,360,560,360,580,360,600,360,620,360,640,360,660,360,680,360,700,360,720,360,740,360,760,360,780,360,800,360,820,360,840,360,860,360,880,360,900,360,920,360,940,360,960,360,980,360,1000,360,1020,360,1040,360,1060,360,1080,360,1100,360,1120,360,1140,360,1160,360,1180,360,1200,360,1280,360,1360,360,1380,360,1400,380,-1220,380,-1200,380,-1180,380,-1160,380,-1140,380,-1120,380,-1100,380,-1080,380,-1060,380,-1040,380,-1020,380,-1000,380,-980,380,-960,380,-940,380,-920,380,-900,380,-880,380,-860,380,-840,380,-820,380,-800,380,-780,380,-80,380,-60,380,-40,380,-20,380,140,380,160,380,220,380,240,380,280,380,300,380,320,380,340,380,360,380,380,380,400,380,420,380,440,380,460,380,480,380,500,380,520,380,540,380,560,380,580,380,600,380,620,380,640,380,660,380,680,380,700,380,720,380,740,380,760,380,780,380,800,380,820,380,840,380,860,380,880,380,900,380,920,380,940,380,960,380,980,380,1000,380,1020,380,1040,380,1060,380,1080,380,1100,380,1120,380,1140,380,1160,380,1180,380,1260,380,1280,380,1400,400,-1240,400,-1220,400,-1200,400,-1180,400,-1160,400,-1140,400,-1120,400,-1100,400,-1080,400,-1060,400,-1040,400,-1020,400,-1000,400,-980,400,-960,400,-940,400,-920,400,-900,400,-880,400,-860,400,-840,400,-820,400,-800,400,-780,400,-760,400,-80,400,-60,400,-40,400,-20,400,0,400,160,400,200,400,220,400,240,400,280,400,300,400,320,400,340,400,360,400,380,400,400,400,420,400,440,400,460,400,480,400,500,400,520,400,540,400,560,400,580,400,600,400,620,400,640,400,660,400,680,400,700,400,720,400,740,400,760,400,780,400,800,400,820,400,840,400,860,400,880,400,900,400,920,400,940,400,960,400,980,400,1000,400,1020,400,1040,400,1060,400,1080,400,1100,400,1120,400,1140,400,1160,400,1180,400,1220,400,1240,400,1260,400,1400,420,-1240,420,-1220,420,-1200,420,-1180,420,-1160,420,-1140,420,-1120,420,-1100,420,-1080,420,-1060,420,-1040,420,-1020,420,-1000,420,-980,420,-960,420,-940,420,-920,420,-900,420,-880,420,-860,420,-840,420,-820,420,-800,420,-780,420,-760,420,-740,420,-720,420,-80,420,-60,420,-40,420,-20,420,0,420,20,420,120,420,140,420,200,420,220,420,240,420,260,420,340,420,420,420,440,420,460,420,480,420,500,420,520,420,540,420,560,420,580,420,600,420,620,420,640,420,660,420,680,420,700,420,720,420,740,420,760,420,780,420,800,420,820,420,840,420,860,420,880,420,900,420,920,420,940,420,960,420,980,420,1000,420,1020,420,1040,420,1060,420,1080,420,1100,420,1120,420,1140,420,1160,420,1180,420,1200,420,1220,420,1240,420,1260,420,1280,420,1300,420,1400,440,-1240,440,-1220,440,-1200,440,-1180,440,-1160,440,-1140,440,-1120,440,-1100,440,-1080,440,-1060,440,-1040,440,-1020,440,-1000,440,-980,440,-960,440,-940,440,-920,440,-900,440,-880,440,-860,440,-840,440,-820,440,-800,440,-780,440,-760,440,-740,440,-720,440,-700,440,-660,440,0,440,20,440,40,440,60,440,80,440,100,440,120,440,160,440,180,440,200,440,220,440,240,440,260,440,280,440,400,440,420,440,440,440,460,440,480,440,500,440,520,440,540,440,560,440,580,440,600,440,620,440,640,440,660,440,680,440,700,440,720,440,740,440,760,440,780,440,800,440,820,440,840,440,860,440,880,440,900,440,920,440,940,440,960,440,980,440,1000,440,1020,440,1040,440,1060,440,1080,440,1100,440,1120,440,1140,440,1160,440,1180,440,1200,440,1220,440,1240,440,1260,440,1280,440,1300,440,1320,440,1340,440,1420,440,1440,460,-1220,460,-1200,460,-1180,460,-1160,460,-1140,460,-1120,460,-1100,460,-1080,460,-1060,460,-1040,460,-1020,460,-1000,460,-980,460,-960,460,-940,460,-920,460,-900,460,-880,460,-860,460,-840,460,-820,460,-800,460,-780,460,-760,460,-740,460,-720,460,-700,460,-680,460,-660,460,-640,460,-600,460,0,460,20,460,40,460,60,460,80,460,100,460,120,460,140,460,160,460,180,460,200,460,220,460,240,460,260,460,280,460,300,460,340,460,380,460,400,460,420,460,440,460,460,460,480,460,500,460,520,460,540,460,560,460,580,460,600,460,620,460,640,460,660,460,680,460,700,460,720,460,740,460,760,460,780,460,800,460,820,460,840,460,860,460,880,460,900,460,920,460,940,460,960,460,980,460,1000,460,1020,460,1040,460,1060,460,1080,460,1100,460,1120,460,1140,460,1160,460,1180,460,1200,460,1220,460,1240,460,1260,460,1280,460,1300,460,1320,460,1340,460,1360,480,-1240,480,-1220,480,-1200,480,-1180,480,-1160,480,-1140,480,-1120,480,-1100,480,-1080,480,-1060,480,-1040,480,-1020,480,-1000,480,-980,480,-960,480,-940,480,-920,480,-900,480,-880,480,-860,480,-840,480,-820,480,-800,480,-780,480,-760,480,-740,480,-720,480,-700,480,-680,480,-660,480,-580,480,-560,480,-540,480,-40,480,-20,480,0,480,20,480,40,480,60,480,80,480,100,480,120,480,140,480,160,480,180,480,200,480,220,480,240,480,260,480,280,480,300,480,320,480,340,480,360,480,380,480,400,480,420,480,440,480,460,480,480,480,500,480,520,480,540,480,560,480,580,480,600,480,620,480,640,480,660,480,680,480,700,480,720,480,740,480,760,480,780,480,800,480,820,480,840,480,860,480,880,480,900,480,920,480,940,480,960,480,980,480,1000,480,1020,480,1040,480,1060,480,1080,480,1100,480,1120,480,1140,480,1160,480,1180,480,1200,480,1220,480,1240,480,1260,480,1280,480,1300,480,1320,480,1340,480,1360,480,1380,480,1420,500,-1280,500,-1260,500,-1240,500,-1220,500,-1200,500,-1180,500,-1160,500,-1140,500,-1120,500,-1100,500,-1080,500,-1060,500,-1040,500,-1020,500,-1000,500,-980,500,-960,500,-940,500,-920,500,-900,500,-880,500,-860,500,-840,500,-820,500,-800,500,-780,500,-760,500,-740,500,-720,500,-700,500,-680,500,-560,500,20,500,40,500,60,500,80,500,100,500,120,500,140,500,160,500,180,500,200,500,220,500,240,500,260,500,280,500,300,500,320,500,340,500,360,500,380,500,400,500,420,500,440,500,460,500,480,500,500,500,520,500,540,500,560,500,580,500,600,500,620,500,640,500,660,500,680,500,700,500,720,500,740,500,760,500,780,500,800,500,820,500,840,500,860,500,880,500,900,500,920,500,940,500,960,500,980,500,1000,500,1020,500,1040,500,1060,500,1080,500,1100,500,1120,500,1140,500,1160,500,1180,500,1200,500,1220,500,1240,500,1260,500,1280,500,1300,500,1320,500,1340,500,1360,500,1380,500,1400,500,1440,520,-1260,520,-1240,520,-1220,520,-1200,520,-1180,520,-1160,520,-1140,520,-1120,520,-1100,520,-1080,520,-1060,520,-1040,520,-1020,520,-1000,520,-980,520,-960,520,-940,520,-920,520,-900,520,-880,520,-860,520,-840,520,-820,520,-780,520,-760,520,-740,520,-720,520,-700,520,-680,520,-660,520,-640,520,-620,520,-600,520,-580,520,-560,520,-80,520,-40,520,-20,520,0,520,60,520,80,520,100,520,120,520,140,520,160,520,180,520,200,520,220,520,240,520,260,520,280,520,300,520,320,520,340,520,360,520,380,520,400,520,420,520,440,520,460,520,480,520,500,520,520,520,540,520,560,520,580,520,600,520,620,520,640,520,660,520,680,520,700,520,720,520,740,520,760,520,780,520,800,520,820,520,840,520,860,520,880,520,900,520,920,520,940,520,960,520,980,520,1000,520,1020,520,1040,520,1060,520,1080,520,1100,520,1120,520,1140,520,1160,520,1180,520,1200,520,1220,520,1240,520,1260,520,1280,520,1300,520,1320,520,1340,520,1360,520,1380,520,1400,520,1420,520,1580,540,-1320,540,-1300,540,-1280,540,-1260,540,-1240,540,-1220,540,-1200,540,-1180,540,-1160,540,-1140,540,-1120,540,-1100,540,-1080,540,-1060,540,-1040,540,-1020,540,-1000,540,-980,540,-960,540,-940,540,-920,540,-900,540,-880,540,-860,540,-840,540,-780,540,-760,540,-740,540,-720,540,-700,540,-680,540,-660,540,-640,540,-620,540,-600,540,-580,540,-80,540,-20,540,100,540,120,540,160,540,180,540,200,540,220,540,240,540,260,540,280,540,300,540,320,540,340,540,360,540,380,540,400,540,420,540,440,540,460,540,480,540,500,540,520,540,540,540,560,540,580,540,600,540,620,540,640,540,660,540,680,540,700,540,720,540,740,540,760,540,780,540,800,540,820,540,840,540,860,540,880,540,900,540,920,540,940,540,960,540,980,540,1000,540,1020,540,1040,540,1060,540,1080,540,1100,540,1120,540,1140,540,1160,540,1180,540,1200,540,1220,540,1240,540,1260,540,1280,540,1300,540,1320,540,1340,540,1360,540,1400,540,1560,540,1580,540,1600,560,-1600,560,-1320,560,-1300,560,-1280,560,-1260,560,-1240,560,-1220,560,-1200,560,-1180,560,-1160,560,-1140,560,-1120,560,-1100,560,-1080,560,-1060,560,-1040,560,-1020,560,-1000,560,-980,560,-960,560,-940,560,-920,560,-900,560,-880,560,-760,560,-740,560,-720,560,-700,560,-680,560,-660,560,-640,560,-620,560,-40,560,100,560,120,560,140,560,220,560,240,560,260,560,280,560,300,560,320,560,340,560,360,560,380,560,400,560,420,560,440,560,460,560,480,560,500,560,520,560,540,560,560,560,580,560,600,560,620,560,640,560,660,560,680,560,700,560,720,560,740,560,760,560,780,560,800,560,820,560,840,560,860,560,880,560,900,560,920,560,940,560,960,560,980,560,1000,560,1020,560,1040,560,1060,560,1080,560,1100,560,1120,560,1140,560,1160,560,1180,560,1200,560,1220,560,1240,560,1260,560,1280,560,1300,560,1320,560,1340,560,1360,560,1560,560,1580,560,1600,560,1620,580,-1560,580,-1340,580,-1320,580,-1300,580,-1280,580,-1260,580,-1240,580,-1220,580,-1200,580,-1180,580,-1160,580,-1140,580,-1120,580,-1100,580,-1080,580,-1060,580,-1040,580,-1020,580,-1000,580,-980,580,-960,580,-940,580,-760,580,-740,580,-720,580,-700,580,-680,580,-660,580,-640,580,-40,580,120,580,140,580,160,580,260,580,280,580,300,580,320,580,340,580,360,580,380,580,400,580,420,580,440,580,460,580,480,580,500,580,520,580,540,580,560,580,580,580,600,580,620,580,640,580,660,580,680,580,700,580,720,580,740,580,760,580,780,580,800,580,820,580,840,580,860,580,880,580,900,580,920,580,940,580,960,580,980,580,1000,580,1020,580,1040,580,1060,580,1080,580,1100,580,1120,580,1140,580,1160,580,1180,580,1200,580,1220,580,1240,580,1260,580,1280,580,1300,580,1320,580,1340,580,1360,580,1380,580,1400,580,1600,580,1620,600,-1660,600,-1640,600,-1620,600,-1600,600,-1580,600,-1560,600,-1540,600,-1500,600,-1440,600,-1420,600,-1400,600,-1380,600,-1360,600,-1340,600,-1320,600,-1300,600,-1280,600,-1260,600,-1240,600,-1220,600,-1200,600,-1180,600,-1160,600,-1140,600,-1120,600,-1100,600,-1080,600,-1060,600,-1040,600,-1020,600,-1000,600,-980,600,-960,600,-760,600,-740,600,-720,600,-700,600,60,600,80,600,100,600,120,600,140,600,160,600,180,600,240,600,300,600,320,600,340,600,360,600,380,600,400,600,420,600,440,600,460,600,480,600,500,600,520,600,540,600,560,600,580,600,600,600,620,600,640,600,660,600,680,600,700,600,720,600,740,600,760,600,780,600,800,600,820,600,840,600,860,600,880,600,900,600,920,600,940,600,960,600,980,600,1000,600,1020,600,1040,600,1060,600,1080,600,1100,600,1120,600,1140,600,1160,600,1180,600,1200,600,1220,600,1240,600,1260,600,1280,600,1300,600,1320,600,1340,600,1360,600,1380,600,1400,600,1420,600,1440,600,1460,600,1480,600,1500,600,1520,600,1540,600,1620,600,1640,620,-1640,620,-1620,620,-1600,620,-1580,620,-1560,620,-1540,620,-1520,620,-1500,620,-1480,620,-1460,620,-1440,620,-1420,620,-1400,620,-1380,620,-1360,620,-1340,620,-1320,620,-1300,620,-1280,620,-1260,620,-1240,620,-1220,620,-1200,620,-1180,620,-1160,620,-1140,620,-1120,620,-1100,620,-1080,620,-1060,620,-1040,620,-1020,620,-1000,620,-980,620,-960,620,-940,620,-800,620,-780,620,-760,620,-740,620,-480,620,-460,620,-440,620,60,620,80,620,100,620,120,620,140,620,160,620,220,620,240,620,260,620,280,620,300,620,320,620,340,620,360,620,380,620,400,620,420,620,440,620,460,620,480,620,500,620,520,620,540,620,560,620,580,620,600,620,620,620,640,620,660,620,680,620,700,620,720,620,740,620,760,620,780,620,800,620,820,620,840,620,860,620,880,620,900,620,920,620,940,620,960,620,980,620,1000,620,1020,620,1040,620,1060,620,1080,620,1100,620,1120,620,1140,620,1160,620,1180,620,1200,620,1220,620,1240,620,1260,620,1280,620,1300,620,1320,620,1340,620,1360,620,1380,620,1400,620,1420,620,1440,620,1460,620,1480,620,1500,620,1520,620,1540,620,1560,620,1580,620,1600,620,1620,620,1660,620,1680,620,1700,620,1720,620,1740,640,-1600,640,-1580,640,-1560,640,-1540,640,-1520,640,-1500,640,-1480,640,-1460,640,-1440,640,-1420,640,-1400,640,-1380,640,-1360,640,-1340,640,-1320,640,-1300,640,-1280,640,-1260,640,-1240,640,-1220,640,-1200,640,-1180,640,-1160,640,-1140,640,-1120,640,-1100,640,-1080,640,-1060,640,-1040,640,-1020,640,-1000,640,-980,640,-960,640,-940,640,-920,640,-900,640,-860,640,-840,640,-820,640,-720,640,-700,640,-680,640,-660,640,-500,640,-480,640,-460,640,-440,640,-420,640,-220,640,-200,640,-180,640,100,640,120,640,140,640,160,640,180,640,200,640,240,640,260,640,280,640,300,640,320,640,340,640,360,640,380,640,400,640,420,640,440,640,460,640,480,640,500,640,520,640,540,640,560,640,580,640,600,640,620,640,640,640,660,640,680,640,700,640,720,640,740,640,760,640,780,640,800,640,820,640,840,640,860,640,880,640,900,640,920,640,940,640,960,640,980,640,1000,640,1020,640,1040,640,1060,640,1080,640,1100,640,1120,640,1140,640,1160,640,1180,640,1200,640,1220,640,1240,640,1260,640,1280,640,1300,640,1320,640,1340,640,1360,640,1380,640,1400,640,1420,640,1440,640,1460,640,1480,640,1500,640,1520,640,1540,640,1560,640,1580,640,1600,640,1620,640,1640,640,1660,640,1680,640,1700,640,1720,640,1740,640,1760,640,1780,660,-1800,660,-1780,660,-1760,660,-1740,660,-1720,660,-1700,660,-1660,660,-1640,660,-1620,660,-1600,660,-1580,660,-1560,660,-1540,660,-1520,660,-1500,660,-1480,660,-1460,660,-1440,660,-1420,660,-1400,660,-1380,660,-1360,660,-1340,660,-1320,660,-1300,660,-1280,660,-1260,660,-1240,660,-1220,660,-1200,660,-1180,660,-1160,660,-1140,660,-1120,660,-1100,660,-1080,660,-1060,660,-1040,660,-1020,660,-1000,660,-980,660,-960,660,-940,660,-920,660,-900,660,-880,660,-740,660,-720,660,-700,660,-660,660,-640,660,-520,660,-500,660,-480,660,-460,660,-440,660,-420,660,-400,660,-380,660,-220,660,-180,660,-160,660,140,660,160,660,180,660,200,660,220,660,240,660,260,660,280,660,300,660,320,660,340,660,420,660,440,660,460,660,480,660,500,660,520,660,540,660,560,660,580,660,600,660,620,660,640,660,660,660,680,660,700,660,720,660,740,660,760,660,780,660,800,660,820,660,840,660,860,660,880,660,900,660,920,660,940,660,960,660,980,660,1000,660,1020,660,1040,660,1060,660,1080,660,1100,660,1120,660,1140,660,1160,660,1180,660,1200,660,1220,660,1240,660,1260,660,1280,660,1300,660,1320,660,1340,660,1360,660,1380,660,1400,660,1420,660,1440,660,1460,660,1480,660,1500,660,1520,660,1540,660,1560,660,1580,660,1600,660,1620,660,1640,660,1660,660,1680,660,1700,660,1720,660,1740,660,1760,660,1780,680,-1800,680,-1780,680,-1640,680,-1620,680,-1600,680,-1580,680,-1560,680,-1540,680,-1520,680,-1500,680,-1480,680,-1460,680,-1440,680,-1420,680,-1400,680,-1380,680,-1360,680,-1340,680,-1320,680,-1300,680,-1280,680,-1260,680,-1240,680,-1220,680,-1200,680,-1180,680,-1160,680,-1080,680,-1060,680,-1040,680,-980,680,-940,680,-920,680,-900,680,-860,680,-840,680,-820,680,-760,680,-720,680,-700,680,-680,680,-520,680,-500,680,-480,680,-460,680,-440,680,-420,680,-400,680,-380,680,-360,680,-340,680,160,680,180,680,200,680,220,680,240,680,260,680,280,680,300,680,320,680,340,680,360,680,380,680,400,680,460,680,520,680,540,680,560,680,580,680,600,680,620,680,640,680,660,680,680,680,700,680,720,680,760,680,780,680,800,680,820,680,840,680,860,680,880,680,900,680,920,680,940,680,960,680,980,680,1000,680,1020,680,1040,680,1060,680,1080,680,1100,680,1120,680,1140,680,1160,680,1180,680,1200,680,1220,680,1240,680,1260,680,1280,680,1300,680,1320,680,1340,680,1360,680,1380,680,1400,680,1420,680,1440,680,1460,680,1480,680,1500,680,1520,680,1540,680,1560,680,1580,680,1600,680,1620,680,1640,680,1660,680,1680,680,1700,680,1720,680,1740,680,1760,680,1780,700,-1620,700,-1600,700,-1580,700,-1560,700,-1540,700,-1520,700,-1500,700,-1480,700,-1460,700,-1440,700,-1300,700,-1280,700,-1160,700,-1140,700,-1120,700,-1100,700,-1080,700,-1060,700,-1040,700,-1020,700,-980,700,-960,700,-940,700,-920,700,-840,700,-820,700,-800,700,-780,700,-760,700,-740,700,-720,700,-700,700,-680,700,-540,700,-520,700,-500,700,-480,700,-460,700,-440,700,-420,700,-400,700,-380,700,-360,700,-340,700,-320,700,-300,700,-280,700,-260,700,-240,700,220,700,240,700,260,700,280,700,300,700,680,700,700,700,720,700,740,700,760,700,780,700,800,700,820,700,840,700,860,700,880,700,900,700,920,700,940,700,960,700,980,700,1000,700,1020,700,1040,700,1060,700,1080,700,1100,700,1120,700,1140,700,1160,700,1180,700,1200,700,1220,700,1240,700,1260,700,1280,700,1300,700,1320,700,1340,700,1360,700,1380,700,1400,700,1420,700,1440,700,1460,700,1480,700,1500,700,1520,700,1540,700,1560,700,1580,720,-1240,720,-1220,720,-1180,720,-1160,720,-1140,720,-1120,720,-1100,720,-1060,720,-1000,720,-980,720,-900,720,-880,720,-860,720,-840,720,-820,720,-800,720,-780,720,-760,720,-540,720,-520,720,-500,720,-480,720,-460,720,-440,720,-420,720,-400,720,-380,720,-360,720,-340,720,-320,720,-300,720,-280,720,-260,720,-240,720,520,720,540,720,700,720,720,720,780,720,800,720,820,720,840,720,860,720,880,720,900,720,920,720,940,720,960,720,980,720,1000,720,1020,720,1040,720,1060,720,1080,720,1100,720,1120,720,1140,720,1160,720,1180,720,1200,720,1220,720,1240,720,1260,720,1280,720,1400,720,1420,720,1440,720,1460,720,1480];
+/* ---- Terre réelle (Blue Marble NASA) : texture équirectangulaire projetée en live sur la sphère.
+   Repli automatique vers le globe vecteur (points continents) si la texture ne charge pas / est tainted. ---- */
+var TEX=null,TEXW=0,TEXH=0,SPH=document.createElement("canvas"),sctx=SPH.getContext("2d"),SPHR=0,sphAngle=null,sphImg=null;
+(function loadEarth(){
+  var urls=["https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg",
+            "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg"];
+  var i=0;function tryNext(){
+    if(i>=urls.length)return; /* repli vecteur */
+    var im=new Image();im.crossOrigin="anonymous";
+    im.onload=function(){try{
+      TEXW=Math.min(1024,im.naturalWidth||1024);TEXH=Math.round(TEXW/2);
+      var tc=document.createElement("canvas");tc.width=TEXW;tc.height=TEXH;
+      var tctx=tc.getContext("2d");tctx.drawImage(im,0,0,TEXW,TEXH);
+      TEX=tctx.getImageData(0,0,TEXW,TEXH).data; /* throw si tainté CORS → repli */
+      sphAngle=null;
+    }catch(e){TEX=null;}};
+    im.onerror=function(){i++;tryNext();};
+    im.src=urls[i];
+  }tryNext();
+})();
+function renderSphere(R){
+  var side=Math.max(80,Math.min(240,Math.round(R*1.2)));
+  if(SPH.width!==side){SPH.width=SPH.height=side;sphImg=null;}
+  SPHR=side/2;if(!sphImg)sphImg=sctx.createImageData(side,side);
+  var cr=SPHR-1,d=sphImg.data,y,x;
+  for(y=0;y<side;y++){for(x=0;x<side;x++){
+    var nx=(x-SPHR+0.5)/cr,ny=(SPHR-y-0.5)/cr,r2=nx*nx+ny*ny,o=(y*side+x)*4;
+    if(r2>1){d[o+3]=0;continue;}
+    var nz=Math.sqrt(1-r2),lat=Math.asin(ny),lam=Math.atan2(nx,nz)-rot;
+    var u=lam*0.15915494+0.5;u-=Math.floor(u);var v=0.5-lat*0.31830989;
+    var tx=(u*TEXW)|0;if(tx>=TEXW)tx=TEXW-1;var ty=(v*TEXH)|0;if(ty<0)ty=0;else if(ty>=TEXH)ty=TEXH-1;
+    var t=(ty*TEXW+tx)<<2,sh=0.45+0.55*nz;
+    d[o]=TEX[t]*sh;d[o+1]=TEX[t+1]*sh;d[o+2]=TEX[t+2]*sh;d[o+3]=255;
+  }}
+  sctx.putImageData(sphImg,0,0);
+}
+function drawGlobe(){var w=cv._w,h=cv._h,cx=w/2,cy=h/2,R=Math.min(w,h)/2-14;ctx.clearRect(0,0,w,h);
+  var g=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.28);g.addColorStop(0,"rgba(60,120,220,.22)");g.addColorStop(1,"rgba(5,7,13,0)");
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.28,0,7);ctx.fill();
+  if(TEX){/* globe photo-réaliste texturé, mis à jour à chaque rotation */
+    if(sphAngle===null||sphAngle!==rot){renderSphere(R);sphAngle=rot;}
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    ctx.imageSmoothingEnabled=true;ctx.drawImage(SPH,cx-R,cy-R,R*2,R*2);ctx.restore();
+    ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.lineWidth=1;ctx.strokeStyle="rgba(150,190,245,.4)";ctx.stroke();
+  }else{/* repli vecteur : continents en points (Natural Earth 110m, domaine public) */
+    ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fillStyle="rgba(12,26,52,.55)";ctx.fill();
+    ctx.lineWidth=1;ctx.strokeStyle="rgba(120,160,230,.5)";ctx.stroke();
+    ctx.fillStyle="rgba(130,180,255,.34)";var li,lp;
+    for(li=0;li<LAND.length;li+=2){lp=proj(LAND[li]/10,LAND[li+1]/10);if(lp.z<0)continue;
+      ctx.beginPath();ctx.arc(cx+lp.x*R,cy-lp.y*R,Math.max(1,R*0.008),0,7);ctx.fill();}
+    ctx.strokeStyle="rgba(120,150,210,.15)";var lat,lon,p,st;
+    for(lat=-60;lat<=60;lat+=30){ctx.beginPath();st=false;for(lon=-180;lon<=180;lon+=4){p=proj(lat,lon);if(p.z<0){st=false;continue;}var x=cx+p.x*R,y=cy-p.y*R;st?ctx.lineTo(x,y):(ctx.moveTo(x,y),st=true);}ctx.stroke();}
+    for(lon=-180;lon<180;lon+=30){ctx.beginPath();st=false;for(lat=-90;lat<=90;lat+=4){p=proj(lat,lon);if(p.z<0){st=false;continue;}var x2=cx+p.x*R,y2=cy-p.y*R;st?ctx.lineTo(x2,y2):(ctx.moveTo(x2,y2),st=true);}ctx.stroke();}
+  }
+  /* halo atmosphérique */
+  var atm=ctx.createRadialGradient(cx,cy,R*0.95,cx,cy,R*1.1);atm.addColorStop(0,"rgba(90,150,255,0)");atm.addColorStop(.55,"rgba(90,150,255,.18)");atm.addColorStop(1,"rgba(90,150,255,0)");
+  ctx.fillStyle=atm;ctx.beginPath();ctx.arc(cx,cy,R*1.1,0,7);ctx.fill();
+  if(ON.flights)DL.flights.forEach(function(f){dot(cx,cy,R,f.lat,f.lon,1.6,"#4fd18b",.7);});
+  if(ON.quakes)DL.quakes.forEach(function(q){var m=q.mag||1,col=m>=5?"#ff5a4d":m>=3?"#ffb84d":"#ffd24d";dot(cx,cy,R,q.lat,q.lon,Math.max(2,Math.min(9,m*1.6)),col,.85);});
+  if(ON.fires)DL.fires.forEach(function(f){dot(cx,cy,R,f.lat,f.lon,2.4,"#ff8a3d",.8);});
+  if(ON.volcano)DL.volcano.forEach(function(f){dot(cx,cy,R,f.lat,f.lon,3,"#ff5a4d",.9);});
+  if(ON.storms)DL.storms.forEach(function(f){dot(cx,cy,R,f.lat,f.lon,3.2,"#b992ff",.85);});
+  if(ON.iss&&DL.iss){var d=dot(cx,cy,R,DL.iss.lat,DL.iss.lon,5,"#35d6e6",1);if(d){ctx.beginPath();ctx.arc(d.sx,d.sy,10,0,7);ctx.strokeStyle="#35d6e6";ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.stroke();ctx.globalAlpha=1;ctx.fillStyle="#9fe9f2";ctx.font="10px sans-serif";ctx.fillText("ISS",d.sx+13,d.sy+3);}}
+  /* 📍 v2.41 — ma position sur le globe aussi (guard typeof : _posFix est défini plus bas) */
+  if(ON.pos&&typeof _posFix!=="undefined"&&_posFix){var dp=dot(cx,cy,R,_posFix.lat,_posFix.lon,4.5,"#2f7fff",1);if(dp){ctx.beginPath();ctx.arc(dp.sx,dp.sy,9,0,7);ctx.strokeStyle="#2f7fff";ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.stroke();ctx.globalAlpha=1;ctx.fillStyle="#9fc4ff";ctx.font="10px sans-serif";ctx.fillText("MOI",dp.sx+12,dp.sy+3);}}}
+function loop(){if(spin)rot+=0.0021;drawGlobe();requestAnimationFrame(loop);}
+resizeGlobe();requestAnimationFrame(loop);
+
+/* ============ SÉISMES (USGS) ============ */
+/* ☀️ Météo spatiale (Kevin n°7) : indice Kp planétaire NOAA SWPC, live */
+async function loadSpaceWx(){try{
+  var a=await getJSON("https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",12000);
+  if(!a||!a.length)return;
+  var kp=+a[a.length-1].kp_index,lab=kp>=8?"G4-G5 extrême":kp>=7?"G3 forte":kp>=6?"G2 modérée":kp>=5?"G1 tempête":kp>=4?"agité":"calme";
+  var col=kp>=7?"#ff5a4d":kp>=5?"#ffb84d":kp>=4?"#ffd24d":"#3ddc84";
+  var el=document.getElementById("sKp"),el2=document.getElementById("sKpL");
+  if(el){var s="Kp "+kp.toFixed(1);if(el.textContent!==s)el.textContent=s;el.style.color=col;}
+  if(el2){var s2="Soleil : "+lab;if(el2.textContent!==s2)el2.textContent=s2;}
+  if(kp>=7)wmNotify("🌞 Tempête solaire "+lab+" (Kp "+kp.toFixed(1)+")","Aurores possibles à basse latitude · perturbations radio/GPS.","kp_"+Math.floor(kp)+"_"+new Date().toISOString().slice(0,13));
+}catch(e){}}
+loadSpaceWx();setInterval(loadSpaceWx,600000);
+async function loadQuakes(){try{
+  var d=await getJSON("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson");
+  var f=(d&&d.features)||[];f.sort(function(a,b){return b.properties.time-a.properties.time;});
+  DL.quakes=f.map(function(x){var c=x.geometry.coordinates;return {lat:c[1],lon:c[0],mag:x.properties.mag||0,place:x.properties.place||"",depth:c[2]||0,time:x.properties.time||0,alert:x.properties.alert||null,tsunami:x.properties.tsunami||0,felt:x.properties.felt||0};});if(_mapReady)drawQuakesMap();
+  f.forEach(function(x){var m=x.properties.mag||0;if(m>=6)wmNotify("🌍 Séisme M"+m.toFixed(1),(x.properties.place||"")+(x.properties.tsunami?" · ⚠️ risque tsunami":""),"q_"+(x.id||x.properties.time));});
+  setText($("sQuakes"),String(f.length));setText($("quakeState"),f.length+" / 24h");setText($("globeState"),"en direct");
+  var box=$("quakes");if(!f.length){setHTML(box,'<div class="empty">Aucun séisme. 🌍</div>');return;}
+  setHTML(box,f.slice(0,30).map(function(x){var m=x.properties.mag||0,col=m>=5?"#ff5a4d":m>=3?"#ffb84d":"#ffd24d";
+    return '<div class="row"><div class="badge" style="background:'+col+'22;color:'+col+';border:1px solid '+col+'55">'+m.toFixed(1)+'</div><div class="main"><div class="t1">'+esc(x.properties.place||"?")+'</div><div class="t2">Profondeur '+((x.geometry.coordinates[2]||0).toFixed(0))+' km</div></div><div class="when">'+ago(x.properties.time)+'</div></div>';}).join(""));
+}catch(e){setText($("quakeState"),"indispo");if($("sQuakes").textContent==="—")setHTML($("quakes"),'<div class="empty">Séismes indisponibles — reprise auto.</div>');}}
+
+/* ============ ÉVÉNEMENTS NATURELS (NASA EONET) ============ */
+async function loadEonet(){try{
+  var d=await getJSON("https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=60",16000);
+  var ev=(d&&d.events)||[];var fires=[],volc=[],storms=[],rows=[];
+  ev.forEach(function(e){var cat=(e.categories&&e.categories[0]&&e.categories[0].id)||"";
+    var geo=e.geometry&&e.geometry[e.geometry.length-1];var c=geo&&geo.coordinates;if(!c||c.length<2)return;
+    var when=geo&&geo.date?new Date(geo.date).getTime():0;
+    var pt={lat:c[1],lon:c[0],title:e.title,when:when};var icon="🌪️",tcat="Événement";
+    if(cat==="wildfires"){fires.push(pt);icon="🔥";tcat="Feu";}
+    else if(cat==="volcanoes"){volc.push(pt);icon="🌋";tcat="Volcan";}
+    else if(cat==="severeStorms"){storms.push(pt);icon="🌀";tcat="Tempête";}
+    else{storms.push(pt);}
+    rows.push({icon:icon,tcat:tcat,title:e.title,when:when});});
+  DL.fires=fires;DL.volcano=volc;DL.storms=storms;
+  setText($("sEvents"),String(ev.length));setText($("eonetState"),ev.length+" ouverts");
+  rows.sort(function(a,b){return b.when-a.when;});
+  var box=$("eonet");if(!rows.length){setHTML(box,'<div class="empty">Aucun événement ouvert.</div>');return;}
+  setHTML(box,rows.slice(0,25).map(function(r){return '<div class="row"><div class="badge" style="background:#ff8a3d1a;border:1px solid #ff8a3d44;font-size:16px">'+r.icon+'</div><div class="main"><div class="t1">'+esc(r.title)+'</div><div class="t2">'+r.tcat+'</div></div><div class="when">'+(r.when?ago(r.when):"")+'</div></div>';}).join(""));
+}catch(e){setText($("eonetState"),"indispo");if($("sEvents").textContent==="—")setHTML($("eonet"),'<div class="empty">Événements indisponibles — reprise auto.</div>');}}
+
+/* ============ VOLS EUROPE (avions via le relais serveur kdmc-live /planes) ============ */
+async function loadFlights(){
+  /* adsb.lol ET airplanes.live BLOQUENT le CORS navigateur (vérifié par la vérif live) →
+     on passe par le relais serveur /planes (adsb.lol→airplanes.live côté worker). 0 bruit CORS. */
+  try{
+    var d=await getJSON(LIVE_URL+"/planes?lat=46&lon=7&radius=250",10000);
+    var ac=(d&&d.ac)||[];
+    if(ac.length){DL.flights=ac.filter(function(a){return a.lat!=null&&a.lon!=null;}).slice(0,600).map(function(a){return {lat:a.lat,lon:a.lon};});
+      setText($("sFlights"),String(ac.length));}
+  }catch(e){/* on garde la dernière valeur */}
+}
+
+/* ============ ISS ============ */
+async function loadIss(){try{
+  var d=await getJSON("https://api.wheretheiss.at/v1/satellites/25544",8000);
+  DL.iss={lat:d.latitude,lon:d.longitude};
+  setText($("sIss"),Math.round(d.velocity).toLocaleString("fr-FR"));setText($("issState"),"en direct");
+  setHTML($("issInfo"),"Lat <b style='color:#dfe7f5'>"+d.latitude.toFixed(2)+"°</b> · Lon <b style='color:#dfe7f5'>"+d.longitude.toFixed(2)+"°</b><br>Altitude <b style='color:#dfe7f5'>"+Math.round(d.altitude)+" km</b> · Vitesse <b style='color:#dfe7f5'>"+Math.round(d.velocity).toLocaleString("fr-FR")+" km/h</b>");
+}catch(e){setText($("issState"),"indispo");}}
+
+/* ============ MONACO (Open-Meteo + sunrise-sunset) ============ */
+var WMO={0:["Ciel clair","☀️"],1:["Peu nuageux","🌤️"],2:["Nuageux","⛅"],3:["Couvert","☁️"],45:["Brouillard","🌫️"],48:["Brouillard givrant","🌫️"],51:["Bruine","🌦️"],53:["Bruine","🌦️"],55:["Bruine dense","🌧️"],61:["Pluie faible","🌧️"],63:["Pluie","🌧️"],65:["Pluie forte","🌧️"],71:["Neige","🌨️"],73:["Neige","🌨️"],75:["Neige forte","❄️"],80:["Averses","🌦️"],81:["Averses","🌧️"],82:["Averses fortes","⛈️"],95:["Orage","⛈️"],96:["Orage grêle","⛈️"],99:["Orage violent","⛈️"]};
+async function loadMonaco(){
+  var lat=43.7384,lon=7.4246;
+  try{var w=await getJSON("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,uv_index&timezone=Europe%2FParis");
+    var c=w.current||{};var wm=WMO[c.weather_code]||["—","🌡️"];
+    setText($("mcWx"),Math.round(c.temperature_2m)+"° "+wm[1]);setText($("mcWxS"),wm[0]);
+    var uvTxt="";if(c.uv_index!=null){var uv=Math.round(c.uv_index);uvTxt=" · UV "+uv+(uv>=8?" 🔴":uv>=6?" 🟠":uv>=3?" 🟡":" 🟢");}
+    setText($("mcFeel"),Math.round(c.apparent_temperature)+"°");setText($("mcHum"),"Humidité "+Math.round(c.relative_humidity_2m)+"%"+uvTxt);
+    setText($("mcWind"),Math.round(c.wind_speed_10m));setText($("mcState"),"en direct");
+  }catch(e){setText($("mcState"),"partiel");}
+  try{var m=await getJSON("https://marine-api.open-meteo.com/v1/marine?latitude=43.73&longitude=7.43&current=wave_height,sea_surface_temperature&timezone=Europe%2FParis");
+    var mc=m.current||{};setText($("mcSea"),mc.sea_surface_temperature!=null?Math.round(mc.sea_surface_temperature)+"°":"—");
+    setText($("mcWave"),mc.wave_height!=null?"Vagues "+mc.wave_height.toFixed(1)+" m":"—");}catch(e){}
+  try{var a=await getJSON("https://air-quality-api.open-meteo.com/v1/air-quality?latitude="+lat+"&longitude="+lon+"&current=european_aqi,pm2_5&timezone=Europe%2FParis");
+    var ac=a.current||{};var aqi=ac.european_aqi;var lab=aqi==null?"—":aqi<=20?"Excellent":aqi<=40?"Bon":aqi<=60?"Moyen":aqi<=80?"Médiocre":"Mauvais";
+    setText($("mcAqi"),aqi!=null?aqi+" · "+lab:"—");setText($("mcPm"),ac.pm2_5!=null?"PM2.5 "+Math.round(ac.pm2_5)+" µg/m³":"—");}catch(e){}
+  try{var s=await getJSON("https://api.sunrise-sunset.org/json?lat="+lat+"&lng="+lon+"&formatted=0");
+    if(s.status==="OK"){var sr=new Date(s.results.sunrise),ss=new Date(s.results.sunset);
+      var f=function(x){return x.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});};
+      setText($("mcSun"),f(sr)+" → "+f(ss));setText($("mcSunS"),"lever / coucher");}}catch(e){}
+}
+
+/* ============ MARCHÉS (CoinGecko + open.er-api) ============ */
+async function loadMarkets(){
+  var rows=[];
+  try{var d=await getJSON("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,pax-gold&vs_currencies=eur&include_24hr_change=true");
+    [["BTC","bitcoin"],["ETH","ethereum"],["OR (once)","pax-gold"]].forEach(function(p){var o=d[p[1]];if(!o)return;var ch=o.eur_24h_change||0;
+      rows.push({sym:p[0],px:o.eur.toLocaleString("fr-FR")+" €",ch:ch});});}catch(e){}
+  try{var fx=await getJSON("https://open.er-api.com/v6/latest/EUR");
+    if(fx&&fx.rates){rows.push({sym:"EUR/USD",px:fx.rates.USD.toFixed(4),ch:null});rows.push({sym:"EUR/CHF",px:fx.rates.CHF.toFixed(4),ch:null});}}catch(e){}
+  try{var fg=await getJSON("https://api.alternative.me/fng/",8000);
+    var v=fg&&fg.data&&fg.data[0];if(v){var n=+v.value;
+      rows.push({sym:"Sentiment",px:n+"/100 · "+(n<25?"😱 Peur extrême":n<45?"😟 Peur":n<55?"😐 Neutre":n<75?"🙂 Avidité":"🤑 Avidité extrême"),ch:null});}}catch(e){}
+  if(!rows.length){setHTML($("markets"),'<div class="empty">Marchés indisponibles — reprise auto.</div>');setText($("mktState"),"indispo");return;}
+  setText($("mktState"),"live");
+  setHTML($("markets"),rows.map(function(r){var chh=r.ch==null?"":'<span class="'+(r.ch>=0?"up":"down")+'" style="font-size:12px;margin-left:8px">'+(r.ch>=0?"▲":"▼")+Math.abs(r.ch).toFixed(1)+'%</span>';
+    return '<div class="mkt"><span class="sym">'+r.sym+'</span><span class="px">'+r.px+chh+'</span></div>';}).join(""));
+}
+
+/* ============ MÉTÉO SPATIALE (NOAA Kp) ============ */
+async function loadSpace(){try{
+  var d=await getJSON("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json",9000);
+  var last=d[d.length-1];var kp=parseFloat(last[1]);
+  var col=kp>=6?"#ff5a4d":kp>=5?"#ffb84d":"#4fd18b";
+  var lab=kp>=6?"Tempête géomagnétique — aurores possibles à basse latitude":kp>=5?"Activité élevée — aurores probables au nord":"Calme";
+  setText($("kpBadge"),"Kp"+Math.round(kp));$("kpBadge").style.color=col;$("kpBadge").style.borderColor=col+"66";$("kpBadge").style.background=col+"1a";
+  setText($("kpTxt"),"Indice Kp "+kp.toFixed(1));setText($("kpSub"),lab);setText($("spaceState"),"live");
+}catch(e){setText($("spaceState"),"indispo");}}
+
+/* ============ ACTUALITÉ (GDELT) ============ */
+async function loadNews(){
+  /* Source 1 : GDELT (monde). Repli : Reddit r/worldnews (CORS, sans clé). */
+  var rows=null,titles=null;
+  try{
+    var d=await getJSON("https://api.gdeltproject.org/api/v2/doc/doc?query="+encodeURIComponent("(world OR breaking)")+"&mode=artlist&maxrecords=12&sort=datedesc&format=json",11000);
+    var a=(d&&d.articles)||[];
+    if(a.length){titles=a.map(function(x){return x.title||"";});
+      rows=a.slice(0,10).map(function(x){return '<a class="newsrow" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer"><div class="t1">'+esc(x.title||"—")+'</div><div class="t2">'+esc(x.domain||"")+(x.sourcecountry?" · "+esc(x.sourcecountry):"")+'</div></a>';}).join("");
+      setText($("newsState"),"live");}
+  }catch(e){/* repli ci-dessous */}
+  if(!rows){try{
+    var r=await getJSON("https://www.reddit.com/r/worldnews/hot.json?limit=12&raw_json=1",11000);
+    var ch=(r&&r.data&&r.data.children)||[];var posts=ch.map(function(c){return c.data;}).filter(function(p){return p&&!p.stickied&&p.title;});
+    if(posts.length){titles=posts.map(function(p){return p.title;});
+      rows=posts.slice(0,10).map(function(p){var u=p.url&&/^https?:/.test(p.url)?p.url:("https://www.reddit.com"+p.permalink);
+        return '<a class="newsrow" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer"><div class="t1">'+esc(p.title)+'</div><div class="t2">'+esc(p.domain||"reddit")+' · r/worldnews</div></a>';}).join("");
+      setText($("newsState"),"reddit");}
+  }catch(e2){/* rien */}}
+  if(rows){FEED.news=titles||[];setHTML($("news"),rows);buildBrief();}
+  else{setText($("newsState"),"indispo");if($("news").querySelector(".empty"))setHTML($("news"),'<div class="empty">Actualité indisponible — reprise auto.</div>');}
+}
+
+/* ============ LANCEMENTS (The Space Devs) ============ */
+async function loadLaunches(){try{
+  var d=await getJSON("https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=6&mode=list",11000);
+  var r=(d&&d.results)||[];setText($("launchState"),r.length?"à venir":"—");
+  var box=$("launches");if(!r.length){setHTML(box,'<div class="empty">Aucun lancement.</div>');return;}
+  setHTML(box,r.map(function(l){var w=l.net?new Date(l.net):null;
+    var ws=w?w.toLocaleDateString("fr-FR",{day:"numeric",month:"short"})+" "+w.toLocaleTimeString("fr-FR").slice(0,5):"à confirmer";
+    var prov=(l.launch_service_provider&&l.launch_service_provider.name)||"";
+    return '<div class="row"><div class="badge" style="background:#35d6e622;color:#35d6e6;border:1px solid #35d6e655">🚀</div><div class="main"><div class="t1">'+esc(l.name||"Lancement")+'</div><div class="t2">'+esc(prov)+'</div></div><div class="when">'+esc(ws)+'</div></div>';}).join(""));
+}catch(e){setText($("launchState"),"indispo");if($("launches").querySelector(".empty"))setHTML($("launches"),'<div class="empty">Lancements indisponibles.</div>');}}
+
+/* ============ BOURSE (Finnhub via worker wm-quotes — la clé reste côté serveur, jamais exposée) ============ */
+async function loadBourse(){try{
+  var d=await getJSON("https://wm-quotes.9r4rxssx64.workers.dev/quotes",10000);
+  var q=(d&&d.quotes)||[];
+  if(d&&d.error)throw new Error(d.detail||d.error);
+  if(!q.length)throw new Error("vide");
+  setText($("bourseState"),"live");
+  setHTML($("bourse"),q.map(function(r){
+    var chh=r.changePct==null?"":'<span class="'+(r.changePct>=0?"up":"down")+'" style="font-size:12px;margin-left:8px">'+(r.changePct>=0?"▲":"▼")+Math.abs(r.changePct).toFixed(2)+'%</span>';
+    return '<div class="mkt"><span class="sym" style="min-width:0">'+esc(r.label)+'</span><span class="px">'+(+r.price).toLocaleString("fr-FR",{maximumFractionDigits:2})+' $'+chh+'</span></div>';}).join(""));
+}catch(e){setText($("bourseState"),"indispo");
+  setHTML($("bourse"),'<div class="empty">Bourse indisponible — reprise auto.</div>');}}
+
+/* ============ TRAFIC ROUTIER (Waze livemap — iframe officielle, gratuite) ============ */
+var _waze={lat:43.7396,lon:7.4263,z:13,name:"Monaco",loaded:false};
+function wazeSrc(){return "https://embed.waze.com/iframe?zoom="+_waze.z+"&lat="+_waze.lat+"&lon="+_waze.lon+"&ct=livemap";}
+function wazeLoad(){_waze.loaded=true;
+  setHTML($("wazeBox"),'<iframe src="'+wazeSrc()+'" style="width:100%;height:340px;border:0;display:block" loading="lazy" allowfullscreen title="Trafic Waze '+esc(_waze.name)+'"></iframe>');}
+$("wazeBox").addEventListener("click",function(){if(!_waze.loaded)wazeLoad();});
+$("wazeChips").addEventListener("click",function(ev){var b=ev.target.closest(".btn");if(!b||!b.dataset.c)return;
+  var c=b.dataset.c.split(",");_waze.lat=+c[0];_waze.lon=+c[1];_waze.z=+c[2];_waze.name=c[3];
+  setText($("wazeCity"),_waze.name);if(_waze.loaded)wazeLoad();});
+
+/* ============ TENDANCES WIKIPÉDIA FR (Wikimedia pageviews — gratuit sans clé) ============ */
+async function loadWiki(){try{
+  var d=new Date(Date.now()-864e5); /* hier (le jour courant n'est pas encore agrégé) */
+  var y=d.getUTCFullYear(),m=String(d.getUTCMonth()+1).padStart(2,"0"),j=String(d.getUTCDate()).padStart(2,"0");
+  var r=await getJSON("https://wikimedia.org/api/rest_v1/metrics/pageviews/top/fr.wikipedia/all-access/"+y+"/"+m+"/"+j,10000);
+  var arts=(((r||{}).items||[])[0]||{}).articles||[];
+  var skip=/^(Wikipédia|Spécial|Special|Cookie|Portail|Aide|Fichier|Main_Page|Recherche)/i;
+  var top=arts.filter(function(a){return !skip.test(a.article);}).slice(0,8);
+  if(!top.length)throw 0;
+  setText($("wikiState"),"hier");
+  setHTML($("wiki"),top.map(function(a,i){var t=a.article.replace(/_/g," ");
+    return '<a class="newsrow" href="https://fr.wikipedia.org/wiki/'+encodeURIComponent(a.article)+'" target="_blank" rel="noopener noreferrer"><div class="t1">'+(i+1)+'. '+esc(t)+'</div><div class="t2">'+a.views.toLocaleString("fr-FR")+' vues</div></a>';}).join(""));
+}catch(e){setText($("wikiState"),"indispo");setHTML($("wiki"),'<div class="empty">Tendances indisponibles — reprise auto.</div>');}}
+
+/* ============ TECH — HACKER NEWS (Firebase public — gratuit sans clé) ============ */
+async function loadHn(){try{
+  var ids=await getJSON("https://hacker-news.firebaseio.com/v0/topstories.json",9000);
+  var top=await Promise.all((ids||[]).slice(0,8).map(function(id){
+    return getJSON("https://hacker-news.firebaseio.com/v0/item/"+id+".json",8000).catch(function(){return null;});}));
+  top=top.filter(Boolean);
+  if(!top.length)throw 0;
+  setText($("hnState"),"live");
+  FEED.hn=top.map(function(s){return s.title||"";});buildBrief();
+  setHTML($("hn"),top.map(function(s){
+    var u=s.url||("https://news.ycombinator.com/item?id="+s.id);
+    return '<a class="newsrow" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer"><div class="t1">'+esc(s.title||"—")+'</div><div class="t2">▲ '+(s.score||0)+' · '+(s.descendants||0)+' commentaires</div></a>';}).join(""));
+}catch(e){setText($("hnState"),"indispo");setHTML($("hn"),'<div class="empty">Hacker News indisponible — reprise auto.</div>');}}
+
+/* ============ CAMÉRAS LIVE (YouTube — embed par CHAÎNE = suit toujours le direct en cours) ============ */
+var CAMS=[
+  {n:"Sky News",e:"🇬🇧",ch:"UCoMdktPbSTixAyNGwb-UYkQ",q:"sky news live"},
+  {n:"France 24",e:"🇫🇷",ch:"UCCCPCZNChQdGa9EkATeye4g",q:"france 24 direct"},
+  {n:"Al Jazeera",e:"🌍",ch:"UCNye-wNBqNL5ZzHSJj3l8Bg",q:"al jazeera english live"},
+  {n:"DW News",e:"🇩🇪",ch:"UCknLrEdhRCp1aegoMqRaCZg",q:"dw news live"},
+  {n:"ABC News",e:"🇺🇸",ch:"UCBi2mrWuNuyYy4gbM6fU18Q",q:"abc news live"},
+  {n:"Bloomberg TV",e:"💹",ch:"UCIALMKvObZNtJ6AmdCLP7Lg",q:"bloomberg tv live"},
+  {n:"TRT World",e:"🌐",ch:"UC7fWeaHhqgM4Ry-RMpM2YYw",q:"trt world live"},
+  {n:"NASA TV",e:"🚀",ch:"UCLA_DiR1FfKNvjuUpBHmylQ",q:"nasa live"},
+  {n:"Times Square NYC",e:"🗽",q:"times square live cam 4k"},
+  {n:"Venise — Grand Canal",e:"🛶",q:"venice italy live cam"},
+  {n:"Tokyo — Shibuya",e:"🇯🇵",q:"shibuya crossing live camera"},
+  {n:"Jérusalem — Mur",e:"🕍",q:"jerusalem western wall live"},
+  {n:"Paris — Tour Eiffel",e:"🗼",q:"paris eiffel tower live cam"},
+  {n:"Dubaï — Skyline",e:"🏙️",q:"dubai live cam 4k"},
+  {n:"Las Vegas — Strip",e:"🎰",q:"las vegas strip live cam"},
+  {n:"Chutes du Niagara",e:"💦",q:"niagara falls live cam"},
+  {n:"Rome — Fontaine de Trevi",e:"⛲",q:"trevi fountain rome live cam"},
+  {n:"Sydney — Opéra",e:"🦘",q:"sydney harbour opera house live cam"},
+  {n:"ISS — la Terre en direct",e:"🌍",q:"iss live earth view"},
+  {n:"La Mecque",e:"🕋",q:"makkah live"},
+  {n:"Istanbul — Bosphore",e:"🌉",q:"istanbul bosphorus live cam"},
+  {n:"Rio — Copacabana",e:"🏖️",q:"rio copacabana live cam"},
+  {n:"Amsterdam — Canaux",e:"🚲",q:"amsterdam live cam dam square"},
+  {n:"Aurores en direct (Laponie)",e:"🌌",q:"northern lights live cam aurora"}
+];
+function renderCams(){
+  setHTML($("cams"),CAMS.map(function(c,i){
+    var tag=c.ch?'<span class="live">LIVE</span>':'<span class="live" style="color:var(--cyan)">↗ OUVRIR</span>';
+    return '<div class="cam" data-i="'+i+'"><div class="ph"><span class="e">'+c.e+'</span><span class="n">'+esc(c.n)+'</span>'+tag+'</div></div>';
+  }).join(""));
+}
+renderCams();
+/* 🖼️ Images actus : sujets cliquables + premier chargement + maj 15 min */
+(function(){var tp=document.getElementById("niTopics");if(!tp)return;
+  tp.addEventListener("click",function(ev){var b=ev.target.closest(".ni-t");if(!b)return;
+    _niQuery=b.getAttribute("data-q")||_niQuery;
+    var all=tp.querySelectorAll(".ni-t");for(var i=0;i<all.length;i++)all[i].setAttribute("aria-pressed",String(all[i]===b));
+    loadNewsImages();});
+  loadNewsImages();setInterval(loadNewsImages,900000);})();
+$("cams").addEventListener("click",function(ev){
+  var close=ev.target.closest(".close");
+  var cell=ev.target.closest(".cam");if(!cell)return;
+  var i=+cell.dataset.i,c=CAMS[i];
+  if(close){
+    cell.innerHTML='<div class="ph"><span class="e">'+c.e+'</span><span class="n">'+esc(c.n)+'</span><span class="live">LIVE</span></div>'; return; }
+  if(cell.querySelector("iframe"))return;
+  if(!c.ch){ /* pas de chaîne stable → recherche YouTube live en 1 tap (toujours à jour) */
+    window.open("https://www.youtube.com/results?search_query="+encodeURIComponent(c.q)+"&sp=EgJAAQ%253D%253D","_blank","noopener");
+    return; }
+  /* Embed live par CHAÎNE : www.youtube.com (le nocookie ne sert pas live_stream) +
+     PAS de referrerpolicy no-referrer (YouTube exige le Referer pour autoriser l'embed,
+     sinon "Erreur 153"). playsinline=1 pour iOS. Lien "Ouvrir sur YouTube" en secours. */
+  var src="https://www.youtube.com/embed/live_stream?channel="+c.ch+"&autoplay=1&mute=1&playsinline=1&rel=0";
+  var watch="https://www.youtube.com/channel/"+c.ch+"/live";
+  cell.innerHTML='<button class="close" aria-label="Fermer">✕</button>'+
+    '<iframe src="'+src+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" title="'+esc(c.n)+'"></iframe>'+
+    '<a class="camopen" href="'+watch+'" target="_blank" rel="noopener noreferrer">↗ Ouvrir sur YouTube si l\'aperçu ne charge pas</a>';
+});
+
+/* ============ TfL JamCams — Londres (~900 caméras publiques, gratuit sans clé) ============ */
+var _tflAll=[];
+function pick(arr,n){var a=arr.slice(),out=[];while(a.length&&out.length<n){out.push(a.splice(Math.floor(Math.random()*a.length),1)[0]);}return out;}
+function renderTfl(){
+  if(!_tflAll.length)return;
+  var sel=pick(_tflAll,8),bust=Date.now();
+  setHTML($("tfl"),sel.map(function(c){
+    return '<figure><img src="'+esc(c.img)+'?_='+bust+'" alt="'+esc(c.name)+'" loading="lazy" onerror="this.closest(\'figure\').style.display=\'none\'">'+
+      '<figcaption>'+esc(c.name)+'</figcaption></figure>';
+  }).join(""));
+  setText($("tflState"),_tflAll.length+" caméras");
+}
+async function loadTfl(){try{
+  var d=await getJSON("https://api.tfl.gov.uk/Place/Type/JamCam",12000);
+  _tflAll=(d||[]).map(function(p){
+    var img=(p.additionalProperties||[]).filter(function(x){return x.key==="imageUrl";})[0];
+    return img&&img.value?{name:(p.commonName||"Londres").replace(/^JamCams?\s*/i,""),img:img.value}:null;
+  }).filter(Boolean);
+  if(!_tflAll.length)throw 0;
+  renderTfl();
+}catch(e){setText($("tflState"),"indispo");
+  setHTML($("tfl"),'<div class="empty" style="grid-column:1/-1">Caméras Londres momentanément indisponibles — reprise auto.</div>');}}
+$("tflShuffle").addEventListener("click",renderTfl);
+setInterval(renderTfl,30000); /* rafraîchit les vignettes (nouvelles images) */
+
+/* ============ VRAIE CARTE LIVE (Leaflet + OpenStreetMap sombre + avions ADS-B + séismes) ============ */
+var LEAF=window.L;var MAP=null,_planeLayer=null,_shipLayer=null,_quakeLayer=null,_fireLayer=null,_chokeLayer=null,_volcanoLayer=null,_stormLayer=null,_darkBase=null,_satBase=null,_liveBase=null,_nightBase=null,_geoBase=null,_bases={},_satsLayer=null,_radarLayer=null,_fireSatLayer=null,_satRecs=null,_satMarkers={},_gdacsLayer=null,_auroraLayer=null,_airLayer=null,_wavesLayer=null,_smokeLayer=null,_nightLayer=null,_issLayer=null,_issMarker=null,_issTrack=null,_issRec=null,_mapReady=false,_planesTimer=null,_lightningLayer=null,_cyclonesLayer=null,_firmsLayer=null,_floodLayer=null,_cadastreLayer=null,_pluLayer=null,_parcelleHL=null,_ignBase=null,_reliefBase=null,_orthoBase=null,_histISO=null;
+function initMap(){
+  if(_mapReady||!window.LEAF)return;
+  _mapReady=true;
+  MAP=LEAF.map("map",{worldCopyJump:true,zoomControl:true,attributionControl:true}).setView([43.74,7.42],7);
+  /* Fonds : sombre (CARTO) par défaut, satellite (Esri) togglable — sans clé */
+  _darkBase=LEAF.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
+    subdomains:"abcd",maxZoom:18,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(MAP);
+  _satBase=LEAF.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{
+    maxZoom:18,attribution:'&copy; Esri World Imagery'});
+  /* 🛰️ Vues satellite LIVE — NASA GIBS/EOSDIS (VIIRS), image d'HIER (le jour même est souvent
+     incomplet), sans clé, CORS OK. True Color = nuages/feux/tempêtes vus de l'espace ;
+     Day/Night Band = lumières des villes la nuit. Leçon #127 : sources CORS-OK sans clé. */
+  var _gd=new Date(Date.now()-24*3600*1000),_giso=_gd.getUTCFullYear()+"-"+String(_gd.getUTCMonth()+1).padStart(2,"0")+"-"+String(_gd.getUTCDate()).padStart(2,"0");
+  function _gibs(layer,matrix,ext){return "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/"+layer+"/default/"+_giso+"/"+matrix+"/{z}/{y}/{x}."+ext;}
+  _liveBase=LEAF.tileLayer(_gibs("VIIRS_SNPP_CorrectedReflectance_TrueColor","GoogleMapsCompatible_Level9","jpg"),{
+    maxNativeZoom:9,maxZoom:18,bounds:[[-85,-180],[85,180]],attribution:'&copy; NASA GIBS/EOSDIS — VIIRS True Color '+_giso});
+  _nightBase=LEAF.tileLayer(_gibs("VIIRS_SNPP_DayNightBand_ENCC","GoogleMapsCompatible_Level8","jpg"),{
+    maxNativeZoom:8,maxZoom:18,bounds:[[-85,-180],[85,180]],attribution:'&copy; NASA GIBS/EOSDIS — VIIRS Nuit '+_giso});
+  /* 🌎 Géo LIVE : disques géostationnaires GOES-East/West (GIBS WMTS 3857, time=default =
+     DERNIÈRE image dispo, ~10-20 min — VÉRIFIÉ 200 par sonde CI) + Himawari via WMS
+     (le WMTS 3857 ne l'a pas : sonde CI = 400 sur tous les candidats). Fond sombre pour
+     les zones hors disques ; tuiles hors couverture = vides → fail-open. */
+  function _gibsNow(layer,matrix){return "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/"+layer+"/default/default/"+matrix+"/{z}/{y}/{x}.png";}
+  var GIBS_WMS="https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi";
+  _geoBase=LEAF.layerGroup([
+    /* backdrop = vraie Terre (Esri satellite) → les disques nuages live se posent sur la vraie imagerie */
+    LEAF.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:18,zIndex:1}),
+    LEAF.tileLayer(_gibsNow("GOES-East_ABI_GeoColor","GoogleMapsCompatible_Level7"),{maxNativeZoom:7,maxZoom:18,zIndex:2,attribution:'&copy; NASA GIBS — GOES GeoColor (quasi temps réel)'}),
+    LEAF.tileLayer(_gibsNow("GOES-West_ABI_GeoColor","GoogleMapsCompatible_Level7"),{maxNativeZoom:7,maxZoom:18,zIndex:2}),
+    LEAF.tileLayer.wms(GIBS_WMS,{layers:"Himawari_AHI_Band13_Clean_Infrared",format:"image/png",transparent:true,version:"1.3.0",zIndex:2})
+    /* Himawari : GeoColor n'existe PAS en 3857 (GetCapabilities CI) → Band13 IR (nuages, 24h/24) */
+  ]);
+  /* 🗺️ Plan IGN officiel (Géoplateforme WMTS, sans clé) + 🏔️ relief ombré mondial (Esri hillshade). */
+  _ignBase=LEAF.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",{maxZoom:19,attribution:'&copy; IGN Géoplateforme — Plan IGN'});
+  _reliefBase=LEAF.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",{maxZoom:16,attribution:'&copy; Esri — Relief (hillshade)'});
+  /* 🛰️ Photographies aériennes IGN (ORTHO) — la vraie imagerie « Google Earth » sur la France, sans clé. */
+  _orthoBase=LEAF.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",{maxZoom:20,attribution:'&copy; IGN — Photographies aériennes'});
+  _bases={dark:_darkBase,sat:_satBase,live:_liveBase,night:_nightBase,geo:_geoBase,ign:_ignBase,relief:_reliefBase,ortho:_orthoBase};
+  /* 🔥 Feux VUS PAR SATELLITE (VIIRS Thermal Anomalies) — via WMS (absent du WMTS 3857,
+     sondes CI 400/404) ; transparent, fail-open. OFF par défaut. */
+  _fireSatLayer=LEAF.tileLayer.wms(GIBS_WMS,{layers:"VIIRS_SNPP_Thermal_Anomalies_375m_All",
+    format:"image/png",transparent:true,version:"1.3.0",zIndex:4,opacity:.9,
+    attribution:'&copy; NASA VIIRS Thermal Anomalies'});
+  _radarLayer=LEAF.layerGroup(); /* 🌧️ rempli par loadRadar, OFF par défaut */
+  /* 🇫🇷 CADASTRE — parcelles officielles IGN (Parcellaire Express, WMTS Géoplateforme, sans clé).
+     Overlay transparent, visible à fort zoom sur la France (fail-open : vide ailleurs).
+     Tap sur une parcelle → n° + surface + commune (API Carto). */
+  _cadastreLayer=LEAF.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=CADASTRALPARCELS.PARCELLAIRE_EXPRESS&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",{minZoom:12,maxZoom:20,opacity:.85,zIndex:5,attribution:'&copy; IGN — Parcellaire Express'});
+  /* 🏞️ ZONAGE PLU (urbanisme) — Géoportail de l'Urbanisme via WMS Géoplateforme, transparent. */
+  _pluLayer=LEAF.layerGroup(); /* overlay coloré retiré (WMS GPU.ZONE_URBA = 400, vérifié CI) : le zonage PLU s'affiche au TAP (apicarto zone-urba, vérifié 200). */
+  _parcelleHL=LEAF.layerGroup();
+  _satsLayer=LEAF.layerGroup().addTo(MAP); /* 🛰️ positions satellites, ON */
+  _gdacsLayer=LEAF.layerGroup().addTo(MAP); /* 🚨 alertes GDACS, ON */
+  _auroraLayer=LEAF.layerGroup(); /* 🌌 aurores, OFF par défaut */
+  _lightningLayer=LEAF.layerGroup(); /* ⚡ foudre, OFF par défaut */
+  _cyclonesLayer=LEAF.layerGroup(); /* 🌀 cyclones, OFF par défaut */
+  _firmsLayer=LEAF.layerGroup(); /* 🔥 feux FIRMS, OFF par défaut */
+  _airLayer=LEAF.layerGroup(); /* 🌫️ qualité de l'air, OFF par défaut */
+  _nightLayer=LEAF.layerGroup().addTo(MAP); /* 🌓 ombre jour/nuit réelle, ON */
+  _issLayer=LEAF.layerGroup().addTo(MAP);   /* 🛰️ ISS + orbite 45 min sur la carte, ON */
+  _wavesLayer=LEAF.layerGroup(); /* 🌊 vagues/houle, OFF par défaut */
+  _floodLayer=LEAF.layerGroup(); /* 🌊 crues/débit rivières, OFF par défaut (charge à l'activation) */
+  /* 🌫️ Fumées/poussières vues de l'espace — OMPS Aerosol Index (présent en WMTS 3857
+     d'après GetCapabilities CI, mais TileMatrixSet incertain → WMS comme les feux sat.).
+     NB : pas de FOUDRE live dans GIBS (les couches "Lightning" = archives DMSP années 90). */
+  _smokeLayer=LEAF.tileLayer.wms(GIBS_WMS,{layers:"OMPS_Aerosol_Index",
+    format:"image/png",transparent:true,version:"1.3.0",zIndex:4,opacity:.75,
+    attribution:'&copy; NASA OMPS Aerosol Index'});
+  _planeLayer=LEAF.layerGroup().addTo(MAP);
+  _shipLayer=LEAF.layerGroup().addTo(MAP);
+  _quakeLayer=LEAF.layerGroup().addTo(MAP);
+  _fireLayer=LEAF.layerGroup().addTo(MAP);
+  _chokeLayer=LEAF.layerGroup().addTo(MAP);
+  _volcanoLayer=LEAF.layerGroup().addTo(MAP);
+  _stormLayer=LEAF.layerGroup().addTo(MAP);
+  /* Les couches se pilotent par les puces sous la carte (pas de boîte sur la carte). */
+  MAP.on("moveend",function(){loadPlanes();drawQuakesMap();if(ON.firms)loadFirms();});
+  MAP.on("zoomend",function(){drawShipsMap();});
+  setTimeout(function(){MAP.invalidateSize();loadPlanes();loadShips();loadSats();loadRadar();loadGdacs();loadAurora();loadAir();loadWaves();drawNight();drawQuakesMap();drawFiresMap();drawChokeMap();drawVolcanoMap();drawStormsMap();},250);
+  _planesTimer=setInterval(loadPlanes,15000);
+  setInterval(loadShips,60000);
+  setInterval(function(){if(ON.radar)loadRadar();},300000); /* radar rafraîchi ~10 min côté source */
+  setInterval(loadGdacs,900000);                            /* alertes ONU ~15 min */
+  setInterval(function(){if(ON.lightning)loadLightning();},40000);   /* ⚡ foudre ~40 s */
+  setInterval(function(){if(ON.cyclones)loadCyclones();},600000);    /* 🌀 cyclones ~10 min */
+  setInterval(function(){if(ON.firms)loadFirms();},600000);          /* 🔥 feux FIRMS ~10 min */
+  setInterval(function(){if(ON.aurora)loadAurora();},600000); /* aurores maj NOAA ~5-10 min */
+  setInterval(function(){if(ON.air)loadAir();},1800000);      /* air (données horaires) */
+  setInterval(function(){if(ON.waves)loadWaves();},1800000);   /* vagues (données horaires) */
+  setInterval(function(){if(ON.crues)loadFloods();},1800000);  /* crues rivières (débit quotidien) */
+  setInterval(function(){if(ON.night)drawNight();},60000);     /* terminateur solaire, maj 1 min */
+  setInterval(function(){var el=document.getElementById("mapClock");if(!el)return;
+    var s=new Date().toISOString().slice(11,19)+" UTC";if(el.textContent!==s)el.textContent=s;},1000);
+  /* 🧠 fond + vue mémorisés (fail-open) */
+  try{if(_wantBase&&_bases[_wantBase])setBase(_wantBase);if(_lastView)setMapView(_lastView);}catch(_e){}
+  /* 📍 v2.41 — position mémorisée : si Kevin l'avait activée, on la relance
+     (permission déjà accordée → aucun re-prompt ; révoquée → message clair + coupe). */
+  try{if(ON.pos)posStart();}catch(_e){}
+  /* 🌦 Météo en tout point (Kevin n°5) : tap sur la carte → météo live + 3 jours (Open-Meteo, gratuit sans clé) */
+  MAP.on("click",function(ev){
+    try{
+      var tgt=ev.originalEvent&&ev.originalEvent.target;
+      if(tgt&&tgt.closest&&tgt.closest("path,.leaflet-marker-icon,.leaflet-interactive,.leaflet-popup"))return; /* ne vole pas le tap des marqueurs */
+      var la=ev.latlng.lat,lo=ev.latlng.lng;
+      if(ON.cadastre||ON.plu){_showParcelle(ev);return;}
+      var pop=LEAF.popup({maxWidth:250}).setLatLng(ev.latlng).setContent('<div style="font-size:12px">🌦 météo de ce point…</div>').openOn(MAP);
+      fetch("https://api.open-meteo.com/v1/forecast?latitude="+la.toFixed(3)+"&longitude="+lo.toFixed(3)+"&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=3&timezone=auto")
+      .then(function(r){return r.json();}).then(function(d){
+        var c=d.current||{},dl=d.daily||{},days=["Aujourd\u2019hui","Demain","Après-demain"];
+        var rows="";for(var i=0;i<3;i++){if(!dl.time||!dl.time[i])break;
+          rows+='<div style="display:flex;justify-content:space-between;gap:8px"><span>'+days[i]+' '+_wxEmoji(dl.weather_code[i])+'</span><span>'+Math.round(dl.temperature_2m_min[i])+'° / <b>'+Math.round(dl.temperature_2m_max[i])+'°</b> · ☔'+(dl.precipitation_probability_max[i]==null?"—":dl.precipitation_probability_max[i]+"%")+'</span></div>';}
+        pop.setContent('<div style="font-size:12px;line-height:1.55;min-width:200px">'+
+          '<b style="font-size:15px">'+_wxEmoji(c.weather_code)+' '+Math.round(c.temperature_2m)+'°C</b> <span style="opacity:.75">(ressenti '+Math.round(c.apparent_temperature)+'°)</span><br>'+
+          '💨 '+Math.round(c.wind_speed_10m)+' km/h · 💧 '+c.relative_humidity_2m+'%<div style="border-top:1px solid rgba(120,150,210,.25);margin:6px 0 4px"></div>'+rows+
+          '<div style="opacity:.6;margin-top:4px">'+la.toFixed(2)+', '+lo.toFixed(2)+' · Open-Meteo live</div></div>');
+      }).catch(function(){pop.setContent('<div style="font-size:12px">🌦 météo indisponible ici — réessaie.</div>');});
+    }catch(_e){}
+  });
+}
+/* 🇫🇷 Tap sur la carte en mode Cadastre → parcelle IGN (n° + surface + commune) + zonage PLU.
+   Sources officielles gratuites sans clé : API Carto IGN (apicarto.ign.fr). Fail-open. */
+function _showParcelle(ev){
+  var la=ev.latlng.lat,lo=ev.latlng.lng;
+  var pop=LEAF.popup({maxWidth:290}).setLatLng(ev.latlng).setContent('<div style="font-size:12px">🇫🇷 parcelle cadastrale…</div>').openOn(MAP);
+  if(_parcelleHL){_parcelleHL.clearLayers();if(!MAP.hasLayer(_parcelleHL))_parcelleHL.addTo(MAP);}
+  var geom=encodeURIComponent(JSON.stringify({type:"Point",coordinates:[+lo.toFixed(6),+la.toFixed(6)]}));
+  function J(u){return fetch(u).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
+  var pP=J("https://apicarto.ign.fr/api/cadastre/parcelle?geom="+geom);
+  var pZ=(ON.plu)?J("https://apicarto.ign.fr/api/gpu/zone-urba?geom="+geom):Promise.resolve(null);
+  var pB=J("https://api-adresse.data.gouv.fr/reverse/?lon="+lo.toFixed(6)+"&lat="+la.toFixed(6));
+  var pG=J("https://georisques.gouv.fr/api/v1/gaspar/risques?latlon="+lo.toFixed(6)+"%2C"+la.toFixed(6)+"&rayon=1000");
+  Promise.all([pP,pZ,pB,pG]).then(function(res){
+    var par=res[0],zon=res[1],ban=res[2],geo=res[3],f=par&&par.features&&par.features[0];
+    if(!f){pop.setContent('<div style="font-size:12px;line-height:1.5">🇫🇷 Aucune parcelle ici.<div style="opacity:.6;margin-top:3px">Le cadastre ne couvre que la France — zoome bien sur le terrain.</div></div>');return;}
+    var p=f.properties||{},HR='<div style="border-top:1px solid rgba(120,150,210,.25);margin:6px 0 4px"></div>';
+    if(_parcelleHL&&f.geometry){try{LEAF.geoJSON(f.geometry,{style:{color:"#e8b830",weight:2,fillColor:"#e8b830",fillOpacity:.12}}).addTo(_parcelleHL);}catch(_e){}}
+    var sec=((p.section||"")+" "+(p.numero||"")).trim(),com=(p.nom_com||p.code_insee||p.code_com||""),surf=(p.contenance!=null?Number(p.contenance).toLocaleString("fr-FR")+" m²":"—");
+    /* 📍 Adresse (Base Adresse Nationale) */
+    var adr="",bf=ban&&ban.features&&ban.features[0]&&ban.features[0].properties;
+    if(bf&&bf.label)adr='📍 '+String(bf.label)+'<br>';
+    /* 🏞️ Zonage PLU */
+    var zt="",zf=zon&&zon.features&&zon.features[0]&&zon.features[0].properties;
+    if(zf)zt=HR+'🏞️ Zonage : <b>'+(zf.libelle||zf.typezone||"zone")+'</b>'+(zf.libelong?' <span style="opacity:.7">'+String(zf.libelong)+'</span>':'');
+    else if(ON.plu)zt=HR+'🏞️ <span style="opacity:.7">pas de PLU numérisé ici</span>';
+    /* 💶 Prix immobiliers réels (DVF) — lien vers la carte officielle Etalab centrée sur le point */
+    var dt=HR+'💶 <a href="https://explore.data.gouv.fr/immobilier?onglet=carte&lat='+la.toFixed(6)+'&lng='+lo.toFixed(6)+'&zoom=19" target="_blank" rel="noopener noreferrer" style="color:#7fd6a8;text-decoration:underline">Prix des ventes (DVF) ↗</a>';
+    /* ⚠️ Risques naturels & technologiques (Géorisques) — risques imbriqués dans data[].risques_detail[] (vérifié CI) */
+    var gt="",gd=geo&&geo.data,rs=[];
+    if(gd&&gd.length){gd.forEach(function(c){(c.risques_detail||[]).forEach(function(r){if(r.libelle_risque_long)rs.push(r.libelle_risque_long);});});rs=rs.filter(function(v,i){return rs.indexOf(v)===i;}).slice(0,6);if(rs.length)gt=HR+'⚠️ Risques : <span style="opacity:.85">'+rs.join(" · ")+'</span>';}
+    pop.setContent('<div style="font-size:12px;line-height:1.55;min-width:225px;max-height:290px;overflow:auto">'+
+      '<b style="font-size:15px">🗺️ Parcelle '+(sec||"—")+'</b><br>'+adr+
+      '📐 Surface : <b>'+surf+'</b><br>'+
+      '🏘️ Commune : '+(com||"—")+(p.code_insee?' <span style="opacity:.6">('+p.code_insee+')</span>':'')+zt+dt+gt+
+      '<div style="opacity:.6;margin-top:5px">'+la.toFixed(5)+', '+lo.toFixed(5)+' · IGN · DVF · Géorisques · BAN</div></div>');
+  }).catch(function(){pop.setContent('<div style="font-size:12px">🇫🇷 données indisponibles ici — réessaie.</div>');});
+}
+/* code météo WMO → emoji */
+function _wxEmoji(w){w=+w;if(w===0)return"☀️";if(w<3)return"🌤️";if(w===3)return"☁️";if(w<49)return"🌫️";if(w<58)return"🌦️";if(w<66)return"🌧️";if(w<78)return"🌨️";if(w<83)return"🌧️";if(w<87)return"🌨️";if(w>=95)return"⛈️";return"🌡️";}
+function planeIcon(track){
+  var t=((track||0)-45); /* ✈️ pointe vers le NE */
+  return LEAF.divIcon({className:"",html:'<div class="plane" style="transform:rotate('+t+'deg)">✈️</div>',iconSize:[16,16],iconAnchor:[8,8]});
+}
+async function loadPlanes(){
+  if(!MAP)return;
+  var c=MAP.getCenter();
+  var lat=Math.round(c.lat*1000)/1000,lon=Math.round(c.lng*1000)/1000;
+  var b=MAP.getBounds(),km=b.getNorthEast().distanceTo(b.getSouthWest())/1000;
+  var nm=Math.min(250,Math.max(50,Math.round(km/2/1.852)));
+  /* avions via le relais serveur /planes (adsb.lol/airplanes.live bloquent le CORS navigateur) */
+  var ac=null;
+  try{var d=await getJSON(LIVE_URL+"/planes?lat="+lat+"&lon="+lon+"&radius="+nm,10000);ac=(d&&d.ac)||null;}catch(e){}
+  if(!ac){setText($("mapHint"),"✈️ trafic aérien momentanément indispo · 🔴 séismes");return;}
+  _planeLayer.clearLayers();
+  var n=0;
+  ac.forEach(function(a){
+    if(a.lat==null||a.lon==null)return;n++;
+    var alt=(a.alt_baro==null||a.alt_baro==="ground")?"au sol":Math.round(a.alt_baro)+" ft";
+    var spd=a.gs!=null?Math.round(a.gs)+" kt":"—";
+    var fl=(a.flight||a.r||"?").trim();
+    var kmh=a.gs!=null?" ("+Math.round(a.gs*1.852)+" km/h)":"",mAlt=(a.alt_baro!=null&&a.alt_baro!=="ground")?" ("+Math.round(a.alt_baro*0.3048)+" m)":"";
+    LEAF.marker([a.lat,a.lon],{icon:planeIcon(a.track)}).bindPopup("<b>✈️ "+esc(fl)+"</b>"+(a.t?" · "+esc(a.t):"")+(a.r?"<br>Immat. "+esc(a.r):"")+"<br>Altitude "+esc(alt)+esc(mAlt)+"<br>Vitesse "+esc(spd)+esc(kmh)+(a.track!=null?"<br>Cap "+Math.round(a.track)+"°":"")+(a.desc?"<br><span style=\'opacity:.7\'>"+esc(a.desc)+"</span>":"")).addTo(_planeLayer);
+  });
+  setText($("mapHint"),"✈️ "+n+" avions en direct · 🔴 séismes · pince pour zoomer");
+  setText($("sFlights"),String(n));
+}
+/* Impact estimé PAGER (USGS) : vert=aucun, jaune=limité, orange=sérieux, rouge=majeur */
+function _pagerHtml(q){var h="";
+  if(q.alert){var pc={green:"#3ddc84",yellow:"#ffd24d",orange:"#ffb84d",red:"#ff5a4d"}[q.alert]||"#9aa7c7";
+    var pl={green:"aucun dégât attendu",yellow:"impact limité possible",orange:"impact sérieux probable",red:"impact majeur probable"}[q.alert]||q.alert;
+    h+="<br>Impact estimé (PAGER) : <b style=\'color:"+pc+"\'>"+pl+"</b>";}
+  if(q.tsunami)h+="<br>🌊 <b style=\'color:#4db8ff\'>alerte tsunami possible</b>";
+  if(q.felt)h+="<br>👥 ressenti par "+q.felt+" personnes";
+  return h;}
+function drawQuakesMap(){
+  if(!MAP||!_quakeLayer)return;
+  _quakeLayer.clearLayers();
+  (DL.quakes||[]).forEach(function(q){
+    var m=q.mag||0,col=m>=5?"#ff5a4d":m>=3?"#ffb84d":"#ffd24d",r=Math.max(4,Math.min(16,m*2.4));
+    LEAF.circleMarker([q.lat,q.lon],{radius:r,color:col,weight:1,fillColor:col,fillOpacity:.35}).bindPopup("<b>Séisme M "+m.toFixed(1)+"</b><br>"+esc(q.place||"")+"<br>Profondeur "+((q.depth||0).toFixed(0))+" km"+(q.time?"<br>Il y a "+ago(q.time):"")+_pagerHtml(q)).addTo(_quakeLayer);
+  });
+}
+function drawFiresMap(){
+  if(!MAP||!_fireLayer)return;
+  _fireLayer.clearLayers();
+  (DL.fires||[]).forEach(function(f){
+    LEAF.circleMarker([f.lat,f.lon],{radius:5,color:"#ff8a3d",weight:1,fillColor:"#ff8a3d",fillOpacity:.5}).bindPopup("<b>🔥 "+esc(f.title||"Incendie actif")+"</b>"+(f.when?"<br>Depuis "+ago(f.when):"")+"<br><span style='opacity:.7'>"+f.lat.toFixed(2)+"°, "+f.lon.toFixed(2)+"°</span>").addTo(_fireLayer);
+  });
+}
+function drawChokeMap(){
+  if(!MAP||!_chokeLayer)return;
+  _chokeLayer.clearLayers();
+  (DL.choke||[]).forEach(function(c){
+    LEAF.marker([c.lat,c.lon],{icon:LEAF.divIcon({className:"",html:'<div style="font-size:15px">⚓</div>',iconSize:[16,16],iconAnchor:[8,8]})}).bindPopup("<b>"+esc(c.n)+"</b><br>"+esc(c.d||"")).addTo(_chokeLayer);
+  });
+  (DL.tension||[]).forEach(function(t){
+    LEAF.circleMarker([t.lat,t.lon],{radius:9,color:"#ff5a4d",weight:1,fillColor:"#ff5a4d",fillOpacity:.18}).bindPopup("⚠️ Zone de tension (indicatif)<br><b>"+esc(t.n)+"</b>").addTo(_chokeLayer);
+  });
+}
+function drawVolcanoMap(){
+  if(!MAP||!_volcanoLayer)return;_volcanoLayer.clearLayers();
+  (DL.volcano||[]).forEach(function(v){LEAF.circleMarker([v.lat,v.lon],{radius:6,color:"#ff5a4d",weight:1,fillColor:"#ff5a4d",fillOpacity:.55}).bindPopup("<b>🌋 "+esc(v.title||"Volcan actif")+"</b>"+(v.when?"<br>Depuis "+ago(v.when):"")+"<br><span style='opacity:.7'>"+v.lat.toFixed(2)+"°, "+v.lon.toFixed(2)+"°</span>").addTo(_volcanoLayer);});
+}
+function drawStormsMap(){
+  if(!MAP||!_stormLayer)return;_stormLayer.clearLayers();
+  (DL.storms||[]).forEach(function(s){LEAF.circleMarker([s.lat,s.lon],{radius:7,color:"#b992ff",weight:1,fillColor:"#b992ff",fillOpacity:.3}).bindPopup("<b>🌀 "+esc(s.title||"Tempête")+"</b>"+(s.when?"<br>Depuis "+ago(s.when):"")+"<br><span style='opacity:.7'>"+s.lat.toFixed(2)+"°, "+s.lon.toFixed(2)+"°</span>").addTo(_stormLayer);});
+}
+/* 🛰️ SATELLITES EN DIRECT — données orbitales Celestrak (groupe "visual" = les plus brillants),
+   positions RÉELLES recalculées toutes les 5 s en SGP4 (satellite.js, dans le navigateur).
+   Aucune clé, CORS OK (leçon #127). Fail-open : échec réseau/lib → couche vide, rien ne casse. */
+async function loadSats(){
+  if(!window.satellite)return;
+  var txt=null;
+  try{
+    var c=new AbortController();var t=setTimeout(function(){c.abort();},12000);
+    var r=await fetch("https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=tle",{signal:c.signal,cache:"no-store"});
+    clearTimeout(t);if(!r.ok)throw 0;txt=await r.text();
+  }catch(e){return;}
+  var lines=txt.split(/\r?\n/),recs=[];
+  for(var i=0;i+2<lines.length;i+=3){
+    var name=(lines[i]||"").trim(),l1=lines[i+1],l2=lines[i+2];
+    if(!l1||!l2||l1[0]!=="1"||l2[0]!=="2")continue;
+    try{var _r=satellite.twoline2satrec(l1,l2);recs.push({name:name,rec:_r});
+      if(/ISS/i.test(name)&&!_issRec)_issRec=_r; /* TLE ISS → marqueur + orbite carte */
+    }catch(e){}
+    if(recs.length>=150)break;
+  }
+  _satRecs=recs;updateSats();
+  if(!window._satsTimer)window._satsTimer=setInterval(updateSats,5000);
+}
+function updateSats(){
+  if(!MAP||!_satsLayer||!_satRecs||!window.satellite)return;
+  var now=new Date(),gmst=satellite.gstime(now),out=[];
+  _satRecs.forEach(function(s,idx){
+    try{
+      var pv=satellite.propagate(s.rec,now);if(!pv||!pv.position)return;
+      var g=satellite.eciToGeodetic(pv.position,gmst);
+      var lat=g.latitude*180/Math.PI,lon=((g.longitude*180/Math.PI+540)%360)-180;
+      if(!isFinite(lat)||!isFinite(lon))return;
+      var d={name:s.name,lat:lat,lon:lon,alt:Math.round(g.height),
+             kmh:pv.velocity?Math.round(Math.sqrt(pv.velocity.x*pv.velocity.x+pv.velocity.y*pv.velocity.y+pv.velocity.z*pv.velocity.z)*3600):null};
+      out.push(d);
+      var m=_satMarkers[idx];
+      if(!m){
+        m=LEAF.circleMarker([lat,lon],{radius:2.6,color:"#ffd27f",weight:1,fillColor:"#ffe9b8",fillOpacity:.9});
+        m.bindPopup(function(){var x=m._sat||{};
+          return "<b>🛰️ "+esc(x.name||"Satellite")+"</b><br>Altitude "+(x.alt!=null?x.alt+" km":"?")
+            +(x.kmh?" · "+x.kmh.toLocaleString("fr-FR")+" km/h":"")
+            +"<br><span style='opacity:.7'>Position réelle en direct (SGP4 · Celestrak)</span>";});
+        m.addTo(_satsLayer);_satMarkers[idx]=m;
+      }
+      m._sat=d;m.setLatLng([lat,lon]);
+    }catch(e){}
+  });
+  DL.sats=out;
+  updateIssMap();
+}
+/* 🌧️ RADAR DE PRÉCIPITATIONS MONDIAL en direct — RainViewer (gratuit, sans clé, maj ~10 min) */
+var _radarFrames=null,_radarHost="";
+async function loadRadar(){
+  try{
+    var j=await getJSON("https://api.rainviewer.com/public/weather-maps.json",10000);
+    var past=j&&j.radar&&j.radar.past;if(!past||!past.length||!_radarLayer)return;
+    _radarFrames=past;_radarHost=j.host||"https://tilecache.rainviewer.com";
+    _radarShowFrame(past.length-1);
+    _radarBarSync();
+  }catch(e){}
+}
+function _radarShowFrame(i){
+  if(!_radarFrames||!_radarFrames[i]||!_radarLayer)return;
+  var f=_radarFrames[i];
+  _radarLayer.clearLayers();
+  LEAF.tileLayer(_radarHost+f.path+"/512/{z}/{x}/{y}/2/1_1.png",{opacity:.65,zIndex:5,maxZoom:18,
+    attribution:'&copy; RainViewer — radar pluie en direct'}).addTo(_radarLayer);
+  var lb=document.getElementById("radarT");
+  if(lb){var d=new Date(f.time*1000),s=(i===_radarFrames.length-1?"maintenant":d.toTimeString().slice(0,5));if(lb.textContent!==s)lb.textContent=s;}
+  var rg=document.getElementById("radarRange");if(rg&&+rg.value!==i)rg.value=String(i);
+}
+/* ⏪ Replay pluie (Kevin n°8) : curseur sur les ~2 dernières heures de radar */
+function _radarBarSync(){
+  var bar=document.getElementById("radarBar");if(!bar)return;
+  var show=!!(ON.radar&&_radarFrames&&_radarFrames.length>1);
+  bar.style.display=show?"flex":"none";
+  if(show){var rg=document.getElementById("radarRange");rg.max=String(_radarFrames.length-1);}
+}
+/* 🖼️ IMAGES DES ACTUS EN DIRECT — GDELT DOC 2.0 artlist (images des articles publiés
+   ces dernières heures : guerres, crises, breaking). Tout échappé, https seulement. */
+var _niQuery="(breaking OR urgent)";
+async function loadNewsImages(){
+  var box=document.getElementById("newsImgs");if(!box)return;
+  box.innerHTML='<div class="empty" style="grid-column:1/-1">Chargement…</div>';
+  try{
+    var j=await getJSON("https://api.gdeltproject.org/api/v2/doc/doc?query="+encodeURIComponent(_niQuery+" sourcelang:eng")+"&mode=artlist&maxrecords=40&sort=datedesc&format=json&timespan=6h",15000);
+    var arts=((j&&j.articles)||[]).filter(function(a){return a&&typeof a.socialimage==="string"&&/^https:\/\//.test(a.socialimage)&&/^https?:\/\//.test(a.url||"");}).slice(0,18);
+    if(!arts.length){box.innerHTML='<div class="empty" style="grid-column:1/-1">Pas d\'image sur ce sujet ces dernières heures — réessaie dans un moment.</div>';return;}
+    box.innerHTML=arts.map(function(a){
+      var when=(a.seendate||"").replace(/^(\d{4})(\d{2})(\d{2})T?(\d{2})(\d{2}).*$/,"$3/$2 $4:$5");
+      return '<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;color:inherit;background:#0e1424;border:1px solid var(--line);border-radius:10px;overflow:hidden">'
+        +'<img src="'+esc(a.socialimage)+'" loading="lazy" style="width:100%;height:96px;object-fit:cover;display:block" onerror="this.parentNode.remove()">'
+        +'<div style="padding:6px 8px;font-size:11px;line-height:1.35"><div style="max-height:44px;overflow:hidden">'+esc(a.title||"Article")+'</div>'
+        +'<div style="opacity:.6;margin-top:3px">'+esc((a.domain||"")+(when?" · "+when:""))+'</div></div></a>';
+    }).join("");
+    var st=document.getElementById("niState");if(st)st.textContent=arts.length+" images · dernières 6 h · GDELT";
+  }catch(e){
+    box.innerHTML='<div class="empty" style="grid-column:1/-1">Source actus momentanément indisponible — réessaie dans une minute.</div>';
+  }
+}
+/* 🌓 OMBRE JOUR/NUIT RÉELLE — position du soleil calculée en direct (aucune API),
+   polygone de nuit translucide, maj 1 min. La carte devient une vraie vue live. */
+function _sunPos(d){
+  var rad=Math.PI/180;
+  var jd=d.getTime()/86400000+2440587.5,n=jd-2451545.0;
+  var L=(280.460+0.9856474*n)%360,g=((357.528+0.9856003*n)%360)*rad;
+  var lambda=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g))*rad,eps=23.439*rad;
+  var decl=Math.asin(Math.sin(eps)*Math.sin(lambda));
+  var ra=Math.atan2(Math.cos(eps)*Math.sin(lambda),Math.cos(lambda));
+  var gmst=((18.697374558+24.06570982441908*n)%24+24)%24;
+  var lon=((ra/rad)-gmst*15+540)%360-180;
+  return {lat:decl/rad,lon:lon};
+}
+function drawNight(){
+  if(!MAP||!_nightLayer)return;
+  var s=_sunPos(new Date()),rad=Math.PI/180,pts=[];
+  for(var lon=-180;lon<=180;lon+=2){
+    var ha=(lon-s.lon)*rad;
+    var tanD=Math.tan(s.lat*rad);if(Math.abs(tanD)<1e-6)tanD=(tanD<0?-1:1)*1e-6;
+    pts.push([Math.atan(-Math.cos(ha)/tanD)/rad,lon]);
+  }
+  var pole=s.lat>0?-90:90;
+  pts.push([pole,180]);pts.push([pole,-180]);
+  _nightLayer.clearLayers();
+  LEAF.polygon(pts,{stroke:false,fillColor:"#020614",fillOpacity:.42,interactive:false}).addTo(_nightLayer);
+}
+/* 🌍/📍 Recentrage 1 tap */
+(function(){var rg=document.getElementById("radarRange");if(rg)rg.addEventListener("input",function(){_radarShowFrame(+rg.value);});})();
+/* 🔍 Recherche de lieu (Kevin n°6) : Nominatim gratuit sans clé → vol vers le lieu */
+(function(){var q=document.getElementById("wmQ"),go=document.getElementById("wmGo"),st=document.getElementById("wmQState");if(!q||!go)return;
+  var mk=null;
+  function fly(){var v=(q.value||"").trim();if(!v)return;st.textContent="…";
+    fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=fr&q="+encodeURIComponent(v),{headers:{"Accept":"application/json"}})
+    .then(function(r){return r.json();}).then(function(a){
+      if(!a||!a[0]){st.textContent="introuvable";setTimeout(function(){st.textContent="";},2500);return;}
+      st.textContent="";var r0=a[0],la=+r0.lat,lo=+r0.lon;
+      if(!MAP){var vb=document.getElementById("vMap");if(vb)vb.click();}
+      if(!MAP)return;
+      var z=9;try{var bb=r0.boundingbox.map(Number);var span=Math.max(Math.abs(bb[1]-bb[0]),Math.abs(bb[3]-bb[2]));z=span>20?4:span>6?6:span>1.5?8:span>.3?10:12;}catch(_e){}
+      MAP.flyTo([la,lo],z,{duration:1.6});
+      if(mk)MAP.removeLayer(mk);
+      mk=LEAF.marker([la,lo]).addTo(MAP).bindPopup('<div style="font-size:12px;max-width:220px">📍 '+esc(r0.display_name||v)+'<br><span style="opacity:.6">tape ailleurs sur la carte pour la météo de ce point</span></div>');
+      setTimeout(function(){if(mk)mk.openPopup();},1700);
+    }).catch(function(){st.textContent="réseau ?";setTimeout(function(){st.textContent="";},2500);});}
+  go.addEventListener("click",fly);
+  q.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();fly();}});
+})();
+function setMapView(v){if(!MAP)return;if(v==="world")MAP.setView([25,10],2);else MAP.setView([43.74,7.42],7);}
+/* 🛰️ ISS SUR LA CARTE — position réelle (SGP4, TLE Celestrak) + orbite des 45 prochaines
+   minutes en pointillés, maj toutes les 5 s avec les autres satellites. */
+function updateIssMap(){
+  if(!MAP||!_issLayer||!_issRec||!window.satellite)return;
+  try{
+    var now=new Date(),pv=satellite.propagate(_issRec,now);if(!pv||!pv.position)return;
+    var g=satellite.eciToGeodetic(pv.position,satellite.gstime(now));
+    var lat=g.latitude*180/Math.PI,lon=((g.longitude*180/Math.PI+540)%360)-180;
+    if(!isFinite(lat)||!isFinite(lon))return;
+    if(!_issMarker){
+      _issMarker=LEAF.marker([lat,lon],{icon:LEAF.divIcon({className:"",html:'<div style="font-size:19px;filter:drop-shadow(0 0 7px #35d6e6)">🛰️</div>',iconSize:[22,22],iconAnchor:[11,11]})})
+        .bindPopup(function(){return "<b>🛰️ Station Spatiale (ISS)</b><br>Altitude "+(_issMarker._alt||"?")+" km · position réelle<br><span style=\'opacity:.7\'>Pointillés = orbite des 45 prochaines minutes</span>";})
+        .addTo(_issLayer);
+    }
+    _issMarker._alt=Math.round(g.height);_issMarker.setLatLng([lat,lon]);
+    var segs=[],seg=[],prev=null;
+    for(var m=0;m<=45;m+=2){
+      var tt=new Date(now.getTime()+m*60000),p2=satellite.propagate(_issRec,tt);
+      if(!p2||!p2.position)continue;
+      var g2=satellite.eciToGeodetic(p2.position,satellite.gstime(tt));
+      var la=g2.latitude*180/Math.PI,lo=((g2.longitude*180/Math.PI+540)%360)-180;
+      if(prev!=null&&Math.abs(lo-prev)>180){segs.push(seg);seg=[];}
+      seg.push([la,lo]);prev=lo;
+    }
+    if(seg.length)segs.push(seg);
+    if(_issTrack)_issLayer.removeLayer(_issTrack);
+    _issTrack=LEAF.polyline(segs,{color:"#35d6e6",weight:1.5,dashArray:"4 6",opacity:.75,interactive:false}).addTo(_issLayer);
+  }catch(e){}
+}
+/* 🚨 ALERTES CATASTROPHES MONDIALES en direct — GDACS (ONU/Commission européenne, sans clé).
+   Cyclones (TC), inondations (FL), séismes majeurs (EQ), volcans (VO), sécheresses (DR),
+   feux (WF) — avec niveau d'alerte officiel Green/Orange/Red. Fail-open. */
+var _GDACS_TYPES={TC:"🌀 Cyclone",EQ:"🔴 Séisme majeur",FL:"🌊 Inondation",VO:"🌋 Volcan",DR:"🌵 Sécheresse",WF:"🔥 Feu de forêt",TS:"🌊 Tsunami"};
+async function loadGdacs(){
+  try{
+    var j=await getJSON("https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP",12000);
+    var fs=(j&&j.features)||[];if(!_gdacsLayer)return;
+    _gdacsLayer.clearLayers();var out=[];
+    fs.forEach(function(f){
+      var g=f.geometry,pr=f.properties||{};if(!g||!g.coordinates)return;
+      var lon=+g.coordinates[0],lat=+g.coordinates[1];if(!isFinite(lat)||!isFinite(lon))return;
+      var lvl=String(pr.alertlevel||"Green"),col=lvl==="Red"?"#ff3b30":lvl==="Orange"?"#ff9500":"#35d684";
+      var typ=_GDACS_TYPES[pr.eventtype]||("⚠️ "+(pr.eventtype||"Événement"));
+      var name=pr.eventname||pr.name||"";
+      out.push({lat:lat,lon:lon,lvl:lvl,typ:typ,name:name});
+      if(lvl==="Red")wmNotify("🔴 Alerte GDACS ROUGE — "+typ,(name||"Événement majeur")+" · niveau rouge ONU","g_"+(pr.eventid||pr.eventtype+"_"+name));
+      LEAF.circleMarker([lat,lon],{radius:lvl==="Red"?9:lvl==="Orange"?7:5,color:col,weight:2,fillColor:col,fillOpacity:.35})
+        .bindPopup("<b>"+typ+(name?" — "+esc(String(name)):"")+"</b><br>Niveau d'alerte : <b style='color:"+col+"'>"+esc(lvl)+"</b>"
+          +(pr.fromdate?"<br>Depuis "+esc(String(pr.fromdate).slice(0,10)):"")
+          +"<br><span style='opacity:.7'>GDACS (ONU) · "+lat.toFixed(2)+"°, "+lon.toFixed(2)+"°</span>")
+        .addTo(_gdacsLayer);
+    });
+    DL.gdacs=out;
+  }catch(e){}
+}
+/* ⚡ FOUDRE MONDIALE en direct — worker kdmc-live (réseau Blitzortung, WS courte côté serveur).
+   Impacts des dernières minutes. Point jaune = récent, s'estompe avec l'âge. */
+async function loadLightning(){
+  if(!_lightningLayer)return;
+  try{
+    var j=await getJSON(LIVE_URL+"/lightning?secs=4&limit=1500",12000);
+    var st=(j&&j.strikes)||[];_lightningLayer.clearLayers();
+    var now=Date.now();
+    st.forEach(function(s){
+      if(!isFinite(+s.lat)||!isFinite(+s.lon))return;
+      var age=Math.max(0,(now-(+s.time||now))/1000),op=Math.max(.25,1-age/600); /* s'estompe sur 10 min */
+      LEAF.circleMarker([+s.lat,+s.lon],{radius:3.2,color:"#fff3a0",weight:1,fillColor:"#ffe14d",fillOpacity:op})
+        .bindPopup("<b>⚡ Impact de foudre</b><br><span style='opacity:.75'>il y a "+(age<60?Math.round(age)+" s":Math.round(age/60)+" min")+" · "+(+s.lat).toFixed(2)+"°, "+(+s.lon).toFixed(2)+"°</span><br><span style='opacity:.6'>Blitzortung (temps réel)</span>")
+        .addTo(_lightningLayer);
+    });
+  }catch(e){}
+}
+/* 🌀 CYCLONES/OURAGANS ACTIFS — worker kdmc-live (relais NOAA/NHC CurrentStorms.json). */
+async function loadCyclones(){
+  if(!_cyclonesLayer)return;
+  try{
+    var j=await getJSON(LIVE_URL+"/cyclones",12000);
+    var st=(j&&j.activeStorms)||[];_cyclonesLayer.clearLayers();
+    st.forEach(function(s){
+      var la=parseFloat(s.latitudeNumeric!=null?s.latitudeNumeric:s.latitude),lo=parseFloat(s.longitudeNumeric!=null?s.longitudeNumeric:s.longitude);
+      if(!isFinite(la)||!isFinite(lo))return;
+      var nm=s.name||s.tcName||"Cyclone",cat=s.classification||s.intensity||"",wind=s.intensity||s.maxSustainedWind||"";
+      LEAF.marker([la,lo],{icon:LEAF.divIcon({className:"",html:'<div style="font-size:20px;filter:drop-shadow(0 0 3px #b992ff)">🌀</div>',iconSize:[22,22],iconAnchor:[11,11]})})
+        .bindPopup("<b>🌀 "+esc(String(nm))+"</b>"+(cat?"<br>"+esc(String(cat)):"")+(wind?"<br>Vent "+esc(String(wind))+(/\d$/.test(String(wind))?" nds":""):"")+"<br><span style='opacity:.6'>NOAA/NHC · "+la.toFixed(1)+"°, "+lo.toFixed(1)+"°</span>")
+        .addTo(_cyclonesLayer);
+    });
+  }catch(e){}
+}
+/* 🔥 FEUX ACTIFS vus par satellite — worker kdmc-live (NASA FIRMS VIIRS, 24 h) sur la vue courante.
+   Vide tant que la clé FIRMS n'est pas configurée (fail-open). */
+async function loadFirms(){
+  if(!_firmsLayer||!MAP)return;
+  try{
+    var b=MAP.getBounds(),bbox=[b.getWest().toFixed(2),b.getSouth().toFixed(2),b.getEast().toFixed(2),b.getNorth().toFixed(2)].join(",");
+    var j=await getJSON(LIVE_URL+"/fires?bbox="+bbox+"&limit=2000",12000);
+    var fs=(j&&j.features)||[];_firmsLayer.clearLayers();
+    fs.forEach(function(f){
+      var c=f.geometry&&f.geometry.coordinates;if(!c)return;var lo=+c[0],la=+c[1];if(!isFinite(la)||!isFinite(lo))return;
+      var pr=f.properties||{},frp=pr.frp!=null?" · "+Math.round(pr.frp)+" MW":"";
+      LEAF.circleMarker([la,lo],{radius:3.4,color:"#ff9a4d",weight:1,fillColor:"#ff5a1a",fillOpacity:.75})
+        .bindPopup("<b>🔥 Feu actif (satellite)</b><br><span style='opacity:.75'>"+(pr.date||"")+(pr.daynight==="N"?" · nuit":pr.daynight==="D"?" · jour":"")+frp+"</span><br><span style='opacity:.6'>NASA FIRMS VIIRS · "+la.toFixed(2)+"°, "+lo.toFixed(2)+"°</span>")
+        .addTo(_firmsLayer);
+    });
+  }catch(e){}
+}
+/* 🌌 AURORES BORÉALES/AUSTRALES en direct — NOAA SWPC OVATION (maj ~5 min, sans clé).
+   Grille mondiale de probabilité d'aurore → points verts au-dessus de 30 %. */
+async function loadAurora(){
+  try{
+    var j=await getJSON("https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",15000);
+    var c=(j&&j.coordinates)||[];if(!_auroraLayer)return;
+    _auroraLayer.clearLayers();var n=0,pts=[];
+    for(var i=0;i<c.length;i+=2){ /* grille 1° : 1 point sur 2 (perf) */
+      var lon=+c[i][0],lat=+c[i][1],v=+c[i][2];
+      if(!(v>=30)||Math.abs(lat)<40)continue;
+      if(lon>180)lon-=360;
+      pts.push({lat:lat,lon:lon,v:v});
+      LEAF.circleMarker([lat,lon],{radius:2.5,stroke:false,fillColor:v>=70?"#3dffb0":v>=50?"#5ee8a8":"#7fd8a8",fillOpacity:Math.min(.75,v/120)})
+        .bindPopup("<b>🌌 Aurore probable</b><br>Probabilité "+Math.round(v)+" %<br><span style='opacity:.7'>NOAA OVATION (maj ~5 min)</span>")
+        .addTo(_auroraLayer);
+      if(++n>=900)break; /* cap perf */
+    }
+    DL.aurora=pts;
+  }catch(e){}
+}
+/* 🌫️ QUALITÉ DE L'AIR en direct — Open-Meteo Air Quality (sans clé, CORS OK), indice
+   européen dans ~34 grandes villes (Monaco inclus). */
+var _AIR_CITIES=[["Monaco",43.73,7.42],["Paris",48.85,2.35],["Londres",51.5,-0.13],["Madrid",40.42,-3.7],["Rome",41.9,12.5],["Berlin",52.52,13.4],["Moscou",55.75,37.62],["Istanbul",41.01,28.98],["Le Caire",30.04,31.24],["Lagos",6.52,3.38],["Johannesburg",-26.2,28.05],["Dubaï",25.2,55.27],["Karachi",24.86,67.0],["Delhi",28.61,77.21],["Bombay",19.08,72.88],["Dacca",23.81,90.41],["Bangkok",13.76,100.5],["Jakarta",-6.2,106.85],["Singapour",1.35,103.82],["Hong Kong",22.32,114.17],["Shanghai",31.23,121.47],["Pékin",39.9,116.4],["Séoul",37.57,126.98],["Tokyo",35.68,139.69],["Sydney",-33.87,151.21],["Los Angeles",34.05,-118.24],["New York",40.71,-74.01],["Chicago",41.88,-87.63],["Mexico",19.43,-99.13],["Bogota",4.71,-74.07],["Lima",-12.05,-77.04],["Santiago",-33.45,-70.66],["São Paulo",-23.55,-46.63],["Buenos Aires",-34.6,-58.38]];
+function _aqiColor(a){return a<=20?"#50f0a0":a<=40?"#a8e05f":a<=60?"#ffd166":a<=80?"#ff9500":a<=100?"#ff3b30":"#8e44ad";}
+function _aqiLabel(a){return a<=20?"Bon":a<=40?"Correct":a<=60?"Moyen":a<=80?"Mauvais":a<=100?"Très mauvais":"Extrême";}
+async function loadAir(){
+  try{
+    var lats=_AIR_CITIES.map(function(c){return c[1];}).join(","),lons=_AIR_CITIES.map(function(c){return c[2];}).join(",");
+    var j=await getJSON("https://air-quality-api.open-meteo.com/v1/air-quality?latitude="+lats+"&longitude="+lons+"&current=european_aqi,pm2_5",15000);
+    var arr=Array.isArray(j)?j:[j];if(!_airLayer)return;
+    _airLayer.clearLayers();var out=[];
+    arr.forEach(function(r,i){
+      var city=_AIR_CITIES[i];if(!city||!r||!r.current)return;
+      var aqi=+r.current.european_aqi,pm=+r.current.pm2_5;if(!isFinite(aqi))return;
+      var col=_aqiColor(aqi);
+      out.push({city:city[0],aqi:aqi});
+      LEAF.circleMarker([city[1],city[2]],{radius:7,color:col,weight:2,fillColor:col,fillOpacity:.5})
+        .bindPopup("<b>🌫️ "+esc(city[0])+"</b><br>Qualité de l'air : <b style='color:"+col+"'>"+_aqiLabel(aqi)+"</b> (indice "+Math.round(aqi)+")"
+          +(isFinite(pm)?"<br>Particules fines PM2.5 : "+pm.toFixed(1)+" µg/m³":"")
+          +"<br><span style=\'opacity:.7\'>Open-Meteo · en direct</span>")
+        .addTo(_airLayer);
+    });
+    DL.air=out;
+  }catch(e){}
+}
+/* 🌊 VAGUES & HOULE en direct — Open-Meteo Marine (sans clé, CORS OK), ~28 points
+   océans/mers dont Méditerranée au large de Monaco. Couleur+taille = hauteur des vagues. */
+var _WAVE_PTS=[["Méditerranée (Monaco)",43.5,7.6],["Golfe du Lion",42.6,4.2],["Baléares",39.4,2.6],["Gibraltar",35.9,-5.5],["Adriatique",42.8,15.2],["Mer Égée",37.5,25.0],["Golfe de Gascogne",45.5,-4.0],["Manche",50.0,-1.5],["Mer du Nord",55.5,3.5],["Atlantique Nord",50.0,-30.0],["Açores",38.0,-27.0],["Canaries",28.0,-15.5],["Caraïbes",15.5,-70.0],["Golfe du Mexique",25.5,-90.0],["Côte Est US",35.0,-73.0],["Côte Ouest US",36.0,-123.0],["Hawaï",21.0,-157.0],["Pacifique Nord",40.0,-165.0],["Japon (Pacifique)",34.0,141.0],["Mer de Chine",15.0,113.0],["Philippines",13.0,127.0],["Indonésie (océan Indien)",-9.0,107.0],["Maldives",3.5,73.0],["Mer Rouge",20.0,38.5],["Cap de Bonne-Espérance",-35.5,19.0],["Brésil",-25.0,-43.0],["Pacifique Sud",-30.0,-120.0],["Tasmanie",-44.0,147.0]];
+function _waveColor(h){return h<1?"#4db8ff":h<2?"#38d6b7":h<3?"#ffd166":h<4.5?"#ff9500":"#ff3b30";}
+async function loadWaves(){
+  try{
+    var lats=_WAVE_PTS.map(function(c){return c[1];}).join(","),lons=_WAVE_PTS.map(function(c){return c[2];}).join(",");
+    var j=await getJSON("https://marine-api.open-meteo.com/v1/marine?latitude="+lats+"&longitude="+lons+"&current=wave_height,wave_direction,wave_period",15000);
+    var arr=Array.isArray(j)?j:[j];if(!_wavesLayer)return;
+    _wavesLayer.clearLayers();var out=[];
+    arr.forEach(function(r,i){
+      var pt=_WAVE_PTS[i];if(!pt||!r||!r.current)return;
+      var h=+r.current.wave_height,dir=+r.current.wave_direction,per=+r.current.wave_period;
+      if(!isFinite(h))return;
+      var col=_waveColor(h);
+      out.push({name:pt[0],h:h});
+      LEAF.circleMarker([pt[1],pt[2]],{radius:Math.max(5,Math.min(13,4+h*2)),color:col,weight:2,fillColor:col,fillOpacity:.4})
+        .bindPopup("<b>🌊 "+esc(pt[0])+"</b><br>Vagues : <b style=\'color:"+col+"\'>"+h.toFixed(1)+" m</b>"
+          +(isFinite(per)?" · période "+per.toFixed(0)+" s":"")
+          +(isFinite(dir)?"<br>Direction houle : "+Math.round(dir)+"°":"")
+          +"<br><span style=\'opacity:.7\'>Open-Meteo Marine · en direct</span>")
+        .addTo(_wavesLayer);
+    });
+    DL.waves=out;
+  }catch(e){}
+}
+/* 🌊 CRUES / débit des grandes rivières — Open-Meteo Flood (GloFAS, sans clé, CORS OK).
+   Signal normalisé PAR rivière : débit du jour vs son pic des 30 derniers jours + pic prévu
+   sur 7 j → couleur (bleu normal / orange qui monte / rouge = au niveau de crue). Honnête :
+   « crue » = la rivière atteint/dépasse son propre haut récent, pas un seuil absolu mondial. */
+var _FLOOD_PTS=[["Rhône (Arles)",43.68,4.63],["Seine (Rouen)",49.44,1.10],["Rhin (Cologne)",50.94,6.96],["Danube (Budapest)",47.50,19.05],["Pô (Ferrare)",44.84,11.60],["Elbe (Dresde)",51.05,13.74],["Vistule (Varsovie)",52.25,21.00],["Tamise (Londres)",51.51,-0.12],["Nil (Le Caire)",30.05,31.23],["Niger (Niamey)",13.51,2.11],["Congo (Kinshasa)",-4.30,15.30],["Zambèze (Tete)",-16.16,33.60],["Gange (Patna)",25.61,85.14],["Brahmapoutre (Guwahati)",26.18,91.75],["Mékong (Phnom Penh)",11.56,104.92],["Yangtsé (Wuhan)",30.58,114.30],["Fleuve Jaune (Jinan)",36.65,117.00],["Indus (Hyderabad)",25.38,68.37],["Amazone (Manaus)",-3.13,-60.02],["Paraná (Rosario)",-32.95,-60.65],["Mississippi (Bâton-Rouge)",30.45,-91.19],["Amour (Khabarovsk)",48.48,135.08],["Volga (Volgograd)",48.72,44.50],["Ienisseï (Krasnoïarsk)",56.01,92.87],["Murray (Australie)",-34.10,141.90]];
+function _floodColor(r){return r>=1?"#ff3b30":r>=0.85?"#ff9500":r>=0.6?"#ffd166":"#4db8ff";}
+function _floodLabel(r){return r>=1?"Niveau de crue":r>=0.85?"Élevé (monte)":r>=0.6?"Modéré":"Normal";}
+async function loadFloods(){
+  try{
+    var lats=_FLOOD_PTS.map(function(c){return c[1];}).join(","),lons=_FLOOD_PTS.map(function(c){return c[2];}).join(",");
+    var j=await getJSON("https://flood-api.open-meteo.com/v1/flood?latitude="+lats+"&longitude="+lons+"&daily=river_discharge&past_days=31&forecast_days=7",15000);
+    var arr=Array.isArray(j)?j:[j];if(!_floodLayer)return;
+    _floodLayer.clearLayers();var out=[];
+    arr.forEach(function(rr,i){
+      var pt=_FLOOD_PTS[i];if(!pt||!rr||!rr.daily)return;
+      var disc=rr.daily.river_discharge||[],time=rr.daily.time||[];
+      if(!disc.length)return;
+      var today=new Date().toISOString().slice(0,10);
+      var idx=time.indexOf(today);if(idx<0)idx=Math.max(0,disc.length-8); /* repli : dernier jour "passé" */
+      var cur=+disc[idx];if(!isFinite(cur))return;
+      var past=disc.slice(0,idx+1).filter(function(v){return isFinite(+v);}).map(Number);
+      var fut=disc.slice(idx+1).filter(function(v){return isFinite(+v);}).map(Number);
+      var ref=past.length?Math.max.apply(null,past):cur;if(!(ref>0))ref=cur||1;
+      var futPeak=fut.length?Math.max.apply(null,fut):cur;
+      var ratio=Math.max(cur/ref,futPeak/ref); /* auto-normalisé par rivière */
+      var col=_floodColor(ratio);
+      out.push({name:pt[0],cur:cur,ratio:ratio});
+      LEAF.circleMarker([pt[1],pt[2]],{radius:Math.max(5,Math.min(13,4+ratio*7)),color:col,weight:2,fillColor:col,fillOpacity:.45})
+        .bindPopup("<b>🌊 "+esc(pt[0])+"</b><br>État : <b style='color:"+col+"'>"+_floodLabel(ratio)+"</b>"
+          +"<br>Débit actuel : "+Math.round(cur).toLocaleString("fr-FR")+" m³/s"
+          +"<br><span style='opacity:.75'>"+Math.round(ratio*100)+" % de son pic des 30 j"+(futPeak>cur?" · en hausse prévue":"")+"</span>"
+          +"<br><span style='opacity:.6'>Open-Meteo Flood (GloFAS) · maj ~quotidienne</span>")
+        .addTo(_floodLayer);
+    });
+    DL.crues=out;
+  }catch(e){}
+}
+/* 🚢 Navires en direct — Digitraffic (AIS mer Baltique/Finlande, ouvert sans clé, CORS OK) */
+/* Vide par défaut → navires Baltique (Digitraffic). Quand Kevin fournit une clé aisstream
+   gratuite et déploie kdmc-ais-proxy, on renseigne cette URL → navires MONDIAUX (leçon #93). */
+var AIS_PROXY_URL="https://kdmc-ais.9r4rxssx64.workers.dev";
+var LIVE_URL="https://kdmc-live.9r4rxssx64.workers.dev"; /* worker kdmc-live : foudre + cyclones + feux (leçons #130/#133) */
+function mapFeats(f){return f.map(function(x){var c=x.geometry&&x.geometry.coordinates;if(!c)return null;
+    var p=x.properties||{};return {lat:c[1],lon:c[0],mmsi:x.mmsi||p.mmsi,sog:p.sog,cog:p.cog,name:p.name};}).filter(Boolean);}
+async function loadShips(){
+  try{
+    if(AIS_PROXY_URL){
+      try{var g=await getJSON(AIS_PROXY_URL.replace(/\/$/,"")+"/ships?limit=1500",12000);
+        var gf=(g&&g.features)||[];
+        if(gf.length){DL.ships=mapFeats(gf);if(_mapReady)drawShipsMap();return;}
+      }catch(e2){}
+    }
+    var d=await getJSON("https://meri.digitraffic.fi/api/ais/v1/locations",12000);
+    DL.ships=mapFeats((d&&d.features)||[]);
+    if(_mapReady)drawShipsMap();
+  }catch(e){}
+}
+/* cellules trop petites (<4 navires) → points individuels même en vue monde */
+function _clusterRest(list,cellKey){
+  list.forEach(function(s){var k=Math.floor(s.lat/6)+"_"+Math.floor(s.lon/6);if(k!==cellKey)return;
+    LEAF.circleMarker([s.lat,s.lon],{radius:3,color:"#35d6e6",weight:1,fillColor:"#7ff0ff",fillOpacity:.8})
+      .bindPopup("<b>🚢 "+esc(s.name&&String(s.name).trim()?String(s.name).trim():"Navire")+"</b>"+(s.mmsi?"<br>MMSI "+esc(String(s.mmsi)):"")).addTo(_shipLayer);});}
+function drawShipsMap(){
+  if(!MAP||!_shipLayer)return;_shipLayer.clearLayers();
+  var list=(DL.ships||[]).slice(0,800),arrows=list.length<=400;
+  /* 🫧 Regroupement (Kevin n°14) : à zoom monde, bulles chiffrées par cellule de 6° — tap = zoomer */
+  if(MAP.getZoom()<=3&&list.length>150){
+    var cells={};
+    list.forEach(function(s){var k=Math.floor(s.lat/6)+"_"+Math.floor(s.lon/6);(cells[k]=cells[k]||{n:0,la:0,lo:0}).n++;cells[k].la+=s.lat;cells[k].lo+=s.lon;});
+    Object.keys(cells).forEach(function(k){var c=cells[k];if(c.n<4)return _clusterRest(list,k);
+      var la=c.la/c.n,lo=c.lo/c.n,sz=Math.min(34,16+Math.round(Math.sqrt(c.n)*2));
+      LEAF.marker([la,lo],{icon:LEAF.divIcon({className:"",html:'<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:rgba(53,214,230,.28);border:1.5px solid #35d6e6;color:#bffaff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">'+c.n+'</div>',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]})})
+        .on("click",function(){MAP.setView([la,lo],5);})
+        .bindTooltip(c.n+" navires — tape pour zoomer",{direction:"top"})
+        .addTo(_shipLayer);});
+    return;
+  } /* flèche orientée cap si raisonnable, cercle sinon (perf) */
+  list.forEach(function(s){
+    var pop="<b>🚢 "+esc(s.name&&String(s.name).trim()?String(s.name).trim():"Navire")+"</b>"+(s.mmsi?"<br>MMSI "+esc(String(s.mmsi)):"")+(s.sog!=null?"<br>Vitesse "+s.sog+" nds":"")+(s.cog!=null?"<br>Cap "+Math.round(s.cog)+"°":"");
+    var m=(arrows&&s.cog!=null&&isFinite(+s.cog))
+      ?LEAF.marker([s.lat,s.lon],{icon:LEAF.divIcon({className:"",html:'<div style="transform:rotate('+Math.round(+s.cog)+'deg);color:#7ff0ff;font-size:11px;line-height:11px;text-shadow:0 0 4px #0af">▲</div>',iconSize:[12,12],iconAnchor:[6,6]})})
+      :LEAF.circleMarker([s.lat,s.lon],{radius:3,color:"#35d6e6",weight:1,fillColor:"#7ff0ff",fillOpacity:.8});
+    m.bindPopup(pop).addTo(_shipLayer);
+  });
+}
+/* Bascule de fond EXCLUSIVE : sombre / Satellite HD / Live NASA / Terre nuit.
+   Un seul fond actif ; les boutons base = radio (aria-pressed reflète la sélection). */
+function setBase(name){
+  if(!MAP||!_bases[name])return;
+  Object.keys(_bases).forEach(function(k){var L=_bases[k];if(!L)return;
+    if(k===name){if(!MAP.hasLayer(L))L.addTo(MAP);
+      if(L.bringToBack)L.bringToBack();else if(L.eachLayer)L.eachLayer(function(t){if(t.bringToBack)t.bringToBack();});}
+    else if(MAP.hasLayer(L))MAP.removeLayer(L);});
+  var btns=document.querySelectorAll("[data-base]");
+  for(var i=0;i<btns.length;i++)btns[i].setAttribute("aria-pressed",String(btns[i].getAttribute("data-base")===name));
+}
+/* Compat : ancien appel booléen (true=satellite HD, false=sombre). */
+function setSatBase(on){setBase(on?"sat":"dark");}
+/* Puces (sous la carte) → pilotent les couches Leaflet ET le globe */
+/* 🕰️ HISTORIQUE — voir la Terre vue de l'espace à une date passée (NASA VIIRS, ~10 ans).
+   Change la date des fonds satellite live (True Color + nuit) via setUrl ; fail-open. */
+function _yISO(off){var d=new Date(Date.now()-(off||1)*86400000);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");}
+function _setHistDate(iso){
+  _histISO=iso||null;var d=_histISO||_yISO(1);
+  if(_liveBase&&_liveBase.setUrl)_liveBase.setUrl("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/"+d+"/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg");
+  if(_nightBase&&_nightBase.setUrl)_nightBase.setUrl("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_DayNightBand_ENCC/default/"+d+"/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg");
+  var lbl=$("histLbl");if(lbl)setText(lbl,_histISO?("📅 "+_histISO):"⏱️ Temps réel");
+}
+(function(){var hd=$("histDate");if(hd){hd.max=_yISO(1);hd.addEventListener("change",function(){_setHistDate(hd.value);
+  if(hd.value&&_wantBase!=="live"&&_wantBase!=="night"&&typeof setBase==="function"){_wantBase="live";_savePrefs();setBase("live");}});}
+  var hn=$("histNow");if(hn)hn.addEventListener("click",function(){if(hd)hd.value="";_setHistDate(null);});})();
+/* 📍 v2.41 — MA POSITION (Kevin « intègre la localisation »). VIE PRIVÉE ABSOLUE :
+   la position est lue par le GPS de l'appareil et DESSINÉE localement — elle n'est
+   JAMAIS envoyée sur le réseau (aucun fetch avec les coordonnées). Suivi LIVE
+   (watchPosition, règle temps réel), point bleu + cercle de précision, recentrage
+   au 1er fix SEULEMENT (on ne vole pas la carte ensuite). Updater IDEMPOTENT
+   (règle stabilité : ne mute que si la valeur change). Permission refusée →
+   message clair + puce désactivée (pas de re-demande en boucle). */
+var _posWatch=null,_posLayer=null,_posMarker=null,_posCircle=null,_posFix=null,_posCentered=false,_pos3dMarker=null;
+/* v2.42 — « carte, map, globe etc » (Kevin) : la position se dessine PARTOUT.
+   Ici : synchro du marqueur sur le globe 3D (MapLibre) — idempotent, fail-open. */
+function _pos3dSync(){
+  try{
+    var ml=(typeof _ml!=="undefined")?_ml:null;
+    if(!ml||!window.maplibregl){return;}
+    if(ON.pos&&_posFix){
+      if(!_pos3dMarker){_pos3dMarker=new maplibregl.Marker({color:"#2f7fff"}).setLngLat([_posFix.lon,_posFix.lat]).addTo(ml);}
+      else{var c=_pos3dMarker.getLngLat();
+        if(Math.abs(c.lat-_posFix.lat)>1e-6||Math.abs(c.lng-_posFix.lon)>1e-6)_pos3dMarker.setLngLat([_posFix.lon,_posFix.lat]);}
+    }else if(_pos3dMarker){_pos3dMarker.remove();_pos3dMarker=null;}
+  }catch(_e){}
+}
+function _posChipSync(){var b=document.querySelector('[data-layer="pos"]');if(b){var w=String(!!ON.pos);if(b.getAttribute("aria-pressed")!==w)b.setAttribute("aria-pressed",w);}}
+function _posDraw(lat,lon,acc){
+  if(!MAP||!LEAF)return;
+  if(!_posLayer)_posLayer=LEAF.layerGroup();
+  if(!MAP.hasLayer(_posLayer))_posLayer.addTo(MAP);
+  if(!_posMarker){
+    _posCircle=LEAF.circle([lat,lon],{radius:Math.max(15,acc||30),color:"#2f7fff",weight:1,opacity:.5,fillColor:"#2f7fff",fillOpacity:.12});
+    _posLayer.addLayer(_posCircle);
+    _posMarker=LEAF.circleMarker([lat,lon],{radius:7,color:"#fff",weight:2,fillColor:"#2f7fff",fillOpacity:1});
+    _posMarker.bindPopup("");
+    _posLayer.addLayer(_posMarker);
+  }
+  var cur=_posMarker.getLatLng();
+  if(Math.abs(cur.lat-lat)>1e-6||Math.abs(cur.lng-lon)>1e-6){_posMarker.setLatLng([lat,lon]);_posCircle.setLatLng([lat,lon]);}
+  var wantR=Math.max(15,acc||30);
+  if(Math.abs((_posCircle.getRadius()||0)-wantR)>1)_posCircle.setRadius(wantR);
+  _posMarker.setPopupContent('<div style="font-size:12px">📍 <b>Ma position</b><br>'+lat.toFixed(5)+", "+lon.toFixed(5)+(acc?('<br>précision ±'+Math.round(acc)+' m'):'')+'<br><span style="opacity:.7">🔒 ta position GPS reste sur l&#39;appareil (les couches live chargent la zone affichée, comme quand tu déplaces la carte)</span></div>');
+  if(!_posCentered){_posCentered=true;try{MAP.setView([lat,lon],Math.max(MAP.getZoom()||0,13));}catch(_e){}}
+  _pos3dSync();
+}
+function posStart(){
+  if(!("geolocation" in navigator)){setText($("mapHint"),"📍 Localisation indisponible sur cet appareil");ON.pos=0;_savePrefs();_posChipSync();return;}
+  if(_posWatch!==null)return;
+  if(typeof initMap==="function")initMap();
+  setText($("mapHint"),"📍 Recherche de ta position… (autorise si demandé)");
+  _posWatch=navigator.geolocation.watchPosition(function(p){
+    _posFix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy||0};
+    _posDraw(_posFix.lat,_posFix.lon,_posFix.acc);
+    var h="📍 Position en direct (±"+Math.round(_posFix.acc)+" m) — 🔒 GPS jamais transmis";
+    var el=$("mapHint");if(el&&el.textContent!==h)setText(el,h);
+  },function(err){
+    if(err&&err.code===1){ /* refusée : on coupe proprement, pas de harcèlement */
+      setText($("mapHint"),"📍 Position refusée — Réglages > Confidentialité > Localisation > Safari, puis retouche la puce");
+      posStop();ON.pos=0;_savePrefs();_posChipSync();
+    }else{
+      setText($("mapHint"),"📍 Position introuvable pour l'instant (signal GPS faible ?) — je continue d'essayer");
+    }
+  },{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+function posStop(){
+  if(_posWatch!==null){try{navigator.geolocation.clearWatch(_posWatch);}catch(_e){}_posWatch=null;}
+  _posFix=null;_posCentered=false;
+  if(MAP&&_posLayer&&MAP.hasLayer(_posLayer)){try{MAP.removeLayer(_posLayer);}catch(_e){}}
+  _posMarker=null;_posCircle=null;_posLayer=null;
+  _pos3dSync(); /* retire aussi le marqueur du globe 3D */
+  var el=$("mapHint");if(el&&el.textContent&&el.textContent.indexOf("📍")===0)setText(el,"");
+}
+function _leafLayerFor(k){return {flights:_planeLayer,ships:_shipLayer,quakes:_quakeLayer,fires:_fireLayer,volcano:_volcanoLayer,storms:_stormLayer,detroits:_chokeLayer,sats:_satsLayer,radar:_radarLayer,firesat:_fireSatLayer,gdacs:_gdacsLayer,aurora:_auroraLayer,air:_airLayer,waves:_wavesLayer,smoke:_smokeLayer,night:_nightLayer,iss:_issLayer,lightning:_lightningLayer,cyclones:_cyclonesLayer,firms:_firmsLayer,crues:_floodLayer,cadastre:_cadastreLayer,plu:_pluLayer}[k]||null;}
+function applyLeafToggle(k,v){if(k==="pos"){if(v)posStart();else posStop();return;}var ly=_leafLayerFor(k);if(k==="radar")setTimeout(_radarBarSync,50);if(k==="cadastre"||k==="plu"){if(v&&MAP&&MAP.getZoom()<10)setText($("mapHint"),"🇫🇷 Cadastre : zoome sur la France, puis tape une parcelle");if(!v&&!ON.cadastre&&!ON.plu&&_parcelleHL)_parcelleHL.clearLayers();}if(v){if(k==="lightning")loadLightning();else if(k==="cyclones")loadCyclones();else if(k==="firms")loadFirms();else if(k==="crues")loadFloods();}if(!MAP||!ly)return;if(v){if(!MAP.hasLayer(ly))ly.addTo(MAP);}else{if(MAP.hasLayer(ly))MAP.removeLayer(ly);}}
+/* bascule Carte / Globe */
+function showMap(on){
+  document.getElementById("g3d").classList.add("hidden");
+  var b3=$("vG3D");if(b3)b3.setAttribute("aria-pressed","false");
+  document.getElementById("map").classList.toggle("hidden",!on);
+  document.getElementById("globe").classList.toggle("hidden",on);
+  document.getElementById("mapHint").style.display=on?"":"none";
+  document.getElementById("toggles").style.display="";
+  $("vMap").setAttribute("aria-pressed",on?"true":"false");
+  $("vGlobe").setAttribute("aria-pressed",on?"false":"true");
+  if(on){initMap();if(MAP)setTimeout(function(){MAP.invalidateSize();},60);}
+}
+$("vMap").addEventListener("click",function(){showMap(true);});
+$("vGlobe").addEventListener("click",function(){showMap(false);});
+/* 🏔️ GLOBE 3D navigable (type Google Earth) — MapLibre GL, gratuit sans clé :
+   satellite Esri + relief 3D (terrain AWS terrarium) + projection globe + survol tactile.
+   Chargé À LA DEMANDE (perf). Fail-open : si le réseau/CDN échoue → message, l'app reste OK. */
+var _ml=null,_mlLoading=false;
+function _loadMapLibre(cb){
+  if(window.maplibregl)return cb();
+  if(_mlLoading)return;_mlLoading=true;
+  var css=document.createElement("link");css.rel="stylesheet";css.href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";document.head.appendChild(css);
+  var s=document.createElement("script");s.src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
+  s.onload=function(){_mlLoading=false;cb();};
+  s.onerror=function(){_mlLoading=false;setText($("globeState"),"3D indisponible (réseau)");};
+  document.head.appendChild(s);
+}
+function _init3D(){
+  if(_ml||!window.maplibregl)return;
+  _ml=new maplibregl.Map({container:"g3d",attributionControl:true,center:[7.42,43.74],zoom:3.2,pitch:0,bearing:0,maxPitch:85,
+    style:{version:8,sources:{
+      sat:{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:19,attribution:"&copy; Esri World Imagery"},
+      dem:{type:"raster-dem",tiles:["https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"],tileSize:256,encoding:"terrarium",maxzoom:14,attribution:"&copy; Terrain AWS/Mapzen"}
+    },layers:[{id:"bg",type:"background",paint:{"background-color":"#0a0f1e"}},{id:"sat",type:"raster",source:"sat"}]}});
+  try{_ml.addControl(new maplibregl.NavigationControl({visualizePitch:true}),"top-right");}catch(_e){}
+  try{if(maplibregl.GlobeControl)_ml.addControl(new maplibregl.GlobeControl(),"top-right");}catch(_e){}
+  try{_ml.addControl(new maplibregl.ScaleControl({unit:"metric"}),"bottom-left");}catch(_e){}
+  _ml.on("style.load",function(){
+    try{_ml.setProjection({type:"globe"});}catch(_e){}
+    try{_ml.setTerrain({source:"dem",exaggeration:1.4});}catch(_e){}
+    try{_ml.setSky({"sky-color":"#0a1428","sky-horizon-blend":.5,"horizon-color":"#5a7bb5","horizon-fog-blend":.6,"fog-color":"#8fb0e0","fog-ground-blend":.4,"atmosphere-blend":.85});}catch(_e){}
+  });
+}
+function show3D(){
+  document.getElementById("map").classList.add("hidden");
+  document.getElementById("globe").classList.add("hidden");
+  document.getElementById("mapHint").style.display="none";
+  document.getElementById("g3d").classList.remove("hidden");
+  $("vMap").setAttribute("aria-pressed","false");$("vGlobe").setAttribute("aria-pressed","false");
+  var b3=$("vG3D");if(b3)b3.setAttribute("aria-pressed","true");
+  setText($("globeState"),"3D — glisse pour tourner · 2 doigts pour incliner · pince pour zoomer");
+  _loadMapLibre(function(){_init3D();setTimeout(function(){if(_ml)_ml.resize();
+    try{if(typeof _pos3dSync==="function")_pos3dSync();}catch(_e){} /* 📍 position sur le 3D dès l'ouverture */
+  },90);});
+}
+(function(){var b=$("vG3D");if(b)b.addEventListener("click",show3D);})();
+/* Plein écran carte (bascule auto sur la carte si on est en globe) */
+$("vFull").addEventListener("click",function(){
+  var el=document.getElementById("map");
+  if(document.fullscreenElement){document.exitFullscreen&&document.exitFullscreen();return;}
+  showMap(true);
+  var req=el.requestFullscreen||el.webkitRequestFullscreen;
+  if(req){try{req.call(el);}catch(e){}}
+});
+document.addEventListener("fullscreenchange",function(){if(MAP)setTimeout(function(){MAP.invalidateSize();},120);});
+
+/* ============ CYBER — vulnérabilités (Shodan CVEDB, sans clé, CORS) ============ */
+var FEED={news:[],hn:[],cve:[]};
+function _cveNorm(x){var id=x.cve_id||x.id||"CVE";var sc=(x.cvss_v3!=null?x.cvss_v3:(x.cvss!=null?x.cvss:(x.cvss_v2!=null?x.cvss_v2:null)));return {id:id,sum:x.summary||"",cvss:(sc!=null?+sc:null)};}
+async function loadCve(){
+  /* Source 1 : CIRCL (cve.circl.lu, CORS OK). Repli : Shodan CVEDB via le relais serveur
+     kdmc-live /cve (Shodan bloque le CORS navigateur → passe par le worker, EPSS-ranked). */
+  var items=null,src="";
+  try{
+    var c=await getJSON("https://cve.circl.lu/api/last",11000);
+    var arr=Array.isArray(c)?c:((c&&c.results)||[]);
+    if(arr.length){items=arr.slice(0,8).map(_cveNorm);src="CIRCL";}
+  }catch(e){}
+  if(!items){try{
+    var d=await getJSON(LIVE_URL+"/cve?limit=8",11000);
+    var a=(d&&(d.cves||d.data))||(Array.isArray(d)?d:[]);
+    if(a.length){items=a.slice(0,8).map(_cveNorm);src="Shodan";}
+  }catch(e2){}}
+  if(items&&items.length){
+    setText($("cveState"),src?src.toLowerCase():"live");
+    FEED.cve=items.map(function(x){return x.sum||x.id;});
+    setHTML($("cve"),items.map(function(x){
+      var col=x.cvss>=9?"#ff5a4d":x.cvss>=7?"#ff8a3d":x.cvss>=4?"#ffd24d":"#7fd08a";
+      var sev=x.cvss!=null?x.cvss.toFixed(1):"—";
+      return '<a class="row" href="https://nvd.nist.gov/vuln/detail/'+esc(x.id)+'" target="_blank" rel="noopener noreferrer"><div class="badge" style="background:'+col+'22;color:'+col+';border:1px solid '+col+'55;font-size:11px">'+esc(sev)+'</div><div class="main"><div class="t1">'+esc(x.id)+'</div><div class="t2">'+esc((x.sum||"").slice(0,120))+'</div></div></a>';
+    }).join(""));buildBrief();
+  }else{setText($("cveState"),"indispo");if($("cve").querySelector(".empty"))setHTML($("cve"),'<div class="empty">Vulnérabilités indisponibles — reprise auto.</div>');}
+}
+
+/* ============ INCENDIES actifs (NASA EONET wildfires, sans clé) ============ */
+async function loadFires(){try{
+  var d=await getJSON("https://eonet.gsfc.nasa.gov/api/v3/events?category=wildfires&status=open&limit=40",14000);
+  var ev=(d&&d.events)||[];setText($("firesState"),ev.length?ev.length+" foyers":"—");
+  var pts=[],rows=[];
+  ev.forEach(function(e){var g=(e.geometry&&e.geometry[e.geometry.length-1])||null;if(!g||!g.coordinates)return;
+    var lon=g.coordinates[0],lat=g.coordinates[1];if(lat==null||lon==null)return;
+    pts.push({lat:lat,lon:lon});
+    rows.push('<div class="row"><div class="badge" style="background:#ff8a3d22;color:#ff8a3d;border:1px solid #ff8a3d55">🔥</div><div class="main"><div class="t1">'+esc(e.title||"Feu")+'</div><div class="t2">'+esc(lat.toFixed(1))+"°, "+esc(lon.toFixed(1))+"°</div></div></div>");});
+  DL.fires=pts;if(_mapReady)drawFiresMap();
+  var box=$("fires");setHTML(box,rows.length?rows.slice(0,10).join(""):'<div class="empty">Aucun foyer actif signalé.</div>');
+}catch(e){setText($("firesState"),"indispo");if($("fires").querySelector(".empty"))setHTML($("fires"),'<div class="empty">Incendies indisponibles — reprise auto.</div>');}}
+
+/* ============ VOLCANS + TEMPÊTES (NASA EONET, sans clé) — alimente les couches globe/carte ============ */
+function _eonetPoints(ev){var pts=[];(ev||[]).forEach(function(e){var g=(e.geometry&&e.geometry[e.geometry.length-1])||null;if(!g||!g.coordinates)return;var lon=g.coordinates[0],lat=g.coordinates[1];if(lat==null||lon==null)return;pts.push({lat:lat,lon:lon,title:e.title||""});});return pts;}
+async function loadVolcano(){try{
+  var d=await getJSON("https://eonet.gsfc.nasa.gov/api/v3/events?category=volcanoes&status=open&limit=40",14000);
+  DL.volcano=_eonetPoints(d&&d.events);if(_mapReady)drawVolcanoMap();
+}catch(e){}}
+async function loadStorms(){try{
+  var d=await getJSON("https://eonet.gsfc.nasa.gov/api/v3/events?category=severeStorms&status=open&limit=40",14000);
+  DL.storms=_eonetPoints(d&&d.events);if(_mapReady)drawStormsMap();
+}catch(e){}}
+
+/* ============ POINTS STRATÉGIQUES MARITIMES (détroits/canaux) + zones de tension (indicatif, statique) ============ */
+var CHOKE=[
+  {n:"Détroit d'Ormuz",lat:26.6,lon:56.3,d:"~20 % du pétrole mondial"},
+  {n:"Canal de Suez",lat:30.4,lon:32.35,d:"Europe ↔ Asie"},
+  {n:"Détroit de Malacca",lat:2.5,lon:101.4,d:"Asie de l'Est ↔ Moyen-Orient"},
+  {n:"Bab-el-Mandeb",lat:12.6,lon:43.4,d:"mer Rouge ↔ golfe d'Aden"},
+  {n:"Canal de Panama",lat:9.1,lon:-79.7,d:"Atlantique ↔ Pacifique"},
+  {n:"Bosphore",lat:41.1,lon:29.1,d:"mer Noire ↔ Méditerranée"},
+  {n:"Détroit de Gibraltar",lat:35.95,lon:-5.6,d:"Atlantique ↔ Méditerranée"},
+  {n:"Cap de Bonne-Espérance",lat:-34.35,lon:18.47,d:"contournement Afrique"},
+  {n:"Détroit de Taïwan",lat:24.4,lon:119.6,d:"route Asie-Pacifique"}
+];
+var TENSION=[
+  {n:"Ukraine",lat:49.0,lon:32.0},{n:"Proche-Orient (Gaza/Israël)",lat:31.4,lon:34.4},
+  {n:"Mer Rouge / Yémen",lat:14.5,lon:43.0},{n:"Sahel",lat:15.0,lon:0.0},
+  {n:"Soudan",lat:15.5,lon:32.5},{n:"Est de la RDC",lat:-1.7,lon:29.0},{n:"Myanmar",lat:21.0,lon:96.0}
+];
+function loadChoke(){
+  DL.choke=CHOKE;DL.tension=TENSION;if(_mapReady)drawChokeMap();
+  setHTML($("choke"),
+    CHOKE.map(function(c){return '<div class="row"><div class="badge" style="background:#5aa9ff22;color:#5aa9ff;border:1px solid #5aa9ff55">⚓</div><div class="main"><div class="t1">'+esc(c.n)+'</div><div class="t2">'+esc(c.d)+'</div></div></div>';}).join("")
+    +'<div class="row" style="opacity:.85"><div class="badge" style="background:#ff5a4d22;color:#ff5a4d;border:1px solid #ff5a4d55">⚠️</div><div class="main"><div class="t1">Zones de tension (indicatif)</div><div class="t2">'+CHOKE_TENSION_LABEL+'</div></div></div>');
+  setText($("chokeState"),"carte");
+}
+var CHOKE_TENSION_LABEL=TENSION.map(function(t){return t.n;}).join(" · ");
+
+/* ============ SYNTHÈSE ACTU IA (worker wm-brief — Claude Haiku, clé côté serveur, cache 15 min) ============
+   Repli automatique vers la synthèse heuristique locale (buildBrief) si le worker est indispo. */
+var WM_BRIEF_URL="https://wm-brief.9r4rxssx64.workers.dev",_briefAI=false;
+async function loadBrief(){try{
+  var d=await getJSON(WM_BRIEF_URL+"/brief",13000);
+  if(d&&d.brief){_briefAI=true;setText($("briefState"),"IA");
+    var html=esc(d.brief).replace(/\n+/g,"<br>");
+    setHTML($("brief"),'<div style="padding:11px 13px;line-height:1.6;font-size:13px;color:#dfe8ff">'+html+'</div><div class="t2" style="padding:0 13px 10px">Synthèse Claude · '+(d.sources||0)+' titres · maj ~15 min</div>');
+    return;}
+  throw 0;
+}catch(e){_briefAI=false;buildBrief();}}
+
+/* ============ SYNTHÈSE ACTU (repli local, sans clé) — thèmes dominants extraits des flux agrégés ============ */
+var STOP=("le la les un une des de du et à a au aux en dans sur pour par avec sans est sont être ont ce cet cette ces qui que quoi dont où mais ou donc or ni car son sa ses leur leurs il elle ils elles on nous vous se ne pas plus the a an of to in on for and or with from at by as is are be was were will new news world after over into out up down amid say says said report reports latest live update updates video how why what who when will can could may vs et").split(" ");
+function tokens(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(function(w){return w.length>3&&STOP.indexOf(w)<0;});}
+function buildBrief(){
+  if(_briefAI)return; /* la synthèse IA (worker) a priorité si dispo */
+  var titles=[].concat(FEED.news||[],FEED.hn||[],FEED.cve||[]);
+  if(!titles.length){return;}
+  var freq={};titles.forEach(function(t){var seen={};tokens(t).forEach(function(w){if(seen[w])return;seen[w]=1;freq[w]=(freq[w]||0)+1;});});
+  /* thèmes récurrents (freq>1) en priorité ; sinon, top mots-clés du moment (freq>=1) */
+  var top=Object.keys(freq).filter(function(w){return freq[w]>1;}).sort(function(a,b){return freq[b]-freq[a];}).slice(0,10);
+  if(!top.length)top=Object.keys(freq).sort(function(a,b){return freq[b]-freq[a];}).slice(0,10);
+  setText($("briefState"),titles.length+" titres");
+  if(!top.length){setHTML($("brief"),'<div class="empty">Pas de thème dominant pour l\'instant.</div>');return;}
+  var max=freq[top[0]]||1;
+  setHTML($("brief"),'<div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px">'+top.map(function(w){
+    var s=0.55+0.45*(freq[w]/max);
+    return '<span style="font-size:'+(11+Math.round(s*6))+'px;padding:3px 9px;border-radius:999px;background:rgba(90,150,255,'+(0.10+s*0.22).toFixed(2)+');border:1px solid rgba(120,170,255,.35);color:#cfe0ff">'+esc(w)+' <b style="opacity:.6">'+freq[w]+'</b></span>';
+  }).join("")+'</div><div class="t2" style="padding:0 12px 10px">Thèmes récurrents dans l\'actu, la tech et les alertes cyber de la dernière heure.</div>');
+}
+
+/* ============ orchestrateur ============ */
+function fast(){loadIss();loadFlights();}
+function slow(){loadQuakes();loadEonet();loadNews();loadLaunches();loadMonaco();loadMarkets();loadSpace();loadTfl();loadWiki();loadHn();loadBourse();loadCve();loadFires();loadVolcano();loadStorms();loadChoke();loadBrief();}
+setInterval(loadHn,600000);setInterval(loadBourse,120000);setInterval(loadWiki,3600000);
+setInterval(loadTfl,600000); /* re-liste les caméras TfL toutes les 10 min */
+showMap(true);slow();fast();
+setInterval(fast,7000);
+setInterval(loadQuakes,60000);
+setInterval(loadFlights,45000);
+setInterval(loadNews,300000);
+setInterval(loadEonet,600000);
+setInterval(loadMarkets,120000);
+setInterval(loadSpace,600000);
+setInterval(loadMonaco,600000);
+setInterval(loadLaunches,1800000);
+setInterval(loadCve,900000);       /* vulnérabilités : 15 min */
+setInterval(loadFires,900000);     /* incendies actifs : 15 min */
+setInterval(loadVolcano,1800000);  /* volcans : 30 min */
+setInterval(loadStorms,1800000);   /* tempêtes : 30 min */
+setInterval(loadBrief,900000);     /* synthèse IA : 15 min (cache worker) */
+document.addEventListener("visibilitychange",function(){if(!document.hidden)fast();});
+</script>
+<div id="briefModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,7,14,.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:18px" role="dialog" aria-label="Brief IA">
+  <div style="max-width:560px;width:100%;max-height:80vh;overflow:auto;background:#0b1120;border:1px solid rgba(120,150,210,.35);border-radius:14px;padding:18px 18px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+      <b style="font-size:15px">🧠 Brief IA — situation mondiale</b>
+      <button id="briefClose" class="tg" style="min-height:36px" aria-label="Fermer">✕</button>
+    </div>
+    <div id="briefBody" style="font-size:13.5px;line-height:1.65;white-space:pre-wrap;color:var(--fg)">Chargement…</div>
+    <div id="briefMeta" style="margin-top:10px;font-size:11px;color:var(--dim)"></div>
+  </div>
+</div>
+<script>
+/* 🧠 Brief IA (Kevin n°4) : lu depuis Firebase /apex/ax_wm_brief (généré par IA toutes
+   les 6 h côté CI — la clé IA reste serveur). Lecture via auth anonyme Firebase
+   (clé Web PUBLIQUE, même pattern que la page Départs). Fail-open. */
+(function(){
+  var FBKEY="AIzaSyDciW-0sIIg9msdmgZjQHBksqzsfA6DCMs",FB="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app";
+  var modal=document.getElementById("briefModal"),body=document.getElementById("briefBody"),meta=document.getElementById("briefMeta"),_tok="";
+  function anonTok(){
+    if(_tok)return Promise.resolve(_tok);
+    return fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FBKEY,{method:"POST",headers:{"Content-Type":"application/json"},body:"{\"returnSecureToken\":true}"})
+      .then(function(r){return r.json();}).then(function(j){_tok=j.idToken||"";return _tok;}).catch(function(){return "";});
+  }
+  function openBrief(){
+    modal.style.display="flex";body.textContent="Chargement du brief…";meta.textContent="";
+    anonTok().then(function(tk){
+      return fetch(FB+"/apex/ax_wm_brief.json"+(tk?"?auth="+encodeURIComponent(tk):""));
+    }).then(function(r){return r.json();}).then(function(j){
+      if(!j||!j.text){body.textContent="Pas encore de brief généré — il arrive au prochain cycle (toutes les 6 h). Les données live de la page restent la source en temps réel.";return;}
+      body.textContent=j.text;
+      var age=j.ts?Math.round((Date.now()-j.ts)/60000):null;
+      meta.textContent="Généré par IA il y a "+(age==null?"?":(age<60?age+" min":Math.round(age/60)+" h"))+" · sources "+(j.sources||"live")+" · prochain brief ≤ 6 h · "+(typeof wmAlertsOn==="function"&&wmAlertsOn()?"🔔 alertes actives (M6+ · GDACS rouge · Kp≥7)":"🔕 alertes locales coupées — active la puce 🔔 Alertes");
+    }).catch(function(){body.textContent="Brief momentanément indisponible (réseau) — réessaie.";});
+  }
+  var b=document.getElementById("btnBrief");if(b)b.addEventListener("click",openBrief);
+  var c=document.getElementById("briefClose");if(c)c.addEventListener("click",function(){modal.style.display="none";});
+  modal.addEventListener("click",function(e){if(e.target===modal)modal.style.display="none";});
+  /* 📲 PWA : Service Worker (réseau d'abord, MAJ auto par le badge partagé) */
+  if("serviceWorker" in navigator){try{navigator.serviceWorker.register("sw.js").catch(function(){});}catch(_e){}}
+  /* 📲 Installer (Kevin « install ») : bouton visible seulement si pas déjà installé */
+  (function(){
+    var btn=document.getElementById("btnInstall");if(!btn)return;
+    var isStandalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+    if(isStandalone)return; /* déjà installé → rien */
+    var deferred=null,ua=navigator.userAgent||"";
+    var isIOS=/iPhone|iPad|iPod/.test(ua)&&!window.MSStream;
+    window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferred=e;btn.style.display="inline-block";});
+    if(isIOS)btn.style.display="inline-block"; /* iOS n\u2019a pas d\u2019invite auto → on guide */
+    btn.addEventListener("click",function(){
+      if(deferred){deferred.prompt();deferred.userChoice&&deferred.userChoice.then(function(){deferred=null;btn.style.display="none";});return;}
+      /* iOS / navigateurs sans invite : mini-guide */
+      var m=document.createElement("div");
+      m.style.cssText="position:fixed;inset:0;z-index:2100;background:rgba(4,7,14,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px";
+      m.innerHTML='<div style="max-width:340px;background:#0b1120;border:1px solid rgba(120,150,210,.35);border-radius:14px;padding:18px;font-size:14px;line-height:1.6;color:#e8eef8">'+
+        '<b style="font-size:15px">📲 Ajouter à l\u2019écran d\u2019accueil</b><div style="margin:10px 0">'+
+        (isIOS?'1. Touche <b>Partager</b> ⬆️ en bas de Safari<br>2. Choisis <b>« Sur l\u2019écran d\u2019accueil »</b> ➕<br>3. Touche <b>Ajouter</b>':'Ouvre le menu de ton navigateur puis <b>« Installer l\u2019application »</b> / <b>« Ajouter à l\u2019écran d\u2019accueil »</b>.')+
+        '</div><button style="width:100%;min-height:42px;background:linear-gradient(135deg,#c9a227,#e8b830);border:0;border-radius:9px;color:#1a1300;font-weight:700;font-size:14px">Compris</button></div>';
+      m.addEventListener("click",function(e){if(e.target===m||e.target.tagName==="BUTTON")document.body.removeChild(m);});
+      document.body.appendChild(m);
+    });
+  })();
+})();
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.40" data-color="#c9a227" defer></script>
+</body>
+</html>

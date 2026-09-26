@@ -1,0 +1,433 @@
+name: KDMC — Déploie le routeur de domaine kd-mc.com (autonome)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Déploie le worker "kdmc-router" (reverse-proxy belles adresses + SSO + admin).
+# Provisionne le KV ACCOUNTS (registre fiches clients) et injecte le secret SSO.
+# 100% auto. Les routes custom_domain auto-provisionnent DNS + SSL sur kd-mc.com.
+# Kevin 2026-09-06 « pourquoi tu es bloqué par GitHub ? trouve des solutions » :
+# l'API GitHub est fermée à cette session (app non connectée pour l'organisation) →
+# impossible de lancer un déploiement à la main depuis l'agent. La voie qui MARCHE est
+# le push sur claude/** (schéma déjà éprouvé par deploy-apex-chat.yml). Un push =
+# un déploiement, sans API, sans clic, sans attendre la fusion (leçon #213).
+on:
+  workflow_dispatch: {}
+  push:
+    # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main.
+    # Une branche de travail ne déploie plus rien (incident m122 du 23.09 : un routeur
+    # déployé depuis une branche en retard a éteint kit.kd-mc.com). Manuel : workflow_dispatch.
+    branches:
+      - main
+    paths:
+      - 'services/kdmc-router/**'
+      - 'services/_shared/ia-route.js'   # routage IA commun : le worker l'importe → doit redéployer
+      - '.github/workflows/deploy-kdmc-router.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }   # on NE fige PAS la branche : un push sur claude/** deploie CETTE branche
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # Garde BLOQUANTE : on ne déploie pas un routeur dont la voix ou le repli sont cassés.
+      # Ces deux tests tournent hors ligne (fetch simulé) → rapides, sans clé, sans réseau.
+      - name: Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
+        working-directory: services/kdmc-router
+        shell: bash -eo pipefail {0}
+        run: |
+          node voix-tts.test.mjs
+          node antonin-tts.test.mjs
+          node arbre.test.mjs
+          # 11/09/2026 (Strix vuln-0001) : les tests SSO ne tournaient dans AUCUN workflow — le
+          # correctif (Origin sur /issue, Face ID exigé pour /me/history et /me/revoke) est
+          # gardé ici, avant chaque déploiement du routeur.
+          node sso.test.mjs
+          node self-service.test.mjs
+          node admin.test.mjs
+          node ../../tools/lingua/verify-coach.mjs
+
+      - name: Install wrangler
+        run: npm i -g wrangler@3
+
+      # BOUÉE DE SECOURS : wrangler.toml déclare `[assets] directory = "./public"` (copie des
+      # pages servie SEULEMENT si GitHub Pages ne répond pas — ajoutée le 14/08 pendant la
+      # suspension). Ce dossier est gitignoré et fabriqué par prepare-secours.mjs. Sans cette
+      # étape, `wrangler deploy` s'arrête net (« assets.directory does not exist ») — et c'est
+      # EXACTEMENT ce qui s'est passé du 13/08 au 05/09 : 4 déploiements rouges d'affilée,
+      # donc AUCUN secret (dont le hash du code admin) poussé au routeur pendant 3 semaines.
+      # --leger = apps seules, 485 fichiers / 18 Mo (limite Cloudflare : 20 000 / 25 Mo par fichier).
+      - name: Bouée de secours — fabrique public/ (exigé par [assets] du wrangler.toml)
+        working-directory: services/kdmc-router
+        shell: bash -eo pipefail {0}
+        run: |
+          node prepare-secours.mjs --leger
+          test -d public || { echo "::error::public/ absent après prepare-secours"; exit 1; }
+          echo "public/ : $(find public -type f | wc -l) fichiers, $(du -sh public | cut -f1)"
+
+      # KV ACCOUNTS : binding FIGÉ dans wrangler.toml (id du namespace existant).
+      # Plus de provisioning dynamique (il cassait le déploiement quand le namespace
+      # existait déjà — cf. wrangler.toml). Déploiement fiable.
+
+      # ── AVANT DE DÉPLOYER : cette branche sait-elle où sont les pages ? ──────
+      # `wrangler deploy` REMPLACE les variables du worker par celles de SON
+      # wrangler.toml. Une branche en retard, sans UPSTREAM_BASE, renvoie donc le
+      # worker sur son défaut — et le 23.09.2026 ce défaut pointait encore sur
+      # github.io, éteint depuis que le dépôt est privé : les 26 adresses du
+      # domaine en 404 pendant ~50 minutes, sans qu'un seul contrôle vire au rouge.
+      # On refuse maintenant de déployer une branche qui ne porte pas l'hébergeur.
+      - name: Garde — la branche porte-t-elle bien l'hébergeur des pages ?
+        shell: bash -eo pipefail {0}
+        run: |
+          T=services/kdmc-router/wrangler.toml
+          BASE=$(grep -oE '^[[:space:]]*UPSTREAM_BASE[[:space:]]*=[[:space:]]*"[^"]+"' "$T" | sed -E 's/.*"([^"]+)".*/\1/' | head -1)
+          if [ -z "$BASE" ]; then
+            echo "::error::UPSTREAM_BASE absent de $T sur cette branche (${GITHUB_REF_NAME}) : déployer ici effacerait la variable du worker et éteindrait kd-mc.com. Fusionne main dans ta branche avant de pousser."
+            exit 1
+          fi
+          case "$BASE" in
+            *github.io*)
+              echo "::error::UPSTREAM_BASE vaut $BASE — GitHub Pages est éteint depuis que le dépôt est privé. Déploiement refusé."
+              exit 1;;
+          esac
+          echo "hébergeur des pages : $BASE"
+          node --test tests/routeur-hebergeur.test.mjs
+
+      - name: Déploiement du routeur (+ custom domains kd-mc.com)
+        id: deploy
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          echo "Deploy kdmc-router…"
+          wrangler deploy 2>&1 | tee deploy.log
+          echo "----"
+          echo "== VARIABLES RÉELLEMENT APPLIQUÉES (ce que le worker voit) =="
+          grep -iA8 'vars' deploy.log || echo "  (wrangler n'a pas listé de Vars — à vérifier)"
+          # GARDE : si le wrangler.toml demande une bascule d'hébergeur, wrangler DOIT
+          # avoir appliqué la variable. Sinon le domaine continue de servir l'ancienne
+          # source et personne ne le voit (mesuré le 18.09 : package.json encore servi).
+          if grep -q 'UPSTREAM_BASE' wrangler.toml; then
+            if ! grep -qi 'UPSTREAM_BASE' deploy.log; then
+              echo "::error::wrangler n'a PAS appliqué UPSTREAM_BASE — les variables du wrangler.toml ne sont pas parties, la bascule ne peut pas prendre"
+              echo "--- début du journal de déploiement ---"
+              sed -n '1,70p' deploy.log
+              exit 1
+            fi
+            echo "  ✅ variable de bascule appliquée : $(grep -i 'UPSTREAM_BASE' deploy.log | head -1 | sed 's/^ *//')"
+          fi
+          echo "Si une route custom_domain échoue avec un message de permission,"
+          echo "le token CLOUDFLARE_API_TOKEN doit inclure Zone:DNS:Edit +"
+          echo "Workers Routes:Edit sur la zone kd-mc.com."
+
+      - name: SSO — injecte le secret de signature (auto, fail-open si absent)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SSO_SECRET: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
+        run: |
+          if [ -n "${SSO_SECRET:-}" ]; then
+            printf '%s' "$SSO_SECRET" | wrangler secret put KDMC_SSO_SECRET 2>&1 | tail -3 \
+              || echo "::warning::secret SSO non posé (SSO fail-open → les apps gardent leur login normal)"
+          else
+            echo "::warning::Ni KDMC_SSO_SECRET ni JWT_SECRET → SSO désactivé (fail-open)."
+          fi
+
+      - name: Admin domaine — injecte le hash du PIN admin (ferme le trou nom auto-asserté)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 != '' && secrets.APEX_ADMIN_PIN_SHA256 || secrets.APEX_ADMIN_PIN_SHA }}
+        run: |
+          # Le code de sortie d'un TUYAU est celui de la DERNIERE commande : avec
+          # `| tail`, un `secret put` RATE ressortait VERT et le `|| echo` derriere ne
+          # se declenchait jamais. Un service qui garde l'ANCIEN code admin sans que
+          # personne ne le voie, c'est exactement le trou du 22.09.2026.
+          if [ -n "${ADMIN_PIN_SHA256:-}" ]; then
+            if printf '%s' "$ADMIN_PIN_SHA256" | wrangler secret put KDMC_ADMIN_PIN_SHA256 >/tmp/pin.log 2>&1; then
+              tail -3 /tmp/pin.log
+              echo "Code admin pose sur le routeur."
+            else
+              tail -10 /tmp/pin.log
+              echo "::error::Le code admin n'a PAS ete pose sur le routeur : il garde l'ANCIEN. Rien ne doit passer au vert."
+              exit 1
+            fi
+          else
+            echo "::warning::APEX_ADMIN_PIN_SHA256 absent → /__admin garde l'ancien contrôle par nom (fail-open)."
+          fi
+
+      - name: Firebase — secrets pour le lockdown shops (custom-token role:admin, fail-safe si absents)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          FB_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FB_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FB_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: |
+          if [ -n "${FB_PRIVATE_KEY:-}" ]; then
+            printf '%s' "$FB_PRIVATE_KEY" | wrangler secret put FIREBASE_PRIVATE_KEY 2>&1 | tail -2 \
+              || echo "::warning::FIREBASE_PRIVATE_KEY non posé (mint shops fail-safe → écriture anon inchangée)"
+          else
+            echo "::warning::FIREBASE_PRIVATE_KEY absent → /__admin/fbtoken renverra fb_not_configured (fail-open)."
+          fi
+          if [ -n "${FB_CLIENT_EMAIL:-}" ]; then
+            printf '%s' "$FB_CLIENT_EMAIL" | wrangler secret put FIREBASE_CLIENT_EMAIL 2>&1 | tail -2 || true
+          fi
+          if [ -n "${FB_WEB_API_KEY:-}" ]; then
+            printf '%s' "$FB_WEB_API_KEY" | wrangler secret put FIREBASE_WEB_API_KEY 2>&1 | tail -2 || true
+          fi
+
+      - name: Alerte push « nouvel appareil » — jeton (fail-open si absent)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Le worker de push accepte son ADMIN_TOKEN (= PUSH_ADMIN_TOKEN). Repli : AX_PUSH_ADMIN_TOKEN.
+          PUSH_TOKEN: ${{ secrets.PUSH_ADMIN_TOKEN != '' && secrets.PUSH_ADMIN_TOKEN || secrets.AX_PUSH_ADMIN_TOKEN }}
+        run: |
+          if [ -n "${PUSH_TOKEN:-}" ]; then
+            printf '%s' "$PUSH_TOKEN" | wrangler secret put KDMC_PUSH_TOKEN 2>&1 | tail -2 \
+              || echo "::warning::KDMC_PUSH_TOKEN non posé (alerte nouvel appareil no-op → le journal admin reste la trace)"
+          else
+            echo "::warning::PUSH_ADMIN_TOKEN absent → alerte nouvel appareil désactivée (fail-open ; journal admin OK)."
+          fi
+
+      - name: Crypto-bot — jeton Railway pour le tableau de bord bot.kd-mc.com (fail-open si absent)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RW_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "${RW_TOKEN:-}" ]; then
+            printf '%s' "$RW_TOKEN" | wrangler secret put RAILWAY_TOKEN 2>&1 | tail -2 \
+              || echo "::warning::RAILWAY_TOKEN non posé (/__bot renverra railway_token_absent — cause exacte visible)"
+          else
+            echo "::warning::RAILWAY_TOKEN absent → tableau de bord bot en railway_token_absent (fail-open)."
+          fi
+
+      - name: OpenAI — clé pour la voix naturelle KDMC Lingua (/__lingua/tts, fail-open si absente)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OPENAI_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+        run: |
+          if [ -n "${OPENAI_KEY:-}" ]; then
+            printf '%s' "$OPENAI_KEY" | wrangler secret put OPEN_AI_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::OPEN_AI_API_KEY non posée (voix Lingua en repli navigateur)"
+          else
+            echo "::warning::OPEN_AI_API_KEY absente → voix Lingua en repli navigateur (Web Speech)."
+          fi
+
+      - name: Replicate — clé pour la voix clonée d'Antonin (/__lingua/tts?v=antonin, fail-open si absente)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REPLICATE_KEY: ${{ secrets.AX_REPLICATE_KEY }}
+        run: |
+          if [ -n "${REPLICATE_KEY:-}" ]; then
+            printf '%s' "$REPLICATE_KEY" | wrangler secret put AX_REPLICATE_KEY 2>&1 | tail -2 \
+              || echo "::warning::AX_REPLICATE_KEY non posée (voix Antonin en repli onyx)"
+          else
+            echo "::warning::AX_REPLICATE_KEY absente → voix Antonin en repli onyx (fail-open)."
+          fi
+
+      - name: Groq + Mistral + Gemini — clés pour le Coach IA KDMC Lingua (/__lingua/ai, fail-open si absentes)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -n "${GROQ_KEY:-}" ]; then
+            printf '%s' "$GROQ_KEY" | wrangler secret put GROQ_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::GROQ_API_KEY non posée (Coach IA en repli Mistral/Gemini/hors-ligne)"
+          else
+            echo "::warning::GROQ_API_KEY absente → Coach IA tentera Mistral puis Gemini."
+          fi
+          if [ -n "${MISTRAL_KEY:-}" ]; then
+            printf '%s' "$MISTRAL_KEY" | wrangler secret put MISTRAL_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::MISTRAL_API_KEY non posée (repli Mistral indisponible)"
+          else
+            echo "::warning::MISTRAL_API_KEY absente → pas de repli Mistral pour le Coach IA."
+          fi
+          if [ -n "${GEMINI_KEY:-}" ]; then
+            printf '%s' "$GEMINI_KEY" | wrangler secret put GEMINI_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::GEMINI_API_KEY non posée (dernier repli Coach IA indisponible)"
+          else
+            echo "::warning::GEMINI_API_KEY absente → pas de dernier repli Gemini pour le Coach IA."
+          fi
+
+      - name: Health check des belles adresses
+        run: |
+          for H in kd-mc.com www.kd-mc.com cmcteams.kd-mc.com apex-ai.kd-mc.com \
+                   apex-chat.kd-mc.com la-detente.kd-mc.com chez-lolo.kd-mc.com \
+                   dashboard.kd-mc.com sourcing.kd-mc.com coffre.kd-mc.com bot.kd-mc.com \
+                   departs.kd-mc.com cmcteams-light.kd-mc.com \
+                   autorisations.kd-mc.com arbre.kd-mc.com lingua.kd-mc.com \
+                   studio.kd-mc.com cuisine.kd-mc.com cocina.kd-mc.com cujina.kd-mc.com; do
+            echo "== https://$H =="
+            curl -fsS -o /dev/null -w "  status=%{http_code}\n" "https://$H/" \
+              || echo "  (pas encore 200 — le certificat custom domain peut mettre 1-2 min)"
+          done
+          echo "== CONTENU studio.kd-mc.com (l'app se charge-t-elle vraiment ?) =="
+          curl -fsS -m 20 -L "https://studio.kd-mc.com/" 2>/dev/null | grep -o "Créa Studio" | head -1 \
+            && echo "  ✅ l'app Créa Studio est bien servie sur le domaine" \
+            || echo "  ::warning:: studio.kd-mc.com ne renvoie pas encore l'app (cert/DNS en cours, ou routage à vérifier)"
+          echo "== CONTENU cuisine.kd-mc.com (le livre se charge-t-il ?) =="
+          curl -fsS -m 20 -L "https://cuisine.kd-mc.com/" 2>/dev/null | grep -o "Répertoire de la Riviera" | head -1 \
+            && echo "  ✅ le livre de cuisine est bien servi sur le domaine" \
+            || echo "  ::warning:: cuisine.kd-mc.com ne renvoie pas encore le livre (cert/DNS en cours, ou Pages tools/cuisine à vérifier)"
+          echo "== CONTENU cujina.kd-mc.com / cocina.kd-mc.com (adresse au nom « A Cüjina de Mùnegu ») =="
+          curl -fsS -m 20 -L "https://cujina.kd-mc.com/" 2>/dev/null | grep -o "Cüjina de Mùnegu" | head -1 \
+            && echo "  ✅ le livre est bien servi sur cujina.kd-mc.com" \
+            || echo "  ::warning:: cujina.kd-mc.com pas encore servi (cert/DNS custom domain en cours — 1-2 min pour un nouveau sous-domaine)"
+          curl -fsS -m 20 -L "https://cocina.kd-mc.com/" 2>/dev/null | grep -o "Cüjina de Mùnegu" | head -1 \
+            && echo "  ✅ alias cocina.kd-mc.com OK" \
+            || echo "  ::warning:: cocina.kd-mc.com pas encore servi (cert/DNS en cours)"
+          echo "== CHEMIN kd-mc.com/cujina (marche sur tout réseau/4G, 0 DNS nouveau) =="
+          curl -fsS -m 20 -L "https://kd-mc.com/cujina/" 2>/dev/null | grep -o "Cüjina de Mùnegu" | head -1 \
+            && echo "  ✅ le livre est servi sur kd-mc.com/cujina" \
+            || echo "  ::warning:: kd-mc.com/cujina pas encore servi (worker en cours de déploiement)"
+          echo "== VOIX KDMC Lingua (/__lingua/tts) — vraie voix naturelle OU repli navigateur ? =="
+          CT=$(curl -fsS -m 25 -o /dev/null -w "%{content_type}" "https://lingua.kd-mc.com/__lingua/tts?v=nova&t=bonjour" 2>/dev/null || echo "erreur")
+          echo "  content-type=$CT"
+          case "$CT" in
+            audio/*) echo "  ✅ VOIX NATURELLE OpenAI ACTIVE côté serveur (un vrai audio est servi)";;
+            *) echo "  ::warning:: /__lingua/tts NE renvoie PAS d'audio (=$CT) → l'app retombe sur la voix du navigateur (robotique). Cause probable : OPEN_AI_API_KEY absente/invalide/quota. Vérifier le secret GitHub OPEN_AI_API_KEY.";;
+          esac
+          echo "== VOIX D'ANTONIN (/__lingua/tts?v=antonin) — clone Replicate OU repli onyx ? =="
+          CTA=$(curl -fsS -m 60 -o /dev/null -w "%{content_type}" "https://lingua.kd-mc.com/__lingua/tts?v=antonin&t=Adiou%20c%27est%20Antonin" 2>/dev/null || echo "erreur")
+          echo "  content-type=$CTA"
+          case "$CTA" in
+            audio/*) echo "  ✅ la voix d'Antonin répond en audio (clone Replicate ou repli onyx — les deux servent un mp3)";;
+            *) echo "  ::warning:: v=antonin ne renvoie pas d'audio (=$CTA) — vérifier AX_REPLICATE_KEY et OPEN_AI_API_KEY.";;
+          esac
+
+      # ── LE DOMAINE SERT-IL VRAIMENT TOUT ? (bloquant) ─────────────────────
+      # Le « Health check » au-dessus est best-effort : il n'échoue JAMAIS. Le
+      # 18.09.2026, en basculant la source des pages de GitHub Pages vers
+      # Cloudflare Pages, on a mesuré qu'une erreur de source aurait éteint les
+      # 31 adresses SANS qu'un seul contrôle vire au rouge. Cette étape-ci ouvre
+      # réellement chaque adresse du domaine et FAIT ÉCHOUER le déploiement si
+      # une seule ne répond pas — c'est le filet du jour de la bascule.
+      - name: Le domaine sert-il vraiment les 31 adresses ? (bloquant)
+        shell: bash -eo pipefail {0}
+        run: |
+          # Laisser le temps au worker de se propager au bord Cloudflare.
+          sleep 20
+          node tools/audit/sonde-site-publie.mjs "https://kd-mc.com"
+
+      # ── D'OÙ VIENNENT VRAIMENT LES PAGES ? (preuve par repère) ───────────
+      # « 31 adresses répondent 200 » ne dit PAS d'où elles viennent.
+      # PREMIÈRE TENTATIVE, RATÉE (18.09) : comparer un fichier présent chez un
+      # hébergeur et absent chez l'autre (package.json). Cloudflare Pages, sans
+      # 404.html, répond à TOUTE adresse inconnue par la page d'accueil AVEC un
+      # code 200 → le contrôle criait « bascule ratée » alors que tout allait
+      # bien. Un code HTTP ne suffit jamais : il faut regarder le CONTENU.
+      # MÉTHODE RETENUE : le paquet pose un repère (__paquet.txt) que l'ancien
+      # hébergeur n'a jamais eu. Si l'hébergeur le sert et que le domaine le
+      # sert aussi, le domaine relaie bien cet hébergeur — sans ambiguïté.
+      # Une page qui s'affiche ne prouve PAS que le planning est chargé : les
+      # données vivent dans trois fichiers à part, en adresse absolue
+      # « /CMCteams/… », que le routeur réécrit au passage. Si ce retrait casse,
+      # l'hébergeur renvoie la page d'accueil AVEC un code 200 (leçon #285) et
+      # l'app s'affiche vide sans un seul message d'erreur. On ouvre donc les
+      # fichiers eux-mêmes et on exige du vrai JavaScript.
+      - name: L'app reçoit-elle vraiment ses plannings ? (bloquant)
+        run: node tools/audit/sonde-ressources-app.mjs
+
+      - name: D'où viennent vraiment les pages ? (preuve par repère)
+        shell: bash -eo pipefail {0}
+        run: |
+          ATTENDU=$(grep -oE 'UPSTREAM_BASE *= *"[^"]+"' services/kdmc-router/wrangler.toml | sed 's/.*"\(.*\)"/\1/' || true)
+          if [ -z "$ATTENDU" ]; then
+            echo "  (aucune bascule configurée — rien à prouver ici)"
+            exit 0
+          fi
+          REPERE=paquet-applications-kdmc
+          HOTE=$(curl -s --max-time 20 "$ATTENDU/__paquet.txt" || true)
+          DOM=$(curl -s --max-time 20 "https://cmcteams.kd-mc.com/__paquet.txt" || true)
+          if ! printf '%s' "$HOTE" | grep -q "$REPERE"; then
+            echo "::warning::l'hébergeur $ATTENDU ne porte pas encore le repère du paquet — la publication n'a pas été refaite depuis son ajout. JE NE CONCLUS RIEN sur la provenance."
+            exit 0
+          fi
+          if ! printf '%s' "$DOM" | grep -q "$REPERE"; then
+            echo "::error::l'hébergeur porte le repère du paquet, mais le domaine ne le sert PAS → kd-mc.com ne relaie pas $ATTENDU. Bascule non effective."
+            exit 1
+          fi
+          echo "  ✅ prouvé : kd-mc.com sert le paquet trié publié sur $ATTENDU (repère présent des deux côtés)"
+
+      # ── L'HÉBERGEUR PUBLIE-T-IL PLUS QUE LES APPLICATIONS ? (bloquant) ────
+      # Mesuré le 18.09 : l'hébergeur servait package.json, que le paquet trié
+      # ne contient pas. « Privé » sur GitHub ne rend pas privé ce qu'un AUTRE
+      # hébergeur publie déjà — il faut donc le vérifier LÀ-BAS aussi.
+      - name: L'hébergeur ne sert-il que les applications ? (bloquant)
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/audit/sonde-fuite-hebergeur.mjs "https://cmcteams.kd-mc.com"
+          ATTENDU=$(grep -oE 'UPSTREAM_BASE *= *"[^"]+"' services/kdmc-router/wrangler.toml | sed 's/.*"\(.*\)"/\1/' || true)
+          if [ -n "$ATTENDU" ]; then
+            node tools/audit/sonde-fuite-hebergeur.mjs "$ATTENDU"
+          fi
+
+      - name: Smoke test SSO live (issue → token → whoami Bearer + gate admin)
+        # Best-effort : confirme la PROPAGATION live (timing-dépendant au bord Cloudflare,
+        # peut dépasser 1 min). La preuve du CODE = tests unitaires (sso/admin) + harnais
+        # Chromium. On ne rougit donc PAS un déploiement réussi pour un délai de propagation.
+        continue-on-error: true
+        run: |
+          set +e
+          BASE=https://kd-mc.com
+          APP=https://apex-chat.kd-mc.com
+          echo "1) issue (uid de test) — retry jusqu'à ~3 min (propagation bord Cloudflare)"
+          TOKEN=""; RESP=""
+          for i in $(seq 1 36); do
+            RESP=$(curl -fsS -X POST "$BASE/__sso/issue" -H 'content-type: application/json' \
+                   -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}' || true)
+            TOKEN=$(printf '%s' "$RESP" | grep -oE '"token":"[^"]+"' | sed 's/.*:"//;s/"//')
+            if [ -n "$TOKEN" ]; then echo "   ✅ token reçu (tentative $i)"; break; fi
+            [ $((i % 6)) -eq 0 ] && echo "   …tentative $i : pas encore propagé"
+            sleep 5
+          done
+          if [ -z "$TOKEN" ]; then echo "::warning::issue sans token après ~3 min (propagation lente). Code prouvé par les tests. $RESP"; else
+            echo "2) whoami via Bearer (SANS cookie) — canal cross-PWA"
+            WHO=$(curl -fsS "$APP/__sso/whoami" -H "Authorization: Bearer $TOKEN")
+            echo "   $WHO"
+            printf '%s' "$WHO" | grep -q '"ok":true'        || echo "::warning::whoami Bearer pas encore OK (propagation)"
+            printf '%s' "$WHO" | grep -q '"uid":"ci_smoke"' || echo "::warning::identité Bearer pas encore OK"
+            BAD=$(curl -fsS "$APP/__sso/whoami" -H "Authorization: Bearer pas.un.vrai")
+            printf '%s' "$BAD" | grep -q '"ok":false'       || echo "::warning::forge pas rejetée (à vérifier)"
+          fi
+          echo "3) SÉCU admin : /__admin/accounts SANS preuve → doit être 403 + reason need_admin_code (PROUVE que le hash PIN est déployé)"
+          AC=$(curl -s -o /tmp/adm.json -w "%{http_code}" "$BASE/__admin/accounts")
+          BODY=$(cat /tmp/adm.json 2>/dev/null)
+          echo "   http=$AC body=$BODY"
+          if [ "$AC" = "403" ] && printf '%s' "$BODY" | grep -q 'need_admin_code'; then \
+            echo "   ✅ /__admin verrouillé PAR LE PIN (need_admin_code) — hash déployé, fiches inaccessibles"; \
+          elif [ "$AC" = "403" ]; then \
+            echo "::warning::/__admin = 403 mais reason ≠ need_admin_code → hash PIN PAS déployé (gate fail-closed = admin_only). Vérifier APEX_ADMIN_PIN_SHA256."; \
+          else echo "::warning::/__admin a répondu $AC (gate peut-être pas encore propagé)"; fi
+          echo "✅ Smoke terminé (best-effort, non bloquant)."

@@ -1,0 +1,2 @@
+Toucher ce fichier relance la vérification LIVE (voir .github/workflows/verif-live-rapport.yml).
+Demande du 05/09/2026 16:37 UTC

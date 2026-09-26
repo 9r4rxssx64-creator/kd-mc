@@ -1,0 +1,19 @@
+{
+  "_comment": "MCP servers du repo — charges AUTOMATIQUEMENT a chaque session Claude Code web (font partie du clone). Expansion ${ENV_VAR} via variables d'environnement / Coffres d'identifiants. github = serveur MCP distant : le credential est fourni par le Coffre matche sur l'URL api.githubcopilot.com (PAS de header ici). SEO: nanobanana + firecrawl (gratuits, ignores si la cle manque).",
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "nanobanana-mcp": {
+      "command": "npx",
+      "args": ["-y", "@ycse/nanobanana-mcp@1.1.1"],
+      "env": { "GOOGLE_AI_API_KEY": "${GEMINI_API_KEY}" }
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp@3.11.0"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
+    }
+  }
+}

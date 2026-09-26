@@ -1,0 +1,160 @@
+name: KDMC — Sauvegarde de TOUS les KV (chiffrée)
+
+# v2026-07-08 (audit amélioration Top #8) — Généralise kdmc-kv-backup.yml :
+# avant, SEUL le KV ACCOUNTS du routeur était sauvegardé ; les ~10 autres
+# namespaces (sessions apex-v13-backend, coffre vault-svc, chat-svc,
+# sentinels-svc, auth…) étaient IRRÉCUPÉRABLES en cas de perte.
+#
+# Ici : ÉNUMÉRATION DYNAMIQUE de tous les namespaces du compte via l'API
+# Cloudflare (aucun id codé en dur — la plupart des wrangler.toml portent des
+# placeholders, et les futurs namespaces sont couverts automatiquement),
+# dump complet de chaque namespace, chiffrement AES-256 (PBKDF2 200k — repo
+# public, JAMAIS de clair), push sur la branche dédiée `kv-backups`.
+#
+# ACCOUNTS garde en plus son backup dédié (kdmc-kv-backup.yml, filtrage des
+# clés durables) — redondance voulue pour la donnée la plus critique.
+#
+# RESTAURATION :
+#   git fetch origin kv-backups && git checkout origin/kv-backups -- backups/kdmc-kv-all/<ns>.json.enc
+#   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in <ns>.json.enc -pass pass:<KDMC_SSO_SECRET> > dump.json
+#   puis PUT chaque clé via l'API KV (cf. kdmc-kv-backup.yml).
+#
+# Anti-spam (règle CLAUDE.md) : 1 cron/jour (04:10, décalé du backup ACCOUNTS),
+# commits [skip ci], caps stricts (10k clés / namespace).
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency: kdmc-kv-backup-all
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with: { ref: main, fetch-depth: 1 }
+
+      - name: Dump de TOUS les namespaces KV (énumération dynamique)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          if [ -z "${CF_TOKEN:-}" ] || [ -z "${CF_ACCOUNT:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents — backup impossible."
+            exit 1
+          fi
+          mkdir -p /tmp/dumps
+          python3 - <<'PY'
+          import json, os, subprocess, urllib.parse, datetime, re, sys
+
+          ACC = os.environ["CF_ACCOUNT"]; TOK = os.environ["CF_TOKEN"]
+          BASE = f"https://api.cloudflare.com/client/v4/accounts/{ACC}/storage/kv/namespaces"
+
+          def api(url):
+              r = subprocess.run(["curl", "-fsS", url, "-H", "Authorization: Bearer " + TOK],
+                                 capture_output=True, text=True, timeout=40)
+              if r.returncode != 0:
+                  print(f"::warning::GET {url} → curl rc={r.returncode} {r.stderr[:200]}")
+                  return None
+              try: return json.loads(r.stdout)
+              except Exception as e:
+                  print(f"::warning::GET {url} → JSON invalide : {e}"); return None
+
+          # 1) Énumère TOUS les namespaces (paginé)
+          namespaces, page = [], 1
+          while page <= 10:
+              d = api(f"{BASE}?per_page=100&page={page}")
+              if not d or not d.get("result"): break
+              namespaces += d["result"]
+              if page >= (d.get("result_info") or {}).get("total_pages", 1): break
+              page += 1
+          print(f"{len(namespaces)} namespaces trouvés : " + ", ".join(n["title"] for n in namespaces))
+          if not namespaces:
+              print("::error::0 namespace listé — token sans permission KV read ?"); sys.exit(1)
+
+          total_keys = 0
+          for ns in namespaces:
+              nsid, title = ns["id"], ns["title"]
+              safe = re.sub(r"[^A-Za-z0-9._-]+", "_", title)[:60] or nsid
+              # 2) Liste des clés (paginée par curseur, cap 10k)
+              keys, cursor = [], ""
+              for _ in range(10):
+                  u = f"{BASE}/{nsid}/keys?limit=1000" + (f"&cursor={urllib.parse.quote(cursor)}" if cursor else "")
+                  d = api(u)
+                  if not d: break
+                  keys += [k["name"] for k in d.get("result", [])]
+                  cursor = (d.get("result_info") or {}).get("cursor") or ""
+                  if not cursor: break
+              if len(keys) >= 10000:
+                  print(f"::warning::{title} : cap 10k clés atteint — dump TRONQUÉ (pas silencieux, règle no-silent-caps)")
+              # 3) Valeurs
+              entries = {}
+              for k in keys:
+                  u = f"{BASE}/{nsid}/values/" + urllib.parse.quote(k, safe="")
+                  r = subprocess.run(["curl", "-fsS", u, "-H", "Authorization: Bearer " + TOK],
+                                     capture_output=True, text=True, timeout=30)
+                  entries[k] = r.stdout if r.returncode == 0 else None
+              total_keys += len(entries)
+              json.dump({"at": datetime.datetime.utcnow().isoformat() + "Z",
+                         "namespace_id": nsid, "title": title,
+                         "count": len(entries), "entries": entries},
+                        open(f"/tmp/dumps/{safe}.json", "w"), ensure_ascii=False)
+              print(f"  {title} ({nsid[:8]}…) : {len(entries)} clés")
+          print(f"TOTAL : {total_keys} clés sur {len(namespaces)} namespaces")
+          PY
+
+      - name: Chiffre chaque dump (AES-256, PBKDF2 200k — jamais de clair)
+        env:
+          BACKUP_PASS: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
+        run: |
+          set -e
+          if [ -z "${BACKUP_PASS:-}" ]; then
+            echo "::error::Ni KDMC_SSO_SECRET ni JWT_SECRET — on ne committe JAMAIS de dump en clair. Abandon."
+            exit 1
+          fi
+          mkdir -p /tmp/out
+          for f in /tmp/dumps/*.json; do
+            [ -e "$f" ] || { echo "::error::aucun dump produit"; exit 1; }
+            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+              -in "$f" -out "/tmp/out/$(basename "$f").enc" -pass env:BACKUP_PASS
+          done
+          ls -la /tmp/out
+
+      - name: Pousse sur la branche kv-backups (latest par namespace + hebdo daté)
+        run: |
+          set -e
+          git config user.name "kdmc-kv-backup[bot]"
+          git config user.email "actions@github.com"
+          git fetch origin kv-backups 2>/dev/null && git checkout -B kv-backups origin/kv-backups || git checkout --orphan kv-backups
+          if ! git rev-parse origin/kv-backups >/dev/null 2>&1; then git rm -rfq --cached . 2>/dev/null || true; git clean -fdq || true; fi
+          mkdir -p backups/kdmc-kv-all
+          cp /tmp/out/*.enc backups/kdmc-kv-all/
+          # Copie hebdo datée (dimanche) pour historique, rétention 8 semaines
+          if [ "$(date -u +%u)" = "7" ]; then
+            mkdir -p "backups/kdmc-kv-all/weekly/$(date -u +%Y%m%d)"
+            cp /tmp/out/*.enc "backups/kdmc-kv-all/weekly/$(date -u +%Y%m%d)/"
+            ls -1d backups/kdmc-kv-all/weekly/2* 2>/dev/null | sort | head -n -8 | xargs -r rm -rf
+          fi
+          # Anti-échec Vercel (même garde que kdmc-kv-backup.yml)
+          mkdir -p tools/agent
+          printf '%s\n' '{ "git": { "deploymentEnabled": false }, "ignoreCommand": "exit 0" }' > tools/agent/vercel.json
+          git add backups/kdmc-kv-all tools/agent/vercel.json
+          git commit -m "backup: TOUS les KV kd-mc.com $(date -u +%Y-%m-%d) (chiffré) [skip ci]" || { echo "rien à committer"; exit 0; }
+          git push -f origin kv-backups
+
+      - name: Copie de secours en artifact (30 jours)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kdmc-kv-all-backup-${{ github.run_id }}
+          path: /tmp/out/
+          retention-days: 30

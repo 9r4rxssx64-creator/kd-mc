@@ -1,0 +1,65 @@
+{
+  "_doc": "SOURCE UNIQUE des apps iPhone (App Store / TestFlight) — Kevin 2026-08-13 « Go tout ». Chaque entrée décrit COMMENT emballer une app web du domaine en vraie app iOS. Le contenu web est EMBARQUÉ (webDir), pas chargé depuis internet : l'app marche hors-ligne et n'est pas une coquille vide (Apple règle 4.2). Modifié ici = modifié partout : le build (mobile/build-ios.mjs) et le garde-fou (tests/mobile-ios-config.test.mjs) lisent CE fichier.",
+  "_bundleId": "Format inverse du domaine, SANS TIRET : Capacitor et Apple exigent la forme « paquet Java » (lettres, chiffres, points ; aucun tiret). Le premier essai com.kd-mc.* a été REFUSÉ au build : « Invalid App ID … Must be in Java package form with no dashes » (run 31762220281, 2026-08-14). À NE PLUS JAMAIS CHANGER une fois une app publiée : l'identifiant est la clé de l'app chez Apple, le modifier crée une app DIFFÉRENTE et fait perdre testeurs, avis et achats. Aucune n'est publiée à ce jour, donc ce changement-ci est sans conséquence — c'est le dernier qui le soit.",
+  "apps": [
+    {
+      "id": "cmcteams",
+      "name": "CMCteams",
+      "bundleId": "com.kdmc.cmcteams",
+      "webDir": ".",
+      "include": [
+        "index.html",
+        "sw.js",
+        "manifest.json",
+        "assets/**",
+        "icons/**",
+        "tools/departs/boards-gen.js",
+        "tools/shared/planning-seed.js",
+    "tools/shared/convention-sbm.js"
+      ],
+      "icon": "icon.svg",
+      "site": "https://cmcteams.kd-mc.com",
+      "categorieApple": "public.app-category.business",
+      "pourquoiPasUneCoquille": "Planning et équipes du Casino de Monaco : import de planning, ordres de départ, échanges de shifts, messagerie interne, fonctionne hors-ligne. Contenu et logique propres — aucun équivalent web public.",
+      "dupliquerSous": "CMCteams",
+      "_note_chemins": "L'app charge /CMCteams/tools/... en ABSOLU (chemin du site GitHub Pages). Dans l'app native la racine est '/', donc ces chemins tomberaient dans le vide. On duplique donc les fichiers sous www/CMCteams/ — 0 modification du code de l'app."
+    },
+    {
+      "id": "apex-chat",
+      "name": "Apex Chat",
+      "bundleId": "com.kdmc.apexchat",
+      "webDir": "messaging-app",
+      "include": [
+        "index.html",
+        "sw.js",
+        "manifest.json",
+        "icons/**",
+        "assets/**"
+      ],
+      "icon": "messaging-app/icons/favicon.svg",
+      "site": "https://apex-chat.kd-mc.com",
+      "categorieApple": "public.app-category.social-networking",
+      "pourquoiPasUneCoquille": "Messagerie chiffrée de bout en bout : chiffrement côté appareil, sessions signées, notifications. Fonction propre, pas un site emballé."
+    },
+    {
+      "id": "lingua",
+      "name": "KDMC Lingua",
+      "bundleId": "com.kdmc.lingua",
+      "webDir": "lingua",
+      "include": [
+        "index.html",
+        "sw.js",
+        "manifest.webmanifest",
+        "*.js",
+        "bee/**",
+        "donkey/**",
+        "icon.svg"
+      ],
+      "icon": "lingua/icon.svg",
+      "site": "https://lingua.kd-mc.com",
+      "categorieApple": "public.app-category.education",
+      "pourquoiPasUneCoquille": "Apprentissage des langues avec contenu propre (leçons, examens, histoires, monégasque), progression locale, prof IA. Le contenu est l'app."
+    }
+  ],
+  "_verif": "Le build VÉRIFIE que chaque référence absolue de index.html existe vraiment dans www. C'est le filet contre le bug silencieux « l'app s'ouvre mais un morceau ne charge pas »."
+}

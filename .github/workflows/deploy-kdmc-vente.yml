@@ -1,0 +1,248 @@
+name: Deploy kdmc-vente Worker
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - "services/kdmc-vente/**"
+      - ".github/workflows/deploy-kdmc-vente.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kdmc-vente
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/kdmc-vente
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Un worker qui encaisse ne part JAMAIS sans ses tests (28 contrôles,
+      # dont 3 prouvés discriminants par sabotage : signature webhook, anti-rejeu,
+      # admin non vérifié). Hors-ligne : aucun compte PayPal nécessaire.
+      - name: Tests (obligatoires avant tout déploiement)
+        run: node --test vente.test.mjs
+
+      - name: Install wrangler
+        run: npm i -g wrangler@4
+
+      # Secrets OPTIONNELS : leur absence ne casse rien, elle fait tomber les
+      # ventes en file manuelle (Kevin valide en 1 clic). On le DIT dans le journal.
+      - name: Push PayPal secrets (ceux qui existent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          push() {
+            if [ -n "$2" ]; then printf '%s' "$2" | wrangler secret put "$1"; echo "$1 poussé"; 
+            else echo "$1 ABSENT — $3"; fi
+          }
+          push PAYPAL_CLIENT_ID  "${{ secrets.PAYPAL_CLIENT_ID }}"  "vérification auto désactivée, tout passe en file manuelle"
+          push PAYPAL_SECRET     "${{ secrets.PAYPAL_SECRET }}"     "idem"
+          push PAYPAL_WEBHOOK_ID "${{ secrets.PAYPAL_WEBHOOK_ID }}" "livraison instantanée désactivée, les webhooks seront ignorés"
+          push EMAILJS_PRIVATE_KEY "${{ secrets.EMAILJS_PRIVATE_KEY }}" "le code d'accès n'est pas envoyé par e-mail, seulement affiché à l'écran"
+          # Tableau de bord Commerce (kd-mc.com/admin/commerce.html) : le jeton sert UNIQUEMENT
+          # à lancer 5 workflows d'une liste fermée (WORKFLOWS du worker), derrière l'admin
+          # SSO vérifié (Face ID). Absent → les boutons deviennent des liens GitHub, rien ne casse.
+          push GITHUB_DISPATCH_TOKEN "${{ secrets.APEX_GITHUB_PAT }}" "les boutons « Lancer » du tableau de bord Commerce renvoient vers GitHub au lieu de lancer"
+
+      - name: Deploy worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee /tmp/deploy.log
+          URL=$(grep -oE "https://[a-zA-Z0-9.-]+\.workers\.dev" /tmp/deploy.log | head -1)
+          echo "worker_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Déployé: $URL"
+
+      # PREUVE LIVE (l'agent ne peut atteindre ni workers.dev ni l'API GitHub —
+      # le journal CI est la seule preuve réelle, leçon #135).
+      - name: Preuve live — santé + catalogue + refus d'un webhook non signé
+        shell: bash -eo pipefail {0}
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          [ -z "$URL" ] && { echo "URL introuvable"; exit 1; }
+          # La version qu'on vient de déployer se reconnaît à SON catalogue : tant que
+          # /health ne liste pas chaque produit du worker.js du dépôt, c'est l'ancienne
+          # version qui répond (mesuré le 16.09 : le premier appel, 0 s après le
+          # déploiement, lisait encore l'ancien worker — la preuve était un faux vert).
+          ATTENDUS=$(node -e "import('./worker.js').then(m=>console.log(Object.keys(m.__test.PRODUITS).join(' ')))")
+          echo "produits attendus : $ATTENDUS"
+          ok=0
+          for i in $(seq 1 12); do
+            curl -fsS "$URL/health" > /tmp/h.json || true
+            manque=0
+            for prod in $ATTENDUS; do grep -q "\"$prod\"" /tmp/h.json || manque=1; done
+            if grep -q '"ok":true' /tmp/h.json && [ "$manque" = 0 ]; then ok=1; break; fi
+            echo "ancienne version encore servie (essai $i) — attente 5 s"; sleep 5
+          done
+          echo "— santé —"; cat /tmp/h.json; echo
+          [ "$ok" = 1 ] || { echo "ÉCHEC : après 60 s, /health ne sert toujours pas le catalogue déployé"; exit 1; }
+          # Le contenu payant (Kit IA) vit dans la base D1 : sans binding, on vend du vide.
+          grep -q '"contenu_prive":true' /tmp/h.json || { echo "ÉCHEC : base de contenu (binding CONTENU) absente du worker déployé"; exit 1; }
+          echo "— catalogue —"; curl -fsS "$URL/produits"; echo
+          # Kit IA : l'aperçu public sert le module gratuit et RIEN de payant.
+          echo "— aperçu Kit IA (module gratuit seulement) —"
+          curl -fsS "$URL/apercu?produit=kit-ia" > /tmp/a.json
+          node -e '
+            const j = JSON.parse(require("fs").readFileSync("/tmp/a.json","utf8"));
+            if (!j.ok) { console.log("ÉCHEC aperçu :", j.detail || j.error); process.exit(1); }
+            const gratuits = j.modules.map(m => m.id), payants = j.sommaire.filter(s => !s.gratuit).map(s => s.id);
+            console.log("modules servis :", gratuits.join(","), "· sommaire :", j.sommaire.length, "· payants annoncés :", payants.length);
+            if (gratuits.length < 1) { console.log("ÉCHEC : aucun module gratuit en base"); process.exit(1); }
+            if (j.modules.some(m => !m.gratuit)) { console.log("DANGER : un module payant est servi sans code"); process.exit(1); }
+            if (j.sommaire.length < 7) { console.log("ÉCHEC : le sommaire annonce", j.sommaire.length, "modules, 7 attendus"); process.exit(1); }
+          '
+          # Un faux webhook, sans signature valable, ne doit RIEN délivrer.
+          echo "— faux webhook (doit être ignoré) —"
+          curl -sS -X POST "$URL/webhook/paypal" -H 'content-type: application/json' \
+            -d '{"event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"FAUX","amount":{"value":"39.00","currency_code":"EUR"}}}' \
+            | tee /tmp/w.json; echo
+          grep -q '"ignore":true' /tmp/w.json || { echo "DANGER : un webhook non signé a été accepté"; exit 1; }
+          echo "OK — un paiement non prouvé ne délivre rien."
+
+          # ── CAISSE (18.09) : ce qui protège l'argent doit être VU en vrai ──────
+          echo "— la caisse refuse une commande sans consentement —"
+          curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' \
+            -d '{"produit":"kit-ia","email":"preuve@example.com"}' | tee /tmp/c1.json; echo
+          grep -q '"error":"consentement"' /tmp/c1.json || { echo "DANGER : on peut commander sans consentir à la livraison immédiate"; exit 1; }
+
+          echo "— la caisse refuse une commande sans e-mail (accès non livrable) —"
+          curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' \
+            -d '{"produit":"kit-ia","consentement":true}' | tee /tmp/c2.json; echo
+          grep -q '"error":"email"' /tmp/c2.json || { echo "DANGER : on peut commander sans e-mail"; exit 1; }
+
+          echo "— la caisse refuse un produit inventé —"
+          curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' \
+            -d '{"produit":"gratuit-ia","email":"p@example.com","consentement":true}' | tee /tmp/c3.json; echo
+          grep -q '"error":"produit_inconnu"' /tmp/c3.json || { echo "DANGER : un produit hors catalogue est accepté"; exit 1; }
+
+          echo "— une capture sur une référence inventée ne délivre rien —"
+          curl -sS -X POST "$URL/caisse/capture" -H 'content-type: application/json' \
+            -d '{"ref":"KZZZZZZZZ"}' | tee /tmp/c4.json; echo
+          grep -q '"error":"commande_inconnue"' /tmp/c4.json || { echo "DANGER : une référence inventée passe la caisse"; exit 1; }
+
+          # Dit la vérité sur l'état : caisse branchée ou repli paypal.me.
+          if grep -q '"caisse":true' /tmp/h.json; then
+            echo "CAISSE ACTIVE : les clés PayPal sont posées, l'achat est automatique de bout en bout."
+            curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' \
+              -d '{"produit":"avis-ia","email":"preuve@example.com","consentement":true}' > /tmp/c5.json
+            node -e '
+              const j = JSON.parse(require("fs").readFileSync("/tmp/c5.json","utf8"));
+              if (!j.ok || !/^https:\/\/www\.(sandbox\.)?paypal\.com\//.test(j.approbation || "")) {
+                console.log("ÉCHEC : la caisse ne rend pas de lien de paiement PayPal :", JSON.stringify(j).slice(0,200)); process.exit(1);
+              }
+              console.log("commande créée, réf", j.ref, "→ lien de paiement PayPal obtenu.");
+            '
+          else
+            grep -q '"error":"caisse_absente"' <(curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' -d '{"produit":"kit-ia","email":"p@example.com","consentement":true}') \
+              || { echo "ÉCHEC : sans clés PayPal, la caisse doit le DIRE (caisse_absente) pour que la page retombe sur paypal.me"; exit 1; }
+            echo "CAISSE EN REPLI : clés PayPal absentes → le bouton rouvre paypal.me. Rien n'est cassé, mais la validation reste manuelle."
+          fi
+
+          # ── PAYPAL PERSO (Kevin 18.09 « utilise mon PayPal comme ça. perso ») ──
+          # Sans clés, le lien paypal.me EST le chemin réel : c'est donc CE chemin
+          # qu'il faut prouver, pas seulement le repli théorique.
+          echo "— le panier refuse un e-mail absent, un produit inventé, un consentement manquant —"
+          curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
+            -d '{"produit":"kit-ia","consentement":true}' | tee /tmp/i1.json; echo
+          grep -q '"error":"email"' /tmp/i1.json || { echo "DANGER : un panier sans e-mail ne serait livrable par personne"; exit 1; }
+          curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
+            -d '{"produit":"gratuit-ia","email":"p@example.com","consentement":true}' | tee /tmp/i2.json; echo
+          grep -q '"error":"produit_inconnu"' /tmp/i2.json || { echo "DANGER : un produit hors catalogue ouvre un panier"; exit 1; }
+          curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
+            -d '{"produit":"kit-ia","email":"p@example.com"}' | tee /tmp/i3.json; echo
+          grep -q '"error":"consentement"' /tmp/i3.json || { echo "DANGER : panier ouvert sans consentement horodaté"; exit 1; }
+
+          echo "— un panier complet rend une référence ET le bon lien PayPal —"
+          curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
+            -d '{"produit":"avis-ia","email":"preuve@example.com","consentement":true}' > /tmp/i4.json
+          cat /tmp/i4.json; echo
+          node -e '
+            const j = JSON.parse(require("fs").readFileSync("/tmp/i4.json","utf8"));
+            if (!j.ok || !/^K[A-Z0-9]{8}$/.test(j.ref || "")) { console.log("ÉCHEC : pas de référence de panier"); process.exit(1); }
+            if (j.lien !== "https://paypal.me/kdmc/17EUR") { console.log("ÉCHEC : lien PayPal inattendu :", j.lien); process.exit(1); }
+            if (j.montant !== 17) { console.log("ÉCHEC : montant hors catalogue :", j.montant); process.exit(1); }
+            require("fs").writeFileSync("/tmp/ref.txt", j.ref);
+            console.log("panier", j.ref, "→", j.lien, "(montant pris dans NOTRE catalogue)");
+          '
+
+          echo "— « j'ai payé » sur une référence inventée est refusé —"
+          curl -sS -X POST "$URL/reclamer" -H 'content-type: application/json' \
+            -d '{"ref":"KZZZZZZZZ","produit":"avis-ia","email":"preuve@example.com"}' | tee /tmp/i5.json; echo
+          grep -q '"reference_inconnue"' /tmp/i5.json || { echo "DANGER : une référence inventée entre dans la file de Kevin"; exit 1; }
+
+          echo "— « j'ai payé » sur le vrai panier le met dans la file de Kevin —"
+          curl -sS -X POST "$URL/reclamer" -H 'content-type: application/json' \
+            -d "{\"ref\":\"$(cat /tmp/ref.txt)\",\"methode\":\"paypal\"}" | tee /tmp/i6.json; echo
+          grep -q '"en_attente":true' /tmp/i6.json || { echo "ÉCHEC : l'acheteur qui dit avoir payé n'arrive pas chez Kevin"; exit 1; }
+          echo "PAYPAL PERSO OK : panier enregistré avant PayPal, référence rendue, réclamation reliée. Aucun acheteur ne se perd."
+
+          echo "— livrer un panier exige d'être admin (sinon on se sert soi-même) —"
+          curl -sS -o /tmp/i7.json -w '%{http_code}\n' -X POST "$URL/admin/livrer-panier" \
+            -H 'content-type: application/json' -d "{\"ref\":\"$(cat /tmp/ref.txt)\"}" | tee /tmp/i7.code
+          grep -qE '^(401|403)$' /tmp/i7.code || { echo "DANGER : un inconnu peut se livrer un acces payant"; cat /tmp/i7.json; exit 1; }
+          echo "OK — sans preuve d'admin, aucun acces ne part."
+
+          # ── REVOLUT + VIREMENT (Kevin 18.09 « Aussi mon Revolut et IBAN ») ────
+          echo "— Revolut ouvre un panier et rend le bon lien —"
+          curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
+            -d '{"produit":"avis-ia","email":"preuve@example.com","moyen":"revolut","consentement":true}' > /tmp/r1.json
+          cat /tmp/r1.json; echo
+          node -e '
+            const j = JSON.parse(require("fs").readFileSync("/tmp/r1.json","utf8"));
+            if (!j.ok || j.lien !== "https://revolut.me/kdmc/17eur") { console.log("ECHEC : lien Revolut inattendu :", j.lien || JSON.stringify(j).slice(0,160)); process.exit(1); }
+            if (j.moyen !== "revolut" || j.libelle !== j.ref) { console.log("ECHEC : le libelle doit etre la reference"); process.exit(1); }
+            console.log("Revolut : panier", j.ref, "->", j.lien);
+          '
+
+          echo "— un moyen invente est refuse —"
+          curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
+            -d '{"produit":"avis-ia","email":"p@example.com","moyen":"bitcoin","consentement":true}' | tee /tmp/r2.json; echo
+          grep -q '"error":"moyen_inconnu"' /tmp/r2.json || { echo "DANGER : un moyen de paiement invente est accepte"; exit 1; }
+
+          echo "— le virement suit l'IBAN range dans le coffre, jamais le depot —"
+          node -e '
+            const h = JSON.parse(require("fs").readFileSync("/tmp/h.json","utf8"));
+            const ouvert = (h.moyens || []).indexOf("virement") >= 0;
+            console.log("virement", ouvert ? "OUVERT (IBAN range)" : "FERME (aucun IBAN range — le bouton ne s\x27affiche pas)");
+            require("fs").writeFileSync("/tmp/vir.txt", ouvert ? "1" : "0");
+          '
+          if [ "$(cat /tmp/vir.txt)" = "0" ]; then
+            curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
+              -d '{"produit":"avis-ia","email":"p@example.com","moyen":"virement","consentement":true}' | tee /tmp/r3.json; echo
+            grep -q '"error":"moyen_indisponible"' /tmp/r3.json || { echo "DANGER : un virement est propose SANS IBAN — l acheteur paierait dans le vide"; exit 1; }
+            echo "OK — sans IBAN, le virement se tait au lieu d envoyer l acheteur nulle part."
+          fi
+
+          echo "— ranger un IBAN exige d'etre admin —"
+          curl -sS -o /tmp/r4.json -w '%{http_code}\n' -X POST "$URL/admin/reglages" \
+            -H 'content-type: application/json' -d '{"iban":"FR7630006000011234567890189"}' | tee /tmp/r4.code
+          grep -qE '^(401|403)$' /tmp/r4.code || { echo "DANGER : un inconnu peut changer l IBAN de Kevin (et detourner ses virements)"; cat /tmp/r4.json; exit 1; }
+          echo "OK — l IBAN n est modifiable que par l admin."
+
+          echo "— relancer les paniers abandonnes exige d'etre admin —"
+          curl -sS -o /tmp/r5.json -w '%{http_code}\n' -X POST "$URL/admin/relancer" \
+            -H 'content-type: application/json' -d '{}' | tee /tmp/r5.code
+          grep -qE '^(401|403)$' /tmp/r5.code || { echo "DANGER : un inconnu peut declencher des envois d e-mails"; cat /tmp/r5.json; exit 1; }
+          echo "TROIS MOYENS OK : PayPal, Revolut, virement — meme panier, meme reference, meme livraison."
+
+
+

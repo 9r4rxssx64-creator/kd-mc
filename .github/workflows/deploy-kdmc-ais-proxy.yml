@@ -1,0 +1,67 @@
+# Déploie le worker kdmc-ais-proxy (navires AIS mondiaux pour World Monitor).
+# Secrets requis : CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, AISSTREAM_KEY (clé gratuite aisstream.io).
+# Dispatch manuel uniquement (pas d'auto-deploy : inutile de déployer sans la clé).
+name: Deploy KDMC AIS Proxy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    defaults:
+      run:
+        working-directory: tools/cloudflare/kdmc-ais-proxy
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Vérifier les secrets (erreur exacte, pas silencieuse)
+        env:
+          AISK: ${{ secrets.AISSTREAM_KEY }}
+        run: |
+          MISSING=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && MISSING="$MISSING CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && MISSING="$MISSING CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$MISSING" ]; then echo "::error::Secrets Cloudflare manquants :$MISSING"; exit 1; fi
+          [ -z "$AISK" ] && echo "::warning::AISSTREAM_KEY absent → le worker se déploie mais /ships restera vide (page bascule Digitraffic Baltique). Ajoute la clé gratuite aisstream.io pour la couverture mondiale."
+          echo "Secrets Cloudflare OK"
+
+      - name: Installer wrangler
+        run: npm i -g wrangler && wrangler --version
+
+      - name: Déployer le worker
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee /tmp/deploy.log
+          grep -Eo 'https://[a-z0-9.-]+workers.dev' /tmp/deploy.log | head -1 > /tmp/url.txt
+          echo "URL déployée : $(cat /tmp/url.txt)"
+
+      - name: Pousser AISSTREAM_KEY (secret, jamais exposé au client)
+        env:
+          AISK: ${{ secrets.AISSTREAM_KEY }}
+        run: |
+          if [ -n "$AISK" ]; then printf '%s' "$AISK" | wrangler secret put AISSTREAM_KEY; echo "AISSTREAM_KEY posé"; else echo "Pas de clé → fail-open (Digitraffic Baltique côté page)"; fi
+
+      - name: Smoke test réel (leçon #95 — un deploy vert sans test live ne prouve rien)
+        run: |
+          URL=$(cat /tmp/url.txt); [ -z "$URL" ] && URL="https://kdmc-ais.9r4rxssx64.workers.dev"
+          sleep 8
+          echo "--- /health ---"
+          curl -sS "$URL/health" | tee /tmp/h.json; echo
+          grep -q '"ok":true' /tmp/h.json || { echo "::error::/health invalide : $(cat /tmp/h.json)"; exit 1; }
+          echo "--- /ships (GeoJSON, Origin autorisée) ---"
+          curl -sS -H "Origin: https://kd-mc.com" "$URL/ships?limit=5" | tee /tmp/s.json; echo
+          grep -q '"FeatureCollection"' /tmp/s.json || { echo "::error::/ships invalide : $(cat /tmp/s.json)"; exit 1; }
+          echo "✅ kdmc-ais-proxy live, /health + /ships OK (clé aisstream = couverture mondiale ; sinon vide → Digitraffic)"

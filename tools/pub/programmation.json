@@ -1,0 +1,116 @@
+{
+  "_doc": "Posts Metricool programmés le 17.09.2026 (12 à 16h, +2 à 17h33 sur la niche immo + Club) (MCP createScheduledPost, marque Kdmc 7000185, Europe/Paris). Fichier de MÉMOIRE publique : ids de posts et créneaux, aucune clé. Lu par tools/produits/tableau-de-bord.mjs pour le tableau de bord Commerce. La publication effective n'est PAS ici : Metricool la dit (PUBLISHED/ERROR) via getScheduledPosts.",
+  "marque": 7000185,
+  "fuseau": "Europe/Paris",
+  "planning": "https://app.metricool.com/planner/calendar?blogId=7000185",
+  "reseaux": [
+    "facebook",
+    "instagram",
+    "tiktok",
+    "youtube"
+  ],
+  "posts": [
+    {
+      "video": "avis-01",
+      "post": 377537574,
+      "date": "2026-09-18T10:00:00+02:00"
+    },
+    {
+      "video": "kit-01",
+      "post": 377538530,
+      "date": "2026-09-18T12:00:00+02:00"
+    },
+    {
+      "video": "bureau-01",
+      "post": 377541193,
+      "date": "2026-09-19T10:00:00+02:00"
+    },
+    {
+      "video": "etudiant-01",
+      "post": 377541282,
+      "date": "2026-09-19T12:00:00+02:00"
+    },
+    {
+      "video": "immo-01",
+      "post": 377541336,
+      "date": "2026-09-22T10:00:00+02:00"
+    },
+    {
+      "video": "avis-02",
+      "post": 377541398,
+      "date": "2026-09-22T12:00:00+02:00"
+    },
+    {
+      "video": "club-01",
+      "post": 377541459,
+      "date": "2026-09-23T10:00:00+02:00"
+    },
+    {
+      "video": "bureau-02",
+      "post": 377541502,
+      "date": "2026-09-23T12:00:00+02:00"
+    },
+    {
+      "video": "etudiant-02",
+      "post": 377541579,
+      "date": "2026-09-24T10:00:00+02:00"
+    },
+    {
+      "video": "immo-02",
+      "post": 377541634,
+      "date": "2026-09-24T12:00:00+02:00"
+    },
+    {
+      "video": "avis-03",
+      "post": 377541707,
+      "date": "2026-09-25T10:00:00+02:00"
+    },
+    {
+      "video": "kit-02",
+      "post": 377541762,
+      "date": "2026-09-25T12:00:00+02:00"
+    },
+    {
+      "video": "immo-03",
+      "post": 377602953,
+      "date": "2026-09-26T10:00:00+02:00"
+    },
+    {
+      "video": "club-02",
+      "post": 377602979,
+      "date": "2026-09-26T12:00:00+02:00"
+    },
+    {
+      "video": "immo-04",
+      "post": 377714810,
+      "date": "2026-09-28T10:00:00+02:00"
+    },
+    {
+      "video": "club-03",
+      "post": 377677711,
+      "date": "2026-09-28T12:00:00+02:00"
+    },
+    {
+      "video": "immo-05",
+      "post": 380976049,
+      "date": "2026-09-29T12:00:00+02:00"
+    },
+    {
+      "video": "club-04",
+      "post": 380995009,
+      "date": "2026-09-30T10:00:00+02:00"
+    }
+  ],
+  "liens": [
+    {
+      "produit": "kit",
+      "post": 377824824,
+      "date": "2026-09-29T10:00:00+02:00"
+    },
+    {
+      "produit": "bureau",
+      "post": 381033305,
+      "date": "2026-09-30T12:00:00+02:00"
+    }
+  ]
+}

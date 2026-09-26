@@ -1,0 +1,113 @@
+name: 🔎 Vérifie les IA gratuites (et écrit le verdict dans le dépôt)
+
+# Pourquoi ce workflow existe (Kevin 2026-08-14, « trouve des outils, sinon
+# crée ce dont tu as besoin ») :
+#   Depuis l'agent je n'atteins ni les sites des fournisseurs, ni kd-mc.com
+#   (proxy bloquant), et l'accès GitHub peut tomber — je ne peux alors même
+#   plus LIRE le résultat d'un test lancé en CI. Ce workflow contourne les
+#   deux : il teste ici (réseau ouvert) et COMMITE son verdict dans
+#   audit/ia-gratuites.md. Un simple « git pull » me le rend lisible, et Kevin
+#   l'a sous les yeux dans le dépôt.
+
+on:
+  workflow_dispatch:
+    inputs:
+      seulement:
+        description: "Limiter à : cles | edition (vide = tout)"
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths:
+      - 'services/kdmc-crea-ai/worker.js'
+      - 'services/kdmc-apis/worker.js'
+      - 'tools/ia-gratuites/**'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: write
+
+concurrency:
+  group: verifie-ia-gratuites
+  cancel-in-progress: false
+
+jobs:
+  verifie:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Teste pour de vrai (liens, clés, et qui édite la photo)
+        id: test
+        continue-on-error: true   # un fournisseur en panne ne doit pas empêcher d'écrire le rapport
+        env:
+          HEALTH_BASE: https://crea-ai.kd-mc.com
+          # Une clé absente = fournisseur marqué « pas de clé », jamais en échec.
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+          SCALEWAY_API_KEY: ${{ secrets.SCALEWAY_API_KEY }}
+          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          PERPLEXITI_API_KEY: ${{ secrets.PERPLEXITI_API_KEY }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/ia-gratuites/verifie.mjs \
+            --sortie audit/ia-gratuites.md \
+            --seulement "${{ github.event.inputs.seulement }}" 2>&1 | tee /tmp/verif.log
+
+      - name: Écrit le verdict dans le dépôt (c'est mon seul moyen de le lire)
+        run: |
+          set -e
+          if [ ! -f audit/ia-gratuites.md ]; then
+            echo "::error::le rapport n'a pas été écrit — le script a planté avant la fin"
+            tail -40 /tmp/verif.log || true
+            exit 1
+          fi
+          git config user.name  "kdmc-bot"
+          git config user.email "bot@kd-mc.com"
+          git add audit/ia-gratuites.md
+          if git diff --cached --quiet; then
+            echo "Rien de changé depuis la dernière fois — aucun commit."
+            exit 0
+          fi
+          # [skip ci] obligatoire : sinon ce commit relance des workflows en
+          # cascade et sature la boîte mail de Kevin.
+          git commit -m "🔎 IA gratuites : verdict du $(date -u '+%d/%m/%Y %H:%M') UTC [skip ci]"
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            echo "push raté, nouvelle tentative dans $((2**i))s"
+            sleep $((2**i))
+          done
+          echo "::error::impossible de pousser le rapport après 4 tentatives"
+          exit 1
+
+      - name: Résumé lisible dans l'onglet Actions
+        if: always()
+        run: cat audit/ia-gratuites.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Échoue SEULEMENT si une transformation est cassée
+        if: steps.test.outcome == 'failure'
+        run: |
+          # La CAUSE EXACTE dans le message d'échec, pas un renvoi vers un
+          # fichier (règle « toujours détailler les erreurs »). Vécu le
+          # 2026-09-06 : « voir audit/ia-gratuites.md » n'apprenait rien, il
+          # fallait rouvrir le worker pour comprendre un simple dépassement.
+          echo "----- ce que le test a réellement dit -----"
+          sed -n '/transformation(s) cassée(s)/,$p' /tmp/verif.log || true
+          CAUSE=$(sed -n '/transformation(s) cassée(s)/,$p' /tmp/verif.log | tr '\n' ' ' | cut -c1-400)
+          echo "::error::transformation d'image cassée — ${CAUSE:-voir audit/ia-gratuites.md}"
+          exit 1

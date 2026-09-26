@@ -1,0 +1,11 @@
+{
+  "_pourquoi": "Cliquet du contrôle 6 de tests/verify-pipeline-sessions.mjs : les branches ACTIVES, non inscrites au registre, et qui portent du travail NON fusionné. Le contrôle ne signale qu'un vrai risque : du travail que personne ne suit et qui disparaît si le conteneur est recyclé.",
+  "_mesure": "10.09.2026 : LISTE VIDE. Les 7 branches figées ici depuis le 6.09 avaient en réalité **0 commit hors de main** — entièrement fusionnées, donc plus rien à perdre : le contrôle criait au loup sur du travail terminé et le cliquet ne servait qu'à taire ce bruit. Depuis, le contrôle exclut les branches fusionnées et les branches fabriquées par un workflow ; il ne reste aucune orpheline. Une entrée ici doit donc être RARE et justifiée : si la liste regrossit sans raison, c'est le contrôle qu'il faut relire, pas la liste qu'il faut allonger.",
+  "_date": "2026-09-10",
+  "orphelines": [
+    "claude/voir-34600331412"
+  ],
+  "notes": {
+    "claude/voir-34600331412": "branche de relecture (captures « voir comme Kevin », run 34600331412, déjà lue) créée AVANT le passage en orpheline (v9.901) : elle porte les commits non fusionnés de claude/verify-cmcteams-light-data-rzlvau jusqu'à la fusion de la PR #3765, puis ne contient plus qu'un commit robot. Suppression git refusée par le proxy (send-pack hung up) — à supprimer par le ménage."
+  }
+}

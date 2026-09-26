@@ -1,0 +1,90 @@
+name: Lighthouse CI Mobile (Apex v13)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Audit Kevin v13.1.0 production-grade : Lighthouse mobile sur chaque push/PR
+# Budgets cibles : Performance ≥ 90, A11y ≥ 95, BP ≥ 95, SEO ≥ 90, PWA ≥ 90
+
+on:
+  push:
+    branches: [main, claude/test-699LQ]
+    paths:
+      - 'apex-ai/v13/**'
+      - '.github/workflows/lighthouse-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse mobile audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Build production bundle
+        run: npm run build
+
+      # ⚠️ 22.09.2026 — l'attente « le temps que GitHub Pages se rafraichisse » n'a plus
+      # de sens : le depot est PRIVE, et deploy.yml SAUTE desormais la publication Pages
+      # (mesure : deploiements « reussis » en 9 secondes, etape de publication ignoree).
+      # L'application vit sur le domaine, qui est deja a jour quand ce job demarre.
+
+      - name: Lighthouse mobile audit (production deployment)
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          # ⚠️ 22.09.2026 — cette adresse pointait sur github.io, qui n'est plus l'app
+          # (depot passe en prive). On mesurait donc la performance d'une page morte,
+          # et le resultat etait quand meme commente sur la demande de fusion : un
+          # chiffre faux est pire qu'aucun chiffre. L'app vit sur le domaine.
+          urls: |
+            https://apex-ai.kd-mc.com/
+          configPath: ./apex-ai/v13/lighthouse.config.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        continue-on-error: true
+        id: lighthouse
+
+      - name: Comment PR with Lighthouse results
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🏎 **Lighthouse mobile scores published**
+
+            Budgets cible :
+            - Performance ≥ 90
+            - Accessibility ≥ 95
+            - Best Practices ≥ 95
+            - SEO ≥ 90
+            - PWA ≥ 90
+
+            Voir artifacts ci-dessus pour rapport HTML complet (storage temporaire 7j).

@@ -1,0 +1,244 @@
+name: Pub — vidéos courtes sans visage
+
+# Déclenché À LA MAIN (bouton, tableau de bord Commerce, ou actions_run_trigger
+# par Claude Code / la routine hebdomadaire « Pub — vidéos de la semaine »),
+# jamais par un cron GitHub (règle absolue du dépôt).
+#
+# Trois façons de s'en servir, un seul workflow (leçon #142 : pas de copie) :
+#   1. `videos` seul → rend les scripts existants de tools/pub/scripts.json
+#      (cartes texte 1080×1920 + voix du domaine lingua.kd-mc.com/__lingua/tts
+#      → MP4 par ffmpeg), `publier=true` = fichiers de la release « pub-videos » :
+#        https://github.com/9r4rxssx64-creator/CMCteams/releases/download/pub-videos/<id>.mp4
+#      C'est cette adresse que Metricool va chercher.
+#   2. `nouveaux` (ex. « immo:1,club:1 ») → l'API Anthropic ÉCRIT de nouveaux
+#      scripts (tools/pub/nouveaux.mjs, même porte de vérité que les scripts
+#      écrits à la main, 3 essais sinon la niche est sautée), ne rend QUE ceux-là,
+#      les publie, écrit tools/pub/a-programmer.json (MP4 + créneaux libres) et
+#      pousse le tout sur une branche claude/pub-auto-* avec une PR (jamais main).
+#   3. `programmer` (ex. « immo-04:377612345:2026-09-28T10:00:00+02:00 ») → la
+#      mémoire : ce que la routine a programmé dans Metricool est enregistré dans
+#      tools/pub/programmation.json, le tableau de bord Commerce est régénéré,
+#      commit sur la même branche. Rien n'est rendu.
+# Secret : ANTHROPIC_API_KEY (écriture des scripts) seulement. Le rendu n'en a aucun.
+
+on:
+  workflow_dispatch:
+    inputs:
+      videos:
+        description: "all, une niche (avis, bureau, etudiant, immo, kit, club) ou des ids séparés par des virgules (avis-01,kit-02). Ignoré si « nouveaux » est rempli"
+        type: string
+        default: "all"
+      publier:
+        description: "Publier les MP4 sur la release « pub-videos » (adresse publique). false = rendu seul, à télécharger dans l'artifact"
+        type: choice
+        options: ["false", "true"]
+        default: "false"
+      nouveaux:
+        description: "Écrire de NOUVEAUX scripts par l'IA avant le rendu : « immo:1,club:1 » (niche:nombre, 3 max par niche). Vide = rien d'écrit"
+        type: string
+        default: ""
+      programmer:
+        description: "Mémoire Metricool : « id:post:date,… » (ex. immo-04:377612345:2026-09-28T10:00:00+02:00). Rempli = on n'enregistre que ça, aucun rendu"
+        type: string
+        default: ""
+      lien:
+        description: "Post AVEC LIEN sur la Page Facebook : « oui » prépare le prochain (rotation des pages). Un Reel ne rend pas le lien cliquable, celui-ci oui"
+        type: choice
+        options: ["non", "oui"]
+        default: "non"
+      programmer_lien:
+        description: "Mémoire du post-lien : « produit:post:date » (ex. immo:377712345:2026-09-29T10:00:00+02:00)"
+        type: string
+        default: ""
+      branche:
+        description: "Branche de travail (vide = claude/pub-auto-<année>-<semaine>)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pub-videos
+  cancel-in-progress: false
+
+jobs:
+  rendu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Garde (tests hors ligne)
+        run: node --test tests/pub-videos.test.mjs tests/pub-nouveaux.test.mjs
+
+      # Les modes « nouveaux » et « programmer » écrivent dans le dépôt : sur une
+      # branche claude/pub-auto-*, jamais sur main. Si la branche existe déjà
+      # (2ᵉ passage de la même semaine), on repart d'elle.
+      - name: Branche de travail
+        if: ${{ inputs.nouveaux != '' || inputs.programmer != '' || inputs.lien == 'oui' || inputs.programmer_lien != '' }}
+        id: br
+        shell: bash -eo pipefail {0}
+        run: |
+          BR="${{ inputs.branche }}"
+          [ -n "$BR" ] || BR="claude/pub-auto-$(date -u +%G-%V)"
+          case "$BR" in claude/*) ;; *) echo "ÉCHEC : la branche doit commencer par claude/ ($BR)"; exit 1;; esac
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git fetch origin "$BR" 2>/dev/null; then git checkout -B "$BR" "origin/$BR"; echo "Branche existante reprise : $BR"; else git checkout -B "$BR"; echo "Nouvelle branche : $BR"; fi
+          echo "branche=$BR" >> "$GITHUB_OUTPUT"
+
+      - name: Nouveaux scripts (API Anthropic + porte de vérité)
+        if: ${{ inputs.nouveaux != '' && inputs.programmer == '' && inputs.lien != 'oui' && inputs.programmer_lien == '' }}
+        id: nouveaux
+        env:
+          NOUVEAUX: ${{ inputs.nouveaux }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/pub/nouveaux.mjs 2>&1 | tee /tmp/nouveaux.log
+          LIGNE=$(grep -E "^NOUVEAUX SCRIPTS" /tmp/nouveaux.log || true)
+          [ -n "$LIGNE" ] || { echo "ÉCHEC : « NOUVEAUX SCRIPTS » absent du journal (cause exacte au-dessus)"; exit 1; }
+          IDS=$(echo "$LIGNE" | sed -n 's/^NOUVEAUX SCRIPTS [0-9]*\/[0-9]* : //p')
+          [ -n "$IDS" ] || { echo "ÉCHEC : aucun script accepté par la porte de vérité — rien à rendre"; exit 1; }
+          echo "ids=$IDS" >> "$GITHUB_OUTPUT"
+          # Le fichier réécrit repasse la garde AVANT tout rendu ou commit.
+          node --test tests/pub-videos.test.mjs
+
+      # Mesuré le 17.09 (run 35216971927) : ffmpeg N'EST PAS sur ubuntu-latest → on l'installe.
+      - name: Outils (ffmpeg + police)
+        if: ${{ inputs.programmer == '' && inputs.lien != 'oui' && inputs.programmer_lien == '' }}
+        shell: bash -eo pipefail {0}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg fonts-dejavu-core
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+
+      - name: Rendu
+        if: ${{ inputs.programmer == '' && inputs.lien != 'oui' && inputs.programmer_lien == '' }}
+        env:
+          VIDEOS: ${{ steps.nouveaux.outputs.ids || inputs.videos }}
+        shell: bash -eo pipefail {0}
+        run: |
+          echo "Vidéos à rendre : $VIDEOS"
+          node tools/pub/video.mjs 2>&1 | tee /tmp/pub.log
+          grep -qE "^PUB RENDUE" /tmp/pub.log || { echo "ÉCHEC : « PUB RENDUE » absent du journal (cause exacte au-dessus)"; exit 1; }
+          ls -la tools/pub/out/*.mp4
+          # Preuve mesurée : chaque MP4 a une piste vidéo 1080x1920 ET une piste audio
+          for f in tools/pub/out/*.mp4; do
+            ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$f" | grep -q "^1080,1920$" || { echo "ÉCHEC : $f n'est pas en 1080x1920"; exit 1; }
+            ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 "$f" | grep -q . || { echo "ÉCHEC : $f n'a pas de piste audio"; exit 1; }
+          done
+          echo "Mesuré : $(ls tools/pub/out/*.mp4 | wc -l) MP4 en 1080x1920 avec audio"
+
+      - name: Artifact (pour regarder les vidéos avant de publier)
+        if: ${{ inputs.programmer == '' && inputs.lien != 'oui' && inputs.programmer_lien == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pub-videos
+          path: |
+            tools/pub/out/*.mp4
+            tools/pub/out/*.json
+          retention-days: 14
+
+      - name: Publication (release « pub-videos », adresse publique)
+        if: ${{ inputs.programmer == '' && inputs.programmer_lien == '' && inputs.lien != 'oui' && inputs.publier == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pub-videos
+          name: "Vidéos de pub sans visage (kit.kd-mc.com)"
+          body: "Fichiers publics servis à Metricool. Rendus par pub-videos.yml depuis tools/pub/scripts.json. Aucun contenu payant."
+          prerelease: true
+          make_latest: "false"
+          files: |
+            tools/pub/out/*.mp4
+            tools/pub/out/index.json
+
+      - name: Adresses publiques + preuve que la release les sert
+        if: ${{ inputs.programmer == '' && inputs.programmer_lien == '' && inputs.lien != 'oui' && inputs.publier == 'true' }}
+        shell: bash -eo pipefail {0}
+        run: |
+          for f in tools/pub/out/*.mp4; do
+            U="https://github.com/${GITHUB_REPOSITORY}/releases/download/pub-videos/$(basename "$f")"
+            echo "$U"
+            # Mesuré, pas supposé : l'adresse répond (redirection 302 vers le fichier = servi)
+            C=$(curl -sS -o /dev/null -w "%{http_code}" -I -L "$U" || echo 000)
+            [ "$C" = "200" ] || { echo "ÉCHEC : $U répond HTTP $C"; exit 1; }
+          done
+
+      - name: "À programmer (ce que la routine lit : MP4 publics + créneaux libres)"
+        if: ${{ inputs.nouveaux != '' && inputs.programmer == '' && inputs.lien != 'oui' && inputs.programmer_lien == '' }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/pub/programmation.mjs --prepare tools/pub/out/index.json tools/pub/a-programmer.json 2>&1 | tee /tmp/prep.log
+          grep -qE "^A_PROGRAMMER [1-9]" /tmp/prep.log || { echo "ÉCHEC : rien à programmer"; exit 1; }
+          echo "A_PROGRAMMER_JSON $(node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("fs").readFileSync("tools/pub/a-programmer.json","utf8"))))')"
+
+      - name: Mémoire Metricool (programmation.json + tableau de bord)
+        if: ${{ inputs.programmer != '' }}
+        env:
+          PROGRAMMER: ${{ inputs.programmer }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/pub/programmation.mjs --ajoute "$PROGRAMMER" 2>&1 | tee /tmp/memo.log
+          grep -qE "^PROGRAMMATION ENREGISTRÉE" /tmp/memo.log || { echo "ÉCHEC : rien d'enregistré (cause exacte au-dessus)"; exit 1; }
+          node tools/produits/tableau-de-bord.mjs
+          node --test tests/pub-nouveaux.test.mjs tests/commerce-tableau.test.mjs
+          rm -f tools/pub/a-programmer.json
+
+      - name: Post avec lien Facebook (ce que la routine programme)
+        if: ${{ inputs.lien == 'oui' && inputs.programmer_lien == '' }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/pub/liens.mjs --prepare tools/pub/a-publier-lien.json 2>&1 | tee /tmp/lien.log
+          grep -qE "^LIEN À PROGRAMMER " /tmp/lien.log || { echo "ÉCHEC : aucun post-lien préparé"; exit 1; }
+          # Les aperçus doivent être EN LIGNE, sinon Facebook affiche un rectangle gris
+          # (mesuré le 17.09). On contrôle LES SIX pages et LEURS SIX images, pas seulement
+          # celle du jour : un aperçu cassé sur une autre niche doit se voir tout de suite,
+          # et un simple code HTTP ne suffit pas (une page d'erreur peut être servie en 200)
+          # → on vérifie que c'est vraiment un PNG 1200×630.
+          node tools/produits/apercus.mjs --en-ligne
+          echo "A_PUBLIER_LIEN_JSON $(node -e 'process.stdout.write(JSON.stringify(JSON.parse(require("fs").readFileSync("tools/pub/a-publier-lien.json","utf8"))))')"
+
+      - name: Mémoire du post-lien
+        if: ${{ inputs.programmer_lien != '' }}
+        env:
+          PROGRAMMER_LIEN: ${{ inputs.programmer_lien }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/pub/liens.mjs --ajoute "$PROGRAMMER_LIEN" 2>&1 | tee /tmp/memolien.log
+          grep -qE "^LIEN ENREGISTRÉ" /tmp/memolien.log || { echo "ÉCHEC : rien d'enregistré"; exit 1; }
+          node tools/produits/tableau-de-bord.mjs
+          node --test tests/pub-nouveaux.test.mjs tests/commerce-tableau.test.mjs
+          rm -f tools/pub/a-publier-lien.json
+
+      - name: Commit + PR (branche claude/pub-auto-*, jamais main)
+        if: ${{ inputs.nouveaux != '' || inputs.programmer != '' || inputs.lien == 'oui' || inputs.programmer_lien != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BR: ${{ steps.br.outputs.branche }}
+        shell: bash -eo pipefail {0}
+        run: |
+          git add tools/pub/scripts.json tools/pub/programmation.json kdmc-home/admin/commerce-data.json
+          for f in tools/pub/a-programmer.json tools/pub/a-publier-lien.json; do
+            [ -f "$f" ] && git add "$f" || git rm -q --cached "$f" 2>/dev/null || true
+          done
+          if git diff --cached --quiet; then echo "Rien de nouveau à enregistrer."; exit 0; fi
+          if [ -n "${{ inputs.programmer }}" ]; then MSG="Pub auto : programmation Metricool enregistrée ($(date -u +%G-%V))"
+          elif [ -n "${{ inputs.programmer_lien }}" ]; then MSG="Pub auto : post-lien Facebook enregistré ($(date -u +%G-%V))"
+          elif [ "${{ inputs.lien }}" = "oui" ]; then MSG="Pub auto : post-lien Facebook préparé ($(date -u +%G-%V))"
+          else MSG="Pub auto : nouveaux scripts ${{ steps.nouveaux.outputs.ids }} rendus et publiés ($(date -u +%G-%V))"; fi
+          git commit -m "$MSG" -m "Écrit par pub-videos.yml (routine hebdomadaire « Pub — vidéos de la semaine »). Scripts passés par la porte de vérité, MP4 sur la release pub-videos."
+          git push -u origin "$BR"
+          # `gh pr view` renvoie aussi une PR FUSIONNÉE (vécu run 35261664161 : aucune PR ouverte
+          # pour la mémoire, car la PR de la semaine était déjà fusionnée) → on cherche une PR OUVERTE.
+          if [ "$(gh pr list --head "$BR" --state open --json number --jq length)" = "0" ]; then
+            gh pr create --base main --head "$BR" --title "Pub auto — $(date -u +%G-%V)" --body "$MSG. Fichiers : tools/pub/scripts.json, tools/pub/programmation.json, kdmc-home/admin/commerce-data.json. Rien de payant, aucun secret."
+          fi
+          echo "PUB AUTO POUSSÉE : $BR"

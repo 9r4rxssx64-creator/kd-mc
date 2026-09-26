@@ -1,0 +1,206 @@
+name: Auto-rollback if tests fail post-merge
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# P1 audit autonomie 2026-05-07 (Kevin "auto-rollback prouvé")
+#
+# Quand un commit landé sur main casse les tests, ouvre automatiquement
+# une PR de revert pour remettre l'état stable précédent. Évite que
+# l'utilisateur (Kevin) découvre la casse en prod.
+#
+# Stratégie :
+#   1. Trigger sur push main qui touche apex-ai/v13/
+#   2. Run tests + build
+#   3. Si fail → identifie le SHA stable précédent (HEAD~1)
+#   4. Crée branche revert/auto-rollback-<sha>
+#   5. Ouvre PR avec body explicatif + label "auto-rollback"
+#   6. Notifie via kevin-alerts (sentinelle Telegram si configuré)
+#
+# La PR n'est PAS auto-mergée (sécurité). Kevin valide manuellement
+# OU le workflow auto-merge-claude.yml peut la prendre si labels OK.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+      - '!apex-ai/v13/**.md'
+      - '!apex-ai/v13/coverage/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  validate-or-rollback:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 5
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Run validation suite (tsc + tests + build)
+        id: validate
+        continue-on-error: true
+        run: |
+          set +e
+          FAIL_REASONS=""
+
+          echo "::group::TypeScript strict"
+          npx tsc --noEmit
+          if [ $? -ne 0 ]; then FAIL_REASONS="$FAIL_REASONS tsc"; fi
+          echo "::endgroup::"
+
+          echo "::group::Vitest"
+          npx vitest run --reporter=basic
+          if [ $? -ne 0 ]; then FAIL_REASONS="$FAIL_REASONS vitest"; fi
+          echo "::endgroup::"
+
+          echo "::group::Build"
+          npx vite build
+          if [ $? -ne 0 ]; then FAIL_REASONS="$FAIL_REASONS build"; fi
+          echo "::endgroup::"
+
+          if [ -z "$FAIL_REASONS" ]; then
+            echo "status=ok" >> $GITHUB_OUTPUT
+            echo "✅ Validation OK — pas de rollback nécessaire"
+          else
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "fail_reasons=$FAIL_REASONS" >> $GITHUB_OUTPUT
+            echo "::error::❌ Validation FAIL: $FAIL_REASONS"
+          fi
+
+      - name: Identify previous stable SHA
+        if: steps.validate.outputs.status == 'fail'
+        id: prev_sha
+        working-directory: ${{ github.workspace }}
+        run: |
+          PREV_SHA=$(git rev-parse HEAD~1)
+          CURR_SHA=$(git rev-parse HEAD)
+          CURR_MSG=$(git log -1 --pretty=format:%s)
+          echo "prev=$PREV_SHA" >> $GITHUB_OUTPUT
+          echo "curr=$CURR_SHA" >> $GITHUB_OUTPUT
+          echo "curr_msg=$CURR_MSG" >> $GITHUB_OUTPUT
+
+      - name: Configure git
+        if: steps.validate.outputs.status == 'fail'
+        working-directory: ${{ github.workspace }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create rollback branch + revert commit
+        if: steps.validate.outputs.status == 'fail'
+        id: rollback
+        working-directory: ${{ github.workspace }}
+        run: |
+          BRANCH="revert/auto-rollback-${{ steps.prev_sha.outputs.curr }}"
+          git checkout -b "$BRANCH"
+          git revert --no-edit ${{ steps.prev_sha.outputs.curr }} || {
+            echo "::error::Revert failed (conflict?) — skipping auto-rollback"
+            exit 0
+          }
+          git push origin "$BRANCH"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Open rollback PR
+        if: steps.validate.outputs.status == 'fail' && steps.rollback.outputs.branch != ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const branch = '${{ steps.rollback.outputs.branch }}';
+            const currSha = '${{ steps.prev_sha.outputs.curr }}';
+            const currMsg = `${{ steps.prev_sha.outputs.curr_msg }}`;
+            const fails = '${{ steps.validate.outputs.fail_reasons }}';
+            try {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🔄 Auto-rollback: ${currMsg.slice(0, 60)}`,
+                head: branch,
+                base: 'main',
+                body: [
+                  `## 🔄 Auto-rollback déclenché`,
+                  ``,
+                  `Le commit \`${currSha}\` (${currMsg}) a cassé la suite de validation post-merge sur main.`,
+                  ``,
+                  `**Échecs détectés** : ${fails || 'inconnu'}`,
+                  ``,
+                  `### Action requise`,
+                  `- [ ] Vérifier les logs du run failed`,
+                  `- [ ] Si bug confirmé → merger ce revert + ouvrir issue de fix`,
+                  `- [ ] Sinon → fermer cette PR + relancer le workflow`,
+                  ``,
+                  `### Sécurité`,
+                  `Cette PR n'est PAS auto-mergée. Validation humaine obligatoire.`,
+                  ``,
+                  `_Généré automatiquement par .github/workflows/auto-rollback.yml_`,
+                ].join('\n'),
+              });
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['auto-rollback', 'P0', 'tests-fail'],
+              });
+              console.log(`✓ Rollback PR opened: #${pr.number} ${pr.html_url}`);
+            } catch (err) {
+              console.error('Failed to open PR:', err.message);
+              /* Si PR existe déjà ou conflit → continue silencieusement */
+            }
+
+      - name: Open issue if rollback failed (revert conflict)
+        if: steps.validate.outputs.status == 'fail' && steps.rollback.outputs.branch == ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const currSha = '${{ steps.prev_sha.outputs.curr }}';
+            const currMsg = `${{ steps.prev_sha.outputs.curr_msg }}`;
+            const fails = '${{ steps.validate.outputs.fail_reasons }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 [auto-rollback] Revert IMPOSSIBLE — intervention manuelle`,
+              body: [
+                `Le commit \`${currSha}\` (${currMsg}) a cassé les tests **et** le revert automatique a échoué (probablement un conflit).`,
+                ``,
+                `**Échecs** : ${fails}`,
+                ``,
+                `### Action manuelle requise`,
+                `1. \`git revert ${currSha}\` localement`,
+                `2. Résoudre les conflits`,
+                `3. Push branche + PR`,
+                ``,
+                `_Source: auto-rollback workflow_`,
+              ].join('\n'),
+              labels: ['auto-rollback', 'P0', 'manual-intervention'],
+            });
+
+      - name: Fail job if validation failed (visible status badge)
+        if: steps.validate.outputs.status == 'fail'
+        run: |
+          echo "::error::Validation post-merge a échoué. Voir PR/issue auto-rollback."
+          exit 1

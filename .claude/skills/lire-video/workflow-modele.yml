@@ -1,0 +1,63 @@
+# MODELE — ne tourne PAS ici (GitHub ne lit que .github/workflows/).
+# Mode d'emploi : copier ce fichier en .github/workflows/zz-lire-video-temp.yml,
+# remplacer URL et le nom de branche, pousser -> le job part seul.
+# LE RETIRER du depot une fois le resultat lu (depot public).
+# Chaine prouvee le 2026-09-15 : passerelle tikwm -> mp4 -> ffmpeg -> faster-whisper (fr).
+name: Lire une video (temporaire)
+
+on:
+  push:
+    branches: ['claude/video-review-wqnqdw']
+    paths:
+      - '.github/workflows/zz-lire-video-temp.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      URL: 'REMPLACER_PAR_L_URL_DE_LA_VIDEO'
+    steps:
+      - name: Outils
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg jq
+          python3 -m pip install -q faster-whisper
+          echo "outils ok"
+
+      - name: Recuperer la video + metadonnees
+        run: |
+          set -e
+          UA='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
+          curl -sS -m 40 -A "$UA" "https://www.tikwm.com/api/?url=${URL}&hd=1" -o tikwm.json
+          jq -e '.data.play' tikwm.json >/dev/null || { echo "ECHEC passerelle :"; cat tikwm.json; exit 1; }
+          jq -r '.data | "LEGENDE_COMPLETE: \(.title)\nDUREE_S: \(.duration)\nVUES: \(.play_count)\nLIKES: \(.digg_count)\nCOMMENTAIRES: \(.comment_count)\nPARTAGES: \(.share_count)\nFAVORIS: \(.collect_count // "n/a")\nTELECHARGEMENTS: \(.download_count // "n/a")\nCREE_LE_UNIX: \(.create_time)\nAUTEUR: \(.author.unique_id) / \(.author.nickname)\nMUSIQUE: \(.music_info.title // "n/a") - \(.music_info.author // "n/a")"' tikwm.json > meta.txt
+          cat meta.txt
+          P=$(jq -r '.data.play' tikwm.json); [ "${P:0:1}" = "/" ] && P="https://www.tikwm.com${P}"
+          curl -sS -m 300 -A "$UA" -L "$P" -o video.mp4
+          ffmpeg -v error -i video.mp4 -vn -ar 16000 -ac 1 audio.wav
+          echo "audio : $(stat -c%s audio.wav) octets, $(ffprobe -v error -show_entries format=duration -of csv=p=0 audio.wav) s"
+
+      - name: Transcrire la parole (francais)
+        run: |
+          python3 - <<'PY' > transcription.txt
+          from faster_whisper import WhisperModel
+          m = WhisperModel("small", device="cpu", compute_type="int8", cpu_threads=4)
+          segs, info = m.transcribe("audio.wav", language="fr", vad_filter=True,
+                                    vad_parameters=dict(min_silence_duration_ms=400))
+          for s in segs:
+              mm, ss = divmod(int(s.start), 60)
+              print(f"[{mm:02d}:{ss:02d}] {s.text.strip()}")
+          PY
+          echo "lignes transcrites : $(wc -l < transcription.txt)"
+
+      - name: RESULTAT
+        run: |
+          echo "############ METADONNEES ############"
+          cat meta.txt
+          echo ""
+          echo "############ TRANSCRIPTION COMPLETE ############"
+          cat transcription.txt

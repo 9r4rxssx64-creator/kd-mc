@@ -1,0 +1,89 @@
+name: Semgrep SAST (sécurité statique gratuit)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Demande Kevin 2026-05-15 "qualité pro sans gros coûts" :
+# Semgrep cloud free remplace audit Cure53 (10-20 k€) pour la détection
+# automatique des patterns vulnérables. Bloquant sur PR si critical.
+#
+# Free tier : 1500 scans/mois, illimité repos publics.
+# Ruleset utilisé : p/typescript + p/javascript + p/owasp-top-ten + p/security-audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**/*.ts'
+      - 'apex-ai/v13/**/*.tsx'
+      - 'apex-ai/v13/**/*.js'
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**/*.ts'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  semgrep:
+    name: Semgrep SAST scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Semgrep CI scan
+        run: |
+          semgrep ci \
+            --config=p/typescript \
+            --config=p/javascript \
+            --config=p/owasp-top-ten \
+            --config=p/security-audit \
+            --config=p/secrets \
+            --config=p/xss \
+            --config=p/jwt \
+            --severity=ERROR \
+            --severity=WARNING \
+            --max-target-bytes=1000000 \
+            --timeout=300 \
+            --exclude=node_modules \
+            --exclude=dist \
+            --exclude=coverage \
+            --exclude=apex-ai-v13 \
+            --exclude=tests \
+            --exclude='*.test.ts' \
+            --error \
+            apex-ai/v13/
+        env:
+          # Semgrep cloud (gratuit, optional) — sinon scan local sans upload
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Comment PR si findings
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚨 Semgrep SAST a trouvé des patterns vulnérables. Voir logs Actions pour détails. PR bloquée jusqu\'à fix.'
+            });

@@ -1,0 +1,31 @@
+{
+  "name": "PoolPilot — Beatbot+",
+  "short_name": "PoolPilot",
+  "description": "Cartographie, plan de nettoyage optimisé, journal et entretien pour robot de piscine Beatbot.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08131f",
+  "theme_color": "#0a1622",
+  "icons": [
+    {
+      "src": "icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

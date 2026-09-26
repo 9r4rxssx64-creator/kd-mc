@@ -1,0 +1,114 @@
+name: Lingua — Vérité (rien de faux, partout toujours)
+
+# « Étend vérité, rien de faux, partout toujours » (Kevin 2026-08-09).
+# 1) STRUCTURE (déterministe, 0 clé) : à CHAQUE changement de lingua/**, on vérifie que TOUT le
+#    contenu a ses 6 langues, des quiz dans les bornes, 0 doublon → le build ÉCHOUE si un faux
+#    structurel apparaît (impossible de publier une langue manquante ou une mauvaise réponse hors bornes).
+# 2) SENS (second modèle indépendant) : 1×/semaine + à la demande, un audit sémantique signale les
+#    traductions/réponses DOUTEUSES dans un rapport (audit/lingua-verite.md). Consultatif : n'édite rien
+#    (un juge IA peut se tromper — on vérifie avant de corriger). Uploadé en artifact + affiché dans le log.
+#    Depuis le 2026-08-11, la passe SENS couvre AUSSI les 8 langues Est+Asie des histoires
+#    (pl/ru/uk/cs/zh/ja/ko/ar) : c'était un angle mort, et c'est là qu'avaient dormi 67 fautes réelles.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: [ 'lingua/**', 'tools/lingua/verify-truth.mjs', 'tools/lingua/verify-coach.mjs', 'services/kdmc-router/worker.js', '.github/workflows/lingua-truth.yml' ]
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: read
+
+# Garde anti-empilement (test:ci-no-stampede) : une seule exécution par workflow+réf,
+# les runs obsolètes de la même réf sont annulés (pas un déploiement → cancel OK).
+# Le groupe inclut l'ÉVÉNEMENT (mesuré le 2026-08-13) : sans lui, un envoi sur main annulait
+# le second avis indépendant lancé à la main, qui n'a donc JAMAIS pu s'exécuter — deux fois de
+# suite. Un audit qu'on croit lancé et qui meurt en silence, c'est un faux vert. Désormais un
+# commit ne remplace qu'un commit, et un lancement manuel qu'un lancement manuel.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: "Vérité structurelle (6 langues partout, quiz dans les bornes, 0 doublon)"
+        run: node tools/lingua/verify-truth.mjs lingua --struct
+      # Le Coach doit rester utilisable : micro branché, phrases à trous remplissables,
+      # consignes « une question à la fois / jamais la réponse » présentes (Kevin 2026-08-11).
+      - name: "Le Coach reste utilisable (micro, cases à remplir, consignes)"
+        run: node tools/lingua/verify-coach.mjs
+      # 🇲🇨 La voix du monégasque : chaque cas vient d'une prononciation DOCUMENTÉE.
+      - name: "La voix du monégasque dit juste"
+        run: node tools/lingua/verify-mc-voix.mjs
+      # 🔊 La voix ne doit plus « baisser toute seule » après quelques questions : une seule
+      # balise son réutilisée, libérée en fin de leçon, garde-fou borné, raisons expliquées.
+      - name: "La voix ne se dégrade plus question après question"
+        run: node tools/lingua/verify-voix.mjs lingua
+      # 🤟 Langue des signes : chaque signe est une VRAIE vidéo sous licence libre, la
+      # question ne donne jamais sa réponse (la « traduction » d'un mot y est le mot lui-même),
+      # et rien ne se prononce — c'est ce qu'on promet à l'élève, donc ça doit être vrai.
+      - name: "Langue des signes : aucun signe inventé, aucun son"
+        run: node tools/lingua/verify-lsf.mjs lingua
+      # 📜 Histoire & anecdotes : chaque fait porte sa source, et la rubrique est VRAIMENT
+      # branchée dans l'app (une anecdote fausse — ou invisible — ne doit pas passer).
+      - name: "Histoire & anecdotes : sourcées et branchées"
+        run: node tools/lingua/verify-histoires.mjs lingua
+      # 🖼️ Aucune image demandée dans le vide : un 404 silencieux coûte du réseau à chaque
+      # affichage et fait passer l'audit live au rouge, ce qui masque les vrais problèmes.
+      - name: "Aucune image demandée dans le vide"
+        run: node tools/lingua/verify-assets.mjs lingua
+      # 📚 Sources officielles des langues : bien formées, branchées, et SEULES les adresses
+      # réellement ouvertes (workflow lingua-sources.yml) sont affichées à l'élève.
+      - name: "Sources officielles : bien formées et branchées"
+        run: node tools/lingua/verify-sources.mjs lingua
+      # 🇲🇨 Cours de monégasque : chaque mot publié doit RESTER attesté par une source
+      # récoltée. Si une source disparaît ou se corrige, le mot ne doit plus être enseigné.
+      - name: "Monégasque : chaque mot publié reste attesté"
+        run: node tools/lingua/auto-verif.mjs
+
+  semantique:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: "Second avis indépendant sur les traductions + quiz (audit, n'édite rien)"
+        shell: bash -eo pipefail {0}   # sans pipefail, un `node … | tee` échoué ressort VERT (garde workflows-pipefail)
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          node tools/lingua/verify-truth.mjs lingua --semantic | tee /tmp/verite.log
+          echo "----- RAPPORT -----"
+          cat audit/lingua-verite.md || true
+      # 📜 Le même second avis, appliqué à l'histoire et aux anecdotes des langues : un modèle
+      # qui n'a PAS écrit ces textes les relit et signale ce qui serait faux. Consultatif.
+      - name: "Second avis indépendant sur l'histoire & les anecdotes (audit, n'édite rien)"
+        shell: bash -eo pipefail {0}
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          node tools/lingua/verify-histoires.mjs lingua --semantic | tee /tmp/histoires.log
+          echo "----- RAPPORT -----"
+          cat audit/lingua-histoires-verite.md || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lingua-verite
+          path: |
+            audit/lingua-verite.md
+            audit/lingua-histoires-verite.md
+          if-no-files-found: ignore

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="1600" viewBox="0 0 1000 1000">
+  <defs><radialGradient id="bg_shotgunpatchcamo" cx="50%" cy="42%" r="62%"><stop offset="0%" stop-color="#283019"/><stop offset="100%" stop-color="#141a0d"/></radialGradient><pattern id="camo_shotgunpatchcamo" width="180" height="180" patternUnits="userSpaceOnUse" patternTransform="rotate(8)">
+    <rect width="180" height="180" fill="#283019"/>
+    <path d="M10,30 q40,-30 80,-5 q40,25 10,55 q-35,30 -75,5 q-30,-25 -15,-60 Z" fill="#3a4520"/>
+    <path d="M95,90 q35,-22 70,5 q22,30 -10,55 q-40,25 -70,-5 q-20,-30 10,-55 Z" fill="#525d2c"/>
+    <path d="M120,10 q30,15 12,42 q-25,22 -52,2 q-15,-30 40,-44 Z" fill="#2a3315"/>
+    <path d="M20,120 q28,-12 44,14 q12,28 -20,40 q-34,8 -40,-24 q-2,-20 16,-30 Z" fill="#6b7536"/>
+    <ellipse cx="150" cy="150" rx="26" ry="18" fill="#222a12"/>
+    <ellipse cx="60" cy="80" rx="14" ry="10" fill="#79844a"/>
+  </pattern><radialGradient id="clay_shotgunpatchcamo" cx="40%" cy="35%" r="75%"><stop offset="0%" stop-color="#ffb24d"/><stop offset="100%" stop-color="#c25a00"/></radialGradient><radialGradient id="hht_shotgunpatchcamo" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ff6a63"/>
+      <stop offset="45%" stop-color="#d72a25"/>
+      <stop offset="100%" stop-color="#7c1311"/>
+    </radialGradient></defs>
+  <circle cx="500" cy="500" r="486" fill="#d72a25"/><circle cx="500" cy="500" r="486" fill="none" stroke="#7c1311" stroke-width="6"/><circle cx="500" cy="500" r="452" fill="url(#camo_shotgunpatchcamo)"/><circle cx="500" cy="500" r="452" fill="none" stroke="#e9e1c9" stroke-width="5" stroke-dasharray="2 11" stroke-linecap="round" opacity="0.9"/><circle cx="500" cy="500" r="404" fill="none" stroke="#e9e1c9" stroke-width="3" stroke-dasharray="2 12" stroke-linecap="round" opacity="0.65"/>
+  <g transform="translate(500,560) scale(1.4) translate(-183,-77)"><g fill="#3c451f" stroke="#e9e1c9" stroke-width="4" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(742,360)"><ellipse cx="0" cy="0" rx="46" ry="17" fill="url(#clay_shotgunpatchcamo)" stroke="#7a3a00" stroke-width="2"/><ellipse cx="0" cy="-4" rx="30" ry="9" fill="#ffd9a0" opacity="0.55"/>
+      <g stroke="#c25a00" stroke-width="5" stroke-linecap="round" opacity="0.8"><line x1="55" y1="-12" x2="92" y2="-20"/><line x1="55" y1="2" x2="96" y2="2"/><line x1="55" y1="14" x2="90" y2="24"/></g></g><g transform="translate(500,330) scale(1.5)">
+      <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="url(#hht_shotgunpatchcamo)" stroke="#7c1311" stroke-width="2.5"/>
+      
+    </g>
+  <g font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="50" fill="#e9e1c9" text-anchor="middle"><text x="109.8" y="412.4" transform="rotate(-75.00 109.8 395.4)">T</text><text x="124.2" y="368.8" transform="rotate(-68.48 124.2 351.8)">I</text><text x="143.4" y="327.1" transform="rotate(-61.96 143.4 310.1)">R</text><text x="195.5" y="251.5" transform="rotate(-48.91 195.5 234.5)">·</text><text x="263.3" y="189.6" transform="rotate(-35.87 263.3 172.6)">B</text><text x="302.0" y="164.8" transform="rotate(-29.35 302.0 147.8)">A</text><text x="343.3" y="144.6" transform="rotate(-22.83 343.3 127.6)">L</text><text x="386.6" y="129.2" transform="rotate(-16.30 386.6 112.2)">L</text><text x="431.4" y="118.9" transform="rotate(-9.78 431.4 101.9)">-</text><text x="477.0" y="113.7" transform="rotate(-3.26 477.0 96.7)">T</text><text x="523.0" y="113.7" transform="rotate(3.26 523.0 96.7)">R</text><text x="568.6" y="118.9" transform="rotate(9.78 568.6 101.9)">A</text><text x="613.4" y="129.2" transform="rotate(16.30 613.4 112.2)">P</text><text x="698.0" y="164.8" transform="rotate(29.35 698.0 147.8)">·</text><text x="772.4" y="218.6" transform="rotate(42.39 772.4 201.6)">C</text><text x="804.5" y="251.5" transform="rotate(48.91 804.5 234.5)">H</text><text x="832.7" y="287.8" transform="rotate(55.43 832.7 270.8)">A</text><text x="856.6" y="327.1" transform="rotate(61.96 856.6 310.1)">S</text><text x="875.8" y="368.8" transform="rotate(68.48 875.8 351.8)">S</text><text x="890.2" y="412.4" transform="rotate(75.00 890.2 395.4)">E</text></g>
+    <path d="M320,752 L286,766 L286,854 L320,834 Z" fill="#7c1311"/>
+    <path d="M680,752 L714,766 L714,854 L680,834 Z" fill="#7c1311"/><path d="M320,744 L680,744 L680,840 L320,840 Z" fill="#d72a25" stroke="#7c1311" stroke-width="3"/><text x="500" y="811" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="58" letter-spacing="3" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text><polygon points="214.0,486.0 217.7,494.9 227.3,495.7 220.0,501.9 222.2,511.3 214.0,506.3 205.8,511.3 208.0,501.9 200.7,495.7 210.3,494.9" fill="#e9e1c9"/><polygon points="786.0,486.0 789.7,494.9 799.3,495.7 792.0,501.9 794.2,511.3 786.0,506.3 777.8,511.3 780.0,501.9 772.7,495.7 782.3,494.9" fill="#e9e1c9"/>
+</svg>

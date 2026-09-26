@@ -1,0 +1,14 @@
+{
+  "name": "KDMC Sourcing",
+  "short_name": "Sourcing",
+  "description": "Catalogues fournisseurs (sans SIRET + API) — sélection des produits à vendre.",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0c130d",
+  "theme_color": "#0e1a12",
+  "icons": [
+    { "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230e1a12'/><text y='.92em' x='8' font-size='80'>📦</text></svg>", "sizes": "192x192", "type": "image/svg+xml" },
+    { "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230e1a12'/><text y='.92em' x='8' font-size='80'>📦</text></svg>", "sizes": "512x512", "type": "image/svg+xml" }
+  ]
+}

@@ -1,0 +1,77 @@
+name: Coffre — auto-refresh PDF adresses (kd-mc.com live)
+
+# Régénère les PDF mémo en mode "live" dès que kd-mc.com répond réellement.
+# 100% auto : aucune action Kevin. Commit uniquement si les PDF changent.
+on:
+  workflow_dispatch:
+    inputs:
+      force_live:
+        description: "Forcer le mode live même si le check échoue"
+        type: boolean
+        default: false
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  push:
+    branches: [ main ]
+    paths:
+      - "KDMC_ADRESSES.md"
+      - "tools/memo-pdf/generate_pdfs.py"
+      - ".github/workflows/coffre-pdf-refresh.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coffre-pdf-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install reportlab
+        run: pip install --quiet reportlab
+
+      - name: Detect kd-mc.com live
+        id: live
+        run: |
+          set +e
+          LIVE=0
+          for host in cmcteams.kd-mc.com kd-mc.com; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -m 12 "https://$host/" || echo "000")
+            echo "$host -> $code"
+            # 2xx/3xx = le site répond réellement (déployé). 000/403/404 edge = pas live.
+            if echo "$code" | grep -qE '^(2|3)[0-9][0-9]$'; then LIVE=1; fi
+          done
+          if [ "${{ github.event.inputs.force_live }}" = "true" ]; then LIVE=1; fi
+          echo "live=$LIVE" >> "$GITHUB_OUTPUT"
+          echo "Mode live = $LIVE"
+
+      - name: Régénérer les PDF
+        env:
+          COFFRE_PDF_LIVE: ${{ steps.live.outputs.live }}
+        run: python3 tools/memo-pdf/generate_pdfs.py
+
+      - name: Commit si changement
+        run: |
+          if ! git diff --quiet coffre-fort/memo/; then
+            git config user.name "coffre-pdf-bot"
+            git config user.email "bot@users.noreply.github.com"
+            git add coffre-fort/memo/
+            LBL=$([ "${{ steps.live.outputs.live }}" = "1" ] && echo "live kd-mc.com" || echo "pré-live")
+            git commit -m "docs(coffre): PDF adresses régénérés ($LBL) [skip ci]"
+            git push
+            echo "PDF mis à jour ($LBL)."
+          else
+            echo "Aucun changement."
+          fi

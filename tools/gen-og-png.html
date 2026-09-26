@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Generateur OG Image PNG — APEX AI</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,system-ui,sans-serif;background:#0a0e1e;color:#f0f0ff;padding:24px;line-height:1.6}
+h1{color:#e8b830;font-size:22px;margin-bottom:16px}
+p{color:#9498c0;margin-bottom:16px;font-size:14px}
+button{background:linear-gradient(135deg,#d4a020,#f0c850);color:#0a0e1e;border:0;padding:14px 24px;border-radius:10px;font-weight:800;font-size:16px;cursor:pointer;margin:8px 8px 8px 0;min-height:44px;min-width:44px}
+button:active{transform:scale(.96)}
+canvas{max-width:100%;border:1px solid rgba(232,184,48,.3);border-radius:10px;margin:16px 0;display:block}
+.note{background:rgba(232,184,48,.08);border-left:3px solid #e8b830;padding:12px;border-radius:6px;margin:16px 0;font-size:13px}
+</style>
+</head>
+<body>
+<h1>Generateur OG Image PNG — APEX AI</h1>
+<p>Outil 1-clic pour generer <code>og-image.png</code> (1200×630) depuis le SVG actuel d'APEX. Telecharge le PNG, place-le dans <code>apex-ai/og-image.png</code>, puis update les meta og:image.</p>
+
+<div class="note">
+<strong>Utilisation :</strong><br>
+1. Clique <strong>Generer + Telecharger</strong><br>
+2. Le PNG telecharge s'appelle <code>og-image.png</code><br>
+3. Place-le dans <code>apex-ai/</code> (remplace l'SVG)<br>
+4. Modifie le meta <code>og:image</code> dans index.html : <code>og-image.svg</code> -> <code>og-image.png</code>
+</div>
+
+<button onclick="genPng()">Generer + Telecharger PNG 1200x630</button>
+<button onclick="copyToClipboard()">Copier en presse-papier</button>
+
+<canvas id="ogCanvas" width="1200" height="630"></canvas>
+
+<script>
+function drawOgImage(){
+  var c=document.getElementById("ogCanvas");
+  var ctx=c.getContext("2d");
+  // Background gradient
+  var grad=ctx.createLinearGradient(0,0,1200,630);
+  grad.addColorStop(0,"#080c1a");
+  grad.addColorStop(0.5,"#121830");
+  grad.addColorStop(1,"#0a0e1e");
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,1200,630);
+
+  // Gold glow circle (decoratif)
+  var glow=ctx.createRadialGradient(600,315,80,600,315,500);
+  glow.addColorStop(0,"rgba(232,184,48,.18)");
+  glow.addColorStop(1,"rgba(232,184,48,0)");
+  ctx.fillStyle=glow;
+  ctx.fillRect(0,0,1200,630);
+
+  // Logo etoile
+  ctx.fillStyle="#e8b830";
+  ctx.font="bold 220px Georgia,serif";
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  ctx.fillText("✦",600,220);
+
+  // APEX
+  ctx.fillStyle="#e8b830";
+  ctx.font="900 96px -apple-system,system-ui,sans-serif";
+  ctx.letterSpacing="8px";
+  ctx.fillText("APEX",600,400);
+
+  // AI tagline
+  ctx.fillStyle="#5aa8ff";
+  ctx.font="600 48px -apple-system,system-ui,sans-serif";
+  ctx.fillText("AI",600,470);
+
+  // Slogan
+  ctx.fillStyle="#9498c0";
+  ctx.font="400 28px -apple-system,system-ui,sans-serif";
+  ctx.fillText("Assistant IA Premium — Chat, Voix, Finance, Agenda",600,540);
+
+  // Border
+  ctx.strokeStyle="rgba(232,184,48,.3)";
+  ctx.lineWidth=4;
+  ctx.strokeRect(20,20,1160,590);
+}
+
+function genPng(){
+  drawOgImage();
+  var c=document.getElementById("ogCanvas");
+  c.toBlob(function(blob){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;
+    a.download="og-image.png";
+    a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  },"image/png");
+}
+
+function copyToClipboard(){
+  var c=document.getElementById("ogCanvas");
+  c.toBlob(function(blob){
+    if(!navigator.clipboard||!window.ClipboardItem){alert("Copie presse-papier non supportee, utilise Telecharger");return;}
+    navigator.clipboard.write([new ClipboardItem({"image/png":blob})]).then(function(){
+      alert("PNG copie ! Colle-le ou tu veux.");
+    }).catch(function(e){alert("Erreur : "+e.message);});
+  },"image/png");
+}
+
+drawOgImage();
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="gen-og-png"
+        data-version="v1.0.0"
+        data-color="#22cc77"
+        defer></script>
+</body>
+</html>

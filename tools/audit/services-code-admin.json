@@ -1,0 +1,76 @@
+{
+  "_lire_moi": [
+    "Registre des services du domaine qui portent le CODE ADMIN de Kevin.",
+    "Le code lui-même n'est JAMAIS ici : seulement le NOM du secret GitHub qui le transporte,",
+    "et le nom du service qui le reçoit. Rien de secret ne se lit dans ce fichier.",
+    "",
+    "À quoi il sert : quand Kevin change son code, GitHub met à jour UN secret.",
+    "Mais chaque service garde l'ANCIEN tant qu'il n'a pas été redéployé. Un service oublié",
+    "reste ouvert à l'ancien code SANS QUE RIEN NE LE DISE. C'est exactement ce qui est",
+    "arrivé le 22.09.2026 : 3 services traînaient (dont un depuis le 8 juillet).",
+    "",
+    "Garde associée : tests/verify-code-admin-a-jour.mjs (npm run test:code-admin-a-jour)."
+  ],
+  "secret_github": "APEX_ADMIN_PIN_SHA256",
+  "services": [
+    {
+      "id": "kdmc-router",
+      "nom": "Routeur du domaine (kd-mc.com)",
+      "workflow": "deploy-kdmc-router.yml",
+      "secret_pose": "KDMC_ADMIN_PIN_SHA256",
+      "pourquoi": "C'est LUI qui dit oui ou non au code admin pour tout le domaine (/__admin/login). S'il décroche, l'ancien code rouvre 32 adresses d'un coup."
+    },
+    {
+      "id": "kdmc-access",
+      "nom": "Qui se connecte (admin.kd-mc.com)",
+      "workflow": "deploy-kdmc-access.yml",
+      "secret_pose": "APEX_ADMIN_PIN_SHA256",
+      "pourquoi": "La page qui montre à Kevin qui entre sur le domaine. S'il décroche, l'ancien code donne encore accès au journal des connexions."
+    },
+    {
+      "id": "kdmc-monaco",
+      "nom": "Connecteur Monaco Telecom",
+      "workflow": "deploy-kdmc-monaco.yml",
+      "secret_pose": "KDMC_ADMIN_PIN_SHA256",
+      "pourquoi": "Il détient les identifiants de la boîte mail Monaco Telecom. S'il décroche, l'ancien code y donne encore accès."
+    },
+    {
+      "id": "kdmc-outlook",
+      "nom": "Connecteur Outlook",
+      "workflow": "deploy-kdmc-outlook.yml",
+      "secret_pose": "KDMC_ADMIN_PIN_SHA256",
+      "pourquoi": "Il lit la boîte Outlook de Kevin. S'il décroche, l'ancien code y donne encore accès."
+    },
+    {
+      "id": "kdmc-rag",
+      "nom": "Mémoire d'Apex (RAG)",
+      "workflow": "deploy-kdmc-rag.yml",
+      "secret_pose": "APEX_ADMIN_PIN_SHA256",
+      "pourquoi": "Il garde ce qu'Apex a retenu de Kevin. S'il décroche, l'ancien code permet encore d'y lire et d'y écrire."
+    },
+    {
+      "id": "apex-secrets-proxy",
+      "nom": "Relais des clés d'Apex",
+      "workflow": "sync-apex-secrets-to-cf-worker.yml",
+      "secret_pose": "APEX_ADMIN_PIN_SHA256",
+      "pourquoi": "Il garde TOUTES les clés payantes (Anthropic, OpenAI, Replicate...). S'il décroche, l'ancien code permet encore de les faire tourner aux frais de Kevin."
+    },
+    {
+      "id": "kdmc-uptime",
+      "nom": "Surveillance des adresses",
+      "workflow": "deploy-kdmc-uptime.yml",
+      "secret_pose": "UPTIME_RUN_KEY",
+      "derive": true,
+      "pourquoi": "Sa clé de lancement est FABRIQUÉE à partir du code admin (sha256 du code + ':uptime-run'). Changer le code sans redéployer ce service casse le lancement à la main de la surveillance."
+    }
+  ],
+  "dernier_controle": {
+    "date": "2026-09-23",
+    "quoi": "Kevin a CHANGE son code admin — les 7 services ont ete redeployes et portent le nouveau.",
+    "detail": "Kevin a dit « Fait » le 23.09.2026 au soir (nouveau code choisi, empreinte posee dans le secret GitHub). Les 7 workflows ont ete lances dans la foulee sur main : les 7 sont revenus « success », et surtout l ETAPE qui pose le code a abouti dans les 7. kdmc-rag passe desormais au vert EN ENTIER (Vectorize remplace par D1 la veille) — c etait le service reste au 8 juillet.",
+    "mesure_le": "2026-09-23",
+    "comment_on_mesure": "On regarde la derniere fois que l ETAPE qui pose le code admin a ABOUTI, pas la reussite du deploiement entier (voir le bloc precedent : un deploiement peut echouer pour une raison etrangere au code, et un deploiement reussi peut avoir saute la pose).",
+    "preuve": "Poses constatees entre 1 et 5 minutes apres le lancement : routeur run 35911279353 · qui-se-connecte 35911282036 · monaco 35911285272 · outlook 35911288028 · rag 35911291075 · relais des cles 35911293895 · surveillance 35911296855.",
+    "limite_honnete": "Je n ai PAS pu verifier moi-meme la date de mise a jour du secret GitHub : le proxy de l agent refuse /actions/secrets (« Access to this GitHub Actions path is not permitted »). Je me fie donc a la parole de Kevin pour le changement du code lui-meme ; ce qui est MESURE ici, c est que les 7 services ont bien recharge le secret courant."
+  }
+}

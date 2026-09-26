@@ -1,0 +1,43 @@
+name: La Détente — Catalogue Printify complet (par catégorie)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'shops/la-detente/scripts/ld-printify-blueprints.mjs'
+      - '.github/workflows/la-detente-printify-blueprints.yml'
+
+permissions:
+  contents: write
+  pull-requests: write   # publier-config : PR vers main
+  actions: write         # publier-config : relance deploy.yml après fusion
+
+jobs:
+  blueprints:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Récupère tout le catalogue Printify
+        env:
+          PRINTIFY_API_KEY: ${{ secrets.PRINTIFY_API_KEY }}
+        run: node shops/la-detente/scripts/ld-printify-blueprints.mjs
+      - name: Publier printify-blueprints.json dans main (PR fusionnée par le robot)
+        # Jusqu'au 10.09.2026 : 5 branches claude/printify-blueprints-<run_id> poussées « pour
+        # auto-merge » — jamais fusionnées ; la boutique lit ce fichier (index.html l.1003) et
+        # main gardait la version du 4 juin. Leçon #243.
+        if: hashFiles('shops/la-detente/printify-blueprints.json') != ''
+        uses: ./.github/actions/publier-config
+        with:
+          fichiers: shops/la-detente/printify-blueprints.json
+          message: "La Détente — catalogue Printify complet par catégorie"
+          prefixe: printify-blueprints

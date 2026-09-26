@@ -1,0 +1,253 @@
+{
+  "_lire_moi": [
+    "Règles de séparation du dépôt (Kevin 24.09.2026 : « dépôt public tout neuf »).",
+    "Le dépôt actuel 9r4rxssx64-creator/CMCteams reste PRIVÉ : c'est le coffre (historique complet,",
+    "CMCteams, Light, données). Le nouveau dépôt PUBLIC 9r4rxssx64-creator/kd-mc reçoit tout le reste,",
+    "SANS historique. Un fichier est soit PUBLIC (copie identique), soit PRIVÉ (il reste au coffre et",
+    "le robot de publication le récupère au passage). Seuls les DOCUMENTS sont caviardés (noms effacés).",
+    "Ce fichier ne contient aucune donnée : seulement des chemins et des règles."
+  ],
+  "depot_prive": "9r4rxssx64-creator/CMCteams",
+  "depot_public": "9r4rxssx64-creator/kd-mc",
+  "prive_toujours": [
+    "index.html",
+    "sw.js",
+    "app 2.js",
+    "manifest.json",
+    "version.txt",
+    "dist/",
+    "BRANCH_PATCH.patch",
+    "BRANCH_PATCH_SOURCE.patch",
+    "_archive_v12/",
+    "tools/departs/",
+    "tools/shared/",
+    "tools/planning-parser-tester/",
+    "tools/planning-weekend.html",
+    "tools/cmc-apex-bridge-patch.html",
+    "tools/backend/routes/pdf.py",
+    "tests/fixtures/",
+    "apex-ai-v13/",
+    "arbre/",
+    "coffre-fort/",
+    "crypto-bot/",
+    "clayscore/",
+    "patrimoine-demande.txt",
+    "NOTES_USER.md",
+    "IMPORT_RECONNAISSANCE.md",
+    "audit-live-shots/",
+    "tools/cuisine/livre.pdf",
+    "patches/",
+    "tools/arbre/",
+    "tools/patrimoine/"
+  ],
+  "_prive_toujours_pourquoi": {
+    "index.html / sw.js / app 2.js / manifest.json / version.txt": "l'application CMCteams elle-même (la liste des 260 employés est écrite dedans)",
+    "tools/departs/": "la version légère (Light)",
+    "tools/shared/ + tools/planning-parser-tester/ + tests/fixtures/": "les plannings, leurs générateurs et les PDF d'origine",
+    "apex-ai-v13/": "le paquet construit d'Apex contient la liste des cadres SBM ; il est reconstruit au coffre",
+    "arbre/": "l'arbre généalogique : noms et photos de la famille",
+    "coffre-fort/, crypto-bot/, clayscore/, patrimoine-demande.txt, NOTES_USER.md": "notes et outils personnels",
+    "patches/": "anciens correctifs d'Apex v12 : inutiles au public, et ils citent des numéros d'établissements"
+  },
+  "chemins_qui_rendent_un_test_prive": [
+    "tools/departs",
+    "tools/shared",
+    "planning-seed",
+    "boards-gen",
+    "planning-parser-tester",
+    "tests/fixtures",
+    "arbre/",
+    "app 2.js"
+  ],
+  "documents_caviardes": {
+    "extensions": [
+      ".md"
+    ],
+    "fichiers": [
+      "pipeline/sessions.json"
+    ],
+    "remplacement": "‹employé›"
+  },
+  "noms_non_sensibles_prefixes": [
+    "DESARZENS",
+    "VISITEUR",
+    "SARZANCE"
+  ],
+  "emails_autorises": [
+    "noreply@anthropic.com",
+    "prenom.nom@sbm.mc",
+    "desarzens.kevin@gmail.com",
+    "kevin.desarzens@gmail.com",
+    "example.com",
+    "exemple.com",
+    "test.com",
+    "users.noreply.github.com",
+    "localhost",
+    "domain.com",
+    "sentry.io",
+    "kd-mc.com",
+    "kdmc.cloud",
+    "wixpress.com",
+    "w3.org",
+    "schema.org"
+  ],
+  "emails_domaines_personnels": [
+    "gmail.com",
+    "monaco.mc",
+    "sbm.mc",
+    "hotmail.com",
+    "hotmail.fr",
+    "outlook.com",
+    "outlook.fr",
+    "live.fr",
+    "live.com",
+    "icloud.com",
+    "me.com",
+    "orange.fr",
+    "free.fr",
+    "sfr.fr",
+    "yahoo.fr",
+    "yahoo.com",
+    "laposte.net",
+    "wanadoo.fr",
+    "privaterelay.appleid.com",
+    "desarzens.com",
+    "protonmail.com",
+    "proton.me"
+  ],
+  "emails_de_kevin": [
+    "desarzens.kevin@gmail.com",
+    "kevin.desarzens@gmail.com",
+    "kevin.desarzens@sbm.mc",
+    "kevind@monaco.mc",
+    "kevin@desarzens.com",
+    "9r4rxssx64@privaterelay.appleid.com"
+  ],
+  "_emails_de_kevin_pourquoi": "Ses propres adresses : contact de sécurité du dépôt public (SECURITY.md) et reconnaissance de l'admin. Elles étaient déjà publiques jusqu'au 15.09.2026.",
+  "emails_fictifs_locaux": [
+    "test",
+    "user",
+    "ami",
+    "chef",
+    "chef1",
+    "chef2",
+    "collegue",
+    "employe",
+    "employe1",
+    "employe2",
+    "prenom",
+    "prenom.nom",
+    "k",
+    "kevin",
+    "no-reply",
+    "noreply",
+    "john",
+    "jane",
+    "demo",
+    "exemple",
+    "example",
+    "foo",
+    "bar",
+    "contact",
+    "admin",
+    "client",
+    "nom"
+  ],
+  "telephones_publics": [
+    "+37798062121"
+  ],
+  "_telephones_publics_pourquoi": "standard public du Casino de Monte-Carlo (numéro d'entreprise, pas une personne)",
+  "exceptions": [
+    {
+      "fichier": "shops/la-detente/index.html",
+      "type": "empreinte de code admin en dur",
+      "pourquoi": "mot de passe de la boutique vérifié DANS la page (défaut ancien, déjà servi à tout visiteur du site et public dans le dépôt jusqu'au 15.09). Le mettre ici n'ajoute aucune exposition. Correction réelle suivie à part : passer par la connexion du domaine."
+    },
+    {
+      "fichier": "shops/chez-lolo/index.html",
+      "type": "empreinte de code admin en dur",
+      "pourquoi": "même défaut que La Détente (même code de boutique)."
+    }
+  ],
+  "workflows_prives": [
+    ".github/workflows/audit-live.yml",
+    ".github/workflows/verif-reelle.yml",
+    ".github/workflows/voir-comme-kevin.yml",
+    ".github/workflows/apex-chat-d1-backup.yml",
+    ".github/workflows/auto-backup.yml",
+    ".github/workflows/firebase-backup.yml",
+    ".github/workflows/depot-public-bascule.yml",
+    ".github/workflows/coffre-previent-public.yml"
+  ],
+  "_workflows_prives_pourquoi": "Dans un dépôt public, les journaux ET les artefacts d'un robot sont lisibles par tous. Ces robots se connectent en tant que Kevin et prennent des captures des vraies pages (plannings), ou manipulent des sauvegardes de données : ils restent au coffre. Règle automatique en plus : un robot qui lance un test ou un fichier resté au coffre reste au coffre.",
+  "_test_prive_index_racine": "Un test est aussi privé s'il lit la page RACINE index.html (CMCteams) : « 'index.html' » seul, « ../index.html », « /CMCteams/index.html ». Pas « apex-ai/index.html » ni « tools/x/index.html » (autres applications).",
+  "scripts_npm_prives": [
+    {
+      "script": "test:improvements-guard",
+      "pourquoi": "mesuré : l'outil d'améliorations lit la page de CMCteams (index.html racine) par un second fichier"
+    },
+    {
+      "script": "test:clicks",
+      "pourquoi": "mesuré : clique chaque bouton de CMCteams (index.html racine)"
+    },
+    {
+      "script": "test:runner-interrupteur",
+      "pourquoi": "au public, la règle est l'inverse : jamais de machine à nous (le verifier refuse tout runner auto-hébergé) ; cette garde vit au coffre"
+    },
+    {
+      "script": "test:sans-github",
+      "pourquoi": "mesuré 24.09 : fabrique le paquet COMPLET du site (CMCteams, arbre…) ; au public il n'a que 276 fichiers et refuse de conclure"
+    },
+    {
+      "script": "test:bascule",
+      "pourquoi": "mesuré 24.09 : sert le site complet (apex-ai, CMCteams) pour tester la bascule de domaine ; 30 échecs au public faute des pages privées"
+    },
+    {
+      "script": "test:rapport-lisible",
+      "pourquoi": "mesuré 24.09 : lit .github/workflows/verif-reelle.yml, robot resté au coffre (il se connecte en tant que Kevin)"
+    },
+    {
+      "script": "test:patrimoine-prive",
+      "pourquoi": "mesuré 24.09 : lance tools/patrimoine/chercher.mjs, resté au coffre (tools/patrimoine/ privé : noms de la famille) — 2 échecs au public"
+    }
+  ],
+  "mots_pas_des_noms_de_famille": [
+    "ACTE",
+    "ACTES",
+    "ANDR",
+    "ARCHIVES",
+    "AUTO",
+    "AVEC",
+    "AVIS",
+    "CITATIONS",
+    "CLOUD",
+    "CONG",
+    "COURS",
+    "DANIEL",
+    "DIPLOMES",
+    "FAIT",
+    "FAMILYSEARCH",
+    "FORTE",
+    "FRANCE",
+    "GENEANET",
+    "HTTP",
+    "INSEE",
+    "ITALIE",
+    "JSON",
+    "MATHIEU",
+    "MONACO",
+    "NICE",
+    "NOTE",
+    "PASSATION",
+    "PDF",
+    "RECHERCHER",
+    "RECHERCHES",
+    "SOEI",
+    "SOURCE",
+    "TODO",
+    "VICTOR",
+    "VIII",
+    "VOIR",
+    "ZINCIP"
+  ]
+}

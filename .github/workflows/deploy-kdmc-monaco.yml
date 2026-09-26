@@ -1,0 +1,124 @@
+name: KDMC — Déploie le connecteur Monaco Telecom (IMAP → factures)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Déploie le worker "kdmc-monaco" : connecté en IMAP à la boîte Monaco Telecom de
+# Kevin (mails.monaco.mc:993 SSL, lecture seule), il récupère AUTOMATIQUEMENT les
+# factures/devis (backfill 60 j + cron 2 h) et les dépose dans le KV partagé
+# (ACCOUNTS, mail:p:<id>). L'app Finances les récupère via le routeur (/__mail/*).
+#
+# Action Kevin (une fois) : ouvrir https://kdmc-monaco.9r4rxssx64.workers.dev/setup
+# → code admin + email/mot de passe monaco.mc → « Tester » puis « Récupérer ».
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'services/kdmc-monaco/**'
+      - '.github/workflows/deploy-kdmc-monaco.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Tests unitaires (logique pure - MIME + parseur IMAP + garde admin)
+        run: node --test services/kdmc-monaco/worker.test.mjs
+
+      - name: Install wrangler
+        run: npm i -g wrangler@3
+
+      - name: Injecte le secret code admin (protège /setup, /config, /test, /sync)
+        working-directory: services/kdmc-monaco
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          # Sans ce controle, un secret ABSENT posait un code admin VIDE sur le service
+          # — pire qu'un ancien code. Mesure du 22.09 : ces deux workflows n'avaient
+          # aucune verification de presence.
+          if [ -z "${{ secrets.APEX_ADMIN_PIN_SHA256 }}" ]; then
+            echo "::error::APEX_ADMIN_PIN_SHA256 absent des secrets GitHub : on refuse de poser un code admin VIDE sur Monaco Telecom."
+            exit 1
+          fi
+          # `| tail` ecrase le code de sortie -> un `secret put` rate ressortait VERT,
+          # et ce service serait reste sur l'ANCIEN code admin sans que rien ne le dise.
+          if printf '%s' "${{ secrets.APEX_ADMIN_PIN_SHA256 }}" | wrangler secret put KDMC_ADMIN_PIN_SHA256 >/tmp/pin.log 2>&1; then
+            tail -2 /tmp/pin.log
+            echo "Code admin pose sur Monaco Telecom."
+          else
+            tail -10 /tmp/pin.log
+            echo "::error::Le code admin n'a PAS ete pose sur Monaco Telecom : ce service garde l'ANCIEN."
+            exit 1
+          fi
+
+      - name: Injecte la clé de chiffrement du mot de passe mail (optionnel mais recommandé)
+        working-directory: services/kdmc-monaco
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ENC_KEY: ${{ secrets.MONACO_ENC_KEY }}
+        run: |
+          set -e
+          if [ -n "$ENC_KEY" ]; then
+            printf '%s' "$ENC_KEY" | wrangler secret put MONACO_ENC_KEY 2>&1 | tail -2 || echo "::warning::secret put MONACO_ENC_KEY a échoué"
+            echo "🔐 Chiffrement au repos activé."
+          else
+            echo "::warning::MONACO_ENC_KEY absent → le mot de passe mail est stocké en clair dans le KV (admin-gated, KV non exposé). Pour chiffrer : ajoute un secret GitHub MONACO_ENC_KEY = 32 octets aléatoires en base64 (openssl rand -base64 32) puis relance ce workflow."
+          fi
+
+      - name: Déploiement du worker Monaco
+        working-directory: services/kdmc-monaco
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -eo pipefail
+          wrangler deploy 2>&1 | tee deploy.log
+
+      - name: Smoke /health (leçon #95 - un deploy vert ne prouve rien)
+        run: |
+          sleep 4
+          URL="https://kdmc-monaco.9r4rxssx64.workers.dev/health"
+          echo "GET $URL"
+          curl -fsS "$URL" && echo "  ✅ kdmc-monaco vivant" || echo "::warning::/health non joignable (workers_dev désactivé ?)"
+
+      - name: Probe IMAP (SANS identifiants — prouve la socket CF 993 + le host)
+        env:
+          PIN: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        run: |
+          # Connexion seule à mails.monaco.mc:993 (TLS), lit le greeting « * OK … »,
+          # ferme. Aucun mot de passe. Prouve MOI-MÊME que Cloudflare autorise la
+          # socket IMAPS depuis un Worker + que le host est bon, avant de rendre la
+          # main à Kevin (leçon #97 : erreur exacte remontée).
+          URL="https://kdmc-monaco.9r4rxssx64.workers.dev/probe"
+          echo "POST $URL (mails.monaco.mc:993, sans identifiants)"
+          RESP=$(curl -sS -X POST -H "x-apex-pin: $PIN" -H "content-type: application/json" -d '{}' "$URL" || echo '{"ok":false,"reason":"curl_failed"}')
+          echo "=== PROBE RÉSULTAT ==="
+          echo "$RESP"
+          echo "======================"
+          # Repli 143 (non-SSL) si 993 échoue, pour distinguer « host faux » de « port bloqué »
+          if echo "$RESP" | grep -q '"ok":true'; then
+            echo "  ✅ Socket CF 993 + host mails.monaco.mc OK — il ne reste QUE le mot de passe côté Kevin."
+          else
+            echo "::warning::probe 993 KO — essai host alternatif imap.monaco.mc:993"
+            curl -sS -X POST -H "x-apex-pin: $PIN" -H "content-type: application/json" -d '{"host":"imap.monaco.mc","port":993}' "$URL" || true
+            echo ""
+            echo "::warning::si les deux échouent → CF bloque la socket 993 ou host faux → plan B (IMAP côté GitHub Action)."
+          fi

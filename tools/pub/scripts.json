@@ -1,0 +1,385 @@
+{
+  "maj": "2026-09-21",
+  "note": "Scripts PUBLICS des vidéos courtes sans visage (9:16, 20-40 s). Chaque ligne = une carte à l'écran ET une phrase lue par la voix du domaine. Tutoiement, zéro jargon, zéro chiffre invérifiable, zéro promesse de résultat : on montre CE QUE ça fait, jamais ce que ça rapporte. Le module 1 de chaque kit est gratuit : c'est la seule promesse.",
+  "marque": "kit.kd-mc.com",
+  "videos": [
+    {
+      "id": "avis-01",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "lignes": [
+        "Un avis à une étoile. Tu réponds quoi ?",
+        "Pas à chaud. Pas en t'excusant de tout.",
+        "Tu remercies. Tu reformules. Tu proposes.",
+        "L'IA écrit la réponse dans ta voix, tu relis, tu publies.",
+        "Quarante réponses prêtes à adapter. Module un gratuit."
+      ],
+      "legende": "Un avis à une étoile, tu réponds quoi ? Pas à chaud. Quarante réponses aux avis clients, prêtes à adapter dans ta voix. Le module 1 est gratuit, tu juges avant de payer.",
+      "hashtags": [
+        "#avisclients",
+        "#commercant",
+        "#restaurateur",
+        "#coiffeur",
+        "#ia"
+      ]
+    },
+    {
+      "id": "avis-02",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "clair",
+      "lignes": [
+        "Tu as dix avis sans réponse ?",
+        "Un avis sans réponse, c'est un client qui parle dans le vide.",
+        "Quinze minutes le lundi. Tu colles les avis, l'IA répond, tu relis.",
+        "Bons ou mauvais, tous ont une réponse.",
+        "Réponses aux avis, dix-sept euros. Module un gratuit."
+      ],
+      "legende": "Dix avis sans réponse ? Quinze minutes le lundi suffisent : tu colles les avis, l'IA répond dans ta voix, tu relis. 40 réponses prêtes à adapter. Module 1 gratuit sur kit.kd-mc.com/avis.html",
+      "hashtags": [
+        "#avisgoogle",
+        "#petitcommerce",
+        "#restaurant",
+        "#artisan",
+        "#ia"
+      ]
+    },
+    {
+      "id": "avis-03",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "lignes": [
+        "L'avis est faux. Ou injuste.",
+        "Tu ne réponds pas à la personne. Tu réponds à ceux qui liront.",
+        "Deux phrases calmes. Une proposition en privé.",
+        "Et tu passes au suivant.",
+        "Réponses aux avis clients. Module un gratuit."
+      ],
+      "legende": "Avis faux ou injuste ? Tu ne réponds pas à la personne, tu réponds aux futurs clients qui liront. Deux phrases calmes, une proposition en privé. Module 1 gratuit sur kit.kd-mc.com/avis.html",
+      "hashtags": [
+        "#avisclients",
+        "#hotel",
+        "#restaurateur",
+        "#tripadvisor",
+        "#ia"
+      ]
+    },
+    {
+      "id": "bureau-01",
+      "produit": "bureau-ia",
+      "page": "https://kit.kd-mc.com/bureau.html",
+      "theme": "clair",
+      "lignes": [
+        "Vingt mails dans la chaîne. Tu lis quoi ?",
+        "Tu colles la chaîne. L'IA sort cinq points et ce qu'on attend de toi.",
+        "Sans le nom du client. Sans le chiffre confidentiel.",
+        "Tu réponds en trois phrases. Tu passes à autre chose.",
+        "Kit IA au bureau. Module un gratuit."
+      ],
+      "legende": "Vingt mails dans une chaîne, tu lis quoi ? Tu colles, l'IA sort les cinq points et ce qu'on attend de toi. Sans jamais coller un nom ni un chiffre confidentiel. Kit IA au bureau, module 1 gratuit sur kit.kd-mc.com/bureau.html",
+      "hashtags": [
+        "#bureau",
+        "#salarie",
+        "#productivite",
+        "#outlook",
+        "#ia"
+      ]
+    },
+    {
+      "id": "bureau-02",
+      "produit": "bureau-ia",
+      "page": "https://kit.kd-mc.com/bureau.html",
+      "theme": "sombre",
+      "lignes": [
+        "Réunion finie. Tes notes sont en vrac.",
+        "Tu les colles telles quelles.",
+        "L'IA rend un compte rendu propre, avec la liste des actions.",
+        "Qui fait quoi, pour quand.",
+        "Kit IA au bureau. Trente-sept euros. Module un gratuit."
+      ],
+      "legende": "Réunion finie, notes en vrac ? Tu les colles, l'IA rend un compte rendu propre avec la liste des actions : qui fait quoi, pour quand. Kit IA au bureau, module 1 gratuit sur kit.kd-mc.com/bureau.html",
+      "hashtags": [
+        "#reunion",
+        "#compterendu",
+        "#manager",
+        "#assistante",
+        "#ia"
+      ]
+    },
+    {
+      "id": "etudiant-01",
+      "produit": "etudiant-ia",
+      "page": "https://kit.kd-mc.com/etudiant.html",
+      "theme": "clair",
+      "lignes": [
+        "L'IA ne passe pas l'examen à ta place.",
+        "Elle te fait arriver prêt.",
+        "Tu colles ton cours. Elle l'explique à trois niveaux.",
+        "Puis elle t'interroge, et corrige tes réponses.",
+        "Kit IA de l'étudiant. Module un gratuit."
+      ],
+      "legende": "L'IA ne passe pas l'examen à ta place. Elle te fait arriver prêt : ton cours expliqué à trois niveaux, puis elle t'interroge et corrige. Sans tricher. Kit IA de l'étudiant, module 1 gratuit sur kit.kd-mc.com/etudiant.html",
+      "hashtags": [
+        "#etudiant",
+        "#revisions",
+        "#bac",
+        "#fac",
+        "#ia"
+      ]
+    },
+    {
+      "id": "etudiant-02",
+      "produit": "etudiant-ia",
+      "page": "https://kit.kd-mc.com/etudiant.html",
+      "theme": "sombre",
+      "lignes": [
+        "Copier un texte d'IA, ça se voit.",
+        "Se faire expliquer, puis refaire seul, ça marche.",
+        "Fiche d'une page. Cartes mémoire. Quiz.",
+        "Tout ça à partir de ton propre cours.",
+        "Kit IA de l'étudiant. Vingt-sept euros. Module un gratuit."
+      ],
+      "legende": "Copier un texte d'IA, ça se voit. Se faire expliquer puis refaire seul, ça marche. Fiches, cartes mémoire, quiz, à partir de ton propre cours. Kit IA de l'étudiant, module 1 gratuit sur kit.kd-mc.com/etudiant.html",
+      "hashtags": [
+        "#lycee",
+        "#revisions",
+        "#etudes",
+        "#methode",
+        "#ia"
+      ]
+    },
+    {
+      "id": "immo-01",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "sombre",
+      "lignes": [
+        "Ton annonce dort sur le portail.",
+        "Le titre dit « bel appartement ». Tout le monde dit ça.",
+        "Tu donnes l'atout principal. L'IA écrit trois versions.",
+        "Portail, réseaux, vitrine.",
+        "Kit IA de l'agent immobilier. Module un gratuit."
+      ],
+      "legende": "Ton annonce dort sur le portail ? Le titre dit « bel appartement », comme tout le monde. Tu donnes l'atout principal, l'IA écrit trois versions : portail, réseaux, vitrine. Kit IA de l'agent immobilier, module 1 gratuit sur kit.kd-mc.com/immo.html",
+      "hashtags": [
+        "#immobilier",
+        "#agentimmobilier",
+        "#mandataire",
+        "#annonce",
+        "#ia"
+      ]
+    },
+    {
+      "id": "immo-02",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "clair",
+      "lignes": [
+        "Visite terminée. Le vendeur attend ton retour.",
+        "Tu dictes trois phrases dans la voiture.",
+        "L'IA rend un compte rendu clair et honnête.",
+        "Jamais le nom de l'acheteur. Jamais son adresse.",
+        "Kit IA de l'agent immobilier. Soixante-sept euros. Module un gratuit."
+      ],
+      "legende": "Visite terminée, le vendeur attend ton retour. Tu dictes trois phrases dans la voiture, l'IA rend un compte rendu clair. Jamais le nom ni l'adresse d'un client dans l'assistant. Kit IA de l'agent immobilier, module 1 gratuit sur kit.kd-mc.com/immo.html",
+      "hashtags": [
+        "#immobilier",
+        "#negociateur",
+        "#visite",
+        "#agence",
+        "#ia"
+      ]
+    },
+    {
+      "id": "kit-01",
+      "produit": "kit-ia",
+      "page": "https://kit.kd-mc.com/",
+      "theme": "sombre",
+      "lignes": [
+        "Un devis à faire. Il est vingt-deux heures.",
+        "Tu dictes trois infos : le problème, la pièce, le déplacement.",
+        "L'IA écrit le devis. Tu relis. Tu envoies.",
+        "Sans coder. Depuis ton téléphone.",
+        "Kit IA de l'indépendant. Module un gratuit."
+      ],
+      "legende": "Un devis à faire à 22 h ? Tu dictes trois infos, l'IA écrit, tu relis, tu envoies. Sans coder, depuis ton téléphone. Kit IA de l'indépendant, module 1 gratuit sur kit.kd-mc.com",
+      "hashtags": [
+        "#independant",
+        "#artisan",
+        "#autoentrepreneur",
+        "#devis",
+        "#ia"
+      ]
+    },
+    {
+      "id": "kit-02",
+      "produit": "kit-ia",
+      "page": "https://kit.kd-mc.com/",
+      "theme": "clair",
+      "lignes": [
+        "La facture n'est pas payée. Tu relances comment ?",
+        "Ni huissier, ni copain.",
+        "L'IA écrit la relance ferme et polie. Trois versions.",
+        "Tu choisis. Tu envoies.",
+        "Kit IA de l'indépendant. Quarante-sept euros. Module un gratuit."
+      ],
+      "legende": "Facture impayée, tu relances comment ? Ni huissier, ni copain : l'IA écrit la relance ferme et polie, en trois versions. Kit IA de l'indépendant, module 1 gratuit sur kit.kd-mc.com",
+      "hashtags": [
+        "#impaye",
+        "#relance",
+        "#freelance",
+        "#artisan",
+        "#ia"
+      ]
+    },
+    {
+      "id": "club-01",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "sombre",
+      "lignes": [
+        "Chaque lundi, une nouvelle consigne prête à copier.",
+        "Une situation réelle d'indépendant. La consigne. L'exemple.",
+        "Cinquante-deux par an, en plus du kit.",
+        "Rien de prélevé sans que tu le décides.",
+        "Club IA au boulot. Cinquante-neuf euros l'année."
+      ],
+      "legende": "Chaque lundi, une nouvelle consigne-outil prête à copier : une situation réelle, la consigne, l'exemple. 52 par an, en plus du kit complet. Sans prélèvement automatique. Club IA au Boulot, 59 € l'année, sur kit.kd-mc.com",
+      "hashtags": [
+        "#independant",
+        "#commercant",
+        "#ia",
+        "#club",
+        "#artisan"
+      ]
+    },
+    {
+      "id": "immo-03",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "sombre",
+      "lignes": [
+        "Un vendeur hésite à te confier son bien.",
+        "Tu n'as pas le temps d'écrire le mail parfait.",
+        "Tu donnes le quartier, le prix, ton point fort.",
+        "L'IA écrit un mail de prospection sobre, à ton nom.",
+        "Kit IA de l'agent immobilier. Module un gratuit."
+      ],
+      "legende": "Un vendeur hésite à te confier son bien et tu n'as pas le temps d'écrire le mail parfait. Tu donnes le quartier, le prix, ton point fort : l'IA écrit un mail de prospection sobre, à ton nom. Kit IA de l'agent immobilier, module 1 gratuit sur kit.kd-mc.com/immo.html",
+      "hashtags": [
+        "#immobilier",
+        "#prospection",
+        "#mandat",
+        "#agentimmobilier",
+        "#ia"
+      ]
+    },
+    {
+      "id": "club-02",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "clair",
+      "lignes": [
+        "Lundi matin. Une consigne nouvelle t'attend.",
+        "Un client mécontent, un devis à relancer, un planning à refaire.",
+        "La situation. La consigne. L'exemple, prêt à adapter.",
+        "Tu copies, tu changes deux mots, tu envoies.",
+        "Club IA au boulot. Cinquante-neuf euros l'année."
+      ],
+      "legende": "Lundi matin, une consigne nouvelle t'attend : un client mécontent, un devis à relancer, un planning à refaire. La situation, la consigne, l'exemple prêt à adapter. Tu copies, tu changes deux mots, tu envoies. Club IA au Boulot, 59 € l'année, sur kit.kd-mc.com",
+      "hashtags": [
+        "#independant",
+        "#artisan",
+        "#commercant",
+        "#ia",
+        "#club"
+      ]
+    },
+    {
+      "id": "immo-04",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "clair",
+      "lignes": [
+        "Trois acheteurs te relancent pendant ta visite.",
+        "Tu dictes le bien, l'assistant IA prépare tes réponses.",
+        "Chaque message reste clair, précis, dans ton ton.",
+        "Tu traites tout entre deux rendez-vous, sur ton téléphone.",
+        "Le module 1 est gratuit."
+      ],
+      "legende": "Trois acheteurs qui relancent pendant une visite, ça arrive tous les jours. Tu dictes l'essentiel du bien, l'assistant IA prépare tes réponses, tu les envoies entre deux portes. Le module 1 est gratuit sur kit.kd-mc.com",
+      "hashtags": [
+        "#immobilier",
+        "#agentimmobilier",
+        "#mandataire",
+        "#prospection",
+        "#ia"
+      ]
+    },
+    {
+      "id": "club-03",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "sombre",
+      "lignes": [
+        "Ton devis est parti mardi. Toujours aucune réponse.",
+        "Tu ouvres le club et tu prends la consigne de la semaine.",
+        "Tu la colles dans ton assistant IA, tu changes deux mots.",
+        "Ta relance est écrite, polie, prête à envoyer.",
+        "Cinquante-neuf euros l'année."
+      ],
+      "legende": "Le devis est parti, le client se tait, et tu n'oses pas relancer. Le Club IA au Boulot te donne la consigne à copier pour écrire cette relance sans y passer ta soirée. Tout est sur kit.kd-mc.com",
+      "hashtags": [
+        "#ia",
+        "#independant",
+        "#commercant",
+        "#devis",
+        "#relance"
+      ]
+    },
+    {
+      "id": "immo-05",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "sombre",
+      "lignes": [
+        "Ton mandat arrive à échéance vendredi.",
+        "Tu dictes l'historique du bien à ton assistant IA.",
+        "Il prépare le message de relance au propriétaire.",
+        "Tu relis, tu ajustes le ton, c'est déjà prêt.",
+        "Le premier module est gratuit, à tester ce soir."
+      ],
+      "legende": "Ton mandat arrive à échéance vendredi et tu n'as rien préparé. Tu dictes l'historique du bien, ton assistant IA rédige la relance du propriétaire, tu ajustes le ton entre deux visites. Le premier module est gratuit sur kit.kd-mc.com",
+      "hashtags": [
+        "#immobilier",
+        "#agentimmobilier",
+        "#mandat",
+        "#prospection",
+        "#ia"
+      ]
+    },
+    {
+      "id": "club-04",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "clair",
+      "lignes": [
+        "Un avis négatif vient de tomber sur ta fiche.",
+        "Tu copies la consigne du club, tu réponds.",
+        "Ta réponse reste calme, posée, professionnelle.",
+        "Tu passes à autre chose avant même ton café.",
+        "Cinquante-neuf euros l'année, le club entier."
+      ],
+      "legende": "Un avis négatif tombe un jeudi soir. Tu ouvres la consigne du club, tu copies, tu réponds calmement, puis tu passes à autre chose. Une consigne prête pour chaque situation vécue de ta semaine. Cinquante-neuf euros l'année, sur kit.kd-mc.com",
+      "hashtags": [
+        "#artisan",
+        "#commercant",
+        "#independant",
+        "#assistantia",
+        "#ia"
+      ]
+    }
+  ]
+}

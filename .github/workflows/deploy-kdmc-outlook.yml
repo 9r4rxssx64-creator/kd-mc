@@ -1,0 +1,86 @@
+name: KDMC — Déploie le worker Outlook (récup auto des factures)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Déploie le worker "kdmc-outlook" : connecté à Outlook (Microsoft Graph, OAuth
+# lecture seule), il récupère AUTOMATIQUEMENT les factures/devis (anciennes via
+# backfill + nouvelles via cron 2 h) et les dépose dans le KV partagé (ACCOUNTS,
+# mail:p:<id>). L'app Finances les récupère via le routeur (/__mail/*).
+#
+# Actions Kevin (une fois) : enregistrer une app Microsoft gratuite (aka.ms/appregistrations,
+# redirect https://kdmc-outlook.9r4rxssx64.workers.dev/auth/callback), puis ouvrir
+# https://kdmc-outlook.9r4rxssx64.workers.dev/setup → code admin + client_id → « Connecter Outlook ».
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'services/kdmc-outlook/**'
+      - '.github/workflows/deploy-kdmc-outlook.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Tests unitaires (logique pure)
+        run: node --test services/kdmc-outlook/worker.test.mjs
+
+      - name: Install wrangler
+        run: npm i -g wrangler@3
+
+      - name: Injecte le secret code admin (protège /setup, /config, /connect, /sync)
+        working-directory: services/kdmc-outlook
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          # Sans ce controle, un secret ABSENT posait un code admin VIDE sur le service
+          # — pire qu'un ancien code. Mesure du 22.09 : ces deux workflows n'avaient
+          # aucune verification de presence.
+          if [ -z "${{ secrets.APEX_ADMIN_PIN_SHA256 }}" ]; then
+            echo "::error::APEX_ADMIN_PIN_SHA256 absent des secrets GitHub : on refuse de poser un code admin VIDE sur Outlook."
+            exit 1
+          fi
+          # `| tail` ecrase le code de sortie -> un `secret put` rate ressortait VERT,
+          # et ce service serait reste sur l'ANCIEN code admin sans que rien ne le dise.
+          if printf '%s' "${{ secrets.APEX_ADMIN_PIN_SHA256 }}" | wrangler secret put KDMC_ADMIN_PIN_SHA256 >/tmp/pin.log 2>&1; then
+            tail -2 /tmp/pin.log
+            echo "Code admin pose sur Outlook."
+          else
+            tail -10 /tmp/pin.log
+            echo "::error::Le code admin n'a PAS ete pose sur Outlook : ce service garde l'ANCIEN."
+            exit 1
+          fi
+
+      - name: Déploiement du worker Outlook
+        working-directory: services/kdmc-outlook
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee deploy.log
+
+      - name: Smoke /health
+        run: |
+          sleep 4
+          URL="https://kdmc-outlook.9r4rxssx64.workers.dev/health"
+          echo "GET $URL"
+          curl -fsS "$URL" && echo "  ✅ kdmc-outlook vivant" || echo "::warning::/health non joignable (workers_dev peut être désactivé)"

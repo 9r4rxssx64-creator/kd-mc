@@ -1,0 +1,93 @@
+name: Apex v13 CI
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  pull_request:
+    paths:
+      - 'apex-ai/v13/**'
+      - '.github/workflows/apex-v13-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+
+permissions:
+  contents: read
+
+jobs:
+  lint-typecheck-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: TypeScript strict check
+        run: npx tsc --noEmit
+
+      - name: ESLint (HARD FAIL Jet 7 fix audit P0-1)
+        run: npx eslint . --ext .ts,.tsx --max-warnings 0
+
+      - name: Vitest unit tests + coverage threshold ≥80% (HARD FAIL Jet 7 fix audit P0-3)
+        run: npx vitest run --coverage
+
+      - name: Build production bundle
+        run: npx vite build
+
+      - name: Bundle size budget (initial < 200 KB gzipped)
+        run: |
+          if [ -d dist ]; then
+            total=$(find dist -name '*.js' -exec gzip -c {} \; | wc -c)
+            echo "Bundle gzipped: $total bytes"
+            if [ "$total" -gt 204800 ]; then
+              echo "::warning::Bundle exceeds 200KB gzipped target"
+            fi
+          fi
+
+      - name: Bundle analyzer auto-report (v13.3.57)
+        if: always()
+        run: |
+          # Restore previous report from cache if exists, then compare
+          if [ -f bundle-report.json ]; then
+            mv bundle-report.json bundle-report-prev.json || true
+          fi
+          node --experimental-strip-types scripts/bundle-report.ts || echo "::warning::Bundle regression detected"
+        continue-on-error: true
+
+      - name: Upload bundle report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle-report-${{ github.sha }}
+          path: apex-ai/v13/bundle-report.json
+          retention-days: 30
+        continue-on-error: true
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Lighthouse CI placeholder
+        run: |
+          echo "Lighthouse CI sera configuré Jet 2 (cible >95 perf/a11y/best-practices/seo)"

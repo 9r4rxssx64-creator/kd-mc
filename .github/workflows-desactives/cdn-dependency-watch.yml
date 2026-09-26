@@ -1,0 +1,80 @@
+name: CDN dependencies watch
+
+# Verifie 1x/jour que les CDN externes utilises par Apex et CMCteams repondent.
+# Liste les versions latest dispos et alerte si on est >2 versions de retard.
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Probe CDN URLs used in code
+        id: probe
+        run: |
+          set +e
+          # CDN URLs hardcoded across both apps
+          declare -A URLS=(
+            ["lz-string"]="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"
+            ["fuse.js"]="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"
+            ["qrcode"]="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"
+          )
+          FAILS=""
+          for name in "${!URLS[@]}"; do
+            url="${URLS[$name]}"
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 15 "$url")
+            if [ "$CODE" = "200" ]; then
+              echo "OK $name : $url"
+            else
+              FAILS="$FAILS\n- $name : $url -> HTTP $CODE"
+              echo "FAIL $name : $url -> $CODE"
+            fi
+          done
+          if [ -n "$FAILS" ]; then
+            echo "fails<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$FAILS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Check latest npm versions vs hardcoded
+        run: |
+          set +e
+          for pkg in lz-string fuse.js qrcode; do
+            LATEST=$(curl -s "https://registry.npmjs.org/$pkg/latest" | grep -oE '"version":"[^"]+"' | head -1 | sed 's/"version":"//;s/"//')
+            CUR=$(grep -oE "$pkg@[0-9.]+" index.html apex-ai/index.html 2>/dev/null | head -1 | sed "s/$pkg@//")
+            echo "$pkg : current=$CUR, latest=$LATEST"
+          done
+
+      - name: Open issue on CDN failure
+        if: failure()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'cdn,auto'
+            });
+            if (issues.data.length > 0) return;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[cdn] Une dependance externe est down`,
+              body: `Verifier les CDN dans le workflow .github/workflows/cdn-dependency-watch.yml.\n\n${{ steps.probe.outputs.fails }}\n\nFallback :\n- lz-string : compression non bloquante (fonctionne sans)\n- fuse.js : fuzzy search degrade en substring\n- qrcode : pas de QR genere\n\nFix : changer URL CDN ou heberger localement.`,
+              labels: ['cdn', 'auto', 'bug']
+            });

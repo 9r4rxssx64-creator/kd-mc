@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://kdmc-vente.9r4rxssx64.workers.dev; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lire le Kit IA de l'indépendant</title>
+<!-- apercu:debut (généré par tools/produits/apercus.mjs) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ton espace Kit IA">
+<meta property="og:description" content="Tes modules et les consignes de la semaine, avec ton code d'accès.">
+<meta property="og:url" content="https://kit.kd-mc.com/lire.html">
+<meta property="og:image" content="https://kit.kd-mc.com/og/lire.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ton espace Kit IA — kit.kd-mc.com">
+<meta property="og:site_name" content="KDMC">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://kit.kd-mc.com/og/lire.png">
+<!-- apercu:fin -->
+<meta name="description" content="Le lecteur du Kit IA : module 1 gratuit, le reste s'ouvre avec ton code d'accès.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D0F14" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+</head>
+<body>
+<main>
+  <p class="sur" id="sur"><a href="./">Kit IA de l'indépendant</a></p>
+  <h1 id="titre">Lecteur</h1>
+  <p class="petit" id="etat">Chargement…</p>
+
+  <div class="carte" id="boiteCode">
+    <form id="formCode" novalidate>
+      <label for="codeAcces">Ton code d'accès</label>
+      <input id="codeAcces" type="text" inputmode="latin" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="16 caractères, par groupes de 4">
+      <p class="aide">Reçu après ton paiement. Sans code, tu lis le module 1 gratuitement.</p>
+      <p class="mt16"><button class="btn btn-primaire" type="submit" id="ouvrir">Ouvrir mon kit</button></p>
+    </form>
+    <div id="resultat" hidden></div>
+  </div>
+
+  <nav aria-label="Sommaire"><ul class="sommaire" id="sommaire"></ul></nav>
+  <article class="module" id="module"></article>
+  <div class="nav-modules" id="navModules" hidden>
+    <button class="btn btn-secondaire" id="precedent" type="button">Précédent</button>
+    <button class="btn btn-primaire" id="suivant" type="button">Suivant</button>
+  </div>
+
+  <div class="encart verrouille" id="verrou" hidden>
+    <p class="sur">La suite est dans le kit complet</p>
+    <p>6 modules de plus, 52 consignes, accès 2 ans. Ou le Club à 59 € / an : le kit complet et une nouvelle consigne chaque semaine.</p>
+    <p><a class="btn btn-primaire" href="./#acheter">Obtenir le kit — 47 €</a></p>
+    <p><a class="btn btn-secondaire" href="./#club">Rejoindre le Club — 59 € / an</a></p>
+  </div>
+
+  <footer><p><a href="./">Retour à la présentation</a> · Vendu par KDMC, Monaco.</p>
+  <p class="petit"><a href="cgv.html">Conditions de vente</a> · <a href="mentions.html">Mentions légales</a> · <a href="mailto:kevind@monaco.mc">kevind@monaco.mc</a></p></footer>
+</main>
+<script src="kit.js"></script>
+</body>
+</html>

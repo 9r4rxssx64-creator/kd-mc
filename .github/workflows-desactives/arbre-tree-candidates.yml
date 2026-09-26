@@ -1,0 +1,72 @@
+name: Arbre — candidats photo d'olivier (contact sheet)
+# Télécharge PLUSIEURS oliviers libres de droit (Pexels), fabrique une planche
+# contact (montage numéroté) + garde chaque photo pleine résolution dans
+# arbre/_cand/. L'agent Claude lit la planche, choisit le meilleur (olivier
+# ENTIER), puis copie le bon vers arbre/tree.jpg. Egress agent bloqué → CI le fait.
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Recherche Pexels"
+        default: "ancient olive tree whole"
+      count:
+        description: "Nombre de candidats"
+        default: "12"
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Télécharge candidats + planche contact
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          Q: ${{ github.event.inputs.query }}
+          N: ${{ github.event.inputs.count }}
+        run: |
+          set -e
+          [ -n "$PEXELS_API_KEY" ] || { echo "❌ secret PEXELS_API_KEY manquant"; exit 1; }
+          sudo apt-get update -qq >/dev/null 2>&1 || true
+          sudo apt-get install -y -qq imagemagick >/dev/null 2>&1 || true
+          rm -rf arbre/_cand; mkdir -p arbre/_cand
+          QENC=$(python3 -c "import urllib.parse,os;print(urllib.parse.quote(os.environ['Q']))")
+          N="${N:-12}"
+          echo "🔎 Pexels: $Q (x$N)"
+          curl -s -H "Authorization: $PEXELS_API_KEY" \
+            "https://api.pexels.com/v1/search?query=$QENC&per_page=$N" -o /tmp/pex.json
+          python3 - <<'PY'
+          import json,os,subprocess
+          d=json.load(open('/tmp/pex.json'))
+          ph=d.get('photos',[])
+          lines=[]
+          for i,p in enumerate(ph):
+              src=p['src']
+              url=src.get('large2x') or src.get('large') or src.get('original')
+              raw=f'/tmp/raw_{i:02d}.jpg'
+              subprocess.run(['curl','-sL',url,'-o',raw],check=False)
+              # plein cadre 900px de large pour le rendu final
+              subprocess.run(['convert',raw,'-resize','900x','-strip','-quality','84',f'arbre/_cand/cand_{i:02d}.jpg'],check=False)
+              # vignette étiquetée pour la planche
+              subprocess.run(['convert',raw,'-resize','300x400^','-gravity','center','-extent','300x400',
+                              '-strip',f'/tmp/th_{i:02d}.jpg'],check=False)
+              subprocess.run(['convert',f'/tmp/th_{i:02d}.jpg','-gravity','North','-background','#00000099',
+                              '-splice','0x28','-fill','white','-pointsize','26','-annotate','+0+2',f'#{i}  {p.get("photographer","")[:16]}',
+                              f'/tmp/lbl_{i:02d}.jpg'],check=False)
+              lines.append(f'#{i} {p.get("photographer","")}')
+          open('arbre/_cand/credits.txt','w').write("\n".join(lines))
+          print("\n".join(lines))
+          PY
+          convert -background '#e7d9ba' $(ls /tmp/lbl_*.jpg | sort) -resize 300x428 miff:- \
+            | montage - -tile 4x -geometry +6+6 -background '#e7d9ba' arbre/_cand/contact.jpg || \
+            montage $(ls /tmp/lbl_*.jpg | sort) -tile 4x -geometry +6+6 -background '#e7d9ba' arbre/_cand/contact.jpg
+          ls -la arbre/_cand/
+      - name: Commit
+        run: |
+          git config user.name "arbre-bot"
+          git config user.email "noreply@anthropic.com"
+          git add arbre/_cand
+          git commit -m "Arbre: planche candidats oliviers (Pexels) [skip ci]" || { echo "rien"; exit 0; }
+          git push

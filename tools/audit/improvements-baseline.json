@@ -1,0 +1,20 @@
+{
+  "_note": "Référence figée de la dette existante. On échoue si un compteur AUGMENTE (jamais parce que la dette existe). Régénérer volontairement : node tools/audit/improvements-audit.cjs --update-baseline",
+  "updated": "2026-09-18",
+  "metrics": {
+    "orphan_functions": 77,
+    "orphan_views": 0,
+    "duplicate_functions": 9,
+    "inline_styles": 5171,
+    "todo_markers": 0,
+    "console_log": 46,
+    "innerhtml_no_esc": 76,
+    "file_kb": 3348,
+    "set_interval": 42,
+    "clear_interval": 31,
+    "add_listener": 85,
+    "remove_listener": 3,
+    "views_total": 102,
+    "views_untested": 38
+  }
+}

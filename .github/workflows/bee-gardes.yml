@@ -1,0 +1,90 @@
+name: Bee — les gardes en VRAI navigateur (Javis + Lingua)
+
+# POURQUOI CE FICHIER EXISTE (mesuré le 16/09/2026)
+# Les trois gardes de Bee sont câblées dans `npm run test:ci`… qui ne tourne dans AUCUN
+# workflow GitHub — seulement dans le job « tests » de GitLab, qui ne voit les branches
+# qu'à une remise à niveau occasionnelle (constat de la session cmcteams-pdf, message m049).
+# Autrement dit : trois gardes écrites, prouvées discriminantes… et qui ne s'exécutaient sur
+# AUCUNE pull request. « Ce qui n'est pas dans la chaîne finit sauté » — alors on les met
+# dans la chaîne GitHub, là où les changements arrivent vraiment.
+#
+# Ce que ça attrape, et que la lecture du code ne peut PAS voir :
+#   • la bouche ne suit plus le son (amplitude → un minuteur = même valeur fort/silencieux) ;
+#   • la vidéo de Bee ne se lit plus, ou son absence laisse un écran VIDE ;
+#   • un clignement redevenu mécanique (durée figée, plus de double battement) ;
+#   • un saut redevenu un simple aller-retour (plus d'écrasement ni d'étirement) ;
+#   • un hôte manquant dans une CSP (fetch/vidéo/son bloqués EN SILENCE) ;
+#   • les copies du widget qui divergent entre `tools/javis/`, `arbre/` et `javis/`.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lingua/**'
+      - 'tools/javis/**'
+      - 'javis/**'
+      - 'arbre/javis-widget.js'
+      - 'arbre/index.html'
+      - 'tests/verify-javis-bee.mjs'
+      - 'tests/verify-javis-bee-reelle.mjs'
+      - 'tests/verify-lingua-bee-vivante.mjs'
+      - '.github/workflows/bee-gardes.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lingua/**'
+      - 'tools/javis/**'
+      - 'javis/**'
+      - 'arbre/javis-widget.js'
+      - 'tests/verify-javis-bee*.mjs'
+      - 'tests/verify-lingua-bee-vivante.mjs'
+      - '.github/workflows/bee-gardes.yml'
+  # ⛔ Pas de cron : le compte a été suspendu le 15/08/2026 pour VOLUME d'exécutions.
+  #    Ce workflow ne tourne que sur un vrai changement, ou à la main.
+
+# `pull_request` et JAMAIS `pull_request_target` : dépôt PUBLIC — `pull_request_target`
+# exécuterait le code d'un inconnu avec nos secrets et un jeton en écriture (règle absolue
+# « dépôt public : le code se lit, les données et les clés non »). Ici : lecture seule,
+# zéro secret, tout tourne en local dans le runner.
+permissions:
+  contents: read
+
+# Garde anti-empilement (test:ci-no-stampede) : un commit ne remplace qu'un commit, un
+# lancement à la main ne remplace qu'un lancement à la main (leçon lingua-truth : sans
+# l'événement dans le groupe, un envoi sur main tuait la vérification lancée à la main).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  bee:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+
+      # Pas de package-lock à la racine de ce dépôt : `npm ci` est impossible et `npm install`
+      # sans `--legacy-peer-deps` échoue (mesuré par la session domaine-audit, message m033,
+      # même symptôme que puppeteer dans le job e2e-tests). On installe le strict nécessaire.
+      - name: Installer Playwright (le navigateur, pas tout le dépôt)
+        run: |
+          npm install playwright@1.56.0 --no-save --no-audit --no-fund --legacy-peer-deps
+          npx playwright install --with-deps chromium
+
+      # ffmpeg : un Chromium de CI ne décode PAS le H.264. Sans ffmpeg, la garde de Javis
+      # annonce honnêtement « NON VÉRIFIÉ ICI » au lieu d'un vert trompeur (leçon #103) ;
+      # avec lui, elle rejoue les VRAIES images de Bee en VP9 et vérifie pour de bon.
+      - name: Installer ffmpeg (pour rejouer les vraies vidéos de Bee en VP9)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: "Javis — les copies, les CSP, les fichiers cités (statique)"
+        run: npm run -s test:javis-bee
+
+      - name: "Javis — Bee bouge, parle et la bouche suit le SON (vrai navigateur)"
+        run: npm run -s test:javis-bee-reelle
+
+      - name: "Lingua — Bee est vivante : clignement, saut, regard (vrai navigateur)"
+        run: npm run -s test:lingua-bee

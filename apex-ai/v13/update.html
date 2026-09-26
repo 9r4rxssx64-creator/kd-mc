@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>APEX — Reset MAJ</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline' 'self';">
+  <style>
+    body{margin:0;background:#08080f;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center}
+    .box{max-width:420px}
+    h1{font-family:Georgia,serif;font-size:48px;margin:0 0 8px;letter-spacing:4px;color:#c9a227}
+    .s{color:#6a8aff;font-size:14px;letter-spacing:2px;margin:0 0 24px}
+    .t{font-size:16px;line-height:1.5;margin:0 0 24px}
+    .b{display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;border:none;border-radius:24px;font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent}
+    .b:active{transform:scale(.96)}
+    .l{margin-top:16px;color:#888;font-size:13px}
+    pre{background:#1a1a2e;padding:8px;border-radius:6px;font-size:11px;color:#22cc77;text-align:left;overflow:auto;max-height:200px}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>APEX</h1>
+    <p class="s">RESET MAJ AUTO</p>
+    <p class="t">Cette page nettoie complètement le cache + Service Worker et te reconnecte à la dernière version d'Apex.</p>
+    <button class="b" id="reset">🔄 Forcer la MAJ maintenant</button>
+    <pre id="log">Tap le bouton pour démarrer...</pre>
+    <p class="l"><a href="./" style="color:#6a8aff">← Retour à l'app</a></p>
+  </div>
+  <script>
+  (function(){
+    var log=document.getElementById('log');
+    var btn=document.getElementById('reset');
+    function l(msg){log.textContent+='\n'+msg;}
+    btn.addEventListener('click',function(){
+      btn.disabled=true;
+      btn.textContent='⏳ Reset en cours...';
+      log.textContent='[1/4] Démarrage...';
+      var p=Promise.resolve();
+      /* 1. Unregister tous SW */
+      if('serviceWorker' in navigator){
+        p=p.then(function(){
+          return navigator.serviceWorker.getRegistrations();
+        }).then(function(regs){
+          l('[2/4] '+regs.length+' Service Workers à désinscrire');
+          return Promise.all(regs.map(function(r){return r.unregister();}));
+        }).then(function(){
+          l('[2/4] ✅ Service Workers désinscrits');
+        }).catch(function(e){l('⚠️ SW unregister: '+e.message);});
+      }
+      /* 2. Clear caches */
+      p=p.then(function(){
+        if('caches' in window){
+          return caches.keys().then(function(ks){
+            l('[3/4] '+ks.length+' caches à supprimer');
+            return Promise.all(ks.map(function(k){return caches.delete(k);}));
+          }).then(function(){
+            l('[3/4] ✅ Caches purgés');
+          });
+        }
+      }).catch(function(e){l('⚠️ Caches: '+e.message);});
+      /* 3. Clear localStorage SW-related uniquement (préserve user data) */
+      p=p.then(function(){
+        try{
+          /* Garde apex_v13_user, vault, conversations, persistent_memory, kb */
+          var keysToDelete=['apex_v13_lastact','apex_v13_pin_fails'];
+          for(var i=0;i<localStorage.length;i++){
+            var k=localStorage.key(i);
+            if(k&&(k.indexOf('cache_')===0||k.indexOf('sw_')===0)){keysToDelete.push(k);}
+          }
+          for(var j=0;j<keysToDelete.length;j++){
+            try{localStorage.removeItem(keysToDelete[j]);}catch(_){}
+          }
+          l('[3/4] ✅ '+keysToDelete.length+' clés cache localStorage purgées');
+        }catch(e){l('⚠️ localStorage: '+e.message);}
+      });
+      /* 4. Reload vers index.html avec query buster */
+      p=p.then(function(){
+        l('[4/4] Reload imminent...');
+        setTimeout(function(){
+          var path=location.pathname.replace(/update\.html.*$/,'');
+          location.replace(path+'?_forceupd='+Date.now()+'&_fresh=1');
+        },1500);
+      });
+    });
+    /* Auto-trigger si arrivée via /update.html?auto=1 */
+    if(location.search.indexOf('auto=1')>=0){
+      setTimeout(function(){btn.click();},500);
+    }
+  })();
+  </script>
+</body>
+</html>

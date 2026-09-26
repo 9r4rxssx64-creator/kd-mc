@@ -1,0 +1,105 @@
+name: "Lingua — enrichit le VOCABULAIRE (vagues, avec juge indépendant)"
+
+# Kevin 2026-08-11 : « 75 verbes c'est bcp trop peu pour apprendre une langue.
+# Pareil pour tout le reste. Enrichit +++ »
+#
+# Chaque exécution ajoute une (ou plusieurs) vague(s) de vocabulaire dans les 14 langues.
+# VÉRITÉ, RIEN DE FAUX : un modèle traduit, un modèle d'un AUTRE fournisseur juge chaque
+# traduction, et un terme n'entre QUE s'il est validé dans LES 14 langues. Une seule langue
+# douteuse → le terme entier est écarté. Mieux vaut 20 mots justes que 100 dont 3 sont faux.
+#
+# Si aucune IA ne répond, le moteur sort proprement sans rien écrire (jamais de contenu inventé,
+# jamais de mail d'échec inutile). Manuel + 1×/semaine (règle anti-spam : pas de cron court).
+
+on:
+  workflow_dispatch:
+    inputs:
+      vagues:
+        description: "Nombre de vagues à enchaîner (1 à 8). 2 est le bon rythme : au-delà, le quota des fournisseurs saute."
+        default: "2"
+        required: false
+      theme:
+        description: "Thème imposé (vide = thèmes automatiques, verbes en priorité)"
+        default: ""
+        required: false
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+concurrency:
+  group: lingua-vocab
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  vagues:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: "Auto-test du chemin d'écriture (sans IA) — refuse de tourner s'il est cassé"
+        run: node tools/lingua/grow-vocab.mjs lingua --selftest
+
+      - name: "Vagues de vocabulaire (traduction + juge indépendant)"
+        id: vagues
+        shell: bash -eo pipefail {0}   # sans pipefail, un `node … | tee` échoué ressortirait VERT
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          N="${{ github.event.inputs.vagues || '2' }}"
+          case "$N" in ''|*[!0-9]*) N=3 ;; esac
+          [ "$N" -gt 8 ] && N=8
+          IMPOSE="${{ github.event.inputs.theme }}"
+          # Thèmes tournants : les verbes d'abord (c'est ce qui manque le plus), puis le concret.
+          THEMES=(
+            "Verbes de tous les jours|--verbes"
+            "Verbes du travail et des démarches|--verbes"
+            "Verbes des émotions et des relations|--verbes"
+            "Verbes du mouvement et du corps|--verbes"
+            "La maison et le bricolage|"
+            "La santé et le corps|"
+            "Le travail et les études|"
+            "La nature et la météo|"
+          )
+          for i in $(seq 1 "$N"); do
+            if [ -n "$IMPOSE" ]; then TH="$IMPOSE"; FL=""; else
+              idx=$(( (i - 1) % ${#THEMES[@]} ))
+              TH="${THEMES[$idx]%%|*}"; FL="${THEMES[$idx]##*|}"
+            fi
+            echo "::group::Vague $i — $TH"
+            node tools/lingua/grow-vocab.mjs lingua --theme "$TH" $FL --n 24 | tee -a /tmp/vocab.log || true
+            echo "::endgroup::"
+            # 60 s entre deux vagues : le 1er essai (8 vagues en rafale, 5 s d'écart) a fait
+            # sauter le quota des fournisseurs — 7 vagues sur 8 sont revenues vides.
+            sleep 60
+          done
+          echo "changed=$(git status --porcelain lingua | grep -c . || true)" >> "$GITHUB_OUTPUT"
+
+      - name: "Porte de vérité (bloquante) puis dépôt sur une branche"
+        if: steps.vagues.outputs.changed != '0'
+        run: |
+          node tools/lingua/verify-truth.mjs lingua
+          node --check lingua/data.js && node --check lingua/app.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="claude/lingua-vocab-${{ github.run_number }}"
+          git checkout -b "$BR"
+          git add lingua tools/lingua
+          VER=$(grep -o 'var APP_VER="[^"]*"' lingua/app.js | head -1 | cut -d'"' -f2)
+          git commit -m "Lingua $VER : vague(s) de vocabulaire — 14 langues, chaque traduction validee par un modele independant [skip ci]" \
+            -m "$(tail -c 3000 /tmp/vocab.log)" || { echo "rien a committer"; exit 0; }
+          for i in 1 2 3 4; do git push -u origin "$BR" && break || sleep $((2**i)); done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: vocab-log, path: /tmp/vocab.log, retention-days: 30, if-no-files-found: ignore }

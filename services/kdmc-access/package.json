@@ -1,0 +1,6 @@
+{
+  "name": "kdmc-access",
+  "private": true,
+  "type": "module",
+  "description": "Worker journal unifié « qui se connecte à mon domaine » (page admin + /log + /history PIN-gated)."
+}

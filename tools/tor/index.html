@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="robots" content="noindex">
+<title>Tor en clair — comprendre et visiter le web .onion, en sécurité</title>
+<style>
+:root{--gold:#c9a227;--gold2:#ffd700;--bg:#0b0d12;--bg2:#121620;--card:#161b26;--ink:#e9ecf3;--mut:#9aa3b5;
+ --ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--line:rgba(201,162,39,.22)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;max-width:100vw;overflow-x:hidden;background:var(--bg);color:var(--ink);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;-webkit-text-size-adjust:100%;
+ font-size:16px;line-height:1.55}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 76px) env(safe-area-inset-left)}
+header{position:sticky;top:0;z-index:40;background:linear-gradient(135deg,#121620,#0b0d12);
+ border-bottom:1px solid var(--line);padding:12px 16px}
+h1{font-size:17px;margin:0;font-weight:800;color:var(--gold2);letter-spacing:.2px}
+.sub{font-size:12.5px;color:var(--mut);margin:3px 0 0}
+main{padding:14px 16px 20px;max-width:760px;margin:0 auto}
+h2{font-size:19px;margin:26px 0 10px;color:var(--gold2);font-weight:800}
+h2:first-child{margin-top:4px}
+h3{font-size:15.5px;margin:18px 0 6px;color:var(--ink);font-weight:700}
+p{margin:9px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin:12px 0}
+.card.good{border-color:rgba(74,222,128,.35)}
+.card.warn{border-color:rgba(251,191,36,.4)}
+.card.bad{border-color:rgba(248,113,113,.45)}
+.big{font-size:17px;font-weight:700}
+.mut{color:var(--mut)}
+.mut.sm{font-size:13px}
+ul,ol{margin:8px 0;padding-left:22px}
+li{margin:7px 0}
+.step{display:flex;gap:12px;align-items:flex-start;margin:14px 0}
+.num{flex:0 0 32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+ color:#000;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:15px}
+a{color:var(--gold2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:rgba(201,162,39,.12);
+ color:var(--gold2);border:1px solid rgba(201,162,39,.45);border-radius:11px;padding:11px 15px;font-size:14.5px;
+ font-weight:700;min-height:46px;font-family:inherit;cursor:pointer;text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.prim{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;border:none}
+.btn.wide{width:100%;margin-top:10px}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;background:rgba(11,13,18,.97);
+ border-top:1px solid var(--line);padding:6px 4px calc(env(safe-area-inset-bottom) + 6px);backdrop-filter:blur(12px)}
+nav.tabs button{flex:1;min-width:0;background:none;border:none;color:var(--mut);font-size:9.5px;font-weight:700;
+ padding:6px 2px;min-height:52px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;cursor:pointer}
+nav.tabs button .ic{font-size:18px;line-height:1}
+nav.tabs button[aria-selected="true"]{color:var(--gold2)}
+.search{width:100%;background:#0b0d12;color:var(--ink);border:1px solid var(--line);border-radius:11px;
+ padding:12px 14px;font-size:16px;font-family:inherit;min-height:46px;margin:6px 0 4px}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:8px 0 4px;-webkit-overflow-scrolling:touch}
+.chip{flex:0 0 auto;background:rgba(201,162,39,.1);border:1px solid var(--line);color:var(--mut);
+ border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;min-height:40px;font-family:inherit;cursor:pointer}
+.chip[aria-pressed="true"]{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;border-color:transparent}
+.site{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin:10px 0}
+.site .top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.site .nm{font-size:16px;font-weight:800;color:var(--ink)}
+.site .tag{font-size:11px;font-weight:700;color:#000;background:var(--gold2);border-radius:999px;padding:2px 8px}
+.site .ds{font-size:13.5px;color:var(--mut);margin:5px 0 9px}
+.addr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;word-break:break-all;
+ background:#0b0d12;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:9px 10px;line-height:1.5}
+.addr b{color:var(--gold2)}
+.addr span{color:#7b8496}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.acts .btn{font-size:13px;padding:9px 13px;min-height:44px}
+.count{font-size:13px;color:var(--mut);margin:10px 0 2px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}
+th{color:var(--gold2);font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+.q{margin:14px 0}
+.q .qt{font-weight:700;font-size:15.5px;margin-bottom:9px}
+.q .opt{display:block;width:100%;text-align:left;background:#0b0d12;border:1px solid var(--line);color:var(--ink);
+ border-radius:11px;padding:12px 14px;font-size:14.5px;margin:7px 0;min-height:48px;font-family:inherit;cursor:pointer}
+.q .opt.ok{border-color:var(--ok);background:rgba(74,222,128,.12)}
+.q .opt.no{border-color:var(--bad);background:rgba(248,113,113,.12)}
+.q .exp{font-size:13.5px;color:var(--mut);margin-top:8px;padding-left:4px;border-left:2px solid var(--line);padding:6px 0 6px 10px}
+.hide{display:none}
+#vbadge{position:fixed;left:calc(env(safe-area-inset-left) + 8px);bottom:calc(env(safe-area-inset-bottom) + 62px);
+ z-index:60;font-size:10px;color:var(--gold2);background:rgba(11,13,18,.85);border:1px solid var(--line);
+ border-radius:7px;padding:3px 7px;opacity:.85}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 84px);
+ z-index:70;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-weight:800;font-size:14px;
+ padding:11px 18px;border-radius:11px;box-shadow:0 6px 22px rgba(0,0,0,.5);opacity:0;pointer-events:none;
+ transition:opacity .22s ease,transform .22s ease;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧅 Tor en clair</h1>
+  <p class="sub">Comprendre le « dark web », y aller en sécurité, et visiter ce qui vaut le détour.</p>
+</header>
+
+<main>
+<!-- ═══════════════ COMPRENDRE ═══════════════ -->
+<section id="v-comprendre">
+  <h2>C'est quoi, en 30 secondes</h2>
+  <div class="card">
+    <p class="big">Le « dark web », ce n'est pas un lieu. C'est une <b>façon de se connecter</b>.</p>
+    <p>Sur le web normal, ton téléphone parle <b>directement</b> au site : le site voit ton adresse, ton
+    opérateur voit quel site tu visites.</p>
+    <p>Avec <b>Tor</b>, ta connexion rebondit sur <b>3 ordinateurs au hasard</b> dans le monde, chacun
+    chiffré en couches (d'où l'oignon 🧅). Résultat : le site ne sait pas qui tu es, et ton opérateur
+    ne sait pas quel site tu visites. Personne n'a l'image complète.</p>
+    <p>Les adresses qui finissent en <b>.onion</b> sont des sites qui n'existent <b>que</b> dans ce réseau.
+    Ils sont invisibles depuis Safari ou Chrome — il faut le navigateur Tor.</p>
+  </div>
+
+  <h2>Est-ce que c'est légal ?</h2>
+  <div class="card good">
+    <p><b>Oui.</b> Utiliser Tor est parfaitement légal à Monaco, en France, et dans la quasi-totalité des
+    pays. Ce n'est pas un logiciel de pirate : il est financé entre autres par des fondations et des
+    universités, et il est utilisé tous les jours par des journalistes, des médecins, des ONG.</p>
+    <p class="mut sm">Ce qui reste illégal, c'est ce qui est illégal partout ailleurs : acheter de la drogue,
+    des données volées, des armes, ou consulter des contenus criminels. Le réseau ne change rien à la loi —
+    et contrairement à la légende, on s'y fait attraper régulièrement.</p>
+  </div>
+
+  <h2>Qui s'en sert, pour de vrai</h2>
+  <div class="card">
+    <table>
+      <tr><th>Qui</th><th>Pourquoi</th></tr>
+      <tr><td>Journalistes</td><td>Recevoir des documents d'une source sans l'exposer (Le Monde, BBC, NYT ont tous une adresse .onion)</td></tr>
+      <tr><td>Habitants de pays censurés</td><td>Lire la presse quand elle est bloquée (Iran, Russie, Chine)</td></tr>
+      <tr><td>Victimes de violences</td><td>Chercher de l'aide sans laisser de trace dans l'historique familial</td></tr>
+      <tr><td>Chercheurs, ONG</td><td>Travailler sans être pistés</td></tr>
+      <tr><td>Gens ordinaires</td><td>Ne pas être suivi par la publicité. C'est tout.</td></tr>
+    </table>
+  </div>
+
+  <h2>Les 4 idées fausses</h2>
+  <div class="card">
+    <p><b>« C'est 90 % du web. »</b> Faux. Le réseau Tor compte quelques dizaines de milliers de sites
+    actifs — le web normal en compte des centaines de millions. C'est un <b>village</b>, pas un continent.</p>
+    <p><b>« On se fait pirater rien qu'en regardant. »</b> Faux. Regarder une page ne pirate pas ton
+    téléphone. Ce qui pirate, c'est <b>télécharger</b> un fichier, <b>installer</b> quelque chose, ou
+    <b>taper</b> ses informations. Voir la partie Sécurité.</p>
+    <p><b>« On est anonyme, donc invulnérable. »</b> Faux. Tor cache <i>d'où tu viens</i>. Si tu te connectes
+    à ton compte Gmail dedans, tu viens de dire qui tu es.</p>
+    <p><b>« Il n'y a que des trucs illégaux. »</b> Faux, mais il y en a. D'où cet outil : je t'ai mis les
+    endroits qui valent le détour, pas un annuaire du pire.</p>
+  </div>
+
+  <h2>Ce que cet outil ne contient pas</h2>
+  <div class="card warn" id="exclus">
+    <p>Tu m'avais demandé « un catalogue de tous les sites, connus et inconnus ». Je ne l'ai
+    <b>volontairement pas fait</b>, et voilà pourquoi, honnêtement :</p>
+    <ul>
+      <li>Un annuaire exhaustif, c'est d'abord un annuaire de <b>marchés illégaux</b>. Je ne construis pas ça.</li>
+      <li>C'est aussi là que se trouvent <b>presque toutes les arnaques</b> : faux sites, pièges à curieux,
+      rançons. Tu ne perds rien d'utile, tu évites le risque.</li>
+      <li>Ces annuaires (type « hidden wiki ») sont pour la plupart <b>eux-mêmes des pièges</b> :
+      les adresses y sont remplacées par des copies frauduleuses.</li>
+    </ul>
+    <p>Si un jour tu veux explorer au-delà de cette liste : passe par le moteur de recherche
+    <b>Ahmia</b> (dans le catalogue), qui filtre les contenus criminels. C'est la bonne porte.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ Y ALLER ═══════════════ -->
+<section id="v-aller" class="hide">
+  <h2>Y aller depuis ton iPhone</h2>
+  <p class="mut">Gratuit, 5 minutes, rien à configurer.</p>
+
+  <div class="card">
+    <div class="step"><div class="num">1</div><div>
+      <b>Installe Onion Browser</b> (gratuit, c'est le navigateur Tor officiellement recommandé sur iPhone).
+      <a class="btn wide" href="https://apps.apple.com/app/onion-browser/id519296448" target="_blank" rel="noopener noreferrer">📲 Ouvrir dans l'App Store</a>
+    </div></div>
+    <div class="step"><div class="num">2</div><div>
+      <b>Ouvre-le et attends la connexion.</b> Il affiche « Connexion au réseau Tor ». Ça prend
+      10 à 40 secondes la première fois. C'est normal, c'est plus lent qu'un navigateur classique.
+    </div></div>
+    <div class="step"><div class="num">3</div><div>
+      <b>Mets la sécurité au maximum.</b> Dans les réglages d'Onion Browser, choisis le niveau
+      <b>« Or » / « Safer »</b> : ça coupe JavaScript, et c'est ce qui te protège vraiment.
+      Certaines pages seront moins jolies — c'est le prix, et il est faible.
+    </div></div>
+    <div class="step"><div class="num">4</div><div>
+      <b>Reviens ici, copie une adresse</b> dans l'onglet Catalogue (bouton « Copier »),
+      puis colle-la dans Onion Browser. C'est tout.
+    </div></div>
+  </div>
+
+  <h2>Depuis un Mac ou un PC</h2>
+  <div class="card">
+    <p>Installe <b>Tor Browser</b>, le navigateur officiel. Il fait tout tout seul.</p>
+    <a class="btn wide prim" href="https://www.torproject.org/download/" target="_blank" rel="noopener noreferrer">⬇️ torproject.org/download</a>
+    <p class="mut sm" style="margin-top:12px">Télécharge <b>uniquement</b> depuis torproject.org. Les faux
+    « Tor Browser » distribués ailleurs sont l'arnaque n°1 du domaine : ils marchent, mais ils regardent.</p>
+  </div>
+
+  <h2>À ne surtout pas faire</h2>
+  <div class="card bad" id="ponts">
+    <p><b>Ne passe jamais par un « pont web » .onion</b> — ces sites en <code>.ly</code>, <code>.to</code>,
+    <code>.cab</code> qui promettent d'ouvrir du .onion dans Safari sans rien installer.</p>
+    <p>Ils fonctionnent, oui : parce qu'ils se mettent <b>au milieu</b>. Ils voient tout ce que tu fais,
+    en clair, avec ton vrai téléphone en face. C'est exactement l'inverse de ce que tu cherches.</p>
+    <p class="mut sm">Règle simple : si une adresse .onion s'ouvre dans <b>Safari</b>, c'est que quelqu'un
+    est au milieu. Ferme.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ CATALOGUE ═══════════════ -->
+<section id="v-catalogue" class="hide">
+  <h2>Explorer tout le réseau</h2>
+  <div class="card good" id="explorer">
+    <p class="big">Ma liste ci-dessous, c'est 20 adresses sûres. Mais tu veux voir <b>tout</b> — et c'est
+    possible : le réseau a un moteur de recherche.</p>
+    <p><b>Ahmia</b> indexe le réseau Tor en entier et fonctionne comme Google : tu tapes, il cherche.
+    Il n'enlève qu'une seule chose de son index — les contenus pédocriminels, dont la simple consultation
+    est un crime. Tout le reste, tu le trouveras.</p>
+    <div class="addr" id="ahmia-addr"></div>
+    <div class="acts">
+      <button class="btn prim" type="button" id="copie-ahmia">📋 Copier Ahmia</button>
+      <a class="btn" href="https://ahmia.fi/" target="_blank" rel="noopener noreferrer">🔎 Prouver l'adresse</a>
+    </div>
+  </div>
+
+  <h3>La méthode, pour ne pas y laisser des plumes</h3>
+  <div class="card">
+    <p><b>1. Pars toujours d'un moteur, jamais d'un annuaire trouvé au hasard.</b> Les annuaires
+    communautaires (type « wiki ») existent, tu vas en croiser — mais la plupart ont été repris par des
+    escrocs qui y remplacent les adresses par leurs copies. Je ne t'en donne aucun : ce ne serait pas te
+    rendre service, ce serait te donner une liste de pièges.</p>
+    <p><b>2. Juge un site en 10 secondes</b> : est-ce qu'il te demande de l'argent ? de télécharger ?
+    de t'inscrire avec un vrai mail ? → dehors. Est-ce qu'il promet un gain ? → c'est une arnaque, sans exception.</p>
+    <p><b>3. Une adresse trouvée quelque part ne vaut rien tant qu'elle n'est pas recoupée</b> à une
+    deuxième source indépendante. C'est la seule parade contre le faux site.</p>
+    <p><b>4. Ce que tu vas trouver, honnêtement</b> : beaucoup de pages mortes (les adresses tombent
+    vite), beaucoup d'arnaques pures, des forums, des blogs, des bibliothèques, et des marchés —
+    dont une large part sont soit des escroqueries, soit surveillés. Le « dark web » du cinéma
+    n'existe pas : c'est surtout un village en ruine avec quelques très bons endroits.</p>
+  </div>
+
+  <h3>Les 3 choses qui ne sont pas négociables</h3>
+  <div class="card bad">
+    <p>Tu explores ce que tu veux, c'est ton choix et je te donne les moyens de le faire.
+    Trois exceptions, pour ta protection, pas pour la morale :</p>
+    <p><b>Les contenus pédocriminels.</b> La consultation seule est un crime, il n'y a pas de zone grise,
+    et c'est le domaine le plus surveillé du réseau. Si tu tombes dessus par accident : ferme, ne
+    télécharge rien, et signale.</p>
+    <p><b>Commander une violence.</b> 100 % de ces « services » sont des escroqueries ou des pièges
+    policiers. Il n'y a aucune exception documentée. Zéro.</p>
+    <p><b>Acheter quoi que ce soit.</b> Pas un jugement : un calcul. Tu perds ton argent (l'escroquerie
+    à la sortie est la norme), tu exposes un moyen de paiement, et les marchés sont infiltrés depuis des
+    années. Les gens se font attraper à la livraison, pas en ligne.</p>
+  </div>
+
+  <h2>Vérifier une adresse avant d'y aller</h2>
+  <div class="card" id="verif">
+    <p>Le piège numéro un du réseau, c'est la <b>fausse adresse</b> : une copie qui commence pareil
+    que la vraie. Colle ici n'importe quelle adresse trouvée ailleurs — je la compare à mon
+    catalogue et je te dis ce qu'elle est. <b>Sans réseau, rien n'est envoyé.</b></p>
+    <input class="search" id="qverif" type="search" placeholder="Colle une adresse .onion" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div id="rverif"></div>
+  </div>
+
+  <h2>Mes adresses</h2>
+  <div class="card" id="perso">
+    <p>Quand tu trouves un endroit qui vaut le coup avec le moteur, garde-le ici. <b>Rien n'est
+    enregistré sur ton téléphone</b> : tes adresses vivent le temps de la page — mais si tu fais
+    « Garder hors ligne », <b>elles partent dans ta copie</b> et te suivent pour toujours.</p>
+    <input class="search" id="pnom" type="text" placeholder="Nom (ex : Forum sécurité)" autocomplete="off">
+    <input class="search" id="padr" type="text" placeholder="Adresse .onion" autocomplete="off" autocorrect="off" spellcheck="false">
+    <input class="search" id="pnote" type="text" placeholder="À quoi ça sert (pour t'en souvenir)" autocomplete="off">
+    <button class="btn prim wide" type="button" id="pajout">➕ Ajouter à mon catalogue</button>
+    <p class="mut sm" id="pinfo" style="margin-top:9px"></p>
+  </div>
+
+  <h2>Le catalogue vérifié</h2>
+  <p class="mut">Que des services <b>légitimes</b>, chacun avec la preuve de son adresse. Copie, colle dans
+  Onion Browser.</p>
+  <input class="search" id="q" type="search" placeholder="Chercher (presse, moteur, mail…)" autocomplete="off" autocorrect="off" spellcheck="false">
+  <div class="chips" id="cats"></div>
+  <p class="count" id="count"></p>
+  <div id="list"></div>
+  <div class="card warn" style="margin-top:18px">
+    <p><b>Comment je sais que ces adresses sont les bonnes ?</b></p>
+    <p>Chaque fiche a un bouton <b>« Prouver l'adresse »</b> : il ouvre la page <b>du site officiel lui-même</b>
+    (bbc.co.uk, torproject.org, proton.me…) où l'organisation publie son adresse .onion. Compare, et tu es sûr.</p>
+    <p class="mut sm">Relevées à leurs sources publiques le 15.09.2026, puis <b>réellement ouvertes
+    à travers Tor le 17.09.2026</b> : <b>15 des 20 ont répondu</b> (Ahmia, DuckDuckGo, Tor Project,
+    BBC News, The Guardian, BBC Learning English, Deutsche Welle, Radio Free Europe, Voice of America,
+    CIA, Facebook, Proton Mail, Riseup, Systemli, Qubes OS). Les <b>5 autres n'ont pas répondu depuis
+    la machine de test</b> (New York Times, ProPublica, The Intercept, Bellingcat, Privacy
+    International) — ce n'est <b>pas</b> une preuve qu'elles sont mortes.</p>
+    <p class="mut sm"><b>La preuve que le chiffre bouge</b> : au premier passage, 13 avaient répondu ;
+    au second, <b>Tor Project et The Guardian ont répondu du deuxième essai</b>, et DuckDuckGo —
+    qui avait répondu du premier coup la fois d'avant — a eu besoin de deux tentatives. Un circuit
+    Tor se construit au hasard et cale souvent depuis un centre de données : « muette ici, ce
+    matin » ne veut pas dire « morte ». Le bouton « Prouver l'adresse » reste la vérité : c'est
+    l'organisation elle-même qui publie son adresse.</p>
+    <p class="mut sm"><b>Pour les ouvrir toi-même, en une commande</b> : ouvre le <b>Tor Browser</b>
+    et laisse-le ouvert, puis lance <code>npm run tor:onion</code>. Il sort un rapport daté, adresse
+    par adresse. S'il ne trouve aucun Tor, il <b>refuse de répondre</b> plutôt que de te dire à tort
+    que tout est mort ; et une adresse muette a droit à un <b>deuxième essai</b> avant d'être comptée
+    injoignable.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ SÉCURITÉ ═══════════════ -->
+<section id="v-secu" class="hide">
+  <h2>Ce que cette page laisse comme trace</h2>
+  <div class="card" id="traces">
+    <p class="big">Aucun blocage, aucun filtre, aucun journal. Tu fais ce que tu veux : cette page
+    ne voit rien de ce que tu fais dans Tor.</p>
+    <p><b>Ce qu'elle stocke sur ton téléphone :</b> une seule chose — le dernier onglet ouvert.
+    Rien d'autre. Pas de cookie, pas de mouchard, aucune de tes identités générées.</p>
+    <p><b>Ce qu'elle envoie :</b> <b>rien</b>. Elle est verrouillée pour ne parler à aucun serveur —
+    même la balise de suivi que Cloudflare ajoute automatiquement sur les sites est bloquée ici.</p>
+    <p><b>Ce qui reste visible, et que je ne peux pas effacer :</b> quand tu ouvres cette page,
+    ton opérateur et l'hébergeur voient que ton téléphone se connecte à <code>tor.kd-mc.com</code>.
+    Pas ce que tu lis, pas ce que tu copies — juste que tu es venu.</p>
+    <p><b>Les deux façons d'effacer même ça :</b></p>
+    <ol>
+      <li><b>Garde la page hors ligne</b> (bouton ci-dessous) : tu l'ouvres depuis tes Fichiers,
+      sans réseau du tout. Plus aucune connexion, donc plus aucune trace, et elle marche en avion.</li>
+      <li><b>Ou ouvre cette page dans Onion Browser</b> : la visite passe alors par Tor comme le reste.</li>
+    </ol>
+    <div class="acts">
+      <button class="btn prim" type="button" id="hors-ligne">💾 Garder hors ligne</button>
+      <button class="btn" type="button" id="efface">🧹 Effacer mes traces</button>
+    </div>
+    <p class="mut sm" style="margin-top:10px">Sur iPhone, le fichier se range dans Fichiers →
+    Téléchargements. Ouvre-le de là : tout fonctionne à l'identique, catalogue et générateur compris.</p>
+  </div>
+
+  <h2>Les 8 règles</h2>
+  <p class="mut">Suis-les et il ne peut pratiquement rien t'arriver.</p>
+  <div class="card">
+    <ol>
+      <li><b>Ne télécharge rien.</b> Ni PDF, ni image, ni « logiciel ». C'est le vecteur n°1.</li>
+      <li><b>Ne te connecte à aucun de tes comptes.</b> Gmail, Facebook, ta banque : tu casses ton anonymat en une seconde.</li>
+      <li><b>N'utilise jamais ton vrai nom, ni tes vrais mails, ni ton vrai mot de passe.</b></li>
+      <li><b>Aucun paiement. Jamais.</b> Ni carte, ni crypto, ni « juste pour voir ». Il n'y a rien à acheter là-bas qui soit pour toi.</li>
+      <li><b>Sécurité au maximum</b> dans le navigateur (JavaScript coupé).</li>
+      <li><b>Vérifie l'adresse caractère par caractère</b> — les 8 premiers <b>et</b> les 8 derniers. Les copies frauduleuses ne diffèrent que par le milieu.</li>
+      <li><b>Pas de caméra, pas de micro, pas de photo.</b> Refuse toute demande d'autorisation.</li>
+      <li><b>Si une page te met mal à l'aise, ferme.</b> Pas de curiosité. Certaines choses ne se « dé-voient » pas, et certaines sont un délit à la simple consultation.</li>
+    </ol>
+  </div>
+
+  <h2>Les 6 arnaques que tu vas croiser</h2>
+  <div class="card">
+    <p><b>1. Le faux site.</b> Une copie parfaite d'un vrai, à une adresse presque identique.
+    <span class="mut">→ Parade : la fiche du catalogue et son bouton « Prouver l'adresse ».</span></p>
+    <p><b>2. Le faux Tor Browser.</b> Téléchargé ailleurs que torproject.org, il espionne.
+    <span class="mut">→ Parade : un seul site de téléchargement.</span></p>
+    <p><b>3. « Ton téléphone est infecté, clique ici. »</b> Aucune page web ne peut savoir ça.
+    <span class="mut">→ Parade : ferme l'onglet.</span></p>
+    <p><b>4. Le service qui « double ton argent ».</b> 100 % des cas sont des vols.
+    <span class="mut">→ Parade : règle n°4, aucun paiement.</span></p>
+    <p><b>5. Le fichier « preuve » ou « catalogue ».</b> C'est un virus, dans la quasi-totalité des cas.
+    <span class="mut">→ Parade : règle n°1, aucun téléchargement.</span></p>
+    <p><b>6. Le chantage par mail.</b> « J'ai filmé ton écran, paye. » Mensonge industriel envoyé à des millions de gens.
+    <span class="mut">→ Parade : supprime, ne réponds jamais, ne paye jamais.</span></p>
+  </div>
+
+  <h2>Si ça tourne mal</h2>
+  <div class="card">
+    <p><b>Tu as téléchargé ou installé quelque chose ?</b> Ferme le navigateur, supprime le fichier,
+    et dis-le-moi — on regarde ensemble.</p>
+    <p><b>Tu as payé ou donné des informations ?</b> Préviens immédiatement ta banque, change les mots de
+    passe concernés, et garde les captures d'écran.</p>
+    <p><b>Tu es tombé sur un contenu criminel ?</b> Ferme, ne télécharge rien, ne partage rien.
+    Signalement en France/Monaco : <a href="https://www.internet-signalement.gouv.fr/" target="_blank" rel="noopener noreferrer">internet-signalement.gouv.fr</a>.</p>
+  </div>
+
+  <h2>Ce que Tor ne fait pas</h2>
+  <div class="card">
+    <p>Honnêtement, pour que tu ne te croies pas plus protégé que tu ne l'es :</p>
+    <ul>
+      <li>Il ne protège pas de ce que <b>tu racontes toi-même</b> (ton nom, une photo, un détail qui t'identifie).</li>
+      <li>Il ne protège pas si tu <b>installes</b> quelque chose.</li>
+      <li>Il ne rend pas légal ce qui est illégal.</li>
+      <li>Il est <b>lent</b> : c'est le prix des 3 rebonds, pas une panne.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════════ QUIZ ═══════════════ -->
+<section id="v-quiz" class="hide">
+  <h2>Vérifie que tu as tout</h2>
+  <p class="mut">6 questions. Réponds : je te dis pourquoi, à chaque fois.</p>
+  <div id="quiz"></div>
+  <p class="count" id="score"></p>
+</section>
+
+<!-- ═══════════════ IDENTITÉ ═══════════════ -->
+<section id="v-identite" class="hide">
+  <h2>Ton identité dédiée</h2>
+  <div class="card">
+    <p class="big">La règle d'or : <b>ce que tu fais là-bas ne doit jamais toucher ce que tu es ici.</b></p>
+    <p>Une identité séparée — un pseudo, un mot de passe, une boîte mail qui ne servent qu'à ça — c'est
+    ce qui fait que même si un site est piraté demain, rien ne remonte jusqu'à toi. C'est de l'hygiène
+    normale, la même que les journalistes et les chercheurs.</p>
+  </div>
+
+  <div class="card good" id="promesse">
+    <p><b>Tout se fabrique ici, sur ton téléphone.</b> Rien n'est envoyé, rien n'est enregistré,
+    personne d'autre ne le voit — moi non plus. Ferme la page et tout disparaît : copie-la avant.</p>
+    <button class="btn prim wide" type="button" id="gen">🎲 Créer mon identité</button>
+    <div id="fiche" class="hide" style="margin-top:14px"></div>
+  </div>
+
+  <h2>Créer la boîte mail — 2 minutes</h2>
+  <div class="card">
+    <div class="step"><div class="num">1</div><div>
+      <b>Va chez Tuta</b> (ex-Tutanota, allemand, chiffré). C'est le seul grand service gratuit qui
+      accepte encore une inscription <b>sans numéro de téléphone</b>, y compris depuis Tor.
+      <a class="btn wide" href="https://app.tuta.com/signup" target="_blank" rel="noopener noreferrer">📧 Ouvrir l'inscription Tuta</a>
+    </div></div>
+    <div class="step"><div class="num">2</div><div>
+      <b>Utilise le nom d'utilisateur et le mot de passe générés ci-dessus.</b> Ne mets aucun mail de
+      secours, aucun numéro. Note la phrase de récupération qu'ils te donnent : sans elle, le compte est
+      perdu pour toujours (c'est le principe du chiffrement).
+    </div></div>
+    <div class="step"><div class="num">3</div><div>
+      <b>Si l'inscription est mise « en attente de validation » (souvent 48 h quand on passe par Tor)</b> :
+      c'est normal, c'est leur anti-spam. Deux options : attendre, ou créer le compte depuis ta connexion
+      normale <b>puis ne l'utiliser que dans Tor</b> ensuite.
+    </div></div>
+    <div class="step"><div class="num">4</div><div>
+      <b>Range la fiche dans ton coffre</b> — tu en as déjà un.
+      <a class="btn wide" href="https://coffre.kd-mc.com" target="_blank" rel="noopener noreferrer">🔐 Ouvrir mon coffre</a>
+    </div></div>
+    <p class="mut sm">Autres possibilités : <b>Disroot</b> (associatif, sans numéro) et <b>Proton</b>
+    (mais Proton demande souvent un téléphone quand l'inscription vient de Tor — crée-le depuis ta
+    connexion normale si tu le choisis). <b>Riseup</b> est excellent mais sur invitation seulement.</p>
+  </div>
+
+  <h2>Les 7 règles d'étanchéité</h2>
+  <div class="card">
+    <ol>
+      <li><b>Cette identité ne sert QU'À ÇA.</b> Une seule réutilisation ailleurs, et les deux mondes sont reliés pour toujours.</li>
+      <li><b>Jamais ce mot de passe ailleurs</b>, et jamais un de tes mots de passe habituels ici.</li>
+      <li><b>Jamais ton vrai mail en secours</b>, jamais ton numéro. C'est le lien n°1 qui trahit les gens.</li>
+      <li><b>Seulement dans Tor.</b> Si tu ouvres cette boîte mail depuis Safari une seule fois, ton adresse IP est enregistrée à côté du compte.</li>
+      <li><b>Aucune photo, aucun document</b> venant de ton téléphone : ils contiennent le lieu, l'appareil, parfois ton nom.</li>
+      <li><b>Attention à ta façon d'écrire.</b> On identifie quelqu'un à ses tournures, ses fautes, ses horaires. Fais court.</li>
+      <li><b>Aucun paiement, jamais</b>, avec cette identité comme avec l'autre.</li>
+    </ol>
+    <p class="mut sm">Honnêtement : une identité séparée te protège des fuites et du recoupement. Elle ne
+    te rend pas intouchable, et elle ne change rien à ce qui est illégal — ça, aucun outil ne le fait.</p>
+  </div>
+</section>
+</main>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-v="comprendre" aria-selected="true"><span class="ic">🧭</span>Comprendre</button>
+  <button role="tab" data-v="aller" aria-selected="false"><span class="ic">🚪</span>Y aller</button>
+  <button role="tab" data-v="catalogue" aria-selected="false"><span class="ic">📚</span>Catalogue</button>
+  <button role="tab" data-v="identite" aria-selected="false"><span class="ic">🪪</span>Identité</button>
+  <button role="tab" data-v="secu" aria-selected="false"><span class="ic">🛡</span>Sécurité</button>
+  <button role="tab" data-v="quiz" aria-selected="false"><span class="ic">🎓</span>Quiz</button>
+</nav>
+<div id="vbadge">v1.7</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Tor en clair — v1.0 (2026-09-15).
+   Page 100% autonome : aucune requête réseau (CSP connect-src 'none'), aucune donnée collectée,
+   rien d'enregistré. Les adresses .onion NE SONT PAS cliquables par choix : un clic depuis Safari
+   ne peut aboutir que sur un « pont web » qui casserait l'anonymat. On copie, on colle dans Tor. */
+"use strict";
+
+/* Chaque entrée : n=nom, d=à quoi ça sert, o=adresse .onion, s=page officielle qui publie l'adresse, c=catégorie */
+var SITES = [
+ {c:"Commencer", n:"Ahmia", d:"Moteur de recherche pour le réseau Tor. Filtre activement les contenus criminels — c'est LA bonne porte pour explorer au-delà de cette liste.", o:"juhanurmihxlp77nkq76byazcldy2hlmovfu2epvl5ankdibsot4csyd.onion", s:"https://ahmia.fi/"},
+ {c:"Commencer", n:"DuckDuckGo", d:"Le moteur de recherche classique, en version .onion. Cherche le web normal, sans te pister.", o:"duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion", s:"https://duckduckgo.com/duckduckgo-help-pages/results/sources/"},
+ {c:"Commencer", n:"Tor Project", d:"Le site officiel du réseau lui-même : documentation, téléchargements, aide.", o:"2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion", s:"https://www.torproject.org/"},
+
+ {c:"Presse", n:"BBC News", d:"Toute l'actualité BBC, y compris dans les pays où elle est censurée.", o:"www.bbcnewsd73hkzno2ini43t4gblxvycyac5aw4gnv7t2rccijh7745uqd.onion", s:"https://www.bbc.co.uk/news/technology-50150981"},
+ {c:"Presse", n:"The Guardian", d:"Le quotidien britannique, version .onion officielle.", o:"www.guardian2zotagl6tmjucg3lrhxdk4dw3lhbqnkvvkywawy3oqfoprid.onion", s:"https://www.theguardian.com/help/insideguardian/2022/may/30/guardian-launches-tor-onion-service"},
+ {c:"Presse", n:"The New York Times", d:"Le NYT en .onion — le premier grand journal à l'avoir fait.", o:"www.nytimesn7cgmftshazwhfgzm37qxb44r64ytbb2dj3x62d2lljsciiyd.onion", s:"https://www.nytimes.com/2017/10/27/technology/nyt-tor-onion.html"},
+ {c:"Presse", n:"ProPublica", d:"Journalisme d'investigation à but non lucratif. Pionnier du .onion.", o:"p53lf57qovyuvwsc6xnrppyply3vtqm7l6pcobkmyqsiofyeznfu5uqd.onion", s:"https://www.propublica.org/nerds/a-more-secure-and-anonymous-propublica-using-tor-hidden-services"},
+ {c:"Presse", n:"The Intercept", d:"Investigation, sécurité, surveillance d'État.", o:"27m3p2uv7igmj6kvd4ql3cct5h3sdwrsajovkkndeufumzyfhlfev4qd.onion", s:"https://theintercept.com/2021/04/28/tor-browser-onion/"},
+ {c:"Presse", n:"Deutsche Welle", d:"Le média international allemand, en plusieurs langues dont le français.", o:"www.dwnewsgngmhlplxy6o2twtfgjnrnjxbegbwqx6wnotdhkzt562tszfid.onion", s:"https://www.dw.com/de/schutz-vor-hackern-darum-wird-tor-noch-sicherer/a-57953191"},
+ {c:"Presse", n:"Radio Free Europe", d:"Presse destinée aux pays où l'information est contrôlée.", o:"www.rferlo2zxgv23tct66v45s5mecftol5vod3hf4rqbipfp46fqu2q56ad.onion", s:"https://www.rferl.org/"},
+ {c:"Presse", n:"Voice of America", d:"Média public américain, très censuré ailleurs — d'où le .onion.", o:"www.voanews5aitmne6gs2btokcacixclgfl43cv27sirgbauyyjylwpdtqd.onion", s:"https://www.voanews.com/"},
+ {c:"Presse", n:"Bellingcat", d:"Enquête en sources ouvertes (OSINT) — le collectif qui a documenté de vraies affaires d'État.", o:"bellcatmbguthn3age23lrbseln2lryzv3mt7whis7ktjw4qrestbzad.onion", s:"https://www.bellingcat.com/resources/2022/04/22/how-to-beat-russias-block-on-bellingcat/"},
+
+ {c:"Apprendre", n:"BBC Learning English", d:"Cours d'anglais gratuits de la BBC, accessibles même derrière une censure.", o:"www.bbcweb3hytmzhn5d532owbu6oqadra5z3ar726vq5kgwwn6aucdccrad.onion/learningenglish/", s:"https://www.bbc.co.uk/news/technology-50150981"},
+ {c:"Apprendre", n:"CIA", d:"Oui, la CIA a un site .onion officiel — pour que ses informateurs puissent la contacter sans se faire repérer.", o:"ciadotgov4sjwlzihbbgxnqg3xiyrg7so2r2o3lt5wz5ypk4sxyjstad.onion", s:"https://www.cia.gov/stories/story/cias-latest-layer-an-onion-site/"},
+
+ {c:"Réseaux", n:"Facebook", d:"Oui, Facebook a une adresse .onion officielle — pour les pays qui le bloquent. Attention : t'y connecter avec ton compte dit exactement qui tu es.", o:"facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.onion", s:"https://en.wikipedia.org/wiki/Facebook_onion_address"},
+ {c:"Vie privée", n:"Proton Mail", d:"La messagerie chiffrée suisse, en .onion. (Créer un compte depuis Tor est souvent refusé — c'est normal.)", o:"protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion", s:"https://proton.me/blog/updated-tor-site"},
+ {c:"Vie privée", n:"Riseup", d:"Collectif qui fournit mail et outils sécurisés aux militants et associations.", o:"vww6ybal4bd7szmgncyruucpgfkqahzddi37ktceo3ah7ngmcopnpyyd.onion", s:"https://riseup.net/en/security/network-security/tor"},
+ {c:"Vie privée", n:"Systemli", d:"Équivalent allemand de Riseup : services libres et sans traçage.", o:"7sk2kov2xwx6cbc32phynrifegg6pklmzs7luwcggtzrnlsolxxuyfyd.onion", s:"https://www.systemli.org/en/service/onion.html"},
+ {c:"Vie privée", n:"Privacy International", d:"ONG qui attaque en justice la surveillance de masse. Rapports et enquêtes.", o:"privacy2ws3ora5p4qpzptqr32qm54gf5ifyzvo5bhl7bb254c6nbiyd.onion", s:"https://privacyinternational.org/"},
+ {c:"Vie privée", n:"Qubes OS", d:"Le système d'exploitation le plus cloisonné qui existe. Pour comprendre à quoi ressemble la sécurité poussée à l'extrême.", o:"qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion", s:"https://www.qubes-os.org/"}
+];
+
+var QUIZ = [
+ {q:"Tu tombes sur une adresse .onion et elle s'ouvre dans Safari. Que se passe-t-il ?",
+  a:["C'est normal, Safari gère le .onion","Quelqu'un est au milieu et voit tout — je ferme","C'est plus rapide comme ça"],
+  r:1, e:"Safari ne sait pas parler au réseau Tor. Si la page s'ouvre, c'est qu'un « pont web » sert d'intermédiaire — et il voit absolument tout, avec ton vrai téléphone en face."},
+ {q:"Un site te propose un fichier « catalogue complet des sites cachés ». Tu fais quoi ?",
+  a:["Je le télécharge, ça m'intéresse","Je ne télécharge rien, jamais","Je le télécharge mais je ne l'ouvre pas"],
+  r:1, e:"Règle n°1. Le téléchargement est le vecteur d'attaque n°1, et un fichier peut agir dès qu'il est ouvert — ou même être piégé au moment de l'aperçu."},
+ {q:"Tu veux vérifier qu'une adresse .onion est la vraie. Tu regardes quoi ?",
+  a:["Le début de l'adresse suffit","Le début ET la fin, caractère par caractère","Le design du site, qui est reconnaissable"],
+  r:1, e:"Les faux sites génèrent des adresses qui commencent pareil. Seule la comparaison complète — début et fin — protège. Et le design se copie en 5 minutes."},
+ {q:"Tu es sur Tor. Tu te connectes à ta boîte Gmail pour vérifier un mail. Problème ?",
+  a:["Non, Tor me protège quand même","Oui : je viens de dire exactement qui je suis","Non, tant que je me déconnecte après"],
+  r:1, e:"Tor cache d'où tu viens, pas qui tu es. Te connecter à un compte à ton nom relie ton identité à toute ta session."},
+ {q:"Une page affiche « Votre iPhone est infecté, cliquez pour nettoyer ».",
+  a:["Je clique, c'est un avertissement","Je ferme : aucune page web ne peut savoir ça","J'installe l'antivirus proposé"],
+  r:1, e:"Aucun site web ne peut analyser ton téléphone. C'est toujours une arnaque, sur Tor comme ailleurs."},
+ {q:"Au fond, Tor te protège de quoi ?",
+  a:["De tout, je suis invulnérable","De la surveillance de ma connexion — pas de ce que je fais moi","De rien, c'est du folklore"],
+  r:1, e:"C'est exactement ça. Tor protège le transport. Ce que tu télécharges, installes, payes ou racontes, ça ne dépend que de toi."}
+];
+
+var $ = function(s){ return document.querySelector(s); };
+
+/* ---------- Toast ---------- */
+var tT = null;
+function toast(msg){
+  var t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  if (tT) clearTimeout(tT);
+  tT = setTimeout(function(){ t.classList.remove("on"); }, 2300);
+}
+
+/* ---------- Onglets ---------- */
+var VUES = ["comprendre","aller","catalogue","identite","secu","quiz"];
+function montre(v){
+  VUES.forEach(function(x){
+    var el = document.getElementById("v-" + x);
+    if (el) el.classList.toggle("hide", x !== v);
+  });
+  document.querySelectorAll('nav.tabs button').forEach(function(b){
+    b.setAttribute("aria-selected", b.getAttribute("data-v") === v ? "true" : "false");
+  });
+  window.scrollTo(0, 0);
+  try { localStorage.setItem("tor_vue", v); } catch (e) {}
+}
+document.querySelector("nav.tabs").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-v]");
+  if (b) montre(b.getAttribute("data-v"));
+});
+
+/* ---------- Catalogue ---------- */
+var filtreCat = "Tout";
+var CATS = ["Tout"].concat(SITES.map(function(s){ return s.c; }).filter(function(c, i, a){ return a.indexOf(c) === i; }));
+
+function renduChips(){
+  var box = $("#cats"); box.textContent = "";
+  CATS.forEach(function(c){
+    var b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = c;
+    b.setAttribute("aria-pressed", c === filtreCat ? "true" : "false");
+    b.addEventListener("click", function(){ filtreCat = c; renduChips(); renduListe(); });
+    box.appendChild(b);
+  });
+}
+
+/* Met en évidence les 8 premiers et 8 derniers caractères : c'est là que se vérifie une adresse. */
+function adresseHtml(o){
+  var el = document.createElement("div");
+  el.className = "addr";
+  var corps = o.replace(/\/.*$/, "");        /* enlève un éventuel chemin */
+  var chemin = o.slice(corps.length);
+  var b1 = document.createElement("b"); b1.textContent = corps.slice(0, 8);
+  var mid = document.createElement("span"); mid.textContent = corps.slice(8, -14);
+  var b2 = document.createElement("b"); b2.textContent = corps.slice(-14);
+  el.appendChild(b1); el.appendChild(mid); el.appendChild(b2);
+  if (chemin) { var sp = document.createElement("span"); sp.textContent = chemin; el.appendChild(sp); }
+  return el;
+}
+
+function copie(txt){
+  var ok = function(){ toast("✅ Adresse copiée — colle-la dans Onion Browser"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(ok, function(){ copieRepli(txt, ok); });
+  } else { copieRepli(txt, ok); }
+}
+function copieRepli(txt, ok){
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = txt; ta.setAttribute("readonly", "");
+    ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, 99999);
+    var r = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (r) { ok(); return; }
+  } catch (e) {}
+  toast("Copie impossible — sélectionne l'adresse à la main");
+}
+
+function renduListe(){
+  var q = ($("#q").value || "").trim().toLowerCase();
+  var box = $("#list"); box.textContent = "";
+  var n = 0;
+  SITES.forEach(function(s){
+    if (filtreCat !== "Tout" && s.c !== filtreCat) return;
+    if (q && (s.n + " " + s.d + " " + s.c).toLowerCase().indexOf(q) < 0) return;
+    n++;
+    var card = document.createElement("div"); card.className = "site";
+    var top = document.createElement("div"); top.className = "top";
+    var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = s.n;
+    var tg = document.createElement("span"); tg.className = "tag"; tg.textContent = s.c;
+    top.appendChild(nm); top.appendChild(tg);
+    var ds = document.createElement("p"); ds.className = "ds"; ds.textContent = s.d;
+    var acts = document.createElement("div"); acts.className = "acts";
+    var bc = document.createElement("button"); bc.className = "btn prim"; bc.type = "button";
+    bc.textContent = "📋 Copier l'adresse";
+    bc.addEventListener("click", function(){ copie(s.o); });
+    var bs = document.createElement("a"); bs.className = "btn";
+    bs.href = s.s; bs.target = "_blank"; bs.rel = "noopener noreferrer";
+    bs.textContent = "🔎 Prouver l'adresse";
+    acts.appendChild(bc); acts.appendChild(bs);
+    card.appendChild(top); card.appendChild(ds); card.appendChild(adresseHtml(s.o)); card.appendChild(acts);
+    box.appendChild(card);
+  });
+  $("#count").textContent = n + (n > 1 ? " services" : " service") + (q || filtreCat !== "Tout" ? " trouvé" + (n > 1 ? "s" : "") : " vérifiés");
+  if (!n) {
+    var v = document.createElement("div"); v.className = "card";
+    v.textContent = "Rien ici. Essaie un autre mot, ou remets « Tout ».";
+    box.appendChild(v);
+  }
+}
+$("#q").addEventListener("input", function(){ renduListe(); });
+
+/* ---------- Quiz ---------- */
+var repondu = {};
+function renduQuiz(){
+  var box = $("#quiz"); box.textContent = "";
+  QUIZ.forEach(function(item, i){
+    var d = document.createElement("div"); d.className = "q card";
+    var t = document.createElement("div"); t.className = "qt"; t.textContent = (i + 1) + ". " + item.q;
+    d.appendChild(t);
+    item.a.forEach(function(txt, j){
+      var b = document.createElement("button"); b.className = "opt"; b.type = "button"; b.textContent = txt;
+      if (repondu[i] !== undefined) {
+        if (j === item.r) b.className = "opt ok";
+        else if (j === repondu[i]) b.className = "opt no";
+        b.disabled = true;
+      }
+      b.addEventListener("click", function(){
+        if (repondu[i] !== undefined) return;
+        repondu[i] = j; renduQuiz();
+        toast(j === item.r ? "✅ Exact" : "❌ Pas tout à fait — lis l'explication");
+      });
+      d.appendChild(b);
+    });
+    if (repondu[i] !== undefined) {
+      var e = document.createElement("div"); e.className = "exp"; e.textContent = item.e;
+      d.appendChild(e);
+    }
+    box.appendChild(d);
+  });
+  var faits = Object.keys(repondu).length;
+  var bons = Object.keys(repondu).filter(function(k){ return repondu[k] === QUIZ[k].r; }).length;
+  $("#score").textContent = faits ? ("Score : " + bons + " / " + faits + (faits === QUIZ.length && bons === QUIZ.length ? " — parfait, tu peux y aller." : "")) : "";
+}
+
+
+/* ---------- Adresse d'Ahmia dans le bloc Explorer ---------- */
+(function(){
+  var a = SITES.filter(function(x){ return x.n === "Ahmia"; })[0];
+  var box = document.getElementById("ahmia-addr");
+  if (a && box) { box.replaceWith(adresseHtml(a.o)); document.getElementById("copie-ahmia")
+    .addEventListener("click", function(){ copie(a.o); }); }
+})();
+
+/* ---------- Identité dédiée ----------
+   Tout est fabriqué ICI, dans le navigateur, avec le générateur aléatoire cryptographique du
+   téléphone (crypto.getRandomValues). Rien n'est envoyé nulle part (la page a connect-src 'none'),
+   rien n'est enregistré : fermer l'onglet efface tout. C'est volontaire — un mot de passe qui
+   transite ou qui se stocke tout seul n'est plus un secret. */
+var MOTS = ("ancre,arbre,argile,avion,balcon,banane,bateau,bougie,boussole,branche,brique,brume,bureau,cactus,cadran,caillou,canard,canyon,carotte,cascade,casque,cendre,cerise,chaise,champ,chapeau,charbon,chemin,cheval,cigale,citron,clavier,cloche,colline,comete,corail,corde,couteau,cristal,cuivre,dauphin,desert,diamant,dragon,ecorce,eclair,ecran,encre,epaule,epice,etoile,falaise,farine,fenetre,ferme,feuille,figue,filet,flamme,flocon,foret,fourmi,fusee,galet,gazon,girafe,glacier,grain,grenier,guitare,hameau,harpe,herbe,hibou,horizon,huitre,igloo,ile,jardin,jonquille,jungle,kiosque,lagune,lampe,lanterne,lezard,lierre,lilas,lion,loutre,lumiere,lune,lynx,marbre,marteau,menthe,meteore,miel,miroir,montagne,moulin,mousse,muraille,museau,nacre,nappe,navire,nectar,neige,nuage,ocean,olive,ombre,orage,orange,orchidee,ortie,otarie,oursin,palais,panier,papyrus,parfum,pavot,pelican,perle,phare,piano,pigeon,pinceau,plage,planete,plume,poivre,pomme,pont,portail,poterie,prairie,puits,quartz,racine,radeau,rempart,renard,requin,rivage,riviere,rocher,rosee,roseau,ruche,ruisseau,sable,safran,sapin,satin,saule,savane,sentier,serpent,silex,sillon,soleil,sommet,source,tambour,tempete,terrasse,tigre,tilleul,tisane,toile,tonnerre,torrent,tortue,tournesol,tresor,tulipe,tunnel,vallee,vapeur,velours,verger,vigne,violon,voile,volcan,zebre").split(",");
+var ADJ = ("agile,ample,ardent,bleu,brave,calme,clair,discret,doux,droit,epais,fier,fin,franc,frais,givre,grand,gris,haut,jaune,large,leger,libre,lent,lisse,long,lourd,mauve,net,noir,pale,pointu,pur,rapide,rond,rouge,rude,sage,sec,simple,solide,sombre,tendre,vaste,vert,vif,vieux,vrai").split(",");
+
+function alea(n){ /* entier 0..n-1, sans biais, via le générateur cryptographique */
+  var max = Math.floor(4294967296 / n) * n, t = new Uint32Array(1);
+  do { crypto.getRandomValues(t); } while (t[0] >= max);
+  return t[0] % n;
+}
+function pioche(tab){ return tab[alea(tab.length)]; }
+
+function genIdentite(){
+  var pseudo = pioche(ADJ) + "-" + pioche(MOTS);
+  var user = pioche(MOTS) + pioche(MOTS).slice(0, 4) + (10 + alea(90));
+  var phrase = [];
+  for (var i = 0; i < 7; i++) phrase.push(pioche(MOTS));
+  var mdp = phrase.join("-") + "-" + (10 + alea(90));
+  /* mot de passe « machine » pour le compte mail : 22 caractères, alphabet sans ambiguïté */
+  var A = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!?@#%+=";
+  var fort = ""; for (var j = 0; j < 22; j++) fort += A[alea(A.length)];
+  var an = 1970 + alea(25);
+  return { pseudo: pseudo, user: user, mdp: mdp, fort: fort,
+           mail: user + "@tuta.com",
+           naiss: (1 + alea(28)) + "/" + (1 + alea(12)) + "/" + an,
+           bits: Math.round(7 * Math.log(MOTS.length) / Math.log(2) + 6.5) };
+}
+
+function ligne(parent, etiq, val, aide){
+  var d = document.createElement("div"); d.style.margin = "12px 0";
+  var l = document.createElement("div");
+  l.style.cssText = "font-size:12px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.4px";
+  l.textContent = etiq;
+  var v = document.createElement("div"); v.className = "addr"; v.style.fontSize = "13px"; v.textContent = val;
+  var b = document.createElement("button"); b.className = "btn"; b.type = "button";
+  b.style.cssText = "margin-top:7px;font-size:13px;padding:9px 13px";
+  b.textContent = "📋 Copier";
+  b.addEventListener("click", function(){ copie(val); });
+  d.appendChild(l); d.appendChild(v);
+  if (aide) { var a = document.createElement("p"); a.className = "mut sm"; a.style.margin = "5px 0 0"; a.textContent = aide; d.appendChild(a); }
+  d.appendChild(b);
+  parent.appendChild(d);
+}
+
+document.getElementById("gen").addEventListener("click", function(){
+  var id = genIdentite();
+  var box = document.getElementById("fiche");
+  box.textContent = ""; box.classList.remove("hide");
+
+  var t = document.createElement("p"); t.className = "big"; t.style.marginTop = "0";
+  t.textContent = "🪪 Ta fiche — copie-la MAINTENANT";
+  box.appendChild(t);
+
+  ligne(box, "Pseudo (ce que les autres voient)", id.pseudo, "Aucun rapport avec toi : ni prénom, ni année de naissance, ni Monaco.");
+  ligne(box, "Nom d'utilisateur (pour l'inscription)", id.user);
+  ligne(box, "Adresse mail (une fois créée chez Tuta)", id.mail, "Elle n'existe pas encore : tu la crées à l'étape suivante avec ce nom d'utilisateur.");
+  ligne(box, "Mot de passe du compte mail", id.fort, "22 caractères au hasard. Tu ne le retiendras pas — c'est fait pour : il va dans ton coffre.");
+  ligne(box, "Phrase de passe (si tu dois en retenir une)", id.mdp,
+        "7 mots tirés au sort parmi " + MOTS.length + " : environ " + id.bits + " bits, inaccessible à une machine. Se retient en la visualisant.");
+  ligne(box, "Date de naissance à donner (fausse)", id.naiss, "Si un site en exige une. Ne donne jamais la vraie.");
+
+  var tout = document.createElement("button");
+  tout.className = "btn prim wide"; tout.type = "button"; tout.textContent = "📋 Copier toute la fiche";
+  tout.addEventListener("click", function(){
+    copie("IDENTITE TOR — a garder dans le coffre\n\n" +
+          "Pseudo        : " + id.pseudo + "\n" +
+          "Utilisateur   : " + id.user + "\n" +
+          "Mail          : " + id.mail + "\n" +
+          "Mot de passe  : " + id.fort + "\n" +
+          "Phrase de passe : " + id.mdp + "\n" +
+          "Naissance (fausse) : " + id.naiss + "\n\n" +
+          "Ne sert QU'A CA. Jamais reutilise ailleurs. Jamais ouvert hors de Tor.");
+  });
+  box.appendChild(tout);
+
+  var av = document.createElement("p"); av.className = "mut sm"; av.style.marginTop = "12px";
+  av.textContent = "Rien de tout ceci n'a quitté ton téléphone et rien n'est enregistré. Si tu fermes sans copier, c'est perdu — regénère, ce n'est pas grave.";
+  box.appendChild(av);
+
+  toast("🪪 Identité créée — copie-la dans ton coffre");
+});
+
+
+
+/* ---------- Vérificateur d'adresse (100 % hors ligne) ----------
+   Une fausse adresse .onion est fabriquée pour PARTAGER LE DÉBUT de la vraie (on peut miner
+   un préfixe, pas une adresse entière). D'où le contrôle qui compte vraiment : un début
+   commun avec un site connu MAIS une fin différente = copie frauduleuse, presque à coup sûr. */
+function clefDe(o) {
+  var hote = String(o).trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  if (!/\.onion$/.test(hote)) return null;
+  return hote.slice(0, -".onion".length).split(".").pop();
+}
+function prefixeCommun(a, b) { var i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; }
+
+function verifieAdresse(saisie) {
+  var brut = String(saisie || "").trim();
+  if (!brut) return null;
+  var hote = brut.toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  if (!/\.onion$/.test(hote)) {
+    return { n: "rouge", t: "Ce n'est pas une adresse .onion",
+             d: "Une adresse du réseau Tor finit toujours par « .onion ». Si on te présente autre chose comme étant « le dark web », ce n'en est pas." };
+  }
+  var cle = clefDe(hote);
+  if (cle.length === 16) {
+    return { n: "rouge", t: "Adresse de l'ancien format, abandonnée en 2021",
+             d: "Ces adresses courtes (16 caractères) ne fonctionnent plus du tout. Quand on t'en propose une aujourd'hui, c'est soit une page morte recopiée, soit un piège." };
+  }
+  if (cle.length !== 56 || !/^[a-z2-7]{56}$/.test(cle)) {
+    return { n: "rouge", t: "Cette adresse ne peut pas exister",
+             d: "Une vraie adresse fait exactement 56 caractères (lettres a-z et chiffres 2 à 7). Celle-ci en a " + cle.length + ". Elle a été tronquée en la recopiant, ou elle est inventée." };
+  }
+  var exact = null;
+  for (var i = 0; i < SITES.length; i++) if (clefDe(SITES[i].o) === cle) { exact = SITES[i]; break; }
+  if (exact) {
+    return { n: "vert", t: "C'est bien " + exact.n, s: exact,
+             d: "Adresse identique à celle de mon catalogue, relevée à la source officielle. Tu peux y aller." };
+  }
+  var meilleur = null, score = 0;
+  for (var j = 0; j < SITES.length; j++) {
+    var k = prefixeCommun(clefDe(SITES[j].o), cle);
+    if (k > score) { score = k; meilleur = SITES[j]; }
+  }
+  if (score >= 6 && meilleur) {
+    return { n: "rouge", t: "DANGER — imite « " + meilleur.n + " » sans être son adresse", s: meilleur,
+             d: "Les " + score + " premiers caractères sont ceux de " + meilleur.n + ", la suite non. C'est exactement ainsi qu'on fabrique une fausse adresse : on mine un début identique pour tromper l'œil. N'y va pas, et surtout n'y tape rien." };
+  }
+  return { n: "jaune", t: "Format correct, mais je ne la connais pas",
+           d: "Ce n'est ni un faux d'un site que je connais, ni une adresse impossible. Je ne peux simplement pas dire à qui elle appartient. Avant d'y aller : recoupe-la à une deuxième source, et ne donne rien dessus." };
+}
+
+(function () {
+  var champ = document.getElementById("qverif"), sortie = document.getElementById("rverif");
+  if (!champ || !sortie) return;
+  champ.addEventListener("input", function () {
+    var r = verifieAdresse(champ.value);
+    sortie.textContent = "";
+    if (!r) return;
+    var d = document.createElement("div");
+    d.className = "card " + (r.n === "vert" ? "good" : r.n === "rouge" ? "bad" : "warn");
+    d.style.margin = "12px 0 0";
+    var t = document.createElement("p"); t.className = "big"; t.style.margin = "0 0 6px";
+    t.textContent = (r.n === "vert" ? "✅ " : r.n === "rouge" ? "🚨 " : "🟡 ") + r.t;
+    var x = document.createElement("p"); x.style.margin = "0"; x.textContent = r.d;
+    d.appendChild(t); d.appendChild(x);
+    if (r.s) {
+      var b = document.createElement("a"); b.className = "btn"; b.style.marginTop = "10px";
+      b.href = r.s.s; b.target = "_blank"; b.rel = "noopener noreferrer";
+      b.textContent = "🔎 Voir l'adresse officielle de " + r.s.n;
+      d.appendChild(b);
+    }
+    sortie.appendChild(d);
+  });
+})();
+
+/* ---------- Mes adresses ----------
+   Volontairement PAS enregistrées sur l'appareil (ce serait une trace). Elles vivent le temps
+   de la page, et sont embarquées dans la copie « hors ligne » — c'est la copie qui devient
+   le carnet personnel de Kevin, sans que rien ne traîne sur le téléphone. */
+var PERSO = [];
+(function () {
+  if (window.__PERSO__ && window.__PERSO__.length) {
+    for (var i = 0; i < window.__PERSO__.length; i++) {
+      var e = window.__PERSO__[i];
+      PERSO.push(e); SITES.push(e);
+    }
+  }
+  var info = document.getElementById("pinfo");
+  function maj() {
+    if (info) info.textContent = PERSO.length
+      ? PERSO.length + (PERSO.length > 1 ? " adresses gardées" : " adresse gardée") + " — fais « Garder hors ligne » (onglet Sécurité) pour les emporter."
+      : "";
+  }
+  maj();
+  var b = document.getElementById("pajout");
+  if (b) b.addEventListener("click", function () {
+    var nom = (document.getElementById("pnom").value || "").trim();
+    var adr = (document.getElementById("padr").value || "").trim();
+    var note = (document.getElementById("pnote").value || "").trim();
+    if (!nom) { toast("Donne-lui un nom"); return; }
+    var v = verifieAdresse(adr);
+    if (!v || v.n === "rouge") { toast(v ? "🚨 " + v.t : "Colle l'adresse"); return; }
+    var e = { c: "Mes adresses", n: nom, d: note || "Ajoutée par toi.",
+              o: adr.toLowerCase().replace(/^https?:\/\//, ""), s: "https://ahmia.fi/" };
+    PERSO.push(e); SITES.push(e);
+    if (CATS.indexOf("Mes adresses") < 0) { CATS.push("Mes adresses"); renduChips(); }
+    renduListe(); maj();
+    document.getElementById("pnom").value = ""; document.getElementById("padr").value = ""; document.getElementById("pnote").value = "";
+    toast("➕ " + nom + " ajouté à ton catalogue");
+  });
+})();
+
+/* ---------- Garder hors ligne / effacer ses traces ----------
+   « Hors ligne » se fabrique SANS réseau : la page se recopie elle-même depuis le document
+   déjà chargé (outerHTML) → aucun téléchargement, aucune requête, donc aucune trace de plus.
+   C'est le seul moyen d'utiliser l'outil en ne laissant strictement rien derrière soi. */
+(function () {
+  var bhl = document.getElementById("hors-ligne");
+  if (bhl) bhl.addEventListener("click", function () {
+    try {
+      var doc = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      /* On embarque les adresses perso DANS la copie : le carnet voyage avec le fichier,
+         et rien n'est écrit sur le téléphone. `<` échappé pour ne pas casser la balise. */
+      if (PERSO.length) {
+        var inj = "<script>window.__PERSO__=" +
+          JSON.stringify(PERSO).replace(/</g, "\\u003c") + ";<\/script>";
+        doc = doc.replace("</head>", inj + "</head>");
+      }
+      var blob = new Blob([doc], { type: "text/html;charset=utf-8" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "tor-en-clair.html";
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      toast("💾 Enregistré — ouvre-le depuis Fichiers, sans réseau");
+    } catch (e) { toast("Enregistrement impossible sur ce navigateur"); }
+  });
+
+  var bef = document.getElementById("efface");
+  if (bef) bef.addEventListener("click", function () {
+    var n = 0;
+    try { if (localStorage.getItem("tor_vue") !== null) { localStorage.removeItem("tor_vue"); n++; } } catch (e) {}
+    var f = document.getElementById("fiche");
+    if (f && !f.classList.contains("hide")) { f.textContent = ""; f.classList.add("hide"); n++; }
+    toast(n ? "🧹 Effacé (" + n + ") — il ne reste rien de toi ici" : "🧹 Rien à effacer : la page ne gardait rien");
+  });
+})();
+
+/* ---------- Boot ---------- */
+renduChips(); renduListe(); renduQuiz();
+try {
+  var v = localStorage.getItem("tor_vue");
+  if (v && VUES.indexOf(v) >= 0) montre(v);
+} catch (e) {}
+</script>
+</body>
+</html>

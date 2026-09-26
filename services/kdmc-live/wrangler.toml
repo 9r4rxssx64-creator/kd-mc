@@ -1,0 +1,9 @@
+name = "kdmc-live"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+# account_id injecté par le workflow via CLOUDFLARE_ACCOUNT_ID (jamais commité)
+# SANS Durable Object : le DO (même SQLite) fait échouer le démarrage du worker sur ce
+# compte → error code 1042 (leçons #132/#133). Foudre = WebSocket COURTE par requête ;
+# cyclones/feux = fetch serveur simple. Zéro binding, zéro migration → démarrage propre.
+# Secret : FIRMS_MAP_KEY (clé NASA FIRMS gratuite) posé par le workflow via `wrangler secret put`.
+# Sans clé : /fires renvoie une FeatureCollection vide (fail-open) — foudre + cyclones marchent quand même.

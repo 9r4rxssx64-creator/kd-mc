@@ -1,0 +1,30 @@
+name = "apex-auth-worker"
+main = "src/index.js"
+compatibility_date = "2026-04-30"
+compatibility_flags = ["nodejs_compat"]
+
+# KV namespace pour rate-limiting des tentatives de login (5/IP/15min)
+#
+# 🔄 IDEMPOTENT — Le workflow `.github/workflows/deploy-apex-auth-worker.yml`
+# résout dynamiquement le KV namespace à chaque run via `wrangler kv namespace list` :
+#   - Si AUTH_KV existe côté Cloudflare → ID réutilisé (sed runner-local)
+#   - Sinon → création + ID injecté
+# Le placeholder ci-dessous est INTENTIONNEL — ne pas le remplacer manuellement.
+# Voir : PR #382 (idempotence) + CLAUDE.md erreur #28 (Declaration ≠ Deployment).
+[[kv_namespaces]]
+binding = "AUTH_KV"
+id = "REPLACE_WITH_KV_ID_FROM_WRANGLER_OUTPUT"
+
+# Variables d'environnement (PUBLIQUES, pas sensibles) — trigger 2026-05-26T09:48Z
+# Pointe le projet Firebase actif (vérifié dans services/auth/rgpd.ts + memory-bridge.ts)
+[vars]
+FIREBASE_PROJECT_ID = "cmcteams-c16ab"
+
+# SECRETS (poussés auto par le workflow depuis GitHub Secrets) :
+#   - FIREBASE_PRIVATE_KEY  : valeur "private_key" du Service Account JSON
+#   - FIREBASE_CLIENT_EMAIL : valeur "client_email" du Service Account JSON
+# Source : Firebase Console > Project Settings > Service Accounts > Generate new private key
+# Projet ciblé : cmcteams-c16ab (PAS kdmc-clients — docs obsolètes nettoyées 2026-05-26)
+
+[observability]
+enabled = true

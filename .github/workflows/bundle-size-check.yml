@@ -1,0 +1,88 @@
+name: Bundle Size Check (Apex v13)
+
+# v13.4.220 (Kevin "100/100 réel Performance gap") :
+# Run size-limit après chaque build pour vérifier que les budgets bundle
+# définis dans package.json size-limit[] sont respectés :
+# - dist/index.html < 30 KB
+# - dist/assets/css/*.css < 30 KB gzip
+# - dist/core/bootstrap-*.js < 80 KB gzip
+#
+# Si seuil dépassé → workflow CI rouge → Issue auto via github-actions[bot]
+# → ma prochaine session lis Issue → optimise bundle
+
+on:
+  # Anti-spam : seulement sur PR + push main (déjà workflows lighthouse pattern v9.618)
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+      - '!apex-ai/v13/tests/**'
+      - '!apex-ai/v13/**/*.test.ts'
+      - '!apex-ai/v13/**/*.spec.ts'
+      - '!apex-ai/v13/coverage/**'
+      - '!apex-ai/v13/SERVICES-INVENTORY.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+  workflow_dispatch:
+
+concurrency:
+  group: bundle-size-check-${{ github.ref }}
+  cancel-in-progress: true
+
+# Droits minimum (24.09.2026) : ce robot ne fait que lire. Explicite, pour ne jamais dépendre du
+# réglage par défaut du dépôt (le dépôt public est réglé en lecture seule).
+permissions:
+  contents: read
+
+jobs:
+  size-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+
+      - name: Build production
+        run: npm run build
+
+      - name: Run size-limit check (budgets in package.json)
+        id: size
+        run: |
+          npm run size 2>&1 | tee size-output.txt
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Append GitHub Step Summary
+        if: always()
+        run: |
+          {
+            echo "## 📦 Bundle Size Check Apex v13"
+            echo ""
+            echo "Budgets définis dans \`package.json\` size-limit[] :"
+            echo "- dist/index.html < 30 KB raw"
+            echo "- dist/assets/css/*.css < 30 KB gzip"
+            echo "- dist/core/bootstrap-*.js < 80 KB gzip"
+            echo ""
+            echo "### Résultat size-limit"
+            echo '```'
+            cat size-output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail si seuils dépassés
+        if: steps.size.outputs.exit_code != '0'
+        run: |
+          echo "::error::Bundle size dépasse seuils package.json size-limit[]. Voir Step Summary."
+          exit 1

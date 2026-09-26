@@ -1,0 +1,57 @@
+name: Agent KDMC — Cron 24/7
+
+# Remplace les crons Vercel Hobby (limités à 1/jour) par GitHub Actions (gratuit).
+# Appelle l'endpoint /api/cron de l'agent déployé sur Vercel avec AGENT_SECRET.
+#
+# ⚙️ Prérequis : ajouter AGENT_SECRET dans les secrets GitHub
+# URL : https://github.com/9r4rxssx64-creator/CMCteams/settings/secrets/actions/new
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:  # Lancement manuel depuis l'onglet Actions
+
+jobs:
+  trigger-agent:
+    name: Trigger agent cron endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call agent endpoint
+        env:
+          AGENT_URL: https://kdmc-agent-monaco.vercel.app
+          AGENT_SECRET: ${{ secrets.AGENT_SECRET }}
+        run: |
+          if [ -z "$AGENT_SECRET" ]; then
+            echo "::error::AGENT_SECRET manquant dans les secrets GitHub"
+            echo "Ajouter sur : https://github.com/9r4rxssx64-creator/CMCteams/settings/secrets/actions/new"
+            exit 1
+          fi
+
+          # Déterminer le trigger selon le cron qui a déclenché (GITHUB_EVENT_NAME=schedule)
+          # ou manuel (workflow_dispatch)
+          TRIGGER="cron:$(date -u +'%H:%M')"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            TRIGGER="manual"
+          fi
+
+          echo "🚀 Appel agent — trigger=$TRIGGER"
+          HTTP_CODE=$(curl -sS -o response.json -w "%{http_code}" \
+            "$AGENT_URL/api/cron?trigger=$TRIGGER&secret=$AGENT_SECRET" \
+            -H "User-Agent: github-actions-cron/1.0" \
+            --max-time 120)
+
+          echo "📬 HTTP $HTTP_CODE"
+          echo "📄 Réponse :"
+          cat response.json | head -80 || echo "(réponse vide)"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "::error::Agent returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "✅ Agent exécuté avec succès"

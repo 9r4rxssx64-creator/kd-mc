@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="3000" height="1688" viewBox="0 0 1600 900">
+   <defs><radialGradient id="bg_lhnoirRouge" cx="50%" cy="38%" r="70%"><stop offset="0%" stop-color="#1a1c22"/><stop offset="100%" stop-color="#0a0b0e"/></radialGradient><linearGradient id="ring_lhnoirRouge" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d7dce3"/><stop offset="45%" stop-color="#7c838f"/><stop offset="100%" stop-color="#2a2d34"/></linearGradient><linearGradient id="mg_lhnoirRouge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d7dce3"/><stop offset="50%" stop-color="#7c838f"/><stop offset="100%" stop-color="#2a2d34"/>
+    </linearGradient><radialGradient id="hht_lhnoirRouge" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ff6a6f"/>
+      <stop offset="45%" stop-color="#e51f2b"/>
+      <stop offset="100%" stop-color="#8c0d15"/>
+    </radialGradient>
+     <linearGradient id="bgLnoirRouge" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#16171c"/><stop offset="100%" stop-color="#070809"/></linearGradient>
+     <linearGradient id="wmnoirRouge" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#c7ccd4"/></linearGradient>
+   </defs>
+   <rect width="1600" height="900" fill="url(#bgLnoirRouge)"/>
+   <rect x="40" y="40" width="1520" height="820" rx="26" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+   <g transform="translate(70,180) scale(0.54)"><circle cx="500" cy="500" r="488" fill="url(#ring_lhnoirRouge)"/><circle cx="500" cy="500" r="488" fill="none" stroke="#2a2d34" stroke-width="3"/><circle cx="500" cy="500" r="470" fill="none" stroke="#d7dce3" stroke-width="2" opacity="0.7"/><circle cx="500" cy="500" r="430" fill="url(#bg_lhnoirRouge)"/><circle cx="500" cy="500" r="430" fill="none" stroke="#2a2d34" stroke-width="6"/><circle cx="500" cy="500" r="426" fill="none" stroke="#d7dce3" stroke-width="2" opacity="0.5"/><path d="M150,300 A488,488 0 0 1 850,300" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.18"/><circle cx="949.0" cy="500.0" r="6" fill="#2a2d34"/><circle cx="888.8" cy="724.5" r="6" fill="#2a2d34"/><circle cx="724.5" cy="888.8" r="6" fill="#2a2d34"/><circle cx="500.0" cy="949.0" r="6" fill="#2a2d34"/><circle cx="275.5" cy="888.8" r="6" fill="#2a2d34"/><circle cx="111.2" cy="724.5" r="6" fill="#2a2d34"/><circle cx="51.0" cy="500.0" r="6" fill="#2a2d34"/><circle cx="111.2" cy="275.5" r="6" fill="#2a2d34"/><circle cx="275.5" cy="111.2" r="6" fill="#2a2d34"/><circle cx="500.0" cy="51.0" r="6" fill="#2a2d34"/><circle cx="724.5" cy="111.2" r="6" fill="#2a2d34"/><circle cx="888.8" cy="275.5" r="6" fill="#2a2d34"/><g transform="translate(500,545) rotate(-29) scale(1.3) translate(-183,-88)"><g fill="url(#mg_lhnoirRouge)" stroke="#0c0e12" stroke-width="2" stroke-linejoin="round">
+    <polygon points="0,44 62,30 62,74 34,82 0,72"/>
+    <rect x="60" y="30" width="130" height="38" rx="3"/>
+    <rect x="92" y="19" width="100" height="10" rx="3"/>
+    <polygon points="118,68 140,68 153,116 126,118"/>
+    <path d="M150,68 L190,68 L202,156 Q184,162 166,156 Z"/>
+    <rect x="190" y="38" width="76" height="26" rx="5"/>
+    <rect x="266" y="46" width="96" height="10" rx="3"/>
+    <polygon points="300,21 310,21 308,46 302,46"/>
+    <rect x="352" y="43" width="15" height="15" rx="2"/>
+  </g></g><g transform="translate(500,545) rotate(29) scale(1.3) translate(-183,-77)"><g fill="url(#mg_lhnoirRouge)" stroke="#0c0e12" stroke-width="2" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,540) scale(1.85)">
+      <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="url(#hht_lhnoirRouge)" stroke="#8c0d15" stroke-width="2.5"/>
+      <path d="M-30,-22 C-40,-6 -34,12 -16,22 C-30,4 -26,-12 -12,-22 C-22,-26 -27,-25 -30,-22 Z" fill="#ffffff" opacity="0.35"/>
+    </g></g>
+   <g transform="translate(640,0)">
+     <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" transform="translate(30,278) scale(0.46)" fill="#e51f2b"/>
+     <text x="78" y="300" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="44" letter-spacing="6" fill="#e51f2b">ON VISE AU CŒUR</text>
+     <text x="0" y="430" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="196" letter-spacing="2" fill="url(#wmnoirRouge)">LA</text>
+     <text x="0" y="616" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="176" letter-spacing="1" fill="url(#wmnoirRouge)">DÉTENTE</text>
+     <rect x="6" y="464" width="720" height="6" fill="#e51f2b"/>
+     <text x="8" y="706" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="46" letter-spacing="11" fill="#c9ccd3">TIR · BALL-TRAP · CHASSE</text>
+   </g>
+  </svg>

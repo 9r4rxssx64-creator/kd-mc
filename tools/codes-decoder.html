@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Decodeur Codes Planning Casino</title>
+<style>
+:root{--gold:#c9a227;--gold2:#e8b830;--bg:#08080f;--bg2:#0e1530;--border:rgba(232,184,48,.3);--text:#f8f8ff;--dim:#9ba8c4;--green:#5cd882;--red:#ff5858;--blue:#5aa8ff;--purple:#b56cff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;padding:0;background:radial-gradient(ellipse at 50% 30%,var(--bg2) 0%,var(--bg) 60%,#040608 100%);color:var(--text);font-family:-apple-system,system-ui,sans-serif;min-height:100vh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 48px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--gold2);font-size:14px;text-decoration:none;padding:10px 14px;background:rgba(232,184,48,.08);border:1px solid var(--border);border-radius:10px;min-height:44px;line-height:24px}
+h1{font-size:24px;font-weight:900;letter-spacing:1px;margin:18px 0 4px;background:linear-gradient(135deg,var(--gold),var(--gold2),#ffd860);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+.sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:18px}
+.icon{font-size:42px;text-align:center;margin-top:8px}
+.search{width:100%;padding:14px 16px;font-size:15px;background:rgba(0,0,0,.35);color:var(--text);border:1px solid var(--border);border-radius:12px;-webkit-appearance:none;min-height:48px;margin:8px 0}
+.search:focus{outline:none;border-color:var(--gold)}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{padding:8px 12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:12px;cursor:pointer;min-height:36px;display:inline-flex;align-items:center}
+.chip.active{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#040608;border-color:var(--gold);font-weight:700}
+.list{margin-top:14px}
+.code{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px}
+.tag{flex:0 0 auto;padding:4px 10px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.5px;font-family:ui-monospace,monospace;min-width:50px;text-align:center}
+.tag.cat-repos{background:rgba(90,168,255,.15);color:var(--blue);border:1px solid rgba(90,168,255,.4)}
+.tag.cat-conges{background:rgba(92,216,130,.15);color:var(--green);border:1px solid rgba(92,216,130,.4)}
+.tag.cat-maladie{background:rgba(255,88,88,.15);color:var(--red);border:1px solid rgba(255,88,88,.4)}
+.tag.cat-horaire{background:rgba(232,184,48,.15);color:var(--gold2);border:1px solid rgba(232,184,48,.4)}
+.tag.cat-sanction{background:rgba(181,108,255,.15);color:var(--purple);border:1px solid rgba(181,108,255,.4)}
+.tag.cat-autre{background:rgba(155,168,196,.15);color:var(--dim);border:1px solid rgba(155,168,196,.4)}
+.code-info{flex:1;font-size:13px;line-height:1.5}
+.code-label{font-weight:700;color:var(--text)}
+.code-desc{color:var(--dim);font-size:12px;margin-top:2px}
+button{width:100%;padding:14px 18px;font-size:15px;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#040608;border:none;border-radius:12px;cursor:pointer;min-height:48px;margin-top:10px}
+button.outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.empty{text-align:center;color:var(--dim);padding:24px;font-size:13px}
+.foot{text-align:center;margin-top:24px;font-size:11px;color:var(--dim);line-height:1.6}
+.foot a{color:var(--gold2);text-decoration:none;margin:0 8px}
+.add-form{background:rgba(255,255,255,.04);border:1px dashed var(--border);border-radius:12px;padding:14px;margin-top:14px;display:none}
+.add-form input,.add-form select,.add-form textarea{width:100%;padding:10px 12px;font-size:14px;background:rgba(0,0,0,.35);color:var(--text);border:1px solid var(--border);border-radius:8px;margin:4px 0;-webkit-appearance:none}
+.add-form textarea{min-height:60px;font-family:inherit;resize:vertical}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="https://cmcteams.kd-mc.com/" aria-label="Retour CMCteams">&larr; Retour</a>
+  <div class="icon" aria-hidden="true">&#128221;</div>
+  <h1>Decodeur Codes Planning</h1>
+  <div class="sub">Tous les codes du planning casino expliques</div>
+
+  <input type="text" id="q" class="search" placeholder="Rechercher un code (ex: CP, RTR, 22/6)" oninput="render()" aria-label="Recherche">
+
+  <div class="filters" role="group" aria-label="Filtres categorie">
+    <span class="chip active" data-cat="all" onclick="setCat('all')">Tous</span>
+    <span class="chip" data-cat="repos" onclick="setCat('repos')">Repos</span>
+    <span class="chip" data-cat="conges" onclick="setCat('conges')">Conges</span>
+    <span class="chip" data-cat="maladie" onclick="setCat('maladie')">Maladie</span>
+    <span class="chip" data-cat="horaire" onclick="setCat('horaire')">Horaires</span>
+    <span class="chip" data-cat="sanction" onclick="setCat('sanction')">Sanctions</span>
+    <span class="chip" data-cat="autre" onclick="setCat('autre')">Autres</span>
+  </div>
+
+  <div id="list" class="list"></div>
+
+  <button class="outline" onclick="toggleAdd()">+ Apprendre un nouveau code</button>
+
+  <div class="add-form" id="addForm">
+    <input type="text" id="newCode" placeholder="Code (ex: XYZ)" maxlength="10">
+    <select id="newCat" aria-label="Categorie">
+      <option value="repos">Repos</option>
+      <option value="conges">Conges</option>
+      <option value="maladie">Maladie</option>
+      <option value="horaire">Horaire</option>
+      <option value="sanction">Sanction</option>
+      <option value="autre">Autre</option>
+    </select>
+    <input type="text" id="newLabel" placeholder="Nom court (ex: Conge speciale)" maxlength="60">
+    <textarea id="newDesc" placeholder="Description complete..." maxlength="400"></textarea>
+    <button onclick="addCode()">Sauvegarder localement</button>
+  </div>
+
+  <div class="foot">
+    <a href="https://apex-ai.kd-mc.com/">Apex</a> &middot;
+    <a href="https://cmcteams.kd-mc.com/">CMCteams</a>
+  </div>
+</div>
+
+<script>
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+
+var BASE_CODES=[
+  {c:'P',cat:'repos',l:'Present',d:'Employe present au travail (jour normal de service).'},
+  {c:'RH',cat:'repos',l:'Repos hebdomadaire',d:'Repos hebdomadaire normal (Article 17.5 Convention SBM).'},
+  {c:'RTP',cat:'repos',l:'Repos travail public',d:'Repos compensateur pour travail un jour ferie public.'},
+  {c:'RTR',cat:'repos',l:'Repos travail recupere',d:'Recuperation d\'heures supplementaires accumulees.'},
+  {c:'RRT',cat:'repos',l:'Reduction temps travail',d:'Repos lie a la reduction du temps de travail (RTT).'},
+  {c:'RHS',cat:'repos',l:'Repos heures sup',d:'Repos compensateur pour heures supplementaires majorees.'},
+  {c:'DP',cat:'repos',l:'Demande personnelle',d:'Jour de repos accorde sur demande personnelle de l\'employe.'},
+  {c:'CP',cat:'conges',l:'Conge paye',d:'Conge paye annuel (2 mois/an dont 1 mois ete : 1 mai - 31 oct, Article 17.4).'},
+  {c:'CRH',cat:'conges',l:'Conge + repos hebdo',d:'Combinaison conge paye et repos hebdomadaire.'},
+  {c:'CPS',cat:'conges',l:'Conge paye special',d:'Conge paye supplementaire (anciennete, evenement particulier).'},
+  {c:'CPM',cat:'conges',l:'Conge paye majore',d:'Conge paye avec majoration (Article 17.5 si > 4 jours supprimes).'},
+  {c:'CDP',cat:'conges',l:'Conge depart',d:'Conge pris avant un depart (retraite, demission).'},
+  {c:'CDH',cat:'conges',l:'Conge demi-journee',d:'Conge paye sur une demi-journee.'},
+  {c:'AF',cat:'conges',l:'Absence familiale',d:'Conge pour evenement familial : mariage 4j, naissance 3j, deces 3j, etc. (Article 18).'},
+  {c:'CL',cat:'conges',l:'Conge legal',d:'Conge legal (jour ferie monegasque ou conge institue par la loi).'},
+  {c:'CEO',cat:'conges',l:'Conge employeur',d:'Conge octroye exceptionnellement par l\'employeur.'},
+  {c:'CSC',cat:'conges',l:'Conge sans solde court',d:'Conge sans solde de courte duree.'},
+  {c:'CSS',cat:'conges',l:'Conge sans solde',d:'Conge sans solde longue duree (sur demande, accord employeur).'},
+  {c:'FL',cat:'conges',l:'Fete legale',d:'Jour ferie legal monegasque (1er janvier, Sainte-Devote, Pentecote, etc.).'},
+  {c:'CFL',cat:'conges',l:'Conge fete legale',d:'Conge accorde a l\'occasion d\'une fete legale.'},
+  {c:'FTP',cat:'conges',l:'Fete travail public',d:'Travail un jour ferie public, donne droit a recuperation.'},
+  {c:'FTR',cat:'conges',l:'Fete travail recup',d:'Recuperation d\'un jour ferie travaille.'},
+  {c:'RFT',cat:'conges',l:'Repos fete travaillee',d:'Repos accorde apres travail une fete legale.'},
+  {c:'M',cat:'maladie',l:'Maladie',d:'Arret maladie (indemnise 85% min 91%, max 1095 jours, Article 23).'},
+  {c:'AT',cat:'maladie',l:'Accident travail',d:'Accident du travail (couvert par la legislation monegasque).'},
+  {c:'MT',cat:'maladie',l:'Maladie travail',d:'Maladie liee au travail (maladie professionnelle).'},
+  {c:'ABS',cat:'maladie',l:'Absent',d:'Absence non motivee (a justifier rapidement).'},
+  {c:'ABI',cat:'maladie',l:'Absence injustifiee',d:'Absence sans motif valable (peut donner lieu a sanction).'},
+  {c:'ABP',cat:'maladie',l:'Absence prolongee',d:'Absence prolongee (necessite suivi RH).'},
+  {c:'22/6',cat:'horaire',l:'22h00 a 06h00',d:'Service de nuit : prise de poste 22h00, fin 06h00 (8h de travail).'},
+  {c:'19/2',cat:'horaire',l:'19h00 a 02h00',d:'Service de soiree tardive : 19h00 a 02h00 (7h de travail).'},
+  {c:'19/4',cat:'horaire',l:'19h00 a 04h00',d:'Service de nuit longue : 19h00 a 04h00 (9h de travail).'},
+  {c:'12/19',cat:'horaire',l:'12h30 a 19h00',d:'Service apres-midi : 12h30 a 19h00 (env. 6h30).'},
+  {c:'14/22',cat:'horaire',l:'14h00 a 22h00',d:'Service apres-midi long : 14h00 a 22h00 (8h).'},
+  {c:'PNE',cat:'sanction',l:'Pas note explication',d:'Code disciplinaire (avertissement note dans le dossier).'},
+  {c:'AMP',cat:'sanction',l:'Avertissement mise pied',d:'Avertissement avec mise a pied disciplinaire.'},
+  {c:'MPC',cat:'sanction',l:'Mise pied conservatoire',d:'Mise a pied conservatoire en attente de decision.'},
+  {c:'MPP',cat:'sanction',l:'Mise pied prolongee',d:'Mise a pied disciplinaire de longue duree.'},
+  {c:'PAT',cat:'autre',l:'Patrimoine',d:'Activite liee au patrimoine SBM (formation, evenement).'},
+  {c:'PRT',cat:'autre',l:'Pret personnel',d:'Pret de service a un autre departement SBM.'},
+  {c:'HC',cat:'autre',l:'Heures complementaires',d:'Heures complementaires effectuees (a recuperer ou payer).'},
+  {c:'FCP',cat:'autre',l:'Frais conge paye',d:'A la masse (mutualisation pourboires) - conge paye.'},
+  {c:'FCS',cat:'autre',l:'Frais conge special',d:'A la masse - conge special.'},
+  {c:'FRH',cat:'autre',l:'Frais repos hebdo',d:'A la masse - repos hebdomadaire.'},
+  {c:'FFL',cat:'autre',l:'Frais fete legale',d:'A la masse - fete legale.'}
+];
+
+var STATE={cat:'all',q:''};
+var USER_CODES=[];
+try{USER_CODES=JSON.parse(localStorage.getItem('cmc_user_codes')||'[]');}catch(e){USER_CODES=[];}
+
+function setCat(c){
+  STATE.cat=c;
+  var chips=document.querySelectorAll('.chip');
+  for(var i=0;i<chips.length;i++){
+    chips[i].classList.toggle('active',chips[i].getAttribute('data-cat')===c);
+  }
+  render();
+}
+
+function render(){
+  STATE.q=(document.getElementById('q').value||'').toLowerCase().trim();
+  var all=BASE_CODES.concat(USER_CODES);
+  var filtered=all.filter(function(x){
+    if(STATE.cat!=='all'&&x.cat!==STATE.cat)return false;
+    if(!STATE.q)return true;
+    return (x.c+' '+x.l+' '+x.d).toLowerCase().indexOf(STATE.q)>=0;
+  });
+  var html='';
+  if(filtered.length===0){
+    html='<div class="empty">Aucun code trouve. Essaie un autre mot ou ajoute-le ci-dessous.</div>';
+  }else{
+    for(var i=0;i<filtered.length;i++){
+      var x=filtered[i];
+      html+='<div class="code"><span class="tag cat-'+esc(x.cat)+'">'+esc(x.c)+'</span><div class="code-info"><div class="code-label">'+esc(x.l)+'</div><div class="code-desc">'+esc(x.d)+'</div></div></div>';
+    }
+  }
+  document.getElementById('list').innerHTML=html;
+}
+
+function toggleAdd(){
+  var f=document.getElementById('addForm');
+  f.style.display=f.style.display==='block'?'none':'block';
+}
+
+function addCode(){
+  var c=document.getElementById('newCode').value.trim().toUpperCase();
+  var cat=document.getElementById('newCat').value;
+  var l=document.getElementById('newLabel').value.trim();
+  var d=document.getElementById('newDesc').value.trim();
+  if(!c||!l){alert('Code et nom court obligatoires.');return;}
+  USER_CODES.push({c:c,cat:cat,l:l,d:d||'(pas de description)'});
+  try{localStorage.setItem('cmc_user_codes',JSON.stringify(USER_CODES));}catch(e){}
+  document.getElementById('newCode').value='';
+  document.getElementById('newLabel').value='';
+  document.getElementById('newDesc').value='';
+  toggleAdd();
+  render();
+  alert('Code "'+c+'" ajoute (sauvegarde dans ce navigateur).');
+}
+
+render();
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="codes-decoder"
+        data-version="v1.0.0"
+        data-color="#22cc77"
+        defer></script>
+</body>
+</html>

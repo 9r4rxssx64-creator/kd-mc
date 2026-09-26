@@ -1,0 +1,287 @@
+# Déploie kdmc-rag — mémoire intelligente (RAG) d'Apex : Workers AI (embeddings) + Vectorize.
+# Secrets requis : CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, APEX_ADMIN_PIN_SHA256 (déjà là).
+#
+# DÉCLENCHEMENT : bouton (workflow_dispatch) + AUTO au push sur main qui touche le worker.
+# Audit du 05/09 : la route /health existait dans la source depuis des semaines mais le
+# worker en ligne datait du 08/07 — personne n'avait appuyé sur le bouton (dispatch seul =
+# déploiement fantôme, leçon #213). La fusion robot dans main (GITHUB_TOKEN) ne déclenche
+# pas les workflows `push`, MAIS auto-merge-claude.yml dispatche lui-même chaque
+# deploy-*.yml dont un services/<x> a changé → pas besoin (ni envie : relecture sécu
+# 05/09) de déployer la production depuis claude/**. Zéro cron, zéro volume automatique.
+#
+# ⚠️ Vectorize doit être disponible sur le compte (comme les Durable Objects ont été
+# refusés — leçon #132). Si `wrangler deploy` échoue sur le binding VEC, le smoke le dira
+# en clair ; côté Apex la mémoire reste fail-open (l'app fonctionne sans).
+name: Deploy KDMC RAG (mémoire Apex)
+
+on:
+  workflow_dispatch:
+  push:
+    # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main.
+    # Une branche de travail ne déploie plus rien (incident m122 du 23.09 : un routeur
+    # déployé depuis une branche en retard a éteint kit.kd-mc.com). Manuel : workflow_dispatch.
+    branches:
+      - main
+    paths:
+      - 'services/kdmc-rag/**'
+      - '.github/workflows/deploy-kdmc-rag.yml'
+
+concurrency:
+  group: ${{ github.workflow }}   # un déploiement à la fois
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/kdmc-rag
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Vérifier les secrets (erreur exacte, pas silencieuse)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        run: |
+          MISSING=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && MISSING="$MISSING CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && MISSING="$MISSING CLOUDFLARE_ACCOUNT_ID"
+          [ -z "$PINSHA" ] && MISSING="$MISSING APEX_ADMIN_PIN_SHA256"
+          if [ -n "$MISSING" ]; then echo "::error::Secrets manquants :$MISSING"; exit 1; fi
+          echo "Secrets OK"
+
+      - name: Syntax check worker
+        run: node --check worker.js
+
+      - name: Installer wrangler (version épinglée, sans scripts d'installation)
+        run: npm i -g --ignore-scripts wrangler@4 && wrangler --version
+
+      # Le jeton Cloudflare n'est présent QUE dans les étapes wrangler (relecture sécu 05/09).
+
+      # ORDRE VOULU (22.09.2026) — le code admin part AVANT tout le reste.
+      # Mesure du jour : la creation de l'index Vectorize echouait (droit manquant sur
+      # le jeton Cloudflare), l'etape sortait en erreur, et le code admin n'etait JAMAIS
+      # pose. Resultat : ce service a garde le code du 8 juillet pendant plus de deux
+      # mois. `wrangler secret put` n'a besoin d'aucun index : il agit sur le worker
+      # DEJA en ligne. On le fait donc en premier, pour que la rotation du code aboutisse
+      # meme si le deploiement, lui, reste bloque.
+      - name: Pousser le secret d'auth EN PREMIER (doit aboutir meme si le deploiement echoue)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        run: printf '%s' "$PINSHA" | wrangler secret put APEX_ADMIN_PIN_SHA256
+
+      # 22.09.2026 — Vectorize a ete abandonne (voir services/kdmc-rag/wrangler.toml).
+      # D1 est gratuit et ne demande aucun droit particulier. On garde quand meme un
+      # diagnostic : quand ca coince, le message de wrangler ne dit NI quelle cle, NI quel
+      # droit. Ici on nomme la cle (son identifiant n'est pas un secret) et le code exact.
+      - name: Que sait faire la cle Cloudflare, exactement ?
+        shell: bash {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          echo "--- La cle est-elle valide, et LAQUELLE est-ce ? ---"
+          curl -sS -H "$H" "https://api.cloudflare.com/client/v4/user/tokens/verify" | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin); r=d.get('result') or {}
+          print('  cle valide :', d.get('success'), '| identifiant :', r.get('id','?'), '| etat :', r.get('status','?'))
+          for e in d.get('errors') or []: print('  erreur :', e)
+          " || echo "  (reponse illisible)"
+          echo "--- Cette cle peut-elle voir les bases D1 ? ---"
+          CODE=$(curl -sS -o /tmp/d1api.json -w '%{http_code}' -H "$H" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database")
+          echo "  HTTP $CODE"
+          python3 -c "
+          import json
+          d=json.load(open('/tmp/d1api.json'))
+          print('  succes :', d.get('success'))
+          for e in d.get('errors') or []: print('  code', e.get('code'), ':', e.get('message'))
+          res=d.get('result')
+          if isinstance(res,list): print('  bases existantes :', [i.get('name') for i in res])
+          " 2>/dev/null || { echo "  reponse brute :"; head -c 400 /tmp/d1api.json; }
+          if [ "$CODE" != "200" ]; then
+            echo "::error::La cle Cloudflare ne peut pas voir les bases D1 (HTTP $CODE). Il lui manque le droit « Account · D1 · Edit » — sur LA cle dont l'identifiant est affiche ci-dessus."
+            exit 1
+          fi
+
+      # La base de la memoire : creee si absente, puis son identifiant est INJECTE dans
+      # wrangler.toml (jamais commite). Sans cet identifiant, le deploiement refuse.
+      - name: Base D1 de la memoire (creee si absente) + table
+        shell: bash {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database"
+
+          trouver() {
+            curl -sS -H "$H" "$API?per_page=100" | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin)
+          for b in (d.get('result') or []):
+              if b.get('name')=='apex-memory': print(b.get('uuid') or ''); break
+          " 2>/dev/null
+          }
+
+          ID=$(trouver)
+          if [ -z "$ID" ]; then
+            echo "Base absente — creation."
+            curl -sS -X POST -H "$H" -H "content-type: application/json" \
+                 --data '{"name":"apex-memory"}' "$API" > /tmp/d1new.json
+            python3 -c "
+          import json
+          d=json.load(open('/tmp/d1new.json'))
+          print('  creation reussie :', d.get('success'))
+          for e in d.get('errors') or []: print('  code', e.get('code'), ':', e.get('message'))
+          "
+            ID=$(trouver)
+          fi
+          if [ -z "$ID" ]; then
+            echo "::error::La base D1 « apex-memory » n'existe pas et n'a pas pu etre creee (cause exacte ci-dessus). Rien n'est deploye."
+            exit 1
+          fi
+          echo "::notice::Base D1 apex-memory prete."
+
+          # l'identifiant va dans le fichier de config, juste pour ce deploiement
+          python3 - "$ID" <<'PY'
+          import sys, re
+          uuid = sys.argv[1]
+          f = 'services/kdmc-rag/wrangler.toml'
+          s = open(f, encoding='utf-8').read()
+          if 'database_id' in s:
+              s = re.sub(r'database_id\s*=\s*"[^"]*"', 'database_id = "%s"' % uuid, s)
+          else:
+              s = s.replace('database_name = "apex-memory"',
+                            'database_name = "apex-memory"\ndatabase_id = "%s"' % uuid)
+          open(f, 'w', encoding='utf-8').write(s)
+          print('identifiant de base injecte dans wrangler.toml')
+          PY
+          grep -c 'database_id' services/kdmc-rag/wrangler.toml
+
+          # la table, cote serveur (le worker sait aussi la creer seul, ceinture + bretelles)
+          cd services/kdmc-rag
+          wrangler d1 execute apex-memory --remote --yes --command \
+            "CREATE TABLE IF NOT EXISTS memoire (id TEXT PRIMARY KEY, texte TEXT NOT NULL, meta TEXT, vecteur TEXT NOT NULL, maj INTEGER)" 2>&1 | tail -6
+
+      - name: Déployer le worker
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          # Journal wrangler → résumé du run (connectés) ET annotations (lisibles sans connexion).
+          # Le 05/09 le déploiement a échoué en 26 s sans qu'on puisse lire pourquoi.
+          MASK='s#/accounts/[0-9a-f]{32}#/accounts/<id>#g'
+          set +e
+          wrangler deploy 2>&1 | sed -E "$MASK" | tee /tmp/deploy.log
+          RC=${PIPESTATUS[0]}
+          set -e
+          if [ "$RC" != "0" ]; then
+            { echo "## ❌ \`wrangler deploy\` a échoué (code $RC)"; echo; echo '```'; grep -iE 'error|✘|failed|code:' /tmp/deploy.log | tail -40 || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            # Le résumé n'est PAS lisible sans connexion GitHub ; les ANNOTATIONS le sont
+            # (10 par type et par étape) → lignes d'erreur en ::error::.
+            { grep -iE 'error|✘|failed|code:' /tmp/deploy.log || true; } | tail -10 | while IFS= read -r L; do echo "::error::wrangler ▸ $L"; done
+            echo "::error::wrangler deploy a échoué (code $RC) — lignes ci-dessus"
+            exit "$RC"
+          fi
+          { grep -E 'Uploaded|Deployed|Current Version|workers.dev|binding|Vectorize' /tmp/deploy.log || true; } | head -6 | while IFS= read -r L; do echo "::notice::wrangler ▸ $L"; done
+          { grep -Eo 'https://[a-z0-9.-]+workers.dev' /tmp/deploy.log || true; } | head -1 > /tmp/url.txt
+          echo "URL déployée : $(cat /tmp/url.txt 2>/dev/null)"
+          { echo "## ✅ \`wrangler deploy\` OK"; echo; echo '```'; grep -E 'Uploaded|Deployed|Current Version|workers.dev' /tmp/deploy.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke /health (preuve — leçon #95)
+        run: |
+          URL="$(cat /tmp/url.txt 2>/dev/null)"
+          [ -z "$URL" ] && URL="https://kdmc-rag.9r4rxssx64.workers.dev"
+          echo "GET $URL/health"
+          curl -sS "$URL/health" -H "Origin: https://kd-mc.com" | tee /tmp/health.txt; echo
+          grep -q '"ok":true' /tmp/health.txt && grep -q '"hasVec":true' /tmp/health.txt \
+            && echo "✅ RAG en ligne (base + IA branchees)" \
+            || echo "::warning::/health ne confirme pas hasVec:true — la base est peut-etre indisponible (la memoire d'Apex reste fail-open)."
+
+      # ⚠️ 22.09.2026 — /health NE PROUVE PAS QUE LA MEMOIRE MARCHE : il dit seulement que
+      # le worker est en ligne et que la base est BRANCHEE. La garde hors ligne
+      # (npm run test:memoire-apex) prouve la logique, mais avec une FAUSSE base.
+      # Ce qu'aucune des deux ne prouve : que la VRAIE base se comporte pareil.
+      # Donc on range un souvenir d'essai, on le redemande MOT POUR MOT (il doit revenir
+      # avec une ressemblance de 1), puis ON L'EFFACE. C'est le seul controle qui dit
+      # « la memoire d'Apex fonctionne » sans mentir.
+      - name: La memoire fonctionne-t-elle VRAIMENT ? (ranger, retrouver, effacer)
+        shell: bash {0}
+        env:
+          PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        run: |
+          URL="$(cat /tmp/url.txt 2>/dev/null)"
+          [ -z "$URL" ] && URL="https://kdmc-rag.9r4rxssx64.workers.dev"
+          if [ -z "$PINSHA" ]; then
+            echo "::warning::Pas de code admin dans les secrets : l'aller-retour reel n'est pas verifie ici (NON VERIFIE, jamais un faux vert)."
+            exit 0
+          fi
+          ID="__essai_deploiement__"
+          TEXTE="Essai automatique du deploiement, a effacer aussitot."
+          H1="content-type: application/json"
+          H2="x-apex-pin: $PINSHA"
+          H3="Origin: https://kd-mc.com"
+
+          echo "1) on range un souvenir d'essai"
+          curl -sS -X POST "$URL/upsert" -H "$H1" -H "$H2" -H "$H3" \
+            --data "{\"items\":[{\"id\":\"$ID\",\"text\":\"$TEXTE\",\"meta\":{\"essai\":true}}]}" \
+            > /tmp/up.json; cat /tmp/up.json; echo
+
+          echo "2) on le redemande MOT POUR MOT"
+          curl -sS -X POST "$URL/query" -H "$H1" -H "$H2" -H "$H3" \
+            --data "{\"text\":\"$TEXTE\",\"topK\":3}" > /tmp/q.json; cat /tmp/q.json; echo
+
+          echo "3) on l'efface (on ne laisse rien dans la memoire de Kevin)"
+          curl -sS -X POST "$URL/forget" -H "$H1" -H "$H2" -H "$H3" \
+            --data "{\"ids\":[\"$ID\"]}" > /tmp/f.json; cat /tmp/f.json; echo
+
+          echo "4) on verifie qu'il a bien disparu"
+          curl -sS -X POST "$URL/query" -H "$H1" -H "$H2" -H "$H3" \
+            --data "{\"text\":\"$TEXTE\",\"topK\":3}" > /tmp/q2.json; cat /tmp/q2.json; echo
+
+          python3 - "$ID" <<'PY'
+          import json, sys
+          ident = sys.argv[1]
+          souci = []
+          up = json.load(open('/tmp/up.json'))
+          if not up.get('ok') or up.get('upserted') != 1:
+              souci.append('le souvenir n a pas ete range : %s' % up)
+          q = json.load(open('/tmp/q.json'))
+          m = [x for x in (q.get('matches') or []) if x.get('id') == ident]
+          if not m:
+              souci.append('le souvenir range n est PAS ressorti (la vraie base ne rend pas ce que la fausse rendait)')
+          else:
+              score = m[0].get('score')
+              if score is None or abs(score - 1) > 1e-3:
+                  souci.append('ressemblance du texte identique = %s (attendu 1) -> les scores ne sont pas comparables, le seuil 0,6 d Apex perdrait son sens' % score)
+              else:
+                  print('  ressemblance du texte identique : %.6f' % score)
+          f = json.load(open('/tmp/f.json'))
+          if not f.get('ok'):
+              souci.append('l effacement a echoue : %s' % f)
+          q2 = json.load(open('/tmp/q2.json'))
+          if [x for x in (q2.get('matches') or []) if x.get('id') == ident]:
+              souci.append('le souvenir efface REVIENT encore')
+          if souci:
+              for x in souci: print('::error::memoire reelle ▸ ' + x)
+              raise SystemExit(1)
+          print('OK : range, retrouve a 1.000000, efface, et il ne revient plus.')
+          PY
+          echo "::notice::La memoire d Apex fonctionne pour de vrai sur la base gratuite (aller-retour complet verifie, rien laisse derriere)."

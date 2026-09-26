@@ -1,0 +1,6 @@
+gen 2026-06-19T12:03:39Z
+shops/la-detente/img/designs/logo_s01.png : NO-URL ()
+shops/la-detente/img/designs/logo_s01.png : NO-URL ()
+shops/la-detente/img/designs/logo_s02.png : NO-URL ()
+shops/la-detente/img/designs/logo_s02.png : NO-URL ()
+shops/la-detente/img/designs/logo_s03.png : NO-URL ()

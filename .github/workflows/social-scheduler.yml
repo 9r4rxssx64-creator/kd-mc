@@ -1,0 +1,150 @@
+name: Social — Smart Scheduler (Multi-Platform)
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action (process / calendar / status / generate-batch)"
+        required: false
+        default: "process"
+      count:
+        description: "Number of videos to generate (for generate-batch)"
+        required: false
+        default: "1"
+
+permissions:
+  contents: write
+
+jobs:
+  scheduler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y espeak-ng
+
+      - name: Install npm deps
+        working-directory: tools/social
+        run: npm install --no-audit --no-fund
+
+      - name: Determine action
+        id: action
+        run: |
+          INPUT="${{ github.event.inputs.action || '' }}"
+          CRON="${{ github.event.schedule }}"
+          if [ "$CRON" = "0 6 * * 1" ]; then
+            echo "action=calendar" >> $GITHUB_OUTPUT
+          elif [ -n "$INPUT" ]; then
+            echo "action=$INPUT" >> $GITHUB_OUTPUT
+          else
+            echo "action=process" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate weekly calendar
+        if: steps.action.outputs.action == 'calendar'
+        working-directory: tools/social
+        run: node scheduler/cron-runner.js --calendar
+
+      - name: Process pending jobs
+        if: steps.action.outputs.action == 'process'
+        working-directory: tools/social
+        env:
+          GOOGLE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          # ⚠️ CORRIGÉ 16.09.2026 — bug silencieux depuis l'origine : le workflow
+          # fournissait FACEBOOK_* / INSTAGRAM_*, mais publishers/facebook.js et
+          # instagram.js lisent FB_* / IG_* (noms déclarés dans platforms.json).
+          # Aucun mappage nulle part → toute publication Facebook/Instagram
+          # mourait sur « Variables d'env manquantes ». On fournit les DEUX noms.
+          # Garde : tests/social-env-parite.test.mjs (dans test:ci).
+          FACEBOOK_PAGE_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          FB_PAGE_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          IG_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node scheduler/cron-runner.js --all
+
+      - name: Diagnostic jetons (présence seulement, jamais la valeur)
+        env:
+          FB_PAGE_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          IG_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+        run: |
+          for v in FB_PAGE_TOKEN FB_PAGE_ID IG_USER_ID IG_ACCESS_TOKEN \
+                   YOUTUBE_REFRESH_TOKEN TELEGRAM_BOT_TOKEN TIKTOK_ACCESS_TOKEN; do
+            eval "n=\${#$v}"
+            if [ "$n" -gt 0 ]; then echo "$v : PRÉSENT ($n caractères)"; else echo "$v : ABSENT"; fi
+          done
+
+      - name: Show queue status
+        if: steps.action.outputs.action == 'status'
+        working-directory: tools/social
+        run: node scheduler/cron-runner.js --status
+
+      - name: Generate batch
+        if: steps.action.outputs.action == 'generate-batch'
+        working-directory: tools/social
+        env:
+          GOOGLE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          COUNT="${{ github.event.inputs.count || '1' }}"
+          for i in $(seq 1 $COUNT); do
+            echo "=== Generating video $i/$COUNT ==="
+            node cli.js generate --random --format long || true
+          done
+
+      - name: Commit state changes
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tools/social/config/content-library.json 2>/dev/null || true
+          git add tools/social/data/*.json 2>/dev/null || true
+          git add tools/social/output/_publish-log.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "auto: scheduler run $(date -u +%Y-%m-%dT%H:%M)"
+            git push
+          fi
+
+      - name: Notify Telegram
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+            curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+              -d "chat_id=$TELEGRAM_CHAT_ID" \
+              -d "text=❌ Scheduler workflow failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              -d "parse_mode=HTML"
+          fi

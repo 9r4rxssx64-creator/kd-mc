@@ -1,0 +1,109 @@
+name: Gardes du planning (ce que les employés lisent vraiment)
+
+# POURQUOI CE FICHIER EXISTE (mesuré le 19/09/2026)
+# Les gardes qui protègent le planning — équipes, horaires, lieux, ordres de départ,
+# mois passés — sont câblées dans `npm run test:ci`… qui ne tourne dans AUCUN workflow
+# GitHub. Il n'existe que dans le job « tests » de GitLab, et la remise à niveau GitLab
+# (`publier-gitlab.yml`) tournait pour la dernière fois le 17/09, À LA MAIN.
+# Autrement dit : des gardes écrites, prouvées discriminantes par sabotage… qui ne
+# s'exécutaient sur AUCUNE pull request. « Ce qui n'est pas dans la chaîne finit sauté. »
+# Même constat, même remède que bee-gardes.yml (16/09) — on les met là où les
+# changements arrivent vraiment.
+#
+# Ce que ça attrape, et que la lecture du code ne peut PAS voir :
+#   • un mois passé qui revient chez un employé (l'effacement et le planning vérifié
+#     se battaient : le repose gagnait à tous les coups — v9.913) ;
+#   • un numéro de départ en double, hors séquence, ou posé sur un jour non travaillé ;
+#   • la rotation qui ne glisse plus de +1 par cycle ;
+#   • l'app et la page Départs qui divergent (18 753 cellules comparées) ;
+#   • un lieu (CMC / Café de Paris) déduit différemment des deux côtés ;
+#   • un planning livré qui ne vient plus des PDF (régénération oubliée, édition à la main) ;
+#   • un Firebase PÉRIMÉ — la vraie situation de Kevin — qui ferait afficher de fausses équipes.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'tools/shared/**'
+      - 'tools/departs/**'
+      - 'tests/verify-mois-passes.mjs'
+      - 'tests/verify-departs-integrity.mjs'
+      - 'tests/verify-real-departs-render.mjs'
+      - 'tests/verify-equipe-miroir-employes.mjs'
+      - 'tests/verify-equipes-mois-suivant.mjs'
+      - 'tests/verify-lieux-parite.mjs'
+      - 'tests/verify-donnees-a-jour.mjs'
+      - 'tests/verify-light-equipes-firebase.mjs'
+      - 'tests/compare-app-vs-light-departs.mjs'
+      - '.github/workflows/gardes-planning.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'tools/shared/**'
+      - 'tools/departs/**'
+      - '.github/workflows/gardes-planning.yml'
+  # ⛔ Pas de cron : le compte a été suspendu le 15/08/2026 pour VOLUME d'exécutions.
+  #    Ce workflow ne tourne que sur un vrai changement de planning, ou à la main.
+
+# `pull_request` et JAMAIS `pull_request_target` : dépôt PUBLIC — `pull_request_target`
+# exécuterait le code d'un inconnu avec nos secrets et un jeton en écriture.
+# Ici : lecture seule, zéro secret, tout tourne en local dans le runner.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  planning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+
+      # Pas de package-lock à la racine : `npm ci` est impossible et `npm install` sans
+      # `--legacy-peer-deps` échoue. On installe le strict nécessaire.
+      - name: Installer Playwright (le navigateur, pas tout le dépôt)
+        run: |
+          npm install playwright@1.56.0 --no-save --no-audit --no-fund --legacy-peer-deps
+          npx playwright install --with-deps chromium
+
+      # D'ABORD ce qui est rapide et sans navigateur : si le planning livré ne vient plus
+      # des PDF, inutile de vérifier finement ce qu'il affiche.
+      - name: "Le planning livré vient-il encore des PDF ?"
+        run: npm run -s test:donnees-a-jour
+
+      - name: "Les deux surfaces portent les mêmes mois et le même effectif"
+        run: npm run -s test:parite-cmcteams-light
+
+      - name: "Lieux : CMC / Café de Paris déduits pareil des deux côtés"
+        run: npm run -s test:lieux-parite
+
+      # Puis le vrai navigateur, du plus structurant au plus fin.
+      - name: "Départs : 0 doublon, numéros dans la séquence, jamais sur un jour non travaillé"
+        run: npm run -s test:departs-integrity
+
+      - name: "Départs : la rotation glisse de +1 à chaque cycle"
+        run: npm run -s test:departs-render
+
+      - name: "Départs : l'app et la page light affichent les MÊMES numéros"
+        run: npm run -s test:departs-compare
+
+      - name: "Chacun voit son équipe et son équipe miroir (on se connecte comme eux)"
+        run: npm run -s test:equipe-miroir
+
+      - name: "Les équipes du mois SUIVANT sont posées, sur deux états d'appareil"
+        run: npm run -s test:equipes-mois-suivant
+
+      - name: "Mois passés : retirés pour tous sauf l'admin, et ils ne reviennent pas"
+        run: npm run -s test:mois-passes
+
+      - name: "Firebase PÉRIMÉ (la vraie situation de Kevin) : c'est le PDF qui gagne"
+        run: npm run -s test:light-firebase

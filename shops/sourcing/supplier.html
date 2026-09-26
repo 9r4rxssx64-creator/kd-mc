@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<!-- v1.0.3 — KDMC Sourcing — page fournisseur (lockdown role:admin + modale PIN) -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://*.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KDMC Sourcing — Fournisseur</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
+<meta name="theme-color" content="#0e1a12">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.55;background:#0c130d;color:#e9efe7;min-height:100vh}
+a{color:inherit;text-decoration:none}button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+input,select,textarea{font:inherit}
+:root{--gold:#c9a227;--green:#3fa45b;--card:#132016;--card2:#172a1d;--border:#27402f;--muted:#9bb3a3}
+.wrap{max-width:1180px;margin:0 auto;padding:0 14px}
+header.top{position:sticky;top:0;z-index:50;background:rgba(12,19,13,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,0px) + 10px) 0 10px}
+.top-in{display:flex;align-items:center;gap:12px;max-width:1180px;margin:0 auto;padding:0 14px}
+.brand{font-weight:800;font-size:16px}.brand b{color:var(--gold)}
+.spacer{flex:1}
+.btn{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:14px;min-height:40px;display:inline-flex;align-items:center;gap:7px}
+.btn:active{transform:translateY(1px)}
+.btn.gold{background:linear-gradient(135deg,#caa62b,#9c7d18);color:#1a1304;font-weight:700;border:none}
+.btn.green{background:var(--green);color:#04140a;font-weight:700;border:none}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px}
+.cnt{background:var(--green);color:#04140a;font-weight:800;border-radius:20px;padding:1px 8px;font-size:12px;min-width:20px;text-align:center}
+.tag{font-size:11px;border-radius:6px;padding:2px 7px;border:1px solid var(--border);color:var(--muted)}
+.tag.free{color:#1a1304;background:var(--gold);border-color:var(--gold);font-weight:700}
+.head{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin:16px 0}
+.head h1{font-size:22px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.head .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:13px}
+.head .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.sec{margin:18px 0}
+.sec h2{font-size:16px;margin-bottom:10px}
+.banner{background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:12px 14px;font-size:13.5px;color:#dfe9df}
+.form{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;display:grid;gap:9px}
+.form input{background:#0c130d;border:1px solid var(--border);border-radius:9px;padding:11px;color:#e9efe7;min-height:44px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px;padding:2px 0 90px}
+.p{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.p img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--card2)}
+.p .b{padding:9px;display:flex;flex-direction:column;gap:6px;flex:1}
+.p .t{font-size:12.5px;line-height:1.35;max-height:3.6em;overflow:hidden}
+.p .pr{font-weight:800;color:var(--gold);font-size:14px}
+.p .add{margin-top:auto}
+details{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-top:10px}
+summary{cursor:pointer;font-size:14px;font-weight:600}
+.muted{color:var(--muted);font-size:13px}
+/* drawer (réutilisé) */
+.drawer{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);display:none}.drawer.open{display:block}
+.drawer-in{position:absolute;right:0;top:0;bottom:0;width:min(440px,92vw);background:#0e1a12;border-left:1px solid var(--border);display:flex;flex-direction:column}
+.drawer-h{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 12px;border-bottom:1px solid var(--border)}
+.sel-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+.sel-row{display:flex;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:9px}
+.sel-row img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:var(--card2);flex:0 0 auto}
+.sel-row .t{font-size:13px;font-weight:600}.sel-row .s{font-size:11.5px;color:var(--muted)}.sel-row .rm{margin-left:auto;color:#e88;font-size:18px;padding:2px 6px}
+.drawer-f{padding:12px 14px calc(env(safe-area-inset-bottom,0px) + 14px);border-top:1px solid var(--border);display:flex;gap:8px}
+.empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:14px}
+#kdmc-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%) translateY(20px);background:#0a0a0a;color:#fff;border:1px solid var(--border);padding:11px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:90vw;text-align:center}
+#kdmc-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html">← 📦 KDMC <b>Sourcing</b></a>
+    <span class="spacer"></span>
+    <button class="btn gold" onclick="openDrawer()">🛒 <span class="cnt" id="selCnt">0</span></button>
+  </div>
+</header>
+
+<main class="wrap" id="app" style="display:none">
+  <div class="head" id="head"></div>
+
+  <div class="sec">
+    <h2>🛍️ Catalogue</h2>
+    <div id="catStatus"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="sec">
+    <details>
+      <summary>📝 Ajouter un produit manuellement (depuis le catalogue du fournisseur)</summary>
+      <div class="form" style="margin-top:10px">
+        <div class="muted">Ouvre le catalogue du fournisseur, copie le lien + l'image d'un produit, colle ici.</div>
+        <input id="m_title" placeholder="Titre du produit *">
+        <input id="m_price" placeholder="Prix (ex: 12.90)" inputmode="decimal">
+        <input id="m_url" placeholder="Lien du produit (URL)">
+        <input id="m_image" placeholder="URL de l'image">
+        <input id="m_sku" placeholder="Référence / SKU (optionnel)">
+        <button class="btn green" onclick="addManual()">✅ Ajouter à la sélection</button>
+      </div>
+    </details>
+    <details>
+      <summary>🔌 Brancher le catalogue LIVE (avancé)</summary>
+      <div class="form" style="margin-top:10px">
+        <div class="muted">Pour afficher le vrai catalogue automatiquement, il faut un <b>worker proxy</b> kd-mc qui détient ta clé API fournisseur. Colle ici l'URL du proxy (ex: https://kdmc-sourcing-proxy.9r4rxssx64.workers.dev).</div>
+        <input id="proxyUrl" placeholder="URL du worker proxy">
+        <button class="btn" onclick="saveProxy()">💾 Enregistrer &amp; charger le catalogue</button>
+        <div class="muted" id="proxyState"></div>
+      </div>
+    </details>
+  </div>
+</main>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-in">
+    <div class="drawer-h"><b>🛒 Sélection à vendre</b><span class="spacer"></span><button class="btn" onclick="closeDrawer()">✕</button></div>
+    <div class="sel-list" id="selList"></div>
+    <div class="drawer-f">
+      <button class="btn gold" style="flex:1" onclick="KDMCSourcing.exportCsv()">⬇️ Export CSV</button>
+      <button class="btn" onclick="refreshSel()">↻</button>
+    </div>
+  </div>
+</div>
+
+<script src="/CMCteams/kdmc-home/kdmc-sso.js" defer></script>
+<script src="/CMCteams/tools/shared/kdmc-fb-auth.js" defer></script>
+<script src="sourcing.js" defer></script>
+<script>
+var S = null, PRODUCTS = [];
+var E = function(s){ return KDMCSourcing.esc(s); };
+function boot(){
+  KDMCSourcing.bootSSO(function(user){
+    if(user === null || !KDMCSourcing.isAllowed(user)){ location.href = 'index.html'; return; }
+    document.getElementById('app').style.display='block';
+    var id = KDMCSourcing.qs('id');
+    KDMCSourcing.loadSuppliers().then(function(d){
+      S = (d.suppliers||[]).filter(function(x){ return x.id===id; })[0];
+      if(!S){ document.getElementById('head').innerHTML='<h1>Fournisseur introuvable</h1>'; return; }
+      renderHead(d.familyLabels||{});
+      var px = KDMCSourcing.proxyBase(); if(px){ document.getElementById('proxyUrl').value = px; }
+      loadCat();
+    });
+    refreshSel(); setInterval(refreshSel, 20000);
+  });
+}
+function renderHead(L){
+  var fams=(S.families||[]).map(function(f){return '<span class="tag">'+E(L[f]||f)+'</span>';}).join(' ');
+  document.getElementById('head').innerHTML =
+    '<h1>'+E(S.name)+(S.freeKey?' <span class="tag free">⭐ clé gratuite</span>':'')+' <span class="tag">'+E(S.zone)+'</span></h1>'
+    + '<div class="row">🔌 '+E(S.api)+' &nbsp;·&nbsp; 💶 '+E(S.pricing)+' &nbsp;·&nbsp; '+E(S.country)+' &nbsp;·&nbsp; Sans SIRET : '+(S.sansSiret==='oui'?'✅':'⚠️')+'</div>'
+    + '<div class="row">'+E(S.note||'')+'</div>'
+    + '<div class="row">'+fams+'</div>'
+    + '<div class="links">'
+    + (S.catalogue?'<a class="btn gold" target="_blank" rel="noopener noreferrer" href="'+E(S.catalogue)+'">🔗 Catalogue complet</a>':'')
+    + (S.signup?'<a class="btn" target="_blank" rel="noopener noreferrer" href="'+E(S.signup)+'">🆕 S\'inscrire</a>':'')
+    + (S.apidocs?'<a class="btn" target="_blank" rel="noopener noreferrer" href="'+E(S.apidocs)+'">📚 Docs API / clé</a>':'')
+    + '</div>';
+}
+function loadCat(){
+  var st = document.getElementById('catStatus'), grid=document.getElementById('grid');
+  if(!S.adapter && !KDMCSourcing.proxyBase()){
+    st.innerHTML = '<div class="banner">Catalogue live pas encore branché pour ce fournisseur. <b>Ouvre « 🔗 Catalogue complet »</b> ci-dessus, puis ajoute les produits voulus via « 📝 Ajouter un produit manuellement ». Le live s\'active dès qu\'une clé API + proxy sont en place.</div>';
+    grid.innerHTML=''; return;
+  }
+  st.innerHTML = '<div class="muted">Chargement du catalogue…</div>';
+  KDMCSourcing.loadCatalog(S.id).then(function(r){
+    if(!r.ok){
+      st.innerHTML = '<div class="banner">Catalogue live indisponible ('+E(r.error||'')+'). Utilise « 🔗 Catalogue complet » + ajout manuel en attendant la clé API.</div>';
+      grid.innerHTML=''; return;
+    }
+    PRODUCTS = r.products||[];
+    st.innerHTML = '<div class="muted">'+PRODUCTS.length+' produits (live).</div>';
+    grid.innerHTML = PRODUCTS.map(function(p,i){
+      return '<div class="p">'+(p.image?'<img src="'+E(p.image)+'" alt="" loading="lazy">':'<img alt="">')
+        +'<div class="b"><div class="t">'+E(p.title)+'</div>'
+        +'<div class="pr">'+(p.price||'?')+' '+E(p.currency||'')+'</div>'
+        +'<button class="btn green sm add" onclick="addIdx('+i+')">✅ Mettre en vente</button></div></div>';
+    }).join('') || '<div class="empty">Aucun produit.</div>';
+  });
+}
+function addIdx(i){
+  var p = PRODUCTS[i]; if(!p) return;
+  KDMCSourcing.addToSelection({supplier:S.id, supplierName:S.name, family:(S.families||[])[0]||'', title:p.title, price:p.price, currency:p.currency, image:p.image, url:p.url, sku:p.sku}, function(){ refreshSel(); });
+}
+function addManual(){
+  var t=document.getElementById('m_title').value.trim();
+  if(!t){ KDMCSourcing.toast('Titre requis'); return; }
+  KDMCSourcing.addToSelection({
+    supplier:S.id, supplierName:S.name, family:(S.families||[])[0]||'',
+    title:t, price:document.getElementById('m_price').value, currency:'EUR',
+    url:document.getElementById('m_url').value.trim(), image:document.getElementById('m_image').value.trim(),
+    sku:document.getElementById('m_sku').value.trim()
+  }, function(){ ['m_title','m_price','m_url','m_image','m_sku'].forEach(function(id){document.getElementById(id).value='';}); refreshSel(); });
+}
+function saveProxy(){
+  var u=document.getElementById('proxyUrl').value.trim();
+  KDMCSourcing.setProxyBase(u);
+  document.getElementById('proxyState').textContent = u?('Proxy enregistré. Rechargement…'):('Proxy retiré.');
+  loadCat();
+}
+/* drawer */
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); refreshSel(); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
+function refreshSel(){
+  KDMCSourcing.fetchSelection(function(){
+    var arr=KDMCSourcing.selectionArray();
+    document.getElementById('selCnt').textContent=arr.length;
+    var box=document.getElementById('selList'); if(!box) return;
+    box.innerHTML = arr.map(function(r){
+      return '<div class="sel-row">'+(r.image?'<img src="'+E(r.image)+'" alt="" loading="lazy">':'<img alt="">')
+        +'<div><div class="t">'+E(r.title||'(sans titre)')+'</div>'
+        +'<div class="s">'+E(r.supplierName||r.supplier)+(r.price?' · '+r.price+' '+E(r.currency||''):'')+'</div>'
+        +'<div class="s">par '+E(r.addedBy||'')+'</div></div>'
+        +'<button class="rm" onclick="rm(\''+E(r.id)+'\')">✕</button></div>';
+    }).join('') || '<div class="empty">Sélection vide.</div>';
+  });
+}
+function rm(id){ KDMCSourcing.removeFromSelection(id, function(){ refreshSel(); }); }
+document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 60); });
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-sourcing" data-version="v1.0.3" data-color="#c9a227" defer></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+name: 'Lighthouse CI Apex v13'
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Audit cascade v13.3.82 — validation MESURABLE de la perf 100/100.
+# Trigger : push sur main qui touche apex-ai/v13/**.
+# Job : build + serve preview + lighthouse autorun + assert seuils config.
+
+on:
+  # v13.4.126 (Kevin "qualité pro App Store-ready") :
+  # Ajout pull_request → Lighthouse bloque merge si score < seuils config.
+  # Avant : seulement push main (détecte trop tard).
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+      - '.github/workflows/lighthouse-apex-v13.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+      - '.github/workflows/lighthouse-apex-v13.yml'
+  workflow_dispatch: {}
+
+# Droits minimum (24.09.2026) : ce robot ne fait que lire. Explicite, pour ne jamais dépendre du
+# réglage par défaut du dépôt (le dépôt public est réglé en lecture seule).
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run Lighthouse CI
+        run: npm run lighthouse
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports-${{ github.sha }}
+          path: |
+            apex-ai/v13/.lighthouseci/
+            apex-ai/v13/lighthouse-*.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🚦 Lighthouse CI Apex v13" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Seuils requis (lighthouse.config.json) :" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance ≥ 90" >> $GITHUB_STEP_SUMMARY
+          echo "- Accessibility ≥ 95" >> $GITHUB_STEP_SUMMARY
+          echo "- Best Practices ≥ 95" >> $GITHUB_STEP_SUMMARY
+          echo "- SEO ≥ 90" >> $GITHUB_STEP_SUMMARY
+          echo "- PWA ≥ 90 (warn)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Rapports JSON archivés dans artifacts (retention 30j)." >> $GITHUB_STEP_SUMMARY

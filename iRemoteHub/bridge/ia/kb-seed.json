@@ -1,0 +1,149 @@
+{
+  "seed_sonos": {
+    "match_hints": { "mac_oui": "00:0E:58", "port": 1400, "ssdp_st": "ZonePlayer" },
+    "vendor": "Sonos Inc.",
+    "model": "Sonos (générique)",
+    "category": "speaker",
+    "device_type": "Enceinte Sonos",
+    "confidence": 0.95,
+    "protocol_hints": ["upnp_soap", "http_rest"],
+    "suggested_libs": ["@svrooij/sonos", "sonos"],
+    "control_endpoints": [
+      { "protocol": "SOAP UPnP", "base_url": "http://{ip}:1400", "actions": ["Play","Pause","Stop","SetVolume"] }
+    ],
+    "docs_urls": ["https://svrooij.io/sonos-api-docs/"]
+  },
+  "seed_chromecast": {
+    "match_hints": { "mdns_type": "_googlecast._tcp.local", "port": 8009 },
+    "vendor": "Google",
+    "model": "Chromecast",
+    "category": "cast",
+    "device_type": "Dongle de streaming Google Cast",
+    "confidence": 0.9,
+    "protocol_hints": ["cast_v2", "tls"],
+    "suggested_libs": ["castv2-client"],
+    "control_endpoints": [
+      { "protocol": "CAST v2 TLS", "base_url": "tls://{ip}:8009", "actions": ["launch","load","stop","setVolume"] }
+    ],
+    "docs_urls": ["https://developers.google.com/cast"]
+  },
+  "seed_roku": {
+    "match_hints": { "mdns_type": "_rokutv._tcp.local", "port": 8060 },
+    "vendor": "Roku",
+    "model": "Roku (TV/box)",
+    "category": "tv",
+    "device_type": "Box/TV Roku",
+    "confidence": 0.9,
+    "protocol_hints": ["ecp_http"],
+    "suggested_libs": ["@dlenroc/roku-ecp"],
+    "control_endpoints": [
+      { "protocol": "ECP HTTP", "base_url": "http://{ip}:8060", "actions": ["keypress/*","launch/*"] }
+    ],
+    "docs_urls": ["https://developer.roku.com/docs/developer-program/dev-tools/external-control-api.md"]
+  },
+  "seed_hue": {
+    "match_hints": { "mac_oui": "00:17:88", "ssdp_st": "IpBridge", "port": 80 },
+    "vendor": "Philips",
+    "model": "Hue Bridge",
+    "category": "hub",
+    "device_type": "Pont Philips Hue (Zigbee)",
+    "confidence": 0.95,
+    "protocol_hints": ["http_rest"],
+    "suggested_libs": ["node-hue-api"],
+    "control_endpoints": [
+      { "protocol": "REST", "base_url": "http://{ip}/api/{user}", "actions": ["lights","groups","scenes"] }
+    ],
+    "docs_urls": ["https://developers.meethue.com/"]
+  },
+  "seed_samsung_tizen": {
+    "match_hints": { "mdns_type": "_samsungmsf._tcp.local", "port": 8001 },
+    "vendor": "Samsung",
+    "model": "Tizen Smart TV",
+    "category": "tv",
+    "device_type": "TV Samsung Tizen",
+    "confidence": 0.9,
+    "protocol_hints": ["websocket"],
+    "suggested_libs": ["samsung-tv-control"],
+    "control_endpoints": [
+      { "protocol": "WebSocket", "base_url": "wss://{ip}:8002/api/v2/channels/samsung.remote.control", "actions": ["KEY_POWER","KEY_VOLUP","KEY_MUTE"] }
+    ]
+  },
+  "seed_lg_webos": {
+    "match_hints": { "mdns_type": "_lgsmartdevice._tcp.local", "port": 3000 },
+    "vendor": "LG",
+    "model": "WebOS TV",
+    "category": "tv",
+    "device_type": "TV LG WebOS",
+    "confidence": 0.9,
+    "protocol_hints": ["websocket"],
+    "suggested_libs": ["lgtv2"],
+    "control_endpoints": [
+      { "protocol": "WebSocket", "base_url": "ws://{ip}:3000", "actions": ["ssap://system/turnOff","ssap://audio/setVolume"] }
+    ]
+  },
+  "seed_sony_bravia": {
+    "match_hints": { "ssdp_st": "IRCC" },
+    "vendor": "Sony",
+    "model": "Bravia TV",
+    "category": "tv",
+    "device_type": "TV Sony Bravia",
+    "confidence": 0.88,
+    "protocol_hints": ["ircc_soap", "rest"],
+    "control_endpoints": [
+      { "protocol": "SOAP IRCC", "base_url": "http://{ip}/sony/IRCC", "actions": ["KEY_POWER","KEY_VOLUMEUP"] }
+    ]
+  },
+  "seed_airplay": {
+    "match_hints": { "mdns_type": "_airplay._tcp.local" },
+    "vendor": "Apple",
+    "model": "AirPlay device",
+    "category": "cast",
+    "device_type": "Appareil AirPlay (Apple TV, HomePod, récepteur tiers)",
+    "confidence": 0.85
+  },
+  "seed_homekit": {
+    "match_hints": { "mdns_type": "_hap._tcp.local" },
+    "vendor": "HomeKit",
+    "model": "HomeKit accessory",
+    "category": "homekit",
+    "device_type": "Accessoire HomeKit",
+    "confidence": 0.8,
+    "suggested_libs": ["hap-controller-node"]
+  },
+  "seed_matter": {
+    "match_hints": { "mdns_type": "_matter._tcp.local" },
+    "vendor": "Matter",
+    "model": "Matter device",
+    "category": "homekit",
+    "device_type": "Accessoire Matter (standard unifié)",
+    "confidence": 0.8,
+    "suggested_libs": ["@project-chip/matter.js"]
+  },
+  "seed_shelly": {
+    "match_hints": { "mac_oui": "E8:DB:84", "port": 80 },
+    "vendor": "Shelly",
+    "model": "Shelly (relais WiFi)",
+    "category": "plug",
+    "device_type": "Relais Shelly",
+    "confidence": 0.85,
+    "suggested_libs": ["node-shellies-ng"]
+  },
+  "seed_tplink_kasa": {
+    "match_hints": { "mac_oui": "50:C7:BF", "port": 9999 },
+    "vendor": "TP-Link",
+    "model": "Kasa",
+    "category": "plug",
+    "device_type": "Prise/interrupteur TP-Link Kasa",
+    "confidence": 0.85,
+    "suggested_libs": ["tplink-smarthome-api"]
+  },
+  "seed_broadlink": {
+    "match_hints": { "mac_oui": "34:EA:34", "port": 80 },
+    "vendor": "BroadLink",
+    "model": "RM4 (dongle IR)",
+    "category": "ir",
+    "device_type": "Dongle IR BroadLink",
+    "confidence": 0.85,
+    "suggested_libs": ["broadlinkjs-rm"]
+  }
+}

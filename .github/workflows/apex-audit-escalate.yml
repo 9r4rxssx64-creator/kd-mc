@@ -1,0 +1,133 @@
+name: Apex Audit Escalate (Claude Code autonome — gratuit)
+
+# Remplace n8n payant par GitHub Actions GRATUIT illimite repos publics.
+# Trigger 1 : repository_dispatch event_type=apex-audit (POST GitHub API depuis Apex).
+# Trigger 2 : workflow_dispatch (manuel via UI GitHub Actions).
+#
+# Pipeline :
+#   1. Checkout repo
+#   2. Parse audit JSON (github.event.client_payload)
+#   3. Setup Python + install anthropic SDK
+#   4. Call Anthropic API (genere plan correctif)
+#   5. Save plan dans docs/apex-escalades/{ts}-{id}.md
+#   6. Commit + push back vers main
+#   7. Open GitHub Issue avec resume + assign Kevin
+#
+# Secrets requis (Settings > Secrets and variables > Actions) :
+#   - ANTHROPIC_API_KEY  (clef API Claude pour generer le plan)
+#
+# Note : GITHUB_TOKEN est fourni automatiquement par Actions.
+
+on:
+  repository_dispatch:
+    types: [apex-audit, apex-escalation]
+  workflow_dispatch:
+    inputs:
+      finding_json:
+        description: 'Finding JSON (escalade manuelle) — colle le JSON brut'
+        required: false
+        default: '{}'
+      audit_summary:
+        description: 'Resume audit (1 ligne)'
+        required: false
+        default: 'Manual escalation'
+
+jobs:
+  escalate:
+    name: Generate plan + open issue
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install anthropic SDK
+        run: |
+          python -m pip install --upgrade pip
+          pip install anthropic==0.40.0
+
+      - name: Prepare payload
+        id: payload
+        env:
+          PAYLOAD_JSON: ${{ toJson(github.event.client_payload) }}
+          INPUT_FINDING: ${{ github.event.inputs.finding_json }}
+          INPUT_SUMMARY: ${{ github.event.inputs.audit_summary }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          mkdir -p docs/apex-escalades
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "${INPUT_FINDING:-{}}" > /tmp/payload.json
+            echo "summary=${INPUT_SUMMARY}" >> "$GITHUB_OUTPUT"
+          else
+            echo "${PAYLOAD_JSON}" > /tmp/payload.json
+            echo "summary=repository_dispatch" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Payload size: $(wc -c < /tmp/payload.json) bytes"
+
+      - name: Run escalation script
+        id: escalate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PAYLOAD_FILE: /tmp/payload.json
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          python .github/workflows/scripts/escalate.py
+
+      - name: Commit plan to repo
+        if: steps.escalate.outputs.plan_path != ''
+        env:
+          PLAN_PATH: ${{ steps.escalate.outputs.plan_path }}
+        run: |
+          git config user.name "apex-audit-bot"
+          git config user.email "apex-audit-bot@users.noreply.github.com"
+          git add "${PLAN_PATH}"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(apex-escalade): plan auto-genere ${PLAN_PATH}"
+            git push origin HEAD:${GITHUB_REF_NAME} || echo "Push failed (non-blocking)"
+          fi
+
+      - name: Open GitHub Issue
+        if: steps.escalate.outputs.issue_title != ''
+        uses: actions/github-script@v9
+        env:
+          ISSUE_TITLE: ${{ steps.escalate.outputs.issue_title }}
+          ISSUE_BODY: ${{ steps.escalate.outputs.issue_body }}
+          PLAN_PATH: ${{ steps.escalate.outputs.plan_path }}
+        with:
+          script: |
+            const title = process.env.ISSUE_TITLE;
+            const body = process.env.ISSUE_BODY || 'Voir plan auto-genere.';
+            const planPath = process.env.PLAN_PATH || '';
+            const finalBody = body + (planPath
+              ? `\n\n**Plan complet** : [${planPath}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/${planPath})`
+              : '');
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body: finalBody,
+              labels: ['apex-audit', 'auto-escalation'],
+            });
+            core.info(`Issue #${issue.number} created: ${issue.html_url}`);
+            core.setOutput('issue_url', issue.html_url);
+
+      - name: Summary
+        run: |
+          echo "## Apex audit escalation result" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Plan path: ${{ steps.escalate.outputs.plan_path }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Issue title: ${{ steps.escalate.outputs.issue_title }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run ID: ${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"

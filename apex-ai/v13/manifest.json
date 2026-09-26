@@ -1,0 +1,102 @@
+{
+  "name": "APEX AI v13",
+  "short_name": "APEX",
+  "description": "Assistant IA personnel niveau entreprise — multi-providers, voice, studios, modules pro, vault chiffré",
+  "start_url": "/CMCteams/apex-ai-v13/",
+  "scope": "/CMCteams/apex-ai-v13/",
+  "id": "/CMCteams/apex-ai-v13/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "background_color": "#08080f",
+  "theme_color": "#08080f",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "business"],
+  "icons": [
+    {
+      "src": "./assets/icons/apex-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icons/apex-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icons/apex-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chat IA",
+      "short_name": "Chat",
+      "description": "Conversation directe avec Apex",
+      "url": "/CMCteams/apex-ai-v13/#chat",
+      "icons": [{ "src": "./assets/icons/chat.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Télécommande",
+      "short_name": "Remote",
+      "description": "Pilotage devices LAN/Bluetooth/NFC",
+      "url": "/CMCteams/apex-ai-v13/#remote",
+      "icons": [{ "src": "./assets/icons/dashboard.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Réglages",
+      "short_name": "Settings",
+      "description": "Configuration Apex",
+      "url": "/CMCteams/apex-ai-v13/#settings",
+      "icons": [{ "src": "./assets/icons/dashboard.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "share_target": {
+    "action": "/CMCteams/apex-ai-v13/#share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": [
+            "image/*",
+            "audio/*",
+            "video/*",
+            "application/pdf",
+            "text/plain",
+            "text/vcard",
+            "text/x-vcard"
+          ]
+        }
+      ]
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+apex",
+      "url": "/CMCteams/apex-ai-v13/#protocol?q=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/CMCteams/apex-ai-v13/#file-handler",
+      "accept": {
+        "image/*": [".png", ".jpg", ".jpeg", ".webp"],
+        "application/pdf": [".pdf"],
+        "text/plain": [".txt", ".md"]
+      }
+    }
+  ]
+}

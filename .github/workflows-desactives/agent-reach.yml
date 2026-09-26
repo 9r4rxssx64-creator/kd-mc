@@ -1,0 +1,182 @@
+name: Agent Reach (accès internet pour Claude Code + Apex)
+
+# Kevin 2026-07-07 : « Instal pour toi et apex » (repo Panniantong/Agent-Reach, MIT).
+#
+# Agent-Reach = couche d'accès internet pour agents IA (web via Jina Reader,
+# YouTube via yt-dlp, recherche via s.jina.ai, RSS via feedparser, GitHub via gh).
+# Le sandbox Claude Code bloque ces endpoints (403 « Host not in allowlist »),
+# le runner GitHub a le réseau OUVERT → l'outil s'installe et tourne ICI
+# (même pattern que pages-smoke / apex-execute, leçons #96/#126).
+#
+# Déclencheurs :
+#  - workflow_dispatch  : moi (Claude Code, via MCP actions_run_trigger) ou Kevin
+#  - repository_dispatch [agent-reach] : Apex (même canal que apex-execute)
+#
+# Résultat : Step Summary + artifact + push Firebase /apex/ax_agent_reach_last
+# (service account gauth.cjs, fail-open) → Apex lit la réponse dans sa base.
+#
+# Sécurité (règle SÉCURITÉ MAXIMALE) :
+#  - permissions: contents: read (aucune écriture repo, pas de secret exposé
+#    aux steps qui exécutent le code tiers ; les secrets Firebase ne sont
+#    montés QUE sur le step de push, qui n'exécute que NOTRE gauth.cjs)
+#  - lecture seule (aucun posting/login social), cibles bornées, sortie tronquée
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Canal'
+        required: true
+        type: choice
+        options: [web, search, youtube, rss, github, doctor]
+      target:
+        description: 'URL / requête (vide pour doctor)'
+        required: false
+        default: ''
+      exec_id:
+        description: 'ID exécution (callback Apex, optionnel)'
+        required: false
+        default: ''
+  repository_dispatch:
+    types: [agent-reach]
+
+concurrency:
+  group: agent-reach
+  cancel-in-progress: false
+
+jobs:
+  reach:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (gauth.cjs uniquement)
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: tools/firebase
+
+      - name: Parse payload
+        id: p
+        env:
+          RD_CHANNEL: ${{ github.event.client_payload.channel }}
+          RD_TARGET: ${{ github.event.client_payload.target }}
+          RD_EXEC: ${{ github.event.client_payload.exec_id }}
+          WD_CHANNEL: ${{ inputs.channel }}
+          WD_TARGET: ${{ inputs.target }}
+          WD_EXEC: ${{ inputs.exec_id }}
+        run: |
+          CHANNEL="${WD_CHANNEL:-$RD_CHANNEL}"; TARGET="${WD_TARGET:-$RD_TARGET}"; EXEC="${WD_EXEC:-$RD_EXEC}"
+          case "$CHANNEL" in web|search|youtube|rss|github|doctor) ;; *) echo "canal invalide: $CHANNEL"; exit 1;; esac
+          # cible bornée : pas de retour ligne, 500 chars max (anti-injection shell via env quoting partout)
+          TARGET=$(printf '%s' "$TARGET" | tr -d '\r\n' | head -c 500)
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET"   >> "$GITHUB_OUTPUT"
+          echo "exec=${EXEC:-run_${{ github.run_id }}}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Installer Agent-Reach (CLI + deps canaux)
+        run: |
+          python3 -m pip install --quiet "https://github.com/Panniantong/agent-reach/archive/main.zip" yt-dlp feedparser
+          agent-reach --help >/dev/null && echo "✅ agent-reach CLI installé"
+          agent-reach doctor --json > /tmp/doctor.json 2>/dev/null || agent-reach doctor > /tmp/doctor.json 2>&1 || true
+          head -c 2000 /tmp/doctor.json || true
+
+      - name: Exécuter le canal
+        id: run
+        env:
+          CHANNEL: ${{ steps.p.outputs.channel }}
+          TARGET: ${{ steps.p.outputs.target }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          OUT=/tmp/result.txt
+          case "$CHANNEL" in
+            web)
+              # Jina Reader = lecteur web officiel d'Agent-Reach (gratuit sans clé)
+              curl -sS --max-time 90 "https://r.jina.ai/${TARGET}" -o "$OUT"
+              ;;
+            search)
+              # s.jina.ai = recherche web gratuite sans clé (l'Exa/mcporter exige Node+MCP, réservé au full install)
+              curl -sS --max-time 90 -G "https://s.jina.ai/" --data-urlencode "q=${TARGET}" -o "$OUT" \
+                || curl -sS --max-time 90 "https://s.jina.ai/${TARGET}" -o "$OUT"
+              ;;
+            youtube)
+              yt-dlp --write-auto-sub --write-sub --sub-lang "fr,en,fr-orig,en-orig" --skip-download -o "/tmp/vid.%(ext)s" "$TARGET" >/dev/null 2>&1
+              VTT=$(ls /tmp/vid*.vtt 2>/dev/null | head -1)
+              if [ -n "$VTT" ]; then
+                # VTT → texte brut (strip timestamps/balises + doublons consécutifs)
+                sed -e '/-->/d' -e '/^WEBVTT/d' -e '/^Kind:/d' -e '/^Language:/d' -e 's/<[^>]*>//g' -e '/^[[:space:]]*$/d' "$VTT" | awk '$0!=prev{print} {prev=$0}' > "$OUT"
+              else
+                yt-dlp --dump-json --skip-download "$TARGET" 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('title',''));print(d.get('uploader',''));print(d.get('description',''))" > "$OUT" \
+                  || echo "yt-dlp : ni sous-titres ni métadonnées pour $TARGET" > "$OUT"
+              fi
+              ;;
+            rss)
+              python3 - "$TARGET" > "$OUT" <<'PYEOF'
+          import sys, feedparser
+          f = feedparser.parse(sys.argv[1])
+          print(f.feed.get('title', sys.argv[1]))
+          for e in f.entries[:20]:
+              print('- ' + e.get('title','?') + ' | ' + e.get('link','') + ' | ' + e.get('published',''))
+          PYEOF
+              ;;
+            github)
+              gh search repos "$TARGET" --sort stars --limit 10 --json fullName,description,stargazersCount,url \
+                | python3 -m json.tool > "$OUT" 2>/dev/null || gh search repos "$TARGET" --limit 10 > "$OUT"
+              ;;
+            doctor)
+              cp /tmp/doctor.json "$OUT"
+              ;;
+          esac
+          RC=$?
+          [ -s "$OUT" ] || { echo "(sortie vide — canal $CHANNEL cible $TARGET rc=$RC)" > "$OUT"; }
+          head -c 200000 "$OUT" > /tmp/result.capped && mv /tmp/result.capped "$OUT"
+          echo "ok=$([ $RC -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          BYTES=$(wc -c < "$OUT")
+          {
+            echo "## 🌐 Agent Reach — $CHANNEL"
+            echo '`'"$TARGET"'` → '"$BYTES octets (rc=$RC)"
+            echo '```'
+            head -c 3000 "$OUT"
+            echo; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Artifact résultat
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-reach-${{ steps.p.outputs.channel }}-${{ github.run_id }}
+          path: /tmp/result.txt
+          retention-days: 7
+
+      - name: Push résultat → Firebase (Apex lit ax_agent_reach_last)
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          CHANNEL: ${{ steps.p.outputs.channel }}
+          TARGET: ${{ steps.p.outputs.target }}
+          EXEC: ${{ steps.p.outputs.exec }}
+          OKF: ${{ steps.run.outputs.ok }}
+        run: |
+          FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          TOKEN=$(node tools/firebase/gauth.cjs); QS=""
+          [ -n "$TOKEN" ] && QS="?access_token=${TOKEN}"
+          python3 - <<'PYEOF'
+          import json, os, time
+          body = {
+            'exec_id': os.environ['EXEC'], 'channel': os.environ['CHANNEL'],
+            'target': os.environ['TARGET'], 'ok': os.environ.get('OKF') == 'true',
+            'ts': int(time.time()*1000), 'run_id': os.environ.get('GITHUB_RUN_ID',''),
+            'excerpt': open('/tmp/result.txt', errors='replace').read()[:6000],
+          }
+          open('/tmp/fb_payload.json','w').write(json.dumps(body, ensure_ascii=False))
+          PYEOF
+          HTTP=$(curl -sS -o /tmp/fb_resp.txt -w "%{http_code}" -X PUT \
+            "${FB_URL}/apex/ax_agent_reach_last.json${QS}" \
+            -H "Content-Type: application/json" --data-binary @/tmp/fb_payload.json || echo 000)
+          echo "Firebase PUT ax_agent_reach_last → HTTP $HTTP $(head -c 200 /tmp/fb_resp.txt)"
+          # fail-open : un échec Firebase ne fait pas échouer le run (artifact + summary restent)

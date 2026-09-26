@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="2112" viewBox="0 0 1600 2112">
+   <defs><radialGradient id="bg_bsemb" cx="50%" cy="38%" r="70%"><stop offset="0%" stop-color="#1a1c22"/><stop offset="100%" stop-color="#0a0b0e"/></radialGradient><linearGradient id="ring_bsemb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d7dce3"/><stop offset="45%" stop-color="#7c838f"/><stop offset="100%" stop-color="#2a2d34"/></linearGradient><linearGradient id="mg_bsemb" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d7dce3"/><stop offset="50%" stop-color="#7c838f"/><stop offset="100%" stop-color="#2a2d34"/>
+    </linearGradient><radialGradient id="hht_bsemb" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ff6a6f"/>
+      <stop offset="45%" stop-color="#e51f2b"/>
+      <stop offset="100%" stop-color="#8c0d15"/>
+    </radialGradient>
+     <linearGradient id="bsbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#15171c"/><stop offset="100%" stop-color="#0a0b0e"/></linearGradient>
+     <linearGradient id="bswm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#c7ccd4"/></linearGradient>
+   </defs>
+   <rect width="1600" height="2112" fill="url(#bsbg)"/>
+   <text x="80" y="120" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="40" letter-spacing="6" fill="#e51f2b">CHARTE GRAPHIQUE</text>
+   <text x="80" y="172" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="26" letter-spacing="4" fill="#8a909b">LA DÉTENTE — armurerie · tir sportif · ball-trap · chasse</text>
+   <line x1="80" y1="200" x2="1520" y2="200" stroke="#262932" stroke-width="2"/>
+
+   <text x="80" y="262" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="26" letter-spacing="2" fill="#cfd3da">1 · LOGO PRINCIPAL</text>
+   <g transform="translate(150,300) scale(0.46)"><circle cx="500" cy="500" r="488" fill="url(#ring_bsemb)"/><circle cx="500" cy="500" r="488" fill="none" stroke="#2a2d34" stroke-width="3"/><circle cx="500" cy="500" r="470" fill="none" stroke="#d7dce3" stroke-width="2" opacity="0.7"/><circle cx="500" cy="500" r="430" fill="url(#bg_bsemb)"/><circle cx="500" cy="500" r="430" fill="none" stroke="#2a2d34" stroke-width="6"/><circle cx="500" cy="500" r="426" fill="none" stroke="#d7dce3" stroke-width="2" opacity="0.5"/><path d="M150,300 A488,488 0 0 1 850,300" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.18"/><circle cx="949.0" cy="500.0" r="6" fill="#2a2d34"/><circle cx="888.8" cy="724.5" r="6" fill="#2a2d34"/><circle cx="724.5" cy="888.8" r="6" fill="#2a2d34"/><circle cx="500.0" cy="949.0" r="6" fill="#2a2d34"/><circle cx="275.5" cy="888.8" r="6" fill="#2a2d34"/><circle cx="111.2" cy="724.5" r="6" fill="#2a2d34"/><circle cx="51.0" cy="500.0" r="6" fill="#2a2d34"/><circle cx="111.2" cy="275.5" r="6" fill="#2a2d34"/><circle cx="275.5" cy="111.2" r="6" fill="#2a2d34"/><circle cx="500.0" cy="51.0" r="6" fill="#2a2d34"/><circle cx="724.5" cy="111.2" r="6" fill="#2a2d34"/><circle cx="888.8" cy="275.5" r="6" fill="#2a2d34"/><g transform="translate(500,545) rotate(-29) scale(1.3) translate(-183,-88)"><g fill="url(#mg_bsemb)" stroke="#0c0e12" stroke-width="2" stroke-linejoin="round">
+    <polygon points="0,44 62,30 62,74 34,82 0,72"/>
+    <rect x="60" y="30" width="130" height="38" rx="3"/>
+    <rect x="92" y="19" width="100" height="10" rx="3"/>
+    <polygon points="118,68 140,68 153,116 126,118"/>
+    <path d="M150,68 L190,68 L202,156 Q184,162 166,156 Z"/>
+    <rect x="190" y="38" width="76" height="26" rx="5"/>
+    <rect x="266" y="46" width="96" height="10" rx="3"/>
+    <polygon points="300,21 310,21 308,46 302,46"/>
+    <rect x="352" y="43" width="15" height="15" rx="2"/>
+  </g></g><g transform="translate(500,545) rotate(29) scale(1.3) translate(-183,-77)"><g fill="url(#mg_bsemb)" stroke="#0c0e12" stroke-width="2" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,540) scale(1.85)">
+      <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="url(#hht_bsemb)" stroke="#8c0d15" stroke-width="2.5"/>
+      <path d="M-30,-22 C-40,-6 -34,12 -16,22 C-30,4 -26,-12 -12,-22 C-22,-26 -27,-25 -30,-22 Z" fill="#ffffff" opacity="0.35"/>
+    </g></g>
+   <g transform="translate(560,300)">
+     <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" transform="translate(26,150) scale(0.4)" fill="#e51f2b"/>
+     <text x="66" y="168" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="34" letter-spacing="5" fill="#e51f2b">ON VISE AU CŒUR</text>
+     <text x="0" y="290" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="150" letter-spacing="2" fill="url(#bswm)">LA</text>
+     <text x="0" y="430" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="132" letter-spacing="1" fill="url(#bswm)">DÉTENTE</text>
+     <rect x="4" y="316" width="540" height="6" fill="#e51f2b"/>
+     <text x="6" y="500" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="34" letter-spacing="9" fill="#c9ccd3">TIR · BALL-TRAP · CHASSE</text>
+   </g>
+
+   <text x="80" y="900" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="26" letter-spacing="2" fill="#cfd3da">2 · PALETTE</text>
+   <g transform="translate(80,940)">
+     <rect width="150" height="150" rx="14" fill="#e51f2b" stroke="#2a2d34" stroke-width="2"/>
+     <text x="75" y="186" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="22" text-anchor="middle" fill="#e7e9ee">Rouge cœur</text>
+     <text x="75" y="214" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="20" text-anchor="middle" fill="#8a909b">#E51F2B</text>
+   </g>
+   <g transform="translate(300,940)">
+     <rect width="150" height="150" rx="14" fill="#0a0b0e" stroke="#2a2d34" stroke-width="2"/>
+     <text x="75" y="186" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="22" text-anchor="middle" fill="#e7e9ee">Noir</text>
+     <text x="75" y="214" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="20" text-anchor="middle" fill="#8a909b">#0A0B0E</text>
+   </g>
+   <g transform="translate(520,940)">
+     <rect width="150" height="150" rx="14" fill="#d4af37" stroke="#2a2d34" stroke-width="2"/>
+     <text x="75" y="186" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="22" text-anchor="middle" fill="#e7e9ee">Or</text>
+     <text x="75" y="214" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="20" text-anchor="middle" fill="#8a909b">#D4AF37</text>
+   </g>
+   <g transform="translate(740,940)">
+     <rect width="150" height="150" rx="14" fill="#586331" stroke="#2a2d34" stroke-width="2"/>
+     <text x="75" y="186" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="22" text-anchor="middle" fill="#e7e9ee">Olive</text>
+     <text x="75" y="214" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="20" text-anchor="middle" fill="#8a909b">#586331</text>
+   </g>
+   <g transform="translate(960,940)">
+     <rect width="150" height="150" rx="14" fill="#c7ccd4" stroke="#2a2d34" stroke-width="2"/>
+     <text x="75" y="186" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="22" text-anchor="middle" fill="#e7e9ee">Acier</text>
+     <text x="75" y="214" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="20" text-anchor="middle" fill="#8a909b">#C7CCD4</text>
+   </g>
+   <g transform="translate(1180,940)">
+     <rect width="150" height="150" rx="14" fill="#efe7d2" stroke="#2a2d34" stroke-width="2"/>
+     <text x="75" y="186" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="22" text-anchor="middle" fill="#e7e9ee">Crème</text>
+     <text x="75" y="214" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="20" text-anchor="middle" fill="#8a909b">#EFE7D2</text>
+   </g>
+
+   <text x="80" y="1320" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="26" letter-spacing="2" fill="#cfd3da">3 · VERSIONS 1 COULEUR (broderie / sérigraphie)</text>
+   <rect x="80" y="1360" width="420" height="420" rx="16" fill="#0a0b0e" stroke="#262932" stroke-width="2"/>
+   <g transform="translate(290,1570) scale(0.38) translate(-500,-500)">
+    <circle cx="500" cy="500" r="466" fill="none" stroke="#ffffff" stroke-width="14"/>
+    <circle cx="500" cy="500" r="430" fill="none" stroke="#ffffff" stroke-width="4"/>
+    <g font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="44" fill="#ffffff" text-anchor="middle"><text x="121.4" y="413.5" transform="rotate(-75.00 121.4 398.5)">T</text><text x="135.3" y="371.2" transform="rotate(-68.48 135.3 356.2)">I</text><text x="154.0" y="330.7" transform="rotate(-61.96 154.0 315.7)">R</text><text x="204.5" y="257.3" transform="rotate(-48.91 204.5 242.4)">·</text><text x="270.3" y="197.3" transform="rotate(-35.87 270.3 182.3)">B</text><text x="307.9" y="173.3" transform="rotate(-29.35 307.9 158.3)">A</text><text x="347.9" y="153.7" transform="rotate(-22.83 347.9 138.7)">L</text><text x="390.0" y="138.7" transform="rotate(-16.30 390.0 123.8)">L</text><text x="433.4" y="128.7" transform="rotate(-9.78 433.4 113.7)">-</text><text x="477.7" y="123.6" transform="rotate(-3.26 477.7 108.6)">T</text><text x="522.3" y="123.6" transform="rotate(3.26 522.3 108.6)">R</text><text x="566.6" y="128.7" transform="rotate(9.78 566.6 113.7)">A</text><text x="610.0" y="138.7" transform="rotate(16.30 610.0 123.8)">P</text><text x="692.1" y="173.3" transform="rotate(29.35 692.1 158.3)">·</text><text x="764.3" y="225.4" transform="rotate(42.39 764.3 210.5)">C</text><text x="795.5" y="257.3" transform="rotate(48.91 795.5 242.4)">H</text><text x="822.8" y="292.6" transform="rotate(55.43 822.8 277.6)">A</text><text x="846.0" y="330.7" transform="rotate(61.96 846.0 315.7)">S</text><text x="864.7" y="371.2" transform="rotate(68.48 864.7 356.2)">S</text><text x="878.6" y="413.5" transform="rotate(75.00 878.6 398.5)">E</text></g>
+    <g transform="translate(500,545) rotate(-29) scale(1.3) translate(-183,-88)"><g fill="none" stroke="#ffffff" stroke-width="8" stroke-linejoin="round">
+    <polygon points="0,44 62,30 62,74 34,82 0,72"/>
+    <rect x="60" y="30" width="130" height="38" rx="3"/>
+    <rect x="92" y="19" width="100" height="10" rx="3"/>
+    <polygon points="118,68 140,68 153,116 126,118"/>
+    <path d="M150,68 L190,68 L202,156 Q184,162 166,156 Z"/>
+    <rect x="190" y="38" width="76" height="26" rx="5"/>
+    <rect x="266" y="46" width="96" height="10" rx="3"/>
+    <polygon points="300,21 310,21 308,46 302,46"/>
+    <rect x="352" y="43" width="15" height="15" rx="2"/>
+  </g></g><g transform="translate(500,545) rotate(29) scale(1.3) translate(-183,-77)"><g fill="none" stroke="#ffffff" stroke-width="8" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,545) scale(1.8)"><path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="#ffffff"/></g>
+    <rect x="300" y="772" width="400" height="74" rx="10" fill="#ffffff"/>
+    <text x="500" y="824" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="52" letter-spacing="3" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text>
+  </g>
+   <rect x="540" y="1360" width="420" height="420" rx="16" fill="#f3f1ea" stroke="#cfcdc4" stroke-width="2"/>
+   <g transform="translate(750,1570) scale(0.38) translate(-500,-500)">
+    <circle cx="500" cy="500" r="466" fill="none" stroke="#111317" stroke-width="14"/>
+    <circle cx="500" cy="500" r="430" fill="none" stroke="#111317" stroke-width="4"/>
+    <g font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="44" fill="#111317" text-anchor="middle"><text x="121.4" y="413.5" transform="rotate(-75.00 121.4 398.5)">T</text><text x="135.3" y="371.2" transform="rotate(-68.48 135.3 356.2)">I</text><text x="154.0" y="330.7" transform="rotate(-61.96 154.0 315.7)">R</text><text x="204.5" y="257.3" transform="rotate(-48.91 204.5 242.4)">·</text><text x="270.3" y="197.3" transform="rotate(-35.87 270.3 182.3)">B</text><text x="307.9" y="173.3" transform="rotate(-29.35 307.9 158.3)">A</text><text x="347.9" y="153.7" transform="rotate(-22.83 347.9 138.7)">L</text><text x="390.0" y="138.7" transform="rotate(-16.30 390.0 123.8)">L</text><text x="433.4" y="128.7" transform="rotate(-9.78 433.4 113.7)">-</text><text x="477.7" y="123.6" transform="rotate(-3.26 477.7 108.6)">T</text><text x="522.3" y="123.6" transform="rotate(3.26 522.3 108.6)">R</text><text x="566.6" y="128.7" transform="rotate(9.78 566.6 113.7)">A</text><text x="610.0" y="138.7" transform="rotate(16.30 610.0 123.8)">P</text><text x="692.1" y="173.3" transform="rotate(29.35 692.1 158.3)">·</text><text x="764.3" y="225.4" transform="rotate(42.39 764.3 210.5)">C</text><text x="795.5" y="257.3" transform="rotate(48.91 795.5 242.4)">H</text><text x="822.8" y="292.6" transform="rotate(55.43 822.8 277.6)">A</text><text x="846.0" y="330.7" transform="rotate(61.96 846.0 315.7)">S</text><text x="864.7" y="371.2" transform="rotate(68.48 864.7 356.2)">S</text><text x="878.6" y="413.5" transform="rotate(75.00 878.6 398.5)">E</text></g>
+    <g transform="translate(500,545) rotate(-29) scale(1.3) translate(-183,-88)"><g fill="none" stroke="#111317" stroke-width="8" stroke-linejoin="round">
+    <polygon points="0,44 62,30 62,74 34,82 0,72"/>
+    <rect x="60" y="30" width="130" height="38" rx="3"/>
+    <rect x="92" y="19" width="100" height="10" rx="3"/>
+    <polygon points="118,68 140,68 153,116 126,118"/>
+    <path d="M150,68 L190,68 L202,156 Q184,162 166,156 Z"/>
+    <rect x="190" y="38" width="76" height="26" rx="5"/>
+    <rect x="266" y="46" width="96" height="10" rx="3"/>
+    <polygon points="300,21 310,21 308,46 302,46"/>
+    <rect x="352" y="43" width="15" height="15" rx="2"/>
+  </g></g><g transform="translate(500,545) rotate(29) scale(1.3) translate(-183,-77)"><g fill="none" stroke="#111317" stroke-width="8" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,545) scale(1.8)"><path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="#111317"/></g>
+    <rect x="300" y="772" width="400" height="74" rx="10" fill="#111317"/>
+    <text x="500" y="824" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="52" letter-spacing="3" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text>
+  </g>
+   <rect x="1000" y="1360" width="420" height="420" rx="16" fill="#586331" stroke="#3c4422" stroke-width="2"/>
+   <g transform="translate(1210,1570) scale(0.38) translate(-500,-500)">
+    <circle cx="500" cy="500" r="466" fill="none" stroke="#f3f1ea" stroke-width="14"/>
+    <circle cx="500" cy="500" r="430" fill="none" stroke="#f3f1ea" stroke-width="4"/>
+    <g font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="44" fill="#f3f1ea" text-anchor="middle"><text x="121.4" y="413.5" transform="rotate(-75.00 121.4 398.5)">T</text><text x="135.3" y="371.2" transform="rotate(-68.48 135.3 356.2)">I</text><text x="154.0" y="330.7" transform="rotate(-61.96 154.0 315.7)">R</text><text x="204.5" y="257.3" transform="rotate(-48.91 204.5 242.4)">·</text><text x="270.3" y="197.3" transform="rotate(-35.87 270.3 182.3)">B</text><text x="307.9" y="173.3" transform="rotate(-29.35 307.9 158.3)">A</text><text x="347.9" y="153.7" transform="rotate(-22.83 347.9 138.7)">L</text><text x="390.0" y="138.7" transform="rotate(-16.30 390.0 123.8)">L</text><text x="433.4" y="128.7" transform="rotate(-9.78 433.4 113.7)">-</text><text x="477.7" y="123.6" transform="rotate(-3.26 477.7 108.6)">T</text><text x="522.3" y="123.6" transform="rotate(3.26 522.3 108.6)">R</text><text x="566.6" y="128.7" transform="rotate(9.78 566.6 113.7)">A</text><text x="610.0" y="138.7" transform="rotate(16.30 610.0 123.8)">P</text><text x="692.1" y="173.3" transform="rotate(29.35 692.1 158.3)">·</text><text x="764.3" y="225.4" transform="rotate(42.39 764.3 210.5)">C</text><text x="795.5" y="257.3" transform="rotate(48.91 795.5 242.4)">H</text><text x="822.8" y="292.6" transform="rotate(55.43 822.8 277.6)">A</text><text x="846.0" y="330.7" transform="rotate(61.96 846.0 315.7)">S</text><text x="864.7" y="371.2" transform="rotate(68.48 864.7 356.2)">S</text><text x="878.6" y="413.5" transform="rotate(75.00 878.6 398.5)">E</text></g>
+    <g transform="translate(500,545) rotate(-29) scale(1.3) translate(-183,-88)"><g fill="none" stroke="#f3f1ea" stroke-width="8" stroke-linejoin="round">
+    <polygon points="0,44 62,30 62,74 34,82 0,72"/>
+    <rect x="60" y="30" width="130" height="38" rx="3"/>
+    <rect x="92" y="19" width="100" height="10" rx="3"/>
+    <polygon points="118,68 140,68 153,116 126,118"/>
+    <path d="M150,68 L190,68 L202,156 Q184,162 166,156 Z"/>
+    <rect x="190" y="38" width="76" height="26" rx="5"/>
+    <rect x="266" y="46" width="96" height="10" rx="3"/>
+    <polygon points="300,21 310,21 308,46 302,46"/>
+    <rect x="352" y="43" width="15" height="15" rx="2"/>
+  </g></g><g transform="translate(500,545) rotate(29) scale(1.3) translate(-183,-77)"><g fill="none" stroke="#f3f1ea" stroke-width="8" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,545) scale(1.8)"><path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="#f3f1ea"/></g>
+    <rect x="300" y="772" width="400" height="74" rx="10" fill="#f3f1ea"/>
+    <text x="500" y="824" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="52" letter-spacing="3" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text>
+  </g>
+
+   <text x="80" y="1880" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="26" letter-spacing="2" fill="#cfd3da">4 · TYPOGRAPHIE</text>
+   <text x="80" y="1946" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="64" fill="#e7e9ee">Aa Bb Cc — LA DÉTENTE 0123</text>
+   <text x="80" y="2010" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="28" fill="#8a909b">Sans-serif bold condensé · titres en capitales · slogan en rouge accent</text>
+   <text x="80" y="2070" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-size="24" fill="#5d636e">Sources vectorielles SVG fournies · couleurs RVB (conversion CMJN par l'imprimeur)</text>
+  </svg>

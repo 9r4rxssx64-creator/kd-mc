@@ -1,0 +1,14 @@
+{
+  "name": "KDMC APEX",
+  "short_name": "KDMC",
+  "description": "Tous tes projets KDMC, un identifiant unique.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080d07",
+  "theme_color": "#0b1409",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

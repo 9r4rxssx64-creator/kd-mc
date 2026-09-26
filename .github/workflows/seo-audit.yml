@@ -1,0 +1,79 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: SEO Audit (skill claude-seo)
+
+# Lance un audit SEO + Core Web Vitals en utilisant les GitHub Secrets existants
+# (GOOGLE_API_KEY / GEMINI_API_KEY / FIREBASE_WEB_API_KEY / TAVILY_API_KEY).
+# Déclenchement MANUEL uniquement (anti-spam mail : pas de cron).
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL à auditer"
+        required: true
+        default: "https://9r4rxssx64-creator.github.io/CMCteams/"
+      strategy:
+        description: "Stratégie PageSpeed"
+        required: false
+        default: "mobile"
+        type: choice
+        options: [mobile, desktop, both]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      # Chaîne de repli : le 1er secret non vide sert de clé Google (PSI/CrUX).
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install SEO skill deps
+        run: pip install -q -r .claude/skills/seo/requirements.txt
+
+      - name: Vérifier les credentials Google (détail des erreurs)
+        run: |
+          echo "## 🔑 Credentials Google" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          python .claude/skills/seo/scripts/google_auth.py --check --json 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: PageSpeed + CrUX
+        id: psi
+        run: |
+          URL='${{ github.event.inputs.url }}'
+          STRAT='${{ github.event.inputs.strategy }}'
+          echo "## 📊 PageSpeed + CrUX — $URL ($STRAT)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          python .claude/skills/seo/scripts/pagespeed_check.py "$URL" --strategy "$STRAT" --json 2>&1 \
+            | tee psi-report.json | tee -a "$GITHUB_STEP_SUMMARY" || {
+              echo "[erreur] PageSpeed a échoué — cause exacte ci-dessus." >> "$GITHUB_STEP_SUMMARY"; }
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-audit-report
+          path: psi-report.json
+          if-no-files-found: ignore
+          retention-days: 30

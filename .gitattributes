@@ -1,0 +1,12 @@
+# Journaux de session : chaque session Claude écrit en tête de ces fichiers, en même temps que les
+# autres. Sans ce réglage, deux ajouts au même endroit = conflit et la fusion automatique s'arrête
+# (vécu le 2026-09-05 : 9 chevauchements sur 10 entre branches venaient de MEMO_RESUME.md).
+# « union » = garder les deux côtés, jamais de marqueur de conflit. Réservé aux journaux
+# (ajout seul, ordre sans importance) — JAMAIS pour du code.
+MEMO_RESUME.md      merge=union
+KEVIN_INVENTORY.md  merge=union
+LESSONS.md          merge=union
+
+# Lanceur Windows double-clic : cmd.exe exige des fins de ligne CRLF. « -text » = git ne
+# convertit JAMAIS ce fichier (ni à l'entrée ni à la sortie). Généré par tools/runner/construire-cmd.mjs.
+tools/runner/*.cmd  -text

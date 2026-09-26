@@ -1,0 +1,131 @@
+<!doctype html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Apex Emergency Fix Zoom — Kevin</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,system-ui,sans-serif;background:#08080f;color:#fff;padding:16px;line-height:1.5}
+  h1{font-size:22px;color:#c9a227;margin-bottom:14px;text-align:center}
+  .step{background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.3);border-radius:12px;padding:14px;margin-bottom:12px}
+  .step h2{font-size:16px;color:#c9a227;margin-bottom:8px}
+  .step p{font-size:14px;color:rgba(255,255,255,0.85);margin-bottom:8px}
+  .step ul{list-style:none;padding:0}
+  .step li{padding:4px 0;font-size:13px;color:rgba(255,255,255,0.7)}
+  .step li::before{content:"→ ";color:#c9a227;font-weight:700}
+  .btn{display:block;width:100%;padding:18px;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;border:none;border-radius:14px;font-size:18px;font-weight:800;cursor:pointer;margin:12px 0;text-decoration:none;text-align:center;box-shadow:0 4px 16px rgba(201,162,39,0.3)}
+  .btn:active{transform:scale(0.97)}
+  .btn-danger{background:linear-gradient(135deg,#ff5b5b,#cc3030);color:#fff}
+  .btn-blue{background:linear-gradient(135deg,#6a8aff,#4a6acc);color:#fff}
+  .status{padding:14px;background:rgba(255,255,255,0.04);border-radius:10px;font-family:monospace;font-size:12px;color:#22cc77;margin-top:14px;white-space:pre-wrap}
+  .check{color:#22cc77;font-weight:700}
+  .warn{color:#ffaa66;font-weight:700}
+  .info{font-size:12px;color:rgba(255,255,255,0.5);text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>🆘 Apex Reset Zoom — Urgence Kevin</h1>
+
+<div class="step">
+  <h2>Étape 1 — Reset complet PWA (le bouton qui marche TOUJOURS)</h2>
+  <p>Click ce bouton. Il fait <b>TOUT</b> en 1 fois :</p>
+  <ul>
+    <li>Unregister tous les Service Workers</li>
+    <li>Clear tous les caches (CacheStorage)</li>
+    <li>Recharge la dernière version Apex depuis le serveur</li>
+  </ul>
+  <button class="btn" onclick="nuclearReset()">💥 RESET TOTAL + RECHARGER APEX</button>
+  <div id="status" class="status">En attente…</div>
+</div>
+
+<div class="step">
+  <h2>Étape 2 — Si Étape 1 ne suffit pas, vérifier iOS</h2>
+  <p>Réglages iPhone à vérifier (le "zoom" peut être device-level) :</p>
+  <ul>
+    <li><b>Réglages → Affichage et luminosité → Zoom de l'écran</b> = "Standard" (pas "Plus grand")</li>
+    <li><b>Réglages → Accessibilité → Affichage et taille du texte → Texte plus grand</b> = slider au MILIEU (par défaut)</li>
+    <li><b>Réglages → Accessibilité → Zoom</b> = OFF</li>
+    <li><b>Safari → AA dans la barre URL → Aa- jusqu'à 100%</b></li>
+  </ul>
+</div>
+
+<div class="step">
+  <h2>Étape 3 — Nuclear : Réinstaller la PWA</h2>
+  <p>Si étapes 1+2 ne suffisent toujours pas :</p>
+  <ul>
+    <li>Sur écran iPhone, appuie-long sur l'icône Apex</li>
+    <li>Tap "Supprimer l'app"</li>
+    <li>Ouvre Safari → https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/</li>
+    <li>Bouton Partager (carré flèche haut) → "Ajouter à l'écran d'accueil"</li>
+    <li>Ouvre la nouvelle icône Apex (PWA propre)</li>
+  </ul>
+  <a class="btn btn-blue" href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/?_force_upd_1">🌐 Ouvrir Apex en mode FORCED</a>
+</div>
+
+<div class="step">
+  <h2>Étape 4 — Diagnostic visuel temps réel</h2>
+  <p>Affiche les vraies métriques de ton iPhone :</p>
+  <button class="btn btn-blue" onclick="showMetrics()">📊 Voir mes métriques iPhone</button>
+  <div id="metrics" class="status">—</div>
+</div>
+
+<p class="info">Apex v13.4.189 · Force-update auto-MAJ activée toujours · Si tu vois encore le zoom après reset, c'est device-level iOS</p>
+
+<script>
+async function nuclearReset() {
+  var s = document.getElementById('status');
+  s.textContent = '⏳ Reset en cours…\n';
+  try {
+    s.textContent += '1. Unregister Service Workers…\n';
+    if ('serviceWorker' in navigator) {
+      var regs = await navigator.serviceWorker.getRegistrations();
+      for (var r of regs) { await r.unregister().catch(function(){}); }
+      s.textContent += '   ✅ ' + regs.length + ' SW unregistered\n';
+    }
+    s.textContent += '2. Clear caches…\n';
+    if (typeof caches !== 'undefined') {
+      var keys = await caches.keys();
+      for (var k of keys) { await caches.delete(k).catch(function(){}); }
+      s.textContent += '   ✅ ' + keys.length + ' caches cleared\n';
+    }
+    s.textContent += '3. Redirection vers Apex…\n';
+    setTimeout(function() {
+      location.replace('https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/?_force_upd_' + Date.now());
+    }, 600);
+  } catch (e) {
+    s.textContent += '❌ Erreur : ' + e.message + '\n';
+    s.textContent += '\nFallback : ouvre manuellement le lien :\nhttps://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/?_force_upd_' + Date.now();
+  }
+}
+function showMetrics() {
+  var m = document.getElementById('metrics');
+  var vw = document.documentElement.clientWidth;
+  var vh = document.documentElement.clientHeight;
+  var iw = window.innerWidth;
+  var ih = window.innerHeight;
+  var dpr = window.devicePixelRatio;
+  var scale = window.visualViewport ? window.visualViewport.scale : 'n/a';
+  var ratio = iw / vw;
+  m.textContent = [
+    'viewport CSS : ' + vw + 'x' + vh + ' px',
+    'innerWidth/Height : ' + iw + 'x' + ih + ' px',
+    'devicePixelRatio : ' + dpr,
+    'visualViewport.scale : ' + scale,
+    'ratio innerWidth/clientWidth : ' + ratio.toFixed(3),
+    '',
+    scale === 1 && Math.abs(ratio - 1) < 0.05
+      ? '✅ Aucun zoom CSS détecté. Si tu vois du zoom, c\'est device-level (Étape 2).'
+      : '⚠️ Zoom détecté ! scale=' + scale + ' ou ratio anormal.'
+  ].join('\n');
+}
+window.addEventListener('load', function() { setTimeout(showMetrics, 500); });
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="apex-emergency-reset"
+        data-version="v1.0.0"
+        data-color="#ff5b5b"
+        defer></script>
+</body>
+</html>

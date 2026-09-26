@@ -1,0 +1,66 @@
+name: Fabrique de produits — écrire un kit en base
+
+# Déclenché À LA MAIN (bouton ou actions_run_trigger par Claude Code), jamais par
+# un cron GitHub (règle absolue du dépôt). Une fabrication = un produit.
+#
+# Ce que ça fait (tools/produits/fabrique.mjs) : lit la fiche publique du
+# catalogue → rédige chaque module MANQUANT par l'API Anthropic → contrôle par
+# script (3 essais, sinon rien n'est écrit) → INSERT en base D1 kdmc-contenu.
+# Le texte des modules (payant) ne passe JAMAIS par le dépôt ni par un artifact.
+# Les secrets restent ici : la session qui déclenche n'en voit aucun.
+
+on:
+  workflow_dispatch:
+    inputs:
+      produit:
+        description: "Produit à fabriquer (id du catalogue tools/produits/catalogue.json)"
+        type: choice
+        options: ["bureau-ia", "etudiant-ia", "avis-ia", "immo-ia"]
+        default: "avis-ia"
+      dry_run:
+        description: "Essai à blanc : lecture de la base seulement, aucun appel IA, rien d'écrit"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+      refaire:
+        description: "Modules à RÉÉCRIRE même s'ils existent (ex : m3,m5) — vide = seulement les manquants"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: produit-fabrique-${{ inputs.produit }}
+  cancel-in-progress: false
+
+jobs:
+  fabrique:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # La fabrique ne tourne pas sans sa garde (porte de vérité hors ligne).
+      - name: Garde (tests hors ligne)
+        run: node --test tests/produits-fabrique.test.mjs
+
+      - name: Fabrication
+        env:
+          PRODUIT: ${{ inputs.produit }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          REFAIRE: ${{ inputs.refaire }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/produits/fabrique.mjs 2>&1 | tee /tmp/fabrique.log
+          if [ "$DRY_RUN" = "false" ]; then
+            grep -qE "^PRODUIT (PUBLIÉ|COMPLET)" /tmp/fabrique.log || { echo "ÉCHEC : ni « PRODUIT PUBLIÉ » ni « PRODUIT COMPLET » dans le journal"; exit 1; }
+          else
+            grep -qE "^PRODUIT (SIMULÉ|COMPLET)" /tmp/fabrique.log || { echo "ÉCHEC : l'essai à blanc n'est pas allé au bout"; exit 1; }
+          fi

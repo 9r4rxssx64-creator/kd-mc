@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+.vitest-cache/
+playwright-report/
+test-results/
+.playwright/
+*.tmp.js
+*.log
+.DS_Store
+tests/.localhost-cert.pem
+tests/.localhost-key.pem

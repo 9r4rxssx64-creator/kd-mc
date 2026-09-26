@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /CMCteams/messaging-app/
+Allow: /CMCteams/messaging-app/cgu.html
+Allow: /CMCteams/messaging-app/privacy.html
+Disallow: /CMCteams/messaging-app/i/
+Disallow: /CMCteams/messaging-app/api/
+Disallow: /CMCteams/messaging-app/admin
+Disallow: /CMCteams/messaging-app/diag.html
+Disallow: /CMCteams/messaging-app/force-update.html
+Disallow: /CMCteams/messaging-app/force-logout.html
+
+Sitemap: https://apex-chat.kd-mc.com/sitemap.xml

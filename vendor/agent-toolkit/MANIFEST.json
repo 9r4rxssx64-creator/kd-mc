@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-08-06T15:30:58.015Z",
+  "generated_by": "tools/agent-toolkit/sync.mjs",
+  "origine": "Tableau « Une Notion = Un Projet » (Kevin, 2026-08-06)",
+  "sources": [
+    {
+      "id": "skills",
+      "notion": "Ingenieur",
+      "repo": "https://github.com/anthropics/skills",
+      "usage": "Skills officiels Anthropic (docx/pdf/pptx/xlsx, artifacts, mcp-builder, canvas-design…). Référence pour écrire mes propres SKILL.md.",
+      "licence": "voir LICENSE vendorisée",
+      "sha": "b29e7cf65e5cb78a5ac33d582270551bc74a14eb",
+      "files": 32,
+      "bytes": 404194,
+      "skipped": 0,
+      "ok": true
+    },
+    {
+      "id": "gbrain",
+      "notion": "Memoire",
+      "repo": "https://github.com/garrytan/gbrain",
+      "usage": "Cerveau/mémoire d'agent exposé en MCP (stdio pour Claude Code, HTTP OAuth 2.1). À comparer avec notre mémoire compacte maison (tools/memory).",
+      "licence": "voir LICENSE vendorisée",
+      "sha": "15b9863d13635d173562a54f55a1d388bfcf546b",
+      "files": 133,
+      "bytes": 1479603,
+      "skipped": 3,
+      "ok": true
+    },
+    {
+      "id": "awesome-design-skills",
+      "notion": "Design",
+      "repo": "https://github.com/bergside/awesome-design-skills",
+      "usage": "67 systèmes de design prêts à l'emploi (SKILL.md pour l'agent + DESIGN.md pour l'humain) + index.json. Sert de bibliothèque de directions visuelles.",
+      "licence": "MIT",
+      "sha": "f631a09b4fcc0166f2e2c1a8c81906ef680c57e8",
+      "files": 136,
+      "bytes": 377757,
+      "skipped": 0,
+      "ok": true
+    },
+    {
+      "id": "rtk",
+      "notion": "Economie de jetons",
+      "repo": "https://github.com/rtk-ai/rtk",
+      "usage": "Proxy CLI (binaire Rust) qui compresse la sortie des commandes dev avant qu'elle n'entre dans le contexte → moins de jetons consommés. Docs + hooks de référence.",
+      "licence": "voir LICENSE vendorisée",
+      "sha": "de1f568c50ec4eeaba6b89695050fc08dc6a9d54",
+      "files": 33,
+      "bytes": 434057,
+      "skipped": 0,
+      "ok": true
+    },
+    {
+      "id": "meridian-company-os",
+      "notion": "Entreprise",
+      "repo": "https://github.com/codejunkie99/meridian-company-os",
+      "usage": "« OS d'entreprise » open-source : piloter humains + agents dans une même console (cockpit, kanban, objectifs, gouvernance, audit, finances). On vendorise la DOC (pas l'appli React).",
+      "licence": "MIT",
+      "sha": "79309eb13bdcad5ea76d3fc56b1a42bd80c01302",
+      "files": 6,
+      "bytes": 21856,
+      "skipped": 0,
+      "ok": true
+    },
+    {
+      "id": "free-llm-api-resources",
+      "notion": "IA gratuites",
+      "repo": "https://github.com/jeis4wpi/free-llm-api-resources",
+      "usage": "Catalogue des IA gratuites par API (26 fournisseurs, paliers réels). La source déclarée depuis le 6.08 mais JAMAIS récupérée : sa vendorisation avait échoué (ok:false).",
+      "licence": "aucun fichier de licence à la racine — voir le dépôt",
+      "ok": true,
+      "error": "Command failed: git clone --depth 1 --quiet https://github.com/cheahjs/free-llm-api-resources.git /tmp/atk-free-llm-api-resources-hGDvKY\nfatal: could not read Username for 'https://github.com': No such device or address\n",
+      "sha": null,
+      "sha_note": "récupéré par raw.githubusercontent (l'API GitHub est inaccessible depuis l'agent : pas de SHA mesurable)",
+      "files": 1,
+      "bytes": 13935,
+      "skipped": 0,
+      "recupere_le": "2026-09-03"
+    },
+    {
+      "id": "free-for-dev",
+      "notion": "Paliers gratuits",
+      "repo": "https://github.com/ripienaar/free-for-dev",
+      "usage": "Catalogue de 57 rubriques de services gratuits pour développeurs.",
+      "licence": "aucun fichier de licence à la racine — voir le dépôt",
+      "sha": null,
+      "sha_note": "récupéré par raw.githubusercontent (l'API GitHub est inaccessible depuis l'agent : pas de SHA mesurable)",
+      "files": 1,
+      "bytes": 256795,
+      "skipped": 0,
+      "ok": true,
+      "recupere_le": "2026-09-03"
+    }
+  ],
+  "generated_at_note": "free-llm-api-resources et free-for-dev récupérés à la main le 3.09.2026 (git clone github.com est bloqué depuis l'agent ; raw.githubusercontent répond)"
+}

@@ -1,0 +1,133 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: Smoke test post-deploy
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Apres deploiement GitHub Pages, verifie que les URLs critiques repondent 200
+# et que la version visible correspond a APP_VER. Sinon ouvre une issue + auto-rollback option.
+
+# ⚠️ MIS EN VEILLE LE 22.09.2026 — IL SURVEILLE UNE ADRESSE QUI N'EXISTE PLUS.
+#
+# Ce controle interroge 9 adresses « 9r4rxssx64-creator.github.io/CMCteams/… ».
+# Depuis que le depot est PRIVE, GitHub Pages ne publie plus : deploy.yml le detecte
+# et SAUTE la publication (mesure : deploiements « reussis » en 9 s, etape en
+# 'skipped'). Ces 9 adresses ne menent donc plus a l'application.
+#
+# CE QUI SE SERAIT PASSE s'il etait reparti : 3 minutes d'attente pour rien, 9 echecs,
+# puis « Open issue on failure » ouvrait une ISSUE annoncant un deploiement rate —
+# alors que le deploiement va parfaitement bien. Une fausse alerte automatique est
+# pire que pas d'alerte du tout. (Il dort en fait depuis le 11.08 : les fusions du
+# robot n'enclenchent pas les workflows « push ».)
+#
+# SON TRAVAIL EST DEJA FAIT, ET MIEUX : publier-site-prive.yml (Cloudflare Pages,
+# ~41 s, vert a chaque fusion) SONDE LES 26 ADRESSES du site publie et verifie
+# l'adresse stable qu'attend le routeur. C'est la vraie verification post-publication.
+#
+# RIEN N'EST SUPPRIME : il reste lançable d'un bouton. Pour le reveiller, il faudra
+# d'abord remplacer les 9 adresses github.io par celles du domaine — sinon il criera
+# au faux. Voir ETAT-INFRA fait n°20 et LESSONS.md #318.
+on:
+  # push:                      ← rendormi le 22.09.2026, voir le bloc ci-dessus
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'index.html'
+  #     - 'apex-ai/index.html'
+  #     - 'sw.js'
+  #     - 'apex-ai/sw.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Wait for GitHub Pages deploy (3 min)
+        run: sleep 180
+
+      - name: Extract local APP_VER
+        id: ver
+        run: |
+          CMC_VER=$(grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' index.html | head -1 | grep -oE 'v[0-9.]+' || echo "unknown")
+          APEX_VER=$(grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' apex-ai/index.html | head -1 | grep -oE 'v[0-9.]+' || echo "unknown")
+          echo "cmc=$CMC_VER" >> $GITHUB_OUTPUT
+          echo "apex=$APEX_VER" >> $GITHUB_OUTPUT
+          echo "Local CMCteams=$CMC_VER, Apex=$APEX_VER"
+
+      - name: Smoke test URLs
+        id: smoke
+        run: |
+          set +e
+          PASS=0
+          FAIL=0
+          ERRORS=""
+          for url in \
+            "https://9r4rxssx64-creator.github.io/CMCteams/" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/index.html" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/sw.js" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/force-update.html" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/index.html" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/sw.js" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/manifest.json" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/force-update.html"; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "$url")
+            if [ "$CODE" = "200" ]; then
+              PASS=$((PASS+1))
+              echo "OK $url -> $CODE"
+            else
+              FAIL=$((FAIL+1))
+              ERRORS="$ERRORS\n- $url -> HTTP $CODE"
+              echo "FAIL $url -> $CODE"
+            fi
+          done
+          echo "pass=$PASS" >> $GITHUB_OUTPUT
+          echo "fail=$FAIL" >> $GITHUB_OUTPUT
+          echo "errors<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$ERRORS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          if [ "$FAIL" -gt 0 ]; then exit 1; fi
+
+      - name: Verify deployed APP_VER matches local
+        run: |
+          set -e
+          DEPLOYED_CMC=$(curl -s "https://9r4rxssx64-creator.github.io/CMCteams/index.html" | grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' | head -1 | grep -oE 'v[0-9.]+' || echo "unknown")
+          DEPLOYED_APEX=$(curl -s "https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/index.html" | grep -oE 'var APP_VER\s*=\s*"v[0-9.]+"' | head -1 | grep -oE 'v[0-9.]+' || echo "unknown")
+          echo "Deployed CMCteams=$DEPLOYED_CMC, Apex=$DEPLOYED_APEX"
+          if [ "$DEPLOYED_CMC" != "${{ steps.ver.outputs.cmc }}" ]; then
+            echo "::warning::CMCteams local=${{ steps.ver.outputs.cmc }} but deployed=$DEPLOYED_CMC (Pages may still be propagating)"
+          fi
+          if [ "$DEPLOYED_APEX" != "${{ steps.ver.outputs.apex }}" ]; then
+            echo "::warning::Apex local=${{ steps.ver.outputs.apex }} but deployed=$DEPLOYED_APEX (Pages may still be propagating)"
+          fi
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const errors = `${{ steps.smoke.outputs.errors }}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[smoke-test] Deploy ${context.sha.slice(0,8)} a echoue`,
+              body: `Apres deploiement de ${context.sha} sur main, le smoke test a echoue.\n\n**Erreurs** :\n${errors}\n\n**Actions a entreprendre** :\n1. Verifier statut GitHub Pages : https://www.githubstatus.com/\n2. Verifier que main n'a pas casse le HTML\n3. Eventuellement rollback via revert\n\nDeclenchee par ${context.actor}, run [#${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
+              labels: ['bug', 'deploy', 'auto']
+            });

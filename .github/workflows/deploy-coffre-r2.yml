@@ -1,0 +1,105 @@
+name: Deploy Coffre R2 Worker
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.   # 'claude/**' couvre l'ancienne branche nommée en dur
+    paths:
+      - "services/coffre-r2/**"
+      - ".github/workflows/deploy-coffre-r2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-coffre-r2
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/coffre-r2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install wrangler
+        run: npm i -g wrangler@4
+
+      - name: Create R2 bucket (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -x
+          wrangler r2 bucket create coffre-vault 2>&1 | tee /tmp/r2.log || true
+          if grep -qiE "already (exists|owned)|exists" /tmp/r2.log; then
+            echo "Bucket déjà présent — OK"
+          fi
+
+      - name: Push app token secret (defense in depth)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          TOKEN="${{ secrets.COFFRE_PUBLIC_TOKEN }}"
+          if [ -z "$TOKEN" ]; then
+            echo "Pas de COFFRE_PUBLIC_TOKEN — worker en mode CORS-only (OK, données chiffrées E2E)."
+          else
+            printf '%s' "$TOKEN" | wrangler secret put COFFRE_PUBLIC_TOKEN
+          fi
+
+      - name: Deploy worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee /tmp/deploy.log
+          URL=$(grep -oE "https://[a-zA-Z0-9.-]+\.workers\.dev" /tmp/deploy.log | head -1)
+          echo "worker_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Déployé: $URL"
+
+      - name: Health check
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          [ -z "$URL" ] && { echo "URL introuvable"; exit 1; }
+          for i in 1 2 3 4 5; do
+            if curl -fsS "$URL/health" | tee /tmp/health.json | grep -q '"ok":true'; then
+              echo "Health OK"; break
+            fi
+            echo "retry $i"; sleep 5
+          done
+          grep -q '"ok":true' /tmp/health.json
+
+      - name: Auto-commit worker URL into coffre-fort/config.json
+        env:
+          URL: ${{ steps.deploy.outputs.worker_url }}
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          node -e '
+            const fs=require("fs");const p="coffre-fort/config.json";
+            const c=JSON.parse(fs.readFileSync(p,"utf8"));
+            if(c.r2_worker_url!==process.env.URL){
+              c.r2_worker_url=process.env.URL;
+              fs.writeFileSync(p,JSON.stringify(c,null,2)+"\n");
+              console.log("config.json mis à jour:",process.env.URL);
+            } else { console.log("config.json déjà à jour"); }
+          '
+          if ! git diff --quiet coffre-fort/config.json; then
+            git config user.name "coffre-r2-bot"
+            git config user.email "bot@users.noreply.github.com"
+            git add coffre-fort/config.json
+            git commit -m "chore(coffre): URL worker R2 auto -> config.json [skip ci]"
+            git push
+          fi

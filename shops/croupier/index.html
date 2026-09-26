@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Devenir croupier — le métier, sans le folklore</title>
+<meta name="description" content="Ce que fait vraiment un croupier, une nuit heure par heure, les jeux à apprendre et dans quel ordre, comment on entre. Écrit par quelqu'un qui travaille aux tables à Monaco.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101010" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://croupier.kd-mc.com/">
+<meta property="og:title" content="Devenir croupier — le métier, sans le folklore">
+<meta property="og:description" content="La rotation aux tables, les paiements à connaître par cœur, comment on entre. Par quelqu'un qui y travaille.">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:url" content="https://croupier.kd-mc.com/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gelasio:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* =====================================================================
+   Système de design : « editorial » — mise en page magazine
+   Source : vendor/agent-toolkit/awesome-design-skills/skills/editorial/
+   Jetons : primaire #111111 · secondaire #f1f1f1 · texte #111827 · surface #FFF
+   Typo Gelasio (serif) + Ubuntu Mono · barème 14/16/18/24/32/40 · grille 8 pt
+   Contrastes vérifiés WCAG 2.2 AA (valeurs en commentaire)
+   ===================================================================== */
+:root{
+  --primaire:#111111;                 /* 18,9:1 sur blanc */
+  --secondaire:#F1F1F1;
+  --accent:#8A6A1F;                   /* 5,5:1 — or sobre, lisible (l'or vif ne passe pas AA) */
+  --succes:#15803D;                   /* 4,9:1 */
+  --danger:#B91C1C;                   /* 6,4:1 */
+  --surface:#FFFFFF; --surface2:#FAFAF8; --papier:#F6F4EF;
+  --bord:#E3E1DB; --bord-fort:#C9C6BD;
+  --texte:#111827;
+  --texte2:#4B5563;                   /* 7,6:1 */
+  --texte3:#6B7280;                   /* 4,8:1 */
+
+  --t14:14px; --t16:16px; --t18:18px; --t24:24px; --t32:32px; --t40:40px; --t52:52px;
+  --e8:8px; --e16:16px; --e24:24px; --e32:32px; --e48:48px; --e64:64px;
+  --r-sm:4px; --r-md:8px;
+  --serif:"Gelasio",Georgia,"Times New Roman",serif;
+  --mono:"Ubuntu Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --lecture:68ch;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --primaire:#F5F5F5; --secondaire:#1C1C1C; --accent:#D9B76A;  /* 9,1:1 sur fond sombre */
+    --succes:#4ADE80; --danger:#F87171;
+    --surface:#101010; --surface2:#171716; --papier:#15150F;
+    --bord:#2B2B29; --bord-fort:#3E3E3A;
+    --texte:#F2F2F0; --texte2:#A8A8A2; --texte3:#8C8C87;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+body{
+  background:var(--surface); color:var(--texte);
+  font-family:var(--serif); font-size:var(--t18); line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:820px;margin:0 auto;padding:0 var(--e24)}
+.large{max-width:1060px;margin:0 auto;padding:0 var(--e24)}
+p{margin:0 0 var(--e16);max-width:var(--lecture)}
+h1,h2,h3{line-height:1.2;font-weight:700;letter-spacing:-.012em}
+h1{font-size:clamp(var(--t32),6.5vw,var(--t52))}
+h2{font-size:clamp(var(--t24),3.6vw,var(--t32));margin:var(--e48) 0 var(--e16)}
+h3{font-size:var(--t18);margin:var(--e24) 0 var(--e8)}
+strong{font-weight:600}
+em{font-style:italic}
+a{color:inherit}
+.chapeau{font-size:clamp(var(--t18),2.3vw,var(--t24));color:var(--texte2);line-height:1.55;max-width:60ch}
+.gris{color:var(--texte2)}
+.petit{font-size:var(--t16);color:var(--texte2)}
+.note{font-size:var(--t14);color:var(--texte3);line-height:1.6;max-width:var(--lecture)}
+.kicker{
+  font-family:var(--mono);font-size:var(--t14);font-weight:700;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--accent);display:block;margin-bottom:var(--e16);
+}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:var(--r-sm)}
+
+/* filet éditorial */
+hr.filet{border:0;border-top:1px solid var(--bord);margin:var(--e48) 0}
+
+header.tete{border-bottom:1px solid var(--bord);padding:var(--e16) 0}
+.marque{display:flex;align-items:center;gap:var(--e8);min-height:44px;font-family:var(--mono);
+  font-size:var(--t14);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--texte2);text-decoration:none}
+
+.une{padding:var(--e48) 0 var(--e32)}
+.signature{display:flex;flex-wrap:wrap;gap:var(--e8) var(--e16);margin-top:var(--e24);
+  font-family:var(--mono);font-size:var(--t14);color:var(--texte3);text-transform:uppercase;letter-spacing:.08em}
+.signature span+span::before{content:"\00b7";margin-right:var(--e16);color:var(--bord-fort)}
+
+/* lettrine — signature « editorial » */
+.lettrine::first-letter{
+  float:left;font-size:4.1em;line-height:.84;padding:6px 10px 0 0;font-weight:600;color:var(--accent);
+}
+
+/* encadré */
+.encadre{background:var(--papier);border-left:3px solid var(--accent);padding:var(--e24);margin:var(--e32) 0;border-radius:0 var(--r-md) var(--r-md) 0}
+.encadre p:last-child{margin-bottom:0}
+.encadre h3{margin-top:0}
+
+/* la nuit, heure par heure */
+.horaire{list-style:none;margin:var(--e24) 0;border-top:1px solid var(--bord)}
+.horaire li{display:grid;grid-template-columns:72px 1fr;gap:var(--e16);padding:var(--e16) 0;border-bottom:1px solid var(--bord);align-items:baseline}
+.horaire b{font-family:var(--mono);font-size:var(--t16);color:var(--accent);font-weight:700}
+.horaire span{font-size:var(--t16);color:var(--texte2);line-height:1.6}
+.horaire span em{color:var(--texte);font-style:normal;font-weight:600}
+
+/* tableau des paiements */
+.tbl{width:100%;border-collapse:collapse;margin:var(--e24) 0;font-size:var(--t16)}
+.tbl caption{caption-side:bottom;text-align:left;padding-top:var(--e16);font-size:var(--t14);color:var(--texte3);line-height:1.6}
+.tbl th,.tbl td{text-align:left;padding:10px var(--e8);border-bottom:1px solid var(--bord)}
+.tbl th{font-family:var(--mono);font-size:var(--t14);text-transform:uppercase;letter-spacing:.07em;color:var(--texte3);font-weight:700}
+.tbl td:last-child,.tbl th:last-child{text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent);white-space:nowrap}
+
+/* questions */
+.questions{list-style:none;counter-reset:q;margin:var(--e24) 0}
+.questions li{counter-increment:q;padding:var(--e16) 0 var(--e16) 48px;position:relative;border-bottom:1px solid var(--bord);max-width:var(--lecture)}
+.questions li::before{content:counter(q);position:absolute;left:0;top:var(--e16);font-family:var(--mono);font-weight:700;
+  font-size:var(--t14);color:var(--accent);border:1px solid var(--bord-fort);border-radius:999px;width:30px;height:30px;display:grid;place-items:center}
+.questions b{display:block;font-weight:600;margin-bottom:4px}
+.questions span{font-size:var(--t16);color:var(--texte2);line-height:1.6}
+
+/* offre */
+.offre{background:var(--secondaire);border:1px solid var(--bord);border-radius:var(--r-md);padding:var(--e32);margin:var(--e48) 0}
+.offre .prix{font-family:var(--mono);font-size:var(--t40);font-weight:700;color:var(--texte);line-height:1;margin:var(--e16) 0 var(--e8)}
+.offre .prix small{font-size:var(--t16);color:var(--texte2);font-weight:400}
+.offre ul{list-style:none;margin:var(--e24) 0}
+.offre li{padding:6px 0 6px 26px;position:relative;font-size:var(--t16);color:var(--texte2);max-width:var(--lecture)}
+.offre li::before{content:"—";position:absolute;left:0;color:var(--accent);font-family:var(--mono)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 var(--e32);
+  background:var(--primaire);color:var(--surface);border-radius:var(--r-md);text-decoration:none;
+  font-family:var(--mono);font-size:var(--t16);font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  transition:opacity .15s ease}
+.btn:hover{opacity:.86}
+.btn:active{transform:translateY(1px)}
+.btn.attente{background:var(--surface);color:var(--texte2);border:1px solid var(--bord-fort);text-transform:none;letter-spacing:0;font-weight:400}
+
+footer{border-top:1px solid var(--bord);margin-top:var(--e64);padding:var(--e32) 0 var(--e48);font-size:var(--t14);color:var(--texte3)}
+footer nav{display:flex;flex-wrap:wrap;gap:var(--e8) var(--e24);margin-top:var(--e16)}
+footer nav a{min-height:44px;display:inline-flex;align-items:center;color:var(--texte2)}
+</style>
+</head>
+<body>
+
+<header class="tete">
+  <div class="wrap"><a class="marque" href="#haut">Devenir croupier</a></div>
+</header>
+
+<main id="haut">
+<article class="wrap">
+
+  <section class="une">
+    <span class="kicker">Le métier, sans le folklore</span>
+    <h1>Ce que personne ne te dit sur le métier de croupier.</h1>
+    <p class="chapeau">
+      Pas le cinéma, pas les paillettes. Le vrai rythme, les vrais calculs,
+      les vraies contraintes — et comment on entre.
+    </p>
+    <p class="signature">
+      <span>Écrit depuis Monaco</span><span>Lecture 12 min</span><span>Gratuit, en entier</span>
+    </p>
+  </section>
+
+  <hr class="filet">
+
+  <h2>Le métier réel</h2>
+  <p class="lettrine">
+    Un croupier ne « joue » pas. Il tient une table : il distribue, il annonce, il paie,
+    il ramasse, et il compte — sans arrêt, à voix haute, devant des gens qui regardent
+    l'argent bouger. La compétence centrale n'est pas le charisme : c'est la
+    <strong>régularité sous surveillance</strong>. Les mêmes gestes, exactement, des milliers
+    de fois, pendant que quelqu'un se trompe à côté, qu'une caméra filme et qu'un joueur
+    conteste un paiement.
+  </p>
+  <p>
+    La deuxième compétence, celle qui élimine le plus de candidats, est le
+    <strong>calcul mental à vitesse de table</strong>. Un joueur pose 4 jetons sur un cheval,
+    3 sur un carré et 2 sur une douzaine ; la bille tombe ; tu dois annoncer et payer juste,
+    en quelques secondes, sans calculette et sans hésitation. Ce n'est pas un don — ça
+    s'entraîne — mais ça ne s'improvise pas le jour du test.
+  </p>
+
+  <div class="encadre">
+    <h3>Ce que ce guide n'est pas</h3>
+    <p class="petit">
+      Ce n'est pas une méthode pour gagner au casino, et ça n'en deviendra jamais une.
+      C'est un guide de <strong>métier</strong>, pour des gens qui veulent travailler derrière
+      la table, pas devant.
+    </p>
+  </div>
+
+  <h2>Une nuit, heure par heure</h2>
+  <p>
+    C'est le point le plus mal compris du métier. On n'est pas huit heures debout à sa table :
+    on <strong>tourne</strong>. Le rythme est réglé, et il est plus dur qu'il n'en a l'air
+    parce qu'il ne s'arrête jamais vraiment.
+  </p>
+  <ul class="horaire">
+    <li><b>20:30</b><span><em>Prise de service.</em> Tenue, comptage de la caisse de la table, vérification du matériel. On sait déjà à quelle table on commence et dans quel ordre on tourne.</span></li>
+    <li><b>21:00</b><span><em>Ouverture.</em> Première table. À partir de là, le temps se compte en tours, pas en heures.</span></li>
+    <li><b>21:00 → 22:00</b><span><em>Un tour.</em> Selon l'affluence et le jeu : 20, 40 ou 60 minutes à la table. Jamais plus de 60 d'affilée.</span></li>
+    <li><b>+20 min</b><span><em>La pause.</em> 20 minutes, systématiquement. Ce n'est pas une faveur, c'est une règle : la vigilance chute et les erreurs de paiement arrivent.</span></li>
+    <li><b>toute la nuit</b><span><em>On recommence.</em> Table, pause, table, pause. La table change, le jeu change, les joueurs changent.</span></li>
+    <li><b>04:00</b><span><em>Fermeture.</em> Comptage, contrôle, signature. On ne part pas parce qu'il est l'heure : on part quand les comptes tombent juste.</span></li>
+  </ul>
+  <p class="note">
+    Les durées de tour (20/40/60 minutes, pause de 20) sont celles pratiquées aux jeux de table
+    à Monaco. Le principe — travail limité, pause obligatoire — est le même partout ; les durées
+    exactes dépendent de l'établissement et de sa convention.
+  </p>
+
+  <div class="encadre">
+    <h3>Le détail qui change tout</h3>
+    <p class="petit">
+      Après un certain âge, le temps de table maximum est <strong>raccourci</strong> :
+      la limite passe de 60 à 40 minutes consécutives. Ce n'est pas symbolique — c'est
+      la reconnaissance que la concentration exigée par une table a un coût physique réel.
+      Si quelqu'un te dit que c'est « juste distribuer des cartes », il n'a jamais tenu
+      une table pleine un samedi soir.
+    </p>
+  </div>
+
+  <h2>Les paiements à connaître par cœur</h2>
+  <p>
+    Voici ce qui tombe aux tests, et ce qui te suivra toute ta carrière. Ce ne sont pas
+    des ordres de grandeur : ce sont les rapports exacts, et on les récite sans réfléchir.
+  </p>
+  <table class="tbl">
+    <caption>Roulette (à zéro unique). « 35 pour 1 » signifie : tu paies 35 fois la mise, et le joueur récupère aussi sa mise.</caption>
+    <thead><tr><th>Mise</th><th>Nombres couverts</th><th>Paiement</th></tr></thead>
+    <tbody>
+      <tr><td>Plein</td><td>1</td><td>35 : 1</td></tr>
+      <tr><td>Cheval</td><td>2</td><td>17 : 1</td></tr>
+      <tr><td>Transversale pleine</td><td>3</td><td>11 : 1</td></tr>
+      <tr><td>Carré</td><td>4</td><td>8 : 1</td></tr>
+      <tr><td>Sixain</td><td>6</td><td>5 : 1</td></tr>
+      <tr><td>Douzaine · Colonne</td><td>12</td><td>2 : 1</td></tr>
+      <tr><td>Rouge/Noir · Pair/Impair · Manque/Passe</td><td>18</td><td>1 : 1</td></tr>
+    </tbody>
+  </table>
+  <table class="tbl">
+    <caption>Blackjack et Punto Banco. Le 3 pour 2 du blackjack est le calcul le plus fréquent du métier — et celui qu'on rate le plus quand la mise n'est pas ronde.</caption>
+    <thead><tr><th>Jeu</th><th>Situation</th><th>Paiement</th></tr></thead>
+    <tbody>
+      <tr><td>Blackjack</td><td>Blackjack du joueur</td><td>3 : 2</td></tr>
+      <tr><td>Blackjack</td><td>Main gagnante ordinaire</td><td>1 : 1</td></tr>
+      <tr><td>Blackjack</td><td>Assurance</td><td>2 : 1</td></tr>
+      <tr><td>Punto Banco</td><td>Punto</td><td>1 : 1</td></tr>
+      <tr><td>Punto Banco</td><td>Banco (commission de 5 %)</td><td>1 : 1 − 5 %</td></tr>
+      <tr><td>Punto Banco</td><td>Égalité</td><td>8 : 1</td></tr>
+    </tbody>
+  </table>
+  <p class="note">
+    Le paiement de l'égalité au Punto Banco et quelques variantes de blackjack diffèrent
+    selon les maisons. Le reste est stable partout.
+  </p>
+
+  <h2>Les jeux, et l'ordre dans lequel on les apprend</h2>
+  <p>
+    On n'apprend pas tout d'un coup. On entre par un jeu, on le tient, puis on en ajoute un.
+    Chaque jeu supplémentaire compte dans la carrière : c'est la progression du métier, et
+    c'est elle qui fait la différence de salaire, pas l'ancienneté seule.
+  </p>
+  <p>
+    L'ordre habituel va du plus mécanique au plus exigeant en gestion de table :
+    <strong>blackjack</strong>, puis <strong>roulette anglaise</strong>, puis
+    <strong>punto banco</strong>, puis <strong>roulette européenne</strong> — celle-ci se
+    tient à plusieurs, avec un vocabulaire d'annonces et un râteau, et c'est un métier dans
+    le métier. Viennent ensuite le <strong>craps</strong> et les variantes de
+    <strong>poker</strong>, qui demandent de gérer beaucoup de mises simultanées.
+  </p>
+
+  <h2>Les 7 questions à te poser avant</h2>
+  <p>
+    Réponds honnêtement. Si trois réponses te gênent, ce métier va être long.
+  </p>
+  <ol class="questions">
+    <li><b>Peux-tu travailler quand les autres sortent ?</b><span>Vendredi soir, samedi soir, 31 décembre, jours fériés. Ce sont les nuits les plus chargées : ce sont exactement celles où tu travailles.</span></li>
+    <li><b>Peux-tu dormir le jour, durablement ?</b><span>Pas une semaine : des années. C'est ce qui use le plus, et c'est ce que personne n'anticipe.</span></li>
+    <li><b>Es-tu à l'aise avec le calcul mental sous pression ?</b><span>Pas fort en maths — <em>rapide</em> et <em>juste</em>, avec du monde qui attend et de l'argent sur la table.</span></li>
+    <li><b>Tiens-tu debout et concentré des heures ?</b><span>On est debout, on ne s'appuie pas, on ne regarde pas son téléphone, on ne décroche pas.</span></li>
+    <li><b>Peux-tu rester neutre quand quelqu'un perd ?</b><span>Tu verras des gens perdre beaucoup. Ton visage ne doit rien dire. Ni joie, ni pitié.</span></li>
+    <li><b>Acceptes-tu d'être filmé et contrôlé en permanence ?</b><span>Caméras, chef de table, inspecteur. Ce n'est pas de la défiance, c'est le métier — mais il faut le supporter.</span></li>
+    <li><b>Ton entourage va-t-il suivre ?</b><span>La question qui décide vraiment. Les horaires décalés se vivent à deux, pas tout seul.</span></li>
+  </ol>
+
+  <h2>Comment on entre</h2>
+  <p>
+    Le chemin classique passe par une <strong>école de jeux</strong>, souvent organisée
+    ou reconnue par les établissements eux-mêmes. On n'y apprend pas à jouer : on y apprend
+    à tenir une table — gestes, annonces, paiements, tenue, gestion des incidents.
+  </p>
+  <p>
+    Quelques constantes, quel que soit l'établissement :
+    <strong>l'âge minimum est de 21 ans</strong> ; un <strong>casier judiciaire vierge</strong>
+    est exigé et vérifié, parce que le métier est réglementé et agréé ; les débuts passent
+    presque toujours par une <strong>période d'essai</strong> puis un contrat à durée
+    déterminée avant la titularisation. La progression vers de nouveaux jeux se fait par
+    passages en école successifs, espacés — on ne devient pas polyvalent en un an.
+  </p>
+  <p>
+    Ensuite, la hiérarchie est lisible : croupier, puis <strong>chef de table</strong>,
+    puis <strong>inspecteur</strong>, puis la direction des jeux. Chaque étage se gagne sur
+    la maîtrise des jeux et la tenue, pas sur l'ancienneté seule.
+  </p>
+  <p class="note">
+    Les conditions précises (durée des contrats, nombre d'écoles, rémunération) sont fixées
+    par la convention collective de chaque établissement ou de chaque pays. Renseigne-toi
+    sur celle de la maison qui t'intéresse : c'est un document que tu as le droit de consulter.
+  </p>
+
+  <hr class="filet">
+
+  <section class="offre" id="entrainement">
+    <span class="kicker">La suite — pour ceux qui passent les tests</span>
+    <h2 style="margin-top:0">L'entraîneur de paiements</h2>
+    <p class="petit" style="max-width:var(--lecture)">
+      Le guide ci-dessus t'a dit <em>quoi</em> savoir. L'entraîneur te fait <em>l'avoir</em>.
+      C'est exactement l'exercice qui tombe aux tests d'entrée : des mises réelles sur une
+      table, un temps limité, et un paiement à annoncer juste.
+    </p>
+    <ul>
+      <li>Roulette : plein, cheval, transversale, carré, sixain, douzaine — mises combinées comme à une vraie table</li>
+      <li>Blackjack : le 3 pour 2 sur des mises non rondes, là où tout le monde se trompe</li>
+      <li>Punto Banco : la commission de 5 % de tête</li>
+      <li>Chronomètre : la vitesse de table, pas la vitesse de papier</li>
+      <li>Progression : ton taux de justesse et ton temps moyen, série après série</li>
+    </ul>
+    <p><a class="btn" href="/entrainement.html">Essayer l'entraîneur — gratuit</a></p>
+    <p class="note" style="margin-top:var(--e16)">
+      La roulette à une mise est <strong>gratuite, pour toujours</strong> — et déjà utilisable.
+      Les mises cumulées, le 3 pour 2 du blackjack et la commission du Punto Banco restent
+      verrouillés : ils seront payants, mais rien n'est en vente tant que l'encaissement n'est
+      pas branché. Aucune préinscription, aucune adresse courriel demandée. Le guide ci-dessus
+      est complet et restera gratuit.
+    </p>
+  </section>
+
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p style="margin:0">Devenir croupier — guide de métier. Publié depuis Monaco.</p>
+    <p class="note" style="margin-top:var(--e8)">
+      Ce site ne propose aucun jeu d'argent et ne donne aucun conseil pour jouer.
+      Il décrit un métier. Les jeux d'argent comportent des risques : isolement, endettement,
+      dépendance. En France, aide et information au <strong>09 74 75 13 13</strong> (appel non surtaxé).
+    </p>
+    <nav aria-label="Informations légales">
+      <a href="/shops/legal/mentions.html">Mentions légales</a>
+      <a href="/shops/legal/confidentialite.html">Confidentialité</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

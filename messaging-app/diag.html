@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apex Chat — Diagnostic technique</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#08080f;color:#e8e8f0;font-family:system-ui,-apple-system,sans-serif;padding:18px;line-height:1.5}
+  .wrap{max-width:780px;margin:0 auto}
+  h1{color:#c9a227;font-family:Georgia,serif;font-size:1.6em;letter-spacing:2px;margin:14px 0}
+  h2{color:#c9a227;font-size:1.05em;margin:18px 0 8px;border-bottom:1px solid #2a2a35;padding-bottom:5px}
+  .card{background:#13131c;border:1px solid #2a2a35;border-radius:12px;padding:12px 14px;margin:10px 0}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1c1c28;font-size:0.92em}
+  .row:last-child{border-bottom:none}
+  .lbl{color:#9aa}
+  .val{font-family:ui-monospace,monospace;font-size:0.85em;color:#e8e8f0}
+  .ok{color:#5fcf5f}.warn{color:#f4d97a}.err{color:#cf5f5f}.info{color:#6a8aff}
+  .btn{display:inline-block;background:#c9a227;color:#08080f;padding:10px 18px;border-radius:12px;text-decoration:none;font-weight:700;border:none;cursor:pointer;margin:6px 4px;min-height:44px}
+  .btn-out{background:transparent;color:#c9a227;border:1px solid #c9a227}
+  pre{background:#0a0a14;padding:10px;border-radius:8px;overflow-x:auto;font-size:0.78em;color:#9aa;border:1px solid #2a2a35;max-height:300px;overflow-y:auto}
+  .footer-back{margin-top:30px;padding:18px;background:#13131c;border-radius:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🔧 Apex Chat — Diagnostic</h1>
+<p style="color:#888;font-size:0.85em">Snapshot de l'état technique de l'app. Utile pour signaler un problème.</p>
+
+<h2>📦 Application</h2>
+<div class="card">
+<div class="row"><span class="lbl">Version</span><span class="val" id="d-ver">…</span></div>
+<div class="row"><span class="lbl">URL</span><span class="val" id="d-url">…</span></div>
+<div class="row"><span class="lbl">Mode display</span><span class="val" id="d-display">…</span></div>
+<div class="row"><span class="lbl">Online</span><span class="val" id="d-online">…</span></div>
+<div class="row"><span class="lbl">Dernière maj</span><span class="val" id="d-update">…</span></div>
+</div>
+
+<h2>🔧 Service Worker</h2>
+<div class="card">
+<div class="row"><span class="lbl">Status</span><span class="val" id="d-sw">…</span></div>
+<div class="row"><span class="lbl">Version cache</span><span class="val" id="d-sw-ver">…</span></div>
+<div class="row"><span class="lbl">Caches actifs</span><span class="val" id="d-sw-caches">…</span></div>
+</div>
+
+<h2>💾 Stockage</h2>
+<div class="card">
+<div class="row"><span class="lbl">localStorage utilisé</span><span class="val" id="d-ls-size">…</span></div>
+<div class="row"><span class="lbl">Clés apex_chat_*</span><span class="val" id="d-ls-keys">…</span></div>
+<div class="row"><span class="lbl">IndexedDB</span><span class="val" id="d-idb">…</span></div>
+<div class="row"><span class="lbl">Quota total</span><span class="val" id="d-quota">…</span></div>
+</div>
+
+<h2>🔔 Permissions navigateur</h2>
+<div class="card">
+<div class="row"><span class="lbl">Notifications</span><span class="val" id="d-perm-notif">…</span></div>
+<div class="row"><span class="lbl">Caméra</span><span class="val" id="d-perm-cam">…</span></div>
+<div class="row"><span class="lbl">Micro</span><span class="val" id="d-perm-mic">…</span></div>
+<div class="row"><span class="lbl">Géolocalisation</span><span class="val" id="d-perm-geo">…</span></div>
+<div class="row"><span class="lbl">Contacts</span><span class="val" id="d-perm-contacts">…</span></div>
+</div>
+
+<h2>🔔 Notifications push (détaillé)</h2>
+<div class="card">
+<div class="row"><span class="lbl">Permission</span><span class="val" id="d-np-perm">…</span></div>
+<div class="row"><span class="lbl">PWA installée (requis iOS)</span><span class="val" id="d-np-pwa">…</span></div>
+<div class="row"><span class="lbl">Push API</span><span class="val" id="d-np-api">…</span></div>
+<div class="row"><span class="lbl">Abonnement push</span><span class="val" id="d-np-sub">…</span></div>
+<div class="row"><span class="lbl">Service push</span><span class="val" id="d-np-svc">…</span></div>
+<div class="row"><span class="lbl">Push reçu par le SW</span><span class="val" id="d-np-recv">…</span></div>
+<div class="row"><span class="lbl">Dernière erreur</span><span class="val" id="d-np-err">—</span></div>
+<button class="btn" onclick="testNotif()">🔔 Tester ma notif maintenant</button>
+</div>
+
+<h2>📞 Appels (visio / audio)</h2>
+<div class="card">
+<div class="row"><span class="lbl">WebRTC (RTCPeerConnection)</span><span class="val" id="d-call-rtc">…</span></div>
+<div class="row"><span class="lbl">getUserMedia</span><span class="val" id="d-call-gum">…</span></div>
+<div class="row"><span class="lbl">Micro</span><span class="val" id="d-call-mic">…</span></div>
+<div class="row"><span class="lbl">Caméra</span><span class="val" id="d-call-cam">…</span></div>
+<div class="row"><span class="lbl">Relais TURN (appels hors Wi-Fi)</span><span class="val" id="d-call-turn">—</span></div>
+<div class="row"><span class="lbl">Dernière erreur</span><span class="val" id="d-call-err">—</span></div>
+<button class="btn btn-out" onclick="testMic()">🎤 Tester micro</button>
+<button class="btn btn-out" onclick="testCam()">📹 Tester caméra</button>
+<button class="btn btn-out" onclick="testTurn()">🌍 Tester le relais TURN</button>
+</div>
+
+<div id="diag-admin-only" style="display:none">
+<h2>📞 Activer les appels (admin)</h2>
+<div class="card">
+<div style="font-size:.82em;color:#9aa;line-height:1.5;margin-bottom:8px">
+Crée une clé TURN dans Cloudflare (<b>Realtime → TURN Server → Create</b>), puis colle ici les
+<b>2 valeurs</b> affichées. Ça active les appels entre réseaux différents, sans rien d'autre à faire.
+</div>
+<input id="turn-key-id" placeholder="Turn Token ID (uid)" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:100%;box-sizing:border-box;margin-bottom:6px;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#eee;font-size:15px">
+<input id="turn-token" placeholder="API Token / Key (le secret)" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:100%;box-sizing:border-box;margin-bottom:6px;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#eee;font-size:15px">
+<div class="row"><span class="lbl">Résultat</span><span class="val" id="d-turn-save">—</span></div>
+<button class="btn" onclick="saveTurnKey()">💾 Enregistrer la clé TURN</button>
+</div>
+</div><!-- /diag-admin-only : visible seulement pour Kevin (admin) -->
+
+<!-- Note non-admin : seuls les TESTS/ANALYSES ci-dessus sont dispo. La config qui
+     impacte tout le monde (clé TURN) est réservée à l'admin (Kevin). -->
+
+<h2>🔐 Crypto / Auth</h2>
+<div class="card">
+<div class="row"><span class="lbl">Web Crypto API</span><span class="val" id="d-webcrypto">…</span></div>
+<div class="row"><span class="lbl">SubtleCrypto</span><span class="val" id="d-subtle">…</span></div>
+<div class="row"><span class="lbl">WebAuthn / FaceID</span><span class="val" id="d-webauthn">…</span></div>
+<div class="row"><span class="lbl">Crypto random</span><span class="val" id="d-crypto-random">…</span></div>
+</div>
+
+<h2>📱 Device</h2>
+<div class="card">
+<div class="row"><span class="lbl">User-Agent</span><span class="val" id="d-ua" style="max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">…</span></div>
+<div class="row"><span class="lbl">Plateforme</span><span class="val" id="d-platform">…</span></div>
+<div class="row"><span class="lbl">Langue</span><span class="val" id="d-lang">…</span></div>
+<div class="row"><span class="lbl">Viewport</span><span class="val" id="d-viewport">…</span></div>
+<div class="row"><span class="lbl">DPR</span><span class="val" id="d-dpr">…</span></div>
+<div class="row"><span class="lbl">Connection</span><span class="val" id="d-conn">…</span></div>
+</div>
+
+<h2>🌐 APIs externes (test rapide)</h2>
+<div class="card">
+<div class="row"><span class="lbl">Cloudflare workers.dev</span><span class="val" id="d-cf">testing…</span></div>
+<div class="row"><span class="lbl">Firebase RTDB</span><span class="val" id="d-fb">testing…</span></div>
+<div class="row"><span class="lbl">Push worker Apex</span><span class="val" id="d-push">testing…</span></div>
+</div>
+
+<h2>📋 Export</h2>
+<div class="card">
+<button class="btn" onclick="copyDiag()">📋 Copier diag (presse-papier)</button>
+<button class="btn btn-out" onclick="sendToKevin()">📨 Envoyer à Kevin (admin)</button>
+<button class="btn btn-out" onclick="location.reload()">🔄 Rafraîchir</button>
+<pre id="d-export">…</pre>
+</div>
+
+<div class="footer-back">
+<a class="btn" href="./">⬅ Retour à Apex Chat</a>
+</div>
+</div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const setOk = (id, v) => { $(id).textContent = v; $(id).className = 'val ok'; };
+const setWarn = (id, v) => { $(id).textContent = v; $(id).className = 'val warn'; };
+const setErr = (id, v) => { $(id).textContent = v; $(id).className = 'val err'; };
+const setInfo = (id, v) => { $(id).textContent = v; $(id).className = 'val info'; };
+
+const diag = {};
+
+async function runDiag() {
+  // App
+  const ver = (typeof __APEX_CHAT_VERSION__ !== 'undefined') ? __APEX_CHAT_VERSION__ : 'v1.0.0';
+  setOk('d-ver', ver); diag.version = ver;
+  setInfo('d-url', location.href); diag.url = location.href;
+  const display = window.matchMedia('(display-mode: standalone)').matches ? 'PWA installée' : 'Navigateur';
+  setInfo('d-display', display); diag.display = display;
+  if (navigator.onLine) setOk('d-online', '✓ En ligne'); else setErr('d-online', '✗ Hors ligne');
+  diag.online = navigator.onLine;
+  setInfo('d-update', new Date().toLocaleString('fr-FR'));
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        setOk('d-sw', '✓ Actif');
+        diag.sw_active = true;
+        try {
+          const channel = new MessageChannel();
+          channel.port1.onmessage = (e) => {
+            setInfo('d-sw-ver', e.data.version || '?');
+            diag.sw_version = e.data.version;
+          };
+          reg.active?.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+        } catch (e) {}
+      } else {
+        setWarn('d-sw', '⚠ Non enregistré');
+      }
+      const cacheKeys = await caches.keys();
+      setInfo('d-sw-caches', cacheKeys.join(', ') || '(aucun)');
+      diag.caches = cacheKeys;
+    } catch (e) { setErr('d-sw', '✗ ' + e.message); }
+  } else {
+    setErr('d-sw', '✗ Non supporté');
+  }
+
+  // Stockage
+  let lsSize = 0, apexKeys = 0;
+  for (const k in localStorage) {
+    if (Object.prototype.hasOwnProperty.call(localStorage, k)) {
+      lsSize += (localStorage.getItem(k) || '').length;
+      if (k.startsWith('apex_chat_')) apexKeys++;
+    }
+  }
+  setInfo('d-ls-size', (lsSize/1024).toFixed(1) + ' KB');
+  setInfo('d-ls-keys', apexKeys + ' clés');
+  diag.ls_size_kb = (lsSize/1024).toFixed(1);
+  diag.ls_apex_keys = apexKeys;
+
+  if ('indexedDB' in window) setOk('d-idb', '✓ Disponible'); else setErr('d-idb', '✗ Non supporté');
+  if ('storage' in navigator && 'estimate' in navigator.storage) {
+    try {
+      const est = await navigator.storage.estimate();
+      const used = (est.usage || 0) / (1024 * 1024);
+      const total = (est.quota || 0) / (1024 * 1024);
+      setInfo('d-quota', `${used.toFixed(1)} / ${total.toFixed(0)} MB`);
+      diag.storage_used_mb = used.toFixed(1);
+      diag.storage_quota_mb = total.toFixed(0);
+    } catch (e) { setErr('d-quota', '✗'); }
+  }
+
+  // Permissions
+  const perms = [
+    ['notifications', 'd-perm-notif'],
+    ['camera', 'd-perm-cam'],
+    ['microphone', 'd-perm-mic'],
+    ['geolocation', 'd-perm-geo']
+  ];
+  for (const [name, id] of perms) {
+    try {
+      const p = await navigator.permissions.query({ name });
+      if (p.state === 'granted') setOk(id, '✓ Accordée');
+      else if (p.state === 'denied') setErr(id, '✗ Refusée');
+      else setWarn(id, '⚠ Non demandée');
+      diag['perm_' + name] = p.state;
+    } catch (e) { setWarn(id, '? Inconnue'); }
+  }
+  setInfo('d-perm-contacts', 'contacts' in navigator ? '✓ API disponible' : 'Polyfill manuel');
+
+  // Notifications push — détaillé (cause EXACTE si problème)
+  try {
+    const np = ('Notification' in window) ? Notification.permission : 'unsupported';
+    (np === 'granted' ? setOk : np === 'denied' ? setErr : setWarn)('d-np-perm', np);
+    diag.notif_permission = np;
+    const pwa = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    (pwa ? setOk : setWarn)('d-np-pwa', pwa ? '✓ Oui' : '⚠ Non (iOS exige la PWA installée)');
+    diag.pwa_installed = pwa;
+    const hasPush = ('serviceWorker' in navigator) && ('PushManager' in window);
+    (hasPush ? setOk : setErr)('d-np-api', hasPush ? '✓ Supportée' : '✗ Non supportée');
+    diag.push_api = hasPush;
+    if (hasPush) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
+      if (sub) {
+        setOk('d-np-sub', '✓ Abonné'); diag.push_subscribed = true; diag.push_endpoint = sub.endpoint;
+        let host = '?'; try { host = new URL(sub.endpoint).host; } catch (_) {}
+        const svc = /apple|push\.apple/.test(host) ? 'Apple (iOS)' : /fcm|google/.test(host) ? 'FCM (Android/Chrome)' : /mozilla/.test(host) ? 'Mozilla' : host;
+        setInfo('d-np-svc', svc); diag.push_service = svc;
+      } else {
+        setWarn('d-np-sub', '⚠ Pas d\'abonnement'); setInfo('d-np-svc', '—'); diag.push_subscribed = false;
+      }
+    }
+    // v1.1.245 : le SW écrit la réception de chaque push dans le cache 'apex-push-debug'.
+    // Si le serveur livre (201) mais que RIEN n'apparaît ici → iOS ne livre pas au SW
+    // (déchiffrement). Si une heure récente apparaît mais pas de bannière → affichage iOS.
+    try {
+      const pc = await caches.open('apex-push-debug');
+      const pr = await pc.match('/last');
+      if (pr) {
+        const pd = await pr.json();
+        const ageSec = Math.round((Date.now() - (pd.ts || 0)) / 1000);
+        const human = ageSec < 60 ? ('il y a ' + ageSec + 's') : ageSec < 3600 ? ('il y a ' + Math.round(ageSec / 60) + 'min') : new Date(pd.ts).toLocaleString();
+        (ageSec < 120 ? setOk : setInfo)('d-np-recv', '✓ ' + human + ' (' + (pd.type || '?') + ')');
+        diag.sw_last_push = pd;
+      } else {
+        setWarn('d-np-recv', '⚠ Aucun push reçu par le SW');
+        diag.sw_last_push = null;
+      }
+    } catch (_) { setInfo('d-np-recv', '—'); }
+  } catch (e) { setErr('d-np-err', e.message); diag.notif_diag_error = e.message; }
+
+  // Appels WebRTC — support + permissions (test live via boutons)
+  try {
+    const rtc = ('RTCPeerConnection' in window);
+    (rtc ? setOk : setErr)('d-call-rtc', rtc ? '✓ Supporté' : '✗ Non supporté'); diag.webrtc = rtc;
+    const gum = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    (gum ? setOk : setErr)('d-call-gum', gum ? '✓ Disponible' : '✗ Indisponible'); diag.getusermedia = gum;
+    setInfo('d-call-mic', diag.perm_microphone || '?');
+    setInfo('d-call-cam', diag.perm_camera || '?');
+  } catch (e) { setErr('d-call-err', e.message); }
+
+  // Crypto
+  if ('crypto' in window) setOk('d-webcrypto', '✓ Disponible'); else setErr('d-webcrypto', '✗');
+  if (window.crypto?.subtle) setOk('d-subtle', '✓ Disponible'); else setErr('d-subtle', '✗');
+  if (window.PublicKeyCredential) setOk('d-webauthn', '✓ FaceID/TouchID OK'); else setWarn('d-webauthn', '⚠ Indisponible');
+  try {
+    const r = window.crypto.getRandomValues(new Uint8Array(16));
+    setOk('d-crypto-random', '✓ ' + r.length + ' bytes');
+  } catch (e) { setErr('d-crypto-random', '✗'); }
+
+  // Device
+  setInfo('d-ua', navigator.userAgent); diag.ua = navigator.userAgent;
+  setInfo('d-platform', navigator.platform); diag.platform = navigator.platform;
+  setInfo('d-lang', navigator.language); diag.lang = navigator.language;
+  setInfo('d-viewport', `${window.innerWidth} × ${window.innerHeight}`);
+  setInfo('d-dpr', window.devicePixelRatio + 'x');
+  if (navigator.connection) {
+    const c = navigator.connection;
+    setInfo('d-conn', `${c.effectiveType || '?'} ${c.downlink ? c.downlink+'Mb/s' : ''}`);
+    diag.connection = c.effectiveType;
+  }
+
+  // APIs externes (HEAD ping, no-cors pour éviter blocage)
+  pingAPI('https://workers.cloudflare.com/cdn-cgi/trace', 'd-cf');
+  pingAPI('https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/.json?shallow=true', 'd-fb');
+  pingAPI('https://apex-push-worker.9r4rxssx64.workers.dev/health', 'd-push');
+
+  // Dernier appel : diagnostic enregistré par l'app (candidats ICE dont RELAIS, états).
+  try {
+    const lc = localStorage.getItem('apex_chat_last_call_diag');
+    if (lc) {
+      diag.last_call = JSON.parse(lc);
+      const lcObj = diag.last_call;
+      const relay = lcObj && lcObj.localCand ? lcObj.localCand.relay : 0;
+      const lastState = lcObj && lcObj.states && lcObj.states.length ? lcObj.states[lcObj.states.length - 1].s : '?';
+      setInfo('d-call-turn', (relay > 0 ? '✓ relais utilisé' : '✗ aucun relais') + ' · ' + lastState);
+    }
+  } catch (_) {}
+
+  // Export final
+  setTimeout(() => {
+    $('d-export').textContent = JSON.stringify(diag, null, 2);
+  }, 1500);
+}
+
+async function pingAPI(url, id) {
+  try {
+    const t0 = performance.now();
+    const r = await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+    const dt = (performance.now() - t0).toFixed(0);
+    setOk(id, `✓ ${dt}ms`);
+    diag['ping_' + id] = dt + 'ms';
+  } catch (e) {
+    setErr(id, '✗ ' + (e.message || 'fail'));
+    diag['ping_' + id] = 'fail';
+  }
+}
+
+function refreshExport() { $('d-export').textContent = JSON.stringify(diag, null, 2); }
+
+// 🔔 Test notif RÉEL sur CE téléphone — affiche la cause EXACTE si échec.
+async function testNotif() {
+  try {
+    if (!('Notification' in window)) { diag.notif_test = 'unsupported'; alert('✗ Notifications non supportées sur ce navigateur.'); return; }
+    let perm = Notification.permission;
+    if (perm !== 'granted') perm = await Notification.requestPermission();
+    setInfo('d-np-perm', perm); diag.notif_permission = perm;
+    if (perm !== 'granted') {
+      setErr('d-np-err', 'permission ' + perm); diag.notif_test = 'perm_' + perm;
+      alert('✗ Permission « ' + perm + " ».\n\niPhone : installe d'abord la PWA (Partager → Ajouter à l'écran d'accueil), rouvre-la depuis l'icône, PUIS autorise les notifications.");
+      return;
+    }
+    const reg = ('serviceWorker' in navigator) ? await navigator.serviceWorker.getRegistration() : null;
+    if (reg && reg.showNotification) {
+      await reg.showNotification('Apex Chat — test ✅', { body: 'Si tu vois ceci, les notifications marchent sur ce téléphone.', tag: 'apex-test', icon: './manifest.json', badge: './manifest.json' });
+      const shown = await reg.getNotifications({ tag: 'apex-test' });
+      setOk('d-np-err', '✓ Notif affichée (' + shown.length + ')'); diag.notif_test = 'shown:' + shown.length;
+      alert('✓ Notification envoyée.\n\nTu dois la voir maintenant — et sur l\'écran verrouillé si tu mets l\'app en arrière-plan.');
+    } else {
+      new Notification('Apex Chat — test ✅', { body: 'Notifications OK (sans Service Worker).' });
+      diag.notif_test = 'shown-direct';
+      alert('✓ Notification affichée (mode direct, sans Service Worker).');
+    }
+  } catch (e) {
+    setErr('d-np-err', (e.name || 'Error') + ': ' + e.message);
+    diag.notif_test_error = (e.name || 'Error') + ': ' + e.message;
+    alert('✗ Erreur EXACTE : ' + (e.name || '') + ' — ' + e.message);
+  }
+  refreshExport();
+}
+
+// 🌍 Test relais TURN — interroge le Worker /api/turn (auth) et dit si un serveur
+// de RELAIS (turn:) est dispo. Sans relais, les appels ne passent QUE sur le même réseau.
+async function testTurn() {
+  const API_BASE = 'https://apex-chat-api.9r4rxssx64.workers.dev';
+  let token = null;
+  try { token = JSON.parse(localStorage.getItem('apex_chat_token') || 'null'); } catch (_) {}
+  if (!token) {
+    setErr('d-call-turn', '✗ pas connecté (ouvre Apex Chat d\'abord)');
+    diag.turn = 'no_token';
+    refreshExport();
+    alert('✗ Connecte-toi d\'abord dans Apex Chat, puis relance ce test.');
+    return;
+  }
+  try {
+    const t0 = performance.now();
+    const r = await fetch(API_BASE + '/api/turn', { headers: { 'Authorization': 'Bearer ' + token }, cache: 'no-store' });
+    const dt = (performance.now() - t0).toFixed(0);
+    const data = await r.json().catch(() => null);
+    diag.turn_http = r.status;
+    if (!r.ok || !data) {
+      setErr('d-call-turn', '✗ HTTP ' + r.status);
+      diag.turn = 'http_' + r.status;
+      alert('✗ Serveur a répondu HTTP ' + r.status + '. Réessaie dans 1 min.');
+      refreshExport();
+      return;
+    }
+    const servers = Array.isArray(data.iceServers) ? data.iceServers : [];
+    const hasRelay = JSON.stringify(servers).indexOf('turn:') >= 0 || JSON.stringify(servers).indexOf('turns:') >= 0;
+    diag.turn = data.turn === true && hasRelay;
+    diag.turn_reason = data.reason || null;
+    diag.turn_servers = servers.length;
+    if (data.turn === true && hasRelay) {
+      setOk('d-call-turn', '✓ relais actif (' + dt + 'ms)');
+      alert('✓ Le relais TURN est ACTIF. Les appels doivent maintenant marcher entre réseaux différents (4G ↔ Wi-Fi).');
+    } else {
+      setErr('d-call-turn', '✗ pas de relais (' + (data.reason || 'inconnu') + ')');
+      alert('✗ Pas de relais TURN.\nRaison exacte : ' + (data.reason || 'inconnue') + '\n\nEnvoie cette raison à Kevin.');
+    }
+  } catch (e) {
+    setErr('d-call-turn', '✗ ' + (e.name || 'Error'));
+    diag.turn = 'error';
+    diag.turn_error = (e.name || 'Error') + ': ' + e.message;
+    alert('✗ Erreur EXACTE : ' + (e.name || '') + ' — ' + e.message);
+  }
+  refreshExport();
+}
+
+// 💾 Admin : enregistre la clé TURN créée dans le dashboard Cloudflare → KV serveur.
+async function saveTurnKey() {
+  const API_BASE = 'https://apex-chat-api.9r4rxssx64.workers.dev';
+  let token = null;
+  try { token = JSON.parse(localStorage.getItem('apex_chat_token') || 'null'); } catch (_) {}
+  const keyId = ($('turn-key-id').value || '').trim();
+  const turnTok = ($('turn-token').value || '').trim();
+  if (!token) { alert('✗ Connecte-toi dans Apex Chat (admin) d\'abord.'); return; }
+  if (!keyId || !turnTok) { alert('✗ Colle les 2 valeurs (Token ID + Key).'); return; }
+  try {
+    setInfo('d-turn-save', '⏳ envoi…');
+    const r = await fetch(API_BASE + '/api/admin/turn-config', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key_id: keyId, token: turnTok }),
+    });
+    const d = await r.json().catch(() => null);
+    if (r.ok && d && d.stored && d.verified) {
+      setOk('d-turn-save', '✓ enregistré + vérifié');
+      diag.turn_save = 'verified';
+      alert('✓ Clé TURN enregistrée ET vérifiée. Les appels marchent maintenant entre réseaux différents. Ferme/rouvre Apex Chat et teste un appel.');
+    } else if (r.ok && d && d.stored) {
+      setErr('d-turn-save', '⚠ enregistré mais clé refusée (' + (d.verifyReason || '?') + ')');
+      diag.turn_save = 'stored_unverified:' + (d.verifyReason || '');
+      alert('⚠ Enregistré, mais la clé n\'a pas été acceptée par Cloudflare (' + (d.verifyReason || '?') + ').\nVérifie que tu as bien copié le Token ID ET le Key (secret) sans espace. Envoie l\'erreur à Kevin.');
+    } else if (r.status === 403) {
+      setErr('d-turn-save', '✗ réservé admin');
+      alert('✗ Réservé à l\'admin (Kevin). Connecte-toi avec ton compte admin.');
+    } else {
+      setErr('d-turn-save', '✗ HTTP ' + r.status);
+      diag.turn_save = 'http_' + r.status + ':' + JSON.stringify(d || '');
+      alert('✗ Erreur HTTP ' + r.status + '\n' + (d ? JSON.stringify(d) : ''));
+    }
+  } catch (e) {
+    setErr('d-turn-save', '✗ ' + (e.name || 'Error'));
+    alert('✗ Erreur EXACTE : ' + (e.name || '') + ' — ' + e.message);
+  }
+  refreshExport();
+}
+
+async function testMic() { await testMedia({ audio: true }, 'd-call-mic', 'mic', 'Micro'); }
+async function testCam() { await testMedia({ video: true }, 'd-call-cam', 'cam', 'Caméra'); }
+async function testMedia(constraints, id, key, label) {
+  try {
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { setErr(id, '✗ getUserMedia indispo'); diag['test_' + key] = 'no-gum'; alert('✗ getUserMedia indisponible sur ce navigateur.'); return; }
+    const s = await navigator.mediaDevices.getUserMedia(constraints);
+    s.getTracks().forEach((t) => t.stop());
+    setOk(id, '✓ OK'); diag['test_' + key] = 'ok';
+    alert('✓ ' + label + ' accessible.');
+  } catch (e) {
+    setErr(id, '✗ ' + (e.name || 'Error'));
+    setErr('d-call-err', (e.name || 'Error') + ': ' + e.message);
+    diag['test_' + key + '_error'] = (e.name || 'Error') + ': ' + e.message;
+    alert('✗ ' + label + ' — erreur EXACTE : ' + (e.name || '') + ' — ' + e.message);
+  }
+  refreshExport();
+}
+
+function copyDiag() {
+  const text = JSON.stringify(diag, null, 2);
+  navigator.clipboard.writeText(text).then(() => {
+    alert('✓ Diag copié !\n\nColle-le dans un message à Kevin.');
+  }, () => alert('✗ Copie échouée'));
+}
+
+async function sendToKevin() {
+  const fbUrl = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/apex/ax_telemetry_in.json';
+  const payload = {
+    id: 'apex-chat-diag-' + Date.now(),
+    kind: 'diag',
+    src: 'apex-chat',
+    diag: diag,
+    ts: Date.now(),
+    processed: false
+  };
+  try {
+    const r = await fetch(fbUrl, { method: 'POST', body: JSON.stringify(payload) });
+    if (r.ok) alert('✓ Diag envoyé à Kevin (Apex telemetry)');
+    else alert('⚠ Échec envoi : ' + r.status);
+  } catch (e) {
+    alert('✗ ' + e.message);
+  }
+}
+
+// Sécurité (Kevin 2026-06-18) : la config TURN modifie l'infra d'appel POUR TOUT LE
+// MONDE → réservée à l'admin (Kevin). On décode le JWT et on ne révèle la section
+// admin que si sub === 'kdmc_admin' (le serveur /api/admin/turn-config rejette déjà
+// les non-admins ; ici on cache AUSSI l'UI). Laurence & autres : tests/analyses only.
+(function revealAdminSection() {
+  try {
+    var t = JSON.parse(localStorage.getItem('apex_chat_token') || 'null');
+    if (!t || typeof t !== 'string') return;
+    var parts = t.split('.');
+    if (parts.length < 2) return;
+    var b = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    b = b + '==='.slice((b.length + 3) % 4);
+    var p = JSON.parse(atob(b));
+    if (p && (p.sub === 'kdmc_admin' || p.admin === true || p.is_admin === true)) {
+      var el = document.getElementById('diag-admin-only');
+      if (el) el.style.display = '';
+    }
+  } catch (_) { /* non-admin par défaut */ }
+})();
+
+runDiag();
+</script>
+</body>
+</html>

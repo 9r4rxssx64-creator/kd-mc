@@ -1,0 +1,47 @@
+name: Dossiers — pinguer les sources officielles
+
+# Pourquoi un workflow : l'agent n'a PAS le réseau (403 sur le proxy, mesuré) ; le
+# runner, si. Un lien n'est « livré » que quand il a été pingué pour de vrai — une
+# archive qui pointe vers des pages mortes ne vaut rien, et on ne le verrait jamais
+# depuis le dépôt. À la main uniquement : aucun cron (règle absolue du dépôt).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  liens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Les gardes d'abord (une archive fausse ne doit pas être publiée)
+        run: node --test tests/dossiers.test.mjs
+
+      - name: Pinguer chaque source officielle
+        run: |
+          set -o pipefail
+          node -e '
+            const { lit, estOfficiel } = await import("./tools/dossiers/page.mjs");
+            const d = lit();
+            let morts = 0, proteges = 0, vivants = 0;
+            for (const c of d.collections) {
+              if (!estOfficiel(c.url)) { console.log("REFUS  " + c.id + " : source non officielle"); morts++; continue; }
+              let code = 0, err = "";
+              try {
+                const r = await fetch(c.url, { redirect: "follow", headers: { "user-agent": "kd-mc.com archive check" } });
+                code = r.status;
+              } catch (e) { err = String(e.message || e).slice(0, 80); }
+              /* 401/403 = le site refuse les robots, PAS un lien mort. La distinction
+                 compte : la confondre ferait retirer des sources parfaitement valides. */
+              if (code >= 200 && code < 400) { console.log("VIVANT " + code + "  " + c.id + "  " + c.url); vivants++; }
+              else if (code === 401 || code === 403 || code === 429) { console.log("PROTÉGÉ " + code + " " + c.id + " (anti-robot, pas un lien mort)"); proteges++; }
+              else { console.log("MORT   " + (code || err) + "  " + c.id + "  " + c.url); morts++; }
+            }
+            console.log("");
+            console.log("Bilan : " + vivants + " vivants · " + proteges + " protégés · " + morts + " morts");
+            if (morts) { console.log("Une archive qui pointe vers des pages mortes ne vaut rien."); process.exit(1); }
+          ' --input-type=module

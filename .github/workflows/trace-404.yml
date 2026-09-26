@@ -1,0 +1,38 @@
+name: Trace 404 (pile d'appel de la requête fautive, connecté)
+
+# Kevin 2026-08-07 « Simule ma co et vérifie » : la vérif réelle voit un 404 /%22/%22 sur
+# CMCteams sans dire QUI le déclenche. Ce workflow capture l'initiator CDP (type de
+# ressource + pile d'appel JS) de toute requête contenant le motif — fini les corrections
+# à l'aveugle. Mêmes règles que verif-reelle : périmètre kd-mc.com, secret jamais loggé.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Page à tracer"
+        default: "https://cmcteams.kd-mc.com/"
+      motif:
+        description: "Sous-chaîne à chercher dans les URLs de requêtes"
+        default: "%22"
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Installer Chromium
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Tracer
+        env:
+          KDMC_AS_KEVIN: "1"
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        run: node tools/smoke/trace-404.mjs "${{ inputs.url }}" "${{ inputs.motif }}"

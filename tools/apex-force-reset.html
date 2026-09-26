@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<!-- v13.3.22 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>APEX — Force Reset</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#08080f;color:#fff;font-family:system-ui,-apple-system,'Helvetica Neue',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.box{max-width:420px;width:100%;text-align:center}
+h1{font-family:Georgia,serif;color:#c9a227;font-size:36px;margin:0 0 8px;letter-spacing:3px}
+.sub{color:#6a8aff;font-size:13px;letter-spacing:2px;margin:0 0 24px}
+.step{background:#12121d;border:1px solid #2a2a3a;border-radius:14px;padding:14px 16px;margin:10px 0;text-align:left;font-size:14px;line-height:1.5}
+.step.done{border-color:#3acc5e;background:#0e1a14}
+.step.err{border-color:#cc3a3a;background:#1a0e0e}
+.step-title{font-weight:700;color:#c9a227;margin-bottom:4px}
+.step-msg{color:#a0a4b8;font-size:13px}
+.btn{display:inline-block;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;padding:16px 32px;border-radius:28px;text-decoration:none;font-weight:700;font-size:16px;border:0;cursor:pointer;margin:16px 8px;min-height:54px;min-width:180px}
+.btn:active{transform:scale(.96)}
+.btn-2{background:#2a2a3a;color:#fff}
+.log{font-family:SF Mono,Menlo,monospace;font-size:11px;color:#6a6f8a;margin-top:24px;text-align:left;max-height:180px;overflow-y:auto;background:#0a0a13;padding:12px;border-radius:10px;white-space:pre-wrap;word-break:break-word}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>APEX</h1>
+  <p class="sub">FORCE RESET — v13.3.22</p>
+  <p style="color:#a0a4b8;font-size:14px;line-height:1.5;margin:0 0 16px">
+    Cet outil va :<br>
+    1. Désinstaller le Service Worker bloqué<br>
+    2. Vider tous les caches PWA<br>
+    3. Recharger Apex à la dernière version v13.3.22<br><br>
+    <strong style="color:#c9a227">À utiliser une fois</strong> si ton Apex reste bloqué sur l'ancienne version.
+  </p>
+
+  <div id="status"></div>
+
+  <button id="go" class="btn">🔄 Lancer le reset</button>
+  <a id="open" class="btn btn-2" style="display:none" href="../apex-ai-v13/?_forceupd=1">Ouvrir Apex v13.3.22 →</a>
+
+  <div id="log" class="log" style="display:none"></div>
+</div>
+
+<script>
+var L = document.getElementById('log');
+var S = document.getElementById('status');
+var btnGo = document.getElementById('go');
+var btnOpen = document.getElementById('open');
+
+function log(msg){
+  console.log(msg);
+  L.style.display = 'block';
+  L.textContent += msg + '\n';
+  L.scrollTop = L.scrollHeight;
+}
+
+function step(title, status, msg){
+  var d = document.createElement('div');
+  d.className = 'step ' + (status === 'ok' ? 'done' : status === 'err' ? 'err' : '');
+  d.innerHTML = '<div class="step-title">' + (status === 'ok' ? '✅' : status === 'err' ? '❌' : '<span class="spinner"></span>') + ' ' + title + '</div><div class="step-msg">' + (msg || '...') + '</div>';
+  S.appendChild(d);
+  return d;
+}
+
+async function reset(){
+  btnGo.disabled = true;
+  btnGo.textContent = 'Reset en cours…';
+  btnGo.style.opacity = '0.6';
+  S.innerHTML = '';
+
+  // Step 1 — Unregister all SW
+  var s1 = step('Désinstaller Service Workers', 'progress', 'Recherche...');
+  try {
+    if ('serviceWorker' in navigator) {
+      var regs = await navigator.serviceWorker.getRegistrations();
+      log('SW trouvés: ' + regs.length);
+      for (var i = 0; i < regs.length; i++) {
+        log('Unregister: ' + (regs[i].scope || 'unknown'));
+        await regs[i].unregister();
+      }
+      s1.className = 'step done';
+      s1.querySelector('.step-title').innerHTML = '✅ Service Workers désinstallés';
+      s1.querySelector('.step-msg').textContent = regs.length + ' SW supprimés';
+    } else {
+      s1.className = 'step done';
+      s1.querySelector('.step-title').innerHTML = '✅ Service Workers';
+      s1.querySelector('.step-msg').textContent = 'API non dispo (OK)';
+    }
+  } catch(e) {
+    s1.className = 'step err';
+    s1.querySelector('.step-title').innerHTML = '⚠ SW erreur';
+    s1.querySelector('.step-msg').textContent = e.message;
+    log('Erreur SW: ' + e.message);
+  }
+
+  // Step 2 — Clear all caches
+  var s2 = step('Vider caches PWA', 'progress');
+  try {
+    if ('caches' in window) {
+      var keys = await caches.keys();
+      log('Caches trouvés: ' + keys.join(', '));
+      for (var j = 0; j < keys.length; j++) {
+        await caches.delete(keys[j]);
+        log('Cache supprimé: ' + keys[j]);
+      }
+      s2.className = 'step done';
+      s2.querySelector('.step-title').innerHTML = '✅ Caches vidés';
+      s2.querySelector('.step-msg').textContent = keys.length + ' caches supprimés';
+    } else {
+      s2.className = 'step done';
+      s2.querySelector('.step-title').innerHTML = '✅ Caches';
+      s2.querySelector('.step-msg').textContent = 'API non dispo (OK)';
+    }
+  } catch(e) {
+    s2.className = 'step err';
+    s2.querySelector('.step-title').innerHTML = '⚠ Cache erreur';
+    log('Erreur cache: ' + e.message);
+  }
+
+  // Step 3 — Test connectivité v13.3.22
+  var s3 = step('Vérifier v13.3.22 disponible', 'progress');
+  try {
+    var bust = '?_t=' + Date.now();
+    var r = await fetch('../apex-ai-v13/index.html' + bust, { cache: 'no-store' });
+    var html = await r.text();
+    var m = html.match(/data-app-ver="(v[\d.]+)"/);
+    var ver = m ? m[1] : 'inconnu';
+    log('Version distante: ' + ver);
+    if (ver.indexOf('v13.3.') === 0) {
+      s3.className = 'step done';
+      s3.querySelector('.step-title').innerHTML = '✅ Version ' + ver + ' disponible';
+      s3.querySelector('.step-msg').textContent = 'Tu vas être redirigé vers la nouvelle version';
+    } else {
+      s3.className = 'step err';
+      s3.querySelector('.step-title').innerHTML = '⚠ Version inattendue: ' + ver;
+      s3.querySelector('.step-msg').textContent = 'Le déploiement n\'a peut-être pas fini. Réessaie dans 2 min.';
+    }
+  } catch(e) {
+    s3.className = 'step err';
+    s3.querySelector('.step-title').innerHTML = '⚠ Test connectivité';
+    s3.querySelector('.step-msg').textContent = e.message;
+    log('Fetch erreur: ' + e.message);
+  }
+
+  // Show open button
+  btnGo.style.display = 'none';
+  btnOpen.style.display = 'inline-block';
+  btnOpen.textContent = '✅ Ouvrir Apex v13.3.22 →';
+
+  // Auto-redirect après 3s
+  setTimeout(function(){
+    location.href = '../apex-ai-v13/?_forceupd=1&_reset=' + Date.now();
+  }, 3000);
+}
+
+btnGo.addEventListener('click', reset);
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="apex-force-reset"
+        data-version="v13.3.22"
+        data-color="#c9a227"
+        defer></script>
+</body>
+</html>

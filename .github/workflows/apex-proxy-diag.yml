@@ -1,0 +1,86 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: Apex proxy diag (appel IA réel authentifié)
+
+# Kevin 2026-07-03 « bannière Toutes les IA sont KO + badge openai » (v13.4.338).
+# Diagnostic leçon #97 : depuis le sandbox Claude Code l'egress vers *.workers.dev
+# est bloqué → ce workflow fait le VRAI appel authentifié (x-apex-pin) au proxy
+# apex-secrets-proxy et imprime le STATUS + BODY EXACT de chaque provider.
+# openai sert de CONTRÔLE (il marche dans l'app) ; anthropic est le suspect.
+#
+# Anti-spam (règle CLAUDE.md) : workflow_dispatch UNIQUEMENT (0 cron), et le job
+# sort TOUJOURS en succès (le diagnostic est dans les logs) → 0 mail.
+# Sécu : aucune clé API ne transite ; seul le hash de PIN (secret existant) est
+# envoyé, comme le fait déjà l'app. Les bodies sont redactés par précaution.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      W: https://apex-secrets-proxy.9r4rxssx64.workers.dev
+      PIN_SHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+    steps:
+      - name: Diag proxy → anthropic + openai (status + body exacts)
+        run: |
+          set +e
+          redact() { sed -E 's/(sk-[A-Za-z0-9_-]{8})[A-Za-z0-9_-]+/\1***/g; s/[A-Za-z0-9_-]{48,}/***LONG***/g'; }
+
+          echo "== 0) /health (sans auth — structure seulement) =="
+          curl -sS -m 15 "$W/health" | head -c 400 | redact; echo; echo
+
+          call() {
+            local NAME="$1" PATHX="$2" BODY="$3"
+            echo "== $NAME =="
+            OUT=$(curl -sS -m 30 -w '\n__HTTP:%{http_code}__' -X POST "$W$PATHX" \
+              -H "content-type: application/json" \
+              -H "x-apex-pin: $PIN_SHA" \
+              --data "$BODY")
+            CODE=$(printf '%s' "$OUT" | grep -o '__HTTP:[0-9]*__' | tr -dc '0-9')
+            printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//' | head -c 900 | redact; echo
+            echo ">>> $NAME HTTP $CODE"; echo
+          }
+
+          call "ANTHROPIC (suspect — modèle exact de l'app)" "/anthropic/v1/messages" \
+            '{"model":"claude-sonnet-4-6","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
+
+          call "ANTHROPIC (modèle alias secours claude-sonnet-4-5)" "/anthropic/v1/messages" \
+            '{"model":"claude-sonnet-4-5","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'
+
+          call "OPENAI (contrôle — marche dans l'app)" "/openai/v1/chat/completions" \
+            '{"model":"gpt-4o-mini","max_tokens":8,"messages":[{"role":"user","content":"ping"}]}'
+
+          echo "== ANTHROPIC APP-LIKE (stream + system cache_control + tools — le body EXACT du chat) =="
+          OUT=$(curl -sS -m 30 -w '\n__HTTP:%{http_code}__' -X POST "$W/anthropic/v1/messages" \
+            -H "content-type: application/json" \
+            -H "x-apex-pin: $PIN_SHA" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "anthropic-dangerous-direct-browser-access: true" \
+            -H "origin: https://apex-ai.kd-mc.com" \
+            --data '{"model":"claude-sonnet-4-6","max_tokens":32,"stream":true,"system":[{"type":"text","text":"Tu es APEX, assistant de test.","cache_control":{"type":"ephemeral"}}],"messages":[{"role":"user","content":[{"type":"text","text":"ping","cache_control":{"type":"ephemeral"}}]}],"tools":[{"name":"get_time","description":"Heure actuelle","input_schema":{"type":"object","properties":{},"required":[]}}]}')
+          CODE=$(printf '%s' "$OUT" | grep -o '__HTTP:[0-9]*__' | tr -dc '0-9')
+          printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//' | head -c 700 | redact; echo
+          echo ">>> ANTHROPIC APP-LIKE (stream+tools) HTTP $CODE"; echo
+
+          echo "== PRÉFLIGHT CORS exact du navigateur (OPTIONS) =="
+          curl -sS -m 15 -X OPTIONS "$W/anthropic/v1/messages" \
+            -H "origin: https://apex-ai.kd-mc.com" \
+            -H "access-control-request-method: POST" \
+            -H "access-control-request-headers: content-type,x-apex-pin,anthropic-version,anthropic-dangerous-direct-browser-access" \
+            -D - -o /dev/null | grep -iE "^HTTP|access-control" | head -8
+
+          echo "Diag terminé — lire les >>> lignes HTTP ci-dessus."
+          exit 0

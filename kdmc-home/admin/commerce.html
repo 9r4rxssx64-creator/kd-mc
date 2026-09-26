@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://kdmc-vente.9r4rxssx64.workers.dev; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
+<title>KDMC — Commerce (admin)</title>
+<meta name="robots" content="noindex,nofollow" />
+<meta name="theme-color" content="#0b1409" />
+<link rel="stylesheet" href="/design-system.css" />
+<style>
+  .wrap{max-width:980px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 14px}
+  .logo{font-weight:800;font-size:22px;letter-spacing:1px;background:linear-gradient(135deg,var(--gold2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo b{font-weight:600;font-size:11px;color:var(--admin);-webkit-text-fill-color:var(--admin);letter-spacing:2px;margin-left:6px}
+  a.home{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 13px;min-height:44px;display:inline-flex;align-items:center}
+  .cat{margin:22px 0 10px;color:var(--gold);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:10px}
+  .cat::after{content:"";flex:1;height:1px;background:var(--line)}
+  .cat .refresh{margin-left:auto;color:var(--mut);font-size:12px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:transparent;cursor:pointer;min-height:44px;text-transform:none;letter-spacing:0;font-weight:500}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(min-width:560px){.kpis{grid-template-columns:repeat(4,1fr)}}
+  .kpi{padding:14px 14px 12px;min-height:92px;display:flex;flex-direction:column;justify-content:space-between}
+  .kpi .l{color:var(--mut);font-size:12px}
+  .kpi .v{color:var(--gold2);font-size:26px;font-weight:800;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .s{color:var(--subtle);font-size:11.5px;margin-top:4px}
+  .kpi.ok .v{color:var(--ok)}.kpi.err .v{color:var(--err)}.kpi.warn .v{color:#f59e0b}
+  .grid{display:grid;grid-template-columns:1fr;gap:11px}
+  @media(min-width:560px){.grid{grid-template-columns:1fr 1fr}}
+  .tile{padding:14px;display:flex;flex-direction:column;gap:8px}
+  .tile h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
+  .tile .meta{color:var(--mut);font-size:12.5px;line-height:1.5}
+  .tile .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:var(--mut);white-space:nowrap}
+  .chip.ok{border-color:rgba(81,207,102,.4);color:var(--ok)}.chip.err{border-color:rgba(255,107,107,.45);color:var(--err)}.chip.warn{border-color:rgba(245,158,11,.45);color:#f59e0b}.chip.gold{border-color:var(--line2);color:var(--gold2)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--txt);font-size:14px;cursor:pointer;text-decoration:none}
+  .btn.p{background:linear-gradient(135deg,#f6d97a,#e8b830);color:#11160c;font-weight:700;border:none}
+  .btn.d{border-color:rgba(255,107,107,.45);color:var(--err)}
+  .btn:disabled{opacity:.5;cursor:default}
+  select.sel{min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--txt);font-size:14px;padding:8px 10px}
+  /* Saisie (IBAN, BIC, titulaire) — Kevin est sur iPhone : 44px de haut et
+     16px de texte, sinon iOS zoome tout seul dès qu'il touche le champ. */
+  input.champ{min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--txt);font-size:16px;padding:10px 12px;width:100%;max-width:340px}
+  input.champ::placeholder{color:var(--mut)}
+  .forme{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+  .bars{display:flex;gap:6px;align-items:flex-end;height:90px;padding:6px 0}
+  .bars>div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+  .bars .b{width:100%;background:linear-gradient(180deg,var(--gold2),var(--gold));border-radius:4px 4px 0 0;min-height:2px}
+  .bars .t{font-size:10px;color:var(--subtle);white-space:nowrap}
+  .list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+  .list li{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.06);border-radius:12px;font-size:13px;min-height:44px}
+  .list li .g{flex:1;min-width:0}
+  .list li .g b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .list li .g span{color:var(--subtle);font-size:11.5px}
+  .list li a{color:var(--gold2);text-decoration:none;font-size:13px;min-height:44px;display:inline-flex;align-items:center;padding:0 8px}
+  .msg{text-align:center;padding:40px 16px;color:var(--mut);line-height:1.6}
+  .note{font-size:12.5px;color:var(--mut);background:rgba(106,138,255,.08);border:1px solid rgba(106,138,255,.25);border-radius:12px;padding:11px 14px;margin:8px 0;line-height:1.5}
+  .note.err{background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.3)}
+  .src{font-size:12px;color:var(--subtle);line-height:1.6}
+  .src a{color:var(--gold2);text-decoration:none}
+  .toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);background:#0a120c;border:1px solid var(--line2);color:var(--txt);border-radius:12px;padding:12px 16px;font-size:14px;max-width:92vw;z-index:9;box-shadow:var(--sh-lg)}
+  details.more summary{cursor:pointer;color:var(--gold2);font-size:13px;min-height:44px;display:flex;align-items:center;list-style:none}
+  details.more summary::-webkit-details-marker{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo">KDMC<b>COMMERCE</b></div>
+    <a class="home" href="/admin/">← Admin</a>
+  </div>
+  <div id="app"><div class="kdmc-skel" style="margin-bottom:10px"></div><div class="kdmc-skel" style="margin-bottom:10px;opacity:.7"></div><div class="kdmc-skel" style="opacity:.4"></div></div>
+</div>
+<script src="/kdmc-sso.js"></script>
+<script src="commerce.js"></script>
+</body>
+</html>

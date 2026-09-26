@@ -1,0 +1,296 @@
+{
+  "name": "Apex Audit Pipeline (KDMC)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apex-audit",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "X-KDMC-Pipeline",
+                "value": "apex-audit-v1"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-apex-audit",
+      "name": "Webhook /apex-audit",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 320],
+      "webhookId": "apex-audit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "auth-header",
+              "leftValue": "={{$json.headers['x-kdmc-token']}}",
+              "rightValue": "={{$env.KDMC_WEBHOOK_SECRET}}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "auth-check",
+      "name": "Verify X-KDMC-Token",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 320]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"forbidden\",\"reason\":\"invalid token\"}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "id": "respond-forbidden",
+      "name": "Respond 403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body || $input.item.json;\nif (!body || typeof body !== 'object') {\n  throw new Error('Empty or invalid audit payload');\n}\nconst audit = body.audit || body;\nif (typeof audit.score !== 'number') {\n  throw new Error('audit.score is missing or not a number');\n}\nif (!Array.isArray(audit.findings)) {\n  throw new Error('audit.findings must be an array');\n}\nreturn [{ json: {\n  audit,\n  receivedAt: new Date().toISOString(),\n  source: body.source || 'apex',\n  requestId: $execution.id\n} }];"
+      },
+      "id": "format-payload",
+      "name": "Format Audit Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const audit = $json.audit;\nconst sev = (f) => f.severity || f.priority || '?';\nconst findings = (audit.findings || []).map((f, i) => {\n  const head = `### Finding ${i+1} [${sev(f)}] ${f.title || '(sans titre)'}`;\n  const lines = [head];\n  if (f.location || f.file) lines.push('- Localisation : `' + (f.location || f.file) + '`');\n  if (f.description) lines.push('- Description : ' + f.description);\n  if (f.cwe) lines.push('- CWE : ' + f.cwe);\n  if (f.cvss) lines.push('- CVSS : ' + f.cvss);\n  return lines.join('\\n');\n}).join('\\n\\n');\nconst ctx = audit.context && typeof audit.context === 'object'\n  ? Object.entries(audit.context).map(([k,v]) => `- **${k}** : ${v}`).join('\\n')\n  : (audit.context || '_(non fourni)_');\nconst userPrompt = `# Audit Apex à traiter\\n\\nScore global : ${audit.score}/100\\nVerdict : ${audit.verdict || '(non fourni)'}\\nDate audit : ${audit.date || audit.timestamp || '(non datée)'}\\n\\n## Findings\\n\\n${findings || '_(aucun finding fourni)_'}\\n\\n## Contexte projet\\n\\n${ctx}\\n\\n---\\n\\nGénère le plan d'implémentation maintenant.`;\nreturn [{ json: { ...$json, userPrompt } }];"
+      },
+      "id": "build-prompt",
+      "name": "Build Claude Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{$env.ANTHROPIC_API_KEY}}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{$env.ANTHROPIC_MODEL || 'claude-opus-4-5-20250514'}}\",\n  \"max_tokens\": 8000,\n  \"system\": \"Tu es un architecte senior expert (15 ans d'expérience) chargé de transformer un audit Apex en plan d'implémentation actionnable. Réponds en français, en Markdown structuré, en priorisant par sévérité (P0>P1>P2>P3). Pour chaque finding fournis : résumé, cause racine, fix concret (fichiers/fonctions), test de non-régression, effort (S/M/L), risque si non corrigé. Termine par 3 quick-wins déployables aujourd'hui et 3 chantiers >7 jours.\",\n  \"messages\": [\n    { \"role\": \"user\", \"content\": $json.userPrompt }\n  ]\n}",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "claude-call",
+      "name": "Claude Opus call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1120, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $json;\nconst content = Array.isArray(r.content) ? r.content : [];\nconst plan = content.map(b => b.text || '').join('\\n').trim();\nconst usage = r.usage || {};\nconst tokensIn = usage.input_tokens || 0;\nconst tokensOut = usage.output_tokens || 0;\nconst prev = $('Format Audit Payload').first().json;\nreturn [{ json: {\n  audit_payload: prev.audit,\n  plan_response: plan,\n  tokens_input: tokensIn,\n  tokens_output: tokensOut,\n  status: plan ? 'ok' : 'empty',\n  request_id: prev.requestId,\n  received_at: prev.receivedAt,\n  model: r.model || 'unknown'\n} }];"
+      },
+      "id": "parse-response",
+      "name": "Parse Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 240]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO apex_escalades (timestamp, audit_payload, plan_response, tokens_input, tokens_output, status, kevin_notified) VALUES ($1, $2, $3, $4, $5, $6, false) RETURNING id, timestamp;",
+        "additionalFields": {
+          "queryParams": "={{$json.received_at}},={{JSON.stringify($json.audit_payload)}},={{$json.plan_response}},={{$json.tokens_input}},={{$json.tokens_output}},={{$json.status}}",
+          "mode": "independently"
+        }
+      },
+      "id": "save-postgres",
+      "name": "Save to apex_escalades",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1560, 240],
+      "credentials": {
+        "postgres": {
+          "id": "kdmc-postgres",
+          "name": "KDMC Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$env.SMTP_FROM}}",
+        "toEmail": "={{$env.KEVIN_EMAIL}}",
+        "subject": "=[Apex] Plan d'escalade #{{$('Parse Claude Response').first().json.request_id}} prêt",
+        "emailFormat": "html",
+        "html": "=<h2>Apex Audit escalade traité</h2><p>Score : <strong>{{$('Format Audit Payload').first().json.audit.score}}/100</strong></p><p>Tokens : in={{$('Parse Claude Response').first().json.tokens_input}} / out={{$('Parse Claude Response').first().json.tokens_output}}</p><p>Status : {{$('Parse Claude Response').first().json.status}}</p><hr><pre style='white-space:pre-wrap;font-family:monospace;font-size:13px'>{{$('Parse Claude Response').first().json.plan_response}}</pre><hr><p>DB id : {{$json.id}} — {{$json.timestamp}}</p>",
+        "options": {}
+      },
+      "id": "notify-kevin",
+      "name": "Notify Kevin (email)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1780, 240],
+      "credentials": {
+        "smtp": {
+          "id": "kdmc-smtp",
+          "name": "KDMC SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE apex_escalades SET kevin_notified = true WHERE id = $1;",
+        "additionalFields": {
+          "queryParams": "={{$('Save to apex_escalades').first().json.id}}",
+          "mode": "independently"
+        }
+      },
+      "id": "mark-notified",
+      "name": "Mark notified",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2000, 240],
+      "credentials": {
+        "postgres": {
+          "id": "kdmc-postgres",
+          "name": "KDMC Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"ok\",\"request_id\":\"{{$('Parse Claude Response').first().json.request_id}}\",\"db_id\":\"{{$('Save to apex_escalades').first().json.id}}\",\"tokens_input\":{{$('Parse Claude Response').first().json.tokens_input}},\"tokens_output\":{{$('Parse Claude Response').first().json.tokens_output}}}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-ok",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2220, 240]
+    }
+  ],
+  "connections": {
+    "Webhook /apex-audit": {
+      "main": [
+        [
+          { "node": "Verify X-KDMC-Token", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Verify X-KDMC-Token": {
+      "main": [
+        [
+          { "node": "Format Audit Payload", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Respond 403", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Format Audit Payload": {
+      "main": [
+        [
+          { "node": "Build Claude Prompt", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Claude Prompt": {
+      "main": [
+        [
+          { "node": "Claude Opus call", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Claude Opus call": {
+      "main": [
+        [
+          { "node": "Parse Claude Response", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Parse Claude Response": {
+      "main": [
+        [
+          { "node": "Save to apex_escalades", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Save to apex_escalades": {
+      "main": [
+        [
+          { "node": "Notify Kevin (email)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Notify Kevin (email)": {
+      "main": [
+        [
+          { "node": "Mark notified", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Mark notified": {
+      "main": [
+        [
+          { "node": "Respond 200", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "tags": [
+    { "name": "apex" },
+    { "name": "kdmc" },
+    { "name": "audit" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "description": "Receives an Apex audit via webhook, escalates to Claude (Anthropic Opus), persists the plan in PostgreSQL (apex_escalades), and notifies Kevin by email.",
+    "version": "1.0.0"
+  }
+}

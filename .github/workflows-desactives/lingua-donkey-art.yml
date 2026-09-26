@@ -1,0 +1,108 @@
+name: "KDMC Lingua — Génère la mascotte Âne (images IA, à la demande)"
+
+# Kevin veut POUVOIR CHOISIR entre l'abeille et un âne (2026-08-11).
+# Même chaîne que lingua-bee-art.yml, mais l'âne n'a pas d'image de référence : on la
+# CRÉE d'abord (images/generations), puis on décline les poses depuis cette source
+# (images/edits) pour garder EXACTEMENT le même personnage d'une pose à l'autre.
+# Style imposé = celui de Bee, et surtout la MÊME géométrie de visage : les paupières
+# et la bouche animées de la marionnette sont positionnées en pourcentage — si la tête
+# de l'âne n'est pas au même endroit que celle de l'abeille, les yeux clignent à côté.
+# Manuel uniquement (workflow_dispatch) — zéro cron, zéro mail (règle anti-spam).
+
+on:
+  workflow_dispatch:
+    inputs:
+      poses:
+        description: "Poses à générer (séparées par un espace)"
+        default: "wave point party read"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Crée l'âne source + ses poses
+        env:
+          OPENAI_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+        run: |
+          set -e
+          if [ -z "${OPENAI_KEY:-}" ]; then echo "::error::OPEN_AI_API_KEY absente"; exit 1; fi
+          mkdir -p /tmp/out
+
+          # Le 1er âne était juste : mais PLAT et terne à côté de Bee (Kevin : « c'est pas beau »).
+          # On copie donc le style EXACT de Bee : ombré doux en dégradé, gros yeux brillants avec
+          # plusieurs reflets et longs cils, couleurs chaudes, rond crème en fond, traits fins.
+          STYLE="Adorable children's app mascot illustration in the SAME art style as a friendly cartoon bee mascot: SOFT AIRBRUSHED GRADIENT SHADING (not flat vector), thin warm brown outlines (not thick harsh black), very large glossy sparkling eyes with two or three white highlights and long curved eyelashes, warm rosy blush cheeks, joyful wide open smile showing a small tongue, chibi proportions with a big head, gentle rim light, soft round cream-coloured vignette background circle, soft shadow under the feet, square composition, warm cosy palette, no text, no watermark, no border."
+          WHO="A very cute cartoon BABY DONKEY: soft warm caramel-taupe fur with lighter golden highlights, creamy beige muzzle and belly, two long upright ears with soft pink inner ears, a fluffy chocolate mane tuft on top of the head, a tiny golden honey-drop pendant on a thin collar, small dark hooves, fluffy tail tip."
+
+          # 1) SOURCE : l'âne de référence, bras le long du corps (sert aussi de rig/base).
+          echo "== source (rig/base) =="
+          FRAME="Standing upright facing the viewer, full body centered in the square, both front hooves hanging DOWN at its sides (no waving, no raised arm), mouth open in a smile. Framing rule, important: the head fills the upper half of the square, the two eyes are centred around 30% from the top of the image, and the mouth is around 43% from the top."
+          HTTP=$(curl -sS -o /tmp/src.json -w "%{http_code}" https://api.openai.com/v1/images/generations \
+            -H "Authorization: Bearer $OPENAI_KEY" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg p "$WHO $FRAME $STYLE" '{model:"gpt-image-1",prompt:$p,size:"1024x1024",quality:"high",n:1}')") || HTTP=000
+          if [ "$HTTP" != "200" ] || ! jq -e '.data[0].b64_json' /tmp/src.json >/dev/null 2>&1; then
+            echo "::error::source non générée (http=$HTTP) : $(jq -r '.error.message // "?"' /tmp/src.json 2>/dev/null | head -c 300)"; exit 1
+          fi
+          jq -r '.data[0].b64_json' /tmp/src.json | base64 -d > /tmp/out/donkey-src.png
+          cp /tmp/out/donkey-src.png /tmp/out/base.png
+          echo "  source OK ($(wc -c < /tmp/out/donkey-src.png) octets)"
+
+          # 2) POSES : dérivées de la source → même personnage exactement.
+          KEEP="Keep the EXACT same character design: same donkey face, same big glossy sparkling eyes with highlights and eyelashes, same blush cheeks, same long ears with pink inside, same mane tuft, same warm caramel fur and creamy muzzle, same golden pendant, same soft gradient shading, same thin warm outlines, same round cream vignette background, same centering and same head position."
+          gen_edit () {
+            NAME="$1"; ACTION="$2"
+            echo "== $NAME =="
+            HTTP=$(curl -sS -o /tmp/img.json -w "%{http_code}" https://api.openai.com/v1/images/edits \
+              -H "Authorization: Bearer $OPENAI_KEY" \
+              -F "model=gpt-image-1" \
+              -F "image[]=@/tmp/out/donkey-src.png;type=image/png" \
+              -F "prompt=$KEEP Now show this same character $ACTION" \
+              -F "size=1024x1024" -F "quality=high" -F "n=1") || HTTP=000
+            if [ "$HTTP" = "200" ] && jq -e '.data[0].b64_json' /tmp/img.json >/dev/null 2>&1; then
+              jq -r '.data[0].b64_json' /tmp/img.json | base64 -d > "/tmp/out/$NAME.png"
+              echo "  OK ($(wc -c < /tmp/out/$NAME.png) octets)"; return 0
+            fi
+            echo "::warning::$NAME non générée (http=$HTTP) : $(jq -r '.error.message // "?"' /tmp/img.json 2>/dev/null | head -c 200)"
+            return 1
+          }
+          OK=0
+          for P in ${{ github.event.inputs.poses || 'wave point party read' }}; do
+            case "$P" in
+              wave)  gen_edit wave  "happily waving hello with one raised front hoof, looking at the viewer" && OK=$((OK+1)) ;;
+              point) gen_edit point "curiously pointing up with one hoof, asking a question, mouth open as if speaking" && OK=$((OK+1)) ;;
+              party) gen_edit party "jumping for joy and celebrating with both hooves up, surrounded by small confetti and stars" && OK=$((OK+1)) ;;
+              read)  gen_edit read  "sitting down and adorably reading a small purple book held in its hooves, eyes looking at the book" && OK=$((OK+1)) ;;
+              *) echo "::warning::pose inconnue : $P" ;;
+            esac
+          done
+          echo "Poses générées : $OK"
+          [ "$OK" -ge 1 ] || { echo "::error::aucune pose générée"; exit 1; }
+
+      - name: Convertit en webp (poids app) + commit sur la branche d'art
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq webp
+          mkdir -p lingua/donkey/rig
+          for f in /tmp/out/*.png; do
+            n=$(basename "$f" .png)
+            case "$n" in
+              base) cwebp -q 88 "$f" -o lingua/donkey/rig/base.webp >/dev/null 2>&1 ;;
+              donkey-src) cwebp -q 90 "$f" -o lingua/donkey/donkey-src.webp >/dev/null 2>&1 ;;
+              *) cwebp -q 88 "$f" -o "lingua/donkey/$n.webp" >/dev/null 2>&1 ;;
+            esac
+          done
+          ls -la lingua/donkey lingua/donkey/rig
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="claude/lingua-donkey-art-${{ github.run_number }}"
+          git checkout -b "$BR"
+          git add lingua/donkey
+          git commit -m "Lingua : mascotte Âne — images générées (source + poses) [skip ci]" \
+            -m "Créées par gpt-image-1 : source d'abord, puis poses dérivées de cette source pour garder le même personnage. Style et cadrage alignés sur Bee (les paupières/bouche animées sont positionnées en %)."
+          for i in 1 2 3 4; do git push -u origin "$BR" && break || sleep $((2**i)); done

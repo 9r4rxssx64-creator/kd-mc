@@ -1,0 +1,32 @@
+{
+ "_lire_moi": "Robots (workflows) restés au dépôt privé. Des noms de fichiers de robots uniquement.",
+ "workflows": [
+  "apex-chat-d1-backup.yml",
+  "arbre-actes-images.yml",
+  "arbre-actes-registres.yml",
+  "arbre-actes.yml",
+  "arbre-ad06.yml",
+  "arbre-ad78-ark.yml",
+  "arbre-ad78.yml",
+  "arbre-cloud-audit.yml",
+  "arbre-enrich-local.yml",
+  "arbre-enrich.yml",
+  "arbre-find-avis-deces.yml",
+  "arbre-find-deces.yml",
+  "arbre-lire-web.yml",
+  "arbre-recherche-web.yml",
+  "arbre-recherche.yml",
+  "audit-live.yml",
+  "auto-backup.yml",
+  "cmc-runtime-audit.yml",
+  "coffre-previent-public.yml",
+  "deces-cors-check.yml",
+  "deces-live-check.yml",
+  "depot-public-bascule.yml",
+  "firebase-backup.yml",
+  "live-verify-departs.yml",
+  "verif-live-rapport.yml",
+  "verif-reelle.yml",
+  "voir-comme-kevin.yml"
+ ]
+}

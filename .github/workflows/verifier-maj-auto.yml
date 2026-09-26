@@ -1,0 +1,59 @@
+name: KDMC — La mise à jour automatique marche-t-elle à CHAQUE adresse ?
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POURQUOI CE WORKFLOW
+#
+# Kevin 2026-09-19 : « Vérifie les MAJ auto pour tout le monde. Certains sont
+# encore en 1.39. Pourquoi ? »
+#
+# La page Départs se met à jour toute seule en comparant sa version à celle
+# annoncée par `version.txt`. Ce mécanisme échoue EN SILENCE : si la réponse
+# n'est pas exactement un numéro de version, le code s'arrête sans rien dire.
+# Et Cloudflare Pages répond à une adresse inconnue par la page d'accueil AVEC
+# un code 200 — donc « version.txt répond 200 » ne veut rien dire.
+#
+# L'app a PLUSIEURS adresses (departs, cmcteams-light, cmcteams, rotaplan…).
+# Il suffit qu'UNE d'elles soit en défaut pour que les gens qui passent par
+# elle restent bloqués sur une vieille version, sans le savoir.
+#
+# ZÉRO tâche programmée (règle anti-mails) : à la demande, et à chaque
+# publication du site.
+# ─────────────────────────────────────────────────────────────────────────────
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch: {}
+  # Une branche de travail qui touche la sonde la fait tourner : sans ça, on ne
+  # peut pas la lancer du tout tant qu'elle n'est pas sur la branche principale.
+  push:
+    branches: ['claude/**']
+    paths:
+      - 'tools/audit/sonde-maj-auto.mjs'
+      - '.github/workflows/verifier-maj-auto.yml'
+  workflow_run:
+    workflows: ["KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ)"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Chaque adresse sert-elle la même version, et peut-elle se mettre à jour ?
+        shell: bash -eo pipefail {0}
+        run: |
+          LIGHT=$(tr -d ' \n' < tools/departs/version.txt)
+          APP=$(grep -oE 'var APP_VER *= *"v[0-9.]+"' index.html | head -1 | grep -oE 'v[0-9.]+')
+          echo "versions attendues (source du dépôt) : app $APP · page Départs $LIGHT"
+          node tools/audit/sonde-maj-auto.mjs --attendu-app "$APP" --attendu-light "$LIGHT"

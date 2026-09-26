@@ -1,0 +1,216 @@
+name: Deploy cmc-parser-proxy (Cloudflare Worker)
+
+# Déploie automatiquement le worker `cmc-parser-proxy` (proxy IA pour l'app de
+# test T1 `tools/planning-parser-tester/`) sur Cloudflare en injectant les
+# secrets API depuis le repo GitHub vers les secrets Worker. Aucune clé n'est
+# stockée côté frontend ni en clair dans le repo.
+#
+# Trigger : push sur main qui touche le code du worker, OU dispatch manuel.
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'tools/planning-parser-tester/worker/**'
+      - '.github/workflows/cmc-parser-proxy-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write       # checkout + écriture branche dédiée
+  pull-requests: write  # création + merge auto de la PR proxy-config
+
+concurrency:
+  group: cmc-parser-proxy-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'  # wrangler >=4 requires Node 22+
+
+      - name: Install wrangler
+        run: npm install -g wrangler@latest
+
+      # Push tous les secrets Worker en une seule étape robuste.
+      # Pour chaque secret : on vérifie qu'il est non-vide, et si oui on le pousse
+      # via `wrangler secret put`. Sinon on log clairement « absent » et on
+      # CONTINUE — un provider absent ne casse pas tout le déploiement (le
+      # worker répondra 503 secret_missing avec hint clair pour ce provider seul).
+      - name: Push secrets Worker
+        working-directory: tools/planning-parser-tester/worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
+          OPEN_AI_API_KEY:       ${{ secrets.OPEN_AI_API_KEY }}
+          MISTRAL_API_KEY:       ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY:        ${{ secrets.GEMINI_API_KEY }}
+          PUSH_ADMIN_TOKEN:      ${{ secrets.PUSH_ADMIN_TOKEN }}
+        run: |
+          set +e
+          push_one () {
+            local NAME="$1"
+            local VAL="$2"
+            if [ -z "$VAL" ]; then
+              echo "⚠️  Secret $NAME absent côté repo GitHub — provider correspondant désactivé."
+              return 0
+            fi
+            echo "▶ Push $NAME …"
+            if echo "$VAL" | wrangler secret put "$NAME" >/dev/null 2>&1; then
+              echo "✅ $NAME pushé vers le Worker"
+            else
+              echo "❌ Échec push $NAME — réessai en mode verbose pour diagnostic :"
+              echo "$VAL" | wrangler secret put "$NAME"
+              return 1
+            fi
+          }
+          push_one ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY" || exit 1
+          push_one OPEN_AI_API_KEY   "$OPEN_AI_API_KEY"   || exit 1
+          push_one MISTRAL_API_KEY   "$MISTRAL_API_KEY"   || exit 1
+          push_one GEMINI_API_KEY    "$GEMINI_API_KEY"    || exit 1
+          push_one PUSH_ADMIN_TOKEN  "$PUSH_ADMIN_TOKEN"  || exit 1
+          echo "✅ Tous les secrets disponibles ont été poussés."
+
+      - name: Deploy Worker (capture URL)
+        id: deploy
+        working-directory: tools/planning-parser-tester/worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          OUT=$(wrangler deploy 2>&1)
+          echo "$OUT"
+          # Extrait la première URL workers.dev affichée par wrangler
+          URL=$(echo "$OUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' | head -1)
+          if [ -z "$URL" ]; then
+            echo "❌ Impossible de capturer l'URL du worker depuis la sortie wrangler"
+            echo "Cause : la sortie ne contient pas de pattern https://*.workers.dev"
+            exit 1
+          fi
+          echo "✅ Worker URL: $URL"
+          echo "worker_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Health check
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          sleep 4
+          STATUS=$(curl -s -o /tmp/h.json -w "%{http_code}" "${URL}/healthz" || echo "000")
+          echo "HTTP $STATUS"
+          cat /tmp/h.json || true
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Worker ne répond pas 200 — déploiement à vérifier"
+            echo "URL testée : ${URL}/healthz"
+            exit 1
+          fi
+          echo "✅ Worker opérationnel sur ${URL}"
+
+      - name: Write proxy-config.json (auto-config frontend)
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          mkdir -p tools/planning-parser-tester
+          cat > tools/planning-parser-tester/proxy-config.json <<EOF
+          {
+            "_comment": "Auto-généré par .github/workflows/cmc-parser-proxy-deploy.yml — NE PAS éditer à la main.",
+            "worker_url": "${URL}",
+            "auth_mode": "trusted_origin",
+            "auth_note": "L'app servie depuis github.io n'a PAS besoin de token (CORS-bypass impossible côté navigateur). Le token X-Auth-Token reste accepté pour debug curl/Postman.",
+            "providers": ["anthropic", "openai", "mistral", "gemini"],
+            "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "deployed_by": "${{ github.actor }}",
+            "deploy_commit": "${{ github.sha }}",
+            "deploy_run_id": "${{ github.run_id }}"
+          }
+          EOF
+          cat tools/planning-parser-tester/proxy-config.json
+
+      # Tentative création PR auto via APEX_GITHUB_PAT (bypass restriction
+      # « GitHub Actions is not permitted to create or approve pull request »
+      # qui rejette GITHUB_TOKEN par défaut). Si APEX_GITHUB_PAT absent →
+      # continue-on-error et bascule sur le mode « URL conventionnelle » côté
+      # frontend (zéro saisie Kevin de toute façon).
+      - name: Create PR pour auto-sync proxy-config.json (best-effort)
+        id: cpr
+        continue-on-error: true
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.APEX_GITHUB_PAT || secrets.GITHUB_TOKEN }}
+          add-paths: tools/planning-parser-tester/proxy-config.json
+          branch: chore/parser-proxy-config-sync
+          delete-branch: true
+          commit-message: |
+            chore(parser-tester): auto-sync proxy-config.json [skip ci]
+
+            worker_url=${{ steps.deploy.outputs.worker_url }}
+            deployed_by=${{ github.actor }}
+            run_id=${{ github.run_id }}
+          title: "chore(parser-tester): sync proxy-config.json → worker URL"
+          body: |
+            🤖 Auto-généré par le workflow `cmc-parser-proxy-deploy.yml`.
+
+            - Worker URL : `${{ steps.deploy.outputs.worker_url }}`
+            - Healthz : ✅ vérifié
+            - Run : ${{ github.run_id }}
+
+            Cette PR met à jour `tools/planning-parser-tester/proxy-config.json`
+            pour que l'app frontend charge la bonne URL exacte au boot
+            (sans dépendre de la convention de naming).
+          labels: |
+            claude-code automation
+            auto-merge
+          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+
+      # Toujours afficher l'URL du worker dans le summary GitHub Actions (visible
+      # par Kevin direct depuis la page du run, pas besoin de fouiller les logs).
+      # IMPORTANT : on écrit le markdown via un heredoc 'EOF' SINGLE-QUOTED pour
+      # désactiver l'interpolation bash (les backticks markdown ne doivent PAS être
+      # interprétés comme command substitution — bug du run précédent line 5).
+      - name: Summary visible pour Kevin
+        if: always() && steps.deploy.outputs.worker_url != ''
+        env:
+          WORKER_URL: ${{ steps.deploy.outputs.worker_url }}
+          PR_OK:      ${{ steps.cpr.outcome }}
+          PR_URL:     ${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF_HEADER'
+          ## ✅ Worker `cmc-parser-proxy` déployé
+          EOF_HEADER
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**URL du worker** : <${WORKER_URL}>" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Healthz** : [${WORKER_URL}/healthz](${WORKER_URL}/healthz)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**App de test** : <https://9r4rxssx64-creator.github.io/CMCteams/tools/planning-parser-tester/>" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF_BODY'
+          L'app charge automatiquement cette URL au boot (URL conventionnelle
+          ou via proxy-config.json). Kevin n'a RIEN à coller manuellement.
+
+          ### 📝 Sync proxy-config.json
+          EOF_BODY
+          if [ "$PR_OK" = "success" ]; then
+            if [ -n "$PR_URL" ]; then
+              echo "✅ PR créée/mise à jour : $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "ℹ️ Aucun changement à committer (proxy-config.json déjà à jour)." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            cat >> "$GITHUB_STEP_SUMMARY" <<'EOF_FALLBACK'
+          ⚠️ Impossible de créer la PR auto (restriction repo Actions par défaut).
+
+          **Pas grave** : le frontend utilise le fallback URL conventionnelle
+          `cmc-parser-proxy.9r4rxssx64.workers.dev`.
+
+          Pour activer la sync auto (optionnel — pas requis pour utiliser l'app) :
+          1. Soit créer un secret `APEX_GITHUB_PAT` (PAT scope `repo` + `workflow`)
+          2. Soit activer Settings → Actions → General → Workflow permissions →
+             « Allow GitHub Actions to create and approve pull requests »
+          EOF_FALLBACK
+          fi

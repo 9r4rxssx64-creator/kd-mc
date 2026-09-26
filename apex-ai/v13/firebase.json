@@ -1,0 +1,6 @@
+{
+  "_comment": "APEX v13 — config Firebase CLI (versionnée v13.4.290). Déploiement règles RTDB: `firebase deploy --only database`. Voir database.rules.json (⚠️ migration ?auth= requise AVANT déploiement).",
+  "database": {
+    "rules": "database.rules.json"
+  }
+}

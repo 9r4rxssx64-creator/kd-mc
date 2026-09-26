@@ -1,0 +1,43 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: Lingua — Vérif « appel en direct » (jeton Realtime réel)
+
+# Vérifie POUR DE VRAI (réseau ouvert en CI) que le worker mint bien un jeton éphémère OpenAI
+# Realtime sur le domaine live — c.-à-d. que le nom du modèle est valide. Ne teste PAS la voix
+# (ça, c'est l'iPhone de Kevin), mais confirme la partie que je peux prouver sans micro.
+# À la demande uniquement (aucun cron → aucun spam).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Frappe /__lingua/rt-session en direct et affiche la réponse"
+        run: |
+          echo "POST https://lingua.kd-mc.com/__lingua/rt-session"
+          code=$(curl -sS -o /tmp/rt.json -w '%{http_code}' -X POST \
+            -H 'content-type: application/json' \
+            --data '{"lang":"en","langName":"anglais","level":"A1"}' \
+            https://lingua.kd-mc.com/__lingua/rt-session || echo "000")
+          echo "HTTP $code"
+          echo "----- Réponse (le jeton est masqué) -----"
+          # masque le client_secret dans l'affichage
+          sed -E 's/("client_secret":")[^"]+/\1***MASQUE***/' /tmp/rt.json || cat /tmp/rt.json
+          echo
+          if grep -q '"ok":true' /tmp/rt.json; then
+            echo "✅ Le worker mint un JETON Realtime → le modèle est valide, l'appel en direct est prêt côté serveur."
+          else
+            echo "⚠️ Pas de jeton (ok:false). Voir le champ \"detail\" ci-dessus : souvent un nom de modèle à ajuster"
+            echo "   via l'env OPENAI_REALTIME_MODEL du worker. Le mode direct retombe alors proprement sur la conversation normale."
+          fi

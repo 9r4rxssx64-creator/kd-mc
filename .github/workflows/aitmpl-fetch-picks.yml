@@ -1,0 +1,53 @@
+name: AITMPL récupère la sélection (texte complet pour vérif)
+
+# 2e passe : récupère le TEXTE COMPLET des composants sélectionnés par Claude Code
+# (depuis github.com/davila7/claude-code-templates), avec leur SHA256, et l'imprime
+# dans le log pour vérification AVANT vendorisation. LECTURE SEULE — aucun code tiers
+# exécuté (jamais `npx claude-code-templates`).
+on:
+  workflow_dispatch:
+    inputs:
+      names:
+        description: "Noms de composants (sans .md), séparés par des virgules"
+        required: true
+        default: "prompt-engineer,llm-architect,model-evaluator,search-specialist,task-decomposition-expert,shopify-expert,api-architect,content-marketer,market-researcher,competitive-analyst,customer-support,smart-contract-auditor,graphql-security-specialist"
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloner AITMPL en superficie (lecture seule)
+        run: git clone --depth 1 https://github.com/davila7/claude-code-templates.git aitmpl 2>&1 | tail -2
+
+      - name: Imprimer le texte complet + SHA256 de chaque composant sélectionné
+        env:
+          NAMES: ${{ github.event.inputs.names }}
+        run: |
+          python3 - <<'PY'
+          import os, hashlib
+          names = [n.strip() for n in os.environ.get("NAMES","").split(",") if n.strip()]
+          root = "aitmpl/cli-tool/components"
+          # index nom -> chemins (agents/skills/... .md)
+          index = {}
+          for dp, _d, files in os.walk(root):
+              for f in files:
+                  if f.lower().endswith(".md"):
+                      index.setdefault(os.path.splitext(f)[0], []).append(os.path.join(dp, f))
+          print("=== SÉLECTION:", len(names), "composants demandés ===\n")
+          for n in names:
+              paths = index.get(n, [])
+              if not paths:
+                  print(f"\n@@@@@ INTROUVABLE: {n} @@@@@\n"); continue
+              # on prend le 1er chemin (dédupe éventuelle signalée)
+              p = paths[0]
+              rel = os.path.relpath(p, "aitmpl")
+              data = open(p, "rb").read()
+              sha = hashlib.sha256(data).hexdigest()
+              extra = (" · AUTRES COPIES: " + ", ".join(os.path.relpath(x,'aitmpl') for x in paths[1:])) if len(paths) > 1 else ""
+              print(f"\n@@@@@ DÉBUT {rel} · sha256={sha} · {len(data)}o{extra} @@@@@")
+              print(data.decode("utf-8", "replace"))
+              print(f"@@@@@ FIN {rel} @@@@@")
+          PY

@@ -1,0 +1,15 @@
+{
+  "connected": true,
+  "shop_id": 27791653,
+  "shop_title": "My new store",
+  "sales_channel": "disconnected",
+  "all_shops": [
+    {
+      "id": 27791653,
+      "title": "My new store",
+      "channel": "disconnected"
+    }
+  ],
+  "api_base": "https://api.printify.com/v1",
+  "checked_at": "2026-06-03T21:29:50.829Z"
+}

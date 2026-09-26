@@ -1,0 +1,13 @@
+name = "coffre-r2"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+# Bucket R2 chiffré (créé automatiquement par le workflow deploy-coffre-r2.yml).
+# Le worker ne stocke que des payloads déjà chiffrés AES-256 côté client (zero-knowledge).
+[[r2_buckets]]
+binding = "COFFRE_BUCKET"
+bucket_name = "coffre-vault"
+
+# Secrets (poussés par le workflow via `wrangler secret put`) :
+#   COFFRE_PUBLIC_TOKEN  (token d'app, défense en profondeur — pas un vrai secret)

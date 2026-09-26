@@ -1,0 +1,27 @@
+name = "kdmc-rag"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+# account_id injecté par le workflow via CLOUDFLARE_ACCOUNT_ID (jamais commité).
+# SANS Durable Object (leçons #132/#133). Embeddings via Workers AI (binding AI, aucune
+# clé externe) + rangement des vecteurs dans D1 (binding DB).
+# Secret : APEX_ADMIN_PIN_SHA256 (auth mémoire perso) posé par le workflow via `wrangler secret put`.
+#
+# ⚠️ 22.09.2026 — Vectorize a été REMPLACÉ par D1, et ce n'est pas un caprice :
+# ce service n'était plus déployé depuis le 8 juillet, parce que la création de l'index
+# Vectorize échouait et que le worker ne pouvait pas partir sans elle. Mesuré : la clé
+# d'API utilisée par GitHub (identifiant 1b93a11a…) reçoit un HTTP 403 « Authentication
+# error » code 10000 sur /vectorize/v2/indexes, alors que le compte est Super
+# Administrator. Il fallait donc un geste de plus sur la bonne clé, à refaire le jour où
+# elle change. Décision de Kevin : « prends le gratuit, ne me demande rien. »
+# D1 est gratuit, ne demande aucun droit particulier, et la recherche par similarité se
+# fait dans le worker (voir worker.js). Les empreintes de sens restent calculées par
+# Workers AI, gratuit : l'intelligence est intacte.
+#
+# database_id est injecté par le workflow (jamais commité) : voir deploy-kdmc-rag.yml.
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "apex-memory"

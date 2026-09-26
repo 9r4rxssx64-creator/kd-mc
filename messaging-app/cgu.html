@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<!-- v2026-09-17 — audit : Firebase retiré (faux), lien de suppression réparé, mentions légales, version des CGU -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Conditions générales d'utilisation d'Apex Chat — messagerie privée sécurisée. Chiffrée en transit (HTTPS/TLS), serveur privé, RGPD, droits utilisateur.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://apex-chat.kd-mc.com/cgu.html">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="Apex Chat">
+<meta property="og:title" content="Apex Chat — CGU">
+<meta property="og:description" content="Conditions générales d'utilisation Apex Chat.">
+<meta property="og:url" content="https://apex-chat.kd-mc.com/cgu.html">
+<meta name="twitter:card" content="summary">
+<title>Apex Chat — Conditions Générales d'Utilisation (CGU)</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#08080f;color:#e8e8f0;font-family:system-ui,-apple-system,sans-serif;
+       padding:20px;line-height:1.7}
+  .wrap{max-width:780px;margin:0 auto}
+  h1{color:#c9a227;font-family:Georgia,serif;font-size:2em;letter-spacing:2px;margin:30px 0 10px}
+  h2{color:#c9a227;font-family:Georgia,serif;font-size:1.4em;margin:30px 0 10px;border-bottom:1px solid #2a2a35;padding-bottom:6px}
+  h3{color:#9aa;font-size:1em;margin:20px 0 6px}
+  a{color:#6a8aff}
+  .meta{color:#888;font-size:0.85em;margin-bottom:20px}
+  .badge{display:inline-block;background:#1a3a1a;color:#5fcf5f;padding:6px 12px;border-radius:14px;font-size:0.85em;margin:4px 4px 4px 0;border:1px solid #2f5f2f}
+  .warning{background:#3a1a1a;border-left:3px solid #cf5f5f;padding:12px 16px;margin:20px 0;border-radius:8px;color:#f0c0c0}
+  .info{background:#1a2a3a;border-left:3px solid #6a8aff;padding:12px 16px;margin:20px 0;border-radius:8px}
+  ul li{margin:8px 0}
+  .footer-back{margin-top:50px;padding:20px;background:#13131c;border-radius:14px;text-align:center}
+  .btn{display:inline-block;background:#c9a227;color:#08080f;padding:12px 24px;border-radius:14px;
+       text-decoration:none;font-weight:700;min-height:44px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>📜 Conditions Générales d'Utilisation</h1>
+<p class="meta">Apex Chat — version du 17 septembre 2026 (remplace celle du 27 avril 2026)</p>
+
+<div class="info">
+<strong>🛡 Apex Chat</strong> est une messagerie privée : on y entre par le lien d'invitation d'un membre ou en vérifiant son numéro de téléphone par SMS. Ces conditions s'appliquent à tous les utilisateurs.
+</div>
+
+<h2>1. Qui édite Apex Chat ?</h2>
+<ul>
+  <li>Éditeur : Kevin DESARZENS (Monaco)</li>
+  <li>Email : kevin.desarzens@gmail.com</li>
+  <li>Hébergement technique : Cloudflare Inc. (Workers + R2 + D1)</li>
+  <li>Vérification du numéro : code envoyé par SMS (Vonage) ou lien d'invitation ; connexion possible par le compte du domaine kd-mc.com (Face ID)</li>
+  <li>Mentions légales complètes : <a href="./mentions.html">mentions.html</a></li>
+</ul>
+
+<h2>2. Sécurité de tes données</h2>
+<span class="badge">🔒 Chiffrée en transit (HTTPS/TLS)</span>
+<span class="badge">🛰 Serveur privé</span>
+<span class="badge">🆔 Face ID / Touch ID</span>
+<p>
+Tes messages sont chiffrés <strong>de bout en bout</strong> (ECDH P-256 + AES-GCM 256) <strong>par défaut</strong> : le serveur ne peut pas lire leur contenu. Si le chiffrement ne peut pas s'établir avec un contact (clé pas encore publiée), le message reste chiffré <strong>en transit</strong> (HTTPS/TLS) et le serveur le transporte/stocke — l'indicateur en haut de chaque conversation (🛡 E2E / 🔒 transit) dit lequel s'applique. Les données de gestion (numéros, pseudos, signalements) restent accessibles à l'administrateur pour la modération (voir §3).
+</p>
+<ul>
+  <li>Chiffrement en transit (HTTPS/TLS) sur tous les messages, photos, vidéos, fichiers</li>
+  <li>Appels audio/vidéo P2P chiffrés (WebRTC DTLS-SRTP)</li>
+  <li>Sauvegarde optionnelle vers iCloud/Google Drive</li>
+  <li>FaceID/Touch ID pour ouvrir l'app</li>
+  <li>Mode "Disparition" : messages auto-supprimés après délai choisi</li>
+</ul>
+
+<h2>3. Modération administrative</h2>
+<p>
+Cette application étant à invitation privée et opérée par Kevin DESARZENS pour son cercle personnel, l'administrateur dispose d'outils de modération pour assurer la sécurité du service (anti-spam, anti-scam, gestion des signalements). En t'inscrivant, tu acceptes ce cadre contractuel privé.
+</p>
+<p>
+Si tu n'es pas d'accord avec ce fonctionnement, ne t'inscris pas. Tu peux à tout moment <a href="./?action=delete-account">supprimer ton compte</a> : ton compte, tes contacts, tes appareils et tes médias sont effacés immédiatement et tes messages deviennent illisibles.
+</p>
+
+<h2>4. Données collectées</h2>
+<h3>Obligatoires (pour que l'app fonctionne)</h3>
+<ul>
+  <li>Numéro de téléphone (vérifié par SMS)</li>
+  <li>Prénom + nom (visibles uniquement par l'administrateur)</li>
+  <li>Pseudo (visible par tous les autres utilisateurs)</li>
+</ul>
+
+<h3>Optionnelles (tu choisis)</h3>
+<ul>
+  <li>Photo de profil</li>
+  <li>Bio courte</li>
+  <li>Email (pour récupération de compte)</li>
+  <li>Localisation (uniquement si tu actives le partage)</li>
+  <li>Carnet d'adresses (uniquement pour trouver tes amis sur Apex Chat)</li>
+</ul>
+
+<h2>5. Permissions techniques</h2>
+<p>À l'installation et à la 1ère connexion, l'app demande en une fois les autorisations nécessaires (tu peux refuser celles que tu veux — l'app continuera de fonctionner avec celles que tu acceptes) :</p>
+<ul>
+  <li>🆔 <strong>Face ID / Touch ID</strong> (biométrie) — déverrouiller l'app sans retaper ton PIN à chaque ouverture. <em>Aucune donnée biométrique n'est transmise au serveur — la vérification se fait 100% sur ton téléphone (zero-knowledge). Le PIN reste disponible en secours.</em></li>
+  <li>🔔 <strong>Notifications push</strong> — recevoir messages et appels même app fermée</li>
+  <li>📷 <strong>Caméra</strong> — photos, vidéos, appels visio, scan QR</li>
+  <li>🎤 <strong>Micro</strong> — notes vocales, appels audio</li>
+  <li>📍 <strong>Localisation</strong> — partage de position (sur demande seulement, jamais en arrière-plan)</li>
+  <li>📇 <strong>Contacts</strong> — picker pour inviter tes amis (le navigateur ne lit que les contacts que tu sélectionnes explicitement)</li>
+  <li>💾 <strong>Stockage</strong> — sauvegarder médias localement</li>
+</ul>
+<p>En cliquant « Activer toutes les autorisations » au démarrage, tu acceptes que l'app demande ces accès au système (iOS / Android décide ensuite, tu peux refuser au cas par cas). Tu peux à tout moment révoquer ces autorisations dans les réglages de ton téléphone. L'app continuera de fonctionner avec les autorisations restantes.</p>
+
+<h2>6. Tes droits (RGPD)</h2>
+<p>Tu as droit à :</p>
+<ul>
+  <li><strong>Accéder</strong> à toutes tes données et les <strong>emporter</strong> : Réglages → Mes données (fichier JSON de tout ce que le serveur sait de toi)</li>
+  <li><strong>Exporter</strong> tes conversations en clair depuis ton téléphone : Réglages → Exporter</li>
+  <li><strong>Modifier</strong> tes informations : Réglages → Profil</li>
+  <li><strong>Effacer</strong> ton compte définitivement : Réglages → Supprimer mon compte</li>
+</ul>
+<p>Pour toute question RGPD : <a href="mailto:kevin.desarzens@gmail.com?subject=RGPD%20Apex%20Chat">kevin.desarzens@gmail.com</a></p>
+
+<h2>7. Comportements interdits</h2>
+<div class="warning">
+Sont interdits sur Apex Chat :
+<ul>
+  <li>Spam, harcèlement, menaces</li>
+  <li>Contenus illégaux (pédopornographie, terrorisme, drogues)</li>
+  <li>Phishing, scams, escroqueries</li>
+  <li>Usurpation d'identité</li>
+  <li>Diffusion non consentie de contenus intimes</li>
+  <li>Bots automatisés non autorisés</li>
+</ul>
+Tout comportement de cette nature entraîne la suppression immédiate du compte et signalement aux autorités si nécessaire.
+</div>
+
+<h2>8. Limitation de responsabilité</h2>
+<p>
+Apex Chat est fourni "en l'état" pour usage privé. L'éditeur ne garantit pas l'absence totale de bugs ou d'interruption de service. En cas de problème majeur, tes données restent accessibles via export — utilise cette fonction régulièrement.
+</p>
+
+<h2>9. Modifications des CGU</h2>
+<p>
+Ces CGU peuvent évoluer. En cas de modification importante (changement modèle économique, transfert d'éditeur, changement substantiel modèle de modération), tu seras notifié dans l'app et devras re-accepter avant utilisation.
+</p>
+
+<h2>10. Loi applicable</h2>
+<p>Loi monégasque (Loi 1.165 sur les données personnelles). Compétence Tribunal de Monaco.</p>
+
+<div class="footer-back">
+<a class="btn" href="./">Retour à Apex Chat</a>
+<p class="meta" style="margin-top:14px"><a href="./privacy.html">Charte privée</a> · <a href="./mentions.html">Mentions légales</a> · <a href="./aide.html">Aide</a></p>
+</div>
+</div>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="messaging-cgu"
+        data-version="v1.0.0"
+        data-color="#6a8aff"
+        defer></script>
+</body>
+</html>

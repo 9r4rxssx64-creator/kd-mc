@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#171008">
+<title>Bee</title>
+<meta name="description" content="Bee — l'assistante personnelle de Kevin, gratuit d'abord.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-512.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bee">
+<!-- img-src : les images de Bee viennent de Lingua (source unique du dessin).
+     media-src : ses VRAIES vidéos (bee/live/*.mp4), hébergées par Lingua elles aussi.
+       ⚠ une balise <video> n'est PAS couverte par img-src : sans media-src, la vidéo est
+       bloquée SANS message et on ne verrait que la marionnette (piège CSP⇄fetch, CLAUDE.md).
+     connect-src : le hub IA gratuit + la météo. Un hôte oublié ici = échec SILENCIEUX. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://lingua.kd-mc.com; media-src 'self' https://lingua.kd-mc.com; connect-src 'self' https://apis.kd-mc.com https://api.open-meteo.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'">
+<style>
+  html,body{margin:0;height:100%;background:#0e0a04;color:#f7efd9;
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+  #boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#a4906a;font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- Cette app n'est qu'une COQUILLE : tout (Bee, ses animations, le chat, le gate
+     SSO) vit dans javis-widget.js, le MEME fichier que le bouton flottant du
+     domaine. Une seule Bee a maintenir — pas deux versions qui divergent
+     (lecon #142). JAVIS_MODE='app' lui dit juste de s'afficher en plein ecran. -->
+<div id="boot">Bee arrive…</div>
+
+<script>window.JAVIS_MODE = 'app';</script>
+<script src="javis-widget.js" defer></script>
+<script>
+  window.addEventListener('load', function () {
+    setTimeout(function () { var b = document.getElementById('boot'); if (b) b.remove(); }, 900);
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+  });
+</script>
+</body>
+</html>

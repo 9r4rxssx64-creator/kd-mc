@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<!-- La Détente — Modèles & Occasions personnalisables v1.1.0 -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Modèles & Occasions — La Détente</title>
+<style>
+  :root{--p:#dc2626;--bg:#0e1012;--panel:#15171a;--panel2:#1d2127;--text:#f1f2f3;--muted:#9aa0a6;--border:#2a2d31;--r:14px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Liberation Sans',system-ui,-apple-system,Arial,sans-serif;background:radial-gradient(120% 90% at 50% -10%,#1b1d24,#08090c 60%);color:var(--text);min-height:100vh}
+  .top{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+  .brand{font-weight:800} .brand .tag{font-size:10px;background:var(--p);padding:2px 6px;border-radius:6px;margin-left:6px}
+  .sp{flex:1} .lnk{color:#cfd3da;text-decoration:none;font-weight:700;font-size:13px;padding:7px 11px;border:1px solid var(--border);border-radius:9px}
+  .lnk.primary{background:var(--p);border-color:var(--p);color:#fff}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 70px}
+  h1{font-size:clamp(26px,5vw,40px);letter-spacing:1px} h1 .r{color:var(--p)}
+  p.lead{color:var(--muted);margin:8px 0 16px;line-height:1.55;max-width:760px}
+  .controls{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px;position:sticky;top:60px;z-index:4}
+  .crow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .fld{display:flex;flex-direction:column;gap:4px} .fld label{font-size:11px;color:var(--muted);letter-spacing:.4px}
+  .fld input,.fld select{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0e1013;color:#fff;font-size:15px}
+  .fld input[type=text]{min-width:150px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--panel2);color:#cfd3da;cursor:pointer;font-size:12px;font-weight:700}
+  .chip.on{border-color:var(--p);color:#fff;background:#dc26261a}
+  h2{font-size:20px;letter-spacing:.5px;margin:26px 0 4px;border-left:4px solid var(--p);padding-left:10px}
+  h2 .n{color:var(--muted);font-weight:600;font-size:13px}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:.16s}
+  .card:hover{transform:translateY(-3px);border-color:#3a3f4b;box-shadow:0 14px 30px #0008}
+  .card .im{background:#0b0d0f;padding:10px;display:flex;align-items:center;justify-content:center}
+  .card .im svg{width:100%;height:auto;border-radius:8px;display:block}
+  .meta{padding:10px 12px 12px} .meta b{display:block;font-size:14px}
+  .meta .d{font-size:11px;color:var(--muted);margin:2px 0 8px}
+  .act{display:flex;gap:6px;flex-wrap:wrap}
+  .act button,.act a{flex:1;min-width:70px;text-align:center;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:#e7e9ee;font-weight:700;font-size:12px;cursor:pointer;text-decoration:none}
+  .act .go{background:var(--p);border-color:var(--p);color:#fff}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--panel);border:1px solid var(--border);padding:12px 18px;border-radius:100px;font-weight:700;font-size:13px;transition:.3s;z-index:50}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .foot{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:26px;border-top:1px solid var(--border);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand">🎯 La Détente <span class="tag">MODÈLES</span></div>
+  <div class="sp"></div>
+  <a class="lnk" href="./index.html">← Boutique</a>
+  <a class="lnk" href="./bibliotheque.html">📚 Bibliothèque</a>
+  <a class="lnk primary" href="./studio.html">🎨 Studio</a>
+</div>
+<div class="wrap">
+  <h1>🎉 Modèles & <span class="r">Occasions</span> personnalisables</h1>
+  <p class="lead">Des modèles <b>déjà faits</b> : tape un <b>prénom / nom</b> (et l'âge, l'année, ou un 2ᵉ prénom) et tout se met à jour en direct. Télécharge le visuel (PNG/SVG) ou ouvre le <b>Studio</b> pour le poser sur un produit et l'ajuster (modèle <b>à personnaliser</b>).</p>
+
+  <div class="controls">
+    <div class="crow">
+      <div class="fld"><label>Prénom / Nom</label><input id="nm" type="text" value="ALEX" maxlength="18" oninput="OCC.render()"></div>
+      <div class="fld"><label>2ᵉ prénom (couple)</label><input id="nm2" type="text" value="SAM" maxlength="18" oninput="OCC.render()"></div>
+      <div class="fld"><label>Âge / Année</label><input id="num" type="text" value="30" maxlength="6" oninput="OCC.render()"></div>
+      <div class="fld"><label>Style</label><select id="pal" onchange="OCC.render()"><option value="">Auto (par modèle)</option><option value="festive">Festif</option><option value="party">Fun</option><option value="pastel">Pastel</option><option value="classic">Noir & Or</option><option value="club">Noir & Rouge</option><option value="nature">Camo/Olive</option></select></div>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="foot">
+    💡 Astuce : ces modèles sont <b>vectoriels</b> (texte net à toute taille). Pour les imprimer, choisis le produit dans le <b>Studio</b> puis importe le PNG, ou imprime tel quel chez le fournisseur. ⚠️ Pour un visuel <b>edge-to-edge</b> (tout le vêtement), il faut un produit <b>All-Over Print</b>.
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ----------------- données ----------------- */
+var THEMES=[["fetes","🎉 Fêtes"],["events","🥂 Événements"],["famille","👪 Famille"],["club","🎯 Club & Tir"],["pro","🏢 Pro & Équipe"]];
+var PAL={
+  festive:{bg1:"#211842",bg2:"#0b0712",ring:"#f4c430",accent:"#ffd34d",ink:"#ffffff",sub:"#d7c6ef"},
+  party:{bg1:"#13233a",bg2:"#070d18",ring:"#36c5ff",accent:"#62d0ff",ink:"#ffffff",sub:"#a9c6e0"},
+  pastel:{bg1:"#2c1626",bg2:"#150810",ring:"#ff9ec4",accent:"#ffb3d1",ink:"#ffffff",sub:"#ecc4d8"},
+  classic:{bg1:"#17141b",bg2:"#08070b",ring:"#d4af37",accent:"#f6e9b0",ink:"#f7ecbf",sub:"#cdbd86"},
+  club:{bg1:"#1a1c22",bg2:"#0a0b0e",ring:"#e51f2b",accent:"#ff5a63",ink:"#ffffff",sub:"#c9ccd3"},
+  nature:{bg1:"#283019",bg2:"#0f140a",ring:"#9bb04a",accent:"#c4d77a",ink:"#efe9d2",sub:"#cdd0b4"}
+};
+var TPL=[
+ {id:"anniv",theme:"fetes",event:"JOYEUX ANNIVERSAIRE",big:"NAME",sub:"{NUM} ANS 🎂",motif:"cake",pal:"festive"},
+ {id:"annivfun",theme:"fetes",event:"BON ANNIV",big:"NAME",sub:"On lève nos verres 🎉",motif:"balloons",pal:"party"},
+ {id:"noel",theme:"fetes",event:"JOYEUX NOËL",big:"NAME",sub:"Ho ho ho 🎁",motif:"gift",pal:"club"},
+ {id:"nouvelan",theme:"fetes",event:"BONNE ANNÉE",big:"NUM",sub:"Santé & bonheur 🥂",motif:"champagne",pal:"classic"},
+ {id:"valentin",theme:"fetes",event:"JOYEUSE ST-VALENTIN",big:"NAME",sub:"Mon amour ❤",motif:"heart",pal:"pastel"},
+ {id:"halloween",theme:"fetes",event:"HAPPY HALLOWEEN",big:"NAME",sub:"Boo 🎃",motif:"star",pal:"festive"},
+
+ {id:"evg",theme:"events",event:"EVG DE",big:"NAME",sub:"Dernier tir avant le mariage 🎯",motif:"rifle",pal:"club"},
+ {id:"evjf",theme:"events",event:"EVJF — TEAM",big:"NAME",sub:"La mariée 👰",motif:"crown",pal:"pastel"},
+ {id:"retraite",theme:"events",event:"BONNE RETRAITE",big:"NAME",sub:"Enfin tranquille ! 🏆",motif:"trophy",pal:"classic"},
+ {id:"mariage",theme:"events",event:"MARIAGE",big:"PAIR",sub:"Just married 💍",motif:"rings",pal:"classic"},
+ {id:"diplome",theme:"events",event:"FÉLICITATIONS",big:"NAME",sub:"Diplômé(e) 🎓",motif:"grad",pal:"party"},
+ {id:"bapteme",theme:"events",event:"BAPTÊME DE",big:"NAME",sub:"Bienvenue 👶",motif:"baby",pal:"pastel"},
+ {id:"cremaillere",theme:"events",event:"PENDAISON DE CRÉMAILLÈRE",big:"NAME",sub:"Nouvelle maison 🥂",motif:"champagne",pal:"party"},
+
+ {id:"papa",theme:"famille",event:"FÊTE DES PÈRES",big:"NAME",sub:"Super Papa",motif:"medal",pal:"club"},
+ {id:"maman",theme:"famille",event:"FÊTE DES MÈRES",big:"NAME",sub:"Super Maman",motif:"heart",pal:"pastel"},
+ {id:"papy",theme:"famille",event:"MEILLEUR PAPY",big:"NAME",sub:"du monde 🏅",motif:"medal",pal:"classic"},
+ {id:"mamie",theme:"famille",event:"MEILLEURE MAMIE",big:"NAME",sub:"du monde ❤",motif:"heart",pal:"pastel"},
+ {id:"familyteam",theme:"famille",event:"FAMILLE",big:"NAME",sub:"Depuis toujours 👪",motif:"star",pal:"club"},
+
+ {id:"team",theme:"club",event:"LA DÉTENTE — TEAM",big:"NAME",sub:"Tir • Ball-trap • Chasse",motif:"target",pal:"club"},
+ {id:"champion",theme:"club",event:"CHAMPION DE BALL-TRAP",big:"NAME",sub:"100/100 🎯",motif:"clay",pal:"nature"},
+ {id:"tir",theme:"club",event:"TIR CLUB",big:"NAME",sub:"On vise au cœur ❤",motif:"target",pal:"club"},
+ {id:"evgtir",theme:"club",event:"EVG — TIR & POTES",big:"NAME",sub:"Le marié 🤵",motif:"rifle",pal:"nature"},
+ {id:"chasse",theme:"club",event:"ÉQUIPE DE CHASSE",big:"NAME",sub:"Saison ouverte 🦌",motif:"target",pal:"nature"},
+
+ {id:"stpatrick",theme:"fetes",event:"JOYEUSE ST-PATRICK",big:"NAME",sub:"Trinque ! 🍀",motif:"champagne",pal:"nature"},
+ {id:"nanchinois",theme:"fetes",event:"NOUVEL AN",big:"NAME",sub:"Bonne année 🧧",motif:"star",pal:"festive"},
+ {id:"14juillet",theme:"fetes",event:"VIVE LA FRANCE",big:"NAME",sub:"14 juillet 🎆",motif:"star",pal:"club"},
+
+ {id:"naissance",theme:"events",event:"BIENVENUE BÉBÉ",big:"NAME",sub:"Né(e) le {NUM} 👶",motif:"baby",pal:"pastel"},
+ {id:"annivmariage",theme:"events",event:"ANNIVERSAIRE DE MARIAGE",big:"PAIR",sub:"{NUM} ans 💍",motif:"rings",pal:"classic"},
+ {id:"retablissement",theme:"events",event:"BON RÉTABLISSEMENT",big:"NAME",sub:"Repose-toi bien ❤",motif:"heart",pal:"pastel"},
+ {id:"fiancailles",theme:"events",event:"FIANÇAILLES",big:"PAIR",sub:"Ils se sont dit oui 💍",motif:"rings",pal:"pastel"},
+
+ {id:"departcol",theme:"pro",event:"BON VENT",big:"NAME",sub:"Tu vas nous manquer 👋",motif:"champagne",pal:"party"},
+ {id:"promotion",theme:"pro",event:"FÉLICITATIONS",big:"NAME",sub:"Promu(e) ! 🚀",motif:"rocket",pal:"party"},
+ {id:"bienvenue",theme:"pro",event:"BIENVENUE",big:"NAME",sub:"Dans l'équipe 🤝",motif:"medal",pal:"club"},
+ {id:"inauguration",theme:"pro",event:"INAUGURATION",big:"NAME",sub:"Nouvelle aventure 🥂",motif:"champagne",pal:"classic"},
+ {id:"merci",theme:"pro",event:"MERCI",big:"NAME",sub:"Pour tout ❤",motif:"medal",pal:"classic"},
+ {id:"retraitecol",theme:"pro",event:"BONNE RETRAITE",big:"NAME",sub:"Profite bien 🏖️",motif:"trophy",pal:"classic"},
+
+ {id:"paques",theme:"fetes",event:"JOYEUSES PÂQUES",big:"NAME",sub:"Cloches & chocolats 🐰",motif:"egg",pal:"pastel"},
+ {id:"muguet",theme:"fetes",event:"1ER MAI",big:"NAME",sub:"Bon muguet 🌼",motif:"flower",pal:"nature"},
+ {id:"fetemusique",theme:"fetes",event:"FÊTE DE LA MUSIQUE",big:"NAME",sub:"Ça envoie 🎶",motif:"star",pal:"party"},
+ {id:"galette",theme:"fetes",event:"TIRAGE DES ROIS",big:"NAME",sub:"Qui aura la fève 👑",motif:"crown",pal:"classic"},
+
+ {id:"babyshower",theme:"events",event:"BABY SHOWER",big:"NAME",sub:"C'est bientôt 👶",motif:"baby",pal:"pastel"},
+ {id:"communion",theme:"events",event:"COMMUNION DE",big:"NAME",sub:"Grand jour ✝",motif:"star",pal:"pastel"},
+ {id:"soireeclub",theme:"events",event:"SOIRÉE",big:"NAME",sub:"On fête ça 🥂",motif:"champagne",pal:"party"},
+ {id:"gendereveal",theme:"events",event:"GARÇON OU FILLE ?",big:"NAME",sub:"Bientôt la réponse 🎈",motif:"balloons",pal:"pastel"},
+
+ {id:"grandsparents",theme:"famille",event:"FÊTE DES GRANDS-PARENTS",big:"NAME",sub:"On vous aime ❤",motif:"heart",pal:"classic"},
+ {id:"couple",theme:"famille",event:"NOUS DEUX",big:"PAIR",sub:"Depuis {NUM} ans ❤",motif:"heart",pal:"pastel"},
+ {id:"meilleureamie",theme:"famille",event:"MEILLEURE AMIE",big:"NAME",sub:"Pour la vie 💖",motif:"heart",pal:"pastel"},
+ {id:"frangins",theme:"famille",event:"FRÈRES & SŒURS",big:"NAME",sub:"La team familiale 👊",motif:"star",pal:"club"},
+
+ {id:"tireurelite",theme:"club",event:"TIREUR D'ÉLITE",big:"NAME",sub:"Précision absolue 🎯",motif:"target",pal:"classic"},
+ {id:"battue",theme:"club",event:"BATTUE",big:"NAME",sub:"Saison de chasse 🦌",motif:"deer",pal:"nature"},
+ {id:"podiumclub",theme:"club",event:"PODIUM",big:"NAME",sub:"Champion 🏆",motif:"podium",pal:"classic"},
+ {id:"concours",theme:"club",event:"CONCOURS DE TIR",big:"NAME",sub:"Que le meilleur gagne 🎯",motif:"target",pal:"nature"},
+
+ {id:"teambuilding",theme:"pro",event:"TEAM BUILDING",big:"NAME",sub:"Esprit d'équipe 🤝",motif:"medal",pal:"party"},
+ {id:"employemois",theme:"pro",event:"EMPLOYÉ DU MOIS",big:"NAME",sub:"Bravo ! 🏅",motif:"medal",pal:"classic"},
+ {id:"objectif",theme:"pro",event:"OBJECTIF ATTEINT",big:"NAME",sub:"On l'a fait 🚀",motif:"rocket",pal:"party"},
+ {id:"anniversaireboite",theme:"pro",event:"NOS {NUM} ANS",big:"NUM",sub:"L'entreprise fête ça 🎉",motif:"champagne",pal:"classic"}
+];
+
+/* ----------------- helpers ----------------- */
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function up(s){return String(s||"").toUpperCase()}
+function toast(m){var e=$("toast");e.textContent=m;e.className="toast show";clearTimeout(toast._t);toast._t=setTimeout(function(){e.className="toast"},2400)}
+function vals(){return{nm:up($("nm").value.trim())||"PRÉNOM",nm2:up($("nm2").value.trim())||"SAM",num:($("num").value.trim()||"30"),pal:$("pal").value}}
+
+/* motifs vectoriels (markup auto-contenu), couleurs ink/accent */
+function motif(id,ink,accent){
+ var A=accent,K=ink;
+ switch(id){
+  case"cake":return '<g><rect x="30" y="52" width="40" height="30" rx="4" fill="'+A+'"/><rect x="30" y="60" width="40" height="5" fill="'+K+'" opacity=".5"/><rect x="46" y="34" width="3" height="14" fill="'+K+'"/><rect x="51" y="34" width="3" height="14" fill="'+K+'"/><circle cx="47.5" cy="31" r="4" fill="'+A+'"/><circle cx="52.5" cy="31" r="4" fill="'+A+'"/><rect x="26" y="80" width="48" height="6" rx="3" fill="'+K+'" opacity=".7"/></g>';
+  case"balloons":return '<g><ellipse cx="40" cy="40" rx="14" ry="17" fill="'+A+'"/><ellipse cx="60" cy="36" rx="13" ry="16" fill="'+K+'" opacity=".85"/><path d="M40 57 q3 8 -2 22 M60 52 q-3 9 2 26" stroke="'+K+'" stroke-width="1.5" fill="none" opacity=".6"/></g>';
+  case"gift":return '<g><rect x="32" y="46" width="36" height="34" rx="3" fill="'+A+'"/><rect x="46" y="46" width="8" height="34" fill="'+K+'" opacity=".8"/><rect x="28" y="40" width="44" height="9" rx="3" fill="'+K+'" opacity=".9"/><path d="M50 40 c-10 -14 -22 -2 0 0 c10 -14 22 -2 0 0" fill="'+A+'"/></g>';
+  case"champagne":return '<g stroke="'+A+'" stroke-width="3" fill="none"><path d="M40 34 l4 22 M40 84 l4 -28"/><path d="M60 34 l-4 22 M60 84 l-4 -28"/><path d="M37 34 h6 M57 34 h6 M40 84 h6 M54 84 h6"/></g><g fill="'+K+'"><circle cx="46" cy="40" r="1.6"/><circle cx="55" cy="44" r="1.6"/><circle cx="50" cy="36" r="1.4"/></g>';
+  case"heart":return '<path d="M50 78 C24 58 14 46 14 34 C14 24 22 18 31 18 C39 18 45 23 50 31 C55 23 61 18 69 18 C78 18 86 24 86 34 C86 46 76 58 50 78 Z" fill="'+A+'"/>';
+  case"rifle":return '<g fill="'+A+'"><rect x="18" y="46" width="58" height="7" rx="2"/><rect x="20" y="44" width="16" height="12" rx="2"/><polygon points="40,53 47,53 50,72 43,72"/><rect x="76" y="47" width="8" height="5"/></g>';
+  case"crown":return '<g fill="'+A+'"><path d="M28 70 L24 40 L38 54 L50 34 L62 54 L76 40 L72 70 Z"/><rect x="28" y="70" width="44" height="8" rx="2"/></g><circle cx="50" cy="34" r="3" fill="'+K+'"/>';
+  case"trophy":return '<g fill="'+A+'"><path d="M36 30 H64 V44 C64 56 56 62 50 62 C44 62 36 56 36 44 Z"/><path d="M30 32 q-10 2 -6 14 q3 7 10 7" fill="none" stroke="'+A+'" stroke-width="3"/><path d="M70 32 q10 2 6 14 q-3 7 -10 7" fill="none" stroke="'+A+'" stroke-width="3"/><rect x="46" y="62" width="8" height="12"/><rect x="38" y="74" width="24" height="6" rx="2"/></g>';
+  case"rings":return '<g fill="none" stroke="'+A+'" stroke-width="5"><circle cx="42" cy="54" r="16"/><circle cx="60" cy="54" r="16"/></g><polygon points="42,30 46,38 38,38" fill="'+K+'"/>';
+  case"grad":return '<g fill="'+A+'"><polygon points="50,34 84,48 50,62 16,48"/><path d="M30 54 v14 q20 12 40 0 v-14" fill="none" stroke="'+A+'" stroke-width="4"/><rect x="82" y="48" width="2.5" height="20"/><circle cx="83" cy="70" r="3.5"/></g>';
+  case"baby":return '<g fill="'+A+'"><circle cx="50" cy="40" r="15"/><rect x="47" y="55" width="6" height="20" rx="3"/></g><g fill="'+K+'"><circle cx="45" cy="38" r="2"/><circle cx="55" cy="38" r="2"/></g>';
+  case"medal":return '<g><path d="M40 28 l-8 18 M60 28 l8 18" stroke="'+A+'" stroke-width="4"/><circle cx="50" cy="60" r="18" fill="'+A+'"/><text x="50" y="67" text-anchor="middle" font-family="Arial" font-weight="900" font-size="20" fill="'+K+'">1</text></g>';
+  case"star":return '<polygon points="50,22 58,44 82,44 63,58 70,80 50,66 30,80 37,58 18,44 42,44" fill="'+A+'"/>';
+  case"target":return '<g fill="none" stroke="'+A+'" stroke-width="5"><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="18"/></g><circle cx="50" cy="50" r="7" fill="'+K+'"/>';
+  case"clay":return '<g><ellipse cx="46" cy="48" rx="26" ry="10" transform="rotate(-18 46 48)" fill="'+A+'"/><ellipse cx="46" cy="46" rx="13" ry="4" transform="rotate(-18 46 48)" fill="'+K+'" opacity=".5"/><g stroke="'+A+'" stroke-width="3" stroke-linecap="round" opacity=".7"><line x1="70" y1="40" x2="86" y2="34"/><line x1="72" y1="50" x2="88" y2="50"/></g></g>';
+  case"deer":return '<g fill="'+A+'"><path d="M50 80 L37 56 Q50 48 63 56 Z"/><ellipse cx="50" cy="56" rx="13" ry="11"/></g><g stroke="'+A+'" stroke-width="3.5" fill="none" stroke-linecap="round"><path d="M40 46 C34 30 28 32 26 22 M40 46 C36 36 30 36 30 28 M60 46 C66 30 72 32 74 22 M60 46 C64 36 70 36 70 28"/></g><g fill="'+K+'"><circle cx="45" cy="56" r="1.8"/><circle cx="55" cy="56" r="1.8"/></g>';
+  case"flower":return '<g fill="'+A+'"><ellipse cx="50" cy="28" rx="6" ry="11"/><ellipse cx="50" cy="54" rx="6" ry="11"/><ellipse cx="36" cy="41" rx="11" ry="6"/><ellipse cx="64" cy="41" rx="11" ry="6"/></g><circle cx="50" cy="41" r="6" fill="'+K+'"/><path d="M50 50 v30" stroke="'+A+'" stroke-width="3"/>';
+  case"egg":return '<g><ellipse cx="50" cy="54" rx="20" ry="26" fill="'+A+'"/><path d="M30 50 q10 6 20 0 t20 0 M30 62 q10 6 20 0 t20 0" stroke="'+K+'" stroke-width="3" fill="none" opacity=".55"/><circle cx="44" cy="44" r="2.5" fill="'+K+'" opacity=".5"/><circle cx="57" cy="46" r="2" fill="'+K+'" opacity=".5"/></g>';
+  case"rocket":return '<g fill="'+A+'"><path d="M50 22 C62 34 62 54 56 66 H44 C38 54 38 34 50 22 Z"/><path d="M44 60 L34 72 L44 68 Z"/><path d="M56 60 L66 72 L56 68 Z"/></g><circle cx="50" cy="44" r="5" fill="'+K+'"/><path d="M46 70 q4 14 8 0" fill="'+K+'" opacity=".7"/>';
+  case"podium":return '<g fill="'+A+'"><rect x="42" y="44" width="16" height="34"/><rect x="24" y="56" width="16" height="22"/><rect x="60" y="62" width="16" height="16"/></g><g fill="'+K+'" font-family="Arial" font-weight="900" font-size="12" text-anchor="middle"><text x="50" y="60">1</text><text x="32" y="70">2</text><text x="68" y="73">3</text></g>';
+  default:return '<polygon points="50,24 58,46 82,46 63,60 70,82 50,68 30,82 37,60 18,46 42,46" fill="'+A+'"/>';
+ }
+}
+
+function tplText(t,v){
+ var big = t.big==="PAIR" ? (v.nm+" & "+v.nm2) : t.big==="NUM" ? v.num : v.nm;
+ var sub = (t.sub||"").replace("{NUM}",v.num).replace("{NAME}",v.nm);
+ return {event:t.event,big:big,sub:sub};
+}
+function fitSize(s){var n=(s||"").length;return n<=5?168:n<=8?132:n<=12?100:n<=16?78:62;}
+
+function svgFor(t){
+ var v=vals(); var p=PAL[v.pal||t.pal]||PAL.club; var tx=tplText(t,v);
+ var W=1000,H=1180;
+ var s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">';
+ s+='<defs><linearGradient id="bg_'+t.id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+p.bg1+'"/><stop offset="100%" stop-color="'+p.bg2+'"/></linearGradient></defs>';
+ s+='<rect x="20" y="20" width="'+(W-40)+'" height="'+(H-40)+'" rx="40" fill="url(#bg_'+t.id+')" stroke="'+p.ring+'" stroke-width="10"/>';
+ s+='<rect x="46" y="46" width="'+(W-92)+'" height="'+(H-92)+'" rx="26" fill="none" stroke="'+p.ring+'" stroke-width="2" opacity=".5"/>';
+ // motif
+ s+='<g transform="translate(390,150) scale(2.2)">'+motif(t.motif,p.ink,p.accent)+'</g>';
+ // event line
+ s+='<text x="500" y="500" text-anchor="middle" font-family="'+FF+'" font-weight="bold" font-size="56" letter-spacing="3" fill="'+p.accent+'">'+esc(tx.event)+'</text>';
+ // big name (auto-fit)
+ s+='<text x="500" y="'+(560+fitSize(tx.big)*0.7)+'" text-anchor="middle" font-family="'+FF+'" font-weight="bold" font-size="'+fitSize(tx.big)+'" fill="'+p.ink+'">'+esc(tx.big)+'</text>';
+ // sub
+ if(tx.sub) s+='<text x="500" y="'+(560+fitSize(tx.big)*0.7+90)+'" text-anchor="middle" font-family="'+FF+'" font-weight="bold" font-size="46" letter-spacing="1" fill="'+p.sub+'">'+esc(tx.sub)+'</text>';
+ // footer
+ s+='<text x="500" y="'+(H-90)+'" text-anchor="middle" font-family="'+FF+'" font-weight="bold" font-size="34" letter-spacing="6" fill="'+p.ring+'">LA DÉTENTE</text>';
+ s+='<text x="500" y="'+(H-54)+'" text-anchor="middle" font-family="'+FF+'" font-weight="bold" font-size="20" letter-spacing="4" fill="'+p.sub+'">TIR · BALL-TRAP · CHASSE</text>';
+ return s+'</svg>';
+}
+var FF="'Liberation Sans','DejaVu Sans',Arial,sans-serif";
+
+/* ----------------- rendu ----------------- */
+var st={theme:"all"};
+function render(){
+ $("sections").innerHTML=THEMES.filter(function(th){return st.theme==="all"||st.theme===th[0]}).map(function(th){
+   var items=TPL.filter(function(t){return t.theme===th[0]});
+   if(!items.length)return"";
+   return '<h2>'+th[1]+' <span class="n">('+items.length+')</span></h2><div class="grid">'+items.map(cardHTML).join("")+'</div>';
+ }).join("");
+}
+function cardHTML(t){
+ var v=vals(); var tx=tplText(t,v);
+ return '<div class="card"><div class="im">'+svgFor(t)+'</div><div class="meta"><b>'+esc(tx.event)+'</b><div class="d">'+esc(tx.big)+(tx.sub?' · '+esc(tx.sub):'')+'</div><div class="act"><button class="go" onclick="OCC.dlPng(\''+t.id+'\')">⬇️ PNG</button><button onclick="OCC.dlSvg(\''+t.id+'\')">SVG</button><a class="" href="./studio.html" title="Personnaliser sur un produit">🎨</a></div></div></div>';
+}
+function chips(){
+ $("chips").innerHTML='<button class="chip'+(st.theme==="all"?" on":"")+'" onclick="OCC.theme(\'all\')">Tout</button>'+THEMES.map(function(th){return '<button class="chip'+(st.theme===th[0]?" on":"")+'" onclick="OCC.theme(\''+th[0]+'\')">'+th[1]+'</button>'}).join("");
+}
+function tplById(id){return TPL.filter(function(t){return t.id===id})[0]}
+function dl(href,name){var a=document.createElement("a");a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove()}
+function dlSvg(id){var t=tplById(id);var svg=svgFor(t);dl("data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg),"la-detente-"+id+".svg");toast("SVG téléchargé ✅")}
+function dlPng(id){var t=tplById(id);var svg=svgFor(t);var img=new Image();
+ img.onload=function(){var c=document.createElement("canvas");c.width=1200;c.height=1416;var x=c.getContext("2d");x.drawImage(img,0,0,1200,1416);try{dl(c.toDataURL("image/png"),"la-detente-"+id+".png");toast("PNG téléchargé ✅")}catch(e){toast("Erreur export")}};
+ img.onerror=function(){toast("Erreur rendu")};
+ img.src="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(svg)));
+}
+window.OCC={render:render,theme:function(t){st.theme=t;chips();render()},dlPng:dlPng,dlSvg:dlSvg};
+chips();render();
+</script>
+<script>(function(){if(!("serviceWorker" in navigator))return;navigator.serviceWorker.register("sw.js").then(function(reg){function chk(){try{reg.update()}catch(e){}if(reg.waiting)reg.waiting.postMessage("skipWaiting")}setInterval(chk,60000);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")chk()})}).catch(function(){})})();</script>
+</body>
+</html>

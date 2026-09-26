@@ -1,0 +1,24 @@
+{
+ "_note": "cartoon des personnes du club",
+ "rev": 102,
+ "jobs": [
+  {
+   "file": "shops/la-detente/people/p1_left.jpg",
+   "outfile": "shops/la-detente/img/people/cartoon_p1.png",
+   "style": "3D",
+   "prompt": "a friendly 3D cartoon character portrait of a man, clean, sport club mascot, smiling"
+  },
+  {
+   "file": "shops/la-detente/people/p2_right.jpg",
+   "outfile": "shops/la-detente/img/people/cartoon_p2.png",
+   "style": "3D",
+   "prompt": "a friendly 3D cartoon character portrait of a bearded man with a cap, clean, sport club mascot"
+  },
+  {
+   "file": "shops/la-detente/people/p3_seated.jpg",
+   "outfile": "shops/la-detente/img/people/cartoon_p3.png",
+   "style": "3D",
+   "prompt": "a friendly 3D cartoon character portrait of a grey-haired man, clean, sport club mascot"
+  }
+ ]
+}

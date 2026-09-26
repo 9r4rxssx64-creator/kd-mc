@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APEX Diagnostic</title>
+<style>
+  body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#08080f;color:#fff;padding:24px;line-height:1.5}
+  h1{color:#c9a227;margin-bottom:24px}
+  .card{background:#141422;border:1px solid #2a2a3a;border-radius:12px;padding:16px;margin-bottom:12px}
+  .ok{color:#4caf50}
+  .err{color:#ef5350}
+  .warn{color:#ff9800}
+  button{background:linear-gradient(135deg,#c9a227,#ffd860);color:#08080f;border:none;padding:14px 24px;border-radius:24px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;font-size:15px}
+  a{color:#5aa8ff;text-decoration:none}
+  pre{background:#000;padding:10px;border-radius:6px;font-size:11px;overflow-x:auto}
+</style>
+</head>
+<body>
+<h1>🔍 Diagnostic APEX</h1>
+
+<div class="card">
+  <strong>Version déployée attendue :</strong> v12.83<br>
+  <strong>Page diagnostic servie à :</strong> <span id="now"></span>
+</div>
+
+<div class="card">
+  <strong>Navigateur :</strong> <span id="ua"></span><br>
+  <strong>Service Worker :</strong> <span id="sw"></span><br>
+  <strong>Cache API :</strong> <span id="cache"></span>
+</div>
+
+<div class="card">
+  <strong>Tests :</strong>
+  <div id="tests">Chargement...</div>
+</div>
+
+<div class="card">
+  <strong>Actions de déblocage :</strong>
+  <button onclick="nukeAll()">💥 Désenregistrer Service Worker + vider caches</button>
+  <button onclick="location.href='./index.html?v='+Date.now()">🔄 Aller à l'app (cache bust)</button>
+  <button onclick="testFetch()">🌐 Tester fetch direct index.html</button>
+</div>
+
+<div class="card">
+  <strong>Résultat fetch :</strong>
+  <pre id="fetch-result">(cliquer sur "Tester fetch" pour vérifier)</pre>
+</div>
+
+<script>
+document.getElementById('now').textContent = new Date().toLocaleString('fr-FR');
+document.getElementById('ua').textContent = navigator.userAgent;
+document.getElementById('sw').innerHTML = ('serviceWorker' in navigator) ? '<span class="ok">supporté</span>' : '<span class="err">non supporté</span>';
+document.getElementById('cache').innerHTML = ('caches' in window) ? '<span class="ok">supporté</span>' : '<span class="err">non supporté</span>';
+
+// Tests
+var t = document.getElementById('tests');
+t.innerHTML = '';
+
+function addTest(name, ok, detail) {
+  var d = document.createElement('div');
+  d.innerHTML = (ok ? '<span class="ok">✓</span> ' : '<span class="err">✗</span> ') + name + (detail ? ' — ' + detail : '');
+  t.appendChild(d);
+}
+
+// SW registrations
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    addTest('Service Workers actifs', true, regs.length + ' enregistré(s)');
+    regs.forEach(function(r, i) {
+      addTest('SW #' + (i+1), true, r.active ? r.active.scriptURL : '(aucun active)');
+    });
+  });
+}
+
+// Cache names
+if ('caches' in window) {
+  caches.keys().then(function(names) {
+    addTest('Caches existants', names.length > 0, names.join(', '));
+  });
+}
+
+function nukeAll() {
+  if (!confirm('Désenregistrer tous les Service Workers et vider tous les caches ?')) return;
+  var steps = [];
+  if ('serviceWorker' in navigator) {
+    steps.push(navigator.serviceWorker.getRegistrations().then(function(regs) {
+      return Promise.all(regs.map(function(r) { return r.unregister(); }));
+    }));
+  }
+  if ('caches' in window) {
+    steps.push(caches.keys().then(function(names) {
+      return Promise.all(names.map(function(n) { return caches.delete(n); }));
+    }));
+  }
+  Promise.all(steps).then(function() {
+    alert('Nuke OK. Recharge la page maintenant.');
+    location.reload();
+  });
+}
+
+function testFetch() {
+  var pre = document.getElementById('fetch-result');
+  pre.textContent = 'Fetching...';
+  fetch('./index.html?nocache=' + Date.now(), { cache: 'no-cache' })
+    .then(function(r) { return r.text(); })
+    .then(function(t) {
+      var verMatch = t.match(/APP_VER="([^"]+)"/);
+      var planMatch = t.match(/var PLANS=\{([^}]*name:"Gratuit"|[^}]*enterprise)/);
+      pre.textContent = 'APP_VER détectée: ' + (verMatch ? verMatch[1] : '?') +
+        '\nPLANS contient Gratuit/Enterprise: ' + (planMatch ? 'OUI (v12.81+)' : 'NON (ancienne version)') +
+        '\nTaille HTML: ' + t.length + ' chars';
+    })
+    .catch(function(e) {
+      pre.textContent = 'ERREUR: ' + e.message;
+    });
+}
+</script>
+</body>
+</html>

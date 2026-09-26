@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kd-mc.com; frame-src https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>🤖 Bot Crypto — kd-mc.com</title>
+<style>
+  :root{--bg:#0b0e14;--card:#131826;--card2:#0f1420;--line:#232b3d;--txt:#e8ecf4;--mut:#8b94a8;
+        --gold:#e8b830;--green:#3ecf7a;--red:#ff5c5c;--orange:#ffab3d;--blue:#5aa9ff}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+       min-height:100vh;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 90px)}
+  .wrap{max-width:560px;margin:0 auto}
+  h1{font-size:21px;display:flex;align-items:center;gap:10px;margin-bottom:2px;flex-wrap:wrap}
+  .sub{color:var(--mut);font-size:12.5px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+  .card h2{font-size:14px;margin-bottom:10px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+  .kpi{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px}
+  .kpi .l{color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px}
+  .kpi .v{font-size:17px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;font-size:12.5px;font-weight:600}
+  .p-ok{background:rgba(62,207,122,.12);color:var(--green)} .p-ko{background:rgba(255,92,92,.12);color:var(--red)}
+  .p-warn{background:rgba(255,171,61,.12);color:var(--orange)} .p-test{background:rgba(232,184,48,.12);color:var(--gold)}
+  .dot{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 2.2s infinite}
+  @keyframes pulse{50%{opacity:.35}} @media (prefers-reduced-motion){.dot{animation:none}}
+  .coins{display:flex;flex-direction:column;gap:8px}
+  .coin{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:1px solid var(--line);
+        border-radius:12px;padding:10px 12px}
+  .coin .nm{font-weight:700} .coin .px{color:var(--mut);font-size:12.5px;font-variant-numeric:tabular-nums}
+  .tag{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:8px}
+  .t-hold{background:rgba(138,148,168,.15);color:var(--mut)} .t-buy{background:rgba(62,207,122,.15);color:var(--green)}
+  .t-sell{background:rgba(255,92,92,.15);color:var(--red)}
+  button{font:inherit;border:0;border-radius:12px;cursor:pointer;min-height:48px;font-weight:700}
+  .btn-kill{background:linear-gradient(135deg,#ff5c5c,#c93030);color:#fff;width:100%}
+  .btn-start{background:linear-gradient(135deg,#3ecf7a,#1f9d55);color:#08130c;width:100%}
+  .btn-ghost{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:100%}
+  .btn-gold{background:linear-gradient(135deg,#e8b830,#c79418);color:#181000;width:100%}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .logs{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:4px;
+        max-height:280px;overflow-y:auto;font:11.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lg{white-space:pre-wrap;word-break:break-word;color:var(--mut)}
+  .lg.buy{color:var(--green)} .lg.sell{color:var(--red)} .lg.warn{color:var(--orange)} .lg.info{color:var(--gold)}
+  /* Réglages */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 4px}
+  .chip{padding:8px 13px;border-radius:99px;border:1px solid var(--line);background:var(--card2);color:var(--mut);
+        font-size:13px;font-weight:700;cursor:pointer;min-height:40px;display:flex;align-items:center}
+  .chip.on{background:rgba(90,169,255,.16);border-color:var(--blue);color:var(--blue)}
+  label{display:block;color:var(--mut);font-size:12px;margin:12px 0 4px}
+  select,input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;color:var(--txt);
+               padding:13px;font-size:16px} /* 16px = pas de zoom iOS */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{color:var(--mut);font-size:11.5px;margin-top:3px}
+  .err{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.35);border-radius:12px;padding:12px;
+       font-size:13px;color:#ffb3b3;margin-top:10px;word-break:break-word}
+  .okmsg{background:rgba(62,207,122,.1);border:1px solid rgba(62,207,122,.35);border-radius:12px;padding:12px;
+         font-size:13px;color:#a9f0c6;margin-top:10px}
+  .hid{display:none}
+  .foot{color:var(--mut);font-size:11.5px;text-align:center;margin-top:14px}
+  .upd{color:var(--mut);font-size:11.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🤖 Bot Crypto <span id="modePill" class="pill p-test hid"></span></h1>
+  <div class="sub">Binance · Railway · <b>6 bots</b> (1 testnet + 5 papier) · bot.kd-mc.com</div>
+
+  <!-- Code admin (1ère fois par appareil) -->
+  <div id="login" class="card hid">
+    <b>🔐 Partie réservée à l'admin</b>
+    <div class="sub" style="margin:6px 0 0">Déverrouille avec Face ID, ou ton code admin.</div>
+    <button class="btn-gold" onclick="faceidLogin()" style="margin-top:10px">🔓 Se connecter avec Face ID</button>
+    <div style="text-align:center;color:#7a8a72;font-size:12px;margin:10px 0">— ou —</div>
+    <input id="code" type="password" inputmode="numeric" autocomplete="off" placeholder="Code admin">
+    <button class="btn-gold" onclick="doLogin()" style="margin-top:10px;background:transparent;border:1px solid rgba(232,184,48,.4);color:#e8b830">Entrer avec le code</button>
+    <div id="loginErr" class="err hid"></div>
+  </div>
+
+  <div id="dash" class="hid">
+    <!-- Statut -->
+    <div class="card">
+      <div class="row">
+        <span id="statusPill" class="pill p-warn"><span class="dot"></span><span id="statusTxt">Chargement…</span></span>
+        <span class="upd" id="updatedAt"></span>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Capital total</div><div class="v" id="kEquity">—</div></div>
+        <div class="kpi"><div class="l">Cryptos suivies</div><div class="v" id="kCoins">—</div></div>
+        <div class="kpi"><div class="l">Trades vus</div><div class="v" id="kTrades">—</div></div>
+      </div>
+    </div>
+
+    <!-- Par crypto -->
+    <div class="card">
+      <h2>💹 Par crypto (en direct)</h2>
+      <div class="coins" id="coins"><div class="sub">Chargement…</div></div>
+    </div>
+
+    <!-- Flotte : classement des 6 bots -->
+    <div class="card">
+      <h2>🏁 Mes 6 bots — classement</h2>
+      <div class="sub" style="margin:-4px 0 8px">1 bot testnet + 5 bots papier (10 000 faux $ chacun, stratégies différentes). Net = gains/pertes déjà encaissés — faux argent, aucune promesse.</div>
+      <div class="coins" id="fleet"><div class="sub">Chargement…</div></div>
+    </div>
+
+    <!-- Bilan durable : lu dans le journal du domaine (KV), pas dans les logs Railway
+         qui s'effacent au bout de quelques semaines et repartent de zéro à chaque
+         redémarrage d'un bot (Kevin 2026-09-11 « bilan de ce qu'ils ont gagné ou perdu »). -->
+    <div class="card">
+      <h2>🧾 Bilan — depuis le premier relevé</h2>
+      <div class="sub" style="margin:-4px 0 8px">Ce que le domaine a enregistré lui-même, relevé toutes les heures. Survit à l'effacement des journaux et aux redémarrages. Faux argent.</div>
+      <div class="coins" id="bilan"><div class="sub">Chargement…</div></div>
+    </div>
+
+    <!-- Analyse expert (calculée serveur sur vraies bougies Binance) -->
+    <div class="card">
+      <h2>🔬 Analyse expert — avis par crypto</h2>
+      <div class="sub" style="margin:-4px 0 8px">Notation façon TradingView (moyennes mobiles + RSI + MACD + stochastique + CCI), calculée sur les vraies bougies Binance. <b>Photo technique du moment — pas une promesse.</b></div>
+      <div class="chips" id="tfChips">
+        <div class="chip on" data-tf="1h" onclick="setTf('1h')">1 heure</div>
+        <div class="chip" data-tf="4h" onclick="setTf('4h')">4 heures</div>
+        <div class="chip" data-tf="1d" onclick="setTf('1d')">1 jour</div>
+      </div>
+      <div class="coins" id="analysis"><div class="sub">Chargement…</div></div>
+    </div>
+
+    <!-- Scanner de marché (Choppiness Index) : lecture SEULE, ne change RIEN aux bots.
+         Kevin 2026-09-12 — capture d'une pub Facebook « Claude AI scanne le marché » :
+         le Choppiness Index est un vrai indicateur, la phrase "Claude AI le fait pour
+         toi" est du marketing. Voici la vraie version, honnête, sur les VRAIES bougies. -->
+    <div class="card">
+      <h2>🔎 Scanner marché — Choppiness Index</h2>
+      <div class="sub" style="margin:-4px 0 8px">24 cryptos liquides, indicateur technique STANDARD (pas une invention). <b>🚀 sort du calme</b> = tendance qui démarre déjà. <b>🌀 comprimé</b> = marché sans direction, pourrait partir dans un sens ou l'autre. Ne change AUCUN réglage d'aucun bot — juste une photo pour t'aider à choisir. Aucune promesse.</div>
+      <div style="margin:0 0 8px"><button class="btn-ghost" onclick="loadScan()">🔎 Scanner maintenant</button></div>
+      <div class="coins" id="scan"><div class="sub">Appuie sur « Scanner maintenant ».</div></div>
+    </div>
+
+    <!-- TradingView officiel (graphique + jauge) -->
+    <div class="card">
+      <h2>📈 TradingView en direct</h2>
+      <div class="sub" style="margin:-4px 0 8px">Le vrai TradingView, intégré ici (gratuit, sans compte). Choisis la crypto :</div>
+      <div class="chips" id="tvChips"></div>
+      <iframe id="tvChart" title="Graphique TradingView" style="width:100%;height:380px;border:0;border-radius:12px;background:var(--card2)" loading="lazy"></iframe>
+      <iframe id="tvGauge" title="Jauge analyse technique TradingView" style="width:100%;height:330px;border:0;border-radius:12px;background:var(--card2);margin-top:10px" loading="lazy"></iframe>
+    </div>
+
+    <!-- Réglages -->
+    <div class="card">
+      <h2>⚙️ Réglages — tu choisis, le bot gère</h2>
+      <div class="sub" style="margin:-4px 0 6px">Choisis tes cryptos et les gros curseurs. « Appliquer » relance le bot avec les nouveaux réglages (≈1-2 min).</div>
+
+      <label>Cryptos à trader (1 à 8)</label>
+      <div class="chips" id="coinChips"></div>
+      <div class="hint">Toutes en USDT. Le capital est réparti à parts égales entre les cryptos choisies.</div>
+
+      <div class="grid2">
+        <div><label>Rythme (bougies)</label>
+          <select id="setTf">
+            <option value="5m">5 min (nerveux)</option>
+            <option value="15m">15 min (recommandé)</option>
+            <option value="30m">30 min</option>
+            <option value="1h">1 heure (calme)</option>
+            <option value="4h">4 heures (très calme)</option>
+          </select></div>
+        <div><label>Risque / trade (%)</label>
+          <input id="setRisk" type="number" step="0.1" min="0.1" max="5" inputmode="decimal"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Position max / crypto (%)</label>
+          <input id="setMaxpos" type="number" step="1" min="5" max="90" inputmode="numeric"></div>
+        <div><label>Stop perte / jour (%)</label>
+          <input id="setDaily" type="number" step="0.5" min="1" max="20" inputmode="decimal"></div>
+      </div>
+      <label>Stop baisse max depuis le sommet (%)</label>
+      <input id="setMaxdd" type="number" step="1" min="3" max="40" inputmode="numeric">
+      <div class="hint">Perte/jour et baisse max coupent le bot automatiquement s'ils sont atteints.</div>
+
+      <button class="btn-gold" style="margin-top:14px" onclick="saveConfig()">💾 Enregistrer &amp; appliquer</button>
+      <div id="cfgErr" class="err hid"></div>
+      <div id="cfgOk" class="okmsg hid"></div>
+    </div>
+
+    <!-- Activité -->
+    <div class="card">
+      <h2>📜 Activité du bot</h2>
+      <div class="logs" id="logs"><div class="lg">Chargement…</div></div>
+    </div>
+
+    <!-- Commandes -->
+    <div class="card">
+      <h2>🎛 Commandes</h2>
+      <div class="sub" style="margin:-4px 0 8px">Le kill vend tout et arrête le bot (il ne redémarre pas seul).</div>
+      <div class="btns">
+        <button class="btn-kill" onclick="botCmd('kill')">🛑 Couper</button>
+        <button class="btn-start" onclick="botCmd('start')">▶️ Relancer</button>
+      </div>
+      <div style="margin-top:10px"><button class="btn-ghost" onclick="refresh(true);loadFleet();loadBilan();loadAnalysis()">🔄 Actualiser</button></div>
+      <div id="cmdErr" class="err hid"></div>
+    </div>
+
+    <div class="foot">🧪 Testnet = faux argent. Auto-actualisation 60 s.<br>Aucune promesse de gains — garde-fous actifs.</div>
+  </div>
+
+  <div id="fatal" class="err hid"></div>
+</div>
+
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.2.0" data-color="#e8b830" defer></script>
+<script>
+(function(){
+  var API = location.origin, GRANT_KEY = 'kdmc_admin_grant', SSO_KEY = 'kdmc_sso_pass', lastStatus = '';
+  var COIN_LIST = ['BTC','ETH','SOL','BNB','XRP','ADA','DOGE','AVAX','LINK','MATIC','DOT','LTC'];
+  var selected = { 'BTC':1 };   // sélection de cryptos (rempli par la config réelle)
+
+  // Face ID : le portail (kd-mc.com) renvoie ici avec un laissez-passer signé dans le
+  // fragment (#kdmc_sso=…, non envoyé aux serveurs). On le garde puis on nettoie l'URL.
+  try{ var _m=(location.hash||'').match(/[#&]kdmc_sso=([^&]+)/); if(_m){ localStorage.setItem(SSO_KEY, decodeURIComponent(_m[1])); history.replaceState(null,'',location.pathname+location.search); } }catch(e){}
+
+  function hdrs(){ var h={}; try{ var g=localStorage.getItem(GRANT_KEY); if(g) h['x-kdmc-admin']=g; var sp=localStorage.getItem(SSO_KEY); if(sp) h['x-kdmc-sso']=sp; }catch(e){} return h; }
+
+  // « Se connecter avec Face ID » = passer par le portail (qui gère déjà Face ID) et
+  // revenir ici authentifié. Aucune crypto en double : on réutilise le SSO du domaine.
+  window.faceidLogin = function(){ location.href = 'https://kd-mc.com/?return=' + encodeURIComponent(location.origin + '/'); };
+  function show(id,on){ document.getElementById(id).classList[on?'remove':'add']('hid'); }
+  function esc(s){ return String(s).replace(/[<>&"]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];}); }
+  function idem(id,t){ var el=document.getElementById(id); if(el.textContent!==t) el.textContent=t; }
+
+  window.doLogin = function(){
+    var code=document.getElementById('code').value.trim(); if(!code) return; show('loginErr',false);
+    fetch(API+'/__admin/login',{method:'POST',credentials:'include',headers:{'content-type':'application/json'},body:JSON.stringify({code:code})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(j.ok&&j.grant){ try{localStorage.setItem(GRANT_KEY,j.grant);}catch(e){} show('login',false); boot(); }
+      else{ var el=document.getElementById('loginErr'); el.textContent=j.reason==='code_invalide'?'Code incorrect.':j.reason==='rate_limited'?('Trop d’essais — attends '+(j.wait||60)+' s.'):('Erreur : '+(j.reason||'inconnue')); show('loginErr',true); }
+    }).catch(function(e){ var el=document.getElementById('loginErr'); el.textContent='Réseau : '+e.message; show('loginErr',true); });
+  };
+
+  // ---- Réglages ----
+  function renderChips(){
+    var box=document.getElementById('coinChips'); box.innerHTML='';
+    COIN_LIST.forEach(function(c){
+      var d=document.createElement('div'); d.className='chip'+(selected[c]?' on':''); d.textContent=c;
+      d.onclick=function(){ if(selected[c]) delete selected[c]; else selected[c]=1; renderChips(); };
+      box.appendChild(d);
+    });
+  }
+  function loadConfig(){
+    fetch(API+'/__bot/config',{credentials:'include',headers:hdrs()})
+    .then(function(r){ return r.json().then(function(j){return {st:r.status,j:j};}); })
+    .then(function(x){
+      if(x.st===403){ show('login',true); show('dash',false); return; }
+      if(!x.j.ok) return;
+      var c=x.j.config||{};
+      selected={}; (c.SYMBOLS||'BTC/USDT').split(',').forEach(function(s){ var b=s.split('/')[0].trim().toUpperCase(); if(b){ selected[b]=1; if(COIN_LIST.indexOf(b)<0) COIN_LIST.push(b); } });
+      renderChips(); renderTvChips();
+      document.getElementById('setTf').value = c.TIMEFRAME||'15m';
+      document.getElementById('setRisk').value = c.RISK_PER_TRADE_PCT||'1';
+      document.getElementById('setMaxpos').value = c.MAX_POSITION_PCT||'25';
+      document.getElementById('setDaily').value = c.DAILY_LOSS_CAP_PCT||'3';
+      document.getElementById('setMaxdd').value = c.MAX_DRAWDOWN_PCT||'15';
+    }).catch(function(){});
+  }
+  window.saveConfig = function(){
+    show('cfgErr',false); show('cfgOk',false);
+    var syms=Object.keys(selected).map(function(c){return c+'/USDT';});
+    if(!syms.length){ var e=document.getElementById('cfgErr'); e.textContent='Choisis au moins 1 crypto.'; show('cfgErr',true); return; }
+    var body={ symbols:syms, timeframe:document.getElementById('setTf').value,
+      risk:document.getElementById('setRisk').value, maxpos:document.getElementById('setMaxpos').value,
+      dailyloss:document.getElementById('setDaily').value, maxdd:document.getElementById('setMaxdd').value };
+    if(!confirm('💾 Appliquer ces réglages ?\n\nLe bot va redémarrer avec :\n'+syms.join(', ')+'\n(≈1-2 min)')) return;
+    fetch(API+'/__bot/config',{method:'POST',credentials:'include',headers:Object.assign({'content-type':'application/json'},hdrs()),body:JSON.stringify(body)})
+    .then(function(r){return r.json();}).then(function(j){
+      if(j.ok){ var o=document.getElementById('cfgOk'); o.textContent='✅ Réglages appliqués — le bot redémarre (≈1-2 min).'; show('cfgOk',true); setTimeout(function(){refresh(true);},5000); }
+      else{ var e=document.getElementById('cfgErr'); e.innerHTML='⚠️ <b>'+esc(j.reason||'erreur')+'</b><br>'+esc(j.detail||''); show('cfgErr',true); }
+    }).catch(function(e){ var el=document.getElementById('cfgErr'); el.textContent='Réseau : '+e.message; show('cfgErr',true); });
+  };
+
+  // ---- Flotte (6 bots : testnet + 5 papier) ----
+  var FLEET_LABELS={'crypto-bot':'🧪 Principal — testnet','crypto-bot-p1':'📝 P1 · Tendance 8/21','crypto-bot-p2':'📝 P2 · Tendance lente','crypto-bot-p3':'📝 P3 · Creux haussier','crypto-bot-p4':'📝 P4 · Retour moyenne','crypto-bot-p5':'📝 P5 · Réactif 5/13'};
+  window.loadFleet = loadFleet; // bouton 🔄 (onclick inline) — la fonction vit dans l'IIFE
+  function loadFleet(){
+    fetch(API+'/__bot/fleet',{credentials:'include',headers:hdrs()})
+    .then(function(r){ return r.json(); }).then(function(j){
+      if(!j.ok||!j.bots) return;
+      var box=document.getElementById('fleet'); box.innerHTML='';
+      var rank=0;
+      j.bots.forEach(function(b){
+        var row=document.createElement('div'); row.className='coin';
+        var label=FLEET_LABELS[b.name]||b.name;
+        if(b.status==='absent'||b.status==='aucun_deploiement'){
+          row.innerHTML='<span class="nm" style="color:var(--mut)">'+esc(label)+'</span><span class="px">pas encore lancé</span>';
+        }else{
+          rank++;
+          var medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank+'ᵉ';
+          var net=(b.net==null)?0:b.net;
+          var netTxt=(net>0?'+':'')+net.toLocaleString('fr-FR')+' $';
+          var netCol=net>0?'var(--green)':net<0?'var(--red)':'var(--mut)';
+          var okS={SUCCESS:1,DEPLOYING:1,BUILDING:1,INITIALIZING:1,QUEUED:1,WAITING:1};
+          var dot=okS[b.status]?'🟢':'🔴';
+          row.innerHTML='<span class="nm">'+medal+' '+esc(label)+' '+dot+'</span>'
+            +'<span class="px">'+(b.equity!=null?Number(b.equity).toLocaleString('fr-FR')+' $':'—')+' · '+(b.buys||0)+'A/'+(b.sells||0)+'V</span>'
+            +'<span class="tag" style="background:rgba(138,148,168,.12);color:'+netCol+'">'+netTxt+'</span>';
+        }
+        box.appendChild(row);
+      });
+    }).catch(function(){});
+  }
+
+  // ---- Bilan durable (journal KV du domaine) ----
+  window.loadBilan = loadBilan;
+  function loadBilan(){
+    fetch(API+'/__bot/history',{credentials:'include',headers:hdrs()})
+    .then(function(r){ return r.json(); }).then(function(j){
+      var box=document.getElementById('bilan'); if(!box) return;
+      box.innerHTML='';
+      if(!j.ok||!j.bilan||!Object.keys(j.bilan).length){
+        box.innerHTML='<div class="sub">Premier relevé en cours — reviens dans une heure, la ligne apparaîtra ici.</div>';
+        return;
+      }
+      Object.keys(j.bilan).forEach(function(name){
+        var b=j.bilan[name]; if(b.actuel==null) return;
+        var label=FLEET_LABELS[name]||name;
+        var ec=(b.ecart==null)?0:b.ecart;
+        var ecTxt=(ec>0?'+':'')+ec.toLocaleString('fr-FR')+' $';
+        var ecCol=ec>0?'var(--green)':ec<0?'var(--red)':'var(--mut)';
+        var depuis=b.depuis?new Date(b.depuis).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}):'—';
+        var vu=b.vu_le?new Date(b.vu_le):null;
+        var muet=vu?((Date.now()-vu.getTime())>3*3600*1000):false;   // plus de 3 h sans relevé
+        var row=document.createElement('div'); row.className='coin';
+        row.innerHTML='<span class="nm">'+esc(label)+(muet?' 😴':'')+'</span>'
+          +'<span class="px">depuis le '+esc(depuis)+' · '+Number(b.depart).toLocaleString('fr-FR')+' $ → '+Number(b.actuel).toLocaleString('fr-FR')+' $'
+          +(b.reprises?' · '+b.reprises+' redémarrage'+(b.reprises>1?'s':''):'')+'</span>'
+          +'<span class="tag" style="background:rgba(138,148,168,.12);color:'+ecCol+'">'+ecTxt+'</span>';
+        box.appendChild(row);
+      });
+      if(!box.children.length) box.innerHTML='<div class="sub">Premier relevé en cours — reviens dans une heure.</div>';
+    }).catch(function(){ /* le bilan est un bonus : jamais bloquant */ });
+  }
+
+  // ---- Analyse expert + TradingView ----
+  var curTf='1h', tvSym=null;
+  window.setTf = function(tf){
+    curTf=tf;
+    document.querySelectorAll('#tfChips .chip').forEach(function(c){ c.classList[c.getAttribute('data-tf')===tf?'add':'remove']('on'); });
+    loadAnalysis();
+  };
+  var LABEL_COL={'Achat fort':'var(--green)','Achat':'var(--green)','Neutre':'var(--mut)','Vente':'var(--orange)','Vente forte':'var(--red)'};
+  var LABEL_ICO={'Achat fort':'🟢🟢','Achat':'🟢','Neutre':'⚪','Vente':'🟠','Vente forte':'🔴'};
+  function adviceFr(a){
+    if(a.label==='Achat fort') return 'Signaux haussiers nets (au-dessus des moyennes, élan positif).';
+    if(a.label==='Achat') return 'Plutôt haussier — élan en train de se construire.';
+    if(a.label==='Neutre') return 'Pas de direction claire — patience.';
+    if(a.label==='Vente') return 'Plutôt baissier — ton bot garde et attend la remontée.';
+    return 'Nettement baissier — pas le moment d\'acheter, on attend.';
+  }
+  window.loadAnalysis = loadAnalysis;
+  function loadAnalysis(){
+    fetch(API+'/__bot/analysis?tf='+encodeURIComponent(curTf),{credentials:'include',headers:hdrs()})
+    .then(function(r){ return r.json(); }).then(function(j){
+      if(!j.ok||!j.analysis) return;
+      var box=document.getElementById('analysis'); box.innerHTML='';
+      j.analysis.forEach(function(a){
+        var row=document.createElement('div'); row.className='coin'; row.style.flexWrap='wrap';
+        if(a.err){ row.innerHTML='<span class="nm">'+esc(a.symbol)+'</span><span class="px">indisponible : '+esc(a.err)+'</span>'; box.appendChild(row); return; }
+        var col=LABEL_COL[a.label]||'var(--mut)';
+        row.innerHTML='<span class="nm">'+esc(a.symbol.split('/')[0])+' <span style="color:'+col+'">'+(LABEL_ICO[a.label]||'')+' '+esc(a.label)+'</span></span>'
+          +'<span class="px">'+Number(a.price).toLocaleString('fr-FR')+' $ · RSI '+(a.rsi!=null?a.rsi:'—')+' · MM '+a.ma_buy+'↑/'+a.ma_sell+'↓ · MACD '+(a.macd_up?'↑':'↓')+'</span>'
+          +'<span class="hint" style="width:100%;margin-top:2px">'+esc(adviceFr(a))+'</span>';
+        box.appendChild(row);
+      });
+    }).catch(function(){});
+  }
+  // ---- Scanner de marché (Choppiness Index) — lecture seule, déclenché à la demande ----
+  var SCAN_LABEL = { sort_du_calme: '🚀 sort du calme', comprime: '🌀 comprimé', neutre: '⚪ neutre' };
+  var SCAN_COL = { sort_du_calme: 'var(--green)', comprime: 'var(--orange)', neutre: 'var(--mut)' };
+  window.loadScan = function(){
+    var box = document.getElementById('scan'); box.innerHTML = '<div class="sub">Scan en cours (24 cryptos)…</div>';
+    fetch(API+'/__bot/scan',{credentials:'include',headers:hdrs()})
+    .then(function(r){ return r.json(); }).then(function(j){
+      if(!j.ok){ box.innerHTML = '<div class="sub">⚠️ '+esc(j.reason||'erreur')+'</div>'; return; }
+      box.innerHTML = '';
+      (j.results||[]).forEach(function(a){
+        var row = document.createElement('div'); row.className = 'coin';
+        if(a.err){ row.innerHTML = '<span class="nm" style="color:var(--mut)">'+esc(a.symbol)+'</span><span class="px">indisponible : '+esc(a.err)+'</span>'; box.appendChild(row); return; }
+        var lab = SCAN_LABEL[a.cat] || a.cat, col = SCAN_COL[a.cat] || 'var(--mut)';
+        var chg = a.chg24 == null ? '' : (' · 24h '+(a.chg24>0?'+':'')+a.chg24+'%');
+        row.innerHTML = '<span class="nm">'+esc(a.symbol.split('/')[0])+' <span style="color:'+col+'">'+esc(lab)+'</span></span>'
+          +'<span class="px">'+Number(a.price).toLocaleString('fr-FR')+' $'+chg+' · CI '+a.ci+(a.ci_delta!=null?' ('+(a.ci_delta>0?'+':'')+a.ci_delta+')':'')+'</span>';
+        box.appendChild(row);
+      });
+      if(!box.children.length) box.innerHTML = '<div class="sub">Rien à afficher.</div>';
+    }).catch(function(e){ box.innerHTML = '<div class="sub">Réseau : '+esc(e.message)+'</div>'; });
+  };
+  function tvUrls(base){
+    var sym='BINANCE%3A'+base+'USDT';
+    var chart='https://s.tradingview.com/widgetembed/?symbol='+sym+'&interval=60&theme=dark&style=1&locale=fr&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&withdateranges=1';
+    var cfg={symbol:'BINANCE:'+base+'USDT',interval:'1h',colorTheme:'dark',isTransparent:true,width:'100%',height:310,showIntervalTabs:true,locale:'fr'};
+    var gauge='https://www.tradingview-widget.com/embed-widget/technical-analysis/?locale=fr#'+encodeURIComponent(JSON.stringify(cfg));
+    return {chart:chart,gauge:gauge};
+  }
+  function renderTvChips(){
+    var box=document.getElementById('tvChips'); box.innerHTML='';
+    var coins=Object.keys(selected); if(!coins.length) coins=['BTC'];
+    if(!tvSym||coins.indexOf(tvSym)<0) tvSym=coins[0];
+    coins.forEach(function(c){
+      var d=document.createElement('div'); d.className='chip'+(tvSym===c?' on':''); d.textContent=c;
+      d.onclick=function(){ tvSym=c; renderTvChips(); };
+      box.appendChild(d);
+    });
+    var u=tvUrls(tvSym);
+    var ch=document.getElementById('tvChart'), ga=document.getElementById('tvGauge');
+    if(ch.getAttribute('src')!==u.chart) ch.setAttribute('src',u.chart);
+    if(ga.getAttribute('src')!==u.gauge) ga.setAttribute('src',u.gauge);
+  }
+
+  // ---- Statut / logs ----
+  function render(j){
+    var sig=JSON.stringify({s:j.status,l:(j.logs||[]).length,last:(j.logs||[]).slice(-1)[0]});
+    show('dash',true); show('login',false); show('fatal',false);
+    var pill=document.getElementById('statusPill');
+    var okS={SUCCESS:1,DEPLOYING:1,BUILDING:1,INITIALIZING:1,QUEUED:1,WAITING:1};
+    pill.className='pill '+(okS[j.status]?'p-ok':'p-ko');
+    idem('statusTxt', okS[j.status]?(j.status==='SUCCESS'?'Bot en ligne':'Démarrage… ('+j.status+')'):'Arrêté / problème ('+j.status+')');
+    idem('updatedAt','à '+new Date().toLocaleTimeString('fr-FR'));
+    if(sig===lastStatus) return; lastStatus=sig;
+
+    var logs=j.logs||[], equity=null, buys=0, sells=0, testnet=null, perCoin={};
+    logs.forEach(function(l){
+      var m=l.m;
+      var mm=m.match(/(?:([A-Z0-9]{2,15}\/[A-Z]{2,6})\s+)?(HOLD|BUY|SELL)\s*\|\s*prix=([\d.]+)\s*\|\s*equity=([\d.]+)/);
+      if(mm){ var sym=mm[1]||'BTC/USDT'; perCoin[sym]={action:mm[2],price:mm[3]}; equity=mm[4]; }
+      if(/ACHAT/.test(m)) buys++; if(/VENTE/.test(m)) sells++;
+      if(/TESTNET/.test(m)) testnet=true; if(/ARGENT RÉEL/.test(m)) testnet=false;
+    });
+
+    idem('kEquity', equity?Number(equity).toLocaleString('fr-FR')+' $':'—');
+    idem('kCoins', String(Object.keys(perCoin).length||Object.keys(selected).length||'—'));
+    idem('kTrades', (buys+sells)?(buys+' A · '+sells+' V'):'0');
+
+    var mp=document.getElementById('modePill');
+    if(testnet!==null){ mp.className='pill '+(testnet?'p-test':'p-ko'); idem('modePill',testnet?'🧪 TESTNET':'💶 RÉEL'); show('modePill',true); }
+
+    var cb=document.getElementById('coins'); cb.innerHTML='';
+    var syms=Object.keys(perCoin);
+    if(!syms.length){ cb.innerHTML='<div class="sub">En attente du premier cycle du bot…</div>'; }
+    syms.forEach(function(s){
+      var pc=perCoin[s], row=document.createElement('div'); row.className='coin';
+      var tag=pc.action==='BUY'?'<span class="tag t-buy">🟢 acheté</span>':pc.action==='SELL'?'<span class="tag t-sell">🔻 vendu</span>':'<span class="tag t-hold">⏸ attente</span>';
+      row.innerHTML='<span class="nm">'+esc(s)+'</span><span class="px">'+Number(pc.price).toLocaleString('fr-FR')+' $</span>'+tag;
+      cb.appendChild(row);
+    });
+
+    var box=document.getElementById('logs'); box.innerHTML='';
+    logs.slice(-30).reverse().forEach(function(l){
+      var d=document.createElement('div'), cls='lg';
+      if(/ACHAT/.test(l.m)) cls+=' buy'; else if(/VENTE/.test(l.m)) cls+=' sell';
+      else if(/KILL|HALT|Erreur|ERROR/i.test(l.m)) cls+=' warn'; else if(/Démarrage|TESTNET/.test(l.m)) cls+=' info';
+      d.className=cls; var t=''; try{t=new Date(l.t).toLocaleTimeString('fr-FR');}catch(e){}
+      d.textContent=t+'  '+l.m; box.appendChild(d);
+    });
+    if(!logs.length) box.innerHTML='<div class="lg">Aucun log pour l’instant.</div>';
+  }
+
+  window.refresh = function(){
+    fetch(API+'/__bot/status',{credentials:'include',headers:hdrs()})
+    .then(function(r){ return r.json().then(function(j){return {st:r.status,j:j};}); })
+    .then(function(x){
+      if(x.st===403){ show('login',true); show('dash',false); return; }
+      if(!x.j.ok){ var el=document.getElementById('fatal'); el.innerHTML='⚠️ <b>'+esc(x.j.reason||'erreur')+'</b><br>Détail exact : '+esc(x.j.detail||'—'); show('fatal',true); show('dash',true); return; }
+      render(x.j);
+    }).catch(function(e){ var el=document.getElementById('fatal'); el.textContent='Réseau indisponible : '+e.message; show('fatal',true); });
+  };
+
+  window.botCmd = function(action){
+    var msg=action==='kill'?'🛑 Couper le bot ?\n\nIl vendra tout et s’arrêtera (pas de redémarrage auto).':'▶️ Relancer le bot ?';
+    if(!confirm(msg)) return; show('cmdErr',false);
+    fetch(API+'/__bot/'+action,{method:'POST',credentials:'include',headers:hdrs()})
+    .then(function(r){return r.json();}).then(function(j){
+      if(j.ok){ alert(action==='kill'?'🛑 Ordre envoyé — le bot se coupe (≈1 min).':'▶️ Relance lancée (≈1-2 min).'); setTimeout(function(){refresh(true);},4000); }
+      else{ var el=document.getElementById('cmdErr'); el.innerHTML='⚠️ <b>'+esc(j.reason||'erreur')+'</b><br>Détail : '+esc(j.detail||'—'); show('cmdErr',true); }
+    }).catch(function(e){ var el=document.getElementById('cmdErr'); el.textContent='Réseau : '+e.message; show('cmdErr',true); });
+  };
+
+  function boot(){ renderChips(); loadConfig(); refresh(true); loadFleet(); loadBilan(); loadAnalysis(); renderTvChips(); }
+  boot();
+  setInterval(function(){ refresh(false); }, 60000);
+  setInterval(function(){ loadFleet(); loadBilan(); }, 120000); // flotte : 6 bots interrogés → toutes les 2 min suffit
+  setInterval(function(){ loadAnalysis(); }, 300000); // analyse expert : toutes les 5 min (bougies 1h+)
+})();
+</script>
+</body>
+</html>

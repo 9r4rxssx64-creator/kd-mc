@@ -1,0 +1,67 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: KDMC — Vérif live d'un sous-domaine (studio par défaut)
+
+# Diagnostic rapide (curl, quelques secondes) : le domaine sert-il bien l'app ?
+# Isole les 3 couches — Pages (fichier servi) / routeur (custom domain) / portail.
+# Réseau ouvert sur le runner (contrairement au sandbox Claude Code).
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: "Sous-domaine à tester (ex: studio.kd-mc.com)"
+        type: string
+        default: "studio.kd-mc.com"
+      pages_path:
+        description: "Chemin GitHub Pages équivalent"
+        type: string
+        default: "/CMCteams/tools/crea-studio/"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diagnostic 3 couches
+        run: |
+          set +e
+          H="${{ inputs.host }}"
+          PP="${{ inputs.pages_path }}"
+          PAGES="https://9r4rxssx64-creator.github.io${PP}"
+          echo "=================================================="
+          echo "  A) DOMAINE  https://$H/"
+          echo "=================================================="
+          curl -sS -m 25 -L -o /tmp/dom.html -D /tmp/dom.hdr \
+            -w "final=%{url_effective}\nHTTP=%{http_code}\nTLS=%{ssl_verify_result}\nredirs=%{num_redirects}\n" "https://$H/" \
+            || echo "CURL_FAIL (domaine injoignable / TLS KO / DNS KO)"
+          echo "--- en-têtes (extrait) ---"; head -n 15 /tmp/dom.hdr 2>/dev/null
+          echo "--- contenu : marqueurs app ---"
+          grep -o "Créa Studio" /tmp/dom.html 2>/dev/null | head -1 || echo "(pas de titre 'Créa Studio')"
+          grep -o "APP_VER='v[0-9.]*'" /tmp/dom.html 2>/dev/null | head -1 || echo "(pas d'APP_VER)"
+          echo
+          echo "=================================================="
+          echo "  B) BASELINE GitHub Pages  $PAGES"
+          echo "=================================================="
+          curl -sS -m 25 -L -o /tmp/pg.html \
+            -w "HTTP=%{http_code}\n" "$PAGES" || echo "CURL_FAIL"
+          grep -o "Créa Studio" /tmp/pg.html 2>/dev/null | head -1 || echo "(pas de titre 'Créa Studio')"
+          grep -o "APP_VER='v[0-9.]*'" /tmp/pg.html 2>/dev/null | head -1 || echo "(pas d'APP_VER)"
+          echo
+          echo "=================================================="
+          echo "  C) PORTAIL  https://kd-mc.com/apps.json"
+          echo "=================================================="
+          curl -sS -m 25 -L -w "\nHTTP=%{http_code}\n" "https://kd-mc.com/apps.json" 2>/dev/null | grep -o "studio.kd-mc.com" | head -1 || echo "(studio absent d'apps.json live)"
+          echo
+          echo "=================================================="
+          echo "  VERDICT : A OK = domaine sert l'app. A KO + B OK = souci routeur/custom domain."
+          echo "            A KO + B KO = souci GitHub Pages. C = présence dans le portail."
+          echo "=================================================="

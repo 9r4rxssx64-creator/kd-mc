@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Album Laurence — Upload</title>
+<style>
+:root{--gold:#ff6b9d;--gold2:#ff8eb5;--bg:#2a0e1a;--bg2:#1a0612;--text:#fff;--dim:#c89bb0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;padding:0;background:radial-gradient(ellipse at 50% 30%,var(--bg) 0%,var(--bg2) 60%,#0a0408 100%);color:var(--text);font-family:-apple-system,system-ui,sans-serif;min-height:100vh;padding-top:env(safe-area-inset-top,0)}
+.wrap{max-width:520px;margin:0 auto;padding:24px 16px 48px}
+h1{text-align:center;font-size:32px;background:linear-gradient(135deg,#ff6b9d,#ff8eb5,#ffb0c5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:8px 0}
+.sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:24px}
+.heart{font-size:48px;text-align:center;margin:8px 0}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,107,157,.3);border-radius:16px;padding:18px;margin:12px 0}
+.upload-zone{border:2px dashed rgba(255,107,157,.5);border-radius:14px;padding:32px 16px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:active{background:rgba(255,107,157,.1);transform:scale(.98)}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:rgba(0,0,0,.3)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb-x{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+button{width:100%;padding:16px 20px;font-size:16px;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;border:none;border-radius:12px;cursor:pointer;min-height:56px;margin-top:10px;transition:transform .1s}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.5}
+button.outline{background:transparent;color:var(--text);border:1px solid rgba(255,107,157,.4)}
+.log{background:rgba(0,0,0,.4);padding:12px;border-radius:8px;font-family:ui-monospace,monospace;font-size:11px;max-height:200px;overflow-y:auto;border:1px solid rgba(255,107,157,.2);white-space:pre-wrap;display:none}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,107,157,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+input[type="text"]{width:100%;padding:12px 14px;font-size:14px;background:rgba(0,0,0,.3);color:var(--text);border:1px solid rgba(255,107,157,.3);border-radius:10px;-webkit-appearance:none}
+.row{display:flex;gap:8px;align-items:center}
+.row label{flex:1;font-size:13px}
+.row select{padding:8px;background:rgba(0,0,0,.3);color:var(--text);border:1px solid rgba(255,107,157,.3);border-radius:8px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="heart">💕</div>
+  <h1>Album Laurence</h1>
+  <div class="sub">Upload photos pour le diaporama Apex de Laurence</div>
+
+  <div class="card">
+    <div style="font-size:13px;color:var(--dim);margin-bottom:10px">Pour qui ?</div>
+    <div class="row">
+      <label>Utilisateur cible :</label>
+      <select id="target">
+        <option value="user_laurence" selected>Laurence (user_laurence)</option>
+        <option value="kdmc_admin">Kevin (admin)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="upload-zone" for="filepick" id="dropzone">
+      <div style="font-size:36px;margin-bottom:8px">📷</div>
+      <strong>Tape ici pour choisir des photos</strong>
+      <div style="font-size:12px;color:var(--dim);margin-top:6px">ou glisse-déposes-en plusieurs</div>
+    </label>
+    <input type="file" id="filepick" accept="image/*" multiple style="display:none">
+    <div id="thumbs" class="thumbs"></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:8px"><label>Taille diaporama :</label>
+      <select id="size">
+        <option value="small">Petit (200px)</option>
+        <option value="medium" selected>Moyen (320px)</option>
+        <option value="large">Grand (480px)</option>
+      </select>
+    </div>
+    <div class="row" style="margin-bottom:8px"><label>Durée par photo :</label>
+      <select id="duration">
+        <option value="3">3 sec</option>
+        <option value="5" selected>5 sec</option>
+        <option value="8">8 sec</option>
+        <option value="12">12 sec</option>
+      </select>
+    </div>
+    <div class="row"><label>Transitions :</label>
+      <select id="trans">
+        <option value="fade" selected>Fondu</option>
+        <option value="bubble">Bulle</option>
+        <option value="slide">Glissement</option>
+        <option value="zoom">Zoom</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="btnSave" disabled>💾 Sauvegarder + activer pour Laurence</button>
+  <button class="outline" onclick="document.getElementById('log').style.display='block'">📋 Voir journal</button>
+
+  <div class="log" id="log"></div>
+
+  <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--dim)">
+    Sauvegardé sur Firebase admin · Apex le récupère au prochain login Laurence ✦
+  </div>
+</div>
+
+<script>
+const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app';
+let PHOTOS = [];
+
+function log(msg, cls){
+  const el = document.getElementById('log');
+  el.style.display='block';
+  el.innerHTML += (cls?'<span style="color:'+(cls==='ok'?'#5cd882':cls==='err'?'#ff5858':'#fff')+'">'+msg+'</span>':msg) + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+async function compressImage(file, maxW){
+  return new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(maxW / img.width, 1);
+        const c = document.createElement('canvas');
+        c.width = img.width * scale;
+        c.height = img.height * scale;
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('filepick').addEventListener('change', async e => {
+  const files = Array.from(e.target.files || []);
+  log('→ ' + files.length + ' photos sélectionnées');
+  for (const f of files) {
+    log('  Compression ' + f.name + '...');
+    const data = await compressImage(f, 1024);
+    PHOTOS.push(data);
+    addThumb(data);
+  }
+  log('✅ ' + PHOTOS.length + ' photos prêtes', 'ok');
+  document.getElementById('btnSave').disabled = PHOTOS.length === 0;
+});
+
+function addThumb(data){
+  const wrap = document.getElementById('thumbs');
+  const div = document.createElement('div');
+  div.className = 'thumb';
+  div.innerHTML = '<img src="'+data+'"><button class="thumb-x">×</button>';
+  div.querySelector('.thumb-x').onclick = () => {
+    PHOTOS = PHOTOS.filter(p => p !== data);
+    div.remove();
+    document.getElementById('btnSave').disabled = PHOTOS.length === 0;
+  };
+  wrap.appendChild(div);
+}
+
+document.getElementById('btnSave').addEventListener('click', async () => {
+  const btn = document.getElementById('btnSave');
+  btn.innerHTML = '<span class="spinner"></span> Sauvegarde...';
+  btn.disabled = true;
+  try {
+    const target = document.getElementById('target').value;
+    // Lire profil existant pour merger
+    let theme = {};
+    try {
+      const r = await fetch(FB_URL + '/apex/ax_user_theme_' + target + '.json');
+      if (r.ok) theme = await r.json() || {};
+    } catch(_){}
+    if (!theme || typeof theme !== 'object') theme = {};
+    if (!theme.bubbles) theme.bubbles = target === 'user_laurence' ? ['🫶🏻','♥️','😘','💕'] : ['✨'];
+    if (!theme.bubbleCount) theme.bubbleCount = 8;
+    if (!theme.colorTheme) theme.colorTheme = target === 'user_laurence' ? 'girly' : 'default';
+    theme.slideshow = {
+      photos: PHOTOS,
+      enabled: true,
+      transitions: [document.getElementById('trans').value],
+      duration: parseInt(document.getElementById('duration').value, 10),
+      size: document.getElementById('size').value,
+      position: theme.slideshow?.position || {x: 20, y: 80}
+    };
+    log('→ Push Firebase /apex/ax_user_theme_' + target + '...');
+    const resp = await fetch(FB_URL + '/apex/ax_user_theme_' + target + '.json', {
+      method: 'PUT',
+      body: JSON.stringify(theme)
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    log('✅ Sauvegardé ! ' + PHOTOS.length + ' photos pour ' + target, 'ok');
+    log('Au prochain login de cette personne, son diaporama démarre.', 'ok');
+    btn.innerHTML = '✅ Sauvegardé avec succès';
+  } catch(e) {
+    log('❌ Erreur : ' + e.message, 'err');
+    btn.innerHTML = '🔁 Réessayer';
+    btn.disabled = false;
+  }
+});
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="album-laurence"
+        data-version="v1.0.0"
+        data-color="#22cc77"
+        defer></script>
+</body>
+</html>

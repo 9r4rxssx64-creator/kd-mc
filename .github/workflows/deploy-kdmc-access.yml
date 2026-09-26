@@ -1,0 +1,187 @@
+name: Deploy kdmc-access (journal « qui se connecte »)
+
+# Worker central + isolé du journal unifié des connexions/actions du domaine
+# (page admin PIN-gated + POST /log depuis les apps + GET /history agrégé).
+# Sous-domaine dédié admin.kd-mc.com (custom_domain auto-provisionné).
+#
+# AUTO-TRIGGER : push main sur services/kdmc-access/** OU ce workflow, + manuel.
+# Secrets requis (déjà présents dans le repo) :
+#   CLOUDFLARE_API_TOKEN, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, APEX_ADMIN_PIN_SHA256.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'services/kdmc-access/**'
+      - '.github/workflows/deploy-kdmc-access.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kdmc-access
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Tests unitaires worker
+        working-directory: services/kdmc-access
+        run: node --test
+
+      - name: Install wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Pre-flight secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          APEX_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        run: |
+          set -e
+          MISSING=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && MISSING="$MISSING CLOUDFLARE_API_TOKEN"
+          [ -z "$FIREBASE_PRIVATE_KEY" ] && MISSING="$MISSING FIREBASE_PRIVATE_KEY"
+          [ -z "$FIREBASE_CLIENT_EMAIL" ] && MISSING="$MISSING FIREBASE_CLIENT_EMAIL"
+          [ -z "$APEX_ADMIN_PIN_SHA256" ] && MISSING="$MISSING APEX_ADMIN_PIN_SHA256"
+          if [ -n "$MISSING" ]; then echo "::error::Secrets GitHub manquants :$MISSING"; exit 1; fi
+          echo "::notice::Secrets OK"; wrangler --version
+
+      - name: Push secrets to worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          APEX_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        working-directory: services/kdmc-access
+        run: |
+          set -e
+          printf '%s' "$FIREBASE_PRIVATE_KEY"  | wrangler secret put FIREBASE_PRIVATE_KEY
+          printf '%s' "$FIREBASE_CLIENT_EMAIL" | wrangler secret put FIREBASE_CLIENT_EMAIL
+          printf '%s' "$APEX_ADMIN_PIN_SHA256" | wrangler secret put APEX_ADMIN_PIN_SHA256
+          echo "::notice::Secrets poussés au worker."
+
+      - name: Deploy worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: services/kdmc-access
+        run: |
+          set -e
+          DEPLOY_OUT=$(wrangler deploy 2>&1); echo "$DEPLOY_OUT"
+          WORKER_URL=$(echo "$DEPLOY_OUT" | grep -oE 'https://kdmc-access\.[a-z0-9-]+\.workers\.dev' | head -1)
+          [ -n "$WORKER_URL" ] && echo "worker_url=$WORKER_URL" >> $GITHUB_OUTPUT
+
+      - name: Health check
+        if: ${{ steps.deploy.outputs.worker_url != '' }}
+        run: |
+          set -e
+          for i in 1 2 3; do
+            if curl -fsS "${{ steps.deploy.outputs.worker_url }}/health" > /tmp/h.json; then cat /tmp/h.json; echo; echo "::notice::Health OK (workers.dev)"; exit 0; fi
+            echo "retry $i"; sleep 5
+          done
+          echo "::error::Health KO"; exit 1
+
+      # PREUVE que le SOUS-DOMAINE admin.kd-mc.com lui-même répond (custom_domain
+      # auto-provisionné : DNS + SSL peuvent prendre ~1-2 min au 1er déploiement).
+      # Non-bloquant (le worker est déjà vivant sur workers.dev) mais le résultat
+      # RÉEL est écrit dans le résumé → on ne déclare « joignable » qu'après lecture.
+      - name: Verify custom domain (admin.kd-mc.com)
+        id: cdom
+        continue-on-error: true
+        run: |
+          OK=false; CODE=""
+          for i in $(seq 1 12); do
+            CODE=$(curl -m 10 -s -o /tmp/c.json -w '%{http_code}' "https://admin.kd-mc.com/health" || echo "000")
+            if [ "$CODE" = "200" ]; then OK=true; cat /tmp/c.json; echo; echo "::notice::admin.kd-mc.com JOIGNABLE (HTTP 200)"; break; fi
+            echo "tentative $i → HTTP $CODE (propagation DNS/SSL possible)"; sleep 15
+          done
+          echo "ok=$OK"   >> $GITHUB_OUTPUT
+          echo "code=$CODE" >> $GITHUB_OUTPUT
+          [ "$OK" = "true" ] || echo "::warning::admin.kd-mc.com pas encore joignable (dernier HTTP $CODE) — worker vivant sur workers.dev"
+
+      # PREUVE DE BOUT EN BOUT EN PRODUCTION (le maillon qui manquait).
+      # /log répond 204 MÊME si l'écriture Firebase échoue (fail-open volontaire : ne
+      # jamais bloquer une app de Kevin). Conséquence : un journal DÉFINITIVEMENT VIDE
+      # passerait totalement inaperçu. Ici on écrit un évènement réel puis on le
+      # RELIT via /history — seul moyen de prouver que « qui se connecte » enregistre.
+      - name: Preuve réelle — le journal enregistre et relit
+        id: e2e
+        env:
+          PIN_SHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        run: |
+          MARK="verif-auto-$GITHUB_RUN_ID"
+          CODE=$(curl -m 15 -s -o /dev/null -w '%{http_code}' -X POST "https://admin.kd-mc.com/log" \
+            -H 'Content-Type: application/json' -H 'Origin: https://kd-mc.com' \
+            -d "{\"app\":\"verification\",\"uid\":\"__verif__\",\"name\":\"Vérification automatique\",\"event\":\"$MARK\",\"device\":\"CI\",\"tier\":\"test\"}")
+          echo "POST /log → HTTP $CODE"
+          OK=false
+          for i in 1 2 3 4 5 6; do
+            sleep 5
+            curl -m 20 -s "https://admin.kd-mc.com/history" -H "x-apex-pin: $PIN_SHA" -o /tmp/hist.json || true
+            if grep -q "$MARK" /tmp/hist.json 2>/dev/null; then OK=true; break; fi
+            echo "relecture $i : pas encore visible"
+          done
+          node -e "const d=require('/tmp/hist.json');console.log('Journal LIVE → personnes:',d.totalPeople,'| évènements:',d.totalEvents)" 2>/dev/null || { echo "Réponse /history brute :"; head -c 400 /tmp/hist.json; echo; }
+          echo "ok=$OK" >> $GITHUB_OUTPUT
+          if [ "$OK" = "true" ]; then
+            echo "::notice::PREUVE OK — l'évènement écrit est bien relu dans le journal"
+            # SOURCE UNIQUE : les VRAIES connexions viennent du routeur (KV ACCOUNTS,
+            # déjà peuplé). On prouve que la page peut les lire — sinon Kevin verrait
+            # une page « vide » alors que son historique existe (le doublon corrigé).
+            curl -m 20 -s "https://kd-mc.com/__admin/domain-log" -H "x-apex-pin: $PIN_SHA" -H 'Origin: https://admin.kd-mc.com' -o /tmp/conn.json || true
+            node -e "
+              let d={};try{d=require('/tmp/conn.json')}catch(e){}
+              if(!d.ok){console.log('::warning::Connexions réelles NON lisibles →',JSON.stringify(d).slice(0,200));process.exit(0)}
+              const tot=(d.people||[]).reduce((a,p)=>a+(p.hits||0),0);
+              console.log('Connexions RÉELLES lisibles →',(d.people||[]).length,'personnes |',tot,'connexions au total');
+              (d.people||[]).slice(0,3).forEach(p=>console.log('  ·',p.name||p.uid,'—',p.hits||0,'connexions,',(p.history||[]).length,'détaillées'));
+            "
+          else
+            echo "::error::LE JOURNAL N'ENREGISTRE RIEN (écriture Firebase perdue en silence) — c'est la cause d'un historique vide"; exit 1
+          fi
+
+      # Le journal ne peut se remplir QUE si les apps réellement PUBLIÉES contiennent
+      # l'envoi + autorisent admin.kd-mc.com dans leur CSP. Vécu 2026-08-05 : worker OK
+      # mais journal à 0 évènement → le code des apps n'était pas encore en ligne.
+      # Non bloquant : c'est un diagnostic qui dit QUELLE app ne nourrit pas le journal.
+      - name: Les apps alimentent-elles le journal ? (pages LIVE)
+        continue-on-error: true
+        run: |
+          check() {
+            B=$(curl -m 25 -sL "$1" || true)
+            [ -z "$B" ] && { echo "$1 → ❌ page injoignable"; return; }
+            echo "$B" | grep -q 'admin\.kd-mc\.com/log' && E=OK || E=ABSENT
+            echo "$B" | grep -q 'connect-src[^>]*admin\.kd-mc\.com' && C=OK || C=ABSENT
+            echo "$1 → envoi:$E | autorisation-réseau(CSP):$C"
+          }
+          check "https://cmcteams.kd-mc.com/"
+          check "https://apex-chat.kd-mc.com/"
+          # Apex v13 : l'envoi est dans un fichier JS compilé, seule la CSP est dans la page.
+          check "https://apex-ai.kd-mc.com/"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Deploy kdmc-access"
+            echo "| Étape | Statut |"
+            echo "|---|---|"
+            echo "| Tests | ✅ |"
+            echo "| Deploy | ${{ steps.deploy.outcome == 'success' && '✅' || '❌' }} |"
+            echo "| admin.kd-mc.com joignable | ${{ steps.cdom.outputs.ok == 'true' && '✅ HTTP 200' || format('❌ HTTP {0}', steps.cdom.outputs.code) }} |"
+            echo "| Journal enregistre + relit (preuve réelle) | ${{ steps.e2e.outputs.ok == 'true' && '✅ prouvé' || '❌ RIEN ENREGISTRÉ' }} |"
+            echo ""
+            echo "Page admin : **https://admin.kd-mc.com** (custom_domain) ou l'URL workers.dev ci-dessous."
+            [ -n "${{ steps.deploy.outputs.worker_url }}" ] && echo "\`${{ steps.deploy.outputs.worker_url }}\`"
+          } >> $GITHUB_STEP_SUMMARY

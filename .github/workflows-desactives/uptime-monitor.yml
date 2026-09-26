@@ -1,0 +1,147 @@
+name: Uptime monitor (6 h)
+
+# Ping toutes les 6 h les VRAIES adresses de production (audit amélioration Top #7) :
+# les 14 sous-domaines kd-mc.com (= routeur Cloudflare + SSL + DNS, le chemin que
+# les utilisateurs empruntent réellement) + les /health des workers critiques.
+# Avant : 3 URLs github.io seulement → une panne du routeur/SSL était INVISIBLE.
+# Si 2 echecs consecutifs -> ouvre issue + log dans .uptime/history.json
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Ping URLs
+        id: ping
+        run: |
+          set +e
+          mkdir -p .uptime
+          touch .uptime/history.json
+          [ -s .uptime/history.json ] || echo "[]" > .uptime/history.json
+
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          RESULTS=""
+          ALL_OK=true
+
+          # Domaine réel (routeur + SSL + DNS) — liste alignée sur ROUTES de
+          # services/kdmc-router/worker.js — + /health des workers critiques
+          # + l'origin GitHub Pages (pour distinguer panne routeur vs panne origin).
+          for url in \
+            "https://kd-mc.com/" \
+            "https://cmcteams.kd-mc.com/" \
+            "https://apex-ai.kd-mc.com/" \
+            "https://apex-chat.kd-mc.com/" \
+            "https://la-detente.kd-mc.com/" \
+            "https://chez-lolo.kd-mc.com/" \
+            "https://dashboard.kd-mc.com/" \
+            "https://sourcing.kd-mc.com/" \
+            "https://coffre.kd-mc.com/" \
+            "https://departs.kd-mc.com/" \
+            "https://cmcteams-light.kd-mc.com/" \
+            "https://bot.kd-mc.com/" \
+            "https://beatbot.kd-mc.com/" \
+            "https://apex-secrets-proxy.9r4rxssx64.workers.dev/health" \
+            "https://kdmc-ais.9r4rxssx64.workers.dev/health" \
+            "https://kdmc-live.9r4rxssx64.workers.dev/health" \
+            "https://kdmc-rag.9r4rxssx64.workers.dev/health" \
+            "https://9r4rxssx64-creator.github.io/CMCteams/"; do
+            START=$(date +%s%3N)
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 "$url")
+            END=$(date +%s%3N)
+            MS=$((END - START))
+            STATUS="ok"
+            case "$CODE" in 2*|3*) : ;; *) STATUS="fail"; ALL_OK=false ;; esac
+            RESULTS="$RESULTS{\"url\":\"$url\",\"code\":\"$CODE\",\"ms\":$MS,\"status\":\"$STATUS\"},"
+            echo "$url -> HTTP $CODE in ${MS}ms"
+          done
+
+          # Truncate trailing comma + assemble entry
+          RESULTS="${RESULTS%,}"
+          ENTRY="{\"ts\":\"$NOW\",\"results\":[$RESULTS]}"
+
+          # Append + cap 500 entries (tail keeps last 500)
+          node -e "
+            const fs=require('fs');
+            const file='.uptime/history.json';
+            let h=[];try{h=JSON.parse(fs.readFileSync(file,'utf8'));}catch(_){h=[];}
+            h.push($ENTRY);
+            if(h.length>500)h=h.slice(-500);
+            fs.writeFileSync(file,JSON.stringify(h,null,2));
+          "
+
+          if [ "$ALL_OK" = "true" ]; then
+            echo "status=ok" >> $GITHUB_OUTPUT
+          else
+            echo "status=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit history
+        run: |
+          git add .uptime/history.json
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "uptime: ping at $(date -u +%H:%MZ) [skip ci]"
+            git push origin main || git push origin HEAD
+          fi
+
+      - name: Check for 2 consecutive fails
+        if: steps.ping.outputs.status == 'fail'
+        run: |
+          # Look at last 2 entries
+          LAST_FAILS=$(node -e "
+            const fs=require('fs');
+            const h=JSON.parse(fs.readFileSync('.uptime/history.json','utf8'));
+            const last2=h.slice(-2);
+            const fails=last2.filter(e=>e.results.some(r=>r.status==='fail'));
+            console.log(fails.length);
+          ")
+          if [ "$LAST_FAILS" = "2" ]; then
+            echo "DOUBLE FAIL detected, alerting..."
+            echo "alert=true" >> $GITHUB_ENV
+          fi
+
+      - name: Open issue if double fail
+        if: env.alert == 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            // Avoid duplicate issues
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'uptime,auto'
+            });
+            if (issues.data.length > 0) {
+              console.log('Issue uptime already open, skipping');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[uptime] Site DOWN - 2 fails consecutifs`,
+              body: `Le monitoring uptime a detecte 2 echecs consecutifs.\n\nVerifier :\n1. https://www.githubstatus.com/\n2. https://github.com/${context.repo.owner}/${context.repo.repo}/actions\n3. .uptime/history.json (dernieres entrees)\n\nFermer cette issue manuellement quand resolu.`,
+              labels: ['uptime', 'auto', 'bug']
+            });

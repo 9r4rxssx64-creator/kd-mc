@@ -1,0 +1,61 @@
+{
+  "name": "iRemoteHub",
+  "short_name": "iRemote",
+  "description": "Télécommande universelle multi-appareils pilotée par IA",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0a",
+  "theme_color": "#d4af37",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tout éteindre",
+      "short_name": "Off",
+      "description": "Éteindre tous les appareils détectés",
+      "url": "./index.html?action=all-off",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Scanner",
+      "short_name": "Scan",
+      "description": "Lancer un scan complet du réseau",
+      "url": "./index.html?action=scan"
+    },
+    {
+      "name": "Soirée ciné",
+      "short_name": "Ciné",
+      "description": "Ambiance cinéma",
+      "url": "./index.html?action=cinema"
+    }
+  ]
+}

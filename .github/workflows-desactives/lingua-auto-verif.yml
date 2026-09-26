@@ -1,0 +1,82 @@
+name: Lingua 🔁 — Vérification + correction AUTOMATIQUES
+
+# Kevin 2026-08-13 : « Vérifie régulièrement et auto les réponses pour corriger auto.
+# Intègres toutes les vérif auto et corrections auto ».
+#
+# Une fois par jour (et à la demande), TOUS les contrôles de l'app passent d'un coup :
+# vérité du contenu, Coach utilisable, moteur de voix, voix clonée, cohérence des versions,
+# et — dès qu'il existera — chaque mot monégasque publié doit rester attesté par ses sources.
+#
+# Ce qui est réparable sans risque est RÉPARÉ TOUT SEUL et poussé en PR (le bot fusionne).
+# Ce qui demande un jugement humain est signalé, jamais bricolé en douce (« jamais régresser »).
+# 1 exécution/jour → aucun spam de mails (règle anti-spam).
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 4 * * *'   # 04:00 UTC, nuit à Monaco
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  verifie:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: "Tous les contrôles + réparations sûres"
+        id: verif
+        shell: bash -eo pipefail {0}   # sans pipefail, un `node … | tee` échoué ressort VERT
+        run: |
+          mkdir -p audit
+          set +e
+          node tools/lingua/auto-verif.mjs --corrige | tee /tmp/verif.log
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: "Pousse les réparations (PR auto-fusionnée par le bot)"
+        shell: bash -eo pipefail {0}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- . ':(exclude)audit/auto-verif-dernier.json'; then
+            echo "Rien à réparer aujourd'hui — le dépôt est déjà correct."
+            exit 0
+          fi
+          BR="claude/auto-verif-${{ github.run_id }}"
+          git checkout -b "$BR"
+          git add -A
+          git commit -m "Correction auto (verification quotidienne) — run ${{ github.run_id }}
+
+          Applique uniquement des reparations MECANIQUES et verifiables (jamais de reecriture
+          de contenu au juge). Detail dans audit/auto-verif-dernier.json."
+          git push -u origin "$BR"
+          echo "Réparations poussées sur $BR"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auto-verif
+          path: |
+            /tmp/verif.log
+            audit/auto-verif-dernier.json
+          if-no-files-found: warn
+
+      - name: "Verdict"
+        shell: bash -eo pipefail {0}
+        run: |
+          if [ "${{ steps.verif.outputs.code }}" != "code=0" ] && grep -q "problèmes bloquants    : 0" /tmp/verif.log; then
+            echo "✅ Aucun problème bloquant."
+          elif grep -q "problèmes bloquants    : 0" /tmp/verif.log; then
+            echo "✅ Aucun problème bloquant."
+          else
+            echo "❌ Des problèmes bloquants demandent un vrai jugement — voir le journal ci-dessus."
+            exit 1
+          fi

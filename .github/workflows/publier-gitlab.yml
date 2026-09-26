@@ -1,0 +1,364 @@
+name: Publier vers le miroir GitLab (à la main)
+
+# POURQUOI CE WORKFLOW EXISTE — et pourquoi il a le droit d'être sur GitHub.
+# La question de la règle « chaque automatisation a une destination écrite » est :
+# « est-ce que ça produit, teste, déploie ou PUBLIE CE dépôt ? ».  Ici oui : il
+# publie CE dépôt vers SON miroir (gitlab.com/kdmc-group/Kdmc-project).  Il
+# n'ouvre aucun site tiers — ça, c'est le travail des jobs GitLab, qui tournent
+# sur GitLab.  Et il est STRICTEMENT à la main (workflow_dispatch) : aucun cron,
+# aucun déclencheur ouvert à un inconnu, donc zéro volume automatique.
+#
+# CE QU'IL PERMET, CONCRÈTEMENT : une session Claude n'a aucun jeton GitLab
+# (mesuré 17.09 : les deux jetons sont révoqués, et toutes les sessions partagent
+# le même environnement).  Kevin colle UN jeton neuf dans les secrets GitHub —
+# un champ prévu pour ça, masqué à vie — et plus personne n'a à le manipuler :
+# je déclenche ce workflow par l'API, il pousse, GitLab fait le reste.
+#
+# LE JETON : portée « write_repository » SEULEMENT, sur le seul projet Kdmc-project.
+# Il ne peut ni lire les variables, ni toucher aux autres projets, ni à un compte.
+#
+# NE JAMAIS pousser vers `main` : les deux lignées (GitHub / GitLab) n'ont pas
+# d'ancêtre commun, un push forcé écraserait le travail de l'autre côté
+# (ETAT-INFRA fait n°4).  On pousse donc sur une branche technique dédiée.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branche_gitlab:
+        description: "Branche technique côté GitLab (jamais main)"
+        required: true
+        default: "ci-veille"
+      lancer_tor_adresses:
+        description: "Lancer le job qui ouvre les adresses .onion à travers Tor"
+        type: boolean
+        default: true
+      publier:
+        description: "Publier la branche (décocher pour SEULEMENT relire un résultat déjà lancé)"
+        type: boolean
+        default: true
+      lire_resultat:
+        description: "Attendre le pipeline GitLab et rapatrier le rapport (exige un jeton read_api)"
+        type: boolean
+        default: true
+      diagnostic_jeton:
+        description: "Dire ce que le jeton porte vraiment (portées, date de fin) — aucune valeur affichée"
+        type: boolean
+        default: false
+      resserrer_jeton:
+        description: "Remplacer le jeton par un jeton MINIMAL (write_repository + read_api) et révoquer l'ancien"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publier-gitlab
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Vérifier que le jeton est là (message clair sinon)
+        env:
+          JETON: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          if [ -z "${JETON}" ]; then
+            echo "::error::Le secret GITLAB_TOKEN est absent."
+            echo "Kevin doit le créer UNE fois :"
+            echo "  1. GitLab → Kdmc-project → Settings → Access tokens"
+            echo "     → rôle Maintainer, portée write_repository, expire dans 90 j"
+            echo "  2. GitHub → ce dépôt → Settings → Secrets → Actions"
+            echo "     → New repository secret → nom exact : GITLAB_TOKEN"
+            echo "Le jeton ne doit JAMAIS être collé dans une conversation."
+            exit 1
+          fi
+          echo "Jeton présent (valeur masquée par GitHub, jamais affichée)."
+
+          # PRÉSENT NE VEUT PAS DIRE VIVANT — mesuré le 26.09 : le jeton répondait 401
+          # (révoqué), et on ne l'apprenait qu'au moment du push, plusieurs étapes plus
+          # loin, avec un message de git peu parlant. On le demande donc TOUT DE SUITE.
+          # Attention au piège : un jeton qui n'a QUE « write_repository » est parfaitement
+          # valide pour pousser et répond 404 à l'API (projet privé) — un 404 ne doit donc
+          # JAMAIS arrêter le travail. Seuls 401/403 disent « ce jeton est mort ».
+          CODE=$(curl -sS -o /dev/null -w '%{http_code}' -H "PRIVATE-TOKEN: ${JETON}" "https://gitlab.com/api/v4/personal_access_tokens/self" || echo 000)
+          case "${CODE}" in
+            401|403)
+              echo "::error title=Jeton GitLab MORT (HTTP ${CODE})::Il a été révoqué ou a expiré. Rien ne pourra être publié tant qu'il n'est pas remplacé."
+              echo "Trois gestes, une fois :"
+              echo "  1. GitLab → Kdmc-project → Settings → Access tokens → Add new token"
+              echo "     rôle Maintainer, portées write_repository + read_api SEULEMENT"
+              echo "  2. GitHub → ce dépôt → Settings → Secrets → Actions → GITLAB_TOKEN → Update"
+              echo "  3. « Revoke » sur l'ancien, sur la même page GitLab"
+              echo "Le jeton ne doit JAMAIS être collé dans une conversation."
+              exit 1;;
+            404) echo "Jeton vivant, sans portée « read_api » : il pousse du code, il ne lit pas l'API (normal).";;
+            200) echo "Jeton vivant, et il sait lire l'API.";;
+            *)   echo "::warning::GitLab n'a pas répondu clairement (HTTP ${CODE}) — on continue, le push dira la vérité.";;
+          esac
+
+      # CE QUE LE JETON PORTE VRAIMENT — mesuré, pas supposé. On ne peut pas décider
+      # de resserrer des autorisations qu'on n'a jamais lues. GitLab répond ici avec
+      # le NOM, les PORTÉES et la DATE DE FIN du jeton : jamais sa valeur. Utile
+      # surtout pour la date de fin — un jeton qui expire sans prévenir, c'est une
+      # chaîne qui casse un matin sans que personne comprenne pourquoi.
+      - name: Diagnostic du jeton (portées et date de fin)
+        if: ${{ inputs.diagnostic_jeton }}
+        env:
+          JETON: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          set -uo pipefail
+          CODE=$(curl -sS -o /tmp/jeton.json -w '%{http_code}' -H "PRIVATE-TOKEN: ${JETON}" "https://gitlab.com/api/v4/personal_access_tokens/self")
+          if [ "${CODE}" != "200" ]; then
+            echo "::warning::GitLab refuse de decrire le jeton (HTTP ${CODE})."
+            echo "401/403 : jeton mort. 404 : il n'a pas la portee « read_api »,"
+            echo "donc il sait pousser du code mais rien lire — c'est deja une reponse."
+            exit 0
+          fi
+          python3 -c "import json;d=json.load(open('/tmp/jeton.json'));print('nom           :',d.get('name'));print('portees       :',', '.join(d.get('scopes') or []) or '(aucune)');print('actif         :',d.get('active'),'| revoque :',d.get('revoked'));print('cree le       :',(d.get('created_at') or '')[:10],'| expire le :',d.get('expires_at') or '(jamais - a eviter)');print('derniere util :',(d.get('last_used_at') or '')[:10] or '(jamais)')"
+
+          # JUSQU'OU CE JETON VA-T-IL ? Une portee ne dit pas l'etendue des degats :
+          # « api » sur un jeton de projet touche UN projet, « api » sur le jeton
+          # personnel de Kevin touche TOUS ses projets. On mesure, on ne suppose pas.
+          # Tout est en LECTURE, et on n'affiche que des comptes — jamais une valeur.
+          echo ""
+          echo "--- jusqu'ou il va (lecture seule, aucune valeur affichee) ---"
+          API="https://gitlab.com/api/v4"; PROJ=85753352
+          curl -sS -o /tmp/qui.json -H "PRIVATE-TOKEN: ${JETON}" "${API}/user" || true
+          python3 -c "import json;d=json.load(open('/tmp/qui.json'));u=d.get('username') or '?';print('identite      :',u,'->','JETON DE PROJET (un seul projet)' if u.startswith('project_') else 'COMPTE PERSONNEL DE KEVIN (tous ses projets)')" 2>/dev/null || echo "identite      : illisible"
+          NBP=$(curl -sS -H "PRIVATE-TOKEN: ${JETON}" "${API}/projects?membership=true&simple=true&per_page=100" 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d) if isinstance(d,list) else 0)" 2>/dev/null || echo 0)
+          echo "projets vus   : ${NBP}"
+          CV=$(curl -sS -o /tmp/vars.json -w '%{http_code}' -H "PRIVATE-TOKEN: ${JETON}" "${API}/projects/${PROJ}/variables?per_page=100")
+          NBV=$(python3 -c "import json;d=json.load(open('/tmp/vars.json'));print(len(d) if isinstance(d,list) else 0)" 2>/dev/null || echo 0)
+          rm -f /tmp/vars.json /tmp/qui.json
+          if [ "${CV}" = "200" ]; then
+            echo "secrets de CI : LISIBLES (${NBV}) <- c'est ce que « api » ouvre, et c'est ce qu'on veut fermer"
+          else
+            echo "secrets de CI : fermes (HTTP ${CV}) <- bien"
+          fi
+          CD=$(curl -sS -o /dev/null -w '%{http_code}' -H "PRIVATE-TOKEN: ${JETON}" "${API}/projects/${PROJ}/deploy_tokens?per_page=1")
+          echo "jetons de deploiement : HTTP ${CD} (200 = je peux en fabriquer un, limite au push)"
+
+          # MESURÉ le 17.09 : GitLab REFUSE qu'un jeton de projet en fabrique un autre
+          # (« User does not have permission to create project access token »), et il ne
+          # sait pas modifier les portées d'un jeton existant. Le resserrage demande donc
+          # DEUX gestes de Kevin, une seule fois. Tant que « api » est là, ce message le
+          # redit à chaque passage : une dette silencieuse finit oubliée.
+          if grep -q '"api"' /tmp/jeton.json; then
+            echo ""
+            echo "::warning::Le jeton porte « api » : il peut lire ET écrire les ${NBV:-?} secrets de CI du projet. Deux gestes, une fois : (1) GitLab → Kdmc-project → Settings → Access tokens → nouveau jeton, rôle Maintainer, portées write_repository + read_api SEULEMENT ; (2) GitHub → ce dépôt → Settings → Secrets → Actions → GITLAB_TOKEN → Update. Puis « Revoke » sur l'ancien, sur la même page GitLab."
+          fi
+          rm -f /tmp/jeton.json
+
+      # RESSERRER LES AUTORISATIONS — mesuré le 17.09 : le jeton portait « api »,
+      # c'est-à-dire la clé de toute la boîte (réglages du projet, membres, variables
+      # de CI, suppression de branches…). Or il n'a besoin que de DEUX choses :
+      # pousser du code, et lire un résultat de pipeline.
+      #
+      # GitLab ne sait pas modifier les portées d'un jeton existant : il faut en créer
+      # un neuf et révoquer l'ancien. L'ORDRE est ce qui rend l'opération sûre —
+      # créer, VÉRIFIER que le neuf marche, l'installer, et seulement ALORS révoquer.
+      # Si quoi que ce soit échoue avant la fin, l'ancien jeton est toujours en place
+      # et la chaîne continue de fonctionner : on ne se met jamais dehors soi-même.
+      - name: Resserrer les autorisations du jeton (création, vérification, bascule, révocation)
+        if: ${{ inputs.resserrer_jeton }}
+        env:
+          JETON: ${{ secrets.GITLAB_TOKEN }}
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+        run: |
+          set -uo pipefail
+          API="https://gitlab.com/api/v4"
+          PROJ=85753352
+          MINI='write_repository read_api'
+
+          if [ -z "${PAT}" ]; then
+            echo "::error::Le secret APEX_GITHUB_PAT est absent : je ne peux pas réécrire GITLAB_TOKEN."
+            echo "Rien n'a été touché, l'ancien jeton fonctionne toujours."
+            exit 1
+          fi
+
+          echo "→ 1/5 état de l'ancien jeton"
+          CODE=$(curl -sS -o /tmp/vieux.json -w '%{http_code}' -H "PRIVATE-TOKEN: ${JETON}" "${API}/personal_access_tokens/self")
+          if [ "${CODE}" != "200" ]; then
+            echo "::error::Impossible de lire le jeton actuel (HTTP ${CODE}) — rien touché."; exit 1
+          fi
+          VIEUX_ID=$(python3 -c "import json;print(json.load(open('/tmp/vieux.json'))['id'])")
+          python3 -c "import json;d=json.load(open('/tmp/vieux.json'));print('   avant :',', '.join(d['scopes']))"
+
+          echo "→ 2/5 création d'un jeton minimal (${MINI})"
+          FIN=$(date -u -d '+364 days' +%F)
+          CODE=$(curl -sS -o /tmp/neuf.json -w '%{http_code}' -X POST \
+            -H "PRIVATE-TOKEN: ${JETON}" -H "Content-Type: application/json" \
+            -d "{\"name\":\"cmcteams-veille (minimal)\",\"scopes\":[\"write_repository\",\"read_api\"],\"expires_at\":\"${FIN}\",\"access_level\":40}" \
+            "${API}/projects/${PROJ}/access_tokens")
+          if [ "${CODE}" != "201" ]; then
+            echo "::error::GitLab refuse de créer le jeton minimal (HTTP ${CODE})."
+            python3 -c "print(open('/tmp/neuf.json').read()[:400])" || true
+            echo "Rien n'a été touché : l'ancien jeton fonctionne toujours."
+            exit 1
+          fi
+          NEUF=$(python3 -c "import json;print(json.load(open('/tmp/neuf.json'))['token'])")
+          echo "::add-mask::${NEUF}"
+          NEUF_ID=$(python3 -c "import json;print(json.load(open('/tmp/neuf.json'))['id'])")
+          rm -f /tmp/neuf.json
+
+          echo "→ 3/5 vérification du jeton neuf AVANT de basculer"
+          CODE=$(curl -sS -o /tmp/v1.json -w '%{http_code}' -H "PRIVATE-TOKEN: ${NEUF}" "${API}/personal_access_tokens/self")
+          OK1=$(python3 -c "import json;d=json.load(open('/tmp/v1.json'));print('oui' if sorted(d.get('scopes',[]))==['read_api','write_repository'] else 'non')" 2>/dev/null || echo non)
+          CODE2=$(curl -sS -o /dev/null -w '%{http_code}' -H "PRIVATE-TOKEN: ${NEUF}" "${API}/projects/${PROJ}/pipelines?per_page=1")
+          echo "   portées exactes : ${OK1} | lecture des pipelines : HTTP ${CODE2}"
+          if [ "${CODE}" != "200" ] || [ "${OK1}" != "oui" ] || [ "${CODE2}" != "200" ]; then
+            echo "::error::Le jeton neuf ne fait pas ce qu'il faut — je le révoque et je garde l'ancien."
+            curl -sS -o /dev/null -X DELETE -H "PRIVATE-TOKEN: ${JETON}" "${API}/projects/${PROJ}/access_tokens/${NEUF_ID}" || true
+            exit 1
+          fi
+
+          echo "→ 4/5 installation dans le secret GitHub"
+          if ! printf '%s' "${NEUF}" | GH_TOKEN="${PAT}" gh secret set GITLAB_TOKEN --repo "${GITHUB_REPOSITORY}" 2>/tmp/gh.txt; then
+            echo "::error::Écriture du secret refusée — le jeton neuf est révoqué, l'ancien reste en place."
+            sed -e "s#${PAT}#***#g" -e "s#${NEUF}#***#g" /tmp/gh.txt || true
+            curl -sS -o /dev/null -X DELETE -H "PRIVATE-TOKEN: ${JETON}" "${API}/projects/${PROJ}/access_tokens/${NEUF_ID}" || true
+            exit 1
+          fi
+          echo "   secret GITLAB_TOKEN réécrit"
+
+          echo "→ 5/5 révocation de l'ancien jeton (id ${VIEUX_ID})"
+          CODE=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE -H "PRIVATE-TOKEN: ${JETON}" "${API}/projects/${PROJ}/access_tokens/${VIEUX_ID}")
+          echo "   révocation : HTTP ${CODE}"
+          echo ""
+          echo "Fait. Le jeton ne porte plus que write_repository + read_api, et expire le ${FIN}."
+
+      - name: Refuser toute cible dangereuse
+        env:
+          CIBLE: ${{ inputs.branche_gitlab }}
+        run: |
+          case "${CIBLE}" in
+            main|master|""|*" "*)
+              echo "::error::Cible « ${CIBLE} » refusée : on ne pousse jamais la lignée GitHub sur main GitLab (ETAT-INFRA fait n°4)."
+              exit 1;;
+          esac
+          echo "Cible acceptée : ${CIBLE}"
+
+      - name: Pousser vers le miroir, puis demander le travail
+        if: ${{ inputs.publier }}
+        env:
+          JETON: ${{ secrets.GITLAB_TOKEN }}
+          CIBLE: ${{ inputs.branche_gitlab }}
+          TOR: ${{ inputs.lancer_tor_adresses }}
+        run: |
+          set -euo pipefail
+          DEPOT="https://oauth2:${JETON}@gitlab.com/kdmc-group/Kdmc-project.git"
+          git config user.name  "publication-gitlab"
+          git config user.email "noreply@kd-mc.com"
+
+          # 1er push : crée/actualise la branche technique. GitLab saute volontairement
+          # le pipeline d'une branche qui vient de naître (garde « pas-sur-nouvelle-branche »),
+          # c'est normal et voulu — rien ne tourne encore.
+          # « --force-with-lease » tout court exige un repère local du distant. Ici on
+          # pousse vers une URL, donc ce repère n'existe pas → git refuse avec « stale
+          # info » (vécu). On va donc chercher l'état réel du miroir d'abord, et on
+          # n'autorise l'écrasement QUE si le miroir est bien là où on croit.
+          echo "→ publication de la branche ${CIBLE}"
+          if git fetch --no-tags "${DEPOT}" "+refs/heads/${CIBLE}:refs/remotes/miroir/${CIBLE}" 2>/dev/null; then
+            ATTENDU=$(git rev-parse "refs/remotes/miroir/${CIBLE}")
+            echo "   (la branche existe déjà côté miroir : ${ATTENDU:0:8})"
+            git push --force-with-lease="refs/heads/${CIBLE}:${ATTENDU}" \
+              "${DEPOT}" "HEAD:refs/heads/${CIBLE}" 2>&1 \
+              | sed -e "s#${JETON}#***#g"
+          else
+            echo "   (première publication : la branche n'existe pas encore, rien à écraser)"
+            git push "${DEPOT}" "HEAD:refs/heads/${CIBLE}" 2>&1 \
+              | sed -e "s#${JETON}#***#g"
+          fi
+
+          if [ "${TOR}" != "true" ]; then
+            echo "Publication faite. Aucun travail demandé (case décochée)."
+            exit 0
+          fi
+
+          # 2e push : un commit vide qui ne change RIEN au code, avec une option de
+          # push qui pose la variable attendue par le job. C'est ce qui le fait
+          # partir tout seul, sans que personne ait à cliquer dans GitLab.
+          #
+          # SURTOUT PAS « [skip ci] » DANS CE MESSAGE. Sur GitHub c'est le réflexe
+          # (un commit de robot ne doit pas relancer toute la CI). Ici c'est
+          # exactement l'inverse : GitLab lit lui aussi « [skip ci] » / « [ci skip] »
+          # dans le message et saute TOUT le pipeline — le commit dont le seul but
+          # est de lancer le job aurait empêché le job de partir. Vécu le 17.09 :
+          # le push est passé, la variable était posée, et rien n'a tourné.
+          git commit --allow-empty -q -m "veille : ouvrir les adresses .onion (demande du $(date -u +%F' '%H:%M) UTC)"
+          echo "→ demande du job tor-adresses"
+          git push "${DEPOT}" "HEAD:refs/heads/${CIBLE}" \
+            -o ci.variable="TOR_ADRESSES=1" 2>&1 \
+            | sed -e "s#${JETON}#***#g"
+
+          echo ""
+          echo "Demandé. Le rapport daté (vivant / protégé / injoignable, adresse par"
+          echo "adresse) sera l'artifact « tor-adresses.json » du pipeline GitLab."
+
+      # LE RETOUR — c'est la moitié qui manquait le 17.09 : le travail partait, et
+      # personne ne pouvait lire le résultat depuis une session (un jeton de portée
+      # « write_repository » pousse du code mais n'interroge pas l'API : réponse 404,
+      # indistinguable d'un projet inexistant). Avec un jeton qui porte AUSSI
+      # « read_api », l'aller-retour se ferme tout seul : Kevin n'a rien à regarder.
+      #
+      # Le jeton part dans un EN-TÊTE, jamais dans l'URL : une URL se retrouve dans
+      # les journaux, dans les redirections et dans les messages d'erreur de curl.
+      - name: Lire le résultat côté GitLab (rapport rapatrié ici)
+        if: ${{ inputs.lire_resultat }}
+        env:
+          JETON: ${{ secrets.GITLAB_TOKEN }}
+          CIBLE: ${{ inputs.branche_gitlab }}
+        run: |
+          set -uo pipefail
+          API="https://gitlab.com/api/v4/projects/85753352"
+          lire() { curl -sS -o /tmp/rep.json -w '%{http_code}' -H "PRIVATE-TOKEN: ${JETON}" "$1"; }
+          CODE=$(lire "${API}/pipelines?ref=${CIBLE}&per_page=1")
+          if [ "${CODE}" != "200" ]; then
+            echo "::error title=Lecture GitLab impossible (HTTP ${CODE})::Le jeton ne peut pas INTERROGER l'API."
+            echo "Ce que ça veut dire, simplement :"
+            echo "  401 ou 403 : le jeton est expiré ou révoqué."
+            echo "  404        : il pousse du code mais n'a pas la portée « read_api »"
+            echo "               (sur un projet privé, GitLab répond 404 et pas 403)."
+            echo "Le correctif est UN geste, une fois : GitLab, Kdmc-project, Settings,"
+            echo "Access tokens, nouveau jeton Maintainer avec write_repository ET read_api,"
+            echo "puis le recoller dans GitHub, Secrets, GITLAB_TOKEN."
+            echo "La publication, elle, a fonctionné : le travail est bien parti."
+            exit 1
+          fi
+          PID=$(python3 -c "import json;d=json.load(open('/tmp/rep.json'));print(d[0]['id'] if d else '')")
+          if [ -z "${PID}" ]; then echo "Aucun pipeline sur la branche ${CIBLE}."; exit 1; fi
+          echo "Pipeline ${PID} sur ${CIBLE}"
+          for i in $(seq 1 20); do
+            lire "${API}/pipelines/${PID}" >/dev/null
+            ETAT=$(python3 -c "import json;print(json.load(open('/tmp/rep.json')).get('status',''))")
+            echo "  etat : ${ETAT}"
+            case "${ETAT}" in
+              created|waiting_for_resource|preparing|pending|running) sleep 30 ;;
+              *) break ;;
+            esac
+          done
+          lire "${API}/pipelines/${PID}/jobs" >/dev/null
+          python3 -c "import json;[print('  job',j['name'],'->',j['status'],'id',j['id']) for j in json.load(open('/tmp/rep.json'))]" || true
+          JOB=$(python3 -c "import json;w=[j for j in json.load(open('/tmp/rep.json')) if j['name']=='tor-adresses'];print(w[0]['id'] if w else '')")
+          if [ -z "${JOB}" ]; then
+            echo "::warning::Le job « tor-adresses » n'apparait pas dans ce pipeline."
+            echo "Cause la plus probable : la variable TOR_ADRESSES n'a pas ete posee,"
+            echo "ou le commit portait une marque [skip ci] que GitLab lit aussi."
+            exit 1
+          fi
+          echo ""
+          echo "=== Rapport tor-adresses.json ==="
+          CODE=$(curl -sS -o /tmp/tor.json -w '%{http_code}' -H "PRIVATE-TOKEN: ${JETON}" "${API}/jobs/${JOB}/artifacts/tor-adresses.json")
+          if [ "${CODE}" = "200" ]; then
+            python3 -c "import json;print(json.dumps(json.load(open('/tmp/tor.json')),ensure_ascii=False,indent=2)[:60000])" || cat /tmp/tor.json
+          else
+            echo "Artifact non recuperable (HTTP ${CODE}) : le job n'a peut-etre pas fini,"
+            echo "ou il a echoue avant de produire le rapport. Voir son journal cote GitLab."
+            exit 1
+          fi

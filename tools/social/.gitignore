@@ -1,0 +1,26 @@
+# Ignorer les outputs générés
+output/
+!output/.gitkeep
+
+# Assets téléchargés
+assets/music/*.mp3
+assets/music/*.m4a
+assets/music/*.wav
+assets/backgrounds/*.jpg
+assets/backgrounds/*.png
+
+# Node
+node_modules/
+package-lock.json
+*.log
+.npm/
+
+# Secrets locaux
+.env
+.env.local
+secrets.json
+
+# Frames temporaires
+frames/
+*_frames/
+tools/

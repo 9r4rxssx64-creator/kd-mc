@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="1600" viewBox="0 0 1000 1000">
+    <circle cx="500" cy="500" r="466" fill="none" stroke="#ffffff" stroke-width="14"/>
+    <circle cx="500" cy="500" r="430" fill="none" stroke="#ffffff" stroke-width="4"/>
+    <g font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="44" fill="#ffffff" text-anchor="middle"><text x="121.4" y="413.5" transform="rotate(-75.00 121.4 398.5)">T</text><text x="135.3" y="371.2" transform="rotate(-68.48 135.3 356.2)">I</text><text x="154.0" y="330.7" transform="rotate(-61.96 154.0 315.7)">R</text><text x="204.5" y="257.3" transform="rotate(-48.91 204.5 242.4)">·</text><text x="270.3" y="197.3" transform="rotate(-35.87 270.3 182.3)">B</text><text x="307.9" y="173.3" transform="rotate(-29.35 307.9 158.3)">A</text><text x="347.9" y="153.7" transform="rotate(-22.83 347.9 138.7)">L</text><text x="390.0" y="138.7" transform="rotate(-16.30 390.0 123.8)">L</text><text x="433.4" y="128.7" transform="rotate(-9.78 433.4 113.7)">-</text><text x="477.7" y="123.6" transform="rotate(-3.26 477.7 108.6)">T</text><text x="522.3" y="123.6" transform="rotate(3.26 522.3 108.6)">R</text><text x="566.6" y="128.7" transform="rotate(9.78 566.6 113.7)">A</text><text x="610.0" y="138.7" transform="rotate(16.30 610.0 123.8)">P</text><text x="692.1" y="173.3" transform="rotate(29.35 692.1 158.3)">·</text><text x="764.3" y="225.4" transform="rotate(42.39 764.3 210.5)">C</text><text x="795.5" y="257.3" transform="rotate(48.91 795.5 242.4)">H</text><text x="822.8" y="292.6" transform="rotate(55.43 822.8 277.6)">A</text><text x="846.0" y="330.7" transform="rotate(61.96 846.0 315.7)">S</text><text x="864.7" y="371.2" transform="rotate(68.48 864.7 356.2)">S</text><text x="878.6" y="413.5" transform="rotate(75.00 878.6 398.5)">E</text></g>
+    <g transform="translate(500,560) scale(1.4) translate(-183,-77)"><g fill="none" stroke="#ffffff" stroke-width="8" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,330) scale(1.45)"><path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="#ffffff"/></g>
+    <rect x="300" y="772" width="400" height="74" rx="10" fill="#ffffff"/>
+    <text x="500" y="824" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="52" letter-spacing="3" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text>
+  </svg>

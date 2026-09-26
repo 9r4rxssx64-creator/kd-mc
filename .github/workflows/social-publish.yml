@@ -1,0 +1,223 @@
+name: Social — Generate & Publish Daily Video
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+    inputs:
+      format:
+        description: "Format (short, long)"
+        required: false
+        default: "long"
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: sudo apt-get update -qq && sudo apt-get install -y espeak-ng ffmpeg python3-pip
+      - run: pip install gtts
+      - run: cd tools/social && npm install --no-audit --no-fund
+
+      - name: Generate video (PRO quality)
+        working-directory: tools/social
+        timeout-minutes: 70
+        run: |
+          FORMAT="${{ github.event.inputs.format || 'long' }}"
+          node --input-type=module << 'ENDSCRIPT'
+          import fs from 'fs';
+          import { execSync } from 'child_process';
+
+          const lib = JSON.parse(fs.readFileSync('config/content-library.json','utf8'));
+          const cats = Object.keys(lib).filter(k=>!k.startsWith('_'));
+          let story = null;
+          for (const cat of cats) {
+            const unused = lib[cat].filter(s=>!s.used);
+            if (unused.length > 0) { story = unused[Math.floor(Math.random()*unused.length)]; break; }
+          }
+          if (!story) { console.error('No unused stories'); process.exit(1); }
+          const fmt = process.env.FORMAT || 'long';
+          const words = story.script.split(/\s+/);
+          const id = story.id;
+          const outDir = 'output/' + id;
+          fs.mkdirSync(outDir, {recursive:true});
+          console.log('Story: ' + id + ' (' + words.length + ' words)');
+
+          // === STEP 1: TTS with gTTS (Google, natural voice, ALWAYS works) ===
+          console.log('1. Voice (gTTS Google)...');
+          const chunkSize = 80;
+          const chunks = [];
+          for (let i = 0; i < words.length; i += chunkSize) chunks.push(words.slice(i, i + chunkSize).join(' '));
+
+          const chunkAudios = [];
+          for (let c = 0; c < chunks.length; c++) {
+            const chunk = chunks[c];
+            const mp3P = outDir + '/audio_' + c + '.mp3';
+            const safe = chunk.replace(/'/g, "\\'").replace(/"/g, '\\"').slice(0, 4000);
+            try {
+              execSync('python3 -c "from gtts import gTTS; tts = gTTS(\'' + safe + '\', lang=\'en\', slow=False); tts.save(\'' + mp3P + '\')"', {timeout:60000});
+            } catch {
+              // Fallback espeak
+              const safee = chunk.replace(/[\\"]/g, '').slice(0, 2500);
+              execSync('espeak-ng -v en -s 155 -p 35 -w ' + outDir + '/tmp.wav "' + safee + '"', {timeout:30000});
+              execSync('ffmpeg -y -i ' + outDir + '/tmp.wav -codec:a libmp3lame -b:a 128k ' + mp3P, {stdio:'pipe', timeout:15000});
+              try { fs.unlinkSync(outDir + '/tmp.wav'); } catch {}
+            }
+            chunkAudios.push(mp3P);
+            console.log('   Chunk ' + (c+1) + '/' + chunks.length + ' (' + (fs.statSync(mp3P).size/1024).toFixed(0) + ' KB)');
+          }
+
+          // === STEP 2: Download background (Pollinations AI) ===
+          let bgPath = null;
+          const bgPrompts = {
+            betrayal: 'dark moody cinematic room dramatic shadows 4k wallpaper',
+            revenge: 'dark courtroom justice dramatic lighting noir 4k',
+            mystery: 'foggy forest moonlight mysterious path cinematic 4k',
+            finance: 'luxury office city skyline golden hour cinematic 4k',
+            true_crime: 'detective desk evidence dark noir cinematic 4k',
+            motivation: 'mountain sunrise epic golden clouds 4k wallpaper',
+            psychology: 'abstract brain neural glowing dark 4k wallpaper',
+            tech: 'cyberpunk neon city holographic interface 4k',
+            history: 'ancient ruins golden sunset dramatic 4k wallpaper',
+          };
+          const niche = (story.tags||[])[0] || 'betrayal';
+          try {
+            console.log('2. Background IA (' + niche + ')...');
+            const prompt = bgPrompts[niche] || bgPrompts.betrayal;
+            bgPath = outDir + '/bg.jpg';
+            execSync('curl -sL -o "' + bgPath + '" "https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=1920&height=1080&nologo=true&seed=' + Date.now() + '"', {timeout:45000});
+            if (!fs.existsSync(bgPath) || fs.statSync(bgPath).size < 5000) { bgPath = null; console.log('   BG: fallback gradient'); }
+            else console.log('   BG: AI (' + (fs.statSync(bgPath).size/1024).toFixed(0) + ' KB)');
+          } catch { bgPath = null; console.log('   BG: fallback gradient'); }
+
+          // === STEP 3: Download music (Pixabay) ===
+          let musicPath = null;
+          try {
+            console.log('3. Musique...');
+            musicPath = outDir + '/music.mp3';
+            execSync('curl -sL -o "' + musicPath + '" "https://cdn.pixabay.com/audio/2024/11/29/audio_d4b72f7f3c.mp3"', {timeout:30000});
+            if (!fs.existsSync(musicPath) || fs.statSync(musicPath).size < 10000) musicPath = null;
+            else console.log('   Music: ' + (fs.statSync(musicPath).size/1024).toFixed(0) + ' KB');
+          } catch { musicPath = null; }
+
+          // === STEP 4: Render chunks ===
+          console.log('4. Rendu vidéo...');
+          const renderW = 960, renderH = 540, finalW = 1920, finalH = 1080, fps = 8;
+          const chunkVideos = [];
+
+          for (let c = 0; c < chunks.length; c++) {
+            const chunk = chunks[c];
+            const cd = outDir + '/c' + c;
+            fs.mkdirSync(cd + '/f', {recursive:true});
+            const mp3P = chunkAudios[c];
+            const sz = fs.statSync(mp3P).size;
+            const dur = Math.round(sz / 4000 * 1000); // gTTS ~4KB/sec
+
+            const { segmentScript, groupIntoSubtitles } = await import('./engine/subtitle-engine.js');
+            const segs = segmentScript(chunk, dur);
+            const subs = groupIntoSubtitles(segs, {wordsPerLine:4, maxCharsPerLine:35, breakOnPunct:true});
+            const sr = subs.map(g=>({text:g.text,startMs:g.startMs,endMs:g.endMs,words:g.words.map(w=>({word:w.word,startMs:w.startMs,endMs:w.endMs}))}));
+
+            const bgConfig = bgPath ? {type:'image', imagePath:bgPath, options:{zoomStart:1.0+c*0.02, zoomEnd:1.05+c*0.02, panX:0.02}} : {type:'cinematic'};
+            const scene = {width:renderW,height:renderH,fps,durationMs:dur+200,bg:bgConfig,style:'narrative',subtitles:sr,title:c===0?story.title:'',watermark:'KDMC Stories',showProgress:c===chunks.length-1};
+            const { generateFrames } = await import('./engine/frame-generator.js');
+            await generateFrames(scene, cd+'/f', {onProgress:(cur)=>{if(cur%10===0)process.stdout.write('.')}});
+
+            // Compile chunk with music on first chunk
+            const vp = cd + '/v.mp4';
+            let ffCmd = 'ffmpeg -y -framerate ' + fps + ' -i ' + cd + '/f/frame_%06d.png -i ' + mp3P;
+            if (musicPath && c === 0) {
+              ffCmd += ' -i ' + musicPath + ' -filter_complex "[2:a]volume=0.10[bg];[1:a][bg]amix=inputs=2:duration=first[a]" -map 0:v -map "[a]"';
+            } else {
+              ffCmd += ' -map 0:v -map 1:a';
+            }
+            ffCmd += ' -vf scale=' + finalW + ':' + finalH + ':flags=lanczos -c:v libx264 -preset ultrafast -crf 26 -pix_fmt yuv420p -r 30 -c:a aac -b:a 128k -shortest -movflags +faststart ' + vp;
+            execSync(ffCmd, {stdio:'pipe', timeout:180000});
+            console.log(' C' + (c+1) + ': ' + (fs.statSync(vp).size/1024/1024).toFixed(1) + 'MB');
+            chunkVideos.push(vp);
+
+            try { fs.readdirSync(cd+'/f').forEach(f=>fs.unlinkSync(cd+'/f/'+f)); fs.rmdirSync(cd+'/f'); } catch {}
+          }
+
+          // === STEP 5: Concatenate ===
+          console.log('5. Assemblage...');
+          const finalVideo = outDir + '/' + id + '_' + fmt + '.mp4';
+          if (chunkVideos.length === 1) {
+            fs.renameSync(chunkVideos[0], finalVideo);
+          } else {
+            const cf = outDir + '/list.txt';
+            fs.writeFileSync(cf, chunkVideos.map(v=>"file '"+v.replace(outDir+'/','')+"'").join('\n'));
+            execSync('cd '+outDir+' && ffmpeg -y -f concat -safe 0 -i list.txt -c copy '+id+'_'+fmt+'.mp4', {stdio:'pipe', timeout:60000});
+            for (const cv of chunkVideos) try{fs.unlinkSync(cv)}catch{}
+            try{fs.unlinkSync(cf)}catch{}
+          }
+
+          const finalSize = fs.statSync(finalVideo).size;
+          console.log('DONE: ' + (finalSize/1024/1024).toFixed(2) + ' MB | BG: ' + (bgPath?'AI':'gradient') + ' | Music: ' + (musicPath?'yes':'no'));
+
+          const desc = (story.tags||[]).map(t=>'#'+t).join(' ') + '\n\n' + story.script.split(/[.!?]/)[0] + '.\n\nGenerated by KDMC Studio';
+          fs.writeFileSync(outDir+'/metadata.json', JSON.stringify({id,title:story.title,tags:story.tags||[],description:desc,format:fmt,width:finalW,height:finalH,sizeBytes:finalSize,tts:'gtts',hasBg:!!bgPath,hasMusic:!!musicPath},null,2));
+          story.used = true;
+          fs.writeFileSync('config/content-library.json', JSON.stringify(lib,null,2));
+          for (let c=0;c<chunks.length;c++) try{fs.rmSync(outDir+'/c'+c,{recursive:true,force:true})}catch{}
+          for (const a of chunkAudios) try{fs.unlinkSync(a)}catch{}
+          if (bgPath) try{fs.unlinkSync(bgPath)}catch{}
+          if (musicPath) try{fs.unlinkSync(musicPath)}catch{}
+          ENDSCRIPT
+
+      - name: Upload to YouTube
+        env:
+          YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        working-directory: tools/social
+        run: |
+          LATEST=$(ls -t output/*/*.mp4 2>/dev/null | head -1)
+          if [ -z "$LATEST" ]; then echo "No video"; exit 0; fi
+          if [ -z "$YT_CLIENT_ID" ]; then echo "No YT creds"; exit 0; fi
+          RESPONSE=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
+            -d "client_id=$(echo -n $YT_CLIENT_ID)" \
+            -d "client_secret=$(echo -n $YT_CLIENT_SECRET)" \
+            -d "refresh_token=$(echo -n $YT_REFRESH_TOKEN)" \
+            -d "grant_type=refresh_token")
+          ACCESS_TOKEN=$(echo $RESPONSE | node -e "process.stdin.on('data',d=>{try{console.log(JSON.parse(d).access_token||'')}catch{console.log('')}})")
+          if [ -z "$ACCESS_TOKEN" ]; then echo "Token failed"; exit 1; fi
+          META=$(dirname "$LATEST")/metadata.json
+          TITLE=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('$META','utf8')).title)}catch{console.log('Story Video')}")
+          DESC=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('$META','utf8')).description||'')}catch{console.log('')}")
+          echo "Uploading: $TITLE"
+          LOCATION=$(curl -s -X POST \
+            "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -D /tmp/yt_headers.txt \
+            -d "{\"snippet\":{\"title\":\"$TITLE\",\"description\":\"$DESC\",\"categoryId\":\"22\"},\"status\":{\"privacyStatus\":\"private\",\"selfDeclaredMadeForKids\":false}}")
+          UPLOAD_URL=$(grep -i "location:" /tmp/yt_headers.txt | tr -d '\r' | awk '{print $2}')
+          if [ -z "$UPLOAD_URL" ]; then echo "No upload URL"; exit 1; fi
+          RESULT=$(curl -s -X PUT "$UPLOAD_URL" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: video/mp4" --data-binary @"$LATEST")
+          VID=$(echo $RESULT | node -e "process.stdin.on('data',d=>{try{console.log(JSON.parse(d).id||'?')}catch{console.log('?')}})")
+          echo "Uploaded! https://youtu.be/$VID"
+
+      - name: Commit state
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || true
+          git add tools/social/config/content-library.json 2>/dev/null || true
+          if git diff --staged --quiet; then echo "No changes"; else
+            git commit -m "auto: video generated $(date -u +%Y-%m-%d) [skip ci]"
+            git push || echo "Push will retry next run"
+          fi

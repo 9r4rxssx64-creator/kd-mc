@@ -1,0 +1,83 @@
+name: LD Logo Gen (Replicate FLUX)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'shops/la-detente/.logo-request.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ld-logo-gen-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Générer via Replicate FLUX 1.1 pro
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.AX_REPLICATE_KEY }}
+        run: |
+          REQ=shops/la-detente/.logo-request.json
+          AR=$(jq -r '.aspect_ratio // "1:1"' "$REQ")
+          LOG=shops/la-detente/.gen-log.txt
+          echo "gen $(date -u +%FT%TZ)" > "$LOG"
+
+          gen_one () {
+            local PROMPT="$1" OUT="$2"
+            local PAYLOAD RESP STATUS GETURL URL ERR
+            PAYLOAD=$(jq -n --arg p "$PROMPT" --arg ar "$AR" \
+              '{input:{prompt:$p, aspect_ratio:$ar, output_format:"png", safety_tolerance:6, prompt_upsampling:true}}')
+            RESP=$(curl -sS -X POST \
+              https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions \
+              -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+              -H "Content-Type: application/json" -H "Prefer: wait" -d "$PAYLOAD" 2>/tmp/curlerr)
+            STATUS=$(echo "$RESP" | jq -r '.status // empty')
+            if [ -z "$STATUS" ]; then ERR="$(echo "$RESP" | head -c 200)$(cat /tmp/curlerr)"; echo "$OUT : NO-STATUS $ERR" >> "$LOG"; return 1; fi
+            if [ "$STATUS" != "succeeded" ]; then
+              GETURL=$(echo "$RESP" | jq -r '.urls.get // empty')
+              for i in $(seq 1 40); do
+                sleep 3
+                RESP=$(curl -sS -H "Authorization: Bearer $REPLICATE_API_TOKEN" "$GETURL")
+                STATUS=$(echo "$RESP" | jq -r '.status // empty')
+                [ "$STATUS" = "succeeded" ] && break
+                if [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then
+                  ERR=$(echo "$RESP" | jq -r '.error // empty'); echo "$OUT : $STATUS — $ERR" >> "$LOG"; return 1; fi
+              done
+            fi
+            URL=$(echo "$RESP" | jq -r 'if (.output|type)=="array" then .output[0] else .output end')
+            if [ -z "$URL" ] || [ "$URL" = "null" ]; then echo "$OUT : NO-URL ($STATUS)" >> "$LOG"; return 1; fi
+            mkdir -p "$(dirname "$OUT")"
+            curl -sS -L "$URL" -o "$OUT"
+            if file "$OUT" | grep -qi png; then echo "$OUT : OK" >> "$LOG"; return 0; fi
+            echo "$OUT : NOT-PNG" >> "$LOG"; return 1
+          }
+
+          if [ "$(jq -r 'has("jobs")' "$REQ")" = "true" ]; then
+            N=$(jq '.jobs | length' "$REQ")
+            for k in $(seq 0 $((N-1))); do
+              P=$(jq -r ".jobs[$k].prompt" "$REQ"); O=$(jq -r ".jobs[$k].outfile" "$REQ")
+              gen_one "$P" "$O" || { echo "  retry"; sleep 12; gen_one "$P" "$O" || true; }
+              sleep 6
+            done
+          else
+            P=$(jq -r '.prompt' "$REQ"); O=$(jq -r '.outfile // "shops/la-detente/img/designs/logo_ai.png"' "$REQ")
+            gen_one "$P" "$O" || true
+          fi
+          echo "=== LOG ==="; cat "$LOG"
+
+      - name: Committer
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "La Détente — visuels + log [skip ci]" || { echo "rien"; exit 0; }
+          git push origin HEAD:${{ github.ref_name }} || echo "push KO"

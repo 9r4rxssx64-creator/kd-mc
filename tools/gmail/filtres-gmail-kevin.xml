@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns='http://www.w3.org/2005/Atom' xmlns:apps='http://schemas.google.com/apps/2006'>
+  <title>Filtres Gmail — Kevin DESARZENS (tri auto)</title>
+
+  <!-- 🔐 Sécurité & Comptes — LABEL + reste en réception (codes de connexion à voir vite) -->
+  <entry>
+    <category term='filter'></category>
+    <title>Securite</title>
+    <content></content>
+    <apps:property name='from' value='accounts.google.com OR notify.cloudflare.com OR idp.vonage.com OR nordaccount.com OR obsidian.md OR noreply-findmydevice@google.com OR google-noreply@google.com OR subito.it'/>
+    <apps:property name='label' value='🔐 Sécurité &amp; Comptes'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
+  </entry>
+
+  <!-- 🏦 Banque & Finance — LABEL + reste en réception (important) -->
+  <entry>
+    <category term='filter'></category>
+    <title>Banque</title>
+    <content></content>
+    <apps:property name='from' value='paypal.fr OR stripe.com OR link.com'/>
+    <apps:property name='label' value='🏦 Banque &amp; Finance'/>
+  </entry>
+
+  <!-- 💳 Factures & Paiements — LABEL + reste en réception (important) -->
+  <entry>
+    <category term='filter'></category>
+    <title>Factures</title>
+    <content></content>
+    <apps:property name='from' value='invoice+statements@mail.anthropic.com OR payments-noreply@google.com'/>
+    <apps:property name='label' value='💳 Factures &amp; Paiements'/>
+  </entry>
+
+  <!-- 📑 Administratif & Impôts — LABEL + reste en réception (perso/important) -->
+  <entry>
+    <category term='filter'></category>
+    <title>Administratif</title>
+    <content></content>
+    <apps:property name='from' value='support@mail.anthropic.com OR feedback@anthropic.com OR feedback+noreply@anthropic.com OR kevind@monaco.mc OR sbm.mc'/>
+    <apps:property name='label' value='📑 Administratif &amp; Impôts'/>
+  </entry>
+
+  <!-- 🛍️ Boutiques Printify — LABEL + reste en réception (business) -->
+  <entry>
+    <category term='filter'></category>
+    <title>Boutiques</title>
+    <content></content>
+    <apps:property name='from' value='tpop.com OR printify.com'/>
+    <apps:property name='label' value='🛍️ Boutiques Printify'/>
+  </entry>
+
+  <!-- 🛠️ Outils & SaaS — LABEL + ARCHIVE auto (sort de la réception) -->
+  <entry>
+    <category term='filter'></category>
+    <title>Outils</title>
+    <content></content>
+    <apps:property name='from' value='tm.openai.com OR email.openai.com OR email.claude.com OR x.ai OR emails.mistral.ai OR googleaistudio-noreply@google.com OR mail.perplexity.ai OR sentry.io OR getsentry.com OR netlify.com OR lovable.dev OR eraser.io OR jam.dev OR mixpanel.com OR airtable.com OR surveymonkey.com OR em.surveymonkey.com OR t.outbound.surveymonkey.com OR notify.vonage.com OR finnhub.io OR adobe.com OR synthesize.bio OR myclaw.ai OR linear.app OR pexels.com OR openlegi.fr OR datasite.com OR wix.com OR googledev-noreply@google.com OR firebase-no-reply@google.com OR firebase-noreply@google.com OR googleplay-noreply@google.com'/>
+    <apps:property name='label' value='🛠️ Outils &amp; SaaS'/>
+    <apps:property name='shouldArchive' value='true'/>
+  </entry>
+
+  <!-- 📰 Newsletters & Veille — LABEL + ARCHIVE auto -->
+  <entry>
+    <category term='filter'></category>
+    <title>Newsletters</title>
+    <content></content>
+    <apps:property name='from' value='mail.consensus.app'/>
+    <apps:property name='label' value='📰 Newsletters &amp; Veille'/>
+    <apps:property name='shouldArchive' value='true'/>
+  </entry>
+
+  <!-- 📣 Promotions & Pubs — LABEL + ARCHIVE auto -->
+  <entry>
+    <category term='filter'></category>
+    <title>Promotions</title>
+    <content></content>
+    <apps:property name='from' value='wps.com OR superhuman.com OR make.com'/>
+    <apps:property name='label' value='📣 Promotions &amp; Pubs'/>
+    <apps:property name='shouldArchive' value='true'/>
+  </entry>
+
+  <!-- 📱 Réseaux sociaux — LABEL + ARCHIVE auto -->
+  <entry>
+    <category term='filter'></category>
+    <title>Reseaux sociaux</title>
+    <content></content>
+    <apps:property name='from' value='google-maps-noreply@google.com'/>
+    <apps:property name='label' value='📱 Réseaux sociaux'/>
+    <apps:property name='shouldArchive' value='true'/>
+  </entry>
+
+</feed>

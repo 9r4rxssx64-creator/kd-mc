@@ -1,0 +1,12 @@
+      - name: Commit state
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || true
+          git add tools/social/config/content-library.json 2>/dev/null || true
+          if git diff --staged --quiet; then echo "No changes"; else
+            git commit -m "auto: video generated $(date -u +%Y-%m-%d) [skip ci]"
+            git pull --rebase origin main || true
+            git push || echo "Push failed, will retry next run"
+          fi

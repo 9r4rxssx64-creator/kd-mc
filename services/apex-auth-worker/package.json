@@ -1,0 +1,17 @@
+{
+  "name": "apex-auth-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker pour Phase 5 Firebase Auth - Apex AI per-user UID gate",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

@@ -1,0 +1,98 @@
+name: Apex v13 E2E (Playwright)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  pull_request:
+    paths:
+      - 'apex-ai/v13/**'
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-boot:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: TypeScript strict
+        run: npx tsc --noEmit
+
+      - name: Vitest unit tests (HARD FAIL si tests rouges)
+        run: npx vitest run --reporter=verbose
+
+      - name: Vitest coverage report (informational, ne fail pas)
+        run: npx vitest run --coverage --reporter=basic
+        continue-on-error: true
+
+      - name: Vite build (HARD FAIL si build casse)
+        run: npx vite build
+
+      - name: Install Playwright browsers (Chromium + WebKit pour iPhone simu)
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Start preview server (background)
+        run: |
+          npx vite preview --port 4173 &
+          sleep 5
+          curl -sf http://localhost:4173/ > /dev/null || (echo "Preview server not responding" && exit 1)
+
+      - name: Run Playwright E2E Chromium (desktop)
+        run: npx playwright test --project=chromium --reporter=line
+
+      # v13.4.125 (Kevin "outil qui fait tests réels sur iPhone à ma place") :
+      # iPhone 14 Pro WebKit simu — bloque PR si bug iPhone détecté avant que
+      # Kevin ouvre l'app. Auto-screenshot fail pour debug.
+      - name: Run Playwright E2E iPhone 14 Pro WebKit (simu iPhone réel)
+        run: npx playwright test --project=mobile-safari --reporter=line
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: apex-ai/v13/playwright-report/
+          retention-days: 7
+
+  worker-tests:
+    name: Apex v13 Backend Worker tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/apex-v13-backend
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+      - name: Vitest Worker tests (HARD FAIL)
+        run: npx vitest run --reporter=verbose

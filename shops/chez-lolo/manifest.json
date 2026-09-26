@@ -1,0 +1,16 @@
+{
+  "name": "Chez Lolo",
+  "short_name": "Chez Lolo",
+  "description": "La boutique multi-univers de Lolo : textile, cosmétiques, goodies & accessoires. Designs personnalisables. KDMC Monaco.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#faf8f0",
+  "theme_color": "#7c8c3c",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

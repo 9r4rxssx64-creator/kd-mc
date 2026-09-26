@@ -1,0 +1,43 @@
+# CodeRabbit — reviewer IA INDÉPENDANT (société externe, modèle ≠ Claude).
+# Kevin 2026-07-08 : « outil extérieur indépendant, expert ». Gratuit pour ce dépôt
+# public. Une fois l'appli GitHub autorisée par Kevin (https://github.com/apps/coderabbitai),
+# CodeRabbit review CHAQUE PR : bugs ligne par ligne, sécurité, corrections proposées,
+# résumé clair. Cette config le règle en français et évite le bruit (build/coverage).
+# Doc : https://docs.coderabbit.ai/reference/yaml-template
+language: fr-FR
+tone_instructions: "Expert, direct, concret. Priorité aux bugs runtime réels, à la sécurité et aux fuites de secrets. Cite fichier:ligne. Pas de remarques cosmétiques."
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    # Évite de reviewer les commits de bots (auto-deploy/backup) = coût/bruit inutile.
+    ignore_title_keywords:
+      - "Auto-deploy"
+      - "backup"
+      - "[skip ci]"
+    base_branches:
+      - "main"
+  # N'analyse QUE le code source réel — pas les artefacts générés ni la couverture.
+  path_filters:
+    - "!**/coverage/**"
+    - "!apex-ai-v13/**"
+    - "!**/dist/**"
+    - "!**/*.min.js"
+    - "!**/node_modules/**"
+    - "!backups/**"
+    - "!**/*.map"
+  path_instructions:
+    - path: "messaging-app/workers/**"
+      instructions: "Backend Cloudflare Worker : vérifie l'auth (JWT/getAuthUser), les fuites de secrets, la gestion CORS/OPTIONS, et que chaque endpoint distingue 401 (auth) de 5xx (upstream)."
+    - path: "shops/**"
+      instructions: "Boutiques e-commerce : vérifie qu'aucun paiement n'est validé sans preuve, les allowlists CORS des workers, et l'absence d'avis fabriqués sur une vraie boutique."
+    - path: "services/kdmc-router/**"
+      instructions: "Routeur du domaine : vérifie les redirections (open-redirect), le fail-closed des accès admin, et la validation WebAuthn."
+chat:
+  auto_reply: true

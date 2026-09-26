@@ -1,0 +1,113 @@
+# ⬅️ RAPATRIÉ ici le 5.09.2026 (Kevin : « rapatrie tout sur GitHub intelligemment
+#    en respectant les règles »). Il teste / déploie / publie CE dépôt — c'est
+#    exactement l'usage prévu par les conditions GitHub Actions.
+#    ⛔ AUCUNE exécution programmée : c'est le VOLUME automatique (~97/jour) qui a
+#    fait suspendre le compte le 15/08, pas ce workflow-ci. On le lance à la main
+#    (bouton « Run workflow ») — et c'est moi qui appuie, via l'API. Ne PAS remettre
+#    de cron : la garde npm run test:actions-conformes échoue en le nommant.
+#    Sa destination et sa raison sont écrites dans
+#    .github/workflows-desactives/DESTINATIONS.json.
+name: Sync Firebase creds → Vercel (agent KDMC)
+
+# Kevin 2026-06-16 « Trouve un outil Vercel pour faire à ma place ».
+#
+# Pourquoi ce workflow : aucun outil MCP Vercel ne peut écrire des variables
+# d'environnement, et les valeurs FIREBASE_* sont des secrets GitHub (illisibles
+# côté agent). La SEULE voie autonome = un workflow qui a accès aux secrets GitHub
+# ET à un token Vercel, et pousse les vars via l'API Vercel.
+#
+# Effet : ajoute/maj FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY sur le projet
+# Vercel `kdmc-agent-monaco` (production+preview+development) → l'agent KDMC peut
+# enfin s'authentifier à Firebase (fin du 401). Réutilisable pour toute future
+# var Vercel.
+#
+# PRÉREQUIS (1 seule fois, Kevin) : ajouter le secret GitHub `VERCEL_TOKEN`
+#   → https://vercel.com/account/tokens (créer un token "Full Access")
+#   → https://github.com/9r4rxssx64-creator/cmcteams/settings/secrets/actions
+#   (optionnel `VERCEL_TEAM_ID` si le projet est dans une équipe Vercel, pas un compte perso)
+
+on:
+  workflow_dispatch:
+  # Auto-déclenche au merge d'une modif de CE fichier (permet de lancer le sync
+  # sans MCP/UI : un commit qui touche ce workflow l'exécute). Idempotent (upsert).
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-agent-firebase-to-vercel.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-agent-firebase-vercel
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PROJECT: kdmc-agent-monaco
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+    steps:
+      - name: Pré-flight (secrets requis)
+        run: |
+          MISSING=""
+          [ -z "$VERCEL_TOKEN" ] && MISSING="$MISSING VERCEL_TOKEN"
+          [ -z "$FIREBASE_CLIENT_EMAIL" ] && MISSING="$MISSING FIREBASE_CLIENT_EMAIL"
+          [ -z "$FIREBASE_PRIVATE_KEY" ] && MISSING="$MISSING FIREBASE_PRIVATE_KEY"
+          if [ -n "$MISSING" ]; then
+            echo "::error::Secrets GitHub manquants :$MISSING"
+            echo "VERCEL_TOKEN → créer https://vercel.com/account/tokens puis l'ajouter dans"
+            echo "https://github.com/9r4rxssx64-creator/cmcteams/settings/secrets/actions"
+            exit 1
+          fi
+          echo "✅ Secrets présents."
+
+      - name: Upsert env vars sur Vercel (API)
+        run: |
+          set -euo pipefail
+          QS="upsert=true"
+          [ -n "${VERCEL_TEAM_ID:-}" ] && QS="upsert=true&teamId=${VERCEL_TEAM_ID}"
+          URL="https://api.vercel.com/v10/projects/${PROJECT}/env?${QS}"
+          # upsert=true → crée ou met à jour. type=encrypted, 3 cibles.
+          upsert () {
+            local KEY="$1" VAL="$2" BODY OUT CODE
+            BODY=$(jq -n --arg k "$KEY" --arg v "$VAL" \
+              '{key:$k, value:$v, type:"encrypted", target:["production","preview","development"]}')
+            OUT=$(curl -sS -w '\n%{http_code}' -X POST "$URL" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data "$BODY") || true
+            CODE=$(printf '%s' "$OUT" | tail -1)
+            if [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; then
+              echo "✅ $KEY → OK (HTTP $CODE)"
+            else
+              echo "::error::$KEY → HTTP $CODE"
+              printf '%s\n' "$OUT" | head -n -1 | sed 's/[A-Za-z0-9_-]\{20,\}/***/g'
+              exit 1
+            fi
+          }
+          upsert FIREBASE_CLIENT_EMAIL "$FIREBASE_CLIENT_EMAIL"
+          upsert FIREBASE_PRIVATE_KEY "$FIREBASE_PRIVATE_KEY"
+          echo "🎉 Variables posées. Redéploie l'agent pour qu'elles prennent effet."
+
+      - name: Redéploiement agent (best-effort)
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          TEAM=""
+          [ -n "${VERCEL_TEAM_ID:-}" ] && TEAM="?teamId=${VERCEL_TEAM_ID}"
+          DEP=$(curl -sS "https://api.vercel.com/v6/deployments?app=${PROJECT}&target=production&limit=1${TEAM:+&teamId=${VERCEL_TEAM_ID}}" \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" | jq -r '.deployments[0].uid // empty')
+          if [ -n "$DEP" ]; then
+            curl -sS -X POST "https://api.vercel.com/v13/deployments${TEAM}" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" -H "Content-Type: application/json" \
+              --data "$(jq -n --arg n "$PROJECT" --arg id "$DEP" '{name:$n, deploymentId:$id, target:"production"}')" \
+              -o /dev/null -w "redeploy HTTP %{http_code}\n" || true
+          else
+            echo "Pas de déploiement prod trouvé — le prochain commit tools/agent/ redéploiera."
+          fi

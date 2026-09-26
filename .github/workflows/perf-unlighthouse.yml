@@ -1,0 +1,146 @@
+name: Perf — Unlighthouse (audit multi-pages mesuré, kd-mc.com)
+
+# Kevin 2026-07-07 (« intègre tout ce qui est utile — va plus loin »). TOP 8 #4 :
+# Unlighthouse (unlighthouse.dev, MIT) = audit Lighthouse MULTI-PAGES en une commande,
+# SANS quota PageSpeed. Mesure les vraies apps kd-mc.com (perf/a11y/best-practices/SEO)
+# → colle à la règle « mesurer, pas estimer » (leçon #94).
+#
+# Déclencheurs : workflow_dispatch (moi/Kevin) + repository_dispatch [perf-audit] (Apex
+# commande future /perf) + cron MENSUEL (1er du mois, 4h UTC = anti-spam, veille perf).
+# Non-bloquant : c'est un RAPPORT (artifact + Firebase ax_perf_last), jamais un gate.
+#
+# Sécurité : permissions contents:read ; secrets Firebase QUE sur le step de push ;
+# cible bornée kd-mc.com / github.io (jamais un tiers).
+
+on:
+  workflow_dispatch:
+    inputs:
+      site:
+        description: 'URL à auditer (app kd-mc.com)'
+        required: false
+        default: 'https://kd-mc.com/worldmonitor/'
+      exec_id:
+        description: 'ID exécution (callback Apex, optionnel)'
+        required: false
+        default: ''
+  repository_dispatch:
+    types: [perf-audit]
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+concurrency:
+  group: perf-unlighthouse
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Cible (bornée kd-mc.com)
+        id: t
+        env:
+          RD_SITE: ${{ github.event.client_payload.site }}
+          WD_SITE: ${{ inputs.site }}
+        run: |
+          SITE="${WD_SITE:-${RD_SITE:-https://kd-mc.com/worldmonitor/}}"
+          SITE=$(printf '%s' "$SITE" | tr -d '\r\n' | head -c 300)
+          case "$SITE" in
+            https://kd-mc.com*|https://*.kd-mc.com*|https://9r4rxssx64-creator.github.io*) : ;;
+            *) echo "::error::Cible hors périmètre kd-mc.com refusée : $SITE"; exit 1 ;;
+          esac
+          echo "site=$SITE" >> "$GITHUB_OUTPUT"
+
+      - name: Unlighthouse CI (Chrome du runner)
+        id: run
+        continue-on-error: true
+        env:
+          SITE: ${{ steps.t.outputs.site }}
+        run: |
+          mkdir -p .unlighthouse
+          # Chrome est préinstallé sur ubuntu-latest ; unlighthouse le détecte.
+          npx --yes unlighthouse-ci@latest \
+            --site "$SITE" \
+            --reporter jsonExpanded \
+            --throttle false 2>&1 | tail -40 | tee .unlighthouse/run.log || echo "unlighthouse rc=$?"
+          ls -la .unlighthouse || true
+
+      - name: Synthèse (moyennes des scores)
+        id: sum
+        run: |
+          python3 - <<'PYEOF' | tee .unlighthouse/summary.txt
+          import json, glob, os
+          # unlighthouse écrit ci-result.json (liste de routes avec report.categories)
+          cand = []
+          for p in ['.unlighthouse/ci-result.json'] + glob.glob('.unlighthouse/**/ci-result.json', recursive=True):
+              try: cand.append(json.load(open(p))); break
+              except Exception: pass
+          rows = cand[0] if cand else []
+          if isinstance(rows, dict): rows = rows.get('routes') or rows.get('reports') or []
+          cats = {'performance':[], 'accessibility':[], 'best-practices':[], 'seo':[]}
+          n = 0
+          for r in (rows or []):
+              c = (r.get('report') or {}).get('categories') or r.get('categories') or {}
+              got = False
+              for k in cats:
+                  v = (c.get(k) or {}).get('score')
+                  if isinstance(v,(int,float)): cats[k].append(round(v*100)); got = True
+              if got: n += 1
+          avg = {k:(round(sum(v)/len(v)) if v else None) for k,v in cats.items()}
+          out = {'pages': n, 'avg': avg}
+          open('.unlighthouse/summary.json','w').write(json.dumps(out, ensure_ascii=False))
+          print("Pages auditées: %d" % n)
+          for k,v in avg.items(): print("  %s: %s" % (k, v if v is not None else '—'))
+          sm = os.environ.get('GITHUB_STEP_SUMMARY')
+          if sm:
+              with open(sm,'a') as f:
+                  f.write("## ⚡ Unlighthouse — %d pages\n\n" % n)
+                  for k,v in avg.items(): f.write("- **%s** : %s\n" % (k, v if v is not None else '—'))
+          PYEOF
+          echo done
+
+      - name: Rapport en artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-report-${{ github.run_id }}
+          path: .unlighthouse/
+          retention-days: 30
+
+      - name: Résumé → Firebase (Apex lit ax_perf_last)
+        if: always()
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          SITE: ${{ steps.t.outputs.site }}
+          RD_EXEC: ${{ github.event.client_payload.exec_id }}
+          WD_EXEC: ${{ inputs.exec_id }}
+        run: |
+          FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          TOKEN=$(node tools/firebase/gauth.cjs 2>/dev/null); QS=""
+          [ -n "$TOKEN" ] && QS="?access_token=${TOKEN}"
+          python3 - <<'PYEOF'
+          import json, os, time
+          try: s = json.load(open('.unlighthouse/summary.json'))
+          except Exception: s = {'pages': 0, 'avg': {}}
+          body = {
+            'exec_id': os.environ.get('WD_EXEC') or os.environ.get('RD_EXEC') or ('run_'+os.environ.get('GITHUB_RUN_ID','')),
+            'site': os.environ.get('SITE',''), 'pages': s.get('pages'), 'avg': s.get('avg', {}),
+            'ts': int(time.time()*1000), 'run_id': os.environ.get('GITHUB_RUN_ID',''),
+          }
+          open('/tmp/perf_fb.json','w').write(json.dumps(body, ensure_ascii=False))
+          PYEOF
+          HTTP=$(curl -sS -o /tmp/r.txt -w "%{http_code}" -X PUT "${FB_URL}/apex/ax_perf_last.json${QS}" \
+            -H "Content-Type: application/json" --data-binary @/tmp/perf_fb.json || echo 000)
+          echo "Firebase PUT ax_perf_last → HTTP $HTTP $(head -c 150 /tmp/r.txt)"

@@ -1,0 +1,205 @@
+name: Deploy kdmc-apis (passerelle APIs gratuites domaine)
+
+# Déploie le worker services/kdmc-apis (apis.kd-mc.com) : pose les clés en secrets
+# Cloudflare (uniquement celles présentes → fail-open), déploie via wrangler, puis
+# smoke-test /health sur la VRAIE URL (leçon #85/#95 : un endpoint sans auth ne prouve
+# rien tout seul, mais /health confirme au moins que le worker répond + quelles clés
+# sont chargées). Isolation CMCteams : ne touche aucune autre app.
+
+# Kevin 2026-09-06 « pourquoi tu es bloqué par GitHub ? trouve des solutions » :
+# l'API GitHub est fermée à cette session (app non connectée pour l'organisation) →
+# impossible de lancer un déploiement à la main depuis l'agent. La voie qui MARCHE est
+# le push sur claude/** (schéma déjà éprouvé par deploy-apex-chat.yml). Un push =
+# un déploiement, sans API, sans clic, sans attendre la fusion (leçon #213).
+on:
+  workflow_dispatch:
+  push:
+    # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main.
+    # Une branche de travail ne déploie plus rien (incident m122 du 23.09 : un routeur
+    # déployé depuis une branche en retard a éteint kit.kd-mc.com). Manuel : workflow_dispatch.
+    branches:
+      - main
+    paths:
+      - 'services/kdmc-apis/**'
+      - 'services/_shared/ia-route.js'   # routage IA commun : le worker l'importe → doit redéployer
+      - '.github/workflows/deploy-kdmc-apis.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kdmc-apis
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Tests unitaires (bloquant)
+        working-directory: services/kdmc-apis
+        run: |
+          node --check worker.js
+          node --test worker.test.mjs
+
+      - name: Install wrangler
+        run: npm install -g wrangler@^3.80.0
+
+      - name: Verify Cloudflare token
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN manquant"; exit 1
+          fi
+          wrangler whoami
+
+      - name: Pose les clés (secrets présents uniquement, fail-open)
+        working-directory: services/kdmc-apis
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # 2026-09-05 : Anthropic = « la plus pertinente » pour code/raisonnement/actions
+          # (Qwen Workers AI reste le principal des questions courantes, 0 clé).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          # Paliers gratuits ajoutés 2026-08-12 (secours « partout dans les apps »).
+          # Un secret absent est simplement sauté plus bas (fail-open) : rien à
+          # faire tant que Kevin n'a pas créé la clé.
+          PERPLEXITI_API_KEY: ${{ secrets.PERPLEXITI_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SCALEWAY_API_KEY: ${{ secrets.SCALEWAY_API_KEY }}
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          PRINTIFY_API_KEY: ${{ secrets.PRINTIFY_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          set -e
+          put() {
+            local name="$1"; local val="${!1}"
+            if [ -n "$val" ]; then
+              printf '%s' "$val" | wrangler secret put "$name" 2>&1 | tail -1
+              echo "  → $name posé"
+            else
+              echo "  → $name absent (route dépendante en 501, fail-open)"
+            fi
+          }
+          for s in ANTHROPIC_API_KEY GEMINI_API_KEY GROQ_API_KEY OPENROUTER_API_KEY MISTRAL_API_KEY \
+                   COHERE_API_KEY DEEPSEEK_API_KEY TOGETHER_API_KEY XAI_API_KEY \
+                   PERPLEXITI_API_KEY CEREBRAS_API_KEY NVIDIA_API_KEY SAMBANOVA_API_KEY \
+                   HF_TOKEN SCALEWAY_API_KEY NEBIUS_API_KEY GLM_API_KEY DASHSCOPE_API_KEY \
+                   TAVILY_API_KEY BRAVE_API_KEY PEXELS_API_KEY FINNHUB_API_KEY \
+                   PRINTIFY_API_KEY RESEND_API_KEY GOOGLE_API_KEY; do
+            put "$s"
+          done
+
+      - name: Deploy
+        working-directory: services/kdmc-apis
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0)
+        # → un déploiement ÉCHOUÉ ressortait VERT. Même piège que verif-reelle.yml, attrapé
+        # par le garde-fou tests/workflows-pipefail.test.mjs.
+        shell: bash -euo pipefail {0}
+        run: wrangler deploy 2>&1 | tee /tmp/deploy.log
+
+      - name: Smoke test /health (vraie URL)
+        run: |
+          set +e
+          echo "## kdmc-apis /health" >> $GITHUB_STEP_SUMMARY
+          for URL in "https://apis.kd-mc.com/health" "https://kdmc-apis.9r4rxssx64.workers.dev/health"; do
+            CODE=$(curl -sS -o /tmp/h.json -w "%{http_code}" -m 15 "$URL")
+            echo "- $URL → HTTP $CODE" >> $GITHUB_STEP_SUMMARY
+            if [ "$CODE" = "200" ]; then
+              echo '```json' >> $GITHUB_STEP_SUMMARY
+              head -c 800 /tmp/h.json >> $GITHUB_STEP_SUMMARY
+              echo '' >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              exit 0
+            fi
+          done
+          echo "::warning::/health pas encore 200 (custom_domain apis.kd-mc.com peut mettre ~1 min à provisionner DNS+SSL)"
+
+      # ─────────────────────────────────────────────────────────────────────────
+      # PREUVE LIVE — Kevin 2026-09-06 « vérifie que toutes nos IA fonctionnent ».
+      # L'agent ne peut atteindre NI kd-mc.com NI workers.dev (pare-feu) et l'API
+      # GitHub lui est fermée : ce journal est la SEULE preuve honnête que les IA
+      # répondent vraiment. On pose 4 VRAIES questions et on imprime qui a répondu.
+      # Jamais bloquant (`set +e`) : un moteur lent ne doit pas annuler un déploiement.
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: Preuve live — les IA répondent-elles vraiment ?
+        run: |
+          set +e
+          BASE="https://apis.kd-mc.com"
+          curl -sS -o /dev/null -m 15 "$BASE/health" || BASE="https://kdmc-apis.9r4rxssx64.workers.dev"
+          echo "## 🧠 Preuve live — qui répond, pour de vrai ($BASE)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Question posée | Attendu | Qui a répondu | Modèle | Extrait |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+
+          cat > /tmp/ligne.py <<'PY'
+          import json, os, sys
+          lbl, att = sys.argv[1], sys.argv[2]
+          raw = sys.stdin.read()
+          out = open(os.environ['GITHUB_STEP_SUMMARY'], 'a')
+          try:
+              d = json.loads(raw)
+          except Exception:
+              print("| %s | %s | ❌ réponse illisible | — | %s |" % (lbl, att, raw[:60].replace('|', '/')), file=out)
+              sys.exit(0)
+          prov = d.get('provider') or d.get('error') or '?'
+          mod = str(d.get('model') or '—').split('/')[-1]
+          txt = str(d.get('text') or d.get('detail') or '')[:70].replace('\n', ' ').replace('|', '/')
+          ok = '✅' if att in str(prov) else '⚠️'
+          print("| %s | %s | %s %s | %s | %s |" % (lbl, att, ok, prov, mod, txt), file=out)
+          PY
+
+          ask() {  # $1 = libellé, $2 = attendu, $3 = question, $4 = options JSON en plus
+            BODY=$(QUESTION="$3" EXTRA="$4" python3 -c '
+          import json, os
+          b = {"messages": [{"role": "user", "content": os.environ["QUESTION"]}], "max_tokens": 200}
+          if os.environ.get("EXTRA"): b.update(json.loads("{" + os.environ["EXTRA"] + "}"))
+          print(json.dumps(b, ensure_ascii=False))')
+            curl -sS -m 45 -X POST "$BASE/ai" -H 'Content-Type: application/json' \
+              -H 'Origin: https://kd-mc.com' -d "$BODY" 2>&1 | python3 /tmp/ligne.py "$1" "$2"
+          }
+
+          ask "Question courante"  "qwen"      "Quelle est la capitale du Portugal ? Réponds en une phrase."  ""
+          ask "Action (outils)"    "anthropic" "Déploie le worker maintenant."                                 ""
+          ask "Question difficile" "council"   "Explique pourquoi les marées existent et le rôle exact de la Lune, en détail." '"council":true'
+          ask "Traduction"         "qwen"      "Traduis en anglais : bonne journée."                           ""
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🗳️ Concertation : le type de la question est-il VOTÉ ?" >> $GITHUB_STEP_SUMMARY
+          A=$(curl -sS -m 30 -X POST "$BASE/ai/analyse" -H 'Content-Type: application/json' \
+                -H 'Origin: https://kd-mc.com' -d '{"text":"peux-tu me dire cette phrase en italien ?"}')
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo "$A" | head -c 700 >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "### 🔑 Clés réellement chargées par le worker" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -sS -m 15 "$BASE/health" | python3 -c "import json,sys;d=json.load(sys.stdin);print(json.dumps({'workers_ai':d.get('workers_ai'),'cles_presentes':[k for k,v in (d.get('keys') or {}).items() if v],'cles_absentes':[k for k,v in (d.get('keys') or {}).items() if not v],'premier_par_question':(d.get('ia_routing') or {}).get('first_by_domain')},ensure_ascii=False,indent=1))" >> $GITHUB_STEP_SUMMARY 2>&1
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit 0

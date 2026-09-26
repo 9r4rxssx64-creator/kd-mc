@@ -1,0 +1,169 @@
+name: Branch Coordinator (Claude Code multi-sessions)
+
+# Kevin 2026-05-16 absolu : "Toutes branches Claude code coordonnées. Pas de
+# double travail, pas de conflit, pas de régression. Futures branches auto."
+#
+# Cron 6h (anti-spam mails CLAUDE.md règle) qui :
+# 1. Liste branches claude/* via GitHub API
+# 2. Pour chaque pair : git diff --name-only main...branch
+# 3. Détecte overlap fichiers (2+ branches touchent même fichier)
+# 4. Si overlap critique → ouvre issue GitHub avec liste détaillée
+# 5. Sentinelle Apex côté iPhone fait pareil en runtime (push Firebase shared)
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - 'apex-ai/v13/services/**/apex-multi-branch-coordinator.ts'
+      - '.github/workflows/branch-coordinator.yml'
+
+# Anti-cascade : 1 run à la fois
+concurrency:
+  group: branch-coordinator
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  detect-conflicts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Detect overlapping files between claude/* branches
+        id: detect
+        run: |
+          set -e
+          git fetch origin --prune --quiet || true
+
+          # Liste branches claude/* remotes
+          BRANCHES=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin | grep '^origin/claude/' | sort)
+          # « || echo 0 » apres grep -c ecrivait « branches_count=0 » PUIS une ligne « 0 »
+          # dans GITHUB_OUTPUT -> etape rejetee (« Invalid format '0' »).
+          NB_BRANCHES=$(printf '%s\n' "$BRANCHES" | grep -c . || true); NB_BRANCHES=${NB_BRANCHES:-0}
+          echo "branches_count=$NB_BRANCHES" >> "$GITHUB_OUTPUT"
+          echo "Found $NB_BRANCHES claude/* branches:"
+          echo "$BRANCHES"
+
+          # Map fichier → liste branches qui l'ont modifié vs main
+          declare -A FILE_BRANCHES
+          for B in $BRANCHES; do
+            BRANCH_NAME="${B#origin/}"
+            # Skip si déjà mergé dans main
+            if git merge-base --is-ancestor "$B" origin/main 2>/dev/null; then
+              echo "  SKIP $BRANCH_NAME (déjà mergé dans main)"
+              continue
+            fi
+            FILES=$(git diff --name-only origin/main..."$B" 2>/dev/null | head -200)
+            COUNT=$(printf '%s\n' "$FILES" | grep -c . || true); COUNT=${COUNT:-0}
+            echo "  $BRANCH_NAME: $COUNT fichiers modifiés"
+            for F in $FILES; do
+              [ -z "$F" ] && continue
+              EXISTING="${FILE_BRANCHES[$F]:-}"
+              if [ -z "$EXISTING" ]; then
+                FILE_BRANCHES["$F"]="$BRANCH_NAME"
+              else
+                FILE_BRANCHES["$F"]="$EXISTING|$BRANCH_NAME"
+              fi
+            done
+          done
+
+          # Détecte overlaps (fichier touché par 2+ branches)
+          OVERLAPS=""
+          OVERLAP_COUNT=0
+          for F in "${!FILE_BRANCHES[@]}"; do
+            BRS="${FILE_BRANCHES[$F]}"
+            if [[ "$BRS" == *"|"* ]]; then
+              OVERLAPS="$OVERLAPS\n- \`$F\` : $BRS"
+              OVERLAP_COUNT=$((OVERLAP_COUNT + 1))
+            fi
+          done
+          echo "overlap_count=$OVERLAP_COUNT" >> "$GITHUB_OUTPUT"
+          echo "Overlap count: $OVERLAP_COUNT"
+
+          # Génère payload pour l'issue
+          if [ "$OVERLAP_COUNT" -gt 0 ]; then
+            {
+              echo "overlaps<<EOF"
+              echo -e "$OVERLAPS"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open coordination issue if critical overlaps
+        if: steps.detect.outputs.overlap_count != '0'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const overlapCount = ${{ steps.detect.outputs.overlap_count }};
+            const overlaps = `${{ steps.detect.outputs.overlaps }}`;
+            const branchCount = ${{ steps.detect.outputs.branches_count }};
+
+            /* Check si une issue similaire existe déjà (anti-doublon) */
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'branch-coordinator',
+              state: 'open',
+            });
+            if (issues.data.length > 0) {
+              console.log(`Issue coordinator déjà ouverte #${issues.data[0].number}, comment update`);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `🔄 Update ${new Date().toISOString()}\n${overlapCount} fichiers en conflit, ${branchCount} branches actives.\n${overlaps}`,
+              });
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Branch Coordinator] ${overlapCount} fichiers en conflit potentiel entre branches claude/*`,
+              labels: ['branch-coordinator', 'auto-detected'],
+              body: `Le workflow branch-coordinator détecte que ${overlapCount} fichier(s) sont modifiés par 2+ branches \`claude/*\` simultanément (${branchCount} branches actives).\n\n**Risque** : conflits de merge, régression, double travail.\n\n## Fichiers en overlap\n${overlaps}\n\n## Actions recommandées\n1. Merger la branche la plus avancée dans \`main\` (déclenchera auto-rebase autres)\n2. Sinon : rebase manuel des autres sur main puis push\n3. Vérifier qu'aucun fix critique ne se contredit entre branches\n\n_Issue auto-générée par .github/workflows/branch-coordinator.yml — clôturée auto au prochain cycle si plus d'overlap._`,
+            });
+            console.log('Issue coordinator créée');
+
+      - name: Close coordinator issue if no overlap
+        if: steps.detect.outputs.overlap_count == '0'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'branch-coordinator',
+              state: 'open',
+            });
+            for (const issue of issues.data) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ Plus d'overlap détecté au cycle ${new Date().toISOString()} — clôturé auto.`,
+              });
+            }

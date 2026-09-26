@@ -1,0 +1,394 @@
+name: Ultra Audit Crew (5 expert agents in parallel)
+
+# Crew externe expert — 5 jobs parallèles indépendants + synthesis.
+# Chaque agent écrit son rapport dans un artifact. Synthesis combine
+# les 5 artifacts + crée une issue GitHub auto (label: audit-report).
+#
+# Avantages :
+# - Rapports archivés automatiquement (cherchable via Issues tab)
+# - Lisible via API GitHub (mcp__github__list_issues label:audit-report)
+# - Aucun copier-coller manuel nécessaire
+
+on:
+  workflow_dispatch:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ultra-audit-crew
+  cancel-in-progress: false
+
+jobs:
+
+  security:
+    name: 🛡 Security Auditor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Audit security
+        shell: bash {0}
+        run: |
+          mkdir -p /tmp/audit
+          {
+            echo "## 🛡 Security findings"
+            echo ""
+
+            LEAKS=$(grep -rEn "sk-(ant|proj)-[A-Za-z0-9_-]{40,}|AIza[A-Za-z0-9_-]{33}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82}" \
+              --include="*.ts" --include="*.js" --include="*.html" --include="*.yml" --include="*.md" \
+              --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=tests . 2>/dev/null || true)
+            if [ -z "$LEAKS" ]; then
+              echo "### Secrets en clair (hors tests/dist/node_modules): 0 ✅"
+            else
+              LEAK_COUNT=$(echo "$LEAKS" | wc -l)
+              echo "### Secrets en clair (hors tests/dist/node_modules): $LEAK_COUNT ❌ P0"
+              echo '```'
+              echo "$LEAKS" | head -10
+              echo '```'
+              echo "❌ P0 — révoquer + rotation"
+            fi
+            echo ""
+
+            # XSS audit : recense les FICHIERS où innerHTML est utilisé SANS aucun
+            # helper d'échappement dans le fichier entier (pas juste sur la même ligne).
+            # Helpers détectés : escapeHtml, escapeAttr, esc(, safeSetHTML, sanitize,
+            # DOMPurify, this.escape, .escape() (méthodes de classes).
+            cd apex-ai/v13
+            RISKY_FILES=""
+            RISKY_COUNT=0
+            for f in $(grep -rlE "innerHTML[[:space:]]*=" --include="*.ts" services features core 2>/dev/null); do
+              # « || echo 0 » apres grep -c donne « 0\n0 » -> [ "$ESC" -eq 0 ] plante
+              # (« integer expression expected ») au lieu de compter.
+              ESC=$(grep -cE "escapeHtml|escapeAttr|esc\(|safeSetHTML|sanitize|DOMPurify|\.escape\(" "$f" 2>/dev/null || true); ESC=${ESC:-0}
+              ESC=${ESC:-0}
+              if [ "$ESC" -eq 0 ]; then
+                IH=$(grep -cE "innerHTML[[:space:]]*=" "$f" 2>/dev/null)
+                # Exclure les fichiers où innerHTML n'apparaît QUE dans des commentaires (* ou //)
+                NON_COMMENT=$(grep -E "innerHTML[[:space:]]*=" "$f" 2>/dev/null | grep -vE "^\s*\*|^\s*//" | wc -l)
+                if [ "$NON_COMMENT" -gt 0 ]; then
+                  RISKY_FILES="$RISKY_FILES\n- $f ($NON_COMMENT innerHTML, 0 helper)"
+                  RISKY_COUNT=$((RISKY_COUNT + 1))
+                fi
+              fi
+            done
+            cd - > /dev/null
+            echo "### XSS audit (par fichier, exclude comments)"
+            echo "Fichiers utilisant innerHTML SANS aucun helper d'échappement: $RISKY_COUNT"
+            if [ "$RISKY_COUNT" -eq 0 ]; then
+              echo "✅ Tous les fichiers innerHTML utilisent au moins un helper d'échappement"
+            elif [ "$RISKY_COUNT" -le 5 ]; then
+              echo "ℹ️ $RISKY_COUNT fichier(s) — audit ciblé requis (probablement HTML statique sans user data)"
+              echo -e "$RISKY_FILES"
+            else
+              echo "⚠️ P1: $RISKY_COUNT fichiers à auditer"
+              echo -e "$RISKY_FILES" | head -20
+            fi
+            echo ""
+
+            CSP=$(grep -c "Content-Security-Policy" apex-ai/v13/index.html 2>/dev/null || true); CSP=${CSP:-0}
+            echo "### CSP meta apex-ai/v13/index.html: $CSP $([ "$CSP" = "1" ] && echo '✅' || echo '❌')"
+          } | tee /tmp/audit/security.md >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: audit-security
+          path: /tmp/audit/security.md
+          retention-days: 90
+
+  architecture:
+    name: 🏗 Architecture Auditor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Audit architecture
+        shell: bash {0}
+        run: |
+          mkdir -p /tmp/audit
+          {
+            echo "## 🏗 Architecture findings"
+            echo ""
+
+            FEATURES=$(find apex-ai/v13/features -name "index.ts" 2>/dev/null | wc -l || echo 0)
+            SERVICES=$(find apex-ai/v13/services -name "*.ts" -not -name "*.test.ts" 2>/dev/null | wc -l || echo 0)
+
+            # Routes : EXCLURE tests/ et lignes commentaires (commencent par * ou //)
+            # IMPORTANT : grep -rn (PAS -h) pour avoir path:ligne, sinon filtre /tests/ ne marche pas
+            ROUTES=$(grep -rnE "router\.register\(['\"][a-z0-9-]+['\"]" apex-ai/v13 2>/dev/null | \
+              grep -v "/tests/" | \
+              grep -vE ":\s*\*" | \
+              grep -vE ":\s*//" | wc -l || echo 0)
+
+            DOUB=$(grep -rnE "router\.register\(['\"][a-z0-9-]+['\"]" apex-ai/v13 2>/dev/null | \
+              grep -v "/tests/" | \
+              grep -vE ":\s*\*" | \
+              grep -vE ":\s*//" | \
+              grep -oE "router\.register\(['\"][a-z0-9-]+['\"]" | sort | uniq -d | wc -l || echo 0)
+
+            echo "| Métrique | Valeur |"
+            echo "|----------|--------|"
+            echo "| Features index.ts | $FEATURES |"
+            echo "| Services .ts | $SERVICES |"
+            echo "| router.register calls (hors tests/commentaires) | $ROUTES |"
+            echo "| Routes en doublon | $DOUB $([ "$DOUB" -gt 0 ] && echo '❌ P0' || echo '✅') |"
+            echo ""
+
+            echo "### Firebase project URLs utilisées (code apex-ai/v13/services + services/)"
+            echo '```'
+            grep -rhoE "[a-z0-9-]+-default-rtdb" apex-ai/v13/services services 2>/dev/null | sort -u || true
+            echo '```'
+
+            # Détection mismatch FB
+            FB_COUNT=$(grep -rhoE "[a-z0-9-]+-default-rtdb" apex-ai/v13/services services 2>/dev/null | sort -u | wc -l)
+            if [ "$FB_COUNT" -gt 1 ]; then
+              echo ""
+              echo "⚠️ P1: $FB_COUNT URLs Firebase différentes — vérifier cohérence (CLAUDE.md règle isolation)"
+            fi
+          } | tee /tmp/audit/architecture.md >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: audit-architecture
+          path: /tmp/audit/architecture.md
+          retention-days: 90
+
+  code-quality:
+    name: 🔬 Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install deps
+        working-directory: apex-ai/v13
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund --no-save
+
+      - name: Audit code quality
+        shell: bash {0}
+        working-directory: apex-ai/v13
+        run: |
+          mkdir -p /tmp/audit
+          {
+            echo "## 🔬 Code Quality"
+            echo ""
+
+            npx tsc --noEmit 2>&1 > /tmp/tsc.log || true
+            TS_ERR=$(grep -c "error TS" /tmp/tsc.log 2>/dev/null)
+            TS_ERR=${TS_ERR:-0}
+            if [ "$TS_ERR" -eq 0 ]; then
+              echo "### TypeScript strict errors: 0 ✅"
+            else
+              echo "### TypeScript strict errors: $TS_ERR ❌ P0"
+              echo '```'
+              tail -20 /tmp/tsc.log
+              echo '```'
+            fi
+            echo ""
+
+            npx eslint . -f json -o /tmp/eslint.json 2>/dev/null || true
+            W=$(jq '[.[] | .warningCount] | add // 0' /tmp/eslint.json 2>/dev/null || echo 0)
+            E=$(jq '[.[] | .errorCount] | add // 0' /tmp/eslint.json 2>/dev/null || echo 0)
+            echo "### ESLint: $E errors, $W warnings"
+            if [ "$E" != "0" ]; then echo "⚠️ P1 — fix errors"; fi
+          } | tee /tmp/audit/code-quality.md >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: audit-code-quality
+          path: /tmp/audit/code-quality.md
+          retention-days: 90
+
+  performance:
+    name: ⚡ Performance Auditor
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install + build
+        working-directory: apex-ai/v13
+        run: |
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund --no-save
+          npx vite build 2>&1 | tail -30 > /tmp/build.log || true
+          cat /tmp/build.log
+
+      - name: Audit performance
+        shell: bash {0}
+        working-directory: apex-ai/v13
+        run: |
+          mkdir -p /tmp/audit
+          {
+            echo "## ⚡ Performance"
+            echo ""
+            echo "### Bundle sizes (top 10)"
+            echo '```'
+            du -sh dist/*.js dist/*.html 2>/dev/null | sort -h | tail -10 || echo "(no dist found)"
+            echo '```'
+            echo ""
+
+            NONCE=$(grep -c "APEX_BOOT_NONCE" dist/index.html 2>/dev/null)
+            NONCE=${NONCE:-0}
+            if [ "$NONCE" -eq 0 ]; then
+              echo "### APEX_BOOT_NONCE placeholders dans dist: 0 ✅"
+            else
+              echo "### APEX_BOOT_NONCE placeholders dans dist: $NONCE ❌ P0 (CLAUDE.md erreur #54)"
+            fi
+            echo ""
+
+            TOTAL=$(du -sb dist 2>/dev/null | awk '{print $1}' || echo 0)
+            echo "### Bundle dist/ total: $(($TOTAL / 1024)) KB"
+          } | tee /tmp/audit/performance.md >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: audit-performance
+          path: /tmp/audit/performance.md
+          retention-days: 90
+
+  tests:
+    name: 🧪 Tests Auditor
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install
+        working-directory: apex-ai/v13
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund --no-save
+
+      - name: Audit tests
+        shell: bash {0}
+        working-directory: apex-ai/v13
+        run: |
+          mkdir -p /tmp/audit
+          {
+            echo "## 🧪 Tests"
+            echo ""
+            npx vitest run --reporter=default 2>&1 > /tmp/vitest.log || true
+            PASS=$(grep -oE "[0-9]+ passed" /tmp/vitest.log | tail -1 | awk '{print $1}' 2>/dev/null || echo 0)
+            FAIL=$(grep -oE "[0-9]+ failed" /tmp/vitest.log | tail -1 | awk '{print $1}' 2>/dev/null || echo 0)
+            FILES_PASS=$(grep -oE "Test Files[[:space:]]+[0-9]+ passed" /tmp/vitest.log | tail -1 | grep -oE "[0-9]+" || echo 0)
+            echo "### Vitest: $PASS passed, $FAIL failed (sur $FILES_PASS fichiers de tests)"
+            echo ""
+            echo "### Détails (tail vitest)"
+            echo '```'
+            tail -30 /tmp/vitest.log
+            echo '```'
+          } | tee /tmp/audit/tests.md >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: audit-tests
+          path: /tmp/audit/tests.md
+          retention-days: 90
+
+  synthesis:
+    name: 📊 Crew Synthesis + auto-issue
+    needs: [security, architecture, code-quality, performance, tests]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v5
+        with:
+          path: /tmp/artifacts
+          merge-multiple: false
+
+      - name: Build combined report
+        id: report
+        run: |
+          mkdir -p /tmp
+          DATE_UTC=$(date -u +"%Y-%m-%d %H:%M UTC")
+          DATE_SLUG=$(date -u +"%Y-%m-%d-%H%M")
+          REPORT_FILE=/tmp/full-report.md
+
+          {
+            echo "# 🎯 Ultra Audit Crew — Rapport $DATE_UTC"
+            echo ""
+            echo "**Commit** : \`${{ github.sha }}\`"
+            echo "**Run** : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo ""
+            echo "## Statuts agents"
+            echo ""
+            echo "| Agent | Conclusion |"
+            echo "|-------|------------|"
+            echo "| 🛡 Security | ${{ needs.security.result }} |"
+            echo "| 🏗 Architecture | ${{ needs.architecture.result }} |"
+            echo "| 🔬 Code Quality | ${{ needs.code-quality.result }} |"
+            echo "| ⚡ Performance | ${{ needs.performance.result }} |"
+            echo "| 🧪 Tests | ${{ needs.tests.result }} |"
+            echo ""
+            echo "---"
+            echo ""
+            for AGENT in security architecture code-quality performance tests; do
+              if [ -f /tmp/artifacts/audit-$AGENT/$AGENT.md ]; then
+                cat /tmp/artifacts/audit-$AGENT/$AGENT.md
+                echo ""
+                echo "---"
+                echo ""
+              fi
+            done
+          } > $REPORT_FILE
+
+          cat $REPORT_FILE >> $GITHUB_STEP_SUMMARY
+          echo "date_slug=$DATE_SLUG" >> $GITHUB_OUTPUT
+          echo "date_utc=$DATE_UTC" >> $GITHUB_OUTPUT
+
+          # Limit issue body to 65000 chars (GitHub limit)
+          head -c 60000 $REPORT_FILE > /tmp/issue-body.md
+          echo "" >> /tmp/issue-body.md
+          echo "_(Report truncated to 60k chars. Full version in artifacts of run #${{ github.run_id }}.)_" >> /tmp/issue-body.md
+
+      - name: Create audit-report issue
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('/tmp/issue-body.md', 'utf8');
+            const title = `[Ultra Audit Crew] ${{ steps.report.outputs.date_utc }} — Run #${{ github.run_id }}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['audit-report']
+            });
+
+      - name: Upload combined report as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: audit-full-report-${{ steps.report.outputs.date_slug }}
+          path: /tmp/full-report.md
+          retention-days: 90

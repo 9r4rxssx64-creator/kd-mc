@@ -1,0 +1,54 @@
+name: Apex Execute Auto Trigger
+
+# Kevin 2026-05-16 règle "1 clic max, sinon tout automatique" :
+# Au lieu de demander Kevin de cliquer "Run workflow" dans GitHub UI pour
+# tester apex-execute, ce workflow se déclenche AUTO au push de claude/test-*
+# et dispatch apex-execute via API GitHub.
+#
+# Résultat : Kevin n'a rien à faire. Premier run = preuve end-to-end que le
+# pipeline d'auto-modification Apex fonctionne. Une fois prouvé, Claude Code
+# retire le @experimental du system prompt Apex.
+
+on:
+  push:
+    branches:
+      - 'claude/test-*'
+      - main
+    paths:
+      - 'apex-ai/v13/core/bootstrap.ts'
+      - 'apex-ai/v13/services/apex-execute.ts'
+      - '.github/workflows/apex-execute.yml'
+      - '.github/workflows/apex-execute-auto-trigger.yml'
+  workflow_dispatch:
+
+# Anti-spam : 1 seul auto-test toutes les 30 minutes max
+concurrency:
+  group: apex-execute-auto-trigger
+  cancel-in-progress: false
+
+jobs:
+  trigger-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Dispatch apex-execute test event
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const execId = `auto_${Date.now()}`;
+            console.log(`Dispatching apex-execute test with exec_id=${execId}`);
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'apex-execute',
+              client_payload: {
+                task: 'run_test',
+                params: {},
+                exec_id: execId,
+                src: 'auto_trigger_workflow',
+                src_version: 'auto'
+              }
+            });
+            console.log('apex-execute dispatched OK. Workflow apex-execute.yml should start.');

@@ -1,0 +1,217 @@
+<!doctype html>
+<!-- v1.0.1 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'">
+<title>IA — 100+ outils curés — KDMC</title>
+<meta name="description" content="Lanceur curé des meilleurs outils IA (génération, voix, image, vidéo, code, SEO, workflows…) + repos de scraping. Prix indiqué : gratuit / freemium / payant. 1 tap = l'outil s'ouvre.">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+  :root{--bg:#080d07;--bg2:#0d1510;--card:#111c14;--card2:#0c150f;--line:rgba(232,184,48,.18);
+    --gold:#e8b830;--gold2:#f6d97a;--txt:#f3f0e6;--mut:#9fb0a0;
+    --free:#43e08a;--freem:#5aa9ff;--paid:#ff9a5a}
+  *{box-sizing:border-box}
+  html,body{margin:0;max-width:100vw;overflow-x:hidden}
+  body{background:radial-gradient(1200px 600px at 50% -10%,rgba(232,184,48,.10),transparent 60%),linear-gradient(180deg,var(--bg),var(--bg2));
+    color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100dvh;padding:max(20px,env(safe-area-inset-top)) 16px max(40px,env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+  .wrap{max-width:960px;margin:0 auto}
+  .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .back{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--mut);border:1px solid var(--line);
+    background:var(--card2);border-radius:11px;padding:9px 13px;font-size:13px;min-height:40px}
+  .back:active{transform:scale(.97)}
+  h1{font-size:clamp(22px,6vw,32px);margin:6px 0 2px;background:linear-gradient(135deg,var(--gold2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--mut);font-size:14px;margin:0 0 14px;line-height:1.5}
+  .note{background:rgba(232,184,48,.08);border:1px solid var(--line);border-radius:13px;padding:12px 14px;font-size:13px;color:var(--mut);line-height:1.55;margin-bottom:14px}
+  .note b{color:var(--txt)}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;font-size:12px;color:var(--mut)}
+  .legend .pill{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:999px;display:inline-block}
+  .dot.free{background:var(--free)}.dot.freem{background:var(--freem)}.dot.paid{background:var(--paid)}
+  #q{width:100%;padding:14px 15px;border-radius:13px;border:1px solid var(--line);background:#0a120c;color:var(--txt);font-size:16px;margin-bottom:8px}
+  #q:focus{outline:none;border-color:rgba(232,184,48,.55)}
+  .filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+  .chip{border:1px solid var(--line);background:var(--card2);color:var(--mut);border-radius:999px;padding:7px 13px;font-size:12.5px;cursor:pointer;min-height:38px}
+  .chip.on{background:rgba(232,184,48,.16);color:var(--gold);border-color:rgba(232,184,48,.5);font-weight:700}
+  .chip:active{transform:scale(.96)}
+  #count{color:var(--mut);font-size:12.5px;margin:6px 2px 16px}
+  .cat{margin:18px 0}
+  .cat h3{display:flex;align-items:center;gap:8px;color:var(--gold);font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 9px}
+  .cat h3 .n{margin-left:auto;color:var(--mut);font-weight:600;font-size:11px;letter-spacing:0;text-transform:none;background:rgba(159,176,160,.12);border-radius:999px;padding:2px 8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  @media(min-width:640px){.grid{grid-template-columns:1fr 1fr 1fr}}
+  a.tool{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;background:linear-gradient(160deg,var(--card),var(--card2));
+    border:1px solid var(--line);border-radius:14px;padding:12px 13px;min-height:62px}
+  a.tool:active{transform:scale(.98)}
+  @media(hover:hover){a.tool:hover{border-color:rgba(232,184,48,.45);transform:translateY(-1px)}}
+  a.tool .t{font-weight:700;font-size:14.5px;display:flex;align-items:center;gap:6px}
+  a.tool .arr{margin-left:auto;color:var(--gold);opacity:.7;font-size:13px}
+  a.tool .meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tag{font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 7px;white-space:nowrap}
+  .tag.free{background:rgba(67,224,138,.15);color:var(--free)}
+  .tag.freem{background:rgba(90,169,255,.15);color:var(--freem)}
+  .tag.paid{background:rgba(255,154,90,.16);color:var(--paid)}
+  .acct{font-size:11px;color:var(--mut)}
+  a.tool .h{color:var(--mut);font-size:11px;word-break:break-all}
+  a.tool.repo{border-color:rgba(90,169,255,.28)}
+  a.tool.repo .arr{color:#7db4ff}
+  #empty{display:none;color:var(--mut);text-align:center;padding:26px;font-size:14px}
+  footer{text-align:center;color:var(--mut);font-size:12px;margin-top:26px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="/">← Accueil</a>
+    <a class="back" href="/osint/">🔎 OSINT</a>
+    <a class="back" href="/worldmonitor/">🌍 World Monitor</a>
+  </div>
+  <h1>🧠 IA — outils curés</h1>
+  <p class="sub">Les meilleurs outils IA par catégorie. Prix indiqué sur chaque carte. Un tap → l'outil s'ouvre.</p>
+  <div class="note">💡 <b>Honnête</b> : ce sont des services externes (la plupart demandent un <b>compte</b>, parfois payant). Le prix affiché est le <b>modèle général</b> (peut évoluer) — vérifie sur le site. Les modèles de génération (ChatGPT, Claude, Gemini, Groq, Mistral…) sont <b>déjà intégrés dans ton Apex AI</b> via le Coffre.</div>
+  <div class="legend">
+    <span class="pill"><span class="dot free"></span> Gratuit</span>
+    <span class="pill"><span class="dot freem"></span> Freemium (gratuit + payant)</span>
+    <span class="pill"><span class="dot paid"></span> Payant</span>
+    <span class="pill">🔓 sans compte · 🔑 compte requis</span>
+  </div>
+  <input id="q" type="search" placeholder="🔍 Rechercher un outil (ex: vidéo, voix, scraping, Suno…)" autocomplete="off">
+  <div class="filters" id="filters">
+    <button class="chip on" data-p="all">Tous</button>
+    <button class="chip" data-p="g">🟢 Gratuit</button>
+    <button class="chip" data-p="f">🔵 Freemium</button>
+    <button class="chip" data-p="p">🟠 Payant</button>
+    <button class="chip" data-p="free-account">🔓 Sans compte</button>
+  </div>
+  <p id="count"></p>
+  <div id="cats"></div>
+  <div id="empty">🔎 Aucun outil pour ce filtre.</div>
+  <footer>KDMC · lanceur IA curé · <span id="v">v1.0.1</span></footer>
+</div>
+<script>
+/* Catalogue curé (affiches Kevin 2026-07-05).
+   u=URL officielle · p=prix (g gratuit · f freemium · p payant) · c=1 compte requis
+   (sinon sans compte). repo:1 = dépôt GitHub open source (gratuit, sans compte).
+   Le prix est le MODÈLE GÉNÉRAL connu, pas un tarif exact (peut changer). */
+var CATS=[
+ {i:"✨",n:"Génération de texte",t:[
+   {n:"ChatGPT",u:"https://chatgpt.com",p:"f",c:1},{n:"Claude",u:"https://claude.ai",p:"f",c:1},
+   {n:"Gemini",u:"https://gemini.google.com",p:"f",c:1},{n:"Mistral (Le Chat)",u:"https://chat.mistral.ai",p:"f",c:1},
+   {n:"Meta AI",u:"https://www.meta.ai",p:"g",c:1},{n:"Perplexity",u:"https://www.perplexity.ai",p:"f",c:1},
+   {n:"NotebookLM",u:"https://notebooklm.google.com",p:"g",c:1},{n:"You.com",u:"https://you.com",p:"f",c:1},
+   {n:"Microsoft Copilot",u:"https://copilot.microsoft.com",p:"f",c:1},{n:"Poe",u:"https://poe.com",p:"f",c:1},
+   {n:"Grok",u:"https://grok.com",p:"f",c:1}]},
+ {i:"🎵",n:"Audio & musique",t:[
+   {n:"Suno",u:"https://suno.com",p:"f",c:1},{n:"Udio",u:"https://www.udio.com",p:"f",c:1},
+   {n:"ElevenLabs (voix)",u:"https://elevenlabs.io",p:"f",c:1},{n:"Murf AI (voix)",u:"https://murf.ai",p:"f",c:1},
+   {n:"Speechify",u:"https://speechify.com",p:"f",c:1},{n:"superwhisper (dictée)",u:"https://superwhisper.com",p:"f",c:1},
+   {n:"Wispr Flow (dictée)",u:"https://wisprflow.ai",p:"f",c:1}]},
+ {i:"🖼",n:"Texte → image",t:[
+   {n:"Midjourney",u:"https://www.midjourney.com",p:"p",c:1},{n:"Ideogram",u:"https://ideogram.ai",p:"f",c:1},
+   {n:"DALL·E 3",u:"https://openai.com/dall-e-3",p:"f",c:1},{n:"Imagen 3 (Google)",u:"https://deepmind.google/technologies/imagen-3/",p:"f",c:1},
+   {n:"Adobe Firefly",u:"https://firefly.adobe.com",p:"f",c:1},{n:"Playground",u:"https://playground.com",p:"f",c:1}]},
+ {i:"🎬",n:"Texte → vidéo",t:[
+   {n:"OpenAI Sora",u:"https://sora.com",p:"p",c:1},{n:"Google Veo",u:"https://deepmind.google/technologies/veo/",p:"f",c:1},
+   {n:"Runway",u:"https://runwayml.com",p:"f",c:1},{n:"Luma AI",u:"https://lumalabs.ai",p:"f",c:1},
+   {n:"Pika",u:"https://pika.art",p:"f",c:1},{n:"Viggle",u:"https://viggle.ai",p:"f",c:1}]},
+ {i:"📹",n:"Vidéo (montage & avatars)",t:[
+   {n:"HeyGen (avatars)",u:"https://www.heygen.com",p:"f",c:1},{n:"Klap",u:"https://klap.app",p:"f",c:1},
+   {n:"OpusClip",u:"https://www.opus.pro",p:"f",c:1},{n:"Submagic",u:"https://www.submagic.co",p:"p",c:1},
+   {n:"VEED",u:"https://www.veed.io",p:"f",c:1},{n:"Descript",u:"https://www.descript.com",p:"f",c:1}]},
+ {i:"🌐",n:"Sites web (build)",t:[
+   {n:"Gamma",u:"https://gamma.app",p:"f",c:1},{n:"Framer",u:"https://www.framer.com",p:"f",c:1},
+   {n:"Webflow",u:"https://webflow.com",p:"f",c:1},{n:"Durable",u:"https://durable.co",p:"p",c:1},
+   {n:"Dora",u:"https://www.dora.run",p:"f",c:1},{n:"Uizard",u:"https://uizard.io",p:"f",c:1},
+   {n:"Galileo AI",u:"https://www.usegalileo.ai",p:"f",c:1}]},
+ {i:"💬",n:"Chatbots de site & support",t:[
+   {n:"Intercom Fin",u:"https://www.intercom.com/fin",p:"p",c:1},{n:"Chatbase",u:"https://www.chatbase.co",p:"f",c:1},
+   {n:"Chatbit",u:"https://chatbit.co",p:"f",c:1},{n:"Tidio",u:"https://www.tidio.com",p:"f",c:1},
+   {n:"Dante AI",u:"https://www.dante-ai.com",p:"f",c:1},{n:"Sierra",u:"https://sierra.ai",p:"p",c:1},
+   {n:"Decagon",u:"https://decagon.ai",p:"p",c:1},{n:"Pylon",u:"https://usepylon.com",p:"p",c:1}]},
+ {i:"📈",n:"Marketing & contenu",t:[
+   {n:"Jasper",u:"https://www.jasper.ai",p:"p",c:1},{n:"Writesonic",u:"https://writesonic.com",p:"f",c:1},
+   {n:"AdCreative",u:"https://www.adcreative.ai",p:"p",c:1},{n:"Blaze",u:"https://www.blaze.ai",p:"f",c:1},
+   {n:"Coframe",u:"https://coframe.com",p:"p",c:1},{n:"beehiiv (newsletter)",u:"https://www.beehiiv.com",p:"f",c:1},
+   {n:"Cohesive",u:"https://cohesive.so",p:"f",c:1},{n:"Supermeme",u:"https://supermeme.ai",p:"f",c:1}]},
+ {i:"🔎",n:"SEO & blog",t:[
+   {n:"Surfer SEO",u:"https://surferseo.com",p:"p",c:1},{n:"SEObot",u:"https://seobotai.com",p:"p",c:1},
+   {n:"Byword",u:"https://byword.ai",p:"p",c:1},{n:"Canva",u:"https://www.canva.com",p:"f",c:1}]},
+ {i:"💼",n:"Ventes & CRM",t:[
+   {n:"Clay",u:"https://www.clay.com",p:"f",c:1},{n:"folk",u:"https://www.folk.app",p:"p",c:1},
+   {n:"Reply.io",u:"https://reply.io",p:"p",c:1},{n:"Sendspark",u:"https://www.sendspark.com",p:"f",c:1}]},
+ {i:"🧑‍💻",n:"Code & no-code",t:[
+   {n:"Cursor",u:"https://www.cursor.com",p:"f",c:1},{n:"v0",u:"https://v0.dev",p:"f",c:1},
+   {n:"Replit",u:"https://replit.com",p:"f",c:1},{n:"Lovable",u:"https://lovable.dev",p:"f",c:1},
+   {n:"Devin",u:"https://devin.ai",p:"p",c:1}]},
+ {i:"🗓",n:"Réunions (notes auto)",t:[
+   {n:"Fireflies",u:"https://fireflies.ai",p:"f",c:1},{n:"tl;dv",u:"https://tldv.io",p:"f",c:1},
+   {n:"Grain",u:"https://grain.com",p:"f",c:1},{n:"Bluedot",u:"https://www.bluedothq.com",p:"f",c:1}]},
+ {i:"⚡",n:"Productivité",t:[
+   {n:"Notion AI",u:"https://www.notion.so/product/ai",p:"f",c:1},{n:"Airtable",u:"https://www.airtable.com",p:"f",c:1},
+   {n:"Superhuman (email)",u:"https://superhuman.com",p:"p",c:1},{n:"Loom",u:"https://www.loom.com",p:"f",c:1},
+   {n:"Raycast",u:"https://www.raycast.com",p:"f",c:1}]},
+ {i:"🔧",n:"Opérations & workflows",t:[
+   {n:"Zapier",u:"https://zapier.com",p:"f",c:1},{n:"Lindy",u:"https://www.lindy.ai",p:"f",c:1},
+   {n:"Cassidy",u:"https://www.cassidyai.com",p:"f",c:1},{n:"Magical",u:"https://www.getmagical.com",p:"f",c:1},
+   {n:"CrewAI",u:"https://www.crewai.com",p:"f",c:1},{n:"PolyAI",u:"https://poly.ai",p:"p",c:1},
+   {n:"Respell",u:"https://www.respell.ai",p:"f",c:1},{n:"Slite",u:"https://slite.com",p:"f",c:1},
+   {n:"Juicebox (PeopleGPT)",u:"https://juicebox.ai",p:"p",c:1}]},
+ {i:"🕷",n:"Scraping / crawl (repos GitHub)",repo:1,t:[
+   {n:"Crawl4AI",u:"https://github.com/unclecode/crawl4ai",p:"g"},
+   {n:"Firecrawl",u:"https://github.com/firecrawl/firecrawl",p:"g"},
+   {n:"Playwright",u:"https://github.com/microsoft/playwright",p:"g"},
+   {n:"Crawlee",u:"https://github.com/apify/crawlee",p:"g"},
+   {n:"Scrapy",u:"https://github.com/scrapy/scrapy",p:"g"},
+   {n:"ScrapeGraphAI",u:"https://github.com/ScrapeGraphAI/Scrapegraph-ai",p:"g"},
+   {n:"Browser Use",u:"https://github.com/browser-use/browser-use",p:"g"},
+   {n:"Katana",u:"https://github.com/projectdiscovery/katana",p:"g"},
+   {n:"Maxun",u:"https://github.com/getmaxun/maxun",p:"g"}]}
+];
+var PMAP={g:{cls:"free",lbl:"Gratuit"},f:{cls:"freem",lbl:"Freemium"},p:{cls:"paid",lbl:"Payant"}};
+var filterP="all";
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function host(u){try{return new URL(u).host.replace(/^www\./,"");}catch(e){return u;}}
+function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");}
+function passFilter(t){
+  if(filterP==="all")return true;
+  if(filterP==="free-account")return !t.c;      /* sans compte (repos) */
+  return (t.p||"f")===filterP;
+}
+function render(f){
+  f=norm(f||"");var box=document.getElementById("cats"),html="",shown=0,total=0;
+  for(var c=0;c<CATS.length;c++){
+    var cat=CATS[c],rows="",catMatch=norm(cat.n).indexOf(f)>=0;
+    for(var i=0;i<cat.t.length;i++){
+      var t=cat.t[i];total++;
+      if(!passFilter(t))continue;
+      if(f&&!catMatch&&norm(t.n+" "+host(t.u)).indexOf(f)<0)continue;
+      shown++;
+      var pm=PMAP[t.p||"f"];
+      var acct=cat.repo?'<span class="acct">🔓 sans compte</span>':(t.c?'<span class="acct">🔑 compte</span>':'<span class="acct">🔓 sans compte</span>');
+      rows+='<a class="tool'+(cat.repo?' repo':'')+'" href="'+esc(t.u)+'" target="_blank" rel="noopener noreferrer">'+
+        '<span class="t">'+esc(t.n)+'<span class="arr">↗</span></span>'+
+        '<span class="meta"><span class="tag '+pm.cls+'">'+pm.lbl+'</span>'+acct+'</span>'+
+        '<span class="h">'+esc(host(t.u))+'</span></a>';
+    }
+    if(rows)html+='<div class="cat"><h3>'+cat.i+' '+esc(cat.n)+'<span class="n">'+cat.t.length+'</span></h3><div class="grid">'+rows+'</div></div>';
+  }
+  box.innerHTML=html;
+  document.getElementById("empty").style.display=shown?"none":"block";
+  var tot=0;for(var k=0;k<CATS.length;k++)tot+=CATS[k].t.length;
+  document.getElementById("count").textContent=(shown<tot?shown+" / ":"")+tot+" outils · "+CATS.length+" catégories";
+}
+document.getElementById("q").addEventListener("input",function(e){render(e.target.value);});
+document.getElementById("filters").addEventListener("click",function(e){
+  var b=e.target.closest(".chip");if(!b)return;
+  filterP=b.getAttribute("data-p");
+  var chips=document.querySelectorAll("#filters .chip");
+  for(var i=0;i<chips.length;i++)chips[i].classList.toggle("on",chips[i]===b);
+  render(document.getElementById("q").value);
+});
+render("");
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-ia" data-version="v1.0.1" data-color="#c9a227" defer></script>
+</body>
+</html>

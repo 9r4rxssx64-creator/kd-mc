@@ -1,0 +1,89 @@
+name: 'Axe A11y Apex v13'
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Audit cascade v13.3.82 — validation MESURABLE de l'a11y 100/100.
+# Trigger : push sur main qui touche apex-ai/v13/**.
+# Job : install + build + preview server + Playwright a11y.spec.ts (5 routes).
+# Assert : 0 violations critical + 0 violations serious (WCAG 2.1 AA).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+      - '.github/workflows/axe-a11y-apex-v13.yml'
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'apex-ai/v13/features/**'
+      - 'apex-ai/v13/ui/**'
+      - 'apex-ai/v13/index.html'
+
+# Droits minimum (24.09.2026) : ce robot ne fait que lire. Explicite, pour ne jamais dépendre du
+# réglage par défaut du dépôt (le dépôt public est réglé en lecture seule).
+permissions:
+  contents: read
+
+jobs:
+  axe-a11y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Run a11y tests (axe-core WCAG 2.1 AA)
+        run: npx playwright test tests/e2e/a11y.spec.ts --project=chromium
+        env:
+          CI: 'true'
+
+      - name: Upload a11y baseline report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: a11y-baseline-${{ github.sha }}
+          path: |
+            apex-ai/v13/a11y-baseline.json
+            apex-ai/v13/test-results/
+            apex-ai/v13/playwright-report/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## ♿ Axe A11y Apex v13" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Routes auditées : landing, chat, vault, settings, admin" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Seuils WCAG 2.1 AA :" >> $GITHUB_STEP_SUMMARY
+          echo "- Critical violations : **0**" >> $GITHUB_STEP_SUMMARY
+          echo "- Serious violations : **0**" >> $GITHUB_STEP_SUMMARY
+          echo "- Moderate / Minor : tracked dans baseline" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f apex-ai/v13/a11y-baseline.json ]; then
+            echo "✅ Rapport baseline généré (artifact \`a11y-baseline-${{ github.sha }}\`)." >> $GITHUB_STEP_SUMMARY
+          fi

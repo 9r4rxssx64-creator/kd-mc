@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/sitemap.xml

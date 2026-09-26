@@ -1,0 +1,95 @@
+name: Liens — garde-fou (drift)
+
+# Vérifie que le Centre de contrôle (kdmc-home/liens) reste à jour :
+# chaque worker (wrangler.toml) et chaque sous-domaine kd-mc.com doit apparaître
+# dans liens.js. Sinon → UNE seule issue (anti-spam). Se ferme seule quand c'est OK.
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  push:
+    branches: [ main ]
+    paths:
+      - "**/wrangler.toml"
+      - "services/kdmc-router/wrangler.toml"
+      - "kdmc-home/liens/liens.js"
+      - ".github/workflows/liens-drift-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: liens-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Détecter les manques
+        id: scan
+        run: |
+          set -e
+          LIENS="kdmc-home/liens/liens.js"
+          # Workers internes/legacy non destinés à la page :
+          EXCLUDE_WORKERS="kdmc-router kdmc-balances apex-chat-svc"
+          MISSING=""
+
+          # 1) Workers (wrangler.toml)
+          for f in $(find . -name wrangler.toml -not -path '*/node_modules/*'); do
+            n=$(grep -m1 '^name' "$f" | sed 's/.*=//; s/[" ]//g')
+            [ -z "$n" ] && continue
+            echo "$EXCLUDE_WORKERS" | grep -qw "$n" && continue
+            if ! grep -q "$n" "$LIENS"; then
+              MISSING="$MISSING\n- worker manquant : \`$n\` ($f)"
+            fi
+          done
+
+          # 2) Sous-domaines kd-mc.com (kdmc-router)
+          for d in $(grep -oE '[a-z0-9-]+\.kd-mc\.com' services/kdmc-router/wrangler.toml | sort -u); do
+            sub="${d%%.kd-mc.com}"
+            # kd-mc.com nu + www = portail (toujours présents)
+            [ "$sub" = "www" ] && continue
+            if ! grep -q "$d" "$LIENS"; then
+              MISSING="$MISSING\n- sous-domaine manquant : \`$d\`"
+            fi
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "drift=1" >> "$GITHUB_OUTPUT"
+            { echo "body<<EOF"; echo "Le Centre de contrôle (kd-mc.com/liens) n'est pas à jour :"; echo -e "$MISSING"; echo ""; echo "Ajoute ces entrées dans \`kdmc-home/liens/liens.js\` (ou ajuste EXCLUDE_WORKERS)."; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          else
+            echo "drift=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ouvrir / mettre à jour / fermer l'issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRIFT: ${{ steps.scan.outputs.drift }}
+          BODY: ${{ steps.scan.outputs.body }}
+        run: |
+          set -e
+          LABEL="liens-drift"
+          gh label create "$LABEL" --color FFB000 --description "Centre de contrôle à mettre à jour" 2>/dev/null || true
+          NUM=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          if [ "$DRIFT" = "1" ]; then
+            if [ -n "$NUM" ]; then
+              gh issue edit "$NUM" --body "$BODY"
+              echo "Issue #$NUM mise à jour"
+            else
+              gh issue create --title "🔗 Centre de contrôle à mettre à jour" --label "$LABEL" --body "$BODY"
+            fi
+          else
+            if [ -n "$NUM" ]; then
+              gh issue close "$NUM" --comment "✅ Plus aucun lien manquant — refermé automatiquement."
+            fi
+            echo "Aucun drift — tout est à jour."
+          fi

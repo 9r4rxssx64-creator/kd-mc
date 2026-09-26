@@ -1,0 +1,13 @@
+{
+  "checked_at": "2026-08-14T07:13:44Z",
+  "workers": {
+    "apex-auth-worker": { "url": "https://apex-auth-worker.9r4rxssx64.workers.dev/health", "http": "200", "up": true },
+    "cmc-parser-proxy": { "url": "https://cmc-parser-proxy.9r4rxssx64.workers.dev/health", "http": "401", "up": true },
+    "apex-push-worker": { "url": "https://apex-push-worker.9r4rxssx64.workers.dev/health", "http": "200", "up": true },
+    "ld-printify-order (shops)": { "url": "https://ld-printify-order.9r4rxssx64.workers.dev/", "http": "200", "up": true },
+    "apex-secrets-proxy (IA)": { "url": "https://apex-secrets-proxy.9r4rxssx64.workers.dev/health", "http": "200", "up": true },
+    "ld-gemini-proxy (shops)": { "url": "https://ld-gemini-proxy.9r4rxssx64.workers.dev/", "http": "200", "up": true },
+    "apex-chat-api": { "url": "https://apex-chat-api.9r4rxssx64.workers.dev/health", "http": "200", "up": true }
+  },
+  "down_count": 0
+}

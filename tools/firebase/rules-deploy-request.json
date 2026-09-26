@@ -1,0 +1,8 @@
+{
+  "_comment": "MARKER — modifier ce fichier déclenche firebase-rules-auto-apply.yml qui publie firebase-rules-apex.json avec ces états. Rollback : apex_state=open (rouvre /apex + /coffre_vault), rules_state=open (rouvre /cmcteams), shops_lock=off (rouvre l'écriture produits anon). Commit, push.",
+  "rules_state": "hardened",
+  "apex_state": "hardened",
+  "shops_lock": "on",
+  "requested_at": "2026-09-05",
+  "reason": "Arbre v3.16 (fait n°12, dépôt PUBLIC) : /arbre n'est plus lisible en entier (plus de listing des empreintes de code) — lecture/écriture UNIQUEMENT par enfant /arbre/<empreinte 64-hex> + auth. Le code famille se vérifie désormais sur le domaine (kdmc-router /__arbre/unlock), plus dans le fichier public. Les états cmcteams/apex/shops sont inchangés (keep/hardened). Rollback : remettre la règle parent .read/.write auth != null sur /arbre."
+}

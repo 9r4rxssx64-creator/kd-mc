@@ -1,0 +1,17 @@
+{
+  "name": "kdmc-gdrive",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Module Google Drive OAuth 2.0 pour CMCteams (KDMC) — upload/download/share",
+  "main": "client.js",
+  "scripts": {
+    "test": "node -e \"import('./client.js').then(m=>console.log(Object.keys(m)))\""
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "google-auth-library": "^9.14.0"
+  },
+  "author": "Kevin DESARZENS (U11804)",
+  "license": "UNLICENSED",
+  "private": true
+}

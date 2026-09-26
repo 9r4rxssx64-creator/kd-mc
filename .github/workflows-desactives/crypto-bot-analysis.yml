@@ -1,0 +1,38 @@
+# Analyse expert des cryptos tradées (vraies bougies Binance, sans clé).
+# Le sandbox de l'agent ne peut pas atteindre Binance (egress bloqué) → l'analyse
+# tourne ICI (runner à réseau ouvert, leçon #135) et je lis le résultat.
+# Déclenchement : manuel uniquement. Lecture seule — aucune écriture nulle part.
+
+name: Crypto Analyse Expert
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Cryptos (ex BTC/USDT,ETH/USDT) — vide = les 8 du bot"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Analyser (multi-horizons 1h/4h/1j)
+        run: |
+          python3 crypto-bot/analysis.py "${{ github.event.inputs.symbols }}" | tee /tmp/analysis.txt
+      - name: Récapitulatif
+        run: |
+          {
+            echo "## 🔬 Analyse expert des cryptos (vraies données Binance)"
+            echo ""
+            echo '```'
+            grep -v '^ANALYSIS|' /tmp/analysis.txt
+            echo '```'
+            echo ""
+            echo "_Photo technique du moment — pas une promesse de gains._"
+          } >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,16 @@
+name = "kdmc-mail"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# KV PARTAGÉ avec kdmc-router (même namespace, id FIGÉ — cf services/kdmc-router/wrangler.toml).
+# Le worker mail y DÉPOSE les pièces jointes (mail:p:<id>) ; le routeur les EXPOSE à l'app
+# admin (/__mail/scan|ack). Un seul registre, aucun binding en plus.
+[[kv_namespaces]]
+binding = "ACCOUNTS"
+id = "8cfa33a28ac045adb7b7a9556ca8a073"
+
+# Réception : brancher via Cloudflare Email Routing une adresse (ex factures@kd-mc.com)
+# vers ce worker (destination = Worker « kdmc-mail »). Action Kevin unique : activer
+# Email Routing sur kd-mc.com + router factures@ → kdmc-mail. Ensuite il transfère/BCC
+# ses factures à cette adresse (ou règle de transfert auto Gmail/iCloud).

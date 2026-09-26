@@ -1,0 +1,110 @@
+name: World Monitor — alertes push (séismes M6+ / alertes rouges ONU)
+
+# Kevin 2026-07-07 (« Go tout », amélioration n°3) : notification push sur son
+# iPhone quand un événement mondial MAJEUR survient — séisme M≥6 ou alerte
+# GDACS/ONU rouge — via l'apex-push-worker EXISTANT (les appareils de Kevin
+# sont déjà abonnés dans /apex/ax_push_subs → /send-all les atteint tous).
+#
+# Cadence horaire JUSTIFIÉE (règle ANTI-SPAM) : alerte catastrophe = sensible
+# au temps ; ce cron n'envoie AUCUN mail (steps fail-open, jamais de fail),
+# et ne pousse une notif QUE s'il y a un événement NOUVEAU (état déduped
+# dans Firebase /apex/ax_wm_alert_state, service account gauth).
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch: {}
+
+concurrency:
+  group: wm-alerts
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: tools/firebase
+
+      - name: Détecter les nouveaux événements majeurs et pousser
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          PUSH_ADMIN_TOKEN: ${{ secrets.PUSH_ADMIN_TOKEN }}
+        run: |
+          set +e
+          FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          PUSH_URL="https://apex-push-worker.9r4rxssx64.workers.dev"
+          TOKEN=$(node tools/firebase/gauth.cjs); QS=""
+          [ -n "$TOKEN" ] && QS="?access_token=${TOKEN}"
+
+          # 1) Sources live (fail-open : source down = pas d'alerte, jamais d'échec)
+          curl -sS --max-time 20 "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/6.0_day.geojson" -o /tmp/usgs.json || echo '{}' > /tmp/usgs.json
+          curl -sS --max-time 20 "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP" -o /tmp/gdacs.json || echo '{}' > /tmp/gdacs.json
+
+          # 2) État déjà-alerté
+          curl -sS --max-time 15 "${FB_URL}/apex/ax_wm_alert_state.json${QS}" -o /tmp/state.json || echo 'null' > /tmp/state.json
+
+          # 3) Diff + notifs (cap 3/run pour ne jamais spammer)
+          python3 - <<'PYEOF'
+          import json, time, os, urllib.request
+
+          def load(p):
+              try:
+                  with open(p) as f: return json.load(f)
+              except Exception: return {}
+
+          usgs, gdacs, state = load('/tmp/usgs.json'), load('/tmp/gdacs.json'), load('/tmp/state.json')
+          seen = set((state or {}).get('ids', []))
+          alerts = []
+          for f in (usgs.get('features') or []):
+              p = f.get('properties') or {}
+              mid = 'q_' + str(f.get('id') or p.get('code') or '')
+              mag = p.get('mag') or 0
+              if mag >= 6 and mid not in seen:
+                  alerts.append((mid, '🌍 Séisme M%.1f' % mag, (p.get('place') or '?') + (' — risque tsunami' if p.get('tsunami') else '')))
+          for f in (gdacs.get('features') or []):
+              p = f.get('properties') or {}
+              if str(p.get('alertlevel', '')).lower() != 'red': continue
+              gid = 'g_' + str(p.get('eventid') or p.get('eventname') or '')
+              if gid not in seen:
+                  alerts.append((gid, '🚨 Alerte ROUGE ONU', (p.get('eventname') or p.get('htmldescription') or p.get('eventtype') or '?')[:120]))
+
+          token = os.environ.get('PUSH_ADMIN_TOKEN', '')
+          sent = 0
+          for mid, title, body in alerts[:3]:
+              seen.add(mid)
+              if not token:
+                  print('(pas de PUSH_ADMIN_TOKEN — événement noté sans notif) ' + title); continue
+              try:
+                  req = urllib.request.Request(
+                      'https://apex-push-worker.9r4rxssx64.workers.dev/send-all',
+                      data=json.dumps({'payload': {'title': title, 'body': body, 'url': 'https://kd-mc.com/worldmonitor/', 'tag': 'wm-alert'}}).encode(),
+                      headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token}, method='POST')
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      print('push', title, '→ HTTP', r.status, r.read()[:150])
+                      sent += 1
+              except Exception as e:
+                  print('push KO (cause exacte):', title, '→', repr(e)[:200])
+          for _, t2, b2 in alerts[3:]:
+              print('(cap 3/run) non notifié :', t2, b2)
+
+          ids = list(seen)[-300:]
+          with open('/tmp/newstate.json', 'w') as f:
+              json.dump({'ids': ids, 'ts': int(time.time() * 1000), 'last_sent': sent}, f)
+          print('événements nouveaux:', len(alerts), '| notifs envoyées:', sent)
+          PYEOF
+
+          # 4) Persister l'état (fail-open)
+          HTTP=$(curl -sS -o /tmp/st_resp.txt -w "%{http_code}" -X PUT "${FB_URL}/apex/ax_wm_alert_state.json${QS}" \
+            -H "Content-Type: application/json" --data-binary @/tmp/newstate.json || echo 000)
+          echo "état → HTTP $HTTP $(head -c 120 /tmp/st_resp.txt)"
+          exit 0

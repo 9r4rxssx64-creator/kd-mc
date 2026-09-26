@@ -1,0 +1,231 @@
+name: Deploy apex-auth-worker
+
+# Workflow dédié au déploiement autonome du Cloudflare Worker apex-auth-worker
+# (Phase 5 Firebase Auth : émission de custom tokens RS256).
+#
+# AUTO-TRIGGER :
+#  - workflow_dispatch (manuel)
+#  - push sur main qui modifie services/apex-auth-worker/** ou ce workflow
+#
+# ACTIONS AUTOMATIQUES :
+#  1. Vérifie pré-requis (CLOUDFLARE_API_TOKEN + FIREBASE_PRIVATE_KEY + FIREBASE_CLIENT_EMAIL)
+#  2. Crée le KV namespace AUTH_KV (rate-limit) s'il n'existe pas + persiste l'ID dans wrangler.toml
+#  3. Pousse les secrets Firebase Admin au worker (wrangler secret put)
+#  4. Déploie le worker
+#  5. Output : URL worker dans le summary (à coller dans Apex Coffre `ax_auth_worker_url`)
+#
+# ACTION KEVIN (1 fois) :
+#  - Ajouter dans GitHub Secrets si manquants :
+#    https://github.com/9r4rxssx64-creator/cmcteams/settings/secrets/actions
+#    * FIREBASE_PRIVATE_KEY  (champ "private_key" du Service Account JSON)
+#    * FIREBASE_CLIENT_EMAIL (champ "client_email")
+#  - Source : Firebase Console > Project cmcteams-c16ab > Settings > Service Accounts
+#             > Generate new private key
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'services/apex-auth-worker/**'
+      - '.github/workflows/deploy-apex-auth-worker.yml'
+
+permissions:
+  contents: write  # Permet le commit auto de l'ID KV dans wrangler.toml
+
+concurrency:
+  group: deploy-apex-auth-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Pre-flight check secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+        run: |
+          set -e
+          MISSING=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && MISSING="$MISSING CLOUDFLARE_API_TOKEN"
+          [ -z "$FIREBASE_PRIVATE_KEY" ] && MISSING="$MISSING FIREBASE_PRIVATE_KEY"
+          [ -z "$FIREBASE_CLIENT_EMAIL" ] && MISSING="$MISSING FIREBASE_CLIENT_EMAIL"
+          if [ -n "$MISSING" ]; then
+            echo "::error::Secrets GitHub manquants :$MISSING"
+            echo ""
+            echo "Pour les ajouter :"
+            echo "1. https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. New repository secret :"
+            echo "   - FIREBASE_PRIVATE_KEY  : champ 'private_key' du Service Account JSON"
+            echo "   - FIREBASE_CLIENT_EMAIL : champ 'client_email'"
+            echo "3. Source JSON : Firebase Console > Project cmcteams-c16ab"
+            echo "                 > Settings > Service Accounts > Generate new private key"
+            exit 1
+          fi
+          echo "::notice::Tous les secrets requis sont configurés."
+          wrangler --version
+          CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN wrangler whoami
+
+      - name: Resolve KV namespace AUTH_KV (idempotent — reuse existing or create)
+        id: kv_setup
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: services/apex-auth-worker
+        run: |
+          set -e
+          # Si wrangler.toml a déjà un vrai ID, on garde
+          if ! grep -q "REPLACE_WITH_KV_ID_FROM_WRANGLER_OUTPUT" wrangler.toml; then
+            EXISTING=$(grep -oE 'id\s*=\s*"[a-f0-9]+"' wrangler.toml | head -1)
+            echo "::notice::KV namespace déjà persisté dans wrangler.toml : $EXISTING"
+            echo "kv_setup=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Sinon, idempotence : list les KV existants AVANT de tenter create
+          # (évite "namespace already exists" si workflow a déjà tourné mais commit pas persisté)
+          echo "Listing existing KV namespaces..."
+          LIST_OUT=$(wrangler kv namespace list 2>&1 || true)
+          echo "$LIST_OUT"
+          # Titre KV selon version wrangler : "AUTH_KV" (binding seul, wrangler récent)
+          # OU "apex-auth-worker-AUTH_KV" (ancien <worker>-<binding>). On matche les 2
+          # pour rester idempotent quelle que soit la version (corrige les runs en échec
+          # 2026-05-26 → 2026-06-02 : create tentait de recréer un namespace existant).
+          EXISTING_ID=$(echo "$LIST_OUT" | jq -r '.[]? | select(.title == "AUTH_KV" or .title == "apex-auth-worker-AUTH_KV") | .id' 2>/dev/null | head -1)
+
+          if [ -n "$EXISTING_ID" ] && [ "$EXISTING_ID" != "null" ]; then
+            KV_ID="$EXISTING_ID"
+            echo "::notice::KV AUTH_KV existe déjà côté Cloudflare : $KV_ID — réutilisé."
+            echo "kv_setup=reused" >> $GITHUB_OUTPUT
+          else
+            echo "Creating KV namespace AUTH_KV..."
+            CREATE_OUT=$(wrangler kv namespace create AUTH_KV 2>&1)
+            echo "$CREATE_OUT"
+            KV_ID=$(echo "$CREATE_OUT" | grep -oE '"id"\s*:\s*"[a-f0-9]{32}"' | grep -oE '[a-f0-9]{32}' | head -1)
+            if [ -z "$KV_ID" ]; then
+              KV_ID=$(echo "$CREATE_OUT" | grep -oE 'id\s*=\s*"[a-f0-9]{32}"' | grep -oE '[a-f0-9]{32}' | head -1)
+            fi
+            if [ -z "$KV_ID" ]; then
+              echo "::error::Impossible de parser l'ID KV namespace"
+              exit 1
+            fi
+            echo "::notice::KV namespace AUTH_KV créé : $KV_ID"
+            echo "kv_setup=created" >> $GITHUB_OUTPUT
+          fi
+
+          # Patch wrangler.toml en local pour ce run (le deploy utilisera le bon ID).
+          # Pas de commit retour vers le repo : l'idempotence ci-dessus garantit qu'on
+          # retrouvera toujours l'ID au prochain run via `wrangler kv namespace list`.
+          sed -i "s/REPLACE_WITH_KV_ID_FROM_WRANGLER_OUTPUT/$KV_ID/" wrangler.toml
+          echo "kv_id=$KV_ID" >> $GITHUB_OUTPUT
+
+      - name: Push Firebase secrets to worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        working-directory: services/apex-auth-worker
+        run: |
+          set -e
+          echo "Pushing FIREBASE_PRIVATE_KEY (length ${#FIREBASE_PRIVATE_KEY}) ..."
+          printf '%s' "$FIREBASE_PRIVATE_KEY" | wrangler secret put FIREBASE_PRIVATE_KEY
+          echo "Pushing FIREBASE_CLIENT_EMAIL ..."
+          printf '%s' "$FIREBASE_CLIENT_EMAIL" | wrangler secret put FIREBASE_CLIENT_EMAIL
+          # FIREBASE_WEB_API_KEY est OPTIONNEL (clé publique) : active l'échange
+          # custom_token → id_token côté worker (Phase 5 client). Si absent → fail-open
+          # (le worker renvoie seulement custom_token, comportement actuel inchangé).
+          if [ -n "$FIREBASE_WEB_API_KEY" ]; then
+            echo "Pushing FIREBASE_WEB_API_KEY ..."
+            printf '%s' "$FIREBASE_WEB_API_KEY" | wrangler secret put FIREBASE_WEB_API_KEY
+            echo "::notice::FIREBASE_WEB_API_KEY poussé — échange id_token activé."
+          else
+            echo "::notice::FIREBASE_WEB_API_KEY absent — worker en mode custom_token seul (Phase 5 client inactive)."
+          fi
+          echo "::notice::Secrets Firebase poussés au worker."
+
+      - name: Deploy worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: services/apex-auth-worker
+        run: |
+          set -e
+          DEPLOY_OUT=$(wrangler deploy 2>&1)
+          echo "$DEPLOY_OUT"
+          # Parse URL worker depuis sortie (format "Uploaded apex-auth-worker (...)" puis "Deployed to https://...")
+          WORKER_URL=$(echo "$DEPLOY_OUT" | grep -oE 'https://apex-auth-worker\.[a-z0-9-]+\.workers\.dev' | head -1)
+          if [ -z "$WORKER_URL" ]; then
+            echo "::warning::URL worker pas trouvée dans la sortie (deploy peut-être OK quand même)"
+          else
+            echo "worker_url=$WORKER_URL" >> $GITHUB_OUTPUT
+            echo "::notice::Worker déployé : $WORKER_URL"
+          fi
+
+      - name: Health check
+        if: ${{ steps.deploy.outputs.worker_url != '' }}
+        run: |
+          set -e
+          URL="${{ steps.deploy.outputs.worker_url }}/health"
+          echo "Pinging $URL ..."
+          for i in 1 2 3; do
+            if curl -fsS "$URL" > /tmp/health.json; then
+              cat /tmp/health.json
+              echo ""
+              echo "::notice::Health check OK"
+              exit 0
+            fi
+            echo "Retry $i/3..."
+            sleep 5
+          done
+          echo "::error::Health check failed après 3 tentatives"
+          exit 1
+
+
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "## Deploy apex-auth-worker"
+            echo ""
+            echo "| Étape | Statut |"
+            echo "|-------|--------|"
+            echo "| KV namespace | ${{ steps.kv_setup.outputs.kv_setup == 'created' && '🆕 créé' || (steps.kv_setup.outputs.kv_setup == 'reused' && '♻️ réutilisé' || '✅ existant') }} |"
+            echo "| Secrets Firebase | ✅ poussés |"
+            echo "| Deploy | ${{ steps.deploy.outcome == 'success' && '✅' || '❌' }} |"
+            echo ""
+            if [ -n "${{ steps.deploy.outputs.worker_url }}" ]; then
+              echo "### 🎯 URL worker"
+              echo ""
+              echo "\`\`\`"
+              echo "${{ steps.deploy.outputs.worker_url }}"
+              echo "\`\`\`"
+              echo ""
+              echo "---"
+              echo ""
+              echo "### 💬 Bloc unique à coller dans le chat Apex"
+              echo ""
+              echo "Copie-colle ce bloc complet dans la zone de chat Apex. L'IA détectera la clé et te demandera UNE confirmation pour la stocker dans le Coffre :"
+              echo ""
+              echo "\`\`\`"
+              echo "Stocke cette clé dans le Coffre :"
+              echo ""
+              echo "ax_auth_worker_url = ${{ steps.deploy.outputs.worker_url }}"
+              echo "\`\`\`"
+            fi
+          } >> $GITHUB_STEP_SUMMARY

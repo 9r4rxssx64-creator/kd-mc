@@ -1,0 +1,194 @@
+{
+ "maj": "2026-09-17",
+ "note": "Fiches PUBLIQUES des produits fabriqués par tools/produits/fabrique.mjs : titres, promesses, briefs. Le CONTENU payant (le texte des modules) n'est JAMAIS ici : il est écrit par la fabrique directement en base D1 kdmc-contenu. Un prix ne doit être partagé par aucun autre produit (la caisse reconnaît un paiement PayPal par son montant).",
+ "produits": [
+  {
+   "id": "bureau-ia",
+   "nom": "Kit IA au bureau — 7 modules pour les salariés qui veulent finir plus tôt",
+   "court": "Kit IA au bureau",
+   "slug": "bureau",
+   "prix": 37,
+   "avant": 79,
+   "cible": "un salarié, un assistant, un manager de proximité, PAS technicien, qui travaille sur Outlook, Teams ou Gmail et lit sur son téléphone",
+   "promesse": "Faire écrire tes e-mails, tes comptes rendus et tes présentations par un assistant IA gratuit, en gardant ta voix et sans rien coller de confidentiel.",
+   "phrase": "Tu tapes moins, tu relis, tu envoies. Le reste de la journée est à toi.",
+   "consignes": [
+    2,
+    5
+   ],
+   "modules": [
+    {
+     "titre": "Démarrer en 10 minutes, sans rien installer",
+     "gratuit": true,
+     "brief": "choisir un assistant gratuit (ChatGPT, Claude, Gemini) sur téléphone ; la règle des trois informations à donner (pour qui, pour quoi, dans quel ton) ; ce qu'on ne colle JAMAIS (nom de client, chiffre confidentiel, mot de passe, données de santé) ; un premier essai guidé sur un e-mail réel"
+    },
+    {
+     "titre": "E-mails : répondre, relancer, désamorcer, résumer une longue chaîne",
+     "brief": "répondre à un e-mail long en trois phrases ; relancer un collègue ou un fournisseur sans agressivité ; transformer un e-mail énervé en version calme ; résumer une chaîne de vingt messages en cinq points"
+    },
+    {
+     "titre": "Réunions : ordre du jour, compte rendu, actions à faire",
+     "brief": "préparer un ordre du jour en une minute ; transformer des notes prises à la volée en compte rendu propre ; extraire la liste des actions avec responsable et date ; écrire le message de suivi après la réunion"
+    },
+    {
+     "titre": "Tableaux et chiffres : se faire expliquer, préparer, vérifier",
+     "brief": "faire expliquer une formule de tableur qu'on ne comprend pas ; décrire le tableau qu'on veut et obtenir la structure ; faire vérifier un raisonnement de calcul (jamais un chiffre confidentiel réel : on remplace par des chiffres fictifs) ; préparer un petit tableau de suivi"
+    },
+    {
+     "titre": "Présentations : plan, titres, accroche, script oral",
+     "brief": "bâtir le plan d'une présentation de dix diapositives à partir de trois idées ; écrire des titres de diapositives qui disent quelque chose ; préparer les phrases de transition et le script de deux minutes par diapositive ; anticiper les questions du public"
+    },
+    {
+     "titre": "Organisation : trier sa journée, préparer sa semaine, dire non poliment",
+     "brief": "trier une liste de tâches en vrac par urgence et importance ; préparer sa semaine en créneaux ; écrire un « non » poli à une demande de dernière minute ; préparer le message d'absence"
+    },
+    {
+     "titre": "Entretien annuel et évolution : bilan, arguments, demande",
+     "brief": "faire le bilan de l'année à partir de ses réalisations ; préparer trois arguments chiffrés pour un entretien annuel ; préparer une demande d'augmentation ou de formation avec calme ; s'entraîner aux questions difficiles"
+    }
+   ]
+  },
+  {
+   "id": "etudiant-ia",
+   "nom": "Kit IA de l'étudiant — réviser, comprendre et rendre mieux, sans tricher",
+   "court": "Kit IA de l'étudiant",
+   "slug": "etudiant",
+   "prix": 27,
+   "avant": 59,
+   "cible": "un lycéen ou un étudiant, qui révise sur son téléphone, et qui veut comprendre plus vite et rendre des travaux plus propres, sans se faire écrire ses devoirs",
+   "promesse": "Transformer n'importe quel cours en fiches, en quiz et en explications claires, et te faire interroger avant l'examen.",
+   "phrase": "L'IA ne passe pas l'examen à ta place. Elle te fait arriver prêt.",
+   "consignes": [
+    2,
+    5
+   ],
+   "modules": [
+    {
+     "titre": "Le bon usage : comprendre, pas copier",
+     "gratuit": true,
+     "brief": "la différence entre se faire expliquer et se faire écrire ; pourquoi copier un texte d'IA se voit et se sanctionne ; la règle « fais-le moi expliquer, puis je le refais seul » ; choisir un assistant gratuit et le régler pour qu'il questionne au lieu de répondre"
+    },
+    {
+     "titre": "Comprendre un cours : expliquer à trois niveaux",
+     "brief": "faire expliquer un chapitre comme à un enfant de dix ans, puis au niveau du cours, puis au niveau examen ; demander des analogies et des exemples ; repérer les trois idées qu'il faut absolument retenir"
+    },
+    {
+     "titre": "Fiches de révision et cartes mémoire",
+     "brief": "transformer un cours en fiche d'une page ; en questions-réponses ; en cartes mémoire à réviser dans le bus ; en frise ou en tableau comparatif"
+    },
+    {
+     "titre": "S'entraîner : se faire interroger, corriger, simuler un oral",
+     "brief": "se faire poser dix questions d'examen et se faire corriger ; simuler un oral avec un jury exigeant ; obtenir un barème et des conseils de réponse ; recommencer jusqu'à réussir"
+    },
+    {
+     "titre": "Écrire mieux : plan, transitions, relecture",
+     "brief": "bâtir un plan de dissertation ou de rapport à partir de ses propres idées ; améliorer ses transitions ; se faire relire pour l'orthographe et la clarté sans que le texte soit réécrit ; garder sa propre voix"
+    },
+    {
+     "titre": "Rapport de stage et mémoire : structure et rigueur",
+     "brief": "structurer un rapport de stage ; écrire une introduction et une conclusion ; préparer la bibliographie (avec l'obligation de VÉRIFIER chaque source : l'IA peut inventer une référence) ; préparer la soutenance"
+    },
+    {
+     "titre": "Candidatures : stage, alternance, premier emploi",
+     "brief": "écrire une lettre de motivation qui parle de l'entreprise ; adapter son CV à une offre ; préparer les questions d'entretien ; relancer après un entretien"
+    }
+   ]
+  },
+  {
+   "id": "avis-ia",
+   "nom": "40 réponses aux avis clients, prêtes à adapter — Google, Facebook, TripAdvisor",
+   "court": "Réponses aux avis",
+   "slug": "avis",
+   "prix": 17,
+   "avant": 39,
+   "cible": "un commerçant, un restaurateur, un coiffeur, un hôtelier, un artisan, qui reçoit des avis en ligne et n'a pas le temps d'y répondre",
+   "promesse": "Répondre à tous tes avis, bons et mauvais, en quinze minutes par semaine, avec ta voix et sans t'énerver.",
+   "phrase": "Un avis sans réponse, c'est un client qui parle dans le vide. Une réponse calme, c'est dix clients qui lisent.",
+   "consignes": [
+    1,
+    3
+   ],
+   "modules": [
+    {
+     "titre": "Pourquoi répondre à tous les avis, et la méthode en trois lignes",
+     "gratuit": true,
+     "brief": "ce que lit un futur client dans une réponse ; la méthode remercier, reformuler, proposer ; la consigne « ma voix » à régler une fois pour que toutes les réponses te ressemblent ; les quatre erreurs qui coûtent des clients"
+    },
+    {
+     "titre": "Avis 5 étoiles : remercier sans se répéter",
+     "brief": "dix variantes de remerciement selon le contexte (première visite, habitué, cadeau, événement, famille) ; comment citer un détail de l'avis ; comment inviter à revenir sans faire vendeur",
+     "exemplesMin": 8
+    },
+    {
+     "titre": "Avis 3 ou 4 étoiles : montrer qu'on a entendu",
+     "brief": "dix variantes pour remercier et reconnaître le point d'amélioration ; dire ce qui va changer sans promettre l'impossible ; inviter à redonner une chance",
+     "exemplesMin": 8
+    },
+    {
+     "titre": "Avis 1 ou 2 étoiles : désamorcer, proposer, ne pas s'excuser de tout",
+     "brief": "dix variantes : erreur reconnue, désaccord poli, malentendu, attente trop longue, produit décevant ; proposer un échange en privé ; garder le calme et la dignité ; ne jamais révéler d'information sur le client",
+     "exemplesMin": 8
+    },
+    {
+     "titre": "Avis injuste, faux ou blessant : répondre calmement",
+     "brief": "répondre en deux phrases sobres qui rassurent les autres lecteurs ; quand et comment signaler un avis à la plateforme (renvoyer aux règles de la plateforme, pas de conseil juridique) ; ne pas répondre à chaud"
+    },
+    {
+     "titre": "Demander des avis : après la visite, le rappel, le message",
+     "brief": "dix variantes de messages pour demander un avis (SMS, e-mail, carte, affichette) selon le métier ; le bon moment ; ce qu'on ne fait pas (acheter des avis, offrir contre un avis)",
+     "exemplesMin": 8
+    },
+    {
+     "titre": "La routine du lundi : quinze minutes pour tout traiter",
+     "brief": "la routine hebdomadaire pas à pas ; coller les avis de la semaine et obtenir les réponses d'un coup, dans sa voix ; relire et publier ; suivre la note moyenne et les mots qui reviennent"
+    }
+   ]
+  },
+  {
+   "id": "immo-ia",
+   "nom": "Kit IA de l'agent immobilier — annonces, prospection, visites, suivi",
+   "court": "Kit IA de l'agent immobilier",
+   "slug": "immo",
+   "prix": 67,
+   "avant": 149,
+   "cible": "un agent, un mandataire ou un négociateur immobilier, indépendant ou en agence, qui travaille sur son téléphone entre deux visites",
+   "promesse": "Faire écrire tes annonces, tes messages de prospection, tes comptes rendus de visite et tes relances par un assistant IA gratuit, en une minute chacun, sans jamais coller les données d'un client.",
+   "phrase": "Une annonce qui fait cliquer, un vendeur rassuré, un acheteur relancé : trois choses que l'IA écrit pendant que tu conduis.",
+   "consignes": [
+    2,
+    5
+   ],
+   "modules": [
+    {
+     "titre": "Démarrer : l'assistant, la fiche du bien, ce qu'on ne colle jamais",
+     "gratuit": true,
+     "brief": "choisir un assistant gratuit ; préparer la fiche du bien (surface, pièces, atouts, défauts) une fois pour toutes ; la règle absolue : jamais le nom, l'adresse exacte, le téléphone ou la situation personnelle d'un client dans l'assistant ; un premier essai sur une annonce"
+    },
+    {
+     "titre": "Annonces qui font cliquer : titre, description, versions",
+     "brief": "écrire un titre qui donne l'atout principal ; une description honnête et vivante (sans superlatifs creux, sans promesse de rendement ni de plus-value) ; trois versions : portail, réseaux sociaux, vitrine ; corriger une annonce qui ne marche pas"
+    },
+    {
+     "titre": "Prospection : propriétaires, quartier, appels",
+     "brief": "un message à un propriétaire qui vend seul, respectueux ; un courrier de quartier après une vente ; un script d'appel de dix secondes qui ne fait pas fuir ; répondre aux objections courantes"
+    },
+    {
+     "titre": "Visites : préparer, questionner, rendre compte",
+     "brief": "préparer la liste des points à montrer et des questions à poser ; transformer des notes de visite en compte rendu au vendeur ; écrire le message d'après-visite à l'acheteur ; gérer une visite qui s'est mal passée"
+    },
+    {
+     "titre": "Négociation et suivi : relances, offre, refus",
+     "brief": "relancer un acheteur silencieux sans pression ; présenter une offre au vendeur avec les arguments des deux côtés ; expliquer un refus avec tact ; garder le lien avec un acheteur qui n'a pas trouvé"
+    },
+    {
+     "titre": "Réseaux sociaux : posts de vente, « vendu », vidéo sans visage",
+     "brief": "un post « nouveau bien » ; un post « vendu en X jours » qui rassure les vendeurs ; un script de vidéo de trente secondes sans montrer son visage ; un calendrier de quatre posts par semaine"
+    },
+    {
+     "titre": "Organisation : semaine type, suivi des mandats, bilan mensuel",
+     "brief": "bâtir sa semaine type entre prospection, visites et administratif ; un tableau de suivi des mandats et des acheteurs ; le point mensuel en dix minutes ; préparer un message de vœux ou de saison à ses anciens clients"
+    }
+   ]
+  }
+ ]
+}

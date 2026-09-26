@@ -1,0 +1,207 @@
+/* APEX v13 — Design tokens
+ * Préservé v12.785 (gold #c9a227 + dark #08080f) mais étendu avec :
+ * - Échelle typographique fluide (clamp)
+ * - Palette sémantique complète (info, success, warn, danger)
+ * - Spacing 8px grid
+ * - Radius cohérent
+ * - Shadows multicouches
+ * - Easing animations Apple-inspired
+ * - Safe-area iOS notch
+ */
+
+:root {
+  /* Color — Brand premium gradient (Kevin v13 redesign UX)
+   * Gradient or principal : #c9a227 → #e8b830 → #f5cc4a (3 tons)
+   * WCAG AA: #e8b830 sur #08080f = 5.1:1 (AA pass) */
+  --ax-gold: #e8b830;
+  --ax-gold-bright: #f5cc4a;
+  --ax-gold-deep: #c9a227;
+  --ax-gold-light: #f0c850;
+  --ax-gold-soft: rgba(232, 184, 48, 0.15);
+  --ax-gold-glow: 0 0 24px rgba(201, 162, 39, 0.4);
+  --ax-gold-glow-strong: 0 0 40px rgba(232, 184, 48, 0.55), 0 0 80px rgba(201, 162, 39, 0.25);
+  --ax-gold-gradient: linear-gradient(135deg, #c9a227 0%, #e8b830 50%, #f5cc4a 100%);
+  --ax-gold-gradient-90: linear-gradient(90deg, #c9a227 0%, #e8b830 50%, #f5cc4a 100%);
+  --ax-gold-gradient-rev: linear-gradient(135deg, #f5cc4a 0%, #e8b830 50%, #c9a227 100%);
+
+  /* Color — Background (dark theme par défaut) */
+  --ax-bg: #08080f;
+  --ax-bg-card: #14141f;
+  --ax-bg-surface: #14141f;
+  --ax-bg-flat: #0f0f1a;
+  --ax-bg-input: #1a1a25;
+  --ax-bg-overlay: rgba(8, 8, 15, 0.85);
+  --ax-bg-glass: rgba(20, 20, 35, 0.85);
+  --ax-bg-glass-soft: rgba(20, 20, 31, 0.6);
+
+  /* Color — Text */
+  --ax-text: #ffffff;
+  --ax-text-dim: #a0a4c0;
+  --ax-text-muted: #6a6f8a;
+  --ax-text-disabled: #4a4f6a;
+
+  /* Color — Border */
+  --ax-border: rgba(255, 255, 255, 0.08);
+  --ax-border-strong: rgba(255, 255, 255, 0.16);
+  --ax-border-gold: rgba(201, 162, 39, 0.35);
+  --ax-border-gold-strong: rgba(232, 184, 48, 0.6);
+
+  /* Color — Sémantique premium (Kevin v13 redesign) */
+  --ax-blue: #6a8aff;
+  --ax-blue-bright: #8aa6ff;
+  --ax-green: #22cc77;
+  --ax-green-bright: #4cd080;
+  --ax-red: #ff5b5b;
+  --ax-red-bright: #ff7878;
+  --ax-orange: #ffaa00;
+  --ax-warning: #ffaa00;
+  --ax-success: #22cc77;
+  --ax-error: #ff5b5b;
+  --ax-purple: #a060ff;
+  --ax-cyan: #4fd6e0;
+  --ax-pink: #ff6b9d;
+  --ax-yellow: #ffc944;
+  --ax-orange-bright: #ff9944;
+
+  /* Severity scale (Apple HIG : critical=red, high=orange, medium=yellow, low=blue) */
+  --ax-sev-critical: #ff5b5b;
+  --ax-sev-high: #ff9944;
+  --ax-sev-medium: #ffc944;
+  --ax-sev-low: #6a8aff;
+
+  /* Status backgrounds */
+  --ax-blue-soft: rgba(106, 138, 255, 0.12);
+  --ax-green-soft: rgba(34, 204, 119, 0.12);
+  --ax-red-soft: rgba(255, 91, 91, 0.12);
+  --ax-orange-soft: rgba(255, 170, 0, 0.12);
+  --ax-purple-soft: rgba(160, 96, 255, 0.12);
+  --ax-yellow-soft: rgba(255, 201, 68, 0.12);
+
+  /* Glassmorphism premium (Kevin v13 redesign UX premium) */
+  --ax-glass: rgba(20, 20, 35, 0.85);
+  --ax-glass-soft: rgba(20, 20, 35, 0.6);
+  --ax-glass-strong: rgba(20, 20, 35, 0.95);
+  --ax-glass-blur: blur(20px) saturate(180%);
+  --ax-glass-blur-soft: blur(12px) saturate(140%);
+  --ax-glass-blur-strong: blur(28px) saturate(200%);
+  --ax-glass-border: 1px solid rgba(255, 255, 255, 0.1);
+  --ax-glass-border-gold: 1px solid rgba(232, 184, 48, 0.35);
+
+  /* Typography */
+  --ax-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --ax-font-serif: Georgia, 'Times New Roman', serif;
+  --ax-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+
+  /* Type scale fluide (clamp) — accessibility AAA */
+  --ax-text-xs: clamp(11px, 0.7rem + 0.1vw, 12px);
+  --ax-text-sm: clamp(13px, 0.85rem + 0.1vw, 14px);
+  --ax-text-base: clamp(15px, 1rem + 0.1vw, 16px);
+  --ax-text-lg: clamp(17px, 1.1rem + 0.2vw, 18px);
+  --ax-text-xl: clamp(20px, 1.25rem + 0.3vw, 22px);
+  --ax-text-2xl: clamp(24px, 1.5rem + 0.4vw, 28px);
+  --ax-text-3xl: clamp(30px, 1.875rem + 0.5vw, 36px);
+
+  /* Line heights */
+  --ax-lh-tight: 1.2;
+  --ax-lh-snug: 1.4;
+  --ax-lh-normal: 1.6;
+  --ax-lh-relaxed: 1.8;
+
+  /* Spacing — 8px grid */
+  --ax-s-0: 0;
+  --ax-s-1: 4px;
+  --ax-s-2: 8px;
+  --ax-s-3: 12px;
+  --ax-s-4: 16px;
+  --ax-s-5: 20px;
+  --ax-s-6: 24px;
+  --ax-s-8: 32px;
+  --ax-s-10: 40px;
+  --ax-s-12: 48px;
+  --ax-s-16: 64px;
+
+  /* Radius */
+  --ax-r-sm: 6px;
+  --ax-r: 10px;
+  --ax-r-md: 14px;
+  --ax-r-lg: 18px;
+  --ax-r-xl: 24px;
+  --ax-r-full: 9999px;
+
+  /* Shadows — multicouches profondeur réaliste */
+  --ax-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --ax-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+  --ax-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.2);
+  --ax-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.45), 0 8px 16px rgba(0, 0, 0, 0.25);
+  --ax-shadow-glow: var(--ax-gold-glow);
+
+  /* Z-index scale */
+  --ax-z-base: 1;
+  --ax-z-dropdown: 100;
+  --ax-z-sticky: 200;
+  --ax-z-overlay: 1000;
+  --ax-z-modal: 2000;
+  --ax-z-toast: 3000;
+  --ax-z-tooltip: 4000;
+  --ax-z-rescue: 2147483647;
+
+  /* Easing — Apple-inspired smooth */
+  --ax-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ax-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ax-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ax-ease-spring: cubic-bezier(0.5, 1.5, 0.5, 1);
+
+  /* Durations */
+  --ax-d-instant: 100ms;
+  --ax-d-fast: 200ms;
+  --ax-d-normal: 300ms;
+  --ax-d-slow: 500ms;
+  --ax-d-slower: 800ms;
+
+  /* Safe areas iOS notch */
+  --ax-safe-t: env(safe-area-inset-top, 0px);
+  --ax-safe-b: env(safe-area-inset-bottom, 0px);
+  --ax-safe-l: env(safe-area-inset-left, 0px);
+  --ax-safe-r: env(safe-area-inset-right, 0px);
+
+  /* Blur */
+  --ax-blur: blur(16px) saturate(180%);
+  --ax-blur-sm: blur(8px) saturate(140%);
+
+  /* Touch targets — Apple HIG min 44px */
+  --ax-touch-min: 44px;
+  --ax-touch-comfort: 56px;
+}
+
+/* Light theme */
+[data-theme='light'] {
+  --ax-bg: #f5f5f7;
+  --ax-bg-card: #ffffff;
+  --ax-bg-flat: #fafafa;
+  --ax-bg-input: #f0f0f3;
+  --ax-bg-overlay: rgba(245, 245, 247, 0.85);
+  --ax-bg-glass: rgba(255, 255, 255, 0.7);
+
+  --ax-text: #1a1a1a;
+  --ax-text-dim: #4a4a4a;
+  --ax-text-muted: #7a7a7a;
+  --ax-text-disabled: #a0a0a0;
+
+  --ax-border: rgba(0, 0, 0, 0.08);
+  --ax-border-strong: rgba(0, 0, 0, 0.16);
+
+  --ax-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --ax-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --ax-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Reduced motion — accessibility */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ax-d-instant: 1ms;
+    --ax-d-fast: 1ms;
+    --ax-d-normal: 1ms;
+    --ax-d-slow: 1ms;
+    --ax-d-slower: 1ms;
+  }
+}

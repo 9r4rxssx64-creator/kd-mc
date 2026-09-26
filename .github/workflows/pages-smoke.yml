@@ -1,0 +1,39 @@
+name: Pages smoke (World Monitor + OSINT live)
+
+# Vérifie le rendu RÉEL des pages live sur kd-mc.com dans un vrai navigateur.
+# Le runner GitHub a un réseau ouvert (contrairement au sandbox Claude Code) →
+# c'est ici qu'on prouve que la carte Leaflet se monte, que les tuiles chargent
+# et que les compteurs live se peuplent. (leçon sandbox — Kevin 2026-07-04)
+
+on:
+  workflow_dispatch:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+concurrency:
+  group: pages-smoke
+  cancel-in-progress: true
+
+# Droits minimum (24.09.2026) : ce robot ne fait que lire. Explicite, pour ne jamais dépendre du
+# réglage par défaut du dépôt (le dépôt public est réglé en lecture seule).
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm i -D playwright@^1.48.0
+          npx playwright install --with-deps chromium
+      - name: Smoke test pages live
+        run: node tools/smoke/pages-smoke.mjs "https://kd-mc.com"

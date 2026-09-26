@@ -1,0 +1,150 @@
+name: External APIs Health Check (Finnhub + Cloudflare + Railway + autres)
+
+# Test rapide de connectivité + auth pour les APIs externes utilisées par Apex.
+# Tourne sur workflow_dispatch + cron 6h.
+# Rapporte le résultat dans le step summary + crée une issue auto label:apis-status
+# si un échec.
+
+on:
+  workflow_dispatch:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: external-apis-health
+  cancel-in-progress: false
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Test endpoints externes
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          set +e
+          mkdir -p /tmp/health
+
+          echo "# 🌡️ External APIs Health Check" > /tmp/health/report.md
+          echo "" >> /tmp/health/report.md
+          echo "Date: $(date -u +%Y-%m-%d\ %H:%M\ UTC)" >> /tmp/health/report.md
+          echo "" >> /tmp/health/report.md
+          echo "| Service | URL | Status | Détail |" >> /tmp/health/report.md
+          echo "|---------|-----|--------|--------|" >> /tmp/health/report.md
+
+          ALL_OK=true
+
+          # ─────── FINNHUB ───────
+          if [ -z "$FINNHUB_API_KEY" ]; then
+            echo "| Finnhub | (key missing) | ⚠️ | Secret FINNHUB_API_KEY non configuré |" >> /tmp/health/report.md
+            ALL_OK=false
+          else
+            HTTP=$(curl -sS -o /tmp/fh.json -w "%{http_code}" -m 10 \
+              -H "X-Finnhub-Token: $FINNHUB_API_KEY" \
+              "https://finnhub.io/api/v1/quote?symbol=AAPL")
+            BODY=$(head -c 200 /tmp/fh.json)
+            if [ "$HTTP" = "200" ]; then
+              echo "| Finnhub | quote?symbol=AAPL | ✅ $HTTP | OK |" >> /tmp/health/report.md
+            else
+              echo "| Finnhub | quote?symbol=AAPL | ❌ $HTTP | \`$BODY\` |" >> /tmp/health/report.md
+              ALL_OK=false
+            fi
+          fi
+
+          # ─────── CLOUDFLARE ───────
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "| Cloudflare | (token missing) | ⚠️ | Secret CLOUDFLARE_API_TOKEN non configuré |" >> /tmp/health/report.md
+            ALL_OK=false
+          else
+            HTTP=$(curl -sS -o /tmp/cf.json -w "%{http_code}" -m 10 \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/user/tokens/verify")
+            BODY=$(jq -r '.success // .errors[0].message // .' /tmp/cf.json 2>/dev/null | head -c 100)
+            if [ "$HTTP" = "200" ]; then
+              echo "| Cloudflare | /user/tokens/verify | ✅ $HTTP | success=$BODY |" >> /tmp/health/report.md
+            else
+              echo "| Cloudflare | /user/tokens/verify | ❌ $HTTP | $BODY |" >> /tmp/health/report.md
+              ALL_OK=false
+            fi
+          fi
+
+          # ─────── RAILWAY ───────
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "| Railway | (token missing) | ⚠️ | Secret RAILWAY_TOKEN non configuré |" >> /tmp/health/report.md
+            ALL_OK=false
+          else
+            # Query { projects } compatible project-scoped ET account-scoped tokens
+            HTTP=$(curl -sS -o /tmp/rw.json -w "%{http_code}" -m 10 -X POST \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{"query":"{ projects { edges { node { id name } } } }"}' \
+              "https://backboard.railway.com/graphql/v2")
+            BODY=$(head -c 200 /tmp/rw.json)
+            if [ "$HTTP" = "200" ]; then
+              if echo "$BODY" | jq -e '.data.projects' > /dev/null 2>&1; then
+                COUNT=$(jq -r '.data.projects.edges | length' /tmp/rw.json 2>/dev/null)
+                echo "| Railway | backboard.railway.com /graphql/v2 | ✅ $HTTP | $COUNT projet(s) accessible(s) |" >> /tmp/health/report.md
+              else
+                echo "| Railway | backboard.railway.com /graphql/v2 | ⚠️ $HTTP | Pas de .data.projects — JSON: \`$BODY\` |" >> /tmp/health/report.md
+                ALL_OK=false
+              fi
+            else
+              # Essai fallback ancienne URL
+              HTTP2=$(curl -sS -o /tmp/rw2.json -w "%{http_code}" -m 10 -X POST \
+                -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                -H "content-type: application/json" \
+                -d '{"query":"{ projects { edges { node { id name } } } }"}' \
+                "https://backboard.railway.app/graphql/v2")
+              BODY2=$(head -c 200 /tmp/rw2.json)
+              if [ "$HTTP2" = "200" ]; then
+                echo "| Railway | backboard.railway.app (legacy URL) | ⚠️ $HTTP2 | URL .com FAIL ($HTTP), .app marche — code à mettre à jour |" >> /tmp/health/report.md
+              else
+                echo "| Railway | .com=$HTTP / .app=$HTTP2 | ❌ | .com: \`$BODY\` / .app: \`$BODY2\` |" >> /tmp/health/report.md
+              fi
+              ALL_OK=false
+            fi
+          fi
+
+          # ─────── Cloudflare Status Page (incident global) ───────
+          CF_STATUS=$(curl -sS -m 10 "https://www.cloudflarestatus.com/api/v2/status.json" | jq -r '.status.description' 2>/dev/null)
+          if [ -n "$CF_STATUS" ]; then
+            echo "| Cloudflare Status Page | global status | ℹ️ | $CF_STATUS |" >> /tmp/health/report.md
+          fi
+
+          echo "" >> /tmp/health/report.md
+          if [ "$ALL_OK" = "true" ]; then
+            echo "## ✅ Tous les services OK" >> /tmp/health/report.md
+          else
+            echo "## ❌ Au moins 1 service KO — voir détails ci-dessus" >> /tmp/health/report.md
+          fi
+
+          cat /tmp/health/report.md
+          cat /tmp/health/report.md >> $GITHUB_STEP_SUMMARY
+          echo "all_ok=$ALL_OK" >> $GITHUB_OUTPUT
+        id: check
+
+      - name: Open issue if any service down
+        if: ${{ steps.check.outputs.all_ok == 'false' }}
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('/tmp/health/report.md', 'utf8');
+            const title = `[APIs Health] ${new Date().toISOString().slice(0,16)} — ≥1 service KO`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['apis-status']
+            });

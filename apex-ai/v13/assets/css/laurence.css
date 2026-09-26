@@ -1,0 +1,253 @@
+/* APEX v13 — Vue Laurence styles (épurée, créative, innovante).
+ * Demande Kevin : "bulles emoji + wallpaper + diaporama + commandes vocales".
+ * Innovations : gradient wallpaper animé, bouton voice prominent pulse,
+ * suggestions chips iOS-style, transitions douces.
+ */
+
+.ax-laurence-app {
+  position: relative;
+  min-height: 100vh;
+  padding: 24px 16px max(24px, env(safe-area-inset-bottom));
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #2a1a3a;
+  transition: background 4s ease-in-out;
+  overflow-x: hidden;
+}
+
+/* Overlay subtle pour lisibilité texte sur wallpaper */
+.ax-laurence-wallpaper-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.4) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Hero greeting */
+.ax-laurence-hero {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin: 32px 0 24px;
+  animation: ax-laurence-fade-in 0.8s ease-out;
+}
+@keyframes ax-laurence-fade-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.ax-laurence-emoji-big {
+  display: block;
+  font-size: 64px;
+  margin-bottom: 8px;
+  animation: ax-laurence-float 3s ease-in-out infinite;
+}
+@keyframes ax-laurence-float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+.ax-laurence-greeting h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(28px, 6vw, 40px);
+  margin: 0;
+  font-weight: 400;
+  color: #2a1a3a;
+  letter-spacing: 0.5px;
+}
+.ax-laurence-greeting h1 strong {
+  font-weight: 700;
+  background: linear-gradient(135deg, #d63384, #6f42c1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ax-laurence-subtitle {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: #5a4570;
+  font-style: italic;
+}
+
+/* Suggestions chips (style iOS messages) */
+.ax-laurence-suggestions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+.ax-laurence-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(214, 51, 132, 0.15);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 80px; /* iOS touch target */
+  backdrop-filter: blur(10px);
+}
+.ax-laurence-chip:hover, .ax-laurence-chip:focus {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(214, 51, 132, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  outline: none;
+}
+.ax-laurence-chip:active {
+  transform: scale(0.97);
+}
+.ax-laurence-chip-emoji { font-size: 28px; }
+.ax-laurence-chip-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2a1a3a;
+  text-align: center;
+}
+
+/* Bouton voice prominent */
+.ax-laurence-voice-zone {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 32px 0;
+  gap: 12px;
+}
+.ax-laurence-voice-btn {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d63384, #6f42c1);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 12px 32px rgba(214, 51, 132, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.ax-laurence-voice-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 16px 40px rgba(214, 51, 132, 0.5);
+}
+.ax-laurence-voice-btn:active {
+  transform: scale(0.96);
+}
+.ax-laurence-voice-emoji {
+  font-size: 44px;
+  z-index: 2;
+  position: relative;
+}
+.ax-laurence-voice-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: rgba(214, 51, 132, 0.4);
+  animation: ax-laurence-voice-pulse 2s ease-out infinite;
+  z-index: 1;
+}
+@keyframes ax-laurence-voice-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.ax-laurence-voice-hint {
+  text-align: center;
+  font-size: 14px;
+  color: #5a4570;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Section projets récents */
+.ax-laurence-projects {
+  position: relative;
+  z-index: 1;
+  margin: 24px 0;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+.ax-laurence-projects h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2a1a3a;
+}
+.ax-laurence-projects-list {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ax-laurence-empty {
+  text-align: center;
+  color: #5a4570;
+}
+.ax-laurence-empty-emoji {
+  display: block;
+  font-size: 36px;
+  margin-bottom: 8px;
+  animation: ax-laurence-sparkle 2s ease-in-out infinite;
+}
+@keyframes ax-laurence-sparkle {
+  0%, 100% { transform: scale(1) rotate(0); opacity: 1; }
+  50% { transform: scale(1.2) rotate(15deg); opacity: 0.8; }
+}
+.ax-laurence-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Footer */
+.ax-laurence-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  margin-top: 40px;
+  font-size: 12px;
+  color: #5a4570;
+  border-top: 1px solid rgba(214, 51, 132, 0.15);
+}
+.ax-laurence-footer-brand {
+  font-weight: 700;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #d63384, #6f42c1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ax-laurence-footer-by {
+  font-style: italic;
+}
+
+/* Mode reduced-motion : désactive animations gourmandes */
+@media (prefers-reduced-motion: reduce) {
+  .ax-laurence-emoji-big,
+  .ax-laurence-empty-emoji,
+  .ax-laurence-voice-pulse,
+  .ax-laurence-app {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 380px) {
+  .ax-laurence-suggestions { grid-template-columns: repeat(2, 1fr); }
+  .ax-laurence-voice-btn { width: 88px; height: 88px; }
+  .ax-laurence-voice-emoji { font-size: 38px; }
+}

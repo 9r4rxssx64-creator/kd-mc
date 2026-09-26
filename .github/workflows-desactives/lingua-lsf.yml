@@ -1,0 +1,79 @@
+name: Lingua 🤟 — Récolter la vraie langue des signes (LSF)
+
+# Kevin 2026-08-13 : « Intègre la vrai langue des signes ».
+#
+# POURQUOI CET OUVRAGE EXISTE : je ne connais pas la LSF, et un signe inventé est pire que pas
+# de signe — une personne sourde le verrait immédiatement. Tout le contenu doit donc venir de
+# sources RÉELLES et libres. Depuis l'agent, internet est fermé ; ici le réseau est ouvert.
+# Ce travail va chercher sur Wikimedia Commons les vidéos et photos de signes publiées sous
+# licence libre, avec leur auteur, et écrit le résultat dans le dépôt.
+#
+# À la demande + 1×/mois (de nouveaux signes sont publiés régulièrement). Aucun spam de mails.
+on:
+  workflow_dispatch:
+    inputs:
+      rapport_seul:
+        description: "Seulement dire ce qui existe, sans rien écrire"
+        type: boolean
+        default: false
+      voir_les_noms:
+        description: "Montrer comment les fichiers sont nommés (pour régler la lecture des titres)"
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 4 3 * *'   # le 3 de chaque mois, 04:00 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  recolter:
+    runs-on: ubuntu-latest
+    steps:
+      # On prend le code de la branche demandée (main pour le rendez-vous mensuel). Forcer
+      # « main » ici ferait tourner l'ANCIEN récolteur alors qu'on vient d'en corriger un :
+      # on croirait tester sa correction sans jamais l'exécuter.
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: "Aller chercher les signes réels (licences libres uniquement)"
+        shell: bash -eo pipefail {0}   # sans pipefail, un `node … | tee` échoué ressortirait VERT
+        run: |
+          node tools/lingua/collect-lsf.mjs ${{ inputs.voir_les_noms && '--titres' || '' }} ${{ inputs.rapport_seul && '--rapport' || '' }} | tee /tmp/lsf.log
+      # Le rapport est écrit DANS le dépôt, pas seulement dans le journal de l'ouvrage :
+      # relire un journal d'ouvrage depuis l'agent est lent et peu fiable, alors qu'un
+      # fichier versionné se lit d'un `git fetch`. Et il garde une trace de ce qui a été
+      # regardé à chaque passage — utile pour voir ce qui apparaît sur Commons avec le temps.
+      - name: "Publier la récolte"
+        if: ${{ !inputs.rapport_seul }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="claude/lsf-recolte-${{ github.run_id }}"
+          git checkout -b "$BR"
+          # « git add » AVANT de comparer : un fichier qui n'existait pas encore n'apparaît pas
+          # dans un « git diff » ordinaire — on aurait annoncé « rien à publier » alors que la
+          # récolte était bien là, et personne n'aurait vu passer le manque.
+          mkdir -p audit && cp /tmp/lsf.log audit/lsf-recolte.log
+          git add lingua/lsf-sources.json audit/lsf-recolte.log
+          if git diff --cached --quiet; then
+            echo "Aucun signe nouveau : rien à publier."; exit 0
+          fi
+          git commit -m "Lingua : récolte LSF (signes réels, sources libres citées) [skip ci]"
+          git push -u origin "$BR"
+          echo "Branche poussée : $BR"
+      - name: "Résumé lisible"
+        if: always()
+        run: |
+          {
+            echo "## 🤟 Récolte LSF"
+            echo ""
+            echo '```'
+            tail -200 /tmp/lsf.log || echo "(pas de log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

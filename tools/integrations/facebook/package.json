@@ -1,0 +1,19 @@
+{
+  "name": "@cmcteams/facebook",
+  "version": "1.0.0",
+  "description": "Intégration Facebook Pages API pour CMCteams (Casino de Monte-Carlo)",
+  "type": "module",
+  "main": "client.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --check client.js && echo OK"
+  },
+  "dependencies": {
+    "axios": "^1.7.0"
+  },
+  "author": "Kevin DESARZENS (U11804)",
+  "license": "UNLICENSED",
+  "private": true
+}

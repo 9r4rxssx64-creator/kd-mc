@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Apex - Force Logout Kevin</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#08080f;color:#fff;font-family:-apple-system,system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:480px;margin:0 auto;padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
+h1{font-family:Georgia,serif;color:#e8b830;font-size:30px;margin:0 0 8px;text-align:center;letter-spacing:2px}
+.sub{color:#a0a4c0;font-size:13px;text-align:center;margin:0 0 24px}
+.card{background:rgba(232,184,48,.05);border:1px solid rgba(232,184,48,.2);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h3{margin:0 0 8px;color:#e8b830;font-size:16px}
+.card p{margin:0;font-size:14px;line-height:1.5;color:#cfcfdf}
+.btn{display:block;width:100%;min-height:60px;background:linear-gradient(135deg,#e8b830,#c9a227);color:#000;border:none;border-radius:14px;font-size:18px;font-weight:700;cursor:pointer;margin:18px 0;padding:0 16px;letter-spacing:.5px;box-shadow:0 4px 16px rgba(232,184,48,.3)}
+.btn:active{transform:scale(.97)}
+.btn-danger{background:linear-gradient(135deg,#ff5858,#cc3030);color:#fff}
+.log{background:#0d0d18;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:#9ca3af;min-height:140px;max-height:280px;overflow-y:auto;white-space:pre-wrap;line-height:1.4;margin-top:14px}
+.log .ok{color:#4cd080}.log .err{color:#ff5858}.log .warn{color:#ffb84a}
+.icon{font-size:48px;text-align:center;display:block;margin-bottom:8px}
+.kept{background:rgba(76,208,128,.08);border:1px solid rgba(76,208,128,.3);border-radius:10px;padding:12px;margin:10px 0;font-size:13px;color:#cfcfdf}
+.kept b{color:#4cd080}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="icon">🚪</span>
+<h1>FORCE LOGOUT</h1>
+<p class="sub">Reinitialise la session utilisateur (efface user actif, garde donnees admin Kevin)</p>
+
+<div class="card">
+<h3>Pourquoi cette page ?</h3>
+<p>Si Apex te dit "Bonjour Laurence" alors que tu es Kevin, c'est que la derniere session pointe encore vers son user. Cette page efface UNIQUEMENT la session active (ax_user, ax_uid, ax_settings, ax_user_theme), tu te reconnectes Kevin et l'app revient normale.</p>
+</div>
+
+<div class="kept">
+<b>Conserve :</b> tes cles API, profil admin, conversations, paiements, audit, lessons. <b>Efface uniquement :</b> session/theme/settings actifs (qui pointent vers Laurence).
+</div>
+
+<button class="btn btn-danger" onclick="forceLogout()" id="btnLogout">🚪 Force logout + retour login</button>
+
+<button class="btn" onclick="forceLogoutFull()" style="background:linear-gradient(135deg,#a060ff,#7a40d0);color:#fff">⚡ Reset complet (cache + session)</button>
+
+<div class="log" id="log">[Pret] Choisis ton bouton</div>
+
+</div>
+
+<script>
+var KEYS_TO_CLEAR = [
+  // Session/identité
+  "ax_user", "ax_uid", "ax_lastact",
+  // Theme/settings (Laurence en mode love)
+  "ax_settings", "ax_user_theme", "ax_theme",
+  // Admin profile potentiellement contamine
+  "ax_admin_profile", "ax_admin_kevin",
+  // Auth temporaire
+  "ax_pin_fails", "ax_session_timeout",
+  // Onboarding
+  "ax_perms_onboarded",
+  // Streak Laurence
+  "ax_streak", "ax_streak_last_day"
+];
+
+var KEYS_KEPT_GUARANTEED = [
+  "ax_api_key", "ax_openai_key", "ax_gemini_key", "ax_openrouter_key",
+  "ax_paypal_me", "ax_revolut_tag", "ax_btc_address", "ax_iban",
+  "ax_persistent_memory", "ax_kb", "ax_audit", "ax_lessons_learned",
+  "ax_convs", "ax_fin"
+];
+
+var log = document.getElementById("log");
+function L(msg, cls){
+  var line = document.createElement("div");
+  if(cls) line.className = cls;
+  line.textContent = "[" + new Date().toTimeString().slice(0,8) + "] " + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function forceLogout(){
+  var btn = document.getElementById("btnLogout");
+  btn.disabled = true;
+  btn.textContent = "⏳ Logout en cours...";
+  log.innerHTML = "";
+  L("Demarrage force logout (session uniquement)");
+
+  // Efface UNIQUEMENT keys de session/theme
+  var cleared = 0;
+  KEYS_TO_CLEAR.forEach(function(k){
+    if(localStorage.getItem(k) !== null){
+      localStorage.removeItem(k);
+      L("Efface : " + k, "ok");
+      cleared++;
+    }
+  });
+  L("Total efface : " + cleared + " cles", "ok");
+
+  // Verifie keys gardees
+  var kept = 0;
+  KEYS_KEPT_GUARANTEED.forEach(function(k){
+    if(localStorage.getItem(k) !== null) kept++;
+  });
+  L("Donnees admin gardees : " + kept + "/" + KEYS_KEPT_GUARANTEED.length, "ok");
+
+  // Tente aussi de nettoyer Firebase ax_user via fetch (best-effort)
+  try {
+    var FB_URL = localStorage.getItem("ax_fb_url") || "https://kdmc-clients-default-rtdb.firebaseio.com";
+    fetch(FB_URL + "/apex/ax_user.json", {method:"DELETE"}).catch(function(){});
+    fetch(FB_URL + "/apex/ax_uid.json", {method:"DELETE"}).catch(function(){});
+    L("Firebase : ax_user/ax_uid DELETE envoye", "ok");
+  } catch(_){}
+
+  L("Redirection vers login dans 2s...", "ok");
+  btn.textContent = "✅ Termine ! Reconnecte Kevin";
+  setTimeout(function(){
+    var url = "./?_reset=" + Date.now();
+    try { window.location.replace(url); } catch(_){ window.location.href = url; }
+  }, 2000);
+}
+
+function forceLogoutFull(){
+  log.innerHTML = "";
+  L("Reset complet : cache + session");
+
+  // 1. Logout
+  KEYS_TO_CLEAR.forEach(function(k){
+    if(localStorage.getItem(k) !== null){
+      localStorage.removeItem(k);
+      L("LS efface : " + k, "ok");
+    }
+  });
+
+  // 2. Cache PWA + SW
+  var p = Promise.resolve();
+  if("serviceWorker" in navigator){
+    p = p.then(function(){
+      return navigator.serviceWorker.getRegistrations().then(function(regs){
+        return Promise.all(regs.map(function(r){
+          L("SW unregister : " + r.scope, "ok");
+          return r.unregister();
+        }));
+      });
+    });
+  }
+  if("caches" in window){
+    p = p.then(function(){
+      return caches.keys().then(function(keys){
+        return Promise.all(keys.map(function(k){
+          L("Cache delete : " + k, "ok");
+          return caches.delete(k);
+        }));
+      });
+    });
+  }
+  p.then(function(){
+    L("Reset complet termine. Redirection 2s...", "ok");
+    setTimeout(function(){
+      var url = "./?_full=" + Date.now();
+      try { window.location.replace(url); } catch(_){ window.location.href = url; }
+    }, 2000);
+  });
+}
+
+// Audit au boot
+window.addEventListener("load", function(){
+  L("Audit session actuelle...");
+  var uid = localStorage.getItem("ax_uid");
+  var user = localStorage.getItem("ax_user");
+  L("ax_uid : " + (uid || "(vide)"), uid ? "warn" : "ok");
+  if(user){
+    try {
+      var u = JSON.parse(user);
+      L("ax_user.name : " + (u.name || "(vide)"), "warn");
+      L("ax_user.id : " + (u.id || "(vide)"), "warn");
+    } catch(_){
+      L("ax_user : " + user.slice(0,80), "warn");
+    }
+  }
+  var settings = localStorage.getItem("ax_settings");
+  if(settings){
+    try {
+      var s = JSON.parse(settings);
+      L("Theme : " + (s.theme || "(none)"), s.theme === "love" ? "warn" : "ok");
+    } catch(_){}
+  }
+});
+</script>
+</body>
+</html>

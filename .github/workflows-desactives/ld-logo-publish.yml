@@ -1,0 +1,67 @@
+name: LD Logo Publish (Firebase)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Publie un PNG du repo comme LOGO/modèle dans Firebase shops_admin_v1/logos/<store>/<id>
+# → visible dans le Studio « Mes logos créés » et la boutique.
+# Déclenché en poussant shops/la-detente/.logo-publish.json. Écrit un reçu vérifiable.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'shops/la-detente/.logo-publish.json'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Publier + vérifier (reçu)
+        run: |
+          REQ=shops/la-detente/.logo-publish.json
+          FB="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/shops_admin_v1/logos"
+          N=$(jq '.logos | length' "$REQ")
+          echo "$N logo(s)"
+          echo '{"published_at":"'"$(date -u +%FT%TZ)"'","results":[]}' > /tmp/receipt.json
+          k=0
+          while [ "$k" -lt "$N" ]; do
+            STORE=$(jq -r ".logos[$k].store" "$REQ")
+            FILE=$(jq -r ".logos[$k].file" "$REQ")
+            NAME=$(jq -r ".logos[$k].name" "$REQ")
+            ID=$(jq -r ".logos[$k].id" "$REQ")
+            CAT=$(jq -r ".logos[$k].cat // \"Mes créations\"" "$REQ")
+            HTTP="no-file"; GOT="ABSENT"
+            if [ -f "$FILE" ]; then
+              B64=$(base64 -w0 "$FILE"); TS=$(date +%s000)
+              jq -n --arg id "$ID" --arg name "$NAME" --arg img "data:image/png;base64,$B64" \
+                    --arg cat "$CAT" --argjson ts "$TS" \
+                '{id:$id,name:$name,img:$img,ts:$ts,cat:$cat,source:"studio"}' > /tmp/logo.json
+              HTTP=$(curl -s -o /tmp/put.json -w "%{http_code}" -X PUT "$FB/$STORE/$ID.json" \
+                -H "Content-Type: application/json" --data-binary @/tmp/logo.json || echo "curl-err")
+              GOT=$(curl -s "$FB/$STORE/$ID.json" | jq -r '.name // "ABSENT"' 2>/dev/null || echo "ABSENT")
+            fi
+            echo "  $ID : http=$HTTP firebase_name=$GOT"
+            jq --arg s "$STORE" --arg id "$ID" --arg h "$HTTP" --arg n "$GOT" \
+              '.results += [{store:$s,id:$id,http:$h,firebase_name:$n,ok:($n!="ABSENT")}]' \
+              /tmp/receipt.json > /tmp/receipt2.json && mv /tmp/receipt2.json /tmp/receipt.json
+            k=$((k+1))
+          done
+          jq . /tmp/receipt.json | tee shops/la-detente/.logo-publish-receipt.json
+      - name: Committer le reçu
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add shops/la-detente/.logo-publish-receipt.json || true
+          git commit -m "LD studio — reçu publication logos [skip ci]" || { echo "rien à committer"; exit 0; }
+          git push origin HEAD:${{ github.ref_name }} || echo "push échoué"

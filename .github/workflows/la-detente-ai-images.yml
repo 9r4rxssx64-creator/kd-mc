@@ -1,0 +1,52 @@
+name: La Détente — Photos lifestyle IA (Gemini/Imagen)
+
+# Génère des fonds photoréalistes via GEMINI_API_KEY (secret), composite le vrai
+# vêtement+logo par-dessus, et pousse le résultat sur une branche claude/* (auto-merge).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  ai-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright + Chromium
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm i playwright@1.48.0
+          npx playwright install --with-deps chromium
+
+      - name: Probe + génération IA (Imagen) + compositing
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "Clé présente : $([ -n "$GEMINI_API_KEY" ] && echo oui || echo NON)"
+          node shops/la-detente/scripts/ld-ai-lifestyle.mjs
+
+      - name: Commit images sur une branche claude/*
+        run: |
+          git config user.name "kdmc-bot"
+          git config user.email "bot@kdmc.local"
+          # branche-de-relecture : les images générées sont déposées pour être REGARDÉES et choisies,
+          # pas fusionnées automatiquement (garde : tests/verify-branches-robot.mjs, leçon #243).
+          BR="claude/ai-lifestyle-${{ github.run_id }}"
+          git checkout -b "$BR"
+          git add shops/la-detente/img/lifestyle
+          if git diff --cached --quiet; then
+            echo "Aucune nouvelle image — rien à committer."
+          else
+            git commit -m "La Détente — photos lifestyle IA (Gemini) [skip ci]"
+            git push -u origin "$BR"
+            echo "Poussé sur $BR (auto-merge prendra le relais)."
+          fi

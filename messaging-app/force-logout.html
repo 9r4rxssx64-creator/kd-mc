@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Apex Chat - Forcer la deconnexion</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --ax-bg:#08080f;
+  --ax-bg2:#0d0d18;
+  --ax-gold:#c9a227;
+  --ax-gold-light:#e8b830;
+  --ax-text:#e8e8f0;
+  --ax-muted:#a0a4c0;
+  --ax-ok:#4cd080;
+  --ax-err:#ff5858;
+  --ax-warn:#ffb84a;
+  --ax-blue:#6a8aff;
+  --ax-purple:#a060ff;
+}
+html,body{margin:0;padding:0;background:var(--ax-bg);color:var(--ax-text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;line-height:1.5}
+.wrap{max-width:480px;margin:0 auto;padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.brand{text-align:center;margin-bottom:20px}
+.brand .logo{font-size:56px;display:block;margin-bottom:4px}
+.brand h1{font-family:Georgia,serif;color:var(--ax-gold);font-size:26px;margin:0 0 4px;letter-spacing:3px}
+.brand .tagline{color:var(--ax-blue);font-size:11px;letter-spacing:4px;text-transform:uppercase}
+.sub{color:var(--ax-muted);font-size:13px;text-align:center;margin:0 0 24px}
+.card{background:rgba(201,162,39,.05);border:1px solid rgba(201,162,39,.2);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h3{margin:0 0 10px;color:var(--ax-gold);font-size:16px}
+.card p{margin:0;font-size:14px;line-height:1.5;color:#cfcfdf}
+.btn{display:block;width:100%;min-height:60px;background:linear-gradient(135deg,var(--ax-gold-light),var(--ax-gold));color:#000;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin:14px 0;padding:0 16px;letter-spacing:.5px;box-shadow:0 4px 16px rgba(201,162,39,.3);font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-danger{background:linear-gradient(135deg,var(--ax-err),#cc3030);color:#fff;box-shadow:0 4px 16px rgba(255,88,88,.3)}
+.btn-purple{background:linear-gradient(135deg,var(--ax-purple),#7a40d0);color:#fff;box-shadow:0 4px 16px rgba(160,96,255,.3)}
+.log{background:var(--ax-bg2);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:#9ca3af;min-height:140px;max-height:280px;overflow-y:auto;white-space:pre-wrap;line-height:1.4;margin-top:14px}
+.log .ok{color:var(--ax-ok)}.log .err{color:var(--ax-err)}.log .warn{color:var(--ax-warn)}
+.kept{background:rgba(76,208,128,.08);border:1px solid rgba(76,208,128,.3);border-radius:10px;padding:12px;margin:10px 0;font-size:13px;color:#cfcfdf}
+.kept b{color:var(--ax-ok)}
+.warned{background:rgba(255,88,88,.08);border:1px solid rgba(255,88,88,.3);border-radius:10px;padding:12px;margin:10px 0;font-size:13px;color:#cfcfdf}
+.warned b{color:var(--ax-err)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="brand">
+<span class="logo">🚪</span>
+<h1>APEX CHAT</h1>
+<div class="tagline">FORCER LA DECONNEXION</div>
+</div>
+
+<p class="sub">Reinitialise la session active (utile si l app affiche le mauvais compte ou se bloque)</p>
+
+<div class="card">
+<h3>A quoi ca sert ?</h3>
+<p>Si Apex Chat te dit "Bonjour Laurence" alors que tu es Kevin, c est qu une vieille session est restee active. Cette page efface uniquement la session active : tu repars sur l ecran de login, tu te reconnectes avec ton numero, et tout revient en ordre.</p>
+</div>
+
+<div class="kept">
+<b>Conserve :</b> tes messages, tes contacts, tes cles E2E, tes cles API personnelles, ton profil. <b>Efface uniquement :</b> session active (qui pointe vers un autre compte).
+</div>
+
+<button class="btn btn-danger" onclick="forceLogout()" id="btnLogout">🚪 Deconnexion + retour login</button>
+
+<button class="btn btn-purple" onclick="forceLogoutFull()" id="btnFull">⚡ Reset complet (cache + session)</button>
+
+<div class="warned" style="display:none" id="warnFull">
+<b>Reset complet :</b> efface AUSSI le Service Worker et tous les caches PWA. Tes messages restent dans localStorage mais Apex Chat se rechargera comme si tu venais d arriver.
+</div>
+
+<div class="log" id="log">[Pret] Choisis ton bouton</div>
+
+</div>
+
+<script>
+// Whitelist stricte : SEULEMENT session/identite/theme actifs (jamais messages/cles E2E)
+var KEYS_TO_CLEAR = [
+  // Session/identite
+  "apex_chat_user", "apex_chat_uid", "apex_chat_lastact", "apex_chat_session",
+  "apex_chat_jwt", "apex_chat_token", "apex_chat_phone_verified",
+  // Theme/settings susceptibles d etre contamines
+  "apex_chat_settings", "apex_chat_user_theme", "apex_chat_theme",
+  // Auth temporaire
+  "apex_chat_pin_fails", "apex_chat_session_timeout",
+  "apex_chat_otp_pending", "apex_chat_otp_attempts",
+  // Onboarding
+  "apex_chat_perms_onboarded", "apex_chat_welcome_shown",
+  // Profile cache temporaire
+  "apex_chat_profile_cache"
+];
+
+// Donnees garanties conservees (audit visuel pour rassurer Kevin)
+var KEYS_KEPT_GUARANTEED = [
+  "apex_chat_messages",         // Messages locaux
+  "apex_chat_e2e_keys",          // Cles chiffrement E2E
+  "apex_chat_contacts",          // Contacts
+  "apex_chat_audit",             // Audit
+  "apex_chat_drafts",            // Brouillons
+  "apex_chat_starred",           // Messages favoris
+  "apex_chat_pinned",            // Conversations epinglees
+  "apex_chat_notes",             // Notes Apex par contact
+  "apex_chat_history"            // Historique
+];
+
+var log = document.getElementById("log");
+function L(msg, cls){
+  var line = document.createElement("div");
+  if(cls) line.className = cls;
+  line.textContent = "[" + new Date().toTimeString().slice(0,8) + "] " + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearKeys(prefix){
+  var n = 0;
+  // 1. Whitelist stricte
+  KEYS_TO_CLEAR.forEach(function(k){
+    if(localStorage.getItem(k) !== null){
+      localStorage.removeItem(k);
+      L("Efface : " + k, "ok");
+      n++;
+    }
+  });
+  // 2. Tout autre cle apex_chat_session_* dynamique (per-device) => prefix scan
+  if(prefix){
+    var keys = [];
+    for(var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if(k && (k.indexOf("apex_chat_session_") === 0 || k.indexOf("apex_chat_token_") === 0)){
+        keys.push(k);
+      }
+    }
+    keys.forEach(function(k){
+      localStorage.removeItem(k);
+      L("Efface (prefix) : " + k, "ok");
+      n++;
+    });
+  }
+  return n;
+}
+
+function clearCookies(){
+  // Efface cookies de session domaine courant (best-effort)
+  try {
+    var cks = document.cookie.split(";");
+    var cleared = 0;
+    cks.forEach(function(c){
+      var eq = c.indexOf("=");
+      var name = (eq > -1 ? c.substr(0, eq) : c).trim();
+      if(name.indexOf("apex_chat") === 0 || name === "session" || name === "jwt" || name === "token"){
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=" + location.pathname;
+        cleared++;
+      }
+    });
+    if(cleared) L("Cookies effaces : " + cleared, "ok");
+  } catch(_){}
+}
+
+function clearIDB(){
+  // Efface uniquement les bases IDB de session, pas les messages
+  if(!("indexedDB" in window) || !indexedDB.databases) return Promise.resolve();
+  return indexedDB.databases().then(function(dbs){
+    var p = [];
+    (dbs || []).forEach(function(db){
+      var name = db && db.name;
+      if(!name) return;
+      // Ne PAS toucher aux DB de messages (apex_chat_messages, apex_chat_media)
+      if(name.indexOf("apex_chat_session") === 0 || name.indexOf("apex_chat_auth") === 0){
+        L("IDB delete : " + name, "ok");
+        p.push(new Promise(function(res){
+          var r = indexedDB.deleteDatabase(name);
+          r.onsuccess = r.onerror = r.onblocked = function(){ res(); };
+        }));
+      }
+    });
+    return Promise.all(p);
+  }).catch(function(){});
+}
+
+function forceLogout(){
+  var btn = document.getElementById("btnLogout");
+  btn.disabled = true;
+  btn.textContent = "⏳ Deconnexion en cours...";
+  log.innerHTML = "";
+  L("Demarrage deconnexion (session uniquement)");
+
+  var cleared = clearKeys(true);
+  L("Total efface : " + cleared + " cles", "ok");
+  clearCookies();
+
+  clearIDB().then(function(){
+    // Verifie keys gardees
+    var kept = 0;
+    KEYS_KEPT_GUARANTEED.forEach(function(k){
+      if(localStorage.getItem(k) !== null) kept++;
+    });
+    L("Donnees gardees : " + kept + "/" + KEYS_KEPT_GUARANTEED.length + " presentes", "ok");
+
+    L("Redirection vers login dans 2s...", "ok");
+    btn.textContent = "✅ Termine ! Reconnexion...";
+    setTimeout(function(){
+      var url = "./?_reset=" + Date.now();
+      try { window.location.replace(url); } catch(_){ window.location.href = url; }
+    }, 2000);
+  });
+}
+
+function forceLogoutFull(){
+  var btn = document.getElementById("btnFull");
+  btn.disabled = true;
+  btn.textContent = "⏳ Reset complet...";
+  log.innerHTML = "";
+  document.getElementById("warnFull").style.display = "block";
+  L("Reset complet : cache + session");
+
+  var cleared = clearKeys(true);
+  L("LS efface : " + cleared + " cles", "ok");
+  clearCookies();
+
+  var p = clearIDB();
+
+  // SW + caches
+  if("serviceWorker" in navigator){
+    p = p.then(function(){
+      return navigator.serviceWorker.getRegistrations().then(function(regs){
+        return Promise.all(regs.map(function(r){
+          L("SW desinscription : " + r.scope, "ok");
+          return r.unregister();
+        }));
+      });
+    });
+  }
+  if("caches" in window){
+    p = p.then(function(){
+      return caches.keys().then(function(keys){
+        return Promise.all(keys.map(function(k){
+          L("Cache delete : " + k, "ok");
+          return caches.delete(k);
+        }));
+      });
+    });
+  }
+  p.then(function(){
+    L("Reset complet termine. Redirection 2s...", "ok");
+    btn.textContent = "✅ Reset OK !";
+    setTimeout(function(){
+      var url = "./?_full=" + Date.now();
+      try { window.location.replace(url); } catch(_){ window.location.href = url; }
+    }, 2000);
+  });
+}
+
+// Audit au boot
+window.addEventListener("load", function(){
+  L("Audit session actuelle...");
+  var uid = localStorage.getItem("apex_chat_uid");
+  var user = localStorage.getItem("apex_chat_user");
+  L("apex_chat_uid : " + (uid || "(vide)"), uid ? "warn" : "ok");
+  if(user){
+    try {
+      var u = JSON.parse(user);
+      L("user.name : " + (u.name || u.firstname || "(vide)"), "warn");
+      L("user.id : " + (u.id || "(vide)"), "warn");
+    } catch(_){
+      L("apex_chat_user : " + user.slice(0,80), "warn");
+    }
+  }
+  var settings = localStorage.getItem("apex_chat_settings");
+  if(settings){
+    try {
+      var s = JSON.parse(settings);
+      L("Theme : " + (s.theme || "(default)"), "ok");
+    } catch(_){}
+  }
+  // Audit donnees gardees
+  var kept = 0;
+  KEYS_KEPT_GUARANTEED.forEach(function(k){
+    if(localStorage.getItem(k) !== null) kept++;
+  });
+  L("Donnees protegees : " + kept + " presentes", "ok");
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+name: npm audit (vulnérabilités deps)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Demande Kevin 2026-05-15 "qualité pro sans gros coûts" :
+# Détecte CVE dans dépendances npm. Bloquant sur PR si severity high/critical.
+# Gratuit illimité (npm intégré).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/package.json'
+      - 'apex-ai/v13/package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/package.json'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: npm audit (high+critical only)
+        working-directory: apex-ai/v13
+        run: |
+          # Échoue uniquement si severity ≥ high (pas low/moderate qui sont fréquents)
+          npm audit --audit-level=high --omit=dev || (
+            echo "🚨 npm audit a trouvé vulnérabilités ≥ high"
+            echo "Fix : cd apex-ai/v13 && npm audit fix"
+            exit 1
+          )
+
+      - name: Génère rapport JSON (audit log)
+        if: always()
+        working-directory: apex-ai/v13
+        run: npm audit --json > /tmp/audit.json || true
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-audit-${{ github.run_number }}
+          path: /tmp/audit.json
+          retention-days: 30

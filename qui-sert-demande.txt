@@ -1,0 +1,9 @@
+Demande du 5.09.2026 — qui sert vraiment kd-mc.com ?
+
+Avant de faire passer la publication du miroir (publier-site, 54 % des 400
+minutes GitLab du mois) de « à chaque push » à « à la demande », il faut savoir
+si le site vivant vient de GitHub Pages ou du miroir Cloudflare. Le conteneur de
+l'agent ne peut atteindre aucune des trois adresses (HTTP 000, pare-feu) : c'est
+la machine GitLab qui regarde.
+
+Toucher ce fichier relance la mesure.

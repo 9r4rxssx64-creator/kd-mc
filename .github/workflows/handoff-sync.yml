@@ -1,0 +1,111 @@
+name: Handoff Claude Code <-> Apex AI Sync
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Synchronise le fichier CLAUDE_HANDOFF.json avec Firebase ax_claude_code_handoff
+# Comme ca Apex AI ecrit dans Firebase (auto), et le fichier GitHub est a jour pour
+# que Claude Code voie les updates d'Apex au prochain pull.
+#
+# Sans intervention de Kevin. Communication bi-directionnelle temps reel.
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:        # Trigger manuel admin
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'CLAUDE_HANDOFF.json'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Fetch handoff from Firebase
+        id: fetch_fb
+        env:
+          # /apex durci auth != null (2026-07-04) → lecture par service account (gauth.cjs, fail-open)
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        run: |
+          FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          TOKEN=$(node tools/firebase/gauth.cjs); QS=""
+          [ -n "$TOKEN" ] && QS="?access_token=${TOKEN}"
+          echo "qs_auth=$QS" >> $GITHUB_OUTPUT
+
+          # Recupere ce qu'Apex a ecrit dans Firebase
+          curl -s "${FB_URL}/apex/ax_claude_code_handoff.json${QS}" -o /tmp/fb_handoff.json
+          # Permission denied = auth manquante → traiter comme "pas de handoff" (fail-open, pas de faux merge)
+          if grep -q '"error"' /tmp/fb_handoff.json 2>/dev/null; then
+            echo "::warning::lecture handoff refusee : $(cat /tmp/fb_handoff.json)"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Si pas de handoff Firebase, on garde le local
+          if [ ! -s /tmp/fb_handoff.json ] || [ "$(cat /tmp/fb_handoff.json)" = "null" ]; then
+            echo "Pas de handoff Firebase, skip"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Si Apex a ecrit quelque chose de plus recent que le fichier local, on merge
+          FB_TS=$(jq -r '.apex_ai.last_active_at // "1970-01-01T00:00:00Z"' /tmp/fb_handoff.json 2>/dev/null || echo "1970-01-01T00:00:00Z")
+          LOCAL_TS=$(jq -r '.apex_ai.last_active_at // "1970-01-01T00:00:00Z"' CLAUDE_HANDOFF.json 2>/dev/null || echo "1970-01-01T00:00:00Z")
+
+          echo "FB last_active_at=$FB_TS"
+          echo "Local last_active_at=$LOCAL_TS"
+
+          if [ "$FB_TS" \> "$LOCAL_TS" ]; then
+            echo "Firebase plus recent, merge"
+            echo "merge=true" >> $GITHUB_OUTPUT
+            cp /tmp/fb_handoff.json CLAUDE_HANDOFF.json
+          else
+            echo "Local plus recent ou egal, skip"
+            echo "merge=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit + push si change
+        if: steps.fetch_fb.outputs.merge == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet CLAUDE_HANDOFF.json; then
+            echo "Pas de diff, skip commit"
+            exit 0
+          fi
+
+          git add CLAUDE_HANDOFF.json
+          git commit -m "chore: sync handoff from Apex AI Firebase (auto bidirectional)"
+          git push origin HEAD
+          echo "✅ CLAUDE_HANDOFF.json mis a jour avec les notes Apex"
+
+      - name: Push handoff vers Firebase si local plus recent
+        if: steps.fetch_fb.outputs.merge != 'true' && steps.fetch_fb.outputs.skip != 'true'
+        run: |
+          FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+          QS="${{ steps.fetch_fb.outputs.qs_auth }}"
+
+          # Push notre version locale vers Firebase (claude_code section)
+          curl -s -X PUT "${FB_URL}/apex/ax_claude_code_handoff.json${QS}" \
+            -H "Content-Type: application/json" \
+            -d @CLAUDE_HANDOFF.json
+
+          echo "✅ Handoff pushe vers Firebase pour qu Apex voie les updates"

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Generer cles VAPID - Apex Push</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#08080f;color:#e8e8f0;margin:0;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;min-height:100vh;line-height:1.5}
+.wrap{max-width:680px;margin:0 auto;padding:20px 0}
+h1{background:linear-gradient(135deg,#e8b830,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:24px;margin:0 0 8px 0}
+.sub{color:#9b9b9b;font-size:13px;margin-bottom:24px}
+.card{background:#101020;border:1px solid rgba(232,184,48,.2);border-radius:16px;padding:18px;margin-bottom:16px}
+button{background:linear-gradient(135deg,#e8b830,#ffd700);color:#000;border:none;padding:14px 22px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;width:100%;min-height:50px;font-family:inherit}
+button:disabled{opacity:.5}
+button.copy{background:rgba(255,255,255,.08);color:#e8e8f0;border:1px solid rgba(255,255,255,.12);min-height:40px;padding:8px 14px;font-size:13px}
+.label{font-size:12px;color:#9b9b9b;margin:14px 0 6px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.label strong{color:#e8b830;font-size:13px}
+.value{font-family:Menlo,Consolas,monospace;background:rgba(0,0,0,.4);padding:12px;border-radius:10px;word-break:break-all;font-size:11px;line-height:1.4;color:#7dd3a8;border:1px solid rgba(125,211,168,.2)}
+.value.priv{color:#ff8b8b;border-color:rgba(255,139,139,.3)}
+.warn{background:rgba(255,139,139,.1);border-left:4px solid #ff8b8b;padding:12px 14px;border-radius:10px;font-size:13px;color:#ffb3b3;margin-top:8px}
+.ok{background:rgba(125,211,168,.1);border-left:4px solid #7dd3a8;padding:12px 14px;border-radius:10px;font-size:13px;color:#a8e8c2;margin-top:8px}
+.step{display:flex;gap:12px;margin:12px 0}
+.step .n{background:#e8b830;color:#000;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;font-size:14px}
+.step .t{flex:1;font-size:13px;color:#d0d0d8}
+code{background:rgba(232,184,48,.15);color:#e8b830;padding:2px 6px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Generer cles VAPID</h1>
+  <div class="sub">Outil pour creer les 2 cles cryptographiques du serveur push Apex.<br>Tout se passe dans ton navigateur, rien n'est envoye en ligne.</div>
+
+  <div class="card">
+    <button id="genBtn" onclick="generateVapid()">Generer mes cles VAPID</button>
+    <div id="result" style="display:none">
+      <div class="label"><strong>Cle PUBLIQUE</strong> <button class="copy" onclick="copyVal('pub')">Copier</button></div>
+      <div class="value" id="pub"></div>
+
+      <div class="label"><strong>Cle PRIVEE</strong> <button class="copy" onclick="copyVal('priv')">Copier</button></div>
+      <div class="value priv" id="priv"></div>
+
+      <div class="warn"><strong>Important :</strong> sauvegarde la cle PRIVEE dans iCloud Notes / 1Password. Si tu la perds, il faudra regenerer + reconfigurer tout le monde. NE JAMAIS la partager.</div>
+      <div class="ok"><strong>OK :</strong> la cle PUBLIQUE peut etre partagee, c'est elle qui sera dans le code de Apex.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 12px 0;color:#e8b830;font-size:16px">Que faire avec ces cles ?</h3>
+    <div class="step"><div class="n">1</div><div class="t">Va dans Cloudflare Workers, ton worker <code>apex-push-worker</code> > Settings > Variables.</div></div>
+    <div class="step"><div class="n">2</div><div class="t">Ajoute <code>VAPID_PUBLIC_KEY</code> = ta cle publique (Encrypt OUI).</div></div>
+    <div class="step"><div class="n">3</div><div class="t">Ajoute <code>VAPID_PRIVATE_KEY</code> = ta cle privee (Encrypt OUI).</div></div>
+    <div class="step"><div class="n">4</div><div class="t">Dans Apex, code source <code>apex-ai/index.html</code>, remplace la ligne <code>var AX_VAPID_PUBLIC=...</code> par ta cle publique. Demande a Claude Code de le faire si besoin.</div></div>
+    <div class="step"><div class="n">5</div><div class="t">Voir <code>DEPLOY-PUSH-WORKER.md</code> pour les autres etapes.</div></div>
+  </div>
+</div>
+
+<script>
+async function generateVapid(){
+  var btn=document.getElementById("genBtn");
+  btn.disabled=true;
+  btn.textContent="Generation...";
+  try{
+    var kp=await crypto.subtle.generateKey(
+      {name:"ECDSA",namedCurve:"P-256"},
+      true,
+      ["sign","verify"]
+    );
+    // Export public key (raw uncompressed: 65 bytes starting 0x04)
+    var pubRaw=new Uint8Array(await crypto.subtle.exportKey("raw",kp.publicKey));
+    var pubB64=base64urlEncode(pubRaw);
+
+    // Export private key (jwk -> d field, 32 bytes raw)
+    var jwk=await crypto.subtle.exportKey("jwk",kp.privateKey);
+    var privB64=jwk.d; // already base64url
+
+    document.getElementById("pub").textContent=pubB64;
+    document.getElementById("priv").textContent=privB64;
+    document.getElementById("result").style.display="block";
+    btn.textContent="Regenerer (creer nouvelles cles)";
+    btn.disabled=false;
+  }catch(e){
+    btn.textContent="Erreur : "+(e.message||e);
+    btn.disabled=false;
+  }
+}
+
+function base64urlEncode(bytes){
+  var s=btoa(String.fromCharCode.apply(null,bytes));
+  return s.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+
+function copyVal(id){
+  var v=document.getElementById(id).textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(function(){
+      alert("Copie !");
+    }).catch(function(){
+      fallbackCopy(v);
+    });
+  }else{
+    fallbackCopy(v);
+  }
+}
+function fallbackCopy(v){
+  var ta=document.createElement("textarea");
+  ta.value=v;ta.style.position="fixed";ta.style.left="-9999px";
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand("copy");alert("Copie !");}catch(_){}
+  document.body.removeChild(ta);
+}
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="gen-vapid" data-version="v1.0" data-color="#c9a227" defer></script>
+</body>
+</html>

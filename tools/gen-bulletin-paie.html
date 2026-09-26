@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Generateur Fiche Paie Monaco</title>
+<style>
+:root{--gold:#c9a227;--gold2:#e8b830;--bg:#08080f;--bg2:#0e1530;--border:rgba(232,184,48,.3);--text:#f8f8ff;--dim:#9ba8c4;--green:#5cd882;--red:#ff5858}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;padding:0;background:radial-gradient(ellipse at 50% 30%,var(--bg2) 0%,var(--bg) 60%,#040608 100%);color:var(--text);font-family:-apple-system,system-ui,sans-serif;min-height:100vh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 48px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--gold2);font-size:14px;text-decoration:none;padding:10px 14px;background:rgba(232,184,48,.08);border:1px solid var(--border);border-radius:10px;min-height:44px;line-height:24px}
+h1{font-size:24px;font-weight:900;letter-spacing:1px;margin:18px 0 4px;background:linear-gradient(135deg,var(--gold),var(--gold2),#ffd860);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+.sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:18px}
+.icon{font-size:42px;text-align:center;margin-top:8px}
+.card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:14px;margin:12px 0}
+.card h2{font-size:15px;font-weight:800;margin:0 0 10px;color:var(--gold2);letter-spacing:.5px}
+label{display:block;font-size:12px;color:var(--dim);margin:8px 0 4px}
+input[type="text"],input[type="number"],select{width:100%;padding:12px 14px;font-size:15px;background:rgba(0,0,0,.35);color:var(--text);border:1px solid var(--border);border-radius:10px;-webkit-appearance:none;min-height:44px}
+input:focus,select:focus{outline:none;border-color:var(--gold)}
+button{width:100%;padding:14px 18px;font-size:15px;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#040608;border:none;border-radius:12px;cursor:pointer;min-height:48px;margin-top:10px;transition:transform .1s}
+button:active{transform:scale(.97)}
+button.outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.preview{background:#fff;color:#222;border-radius:12px;padding:16px;margin-top:12px;font-size:12px;line-height:1.5}
+.preview h3{margin:0 0 6px;font-size:14px;color:#000}
+.preview table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}
+.preview th,.preview td{border:1px solid #ccc;padding:5px 6px;text-align:left}
+.preview th{background:#f0f0f0;font-weight:700}
+.preview .total{background:#fffbe0;font-weight:700}
+.preview .net{background:#e8fff0;font-weight:700;font-size:13px}
+.warn{background:rgba(232,184,48,.08);border-left:3px solid var(--gold);padding:8px 12px;border-radius:6px;font-size:11px;color:var(--gold);margin-top:10px}
+.foot{text-align:center;margin-top:24px;font-size:11px;color:var(--dim);line-height:1.6}
+.foot a{color:var(--gold2);text-decoration:none;margin:0 8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:380px){.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="https://9r4rxssx64-creator.github.io/CMCteams/" aria-label="Retour CMCteams">&larr; Retour</a>
+  <div class="icon" aria-hidden="true">&#128179;</div>
+  <h1>Fiche Paie Simplifiee</h1>
+  <div class="sub">Casino de Monaco &middot; Calcul indicatif</div>
+
+  <div class="card">
+    <h2>Informations employe</h2>
+    <label for="nom">Nom &amp; prenom</label>
+    <input type="text" id="nom" placeholder="ex: DURAND Jean" maxlength="80">
+    <div class="row2">
+      <div>
+        <label for="poste">Poste</label>
+        <select id="poste" aria-label="Poste">
+          <option value="emp1">Employe 1 jeu (N1)</option>
+          <option value="emp3">Employe 3 jeux (N3)</option>
+          <option value="emp5">Employe 5 jeux (N5)</option>
+          <option value="expert">Expert tous jeux (N7)</option>
+          <option value="schef">Sous-chef table (N9)</option>
+          <option value="chef">Chef de table (N11)</option>
+          <option value="insp">Inspecteur</option>
+          <option value="sdir">Sous-directeur</option>
+        </select>
+      </div>
+      <div>
+        <label for="mois">Mois</label>
+        <select id="mois" aria-label="Mois">
+          <option value="Janvier">Janvier</option><option value="Fevrier">Fevrier</option>
+          <option value="Mars">Mars</option><option value="Avril" selected>Avril</option>
+          <option value="Mai">Mai</option><option value="Juin">Juin</option>
+          <option value="Juillet">Juillet</option><option value="Aout">Aout</option>
+          <option value="Septembre">Septembre</option><option value="Octobre">Octobre</option>
+          <option value="Novembre">Novembre</option><option value="Decembre">Decembre</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div>
+        <label for="jt">Jours travailles</label>
+        <input type="number" id="jt" min="0" max="31" value="22" inputmode="numeric">
+      </div>
+      <div>
+        <label for="annee">Annee</label>
+        <input type="number" id="annee" min="2024" max="2030" value="2026" inputmode="numeric">
+      </div>
+    </div>
+    <button onclick="calc()">Calculer la fiche</button>
+  </div>
+
+  <div id="preview"></div>
+
+  <div id="actions" style="display:none">
+    <button class="outline" onclick="dlPdf()">Telecharger PDF</button>
+    <button class="outline" onclick="window.print()">Imprimer</button>
+  </div>
+
+  <div class="warn">Calcul indicatif base sur la grille SBM (Convention Collective 2015, Annexes 1-2). Cotisations sociales Monaco approximees (CCSS, CARTI). Pour fiche officielle, demander au DRH SBM. Ne remplace pas un bulletin de paie legal.</div>
+
+  <div class="foot">
+    <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/">Apex</a> &middot;
+    <a href="https://9r4rxssx64-creator.github.io/CMCteams/">CMCteams</a>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+var GRILLE={emp1:2300,emp3:3200,emp5:4400,expert:6113,schef:6460,chef:7000,insp:8295,sdir:10452};
+var LABELS={emp1:'Employe 1 jeu (N1)',emp3:'Employe 3 jeux (N3)',emp5:'Employe 5 jeux (N5)',expert:'Expert tous jeux (N7)',schef:'Sous-chef table (N9)',chef:'Chef de table (N11)',insp:'Inspecteur',sdir:'Sous-directeur'};
+
+function calc(){
+  var nom=document.getElementById('nom').value.trim()||'(sans nom)';
+  var poste=document.getElementById('poste').value;
+  var mois=document.getElementById('mois').value;
+  var annee=parseInt(document.getElementById('annee').value,10)||2026;
+  var jt=parseInt(document.getElementById('jt').value,10)||0;
+  var fixe=GRILLE[poste]||0;
+  // Pro-rata jours travailles (base 22 jours mois standard)
+  var brut=fixe*(jt/22);
+  // Cotisations Monaco approx: CCSS 6.65% + CARTI 6.55% = ~13.2% salarie
+  var ccss=brut*0.0665;
+  var carti=brut*0.0655;
+  var totalCot=ccss+carti;
+  var net=brut-totalCot;
+  var html='<div class="preview" id="ficheBox">'+
+    '<h3>FICHE DE PAIE INDICATIVE</h3>'+
+    '<div style="font-size:10px;color:#666">Casino &middot; Monaco &middot; '+esc(mois)+' '+annee+'</div>'+
+    '<div style="margin-top:6px"><b>Salarie :</b> '+esc(nom)+'</div>'+
+    '<div><b>Poste :</b> '+esc(LABELS[poste])+'</div>'+
+    '<div><b>Periode :</b> '+esc(mois)+' '+annee+' &middot; '+jt+' jours travailles</div>'+
+    '<table>'+
+      '<tr><th>Libelle</th><th style="text-align:right">Base</th><th style="text-align:right">Taux</th><th style="text-align:right">Montant</th></tr>'+
+      '<tr><td>Salaire de base</td><td style="text-align:right">'+fixe.toFixed(2)+' EUR</td><td style="text-align:right">'+(jt/22*100).toFixed(0)+'%</td><td style="text-align:right">'+brut.toFixed(2)+'</td></tr>'+
+      '<tr class="total"><td colspan="3"><b>BRUT IMPOSABLE</b></td><td style="text-align:right"><b>'+brut.toFixed(2)+' EUR</b></td></tr>'+
+      '<tr><td>CCSS (sante Monaco)</td><td style="text-align:right">'+brut.toFixed(2)+'</td><td style="text-align:right">6,65%</td><td style="text-align:right">-'+ccss.toFixed(2)+'</td></tr>'+
+      '<tr><td>CARTI (retraite Monaco)</td><td style="text-align:right">'+brut.toFixed(2)+'</td><td style="text-align:right">6,55%</td><td style="text-align:right">-'+carti.toFixed(2)+'</td></tr>'+
+      '<tr class="total"><td colspan="3"><b>TOTAL COTISATIONS SALARIE</b></td><td style="text-align:right"><b>-'+totalCot.toFixed(2)+' EUR</b></td></tr>'+
+      '<tr class="net"><td colspan="3"><b>NET A PAYER</b></td><td style="text-align:right"><b>'+net.toFixed(2)+' EUR</b></td></tr>'+
+    '</table>'+
+    '<div style="margin-top:8px;font-size:10px;color:#888">Calcul indicatif &middot; Monaco n\'a pas d\'impot sur le revenu pour residents monegasques &middot; Ne remplace pas un bulletin officiel.</div>'+
+  '</div>';
+  document.getElementById('preview').innerHTML=html;
+  document.getElementById('actions').style.display='block';
+}
+
+function dlPdf(){
+  if(!window.jspdf||!window.jspdf.jsPDF){alert('PDF non disponible (besoin d\'internet).');return;}
+  var doc=new window.jspdf.jsPDF();
+  var nom=document.getElementById('nom').value.trim()||'(sans nom)';
+  var mois=document.getElementById('mois').value;
+  var annee=document.getElementById('annee').value;
+  var poste=document.getElementById('poste').value;
+  var jt=parseInt(document.getElementById('jt').value,10)||0;
+  var fixe=GRILLE[poste]||0;
+  var brut=fixe*(jt/22);
+  var ccss=brut*0.0665;
+  var carti=brut*0.0655;
+  var net=brut-(ccss+carti);
+  doc.setFontSize(16);doc.text('FICHE DE PAIE INDICATIVE',105,20,{align:'center'});
+  doc.setFontSize(10);doc.text('Casino - Monaco - '+mois+' '+annee,105,28,{align:'center'});
+  doc.setFontSize(11);
+  doc.text('Salarie : '+nom,20,42);
+  doc.text('Poste : '+LABELS[poste],20,50);
+  doc.text('Periode : '+mois+' '+annee+' - '+jt+' jours travailles',20,58);
+  doc.line(20,64,190,64);
+  var y=72;
+  doc.text('Salaire de base ('+fixe.toFixed(2)+' EUR x '+(jt/22*100).toFixed(0)+'%)',20,y);doc.text(brut.toFixed(2)+' EUR',170,y,{align:'right'});y+=8;
+  doc.setFont(undefined,'bold');doc.text('BRUT IMPOSABLE',20,y);doc.text(brut.toFixed(2)+' EUR',170,y,{align:'right'});doc.setFont(undefined,'normal');y+=12;
+  doc.text('CCSS sante Monaco (6,65%)',20,y);doc.text('-'+ccss.toFixed(2)+' EUR',170,y,{align:'right'});y+=8;
+  doc.text('CARTI retraite Monaco (6,55%)',20,y);doc.text('-'+carti.toFixed(2)+' EUR',170,y,{align:'right'});y+=12;
+  doc.setFont(undefined,'bold');doc.setFontSize(13);
+  doc.text('NET A PAYER',20,y);doc.text(net.toFixed(2)+' EUR',170,y,{align:'right'});
+  doc.setFont(undefined,'normal');doc.setFontSize(8);
+  doc.text('Calcul indicatif - Ne remplace pas un bulletin officiel - Cotisations Monaco approximees',105,280,{align:'center'});
+  var fname='fiche_paie_'+nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+mois+'_'+annee+'.pdf';
+  doc.save(fname);
+}
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="gen-bulletin-paie"
+        data-version="v1.0.0"
+        data-color="#22cc77"
+        defer></script>
+</body>
+</html>

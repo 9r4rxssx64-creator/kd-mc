@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Calculateur Convention SBM Monaco</title>
+<style>
+:root{--gold:#c9a227;--gold2:#e8b830;--bg:#08080f;--bg2:#0e1530;--border:rgba(232,184,48,.3);--text:#f8f8ff;--dim:#9ba8c4;--green:#5cd882;--red:#ff5858}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;padding:0;background:radial-gradient(ellipse at 50% 30%,var(--bg2) 0%,var(--bg) 60%,#040608 100%);color:var(--text);font-family:-apple-system,system-ui,sans-serif;min-height:100vh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 48px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--gold2);font-size:14px;text-decoration:none;padding:10px 14px;background:rgba(232,184,48,.08);border:1px solid var(--border);border-radius:10px;min-height:44px;line-height:24px}
+h1{font-size:24px;font-weight:900;letter-spacing:1px;margin:18px 0 4px;background:linear-gradient(135deg,var(--gold),var(--gold2),#ffd860);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+.sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:18px}
+.icon{font-size:42px;text-align:center;margin-top:8px}
+.card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:14px 14px 16px;margin:12px 0}
+.card h2{font-size:15px;font-weight:800;margin:0 0 10px;color:var(--gold2);letter-spacing:.5px}
+label{display:block;font-size:12px;color:var(--dim);margin:8px 0 4px}
+select,input[type="number"]{width:100%;padding:12px 14px;font-size:15px;background:rgba(0,0,0,.35);color:var(--text);border:1px solid var(--border);border-radius:10px;-webkit-appearance:none;min-height:44px}
+select:focus,input:focus{outline:none;border-color:var(--gold)}
+button{width:100%;padding:14px 18px;font-size:15px;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#040608;border:none;border-radius:12px;cursor:pointer;min-height:48px;margin-top:10px;transition:transform .1s}
+button:active{transform:scale(.97)}
+button.outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.result{background:rgba(92,216,130,.08);border:1px solid rgba(92,216,130,.4);border-radius:12px;padding:14px;margin-top:12px;font-size:14px;line-height:1.6}
+.result b{color:var(--gold2);font-size:18px}
+.ref{font-size:11px;color:var(--dim);margin-top:8px;font-style:italic;line-height:1.5}
+.foot{text-align:center;margin-top:24px;font-size:11px;color:var(--dim);line-height:1.6}
+.foot a{color:var(--gold2);text-decoration:none;margin:0 8px}
+.warn{background:rgba(232,184,48,.08);border-left:3px solid var(--gold);padding:8px 12px;border-radius:6px;font-size:11px;color:var(--gold);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="https://9r4rxssx64-creator.github.io/CMCteams/" aria-label="Retour CMCteams">&larr; Retour</a>
+  <div class="icon" aria-hidden="true">&#9878;</div>
+  <h1>Calculateur Convention SBM</h1>
+  <div class="sub">Conges familiaux + indemnite retraite (Monaco)</div>
+
+  <div class="card">
+    <h2>Conges pour evenement familial (Article 18)</h2>
+    <label for="evt">Type d'evenement</label>
+    <select id="evt" aria-label="Type d'evenement">
+      <option value="mariage_emp|4">Mariage de l'employe (4 jours)</option>
+      <option value="naissance|3">Naissance d'un enfant (3 jours)</option>
+      <option value="deces_proche|3">Deces conjoint / enfant / parent (3 jours)</option>
+      <option value="mariage_enfant|2">Mariage d'un enfant (2 jours)</option>
+      <option value="deces_beau|1">Deces beau-pere / belle-mere (1 jour)</option>
+      <option value="deces_frere|1">Deces frere / soeur (1 jour)</option>
+    </select>
+    <button onclick="calcConge()">Calculer</button>
+    <div id="res-conge"></div>
+  </div>
+
+  <div class="card">
+    <h2>Indemnite de depart en retraite (Article 26)</h2>
+    <label for="ans">Annees d'anciennete SBM</label>
+    <input type="number" id="ans" min="0" max="50" step="1" placeholder="ex: 20" inputmode="numeric">
+    <label for="sal">Salaire mensuel brut moyen (EUR)</label>
+    <input type="number" id="sal" min="0" step="50" placeholder="ex: 4500" inputmode="decimal">
+    <label for="grp">Statut</label>
+    <select id="grp" aria-label="Statut">
+      <option value="ouvert">Groupe ouvert (standard)</option>
+      <option value="ferme">Groupe ferme (anciens contrats)</option>
+    </select>
+    <button onclick="calcRetraite()">Calculer</button>
+    <div id="res-retraite"></div>
+  </div>
+
+  <div class="warn">Calcul indicatif base sur la Convention Collective Jeux de Table SBM (1er avril 2015). Pour decision officielle, consulter le DRH SBM ou un avocat specialise droit du travail Monaco.</div>
+
+  <div class="foot">
+    <a href="https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/">Apex</a> &middot;
+    <a href="https://9r4rxssx64-creator.github.io/CMCteams/">CMCteams</a>
+  </div>
+</div>
+
+<script>
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+function copyTxt(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){alert('Copie au presse-papier');});
+  }else{
+    var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');alert('Copie au presse-papier');}catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+function calcConge(){
+  var sel=document.getElementById('evt');
+  var v=sel.value.split('|');
+  var label=sel.options[sel.selectedIndex].text;
+  var jours=parseInt(v[1],10);
+  var txt='Vous avez droit a '+jours+' jour'+(jours>1?'s':'')+' de conge paye pour : '+label.split(' (')[0]+'.';
+  var html='<div class="result"><b>'+jours+' jour'+(jours>1?'s':'')+'</b> de conge paye<br><div class="ref">Reference : Convention Collective SBM, Article 18 (conges pour evenements familiaux). Ces jours s\'ajoutent aux conges payes annuels et doivent etre pris au moment de l\'evenement, sur justificatif.</div><button class="outline" style="margin-top:10px" onclick="copyTxt('+JSON.stringify(txt)+')">Copier le resultat</button></div>';
+  document.getElementById('res-conge').innerHTML=html;
+}
+
+function calcRetraite(){
+  var ans=parseInt(document.getElementById('ans').value,10)||0;
+  var sal=parseFloat(document.getElementById('sal').value)||0;
+  var grp=document.getElementById('grp').value;
+  if(ans<=0||sal<=0){
+    document.getElementById('res-retraite').innerHTML='<div class="result" style="background:rgba(255,88,88,.08);border-color:rgba(255,88,88,.4)">Renseigne anciennete et salaire pour calculer.</div>';
+    return;
+  }
+  var mois=0,palier='';
+  if(ans>=30){mois=2;palier='30 ans et +';}
+  else if(ans>=20){mois=1.5;palier='20 a 29 ans';}
+  else if(ans>=15){mois=1;palier='15 a 19 ans';}
+  else if(ans>=10){mois=0.5;palier='10 a 14 ans';}
+  else{mois=0;palier='Moins de 10 ans (pas d\'indemnite conventionnelle)';}
+  if(grp==='ferme'&&ans>=30){mois=3;palier='30 ans et + (groupe ferme)';}
+  var montant=sal*mois;
+  var txt='Indemnite retraite : '+mois+' mois de salaire = '+montant.toFixed(2)+' EUR (palier : '+palier+', anciennete '+ans+' ans).';
+  var html='<div class="result"><b>'+mois+' mois</b> de salaire<br>= <b>'+montant.toFixed(2)+' EUR</b><br><div class="ref">Palier : '+esc(palier)+' &middot; Reference : Convention SBM Article 26. Indemnite versee en une fois au depart en retraite. A verifier avec DRH selon contrat individuel.</div><button class="outline" style="margin-top:10px" onclick="copyTxt('+JSON.stringify(txt)+')">Copier le resultat</button></div>';
+  document.getElementById('res-retraite').innerHTML=html;
+}
+</script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="calc-conventions"
+        data-version="v1.0.0"
+        data-color="#22cc77"
+        defer></script>
+</body>
+</html>

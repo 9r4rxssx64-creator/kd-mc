@@ -1,0 +1,92 @@
+name: Antonin — clonage de voix (Replicate)
+
+# Clone la voix d'Antonin (MiniMax voice-cloning, officiel) puis lui fait dire une phrase
+# test (MiniMax speech-02-hd). L'audio produit est déposé en artifact pour écoute.
+# Clé : AX_REPLICATE_KEY (secret déjà présent). Le fichier m4a est accepté tel quel.
+
+on:
+  workflow_dispatch:
+    inputs:
+      texte:
+        description: "Phrase à faire dire à Antonin"
+        default: "Adiou, c'est Antonin ! Boudu, quelle belle journée pour apprendre les langues."
+        required: false
+
+jobs:
+  clone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cloner la voix d'Antonin + générer la phrase test
+        env:
+          REPLICATE_KEY: ${{ secrets.AX_REPLICATE_KEY }}
+          TEXTE: ${{ github.event.inputs.texte }}
+        run: |
+          set -e
+          if [ -z "${REPLICATE_KEY:-}" ]; then echo "::error::AX_REPLICATE_KEY absente"; exit 1; fi
+          AUTH="Authorization: Bearer $REPLICATE_KEY"
+
+          poll(){ # attend qu'une prédiction soit terminée ; renvoie la réponse finale
+            local url="$1" r s
+            for i in $(seq 1 80); do
+              r=$(curl -sS "$url" -H "$AUTH")
+              s=$(echo "$r" | jq -r '.status // empty')
+              if [ "$s" = "succeeded" ] || [ "$s" = "failed" ] || [ "$s" = "canceled" ]; then echo "$r"; return; fi
+              sleep 3
+            done
+            echo "$r"
+          }
+
+          # URL PUBLIQUE et propre (.m4a — format supporté par MiniMax : mp3/m4a/wav, 10 s-5 min, <20 Mo).
+          # Les runs #2/#3 échouaient sur l'URL de l'API Files de Replicate (get authentifié → MiniMax
+          # n'arrive pas à la lire / détecter l'extension). Une URL raw GitHub est publique, sans auth,
+          # avec une vraie extension .m4a → MiniMax la télécharge directement.
+          REF="https://raw.githubusercontent.com/9r4rxssx64-creator/CMCteams/main/lingua/voices/antonin.m4a"
+          echo "== 1) Voix de référence (URL publique) : $REF =="
+          echo "Vérif accessibilité :"; curl -sSI "$REF" | head -n 5 || true
+
+          echo "== 2) Clonage (minimax/voice-cloning) — entraînement ~30 s =="
+          C=$(curl -sS -X POST https://api.replicate.com/v1/models/minimax/voice-cloning/predictions \
+                -H "$AUTH" -H "Content-Type: application/json" \
+                -d "$(jq -n --arg v "$REF" '{input:{voice_file:$v, model:"speech-02-hd"}}')")
+          G=$(echo "$C" | jq -r '.urls.get // empty')
+          if [ -z "$G" ]; then echo "::error::Création du clone échouée (cause exacte) :"; echo "$C"; exit 1; fi
+          CL=$(poll "$G"); echo "$CL" > clone.json
+          CS=$(echo "$CL" | jq -r '.status')
+          VID=$(echo "$CL" | jq -r 'if (.output|type)=="string" then .output elif (.output|type)=="object" then (.output.voice_id // .output.id // empty) else empty end')
+          if [ "$CS" != "succeeded" ] || [ -z "$VID" ] || [ "$VID" = "null" ]; then
+            echo "::error::Clonage NON abouti (statut=$CS). Détail :"; echo "$CL" | jq -r '.error // .detail // "voir clone.json"'; echo "$CL"; exit 1
+          fi
+          echo "voice_id: $VID"
+
+          echo "== 3) Faire parler Antonin (minimax/speech-02-hd) =="
+          S=$(curl -sS -X POST https://api.replicate.com/v1/models/minimax/speech-02-hd/predictions \
+                -H "$AUTH" -H "Content-Type: application/json" \
+                -d "$(jq -n --arg t "$TEXTE" --arg v "$VID" '{input:{text:$t, voice_id:$v}}')")
+          G2=$(echo "$S" | jq -r '.urls.get // empty')
+          if [ -z "$G2" ]; then echo "::error::Création de la parole échouée :"; echo "$S"; exit 1; fi
+          SP=$(poll "$G2"); echo "$SP" > speech.json
+          SS=$(echo "$SP" | jq -r '.status')
+          OUT=$(echo "$SP" | jq -r 'if (.output|type)=="string" then .output elif (.output|type)=="array" then .output[0] else empty end')
+          if [ "$SS" != "succeeded" ] || [ -z "$OUT" ]; then
+            echo "::error::Synthèse NON aboutie (statut=$SS). Détail :"; echo "$SP" | jq -r '.error // .detail // "voir speech.json"'; echo "$SP"; exit 1
+          fi
+
+          echo "== 4) Téléchargement de l'audio d'Antonin =="
+          curl -sS -L "$OUT" -o antonin-test.mp3
+          ls -la antonin-test.mp3
+          echo "✅ VOIX D'ANTONIN CLONÉE — voice_id=$VID — phrase : « $TEXTE »"
+          echo "$VID" > antonin-voice-id.txt
+
+      - name: Déposer l'audio + le voice_id (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antonin-voix-test
+          path: |
+            antonin-test.mp3
+            antonin-voice-id.txt
+            clone.json
+            speech.json
+          if-no-files-found: warn

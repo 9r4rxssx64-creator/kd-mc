@@ -1,0 +1,123 @@
+name = "kdmc-router"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# ⚠️ TOML SCOPING : `routes` DOIT rester AVANT tout [[table]]/[table] (ici [[kv_namespaces]]
+# et [vars]). Sinon TOML rattache `routes` à la dernière table ouverte (« Unexpected fields
+# found in kv_namespaces[0] field: routes ») et wrangler IGNORE tout le tableau → AUCUN
+# custom_domain provisionné → les sous-domaines (departs, cmcteams-light, dashboard,
+# sourcing, coffre, bot) renvoient « serveur introuvable » (DNS absent). Bug vécu 2026-07-03.
+# Chaque custom_domain auto-provisionne le DNS + le certificat SSL sur la zone kd-mc.com
+# (déjà dans le compte Cloudflare de Kevin). Aucune manip DNS manuelle.
+routes = [
+  { pattern = "kd-mc.com", custom_domain = true },
+  { pattern = "www.kd-mc.com", custom_domain = true },
+  { pattern = "cmcteams.kd-mc.com", custom_domain = true },
+  { pattern = "apex-ai.kd-mc.com", custom_domain = true },
+  { pattern = "apex-chat.kd-mc.com", custom_domain = true },
+  { pattern = "la-detente.kd-mc.com", custom_domain = true },
+  { pattern = "chez-lolo.kd-mc.com", custom_domain = true },
+  { pattern = "dashboard.kd-mc.com", custom_domain = true },
+  { pattern = "sourcing.kd-mc.com", custom_domain = true },
+  { pattern = "coffre.kd-mc.com", custom_domain = true },
+  { pattern = "departs.kd-mc.com", custom_domain = true },
+  { pattern = "cmcteams-light.kd-mc.com", custom_domain = true },
+  { pattern = "tor.kd-mc.com", custom_domain = true },
+  { pattern = "bot.kd-mc.com", custom_domain = true },
+  { pattern = "beatbot.kd-mc.com", custom_domain = true },
+  { pattern = "autorisations.kd-mc.com", custom_domain = true },
+  { pattern = "arbre.kd-mc.com", custom_domain = true },
+  { pattern = "lingua.kd-mc.com", custom_domain = true },
+  { pattern = "studio.kd-mc.com", custom_domain = true },
+  { pattern = "worldmonitor.kd-mc.com", custom_domain = true },
+  { pattern = "osint.kd-mc.com", custom_domain = true },
+  { pattern = "ia.kd-mc.com", custom_domain = true },
+  { pattern = "outils.kd-mc.com", custom_domain = true },
+  { pattern = "shops.kd-mc.com", custom_domain = true },
+  { pattern = "rotaplan.kd-mc.com", custom_domain = true },
+  { pattern = "kit.kd-mc.com", custom_domain = true },
+  { pattern = "dossiers.kd-mc.com", custom_domain = true },
+  { pattern = "croupier.kd-mc.com", custom_domain = true },
+  { pattern = "javis.kd-mc.com", custom_domain = true },
+  { pattern = "cuisine.kd-mc.com", custom_domain = true },
+  { pattern = "cocina.kd-mc.com", custom_domain = true },
+  { pattern = "cujina.kd-mc.com", custom_domain = true },
+]
+
+# Registre fiches clients — KV à id FIGÉ (provisionné le 2026-06-09) pour un déploiement
+# FIABLE. Le provisioning dynamique cassait `wrangler deploy` quand le namespace existait
+# déjà : `kv:namespace create` → "already exists", le fallback re-parsait un MAUVAIS id,
+# l'ajoutait au toml → "KV namespace not found [10041]" → worker PAS déployé (gate admin
+# + token jamais en ligne). Id figé = plus jamais ce souci.
+# BOUÉE DE SECOURS (Kevin 2026-08-14) : une copie des pages embarquée dans le
+# Worker, servie UNIQUEMENT si GitHub Pages ne répond pas (compte suspendu le
+# 14/08 → 404 sur les 20 sous-domaines). Dès que GitHub revient, le Worker
+# redevient un simple proxy — rien à défaire.
+# Le dossier public/ est fabriqué par : node prepare-secours.mjs
+#
+# ⚠️ run_worker_first = true est OBLIGATOIRE, ce n'est pas un détail :
+# par défaut Cloudflare sert un fichier statique AVANT d'exécuter le code. Or
+# le routeur accepte les chemins /CMCteams/… (PAGES_PREFIX) → sans ce réglage,
+# autorisations.kd-mc.com/CMCteams/tools/approvals/index.html aurait servi la
+# page ADMIN sans passer par le verrou Face ID/PIN. Avec true, le code tourne
+# toujours en premier et ne sert la copie que via env.ASSETS.fetch(), APRÈS
+# les contrôles d'accès.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[kv_namespaces]]
+binding = "ACCOUNTS"
+id = "8cfa33a28ac045adb7b7a9556ca8a073"
+
+# Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
+# Workers AI (binding AI, 0 clé) sert le coach Lingua via services/_shared/ia-route.js.
+[ai]
+binding = "AI"
+
+# Arbre généalogique — AMORCE des données (fait n°12) : base D1 `kdmc-arbre` créée le 5.09.2026,
+# table kv(k,v,saved_at) avec `codehash` (empreinte du code famille) et `seed` (l'arbre v3.14, texte).
+# Le routeur y lit SEULEMENT si KV ACCOUNTS (arbre:codehash / arbre:seed = publication depuis
+# l'iPhone) est vide. Aucune donnée personnelle dans le dépôt : elles sont dans cette base.
+[[d1_databases]]
+binding = "ARBRE_DB"
+database_name = "kdmc-arbre"
+database_id = "a10e750d-de49-47b5-b1d8-0e937eccbec8"
+
+# Alerte push « nouvel appareil » → worker de push existant (sous-domaine = le COMPTE
+# 9r4rxssx64, jamais un nom deviné — leçon #85). URL publique ici ; le JETON est un
+# secret (KDMC_PUSH_TOKEN, posé par le workflow depuis PUSH_ADMIN_TOKEN). Sans jeton,
+# l'alerte no-op (le journal admin reste la trace) — fail-open total.
+[vars]
+KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
+
+# ── OÙ LE ROUTEUR VA CHERCHER LES PAGES (bascule du 18.09.2026) ──────────────
+# Kevin 2026-09-15 : « passe tout en privé ». GitHub Pages depuis un dépôt PRIVÉ
+# est payant → le site est désormais publié sur Cloudflare Pages par le workflow
+# `publier-site-prive.yml`, et le routeur va le chercher LÀ.
+#
+# Ces deux valeurs ne sont PAS devinées : elles sont MESURÉES par l'étape
+# « Vérifier l'adresse STABLE » de ce workflow, qui sonde l'adresse avant de
+# l'annoncer (run 35385082990 : 31 adresses servies / 0 en échec, à la racine).
+# Deviner l'adresse d'un projet Pages (kdmc-site vs kdmc-site-bj5) aurait éteint
+# les 31 adresses du domaine d'un coup.
+#
+# UPSTREAM_PREFIX = "" parce que Cloudflare Pages sert à la RACINE, là où GitHub
+# Pages ajoutait /CMCteams (le nom du dépôt). Le routeur continue de RECONNAÎTRE
+# les liens internes en /CMCteams/… et les traduit (cf. PREFIX_SORTIE).
+#
+# Pour revenir en arrière : retirer ces deux lignes → le routeur reprend
+# automatiquement GitHub Pages (UPSTREAM_DEFAUT). Aucune ligne de code à changer.
+UPSTREAM_BASE = "https://kdmc-site-bj5.pages.dev"
+UPSTREAM_PREFIX = ""
+
+# Sentinelle « robot en surface » (PoolPilot) : cron RETIRÉ 2026-08-03.
+# CAUSE : le compte Cloudflare a atteint la limite Free de 5 cron triggers/compte
+# (API /schedules → code 10072). Ce cron faisait ÉCHOUER `wrangler deploy` (masqué par
+# `| tee`) → tout nouveau sous-domaine custom_domain (ex. arbre.kd-mc.com) n'était PLUS
+# provisionné (DNS introuvable). Le handler scheduled() reste dans worker.js ; à ré-armer
+# via un GitHub Actions cron dédié si besoin (ou passage Workers Paid). No-op sans clés Tuya.
+[triggers]
+crons = []

@@ -1,0 +1,67 @@
+name: Lingua 🇲🇨 — Collecte les sources monégasques (libres, attestées)
+
+# Kevin 2026-08-11 : « intègre le monégasque, tout ce que tu as et trouve sur le monégasque ».
+# Le monégasque est une petite langue : écrire un cours de mémoire reviendrait à INVENTER du
+# vocabulaire (interdit par la règle « vérité, rien de faux »). Depuis l'agent, le web est fermé.
+# Ce workflow tourne donc ici, où le réseau est ouvert : il récupère les sources LIBRES
+# (Wikipédia / Wiktionnaire, CC BY-SA) et les dépose sur une branche, pour que le cours soit
+# bâti sur du texte réel et citable. Aucun lexique édité sous droit d'auteur n'est copié.
+# À la demande uniquement (aucun cron → aucun mail).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  collecte:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: "Récupère ce qui existe vraiment (Wikipédia + Wiktionnaire)"
+        shell: bash -eo pipefail {0}   # sans pipefail, un `node … | tee` échoué ressort VERT
+        run: |
+          node tools/lingua/collect-monegasque.mjs --out audit/monegasque | tee /tmp/collecte.log
+
+      - name: "Récupère le dossier monégasque de munegascu.free.fr (site cité, pages non republiées)"
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/lingua/collect-munegascu-site.mjs --out /tmp/munegascu-pages --max 400 | tee /tmp/site.log || true
+          # seuls les COUPLES DE MOTS (des faits) + leur source entrent dans le dépôt ;
+          # les pages complètes restent en pièce jointe de l'exécution.
+          mkdir -p audit/monegasque
+          if [ -f /tmp/munegascu-pages/COUPLES.json ]; then cp /tmp/munegascu-pages/COUPLES.json audit/monegasque/munegascu-couples.json; fi
+
+      - name: "Dépose la moisson sur une branche (pour la relire et bâtir le cours dessus)"
+        shell: bash -eo pipefail {0}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # branche-de-relecture : la moisson est déposée pour être RELUE avant de bâtir le cours,
+          # jamais fusionnée automatiquement (garde : tests/verify-branches-robot.mjs, leçon #243).
+          BR="claude/monegasque-sources-${{ github.run_id }}"
+          git checkout -b "$BR"
+          git add audit/monegasque
+          if git diff --cached --quiet; then
+            echo "Rien de nouveau à déposer."; exit 0
+          fi
+          git commit -m "Sources monegasques libres (Wikipedia/Wiktionnaire, CC BY-SA) — collecte ${{ github.run_id }} [skip ci]"
+          git push -u origin "$BR"
+          echo "Branche : $BR"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monegasque-sources
+          path: |
+            audit/monegasque
+            /tmp/munegascu-pages
+          if-no-files-found: warn

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Sitemap: https://shops.kd-mc.com/sitemap.xml
+
+# KDMC Shops — 5 boutiques e-commerce Monaco
+# Tech Hub | CHEZ LOLO | EcoCraft | Digital Vault | Pawsome

@@ -1,0 +1,174 @@
+name: KDMC — Déploie le lien famille de Créa Studio (autonome)
+
+# Déploie "kdmc-crea-famille" : le service qui relie les téléphones de la famille.
+# 100 % automatique, ZÉRO clic Kevin :
+#   - crée l'espace de stockage (KV) s'il n'existe pas, et écrit son identifiant
+#     dans wrangler.toml au moment du déploiement ;
+#   - fabrique le secret de signature tout seul s'il n'est pas déjà posé.
+# Aucun secret ne redescend jamais dans l'app.
+on:
+  workflow_dispatch:
+    inputs:
+      selftest:
+        description: "Auto-test complet (rejoindre → partager → lire → réagir)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'services/kdmc-crea-famille/**'
+      - '.github/workflows/deploy-kdmc-crea-famille.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kdmc-crea-famille
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install wrangler
+        run: npm i -g wrangler@3
+
+      - name: Espace de stockage (créé une seule fois, réutilisé ensuite)
+        working-directory: services/kdmc-crea-famille
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          # 1) l'espace existe-t-il déjà ?
+          LIST=$(wrangler kv namespace list 2>/dev/null)
+          ID=$(printf '%s' "$LIST" | python3 -c "
+          import json,sys
+          try: d=json.load(sys.stdin)
+          except Exception: d=[]
+          for n in d:
+              if n.get('title','').endswith('kdmc-crea-famille-FAMILLE'):
+                  print(n['id']); break
+          ")
+          # 2) sinon on le crée
+          if [ -z "$ID" ]; then
+            echo "Création de l'espace de stockage…"
+            OUT=$(wrangler kv namespace create FAMILLE 2>&1); echo "$OUT"
+            ID=$(printf '%s' "$OUT" | grep -oE '[0-9a-f]{32}' | head -1)
+          fi
+          if [ -z "$ID" ]; then
+            echo "::error::Impossible d'obtenir l'espace de stockage — le service ne peut pas démarrer."
+            exit 1
+          fi
+          echo "Espace de stockage : $ID"
+          python3 - "$ID" <<'PY'
+          import sys, re
+          p = 'wrangler.toml'
+          s = open(p).read()
+          s = re.sub(r'id = "[^"]*"', 'id = "%s"' % sys.argv[1], s, count=1)
+          open(p, 'w').write(s)
+          print('wrangler.toml mis à jour')
+          PY
+
+      - name: Déploiement
+        working-directory: services/kdmc-crea-famille
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler deploy 2>&1 | tail -12
+
+      - name: Secret de signature (fabriqué tout seul la première fois)
+        working-directory: services/kdmc-crea-famille
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          FIXE: ${{ secrets.JWT_SECRET }}
+        run: |
+          set +e
+          DEJA=$(wrangler secret list 2>/dev/null | grep -c FAMILLE_SECRET)
+          if [ "$DEJA" -gt 0 ]; then
+            echo "  ✅ secret déjà en place (on n'y touche pas : changer le secret déconnecterait tout le monde)"
+          else
+            V="${FIXE:-}"
+            [ -z "$V" ] && V=$(head -c 48 /dev/urandom | base64 | tr -d '\n=/+' | head -c 48)
+            printf '%s' "$V" | wrangler secret put FAMILLE_SECRET 2>&1 | tail -2 \
+              && echo "  ✅ secret posé" || echo "::warning::secret non posé — le service restera en attente"
+          fi
+
+      - name: Code admin (REPLI seulement — l'admin principal = SSO central du domaine)
+        working-directory: services/kdmc-crea-famille
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_CODE: ${{ secrets.CREA_FAMILLE_ADMIN_CODE }}
+        run: |
+          set +e
+          # 2026-08-09 : l'admin famille se décide désormais par le SSO CENTRAL du domaine
+          # (kd-mc.com/__sso/whoami — Kevin reconnu par Face ID). Kevin est donc admin ICI
+          # SANS aucun code à créer : rien à faire de son côté.
+          # Ce code secret n'est plus qu'un REPLI facultatif (si le SSO est injoignable).
+          # Audit 2026-08-09 : avant, taper « Kevin Desarzens » suffisait à tout lire → fermé.
+          if [ -n "${ADMIN_CODE:-}" ]; then
+            printf '%s' "$ADMIN_CODE" | wrangler secret put ADMIN_CODE 2>&1 | tail -2 \
+              && echo "  ✅ code admin de repli posé" \
+              || echo "::warning::code admin de repli non posé"
+          else
+            echo "  ℹ️ pas de code de repli (facultatif) — l'admin passe par le SSO central du domaine, aucune action Kevin requise."
+          fi
+
+      - name: Vérification (le service répond-il ?)
+        run: |
+          set +e
+          BASE="https://crea-famille.kd-mc.com"
+          ALT="https://kdmc-crea-famille.9r4rxssx64.workers.dev"
+          OK=""
+          for i in $(seq 1 20); do
+            R=$(curl -sS -m 15 "$BASE/sante"); echo "[$i] $BASE → $R"
+            echo "$R" | grep -q '"pret":true' && { OK="$BASE"; break; }
+            R2=$(curl -sS -m 15 "$ALT/sante"); echo "[$i] $ALT → $R2"
+            echo "$R2" | grep -q '"pret":true' && { OK="$ALT"; break; }
+            sleep 15
+          done
+          if [ -z "$OK" ]; then echo "::warning::le service n'est pas encore prêt (propagation DNS/SSL possible)"; fi
+          echo "BASE_OK=$OK" >> "$GITHUB_ENV"
+
+      - name: Auto-test complet (rejoindre → partager → lire → réagir → message)
+        if: ${{ inputs.selftest == true }}
+        run: |
+          set +e
+          BASE="${BASE_OK:-https://crea-famille.kd-mc.com}"
+          echo "== Auto-test du lien famille sur $BASE =="
+          FAM="test-ci-$RANDOM"; CODE="code-$RANDOM"
+          J1=$(curl -sS -m 20 -X POST "$BASE/rejoindre" -H 'content-type: application/json' \
+            -d "{\"famille\":\"$FAM\",\"nom\":\"Marie Dupont\",\"code\":\"$CODE\"}" \
+            | python3 -c "import json,sys;print(json.load(sys.stdin).get('jeton',''))")
+          [ -n "$J1" ] && echo "  ✅ Marie a rejoint la famille" || { echo "  ❌ impossible de rejoindre"; exit 0; }
+          J2=$(curl -sS -m 20 -X POST "$BASE/rejoindre" -H 'content-type: application/json' \
+            -d "{\"famille\":\"$FAM\",\"nom\":\"Paul Dupont\",\"code\":\"$CODE\"}" \
+            | python3 -c "import json,sys;print(json.load(sys.stdin).get('jeton',''))")
+          PNG="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+          ID=$(curl -sS -m 25 -X POST "$BASE/partager" -H 'content-type: application/json' \
+            -d "{\"jeton\":\"$J1\",\"kind\":\"image\",\"label\":\"Test CI\",\"mime\":\"image/png\",\"data\":\"$PNG\"}" \
+            | python3 -c "import json,sys;print(json.load(sys.stdin).get('id',''))")
+          [ -n "$ID" ] && echo "  ✅ Marie a partagé une création ($ID)" || echo "  ❌ partage impossible"
+          N=$(curl -sS -m 20 "$BASE/fil?jeton=$J2" | python3 -c "import json,sys;print(len(json.load(sys.stdin).get('items',[])))")
+          [ "$N" -ge 1 ] && echo "  ✅ Paul voit la création de Marie ($N dans le fil)" || echo "  ❌ Paul ne voit rien"
+          curl -sS -m 20 -X POST "$BASE/reaction" -H 'content-type: application/json' \
+            -d "{\"jeton\":\"$J2\",\"id\":\"$ID\",\"emo\":\"❤️\"}" -o /tmp/re.json \
+            -w "  réaction HTTP %{http_code}\n"
+          curl -sS -m 20 -X POST "$BASE/message" -H 'content-type: application/json' \
+            -d "{\"jeton\":\"$J2\",\"texte\":\"Trop belle !\"}" -o /dev/null -w "  message HTTP %{http_code}\n"
+          M=$(curl -sS -m 20 "$BASE/messages?jeton=$J1" | python3 -c "import json,sys;print(len(json.load(sys.stdin).get('messages',[])))")
+          [ "$M" -ge 1 ] && echo "  ✅ Marie lit le message de Paul ($M message(s))" || echo "  ❌ messages non lus"
+          # ISOLATION : une autre famille ne doit RIEN voir
+          J3=$(curl -sS -m 20 -X POST "$BASE/rejoindre" -H 'content-type: application/json' \
+            -d "{\"famille\":\"$FAM\",\"nom\":\"Intrus Inconnu\",\"code\":\"MAUVAIS-CODE\"}" \
+            | python3 -c "import json,sys;print(json.load(sys.stdin).get('jeton',''))")
+          N3=$(curl -sS -m 20 "$BASE/fil?jeton=$J3" | python3 -c "import json,sys;print(len(json.load(sys.stdin).get('items',[])))")
+          [ "$N3" = "0" ] && echo "  ✅ ISOLATION : avec un mauvais code, on ne voit RIEN ($N3 création)" \
+                          || echo "  ❌ FUITE : un mauvais code voit $N3 création(s) !"
+          echo "== Fin auto-test =="

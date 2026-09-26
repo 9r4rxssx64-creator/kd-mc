@@ -1,0 +1,132 @@
+name: Apex v13 Regression Watch
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Sentinelle régression Kevin (CLAUDE.md règle "🛡 RÈGLE ABSOLUE — JAMAIS RÉGRESSER" 2026-05-07).
+#
+# Mission : bloquer toute PR qui casse un fix critique Round 1 + Round 2 + Round 3.
+# Tests régression dédiés à chaque fix protégé (auth, vault, ai-router, security, chat-ux, archi).
+# Si UN fail → merge bloqué + notification urgente Kevin.
+
+on:
+  pull_request:
+    paths:
+      - 'apex-ai/v13/**'
+      - '.github/workflows/regression-watch.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apex-ai/v13/**'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    name: 🛡 Tests régression critiques (Round 1+2+3)
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: 🛡 RUN tests/regression/ (HARD FAIL si UN seul fail)
+        id: regression
+        run: |
+          echo "::group::Tests régression critiques"
+          npx vitest run tests/regression/ --reporter=verbose 2>&1 | tee regression-output.log
+          echo "::endgroup::"
+
+      - name: 📊 Stats régression
+        if: always()
+        run: |
+          echo "=== STATS RÉGRESSION ==="
+          PASS_COUNT=$(grep -E "✓|PASS" regression-output.log | wc -l || echo 0)
+          FAIL_COUNT=$(grep -E "✗|FAIL" regression-output.log | wc -l || echo 0)
+          echo "Pass : $PASS_COUNT"
+          echo "Fail : $FAIL_COUNT"
+          echo "regression_pass=$PASS_COUNT" >> $GITHUB_OUTPUT
+          echo "regression_fail=$FAIL_COUNT" >> $GITHUB_OUTPUT
+
+      - name: 🚨 Comment PR si régression détectée
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## 🚨 RÉGRESSION CRITIQUE DÉTECTÉE
+
+              Cette PR casse au moins UN test régression Round 1+2+3.
+
+              **Action requise** :
+              1. Lire \`apex-ai/v13/tests/regression/\` pour identifier le fix protégé
+              2. Vérifier CLAUDE.md règles "JAMAIS RÉGRESSER" (2026-05-07)
+              3. Soit fix le code soit replacement clean du garde-fou
+
+              **Garde-fous protégés** :
+              - \`auth-critical.test.ts\` : v12.240, v12.241, v12.331, v13.3.65
+              - \`vault-critical.test.ts\` : 14+ patterns, decrypt null, forbidden CB/seed
+              - \`ai-router-critical.test.ts\` : failover chain, hashPin Worker fallback
+              - \`security-critical.test.ts\` : logRedaction, audit-log autoRepair
+              - \`archi-critical.test.ts\` : 117 toggles, 50+ voix, 0 cycle TDZ
+              - \`chat-ux.test.ts\` : v13.3.72 FAB, v13.3.75 dedup names
+
+              **Merge bloqué** tant que tous les tests régression ne passent pas. ❌`,
+            })
+
+      - name: 🚨 Open issue si régression détectée sur main
+        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 RÉGRESSION CRITIQUE détectée sur main',
+              body: `Push sur \`main\` (commit ${context.sha.slice(0,7)}) casse au moins UN test régression.
+
+              **Investigation requise** :
+              \`\`\`bash
+              cd apex-ai/v13
+              npx vitest run tests/regression/
+              \`\`\`
+
+              CLAUDE.md règle "JAMAIS RÉGRESSER" violée. Fix urgent.`,
+              labels: ['regression', 'critical', 'apex-v13'],
+            })
+
+      - name: Upload regression report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: regression-report-${{ github.sha }}
+          path: apex-ai/v13/regression-output.log
+          retention-days: 30

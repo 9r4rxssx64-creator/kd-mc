@@ -1,0 +1,486 @@
+# =============================================================================
+# UNE SEULE RECETTE POUR TOUTES LES BRANCHES — unifiée le 5.09.2026.
+# -----------------------------------------------------------------------------
+# Avant : deux fichiers différents vivaient sur deux branches. Celui de « main »
+# portait la publication du miroir, celui des branches de travail portait les
+# tests. Fusionner une branche dans main aurait donc SUPPRIMÉ la publication, en
+# silence. C'est exactement le piège de la leçon #142 : deux surfaces qui font le
+# même travail finissent par diverger. Il n'y a plus qu'un fichier.
+#
+# Les deux règles à ne jamais oublier (règlements lus le 5.09, voir ORGANISATION.md) :
+#   1. GitHub  : une automatisation n'a le droit d'exister que si elle produit,
+#      teste, déploie ou publie CE dépôt. C'est la NATURE, pas la fréquence.
+#   2. GitLab  : 400 minutes de calcul par mois. On les compte
+#      (« npm run minutes-gitlab ») AVANT d'ajouter un job.
+#
+# ⚠️ NE JAMAIS ajouter de « schedule » ici : le job « conformite » échoue si un
+#    cron réapparaît. Ce qui doit tourner en boucle appartient à un Worker
+#    Cloudflare, pas à un dépôt de code.
+#
+# La clé Cloudflare n'est PAS disponible sur toutes les branches (mesuré). Chaque
+# job qui en a besoin le vérifie lui-même, au lieu d'une porte globale qui
+# empêcherait tout pipeline ailleurs.
+# =============================================================================
+
+stages: [tests, verifier, publier, recherches, etat, veille]
+
+default:
+  image: node:20
+  interruptible: true          # un nouveau push annule l'ancien : minutes économisées
+
+variables:
+  GIT_DEPTH: "20"              # historique court : clone plus rapide, moins de minutes
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "web"        # bouton « Lancer » = volontaire
+    - if: $CI_PIPELINE_SOURCE == "api"
+    - when: never
+
+tests:
+  stage: tests
+  # Image Playwright = MÊME version que devDependencies (1.56.0) : navigateurs déjà là.
+  # Sur node:20 nu, test:all plantait (« Executable doesn't exist … headless_shell »,
+  # mesuré 6.09 14h56, job 16332428451) — on ne télécharge pas 150 Mo à chaque run.
+  image: mcr.microsoft.com/playwright:v1.56.0-noble
+  cache:
+    key: npm-$CI_COMMIT_REF_SLUG
+    paths: [node_modules/]
+  script:
+    # Pas de package-lock.json dans le dépôt : `npm ci` seul échoue TOUJOURS (EUSAGE,
+    # mesuré 5.09 17h18). Même repli que les workflows GitHub.
+    # Sur l'image Playwright (node 22 / npm 10), `npm install` nu plante en résolvant les
+    # peer deps du package.json racine (« Cannot read properties of null (reading 'edgesOut') »,
+    # job 16332439755) — même repli que audit-live.yml sur GitHub.
+    - npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
+    - npm run test:ci
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'   # miroir de publication, pas le code
+      when: never
+    # Branche NOUVELLE sur GitLab : rien à quoi comparer (et `compare_to: main`
+    # ne peut pas servir : la `main` GitLab n'a pas d'ancêtre commun avec les
+    # branches venues de GitHub → pipeline créé « failed » sans aucun job,
+    # mesuré 5.09 17h31). Donc : bouton manuel, on ne brûle rien.
+    - if: '$CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"'
+      when: manual
+      allow_failure: true
+    - changes:
+        - "**/*.js"
+        - "**/*.mjs"
+        - "**/*.html"
+        - "**/*.json"
+        - "tests/**/*"
+      when: on_success
+    - when: manual                # rien à voir dans le code → on ne brûle rien
+      allow_failure: true
+
+# Garde-fou spécifique : la règle qui a coûté le compte GitHub doit tenir ici
+# aussi. Court, donc quasi gratuit en minutes.
+conformite:
+  stage: tests
+  # Image ALPINE et pas node:20 : ce job ne lit que des fichiers. Mesuré le 5.09,
+  # il coûtait 45 s dont l'essentiel en téléchargement d'une image de 400 Mo —
+  # 28 minutes en quatre jours, devenues le premier poste du quota une fois la
+  # publication du miroir passée à la demande. L'image alpine fait ~50 Mo.
+  image: node:20-alpine
+  rules:
+    # Sur « main », cette branche est le MIROIR de publication : ses copies de
+    # .github/workflows/ ne s'exécutent nulle part, et l'arbre y date d'avant la
+    # remise en conformité (54 crons y dorment, inertes — mesuré le 5.09). Faire
+    # échouer la garde ici serait un rouge permanent que plus personne ne lit.
+    # La vérité du code, c'est GitHub : la garde y tourne à chaque envoi.
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: never
+    - when: on_success
+  script:
+    - node tests/verify-actions-conformes.mjs
+    - |
+      if grep -rqE '^\s*(schedule|- cron)\s*:' .gitlab-ci.yml; then
+        echo "❌ Une exécution programmée a été ajoutée. C'est exactement ce qui a fait"
+        echo "   suspendre le compte GitHub. Ce qui doit tourner en boucle appartient"
+        echo "   à un Cloudflare Worker, pas à un dépôt de code."
+        exit 1
+      fi
+      echo "✅ Aucune exécution programmée."
+
+# =============================================================================
+# RECHERCHES PATRIMOINE — ce qui est PERMIS d'automatiser, et rien de plus.
+#
+# ⛔ Ciclade a été RETIRÉ de ce job le 4.09.2026 : la capture d'écran du vrai
+#    formulaire montre un CAPTCHA et, écrit dessous, « conformément aux CGU du
+#    site (art 1er), toute utilisation non humaine de ce site est interdite ».
+#    Ce n'est pas une limite technique, c'est une règle. On la respecte.
+# -----------------------------------------------------------------------------
+# Pourquoi ce job existe : le conteneur de l'agent Claude n'a PAS accès à
+# ciclade.caissedesdepots.fr (pare-feu). Le runner, lui, l'a. C'est donc lui qui
+# ouvre un vrai navigateur et fait les 14 recherches, une par une.
+#
+# Ce qu'il ne fait pas : toucher l'argent. La restitution exige un compte, une
+# pièce d'identité et la preuve des droits — ça restera toujours Kevin.
+#
+# Il ne part JAMAIS tout seul : ni « schedule » (interdit, cause de la
+# suspension GitHub), ni au fil des pushs. Il faut le lancer à la main.
+# =============================================================================
+# PIÈGE MESURÉ LE 5.09 (17h17, pipeline 2823049053) : sur le PREMIER push d'une
+# branche, GitLab n'a rien à quoi comparer → CHAQUE règle `changes:` vaut « oui ».
+# Résultat : publier-site, recherches-patrimoine, liens-reels, exposition-publique
+# et verifier-cloudflare sont TOUS partis pour un simple miroir de branche
+# (~7 min brûlées, une publication non demandée). Un job à fichier-signal ne
+# doit JAMAIS partir sur une branche nouvelle : cette règle se place en premier.
+# Et TOUT job qui `needs: [verifier-cloudflare]` la porte aussi : sinon, sur une
+# branche nouvelle, il réclame un job qui n'existe pas → le pipeline entier naît
+# « failed » avec 0 job (« error on the CI/CD configuration file », mesuré 17h31).
+.pas-sur-nouvelle-branche: &pas-sur-nouvelle-branche
+  if: '$CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"'
+  when: never
+
+recherches-patrimoine:
+  stage: recherches
+  image: mcr.microsoft.com/playwright:v1.50.0-noble
+  # Il part quand JE pousse le fichier-signal « patrimoine-demande.txt », et
+  # seulement là. Ce n'est pas une tâche programmée (celles-là sont interdites,
+  # c'est ce qui a fait suspendre GitHub) : c'est un push volontaire, comme un
+  # bouton — sauf que le bouton, c'est moi qui l'appuie, pas Kevin.
+  rules:
+    - *pas-sur-nouvelle-branche
+    - changes: ["patrimoine-demande.txt"]
+      when: on_success
+    - when: manual                # au cas où Kevin veuille le relancer lui-même
+  needs: []                       # ne dépend pas des tests : une recherche n'attend
+                                  # pas qu'un test sans rapport soit vert
+  allow_failure: true             # une recherche qui échoue ne casse pas le reste
+  timeout: 25m
+  variables:
+    MODE: "--max 3"               # le formulaire est connu : on valide sur 3 cas
+  script:
+    # Les NAVIGATEURS sont dans l'image ; le paquet npm, non (le « npm root -g »
+    # de l'image ne contient que corepack/npm/yarn — mesuré). On l'installe donc
+    # dans /tmp, À L'ÉCART du dépôt : installer à la racine du projet fait lire son
+    # package.json complet à npm, et c'est ce qui cassait (« edgesOut »).
+    - mkdir -p /tmp/pw && (cd /tmp/pw && npm init -y >/dev/null && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i --no-audit --no-fund playwright@1.50.0)
+    - export NODE_PATH=/tmp/pw/node_modules
+    - node -e 'require(process.env.NODE_PATH + "/playwright"); console.log("playwright OK")'
+    - mkdir -p patrimoine-resultats
+    - node tools/patrimoine/deces-insee.mjs
+    # Ce qui est réellement PUBLIC sur le site : mesuré, pas supposé.
+    - node tools/audit/exposition-publique.mjs
+  artifacts:
+    when: always
+    expire_in: 7 days             # données personnelles : on ne les garde pas
+    paths:
+      - patrimoine-resultats/
+
+# Vérifie que la clé Cloudflare est vivante et trouve le compte. Il ne coûte que
+# ~30 s, mais 30 s à CHAQUE push font 163 minutes par mois — 41 % du quota pour
+# une simple vérification de clé. Il ne part donc plus que lorsqu'un job qui en a
+# besoin va réellement tourner (il leur fournit CLOUDFLARE_ACCOUNT_ID).
+verifier-cloudflare:
+  stage: verifier
+  image: alpine:3.20
+  needs: []                     # la publication de secours ne doit JAMAIS attendre
+                                # les tests : le jour où on en a besoin, c'est
+                                # justement que quelque chose ne va pas.
+  rules:
+    - *pas-sur-nouvelle-branche
+    - changes: ["publier-demande.txt"]
+      when: on_success
+    - if: '$CLOUDFLARE_API_TOKEN && ($PUBLIER || $DEPLOYER_WORKERS || $REGARDER || $QUI_SERT)'
+      when: on_success
+    - when: manual
+      allow_failure: true
+  script:
+    - 'sh tools/gitlab/verifier.sh'
+  artifacts:
+    reports:
+      dotenv: compte.env
+
+# =============================================================================
+# PUBLICATION DU MIROIR — À LA DEMANDE DEPUIS LE 5.09.2026, plus à chaque push.
+# -----------------------------------------------------------------------------
+# Pourquoi ce changement, avec les chiffres :
+#   · le palier gratuit GitLab donne 400 minutes de calcul par mois ;
+#   · ce job seul en avait consommé 72,5 (44 envois × ~99 s) en QUATRE jours,
+#     soit 41 % du mois — au rythme d'alors, GitLab était à sec le 9 septembre.
+#     C'était refaire sur GitLab l'erreur qui a coûté le compte GitHub.
+#
+# Pourquoi c'est sans risque — mesuré le 5.09, pas supposé (job « qui-sert ») :
+#   les en-têtes de kd-mc.com portent « x-kdmc-router » ET « x-github-request-id
+#   / x-github-edge-region / via: varnish » : le site vivant est servi par le
+#   routeur Cloudflare depuis GITHUB PAGES, revenu en service le 4.09. Ce miroir
+#   n'est donc plus la source du site : c'est un filet de secours.
+#
+# Comment le relancer, sans rien réapprendre :
+#   · pousser (ou modifier) le fichier « publier-demande.txt » ;
+#   · ou lancer le pipeline avec la variable PUBLIER ;
+#   · ou cliquer « Lancer » sur le job dans GitLab.
+# Si GitHub retombait, remettre « - when: on_success » en tête des règles suffit
+# à retrouver la publication automatique d'avant.
+# =============================================================================
+publier-site:
+  stage: publier
+  image: node:20
+  needs: [verifier-cloudflare]  # et rien d'autre : indépendant des tests
+  rules:
+    - *pas-sur-nouvelle-branche
+    - changes: ["publier-demande.txt"]
+      when: on_success
+    - if: '$PUBLIER'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'bash tools/gitlab/publier.sh'
+
+# Sonde du domaine : qui est vivant, qui est mort — chiffres réels.
+# NB : la ligne « schedule » ci-dessous est SANS EFFET depuis le 5.09 — les règles
+# de workflow en tête de fichier n'acceptent plus les pipelines programmés. Elle
+# est gardée pour documenter le déclencheur d'origine, pas comme une porte ouverte.
+etat-du-domaine:
+  stage: etat
+  image: alpine:3.20
+  needs: []
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "api"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+  script:
+    - 'sh tools/gitlab/etat.sh'
+
+# État des SESSIONS Claude (registre pipeline/sessions.json) : qui bloque, qui attend Kevin,
+# courrier ouvert — sans aucun secret. Remplace l'ancien claude-todo-watcher (cron GitHub,
+# interdit depuis le 15/08). Tourne quand le registre change, ou en bouton. Demandé par m002.
+etat-sessions:
+  stage: etat
+  image: node:20
+  needs: []
+  allow_failure: true
+  rules:
+    - changes: ["pipeline/sessions.json"]
+      when: on_success
+    - when: manual
+  script:
+    - 'node tools/pipeline/pipeline.mjs verifier'
+    - 'node tools/pipeline/pipeline.mjs etat'
+
+# Renaissance des workers sur le nouveau compte — a la demande, jamais automatique.
+renaitre-workers:
+  stage: publier
+  image: node:20
+  needs: [verifier-cloudflare]
+  rules:
+    - *pas-sur-nouvelle-branche   # needs: verifier-cloudflare, absent sur une branche nouvelle
+    - if: '$DEPLOYER_WORKERS'
+    - when: never
+  script:
+    - 'for W in $DEPLOYER_WORKERS; do bash tools/gitlab/deployer-worker.sh services/$W; done'
+
+# Mes yeux : inventaire Cloudflare a la demande (lecture seule).
+regarder-cloudflare:
+  stage: etat
+  image: alpine:3.20
+  needs: [verifier-cloudflare]
+  allow_failure: true
+  rules:
+    - *pas-sur-nouvelle-branche   # needs: verifier-cloudflare, absent sur une branche nouvelle
+    - if: '$REGARDER'
+    - when: never
+  script:
+    - 'sh tools/gitlab/regarder.sh'
+
+# Mes yeux : lire n'importe quelle page web depuis la machine.
+sonder-url:
+  stage: etat
+  image: alpine:3.20
+  needs: []
+  allow_failure: true
+  rules:
+    - if: '$SONDER_URL'
+    - when: never
+  script:
+    - 'sh tools/gitlab/sonder-url.sh'
+
+# Tableau de bord des branches — "que se passe-t-il partout ?" (à la demande).
+tableau-branches:
+  stage: etat
+  image: alpine:3.20
+  needs: []
+  allow_failure: true
+  rules:
+    - if: '$BRANCHES'
+    - when: never
+  script:
+    - 'sh tools/gitlab/branches.sh'
+
+# Sonde toutes les surfaces du domaine sur le site déployé (à la demande).
+etat-site:
+  stage: etat
+  image: alpine:3.20
+  needs: []
+  allow_failure: true
+  rules:
+    - if: '$ETAT_SITE'
+    - when: never
+  script:
+    - 'sh tools/gitlab/etat-site.sh'
+
+# Recherche généalogique INSEE (réseau ouvert) — var NAMES (csv), à la demande.
+genealogie:
+  stage: etat
+  image: alpine:3.20
+  needs: []
+  allow_failure: true
+  rules:
+    - if: '$GENEALOGIE'
+    - when: never
+  script:
+    - 'sh tools/gitlab/genealogie.sh'
+
+# Mes yeux : qui sert vraiment kd-mc.com aujourd'hui ? (lecture seule)
+# Le conteneur de l'agent Claude ne peut atteindre ni kd-mc.com, ni github.io,
+# ni pages.dev (HTTP 000, pare-feu). Cette machine-ci, oui.
+qui-sert:
+  stage: etat
+  image: alpine:3.20
+  needs: [verifier-cloudflare]
+  allow_failure: true
+  rules:
+    - *pas-sur-nouvelle-branche   # needs: verifier-cloudflare, absent sur une branche nouvelle
+    - if: '$QUI_SERT'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'sh tools/gitlab/qui-sert.sh'
+
+# Après CHAQUE publication du miroir : vérifier ce qu'un inconnu peut réellement
+# lire. Léger (fetch seulement, image alpine ~50 Mo) et enchaîné sur la
+# publication, pour qu'on ne redécouvre jamais une fuite des semaines plus tard.
+exposition-publique:
+  stage: etat
+  image: node:20-alpine
+  needs: []                     # doit pouvoir mesurer SEUL, sans republier
+  allow_failure: true
+  rules:
+    - *pas-sur-nouvelle-branche
+    - changes: ["publier-demande.txt", "exposition-demande.txt"]
+      when: on_success
+    - if: '$EXPOSITION'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'node tools/audit/exposition-publique.mjs'
+
+# =============================================================================
+# VEILLE — ce que GitHub n'a PAS le droit d'héberger, et qui vit donc ICI.
+# -----------------------------------------------------------------------------
+# Conditions GitHub Actions, mot pour mot : une automatisation n'y est permise
+# que pour « the production, testing, deployment, or publication of the software
+# project associated with the repository ». Ces jobs-là appellent des sites
+# TIERS ou doivent tourner périodiquement : leur place est GitLab, dont les
+# règles ne l'interdisent pas — mais qui ne donne que 400 minutes par mois.
+#
+# D'où : AUCUN `schedule`, AUCUN déclenchement au push. Chacun part quand je
+# pousse son fichier-signal (mon bouton à moi, Kevin ne clique rien) ou depuis
+# le bouton « Lancer ». Tant qu'on ne les lance pas, ils coûtent 0 minute.
+#
+# La destination de CHAQUE automatisation rangée est écrite dans
+# .github/workflows-desactives/DESTINATIONS.json, et une garde
+# (npm run test:destinations-workflows) vérifie que rien n'y manque.
+#
+# Ces quatre-là ne demandent AUCUN secret : ils marchent tels quels. Les autres
+# (génération d'images, sauvegardes KV, santé des API…) attendent que leur clé
+# soit ajoutée aux variables du projet GitLab — la liste est dans
+# ETAT-INFRA.md, pour ne pas la redécouvrir un par un.
+# =============================================================================
+
+.veille-base: &veille-base
+  stage: veille
+  needs: []
+  allow_failure: true
+  interruptible: true
+
+# Les 198 liens du domaine, pinguer pour de vrai. Classement honnête :
+# vivant / protégé (401-403 = anti-robot, PAS un lien mort) / MORT.
+liens-reels:
+  <<: *veille-base
+  image: node:20-alpine
+  rules:
+    - *pas-sur-nouvelle-branche
+    - changes: ["veille-demande.txt"]
+      when: on_success
+    - if: '$LIENS'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'node tools/audit/liens-check.mjs'
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths: [audit/]
+
+# Les bibliothèques chargées depuis un CDN répondent-elles encore ?
+cdn-dependances:
+  <<: *veille-base
+  image: alpine:3.20
+  rules:
+    - if: '$CDN'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'apk add --no-cache curl > /dev/null'
+    - 'sh tools/gitlab/cdn-check.sh'
+
+# Les sources officielles des langues (Lingua) répondent-elles encore ?
+lingua-sources:
+  <<: *veille-base
+  image: node:20
+  rules:
+    - if: '$LINGUA_SOURCES'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'npm ci --no-audit --no-fund'
+    - 'node tools/lingua/verify-sources.mjs --live lingua'
+
+# Récolte de la langue des signes depuis les sources officielles.
+lingua-lsf:
+  <<: *veille-base
+  image: node:20
+  rules:
+    - if: '$LINGUA_LSF'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'npm ci --no-audit --no-fund'
+    - 'node tools/lingua/collect-lsf.mjs --titres'
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths: [lingua/]
+
+# Vérifie EN VRAI que les adresses .onion du catalogue « Tor en clair » répondent, en passant
+# par le réseau Tor. Ici et pas ailleurs, par élimination (règle « destination écrite ») :
+# l'agent Claude a le réseau fermé, et GitHub Actions interdit d'utiliser la CI « uniquement
+# pour interagir avec des sites tiers » — c'est la phrase exacte qui a suspendu le compte le
+# 15/08/2026. Donc GitLab, À LA DEMANDE : aucune tâche programmée, aucune minute brûlée tant
+# que personne ne le lance. Le verdict ne vaut que pour l'instant du run (les .onion vont et
+# viennent) — d'où l'artifact daté plutôt qu'une promesse gravée dans la page.
+tor-adresses:
+  <<: *veille-base
+  image: node:20-bookworm
+  rules:
+    - *pas-sur-nouvelle-branche
+    - if: '$TOR_ADRESSES'
+    - when: manual
+      allow_failure: true
+  script:
+    - 'apt-get update -qq && apt-get install -y -qq tor curl'
+    - 'tor --SocksPort 9050 --Log "notice stdout" & sleep 45'
+    - 'curl -sS --socks5-hostname 127.0.0.1:9050 --max-time 30 -o /dev/null -w "sortie Tor : %{http_code}\n" https://check.torproject.org/ || echo "Tor pas encore prêt — le rapport le dira"'
+    - 'node tools/tor/verif-onion.mjs --json tor-adresses.json'
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths: [tor-adresses.json]

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c9a227"/>
+      <stop offset="50%" stop-color="#e8b830"/>
+      <stop offset="100%" stop-color="#a78118"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e0e1a"/>
+      <stop offset="100%" stop-color="#08080f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <g transform="translate(256 256)">
+    <polygon points="0,-150 130,75 -130,75" fill="none" stroke="url(#g)" stroke-width="14" stroke-linejoin="round"/>
+    <polygon points="0,-90 78,45 -78,45" fill="url(#g)" opacity="0.85"/>
+    <text x="0" y="155" font-family="Georgia, serif" font-size="68" font-weight="bold" fill="url(#g)" text-anchor="middle" letter-spacing="6">APEX</text>
+  </g>
+</svg>

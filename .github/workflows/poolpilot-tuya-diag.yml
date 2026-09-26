@@ -1,0 +1,35 @@
+name: PoolPilot — diag Tuya réel (à la place de Kevin)
+
+# Lance la VRAIE découverte du robot sur la prod, authentifié en admin machine
+# (jeton SSO), avec les clés Tuya déjà stockées côté serveur. Le runner GitHub a le
+# réseau ouvert (l'agent Claude, lui, ne joint pas *.kd-mc.com). Manuel + après chaque
+# déploiement du routeur, pour vérifier l'état réel sans que Kevin touche à quoi que ce soit.
+on:
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: "Caler les compteurs sur la Fiche Beatbot (format cycles:minutes, ex 26:8898)"
+        required: false
+        default: ""
+  workflow_run:
+    workflows: ["KDMC — Déploie le routeur de domaine kd-mc.com (autonome)"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Attendre la propagation du déploiement
+        run: sleep 30
+      - name: Découverte Tuya réelle
+        env:
+          KDMC_SSO_SECRET: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
+          PP_BASELINE: ${{ github.event.inputs.baseline || '' }}
+        run: node tools/smoke/poolpilot-tuya-diag.mjs

@@ -1,0 +1,65 @@
+name: Club IA — consigne de la semaine
+
+# Déclenché CHAQUE LUNDI 07:00 UTC par la routine Claude Code Remote
+# « Club IA — contenu de la semaine » (actions_run_trigger), jamais par un cron
+# GitHub (règle absolue du dépôt). Bouton « Run workflow » pour un essai.
+#
+# Ce que ça fait (tools/club/semaine.mjs) : rédaction de la consigne de la
+# semaine par l'API Anthropic → contrôle par script (3 essais, sinon RIEN n'est
+# publié) → insertion en base D1 kdmc-contenu (produit club-ia) → e-mail à
+# chaque abonné actif → point à Kevin → « SEMAINE PUBLIÉE » dans le journal.
+# Les secrets restent ici : la session de la routine n'en voit aucun.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Essai à blanc : tout sauf l'écriture en base et les e-mails (la lecture D1 est réelle)"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+      tester_email:
+        description: "Avec l'essai à blanc : envoyer UN e-mail d'essai à Kevin pour voir si EmailJS accepte (cause exacte dans le journal)"
+        type: choice
+        options: ["false", "true"]
+        default: "false"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: club-semaine
+  cancel-in-progress: false
+
+jobs:
+  semaine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # La machine ne tourne pas sans sa garde : 10 contrôles hors ligne
+      # (porte de vérité prouvée discriminante par sabotage, faux réseau).
+      - name: Garde (tests hors ligne)
+        run: node --test tests/club-semaine.test.mjs
+
+      - name: Consigne de la semaine
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          TEST_EMAIL: ${{ inputs.tester_email }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EMAILJS_PRIVATE_KEY: ${{ secrets.EMAILJS_PRIVATE_KEY }}
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/club/semaine.mjs 2>&1 | tee /tmp/club.log
+          # Le mot de la fin est la SEULE preuve lue par la routine : on le vérifie ici aussi.
+          if [ "$DRY_RUN" = "false" ]; then
+            grep -qE "^SEMAINE (PUBLIÉE|DÉJÀ PUBLIÉE)" /tmp/club.log || { echo "ÉCHEC : ni « SEMAINE PUBLIÉE » ni « SEMAINE DÉJÀ PUBLIÉE » dans le journal"; exit 1; }
+          else
+            grep -qE "^SEMAINE (SIMULÉE|DÉJÀ PUBLIÉE)" /tmp/club.log || { echo "ÉCHEC : l'essai à blanc n'est pas allé au bout"; exit 1; }
+          fi

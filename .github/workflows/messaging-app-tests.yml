@@ -1,0 +1,153 @@
+name: Apex Chat — Tests + Coverage 100%
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# CRITIQUE (CLAUDE.md règle 100/100 réel) :
+# Sentinelle anti-régression — chaque push qui touche messaging-app DOIT garder
+# 100% coverage v8 sur lib/ + workers/ (sauf api-worker.js Phase C en cours).
+# Si la coverage descend, le check fail et bloque l'auto-merge.
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'messaging-app/**'
+      - '.github/workflows/messaging-app-tests.yml'
+  pull_request:
+    paths:
+      - 'messaging-app/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: messaging-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'messaging-app/package.json'
+
+      - name: Install deps
+        run: npm install
+
+      - name: Syntax check (node --check)
+        run: |
+          node --check sw.js
+          node --check crypto.js
+          node --check lib/crypto-core.js
+          node --check lib/sw-handlers.js
+          node --check workers/api-worker.js
+          node --check workers/ia-worker.js
+          node --check workers/push-worker.js
+          node --check workers/sms-worker.js
+          node --check workers/durable-objects/ConversationDO.js
+
+      - name: Tests + Coverage 100%
+        run: npx vitest run --coverage
+
+      # Politique réelle (= vitest.config.js) : 100 % PARTOUT, SAUF api-worker.js
+      # (~5800 lignes, mesuré avec un plancher anti-régression dédié depuis
+      # l'audit 2026-07-07, à remonter progressivement). Le check ci-dessous
+      # reflète EXACTEMENT cette politique par fichier — l'ancien check exigeait
+      # 100 % sur le TOTAL (donc incluait api-worker) et bloquait tout merge.
+      - name: Verify coverage policy (lib 100% + plancher api-worker)
+        run: |
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "❌ coverage-summary.json missing"
+            exit 1
+          fi
+          # 10/09/2026 — SOURCE UNIQUE : les seuils sont LUS dans vitest.config.js (un seuil
+          # par fichier = cliquet sur la mesure vitest 5). Avant, une table copiée ici
+          # (FLOOR) devait être tenue à la main en miroir — deux vérités, une dérive garantie.
+          node --input-type=module -e "
+            import { readFileSync } from 'node:fs';
+            const cov = JSON.parse(readFileSync('./coverage/coverage-summary.json', 'utf8'));
+            const { default: cfg } = await import('./vitest.config.js');
+            const T = cfg.test.coverage.thresholds;
+            const KEYS = ['lines','statements','branches','functions'];
+            let failed = false, seen = 0;
+            for (const [path, s] of Object.entries(cov)) {
+              if (path === 'total' || !s || !s.lines) continue;
+              const rel = path.replace(/^.*\/messaging-app\//, '');
+              const t = T[rel];
+              if (!t) { failed = true; console.error('❌', rel, 'aucun seuil dans vitest.config.js — un fichier nouveau doit avoir le sien'); continue; }
+              seen++;
+              // total === 0 : rien de mesurable (fichier de pur réexport, ex. durable-objects/*DO.js
+              // shims) — json-summary écrit pct 0 alors que vitest considère le seuil satisfait.
+              // On aligne la lecture sur vitest : une métrique vide ne peut pas être « en dessous ».
+              const bad = KEYS.filter(k => s[k].total > 0 && s[k].pct < t[k]);
+              if (bad.length) {
+                failed = true;
+                console.error('❌', rel, bad.map(k => k+'='+s[k].pct+'% (min '+t[k]+')').join(', '));
+              }
+            }
+            if (failed) process.exit(1);
+            console.log('✅ Couverture conforme : ' + seen + ' fichiers au-dessus de leur seuil (vitest.config.js).');
+          "
+
+      - name: Upload coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: messaging-app-coverage
+          path: messaging-app/coverage/
+          retention-days: 7
+
+  e2e:
+    needs: tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: messaging-app
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [iphone-safari, iphone-se, chromium-desktop, pixel-android]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'messaging-app/package.json'
+
+      - name: Install deps
+        run: npm install
+
+      - name: Install Playwright browsers (${{ matrix.project }})
+        run: |
+          if [ "${{ matrix.project }}" = "iphone-safari" ] || [ "${{ matrix.project }}" = "iphone-se" ]; then
+            npx playwright install --with-deps webkit
+          elif [ "${{ matrix.project }}" = "chromium-desktop" ] || [ "${{ matrix.project }}" = "pixel-android" ]; then
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Run Playwright E2E (${{ matrix.project }})
+        run: npx playwright test --project=${{ matrix.project }}
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: messaging-app/playwright-report/
+          retention-days: 7

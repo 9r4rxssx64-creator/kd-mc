@@ -1,0 +1,106 @@
+# Vérifie l'état RÉEL de TOUS les bots crypto sur Railway (bot testnet + flotte papier)
+# et publie un CLASSEMENT des performances (trades réels comptés dans les logs).
+# Déclenchement : manuel uniquement. Lecture seule — ne modifie rien.
+# Règle "détailler les erreurs" : réponses GraphQL brutes loggées (tronquées).
+
+name: Crypto Bot Status (Railway)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      GQL: https://backboard.railway.com/graphql/v2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Interroger Railway (tous les bots) + classement
+        run: |
+          set +e
+          gql() {
+            curl -sS -m 20 -X POST \
+              -H "Project-Access-Token: $RAILWAY_TOKEN" \
+              -H "content-type: application/json" \
+              -d "$1" "$GQL"
+          }
+
+          echo "── 1) Projet lié au token ──"
+          PT=$(gql '{"query":"query { projectToken { projectId environmentId } }"}')
+          echo "$PT" | head -c 300; echo
+          PID=$(echo "$PT" | jq -r '.data.projectToken.projectId // empty')
+          EID=$(echo "$PT" | jq -r '.data.projectToken.environmentId // empty')
+          [ -z "$PID" ] && { echo "::error::Token projet invalide — réponse ci-dessus."; exit 1; }
+
+          echo "── 2) Services du projet ──"
+          PR=$(gql "{\"query\":\"query { project(id: \\\"$PID\\\") { name services { edges { node { id name } } } } }\"}")
+          PNAME=$(echo "$PR" | jq -r '.data.project.name // "?"')
+          echo "$PR" | jq -r '.data.project.services.edges[].node | "\(.name) \(.id)"' > /tmp/services.txt
+          cat /tmp/services.txt
+
+          BOTS="crypto-bot crypto-bot-p1 crypto-bot-p2 crypto-bot-p3 crypto-bot-p4 crypto-bot-p5"
+          LABELS='{"crypto-bot":"🧪 testnet — ne vend pas à perte","crypto-bot-p1":"📝 P1 EMA 8/21 champion","crypto-bot-p2":"📝 P2 EMA 12/26 lent","crypto-bot-p3":"📝 P3 creux haussier","crypto-bot-p4":"📝 P4 retour moyenne","crypto-bot-p5":"📝 P5 réactif 5/13"}'
+          : > /tmp/board.tsv
+
+          for SVC in $BOTS; do
+            SID=$(awk -v s="$SVC" '$1==s{print $2}' /tmp/services.txt | head -1)
+            if [ -z "$SID" ]; then
+              echo "── $SVC : service absent (pas encore déployé) ──"
+              printf '%s\t%s\t%s\t-\t-\t-\t-\t-\t-\n' "-9999999" "$SVC" "absent" >> /tmp/board.tsv
+              continue
+            fi
+            DP=$(gql "{\"query\":\"query { deployments(first: 1, input: { projectId: \\\"$PID\\\", serviceId: \\\"$SID\\\", environmentId: \\\"$EID\\\" }) { edges { node { id status } } } }\"}")
+            DID=$(echo "$DP" | jq -r '.data.deployments.edges[0].node.id // empty')
+            DST=$(echo "$DP" | jq -r '.data.deployments.edges[0].node.status // "?"')
+            echo "── $SVC : déploiement ${DID:-aucun} ($DST) ──"
+            if [ -z "$DID" ]; then
+              printf '%s\t%s\t%s\t-\t-\t-\t-\t-\t-\n' "-9999999" "$SVC" "aucun-deploiement" >> /tmp/board.tsv
+              continue
+            fi
+            RLF=$(gql "{\"query\":\"query { deploymentLogs(deploymentId: \\\"$DID\\\", limit: 5000) { timestamp message } }\"}")
+            echo "$RLF" | jq -c '.data.deploymentLogs // []' > /tmp/logs.json 2>/dev/null || echo '[]' > /tmp/logs.json
+            if [ "$(jq 'length' /tmp/logs.json 2>/dev/null || echo 0)" = "0" ]; then
+              RLF=$(gql "{\"query\":\"query { deploymentLogs(deploymentId: \\\"$DID\\\", limit: 1000) { timestamp message } }\"}")
+              echo "$RLF" | jq -c '.data.deploymentLogs // []' > /tmp/logs.json 2>/dev/null || echo '[]' > /tmp/logs.json
+            fi
+            BUYS=0; SELLS=0; WINS=0; LOSSES=0; NET=0; OPEN=0; FIRST=-; LAST=-; NLINES=0
+            python3 crypto-bot/trade_stats.py > /tmp/trades.env && . /tmp/trades.env
+            EQUITY=$(jq -r '[.[].message | capture("equity=(?<e>[0-9.]+)") | .e] | last // "-"' /tmp/logs.json 2>/dev/null || echo "-")
+            echo "$SVC ($DST) : buys=$BUYS sells=$SELLS wins=$WINS losses=$LOSSES net=$NET open=$OPEN equity=$EQUITY lignes=$NLINES"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$NET" "$SVC" "$DST" "$BUYS" "$SELLS" "$WINS" "$LOSSES" "$OPEN" "$EQUITY" >> /tmp/board.tsv
+            if [ "$SVC" = "crypto-bot" ]; then
+              echo "── dernières lignes runtime du bot testnet ──"
+              jq -r '.[-15:][] | "\(.timestamp) \(.message)"' /tmp/logs.json 2>/dev/null | tail -15
+            fi
+          done
+
+          {
+            echo "## 🏁 Classement des bots (projet \`$PNAME\`)"
+            echo ""
+            echo "| # | bot | état | achats | ventes | 🟢/🔴 | net (USDT) | ouvertes | équité |"
+            echo "|---|---|---|---|---|---|---|---|---|"
+            R=0
+            sort -t"$(printf '\t')" -k1,1gr /tmp/board.tsv | while IFS="$(printf '\t')" read -r NET SVC DST B S W L O EQ; do
+              R=$((R+1))
+              LABEL=$(echo "$LABELS" | jq -r --arg s "$SVC" '.[$s] // $s')
+              if [ "$NET" = "-9999999" ]; then
+                echo "| — | $LABEL | $DST | - | - | - | - | - | - |"
+              else
+                MEDAL="$R"
+                [ $R -eq 1 ] && MEDAL="🥇"
+                [ $R -eq 2 ] && MEDAL="🥈"
+                [ $R -eq 3 ] && MEDAL="🥉"
+                echo "| $MEDAL | $LABEL | $DST | $B | $S | 🟢$W/🔴$L | **$NET** | $O | $EQ |"
+              fi
+            done
+            echo ""
+            echo "_Net = gains/pertes RÉALISÉS comptés dans les logs visibles (faux argent). Les portefeuilles papier démarrent à 10 000 USDT._"
+          } >> $GITHUB_STEP_SUMMARY
+
+          exit 0

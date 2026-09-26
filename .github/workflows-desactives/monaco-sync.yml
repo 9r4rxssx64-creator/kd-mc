@@ -1,0 +1,51 @@
+name: KDMC — Synchro auto Monaco Telecom (récup factures)
+
+# Le worker kdmc-monaco ne peut PAS avoir de cron Cloudflare (compte déjà au max
+# de 5 crons, code 10072). On déclenche donc sa synchro IMAP toutes les 2 h ici,
+# en appelant son endpoint /sync (admin-gated par le code admin). Fail-open : un
+# souci n'échoue jamais le job (pas d'email). Si Kevin n'a pas encore saisi ses
+# identifiants sur /setup, /sync répond ok:false (200) → no-op silencieux.
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération IMAP en BOUCLE (kdmc-monaco /sync) — parcourt vite le gros historique
+        # Chaque /sync avance UN lot de backfill (~80 mails). On boucle jusqu'à 40 fois
+        # (≈ 3 200 mails/run) pour ne pas rester à 80/2h = des semaines. On s'arrête net si :
+        #  - le backfill est terminé ("done":true)
+        #  - la file est pleine ("file_pleine") → on attend que l'app Finances vide (rien à gagner à insister)
+        #  - pas connecté / erreur → no-op silencieux (fail-open, jamais d'email).
+        run: |
+          set +e
+          URL="https://kdmc-monaco.9r4rxssx64.workers.dev/sync"
+          PIN="${{ secrets.APEX_ADMIN_PIN_SHA256 }}"
+          done_total=0; miss=0
+          for i in $(seq 1 30); do   # 30 lots max/run (petits lots de 12) : limite le CPU cumulé du Worker (tier gratuit) → moins de « 1102 » ; le cron 2h + les runs suivants finissent l'arriéré
+            OUT=$(curl -sS -m 60 -X POST -H "x-apex-pin: $PIN" "$URL")
+            echo "lot $i → $OUT"
+            # Arrêts DÉFINITIFS : terminé, file pleine (attendre le drain), ou vraiment pas connecté.
+            echo "$OUT" | grep -q '"done":true'      && { echo "✅ backfill TERMINÉ — tout l'historique parcouru."; break; }
+            echo "$OUT" | grep -q '"file_pleine"'    && { echo "⏸ file pleine — j'attends que l'app Finances vide (ouvre-la)."; break; }
+            echo "$OUT" | grep -qiE 'not_connected|need_admin_code' && { echo "::notice::pas connecté — enregistre tes identifiants sur /setup."; break; }
+            if echo "$OUT" | grep -q '"ok":true'; then
+              add=$(echo "$OUT" | grep -oE '"added":[0-9]+' | head -1 | grep -oE '[0-9]+'); done_total=$((done_total + ${add:-0})); miss=0; sleep 2
+            else
+              # Erreur TRANSITOIRE (ex : « error code: 1102 » CPU worker, timeout réseau) → on réessaie
+              # le même lot au lieu de s'arrêter. Abandon seulement après 4 échecs d'affilée.
+              miss=$((miss+1)); echo "::notice::lot transitoire ($miss/4) — nouvel essai"; [ "$miss" -ge 4 ] && { echo "::notice::4 échecs d'affilée — le cron reprendra."; break; }; sleep 5
+            fi
+          done
+          echo "🧾 total factures ajoutées ce run : $done_total"
+          exit 0

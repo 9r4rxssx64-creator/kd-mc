@@ -1,0 +1,4 @@
+# Artefacts vidéo intermédiaires (trop lourds pour Git)
+frames/
+assets/*.png
+output/_palette.png

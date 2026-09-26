@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="iRemote">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#d4af37">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="iRemoteHub — télécommande universelle multi-appareils (PWA + IA).">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="canonical" href="https://9r4rxssx64-creator.github.io/CMCteams/iRemoteHub/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="iRemoteHub — Télécommande universelle (TV, BLE, IR, Wi-Fi)">
+<meta property="og:description" content="Pilotez tous vos appareils (TV, enceintes, lumières, objets connectés) depuis une PWA. IR, BLE, Wi-Fi, multi-marques, avec IA d'identification.">
+<meta property="og:url" content="https://9r4rxssx64-creator.github.io/CMCteams/iRemoteHub/">
+<meta property="og:site_name" content="iRemoteHub">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="iRemoteHub — Télécommande universelle">
+<meta name="twitter:description" content="Pilotez tous vos appareils depuis une PWA. IR, BLE, Wi-Fi, multi-marques.">
+<title>iRemoteHub — Télécommande universelle multi-appareils (TV, BLE, IR, Wi-Fi)</title>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "iRemoteHub",
+  "url": "https://9r4rxssx64-creator.github.io/CMCteams/iRemoteHub/",
+  "description": "Télécommande universelle multi-appareils (PWA) : pilote TV, enceintes, lumières et objets connectés via IR, BLE et Wi-Fi, avec IA d'identification.",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "iOS, Android, Web",
+  "inLanguage": "fr",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+}
+</script>
+<style>
+:root {
+  --bg: #0a0a0a; --bg2: #15110a; --fg: #f5e8c8; --fg-dim: #b9a877;
+  --accent: #d4af37; --accent2: #ffd76a; --danger: #e25555; --ok: #4cd97a;
+  --warn: #ffb547; --border: rgba(212,175,55,.28); --card: rgba(40,30,8,.7);
+  --shadow: 0 4px 20px rgba(0,0,0,.5); --radius: 14px; --pad: 14px;
+  --hpad: max(14px, env(safe-area-inset-left));
+  --tpad: max(14px, env(safe-area-inset-top));
+  --bpad: max(80px, calc(env(safe-area-inset-bottom) + 80px));
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+html[data-theme="nuit"]   { --bg:#05060a; --bg2:#0c1020; --fg:#cfd8e8; --fg-dim:#7d8aa2; --accent:#5b8def; --accent2:#7ba8ff; --border:rgba(91,141,239,.25); --card:rgba(20,30,55,.7); }
+html[data-theme="jour"]   { --bg:#f7f5ee; --bg2:#ffffff; --fg:#1b1b1b; --fg-dim:#5a5a5a; --accent:#1d6f5b; --accent2:#2da17c; --border:rgba(29,111,91,.28); --card:#ffffff; --shadow:0 2px 10px rgba(0,0,0,.08); }
+html[data-theme="arcade"] { --bg:#0b0021; --bg2:#190044; --fg:#f0e7ff; --fg-dim:#a78cff; --accent:#ff3df8; --accent2:#3df8ff; --border:rgba(255,61,248,.45); --card:rgba(35,5,70,.75); --shadow:0 0 24px rgba(255,61,248,.25); }
+html[data-theme="pro"]    { --bg:#fafafa; --bg2:#fff; --fg:#222; --fg-dim:#666; --accent:#2854c5; --accent2:#3973e6; --border:#ddd; --card:#fff; --shadow:0 1px 4px rgba(0,0,0,.08); }
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--font); font-size: 16px; line-height: 1.45;
+  overflow-x: hidden; max-width: 100vw; min-height: 100vh;
+  background-image: radial-gradient(1200px 600px at 50% -10%, var(--bg2) 0%, var(--bg) 60%);
+}
+body { padding-bottom: var(--bpad); }
+button, input, select, textarea {
+  font-family: inherit; font-size: 1rem; color: inherit;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; min-height: 44px; min-width: 44px;
+  outline: none;
+}
+button { cursor: pointer; transition: all .15s; touch-action: manipulation; }
+button:active { transform: scale(.97); }
+button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+.btn { background: var(--accent); color: #1b1300; border: none; font-weight: 600; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.ok { background: var(--ok); color: #042810; }
+.btn.compact { padding: 6px 10px; min-height: 36px; font-size: .85rem; }
+input, select, textarea { background: rgba(255,255,255,.05); border-color: var(--border); width: 100%; }
+html[data-theme="jour"] input, html[data-theme="pro"] input { background: #fff; }
+
+#topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; gap: 8px; align-items: center;
+  padding: var(--tpad) var(--hpad) 8px var(--hpad);
+  background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+#topbar .logo { font-size: 1.3rem; font-weight: 700; color: var(--accent); letter-spacing: -.5px; flex: 1; }
+#topbar .badge { font-size: .7rem; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--fg-dim); }
+#topbar .badge.ok { color: var(--ok); border-color: var(--ok); }
+#topbar .badge.warn { color: var(--warn); border-color: var(--warn); }
+#topbar .icbtn { padding: 8px; font-size: 1.1rem; background: transparent; border-color: var(--border); }
+
+#bnav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  background: var(--bg2); border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+#bnav button {
+  border: none; background: transparent; color: var(--fg-dim);
+  padding: 10px 4px; font-size: .68rem; line-height: 1.1;
+  display: flex; flex-direction: column; gap: 3px; align-items: center;
+  border-radius: 0; min-height: 56px;
+}
+#bnav button .ic { font-size: 1.3rem; }
+#bnav button.active { color: var(--accent); }
+@media (max-width: 380px) { #bnav button .lbl { display: none; } }
+
+main { padding: 8px var(--hpad) 20px var(--hpad); max-width: 900px; margin: 0 auto; }
+
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: var(--pad); margin: 10px 0;
+  box-shadow: var(--shadow);
+}
+.card h2 { margin: 0 0 8px 0; font-size: 1.05rem; letter-spacing: .3px; color: var(--accent); }
+.card h3 { margin: 0 0 6px 0; font-size: .9rem; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.grid.2 { grid-template-columns: repeat(2, 1fr); }
+.grid.3 { grid-template-columns: repeat(3, 1fr); }
+@media (min-width: 600px) { .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
+
+.device {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px; cursor: pointer; transition: transform .15s, border-color .15s;
+  display: flex; flex-direction: column; gap: 6px; min-height: 110px;
+}
+.device:hover, .device:focus-visible { border-color: var(--accent); transform: translateY(-2px); }
+.device .ic { font-size: 1.8rem; }
+.device .nm { font-weight: 600; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.device .sub { font-size: .75rem; color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.device .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--fg-dim); margin-right: 4px; }
+.device .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.device .dot.off { background: var(--danger); }
+
+.macro {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 8px; min-height: 88px; gap: 6px; font-size: .85rem;
+}
+.macro .ic { font-size: 1.6rem; }
+.macro:hover { border-color: var(--accent); }
+
+.toast {
+  position: fixed; top: calc(var(--tpad) + 50px); left: 50%; transform: translateX(-50%);
+  background: var(--bg2); border: 1px solid var(--accent); border-radius: 12px;
+  padding: 10px 16px; font-size: .9rem; box-shadow: var(--shadow); z-index: 100;
+  animation: toastIn .25s ease-out;
+}
+.toast.ok { border-color: var(--ok); color: var(--ok); }
+.toast.err { border-color: var(--danger); color: var(--danger); }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row > * { flex: 0 0 auto; }
+.row.between { justify-content: space-between; }
+.gap-10 { display: flex; gap: 10px; flex-wrap: wrap; }
+.muted { color: var(--fg-dim); }
+.tiny { font-size: .75rem; }
+.center { text-align: center; }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+.remote {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 360px; margin: 0 auto;
+}
+.remote button { aspect-ratio: 1; font-size: 1.1rem; }
+.slider { width: 100%; height: 32px; accent-color: var(--accent); }
+
+label { display: block; font-size: .8rem; color: var(--fg-dim); margin: 8px 0 4px 0; }
+
+.kbd { font-family: var(--mono); font-size: .8rem; background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); }
+.warn { background: rgba(255,181,71,.12); border-left: 3px solid var(--warn); padding: 10px 12px; border-radius: 6px; font-size: .85rem; }
+.danger-banner { background: rgba(226,85,85,.12); border-left: 3px solid var(--danger); padding: 10px 12px; border-radius: 6px; font-size: .85rem; }
+.ok-banner { background: rgba(76,217,122,.12); border-left: 3px solid var(--ok); padding: 10px 12px; border-radius: 6px; font-size: .85rem; }
+
+.modepick { display: flex; gap: 4px; padding: 3px; background: var(--bg2); border-radius: 12px; border: 1px solid var(--border); }
+.modepick button { flex: 1; min-height: 36px; padding: 6px 8px; font-size: .8rem; background: transparent; border: none; border-radius: 9px; }
+.modepick button.active { background: var(--accent); color: #1b1300; font-weight: 600; }
+
+.recbtn {
+  position: fixed; top: calc(var(--tpad) + 50px); right: var(--hpad); z-index: 80;
+  background: var(--danger); color: #fff; border: none; border-radius: 999px;
+  padding: 10px 16px; font-size: .85rem; font-weight: 600;
+  box-shadow: 0 4px 20px rgba(226,85,85,.4); display: none; align-items: center; gap: 6px;
+}
+.recbtn.rec { display: flex; animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+.qr {
+  display: inline-block; padding: 12px; background: #fff; border-radius: 8px;
+}
+
+.hide { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01s !important; transition-duration: .01s !important; }
+}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <span class="logo" aria-label="iRemoteHub">🎛️ iRemoteHub</span>
+  <span id="bridge-badge" class="badge" title="État du bridge">⚪ bridge</span>
+  <button class="icbtn" id="btn-mode" title="Mode contextuel" aria-label="Changer de mode">☀️</button>
+  <button class="icbtn" id="btn-theme" title="Changer de thème" aria-label="Changer de thème">🎨</button>
+</div>
+<button class="recbtn" id="recbtn" aria-label="Enregistrement macro en cours">⏺ <span id="rec-count">0</span></button>
+<main id="app" role="main"></main>
+<nav id="bnav" role="navigation" aria-label="Navigation principale">
+  <button data-view="accueil"><span class="ic">🏠</span><span class="lbl">Accueil</span></button>
+  <button data-view="scanner"><span class="ic">🔍</span><span class="lbl">Scan</span></button>
+  <button data-view="macros"><span class="ic">🪄</span><span class="lbl">Macros</span></button>
+  <button data-view="clone"><span class="ic">📇</span><span class="lbl">Clone</span></button>
+  <button data-view="ia"><span class="ic">🤖</span><span class="lbl">IA</span></button>
+  <button data-view="settings"><span class="ic">⚙️</span><span class="lbl">Réglages</span></button>
+</nav>
+
+<script>
+"use strict";
+
+// ========== Constantes ==========
+const APP_VER = "v0.1.1";
+const NS = "iremotehub_";
+const APEX_ORIGINS = ["https://apex.local", "https://localhost", window.location.origin];
+
+// ========== Sécurité — escape HTML ==========
+const ESCMAP = { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;", "/":"&#x2F;" };
+function esc(s) {
+  if (s == null) return "";
+  return String(s).replace(/[&<>"'/]/g, c => ESCMAP[c]);
+}
+
+// ========== État global ==========
+const A = {
+  devices: new Map(),
+  view: "accueil",
+  theme: "casino",
+  mode: "jour",
+  bridgeUrl: "",
+  token: "",
+  embedded: window.parent !== window,
+  cloneLibrary: [],
+  customMacros: [],
+  selectedDevice: null,
+  bridgeOnline: false,
+  ws: null,
+  disclaimerAccepted: false,
+  recording: null
+};
+
+const THEMES = ["casino", "nuit", "jour", "arcade", "pro"];
+const THEME_LABELS = { casino: "🎰 Casino", nuit: "🌃 Nuit", jour: "☀️ Jour", arcade: "🎮 Arcade", pro: "🏢 Pro" };
+
+const MODES = ["jour", "nuit", "enfant", "invite"];
+const MODE_LABELS = { jour: "☀️ Jour", nuit: "🌙 Nuit", enfant: "👶 Enfant", invite: "👥 Invité" };
+
+const CATEGORY_ICONS = { tv: "📺", speaker: "🔊", cast: "🎬", light: "💡", plug: "🔌", watch: "⌚", phone: "📱", tablet: "📋", hub: "🏠", homekit: "🏡", ir: "📡", camera: "📷", car: "🚗", game: "🎮", unknown: "❓" };
+
+const BUILTIN_MACROS = [
+  { id: "all-off", name: "Tout éteindre", ic: "🌙", desc: "Coupe TV, enceintes, lumières, prises" },
+  { id: "cinema", name: "Soirée ciné", ic: "🎬", desc: "Lumières tamisées + TV HDMI2 + son 30%" },
+  { id: "panic-silence", name: "Panique silence", ic: "🔇", desc: "Mute toutes sources sonores" },
+  { id: "morning", name: "Réveil matin", ic: "☀️", desc: "Lumières montent progressivement" }
+];
+
+// ========== LocalStorage ==========
+function ls(k, def) {
+  try { const v = localStorage.getItem(NS + k); return v == null ? def : JSON.parse(v); }
+  catch { return def; }
+}
+function ss(k, v) {
+  try { localStorage.setItem(NS + k, JSON.stringify(v)); } catch {}
+}
+function lsRemove(k) { try { localStorage.removeItem(NS + k); } catch {} }
+
+// ========== Toast ==========
+let toastTimer = null;
+function toast(msg, type) {
+  const old = document.querySelector(".toast");
+  if (old) old.remove();
+  clearTimeout(toastTimer);
+  const el = document.createElement("div");
+  el.className = "toast" + (type ? " " + type : "");
+  el.textContent = msg;
+  el.setAttribute("role", "status");
+  document.body.appendChild(el);
+  toastTimer = setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+// ========== Themes & modes ==========
+function setTheme(name) {
+  if (!THEMES.includes(name)) name = "casino";
+  A.theme = name;
+  document.documentElement.dataset.theme = name;
+  ss("theme", name);
+  const colors = { casino:"#d4af37", nuit:"#5b8def", jour:"#1d6f5b", arcade:"#ff3df8", pro:"#2854c5" };
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", colors[name]);
+  emitApex("theme:changed", { theme: name });
+}
+
+function cycleTheme() {
+  const i = THEMES.indexOf(A.theme);
+  setTheme(THEMES[(i + 1) % THEMES.length]);
+  toast(THEME_LABELS[A.theme]);
+}
+
+function setMode(name) {
+  if (!MODES.includes(name)) name = "jour";
+  A.mode = name;
+  ss("mode", name);
+  document.getElementById("btn-mode").textContent = MODE_LABELS[name].split(" ")[0];
+  if (A.view) render();
+  emitApex("mode:changed", { mode: name });
+}
+
+function cycleMode() {
+  const i = MODES.indexOf(A.mode);
+  setMode(MODES[(i + 1) % MODES.length]);
+  toast(MODE_LABELS[A.mode]);
+}
+
+// ========== Bridge API ==========
+function headers() {
+  const h = { "Content-Type": "application/json" };
+  if (A.token) h["X-Auth-Token"] = A.token;
+  return h;
+}
+
+async function apiGet(path, opts) {
+  if (!A.bridgeUrl) throw new Error("Bridge non configuré");
+  const r = await fetch(A.bridgeUrl + path, { headers: headers(), ...opts });
+  if (!r.ok) throw new Error("Bridge HTTP " + r.status);
+  return await r.json();
+}
+
+async function apiPost(path, body, opts) {
+  if (!A.bridgeUrl) throw new Error("Bridge non configuré");
+  const r = await fetch(A.bridgeUrl + path, { method: "POST", headers: headers(), body: JSON.stringify(body || {}), ...opts });
+  if (!r.ok) {
+    let j; try { j = await r.json(); } catch {}
+    throw new Error((j && j.error) || ("Bridge HTTP " + r.status));
+  }
+  return await r.json();
+}
+
+async function apiDelete(path) {
+  const r = await fetch(A.bridgeUrl + path, { method: "DELETE", headers: headers() });
+  if (!r.ok) throw new Error("Bridge HTTP " + r.status);
+  return await r.json();
+}
+
+async function pingBridge() {
+  if (!A.bridgeUrl) return setBridgeStatus(false);
+  try {
+    const r = await fetch(A.bridgeUrl + "/health", { signal: AbortSignal.timeout(2500) });
+    setBridgeStatus(r.ok);
+  } catch { setBridgeStatus(false); }
+}
+
+function setBridgeStatus(online) {
+  A.bridgeOnline = online;
+  const el = document.getElementById("bridge-badge");
+  if (online) { el.className = "badge ok"; el.textContent = "🟢 bridge"; }
+  else { el.className = "badge warn"; el.textContent = "🟡 hors-ligne"; }
+}
+
+function connectWS() {
+  if (!A.bridgeUrl || !A.token) return;
+  try {
+    if (A.ws) { try { A.ws.close(); } catch {} A.ws = null; }
+    const wsUrl = A.bridgeUrl.replace(/^http/, "ws") + "/events?token=" + encodeURIComponent(A.token);
+    const ws = new WebSocket(wsUrl);
+    A.ws = ws;
+    ws.onopen = () => setBridgeStatus(true);
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === "hello" && msg.devices) {
+          for (const d of msg.devices) A.devices.set(d.id, d);
+          if (A.view === "scanner" || A.view === "accueil") render();
+        }
+        if (msg.type === "devices:update" || msg.type === "scan:done") {
+          loadDevices();
+        }
+        emitApex("event:" + msg.type, msg);
+      } catch {}
+    };
+    ws.onclose = () => { setBridgeStatus(false); setTimeout(connectWS, 5000); };
+    ws.onerror = () => {};
+  } catch {}
+}
+
+async function loadDevices() {
+  if (!A.bridgeUrl) return;
+  try {
+    const list = await apiGet("/devices");
+    A.devices.clear();
+    for (const d of list) A.devices.set(d.id, d);
+    if (A.view === "scanner" || A.view === "accueil") render();
+  } catch (e) { /* silent */ }
+}
+
+// ========== Mode APEX embedded ==========
+function emitApex(type, data) {
+  if (!A.embedded) return;
+  try { window.parent.postMessage({ from: "iremotehub", type, version: APP_VER, data }, "*"); } catch {}
+}
+
+function setupApexBridge() {
+  window.addEventListener("message", (e) => {
+    if (!e.data || e.data.from !== "apex") return;
+    const ok = APEX_ORIGINS.includes(e.origin) || /^https?:\/\/(localhost|127\.|192\.168\.|10\.|apex)/i.test(e.origin);
+    if (!ok) return;
+    const { command, args } = e.data;
+    try { handleApexCommand(command, args || []); }
+    catch (err) { emitApex("error", { message: err.message }); }
+  });
+}
+
+async function handleApexCommand(cmd, args) {
+  switch (cmd) {
+    case "runMacro": return runMacro(args[0]);
+    case "scanNow": return scanNow();
+    case "setTheme": return setTheme(args[0]);
+    case "setMode": return setMode(args[0]);
+    case "getDevices": return emitApex("response:getDevices", { devices: [...A.devices.values()] });
+    case "identifyDevice": return iaIdentify(args[0]);
+    case "reload": return location.reload();
+    case "setBridge":
+      A.bridgeUrl = args[0] || "";
+      A.token = args[1] || "";
+      ss("bridge_url", A.bridgeUrl); ss("bridge_token", A.token);
+      await pingBridge(); connectWS();
+      return;
+    default: throw new Error("commande inconnue : " + cmd);
+  }
+}
+
+// ========== API publique iRemoteHub ==========
+const listeners = new Map();
+window.iRemoteHub = {
+  version: APP_VER,
+  get mode() { return A.embedded ? "embedded" : "standalone"; },
+  init(config) {
+    if (config && config.bridge_url) { A.bridgeUrl = config.bridge_url; ss("bridge_url", A.bridgeUrl); }
+    if (config && config.token) { A.token = config.token; ss("bridge_token", A.token); }
+    if (config && config.theme) setTheme(config.theme);
+    if (config && config.mode) setMode(config.mode);
+    pingBridge(); connectWS();
+  },
+  getDevices() { return [...A.devices.values()]; },
+  getMacros() { return [...BUILTIN_MACROS, ...A.customMacros]; },
+  getCloneLibrary() { return [...A.cloneLibrary]; },
+  getTheme() { return A.theme; },
+  runMacro,
+  scanNow,
+  identifyDevice: iaIdentify,
+  setTheme,
+  setMode,
+  on(event, cb) { (listeners.get(event) || listeners.set(event, []).get(event)).push(cb); },
+  off(event, cb) { const arr = listeners.get(event); if (arr) listeners.set(event, arr.filter(f => f !== cb)); },
+  destroy() { try { A.ws && A.ws.close(); } catch {} }
+};
+
+function fire(event, data) {
+  (listeners.get(event) || []).forEach(cb => { try { cb(data); } catch {} });
+  emitApex("event:" + event, data);
+}
+
+// ========== Actions ==========
+async function runMacro(name) {
+  if (!A.bridgeUrl) { toast("Configure le bridge dans Réglages", "err"); return; }
+  if (A.mode === "invite") { toast("Mode invité : actions désactivées", "err"); return; }
+  try {
+    toast("🪄 " + name + "…");
+    const r = await apiPost("/macro/" + encodeURIComponent(name), { source: A.embedded ? "apex" : "pwa" });
+    toast("✅ " + name + " — " + (r.results ? r.results.length : 0) + " action(s)", "ok");
+    fire("macro:done", { name, result: r });
+    return r;
+  } catch (e) {
+    toast("❌ " + e.message, "err");
+    throw e;
+  }
+}
+
+async function scanNow() {
+  if (!A.bridgeUrl) { toast("Configure le bridge", "err"); return; }
+  try {
+    toast("🔍 Scan en cours…");
+    const r = await apiPost("/scan", {});
+    toast("✅ " + r.count + " appareil(s) détecté(s)", "ok");
+    loadDevices();
+    return r;
+  } catch (e) { toast("❌ " + e.message, "err"); }
+}
+
+async function doAction(deviceId, action, params) {
+  if (A.mode === "invite") { toast("Mode invité : lecture seule", "err"); return; }
+  if (A.mode === "enfant" && /power_off|delete|reset/i.test(action)) { toast("Mode enfant : action bloquée", "err"); return; }
+  if (A.recording) recAdd({ device_id: deviceId, action, params });
+  try {
+    const r = await apiPost("/action", { device_id: deviceId, action, params: params || {} });
+    toast("✅ " + action, "ok");
+    return r;
+  } catch (e) { toast("❌ " + e.message, "err"); throw e; }
+}
+
+async function iaIdentify(deviceId) {
+  const d = A.devices.get(deviceId);
+  if (!d) { toast("Appareil inconnu", "err"); return; }
+  try {
+    toast("🤖 Identification IA…");
+    const fingerprint = buildFingerprint(d);
+    const r = await apiPost("/identify", { fingerprint });
+    toast("✅ " + (r.vendor || "?") + " " + (r.model || ""), "ok");
+    Object.assign(d, { ia: r });
+    A.devices.set(deviceId, d);
+    render();
+    fire("device:identified", { device_id: deviceId, identification: r });
+    return r;
+  } catch (e) { toast("❌ " + e.message, "err"); }
+}
+
+function buildFingerprint(d) {
+  return {
+    network: { mac: d.mac, mac_oui_vendor: d.vendor, ipv4: d.ip, hostname: d.hostname },
+    tcp_ip: { open_ports: d.open_ports || [], banner_http: d.banner_http || "" },
+    mdns: d.mdns || [],
+    ssdp: d.ssdp || [],
+    ble: d.ble_address ? { name: d.name, address: d.ble_address, rssi: d.rssi, services_uuids: d.services_uuids } : undefined,
+    category: d.category
+  };
+}
+
+// ========== Macro recorder ==========
+function recStart() {
+  A.recording = { id: "macro-" + Date.now().toString(36), name: "", actions: [], started: Date.now() };
+  document.getElementById("recbtn").classList.add("rec");
+  document.getElementById("rec-count").textContent = "0";
+  toast("⏺ Enregistrement démarré", "ok");
+}
+
+function recAdd(action) {
+  if (!A.recording) return;
+  A.recording.actions.push({ ...action, t: Date.now() - A.recording.started });
+  document.getElementById("rec-count").textContent = A.recording.actions.length;
+}
+
+function recStop() {
+  if (!A.recording) return;
+  const name = prompt("Nom de la macro :", "Ma macro " + new Date().toLocaleTimeString());
+  if (!name) { A.recording = null; document.getElementById("recbtn").classList.remove("rec"); return; }
+  A.recording.name = name;
+  A.recording.ic = "⭐";
+  A.customMacros.push(A.recording);
+  ss("custom_macros", A.customMacros);
+  toast("💾 Macro \"" + name + "\" sauvegardée", "ok");
+  fire("macro:recorded", A.recording);
+  A.recording = null;
+  document.getElementById("recbtn").classList.remove("rec");
+  if (A.view === "macros") render();
+}
+
+async function playCustomMacro(macroId) {
+  const m = A.customMacros.find(x => x.id === macroId);
+  if (!m) return;
+  toast("▶ " + m.name);
+  for (const step of m.actions) {
+    try { await apiPost("/action", { device_id: step.device_id, action: step.action, params: step.params }); }
+    catch (e) { toast("⚠ " + step.action + " : " + e.message, "err"); }
+  }
+  toast("✅ " + m.name + " terminée", "ok");
+}
+
+// ========== Apple Shortcuts ==========
+function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+function callShortcut(name, input) {
+  const url = "shortcuts://x-callback-url/run-shortcut?name=" + encodeURIComponent(name) +
+              "&x-success=" + encodeURIComponent(location.href) +
+              "&x-error=" + encodeURIComponent(location.href);
+  window.location.href = url;
+}
+
+// ========== Web NFC (Android Chrome) ==========
+async function nfcScan() {
+  if (!("NDEFReader" in window)) { toast("Web NFC indisponible (Chrome Android requis)", "err"); return null; }
+  try {
+    const reader = new NDEFReader();
+    await reader.scan();
+    toast("📡 Approchez un tag NFC", "ok");
+    return new Promise((resolve) => {
+      reader.onreading = (event) => {
+        const records = [];
+        for (const rec of event.message.records) {
+          records.push({ recordType: rec.recordType, mediaType: rec.mediaType, data: rec.data && new TextDecoder().decode(rec.data) });
+        }
+        resolve({ serialNumber: event.serialNumber, records });
+      };
+      setTimeout(() => resolve(null), 30000);
+    });
+  } catch (e) { toast("❌ NFC : " + e.message, "err"); return null; }
+}
+
+async function nfcWrite(text) {
+  if (!("NDEFReader" in window)) { toast("Web NFC indisponible", "err"); return false; }
+  try {
+    const writer = new NDEFReader();
+    await writer.write({ records: [{ recordType: "text", data: text }] });
+    toast("✅ Tag écrit", "ok");
+    return true;
+  } catch (e) { toast("❌ " + e.message, "err"); return false; }
+}
+
+// ========== Web Bluetooth (Android Chrome) ==========
+async function bleScan() {
+  if (!navigator.bluetooth) { toast("Web Bluetooth indisponible (Chrome Android)", "err"); return; }
+  try {
+    const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ["battery_service","device_information"] });
+    toast("🔵 " + (device.name || "Appareil BLE") + " sélectionné", "ok");
+    const id = "ble-" + (device.id || Date.now());
+    A.devices.set(id, { id, name: device.name, category: "unknown", sources: ["ble-web"], vendor: "BLE (web)" });
+    render();
+    fire("device:found", A.devices.get(id));
+  } catch (e) { if (e.name !== "NotFoundError") toast("❌ " + e.message, "err"); }
+}
+
+// ========== Clone ==========
+async function cloneReadNDEF() {
+  await ensureDisclaimer();
+  const r = await nfcScan();
+  if (!r) return;
+  const label = prompt("Nom du tag (ex: 🚪 Porte bureau) :", "Tag NFC " + new Date().toLocaleTimeString());
+  if (!label) return;
+  const entry = { format: "NFC_NDEF", label, serial: r.serialNumber, records: r.records, hardware: "Web NFC" };
+  await saveCloneEntry(entry);
+}
+
+async function cloneEmitNDEF(entry) {
+  await ensureDisclaimer();
+  const text = entry.records && entry.records[0] && entry.records[0].data ? entry.records[0].data : prompt("Texte à écrire :");
+  if (!text) return;
+  await nfcWrite(text);
+}
+
+async function ensureDisclaimer() {
+  if (A.disclaimerAccepted) return true;
+  const ok = confirm("⚠ J'atteste que les objets que je vais cloner m'appartiennent.\n\nLe clonage d'objets tiers sans accord est interdit par la loi (L323-1 Code pénal FR).\n\nConfirmer ?");
+  if (!ok) throw new Error("Disclaimer refusé");
+  A.disclaimerAccepted = true;
+  ss("disclaimer", true);
+  if (A.bridgeUrl) { try { await apiPost("/clone/disclaimer", {}); } catch {} }
+  return true;
+}
+
+async function saveCloneEntry(entry) {
+  entry.id = entry.id || "clone-" + Date.now().toString(36);
+  entry.created_at = entry.created_at || new Date().toISOString();
+  A.cloneLibrary.push(entry);
+  ss("clone_library", A.cloneLibrary);
+  if (A.bridgeUrl) { try { await apiPost("/clone/library", entry); } catch {} }
+  toast("💾 \"" + entry.label + "\" sauvegardé", "ok");
+  fire("clone:saved", entry);
+  if (A.view === "clone") render();
+}
+
+function deleteCloneEntry(id) {
+  if (!confirm("Supprimer cette entrée ?")) return;
+  A.cloneLibrary = A.cloneLibrary.filter(e => e.id !== id);
+  ss("clone_library", A.cloneLibrary);
+  if (A.bridgeUrl) { try { apiDelete("/clone/library/" + encodeURIComponent(id)); } catch {} }
+  render();
+}
+
+// ========== QR/Barcode ==========
+async function barcodeScan() {
+  if (!("BarcodeDetector" in window)) { toast("Scanner indisponible (Chrome Android)", "err"); return; }
+  toast("📷 Approchez un code");
+  // Demo placeholder — usage réel = capture vidéo + detect.detect(frame)
+}
+
+function renderBarcode(text, container) {
+  // QR très simple : on délègue à une API publique côté affichage (offline-fallback : SVG datamatrix maison v0.2)
+  const img = document.createElement("img");
+  img.alt = "Code: " + text;
+  img.style.width = "200px";
+  img.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(text);
+  container.innerHTML = "";
+  container.appendChild(img);
+}
+
+// ========== Vues ==========
+function categoryIcon(cat) { return CATEGORY_ICONS[cat] || CATEGORY_ICONS.unknown; }
+
+function deviceCardHtml(d) {
+  const online = (Date.now() - (d.last_seen || 0)) < 5 * 60 * 1000;
+  return '<div class="device" role="button" tabindex="0" data-act="openDevice" data-id="' + esc(d.id) + '">' +
+    '<div class="ic">' + categoryIcon(d.category) + '</div>' +
+    '<div class="nm">' + esc(d.name || d.hostname || d.vendor || "Inconnu") + '</div>' +
+    '<div class="sub"><span class="dot ' + (online ? "on" : "off") + '"></span>' + esc(d.vendor || "") + (d.ip ? " · " + esc(d.ip) : "") + '</div>' +
+  '</div>';
+}
+
+function vAccueil() {
+  const devs = [...A.devices.values()];
+  const macros = [...BUILTIN_MACROS, ...A.customMacros];
+  return '<div class="card">' +
+      '<h2>👋 Bonjour</h2>' +
+      '<p class="muted tiny">' + esc(devs.length) + ' appareil(s) détecté(s) · Mode ' + esc(MODE_LABELS[A.mode]) + ' · Thème ' + esc(THEME_LABELS[A.theme]) + '</p>' +
+      (!A.bridgeUrl ? '<div class="warn" style="margin-top:10px">⚙ Bridge non configuré — va dans <b>Réglages</b> pour appairer.</div>' : '') +
+      (!A.bridgeOnline && A.bridgeUrl ? '<div class="warn" style="margin-top:10px">🟡 Bridge hors-ligne — vérifie qu\'il tourne sur Termux/Pi.</div>' : '') +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>🪄 Macros rapides</h3>' +
+      '<div class="grid 2">' +
+        macros.slice(0, 6).map(m => '<button class="macro" data-act="' + (m.actions ? "playCustomMacro" : "runMacro") + '" data-id="' + esc(m.id) + '"><span class="ic">' + esc(m.ic) + '</span><span>' + esc(m.name) + '</span></button>').join('') +
+      '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>📺 Vos appareils</h3>' +
+      (devs.length === 0 ?
+        '<p class="muted center">Aucun appareil. <button class="btn compact" onclick="scanNow()">🔍 Lancer un scan</button></p>' :
+        '<div class="grid">' + devs.slice(0, 8).map(deviceCardHtml).join('') + '</div>' +
+        (devs.length > 8 ? '<p class="center"><button class="btn ghost compact" onclick="setView(\'scanner\')">Voir les ' + esc(devs.length) + ' appareils →</button></p>' : '')
+      ) +
+    '</div>';
+}
+
+function vScanner() {
+  const devs = [...A.devices.values()];
+  return '<div class="card">' +
+      '<div class="spread"><h2>🔍 Scanner</h2><div class="row">' +
+        '<button class="btn compact" onclick="scanNow()">🔄 Scanner</button>' +
+        '<button class="btn ghost compact" onclick="bleScan()">🔵 BLE</button>' +
+        (isIOS() ? '' : '<button class="btn ghost compact" onclick="cloneReadNDEF()">📡 NFC</button>') +
+      '</div></div>' +
+      '<p class="muted tiny">' + esc(devs.length) + ' appareil(s) — sources : mDNS, SSDP, ARP, BLE.</p>' +
+    '</div>' +
+    '<div class="card">' +
+      (devs.length === 0 ?
+        '<p class="center muted">Aucun appareil. Vérifie que le bridge tourne et lance un scan.</p>' :
+        '<div class="grid">' + devs.map(deviceCardHtml).join('') + '</div>'
+      ) +
+    '</div>';
+}
+
+function vDevice() {
+  const id = A.selectedDevice;
+  const d = A.devices.get(id);
+  if (!d) return '<div class="card"><p>Appareil introuvable. <button class="btn ghost" onclick="setView(\'scanner\')">← Retour</button></p></div>';
+
+  const cat = d.category || "unknown";
+  const buttons = remoteButtonsFor(cat);
+
+  return '<div class="card">' +
+      '<div class="row between"><button class="btn ghost compact" onclick="setView(\'scanner\')">← Retour</button>' +
+      '<button class="btn compact" data-act="iaIdentify" data-id="' + esc(id) + '">🤖 IA</button></div>' +
+      '<h2>' + categoryIcon(cat) + ' ' + esc(d.name || d.vendor || "Inconnu") + '</h2>' +
+      '<p class="muted tiny">' + esc(d.vendor || "?") + ' · ' + esc(d.ip || d.ble_address || "") + ' · ' + esc(cat) + '</p>' +
+      (d.ia ? '<div class="ok-banner" style="margin-top:8px"><b>IA :</b> ' + esc(d.ia.vendor) + ' ' + esc(d.ia.model || "") + ' (confiance ' + Math.round((d.ia.confidence || 0) * 100) + '%) — ' + esc(d.ia.reasoning || "") + '</div>' : '') +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>🎛 Télécommande</h3>' +
+      (buttons.length === 0 ?
+        '<p class="muted">Pas de commandes prédéfinies. <button class="btn ghost compact" data-act="iaIdentify" data-id="' + esc(id) + '">🤖 Identifier via IA</button></p>' :
+        '<div class="remote">' + buttons.map(b => '<button class="btn ghost" data-act="doAction" data-id="' + esc(id) + '" data-action="' + esc(b.action) + '" title="' + esc(b.label) + '">' + esc(b.ic) + '</button>').join('') + '</div>'
+      ) +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>📋 Détails</h3>' +
+      '<pre style="overflow:auto;font-size:.75rem;color:var(--fg-dim);max-height:200px">' + esc(JSON.stringify(d, null, 2)) + '</pre>' +
+    '</div>';
+}
+
+function remoteButtonsFor(cat) {
+  if (cat === "tv" || cat === "cast") return [
+    { ic: "⏻", action: "power_off", label: "Éteindre" },
+    { ic: "🔼", action: "up", label: "Haut" },
+    { ic: "🏠", action: "home", label: "Accueil" },
+    { ic: "◀", action: "left", label: "Gauche" },
+    { ic: "✓", action: "ok", label: "OK" },
+    { ic: "▶", action: "right", label: "Droite" },
+    { ic: "🔉", action: "volume_down", label: "Vol -" },
+    { ic: "🔽", action: "down", label: "Bas" },
+    { ic: "🔊", action: "volume_up", label: "Vol +" },
+    { ic: "🔇", action: "mute", label: "Silence" },
+    { ic: "↩", action: "back", label: "Retour" },
+    { ic: "🎚", action: "input", label: "Source" }
+  ];
+  if (cat === "speaker") return [
+    { ic: "▶", action: "play", label: "Lecture" },
+    { ic: "⏸", action: "pause", label: "Pause" },
+    { ic: "⏹", action: "stop", label: "Stop" },
+    { ic: "⏮", action: "previous", label: "Préc" },
+    { ic: "⏭", action: "next", label: "Suiv" },
+    { ic: "🔇", action: "mute", label: "Mute" }
+  ];
+  if (cat === "light") return [
+    { ic: "💡", action: "on", label: "On" },
+    { ic: "🌑", action: "off", label: "Off" }
+  ];
+  if (cat === "plug") return [
+    { ic: "⚡", action: "on", label: "On" },
+    { ic: "❌", action: "off", label: "Off" }
+  ];
+  return [];
+}
+
+function vMacros() {
+  const all = [...BUILTIN_MACROS, ...A.customMacros];
+  return '<div class="card">' +
+      '<div class="spread"><h2>🪄 Macros</h2>' +
+      '<button class="btn compact" onclick="' + (A.recording ? "recStop" : "recStart") + '()">' + (A.recording ? "⏹ Stop" : "⏺ Enregistrer") + '</button></div>' +
+      '<p class="muted tiny">' + (A.recording ? "Enregistrement en cours… cliquez sur les actions à mémoriser." : "Astuce : commence un enregistrement puis tape les actions sur tes appareils.") + '</p>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>Disponibles</h3>' +
+      '<div class="grid 2">' +
+      all.map(m => '<div class="macro" style="cursor:pointer" data-act="' + (m.actions ? "playCustomMacro" : "runMacro") + '" data-id="' + esc(m.id) + '">' +
+        '<span class="ic">' + esc(m.ic || "✨") + '</span>' +
+        '<span><b>' + esc(m.name) + '</b></span>' +
+        '<span class="tiny muted">' + esc(m.desc || (m.actions ? m.actions.length + " action(s)" : "")) + '</span>' +
+      '</div>').join('') +
+      '</div>' +
+    '</div>' +
+    (A.customMacros.length > 0 ? '<div class="card"><h3>⚙ Tes macros perso</h3>' +
+      A.customMacros.map(m => '<div class="spread" style="padding:6px 0;border-bottom:1px solid var(--border)">' +
+        '<span>' + esc(m.ic) + ' <b>' + esc(m.name) + '</b> <span class="tiny muted">(' + m.actions.length + ' actions)</span></span>' +
+        '<button class="btn ghost compact" data-act="deleteMacro" data-id="' + esc(m.id) + '">🗑</button>' +
+      '</div>').join('') +
+    '</div>' : '');
+}
+
+function vClone() {
+  return '<div class="card">' +
+      '<h2>📇 Clone universel</h2>' +
+      '<div class="warn"><b>Cadre légal strict :</b> uniquement tes propres badges/télécommandes. Les cartes bancaires, badges chiffrés et codes voiture rolling sont refusés par design.</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>Nouveau clone</h3>' +
+      '<div class="grid 2">' +
+        '<button class="btn ghost" onclick="cloneReadNDEF()" title="Lecture/écriture NDEF — tablette Android"><span class="ic" style="font-size:1.5rem;display:block">📡</span> NFC NDEF</button>' +
+        '<button class="btn ghost" onclick="alert(\'Brancher BroadLink RM4 + utiliser /clone/read type:ir_read\')" title="Apprentissage IR via BroadLink RM4"><span class="ic" style="font-size:1.5rem;display:block">📺</span> IR (BroadLink)</button>' +
+        '<button class="btn ghost" onclick="barcodeScan()" title="Caméra"><span class="ic" style="font-size:1.5rem;display:block">📷</span> QR/Barcode</button>' +
+        '<button class="btn ghost" onclick="alert(\'Flipper Zero ou Proxmark requis (voir docs/CLONE.md)\')" title="RFID 125 kHz"><span class="ic" style="font-size:1.5rem;display:block">📇</span> RFID 125k</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>📚 Bibliothèque (' + A.cloneLibrary.length + ')</h3>' +
+      (A.cloneLibrary.length === 0 ?
+        '<p class="muted center">Vide. Capture ton premier clone ↑</p>' :
+        A.cloneLibrary.map(e => '<div class="spread" style="padding:8px 0;border-bottom:1px solid var(--border)">' +
+          '<div><b>' + esc(e.label) + '</b><br><span class="tiny muted">' + esc(e.format) + ' · ' + esc(e.hardware || "?") + '</span></div>' +
+          '<div class="row">' +
+            (e.format === "NFC_NDEF" ? '<button class="btn compact" data-act="cloneEmitNDEF" data-e="' + esc(JSON.stringify(e)) + '">📤 Émettre</button>' : '') +
+            '<button class="btn ghost compact" data-act="deleteCloneEntry" data-id="' + esc(e.id) + '">🗑</button>' +
+          '</div>' +
+        '</div>').join('')
+      ) +
+    '</div>';
+}
+
+function vIA() {
+  return '<div class="card">' +
+      '<h2>🤖 Module IA</h2>' +
+      '<p class="muted">Identifie automatiquement chaque appareil détecté via la base de connaissances locale et Claude API.</p>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>Comment ça marche ?</h3>' +
+      '<ol style="line-height:1.6">' +
+        '<li>Le scanner détecte un appareil (mDNS/SSDP/BLE).</li>' +
+        '<li>L\'app construit son empreinte (MAC, ports, bannières, services).</li>' +
+        '<li>Cherche d\'abord dans la base locale (instantané, offline).</li>' +
+        '<li>Si inconnu → appelle Claude API avec tool use (search_web, fetch_docs, probe_device).</li>' +
+        '<li>Sauvegarde le résultat + demande confirmation utilisateur.</li>' +
+        '<li>La base s\'enrichit à chaque identification.</li>' +
+      '</ol>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>Identifier maintenant</h3>' +
+      (A.devices.size === 0 ?
+        '<p class="muted">Aucun appareil. Lance un scan d\'abord.</p>' :
+        '<div class="grid">' + [...A.devices.values()].map(d => '<button class="device" data-act="iaIdentify" data-id="' + esc(d.id) + '">' +
+          '<span class="ic">' + categoryIcon(d.category) + '</span>' +
+          '<span class="nm">' + esc(d.name || d.vendor || "Inconnu") + '</span>' +
+          '<span class="sub">' + (d.ia ? "✅ Identifié" : "🤖 Identifier") + '</span>' +
+        '</button>').join('') + '</div>'
+      ) +
+    '</div>';
+}
+
+function vSettings() {
+  return '<div class="card">' +
+      '<h2>⚙ Réglages</h2>' +
+      '<p class="muted tiny">Version ' + esc(APP_VER) + ' · Mode ' + esc(A.embedded ? "embedded (APEX)" : "standalone") + '</p>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>🔌 Bridge</h3>' +
+      '<label for="cfg-url">URL du bridge</label>' +
+      '<input id="cfg-url" placeholder="http://192.168.1.42:7070" value="' + esc(A.bridgeUrl) + '">' +
+      '<label for="cfg-token">Token (depuis QR du bridge)</label>' +
+      '<input id="cfg-token" placeholder="abc123..." value="' + esc(A.token) + '" type="password">' +
+      '<div class="row" style="margin-top:10px">' +
+        '<button class="btn" onclick="saveBridge()">💾 Sauvegarder</button>' +
+        '<button class="btn ghost" onclick="pingBridge()">🔄 Tester</button>' +
+        (A.bridgeUrl ? '<button class="btn ghost" onclick="if(confirm(\'Oublier ?\')){A.bridgeUrl=\'\';A.token=\'\';lsRemove(\'bridge_url\');lsRemove(\'bridge_token\');render();}">🗑 Oublier</button>' : '') +
+      '</div>' +
+      '<p class="muted tiny" style="margin-top:8px">' + (A.bridgeOnline ? "🟢 En ligne" : "🟡 Hors-ligne") + '</p>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>🎨 Thème</h3>' +
+      '<div class="modepick">' + THEMES.map(t => '<button class="' + (A.theme === t ? "active" : "") + '" onclick="setTheme(\'' + esc(t) + '\')">' + esc(THEME_LABELS[t]) + '</button>').join('') + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>👶 Mode contextuel</h3>' +
+      '<div class="modepick">' + MODES.map(m => '<button class="' + (A.mode === m ? "active" : "") + '" onclick="setMode(\'' + esc(m) + '\')">' + esc(MODE_LABELS[m]) + '</button>').join('') + '</div>' +
+      '<p class="muted tiny" style="margin-top:8px">Mode invité = lecture seule · Mode enfant = actions destructrices bloquées.</p>' +
+    '</div>' +
+    (isIOS() ? '<div class="card">' +
+      '<h3>🍎 Raccourcis Apple</h3>' +
+      '<p class="muted tiny">Importe les Raccourcis depuis le dossier <span class="kbd">shortcuts/</span> du projet pour accéder à HomeKit, Find My, AirPlay.</p>' +
+      '<div class="row" style="margin-top:8px">' +
+        '<button class="btn ghost compact" onclick="callShortcut(\'iRemoteHub - Tout éteindre\')">🌙 Tout éteindre</button>' +
+        '<button class="btn ghost compact" onclick="callShortcut(\'iRemoteHub - Faire sonner mon iPhone\')">📢 Sonner</button>' +
+      '</div>' +
+    '</div>' : '') +
+    '<div class="card">' +
+      '<h3>📦 Données</h3>' +
+      '<div class="row">' +
+        '<button class="btn ghost compact" onclick="exportData()">📤 Exporter</button>' +
+        '<button class="btn ghost compact" onclick="importData()">📥 Importer</button>' +
+        '<button class="btn ghost compact danger" onclick="if(confirm(\'Tout effacer ?\')){for(const k of Object.keys(localStorage)){if(k.startsWith(NS))localStorage.removeItem(k);}location.reload();}">🗑 Reset</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>ℹ À propos</h3>' +
+      '<p class="muted tiny">iRemoteHub ' + esc(APP_VER) + ' — PWA + Bridge Node.js<br>Pilote toi-même : <a href="https://github.com" style="color:var(--accent)">documentation</a></p>' +
+    '</div>';
+}
+
+function saveBridge() {
+  A.bridgeUrl = (document.getElementById("cfg-url").value || "").replace(/\/$/, "");
+  A.token = document.getElementById("cfg-token").value || "";
+  ss("bridge_url", A.bridgeUrl);
+  ss("bridge_token", A.token);
+  pingBridge();
+  connectWS();
+  loadDevices();
+  toast("✅ Bridge sauvegardé", "ok");
+}
+
+function exportData() {
+  const dump = {
+    version: APP_VER,
+    exported_at: new Date().toISOString(),
+    theme: A.theme,
+    mode: A.mode,
+    custom_macros: A.customMacros,
+    clone_library: A.cloneLibrary
+  };
+  const blob = new Blob([JSON.stringify(dump, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "iremotehub-" + Date.now() + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData() {
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = "application/json";
+  input.onchange = (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const j = JSON.parse(reader.result);
+        if (j.theme) setTheme(j.theme);
+        if (j.mode) setMode(j.mode);
+        if (j.custom_macros) { A.customMacros = j.custom_macros; ss("custom_macros", A.customMacros); }
+        if (j.clone_library) { A.cloneLibrary = j.clone_library; ss("clone_library", A.cloneLibrary); }
+        toast("✅ Import réussi", "ok");
+        render();
+      } catch { toast("❌ JSON invalide", "err"); }
+    };
+    reader.readAsText(f);
+  };
+  input.click();
+}
+
+function openDevice(id) { A.selectedDevice = id; setView("device"); }
+
+// ========== Render ==========
+const VIEWS = { accueil: vAccueil, scanner: vScanner, device: vDevice, macros: vMacros, clone: vClone, ia: vIA, settings: vSettings };
+
+function setView(v) {
+  A.view = v;
+  if (v !== "device" && v !== A.view) A.selectedDevice = null;
+  render();
+  emitApex("view:changed", { view: v });
+}
+
+// Sécurité (audit XSS) : les actions portant des données DÉCOUVERTES/SCANNÉES
+// (id d'appareil mDNS/BLE, données NFC clonées, id de macro) passent par la
+// DÉLÉGATION d'événements (attributs data-act/data-id/data-action/data-e lus via
+// getAttribute → JAMAIS exécutés comme code), au lieu de onclick="fn('...')" où
+// une valeur contenant ' pouvait injecter du JS (esc() échappe le HTML mais le
+// parseur décode &#39; AVANT l'exécution JS → esc insuffisant en JS-dans-attribut).
+function deleteMacro(id) {
+  if (!confirm("Supprimer ?")) return;
+  A.customMacros = A.customMacros.filter(x => x.id !== id);
+  ss("custom_macros", A.customMacros);
+  render();
+}
+function _irWireDelegation() {
+  const app = document.getElementById("app");
+  if (!app || app._deleg) return;
+  app._deleg = true;
+  app.addEventListener("click", e => {
+    const el = e.target.closest("[data-act]");
+    if (!el || !app.contains(el)) return;
+    const act = el.getAttribute("data-act");
+    const id = el.getAttribute("data-id");
+    switch (act) {
+      case "openDevice": openDevice(id); break;
+      case "iaIdentify": iaIdentify(id); break;
+      case "doAction": doAction(id, el.getAttribute("data-action")); break;
+      case "runMacro": runMacro(id); break;
+      case "playCustomMacro": playCustomMacro(id); break;
+      case "deleteMacro": deleteMacro(id); break;
+      case "deleteCloneEntry": deleteCloneEntry(id); break;
+      case "cloneEmitNDEF":
+        try { cloneEmitNDEF(JSON.parse(el.getAttribute("data-e"))); } catch (_) {}
+        break;
+    }
+  });
+}
+
+function render() {
+  _irWireDelegation();
+  const fn = VIEWS[A.view] || vAccueil;
+  document.getElementById("app").innerHTML = fn();
+  document.querySelectorAll("#bnav button").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === A.view);
+  });
+}
+window.deleteMacro = deleteMacro;
+
+// ========== URL params (action=… déclenche depuis manifest shortcut) ==========
+function handleUrlAction() {
+  const u = new URL(location.href);
+  const action = u.searchParams.get("action");
+  if (action === "all-off") setTimeout(() => runMacro("all-off"), 300);
+  if (action === "scan") setTimeout(() => scanNow(), 300);
+  if (action === "cinema") setTimeout(() => runMacro("cinema"), 300);
+  if (u.searchParams.get("embedded") === "1") A.embedded = true;
+}
+
+// ========== Boot ==========
+function boot() {
+  // Restaurer état
+  A.theme = ls("theme", "casino"); setTheme(A.theme);
+  A.mode = ls("mode", "jour"); setMode(A.mode);
+  A.bridgeUrl = ls("bridge_url", "");
+  A.token = ls("bridge_token", "");
+  A.customMacros = ls("custom_macros", []);
+  A.cloneLibrary = ls("clone_library", []);
+  A.disclaimerAccepted = ls("disclaimer", false);
+
+  // Nav
+  document.querySelectorAll("#bnav button").forEach(b => {
+    b.onclick = () => setView(b.dataset.view);
+  });
+  document.getElementById("btn-theme").onclick = cycleTheme;
+  document.getElementById("btn-mode").onclick = cycleMode;
+  document.getElementById("recbtn").onclick = recStop;
+
+  // SW
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+
+  // APEX
+  handleUrlAction();
+  setupApexBridge();
+
+  // Bridge
+  if (A.bridgeUrl) { pingBridge(); connectWS(); loadDevices(); setInterval(pingBridge, 30000); }
+
+  // First render
+  setView("accueil");
+
+  // Signal APEX ready
+  emitApex("ready", { version: APP_VER });
+}
+
+// Exposer pour onclick inline
+window.runMacro = runMacro;
+window.scanNow = scanNow;
+window.openDevice = openDevice;
+window.setView = setView;
+window.setTheme = setTheme;
+window.setMode = setMode;
+window.iaIdentify = iaIdentify;
+window.doAction = doAction;
+window.recStart = recStart;
+window.recStop = recStop;
+window.playCustomMacro = playCustomMacro;
+window.cloneReadNDEF = cloneReadNDEF;
+window.cloneEmitNDEF = cloneEmitNDEF;
+window.deleteCloneEntry = deleteCloneEntry;
+window.bleScan = bleScan;
+window.barcodeScan = barcodeScan;
+window.saveBridge = saveBridge;
+window.pingBridge = pingBridge;
+window.callShortcut = callShortcut;
+window.exportData = exportData;
+window.importData = importData;
+window.A = A; window.NS = NS; window.lsRemove = lsRemove; window.ss = ss; window.render = render;
+
+document.addEventListener("DOMContentLoaded", boot);
+if (document.readyState !== "loading") boot();
+</script>
+</body>
+</html>

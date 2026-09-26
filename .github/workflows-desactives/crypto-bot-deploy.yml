@@ -1,0 +1,168 @@
+# Déploie le bot crypto (crypto-bot/) sur Railway — 100% auto, zéro clic Kevin.
+# Déclenchement : manuel uniquement (workflow_dispatch) — pas de cron (règle anti-spam).
+#
+# Secrets requis (noms EXACTS) :
+#   RAILWAY_TOKEN               (déjà présent — token projet Railway)
+#   BINANCE_TESTNET_API_KEY     (clé testnet Binance de Kevin)
+#   BINANCE_TESTNET_API_SECRET  (secret testnet Binance de Kevin)
+#
+# Règle "détailler les erreurs" : chaque étape logge la sortie RÉELLE des
+# commandes (codes GraphQL, stderr CLI) — jamais de "failed" muet.
+
+name: Crypto Bot Deploy (Railway)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      SERVICE_NAME: crypto-bot
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier les secrets requis
+        env:
+          BK: ${{ secrets.BINANCE_TESTNET_API_KEY }}
+          BS: ${{ secrets.BINANCE_TESTNET_API_SECRET }}
+        run: |
+          MISSING=""
+          [ -z "$RAILWAY_TOKEN" ] && MISSING="$MISSING RAILWAY_TOKEN"
+          [ -z "$BK" ] && MISSING="$MISSING BINANCE_TESTNET_API_KEY"
+          [ -z "$BS" ] && MISSING="$MISSING BINANCE_TESTNET_API_SECRET"
+          if [ -n "$MISSING" ]; then
+            echo "::error::Secrets manquants :$MISSING — les ajouter dans Settings > Secrets > Actions (noms EXACTS)."
+            exit 1
+          fi
+          echo "✅ Tous les secrets requis sont présents."
+
+      - name: Vérifier le token Railway (type + projet lié)
+        run: |
+          set +e
+          HTTP=$(curl -sS -o /tmp/pt.json -w "%{http_code}" -m 15 -X POST \
+            -H "Project-Access-Token: $RAILWAY_TOKEN" \
+            -H "content-type: application/json" \
+            -d '{"query":"query { projectToken { projectId environmentId } }"}' \
+            https://backboard.railway.com/graphql/v2)
+          echo "HTTP=$HTTP ; réponse: $(cat /tmp/pt.json)"
+          PID=$(jq -r '.data.projectToken.projectId // empty' /tmp/pt.json)
+          EID=$(jq -r '.data.projectToken.environmentId // empty' /tmp/pt.json)
+          if [ -n "$PID" ]; then
+            echo "✅ Token PROJET valide — projectId=$PID environmentId=$EID"
+            echo "PROJECT_ID=$PID" >> $GITHUB_ENV
+            echo "ENV_ID=$EID" >> $GITHUB_ENV
+          else
+            echo "::warning::Le token n'a pas répondu comme un token projet. Détail exact ci-dessus. On tente quand même le CLI (token de compte possible)."
+          fi
+
+      - name: Installer Railway CLI
+        run: |
+          npm i -g @railway/cli
+          railway --version
+
+      - name: Créer le service s'il n'existe pas (tolérant)
+        working-directory: crypto-bot
+        run: |
+          set +e
+          OUT=$(railway add --service "$SERVICE_NAME" 2>&1)
+          RC=$?
+          echo "railway add (rc=$RC) : $OUT"
+          echo "$OUT" | grep -qiE "already exists|existe" && echo "ℹ️ Service déjà présent — OK."
+          exit 0
+
+      - name: Régler les variables du bot (testnet, garde-fous)
+        working-directory: crypto-bot
+        env:
+          BK: ${{ secrets.BINANCE_TESTNET_API_KEY }}
+          BS: ${{ secrets.BINANCE_TESTNET_API_SECRET }}
+        run: |
+          set +e
+          # A) testnet (faux argent) + garde-fous  B) plusieurs cryptos (capital réparti 1/N)
+          # C) réglage OPTIMISÉ POUR LES GAINS (mesuré au backtest, marché normal ET faible
+          #    mouvement) : EMA 8/21 + RSI 78 + stop ATR x2.0. Vérifié : bat nettement l'ancien
+          #    réglage "réactif" 5/13 (qui PERDAIT en marché plat), avec moins de faux signaux.
+          #    On garde des vérifs fréquentes (bougies 5 min, boucle 30 s) → le bot reste actif
+          #    même quand ça bouge peu, mais n'achète que sur signal sélectif (moins de pertes).
+          # Le risque TOTAL reste borné : risque/trade et position max sont divisés par le
+          # nombre de paires (alloc = 1/N) → exposition globale inchangée. Stop-loss + plafond
+          # perte/jour + max drawdown toujours actifs (défauts config : 3% / 15%).
+          # Les achats sont bornés au cash USDT LIBRE (fini les "insufficient balance")
+          # et le bot reprend les cryptos déjà détenues au démarrage (state éphémère Railway).
+          # D) POLITIQUE DE SORTIE (demande Kevin) : HOLD_UNTIL_PROFIT=true → le bot ne vend
+          #    JAMAIS à perte, il attend la remontée et ne sort qu'en profit (marge 0.5%).
+          #    Le plafond perte/jour ne solde plus (il PAUSE les achats).
+          #    CATASTROPHE_STOP_PCT=0 → frein anti-catastrophe RETIRÉ (Kevin 2026-07-07
+          #    « On garde quoi qu'il arrive jusqu'à ce que ça remonte ») : le bot garde une
+          #    position même à -50%. Honnête : la perte latente n'est plus bornée (testnet,
+          #    faux argent). Pour remettre le frein : CATASTROPHE_STOP_PCT=20.
+          # E) STRATÉGIE = style du CHAMPION P3 du tournoi (Kevin « Go » 2026-07-20) :
+          #    dipup = acheter les CREUX quand la tendance de fond est HAUSSIÈRE
+          #    (prix > EMA50 + RSI < 40), encaisser sur rebond (RSI > 65). Mêmes réglages
+          #    que crypto-bot-p3, seul bot au-dessus de 10 000 après 2 semaines de tournoi.
+          #    La sortie reste gérée par la politique D (jamais à perte). Rollback : STRATEGY=ema.
+          OUT=$(railway variables --service "$SERVICE_NAME" --skip-deploys \
+            --set "BINANCE_API_KEY=$BK" \
+            --set "BINANCE_API_SECRET=$BS" \
+            --set "TESTNET=true" \
+            --set "BOT_KILL=0" \
+            --set "SYMBOLS=BTC/USDT,ETH/USDT,SOL/USDT,BNB/USDT,XRP/USDT" \
+            --set "SYMBOL=BTC/USDT" \
+            --set "TIMEFRAME=5m" \
+            --set "LOOP_SECONDS=30" \
+            --set "STRATEGY=dipup" \
+            --set "DU_TREND_PERIOD=50" \
+            --set "DU_RSI_BUY=40" \
+            --set "DU_RSI_SELL=65" \
+            --set "EMA_FAST=8" \
+            --set "EMA_SLOW=21" \
+            --set "ATR_STOP_MULT=2.0" \
+            --set "RSI_MAX=78" \
+            --set "HOLD_UNTIL_PROFIT=true" \
+            --set "MIN_PROFIT_PCT=0.5" \
+            --set "CATASTROPHE_STOP_PCT=0" 2>&1)
+          RC=$?
+          # Ne jamais logger les valeurs — uniquement le code retour + erreurs
+          echo "railway variables rc=$RC"
+          if [ $RC -ne 0 ]; then
+            echo "::error::Échec réglage variables — sortie CLI : $(echo "$OUT" | sed 's/[A-Za-z0-9]\{20,\}/***MASQUÉ***/g')"
+            exit 1
+          fi
+          echo "✅ Variables réglées (clés masquées dans les logs)."
+
+      - name: Déployer le bot (railway up)
+        working-directory: crypto-bot
+        run: |
+          set +e
+          OUT=$(railway up --service "$SERVICE_NAME" --detach 2>&1)
+          RC=$?
+          echo "railway up (rc=$RC) :"
+          echo "$OUT"
+          if [ $RC -ne 0 ]; then
+            echo "::error::Échec du déploiement — sortie CLI complète ci-dessus (cause exacte)."
+            exit 1
+          fi
+          echo "✅ Déploiement lancé. Logs du bot : dashboard Railway > service crypto-bot > Deployments > View Logs."
+
+      - name: Récapitulatif
+        run: |
+          {
+            echo "## 🤖 Crypto Bot — déploiement Railway"
+            echo ""
+            echo "- Mode : 🧪 TESTNET (faux argent) — TESTNET=true, BOT_KILL=0"
+            echo "- Cryptos : BTC, ETH, SOL, BNB, XRP (capital réparti à parts égales)"
+            echo "- 🏆 Stratégie : style du champion P3 du tournoi — achète les CREUX en tendance haussière (dipup 50/40/65)"
+            echo "- 🟢 **Ne vend JAMAIS à perte** : attend la remontée, sort seulement en profit (+0,5%)"
+            echo "- 🚫 Frein anti-catastrophe RETIRÉ (choix Kevin) : on garde quoi qu'il arrive jusqu'à la remontée — perte latente non bornée (testnet)"
+            echo "- Le plafond perte/jour ne solde plus : il met les ACHATS en pause (garde les positions)"
+            echo "- Rythme : vérifs toutes les 30 s sur bougies 5 min"
+            echo "- ⚠️ Honnête : « ne pas vendre à perte » affiche 100% de trades gagnants mais peut BLOQUER du capital en perte latente. Mesuré : rend moins que le stop classique. Pour revenir : HOLD_UNTIL_PROFIT=false."
+            echo "- Service : \`crypto-bot\`"
+            echo "- Suivi : https://railway.app → projet → service crypto-bot → View Logs"
+            echo "- Kill switch iPhone : Variables → BOT_KILL=1 (le bot vend et s'arrête au cycle suivant)"
+          } >> $GITHUB_STEP_SUMMARY

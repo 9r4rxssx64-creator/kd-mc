@@ -1,0 +1,153 @@
+name: Apex Chat E2E — tests Playwright sur prod live
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Lance Playwright Chromium + WebKit iPhone sur la prod après chaque déploiement
+# messaging-app/ (cf règle CLAUDE.md "TOUJOURS TESTER END-TO-END").
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'messaging-app/index.html'
+      - 'messaging-app/sw.js'
+      - 'messaging-app/lib/**'
+      - 'messaging-app/cgu.html'
+      - 'messaging-app/privacy.html'
+      - 'messaging-app/manifest.json'
+      - 'messaging-app/e2e/**'
+      - 'messaging-app/workers/**'
+      - '.github/workflows/apex-chat-e2e.yml'
+  workflow_dispatch:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: read
+  issues: write   # v1.1.199 — report des échecs E2E dans une issue lisible
+
+jobs:
+  e2e:
+    name: Smoke tests Playwright
+    runs-on: ubuntu-latest
+    # Attend ~2 min après le push pour laisser GitHub Pages déployer
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright + browsers
+        working-directory: messaging-app/e2e
+        run: |
+          npm install --no-fund --no-audit
+          npx playwright install --with-deps chromium webkit
+
+      - name: Wait for GitHub Pages deploy propagation (2 min)
+        if: github.event_name == 'push'
+        run: sleep 120
+
+      - name: Pre-flight check (HTTP 200 sur prod)
+        run: |
+          URL="${APEX_CHAT_URL:-https://apex-chat.kd-mc.com/}"
+          echo "Testing $URL"
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+            if [ "$CODE" = "200" ]; then
+              echo "::notice::Prod OK (HTTP $CODE)"
+              exit 0
+            fi
+            echo "Tentative $i : HTTP $CODE — retry dans 20s…"
+            sleep 20
+          done
+          echo "::error::Prod injoignable après 5 retries"
+          exit 1
+
+      - name: Run Playwright smoke tests
+        working-directory: messaging-app/e2e
+        env:
+          APEX_CHAT_URL: https://apex-chat.kd-mc.com/
+          # v1.1.198 — secret du login de test sûr (== APEX_CHAT_ADMIN_TOKEN côté worker)
+          E2E_TEST_SECRET: ${{ secrets.APEX_CHAT_ADMIN_TOKEN }}
+          # v1.1.199 — le flag CLI --reporter=json IGNORE le outputFile du config →
+          # le json partait en STDOUT et results.json n'était jamais écrit (print-fails
+          # ne trouvait rien). Cet env force l'écriture du fichier.
+          PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
+        run: npx playwright test --reporter=list,json
+
+      - name: Efface les comptes de test Alice/Bob (déterministe)
+        if: always()
+        env:
+          SECRET: ${{ secrets.APEX_CHAT_ADMIN_TOKEN }}
+        run: |
+          # v1.1.203 — Kevin « toujours Alice et Bob » : cleanup FIABLE (curl direct,
+          # indépendant du afterAll Playwright qui pouvait échouer en silence).
+          if [ -z "$SECRET" ]; then echo "::notice::pas de secret — skip cleanup"; exit 0; fi
+          CODE=$(curl -s -o /tmp/cleanup.json -w "%{http_code}" -X POST \
+            "https://apex-chat-api.9r4rxssx64.workers.dev/api/test/cleanup" \
+            -H "X-Test-Auth: $(printf '%s' "$SECRET" | tr -d '\n\r')" -H "content-type: application/json" -d '{}')
+          echo "cleanup HTTP $CODE"; cat /tmp/cleanup.json 2>/dev/null || true
+          echo "::notice::Alice/Bob cleanup → HTTP $CODE"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            messaging-app/e2e/playwright-report/
+            messaging-app/e2e/results.json
+            messaging-app/e2e/test-results/
+          retention-days: 14
+
+      - name: Job summary
+        if: always()
+        working-directory: messaging-app/e2e
+        run: |
+          if [ -f results.json ]; then
+            echo "## 🎭 Apex Chat E2E — résultats" >> $GITHUB_STEP_SUMMARY
+            # v1.1.198 — liste EXACTE des specs échouées, sur stdout ET dans le summary.
+            python3 print-fails.py results.json | tee -a $GITHUB_STEP_SUMMARY
+            # 26/09/2026 — bilan en ANNOTATIONS : seules les annotations se lisent par
+            # l'API sans télécharger journaux/artefacts (hôte blob refusé aux agents).
+            # Sans elles, « vert » ne distingue pas un test PASSÉ d'un test SAUTÉ.
+            jq -r '.stats | "::notice::E2E prod — réussis=\(.expected) sautés=\(.skipped) échoués=\(.unexpected) instables=\(.flaky)"' results.json || true
+            jq -r '.. | objects | select(has("projectName") and (.status? == "skipped")) | "::notice::sauté [\(.projectName)] — \([.annotations[]?.description // empty] | join(" / "))"' results.json | head -20 || true
+            echo "- 📦 Artefacts : voir 'playwright-report-${{ github.run_id }}'" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Reporter les échecs dans une issue (lisible)
+        if: failure()
+        working-directory: messaging-app/e2e
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 report-fails.py
+
+      - name: Refermer l'issue E2E si succès
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          # 10/09/2026 : jq (déclaratif, pas d'interpréteur) à la place de `| python3 -c` — Semgrep
+          # gha-curl-pipe-shell signalait le motif « curl | interpréteur » ; la réponse n'était déjà
+          # que parsée, jamais exécutée (faux positif), mais jq lève le doute et le signalement.
+          N=$(curl -s -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/issues?state=open&labels=e2e-fails&per_page=1" \
+            | jq -r '.[0].number // empty')
+          if [ -n "$N" ]; then
+            curl -s -X PATCH -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/issues/$N" -d '{"state":"closed"}' >/dev/null
+            echo "Issue #$N refermée (E2E vert)"
+          fi

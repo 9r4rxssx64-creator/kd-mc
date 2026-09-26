@@ -1,0 +1,93 @@
+# Déploie le worker wm-brief (synthèse IA du panneau "Synthèse actu" de World Monitor).
+# Secrets requis (noms EXACTS — règle CLAUDE.md secrets) :
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ANTHROPIC_API_KEY
+# Anti-spam : pas de cron — dispatch manuel + push sur le dossier du worker uniquement.
+name: Deploy WM Brief Worker
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Kevin 2026-09-06 « pourquoi tu es bloqué par GitHub ? trouve des solutions » :
+# l'API GitHub est fermée à cette session (app non connectée pour l'organisation) →
+# impossible de lancer un déploiement à la main depuis l'agent. La voie qui MARCHE est
+# le push sur claude/** (schéma déjà éprouvé par deploy-apex-chat.yml). Un push =
+# un déploiement, sans API, sans clic, sans attendre la fusion (leçon #213).
+on:
+  workflow_dispatch:
+  push:
+    # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main.
+    # Une branche de travail ne déploie plus rien (incident m122 du 23.09 : un routeur
+    # déployé depuis une branche en retard a éteint kit.kd-mc.com). Manuel : workflow_dispatch.
+    branches:
+      - main
+    paths:
+      - 'tools/cloudflare/wm-brief/**'
+      - 'services/_shared/ia-route.js'          # le worker l'importe (routage IA commun)
+      - '.github/workflows/deploy-wm-brief.yml' # sinon modifier ce fichier ne redéploie rien
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    defaults:
+      run:
+        working-directory: tools/cloudflare/wm-brief
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Vérifier les secrets requis (erreur exacte, pas silencieuse)
+        env:
+          AK: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          MISSING=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && MISSING="$MISSING CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && MISSING="$MISSING CLOUDFLARE_ACCOUNT_ID"
+          # Kevin 2026-09-05 : Qwen (Workers AI, 0 clé) fait la synthèse ; Anthropic = secours.
+          # Une clé Anthropic absente n'est plus bloquante — juste annoncée.
+          [ -z "$AK" ] && echo "::warning::ANTHROPIC_API_KEY absent : Qwen seul (pas de secours payant)"
+          if [ -n "$MISSING" ]; then echo "::error::Secrets manquants :$MISSING"; exit 1; fi
+          echo "Secrets OK"
+
+      - name: Installer wrangler
+        run: npm i -g wrangler && wrangler --version
+
+      - name: Déployer le worker
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee /tmp/deploy.log
+          grep -Eo 'https://[a-z0-9.-]+workers.dev' /tmp/deploy.log | head -1 > /tmp/url.txt
+          echo "URL déployée : $(cat /tmp/url.txt)"
+
+      - name: Pousser la clé Anthropic (secret worker, jamais dans le code)
+        env:
+          AK: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$AK" ]; then printf '%s' "$AK" | wrangler secret put ANTHROPIC_API_KEY; else echo "ANTHROPIC_API_KEY absent → non poussé (Qwen Workers AI suffit)"; fi
+
+      - name: Smoke test réel (leçon 95 — un deploy vert sans test live ne prouve rien)
+        run: |
+          URL=$(cat /tmp/url.txt); [ -z "$URL" ] && URL="https://wm-brief.9r4rxssx64.workers.dev"
+          sleep 8
+          echo "--- /health ---"
+          curl -sS "$URL/health" | tee /tmp/h.json; echo
+          grep -q '"hasEngine":true' /tmp/h.json || { echo "::error::Aucune IA visible par le worker (ni Workers AI, ni clé Anthropic)"; exit 1; }
+          grep -q '"qwen"' /tmp/h.json || echo "::warning::Qwen (Workers AI) absent du worker — vérifier le binding [ai] dans wrangler.toml"
+          echo "--- /brief ---"
+          curl -sS "$URL/brief" | tee /tmp/b.json; echo
+          grep -q '"brief"' /tmp/b.json || { echo "::error::Réponse /brief invalide : $(cat /tmp/b.json)"; exit 1; }
+          echo "✅ wm-brief live — synthèse par : $(grep -o '"provider":"[^"]*"' /tmp/b.json) $(grep -o '"model":"[^"]*"' /tmp/b.json)"

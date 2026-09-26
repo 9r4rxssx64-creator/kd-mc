@@ -1,0 +1,83 @@
+{
+  "_doc": "Archive Epstein — SOURCES OFFICIELLES UNIQUEMENT (Kevin 2026-09-18). On n'héberge AUCUN document : on indexe et on renvoie vers l'original publié par l'institution. Raison : (1) l'original fait foi, (2) les éditeurs officiels retirent eux-mêmes l'identité des victimes et le matériel pédocriminel AVANT publication — recopier des scans non vérifiés reviendrait à republier sans ce filtre. Toute entrée doit porter une `url` officielle (.gov, courtlistener.com) ; la garde tests/dossiers.test.mjs refuse tout autre domaine.",
+  "titre": "Affaire Epstein — les documents publics, rangés",
+  "sous_titre": "Ce que les institutions ont réellement publié, avec le lien vers l'original. Rien de plus, rien d'inventé.",
+  "maj": "2026-09-18",
+  "avertissement": [
+    "Cette page n'héberge aucun document : chaque fiche renvoie vers le site de l'institution qui l'a publié.",
+    "Les éditeurs officiels (ministère de la Justice américain, commission du Congrès) retirent l'identité des victimes et tout matériel d'abus sur mineurs avant publication. Ce qui circule ailleurs en se présentant comme « les photos privées » est soit faux, soit illégal à détenir.",
+    "Des centaines de noms apparaissent dans ces pages. Être cité dans un document ne veut pas dire être coupable de quoi que ce soit : beaucoup sont des témoins, des employés, ou des personnes mentionnées au passage."
+  ],
+  "collections": [
+    {
+      "id": "oversight-doj-33295",
+      "titre": "33 295 pages remises par le ministère de la Justice",
+      "institution": "Commission de surveillance de la Chambre des représentants (États-Unis)",
+      "date": "2025-09",
+      "pages": 33295,
+      "quoi": "Les dossiers que le ministère de la Justice a remis à la commission, sur assignation du 5 août 2025. Publiés en retirant l'identité des victimes et tout matériel d'abus sur mineurs.",
+      "url": "https://oversight.house.gov/release/oversight-committee-releases-epstein-records-provided-by-the-department-of-justice/",
+      "langue": "en"
+    },
+    {
+      "id": "oversight-succession",
+      "titre": "Documents remis par la succession d'Epstein",
+      "institution": "Commission de surveillance de la Chambre des représentants (États-Unis)",
+      "date": "2025-09",
+      "pages": null,
+      "quoi": "Ce que les exécuteurs testamentaires ont dû remettre après l'assignation du 25 août 2025.",
+      "url": "https://oversight.house.gov/release/oversight-committee-releases-records-provided-by-the-epstein-estate-chairman-comer-provides-statement/",
+      "langue": "en"
+    },
+    {
+      "id": "oversight-succession-suite",
+      "titre": "20 000 pages supplémentaires de la succession",
+      "institution": "Commission de surveillance de la Chambre des représentants (États-Unis)",
+      "date": "2025-09",
+      "pages": 20000,
+      "quoi": "Deuxième versement de la succession : agendas, registre de paiements, carnets d'adresses, journaux de messages.",
+      "url": "https://oversight.house.gov/release/oversight-committee-releases-additional-epstein-estate-documents/",
+      "langue": "en"
+    },
+    {
+      "id": "doj-bibliotheque",
+      "titre": "Bibliothèque Epstein du ministère de la Justice",
+      "institution": "Department of Justice (États-Unis)",
+      "date": "2025",
+      "pages": null,
+      "quoi": "Le point d'entrée officiel du ministère pour les documents de l'affaire.",
+      "url": "https://www.justice.gov/epstein",
+      "langue": "en"
+    },
+    {
+      "id": "oversight-enquete",
+      "titre": "L'enquête de la commission : où elle en est",
+      "institution": "Commission de surveillance de la Chambre des représentants (États-Unis)",
+      "date": "2025",
+      "pages": null,
+      "quoi": "Le point d'étape du président de la commission sur l'examen de la façon dont l'État fédéral a traité les affaires Epstein et Maxwell.",
+      "url": "https://oversight.house.gov/release/chairman-comer-provides-update-on-review-of-the-federal-governments-investigation-of-epstein-and-maxwell/",
+      "langue": "en"
+    },
+    {
+      "id": "oversight-banques",
+      "titre": "Assignations bancaires",
+      "institution": "Commission de surveillance de la Chambre des représentants (États-Unis)",
+      "date": "2025",
+      "pages": null,
+      "quoi": "Les demandes de relevés bancaires — c'est le fil « argent » de l'affaire, celui qui montre comment les fonds ont circulé.",
+      "url": "https://oversight.house.gov/release/chairman-comer-subpoenas-banks-for-epstein-records-seeks-information-from-usvi-attorney-general/",
+      "langue": "en"
+    },
+    {
+      "id": "courtlistener-dockets",
+      "titre": "Les dossiers judiciaires eux-mêmes",
+      "institution": "CourtListener / RECAP (Free Law Project)",
+      "date": "en continu",
+      "pages": null,
+      "quoi": "Les pièces déposées au tribunal, telles qu'enregistrées au greffe. C'est la source la plus brute : ni communiqué, ni résumé.",
+      "url": "https://www.courtlistener.com/?q=Epstein&type=r",
+      "langue": "en"
+    }
+  ]
+}

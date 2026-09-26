@@ -1,0 +1,66 @@
+name = "apex-v13-backend"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Routes — à configurer côté Cloudflare dashboard ou via Wrangler deploy
+# Exemples possibles :
+# - apex-v13-backend.<your-account>.workers.dev (par défaut)
+# - api.apex.kdmc.com (si domaine custom)
+
+# Variables (publiques)
+[vars]
+ENV = "production"
+APEX_ORIGIN = "https://9r4rxssx64-creator.github.io"
+
+# KV namespaces — à créer via Cloudflare dashboard ou Wrangler :
+#   wrangler kv:namespace create "IDEMPOTENCY"
+#   wrangler kv:namespace create "RATE_LIMIT"
+#   wrangler kv:namespace create "WEBAUTHN"
+#   wrangler kv:namespace create "SESSIONS"
+#   wrangler kv:namespace create "STRIPE_EVENTS"
+#   wrangler kv:namespace create "ESCALATIONS"
+#
+# Puis remplacer les IDs ci-dessous par les vrais IDs (ex: 1a2b3c...)
+
+[[kv_namespaces]]
+binding = "IDEMPOTENCY"
+id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "WEBAUTHN"
+id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "STRIPE_EVENTS"
+id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "ESCALATIONS"
+id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "USER_PLANS"
+id = "REPLACE_AFTER_CREATE"
+
+# Secrets (privés, à push via Wrangler) :
+#   wrangler secret put STRIPE_WEBHOOK_SECRET
+#   wrangler secret put ANTHROPIC_KEY
+#
+# Ces secrets ne sont PAS dans le code, jamais commités.
+
+# Observability
+[observability]
+enabled = true
+
+# Limits (Cloudflare free tier compatible)
+[limits]
+cpu_ms = 50

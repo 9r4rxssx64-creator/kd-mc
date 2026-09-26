@@ -1,0 +1,377 @@
+/* APEX v13 — Financial Bilan styles + animations innovantes.
+ * Demande Kevin : créatif, innovant, présentation soignée.
+ */
+
+.ax-fin-dashboard {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  color: #e6e6f0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ax-fin-hero h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(28px, 5vw, 44px);
+  margin: 0 0 4px;
+  background: linear-gradient(135deg, #c9a227, #e8b830);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
+}
+.ax-fin-subtitle {
+  color: #6a8aff;
+  font-size: 14px;
+  margin: 0 0 20px;
+  text-transform: capitalize;
+}
+
+/* 🔥 Burn rate */
+.ax-fin-burn { margin: 20px 0; }
+.ax-fin-burn-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 22px;
+  background: linear-gradient(135deg, rgba(255, 80, 80, 0.18), rgba(255, 165, 0, 0.10));
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+}
+.ax-fin-burn-card.pulse { animation: ax-pulse-fire 3s ease-in-out infinite; }
+@keyframes ax-pulse-fire {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 100, 100, 0.4); }
+  50% { box-shadow: 0 0 30px 8px rgba(255, 100, 100, 0.15); }
+}
+.ax-fin-burn-icon { font-size: 38px; animation: ax-flicker 1.8s ease-in-out infinite alternate; }
+@keyframes ax-flicker {
+  0% { transform: scale(1) rotate(-2deg); }
+  100% { transform: scale(1.1) rotate(3deg); }
+}
+.ax-fin-burn-label {
+  font-size: 12px;
+  color: #ffaaaa;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.ax-fin-burn-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 15px;
+}
+.ax-fin-burn-val strong {
+  color: #ffd75e;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 💸 KPIs grid */
+.ax-fin-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.ax-fin-kpi {
+  padding: 16px;
+  background: rgba(20, 20, 35, 0.6);
+  border: 1px solid rgba(201, 162, 39, 0.2);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.ax-fin-kpi:hover { transform: translateY(-2px); border-color: rgba(201, 162, 39, 0.5); }
+.ax-fin-kpi-label {
+  font-size: 11px;
+  color: #8a8aa0;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.ax-fin-kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #c9a227;
+  font-variant-numeric: tabular-nums;
+  animation: ax-count-up 0.6s ease-out;
+}
+@keyframes ax-count-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.ax-fin-kpi-sub { font-size: 11px; color: #6a8aff; }
+.ax-fin-kpi-savings { background: rgba(34, 204, 119, 0.08); border-color: rgba(34, 204, 119, 0.4); }
+.ax-fin-kpi-savings .ax-fin-kpi-value { color: #22cc77; }
+
+/* 📈 Graphs */
+.ax-fin-graphs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.ax-fin-graph-card {
+  padding: 16px;
+  background: rgba(20, 20, 35, 0.6);
+  border: 1px solid rgba(201, 162, 39, 0.2);
+  border-radius: 12px;
+}
+.ax-fin-graph-card h3 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #6a8aff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.ax-sparkline { width: 100%; height: 60px; animation: ax-spark-draw 1.2s ease-out; }
+@keyframes ax-spark-draw {
+  0% { stroke-dasharray: 1000; stroke-dashoffset: 1000; }
+  100% { stroke-dasharray: 1000; stroke-dashoffset: 0; }
+}
+.ax-spark-empty { color: #6a8aff; font-size: 12px; }
+
+/* 🌡️ Heatmap 24h */
+.ax-heatmap-24h {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  height: 30px;
+  margin-bottom: 6px;
+}
+.ax-heat-cell {
+  height: 100%;
+  border-radius: 2px;
+  animation: ax-fade-in 0.3s ease-out backwards;
+  transition: transform 0.15s;
+  cursor: pointer;
+}
+.ax-heat-cell:hover { transform: scaleY(1.3); border: 1px solid #c9a227; }
+.ax-heat-cell:nth-child(1) { animation-delay: 0.0s; }
+.ax-heat-cell:nth-child(6) { animation-delay: 0.05s; }
+.ax-heat-cell:nth-child(12) { animation-delay: 0.10s; }
+.ax-heat-cell:nth-child(18) { animation-delay: 0.15s; }
+.ax-heat-cell:nth-child(24) { animation-delay: 0.20s; }
+@keyframes ax-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.ax-fin-heatmap-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #6a8aff;
+}
+
+/* 📊 Service cards by category */
+.ax-fin-category { margin: 24px 0; }
+.ax-fin-category-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.ax-fin-category-head h3 {
+  font-size: 16px;
+  margin: 0;
+  color: #fff;
+}
+.ax-fin-category-subtotal {
+  font-variant-numeric: tabular-nums;
+  color: #c9a227;
+  font-weight: 600;
+}
+.ax-fin-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.ax-fin-service-card {
+  padding: 12px;
+  background: rgba(20, 20, 35, 0.6);
+  border: 1px solid rgba(201, 162, 39, 0.15);
+  border-radius: 10px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.ax-fin-service-card[data-status="critical"] {
+  border-color: rgba(255, 68, 68, 0.5);
+  background: rgba(255, 68, 68, 0.06);
+}
+.ax-fin-service-card[data-status="warn"] {
+  border-color: rgba(255, 170, 0, 0.4);
+  background: rgba(255, 170, 0, 0.05);
+}
+.ax-fin-service-card:hover {
+  transform: translateY(-2px);
+  border-color: #c9a227;
+}
+.ax-fin-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ax-fin-emoji { font-size: 18px; }
+.ax-fin-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+.ax-fin-trend { font-size: 14px; }
+.trend-up { color: #ff6b6b; }
+.trend-down { color: #22cc77; }
+.trend-stable { color: #6a8aff; }
+.ax-badge-free {
+  background: linear-gradient(135deg, #22cc77, #1a9a5a);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.ax-fin-amounts {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+.ax-fin-today, .ax-fin-month {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+}
+.ax-fin-label { color: #8a8aa0; text-transform: uppercase; letter-spacing: 1px; }
+.ax-fin-value {
+  color: #c9a227;
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.ax-fin-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.ax-fin-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ax-fin-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  animation: ax-bar-grow 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes ax-bar-grow { 0% { width: 0; } }
+.ax-fin-bar-pct {
+  font-size: 11px;
+  color: #c9a227;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
+}
+.ax-fin-budget-label {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #6a8aff;
+}
+
+/* 💰 ROI block */
+.ax-fin-roi {
+  margin: 24px 0;
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(34, 204, 119, 0.06), rgba(106, 138, 255, 0.06));
+  border: 1px solid rgba(34, 204, 119, 0.3);
+  border-radius: 14px;
+}
+.ax-fin-roi h3 {
+  margin: 0 0 12px;
+  color: #fff;
+}
+.ax-fin-roi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.ax-fin-roi-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax-fin-roi-label {
+  font-size: 11px;
+  color: #8a8aa0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.ax-fin-roi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #c9a227;
+  font-variant-numeric: tabular-nums;
+}
+.profit-positive .ax-fin-roi-value { color: #22cc77; }
+.profit-negative .ax-fin-roi-value { color: #ff6b6b; }
+
+/* 💎 Competition table */
+.ax-fin-competition {
+  margin: 24px 0;
+  padding: 18px;
+  background: rgba(20, 20, 35, 0.6);
+  border: 1px solid rgba(201, 162, 39, 0.2);
+  border-radius: 14px;
+}
+.ax-fin-competition h3 { margin: 0 0 12px; color: #fff; }
+.ax-comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ax-comp-table th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.3);
+  color: #6a8aff;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.ax-comp-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.ax-comp-price {
+  color: #ff6b6b;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ax-comp-advantage { color: #c9e0ff; font-style: italic; }
+
+/* Footer */
+.ax-fin-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  color: #8a8aa0;
+}
+.ax-fin-health { color: #c9a227; font-weight: 600; }
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .ax-fin-burn-values { gap: 10px; font-size: 13px; }
+  .ax-fin-burn-val strong { font-size: 16px; }
+  .ax-fin-kpi-value { font-size: 22px; }
+  .ax-fin-roi-value { font-size: 18px; }
+}

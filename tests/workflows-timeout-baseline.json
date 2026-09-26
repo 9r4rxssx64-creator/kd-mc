@@ -1,0 +1,5 @@
+{
+  "_note": "Nombre de workflows SANS timeout-minutes, figé le 19/09/2026. Un job sans borne peut tourner 6 heures (défaut GitHub) ; le compte a été suspendu en août 2026 pour VOLUME d'executions. Ce cliquet bloque le NOUVEAU sans allumer un rouge permanent sur l'ancien : il echoue seulement si le nombre AUGMENTE. Pour le faire baisser : ajouter timeout-minutes a un workflow, puis re-figer ce nombre.",
+  "_date": "2026-09-19",
+  "sansTimeout": 110
+}

@@ -1,0 +1,62 @@
+name: La Détente — Designs PHOTORÉALISTES armes (Gemini)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Génère de vraies images d'armes (photo studio, registre sport/chasse/ball-trap),
+# fond transparent, via GEMINI_API_KEY, et pousse sur une branche claude/* (auto-merge).
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'shops/la-detente/scripts/ld-ai-realguns.mjs'
+      - '.github/workflows/la-detente-ai-realguns.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  ai-realguns:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install sharp
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm i sharp@0.33.5
+
+      - name: Génération designs réalistes
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "Clé présente : $([ -n "$GEMINI_API_KEY" ] && echo oui || echo NON)"
+          node shops/la-detente/scripts/ld-ai-realguns.mjs
+
+      - name: Commit designs réalistes sur une branche claude/*
+        run: |
+          git config user.name "kdmc-bot"
+          git config user.email "bot@kdmc.local"
+          # branche-de-relecture : les images générées sont déposées pour être REGARDÉES et choisies,
+          # pas fusionnées automatiquement (garde : tests/verify-branches-robot.mjs, leçon #243).
+          BR="claude/ai-realguns-${{ github.run_id }}"
+          git checkout -b "$BR"
+          git add shops/la-detente/img/designs
+          if git diff --cached --quiet; then
+            echo "Aucune image — rien à committer."
+          else
+            git commit -m "La Détente — designs photoréalistes armes (Gemini) [skip ci]"
+            git push -u origin "$BR"
+            echo "Poussé sur $BR (auto-merge)."
+          fi

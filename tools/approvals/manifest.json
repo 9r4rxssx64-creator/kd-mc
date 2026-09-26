@@ -1,0 +1,17 @@
+{
+  "name": "Coffre d'autorisations — Apex",
+  "short_name": "Autorisations",
+  "description": "Apex fait tout à ta place — tu valides d'un Face ID (connexion, paiement, signature, KYC).",
+  "start_url": "./",
+  "scope": "./",
+  "id": "kdmc-approvals",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f0a",
+  "theme_color": "#0b0f0a",
+  "categories": ["productivity", "security", "utilities"],
+  "lang": "fr",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

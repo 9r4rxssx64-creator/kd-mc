@@ -1,0 +1,111 @@
+name: Apex Chat — Version + CACHE_VERSION Sync
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Auto-fix CACHE_VERSION + badge data-version pour messaging-app (Apex Chat).
+# Empêche Kevin "Maj force auto oublie pas même PWA iOS" (règle absolue CLAUDE.md).
+#
+# Détecte drift entre :
+#   - messaging-app/index.html __APEX_CHAT_VERSION__ + #splash-version + #topbar-version
+#   - messaging-app/sw.js CACHE_VERSION fallback
+#   - messaging-app/lib/sw-handlers.js CACHE_VERSION
+#   - messaging-app/index.html data-version="..." (version-badge-pwa.js)
+#
+# Si drift détecté, sync vers la version la plus récente trouvée et commit auto.
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'messaging-app/index.html'
+      - 'messaging-app/sw.js'
+      - 'messaging-app/lib/sw-handlers.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-apex-chat:
+    name: Sync Apex Chat (messaging-app)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Détecter versions
+        id: check
+        run: |
+          # __APEX_CHAT_VERSION__ dans index.html = source de vérité
+          APP_VER=$(grep -oE "__APEX_CHAT_VERSION__\s*=\s*'v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          SW_FALLBACK_VER=$(grep -oE "CACHE_VERSION:\s*'apex-chat-v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/sw.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          LIB_VER=$(grep -oE "CACHE_VERSION\s*=\s*'apex-chat-v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/lib/sw-handlers.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          BADGE_VER=$(grep -oE 'data-version="v[0-9]+\.[0-9]+\.[0-9]+"' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          SPLASH_VER=$(grep -oE 'id="splash-version"[^>]*>v[0-9]+\.[0-9]+\.[0-9]+' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          TOPBAR_VER=$(grep -oE 'id="topbar-version"[^>]*>v[0-9]+\.[0-9]+\.[0-9]+' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+
+          echo "APP_VER (source vérité): $APP_VER"
+          echo "SW_FALLBACK_VER: $SW_FALLBACK_VER"
+          echo "LIB_VER: $LIB_VER"
+          echo "BADGE_VER: $BADGE_VER"
+          echo "SPLASH_VER: $SPLASH_VER"
+          echo "TOPBAR_VER: $TOPBAR_VER"
+
+          echo "app_ver=$APP_VER" >> $GITHUB_OUTPUT
+
+          if [ -z "$APP_VER" ]; then
+            echo "drift=false" >> $GITHUB_OUTPUT
+            echo "::warning::__APEX_CHAT_VERSION__ introuvable, skip"
+            exit 0
+          fi
+
+          DRIFT=false
+          if [ "$SW_FALLBACK_VER" != "$APP_VER" ] && [ -n "$SW_FALLBACK_VER" ]; then DRIFT=true; fi
+          if [ "$LIB_VER" != "$APP_VER" ] && [ -n "$LIB_VER" ]; then DRIFT=true; fi
+          if [ "$BADGE_VER" != "$APP_VER" ] && [ -n "$BADGE_VER" ]; then DRIFT=true; fi
+          if [ "$SPLASH_VER" != "$APP_VER" ] && [ -n "$SPLASH_VER" ]; then DRIFT=true; fi
+          if [ "$TOPBAR_VER" != "$APP_VER" ] && [ -n "$TOPBAR_VER" ]; then DRIFT=true; fi
+
+          if [ "$DRIFT" = "true" ]; then
+            echo "drift=true" >> $GITHUB_OUTPUT
+            echo "::warning::Drift détecté Apex Chat — sync vers $APP_VER"
+          else
+            echo "drift=false" >> $GITHUB_OUTPUT
+            echo "✅ Tout sync sur $APP_VER"
+          fi
+
+      - name: Auto-fix drift
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          APP_VER="${{ steps.check.outputs.app_ver }}"
+          # sw.js fallback CACHE_VERSION
+          sed -i "s/CACHE_VERSION:\s*'apex-chat-v[0-9]\+\.[0-9]\+\.[0-9]\+'/CACHE_VERSION: 'apex-chat-${APP_VER}'/" messaging-app/sw.js
+          # lib/sw-handlers.js CACHE_VERSION
+          sed -i "s/CACHE_VERSION\s*=\s*'apex-chat-v[0-9]\+\.[0-9]\+\.[0-9]\+'/CACHE_VERSION = 'apex-chat-${APP_VER}'/" messaging-app/lib/sw-handlers.js
+          # index.html data-version badge
+          sed -i "s/data-version=\"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/data-version=\"${APP_VER}\"/" messaging-app/index.html
+          # splash-version + topbar-version
+          sed -i "s/\(id=\"splash-version\"[^>]*>\)v[0-9]\+\.[0-9]\+\.[0-9]\+/\1${APP_VER}/" messaging-app/index.html
+          sed -i "s/\(id=\"topbar-version\"[^>]*>\)v[0-9]\+\.[0-9]\+\.[0-9]\+/\1${APP_VER}/" messaging-app/index.html
+
+          echo "Fix appliqué: tous syncs sur ${APP_VER}"
+
+      - name: Commit + push
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          APP_VER="${{ steps.check.outputs.app_ver }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add messaging-app/sw.js messaging-app/lib/sw-handlers.js messaging-app/index.html
+          if git diff --cached --quiet; then
+            echo "Pas de changement (sed n'a rien matché)"
+            exit 0
+          fi
+          git commit -m "chore: sync Apex Chat CACHE_VERSION/badge → ${APP_VER} (sentinelle auto) [skip ci]"
+          git push

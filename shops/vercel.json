@@ -1,0 +1,34 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": true,
+  "rewrites": [
+    {
+      "source": "/lolo/(.*)",
+      "destination": "/chez-lolo/$1"
+    },
+    {
+      "source": "/tech/(.*)",
+      "destination": "/tech-hub/$1"
+    },
+    {
+      "source": "/eco/(.*)",
+      "destination": "/ecocraft/$1"
+    },
+    {
+      "source": "/digital/(.*)",
+      "destination": "/digital-vault/$1"
+    },
+    {
+      "source": "/pets/(.*)",
+      "destination": "/pawsome/$1"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/dashboard/$1"
+    }
+  ],
+  "installCommand": "echo 'skip install (site statique)'",
+  "buildCommand": "echo 'skip build (site statique)'",
+  "outputDirectory": ".",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- ."
+}

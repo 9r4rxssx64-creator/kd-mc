@@ -1,0 +1,41 @@
+name: KDMC — Smoke réel PoolPilot / beatbot.kd-mc.com
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Teste le déploiement RÉEL (à la place de Kevin, en auto) : app privée gardée,
+# relais de contrôle live+gaté, app déployée. Le runner GitHub a le réseau ouvert
+# (contrairement au sandbox de l'agent). Retries intégrés pour le délai de déploiement.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'tools/poolrobot/**'
+      - 'services/kdmc-router/worker.js'
+      - 'tools/smoke/beatbot-smoke.mjs'
+      - '.github/workflows/beatbot-smoke.yml'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Attendre le déploiement (déploiements parallèles)
+        run: sleep 45
+      - name: Smoke réel beatbot.kd-mc.com
+        run: node tools/smoke/beatbot-smoke.mjs

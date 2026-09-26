@@ -1,0 +1,9 @@
+{
+  "_note": "Référence. On échoue si le nombre de règles SANS garde augmente (= nouvelle règle ajoutée sans automatisme), ou si une garde annoncée disparaît.",
+  "updated": "2026-08-09",
+  "metrics": {
+    "total": 131,
+    "declaratif": 19,
+    "casses": 0
+  }
+}

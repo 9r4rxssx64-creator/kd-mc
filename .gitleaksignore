@@ -1,0 +1,4 @@
+# Faux positifs Gitleaks confirmés à la main (empreinte = commit:fichier:règle:ligne).
+# 17/09/2026 — api-worker.js : « thumbnail_r2_key FROM media » est un nom de colonne SQL dans
+# handleDeleteMe, pas une clé. Vérifié : la ligne ne contient aucune valeur secrète.
+bb22f404834372cbec2af3cbfa016b067d769615:messaging-app/workers/api-worker.js:generic-api-key:1306

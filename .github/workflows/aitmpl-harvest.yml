@@ -1,0 +1,73 @@
+name: AITMPL récolte (inventaire lecture seule)
+
+# Récupère le catalogue AITMPL (github.com/davila7/claude-code-templates) via la CI —
+# le SEUL canal réseau fiable (egress agent bridé + Firecrawl 403). LECTURE SEULE :
+# on clone en superficie, on inventorie les composants (skills/agents/commands/mcps/hooks/
+# settings) et on imprime, pour CHAQUE fichier, son chemin + son entête (frontmatter /
+# 1res lignes = description). AUCUN code tiers exécuté (jamais `npx claude-code-templates`).
+# Sortie = un manifest JSON en artifact, que Claude Code lit ensuite pour trier + vérifier.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloner AITMPL en superficie (lecture seule, sans exécuter son code)
+        run: |
+          set -e
+          git clone --depth 1 https://github.com/davila7/claude-code-templates.git aitmpl 2>&1 | tail -3
+          echo "== arborescence des composants =="
+          find aitmpl/cli-tool/components -maxdepth 2 -type d 2>/dev/null | sort | head -60 || echo "(dossier components introuvable — structure a peut-être changé)"
+
+      - name: Construire le manifest (chemin + entête de chaque composant)
+        run: |
+          python3 - <<'PY'
+          import os, json, glob
+          ROOT = "aitmpl/cli-tool/components"
+          if not os.path.isdir(ROOT):
+              # repli : chercher où sont les composants
+              cands = [p for p in glob.glob("aitmpl/**/components", recursive=True) if os.path.isdir(p)]
+              ROOT = cands[0] if cands else "aitmpl"
+          items = []
+          for dirpath, _dirs, files in os.walk(ROOT):
+              for f in files:
+                  if not f.lower().endswith((".md", ".json", ".yaml", ".yml")):
+                      continue
+                  fp = os.path.join(dirpath, f)
+                  rel = os.path.relpath(fp, "aitmpl")
+                  parts = rel.split(os.sep)
+                  # type = 1er sous-dossier sous components (agents/skills/commands/mcps/...)
+                  typ = parts[2] if len(parts) > 2 else (parts[1] if len(parts) > 1 else "?")
+                  try:
+                      with open(fp, encoding="utf-8", errors="replace") as fh:
+                          head = fh.read(600)
+                  except Exception as e:
+                      head = "(lecture KO: %s)" % e
+                  # description = 1res lignes non vides
+                  desc = " / ".join([l.strip() for l in head.splitlines() if l.strip()][:4])[:280]
+                  items.append({"type": typ, "path": rel, "name": os.path.splitext(f)[0], "desc": desc})
+          items.sort(key=lambda x: (x["type"], x["path"]))
+          # comptage par type
+          from collections import Counter
+          counts = Counter(i["type"] for i in items)
+          manifest = {"root": ROOT, "total": len(items), "by_type": dict(counts), "items": items}
+          os.makedirs("out", exist_ok=True)
+          with open("out/aitmpl-manifest.json", "w", encoding="utf-8") as fh:
+              json.dump(manifest, fh, ensure_ascii=False, indent=1)
+          print("TOTAL composants:", len(items))
+          print("PAR TYPE:", dict(counts))
+          print("--- échantillon (30 premiers) ---")
+          for i in items[:30]:
+              print(f"[{i['type']}] {i['name']} :: {i['desc'][:120]}")
+          PY
+
+      - name: Publier le manifest (artifact lu ensuite par Claude Code)
+        uses: actions/upload-artifact@v4
+        with:
+          name: aitmpl-manifest
+          path: out/aitmpl-manifest.json
+          retention-days: 14

@@ -1,0 +1,21 @@
+# KDMC — Portfolio applications (Kevin DESARZENS, Monaco)
+
+> Portfolio d'applications web PWA développées par Kevin DESARZENS (Monaco) : assistant IA, gestion d'équipes casino, boutiques en ligne, messagerie chiffrée et télécommande universelle. Toutes installables sur iOS et Android, sécurité maximale, conçues pour un usage professionnel et personnel.
+
+Ce portfolio regroupe plusieurs applications indépendantes, chacune autonome et déployée sur GitHub Pages. Les applications manipulant des données utilisateurs sont protégées par authentification (prénom + nom + PIN, puis Face ID / Touch ID après la première connexion).
+
+## Applications
+
+- [APEX AI](https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/) : assistant IA personnel multi-providers (Claude, GPT, Gemini, Groq, Mistral…) avec failover automatique, reconnaissance vocale, studios créatifs, modules experts (juridique, finance, médical) et vault chiffré. Voir [llms.txt détaillé](https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/llms.txt).
+- [CMCteams](https://9r4rxssx64-creator.github.io/CMCteams/) : application de gestion des plannings et shifts du Casino de Monaco (SBM). Import PDF des plannings, détection automatique des équipes et équipes miroir, gestion des congés/absences, chat interne. Usage interne, ~258 employés.
+- [KDMC Shops](https://9r4rxssx64-creator.github.io/CMCteams/shops/) : 5 boutiques en ligne (Tech Hub, CHEZ LOLO cosmétiques naturels, EcoCraft éco-responsable, Digital Vault produits digitaux, Pawsome animalerie) — 500 produits, paiement sécurisé.
+- [Apex Chat](https://9r4rxssx64-creator.github.io/CMCteams/messaging-app/) : messagerie privée chiffrée de bout en bout, sécurité post-quantum, magic-link.
+- [iRemoteHub](https://9r4rxssx64-creator.github.io/CMCteams/iRemoteHub/) : télécommande universelle web (TV, objets connectés) via IR/BLE/Wi-Fi.
+
+## Technologie
+- PWA installables (iOS Safari + Android Chrome), fonctionnement hors-ligne via Service Worker.
+- Chiffrement AES-GCM-256, authentification biométrique WebAuthn (Face ID / Touch ID).
+- Architecture 100 % client-side, hébergement GitHub Pages, sync temps réel Firebase.
+
+## Contact
+- Auteur : Kevin DESARZENS (Monaco).

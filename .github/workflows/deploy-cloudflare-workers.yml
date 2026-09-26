@@ -1,0 +1,97 @@
+name: Deploy Cloudflare Workers (Apex services)
+
+# Workflow auto-deploy des 4 workers Apex (auth/chat/vault/sentinels) via wrangler.
+# Apex IA peut déclencher ce workflow via GitHub API (axTriggerWorkerDeploy).
+# Pré-requis Kevin : configurer GitHub Secret CLOUDFLARE_API_TOKEN une fois.
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Service à déployer (apex-auth-worker | chat-svc | vault-svc | sentinels-svc | all)"
+        required: true
+        default: "all"
+      env:
+        description: "Environnement (production)"
+        required: false
+        default: "production"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Apex services to Cloudflare Workers
+    permissions:
+      contents: read   # triage sécu 10/09 (zizmor « excessive-permissions ») : ce job ne touche qu'à Cloudflare, jamais au dépôt
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Install wrangler globally
+        run: npm install -g wrangler@^3.80.0
+
+      - name: Verify Cloudflare token
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret missing - configure dans Settings > Secrets"
+            exit 1
+          fi
+          wrangler whoami
+
+      - name: Deploy apex-auth-worker
+        if: ${{ github.event.inputs.service == 'apex-auth-worker' || github.event.inputs.service == 'all' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: services/apex-auth-worker
+        continue-on-error: true
+        run: |
+          echo "Deploying apex-auth-worker..."
+          wrangler deploy || echo "::warning::apex-auth-worker deploy failed - check secrets FIREBASE_PRIVATE_KEY + FIREBASE_CLIENT_EMAIL configurés via 'wrangler secret put' avant ce workflow"
+
+      - name: Deploy chat-svc
+        if: ${{ github.event.inputs.service == 'chat-svc' || github.event.inputs.service == 'all' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: services/chat-svc
+        continue-on-error: true
+        run: |
+          echo "Deploying chat-svc..."
+          wrangler deploy || echo "::warning::chat-svc deploy failed"
+
+      - name: Deploy vault-svc
+        if: ${{ github.event.inputs.service == 'vault-svc' || github.event.inputs.service == 'all' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: services/vault-svc
+        continue-on-error: true
+        run: |
+          echo "Deploying vault-svc..."
+          wrangler deploy || echo "::warning::vault-svc deploy failed"
+
+      - name: Deploy sentinels-svc
+        if: ${{ github.event.inputs.service == 'sentinels-svc' || github.event.inputs.service == 'all' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: services/sentinels-svc
+        continue-on-error: true
+        run: |
+          echo "Deploying sentinels-svc..."
+          wrangler deploy || echo "::warning::sentinels-svc deploy failed"
+
+      - name: Summary
+        run: |
+          echo "## Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "Service requested: ${{ github.event.inputs.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "Environment: ${{ github.event.inputs.env }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Vérifie les logs ci-dessus pour status par service." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "URLs attendues :" >> $GITHUB_STEP_SUMMARY
+          echo "- https://apex-auth-worker.<TON-SUBDOMAIN>.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- https://apex-chat-svc.<TON-SUBDOMAIN>.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- https://apex-vault-svc.<TON-SUBDOMAIN>.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- https://apex-sentinels-svc.<TON-SUBDOMAIN>.workers.dev" >> $GITHUB_STEP_SUMMARY

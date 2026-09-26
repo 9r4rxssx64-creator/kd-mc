@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="1200" viewBox="0 0 1600 1200">
+   <defs><radialGradient id="bg_mcap" cx="50%" cy="42%" r="62%"><stop offset="0%" stop-color="#283019"/><stop offset="100%" stop-color="#141a0d"/></radialGradient><pattern id="camo_mcap" width="180" height="180" patternUnits="userSpaceOnUse" patternTransform="rotate(8)">
+    <rect width="180" height="180" fill="#283019"/>
+    <path d="M10,30 q40,-30 80,-5 q40,25 10,55 q-35,30 -75,5 q-30,-25 -15,-60 Z" fill="#3a4520"/>
+    <path d="M95,90 q35,-22 70,5 q22,30 -10,55 q-40,25 -70,-5 q-20,-30 10,-55 Z" fill="#525d2c"/>
+    <path d="M120,10 q30,15 12,42 q-25,22 -52,2 q-15,-30 40,-44 Z" fill="#2a3315"/>
+    <path d="M20,120 q28,-12 44,14 q12,28 -20,40 q-34,8 -40,-24 q-2,-20 16,-30 Z" fill="#6b7536"/>
+    <ellipse cx="150" cy="150" rx="26" ry="18" fill="#222a12"/>
+    <ellipse cx="60" cy="80" rx="14" ry="10" fill="#79844a"/>
+  </pattern><radialGradient id="hht_mcap" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ff6a63"/>
+      <stop offset="45%" stop-color="#d72a25"/>
+      <stop offset="100%" stop-color="#7c1311"/>
+    </radialGradient>
+     <linearGradient id="capbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#272b33"/><stop offset="100%" stop-color="#14161b"/></linearGradient>
+     <linearGradient id="capcol" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#586331"/><stop offset="100%" stop-color="#333c1d"/></linearGradient>
+   </defs>
+   <rect width="1600" height="1200" fill="url(#capbg)"/>
+   <ellipse cx="800" cy="690" rx="330" ry="46" fill="#000000" opacity="0.28"/>
+   <text x="800" y="115" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="46" letter-spacing="10" text-anchor="middle" fill="#7d848f">CASQUETTE BRODÉE — PATCH FRONTAL</text>
+   <!-- casquette (vue de face) -->
+   <g transform="translate(800,560)">
+     <!-- visiere (devant, bien marquee) -->
+     <path d="M-262,46 C-150,265 150,265 262,46 C150,118 -150,118 -262,46 Z" fill="#202611" stroke="#0c0f06" stroke-width="6"/>
+     <path d="M-262,46 C-150,118 150,118 262,46" fill="none" stroke="#3a4422" stroke-width="3" opacity="0.7"/>
+     <path d="M-150,150 C-60,196 60,196 150,150" fill="none" stroke="#3a4422" stroke-width="4" opacity="0.5"/>
+     <!-- calotte -->
+     <path d="M-258,58 C-258,-278 258,-278 258,58 C258,98 216,116 168,116 L-168,116 C-216,116 -258,98 -258,58 Z" fill="url(#capcol)" stroke="#11140b" stroke-width="3"/>
+     <!-- reflet -->
+     <path d="M-200,-150 C-140,-244 140,-244 200,-150" fill="none" stroke="#79854a" stroke-width="12" stroke-linecap="round" opacity="0.45"/>
+     <!-- coutures 6 panneaux -->
+     <path d="M0,-274 L0,112" stroke="#2c3318" stroke-width="3" opacity="0.8"/>
+     <path d="M-150,-246 C-148,-60 -150,40 -150,112" stroke="#2c3318" stroke-width="3" fill="none" opacity="0.6"/>
+     <path d="M150,-246 C148,-60 150,40 150,112" stroke="#2c3318" stroke-width="3" fill="none" opacity="0.6"/>
+     <!-- bande de proprete -->
+     <path d="M-258,58 C-258,98 216,116 168,116 L-168,116 C-216,116 -258,98 -258,58" fill="none" stroke="#161a0c" stroke-width="7"/>
+     <!-- bouton -->
+     <circle cx="0" cy="-266" r="15" fill="#3a4422" stroke="#161a0c" stroke-width="2"/>
+     <!-- oeillets -->
+     <circle cx="-78" cy="-140" r="6" fill="#161a0c"/><circle cx="78" cy="-140" r="6" fill="#161a0c"/>
+     <!-- patch brode sur panneau frontal -->
+     <g transform="translate(0,-96) scale(0.285) translate(-500,-500)"><circle cx="500" cy="500" r="486" fill="#d72a25"/><circle cx="500" cy="500" r="486" fill="none" stroke="#7c1311" stroke-width="6"/><circle cx="500" cy="500" r="452" fill="url(#camo_mcap)"/><circle cx="500" cy="500" r="452" fill="none" stroke="#e9e1c9" stroke-width="5" stroke-dasharray="2 11" stroke-linecap="round" opacity="0.9"/><circle cx="500" cy="500" r="404" fill="none" stroke="#e9e1c9" stroke-width="3" stroke-dasharray="2 12" stroke-linecap="round" opacity="0.65"/><g transform="translate(500,545) rotate(-29) scale(1.3) translate(-183,-88)"><g fill="#3c451f" stroke="#e9e1c9" stroke-width="4" stroke-linejoin="round">
+    <polygon points="0,44 62,30 62,74 34,82 0,72"/>
+    <rect x="60" y="30" width="130" height="38" rx="3"/>
+    <rect x="92" y="19" width="100" height="10" rx="3"/>
+    <polygon points="118,68 140,68 153,116 126,118"/>
+    <path d="M150,68 L190,68 L202,156 Q184,162 166,156 Z"/>
+    <rect x="190" y="38" width="76" height="26" rx="5"/>
+    <rect x="266" y="46" width="96" height="10" rx="3"/>
+    <polygon points="300,21 310,21 308,46 302,46"/>
+    <rect x="352" y="43" width="15" height="15" rx="2"/>
+  </g></g><g transform="translate(500,545) rotate(29) scale(1.3) translate(-183,-77)"><g fill="#3c451f" stroke="#e9e1c9" stroke-width="4" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,540) scale(1.85)">
+      <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="url(#hht_mcap)" stroke="#7c1311" stroke-width="2.5"/>
+      
+    </g><g font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="50" fill="#e9e1c9" text-anchor="middle"><text x="109.8" y="412.4" transform="rotate(-75.00 109.8 395.4)">T</text><text x="124.2" y="368.8" transform="rotate(-68.48 124.2 351.8)">I</text><text x="143.4" y="327.1" transform="rotate(-61.96 143.4 310.1)">R</text><text x="195.5" y="251.5" transform="rotate(-48.91 195.5 234.5)">·</text><text x="263.3" y="189.6" transform="rotate(-35.87 263.3 172.6)">B</text><text x="302.0" y="164.8" transform="rotate(-29.35 302.0 147.8)">A</text><text x="343.3" y="144.6" transform="rotate(-22.83 343.3 127.6)">L</text><text x="386.6" y="129.2" transform="rotate(-16.30 386.6 112.2)">L</text><text x="431.4" y="118.9" transform="rotate(-9.78 431.4 101.9)">-</text><text x="477.0" y="113.7" transform="rotate(-3.26 477.0 96.7)">T</text><text x="523.0" y="113.7" transform="rotate(3.26 523.0 96.7)">R</text><text x="568.6" y="118.9" transform="rotate(9.78 568.6 101.9)">A</text><text x="613.4" y="129.2" transform="rotate(16.30 613.4 112.2)">P</text><text x="698.0" y="164.8" transform="rotate(29.35 698.0 147.8)">·</text><text x="772.4" y="218.6" transform="rotate(42.39 772.4 201.6)">C</text><text x="804.5" y="251.5" transform="rotate(48.91 804.5 234.5)">H</text><text x="832.7" y="287.8" transform="rotate(55.43 832.7 270.8)">A</text><text x="856.6" y="327.1" transform="rotate(61.96 856.6 310.1)">S</text><text x="875.8" y="368.8" transform="rotate(68.48 875.8 351.8)">S</text><text x="890.2" y="412.4" transform="rotate(75.00 890.2 395.4)">E</text></g>
+    <path d="M320,752 L286,766 L286,854 L320,834 Z" fill="#7c1311"/>
+    <path d="M680,752 L714,766 L714,854 L680,834 Z" fill="#7c1311"/><path d="M320,744 L680,744 L680,840 L320,840 Z" fill="#d72a25" stroke="#7c1311" stroke-width="3"/><text x="500" y="811" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="58" letter-spacing="3" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text><polygon points="214.0,486.0 217.7,494.9 227.3,495.7 220.0,501.9 222.2,511.3 214.0,506.3 205.8,511.3 208.0,501.9 200.7,495.7 210.3,494.9" fill="#e9e1c9"/><polygon points="786.0,486.0 789.7,494.9 799.3,495.7 792.0,501.9 794.2,511.3 786.0,506.3 777.8,511.3 780.0,501.9 772.7,495.7 782.3,494.9" fill="#e9e1c9"/></g>
+   </g>
+  </svg>

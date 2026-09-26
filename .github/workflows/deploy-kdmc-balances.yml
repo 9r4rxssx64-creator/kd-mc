@@ -1,0 +1,72 @@
+name: Deploy kdmc-balances Worker
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - "services/kdmc-balances/**"
+      - ".github/workflows/deploy-kdmc-balances.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kdmc-balances
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/kdmc-balances
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install wrangler
+        run: npm i -g wrangler@4
+
+      - name: Push provider secrets (only those that exist)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          K="${{ secrets.DEEPSEEK_API_KEY }}"
+          if [ -n "$K" ]; then
+            printf '%s' "$K" | wrangler secret put DEEPSEEK_API_KEY
+            echo "DEEPSEEK_API_KEY poussé"
+          else
+            echo "Pas de DEEPSEEK_API_KEY — /balances renverra une liste vide (honnête)."
+          fi
+
+      - name: Deploy worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee /tmp/deploy.log
+          URL=$(grep -oE "https://[a-zA-Z0-9.-]+\.workers\.dev" /tmp/deploy.log | head -1)
+          echo "worker_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Déployé: $URL"
+
+      - name: Health check
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          [ -z "$URL" ] && { echo "URL introuvable"; exit 1; }
+          for i in 1 2 3 4 5; do
+            if curl -fsS "$URL/health" | tee /tmp/h.json | grep -q '"ok":true'; then
+              echo "Health OK"; cat /tmp/h.json; break
+            fi
+            echo "retry $i"; sleep 5
+          done
+          grep -q '"ok":true' /tmp/h.json

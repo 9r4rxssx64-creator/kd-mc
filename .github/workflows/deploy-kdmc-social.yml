@@ -1,0 +1,110 @@
+name: Deploy kdmc-social Worker
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - "services/kdmc-social/**"
+      - ".github/workflows/deploy-kdmc-social.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kdmc-social
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/kdmc-social
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Un worker qui publie au nom de Kevin ne part jamais sans ses tests
+      # (19 contrôles, 4 gardes prouvés par sabotage).
+      - name: Tests (obligatoires avant tout déploiement)
+        run: node --test social.test.mjs
+
+      - name: Install wrangler
+        run: npm i -g wrangler@4
+
+      # Tous OPTIONNELS. Absents = le réseau est « pas prêt », pas cassé.
+      # Les noms sont ceux que le CODE lit (leçon du 16.09 : un nom de travers
+      # et le jeton n'arrive jamais — cf. tests/social-env-parite.test.mjs).
+      - name: Push secrets réseaux (ceux qui existent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          push() {
+            if [ -n "$2" ]; then printf '%s' "$2" | wrangler secret put "$1"; echo "$1 poussé";
+            else echo "$1 ABSENT — $3"; fi
+          }
+          push FB_PAGE_TOKEN       "${{ secrets.FACEBOOK_PAGE_TOKEN }}"     "Facebook : pas prêt"
+          push FB_PAGE_ID          "${{ secrets.FACEBOOK_PAGE_ID }}"        "Facebook : pas prêt"
+          push IG_ACCESS_TOKEN     "${{ secrets.INSTAGRAM_ACCESS_TOKEN }}"  "Instagram : pas prêt"
+          push IG_USER_ID          "${{ secrets.INSTAGRAM_USER_ID }}"       "Instagram : pas prêt"
+          push TELEGRAM_BOT_TOKEN  "${{ secrets.TELEGRAM_BOT_TOKEN }}"      "Telegram : pas prêt"
+          push TELEGRAM_CHAT_ID    "${{ secrets.TELEGRAM_CHAT_ID }}"        "Telegram : pas prêt"
+          push TIKTOK_ACCESS_TOKEN "${{ secrets.TIKTOK_ACCESS_TOKEN }}"     "TikTok : lecture indisponible"
+          push YOUTUBE_REFRESH_TOKEN "${{ secrets.YOUTUBE_REFRESH_TOKEN }}" "YouTube : non relié"
+
+      - name: Deploy worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          wrangler deploy 2>&1 | tee /tmp/deploy.log
+          URL=$(grep -oE "https://[a-zA-Z0-9.-]+\.workers\.dev" /tmp/deploy.log | head -1)
+          echo "worker_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Déployé: $URL"
+
+      # PREUVE LIVE : l'agent ne peut atteindre ni workers.dev ni les réseaux —
+      # ce journal est la seule preuve réelle (leçon #135).
+      - name: Preuve live — la matrice des réseaux, et publier reste fermé
+        shell: bash -eo pipefail {0}
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          [ -z "$URL" ] && { echo "URL introuvable"; exit 1; }
+          for i in 1 2 3 4 5; do
+            if curl -fsS "$URL/health" | tee /tmp/h.json | grep -q '"ok":true'; then break; fi
+            echo "retry $i"; sleep 5
+          done
+          echo "— état des réseaux —"; cat /tmp/h.json; echo
+          grep -q '"ok":true' /tmp/h.json
+          # Aucun jeton ne doit jamais sortir de /health.
+          if grep -qiE '(EAA[A-Za-z0-9]{20}|[0-9]{8,10}:AA[A-Za-z0-9_-]{30})' /tmp/h.json; then
+            echo "DANGER : un jeton est visible dans /health"; exit 1
+          fi
+          echo "— le worker répond-il aux POST ? (route inconnue) —"
+          curl -sS -D- -o /tmp/x.json -X POST "$URL/route-qui-nexiste-pas" \
+               -H 'content-type: application/json' -d '{}' | head -3
+          cat /tmp/x.json; echo
+          echo "— le contrôle admin peut-il joindre le SSO ? (erreur 1042 ?) —"
+          curl -sS "$URL/diag/sso"; echo
+          echo "— publier sans session —"
+          CODE=$(curl -sS -o /tmp/p.json -w '%{http_code}' -X POST "$URL/publier" \
+                 -H 'content-type: application/json' -d '{"texte":"test"}')
+          echo "HTTP $CODE"; cat /tmp/p.json; echo
+          # Le SEUL vrai danger est que ça RÉUSSISSE sans session. Un 404 ou un
+          # 502 n'est pas une ouverture : c'est un montage à réparer, et on le
+          # distingue au lieu de crier au loup (une alerte fausse ne se lit plus).
+          case "$CODE" in
+            2*) echo "DANGER : publier a réussi SANS session"; exit 1 ;;
+            401) echo "OK — refusé proprement, personne ne publie sans Face ID." ;;
+            *)   echo "À RÉPARER : refusé, mais pas par le contrôle admin (HTTP $CODE)."
+                 echo "Voir le diagnostic SSO ci-dessus."; exit 1 ;;
+          esac

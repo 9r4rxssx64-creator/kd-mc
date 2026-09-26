@@ -1,0 +1,125 @@
+# 🔎 Agent de contrôle du bot crypto — vérifie « à la place de Kevin », tout le temps.
+# S'authentifie en ADMIN MACHINE (jeton signé avec le secret SSO, PAS le Face ID de Kevin)
+# depuis un runner GitHub (qui a accès à Internet, contrairement à l'agent local),
+# appelle bot.kd-mc.com, contrôle le bot, et n'alerte QUE si un problème est détecté.
+#
+# Déclenchement : à la demande (workflow_dispatch) + auto toutes les 6 h (anti-spam).
+
+name: Crypto Bot Verify (contrôle autonome)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: crypto-bot-verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Contrôle end-to-end du bot (page + gate + statut + réglages)
+        id: check
+        env:
+          # Même secret que le worker (KDMC_SSO_SECRET, avec repli JWT_SECRET) → jeton accepté.
+          SEC: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
+          # API : les endpoints /__bot/* sont gérés AVANT le routage par host → dispo sur
+          # n'importe quel sous-domaine kd-mc.com déjà actif. On tape un host STABLE
+          # (cmcteams.kd-mc.com, utilisé au quotidien) pour ne pas dépendre de la
+          # provision du certificat du nouveau bot.kd-mc.com.
+          BASE: https://cmcteams.kd-mc.com
+          PAGE: https://bot.kd-mc.com
+        run: |
+          set +e
+          HEALTHY=true; REPORT=""
+          add(){ REPORT="${REPORT}$1"$'\n'; echo "$1"; }
+
+          if [ -z "$SEC" ]; then
+            add "❌ Aucun secret SSO (KDMC_SSO_SECRET/JWT_SECRET) — impossible de signer l'accès admin."
+            echo "healthy=false" >> $GITHUB_OUTPUT
+            { echo "## 🔎 Contrôle bot crypto"; echo ""; echo "$REPORT"; } >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          # 1) Jeton admin MACHINE (même ssoSign que le worker → forcément accepté)
+          TOK=$(SEC="$SEC" node -e "import('./services/kdmc-router/worker.js').then(async m=>{process.stdout.write(await m.adminGrant(process.env.SEC));}).catch(e=>{console.error(e);process.exit(1);})")
+          if [ -z "$TOK" ]; then add "❌ Échec génération du jeton admin machine."; HEALTHY=false; fi
+
+          # 2) La page du tableau de bord répond (souple : la santé du BOT ne dépend
+          #    pas de la provision du certificat de la jolie adresse)
+          PC=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "$PAGE/")
+          if [ "$PC" = "200" ]; then add "✅ Page bot.kd-mc.com : HTTP $PC"; else add "⚠️ Page bot.kd-mc.com : HTTP $PC (certificat peut-être en cours — non bloquant)"; fi
+
+          # 3) Le verrou admin est bien ACTIF (sans jeton → 403 need_admin_code)
+          NOAUTH=$(curl -s -m 15 "$BASE/__bot/status"); echo "$NOAUTH" | grep -q 'need_admin_code' \
+            && add "✅ Verrou admin actif (accès refusé sans code)" \
+            || { add "⚠️ Verrou admin : réponse inattendue sans jeton → $NOAUTH"; HEALTHY=false; }
+
+          # 4) Statut du bot AVEC le jeton machine (prouve toute la chaîne : gate → worker → Railway)
+          ST=$(curl -s -m 20 "$BASE/__bot/status" -H "x-kdmc-admin: $TOK")
+          if echo "$ST" | grep -q '"ok":true'; then
+            DSTATUS=$(echo "$ST" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).status)}catch(e){console.log('?')}})")
+            LAST=$(echo "$ST" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{let j=JSON.parse(s),l=(j.logs||[]).slice(-1)[0];console.log(l?l.m:'(aucun log)')}catch(e){console.log('?')}})")
+            case "$DSTATUS" in
+              SUCCESS|DEPLOYING|BUILDING|INITIALIZING|QUEUED|WAITING) add "✅ Bot : déploiement $DSTATUS"; add "   dernière décision : $LAST" ;;
+              *) add "❌ Bot : état $DSTATUS (arrêté/problème) — dernière ligne : $LAST"; HEALTHY=false ;;
+            esac
+            echo "$ST" | grep -q 'ARGENT RÉEL' && add "⚠️ MODE ARGENT RÉEL détecté" || add "✅ Mode testnet (faux argent)"
+          else
+            R=$(echo "$ST" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{let j=JSON.parse(s);console.log((j.reason||'?')+' — '+(j.detail||''))}catch(e){console.log('réponse illisible')}})")
+            add "❌ /__bot/status a échoué : $R"; HEALTHY=false
+          fi
+
+          # 5) Réglages lisibles (cryptos suivies)
+          CF=$(curl -s -m 20 "$BASE/__bot/config" -H "x-kdmc-admin: $TOK")
+          if echo "$CF" | grep -q '"ok":true'; then
+            SYMS=$(echo "$CF" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log((JSON.parse(s).config||{}).SYMBOLS||'?')}catch(e){console.log('?')}})")
+            add "✅ Cryptos suivies : $SYMS"
+          else
+            add "⚠️ Réglages illisibles (non bloquant)"
+          fi
+
+          echo "healthy=$HEALTHY" >> $GITHUB_OUTPUT
+          # Rapport (sans le jeton) pour l'issue éventuelle
+          { echo "$REPORT"; } > /tmp/report.txt
+          { echo "## 🔎 Contrôle bot crypto ($(date -u +%H:%MZ))"; echo ""; echo '```'; echo "$REPORT"; echo '```'; } >> $GITHUB_STEP_SUMMARY
+
+      - name: Alerter uniquement si problème (1 seule issue, fermée quand résolu)
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const healthy = '${{ steps.check.outputs.healthy }}' === 'true';
+            const LABEL = 'crypto-bot-verify';
+            const report = fs.existsSync('/tmp/report.txt') ? fs.readFileSync('/tmp/report.txt','utf8') : '(pas de rapport)';
+            const q = `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open label:${LABEL}`;
+            const found = await github.rest.search.issuesAndPullRequests({ q });
+            const open = found.data.items[0];
+            if (!healthy) {
+              const body = `Le contrôle automatique du bot a détecté un problème.\n\n\`\`\`\n${report}\n\`\`\`\n\n_Vérifie https://bot.kd-mc.com — ce ticket se fermera seul au prochain contrôle OK._`;
+              if (open) {
+                await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: open.number, body });
+              } else {
+                await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: '⚠️ Bot crypto — problème détecté', body, labels: [LABEL] });
+              }
+            } else if (open) {
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: open.number, body: '✅ Contrôle OK — le bot est de nouveau sain. Fermeture.' });
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo, issue_number: open.number, state: 'closed' });
+            }
+
+      - name: Statut rouge si problème
+        if: always() && steps.check.outputs.healthy != 'true'
+        run: exit 1

@@ -1,0 +1,58 @@
+name: Arbre — photo d'arbre libre de droit (Pexels)
+# Récupère une VRAIE photo d'arbre libre de droit (Pexels, licence gratuite) sur le
+# runner (réseau ouvert), l'optimise et la commite dans arbre/tree.jpg (même origine,
+# CSP-safe). L'agent Claude ne peut pas télécharger d'image (egress bloqué) → c'est la
+# CI qui le fait. Dispatch manuel ; ne tourne jamais tout seul.
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Recherche Pexels (type de photo d'arbre)"
+        default: "majestic lone oak tree meadow"
+      index:
+        description: "Numéro de la photo dans les résultats (0 = 1re)"
+        default: "0"
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Récupère + optimise la photo
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          Q: ${{ github.event.inputs.query }}
+          IDX: ${{ github.event.inputs.index }}
+        run: |
+          set -e
+          if [ -z "$PEXELS_API_KEY" ]; then echo "❌ secret PEXELS_API_KEY manquant"; exit 1; fi
+          QENC=$(python3 -c "import urllib.parse,os;print(urllib.parse.quote(os.environ['Q']))")
+          echo "🔎 Pexels: $Q"
+          curl -s -H "Authorization: $PEXELS_API_KEY" \
+            "https://api.pexels.com/v1/search?query=$QENC&orientation=portrait&per_page=15" -o /tmp/pex.json
+          URL=$(python3 -c "import sys,json,os;d=json.load(open('/tmp/pex.json'));ph=d.get('photos',[]);i=int(os.environ.get('IDX') or 0);i=i if i<len(ph) else 0;print((ph[i]['src'].get('portrait') or ph[i]['src'].get('large2x')) if ph else '')")
+          CREDIT=$(python3 -c "import json;d=json.load(open('/tmp/pex.json'));ph=d.get('photos',[]);print(ph[0]['photographer'] if ph else '') " || true)
+          echo "🖼  $URL (photo: $CREDIT)"
+          [ -n "$URL" ] || { echo "❌ aucune photo"; exit 1; }
+          curl -sL "$URL" -o /tmp/tree_raw.jpg
+          sudo apt-get update -qq >/dev/null 2>&1 || true
+          sudo apt-get install -y -qq imagemagick >/dev/null 2>&1 || true
+          if command -v convert >/dev/null; then
+            convert /tmp/tree_raw.jpg -resize 860x -strip -quality 82 arbre/tree.jpg
+          else
+            cp /tmp/tree_raw.jpg arbre/tree.jpg
+          fi
+          echo "PHOTO_CREDIT=$CREDIT" >> "$GITHUB_ENV"
+          ls -la arbre/tree.jpg
+      - name: Commit
+        run: |
+          git config user.name "arbre-bot"
+          git config user.email "noreply@anthropic.com"
+          # crédit photographe (courtoisie Pexels — licence gratuite)
+          printf 'Photo d''arbre : Pexels (licence gratuite) — %s\n' "${PHOTO_CREDIT:-Pexels}" > arbre/tree-credit.txt
+          git add arbre/tree.jpg arbre/tree-credit.txt
+          git commit -m "Arbre: vraie photo d'arbre libre de droit (Pexels) [skip ci]" || { echo "aucun changement"; exit 0; }
+          git push

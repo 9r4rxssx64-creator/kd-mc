@@ -1,0 +1,30 @@
+name = "kdmc-vente"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+# Worker ISOLÉ (règle d'isolation Kevin) : encaisser → VÉRIFIER → livrer.
+# S'il casse, AUCUNE autre app du domaine ne casse (il ne touche ni le routeur,
+# ni Firebase, ni les boutiques — il ne fait que lire PayPal et écrire dans SON KV).
+#
+# Secrets (poussés par .github/workflows/deploy-kdmc-vente.yml, jamais en clair) :
+#   PAYPAL_CLIENT_ID   ┐ vérification automatique des paiements. ABSENTS = le worker
+#   PAYPAL_SECRET      ┘ marche encore, tout tombe en file manuelle (jamais bloquant).
+#   PAYPAL_WEBHOOK_ID    livraison INSTANTANÉE. Absent = les webhooks sont ignorés
+#                        (jamais honorés sans signature vérifiée — on ne délivre
+#                        pas sur parole).
+#
+# Auth : /admin/* exige une session ADMIN VÉRIFIÉE (Face ID) validée auprès de
+# https://kd-mc.com/__sso/whoami. Aucun code, aucun PIN, aucun secret partagé.
+
+[[kv_namespaces]]
+binding = "VENTES"
+id = "059260f5ec0d4f70958f3172fd8e0c7f"   # créé le 16.09.2026 — un id KV n'est PAS un secret (inutile sans le jeton du compte)
+
+# Contenu PAYANT (Kit IA…) : base D1 créée le 16.09.2026 depuis l'agent (jamais un
+# fichier du dépôt public — le dépôt se lit, les données non). Un id de base n'est
+# pas un secret : inutile sans le jeton du compte.
+[[d1_databases]]
+binding = "CONTENU"
+database_name = "kdmc-contenu"
+database_id = "d28c6ec0-21e4-46b8-a3dc-49f282e3a036"

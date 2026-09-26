@@ -1,0 +1,67 @@
+name: CodeQL Security Scan
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# ⛔ MIS EN VEILLE LE 22.09.2026 — IL NE PEUT PLUS RIEN PRODUIRE, ET IL COÛTAIT CHER.
+#
+#    Depuis que le dépôt est PRIVÉ (compte personnel gratuit), l'analyse de code de
+#    GitHub n'est plus disponible : elle demande GitHub Advanced Security. Mesuré sur
+#    le run 35774743666 (22.09, 19h35), message exact de GitHub :
+#      « Code scanning is not enabled for this repository. »
+#    Chaque exécution analysait donc tout le dépôt pendant ~15 minutes, PUIS jetait le
+#    résultat — et envoyait un mail d'échec à Kevin. Bilan mesuré : 7 échecs, 0 succès
+#    depuis le 20.09, et 304 minutes de machine consommées en septembre POUR RIEN, sur
+#    un quota gratuit de 2000 minutes par mois.
+#
+#    Ce qui le remplace, et qui marche sur un dépôt privé : security-suite.yml
+#    (gitleaks + TruffleHog + Semgrep + OSV + Trivy + zizmor), 100 % libre, aucun compte.
+#
+#    ⚠️ NE PAS SUPPRIMER. Le jour où le dépôt redevient public — ou si Kevin prend
+#    GitHub Pro — il suffit de remettre les deux déclencheurs ci-dessous en commentaire
+#    pour le réveiller tel quel. Il reste lançable à la main entre-temps.
+on:
+  # Seul déclencheur restant : le bouton « Run workflow ». Il n'y en avait AUCUN
+  # avant le 22.09 — le commentaire du 15/08 disait « reste lançable à la main
+  # (workflow_dispatch) », alors que la clé n'était pas là. Elle l'est maintenant.
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  # pull_request:
+  #   branches: [main]
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  security-events: write
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"

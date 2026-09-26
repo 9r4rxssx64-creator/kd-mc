@@ -1,0 +1,44 @@
+name = "kdmc-uptime"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+# account_id injecté par le workflow via CLOUDFLARE_ACCOUNT_ID (jamais commité).
+#
+# Pas de Durable Object (error 1042 sur ce compte, leçons #132/#133), pas de KV à id
+# placeholder. L'état vit dans le KV ACCOUNTS DÉJÀ PROVISIONNÉ du compte — même id réel
+# que services/kdmc-outlook/wrangler.toml (routeur, mail, Monaco l'utilisent aussi),
+# préfixe `upt:`. Relecture du 05/09 : le Cache API seul est PAR DATACENTER, donc l'état
+# n'était pas partagé entre deux passages → alerte répétée, jamais de « de retour ».
+[[kv_namespaces]]
+binding = "ACCOUNTS"
+id = "8cfa33a28ac045adb7b7a9556ca8a073"
+
+# Secrets posés par le workflow :
+#   UPTIME_RUN_KEY (depuis APEX_ADMIN_PIN_SHA256) → protège POST /run (clé dérivée,
+#     le secret ne circule jamais tel quel) ; sans lui /run répond 503.
+#   KDMC_PUSH_TOKEN (depuis PUSH_ADMIN_TOKEN, optionnel) → notifications iPhone.
+#     Sans lui, le worker sonde et sert son état, mais n'envoie pas de notification.
+
+[vars]
+KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
+
+# ⚠️ PAS DE CRON ICI — et ce n'est pas un oubli non plus (mesuré le 05/09, run 33978540250) :
+#   « This account has reached the Workers Free limit of 5 cron triggers per account »
+#   Les 5 places sont prises : 4 par apex-chat-api (messaging-app/workers), 1 par
+#   kdmc-outlook. Avec crons = ["0 * * * *"], wrangler TÉLÉVERSE le code puis sort en
+#   erreur (code 1) au moment de poser le déclencheur → run rouge à chaque push.
+#   `crons = []` retire explicitement tout déclencheur (doc Cloudflare : un tableau vide
+#   = suppression ; absent = laissé en place).
+#
+# QUI DÉCLENCHE LE PASSAGE, ALORS ? kdmc-outlook (cron « 0 */2 * * * », déjà payé) appelle
+# POST /run de ce worker par SERVICE BINDING dans son scheduled() (pas de saut HTTP public,
+# clé dérivée dans l'en-tête). kdmc-monaco avait le même problème mais se faisait réveiller
+# par un cron GitHub (monaco-sync.yml) — rangé le 15/08, donc mort : ne pas copier ça.
+# Passage toutes les 2 h au lieu de 1 h : c'est le prix du plan gratuit, pas un choix. Le
+# handler scheduled() de ce worker reste, prêt à servir le jour où une place se libère
+# (Apex Chat peut rendre 3 places en regroupant ses 4 crons derrière un seul « */5 »,
+# message pipeline m027) ou si Kevin passe en Workers Paid. Toujours ZÉRO cron GitHub
+# Actions (fait n°10/11).
+[triggers]
+crons = []

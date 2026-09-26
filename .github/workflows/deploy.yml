@@ -1,0 +1,235 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    # Ne déclencher que sur ce qui change VRAIMENT le site publié.
+    # Vécu 2026-08-04 : chaque push main lançait un déploiement complet ; avec des
+    # merges toutes les ~1 min et une attente de machine de plusieurs minutes, chaque
+    # déploiement en attente était remplacé par le suivant → AUCUN n'arrivait à
+    # démarrer, donc plus rien n'était publié (page figée sur une vieille version).
+    # Ces chemins ne font pas partie du site → inutile de republier pour eux.
+    paths-ignore:
+      - '.github/**'
+      - 'services/**'
+      - 'tests/**'
+      - 'tools/memory/**'
+      - 'audit/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  # NE PAS annuler un déploiement en cours (recommandation GitHub Pages).
+  # Vécu 2026-08-04 : avec cancel-in-progress:true, une série de merges rapprochés
+  # annulait CHAQUE déploiement avant publication (5 runs "cancelled" d'affilée)
+  # → plus rien n'était publié sur kd-mc.com et les nouveautés restaient invisibles.
+  # En file d'attente, chaque run publie et le dernier gagne. Ne pas remettre true.
+  cancel-in-progress: false
+
+jobs:
+  # ── Le jour où Kevin ferme le dépôt, GitHub Pages s'éteint (Pages depuis un
+  #    dépôt privé est payant). Sans ce contrôle, CE workflow partirait en
+  #    erreur à CHAQUE publication — et enverrait un mail à chaque fois, pour
+  #    une panne qui n'en est pas une : le site vit sur Cloudflare Pages depuis
+  #    le 19.09 (preuve par repère dans deploy-kdmc-router.yml).
+  #    On regarde donc l'état du dépôt AVANT, et on s'arrête proprement.
+  verif:
+    runs-on: ubuntu-latest
+    outputs:
+      prive: ${{ steps.etat.outputs.prive }}
+    steps:
+      - name: Le dépôt est-il devenu privé ?
+        id: etat
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          rep=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+                     -H "Accept: application/vnd.github+json" \
+                     "https://api.github.com/repos/${{ github.repository }}" || true)
+          if printf '%s' "$rep" | grep -qE '"private"[[:space:]]*:[[:space:]]*true'; then
+            echo "prive=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Dépôt PRIVÉ — GitHub Pages est éteint, c'est normal. Le site est servi par Cloudflare Pages ; rien à faire."
+          else
+            echo "prive=false" >> "$GITHUB_OUTPUT"
+            echo "Dépôt public : publication GitHub Pages comme d'habitude."
+          fi
+
+  deploy:
+    needs: verif
+    if: needs.verif.outputs.prive != 'true'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment2.outputs.page_url || steps.deployment3.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # --- Minification JS (best-effort, jamais bloquante) ---
+      # Minifie le JS de index.html SUR LA COPIE DU RUNNER (la source git reste
+      # lisible). Filet anti-régression : si la minification OU le smoke-test de
+      # rendu échoue, on garde l'index.html original non-minifié → la prod ne
+      # peut PAS casser. Gain mesuré : ~25% sur-le-fil (gzip 846->634 Ko).
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install build deps
+        run: npm ci || npm install --no-audit --no-fund
+        continue-on-error: true
+      - name: Install Chromium (smoke-test)
+        run: npx playwright install --with-deps chromium
+        continue-on-error: true
+      - name: Minify JS + smoke-test (fallback si echec)
+        run: |
+          set +e
+          node tools/build/minify-html.cjs index.html /tmp/index.min.html \
+            && node tools/build/smoke-test.cjs /tmp/index.min.html index.html \
+            && cp /tmp/index.min.html index.html \
+            && echo "OK index.html minifie deploye" \
+            || echo "Fallback : source non-minifiee deployee (minify/smoke KO)"
+          exit 0
+
+      # Alléger l'artefact : node_modules (générés par npm install ci-dessus, PAS dans git,
+      # ~240 Mo / ~50k fichiers) ne doivent jamais être publiés — c'est ce qui fait échouer
+      # la synchro Pages ("Deployment failed, try again later"). Contenu servi inchangé.
+      - name: Alléger l'artefact (retire node_modules générés)
+        run: find . -name node_modules -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+      # ── Le dépôt est PUBLIC et « path: . » publie TOUT. Mesuré le 5.09 sur le
+      #    vrai site : /NOTES_USER.md exposait 19 noms de famille, 4 dates de
+      #    naissance et 10 e-mails ; /CLAUDE.md 42 noms ; /KEVIN_ACTIONS_TODO.md
+      #    10 noms et 8 dates de naissance. Ce sont des documents de travail —
+      #    le site n'en a AUCUN besoin (vérifié : aucune page ne les charge, les
+      #    renvois de l'app arbre pointent vers github.com).
+      #    On les retire de la COPIE DE TRAVAIL du runner, jamais du dépôt.
+      #    arbre/research/actesimg/ est CONSERVÉ : l'app arbre s'en sert
+      #    réellement (19 références dans arbre/index.html, vérifié).
+      #    MESURÉ avant d'élargir (5.09) : AUCUNE page du site ne charge un
+      #    fichier .md. Les seuls renvois vers des .md dans le code sont des
+      #    adresses ABSOLUES vers github.com / raw.githubusercontent.com (c'est
+      #    ainsi qu'Apex relit ses documents — donc rien ne casse), et aucun
+      #    service worker n'en met en cache. La règle est donc simple et se
+      #    maintient toute seule : le site publié ne contient AUCUN Markdown.
+      #    Un document de travail ajouté demain est exclu sans rien changer ici.
+      - name: Retirer les documents de travail avant publication
+        run: |
+          set -e
+          avant=$(find . -type f | wc -l)
+          # 1. tous les Markdown (672 aujourd'hui) — aucune page n'en charge
+          find . -name '*.md' -type f -delete
+          # 2. les documents de travail qui ne sont pas des Markdown.
+          #    ⚠️ CLAUDE_ACTIVITY.json est VOLONTAIREMENT gardé : la vue
+          #    « activité Claude » de l'app le charge depuis le site publié
+          #    (index.html ligne ~32025, adresse github.io). Le retirer casserait
+          #    la vue — et il ne contient que des messages de commit, déjà publics.
+          for f in CLAUDE_HANDOFF.json arbre/research/actes.json; do
+            [ -e "$f" ] && rm -f "$f" && echo "retiré : $f"
+          done
+          # 3. les dossiers de travail entiers (+ les mémos perso du coffre-fort,
+          #    des formulaires vierges qu'aucune page ne propose au téléchargement)
+          #    tools/gitlab : les scripts de publication et leur carte des NOMS de
+          #    secrets (aucune valeur). Aucune page ne s'en sert ; un site n'a pas
+          #    à servir ses propres scripts de fabrication.
+          # 3bis. LES PLANNINGS EUX-MÊMES (Kevin 2026-09-18, « que personne ne puisse tout
+          #    voir, les noms de chaque personne »). MESURÉ : « path: . » publiait
+          #    tests/fixtures/*.pdf — les CINQ PLANNINGS SBM D'ORIGINE (10 Mo : juillet,
+          #    août, septembre, octobre 2026), téléchargeables par n'importe qui à
+          #    l'adresse du site. Aucune page du site ne charge quoi que ce soit de
+          #    tests/ (vérifié : zéro référence dans tous les .html). Un site n'a pas à
+          #    servir ses propres jeux d'essai. 16 Mo en moins, et les documents
+          #    d'origine du personnel ne sont plus en ligne.
+          rm -rf audit pipeline patrimoine patrimoine-resultats coffre-fort/memo tools/gitlab tests 2>/dev/null || true
+          apres=$(find . -type f | wc -l)
+          echo "documents de travail retirés : $((avant - apres)) fichiers en moins"
+          echo "le dépôt, lui, n'a pas bougé — seule la copie du runner est allégée"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: '.'
+      # Déploiement Pages avec RETRY : la synchro Pages renvoie parfois une erreur
+      # PASSAGÈRE (« Deployment failed, try again later » pendant syncing_files) qui
+      # laissait la prod SILENCIEUSEMENT sur l'ancienne version (cf. v1.0.18). On
+      # réessaie jusqu'à 3 fois avec un court back-off ; seul l'échec des 3 tentatives
+      # fait échouer le job (= vrai problème, pas un hoquet passager).
+      - name: Deploy to GitHub Pages (tentative 1)
+        id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+      - name: Back-off avant retry
+        if: steps.deployment.outcome == 'failure'
+        run: echo "Pages a échoué (passager ?) — nouvelle tentative dans 20 s"; sleep 20
+      - name: Deploy to GitHub Pages (tentative 2)
+        id: deployment2
+        if: steps.deployment.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+      - name: Back-off avant tentative finale
+        if: steps.deployment.outcome == 'failure' && steps.deployment2.outcome == 'failure'
+        run: echo "2e échec — dernière tentative dans 30 s"; sleep 30
+      - name: Deploy to GitHub Pages (tentative 3, bloquante)
+        id: deployment3
+        if: steps.deployment.outcome == 'failure' && steps.deployment2.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+
+      # ── VÉRIFIER, pas supposer. L'étape de retrait ci-dessus peut très bien
+      #    « réussir » et publier quand même : un nom de fichier qui change, une
+      #    exclusion oubliée, un nouveau document de travail ajouté à la racine.
+      #    Mesuré le 5.09 : le retrait a bien enlevé 126 fichiers du miroir, et
+      #    pourtant les adresses répondaient encore 200 — c'était le cache de
+      #    bordure. Une étape qui passe au vert ne prouve rien ; seule la vraie
+      #    page le prouve. Le runner GitHub a le réseau ouvert (l'agent, non).
+      #
+      #    C'est bien « la publication de CE dépôt » au sens des conditions
+      #    GitHub Actions : on contrôle ce que notre propre site vient de servir.
+      #    Aucune exécution programmée — ça part avec la publication, c'est tout.
+      - name: Vérifier que le site publié ne sert AUCUN document de travail
+        shell: bash
+        run: |
+          set -uo pipefail
+          # Pages met quelques secondes à propager : on laisse 3 chances avant
+          # de crier, sinon un simple délai de propagation ferait un faux rouge.
+          # ⚠️ L'ADRESSE EXACTE COMPTE (corrigé le 19.09, après 14 rouges d'affilée) :
+          # ce dépôt est publié en « project pages », donc le site vit sous
+          # /CMCteams/ — la RACINE 9r4rxssx64-creator.github.io/ est la page
+          # d'utilisateur, qui n'existe pas et répond 404. La sonde refusait donc
+          # de mesurer (sortie 2, « MESURE IMPOSSIBLE »), et cette étape traduisait
+          # ça par « le site publie encore des documents de travail » : un message
+          # FAUX, qui annonçait une fuite là où il n'y avait qu'une adresse ratée.
+          # On sonde LE SITE QU'ON VIENT DE PUBLIER (GitHub Pages), pas le domaine :
+          # depuis le 19.09, kd-mc.com est servi par Cloudflare Pages, donc mesurer
+          # le domaine ici revenait à noter le travail de quelqu'un d'autre. Le
+          # domaine, lui, est contrôlé par la sonde de fuite du routeur.
+          code=0
+          for essai in 1 2 3; do
+            echo "── contrôle $essai/3 ──"
+            node tools/audit/exposition-publique.mjs --site https://9r4rxssx64-creator.github.io/CMCteams
+            code=$?
+            if [ "$code" = "0" ]; then
+              echo "✅ rien à retirer : le site ne publie aucun document de travail."
+              exit 0
+            fi
+            [ "$essai" -lt 3 ] && { echo "propagation en cours ? nouvel essai dans 25 s"; sleep 25; }
+          done
+          # Deux échecs très différents, deux messages différents : confondre
+          # « je n'ai pas pu mesurer » avec « j'ai trouvé une fuite » fait perdre
+          # confiance dans la garde — et on finit par ignorer ses rouges.
+          if [ "$code" = "2" ]; then
+            echo "::error::MESURE IMPOSSIBLE : le site publié n'a pas répondu, donc je n'affirme RIEN sur ce qu'il expose (ce n'est pas une fuite constatée — vérifier l'adresse sondée et l'état de GitHub Pages)."
+          else
+            echo "::error::Le site publie encore des documents de travail (détail ci-dessus)."
+          fi
+          exit 1

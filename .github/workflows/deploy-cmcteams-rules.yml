@@ -1,0 +1,95 @@
+name: Deploy CMCteams Firebase Rules (consolidé)
+
+# Publie le ruleset RTDB CONSOLIDÉ (firebase-rules-apex.json : cmcteams + apex + coffre_vault
+# + shops + deny racine) via le service account, par REST (PUT /.settings/rules.json).
+# Indépendant du workflow Apex (qui déploie un fichier apex-only — ne PAS confondre).
+#
+# Déclenchement MANUEL/API uniquement (changement sécurité) — pas de cron (anti-spam).
+#   rules_state: hardened (défaut, /cmcteams auth!=null) | open (rollback, /cmcteams ouvert)
+# Le script vérifie après publication (GET) que /cmcteams est bien dans l'état attendu,
+# et garde-fou : abort si deny racine perdu ou /apex modifié.
+#
+# Secrets requis (déjà présents) : FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rules_state:
+        description: "hardened (fermer /cmcteams) ou open (rollback)"
+        required: true
+        default: "hardened"
+        type: choice
+        options:
+          - hardened
+          - open
+      apex_state:
+        description: "hardened (fermer /apex + /coffre_vault, defaut) ou open (rollback)"
+        required: true
+        default: "hardened"
+        type: choice
+        options:
+          - hardened
+          - open
+      shops_lock:
+        description: "Lockdown shops par rôle (products/logos/selection écriture = role:admin). keep = préserver l'état live actuel (défaut) | on = activer | off = rouvrir"
+        required: true
+        default: "keep"
+        type: choice
+        options:
+          - "keep"
+          - "off"
+          - "on"
+      orders_read:
+        description: "Verrou LECTURE des commandes clients (fuite orders/.read=true). keep = préserver l'état live (défaut) | on = lecture dashboard admin seul | off = rouvrir (rollback). L'écriture (checkout) reste anonyme."
+        required: true
+        default: "keep"
+        type: choice
+        options:
+          - "keep"
+          - "off"
+          - "on"
+      cmc_admin_lock:
+        description: "Verrou ÉCRITURE config admin /cmcteams (cmc_admin_cfg + cmc_motd = role:admin). keep = préserver l'état live (défaut) | on = verrouiller (appareil admin role:admin seul) | off = rouvrir (rollback). Employés/lecture inchangés. Activer APRÈS canary iPhone Kevin."
+        required: true
+        default: "keep"
+        type: choice
+        options:
+          - "keep"
+          - "off"
+          - "on"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # Kevin 26.09.2026 (« fermé ») : avant de fermer l'écriture des boutiques (shops_lock=on),
+      # vérifier que le guichet qui donne le jeton admin existe VRAIMENT sur le domaine.
+      # Sinon Kevin/Lolo ne pourraient plus publier un produit ni un logo (les clients, eux,
+      # ne sont jamais touchés). 401/403 = le guichet est là et protégé (attendu) ; 404/5xx =
+      # absent → on s'arrête AVANT de publier, avec la cause.
+      - name: Le guichet admin du routeur répond-il ? (obligatoire si shops_lock=on)
+        if: ${{ github.event.inputs.shops_lock == 'on' }}
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST https://kd-mc.com/__admin/fbtoken || echo 000)
+          echo "POST https://kd-mc.com/__admin/fbtoken → HTTP $code"
+          case "$code" in
+            401|403) echo "✅ guichet présent et protégé : on peut fermer l'écriture des boutiques" ;;
+            *) echo "::error::Le guichet /__admin/fbtoken répond $code (attendu 401/403). Redéployer kdmc-router (deploy-kdmc-router.yml, il pose les secrets FIREBASE_*) AVANT shops_lock=on. Rien n'a été publié."; exit 1 ;;
+          esac
+      - name: Publish consolidated RTDB rules (REST + verify)
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          RULES_STATE: ${{ github.event.inputs.rules_state }}
+          APEX_STATE: ${{ github.event.inputs.apex_state || 'hardened' }}
+          SHOPS_LOCK: ${{ github.event.inputs.shops_lock || 'keep' }}
+          ORDERS_READ: ${{ github.event.inputs.orders_read || 'keep' }}
+          CMC_ADMIN_LOCK: ${{ github.event.inputs.cmc_admin_lock || 'keep' }}
+        run: node tools/firebase/deploy-rules.cjs

@@ -1,0 +1,237 @@
+# Déploie kdmc-uptime — la surveillance des 26 sous-domaines de kd-mc.com.
+#
+# CONTEXTE : le 15/08/2026 les 7 workflows de surveillance ont été rangés dans
+# .github/workflows-desactives/ pour retirer les crons à l'origine de la suspension
+# du compte. Personne ne les a remis ailleurs → 22 jours sans aucun contrôle
+# (dernier relevé : 14/08 18h52). Ce worker les remplace, du bon côté : le périodique
+# vit dans Cloudflare, JAMAIS ici. Nuance mesurée le 05/09 : le plan gratuit n'a que
+# 5 crons par compte et ils sont pris → ce worker n'a PAS de cron à lui, c'est le cron
+# de kdmc-outlook (toutes les 2 h) qui appelle son /run (services/kdmc-uptime/wrangler.toml).
+#
+# ⚠️ NE JAMAIS ajouter de `schedule:` à ce fichier. C'est exactement ce qui a fait
+# suspendre le compte. La garde npm run test:actions-conformes échoue si un cron
+# réapparaît. Le périodique appartient à Cloudflare, pas à GitHub Actions.
+#
+# Secrets requis : CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, APEX_ADMIN_PIN_SHA256
+# (→ UPTIME_RUN_KEY : protège POST /run). Optionnel : PUSH_ADMIN_TOKEN (notifications
+# iPhone). Sans lui → fail-open.
+#
+# DÉCLENCHEMENT : bouton (workflow_dispatch) + AUTO au push sur main qui touche le worker.
+# Pas de `claude/**` (relecture sécurité 05/09) : ça déployait la PRODUCTION depuis
+# n'importe quelle branche, avant revue, sans les gardes de test:ci — et c'était inutile :
+# après chaque fusion, auto-merge-claude.yml dispatche lui-même ce workflow sur main
+# (vérifié : run « Deploy KDMC Uptime #3 », main, lancé par le bot). Un push = un
+# déploiement, zéro cron : usage prévu d'Actions (règle 2 de verify-actions-conformes).
+name: Deploy KDMC Uptime (surveillance domaine)
+
+on:
+  workflow_dispatch:
+  push:
+    # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main.
+    # Une branche de travail ne déploie plus rien (incident m122 du 23.09 : un routeur
+    # déployé depuis une branche en retard a éteint kit.kd-mc.com). Manuel : workflow_dispatch.
+    branches:
+      - main
+    paths:
+      - 'services/kdmc-uptime/**'
+      - 'tests/uptime-couverture.test.mjs'
+      - '.github/workflows/deploy-kdmc-uptime.yml'
+
+concurrency:
+  group: ${{ github.workflow }}   # UN déploiement à la fois, toutes branches confondues
+  cancel-in-progress: false       # un déploiement ne se coupe jamais en plein vol
+
+permissions:
+  contents: read
+  actions: write   # dernière étape : redéployer kdmc-outlook (son cron réveille la sonde)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/kdmc-uptime
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Vérifier les secrets (erreur exacte, pas silencieuse)
+        env:
+          CFT: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CFA: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          PUSHT: ${{ secrets.PUSH_ADMIN_TOKEN }}
+        run: |
+          MISSING=""
+          [ -z "$CFT" ] && MISSING="$MISSING CLOUDFLARE_API_TOKEN"
+          [ -z "$CFA" ] && MISSING="$MISSING CLOUDFLARE_ACCOUNT_ID"
+          [ -z "$PINSHA" ] && MISSING="$MISSING APEX_ADMIN_PIN_SHA256"
+          if [ -n "$MISSING" ]; then echo "::error::Secrets manquants :$MISSING"; exit 1; fi
+          [ -z "$PUSHT" ] && echo "::warning::PUSH_ADMIN_TOKEN absent → le worker surveillera et servira son état, mais n'enverra AUCUNE notification (fail-open). Ajoute le secret pour être prévenu sur l'iPhone."
+          echo "Secrets OK"
+
+      - name: Syntax check worker
+        run: node --check worker.js
+
+      - name: Vérifier la couverture (aucun sous-domaine du routeur oublié)
+        working-directory: .
+        run: node tests/uptime-couverture.test.mjs
+
+      - name: Installer wrangler (version épinglée, sans scripts d'installation)
+        # Sonar 05/09 : « dépendance non verrouillée » + « lifecycle scripts ». Épinglé sur la
+        # majeure 4 et --ignore-scripts. Le jeton Cloudflare n'est PAS dans l'env de cette étape.
+        run: npm i -g --ignore-scripts wrangler@4 && wrangler --version
+
+      - name: Déployer le worker
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          # Le journal de wrangler est recopié dans le RÉSUMÉ du run (pour qui est connecté)
+          # ET en ANNOTATIONS (lisibles sans connexion — c'est le seul canal, vérifié 05/09).
+          # Règle « toujours détailler les erreurs » : un échec doit dire POURQUOI.
+          # L'identifiant de compte est masqué avant toute sortie (relecture sécu 05/09).
+          MASK='s#/accounts/[0-9a-f]{32}#/accounts/<id>#g'
+          set +e
+          wrangler deploy 2>&1 | sed -E "$MASK" | tee /tmp/deploy.log
+          RC=${PIPESTATUS[0]}
+          set -e
+          if [ "$RC" != "0" ]; then
+            { echo "## ❌ \`wrangler deploy\` a échoué (code $RC)"; echo; echo '```'; grep -iE 'error|✘|failed|code:' /tmp/deploy.log | tail -40 || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            { grep -iE 'error|✘|failed|code:' /tmp/deploy.log || true; } | tail -10 | while IFS= read -r L; do echo "::error::wrangler ▸ $L"; done
+            echo "::error::wrangler deploy a échoué (code $RC) — lignes ci-dessus"
+            exit "$RC"
+          fi
+          # Pas d'URL dans la sortie ≠ échec : on retombe sur l'adresse connue.
+          { grep -Eo 'https://[a-z0-9.-]+workers.dev' /tmp/deploy.log || true; } | head -1 > /tmp/url.txt
+          echo "URL déployée : $(cat /tmp/url.txt)"
+          { echo "## ✅ \`wrangler deploy\` OK"; echo; echo '```'; grep -E 'Uploaded|Deployed|Current Version|workers.dev' /tmp/deploy.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          { grep -E 'Uploaded|Deployed|Current Version|workers.dev|Cron' /tmp/deploy.log || true; } | head -6 | while IFS= read -r L; do echo "::notice::wrangler ▸ $L"; done
+
+      - name: Poser les secrets du worker (UPTIME_RUN_KEY obligatoire, push best-effort)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          PUSHT: ${{ secrets.PUSH_ADMIN_TOKEN }}
+        run: |
+          # /run n'est plus public : clé dérivée de ce secret (jamais le secret sur le fil).
+          printf '%s' "$PINSHA" | wrangler secret put UPTIME_RUN_KEY
+          echo "UPTIME_RUN_KEY posé"
+          if [ -n "$PUSHT" ]; then
+            printf '%s' "$PUSHT" | wrangler secret put KDMC_PUSH_TOKEN
+            echo "KDMC_PUSH_TOKEN posé"
+          else
+            echo "Pas de PUSH_ADMIN_TOKEN → surveillance active, notifications désactivées. Skip propre."
+          fi
+
+      - name: Smoke test réel (leçon #95 — un deploy vert sans test live ne prouve rien)
+        shell: bash -eo pipefail {0}
+        env:
+          PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          PUSHT: ${{ secrets.PUSH_ADMIN_TOKEN }}
+        run: |
+          URL=$(cat /tmp/url.txt); [ -z "$URL" ] && URL="https://kdmc-uptime.9r4rxssx64.workers.dev"
+          KEY=$(printf '%s:uptime-run' "$PINSHA" | sha256sum | cut -d' ' -f1)
+          sleep 8
+
+          echo "--- /health ---"
+          curl -sS "$URL/health" | tee /tmp/h.json; echo
+          grep -q '"ok": true' /tmp/h.json || { echo "::error::/health invalide : $(cat /tmp/h.json)"; exit 1; }
+
+          echo "--- /run sans clé doit être refusé (garde) ---"
+          CODE=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$URL/run")
+          [ "$CODE" = "401" ] || { echo "::error::POST /run sans clé a répondu $CODE au lieu de 401 — /run est PUBLIC"; exit 1; }
+          CODE=$(curl -sS -o /dev/null -w '%{http_code}' "$URL/run")
+          [ "$CODE" = "405" ] || { echo "::error::GET /run a répondu $CODE au lieu de 405"; exit 1; }
+          echo "garde OK : 401 sans clé, 405 en GET"
+
+          echo "--- /run : relevé réel des 26 sous-domaines + 6 workers ---"
+          curl -sS --max-time 120 -X POST -H "x-uptime-key: $KEY" "$URL/run" | tee /tmp/run.json; echo
+          grep -q '"results"' /tmp/run.json || { echo "::error::/run invalide : $(head -c 800 /tmp/run.json)"; exit 1; }
+
+          TOTAL=$(node -e "const d=require('/tmp/run.json');console.log(d.total)")
+          OK=$(node -e "const d=require('/tmp/run.json');console.log(d.ok)")
+          echo "Cibles sondées : $TOTAL · en bonne santé : $OK"
+
+          # On n'échoue PAS si une adresse est en panne : le rôle de ce workflow est de
+          # déployer la surveillance, pas de juger l'état du domaine. Les pannes trouvées
+          # sont listées en ANNOTATIONS (une par cible, code + cause), lisibles sans connexion.
+          node -e "
+            const d=require('/tmp/run.json');
+            if(!d.down || !d.down.length){ console.log('::notice::✅ Toutes les cibles répondent (' + d.ok + '/' + d.total + ')'); process.exit(0); }
+            console.log('::warning::' + d.down.length + ' cible(s) en panne : ' + d.down.join(', '));
+            for(const r of d.results.filter(x=>!x.ok).slice(0,9)){
+              console.log('::warning::' + r.id + ' → ' + r.code + ' (' + r.ms + ' ms)' + (r.detail ? ' · ' + r.detail : ''));
+            }
+          "
+          # La notification est-elle vraiment partie ? (relecture 05/09 : /send + {title,body}
+          # répondait 400 depuis le début et le smoke ne le lisait pas)
+          node -e "
+            const d=require('/tmp/run.json'); const p=d.push||{};
+            const hasToken=!!process.env.PUSHT;
+            if(!hasToken){ console.log('::notice::push : pas de jeton → non testé (fail-open)'); process.exit(0); }
+            if(!d.tombees.length && !d.revenues.length){ console.log('::notice::push : rien à signaler ce passage → non testé'); process.exit(0); }
+            if(p.sent){ console.log('::notice::push envoyé (HTTP ' + p.code + ')'); process.exit(0); }
+            console.log('::error::push NON envoyé : HTTP ' + p.code + ' ' + (p.why||'')); process.exit(1);
+          "
+          echo "--- / : l'état a-t-il survécu au passage (KV partagé) ? ---"
+          curl -sS "$URL/" | tee /tmp/state.json | head -c 400; echo
+          grep -q '"ts"' /tmp/state.json || { echo "::error::/ ne rend pas l'état du passage qui vient d'avoir lieu — persistance cassée"; exit 1; }
+          echo "✅ kdmc-uptime déployé et opérationnel — passage toutes les 2 h déclenché par le cron de kdmc-outlook (plan gratuit : 5 crons, tous pris)"
+
+      - name: Santé des workers (depuis le runner — un Worker ne peut pas les joindre)
+        # POURQUOI ICI ET PAS DANS LA SONDE : au passage n°11 (05/09) les 6 adresses
+        # *.workers.dev répondaient 404 en 10-21 ms pendant que les 26 adresses du domaine
+        # répondaient normalement. 10-21 ms = la requête n'est jamais sortie du réseau
+        # Cloudflare : depuis un Worker, une URL workers.dev du MÊME compte n'est pas
+        # joignable (même famille que l'erreur 1042 qui a imposé un Service Binding à
+        # Outlook). Six fausses pannes à chaque passage = des alertes qu'on cesse de lire.
+        # Le runner GitHub a un vrai réseau : c'est LUI qui sonde, et la sortie ci-dessous
+        # dit lequel des deux avait raison. Observation seulement : jamais bloquant.
+        shell: bash {0}
+        run: |
+          LISTE=$(node -e "
+            const s=require('fs').readFileSync('services/kdmc-uptime/worker.js','utf8');
+            const m=s.match(/const WORKERS = \[([\s\S]*?)\]/);
+            if(!m){ console.error('liste WORKERS introuvable dans worker.js'); process.exit(1); }
+            console.log([...m[1].matchAll(/'([a-z0-9-]+)'/g)].map(x=>x[1]).join(' '));
+          ") || { echo "::error::Impossible de lire la liste des workers dans services/kdmc-uptime/worker.js"; exit 0; }
+          echo "Workers à sonder : $LISTE"
+          VIVANTS=0; MORTS=""
+          for W in $LISTE; do
+            U="https://$W.9r4rxssx64.workers.dev/health"
+            CODE=$(curl -s -o /tmp/w.txt -w '%{http_code}' --max-time 15 "$U" || echo 000)
+            MS=$(curl -s -o /dev/null -w '%{time_total}' --max-time 15 "$U" || echo '?')
+            if [ "$CODE" -ge 200 ] 2>/dev/null && [ "$CODE" -lt 400 ] 2>/dev/null; then
+              VIVANTS=$((VIVANTS+1))
+              echo "::notice::worker ▸ $W → HTTP $CODE en ${MS}s · $(head -c 120 /tmp/w.txt)"
+            else
+              MORTS="$MORTS $W"
+              echo "::warning::worker ▸ $W → HTTP $CODE (${MS}s) · $(head -c 160 /tmp/w.txt)"
+            fi
+          done
+          if [ -z "$MORTS" ]; then
+            echo "::notice::✅ $VIVANTS worker(s) répondent depuis le runner — les 404 vus par la sonde étaient bien un angle mort du Worker, pas une panne"
+          else
+            echo "::warning::worker(s) qui ne répondent pas depuis le runner :$MORTS — là c'est une vraie panne, pas un angle mort"
+          fi
+
+      - name: Redéployer kdmc-outlook (son cron est l'horloge de la sonde)
+        # Mesuré 05/09 : après la fusion #3665, kdmc-uptime a été redéployé mais PAS kdmc-outlook
+        # (modified_on inchangé) → le réveil toutes les 2 h n'était pas en ligne. Le dispatch
+        # post-fusion du bot n'est pas fiable pour ce worker ; on le déclenche ICI, sur main
+        # seulement (un run lancé par GITHUB_TOKEN ne relance rien d'autre : pas de boucle).
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run deploy-kdmc-outlook.yml --ref main \
+            && echo "::notice::deploy-kdmc-outlook.yml déclenché (le cron d'Outlook portera le nouveau réveil)" \
+            || echo "::warning::dispatch deploy-kdmc-outlook.yml refusé — le réveil de la sonde reste sur l'ancien code d'Outlook"

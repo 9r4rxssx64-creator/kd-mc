@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="1600" viewBox="0 0 1000 1000">
+  <defs><linearGradient id="bg_crossedvectorcamo" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#283019"/><stop offset="100%" stop-color="#141a0d"/></linearGradient><pattern id="camo_crossedvectorcamo" width="180" height="180" patternUnits="userSpaceOnUse" patternTransform="rotate(8)">
+    <rect width="180" height="180" fill="#283019"/>
+    <path d="M10,30 q40,-30 80,-5 q40,25 10,55 q-35,30 -75,5 q-30,-25 -15,-60 Z" fill="#3a4520"/>
+    <path d="M95,90 q35,-22 70,5 q22,30 -10,55 q-40,25 -70,-5 q-20,-30 10,-55 Z" fill="#525d2c"/>
+    <path d="M120,10 q30,15 12,42 q-25,22 -52,2 q-15,-30 40,-44 Z" fill="#2a3315"/>
+    <path d="M20,120 q28,-12 44,14 q12,28 -20,40 q-34,8 -40,-24 q-2,-20 16,-30 Z" fill="#6b7536"/>
+    <ellipse cx="150" cy="150" rx="26" ry="18" fill="#222a12"/>
+    <ellipse cx="60" cy="80" rx="14" ry="10" fill="#79844a"/>
+  </pattern><radialGradient id="hht_crossedvectorcamo" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ff6a63"/>
+      <stop offset="45%" stop-color="#d72a25"/>
+      <stop offset="100%" stop-color="#7c1311"/>
+    </radialGradient></defs>
+  <path d="M500,40 L880,235 L880,640 C880,820 700,920 500,968 C300,920 120,820 120,640 L120,235 Z" fill="url(#camo_crossedvectorcamo)" stroke="#d72a25" stroke-width="14" stroke-linejoin="round"/><path d="M500,40 L880,235 L880,640 C880,820 700,920 500,968 C300,920 120,820 120,640 L120,235 Z" fill="none" stroke="#e9e1c9" stroke-width="3" stroke-linejoin="round" opacity="0.35" transform="translate(0,0) scale(1)"/><path d="M500,92 L832,262 L832,628 C832,786 676,876 500,920 C324,876 168,786 168,628 L168,262 Z" fill="none" stroke="#d72a25" stroke-width="4" opacity="0.5"/>
+  <g transform="translate(500,545) rotate(-29) scale(1.3) translate(-183,-88)"><g fill="#6a7540" stroke="none" stroke-width="0" stroke-linejoin="round">
+    <polygon points="0,44 62,30 62,74 34,82 0,72"/>
+    <rect x="60" y="30" width="130" height="38" rx="3"/>
+    <rect x="92" y="19" width="100" height="10" rx="3"/>
+    <polygon points="118,68 140,68 153,116 126,118"/>
+    <path d="M150,68 L190,68 L202,156 Q184,162 166,156 Z"/>
+    <rect x="190" y="38" width="76" height="26" rx="5"/>
+    <rect x="266" y="46" width="96" height="10" rx="3"/>
+    <polygon points="300,21 310,21 308,46 302,46"/>
+    <rect x="352" y="43" width="15" height="15" rx="2"/>
+  </g></g><g transform="translate(500,545) rotate(29) scale(1.3) translate(-183,-77)"><g fill="#6a7540" stroke="none" stroke-width="0" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(500,540) scale(1.85)">
+      <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="url(#hht_crossedvectorcamo)" stroke="#7c1311" stroke-width="2.5"/>
+      
+    </g>
+  <rect x="250" y="742" width="500" height="86" rx="14" fill="#d72a25"/><text x="500" y="802" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="64" letter-spacing="4" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text><text x="500" y="690" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="34" letter-spacing="7" text-anchor="middle" fill="#cdd0b4">TIR · BALL-TRAP · CHASSE</text>
+</svg>

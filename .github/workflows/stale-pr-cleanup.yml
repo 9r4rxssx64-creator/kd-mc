@@ -1,0 +1,62 @@
+name: Stale PR + branch cleanup
+
+# Tous les jours a 03:00 UTC :
+# - Ferme les PRs ouvertes depuis > 30 jours sans activite (label stale)
+# - Supprime les branches claude/* mergees dans main
+# - Garde les branches actives < 30 jours
+
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Mark stale PRs
+        uses: actions/stale@v10
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 30
+          days-before-close: 7
+          stale-pr-message: 'Cette PR est inactive depuis 30 jours. Sera fermee dans 7 jours sans activite.'
+          close-pr-message: 'PR fermee automatiquement (inactive 37 jours).'
+          stale-pr-label: 'stale'
+          exempt-pr-labels: 'pinned,security'
+
+      - name: Delete merged claude/* branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          # List remote merged branches
+          git fetch --all --prune
+          MERGED=$(git branch -r --merged origin/main | grep -E "origin/claude/" | sed "s/origin\///" | tr -d ' ')
+          KEPT=0
+          DELETED=0
+          for b in $MERGED; do
+            # Skip the active session branch (Kevin's working branch)
+            if [ "$b" = "claude/fix-apex-ai-bugs-adHfF" ]; then
+              echo "KEEP $b (active session)"
+              KEPT=$((KEPT+1))
+              continue
+            fi
+            echo "DELETE $b (already merged in main)"
+            git push origin --delete "$b" 2>&1 | head -3
+            DELETED=$((DELETED+1))
+          done
+          echo "Cleanup : $DELETED deleted, $KEPT kept"

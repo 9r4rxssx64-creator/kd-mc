@@ -1,0 +1,115 @@
+name: Apex v13 iOS Simulator (Playwright WebKit iPhone 14 Pro)
+
+# v13.4.90 — iOS Simulator wiring complet pour Apex IA self-test autonome.
+#
+# Kevin "Apex utilise iOS simulator pour verif réel" + "Intègre à apex et qu'il
+# utilise avec fonction".
+#
+# Trigger :
+#   - repository_dispatch event_type='apex_e2e_request' → Apex IA peut déclencher
+#     via services/apex-e2e-trigger.ts (admin Kevin only)
+#   - workflow_dispatch manual (admin Kevin via GitHub UI)
+#
+# Run : Playwright WebKit (moteur Safari iOS) sur runner Linux ubuntu-latest.
+# Device descriptor : iPhone 14 Pro (defined dans playwright.config.ts).
+# Cloud iOS Simulator natif macOS = trop coûteux, WebKit suffit (même moteur).
+
+on:
+  # v13.4.95 (Kevin "Pourquoi les tests réels ne te montrent pas ces problèmes") :
+  # Lance sur CHAQUE push qui touche le code Apex pour détecter régression UX iPhone.
+  # Avant : workflow existait mais jamais déclenché auto → bugs iPhone échappaient.
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'apex-ai/v13/**'
+      - 'apex-ai-v13/**'
+      - '.github/workflows/apex-ios-simulator.yml'
+  repository_dispatch:
+    types: [apex_e2e_request]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Playwright project (mobile-safari | mobile-chrome | all)'
+        required: false
+        default: 'mobile-safari'
+        type: choice
+        options:
+          - 'mobile-safari'
+          - 'mobile-chrome'
+          - 'all'
+      trace_id:
+        description: 'Trace ID (pour suivi Firebase)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apex-ios-e2e-${{ github.event.client_payload.trace_id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  ios-e2e-webkit:
+    name: Playwright WebKit iPhone 14 Pro
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apex-ai/v13
+    env:
+      APEX_E2E_TRACE_ID: ${{ github.event.client_payload.trace_id || inputs.trace_id || github.run_id }}
+      APEX_E2E_PROJECT: ${{ github.event.client_payload.project || inputs.project || 'mobile-safari' }}
+      APEX_E2E_REQUESTED_BY: ${{ github.event.client_payload.requested_by || 'manual_dispatch' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build Vite production
+        run: npx vite build
+
+      - name: Install Playwright WebKit
+        run: npx playwright install webkit chromium
+
+      - name: Start preview server
+        run: |
+          npx vite preview --port 4173 &
+          for i in {1..10}; do
+            if curl -sf http://localhost:4173/ > /dev/null; then
+              echo "Preview OK after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run Playwright WebKit iPhone 14 Pro
+        run: |
+          if [ "$APEX_E2E_PROJECT" = "all" ]; then
+            npx playwright test --reporter=json,line --output=test-results-ios > playwright-result.json || true
+          else
+            npx playwright test --project="$APEX_E2E_PROJECT" --reporter=json,line > playwright-result.json || true
+          fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-ios-report-${{ github.run_id }}
+          path: apex-ai/v13/playwright-report/
+          retention-days: 14
+
+      - name: Summary in job output
+        if: always()
+        run: |
+          echo "::notice::Apex iOS E2E done — trace=$APEX_E2E_TRACE_ID project=$APEX_E2E_PROJECT requested_by=$APEX_E2E_REQUESTED_BY"
+          if [ -f playwright-result.json ]; then
+            cat playwright-result.json | head -100 || true
+          fi

@@ -1,0 +1,16 @@
+{
+  "name": "kdmc-gmail",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Module Gmail OAuth 2.0 pour CMCteams (KDMC)",
+  "main": "client.js",
+  "scripts": {
+    "setup": "node setup.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "author": "Kevin DESARZENS (U11804)",
+  "license": "UNLICENSED",
+  "private": true
+}

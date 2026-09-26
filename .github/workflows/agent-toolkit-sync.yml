@@ -1,0 +1,106 @@
+name: Boîte à outils agents (récupère les 6 dépôts du tableau)
+
+# Kevin 2026-08-06 (« Récupère et installe tout ça pour toi et Apex et utilise »).
+# Les 6 dépôts du tableau « Une Notion = Un Projet » sont clonés ICI (le runner a le réseau,
+# l'agent Claude Code ne l'a pas) puis leur TEXTE utile est déposé dans vendor/agent-toolkit/.
+# Rien n'est poussé sur main : une branche claude/* + une PR (le bot auto-merge fait le reste).
+# Cron MENSUEL = veille automatique sans saturer la boîte mail de Kevin (règle anti-spam).
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Une seule source (skills, gbrain, awesome-design-skills, rtk, meridian-company-os, free-llm-api-resources) — vide = toutes"
+        required: false
+        default: ""
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: agent-toolkit-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Vérifier la logique de tri AVANT de télécharger quoi que ce soit
+        run: node --test tools/agent-toolkit/
+
+      - name: Récupérer les dépôts (texte seulement, plafonds appliqués)
+        id: sync
+        run: |
+          set -o pipefail
+          ARGS=""
+          if [ -n "${{ github.event.inputs.only }}" ]; then ARGS="--only ${{ github.event.inputs.only }}"; fi
+          node tools/agent-toolkit/sync.mjs $ARGS | tee /tmp/atk.log
+
+      - name: Prévenir FORT si une source n'a pas pu être récupérée
+        run: |
+          node -e "
+            const m = require('./vendor/agent-toolkit/MANIFEST.json');
+            const ko = m.sources.filter(s => !s.ok);
+            ko.forEach(s => console.log('::warning title=Source non récupérée::' + s.id + ' (' + s.repo + ') — ' + s.error));
+            console.log(ko.length ? ko.length + ' source(s) en échec — dépôt renommé/supprimé ? à vérifier'
+                                  : 'Les ' + m.sources.length + ' sources ont été récupérées.');
+          "
+
+      - name: Refuser tout binaire qui se serait glissé dedans
+        run: |
+          set -e
+          BAD=$(find vendor/agent-toolkit -type f ! -name '*.md' ! -name '*.markdown' ! -name '*.json' \
+                 ! -name '*.txt' ! -name '*.yml' ! -name '*.yaml' ! -iname 'LICENSE*' ! -iname 'LICENCE*' | head -20)
+          if [ -n "$BAD" ]; then echo "Fichiers non-texte détectés :"; echo "$BAD"; exit 1; fi
+          echo "OK — que du texte."
+          du -sh vendor/agent-toolkit
+
+      - name: Ouvrir/mettre à jour la PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BR="claude/agent-toolkit-sync"
+          # La branche de synchro survit d'un run à l'autre. Sans récupérer son état distant,
+          # `--force-with-lease` échoue en « stale info » (il refuse d'écraser ce qu'il ne
+          # connaît pas) — c'est ce qui a fait échouer le run 31129787712 alors que la
+          # récupération des 6 dépôts, elle, avait réussi. On récupère donc la référence
+          # d'abord ; le garde-fou du lease reste actif, on ne le désactive pas.
+          git fetch origin "$BR" 2>/dev/null || echo "(branche de synchro pas encore distante — 1er run)"
+          git checkout -B "$BR"
+          git add -A vendor/agent-toolkit
+          if git diff --cached --quiet; then
+            echo "Rien de neuf dans les 6 dépôts — aucune PR."
+            exit 0
+          fi
+          git commit -m "Boîte à outils agents : mise à jour depuis les 6 dépôts sources [skip ci]"
+          git push -u origin "$BR" --force-with-lease
+          if ! gh pr view "$BR" --json number >/dev/null 2>&1; then
+            gh pr create --base main --head "$BR" \
+              --title "Boîte à outils agents — mise à jour des 6 dépôts sources" \
+              --body "$(cat /tmp/atk.log)"
+          fi
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "## Boîte à outils agents"
+            echo '```'
+            cat /tmp/atk.log 2>/dev/null || echo "(pas de log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

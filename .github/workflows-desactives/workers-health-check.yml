@@ -1,0 +1,145 @@
+name: Workers — Health check (pour savoir)
+
+# Kevin 2026-06-09 « Câble aussi pour savoir » : ping /health de TOUS les workers
+# Cloudflare depuis le runner GitHub (réseau réel, contrairement au sandbox Claude).
+# Écrit un tableau visible (Summary) + commit tools/health/workers-status.json
+# (lisible par l'app / Kevin). Anti-spam : cron quotidien (pas plus) + dispatch manuel.
+
+on:
+  workflow_dispatch: {}
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+permissions:
+  contents: write
+  issues: write   # ouvrir/mettre à jour/fermer l'issue "worker-down" (anti-spam : 1 seule ouverte)
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+
+      - name: Ping workers + build report
+        run: |
+          set -uo pipefail
+          declare -A W=(
+            ["apex-secrets-proxy (IA)"]="https://apex-secrets-proxy.9r4rxssx64.workers.dev/health"
+            ["apex-push-worker"]="https://apex-push-worker.9r4rxssx64.workers.dev/health"
+            ["apex-chat-api"]="https://apex-chat-api.9r4rxssx64.workers.dev/health"
+            ["apex-auth-worker"]="https://apex-auth-worker.9r4rxssx64.workers.dev/health"
+            ["cmc-parser-proxy"]="https://cmc-parser-proxy.9r4rxssx64.workers.dev/health"
+            ["ld-gemini-proxy (shops)"]="https://ld-gemini-proxy.9r4rxssx64.workers.dev/"
+            ["ld-printify-order (shops)"]="https://ld-printify-order.9r4rxssx64.workers.dev/"
+          )
+          echo "## 🩺 Workers health — $(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Worker | URL | HTTP | État |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p tools/health
+          echo "{" > tools/health/workers-status.json
+          echo "  \"checked_at\": \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\"," >> tools/health/workers-status.json
+          echo "  \"workers\": {" >> tools/health/workers-status.json
+          DOWN=0; FIRST=1; : > /tmp/down.txt
+          for name in "${!W[@]}"; do
+            url="${W[$name]}"
+            # Suit les redirections, timeout 15s. Tente /health puis fallback racine.
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -L "$url" || echo "000")
+            if [ "$code" = "404" ]; then
+              base=$(echo "$url" | sed -E 's#(workers\.dev).*#\1#')/
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -L "$base" || echo "000")
+              url="$base"
+            fi
+            # Alive = toute réponse HTTP (même 401/403/404 = worker déployé qui répond).
+            # Down = 000 (connexion refusée / timeout / DNS).
+            if [ "$code" = "000" ]; then state="🔴 DOWN"; DOWN=$((DOWN+1)); echo "- $name (HTTP $code) — $url" >> /tmp/down.txt;
+            elif [ "$code" -ge 500 ]; then state="🟠 5xx"; DOWN=$((DOWN+1)); echo "- $name (HTTP $code) — $url" >> /tmp/down.txt;
+            else state="🟢 UP"; fi
+            echo "| $name | \`$url\` | $code | $state |" >> "$GITHUB_STEP_SUMMARY"
+            [ $FIRST -eq 0 ] && echo "," >> tools/health/workers-status.json
+            FIRST=0
+            printf '    "%s": { "url": "%s", "http": "%s", "up": %s }' "$name" "$url" "$code" "$([ "$state" = "🟢 UP" ] && echo true || echo false)" >> tools/health/workers-status.json
+          done
+          echo "" >> tools/health/workers-status.json
+          echo "  }," >> tools/health/workers-status.json
+          echo "  \"down_count\": $DOWN" >> tools/health/workers-status.json
+          echo "}" >> tools/health/workers-status.json
+          echo "DOWN_COUNT=$DOWN" >> "$GITHUB_ENV"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Workers en panne : $DOWN**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit status JSON (si changé)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tools/health/workers-status.json
+          if git diff --staged --quiet; then
+            echo "Pas de changement de statut."
+          else
+            git commit -m "chore(health): statut workers $(date -u '+%Y-%m-%d %H:%M') [skip ci]"
+            git push origin main || echo "push non propagé (non bloquant)"
+          fi
+
+      # Alerte Kevin (push iPhone) + issue GitHub anti-spam quand un worker tombe.
+      # Anti-spam (règle Kevin) : UNE SEULE issue "worker-down" ouverte à la fois —
+      # on la met à jour par commentaire tant que la panne dure, on la FERME dès que
+      # tout est revenu. Le push est best-effort (fail-open, jamais bloquant).
+      - name: Alerte si worker DOWN (push + issue), sinon fermeture
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUSH_URL: https://apex-push-worker.9r4rxssx64.workers.dev
+          PUSH_TOKEN: ${{ secrets.PUSH_ADMIN_TOKEN }}
+        run: |
+          set -uo pipefail
+          DOWN="${DOWN_COUNT:-0}"
+          LIST="$(cat /tmp/down.txt 2>/dev/null || true)"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # label idempotent (ne bloque jamais s'il existe déjà)
+          gh label create worker-down --color B60205 --description "Un worker Cloudflare est injoignable" 2>/dev/null || true
+          OPEN=$(gh issue list --label worker-down --state open --json number --jq '.[0].number // ""' 2>/dev/null || echo "")
+
+          if [ "$DOWN" -gt 0 ]; then
+            # 1) Push iPhone (best-effort, opt-in : rien si le secret n'est pas configuré)
+            if [ -n "${PUSH_TOKEN:-}" ]; then
+              BODY=$(printf '%s workers injoignables : %s' "$DOWN" "$(head -c 180 /tmp/down.txt | tr '\n' ' ')")
+              curl -s --max-time 15 -X POST "$PUSH_URL/send-all" \
+                -H "Authorization: Bearer $PUSH_TOKEN" -H "Content-Type: application/json" \
+                -d "$(jq -n --arg t '⚠️ KDMC — worker en panne' --arg b "$BODY" --arg u "$RUN_URL" \
+                      '{payload:{title:$t, body:$b, tag:"kdmc-worker-down", url:$u}}')" \
+                >/dev/null 2>&1 || echo "push non envoyé (non bloquant)"
+            else
+              echo "PUSH_ADMIN_TOKEN absent → pas de push (repli = issue GitHub)."
+            fi
+            # 2) Issue GitHub — anti-spam : 1 ouverte à la fois
+            TITLE="🔴 Worker(s) Cloudflare en panne"
+            MSG=$(printf '**%s worker(s) injoignable(s)** — %s\n\n%s\n\n[Voir le run](%s)' "$DOWN" "$(date -u '+%Y-%m-%d %H:%M UTC')" "$LIST" "$RUN_URL")
+            if [ -n "$OPEN" ]; then
+              gh issue comment "$OPEN" --body "$MSG" || true
+              echo "Issue #$OPEN mise à jour (panne toujours active)."
+            else
+              gh issue create --title "$TITLE" --label worker-down --body "$MSG" || true
+              echo "Nouvelle issue worker-down créée."
+            fi
+          else
+            # Rétabli : on ferme l'issue ouverte (le cas échéant)
+            if [ -n "$OPEN" ]; then
+              gh issue comment "$OPEN" --body "✅ Tous les workers répondent à nouveau ($(date -u '+%Y-%m-%d %H:%M UTC')). Fermeture automatique. [run]($RUN_URL)" || true
+              gh issue close "$OPEN" --reason completed || true
+              echo "Issue #$OPEN fermée (rétabli)."
+            else
+              echo "Tous les workers répondent, aucune issue ouverte ✅"
+            fi
+          fi
+
+      - name: Échec si worker DOWN
+        run: |
+          if [ "${DOWN_COUNT:-0}" -gt 0 ]; then
+            echo "::error::$DOWN_COUNT worker(s) injoignable(s) — voir le tableau Summary"
+            exit 1
+          fi
+          echo "Tous les workers répondent ✅"

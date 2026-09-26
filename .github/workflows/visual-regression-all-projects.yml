@@ -1,0 +1,86 @@
+name: Visual + Functional Regression — All Kevin Projects
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Kevin règles 2026-05-16 :
+# - "Inspecter mes autres projets et corriger"
+# - "Teste réel toutes les fonctions, bouton, systèmes et corrige auto les bugs comme les vues"
+# Inspecte Apex v13 + CMCteams + tools/ sur 3 viewports iPhone via Playwright WebKit.
+# Test interaction réelle des boutons (click + observe réaction).
+# Sandbox Claude Code bloque downloads browser → CI uniquement.
+
+on:
+  push:
+    branches: [main, claude/test-699LQ]
+    paths:
+      - 'apex-ai/v13/**'
+      - 'index.html'
+      - 'sw.js'
+      - 'tools/**'
+  pull_request:
+    branches: [main]
+    # ── 24.09.2026 — ÉCONOMIE MESURÉE, sans perdre une seule protection.
+    # Sur 125 commits arrivés sur main depuis le 22.09, 70 (56 %) ne touchent
+    # QUE des documents : journaux, diagnostics, rapports de ménage. Chacun
+    # déclenchait quand même toute cette batterie. Un fichier Markdown ne peut
+    # pas casser l'application : on ne la teste donc plus pour lui.
+    paths-ignore:
+      - '**/*.md'
+      - 'audit/**'
+      - 'pipeline/**'
+      - '.github/automerge-diag/**'
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+# Droits minimum (24.09.2026) : ce robot ne fait que lire. Explicite, pour ne jamais dépendre du
+# réglage par défaut du dépôt (le dépôt public est réglé en lecture seule).
+permissions:
+  contents: read
+
+jobs:
+  inspect-projects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium webkit
+
+      - name: Run multi-project visual inspection
+        run: node ./.github/scripts/visual-inspect.mjs
+        env:
+          OUTPUT_DIR: ${{ github.workspace }}/visual-reports
+
+      - name: Upload screenshots + reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-reports-${{ github.sha }}
+          path: visual-reports/
+          retention-days: 14
+
+      - name: Fail if critical overflow detected
+        run: |
+          if [ -f visual-reports/critical_failures.txt ]; then
+            echo "❌ Critical visual issues detected:"
+            cat visual-reports/critical_failures.txt
+            exit 1
+          else
+            echo "✅ No critical visual issues"
+          fi

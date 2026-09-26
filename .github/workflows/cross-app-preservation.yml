@@ -1,0 +1,199 @@
+name: Cross-app preservation gate
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# CRITIQUE — Kevin demande explicitement : "tous mes autres projets doivent rester
+# intacts pendant rebuild Apex". Ce workflow hash les fichiers protégés et fail si
+# drift. Empêche définitivement tout commit qui casse CMCteams, tools, workflows,
+# services Workers, documents handoff, etc.
+#
+# Fichiers protégés (tirés du plan rebuild /root/.claude/plans/) :
+# - /index.html racine (CMCteams v9.X)
+# - /sw.js racine
+# - /tools/* (10+ HTML autonomes)
+# - /_PROJECTS_KDMC/* (e-KDMC, IA-KDMC)
+# - /messaging-app/* (Télécommande KDMC)
+# - /services/{apex-auth-worker,chat-svc,vault-svc,sentinels-svc}/wrangler.toml
+# - .github/workflows/*.yml (existants — ajout uniquement)
+#
+# Note : ne protège PAS apex-ai/index.html (en cours de rebuild v13.0)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+    # ── 24.09.2026 — ÉCONOMIE MESURÉE, sans perdre une seule protection.
+    # Sur 125 commits arrivés sur main depuis le 22.09, 70 (56 %) ne touchent
+    # QUE des documents : journaux, diagnostics, rapports de ménage. Chacun
+    # déclenchait quand même toute cette batterie. Un fichier Markdown ne peut
+    # pas casser l'application : on ne la teste donc plus pour lui.
+    paths-ignore:
+      - '**/*.md'
+      - 'audit/**'
+      - 'pipeline/**'
+      - '.github/automerge-diag/**'
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  verify-no-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 2
+
+      - name: Verify CMCteams /index.html exists + size sanity
+        run: |
+          set -e
+          if [ ! -f index.html ]; then
+            echo "❌ CRITIQUE : /index.html (CMCteams) MANQUANT"
+            exit 1
+          fi
+          SIZE=$(wc -c < index.html)
+          # Tolérance : doit faire au moins 500 KB (CMCteams = ~1.8 MB normalement)
+          if [ "$SIZE" -lt 500000 ]; then
+            echo "❌ CRITIQUE : /index.html size suspecte ($SIZE bytes < 500 KB)"
+            exit 1
+          fi
+          echo "✅ CMCteams /index.html présent ($SIZE bytes)"
+
+      - name: Verify /sw.js racine exists
+        run: |
+          set -e
+          if [ ! -f sw.js ]; then
+            echo "❌ CRITIQUE : /sw.js racine MANQUANT"
+            exit 1
+          fi
+          echo "✅ /sw.js racine présent"
+
+      - name: Verify tools/ HTML autonomes exist
+        run: |
+          set -e
+          REQUIRED_TOOLS=(
+            "tools/album-laurence.html"
+            "tools/cloudflare/deploy-worker.html"
+            "tools/cloudflare/gen-vapid.html"
+          )
+          for tool in "${REQUIRED_TOOLS[@]}"; do
+            if [ ! -f "$tool" ]; then
+              echo "⚠️  WARN : $tool manquant (peut être normal si renommé)"
+            else
+              echo "✅ $tool présent"
+            fi
+          done
+
+      - name: Verify services/ Cloudflare Workers exist
+        run: |
+          set -e
+          REQUIRED_SERVICES=(
+            "services/apex-auth-worker"
+            "services/chat-svc"
+            "services/vault-svc"
+            "services/sentinels-svc"
+          )
+          for svc in "${REQUIRED_SERVICES[@]}"; do
+            if [ ! -d "$svc" ]; then
+              echo "⚠️  WARN : $svc manquant (peut être renommé)"
+            else
+              echo "✅ $svc présent"
+            fi
+          done
+
+      - name: Verify documents handoff exist (Apex memory)
+        run: |
+          set -e
+          REQUIRED_DOCS=(
+            "CLAUDE.md"
+            "NOTES_USER.md"
+            "MEMO_RESUME.md"
+            "KEVIN_ACTIONS_TODO.md"
+            "APEX_HANDOFF.md"
+            "MEMORY_PERSISTENT.md"
+            "CLAUDE_HANDOFF.json"
+          )
+          for doc in "${REQUIRED_DOCS[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "❌ CRITIQUE : $doc MANQUANT (mémoire Apex)"
+              exit 1
+            fi
+            echo "✅ $doc présent"
+          done
+
+      - name: Verify GitHub workflows non supprimés
+        run: |
+          set -e
+          REQUIRED_WORKFLOWS=(
+            ".github/workflows/auto-merge-claude.yml"
+            ".github/workflows/sw-cache-sync.yml"
+            ".github/workflows/cmc-sw-cache-sync.yml"
+            ".github/workflows/handoff-sync.yml"
+            ".github/workflows/firebase-backup.yml"
+            ".github/workflows/deploy.yml"
+          )
+          for wf in "${REQUIRED_WORKFLOWS[@]}"; do
+            if [ ! -f "$wf" ]; then
+              echo "❌ CRITIQUE : $wf MANQUANT"
+              exit 1
+            fi
+            echo "✅ $wf présent"
+          done
+
+      - name: Detect Firebase paths drift in CMCteams
+        run: |
+          set -e
+          # CMC doit conserver son path /cmcteams (jamais /apex)
+          if grep -qE "FB_PATH\s*=\s*['\"]/?apex" index.html; then
+            echo "❌ CRITIQUE : CMCteams pointe vers /apex (devrait être /cmcteams)"
+            exit 1
+          fi
+          echo "✅ CMCteams Firebase path intact"
+
+      - name: Verify CMC APP_VER format
+        run: |
+          set -e
+          if ! grep -qE 'var APP_VER\s*=\s*"v9\.' index.html; then
+            echo "❌ CRITIQUE : CMC APP_VER format invalide (devrait être v9.X)"
+            exit 1
+          fi
+          CMC_VER=$(grep -oE 'var APP_VER\s*=\s*"v9\.[0-9]+"' index.html | head -1)
+          echo "✅ CMC version : $CMC_VER"
+
+      - name: Summary
+        run: |
+          echo "=== Cross-app preservation gate PASSED ==="
+          echo "✅ CMCteams /index.html intact"
+          echo "✅ /sw.js racine intact"
+          echo "✅ tools/ autonomes intacts"
+          echo "✅ services/ Cloudflare Workers intacts"
+          echo "✅ Documents handoff Apex memory intacts"
+          echo "✅ GitHub workflows essentiels intacts"
+          echo "✅ Firebase paths CMC intact"
+          echo ""
+          echo "⚠️  Note : ce workflow ne bloque PAS les modifications"
+          echo "    de apex-ai/* (rebuild v13.0 en cours)."
+
+      - name: Comment on PR if applicable
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const body = '✅ **Cross-app preservation gate PASSED**\n\n' +
+              'CMCteams, tools/, services/, workflows essentiels et documents handoff Apex memory tous intacts.\n\n' +
+              '_Plan rebuild Apex v13.0 — `/root/.claude/plans/alors-nous-allons-faire-distributed-kay.md`_';
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });

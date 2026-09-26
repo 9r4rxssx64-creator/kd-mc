@@ -1,0 +1,140 @@
+name: Auto-deploy Apex v13 build to apex-ai-v13/
+
+# Demande Kevin 2026-05-08 21h00 ABSOLUE :
+# "Apex ne veut pas se mettre à jour comme tu avais prévu" — cause racine
+# identifiée : GitHub Pages sert apex-ai-v13/ (build), mais source apex-ai/v13/
+# n'était pas auto-rebuildé. Cet workflow le fait en autonomie.
+#
+# RÉSOUT DÉFINITIVEMENT le gap source vs build qui causait
+# "v13.3.78 bloqué malgré force quit + clear cache".
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'apex-ai/v13/**'
+      - '!apex-ai/v13/dist/**'
+      - '!apex-ai/v13/coverage/**'
+      - '!apex-ai/v13/node_modules/**'
+      - '!apex-ai/v13/**/*.test.ts'
+  # v13.4.168 (Kevin 2026-05-15) : anti-récidive Erreur #54 — schedule cron 30 min
+  # détecte drift source vs apex-ai-v13/ même si push trigger raté.
+  # Étape "Sync dist/ to apex-ai-v13/" idempotente : skip si déjà à jour.
+  # Filet anti-dérive : le vrai déclencheur est le push apex-ai/v13/** (immédiat).
+  # Le cron n'attrape qu'une dérive résiduelle → 6h suffit (audit 2026-07-07,
+  # règle anti-spam : 48 runs/j → 4/j). Étape sync idempotente (skip si à jour).
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-deploy-apex-v13
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          # Pas de `cache: npm` : apex-ai/v13/ n'a pas de package-lock.json,
+          # setup-node échouait ("paths not resolved") -> deploy jamais exécuté.
+
+      - name: Install deps
+        working-directory: apex-ai/v13
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+
+      - name: TypeScript strict check
+        working-directory: apex-ai/v13
+        run: npx tsc --noEmit
+
+      - name: Build production bundle
+        working-directory: apex-ai/v13
+        run: npx vite build
+
+      - name: Sync dist/ to apex-ai-v13/
+        run: |
+          set -e
+          # Backup non-build files (sw.js, manifest.json sont copiés depuis source)
+          mkdir -p /tmp/apex-deploy
+          # Clean apex-ai-v13/ (sauf .git si présent)
+          find apex-ai-v13 -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          # Copy dist content
+          cp -r apex-ai/v13/dist/* apex-ai-v13/
+          # SW + manifest non bundlés par Vite
+          cp apex-ai/v13/sw.js apex-ai-v13/sw.js
+          cp apex-ai/v13/manifest.json apex-ai-v13/manifest.json
+          # rescue.js/css (v13.0.13, HORS bundle Vite pour CSP strict) : le HTML buildé
+          # référence ./assets/js/rescue.js MAIS Vite peut relocaliser l'asset vers js/
+          # → 404 live sur apex-ai.kd-mc.com/assets/js/rescue.js (trouvé par audit-live).
+          # On garantit que le chemin RÉFÉRENCÉ existe, depuis la source autoritative.
+          mkdir -p apex-ai-v13/assets/js apex-ai-v13/assets/css
+          cp apex-ai/v13/assets/js/rescue.js  apex-ai-v13/assets/js/rescue.js
+          cp apex-ai/v13/assets/css/rescue.css apex-ai-v13/assets/css/rescue.css
+          # Verify version cohérence
+          echo "=== Verification ==="
+          grep -oE 'data-app-ver="[^"]*"' apex-ai-v13/index.html | head -1
+          grep "CACHE_VERSION" apex-ai-v13/sw.js | head -1
+
+      - name: Commit + merge build via PR (main protégé → pas de push direct)
+        # v13.4.288 (Kevin 2026-06-03 "c'est fait ?") — CAUSE du gap 282→287 :
+        # `main` est protégé ("Require a pull request") → un `git push origin main`
+        # direct est REJETÉ → le déploiement échouait silencieusement (bloqué à v282).
+        # Fix : on merge le build via une PR + `gh pr merge --admin`, exactement
+        # comme auto-merge-claude.yml (qui, lui, fonctionne). Cf. CLAUDE.md #79/#86.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "apex-deploy-bot"
+          git config user.email "apex-deploy-bot@noreply.github.com"
+          git add apex-ai-v13/
+          if git diff --cached --quiet; then
+            echo "No changes to deploy"
+            exit 0
+          fi
+          # Extraire APP_VER (1re occurrence de l'attribut data-app-ver="…").
+          APP_VER=$(grep -oE 'data-app-ver="[^"]*"' apex-ai-v13/index.html | head -1 | sed 's/.*="\([^"]*\)"/\1/')
+          # v13.4.321 (Kevin "V320" — deploy bloqué) : branche UNIQUE par run +
+          # pas de force-push. L'ancienne branche fixe + `git push -f` était
+          # REJETÉE par une règle de protection ("Cannot force-push to this
+          # branch"). Une branche neuve à chaque run = push normal (fast-forward),
+          # PR, merge, suppression → aucun force-push.
+          BRANCH="auto-deploy/apex-v13-build-${{ github.run_id }}"
+          git checkout -B "$BRANCH"
+          git commit -m "Auto-deploy Apex ${APP_VER} build → apex-ai-v13/ [skip ci]" \
+            -m "Source apex-ai/v13/ → build dist/ → deployed apex-ai-v13/ (auto)."
+          git push origin "$BRANCH"
+          # Branche neuve → toujours créer la PR.
+          gh pr create --base main --head "$BRANCH" \
+            --title "Auto-deploy Apex ${APP_VER} build" \
+            --body "Build dist/ → apex-ai-v13/ (auto). Ne touche que apex-ai-v13/** → pas de re-trigger. [skip ci]" \
+            || true
+          PR=$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -z "$PR" ]; then
+            echo "::warning::PR introuvable pour $BRANCH — déploiement bloqué."
+            exit 1
+          fi
+          # Merge via PR (admin override si dispo, sinon merge normal).
+          if gh pr merge "$PR" --merge --admin --delete-branch 2>/dev/null \
+             || gh pr merge "$PR" --merge --delete-branch 2>/dev/null; then
+            echo "Déploiement Apex ${APP_VER} mergé → GitHub Pages dans 1-3 min"
+          else
+            echo "::warning::PR #$PR créée mais merge refusé (protection) — merger manuellement."
+            exit 1
+          fi

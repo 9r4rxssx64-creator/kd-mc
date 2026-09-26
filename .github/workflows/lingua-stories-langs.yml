@@ -1,0 +1,76 @@
+name: Lingua — traduit les histoires vers les 8 nouvelles langues (au fur et à mesure)
+
+# Les 24 histoires existent en 6 langues ; les 8 langues Est+Asie (pl,ru,uk,cs,zh,ja,ko,ar)
+# n'ont pas encore leurs histoires. Ce workflow en traduit quelques-unes à chaque passage,
+# DANS L'ORDRE (la 1re d'abord — la carte Histoires apparaît dès que l'histoire 1 est prête).
+# VÉRITÉ : un modèle A traduit, un modèle B INDÉPENDANT juge chaque phrase ; la moindre
+# erreur dure → l'histoire est rejetée en silence (rien n'est publié de douteux).
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Nombre d'histoires à traduire ce passage"
+        default: "3"
+        required: false
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+concurrency:
+  group: lingua-stories-langs
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: "Traduit + juge (sûr : rejet silencieux si douteux)"
+        id: tr
+        shell: bash -eo pipefail {0}   # sans pipefail, un `node … | tee` échoué ressort VERT
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Juges de secours (indépendants) : si Mistral + Gemini sont en limite de débit
+          # au même moment, le passage était perdu (« juge indisponible »). Mêmes clés que
+          # le reste du dépôt. Aucune n'est Anthropic : l'IA principale n'est pas engagée.
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+        run: |
+          node tools/lingua/translate-stories.mjs lingua --limit "${{ github.event.inputs.limit || '3' }}" | tee /tmp/tr.log
+          echo "changed=$(git status --porcelain lingua | grep -c . || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Garde-fou syntaxe + porte de vérité (l'app ne doit JAMAIS casser)
+        if: steps.tr.outputs.changed != '0'
+        run: |
+          node --check lingua/data.js && node --check lingua/app.js
+          node tools/lingua/verify-truth.mjs --struct
+
+      - name: Publie (branche claude/* → auto-merge → déploiement)
+        if: steps.tr.outputs.changed != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="claude/lingua-stories-langs-${{ github.run_number }}"
+          git checkout -b "$BR"
+          git add lingua/data.js lingua/app.js lingua/sw.js
+          MSG=$(grep -m1 '^OK: [0-9]' /tmp/tr.log || echo 'Lingua : histoires traduites (8 nouvelles langues)')
+          git commit -m "Lingua : histoires → 8 nouvelles langues — ${MSG#OK: }" -m "Traduites par un modèle A puis validées phrase par phrase par un modèle B indépendant (0 erreur dure). Rejet silencieux sinon."
+          for i in 1 2 3 4; do git push -u origin "$BR" && break || sleep $((2**i)); done
+
+      - name: Rien de publié ce passage
+        if: steps.tr.outputs.changed == '0'
+        run: echo "Aucune histoire validée ce passage (rejet du garde-qualité ou IA indisponible) — sans risque, on réessaie."

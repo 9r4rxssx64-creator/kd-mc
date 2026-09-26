@@ -1,0 +1,131 @@
+name: KDMC — Sauvegarde du registre clients (KV ACCOUNTS)
+
+# Sauvegarde QUOTIDIENNE et CHIFFRÉE du KV ACCOUNTS du routeur kd-mc.com :
+# fiches clients (acc:*), passkeys Face ID (pk:*), index (idx:uids), journal
+# admin (aud:log). Sans ce backup, une perte du namespace KV = perte de TOUS
+# les Face ID enrôlés + tout l'historique.
+#
+# SÉCU : le repo est PUBLIC → le dump est chiffré AES-256 (openssl, PBKDF2
+# 200k itérations) avec le secret KDMC_SSO_SECRET avant tout commit. Jamais
+# de données clients en clair dans le repo. Poussé sur la branche dédiée
+# `kv-backups` (non protégée — un workflow ne peut pas pousser sur main).
+#
+# RESTAURATION (en cas de perte du KV) :
+#   git fetch origin kv-backups && git checkout origin/kv-backups -- backups/kdmc-accounts/latest.json.enc
+#   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in latest.json.enc -pass pass:<KDMC_SSO_SECRET> > dump.json
+#   puis pour chaque entrée : curl -X PUT "https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/storage/kv/namespaces/<NS>/values/<clé>" \
+#     -H "Authorization: Bearer <CLOUDFLARE_API_TOKEN>" --data-binary "<valeur>"
+#
+# Anti-spam mails (règle CLAUDE.md) : 1 cron/jour, commits [skip ci].
+on:
+  # ⛔ Exécutions programmées RETIRÉES le 15/08/2026.
+  #    GitHub a suspendu le compte : « repositories that use GitHub Actions
+  #    solely to interact with 3rd party websites […] or for general
+  #    computing purposes may fall afoul of the Additional Product Terms ».
+  #    Ce workflow reste lançable À LA MAIN (workflow_dispatch), mais plus
+  #    rien ne tourne tout seul. Ne PAS remettre de cron ici.
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency: kdmc-kv-backup
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+
+      - name: Dump du KV via l'API Cloudflare (clés durables uniquement)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: 8cfa33a28ac045adb7b7a9556ca8a073 # id figé (cf. services/kdmc-router/wrangler.toml)
+        run: |
+          set -e
+          if [ -z "${CF_TOKEN:-}" ] || [ -z "${CF_ACCOUNT:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents — backup impossible."
+            exit 1
+          fi
+          API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces/$NS"
+          # 1) Liste des clés (paginée par curseur)
+          CURSOR=""; : > /tmp/keys.txt
+          for i in $(seq 1 20); do
+            URL="$API/keys?limit=1000"; [ -n "$CURSOR" ] && URL="$URL&cursor=$CURSOR"
+            R=$(curl -fsS "$URL" -H "Authorization: Bearer $CF_TOKEN")
+            echo "$R" | python3 -c "import sys,json; d=json.load(sys.stdin); [print(k['name']) for k in d.get('result',[])]" >> /tmp/keys.txt
+            CURSOR=$(echo "$R" | python3 -c "import sys,json; d=json.load(sys.stdin); print((d.get('result_info') or {}).get('cursor') or '')")
+            [ -z "$CURSOR" ] && break
+          done
+          # 2) Clés DURABLES seulement (les chx:/al: sont éphémères, TTL auto)
+          grep -E '^(acc:|pk:|idx:|aud:)' /tmp/keys.txt > /tmp/keep.txt || true
+          N=$(wc -l < /tmp/keep.txt | tr -d ' ')
+          echo "Clés durables à sauvegarder : $N"
+          if [ "$N" = "0" ]; then echo "::warning::0 clé durable — dump vide (KV neuf ?)"; fi
+          # 3) Valeurs → JSON unique
+          python3 - <<'PY'
+          import json, os, subprocess, urllib.parse
+          api = "https://api.cloudflare.com/client/v4/accounts/%s/storage/kv/namespaces/%s" % (os.environ["CF_ACCOUNT"], os.environ["NS"])
+          tok = os.environ["CF_TOKEN"]
+          out = {}
+          for k in open("/tmp/keep.txt").read().splitlines():
+              if not k: continue
+              u = api + "/values/" + urllib.parse.quote(k, safe="")
+              try:
+                  v = subprocess.run(["curl", "-fsS", u, "-H", "Authorization: Bearer " + tok],
+                                     capture_output=True, text=True, timeout=30)
+                  out[k] = v.stdout if v.returncode == 0 else None
+              except Exception:
+                  out[k] = None
+          import datetime
+          json.dump({"at": datetime.datetime.utcnow().isoformat() + "Z",
+                     "namespace": os.environ["NS"], "count": len(out), "entries": out},
+                    open("/tmp/kv-dump.json", "w"), ensure_ascii=False, indent=1)
+          print("dump:", len(out), "entrées")
+          PY
+
+      - name: Chiffre le dump (AES-256, PBKDF2 200k — repo public, jamais de clair)
+        env:
+          BACKUP_PASS: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
+        run: |
+          set -e
+          if [ -z "${BACKUP_PASS:-}" ]; then
+            echo "::error::Ni KDMC_SSO_SECRET ni JWT_SECRET — on ne committe JAMAIS le dump en clair. Abandon."
+            exit 1
+          fi
+          mkdir -p /tmp/out
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+            -in /tmp/kv-dump.json -out "/tmp/out/latest.json.enc" -pass env:BACKUP_PASS
+          cp "/tmp/out/latest.json.enc" "/tmp/out/$(date -u +%Y%m%d).json.enc"
+          ls -la /tmp/out
+
+      - name: Pousse sur la branche kv-backups (rétention 14 jours datés + latest)
+        run: |
+          set -e
+          git config user.name "kdmc-kv-backup[bot]"
+          git config user.email "actions@github.com"
+          git fetch origin kv-backups 2>/dev/null && git checkout -B kv-backups origin/kv-backups || git checkout --orphan kv-backups
+          # Branche dédiée : ne garder QUE le dossier backups (orphan → nettoyer l'index)
+          if ! git rev-parse origin/kv-backups >/dev/null 2>&1; then git rm -rfq --cached . 2>/dev/null || true; git clean -fdq || true; fi
+          mkdir -p backups/kdmc-accounts
+          cp /tmp/out/*.json.enc backups/kdmc-accounts/
+          # Rétention : latest + 14 derniers dumps datés
+          ls -1 backups/kdmc-accounts/2*.json.enc 2>/dev/null | sort | head -n -14 | xargs -r rm -f
+          # Anti-échec Vercel : le projet kdmc-agent-monaco (Root Directory tools/agent)
+          # tentait un preview deploy sur CHAQUE push de cette branche orpheline →
+          # « Root Directory does not exist » + mail d'échec quotidien à Kevin.
+          # Ce vercel.json fait ignorer la branche par Vercel (idempotent).
+          mkdir -p tools/agent
+          printf '%s\n' '{ "git": { "deploymentEnabled": false }, "ignoreCommand": "exit 0" }' > tools/agent/vercel.json
+          git add backups/kdmc-accounts tools/agent/vercel.json
+          git commit -m "backup: registre KV kd-mc.com $(date -u +%Y-%m-%d) (chiffré) [skip ci]" || { echo "rien à committer"; exit 0; }
+          git push -f origin kv-backups
+
+      - name: Copie de secours en artifact (30 jours)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kdmc-kv-backup-${{ github.run_id }}
+          path: /tmp/out/latest.json.enc
+          retention-days: 30

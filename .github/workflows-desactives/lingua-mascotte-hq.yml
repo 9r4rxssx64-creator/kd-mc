@@ -1,0 +1,139 @@
+name: "KDMC Lingua — Mascotte en HAUTE QUALITÉ (dessin + calques animés)"
+
+# Kevin 2026-08-11 : « Augmente la qualité de Bee aussi ».
+# Redessine une mascotte dans le style riche (ombré doux, pelage/duvet, yeux brillants)
+# ET refabrique les CALQUES ANIMÉS depuis le MÊME dessin, pour ne rien perdre :
+#   rig/base.webp   = le personnage SANS ses ailes ni son bras levé (fond du pantin)
+#   rig/wing-l|r    = chaque aile seule, fond transparent
+#   rig/arm         = le bras seul, fond transparent
+#   wave/point/party/read = les 4 poses plates utilisées partout ailleurs
+# Sans ces calques, Bee perdrait son battement d'ailes permanent (régression visible).
+#
+# Pourquoi tout dériver d'UNE source : images/edits repart de l'image fournie, donc les
+# calques restent cadrés sur le même personnage. L'alignement est ensuite VÉRIFIÉ dans un
+# navigateur avant intégration ; s'il dérive, on jette les calques (l'app les rend
+# optionnels via onerror) plutôt que de livrer un pantin décalé.
+# Manuel uniquement — zéro cron, zéro mail (règle anti-spam).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mascotte:
+        description: "Quelle mascotte redessiner (bee ou donkey)"
+        default: "bee"
+        required: true
+      calques:
+        description: "Refabriquer les calques animés (ailes/bras) — oui/non"
+        default: "oui"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Dessin + calques
+        env:
+          OPENAI_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          MASC: ${{ github.event.inputs.mascotte }}
+          CALQUES: ${{ github.event.inputs.calques }}
+        run: |
+          set -e
+          [ -n "${OPENAI_KEY:-}" ] || { echo "::error::OPEN_AI_API_KEY absente"; exit 1; }
+          case "$MASC" in bee|donkey) ;; *) echo "::error::mascotte inconnue : $MASC"; exit 1 ;; esac
+          mkdir -p /tmp/out
+
+          # Style commun aux deux mascottes : c'est LUI qui fait la « qualité ».
+          STYLE="Adorable children's app mascot illustration: SOFT AIRBRUSHED GRADIENT SHADING (not flat vector), thin warm outlines (not thick harsh black), very large glossy sparkling eyes with two or three white highlights and long curved eyelashes, warm rosy blush cheeks, joyful wide open smile showing a small tongue, chibi proportions with a big head, soft fuzzy fur texture, gentle rim light, soft round cream-coloured vignette background circle, soft shadow under the feet, square composition, warm cosy palette, no text, no watermark, no border."
+
+          if [ "$MASC" = "bee" ]; then
+            WHO="A very cute cartoon BABY BEE: round golden-yellow head with a small yellow tuft on top, two brown antennae with rounded tips, plush black-and-yellow striped body, a fluffy golden collar with a honey hexagon pendant, two translucent pale-blue veined wings spread behind her, small dark brown limbs."
+            FRAME="Standing upright facing the viewer, full body centred in the square, both arms hanging DOWN at her sides (no waving, no raised arm), wings spread symmetrically behind her, mouth open in a smile. Framing rule, important: the head fills the upper half of the square, the two eyes are centred around 30% from the top of the image and the mouth around 43% from the top."
+          else
+            WHO="A very cute cartoon BABY DONKEY: soft warm caramel-taupe fur with lighter golden highlights, creamy beige muzzle and belly, two long upright ears with soft pink inner ears, a fluffy chocolate mane tuft on top of the head, a tiny golden honey-drop pendant on a thin collar, small dark hooves, fluffy tail tip."
+            FRAME="Standing upright facing the viewer, full body centred in the square, both front hooves hanging DOWN at its sides, mouth open in a smile. Framing rule: the head fills the upper half of the square, the two eyes are centred around 40% from the top and the mouth around 56% from the top."
+          fi
+
+          echo "== source =="
+          HTTP=$(curl -sS -o /tmp/src.json -w "%{http_code}" https://api.openai.com/v1/images/generations \
+            -H "Authorization: Bearer $OPENAI_KEY" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg p "$WHO $FRAME $STYLE" '{model:"gpt-image-1",prompt:$p,size:"1024x1024",quality:"high",n:1}')") || HTTP=000
+          if [ "$HTTP" != "200" ] || ! jq -e '.data[0].b64_json' /tmp/src.json >/dev/null 2>&1; then
+            echo "::error::source non générée (http=$HTTP) : $(jq -r '.error.message // "?"' /tmp/src.json 2>/dev/null | head -c 300)"; exit 1
+          fi
+          jq -r '.data[0].b64_json' /tmp/src.json | base64 -d > /tmp/out/source.png
+          echo "  source OK ($(wc -c < /tmp/out/source.png) octets)"
+
+          KEEP="Keep the EXACT same character design, exact same pose, exact same position and size in the frame, exact same colours, exact same soft shaded style and the exact same cream background."
+
+          # $1 = nom de sortie · $2 = consigne · $3 = "transparent" pour un calque découpé
+          gen_edit () {
+            NAME="$1"; ACTION="$2"; TRANSP="${3:-}"
+            echo "== $NAME =="
+            set -- -F "model=gpt-image-1" -F "image[]=@/tmp/out/source.png;type=image/png" \
+                   -F "prompt=$KEEP $ACTION" -F "size=1024x1024" -F "quality=high" -F "n=1"
+            [ "$TRANSP" = "transparent" ] && set -- "$@" -F "background=transparent" -F "output_format=png"
+            HTTP=$(curl -sS -o /tmp/img.json -w "%{http_code}" https://api.openai.com/v1/images/edits \
+              -H "Authorization: Bearer $OPENAI_KEY" "$@") || HTTP=000
+            if [ "$HTTP" = "200" ] && jq -e '.data[0].b64_json' /tmp/img.json >/dev/null 2>&1; then
+              jq -r '.data[0].b64_json' /tmp/img.json | base64 -d > "/tmp/out/$NAME.png"
+              echo "  OK ($(wc -c < /tmp/out/$NAME.png) octets)"; return 0
+            fi
+            echo "::warning::$NAME non générée (http=$HTTP) : $(jq -r '.error.message // "?"' /tmp/img.json 2>/dev/null | head -c 200)"
+            return 1
+          }
+
+          OK=0
+          gen_edit wave  "Now show this same character happily waving hello with one raised arm, looking at the viewer." && OK=$((OK+1))
+          gen_edit point "Now show this same character curiously pointing upwards with one hand, asking a question, mouth open as if speaking." && OK=$((OK+1))
+          gen_edit party "Now show this same character jumping for joy with both arms up, surrounded by small confetti and stars." && OK=$((OK+1))
+          gen_edit read  "Now show this same character sitting down and adorably reading a small purple book held in its hands, eyes looking at the book." && OK=$((OK+1))
+
+          if [ "$CALQUES" = "oui" ] && [ "$MASC" = "bee" ]; then
+            # base = le corps SANS ailes ni bras levé ; les calques viennent par-dessus.
+            gen_edit base   "Now show this same character with BOTH WINGS COMPLETELY REMOVED — no wings at all, nothing behind the body, the background fully visible where the wings used to be. Everything else must stay pixel-identical." && OK=$((OK+1))
+            gen_edit wing-l "Now keep ONLY the character's left wing (the one on the left side of the image), exactly where it is, at the exact same size. Erase absolutely everything else — the body, the head, the other wing — leaving those areas fully transparent." transparent && OK=$((OK+1))
+            gen_edit wing-r "Now keep ONLY the character's right wing (the one on the right side of the image), exactly where it is, at the exact same size. Erase absolutely everything else, leaving those areas fully transparent." transparent && OK=$((OK+1))
+            gen_edit arm    "Now keep ONLY the character's right arm raised in a friendly wave, drawn in the same style and colours, positioned at the character's right shoulder. Erase everything else, leaving it fully transparent." transparent && OK=$((OK+1))
+          else
+            # L'âne n'a pas de calques : sa base EST la source.
+            cp /tmp/out/source.png /tmp/out/base.png; OK=$((OK+1))
+          fi
+          echo "Images produites : $OK"
+          [ "$OK" -ge 2 ] || { echo "::error::génération insuffisante"; exit 1; }
+
+      - name: Conversion webp + dépôt sur une branche
+        env:
+          MASC: ${{ github.event.inputs.mascotte }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq webp
+          mkdir -p "lingua/$MASC/rig"
+          for f in /tmp/out/*.png; do
+            n=$(basename "$f" .png)
+            case "$n" in
+              source) cwebp -q 92 "$f" -o "lingua/$MASC/$MASC-src.webp" >/dev/null 2>&1 ;;
+              base|wing-l|wing-r|arm)
+                # -exact : ne PAS altérer les pixels totalement transparents (sinon halo)
+                cwebp -q 92 -exact -alpha_q 100 "$f" -o "lingua/$MASC/rig/$n.webp" >/dev/null 2>&1 ;;
+              *) cwebp -q 90 "$f" -o "lingua/$MASC/$n.webp" >/dev/null 2>&1 ;;
+            esac
+          done
+          ls -la "lingua/$MASC" "lingua/$MASC/rig"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR="claude/lingua-hq-$MASC-${{ github.run_number }}"
+          git checkout -b "$BR"
+          git add "lingua/$MASC"
+          git commit -m "Lingua : $MASC redessiné en haute qualité (dessin + calques) [skip ci]" \
+            -m "Source d'abord, puis poses et calques dérivés de cette source pour garder le même personnage. L'alignement des calques doit être VÉRIFIÉ au navigateur avant intégration." || { echo "rien à committer"; exit 0; }
+          for i in 1 2 3 4; do git push -u origin "$BR" && break || sleep $((2**i)); done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: mascotte-hq, path: /tmp/out/, retention-days: 30 }

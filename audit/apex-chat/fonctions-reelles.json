@@ -1,0 +1,4211 @@
+{
+ "meta": {
+  "debut": "2026-09-17T18:54:44.222Z",
+  "node": "v22.22.2",
+  "only": "all",
+  "fin": "2026-09-17T18:57:39.189Z",
+  "duree_ms": 174968
+ },
+ "front": {
+  "duree_ms": 174377,
+  "vues": [
+   {
+    "fid": "F01",
+    "view": "chats",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "Conversations"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F01-chats.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Rechercher dans toutes les conversations",
+      "onclick": "K._openGlobalSearch()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → gs-input"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "＋ Nouveau",
+      "onclick": "K._showNewMenu()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "📦 1 conv archivée",
+      "onclick": "K._viewArchivedConvs()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "📌 Laurence (message chiffré) 2 ⋯",
+      "onclick": "K.openConv('cv-laurence')",
+      "clic": "souris",
+      "effet": [
+       "vue → chat",
+       "focus → app",
+       "réseau : POST /api/auth/ws-ticket, POST /api/keys/prekeys, GET /api/keys/u-laurence/bundle, GET /api/users/u-laurence, POST /api/ai/smart-reply, GET /api/conversations/cv-laurence/ws-diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "Actions",
+      "onclick": "event.stopPropagation();K._openConvActionsMenu('cv-laurence',event)",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "Famille (message chiffré) ⋯",
+      "onclick": "K.openConv('cv-groupe')",
+      "clic": "souris",
+      "effet": [
+       "vue → chat",
+       "focus → app",
+       "réseau : POST /api/auth/ws-ticket, POST /api/auth/media-ticket, GET /api/conversations/cv-groupe/ws-diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "Actions",
+      "onclick": "event.stopPropagation();K._openConvActionsMenu('cv-groupe',event)",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 7,
+      "label": "Menu",
+      "onclick": "K.toggleMenu()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 8,
+      "label": "Inviter",
+      "onclick": "K.openInvite()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 9,
+      "label": "💬Chats",
+      "onclick": "",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 10,
+      "label": "👥Contacts",
+      "onclick": "",
+      "clic": "souris",
+      "effet": [
+       "vue → contacts"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 11,
+      "label": "📞Appels",
+      "onclick": "",
+      "clic": "souris",
+      "effet": [
+       "vue → calls"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 12,
+      "label": "⚙️Réglages",
+      "onclick": "",
+      "clic": "souris",
+      "effet": [
+       "vue → settings"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 13,
+      "label": "👑Admin",
+      "onclick": "",
+      "clic": "souris",
+      "effet": [
+       "vue → admin",
+       "focus → bnav-admin",
+       "réseau : GET /api/admin/force-update-ts"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F02",
+    "view": "chat",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "POST /api/ai/smart-reply"
+    ],
+    "h2": [],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F02-chat.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('chats')",
+      "clic": "souris",
+      "effet": [
+       "vue → chats",
+       "focus → BODY"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Laurence 🔒 Chiffré (transit)",
+      "onclick": "K._openSecurityVerification()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "Appel audio",
+      "onclick": "K._call('audio','cv-laurence')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "Actions",
+      "onclick": "K._openConvActionsMenu('cv-laurence', event)",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "Salut Kevin, ça va ? 18:49",
+      "onclick": "if(K._selectedMsgs && K._selectedMsgs.size > 0){event.stopPropagation();K._toggl",
+      "clic": "souris",
+      "effet": [
+       "focus → app"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "Coucou Lolo, oui et toi ? 18:50 ✓✓",
+      "onclick": "if(K._selectedMsgs && K._selectedMsgs.size > 0){event.stopPropagation();K._toggl",
+      "clic": "souris",
+      "effet": [
+       "conditionnel : garde `if(…)` non satisfaite dans cet état (pas un bouton)"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "Regarde https://example.com/photo.jpg 😊 18:53 ❤",
+      "onclick": "if(K._selectedMsgs && K._selectedMsgs.size > 0){event.stopPropagation();K._toggl",
+      "clic": "souris",
+      "effet": [
+       "conditionnel : garde `if(…)` non satisfaite dans cet état (pas un bouton)"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 7,
+      "label": "❤️",
+      "onclick": "K._toggleReaction('m3','❤️')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 8,
+      "label": "Oui",
+      "onclick": "",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 9,
+      "label": "Non",
+      "onclick": "",
+      "clic": "souris",
+      "effet": [
+       "focus → msg-input"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 10,
+      "label": "Emojis",
+      "onclick": "K._toggleEmojiPicker()",
+      "clic": "souris",
+      "effet": [
+       "focus → chat-emoji-btn"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 11,
+      "label": "Message vocal",
+      "onclick": "K._toggleVoiceRecord()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → chat-mic-btn"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 12,
+      "label": "Photo ou vidéo",
+      "onclick": "document.getElementById('chat-media-input').click()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 13,
+      "label": "Joindre un fichier",
+      "onclick": "document.getElementById('chat-file-input').click()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 14,
+      "label": "GIF",
+      "onclick": "K._toggleGifPicker()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → gif-q",
+       "réseau : GET /api/gif"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 15,
+      "label": "Programmer un message",
+      "onclick": "K._openScheduleMenu()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 16,
+      "label": "Message éphémère",
+      "onclick": "K._openEphemeralMenu()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 17,
+      "label": "Créer sondage",
+      "onclick": "K._openPollComposer()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 18,
+      "label": "Partager position",
+      "onclick": "K._openLocationShare()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 19,
+      "label": "Partager un contact",
+      "onclick": "K._openContactCardComposer()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 20,
+      "label": "Envoyer",
+      "onclick": "K._sendMsg()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F03",
+    "view": "calls",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "📞 Appels"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F03-calls.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Appel audio Laurence",
+      "onclick": "K._callContact('u-laurence','audio')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Appel vidéo Laurence",
+      "onclick": "K._callContact('u-laurence','video')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "Appel audio Ami",
+      "onclick": "K._callContact('u-ami','audio')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "Appel vidéo Ami",
+      "onclick": "K._callContact('u-ami','video')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F04",
+    "view": "contacts",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "Contacts (2)"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F04-contacts.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Ajouter",
+      "onclick": "K._openAddContact()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → ac-name"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Rafraîchir",
+      "onclick": "K._fetchContacts()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "réseau : GET /api/contacts"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "L Laurence Saint-Polit 🟢 En ligne ℹ️ 📞",
+      "onclick": "K._startConvWithUser('u-laurence','Laurence Saint-Polit')",
+      "clic": "souris",
+      "effet": [
+       "vue → chat",
+       "focus → app",
+       "réseau : POST /api/auth/ws-ticket, GET /api/keys/u-laurence/bundle, GET /api/users/u-laurence, GET /api/conversations/cv-laurence/ws-diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "Fiche",
+      "onclick": "event.stopPropagation();K._openContactSheet('u-laurence')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/u-laurence"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "Appel",
+      "onclick": "event.stopPropagation();K._callContact && K._callContact('u-laurence','audio')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "A Ami Synthétique Vu il y a 2h ℹ️ 📞",
+      "onclick": "K._startConvWithUser('u-ami','Ami Synthétique')",
+      "clic": "souris",
+      "effet": [
+       "vue → chat",
+       "focus → app",
+       "réseau : POST /api/auth/ws-ticket, GET /api/keys/u-ami/bundle, GET /api/users/u-ami, GET /api/conversations/cv-archive/ws-diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "Fiche",
+      "onclick": "event.stopPropagation();K._openContactSheet('u-ami')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/u-ami"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 7,
+      "label": "Appel",
+      "onclick": "event.stopPropagation();K._callContact && K._callContact('u-ami','audio')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F05",
+    "view": "settings",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "Réglages"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F05-settings.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "👤Mon profil›",
+      "onclick": "K.openProfile()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "🖼Photo de profil›",
+      "onclick": "K._openProfilePhoto()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "🔔Notifications›",
+      "onclick": "K.openNotifPrefs()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "📡Tester une notif serveur›",
+      "onclick": "K._testServerPush()",
+      "clic": "souris",
+      "effet": [
+       "focus → app",
+       "dialogue alert « ⚠️ Les notifications ne sont pas autorisées sur ce »"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "🔒Confidentialité›",
+      "onclick": "K.openPrivacyPrefs()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "🎨Apparence›",
+      "onclick": "K.openAppearance()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "⏰Capsule temporelle›",
+      "onclick": "K.openTimeCapsule()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 7,
+      "label": "💌Lettre différée 24h›",
+      "onclick": "K.openLetters()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 8,
+      "label": "🕰Memory Lane (il y a 1 an)›",
+      "onclick": "K.openMemoryLane()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 9,
+      "label": "📅Messages programmés›",
+      "onclick": "K._viewScheduledList()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 10,
+      "label": "📊Insights IA (statistiques)›",
+      "onclick": "K._openInsightsModal()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 11,
+      "label": "⭐Messages favoris›",
+      "onclick": "K._openStarredList()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 12,
+      "label": "🔔Son de notification (global)›",
+      "onclick": "K._openSoundPicker(null)",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 13,
+      "label": "📸Mes statuts (24h)›",
+      "onclick": "K._viewMyStories()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 14,
+      "label": "💬Mon statut›",
+      "onclick": "K._openMyStatus()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 15,
+      "label": "🚫Utilisateurs bloqués›",
+      "onclick": "K._viewBlockedList()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 16,
+      "label": "⌨️Raccourcis clavier›",
+      "onclick": "K._openKeyboardShortcuts()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 17,
+      "label": "✅Marquer toutes les conv comme lues›",
+      "onclick": "K._markAllConvsAsRead()",
+      "clic": "souris",
+      "effet": [
+       "focus → app",
+       "dialogue confirm « ✅ Marquer toutes les conversations comme lues ? »"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 18,
+      "label": "💾Stockage local›",
+      "onclick": "K._openStorageStats()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 19,
+      "label": "📦Backup / Restauration complète›",
+      "onclick": "K._openBackupRestoreMenu()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 20,
+      "label": "📝Templates / Snippets›",
+      "onclick": "K._openSnippetEditor()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 21,
+      "label": "🔔Notifications push (app fermée)›",
+      "onclick": "K._openPushSettings()",
+      "clic": "souris",
+      "effet": [
+       "focus → app",
+       "réseau : GET /api/admin/force-update-ts"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 22,
+      "label": "🔧Diagnostic MAJ + Forcer MAJ chez tous›",
+      "onclick": "K._openUpdateDiagnostic()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 23,
+      "label": "👥Cercle privé pré-câblé (Laurence)›",
+      "onclick": "K._openConfigureCorePair()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 24,
+      "label": "🩹Réparer un DM (l'autre ne reçoit rien)›",
+      "onclick": "K._healDmServer()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "dialogue prompt « Qui ne reçoit pas tes messages ?\n\nTape un nom/pseu »"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 25,
+      "label": "🔐Sécurité admin : clé + Face ID ›",
+      "onclick": "K._openAdminKeySetup()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 26,
+      "label": "🔧Réparer mes conversations (sync serveur)›",
+      "onclick": "K._healConversations()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → app",
+       "réseau : GET /api/conversations, GET /api/contacts, POST /api/auth/ws-ticket, GET /api/conversations/cv-archive/ws-diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 27,
+      "label": "🧹Effacer TOUT l'historique des chats›",
+      "onclick": "K._wipeAllChatHistory()",
+      "clic": "souris",
+      "effet": [
+       "dialogue confirm « 🧹 Effacer l'historique de TOUS les chats ?\n\nTous  »"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 28,
+      "label": "🎨Thème + couleur d'accent›",
+      "onclick": "K._openThemePicker()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 29,
+      "label": "💾Exporter mes données (JSON)›",
+      "onclick": "K._exportAllData()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → app"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 30,
+      "label": "📥Importer un backup›",
+      "onclick": "K._openImportData()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 31,
+      "label": "🎨Mini-apps (Studios Apex)›",
+      "onclick": "K.openMiniApps()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 32,
+      "label": "💸Paiement QR›",
+      "onclick": "K._openPayQr()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 33,
+      "label": "⭐Apex Chat+ Premium›",
+      "onclick": "K.openPremium()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 34,
+      "label": "🔧Diagnostic technique›",
+      "onclick": "window.open('./diag.html')",
+      "clic": "souris",
+      "effet": [
+       "window.open → ./diag.html",
+       "focus → app"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 35,
+      "label": "📜CGU›",
+      "onclick": "window.open('./cgu.html')",
+      "clic": "souris",
+      "effet": [
+       "window.open → ./cgu.html"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 36,
+      "label": "🛡Charte privée›",
+      "onclick": "window.open('./privacy.html')",
+      "clic": "souris",
+      "effet": [
+       "window.open → ./privacy.html"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 37,
+      "label": "ℹ️Mentions légales›",
+      "onclick": "window.open('./mentions.html')",
+      "clic": "souris",
+      "effet": [
+       "window.open → ./mentions.html"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 38,
+      "label": "❓Aide›",
+      "onclick": "window.open('./aide.html')",
+      "clic": "souris",
+      "effet": [
+       "window.open → ./aide.html"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 39,
+      "label": "🆘Contacter l'assistance›",
+      "onclick": "K._contactSupport()",
+      "clic": "souris",
+      "effet": [
+       "vue → chat",
+       "toast",
+       "réseau : POST /api/conversations, POST /api/auth/ws-ticket, GET /api/keys/kdmc_admin/bundle, GET /api/conversations/cv-new/ws-diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 40,
+      "label": "📤Mes données (tout ce que le serveur sait de mo",
+      "onclick": "K._downloadServerData()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "réseau : GET /api/users/me/export"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 41,
+      "label": "🗑Supprimer mon compte›",
+      "onclick": "K._deleteMyAccount()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 42,
+      "label": "🚪 Se déconnecter",
+      "onclick": "K.logout()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON",
+       "dialogue confirm « Te déconnecter ? Tes messages chiffrés restent sur »"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F06",
+    "view": "admin",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "👑 Panel admin Kevin"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F06-admin.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "🩺 DIAG Diagnostic + tests",
+      "onclick": "K.sv('admin-diag')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-diag",
+       "focus → app",
+       "réseau : GET /api/conversations, POST /api/auth/ws-ticket, GET /api/admin/diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "🔔 TEST Notifs / Appels (device)",
+      "onclick": "window.open('./diag.html')",
+      "clic": "souris",
+      "effet": [
+       "window.open → ./diag.html"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "🟢 LIVE Connectés live",
+      "onclick": "K.sv('admin-live-users')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-live-users",
+       "réseau : GET /api/admin/all-users"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "🗺 MAP Carte temps réel",
+      "onclick": "K.sv('admin-map')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-map"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "📋 + Carnet invitations",
+      "onclick": "K.sv('admin-invite-book')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-invite-book"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "🔓 SMS✕ Cercle de confiance",
+      "onclick": "K.sv('admin-trusted-circle')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-trusted-circle",
+       "réseau : GET /api/admin/trusted-circle"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "👥 5 Utilisateurs",
+      "onclick": "K.sv('admin-users')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-users",
+       "réseau : GET /api/admin/all-users"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 7,
+      "label": "🎛 ON/OFF Toggles",
+      "onclick": "K.sv('admin-toggles')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 8,
+      "label": "📜 17 Audit log",
+      "onclick": "K.sv('admin-audit')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 9,
+      "label": "🛡 0% Sentinelles",
+      "onclick": "K.sv('admin-sentinels')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-sentinels",
+       "focus → app"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 10,
+      "label": "📊 — Stats",
+      "onclick": "K._adminCmd('analytics')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : POST /api/admin/commands"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 11,
+      "label": "🔍 🔎 Recherche globale",
+      "onclick": "K.sv('admin-search')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-search",
+       "focus → app"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 12,
+      "label": "📢 — Broadcast",
+      "onclick": "K._adminCmd('broadcast')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 13,
+      "label": "⚠ 0 Signalements",
+      "onclick": "K._adminLoadSignalements()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : POST /api/admin/commands"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 14,
+      "label": "🔔 LOG Connexions",
+      "onclick": "K.sv('admin-connections')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-connections",
+       "focus → app",
+       "réseau : GET /api/admin/connections"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 15,
+      "label": "⭐ € Demandes Premium",
+      "onclick": "K.sv('admin-premium')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-premium",
+       "réseau : GET /api/admin/premium-requests"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 16,
+      "label": "✨ Demander à Apex",
+      "onclick": "K._adminAiAsk()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F07",
+    "view": "admin-users",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "GET /api/admin/all-users"
+    ],
+    "h2": [
+     "🟢 Tous les comptes"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F07-admin-users.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Actualiser",
+      "onclick": "K.render()",
+      "clic": "souris",
+      "effet": [
+       "réseau : GET /api/admin/all-users"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "📇",
+      "onclick": "K._openContactSheet('kdmc_admin')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/kdmc_admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "📇",
+      "onclick": "K._openContactSheet('u-laurence')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/u-laurence"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "📇",
+      "onclick": "K._openContactSheet('u-ami')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/u-ami"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "📋 Inviter",
+      "onclick": "K.sv('admin-invite-book')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-invite-book"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "📤 1-clic",
+      "onclick": "K.openInvite()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F08",
+    "view": "admin-live-users",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "GET /api/admin/all-users"
+    ],
+    "h2": [
+     "🟢 Tous les comptes"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F08-admin-live-users.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Actualiser",
+      "onclick": "K.render()",
+      "clic": "souris",
+      "effet": [
+       "réseau : GET /api/admin/all-users"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "📇",
+      "onclick": "K._openContactSheet('kdmc_admin')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/kdmc_admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "📇",
+      "onclick": "K._openContactSheet('u-laurence')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/u-laurence"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "📇",
+      "onclick": "K._openContactSheet('u-ami')",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV",
+       "réseau : GET /api/contact/u-ami"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "📋 Inviter",
+      "onclick": "K.sv('admin-invite-book')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-invite-book"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "📤 1-clic",
+      "onclick": "K.openInvite()",
+      "clic": "souris",
+      "effet": [
+       "modale ouverte",
+       "focus → DIV"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F09",
+    "view": "admin-map",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "🗺 Carte temps réel"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F09-admin-map.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K._adminMapClose();K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Actualiser",
+      "onclick": "K._adminMapRefresh()",
+      "clic": "souris",
+      "effet": [
+       "focus → map-refresh-btn"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "🟢 En ligne",
+      "onclick": "K._adminMapFilter('online')",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "Tous",
+      "onclick": "K._adminMapFilter('all')",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "📜 Historique 7j",
+      "onclick": "K._adminMapToggleHistory()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → map-history-btn"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "🌍 Tout afficher",
+      "onclick": "K._adminMapFitAll()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F10",
+    "view": "admin-search",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "🔍 Recherche globale"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F10-admin-search.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Tout",
+      "onclick": "K._adminSearchScope='all';K._adminSearchRun($('#admin-search-q').value)",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "Users",
+      "onclick": "K._adminSearchScope='users';K._adminSearchRun($('#admin-search-q').value)",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "Audit",
+      "onclick": "K._adminSearchScope='audit';K._adminSearchRun($('#admin-search-q').value)",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "Invitations",
+      "onclick": "K._adminSearchScope='invitations';K._adminSearchRun($('#admin-search-q').value)",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "Signal.",
+      "onclick": "K._adminSearchScope='signalements';K._adminSearchRun($('#admin-search-q').value)",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F11",
+    "view": "admin-connections",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "GET /api/admin/connections"
+    ],
+    "h2": [
+     "🔔 Connexions"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F11-admin-connections.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Actualiser",
+      "onclick": "K.render()",
+      "clic": "souris",
+      "effet": [
+       "réseau : GET /api/admin/connections"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F12",
+    "view": "admin-audit",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "Audit & télémétrie"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F12-admin-audit.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F13",
+    "view": "admin-premium",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "GET /api/admin/premium-requests"
+    ],
+    "h2": [
+     "⭐ Demandes Premium (@kdmc)"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F13-admin-premium.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "← Admin",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "✅ Activer Premium",
+      "onclick": "K._adminGrantPremium('u-laurence','monthly')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "réseau : POST /api/admin/grant-premium, GET /api/admin/premium-requests"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F14",
+    "view": "admin-toggles",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "🎛 Toggles features"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F14-admin-toggles.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Notes vocales ✓",
+      "onclick": "K._adminToggle('voice_messages')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → app",
+       "réseau : POST /api/admin/toggles"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "Partage fichiers ✓",
+      "onclick": "K._adminToggle('file_sharing')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "Partage localisation ✓",
+      "onclick": "K._adminToggle('location_sharing')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "Stories 24h ✓",
+      "onclick": "K._adminToggle('stories')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 5,
+      "label": "Sondages ✓",
+      "onclick": "K._adminToggle('polls')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 6,
+      "label": "Appels audio ✓",
+      "onclick": "K._adminToggle('audio_calls')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 7,
+      "label": "Appels vidéo ✓",
+      "onclick": "K._adminToggle('video_calls')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 8,
+      "label": "Capsules temporelles ✓",
+      "onclick": "K._adminToggle('time_capsule')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 9,
+      "label": "Lettres 24h différées ✓",
+      "onclick": "K._adminToggle('letters_24h')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 10,
+      "label": "Memory Lane (il y a 1 an) ✓",
+      "onclick": "K._adminToggle('memory_lane')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 11,
+      "label": "Assistant IA (résumé, smart reply) ✓",
+      "onclick": "K._adminToggle('ai_assistant')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 12,
+      "label": "Anti-scam IA ✓",
+      "onclick": "K._adminToggle('anti_scam')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 13,
+      "label": "Traduction live (béta) ✗",
+      "onclick": "K._adminToggle('auto_translate')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "réseau : POST /api/admin/toggles"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 14,
+      "label": "Studios Apex embedded ✓",
+      "onclick": "K._adminToggle('mini_apps')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 15,
+      "label": "Paiement QR ✓",
+      "onclick": "K._adminToggle('payment_qr')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 16,
+      "label": "Chiffrement E2E strict ✓",
+      "onclick": "K._adminToggle('e2e_strict')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 17,
+      "label": "Admin Kevin invisible (Option A) ✓",
+      "onclick": "K._adminToggle('kevin_invisible')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 18,
+      "label": "Inscription publique (sans invitation) ✗",
+      "onclick": "K._adminToggle('public_signup')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "réseau : POST /api/admin/toggles"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 19,
+      "label": "Géoloc users ✓",
+      "onclick": "K._adminToggle('track_geoloc')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 20,
+      "label": "Devices users ✓",
+      "onclick": "K._adminToggle('track_devices')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 21,
+      "label": "Notifications push ✓",
+      "onclick": "K._adminToggle('push_notifs')",
+      "tag": "div",
+      "clic": "aucun",
+      "effet": [
+       "⚪ non retrouvé après re-rendu"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 22,
+      "label": "SMS Vonage réel (si OFF = lien magique seulement",
+      "onclick": "K._adminToggle('sms_real')",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "réseau : POST /api/admin/toggles"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F15",
+    "view": "admin-trusted-circle",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "GET /api/admin/trusted-circle"
+    ],
+    "h2": [
+     "🔓 Cercle de confiance"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F15-admin-trusted-circle.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "‹ Admin",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin",
+       "focus → BODY"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "➕ Ajouter",
+      "onclick": "K._tcAdd()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "🗑 Retirer",
+      "onclick": "K._tcRemove('+33600000002')",
+      "clic": "souris",
+      "effet": [
+       "réseau : POST /api/admin/trusted-circle, GET /api/admin/trusted-circle"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "🗑 Retirer",
+      "onclick": "K._tcRemove('+33600000003')",
+      "clic": "souris",
+      "effet": [
+       "réseau : POST /api/admin/trusted-circle, GET /api/admin/trusted-circle"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F16",
+    "view": "admin-invite-book",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "📋 Carnet d'invitations"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F16-admin-invite-book.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "📁 Choisir fichier .vcf",
+      "onclick": "document.getElementById('vcf-file').click()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "📇 Contacts natifs (Android)",
+      "onclick": "K._adminPickContactsNative()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "🪄 Tout autoriser et générer les liens",
+      "onclick": "K._adminInviteBulkRun()",
+      "clic": "souris",
+      "effet": [
+       "toast",
+       "focus → BUTTON"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F17",
+    "view": "admin-diag",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "GET /api/conversations",
+     "POST /api/auth/ws-ticket",
+     "GET /api/admin/diag"
+    ],
+    "h2": [
+     "🩺 Diagnostic"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F17-admin-diag.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "←",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "🔄 Relancer",
+      "onclick": "K._runDiag()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON",
+       "réseau : GET /api/conversations, POST /api/auth/ws-ticket, GET /api/admin/diag"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "🔍",
+      "onclick": "K._diagQ=document.getElementById('diag-q').value.trim();K._runDiag()",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON",
+       "réseau : GET /api/admin/diag, GET /api/conversations, POST /api/auth/ws-ticket"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F18",
+    "view": "admin-sentinels",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [],
+    "h2": [
+     "Sentinelles"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F18-admin-sentinels.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "🔄 Actualiser",
+      "onclick": "_runSentinels();K.render()",
+      "clic": "souris",
+      "effet": [
+       "DOM modifié"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   },
+   {
+    "fid": "F19",
+    "view": "admin-timeline",
+    "rendue": true,
+    "cle": true,
+    "exceptions": [],
+    "requetes": [
+     "GET /api/admin/users/u-laurence/timeline",
+     "GET /api/users/u-laurence"
+    ],
+    "h2": [
+     "📜 Timeline"
+    ],
+    "capture": "/home/user/CMCteams/messaging-app/test-results/fonctions-reelles/F19-admin-timeline.png",
+    "boutons": [
+     {
+      "i": 0,
+      "label": "Retour",
+      "onclick": "K.sv('admin-live-users')",
+      "clic": "souris",
+      "effet": [
+       "vue → admin-live-users",
+       "réseau : GET /api/admin/all-users"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 1,
+      "label": "Actualiser",
+      "onclick": "K.render()",
+      "clic": "souris",
+      "effet": [
+       "réseau : GET /api/admin/users/u-laurence/timeline"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 2,
+      "label": "🚫 Bloquer",
+      "onclick": "K._adminUserAction('u-laurence','block')",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON",
+       "dialogue confirm « Bloquer cet utilisateur ? »"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 3,
+      "label": "✅ Whitelist",
+      "onclick": "K._adminUserAction('u-laurence','authorize')",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON",
+       "dialogue confirm « Autoriser cet utilisateur ? »"
+      ],
+      "exceptions": [],
+      "mort": false
+     },
+     {
+      "i": 4,
+      "label": "🚪 Force logout",
+      "onclick": "K._adminUserAction('u-laurence','force_logout')",
+      "clic": "souris",
+      "effet": [
+       "focus → BUTTON",
+       "dialogue confirm « Force logout cet utilisateur ? »"
+      ],
+      "exceptions": [],
+      "mort": false
+     }
+    ]
+   }
+  ],
+  "boutons": [],
+  "clients": {
+   "F07": {
+    "ok": true,
+    "detail": "renderAdminUsers(app) exécutée directement : #user-search=true, #user-list=true — mais le routeur envoie 'admin-users' vers renderAdminLiveUsers (fonction non atteignable par K.sv)",
+    "exceptions": []
+   },
+   "F29": {
+    "ok": true,
+    "detail": "plateforme=true enrôlé avant=false enrôlement=true enrôlé après=true vérification=true (authentificateur virtuel CDP)",
+    "exceptions": []
+   },
+   "F34": {
+    "ok": true,
+    "detail": "selfTest=true, aller-retour ECDH+AES-GCM entre 2 identités OK (« Coucou Lolo 🔐 »), empreinte 6b3a3 d2c68 …",
+    "exceptions": []
+   },
+   "F35": {
+    "ok": true,
+    "detail": "3 messages, le 3ᵉ reçu en premier → « trois », puis « un », « deux » ; export/reset/import du cliquet : true/true",
+    "exceptions": []
+   },
+   "F36": {
+    "ok": false,
+    "detail": "lib : enveloppe v1 déballée avec le bon PIN, refusée avec un faux PIN=true, plan={\"action\":\"noop\"} — MAIS window.ApexVault présent dans la page=false, balise <script type=module src=lib/key-vault.js>=false : le coffre n'est PAS chargé par index.html (importé ici manuellement), _ensureCryptoKeys retombe sur « keep-cleartext »",
+    "exceptions": []
+   },
+   "F38": {
+    "ok": true,
+    "detail": "classes réelles : [grp-start | grp-end | grp-start grp-end]",
+    "exceptions": []
+   },
+   "F39": {
+    "ok": true,
+    "detail": "findInMessages('coucou') → 1 résultat (m2) ; barre #find-input ouverte=true, compteur réel « 1/1 », nextMatchIndex(0,3,+1)=1",
+    "exceptions": []
+   },
+   "F43": {
+    "ok": true,
+    "detail": "collectConversationMedia → 5 élément(s), extractLinks → 2 liens, galerie ouverte (modale 0→2)",
+    "exceptions": []
+   },
+   "F44": {
+    "ok": true,
+    "detail": "déchiffrement direct échoue (clé du pair tournée)=true → _decryptBytesHeal re-télécharge le bundle et déchiffre [1,2,3,42]",
+    "exceptions": []
+   },
+   "F45": {
+    "ok": true,
+    "detail": "GET /api/gif (mock, via le vrai fetch) → 1 cellule ; clic → _uploadMedia(File image/gif, 6 o)",
+    "exceptions": []
+   },
+   "F46": {
+    "ok": true,
+    "detail": "_fetchPeerAvatar → data:image/png;base64,BBBBV2… (cache=true) ; _openProfilePhoto → modale/sélecteur (0→6)",
+    "exceptions": []
+   },
+   "F47": {
+    "ok": true,
+    "detail": "balayage 85 px sur la vraie bulle m1 → réponse à « m1 » ; balayage 30 px → rien ; ApexGesture.swipeReplyDecision présent",
+    "exceptions": []
+   },
+   "F55": {
+    "ok": true,
+    "detail": "activé → je vois lecture+saisie=true ; coupé → masqués=true, présence « 🔒 Chiffré (transit) »",
+    "exceptions": []
+   },
+   "F59": {
+    "ok": true,
+    "detail": "vraie RTCPeerConnection créée pour 1 pair, offre SDP locale=true, 3 signal(aux) envoyés via ws, mute=true, end() → 0 pair",
+    "exceptions": []
+   },
+   "F70": {
+    "ok": true,
+    "detail": "décisions {\"resub\":true,\"keep\":false,\"noSub\":true,\"failOpen\":false,\"eff\":true} ; _serverVapidKey() lit la clé du push-worker (/health mocké) = true",
+    "exceptions": []
+   },
+   "F82": {
+    "ok": true,
+    "detail": "_resendOtp() → POST /api/auth/send-otp (mock) → code de dev reçu « 000000 », re-rendu de l'étape=true",
+    "exceptions": []
+   },
+   "F83": {
+    "ok": true,
+    "detail": "_reportUser() → modale (0→2), bouton « Envoyer le signalement », POST /api/signalements ×1, dialogues aucun",
+    "exceptions": []
+   },
+   "F41-client": {
+    "ok": true,
+    "detail": "fonctions membres présentes côté client : _openConvInfo (la logique membres locaux est testée côté worker F41)",
+    "exceptions": []
+   }
+  },
+  "sw": {
+   "ok": true,
+   "detail": "SW actif (https://localhost:4177/sw.js?v=v1.1.291), caches [\"apex-chat-v1.1.291-static\",\"apex-chat-v1.1.291-offline\"], manifest pré-caché=true"
+  },
+  "erreurs_js": [],
+  "requetes_api": 137,
+  "dialogues": 8
+ },
+ "worker": {
+  "duree_ms": 531,
+  "nb_routes": 103,
+  "routes": [
+   {
+    "key": "POST /api/auth/send-otp",
+    "f": "F20",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/auth/verify-otp",
+    "f": "F21",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/auth/check-phone",
+    "f": "F22",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/auth/sso-from-apex",
+    "f": "F25",
+    "regex": false,
+    "anon": 401,
+    "user": 401,
+    "admin": 401,
+    "adminCode": "invalid_apex_token",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/auth/sso-from-kdmc",
+    "f": "F24",
+    "regex": false,
+    "anon": 401,
+    "user": 401,
+    "admin": 401,
+    "adminCode": "face_id_requis",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/users/me",
+    "f": "F05",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "PATCH /api/users/me",
+    "f": "F05",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "DELETE /api/users/me",
+    "f": "F79",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 403,
+    "adminCode": "admin_protected",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/users/me/export",
+    "f": "F80",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/users/me/avatar",
+    "f": "F46",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/user-toggles",
+    "f": "F14",
+    "regex": false,
+    "anon": 401,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/users/heartbeat",
+    "f": "F08",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/cgu/accept",
+    "f": "F75",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/users/u-laurence",
+    "f": "F05",
+    "regex": true,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/users/u-laurence/full",
+    "f": "F07",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/location/u-laurence",
+    "f": "F09",
+    "regex": true,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/media",
+    "f": "F42",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/gif",
+    "f": "F45",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/media/u-laurence",
+    "f": "F42",
+    "regex": true,
+    "anon": 401,
+    "user": 404,
+    "admin": 404,
+    "adminCode": "no_media",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/turn",
+    "f": "F56",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/turn/health",
+    "f": "F57",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/turn-config",
+    "f": "F58",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/keys/prekeys",
+    "f": "F37",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "bad_pubkey",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/keys/u-laurence/bundle",
+    "f": "F37",
+    "regex": true,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/conversations",
+    "f": "F30",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/conversations",
+    "f": "F30",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/configure-core-pair",
+    "f": "F40",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/heal-dm",
+    "f": "F40",
+    "regex": false,
+    "anon": 401,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/trusted-circle",
+    "f": "F15",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/trusted-circle",
+    "f": "F15",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/diag",
+    "f": "F17",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/auth/ws-ticket",
+    "f": "F26",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/auth/media-ticket",
+    "f": "F27",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/conversations/u-laurence/ws",
+    "f": "F30",
+    "regex": true,
+    "anon": 426,
+    "user": 426,
+    "admin": 426,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/conversations/u-laurence/ws-diag",
+    "f": "F30",
+    "regex": true,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/conversations/u-laurence/members",
+    "f": "F41",
+    "regex": true,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/conversations/u-laurence/members",
+    "f": "F41",
+    "regex": true,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "DELETE /api/conversations/u-laurence/members/u-laurence",
+    "f": "F41",
+    "regex": true,
+    "anon": 401,
+    "user": 400,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "PATCH /api/conversations/u-laurence",
+    "f": "F30",
+    "regex": true,
+    "anon": 401,
+    "user": 500,
+    "admin": 500,
+    "adminCode": "internal",
+    "ok": false,
+    "problemes": [
+     "user: 500 Erreur interne, réessaie dans un instant {\"error\":\"internal\",\"message\":\"Erreur interne, réessaie dans un instant\",\"detail\":\"unusable\",\"where\":\"    at _Request.cl",
+     "admin: 500 Erreur interne, réessaie dans un instant {\"error\":\"internal\",\"message\":\"Erreur interne, réessaie dans un instant\",\"detail\":\"unusable\",\"where\":\"    at _Request.cl"
+    ]
+   },
+   {
+    "key": "DELETE /api/conversations/u-laurence",
+    "f": "F30",
+    "regex": true,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/stories",
+    "f": "F48",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/stories",
+    "f": "F48",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/stories/u-laurence",
+    "f": "F48",
+    "regex": true,
+    "anon": 401,
+    "user": 404,
+    "admin": 404,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/polls",
+    "f": "F49",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/polls/u-laurence/vote",
+    "f": "F49",
+    "regex": true,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/signalements",
+    "f": "F76",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/time-capsules",
+    "f": "F50",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/time-capsules",
+    "f": "F50",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/time-capsules/u-laurence",
+    "f": "F50",
+    "regex": true,
+    "anon": 401,
+    "user": 404,
+    "admin": 404,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/letters",
+    "f": "F51",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/letters",
+    "f": "F51",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "DELETE /api/letters/u-laurence",
+    "f": "F51",
+    "regex": true,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/memory-lane",
+    "f": "F52",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ia/chat",
+    "f": "F60",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /ia/chat",
+    "f": "F60",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ai/summarize",
+    "f": "F61",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/premium/request",
+    "f": "F72",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/grant-premium",
+    "f": "F73",
+    "regex": false,
+    "anon": 401,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/premium-requests",
+    "f": "F73",
+    "regex": false,
+    "anon": 401,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/premium/status",
+    "f": "F72",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/premium/quota",
+    "f": "F72",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/force-update",
+    "f": "F17",
+    "regex": false,
+    "anon": 401,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/force-update-ts",
+    "f": "F17",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/force-update-via-token",
+    "f": "F17",
+    "regex": false,
+    "anon": 401,
+    "user": 401,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/push/subscribe",
+    "f": "F68",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/push/unsubscribe",
+    "f": "F68",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/push/test",
+    "f": "F68",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ai/search",
+    "f": "F65",
+    "regex": false,
+    "anon": 401,
+    "user": 503,
+    "admin": 503,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ai/rewrite",
+    "f": "F63",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ai/smart-reply",
+    "f": "F64",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ai/translate",
+    "f": "F62",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ai/voice-transcribe",
+    "f": "F67",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/ai/image-describe",
+    "f": "F66",
+    "regex": false,
+    "anon": 401,
+    "user": 400,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/invitations",
+    "f": "F54",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": "B6HTUTJX",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/invitations/ABC123",
+    "f": "F54",
+    "regex": true,
+    "anon": 404,
+    "user": 404,
+    "admin": 404,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/commands",
+    "f": "F12",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/invite-magic",
+    "f": "F16",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": "HKDQVRAS",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/whitelist-bulk",
+    "f": "F16",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/auth/magic-login",
+    "f": "F23",
+    "regex": false,
+    "anon": 401,
+    "user": 401,
+    "admin": 401,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/live-users",
+    "f": "F08",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/map",
+    "f": "F09",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/users/u-laurence/geo-history",
+    "f": "F09",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/test/login",
+    "f": "F17",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 403,
+    "adminCode": "forbidden",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/test/cleanup",
+    "f": "F17",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 403,
+    "adminCode": "forbidden",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/contacts",
+    "f": "F53",
+    "regex": false,
+    "anon": 401,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/all-users",
+    "f": "F07",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/block",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/unblock",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/ban",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/unban",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/authorize",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/revoke",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/force_logout",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/users/u-laurence/delete",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/users/u-laurence/timeline",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/users/u-laurence/conversations",
+    "f": "F19",
+    "regex": true,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/connections",
+    "f": "F11",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/search",
+    "f": "F10",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/admin/toggles",
+    "f": "F14",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "POST /api/admin/toggles",
+    "f": "F14",
+    "regex": false,
+    "anon": 403,
+    "user": 403,
+    "admin": 400,
+    "adminCode": "error",
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/system/config",
+    "f": "F74",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /health",
+    "f": "F74",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   },
+   {
+    "key": "GET /api/health",
+    "f": "F74",
+    "regex": false,
+    "anon": 200,
+    "user": 200,
+    "admin": 200,
+    "adminCode": null,
+    "ok": true,
+    "problemes": []
+   }
+  ],
+  "sondes": {
+   "F28": {
+    "ok": true,
+    "detail": "drapeau OFF→200 admin ; ON+jeton→200 admin ; ON sans jeton→401 admin_mfa_required ; ON jeton faux→401"
+   },
+   "F78": {
+    "ok": true,
+    "detail": "origine autorisée → https://9r4rxssx64-creator.github.io ; origine inconnue → null"
+   },
+   "F77": {
+    "ok": true,
+    "detail": "0 */1 * * * → 0 requêtes D1, 2 msg queue · */5 * * * * → 2 requêtes D1, 0 msg queue · 0 9 * * * → 1 requêtes D1, 2 msg queue · 0 3 * * * → 16 requêtes D1, 0 msg queue"
+   },
+   "F84": {
+    "ok": true,
+    "detail": "backups/d1-2026-09-17.json.enc : v=1, déchiffré (3 clés), ancienne sauvegarde 2020 purgée=true, aucune donnée en clair dans le blob=true"
+   },
+   "F69": {
+    "ok": true,
+    "detail": "service binding → https://apex-push-worker.internal/web-push (jeton posé, payload transmis) ; repli fetch direct → https://apex-push-worker.9r4rxssx64.workers.dev/web-push"
+   },
+   "F31": {
+    "ok": true,
+    "detail": "ConversationDO.fetch sans en-tête Upgrade → 426 (WebSocket required)"
+   },
+   "F81": {
+    "ok": true,
+    "detail": "strict ON : clair → e2e_required, E2E1: → ack ; strict OFF : clair → ack"
+   },
+   "F85": {
+    "ok": true,
+    "detail": "alarm() : tampon 1→0 message, 1 écriture(s) D1"
+   },
+   "F32": {
+    "ok": true,
+    "detail": "PresenceDO.fetch POST /heartbeat → 200"
+   },
+   "F33": {
+    "ok": true,
+    "detail": "BroadcastDO.fetch POST /broadcast → 200"
+   }
+  }
+ },
+ "verdicts": {
+  "F01": {
+   "statut": "✅",
+   "libelle": "Liste des conversations (chats)",
+   "volet": "vue",
+   "preuve": "rendue, 14 boutons cliqués (14 avec effet), requêtes aucune"
+  },
+  "F02": {
+   "statut": "✅",
+   "libelle": "Fil d'une conversation (chat)",
+   "volet": "vue",
+   "preuve": "rendue, 21 boutons cliqués (21 avec effet), requêtes POST /api/ai/smart-reply"
+  },
+  "F03": {
+   "statut": "✅",
+   "libelle": "Appels (calls)",
+   "volet": "vue",
+   "preuve": "rendue, 4 boutons cliqués (4 avec effet), requêtes aucune"
+  },
+  "F04": {
+   "statut": "✅",
+   "libelle": "Contacts",
+   "volet": "vue",
+   "preuve": "rendue, 8 boutons cliqués (8 avec effet), requêtes aucune"
+  },
+  "F05": {
+   "statut": "✅",
+   "libelle": "Réglages (settings)",
+   "volet": "vue",
+   "preuve": "rendue, 43 boutons cliqués (43 avec effet), requêtes aucune"
+  },
+  "F06": {
+   "statut": "✅",
+   "libelle": "Panneau admin",
+   "volet": "vue",
+   "preuve": "rendue, 17 boutons cliqués (17 avec effet), requêtes aucune"
+  },
+  "F07": {
+   "statut": "✅",
+   "libelle": "renderAdminUsers — annuaire",
+   "volet": "vue",
+   "preuve": "rendue, 7 boutons cliqués (7 avec effet), requêtes GET /api/admin/all-users · renderAdminUsers(app) exécutée directement : #user-search=true, #user-list=true — mais le routeur envoie 'admin-users' vers renderAdminLiveUsers (fonction non atteignable par K.sv)"
+  },
+  "F08": {
+   "statut": "✅",
+   "libelle": "renderAdminLiveUsers — présence",
+   "volet": "vue",
+   "preuve": "rendue, 7 boutons cliqués (7 avec effet), requêtes GET /api/admin/all-users"
+  },
+  "F09": {
+   "statut": "✅",
+   "libelle": "renderAdminMap — carte",
+   "volet": "vue",
+   "preuve": "rendue, 6 boutons cliqués (6 avec effet), requêtes aucune · ⚪ tuiles/CDN Leaflet (unpkg) injoignables hors réseau : seul le repli « Carte indisponible » est prouvé"
+  },
+  "F10": {
+   "statut": "✅",
+   "libelle": "renderAdminSearch — recherche",
+   "volet": "vue",
+   "preuve": "rendue, 6 boutons cliqués (6 avec effet), requêtes aucune"
+  },
+  "F11": {
+   "statut": "✅",
+   "libelle": "renderAdminConnections — connexions",
+   "volet": "vue",
+   "preuve": "rendue, 2 boutons cliqués (2 avec effet), requêtes GET /api/admin/connections"
+  },
+  "F12": {
+   "statut": "✅",
+   "libelle": "renderAdminAudit — audit",
+   "volet": "vue",
+   "preuve": "rendue, 1 boutons cliqués (1 avec effet), requêtes aucune"
+  },
+  "F13": {
+   "statut": "✅",
+   "libelle": "renderAdminPremium — premium",
+   "volet": "vue",
+   "preuve": "rendue, 2 boutons cliqués (2 avec effet), requêtes GET /api/admin/premium-requests"
+  },
+  "F14": {
+   "statut": "✅",
+   "libelle": "renderAdminToggles — interrupteurs",
+   "volet": "vue",
+   "preuve": "rendue, 23 boutons cliqués (23 avec effet), requêtes aucune"
+  },
+  "F15": {
+   "statut": "✅",
+   "libelle": "renderAdminTrustedCircle — cercle",
+   "volet": "vue",
+   "preuve": "rendue, 4 boutons cliqués (4 avec effet), requêtes GET /api/admin/trusted-circle"
+  },
+  "F16": {
+   "statut": "✅",
+   "libelle": "renderAdminInviteBook — invitations",
+   "volet": "vue",
+   "preuve": "rendue, 4 boutons cliqués (4 avec effet), requêtes aucune"
+  },
+  "F17": {
+   "statut": "✅",
+   "libelle": "renderAdminDiag — diagnostic",
+   "volet": "vue",
+   "preuve": "rendue, 3 boutons cliqués (3 avec effet), requêtes GET /api/conversations, POST /api/auth/ws-ticket, GET /api/admin/diag"
+  },
+  "F18": {
+   "statut": "✅",
+   "libelle": "renderAdminSentinels — sentinelles",
+   "volet": "vue",
+   "preuve": "rendue, 2 boutons cliqués (2 avec effet), requêtes aucune"
+  },
+  "F19": {
+   "statut": "✅",
+   "libelle": "renderAdminTimeline — chronologie",
+   "volet": "vue",
+   "preuve": "rendue, 5 boutons cliqués (5 avec effet), requêtes GET /api/admin/users/u-laurence/timeline, GET /api/users/u-laurence"
+  },
+  "F20": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/send-otp",
+   "volet": "route",
+   "preuve": "POST /api/auth/send-otp → anon 200 / user 200 / admin 200"
+  },
+  "F21": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/verify-otp",
+   "volet": "route",
+   "preuve": "POST /api/auth/verify-otp → anon 200 / user 200 / admin 200"
+  },
+  "F22": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/check-phone",
+   "volet": "route",
+   "preuve": "POST /api/auth/check-phone → anon 200 / user 200 / admin 200"
+  },
+  "F23": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/magic-login",
+   "volet": "route",
+   "preuve": "POST /api/auth/magic-login → anon 401 / user 401 / admin 401"
+  },
+  "F24": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/sso-from-kdmc",
+   "volet": "route",
+   "preuve": "POST /api/auth/sso-from-kdmc → anon 401 / user 401 / admin 401"
+  },
+  "F25": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/sso-from-apex",
+   "volet": "route",
+   "preuve": "POST /api/auth/sso-from-apex → anon 401 / user 401 / admin 401"
+  },
+  "F26": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/ws-ticket",
+   "volet": "route",
+   "preuve": "POST /api/auth/ws-ticket → anon 401 / user 200 / admin 200"
+  },
+  "F27": {
+   "statut": "✅",
+   "libelle": "POST /api/auth/media-ticket",
+   "volet": "route",
+   "preuve": "POST /api/auth/media-ticket → anon 401 / user 200 / admin 200"
+  },
+  "F28": {
+   "statut": "✅",
+   "libelle": "Porte admin X-Apex-Admin-Token (MFA)",
+   "volet": "sonde",
+   "preuve": "drapeau OFF→200 admin ; ON+jeton→200 admin ; ON sans jeton→401 admin_mfa_required ; ON jeton faux→401"
+  },
+  "F29": {
+   "statut": "✅",
+   "libelle": "Verrou Face ID / passkey (client)",
+   "volet": "client",
+   "preuve": "plateforme=true enrôlé avant=false enrôlement=true enrôlé après=true vérification=true (authentificateur virtuel CDP)"
+  },
+  "F30": {
+   "statut": "❌",
+   "libelle": "GET/POST /api/conversations (+PATCH/DELETE/members)",
+   "volet": "route",
+   "preuve": "PATCH /api/conversations/u-laurence : user: 500 Erreur interne, réessaie dans un instant {\"error\":\"internal\",\"message\":\"Erreur interne, réessaie dans un instant\",\"detail\":\"unusable\",\"where\":\"    at _Request.cl ; admin: 500 Erreur interne, réessaie dans un instant {\"error\":\"internal\",\"message\":\"Erreur interne, réessaie dans un instant\",\"detail\":\"unusable\",\"where\":\"    at _Request.cl — GET /api/conversations → anon 401 / user 200 / admin 200 · POST /api/conversations → anon 401 / user 400 / admin 400 · GET /api/conversations/u-laurence/ws → anon 426 / user 426 / admin 426 · GET /api/conversations/u-laurence/ws-diag → anon 200 / user 200 / admin 200 · PATCH /api/conversations/u-laurence → anon 401 / user 500 / admin 500 · DELETE /api/conversations/u-laurence → anon 401 / user 200 / admin 200"
+  },
+  "F31": {
+   "statut": "✅",
+   "libelle": "ConversationDO — WebSocket",
+   "volet": "do",
+   "preuve": "ConversationDO.fetch sans en-tête Upgrade → 426 (WebSocket required) (Durable Object instancié avec un état simulé — pas le runtime Cloudflare)"
+  },
+  "F32": {
+   "statut": "✅",
+   "libelle": "PresenceDO",
+   "volet": "do",
+   "preuve": "PresenceDO.fetch POST /heartbeat → 200 (Durable Object instancié avec un état simulé — pas le runtime Cloudflare)"
+  },
+  "F33": {
+   "statut": "✅",
+   "libelle": "BroadcastDO",
+   "volet": "do",
+   "preuve": "BroadcastDO.fetch POST /broadcast → 200 (Durable Object instancié avec un état simulé — pas le runtime Cloudflare)"
+  },
+  "F34": {
+   "statut": "✅",
+   "libelle": "Chiffrement E2E (crypto-core)",
+   "volet": "client",
+   "preuve": "selfTest=true, aller-retour ECDH+AES-GCM entre 2 identités OK (« Coucou Lolo 🔐 »), empreinte 6b3a3 d2c68 …"
+  },
+  "F35": {
+   "statut": "✅",
+   "libelle": "Cliquet (ratchet) & désynchronisation",
+   "volet": "client",
+   "preuve": "3 messages, le 3ᵉ reçu en premier → « trois », puis « un », « deux » ; export/reset/import du cliquet : true/true"
+  },
+  "F36": {
+   "statut": "❌",
+   "libelle": "Coffre à clés (key-vault)",
+   "volet": "client",
+   "preuve": "lib : enveloppe v1 déballée avec le bon PIN, refusée avec un faux PIN=true, plan={\"action\":\"noop\"} — MAIS window.ApexVault présent dans la page=false, balise <script type=module src=lib/key-vault.js>=false : le coffre n'est PAS chargé par index.html (importé ici manuellement), _ensureCryptoKeys retombe sur « keep-cleartext »"
+  },
+  "F37": {
+   "statut": "✅",
+   "libelle": "POST /api/keys/prekeys + GET bundle",
+   "volet": "route",
+   "preuve": "POST /api/keys/prekeys → anon 401 / user 400 / admin 400 · GET /api/keys/u-laurence/bundle → anon 401 / user 200 / admin 200"
+  },
+  "F38": {
+   "statut": "✅",
+   "libelle": "Groupement des messages",
+   "volet": "client",
+   "preuve": "classes réelles : [grp-start | grp-end | grp-start grp-end]"
+  },
+  "F39": {
+   "statut": "✅",
+   "libelle": "Recherche dans une conversation",
+   "volet": "client",
+   "preuve": "findInMessages('coucou') → 1 résultat (m2) ; barre #find-input ouverte=true, compteur réel « 1/1 », nextMatchIndex(0,3,+1)=1"
+  },
+  "F40": {
+   "statut": "✅",
+   "libelle": "Auto-réparation DM (heal-dm)",
+   "volet": "route",
+   "preuve": "POST /api/admin/configure-core-pair → anon 403 / user 403 / admin 400 · POST /api/admin/heal-dm → anon 401 / user 403 / admin 200"
+  },
+  "F41": {
+   "statut": "✅",
+   "libelle": "Membres locaux (hors-ligne)",
+   "volet": "route",
+   "preuve": "GET /api/conversations/u-laurence/members → anon 401 / user 200 / admin 200 · POST /api/conversations/u-laurence/members → anon 401 / user 400 / admin 400 · DELETE /api/conversations/u-laurence/members/u-laurence → anon 401 / user 400 / admin 200"
+  },
+  "F42": {
+   "statut": "✅",
+   "libelle": "GET /api/media/:id (R2) + POST /api/media",
+   "volet": "route",
+   "preuve": "POST /api/media → anon 401 / user 200 / admin 200 · GET /api/media/u-laurence → anon 401 / user 404 / admin 404"
+  },
+  "F43": {
+   "statut": "✅",
+   "libelle": "Galerie médias",
+   "volet": "client",
+   "preuve": "collectConversationMedia → 5 élément(s), extractLinks → 2 liens, galerie ouverte (modale 0→2)"
+  },
+  "F44": {
+   "statut": "✅",
+   "libelle": "Auto-réparation média cassé",
+   "volet": "client",
+   "preuve": "déchiffrement direct échoue (clé du pair tournée)=true → _decryptBytesHeal re-télécharge le bundle et déchiffre [1,2,3,42]"
+  },
+  "F45": {
+   "statut": "✅",
+   "libelle": "GET /api/gif + sélecteur GIF",
+   "volet": "route+client",
+   "preuve": "GET /api/gif → anon 401 / user 200 / admin 200 · client : GET /api/gif (mock, via le vrai fetch) → 1 cellule ; clic → _uploadMedia(File image/gif, 6 o)"
+  },
+  "F46": {
+   "statut": "✅",
+   "libelle": "POST /api/users/me/avatar + photo",
+   "volet": "route+client",
+   "preuve": "POST /api/users/me/avatar → anon 401 / user 200 / admin 200 · client : _fetchPeerAvatar → data:image/png;base64,BBBBV2… (cache=true) ; _openProfilePhoto → modale/sélecteur (0→6)"
+  },
+  "F47": {
+   "statut": "✅",
+   "libelle": "Geste balayer pour répondre",
+   "volet": "client",
+   "preuve": "balayage 85 px sur la vraie bulle m1 → réponse à « m1 » ; balayage 30 px → rien ; ApexGesture.swipeReplyDecision présent"
+  },
+  "F48": {
+   "statut": "✅",
+   "libelle": "/api/stories",
+   "volet": "route",
+   "preuve": "POST /api/stories → anon 401 / user 400 / admin 400 · GET /api/stories → anon 401 / user 200 / admin 200 · GET /api/stories/u-laurence → anon 401 / user 404 / admin 404"
+  },
+  "F49": {
+   "statut": "✅",
+   "libelle": "/api/polls",
+   "volet": "route",
+   "preuve": "POST /api/polls → anon 401 / user 400 / admin 400 · POST /api/polls/u-laurence/vote → anon 401 / user 400 / admin 400"
+  },
+  "F50": {
+   "statut": "✅",
+   "libelle": "/api/time-capsules",
+   "volet": "route",
+   "preuve": "POST /api/time-capsules → anon 401 / user 400 / admin 400 · GET /api/time-capsules → anon 401 / user 200 / admin 200 · GET /api/time-capsules/u-laurence → anon 401 / user 404 / admin 404"
+  },
+  "F51": {
+   "statut": "✅",
+   "libelle": "/api/letters",
+   "volet": "route",
+   "preuve": "POST /api/letters → anon 401 / user 400 / admin 400 · GET /api/letters → anon 401 / user 200 / admin 200 · DELETE /api/letters/u-laurence → anon 401 / user 200 / admin 200"
+  },
+  "F52": {
+   "statut": "✅",
+   "libelle": "/api/memory-lane",
+   "volet": "route",
+   "preuve": "GET /api/memory-lane → anon 401 / user 200 / admin 200"
+  },
+  "F53": {
+   "statut": "✅",
+   "libelle": "/api/contacts + /api/contact/:id",
+   "volet": "route",
+   "preuve": "GET /api/contacts → anon 401 / user 200 / admin 200"
+  },
+  "F54": {
+   "statut": "✅",
+   "libelle": "/api/invitations",
+   "volet": "route",
+   "preuve": "POST /api/invitations → anon 401 / user 200 / admin 200 · GET /api/invitations/ABC123 → anon 404 / user 404 / admin 404"
+  },
+  "F55": {
+   "statut": "✅",
+   "libelle": "Réciprocité vie privée",
+   "volet": "client",
+   "preuve": "activé → je vois lecture+saisie=true ; coupé → masqués=true, présence « 🔒 Chiffré (transit) »"
+  },
+  "F56": {
+   "statut": "✅",
+   "libelle": "GET /api/turn",
+   "volet": "route",
+   "preuve": "GET /api/turn → anon 401 / user 200 / admin 200"
+  },
+  "F57": {
+   "statut": "✅",
+   "libelle": "GET /api/turn/health",
+   "volet": "route",
+   "preuve": "GET /api/turn/health → anon 200 / user 200 / admin 200"
+  },
+  "F58": {
+   "statut": "✅",
+   "libelle": "POST /api/admin/turn-config",
+   "volet": "route",
+   "preuve": "POST /api/admin/turn-config → anon 403 / user 403 / admin 200"
+  },
+  "F59": {
+   "statut": "✅",
+   "libelle": "Maillage WebRTC (visio-mesh)",
+   "volet": "client",
+   "preuve": "vraie RTCPeerConnection créée pour 1 pair, offre SDP locale=true, 3 signal(aux) envoyés via ws, mute=true, end() → 0 pair"
+  },
+  "F60": {
+   "statut": "✅",
+   "libelle": "/api/ia/chat",
+   "volet": "route",
+   "preuve": "POST /api/ia/chat → anon 401 / user 200 / admin 200 · POST /ia/chat → anon 401 / user 200 / admin 200"
+  },
+  "F61": {
+   "statut": "✅",
+   "libelle": "/api/ai/summarize",
+   "volet": "route",
+   "preuve": "POST /api/ai/summarize → anon 401 / user 400 / admin 400"
+  },
+  "F62": {
+   "statut": "✅",
+   "libelle": "/api/ai/translate",
+   "volet": "route",
+   "preuve": "POST /api/ai/translate → anon 401 / user 200 / admin 200"
+  },
+  "F63": {
+   "statut": "✅",
+   "libelle": "/api/ai/rewrite",
+   "volet": "route",
+   "preuve": "POST /api/ai/rewrite → anon 401 / user 200 / admin 200"
+  },
+  "F64": {
+   "statut": "✅",
+   "libelle": "/api/ai/smart-reply",
+   "volet": "route",
+   "preuve": "POST /api/ai/smart-reply → anon 401 / user 400 / admin 400"
+  },
+  "F65": {
+   "statut": "✅",
+   "libelle": "/api/ai/search",
+   "volet": "route",
+   "preuve": "POST /api/ai/search → anon 401 / user 503 / admin 503"
+  },
+  "F66": {
+   "statut": "✅",
+   "libelle": "/api/ai/image-describe",
+   "volet": "route",
+   "preuve": "POST /api/ai/image-describe → anon 401 / user 400 / admin 400"
+  },
+  "F67": {
+   "statut": "✅",
+   "libelle": "/api/ai/voice-transcribe",
+   "volet": "route",
+   "preuve": "POST /api/ai/voice-transcribe → anon 401 / user 400 / admin 400"
+  },
+  "F68": {
+   "statut": "✅",
+   "libelle": "/api/push/subscribe·unsubscribe·test",
+   "volet": "route",
+   "preuve": "POST /api/push/subscribe → anon 401 / user 200 / admin 200 · POST /api/push/unsubscribe → anon 401 / user 200 / admin 200 · POST /api/push/test → anon 401 / user 200 / admin 200"
+  },
+  "F69": {
+   "statut": "✅",
+   "libelle": "Envoi VAPID (workers/lib/push-send.js)",
+   "volet": "sonde",
+   "preuve": "service binding → https://apex-push-worker.internal/web-push (jeton posé, payload transmis) ; repli fetch direct → https://apex-push-worker.9r4rxssx64.workers.dev/web-push"
+  },
+  "F70": {
+   "statut": "✅",
+   "libelle": "Clé push client (push-key) + auto-réparation",
+   "volet": "client",
+   "preuve": "décisions {\"resub\":true,\"keep\":false,\"noSub\":true,\"failOpen\":false,\"eff\":true} ; _serverVapidKey() lit la clé du push-worker (/health mocké) = true"
+  },
+  "F71": {
+   "statut": "✅",
+   "libelle": "Service Worker actif + cache",
+   "volet": "client",
+   "preuve": "SW actif (https://localhost:4177/sw.js?v=v1.1.291), caches [\"apex-chat-v1.1.291-static\",\"apex-chat-v1.1.291-offline\"], manifest pré-caché=true"
+  },
+  "F72": {
+   "statut": "✅",
+   "libelle": "/api/premium/status·quota·request",
+   "volet": "route",
+   "preuve": "POST /api/premium/request → anon 401 / user 200 / admin 200 · GET /api/premium/status → anon 401 / user 200 / admin 200 · GET /api/premium/quota → anon 401 / user 200 / admin 200"
+  },
+  "F73": {
+   "statut": "✅",
+   "libelle": "/api/admin/grant-premium",
+   "volet": "route",
+   "preuve": "POST /api/admin/grant-premium → anon 401 / user 403 / admin 200 · GET /api/admin/premium-requests → anon 401 / user 403 / admin 200"
+  },
+  "F74": {
+   "statut": "✅",
+   "libelle": "/api/system/config + /api/health",
+   "volet": "route",
+   "preuve": "GET /api/system/config → anon 200 / user 200 / admin 200 · GET /health → anon 200 / user 200 / admin 200 · GET /api/health → anon 200 / user 200 / admin 200"
+  },
+  "F75": {
+   "statut": "✅",
+   "libelle": "/api/cgu/accept",
+   "volet": "route",
+   "preuve": "POST /api/cgu/accept → anon 200 / user 200 / admin 200"
+  },
+  "F76": {
+   "statut": "✅",
+   "libelle": "/api/signalements",
+   "volet": "route",
+   "preuve": "POST /api/signalements → anon 401 / user 200 / admin 200"
+  },
+  "F77": {
+   "statut": "✅",
+   "libelle": "Tâches planifiées (scheduled)",
+   "volet": "sonde",
+   "preuve": "0 */1 * * * → 0 requêtes D1, 2 msg queue · */5 * * * * → 2 requêtes D1, 0 msg queue · 0 9 * * * → 1 requêtes D1, 2 msg queue · 0 3 * * * → 16 requêtes D1, 0 msg queue"
+  },
+  "F78": {
+   "statut": "✅",
+   "libelle": "Filtre CORS liste blanche",
+   "volet": "sonde",
+   "preuve": "origine autorisée → https://9r4rxssx64-creator.github.io ; origine inconnue → null"
+  },
+  "F79": {
+   "statut": "✅",
+   "libelle": "DELETE /api/users/me",
+   "volet": "route",
+   "preuve": "DELETE /api/users/me → anon 401 / user 400 / admin 403"
+  },
+  "F80": {
+   "statut": "✅",
+   "libelle": "GET /api/users/me/export",
+   "volet": "route",
+   "preuve": "GET /api/users/me/export → anon 401 / user 200 / admin 200"
+  },
+  "F81": {
+   "statut": "✅",
+   "libelle": "e2e_strict appliqué par le DO",
+   "volet": "do",
+   "preuve": "strict ON : clair → e2e_required, E2E1: → ack ; strict OFF : clair → ack (Durable Object instancié avec un état simulé — pas le runtime Cloudflare)"
+  },
+  "F82": {
+   "statut": "✅",
+   "libelle": "Renvoi du code SMS (client)",
+   "volet": "client",
+   "preuve": "_resendOtp() → POST /api/auth/send-otp (mock) → code de dev reçu « 000000 », re-rendu de l'étape=true"
+  },
+  "F83": {
+   "statut": "✅",
+   "libelle": "Signalement côté utilisateur (client)",
+   "volet": "client",
+   "preuve": "_reportUser() → modale (0→2), bouton « Envoyer le signalement », POST /api/signalements ×1, dialogues aucun"
+  },
+  "F84": {
+   "statut": "✅",
+   "libelle": "Sauvegarde chiffrée + rotation",
+   "volet": "sonde",
+   "preuve": "backups/d1-2026-09-17.json.enc : v=1, déchiffré (3 clés), ancienne sauvegarde 2020 purgée=true, aucune donnée en clair dans le blob=true"
+  },
+  "F85": {
+   "statut": "✅",
+   "libelle": "Alarme de flush DO",
+   "volet": "do",
+   "preuve": "alarm() : tampon 1→0 message, 1 écriture(s) D1 (Durable Object instancié avec un état simulé — pas le runtime Cloudflare)"
+  }
+ }
+}

@@ -1,0 +1,118 @@
+name: ClayScore — Vérifier les prix sur les vraies pages
+
+# POURQUOI CE WORKFLOW EXISTE
+# ---------------------------
+# Depuis l'environnement de développement, le pare-feu bloque tout sauf
+# api.github.com : impossible d'ouvrir une fiche produit pour vérifier un prix.
+# Le runner GitHub, lui, a le réseau OUVERT. Ce workflow y fait tourner
+# tools/verif_prix.py : il ouvre les vraies pages marchandes, en extrait le
+# prix (JSON-LD schema.org d'abord), et le compare à celui du dossier.
+#
+# Déclenchement MANUEL uniquement (workflow_dispatch) : pas de cron, donc
+# aucun mail automatique. Conforme à la règle anti-spam.
+
+# Garde « une seule à la fois » : elle est plus bas, AVEC l'événement dans le groupe.
+# Il y en avait DEUX ici (une posée le 15/08, une seconde ensuite sans retirer la
+# première) : deux clés `concurrency:` dans le même document YAML = fichier INVALIDE.
+# Conséquence mesurée le 16/09/2026 : GitHub refusait le fichier au démarrage, donc
+# CHAQUE push de CHAQUE branche produisait une exécution en échec immédiat (0 job,
+# 0 ligne de journal) — 413 échecs, et autant de mails. Un échec qu'on ne peut pas
+# lire n'existe pas (leçon #214) : celui-ci criait dans le vide depuis des semaines.
+
+on:
+  # Déclencheur PUSH volontairement très étroit : uniquement quand l'outil ou
+  # la table des prix change. C'est ce qui permet de lancer la vérification
+  # depuis une branche, sans attendre que le workflow soit sur `main` (l'API
+  # `workflow_dispatch` ne voit que les workflows de la branche par défaut).
+  push:
+    paths:
+      - "clayscore/tools/verif_prix.py"
+      - "clayscore/clayscore/site.py"
+      - ".github/workflows/clayscore-verif-prix.yml"
+  workflow_dispatch:
+    inputs:
+      tolerance:
+        description: "Écart toléré avant alerte (%)"
+        required: false
+        default: "12"
+      strict:
+        description: "Échouer si un écart dépasse le seuil (true/false)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+
+# Garde anti-empilement (test:ci-no-stampede) : sans elle, chaque commit ajoutait une
+# exécution à la file au lieu de remplacer la précédente — c'est ce qui avait bloqué
+# 399 exécutions le 6 août 2026. Le groupe inclut l'événement pour qu'un commit
+# n'annule jamais une vérification lancée à la main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Vérifier les prix
+        id: verif
+        working-directory: clayscore
+        shell: bash -eo pipefail {0}   # sans pipefail, un echec ressort VERT
+        run: |
+          set -o pipefail
+          # Sur un push, `inputs` est vide : on retombe sur les valeurs par défaut.
+          TOL="${{ inputs.tolerance }}"; TOL="${TOL:-12}"
+          ARGS="--tolerance $TOL --sortie rapport-prix.md"
+          if [ "${{ inputs.strict }}" = "true" ]; then ARGS="$ARGS --strict"; fi
+          # On ne masque JAMAIS la sortie : en cas d'échec, le motif exact
+          # (HTTP 403, timeout, prix introuvable) doit rester lisible.
+          python -m tools.verif_prix $ARGS 2>&1 | tee sortie-brute.txt
+        continue-on-error: true
+
+      - name: Publier le rapport dans le résumé du run
+        if: always()
+        working-directory: clayscore
+        run: |
+          if [ -f rapport-prix.md ]; then
+            cat rapport-prix.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ⚠️ Aucun rapport produit" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -50 sortie-brute.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Régénérer le devis comparatif avec les prix du jour
+        if: always()
+        working-directory: clayscore
+        run: |
+          python -m tools.devis --sortie docs/DEVIS_COMPARATIF.md || true
+          python -m tools.devis --etape 0 --sortie docs/DEVIS_ETAPE_0.md || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clayscore-rapport-prix
+          path: |
+            clayscore/rapport-prix.md
+            clayscore/sortie-brute.txt
+            clayscore/docs/DEVIS_COMPARATIF.md
+            clayscore/docs/DEVIS_ETAPE_0.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Refléter le résultat de la vérification
+        if: always()
+        run: |
+          if [ "${{ steps.verif.outcome }}" = "failure" ]; then
+            echo "::warning::Des prix ont dérivé au-delà du seuil — voir le résumé du run."
+          fi

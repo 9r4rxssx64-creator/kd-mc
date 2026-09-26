@@ -1,0 +1,12 @@
+name = "kdmc-access"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# ⚠️ TOML : `routes` DOIT rester AVANT toute [table]/[[table]] (cf. kdmc-router).
+# custom_domain auto-provisionne DNS + SSL sur la zone kd-mc.com (compte Cloudflare
+# de Kevin) — aucune manip DNS manuelle. Sous-domaine dédié = isolation (une panne
+# de ce worker ne touche AUCUN autre sous-domaine).
+routes = [
+  { pattern = "admin.kd-mc.com", custom_domain = true },
+]

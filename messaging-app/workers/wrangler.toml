@@ -1,0 +1,221 @@
+# ============================================================================
+#  Apex Chat — Cloudflare Workers configuration
+#
+#  Architecture :
+#    - api-worker      : REST + WebSocket upgrade (route principale)
+#    - push-worker     : Web Push + APNs + FCM (clone apex-push-worker.js)
+#    - sms-worker      : Vonage SMS invitations + OTP fallback
+#    - ia-worker       : Cache LRU IA + failover Anthropic→OpenRouter→Gemini→Groq
+#    - sentinel-consumer : consume CF Queues self-healing
+#    - cron workers    : letters-deliver, time-capsule-open, memory-lane, lifecycle-r2
+#
+#  Bindings :
+#    - 1 D1 database  : APEX_CHAT_DB
+#    - 1 R2 bucket    : APEX_CHAT_MEDIA
+#    - 1 KV namespace : APEX_CHAT_CACHE (cache LRU IA)
+#    - 5 Queues       : telemetry, pipeline-fix, letters-deliver, timecapsule-open, memory-lane
+#    - 3 DO classes   : ConversationDO, BroadcastDO, PresenceDO
+#
+# v1.1.165 — trigger re-deploy pour pousser APEX_CHAT_ADMIN_TOKEN
+# depuis GitHub Secret vers env du Worker (deploy-apex-chat.yml step
+# "Generate + put secrets" lit secrets.APEX_CHAT_ADMIN_TOKEN en priorité).
+# ============================================================================
+
+name = "apex-chat-api"
+main = "api-worker.js"
+compatibility_date = "2026-04-27"
+compatibility_flags = ["nodejs_compat"]
+
+# Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
+# Workers AI (binding AI, 0 clé, 0 €) répond aux questions courantes (chat, résumé,
+# traduction, réponses rapides) ; Anthropic/Groq/Gemini restent en bascule/secours.
+[ai]
+binding = "AI"
+# v1.1.122 fix Kevin "Load failed" : workers_dev=true active l'URL par défaut
+# https://apex-chat-api.<account-subdomain>.workers.dev (sinon Worker déployé
+# mais non joignable car [[routes]] cassé avec zone_name vide).
+workers_dev = true
+
+# Limites runtime — [limits] cpu_ms retiré v1.1.132 (non supporté plan Workers FREE)
+# Le plan FREE applique un CPU limit fixe automatique.
+
+# D1 database
+[[d1_databases]]
+binding = "APEX_CHAT_DB"
+database_name = "apex-chat-main"
+database_id = "afee673e-83e9-4ae3-a578-96fabbfdd023"  # apex-chat-main (Kevin créé v1.1.131)
+migrations_dir = "../d1-migrations"
+
+# R2 bucket
+[[r2_buckets]]
+binding = "APEX_CHAT_MEDIA"
+bucket_name = "apex-chat-media"
+
+# KV namespace cache LRU
+[[kv_namespaces]]
+binding = "APEX_CHAT_CACHE"
+id = "5d46f8fa642a4a5399d90fd00a379ab1"  # APEX_CHAT_CACHE (Kevin créé v1.1.131)
+
+# v1.1.172 FIX P0 (audit crew) : le code lit env.APEX_CHAT_KV (quotas premium
+# checkPremiumOrQuota/consumeQuota) mais ce binding n'existait pas → quotas
+# jamais comptés (fail-open, IA illimitée gratuite = dérive de coûts). On binde
+# APEX_CHAT_KV sur le MÊME namespace que le cache (clés quota:* sans collision
+# avec le cache IA). Aucun namespace à créer côté Kevin.
+[[kv_namespaces]]
+binding = "APEX_CHAT_KV"
+id = "5d46f8fa642a4a5399d90fd00a379ab1"  # réutilise APEX_CHAT_CACHE
+
+# Queues producers
+[[queues.producers]]
+queue = "apex-chat-telemetry"
+binding = "TELEMETRY_QUEUE"
+
+[[queues.producers]]
+queue = "apex-chat-pipeline-fix"
+binding = "PIPELINE_FIX_QUEUE"
+
+[[queues.producers]]
+queue = "apex-chat-letters-deliver"
+binding = "LETTERS_QUEUE"
+
+[[queues.producers]]
+queue = "apex-chat-timecapsule-open"
+binding = "TIMECAPSULE_QUEUE"
+
+[[queues.producers]]
+queue = "apex-chat-memory-lane"
+binding = "MEMORY_LANE_QUEUE"
+
+# v1.1.243 — Service Binding vers le push-worker (Web Push VAPID).
+# FIX Cloudflare 1042 : un Worker ne peut PAS fetch un autre Worker par son URL
+# *.workers.dev sur la même zone (→ 404 error code 1042 → 100% des notifs perdues).
+# Le Service Binding route en interne vers `apex-push-worker` (voie supportée).
+[[services]]
+binding = "PUSH_WORKER"
+service = "apex-push-worker"
+
+# Durable Objects
+[[durable_objects.bindings]]
+name = "CONVERSATION_DO"
+class_name = "ConversationDO"
+script_name = "apex-chat-api"
+
+[[durable_objects.bindings]]
+name = "BROADCAST_DO"
+class_name = "BroadcastDO"
+script_name = "apex-chat-api"
+
+[[durable_objects.bindings]]
+name = "PRESENCE_DO"
+class_name = "PresenceDO"
+script_name = "apex-chat-api"
+
+# Migration des Durable Objects (v1.1.132 : new_sqlite_classes pour plan Workers FREE)
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ConversationDO", "BroadcastDO", "PresenceDO"]
+
+# Variables d'environnement (publiques — utiliser secrets pour clés sensibles)
+[vars]
+ENV = "production"
+APEX_BASE_URL = "https://9r4rxssx64-creator.github.io/CMCteams/apex-ai/"
+# Audit 17/09/2026 : les liens d'invitation et magiques pointaient sur github.io alors que
+# l'adresse officielle (canonical, CGU, routeur) est apex-chat.kd-mc.com — et github.io
+# cessera de répondre le jour où le dépôt passe en privé.
+APEX_CHAT_BASE_URL = "https://apex-chat.kd-mc.com/"
+APEX_HANDOFF_FIREBASE_URL = "https://kdmc-clients-default-rtdb.europe-west1.firebasedatabase.app"
+ADMIN_MODE = "A"  # A | B | C — bascule via D1.system_config (cette var = fallback)
+KEVIN_INVISIBLE_ADMIN = "true"
+# v1.1.283 (audit 05/09, faille P0) — ferme la porte admin.
+# "false" : accès admin par numéro + 000000 (ancien comportement historique).
+# "true" (ACTIF depuis v1.1.284) : le numéro seul ne suffit PLUS. La porte admin
+#   principale est le SSO central kd-mc.com (Face ID prouvé → is_admin), via
+#   /api/auth/sso-from-kdmc — INDÉPENDANT de ce drapeau. Le bypass numéro+000000
+#   exige EN PLUS le jeton secret X-Apex-Admin-Token (== APEX_CHAT_ADMIN_TOKEN),
+#   jamais présent dans la page (repli anti-lock-out uniquement).
+# ✅ Activé le 05/09 APRÈS vérification en base : le compte SSO de Kevin
+#   (kdmc_kevin-desarzens, source kdmc-sso) est bien is_admin=1 → reconnu admin
+#   par Face ID sans le numéro. Le numéro avait déjà été retiré de la page
+#   publique en v1.1.282 (l'attaque « voir source → admin » était déjà morte) ;
+#   ce drapeau ferme le dernier vecteur résiduel (numéro connu + 000000).
+# Rollback immédiat si besoin : repasser à "false" + redéployer (le SSO n'est
+#   pas affecté, il fonctionne dans les deux états).
+ADMIN_BYPASS_REQUIRE_MFA = "true"
+# v1.1.172 (audit crew) : "true" = mode cercle privé (signup direct via code
+# 000000, OTP affiché en clair si SMS KO). "false" = OTP SMS RÉEL imposé pour
+# tout le monde (le bypass admin KEVIN_PHONE_E164 reste actif dans tous les cas).
+# Passer à "false" UNE FOIS que l'envoi SMS Vonage est confirmé fonctionnel
+# (sinon les non-Kevin ne peuvent plus s'inscrire). Flag = zéro risque de lockout.
+# v1.1.174 (Kevin 2026-06-08) : "false" → backdoor 000000 FERMÉ. Onboarding via
+# LIEN D'INVITATION magique (indépendant du flag, sans SMS). Bypass admin Kevin
+# (KEVIN_PHONE_E164) toujours actif. SMS Vonage en trial/indispo → à réparer + WhatsApp.
+ALLOW_TEST_OTP = "false"
+AUTH_PROVIDER = "firebase"  # firebase | vonage
+TURN_PROVIDER = "p2p-only"  # p2p-only | local-coturn | cloudflare-calls
+JWT_ISSUER = "apex-chat"
+# v1.1.150 : URL du push-worker (Web Push VAPID). Le sous-domaine d'origine
+# (desarzens-kevin) était faux → tous les pushs partaient dans le vide.
+APEX_PUSH_WORKER_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
+
+# Secrets (à définir via wrangler secret put) :
+#   - JWT_SIGN_KEY            : HS256 secret pour JWT
+#   - FIREBASE_PROJECT_ID
+#   - FIREBASE_API_KEY
+#   - VONAGE_API_KEY          : pour SMS payants
+#   - VONAGE_API_SECRET
+#   - ANTHROPIC_API_KEY
+#   - OPENROUTER_API_KEY
+#   - GEMINI_API_KEY
+#   - GROQ_API_KEY
+#   - VAPID_PUBLIC_KEY
+#   - VAPID_PRIVATE_KEY
+#   - APNS_KEY_ID
+#   - APNS_TEAM_ID
+#   - APNS_PRIVATE_KEY        : .p8 base64
+#   - FCM_SERVER_KEY
+#   - APEX_HANDOFF_TOKEN      : auth pour push ax_telemetry_in
+#   - APEX_CHAT_ADMIN_TOKEN   : auth admin Kevin pour endpoints sensibles
+
+# Cron triggers (P0 FIX audit — purge automatique + jobs récurrents)
+[triggers]
+crons = [
+  "0 */1 * * *",     # toutes les heures : purge messages expirés + lifecycle R2
+  "*/5 * * * *",     # toutes les 5 min : Letters delivery + Time Capsules
+  "0 9 * * *",       # 09:00 quotidien : Memory Lane push
+  "0 3 * * *"        # 03:00 quotidien : Backup D1 + cleanup audit log >90j
+]
+
+# Queues consumers (P0 FIX audit — consume queues)
+[[queues.consumers]]
+queue = "apex-chat-telemetry"
+max_batch_size = 25
+max_batch_timeout = 10
+
+[[queues.consumers]]
+queue = "apex-chat-pipeline-fix"
+max_batch_size = 10
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "apex-chat-letters-deliver"
+max_batch_size = 50
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "apex-chat-timecapsule-open"
+max_batch_size = 50
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "apex-chat-memory-lane"
+max_batch_size = 25
+max_batch_timeout = 60
+
+# Routes — DÉSACTIVÉ v1.1.122 (pattern cassé sans zone_name)
+# Le Worker est servi via workers_dev=true à :
+# https://apex-chat-api.<account-subdomain>.workers.dev
+# Pour ajouter un custom domain, configurer dans CF Dashboard puis remettre ici.
+
+# Workers annexes (push-worker.js, sms-worker.js, ia-worker.js) : déployés par
+# deploy-apex-chat.yml avec ce même fichier — il n'existe pas de wrangler.toml séparé
+# (audit 17/09/2026 : les dossiers cités ici n'ont jamais existé).

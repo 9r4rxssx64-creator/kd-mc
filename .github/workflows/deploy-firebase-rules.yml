@@ -1,0 +1,86 @@
+name: Deploy Firebase RTDB Rules (Apex)
+
+# Déploie apex-ai/v13/database.rules.json sur la base RTDB cmcteams-c16ab.
+#
+# ⚠️ ACTION NIVEAU C (peut casser prod) — déclenchement MANUEL + confirmation
+# obligatoire. Règle Kevin "1 clic max" : Kevin lance ce workflow + tape DEPLOY.
+#
+# 🔒 PRÉ-REQUIS AVANT DE DÉPLOYER (sinon 100% des sync Firebase cassées) :
+#   1. v13.4.291+ déployé en prod (firebase.ts attache `?auth=` — déjà mergé/Pages).
+#   2. FIREBASE_WEB_API_KEY configuré → l'auth-worker échange custom_token → id_token
+#      (sinon firebaseAuthBridge.getToken() === '' → `?auth=` absent → règles strictes
+#      = accès refusé → app cassée). Voir deploy-apex-auth-worker.yml.
+#   3. Test live confirmé : un read/write RTDB réussit avec le token attaché.
+# Tant que ces 3 points ne sont pas vrais, NE PAS lancer (les règles restent en
+# l'état actuel côté console — ce workflow ne touche QUE si lancé volontairement).
+#
+# Secrets requis (déjà présents pour apex-auth-worker) :
+#   FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Tape DEPLOY pour confirmer le déploiement des règles RTDB (action niveau C).'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Garde de confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY" ]; then
+            echo "::error::Confirmation manquante. Relance en tapant exactement DEPLOY dans le champ 'confirm'."
+            exit 1
+          fi
+          echo "::notice::Confirmation OK — déploiement des règles RTDB autorisé."
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Vérifier secrets + valider JSON des règles
+        env:
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+        run: |
+          set -e
+          MISSING=""
+          [ -z "$FIREBASE_PRIVATE_KEY" ] && MISSING="$MISSING FIREBASE_PRIVATE_KEY"
+          [ -z "$FIREBASE_CLIENT_EMAIL" ] && MISSING="$MISSING FIREBASE_CLIENT_EMAIL"
+          if [ -n "$MISSING" ]; then
+            echo "::error::Secrets manquants :$MISSING"
+            exit 1
+          fi
+          node -e "JSON.parse(require('fs').readFileSync('apex-ai/v13/database.rules.json','utf8')); console.log('database.rules.json : JSON valide')"
+
+      - name: Installer firebase-tools
+        run: npm install -g firebase-tools@13
+
+      - name: Construire le Service Account + déployer (RTDB rules uniquement)
+        env:
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+        working-directory: apex-ai/v13
+        run: |
+          set -e
+          # Construire le JSON Service Account de façon sûre (jq échappe les newlines de la clé privée).
+          jq -n \
+            --arg pk "$FIREBASE_PRIVATE_KEY" \
+            --arg ce "$FIREBASE_CLIENT_EMAIL" \
+            '{type:"service_account", project_id:"cmcteams-c16ab", private_key:$pk, client_email:$ce}' \
+            > /tmp/sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
+          echo "::notice::Déploiement RTDB rules → cmcteams-c16ab ..."
+          firebase deploy --only database --project cmcteams-c16ab --non-interactive
+          rm -f /tmp/sa.json
+          echo "::notice::Règles RTDB déployées. Vérifie immédiatement un read/write dans l'app."

@@ -1,0 +1,2108 @@
+<!doctype html>
+<!-- v0.11.15 -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#0a1622" id="metaTheme">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PoolPilot">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>PoolPilot — Beatbot+</title>
+<script>/* thème avant premier rendu (pas de flash) */
+try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentElement.setAttribute("data-theme","light");}}catch(e){}</script>
+<style>
+  :root{
+    --bg:#08131f; --bg2:#0e2032; --card:#11263a; --card2:#183753;
+    --line:#22456580; --line2:#2b5580; --txt:#eef5fb; --dim:#a8c4dc; --dim2:#8ba9c4;
+    --gold:#3ad0ff; --gold2:#0e88c9; --acc:#3ad0ff;
+    --ok:#3ddc84; --warn:#f2b632; --bad:#f0674d; --stair:#c88bff; --deep:#2d7bd6;
+    --grad:linear-gradient(135deg,#4ad6ff,#0e88c9);
+    --r:16px; --r-sm:12px;
+    --sh:0 10px 30px -16px rgba(0,0,0,.75); --sh-btn:0 8px 20px -8px rgba(14,136,201,.55);
+    --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+  }
+  /* ---- thème clair (☀️, opt-in, persistant) ---- */
+  html[data-theme="light"]{
+    --bg:#eef6fc; --bg2:#dfecf7; --card:#ffffff; --card2:#eef5fb;
+    --line:#c9dded; --line2:#aecbe2; --txt:#0b2334; --dim:#48708f; --dim2:#5f83a1;
+    --gold:#0e88c9; --gold2:#0a6ba0; --acc:#0e88c9; --deep:#1d68c0;
+    --sh:0 10px 26px -18px rgba(21,72,110,.45); --sh-btn:0 8px 18px -8px rgba(14,136,201,.45);
+  }
+  html[data-theme="light"] body{
+    background:
+      radial-gradient(120% 60% at 50% -10%,rgba(14,136,201,.10),transparent 60%),
+      radial-gradient(90% 50% at 100% 0%,rgba(58,208,255,.12),transparent 55%),
+      linear-gradient(180deg,#eaf4fc,#dcebf7 55%);
+    color:var(--txt);
+  }
+  html[data-theme="light"] #top{background:rgba(240,247,253,.78)}
+  html[data-theme="light"] #nav{background:rgba(240,247,253,.86)}
+  html[data-theme="light"] .card{background:linear-gradient(180deg,#ffffff,#f4f9fd);box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.8)}
+  html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{background:#fff;color:var(--txt)}
+  html[data-theme="light"] .btn{color:#fff}
+  html[data-theme="light"] .btn.ghost{background:#eaf3fb;color:var(--txt)}
+  html[data-theme="light"] .stat{background:linear-gradient(180deg,#fff,#eef5fb)}
+  html[data-theme="light"] .pill,html[data-theme="light"] .hero-state,html[data-theme="light"] .chipzone{background:#eaf3fb;color:var(--txt)}
+  html[data-theme="light"] .chip-robot,html[data-theme="light"] #top .robot{background:#eaf3fb;color:var(--txt)}
+  html[data-theme="light"] .tool{background:#eaf3fb}
+  html[data-theme="light"] .tool.on{background:rgba(14,136,201,.14);color:#0b2334}
+  html[data-theme="light"] canvas{background:#dfeefa}
+  html[data-theme="light"] code{background:#eaf3fb}
+  html[data-theme="light"] .note{color:#0d3752;background:linear-gradient(180deg,rgba(14,136,201,.10),rgba(14,136,201,.04))}
+  html[data-theme="light"] .warn{color:#6b4d05;background:linear-gradient(180deg,rgba(242,182,50,.16),rgba(242,182,50,.06))}
+  html[data-theme="light"] #nav button.on{background:rgba(14,136,201,.12)}
+  html[data-theme="light"] .ring .rt{stroke:rgba(11,35,52,.12)}
+  html[data-theme="light"] .hero-bg{opacity:.55}
+  html[data-theme="light"] #top h1 span{-webkit-text-fill-color:transparent}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;max-width:100vw;overflow-x:hidden}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:
+      radial-gradient(120% 60% at 50% -10%,rgba(58,208,255,.10),transparent 60%),
+      radial-gradient(90% 50% at 100% 0%,rgba(14,136,201,.08),transparent 55%),
+      linear-gradient(180deg,#0a1826,#050c14 55%);
+    background-attachment:fixed;color:var(--txt);
+    font-size:15px;line-height:1.5;min-height:100vh;letter-spacing:.1px;
+    padding-bottom:calc(80px + var(--safe-b));
+    -webkit-font-smoothing:antialiased;
+  }
+  #top{
+    position:sticky;top:0;z-index:20;background:rgba(8,19,31,.72);backdrop-filter:blur(18px) saturate(160%);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    border-bottom:1px solid var(--line);padding:calc(11px + var(--safe-t)) 16px 11px;
+    display:flex;align-items:center;gap:11px;
+  }
+  #top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(58,208,255,.55),transparent)}
+  #top .logo{font-size:21px;filter:drop-shadow(0 2px 6px rgba(58,208,255,.4))}
+  #top h1{font-size:16px;margin:0;font-weight:800;letter-spacing:.2px;flex:1;line-height:1.15}
+  #top h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  #top .robot{font-size:11px;font-weight:600;color:var(--dim);background:rgba(24,55,83,.6);padding:5px 11px 5px 9px;border-radius:20px;border:1px solid var(--line2);white-space:nowrap}
+  #app{padding:16px;max-width:640px;margin:0 auto}
+  .card{
+    background:linear-gradient(180deg,rgba(24,55,83,.5),rgba(15,32,50,.72));
+    border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:0 0 14px;
+    box-shadow:var(--sh),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .card h2{margin:0 0 5px;font-size:15.5px;font-weight:800;letter-spacing:.2px;display:flex;align-items:center;gap:9px}
+  .card .sub{color:var(--dim);font-size:12.5px;line-height:1.5;margin:0 0 13px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:0}
+  label{display:block;font-size:12px;color:var(--dim);margin:0 0 4px;font-weight:600}
+  input,select,textarea{
+    width:100%;background:rgba(8,19,31,.7);border:1px solid var(--line2);color:var(--txt);
+    border-radius:var(--r-sm);padding:12px 13px;font-size:16px;font-family:inherit;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(58,208,255,.18)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--grad);color:#04202f;
+    border:none;border-radius:var(--r-sm);padding:13px 16px;font-size:15px;font-weight:800;letter-spacing:.2px;
+    cursor:pointer;min-height:48px;width:100%;box-shadow:var(--sh-btn);
+    transition:transform .12s ease,box-shadow .15s ease,filter .15s ease;
+  }
+  .btn:hover{filter:brightness(1.05)}
+  .btn:active{transform:translateY(1px);box-shadow:0 3px 10px -6px rgba(14,136,201,.5)}
+  .btn.ghost{background:rgba(24,55,83,.55);color:var(--txt);border:1px solid var(--line2);box-shadow:none;font-weight:700}
+  .btn.ghost:active{background:rgba(24,55,83,.8)}
+  .btn.sm{min-height:40px;padding:9px 13px;font-size:13px;width:auto;border-radius:10px}
+  .btn.bad{background:linear-gradient(135deg,#f0674d,#c23a26);color:#fff;box-shadow:0 8px 20px -8px rgba(192,58,38,.5)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--line2);background:rgba(8,19,31,.6)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .stat{
+    background:linear-gradient(180deg,rgba(14,32,50,.85),rgba(8,19,31,.7));
+    border:1px solid var(--line);border-radius:14px;padding:13px 12px;text-align:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .stat .n{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;letter-spacing:.3px}
+  .stat .l{font-size:10.5px;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .note{background:linear-gradient(180deg,rgba(58,208,255,.1),rgba(58,208,255,.05));border:1px solid rgba(58,208,255,.32);border-radius:var(--r-sm);padding:11px 13px;font-size:12.5px;line-height:1.5;color:#cbe9fb;margin:11px 0}
+  .warn{background:linear-gradient(180deg,rgba(242,182,50,.12),rgba(242,182,50,.05));border:1px solid rgba(242,182,50,.42);color:#f7dc9a}
+  canvas{width:100%;display:block;border-radius:12px;background:#071726;border:1px solid var(--line);touch-action:none}
+  #poolCanvas{height:420px}
+  #covCanvas{height:300px}
+  .palette{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+  .tool{flex:0 0 auto;padding:9px 11px;border-radius:11px;border:1px solid var(--line);background:var(--bg2);font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .tool.on{border-color:var(--gold);background:rgba(57,194,255,.15);color:#cdeafd}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:8px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:-1px}
+  .step{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .step:last-child{border-bottom:none}
+  .step .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--gold);color:#052034;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+  .step .b{flex:1}
+  .step .b b{font-size:14px}
+  .step .b span{display:block;color:var(--dim);font-size:12.5px;margin-top:2px}
+  .logrow{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .logrow:last-child{border-bottom:none}
+  .logrow .d{flex:1}
+  .logrow .d b{font-size:14px}
+  .logrow .d span{color:var(--dim);font-size:12px;display:block}
+  .maint{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .maint:last-child{border-bottom:none}
+  .maint .bar{flex:1;height:8px;background:var(--bg2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .maint .bar i{display:block;height:100%;border-radius:6px}
+  #nav{
+    position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(8,19,31,.82);
+    backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);
+    border-top:1px solid var(--line);
+    display:flex;padding:8px 6px calc(8px + var(--safe-b));gap:2px;
+  }
+  #nav button{
+    flex:1;background:none;border:none;color:var(--dim2);font-size:9.5px;font-weight:600;letter-spacing:.2px;
+    padding:7px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;border-radius:12px;min-height:50px;
+    transition:color .15s,background .15s;position:relative;
+  }
+  #nav button .ic{font-size:19px;line-height:1;transition:transform .15s}
+  #nav button.on{color:var(--gold);background:rgba(58,208,255,.12)}
+  #nav button.on .ic{transform:translateY(-1px) scale(1.06)}
+  #nav button.on::before{content:"";position:absolute;top:2px;width:20px;height:3px;border-radius:3px;background:var(--grad)}
+  .disabled-wrap{opacity:.55;pointer-events:none;filter:grayscale(.3)}
+  .center{text-align:center}
+  .mut{color:var(--dim);font-size:12.5px}
+  ol.clean{margin:8px 0 0;padding-left:18px}
+  ol.clean li{margin:6px 0;font-size:13.5px}
+  code{background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:12px}
+  a{color:var(--gold)}
+  .chipzone{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:5px 10px;font-size:12px;margin:3px 4px 0 0}
+  .empty{text-align:center;color:var(--dim);padding:26px 10px;font-size:13.5px}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .kv:last-child{border-bottom:none}.kv b{color:var(--txt);font-weight:600}.kv span{color:var(--dim);text-align:right}
+  #d3{position:fixed;inset:0;z-index:60;background:#04101c;display:flex;flex-direction:column}
+  #d3[hidden]{display:none}
+  #lv{position:fixed;inset:0;z-index:60;background:#04101c;display:flex;flex-direction:column}
+  #lv[hidden]{display:none}
+  #cam{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column}
+  #cam[hidden]{display:none}
+  #camtop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;background:#04101c}
+  #camtop button{background:#0d1c2c;border:1px solid #1f3d5a;color:#e8f1fa;border-radius:10px;min-width:44px;min-height:44px;font-size:17px}
+  #cambadge{font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;border:1px solid var(--line)}
+  #camwrap{position:relative;flex:1;overflow:hidden;background:#000}
+  #camv{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  #camc{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation}
+  #camhint{padding:9px 14px;font-size:12.5px;color:#93b0c8;background:#04101c;text-align:center;min-height:20px}
+  #camctl{display:flex;gap:10px;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px);background:#04101c}
+  #camctl button{flex:1;min-height:48px;border-radius:12px;border:1px solid #1f3d5a;background:#0d1c2c;color:#e8f1fa;font-size:14px;font-weight:600}
+  #lvtop{display:flex;align-items:center;gap:10px;padding:calc(10px + var(--safe-t)) 14px 10px;border-bottom:1px solid var(--line)}
+  #lvtop b{font-size:15px;flex:1}
+  #lvbadge{font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;border:1px solid var(--line)}
+  #lvtop button{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;width:40px;height:40px;font-size:16px}
+  #lvc{flex:1;width:100%;display:block;touch-action:none}
+  #lvstat{display:flex;gap:8px;padding:8px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
+  #lvstat .s{flex:1;min-width:70px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+  #lvstat .s .n{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+  #lvstat .s .l{font-size:10px;color:var(--dim)}
+  #lvctl{display:flex;gap:8px;padding:8px 14px calc(10px + var(--safe-b));border-top:1px solid var(--line)}
+  #lvctl button{flex:1;border:1px solid var(--line);border-radius:11px;padding:12px;font-size:13px;font-weight:700;background:var(--card2);color:var(--txt)}
+  #lvctl button.pri{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#052034;border:none}
+  #d3top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + var(--safe-t)) 14px 10px;border-bottom:1px solid var(--line)}
+  #d3top b{font-size:15px}
+  #d3top button{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;width:40px;height:40px;font-size:16px}
+  #d3c{flex:1;width:100%;display:block;touch-action:none}
+  #d3hint{position:absolute;top:calc(60px + var(--safe-t));left:0;right:0;text-align:center;color:var(--dim);font-size:11.5px;pointer-events:none}
+  #d3ctl{display:flex;gap:8px;padding:10px 14px calc(10px + var(--safe-b));border-top:1px solid var(--line)}
+  #d3ctl button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:12px;font-size:13px;font-weight:700}
+  /* ---- hero accueil ---- */
+  .hero{position:relative;overflow:hidden}
+  .hero-bg{position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(120% 90% at 12% -10%,rgba(58,208,255,.20),transparent 58%),
+    radial-gradient(90% 80% at 110% 120%,rgba(14,136,201,.16),transparent 55%)}
+  /* eau animée (discrète) : caustiques qui dérivent + vague en bas du hero */
+  .hero-bg::before{content:"";position:absolute;inset:-45%;
+    background:
+      radial-gradient(32% 26% at 28% 42%,rgba(58,208,255,.13),transparent 70%),
+      radial-gradient(26% 22% at 68% 58%,rgba(14,136,201,.12),transparent 70%),
+      radial-gradient(20% 18% at 50% 30%,rgba(120,220,255,.08),transparent 70%);
+    animation:heroDrift 16s ease-in-out infinite alternate;will-change:transform}
+  .hero-bg::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:38px;opacity:.5;
+    background:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 34' preserveAspectRatio='none'%3E%3Cpath d='M0 22 Q 27 8 55 22 T 110 22 T 165 22 T 220 22 V34 H0 Z' fill='%233ad0ff' fill-opacity='.16'/%3E%3Cpath d='M0 27 Q 27 15 55 27 T 110 27 T 165 27 T 220 27 V34 H0 Z' fill='%230e88c9' fill-opacity='.20'/%3E%3C/svg%3E") repeat-x bottom/220px 34px;
+    animation:heroWave 11s linear infinite;will-change:background-position}
+  @keyframes heroDrift{from{transform:translate3d(-2.5%,-2%,0) rotate(-1.5deg)}to{transform:translate3d(2.5%,2%,0) rotate(1.5deg)}}
+  @keyframes heroWave{from{background-position-x:0}to{background-position-x:-220px}}
+  .hero-row{position:relative;display:flex;gap:16px;align-items:center}
+  .hero-live{display:flex;flex-direction:column;align-items:center;gap:9px;flex:0 0 auto}
+  .ring{position:relative;width:90px;height:90px}
+  .ring svg{width:90px;height:90px;transform:rotate(-90deg);display:block}
+  .ring .rt{fill:none;stroke:rgba(255,255,255,.08);stroke-width:7}
+  .ring .rp{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1)}
+  .ring-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-n{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .ring-n small{font-size:12px;font-weight:700;color:var(--dim)}
+  .ring-l{font-size:12px;margin-top:2px;opacity:.85}
+  .hero-state{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--dim);background:rgba(8,19,31,.55);border:1px solid var(--line2);padding:5px 11px;border-radius:20px}
+  .hero-state .dot{width:7px;height:7px;border-radius:50%}
+  .hero-info{flex:1;min-width:0}
+  .hero-eyebrow{font-size:10.5px;letter-spacing:1.4px;font-weight:800;color:var(--acc)}
+  .hero-title{font-size:33px;font-weight:800;line-height:1.02;margin:4px 0 8px;letter-spacing:-.6px}
+  .hero-title small{font-size:16px;font-weight:700;color:var(--dim);letter-spacing:0}
+  .chip-robot{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;background:rgba(24,55,83,.55);border:1px solid var(--line2);padding:5px 11px;border-radius:20px;color:var(--txt)}
+  /* ---- finitions expert ---- */
+  .card>.btn+.btn,.card>.btn+.row,.card>.row+.btn{margin-top:10px}
+  .kv b{font-weight:700}
+  .step .n{box-shadow:0 4px 12px -4px rgba(58,208,255,.5)}
+  .tool{transition:transform .12s,border-color .15s,background .15s}
+  .tool:active{transform:scale(.96)}
+  .pill,.chipzone{transition:border-color .15s}
+  ::-webkit-scrollbar{width:0;height:0}
+  /* ---- bouton thème (☀️/🌙) ---- */
+  #themeBtn{flex:0 0 auto;width:40px;height:40px;border-radius:12px;border:1px solid var(--line2);
+    background:rgba(24,55,83,.55);color:var(--txt);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:transform .12s,background .15s}
+  #themeBtn:active{transform:scale(.92)}
+  html[data-theme="light"] #themeBtn{background:#eaf3fb}
+  /* ---- jauge circulaire (score) ---- */
+  .gauge{position:relative;width:190px;margin:2px auto 6px}
+  .gauge svg{width:100%;display:block}
+  .gauge .gt{fill:none;stroke:rgba(255,255,255,.09);stroke-width:13;stroke-linecap:round}
+  html[data-theme="light"] .gauge .gt{stroke:rgba(11,35,52,.10)}
+  .gauge .gp{fill:none;stroke-width:13;stroke-linecap:round;transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)}
+  .gauge-c{position:absolute;left:0;right:0;top:56%;text-align:center}
+  .gauge-n{font-size:33px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .gauge-l{font-size:11px;color:var(--dim);margin-top:3px;font-weight:600}
+  .gauge-minmax{display:flex;justify-content:space-between;font-size:10px;color:var(--dim2);padding:0 8px;margin-top:-8px}
+  /* ---- splash de lancement ---- */
+  #splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    background:radial-gradient(120% 70% at 50% -10%,rgba(58,208,255,.14),transparent 60%),linear-gradient(180deg,#0a1826,#050c14 70%);
+    transition:opacity .45s ease,visibility .45s}
+  html[data-theme="light"] #splash{background:radial-gradient(120% 70% at 50% -10%,rgba(14,136,201,.12),transparent 60%),linear-gradient(180deg,#eaf4fc,#dcebf7 70%)}
+  #splash.off{opacity:0;visibility:hidden;pointer-events:none}
+  #splash img{width:96px;height:96px;border-radius:24px;box-shadow:0 18px 44px -14px rgba(14,136,201,.55);animation:splashIn .6s cubic-bezier(.2,.8,.3,1.2) both}
+  #splash b{font-size:19px;font-weight:800;letter-spacing:.3px;animation:splashIn .6s .08s cubic-bezier(.2,.8,.3,1.2) both}
+  #splash b span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  #splash .ld{width:34px;height:34px;border-radius:50%;border:3px solid rgba(58,208,255,.18);border-top-color:var(--gold);animation:splashSpin .8s linear infinite}
+  @keyframes splashIn{from{opacity:0;transform:translateY(10px) scale(.92)}to{opacity:1;transform:none}}
+  @keyframes splashSpin{to{transform:rotate(360deg)}}
+  @media(min-width:560px){#nav button{font-size:10.5px}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    #top{background:rgba(8,19,31,.97)}#nav{background:rgba(8,19,31,.98)}
+  }
+</style>
+</head>
+<body>
+<div id="splash" aria-hidden="true">
+  <img src="icon.svg" alt="">
+  <b>PoolPilot <span>Beatbot+</span></b>
+  <div class="ld"></div>
+</div>
+<div id="top">
+  <span class="logo">🌊</span>
+  <h1>PoolPilot <span style="color:var(--gold)">Beatbot+</span></h1>
+  <span class="robot" id="robotTag">…</span>
+  <button id="themeBtn" onclick="toggleTheme()" aria-label="Changer de thème" title="Thème clair / sombre">☀️</button>
+</div>
+<div id="app"></div>
+<nav id="nav"></nav>
+
+<div id="lv" hidden>
+  <div id="lvtop"><b>📡 Robot en direct</b><span id="lvbadge">⏳ EN ATTENTE</span><button onclick="closeLive()" aria-label="Fermer">✕</button></div>
+  <canvas id="lvc"></canvas>
+  <div id="lvstat">
+    <div class="s"><div class="n" id="lvCov">0%</div><div class="l">Couverture</div></div>
+    <div class="s"><div class="n" id="lvTime">0:00</div><div class="l">Temps</div></div>
+    <div class="s"><div class="n" id="lvBatt">—</div><div class="l">Batterie</div></div>
+    <div class="s"><div class="n" id="lvSpeed">—</div><div class="l">État</div></div>
+  </div>
+  <div id="lvctl">
+    <button id="lvReal" class="pri" onclick="lvStartReal()">▶️ Démarrer le robot</button>
+    <button onclick="openCam()">📷 Suivi caméra</button>
+    <button onclick="lvPollNow()">🔄 Actualiser la position réelle</button>
+  </div>
+</div>
+<div id="cam" hidden>
+  <div id="camtop"><b>📷 Robot sous l'eau</b><span id="cambadge">🎯 CALIBRAGE</span><button onclick="closeCam()" aria-label="Fermer">✕</button></div>
+  <div id="camwrap"><video id="camv" playsinline muted></video><canvas id="camc"></canvas></div>
+  <div id="camhint">La lumière traverse l'eau — la caméra voit ton robot au fond.</div>
+  <div id="camctl">
+    <button onclick="camRecal()">🎯 Recalibrer</button>
+    <button onclick="camOpenPlan()">🗺️ Voir dans le plan</button>
+  </div>
+</div>
+<div id="d3" hidden>
+  <div id="d3top"><b>🧊 Ta piscine en 3D</b><button onclick="close3D()" aria-label="Fermer">✕</button></div>
+  <canvas id="d3c"></canvas>
+  <div id="d3hint">Fais glisser pour tourner · pince/molette pour zoomer</div>
+  <div id="d3ctl">
+    <button id="d3play" onclick="toggle3D()">⏸️ Pause robot</button>
+    <button onclick="reset3D()">🎥 Recentrer la vue</button>
+  </div>
+</div>
+
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="poolrobot" data-version="v0.11.15" data-color="#39c2ff" defer></script>
+<script>
+"use strict";
+/* ============ PoolPilot — Beatbot+ companion (v0.2.0) ============
+   Garantie intacte : aucune modif firmware, aucun accès physique.
+   Couche stratégie/cartographie/analytics AUTOUR du robot.
+   Pré-réglé pour Kevin : AquaSense 2 Ultra + Waterair Céline 7 (haricot).
+================================================================= */
+var APP_VER="v0.11.15";
+function $(s,el){return (el||document).querySelector(s)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function lg(k,d){try{var v=localStorage.getItem("pr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function ls(k,v){try{localStorage.setItem("pr_"+k,JSON.stringify(v))}catch(e){}}
+function uid(){return "m"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36)}
+function fmtDate(ts){var d=new Date(ts);return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}
+
+/* ---- Modèles Beatbot connus (capacités indicatives) ---- */
+var MODELS={
+  "aquasense2ultra":{name:"AquaSense 2 Ultra",modes:["Standard","Sol","Ligne d'eau","Ultra profond","Éco"],waterline:true,map:true,clearwater:true},
+  "aquasense2pro":{name:"AquaSense 2 Pro",modes:["Standard","Sol","Ligne d'eau","Éco"],waterline:true,map:true,clearwater:false},
+  "aquasense2":{name:"AquaSense 2",modes:["Standard","Sol","Ligne d'eau","Éco"],waterline:true,map:false,clearwater:false},
+  "aquasense":{name:"AquaSense",modes:["Standard","Sol","Ligne d'eau"],waterline:true,map:false,clearwater:false},
+  "iskimultra":{name:"iSkim Ultra (surface)",modes:["Surface"],waterline:false,map:false,clearwater:false},
+  "autre":{name:"Autre Beatbot",modes:["Standard","Sol","Ligne d'eau","Éco"],waterline:true,map:false,clearwater:false}
+};
+
+/* ---- State (pré-rempli pour Kevin, écrasable) ---- */
+var cfg=Object.assign({
+  model:"aquasense2ultra",unit:"m",runHours:0,
+  reference:"PRCMDS02-EU-G",serial:"P0004EUGJ155601124KF1",
+  warrantyYears:3,retailer:"mypiscine.com",price:2499,purchaseDate:"",firmwareOk:true,
+  /* réglages performance */
+  env:"peu",usage:"moyenne",debris:"fines",focus:"equilibre",batteryMin:180,
+  robotId:"bf97b001fc39788539s9b3",robotUuid:"uuid10f452b75a80a003",pluginVersion:"0.0.80"
+},lg("cfg",{}));
+var pool=Object.assign({L:6.85,W:4.10,shape:"bean",preset:"celine7",depthShallow:1.20,depthDeep:2.20,depthProfile:"fosse",volOfficial:0,markers:[]},lg("pool",{}));
+/* Migration v0.5 : cotes officielles Waterair Céline 07 (6,85 x 4,10 - waterair.com) + escalier roman lobe avant-droit (photo Kevin) */
+(function(){
+  if(pool._v5)return;
+  if(pool.L===6.9)pool.L=6.85;
+  if(pool.W===4.0)pool.W=4.10;
+  if(pool.preset==="celine7"&&!pool.markers.some(function(m){return m.type==="escalier"})){
+    pool.markers.push({id:"stairs_roman",type:"escalier",x:0.80,y:0.55});
+  }
+  pool._v5=1;ls("pool",pool);
+})();
+/* Migration v0.6 : profondeurs réelles Kevin (petit bain ~1,20 / fosse centrale ~2,20) */
+(function(){
+  if(pool._v6)return;
+  if(pool.depthShallow===1.1||pool.depthShallow==null)pool.depthShallow=1.20;
+  if(pool.depthDeep===1.7||pool.depthDeep==null)pool.depthDeep=2.20;
+  if(!pool.depthProfile)pool.depthProfile="fosse";
+  pool._v6=1;ls("pool",pool);
+})();
+/* v0.7 : identifiants robot Beatbot (écran « Autres réglages ») */
+(function(){
+  if(cfg._v7)return;
+  if(!cfg.robotId)cfg.robotId="bf97b001fc39788539s9b3";
+  if(!cfg.robotUuid)cfg.robotUuid="uuid10f452b75a80a003";
+  if(!cfg.pluginVersion)cfg.pluginVersion="0.0.80";
+  cfg._v7=1;ls("cfg",cfg);
+})();
+var sessions=lg("sessions",[]);
+var plan=lg("plan",{mode:"Standard",generatedAt:0});
+var maint=Object.assign({filter:0,brush:0,seal:0,clearwater:0},lg("maint",{}));
+var beatbot=Object.assign({relay:"https://beatbot.kd-mc.com/__beatbot/relay",hosts:[],token:"",tokenHeader:"Authorization",commands:{},mapUrl:"",statusUrl:""},lg("beatbot",{}));
+var tuya=Object.assign({linked:false,region:"eu",device_id:"",device_name:""},lg("tuya",{}));
+var _bbAnalysis=null;
+var S={view:"accueil"};
+function save(){ls("cfg",cfg);ls("pool",pool);ls("sessions",sessions);ls("plan",plan);ls("maint",maint);ls("beatbot",beatbot);ls("tuya",tuya)}
+
+/* ---- Presets bassins ---- */
+var PRESETS={
+  celine7:{name:"Waterair Céline 7 (haricot) — 6,85 × 4,10 m officiel",shape:"bean",L:6.85,W:4.10},
+  celine8:{name:"Waterair Céline 8 (haricot)",shape:"bean",L:7.9,W:4.2},
+  rect84:{name:"Rectangle 8×4",shape:"rect",L:8,W:4},
+  rect104:{name:"Rectangle 10×5",shape:"rect",L:10,W:5}
+};
+
+/* ============ GÉOMÉTRIE bassin (haricot / rectangle) ============ */
+var BEAN_RAW=[[0.10,0.30],[0.20,0.15],[0.34,0.10],[0.44,0.17],[0.50,0.23],[0.56,0.17],[0.66,0.10],[0.80,0.12],[0.90,0.26],[0.94,0.45],[0.90,0.64],[0.80,0.79],[0.66,0.86],[0.50,0.84],[0.34,0.86],[0.20,0.79],[0.07,0.62],[0.05,0.44]];
+var BEAN=(function(){
+  var xs=BEAN_RAW.map(function(p){return p[0]}),ys=BEAN_RAW.map(function(p){return p[1]});
+  var x0=Math.min.apply(null,xs),x1=Math.max.apply(null,xs),y0=Math.min.apply(null,ys),y1=Math.max.apply(null,ys);
+  return BEAN_RAW.map(function(p){return {x:(p[0]-x0)/(x1-x0),y:(p[1]-y0)/(y1-y0)}});
+})();
+var RECTPOLY=[{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:1}];
+function poolPoly(){return pool.shape==="bean"?BEAN:RECTPOLY}
+function pointInPoly(x,y,poly){var inside=false;for(var i=0,j=poly.length-1;i<poly.length;j=i++){var xi=poly[i].x,yi=poly[i].y,xj=poly[j].x,yj=poly[j].y;if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-9)+xi))inside=!inside}return inside}
+function segDist(px,py,ax,ay,bx,by){var dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;var t=l2?((px-ax)*dx+(py-ay)*dy)/l2:0;t=Math.max(0,Math.min(1,t));var cx=ax+t*dx,cy=ay+t*dy;return Math.sqrt((px-cx)*(px-cx)+(py-cy)*(py-cy))}
+function distToPoly(x,y,poly){var m=1e9;for(var i=0,j=poly.length-1;i<poly.length;j=i++)m=Math.min(m,segDist(x,y,poly[j].x,poly[j].y,poly[i].x,poly[i].y));return m}
+function polyArea(poly){var a=0;for(var i=0,j=poly.length-1;i<poly.length;j=i++)a+=(poly[j].x+poly[i].x)*(poly[j].y-poly[i].y);return Math.abs(a/2)}
+function polyCentroid(poly){var cx=0,cy=0;poly.forEach(function(p){cx+=p.x;cy+=p.y});return {x:cx/poly.length,y:cy/poly.length}}
+function poolAreaM2(){return polyArea(poolPoly())*pool.L*pool.W}
+function worldPerimeter(){var poly=poolPoly(),per=0;for(var i=0;i<poly.length;i++){var a=poly[i],b=poly[(i+1)%poly.length];per+=Math.hypot((a.x-b.x)*pool.L,(a.y-b.y)*pool.W)}return per}
+function depthShallow(){return +pool.depthShallow||1.1}
+function depthDeep(){return +pool.depthDeep||1.7}
+function avgDepth(){
+  if(pool.depthProfile==="pente")return (depthShallow()+depthDeep())/2;
+  var poly=poolPoly(),sum=0,n=0;
+  for(var y=0;y<20;y++)for(var x=0;x<30;x++){var nx=(x+0.5)/30,ny=(y+0.5)/20;if(!pointInPoly(nx,ny,poly))continue;sum+=-floorDepthAt(nx,ny);n++}
+  return n?sum/n:(depthShallow()+depthDeep())/2;
+}
+function volumeM3(){return poolAreaM2()*avgDepth()}
+function wallAreaM2(){return worldPerimeter()*avgDepth()}
+function floorSlopeLen(){return Math.hypot(pool.L,depthDeep()-depthShallow())}
+
+/* ============ NAV ============ */
+var NAV=[
+  {v:"accueil",ic:"🏠",l:"Accueil"},
+  {v:"bassin",ic:"🗺️",l:"Bassin"},
+  {v:"plan",ic:"🎯",l:"Plan"},
+  {v:"journal",ic:"📊",l:"Journal"},
+  {v:"reglage",ic:"⚙️",l:"Réglage"},
+  {v:"entretien",ic:"🔧",l:"Entretien"},
+  {v:"pilotage",ic:"🎮",l:"Pilotage"}
+];
+function renderNav(){$("#nav").innerHTML=NAV.map(function(n){return '<button class="'+(S.view===n.v?"on":"")+'" data-v="'+n.v+'"><span class="ic">'+n.ic+'</span>'+esc(n.l)+'</button>'}).join("")}
+function go(v){S.view=v;render();window.scrollTo(0,0)}
+
+/* ============ warranty ============ */
+function warrantyInfo(){
+  if(!cfg.purchaseDate)return {txt:"📅 Renseigne la date d'achat pour suivre la garantie ("+cfg.warrantyYears+" ans).",days:null};
+  var start=new Date(cfg.purchaseDate).getTime();
+  var end=start+cfg.warrantyYears*365.25*24*3600*1000;
+  var days=Math.round((end-Date.now())/(24*3600*1000));
+  return {txt:(days>0?"🛡️ Garantie jusqu'au ":"⛔ Garantie expirée le ")+new Date(end).toLocaleDateString("fr-FR")+(days>0?" · "+days+" jours restants":""),days:days};
+}
+
+/* ============ VIEWS ============ */
+/* Anneau de batterie + état live du robot pour le hero d'accueil (données réelles Tuya
+   si dispo, dégradé gracieux sinon). Idempotent : réinjecté par tuyaRefresh. */
+function heroLiveInner(){
+  var m=(typeof tuyaMap==="function")?tuyaMap(TUYA.status):{batt:null};
+  var batt=m.batt,online=TUYA.online;
+  var R=32,C=2*Math.PI*R,pct=(batt!=null?Math.max(0,Math.min(100,batt)):0),off=C*(1-pct/100);
+  var col=batt==null?"#5a7fa0":(batt<20?"#f0674d":(batt<50?"#f2b632":"#3ddc84"));
+  var lbl=TUYA.status?tuyaLabelState(m.state||m.mode):(tuya.linked?"Prêt":(onBeatbotHost()?"À lier":"Companion"));
+  var dc=online===true?"#3ddc84":(online===false?"#8ba9c4":"#5a7fa0");
+  return '<div class="ring"><svg viewBox="0 0 80 80">'+
+      '<circle class="rt" cx="40" cy="40" r="'+R+'"></circle>'+
+      '<circle class="rp" cx="40" cy="40" r="'+R+'" stroke="'+col+'" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"></circle>'+
+    '</svg><div class="ring-c"><div class="ring-n">'+(batt!=null?batt:"—")+'<small>'+(batt!=null?"%":"")+'</small></div><div class="ring-l">🔋</div></div></div>'+
+    '<div class="hero-state"><span class="dot" style="background:'+dc+';box-shadow:0 0 6px '+dc+'"></span>'+esc(lbl)+'</div>'+
+    ((TUYA.props&&TUYA.props.water_temperature!=null)?'<div class="hero-state">🌡️ '+esc(String(TUYA.props.water_temperature))+' °C</div>':'');
+}
+/* idempotent (règle #94) : ne touche le DOM que si le contenu change réellement */
+function heroLiveUpdate(){var el=$("#heroLive");if(!el)return;var h=heroLiveInner();if(el._pp!==h){el._pp=h;el.innerHTML=h;}}
+function vAccueil(){
+  var m=MODELS[cfg.model]||MODELS.autre;
+  var nStairs=pool.markers.filter(function(x){return x.type==="escalier"}).length;
+  var alerts=maintAlerts();
+  var w=warrantyInfo();
+  if(onBeatbotHost()&&tuya.linked&&tuya.device_id&&!TUYA.status&&!S._heroFetch){S._heroFetch=1;setTimeout(tuyaRefresh,80);}
+  return '<div class="card hero"><div class="hero-bg"></div>'+
+    '<div class="hero-row"><div id="heroLive" class="hero-live">'+heroLiveInner()+'</div>'+
+      '<div class="hero-info"><div class="hero-eyebrow">MA PISCINE · HARICOT</div>'+
+        '<div class="hero-title">'+poolAreaM2().toFixed(1)+' <small>m²</small></div>'+
+        '<span class="chip-robot">🤖 '+esc(m.name)+'</span></div></div>'+
+    '<button class="btn" style="margin-top:15px" onclick="openLive()">📡 Voir le robot en direct</button>'+
+    '<div class="grid2" style="margin-top:10px">'+
+      '<button class="btn ghost" onclick="go(\'plan\')">🎯 Mon plan</button>'+
+      '<button class="btn ghost" onclick="go(\'bassin\')">🗺️ Cartographier</button></div>'+
+    (alerts.length?'<div class="note warn" style="margin-top:12px">🔧 '+alerts.length+' entretien(s) à prévoir — <a href="#" onclick="go(\'entretien\');return false">voir</a></div>':'')+
+  '</div>'+
+  '<div class="grid2" style="margin-bottom:14px">'+
+    stat(nStairs||"0","Escaliers")+stat(sessions.length,"Sessions")+
+    stat(cfg.runHours+" h","Heures")+stat(volumeM3().toFixed(0)+" m³","Volume")+
+  '</div>'+
+  card("🤖 Mon robot","",
+    '<div class="kv"><b>'+esc(m.name)+'</b><span>Réf. '+esc(cfg.reference)+'</span></div>'+
+    '<div class="kv"><b>N° série</b><span><code>'+esc(cfg.serial.slice(0,6)+"…"+cfg.serial.slice(-4))+'</code></span></div>'+
+    (cfg.robotId?'<div class="kv"><b>ID Robot</b><span><code>'+esc(cfg.robotId)+'</code></span></div>':'')+
+    (cfg.robotUuid?'<div class="kv"><b>UUID</b><span><code>'+esc(cfg.robotUuid)+'</code></span></div>':'')+
+    (cfg.pluginVersion?'<div class="kv"><b>Plug-in Beatbot</b><span>'+esc(cfg.pluginVersion)+'</span></div>':'')+
+    '<div class="kv"><b>Acheté</b><span>'+esc(cfg.retailer)+' · '+esc(cfg.price)+' €</span></div>'+
+    '<div class="kv"><b>État</b><span>Firmware '+(cfg.firmwareOk?'✅':'—')+' · Brosses ✅ · ClearWater ✅</span></div>'+
+    '<div class="row" style="margin-top:10px"><div style="flex:2"><label>Date d\'achat</label><input id="purch" type="date" value="'+esc(cfg.purchaseDate)+'"></div>'+
+    '<button class="btn ghost sm" style="flex:1;align-self:end" onclick="setPurch()">Enregistrer</button></div>'+
+    '<div class="note '+(w.days!=null&&w.days<0?'warn':'')+'">'+esc(w.txt)+'</div>'
+  )+
+  card("✨ Ce que fait PoolPilot (garantie intacte)","Une couche intelligente autour du robot — pas dans son firmware.",
+    '<ol class="clean">'+
+      '<li><b>Ta carto haricot</b> : escaliers, angles morts, point bas → le plan cible ces zones.</li>'+
+      '<li><b>Plan optimisé</b> : dépôt, orientation, séquence + passes escaliers.</li>'+
+      '<li><b>Journal & tendances</b> absents de l\'app Beatbot.</li>'+
+      '<li><b>Entretien</b> (filtre/brosses/joints/ClearWater) sur tes heures réelles.</li>'+
+      '<li><b>Pilotage réel</b> possible après capture du protocole (onglet 🎮).</li>'+
+    '</ol>'
+  );
+}
+
+function vBassin(){
+  var toolsHtml=[
+    ["main","✋ Déplacer"],["escalier","🪜 Escalier"],["pointbas","🕳️ Point bas"],
+    ["depot","📍 Dépôt robot"],["anglemort","⛔ Angle mort"],["obstacle","🪨 Obstacle"]
+  ].map(function(t){return '<div class="tool'+(S.tool===t[0]?" on":"")+'" data-tool="'+t[0]+'">'+esc(t[1])+'</div>'}).join("");
+  return card("🗺️ Cartographie de ta piscine",
+    "Waterair Céline 7 — forme haricot. Renseigne tes mesures, pose les repères (tape pour ajouter, glisse pour déplacer).",
+    '<div class="row">'+
+      '<div style="flex:2"><label>Forme</label><select id="poolShape">'+
+        '<option value="bean" '+(pool.shape==="bean"?"selected":"")+'>Haricot (Waterair Céline)</option>'+
+        '<option value="rect" '+(pool.shape==="rect"?"selected":"")+'>Rectangle</option>'+
+      '</select></div>'+
+      '<button class="btn ghost sm" style="flex:1;align-self:end" onclick="applyPreset(\'celine7\')">↺ Céline 7</button>'+
+    '</div>'+
+    '<div class="palette">'+toolsHtml+'</div>'+
+    '<canvas id="poolCanvas" height="420"></canvas>'+
+    '<div class="legend">'+
+      '<span><i style="background:var(--stair)"></i>Escalier</span>'+
+      '<span><i style="background:var(--deep)"></i>Point bas</span>'+
+      '<span><i style="background:var(--gold)"></i>Dépôt robot</span>'+
+      '<span><i style="background:var(--bad)"></i>Angle mort</span>'+
+      '<span><i style="background:#8a97a6"></i>Obstacle</span>'+
+    '</div>'+
+    '<div id="markerPanel" style="margin-top:10px"></div>'+
+    '<button class="btn" style="margin-top:12px" onclick="open3D()">🧊 Voir ma piscine en 3D</button>'+
+    '<div class="note">💡 Sur un bassin haricot, les <b>escaliers</b> (souvent dans une courbe) et le <b>rétrécissement</b> sont les zones que le robot rate le plus. Marque-les bien : c\'est ce qui rend le plan (🎯) efficace.</div>'
+  )+
+  card("📐 Mesures précises","Tes vraies mesures Waterair (ajuste-les) — surface, périmètre et volume se recalculent.",
+    '<div class="row">'+
+      field("Longueur (m)","poolL",pool.L,"number","0.05")+
+      field("Largeur max (m)","poolW",pool.W,"number","0.05")+
+    '</div>'+
+    '<div class="row" style="margin-top:8px">'+
+      '<div><label>Profil du fond</label><select id="poolProfile">'+
+        '<option value="fosse" '+(pool.depthProfile!=="pente"?"selected":"")+'>Fosse centrale</option>'+
+        '<option value="pente" '+(pool.depthProfile==="pente"?"selected":"")+'>Pente régulière</option>'+
+      '</select></div>'+
+    '</div>'+
+    '<div class="row" style="margin-top:8px">'+
+      field("Prof. petit bain (m)","poolPB",depthShallow(),"number","0.05")+
+      field((pool.depthProfile==="pente"?"Prof. grand bain (m)":"Prof. fosse (m)"),"poolGB",depthDeep(),"number","0.05")+
+    '</div>'+
+    '<div class="row" style="margin-top:8px">'+
+      field("Volume officiel Waterair (m³) — optionnel","poolVol",(pool.volOfficial||""),"number","0.5")+
+    '</div>'+
+    '<div style="margin-top:12px">'+
+      '<div class="kv"><b>Surface plan d\'eau</b><span>'+poolAreaM2().toFixed(1)+' m²</span></div>'+
+      '<div class="kv"><b>Périmètre (ligne d\'eau)</b><span>'+worldPerimeter().toFixed(1)+' m</span></div>'+
+      '<div class="kv"><b>Profondeur moyenne</b><span>'+avgDepth().toFixed(2)+' m</span></div>'+
+      '<div class="kv"><b>'+(pool.volOfficial>0?"Volume officiel":"Volume estimé")+'</b><span>'+(pool.volOfficial>0?(+pool.volOfficial).toFixed(1):volumeM3().toFixed(1))+' m³ (~'+Math.round((pool.volOfficial>0?+pool.volOfficial:volumeM3())*1000).toLocaleString("fr-FR")+' L)</span></div>'+
+      '<div class="kv"><b>Parois immergées (~)</b><span>'+wallAreaM2().toFixed(1)+' m²</span></div>'+
+      '<div class="kv"><b>Surface totale à nettoyer</b><span>'+(poolAreaM2()+wallAreaM2()).toFixed(1)+' m²</span></div>'+
+    '</div>'+
+    '<div class="note">📏 Cotes officielles Waterair Céline 07 pré-remplies : <b>6,85 × 4,10 m</b> (waterair.com). Profondeurs à ajuster selon TA config (version fosse annoncée jusqu\'à ~2,2 m en pointe). Ton escalier roman est pré-placé dans le lobe avant-droit (ta photo) — déplace-le si besoin.</div>'
+  );
+}
+
+function vPlan(){
+  var m=MODELS[cfg.model]||MODELS.autre;
+  var modes=m.modes.map(function(md){return '<option '+(plan.mode===md?"selected":"")+'>'+esc(md)+'</option>'}).join("");
+  var computed=computeCoverage();
+  var stepsHtml=buildPlanSteps(computed).map(function(s,i){return '<div class="step"><div class="n">'+(i+1)+'</div><div class="b"><b>'+esc(s.t)+'</b><span>'+s.d+'</span></div></div>'}).join("");
+  var weak=computed.weak;
+  var rec=recommend();
+  return card("🎯 Plan de nettoyage optimisé","Choisis le cycle prévu, PoolPilot calcule dépôt, ordre et passes escaliers.",
+    '<div class="note">💡 D\'après tes conditions (⚙️ Réglage) : mode <b>'+esc(rec.mode)+'</b> · <b>'+esc(rec.freq)+'</b>'+(rec.mode!==plan.mode?' · <a href="#" onclick="applyReco();go(\'plan\');return false">appliquer</a>':'')+'</div>'+
+    '<label>Mode de cycle prévu</label><select id="planMode">'+modes+'</select>'+
+    '<button class="btn" style="margin-top:12px" onclick="regenPlan()">⚙️ (Re)générer le plan + la carte de couverture</button>'
+  )+
+  card("🌡️ Carte de couverture estimée","",
+    '<canvas id="covCanvas" height="300"></canvas>'+
+    '<div class="legend">'+
+      '<span><i style="background:var(--ok)"></i>Bien couvert</span>'+
+      '<span><i style="background:var(--warn)"></i>Moyen</span>'+
+      '<span><i style="background:var(--bad)"></i>Faible</span>'+
+    '</div>'+
+    '<div class="note">⚠️ <b>Estimation</b> — d\'après le comportement type du robot + TES zones marquées, sur le contour réel du bassin. Pas une mesure du robot ; ça sert à décider où renforcer.</div>'+
+    '<button class="btn ghost" style="margin-top:10px" onclick="open3D()">🧊 Voir en 3D (avec cotes + robot animé)</button>'+
+    '<button class="btn" style="margin-top:8px" onclick="openLive()">📡 Suivre le robot en direct (plan)</button>'
+  )+
+  card("📋 Étapes recommandées","",
+    (stepsHtml||'<div class="empty">Cartographie ton bassin puis génère le plan.</div>')+
+    (weak.length?'<div style="margin-top:12px"><b style="font-size:13px">Zones à renforcer :</b><br>'+weak.map(function(w){return '<span class="chipzone">'+esc(w)+'</span>'}).join("")+'</div>':'')
+  );
+}
+
+function vJournal(){
+  var rows=sessions.length?sessions.map(function(s){return '<div class="logrow"><div class="d"><b>'+esc(s.mode)+'</b><span>'+fmtDate(s.ts)+' · '+s.dur+' min'+(s.area!=null?' · '+s.area+' m²':'')+(s.batt!=null?' · 🔋'+s.batt+'%':'')+'</span></div><button class="btn ghost sm" onclick="delSession(\''+s.id+'\')">🗑</button></div>'}).join(""):'<div class="empty">Aucune session pour l\'instant — le robot les ajoutera tout seul après son prochain cycle 🤖</div>';
+  var avg=sessions.length?Math.round(sessions.reduce(function(a,s){return a+(+s.dur||0)},0)/sessions.length):0;
+  return card("➕ Loguer une session","À faire à la fin de chaque cycle du robot.",
+    '<div class="row">'+
+      '<div style="flex:2"><label>Mode</label><select id="lgMode">'+((MODELS[cfg.model]||MODELS.autre).modes.map(function(md){return '<option>'+esc(md)+'</option>'}).join(""))+'</select></div>'+
+      '<div><label>Durée (min)</label><input id="lgDur" type="number" value="120"></div>'+
+      '<div><label>Batterie fin %</label><input id="lgBatt" type="number" placeholder="—"></div>'+
+    '</div>'+
+    '<button class="btn" style="margin-top:12px" onclick="saveLog()">💾 Enregistrer la session</button>'
+  )+
+  card("📊 Tendances","",
+    '<div class="grid2">'+stat(sessions.length,"Sessions")+stat(avg+" min","Durée moyenne")+'</div>'+
+    autoStatsHtml()+
+    (sessions.length>1?'<canvas id="trendCanvas" height="176" style="margin-top:12px"></canvas>':'')
+  )+
+  (function(){
+    if(!onBeatbotHost()||!tuya.linked)return "";
+    var sp=S._tuyaSnaps||[];
+    return card("📡 Pendant le travail (relevés auto)","Un point archivé à chaque changement observé sur le robot (remontée, progression, température) — même app fermée.",
+      (sp.length>1?'<canvas id="snapCanvas" height="150"></canvas>':'')+
+      (sp.length?('<div style="margin-top:8px">'+sp.slice(0,6).map(function(s){
+        var d=new Date(s.ts),hm=("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+        return '<div class="kv"><b>'+hm+' · '+esc(tuyaLabelState(s.st))+'</b><span>'+(s.batt!=null?'🔋'+s.batt+'% ':'')+(s.ct?s.ct+' min ':'')+(s.ca?s.ca+' m² ':'')+(s.temp!=null?'🌡️'+s.temp+'°':'')+'</span></div>';
+      }).join("")+'</div>'):'<div class="mut" style="font-size:12px">En attente du premier relevé (le serveur regarde toutes les 5 min).</div>')
+    );
+  })()+
+  card("🗂️ Historique","",rows);
+}
+
+function vEntretien(){
+  var items=[
+    {k:"filter",l:"Nettoyer le filtre",ic:"🧽",max:8,tip:"Rincer le panier / filtre fin"},
+    {k:"clearwater",l:"Recharge ClearWater (clarifiant)",ic:"💧",max:40,tip:"Cartouche clarifiant bleu — remplacer quand épuisée"},
+    {k:"brush",l:"Vérifier brosses / chenilles",ic:"🌀",max:60,tip:"Usure + débris coincés"},
+    {k:"seal",l:"Joints & flotteur ligne d'eau",ic:"🔩",max:120,tip:"Étanchéité + capteur"}
+  ];
+  if(!(MODELS[cfg.model]||{}).clearwater)items=items.filter(function(i){return i.k!=="clearwater"});
+  var html=items.map(function(it){
+    var h=maint[it.k]||0,pct=Math.min(100,Math.round(h/it.max*100));
+    var col=pct>=100?"var(--bad)":pct>=70?"var(--warn)":"var(--ok)";
+    return '<div class="maint"><span style="font-size:20px">'+it.ic+'</span>'+
+      '<div style="flex:1"><b style="font-size:14px">'+esc(it.l)+'</b><div class="mut" style="font-size:11.5px">'+esc(it.tip)+' · '+h+'/'+it.max+' h</div>'+
+      '<div class="bar" style="margin-top:5px"><i style="width:'+pct+'%;background:'+col+'"></i></div></div>'+
+      '<button class="btn ghost sm" onclick="resetMaint(\''+it.k+'\')">✓ Fait</button></div>';
+  }).join("");
+  return card("⏱️ Compteur d'heures","Ajoute le temps de fonctionnement pour piloter l'entretien.",
+    '<div class="row"><div style="flex:2"><label>Heures totales cumulées</label><input id="runH" type="number" value="'+cfg.runHours+'"></div>'+
+    '<button class="btn sm" style="flex:1;align-self:end" onclick="setRunH()">Mettre à jour</button></div>'
+  )+
+  card("🔧 Entretien intelligent","Basé sur tes heures réelles depuis la dernière action.",html);
+}
+
+function analyzeCapture(text){
+  var hosts={},auth=null,cands=[],maps=[],stats=[];
+  var NOISE=/(apple|icloud|gstatic|googleapis|google-analytics|firebaseio|crashlytics|sentry|facebook|doubleclick|akamai|appsflyer|adjust\.com|amplitude|mixpanel|branch\.io|bugsnag|datadog)/i;
+  function push(method,url,headers,body){
+    var h;try{h=new URL(url).hostname;}catch(e){return;}
+    if(NOISE.test(h))return;
+    hosts[h]=(hosts[h]||0)+1;
+    var lc=(url+" "+(body||"")).toLowerCase(),label=null;
+    if(/start|clean|\bwork\b|begin|\bplay\b|\brun\b/.test(lc))label="start";
+    else if(/stop|pause|\bhalt\b/.test(lc))label="stop";
+    else if(/mode|program|setting|profile|waterline|floor/.test(lc))label="mode";
+    else if(/dock|home|charge|return|\bpark\b|\bbase\b/.test(lc))label="dock";
+    if(/map|coverage|track|record|\bpath\b|route/.test(lc))maps.push({method:method||"GET",url:url});
+    if(/status|state|realtime|position|location|\/info\b|device.?status|heartbeat|telemetr/.test(lc))stats.push({method:method||"GET",url:url});
+    if(headers)for(var k in headers){var kl=k.toLowerCase();if((kl==="authorization"||kl==="token"||/x-.*(token|auth|session)/.test(kl))&&!auth)auth={header:k,value:String(headers[k])};}
+    var mine=false;try{var idn=[cfg.robotId,cfg.robotUuid,cfg.serial].filter(Boolean);var blob=(url+" "+(body||"")+" "+JSON.stringify(headers||{}));mine=idn.some(function(x){return x&&blob.indexOf(x)>=0;});}catch(e){}
+    cands.push({method:method||"GET",url:url,label:label,headers:headers||{},body:body||"",mine:mine});
+  }
+  var t=(text||"").trim(),har=null;try{har=JSON.parse(t);}catch(e){}
+  if(har&&har.log&&har.log.entries){har.log.entries.forEach(function(e){var r=e.request||{},hs={};(r.headers||[]).forEach(function(x){hs[x.name]=x.value;});push(r.method,r.url,hs,(r.postData&&r.postData.text)||"");});}
+  else{var urls=t.match(/https:\/\/[^\s"'<>]+/g)||[];var al=(t.match(/authorization["']?\s*[:=]\s*["']?([^"'\r\n]+)/i)||[])[1];if(al&&!auth)auth={header:"Authorization",value:al.trim()};urls.forEach(function(u){push("POST",u,al?{Authorization:al.trim()}:{},"");});}
+  return {hosts:Object.keys(hosts).sort(function(a,b){return hosts[b]-hosts[a]}),auth:auth,candidates:cands,maps:maps,stats:stats};
+}
+var beatbotClient={
+  configured:function(){return !!(beatbot.commands&&Object.keys(beatbot.commands).length)},
+  onBeatbot:function(){return location.hostname==="beatbot.kd-mc.com"},
+  _hdrs:function(extra){var hh=Object.assign({},extra||{});if(beatbot.token)hh[beatbot.tokenHeader||"Authorization"]=beatbot.token;return hh;},
+  send:function(name){
+    var c=beatbot.commands[name];var el=$("#bbCockOut");
+    if(!c){if(el)el.innerHTML='<div class="note warn">« '+esc(name)+' » non configuré.</div>';return;}
+    if(!this.onBeatbot()&&el)el.innerHTML='<div class="note warn">Ouvre l\'app sur <b>beatbot.kd-mc.com</b> pour piloter (sécurité admin même-origine).</div>';
+    if(el&&this.onBeatbot())el.innerHTML='<span class="mut">Envoi de « '+esc(name)+' »…</span>';
+    fetch(beatbot.relay,{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({url:c.url,method:c.method||"POST",headers:this._hdrs(c.headers),body:c.body||""})})
+    .then(function(r){return r.json().catch(function(){return {ok:false,reason:"réponse illisible (HTTP "+r.status+")"};});})
+    .then(function(j){if(!el)return;
+      if(j.ok&&j.status>=200&&j.status<300)el.innerHTML='<div class="note">✅ « '+esc(name)+' » envoyé au robot (HTTP '+j.status+').</div>';
+      else if(j.reason==="need_admin_code"||j.reason==="admin_only")el.innerHTML='<div class="note warn">🔐 Prouve ton code admin (Face ID) sur <a href="https://kd-mc.com" target="_blank" rel="noopener noreferrer">kd-mc.com</a>, puis réessaie.</div>';
+      else el.innerHTML='<div class="note warn">⚠️ Échec : '+esc(j.reason||("HTTP "+(j.status||"?")))+(j.detail?" — "+esc(j.detail):"")+'.<br>Le robot doit être <b>connecté</b> (accosté/surface) — le WiFi ne passe pas sous l\'eau.</div>';
+    }).catch(function(e){if(el)el.innerHTML='<div class="note warn">⚠️ '+esc((e&&e.message)||e)+'</div>';});
+  },
+  fetchMap:function(){
+    var el=$("#bbMapOut");if(!beatbot.mapUrl){if(el)el.innerHTML='<div class="note warn">Aucune carte détectée dans la capture.</div>';return;}
+    if(el)el.innerHTML='<span class="mut">Chargement de la carte du robot…</span>';
+    fetch(beatbot.relay,{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({url:beatbot.mapUrl,method:"GET",headers:this._hdrs({})})})
+    .then(function(r){return r.json();}).then(function(j){if(!el)return;
+      if(j.ok&&j.body&&j.body.b64&&/image/.test(j.ct||""))el.innerHTML='<img alt="carte robot" style="width:100%;border-radius:10px;border:1px solid var(--line)" src="data:'+esc(j.ct)+';base64,'+j.body.b64+'">';
+      else if(j.ok&&j.body&&j.body.text)el.innerHTML='<pre style="white-space:pre-wrap;font-size:11px;max-height:220px;overflow:auto;background:var(--bg2);padding:8px;border-radius:8px">'+esc(j.body.text.slice(0,2000))+'</pre>';
+      else el.innerHTML='<div class="note warn">⚠️ '+esc(j.reason||"carte indisponible")+'</div>';
+    }).catch(function(e){if(el)el.innerHTML='<div class="note warn">⚠️ '+esc((e&&e.message)||e)+'</div>';});
+  }
+};
+function bbAnalyze(){
+  var t=($("#bbPaste")&&$("#bbPaste").value)||"";
+  if(!t.trim()){$("#bbResult").innerHTML='<div class="note warn">Dépose un fichier .har ou colle le log d\'abord.</div>';return;}
+  _bbAnalysis=analyzeCapture(t);
+  $("#bbResult").innerHTML=bbResultHtml(_bbAnalysis);
+}
+function bbCandOpts(cands,label){
+  var idx=cands.map(function(c,i){return i;}).sort(function(a,b){return (cands[b].mine?1:0)-(cands[a].mine?1:0);});
+  var sel=null;for(var q=0;q<idx.length;q++){if(cands[idx[q]].label===label){sel=idx[q];break;}}
+  return idx.map(function(i){var c=cands[i];var tail=c.url.replace(/^https:\/\//,"").slice(0,42);return '<option value="'+i+'" '+(i===sel?"selected":"")+'>'+(c.mine?"⭐ ":"")+esc(c.method+" "+tail)+'</option>';}).join("");
+}
+function bbResultHtml(a){
+  if(!a.candidates.length)return '<div class="note warn">Rien de exploitable détecté. Assure-toi d\'avoir capturé pendant que tu appuyais sur Start/Stop dans l\'app Beatbot.</div>';
+  var nm=a.candidates.filter(function(c){return c.mine;}).length;
+  var h='<div class="note">🔎 '+a.candidates.length+' requêtes · serveur principal : <b>'+esc(a.hosts[0]||"?")+'</b>'+(a.auth?' · token détecté ✅':' · <b>aucun token</b> (recapture connecté)')+(nm?' · '+nm+' ciblent TON robot ✅':'')+'</div>';
+  ["start","stop","mode","dock"].forEach(function(k){
+    var lbl={start:"▶️ Démarrer",stop:"⏹️ Stop",mode:"🔁 Mode",dock:"🏠 Base"}[k];
+    h+='<label style="margin-top:8px">'+lbl+'</label><select id="bbCmd_'+k+'"><option value="">— aucune —</option>'+bbCandOpts(a.candidates,k)+'</select>';
+  });
+  if(a.maps.length)h+='<div class="note">🗺️ '+a.maps.length+' endpoint(s) de carte détecté(s) — carte robot activable.</div>';
+  if(a.stats.length)h+='<div class="note">📡 '+a.stats.length+' endpoint(s) de statut détecté(s) — suivi LIVE de la position activable.</div>';
+  h+='<button class="btn" style="margin-top:12px" onclick="bbSaveConfig()">💾 Enregistrer la config & activer le pilotage</button>';
+  return h;
+}
+function bbSaveConfig(){
+  if(!_bbAnalysis)return;var a=_bbAnalysis,cmds={};
+  ["start","stop","mode","dock"].forEach(function(k){var s=$("#bbCmd_"+k);if(s&&s.value!==""){var c=a.candidates[+s.value];if(c)cmds[k]={url:c.url,method:c.method,headers:c.headers,body:c.body};}});
+  beatbot.commands=cmds;
+  if(a.auth){beatbot.token=a.auth.value;beatbot.tokenHeader=a.auth.header;}
+  beatbot.hosts=a.hosts;beatbot.mapUrl=a.maps.length?a.maps[0].url:"";beatbot.statusUrl=(a.stats&&a.stats.length)?a.stats[0].url:"";
+  save();toast("✅ Config enregistrée — "+Object.keys(cmds).length+" commande(s) prête(s)");render();
+}
+function bbCaptureProcedure(){
+  return '<div class="note warn"><b>Une seule étape manuelle</b> (personne d\'autre ne peut lire le trafic de TON iPhone) :</div>'+
+    '<ol class="clean">'+
+    '<li>Installe <b>Proxyman</b> (App Store) ou <b>Stream</b> sur ton iPhone.</li>'+
+    '<li>Active le proxy + installe/active le certificat (déchiffrement HTTPS).</li>'+
+    '<li>Ouvre l\'app <b>Beatbot</b> et fais : <b>Démarrer, Arrêter, changer de mode, retour base</b>.</li>'+
+    '<li>Exporte en <b>.har</b> et dépose-le ci-dessous. Le reste est automatique.</li>'+
+    '</ol>'+
+    '<div class="note">🔒 Aucun démontage → <b>garantie matérielle intacte</b>. On relaie les MÊMES requêtes que l\'app Beatbot. (Zone grise vis-à-vis des conditions de l\'app : ton choix.)</div>';
+}
+/* ---- Tuya : contrôle RÉEL du robot via l'API officielle (Smart Life / Tuya) ----
+   Le robot passe par le cloud Tuya (Smart Life = l'app Tuya). Aucune capture, aucune
+   bidouille firmware → garantie intacte. Kevin lie son compte Smart Life à un projet
+   Tuya IoT et colle 2 clés ; le worker signe et relaie. On lit/écrit les VRAIS data
+   points (batterie, état, marche/arrêt, mode…). Honnête : position live seulement si
+   le robot publie un DP de position. */
+var TUYA_BASE=(location.hostname==="beatbot.kd-mc.com"?"":"https://beatbot.kd-mc.com")+"/__beatbot/tuya/";
+var TUYA={funcs:null,status:null,online:null,name:"",pollTimer:0,lastErr:""};
+function onBeatbotHost(){return location.hostname==="beatbot.kd-mc.com";}
+function tuyaApi(seg,method,body){
+  return fetch(TUYA_BASE+seg,{method:method||"GET",credentials:"include",headers:{"content-type":"application/json"},body:body?JSON.stringify(body):undefined})
+    .then(function(r){return r.json();}).catch(function(e){return {ok:false,reason:"net",detail:String(e&&e.message||e)};});
+}
+/* mappe un tableau Tuya [{code,value}] vers batterie/état lisibles */
+function tuyaMap(status){
+  var o={batt:null,state:null,mode:null,fault:null,area:null,time:null};
+  (status||[]).forEach(function(s){var k=String(s.code||"").toLowerCase(),v=s.value;
+    if(o.batt==null&&/electric|battery|soc|elec_left|residual/.test(k)&&typeof v==="number"&&v>=0&&v<=100)o.batt=Math.round(v);
+    if(o.mode==null&&/^mode$|work_mode|clean_mode/.test(k))o.mode=String(v);
+    if(o.fault==null&&/fault|error|alarm/.test(k)&&v&&v!=="0"&&v!=="no_fault")o.fault=String(v);
+    if(o.state==null&&/status|state|work_state|working/.test(k))o.state=String(v);
+    if(o.area==null&&/clean_area|^area$/.test(k)&&typeof v==="number")o.area=v;
+    if(o.time==null&&/clean_time|work_time/.test(k)&&typeof v==="number")o.time=v;
+  });
+  return o;
+}
+function tuyaLabelState(st){var m={standby:"En veille",goto_charge:"Retour charge",charging:"En charge",charge_done:"Charge finie",paused:"En pause",cleaning:"🧹 Nettoyage",sleep:"Sommeil",fault:"Défaut",going_home:"Retour base",smart:"Auto",diving:"🤿 En plongée",emerge:"🌊 Remonte en surface",return_trip:"↩️ Retour",clean_done:"✅ Nettoyage fini",clean_wait:"⏳ En attente",remote_control:"🕹️ Télécommande",wifi_connect:"📶 Connexion wifi",multi:"Multizone",surface:"Surface",pro:"Pro",fast:"Rapide",standard:"Standard",custom:"Perso",cec:"CEC"};return m[String(st||"").toLowerCase()]||st||"—";}
+/* RE-LIAISON AUTO : les clés (ID/Secret) + le robot choisi vivent CÔTÉ SERVEUR (KV).
+   Le drapeau « lié » local (localStorage) peut disparaître (réinstall PWA, purge iOS)
+   → au boot on redemande la vérité au serveur et on se re-lie tout seul. Fail-open :
+   réseau KO → on garde l'état local, jamais de casse (règle #55/#81). */
+function tuyaBootSync(){
+  if(!onBeatbotHost()||S._tuyaSyncing)return;S._tuyaSyncing=1;
+  tuyaApi("state").then(function(j){
+    S._tuyaSyncing=0;S._tuyaSynced=1;
+    if(!j||j.ok!==true){if(S._tuyaNeedRender){S._tuyaNeedRender=0;render();}return;} /* réseau KO → état local conservé, formulaire de secours affiché */
+    var was=tuya.linked,changed=false;
+    if(j.linked){
+      if(!tuya.linked){tuya.linked=true;changed=true;}
+      if(j.region&&tuya.region!==j.region){tuya.region=j.region;changed=true;}
+      if(j.device_id&&tuya.device_id!==j.device_id){tuya.device_id=j.device_id;changed=true;}
+    }else if(tuya.linked){tuya.linked=false;tuya.device_id="";tuya.device_name="";changed=true;}
+    if(changed||S._tuyaNeedRender){S._tuyaNeedRender=0;save();render();
+      if(!was&&tuya.linked)toast("🔗 Liaison robot retrouvée sur le serveur — rien à re-coller");}
+    if(tuya.linked)setTimeout(tuyaStatsSync,150); /* récupère l'historique auto du robot */
+  });
+}
+/* HISTORIQUE AUTO : le serveur relève le robot toutes les 5 min et enregistre chaque
+   cycle RÉEL terminé (durée clean_time, surface clean_area, batterie) — même app fermée,
+   comme l'app d'origine. Ici on récupère ces cycles et on alimente Journal + compteurs
+   + entretien tout seul. Kevin n'a plus rien à loguer à la main. */
+function tuyaStatsSync(){
+  if(!onBeatbotHost()||!tuya.linked)return;
+  var now=Date.now();if(S._statsAt&&now-S._statsAt<240000)return;S._statsAt=now;
+  tuyaApi("stats").then(function(j){
+    if(!j||j.ok!==true){S._statsAt=0;return;} /* réseau KO → on retentera */
+    S._tuyaStats=j.stats||null;
+    var prevSnaps=(S._tuyaSnaps||[]).length;
+    S._tuyaSnaps=j.snaps||[]; /* instantanés « pendant le travail » archivés côté serveur */
+    var added=0,addH=0;
+    (j.sessions||[]).forEach(function(sv){
+      var id="auto_"+sv.ts;
+      if(sessions.some(function(s){return s.id===id}))return;
+      sessions.push({id:id,ts:sv.ts,mode:"Cycle robot 🤖",dur:+sv.dur||0,batt:(sv.batt!=null?sv.batt:null),area:(sv.area!=null?sv.area:null),auto:true});
+      added++;addH+=(+sv.dur||0)/60;
+    });
+    if(added){
+      sessions.sort(function(a,b){return b.ts-a.ts});if(sessions.length>300)sessions=sessions.slice(0,300);
+      addH=Math.round(addH*10)/10;
+      cfg.runHours=Math.round((cfg.runHours+addH)*10)/10;
+      ["filter","brush","seal","clearwater"].forEach(function(k){maint[k]=Math.round(((maint[k]||0)+addH)*10)/10});
+      save();render();toast("🤖 "+added+" cycle(s) du robot ajoutés au journal automatiquement");
+    }else if(S.view==="journal"){
+      if((S._tuyaSnaps||[]).length!==prevSnaps)render(); /* nouveaux relevés → carte + graphe à jour */
+      else{var el=$("#autoStats");if(el)el.outerHTML=autoStatsHtml();setTimeout(drawSnaps,40);}
+    }
+  });
+}
+/* graphe des relevés pendant le travail : batterie (0-100) + température (échelle propre) */
+function drawSnaps(){
+  var cv=$("#snapCanvas");if(!cv)return;
+  var snaps=(S._tuyaSnaps||[]).slice(0,48).reverse();if(snaps.length<2)return;
+  var dpr=Math.min(2,window.devicePixelRatio||1),cssW=cv.clientWidth||300,cssH=150;
+  cv.width=cssW*dpr;cv.height=cssH*dpr;var g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);
+  var W=cssW,H=cssH;g.clearRect(0,0,W,H);
+  var light=isLight(),cTxt=light?"#48708f":"#93b0c8",cGrid=light?"rgba(11,35,52,.10)":"rgba(255,255,255,.07)";
+  var padL=30,padR=34,padT=20,padB=12,iw=W-padL-padR,ih=H-padT-padB;
+  function X(i){return padL+i/(snaps.length-1)*iw}
+  g.font="9px -apple-system";g.lineWidth=1;
+  [0,50,100].forEach(function(v){var y=padT+ih-(v/100)*ih;g.strokeStyle=cGrid;g.beginPath();g.moveTo(padL,y);g.lineTo(W-padR,y);g.stroke();g.fillStyle=cTxt;g.textAlign="right";g.fillText(String(v),padL-4,y+3);});
+  /* batterie */
+  g.strokeStyle=light?"#0e88c9":"#39c2ff";g.lineWidth=2;g.lineJoin="round";g.beginPath();var st1=false;
+  snaps.forEach(function(s,i){if(s.batt==null)return;var y=padT+ih-(s.batt/100)*ih;st1?g.lineTo(X(i),y):g.moveTo(X(i),y);st1=true;});
+  g.stroke();
+  /* température (échelle min/max dédiée, repères à droite) */
+  var temps=snaps.map(function(s){return s.temp}).filter(function(v){return v!=null});
+  if(temps.length>1){
+    var tmin=Math.min.apply(null,temps)-1,tmax=Math.max.apply(null,temps)+1;
+    g.strokeStyle="#3ddc84";g.lineWidth=2;g.beginPath();var st2=false;
+    snaps.forEach(function(s,i){if(s.temp==null)return;var y=padT+ih-((s.temp-tmin)/(tmax-tmin))*ih;st2?g.lineTo(X(i),y):g.moveTo(X(i),y);st2=true;});
+    g.stroke();
+    g.fillStyle="#3ddc84";g.textAlign="left";g.fillText(tmax.toFixed(0)+"°",W-padR+4,padT+8);g.fillText(tmin.toFixed(0)+"°",W-padR+4,padT+ih);
+  }
+  g.fillStyle=cTxt;g.textAlign="left";g.font="10px -apple-system";
+  g.fillText("— batterie %    — température eau",padL,12);
+}
+/* bloc « compteurs réels » (Journal) — honnête : construit depuis l'activation,
+   le cloud privé Beatbot ne partage pas l'historique antérieur */
+function autoStatsHtml(){
+  if(!onBeatbotHost()||!tuya.linked)return '<span id="autoStats"></span>';
+  var st=S._tuyaStats;
+  if(!st)return '<div id="autoStats" class="mut" style="font-size:12px;margin-top:10px">🤖 Compteurs robot : en attente du premier cycle détecté (relevé automatique toutes les 5 min, même app fermée).</div>';
+  var totC=(st.count||0)+(st.baseCount||0);
+  var totH=Math.round(((st.minutes||0)+(st.baseMinutes||0))/60*10)/10;
+  return '<div id="autoStats" style="margin-top:10px"><div class="grid2">'+
+    stat(totC,"Nettoyages (total)")+stat(totH+" h","Durée totale")+
+    '</div><div class="mut" style="font-size:11.5px;margin-top:6px">🤖 '+(st.baseCount?st.baseCount+' cycles repris de la Fiche Beatbot + ':'')+(st.count||0)+' relevé(s) auto PoolPilot'+(st.m2?' · '+Math.round(st.m2)+' m² relevés':'')+' — à jour même app fermée.</div></div>';
+}
+function tuyaLink(){
+  var id=($("#tyId").value||"").trim(),sec=($("#tySec").value||"").trim(),reg=($("#tyReg").value||"eu");
+  if(!id||!sec){toast("Colle Access ID et Access Secret");return;}
+  var b=$("#tyLinkBtn");b.disabled=true;b.textContent="Connexion…";
+  tuyaApi("link","POST",{access_id:id,access_secret:sec,region:reg}).then(function(j){
+    b.disabled=false;b.textContent="🔗 Lier mon robot";
+    if(j.ok){tuya.linked=true;tuya.region=reg;save();toast("✅ Compte Tuya lié");tuyaLoadDevices();render();}
+    else{$("#tyErr").innerHTML='<div class="note warn">'+esc(j.detail||j.reason||"Échec")+'</div>';}
+  });
+}
+function tuyaLoadDevices(){
+  var el=$("#tyDevs");if(el)el.innerHTML='<div class="mut">Recherche de tes robots…</div>';
+  tuyaApi("devices").then(function(j){
+    if(!el)return;
+    if(!j.ok){el.innerHTML='<div class="note warn">'+esc(j.detail||j.reason||"Erreur")+'</div>';return;}
+    if(!j.devices.length){
+      var diag="";
+      if(j.tried&&j.tried.length){diag='<details style="margin-top:6px"><summary style="font-size:11.5px;color:var(--mut)">Diagnostic (zones testées)</summary><div style="font-size:11px;color:var(--mut);font-family:ui-monospace,monospace;margin-top:4px">'+j.tried.map(function(t){return esc(t.host)+(t.path?" "+t.path.split("/").slice(-2).join("/"):"")+" → "+(t.error?("⚠ "+t.error):(t.count+" robot(s)"));}).join("<br>")+'</div></details>';}
+      el.innerHTML='<div class="note warn">Aucun robot rattaché trouvé (toutes zones Europe testées). Vérifie dans la console Tuya que <b>« Link App Account »</b> affiche bien <b>1 device linked</b> après le scan.'+diag+'</div>';return;
+    }
+    el.innerHTML=j.devices.map(function(d){return '<button class="btn ghost sm" style="width:100%;text-align:left;margin-top:6px" onclick="tuyaSelect(\''+esc(d.id)+'\',\''+esc((d.name||"").replace(/\x27/g,""))+'\')">'+(d.online?"🟢":"⚪")+' '+esc(d.name||d.id)+' <span class="mut">· '+esc(d.category||"")+'</span></button>';}).join("");
+  });
+}
+function tuyaSelect(id,name){
+  tuyaApi("select","POST",{device_id:id}).then(function(j){
+    if(j.ok){tuya.device_id=id;tuya.device_name=name||id;save();toast("Robot sélectionné");tuyaRefresh();render();}
+    else toast(j.detail||"Erreur");
+  });
+}
+function tuyaUnlink(){ if(!confirm("Délier le compte Tuya ? (clés effacées du serveur)"))return;
+  tuyaApi("unlink","POST",{}).then(function(){tuya.linked=false;tuya.device_id="";tuya.device_name="";TUYA.status=null;TUYA.funcs=null;save();render();});
+}
+function tuyaRefresh(){
+  var el=$("#tyState");
+  if(el&&!TUYA.status)el.innerHTML='<div class="mut">Lecture du robot…</div>'; /* pas de flash au refresh 30 s */
+  Promise.all([tuyaApi("status"),tuyaApi("functions"),tuyaApi("props")]).then(function(r){
+    var st=r[0],fn=r[1],pr=r[2];
+    if(st.ok){TUYA.status=st.status;TUYA.online=st.online;TUYA.name=st.name||"";
+      if(TUYA.name&&!tuya.device_name){tuya.device_name=TUYA.name;save();}}
+    if(fn.ok)TUYA.funcs=fn.functions;
+    /* propriétés COMPLÈTES (shadow) : température d'eau, litres filtrés, mode courant… */
+    if(pr&&pr.ok){var P={};(pr.properties||[]).forEach(function(x){P[String(x.code||"").toLowerCase()]=x.value;});TUYA.props=P;}
+    TUYA.lastErr=(!st.ok&&(st.detail||st.reason))||(!fn.ok&&(fn.detail||fn.reason))||"";
+    /* idempotent (règle #94) : pas de réécriture DOM si rien n'a changé (refresh 30 s) */
+    if(el){var h=tuyaStateHtml();if(el._pp!==h){el._pp=h;el.innerHTML=h;}}
+    if(typeof heroLiveUpdate==="function")heroLiveUpdate();
+  });
+}
+/* envoi générique d'un DP écrivable RÉEL (mesuré dans le thing model — jamais inventé) */
+function tuyaSetDp(code,value,label){
+  tuyaApi("command","POST",{commands:[{code:code,value:value}]}).then(function(j){
+    if(j.ok){toast("✅ "+label);setTimeout(tuyaRefresh,1200);}
+    else toast("Échec — "+label+" : "+(j.detail||j.reason||"?"));
+  });
+}
+/* départ différé NATIF du robot (DP delay_start + delay_repeat mesurés) : le robot
+   démarre TOUT SEUL après N minutes, même sans réseau ni app — minuterie embarquée */
+function tuyaDelay(){
+  var n=Math.max(0,Math.round(+($("#tyDelayMin").value||0))),rep=$("#tyDelayRep").value;
+  if(!n){toast("Indique un délai en minutes (ex : 120)");return;}
+  tuyaApi("command","POST",{commands:[{code:"delay_start",value:n},{code:"delay_repeat",value:rep}]}).then(function(j){
+    if(j.ok)toast("⏰ Départ différé réglé : dans "+n+" min ("+(rep==="every_time"?"répété à chaque fois":"une seule fois")+")");
+    else toast("Échec départ différé : "+(j.detail||j.reason||"?"));
+  });
+}
+/* diffusion du clarifiant ClearWater (DP clarify_agent_spread mesuré) — action physique → confirm */
+function tuyaClarify(){
+  if(!confirm("💧 Diffuser le clarifiant ClearWater maintenant ?\n\nLe robot libère une dose de clarifiant dans l'eau."))return;
+  tuyaSetDp("clarify_agent_spread",1,"Clarifiant diffusé");
+}
+function tuyaDock(){
+  if(!confirm("🏠 Renvoyer le robot à sa base / plateforme ?"))return;
+  tuyaSetDp("dock",1,"Retour base demandé");
+}
+/* enregistre le cycle Perso (mode custom) : réglages par zone envoyés tels quels
+   (unités internes du robot — Beatbot ne les documente pas, on n'invente pas) */
+function tuyaCustomSave(){
+  var codes=["clean_floor","clean_wall","clean_line","clean_surface"];
+  var cmds=codes.map(function(c){return {code:c,value:Math.max(0,Math.round(+($("#ty_"+c).value||0)))};});
+  cmds.push({code:"mode",value:"custom"});
+  tuyaApi("command","POST",{commands:cmds}).then(function(j){
+    if(j.ok){toast("🎚️ Cycle Perso enregistré (mode « custom ») — démarre avec ▶️");setTimeout(tuyaRefresh,1200);}
+    else toast("Échec cycle Perso : "+(j.detail||j.reason||"?"));
+  });
+}
+/* carte Réglages embarqués : uniquement des DP rw MESURÉS sur ce robot */
+function vTuyaGear(){
+  if(!onBeatbotHost()||!tuya.linked||!tuya.device_id)return "";
+  var P=TUYA.props||{};
+  return card("🔧 Réglages embarqués du robot","Fonctions natives découvertes dans le modèle profond de TON robot (rien d'inventé).",
+    '<div class="mut" style="font-size:11px;margin-bottom:4px">⏰ Départ différé natif (le robot part tout seul, même sans réseau)</div>'+
+    '<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'+
+      '<input id="tyDelayMin" type="number" min="1" max="1440" placeholder="minutes" style="max-width:110px">'+
+      '<select id="tyDelayRep" style="max-width:150px"><option value="once">Une fois</option><option value="every_time">À chaque fois</option></select>'+
+      '<button class="btn ghost sm" onclick="tuyaDelay()">⏰ Régler</button>'+
+    '</div>'+
+    '<div class="grid2" style="gap:8px">'+
+      '<button class="btn ghost sm" onclick="tuyaSetDp(\'fill_light_switch\',1,\'Lampe allumée\')">💡 Lampe ON</button>'+
+      '<button class="btn ghost sm" onclick="tuyaSetDp(\'fill_light_switch\',0,\'Lampe éteinte\')">💡 Lampe OFF</button>'+
+      '<button class="btn ghost sm" onclick="tuyaSetDp(\'ai_clean_switch\',1,\'Nettoyage IA activé\')">🤖 IA ON</button>'+
+      '<button class="btn ghost sm" onclick="tuyaSetDp(\'ai_clean_switch\',0,\'Nettoyage IA coupé\')">🤖 IA OFF</button>'+
+      '<button class="btn ghost sm" onclick="tuyaSetDp(\'volume_switch\',1,\'Sons activés\')">🔊 Sons ON</button>'+
+      '<button class="btn ghost sm" onclick="tuyaSetDp(\'volume_switch\',0,\'Sons coupés\')">🔇 Sons OFF</button>'+
+    '</div>'+
+    '<div class="grid2" style="gap:8px;margin-top:8px">'+
+      '<button class="btn ghost sm" onclick="tuyaClarify()">💧 Diffuser le clarifiant</button>'+
+      '<button class="btn ghost sm" onclick="tuyaDock()">🏠 Retour base</button>'+
+    '</div>'+
+    '<div class="mut" style="font-size:11px;margin:12px 0 4px">🔊 Volume des bips (0-100)</div>'+
+    '<div class="row" style="gap:8px;align-items:center">'+
+      '<input id="tyVol" type="range" min="0" max="100" value="'+esc(String(P.volume_value!=null?P.volume_value:100))+'" style="flex:1">'+
+      '<button class="btn ghost sm" onclick="tuyaSetDp(\'volume_value\',+$(\'#tyVol\').value,\'Volume réglé\')">OK</button>'+
+    '</div>'+
+    '<div class="mut" style="font-size:11px;margin:12px 0 4px">🎚️ Cycle Perso par zone (valeurs internes du robot, pré-remplies avec ses réglages actuels)</div>'+
+    '<div class="row" style="gap:8px;flex-wrap:wrap">'+
+      [["clean_floor","Fond"],["clean_wall","Parois"],["clean_line","Ligne d\'eau"],["clean_surface","Surface"]].map(function(z){
+        return '<div style="flex:1 1 40%"><label style="font-size:11px">'+z[1]+'</label><input id="ty_'+z[0]+'" type="number" min="0" value="'+esc(String(P[z[0]]!=null?P[z[0]]:0))+'"></div>';
+      }).join("")+
+    '</div>'+
+    '<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tuyaCustomSave()">💾 Enregistrer le cycle Perso (mode « custom »)</button>'+
+    '<div class="mut" style="font-size:11px;margin-top:8px">L\'état courant (lampe, IA, volume…) est visible dans « données brutes du robot » au-dessus. Commandes acceptées seulement robot en surface (wifi).</div>'
+  );
+}
+/* règle le mode de cycle RÉEL du robot (range mesuré : fast/surface/custom/standard/pro/cec/multi) */
+function tuyaSetMode(v){
+  tuyaApi("command","POST",{commands:[{code:"mode",value:v}]}).then(function(j){
+    if(j.ok){toast("🎛️ Mode « "+tuyaLabelState(v)+" » réglé — démarre avec ▶️ ou 🌊 Ultra");setTimeout(tuyaRefresh,1200);}
+    else toast("Échec réglage mode : "+(j.detail||j.reason||"?"));
+  });
+}
+function tuyaStateHtml(){
+  if(TUYA.lastErr&&!TUYA.status)return '<div class="note warn">'+esc(TUYA.lastErr)+'</div>';
+  var m=tuyaMap(TUYA.status);
+  var h='<div class="row" style="gap:14px;flex-wrap:wrap">';
+  h+='<div><b style="font-size:22px">'+(m.batt!=null?m.batt+"%":"—")+'</b><br><span class="mut">🔋 Batterie</span></div>';
+  h+='<div><b style="font-size:15px">'+esc(tuyaLabelState(m.state||m.mode))+'</b><br><span class="mut">'+(TUYA.online?"🟢 En ligne":"⚪ Hors ligne")+'</span></div>';
+  if(m.area!=null)h+='<div><b style="font-size:15px">'+esc(m.area)+' ㎡</b><br><span class="mut">🧭 Surface</span></div>';
+  if(m.time!=null)h+='<div><b style="font-size:15px">'+esc(m.time)+' min</b><br><span class="mut">⏱️ Durée</span></div>';
+  h+='</div>';
+  /* capteurs riches (shadow properties — mesurés sur ce robot) */
+  var P=TUYA.props||{},ex="";
+  if(P.water_temperature!=null)ex+='<div class="kv"><b>🌡️ Température de l\'eau</b><span>'+esc(String(P.water_temperature))+' °C</span></div>';
+  if(P.filtered_water!=null)ex+='<div class="kv"><b>💧 Eau filtrée</b><span>'+esc(String(P.filtered_water))+' '+esc(String(P.water_unit||"m3"))+'</span></div>';
+  if(P.mode!=null)ex+='<div class="kv"><b>🎛️ Mode courant</b><span>'+esc(tuyaLabelState(P.mode))+'</span></div>';
+  if(P.dust_box!=null)ex+='<div class="kv"><b>🧺 Panier / bac</b><span>'+esc(String(P.dust_box))+'</span></div>';
+  if(ex)h+='<div style="margin-top:10px">'+ex+'</div>';
+  if(m.fault)h+='<div class="note warn" style="margin-top:8px">⚠️ Défaut : '+esc(m.fault)+'</div>';
+  /* commandes réelles construites à partir des vraies fonctions du robot */
+  var cmds=tuyaCmdButtons();
+  h+='<div style="margin-top:12px">'+tuyaUltraBtn()+cmds+'</div>';
+  h+='<details style="margin-top:10px"><summary class="mut" style="font-size:12px">Voir les données brutes du robot</summary><div style="font-size:11.5px;color:var(--mut);margin-top:6px;font-family:ui-monospace,monospace;word-break:break-all">'+(TUYA.status||[]).map(function(s){return esc(s.code)+" = "+esc(JSON.stringify(s.value));}).join("<br>")+'</div></details>';
+  return h;
+}
+/* libellés FR pour codes/valeurs réels du robot (fallback = valeur brute, jamais inventé) */
+var TUYA_VLAB={forward:"⬆️ Avancer",backward:"⬇️ Reculer",turn_left:"⬅️ Gauche",turn_right:"➡️ Droite",stop:"⏹️ Stop",strong:"Forte",normal:"Normale",gentle:"Douce"};
+var TUYA_CLAB={suction:"💨 Aspiration",fan:"💨 Aspiration",direction_control:"🕹️ Direction",mode:"Mode",work_mode:"Mode",clean_mode:"Mode"};
+function tuyaEnumRange(f){var r=[];try{r=(JSON.parse(f.values||"{}").range)||[];}catch(e){}return r;}
+function tuyaVlab(v){return TUYA_VLAB[String(v).toLowerCase()]||String(v);}
+/* boutons de commande dérivés des fonctions écrivables RÉELLES du robot */
+function tuyaCmdButtons(){
+  var fns=TUYA.funcs||[];if(!fns.length)return '<div class="mut" style="font-size:12px">Aucune commande exposée par ce robot.</div>';
+  var lc=function(f){return String(f.code).toLowerCase();};
+  var out="";
+  /* marche/arrêt (Boolean start/go/clean) */
+  var sw=fns.filter(function(f){return f.type==="Boolean"&&/switch|power|start|go|clean|work|pause/.test(lc(f));});
+  if(sw.length){var c=sw[0].code;
+    out+='<div class="grid2" style="margin-bottom:10px">'+
+      '<button class="btn" onclick="tuyaCmd(\''+esc(c)+'\',true)">▶️ Démarrer</button>'+
+      '<button class="btn ghost" onclick="tuyaCmd(\''+esc(c)+'\',false)">⏹️ Stop</button></div>';
+  }
+  /* pavé directionnel (Enum direction_control : forward/backward/turn_left/turn_right/stop) */
+  var dir=fns.filter(function(f){return f.type==="Enum"&&/direction|move|joystick/.test(lc(f));});
+  if(dir.length){var dc=dir[0].code,r=tuyaEnumRange(dir[0]),has=function(v){return r.indexOf(v)>=0;};
+    out+='<div class="mut" style="font-size:12px;margin:2px 0 6px">'+esc(TUYA_CLAB[lc(dir[0])]||"Direction (pilotage manuel)")+'</div>';
+    var b=function(v,lab){return has(v)?'<button class="btn ghost sm" onclick="tuyaCmd(\''+esc(dc)+'\',\''+esc(v)+'\')">'+lab+'</button>':'<span></span>';};
+    out+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:230px;margin-bottom:10px">'+
+      '<span></span>'+b("forward","⬆️")+'<span></span>'+
+      b("turn_left","⬅️")+b("stop","⏹️")+b("turn_right","➡️")+
+      '<span></span>'+b("backward","⬇️")+'<span></span></div>';
+  }
+  /* tous les Enum restants (aspiration, mode…) → sélecteur libellé */
+  var enums=fns.filter(function(f){return f.type==="Enum"&&!/direction|move|joystick/.test(lc(f));});
+  var extra="";
+  var home=fns.filter(function(f){return f.type==="Boolean"&&/seek|home|dock|charge|back/.test(lc(f));});
+  if(home.length)extra+='<button class="btn ghost sm" onclick="tuyaCmd(\''+esc(home[0].code)+'\',true)">🏠 Base</button>';
+  enums.forEach(function(en){var vals=tuyaEnumRange(en);if(!vals.length)return;var id="tyEn_"+esc(en.code);
+    extra+='<span style="display:inline-flex;align-items:center;gap:6px">'+
+      '<span class="mut" style="font-size:12px">'+esc(TUYA_CLAB[lc(en)]||en.code)+'</span>'+
+      '<select id="'+id+'" style="max-width:150px">'+vals.map(function(v){return '<option value="'+esc(v)+'">'+esc(tuyaVlab(v))+'</option>';}).join("")+'</select>'+
+      '<button class="btn ghost sm" onclick="tuyaCmd(\''+esc(en.code)+'\',$(\'#'+id+'\').value)">✅</button></span>';
+  });
+  if(extra)out+='<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center">'+extra+'</div>';
+  out+='<div id="tyCmdOut" style="margin-top:8px"></div>';
+  return out;
+}
+function tuyaCmd(code,value){
+  var el=$("#tyCmdOut");if(el)el.innerHTML='<span class="mut">Envoi…</span>';
+  tuyaApi("command","POST",{commands:[{code:code,value:value}]}).then(function(j){
+    if(el)el.innerHTML=j.ok?'<span style="color:#5fd38a">✅ Commande envoyée au robot</span>':'<div class="note warn">'+esc(j.detail||j.reason||"Échec")+'</div>';
+    if(j.ok)setTimeout(tuyaRefresh,1500);
+  });
+}
+/* Mode Ultra « la totale » : aspiration MAX + démarrage du cycle complet du robot.
+   100% dérivé des VRAIES fonctions Tuya (aucun code inventé). Tuya n'expose PAS de
+   sélection de zone (fond/paroi/ligne d'eau/surface) — le cycle complet standard du
+   robot couvre déjà fond + parois + ligne d'eau ; on le lance à pleine puissance. */
+function tuyaUltraBtn(){
+  var fns=TUYA.funcs||[];
+  var canStart=fns.some(function(f){return f.type==="Boolean"&&/switch|power|start|go|clean|work/.test(String(f.code).toLowerCase());});
+  if(!canStart)return "";
+  var canDir=fns.some(function(f){return f.type==="Enum"&&/direction|move|joystick/.test(String(f.code).toLowerCase());});
+  return '<button class="btn" style="width:100%;margin-bottom:6px;background:linear-gradient(135deg,#0a6bd6,#39c2ff);border:none;font-weight:700;font-size:15px" onclick="tuyaUltra()">🌊 Mode Ultra — la totale</button>'+
+    '<div class="mut" style="font-size:11.5px;margin:0 0 10px">Aspiration MAX + <b>mode Multizone</b> du robot (fond · parois · ligne d\'eau · surface) — le vrai mode complet, mesuré sur ton robot.</div>'+
+    '<button class="btn ghost" style="width:100%;margin-bottom:4px;font-weight:600" onclick="tuyaSurface()">🌅 Surface — écumage (feuilles, pollen)</button>'+
+    '<div class="mut" style="font-size:11.5px;margin:0 0 10px">Lance le mode « surface » du robot : il écume le plan d\'eau. Cycle relevé au journal automatiquement.</div>'+
+    '<div class="mut" style="font-size:11px;margin:2px 0 4px">🎛️ Mode de cycle (les vrais modes de ton robot) :</div>'+
+    '<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">'+
+      ["fast","standard","pro","multi","surface"].map(function(v){return '<button class="btn ghost sm" style="flex:1 1 30%" onclick="tuyaSetMode(\''+v+'\')">'+esc(tuyaLabelState(v))+'</button>';}).join("")+
+    '</div>'+
+    (canDir?'<button class="btn ghost" style="width:100%;margin-bottom:4px;font-weight:600" onclick="tuyaStairs()">🪜 Escaliers — aspi max + guidage</button>'+
+      '<div class="mut" style="font-size:11.5px;margin:0 0 12px">Le robot n\'a pas de programme « escaliers » via Tuya. Je règle l\'aspiration au MAX et tu l\'amènes sur tes marches (escalier roman) avec le pavé 🕹️ ci-dessous — il brosse à fond.</div>':'');
+}
+/* Surface : mode « surface » RÉEL du robot (mesuré dans son thing model 2026-07-21,
+   range mode = fast/surface/custom/standard/pro/cec/multi) — écumage du plan d'eau. */
+function tuyaSurface(){
+  if(!confirm("🌅 Lancer le nettoyage de SURFACE ?\n\nLe robot écume le plan d'eau (feuilles, pollen, gras).\n\n⚠️ Vérifie qu'il est bien dans l'eau."))return;
+  var el=$("#tyCmdOut");if(el)el.innerHTML='<span class="mut">Lancement Surface…</span>';
+  tuyaApi("command","POST",{commands:[{code:"mode",value:"surface"},{code:"switch",value:true},{code:"switch_go",value:true}]}).then(function(j){
+    if(j.ok){
+      sessions.unshift({id:uid(),ts:Date.now(),mode:"Surface 🌅",dur:0,batt:tuyaMap(TUYA.status).batt});
+      if(sessions.length>300)sessions=sessions.slice(0,300);save();
+      if(el)el.innerHTML='<div class="note" style="border-color:#5fd38a;color:#cfeee0">✅ Mode Surface lancé — le robot écume le plan d\'eau. Cycle relevé au journal à la fin.</div>';
+      setTimeout(tuyaRefresh,1800);
+    } else if(el)el.innerHTML='<div class="note warn">Échec : '+esc(j.detail||j.reason||"?")+'</div>';
+  });
+}
+/* Escaliers : aspiration max réelle + guidage manuel (seule voie réelle — Tuya n'expose
+   pas de programme escaliers ; le robot ignore la position de tes marches). */
+function tuyaStairs(){
+  var fns=TUYA.funcs||[],lc=function(f){return String(f.code).toLowerCase();};
+  var suc=fns.filter(function(f){return f.type==="Enum"&&/suction|fan|power/.test(lc(f));})[0];
+  var el=$("#tyCmdOut"),send=[];
+  if(suc){var r=[];try{r=(JSON.parse(suc.values||"{}").range)||[];}catch(e){}
+    var mx=r.filter(function(v){return /strong|max|super|ultra|high|turbo/.test(String(v).toLowerCase());})[0]||r[0];
+    if(mx)send.push({code:suc.code,value:mx});}
+  var done=function(ok,detail){
+    if(!el)return;
+    el.innerHTML=(ok===false?'<div class="note warn">Échec réglage aspiration : '+esc(detail||"?")+'</div>':'')+
+      '<div class="note" style="border-color:#39c2ff;color:#cfeee0">🪜 <b>Mode Escaliers</b> — aspiration réglée au MAX'+(ok===false?' (échec, réessaie)':'')+'.<br>Utilise le pavé 🕹️ <b>ci-dessous</b> pour amener le robot sur tes marches (escalier roman, lobe avant-droit), puis laisse-le brosser. C\'est toi qui le guides : le robot ne connaît pas la position des marches.</div>';
+  };
+  if(send.length){tuyaApi("command","POST",{commands:send}).then(function(j){done(j.ok,j.detail||j.reason);if(j.ok)setTimeout(tuyaRefresh,1500);});}
+  else done(true);
+}
+function tuyaUltra(){
+  var fns=TUYA.funcs||[],lc=function(f){return String(f.code).toLowerCase();},cmds=[];
+  /* aspiration à sa valeur MAX réelle (strong/max/turbo…), sinon 1re du range */
+  var suc=fns.filter(function(f){return f.type==="Enum"&&/suction|fan|power/.test(lc(f));})[0];
+  if(suc){var r=[];try{r=(JSON.parse(suc.values||"{}").range)||[];}catch(e){}
+    var mx=r.filter(function(v){return /strong|max|super|ultra|high|turbo/.test(String(v).toLowerCase());})[0]||r[0];
+    if(mx)cmds.push({code:suc.code,value:mx});}
+  /* MODE DE CYCLE (surface incluse) : utilisé UNIQUEMENT si le robot expose un DP mode
+     via Tuya — les valeurs viennent de SON catalogue déclaré, jamais inventées.
+     Préférence : cycle TOTAL (smart/multi/full), sinon surface/ligne d'eau. */
+  var md=fns.filter(function(f){return f.type==="Enum"&&/^mode$|work_mode|clean_mode|scene|water/.test(lc(f));})[0];
+  if(md){var mr=[];try{mr=(JSON.parse(md.values||"{}").range)||[];}catch(e){}
+    var pick=mr.filter(function(v){return /smart|auto|multi|all|full|total/.test(String(v).toLowerCase());})[0]
+          ||mr.filter(function(v){return /surface|water|wall/.test(String(v).toLowerCase());})[0]||null;
+    if(pick)cmds.push({code:md.code,value:pick});}
+  /* MESURÉ (thing model 2026-07-21) : le DP « mode » du robot est écrivable, range
+     [fast/surface/custom/standard/pro/cec/multi] — « multi » = le Mode multizone
+     de l'app Beatbot (fond+parois+ligne d'eau+surface). On l'envoie si pas déjà posé. */
+  if(!cmds.some(function(c){return c.code==="mode";}))cmds.push({code:"mode",value:"multi"});
+  /* interrupteur principal + démarrage nettoyage (toutes les vraies fonctions marche/go) */
+  var sw=fns.filter(function(f){return f.type==="Boolean"&&/^switch$|power/.test(lc(f));})[0];
+  if(sw)cmds.push({code:sw.code,value:true});
+  fns.filter(function(f){return f.type==="Boolean"&&/go|clean|work|start/.test(lc(f));}).forEach(function(g){
+    if(!cmds.some(function(c){return c.code===g.code;}))cmds.push({code:g.code,value:true});});
+  var el=$("#tyCmdOut");
+  if(!cmds.length){if(el)el.innerHTML='<div class="note warn">Ce robot n\'expose pas de démarrage via Tuya.</div>';return;}
+  if(!confirm("🌊 Lancer le mode Ultra ?\n\nLe robot DÉMARRE à pleine puissance pour un cycle complet (fond, parois, ligne d'eau).\n\n⚠️ Vérifie qu'il est bien dans l'eau."))return;
+  if(el)el.innerHTML='<span class="mut">Lancement Ultra…</span>';
+  tuyaApi("command","POST",{commands:cmds}).then(function(j){
+    if(j.ok){
+      sessions.unshift({id:uid(),ts:Date.now(),mode:"Ultra 🌊",dur:0,batt:tuyaMap(TUYA.status).batt});
+      if(sessions.length>300)sessions=sessions.slice(0,300);save();
+      if(el)el.innerHTML='<div class="note" style="border-color:#5fd38a;color:#cfeee0">✅ Mode Ultra lancé — aspiration max + cycle complet ('+esc(cmds.map(function(c){return c.code+"="+c.value;}).join(" · "))+'). Session notée.</div>';
+      setTimeout(tuyaRefresh,1800);
+    } else if(el)el.innerHTML='<div class="note warn">Échec : '+esc(j.detail||j.reason||"?")+'</div>';
+  });
+}
+/* ---- Programmation & auto-pilote (moteur serveur : démarre le robot même app fermée) ---- */
+var TSCHED=null,DOWFR=["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+function vTuyaSchedule(){
+  if(!onBeatbotHost()||!tuya.linked||!tuya.device_id)return "";
+  setTimeout(tuyaSchedLoad,60);
+  return card("🗓️ Programmation & auto-pilote","Le robot démarre tout seul aux horaires choisis, même app fermée. (Suppose qu'il reste dans la piscine.)",
+    '<div id="tySched"><div class="mut">Chargement…</div></div>');
+}
+function tuyaSchedLoad(){tuyaApi("schedule","GET").then(function(j){TSCHED=(j&&j.schedule)||{enabled:false,slots:[],suction:"strong",autoResume:false,minBatt:20};tuyaSchedRender();});}
+function tuyaSchedRender(){
+  var el=$("#tySched");if(!el||!TSCHED)return;var s=TSCHED;
+  var slots=(s.slots||[]).map(function(sl,i){return '<div class="row" style="justify-content:space-between;align-items:center;padding:4px 0"><span>🕒 <b>'+DOWFR[sl.dow]+'</b> à <b>'+esc(sl.hm)+'</b></span><button class="btn ghost sm" onclick="tuyaSchedDel('+i+')">🗑</button></div>';}).join("")||'<div class="mut" style="font-size:12px">Aucun créneau. Ajoute-en un 👇</div>';
+  var daySel='<select id="tsD">'+DOWFR.map(function(d,i){return '<option value="'+i+'">'+d+'</option>';}).join("")+'</select>';
+  var sucOpt=[["strong","Forte"],["normal","Normale"],["gentle","Douce"]].map(function(p){return '<option value="'+p[0]+'" '+(s.suction===p[0]?"selected":"")+'>'+p[1]+'</option>';}).join("");
+  el.innerHTML=
+    '<label class="row" style="gap:8px;align-items:center"><input type="checkbox" id="tsEn" '+(s.enabled?"checked":"")+' onchange="tuyaSchedFlag(\'enabled\',this.checked)"> <b>Activer la programmation</b></label>'+
+    '<label class="row" style="gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="tsAR" '+(s.autoResume?"checked":"")+' onchange="tuyaSchedFlag(\'autoResume\',this.checked)"> 🔁 Auto-relance après charge (grande piscine)</label>'+
+    '<div class="row" style="gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="mut" style="font-size:12px">Aspiration</span><select id="tsS" onchange="tuyaSchedFlag(\'suction\',this.value)">'+sucOpt+'</select>'+
+      '<span class="mut" style="font-size:12px">Batterie mini</span><input id="tsB" type="number" min="0" max="90" value="'+esc(s.minBatt)+'" style="max-width:66px" onchange="tuyaSchedFlag(\'minBatt\',+this.value)"> %</div>'+
+    '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px">'+slots+'</div>'+
+    '<div class="row" style="gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">'+daySel+'<input id="tsT" type="time" value="09:00"><button class="btn ghost sm" onclick="tuyaSchedAdd()">➕ Ajouter</button></div>'+
+    '<div class="grid2" style="margin-top:10px"><button class="btn" onclick="tuyaSchedSave()">💾 Enregistrer</button><button class="btn ghost" onclick="tuyaSchedStartNow()">▶️ Lancer maintenant</button></div>'+
+    '<div id="tsOut" style="margin-top:8px"></div>';
+}
+function tuyaSchedFlag(k,v){if(TSCHED)TSCHED[k]=v;}
+function tuyaSchedAdd(){if(!TSCHED)return;var d=+$("#tsD").value,t=$("#tsT").value;if(!/^\d{1,2}:\d{2}$/.test(t))return;TSCHED.slots=TSCHED.slots||[];if(TSCHED.slots.length>=21)return;TSCHED.slots.push({dow:d,hm:t});tuyaSchedRender();}
+function tuyaSchedDel(i){if(!TSCHED)return;TSCHED.slots.splice(i,1);tuyaSchedRender();}
+function tuyaSchedSave(){
+  if(!TSCHED)return;var o=$("#tsOut");if(o)o.innerHTML='<span class="mut">Enregistrement…</span>';
+  tuyaApi("schedule","POST",TSCHED).then(function(j){
+    if(j&&j.ok){TSCHED=j.schedule;if(o)o.innerHTML='<div class="note" style="border-color:#5fd38a;color:#cfeee0">✅ Programmation enregistrée'+(TSCHED.enabled?" — <b>active</b>. Le robot démarrera tout seul aux créneaux.":" (désactivée).")+'</div>';}
+    else if(o)o.innerHTML='<div class="note warn">Échec : '+esc((j&&(j.detail||j.reason))||"?")+'</div>';
+  });
+}
+function tuyaSchedStartNow(){
+  if(!confirm("▶️ Lancer un nettoyage complet maintenant ?\n\nLe robot démarre à pleine puissance. Vérifie qu'il est dans l'eau."))return;
+  var o=$("#tsOut");if(o)o.innerHTML='<span class="mut">Démarrage…</span>';
+  tuyaApi("start","POST",{suction:(TSCHED&&TSCHED.suction)||"strong"}).then(function(j){
+    if(j&&j.ok){if(o)o.innerHTML='<div class="note" style="border-color:#5fd38a;color:#cfeee0">✅ Robot démarré'+(j.batt!=null?" (batterie "+j.batt+"%)":"")+'.</div>';setTimeout(tuyaRefresh,1800);}
+    else if(o)o.innerHTML='<div class="note warn">Non lancé : '+esc(tuyaStartReason(j&&j.reason))+'</div>';
+  });
+}
+function tuyaStartReason(r){var m={offline:"robot hors ligne (peut-être sous l'eau)",already_cleaning:"déjà en train de nettoyer",low_batt:"batterie trop faible",no_device:"robot non choisi",token_fail:"clés Tuya refusées"};return m[r]||r||"?";}
+function vTuyaCard(){
+  if(!onBeatbotHost())return card("🌊 Contrôle réel du robot (Tuya / Smart Life)","","<div class=\"note warn\">Ouvre l'app sur <b>beatbot.kd-mc.com</b> (ton espace privé) pour piloter — sécurité admin même-origine.</div>");
+  if(!tuya.linked&&!S._tuyaSynced){
+    /* on ne montre PAS le formulaire à clés avant d'avoir demandé au serveur :
+       9 fois sur 10 la liaison existe déjà côté serveur (rien n'est perdu) */
+    S._tuyaNeedRender=1;setTimeout(tuyaBootSync,30);
+    return card("🌊 Contrôle réel du robot (Tuya / Smart Life)","",
+      '<div class="note">🔎 Vérification de la liaison sur le serveur… (tes clés y sont gardées en mémoire, même après une réinstallation)</div>');
+  }
+  if(!tuya.linked){
+    return card("🌊 Contrôle réel du robot (Tuya / Smart Life)",
+      "Ton robot passe par le cloud Tuya. Lie-le une fois — accès officiel, garantie intacte.",
+      '<label>Access ID (client_id)</label><input id="tyId" placeholder="colle l\'Access ID Tuya">'+
+      '<label style="margin-top:8px;display:block">Access Secret</label><input id="tySec" type="password" placeholder="colle l\'Access Secret">'+
+      '<label style="margin-top:8px;display:block">Région du compte</label><select id="tyReg">'+
+        '<option value="eu" '+(tuya.region==="eu"?"selected":"")+'>Europe (Central Europe)</option>'+
+        '<option value="us" '+(tuya.region==="us"?"selected":"")+'>Amérique (Western America)</option>'+
+        '<option value="in" '+(tuya.region==="in"?"selected":"")+'>Inde</option>'+
+        '<option value="cn" '+(tuya.region==="cn"?"selected":"")+'>Chine</option></select>'+
+      '<button class="btn" id="tyLinkBtn" style="margin-top:12px" onclick="tuyaLink()">🔗 Lier mon robot</button>'+
+      '<div id="tyErr" style="margin-top:8px"></div>'+
+      '<details style="margin-top:14px"><summary style="color:var(--acc);font-size:13px;font-weight:600">📋 Comment obtenir les 2 clés (5 min, une seule fois)</summary>'+
+      '<ol class="clean" style="font-size:12.5px;line-height:1.55;margin-top:8px">'+
+        '<li>Va sur <b>iot.tuya.com</b> → crée un compte gratuit.</li>'+
+        '<li>Menu <b>Cloud → Development → Create Cloud Project</b> (région = <b>Central Europe</b>). Ouvre le projet → onglet <b>Overview</b> : tu vois <b>Access ID</b> et <b>Access Secret</b> → colle-les ici.</li>'+
+        '<li>Onglet <b>Devices → Link App Account → Add App Account</b> → un QR s\'affiche.</li>'+
+        '<li>Dans <b>Smart Life</b> (ton app) : <b>Moi → icône scan (haut droite) → scanne le QR</b>. Ton robot apparaît alors dans le projet.</li>'+
+        '<li>Onglet <b>Service API → Go to Authorize</b> → active <b>IoT Core</b> (gratuit).</li>'+
+      '</ol></details>'
+    );
+  }
+  var body='<div class="note">✅ Compte Tuya lié'+(tuya.device_name?' · robot <b>'+esc(tuya.device_name)+'</b>':'')+'.</div>';
+  if(!tuya.device_id){
+    body+='<div id="tyDevs" style="margin-top:8px"></div><button class="btn ghost sm" style="margin-top:8px;width:100%" onclick="tuyaLoadDevices()">🔎 Découvrir mes robots</button>';
+    setTimeout(tuyaLoadDevices,50);
+  }else{
+    body+='<div id="tyState" style="margin-top:10px"></div>'+
+      '<div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost sm" onclick="tuyaRefresh()">🔄 Rafraîchir</button>'+
+      '<button class="btn ghost sm" onclick="openLive()">📡 Live plan</button></div>';
+    setTimeout(tuyaRefresh,50);
+  }
+  body+='<button class="btn ghost sm" style="margin-top:12px;width:100%" onclick="tuyaUnlink()">🗑 Délier le compte Tuya</button>';
+  return card("🌊 Contrôle réel du robot (Tuya / Smart Life)","Officiel, sans bidouille — garantie intacte.",body);
+}
+function vPilotage(){
+  var out=vTuyaCard();
+  out+=vTuyaGear();
+  out+=vTuyaSchedule();
+  out+=card("📷 Voir le robot SOUS l'eau (caméra)",
+    "La radio ne traverse pas l'eau — la lumière oui. Ton iPhone filme le bassin, PoolPilot détecte le robot à travers l'eau et le suit en direct dans le plan.",
+    '<ol class="clean" style="font-size:12.5px;line-height:1.55">'+
+      '<li>Pose l\'iPhone <b>stable et en hauteur</b> (rebord, muret, trépied) avec <b>tout le bassin</b> dans l\'image.</li>'+
+      '<li>Calibre en touchant les <b>4 coins de l\'eau</b> (une seule fois, mémorisé).</li>'+
+      '<li>Le robot apparaît en direct dans le plan + la carte de couverture se remplit.</li>'+
+    '</ol>'+
+    '<div class="mut" style="font-size:12px;margin-bottom:10px">Honnête : eau agitée ou nuit sans éclairage = détection difficile — l\'app affiche alors « robot non détecté », jamais une position inventée. Tout reste sur ton téléphone.</div>'+
+    '<button class="btn" onclick="openCam()">📷 Lancer le suivi caméra</button>'
+  );
+  /* La capture .har est bloquée par l'app Beatbot (certificate pinning) → méthode
+     avancée, repliée. Tuya (ci-dessus) est le chemin réel recommandé. */
+  var har=vPilotageHar();
+  if(beatbotClient.configured())return out+har; /* déjà configurée par capture → on la montre */
+  out+='<div class="card"><details><summary style="cursor:pointer;font-weight:600;font-size:15px">🎮 Méthode avancée — capture .har (souvent bloquée)</summary>'+
+    '<p class="sub" style="margin-top:8px">L\'app Beatbot protège ses échanges (certificate pinning) : la capture donne souvent « rien ». Utilise Tuya ci-dessus. Si tu veux quand même essayer :</p>'+
+    har+'</details></div>';
+  return out;
+}
+function vPilotageHar(){
+  var configured=beatbotClient.configured();
+  var out=card("Contrôle par capture",
+    configured?"Config chargée — pilote ton robot ci-dessous.":"À activer une seule fois via une capture de l'app Beatbot.",
+    configured
+      ? '<div class="note">✅ Connecté à <b>'+esc(beatbot.hosts[0]||"?")+'</b> · '+Object.keys(beatbot.commands).length+' commande(s)'+(beatbot.mapUrl?' · carte 🗺️':'')+'. Le pilotage passe par ton relais sécurisé (admin kd-mc.com).</div>'+
+        (beatbotClient.onBeatbot()?'':'<div class="note warn">Pour piloter, ouvre l\'app sur <b>beatbot.kd-mc.com</b> (sécurité admin même-origine).</div>')
+      : bbCaptureProcedure()
+  );
+  if(configured){
+    out+=card("🕹️ Cockpit",
+      "Le robot doit être connecté (accosté ou en surface) — le WiFi ne passe pas sous l'eau.",
+      '<div class="grid2" style="margin-bottom:10px">'+
+        '<button class="btn" onclick="beatbotClient.send(\'start\')">▶️ Démarrer</button>'+
+        '<button class="btn ghost" onclick="beatbotClient.send(\'stop\')">⏹️ Stop</button>'+
+      '</div>'+
+      '<div class="row">'+
+        (beatbot.commands.mode?'<button class="btn ghost sm" onclick="beatbotClient.send(\'mode\')">🔁 Mode</button>':'')+
+        (beatbot.commands.dock?'<button class="btn ghost sm" onclick="beatbotClient.send(\'dock\')">🏠 Base</button>':'')+
+      '</div>'+
+      '<div id="bbCockOut" style="margin-top:10px"></div>'+
+      '<button class="btn ghost" style="margin-top:10px" onclick="openLive()">📡 Suivre le robot en direct (plan)</button>'+
+      (beatbot.mapUrl?'<button class="btn ghost" style="margin-top:12px" onclick="beatbotClient.fetchMap()">🗺️ Récupérer la carte du robot</button><div id="bbMapOut" style="margin-top:10px"></div>':'')
+    );
+  }
+  out+=card("📥 Importer une capture Beatbot",
+    "Dépose le .har exporté de l'app Beatbot — serveurs, token et commandes sont détectés automatiquement.",
+    '<input type="file" id="bbFile" accept=".har,.json,.txt,.log" style="margin-bottom:8px">'+
+    '<textarea id="bbPaste" rows="3" placeholder="…ou colle le log/HAR ici"></textarea>'+
+    '<button class="btn" style="margin-top:10px" onclick="bbAnalyze()">🔎 Analyser la capture</button>'+
+    '<div id="bbResult" style="margin-top:10px"></div>'+
+    (beatbotClient.configured()?'<button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="if(confirm(\'Effacer la config de pilotage ?\')){beatbot.commands={};beatbot.token=\'\';beatbot.mapUrl=\'\';save();render();}">🗑 Effacer la config</button>':'')
+  );
+  out+=card("⚙️ Réglages robot","",
+    '<label>Modèle Beatbot</label><select id="cfgModel">'+
+    Object.keys(MODELS).map(function(k){return '<option value="'+k+'" '+(cfg.model===k?"selected":"")+'>'+esc(MODELS[k].name)+'</option>'}).join("")+
+    '</select><button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="setModel()">Enregistrer le modèle</button>'
+  );
+  return out;
+}
+
+function selOpts(val,opts){return opts.map(function(o){return '<option value="'+o[0]+'" '+(val===o[0]?"selected":"")+'>'+esc(o[1])+'</option>'}).join("")}
+function vReglage(){
+  var m=MODELS[cfg.model]||MODELS.autre;
+  var rec=recommend();
+  var eff=coverageMean(rec.mode);
+  var effCol=eff>=75?"var(--ok)":eff>=55?"var(--warn)":"var(--bad)";
+  var realA=realAutonomy();
+  var avg=sessions.length?Math.round(sessions.reduce(function(a,s){return a+(+s.dur||0)},0)/sessions.length):0;
+  var tips=effTips();
+  var seasonBtns=Object.keys(SEASONS).map(function(k){return '<button class="btn ghost sm" style="flex:1 1 46%" onclick="applySeason(\''+k+'\')">'+SEASONS[k].ic+' '+esc(SEASONS[k].l.split(" (")[0])+'</button>'}).join("");
+  return card("🎛️ Conditions du bassin","Dis-moi l'environnement, j'adapte fréquence, mode et filtre.",
+    '<div class="row">'+
+      '<div><label>Environnement</label><select id="rgEnv">'+selOpts(cfg.env,[["peu","Dégagé"],["arbres","Arbres proches"],["pollen","Beaucoup de pollen"]])+'</select></div>'+
+      '<div><label>Fréquentation</label><select id="rgUse">'+selOpts(cfg.usage,[["faible","Faible"],["moyenne","Moyenne"],["forte","Forte"]])+'</select></div>'+
+    '</div>'+
+    '<div class="row" style="margin-top:8px">'+
+      '<div><label>Saletés dominantes</label><select id="rgDeb">'+selOpts(cfg.debris,[["fines","Poussières fines"],["feuilles","Feuilles"],["sable","Sable"],["algues","Algues / dépôts verts"]])+'</select></div>'+
+      '<div><label>Priorité</label><select id="rgFoc">'+selOpts(cfg.focus,[["equilibre","Équilibré"],["sol","Le fond"],["ligne","Ligne d'eau"],["escaliers","Escaliers"]])+'</select></div>'+
+    '</div>'
+  )+
+  card("✅ Recommandation PoolPilot","",
+    '<div class="kv"><b>Fréquence conseillée</b><span>'+esc(rec.freq)+'</span></div>'+
+    '<div class="kv"><b>Mode conseillé</b><span>'+esc(rec.mode)+'</span></div>'+
+    '<div class="kv"><b>Filtre</b><span>'+esc(rec.filter)+'</span></div>'+
+    (m.clearwater?'<div class="kv"><b>Cartouche ClearWater</b><span>'+(rec.clearwater?"Recommandée ✅":"Optionnelle")+'</span></div>':'')+
+    '<button class="btn" style="margin-top:12px" onclick="applyReco()">🎯 Appliquer ce mode au plan</button>'
+  )+
+  card("📈 Score d'efficacité estimé","",
+    gaugeSvg(eff,effCol,"couverture estimée · mode conseillé")+
+    (tips.length?'<b style="font-size:13px">Pour gagner des points :</b><ol class="clean">'+tips.map(function(t){return '<li>'+esc(t)+'</li>'}).join("")+'</ol>':'<div class="note">👍 Bien réglé. Continue à loguer tes sessions pour affiner.</div>')+
+    '<div class="note">⚠️ Estimation d\'après le comportement type + tes zones marquées, pas une mesure du robot.</div>'
+  )+
+  card("🔋 Autonomie & couverture","",
+    '<div class="row"><div style="flex:2"><label>Autonomie annoncée du robot (min)</label><input id="battMin" type="number" value="'+esc(cfg.batteryMin)+'"></div>'+
+    '<button class="btn ghost sm" style="flex:1;align-self:end" onclick="setBattery()">OK</button></div>'+
+    (realA?'<div class="note">🔎 D\'après tes '+sessions.filter(function(s){return s.batt!=null}).length+' sessions avec batterie notée, ton autonomie <b>réelle</b> ≈ <b>'+realA+' min</b>'+(realA<cfg.batteryMin*0.8?' (nettement sous l\'annoncé → brosses/filtre à vérifier).':'.')+'</div>':'<div class="mut" style="font-size:12.5px;margin-top:8px">Note la batterie de fin dans 📊 Journal → je calcule ton autonomie réelle.</div>')+
+    (avg?'<div class="mut" style="font-size:12.5px;margin-top:6px">Cycle moyen logué : '+avg+' min'+(avg>cfg.batteryMin?' — > autonomie : prévois 2 charges / 2 jours pour un nettoyage complet.':' — tient sur une charge.')+'</div>':'')
+  )+
+  card("📍 Optimiseur de point de dépôt","Où poser le robot pour la meilleure couverture (loin des escaliers, dans la grande boucle).",
+    '<button class="btn" onclick="optimizeDepot()">📍 Calculer & placer le point optimal</button>'
+  )+
+  card("🗓️ Presets saisonniers","Un tap règle conditions + priorité pour la saison.",
+    '<div class="row">'+seasonBtns+'</div>'+
+    '<div class="note">'+esc((function(){var best=null;Object.keys(SEASONS).forEach(function(k){if(SEASONS[k].usage===cfg.usage&&SEASONS[k].debris===cfg.debris&&SEASONS[k].focus===cfg.focus)best=SEASONS[k]});return best?best.note:"Choisis une saison pour un réglage rapide.";})())+'</div>'
+  );
+}
+
+/* ============ helpers UI ============ */
+function card(title,sub,body){return '<div class="card"><h2>'+esc(title)+'</h2>'+(sub?'<p class="sub">'+esc(sub)+'</p>':'')+(body||'')+'</div>'}
+function stat(n,l){return '<div class="stat"><div class="n">'+esc(n)+'</div><div class="l">'+esc(l)+'</div></div>'}
+function field(l,id,v,type,step){return '<div><label>'+esc(l)+'</label><input id="'+id+'" type="'+(type||"text")+'"'+(step?' step="'+step+'"':'')+' value="'+esc(v)+'"></div>'}
+
+/* ============ actions ============ */
+function setModel(){cfg.model=$("#cfgModel").value;save();renderRobotTag();render()}
+function setRunH(){cfg.runHours=Math.max(0,+$("#runH").value||0);save();render()}
+function setPurch(){cfg.purchaseDate=$("#purch").value||"";save();render()}
+function resetMaint(k){maint[k]=0;save();render()}
+function delSession(id){sessions=sessions.filter(function(s){return s.id!==id});save();render()}
+function applyPreset(k){var p=PRESETS[k];if(!p)return;pool.shape=p.shape;pool.L=p.L;pool.W=p.W;pool.preset=k;save();render()}
+function saveLog(){
+  var dur=+$("#lgDur").value||0;
+  sessions.unshift({id:uid(),ts:Date.now(),mode:$("#lgMode").value,dur:dur,batt:$("#lgBatt").value?+$("#lgBatt").value:null});
+  if(sessions.length>300)sessions=sessions.slice(0,300);
+  var addH=Math.round(dur/60*10)/10;cfg.runHours=Math.round((cfg.runHours+addH)*10)/10;
+  ["filter","brush","seal","clearwater"].forEach(function(k){maint[k]=Math.round(((maint[k]||0)+addH)*10)/10});
+  save();render();
+}
+function regenPlan(){plan.mode=$("#planMode").value;plan.generatedAt=Date.now();save();render();setTimeout(drawCoverage,30)}
+function maintAlerts(){var a=[];if((maint.filter||0)>=8)a.push("filtre");if((MODELS[cfg.model]||{}).clearwater&&(maint.clearwater||0)>=40)a.push("ClearWater");if((maint.brush||0)>=60)a.push("brosses");if((maint.seal||0)>=120)a.push("joints");return a}
+
+/* ============ PERFORMANCE / RÉGLAGES ============ */
+var SEASONS={
+  printemps:{ic:"🌱",l:"Printemps (ouverture)",usage:"moyenne",debris:"fines",focus:"equilibre",note:"Eau trouble à la réouverture → Standard + ClearWater, 2-3×/sem le temps que l'eau s'éclaircisse."},
+  ete:{ic:"☀️",l:"Été (baignade)",usage:"forte",debris:"fines",focus:"ligne",note:"Forte fréquentation → priorité ligne d'eau (crème solaire/gras) + fréquence haute."},
+  automne:{ic:"🍂",l:"Automne (feuilles)",usage:"faible",debris:"feuilles",focus:"sol",note:"Feuilles : cycle Sol, vide le panier souvent, filtre standard (pas ultra-fin qui se bouche)."},
+  hivernage:{ic:"❄️",l:"Avant hivernage",usage:"faible",debris:"fines",focus:"equilibre",note:"Grand nettoyage final Sol + Ligne d'eau avant de bâcher."}
+};
+function recommend(){
+  var m=MODELS[cfg.model]||MODELS.autre;
+  var envScore={peu:0,arbres:1,pollen:2}[cfg.env]||0;
+  var useScore={faible:0,moyenne:1,forte:2}[cfg.usage]||1;
+  var debris=cfg.debris||"fines";
+  var s=envScore+useScore+({fines:0,feuilles:1,sable:1,algues:2}[debris]||0);
+  var freq=s>=5?"tous les jours":s>=4?"3×/semaine":s>=2?"2×/semaine":"1×/semaine";
+  var mode;
+  if(cfg.focus==="ligne"||debris==="algues")mode="Ligne d'eau";
+  else if(cfg.focus==="escaliers")mode="Sol";
+  else if(debris==="sable")mode=(m.modes.indexOf("Ultra profond")>=0?"Ultra profond":"Sol");
+  else if(cfg.focus==="sol")mode="Sol";
+  else mode="Standard";
+  if(m.modes.indexOf(mode)<0)mode=m.modes[0];
+  var filter=(debris==="sable"||debris==="fines")?"Ultra-fin":"Standard";
+  var clearwater=!!(m.clearwater&&(debris==="algues"||useScore>=2));
+  return {freq:freq,mode:mode,filter:filter,clearwater:clearwater};
+}
+function realAutonomy(){
+  var wb=sessions.filter(function(s){return s.batt!=null&&s.dur>10&&s.batt<95});
+  var est=wb.map(function(s){return s.dur/(100-s.batt)*100}).filter(function(v){return isFinite(v)&&v>0&&v<600});
+  if(!est.length)return null;
+  return Math.round(est.reduce(function(a,b){return a+b},0)/est.length);
+}
+function coverageMean(mode){
+  var cv=computeCoverage(mode);var sum=0,n=0;
+  for(var y=0;y<cv.NY;y++)for(var x=0;x<cv.NX;x++){var c=cv.grid[y][x];if(c<0)continue;sum+=c;n++}
+  return n?Math.round(sum/n*100):0;
+}
+function effTips(){
+  var t=[],cv=computeCoverage(recommend().mode);
+  if(!pool.markers.some(function(m){return m.type==="escalier"}))t.push("Marque tes escaliers (🗺️) — le score les ignore tant qu'ils ne sont pas placés.");
+  if(!pool.markers.some(function(m){return m.type==="depot"}))t.push("Place le point de dépôt optimal (bouton ci-dessous) : bien démarrer améliore la couverture.");
+  if(recommend().mode.indexOf("Ligne")<0)t.push("Ajoute un cycle « Ligne d'eau » de temps en temps : le rétrécissement du haricot y accumule le gras.");
+  return t.slice(0,2);
+}
+function setPerf(k,v){cfg[k]=v;save();render()}
+function applyReco(){plan.mode=recommend().mode;plan.generatedAt=Date.now();save();toast("✅ Mode « "+plan.mode+" » appliqué au plan");}
+function applySeason(k){var s=SEASONS[k];if(!s)return;cfg.usage=s.usage;cfg.debris=s.debris;cfg.focus=s.focus;save();toast(s.ic+" Preset « "+s.l+" » appliqué");render()}
+function setBattery(){cfg.batteryMin=Math.max(30,+$("#battMin").value||180);save();render()}
+function optimizeDepot(){
+  var poly=poolPoly(),c=polyCentroid(poly),dx=0,dy=0;
+  var stairs=pool.markers.filter(function(m){return m.type==="escalier"});
+  if(stairs.length){var sx=0,sy=0;stairs.forEach(function(m){sx+=m.x;sy+=m.y});sx/=stairs.length;sy/=stairs.length;dx=c.x-sx;dy=c.y-sy;var L=Math.hypot(dx,dy)||1;dx/=L;dy/=L}
+  var best={x:c.x,y:c.y};
+  for(var k=0.32;k>=0;k-=0.04){var px=c.x+dx*k,py=c.y+dy*k;if(pointInPoly(px,py,poly)){best={x:px,y:py};break}}
+  pool.markers=pool.markers.filter(function(m){return m.type!=="depot"});
+  pool.markers.push({id:uid(),type:"depot",x:best.x,y:best.y});
+  save();toast("📍 Point de dépôt optimal placé — vois-le sur ta carte 🗺️");render();
+}
+function toast(msg){
+  var t=document.createElement("div");t.textContent=msg;
+  t.style.cssText="position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0e88c9;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;z-index:50;box-shadow:0 6px 22px rgba(0,0,0,.45);max-width:90vw;text-align:center";
+  document.body.appendChild(t);setTimeout(function(){t.style.transition="opacity .4s";t.style.opacity="0";setTimeout(function(){t.remove()},400)},2200);
+}
+
+/* ============ Coverage engine (estimation, contour réel) ============ */
+function computeCoverage(modeOverride){
+  var poly=poolPoly();
+  var NX=40,NY=Math.max(12,Math.round(40*(pool.W/Math.max(1,pool.L))));
+  var mode=modeOverride||plan.mode||"Standard";
+  var grid=[],weakSet={};
+  var stairs=pool.markers.filter(function(m){return m.type==="escalier"});
+  var deads=pool.markers.filter(function(m){return m.type==="anglemort"});
+  var obst=pool.markers.filter(function(m){return m.type==="obstacle"});
+  for(var y=0;y<NY;y++){grid[y]=[];for(var x=0;x<NX;x++){
+    var nx=(x+0.5)/NX,ny=(y+0.5)/NY;
+    if(!pointInPoly(nx,ny,poly)){grid[y][x]=-1;continue}
+    var edge=distToPoly(nx,ny,poly);var isBand=edge<0.06;
+    var c;
+    if(mode.indexOf("Ligne")>=0)      c=isBand?0.92:0.35;
+    else if(mode.indexOf("Sol")>=0)   c=isBand?0.45:0.9;
+    else if(mode.indexOf("Ultra")>=0) c=isBand?0.78:0.9;
+    else if(mode.indexOf("Éco")>=0)   c=0.55;
+    else                              c=isBand?0.7:0.8;
+    stairs.forEach(function(m){if(dist(nx,ny,m.x,m.y)<0.13)c=Math.min(c,0.32)});
+    deads.forEach(function(m){if(dist(nx,ny,m.x,m.y)<0.11)c=Math.min(c,0.28)});
+    obst.forEach(function(m){if(dist(nx,ny,m.x,m.y)<0.09)c=Math.min(c,0.4)});
+    grid[y][x]=c;
+    if(c<0.5){var q=(ny<0.5?"avant":"arrière")+"-"+(nx<0.5?"gauche":"droite");weakSet[q]=(weakSet[q]||0)+1}
+  }}
+  var weak=[];
+  if(stairs.length)weak.push("🪜 Escaliers ("+stairs.length+")");
+  Object.keys(weakSet).sort(function(a,b){return weakSet[b]-weakSet[a]}).slice(0,3).forEach(function(q){weak.push("Zone "+q)});
+  return {grid:grid,NX:NX,NY:NY,mode:mode,weak:weak,stairs:stairs};
+}
+function dist(a,b,c,d){return Math.sqrt((a-c)*(a-c)+(b-d)*(b-d))}
+
+function buildPlanSteps(cv){
+  if(!plan.generatedAt)return [];
+  var m=MODELS[cfg.model]||MODELS.autre,steps=[];
+  var depot=pool.markers.filter(function(x){return x.type==="depot"})[0];
+  var stairs=cv.stairs;
+  if((maint.filter||0)>=8)steps.push({t:"Nettoie le filtre AVANT",d:"Filtre encrassé = aspiration réduite → escaliers encore moins bien faits."});
+  if(m.clearwater&&(maint.clearwater||0)>=40)steps.push({t:"Vérifie la cartouche ClearWater",d:"Clarifiant épuisé = eau moins limpide. Remplace avant le cycle."});
+  steps.push({t:"Dépose le robot au bon endroit",d:depot?"Repère 📍 posé sur ta carte. Sur un haricot, dépose-le dans la grande courbe, face au rétrécissement, pour qu'il finisse près des escaliers.":"Sur ta piscine haricot : dépose-le dans la grande boucle, face au grand axe. (Astuce : marque un point 📍 Dépôt sur ta carte)."});
+  steps.push({t:"Lance le cycle « "+esc(cv.mode)+" »",d:cv.mode.indexOf("Sol")>=0?"Bon pour le fond, mais ligne d'eau et escaliers restent faibles → étapes suivantes.":cv.mode.indexOf("Ligne")>=0?"Couvre bien la ligne d'eau ; enchaîne un cycle Sol pour le fond.":"Cycle mixte fond + ligne d'eau."});
+  if(stairs.length)steps.push({t:"Renforce les escaliers ("+stairs.length+")",d:"Point noir des robots. En fin de cycle : "+(m.map?"crée une zone 'escaliers' si ton AquaSense 2 Ultra le permet, sinon ":"")+"repositionne le robot au pied des marches et relance 5–8 min, ×2. Passage manuel via 🎮 une fois le protocole branché."});
+  if(m.waterline&&cv.mode.indexOf("Ligne")<0)steps.push({t:"Cycle ligne d'eau",d:"Dépôts gras en surface ? Ajoute un cycle « Ligne d'eau » dédié (le rétrécissement du haricot en accumule souvent)."});
+  steps.push({t:"Contrôle & log",d:"Vérifie escaliers + angles ⛔. Note la session dans 📊 Journal (durée/batterie) pour suivre l'efficacité dans le temps."});
+  return steps;
+}
+
+/* ============ Canvas: pool editor ============ */
+var canvasState={drag:null,sel:null};
+function poolRectCss(W,H){
+  var pad=26,w=W-pad*2,h=H-pad*2;
+  var ar=pool.L/Math.max(0.1,pool.W),car=w/h,rw,rh;
+  if(ar>car){rw=w;rh=w/ar}else{rh=h;rw=h*ar}
+  return {x:(W-rw)/2,y:(H-rh)/2,w:rw,h:rh};
+}
+function polyPix(r){return poolPoly().map(function(p){return {x:r.x+p.x*r.w,y:r.y+p.y*r.h}})}
+function tracePoly(g,pts){
+  var n=pts.length,mid=function(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}};
+  var st=mid(pts[n-1],pts[0]);g.beginPath();g.moveTo(st.x,st.y);
+  for(var i=0;i<n;i++){var cur=pts[i],nxt=pts[(i+1)%n],mm=mid(cur,nxt);g.quadraticCurveTo(cur.x,cur.y,mm.x,mm.y)}
+  g.closePath();
+}
+function roundRect(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function drawBasin(g,r,fill){
+  if(pool.shape==="bean"){var pts=polyPix(r);tracePoly(g,pts);if(fill){g.fill()}g.stroke();
+    if(fill){var c=polyCentroid(poolPoly());var inPts=poolPoly().map(function(p){return {x:r.x+(c.x+(p.x-c.x)*0.9)*r.w,y:r.y+(c.y+(p.y-c.y)*0.9)*r.h}});g.save();g.strokeStyle="rgba(120,200,255,.35)";g.lineWidth=1;tracePoly(g,inPts);g.stroke();g.restore()}
+  }else{roundRect(g,r.x,r.y,r.w,r.h,10);if(fill){g.fill()}g.stroke();if(fill){g.save();g.strokeStyle="rgba(120,200,255,.35)";g.lineWidth=1;roundRect(g,r.x+7,r.y+7,r.w-14,r.h-14,8);g.stroke();g.restore()}}
+}
+function drawPool(){
+  var cv=$("#poolCanvas");if(!cv)return;
+  var dpr=Math.min(2,window.devicePixelRatio||1);var cssW=cv.clientWidth||300;
+  cv.width=cssW*dpr;cv.height=420*dpr;var g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);
+  var W=cssW,H=420;g.clearRect(0,0,W,H);var r=poolRectCss(W,H);
+  g.fillStyle="#0c3a5c";g.strokeStyle="#2d7bd6";g.lineWidth=2;drawBasin(g,r,true);
+  g.fillStyle="#93b0c8";g.font="11px -apple-system";g.textAlign="center";
+  g.fillText(pool.L+" m",r.x+r.w/2,r.y-8);
+  g.save();g.translate(r.x-10,r.y+r.h/2);g.rotate(-Math.PI/2);g.fillText(pool.W+" m",0,0);g.restore();
+  pool.markers.forEach(function(m){
+    var px=r.x+m.x*r.w,py=r.y+m.y*r.h;
+    g.beginPath();g.arc(px,py,m===canvasState.sel?16:13,0,7);g.fillStyle=markerColor(m.type);g.globalAlpha=.9;g.fill();g.globalAlpha=1;
+    if(m===canvasState.sel){g.strokeStyle="#fff";g.lineWidth=2;g.stroke()}
+    g.font="14px -apple-system";g.textAlign="center";g.textBaseline="middle";g.fillStyle="#fff";g.fillText(markerIcon(m.type),px,py);
+  });
+  g.textBaseline="alphabetic";
+}
+function markerIcon(t){return{escalier:"🪜",pointbas:"🕳️",depot:"📍",anglemort:"⛔",obstacle:"🪨"}[t]||"•"}
+function markerColor(t){return{escalier:"#c46bff",pointbas:"#2d7bd6",depot:"#39c2ff",anglemort:"#e8624a",obstacle:"#8a97a6"}[t]||"#888"}
+function canvasPos(cv,e){
+  var rect=cv.getBoundingClientRect();
+  var cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+  var cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+  var r=poolRectCss(cv.clientWidth,420);
+  return {nx:clamp((cx-r.x)/r.w),ny:clamp((cy-r.y)/r.h),px:cx,py:cy,r:r};
+}
+function clamp(v){return Math.max(0,Math.min(1,v))}
+function hitMarker(p){var best=null,bd=22;pool.markers.forEach(function(m){var mx=p.r.x+m.x*p.r.w,my=p.r.y+m.y*p.r.h,d=Math.sqrt((mx-p.px)*(mx-p.px)+(my-p.py)*(my-p.py));if(d<bd){bd=d;best=m}});return best}
+function bindCanvas(){
+  var cv=$("#poolCanvas");if(!cv)return;
+  function down(e){
+    e.preventDefault();var p=canvasPos(cv,e);var hit=hitMarker(p);
+    if(hit){canvasState.drag=hit;canvasState.sel=hit;showMarkerPanel();drawPool();return}
+    if(S.tool&&S.tool!=="main"){
+      if(S.tool==="depot"||S.tool==="pointbas")pool.markers=pool.markers.filter(function(m){return m.type!==S.tool});
+      var m={id:uid(),type:S.tool,x:p.nx,y:p.ny};pool.markers.push(m);canvasState.sel=m;save();showMarkerPanel();drawPool();
+    }else{canvasState.sel=null;showMarkerPanel();drawPool()}
+  }
+  function move(e){if(!canvasState.drag)return;e.preventDefault();var p=canvasPos(cv,e);canvasState.drag.x=p.nx;canvasState.drag.y=p.ny;drawPool()}
+  function up(){if(canvasState.drag)save();canvasState.drag=null}
+  cv.addEventListener("pointerdown",down);cv.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
+}
+function showMarkerPanel(){
+  var el=$("#markerPanel");if(!el)return;var m=canvasState.sel;
+  if(!m){el.innerHTML="";return}
+  var names={escalier:"Escalier",pointbas:"Point bas",depot:"Dépôt robot",anglemort:"Angle mort",obstacle:"Obstacle"};
+  el.innerHTML='<div class="row" style="align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:10px"><div style="flex:2">'+markerIcon(m.type)+' <b>'+esc(names[m.type]||m.type)+'</b></div><button class="btn bad sm" style="flex:1" onclick="delMarker(\''+m.id+'\')">🗑 Supprimer</button></div>';
+}
+function delMarker(id){pool.markers=pool.markers.filter(function(m){return m.id!==id});canvasState.sel=null;save();showMarkerPanel();drawPool()}
+
+/* ============ Canvas: coverage heatmap ============ */
+function drawCoverage(){
+  var cv=$("#covCanvas");if(!cv)return;
+  var dpr=Math.min(2,window.devicePixelRatio||1);var cssW=cv.clientWidth||300;
+  cv.width=cssW*dpr;cv.height=300*dpr;var g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);
+  var W=cssW,H=300;g.clearRect(0,0,W,H);var cvd=computeCoverage(),r=poolRectCss(W,H);
+  var cw=r.w/cvd.NX,ch=r.h/cvd.NY;
+  /* clip au contour réel */
+  g.save();g.beginPath();if(pool.shape==="bean"){tracePoly(g,polyPix(r))}else{roundRect(g,r.x,r.y,r.w,r.h,8)}g.clip();
+  for(var y=0;y<cvd.NY;y++)for(var x=0;x<cvd.NX;x++){var c=cvd.grid[y][x];if(c<0)continue;g.fillStyle=heat(c);g.fillRect(r.x+x*cw,r.y+y*ch,cw+0.6,ch+0.6)}
+  g.restore();
+  g.strokeStyle="#2d7bd6";g.lineWidth=2;if(pool.shape==="bean"){tracePoly(g,polyPix(r));g.stroke()}else{roundRect(g,r.x,r.y,r.w,r.h,8);g.stroke()}
+  pool.markers.forEach(function(m){var px=r.x+m.x*r.w,py=r.y+m.y*r.h;g.font="13px -apple-system";g.textAlign="center";g.textBaseline="middle";g.fillText(markerIcon(m.type),px,py)});
+  g.textBaseline="alphabetic";
+}
+function heat(c){
+  var r,gc,b;
+  if(c<0.5){r=232;gc=Math.round(98+(c/0.5)*(179-98));b=74}
+  else{r=Math.round(232-((c-0.5)/0.5)*(232-46));gc=Math.round(179+((c-0.5)/0.5)*(204-179));b=Math.round(74+((c-0.5)/0.5)*(113-74))}
+  return "rgba("+r+","+gc+","+b+",.82)";
+}
+
+/* ============ trend chart (data-viz pro : courbe lissée + aire dégradée + grille) ============ */
+function drawTrend(){
+  var cv=$("#trendCanvas");if(!cv)return;
+  var dpr=Math.min(2,window.devicePixelRatio||1);var cssW=cv.clientWidth||300,cssH=176;
+  cv.width=cssW*dpr;cv.height=cssH*dpr;var g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);
+  var W=cssW,H=cssH;g.clearRect(0,0,W,H);
+  var data=sessions.slice(0,14).reverse().map(function(s){return +s.dur||0});if(data.length<2)return;
+  var light=isLight();
+  var cGrid=light?"rgba(11,35,52,.10)":"rgba(255,255,255,.07)";
+  var cTxt=light?"#48708f":"#93b0c8";
+  var cLine=light?"#0e88c9":"#39c2ff";
+  var mx=Math.max.apply(null,data)*1.15||1;
+  var padL=34,padR=14,padT=24,padB=16,iw=W-padL-padR,ih=H-padT-padB;
+  function X(i){return padL+i/(data.length-1)*iw}
+  function Y(v){return padT+ih-(v/mx)*ih}
+  /* grille horizontale + échelle */
+  g.font="10px -apple-system";g.lineWidth=1;g.textAlign="right";
+  [0,0.5,1].forEach(function(f){var v=Math.round(mx*f),y=Y(v);
+    g.strokeStyle=cGrid;g.beginPath();g.moveTo(padL,y);g.lineTo(W-padR,y);g.stroke();
+    g.fillStyle=cTxt;g.fillText(String(v),padL-6,y+3)});
+  /* ligne de moyenne (pointillés) */
+  var avg=data.reduce(function(a,b){return a+b},0)/data.length;
+  g.save();g.setLineDash([4,4]);g.strokeStyle=light?"rgba(14,136,201,.45)":"rgba(58,208,255,.35)";
+  g.beginPath();g.moveTo(padL,Y(avg));g.lineTo(W-padR,Y(avg));g.stroke();g.restore();
+  /* courbe lissée (bézier par points milieux) + aire dégradée */
+  function curve(){
+    g.beginPath();g.moveTo(X(0),Y(data[0]));
+    for(var i=1;i<data.length;i++){var xm=(X(i-1)+X(i))/2;g.bezierCurveTo(xm,Y(data[i-1]),xm,Y(data[i]),X(i),Y(data[i]))}
+  }
+  var lg=g.createLinearGradient(0,padT,0,H-padB);
+  lg.addColorStop(0,light?"rgba(14,136,201,.26)":"rgba(58,208,255,.28)");lg.addColorStop(1,"rgba(58,208,255,0)");
+  curve();g.lineTo(X(data.length-1),H-padB);g.lineTo(X(0),H-padB);g.closePath();g.fillStyle=lg;g.fill();
+  curve();g.strokeStyle=cLine;g.lineWidth=2.5;g.lineJoin="round";g.stroke();
+  /* points + dernier point mis en avant avec sa valeur */
+  g.fillStyle=cLine;
+  data.forEach(function(v,i){g.beginPath();g.arc(X(i),Y(v),i===data.length-1?4.5:2.4,0,6.3);g.fill()});
+  var lx=X(data.length-1),ly=Y(data[data.length-1]);
+  g.strokeStyle=light?"#ffffff":"#071726";g.lineWidth=2;g.beginPath();g.arc(lx,ly,4.5,0,6.3);g.stroke();
+  g.textAlign="right";g.font="700 11px -apple-system";g.fillStyle=light?"#0a6ba0":"#7fdcff";
+  g.fillText(data[data.length-1]+" min",Math.min(W-padR,lx+4),Math.max(padT+9,ly-9));
+  /* titre + repère moyenne */
+  g.textAlign="left";g.font="10px -apple-system";g.fillStyle=cTxt;
+  g.fillText("Durée des "+data.length+" dernières sessions (min)",padL,13);
+  g.fillText("moy "+Math.round(avg),padL+2,Y(avg)-4);
+}
+/* jauge circulaire réutilisable (score, %) */
+function gaugeSvg(pct,col,label){
+  pct=Math.max(0,Math.min(100,Math.round(pct)));
+  var R=80,len=Math.PI*R,off=len*(1-pct/100);
+  return '<div class="gauge"><svg viewBox="0 0 190 108" aria-hidden="true">'+
+    '<path class="gt" d="M15 95 A80 80 0 0 1 175 95"/>'+
+    '<path class="gp" d="M15 95 A80 80 0 0 1 175 95" style="stroke:'+col+'" stroke-dasharray="'+len.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'+
+    '</svg><div class="gauge-c"><div class="gauge-n" style="color:'+col+'">'+pct+'<small style="font-size:15px">%</small></div></div></div>'+
+    '<div class="gauge-minmax" style="max-width:190px;margin:-6px auto 0"><span>0</span><span>100</span></div>'+
+    '<div class="gauge-l" style="text-align:center;margin:4px 0 10px">'+esc(label)+'</div>';
+}
+
+/* ============ VUE 3D (canvas, projection maison — pas de WebGL) ============ */
+var D3={raf:0,t0:0,prog:0,playing:true,yaw:-0.7,pitch:1.02,zoom:1,drag:null,pointers:{},pinch:0,path:null};
+function floorDepthAt(nx,ny){
+  var s=depthShallow(),d=depthDeep();
+  if(pool.depthProfile==="pente")return -(s+(d-s)*nx);
+  var c=polyCentroid(poolPoly());
+  var r=Math.min(1,Math.hypot(nx-c.x,ny-c.y)/0.42);
+  var f=1-r;f=f*f*(3-2*f);            /* smoothstep : 1 au centre (fosse), 0 au bord */
+  return -(s+(d-s)*f);
+}
+function worldPt3(nx,ny,z){return {x:(nx-0.5)*pool.L,y:(ny-0.5)*pool.W,z:z}}
+function proj3(w){
+  var cy=Math.cos(D3.yaw),sy=Math.sin(D3.yaw);
+  var rx=w.x*cy-w.y*sy, ry=w.x*sy+w.y*cy;
+  return {x:rx, y:-(ry*Math.sin(D3.pitch)+w.z*Math.cos(D3.pitch)), depth:ry*Math.cos(D3.pitch)-w.z*Math.sin(D3.pitch)};
+}
+function buildPath3D(){
+  var poly=poolPoly(),pts=[],rows=15;
+  for(var r=0;r<rows;r++){var ny=0.08+r/(rows-1)*0.84,row=[];
+    for(var i=0;i<=30;i++){var nx=i/30;if(pointInPoly(nx,ny,poly))row.push({x:nx,y:ny})}
+    if(row.length){if(r%2)row.reverse();pts=pts.concat(row)}
+  }
+  D3.path=pts;
+}
+function open3D(){var o=$("#d3");if(!o)return;o.hidden=false;buildPath3D();D3.playing=true;D3.prog=0;D3.t0=performance.now();reset3D();resize3D();bind3D();cancelAnimationFrame(D3.raf);D3.raf=requestAnimationFrame(loop3D)}
+function close3D(){var o=$("#d3");if(o)o.hidden=true;cancelAnimationFrame(D3.raf)}
+function toggle3D(){D3.playing=!D3.playing;if(D3.playing)D3.t0=performance.now()-D3.prog*24000;var b=$("#d3play");if(b)b.textContent=D3.playing?"⏸️ Pause robot":"▶️ Lancer robot"}
+function reset3D(){D3.yaw=-0.7;D3.pitch=1.02;D3.zoom=1}
+function resize3D(){var cv=$("#d3c");if(!cv)return;var dpr=Math.min(2,window.devicePixelRatio||1);cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;cv._dpr=dpr}
+function bind3D(){
+  var cv=$("#d3c");if(!cv||cv._bound)return;cv._bound=true;
+  cv.addEventListener("pointerdown",function(e){cv.setPointerCapture&&cv.setPointerCapture(e.pointerId);D3.pointers[e.pointerId]={x:e.clientX,y:e.clientY};var ks=Object.keys(D3.pointers);if(ks.length===1){D3.drag={x:e.clientX,y:e.clientY,yaw:D3.yaw,pitch:D3.pitch}}else if(ks.length===2){D3.pinch=ptrDist();D3.pinchZoom=D3.zoom}});
+  cv.addEventListener("pointermove",function(e){if(!D3.pointers[e.pointerId])return;D3.pointers[e.pointerId]={x:e.clientX,y:e.clientY};var ks=Object.keys(D3.pointers);
+    if(ks.length>=2){var d=ptrDist();if(D3.pinch)D3.zoom=Math.max(0.5,Math.min(3,D3.pinchZoom*d/D3.pinch));}
+    else if(D3.drag){D3.yaw=D3.drag.yaw+(e.clientX-D3.drag.x)*0.01;D3.pitch=Math.max(0.35,Math.min(1.45,D3.drag.pitch-(e.clientY-D3.drag.y)*0.008))}});
+  function endp(e){delete D3.pointers[e.pointerId];if(Object.keys(D3.pointers).length<2)D3.pinch=0;if(!Object.keys(D3.pointers).length)D3.drag=null}
+  cv.addEventListener("pointerup",endp);cv.addEventListener("pointercancel",endp);
+  cv.addEventListener("wheel",function(e){e.preventDefault();D3.zoom=Math.max(0.5,Math.min(3,D3.zoom*(e.deltaY<0?1.1:0.9)))},{passive:false});
+}
+function ptrDist(){var p=Object.keys(D3.pointers).map(function(k){return D3.pointers[k]});if(p.length<2)return 0;return Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}
+function loop3D(ts){
+  if($("#d3").hidden){return}
+  if(D3.playing)D3.prog=((ts-D3.t0)/24000)%1;
+  if(!D3.drag&&!Object.keys(D3.pointers).length)D3.yaw+=0.0018;
+  draw3D();D3.raf=requestAnimationFrame(loop3D);
+}
+function draw3D(){
+  var cv=$("#d3c");if(!cv)return;var dpr=cv._dpr||1;var g=cv.getContext("2d");
+  var W=cv.width/dpr,H=cv.height/dpr;g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+  g.fillStyle="#04101c";g.fillRect(0,0,W,H);
+  var poly=poolPoly();
+  /* fit: projeter contour haut + fond → bbox → scale/centre */
+  var proj=[],i;
+  for(i=0;i<poly.length;i++){proj.push(proj3(worldPt3(poly[i].x,poly[i].y,0)));proj.push(proj3(worldPt3(poly[i].x,poly[i].y,floorDepthAt(poly[i].x,poly[i].y))))}
+  var minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;proj.forEach(function(p){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y)});
+  var scale=0.8*Math.min(W/(maxx-minx||1),H/(maxy-miny||1))*D3.zoom;
+  var cx=W/2-(minx+maxx)/2*scale, cy=H/2-(miny+maxy)/2*scale;
+  function S(nx,ny,z){var p=proj3(worldPt3(nx,ny,z));return {x:cx+p.x*scale,y:cy+p.y*scale}}
+  function tp(pts,close){g.beginPath();pts.forEach(function(p,k){k?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)});if(close!==false)g.closePath()}
+  /* FOND */
+  tp(poly.map(function(p){return S(p.x,p.y,floorDepthAt(p.x,p.y))}));
+  var fg=g.createLinearGradient(0,cy-scale,0,cy+scale);fg.addColorStop(0,"#0a3a58");fg.addColorStop(1,"#062338");g.fillStyle=fg;g.fill();
+  /* grille fond */
+  g.strokeStyle="rgba(120,200,255,.12)";g.lineWidth=1;
+  for(var gx=0;gx<=10;gx++){g.beginPath();for(var t=0;t<=20;t++){var ny=t/20,nx=gx/10;var s=S(nx,ny,floorDepthAt(nx,ny));t?g.lineTo(s.x,s.y):g.moveTo(s.x,s.y)}g.stroke()}
+  /* TRAÎNÉE robot (nettoyé) */
+  if(D3.path&&D3.path.length){var ci=Math.floor(D3.prog*D3.path.length);g.strokeStyle="rgba(120,240,200,.45)";g.lineWidth=Math.max(6,scale*0.42);g.lineJoin="round";g.lineCap="round";g.beginPath();for(i=0;i<=ci;i++){var pt=D3.path[i];var s=S(pt.x,pt.y,floorDepthAt(pt.x,pt.y));i?g.lineTo(s.x,s.y):g.moveTo(s.x,s.y)}g.stroke()}
+  /* MARQUEURS (au fond) */
+  pool.markers.forEach(function(m){var z=floorDepthAt(m.x,m.y);var sf=S(m.x,m.y,z),ss=S(m.x,m.y,0);
+    g.strokeStyle=markerColor(m.type);g.lineWidth=2;g.beginPath();g.moveTo(sf.x,sf.y);g.lineTo(ss.x,ss.y);g.stroke();
+    if(m.type==="escalier"){for(var st=0;st<3;st++){drawBox3D(g,S,m.x,m.y,0.5,depthShallow()*0.33*(st+1),floorDepthAt(m.x,m.y),"rgba(196,107,255,.7)")}}
+  });
+  /* PAROIS (verre translucide) */
+  g.lineWidth=1;g.strokeStyle="rgba(120,200,255,.25)";
+  for(i=0;i<poly.length;i++){var a=poly[i],b=poly[(i+1)%poly.length];
+    tp([S(a.x,a.y,0),S(b.x,b.y,0),S(b.x,b.y,floorDepthAt(b.x,b.y)),S(a.x,a.y,floorDepthAt(a.x,a.y))]);
+    g.fillStyle="rgba(45,123,214,.16)";g.fill();g.stroke();
+  }
+  /* SURFACE EAU */
+  tp(poly.map(function(p){return S(p.x,p.y,0)}));g.fillStyle="rgba(80,190,255,.22)";g.fill();g.strokeStyle="#5bc8ff";g.lineWidth=2;g.stroke();
+  /* ROBOT */
+  if(D3.path&&D3.path.length){var idx=Math.min(D3.path.length-1,Math.floor(D3.prog*D3.path.length));var rp=D3.path[idx];drawBox3D(g,S,rp.x,rp.y,0.42,0.16,floorDepthAt(rp.x,rp.y),"#39c2ff",true)}
+  /* MARQUEURS icônes (au-dessus de l'eau, lisibles) */
+  pool.markers.forEach(function(m){var ss=S(m.x,m.y,0.05);g.font="15px -apple-system";g.textAlign="center";g.textBaseline="middle";g.fillText(markerIcon(m.type),ss.x,ss.y-6)});
+  /* COTES */
+  g.font="12px -apple-system";g.textAlign="center";g.textBaseline="middle";
+  dimLine(g,S(0,1,0),S(1,1,0),pool.L.toFixed(2)+" m");
+  dimLine(g,S(0,0,0),S(0,1,0),pool.W.toFixed(2)+" m");
+  var cC=polyCentroid(poolPoly());
+  var dS=S(0.14,0.5,floorDepthAt(0.14,0.5)*0.5),dD=S(cC.x,cC.y,floorDepthAt(cC.x,cC.y)*0.55);
+  g.fillStyle="#f6d68a";g.fillText("PB "+depthShallow().toFixed(2)+" m",dS.x,dS.y);g.fillText((pool.depthProfile==="pente"?"GB ":"Fosse ")+depthDeep().toFixed(2)+" m",dD.x,dD.y);
+  /* légende chiffres */
+  g.textAlign="left";g.fillStyle="#bfe3fb";g.font="11px -apple-system";
+  g.fillText("Surface "+poolAreaM2().toFixed(1)+" m² · Volume "+(pool.volOfficial>0?(+pool.volOfficial).toFixed(1)+" m³ (officiel)":"~"+volumeM3().toFixed(1)+" m³")+" · Périmètre "+worldPerimeter().toFixed(1)+" m",12,H-10);
+}
+function drawBox3D(g,S,nx,ny,sizeM,hM,zFloor,col,top){
+  var hx=sizeM/pool.L/2,hy=sizeM/pool.W/2;
+  var c=[[-1,-1],[1,-1],[1,1],[-1,1]].map(function(o){return {x:nx+o[0]*hx,y:ny+o[1]*hy}});
+  var bot=c.map(function(p){return S(p.x,p.y,zFloor)}),topP=c.map(function(p){return S(p.x,p.y,zFloor+hM)});
+  for(var i=0;i<4;i++){var j=(i+1)%4;g.beginPath();g.moveTo(bot[i].x,bot[i].y);g.lineTo(bot[j].x,bot[j].y);g.lineTo(topP[j].x,topP[j].y);g.lineTo(topP[i].x,topP[i].y);g.closePath();g.fillStyle=col;g.globalAlpha=.85;g.fill();g.globalAlpha=1}
+  g.beginPath();topP.forEach(function(p,k){k?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)});g.closePath();g.fillStyle=top?"#cdeafd":col;g.fill();if(top){g.strokeStyle="#052034";g.lineWidth=1.5;g.stroke()}
+}
+function dimLine(g,a,b,label){
+  g.strokeStyle="rgba(255,255,255,.5)";g.lineWidth=1;g.setLineDash([4,3]);g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();g.setLineDash([]);
+  var mx=(a.x+b.x)/2,my=(a.y+b.y)/2;g.fillStyle="#0e88c9";var w=g.measureText(label).width+10;g.fillRect(mx-w/2,my-9,w,18);g.fillStyle="#fff";g.fillText(label,mx,my);
+}
+window.addEventListener("resize",function(){if($("#d3")&&!$("#d3").hidden)resize3D()});
+
+/* ============ VUE LIVE 2D — 100% RÉELLE (aucune simulation) ============
+   N'affiche QUE la position/trace/batterie réellement remontées par le robot
+   (via la capture → endpoint statut, relayé par le proxy admin). Pas de robot
+   simulé. Le robot n'émet pas sous l'eau → « en attente » tant qu'il n'est pas
+   connecté (surface/base) ou tant que la capture n'est pas faite. */
+var LV={raf:0,grid:null,realPos:null,realTrack:null,batt:null,state:null,pollTimer:0,lastData:0,startedTs:0};
+function buildLiveGrid(){
+  var poly=poolPoly(),NX=46,NY=Math.max(14,Math.round(46*(pool.W/Math.max(1,pool.L))));
+  var inside=[],n=0;
+  for(var y=0;y<NY;y++)for(var x=0;x<NX;x++){var nx=(x+0.5)/NX,ny=(y+0.5)/NY;var ins=pointInPoly(nx,ny,poly);inside.push(ins);if(ins)n++;}
+  LV.grid={NX:NX,NY:NY,inside:inside,total:n,visited:new Uint8Array(NX*NY)};
+}
+function openLive(){
+  var o=$("#lv");if(!o)return;o.hidden=false;buildLiveGrid();
+  LV.realPos=null;LV.realTrack=null;LV.batt=null;LV.state=null;LV.lastData=0;LV.startedTs=performance.now();
+  var rb=$("#lvReal");if(rb)rb.style.display=(beatbotClient.configured()||tuyaLive())?"":"none";
+  resizeLive();
+  if(tuyaLive()){tuyaPollLive();LV.pollTimer=setInterval(tuyaPollLive,5000);}
+  else if(beatbot.statusUrl){lvPollNow();LV.pollTimer=setInterval(lvPollNow,4000);}
+  cancelAnimationFrame(LV.raf);LV.raf=requestAnimationFrame(loopLive);
+}
+/* Live via Tuya (source réelle) : batterie + état. La position n'est fournie que si le
+   robot publie un DP de position — sinon on reste honnête (« en attente »). */
+function tuyaLive(){return !!(tuya.linked&&tuya.device_id&&onBeatbotHost());}
+function tuyaPollLive(){
+  if(!tuyaLive())return;
+  tuyaApi("status").then(function(j){
+    if(!j.ok||!j.status)return;
+    var m=tuyaMap(j.status);
+    if(m.batt!=null)LV.batt=m.batt;
+    if(m.state||m.mode)LV.state=tuyaLabelState(m.state||m.mode);
+    /* cherche un DP de position éventuel (rare sur ces robots) */
+    j.status.forEach(function(s){var k=String(s.code||"").toLowerCase();
+      if(/position|coordinate|robot_pos|point/.test(k)&&s.value){
+        var v=s.value;try{if(typeof v==="string")v=JSON.parse(v);}catch(e){}
+        if(v&&typeof v.x==="number"&&typeof v.y==="number"){var x=v.x>1.5?v.x/Math.max(1,pool.L):v.x,y=v.y>1.5?v.y/Math.max(1,pool.W):v.y;LV.realPos={x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y))};LV.lastData=performance.now();}
+      }
+    });
+    /* état de nettoyage = signe de vie même sans position */
+    if(m.state&&/clean|work/.test(String(m.state).toLowerCase()))LV.lastData=performance.now();
+  });
+}
+function closeLive(){var o=$("#lv");if(o){o.hidden=true;if(o.dataset.fromCam){o.dataset.fromCam="";var c=$("#cam");if(c)c.style.zIndex="";}}cancelAnimationFrame(LV.raf);if(LV.pollTimer){clearInterval(LV.pollTimer);LV.pollTimer=0;}}
+function resizeLive(){var cv=$("#lvc");if(!cv)return;var dpr=Math.min(2,window.devicePixelRatio||1);cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;cv._dpr=dpr;}
+function lvStartReal(){ if(!beatbotClient.configured()){toast("Configure d'abord le pilotage (onglet 🎮)");return;} beatbotClient.send("start"); toast("▶️ Commande Démarrer envoyée au robot"); }
+function lvPollNow(){
+  if(!beatbot.statusUrl){return;}
+  var headers={};if(beatbot.token)headers[beatbot.tokenHeader||"Authorization"]=beatbot.token;
+  fetch(beatbot.relay,{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({url:beatbot.statusUrl,method:"GET",headers:headers})})
+  .then(function(r){return r.json();}).then(function(j){
+    if(!j.ok||!j.body||!j.body.text)return;
+    var data;try{data=JSON.parse(j.body.text);}catch(e){return;}
+    var t=parseTelemetry(data);
+    if(t.pos){LV.realPos=t.pos;LV.lastData=performance.now();}
+    if(t.track&&t.track.length){LV.realTrack=t.track;LV.lastData=performance.now();}
+    if(t.batt!=null)LV.batt=t.batt;
+    if(t.state)LV.state=t.state;
+  }).catch(function(){});
+}
+function parseTelemetry(d){
+  var out={pos:null,track:null,batt:null,state:null};
+  function num(v){return typeof v==="number"&&isFinite(v);}
+  function norm(p){ if(!p)return null; var x=p.x,y=p.y; if(!num(x)||!num(y))return null; if(x>1.5||y>1.5){x=x/Math.max(1,pool.L);y=y/Math.max(1,pool.W);} return {x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y))}; }
+  function walk(o,depth){
+    if(!o||depth>4)return;
+    if(Array.isArray(o)){ if(o.length>3&&o[0]&&(num(o[0].x)||num(o[0].lat))){out.track=o.map(function(p){return norm(p);}).filter(Boolean);} else o.forEach(function(v){walk(v,depth+1);}); return; }
+    if(typeof o!=="object")return;
+    for(var k in o){var kl=k.toLowerCase(),v=o[k];
+      if(num(v)&&/batt|power|soc|electric/.test(kl)&&v>=0&&v<=100)out.batt=Math.round(v);
+      if(typeof v==="string"&&/state|status|mode|working|cleaning/.test(kl)&&!out.state)out.state=v;
+      if(!out.pos&&num(o.x)&&num(o.y))out.pos=norm(o);
+    }
+    for(var k2 in o)walk(o[k2],depth+1);
+  }
+  walk(d,0);return out;
+}
+function markVisited(nx,ny){var g=LV.grid;if(!g)return;
+  var cx=Math.round(nx*g.NX-0.5),cy=Math.round(ny*g.NY-0.5);
+  for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var x=cx+dx,y=cy+dy;if(x<0||y<0||x>=g.NX||y>=g.NY)continue;var k=y*g.NX+x;if(g.inside[k])g.visited[k]=1;}
+}
+function loopLive(ts){
+  if($("#lv").hidden)return;
+  var g=LV.grid;if(!g){LV.raf=requestAnimationFrame(loopLive);return;}
+  if(LV.realTrack)LV.realTrack.forEach(function(p){if(p)markVisited(p.x,p.y);});
+  if(LV.realPos)markVisited(LV.realPos.x,LV.realPos.y);
+  drawLive(ts);updateLiveStats(ts);
+  LV.raf=requestAnimationFrame(loopLive);
+}
+function drawLive(ts){
+  var cv=$("#lvc");if(!cv)return;var dpr=cv._dpr||1,g=cv.getContext("2d");
+  var W=cv.width/dpr,H=cv.height/dpr;g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+  g.fillStyle="#04101c";g.fillRect(0,0,W,H);
+  var r=poolRectCss(W,H),gr=LV.grid,cw=r.w/gr.NX,ch=r.h/gr.NY,poly=poolPoly();
+  var pp=poly.map(function(p){return {x:r.x+p.x*r.w,y:r.y+p.y*r.h}});
+  g.save();g.beginPath();if(pool.shape==="bean")tracePoly(g,pp);else roundRect(g,r.x,r.y,r.w,r.h,10);g.clip();
+  for(var y=0;y<gr.NY;y++)for(var x=0;x<gr.NX;x++){var k=y*gr.NX+x;if(!gr.inside[k])continue;g.fillStyle=gr.visited[k]?"rgba(60,220,150,.55)":"rgba(20,70,110,.45)";g.fillRect(r.x+x*cw,r.y+y*ch,cw+0.6,ch+0.6);}
+  g.restore();
+  g.strokeStyle="#5bc8ff";g.lineWidth=2;if(pool.shape==="bean"){tracePoly(g,pp);g.stroke();}else{roundRect(g,r.x,r.y,r.w,r.h,10);g.stroke();}
+  pool.markers.forEach(function(m){var px=r.x+m.x*r.w,py=r.y+m.y*r.h;g.font="14px -apple-system";g.textAlign="center";g.textBaseline="middle";g.fillText(markerIcon(m.type),px,py);});
+  if(LV.realPos){
+    var px=r.x+LV.realPos.x*r.w,py=r.y+LV.realPos.y*r.h;
+    g.beginPath();g.arc(px,py,Math.max(14,18+3*Math.sin(ts/200)),0,7);g.strokeStyle="rgba(255,90,90,.6)";g.lineWidth=2;g.stroke();
+    g.beginPath();g.arc(px,py,11,0,7);g.fillStyle="#39c2ff";g.fill();g.strokeStyle="#fff";g.lineWidth=2;g.stroke();
+  }else{
+    g.fillStyle="rgba(147,176,200,.9)";g.font="600 14px -apple-system";g.textAlign="center";g.textBaseline="middle";
+    var linked=tuyaLive()||beatbot.statusUrl;
+    var msg=linked?"En attente de la position réelle du robot…":"Position réelle non configurée";
+    g.fillText(msg,W/2,H/2-10);
+    g.fillStyle="rgba(147,176,200,.7)";g.font="12px -apple-system";
+    var sub=camActive()?"📷 Caméra active — la position s'affichera dès que le robot est détecté dans l'image.":(tuyaLive()?"Batterie/état lus via Tuya. Pour la position sous l'eau : lance le 📷 suivi caméra.":(beatbot.statusUrl?"Le robot n'émet pas sous l'eau — dispo quand il est connecté (surface/base).":"Lie ton robot via Tuya (onglet 🎮) ou lance le 📷 suivi caméra."));
+    g.fillText(sub,W/2,H/2+12);
+  }
+  g.textBaseline="alphabetic";
+}
+function updateLiveStats(ts){
+  var gr=LV.grid;if(!gr)return;var vis=0;for(var i=0;i<gr.visited.length;i++)if(gr.visited[i])vis++;
+  var hasData=!!(LV.realPos||LV.realTrack);
+  setTxt("lvCov",hasData?(gr.total?Math.round(vis/gr.total*100):0)+"%":"—");
+  var sec=Math.floor((ts-LV.startedTs)/1000);setTxt("lvTime",Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2));
+  setTxt("lvBatt",LV.batt!=null?LV.batt+"%":"—");
+  var fresh=hasData&&(performance.now()-LV.lastData<15000);
+  setTxt("lvSpeed",LV.state?String(LV.state).slice(0,10):(fresh?"connecté":"hors ligne"));
+  var bd=$("#lvbadge");if(bd){var t=fresh?"🔴 LIVE":((camActive()||tuyaLive()||beatbot.statusUrl)?"⏳ EN ATTENTE":"⚙️ À CONFIGURER");if(bd.textContent!==t)bd.textContent=t;bd.style.color=fresh?"#ff5a5a":"#93b0c8";}
+}
+function setTxt(id,t){var el=$("#"+id);if(el&&el.textContent!==t)el.textContent=t;}
+window.addEventListener("resize",function(){if($("#lv")&&!$("#lv").hidden)resizeLive();});
+
+/* ============ SUIVI CAMÉRA — voir le robot SOUS l'eau ============
+   La radio ne traverse pas l'eau, la LUMIÈRE oui : l'iPhone (posé en hauteur) filme le
+   bassin, on détecte le robot (tache sombre mobile) À TRAVERS l'eau et on le projette
+   en direct dans le plan. 100% RÉEL : la position vient de la vraie vidéo ; si rien
+   n'est détecté → « robot non détecté » (jamais de position inventée).
+   Pipeline : calibrage 4 coins → homographie caméra→bassin ; modèle de fond (moyenne
+   mobile) sur grille 96×54 ; plus grosse composante connexe sombre DANS le bassin ;
+   centroïde → homographie → plan + carte de couverture (LV). Tout en local, rien envoyé. */
+var CAM={stream:null,raf:0,corners:[],H:null,mask:null,maskN:0,bg:null,GW:96,GH:54,frames:0,lock:null,lastDet:0,calStep:0,det:null,thresh:16};
+var camCal=lg("camcal",null);
+function camActive(){return !!CAM.stream;}
+/* Homographie 4 points (src vidéo normalisée → carré unité = coords bassin) */
+function camGauss(A,b){var n=8,i,j,k,M=[];for(i=0;i<n;i++)M.push(A[i].concat([b[i]]));
+  for(i=0;i<n;i++){var p=i;for(j=i+1;j<n;j++)if(Math.abs(M[j][i])>Math.abs(M[p][i]))p=j;
+    if(Math.abs(M[p][i])<1e-12)return null;var t=M[i];M[i]=M[p];M[p]=t;
+    for(j=i+1;j<n;j++){var f=M[j][i]/M[i][i];for(k=i;k<=n;k++)M[j][k]-=f*M[i][k];}}
+  var x=new Array(n);for(i=n-1;i>=0;i--){var s=M[i][n];for(j=i+1;j<n;j++)s-=M[i][j]*x[j];x[i]=s/M[i][i];}return x;}
+function camSolveH(src,dst){var A=[],b=[];
+  for(var i=0;i<4;i++){var x=src[i].x,y=src[i].y,u=dst[i].x,v=dst[i].y;
+    A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);
+    A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v);}
+  var h=camGauss(A,b);if(!h)return null;
+  return [h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1];}
+function camMap(H,x,y){var w=H[6]*x+H[7]*y+H[8];if(Math.abs(w)<1e-9)return null;return {x:(H[0]*x+H[1]*y+H[2])/w,y:(H[3]*x+H[4]*y+H[5])/w};}
+/* Détection : ImageData (GW×GH) → {x,y,size} en coords vidéo normalisées, ou null (honnête) */
+function camProcessFrame(im,W,Hh){
+  var d=im.data,n=W*Hh,i;
+  var lum=CAM._lum&&CAM._lum.length===n?CAM._lum:(CAM._lum=new Float32Array(n));
+  for(i=0;i<n;i++){var o=i*4;lum[i]=d[o]*0.299+d[o+1]*0.587+d[o+2]*0.114;}
+  if(!CAM.bg||CAM.bg.length!==n){CAM.bg=new Float32Array(n);CAM.bg.set(lum);return null;}
+  var bg=CAM.bg,mask=CAM.mask,cand=CAM._cand&&CAM._cand.length===n?CAM._cand:(CAM._cand=new Uint8Array(n));
+  var th=CAM.thresh,cnt=0,inMask=CAM.maskN||n;
+  for(i=0;i<n;i++){cand[i]=0;
+    if(mask&&!mask[i]){bg[i]+=(lum[i]-bg[i])*0.05;continue;}
+    var diff=bg[i]-lum[i];
+    if(diff>th){cand[i]=1;cnt++;}else bg[i]+=(lum[i]-bg[i])*0.03;} /* n'apprend jamais le robot dans le fond */
+  if(!cnt)return null;
+  if(cnt>inMask*0.3){for(i=0;i<n;i++)bg[i]+=(lum[i]-bg[i])*0.3;return null;} /* changement global de lumière → réapprend, pas de fausse détection */
+  /* plus grosse composante connexe */
+  var seen=CAM._seen&&CAM._seen.length===n?CAM._seen:(CAM._seen=new Uint8Array(n));seen.fill(0);
+  var best=0,bx=0,by=0,stack=[];
+  for(i=0;i<n;i++){
+    if(!cand[i]||seen[i])continue;
+    var size=0,sx=0,sy=0;stack.length=0;stack.push(i);seen[i]=1;
+    while(stack.length){var c=stack.pop(),cx=c%W,cy=(c/W)|0;size++;sx+=cx;sy+=cy;
+      if(cx>0&&cand[c-1]&&!seen[c-1]){seen[c-1]=1;stack.push(c-1);}
+      if(cx<W-1&&cand[c+1]&&!seen[c+1]){seen[c+1]=1;stack.push(c+1);}
+      if(cy>0&&cand[c-W]&&!seen[c-W]){seen[c-W]=1;stack.push(c-W);}
+      if(cy<Hh-1&&cand[c+W]&&!seen[c+W]){seen[c+W]=1;stack.push(c+W);}}
+    if(size>best){best=size;bx=sx/size;by=sy/size;}}
+  if(best<3||best>inMask*0.15)return null; /* trop petit = bruit, trop gros = ombre/nuage */
+  return {x:(bx+0.5)/W,y:(by+0.5)/Hh,size:best};}
+/* Détection (coords vidéo) → position bassin + alimentation du plan Live */
+function camApplyDetection(det){
+  if(!det||!CAM.H)return null;
+  var p=camMap(CAM.H,det.x,det.y);if(!p)return null;
+  if(p.x<-0.06||p.x>1.06||p.y<-0.06||p.y>1.06)return null;
+  var px=Math.max(0,Math.min(1,p.x)),py=Math.max(0,Math.min(1,p.y));
+  if(!pointInPoly(px,py,poolPoly())&&distToPoly(px,py,poolPoly())>0.05)return null;
+  CAM.det={vx:det.x,vy:det.y,x:px,y:py};CAM.lastDet=performance.now();
+  LV.realPos={x:px,y:py};LV.lastData=performance.now();if(LV.grid)markVisited(px,py);
+  return {x:px,y:py};}
+function camBuildMask(){
+  if(!CAM.H){CAM.mask=null;CAM.maskN=0;return;}
+  var W=CAM.GW,Hh=CAM.GH,m=new Uint8Array(W*Hh),n=0,poly=poolPoly();
+  for(var y=0;y<Hh;y++)for(var x=0;x<W;x++){
+    var p=camMap(CAM.H,(x+0.5)/W,(y+0.5)/Hh);
+    if(p&&p.x>-0.03&&p.x<1.03&&p.y>-0.03&&p.y<1.03){
+      var cx=Math.max(0,Math.min(1,p.x)),cy=Math.max(0,Math.min(1,p.y));
+      if(pointInPoly(cx,cy,poly)||distToPoly(cx,cy,poly)<0.03){m[y*W+x]=1;n++;}}}
+  CAM.mask=m;CAM.maskN=n;}
+var CAM_CORNER_LABELS=["coin AVANT-GAUCHE","coin AVANT-DROIT","coin ARRIÈRE-DROIT","coin ARRIÈRE-GAUCHE"];
+function camRecal(){CAM.corners=[];CAM.H=null;CAM.mask=null;CAM.bg=null;CAM.calStep=0;CAM.det=null;camHint();}
+function camHint(){var el=$("#camhint");if(!el)return;
+  if(CAM.calStep<4)el.textContent="Calibrage "+(CAM.calStep+1)+"/4 — touche le "+CAM_CORNER_LABELS[CAM.calStep]+" de l'eau dans l'image.";
+  else el.textContent="Calibré ✓ — pose le téléphone stable. Le robot est détecté à travers l'eau (eau calme = meilleur suivi).";}
+function camFinishCal(){
+  CAM.H=camSolveH(CAM.corners,[{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:1}]);
+  if(!CAM.H){toast("Coins invalides, recommence le calibrage");camRecal();return;}
+  camCal=CAM.corners.slice();ls("camcal",camCal);
+  camBuildMask();CAM.bg=null;CAM.calStep=4;camHint();}
+function camTapToFrame(ev){
+  var v=$("#camv"),r=$("#camwrap").getBoundingClientRect();
+  var vw=v.videoWidth||1280,vh=v.videoHeight||720;
+  var sc=Math.min(r.width/vw,r.height/vh),dw=vw*sc,dh=vh*sc,ox=(r.width-dw)/2,oy=(r.height-dh)/2;
+  var x=(ev.clientX-r.left-ox)/dw,y=(ev.clientY-r.top-oy)/dh;
+  if(x<0||x>1||y<0||y>1)return null;return {x:x,y:y};}
+function camFrameToCss(p,r,v){
+  var vw=v.videoWidth||1280,vh=v.videoHeight||720;
+  var sc=Math.min(r.width/vw,r.height/vh),dw=vw*sc,dh=vh*sc,ox=(r.width-dw)/2,oy=(r.height-dh)/2;
+  return {x:ox+p.x*dw,y:oy+p.y*dh};}
+function openCam(){
+  var o=$("#cam");if(!o)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast("Caméra non disponible sur ce navigateur");return;}
+  o.hidden=false;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280}},audio:false}).then(function(st){
+    CAM.stream=st;var v=$("#camv");v.srcObject=st;var pl=v.play();if(pl&&pl.catch)pl.catch(function(){});
+    if(camCal&&camCal.length===4){CAM.corners=camCal.slice();camFinishCal();}else camRecal();
+    if(!LV.grid)buildLiveGrid();if(!LV.startedTs)LV.startedTs=performance.now();
+    if(navigator.wakeLock&&navigator.wakeLock.request)navigator.wakeLock.request("screen").then(function(l){CAM.lock=l;}).catch(function(){});
+    cancelAnimationFrame(CAM.raf);CAM.raf=requestAnimationFrame(camLoop);
+  }).catch(function(e){o.hidden=true;
+    var msg=(e&&e.name==="NotAllowedError")?"Autorise la caméra : Réglages iPhone → Safari (ou l'app) → Caméra":"Caméra : "+String(e&&e.message||e).slice(0,120);
+    toast(msg);});}
+function closeCam(){var o=$("#cam");if(o)o.hidden=true;cancelAnimationFrame(CAM.raf);
+  if(CAM.stream){CAM.stream.getTracks().forEach(function(t){t.stop();});CAM.stream=null;}
+  if(CAM.lock){try{CAM.lock.release();}catch(e){}CAM.lock=null;}}
+function camOpenPlan(){openLive();var c=$("#cam");if(c)c.style.zIndex="50";var o=$("#lv");if(o)o.dataset.fromCam="1";}
+function camLoop(){
+  var o=$("#cam");if(!o||o.hidden)return;
+  var v=$("#camv");
+  if(v&&v.readyState>=2&&CAM.calStep>=4){
+    var pc=CAM._pc||(CAM._pc=document.createElement("canvas"));
+    if(pc.width!==CAM.GW){pc.width=CAM.GW;pc.height=CAM.GH;}
+    var g=pc.getContext("2d",{willReadFrequently:true});
+    try{g.drawImage(v,0,0,CAM.GW,CAM.GH);
+      var det=camProcessFrame(g.getImageData(0,0,CAM.GW,CAM.GH),CAM.GW,CAM.GH);
+      CAM.frames++;if(det)camApplyDetection(det);}catch(e){}
+  }
+  camDraw();
+  CAM.raf=requestAnimationFrame(camLoop);}
+function camDraw(){
+  var cv=$("#camc"),v=$("#camv");if(!cv||!v)return;
+  var r=$("#camwrap").getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+  if(cv.width!==Math.round(r.width*dpr)){cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);}
+  var g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,r.width,r.height);
+  /* contour du bassin calibré */
+  if(CAM.corners.length){g.strokeStyle="rgba(91,200,255,.9)";g.lineWidth=2;g.beginPath();
+    for(var i=0;i<CAM.corners.length;i++){var s=camFrameToCss(CAM.corners[i],r,v);i?g.lineTo(s.x,s.y):g.moveTo(s.x,s.y);}
+    if(CAM.corners.length===4)g.closePath();g.stroke();
+    g.fillStyle="#5bc8ff";CAM.corners.forEach(function(c,idx){var s=camFrameToCss(c,r,v);g.beginPath();g.arc(s.x,s.y,7,0,7);g.fill();g.fillStyle="#04101c";g.font="700 10px -apple-system";g.textAlign="center";g.textBaseline="middle";g.fillText(String(idx+1),s.x,s.y);g.fillStyle="#5bc8ff";});}
+  /* détection */
+  var fresh=CAM.lastDet&&(performance.now()-CAM.lastDet<4000);
+  if(fresh&&CAM.det){var dpx=camFrameToCss({x:CAM.det.vx,y:CAM.det.vy},r,v);
+    g.strokeStyle="rgba(255,90,90,.85)";g.lineWidth=3;g.beginPath();g.arc(dpx.x,dpx.y,16,0,7);g.stroke();
+    g.fillStyle="#39c2ff";g.beginPath();g.arc(dpx.x,dpx.y,6,0,7);g.fill();}
+  var bd=$("#cambadge");if(bd){
+    var t=CAM.calStep<4?("🎯 CALIBRAGE "+(CAM.calStep+1)+"/4"):(fresh?"🔴 SUIVI":"👀 ROBOT NON DÉTECTÉ");
+    if(bd.textContent!==t)bd.textContent=t;bd.style.color=fresh?"#ff5a5a":"#93b0c8";}}
+(function(){var c=$("#camc");if(!c)return;
+  c.addEventListener("click",function(ev){
+    if(CAM.calStep>=4)return;
+    var p=camTapToFrame(ev);if(!p)return;
+    CAM.corners.push(p);CAM.calStep++;
+    if(CAM.calStep===4)camFinishCal();else camHint();});})();
+
+
+/* ============ render ============ */
+function renderRobotTag(){var m=MODELS[cfg.model]||MODELS.autre;var t=$("#robotTag");if(t)t.textContent="🤖 "+m.name}
+function render(){
+  renderRobotTag();
+  var v=S.view,html="";
+  if(v==="accueil")html=vAccueil();
+  else if(v==="bassin"){S.tool=S.tool||"escalier";html=vBassin()}
+  else if(v==="plan")html=vPlan();
+  else if(v==="journal")html=vJournal();
+  else if(v==="reglage")html=vReglage();
+  else if(v==="entretien")html=vEntretien();
+  else if(v==="pilotage")html=vPilotage();
+  $("#app").innerHTML=html;renderNav();
+  if(v==="bassin"){
+    setTimeout(function(){drawPool();bindCanvas();
+      var sh=$("#poolShape");if(sh)sh.addEventListener("change",function(){pool.shape=this.value;save();render()});
+      $("#poolL").addEventListener("change",function(){pool.L=Math.max(1,+this.value||6.9);save();render()});
+      $("#poolW").addEventListener("change",function(){pool.W=Math.max(1,+this.value||4);save();render()});
+      var pb=$("#poolPB");if(pb)pb.addEventListener("change",function(){pool.depthShallow=Math.max(0.3,+this.value||1.1);save();render()});
+      var gb=$("#poolGB");if(gb)gb.addEventListener("change",function(){pool.depthDeep=Math.max(0.3,+this.value||1.7);save();render()});
+      var pf=$("#poolProfile");if(pf)pf.addEventListener("change",function(){pool.depthProfile=this.value;save();render()});
+      var pv=$("#poolVol");if(pv)pv.addEventListener("change",function(){pool.volOfficial=Math.max(0,+this.value||0);save();render()});
+    },30);
+  }
+  if(v==="plan")setTimeout(drawCoverage,40);
+  if(v==="journal"){if(sessions.length>1)setTimeout(drawTrend,40);setTimeout(drawSnaps,50);setTimeout(tuyaStatsSync,120);}
+  if(v==="reglage"){
+    var bind={rgEnv:"env",rgUse:"usage",rgDeb:"debris",rgFoc:"focus"};
+    Object.keys(bind).forEach(function(id){var el=$("#"+id);if(el)el.addEventListener("change",function(){setPerf(bind[id],this.value)})});
+  }
+  if(v==="pilotage"){setTimeout(function(){var f=$("#bbFile");if(f)f.addEventListener("change",function(){var file=this.files&&this.files[0];if(!file)return;var rd=new FileReader();rd.onload=function(){var ta=$("#bbPaste");if(ta){ta.value=String(rd.result||"").slice(0,3000000);bbAnalyze();}};rd.readAsText(file);});},30);}
+}
+document.addEventListener("click",function(e){
+  var nb=e.target.closest("#nav button");if(nb){go(nb.getAttribute("data-v"));return}
+  var tl=e.target.closest(".tool");if(tl){S.tool=tl.getAttribute("data-tool");render();return}
+});
+window.addEventListener("resize",function(){if(S.view==="bassin")drawPool();if(S.view==="plan")drawCoverage()});
+
+/* ============ thème clair/sombre ============ */
+function isLight(){return document.documentElement.getAttribute("data-theme")==="light"}
+function applyThemeUi(){
+  var b=$("#themeBtn");if(b)b.textContent=isLight()?"🌙":"☀️";
+  var m=document.getElementById("metaTheme");if(m)m.setAttribute("content",isLight()?"#eaf4fc":"#0a1622");
+}
+function toggleTheme(){
+  var toLight=!isLight();
+  if(toLight)document.documentElement.setAttribute("data-theme","light");
+  else document.documentElement.removeAttribute("data-theme");
+  try{localStorage.setItem("pp_theme",toLight?"light":"dark")}catch(e){}
+  applyThemeUi();
+  /* redessiner les canvas avec la bonne palette */
+  if(S.view==="plan")setTimeout(drawCoverage,30);
+  if(S.view==="journal"&&sessions.length>1)setTimeout(drawTrend,30);
+  if(S.view==="bassin")setTimeout(function(){if(typeof drawPool==="function")drawPool()},30);
+}
+
+/* boot */
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){})}
+renderRobotTag();render();applyThemeUi();
+tuyaBootSync(); /* connexion auto : re-liaison depuis le serveur (clés jamais perdues) */
+/* MAJ TEMPS RÉEL AUTO : relit le robot toutes les 30 s quand l'app est visible
+   (accueil + pilotage), + au retour sur l'app. Updaters idempotents (règle #94). */
+setInterval(function(){
+  if(document.visibilityState!=="visible")return;
+  if(!onBeatbotHost()||!tuya.linked||!tuya.device_id)return;
+  if(S.view!=="accueil"&&S.view!=="pilotage")return;
+  tuyaRefresh();
+},30000);
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState!=="visible"||!onBeatbotHost()||!tuya.linked)return;
+  tuyaRefresh();S._statsAt=0;tuyaStatsSync();
+});
+/* splash : on le laisse le temps du premier rendu puis fondu */
+setTimeout(function(){var s=$("#splash");if(s)s.classList.add("off")},500);
+setTimeout(function(){var s=$("#splash");if(s&&s.parentNode)s.parentNode.removeChild(s)},1400);
+</script>
+</body>
+</html>

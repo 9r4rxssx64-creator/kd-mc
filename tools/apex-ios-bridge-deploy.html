@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Apex iOS Bridge — Déploiement 1-clic</title>
+  <style>
+    :root {
+      --gold: #d4af37;
+      --bg: #0a0a14;
+      --card: #14141f;
+      --text: #f0f0f5;
+      --muted: #8a8a99;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 1rem;
+      padding-bottom: env(safe-area-inset-bottom, 1rem);
+      max-width: 720px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    h1 { color: var(--gold); margin-bottom: 0.5rem; font-size: 1.5rem; }
+    h2 { color: var(--gold); margin: 1.5rem 0 0.5rem; font-size: 1.15rem; }
+    p { margin-bottom: 0.75rem; color: var(--text); }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .card {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+    }
+    .step {
+      counter-increment: step;
+      padding-left: 2.5rem;
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    .step::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--gold);
+      color: var(--bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    ol { counter-reset: step; list-style: none; }
+    code, pre {
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      background: rgba(212, 175, 55, 0.1);
+      padding: 0.15rem 0.35rem;
+      border-radius: 3px;
+      font-size: 0.85rem;
+      color: var(--gold);
+      word-break: break-all;
+    }
+    pre {
+      padding: 0.75rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    button {
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 44px;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    button.outline {
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.75rem; }
+    .badge.green { background: rgba(74, 222, 128, 0.2); color: var(--green); }
+    .badge.gold { background: rgba(212, 175, 55, 0.2); color: var(--gold); }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 0.5rem 0 1rem;
+    }
+    input[type="text"], input[type="url"], textarea {
+      background: var(--bg);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-family: inherit;
+      min-height: 44px;
+    }
+    .result {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      display: none;
+    }
+    .result.ok { background: rgba(74, 222, 128, 0.15); color: var(--green); display: block; }
+    .result.err { background: rgba(248, 113, 113, 0.15); color: var(--red); display: block; }
+    a { color: var(--gold); }
+  </style>
+</head>
+<body>
+  <h1>🔗 Apex iOS Bridge — Déploiement 1-clic</h1>
+  <p class="muted">v13.3.58 · Cloudflare Worker pour débloquer Bluetooth/IR/IoT depuis iOS Safari</p>
+
+  <div class="card">
+    <h2>Pourquoi ce Worker ?</h2>
+    <p>iOS Safari bloque <strong>Web Bluetooth</strong>, <strong>Web NFC</strong>, <strong>Web USB</strong>.
+    Ce Worker tourne sur Cloudflare edge et permet à Apex iOS de piloter
+    Broadlink (TV/IR), eWeLink (Sonoff), Tuya, Hue et HomeKit via HTTPS.</p>
+  </div>
+
+  <h2>Étapes</h2>
+  <ol>
+    <li class="step">
+      <h3>Compte Cloudflare gratuit</h3>
+      <p>Si tu n'en as pas, crée un compte sur
+        <a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener">dash.cloudflare.com/sign-up</a>
+        (gratuit, 100 000 requêtes/jour).</p>
+    </li>
+
+    <li class="step">
+      <h3>Créer le Worker</h3>
+      <p>Va sur
+        <a href="https://dash.cloudflare.com/?to=/:account/workers/services/new/edit" target="_blank" rel="noopener">
+          dash.cloudflare.com → Workers → Create
+        </a>
+        et nomme-le <code>apex-ios-bridge</code>.</p>
+    </li>
+
+    <li class="step">
+      <h3>Coller le code Worker</h3>
+      <p>Copie tout le code de
+        <code>tools/apex-ios-bridge-worker.js</code>
+        et colle-le dans l'éditeur Cloudflare Worker.</p>
+      <button class="outline" onclick="copyWorkerCode()">📋 Copier le code Worker</button>
+      <div id="copyResult" class="result"></div>
+    </li>
+
+    <li class="step">
+      <h3>Configurer les variables d'environnement</h3>
+      <p>Dans le Worker → <strong>Settings</strong> → <strong>Variables</strong>, ajoute :</p>
+      <pre>APEX_BRIDGE_TOKEN     = (généré ci-dessous, à coller aussi dans Apex Coffre)
+BROADLINK_TOKEN       = (token Broadlink Cloud, optionnel)
+EWELINK_TOKEN         = (token eWeLink, optionnel)
+TUYA_TOKEN            = (token Tuya, optionnel)
+HUE_BRIDGE_URL        = (URL Hue Bridge LAN, optionnel)
+HUE_USERNAME          = (username Hue, optionnel)
+ALLOWED_ORIGINS       = https://9r4rxssx64-creator.github.io</pre>
+      <button onclick="generateToken()">🔐 Générer APEX_BRIDGE_TOKEN</button>
+      <div class="input-group">
+        <input type="text" id="generatedToken" placeholder="Token généré apparaîtra ici" readonly />
+      </div>
+    </li>
+
+    <li class="step">
+      <h3>Déployer</h3>
+      <p>Clique sur <strong>Save and Deploy</strong> dans le Worker. Tu obtiens une URL :
+      <code>https://apex-ios-bridge.&lt;ton-compte&gt;.workers.dev</code></p>
+    </li>
+
+    <li class="step">
+      <h3>Coller dans Apex Coffre</h3>
+      <p>Ouvre Apex iOS → <strong>Coffre</strong> → ajoute deux entrées :</p>
+      <pre>ax_apex_bridge_worker_url = https://apex-ios-bridge.&lt;ton-compte&gt;.workers.dev
+ax_apex_bridge_token       = (le token généré ci-dessus)</pre>
+      <button class="outline" onclick="testWorker()">🧪 Tester la connexion Worker</button>
+      <div class="input-group">
+        <input type="url" id="workerUrl" placeholder="https://apex-ios-bridge.xxx.workers.dev" />
+        <input type="text" id="workerToken" placeholder="Token APEX_BRIDGE_TOKEN" />
+      </div>
+      <div id="testResult" class="result"></div>
+    </li>
+
+    <li class="step">
+      <h3>Tester depuis Apex</h3>
+      <p>Dans Apex iOS, ouvre le chat et tape :
+        <code>Liste mes devices Broadlink</code> ou
+        <code>Allume la TV Clayton</code>.
+      Apex utilisera maintenant le Worker au lieu de fetch direct (qui était bloqué CORS sur iOS).</p>
+    </li>
+  </ol>
+
+  <div class="card">
+    <h2>📊 Endpoints disponibles</h2>
+    <p class="muted">Tous protégés par <code>Authorization: Bearer &lt;token&gt;</code> + CORS strict.</p>
+    <pre>POST /broadlink/ir       Send IR command (TV, climatiseur, etc.)
+POST /broadlink/learn    Apprendre code IR depuis télécommande
+POST /ewelink/cmd        Sonoff/eWeLink device command
+POST /tuya/cmd           Tuya Smart device command
+POST /hue/lan            Philips Hue Bridge LAN
+POST /homekit/scene      HomeKit scene trigger
+GET  /scan-lan           Server-side LAN scan (mDNS)
+GET  /health             Health check (no auth)</pre>
+  </div>
+
+  <div class="card">
+    <h2>🔒 Sécurité</h2>
+    <ul style="padding-left: 1.5rem;">
+      <li>Auth Bearer token obligatoire</li>
+      <li>CORS strict (seul ton domaine Apex autorisé)</li>
+      <li>Rate limit 60 req/min par IP</li>
+      <li>Audit log immutable (KV namespace optionnelle)</li>
+      <li>Token rotation 30j recommandée</li>
+    </ul>
+  </div>
+
+  <script>
+    async function copyWorkerCode() {
+      const result = document.getElementById('copyResult');
+      try {
+        const resp = await fetch('./apex-ios-bridge-worker.js');
+        if (!resp.ok) throw new Error('Fichier introuvable. Sers cette page depuis tools/.');
+        const code = await resp.text();
+        await navigator.clipboard.writeText(code);
+        result.className = 'result ok';
+        result.textContent = '✅ ' + code.length + ' caractères copiés. Va dans Cloudflare Worker → Edit → colle (Cmd+V).';
+      } catch (e) {
+        result.className = 'result err';
+        result.textContent = '❌ Erreur : ' + e.message + '. Tu peux copier manuellement le fichier tools/apex-ios-bridge-worker.js.';
+      }
+    }
+
+    function generateToken() {
+      /* 256-bit token base64url */
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      const b64 = btoa(String.fromCharCode.apply(null, arr))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+      const token = 'apex_' + b64;
+      document.getElementById('generatedToken').value = token;
+      navigator.clipboard.writeText(token).catch(() => {/* manual copy */});
+    }
+
+    async function testWorker() {
+      const url = document.getElementById('workerUrl').value.trim();
+      const token = document.getElementById('workerToken').value.trim();
+      const result = document.getElementById('testResult');
+      if (!url || !token) {
+        result.className = 'result err';
+        result.textContent = 'Renseigne URL et token avant de tester.';
+        return;
+      }
+      try {
+        const resp = await fetch(url.replace(/\/$/, '') + '/health');
+        const data = await resp.json();
+        if (resp.ok && data.ok) {
+          /* Test auth */
+          const authResp = await fetch(url.replace(/\/$/, '') + '/scan-lan', {
+            headers: { Authorization: 'Bearer ' + token },
+          });
+          if (authResp.status === 401) {
+            result.className = 'result err';
+            result.textContent = '❌ Token invalide. Vérifie APEX_BRIDGE_TOKEN dans le Worker.';
+          } else {
+            result.className = 'result ok';
+            result.textContent = '✅ Worker en ligne. Status: ' + authResp.status + '. Tu peux maintenant l\'utiliser depuis Apex iOS.';
+          }
+        } else {
+          throw new Error('Health check failed');
+        }
+      } catch (e) {
+        result.className = 'result err';
+        result.textContent = '❌ Erreur réseau : ' + e.message + '. Vérifie l\'URL.';
+      }
+    }
+  </script>
+<!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="apex-ios-bridge-deploy"
+        data-version="v1.0.0"
+        data-color="#c9a227"
+        defer></script>
+</body>
+</html>

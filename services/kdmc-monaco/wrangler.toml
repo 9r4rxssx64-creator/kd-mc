@@ -1,0 +1,20 @@
+name = "kdmc-monaco"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# KV PARTAGÉ avec kdmc-router / kdmc-mail / kdmc-outlook (même namespace, id FIGÉ —
+# leçon #99 : jamais provisionner dynamiquement). Le worker y dépose les pièces
+# jointes (mail:p:<id>) que l'app récupère, et y garde sa config IMAP (mon:user/pass).
+[[kv_namespaces]]
+binding = "ACCOUNTS"
+id = "8cfa33a28ac045adb7b7a9556ca8a073"
+
+# NB : pas de [triggers] cron ici — le compte Cloudflare est déjà au max de 5 crons
+# (code 10072). La synchro automatique toutes les 2 h est déclenchée par la
+# GitHub Action .github/workflows/monaco-sync.yml (curl /sync), qui ne consomme
+# aucun cron Cloudflare. Le handler scheduled() du worker reste (inoffensif).
+
+# Secrets injectés par deploy-kdmc-monaco.yml :
+#   KDMC_ADMIN_PIN_SHA256 = sha256(code admin) → protège /setup, /config, /test, /sync
+#   MONACO_ENC_KEY (optionnel, 32 octets base64) → chiffre le mot de passe mail au repos

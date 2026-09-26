@@ -1,0 +1,21 @@
+name = "apex-sentinels-svc"
+main = "src/index.js"
+compatibility_date = "2026-04-30"
+
+[[kv_namespaces]]
+binding = "SENTINELS_KV"
+id = "REPLACE_WITH_KV_ID"
+
+[vars]
+FIREBASE_DB_URL = "https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app"
+
+[triggers]
+crons = ["0 2 * * 1"]   # Lundi 02:00 UTC
+
+# SECRETS:
+#   wrangler secret put GITHUB_PAT          # workflow scope
+#   wrangler secret put TELEGRAM_BOT_TOKEN  # optionnel
+#   wrangler secret put TELEGRAM_CHAT_ID    # optionnel
+
+[observability]
+enabled = true

@@ -1,0 +1,81 @@
+name: La Détente — Déploie le Worker Gemini (autonome)
+# Une seule execution a la fois par branche : un nouveau commit remplace
+# l'ancien au lieu de s'empiler dans la file d'attente GitHub.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # un deploiement ne doit jamais etre coupe en plein vol
+
+
+# Déploie le Worker proxy Gemini sur Cloudflare, injecte la clé depuis les secrets,
+# capture l'URL réelle (workers.dev) et la commit dans proxy-config.json. 100% auto.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'shops/la-detente/worker/**'
+      - '.github/workflows/la-detente-worker-deploy.yml'
+
+permissions:
+  contents: write
+  pull-requests: write   # publier-config : PR vers main
+  actions: write         # publier-config : relance deploy.yml après fusion
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Install wrangler
+        run: npm i -g wrangler@3
+
+      - name: Déploiement + secret + capture URL
+        id: deploy
+        working-directory: shops/la-detente/worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        # `pipefail` : sinon le code de sortie est celui de `tee` (toujours 0)
+        # et un DÉPLOIEMENT ÉCHOUÉ ressort VERT. Cf. tests/workflows-pipefail.test.mjs.
+        shell: bash -eo pipefail {0}
+        run: |
+          set -e
+          echo "Deploy worker…"
+          wrangler deploy 2>&1 | tee deploy.log
+          echo "Set secret GEMINI_API_KEY…"
+          printf '%s' "$GEMINI_API_KEY" | wrangler secret put GEMINI_API_KEY 2>&1 | tail -3 || true
+          URL=$(grep -oE 'https://[a-z0-9._-]+\.workers\.dev' deploy.log | head -1)
+          echo "URL=$URL"
+          if [ -z "$URL" ]; then echo "::error::URL worker introuvable dans le log"; exit 1; fi
+          echo "worker_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Health check
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          echo "GET $URL"
+          curl -fsS "$URL" | head -c 300 || echo "(health non-200, le worker peut mettre qq sec)"
+
+      - name: Écrire proxy-config.json
+        run: |
+          URL="${{ steps.deploy.outputs.worker_url }}"
+          mkdir -p shops/la-detente
+          printf '{\n  "worker_url": "%s",\n  "app_tag": "ld-studio-v1",\n  "updated_at": "%s"\n}\n' "$URL" "$(date -u +%FT%TZ)" > shops/la-detente/proxy-config.json
+          cat shops/la-detente/proxy-config.json
+
+      - name: Publier proxy-config.json dans main (PR fusionnée par le robot)
+        # Jusqu'au 10.09.2026 : `git push` d'une branche claude/worker-config-<run_id> avec
+        # « (auto-merge) » écrit dans le journal — sauf qu'un push signé par GITHUB_TOKEN ne
+        # réveille JAMAIS l'auto-merge, et le message portait [skip ci]. Résultat mesuré :
+        # 8 branches orphelines, main jamais mis à jour. L'action fait PR + fusion + redéploiement,
+        # et ne crée rien si seul l'horodatage a changé. Leçon #243.
+        uses: ./.github/actions/publier-config
+        with:
+          fichiers: shops/la-detente/proxy-config.json
+          message: "La Détente — URL worker Gemini auto (${{ steps.deploy.outputs.worker_url }})"
+          prefixe: worker-config

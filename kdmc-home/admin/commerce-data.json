@@ -1,0 +1,558 @@
+{
+  "_doc": "GÉNÉRÉ par tools/produits/tableau-de-bord.mjs — ne pas éditer à la main (npm run commerce:data). Partie statique du tableau de bord Commerce ; le live vient de kdmc-vente /admin/tableau.",
+  "maj": "2026-09-17",
+  "depot": "https://github.com/9r4rxssx64-creator/cmcteams",
+  "caisse": "https://kdmc-vente.9r4rxssx64.workers.dev",
+  "produits": [
+    {
+      "id": "bureau-ia",
+      "court": "Kit IA au bureau",
+      "nom": "Kit IA au bureau — 7 modules pour les salariés qui veulent finir plus tôt",
+      "slug": "bureau",
+      "prix": 37,
+      "prixBarre": 79,
+      "page": "https://kit.kd-mc.com/bureau.html",
+      "lecteur": "https://kit.kd-mc.com/lire.html?produit=bureau-ia",
+      "modulesAttendus": 7,
+      "gratuits": 1,
+      "cible": "un salarié, un assistant, un manager de proximité, PAS technicien, qui travaille sur Outlook, Teams ou Gmail et lit sur son téléphone",
+      "famille": "niche",
+      "gele": false
+    },
+    {
+      "id": "etudiant-ia",
+      "court": "Kit IA de l'étudiant",
+      "nom": "Kit IA de l'étudiant — réviser, comprendre et rendre mieux, sans tricher",
+      "slug": "etudiant",
+      "prix": 27,
+      "prixBarre": 59,
+      "page": "https://kit.kd-mc.com/etudiant.html",
+      "lecteur": "https://kit.kd-mc.com/lire.html?produit=etudiant-ia",
+      "modulesAttendus": 7,
+      "gratuits": 1,
+      "cible": "un lycéen ou un étudiant, qui révise sur son téléphone, et qui veut comprendre plus vite et rendre des travaux plus propres, sans se faire écrire ses devoirs",
+      "famille": "niche",
+      "gele": false
+    },
+    {
+      "id": "avis-ia",
+      "court": "Réponses aux avis",
+      "nom": "40 réponses aux avis clients, prêtes à adapter — Google, Facebook, TripAdvisor",
+      "slug": "avis",
+      "prix": 17,
+      "prixBarre": 39,
+      "page": "https://kit.kd-mc.com/avis.html",
+      "lecteur": "https://kit.kd-mc.com/lire.html?produit=avis-ia",
+      "modulesAttendus": 7,
+      "gratuits": 1,
+      "cible": "un commerçant, un restaurateur, un coiffeur, un hôtelier, un artisan, qui reçoit des avis en ligne et n'a pas le temps d'y répondre",
+      "famille": "niche",
+      "gele": false
+    },
+    {
+      "id": "immo-ia",
+      "court": "Kit IA de l'agent immobilier",
+      "nom": "Kit IA de l'agent immobilier — annonces, prospection, visites, suivi",
+      "slug": "immo",
+      "prix": 67,
+      "prixBarre": 149,
+      "page": "https://kit.kd-mc.com/immo.html",
+      "lecteur": "https://kit.kd-mc.com/lire.html?produit=immo-ia",
+      "modulesAttendus": 7,
+      "gratuits": 1,
+      "cible": "un agent, un mandataire ou un négociateur immobilier, indépendant ou en agence, qui travaille sur son téléphone entre deux visites",
+      "famille": "niche",
+      "gele": false
+    },
+    {
+      "id": "kit-ia",
+      "court": "Kit IA de l'indépendant",
+      "page": "https://kit.kd-mc.com/",
+      "modulesAttendus": 7,
+      "famille": "kit",
+      "gele": false,
+      "nom": "Kit IA de l'indépendant — 7 modules + 57 consignes prêtes à copier",
+      "prix": 47,
+      "prixBarre": null,
+      "lecteur": "https://kit.kd-mc.com/lire.html"
+    },
+    {
+      "id": "club-ia",
+      "court": "Club IA au Boulot (1 an)",
+      "page": "https://kit.kd-mc.com/#club",
+      "modulesAttendus": null,
+      "famille": "club",
+      "gele": false,
+      "nom": "Club IA au Boulot — 1 an : le kit complet + une nouvelle consigne chaque semaine",
+      "prix": 59,
+      "prixBarre": null,
+      "lecteur": "https://kit.kd-mc.com/lire.html"
+    },
+    {
+      "id": "croupier-pro",
+      "court": "Croupier Pro — entraînement",
+      "page": "https://croupier.kd-mc.com/",
+      "modulesAttendus": null,
+      "famille": "casino",
+      "gele": true,
+      "nom": "Croupier Pro — entraînement complet aux paiements",
+      "prix": 39,
+      "prixBarre": null,
+      "lecteur": null
+    },
+    {
+      "id": "croupier-entretien",
+      "court": "Croupier — l'entretien",
+      "page": "https://croupier.kd-mc.com/",
+      "modulesAttendus": null,
+      "famille": "casino",
+      "gele": true,
+      "nom": "Croupier — réussir l'entretien et les tests d'embauche",
+      "prix": 19,
+      "prixBarre": null,
+      "lecteur": null
+    }
+  ],
+  "videos": [
+    {
+      "id": "avis-01",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/avis-01.mp4",
+      "post": 377537574,
+      "date": "2026-09-18T10:00:00+02:00",
+      "legende": "Un avis à une étoile, tu réponds quoi ? Pas à chaud. Quarante réponses aux avis clients, prêtes à adapter dans ta voix. "
+    },
+    {
+      "id": "avis-02",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/avis-02.mp4",
+      "post": 377541398,
+      "date": "2026-09-22T12:00:00+02:00",
+      "legende": "Dix avis sans réponse ? Quinze minutes le lundi suffisent : tu colles les avis, l'IA répond dans ta voix, tu relis. 40 r"
+    },
+    {
+      "id": "avis-03",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/avis-03.mp4",
+      "post": 377541707,
+      "date": "2026-09-25T10:00:00+02:00",
+      "legende": "Avis faux ou injuste ? Tu ne réponds pas à la personne, tu réponds aux futurs clients qui liront. Deux phrases calmes, u"
+    },
+    {
+      "id": "bureau-01",
+      "produit": "bureau-ia",
+      "page": "https://kit.kd-mc.com/bureau.html",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/bureau-01.mp4",
+      "post": 377541193,
+      "date": "2026-09-19T10:00:00+02:00",
+      "legende": "Vingt mails dans une chaîne, tu lis quoi ? Tu colles, l'IA sort les cinq points et ce qu'on attend de toi. Sans jamais c"
+    },
+    {
+      "id": "bureau-02",
+      "produit": "bureau-ia",
+      "page": "https://kit.kd-mc.com/bureau.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/bureau-02.mp4",
+      "post": 377541502,
+      "date": "2026-09-23T12:00:00+02:00",
+      "legende": "Réunion finie, notes en vrac ? Tu les colles, l'IA rend un compte rendu propre avec la liste des actions : qui fait quoi"
+    },
+    {
+      "id": "etudiant-01",
+      "produit": "etudiant-ia",
+      "page": "https://kit.kd-mc.com/etudiant.html",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/etudiant-01.mp4",
+      "post": 377541282,
+      "date": "2026-09-19T12:00:00+02:00",
+      "legende": "L'IA ne passe pas l'examen à ta place. Elle te fait arriver prêt : ton cours expliqué à trois niveaux, puis elle t'inter"
+    },
+    {
+      "id": "etudiant-02",
+      "produit": "etudiant-ia",
+      "page": "https://kit.kd-mc.com/etudiant.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/etudiant-02.mp4",
+      "post": 377541579,
+      "date": "2026-09-24T10:00:00+02:00",
+      "legende": "Copier un texte d'IA, ça se voit. Se faire expliquer puis refaire seul, ça marche. Fiches, cartes mémoire, quiz, à parti"
+    },
+    {
+      "id": "immo-01",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/immo-01.mp4",
+      "post": 377541336,
+      "date": "2026-09-22T10:00:00+02:00",
+      "legende": "Ton annonce dort sur le portail ? Le titre dit « bel appartement », comme tout le monde. Tu donnes l'atout principal, l'"
+    },
+    {
+      "id": "immo-02",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/immo-02.mp4",
+      "post": 377541634,
+      "date": "2026-09-24T12:00:00+02:00",
+      "legende": "Visite terminée, le vendeur attend ton retour. Tu dictes trois phrases dans la voiture, l'IA rend un compte rendu clair."
+    },
+    {
+      "id": "kit-01",
+      "produit": "kit-ia",
+      "page": "https://kit.kd-mc.com/",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/kit-01.mp4",
+      "post": 377538530,
+      "date": "2026-09-18T12:00:00+02:00",
+      "legende": "Un devis à faire à 22 h ? Tu dictes trois infos, l'IA écrit, tu relis, tu envoies. Sans coder, depuis ton téléphone. Kit"
+    },
+    {
+      "id": "kit-02",
+      "produit": "kit-ia",
+      "page": "https://kit.kd-mc.com/",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/kit-02.mp4",
+      "post": 377541762,
+      "date": "2026-09-25T12:00:00+02:00",
+      "legende": "Facture impayée, tu relances comment ? Ni huissier, ni copain : l'IA écrit la relance ferme et polie, en trois versions."
+    },
+    {
+      "id": "club-01",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/club-01.mp4",
+      "post": 377541459,
+      "date": "2026-09-23T10:00:00+02:00",
+      "legende": "Chaque lundi, une nouvelle consigne-outil prête à copier : une situation réelle, la consigne, l'exemple. 52 par an, en p"
+    },
+    {
+      "id": "immo-03",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/immo-03.mp4",
+      "post": 377602953,
+      "date": "2026-09-26T10:00:00+02:00",
+      "legende": "Un vendeur hésite à te confier son bien et tu n'as pas le temps d'écrire le mail parfait. Tu donnes le quartier, le prix"
+    },
+    {
+      "id": "club-02",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/club-02.mp4",
+      "post": 377602979,
+      "date": "2026-09-26T12:00:00+02:00",
+      "legende": "Lundi matin, une consigne nouvelle t'attend : un client mécontent, un devis à relancer, un planning à refaire. La situat"
+    },
+    {
+      "id": "immo-04",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/immo-04.mp4",
+      "post": 377714810,
+      "date": "2026-09-28T10:00:00+02:00",
+      "legende": "Trois acheteurs qui relancent pendant une visite, ça arrive tous les jours. Tu dictes l'essentiel du bien, l'assistant I"
+    },
+    {
+      "id": "club-03",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/club-03.mp4",
+      "post": 377677711,
+      "date": "2026-09-28T12:00:00+02:00",
+      "legende": "Le devis est parti, le client se tait, et tu n'oses pas relancer. Le Club IA au Boulot te donne la consigne à copier pou"
+    },
+    {
+      "id": "immo-05",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/immo-05.mp4",
+      "post": 380976049,
+      "date": "2026-09-29T12:00:00+02:00",
+      "legende": "Ton mandat arrive à échéance vendredi et tu n'as rien préparé. Tu dictes l'historique du bien, ton assistant IA rédige l"
+    },
+    {
+      "id": "club-04",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/club-04.mp4",
+      "post": 380995009,
+      "date": "2026-09-30T10:00:00+02:00",
+      "legende": "Un avis négatif tombe un jeudi soir. Tu ouvres la consigne du club, tu copies, tu réponds calmement, puis tu passes à au"
+    }
+  ],
+  "liens": [
+    {
+      "produit": "kit",
+      "post": 377824824,
+      "date": "2026-09-29T10:00:00+02:00",
+      "url": "https://kit.kd-mc.com/",
+      "apercu": "https://kit.kd-mc.com/og/kit.png"
+    },
+    {
+      "produit": "bureau",
+      "post": 381033305,
+      "date": "2026-09-30T12:00:00+02:00",
+      "url": "https://kit.kd-mc.com/bureau.html",
+      "apercu": "https://kit.kd-mc.com/og/bureau.png"
+    }
+  ],
+  "programmation": {
+    "marque": 7000185,
+    "planning": "https://app.metricool.com/planner/calendar?blogId=7000185",
+    "reseaux": [
+      "facebook",
+      "instagram",
+      "tiktok",
+      "youtube"
+    ],
+    "fuseau": "Europe/Paris"
+  },
+  "pages": [
+    {
+      "ic": "🧰",
+      "nom": "Kit IA — page mère",
+      "url": "https://kit.kd-mc.com/",
+      "quoi": "kit 47 € + Club 59 €"
+    },
+    {
+      "ic": "📚",
+      "nom": "Lecteur (module 1 gratuit → payant)",
+      "url": "https://kit.kd-mc.com/lire.html",
+      "quoi": "sert la base D1 contre un code"
+    },
+    {
+      "ic": "🔎",
+      "nom": "L'IA par métier",
+      "url": "https://kit.kd-mc.com/pour/index.html",
+      "quoi": "47 pages métier (SEO longue traîne)"
+    },
+    {
+      "ic": "🏷️",
+      "nom": "Kit IA au bureau",
+      "url": "https://kit.kd-mc.com/bureau.html",
+      "quoi": "37 €"
+    },
+    {
+      "ic": "🏷️",
+      "nom": "Kit IA de l'étudiant",
+      "url": "https://kit.kd-mc.com/etudiant.html",
+      "quoi": "27 €"
+    },
+    {
+      "ic": "🏷️",
+      "nom": "Réponses aux avis",
+      "url": "https://kit.kd-mc.com/avis.html",
+      "quoi": "17 €"
+    },
+    {
+      "ic": "🏷️",
+      "nom": "Kit IA de l'agent immobilier",
+      "url": "https://kit.kd-mc.com/immo.html",
+      "quoi": "67 €"
+    },
+    {
+      "ic": "🎰",
+      "nom": "Croupier (gelé par Kevin 16.09)",
+      "url": "https://croupier.kd-mc.com/",
+      "quoi": "39 € / 19 € — en attente"
+    },
+    {
+      "ic": "🛍️",
+      "nom": "Boutiques POD (6) — dashboard",
+      "url": "https://dashboard.kd-mc.com/",
+      "quoi": "commandes Firebase, hors caisse"
+    },
+    {
+      "ic": "🎬",
+      "nom": "Vidéos de pub",
+      "url": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/index.json",
+      "quoi": "18 MP4 publics"
+    },
+    {
+      "ic": "📅",
+      "nom": "Planning Metricool",
+      "url": "https://app.metricool.com/planner/calendar?blogId=7000185",
+      "quoi": "marque 7000185"
+    }
+  ],
+  "workflows": {
+    "produit-fabrique.yml": {
+      "nom": "Fabrique : écrire un kit en base",
+      "inputs": {
+        "produit": [
+          "bureau-ia",
+          "etudiant-ia",
+          "avis-ia",
+          "immo-ia"
+        ],
+        "dry_run": [
+          "true",
+          "false"
+        ],
+        "refaire": "texte"
+      },
+      "defaut": {
+        "produit": "avis-ia",
+        "dry_run": "true"
+      }
+    },
+    "pub-videos.yml": {
+      "nom": "Pub : vidéos et posts-liens Facebook",
+      "inputs": {
+        "videos": [
+          "all",
+          "avis",
+          "bureau",
+          "etudiant",
+          "immo",
+          "kit",
+          "club"
+        ],
+        "publier": [
+          "false",
+          "true"
+        ],
+        "nouveaux": [
+          "",
+          "immo:1,club:1",
+          "avis:1",
+          "bureau:1",
+          "etudiant:1",
+          "immo:1",
+          "kit:1",
+          "club:1"
+        ],
+        "lien": [
+          "non",
+          "oui"
+        ],
+        "programmer": "texte",
+        "programmer_lien": "texte",
+        "branche": "texte"
+      },
+      "defaut": {
+        "videos": "all",
+        "publier": "false",
+        "nouveaux": "",
+        "lien": "non"
+      }
+    },
+    "club-semaine.yml": {
+      "nom": "Club : consigne de la semaine",
+      "inputs": {
+        "dry_run": [
+          "true",
+          "false"
+        ],
+        "tester_email": [
+          "false",
+          "true"
+        ]
+      },
+      "defaut": {
+        "dry_run": "true",
+        "tester_email": "false"
+      }
+    },
+    "audit-live.yml": {
+      "nom": "Audit LIVE des vraies pages",
+      "inputs": {},
+      "defaut": {}
+    },
+    "deploy-kdmc-vente.yml": {
+      "nom": "Redéployer la caisse",
+      "inputs": {},
+      "defaut": {}
+    }
+  },
+  "marche": {
+    "date": "2026-09-17",
+    "nos_ventes": {
+      "mesure": "KV VENTES (clés code:*) lue en direct par le tableau",
+      "note": "Tant que la caisse affiche 0, la niche la plus rentable CHEZ NOUS n'est pas mesurable : on s'appuie sur le marché."
+    },
+    "releves": [
+      {
+        "source": "InsightRaider — 146 271 produits Gumroad analysés (2026)",
+        "url": "https://insightraider.com/en/answers/what-digital-products-sell-best-on-gumroad",
+        "faits": [
+          "Business & Money : 3ᵉ catégorie en revenu total (15,4 M$)",
+          "Software Development : 1ʳᵉ (65,8 M$, 60 814 $ par produit)",
+          "Writing & Publishing : 15 750 $ par produit sur 226 produits seulement — le meilleur rapport chances/concurrence",
+          "La catégorie « Other » (produits atypiques, ticket élevé) : 88 048 $ par produit"
+        ]
+      },
+      {
+        "source": "InsightRaider — 24 724 vendeurs Gumroad (taille de catalogue)",
+        "url": "https://insightraider.com/en/blog/gumroad-catalog-size-revenue-data",
+        "faits": [
+          "Revenu médian par produit : 134 $ avec 1 produit, 187 $ avec 2-3 produits (+40 %), 112 $ à 8 produits et plus (−40 % vs le pic)",
+          "Donc : peu de produits, bien tenus, plutôt qu'une longue liste"
+        ]
+      },
+      {
+        "source": "Reddit r/EntrepreneurRideAlong — 200 000+ produits Gumroad suivis",
+        "url": "https://www.reddit.com/r/EntrepreneurRideAlong/comments/1s9k56c/i_tracked_200000_digital_products_on_gumroad_most/",
+        "faits": [
+          "Graphisme : ~40 000 produits, 34 % font au moins une vente (le plus encombré)",
+          "La niche la plus rentable du relevé : 17 % des produits vendent, mais revenu médian 3 200 $ chez ceux qui vendent"
+        ]
+      },
+      {
+        "source": "CreateSell — Etsy 2026",
+        "url": "https://createsell.com/blog/best-digital-products-to-sell-on-etsy",
+        "faits": [
+          "Planificateurs numériques : 5,8 M de vues par mois, prix moyen 6,97 $ (volume, petit ticket)",
+          "Modèles de site : prix moyen 44,53 $ (moins de volume, ticket plus haut)"
+        ]
+      },
+      {
+        "source": "Pilotage IA — marché francophone",
+        "url": "https://www.pilotage-ia.fr/produits-numeriques-ia/",
+        "faits": [
+          "Formations : ticket moyen le plus élevé (97 € à 997 €)",
+          "Packs de consignes IA prêts à l'emploi : demande soutenue en 2026 (répondre plus vite, mieux vendre, service client)"
+        ]
+      }
+    ],
+    "conclusion": [
+      "Le meilleur rendement PAR PRODUIT va aux acheteurs qui paient déjà pour leur travail (pros, entreprises) et aux tickets élevés — pas aux planificateurs à 7 $.",
+      "Chez nous, le produit le plus aligné : Kit IA de l'agent immobilier (67 €, un pro qui gagne du temps sur chaque mandat). Ensuite : le Club (59 €/an, récurrent) et le Kit au bureau (37 €).",
+      "Copié du relevé « 2-3 produits » : on n'ouvre pas de 7ᵉ niche tant que les 6 ne vendent pas — on met la pub sur immo et sur le Club.",
+      "🔴 Non mesuré : nos ventes (0 au 17.09, pub programmée du 18 au 25.09). Le tableau relit la caisse en direct : dès qu'un chiffre apparaît, il compte plus que tout ce qui précède."
+    ]
+  }
+}

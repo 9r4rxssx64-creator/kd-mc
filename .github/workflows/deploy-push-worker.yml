@@ -1,0 +1,319 @@
+name: Deploy Apex Push Worker
+
+# Déploiement autonome du Cloudflare Worker apex-push-worker (notifications push iPhone via VAPID).
+#
+# AUTO-TRIGGER :
+#   - workflow_dispatch (manuel)
+#   - push sur main qui modifie tools/cloudflare/apex-push-worker.js OU ce workflow
+#
+# ACTIONS AUTOMATIQUES :
+#   1. Pré-flight check 2 secrets requis seulement (CLOUDFLARE_API_TOKEN, VAPID_PRIVATE_KEY)
+#   2. Dérive VAPID_PUBLIC_KEY depuis VAPID_PRIVATE_KEY via ECDH P-256 (Node natif, pas de dep)
+#   3. Génère un ADMIN_TOKEN random 32 chars (si pas de PUSH_ADMIN_TOKEN secret existant)
+#   4. Hardcode VAPID_EMAIL + FIREBASE_URL (publics, pas besoin de secrets)
+#   5. Deploy via wrangler CLI direct (capture URL output)
+#   6. Push 5 secrets au worker (VAPID_PUBLIC/PRIVATE, EMAIL, FIREBASE_URL, ADMIN_TOKEN)
+#   7. Re-deploy pour appliquer les secrets
+#   8. Health check /health avec retry
+#   9. Summary avec URL worker + VAPID_PUBLIC + ADMIN_TOKEN à coller dans Apex Coffre
+#
+# SECRETS GITHUB REQUIS (seulement 3, déjà tous configurés) :
+#   - CLOUDFLARE_API_TOKEN
+#   - CLOUDFLARE_ACCOUNT_ID
+#   - VAPID_PRIVATE_KEY (sans préfixe CF_, déjà existant 2 semaines)
+#
+# SECRETS OPTIONNELS :
+#   - PUSH_ADMIN_TOKEN : si défini, sera utilisé. Sinon généré à chaque run et output.
+#
+# PAS DE KV NAMESPACE — worker stateless (subscriptions lues depuis Firebase RTDB).
+
+on:
+  push:
+    branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
+    paths:
+      - 'tools/cloudflare/apex-push-worker.js'
+      - '.github/workflows/deploy-push-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-push-worker
+  cancel-in-progress: false
+
+env:
+  # Valeurs publiques hardcodées (pas besoin de secrets GitHub)
+  PUBLIC_VAPID_EMAIL: 'kevin.desarzens@gmail.com'
+  PUBLIC_FIREBASE_URL: 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Pre-flight check secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: |
+          set -e
+          MISSING=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && MISSING="$MISSING CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && MISSING="$MISSING CLOUDFLARE_ACCOUNT_ID"
+          [ -z "$VAPID_PRIVATE_KEY" ] && MISSING="$MISSING VAPID_PRIVATE_KEY"
+          if [ -n "$MISSING" ]; then
+            echo "::error::Secrets GitHub manquants :$MISSING"
+            exit 1
+          fi
+          echo "::notice::Secrets requis OK (3/3)."
+          wrangler --version
+          CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN wrangler whoami
+
+      - name: Derive VAPID_PUBLIC_KEY from VAPID_PRIVATE_KEY (ECDH P-256)
+        id: derive_vapid
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: |
+          set -e
+          # Dérivation mathématique : pub = G * priv sur la courbe P-256
+          # Node natif via crypto.ECDH — aucune dépendance externe
+          PUBLIC_B64URL=$(node -e '
+            const crypto = require("crypto");
+            const priv = process.env.VAPID_PRIVATE_KEY;
+            function b64urlDecode(s) {
+              const pad = s.length % 4 ? "=".repeat(4 - s.length % 4) : "";
+              return Buffer.from((s + pad).replace(/-/g, "+").replace(/_/g, "/"), "base64");
+            }
+            function b64urlEncode(buf) {
+              return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+            }
+            const privBytes = b64urlDecode(priv);
+            if (privBytes.length !== 32) {
+              console.error("Invalid VAPID_PRIVATE_KEY length:", privBytes.length, "(expected 32)");
+              process.exit(2);
+            }
+            const ecdh = crypto.createECDH("prime256v1");
+            ecdh.setPrivateKey(privBytes);
+            const pubBytes = ecdh.getPublicKey();  // 65 bytes uncompressed (0x04 || X || Y)
+            console.log(b64urlEncode(pubBytes));
+          ')
+          if [ -z "$PUBLIC_B64URL" ]; then
+            echo "::error::Failed to derive VAPID public key"
+            exit 1
+          fi
+          # PAS de ::add-mask:: ici : VAPID_PUBLIC_KEY est PUBLIQUE par design (envoyée dans
+          # les headers VAPID des requêtes Web Push, intégrée dans applicationServerKey côté
+          # client). La masquer rend impossible la copie depuis le step summary.
+          echo "vapid_public=$PUBLIC_B64URL" >> $GITHUB_OUTPUT
+          echo "::notice::VAPID_PUBLIC_KEY dérivée (${#PUBLIC_B64URL} chars)."
+
+      - name: Resolve ADMIN_TOKEN (existing secret OR generate fresh)
+        id: admin_token
+        env:
+          PUSH_ADMIN_TOKEN: ${{ secrets.PUSH_ADMIN_TOKEN }}
+        run: |
+          set -e
+          if [ -n "$PUSH_ADMIN_TOKEN" ]; then
+            TOKEN="$PUSH_ADMIN_TOKEN"
+            echo "::notice::ADMIN_TOKEN from existing secret PUSH_ADMIN_TOKEN."
+            echo "fresh=false" >> $GITHUB_OUTPUT
+          else
+            # Génère un token random 32 bytes (43 chars base64url)
+            TOKEN=$(node -e 'console.log(require("crypto").randomBytes(32).toString("base64url"))')
+            echo "::notice::ADMIN_TOKEN généré (fresh, à coller dans Apex Coffre)."
+            echo "fresh=true" >> $GITHUB_OUTPUT
+          fi
+          # PAS de ::add-mask:: ici : on a besoin que le summary affiche le token en clair
+          # pour que Kevin puisse le copier UNE fois. Repo privé (Kevin seul collab) +
+          # summary protégé par auth GitHub → risque sécu acceptable vs le bénéfice usability.
+          # Pour figer le token, ajouter PUSH_ADMIN_TOKEN aux GitHub Secrets (cf. summary).
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Prepare wrangler deploy directory
+        run: |
+          set -e
+          mkdir -p /tmp/push-worker-deploy
+          cp tools/cloudflare/apex-push-worker.js /tmp/push-worker-deploy/index.js
+          cat > /tmp/push-worker-deploy/wrangler.toml << 'EOF'
+          name = "apex-push-worker"
+          main = "index.js"
+          compatibility_date = "2025-10-01"
+
+          [observability]
+          enabled = true
+          EOF
+          ls -la /tmp/push-worker-deploy/
+
+      - name: Deploy worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: /tmp/push-worker-deploy
+        run: |
+          set -e
+          DEPLOY_OUT=$(wrangler deploy 2>&1)
+          echo "$DEPLOY_OUT"
+          WORKER_URL=$(echo "$DEPLOY_OUT" | grep -oE 'https://apex-push-worker\.[a-z0-9-]+\.workers\.dev' | head -1)
+          if [ -z "$WORKER_URL" ]; then
+            echo "::warning::URL worker pas trouvée dans la sortie"
+          else
+            echo "worker_url=$WORKER_URL" >> $GITHUB_OUTPUT
+            echo "::notice::Worker déployé : $WORKER_URL"
+          fi
+
+      - name: Push secrets to worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_PUBLIC_KEY: ${{ steps.derive_vapid.outputs.vapid_public }}
+          ADMIN_TOKEN_VAL: ${{ steps.admin_token.outputs.token }}
+          APEX_CHAT_ADMIN_TOKEN: ${{ secrets.APEX_CHAT_ADMIN_TOKEN }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        working-directory: /tmp/push-worker-deploy
+        run: |
+          set -e
+          echo "Pushing VAPID_PUBLIC_KEY..."
+          printf '%s' "$VAPID_PUBLIC_KEY" | wrangler secret put VAPID_PUBLIC_KEY
+          echo "Pushing VAPID_PRIVATE_KEY..."
+          printf '%s' "$VAPID_PRIVATE_KEY" | wrangler secret put VAPID_PRIVATE_KEY
+          echo "Pushing VAPID_EMAIL..."
+          printf '%s' "$PUBLIC_VAPID_EMAIL" | wrangler secret put VAPID_EMAIL
+          echo "Pushing FIREBASE_URL..."
+          printf '%s' "$PUBLIC_FIREBASE_URL" | wrangler secret put FIREBASE_URL
+          echo "Pushing ADMIN_TOKEN..."
+          printf '%s' "$ADMIN_TOKEN_VAL" | wrangler secret put ADMIN_TOKEN
+          # v1.1.241 : pousse AUSSI le jeton Apex Chat pour que le push-worker accepte
+          # les appels de l'api-worker même si APEX_CHAT_ADMIN_TOKEN ≠ ADMIN_TOKEN.
+          if [ -n "$APEX_CHAT_ADMIN_TOKEN" ]; then
+            echo "Pushing APEX_CHAT_ADMIN_TOKEN..."
+            printf '%s' "$APEX_CHAT_ADMIN_TOKEN" | wrangler secret put APEX_CHAT_ADMIN_TOKEN
+          else
+            echo "::warning::secret APEX_CHAT_ADMIN_TOKEN absent — le push-worker n'acceptera que ADMIN_TOKEN"
+          fi
+          # Durcissement /apex auth != null (Kevin 2026-07-04) : le worker lit les
+          # push subs dans /apex → il lui faut le service account pour s'authentifier.
+          if [ -n "$FIREBASE_CLIENT_EMAIL" ] && [ -n "$FIREBASE_PRIVATE_KEY" ]; then
+            echo "Pushing FIREBASE_CLIENT_EMAIL..."
+            printf '%s' "$FIREBASE_CLIENT_EMAIL" | wrangler secret put FIREBASE_CLIENT_EMAIL
+            echo "Pushing FIREBASE_PRIVATE_KEY..."
+            printf '%s' "$FIREBASE_PRIVATE_KEY" | wrangler secret put FIREBASE_PRIVATE_KEY
+          else
+            echo "::warning::FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY absents — le worker lira /apex SANS auth (KO si règles durcies)"
+          fi
+          echo "::notice::secrets poussés au worker."
+
+      - name: Re-deploy to apply secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: /tmp/push-worker-deploy
+        run: |
+          set -e
+          echo "Re-deploying to refresh secrets..."
+          wrangler deploy
+          sleep 3
+
+      - name: Health check
+        if: ${{ steps.deploy.outputs.worker_url != '' }}
+        run: |
+          set -e
+          URL="${{ steps.deploy.outputs.worker_url }}/health"
+          echo "Pinging $URL ..."
+          for i in 1 2 3; do
+            if curl -fsS "$URL" > /tmp/health.json; then
+              cat /tmp/health.json
+              echo ""
+              if jq -e '.configured == true' /tmp/health.json > /dev/null 2>&1; then
+                echo "::notice::Health check OK + configured=true"
+                exit 0
+              else
+                echo "::warning::Health check OK mais configured=false"
+                exit 0
+              fi
+            fi
+            echo "Retry $i/3..."
+            sleep 5
+          done
+          echo "::error::Health check failed après 3 tentatives"
+          exit 1
+
+      - name: Write summary
+        if: always()
+        env:
+          VAPID_PUBLIC_VAL: ${{ steps.derive_vapid.outputs.vapid_public }}
+          ADMIN_TOKEN_VAL: ${{ steps.admin_token.outputs.token }}
+          ADMIN_FRESH: ${{ steps.admin_token.outputs.fresh }}
+        run: |
+          if [ "$ADMIN_FRESH" = "true" ]; then
+            ADMIN_TOKEN_STATUS="🆕 généré (à coller)"
+          else
+            ADMIN_TOKEN_STATUS="♻️ réutilisé (secret PUSH_ADMIN_TOKEN)"
+          fi
+          {
+            echo "## Deploy apex-push-worker"
+            echo ""
+            echo "| Étape | Statut |"
+            echo "|-------|--------|"
+            echo "| Pré-flight check secrets | ✅ (3/3) |"
+            echo "| Derive VAPID public key | ✅ ECDH P-256 |"
+            echo "| ADMIN_TOKEN | $ADMIN_TOKEN_STATUS |"
+            echo "| Deploy initial | ${{ steps.deploy.outcome == 'success' && '✅' || '❌' }} |"
+            echo "| Secrets poussés (5) | ✅ |"
+            echo "| Re-deploy | ✅ |"
+            echo ""
+            if [ -n "${{ steps.deploy.outputs.worker_url }}" ]; then
+              echo "### 🎯 3 valeurs à coller dans Apex Coffre"
+              echo ""
+              echo "**1. \`ax_push_worker_url\`**"
+              echo "\`\`\`"
+              echo "${{ steps.deploy.outputs.worker_url }}"
+              echo "\`\`\`"
+              echo ""
+              echo "**2. \`ax_vapid_public\`** (87 chars, public — pas sensible)"
+              echo "\`\`\`"
+              echo "$VAPID_PUBLIC_VAL"
+              echo "\`\`\`"
+              echo ""
+              if [ "$ADMIN_FRESH" = "true" ]; then
+                echo "**3. \`ax_push_admin_token\`** ⚠️ FRESH — à coller maintenant (visible UNE fois)"
+                echo "\`\`\`"
+                echo "$ADMIN_TOKEN_VAL"
+                echo "\`\`\`"
+                echo ""
+                echo "> 💡 Si tu veux figer ce token (éviter regen au prochain run), ajoute-le dans"
+                echo "> GitHub Secrets > \`PUSH_ADMIN_TOKEN\` (avec la valeur ci-dessus). Le workflow"
+                echo "> le réutilisera tel quel ensuite."
+              else
+                echo "**3. \`ax_push_admin_token\`** = valeur du secret GitHub \`PUSH_ADMIN_TOKEN\` (inchangé)"
+              fi
+              echo ""
+              echo "---"
+              echo ""
+              echo "### 💬 Bloc unique à coller dans le chat Apex (tout d'un coup)"
+              echo ""
+              echo "Copie-colle ce bloc complet dans la zone de chat Apex. L'IA détectera les 3 clés et te demandera UNE seule confirmation pour les stocker dans le Coffre :"
+              echo ""
+              echo "\`\`\`"
+              echo "Stocke ces 3 clés dans le Coffre :"
+              echo ""
+              echo "ax_push_worker_url = ${{ steps.deploy.outputs.worker_url }}"
+              echo "ax_vapid_public = $VAPID_PUBLIC_VAL"
+              echo "ax_push_admin_token = $ADMIN_TOKEN_VAL"
+              echo "\`\`\`"
+            fi
+          } >> $GITHUB_STEP_SUMMARY

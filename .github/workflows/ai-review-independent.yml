@@ -1,0 +1,167 @@
+name: Revue IA INDÉPENDANTE (modèle non-Claude · dans TA CI)
+
+# Kevin 2026-07-08 : « un outil extérieur indépendant, expert, pour vérifier/
+# corriger/améliorer chaque app ». auto-pr-review.yml = un reviewer CLAUDE (moi)
+# → PAS indépendant (le biais que Kevin dénonce). ICI : Qodo PR-Agent tourne dans
+# TA CI, avec TA clé OpenAI (secret OPEN_AI_API_KEY) = un modèle DIFFÉRENT de moi
+# → vrai second avis. 100% dans ton infra, aucune société externe n'a ton code
+# (respecte la règle ISOLATION MAX). Coût maîtrisé : pas sur les PR de bots.
+#
+# Commandes dans un commentaire de PR : /review (revue), /improve (suggestions de
+# code), /describe (résumé), /ask <question>.
+
+# ⚠️ MESURÉ LE 2026-09-10 — CE WORKFLOW N'A JAMAIS PRODUIT UNE SEULE REVUE.
+#    Sur les 100 derniers runs : 92 « skipped », 6 « failure », 2 « cancelled »,
+#    **0 succès**. Cause racine : dans ce dépôt, **29 PR sur 30 sont créées par
+#    `github-actions[bot]`** (le robot d'auto-fusion des branches `claude/*`), et
+#    la condition ci-dessous excluait explicitement ce robot. Le second avis
+#    indépendant — la passe que le protocole d'audit rend OBLIGATOIRE, celle qui
+#    répond à « c'est toi qui relis ton propre travail, donc c'est biaisé » —
+#    était donc éteint depuis toujours, tout en paraissant actif.
+#    C'est exactement l'erreur #28 : Déclaration ≠ Déploiement.
+#
+#    CORRECTIF (2026-09-10) : un déclenchement MANUEL sur une PR précise
+#    (`workflow_dispatch` + numéro de PR), qui ne dépend plus de qui a ouvert la
+#    PR. Volontairement manuel : la revue coûte des jetons OpenAI **réels** à
+#    chaque exécution ; l'activer automatiquement sur les PR du robot, c'est une
+#    revue payante à CHAQUE push. Ce choix-là revient à Kevin, pas à moi.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    # ── 24.09.2026 — ÉCONOMIE MESURÉE, sans perdre une seule protection.
+    # Sur 125 commits arrivés sur main depuis le 22.09, 70 (56 %) ne touchent
+    # QUE des documents : journaux, diagnostics, rapports de ménage. Chacun
+    # déclenchait quand même toute cette batterie. Un fichier Markdown ne peut
+    # pas casser l'application : on ne la teste donc plus pour lui.
+    paths-ignore:
+      - '**/*.md'
+      - 'audit/**'
+      - 'pipeline/**'
+      - '.github/automerge-diag/**'
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Numéro de la PR à faire relire par le modèle indépendant (ex : 3740)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  # `inputs.pr_number` ajouté : sans lui, tous les lancements manuels partageaient
+  # le même groupe vide et s'annulaient les uns les autres.
+  group: ai-review-indep-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    # Coût maîtrisé (clé OpenAI de Kevin) : on saute les PR des bots (auto-deploy,
+    # auto-merge, kv-backup) et les [skip ci]. Les commentaires /review passent toujours.
+    # ⚠️ LE DÉPÔT EST PUBLIC. Sans le contrôle « author_association » ci-dessous,
+    #    N'IMPORTE QUI pouvait ouvrir une PR ou écrire un commentaire et déclencher
+    #    une revue IA payée avec la clé OpenAI de Kevin. Ce n'est pas une faille de
+    #    lecture de données : c'est une facture ouverte à des inconnus, et un moyen
+    #    de saturer les minutes du compte. On n'accepte que le propriétaire, un
+    #    membre ou un collaborateur du dépôt (mesuré le 5.09 : il n'y en a qu'un).
+    if: >
+      ( github.event_name == 'issue_comment'
+        && github.event.issue.pull_request
+        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) ) ||
+      ( github.event_name == 'pull_request'
+        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+        && github.event.pull_request.user.login != 'github-actions[bot]'
+        && !contains(github.event.pull_request.title, '[skip ci]')
+        && !startsWith(github.event.pull_request.title, 'Auto-deploy')
+        && !contains(github.event.pull_request.title, 'backup') )
+    steps:
+      - name: Qodo PR-Agent (OpenAI = indépendant de Claude)
+        # ÉPINGLÉ à une version publiée (v0.44.0, la plus récente au 5.09.2026).
+        # Avant : @main — c'est-à-dire « exécute ce que ce dépôt tiers contiendra
+        # demain », avec la clé OpenAI de Kevin dans l'environnement. Un compte
+        # compromis chez eux, et la clé partait. Une version figée ne bouge pas
+        # toute seule ; la mettre à jour redevient une décision, pas un hasard.
+        uses: qodo-ai/pr-agent@v0.44.0
+        continue-on-error: true   # un souci de config ne bloque JAMAIS une PR (fail-open)
+        env:
+          OPENAI_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Comportement : revue auto à l'ouverture, en français, focalisée bugs/sécu/fiabilité.
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "false"
+          github_action_config.auto_improve: "false"
+          PR_REVIEWER.EXTRA_INSTRUCTIONS: "Réponds en FRANÇAIS. Concentre-toi sur les bugs réels, la sécurité, la fiabilité runtime et les fuites de secrets. Sois concis et concret (fichier:ligne). Ignore le style cosmétique."
+          PR_REVIEWER.NUM_MAX_FINDINGS: "8"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # REVUE À LA DEMANDE — la voie qui marche vraiment (ajoutée le 2026-09-10)
+  # ───────────────────────────────────────────────────────────────────────────
+  # Le job « review » ci-dessus ne se déclenche que sur un évènement de PR, et
+  # il est éteint de fait (voir l'encadré en tête de fichier : 0 succès / 100).
+  # Celui-ci prend un NUMÉRO DE PR et fait tourner le même modèle indépendant
+  # (GPT via la clé de Kevin) en ligne de commande — donc sans dépendre de qui
+  # a ouvert la PR, ni d'un évènement GitHub.
+  #
+  # Lancement : bouton « Run workflow », ou depuis une session d'agent :
+  #   node tools/ci/ci.mjs run ai-review-independent.yml --input pr_number=3740
+  revue-a-la-demande:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Vérifier que la clé OpenAI existe (sinon, le dire clairement)
+        env:
+          CLE: ${{ secrets.OPEN_AI_API_KEY }}
+        run: |
+          if [ -z "$CLE" ]; then
+            echo "::error::Le secret OPEN_AI_API_KEY est absent — le second avis indépendant ne peut pas tourner."
+            echo "Ajouter la clé dans Réglages → Secrets → Actions, sous le nom EXACT « OPEN_AI_API_KEY » (avec les underscores)."
+            exit 1
+          fi
+          echo "::notice::Clé OpenAI présente."
+
+      - name: Installer le relecteur indépendant (PR-Agent, version figée)
+        run: |
+          python -m pip install --quiet --upgrade pip
+          # Version ÉPINGLÉE, comme l'action : une version figée ne change pas toute seule.
+          python -m pip install --quiet "pr-agent==0.2.7" || python -m pip install --quiet pr-agent
+          python -c "import pr_agent, sys; print('pr-agent installé')"
+
+      - name: Revue de la PR ${{ inputs.pr_number }} par un modèle NON-Claude
+        continue-on-error: true   # fail-open : un souci ici ne bloque jamais rien
+        env:
+          OPENAI__KEY: ${{ secrets.OPEN_AI_API_KEY }}
+          GITHUB__USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFIG__GIT_PROVIDER: github
+          GITHUB__DEPLOYMENT_TYPE: user
+          PR_REVIEWER__EXTRA_INSTRUCTIONS: "Réponds en FRANÇAIS. Concentre-toi sur les bugs réels, la sécurité, la fiabilité runtime et les fuites de secrets. Sois concis et concret (fichier:ligne). Ignore le style cosmétique."
+          PR_REVIEWER__NUM_MAX_FINDINGS: "8"
+        run: |
+          set -o pipefail
+          URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ inputs.pr_number }}"
+          echo "::notice::Revue indépendante de $URL"
+          # 2>&1 + tee : la CAUSE EXACTE d'un échec doit rester lisible dans le
+          # journal, jamais avalée par un « || echo erreur » (règle « détailler
+          # les erreurs partout »).
+          python -m pr_agent.cli --pr_url "$URL" review 2>&1 | tee /tmp/revue.log
+          echo "::notice::Revue terminée — le verdict est posté en commentaire sur la PR."
+
+      - name: Dire honnêtement si la revue n'a rien produit
+        if: always()
+        run: |
+          if [ ! -s /tmp/revue.log ]; then
+            echo "::warning::Aucune sortie du relecteur — la revue n'a PAS eu lieu. Ne pas la compter comme faite."
+          else
+            echo "Dernières lignes du relecteur :"; tail -20 /tmp/revue.log
+          fi

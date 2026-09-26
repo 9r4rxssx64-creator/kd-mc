@@ -1,0 +1,1 @@
+{"name": "Bee — Assistante personnelle", "short_name": "Bee", "start_url": ".", "scope": ".", "display": "standalone", "background_color": "#0e0a04", "theme_color": "#171008", "icons": [{"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]}

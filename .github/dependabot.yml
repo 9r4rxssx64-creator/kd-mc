@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(actions)"
+
+  # Si package.json ajouté dans tools/ un jour :
+  # - package-ecosystem: "npm"
+  #   directory: "/tools"
+  #   schedule:
+  #     interval: "weekly"

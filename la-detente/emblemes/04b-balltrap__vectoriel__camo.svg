@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="1600" viewBox="0 0 1000 1000">
+  <defs><linearGradient id="bg_shotgunvectorcamo" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#283019"/><stop offset="100%" stop-color="#141a0d"/></linearGradient><pattern id="camo_shotgunvectorcamo" width="180" height="180" patternUnits="userSpaceOnUse" patternTransform="rotate(8)">
+    <rect width="180" height="180" fill="#283019"/>
+    <path d="M10,30 q40,-30 80,-5 q40,25 10,55 q-35,30 -75,5 q-30,-25 -15,-60 Z" fill="#3a4520"/>
+    <path d="M95,90 q35,-22 70,5 q22,30 -10,55 q-40,25 -70,-5 q-20,-30 10,-55 Z" fill="#525d2c"/>
+    <path d="M120,10 q30,15 12,42 q-25,22 -52,2 q-15,-30 40,-44 Z" fill="#2a3315"/>
+    <path d="M20,120 q28,-12 44,14 q12,28 -20,40 q-34,8 -40,-24 q-2,-20 16,-30 Z" fill="#6b7536"/>
+    <ellipse cx="150" cy="150" rx="26" ry="18" fill="#222a12"/>
+    <ellipse cx="60" cy="80" rx="14" ry="10" fill="#79844a"/>
+  </pattern><radialGradient id="clay_shotgunvectorcamo" cx="40%" cy="35%" r="75%"><stop offset="0%" stop-color="#ffb24d"/><stop offset="100%" stop-color="#c25a00"/></radialGradient><radialGradient id="hht_shotgunvectorcamo" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ff6a63"/>
+      <stop offset="45%" stop-color="#d72a25"/>
+      <stop offset="100%" stop-color="#7c1311"/>
+    </radialGradient></defs>
+  <path d="M500,40 L880,235 L880,640 C880,820 700,920 500,968 C300,920 120,820 120,640 L120,235 Z" fill="url(#camo_shotgunvectorcamo)" stroke="#d72a25" stroke-width="14" stroke-linejoin="round"/><path d="M500,40 L880,235 L880,640 C880,820 700,920 500,968 C300,920 120,820 120,640 L120,235 Z" fill="none" stroke="#e9e1c9" stroke-width="3" stroke-linejoin="round" opacity="0.35" transform="translate(0,0) scale(1)"/><path d="M500,92 L832,262 L832,628 C832,786 676,876 500,920 C324,876 168,786 168,628 L168,262 Z" fill="none" stroke="#d72a25" stroke-width="4" opacity="0.5"/>
+  <g transform="translate(500,560) scale(1.4) translate(-183,-77)"><g fill="#6a7540" stroke="none" stroke-width="0" stroke-linejoin="round">
+    <path d="M0,56 L58,40 L114,48 L114,98 L74,100 L44,114 L10,100 Z"/>
+    <rect x="108" y="40" width="48" height="48" rx="5"/>
+    <rect x="150" y="40" width="210" height="11" rx="3"/>
+    <rect x="150" y="56" width="210" height="11" rx="3"/>
+    <rect x="150" y="72" width="74" height="17" rx="7"/>
+    <rect x="354" y="38" width="11" height="31" rx="2"/>
+  </g></g><g transform="translate(742,360)"><ellipse cx="0" cy="0" rx="46" ry="17" fill="url(#clay_shotgunvectorcamo)" stroke="#7a3a00" stroke-width="2"/><ellipse cx="0" cy="-4" rx="30" ry="9" fill="#ffd9a0" opacity="0.55"/>
+      <g stroke="#c25a00" stroke-width="5" stroke-linecap="round" opacity="0.8"><line x1="55" y1="-12" x2="92" y2="-20"/><line x1="55" y1="2" x2="96" y2="2"/><line x1="55" y1="14" x2="90" y2="24"/></g></g><g transform="translate(500,330) scale(1.5)">
+      <path d="M0,56 C-31,26 -54,6 -54,-16 C-54,-37 -31,-47 -12,-31 C-6,-26 0,-17 0,-11 C0,-17 6,-26 12,-31 C31,-47 54,-37 54,-16 C54,6 31,26 0,56 Z" fill="url(#hht_shotgunvectorcamo)" stroke="#7c1311" stroke-width="2.5"/>
+      
+    </g>
+  <rect x="250" y="742" width="500" height="86" rx="14" fill="#d72a25"/><text x="500" y="802" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="64" letter-spacing="4" text-anchor="middle" fill="#ffffff">LA DÉTENTE</text><text x="500" y="690" font-family="'Liberation Sans','DejaVu Sans',Arial,sans-serif" font-weight="bold" font-size="34" letter-spacing="7" text-anchor="middle" fill="#cdd0b4">TIR · BALL-TRAP · CHASSE</text>
+</svg>

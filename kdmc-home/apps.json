@@ -1,0 +1,133 @@
+{
+  "_doc": "SOURCE UNIQUE des apps du domaine kd-mc.com (host -> nom + icône). Consommé au boot par le portail (kdmc-portal.js) et l'admin (admin/admin.js) — chacun garde une copie de repli intégrée pour l'hors-ligne. Le test apps-consistency.test.mjs échoue si cette liste diverge du routeur (worker ROUTES) ou des copies de repli. Ajouter une app = 1 entrée ici + la route dans services/kdmc-router/wrangler.toml + ROUTES du worker.",
+  "apps": {
+    "kd-mc.com": {
+      "name": "Portail",
+      "icon": "🏠"
+    },
+    "www.kd-mc.com": {
+      "name": "Portail",
+      "icon": "🏠"
+    },
+    "cmcteams.kd-mc.com": {
+      "name": "CMCteams",
+      "icon": "📅"
+    },
+    "cmcteams-light.kd-mc.com": {
+      "name": "CMCteams light",
+      "icon": "🎯"
+    },
+    "departs.kd-mc.com": {
+      "name": "CMCteams light",
+      "icon": "🎯"
+    },
+    "apex-ai.kd-mc.com": {
+      "name": "Apex AI",
+      "icon": "🤖"
+    },
+    "apex-chat.kd-mc.com": {
+      "name": "Apex Chat",
+      "icon": "💬"
+    },
+    "dashboard.kd-mc.com": {
+      "name": "Dashboard",
+      "icon": "📊"
+    },
+    "sourcing.kd-mc.com": {
+      "name": "Sourcing",
+      "icon": "📦"
+    },
+    "coffre.kd-mc.com": {
+      "name": "Coffre",
+      "icon": "🔐"
+    },
+    "la-detente.kd-mc.com": {
+      "name": "La Détente",
+      "icon": "🌿"
+    },
+    "chez-lolo.kd-mc.com": {
+      "name": "Chez Lolo",
+      "icon": "🎨"
+    },
+    "bot.kd-mc.com": {
+      "name": "Bot Crypto",
+      "icon": "🤖"
+    },
+    "beatbot.kd-mc.com": {
+      "name": "PoolPilot",
+      "icon": "🌊"
+    },
+    "autorisations.kd-mc.com": {
+      "name": "Autorisations",
+      "icon": "🆔"
+    },
+    "arbre.kd-mc.com": {
+      "name": "Arbre",
+      "icon": "🌳"
+    },
+    "lingua.kd-mc.com": {
+      "name": "Lingua",
+      "icon": "🐝"
+    },
+    "studio.kd-mc.com": {
+      "name": "Créa Studio",
+      "icon": "🎬"
+    },
+    "cuisine.kd-mc.com": {
+      "name": "A Cüjina de Mùnegu",
+      "icon": "🍽️"
+    },
+    "cocina.kd-mc.com": {
+      "name": "A Cüjina de Mùnegu",
+      "icon": "🍽️"
+    },
+    "cujina.kd-mc.com": {
+      "name": "A Cüjina de Mùnegu",
+      "icon": "🍽️"
+    },
+    "worldmonitor.kd-mc.com": {
+      "icon": "🌍",
+      "name": "World Monitor"
+    },
+    "osint.kd-mc.com": {
+      "icon": "🔎",
+      "name": "OSINT"
+    },
+    "ia.kd-mc.com": {
+      "icon": "🧠",
+      "name": "Outils IA"
+    },
+    "outils.kd-mc.com": {
+      "icon": "🧰",
+      "name": "Mes outils gratuits"
+    },
+    "tor.kd-mc.com": {
+      "name": "Tor en clair",
+      "icon": "🧅"
+    },
+    "shops.kd-mc.com": {
+      "icon": "🏬",
+      "name": "Portail boutiques"
+    },
+    "rotaplan.kd-mc.com": {
+      "icon": "🗓️",
+      "name": "Rotaplan"
+    },
+    "kit.kd-mc.com": {
+      "icon": "🧰",
+      "name": "Kit IA de l'indépendant"
+    },
+    "croupier.kd-mc.com": {
+      "icon": "🃏",
+      "name": "Devenir croupier"
+    },
+    "javis.kd-mc.com": {
+      "name": "Javis",
+      "icon": "🐝"
+    },
+    "dossiers.kd-mc.com": {
+      "icon": "🗂️",
+      "name": "Dossiers publics"
+    }
+  }
+}

@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Pre-commit hook CMCteams + Apex
+# Verifie syntaxe JS extraite + run tests Apex modules
+# Skip avec : git commit --no-verify (deconseille)
+#
+# Installation :
+#   cp tools/git-hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+# Ou via le script tools/git-hooks/install.sh
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+echo "[pre-commit] CMCteams + Apex syntax check + tests"
+
+# 1. Extraire JS de CMCteams index.html
+if [ -f index.html ]; then
+  node -e "
+  const fs=require('fs');
+  const html=fs.readFileSync('index.html','utf8');
+  const s=html.lastIndexOf('<script>');
+  const e=html.lastIndexOf('</script>');
+  if(s<0||e<0){process.exit(0);}
+  fs.writeFileSync('/tmp/precommit_cmc.js',html.slice(s+8,e));
+  " 2>/dev/null || true
+
+  if [ -f /tmp/precommit_cmc.js ]; then
+    if ! node --check /tmp/precommit_cmc.js 2>&1 | head -10; then
+      echo "[pre-commit] FAIL: CMCteams index.html JS syntax error"
+      exit 1
+    fi
+    echo "[pre-commit] OK: CMCteams JS syntax"
+  fi
+fi
+
+# 2. Extraire JS de Apex index.html
+if [ -f apex-ai/index.html ]; then
+  node -e "
+  const fs=require('fs');
+  const html=fs.readFileSync('apex-ai/index.html','utf8');
+  const s=html.lastIndexOf('<script>');
+  const e=html.lastIndexOf('</script>');
+  if(s<0||e<0){process.exit(0);}
+  fs.writeFileSync('/tmp/precommit_apex.js',html.slice(s+8,e));
+  " 2>/dev/null || true
+
+  if [ -f /tmp/precommit_apex.js ]; then
+    if ! node --check /tmp/precommit_apex.js 2>&1 | head -10; then
+      echo "[pre-commit] FAIL: Apex index.html JS syntax error"
+      exit 1
+    fi
+    echo "[pre-commit] OK: Apex JS syntax"
+  fi
+fi
+
+# 3. Run Apex tests si presents
+if [ -f tests/apex-modules.test.js ]; then
+  if ! node tests/apex-modules.test.js > /tmp/precommit_test_out 2>&1; then
+    echo "[pre-commit] FAIL: Apex modules tests"
+    tail -20 /tmp/precommit_test_out
+    exit 1
+  fi
+  PASS_LINE=$(grep -E "^Total:" /tmp/precommit_test_out || echo "Tests OK")
+  echo "[pre-commit] OK: Apex tests ($PASS_LINE)"
+fi
+
+# 4. Verif rapide XSS innerHTML sans esc() (warning seulement)
+if [ -f index.html ]; then
+  XSS_COUNT=$(grep -c 'innerHTML.*\${' index.html 2>/dev/null | head -1)
+  XSS_COUNT=${XSS_COUNT:-0}
+  if [ "$XSS_COUNT" -gt 50 ] 2>/dev/null; then
+    echo "[pre-commit] WARN: $XSS_COUNT innerHTML+template-string dans index.html (verifier esc())"
+  fi
+fi
+
+# Tests Phase 1 modules extraits (CLAUDE.md regle Code Quality)
+if [ -f tests/apex-modules-extracted.test.js ]; then
+  if ! node tests/apex-modules-extracted.test.js > /tmp/precommit_modules_out 2>&1; then
+    echo "[pre-commit] FAIL: Modules extraits tests"
+    tail -20 /tmp/precommit_modules_out
+    exit 1
+  fi
+  PASS=$(grep -E "^Total:" /tmp/precommit_modules_out || echo "Tests OK")
+  echo "[pre-commit] OK: Modules extraits ($PASS)"
+fi
+
+echo "[pre-commit] All checks passed"
+exit 0

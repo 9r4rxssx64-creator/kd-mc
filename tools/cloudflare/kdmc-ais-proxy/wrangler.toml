@@ -1,0 +1,7 @@
+name = "kdmc-ais"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+# account_id injecté par le workflow via CLOUDFLARE_ACCOUNT_ID (jamais commité)
+# SANS Durable Object : le DO (même SQLite) faisait échouer le démarrage du worker sur ce
+# compte → error code 1042 (leçon #133). /ships ouvre une WebSocket courte par requête.
+# Nouveau nom (kdmc-ais) = zéro historique de migration DO → démarrage propre.

@@ -1,0 +1,40 @@
+name: La Détente — Test E2E studio (Playwright)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install Playwright + Chromium
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm i playwright@1.48.0
+          npx playwright install --with-deps chromium
+      - name: Servir la boutique + lancer le test
+        run: |
+          python3 -m http.server 8080 --directory shops/la-detente >/tmp/srv.log 2>&1 &
+          sleep 2
+          BASE=http://localhost:8080 node tools/la-detente-e2e/test.mjs
+      - name: Publier la capture (toujours)
+        if: always()
+        run: |
+          if ls tools/la-detente-e2e/*.png >/dev/null 2>&1; then
+            git config user.name "kdmc-bot"; git config user.email "bot@kdmc.local"
+            # branche-de-relecture : la capture d'écran est déposée pour être REGARDÉE depuis une
+            # session d'agent (qui ne lit pas les artefacts), jamais fusionnée (leçon #243).
+            BR="claude/e2e-shot-${{ github.run_id }}"
+            git checkout -b "$BR"
+            git add -f tools/la-detente-e2e/*.png
+            git commit -m "La Détente — capture test E2E studio [skip ci]" || echo "rien"
+            git push -u origin "$BR" || echo "push KO"
+            echo "Capture sur $BR"
+          fi

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apex OAuth Callback</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#08080f;color:#c9a227;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;text-align:center}
+.box{max-width:420px}
+h1{color:#c9a227;font-family:Georgia,serif;font-size:48px;margin:0 0 8px}
+.s{color:#6a8aff;font-size:14px;letter-spacing:2px;margin:0 0 24px}
+.t{color:#fff;font-size:16px;line-height:1.5;margin:0 0 24px}
+.b{display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;border:none;border-radius:24px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none}
+.spin{display:inline-block;width:32px;height:32px;border:3px solid rgba(201,162,39,.3);border-top-color:#c9a227;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="box">
+<div id="spinner" class="spin"></div>
+<h1>APEX</h1>
+<p class="s" id="status">RÉCUPÉRATION TOKEN...</p>
+<p class="t" id="msg">Apex récupère ton autorisation email. Ne ferme pas cette page.</p>
+<a class="b" id="back" href="./" style="display:none">Retour Apex</a>
+</div>
+<script>
+(function(){
+  /* Parse hash (#access_token=...) ou query (?code=...) selon flow OAuth */
+  var hash = window.location.hash.slice(1);
+  var query = window.location.search.slice(1);
+  var params = {};
+  (hash || query).split("&").forEach(function(p){
+    var kv = p.split("=");
+    if(kv[0]) params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]||"");
+  });
+
+  /* Identifier provider via state ou referrer */
+  var provider = params.state || localStorage.getItem("ax_oauth_pending_provider") || "gmail";
+
+  if(params.access_token){
+    /* Implicit flow OK : token direct */
+    var stored = JSON.parse(localStorage.getItem("ax_email_tokens") || "{}");
+    stored[provider] = {
+      access_token: params.access_token,
+      expires_in: parseInt(params.expires_in||"3600", 10),
+      ts: Date.now(),
+      token_type: params.token_type || "Bearer",
+      scope: params.scope || ""
+    };
+    localStorage.setItem("ax_email_tokens", JSON.stringify(stored));
+    localStorage.removeItem("ax_oauth_pending_provider");
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("status").textContent = "✅ TOKEN OK";
+    document.getElementById("msg").textContent = "Apex a recupere ton autorisation " + provider + ". Tu peux fermer cette page ou retourner sur Apex.";
+    document.getElementById("back").style.display = "inline-block";
+    /* Auto-redirect apres 2s */
+    setTimeout(function(){
+      try{ window.opener && window.opener.postMessage({apex_oauth: provider, ok: true}, "*"); }catch(_){}
+      try{ window.close(); }catch(_){}
+      setTimeout(function(){ window.location.href = "./"; }, 1000);
+    }, 2000);
+  } else if(params.code){
+    /* Authorization code flow : besoin echange via backend (Cloudflare Worker) */
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("status").textContent = "⚠ CODE RECU";
+    document.getElementById("msg").textContent = "Code OAuth recu (" + params.code.slice(0,8) + "...). Apex va l echanger via worker. Reviens sur l app.";
+    var stored2 = JSON.parse(localStorage.getItem("ax_email_oauth_codes") || "{}");
+    stored2[provider] = {code: params.code, ts: Date.now()};
+    localStorage.setItem("ax_email_oauth_codes", JSON.stringify(stored2));
+    document.getElementById("back").style.display = "inline-block";
+    setTimeout(function(){
+      try{ window.opener && window.opener.postMessage({apex_oauth: provider, ok: true, code: params.code}, "*"); }catch(_){}
+      try{ window.close(); }catch(_){}
+    }, 2000);
+  } else if(params.error){
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("status").textContent = "❌ ERREUR";
+    document.getElementById("msg").textContent = "OAuth refuse : " + params.error + (params.error_description ? " - " + params.error_description : "");
+    document.getElementById("back").style.display = "inline-block";
+  } else {
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("status").textContent = "❓ PARAMS MANQUANTS";
+    document.getElementById("msg").textContent = "Cette page attend un token OAuth. Lance d abord axEmailAuth(provider) depuis Apex.";
+    document.getElementById("back").style.display = "inline-block";
+  }
+})();
+</script>
+</body>
+</html>

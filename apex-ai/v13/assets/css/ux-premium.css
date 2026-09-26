@@ -1,0 +1,500 @@
+/* APEX v13 — UX premium styles (drill-down + skeleton + micro-interactions).
+ * Demande Kevin "design innovant créatif partout" — UX axe 17→20.
+ */
+
+/* ============ DRILL-DOWN ============ */
+.ax-drilldown {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 15, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  animation: ax-drill-fade-in 0.25s ease-out;
+}
+@keyframes ax-drill-fade-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.ax-drill-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(20, 20, 35, 0.95);
+  border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+  position: sticky;
+  top: 0;
+}
+
+.ax-drill-back, .ax-drill-close {
+  /* v13.3.74 a11y fix : touch target 44px (Apple HIG) */
+  width: var(--ax-touch-min);
+  height: var(--ax-touch-min);
+  min-width: var(--ax-touch-min);
+  min-height: var(--ax-touch-min);
+  border-radius: 22px;
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  color: #c9a227;
+  font-size: 18px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ax-drill-back:hover, .ax-drill-close:hover {
+  background: rgba(201, 162, 39, 0.25);
+}
+.ax-drill-back:active, .ax-drill-close:active {
+  transform: scale(0.92);
+}
+
+.ax-drill-bread {
+  flex: 1;
+  font-size: 13px;
+  color: #a0a4c0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scroll-behavior: smooth;
+}
+.ax-drill-bread strong {
+  color: #c9a227;
+}
+
+.ax-drill-crumb {
+  background: none;
+  border: none;
+  color: #6a8aff;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.ax-drill-crumb:hover {
+  background: rgba(106, 138, 255, 0.15);
+}
+.ax-drill-sep {
+  color: #555;
+  margin: 0 4px;
+}
+
+.ax-drill-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px max(24px, env(safe-area-inset-bottom));
+  color: #e6e6f0;
+  animation: ax-drill-content-fade 0.3s ease-out 0.1s backwards;
+}
+@keyframes ax-drill-content-fade {
+  0% { opacity: 0; transform: translateX(10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.ax-drill-trigger {
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px dashed rgba(201, 162, 39, 0.3);
+  color: #c9a227;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ax-drill-trigger:hover {
+  background: rgba(201, 162, 39, 0.2);
+}
+
+/* ============ SKELETON LOADERS ============ */
+.ax-skel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ax-skel {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: ax-skel-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes ax-skel-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ax-skel-line { height: 14px; width: 100%; }
+.ax-skel-circle { width: 32px; height: 32px; border-radius: 50%; }
+.ax-skel-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.ax-skel-card { height: 100px; border-radius: 12px; }
+.ax-skel-button { height: 36px; width: 80px; border-radius: 18px; }
+
+.ax-skel-chat {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  align-items: flex-start;
+}
+.ax-skel-msg { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+.ax-skel-card-full {
+  padding: 16px;
+  background: rgba(20, 20, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ax-skel-list-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ============ MICRO-INTERACTIONS ============ */
+
+/* Click ripple effect (Material-inspired) */
+.ax-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.ax-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(201, 162, 39, 0.4) 0%, transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s, transform 0.4s;
+}
+.ax-ripple:active::after {
+  opacity: 1;
+  transform: scale(1.5);
+  transition: opacity 0s, transform 0s;
+}
+
+/* Bounce on tap (iOS-style) */
+.ax-bounce-tap {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ax-bounce-tap:active {
+  transform: scale(0.95);
+}
+
+/* Smooth scroll snap pour listes horizontales */
+.ax-snap-x {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 12px;
+  scrollbar-width: none;
+}
+.ax-snap-x::-webkit-scrollbar { display: none; }
+.ax-snap-x > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+/* ============ CHAT INPUT LAYOUT FIX ============ */
+/* Fix Kevin v13.0.36 : textarea s'affichait en vertical (1 char/ligne)
+   parce que les 5 boutons icon (mic/wake/attach/camera/send) saturaient flex-row.
+   Solution : textarea flex:1 prend tout l'espace, boutons icon flex-shrink:0 + wrap row 2 si overflow */
+.ax-chat-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  align-items: flex-end;
+  border-top: 1px solid rgba(201, 162, 39, 0.2);
+  background: rgba(20, 20, 35, 0.95);
+}
+
+.ax-chat-input textarea {
+  flex: 1 1 200px;
+  min-width: 180px;
+  /* P2.3 v13.3.81 (audit cascade) : Apple HIG 44px touch target */
+  min-height: 44px;
+  max-height: 120px;
+  padding: 10px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  color: #fff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: none;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.ax-chat-input textarea:focus {
+  outline: none;
+  border-color: #c9a227;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ax-chat-input .ax-btn-icon {
+  flex-shrink: 0;
+  /* P2.3 v13.3.81 (audit cascade) : Apple HIG 44px (was 40px) */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  font-size: 18px;
+  cursor: pointer;
+  color: #c9a227;
+  transition: background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.ax-chat-input .ax-btn-icon:hover {
+  background: rgba(201, 162, 39, 0.25);
+}
+.ax-chat-input .ax-btn-icon:active {
+  transform: scale(0.92);
+}
+
+.ax-chat-input .ax-btn-primary {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c9a227, #e8b830);
+  color: #000;
+  font-weight: 700;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+.ax-chat-input .ax-btn-primary:active { transform: scale(0.94); }
+
+/* Mobile compact petit écran : icon 40px (compromis touch HIG vs espace) */
+/* P2.3 v13.3.81 (audit cascade) : 40px → 44px (Apple HIG strict, même mobile <380px) */
+@media (max-width: 380px) {
+  .ax-chat-input .ax-btn-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .ax-chat-input .ax-btn-primary {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Reduce motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .ax-drilldown,
+  .ax-drill-body,
+  .ax-skel,
+  .ax-bounce-tap {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+ * v13.4.6 UX PREMIUM EXPERT ENTREPRISE (Kevin 2026-05-10 audit massif)
+ * ========================================================================= */
+
+/* Focus visible pro (a11y + premium feel) — anneau or doux */
+:root {
+  --ax-focus-ring: 0 0 0 2px rgba(232, 184, 48, 0.55);
+}
+button:focus-visible,
+a:focus-visible,
+.ax-btn:focus-visible,
+.ax-btn-icon:focus-visible,
+.ax-btn-primary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: var(--ax-focus-ring);
+  border-radius: 8px;
+}
+
+/* Card hover subtil — niveau entreprise (pas trop flashy) */
+.ax-card,
+.ax-feature-card,
+.ax-modernized-card,
+.ax-cat,
+details {
+  transition: transform 120ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+}
+@media (hover: hover) {
+  .ax-card:hover,
+  .ax-feature-card:hover,
+  .ax-modernized-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* Loading skeleton premium — shimmer or doux */
+.ax-skel,
+.ax-skel-vault-cards,
+[data-loading="true"] {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: ax-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes ax-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Toasts premium — fade + slide bottom */
+.ax-toast,
+.ax-toast-success,
+.ax-toast-warn,
+.ax-toast-error,
+.ax-toast-info {
+  animation: ax-toast-in 220ms ease-out;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+@keyframes ax-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar premium discrète */
+.ax-chat-scroll::-webkit-scrollbar,
+.ax-vault-page::-webkit-scrollbar,
+.ax-admin::-webkit-scrollbar,
+.ax-settings::-webkit-scrollbar,
+.ax-page::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.ax-chat-scroll::-webkit-scrollbar-thumb,
+.ax-vault-page::-webkit-scrollbar-thumb,
+.ax-admin::-webkit-scrollbar-thumb,
+.ax-settings::-webkit-scrollbar-thumb,
+.ax-page::-webkit-scrollbar-thumb {
+  background: rgba(232, 184, 48, 0.25);
+  border-radius: 3px;
+}
+.ax-chat-scroll::-webkit-scrollbar-thumb:hover,
+.ax-vault-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 184, 48, 0.45);
+}
+
+/* Sélection texte premium or */
+::selection {
+  background: rgba(232, 184, 48, 0.32);
+  color: #fff;
+}
+
+/* Empty state premium (rien à afficher = espace généreux + icône) */
+.ax-empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+}
+.ax-empty-state-icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+/* Status indicators colorés cohérents */
+.ax-status-ok { color: #22cc77; }
+.ax-status-warn { color: #f0c020; }
+.ax-status-error { color: #ff5b5b; }
+.ax-status-idle { color: rgba(255, 255, 255, 0.4); }
+
+/* Badges admin premium (rectangle arrondi avec gradient subtil) */
+.ax-badge,
+.ax-badge-admin,
+.ax-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, rgba(232, 184, 48, 0.18), rgba(232, 184, 48, 0.08));
+  color: #e8b830;
+  border: 1px solid rgba(232, 184, 48, 0.28);
+}
+
+/* Disabled state cohérent (gris + opacity + curseur) */
+button:disabled,
+.ax-btn:disabled,
+input:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Long text wrap pour ne JAMAIS overflow horizontalement (anti-cassure layout) */
+.ax-card, .ax-message, .ax-msg-body, .ax-result, .ax-detail {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Header sticky avec backdrop-filter (premium feeling) */
+.ax-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(8, 8, 15, 0.78);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Modal-sheet bottom premium iOS-like */
+.ax-sheet {
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+  max-height: 88dvh;
+  overflow-y: auto;
+}

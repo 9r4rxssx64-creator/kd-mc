@@ -1,0 +1,174 @@
+name: Relais de lecture du dépôt (pour qu'Apex survive au passage en privé)
+
+# Pourquoi ce workflow existe
+# ---------------------------
+# CMCteams doit passer en PRIVÉ : il contient le dossier commercial
+# ClayScore, la structure de planning de 258 employés et la configuration
+# d'Apex, tout cela lisible par n'importe qui aujourd'hui.
+#
+# Mais Apex relit ses documents (CLAUDE.md, NOTES_USER.md, ses skills, sa
+# mémoire) directement sur GitHub SANS jeton. Le jour du basculement, ces
+# lectures répondront 404 — et comme le code ignore un document manquant,
+# Apex arrêterait de se relire EN SILENCE. Personne ne s'en apercevrait.
+#
+# Ce relais est la pièce qui manque : un petit serveur Cloudflare qui garde
+# le jeton GitHub de son côté et lit le dépôt pour Apex. Le jeton n'arrive
+# jamais dans le navigateur.
+#
+# ⚠️ ZÉRO ACTION KEVIN : le workflow déploie, pose le jeton, RÉCUPÈRE
+# l'adresse produite et l'ÉCRIT LUI-MÊME dans le code d'Apex. Personne n'a
+# de lien à recopier nulle part.
+
+on:
+  workflow_dispatch:
+    inputs:
+      nom:
+        description: "Nom du relais"
+        default: "apex-depot-relais"
+        required: true
+      essai_seulement:
+        description: "true = tout vérifier sans rien déployer"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Vérifier que les clés nécessaires existent
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_COMPTE: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+        run: |
+          manque=""
+          [ -z "$CF_TOKEN" ] && manque="$manque CLOUDFLARE_API_TOKEN"
+          [ -z "$CF_COMPTE" ] && manque="$manque CLOUDFLARE_ACCOUNT_ID"
+          [ -z "$PAT" ]      && manque="$manque APEX_GITHUB_PAT"
+          if [ -n "$manque" ]; then
+            echo "::error::Clé(s) manquante(s) :$manque"
+            exit 1
+          fi
+          echo "Les trois clés sont là."
+
+      - name: Préparer le relais
+        run: |
+          mkdir -p /tmp/relais
+          cp tools/github-proxy-worker.js /tmp/relais/index.js
+          cat > /tmp/relais/wrangler.toml <<TOML
+          name = "${{ inputs.nom }}"
+          main = "index.js"
+          compatibility_date = "2026-01-01"
+          TOML
+          echo "Relais prêt."
+
+      - name: Déployer + poser le jeton (il reste côté serveur)
+        id: deploiement
+        if: ${{ !inputs.essai_seulement }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+        shell: bash -eo pipefail {0}   # sans pipefail, un echec ressort VERT
+        run: |
+          set -e
+          cd /tmp/relais
+          npx --yes wrangler@3 deploy 2>&1 | tee /tmp/sortie.txt
+          # Le jeton est posé APRÈS le déploiement, par l'entrée standard :
+          # il ne passe donc jamais par la ligne de commande, où il finirait
+          # dans les journaux — qui sont publics sur ce dépôt.
+          printf '%s' "$PAT" | npx --yes wrangler@3 secret put GITHUB_PAT
+          ADRESSE=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/sortie.txt | head -1)
+          if [ -z "$ADRESSE" ]; then
+            echo "::error::Adresse du relais introuvable dans la sortie du déploiement."
+            exit 1
+          fi
+          echo "adresse=$ADRESSE" >> "$GITHUB_OUTPUT"
+          echo "Relais déployé : $ADRESSE"
+
+      - name: Le relais lit-il VRAIMENT le dépôt ?
+        if: ${{ !inputs.essai_seulement }}
+        env:
+          ADRESSE: ${{ steps.deploiement.outputs.adresse }}
+        run: |
+          set -e
+          # Un déploiement réussi ne prouve rien : ce qui compte, c'est que la
+          # lecture fonctionne pour de vrai.
+          # L'origine testée est celle du VRAI consommateur : Apex est servi sur
+          # apex-ai.kd-mc.com. Tester avec une autre adresse (github.io) a
+          # laissé passer, le 22.09, un relais qui refusait tout le domaine —
+          # un vert qui ne prouvait rien.
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -sS -o /tmp/lu.txt -w '%{http_code}' \
+              -H "Origin: https://apex-ai.kd-mc.com" \
+              "$ADRESSE?action=read&path=CLAUDE.md&branch=main" || echo 000)
+            [ "$CODE" = "200" ] && break
+            echo "Tentative $i : HTTP $CODE — le relais démarre, on attend."
+            sleep 5
+          done
+          TAILLE=$(wc -c < /tmp/lu.txt)
+          echo "HTTP $CODE, $TAILLE caractères lus."
+          if [ "$CODE" != "200" ] || [ "$TAILLE" -lt 1000 ]; then
+            echo "::error::Le relais ne renvoie pas CLAUDE.md. On n'inscrit rien dans le code."
+            exit 1
+          fi
+          grep -q "RÈGLE" /tmp/lu.txt || {
+            echo "::error::Le contenu lu ne ressemble pas à CLAUDE.md."; exit 1; }
+          echo "✅ Lecture réelle vérifiée."
+
+      - name: Inscrire l'adresse dans Apex (aucun lien à recopier)
+        if: ${{ !inputs.essai_seulement }}
+        env:
+          ADRESSE: ${{ steps.deploiement.outputs.adresse }}
+        run: |
+          set -e
+          F=apex-ai/v13/services/integrations/depot-github.ts
+          python3 - "$F" "$ADRESSE" <<'PY'
+          import re, sys
+          f, adresse = sys.argv[1], sys.argv[2]
+          s = open(f, encoding='utf-8').read()
+          motif = r"export const RELAIS_PAR_DEFAUT = '[^']*';"
+          # ⚠️ 22.09.2026 : ce script échouait quand l'adresse était DÉJÀ la bonne
+          # (la réécriture ne changeait rien → « neuf == s » → exit 1). Un déploiement
+          # parfaitement réussi ressortait donc ROUGE. « Rien à changer » est un
+          # SUCCÈS ; le seul vrai problème, c'est que la ligne n'existe plus.
+          if not re.search(motif, s):
+              print("::error::Ligne RELAIS_PAR_DEFAUT introuvable — le code d'Apex a changé de forme.")
+              sys.exit(1)
+          neuf = re.sub(motif, f"export const RELAIS_PAR_DEFAUT = '{adresse}';", s, count=1)
+          if neuf == s:
+              print("Adresse déjà à jour :", adresse)
+          else:
+              open(f, 'w', encoding='utf-8').write(neuf)
+              print("Adresse inscrite :", adresse)
+          PY
+          grep -n "RELAIS_PAR_DEFAUT" "$F"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$F"
+          git commit -m "Relais du dépôt déployé : $ADRESSE [skip ci]" || {
+            echo "Rien à committer (adresse déjà à jour)."; exit 0; }
+          git push
+
+      - name: Ce qu'il faut retenir
+        if: always()
+        run: |
+          {
+            echo "## Relais de lecture du dépôt"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Relais | \`${{ steps.deploiement.outputs.adresse }}\` |"
+            echo "| Jeton | posé côté serveur, jamais dans le navigateur |"
+            echo "| Adresse | inscrite automatiquement dans Apex |"
+            echo
+            echo "**Ce que ça change :** Apex peut désormais continuer à relire"
+            echo "ses documents même quand CMCteams passera en privé. C'était le"
+            echo "dernier verrou avant de pouvoir fermer le dépôt."
+          } >> "$GITHUB_STEP_SUMMARY"

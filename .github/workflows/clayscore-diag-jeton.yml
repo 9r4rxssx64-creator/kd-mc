@@ -1,0 +1,113 @@
+name: Diagnostic du jeton APEX_GITHUB_PAT
+
+# Pourquoi cet outil existe
+# -------------------------
+# L'envoi vers le dépôt privé `clayscore` échoue sur « Repository not found »,
+# ALORS QUE le même jeton lit ce même dépôt privé par l'API sans problème.
+# J'ai supposé une cause (le mauvais identifiant git), corrigé, et ça a
+# re-échoué : ma supposition était fausse.
+#
+# Donc on arrête de supposer. Ce workflow DEMANDE à GitHub ce que le jeton a
+# le droit de faire, et affiche la réponse. Il tourne en ~20 secondes et ne
+# modifie RIEN.
+#
+# Il ne révèle jamais le jeton : uniquement son TYPE, ses DROITS, et le
+# résultat des tests.
+
+on:
+  workflow_dispatch:
+    inputs:
+      depot:
+        description: "Dépôt à tester"
+        default: "clayscore"
+        required: true
+
+permissions: {}
+
+jobs:
+  diagnostiquer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Que peut réellement faire ce jeton ?
+        env:
+          PAT: ${{ secrets.APEX_GITHUB_PAT }}
+          DEPOT: ${{ inputs.depot }}
+        run: |
+          if [ -z "$PAT" ]; then
+            echo "::error::Secret APEX_GITHUB_PAT absent."; exit 1
+          fi
+
+          echo "════════ 1. TYPE DE JETON ════════"
+          # On ne montre JAMAIS le jeton — seulement sa famille, via son préfixe.
+          case "$PAT" in
+            ghp_*)        TYPE="CLASSIQUE (ghp_…)" ;;
+            github_pat_*) TYPE="FIN (github_pat_…)" ;;
+            gho_*|ghu_*)  TYPE="OAuth (gho_/ghu_…)" ;;
+            *)            TYPE="INCONNU" ;;
+          esac
+          echo "Type : $TYPE"
+
+          echo
+          echo "════════ 2. DROITS DÉCLARÉS ════════"
+          # Pour un jeton CLASSIQUE, GitHub renvoie les droits dans un en-tête.
+          curl -sS -D /tmp/h.txt -o /tmp/me.json \
+            -H "Authorization: Bearer $PAT" https://api.github.com/user
+          MOI=$(python3 -c "import json;print(json.load(open('/tmp/me.json')).get('login','?'))")
+          PORTEES=$(grep -i '^x-oauth-scopes:' /tmp/h.txt | cut -d: -f2- | tr -d '\r' | xargs)
+          echo "Compte  : $MOI"
+          echo "Portées : ${PORTEES:-(aucune — normal pour un jeton FIN)}"
+          if [ "$TYPE" = "CLASSIQUE (ghp_…)" ]; then
+            case "$PORTEES" in
+              *repo*) echo "  ✅ la portée 'repo' est présente" ;;
+              *)      echo "  ❌ la portée 'repo' MANQUE — c'est la cause." ;;
+            esac
+          fi
+
+          echo
+          echo "════════ 3. DROITS SUR LE DÉPÔT ════════"
+          CODE=$(curl -sS -o /tmp/r.json -w '%{http_code}' \
+            -H "Authorization: Bearer $PAT" \
+            "https://api.github.com/repos/${MOI}/${DEPOT}")
+          echo "Lecture par l'API : HTTP $CODE"
+          if [ "$CODE" = "200" ]; then
+            python3 - <<'PY'
+          import json
+          d = json.load(open('/tmp/r.json'))
+          p = d.get('permissions', {})
+          print(f"  Nom      : {d.get('full_name')}")
+          print(f"  Privé    : {d.get('private')}")
+          print(f"  Vide     : {d.get('size') == 0}")
+          print(f"  Droits   : admin={p.get('admin')} push={p.get('push')} pull={p.get('pull')}")
+          if p.get('push') is not True:
+              print("  ❌ PAS de droit d'ECRITURE -> c'est exactement pourquoi")
+              print("     git repond « Repository not found » (GitHub ne dit jamais")
+              print("     « acces refuse » sur un depot prive, pour ne pas reveler")
+              print("     son existence).")
+          else:
+              print("  ✅ droit d'ecriture present")
+          PY
+          else
+            echo "  ❌ Le jeton ne voit même pas le dépôt (HTTP $CODE)."
+          fi
+
+          echo
+          echo "════════ 4. TEST GIT RÉEL (lecture seule) ════════"
+          # `ls-remote` n'écrit rien : il demande juste « qu'y a-t-il dedans ? ».
+          # C'est le test décisif, avec exactement les mêmes identifiants que
+          # l'envoi qui échoue.
+          for FORME in "${MOI}:\${PAT}" "x-access-token:\${PAT}" "\${PAT}"; do
+            URL=$(eval echo "https://${FORME}@github.com/${MOI}/${DEPOT}.git")
+            AFFICHE=$(echo "$FORME" | sed "s/\${PAT}/•••/")
+            if git ls-remote "$URL" >/dev/null 2>&1; then
+              echo "  ✅ ça marche avec l'identifiant : $AFFICHE"
+            else
+              echo "  ❌ refusé avec l'identifiant : $AFFICHE"
+            fi
+          done
+
+          echo
+          echo "════════ CE QU'IL FAUT EN CONCLURE ════════"
+          echo "Si l'API lit le dépôt (§3 = 200) mais que git est refusé (§4),"
+          echo "alors le jeton a le droit de VOIR mais pas celui d'ÉCRIRE."
+          echo "  • Jeton FIN  -> il faut « Contents: Read and write » sur ce dépôt"
+          echo "  • Jeton CLASSIQUE -> il faut cocher la portée « repo »"

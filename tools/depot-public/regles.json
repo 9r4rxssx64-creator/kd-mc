@@ -214,6 +214,10 @@
     {
       "script": "test:chaine-privee",
       "pourquoi": "elle exige un robot qui vit AU COFFRE (coffre-chaine-privee.yml, dans workflows_prives) : au depot public il n'existe pas, donc la garde y echouerait a juste titre. Mesure 26.09 : sans elle, les 109 etapes de test:ci que seul le coffre peut lancer ne tournaient plus nulle part."
+    },
+    {
+      "script": "test:laissez-passer",
+      "pourquoi": "mesuré : lit la page d'entrée de CMCteams (index.html racine) et de Départs (tools/departs) pour savoir qui lit le laissez-passer"
     }
   ],
   "mots_pas_des_noms_de_famille": [

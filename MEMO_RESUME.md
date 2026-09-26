@@ -1,5 +1,20 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (23 h 30) — « Impossible de me connecter » à Bee depuis l'iPhone : réparé, et 4 autres apps avec
+
+- **Cause mesurée en vrai navigateur** (vrai routeur, Face ID virtuel, cookies vidés comme l'app
+  de l'écran d'accueil) : Bee attend le laissez-passer `#kdmc_sso=`, le portail ne le donne qu'aux
+  apps de sa liste — **javis n'y était pas**. Et l'écran fermé n'avait **aucun bouton**.
+- Le portail avait **deux listes** déjà différentes → **une seule**. Ajoutées : javis, Départs/Light,
+  cuisine, studio, Chez Lolo (elles attendaient déjà le laissez-passer). Chez Lolo le laissait
+  traîner dans l'adresse : corrigé avant. **CMCteams laissée dehors exprès** (navigation par `#`,
+  leçon #101) — à prouver d'abord en vrai navigateur.
+- **Bee v1.7** : l'écran fermé dit pourquoi et offre **« Me connecter »** (52 px) → passe par le
+  domaine (Face ID) et revient ouvert. Portail **v1.0.35**.
+- Gardes neuves dans `test:ci` : `test:bee-iphone` **10/0** (sabotage = la panne de Kevin, rouge) ·
+  `test:laissez-passer` **43/0** (4 sabotages rouges). `test:javis-bee-reelle` **45/0** (27 avant :
+  ffmpeg déclaré). Leçon **#342**.
+
 ## 2026-09-26 (23 h) — croupier.kd-mc.com rectifié d'après NOS documents + vérif LIVE de CMCteams
 
 - **Kevin (capture iPhone 23:14)** : « Rectifie les horaires, les jeux, consulte tes documents tu as

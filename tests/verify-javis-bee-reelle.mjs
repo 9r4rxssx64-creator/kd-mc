@@ -72,6 +72,12 @@ function ffmpegUtilisable(bin) {
 }
 let candidats = [process.env.FFMPEG_PATH, 'ffmpeg'];
 try { candidats.unshift((await import('ffmpeg-static')).default); } catch (_) {}
+/* 26.09.2026 : `ffmpeg-static` n'est déclaré NULLE PART dans package.json. Il traînait dans le
+   conteneur, et le jour où `npm install` a été réparé il a disparu : 18 contrôles (vidéo,
+   synchro des lèvres, visèmes) sont passés en « non vérifiable » SANS devenir rouges — 45 → 27.
+   Le dépôt déclare déjà un ffmpeg complet (@ffmpeg-installer/ffmpeg, dans dependencies) :
+   on le prend aussi, donc ces contrôles tournent partout où `npm install` a tourné. */
+try { const m = await import('@ffmpeg-installer/ffmpeg'); candidats.push((m.default || m).path); } catch (_) {}
 const FFMPEG = candidats.filter(Boolean).find(ffmpegUtilisable) || null;
 const TRANSCODE = !sonde.h264 && sonde.vp9 && !!FFMPEG;
 const VIDEO_TESTABLE = sonde.h264 || TRANSCODE;
@@ -117,15 +123,15 @@ function sonDeTest(hz = sonHz) {
       const f = Number(String(hz).split('-')[1] || 3500);
       execFileSync(FFMPEG, ['-hide_banner', '-v', 'error',
         '-f', 'lavfi', '-i', 'anoisesrc=c=white:r=44100:d=1.2:a=0.9',
-        '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono:d=0.9',
+        '-f', 'lavfi', '-t', '0.9', '-i', 'anullsrc=r=44100:cl=mono',   /* -t et non d= : d= n'existe pas dans les ffmpeg d'avant 2019 */
         '-filter_complex', `[0:a]highpass=f=${f}:poles=2,highpass=f=${f}:poles=2,volume=6[v];[v][1:a]concat=n=2:v=0:a=1`,
         '-c:a', 'libmp3lame', '-b:a', '192k', '-y', out], { stdio: 'ignore' });
     } else if (paires.length === 2) {
       execFileSync(FFMPEG, ['-hide_banner', '-v', 'error',
         '-f', 'lavfi', '-i', `sine=frequency=${paires[0]}:duration=1.2`,
         '-f', 'lavfi', '-i', `sine=frequency=${paires[1]}:duration=1.2`,
-        '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono:d=0.9',
-        '-filter_complex', '[0:a][1:a]amix=inputs=2:normalize=0[v];[v][2:a]concat=n=2:v=0:a=1',
+        '-f', 'lavfi', '-t', '0.9', '-i', 'anullsrc=r=44100:cl=mono',   /* -t et non d= : d= n'existe pas dans les ffmpeg d'avant 2019 */
+        '-filter_complex', '[0:a][1:a]amix=inputs=2,volume=2[v];[v][2:a]concat=n=2:v=0:a=1',
         '-c:a', 'libmp3lame', '-b:a', '128k', '-y', out], { stdio: 'ignore' });
     } else {
       /* `volume=3` : une VOYELLE de test est faite de DEUX tons mélangés, donc deux fois
@@ -134,7 +140,7 @@ function sonDeTest(hz = sonHz) {
          écrêtage, donc aucune harmonique parasite qui fausserait le spectre. */
       execFileSync(FFMPEG, ['-hide_banner', '-v', 'error',
         '-f', 'lavfi', '-i', `sine=frequency=${hz}:duration=1.2`,
-        '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono:d=0.9',
+        '-f', 'lavfi', '-t', '0.9', '-i', 'anullsrc=r=44100:cl=mono',   /* -t et non d= : d= n'existe pas dans les ffmpeg d'avant 2019 */
         '-filter_complex', '[0:a]volume=3[v];[v][1:a]concat=n=2:v=0:a=1',
         '-c:a', 'libmp3lame', '-b:a', '128k', '-y', out], { stdio: 'ignore' });
     }

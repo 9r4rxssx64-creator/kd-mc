@@ -46,7 +46,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.6';
+  var JAVIS_VER = 'v1.7';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
@@ -117,7 +117,10 @@
        obtenait un ecran noir SANS explication. Au bout de 4 s on tranche comme un
        refus : meme chemin que le refus rapide, donc meme message. */
     var fini = false;
-    var fin = function (ok) { if (!fini) { fini = true; cb(ok); } };
+    /* La RAISON accompagne le verdict (Kevin 26.09, capture iPhone : « Impossible de me
+       connecter » devant un cadenas sans bouton). Le verdict ne change pas — fail-closed —
+       mais l'écran doit dire LAQUELLE des trois situations c'est, et offrir la sortie. */
+    var fin = function (ok, raison) { if (!fini) { fini = true; cb(ok, raison || (ok ? 'ok' : 'inconnu')); } };
     try {
       var tok = ssoToken();
       var hdr = {};
@@ -126,7 +129,7 @@
       try { ctrl = new AbortController(); } catch (_) {}
       var minuteur = setTimeout(function () {
         try { if (ctrl) ctrl.abort(); } catch (_) {}
-        fin(false);
+        fin(false, 'muet');
       }, 4000);
       var opts = { credentials: 'include', cache: 'no-store', headers: hdr };
       if (ctrl) opts.signal = ctrl.signal;
@@ -134,10 +137,14 @@
         .then(function (r) { return r && r.ok ? r.json() : null; })
         .then(function (j) {
           clearTimeout(minuteur);
-          fin(!!(j && j.ok && j.verified === true && j.admin === true));
+          if (j && j.ok && j.verified === true && j.admin === true) return fin(true, 'ok');
+          if (!j) return fin(false, 'muet');                       /* réponse illisible */
+          if (!j.ok) return fin(false, 'inconnu');                 /* pas de session ICI */
+          if (j.verified !== true) return fin(false, 'sans-faceid'); /* connecté, mais pas prouvé */
+          return fin(false, 'pas-kevin');                          /* prouvé, mais pas l'admin */
         })
-        .catch(function () { clearTimeout(minuteur); fin(false); });
-    } catch (_) { fin(false); }
+        .catch(function () { clearTimeout(minuteur); fin(false, 'muet'); });
+    } catch (_) { fin(false, 'muet'); }
   }
 
   /* ============================================================
@@ -1227,19 +1234,65 @@
   /* ============================================================
      7. Go — visibilité fail-closed (admin only), réseau fail-open
      ============================================================ */
+  /* ÉCRAN DE VERROU — Kevin 26.09.2026, capture iPhone à 23h19 : « Impossible de me connecter ».
+     L'ancien écran disait « connecte-toi d'abord sur le domaine, puis rouvre Bee » SANS bouton.
+     Or sur iPhone une app posée sur l'écran d'accueil a ses cookies ISOLÉS : se connecter
+     ailleurs ne sert à rien, et rouvrir Bee retombe au même endroit. C'était une impasse.
+     Maintenant : la cause EXACTE (trois cas), et UN bouton qui va se connecter sur le domaine
+     puis REVIENT ici avec le laissez-passer signé (#kdmc_sso=, que Bee sait lire). Le verdict
+     ne change pas : sans identité prouvée, Bee reste fermée (fail-closed).
+     Construit en DOM, jamais en innerHTML : l'adresse de retour vient de location. */
+  function ecranVerrou(raison) {
+    var TXT = {
+      'inconnu': ['Bee ne te reconnaît pas ici',
+        'Ta connexion ne passe pas jusqu\'à cette page (sur iPhone, une app posée sur l\'écran d\'accueil garde ses propres cookies). Touche le bouton : tu te connectes, et tu reviens ici tout seul.'],
+      'sans-faceid': ['Il manque Face ID',
+        'Tu es bien connecté, mais sans Face ID. Bee est réservée à toi seul : elle demande la preuve Face ID. Touche le bouton, valide Face ID, et tu reviens ici.'],
+      'pas-kevin': ['Bee est personnelle à Kevin',
+        'Ce compte n\'est pas celui de Kevin : Bee reste fermée.'],
+      'muet': ['Le domaine ne répond pas',
+        'Pas de réponse en 4 secondes — réseau lent ou coupé. Réessaie dans un instant.']
+    };
+    var t = TXT[raison] || TXT.inconnu;
+    var d = document.createElement('div');
+    d.setAttribute('role', 'alert');
+    d.style.cssText = 'min-height:100dvh;display:flex;flex-direction:column;align-items:center;' +
+      'justify-content:center;gap:14px;padding:24px;text-align:center;background:#0e0a04;' +
+      'color:#a4906a;font:15px/1.5 -apple-system,sans-serif';
+    var ic = document.createElement('div'); ic.style.fontSize = '44px';
+    ic.textContent = raison === 'muet' ? '\uD83D\uDCE1' : '\uD83D\uDD12';
+    var b = document.createElement('b'); b.style.cssText = 'color:#f6b73c;font-size:17px';
+    b.textContent = t[0];
+    var p = document.createElement('p'); p.style.cssText = 'max-width:320px;margin:0';
+    p.textContent = t[1];
+    d.appendChild(ic); d.appendChild(b); d.appendChild(p);
+    if (raison !== 'pas-kevin') {
+      var a = document.createElement('a');
+      a.id = 'bee-connexion';
+      a.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-height:52px;' +
+        'min-width:240px;padding:0 22px;border-radius:14px;background:#f6b73c;color:#1a1204;' +
+        'font-weight:700;font-size:17px;text-decoration:none;margin-top:6px';
+      if (raison === 'muet') {
+        a.textContent = 'Réessayer';
+        a.href = location.pathname + location.search;
+      } else {
+        a.textContent = raison === 'sans-faceid' ? 'Valider avec Face ID' : 'Me connecter';
+        /* Retour vers CETTE page, sans fragment (un vieux #kdmc_sso ne doit pas repartir). */
+        var ret = location.origin + location.pathname + location.search;
+        a.href = 'https://kd-mc.com/?return=' + encodeURIComponent(ret);
+      }
+      d.appendChild(a);
+    }
+    document.body.textContent = '';
+    document.body.appendChild(d);
+  }
+
   function boot() {
-    checkAdmin(function (isAdmin) {
+    checkAdmin(function (isAdmin, raison) {
       if (!isAdmin) {
         /* Sur une page normale : rien du tout, la page reste intacte.
            Dans l'app dédiée : on le DIT, sinon écran noir inexplicable. */
-        if (window.JAVIS_MODE === 'app') {
-          document.body.innerHTML = '<div style="min-height:100dvh;display:flex;flex-direction:column;' +
-            'align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;' +
-            'background:#0e0a04;color:#a4906a;font:15px/1.5 -apple-system,sans-serif">' +
-            '<div style="font-size:44px">🔒</div>' +
-            '<b style="color:#f6b73c;font-size:17px">Bee est personnelle à Kevin</b>' +
-            '<p style="max-width:300px;margin:0">Connecte-toi d\'abord sur le domaine (Face ID), puis rouvre Bee.</p></div>';
-        }
+        if (window.JAVIS_MODE === 'app') ecranVerrou(raison);
         return;
       }
       armerAudio();

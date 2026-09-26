@@ -55,7 +55,21 @@
      Même allowlist que _decorateAppLinks (leçon #101 : une app à routeur #hash qui
      ne consomme pas le jeton casse — « Page introuvable » — ou le laisse traîner
      dans son URL/historique). Sourcing consomme (bootSSO → consumeHashToken). */
-  var SSO_PASS_CONSUMERS = { 'apex-chat.kd-mc.com': 1, 'dashboard.kd-mc.com': 1, 'sourcing.kd-mc.com': 1, 'bot.kd-mc.com': 1 };
+  /* UNE SEULE LISTE (26.09.2026). Il y en avait DEUX — celle-ci (retour après connexion) et
+     celle des tuiles (_decorateAppLinks) — et elles avaient déjà divergé : sourcing dans
+     l'une, pas dans l'autre. Surtout, javis.kd-mc.com n'était dans AUCUNE, alors que Bee
+     lit et nettoie #kdmc_sso= (tools/javis/javis-widget.js, ssoToken). Mesuré sur l'iPhone
+     de Kevin le 26.09 à 23h19 : Bee ouverte depuis l'app de l'écran d'accueil, cookies
+     isolés, aucun laissez-passer → « Bee est personnelle à Kevin » et aucune issue.
+     Garde : npm run test:laissez-passer (toute app qui LIT #kdmc_sso= doit être ici). */
+  /* Ajoutées le même soir, vérifiées une par une (aucune ne navigue par « # », toutes retirent le
+     laissez-passer de l'adresse) : la Light, la cuisine, le studio et Chez Lolo LISAIENT déjà
+     #kdmc_sso= au retour de connexion — mais ne le recevaient jamais : même trou que Bee.
+     PAS CMCteams : il navigue par « # » (leçon #101), il lui faut sa propre preuve navigateur. */
+  var SSO_PASS_CONSUMERS = { 'apex-chat.kd-mc.com': 1, 'dashboard.kd-mc.com': 1, 'sourcing.kd-mc.com': 1,
+    'bot.kd-mc.com': 1, 'javis.kd-mc.com': 1,
+    'departs.kd-mc.com': 1, 'cmcteams-light.kd-mc.com': 1, 'cuisine.kd-mc.com': 1, 'cocina.kd-mc.com': 1,
+    'cujina.kd-mc.com': 1, 'studio.kd-mc.com': 1, 'chez-lolo.kd-mc.com': 1 };
   function gotoReturnIfAny() {
     var r = safeReturnUrl();
     if (r) {
@@ -470,7 +484,7 @@
       /* Consommateurs connus du fragment (lisent+nettoient #kdmc_sso=) : Apex Chat ET
          le Dashboard boutiques (cookie isolé en PWA iOS → besoin du pass Bearer). Ne
          JAMAIS décorer une app à routeur #hash qui ne consomme pas le jeton (leçon #101). */
-      if (host !== 'apex-chat.kd-mc.com' && host !== 'dashboard.kd-mc.com' && host !== 'bot.kd-mc.com') return;
+      if (!SSO_PASS_CONSUMERS[host]) return;   /* la MÊME liste que le retour après connexion */
       var t = (window.kdmcSSO && window.kdmcSSO.token) ? window.kdmcSSO.token() : '';
       if (!t) return;
       var base = a.href.replace(/([#&])kdmc_sso=[^&]*/, '$1').replace(/[#&]+$/, '');

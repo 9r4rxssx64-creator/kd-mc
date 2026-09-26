@@ -940,6 +940,10 @@ function clSaveNewProduct(){
     Additif + fail-open : n'agit QUE si pas déjà admin ; les clients de la boutique ne
     sont JAMAIS touchés ; le mot de passe admin reste le fallback. */
  try{(function(){
+   /* 26.09.2026 : le laissez-passer (#kdmc_sso=) est RANGÉ puis RETIRÉ de l'adresse, et ce AVANT le
+      retour anticipé du mode admin. Avant, il n'était jamais retiré (et jamais lu en mode admin) :
+      une session restait visible dans la barre d'adresse, l'historique, un lien partagé. */
+   try{var h0=location.hash||"";var m0=h0.match(/[#&]kdmc_sso=([^&]+)/);if(m0){localStorage.setItem("kdmc_sso_token",decodeURIComponent(m0[1]));var r0=h0.replace(/([#&])kdmc_sso=[^&]*/,"$1").replace(/[#&]+$/,"");history.replaceState(null,"",location.pathname+location.search+r0);}}catch(_){}
    if(LD_ADMIN)return;
    try{var h=location.hash||"";var m=h.match(/[#&]kdmc_sso=([^&]+)/);if(m){localStorage.setItem("kdmc_sso_token",decodeURIComponent(m[1]));}}catch(_){}
    var tok="";try{tok=localStorage.getItem("kdmc_sso_token")||"";}catch(_){}

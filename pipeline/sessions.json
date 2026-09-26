@@ -42,9 +42,10 @@
         ".gitlab-ci.yml"
       ],
       "etat": "actif",
-      "maj": "2026-09-02",
-      "attend_kevin": "accès au compte Cloudflare « 9r4 » (verrouillé derrière GitHub)",
-      "attend_session": "arbre : ROUTEUR touché : /__arbre/* (code famille vérifié sur le domaine + données de l'arbre en KV) — fait n°12"
+      "maj": "2026-09-26",
+      "attend_kevin": null,
+      "attend_session": "arbre : ROUTEUR touché : /__arbre/* (code famille vérifié sur le domaine + données de l'arbre en KV) — fait n°12",
+      "note": "26.09 (javis-bee) : attente Kevin LEVEE, verifie en vrai. Le compte Cloudflare 9r4 etait verrouille derriere le login GitHub pendant la suspension (15.08 -> 4.09) ; GitHub est retabli depuis le 4.09. Mesure 26.09 par le connecteur Cloudflare : 28 workers lus, kdmc-router modifie 26.09 18:36 UTC, apex-chat-api 17:14 UTC. Le travail qui attendait cet acces (routeur, publication, remise en ligne) est fait par d'autres sessions depuis."
     },
     "divers": {
       "titre": "Divers",

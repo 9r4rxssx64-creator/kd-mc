@@ -1,5 +1,21 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-26 (19 h 45) — « Accès Cloudflare ? » : plus rien à faire, 2 lignes retirées de la liste de Kevin
+
+- **Le compte Cloudflare « 9r4 » n'est plus verrouillé.** Le blocage venait de la suspension de GitHub
+  (15.08 → 4.09) : Kevin se connecte à Cloudflare avec GitHub. La demande avait été écrite le **2.09**
+  par `domain-kdmc`, en pleine suspension, et jamais relue. Mesuré en direct par le **connecteur
+  Cloudflare** : 28 workers lus, `kdmc-router` modifié le 26.09 à 18:36 UTC, `apex-chat-api` à 17:14.
+  Attente levée au registre (`domain-kdmc`), avec la preuve.
+- **Le clic « droit Vectorize » était périmé lui aussi** : Vectorize abandonné le 22.09 pour une base
+  D1 ; mémoire longue d'Apex déployée le 23.09 (run 35911291075 sur `main`, vert, test réel
+  « ranger, retrouver, effacer » passé).
+- **Chaîne `test:ci` complète, d'une seule traite, sur l'état final : 222 étapes, sortie 0.**
+- Kevin n'a plus que **3** choses en attente : code famille, gilets, compte Apple.
+- Leçon pratique : une demande à Kevin porte une DATE et une CAUSE ; quand la cause disparaît
+  (ici, la suspension GitHub), la demande doit être relue — sinon elle lui reste sur les bras un mois.
+
+
 ## 2026-09-26 (20h45) — Kevin : « Fais tout ce qui était prévu le 1er, inutile d'attendre » → FAIT
 
 - **Règles boutiques** : `deploy-cmcteams-rules.yml` était « disabled_manually » dans le coffre (pause posée par la

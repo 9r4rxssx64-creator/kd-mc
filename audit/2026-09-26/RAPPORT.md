@@ -109,7 +109,6 @@ aucun test (règle absolue) : un code de test suffit, le domaine décide l'ident
 Relancé machine au repos : **18 OK / 0 FAIL**. Même piège que le clignotement de Bee ce matin —
 un seuil en millisecondes mesure la charge de la machine autant que le produit.
 
-<<<<<<< HEAD
 ### 0.8 ✅ LA CAUSE RACINE : le site était GELÉ — plus personne ne pouvait publier
 
 La section 0.2 accusait « l'alias de production ne suit pas le déploiement ». C'était vrai en
@@ -152,8 +151,6 @@ garde `test:sync-public` (14 contrôles, **7 sabotages**). Plus l'empreinte de c
 **Vérifié après la fusion** : le dépôt public est passé à `v1.0.34`, tuiles présentes, widget
 Javis à 72 270 o (commit « Synchronisation depuis le coffre (5bea46c67) », 18:35:48 UTC).
 
-=======
->>>>>>> origin/main
 ### 0.5 🔴 Ce qui reste non vérifié
 
 Le **second avis indépendant** (Qodo/GPT, Semgrep, gitleaks) n'a pas été relancé : les machines

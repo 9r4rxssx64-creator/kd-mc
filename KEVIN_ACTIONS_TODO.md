@@ -158,7 +158,6 @@ Seules les **automatisations** sont bloquées.
 > **aucune session ne peut plus oublier de te signaler ce qu'elle attend de toi.**
 
 <!-- MAJ-AUTO:debut attentes-kevin -->
-- 👤 **accès au compte Cloudflare « 9r4 » (verrouillé derrière GitHub)**  `domain-kdmc`
 - 👤 **changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…**  `arbre`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
@@ -515,7 +514,7 @@ Rien à installer, rien à configurer. Tu réponds, je m'occupe du reste.
 | 8 | ~~**`arbre/research/ACTES-VERIF.md`** (dates et lieux de naissance de ~18 personnes vivantes) dans un dépôt public. Je le retire ?~~ → **Tu as répondu « retire pas l'affichage des dates dans l'arbre, trouve une solution » (26.09).** Solution déjà en place, vérifiée : **rien n'est retiré, les dates restent dans l'arbre**. Le fichier vit dans le **coffre privé** (le dépôt est privé depuis le 22.09) et le dossier `arbre/` est classé « privé toujours » par le tri du dépôt public (garde `test:depot-public`, 47/0) : il ne sera **jamais** publié. | Rien à faire |
 | 9 | **Compte développeur Apple à 99 $/an** : oui ou non ? *(demandé par la session « meta »)* | Sans lui, aucune app ne peut aller sur l'App Store |
 | 10 | **Gilets** : combien, et broderie logo seul ou logo + prénoms ? *(session « la détente »)* | La commande part |
-| 11 | **Accès au compte Cloudflare « 9r4 »** *(session « domain kdmc »)* | Elle débloque son travail |
+| 11 | ~~**Accès au compte Cloudflare « 9r4 »**~~ → **Plus rien à faire (vérifié le 26.09).** Le blocage venait de la suspension de GitHub (15.08 → 4.09) : tu te connectes à Cloudflare avec GitHub. Mesuré en direct par le connecteur Cloudflare : ton compte s'ouvre, 28 services lus, le routeur de kd-mc.com mis à jour le 26.09 à 18h36. Le travail qui attendait cet accès est fait. | Rien à faire |
 
 ---
 
@@ -523,7 +522,7 @@ Rien à installer, rien à configurer. Tu réponds, je m'occupe du reste.
 
 | # | Quoi | Pourquoi |
 |---|---|---|
-| 12 | Sur [tes jetons Cloudflare](https://dash.cloudflare.com/profile/api-tokens) → le jeton qui a « Workers Scripts : Edit » → **Modifier** → ajouter **Compte › Vectorize › Edit** → **Enregistrer**. Puis écris-moi **« vectorize fait »**. | Sans ce droit, la **mémoire longue d'Apex** ne se déploie jamais. Apex marche, mais il oublie. Le jeton garde la même valeur : rien à changer ailleurs. |
+| 12 | ~~Donner le droit **Vectorize** au jeton Cloudflare~~ → **Plus rien à faire (vérifié le 26.09).** Vectorize a été abandonné le 22.09 pour une base D1 qui n'a pas besoin de ce droit. La mémoire longue d'Apex a été installée le 23.09 (run 35911291075 sur `main`, vert) et son test réel « ranger, retrouver, effacer » est passé. | Rien à faire |
 
 ---
 

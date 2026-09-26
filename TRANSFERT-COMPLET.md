@@ -46,7 +46,7 @@
 <!-- MAJ-AUTO:debut etat-live -->
 | Ce qui bouge | État au 2026-09-26 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **253** | `git ls-remote` |
+| Branches dans le dépôt | **255** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
 | État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
@@ -54,7 +54,6 @@
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)
 
 <!-- MAJ-AUTO:debut attentes-kevin -->
-- 👤 **accès au compte Cloudflare « 9r4 » (verrouillé derrière GitHub)**  `domain-kdmc`
 - 👤 **changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…**  `arbre`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`

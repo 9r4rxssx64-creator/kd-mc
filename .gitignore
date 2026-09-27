@@ -57,3 +57,6 @@ audit/captures-admin/
 # Paquet de reprise (fabrique par npm run transfert — copie locale, pas a versionner)
 /transfert/
 /transfert-kdmc-*.tgz
+
+# Captures de la vérification « affichage sur ordinateur » (regénérées à la demande)
+audit/arbre-ordi/

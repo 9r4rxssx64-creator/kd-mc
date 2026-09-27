@@ -1,5 +1,27 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — L'arbre sur ORDINATEUR : pleine page (v3.33)
+
+Kevin, capture de son portable : « Revois l'affichage sur ordi. Mauvaise qualité et pas assez
+grand. Pleine page. »
+
+**Mesuré d'abord**, à 1920×1080 : la scène n'occupait que **46 %** de la largeur (toute l'app
+vit dans une colonne de 900 px héritée de l'iPhone) et l'arbre était réduit à **×0,34** pour y
+entrer → étiquettes de **21 px**, petites et floues. La photo de fond, elle, fait 900 px de
+large : étirée sur 1888 px, elle paraît pâteuse.
+
+**v3.33, tout enfermé dans « ≥ 1000 px »** (le téléphone ne change pas d'un pixel) :
+vue Arbre **pleine largeur** et `100vh - 152px` de haut · échelle par défaut **0,70** au lieu
+de 0,34 · photo de fond assumée comme **arrière-plan** (léger flou + voile) · bouton
+**plein écran** sur ordinateur · recalage automatique au redimensionnement et en plein écran.
+
+**Mesuré après** : **98 %** de large, **86 %** de haut, **×0,70**, étiquette **42 px** (le
+double). Téléphone : 366×625, ×0,34, pas de bouton plein écran — identique.
+**Sabotages** → 2 rouges hors ligne, 3 en navigateur. Leçon **#272**.
+`npm run arbre:verif-ordi` refait la mesure et les captures.
+
+---
+
 ## 2026-09-27 — Première écriture automatique dans l'arbre : le filet a REFUSÉ, et il avait raison (v3.32)
 
 Premier passage de l'outil sur le vrai arbre partagé : **arrêt net**, rien écrit —

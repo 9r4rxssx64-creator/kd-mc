@@ -2740,6 +2740,15 @@
       "corps": "Attrapé le 27.09 par le filet de sécurité, sur les vraies données, avant toute écriture : « REFUSÉ : sources 1→0, notes réécrites ». Cause : fusionnerFiche sautait null, undefined et la chaîne vide, mais PAS un tableau vide — et l'outil qui prépare les fichiers mettait « sources: [] » dans chaque fiche à créer. Sur une personne qui existait déjà (retrouvée par son NOM, sous un identifiant à l'ancienne orthographe), cette liste vide remplaçait ses sources. SI VOUS FUSIONNEZ DES OBJETS QUELQUE PART (import planning, sync, overrides, fiches employés) : votre règle « champ vide = on garde l'ancien » couvre-t-elle le tableau vide et l'objet vide, ou seulement la chaîne vide ? Ici : une liste vide face à une liste remplie = on garde ; une liste remplie remplace toujours. Et la leçon plus générale : le vrai test d'un garde-fou, c'est le jour où il REFUSE — écrivez le filet avant la fonctionnalité. Leçon #271.",
       "ts": "2026-09-27 14:11",
       "etat": "ouvert"
+    },
+    {
+      "id": "m142-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "« Mobile-first » ≠ prêt pour un ordinateur : l'arbre tenait dans 46 % d'un écran 1920 et était réduit à ×0,34 — vérifiez vos apps sur grand écran",
+      "corps": "Kevin, capture de son portable : « pas assez grand, pleine page ». Mesuré à 1920×1080 AVANT de toucher : scène 46 % de la largeur, échelle ×0,34, noms 21 px. Trois causes : (a) #wrap{max-width:900px} — la colonne iPhone appliquée à TOUT ; (b) une constante de zoom « 0.34 » réglée pour 390 px et jamais revue ; (c) une image de fond de 900 px étirée sur 1888 px. Correctifs enfermés dans @media (min-width:1000px) pour ne rien changer au téléphone : pleine largeur + 100vh-152px, échelle 0,70, fond assumé en arrière-plan (flou léger + voile), bouton plein écran, recalage au resize. Mesuré après : 98 % / 86 % / ×0,70 / 42 px. Téléphone identique. SI VOTRE APP EST MOBILE-FIRST (CMCteams, Light, Lingua, Créa, boutiques) : ouvrez-la à 1920×1080 et mesurez la part de la fenêtre réellement utilisée — un max-width hérité est un plafond que personne n'a décidé. Et une constante d'échelle est toujours liée à l'écran où on l'a réglée : la faire dépendre de la place. Leçon #272 · npm run arbre:verif-ordi pour le gabarit de mesure.",
+      "ts": "2026-09-27 14:28",
+      "etat": "ouvert"
     }
   ]
 }

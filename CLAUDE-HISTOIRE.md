@@ -3203,6 +3203,60 @@ au boot se charge TOUJOURS (même puce OFF) pour un premier affichage instantan�
 
 ---
 
+## 🔓 RÈGLE ABSOLUE — POUR KEVIN, TOUT S'OUVRE AUTOMATIQUEMENT : AUCUN CODE À QUI LE DOMAINE CONNAÎT, ET C'EST L'ÉCRAN DU CODE QUI DEMANDE (Kevin 2026-09-27, ABSOLUE)
+
+> **« Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. »** — puis **« Note le »** — Kevin 2026-09-27
+
+### 1. Mesuré avant (le 27.09, relevé m149)
+
+Neuf portes redemandaient un code à Kevin alors que le domaine tenait déjà sa session **vérifiée admin** :
+CMCteams (PIN local après un ✕), fiches privées (`/__admin/fbtoken` sans le pass), admin.kd-mc.com, Finances,
+arbre (`prompt()` à chaque publication), bot (lisait une autre clé que le pass), Chez Lolo et son studio (mot de
+passe demandé 300 ms avant la réponse du domaine), journal « qui se connecte ». Et l'auto-login de CMCteams au
+démarrage ne suffisait pas : après une déconnexion (✕, sans rechargement), l'écran du matricule puis du PIN
+revenait, et le PIN était vérifié DANS la page (leçon #360).
+
+### 2. La règle
+
+- **Le domaine rend le laissez-passer admin sans code** : `GET|POST /__admin/grant` → `{ok, grant, via}` + cookie
+  `kdmc_admin` pour une session **vérifiée admin** (Bearer, `x-kdmc-sso`, cookie) ; **403 `need_admin_code`** à
+  toute session faible ou non-admin. Journal `admin_grant_session`.
+- **Toute porte admin d'une app demande d'abord à `/__admin/grant`** (`credentials:'include'` +
+  `Authorization: Bearer <kdmc_sso_token>`), range le `grant` (`x-kdmc-admin`) et ouvre. **L'écran du code
+  n'apparaît que sur refus.** Un auto-login au démarrage ne remplace pas ça : c'est **l'écran du code lui-même**
+  qui pose la question.
+- **Une page ne vérifie jamais un code** (règle 8) : CMCteams v9.928 n'exécute son chemin « entré » qu'après
+  la réponse du domaine (`_cmcAdminSansCode()`, `tools/shared/fiche-privee.js`, jamais dans `index.html`).
+- **Le pass voyage toujours avec le grant** : `x-kdmc-admin` + `Authorization: Bearer` sur `/__admin/fbtoken`
+  et toute porte admin — une app installée sur iPhone a ses cookies à part.
+- Ce qui vaut pour Kevin vaut pour toute personne connue du domaine, à son niveau : **un code de compte ne se
+  redemande pas non plus** à qui `whoami` reconnaît (règle 4 quater).
+
+### 3. Fait le 27.09 (PR #4118, #4119)
+
+CMCteams v9.928, fiches privées, admin.kd-mc.com, Finances, arbre, bot, Chez Lolo v2.0.16 + studio, kdmc-access.
+La sonde du domaine mesure `GET cmcteams…/__admin/grant` sans session (403 attendu ; 404 = route absente,
+200 = grand ouvert) et les versions servies de CMCteams et Chez Lolo.
+
+### 4. Prouvée discriminante
+
+`test:admin-partout` (11 : grant par session ; session faible → 403 ; non-admin → 403) et
+`test:admin-sans-code` (7, **vraie app CMCteams + vrai routeur, Chromium** : Kevin connu → ✕ → matricule →
+entré sans PIN, aucun PIN créé ; téléphone neuf → l'écran du code reste ; non-admin vérifié → reste ;
+**sabotage** : module servi sans la fonction → le code revient). Tous deux dans `test:ci`.
+
+### 5. Limite honnête
+
+Le vrai domaine n'a pas pu le montrer le soir même : coupé par la limite de requêtes du plan gratuit Cloudflare
+(1027, leçon #361) de ~21h45 à 00h00 UTC. Mesure reportée, une seule fois, après la remise à zéro.
+Restent hors de cette session : Apex « Activer l'IA » (le proxy exige l'empreinte du PIN) et Apex Chat qui
+ignore le cookie — message m162.
+
+### 6. Test mental
+
+> *« Kevin ouvre cette porte sur un appareil où le domaine le connaît déjà : est-ce qu'on lui demande quelque
+> chose ? Si oui, la porte est mal faite — elle devait demander au domaine avant de demander à Kevin. »*
+
 ## 🔬 RÈGLE ABSOLUE — RÉEL TOUJOURS : RIEN N'EST « FAIT » TANT QUE LE VRAI DOMAINE NE L'A PAS MONTRÉ (Kevin 2026-09-27, ABSOLUE)
 
 > **« Fais ton audit de lingua, toutes les fonctions, voix, etc. Tout. Réel tjs »** — puis, le soir même : **« Toujours, rappelle-toi »** — Kevin 2026-09-27

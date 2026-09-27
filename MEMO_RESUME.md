@@ -77,6 +77,13 @@ Chaque constat reproduit par moi, puis corrigé avec un test prouvé par sabotag
   payable par n'importe qui qui change d'IP (auth du domaine à brancher pour toutes les apps). Leçon **#363**.
 
 ---
+## 2026-09-27 (22h20 UTC) — « Note le » : la règle « tout s'ouvre pour Kevin » écrite noir sur blanc
+
+Kevin : « Note le ». Règle absolue ajoutée à `CLAUDE-HISTOIRE.md` (🔓 POUR KEVIN, TOUT S'OUVRE AUTOMATIQUEMENT :
+aucun code à qui le domaine connaît, et c'est l'écran du code qui demande — `/__admin/grant` d'abord, code sur
+refus seulement), index `CLAUDE.md` régénéré (`npm run claude-md:index`, garde `test:claude-md`), fait durable dans
+la mémoire (`mem.cjs`). Rien d'autre ne change.
+
 ## 2026-09-27 (22h10 UTC) — Le domaine entier coupé par la limite du plan gratuit Cloudflare (1027) — mesuré, pas de panne de code
 
 **Mesuré** : sonde `audit-domaine` run 36352979439 (21h48 UTC) : **33 adresses sur 33 → 429** ; lecture directe de

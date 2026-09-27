@@ -658,6 +658,16 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "note-tout-ouvert": {
+      "titre": "« Note le » : règle absolue tout s'ouvre pour Kevin",
+      "branche": "claude/note-tout-ouvert",
+      "sujet": "CLAUDE-HISTOIRE + index CLAUDE.md + mémoire",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

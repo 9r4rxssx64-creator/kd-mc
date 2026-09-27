@@ -29,7 +29,7 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **57** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **58** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
@@ -37,8 +37,8 @@
 | Gardes / tests | **123** fichiers, **181** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **106** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **162** dont **93** ouvertes | `pipeline/sessions.json` |
-| `CLAUDE.md` rechargé à chaque message | **68 113 o ≈ 19 461 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **609 005 o** | `wc -c` |
+| `CLAUDE.md` rechargé à chaque message | **68 612 o ≈ 19 603 tokens** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **612 681 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)

@@ -326,8 +326,17 @@
   }
 
   function renderCreate() {
+    /* « J'AI DÉJÀ UN COMPTE » — Face ID d'abord (26.09.2026, mesuré sur le parcours de l'iPhone
+       de Kevin) : une app de l'écran d'accueil a un stockage VIDE ; « Me connecter » l'amenait
+       ici, et la page ne proposait QUE « Créer mon compte » — Kevin, admin, ne pouvait pas
+       rentrer (son Face ID refusé sur une session nouvelle, par sécurité). Le passkey du
+       trousseau iCloud, lui, est là : Face ID le retrouve sans qu'on sache encore qui c'est. */
+    var pk = _pkSupported();
     gate.innerHTML =
-      '<h2 class="g-title">Créer mon compte KDMC</h2>'
+      (pk ? '<button class="btn" id="f-pk" type="button">🔓 J\'ai déjà un compte — Face ID</button>'
+        + '<p class="g-err" id="f-pk-err" role="alert" aria-live="polite"></p>'
+        + '<p class="g-sub" style="text-align:center;margin:10px 0 14px">— ou, première fois ici —</p>' : '')
+      + '<h2 class="g-title">Créer mon compte KDMC</h2>'
       + '<p class="g-sub">Première connexion. Un seul compte pour tout ton univers.</p>'
       + '<input class="fld" id="f-prenom" type="text" autocomplete="given-name" placeholder="Prénom" inputmode="text">'
       + '<input class="fld" id="f-nom" type="text" autocomplete="family-name" placeholder="Nom">'
@@ -338,6 +347,16 @@
       + '<p class="g-err" id="f-err" role="alert" aria-live="polite"></p>';
     wireCgu();
     document.getElementById('f-create').addEventListener('click', doCreate);
+    var bpk = document.getElementById('f-pk');
+    if (bpk) bpk.addEventListener('click', function () {
+      bpk.disabled = true; bpk.textContent = '…';
+      window.kdmcSSO.loginPasskey().then(function (j) {
+        if (j && j.ok && j.uid) { _setPasskey(j.uid, j.credId); showHub(j.name || ''); return; }
+        document.getElementById('f-pk-err').textContent = 'Face ID : ' + ((j && j.reason) || 'échec')
+          + '. Aucun compte avec Face ID sur cet appareil ? Crée-le ci-dessous.';
+        bpk.disabled = false; bpk.textContent = '🔓 J\'ai déjà un compte — Face ID';
+      });
+    });
   }
 
   function renderUnlock(acc) {

@@ -1833,6 +1833,15 @@ async function handleSso(request, url, env) {
      en prod aucune de ces vars n'est posée → valeurs kd-mc.com. */
   const RP_ID = (env && env.KDMC_RP_ID) || 'kd-mc.com';
   const RP_ORIGINS = (env && env.KDMC_RP_ORIGINS) ? env.KDMC_RP_ORIGINS.split(',') : ['https://kd-mc.com', 'https://www.kd-mc.com'];
+  /* SE CONNECTER par Face ID (auth, pas l'enrôlement) : aussi depuis NOS apps (Kevin 26.09,
+     « Oui aux 2 »). Mesuré le 26.09 : une app posée sur l'écran d'accueil de l'iPhone a un stockage
+     VIDE et isolé — « Me connecter » renvoyait au portail, qui n'y connaissait personne et
+     affichait « Créer mon compte ». Avec rpId kd-mc.com, le passkey de Kevin (trousseau iCloud)
+     marche aussi sur javis.kd-mc.com : l'app le prouve SUR PLACE. Liste = les adresses que CE
+     routeur sert (ROUTES), jamais un joker ; la preuve reste la signature Face ID vérifiée ici avec
+     la clé enregistrée. L'ENRÔLEMENT d'un nouvel appareil reste au portail seul (RP_ORIGINS). */
+  const RP_ORIGINS_AUTH = (env && env.KDMC_RP_ORIGINS) ? RP_ORIGINS
+    : RP_ORIGINS.concat(Object.keys(ROUTES).map((h) => 'https://' + h).filter((o) => RP_ORIGINS.indexOf(o) < 0));
   if (path === '/__sso/webauthn/register/options' && request.method === 'POST') {
     const s = await ssoVerify(secret, ssoToken(request));
     if (!s) return J({ ok: false, reason: 'session requise' });
@@ -1897,7 +1906,7 @@ async function handleSso(request, url, env) {
     const list = (env && env.ACCOUNTS) ? JSON.parse((await env.ACCOUNTS.get('pk:' + uid)) || '[]') : [];
     const rec = list.find((k) => k.credId === credId);
     if (!rec) return J({ ok: false, reason: 'passkey inconnu' });
-    const r = await verifyAssertion(secret, rec.jwk, { clientDataJSON: b.clientDataJSON, authenticatorData: b.authenticatorData, signature: b.signature }, { origins: RP_ORIGINS, rpId: RP_ID });
+    const r = await verifyAssertion(secret, rec.jwk, { clientDataJSON: b.clientDataJSON, authenticatorData: b.authenticatorData, signature: b.signature }, { origins: RP_ORIGINS_AUTH, rpId: RP_ID });
     if (!r.ok) return J({ ok: false, reason: r.reason });
     if ((await challengeConsume(env, b.clientDataJSON)) === 'replay') return J({ ok: false, reason: 'challenge déjà utilisé (rejeu)' });
     /* Détection de clone par compteur de signature : on ne rejette QUE si le compteur

@@ -1,12 +1,12 @@
 {
-  "le": "2026-09-26T22:01:53.319Z",
-  "echecs": 0,
+  "le": "2026-09-26T22:48:50.740Z",
+  "echecs": 3,
   "surfaces": [
     {
       "nom": "Portail kd-mc.com",
       "hote": "kd-mc.com",
       "servie": true,
-      "version_depot": "v1.0.34",
+      "version_depot": "v1.0.35",
       "version_servie": "v1.0.34",
       "tuiles": 39,
       "absentes": 0
@@ -24,11 +24,12 @@
   "tuiles_total": 49,
   "tuiles_absentes_en_ligne": 0,
   "destinations_mortes": 0,
+  "cause": "origine-perimee",
   "destinations_total": 41,
   "tuiles_en_construction": 8,
   "javis": {
     "hote": "javis.kd-mc.com",
     "octets_en_ligne": 71397,
-    "octets_depot": 72270
+    "octets_depot": 75789
   }
 }

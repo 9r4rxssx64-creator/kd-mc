@@ -82,9 +82,9 @@ const run = async () => {
 
   /* 8) anti-rejeu : rejouer la MÊME assertion → refus (challenge déjà consommé) ;
      valide aussi la progression du compteur (count 1→2 acceptée). */
-  async function assertionN(challengeB64, count) {
+  async function assertionN(challengeB64, count, origine) {
     const ad = cat(rpIdHash, Uint8Array.of(0x05), Uint8Array.of(0, 0, 0, count));
-    const cd = te.encode(JSON.stringify({ type: 'webauthn.get', challenge: challengeB64, origin: ORIGIN }));
+    const cd = te.encode(JSON.stringify({ type: 'webauthn.get', challenge: challengeB64, origin: origine || ORIGIN }));
     const raw = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, kp.privateKey, cat(ad, await sha256(cd))));
     return { uid: 'kevin-desarzens', credId: b64uEnc(credId), clientDataJSON: b64uEnc(cd), authenticatorData: b64uEnc(ad), signature: b64uEnc(rawToDer(raw)) };
   }
@@ -112,6 +112,33 @@ const run = async () => {
   ok(rvA.ok === false && /admin protégé/i.test(rvA.reason || ''), 'attaquant (session faible) NE greffe PAS de passkey sur admin → REFUS');
   const pkList = JSON.parse(store.get('pk:kevin-desarzens') || '[]');
   ok(!pkList.some((k) => k.credId === b64uEnc(credId2)), 'le passkey de l\'attaquant n\'est PAS entré en KV');
+
+  /* 10) FACE ID DEPUIS NOS APPS (Kevin 26.09, « Oui aux 2 ») : l'app Bee de l'écran d'accueil a
+     un stockage vide ; elle prouve Face ID SUR PLACE. La connexion est acceptée depuis une adresse
+     que le routeur sert — et SEULEMENT celles-là : ni un site tiers, ni un faux sous-domaine, ni
+     un nom qui « finit comme » le domaine. L'enrôlement d'un appareil reste au portail seul. */
+  const aoLibre = await (await mod.fetch(POST('/__sso/webauthn/auth/options', { uid: '' }), env)).json();
+  ok(aoLibre.ok && Array.isArray(aoLibre.allowCredentials) && aoLibre.allowCredentials.length === 0 && aoLibre.rpId === RPID,
+    'auth/options SANS uid (appareil qui ne connaît personne) → challenge, liste vide : le trousseau se présente');
+  const essai = async (origine, n) => {
+    const o = await (await mod.fetch(POST('/__sso/webauthn/auth/options', { uid: 'kevin-desarzens' }), env)).json();
+    return (await mod.fetch(POST('/__sso/webauthn/auth/verify', await assertionN(o.challenge, n, origine)), env)).json();
+  };
+  const jv = await essai('https://javis.kd-mc.com', 3);
+  ok(jv.ok === true && jv.verified === true, 'Face ID prouvé DEPUIS javis.kd-mc.com (app du domaine) → session FORTE');
+  ok((await essai('https://evil.example', 4)).ok === false, 'Face ID signé pour un site TIERS → REFUS');
+  ok((await essai('https://kd-mc.com.evil.example', 5)).ok === false, 'origine qui « commence comme » le domaine → REFUS');
+  ok((await essai('https://inconnu.kd-mc.com', 6)).ok === false, 'sous-domaine que le routeur ne SERT PAS → REFUS (pas de joker)');
+  ok((await essai('http://javis.kd-mc.com', 7)).ok === false, 'même app mais en http (non chiffré) → REFUS');
+  {
+    const ro3 = await (await mod.fetch(POST('/__sso/webauthn/register/options', {}, { authorization: 'Bearer ' + jv.token }), env)).json();
+    const credId3 = crypto.getRandomValues(new Uint8Array(32));
+    const regAD3 = cat(rpIdHash, Uint8Array.of(0x45), Uint8Array.of(0, 0, 0, 0), new Uint8Array(16), Uint8Array.of(0, credId3.length), credId3, cose);
+    const att3 = cat(head(5, 3), enc('fmt'), enc('none'), enc('attStmt'), head(5, 0), enc('authData'), enc(regAD3));
+    const cd3 = te.encode(JSON.stringify({ type: 'webauthn.create', challenge: ro3.challenge, origin: 'https://javis.kd-mc.com' }));
+    const r3 = await (await mod.fetch(POST('/__sso/webauthn/register/verify', { attestationObject: b64uEnc(att3), clientDataJSON: b64uEnc(cd3) }, { authorization: 'Bearer ' + jv.token }), env)).json();
+    ok(r3.ok === false, 'ENRÔLER un nouvel appareil depuis une app (javis) → REFUS : l\'enrôlement reste au portail');
+  }
 
   console.log(`WebAuthn endpoints test: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

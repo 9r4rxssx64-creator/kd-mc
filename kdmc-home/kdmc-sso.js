@@ -103,22 +103,25 @@
       .catch(function (e) { return { ok: false, reason: String((e && e.message) || e).slice(0, 120) }; });
   }
 
-  /* Connexion par passkey (Face ID) pour un uid connu. → {ok, verified, ...} ; stocke le pass. */
+  /* Connexion par passkey (Face ID). → {ok, verified, uid, name, ...} ; stocke le pass.
+     Sans uid (appareil qui ne connaît encore personne : app de l'écran d'accueil au stockage vide,
+     26.09) : Face ID propose lui-même le passkey du trousseau, et on lit l'uid dans la réponse
+     signée (userHandle = l'uid posé à l'enrôlement). Le serveur vérifie la signature avec la clé
+     qu'IL a enregistrée pour cet uid : annoncer un autre uid ne donne rien. */
   function loginPasskey(uid) {
     if (!supportsPasskey()) return Promise.resolve({ ok: false, reason: 'non supporté' });
-    return fetch(BASE + '/webauthn/auth/options', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: uid }) })
+    return fetch(BASE + '/webauthn/auth/options', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: uid || '' }) })
       .then(function (r) { return r.json(); })
       .then(function (o) {
         if (!o || !o.ok) return { ok: false, reason: (o && o.reason) || 'options' };
-        if (!o.allowCredentials || !o.allowCredentials.length) return { ok: false, reason: 'aucun passkey' };
-        return navigator.credentials.get({ publicKey: {
-          challenge: _b64uToBuf(o.challenge),
-          rpId: o.rpId,
-          allowCredentials: o.allowCredentials.map(function (c) { return { type: 'public-key', id: _b64uToBuf(c.id) }; }),
-          userVerification: 'required', timeout: 60000,
-        } }).then(function (cred) {
+        if (uid && (!o.allowCredentials || !o.allowCredentials.length)) return { ok: false, reason: 'aucun passkey' };
+        var pk = { challenge: _b64uToBuf(o.challenge), rpId: o.rpId, userVerification: 'required', timeout: 60000 };
+        if (uid) pk.allowCredentials = o.allowCredentials.map(function (c) { return { type: 'public-key', id: _b64uToBuf(c.id) }; });
+        return navigator.credentials.get({ publicKey: pk }).then(function (cred) {
           var a = cred.response;
           var _cid = cred.id; /* id (b64u) du passkey utilisé sur CET appareil */
+          if (!uid) { try { uid = new TextDecoder().decode(a.userHandle); } catch (e) { uid = ''; } }
+          if (!uid) return { ok: false, reason: 'passkey sans compte' };
           return fetch(BASE + '/webauthn/auth/verify', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: uid, credId: cred.id, clientDataJSON: _bufToB64u(a.clientDataJSON), authenticatorData: _bufToB64u(a.authenticatorData), signature: _bufToB64u(a.signature) }) })
             .then(function (r) { return r.json(); })
             .then(function (j) { if (j && j.ok && j.token) setToken(j.token); if (j && j.ok && !j.credId) j.credId = _cid; return j || { ok: false }; });

@@ -1,10 +1,11 @@
 # Vérif LIVE des tuiles — ce que Kevin voit vraiment sur son iPhone
 
-_2026-09-26 22:01 UTC · lecture seule sur le domaine · rapport écrit par la machine GitHub_
+_2026-09-26 22:48 UTC · lecture seule sur le domaine · rapport écrit par la machine GitHub_
 
 ## Portail kd-mc.com
 - ✅ kd-mc.com répond — HTTP 200, 26502 octets
-- ✅ la version servie est celle du dépôt — dépôt = v1.0.34 · en ligne = v1.0.34
+- ❌ la version servie est celle du dépôt — dépôt = v1.0.35 · en ligne = v1.0.34 → PUBLICATION EN RETARD
+- ❌ CAUSE : l'origine elle-même sert l'ancienne version — même avec un paramètre inédit → v1.0.34. Ce n'est donc pas le cache : l'adresse stable ne pointe pas sur le paquet publié.
 - ✅ les 39 tuiles du fichier sont toutes servies en ligne — 39 tuile(s) dans la page servie
 
 ## Vitrine boutiques
@@ -20,7 +21,7 @@ _2026-09-26 22:01 UTC · lecture seule sur le domaine · rapport écrit par la m
 - ✅ javis.kd-mc.com sert le widget — 71397 octets
 - ✅ la garde des 4 secondes est en ligne (plus d'écran noir si le domaine ne répond pas)
 - ✅ le son n'est armé qu'après le portier, et désarmé à la mise en veille
-- ✅ le fichier servi est bien celui du dépôt — en ligne 71397 o · dépôt 72270 o
+- ❌ le fichier servi est bien celui du dépôt — en ligne 71397 o · dépôt 75789 o
 - ✅ l'icône 192 px est servie (installation sur iPhone sans icône floue) — HTTP 200
 
 ## Ce que ce contrôle NE prouve pas
@@ -30,4 +31,4 @@ _2026-09-26 22:01 UTC · lecture seule sur le domaine · rapport écrit par la m
 
 ---
 
-**Conclusion : 49 tuiles servies, 41 destinations vivantes, 0 écart.**
+**Conclusion : 3 écart(s) mesuré(s) — détail ci-dessus.**

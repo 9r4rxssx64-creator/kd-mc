@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Bee : reconnu TOUT SEUL par Face ID, même dans l'app de l'écran d'accueil
+
+- **Mesuré** : dans une app neuve (stockage vide, comme l'icône de l'écran d'accueil), « Me
+  connecter » menait à « Créer mon compte KDMC » sans Face ID → Kevin dehors. Mon test de la veille
+  n'effaçait que les cookies (leçon **#343**).
+- **Kevin : « Oui aux 2 »** → Face ID **dans Bee** (v1.8) + bouton **« J'ai déjà un compte — Face
+  ID »** sur kd-mc.com (portail v1.0.36, sso v1.0.27, service worker réaligné). Le routeur accepte la
+  connexion Face ID depuis les adresses qu'il sert — liste explicite, enrôlement toujours au portail.
+- Gardes : `test:bee-iphone` **21/0** (3 sabotages rouges) · `webauthn-endpoints` **20/0** (7 refus
+  de sécurité neufs, 2 sabotages rouges) · 4 parcours e2e du domaine **33/0**.
+
 ## 2026-09-26 (23 h 30) — « Impossible de me connecter » à Bee depuis l'iPhone : réparé, et 4 autres apps avec
 
 - **Cause mesurée en vrai navigateur** (vrai routeur, Face ID virtuel, cookies vidés comme l'app

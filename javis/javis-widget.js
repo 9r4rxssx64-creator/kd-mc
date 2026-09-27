@@ -46,7 +46,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.7';
+  var JAVIS_VER = 'v1.8';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
@@ -1245,9 +1245,9 @@
   function ecranVerrou(raison) {
     var TXT = {
       'inconnu': ['Bee ne te reconnaît pas ici',
-        'Ta connexion ne passe pas jusqu\'à cette page (sur iPhone, une app posée sur l\'écran d\'accueil garde ses propres cookies). Touche le bouton : tu te connectes, et tu reviens ici tout seul.'],
+        'Sur iPhone, une app posée sur l\'écran d\'accueil garde sa propre mémoire : ta connexion au domaine n\'arrive pas jusqu\'ici. Touche Face ID : Bee te reconnaît directement, puis toute seule les fois suivantes.'],
       'sans-faceid': ['Il manque Face ID',
-        'Tu es bien connecté, mais sans Face ID. Bee est réservée à toi seul : elle demande la preuve Face ID. Touche le bouton, valide Face ID, et tu reviens ici.'],
+        'Tu es bien connecté, mais sans Face ID. Bee est réservée à toi seul : elle demande la preuve Face ID. Touche Face ID, et c\'est ouvert.'],
       'pas-kevin': ['Bee est personnelle à Kevin',
         'Ce compte n\'est pas celui de Kevin : Bee reste fermée.'],
       'muet': ['Le domaine ne répond pas',
@@ -1266,17 +1266,54 @@
     var p = document.createElement('p'); p.style.cssText = 'max-width:320px;margin:0';
     p.textContent = t[1];
     d.appendChild(ic); d.appendChild(b); d.appendChild(p);
+    var PLEIN = 'display:inline-flex;align-items:center;justify-content:center;min-height:52px;' +
+      'min-width:240px;padding:0 22px;border-radius:14px;background:#f6b73c;color:#1a1204;border:0;' +
+      'font-weight:700;font-size:17px;text-decoration:none;margin-top:6px;font-family:inherit';
+    var CREUX = PLEIN.replace('background:#f6b73c;color:#1a1204;border:0', 'background:transparent;color:#f6b73c;border:1px solid #6b5423')
+      .replace('font-size:17px', 'font-size:15px');
+    /* FACE ID SUR PLACE (Kevin 26.09 : « je suis normalement reconnu auto admin dans mon domaine et
+       chaque app », puis « Oui aux 2 »). Mesuré : depuis l'app de l'écran d'accueil (stockage VIDE),
+       passer par kd-mc.com menait à « Créer mon compte ». Le passkey de Kevin (rpId kd-mc.com,
+       trousseau iCloud) marche ICI : on le prouve sans quitter Bee, le domaine vérifie la signature
+       et rend une session FORTE, gardée 30 jours dans CETTE app → reconnu tout seul ensuite. */
+    var faceId = (raison === 'inconnu' || raison === 'sans-faceid') && !!window.PublicKeyCredential;
+    if (faceId) {
+      var f = document.createElement('button');
+      f.id = 'bee-faceid'; f.type = 'button';
+      f.style.cssText = PLEIN;
+      f.textContent = '\uD83D\uDD13 Face ID';
+      var err = document.createElement('p');
+      err.id = 'bee-faceid-err';
+      err.style.cssText = 'max-width:320px;margin:0;min-height:20px;color:#ff8a7a;font-size:14px';
+      var lancer = function (auto) {
+        f.disabled = true; f.textContent = '\u2026';
+        faceIdIci(function (ok, pourquoi) {
+          if (ok) {
+            try { localStorage.setItem('bee_faceid_ok', '1'); } catch (_) {}
+            location.replace(location.pathname + location.search);   /* rechargée : reconnue */
+            return;
+          }
+          f.disabled = false; f.textContent = '\uD83D\uDD13 Face ID';
+          if (!auto) err.textContent = 'Face ID n\'a pas abouti (' + pourquoi + '). Réessaie, ou passe par kd-mc.com.';
+        });
+      };
+      f.addEventListener('click', function () { lancer(false); });
+      d.appendChild(f); d.appendChild(err);
+      /* Déjà réussi une fois sur cet appareil → on le relance SANS attendre un toucher (session
+         expirée au bout de 30 jours). Si l'iPhone exige un toucher, rien ne s'affiche : le bouton reste. */
+      var deja = false; try { deja = localStorage.getItem('bee_faceid_ok') === '1'; } catch (_) {}
+      if (deja) setTimeout(function () { lancer(true); }, 300);
+    }
     if (raison !== 'pas-kevin') {
       var a = document.createElement('a');
       a.id = 'bee-connexion';
-      a.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-height:52px;' +
-        'min-width:240px;padding:0 22px;border-radius:14px;background:#f6b73c;color:#1a1204;' +
-        'font-weight:700;font-size:17px;text-decoration:none;margin-top:6px';
+      a.style.cssText = faceId ? CREUX : PLEIN;
       if (raison === 'muet') {
         a.textContent = 'Réessayer';
         a.href = location.pathname + location.search;
       } else {
-        a.textContent = raison === 'sans-faceid' ? 'Valider avec Face ID' : 'Me connecter';
+        a.textContent = faceId ? 'Passer par kd-mc.com'
+          : (raison === 'sans-faceid' ? 'Valider avec Face ID' : 'Me connecter');
         /* Retour vers CETTE page, sans fragment (un vieux #kdmc_sso ne doit pas repartir). */
         var ret = location.origin + location.pathname + location.search;
         a.href = 'https://kd-mc.com/?return=' + encodeURIComponent(ret);
@@ -1285,6 +1322,43 @@
     }
     document.body.textContent = '';
     document.body.appendChild(d);
+  }
+
+  /* Face ID prouvé AUPRÈS DU DOMAINE, depuis cette page (/__sso/* est servi par le routeur sur
+     chaque adresse). Sans uid connu : le passkey du trousseau se présente lui-même, son userHandle
+     porte l'uid ; le domaine vérifie la signature avec la clé qu'IL a enregistrée. Bee ne décide
+     rien : elle range le laissez-passer rendu, puis redemande /__sso/whoami au rechargement. */
+  function faceIdIci(cb) {
+    function versBuf(s) { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
+      var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
+    function versB64u(buf) { var u = new Uint8Array(buf), s = ''; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+      return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+    var fini = false;
+    var fin = function (ok, pourquoi) { if (!fini) { fini = true; cb(ok, pourquoi || ''); } };
+    var POST = { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' } };
+    try {
+      fetch('/__sso/webauthn/auth/options', Object.assign({ body: '{"uid":""}' }, POST))
+        .then(function (r) { return r.json(); })
+        .then(function (o) {
+          if (!o || !o.ok) throw new Error('domaine indisponible');
+          return navigator.credentials.get({ publicKey: { challenge: versBuf(o.challenge), rpId: o.rpId,
+            userVerification: 'required', timeout: 60000 } });
+        })
+        .then(function (cred) {
+          var a = cred.response, uid = '';
+          try { uid = new TextDecoder().decode(a.userHandle); } catch (_) {}
+          if (!uid) throw new Error('aucun compte sur ce Face ID');
+          return fetch('/__sso/webauthn/auth/verify', Object.assign({ body: JSON.stringify({ uid: uid, credId: cred.id,
+            clientDataJSON: versB64u(a.clientDataJSON), authenticatorData: versB64u(a.authenticatorData),
+            signature: versB64u(a.signature) }) }, POST)).then(function (r) { return r.json(); });
+        })
+        .then(function (j) {
+          if (!(j && j.ok && j.token)) return fin(false, (j && j.reason) || 'refusé');
+          try { localStorage.setItem('kdmc_sso_token', j.token); } catch (_) {}
+          fin(true);
+        })
+        .catch(function (e) { fin(false, (e && (e.name === 'NotAllowedError' ? 'annulé' : e.message)) || 'échec'); });
+    } catch (e) { fin(false, 'non disponible'); }
   }
 
   function boot() {

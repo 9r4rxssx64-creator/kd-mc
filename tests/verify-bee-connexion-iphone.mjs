@@ -21,6 +21,15 @@
  * alors pour Kevin, et nettoie le laissez-passer de l'adresse ; (4) connecté SANS Face ID, Bee
  * reste fermée et le dit exactement (le verrou n'est pas affaibli).
  *
+ * PUIS LE VRAI CAS DE L'IPHONE (Kevin 27.09 : « je suis normalement reconnu auto admin dans mon
+ * domaine et chaque app ») — mesuré : l'étape 2 ci-dessus n'efface que les COOKIES ; or l'app de
+ * l'écran d'accueil a TOUT son stockage vide. Dans ce cas « Me connecter » menait à « Créer mon
+ * compte KDMC », sans Face ID : Kevin restait dehors. On rejoue donc dans un NAVIGATEUR NEUF (rien
+ * en mémoire) où seul le passkey de Kevin est présent (copié : le trousseau iCloud synchronisé) :
+ *   (5) Face ID directement DANS Bee → ouverte ; rechargée → ouverte SANS rien toucher (reconnu) ;
+ *   (6) par kd-mc.com : le portail propose « J'ai déjà un compte — Face ID » → retour dans Bee ;
+ *   (7) un inconnu sans passkey : Face ID échoue, Bee reste fermée et le dit.
+ *
  * Aucun vrai code : le code de test « 123456 » (règle absolue : le code admin ne s'écrit nulle part).
  * node tests/verify-bee-connexion-iphone.mjs
  */
@@ -53,7 +62,7 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ✅ ' + m); } else { fail
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });   /* écran d'iPhone */
-await ctx.route(/^https:\/\/([a-z0-9-]+\.)?kd-mc\.com\//, async (route) => {
+const routeur = async (route) => {
   const req = route.request();
   const u = new URL(req.url());
   if (u.pathname.startsWith('/__sso/') || u.pathname.startsWith('/__admin/')) {
@@ -70,13 +79,30 @@ await ctx.route(/^https:\/\/([a-z0-9-]+\.)?kd-mc\.com\//, async (route) => {
   const f = join(ROOT, dossier, chemin);
   if (!f.startsWith(join(ROOT, dossier)) || !existsSync(f) || statSync(f).isDirectory()) return route.fulfill({ status: 404, body: 'introuvable' });
   return route.fulfill({ status: 200, headers: { 'content-type': TYPES[extname(f)] || 'application/octet-stream' }, body: readFileSync(f) });
-});
+};
+await ctx.route(/^https:\/\/([a-z0-9-]+\.)?kd-mc\.com\//, routeur);
+
+/* Un navigateur NEUF = l'app de l'écran d'accueil : aucun cookie, aucun stockage. `passkeys` = ce que
+   le trousseau iCloud synchronisé y apporte (rien pour un inconnu). */
+async function appNeuve(passkeys) {
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await c.route(/^https:\/\/([a-z0-9-]+\.)?kd-mc\.com\//, routeur);
+  const p = await c.newPage();
+  const s = await c.newCDPSession(p);
+  await s.send('WebAuthn.enable');
+  const a = await s.send('WebAuthn.addVirtualAuthenticator', { options: { protocol: 'ctap2', transport: 'internal',
+    hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
+  for (const k of passkeys || []) await s.send('WebAuthn.addCredential', { authenticatorId: a.authenticatorId, credential: k });
+  return { c, p, s, id: a.authenticatorId };
+}
+const etatBee = (p) => p.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher'), url: location.href,
+  texte: document.body.innerText, verrou: !!document.getElementById('bee-connexion') || !!document.getElementById('bee-faceid') }));
 
 try {
   const page = await ctx.newPage();
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('WebAuthn.enable');
-  await cdp.send('WebAuthn.addVirtualAuthenticator', { options: { protocol: 'ctap2', transport: 'internal',
+  const A1 = await cdp.send('WebAuthn.addVirtualAuthenticator', { options: { protocol: 'ctap2', transport: 'internal',
     hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
 
   console.log('— 1. Kevin se connecte sur kd-mc.com AVEC Face ID —');
@@ -89,6 +115,7 @@ try {
   await page.click('#pk-go');
   await page.waitForFunction(() => { const h = document.getElementById('hub'); return h && !h.hidden; }, null, { timeout: 10000 });
   const moi = await page.evaluate(() => window.kdmcSSO.whoami());
+  let trousseau = (await cdp.send('WebAuthn.getCredentials', { authenticatorId: A1.authenticatorId })).credentials;
   ok(moi && moi.verified === true && moi.admin === true, 'sur kd-mc.com : session FORTE et admin (Face ID prouvé)  [' + JSON.stringify(moi && { v: moi.verified, a: moi.admin }) + ']');
 
   console.log('— 2. Bee ouverte depuis l\'app de l\'écran d\'accueil : cookies ISOLÉS —');
@@ -96,15 +123,17 @@ try {
   await page.goto('https://javis.kd-mc.com/');
   await page.waitForSelector('#bee-connexion', { timeout: 8000 }).catch(() => {});
   const verrou = await page.evaluate(() => {
-    const a = document.getElementById('bee-connexion');
-    const r = a ? a.getBoundingClientRect() : null;
-    return { texte: document.body.innerText, href: a ? a.href : '', haut: r ? r.height : 0, larg: r ? r.width : 0, bee: !!document.querySelector('#javis-launcher') };
+    const a = document.getElementById('bee-connexion'), f = document.getElementById('bee-faceid');
+    const r = a ? a.getBoundingClientRect() : null, rf = f ? f.getBoundingClientRect() : null;
+    return { texte: document.body.innerText, href: a ? a.href : '', haut: r ? r.height : 0, larg: r ? r.width : 0,
+      fHaut: rf ? rf.height : 0, fLarg: rf ? rf.width : 0, bee: !!document.querySelector('#javis-launcher') };
   });
   ok(!verrou.bee, 'sans laissez-passer, Bee reste FERMÉE (fail-closed intact)');
   ok(/ne te reconnaît pas ici/.test(verrou.texte), 'l\'écran dit la VRAIE raison (« Bee ne te reconnaît pas ici »), pas une consigne impossible');
   ok(verrou.href === 'https://kd-mc.com/?return=' + encodeURIComponent('https://javis.kd-mc.com/'),
     'il offre UN bouton qui passe par le domaine et revient ici  [' + verrou.href + ']');
   ok(verrou.haut >= 44 && verrou.larg >= 44, `le bouton se touche au doigt (${Math.round(verrou.larg)}×${Math.round(verrou.haut)} px, ≥ 44)`);
+  ok(verrou.fHaut >= 44 && verrou.fLarg >= 44, `et le bouton « Face ID » (sur place) aussi (${Math.round(verrou.fLarg)}×${Math.round(verrou.fHaut)} px, ≥ 44)`);
 
   console.log('— 3. Kevin touche « Me connecter » —');
   await Promise.all([page.waitForURL(/^https:\/\/javis\.kd-mc\.com\//, { timeout: 15000 }), page.click('#bee-connexion')]);
@@ -134,8 +163,59 @@ try {
     const r4 = await page.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher'), texte: document.body.innerText,
       bouton: (document.getElementById('bee-connexion') || {}).textContent || '' }));
     ok(!r4.bee, 'sans Face ID, Bee reste FERMÉE même au nom de Kevin');
-    ok(/Il manque Face ID/.test(r4.texte) && /Face ID/.test(r4.bouton), 'et l\'écran dit exactement ce qui manque (« Il manque Face ID »)  [bouton : ' + r4.bouton + ']');
+    ok(/Il manque Face ID/.test(r4.texte) && /Face ID/.test(r4.texte), 'et l\'écran dit exactement ce qui manque (« Il manque Face ID »)  [bouton : ' + r4.bouton + ']');
   }
+
+  console.log('— 5. LE VRAI iPHONE : app NEUVE (stockage vide), seul le passkey du trousseau est là —');
+  ok(trousseau.length >= 1, `le passkey Face ID de Kevin est copié dans l'app neuve (trousseau iCloud) : ${trousseau.length}`);
+  const A = await appNeuve(trousseau);
+  await A.p.goto('https://javis.kd-mc.com/');
+  await A.p.waitForSelector('#bee-faceid', { timeout: 8000 }).catch(() => {});
+  const e5 = await etatBee(A.p);
+  ok(!e5.bee && /ne te reconnaît pas ici/.test(e5.texte), 'app neuve : Bee fermée et dit pourquoi');
+  await Promise.all([A.p.waitForNavigation({ timeout: 15000 }).catch(() => {}), A.p.click('#bee-faceid')]);
+  await A.p.waitForSelector('#javis-launcher', { timeout: 10000 }).catch(() => {});
+  const e5b = await etatBee(A.p);
+  ok(e5b.bee && !e5b.verrou, 'un toucher « Face ID » DANS Bee → Bee S\'OUVRE (sans passer par une autre page)');
+  const w5 = await A.p.evaluate(async () => { const t = localStorage.getItem('kdmc_sso_token') || '';
+    const r = await fetch('/__sso/whoami', { headers: t ? { Authorization: 'Bearer ' + t } : {}, cache: 'no-store' }); return r.json(); });
+  ok(w5 && w5.verified === true && w5.admin === true, 'le domaine confirme : session FORTE et admin, rangée DANS l\'app  [' + JSON.stringify(w5 && { v: w5.verified, a: w5.admin }) + ']');
+  await A.p.goto('about:blank'); await A.p.goto('https://javis.kd-mc.com/');
+  await A.p.waitForSelector('#javis-launcher', { timeout: 10000 }).catch(() => {});
+  const e5c = await etatBee(A.p);
+  ok(e5c.bee && !e5c.verrou, 'rouverte ensuite : Bee s\'ouvre TOUTE SEULE (reconnu auto, aucun toucher)');
+  /* Le trousseau iCloud est SYNCHRONISÉ : l'app suivante reçoit le passkey dans son état du moment
+     (compteur compris — sinon le domaine croit à un clone, et il a raison de refuser). */
+  trousseau = (await A.s.send('WebAuthn.getCredentials', { authenticatorId: A.id })).credentials;
+  await A.c.close();
+
+  console.log('— 6. App neuve, par kd-mc.com : le portail propose Face ID au lieu de « Créer mon compte » —');
+  const B = await appNeuve(trousseau);
+  await B.p.goto('https://javis.kd-mc.com/');
+  await B.p.waitForSelector('#bee-connexion', { timeout: 8000 }).catch(() => {});
+  await Promise.all([B.p.waitForURL(/^https:\/\/kd-mc\.com\//, { timeout: 15000 }), B.p.click('#bee-connexion')]);
+  await B.p.waitForSelector('#f-pk', { timeout: 8000 }).catch(() => {});
+  const e6 = await B.p.evaluate(() => { const b = document.getElementById('f-pk'); const r = b ? b.getBoundingClientRect() : null;
+    return { txt: b ? b.textContent : '', h: r ? r.height : 0 }; });
+  ok(/déjà un compte/.test(e6.txt) && e6.h >= 44, 'le portail (qui ne connaît personne ici) propose « J\'ai déjà un compte — Face ID »  [' + e6.txt + ', ' + Math.round(e6.h) + ' px]');
+  await Promise.all([B.p.waitForURL(/^https:\/\/javis\.kd-mc\.com\//, { timeout: 15000 }), B.p.click('#f-pk')]);
+  await B.p.waitForSelector('#javis-launcher', { timeout: 10000 }).catch(() => {});
+  const e6b = await etatBee(B.p);
+  ok(e6b.bee && !e6b.verrou, 'Face ID sur le portail → retour dans Bee, OUVERTE');
+  ok(!/kdmc_sso=/.test(e6b.url), 'laissez-passer retiré de l\'adresse  [' + e6b.url + ']');
+  await B.c.close();
+
+  console.log('— 7. Un inconnu (aucun passkey Kevin) : Face ID ne force rien —');
+  const C = await appNeuve([]);
+  await C.p.goto('https://javis.kd-mc.com/');
+  await C.p.waitForSelector('#bee-faceid', { timeout: 8000 }).catch(() => {});
+  await C.p.click('#bee-faceid').catch(() => {});
+  await C.p.waitForFunction(() => (document.getElementById('bee-faceid-err') || {}).textContent, null, { timeout: 70000 }).catch(() => {});
+  const e7 = await etatBee(C.p);
+  const err7 = await C.p.evaluate(() => (document.getElementById('bee-faceid-err') || {}).textContent || '');
+  ok(!e7.bee, 'sans le passkey de Kevin, Bee reste FERMÉE (fail-closed)');
+  ok(/Face ID n'a pas abouti/.test(err7), 'et elle le dit en clair  [' + err7 + ']');
+  await C.c.close();
 } catch (e) {
   fails.push('exception : ' + String((e && e.message) || e).slice(0, 300));
   console.log('  ❌ exception : ' + String((e && e.message) || e).slice(0, 300));

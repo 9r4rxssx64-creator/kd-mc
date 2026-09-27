@@ -207,6 +207,18 @@ Si elle est encore sur l'iPhone, elle repartira toute seule ; sinon elle est à 
 
 ---
 
+## 2026-09-27 (19h15) — Phase 2 ACTIVE en ligne : prouvé de l'extérieur
+
+- PR #4076 fusionnée (a6c73ee52) après chaine-privee + runtime-audit + SonarCloud verts (SonarCloud avait d'abord
+  signalé un `.sort()` sans comparaison dans le test : les mois « 2026-9 »/« 2026-10 » triés comme du texte → corrigé).
+- Robot `coffre-secrets-cmc` run 36334939303 : ✅ en 1 min — serveur prêt après 30 s, appli ≥ v9.924 en ligne,
+  1 mot de passe rangé et relu identique, drapeau posé, 0 hash / 0 code publics, verrou `SECRETS_LOCK=on` publié.
+  Preuves du robot : visiteur et téléphone anonyme → `/cmcteams_secret` 401 ; `cmc_pw` lu par un téléphone anonyme :
+  0 hash ; remettre un hash ou un code : refusé (401) ; `/login-cmc` compte inconnu → 404.
+- Revérifié de l'extérieur (Firecrawl) : `/cmcteams_secret.json` → **401** ; apex-auth-worker `/health` →
+  `v1.1`, `capacites: [cmc_secret, cmc_code]` ; `cmcteams.kd-mc.com/sw.js` → `cmcteams-v9.924`.
+- Audit LIVE rouge sur World Monitor / OSINT / Cüjina : déjà rouge avant (run 36332285831), pas ce chantier.
+
 ## 2026-09-27 (soir) — Phase 2 : mots de passe et codes vérifiés par le serveur (v9.924, Kevin « Go tout auto »)
 
 - Mesuré : `cmc_pw` (hash rapides, sel fixe) et `cmc_verif_codes` (codes EN CLAIR) lisibles par tout téléphone, vérifiés

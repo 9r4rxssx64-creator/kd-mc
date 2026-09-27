@@ -153,6 +153,35 @@
       .catch(function () { return false; });
   }
 
+  /* Même chose qu'issue(), mais avec le CODE du compte (vérifié par le domaine depuis le 27.09)
+     et la réponse complète (raison + message en français) au lieu d'un simple oui/non.
+     → objet {ok, reason, message, code, …}, ou null si le domaine ne répond pas. */
+  function issueDetail(uid, name, cgu, returnUrl, code) {
+    var pour = '';
+    try { if (returnUrl) pour = new URL(String(returnUrl), location.origin).hostname; } catch (e) { pour = ''; }
+    return fetch(BASE + '/issue', {
+      method: 'POST', credentials: 'include', headers: authHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ uid: uid, name: name, cgu: !!cgu, pour: pour, code: code ? String(code) : undefined }),
+    })
+      .then(function (r) { return r.json().catch(function () { return null; }); })
+      .then(function (j) {
+        if (j && j.ok && j.token) setToken(j.token);
+        if (j && j.hors_perimetre) _refus = { app: j.app || '', reason: j.reason || 'hors_perimetre', message: j.message || '' };
+        return j;
+      })
+      .catch(function () { return null; });
+  }
+  /* Appareil neuf, ou n'importe quelle app du domaine : nom + code → la session du compte. */
+  function login(name, code) {
+    return fetch(BASE + '/login', {
+      method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: String(name || ''), code: String(code || '') }),
+    })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, reason: 'neterr' }; }); })
+      .then(function (j) { if (j && j.ok && j.token) setToken(j.token); return j; })
+      .catch(function () { return { ok: false, reason: 'neterr', message: 'Le domaine ne répond pas. Réessaie dans un instant.' }; });
+  }
+
   function logout() {
     setToken('');
     return fetch(BASE + '/logout', { method: 'POST', credentials: 'include', headers: authHeaders() })
@@ -240,6 +269,8 @@
   global.kdmcSSO = {
     whoami: whoami,
     issue: issue,
+    issueDetail: issueDetail,
+    login: login,
     logout: logout,
     consumeHashToken: consumeHashToken,
     ensureSession: ensureSession,

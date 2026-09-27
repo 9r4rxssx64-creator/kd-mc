@@ -177,6 +177,14 @@ function appDe(host) { return APPS[String(host || '').toLowerCase().replace(/:.*
    ligne ajoutée ici élargit ce que voit un inscrit, donc elle se décide avec
    Kevin, jamais toute seule. */
 const SURFACES_JUMELLES = [['cmcteams', 'departs']];
+/* COMPTE UNIQUE (Kevin 2026-09-27) : « Lorsqu'une personne crée son compte et code dans le
+   domaine ou une app, il peut se connecter aux autres apps du domaine avec les mêmes. Reconnu
+   auto. » → un compte né n'importe où est reconnu PARTOUT. Ce qui reste fermé par défaut à un
+   compte que l'admin n'a jamais rangé : les apps PERSONNELLES de Kevin (règle du 15.09 :
+   « domaine entier, sauf partie admin »). L'admin les ouvre d'un geste (liste `acces`, ou en
+   rangeant la personne en « domaine » depuis /admin → `acces_at`). Liste fermée, gardée par
+   test:perimetre-apps : l'allonger se décide avec Kevin. */
+const APPS_PRIVEES = ['arbre', 'coffre', 'bot', 'dashboard'];
 function perimetre(acc, app) {
   if (!app) return { ok: true, raison: 'adresse_hors_domaine' };
   /* LE PORTAIL EST LA RÉCEPTION : toujours ouvert, à tout le monde. C'est par lui
@@ -189,9 +197,18 @@ function perimetre(acc, app) {
   if (!acc) return { ok: true, raison: 'sans_fiche' };
   const bloque = Array.isArray(acc.bloque) ? acc.bloque : [];
   if (bloque.indexOf(app) >= 0) return { ok: false, raison: 'bloque_ici' };
-  if (acc.portee !== 'app') return { ok: true, raison: 'domaine' };
   const acces = Array.isArray(acc.acces) ? acc.acces : [];
   if (acces.indexOf(app) >= 0) return { ok: true, raison: 'app_autorisee' };
+  /* Rangé par l'admin (`acces_at`) : sa décision s'applique telle quelle, dans les deux sens.
+     Sans champ `portee` (comptes d'avant le 15.09) : tout le domaine, comme toujours. */
+  const rangeParAdmin = !!acc.acces_at;
+  if (!acc.portee || (rangeParAdmin && acc.portee !== 'app')) return { ok: true, raison: 'domaine' };
+  if (!rangeParAdmin) {
+    /* Compte jamais rangé (nouvel inscrit, OU enfermé par défaut entre le 15.09 et le 27.09) :
+       reconnu partout, sauf les apps personnelles de Kevin. */
+    if (APPS_PRIVEES.indexOf(app) >= 0) return { ok: false, raison: 'app_privee' };
+    return { ok: true, raison: 'compte_unique' };
+  }
   /* DEUX SURFACES, UN SEUL OUTIL (Kevin 2026-09-22, choix explicite : « les deux
      comptent comme une seule app »). CMCteams et CMCteams light, ce sont les mêmes
      260 personnes et le même planning — la light s'appelle littéralement « CMCteams
@@ -716,6 +733,54 @@ async function ssoSign(secret, uid, name, cgu, verified) {
   const p = b64urlStr(JSON.stringify({ u: uid, n: name, c: cgu ? 1 : 0, v: verified ? 1 : 0, iat: Date.now(), exp: Date.now() + SSO_TTL * 1000 }));
   return p + '.' + (await ssoHmac(secret, p));
 }
+/* ===== CODE DU COMPTE, VÉRIFIÉ PAR LE DOMAINE (Kevin 2026-09-27) =====
+   « Lorsqu'une personne crée son compte et code dans le domaine ou une app, il peut se
+   connecter aux autres apps du domaine avec les mêmes. Reconnu auto. »
+   Avant : le code n'existait QUE dans le téléphone (kdmc-portal.js, PBKDF2 local) ; le domaine
+   rangeait par NOM sans rien vérifier → sur un appareil neuf, taper un nom suffisait pour
+   recevoir la session de cette personne, et le même nom + code ne marchait nulle part ailleurs.
+   Maintenant : empreinte PBKDF2-SHA256 (100 000 passes — plafond des Workers, sel aléatoire par
+   compte) en KV `cred:<uid canonique>`. Jamais le code. Jamais pour l'identité admin (Face ID). */
+const CRED_ITER = 100000;
+async function credHash(code, saltHex) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(code)), 'PBKDF2', false, ['deriveBits']);
+  const salt = new Uint8Array(String(saltHex).match(/../g).map((h) => parseInt(h, 16)));
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: CRED_ITER }, k, 256);
+  return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function credGet(env, uid) {
+  if (!env || !env.ACCOUNTS) return null;
+  try { return JSON.parse((await env.ACCOUNTS.get('cred:' + uid)) || 'null'); } catch { return null; }
+}
+async function credSet(env, uid, code) {
+  const salt = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  const rec = { s: salt, h: await credHash(code, salt), i: CRED_ITER, at: Date.now() };
+  await env.ACCOUNTS.put('cred:' + uid, JSON.stringify(rec));
+  return rec;
+}
+async function credOk(rec, code) {
+  if (!rec || !rec.s || !rec.h) return false;
+  return hexEq(await credHash(code, rec.s), rec.h);
+}
+/* Essais limités PAR COMPTE, FERMÉ en cas de doute (au contraire de rlFail) : si le registre
+   ne répond pas, on refuse d'essayer un code plutôt que de laisser deviner sans limite.
+   5 erreurs → 15 min, puis doublement (plafond 24 h). */
+async function credVerrou(env, uid) {
+  try {
+    const r = JSON.parse((await env.ACCOUNTS.get('rlc:' + uid)) || 'null');
+    return r && r.until > Date.now() ? Math.ceil((r.until - Date.now()) / 1000) : 0;
+  } catch { return 900; }
+}
+async function credEchec(env, uid) {
+  try {
+    const r = JSON.parse((await env.ACCOUNTS.get('rlc:' + uid)) || 'null') || { f: 0 };
+    r.f = (r.f || 0) + 1;
+    r.until = r.f >= 5 ? Date.now() + Math.min(900e3 * Math.pow(2, r.f - 5), 86400e3) : 0;
+    await env.ACCOUNTS.put('rlc:' + uid, JSON.stringify(r), { expirationTtl: 86400 });
+  } catch { /* le verrou reste fermé au prochain essai (credVerrou refuse si illisible) */ }
+}
+async function credReussite(env, uid) { try { if (env.ACCOUNTS.delete) await env.ACCOUNTS.delete('rlc:' + uid); } catch { /* */ } }
+const CODE_VALIDE = (c) => typeof c === 'string' && c.length >= 6 && c.length <= 64;
 async function ssoVerify(secret, token) {
   if (!token || token.indexOf('.') < 0) return null;
   const dot = token.indexOf('.'); const p = token.slice(0, dot); const sig = token.slice(dot + 1);
@@ -1909,7 +1974,10 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   const premiere = (origine && origine !== 'portail') ? origine : (appIci && appIci !== 'portail' ? appIci : '');
   const acc = prev || {
     uid, name, created: now, cgu_at: 0, hits: 0, devices: [], places: [], apps: {}, history: [],
-    portee: host ? 'app' : 'domaine', acces: premiere ? [premiere] : [], bloque: [],
+    /* Compte unique (27.09) : né « domaine », reconnu partout sauf APPS_PRIVEES ; `acces`
+       garde l'app d'arrivée (utile à l'admin) — SAUF une app privée : l'origine vient du
+       client, et « je viens du coffre » ne doit jamais ouvrir le coffre. */
+    portee: 'domaine', acces: (premiere && APPS_PRIVEES.indexOf(premiere) < 0) ? [premiere] : [], bloque: [],
   };
   const prevSeen = acc.last_seen || 0;
   const prevCountry = acc.last_country || '';
@@ -2006,35 +2074,12 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   /* NOUVEL INSCRIT fermé à une app → Kevin doit le SAVOIR, sinon la personne
      attend une ouverture que personne ne sait devoir faire. Journal admin + push
      (opt-in par config, fail-open : jamais une connexion cassée par une notif). */
-  if (isNew && acc.portee === 'app') {
-    const ouvert = (acc.acces && acc.acces.length) ? acc.acces.join(', ') : 'portail seulement';
-    /* Le JOURNAL garde tout : aucune arrivée ne se perd, quoi qu'il arrive ensuite. */
-    await audLog(env, { ev: 'nouvel_inscrit', uid, detail: (acc.name || uid) + ' · ouvert à : ' + ouvert });
-    /* ⚠️ ANTI-SPAM (22.09.2026) — DANGER CRÉÉ LE JOUR MÊME : à partir de maintenant,
-       CMCteams et la light déclarent leur utilisateur au domaine. Les ~250 employés
-       qui n'avaient jamais de session vont donc arriver « nouveaux » au fil de leurs
-       prises de poste : sans frein, c'est 250 notifications sur l'iPhone de Kevin en
-       quelques jours. La règle anti-spam de ce dépôt est explicite, et une alerte
-       qu'on finit par ignorer ne protège plus rien.
-       On prévient donc AU PLUS UNE FOIS PAR HEURE, en disant combien d'autres sont
-       arrivés depuis — le détail reste dans le journal admin, qui, lui, garde tout. */
-    let prevenir = true, enAttente = 0;
-    try {
-      if (env.ACCOUNTS) {
-        const cleF = 'notif:inscrits';
-        const etat = JSON.parse((await env.ACCOUNTS.get(cleF)) || '{"t":0,"n":0}');
-        if (now - (etat.t || 0) < 3600e3) { prevenir = false; etat.n = (etat.n || 0) + 1; }
-        else { enAttente = etat.n || 0; etat.t = now; etat.n = 0; }
-        await env.ACCOUNTS.put(cleF, JSON.stringify(etat), { expirationTtl: 7200 });
-      }
-    } catch (_) { /* en cas de doute on prévient : mieux vaut une notif de trop qu'une arrivée muette */ }
-    if (prevenir) {
-      await notifyPush(env, '🆕 KDMC — nouvel inscrit',
-        (acc.name || uid) + ' vient de créer un compte. Ouvert à : ' + ouvert + '.'
-        + (enAttente ? ' (+ ' + enAttente + ' autre(s) dans l\'heure écoulée — tout est dans le journal.)' : '')
-        + ' À toi de décider s\'il circule plus loin.',
-        { tag: 'kdmc-nouvel-inscrit', url: 'https://kd-mc.com/admin/#fiche-' + encodeURIComponent(uid) });
-    }
+  if (isNew) {
+    /* Compte unique (27.09) : un nouvel inscrit n'attend plus de décision de Kevin (il est
+       reconnu partout sauf APPS_PRIVEES) → plus de notification sur l'iPhone (règle anti-spam),
+       le JOURNAL admin garde chaque arrivée. */
+    const arrivee = (acc.acces && acc.acces.length) ? acc.acces.join(', ') : 'portail';
+    await audLog(env, { ev: 'nouvel_inscrit', uid, detail: (acc.name || uid) + ' · arrivé par : ' + arrivee + ' · reconnu partout sauf ' + APPS_PRIVEES.join('/') });
   }
   if (newDevice && !isNew) {
     await audLog(env, { ev: 'new_device', uid, detail: devKey + (place ? ' · ' + place : '') });
@@ -2325,6 +2370,40 @@ async function handleSso(request, url, env) {
         }
       }
     }
+    /* CODE DU COMPTE (27.09) — voir credHash. `cle` = le dossier canonique de la personne. */
+    let codeProuve = false;
+    {
+      const code = typeof b.code === 'string' ? b.code : '';
+      const accC = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));
+      const cle = accC ? accC.uid : uid;
+      if (cle !== CANON_UID && env.ACCOUNTS) {
+        const rec = await credGet(env, cle);
+        const sess = await ssoVerify(secret, ssoToken(request));
+        const memeSession = !!(sess && (sess.uid === cle || sess.uid === uid) && !revoked(accC, sess));
+        if (code) {
+          if (!CODE_VALIDE(code)) return J({ ok: false, reason: 'code_invalide', message: 'Le code doit faire au moins 6 caractères.' }, undefined, 400);
+          const attente = await credVerrou(env, cle);
+          if (attente) return J({ ok: false, reason: 'trop_essais', attente, message: 'Trop d\'essais. Réessaie dans ' + Math.ceil(attente / 60) + ' min.' }, undefined, 429);
+          if (rec) {
+            if (!(await credOk(rec, code))) {
+              await credEchec(env, cle);
+              return J({ ok: false, reason: 'code_incorrect', message: 'Ce nom a déjà un compte, et ce n\'est pas son code.' }, undefined, 401);
+            }
+            await credReussite(env, cle); codeProuve = true;
+          } else if (!accC || memeSession) {
+            /* Nouveau compte, OU la personne elle-même (session déjà à elle, sur son appareil) :
+               on enregistre son code au domaine. Un inconnu sur un appareil neuf ne peut PAS
+               poser le code d'un compte existant (il enfermerait le vrai propriétaire dehors). */
+            await credSet(env, cle, code); codeProuve = true;
+          }
+        } else if (rec && !memeSession) {
+          /* Nom protégé par un code, et personne ne le prouve : on ne délivre plus la session de
+             quelqu'un d'autre sur la foi de son nom. (Les apps qui déclarent leur utilisateur
+             sans code restent fonctionnelles : leur appel est « jamais bloquant ».) */
+          return J({ ok: false, reason: 'code_requis', message: 'Ce nom a un compte protégé par un code : connecte-toi avec ton nom et ton code.' }, undefined, 401);
+        }
+      }
+    }
     await enrich(env, request, uid, name, cgu, undefined, { origine });
     const token = await ssoSign(secret, uid, name, cgu);
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
@@ -2332,7 +2411,37 @@ async function handleSso(request, url, env) {
        (#kdmc_sso=) pour les apps installées (où le cookie ne traverse pas). */
     /* /issue = identité AUTO-DÉCLARÉE (aucune preuve) → jamais admin/verified ici.
        L'admin ne s'obtient que par un passkey Face ID vérifié (auth/verify). */
-    return J({ ok: true, uid, name, cgu, token, admin: false }, cookie);
+    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve }, cookie);
+  }
+  /* CONNEXION SUR UN APPAREIL NEUF (ou dans n'importe quelle app) : nom + code → la session du
+     compte. Même message pour « nom inconnu » et « mauvais code » (on ne confirme pas qu'un nom
+     existe). Essais limités par compte, fermé en cas de doute. */
+  if (path === '/__sso/login' && request.method === 'POST') {
+    if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
+    let b = {}; try { b = await request.json(); } catch { /* ignore */ }
+    const name = String(b.name || '').slice(0, 80).trim();
+    const code = typeof b.code === 'string' ? b.code : '';
+    const NON = { ok: false, reason: 'identifiants', message: 'Nom ou code incorrect. (Si tu n\'as pas rouvert ton compte depuis le 27.09, ouvre-le une fois sur ton appareil habituel : ton code y sera enregistré.)' };
+    if (!name || !CODE_VALIDE(code) || !env.ACCOUNTS) return J(NON, undefined, 401);
+    /* Prénom Nom OU Nom Prénom (règle « recherche nom/prénom toujours flexible ») : on cherche
+       le nom tel quel, puis mots inversés (« Curie Marie », « SAINT-POLIT Laurence »). */
+    const mots = name.split(/\s+/).filter(Boolean);
+    let cle = await canonFor(env, '', name, { sansCreer: true });
+    if (!cle && mots.length >= 2) cle = await canonFor(env, '', mots.slice(1).join(' ') + ' ' + mots[0], { sansCreer: true });
+    if (!cle && mots.length >= 2) cle = await canonFor(env, '', mots[mots.length - 1] + ' ' + mots.slice(0, -1).join(' '), { sansCreer: true });
+    if (!cle || cle === CANON_UID) return J(NON, undefined, 401);
+    const attente = await credVerrou(env, cle);
+    if (attente) return J({ ok: false, reason: 'trop_essais', attente, message: 'Trop d\'essais. Réessaie dans ' + Math.ceil(attente / 60) + ' min.' }, undefined, 429);
+    const rec = await credGet(env, cle);
+    const acc = await accGet(env, cle);
+    if (!rec || !acc || !(await credOk(rec, code))) { if (rec) await credEchec(env, cle); return J(NON, undefined, 401); }
+    await credReussite(env, cle);
+    const per = perimetre(acc, appDe(request.headers.get('host')));
+    if (!per.ok) return J({ ok: false, reason: per.raison, hors_perimetre: true, message: 'Ton compte n\'est pas ouvert sur cette application.' });
+    await enrich(env, request, acc.uid, acc.name || name, true, undefined, {});
+    const token = await ssoSign(secret, acc.uid, acc.name || name, true);
+    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
+    return J({ ok: true, uid: acc.uid, name: acc.name || name, cgu: true, token, admin: false, code: true }, cookie);
   }
   if (path === '/__sso/logout' && request.method === 'POST') {
     return J({ ok: true }, `${SSO_COOKIE}=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`);
@@ -2664,6 +2773,16 @@ async function handleAdmin(request, url, env) {
     await accPut(env, acc, true);
     await audLog(env, { ev: 'perimetre', uid, portee: acc.portee, acces: acc.acces, bloque: acc.bloque });
     return J({ ok: true, uid, portee: acc.portee, acces: acc.acces || [], bloque: acc.bloque || [] });
+  }
+  /* Code oublié : l'admin efface le code enregistré au domaine ; la personne en choisit un
+     nouveau à sa prochaine connexion depuis son appareil (ou en recréant son compte). */
+  if (path === '/__admin/code' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const uid = String(b.uid || '').slice(0, 80).trim();
+    if (!uid) return J({ ok: false, reason: 'uid requis' });
+    try { await env.ACCOUNTS.delete('cred:' + uid); await env.ACCOUNTS.delete('rlc:' + uid); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
+    await audLog(env, { ev: 'code_efface', uid });
+    return J({ ok: true, uid });
   }
   if (path === '/__admin/account' && request.method === 'GET') {
     const uid = url.searchParams.get('uid') || '';

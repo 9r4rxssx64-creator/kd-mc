@@ -70,22 +70,43 @@ ok(appDe('inconnu.example.com') === '' && appDe('') === '' && appDe(null) === ''
 /* ── B. La décision, cas par cas ───────────────────────────────────────────── */
 console.log('\nB. La règle elle-même');
 ok(perimetre(null, 'arbre').ok === true, 'sans fiche → reconnu (fail-open : on ne casse personne)');
-ok(perimetre({ portee: 'app', acces: [] }, '').ok === true, 'adresse hors domaine → on ne juge pas');
+ok(perimetre({ acces_at: 1, portee: 'app', acces: [] }, '').ok === true, 'adresse hors domaine → on ne juge pas');
 ok(perimetre({}, 'arbre').ok === true, 'fiche SANS portée → domaine entier (les ~191 comptes existants gardent tout)');
-ok(perimetre({ portee: 'domaine' }, 'coffre').ok === true, 'portée domaine → toutes les apps');
-ok(perimetre({ portee: 'app', acces: ['chez-lolo'] }, 'chez-lolo').ok === true, 'portée app → son app : oui');
-const hors = perimetre({ portee: 'app', acces: ['chez-lolo'] }, 'arbre');
+ok(perimetre({ acces_at: 1, portee: 'domaine' }, 'coffre').ok === true, 'portée domaine → toutes les apps');
+ok(perimetre({ acces_at: 1, portee: 'app', acces: ['chez-lolo'] }, 'chez-lolo').ok === true, 'portée app → son app : oui');
+const hors = perimetre({ acces_at: 1, portee: 'app', acces: ['chez-lolo'] }, 'arbre');
 ok(hors.ok === false && hors.raison === 'hors_perimetre', 'portée app → une autre app : non');
-const bl = perimetre({ portee: 'domaine', bloque: ['arbre'] }, 'arbre');
+const bl = perimetre({ acces_at: 1, portee: 'domaine', bloque: ['arbre'] }, 'arbre');
 ok(bl.ok === false && bl.raison === 'bloque_ici', 'blocage admin → ferme une app MÊME en portée domaine');
-ok(perimetre({ portee: 'domaine', bloque: ['arbre'] }, 'coffre').ok === true, 'le blocage ne ferme QUE l\'app visée');
-ok(perimetre({ portee: 'app', acces: ['cuisine'], bloque: ['cuisine'] }, 'cuisine').ok === false,
+ok(perimetre({ acces_at: 1, portee: 'domaine', bloque: ['arbre'] }, 'coffre').ok === true, 'le blocage ne ferme QUE l\'app visée');
+ok(perimetre({ acces_at: 1, portee: 'app', acces: ['cuisine'], bloque: ['cuisine'] }, 'cuisine').ok === false,
   'le blocage l\'emporte sur l\'autorisation (l\'admin a le dernier mot)');
-ok(perimetre({ portee: 'app', acces: 'chez-lolo' }, 'chez-lolo').ok === false,
+ok(perimetre({ acces_at: 1, portee: 'app', acces: 'chez-lolo' }, 'chez-lolo').ok === false,
   'une liste d\'accès corrompue (texte au lieu de liste) ferme, elle n\'ouvre pas');
-ok(perimetre({ portee: 'app', acces: ['chez-lolo'] }, 'portail').ok === true
-  && perimetre({ portee: 'domaine', bloque: ['portail'] }, 'portail').ok === true,
+ok(perimetre({ acces_at: 1, portee: 'app', acces: ['chez-lolo'] }, 'portail').ok === true
+  && perimetre({ acces_at: 1, portee: 'domaine', bloque: ['portail'] }, 'portail').ok === true,
   'le PORTAIL est la réception : toujours ouvert, même « une app », même « bloqué » (sinon plus personne ne peut se connecter nulle part)');
+
+/* ── B quater. COMPTE UNIQUE (Kevin 27.09.2026) ───────────────────────────────
+ * « Lorsqu'une personne crée son compte et code dans le domaine ou une app, il peut se
+ * connecter aux autres apps du domaine avec les mêmes. Reconnu auto. »
+ * Les fiches ENFERMÉES PAR DÉFAUT entre le 15.09 et le 27.09 (portee 'app' sans décision de
+ * l'admin, donc sans `acces_at`) sont libérées à la lecture, sans migration : cas réel de la
+ * maman de Kevin, inscrite ailleurs, bloquée sur la cuisine. */
+console.log('\nB quater. Compte unique : reconnu partout, sauf les apps personnelles');
+{
+  const enfermee = { portee: 'app', acces: ['lingua'] };
+  ok(perimetre(enfermee, 'cuisine').ok === true, 'enfermée par défaut sur Lingua → reconnue sur la cuisine');
+  ok(perimetre(enfermee, 'cmcteams').ok === true && perimetre(enfermee, 'la-detente').ok === true, '…et sur les autres apps');
+  for (const p of ['arbre', 'coffre', 'bot', 'dashboard']) {
+    const r = perimetre(enfermee, p);
+    ok(r.ok === false && r.raison === 'app_privee', 'mais pas sur l\'app personnelle ' + p);
+  }
+  ok(perimetre({ portee: 'app', acces: ['arbre'] }, 'arbre').ok === true, 'une app personnelle ouverte par l\'admin (liste acces) s\'ouvre');
+  ok(perimetre({ portee: 'domaine', acces_at: 1 }, 'coffre').ok === true, 'rangée « domaine » par l\'admin → tout, apps perso comprises');
+  ok(perimetre({ portee: 'app', acces: ['lingua'], acces_at: 1 }, 'cuisine').ok === false, 'rangée « une app » PAR L\'ADMIN → sa décision tient');
+  ok(perimetre({ portee: 'domaine', bloque: ['cuisine'] }, 'cuisine').ok === false, 'un blocage de l\'admin tient toujours');
+}
 
 /* ── B ter. CMCteams et CMCteams light = UN SEUL OUTIL ────────────────────────
  * Kevin, 22.09.2026, choix explicite : « les deux comptent comme une seule app ».
@@ -97,17 +118,17 @@ ok(perimetre({ portee: 'app', acces: ['chez-lolo'] }, 'portail').ok === true
  * périmètre existe pour empêcher. Les deux sens sont vérifiés, et le contraire
  * aussi. */
 console.log('\nB ter. CMCteams et sa light : le même outil, et rien de plus');
-ok(perimetre({ portee: 'app', acces: ['cmcteams'] }, 'departs').ok === true,
+ok(perimetre({ acces_at: 1, portee: 'app', acces: ['cmcteams'] }, 'departs').ok === true,
   'déclaré sur CMCteams → reconnu sur la light');
-ok(perimetre({ portee: 'app', acces: ['departs'] }, 'cmcteams').ok === true,
+ok(perimetre({ acces_at: 1, portee: 'app', acces: ['departs'] }, 'cmcteams').ok === true,
   'déclaré sur la light → reconnu sur CMCteams');
 for (const ailleurs of ['lingua', 'coffre', 'chez-lolo', 'arbre', 'bot', 'dossiers']) {
-  ok(perimetre({ portee: 'app', acces: ['cmcteams'] }, ailleurs).ok === false,
+  ok(perimetre({ acces_at: 1, portee: 'app', acces: ['cmcteams'] }, ailleurs).ok === false,
     'un employé CMCteams n\'est PAS ouvert à ' + ailleurs + ' pour autant');
 }
-ok(perimetre({ portee: 'app', acces: ['lingua'] }, 'cmcteams').ok === false,
+ok(perimetre({ acces_at: 1, portee: 'app', acces: ['lingua'] }, 'cmcteams').ok === false,
   'et l\'inverse : quelqu\'un de Lingua n\'entre pas dans le planning');
-ok(perimetre({ portee: 'app', acces: ['cmcteams'], bloque: ['departs'] }, 'departs').ok === false,
+ok(perimetre({ acces_at: 1, portee: 'app', acces: ['cmcteams'], bloque: ['departs'] }, 'departs').ok === false,
   'un blocage explicite de l\'admin l\'emporte quand même (dernier mot à Kevin)');
 
 /* ── B bis. LE VRAI PARCOURS D'UN NOUVEL INSCRIT passe par le portail ─────────
@@ -128,34 +149,42 @@ console.log('\nB bis. Inscription via le portail (le vrai parcours)');
   let jp = await inscrire('cliente_via_portail', 'Nadia Roux', 'https://chez-lolo.kd-mc.com/produits?x=1');
   ok(jp.ok === true, 'inscription sur le portail, en venant de Chez Lolo → acceptée');
   let f = JSON.parse(envP._kv.get('acc:cliente_via_portail') || 'null');
-  ok(f && f.portee === 'app' && JSON.stringify(f.acces) === '["chez-lolo"]',
-    'son compte est ouvert à CHEZ LOLO (l\'app d\'où elle vient), pas au portail', f && JSON.stringify(f.acces));
+  ok(f && f.portee === 'domaine' && !f.acces_at && JSON.stringify(f.acces) === '["chez-lolo"]',
+    'COMPTE UNIQUE (27.09) : son compte naît « domaine », Chez Lolo noté comme app d\'arrivée', f && JSON.stringify(f));
   ok((await voir(jp.token, 'chez-lolo.kd-mc.com')).ok === true, 'de retour sur la boutique avec son pass : reconnue');
   ok((await voir(jp.token, 'kd-mc.com')).ok === true, 'et le portail la reconnaît aussi (réception)');
-  ok((await voir(jp.token, 'arbre.kd-mc.com')).ok === false, 'mais pas l\'arbre familial');
+  ok((await voir(jp.token, 'cuisine.kd-mc.com')).ok === true && (await voir(jp.token, 'lingua.kd-mc.com')).ok === true,
+    'le MÊME compte est reconnu automatiquement sur les autres apps (cuisine, Lingua)');
+  for (const privee of ['arbre', 'coffre', 'bot', 'dashboard']) {
+    ok((await voir(jp.token, privee + '.kd-mc.com')).ok === false, 'mais pas l\'app personnelle de Kevin : ' + privee);
+  }
 
   jp = await inscrire('curieux', 'Marc Petit', '');
   f = JSON.parse(envP._kv.get('acc:curieux') || 'null');
-  ok(f && f.portee === 'app' && Array.isArray(f.acces) && f.acces.length === 0,
-    'inscrit directement sur le portail sans venir d\'une app → aucune app ouverte (Kevin décide)', f && JSON.stringify(f.acces));
-  ok((await voir(jp.token, 'kd-mc.com')).ok === true && (await voir(jp.token, 'cuisine.kd-mc.com')).ok === false,
-    'il a le portail, et rien d\'autre');
+  ok(f && f.portee === 'domaine' && Array.isArray(f.acces) && f.acces.length === 0,
+    'inscrit directement sur le portail → compte « domaine », aucune app d\'arrivée', f && JSON.stringify(f));
+  ok((await voir(jp.token, 'kd-mc.com')).ok === true && (await voir(jp.token, 'cuisine.kd-mc.com')).ok === true,
+    'inscrit au domaine → reconnu aussi dans les apps (compte unique)');
+  jp = await inscrire('ruse_renard', 'Rusé Renard', 'https://coffre.kd-mc.com/');
+  f = JSON.parse(envP._kv.get('acc:ruse_renard') || 'null');
+  ok(f && f.acces.length === 0 && (await voir(jp.token, 'coffre.kd-mc.com')).ok === false,
+    '« je viens du coffre » (origine fournie par le client) n\'ouvre JAMAIS une app personnelle', f && JSON.stringify(f.acces));
 
   jp = await inscrire('malin', 'Jean Malin', 'https://evil.example.com/');
   f = JSON.parse(envP._kv.get('acc:malin') || 'null');
   ok(f && f.acces.length === 0, 'une origine hors domaine est ignorée (jamais d\'app inventée par le client)', f && JSON.stringify(f.acces));
 
   const journal = [...envP._kv.values()].some((v) => typeof v === 'string' && v.includes('"nouvel_inscrit"'));
-  ok(journal, 'chaque nouvel inscrit limité à une app laisse une trace « nouvel_inscrit » dans le journal admin (Kevin sait qu\'il a une décision à prendre)');
+  ok(journal, 'chaque nouvel inscrit laisse une trace « nouvel_inscrit » dans le journal admin (Kevin sait qu\'il a une décision à prendre)');
 }
 
 /* ── C. Le comportement réel du SSO ────────────────────────────────────────── */
 console.log('\nC. /__sso/whoami et /__sso/issue en vrai');
 const FICHES = {
-  cliente_lolo: { uid: 'cliente_lolo', name: 'Marie Dupont', portee: 'app', acces: ['chez-lolo'] },
-  ami_domaine: { uid: 'ami_domaine', name: 'Paul Martin', portee: 'domaine' },
+  cliente_lolo: { uid: 'cliente_lolo', name: 'Marie Dupont', acces_at: 1, portee: 'app', acces: ['chez-lolo'] },
+  ami_domaine: { uid: 'ami_domaine', name: 'Paul Martin', acces_at: 1, portee: 'domaine' },
   ancien: { uid: 'ancien', name: 'Ancien Compte' },
-  banni: { uid: 'banni', name: 'Jean Bloque', portee: 'domaine', bloque: ['arbre'] },
+  banni: { uid: 'banni', name: 'Jean Bloque', acces_at: 1, portee: 'domaine', bloque: ['arbre'] },
 };
 const env = faireEnv(FICHES);
 
@@ -202,7 +231,7 @@ ok(j.ok === true, 'la personne bloquée sur UNE app garde les autres');
 w = await vu(j.token, 'arbre.kd-mc.com');
 ok(w.ok === false && w.reason === 'bloque_ici', 'et elle est refusée sur l\'app fermée par l\'admin');
 
-/* Nouvelle inscription : fermée à son app, et RIEN d'autre. */
+/* Nouvelle inscription (règle du 27.09) : reconnue partout, sauf les apps personnelles. */
 const envNeuf = faireEnv({});
 const rN = await mod.fetch(req('chez-lolo.kd-mc.com', '/__sso/issue', {
   method: 'POST', headers: { 'content-type': 'application/json' },
@@ -210,11 +239,13 @@ const rN = await mod.fetch(req('chez-lolo.kd-mc.com', '/__sso/issue', {
 }), envNeuf);
 const jN = await rN.json();
 const fiche = JSON.parse(envNeuf._kv.get('acc:inconnu_1') || 'null');
-ok(fiche && fiche.portee === 'app' && JSON.stringify(fiche.acces) === '["chez-lolo"]',
-  'un NOUVEL inscrit naît fermé à l\'app où il s\'inscrit',
+ok(fiche && fiche.portee === 'domaine' && JSON.stringify(fiche.acces) === '["chez-lolo"]',
+  'un NOUVEL inscrit naît « domaine » (compte unique), son app d\'arrivée notée',
   fiche ? `portee=${fiche.portee} acces=${JSON.stringify(fiche.acces)}` : 'aucune fiche');
 const wN = await mod.fetch(req('coffre.kd-mc.com', '/__sso/whoami', { headers: { authorization: 'Bearer ' + jN.token } }), envNeuf);
-ok((await wN.json()).ok === false, 'et il n\'est reconnu nulle part ailleurs');
+ok((await wN.json()).ok === false, 'il n\'est PAS reconnu sur le coffre (app personnelle)');
+{ const w2 = await mod.fetch(req('lingua.kd-mc.com', '/__sso/whoami', { headers: { authorization: 'Bearer ' + jN.token } }), envNeuf);
+  ok((await w2.json()).ok === true, 'mais il est reconnu AUTOMATIQUEMENT sur une autre app (Lingua), avec le même compte'); }
 
 /* ── D. L'admin : jamais enfermé dehors, et seul à pouvoir ranger ──────────── */
 console.log('\nD. L\'admin');

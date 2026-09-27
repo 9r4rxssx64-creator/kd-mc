@@ -10,6 +10,12 @@
 | `tools/departs/index.html` | **Modifié (v1.58).** light : départs cachés tant que portillon + fiche ne sont pas faits ; plus de « Plus tard ». | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/departs/index.html) |
 | `tests/verify-fiche-premiere-connexion.mjs` | **Modifié.** 35 contrôles en vrai navigateur, dans les deux applis. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-fiche-premiere-connexion.mjs) |
 
+### 🔑 Un seul compte + un seul code pour tout ton domaine (27.09.2026)
+
+- 🖥 **Le portail** (bouton « J'ai déjà un compte — nom + code ») : [kd-mc.com](https://kd-mc.com/)
+- 🧪 **Le test des deux téléphones** : [tests/verify-compte-unique-portail.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-compte-unique-portail.mjs)
+- 🧪 **Le test du code vérifié par le domaine** : [services/kdmc-router/code-compte.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/code-compte.test.mjs)
+
 ### 🛡 Audit de ton domaine : 36/100, un trou fermé ce soir (27.09.2026)
 
 - 📄 **Le rapport** (privé, dans le coffre) : [audit/prive/AUDIT-DOMAINE-2026-09-27.md](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/prive/AUDIT-DOMAINE-2026-09-27.md)

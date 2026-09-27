@@ -1,5 +1,30 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (18h40 UTC) — Compte unique : un nom + un code, partout, reconnu auto
+
+Kevin : « Lorsqu'une personne crée son compte et code dans le domaine ou une app, il peut se connecter
+aux autres apps du domaine avec les mêmes. Reconnu auto. »
+
+**Mesuré avant** (inventaire des 20 apps) : (1) un nouvel inscrit était ENFERMÉ dans l'app d'arrivée
+(règle du 15.09) — cas de la maman de Kevin bloquée sur la cuisine ; (2) le code du portail n'existait
+QUE dans le téléphone : sur un appareil neuf, taper un NOM suffisait pour recevoir la session de cette
+personne, et le même nom + code ne marchait nulle part ailleurs ; (3) 8 apps ont leur propre compte.
+
+**Fait (phase 1, le socle)** :
+- `perimetre()` : compte jamais rangé par l'admin (pas d'`acces_at`) = reconnu partout sauf
+  `APPS_PRIVEES` (arbre, coffre, bot, dashboard). Les fiches enfermées par défaut sont libérées à la
+  lecture, sans migration. Décisions manuelles de l'admin et blocages : inchangés.
+- Code vérifié au domaine : `cred:<uid>` (PBKDF2 100k, sel), `/__sso/issue` accepte `code`,
+  `/__sso/login {nom, code}` (nom dans les 2 sens), `code_requis` ferme l'usurpation par le nom,
+  verrou par compte fermé en cas de doute, `/__admin/code` pour un code oublié. Jamais pour l'admin.
+- Portail v1.0.37 : « J'ai déjà un compte — nom + code » ; création et déverrouillage envoient le code.
+- Nouvel inscrit : plus de notification iPhone (plus de décision à prendre), journal admin conservé.
+- Gardes : `test:perimetre-apps`, `test:code-compte` 15/15, `test:compte-unique-portail` 5/5 (vrai
+  Chromium, 2 téléphones) — chacun prouvé par sabotage.
+
+**Reste (phase 2)** : brancher les apps qui ont LEUR compte (Lingua, Apex, Créa, Light, CMCteams,
+Messagerie) sur `/__sso/login` + enregistrement du code au domaine. Message m146.
+
 ## 2026-09-27 (nuit) — « Personne ne doit atterrir sur CMCteams ou light sans se connecter ou s'inscrire complètement » (CMCteams v9.925, light v1.58)
 
 **Mesuré avant de toucher** : le portail `kd-mc.com` n'est PAS CMCteams (c'est « KDMC APEX », `kdmc-home`).

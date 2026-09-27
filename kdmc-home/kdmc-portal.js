@@ -336,6 +336,14 @@
       (pk ? '<button class="btn" id="f-pk" type="button">🔓 J\'ai déjà un compte — Face ID</button>'
         + '<p class="g-err" id="f-pk-err" role="alert" aria-live="polite"></p>'
         + '<p class="g-sub" style="text-align:center;margin:10px 0 14px">— ou, première fois ici —</p>' : '')
+      + '<button class="btn ghost" id="f-deja" type="button">🔑 J\'ai déjà un compte — nom + code</button>'
+      + '<div id="f-deja-box" hidden>'
+      +   '<input class="fld" id="l-nom" type="text" autocomplete="username" placeholder="Prénom et nom">'
+      +   '<input class="fld" id="l-code" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Ton code">'
+      +   '<button class="btn" id="l-go" type="button">Me connecter</button>'
+      +   '<p class="g-err" id="l-err" role="alert" aria-live="polite"></p>'
+      + '</div>'
+      + '<p class="g-sub" style="text-align:center;margin:10px 0 14px">— ou, première fois ici —</p>'
       + '<h2 class="g-title">Créer mon compte KDMC</h2>'
       + '<p class="g-sub">Première connexion. Un seul compte pour tout ton univers.</p>'
       + '<input class="fld" id="f-prenom" type="text" autocomplete="given-name" placeholder="Prénom" inputmode="text">'
@@ -347,6 +355,12 @@
       + '<p class="g-err" id="f-err" role="alert" aria-live="polite"></p>';
     wireCgu();
     document.getElementById('f-create').addEventListener('click', doCreate);
+    document.getElementById('f-deja').addEventListener('click', function () {
+      var box = document.getElementById('f-deja-box'); box.hidden = !box.hidden;
+      if (!box.hidden) document.getElementById('l-nom').focus();
+    });
+    document.getElementById('l-go').addEventListener('click', doLoginCode);
+    document.getElementById('l-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLoginCode(); });
     var bpk = document.getElementById('f-pk');
     if (bpk) bpk.addEventListener('click', function () {
       bpk.disabled = true; bpk.textContent = '…';
@@ -410,10 +424,45 @@
       ls(LS_CGU, { at: Date.now(), v: 1 });
       /* 4e argument = l'app d'où la personne vient (?return=) : le domaine ouvre son
          NOUVEAU compte à cette app-là, pas au portail (qui n'est que la réception). */
-      return (window.kdmcSSO ? window.kdmcSSO.issue(uid, name, true, safeReturnUrl()) : Promise.resolve(false)).then(function () { return acc; });
+      /* Le CODE part au domaine (27.09) : il en garde l'empreinte, et le même nom + code
+         marchera sur tous les appareils et dans toutes les apps. */
+      if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) return acc;
+      return window.kdmcSSO.issueDetail(uid, name, true, safeReturnUrl(), code).then(function (j) {
+        if (j && !j.ok && (j.reason === 'code_requis' || j.reason === 'code_incorrect')) {
+          localStorage.removeItem(LS_ACCOUNT);
+          throw { deja: true };
+        }
+        if (j && !j.ok && j.message) throw { message: j.message };
+        return acc;   /* domaine muet (null) → le compte local marche quand même (fail-open) */
+      });
     }).then(function (acc) {
       _postLogin(acc);
-    }).catch(function () { err.textContent = 'Erreur, réessaie.'; btn.disabled = false; btn.textContent = 'Créer mon compte'; });
+    }).catch(function (e) {
+      err.textContent = (e && e.deja) ? 'Ce nom a déjà un compte. Touche « J\'ai déjà un compte — nom + code » ci-dessus.'
+        : ((e && e.message) || 'Erreur, réessaie.');
+      btn.disabled = false; btn.textContent = 'Créer mon compte';
+    });
+  }
+
+  /* Appareil NEUF (ou app installée au stockage vide) : nom + code vérifiés par le domaine.
+     Réussi → on garde aussi le compte sur CET appareil, pour que la prochaine fois le code
+     (ou Face ID) suffise, sans retaper le nom. */
+  function doLoginCode() {
+    var nom = (document.getElementById('l-nom').value || '').trim();
+    var code = (document.getElementById('l-code').value || '').trim();
+    var err = document.getElementById('l-err'); err.textContent = '';
+    if (nom.split(/\s+/).length < 2) { err.textContent = 'Prénom ET nom.'; return; }
+    if (code.length < 6) { err.textContent = 'Ton code (6 caractères minimum).'; return; }
+    var b = document.getElementById('l-go'); b.disabled = true; b.textContent = '…';
+    window.kdmcSSO.login(nom, code).then(function (j) {
+      if (!j || !j.ok) { err.textContent = (j && j.message) || 'Nom ou code incorrect.'; b.disabled = false; b.textContent = 'Me connecter'; return; }
+      var salt = rndSalt();
+      return hashCode(code, salt).then(function (h) {
+        var acc = { uid: j.uid, name: j.name, salt: salt, codeHash: h, created: Date.now() };
+        ls(LS_ACCOUNT, acc); ls(LS_CGU, { at: Date.now(), v: 1 });
+        _postLogin(acc);   /* → showHub → retour dans l'app d'origine (liste des apps qui lisent le laissez-passer) */
+      });
+    });
   }
 
   function doUnlock(acc) {
@@ -423,7 +472,16 @@
     var btn = document.getElementById('u-go'); btn.disabled = true; btn.textContent = '…';
     hashCode(code, acc.salt).then(function (h) {
       if (!timingEq(h, acc.codeHash)) { err.textContent = 'Code incorrect.'; btn.disabled = false; btn.textContent = 'Se connecter'; return; }
-      return (window.kdmcSSO ? window.kdmcSSO.issue(acc.uid, acc.name, true, safeReturnUrl()) : Promise.resolve(false)).then(function () { _postLogin(acc); });
+      if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) { _postLogin(acc); return; }
+      /* Le code part au domaine : la 1re fois, il y est enregistré (migration), ensuite c'est
+         le domaine qui a le dernier mot (un code changé ailleurs l'emporte). */
+      return window.kdmcSSO.issueDetail(acc.uid, acc.name, true, safeReturnUrl(), code).then(function (j) {
+        if (j && !j.ok && (j.reason === 'code_incorrect' || j.reason === 'trop_essais')) {
+          err.textContent = j.reason === 'trop_essais' ? j.message : 'Ton code a été changé sur un autre appareil : utilise ce code-là.';
+          btn.disabled = false; btn.textContent = 'Se connecter'; return;
+        }
+        _postLogin(acc);
+      });
     }).catch(function () { err.textContent = 'Erreur, réessaie.'; btn.disabled = false; btn.textContent = 'Se connecter'; });
   }
 

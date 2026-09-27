@@ -10546,8 +10546,27 @@ Plus `bloque:[…]` : l'admin ferme **une app précise**, même à quelqu'un qui
 ### 4. Trois garde-fous qui ne se négocient pas
 
 - **Fail-open** : sans fiche, sans champ `portee`, ou sur une adresse inconnue → **autorisé**. Les comptes déjà existants gardent tout le domaine le jour du déploiement. Un périmètre qui casse l'existant est un bug, pas une sécurité.
-- **Nouvelle inscription = fermée à son app** (moindre privilège). C'est l'admin qui ouvre.
+- ~~Nouvelle inscription = fermée à son app~~ → **REMPLACÉ le 27.09.2026 par le COMPTE UNIQUE** (voir ci-dessous).
 - **L'admin n'est jamais enfermé dehors** : une session Face ID sur un uid admin passe outre le périmètre, partout. Sinon une erreur de rangement met Kevin dehors de son propre domaine.
+
+### 4 bis. COMPTE UNIQUE — un nom + un code, partout, reconnu auto (Kevin 2026-09-27)
+
+> **« Lorsqu'une personne crée son compte et code dans le domaine ou une app, il peut se connecter aux autres apps du domaine avec les mêmes. Reconnu auto. »** — Kevin 2026-09-27
+
+- **Un compte jamais rangé par l'admin est reconnu dans TOUT le domaine**, sauf `APPS_PRIVEES`
+  (arbre, coffre, bot, dashboard : les apps personnelles de Kevin, « sauf partie admin » du 15.09).
+  Vaut pour les nouveaux inscrits ET pour les fiches enfermées par défaut entre le 15.09 et le 27.09
+  (lu à la volée : `portee:'app'` sans `acces_at` = jamais décidé par l'admin → libéré).
+- **Ce que l'admin a rangé à la main (`acces_at`) tient**, dans les deux sens ; `bloque` tient toujours.
+- **Le CODE est vérifié par le domaine** : empreinte PBKDF2 (sel par compte) en KV `cred:<uid>`,
+  jamais le code. `/__sso/login {nom, code}` = connexion sur un appareil neuf ou dans n'importe quelle
+  app (nom dans les deux sens). Un nom protégé par un code ne se prend plus « sur la foi du nom »
+  (`code_requis`). Essais limités par compte, **fermé** en cas de doute. Jamais pour l'identité admin.
+- Comptes d'avant : le code s'enregistre au domaine la première fois que la personne ouvre son compte
+  **depuis son propre appareil** (sa session) — jamais depuis un appareil inconnu (il enfermerait le
+  vrai propriétaire dehors). Code oublié : `/__admin/code` (admin seul).
+- Gardes : `test:perimetre-apps`, `test:code-compte` (15), `test:compte-unique-portail` (vrai
+  navigateur, deux téléphones).
 
 ### 5. Parité obligatoire `ROUTES` ⇄ `APPS`
 

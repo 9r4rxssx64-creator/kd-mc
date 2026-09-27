@@ -156,7 +156,9 @@ test('250 employés qui arrivent ne font PAS 250 notifications à Kevin', async 
     await servir(page('cmcteams.kd-mc.com', await jeton('u_' + i, 'Prenom' + i + ' Nom' + i)), env);
   }
   globalThis.fetch = vrai;
-  assert.equal(envois.length, 1, '25 arrivées → ' + envois.length + ' notification(s) (1 attendue)');
+  /* Depuis le compte unique (27.09) : un nouvel inscrit n'attend plus de décision → ZÉRO
+     notification (il y en avait 1 par heure quand l'arrivant restait enfermé). */
+  assert.equal(envois.length, 0, '25 arrivées → ' + envois.length + ' notification(s) (0 attendue)');
   /* …mais le JOURNAL, lui, garde TOUT : aucune arrivée ne se perd. */
   const journal = [...env.ACCOUNTS.m.keys()].filter((k) => String(k).startsWith('acc:'));
   assert.equal(journal.length, 25, 'les 25 fiches sont bien créées (' + journal.length + ')');

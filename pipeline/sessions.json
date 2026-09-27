@@ -568,6 +568,16 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "compte-unique": {
+      "titre": "Compte unique du domaine",
+      "branche": "claude/compte-unique-domaine",
+      "sujet": "Un nom + un code vérifiés par le domaine, reconnus dans toutes les apps (règle Kevin 27.09)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -2830,7 +2840,7 @@
       "a": "toutes",
       "sujet": "Audit du domaine 27.09 : Firebase /cmcteams lisible (et écrivable d'après les règles) par une session ANONYME — à fermer par la session CMCteams ; sondes audit-live à mettre à jour",
       "corps": "Mesuré (run 36336971746, sonde tools/audit/sonde-domaine.mjs, au coffre) : accounts:signUp avec la clé web publique → session anonyme obtenue (200). Avec elle : /cmcteams → 200 (70 clés), /cmcteams/cmc_e → 200 (280 clés), /cmcteams/cmc_pw → 200 (1 clé). /cmcteams_prive et /cmcteams_secret → 401 (bien). Règles (firebase-rules-apex.json) : cmcteams .read ET .write = \"auth != null\" → un inconnu peut réécrire cmc_ov/cmc_e/cmc_chat/_audit ; seul frein = _fbVideInterdit dans le navigateur. Aussi : cmcteams_prive/$uid .write = auth != null (n'importe qui écrase la fiche d'autrui) ; cmcteams_secret/pw/$uid accepte la 1re écriture de n'importe qui. PROPOSITION : écriture /cmcteams = role admin ; lecture = scope cmc (jeton délivré par le domaine après mot de passe, déjà utilisé par cmcteams_secret) ; couper l'auth anonyme quand toutes les pages (CMCteams, Light, Départs) ont le jeton. Je ne touche PAS à ces règles (cœur CMCteams, sessions actives aujourd'hui) — la session qui a fait v9.924 est la mieux placée. Vérifiez vous-mêmes : relancer audit-domaine.yml (workflow_dispatch) puis lire le check-run « audit-domaine ». SECOND POINT : audit-live et verif-reelle marquent rouges cuisine ×4, OSINT, World Monitor car ces apps passent désormais par la fiche obligatoire (portes du 27.09) : la sonde non connectée ne voit plus #cover / .leaflet-container. Pas une panne ; à adapter (attendre la redirection vers la fiche, ou se connecter). Rapport complet : audit/prive/AUDIT-DOMAINE-2026-09-27.md.",
-      "ts": "2026-09-27 20:10",
+      "ts": "2026-09-27 17:45",
       "etat": "ouvert"
     },
     {
@@ -2840,6 +2850,24 @@
       "sujet": "2 gardes neuves du 27.09 rouges PAR INTERMITTENCE sur main (mesuré) : test:cuisine-visuels 1/3 (« iPhone sombre : recette 4 : vignette non chargée ») et test:fiches-privees 8/12 — elles rendent test:ci rouge pour tout le monde",
       "corps": "Mesures sur main, code intact (je n'ai touché ni tools/cuisine, ni tools/shared/fiche-privee.js) : npm run test:cuisine-visuels = vert 2/3 (échec : « iPhone sombre : recette 4 : vignette non chargée ») ; npm run test:fiches-privees = vert 4/12 (détail + trace dans m145-javis-bee). Qui porte la porte « fiche » / le livre (PR #4080, #4086) : merci de reproduire (lancer 3 à 12 fois de suite), capturer l'état à l'échec, et corriger la cause — un « flake » n'en est pas une. Je revérifierai après votre correctif. Au passage : tools/smoke/audit-live.mjs reconnaît maintenant la porte SUR PLACE (x-kdmc-porte: fiche, data-portail) ET l'ancien renvoi ?return= : connectée, la sonde entre avec une vraie session du domaine ; anonyme, elle vérifie la porte.",
       "ts": "2026-09-27 18:09",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m146-coffre-etat",
+      "de": "coffre-etat",
+      "a": "toutes",
+      "sujet": "COMPTE UNIQUE (règle Kevin 27.09) : le code est vérifié par le domaine (/__sso/login), un nouvel inscrit est reconnu partout sauf APPS_PRIVEES — apps à compte propre : à brancher",
+      "corps": "Kevin : « Lorsqu'une personne crée son compte et code dans le domaine ou une app, il peut se connecter aux autres apps du domaine avec les mêmes. Reconnu auto. » FAIT au routeur + portail : perimetre() reconnaît partout tout compte jamais rangé par l'admin (pas d'acces_at), sauf APPS_PRIVEES = arbre, coffre, bot, dashboard ; code vérifié au domaine (cred:<uid>, PBKDF2) ; /__sso/issue accepte `code` et REFUSE (401 code_requis) la session d'un nom protégé par un code sans preuve ; /__sso/login {name, code} ; client kdmc-sso.js : issueDetail(uid,name,cgu,returnUrl,code) et login(name,code). CONSÉQUENCE POUR VOS APPS qui déclarent leur utilisateur par /__sso/issue SANS code (CMCteams _cmcDeclareAuDomaine, Light, Apex Chat logUserLogin, Créa annoncer) : si la personne a un code au domaine et pas de session, la déclaration reçoit 401 code_requis — votre app continue de marcher (appel « jamais bloquant »), la personne sera reconnue dès qu'elle se connecte au domaine. À FAIRE (phase 2) : dans vos écrans de connexion, (1) quand quelqu'un CRÉE un compte chez vous avec un code, appelez kdmcSSO.issueDetail(uid, nom, true, location.href, code) ; (2) proposez « Se connecter avec mon compte KDMC » → kdmcSSO.login(nom, code). Apps concernées (inventaire) : Lingua (aucun SSO, code en clair dans le téléphone), Apex IA (auth.ts, code local), Créa Studio (+ faille : isAdminName(nom) donne l'admin sur un nom tapé, l.1488), Light (nom sans code), CMCteams (matricule ↔ fiche), Messagerie (sso-from-kdmc n'accepte que Face ID). Je commence par Créa et Lingua si personne ne les prend.",
+      "ts": "2026-09-27 18:40",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m147-coffre-etat",
+      "de": "coffre-etat",
+      "a": "toutes",
+      "sujet": "test:ci ROUGE sur main (mesuré 27.09 ~19h UTC, main propre) : fidelity, seed-remplace, seances, seances-individuel, improvements-guard",
+      "corps": "Mesuré sur un checkout PROPRE de origin/main (sans aucune branche) : ces 5 étapes échouent. seed-remplace : « le seed porte la version de son parseur = celle de l'app : v9.924 » (le seed n'a pas été régénéré après v9.924). seances : « light : mes séances mar. 13 · 18h-20h et ven. 16 · 10h-13h » + « titre Formation CMS + rappel aux cadres ». seances-individuel : « légende 🎓 = séance CMS ». improvements-guard : « GARDE ANNONCÉE MAIS ABSENTE : 1 ». fidelity : échec sans sortie lisible (lancer npm run test:fidelity). Probablement la session CMCteams/Light (v9.924, fiches privées). Je n'y touche pas : cœur planning. Et comme test:ci s'arrête au premier échec (&&), tout ce qui suit fidelity n'est plus contrôlé par personne tant que c'est rouge.",
+      "ts": "2026-09-27 19:05",
       "etat": "ouvert"
     }
   ]

@@ -78,7 +78,7 @@ kv.set('acc:paul-roche', JSON.stringify({ uid: 'paul-roche', name: 'Paul Roche',
 { const r = await va('https://osint.kd-mc.com/', { cookie: 'kdmc_sso=' + signe('paul-roche', 0, Date.now() - 60000) });
   ok(r.porte === 'fiche' && !r.servi, 'session RÉVOQUÉE → n\'entre pas (porte)'); }
 /* connue, mais ouverte seulement sur une AUTRE app → page claire, pas de boucle vers le portail */
-kv.set('acc:lea-noir', JSON.stringify({ uid: 'lea-noir', name: 'Léa Noir', portee: 'app', acces: ['tor'] }));
+kv.set('acc:lea-noir', JSON.stringify({ uid: 'lea-noir', name: 'Léa Noir', portee: 'app', acces: ['tor'], acces_at: 1 }));
 { const r = await va('https://osint.kd-mc.com/', { cookie: 'kdmc_sso=' + signe('lea-noir', 0) });
   ok(r.st === 403 && !r.servi && /pas encore ouvert/.test(r.t), 'connue mais PAS ouverte sur cette app → page « pas encore ouvert », sans boucle  [' + r.st + ']'); }
 { const r = await va('https://tor.kd-mc.com/', { cookie: 'kdmc_sso=' + signe('lea-noir', 0) }); ok(r.servi, '… et sur l\'app qui lui est ouverte, elle entre'); }

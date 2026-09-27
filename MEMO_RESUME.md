@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — Le mail de Laure ‹employé› intégré dans l'arbre (124 → 126 fiches)
+
+Kevin transmet un mail de **Laure ‹employé›** à Marie-Noëlle ‹employé›. Lu d'abord ce que
+l'arbre savait déjà (nouveau `--voir`, lecture seule), puis appliqué, puis relu :
+
+| Information du mail | Ce que l'arbre disait | Ce qui a été fait |
+|---|---|---|
+| Michel ‹employé›, né à Nice le 19.08.1937, † Beaulieu-sur-Mer le 18.03.2005 | dates identiques, **lieu du décès absent** | lieu ajouté, dates confirmées |
+| Françoise **JEANNE** (nom de naissance), née le 07.04.1937 à Villedieu-les-Poêles (50), épouse de Michel | **inconnue** | fiche créée + reliée à Michel (par son identifiant : il y a **deux** Michel ‹employé›) |
+| Laure ‹employé› née le **31.08.1971** à Bezons (95) | 30.08.1971, sans lieu | **date corrigée** (source : l'intéressée) + lieu |
+| Jeanne ROSSI épouse de Charles ‹employé› | une « **Yvonne** » déjà déclarée épouse de Charles | fiche Jeanne ROSSI créée et reliée ; **Yvonne conservée**, question posée |
+
+**Mesuré** : 124 → **126 fiches**, 5 écrites, relecture conforme, 0 photo perdue. Relu ensuite
+fiche par fiche : Michel ↔ Françoise réciproque, Laure au 31.08.1971 à Bezons, Jeanne ↔ Charles.
+
+**3 questions en attente** (dans `KEVIN_ACTIONS_TODO.md`) : Jeanne ou Yvonne · la mère de Laure ·
+le sort de Jean Marius Victor ‹employé› et des doublons Jean / Alexandre ‹employé›.
+
+---
+
 ## 2026-09-27 — Pourquoi les saisies de Kevin disparaissaient (arbre v3.34) + audit de l'arbre
 
 **Kevin** : « Je ne peux pas rajouter les dates de naissance de Ronan 20.08.2007. Et d'autres. »

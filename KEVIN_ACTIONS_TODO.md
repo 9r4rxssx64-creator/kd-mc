@@ -9,6 +9,21 @@
 
 ---
 
+## 🌳 Arbre — 3 réponses attendues (je fais le travail dès que tu réponds)
+
+1. **Jeanne ROSSI ou Yvonne ?** L'arbre portait déjà une « Yvonne » (fiche sans nom de famille)
+   comme épouse de **Charles ‹employé›** (1904-1969). Le mail de Laure dit **Jeanne ROSSI**.
+   Même personne (prénom mal retenu) ou **deuxième union** ? Rien n'a été supprimé.
+2. **La mère de Laure** est-elle bien **Françoise JEANNE** ? Le mail dit que Françoise est
+   l'épouse de Michel, et l'arbre dit que Laure est la fille de Michel — mais personne n'écrit
+   noir sur blanc que Françoise est sa mère. Je ne devine pas une filiation.
+3. **Jean Marius Victor ‹employé›** (12.07.1912 Nice – 9.09.1999) : c'est l'ANCIENNE hypothèse
+   pour Victor, que le manuscrit contredit (Victor : 21.12.1914 Vallauris – 19.03.1989 Beaulieu).
+   Je le supprime de l'arbre ? Et les doublons **Jean ‹employé›** (3 fiches) et
+   **Alexandre ‹employé›** (3 fiches) : lesquels sont la même personne ?
+
+---
+
 ## 🚨 LE PLUS URGENT — TOUTES tes automatisations sont à l'arrêt depuis cette nuit (24.09.2026) 👆
 
 **Ce que j'ai mesuré, pas supposé** : les **30 dernières exécutions** GitHub sont en échec, toutes

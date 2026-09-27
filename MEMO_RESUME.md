@@ -1,5 +1,49 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (soir) — L'app du livre de cuisine sur l'écran d'accueil ouvrait le portail : la porte se montre maintenant DANS l'app
+
+Kevin : « Quand je clique sur l'app de l'écran d'accueil j'atterris sur CMCteams ! »
+
+**Cause mesurée** : la porte « fiche avant d'entrer » posée ce matin renvoyait tout inconnu en 302 vers
+le portail kd-mc.com. Une app de l'écran d'accueil a ses cookies **à part** (pas la session de Safari)
+→ elle atterrissait sur le portail KDMC (première tuile : CMCteams). Vérifié avec une demande de page
+sans cookie sur `cuisine.kd-mc.com/index.html` : la réponse était la page du portail.
+
+**Fait (routeur `services/kdmc-router/worker.js`)** :
+- la porte est une **page servie sur la même adresse** (l'app ne bouge pas), CSP stricte, contenu jamais servi sans session ;
+- son script `/__sso/porte.js` : pass gardé par l'app → `POST /__sso/cookie` repose le cookie → le livre s'ouvre **sans appui** ;
+  sinon **Face ID sur place** ; sinon « Remplir ma fiche » ; navigateur ordinaire → portail comme avant ;
+- `POST /__sso/cookie` : même jeton reposé (signature, expiration, révocation, périmètre revérifiés), origine du domaine obligatoire.
+
+**Garde** : `npm run test:portes-dossier` 70/0 — le vrai script de la porte tourne avec un faux iPhone
+(stockage vide, écran d'accueil) et reste dans l'app. Leçon **#351**. Déploiement du routeur : le robot
+auto-merge est en pause dans le coffre (voir ETAT-DU-MOMENT) → PR ouverte et fusionnée **par l’API**, puis
+`deploy-kdmc-router.yml` lancé **par l’API** (`workflow_dispatch` sur `main`) et vérifié servi.
+
+**Pour Kevin** : la première fois, l'app demande Face ID une fois (sur place), puis elle s'ouvre directement.
+
+---
+
+## 2026-09-27 — Livre de cuisine : le sommaire s'habille de ses propres photos (thème inchangé)
+
+Kevin, photo du portable à l'appui : « Améliore les visuels, présentation, etc. Dans le thème tjs. »
+Le sommaire était sage (cartes blanches presque vides, tomes avec le compte collé au titre,
+liste avec la famille collée au nom) alors que le livre a déjà **128 photos** servies dans les listes.
+
+**Fait, sans toucher aux couleurs marine · or · papier · rouge (le test les fige)** :
+- **Le plat du jour** en tête : grande photo, nom, origine, bouton or « Voir la recette ». Le même
+  plat pour tout le monde un jour donné, il change chaque jour (aucun hasard).
+- **Les familles** : la photo d'un de leurs plats sous un voile marine, nom en crème, compte en or,
+  médaillon gravé gardé en coin.
+- **Les origines** : le drapeau en liseré (Monaco rouge/blanc, Ligurie vert/blanc/rouge).
+- **Les tomes** : numéro romain en or, titre et compte sur deux lignes, une seule carte.
+- **La liste** : vignette carrée arrondie, nom puis « famille · tome » sur des lignes séparées.
+- Losange or devant chaque titre, cartes pleine largeur en une ligne, barre d'onglets filetée d'or.
+
+**Garde** : `npm run test:cuisine-visuels` (dans `test:ci`) — vraie page, 5 écrans (iPhone 390/375,
+bureau 1280, clair et sombre) : photos chargées, textes sur lignes séparées, contraste contre le
+voile, cibles ≥ 44 px, 0 défilement horizontal, 0 erreur JS. **Sabotage : l'ancienne page → 169 ✗.**
+`test:cuisine-lecture` toujours vert. Leçon **#350**.
 ## 2026-09-27 — Le robot de fusion n'est pas cassé, et la vérif réelle ne disait pas POURQUOI
 
 Kevin : « Répare le robot si besoin. Trouve des solutions pour te connecter et vérifier

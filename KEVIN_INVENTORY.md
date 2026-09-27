@@ -1,5 +1,23 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔓 L'app de l'écran d'accueil ne renvoie plus sur le portail : la porte se montre dans l'app (27.09.2026, soir)
+
+- 🧪 **À essayer sur l'iPhone** : ouvre l'icône du livre de cuisine. La première fois, une page « 🔒 A Cüjina de Mùnegu » te propose **Face ID** sur place ; ensuite le livre s'ouvre directement.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `services/kdmc-router/worker.js` | **Modifié.** La porte « fiche avant d'entrer » est servie **sur la même adresse** (plus de renvoi au portail, qui faisait atterrir l'app installée sur la page KDMC). Nouveau `POST /__sso/cookie` : le laissez-passer gardé par l'app repose le cookie (mêmes contrôles). Script `/__sso/porte.js` servi par le routeur. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `services/kdmc-router/portes.test.mjs` | **Modifié.** 70 contrôles (61 avant) : la porte sur place, le cookie reposé par le vrai routeur, et le script de la porte rejoué avec un faux iPhone (stockage vide, écran d'accueil). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/portes.test.mjs) |
+
+### 🍽 Le livre de cuisine s'habille de ses photos, dans le thème (27.09.2026)
+
+- 🧪 **Ouvrir le livre** : [cuisine.kd-mc.com](https://cuisine.kd-mc.com/) — plat du jour en photo, familles en photo, drapeaux sur les origines, tomes en chiffres romains.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tools/cuisine/index.html` | **Modifié.** Sommaire illustré avec les photos déjà dans le livre : plat du jour (le même pour tous un jour donné), une photo par famille sous un voile marine, drapeau en liseré sur Monaco / Ligurie, tomes I à XI sur deux lignes, liste avec vignettes carrées et lignes séparées. Couleurs du thème inchangées. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/cuisine/index.html) |
+| `tests/verify-cuisine-visuels.mjs` | **Nouveau.** La garde : vraie page dans Chromium, 5 écrans (iPhone clair/sombre, iPhone SE, bureau clair/sombre) — photos chargées, textes lisibles et séparés, cibles ≥ 44 px, thème intact, 0 erreur JS. L'ancienne page échoue (169 problèmes). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-cuisine-visuels.mjs) |
+
 ### 🔍 Audit du 26.09 : les tuiles partout, Javis durci (26.09.2026)
 
 - ▶️ **Le rapport d'audit** (mesures, sabotages, auto-critique) : [audit/2026-09-26/RAPPORT.md](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/2026-09-26/RAPPORT.md)

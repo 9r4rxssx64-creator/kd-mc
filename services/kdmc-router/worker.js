@@ -665,7 +665,7 @@ async function ssoVerify(secret, token) {
   if (diff !== 0) return null;
   let d; try { d = JSON.parse(b64urlToStr(p)); } catch { return null; }
   if (!d || !d.u || !d.exp || d.exp < Date.now()) return null;
-  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, iat: d.iat || 0 };
+  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, iat: d.iat || 0, exp: d.exp };
 }
 /* Révocation à distance (« Déconnecter partout ») : un token émis AVANT
    acc.revoked_at est refusé. Le user peut se RE-connecter (nouveau token,
@@ -1022,14 +1022,90 @@ async function porteFermee(request, url, env, cheminCMC) {
       return ficheRefusee(g, per.raison);                     /* connu mais pas ouvert ici : pas de boucle */
     }
   }
-  /* Inconnu (ou session révoquée) : fiche obligatoire, sur le portail, puis retour ici. */
-  if (estUnePage(request)) {
-    return new Response(null, { status: 302, headers: { location: 'https://kd-mc.com/?return=' + encodeURIComponent(url.href),
-      'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
-  }
+  /* Inconnu (ou session révoquée) : fiche obligatoire — la porte se montre ICI, sans quitter l'app
+     (voir portePage) ; un navigateur ordinaire part remplir sa fiche au portail, puis revient. */
+  if (estUnePage(request)) return portePage(g, url);
   return new Response('Connexion au domaine requise.', { status: 401,
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
 }
+/* PORTE « FICHE » SANS QUITTER L'APP (Kevin 27.09 : « Quand je clique sur l'app de l'écran
+   d'accueil j'atterris sur CMCteams ! »).
+   Mesuré : une app posée sur l'écran d'accueil de l'iPhone a ses cookies À PART — la session prise
+   dans Safari n'y est pas. Depuis la porte par dossier du matin, l'app du livre de cuisine était
+   renvoyée en 302 sur le portail kd-mc.com : l'app de l'écran d'accueil affichait donc le portail
+   KDMC (première tuile : CMCteams) à la place du livre. Ici, la porte est servie SUR LA MÊME ADRESSE
+   (l'app ne bouge pas) et son script, dans l'ordre : (1) réutilise le laissez-passer que l'app
+   garde en localStorage (#kdmc_sso= reçu du portail) pour reposer le cookie (/__sso/cookie),
+   (2) sinon propose Face ID SUR PLACE (accepté depuis les adresses du routeur depuis le 26.09),
+   (3) sinon renvoie remplir sa fiche au portail — un navigateur ordinaire sans laissez-passer y va
+   tout seul, comme avant. Le CONTENU n'est jamais servi sans session valide : fail-closed inchangé
+   (robots et scripts : 401 comme avant). Garde : portes.test.mjs (rejoue l'app de l'écran d'accueil). */
+function portePage(g, url) {
+  const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const portail = 'https://kd-mc.com/?return=' + encodeURIComponent(url.href);
+  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<meta name="robots" content="noindex"><meta name="theme-color" content="#0b1409"><title>' + esc(g.nom) + ' — connexion</title>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
+    + '.c{max-width:340px;width:100%}h1{font-size:19px;color:#f6d97a;margin:8px 0 6px}p{margin:0 0 14px;color:#cfd8cc;min-height:22px}'
+    + 'button,a.b{display:block;width:100%;box-sizing:border-box;margin-top:12px;min-height:50px;line-height:50px;padding:0 20px;border:none;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer}'
+    + 'button:disabled{opacity:.6}a.b.s{background:transparent;color:#f6d97a;border:1px solid rgba(232,184,48,.45);line-height:48px}</style></head>'
+    + '<body data-return="' + esc(url.href) + '" data-portail="' + esc(portail) + '"><div class="c"><div style="font-size:44px">🔒</div><h1>' + esc(g.nom) + '</h1>'
+    + '<p id="msg">Un instant…</p>'
+    + '<div id="acts" hidden><button id="pk" type="button">🔓 Face ID — j&#39;ai déjà un compte</button>'
+    + '<a class="b s" id="fiche" href="' + esc(portail) + '">Remplir ma fiche sur kd-mc.com</a></div>'
+    + '<noscript><a class="b" href="' + esc(portail) + '">Remplir ma fiche sur kd-mc.com</a></noscript></div>'
+    + '<script src="/__sso/porte.js?v=1"></script></body></html>';
+  return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
+    'x-kdmc-porte': 'fiche', 'referrer-policy': 'strict-origin-when-cross-origin',
+    'content-security-policy': "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
+}
+/* Le script de la porte, servi par le routeur lui-même (/__sso/porte.js) : aucune dépendance à
+   l'hébergeur, testable tel quel dans Node (portes.test.mjs le fait tourner avec un faux iPhone). */
+const PORTE_JS = `(function(){
+'use strict';
+var LS='kdmc_sso_token';
+var body=document.body; var ret=body.getAttribute('data-return')||location.href;
+var portail=body.getAttribute('data-portail')||('https://kd-mc.com/?return='+encodeURIComponent(ret));
+var msg=document.getElementById('msg'), acts=document.getElementById('acts'), pk=document.getElementById('pk');
+function say(t){ if(msg)msg.textContent=t; }
+function tok(){ try{ return localStorage.getItem(LS)||''; }catch(e){ return ''; } }
+function setTok(t){ try{ if(t)localStorage.setItem(LS,t); else localStorage.removeItem(LS); }catch(e){} }
+function standalone(){ try{ return navigator.standalone===true||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches); }catch(e){ return false; } }
+function pkOk(){ return !!(window.PublicKeyCredential&&navigator.credentials&&navigator.credentials.get); }
+function b64uToBuf(s){ s=String(s||'').replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; var bin=atob(s),a=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i); return a.buffer; }
+function bufToB64u(b){ var a=new Uint8Array(b),s=''; for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]); return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,''); }
+function entrer(){ location.replace(ret); }
+/* 1. laissez-passer arrivé dans l'adresse (#kdmc_sso=…, posé par le portail) : on le garde */
+try{ var m=(location.hash||'').match(/[#&]kdmc_sso=([^&]+)/); if(m){ setTok(decodeURIComponent(m[1])); try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} } }catch(e){}
+/* 2. laissez-passer gardé → le domaine repose le cookie sur CETTE app, puis on entre */
+function cookieDepuisPass(){ var t=tok(); if(!t) return Promise.resolve({ok:false,reason:'aucun'});
+  return fetch('/__sso/cookie',{method:'POST',credentials:'include',headers:{'authorization':'Bearer '+t,'content-type':'application/json'},body:'{}'})
+    .then(function(r){ return r.json(); }).then(function(j){ j=j||{ok:false}; if(!j.ok&&(j.reason==='pass_invalide'||j.reason==='session_revoquee'))setTok(''); return j; })
+    .catch(function(){ return {ok:false,reason:'reseau'}; }); }
+/* 3. Face ID sur place : le passkey du trousseau se présente, le domaine vérifie la signature */
+function faceId(){ if(!pkOk()) return Promise.resolve({ok:false,reason:'non supporté'});
+  return fetch('/__sso/webauthn/auth/options',{method:'POST',credentials:'include',headers:{'content-type':'application/json'},body:'{"uid":""}'})
+    .then(function(r){ return r.json(); }).then(function(o){ if(!o||!o.ok) return {ok:false,reason:(o&&o.reason)||'options'};
+      return navigator.credentials.get({publicKey:{challenge:b64uToBuf(o.challenge),rpId:o.rpId,userVerification:'required',timeout:60000}}).then(function(cred){
+        var a=cred.response; var uid=''; try{ uid=new TextDecoder().decode(a.userHandle); }catch(e){}
+        if(!uid) return {ok:false,reason:'passkey sans compte'};
+        return fetch('/__sso/webauthn/auth/verify',{method:'POST',credentials:'include',headers:{'content-type':'application/json'},
+          body:JSON.stringify({uid:uid,credId:cred.id,clientDataJSON:bufToB64u(a.clientDataJSON),authenticatorData:bufToB64u(a.authenticatorData),signature:bufToB64u(a.signature)})})
+          .then(function(r){ return r.json(); }).then(function(j){ j=j||{ok:false}; if(j.ok&&j.token)setTok(j.token); return j; }); }); })
+    .catch(function(e){ return {ok:false,reason:String((e&&e.message)||e).slice(0,120)}; }); }
+if(pk) pk.addEventListener('click',function(){ pk.disabled=true; say('Face ID…');
+  faceId().then(function(j){ if(j.ok){ say('Bonjour '+(j.name||'')+' — ouverture…'); entrer(); }
+    else { pk.disabled=false; say('Face ID refusé ('+(j.reason||'annulé')+'). Réessaie, ou remplis ta fiche.'); } }); });
+cookieDepuisPass().then(function(j){
+  if(j.ok){ say('Bonjour '+(j.name||'')+' — ouverture…'); entrer(); return; }
+  if(j.hors_perimetre){ say(j.message||'Ton compte n\\'est pas ouvert sur cette application.'); if(acts)acts.hidden=false; if(pk)pk.hidden=true; return; }
+  if(!standalone()){ location.replace(portail); return; }
+  /* app de l'écran d'accueil : on reste ICI — le portail ne serait pas le livre */
+  say('Réservé aux personnes connues du domaine.');
+  if(acts)acts.hidden=false;
+  if(pk&&!pkOk())pk.hidden=true;
+});
+})();`;
 function ficheRefusee(g, raison) {
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const msg = raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.'
@@ -1922,6 +1998,34 @@ async function handleSso(request, url, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (!secret) return J({ ok: false, reason: 'sso_not_configured' });
   const path = url.pathname;
+  if (path === '/__sso/porte.js' && request.method === 'GET') {
+    return new Response(PORTE_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=3600', 'x-content-type-options': 'nosniff' } });
+  }
+  if (path === '/__sso/cookie' && request.method === 'POST') {
+    /* Repose le cookie de session à partir du laissez-passer (Bearer) que l'app garde en
+       localStorage : une app de l'écran d'accueil (cookies à part) redevient reconnue par le
+       ROUTEUR à la navigation, pas seulement par ses propres appels. Même garde-fou anti-CSRF
+       de connexion que /__sso/issue (origine du domaine seulement) ; le pass est vérifié
+       (signature, expiration, révocation, périmètre) et reposé TEL QUEL, avec sa durée
+       restante — aucune session nouvelle n'est fabriquée ici. */
+    if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
+    const m = (request.headers.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+    const token = m ? m[1].trim() : '';
+    const s = token ? await ssoVerify(secret, token) : null;
+    if (!s) return J({ ok: false, reason: 'pass_invalide' }, undefined, 401);
+    const acc = await accGet(env, s.uid);
+    if (revoked(acc, s)) return J({ ok: false, reason: 'session_revoquee' }, undefined, 401);
+    const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
+    const app = appDe(url.host); /* l'adresse appelée (pas l'en-tête Host, absent hors navigateur) */
+    const per = perimetre(acc, app);
+    if (!per.ok && !estAdmin) {
+      return J({ ok: false, reason: per.raison, hors_perimetre: true, app,
+        message: per.raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.' : 'Ton compte n\'est pas ouvert sur cette application.' });
+    }
+    const restant = Math.max(60, Math.floor(((s.exp || 0) - Date.now()) / 1000));
+    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${restant}; Secure; HttpOnly; SameSite=Lax`;
+    return J({ ok: true, uid: s.uid, name: s.name, verified: !!s.verified, admin: estAdmin }, cookie);
+  }
   if (path === '/__sso/whoami' && request.method === 'GET') {
     const s = await ssoVerify(secret, ssoToken(request));
     /* SÉCU (leçon #99) : admin EXIGE une identité FORTE (verified = Face ID prouvé).

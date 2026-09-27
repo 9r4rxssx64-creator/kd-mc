@@ -28,7 +28,8 @@ globalThis.fetch = async (input) => { const u = typeof input === 'string' ? inpu
   return realFetch(input); };
 const NAV = { 'sec-fetch-dest': 'document', accept: 'text/html' };
 const va = async (url, extra) => { const r = await mod.fetch(new Request(url, { headers: Object.assign({}, NAV, extra || {}) }), env, { waitUntil() {} });
-  const t = r.status === 302 ? '' : await r.text(); return { st: r.status, loc: r.headers.get('location') || '', servi: /^CONTENU /.test(t), t }; };
+  const t = r.status === 302 ? '' : await r.text(); return { st: r.status, loc: r.headers.get('location') || '', servi: /^CONTENU /.test(t), t, porte: r.headers.get('x-kdmc-porte') || '',
+    csp: r.headers.get('content-security-policy') || '' }; };
 
 /* ---- 1. ADMIN : PoolPilot et Autorisations, par TOUS les chemins ---- */
 const CHEMINS_ADMIN = [
@@ -47,10 +48,17 @@ for (const u of ['https://beatbot.kd-mc.com/', 'https://kd-mc.com/CMCteams/tools
 const INFOS = ['https://cuisine.kd-mc.com/', 'https://cujina.kd-mc.com/', 'https://kd-mc.com/cujina/', 'https://worldmonitor.kd-mc.com/',
   'https://osint.kd-mc.com/', 'https://kd-mc.com/osint/', 'https://kd-mc.com/CMCteams/kdmc-home/osint/', 'https://ia.kd-mc.com/',
   'https://outils.kd-mc.com/', 'https://tor.kd-mc.com/', 'https://dossiers.kd-mc.com/', 'https://kd-mc.com/CMCteams/tools/tor/'];
+/* Depuis le 27.09 (soir) : la porte se montre SUR PLACE — plus de 302 vers le portail. Une app de
+   l'écran d'accueil (cookies à part) restait sinon bloquée sur le portail KDMC (Kevin : « j'atterris
+   sur CMCteams »). La page de porte porte le lien « remplir ma fiche » (retour ici), le bouton Face
+   ID, le script /__sso/porte.js, une CSP stricte — et JAMAIS le contenu. */
 for (const u of INFOS) {
   const r = await va(u);
-  ok(r.st === 302 && r.loc === 'https://kd-mc.com/?return=' + encodeURIComponent(u), 'inconnu sur ' + u + ' → envoyé remplir sa fiche puis RETOUR ici  [' + r.st + ' ' + r.loc.slice(0, 60) + ']');
+  const lien = 'https://kd-mc.com/?return=' + encodeURIComponent(u);
+  ok(r.st === 200 && r.porte === 'fiche' && !r.servi && r.t.includes(lien) && r.t.includes('/__sso/porte.js') && r.t.includes('id="pk"') && /script-src 'self'/.test(r.csp),
+    'inconnu sur ' + u + ' → porte SUR PLACE (fiche ou Face ID, retour ici), contenu non servi  [' + r.st + ' ' + r.porte + ']');
 }
+{ const r = await va('https://cuisine.kd-mc.com/'); ok(/A Cüjina de Mùnegu/.test(r.t) && !/<script>/.test(r.t), 'la porte nomme l\'app et ne contient aucun script en ligne (CSP)'); }
 { const r = await mod.fetch(new Request('https://osint.kd-mc.com/index.html', { headers: { accept: '*/*' } }), env, { waitUntil() {} });
   ok(r.status === 401 && !/^CONTENU/.test(await r.text()), 'inconnu qui lit la page SANS navigateur (script, robot) → 401, rien servi'); }
 { const r = await mod.fetch(new Request('https://cuisine.kd-mc.com/livre.pdf', { headers: { accept: '*/*' } }), env, { waitUntil() {} });
@@ -68,7 +76,7 @@ for (const u of ['https://osint.kd-mc.com/', 'https://kd-mc.com/cujina/', 'https
 /* session révoquée (« déconnecter mes autres appareils ») → retour à la fiche */
 kv.set('acc:paul-roche', JSON.stringify({ uid: 'paul-roche', name: 'Paul Roche', revoked_at: Date.now() }));
 { const r = await va('https://osint.kd-mc.com/', { cookie: 'kdmc_sso=' + signe('paul-roche', 0, Date.now() - 60000) });
-  ok(r.st === 302 && !r.servi, 'session RÉVOQUÉE → n\'entre pas'); }
+  ok(r.porte === 'fiche' && !r.servi, 'session RÉVOQUÉE → n\'entre pas (porte)'); }
 /* connue, mais ouverte seulement sur une AUTRE app → page claire, pas de boucle vers le portail */
 kv.set('acc:lea-noir', JSON.stringify({ uid: 'lea-noir', name: 'Léa Noir', portee: 'app', acces: ['tor'] }));
 { const r = await va('https://osint.kd-mc.com/', { cookie: 'kdmc_sso=' + signe('lea-noir', 0) });
@@ -96,6 +104,72 @@ const inscrit = async (corps) => { const r = await mod.fetch(new Request('https:
 { const r = await inscrit({ uid: 'marc-dupont', name: 'Marc Dupont', cgu: true }); ok(r.st === 200 && r.j.ok === true, 'nouveau COMPLET (prénom + nom + conditions) → compte créé'); }
 { const r = await inscrit({ uid: 'anne-sophie-saint-polit', name: 'Anne-Sophie SAINT-POLIT', cgu: true }); ok(r.j.ok === true, 'noms composés et accents acceptés'); }
 { const r = await inscrit({ uid: 'anne-martin', name: 'Anne', cgu: false }); ok(r.j.ok === true, 'quelqu\'un de DÉJÀ inscrit n\'est jamais bloqué par ce contrôle'); }
+
+/* ---- 5. L'APP DE L'ÉCRAN D'ACCUEIL : la porte reste DANS l'app (Kevin 27.09 « j'atterris sur CMCteams ») ---- */
+const ctx = { waitUntil() {} };
+const post = async (host, headers, body) => mod.fetch(new Request('https://' + host + '/__sso/cookie', { method: 'POST',
+  headers: Object.assign({ 'content-type': 'application/json' }, headers || {}), body: body || '{}' }), env, ctx);
+let porteJs = '';
+{ const r = await mod.fetch(new Request('https://cuisine.kd-mc.com/__sso/porte.js'), env, ctx); porteJs = await r.text();
+  ok(r.status === 200 && /javascript/.test(r.headers.get('content-type') || '') && porteJs.includes('/__sso/cookie') && porteJs.includes('webauthn/auth/options') && porteJs.includes('display-mode: standalone'),
+    'le script de la porte est servi par le routeur (cookie depuis le pass, Face ID, détection écran d\'accueil)'); }
+/* /__sso/cookie : le laissez-passer redevient un cookie — mêmes contrôles que le reste */
+{ const r = await post('cuisine.kd-mc.com', { origin: 'https://cuisine.kd-mc.com', authorization: 'Bearer ' + anne });
+  const j = await r.json(); const sc = r.headers.get('set-cookie') || '';
+  ok(r.status === 200 && j.ok === true && j.uid === 'anne-martin' && sc.startsWith('kdmc_sso=' + anne + ';') && /Domain=\.kd-mc\.com/.test(sc) && /HttpOnly/.test(sc) && /Max-Age=\d+/.test(sc),
+    'laissez-passer gardé par l\'app → le domaine repose le MÊME cookie (pas une session neuve)  [' + r.status + ']');
+  const r2 = await va('https://cuisine.kd-mc.com/', { cookie: 'kdmc_sso=' + anne }); ok(r2.servi, '… et au rechargement, le livre s\'ouvre'); }
+{ const r = await post('cuisine.kd-mc.com', { origin: 'https://cuisine.kd-mc.com', authorization: 'Bearer ' + signe('paul-roche', 0, Date.now() - 60000) });
+  ok(r.status === 401 && !r.headers.get('set-cookie'), 'pass d\'une session RÉVOQUÉE → refusé, aucun cookie'); }
+{ const r = await post('cuisine.kd-mc.com', { origin: 'https://evil.example', authorization: 'Bearer ' + anne });
+  ok(r.status === 403 && !r.headers.get('set-cookie'), 'un site TIERS ne peut pas poser un cookie avec un pass volé (origine refusée)'); }
+{ const r = await post('cuisine.kd-mc.com', { origin: 'https://cuisine.kd-mc.com' }); ok(r.status === 401 && !r.headers.get('set-cookie'), 'sans pass → 401, aucun cookie'); }
+{ const r = await post('cuisine.kd-mc.com', { origin: 'https://cuisine.kd-mc.com', authorization: 'Bearer faux.' + anne.split('.')[1] }); ok(r.status === 401 && !r.headers.get('set-cookie'), 'pass FALSIFIÉ → 401, aucun cookie'); }
+{ const r = await post('osint.kd-mc.com', { origin: 'https://osint.kd-mc.com', authorization: 'Bearer ' + signe('lea-noir', 0) }); const j = await r.json();
+  ok(j.ok === false && j.hors_perimetre === true && !r.headers.get('set-cookie'), 'connue mais pas ouverte ICI → pas de cookie, message clair'); }
+{ const r = await post('dossiers.kd-mc.com', { origin: 'https://dossiers.kd-mc.com', authorization: 'Bearer ' + signe('kevin-desarzens', 1) }); const j = await r.json();
+  ok(j.ok === true && j.admin === true && /^kdmc_sso=/.test(r.headers.get('set-cookie') || ''), 'Kevin (admin + Face ID) : cookie reposé partout'); }
+
+/* Le VRAI script de la porte tourne ici avec un faux iPhone (leçon #343 : un test « iPhone » qui
+   n'efface que les cookies n'est pas un iPhone — ici : stockage VIDE, cookies vides, écran d'accueil). */
+async function porte(sc) {
+  const store = new Map(Object.entries(sc.storage || {}));
+  const els = { msg: { textContent: '' }, acts: { hidden: true }, pk: { hidden: false, disabled: false, _click: null, addEventListener(t, f) { if (t === 'click') this._click = f; } } };
+  const document = { body: { getAttribute: (a) => ({ 'data-return': sc.url, 'data-portail': 'https://kd-mc.com/?return=' + encodeURIComponent(sc.url) })[a] || null }, getElementById: (id) => els[id] || null };
+  const location = { href: sc.url, hash: sc.hash || '', pathname: new URL(sc.url).pathname, search: '', replaced: '', replace(u) { this.replaced = u; } };
+  const history = { replaceState() { location.hash = ''; } };
+  const localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const navigator = { standalone: !!sc.standalone, credentials: sc.faceId ? { get: async () => sc.faceId } : undefined };
+  const window = { matchMedia: () => ({ matches: !!sc.standalone }), PublicKeyCredential: sc.faceId ? function () {} : undefined };
+  const calls = [];
+  const fetch = async (u, init) => {
+    calls.push(u);
+    if (sc.fake && sc.fake[u]) return { json: async () => sc.fake[u] };
+    const h = Object.assign({ origin: 'https://cuisine.kd-mc.com' }, (init && init.headers) || {});
+    const r = await mod.fetch(new Request('https://cuisine.kd-mc.com' + u, { method: init.method || 'GET', headers: h, body: init.body }), env, ctx);
+    return { json: async () => r.json() };
+  };
+  new Function('window', 'document', 'location', 'history', 'localStorage', 'navigator', 'fetch', 'TextDecoder', 'atob', 'btoa', porteJs)(window, document, location, history, localStorage, navigator, fetch, TextDecoder, atob, btoa);
+  await new Promise((r) => setTimeout(r, 30));
+  if (sc.clickFaceId && els.pk._click) { els.pk._click(); await new Promise((r) => setTimeout(r, 30)); }
+  return { replaced: location.replaced, msg: els.msg.textContent, acts: !els.acts.hidden, pk: !els.pk.hidden, calls, tok: store.get('kdmc_sso_token') || '', hash: location.hash };
+}
+const LIVRE = 'https://cuisine.kd-mc.com/index.html';
+{ const r = await porte({ url: LIVRE, standalone: true, storage: {}, faceId: false });
+  ok(r.replaced === '' && r.acts && !r.calls.length, 'iPhone, app de l\'écran d\'accueil, stockage VIDE → la porte RESTE dans l\'app (aucun renvoi au portail), fiche proposée  [' + r.msg + ']'); }
+{ const r = await porte({ url: LIVRE, standalone: true, storage: {}, faceId: { id: 'c1', response: { userHandle: new TextEncoder().encode('anne-martin'), clientDataJSON: new Uint8Array(3), authenticatorData: new Uint8Array(3), signature: new Uint8Array(3) } },
+    fake: { '/__sso/webauthn/auth/options': { ok: true, challenge: 'AAAA', rpId: 'kd-mc.com' }, '/__sso/webauthn/auth/verify': { ok: true, uid: 'anne-martin', name: 'Anne Martin', token: anne } }, clickFaceId: true });
+  ok(r.pk && r.replaced === LIVRE && r.tok === anne && r.calls.includes('/__sso/webauthn/auth/verify'), 'écran d\'accueil : Face ID SUR PLACE → pass gardé, l\'app se recharge sur le livre  [' + r.msg + ']'); }
+{ const r = await porte({ url: LIVRE, standalone: true, storage: { kdmc_sso_token: anne } });
+  ok(r.replaced === LIVRE && r.calls[0] === '/__sso/cookie' && r.tok === anne, 'écran d\'accueil avec un pass gardé → cookie reposé par le VRAI routeur, retour direct sur le livre (0 appui)'); }
+{ const r = await porte({ url: LIVRE, standalone: true, hash: '#kdmc_sso=' + encodeURIComponent(anne), storage: {} });
+  ok(r.replaced === LIVRE && r.tok === anne && r.hash === '', 'pass reçu du portail dans l\'adresse (#kdmc_sso=) → gardé, adresse nettoyée, on entre'); }
+{ const r = await porte({ url: LIVRE, standalone: true, storage: { kdmc_sso_token: 'faux.' + anne.split('.')[1] } });
+  ok(r.replaced === '' && r.tok === '' && r.acts, 'pass FALSIFIÉ dans l\'app → jeté, la porte reste avec fiche/Face ID (pas de boucle)'); }
+{ const r = await porte({ url: LIVRE, standalone: false, storage: {} });
+  ok(r.replaced === 'https://kd-mc.com/?return=' + encodeURIComponent(LIVRE), 'navigateur ORDINAIRE sans pass → part remplir sa fiche au portail, puis retour ici (comme avant)'); }
+{ const r = await porte({ url: 'https://osint.kd-mc.com/', standalone: true, storage: { kdmc_sso_token: signe('lea-noir', 0) }, fake: { '/__sso/cookie': { ok: false, hors_perimetre: true, message: 'Ton compte n\'est pas ouvert sur cette application.' } } });
+  ok(r.replaced === '' && /pas ouvert/.test(r.msg) && !r.pk, 'connue mais pas ouverte ici → message clair dans l\'app, sans Face ID inutile'); }
 
 console.log(`Portes par dossier : ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

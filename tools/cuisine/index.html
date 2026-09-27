@@ -81,8 +81,10 @@ a{color:var(--gold)}
 .top .act{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:19px;border-radius:50%;color:var(--gold-bright)}
 
 /* ---- HOME ---- */
-.home-hd{background:linear-gradient(180deg,var(--marine),var(--marine-soft));color:var(--onmarine);
-   text-align:center;padding:26px 22px 30px;padding-top:calc(20px + env(safe-area-inset-top))}
+.home-hd{background:radial-gradient(120% 90% at 50% -20%, #1C4A5C 0%, var(--marine) 62%, #0A2029 100%);color:var(--onmarine);
+   text-align:center;padding:26px 22px 30px;padding-top:calc(20px + env(safe-area-inset-top));
+   border-bottom:1px solid rgba(203,161,76,.45);position:relative}
+.home-hd::after{content:"◆";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font-size:10px;color:var(--gold);background:var(--paper);padding:0 8px;line-height:16px}
 .home-hd .crest{width:56px;height:56px;margin:0 auto 12px}
 .home-hd h1{font-size:clamp(22px,6vw,30px);color:#F5EDD8}
 .home-hd .sub{font-style:italic;color:#C6B489;margin-top:8px;font-size:15px}
@@ -92,12 +94,28 @@ a{color:var(--gold)}
 
 .searchbar{position:relative;margin:18px 16px 6px}
 .searchbar input{width:100%;padding:15px 16px 15px 46px;border-radius:14px;border:1px solid var(--line);
-   background:var(--card);color:var(--ink);font-size:16px;font-family:system-ui,sans-serif}
+   background:var(--card);color:var(--ink);font-size:16px;font-family:system-ui,sans-serif;box-shadow:var(--shadow)}
+.searchbar input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(203,161,76,.22)}
 .searchbar .mag{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--gold);pointer-events:none}
 .searchbar input::placeholder{color:var(--ink-soft)}
 
 .section-t{padding:22px 18px 6px;display:flex;align-items:baseline;justify-content:space-between}
-.section-t h2{font-size:20px}
+.section-t h2{font-size:20px;display:flex;align-items:center;gap:9px}
+.section-t h2::before{content:"◆";color:var(--gold);font-size:9px;flex:0 0 auto}
+
+/* ---- PLAT DU JOUR : une grande photo, le nom, l'origine ---- */
+.pdj{position:relative;display:block;width:calc(100% - 32px);margin:16px 16px 4px;border-radius:18px;overflow:hidden;aspect-ratio:16/9;
+   background:linear-gradient(160deg,var(--marine-soft),var(--marine));box-shadow:var(--shadow);text-align:left;color:#F5EDD8;border:1px solid rgba(203,161,76,.45);padding:0}
+.pdj img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+.pdj:active img{transform:scale(1.04)}
+@media(max-width:520px){.pdj{aspect-ratio:4/3}}
+.pdj::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,30,37,0) 40%,rgba(10,30,37,.6) 70%,rgba(10,30,37,.92) 100%)}
+.pdj .pdj-in{position:absolute;left:0;right:0;bottom:0;padding:16px 18px 16px;z-index:1;display:flex;flex-direction:column;gap:6px}
+.pdj .lbl{color:var(--gold-bright);align-self:flex-start;background:rgba(10,30,37,.55);border:1px solid rgba(203,161,76,.45);border-radius:20px;padding:4px 10px;backdrop-filter:blur(4px)}
+.pdj h3{font-size:clamp(20px,5.6vw,27px);color:#F8F1DF;text-shadow:0 2px 14px rgba(0,0,0,.55);font-weight:600}
+.pdj .pdj-m{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px}
+.pdj .orig,.pdj .orig.monaco,.pdj .orig.ligurie{background:rgba(10,30,37,.55);color:#F5EDD8;border:1px solid rgba(255,255,255,.35);font-size:11.5px;backdrop-filter:blur(4px)}
+.pdj .pdj-go{margin-left:auto;font-family:system-ui,sans-serif;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:#241f0d;background:var(--gold);border-radius:30px;padding:8px 13px;min-height:34px;display:inline-flex;align-items:center}
 .section-t .cnt{font-family:system-ui,sans-serif;font-size:12px;color:var(--ink-soft)}
 
 .chips{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -114,23 +132,46 @@ a{color:var(--gold)}
 .fam .ic{font-size:26px}
 .fam .nm{font-size:15.5px;line-height:1.25}
 .fam .n{font-family:system-ui,sans-serif;font-size:12px;color:var(--ink-soft)}
+/* carte de famille illustrée : la photo d'un plat, un voile marine, le nom en crème, le compte en or */
+.fam.fam-ph{position:relative;overflow:hidden;padding:0;aspect-ratio:4/3;min-height:150px;justify-content:flex-end;gap:2px;
+   color:#F5EDD8;border-color:rgba(203,161,76,.4);background:linear-gradient(160deg,var(--marine-soft),var(--marine))}
+.fam.fam-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.fam.fam-ph:active img{transform:scale(1.05)}
+.fam.fam-ph .sh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,30,37,.05) 25%,rgba(10,30,37,.5) 60%,rgba(10,30,37,.92) 100%)}
+.fam.fam-ph .illu-m{position:absolute;top:9px;right:9px;width:38px;height:38px;color:var(--gold-bright);background:rgba(10,30,37,.6);border-radius:50%;padding:2px;z-index:1;backdrop-filter:blur(4px)}
+.fam.fam-ph .nm{position:relative;z-index:1;padding:0 14px;font-size:16px;color:#F8F1DF;text-shadow:0 1px 10px rgba(0,0,0,.6)}
+.fam.fam-ph .n{position:relative;z-index:1;padding:0 14px 13px;color:var(--gold-bright);font-weight:600;letter-spacing:.03em}
+/* cartes pleine largeur (surprise, lexique, livre papier) : une ligne, médaillon rond, flèche or */
+.fam.row{width:100%;flex-direction:row;align-items:center;gap:14px;padding:13px 16px;text-decoration:none;color:var(--ink)}
+.fam.row .ic{width:46px;height:46px;border-radius:50%;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto;border:1px solid var(--line)}
+.fam.row .nm{flex:1;min-width:0}
+.fam.row .n{display:block;margin-top:2px}
+.fam.row::after{content:"›";color:var(--gold);font-size:24px;line-height:1;flex:0 0 auto}
+.fam.row.surprise{border-color:var(--gold);background:linear-gradient(135deg,rgba(203,161,76,.16),rgba(203,161,76,.03))}
+.fam.row.surprise .ic{background:var(--gold);border-color:var(--gold)}
+.fam.row.dial{border-left:4px solid var(--rouge)}
+.fam.row.papier{border-left:4px solid var(--gold)}
 
 /* tomes list */
-.tome{display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid var(--line);background:var(--card);text-align:left;width:100%}
-.tome .rn{font-family:system-ui,sans-serif;font-size:12px;letter-spacing:.1em;color:var(--gold);width:52px;flex:0 0 auto}
+.tomes{margin:8px 16px 4px;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);background:var(--card)}
+.tome{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card);text-align:left;width:100%}
+.tomes .tome:last-child{border-bottom:none}
+.tome:active{background:var(--chip)}
+.tome .rn{font-family:system-ui,sans-serif;font-size:10.5px;letter-spacing:.08em;color:var(--gold);width:46px;flex:0 0 auto;text-transform:uppercase;line-height:1.2}
+.tome .rn b{display:block;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:19px;letter-spacing:.02em;color:var(--gold-bright);font-weight:600}
 .tome .ic{font-size:22px;width:26px;text-align:center}
-.tome .tx{flex:1}
-.tome .tx .t{font-size:15.5px}
-.tome .tx .d{font-family:system-ui,sans-serif;font-size:12px;color:var(--ink-soft);margin-top:2px}
-.tome .ch{color:var(--gold);font-size:20px}
+.tome .tx{flex:1;min-width:0}
+.tome .tx .t{font-size:15.5px;display:block;line-height:1.3}
+.tome .tx .d{display:block;font-family:system-ui,sans-serif;font-size:12px;color:var(--ink-soft);margin-top:3px}
+.tome .ch{color:var(--gold);font-size:22px}
 
 /* recipe list */
 .rlist{padding:6px 0 20px}
 .ritem{display:flex;gap:14px;align-items:flex-start;padding:15px 16px;border-bottom:1px solid var(--line);width:100%;text-align:left;background:transparent}
 .ritem:active{background:var(--chip)}
 .ritem .rlft{flex:1;min-width:0}
-.ritem .rn2{font-size:16.5px;line-height:1.25;margin-bottom:3px}
-.ritem .rmeta{font-family:system-ui,sans-serif;font-size:11.5px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em}
+.ritem .rn2{display:block;font-size:17px;line-height:1.25;margin-bottom:4px}
+.ritem .rmeta{display:block;font-family:system-ui,sans-serif;font-size:10.5px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ritem .rdial{display:inline-block;margin-top:4px;font-family:system-ui,sans-serif;font-size:11.5px;color:var(--rouge);background:var(--chip);border-radius:20px;padding:2px 10px;letter-spacing:.02em}
 .orig{display:inline-flex;align-items:center;gap:5px;font-family:system-ui,sans-serif;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:.02em;white-space:nowrap}
 .orig.monaco{background:rgba(158,59,52,.12);color:var(--rouge);border:1px solid rgba(158,59,52,.35)}
@@ -139,13 +180,17 @@ a{color:var(--gold)}
 .stylechip{font-family:system-ui,sans-serif;font-size:10.5px;color:var(--ink-soft);background:var(--chip);border-radius:20px;padding:2px 8px}
 .rp-hero .orig{margin-top:12px;font-size:12px;background:rgba(255,255,255,.1);color:#F5EDD8;border:1px solid rgba(255,255,255,.25)}
 .orig-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 16px 4px}
-.orig-card{border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:5px;text-align:left;box-shadow:var(--shadow);border:1px solid var(--line);background:var(--card)}
+.orig-card{position:relative;overflow:hidden;border-radius:16px;padding:20px 14px 15px;display:flex;flex-direction:column;gap:4px;text-align:left;box-shadow:var(--shadow);border:1px solid var(--line);background:var(--card);transition:.18s}
 .orig-card:active{transform:scale(.98)}
-.orig-card.oc-monaco{border-left:4px solid var(--rouge)}
-.orig-card.oc-ligurie{border-left:4px solid var(--olive)}
-.orig-card .oc-fl{font-size:26px}
-.orig-card .oc-nm{font-size:15.5px;line-height:1.2}
-.orig-card .oc-n{font-family:system-ui,sans-serif;font-size:12px;color:var(--ink-soft)}
+/* le drapeau du pays en liseré, en haut de la carte */
+.orig-card::before{content:"";position:absolute;left:0;top:0;right:0;height:6px}
+.orig-card.oc-monaco::before{background:linear-gradient(180deg,#CE1126 50%,#FFFFFF 50%);box-shadow:0 1px 0 var(--line)}
+.orig-card.oc-ligurie::before{background:linear-gradient(90deg,#009246 0 33.3%,#FFFFFF 33.3% 66.6%,#CE2B37 66.6%);box-shadow:0 1px 0 var(--line)}
+.orig-card.oc-monaco{background:linear-gradient(180deg,rgba(158,59,52,.07),var(--card) 45%)}
+.orig-card.oc-ligurie{background:linear-gradient(180deg,rgba(94,107,68,.09),var(--card) 45%)}
+.orig-card .oc-fl{font-size:30px;line-height:1}
+.orig-card .oc-nm{font-size:16.5px;line-height:1.2;margin-top:4px}
+.orig-card .oc-n{font-family:system-ui,sans-serif;font-size:12px;color:var(--gold);font-weight:600;letter-spacing:.02em}
 .rp-hero .dial{margin-top:10px;font-style:italic;color:var(--gold-bright);font-size:15px}
 .rp-hero .dial b{font-style:normal;color:#F5EDD8}
 .dial-src{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--rouge);border-radius:0 12px 12px 0;padding:14px 16px;margin:16px 0;font-size:15px;line-height:1.6}
@@ -170,9 +215,10 @@ a{color:var(--gold)}
 .ritem .fav{font-size:19px;color:var(--line);width:34px;flex:0 0 auto;text-align:center;padding-top:2px}
 .ritem .fav.on{color:var(--rouge)}
 .empty{text-align:center;color:var(--ink-soft);padding:60px 30px;font-style:italic}
-.rthumb{position:relative;width:56px;height:56px;flex:0 0 auto;color:var(--gold);opacity:.95;border-radius:50%;overflow:hidden}
+.rthumb{position:relative;width:66px;height:66px;flex:0 0 auto;color:var(--gold);opacity:.95;border-radius:14px;overflow:hidden;background:var(--chip);
+   box-shadow:0 0 0 1px var(--line),0 4px 12px rgba(14,42,52,.14)}
 .rthumb svg{width:100%;height:100%}
-.rthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.rthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px}
 .rp-photo{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:var(--marine-soft);display:flex;align-items:center;justify-content:center}
 .rp-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .rp-photo .illu-hero{position:absolute;margin:0;opacity:.35}
@@ -267,7 +313,7 @@ a{color:var(--gold)}
 /* ---- TABBAR ---- */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--marine);
    display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));
-   box-shadow:0 -4px 20px rgba(0,0,0,.18);max-width:820px;margin:0 auto}
+   box-shadow:0 -4px 20px rgba(0,0,0,.18);max-width:820px;margin:0 auto;border-top:1px solid rgba(203,161,76,.35)}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#7E96A2;font-family:system-ui,sans-serif;font-size:10px;letter-spacing:.03em;padding:4px 0;min-height:48px}
 .tab .ti{font-size:20px}
 .tab.on{color:var(--gold-bright)}
@@ -286,7 +332,7 @@ a{color:var(--gold)}
 
 @media print{
   body{background:#fff;padding:0}
-  .top,.tabbar,.rp-actions,.portions,.stepper,#cover,.toast{display:none!important}
+  .top,.tabbar,.rp-actions,.portions,.stepper,#cover,.toast,.pdj{display:none!important}
   .wrap{box-shadow:none;max-width:none}
   .rp-hero{background:none;color:#000;border-bottom:2px solid #000}
   .rp-hero h1,.rp-hero .cat,.rp-hero .tt{color:#000}
@@ -366,6 +412,22 @@ function illu(cat,cls){
 
 var CATS=[];
 (function(){var seen={};R.forEach(function(r){if(!seen[r.cat]){seen[r.cat]=r.cat_icon;CATS.push({name:r.cat,icon:r.cat_icon});}});})();
+/* Photo qui illustre chaque famille sur le sommaire (choisie à l'œil parmi les plats de la famille) ;
+ * repli : la première recette de la famille. Si la photo manque, la carte garde son fond marine + médaillon. */
+var FAM_PHOTO={"Desserts & Pâtisseries":7,"Entrées, Œufs & Hors-d'œuvre":30,"Potages & Soupes":15,
+  "Viandes, Volailles & Gibiers":50,"Poissons & Fruits de mer":51,"Spécialités du Terroir":56};
+function famPhotoId(cat){
+  var id=FAM_PHOTO[cat]; if(id!=null&&R[id]&&R[id].cat===cat)return id;
+  for(var i=0;i<R.length;i++){ if(R[i].cat===cat)return i; }
+  return null;
+}
+/* Le plat du jour : le même pour tout le monde un jour donné, il change chaque jour (aucun tirage au hasard). */
+function platDuJour(){
+  var d=new Date(); var doy=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(d.getFullYear(),0,0))/864e5);
+  return R[(doy*7+d.getFullYear())%R.length];
+}
+function goRecipeHome(id){ go('recipe',{id:id,_from:"go('home')",_portions:null}); }
+function roman(n){ var m=[[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']],s=''; n=n|0; m.forEach(function(p){ while(n>=p[0]){s+=p[1];n-=p[0];} }); return s||String(n); }
 var TOMES=[];
 (function(){var seen={};R.forEach(function(r){if(!seen[r.tome]){seen[r.tome]=1;TOMES.push({num:r.tome,title:r.tome_title,icon:r.icon});}});TOMES.sort(function(a,b){return a.num-b.num;});})();
 
@@ -594,6 +656,16 @@ function renderHome(){
     '<div class="stat">'+R.length+' recettes · '+TOMES.length+' tomes · Belle Époque → aujourd\'hui</div>'+
     '<div>'+domBadge()+'</div></div>';
   h+='<div class="searchbar"><span class="mag">🔍</span><input class="ui" placeholder="Chercher un plat, un ingrédient…" onfocus="go(\'search\')" readonly></div>';
+  // le plat du jour — une grande photo pour ouvrir le livre
+  var p=platDuJour();
+  if(p){
+    h+='<button class="pdj" onclick="goRecipeHome('+p.id+')" aria-label="Le plat du jour : '+esc(p.name)+'">'+
+       '<img src="'+IMG_BASE+p.id+'.jpg?v=2" alt="" onerror="this.remove()">'+
+       '<span class="pdj-in"><span class="lbl">◆ Le plat du jour</span><h3>'+esc(p.name)+'</h3>'+
+       '<span class="pdj-m">'+(p.origine?'<span class="orig '+p.origine.key+'">'+p.origine.flag+' '+esc(p.origine.key==='monaco'?'Monaco':'Ligurie · Italie')+'</span>':'')+
+       '<span class="orig" style="background:rgba(255,255,255,.12);color:#F5EDD8;border:1px solid rgba(255,255,255,.3)">'+p.cat_icon+' '+esc(p.cat.split(/[ ,]/)[0])+'</span>'+
+       '<span class="pdj-go">Voir la recette ›</span></span></span></button>';
+  }
   // origines (distinction claire monégasque / autres)
   var nMon=R.filter(function(r){return r.origine&&r.origine.key==='monaco';}).length;
   var nLig=R.filter(function(r){return r.origine&&r.origine.key==='ligurie';}).length;
@@ -601,8 +673,8 @@ function renderHome(){
   var nPal=R.filter(function(r){return r.style&&r.style.key==='palace';}).length;
   h+='<div class="section-t"><h2>Les origines</h2><span class="cnt ui">D\'où vient chaque plat</span></div>';
   h+='<div class="orig-grid">';
-  h+='<button class="orig-card oc-monaco" onclick="goList({origine:\'monaco\'})"><span class="oc-fl">🇲🇨</span><span class="oc-nm">Cuisine monégasque</span><span class="oc-n">'+nMon+' recettes de Monaco</span></button>';
-  h+='<button class="orig-card oc-ligurie" onclick="goList({origine:\'ligurie\'})"><span class="oc-fl">🇮🇹</span><span class="oc-nm">Ligurie · Italie voisine</span><span class="oc-n">'+nLig+' recettes liguriennes</span></button>';
+  h+='<button class="orig-card oc-monaco" onclick="goList({origine:\'monaco\'})"><span class="oc-fl">🇲🇨</span><span class="oc-nm">Cuisine monégasque</span><span class="oc-n">'+nMon+' recettes</span></button>';
+  h+='<button class="orig-card oc-ligurie" onclick="goList({origine:\'ligurie\'})"><span class="oc-fl">🇮🇹</span><span class="oc-nm">Ligurie · Italie voisine</span><span class="oc-n">'+nLig+' recettes</span></button>';
   h+='</div>';
   h+='<div class="chips" style="padding-top:10px">'+
      '<button class="chip" onclick="goList({style:\'terroir\'})">🏡 Terroir monégasque · '+nTer+'</button>'+
@@ -613,27 +685,31 @@ function renderHome(){
   h+='<div class="fam-grid">';
   CATS.forEach(function(c){
     var n=R.filter(function(r){return r.cat===c.name;}).length;
-    h+='<button class="fam" onclick="go(\'list\',{cat:'+JSON.stringify(c.name)+',tome:null,origine:null,style:null,q:\'\'})">'+
+    var pid=famPhotoId(c.name);
+    h+='<button class="fam fam-ph" onclick="go(\'list\',{cat:'+JSON.stringify(c.name)+',tome:null,origine:null,style:null,q:\'\'})">'+
+       (pid!=null?'<img src="'+IMG_BASE+pid+'.jpg?v=2" alt="" loading="lazy" onerror="this.remove()">':'')+'<span class="sh"></span>'+
        illu(c.name,'illu-m')+'<span class="nm">'+esc(c.name)+'</span><span class="n">'+n+' recettes</span></button>';
   });
   h+='</div>';
   // random
-  h+='<div style="padding:16px"><button class="fam" style="width:100%;flex-direction:row;align-items:center;gap:12px;justify-content:center" onclick="surprise()"><span class="ic">🎲</span><span class="nm">La surprise du chef</span></button></div>';
+  h+='<div style="padding:14px 16px 4px"><button class="fam row surprise" onclick="surprise()"><span class="ic">🎲</span><span class="nm">La surprise du chef<span class="n">Une recette au hasard parmi les '+R.length+'</span></span></button></div>';
   // tomes
   h+='<div class="rule"><i>◆ ◆ ◆</i></div>';
-  h+='<div class="section-t"><h2>Les dix tomes</h2></div>';
+  h+='<div class="section-t"><h2>Les tomes</h2><span class="cnt ui">'+TOMES.length+' volumes</span></div>';
+  h+='<div class="tomes">';
   TOMES.forEach(function(t){
     var n=R.filter(function(r){return r.tome===t.num;}).length;
     h+='<button class="tome" onclick="go(\'list\',{tome:'+t.num+',cat:null,origine:null,style:null,q:\'\'})">'+
-       '<span class="rn">TOME '+t.num+'</span><span class="ic">'+t.icon+'</span>'+
+       '<span class="rn">Tome<b>'+roman(t.num)+'</b></span><span class="ic">'+t.icon+'</span>'+
        '<span class="tx"><span class="t">'+esc(t.title)+'</span><span class="d">'+n+' recettes</span></span>'+
        '<span class="ch">›</span></button>';
   });
+  h+='</div>';
   h+='<div class="rule"><i>◆</i></div>';
   if(DATA.dialectes&&DATA.dialectes.length){
-    h+='<div style="padding:6px 16px"><button class="fam" style="width:100%;flex-direction:row;align-items:center;gap:12px;justify-content:center;border-left:3px solid var(--rouge)" onclick="go(\'lexique\')"><span class="ic">🗣️</span><span class="nm">U parlà d\'ê cœuxe — le parler des plats <span class="n" style="display:block">'+DATA.dialectes.length+' mots en munegascu, niçard &amp; ligure · sourcés</span></span></button></div>';
+    h+='<div style="padding:6px 16px"><button class="fam row dial" onclick="go(\'lexique\')"><span class="ic">🗣️</span><span class="nm">U parlà d\'ê cœuxe — le parler des plats<span class="n">'+DATA.dialectes.length+' mots en munegascu, niçard &amp; ligure · sourcés</span></span></button></div>';
   }
-  h+='<div style="padding:6px 16px"><a class="fam" href="imprimer.html" style="width:100%;flex-direction:row;align-items:center;gap:12px;justify-content:center;text-decoration:none;border-left:3px solid var(--gold)"><span class="ic">🖨️</span><span class="nm">Livre papier <span class="n" style="display:block">Tout le livre à imprimer ou enregistrer en PDF</span></span></a></div>';
+  h+='<div style="padding:6px 16px"><a class="fam row papier" href="imprimer.html"><span class="ic">🖨️</span><span class="nm">Livre papier<span class="n">Tout le livre à imprimer ou enregistrer en PDF</span></span></a></div>';
   h+='<div style="text-align:center;padding:4px 24px 30px" class="ui"><button onclick="go(\'sources\')" style="color:var(--gold);font-size:13px;letter-spacing:.05em;text-transform:uppercase">Sources &amp; bibliographie ›</button></div>';
   APP.innerHTML=h;
 }
@@ -644,7 +720,7 @@ function recipeItem(r){
   return '<button class="ritem" onclick="go(\'recipe\',{id:'+r.id+'})">'+
     thumbHtml(r)+
     '<span class="rlft"><span class="rn2">'+esc(r.name)+'</span>'+
-    '<span class="rmeta">'+r.cat_icon+' '+esc(r.cat)+'</span>'+
+    '<span class="rmeta">'+r.cat_icon+' '+esc(r.cat)+' · Tome '+roman(r.tome)+'</span>'+
     origBadge(r)+
     (r.dialectes&&r.dialectes.length?'<br><span class="rdial">🗣 '+esc(r.dialectes[0].name)+'</span>':'')+
     (desc?'<span class="rdesc">'+esc(desc)+'</span>':'')+'</span>'+
@@ -660,7 +736,7 @@ function renderList(){
   if(STATE.style){list=list.filter(function(r){return r.style&&r.style.key===STATE.style;});title=(STATE.style==='terroir'?'🏡 Terroir monégasque':'👑 Palaces · Monte-Carlo');}
   list.sort(function(a,b){return a.name.localeCompare(b.name,'fr');});
   var h=topbar(title,"go('home')");
-  if(STATE.tome){var tt=TOMES.filter(function(x){return x.num===STATE.tome;})[0];h+='<div class="home-hd view" style="padding:20px"><span class="lbl" style="color:var(--gold-bright)">Tome '+STATE.tome+'</span><h1 style="font-size:22px;margin-top:8px">'+tt.icon+' '+esc(tt.title)+'</h1></div>';}
+  if(STATE.tome){var tt=TOMES.filter(function(x){return x.num===STATE.tome;})[0];h+='<div class="home-hd view" style="padding:20px 20px 26px"><span class="lbl" style="color:var(--gold-bright)">Tome '+roman(STATE.tome)+'</span><h1 style="font-size:22px;margin-top:8px">'+tt.icon+' '+esc(tt.title)+'</h1></div>';}
   h+='<div class="section-t"><h2 style="font-size:16px" class="ui">'+list.length+' recettes</h2></div>';
   h+='<div class="rlist view">';
   list.forEach(function(r){h+=recipeItem(r);});
@@ -713,7 +789,7 @@ function renderRecipe(){
   if(r.dialectes&&r.dialectes.length){
     h+='<div class="dial">'+r.dialectes.map(function(d){return '🗣 '+langLabel(d.lang)+' : <b>'+esc(d.name)+'</b>';}).join('<br>')+'</div>';
   }
-  h+='<div class="tt">Tome '+r.tome+' · '+esc(r.tome_title)+'</div></div>';
+  h+='<div class="tt">Tome '+roman(r.tome)+' · '+esc(r.tome_title)+'</div></div>';
   h+='<div class="rp-body">';
   // nom(s) en dialecte — sourcé
   if(r.dialectes&&r.dialectes.length){r.dialectes.forEach(function(d){

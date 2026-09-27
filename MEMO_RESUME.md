@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (15h55) — Fiches privées : v9.923 en ligne, mais les règles ne sont PAS publiées (en attente de Kevin)
+
+- En ligne (mesuré, cmcteams.kd-mc.com) : `APP_VER="v9.923"`, `sw.js` `cmcteams-v9.923`, garde `_fbVideInterdit` présente,
+  `fiche-privee.js` chargé. Tests sur `main` après fusion : chaîne privée + runtime-audit verts.
+- Robot `coffre-fiches-privees` (run 36321769476) : a attendu 20 min des règles `/cmcteams_prive` jamais publiées,
+  puis s'est arrêté **sans rien toucher**. Cause mesurée : le dépôt public ne peut pas publier ces règles
+  (`firebase-rules-apex.json` reste au coffre ; son robot a tourné 11 s pour rien) et le robot des règles du coffre
+  (`deploy-cmcteams-rules.yml`) est en pause depuis la bascule (dispatch refusé : « disabled workflow »).
+- Correctif préparé : le robot des fiches publie lui-même les règles (même script, gardes + preuves anonymes, autres
+  états `keep`). **Pas déclenché** : publier des règles de sécurité en production + déplacer les vraies fiches
+  attend le feu vert de Kevin. Seul changement de règles depuis la dernière publication (26.09) : `cmcteams_prive`.
 ## 2026-09-27 (nuit) — Hélène : une seule, vérifiée dans les documents · arbre v3.30 (l'import ne se recopie plus)
 
 **La question de Kevin** : « Hélène est née le 20.01.1919, décédée le 23.01.1919. Il n'y a qu'une

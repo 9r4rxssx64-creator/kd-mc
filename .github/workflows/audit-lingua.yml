@@ -67,8 +67,11 @@ jobs:
           [ -s /tmp/lingua.log ] || { echo "::notice title=Audit Lingua::(pas de journal)"; exit 0; }
           # Tout le rapport est fait de lignes qui PORTENT un verdict : on garde
           # ✅ ❌ ⚠, les en-têtes, le détail par langue et le total.
+          # 27.09 nuit : les suites hexa sont MASQUÉES (jamais une empreinte dans un rapport) au lieu de
+          # faire JETER la ligne : les URL des paquets Apex (index-3f9a2b1c.js) effaçaient la raison même
+          # d'un rouge — « Apex AI » rouge sans un mot d'explication.
           grep -aE '✅|❌|⚠|=== AUDIT LINGUA|AUDIT LINGUA (OK|ÉCHEC)|version servie|^   ·' /tmp/lingua.log \
-            | grep -avE 'code admin|pinhash|PIN_HASH|[0-9a-f]{16,}' \
+            | grep -avE 'code admin|pinhash|PIN_HASH' | sed -E '/empreinte/!s/[0-9a-f]{8,}/…/g' \
             | tail -110 > /tmp/rap.txt || tail -60 /tmp/lingua.log > /tmp/rap.txt
           # Une annotation = 12 lignes max. GitHub impose d'encoder %, CR et LF.
           split -l 12 -d /tmp/rap.txt /tmp/bl_

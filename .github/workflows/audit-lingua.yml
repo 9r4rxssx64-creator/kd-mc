@@ -22,11 +22,17 @@ name: Audit LINGUA (tout, sur le vrai domaine)
 on:
   workflow_dispatch:
     inputs:
+      forcer:
+        description: "Passer outre le plafond de 2 vérifications réelles par jour (Kevin seulement — chaque run coûte du quota Cloudflare)"
+        type: boolean
+        default: false
       base:
         description: "Adresse à auditer"
         default: "https://lingua.kd-mc.com"
 
 permissions:
+
+  actions: read   # le plafond compte les exécutions du jour par l'API
   contents: read
 
 concurrency:
@@ -46,12 +52,24 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Plafond — 2 vérifications réelles par jour, toutes familles confondues (Kevin 27.09)
+        # Le 27.09, les robots ont mis le domaine à terre (1 000 écritures KV, puis 100 000 requêtes :
+        # 48 surfaces en HTTP 429 pour tout le monde). Compté par l'API GitHub, jour UTC, sans écrire
+        # nulle part. Plafonné = run vert qui le DIT et ne frappe rien. Kevin seul passe outre (« forcer »).
+        id: plafond
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FORCER: ${{ inputs.forcer }}
+        run: node tools/ci/plafond-verifs.mjs
+
       - name: Installer Chromium
+        if: steps.plafond.outputs.ok == 'true'
         run: |
           npm i -D playwright@1.49.1 --no-audit --no-fund
           npx playwright install --with-deps chromium
 
       - name: Auditer Lingua pour de vrai
+        if: steps.plafond.outputs.ok == 'true'
         # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee`
         # (toujours 0) et un audit qui dit « ÉCHEC » ressortirait VERT. Un contrôle
         # qui ment est pire que pas de contrôle.

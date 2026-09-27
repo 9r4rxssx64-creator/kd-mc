@@ -3288,6 +3288,15 @@ Le proxy d'agent répond **403** au CONNECT sur `*.kd-mc.com` : `curl` d'ici ne 
    1 000 écritures/jour, et 24 vérifications l'ont vidé le 27.09).
 4. Le verdict **nomme** ce qui est rouge, et la raison suit sous la surface.
 
+### 4. Réel, mais plafonné : 2 vérifications réelles par jour (Kevin 27.09 soir, « Plafonne »)
+
+Vérifier en réel coûte au domaine ce qu'un visiteur lui coûte, en centaines d'exemplaires. Le soir du
+27.09, 24 vérifications en deux heures ont vidé les 1 000 écritures KV puis les 100 000 requêtes du
+plan gratuit : 48 surfaces en HTTP 429 pour tout le monde. Le budget est écrit dans le code
+(`tools/ci/plafond-verifs.mjs`, dans les 6 workflows qui frappent le domaine) : **2 par jour UTC,
+toutes familles confondues** ; au-delà, le run est vert et le dit — il ne vérifie rien. On lit le
+rapport existant avant d'en relancer un. Kevin seul passe outre (entrée `forcer`).
+
 ### 3. Ce que ça a déjà rapporté (27.09)
 
 Le premier audit « réel » de Lingua a rendu 3 rouges — tous dans la sonde, aucun dans l'app —, puis

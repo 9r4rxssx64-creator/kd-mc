@@ -34,11 +34,11 @@
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
 | Automatisations actives | **135** (+ 37 rangées) | `.github/workflows/` |
-| Gardes / tests | **123** fichiers, **181** commandes `npm run` | `tests/` + `package.json` |
+| Gardes / tests | **124** fichiers, **182** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **106** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **162** dont **93** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **68 612 o ≈ 19 603 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **612 681 o** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **613 371 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
@@ -46,7 +46,7 @@
 <!-- MAJ-AUTO:debut etat-live -->
 | Ce qui bouge | État au 2026-09-27 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **312** | `git ls-remote` |
+| Branches dans le dépôt | **314** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
 | État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->

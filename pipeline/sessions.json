@@ -530,9 +530,9 @@
       "attend_session": null
     },
     "lingua-code": {
-      "titre": "Lingua : retrouver son code, vérif réelle, une seule adresse, MAJ à la main, écritures KV",
-      "branche": "claude/kv-ecritures",
-      "sujet": "Sondes = 0 écriture KV (x-kdmc-sonde) ; Lingua v2.128.0 regroupe ses sauvegardes ; garde des branches jugée sur le contenu ; verdict d'audit nommé",
+      "titre": "Lingua : code, vérif réelle, une seule adresse, MAJ, écritures KV, plafond des vérifs",
+      "branche": "claude/plafond-verifs",
+      "sujet": "Plafond 2 vérifs réelles/jour dans les 6 robots (tools/ci/plafond-verifs.mjs) ; sondes muettes et sobres ; Lingua v2.128.0 ; docs à jour",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-27",

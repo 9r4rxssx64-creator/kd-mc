@@ -1,4 +1,4 @@
-# 🚨 ETAT-INFRA.md — l'HISTORIQUE infra pour TOUTE session Claude (22 faits datés ; l'état du jour est dans ETAT-DU-MOMENT.md)
+# 🚨 ETAT-INFRA.md — l'HISTORIQUE infra pour TOUTE session Claude (24 faits datés ; l'état du jour est dans ETAT-DU-MOMENT.md)
 
 > 🧭 **LIS D'ABORD [`ETAT-DU-MOMENT.md`](ETAT-DU-MOMENT.md)** — une page, la vérité d'AUJOURD'HUI,
 > servie depuis `main` à chaque réveil de session. Ce fichier-ci est l'**historique** : ses faits
@@ -1078,6 +1078,37 @@ Fusionner **par l'API** (elle ne consomme aucune minute d'Actions) :
 `create_pull_request` puis `merge_pull_request` via le connecteur GitHub — c'est ce qui a été
 fait pour la branche `claude/work-summary-ai-alternatives-cj6s29` le 24.09.
 **Ne pas** attendre le robot auto-merge : il ne tourne plus.
+
+## ⛔ Fait n°24 — LA JOURNÉE OÙ LES ROBOTS ONT MIS LE DOMAINE À TERRE, et le plafond qui en est sorti (27.09.2026)
+
+**Mesuré, dans l'ordre :**
+
+| Heure (UTC) | Ce qui s'est passé | Mesuré par |
+|---|---|---|
+| 18h–20h | **24 vérifications réelles** lancées par plusieurs sessions (13 Audit domaine, 5 Vérif LIVE, 2 Vérif RÉELLE, 4 Audit Lingua) | API GitHub (runs) |
+| ~18h50 | **KV : 1 000 écritures/jour atteintes** — `POST /__lingua/save` → `KV put() limit exceeded for the day` ; à 17h58 ça passait | run 36346907568 |
+| ~22h00 | **Workers : plafond de requêtes du plan gratuit (100 000/jour)** — 48 surfaces sur 48 en « page HTTP 429 », pour tout le monde ; aucun 429 de page n'existe dans le code du routeur | runs 36352660634 / 36352662460 |
+| 00h00 | remise à zéro des deux quotas | Cloudflare |
+
+**Pourquoi les robots** : chaque vérification arrive d'une adresse IP neuve, ouvre ~39 surfaces et chargeait
+chaque image, police et son — des centaines de requêtes par surface, et **2 écritures KV par surface** (marqueur
+de visiteur + compteur). Un seul worker (`kdmc-router`) sert les 48 adresses et tous leurs fichiers : le quota
+est **global**, pas par app.
+
+**Ce qui a été fait (27.09 nuit)** — tout dans le code, avec garde :
+1. **Une sonde ne s'écrit pas** : en-tête `x-kdmc-sonde` sur les seules navigations de page (`route` +
+   `resourceType() === 'document'` — JAMAIS `extraHTTPHeaders`, qui casse le CORS des pages : 14 rouges en une
+   heure, aucun visiteur touché) ; le routeur ne la fiche ni ne la compte. `test:sonde-sans-ecriture`.
+2. **Une sonde est sobre** : images, polices, sons coupés à la source (≈ −70 % de requêtes).
+3. **Lingua regroupe ses sauvegardes** (v2.128.0) : 20 s d'activité = 1 écriture, rien si inchangé.
+4. **PLAFOND : 2 vérifications réelles par jour UTC, toutes familles confondues** (Kevin : « Plafonne »),
+   `tools/ci/plafond-verifs.mjs` dans les 6 workflows, compté par l'API sans écrire, run plafonné = vert qui le
+   dit. Kevin seul passe outre (`forcer`). `test:plafond-verifs`.
+
+**Ce qui reste à Kevin** : Workers Paid (5 $/mois : 10 M requêtes, 1 M écritures) si le domaine répond encore
+429 un jour **sans robot en cause** ; et débrancher le faux rouge « Workers Builds » (tableau Cloudflare).
+
+---
 
 ## 🟢 Fait n°23 — LES ACTIONS TOURNENT DE NOUVEAU (mesuré le 26.09.2026, vers 17:09 UTC)
 

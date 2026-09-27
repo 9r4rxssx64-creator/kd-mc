@@ -20,9 +20,13 @@ sont la même chose : ton domaine a dépassé le gratuit. Ça se remet à zéro 
 **Ce que j'ai fait** : les robots de vérification ne s'inscrivent plus nulle part et ne chargent plus
 images/polices/sons (≈ −70 % de requêtes). **Ce que je ne peux pas faire** : changer ton plan.
 
-→ **Cloudflare → Workers & Pages → Plans → Workers Paid (5 $/mois)** : 10 M de requêtes et 1 M
-d'écritures par mois, effet immédiat. Pour 260 personnes + les robots, le gratuit ne tient plus.
-Si tu préfères rester gratuit : dis-le, je plafonne les robots à 2 vérifs réelles par jour.
+**✅ FAIT (27.09 nuit, « Plafonne ») : les robots sont plafonnés à 2 vérifications réelles par jour,
+toutes familles confondues** — au-delà, un run reste vert mais ne frappe rien et le dit. Toi seul
+peux passer outre (entrée « forcer » au lancement).
+
+→ Reste ta décision, sans urgence : **Workers Paid (5 $/mois)** — 10 M de requêtes et 1 M
+d'écritures par mois. Avec le plafond, le gratuit devrait tenir pour 260 personnes ; si un jour
+le domaine répond encore 429 sans robot en cause, c'est le signe qu'il faut y passer.
 
 ---
 

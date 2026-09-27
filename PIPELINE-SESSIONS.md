@@ -164,3 +164,15 @@ node tools/pipeline/pipeline.mjs enregistrer --id <toi> --branche "claude/<nouve
 
 Pour savoir ce qu'une branche apporte encore : `node tools/menage/branches-superflues.mjs`
 (et `--fichiers` pour la liste des fichiers qui n'existent que sur des branches).
+
+## ⛔ Vérifications réelles : 2 par jour pour TOUTES les sessions (27.09)
+
+Le 27.09, 24 vérifications réelles lancées par plusieurs sessions en deux heures ont mis le domaine à
+terre (plafond d'écritures KV, puis plafond de requêtes : 48 surfaces en 429 pour tout le monde).
+Le budget est désormais **2 exécutions par jour UTC, toutes familles confondues** (Vérif RÉELLE, Audit
+LINGUA, Vérif LIVE, Audit LIVE, Voir comme Kevin, Audit domaine), tenu par `tools/ci/plafond-verifs.mjs`
+dans chaque workflow. Avant d'en lancer une : regarde ce qui a déjà tourné aujourd'hui
+(`gh api "repos/…/actions/runs?created=>=$(date -u +%F)"`), et préfère lire le rapport d'un run
+existant à en relancer un. Une exécution plafonnée est verte et **ne vérifie rien** — lis
+l'avertissement « Plafond atteint » avant de conclure quoi que ce soit.
+

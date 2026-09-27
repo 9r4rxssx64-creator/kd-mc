@@ -1,5 +1,26 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — « Plafonne et mets tous les docs à jour » : 2 vérifications réelles par jour, écrit dans le code
+
+**Le plafond** : `tools/ci/plafond-verifs.mjs`, appelé par les **6 robots qui frappent le domaine**
+(Vérif RÉELLE, Audit LINGUA, Vérif LIVE, Audit LIVE, Voir comme Kevin, Audit domaine) AVANT d'installer
+un navigateur. Il compte les exécutions du **jour UTC** (le jour des quotas Cloudflare) par l'API
+GitHub — jeton du robot, `actions: read`, **sans écrire nulle part** (le plafond ne consomme pas ce
+qu'il protège). Au-delà de **2**, toutes familles confondues, le run reste vert, **ne frappe rien** et
+le dit (avertissement « Plafond atteint », résumé d'étape). Ne comptent que les runs qui ont vraiment
+frappé (en cours, ou ≥ 90 s) : un run plafonné ne mange pas le budget. Seul Kevin passe outre
+(entrée `forcer`, journalisée). Les étapes qui portaient déjà un `if: always()` le gardent, combiné.
+
+**Garde** `test:plafond-verifs` (dans `test:ci`) : 11 cas sur la décision (jour UTC, soi-même exclu,
+runs courts non comptés, en cours comptés, annulés ignorés, autre robot ignoré, hier ignoré) + pour
+chacun des 6 fichiers : étape présente, placée AVANT le navigateur, étapes conditionnées,
+`actions: read`, entrée `forcer` transmise ; et la liste VERIFS ↔ fichiers.
+
+**Docs mis à jour** : ETAT-DU-MOMENT (ligne PLAFOND), ETAT-INFRA (fait n°24 : la journée où les
+robots ont mis le domaine à terre), KEVIN_ACTIONS_TODO (fait ; Workers Paid reste une option),
+KEVIN_INVENTORY (2 fichiers), LESSONS #277, PIPELINE-SESSIONS (règle pour toutes les sessions),
+CLAUDE-HISTOIRE § 4 de « Réel toujours » + index, SESSIONS-ET-BRANCHES, TRANSFERT-COMPLET.
+
 ## 2026-09-27 — Arbre v3.36 : les dates en entier, la pleine page sur iPhone, le visuel vérifié personne par personne
 
 Kevin : « Tu as vérifié le visuel réel de chaque personne dans les arbres ? Les filiations,

@@ -1,0 +1,90 @@
+name: Audit LINGUA (tout, sur le vrai domaine)
+
+# Kevin 27.09.2026 : « Fais ton audit de lingua, toutes les fonctions, voix, etc.
+# Tout. Réel tjs ».
+#
+# Pourquoi un robot et pas une session : depuis un agent Claude, le proxy répond
+# 403 au CONNECT sur *.kd-mc.com. Ce runner, lui, a Internet — c'est le seul
+# endroit d'où l'on peut MESURER au lieu d'affirmer.
+#
+# Pourquoi les annotations : le journal du job est servi par
+# productionresultssa*.blob.core.windows.net, que le proxy refuse ; les artefacts
+# aussi (téléchargement testé le 27.09 : 403). Les ANNOTATIONS sortent par
+# api.github.com — le seul canal qui traverse. On y recopie donc le rapport.
+#
+# ⛔ PAS DE CRON ICI. GitHub a suspendu le compte le 15/08/2026 pour des
+#    workflows qui interrogeaient des sites tiers en boucle. Ce robot se lance
+#    À LA MAIN, point.
+#
+# Coût : les voix passent par /__lingua/tts, facturé au caractère. La sonde dit
+# UN mot court par voix (~90 caractères pour les 12), et le worker met en cache.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Adresse à auditer"
+        default: "https://lingua.kd-mc.com"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-lingua
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    # Borne de temps : 16 langues + 12 voix, ~10 min quand tout va bien. Sans borne,
+    # GitHub laisse tourner SIX HEURES — six heures de quota brûlées pour rien.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installer Chromium
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Auditer Lingua pour de vrai
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee`
+        # (toujours 0) et un audit qui dit « ÉCHEC » ressortirait VERT. Un contrôle
+        # qui ment est pire que pas de contrôle.
+        shell: bash -euo pipefail {0}
+        # `stdbuf -oL` : vers un TUYAU, Node met sa sortie en mémoire tampon et
+        # n'écrit qu'à la fin — dix minutes de silence qu'on prend pour un blocage.
+        run: stdbuf -oL -eL node tools/smoke/audit-lingua.mjs "${{ inputs.base || 'https://lingua.kd-mc.com' }}" 2>&1 | tee /tmp/lingua.log
+
+      - name: Rapport lisible depuis l'agent (annotations)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/lingua.log ] || { echo "::notice title=Audit Lingua::(pas de journal)"; exit 0; }
+          # Tout le rapport est fait de lignes qui PORTENT un verdict : on garde
+          # ✅ ❌ ⚠, les en-têtes, le détail par langue et le total.
+          grep -aE '✅|❌|⚠|=== AUDIT LINGUA|AUDIT LINGUA (OK|ÉCHEC)|version servie|^   ·' /tmp/lingua.log \
+            | grep -avE 'code admin|pinhash|PIN_HASH|[0-9a-f]{16,}' \
+            | tail -110 > /tmp/rap.txt || tail -60 /tmp/lingua.log > /tmp/rap.txt
+          # Une annotation = 12 lignes max. GitHub impose d'encoder %, CR et LF.
+          split -l 12 -d /tmp/rap.txt /tmp/bl_
+          n=0
+          for f in /tmp/bl_*; do
+            n=$((n+1))
+            msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Audit Lingua ${n}::${msg}"
+          done
+          echo "::notice title=Audit Lingua bilan::${n} bloc(s) publies en annotations"
+
+      - name: Journal complet en artefact (si on peut le télécharger un jour)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-lingua-${{ github.run_id }}
+          path: /tmp/lingua.log
+          if-no-files-found: ignore
+          retention-days: 7

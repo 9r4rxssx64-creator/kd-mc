@@ -1,5 +1,42 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — Audit LINGUA : tout, sur le vrai domaine (sonde neuve)
+
+Kevin : « Fais ton audit de lingua, toutes les fonctions, voix, etc. Tout. Réel tjs. »
+
+`audit-live.mjs` vérifiait déjà que Lingua **répond**, parmi 39 surfaces : une langue sur
+seize, les voix **comptées** dans une liste et non écoutées, ni dictionnaire, ni verbes, ni
+LSF, ni mémoire en ligne. D'où `tools/smoke/audit-lingua.mjs` + `audit-lingua.yml`
+(à la main, **pas de cron** — suspension du 15/08).
+
+**Ce qu'il mesure** : les 16 langues ouvertes une par une (unités et leçons comptées dans
+chacune) · une leçon **jouée**, exercice après exercice, chaque sorte reconnue et répondue
+selon SA règle · les 6 onglets · histoires, jeux, statistiques, prononciation, verbes,
+dictionnaire · **les 12 voix cloud appelées pour de vrai** sur `/__lingua/tts`, avec
+comparaison des **empreintes** (deux voix qui rendent le même fichier ne sont pas deux
+voix) · l'aller-retour réel de la mémoire en ligne · « Voir mon code » · le service
+worker · la version **réellement servie** (`window.LINGUA_VER`).
+
+**Deux pièges trouvés en écrivant la sonde — dans la sonde, pas dans l'app :**
+
+1. **`lingua/app.js` vit entièrement dans une IIFE.** `go()`, `S`, `startLesson()`,
+   `VOICES` n'existent PAS sur `window` (seul `window.LINGUA_VER` est exposé, exprès).
+   Le premier jet les appelait ; comme les erreurs sont avalées, il croyait avoir navigué
+   et notait **six onglets verts en regardant six fois le même écran**. Mesuré : six
+   empreintes identiques, 16 067 caractères à chaque fois. Tout est refait **au clic**, et
+   une garde compte désormais les écrans DISTINCTS (5.∑) pour que ce mensonge-là ne puisse
+   plus passer.
+2. **Une leçon mélange cinq sortes d'exercices** (mc, match, bank, type, speak) tirées au
+   sort. La sonde ne savait répondre qu'au QCM : d'un lancement à l'autre elle trouvait
+   « 4 réponses » ou « 0 », sans que l'app ait bougé. Et sur les paires, cliquer deux
+   tuiles au hasard laisse « Vérifier » gris → elle concluait « pas de verdict »
+   (3 sur 6). Elle apparie maintenant pour de bon via `data-key`.
+
+**Répétabilité vérifiée** : trois lancements d'affilée, **58 vérifiés / 0 écart**.
+Les seuls rouges hors ligne sont les 15 contrôles qui exigent le worker
+(`/__lingua/tts` ×12, le bilan des empreintes, `save`, `load`) — attendus sur un serveur
+statique local, verts seulement sur le vrai domaine.
+
 ## 2026-09-27 (soir, suite) — Fusionné et EN LIGNE ; la sonde du déploiement ne prend plus une porte pour une panne
 
 **Fusion** : PR #4080 (cuisine illustrée + porte dans l'app) ouverte et fusionnée **par l'API**

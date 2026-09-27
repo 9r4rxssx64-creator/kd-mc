@@ -1,5 +1,14 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔓 Light v1.60 : Face ID ou code, et toi dispensé (27.09.2026, nuit)
+
+- 📱 **À essayer** : [cmcteams-light.kd-mc.com](https://cmcteams-light.kd-mc.com/) → touche **Face ID** : tu entres directement, sans fiche. Un employé : Face ID, ou matricule + son code CMCteams, puis sa fiche.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tools/departs/index.html` | **Modifié (v1.60).** Portillon avec Face ID et code vérifié au serveur ; admin prouvé dispensé. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/departs/index.html) |
+| `tests/verify-light-faceid-code.mjs` | **Nouveau.** 25 contrôles en vrai navigateur. `npm run test:light-faceid-code`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-light-faceid-code.mjs) |
+
 ### 🧭 Plus jamais CMCteams par erreur depuis une icône (27.09.2026, nuit)
 
 - 📱 **À essayer** : touche l’icône qui t’amenait sur CMCteams — elle ouvre maintenant la bonne app. Le mieux : supprime-la et repose-la depuis [cuisine.kd-mc.com](https://cuisine.kd-mc.com/).

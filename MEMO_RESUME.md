@@ -1,5 +1,29 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Light v1.60 : Face ID et code, et Kevin dispensé partout
+
+Kevin : « Ajoute Face ID et code à light » · « Dispense-moi dans light comme dans Teams et partout ».
+- **Portillon light** : prénom + nom + **matricule + code** (le mot de passe CMCteams, vérifié par
+  `apex-auth-worker /login-cmc`, 5 essais/IP et 10/compte par 15 min) **ou Face ID** (clé du domaine,
+  `/__sso/webauthn/auth/*`, déjà autorisé depuis les adresses de la light). Identité retenue avec
+  `verif: "code" | "faceid"` ; une identité d'avant (juste déclarée) redemande une preuve UNE fois.
+  Serveur injoignable ou erreur : on reste dehors (plus de « fail-open »). CSP : `connect-src` + le worker.
+- **Kevin dispensé** : Face ID reconnu admin par le domaine, OU code du compte `U11804` → ni portillon ni
+  fiche, son équipe s'ouvre. Retenu sur le téléphone (`cmc_dep_admin`) ; les **droits** admin restent
+  redemandés au domaine à chaque ouverture. Déjà reconnu par le domaine (Face ID ailleurs) → rien à faire.
+- **« Partout »** : CMCteams le dispensait déjà (fiche jamais pour l'admin) ; les portes du domaine laissent
+  passer l'admin prouvé ; Apex Chat n'a pas de fiche à lui redemander (profil complet — son PIN est une
+  sécurité, pas une inscription). Rien d'autre ne lui demande de fiche.
+- **Tests** : `test:light-faceid-code` **25/0** (ancienne page : 10 ✗). Mis à jour pour la preuve : departs-gate
+  11/0, fiche-premiere-connexion 35/0, departs-pin, departs-xss, noms-prives, mois-ouverture, seances 40/0,
+  seances-individuel 23/0, session-kevin 32/0, maj-forcee, parite 7/0 ; sondes en ligne (session-kevin,
+  verif-live-rapport). Leçon **#358**.
+- **À savoir** : quelqu'un sans compte CMCteams ne peut plus entrer par code ; le portillon l'envoie créer son
+  compte dans CMCteams (validation de Kevin). Les fichiers de planning restent lisibles par qui connaît leur
+  adresse : la porte de la light est dans la page, pas au serveur.
+
+---
+
 ## 2026-09-27 (nuit) — Ma sonde muette a aveuglé 14 surfaces pendant une heure — corrigé, et la règle « Réel toujours » écrite
 
 **Ce que j'ai cassé** (run 36348099463, 22h27) : en posant `x-kdmc-sonde` par `extraHTTPHeaders`, Playwright

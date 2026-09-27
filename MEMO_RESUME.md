@@ -1,5 +1,52 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — Arbre v3.36 : les dates en entier, la pleine page sur iPhone, le visuel vérifié personne par personne
+
+Kevin : « Tu as vérifié le visuel réel de chaque personne dans les arbres ? Les filiations,
+etc. / Le pleine page, écran ? Ordi, android, iOS, etc chaque visuel etc / **Affiche les
+dates entière dans les fiches** ».
+
+**Réponse honnête à la 1ʳᵉ question : non.** Les vérifications précédentes mesuraient UNE
+personne sur UN écran. La nouvelle mesure couvre **88 personnes × 10 appareils réels ×
+4 vues** — et elle a trouvé **quatre vrais défauts**, tous corrigés.
+
+**Les dates en entier** — « 19.08.1937 » s'écrit « 19 août 1937 », « 1.01.1900 » → « 1er
+janvier 1900 », « 08.1937 » → « août 1937 ». Ce qui n'est pas une date (« vers 1850 ») est
+rendu tel quel. Sous le nom : « né le 19 août 1937 · mort le 18 mars 2005 » (et « né **en**
+1904 » quand on n'a que l'année). À l'enregistrement, 20/08/2007 · 20.08.2007 · 20 août 2007
+deviennent **une seule** date. Pendant la saisie, l'app relit ce qu'elle a compris
+(« → 20 août 2007 »). Les cartes de l'arbre gardent l'année seule : la place y est comptée.
+
+**La pleine page, partout** — le bouton ⛶ n'existait **que sur ordinateur**, et il reposait
+sur l'API Fullscreen, **absente sur iPhone** : là où Kevin travaille, la pleine page était
+impossible. Elle se fait maintenant en **CSS** — iPhone, Android, iPad, ordinateur. Sortie
+par le bouton, par Échap, ou en quittant l'arbre.
+
+**Le visuel** — deux défauts : (1) sur **Full HD**, les 88 fiches « tenaient » à ×0,31, donc
+l'app les montrait : **noms de 3,8 px**. Un seuil en dur décidait à la place des yeux. Une
+règle désormais : on n'ajuste que si le nom reste **≥ 9 px** à l'écran. Enfermé à ≥ 700 px —
+sur un téléphone, exiger 9 px ne laisserait que **3 personnes** à l'écran (mesuré) : vue
+d'ensemble + pincement (12,5 px après pincement). (2) Section **« À relier »** : deux époux
+tombaient dans **deux sections différentes** (rangées par nom de famille) — l'un au-dessus
+de l'autre, sans trait de mariage. Un couple part maintenant entier, côte à côte.
+
+**Et sur le VRAI arbre** (126 fiches, via la CI qui a l'accès au nuage) : deux défauts que la
+famille d'essai ne contenait pas — **Renée Gilberte ‹employé› dessinée à 8298 px de son fils
+Gérard, sans aucun trait**, et **Victor ‹employé› / Marius ‹employé› / Élisabeth ‹employé›**
+bien placés mais sans trait non plus. Corrigé : un parent seul est ramené à la case libre la
+plus proche de ses enfants (3 cartes au plus), et **tout enfant dessiné sous un parent
+dessiné reçoit son trait**, couple compris. Renée : 8298 px → **495 px**. **Mesure finale sur
+le vrai arbre : 126 personnes × 10 appareils × 4 vues, tout vert** (run 36352174569).
+
+**Mesure** : `npm run arbre:verif-visuel` — 21 contrôles, **tout vert** ; **sabotage**
+(4 défauts réintroduits) → **4 rouges distincts**. Avec `--arbre <fichier>` la même mesure
+tourne sur le **vrai** arbre (case « visuel » du workflow `arbre-nuage.yml`, car l'agent n'a
+pas accès au nuage, la CI oui ; l'export refuse d'écrire dans le dépôt).
+**Gardes** : `test:arbre-dates-visuel` (31 contrôles) câblé dans `test:ci` ; trois
+affirmations de `test:arbre-ordi` / `verify-ordinateur` **inversées** (elles disaient « pas
+de plein écran sur téléphone ») — jamais désactivées. Leçons **#357** et **#358**.
+
+---
 ## 2026-09-27 (nuit) — Audit de Bee (Javis) + audit d'amélioration : Bee v1.10, 24 apps protégées
 
 Kevin : « Fais ton audit de Javis et un audit d'amélioration détaillé ». 6 auditeurs indépendants (sécurité,

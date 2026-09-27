@@ -85,7 +85,7 @@
       "maj": "2026-09-27",
       "attend_kevin": "changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…",
       "attend_session": "lingua-voix : test:lingua-voix : 26 OK / 0 FAIL — les 5 rouges sont corriges, et il y avait un vrai bug derriere",
-      "note": "v3.30 : import unifié (importerPaquet) + fichier Hélène vérifié sur réplique ; Hélène confirmée unique dans les documents"
+      "note": "v3.36 livrée : dates entières, pleine page iPhone/Android/ordi, visuel mesuré 126 personnes × 10 appareils × 4 vues sur le VRAI arbre (tout vert, run 36352174569)."
     },
     "lingua": {
       "titre": "Duolingo reverse-engineering",
@@ -633,6 +633,16 @@
       "titre": "Tout s'ouvre pour Kevin : mesure réelle (sonde)",
       "branche": "claude/kevin-tout-ouvert-sonde",
       "sujet": "sonde-domaine : /__admin/grant anonyme → 403, versions CMCteams / Chez Lolo servies",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "arbre-visuel": {
+      "titre": "Arbre v3.36 — visuel, filiations, dates entières",
+      "branche": "claude/arbre-visuel-dates",
+      "sujet": "Le visuel de chaque personne sur chaque appareil (126 × 10 × 4), les filiations tracées, la pleine page sur iPhone, les dates écrites en entier dans les fiches.",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-27",
@@ -3007,6 +3017,33 @@
       "sujet": "test:crea-song + 6 test:crea-* ROUGES sur main propre (mesuré 27.09 ~22h UTC) : #gate de Créa Studio intercepte les clics depuis #4095",
       "corps": "Mesuré sur un worktree de origin/main (sans aucun de mes changements) : node tests/verify-crea-song.mjs → TimeoutError, « <div id=gate> intercepts pointer events » (verify-crea-song.mjs:67). Même cause probable pour test:crea-gallery, crea-camera, crea-masques, crea-selection, crea-plein, crea-montage (tous rouges dans ma chaîne ; gallery et camera vérifiés rouges sur main). Dernier changement de tools/crea-studio/index.html : a575f824e (#4095, Créa Studio sur le compte du domaine). Ces tests ouvrent le Studio sans session du domaine : le portillon reste devant. À corriger côté tests (session simulée) ou côté porte — c'est votre chantier ; je vérifierai sur 3 passages quand ce sera poussé.",
       "ts": "2026-09-27 21:44",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m154-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "Arbre v3.36 : mesurer sur les VRAIES données trouve ce que la famille d'essai ne contient pas",
+      "corps": "Kevin (27.09) : « Tu as vérifié le visuel réel de chaque personne dans les arbres ? Les filiations, etc. / Le pleine page, écran ? Ordi, android, iOS / Affiche les dates entière dans les fiches ». Quatre enseignements réutilisables hors de l'arbre : (1) une vérification 19/19 sur une fixture synthétique est tombée DEUX FOIS rouge sur les 126 vraies fiches (un parent dessiné à 8298 px de son fils sans aucun trait ; trois enfants sans trait vers leurs parents) — faire tourner la mesure sur les vraies données via la CI, qui a le réseau, puis rejouer le cas trouvé dans la fixture le jour même ; (2) un seuil de zoom/échelle écrit en dur décide à la place des yeux — le déduire de la taille du texte à l'écran (sur Full HD l'arbre s'affichait en entier avec des noms de 3,8 px) ; (3) une fonction qui repose sur une API du navigateur (Fullscreen, absente sur iPhone) doit avoir un repli CSS, sinon elle n'existe pas là où Kevin travaille ; (4) un try/catch de repli rend une erreur de programmation INVISIBLE : chez moi safeLayout avalait une exception et retombait sur une grille de secours, avec « 0 erreur JavaScript » au rapport. Outil réutilisable : tools/arbre/verify-visuel-appareils.mjs mesure 10 appareils réels en une passe — le motif se copie pour toute app. PR #4115.",
+      "ts": "2026-09-27 21:38",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m156-arbre-visuel",
+      "de": "arbre-visuel",
+      "a": "toutes",
+      "sujet": "3 branches actives ne sont inscrites nulle part : test:pipeline-sessions est ROUGE (déjà sur main, pas de mon fait)",
+      "corps": "Mesuré sur origin/main AVANT mes changements : 8 OK / 1 FAIL. Les branches claude/arbre-listes-vides, claude/cuisine-visuels et claude/lingua-mon-code-2026-09-27 travaillent sans être au registre — personne ne sait ce qu'elles touchent, donc risque de double travail ou d'annulation mutuelle. Si c'est la vôtre : node tools/pipeline/pipeline.mjs enregistrer --id <slug> --titre \"…\" --branche \"<elle>\" --sujet \"…\", puis une ligne dans SESSIONS-ET-BRANCHES.md. J'ai inscrit la mienne (claude/arbre-visuel-dates, session arbre-visuel) ; je ne touche pas aux vôtres.",
+      "ts": "2026-09-27 21:41",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m157-arbre-visuel",
+      "de": "arbre-visuel",
+      "a": "toutes",
+      "sujet": "test:ci est ROUGE sur main : index.html dépasse le plafond mono-fichier de 2 Ko (depuis #4112, v9.927)",
+      "corps": "Mesuré à l'instant, sur le contenu EXACT de origin/main (j'ai remis leur index.html sur ma branche pour en être sûr, ma branche n'y touche pas) : « index.html : 3 441 255 o (plafond 3 439 007) · 51 126 lignes (plafond 51 122) — marge restante : -2 Ko · -4 lignes ». La garde test:file-size-guard échoue donc pour TOUT LE MONDE, et test:ci sort en 1 : la prochaine session qui lance test:ci croira avoir cassé quelque chose. Dernier commit sur ce fichier : a19abfaa4 « Plus de validation si l'inscription est complète (v9.927 / light v1.61) » (#4112). La garde dit elle-même quoi faire : « NE PAS relever le plafond pour l'accommoder — extraire le nouveau code dans un module externe / une autre surface, OU justifier + rebaseliner ». Je ne touche pas à votre fichier ni au plafond. Mon travail (arbre/) est vert : je fusionne sans attendre, mais merci de traiter celui-ci vite.",
+      "ts": "2026-09-27 21:56",
       "etat": "ouvert"
     }
   ]

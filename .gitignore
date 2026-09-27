@@ -60,6 +60,7 @@ audit/captures-admin/
 
 # Captures de la vérification « affichage sur ordinateur » (regénérées à la demande)
 audit/arbre-ordi/
+audit/arbre-visuel/
 
 # Capture produite par tests/verify-tor-page.mjs (sortie de test, jamais un livrable)
 tor-iphone.png

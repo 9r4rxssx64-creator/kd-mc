@@ -1,5 +1,15 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔐 CMCteams et light : on n'entre qu'inscrit complètement (27.09.2026, nuit — v9.925 / v1.58)
+
+- 📱 **À essayer** : [cmcteams-light.kd-mc.com](https://cmcteams-light.kd-mc.com/) sur un appareil neuf → prénom + nom + conditions, puis la fiche SBM **obligatoire** ; rien d'autre ne s'affiche avant. [cmcteams.kd-mc.com](https://cmcteams.kd-mc.com/) : après la connexion, la fiche SBM couvre tout l'écran tant qu'elle n'est pas remplie.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tools/shared/fiche-auto.js` | **Modifié.** « Ma fiche SBM » de CMCteams obligatoire : plus de « Plus tard », fond opaque, revérifiée à chaque connexion. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/shared/fiche-auto.js) |
+| `tools/departs/index.html` | **Modifié (v1.58).** light : départs cachés tant que portillon + fiche ne sont pas faits ; plus de « Plus tard ». | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/departs/index.html) |
+| `tests/verify-fiche-premiere-connexion.mjs` | **Modifié.** 35 contrôles en vrai navigateur, dans les deux applis. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-fiche-premiere-connexion.mjs) |
+
 ### 🛡 Audit de ton domaine : 36/100, un trou fermé ce soir (27.09.2026)
 
 - 📄 **Le rapport** (privé, dans le coffre) : [audit/prive/AUDIT-DOMAINE-2026-09-27.md](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/prive/AUDIT-DOMAINE-2026-09-27.md)

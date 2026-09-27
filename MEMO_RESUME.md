@@ -1,5 +1,31 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — « Personne ne doit atterrir sur CMCteams ou light sans se connecter ou s'inscrire complètement » (CMCteams v9.925, light v1.58)
+
+**Mesuré avant de toucher** : le portail `kd-mc.com` n'est PAS CMCteams (c'est « KDMC APEX », `kdmc-home`).
+CMCteams exige déjà un mot de passe vérifié par le serveur (v9.924) et la validation de l'admin pour un
+compte nouveau. Les deux trous étaient **l'inscription incomplète** :
+- **CMCteams** : « Ma fiche SBM » (`tools/shared/fiche-auto.js`) avait « Plus tard », un fond à 96 % qui
+  laissait voir le planning, et ne se vérifiait qu'**une fois** puis s'arrêtait après 10 min (quelqu'un resté
+  plus longtemps sur l'écran de connexion n'était jamais vérifié ; un changement de compte non plus).
+- **light** : « Ta fiche SBM » avait « Plus tard » ; les départs se dessinaient derrière les fenêtres ; et
+  une erreur dans le portillon **cachait le portillon** (« fail-open ») → entrée sans identité.
+
+**Corrigé (les deux dans le même commit)** : fiche **obligatoire**, plus de « Plus tard » ; CMCteams : fenêtre
+opaque plein écran, revérifiée chaque seconde et à chaque connexion, revient si on la retire, une erreur
+d'enregistrement ne fait plus entrer ; light : tant que portillon + fiche ne sont pas faits, **rien d'autre
+n'est visible ni touchable** (`html.dep-ferme`, décidé avant que la page se dessine), une erreur du
+portillon ne fait plus entrer. Versions : CMCteams **v9.925**, light **v1.58** (MAJ forcée prouvée).
+
+**Garde** `test:fiche-premiere-connexion` **35/0** (sabotage avec l'ancien code : **7 ✗**). Aussi verts :
+departs-gate 10/0, secrets-cmc 41/0, fiches-privees 45/0, visiteur-ne-vide-pas 14/0, parite 7/0,
+maj-forcee ✅, departs-pin 9/0. Leçon **#354**.
+
+**Reste, à dire à Kevin** : dans la light, « se connecter » = prénom + nom + CGU (choix de Kevin du 1.07) —
+c'est une déclaration, pas une preuve. Le durcir (code ou Face ID) changerait l'entrée de tout le monde : à lui
+de décider.
+
+---
 ## 2026-09-27 (soir) — Audit du domaine : 36/100, un trou du coffre fermé, deux à fermer
 
 Kevin : « Fais ton audit du domaine et un d'améliorations détaillé ». Rapport **privé** :

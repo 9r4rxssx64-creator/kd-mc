@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.128.0";
+var APP_VER="v2.129.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -140,10 +140,33 @@ function reportProgress(){
 /* ============ Comptes (CRUD) ============ */
 var AVATARS=["🦊","🐼","🐨","🦁","🐵","🐸","🦄","🐙","🐯","🐧","🐷","🐰","🐻","🐮","🐲","🦖"];
 function accounts(){ return gg("accounts",[]); }
-function createAccount(name,avatar,code){
+function createAccount(name,avatar,code,kdmcUid){
   var id="acc_"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
-  var a=accounts(); a.push({id:id,name:name||"Joueur",avatar:avatar||"🦊",code:code||"",created:Date.now()}); gs("accounts",a);
+  var a=accounts(); a.push({id:id,name:name||"Joueur",avatar:avatar||"🦊",code:code||"",kdmcUid:kdmcUid||"",created:Date.now()}); gs("accounts",a);
   return id;
+}
+/* ===== COMPTE DU DOMAINE kd-mc.com (Kevin 27.09.2026 : « fais Lingua ») =====
+   Un seul compte + un seul code pour toutes les apps. Quand le domaine connaît la personne
+   (session posée au portail, ou déposée par /__sso/entrer dans l'app installée), Lingua
+   l'ouvre SANS rien demander et sa progression suit le compte KDMC (sauvegarde `lingua:u:<uid>`,
+   côté domaine). Les comptes Lingua d'avant (nom + code Lingua) continuent de marcher tels quels. */
+function kdmcToken(){ try{ var h=location.hash||"",m=h.match(/[#&]kdmc_sso=([^&]+)/); if(m){ localStorage.setItem("kdmc_sso_token",decodeURIComponent(m[1])); history.replaceState(null,"",location.pathname+location.search+h.replace(/([#&])kdmc_sso=[^&]*/,"$1").replace(/[#&]+$/,"")); } return localStorage.getItem("kdmc_sso_token")||""; }catch(e){ return ""; } }
+function kdmcHeaders(extra){ var h=extra||{}; var t=kdmcToken(); if(t)h.Authorization="Bearer "+t; return h; }
+function kdmcWhoami(){ return fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:kdmcHeaders()}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ return (j&&j.ok)?j:null; }).catch(function(){ return null; }); }
+function kdmcLogin(name,code){ return fetch("/__sso/login",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({name:name,code:String(code||"")})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
+function kdmcIssue(uid,name,code,cgu){ return fetch("/__sso/issue",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({uid:uid,name:name,cgu:!!cgu,pour:location.host,code:(code&&String(code).length>=6)?String(code):undefined})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
+function kdmcSlug(name){ return norm(name).replace(/\s+/g,"-").slice(0,60); }
+/* Le compte local rattaché à cette personne du domaine (par uid, sinon par prénom+nom). */
+function accountForDomain(j){ var accs=accounts(),k=nameKey(j.name||"");
+  for(var i=0;i<accs.length;i++){ if(accs[i].kdmcUid&&accs[i].kdmcUid===j.uid) return accs[i].id; }
+  for(var i2=0;i2<accs.length;i2++){ if(k&&nameKey(accs[i2].name||"")===k){ accs[i2].kdmcUid=j.uid; gs("accounts",accs); return accs[i2].id; } }
+  return null; }
+/* Entrée par le domaine : on ouvre (ou crée) le compte local de la personne, sans code, et on
+   récupère sa progression sauvegardée sous son compte KDMC. */
+function enterFromDomain(j){
+  var id=accountForDomain(j);
+  if(!id){ id=createAccount(j.name||"Joueur","🦊","",j.uid); }
+  switchAccount(id); return Promise.resolve(id);
 }
 function switchAccount(id){ ACC=id; gs("current",id); loadS(); ensureLeague(); PICK=false; try{ cloudRestoreInto(id); }catch(e){} }
 function deleteAccount(id){
@@ -262,8 +285,12 @@ var _syncT=null,_cloudDernier="";
    chose. Maintenant : on regroupe 20 s d'activité en une seule écriture, on n'envoie RIEN si le
    contenu n'a pas changé depuis le dernier envoi réussi, et on écrit tout de suite quand l'app
    passe en arrière-plan (sinon les 20 dernières secondes se perdraient en fermant). */
-function scheduleCloudSave(){ if(!ACC)return; var m=accMeta(ACC); if(!m||!m.code)return; if(_syncT)clearTimeout(_syncT); _syncT=setTimeout(cloudSaveNow,20000); }
-function cloudSaveNow(){ if(!ACC)return; var m=accMeta(ACC); if(!m||!m.code)return; var id=ACC;
+function scheduleCloudSave(){ if(!ACC)return; var m=accMeta(ACC); if(!m||(!m.code&&!m.kdmcUid))return; if(_syncT)clearTimeout(_syncT); _syncT=setTimeout(cloudSaveNow,20000); }
+function cloudSaveNow(){ if(!ACC)return; var m=accMeta(ACC); if(!m||(!m.code&&!m.kdmcUid))return; var id=ACC;
+  /* Compte du domaine : la sauvegarde suit la SESSION (clé côté domaine), aucun code à connaître. */
+  if(m.kdmcUid){ var snapD=_acctSnapshot(id); try{ localStorage.setItem("lingua_a_"+id+"_syncTs",JSON.stringify(Date.now())); }catch(e){}
+    fetch(SYNC_BASE+"/save",{method:"POST",keepalive:true,credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({data:snapD})}).then(function(r){ _cloudState=(r&&r.ok)?"on":"off"; }).catch(function(){ _cloudState="off"; });
+    if(!m.code) return; }
   if(_syncT){ clearTimeout(_syncT); _syncT=null; }
   var snap=_acctSnapshot(id);
   /* Comparé SANS les horodatages (haut et dans data) : sinon chaque envoi diffère du
@@ -277,7 +304,12 @@ function cloudSaveNow(){ if(!ACC)return; var m=accMeta(ACC); if(!m||!m.code)retu
     .then(function(r){ return r&&r.json(); }).then(function(j){ _cloudState=(j&&j.ok)?"ok":"off"; if(j&&j.ok) _cloudDernier=corps; }).catch(function(){ _cloudState="off"; }); }
 /* L'app part en arrière-plan (écran verrouillé, autre app) : on écrit ce qui attend. */
 document.addEventListener("visibilitychange",function(){ if(document.hidden && _syncT) cloudSaveNow(); });
-function cloudRestoreInto(id){ var m=accMeta(id); if(!m||!m.code) return Promise.resolve(false);
+function cloudRestoreInto(id){ var m=accMeta(id); if(!m||(!m.code&&!m.kdmcUid)) return Promise.resolve(false);
+  if(m.kdmcUid){ return fetch(SYNC_BASE+"/load",{credentials:"include",headers:kdmcHeaders()}).then(function(r){ return r.json(); }).then(function(j){
+      if(j&&j.ok&&j.data){ var loc=_rawGet(id,"syncTs"); var lt=loc?JSON.parse(loc):0; if((j.data.syncTs||0)>=lt){ _applySnapshot(id,j.data); if(ACC===id){ loadS(); render(); } } return true; }
+      /* rien sous le compte KDMC : un ancien compte Lingua (nom + code) est peut-être là → clé historique */
+      if(m.code) return cloudKeyFor(m.name,m.code).then(function(k){ return fetch(SYNC_BASE+"/load?k="+encodeURIComponent(k)); }).then(function(r){ return r.json(); }).then(function(j2){ if(j2&&j2.ok&&j2.data){ _applySnapshot(id,j2.data); cloudSaveNow(); if(ACC===id){ loadS(); render(); } return true; } return false; });
+      return false; }).catch(function(){ return false; }); }
   return cloudKeyFor(m.name,m.code).then(function(k){ return fetch(SYNC_BASE+"/load?k="+encodeURIComponent(k)); })
     .then(function(r){ return r&&r.json(); }).then(function(j){ if(!j||!j.ok){ _cloudState="off"; return false; } _cloudState="ok"; if(!j.data) return false;
       var cloud=j.data, localTs=(function(){ var t=_rawGet(id,"syncTs"); return t?JSON.parse(t):0; })();
@@ -943,8 +975,12 @@ function openCreate(){
     '<input id="acPrenom" class="txt" placeholder="Ton prénom" maxlength="18" autocomplete="off">'+
     '<input id="acNom" class="txt" placeholder="Ton nom" maxlength="24" autocomplete="off">'+
     '<input id="acCode" class="txt" placeholder="Code secret (facultatif)" inputmode="numeric" maxlength="10" autocomplete="off">'+
-    '<p class="mini">🔒 <b>Facultatif</b> : un code sauvegarde ta progression <b>en ligne</b> (prénom + nom + code = tout revient sur n\'importe quel téléphone). Tu peux commencer <b>sans</b>, et l\'ajouter plus tard.</p>'+
+    '<p class="mini">🔒 <b>Facultatif</b> : un code (6 chiffres min.) crée ton <b>compte KDMC</b> — le même nom + code te reconnaît dans toutes les apps du domaine et sur n\'importe quel téléphone. Tu peux commencer <b>sans</b>, et l\'ajouter plus tard.</p>'+
+    '<label class="mini" id="acCguWrap" style="display:block"><input type="checkbox" id="acCgu"> J\'accepte les <a href="#" id="acCguLink">conditions</a>.</label><div class="mini" id="acCguText" hidden>Un seul compte pour toutes les apps KDMC. Tes informations restent privées et ne servent qu\'à te reconnaître. Tu peux te déconnecter ou demander l\'effacement quand tu veux.</div>'+
     '<p class="mini">Choisis ton avatar</p>';
+  /* Conditions : UNE fois pour tout le domaine. Déjà acceptées (session KDMC) → pas de case. Texte servi par le domaine. */
+  try{ var lk=m.body.querySelector("#acCguLink"); lk.onclick=function(ev){ ev.preventDefault(); var t=m.body.querySelector("#acCguText"); t.hidden=!t.hidden; };
+    fetch("/__sso/cgu",{credentials:"include",cache:"no-store",headers:kdmcHeaders()}).then(function(r){return r.json();}).then(function(j){ if(!j||!j.ok)return; var t=m.body.querySelector("#acCguText"); if(t&&j.texte)t.textContent=j.texte; if(j.acceptees){ var w=m.body.querySelector("#acCguWrap"); if(w)w.style.display="none"; m.body.querySelector("#acCgu").checked=true; } }).catch(function(){}); }catch(e){}
   var g=el("div","av-pick");
   AVATARS.forEach(function(a){ var b=el("button","av-opt"+(a===av?" sel":"")); b.textContent=a; b.onclick=function(){ av=a; g.querySelectorAll(".av-opt").forEach(function(x){x.classList.remove("sel");}); b.classList.add("sel"); }; g.appendChild(b); });
   m.body.appendChild(g);
@@ -956,9 +992,18 @@ function openCreate(){
        partageraient le même compte en ligne (Kevin 2026-09-05). */
     if(!fullNameOk(n)){ toast("Entre ton prénom ET ton nom 🙂"); return; }
     if(c && c.length<4){ toast("Le code doit faire au moins 4 chiffres (ou laisse-le vide) 🔒"); return; }
+    var cguOk=!!(m.body.querySelector("#acCgu")&&m.body.querySelector("#acCgu").checked);
+    if(!cguOk){ toast("Coche les conditions pour continuer 🙂"); return; }
     ok.disabled=true; ok.textContent="…";
     if(!c){ var id=createAccount(n,av,""); switchAccount(id); m.close(); VIEW="home"; render(); return; } // sans code = on démarre direct (mémoire cloud = bonus optionnel)
-    enterWithCredentials(n,av,c,true).then(function(res){ m.close(); VIEW="home"; render(); if(res&&res.restored) toast("👋 Compte retrouvé — bienvenue "+esc(n)+" !"); }); };
+    /* Avec un code (6+ chiffres) : c'est un compte KDMC — le domaine garde l'empreinte du code, et le
+       même nom + code marche partout. Un code Lingua court (4-5 chiffres) reste un compte Lingua seul. */
+    var suite=function(res){ m.close(); VIEW="home"; render(); if(res&&res.restored) toast("👋 Compte retrouvé — bienvenue "+esc(n)+" !"); };
+    if(c.length>=6){ kdmcIssue(kdmcSlug(n),n,c,true).then(function(j){
+        if(j&&!j.ok&&(j.reason==="code_requis"||j.reason==="code_incorrect")){ ok.disabled=false; ok.textContent="Créer mon compte"; toast("Ce nom a déjà un compte KDMC avec un autre code — touche « J'ai déjà un compte » 🔑"); return; }
+        if(j&&j.ok){ var idD=createAccount(n,av,c,j.uid); switchAccount(idD); cloudSaveNow(); suite({ok:true}); return; }
+        enterWithCredentials(n,av,c,true).then(suite); }); return; }
+    enterWithCredentials(n,av,c,true).then(suite); };
   m.body.appendChild(ok);
   setTimeout(function(){ var i=m.body.querySelector("#acPrenom"); if(i)i.focus(); },100);
 }
@@ -976,7 +1021,12 @@ function openLogin(){
     if(!fullNameOk(n)){ toast("Entre ton prénom ET ton nom 🙂"); return; }
     if(c.length<4){ toast("Entre ton code 🔑"); return; }
     ok.disabled=true; ok.textContent="…";
-    enterWithCredentials(n,"🦊",c,false).then(function(res){
+    /* D'abord le compte KDMC (même nom + code que partout dans le domaine), sinon l'ancien compte Lingua. */
+    (c.length>=6 ? kdmcLogin(n,c) : Promise.resolve(null)).then(function(j){
+      if(j&&j.ok){ return enterFromDomain(j).then(function(id){ setAccountCode(id,c); return {ok:true,domaine:true}; }); }
+      if(j&&j.reason==="trop_essais"){ return {ok:false,message:j.message}; }
+      return enterWithCredentials(n,"🦊",c,false); }).then(function(res){
+      if(res&&res.message){ ok.disabled=false; ok.textContent="Retrouver mon compte"; toast(res.message); return; }
       if(res&&res.ok){ m.close(); VIEW="home"; render(); toast("👋 Bienvenue "+esc(n)+" !"); return; }
       ok.disabled=false; ok.textContent="Retrouver mon compte";
       /* On dit la VÉRITÉ sur ce qui s'est passé — jamais « compte introuvable » quand on n'a
@@ -1714,7 +1764,8 @@ function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",
   // (Une seule voix pour tout — voir la section « 🔊 Voix » plus bas. Fini les 2 réglages qui se contredisaient.)
   // mémoire en ligne
   var cloud=el("div","freeze-card");
-  if(me.code){ cloud.innerHTML='<div><b>☁️ Mémoire en ligne active</b><span> — ta progression est sauvegardée. Retrouve-la partout avec ton prénom + ton code.</span></div><div class="fx">'+(_cloudState==="off"?"⚠️":"✓")+'</div>';
+  if(me.kdmcUid&&!me.code){ cloud.innerHTML='<div><b>☁️ Compte KDMC</b><span> — ta progression suit ton compte kd-mc.com, sur tous tes appareils.</span></div><div class="fx">'+(_cloudState==="off"?"⚠️":"✓")+'</div>'; }
+  else if(me.code){ cloud.innerHTML='<div><b>☁️ Mémoire en ligne active</b><span> — ta progression est sauvegardée. Retrouve-la partout avec ton prénom + ton code.</span></div><div class="fx">'+(_cloudState==="off"?"⚠️":"✓")+'</div>';
     var vb=el("button","btn-buy"); vb.textContent="Voir mon code"; vb.onclick=function(){ openMyCode(ACC); }; cloud.appendChild(vb); }
   else { cloud.innerHTML='<div><b>☁️ Mémoire en ligne</b><span> — inactive (progression seulement sur cet appareil).</span></div>'; var eb=el("button","btn-buy"); eb.textContent="Activer"; eb.onclick=openEnableCloud; cloud.appendChild(eb); }
   d.appendChild(cloud);
@@ -3250,6 +3301,11 @@ function boot(){ app=document.getElementById("app");
   else if(accs.length>1){ ACC=null; PICK=false; }          /* plusieurs comptes → écran « qui apprend ? » */
   else { ACC=null; PICK=false; }                            /* aucun compte → création */
   render();
+  /* RECONNU PAR LE DOMAINE (27.09) : si kd-mc.com connaît la personne, on ouvre SON compte sans rien
+     demander — même si un autre compte local était ouvert (c'est la session du domaine qui dit qui est là). */
+  kdmcWhoami().then(function(j){ if(!j||!j.uid) return; var cur=ACC?accMeta(ACC):null;
+    if(cur&&cur.kdmcUid===j.uid) return;
+    enterFromDomain(j).then(function(){ VIEW=S.course?"home":"home"; PICK=false; render(); toast("👋 Bonjour "+esc((j.name||"").split(" ")[0])+" — reconnu·e par KDMC"); }); });
   if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=function(){}; speechSynthesis.getVoices(); }
   setInterval(function(){ if(ACC&&VIEW!=="lesson"&&!PICK){ var b=S.hearts; regenHearts(); if(S.hearts!==b&&VIEW==="home")render(); } },20000);
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});

@@ -69,7 +69,8 @@
   var SSO_PASS_CONSUMERS = { 'apex-chat.kd-mc.com': 1, 'dashboard.kd-mc.com': 1, 'sourcing.kd-mc.com': 1,
     'bot.kd-mc.com': 1, 'javis.kd-mc.com': 1,
     'departs.kd-mc.com': 1, 'cmcteams-light.kd-mc.com': 1, 'cuisine.kd-mc.com': 1, 'cocina.kd-mc.com': 1,
-    'cujina.kd-mc.com': 1, 'studio.kd-mc.com': 1, 'chez-lolo.kd-mc.com': 1 };
+    'cujina.kd-mc.com': 1, 'studio.kd-mc.com': 1, 'chez-lolo.kd-mc.com': 1,
+    'lingua.kd-mc.com': 1 };   /* 27.09 : Lingua lit et retire #kdmc_sso= (kdmcToken), aucune navigation par « # » */
   function gotoReturnIfAny() {
     var r = safeReturnUrl();
     if (r) {
@@ -325,8 +326,14 @@
     return '<label class="cgu"><input type="checkbox" id="cgu-ok"> '
       + 'J\'accepte les <a href="#" id="cgu-link">conditions</a>.</label>'
       + '<div id="cgu-text" class="cgu-text" hidden>'
-      + 'Un identifiant unique pour tes apps KDMC. Données privées, utilisées seulement pour te connecter. '
-      + 'Déconnexion possible à tout moment.</div>';
+      + 'Un seul compte pour toutes les apps KDMC. Tes informations restent privées et ne servent qu\'à te reconnaître. '
+      + 'Tu peux te déconnecter ou demander l\'effacement quand tu veux.</div>';
+  }
+  /* Le texte vient du domaine (/__sso/cgu) : UN texte pour toutes les apps ; celui ci-dessus n'est
+     que le repli hors ligne. */
+  function chargerCgu() {
+    if (!window.kdmcSSO || !window.kdmcSSO.cgu) return;
+    window.kdmcSSO.cgu().then(function (j) { var t = document.getElementById('cgu-text'); if (j && j.ok && j.texte && t) t.textContent = j.texte; });
   }
 
   function renderCreate() {
@@ -405,6 +412,7 @@
   }
 
   function wireCgu() {
+    chargerCgu();
     var link = document.getElementById('cgu-link');
     if (link) link.addEventListener('click', function (e) { e.preventDefault(); var t = document.getElementById('cgu-text'); if (t) t.hidden = !t.hidden; });
   }

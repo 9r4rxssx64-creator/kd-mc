@@ -1,5 +1,38 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Conditions une fois, Lingua et La Détente sur le compte du domaine, codes redemandés : relevés
+
+Kevin : « Le CGU doit être demandé qu'une seule fois… CGU rapide, vague, simplifié. Sécurisé partout… On me
+demande encore un code… » puis « Fais lingua et la détente ».
+
+**Mesuré avant** (2 inventaires, 20 apps) : 7 textes de conditions différents (19 à 956 mots), aucune app ne
+lisait `whoami().cgu` (0 occurrence), `whoami` renvoyait le bit du JETON et pas la fiche ; Lingua ignorait le
+domaine (0 appel /__sso), code en clair dans le téléphone ; La Détente : bandeau local, mot de passe admin
+dont l'empreinte est dans la page publique, studio idem (60 j), commande jamais pré-remplie ; `adminSession`
+ne lisait pas `Authorization: Bearer` (cause commune de 5 « code admin » redemandés en app installée).
+
+**Fait** : `/__sso/cgu` (texte unique 28 mots + `acceptees` d'après la fiche, POST = accepté partout),
+`whoami.cgu` lit la fiche ; `kdmcSSO.cgu()/accepterCgu()` ; portail v1.0.39 charge ce texte.
+**Lingua v2.129.0** : boot → `whoami` → compte ouvert sans code (`kdmcUid`), sauvegarde suit la session
+(`/__lingua/save|load` sans `k` → `lingua:u:<uid>`), « Nouveau compte » + code 6 chiffres = compte KDMC
+(`kdmcIssue`, case conditions cachée si déjà acceptées), « J'ai déjà un compte » → `/__sso/login` d'abord ;
+Lingua ajouté aux consommateurs du laissez-passer. **La Détente v1.53.24** : bandeau supprimé si
+`whoami.cgu`, accepter ici = `/__sso/cgu` POST, commande pré-remplie depuis `/__sso/fiche` et renvoyée,
+`?ld_admin` attend la réponse du domaine avant le mot de passe, studio : Kevin vérifié entre sans code ;
+galerie la-detente.kd-mc.com charge kdmc-sso.js (présence + raccourci admin).
+**Routeur** : `adminSession` lit aussi Bearer/`?t=`.
+**Gardes** : test:cgu-une-fois 6/6, test:lingua-compte 4/4, test:lingua-compte-domaine 5/5 (Chromium,
+4 téléphones), lingua-parcours 11/11, identite-domaine, laissez-passer — sabotages faits.
+
+**Relevé « codes redemandés » (m149, non traité ici)** : Apex « Activer l'IA » (proxy exige sha256 du PIN
+après chaque login), CMCteams PIN admin vérifié DANS la page (`cmc_admin_pin`), fiche-privee / admin.js /
+kdmc-fb-auth n'envoient pas le pass SSO, admin.kd-mc.com mémorise sha256 du code admin, Finances jamais de
+whoami, arbre `prompt()` à chaque publication, bot lit `kdmc_sso_pass` pas `kdmc_sso_token`, Chez Lolo
+mot de passe + empreinte en page, Apex Chat ignore le cookie. **Relevé « conditions »** : Apex Chat gate
+locale, Light `gateCgu`, **Apex IA `issue` sans `cgu` → refusé pour un nouveau**, CMCteams/Créa
+`cgu:true` en dur, CMCteams capture GPS au login sans consentement (`index.html:17662`), 3 clés de
+consentement géoloc différentes ; aucune app ne lit `GET /__sso/fiche`.
+
 ## 2026-09-27 (nuit) — Light v1.60 : Face ID et code, et Kevin dispensé partout
 
 Kevin : « Ajoute Face ID et code à light » · « Dispense-moi dans light comme dans Teams et partout ».

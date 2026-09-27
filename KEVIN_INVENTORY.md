@@ -35,6 +35,12 @@
 | `tools/departs/index.html` | **Modifié (v1.58).** light : départs cachés tant que portillon + fiche ne sont pas faits ; plus de « Plus tard ». | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/departs/index.html) |
 | `tests/verify-fiche-premiere-connexion.mjs` | **Modifié.** 35 contrôles en vrai navigateur, dans les deux applis. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-fiche-premiere-connexion.mjs) |
 
+### 📜 Conditions une seule fois · Lingua et La Détente sur ton compte (27.09.2026)
+
+- 🗣 **Lingua** (reconnu sans code, progression qui te suit) : [lingua.kd-mc.com](https://lingua.kd-mc.com/) · preuve [tests/verify-lingua-compte-domaine.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-lingua-compte-domaine.mjs)
+- 🎯 **La Détente** (galerie) : [la-detente.kd-mc.com](https://la-detente.kd-mc.com/) · boutique : [shops.kd-mc.com/la-detente/](https://shops.kd-mc.com/la-detente/)
+- 📜 **Le texte unique des conditions** (servi par le domaine) : [kd-mc.com/__sso/cgu](https://kd-mc.com/__sso/cgu) · preuve [services/kdmc-router/cgu.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/cgu.test.mjs)
+
 ### 👑 Toi, reconnu par n'importe quel chemin (27.09.2026)
 
 - 🖥 **Le portail, bouton « 👑 Je suis l'administrateur »** (PC, navigateur neuf) : [kd-mc.com](https://kd-mc.com/)

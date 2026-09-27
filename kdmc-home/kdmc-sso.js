@@ -212,6 +212,17 @@
       .catch(function () { return { ok: false, reason: 'neterr' }; });
   }
 
+  /* CONDITIONS — une fois pour tout le domaine (27.09.2026). `cgu()` → {ok, version, texte, acceptees} ;
+     une app n'affiche sa case QUE si `acceptees` est faux, puis appelle `accepterCgu()`. */
+  function cgu() {
+    return fetch(BASE + '/cgu', { credentials: 'include', cache: 'no-store', headers: authHeaders() })
+      .then(function (r) { return r.json(); }).catch(function () { return { ok: false, acceptees: false, texte: '' }; });
+  }
+  function accepterCgu() {
+    return fetch(BASE + '/cgu', { method: 'POST', credentials: 'include', headers: authHeaders({ 'content-type': 'application/json' }), body: '{}' })
+      .then(function (r) { return r.json(); }).catch(function () { return { ok: false }; });
+  }
+
   function logout() {
     setToken('');
     return fetch(BASE + '/logout', { method: 'POST', credentials: 'include', headers: authHeaders() })
@@ -303,6 +314,8 @@
     login: login,
     porte: porte,
     adminCode: adminCode,
+    cgu: cgu,
+    accepterCgu: accepterCgu,
     logout: logout,
     consumeHashToken: consumeHashToken,
     ensureSession: ensureSession,

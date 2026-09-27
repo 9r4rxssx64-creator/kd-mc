@@ -598,6 +598,26 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "cgu-une-fois": {
+      "titre": "Conditions une fois, Lingua et La Détente sur le domaine",
+      "branche": "claude/cgu-une-fois",
+      "sujet": "/__sso/cgu texte unique, Lingua v2.129.0 et La Détente v1.53.24 sur le compte KDMC",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "kevin-reconnu-mesure": {
+      "titre": "Kevin reconnu partout : mesures en ligne (fusionnée)",
+      "branche": "claude/kevin-reconnu-partout-mesure",
+      "sujet": "Documents seulement, fusionnée #4109",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -2922,6 +2942,15 @@
       "sujet": "KEVIN RECONNU PARTOUT : /__sso/entrer dépose la session dans une app installée (toutes adresses), code admin = session vérifiée, plus de bootstrap passkey admin — ce que vos apps peuvent retirer",
       "corps": "Règle Kevin 27.09 : « reconnu par n'importe quel chemin sur mes appareils : domaine, chaque app, internet, bureau ». FAIT au routeur/portail : (1) https://<votre-app>/__sso/entrer?to=<chemin>&t=<pass>[&g=<grant>] pose le cookie kdmc_sso (et kdmc_admin) DANS le stockage de l'app installée puis redirige sur `to` — le portail y passe pour TOUTES les apps au retour de connexion (kdmcSSO.porte(url)). Conséquence : vous n'avez plus besoin de lire #kdmc_sso= ni d'être dans SSO_PASS_CONSUMERS (liste gardée pour compat, ne pas l'allonger) ; CMCteams et Apex AI installés sont couverts. (2) /__sso/whoami (ssoToken) lit maintenant Bearer, x-kdmc-sso, ?t= et cookie — Créa Studio installé, qui envoyait ?t=, est reconnu. (3) /__admin/login renvoie aussi {token, uid:'kdmc_admin', verified:true} et pose kdmc_sso vérifié : sur un PC sans Face ID, Kevin est admin partout après son code ; kdmcSSO.adminCode(code). Vos écrans « code admin » (Light PIN, bot, fiche-privee, kdmc-fb-auth, admin.js avec DEUX clés localStorage différentes kdmc_admin_grant / kdmc_admin_token) peuvent d'abord essayer whoami (admin && verified) avant de demander le code — merci d'unifier la clé. (4) Passkeys admin rangés sous pk:kdmc_admin (pkKey), plus d'exception « liste vide » : un uid admin n'enrôle un passkey qu'avec session vérifiée ou grant. (5) /__admin/domain-log et admin.kd-mc.com acceptent la session vérifiée. Inventaire complet (32 adresses × 4 chemins) dans MEMO_RESUME du 27.09 soir. Restent sans identité domaine : Lingua, La Détente ; Autorisations garde un PIN local créé par le 1er venu (derrière la porte admin) — à retirer par sa session.",
       "ts": "2026-09-27 21:10",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m149-coffre-etat",
+      "de": "coffre-etat",
+      "a": "toutes",
+      "sujet": "RÈGLE KEVIN 27.09 : conditions UNE fois (/__sso/cgu), renseignements/position une fois, AUCUN code redemandé à qui le domaine connaît — relevé précis de ce que chaque app doit changer",
+      "corps": "Kevin : « Le CGU doit être demandé qu'une seule fois dans n'importe quelle app et sauvegardé pour chaque app du domaine. Vérifie la localisation, renseignements etc. CGU rapide, vague, simplifié. Sécurisé partout les connexions, comptes, codes, de tout le monde. On me demande encore un code alors que je dois être reconnu partout toujours. » SOCLE (en ligne après #cgu) : GET /__sso/cgu → {texte (28 mots, UNIQUE), version, acceptees} ; POST /__sso/cgu (session) = accepté pour tout le domaine ; whoami.cgu lit maintenant la FICHE (plus seulement le jeton) ; kdmcSSO.cgu()/accepterCgu() ; adminSession lit aussi Authorization: Bearer et ?t=. RÈGLE POUR VOS APPS : (a) n'affichez votre case conditions QUE si kdmcSSO.cgu().acceptees === false, puis accepterCgu() ; supprimez votre drapeau local ; (b) lisez GET /__sso/fiche au démarrage pour pré-remplir et ne redemander que ce qui manque, renvoyez ce que vous apprenez (POST) ; (c) AUCUN code / PIN / mot de passe à quelqu'un dont whoami dit admin&&verified (ou simplement ok pour un code de compte). CE QUE J'AI MESURÉ CHEZ VOUS (fichier:ligne) — CONDITIONS : Apex Chat messaging-app/index.html:7243-7256 + 15319 (gate locale apex_chat_cgu_v1) ; Light tools/departs/index.html:151-154, 1353 (gateCgu) ; Apex IA apex-ai/v13/services/auth/auth.ts:314-318 : issue SANS champ cgu → un NOUVEAU compte est REFUSÉ par le domaine (renseignements_requis) — à corriger vite ; CMCteams index.html:17599 et Créa 1373 : cgu:true EN DUR sans acceptation réelle ; boutiques/Kit/Rotaplan : bandeaux locaux. FICHE : personne n'appelle GET /__sso/fiche ; Light redemande la fiche sur chaque appareil (1398-1406) ; Apex Chat onboarding 15285-15305 ne pousse pas email/adresse. POSITION : CMCteams index.html:17662-17674 capture le GPS à CHAQUE login sans consentement ; 3 clés de consentement géoloc différentes (12262, 18797, 18939) ; Apex Chat 1331-1345 suit la position selon un toggle admin, pas le consentement. CODES REDEMANDÉS À KEVIN : Apex proxy-pin-activation.ts:66-126 (« Activer l'IA » après chaque login, le proxy exige sha256 du PIN) ; CMCteams index.html:17287-17356 PIN admin vérifié DANS LA PAGE (cmc_admin_pin) → remplacer par /__admin/login (règle 8) ; tools/shared/fiche-privee.js:193-195, kdmc-home/admin/admin.js:435, tools/shared/kdmc-fb-auth.js:55-56 : n'envoient que x-kdmc-admin → ajoutez le pass SSO (Bearer ou x-kdmc-sso) ; kdmc-access/page.js:227 mémorise sha256 du code admin ; tools/finances/index.html:2682/2778/3020 jamais de whoami ; arbre/index.html:2177 prompt() à chaque publication → tenter le PUT avec la session d'abord ; crypto-bot-dashboard/index.html:212 lit kdmc_sso_pass, pas kdmc_sso_token ; shops/chez-lolo/index.html:846-852 + studio.html:912 empreinte de mot de passe dans la page publique + prompt à 300 ms avant whoami (La Détente corrigée par moi : copiez) ; Apex Chat 1109 ignore le cookie. Clés à unifier : kdmc_admin_grant / kdmc_admin_token / kdmc_sso_pass / crea_sso_token. Fait par moi : Lingua v2.129.0 et La Détente v1.53.24 (voir MEMO). Je ne touche ni CMCteams, ni Light, ni Apex, ni la messagerie : sessions actives.",
+      "ts": "2026-09-27 22:40",
       "etat": "ouvert"
     }
   ]

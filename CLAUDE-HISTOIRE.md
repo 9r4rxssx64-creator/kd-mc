@@ -10629,6 +10629,29 @@ Plus `bloque:[…]` : l'admin ferme **une app précise**, même à quelqu'un qui
 - Gardes : `test:entrer` (7), `test:admin-partout` (7), `test:compte-unique-portail` (10, vrai navigateur :
   PC sans passkey, app installée), `webauthn-endpoints` (22), `bee-iphone` (21).
 
+### 4 quater. CONDITIONS, RENSEIGNEMENTS, CODES : UNE FOIS, N'IMPORTE OÙ, VALABLE PARTOUT (Kevin 2026-09-27)
+
+> **« Le CGU doit être demandé qu'une seule fois dans n'importe quelle app et sauvegardé pour chaque app du domaine. Vérifie la localisation, renseignements etc. CGU rapide, vague, simplifié. Sécurisé partout les connexions, comptes, codes, de tout le monde, chaque personne et les futures. On me demande encore un code alors que je dois être reconnu partout toujours. »** — Kevin 2026-09-27
+
+- **Un seul texte de conditions**, servi par le domaine (`/__sso/cgu`, 28 mots, simple). Une app n'affiche sa case
+  QUE si `whoami().cgu` / `kdmcSSO.cgu().acceptees` est faux, puis appelle `accepterCgu()` : l'accord est gravé
+  dans la fiche (`cgu_at`, `cgu_v`) et vaut dans toutes les apps, même celles dont le pass ne le portait pas.
+  Plus aucun drapeau « conditions » propre à une app pour une personne connue du domaine.
+- **Les renseignements** (e-mail, téléphone, adresse…) vivent dans la fiche du domaine (`/__sso/fiche`) :
+  une app les LIT pour pré-remplir et ne redemande que ce qui manque ; ce qu'elle apprend, elle le RENVOIE.
+- **La position** : le domaine sait déjà ville / pays / fuseau sans permission (`request.cf`). Une app ne
+  demande la position précise qu'avec un consentement explicite, jamais en silence à la connexion.
+- **Un code n'est JAMAIS redemandé à quelqu'un que le domaine connaît** : toute porte (admin ou compte)
+  demande d'abord `whoami` ; l'admin vérifié passe partout. Toute porte serveur lit les MÊMES canaux
+  (`ssoToken` : Bearer, `x-kdmc-sso`, `?t=`, cookie — `adminSession` compris). Une empreinte de code
+  écrite dans une page publique est une faille, pas une protection.
+- **Lingua** (27.09) : la personne reconnue par le domaine entre sans code, sa progression suit son compte
+  KDMC (`lingua:u:<uid>`) ; un compte créé dans Lingua avec un code de 6 chiffres est un compte KDMC.
+  **La Détente** : conditions déjà acceptées → pas de bandeau ; commande pré-remplie depuis la fiche et
+  renvoyée à la fiche ; Kevin entre au studio et à l'admin boutique par sa session, sans mot de passe.
+- Gardes : `test:cgu-une-fois` (6), `test:lingua-compte` (4), `test:lingua-compte-domaine` (5, vrai
+  navigateur, 4 téléphones), `test:identite-domaine`, `test:laissez-passer`.
+
 ### 5. Parité obligatoire `ROUTES` ⇄ `APPS`
 
 Un sous-domaine servi sans clé d'app **échappe au périmètre en silence** — pire que pas de périmètre. `npm run test:perimetre-apps` (dans `test:ci`) le refuse, et `test:perimetre-page` prouve dans un **vrai navigateur** que Kevin peut le régler au doigt.

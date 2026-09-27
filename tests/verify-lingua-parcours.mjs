@@ -52,6 +52,8 @@ const erreurs = [];
     await page.fill('#acPrenom', 'Kevin');
     await page.fill('#acNom', 'Desarzens');
     await page.fill('#acCode', '200807');
+    /* (27.09) conditions : une case, une fois — acceptée ici (hors ligne, le domaine ne peut pas dire « déjà accepté ») */
+    await page.evaluate(() => { const c = document.querySelector('#acCgu'); if (c) c.checked = true; });
   } catch (e) { remplissable = false; }
   chk(remplissable, '2. on peut REMPLIR les champs — c\'est ce geste précis qui expirait sur le vrai domaine (m051)');
 

@@ -88,6 +88,8 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Compte unique du domaine (`compte-unique`) | `claude/compte-unique-domaine` | 🟢 Code vérifié au domaine, /__sso/login, reconnu partout sauf apps perso (27.09) |
 | Compte unique : apps (`compte-unique-apps`) | `claude/compte-unique-apps` | 🟢 Créa Studio sur le compte du domaine, jeton « code prouvé » (27.09) |
 | Kevin reconnu partout (`kevin-reconnu-partout`) | `claude/kevin-reconnu-partout` | 🟢 Code admin = session vérifiée, /__sso/entrer, passkeys admin canoniques (27.09) |
+| Conditions une fois, Lingua / La Détente (`cgu-une-fois`) | `claude/cgu-une-fois` | 🟢 /__sso/cgu, Lingua v2.129.0, La Détente v1.53.24 (27.09) |
+| Kevin reconnu partout : mesures (`kevin-reconnu-mesure`) | `claude/kevin-reconnu-partout-mesure` | ✅ fusionnée #4109 (docs seulement) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 
 ## 📅 État RÉEL mesuré le 10.09.2026 — `git for-each-ref` + `git rev-list origin/main..<branche>`

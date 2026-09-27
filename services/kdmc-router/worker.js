@@ -773,6 +773,12 @@ function rewriteLocation(loc, base, host, baseAmont, upstream) {
 
 /* ===================== SSO transverse kd-mc.com ===================== */
 const SSO_COOKIE = 'kdmc_sso';
+/* CONDITIONS — UN SEUL TEXTE POUR TOUT LE DOMAINE (Kevin 2026-09-27 : « le CGU doit être demandé
+   qu'une seule fois dans n'importe quelle app et sauvegardé pour chaque app du domaine. CGU rapide,
+   vague, simplifié »). Servi par /__sso/cgu ; l'acceptation vit dans la fiche (`cgu_at`) et vaut
+   dans toutes les apps. Changer la version redemande l'accord une fois, partout. */
+const CGU_VERSION = 2;
+const CGU_TEXTE = 'Un seul compte pour toutes les apps KDMC. Tes informations restent privées et ne servent qu\'à te reconnaître. Tu peux te déconnecter ou demander l\'effacement quand tu veux.';
 const SSO_TTL = 30 * 24 * 3600;
 /* Admins du domaine (peuvent voir les fiches clients). uid = slug prénom-nom. */
 const ADMIN_UIDS = ['kdmc_admin', 'kevin-desarzens'];
@@ -1425,16 +1431,27 @@ async function handleLingua(request, url, env) {
   if (!env || !env.ACCOUNTS) return JL({ ok: false, reason: 'kv_absent' }); // fail-open (200)
   try {
     const okKey = (k) => /^[a-f0-9]{16,64}$/.test(k);
+    /* COMPTE DU DOMAINE (Kevin 27.09 : « fais Lingua ») : sans clé `k`, la sauvegarde est celle de la
+       SESSION du domaine (cookie ou Bearer) → clé `lingua:u:<uid>`. Plus besoin d'un code Lingua : la
+       progression suit le compte KDMC sur tous les appareils. Les anciennes clés (empreinte nom+code)
+       restent lisibles pour ne perdre personne. */
+    const cleSession = async () => {
+      const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request));
+      if (!s || revoked(await accGet(env, s.uid), s)) return '';
+      return 'u:' + s.uid.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80);
+    };
     if (url.pathname === '/__lingua/load' && request.method === 'GET') {
-      const k = url.searchParams.get('k') || '';
-      if (!okKey(k)) return JL({ ok: false, reason: 'bad_key' }, 400);
+      let k = url.searchParams.get('k') || '';
+      if (!k) { k = await cleSession(); if (!k) return JL({ ok: false, reason: 'session_requise' }, 401); }
+      else if (!okKey(k)) return JL({ ok: false, reason: 'bad_key' }, 400);
       const blob = await env.ACCOUNTS.get('lingua:' + k);
-      return JL({ ok: true, data: blob ? JSON.parse(blob) : null });
+      return JL({ ok: true, data: blob ? JSON.parse(blob) : null, cle: k.startsWith('u:') ? 'compte' : 'code' });
     }
     if (url.pathname === '/__lingua/save' && request.method === 'POST') {
       let b; try { b = await request.json(); } catch { return JL({ ok: false, reason: 'bad_json' }, 400); }
-      const k = String(b && b.k || '');
-      if (!okKey(k)) return JL({ ok: false, reason: 'bad_key' }, 400);
+      let k = String(b && b.k || '');
+      if (!k) { k = await cleSession(); if (!k) return JL({ ok: false, reason: 'session_requise' }, 401); }
+      else if (!okKey(k)) return JL({ ok: false, reason: 'bad_key' }, 400);
       const s = JSON.stringify(b && b.data || {});
       if (s.length > 200000) return JL({ ok: false, reason: 'too_big' }, 413);
       await env.ACCOUNTS.put('lingua:' + k, s, { expirationTtl: 60 * 60 * 24 * 400 }); // ~400 j, renouvelé à chaque save
@@ -2294,7 +2311,8 @@ async function handleSso(request, url, env) {
         });
       }
       await enrich(env, request, s.uid, s.name, s.cgu, acc);
-      return J({ ok: true, uid: s.uid, name: s.name, cgu: s.cgu, verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' });
+      /* `cgu` = accepté UNE fois, n'importe où (fiche `cgu_at`), pas seulement dans ce pass. */
+      return J({ ok: true, uid: s.uid, name: s.name, cgu: !!(s.cgu || (acc && acc.cgu_at)), verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' });
     }
     return J({ ok: false });
   }
@@ -2551,6 +2569,22 @@ async function handleSso(request, url, env) {
   /* Mon laissez-passer, pour le déposer dans une app installée (via /__sso/entrer). Même
      niveau d'exposition que /issue et /login, qui renvoient déjà le pass dans le corps.
      Lisible seulement par une page du domaine (aucun en-tête CORS → un site tiers n'y lit rien). */
+  /* Les conditions : le texte (pour l'afficher au même endroit dans chaque app) et, avec une
+     session, « déjà acceptées ? ». POST = j'accepte (une fois, pour tout le domaine). */
+  if (path === '/__sso/cgu' && request.method === 'GET') {
+    const s = await ssoVerify(secret, ssoToken(request));
+    const acc = s ? await accGet(env, s.uid) : null;
+    return J({ ok: true, version: CGU_VERSION, texte: CGU_TEXTE, acceptees: !!(acc && acc.cgu_at && (acc.cgu_v || 1) >= CGU_VERSION) || !!(s && s.cgu && !acc), session: !!s });
+  }
+  if (path === '/__sso/cgu' && request.method === 'POST') {
+    if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
+    const s = await ssoVerify(secret, ssoToken(request));
+    if (!s) return J({ ok: false, reason: 'session requise' });
+    const acc = await accGet(env, s.uid);
+    if (!acc || revoked(acc, s)) return J({ ok: false, reason: 'compte introuvable' });
+    if (!acc.cgu_at || (acc.cgu_v || 1) < CGU_VERSION) { acc.cgu_at = Date.now(); acc.cgu_v = CGU_VERSION; await accPut(env, acc, true); }
+    return J({ ok: true, acceptees: true, version: CGU_VERSION });
+  }
   if (path === '/__sso/pass' && request.method === 'GET') {
     const t = ssoToken(request);
     const s = await ssoVerify(secret, t);
@@ -2704,7 +2738,9 @@ async function adminSession(request, env) {
      enrôlement, leçon #99) → « verified + uid∈ADMIN_UIDS » = Kevin, même confiance que
      whoami admin:true. Jeton via header x-kdmc-sso (PWA iOS = cookies isolés) OU cookie
      kdmc_sso (Safari). Permet le Face ID sur bot.kd-mc.com sans retaper le code. */
-  const ssoRaw = (request.headers.get('x-kdmc-sso') || '').replace(/^Bearer\s+/i, '').trim() || ssoCookie(request, SSO_COOKIE);
+  /* (27.09.2026) Les MÊMES canaux que whoami (Bearer, x-kdmc-sso, ?t=, cookie) : une app installée qui
+     n'a que son pass en localStorage et l'envoie en Bearer était traitée comme inconnue → « code admin ». */
+  const ssoRaw = (request.headers.get('x-kdmc-sso') || '').replace(/^Bearer\s+/i, '').trim() || ssoToken(request);
   if (ssoRaw) {
     const s = await ssoVerify(secret, ssoRaw);
     if (s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0) return { uid: s.uid, name: s.name, faceid: true };

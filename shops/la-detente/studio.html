@@ -1121,6 +1121,12 @@ var Gate=(function(){
    var u=trusted();
    if(u){var g=document.getElementById("studioGate");if(g)g.style.display="none";return}
    document.body.style.overflow="hidden";
+   /* (27.09.2026) RECONNU PAR LE DOMAINE : Kevin (session vérifiée, admin) entre sans code ; le code
+      du studio reste le secours pour un appareil où le domaine ne le connaît pas encore. */
+   try{var tk=localStorage.getItem("kdmc_sso_token")||"";var hd={};if(tk)hd.Authorization="Bearer "+tk;
+     fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hd}).then(function(r){return r.ok?r.json():null}).then(function(w){
+       if(w&&w.ok&&w.admin===true&&w.verified===true){msg("Bienvenue "+((w.name||"Kevin").split(" ")[0])+" 👋",true);grant("kevin");}
+     }).catch(function(){});}catch(e){}
    var c=lg(CRED,null);if(c){var b=document.getElementById("sgBio");if(b)b.style.display="block";try{bio()}catch(e){}}
    var n=document.getElementById("sgName");if(n)setTimeout(function(){n.focus()},200);
  }

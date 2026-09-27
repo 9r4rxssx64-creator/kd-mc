@@ -958,7 +958,7 @@ function ldDelPerson(nm){var a=ldAuthUsers().filter(function(u){return u.name!==
 function ldAccessPanel(){var ex=document.getElementById("ldAccessModal");if(ex)ex.remove();var list=ldAuthUsers();var rows='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)"><b>Kevin</b><span style="font-size:11px;color:var(--muted)">propriétaire</span></div>'+list.map(function(u){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)"><b>'+esc(u.name)+'</b><button onclick="ldDelPerson(\''+esc(u.name)+'\')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px">Retirer</button></div>'}).join("");var d=document.createElement("div");d.id="ldAccessModal";d.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:18px";d.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:360px;width:100%"><div style="font-weight:800;font-size:16px;margin-bottom:2px">👥 Accès — nous deux</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Seules ces personnes peuvent gérer la boutique et le studio.</div>'+rows+'<div style="margin-top:14px;font-weight:700;font-size:13px">Ajouter une personne</div><input id="ldNewName" placeholder="Prénom (ex : Laurence)" style="width:100%;padding:11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:16px;margin:6px 0"><input id="ldNewPw" type="password" placeholder="Son mot de passe" style="width:100%;padding:11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:16px;margin-bottom:10px"><div style="display:flex;gap:8px"><button onclick="ldAddPerson()" style="flex:1;padding:11px;background:var(--p);color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer">Ajouter</button><button onclick="document.getElementById(\'ldAccessModal\').remove()" style="padding:11px 14px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:9px;font-weight:600;cursor:pointer">Fermer</button></div></div>';document.body.appendChild(d);}
 
 (function(){try{ldAuthSyncNow();}catch(_){}})();
-(function(){try{var u=new URLSearchParams(location.search);if(localStorage.getItem("ld_admin_trust")==="1"||localStorage.getItem("ld_admin")==="1"){localStorage.setItem("ld_admin_trust","1");LD_ADMIN=true;}if(u.get("ld_logout")!==null||u.get("ld_admin")==="0"){ldAdminLogout();}else if(u.get("ld_admin")!==null&&!LD_ADMIN){setTimeout(ldAdminPrompt,300);}}catch(_){}})();
+(function(){try{var u=new URLSearchParams(location.search);if(localStorage.getItem("ld_admin_trust")==="1"||localStorage.getItem("ld_admin")==="1"){localStorage.setItem("ld_admin_trust","1");LD_ADMIN=true;}if(u.get("ld_logout")!==null||u.get("ld_admin")==="0"){ldAdminLogout();}else if(u.get("ld_admin")!==null&&!LD_ADMIN){/* (27.09) on laisse d'abord le domaine répondre (Kevin reconnu = pas de mot de passe) */var _t0=Date.now();var _att=function(){if(LD_ADMIN)return;if(window._kdmcWhoamiFini||Date.now()-_t0>2500){ldAdminPrompt();}else setTimeout(_att,120);};setTimeout(_att,300);}}catch(_){}})();
 /* Compte unique kd-mc.com : déverrouillage AUTO de l'admin boutique (= accès Studio)
    si le domaine PROUVE l'identité par Face ID (whoami.verified===true) ET propriétaire
    (admin===true). Additif + fail-open : n'agit QUE si pas déjà admin ; clients jamais
@@ -970,7 +970,7 @@ try{(function(){
   var hdr={};if(tok)hdr.Authorization="Bearer "+tok;
   fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hdr})
     .then(function(r){return r.ok?r.json():null;})
-    .then(function(j){
+    .catch(function(){return null;}).then(function(j){window._kdmcWhoamiFini=true;
       if(!j||!j.ok||j.verified!==true||j.admin!==true)return; /* jamais sans preuve Face ID + proprio */
       if(LD_ADMIN)return;
       try{localStorage.setItem("ld_admin_trust","1");localStorage.setItem("ld_admin_who",j.name||"Kevin");}catch(_){}
@@ -1325,7 +1325,7 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.23"
+        data-version="v1.53.24"
         data-color="#e8b830"
         defer></script>
 

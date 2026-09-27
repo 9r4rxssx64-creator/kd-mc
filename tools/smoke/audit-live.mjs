@@ -396,13 +396,13 @@ const SURFACES = [
         } catch (e) { mc = ' · 🇲🇨 sonde monégasque indispo'; }
         // (la version servie est désormais lue pour TOUTES les surfaces, avant le `deep` —
         //  voir lireVersionServie(). Ce doublon local a été retiré.)
-        /* LA VERSION RÉELLEMENT SERVIE (27.09). Sans elle, un balayage vert ne dit pas
-           si le correctif qu'on vient de fusionner est EN LIGNE : on lisait « Lingua ✅ »
-           en croyant avoir la preuve du déploiement, alors qu'un service worker ou un
-           cache peut encore servir l'ancienne app. `APP_VER` est une variable globale de
-           `lingua/app.js` : c'est la seule source qui vienne du fichier VRAIMENT chargé. */
-        const ver = await page.evaluate(() => (typeof APP_VER === 'string' ? APP_VER : '')).catch(() => '');
-        return { ok:true, note: (ver ? 'version servie ' + ver + ' · ' : 'version servie INCONNUE · ') + langs + ' langues · ' + units + ' unités · ' + tabs + ' onglets · ' + stories + ' histoires 📖 · ' + games + ' jeux ⚡🃏 · stats 📊 · prononciation 🎤 · ' + faits + ' anecdotes + ' + chiffres + ' chiffres + ' + motsV + ' mots, tous sourcés 📜' + mc + voix + ' · vies ' + hearts };
+        // 27.09 : je l'avais RÉINTRODUIT sans voir que la version était déjà lue plus haut.
+        // Résultat mesuré au run 36332320385 : deux lignes contradictoires pour Lingua,
+        // « version servie : v2.126.0 » (la bonne, lue avant le deep) et « version servie
+        // INCONNUE » (la mienne, lue APRÈS toute la navigation, qui ne retrouvait plus la
+        // globale). Un rapport qui se contredit ne vaut pas mieux qu'un rapport muet :
+        // le doublon est retiré une deuxième fois, la lecture générale suffit.
+        return { ok:true, note: langs + ' langues · ' + units + ' unités · ' + tabs + ' onglets · ' + stories + ' histoires 📖 · ' + games + ' jeux ⚡🃏 · stats 📊 · prononciation 🎤 · ' + faits + ' anecdotes + ' + chiffres + ' chiffres + ' + motsV + ' mots, tous sourcés 📜' + mc + voix + ' · vies ' + hearts };
       } catch (e) { return { ok:false, note:'exception deep: ' + String(e).slice(0,80) }; }
     } },
   { url: 'https://studio.' + ROOT + '/', name: 'Créa Studio', selKey: '#bnav', deep: async (page) => {

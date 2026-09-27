@@ -71,6 +71,7 @@ const journal = [
   '   · version servie v9.9.9 · 16 langues',
   '❌ A Cüjina de Mùnegu (cujina)  https://cujina.kd-mc.com/',
   '   · RAISON-DU-ROUGE sélecteur introuvable',
+  '   · STATUT PROJET 404/5xx (route/asset cassé): HTTP 404 https://relais.example/?x=1',
   '✅ Créa Studio  https://studio.kd-mc.com/',
   '   · deep: 7 studios rendus',
   'AUDIT LIVE ÉCHEC (6 surface(s))',
@@ -83,6 +84,14 @@ try {
 
 dit(sorti.includes('RAISON-DU-ROUGE'),
     'la RAISON d\'une surface ❌ arrive dans le rapport (c\'est tout l\'intérêt : sans elle il faut ouvrir le journal, que le proxy refuse)');
+/* Une note de rouge qui contient « HTTP 404 » (ou « OK ») doit rester COLLÉE à son rouge — pas
+   partir chez les verts en fin de rapport (vécu : « Apex AI » rouge trois fois sans sa raison). */
+{
+  const li = sorti.split('\n');
+  const iRouge = li.findIndex((l) => /^❌ A Cüjina/.test(l)), iNote = li.findIndex((l) => /STATUT PROJET 404/.test(l)), iVert = li.findIndex((l) => /^✅/.test(l));
+  dit(iNote === iRouge + 2, 'une note de rouge portant « HTTP 404 » reste juste sous son rouge (pas déportée chez les verts)');
+  dit(iVert === -1 || iNote < iVert, 'toutes les notes de rouges précèdent le premier vert');
+}
 dit(sorti.includes('version servie v9.9.9'),
     'la VERSION réellement servie par Lingua arrive dans le rapport (preuve qu\'un correctif fusionné est en ligne)');
 dit(!sorti.includes('7 studios rendus'),

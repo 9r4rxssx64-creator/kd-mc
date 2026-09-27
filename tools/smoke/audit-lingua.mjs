@@ -261,21 +261,44 @@ try {
 chk(ids.length >= 10, `8.ids ${ids.length} voix cloud déclarées dans le app.js SERVI : ${ids.join(', ') || '(illisible)'}`);
 
 const empreintes = new Map();
+/* VERROU DU DOMAINE (mesuré le 27.09, run 36337868944) : /__lingua/tts refuse toute
+   requête qui ne vient pas d'une page du domaine — `vientDuDomaine()` dans worker.js —
+   et répond 200 + {"ok":false,"reason":"hors_domaine"}, soit EXACTEMENT 36 octets de
+   JSON. Le premier jet appelait l'adresse en direct (APIRequestContext) : les 12 voix
+   rendaient le même corps de 36 octets et la sonde criait « des voix identiques se font
+   passer pour différentes ». C'était l'app qui se protégeait, correctement.
+   On demande donc les voix DEPUIS LA PAGE, comme l'app le fait. */
+const bareTts = await ctx.request.get(BASE + '/__lingua/tts?v=nova&t=bonjour', { timeout: 30000 }).catch(() => null);
+const bareTxt = bareTts ? await bareTts.text().catch(() => '') : '';
+chk(!!bareTts && /hors_domaine/.test(bareTxt),
+    `8.verrou un appel à la voix DEPUIS L'EXTÉRIEUR du domaine est refusé (${bareTts ? bareTts.status() + ' ' + bareTxt.slice(0, 40) : 'pas de réponse'}) — personne ne peut faire chanter le compte de Kevin`);
+
 for (const id of ids) {
-  let r;
-  try { r = await ctx.request.get(BASE + '/__lingua/tts?v=' + encodeURIComponent(id) + '&t=bonjour', { timeout: 40000 }); }
-  catch (e) { ko(`8.${id} appel impossible : ${String(e.message).slice(0, 60)}`); continue; }
-  const buf = Buffer.from(await r.body().catch(() => Buffer.alloc(0)));
-  const ct = (r.headers()['content-type'] || '').split(';')[0];
-  if (!r.ok() || buf.length === 0) { ko(`8.${id} voix MUETTE : HTTP ${r.status()}, ${buf.length} octets`); continue; }
-  const sig = createHash('sha256').update(buf).digest('hex').slice(0, 12);
-  empreintes.set(id, sig);
-  ok(`8.${id} HTTP ${r.status()} · ${ct} · ${String(buf.length).padStart(6)} o · empreinte ${sig}`);
+  const r = await page.evaluate(async (v) => {
+    try {
+      const q = await fetch('/__lingua/tts?v=' + encodeURIComponent(v) + '&t=bonjour', { cache: 'no-store' });
+      const b = new Uint8Array(await q.arrayBuffer());
+      const h = await crypto.subtle.digest('SHA-256', b);
+      const sig = Array.from(new Uint8Array(h)).map((x) => ('0' + x.toString(16)).slice(-2)).join('').slice(0, 12);
+      return { s: q.status, ct: (q.headers.get('content-type') || '').split(';')[0], n: b.length, sig,
+               txt: b.length < 200 ? new TextDecoder().decode(b).slice(0, 60) : '' };
+    } catch (e) { return { err: String(e).slice(0, 60) }; }
+  }, id).catch(() => ({ err: 'appel impossible' }));
+  if (!r || r.err) { ko(`8.${id} appel impossible : ${r && r.err}`); continue; }
+  if (r.s !== 200 || !/^audio\//.test(r.ct) || r.n === 0) {
+    ko(`8.${id} pas d'audio : HTTP ${r.s} · ${r.ct} · ${r.n} o${r.txt ? ' · ' + r.txt : ''}`); continue;
+  }
+  empreintes.set(id, r.sig);
+  ok(`8.${id} HTTP ${r.s} · ${r.ct} · ${String(r.n).padStart(6)} o · empreinte ${r.sig}`);
 }
+/* LE contrôle central : douze voix qui rendraient le même fichier ne sont pas douze
+   voix. C'est exactement ce que l'empreinte attrape. */
 const distinctes = new Set(empreintes.values()).size;
-chk(empreintes.size > 0 && distinctes === empreintes.size,
-    `8.∑ ${empreintes.size}/${ids.length} voix cloud répondent, ${distinctes} empreintes DISTINCTES` +
-    (empreintes.size && distinctes === empreintes.size ? ' — aucune n\'est la copie d\'une autre' : ' — DES VOIX IDENTIQUES se font passer pour différentes'));
+chk(empreintes.size === ids.length && ids.length > 0 && distinctes === empreintes.size,
+    `8.∑ ${empreintes.size}/${ids.length} voix cloud rendent de l'audio, ${distinctes} empreintes DISTINCTES` +
+    (empreintes.size === ids.length && distinctes === empreintes.size
+      ? ' — chacune est bien une voix différente'
+      : ' — des voix MUETTES ou IDENTIQUES se font passer pour différentes'));
 
 /* Le bouton 🔊 déclenche-t-il vraiment un appel ? On regarde le réseau. */
 await onglet('Accueil'); await attends(1000);
@@ -287,7 +310,10 @@ chk(aParle && partis.length >= 1, `8.🔊 appuyer sur 🔊 déclenche ${partis.l
 chk(partis.length <= 1, `8.🔊×2 le mot n'est demandé qu'UNE fois (${partis.length}) — le bug « dit deux fois » ne revient pas`);
 
 /* ─── 9. Mémoire en ligne : aller-retour réel ────────────────────────────── */
-const cle = 'audit-lingua-sonde-' + createHash('sha256').update(String(Date.now())).digest('hex').slice(0, 12);
+/* La clé doit être du HEXA PUR : `okKey = /^[a-f0-9]{16,64}$/` dans worker.js. Le
+   premier jet envoyait « audit-lingua-sonde-<hexa> » → `bad_key` (400), et la sonde
+   l'annonçait comme une mémoire en ligne en panne. Elle marchait très bien. */
+const cle = createHash('sha256').update('audit-lingua-sonde-' + Date.now()).digest('hex').slice(0, 40);
 try {
   const pos = await ctx.request.post(BASE + '/__lingua/save', { data: { k: cle, data: { v: 2, sonde: true } }, timeout: 25000 });
   const jp = await pos.json().catch(() => ({}));

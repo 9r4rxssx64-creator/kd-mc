@@ -36,5 +36,24 @@ async function commeVisiteur(method, p, idToken, body) {
   return { status: r.status, body: corps };
 }
 const attendre = (ms) => new Promise((res) => setTimeout(res, ms));
+/* Jeton d'un téléphone PORTANT UN RÔLE (ex. { role: 'admin' }) : custom token signé avec la clé du
+   compte de service (comme apex-auth-worker et le routeur), échangé contre un id_token. Sert aux
+   robots à PROUVER qu'un admin passe un verrou — jamais écrit, jamais journalisé. */
+async function jetonRole(claims, uid) {
+  const crypto = require('node:crypto');
+  const { lireSecrets, clePrivee } = require('./sa-token.cjs');
+  const k = cleWeb(); if (!k) return null;
+  const { email, raw } = lireSecrets();
+  const { cle } = clePrivee(raw); if (!cle) return null;
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const corps = b64({ alg: 'RS256', typ: 'JWT' }) + '.' + b64({ iss: email, sub: email, uid: String(uid).slice(0, 60), claims: claims || {}, iat: now, exp: now + 3600,
+    aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit' });
+  const jeton = corps + '.' + crypto.createSign('RSA-SHA256').update(corps).sign(cle).toString('base64url');
+  const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=' + encodeURIComponent(k),
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: jeton, returnSecureToken: true }) });
+  const j = await r.json().catch(() => ({}));
+  return j.idToken || null;
+}
 
-module.exports = { DB, req, cleWeb, jetonAnonyme, commeVisiteur, attendre };
+module.exports = { DB, req, cleWeb, jetonAnonyme, jetonRole, commeVisiteur, attendre };

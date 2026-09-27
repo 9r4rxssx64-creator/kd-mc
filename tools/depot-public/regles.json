@@ -184,6 +184,7 @@
     ".github/workflows/coffre-chaine-privee.yml",
     ".github/workflows/coffre-fiches-privees.yml",
     ".github/workflows/coffre-secrets-cmc.yml",
+    ".github/workflows/coffre-ecritures-cmc.yml",
     ".github/workflows/audit-domaine.yml"
   ],
   "_workflows_prives_pourquoi": "Dans un dépôt public, les journaux ET les artefacts d'un robot sont lisibles par tous. Ces robots se connectent en tant que Kevin et prennent des captures des vraies pages (plannings), ou manipulent des sauvegardes de données : ils restent au coffre. Règle automatique en plus : un robot qui lance un test ou un fichier resté au coffre reste au coffre. coffre-chaine-privee.yml : il lance les etapes de test:ci qui ont besoin des fichiers PRIVES (CMCteams, Light, plannings, arbre) — au public elles ne peuvent pas tourner, et depuis la bascule du 26.09 elles ne tournaient plus nulle part (109 etapes sur 221, mesure). audit-domaine.yml : ses résultats (check-run) listent ce qu'un inconnu peut lire — au public, ce serait un mode d'emploi.",

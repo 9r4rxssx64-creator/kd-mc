@@ -63,4 +63,4 @@ async function getAccessToken() {
   return j.access_token;
 }
 
-module.exports = { getAccessToken };
+module.exports = { getAccessToken, lireSecrets, clePrivee };

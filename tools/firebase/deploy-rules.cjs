@@ -41,8 +41,14 @@ const CMC_ADMIN_LOCK = (process.env.CMC_ADMIN_LOCK || 'keep').toLowerCase();
 // apex-auth-worker). Posé par le robot coffre-secrets-cmc APRÈS la migration. 'keep' (défaut) =
 // état LIVE préservé ; 'off' = rollback (l'ancien emplacement réécrivable).
 const SECRETS_LOCK = (process.env.SECRETS_LOCK || 'keep').toLowerCase();
+// Verrou ÉCRITURES CMCteams (27.09.2026, phase 2b) : 'on' = le planning et les réglages
+// (_phase_cmc_ecritures._cles + les clés commençant par _prefixes) ne s'écrivent plus qu'au rôle
+// admin. Posé par le robot coffre-ecritures-cmc APRÈS l'appli v9.926 / light v1.59 en ligne.
+// Exige CMC_ADMIN_LOCK=on. 'keep' (défaut) = état LIVE préservé ; 'off' = rollback.
+const ECRITURES_LOCK = (process.env.ECRITURES_LOCK || 'keep').toLowerCase();
 
 const { getAccessToken } = require('./sa-token.cjs');
+const VERROU = require('./verrou-ecritures.cjs');
 
 (async () => {
   const doc = JSON.parse(fs.readFileSync(RULES_FILE, 'utf8'));
@@ -155,6 +161,27 @@ const { getAccessToken } = require('./sa-token.cjs');
     console.log('🔒 CMC_ADMIN_LOCK=on : cmc_admin_cfg + cmc_motd .write = role:admin ; cmc_e/cmc_ov/cmc_pw/$key .write = auth!=null (inchangé pour tous)');
   } else {
     console.log('🛟 CMC_ADMIN_LOCK=off : écriture /cmcteams = auth!=null au parent (inchangé)');
+  }
+  // Verrou ÉCRITURES (phase 2b) : planning + réglages au rôle admin. Jamais sans le verrou config
+  // admin (sinon le .write parent « auth != null » accorderait tout, en RTDB il ne se retire pas plus bas).
+  let ecrLock = ECRITURES_LOCK;
+  const E = doc._phase_cmc_ecritures;
+  if (STATE === 'open') ecrLock = 'off';
+  else if (ecrLock === 'keep') {
+    try {
+      const cur = await fetch(DB + '/.settings/rules.json?access_token=' + encodeURIComponent(token)).then(r => r.json());
+      ecrLock = VERROU.estPose(cur && cur.rules) ? 'on' : 'off';
+      console.log('🔎 ECRITURES_LOCK=keep → état live détecté : ' + ecrLock);
+    } catch (e) {
+      throw new Error('ECRITURES_LOCK=keep : lecture des règles live impossible (' + e.message + '), abort');
+    }
+  }
+  if (ecrLock === 'on') {
+    if (cmcLock !== 'on') throw new Error('ECRITURES_LOCK=on exige CMC_ADMIN_LOCK=on (write parent descendu), abort');
+    try { VERROU.appliquer(rules, E); } catch (e) { throw new Error('ECRITURES_LOCK=on refusé : ' + e.message + ', abort'); }
+    console.log('🔒 ECRITURES_LOCK=on : ' + E._cles.length + ' clés + ' + E._prefixes.length + ' préfixes (planning, équipes, réglages) = role:admin ; employés inchangés sur le reste');
+  } else {
+    console.log('🛟 ECRITURES_LOCK=off : planning et réglages écrivables par tout jeton (inchangé)');
   }
   // /apex + /coffre_vault : hardened (défaut, état du fichier = auth != null) ou rollback open
   if (APEX_STATE === 'open') {
@@ -274,11 +301,17 @@ const { getAccessToken } = require('./sa-token.cjs');
   // Vérif STRUCTURELLE du verrou config admin (write authentifié non testable sans token).
   const lc = live && live.rules && live.rules.cmcteams;
   if (cmcLock === 'on') {
-    const okLock = lc && lc['.write'] == null && lc.$key && lc.$key['.write'] === 'auth != null'
+    const keyW = ecrLock === 'on' ? E.key_write : 'auth != null';
+    const okLock = lc && lc['.write'] == null && lc.$key && lc.$key['.write'] === keyW
       && lc.cmc_motd && /role/.test(String(lc.cmc_motd['.write'] || '')) && lc.cmc_admin_cfg && /role/.test(String(lc.cmc_admin_cfg['.write'] || ''))
-      && ['cmc_e', 'cmc_ov', 'cmc_pw'].every((k) => lc[k] && lc[k]['.write'] === 'auth != null');
+      && ['cmc_e', 'cmc_pw'].concat(ecrLock === 'on' ? [] : ['cmc_ov']).every((k) => lc[k] && lc[k]['.write'] === 'auth != null');
     if (!okLock) throw new Error('Vérif KO : structure verrou config admin incorrecte en live, abort');
     console.log('🔒 Config admin /cmcteams : cmc_admin_cfg + cmc_motd = role:admin (employés écrivent le reste, lecture inchangée)');
+    if (ecrLock === 'on') {
+      const manque = E._cles.filter((k) => !(lc[k] && /auth\.token\.role === 'admin'/.test(String(lc[k]['.write'] || ''))));
+      if (manque.length) throw new Error('Vérif KO : verrou écritures absent en live sur ' + manque.join(', ') + ', abort');
+      console.log('🔒 Écritures /cmcteams : planning + réglages (' + E._cles.length + ' clés + ' + E._prefixes.length + ' préfixes) = role:admin en live');
+    }
   } else {
     console.log('🛟 Config admin /cmcteams : écriture parent auth!=null (inchangé)');
   }

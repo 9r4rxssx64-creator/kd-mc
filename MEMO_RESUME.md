@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (19h25 UTC) — test:fiches-privees rouge par intermittence : cause racine corrigée (v9.926)
+
+- **Cause** : la relecture du privé chez l'admin (toutes les 15 s) remettait l'ancien numéro sans comparer les dates → une correction pouvait être annulée. `tools/shared/fiche-privee.js` `appliquer()` applique maintenant « la plus récente gagne », comme la fusion.
+- **Test** : la relecture est forcée au pire moment (rouge 2/2 sans le correctif) ; bannière cookies acceptée d'office (elle couvrait la pastille sous charge). **16/16 vert, 4 en parallèle.** Leçon #356. Signalé par javis-bee (m145/m147).
+- PR #4084 : `main` refusionné (tests séances d'#4093, `test:code-compte`, `test:compte-unique-portail` gardés dans `test:ci`).
+
+## 2026-09-27 (21h00) — Phase 2b : le planning et les réglages à l'admin seul (v9.926 / light v1.59, Kevin « Go »)
+
+- Mesuré : tout jeton (même anonyme) réécrivait cmc_ov / cmc_t / cmc_access / cmc_docs… en entier, et chaque
+  téléphone renvoyait au démarrage sa copie réparée du planning. Classement exhaustif des 648 écritures de l'appli :
+  seul un groupe peut être verrouillé tout de suite ; cmc_e (l'inscription renomme une entrée), cmc_reg, chat,
+  journaux → phase 2c.
+- Livré : `tools/shared/ecritures-cmc.js` (dormant jusqu'au drapeau ; non-admin : garde pour lui, zéro refus, le
+  disjoncteur ne saute jamais ; admin : jeton role:admin, sinon file + pastille + code), light v1.59 (planning et
+  chefs avec le guichet admin, « Pas enregistré » clair), `verrou-ecritures.cjs` (une seule copie du verrou, publiée
+  ET testée), `ECRITURES_LOCK` dans deploy-rules, robot privé `coffre-ecritures-cmc.yml` (+ `ecritures-migrer.cjs`,
+  preuve admin sur une clé-sonde, jamais dans le vrai planning).
+- Gardes : `test:ecritures-cmc` **41/0**, 8 sabotages. Leçon #355. Place faite dans index.html (plafond) en
+  raccourcissant un commentaire périmé.
+- Reste (phase 2c) : cmc_e / cmc_reg / chat / journaux écrits morceau par morceau, puis verrou par personne.
 ## 2026-09-27 (nuit, suite) — Chaîne privée rouge après « inscription complète » : 2 tests à moi, 1 d'une autre session
 
 `coffre-chaine-privee` (run 36339556605, sur la branche de la PR #4089) : **3 échecs**, causes lues dans les annotations.

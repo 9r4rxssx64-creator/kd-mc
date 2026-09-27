@@ -22,6 +22,7 @@
   "auto-backup.yml",
   "cmc-runtime-audit.yml",
   "coffre-chaine-privee.yml",
+  "coffre-ecritures-cmc.yml",
   "coffre-fiches-privees.yml",
   "coffre-previent-public.yml",
   "coffre-secrets-cmc.yml",

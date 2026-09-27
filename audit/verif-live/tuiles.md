@@ -1,11 +1,10 @@
 # Vérif LIVE des tuiles — ce que Kevin voit vraiment sur son iPhone
 
-_2026-09-26 22:48 UTC · lecture seule sur le domaine · rapport écrit par la machine GitHub_
+_2026-09-27 19:09 UTC · lecture seule sur le domaine · rapport écrit par la machine GitHub_
 
 ## Portail kd-mc.com
 - ✅ kd-mc.com répond — HTTP 200, 26502 octets
-- ❌ la version servie est celle du dépôt — dépôt = v1.0.35 · en ligne = v1.0.34 → PUBLICATION EN RETARD
-- ❌ CAUSE : l'origine elle-même sert l'ancienne version — même avec un paramètre inédit → v1.0.34. Ce n'est donc pas le cache : l'adresse stable ne pointe pas sur le paquet publié.
+- ✅ la version servie est celle du dépôt — dépôt = v1.0.37 · en ligne = v1.0.37
 - ✅ les 39 tuiles du fichier sont toutes servies en ligne — 39 tuile(s) dans la page servie
 
 ## Vitrine boutiques
@@ -14,14 +13,25 @@ _2026-09-26 22:48 UTC · lecture seule sur le domaine · rapport écrit par la m
 - ✅ les 10 tuiles du fichier sont toutes servies en ligne — 10 tuile(s) dans la page servie
 
 ## Chaque tuile mène-t-elle quelque part ?
-- ✅ les 41 destinations de tuiles répondent — aucune tuile ne mène à une page morte
+- ❌ les 41 destinations de tuiles répondent — https://worldmonitor.kd-mc.com/ → 401 (Portail kd-mc.com → « World Monitor ») · https://osint.kd-mc.com/ → 401 (Portail kd-mc.com → « OSINT ») · https://dossiers.kd-mc.com/ → 401 (Portail kd-mc.com → « Dossiers publics ») · https://ia.kd-mc.com/ → 401 (Portail kd-mc.com → « Outils IA 100+ ») · https://outils.kd-mc.com/ → 401 (Portail kd-mc.com → « Mes outils gratuits ») · https://kd-mc.com/cujina → 401 (Portail kd-mc.com → « A Cüjina de Mùnegu ») · https://kd-mc.com/cujina/livre.pdf → 401 (Portail kd-mc.com → « Livre papier ») · https://tor.kd-mc.com/ → 401 (Portail kd-mc.com → « Tor en clair Privé »)
 - ℹ️ 8 tuile(s) « en construction » non sonnée(s) (grisées exprès, elles annoncent un chantier) — Portail kd-mc.com → « Tech Hub 🚧 En construction » (https://shops.kd-mc.com/tech-hub/) · Portail kd-mc.com → « EcoCraft 🚧 En construction » (https://shops.kd-mc.com/ecocraft/) · Portail kd-mc.com → « Digital Vault 🚧 En construction » (https://shops.kd-mc.com/digital-vault/) · Portail kd-mc.com → « Pawsome 🚧 En construction » (https://shops.kd-mc.com/pawsome/) · Vitrine boutiques → « Tech Hub » (tech-hub/) · Vitrine boutiques → « EcoCraft » (ecocraft/) · Vitrine boutiques → « Digital Vault » (digital-vault/) · Vitrine boutiques → « Pawsome » (pawsome/)
 
+| Adresse | Réponse | Tuile qui y mène |
+|---|---|---|
+| https://worldmonitor.kd-mc.com/ | 401 | Portail kd-mc.com → « World Monitor » |
+| https://osint.kd-mc.com/ | 401 | Portail kd-mc.com → « OSINT » |
+| https://dossiers.kd-mc.com/ | 401 | Portail kd-mc.com → « Dossiers publics » |
+| https://ia.kd-mc.com/ | 401 | Portail kd-mc.com → « Outils IA 100+ » |
+| https://outils.kd-mc.com/ | 401 | Portail kd-mc.com → « Mes outils gratuits » |
+| https://kd-mc.com/cujina | 401 | Portail kd-mc.com → « A Cüjina de Mùnegu » |
+| https://kd-mc.com/cujina/livre.pdf | 401 | Portail kd-mc.com → « Livre papier » |
+| https://tor.kd-mc.com/ | 401 | Portail kd-mc.com → « Tor en clair Privé » |
+
 ## Javis / Bee — le durcissement du 26.09 est-il en ligne ?
-- ✅ javis.kd-mc.com sert le widget — 71397 octets
+- ✅ javis.kd-mc.com sert le widget — 80183 octets
 - ✅ la garde des 4 secondes est en ligne (plus d'écran noir si le domaine ne répond pas)
 - ✅ le son n'est armé qu'après le portier, et désarmé à la mise en veille
-- ❌ le fichier servi est bien celui du dépôt — en ligne 71397 o · dépôt 75789 o
+- ✅ le fichier servi est bien celui du dépôt — en ligne 80183 o · dépôt 81152 o
 - ✅ l'icône 192 px est servie (installation sur iPhone sans icône floue) — HTTP 200
 
 ## Ce que ce contrôle NE prouve pas
@@ -31,4 +41,4 @@ _2026-09-26 22:48 UTC · lecture seule sur le domaine · rapport écrit par la m
 
 ---
 
-**Conclusion : 3 écart(s) mesuré(s) — détail ci-dessus.**
+**Conclusion : 1 écart(s) mesuré(s) — détail ci-dessus.**

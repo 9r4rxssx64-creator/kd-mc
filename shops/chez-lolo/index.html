@@ -551,21 +551,60 @@ if(email.value.indexOf("@")<1)return toast("Email invalide","error");
 if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{from_name:name.value,from_email:email.value,message:msg.value,store:STORE_NAME}).then(function(){toast("Message envoyé ! Réponse sous 24h 📧");name.value="";email.value="";msg.value=""}).catch(function(){toast("Envoyé ! Réponse sous 24h 📧")})}else{toast("Message envoyé ! Réponse sous 24h 📧")}}
 function notifyPayment(total){
 if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{store:STORE_NAME,amount:fmtP(total),items:S.cart.map(function(i){return i.name+" x"+i.qty}).join(", "),timestamp:new Date().toLocaleString("fr-FR")}).catch(function(){})}}
+/* FICHE DE COMMANDE OBLIGATOIRE (Kevin 27.09 : « renseignements obligatoires partout pour les
+   nouveaux » ; pour les boutiques : « à la commande »). Mesuré avant : on payait SANS rien donner
+   (ni nom, ni e-mail, ni CGV acceptées) et la commande d'impression partait chez Printify SANS
+   adresse (cl_checkout n'était jamais rempli). Prénom, nom, e-mail, adresse complète et CGV sont
+   exigés avant d'ouvrir PayPal, Revolut ou le virement ; l'adresse part avec la commande. */
+var CO_FLD="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:16px;min-height:44px;box-sizing:border-box";
+function coVal(id){var e=document.getElementById(id);return e?String(e.value||"").trim():""}
+function coLettres(v){return (String(v).match(/\p{L}/gu)||[]).length>=2}
+function coPreremplir(){try{var c=JSON.parse(localStorage.getItem("cl_checkout")||"null");if(!c)return;
+ [["coPrenom","prenom"],["coNom","nom"],["coEmail","email"],["coTel","phone"],["coAddr","addr"],["coZip","zip"],["coCity","city"],["coCountry","country"]].forEach(function(k){var e=document.getElementById(k[0]);if(e&&c[k[1]])e.value=c[k[1]]})}catch(_){}}
+function coFicheOk(){
+ var err=document.getElementById("coErr");var dis=function(t,id){if(err)err.textContent=t;if(id){var e=document.getElementById(id);if(e)e.focus()}return false};
+ var f={prenom:coVal("coPrenom"),nom:coVal("coNom"),email:coVal("coEmail"),phone:coVal("coTel"),addr:coVal("coAddr"),zip:coVal("coZip"),city:coVal("coCity"),country:coVal("coCountry")||"France"};
+ if(!coLettres(f.prenom))return dis("Ton prénom, s'il te plaît.","coPrenom");
+ if(!coLettres(f.nom))return dis("Ton nom de famille, s'il te plaît.","coNom");
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email))return dis("Une adresse e-mail valide (pour la confirmation).","coEmail");
+ if(f.addr.length<4)return dis("L'adresse de livraison.","coAddr");
+ if(f.zip.length<3)return dis("Le code postal.","coZip");
+ if(!coLettres(f.city))return dis("La ville.","coCity");
+ var cg=document.getElementById("coCgv");if(!cg||!cg.checked)return dis("Coche « J'accepte les conditions générales de vente ».");
+ if(err)err.textContent="";
+ f.name=f.prenom+" "+f.nom;f.cgv_ts=new Date().toISOString();
+ try{localStorage.setItem("cl_checkout",JSON.stringify(f))}catch(_){}
+ return true}
+function coPayer(ev,method){if(!coFicheOk()){if(ev&&ev.preventDefault)ev.preventDefault();return false}processOrder(method);return true}
+function coClient(){try{return JSON.parse(localStorage.getItem("cl_checkout")||"null")||{}}catch(_){return {}}}
 function showPayment(total){
 var m=document.createElement("div");m.id="payModal";
 m.style.cssText="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px";
 m.innerHTML='<div style="background:var(--card);border-radius:16px;padding:32px;max-width:440px;width:100%;border:1px solid var(--border);max-height:90vh;overflow-y:auto">'
 +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px"><h2 style="font-size:22px;font-weight:800">Paiement</h2><span onclick="closePayModal()" style="cursor:pointer;font-size:24px;color:var(--muted)">✕</span></div>'
 +'<div style="background:var(--bg);padding:16px;border-radius:12px;margin-bottom:20px;text-align:center"><span style="font-size:14px;color:var(--muted)">Total à payer</span><div style="font-size:32px;font-weight:800;color:var(--p);margin-top:4px">'+fmtP(total)+'</div></div>'
++'<div id="coFiche" style="background:var(--bg);padding:14px;border-radius:12px;margin-bottom:16px;border:1px solid var(--border)">'
++'<div style="font-weight:700;margin-bottom:10px">📋 Tes coordonnées <span style="font-weight:400;color:var(--muted);font-size:12px">(obligatoires pour commander)</span></div>'
++'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
++'<input id="coPrenom" autocomplete="given-name" placeholder="Prénom" style="'+CO_FLD+'"><input id="coNom" autocomplete="family-name" placeholder="Nom" style="'+CO_FLD+'"></div>'
++'<input id="coEmail" type="email" inputmode="email" autocomplete="email" placeholder="E-mail (confirmation de commande)" style="'+CO_FLD+';margin-top:8px">'
++'<input id="coTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Téléphone (facultatif, pour le livreur)" style="'+CO_FLD+';margin-top:8px">'
++'<input id="coAddr" autocomplete="street-address" placeholder="Adresse de livraison" style="'+CO_FLD+';margin-top:8px">'
++'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:8px"><input id="coZip" inputmode="numeric" autocomplete="postal-code" placeholder="Code postal" style="'+CO_FLD+'"><input id="coCity" autocomplete="address-level2" placeholder="Ville" style="'+CO_FLD+'"></div>'
++'<input id="coCountry" autocomplete="country-name" placeholder="Pays" value="France" style="'+CO_FLD+';margin-top:8px">'
++'<label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14px;min-height:44px;cursor:pointer"><input type="checkbox" id="coCgv" style="width:22px;height:22px;flex:0 0 auto;margin-top:1px"><span>J\'accepte les <a href="../legal/cgv.html" target="_blank" rel="noopener" style="color:var(--p)">conditions générales de vente</a>.</span></label>'
++'<div id="coErr" role="alert" aria-live="polite" style="color:#ef4444;font-size:13px;min-height:18px;margin-top:6px"></div>'
++'</div>'
 +'<div style="display:flex;flex-direction:column;gap:12px">'
-+'<a rel="noopener noreferrer" href="https://paypal.me/kdmc/'+total.toFixed(2)+'" onclick="processOrder(\'PayPal\')" target="_blank" style="display:flex;align-items:center;gap:12px;padding:16px;background:#0070ba22;border:1px solid #0070ba55;border-radius:12px;text-decoration:none;color:var(--text);font-weight:600"><span style="font-size:28px">🅿️</span><div><div>PayPal</div><div style="font-size:12px;color:var(--muted)">Paiement sécurisé instantané</div></div></a>'
-+'<a rel="noopener noreferrer" href="https://revolut.me/kdmc" onclick="processOrder(\'Revolut\')" target="_blank" style="display:flex;align-items:center;gap:12px;padding:16px;background:#0075eb22;border:1px solid #0075eb55;border-radius:12px;text-decoration:none;color:var(--text);font-weight:600"><span style="font-size:28px">🔄</span><div><div>Revolut @kdmc</div><div style="font-size:12px;color:var(--muted)">Envoi instantané sans frais</div></div></a>'
-+'<div onclick="showIBAN()" style="display:flex;align-items:center;gap:12px;padding:16px;background:#22c55e22;border:1px solid #22c55e55;border-radius:12px;cursor:pointer;font-weight:600"><span style="font-size:28px">🏦</span><div><div>Virement bancaire</div><div style="font-size:12px;color:var(--muted)">IBAN — délai 1-2 jours</div></div></div>'
++'<a rel="noopener noreferrer" href="https://paypal.me/kdmc/'+total.toFixed(2)+'" onclick="return coPayer(event,\'PayPal\')" target="_blank" style="display:flex;align-items:center;gap:12px;padding:16px;background:#0070ba22;border:1px solid #0070ba55;border-radius:12px;text-decoration:none;color:var(--text);font-weight:600"><span style="font-size:28px">🅿️</span><div><div>PayPal</div><div style="font-size:12px;color:var(--muted)">Paiement sécurisé instantané</div></div></a>'
++'<a rel="noopener noreferrer" href="https://revolut.me/kdmc" onclick="return coPayer(event,\'Revolut\')" target="_blank" style="display:flex;align-items:center;gap:12px;padding:16px;background:#0075eb22;border:1px solid #0075eb55;border-radius:12px;text-decoration:none;color:var(--text);font-weight:600"><span style="font-size:28px">🔄</span><div><div>Revolut @kdmc</div><div style="font-size:12px;color:var(--muted)">Envoi instantané sans frais</div></div></a>'
++'<div onclick="if(coFicheOk())showIBAN()" style="display:flex;align-items:center;gap:12px;padding:16px;background:#22c55e22;border:1px solid #22c55e55;border-radius:12px;cursor:pointer;font-weight:600"><span style="font-size:28px">🏦</span><div><div>Virement bancaire</div><div style="font-size:12px;color:var(--muted)">IBAN — délai 1-2 jours</div></div></div>'
 +'</div>'
 +'<div id="kdmc_ship_est" style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px"></div>'
 +'<p style="text-align:center;font-size:11px;color:var(--muted);margin-top:16px">🔒 Paiement sécurisé · Données protégées · KDMC Monaco</p>'
 +'</div>';
 document.body.appendChild(m);
+coPreremplir();
 /* v2026-07-08 (audit amélioration) : PORT RÉEL Printify estimé au paiement (fail-open, purement informatif) */
 try{if(window.kdmcCatalog&&window.kdmcCatalog.cartShippingEstimate){kdmcCatalog.cartShippingEstimate(S.cart,"FR",function(e2){var b=document.getElementById("kdmc_ship_est");if(b&&e2)b.innerHTML="🚚 Port estimé (Printify réel, France) : <b>"+e2.total.toFixed(2)+" €</b> pour "+e2.items+" article(s) imprimé(s)";});}}catch(_e){}notifyPayment(total);m.onclick=function(e){if(e.target===m)closePayModal()};
 m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");m.setAttribute("aria-label","Paiement");
@@ -625,8 +664,11 @@ trackPurchase(orderId,total,items);
 /* Email confirmation client + notif Kevin */
 if(typeof emailjs!=="undefined"){
 emailjs.init("nUso3vcsGadvrWTtC");
+var cli=coClient();
 emailjs.send("service_4s16z8l","template_fzva9uf",{
 order_id:orderId,store:STORE_NAME,total:fmtP(total),method:method,
+from_name:cli.name||"",from_email:cli.email||"",
+client:(cli.name||"")+"\n"+(cli.email||"")+(cli.phone?"\n"+cli.phone:"")+"\n"+(cli.addr||"")+"\n"+(cli.zip||"")+" "+(cli.city||"")+"\n"+(cli.country||"")+"\nCGV acceptées : "+(cli.cgv_ts||"—"),
 items:items.map(function(i){return i.name+" x"+i.qty+" = "+fmtP(i.price*i.qty)}).join("\n"),
 timestamp:new Date().toLocaleString("fr-FR")
 }).catch(function(){})}

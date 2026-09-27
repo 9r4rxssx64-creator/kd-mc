@@ -2695,6 +2695,15 @@
       "corps": "Sur iPhone, une app de l'écran d'accueil a ses cookies isolés : la session du domaine n'y entre que par #kdmc_sso= que kdmc-home/kdmc-portal.js ajoute SEULEMENT aux hôtes de SSO_PASS_CONSUMERS. Il y avait 2 listes (la 2e en dur), divergentes. Maintenant 1 seule liste + garde test:laissez-passer (lit la page d'entrée de chaque app routée : qui lit le pass doit le recevoir, qui le reçoit doit le lire). Nouvelle app qui lit le pass = l'ajouter à SSO_PASS_CONSUMERS, sinon test:ci rouge. CMCteams volontairement exclue (navigation par #, leçon #101) : la session cmcteams qui veut l'ajouter doit d'abord le prouver en vrai navigateur puis retirer l'exception PAS_ENCORE. Leçon #342.",
       "ts": "2026-09-26 22:09",
       "etat": "ouvert"
+    },
+    {
+      "id": "m137-javis-bee",
+      "de": "javis-bee",
+      "a": "toutes",
+      "sujet": "Le routeur verrouille désormais par DOSSIER (plus par adresse) : PoolPilot/Autorisations s'ouvraient sans code par kd-mc.com/CMCteams/tools/… (mesuré 27.09) — et /__sso/issue exige prénom+nom+conditions pour un NOUVEAU compte",
+      "corps": "1) Liste PORTES dans services/kdmc-router/worker.js : admin (tools/poolrobot, tools/approvals) et fiche obligatoire avant d'entrer (tools/cuisine, kdmc-home/worldmonitor|osint|ia|outils, tools/tor, dossiers) — choix de Kevin ; boutiques et pages de vente restent visibles. Si vous ajoutez une app privée ou un site d'information : ajoutez son DOSSIER à PORTES, pas un test sur host. Garde test:portes-dossier (53/0). 2) /__sso/issue refuse (400 renseignements_requis) une fiche NEUVE sans prénom ET nom (2 mots de 2 lettres) + cgu:true — si votre app déclare des comptes, envoyez cgu:true (après l'avoir fait accepter) et le nom complet. Apex Chat corrigé. 3) Tests Finances : l'autofocus 80 ms volait la saisie de fill('#g-pass2') sous charge — si vos tests remplissent un champ juste après l'affichage, vérifiez la valeur écrite. Leçons #344, #345.",
+      "ts": "2026-09-27 11:05",
+      "etat": "ouvert"
     }
   ]
 }

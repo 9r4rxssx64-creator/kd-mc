@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (midi) — Boutiques : fiche obligatoire À LA COMMANDE (choix de Kevin)
+
+- **Chez Lolo** : prénom, nom, e-mail, adresse complète et CGV exigés avant PayPal, Revolut et le RIB.
+  L'adresse part enfin avec la commande d'impression (Printify la recevait VIDE). `test:chez-lolo-commande` 15/0.
+- **Kit IA** : prénom, nom et case « conditions de vente » dans toutes les caisses, **revérifiés par le
+  serveur de vente**. `test:kit-fiche-commande` 9/0 · `test:vente-fiche` 10/0.
+- **Rotaplan** : page sans script (sécurité) → « Prénom et nom / Fonction » ajoutés à l'e-mail de démo.
+- **Signalé à Kevin** : Croupier n'a **aucun bouton pour payer**. La Détente et le portail boutiques
+  n'ont pas de commande. Leçon **#346**.
+
 ## 2026-09-27 (matin) — Domaine verrouillé par DOSSIER + renseignements obligatoires vérifiés par le serveur
 
 - **Faille mesurée et fermée** : PoolPilot et Autorisations s'ouvraient sans code par

@@ -148,6 +148,21 @@ function json(obj, status, origin) {
 function nettoieEmail(v) {
   return String(v || '').trim().toLowerCase().slice(0, 160);
 }
+/* FICHE ACHETEUR OBLIGATOIRE (Kevin 27.09 : « renseignements obligatoires partout pour les
+   nouveaux » ; boutiques = à la commande). Avant : un e-mail seul, et aucune acceptation des
+   conditions de vente (la case existante ne porte que sur la rétractation). Prénom ET nom (au
+   moins 2 lettres chacun) + CGV acceptées, vérifiés ICI : la page le demande, le serveur le
+   refuse sinon — une règle affichée à l'écran seulement ne tient que pour les gens honnêtes. */
+export const CGV_TEXTE = "J'accepte les conditions de vente (https://kit.kd-mc.com/cgv.html).";
+function nomPlausible(v) { return (String(v || '').match(/\p{L}/gu) || []).length >= 2 && String(v).trim().length <= 60; }
+function ficheAcheteur(b, etape) {
+  const prenom = String((b && b.prenom) || '').trim().replace(/\s+/g, ' ');
+  const nom = String((b && b.nom) || '').trim().replace(/\s+/g, ' ');
+  if (!nomPlausible(prenom)) return { erreur: { ok: false, error: 'prenom', detail: 'prénom requis', step: etape + '_prenom' } };
+  if (!nomPlausible(nom)) return { erreur: { ok: false, error: 'nom', detail: 'nom de famille requis', step: etape + '_nom' } };
+  if (!(b && b.cgv === true)) return { erreur: { ok: false, error: 'cgv', detail: 'acceptation des conditions de vente requise', step: etape + '_cgv' } };
+  return { acheteur: { prenom, nom }, cgv: { acceptees: true, texte: CGV_TEXTE, ts_iso: new Date().toISOString() } };
+}
 function emailPlausible(v) {
   return /^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$/.test(v);
 }
@@ -276,7 +291,8 @@ async function ecritRecu(env, { cmd, cap, produit, code }) {
     const recu = {
       numero, date_iso: new Date().toISOString(),
       vendeur: VENDEUR,
-      acheteur: { email: cmd.email || cap.email || null },
+      acheteur: { email: cmd.email || cap.email || null, prenom: (cmd.acheteur && cmd.acheteur.prenom) || null, nom: (cmd.acheteur && cmd.acheteur.nom) || null },
+      cgv: cmd.cgv || null,
       article: { produit: cmd.produit, libelle: produit.nom, prix: produit.prix, devise: produit.devise },
       total: { montant: cap.montant, devise: cap.devise },
       paiement: { moyen: 'PayPal', transaction: cap.txId, reference: cmd.ref },
@@ -860,6 +876,8 @@ export default {
          EXPRÈS à l'exécution immédiate + la reconnaissance de perdre le droit de
          rétractation. On le stocke HORODATÉ — c'est la preuve, pas la case. */
       if (!(b && b.consentement === true)) return json({ ok: false, error: 'consentement', detail: 'consentement à la livraison immédiate requis', step: 'cmd_consentement' }, 400, origin);
+      const fiche = ficheAcheteur(b, 'cmd');
+      if (fiche.erreur) return json(fiche.erreur, 400, origin);
       if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_SECRET) {
         return json({ ok: false, error: 'caisse_absente', detail: 'PayPal non configuré — la page garde les liens de paiement simples', step: 'cmd_config' }, 200, origin);
       }
@@ -868,7 +886,7 @@ export default {
       try { cmd = await ppCreeCommande(env, { produitId, produit, ref, email }); }
       catch (e) { return json({ ok: false, error: 'paypal', detail: String(e.message || e).slice(0, 200), step: 'cmd_paypal' }, 502, origin); }
       await env.VENTES.put('cmd:' + ref, JSON.stringify({
-        ref, produit: produitId, email, montant: produit.prix, devise: produit.devise,
+        ref, produit: produitId, email, acheteur: fiche.acheteur, cgv: fiche.cgv, montant: produit.prix, devise: produit.devise,
         order: cmd.id, etat: 'en_attente',
         consentement: { donne: true, texte: CONSENTEMENT, ts_iso: new Date().toISOString(), ip: req.headers.get('CF-Connecting-IP') || null },
         ts: Date.now(), ts_iso: new Date().toISOString(),
@@ -887,13 +905,15 @@ export default {
       const email = nettoieEmail((b && b.email) || '');
       if (!emailPlausible(email)) return json({ ok: false, error: 'email', detail: 'e-mail requis pour recevoir l\'accès', step: 'int_email' }, 400, origin);
       if (!(b && b.consentement === true)) return json({ ok: false, error: 'consentement', detail: 'consentement à la livraison immédiate requis', step: 'int_consentement' }, 400, origin);
+      const fiche = ficheAcheteur(b, 'int');
+      if (fiche.erreur) return json(fiche.erreur, 400, origin);
       const moyen = String((b && b.moyen) || 'paypal').toLowerCase();
       if (MOYENS.indexOf(moyen) < 0) return json({ ok: false, error: 'moyen_inconnu', detail: moyen, step: 'int_moyen' }, 400, origin);
       const banque = await lireBanque(env);
       if (!instructionsPaiement(moyen, produit, 'X', banque)) return json({ ok: false, error: 'moyen_indisponible', detail: moyen + ' pas encore ouvert — utilise PayPal ou Revolut', step: 'int_moyen_conf' }, 200, origin);
       const ref = nouvelleRef();
       await env.VENTES.put('cmd:' + ref, JSON.stringify({
-        ref, produit: produitId, email, montant: produit.prix, devise: produit.devise,
+        ref, produit: produitId, email, acheteur: fiche.acheteur, cgv: fiche.cgv, montant: produit.prix, devise: produit.devise,
         etat: 'intention', moyen,
         consentement: { donne: true, texte: CONSENTEMENT, ts_iso: new Date().toISOString(), ip: req.headers.get('CF-Connecting-IP') || null },
         ts: Date.now(), ts_iso: new Date().toISOString(),
@@ -1267,4 +1287,4 @@ export default {
 };
 
 /* Export pour les tests hors-ligne (le worker n'en dépend pas). */
-export const __test = { PRODUITS, WORKFLOWS, masqueEmail, nouveauCode, memeMontant, nettoieEmail, emailPlausible, ALPHABET, origineDuDomaine, lireContenu, envoieCode, EMAILJS };
+export const __test = { ficheAcheteur, nomPlausible, PRODUITS, WORKFLOWS, masqueEmail, nouveauCode, memeMontant, nettoieEmail, emailPlausible, ALPHABET, origineDuDomaine, lireContenu, envoieCode, EMAILJS };

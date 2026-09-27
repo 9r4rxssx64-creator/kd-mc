@@ -199,9 +199,37 @@
     avis.appendChild(b);
   }
 
-  function ouvrePanier(btn, produit, moyen, mail, avis) {
+  /* FICHE ACHETEUR (Kevin 27.09 : « renseignements obligatoires partout pour les nouveaux »,
+     boutiques = à la commande). Chaque caisse reçoit prénom + nom au-dessus de l'e-mail, et une
+     case « conditions de vente » à côté de la rétractation. Construit en DOM (jamais innerHTML) ;
+     le serveur de vente REVÉRIFIE les trois (sinon 400). */
+  function lettres(v) { return (String(v || '').match(/[A-Za-z\u00C0-\u024F]/g) || []).length >= 2; }
+  function champFiche(id, libelle, auto, attr) {
+    var lab = document.createElement('label'); lab.setAttribute('for', id); texte(lab, libelle);
+    var inp = document.createElement('input'); inp.id = id; inp.type = 'text'; inp.setAttribute('autocomplete', auto);
+    inp.setAttribute(attr, ''); return [lab, inp];
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-caisse-email]'), function (mail, i) {
+    var bloc = mail.closest ? mail.closest('.encart, .carte') : null;
+    if (!bloc || bloc.querySelector('[data-caisse-prenom]')) return;
+    var avant = (mail.previousElementSibling && mail.previousElementSibling.tagName === 'LABEL') ? mail.previousElementSibling : mail;
+    champFiche('prenom-' + i, 'Ton prénom', 'given-name', 'data-caisse-prenom').concat(champFiche('nom-' + i, 'Ton nom', 'family-name', 'data-caisse-nom'))
+      .forEach(function (el) { avant.parentNode.insertBefore(el, avant); });
+    var conso = bloc.querySelector('[data-caisse-consentement]');
+    var apres = conso && conso.closest ? conso.closest('label') : null;
+    var lab = document.createElement('label'); lab.className = 'consent';
+    var cb = document.createElement('input'); cb.type = 'checkbox'; cb.setAttribute('data-caisse-cgv', '');
+    var sp = document.createElement('span'); sp.appendChild(document.createTextNode('J\u2019accepte les '));
+    var a = document.createElement('a'); a.href = 'cgv.html'; a.target = '_blank'; a.rel = 'noopener'; texte(a, 'conditions de vente');
+    a.style.cssText = 'display:inline-block;min-height:44px;line-height:44px'; /* cible au doigt (44 px), règle iPhone */
+    sp.appendChild(a); sp.appendChild(document.createTextNode('.'));
+    lab.appendChild(cb); lab.appendChild(sp);
+    if (apres && apres.parentNode) apres.parentNode.insertBefore(lab, apres.nextSibling); else mail.parentNode.insertBefore(lab, mail.nextSibling);
+  });
+
+  function ouvrePanier(btn, produit, moyen, mail, avis, fiche) {
     return fetch(API + '/caisse/intention', { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ produit: produit, email: mail, moyen: moyen, consentement: true }) })
+      body: JSON.stringify({ produit: produit, email: mail, moyen: moyen, consentement: true, prenom: fiche.prenom, nom: fiche.nom, cgv: true }) })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.ok || !d.ref) return false;
@@ -225,7 +253,13 @@
     var avis = bloc && bloc.querySelector('[data-caisse-avis]');
     var dis = function (t) { if (avis) { texte(avis, t); avis.hidden = !t; } };
     if (!champ || !emailPlausible(champ.value)) { dis('Mets d\u2019abord ton adresse e-mail : c\u2019est l\u00e0 qu\u2019arrive ton acc\u00e8s.'); if (champ) champ.focus(); return; }
+    var cPre = bloc && bloc.querySelector('[data-caisse-prenom]'), cNom = bloc && bloc.querySelector('[data-caisse-nom]');
+    var cgv = bloc && bloc.querySelector('[data-caisse-cgv]');
+    if (!cPre || !lettres(cPre.value)) { dis('Ton pr\u00e9nom, s\u2019il te pla\u00eet.'); if (cPre) cPre.focus(); return; }
+    if (!cNom || !lettres(cNom.value)) { dis('Ton nom de famille, s\u2019il te pla\u00eet.'); if (cNom) cNom.focus(); return; }
     if (!coche || !coche.checked) { dis('Coche la case au-dessus pour qu\u2019on t\u2019ouvre l\u2019acc\u00e8s tout de suite.'); return; }
+    if (!cgv || !cgv.checked) { dis('Coche \u00ab J\u2019accepte les conditions de vente \u00bb.'); return; }
+    var fiche = { prenom: cPre.value.trim(), nom: cNom.value.trim() };
     var mail = champ.value.trim();
     var ancien = btn.textContent; btn.disabled = true; texte(btn, 'On pr\u00e9pare le paiement\u2026'); dis('');
     var fini = function () { btn.disabled = false; texte(btn, ancien); };
@@ -237,13 +271,13 @@
       if (secours) { window.open(secours, '_blank', 'noopener'); dis('On t\u2019a ouvert le paiement. Notre serveur n\u2019a pas r\u00e9pondu : apr\u00e8s avoir pay\u00e9, redescends sur \u00ab J\u2019ai pay\u00e9, je r\u00e9cup\u00e8re mon acc\u00e8s \u00bb.'); }
       else dis('La caisse ne r\u00e9pond pas. Reviens dans un instant, ou prends un autre moyen de paiement.');
     };
-    var viaPanier = function () { return ouvrePanier(btn, produit, moyen, mail, avis).then(function (ok) { if (!ok) replit(); fini(); }); };
+    var viaPanier = function () { return ouvrePanier(btn, produit, moyen, mail, avis, fiche).then(function (ok) { if (!ok) replit(); fini(); }); };
     /* La vraie caisse PayPal (capture automatique) n'existe que pour PayPal, et
        seulement si les cl\u00e9s sont pos\u00e9es un jour. Revolut et virement passent
        directement par le panier. */
     if (moyen !== 'paypal') { viaPanier(); return; }
     fetch(API + '/caisse/commande', { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ produit: produit, email: mail, consentement: true }) })
+      body: JSON.stringify({ produit: produit, email: mail, consentement: true, prenom: fiche.prenom, nom: fiche.nom, cgv: true }) })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d && d.ok && d.approbation) { location.href = d.approbation; return; }

@@ -40,7 +40,11 @@ const chk = (c, m) => (c ? ok(m) : ko(m));
    OSINT) : un en-tête inconnu déclenche un contrôle CORS que leurs workers refusent → 14
    surfaces « rouges » en une heure, alors que rien n'avait changé pour un vrai visiteur.
    Le routeur ne fiche que les pages (`estUnePage`) : marquer les documents suffit. */
-const marquerSonde = (cible, nom) => cible.route('**/*', (route, req) => {
+/* On n'intercepte que ce qui PEUT être une page (pas les .js/.css/images/sons/json) : intercepter
+   les centaines de fichiers d'une app coûte un aller-retour chacun — mesuré le 27.09 nuit, l'audit
+   Lingua a dépassé ses 15 min là où il en prenait 9. Le test `resourceType` reste en garde-fou. */
+const PAS_UNE_PAGE = /\.(js|mjs|css|map|json|webmanifest|png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf|pdf|txt|xml)($|\?)/i;
+const marquerSonde = (cible, nom) => cible.route((u) => !PAS_UNE_PAGE.test(u.pathname), (route, req) => {
   if (req.resourceType() !== 'document') return route.continue();
   return route.continue({ headers: Object.assign({}, req.headers(), { 'x-kdmc-sonde': nom }) });
 });

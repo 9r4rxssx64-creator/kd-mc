@@ -2896,7 +2896,14 @@
       "sujet": "🔴 KV du domaine : plafond d'écritures du jour ATTEINT (mesuré 27.09 ~20h50, run 36346907568) — toute écriture refusée jusqu'à 00:00 UTC",
       "corps": "Mesuré sur le vrai domaine par l'audit Lingua : POST /__lingua/save → 200 + {\"ok\":false,\"reason\":\"error\",\"detail\":\"KV put() limit exceeded for the day.\"}. À 19h58 le même appel passait. Le quota gratuit Cloudflare est de 1 000 écritures KV PAR JOUR POUR TOUT LE COMPTE (déjà écrit dans MEMO_RESUME, § quota d'inscriptions), et le même espace 8cfa33a2… est partagé par 5 workers : routeur, mail, monaco, outlook, uptime.\n\nCE QUI NE S'ÉCRIT PLUS jusqu'à la remise à zéro (00:00 UTC) : nouveaux comptes du domaine (cred:, acc:), fiches et dernière visite, sauvegardes Lingua (l'app garde sa mémoire locale, fail-open, rien n'est perdu — mais rien ne se synchronise), cache des voix, demandes Rotaplan, arbre, mail, Outlook. Tout ce qui LIT continue.\n\nQUI ÉCRIT, d'après le code (pas de compteur KV lisible d'ici, c'est déduit) :\n· enrich() réécrit la fiche de la personne CONNECTÉE à chaque page vue (acc.last_seen = now, sans cadence) → une vérif « connectée en tant que Kevin » = ~39 surfaces = ~39 écritures ;\n· ficheLaVisite : 2 écritures par visiteur anonyme, par app et par heure ;\n· Lingua : 1 écriture par action d'élève (debounce 1,5 s) ;\n· compte unique (#4094, ce soir) : rlc: à chaque tentative ;\n· aujourd'hui, 13 « Audit domaine », 5 « Vérif LIVE », 2+ « Vérif RÉELLE », 4 « Audit LINGUA » entre 18h et 20h UTC — la journée de vérifications a sa part.\n\nLes crons n'y sont pour rien : routeur crons = [], Tuya non lié, uptime crons = [].\n\nÀ NE PAS FAIRE ce soir : relancer des vérifs connectées « pour voir » — chacune consomme du quota qu'il n'y a plus. À DÉCIDER (Kevin, pas nous) : cadencer last_seen (1 écriture/heure/personne suffit), ne plus écrire depuis les sondes, ou passer le plan Workers payant (5 $/mois, 1 M d'écritures). Je n'ai touché à rien de tout ça : je signale.",
       "ts": "2026-09-27 20:13",
-      "etat": "ouvert"
+      "etat": "ouvert",
+      "suivi": [
+        {
+          "date": "2026-09-27",
+          "par": "lingua-code",
+          "action": "CORRECTION de ma propre cause probable : enrich() a une cadence — au plus 1 écriture toutes les 2 minutes par personne connectée (worker.js, enrich l.144 : if (!structural && now - prevSeen < 120e3) return). Ce n'est donc PAS « une écriture à chaque page vue » : une vérif connectée de 10 min = ~5 écritures de fiche, pas 39. Les autres postes restent tels quels (2 écritures / visiteur anonyme / app / heure ; 1 / action d'élève Lingua ; rlc: par tentative ; 24 vérifs réelles 18h-20h UTC). Le fait central ne change pas : plafond atteint, aucune écriture jusqu'à 00:00 UTC."
+        }
+      ]
     }
   ]
 }

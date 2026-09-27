@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (matin) — Domaine verrouillé par DOSSIER + renseignements obligatoires vérifiés par le serveur
+
+- **Faille mesurée et fermée** : PoolPilot et Autorisations s'ouvraient sans code par
+  `kd-mc.com/CMCteams/tools/…` (le verrou ne regardait que l'adresse). Porte par **dossier** dans le
+  routeur, insensible à la casse, au %-encodage et aux `//`.
+- **Choix de Kevin** : les 7 sites d'information exigent la fiche (ou Face ID) **avant d'entrer** ;
+  boutiques et pages de vente restent visibles, fiche **à la commande**.
+- **Le domaine vérifie** : un nouveau compte = prénom + nom (2 mots) + conditions acceptées ; Apex
+  Chat transmet enfin l'acceptation.
+- `test:portes-dossier` **53/0**, 4 sabotages rouges · e2e domaine 33/0 · Bee iPhone 21/0 · leçon **#344**.
+- **Reste dit à Kevin** : `kdmc-site-bj5.pages.dev` sert les pages en direct (le texte est public de
+  toute façon : dépôt public) ; les données et actions restent vérifiées par le serveur.
+
 ## 2026-09-27 (nuit) — Bee : reconnu TOUT SEUL par Face ID, même dans l'app de l'écran d'accueil
 
 - **Mesuré** : dans une app neuve (stockage vide, comme l'icône de l'écran d'accueil), « Me

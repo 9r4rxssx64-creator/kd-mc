@@ -1233,8 +1233,11 @@ K.login = async function(user, token){
     if(location.hostname.indexOf('kd-mc.com') >= 0){
       var _kdmcUid = user.id || user.uid || ('apex-chat:' + (user.phone || user.pseudo || ''));
       var _kdmcName = (user.real_name || ((user.first_name || user.pseudo || 'Utilisateur') + ' ' + (user.last_name || ''))).trim();
+      /* Le domaine exige, pour un NOUVEAU compte, prénom + nom + conditions acceptées (27.09) :
+         les conditions sont cochées dans CETTE app (#auth-cgu, obligatoire) → on le transmet. */
+      var _kdmcCgu = false; try { _kdmcCgu = !!localStorage.getItem('apex_chat_cgu_v1'); } catch(_){}
       fetch('/__sso/issue', { method:'POST', credentials:'include', headers:{ 'content-type':'application/json' },
-        body: JSON.stringify({ uid: String(_kdmcUid), name: _kdmcName, app: 'apex-chat' }) }).catch(function(){});
+        body: JSON.stringify({ uid: String(_kdmcUid), name: _kdmcName, cgu: _kdmcCgu, app: 'apex-chat' }) }).catch(function(){});
     }
   }catch(_){}
   // Préchauffe les credentials TURN en arrière-plan → le 1er appel se connecte vite (v1.1.229)

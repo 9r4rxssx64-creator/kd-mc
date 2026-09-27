@@ -81,7 +81,17 @@ const gotoTab = async (label) => {
 
 try {
   await page.goto(URL, { waitUntil: 'load' });
-  await page.fill('#g-pass', '123456'); await page.fill('#g-pass2', '123456'); await page.click('#g-go');
+  /* La page met le curseur dans #g-pass 80 ms APRÈS s'être affichée. Sous charge (chaîne test:ci),
+     ce minuteur tombait PENDANT la saisie de #g-pass2 : le texte partait dans #g-pass
+     (« 123456123456 ») → « Les deux codes ne correspondent pas », coffre jamais ouvert (mesuré le
+     27.09 : 1 fois sur 3 après le test précédent). On attend que la page ait posé son curseur,
+     puis on VÉRIFIE ce qui est réellement écrit avant de valider. */
+  await page.waitForFunction(() => (document.activeElement && document.activeElement.id === 'g-pass') || !!document.getElementById('g-face'), null, { timeout: 2000 }).catch(() => {});
+  for (let k = 0; k < 3; k++) {
+    await page.fill('#g-pass', '123456'); await page.fill('#g-pass2', '123456');
+    if (await page.evaluate(() => document.getElementById('g-pass').value === '123456' && document.getElementById('g-pass2').value === '123456')) break;
+  }
+  await page.click('#g-go');
   await page.waitForSelector('#tabs', { timeout: 5000 });
   // Activer l'IA (son handler pose aiPinHash → #ai-off apparaît)
   await page.waitForSelector('#ai-pin', { timeout: 3000 });

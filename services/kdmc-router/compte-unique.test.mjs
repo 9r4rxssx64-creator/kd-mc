@@ -141,10 +141,13 @@ test('deux personnes DIFFÉRENTES ne sont JAMAIS fusionnées', async () => {
 
 test('un prénom seul auto-déclaré ne se range PAS dans le dossier admin', async () => {
   const { store, env } = mkEnv();
-  await issue(env, 'inconnu_1', 'Kevin');       /* prénom seul */
+  const r1 = await issue(env, 'inconnu_1', 'Kevin');       /* prénom seul */
   await issue(env, 'inconnu_2', 'Kevin Martin'); /* homonyme */
   assert.equal(acc(store, 'kdmc_admin'), null, 'aucun dossier admin créé par un nom incomplet');
-  assert.ok(acc(store, 'inconnu_1'), 'la fiche reste séparée');
+  /* Depuis le 27.09 (Kevin : « renseignements obligatoires partout pour les nouveaux »), un
+     prénom seul ne crée plus de fiche du tout — encore plus strict qu'une fiche séparée. */
+  assert.equal(r1.status, 400, 'un prénom seul est refusé à l\'inscription');
+  assert.equal(acc(store, 'inconnu_1'), null, 'aucune fiche créée pour un prénom seul');
   assert.ok(acc(store, 'inconnu_2'), 'un homonyme garde sa propre fiche');
 });
 
@@ -194,6 +197,12 @@ test('Ronan Desarzens garde SON compte (même nom de famille ≠ même personne)
 
 test('« Desarzens K » (nom + initiale) reste bien reconnu comme l\'admin', async () => {
   const { store, env } = mkEnv();
-  await issue(env, 'u1', 'DESARZENS K');
+  /* Le dossier de Kevin existe (c'est le cas en vrai) : « DESARZENS K » n'est donc pas une
+     inscription NOUVELLE — il doit être rangé chez l'admin, pas refusé ni dédoublé. (Seule une
+     inscription neuve exige prénom + nom complets, depuis le 27.09.) */
+  await issue(env, 'kdmc_admin', 'Kevin Desarzens');
+  const r = await issue(env, 'u1', 'DESARZENS K');
+  assert.equal(r.status, 200, 'accepté : ce n\'est pas un nouveau compte');
   assert.ok(acc(store, 'kdmc_admin'), 'rangé dans le dossier admin');
+  assert.equal(acc(store, 'u1'), null, 'aucun dossier séparé « u1 » créé');
 });

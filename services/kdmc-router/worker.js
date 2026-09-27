@@ -153,6 +153,13 @@ const APPS = {
   'croupier.kd-mc.com': 'croupier',
   'javis.kd-mc.com': 'javis',
 };
+/* Prénom ET nom : au moins deux mots d'au moins deux lettres (accents, tirets, apostrophes
+   admis : « Anne-Sophie SAINT-POLIT », « D'Amico Luca »). Et les conditions acceptées. */
+function renseignementsComplets(name, cgu) {
+  if (cgu !== true) return false;
+  const mots = String(name || '').trim().split(/\s+/).filter((m) => /\p{L}.*\p{L}/u.test(m));
+  return mots.length >= 2;
+}
 function appDe(host) { return APPS[String(host || '').toLowerCase().replace(/:.*$/, '')] || ''; }
 
 /* Décide si CETTE fiche a le droit d'exister dans CETTE app. Fonction PURE :
@@ -410,23 +417,19 @@ export default {
       else journal.catch(() => { /* jamais bloquant */ });
     }
 
-    // beatbot.kd-mc.com = ESPACE PRIVÉ ADMIN (Kevin) : session admin (Face ID/PIN) requise
-    // pour VOIR l'app PoolPilot. Fail-open si le PIN admin n'est pas déployé (anti-lockout
-    // au rollout — leçons #99/#100 ; le secret étant déployé, le gate est effectif).
-    if (host === 'beatbot.kd-mc.com' && env && env.KDMC_ADMIN_PIN_SHA256) {
-      const meB = await adminSession(request, env);
-      if (!meB) return beatbotLock();
-    }
-
-    // autorisations.kd-mc.com = COFFRE D'AUTORISATIONS — RÉSERVÉ ADMIN (Kevin).
-    // Session admin (Face ID/code, même grant que /__admin) requise pour VOIR l'app.
-    // Fail-open si le PIN admin n'est pas déployé (anti-lockout au rollout — leçons #99/#100).
-    if (host === 'autorisations.kd-mc.com' && env && env.KDMC_ADMIN_PIN_SHA256) {
-      const meA = await adminSession(request, env);
-      if (!meA) return approvalsLock();
-    }
-
     let p = url.pathname;
+
+    /* PORTES PAR DOSSIER (Kevin 27.09 : « le domaine comme chaque app doit être bien sécurisé.
+       Personne ne peut entrer ou modifier. Renseignements obligatoires partout pour les nouveaux »).
+       Avant, PoolPilot et le coffre d'autorisations n'étaient verrouillés que sur LEUR adresse :
+       mesuré le 27.09, kd-mc.com/CMCteams/tools/poolrobot/ servait l'app SANS code (toute adresse
+       du domaine peut demander un dossier par /CMCteams/…). La porte se décide donc sur le
+       DOSSIER réellement demandé, quel que soit le chemin pris. Voir `porteFermee`. */
+    {
+      const cheminCMC = p.startsWith(PAGES_PREFIX_DEFAUT + '/') ? p : (p === '/' || p === '' ? base + '/' : base + p);
+      const ferme = await porteFermee(request, url, env, cheminCMC);
+      if (ferme) return ferme;
+    }
 
     // Livre de cuisine « A Cüjina de Mùnegu » aussi accessible en CHEMIN du domaine
     // principal (Kevin 2026-08-13, « je dois pouvoir l'ouvrir même en 4G »). kd-mc.com
@@ -446,6 +449,7 @@ export default {
            « 200 + page d'accueil » quand il ne trouve rien : kd-mc.com/cujina/ servait
            l'app CMCteams (v9.914) au lieu du livre de cuisine (run 35458650075). */
         let chemin2 = '/CMCteams/tools/cuisine' + rest;
+        { const ferme2 = await porteFermee(request, url, env, chemin2); if (ferme2) return ferme2; }
         if (PREFIX_SORTIE !== PAGES_PREFIX_DEFAUT && chemin2.startsWith(PAGES_PREFIX_DEFAUT + '/')) {
           chemin2 = PREFIX_SORTIE + chemin2.slice(PAGES_PREFIX_DEFAUT.length);
         }
@@ -957,6 +961,85 @@ async function voixGratuite(env, texte, cleCache) {
  * moins de 2 minutes ne réécrit rien).
  * NE CASSE RIEN : tout est dans un try/catch. Une panne du stockage fait perdre
  * une ligne de journal, jamais une page. */
+/* ===== PORTES PAR DOSSIER ================================================================
+   « admin » : ton code admin / Face ID (même preuve que /__admin) — PoolPilot, Autorisations.
+   « fiche » : une personne CONNUE du domaine (fiche remplie : prénom + nom + code + conditions,
+     ou Face ID), non révoquée, et ouverte sur cette app (périmètre). Kevin 27.09 : sites
+     d'information = fiche AVANT d'entrer ; boutiques et pages de vente = fiche à la COMMANDE
+     (elles restent donc hors de cette liste).
+   Le dossier est comparé DÉCODÉ, en minuscules, barres doublées fusionnées : « pool%72obot »,
+   « POOLROBOT » ou « //tools » ne passent pas à côté (l'hébergeur les servirait quand même). */
+const PORTES = [
+  { dossier: '/CMCteams/tools/poolrobot', niveau: 'admin', verrou: () => beatbotLock() },
+  { dossier: '/CMCteams/tools/approvals', niveau: 'admin', verrou: () => approvalsLock() },
+  { dossier: '/CMCteams/tools/cuisine', niveau: 'fiche', app: 'cuisine.kd-mc.com', nom: 'A Cüjina de Mùnegu' },
+  { dossier: '/CMCteams/kdmc-home/worldmonitor', niveau: 'fiche', app: 'worldmonitor.kd-mc.com', nom: 'World Monitor' },
+  { dossier: '/CMCteams/kdmc-home/osint', niveau: 'fiche', app: 'osint.kd-mc.com', nom: 'OSINT' },
+  { dossier: '/CMCteams/kdmc-home/ia', niveau: 'fiche', app: 'ia.kd-mc.com', nom: 'Outils IA' },
+  { dossier: '/CMCteams/kdmc-home/outils', niveau: 'fiche', app: 'outils.kd-mc.com', nom: 'Mes outils gratuits' },
+  { dossier: '/CMCteams/tools/tor', niveau: 'fiche', app: 'tor.kd-mc.com', nom: 'Tor en clair' },
+  { dossier: '/CMCteams/dossiers', niveau: 'fiche', app: 'dossiers.kd-mc.com', nom: 'Dossiers publics' },
+];
+function cheminNormal(chemin) {
+  let c = String(chemin || '');
+  for (let i = 0; i < 3; i++) { try { const d = decodeURIComponent(c); if (d === c) break; c = d; } catch { break; } }
+  return c.replace(/\\/g, '/').replace(/\/{2,}/g, '/').toLowerCase();
+}
+function porteDe(cheminCMC) {
+  const c = cheminNormal(cheminCMC);
+  for (const g of PORTES) {
+    const d = g.dossier.toLowerCase();
+    if (c === d || c.startsWith(d + '/')) return g;
+  }
+  return null;
+}
+/* Fichiers qu'un iPhone demande SANS cookie pour installer l'app (nom, icône, mise à jour) :
+   aucun contenu, ils restent ouverts — sinon l'app installée n'aurait ni nom ni icône. */
+function libreSansFiche(cheminCMC) {
+  return /\/(manifest\.json|[^/]*\.webmanifest|sw\.js|robots\.txt|(apple-touch-icon|favicon|icon)[^/]*\.(png|svg|ico))$/.test(cheminNormal(cheminCMC));
+}
+async function porteFermee(request, url, env, cheminCMC) {
+  const g = porteDe(cheminCMC);
+  if (!g) return null;
+  if (g.niveau === 'admin') {
+    /* Fail-open si le code admin n'est pas déployé (anti-verrouillage au déploiement,
+       leçons #99/#100) — comme les deux verrous d'avant, qui ne regardaient que l'adresse. */
+    if (!(env && env.KDMC_ADMIN_PIN_SHA256)) return null;
+    if (await adminSession(request, env)) return null;
+    return g.verrou();
+  }
+  /* niveau « fiche » */
+  const secret = env && env.KDMC_SSO_SECRET;
+  if (!secret) return null;                                    /* domaine sans SSO (test) : ouvert */
+  if (libreSansFiche(cheminCMC)) return null;
+  const s = await ssoVerify(secret, ssoToken(request));
+  if (s && s.uid) {
+    const acc = await accGet(env, s.uid);
+    if (!revoked(acc, s)) {
+      const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
+      const per = perimetre(acc, appDe(g.app));
+      if (per.ok || estAdmin) return null;                    /* connu et ouvert ici : entre */
+      return ficheRefusee(g, per.raison);                     /* connu mais pas ouvert ici : pas de boucle */
+    }
+  }
+  /* Inconnu (ou session révoquée) : fiche obligatoire, sur le portail, puis retour ici. */
+  if (estUnePage(request)) {
+    return new Response(null, { status: 302, headers: { location: 'https://kd-mc.com/?return=' + encodeURIComponent(url.href),
+      'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
+  }
+  return new Response('Connexion au domaine requise.', { status: 401,
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
+}
+function ficheRefusee(g, raison) {
+  const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const msg = raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.'
+    : 'Ton compte n\'est pas encore ouvert sur cette application. Demande à l\'administrateur de l\'ouvrir.';
+  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>' + esc(g.nom) + ' — accès</title>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
+    + '.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
+    + '<body><div class="c"><div style="font-size:44px">🔒</div><h1>' + esc(g.nom) + '</h1><p>' + esc(msg) + '</p><a href="https://kd-mc.com/">Retour à mon espace</a></div></body></html>';
+  return new Response(html, { status: 403, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'x-kdmc-porte': 'perimetre' } });
+}
 function estUnePage(request) {
   if (request.method !== 'GET') return false;
   const dest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
@@ -2003,6 +2086,14 @@ async function handleSso(request, url, env) {
             ? 'Ton accès à cette application a été fermé par l\'administrateur.'
             : 'Ton compte n\'est pas ouvert sur cette application.',
         });
+      }
+      /* RENSEIGNEMENTS OBLIGATOIRES pour un NOUVEAU (Kevin 27.09 : « renseignements obligatoires
+         partout pour les nouveaux »). Le portail les exigeait déjà à l'écran, mais le DOMAINE ne
+         vérifiait rien : un script créait une fiche avec un seul mot et sans accepter les
+         conditions. Prénom ET nom (règle absolue : jamais un seul mot) + conditions acceptées.
+         Quelqu'un de déjà inscrit n'est jamais bloqué par ce contrôle. */
+      if (!accCanon && !renseignementsComplets(name, cgu)) {
+        return J({ ok: false, reason: 'renseignements_requis', message: 'Pour créer ton compte : prénom ET nom, et accepter les conditions.' }, undefined, 400);
       }
       /* QUOTA — seulement pour une fiche NEUVE. Quelqu'un de déjà inscrit passe
          toujours, autant de fois qu'il veut : `accCanon` existe, on ne compte rien. */

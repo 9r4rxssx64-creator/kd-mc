@@ -1,5 +1,24 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — Première écriture automatique dans l'arbre : le filet a REFUSÉ, et il avait raison (v3.32)
+
+Premier passage de l'outil sur le vrai arbre partagé : **arrêt net**, rien écrit —
+« ❌ REFUSÉ : `seed_jeanmarie_bauwmann` : sources 1→0, notes réécrites ».
+
+Deux causes, toutes deux dans mon propre code : `patch-liens` mettait `sources: []` dans
+chaque fiche « à créer » — or cette personne **existait déjà** (retrouvée par son nom, sous
+un identifiant à l'ancienne orthographe) — et `fusionnerFiche` ne sautait que les valeurs
+`null`/`""` : une **liste vide** passait et remplaçait ses sources. Et les `notes` d'une
+création réécrivaient les siennes.
+
+**v3.32** : une liste vide face à une liste remplie = « je ne sais pas », on garde.
+**patch-liens** : plus aucune liste vide, et les notes d'une création partent en `notesAjout`.
+**Rejoué sur le cas exact** : sources `["acte 1964"]` gardées, notes d'origine en tête + la
+ligne du document, **17 fiches** à écrire. Garde comportementale ajoutée (vraie fonction de
+la page exécutée). Leçon **#271**.
+
+---
+
 ## 2026-09-27 — La photo du père de Kevin : la cause trouvée (arbre v3.31) + l'arbre se corrige sans l'iPhone
 
 **Kevin** : « Il manque la photo de mon père que j'avais mis. » **Mesuré** sur la vraie copie

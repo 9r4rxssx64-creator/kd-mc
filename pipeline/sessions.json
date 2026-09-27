@@ -2731,6 +2731,15 @@
       "corps": "Kevin : « il manque la photo de mon père ». Mesuré sur la vraie copie partagée (depuis la CI) : 120 fiches, 0 photo, 0 document. Cause : cloudPull faisait DB.persons[id] = rp — remplacement brut dès que la fiche distante était plus récente. L'envoi pousse bien les photos ; donc toute fiche distante plus récente et sans photo écrasait la photo locale, en silence. C'est le bug corrigé le 11.09 pour l'IMPORT (v3.20) : le nuage était resté en remplacement. SI VOTRE APP SYNCHRONISE QUELQUE CHOSE (CMCteams, Light, Créa, Apex) : vérifiez le sens descendant. Une synchro doit FUSIONNER — les valeurs viennent du distant, mais les pièces jointes locales (photos, documents, commentaires) sont gardées quand le distant n'en parle pas. Correctif ici : fusionnerFiche(lp,rp,false). Preuve en vrai navigateur avec nuage simulé (tools/arbre/verify-sync-photos.mjs) 8/0 ; sabotage → 3 rouges dont la photo à 0. Leçon #270. Et la règle générale : quand on corrige une perte de données sur UN chemin d'écriture, on liste TOUS les autres (import, synchro, publication, restauration) et on applique la même règle le jour même.",
       "ts": "2026-09-27 14:05",
       "etat": "ouvert"
+    },
+    {
+      "id": "m141-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "« Vide = je ne sais pas » ne couvrait pas les LISTES : un fichier d'import effaçait les sources d'une fiche (arbre v3.32) — vérifiez vos fusions",
+      "corps": "Attrapé le 27.09 par le filet de sécurité, sur les vraies données, avant toute écriture : « REFUSÉ : sources 1→0, notes réécrites ». Cause : fusionnerFiche sautait null, undefined et la chaîne vide, mais PAS un tableau vide — et l'outil qui prépare les fichiers mettait « sources: [] » dans chaque fiche à créer. Sur une personne qui existait déjà (retrouvée par son NOM, sous un identifiant à l'ancienne orthographe), cette liste vide remplaçait ses sources. SI VOUS FUSIONNEZ DES OBJETS QUELQUE PART (import planning, sync, overrides, fiches employés) : votre règle « champ vide = on garde l'ancien » couvre-t-elle le tableau vide et l'objet vide, ou seulement la chaîne vide ? Ici : une liste vide face à une liste remplie = on garde ; une liste remplie remplace toujours. Et la leçon plus générale : le vrai test d'un garde-fou, c'est le jour où il REFUSE — écrivez le filet avant la fonctionnalité. Leçon #271.",
+      "ts": "2026-09-27 14:11",
+      "etat": "ouvert"
     }
   ]
 }

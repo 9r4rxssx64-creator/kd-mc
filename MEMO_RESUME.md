@@ -1,5 +1,28 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — Arbre v3.35 : écrire un nom qui n'est pas encore dans l'arbre
+
+Kevin : « possibilité d'ajouter un nouveau nom prénom etc pour chaque fiche, pas seulement
+choisir par rapport au présent dans les arbres… va plus loin ».
+
+**Le problème** : « Père » et « Mère » étaient des menus **fermés**. Pour rattacher un
+grand-père inconnu de l'arbre : fermer la fiche, créer la personne, revenir, la choisir.
+Le **conjoint** avait déjà un champ libre — la bonne idée existait, elle n'avait jamais été
+portée aux deux autres liens.
+
+**v3.35** : chaque menu de lien porte **« ➕ Nouvelle personne… »** → deux champs
+**Prénom + Nom** s'ouvrent dessous, la fiche est créée, reliée, poussée au nuage, et l'app
+dit qui elle a ajouté. Avec : le **sexe déduit du rôle**, le **nom de famille pré-rempli**
+pour le père, et surtout **l'anti-doublon** — un prénom+nom déjà présent **relie l'existant**
+au lieu d'en fabriquer un second (un doublon finit supprimé par le ménage : travail perdu).
+En plus, la liste de 126 noms est **regroupée** : « Même nom de famille » d'abord.
+
+**Preuve en vrai navigateur** (vrai formulaire, vrai bouton) : **12/0** ·
+**sabotage** (option retirée) → **7 rouges**. Garde `test:arbre-nouvelle` câblée dans
+`test:ci`. Leçon **#274**.
+
+---
+
 ## 2026-09-27 (soir) — « Fais un point des bots » puis « Go tout » : le rouge était surtout du bruit, et la cuisine n'est pas cassée
 
 **Mesuré sur 48 h** : dépôt public **137 échecs / 300**, dont **119** venaient de 4 robots qui ne peuvent JAMAIS réussir

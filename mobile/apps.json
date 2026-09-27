@@ -18,7 +18,8 @@
         "tools/shared/convention-sbm.js",
         "tools/shared/seances-seed.js",
         "tools/shared/seances-ui.js",
-        "tools/shared/planning-seed-emps.js"
+        "tools/shared/planning-seed-emps.js",
+        "tools/shared/fiche-auto.js"
       ],
       "icon": "icon.svg",
       "site": "https://cmcteams.kd-mc.com",

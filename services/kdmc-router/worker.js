@@ -679,6 +679,48 @@ function ssoCookie(request, name) {
    sous-domaine), une app native (capacitor:// / ionic://), ou AUCUN en-tête Origin (outil,
    app installée qui ne l'envoie pas : pas de navigateur tiers en jeu). « null » (iframe
    sandbox, fichier local) et tout autre site → refusé. Strix vuln-0001, 11/09/2026. */
+/* Fiche de renseignements : on ne garde que des champs CONNUS, bornés, au bon format
+   (jamais de HTML, jamais de champ inventé). Un champ vide ou invalide est ignoré, pas
+   effacé : une erreur de frappe ne détruit pas ce qui était juste. Fonction PURE (testée). */
+const FICHE_TEXTES = [['poste', 60], ['adresse', 160], ['usm', 30]];
+function ficheTxt(v, n) {
+  return String(v == null ? '' : v).replace(/[<>\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+}
+/* E-mail : un seul « @ », pas d'espace, un point dans le domaine (ni au début ni à la fin).
+   Contrôle par indices, sans expression régulière à retour arrière. */
+function ficheMailOk(m) {
+  if (!m || m.length > 120 || /\s/.test(m)) return false;
+  const i = m.indexOf('@');
+  if (i < 1 || i !== m.lastIndexOf('@')) return false;
+  const dom = m.slice(i + 1), p = dom.lastIndexOf('.');
+  return p > 0 && p < dom.length - 1;
+}
+function ficheAnnee(v, min, max) {
+  const y = Number.parseInt(v, 10);
+  return y >= min && y <= max ? y : null;
+}
+function ficheNaissanceOk(s, an) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const y = Number(s.slice(0, 4));
+  return y >= 1930 && y <= an - 16;
+}
+function ficheNettoyee(b) {
+  const src = b || {}, o = {}, an = new Date().getFullYear();
+  const mat = ficheTxt(src.matricule, 12).toUpperCase();
+  if (/^U\d{3,6}$/.test(mat)) o.matricule = mat;
+  for (const k of ['anneeSbm', 'anneeJeux']) {
+    const y = ficheAnnee(ficheTxt(src[k], 4), 1950, an);
+    if (y !== null) o[k] = y;
+  }
+  const tel = ficheTxt(src.telephone, 24);
+  if (/^\+?[0-9 .()-]{6,24}$/.test(tel)) o.telephone = tel;
+  const mail = ficheTxt(src.email, 120).toLowerCase();
+  if (ficheMailOk(mail)) o.email = mail;
+  const nais = ficheTxt(src.dateNaissance, 10);
+  if (ficheNaissanceOk(nais, an)) o.dateNaissance = nais;
+  for (const [k, n] of FICHE_TEXTES) { const v = ficheTxt(src[k], n); if (v) o[k] = v; }
+  return o;
+}
 function ssoOriginOk(origin, selfHost) {
   if (!origin) return true;
   const o = String(origin).trim().toLowerCase();
@@ -1993,6 +2035,25 @@ async function handleSso(request, url, env) {
   /* ===== Self-service utilisateur : chacun ne voit/gère QUE SES données =====
      (uid pris dans SON token vérifié — jamais un paramètre → aucun accès croisé). */
 
+  /* Ma fiche (Kevin 2026-09-26 : « à la première connexion dans light ou CMCteams, demander
+     tous les renseignements, SBM, etc. auto »). La light est ouverte au personnel sans compte
+     CMCteams : ses renseignements ne vont PAS dans Firebase (lisible par toute session
+     anonyme) mais ICI, dans le dossier de la personne (KV ACCOUNTS), que seul l'admin lit
+     (/__admin/accounts). Chacun ne lit et n'écrit QUE sa fiche : uid pris dans SON token. */
+  if (path === '/__sso/fiche' && (request.method === 'GET' || request.method === 'POST')) {
+    const s = await ssoVerify(secret, ssoToken(request));
+    if (!s) return J({ ok: false, reason: 'session requise' });
+    const acc = await accGet(env, s.uid);
+    if (revoked(acc, s)) return J({ ok: false, reason: 'session_revoquee' });
+    if (request.method === 'GET') return J({ ok: true, fiche: acc?.fiche || {} });
+    if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
+    if (!acc) return J({ ok: false, reason: 'compte introuvable' });
+    let b = {}; try { b = await request.json(); } catch { /* ignore */ }
+    const f = ficheNettoyee(b);
+    acc.fiche = { ...acc.fiche, ...f, maj: Date.now(), app: appDe(request.headers.get('host')) };
+    await accPut(env, acc, true);
+    return J({ ok: true, champs: Object.keys(f) });
+  }
   /* Mes appareils (passkeys Face ID) : liste. Session requise. */
   if (path === '/__sso/passkeys' && request.method === 'GET') {
     const s = await ssoVerify(secret, ssoToken(request));
@@ -3347,4 +3408,4 @@ async function tuyaScheduleTick(env) {
 }
 
 /* Export nommé pour les tests régression (Cloudflare utilise seulement le default export). */
-export { APPS, ROUTES, appDe, perimetre, ssoSign, enrich, adminGrant, quotaInscription, INSCR_PAR_IP_JOUR, INSCR_TOTAL_JOUR, beatbotTargetOk, tuyaStringToSign, tuyaSign, tuyaSha256Hex, tuyaHmacHex, tuyaSurfaceCheck, tuyaScheduleTick, tuyaStartClean, tuyaHistoryTick };
+export { APPS, ROUTES, appDe, perimetre, ssoSign, ficheNettoyee, enrich, adminGrant, quotaInscription, INSCR_PAR_IP_JOUR, INSCR_TOTAL_JOUR, beatbotTargetOk, tuyaStringToSign, tuyaSign, tuyaSha256Hex, tuyaHmacHex, tuyaSurfaceCheck, tuyaScheduleTick, tuyaStartClean, tuyaHistoryTick };

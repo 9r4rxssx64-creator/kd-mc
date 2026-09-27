@@ -26,6 +26,42 @@
   `test:laissez-passer` **43/0** (4 sabotages rouges). `test:javis-bee-reelle` **45/0** (27 avant :
   ffmpeg déclaré). Leçon **#342**.
 
+## 2026-09-27 (nuit) — Fiche SBM demandée d'office à la 1re connexion (CMCteams v9.921 · light v1.57)
+
+- **Kevin** : « À la première connexion dans light ou CMCteams, demander tous les renseignements,
+  SBM, etc. auto. » Avant : CMCteams demandait à l'inscription nom, prénom, matricule, années SBM/jeux
+  (facultatives), e-mail, mot de passe ; le reste (téléphone, poste, naissance, adresse, n° USM)
+  n'était que dans « Mon profil », qu'on devait aller chercher. La light ne demandait que prénom + nom
+  + CGU.
+- **Light v1.57** : après le portillon, « Ta fiche SBM » s'ouvre seule (matricule *, entrée SBM *,
+  entrée aux jeux *, téléphone *, poste, e-mail, naissance, adresse, USM). Aussi à l'ouverture pour un
+  inscrit d'avant sans fiche. « Plus tard » ne bloque jamais les départs (redemandée à l'ouverture
+  suivante). Copie sur l'appareil + envoi au **dossier du domaine** (`/__sso/fiche`), PAS Firebase.
+- **CMCteams v9.921** : `tools/shared/fiche-auto.js` (index.html à 6 octets du plafond : juste une
+  balise). Employé connecté sans l'essentiel → « Ma fiche SBM » s'ouvre seule, pré-remplie ;
+  enregistrée aux MÊMES champs que « Mon profil » (A.reg → cmc_reg ; années → 1er janvier, USM →
+  `usbm`) + copie au dossier du domaine. Jamais pour l'admin ni en « voir comme ».
+- **Routeur** : `POST/GET /__sso/fiche` — uid pris dans le token (chacun SA fiche), origine du domaine
+  exigée (403 sinon), `ficheNettoyee()` garde 9 champs connus, formats bornés, HTML retiré.
+  **admin.kd-mc.com** : bloc « 📋 Fiche de renseignements » dans la carte de chaque compte.
+- **Pourquoi pas Firebase pour la light** : les règles `cmcteams` = `.read: auth != null`, et la light
+  obtient un jeton ANONYME → tout le contenu `cmcteams/` (dont `cmc_reg` : e-mails, adresses,
+  naissances de CMCteams) est lisible par n'importe quelle session anonyme. **Trou existant, non
+  élargi ici ; correctif à proposer à part** (lecture de `cmc_reg` réservée : chaque employé sa
+  fiche, l'admin tout).
+- **Kevin : « Année entrée jeux »** → les deux champs d'année s'appellent partout « Année d'entrée à la
+  SBM » et « Année d'entrée aux jeux » (inscription CMCteams, fiche auto CMCteams, fiche light). Même
+  version (v9.921 · v1.57, pas encore en ligne). Vérifié à 375/390 px : champs alignés, rien ne déborde.
+  La fiche light passe sur les jetons de couleur (`--gold`, `--gl06/25/35/40`, classes `.fbox/.fk/.fi`) :
+  la garde `test:theme-signature` refusait +13 couleurs en dur ; libellés passés de 13 à 14 px (règle iPhone).
+- **SonarCloud (PR #4051, note B)** : `ficheNettoyee` (routeur) et l'enregistrement de la fiche light
+  découpés en petites fonctions (complexité 18 et 16 → sous 15) ; e-mail contrôlé par indices au lieu
+  d'une regex à retour arrière ; `catch` vides commentés ; `autocomplete="address-line1"`. Le test
+  fiche reste 28/0 et attrape toujours un sabotage (validation coupée → 3 échecs).
+- Garde `test:fiche-premiere-connexion` (dans `test:ci`) : 28/0 ; sabotage (routeur, déclencheurs
+  light, balise CMCteams) → rouge. `test:departs-pin` : fiche pré-remplie dans son décor (il teste le
+  verrou admin, pas la 1re connexion). `mobile/apps.json` : fiche-auto.js embarqué (test:ios-config).
+
 ## 2026-09-26 (23 h) — croupier.kd-mc.com rectifié d'après NOS documents + vérif LIVE de CMCteams
 
 - **Kevin (capture iPhone 23:14)** : « Rectifie les horaires, les jeux, consulte tes documents tu as

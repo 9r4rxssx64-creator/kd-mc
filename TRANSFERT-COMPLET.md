@@ -44,7 +44,7 @@
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
 
 <!-- MAJ-AUTO:debut etat-live -->
-| Ce qui bouge | État au 2026-09-26 | Mesuré par |
+| Ce qui bouge | État au 2026-09-27 | Mesuré par |
 |---|---|---|
 | Branches dans le dépôt | **256** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |

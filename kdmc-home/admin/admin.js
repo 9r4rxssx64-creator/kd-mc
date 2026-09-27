@@ -205,6 +205,19 @@
         + ' <span style="color:var(--subtle)">— vu ' + esc(ago(apps[h].last)) + '</span>';
     }).join('<br>');
   }
+  /* Renseignements donnés par la personne à sa 1re connexion (light / CMCteams — Kevin
+     2026-09-26). Rangés dans SON dossier du domaine, lisibles ici seulement. */
+  function ficheRens(f) {
+    if (!f || typeof f !== 'object') return '';
+    var L = [['matricule', 'Matricule SBM'], ['anneeSbm', 'Entrée à la SBM'], ['anneeJeux', 'Entrée aux jeux'],
+      ['poste', 'Poste'], ['telephone', 'Téléphone'], ['email', 'E-mail'], ['dateNaissance', 'Naissance'],
+      ['adresse', 'Adresse'], ['usm', 'N° USM']];
+    var rows = L.filter(function (x) { return f[x[0]] != null && f[x[0]] !== ''; })
+      .map(function (x) { return kvp(x[1], esc(String(f[x[0]]))); });
+    if (!rows.length) return '';
+    return '<div class="kv"><div style="grid-column:1/-1"><span>📋 Fiche de renseignements'
+      + (f.maj ? ' — mise à jour ' + esc(ago(f.maj)) : '') + '</span></div>' + rows.join('') + '</div>';
+  }
   function fiche(a) {
     var places = (a.places || []).map(esc).join(' · ') || esc(a.last_place || '—');
     var devs = (a.devices || []).map(esc).join(' · ') || esc(a.last_device || '—');
@@ -224,6 +237,7 @@
       + kvp('Lieux', places)
       + kvp('Dernière connexion', dt(a.last_seen))
       + '</div>'
+      + ficheRens(a.fiche)
       + blocAcces(a)
       + '<button class="revoke" data-uid="' + esc(a.uid) + '" type="button" '
       + 'title="Coupe toutes ses sessions ouvertes (appareil perdu/volé). Il pourra se reconnecter normalement.">🚪 Déconnecter partout</button>'

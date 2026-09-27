@@ -1,5 +1,30 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (soir, suite) — Le DOCUMENT FAMILIAL photographié : deux dates corrigées, la fratrie complète
+
+Kevin a envoyé la photo du manuscrit. Il tranche ce que deux transcriptions antérieures avaient
+mal lu :
+
+- **Hélène Julia : 20.01.1919 – 23.01.1919** (Beaulieu, 2 h) — un bébé mort à trois jours, et
+  non « née en 1949 ». C'est ce que Kevin et moi avions retenu de la transcription d'août
+  (« Hélène 20/01/49 »), et c'était faux.
+- **Monique : 16.08.1935 à Nice**, pas 1955. Elle est bien la **sœur** de Josette — la fiche la
+  disait « fille de Josette » à cause du même 3 lu 5.
+- **Judith ‹employé›** : 2.02.1892 Nice (un mardi, 6 h) – 14.09.1979 Saint-Jean-Cap-Ferrat.
+- **Marius** : le document dit **17.02.1890 à Villefranche** et **† 17.04.1968** — la fiche portait
+  11.03.1890 / 11.04.1968, venues d'une lecture antérieure du MÊME document. Corrigé, à confirmer
+  par Kevin (écriture manuscrite).
+- **Roger ‹employé›** (31.05.1913), mari de Josette, père de Marie-France et Jean-Marie : créé,
+  marié à Josette, et Marie-France (déjà dans l'arbre) rattachée à ses deux parents. Jean-Marie
+  créé (aucune date au document).
+- **v3.28** : chercher une fiche par son nom pour éviter un doublon, puis la créer, n'est plus
+  compté comme un « lien non posé » (l'app annonçait 3 échecs pour 3 créations normales).
+- **Essai du fichier réel** sur une réplique de l'arbre : 3 créées, 8 complétées, **0 lien en
+  plan**, les six enfants sous Marius et Judith, branche de Monique conservée, Marie-France garde
+  son mari, aïeul homonyme intact, 0 doublon.
+
+---
+
 ## 2026-09-27 (soir) — Arbre v3.27 : relier quelqu'un PAR SON NOM (la fratrie ‹employé› débloquée)
 
 Kevin : *« Josette est la sœur de Monique, de Germaine, Marie-Thérèse et Hélène et Alexandre.

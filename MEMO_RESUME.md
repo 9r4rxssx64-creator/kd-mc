@@ -1,5 +1,29 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — La photo du père de Kevin : la cause trouvée (arbre v3.31) + l'arbre se corrige sans l'iPhone
+
+**Kevin** : « Il manque la photo de mon père que j'avais mis. » **Mesuré** sur la vraie copie
+partagée (lue depuis la CI — l'agent n'a pas d'accès sortant vers Firebase) :
+**120 fiches, 0 photo, 0 document, 88 Ko**. Plus une seule image dans le nuage.
+
+**Cause racine, dans le code de la synchro** : `cloudPull` faisait `DB.persons[id] = rp` —
+un **remplacement brut** de la fiche du téléphone par celle du nuage dès qu'elle était plus
+récente. L'envoi, lui, pousse bien les photos. Donc toute fiche distante plus récente et sans
+photo **écrasait la photo locale, en silence**. C'est le bug corrigé le 11.09 pour l'IMPORT
+(v3.20) — le nuage était resté en remplacement.
+
+**v3.31** : `fusionnerFiche(lp, rp, false)` — les corrections venues de la famille passent,
+mais photos, documents et commentaires de l'appareil sont **gardés**.
+**Preuve en vrai navigateur, nuage simulé** (`arbre:verif-sync-photos`) : **8/0** ;
+**sabotage** (retour au remplacement) → **3 rouges**, la photo tombe à 0 : le mécanisme de la
+perte est reproduit. Leçon **#270**.
+
+**Honnêteté** : ça explique la disparition, ça ne ramène pas la photo — ni le nuage ni les
+sauvegardes du dépôt (`arbre/research/cloudraw/*.json` : 0 `data:image`) n'en contiennent.
+Si elle est encore sur l'iPhone, elle repartira toute seule ; sinon elle est à remettre.
+
+---
+
 ## 2026-09-27 (15h55) — Fiches privées : v9.923 en ligne, mais les règles ne sont PAS publiées (en attente de Kevin)
 
 - En ligne (mesuré, cmcteams.kd-mc.com) : `APP_VER="v9.923"`, `sw.js` `cmcteams-v9.923`, garde `_fbVideInterdit` présente,

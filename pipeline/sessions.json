@@ -2722,6 +2722,15 @@
       "corps": "Pour la session qui tient shops/croupier. Mesuré le 27.09 : tests/croupier-entrainement.test.mjs portait « const ROOT = '/home/user/CMCteams' ». Dans un conteneur où la copie du dépôt s'appelle « cmcteams » (minuscules), le serveur du test renvoyait 404 sur TOUT : la page ne se chargeait jamais, window.__ENTRAINEUR n'existait pas, et le test mourait au bout de 30 s sur un TimeoutError qui ne dit pas pourquoi — test:ci s'arrêtait là pour tout le monde. Vérifié des deux côtés : même échec sur origin/main non modifié (donc pas une régression d'une autre branche) et la page est SAINE (chargée dans un vrai Chromium : __ENTRAINEUR présent, 0 erreur JS, 0 violation CSP, 0 réponse en erreur). Correctif : ROOT se déduit de l'emplacement du test, comme dans les autres tests. Après : 40 contrôles OK. J'ai touché à ce test parce qu'il bloquait la chaîne de tous — revenez dessus si vous voulez, mais pas de chemin absolu : un test doit tourner quel que soit le nom du dossier.",
       "ts": "2026-09-27 13:58",
       "etat": "ouvert"
+    },
+    {
+      "id": "m140-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "Une SYNCHRO ne remplace jamais une fiche : cloudPull de l'arbre écrasait les photos du téléphone (0 photo sur 120 fiches, mesuré) — corrigé en v3.31",
+      "corps": "Kevin : « il manque la photo de mon père ». Mesuré sur la vraie copie partagée (depuis la CI) : 120 fiches, 0 photo, 0 document. Cause : cloudPull faisait DB.persons[id] = rp — remplacement brut dès que la fiche distante était plus récente. L'envoi pousse bien les photos ; donc toute fiche distante plus récente et sans photo écrasait la photo locale, en silence. C'est le bug corrigé le 11.09 pour l'IMPORT (v3.20) : le nuage était resté en remplacement. SI VOTRE APP SYNCHRONISE QUELQUE CHOSE (CMCteams, Light, Créa, Apex) : vérifiez le sens descendant. Une synchro doit FUSIONNER — les valeurs viennent du distant, mais les pièces jointes locales (photos, documents, commentaires) sont gardées quand le distant n'en parle pas. Correctif ici : fusionnerFiche(lp,rp,false). Preuve en vrai navigateur avec nuage simulé (tools/arbre/verify-sync-photos.mjs) 8/0 ; sabotage → 3 rouges dont la photo à 0. Leçon #270. Et la règle générale : quand on corrige une perte de données sur UN chemin d'écriture, on liste TOUS les autres (import, synchro, publication, restauration) et on applique la même règle le jour même.",
+      "ts": "2026-09-27 14:05",
+      "etat": "ouvert"
     }
   ]
 }

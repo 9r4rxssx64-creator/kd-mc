@@ -80,13 +80,19 @@ for (const [i, e] of privees.entries()) {
        empreintes — mêmes motifs que le filtre de verif-reelle.yml. Garde :
        test:rapport-chaine-privee (prouvée discriminante). */
     const FUITE = /code admin|pinhash|PIN_HASH|[0-9a-f]{8,}/i;
+    /* ❌ aussi (27.09, soir) : la moitié des gardes du dépôt écrivent « ❌ <cas> ». Mesuré sur
+       le run 36346393620 : test:seed-remplace n'a publié que « ❌ 1 échec(s) », sans le cas.
+       Et le total n'entre plus dans la liste des cas : il sortait EN DOUBLE (« 22 OK / 1 FAIL »
+       deux fois), puisqu'il contient lui-même « FAIL » et qu'on le rajoute en dernière ligne. */
+    const resume = (fin[fin.length - 1] || 'échec').trim();
     const fautifs = brut
-      .filter((l) => /(^|\s)(FAIL|✗|✘|not ok|AssertionError|Error:)/.test(l))
+      // ❌ ✗ ✘ seulement EN TÊTE de ligne : « ✅ la raison d'une surface ❌ arrive… » est un succès.
+      .filter((l) => /^\s*(❌|✗|✘)|(^|\s)(FAIL|not ok|AssertionError|Error:)/.test(l))
+      .filter((l) => !/^\s*(✅|ok\b)/.test(l))
       .filter((l) => !FUITE.test(l))
       .map((l) => l.trim())
-      .filter(Boolean)
+      .filter((l) => l && l !== resume)
       .slice(0, 10);
-    const resume = (fin[fin.length - 1] || 'échec').trim();
     const msg = [...fautifs, resume].join('\n').slice(0, 800)
       .replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
     console.log(`::error title=${e}::${msg}`);

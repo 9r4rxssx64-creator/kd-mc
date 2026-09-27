@@ -50,6 +50,10 @@ s'il lance `node|bash <fichier privé>`, mais pas s'il le **lit** (`grep … ind
 vérifiés pour de vrai. Mais « 1 surface en échec » sans nom : le rapport `verif-reelle` coupait par la fin (`tail -72`).
 **Corrigé** : rouges d'abord, coupe par la fin (`head -72`) ; garde `test:rapport-lisible` 16/0, 2 sabotages.
 
+**Chaîne privée relancée avec le nouveau rapport** (run 36346393620) : `fiches-privees` ne casse plus ; rouges nommés =
+`seances` 38/2 et `seances-individuel` 22/1 (light, « Formation CMS » — chantier de `claude/seances-light`) et
+`seed-remplace` (cas NON nommé : mon filtre ignorait « ❌ » → corrigé, + total en double, garde 17/0, 4 sabotages).
+
 **Reste, à dire à Kevin** : `test:fiches-privees` est vert en local (45/0) et rouge en CI (44/1) — le cas sera nommé au
 prochain passage de la chaîne privée. Une décision à lui : rallumer `verifier-maj-auto` au coffre (minutes) — ou
 se contenter de `coffre-sonde-ce-qui-est-servi`, lancé à la main.

@@ -97,6 +97,39 @@ dit(!annotation.includes('\n') && annotation.includes('%0A'),
     'les retours à la ligne sont encodés %0A (sinon GitHub ne garde que la 1re ligne)');
 dit(annotation.length <= 1000,
     `l'annotation reste dans les limites de GitHub (${annotation.length} caractères)`);
+dit(annotation.split('44 OK / 1 FAIL').length - 1 === 1,
+    'le total apparaît UNE fois (run 36346393620 : « 22 OK / 1 FAIL » sortait en double)');
+
+/* 5) Les gardes au style « ❌ <cas> » (27.09, soir). Mesuré sur le run 36346393620 :
+      test:seed-remplace n'a publié que « ❌ 1 échec(s) » — son cas n'était pas nommé, le
+      filtre ne connaissait pas ❌. Piège voisin : une ligne VERTE qui parle de ❌ dans son
+      texte (« ✅ la raison d'une surface ❌ arrive… ») ne doit PAS passer pour un échec. */
+const SORTIE2 = [
+  '  ✅ la raison d\'une surface ❌ arrive dans le rapport',
+  // n'est écartée QUE par le filtre « ligne de succès » (FAIL au milieu d'un ✅) :
+  '  ✅ aucun FAIL-DANS-UN-SUCCES restant',
+  // n'est écartée QUE par l'ancrage « ❌ en tête » (une note qui cite ❌) :
+  '     · NOTE-QUI-CITE la marque ❌ en exemple',
+  '  ❌ CAS-CROIX-ROUGE la graine remplace au lieu d\'ajouter',
+  '  ✅ la graine garde les anciens employés',
+  '❌ 1 échec(s)',
+].join('\n');
+const sorti2 = [];
+try {
+  // eslint-disable-next-line no-new-func
+  new Function('r', 'e', 'console', bloc)({ stdout: SORTIE2, stderr: '' }, 'test:seed-remplace', { log: (s) => sorti2.push(String(s)) });
+} catch (err) { sorti2.push('<<exécution impossible : ' + err.message + '>>'); }
+const annotation2 = sorti2.find((l) => l.startsWith('::error')) || '';
+dit(annotation2.includes('CAS-CROIX-ROUGE'),
+    'un cas écrit « ❌ <cas> » est NOMMÉ (style de la moitié des gardes du dépôt)');
+dit(!annotation2.includes('arrive dans le rapport'),
+    'une ligne ✅ qui mentionne ❌ dans son texte n\'est PAS prise pour un échec');
+dit(!annotation2.includes('FAIL-DANS-UN-SUCCES'),
+    'une ligne ✅ qui contient le mot FAIL n\'est PAS prise pour un échec (filtre « ligne de succès »)');
+dit(!annotation2.includes('NOTE-QUI-CITE'),
+    'une note qui cite ❌ au milieu n\'est PAS prise pour un échec (❌ compte seulement en tête)');
+dit(annotation2.split('❌ 1 échec(s)').length - 1 === 1,
+    'le total « ❌ 1 échec(s) » apparaît une seule fois');
 
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

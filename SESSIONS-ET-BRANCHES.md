@@ -92,6 +92,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Conditions une fois, Lingua / La Détente (`cgu-une-fois`) | `claude/cgu-une-fois` | 🟢 /__sso/cgu, Lingua v2.129.0, La Détente v1.53.24 (27.09) |
 | Tout s'ouvre pour Kevin (`kevin-tout-ouvert`) | `claude/kevin-tout-ouvert` | 🟢 /__admin/grant, CMCteams v9.928 sans PIN si reconnu, 8 portes admin, Chez Lolo v2.0.16 (27.09) |
 | Tout s'ouvre pour Kevin : mesure réelle (`kevin-tout-ouvert-sonde`) | `claude/kevin-tout-ouvert-sonde` | 🟢 sonde : /__admin/grant anonyme → 403, versions CMCteams / Chez Lolo lues (27.09) |
+| Domaine coupé 1027 (`domaine-1027`) | `claude/domaine-1027` | 🟢 docs : constat 22h06, leçon #361, message m162, mesure reportée à 00h10 UTC (27.09) |
 | Kevin reconnu partout : mesures (`kevin-reconnu-mesure`) | `claude/kevin-reconnu-partout-mesure` | ✅ fusionnée #4109 (docs seulement) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 

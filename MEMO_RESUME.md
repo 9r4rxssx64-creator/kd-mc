@@ -71,6 +71,22 @@ Chaque constat reproduit par moi, puis corrigé avec un test prouvé par sabotag
   Leçons **#359–#362**.
 
 ---
+## 2026-09-27 (22h10 UTC) — Le domaine entier coupé par la limite du plan gratuit Cloudflare (1027) — mesuré, pas de panne de code
+
+**Mesuré** : sonde `audit-domaine` run 36352979439 (21h48 UTC) : **33 adresses sur 33 → 429** ; lecture directe de
+`kd-mc.com/__sso/whoami` à 22h06 : page Cloudflare **« Error 1027 — This website has been temporarily rate limited,
+the owner has reached their plan limits »** (Ray a41dd0a6d8673ebd). C'est la limite **100 000 requêtes/jour** du
+plan gratuit Workers, pour tout le compte : le routeur sert chaque adresse → tout est coupé jusqu'à **00h00 UTC**.
+**Conséquence pour #4118** : le déploiement public du routeur est VERT à l'étape « Déploiement » (v9.928 et
+`/__admin/grant` sont en ligne) ; l'étape suivante « 31 adresses » et kdmc-access « Health KO », SSO navigateur,
+PoolPilot smoke sont rouges **à cause du 1027**. La mesure réelle de `/__admin/grant` (sonde #4119) ne peut pas se
+faire avant 00h00 : `GET cmcteams…/__admin/grant → 429`, `version.txt → 429`, `chez-lolo/sw.js → 429`.
+**Cause** : nos propres robots (24 vérifs réelles, audit Lingua 16 langues, sondes de 5 sessions, ~10 robots publics
+par fusion) : leçon #361. **Rien à corriger dans le code** ; décision Kevin : plan Workers payant (5 $/mois) ou
+moins de robots contre le domaine. Message m162 à toutes les sessions : aucune sonde ce soir (la session « vérif réelle » l'avait mesuré à 22h00 : #4121, m ≤ 161).
+**Non vérifié (honnêtement)** : le compte exact de requêtes du jour (analytics Cloudflare inaccessibles d'ici) ; le
+comportement réel de CMCteams v9.928 sur le vrai domaine (prouvé en local, Chromium, vrai routeur : 7/7).
+
 ## 2026-09-27 (21h35 UTC) — « Moi tout s'ouvre automatiquement » : plus aucun code à Kevin quand le domaine le connaît (CMCteams v9.928, Chez Lolo v2.0.16)
 
 Kevin : « Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. »

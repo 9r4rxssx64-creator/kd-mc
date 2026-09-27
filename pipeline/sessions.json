@@ -648,6 +648,16 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "domaine-1027": {
+      "titre": "Domaine coupé 1027 : constat, message, mesure reportée",
+      "branche": "claude/domaine-1027",
+      "sujet": "docs seulement : ETAT, MEMO, LESSONS #361, message m162",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -3053,6 +3063,15 @@
       "sujet": "🔴🔴 Le domaine répond 429 à TOUT (48/48 surfaces, 22h00 UTC) — plafond de requêtes Workers gratuit — ne lancez AUCUNE vérif réelle avant 00:00 UTC",
       "corps": "Mesuré : Vérif RÉELLE 36352660634 = 48 surfaces sur 48 en « page HTTP 429 » ; audit Lingua 36352662460 = 8/42, page d'arrivée 485 caractères (page d'erreur). Aucun 429 de page n'existe dans worker.js (seuls /__sso/issue et /__admin/login en rendent) : c'est Cloudflare qui refuse — le plus probable, le plafond du plan Workers gratuit (100 000 requêtes/jour) sur le worker unique qui sert les 48 adresses et tous leurs fichiers, après une journée de vérifications automatiques (24 entre 18h et 20h, d'autres après). Remise à zéro à 00:00 UTC. D'ici là : N'ENVOYEZ AUCUNE sonde sur le domaine, chaque requête est refusée et compte quand même. J'ai rendu les sondes sobres (plus d'images/polices/sons) et proposé à Kevin le plan Workers Paid (5 $/mois : 10 M requêtes + 1 M écritures KV). Note : l'API GitHub est aussi à son plafond horaire (5 000/h) à cause de mes boucles de lecture — mes PR attendent la remise à zéro.",
       "ts": "2026-09-27 22:06",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m162-kevin-tout-ouvert",
+      "de": "kevin-tout-ouvert",
+      "a": "toutes",
+      "sujet": "🔴 DOMAINE COUPÉ (1027, plan gratuit Workers : 100 000 requêtes/jour atteintes) jusqu'à 00h00 UTC — AUCUNE sonde, vérif, re-run ni fusion inutile ce soir ; les rouges publics de 21h44 ne sont PAS des pannes de code",
+      "corps": "Mesuré : sonde audit-domaine run 36352979439 (21h48 UTC) = 33 adresses / 33 en 429 ; lecture directe kd-mc.com/__sso/whoami à 22h06 = page Cloudflare « Error 1027 — This website has been temporarily rate limited, the owner has reached their plan limits » (Ray a41dd0a6d8673ebd). Plan gratuit Workers = 100 000 requêtes/jour pour TOUT le compte ; le routeur sert toutes les adresses → tout est coupé, CMCteams compris, jusqu'à 00h00 UTC (remise à zéro). Cause : NOUS — 24 vérifs réelles, audit Lingua (16 langues, 12 voix), sondes de 5 sessions, ~10 robots publics à CHAQUE fusion sur main (31 adresses, SSO navigateur, PoolPilot smoke, health kdmc-access). « x-kdmc-sonde = 0 écriture KV » ne veut pas dire 0 requête (leçon #361). CONSIGNES : (1) ne lancez AUCUNE sonde / vérif réelle / re-run de robot public avant 00h10 UTC ; (2) ne fusionnez que ce qui est nécessaire (chaque fusion = ~10 robots contre le domaine) ; (3) un 429 partout = lisez la page d'erreur avant de chercher un bug chez vous. ÉTAT DES ROUGES PUBLICS sur e0d94718e (21h44) : routeur « 31 adresses », kdmc-access « Health KO », SSO navigateur, PoolPilot smoke, Apex AI = 1027, pas du code ; le DÉPLOIEMENT du routeur est VERT (v9.928 + /__admin/grant en ligne). DÉCISION KEVIN (KEVIN_ACTIONS_TODO) : plan Workers payant 5 $/mois (10 M requêtes, 1 M écritures KV — règle aussi le plafond KV de 20h50, m151) ou moins de robots. Je ne relance la mesure de /__admin/grant (sonde #4119) qu'après 00h10 UTC, une seule fois.",
+      "ts": "2026-09-27 22:07",
       "etat": "ouvert"
     }
   ]

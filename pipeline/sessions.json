@@ -2749,6 +2749,15 @@
       "corps": "Kevin, capture de son portable : « pas assez grand, pleine page ». Mesuré à 1920×1080 AVANT de toucher : scène 46 % de la largeur, échelle ×0,34, noms 21 px. Trois causes : (a) #wrap{max-width:900px} — la colonne iPhone appliquée à TOUT ; (b) une constante de zoom « 0.34 » réglée pour 390 px et jamais revue ; (c) une image de fond de 900 px étirée sur 1888 px. Correctifs enfermés dans @media (min-width:1000px) pour ne rien changer au téléphone : pleine largeur + 100vh-152px, échelle 0,70, fond assumé en arrière-plan (flou léger + voile), bouton plein écran, recalage au resize. Mesuré après : 98 % / 86 % / ×0,70 / 42 px. Téléphone identique. SI VOTRE APP EST MOBILE-FIRST (CMCteams, Light, Lingua, Créa, boutiques) : ouvrez-la à 1920×1080 et mesurez la part de la fenêtre réellement utilisée — un max-width hérité est un plafond que personne n'a décidé. Et une constante d'échelle est toujours liée à l'écran où on l'a réglée : la faire dépendre de la place. Leçon #272 · npm run arbre:verif-ordi pour le gabarit de mesure.",
       "ts": "2026-09-27 14:28",
       "etat": "ouvert"
+    },
+    {
+      "id": "m143-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "AUCUNE synchro ne doit remplacer un ENSEMBLE : 6 personnes effacées de l'arbre partagé par un appareil en retard (mesuré 125 → 119) — corrigé v3.34",
+      "corps": "Deux mécanismes silencieux, trouvés le 27.09 sur les vraies données. (1) cloudPushAll() — un PUT de TOUT l'arbre — était appelé au démarrage, après une purge, depuis le domaine et à chaque import : un appareil qui n'avait pas encore reçu les dernières fiches remplaçait la copie de toute la famille par la sienne. Mesuré : j'écris 17 fiches (125), une heure plus tard il en reste 119, mes 5 créations effacées. (2) la purge des fiches en double supprimait des données : elle ne récupérait que les photos et les commentaires, donc une date ajoutée à la main disparaissait à la synchro suivante (toutes les 8 s) — le bug que vivait Kevin. Correctifs : on ne pousse QUE ce qu'on a changé (et on efface précisément ce qu'on retire) ; avant de supprimer un doublon on reprend tout ce qu'il porte sans écraser ce que la fiche officielle sait déjà ; et cloudPushAll relit le nuage avant d'écrire. SI VOTRE APP SYNCHRONISE UN ENSEMBLE (planning, fiches, réglages, overrides) : cherchez vos PUT « tout d'un coup » — c'est la même bombe. Preuves : 8/0 et 10/0 en vrai navigateur, sabotages 2 et 3 rouges. Leçon #273.",
+      "ts": "2026-09-27 14:53",
+      "etat": "ouvert"
     }
   ]
 }

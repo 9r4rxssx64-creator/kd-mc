@@ -1,5 +1,44 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — Pourquoi les saisies de Kevin disparaissaient (arbre v3.34) + audit de l'arbre
+
+**Kevin** : « Je ne peux pas rajouter les dates de naissance de Ronan 20.08.2007. Et d'autres. »
+
+**Trouvé dans le code, puis mesuré sur le vrai arbre** — deux mécanismes, tous deux silencieux :
+
+1. **La purge des doublons supprimait des données.** L'app efface d'elle-même les fiches
+   « ombres » (même nom qu'une fiche officielle `seed_…`, identifiant différent) et ne
+   récupérait d'elles que les photos et les commentaires. Une date ajoutée à la main sur une
+   de ces fiches partait à la poubelle à la synchro suivante (elle tourne **toutes les 8 s**).
+2. **Un appareil en retard renvoyait TOUT l'arbre.** `cloudPushAll()` (PUT de l'arbre entier)
+   était appelé au démarrage, après une purge, depuis le domaine et à chaque import. Mesuré :
+   à 15 h 5x j'écris 17 fiches → **125** ; à 16 h je relis → **119**. Mes 5 créations
+   (Hélène, Roger, Jean-Baptiste, Victoria, Ludovic) **et une fiche de plus** avaient disparu.
+
+**v3.34, trois niveaux** : `completerSansEcraser()` reprend tout ce que porte un doublon avant
+de le supprimer (sans écraser ce que la fiche officielle sait déjà) · plus aucun envoi global
+après une purge, au démarrage, dans un import ou depuis le domaine — on pousse les fiches
+touchées et on efface celles qu'on retire · et, en dernier filet, `cloudPushAll()` **relit** le
+nuage avant d'écrire. **Preuves** : 8/0 et 10/0 en vrai navigateur, sabotages → 2 et 3 rouges.
+Leçon **#273**.
+
+### Audit de l'arbre (nouveau : `tools/arbre/audit-arbre.mjs`, lecture seule)
+
+Sur les 119 fiches réelles : **3 personnes seules** (Myriam Augusta Olga ‹employé›,
+Jean Marius Victor ‹employé›, Claude Alain DE SARZENS), **2 trios de même nom** à départager
+(3 Jean ‹employé›, 3 Alexandre ‹employé›), **5 groupes de parenté** dont un principal de 102
+personnes. Aucune date impossible, aucune boucle d'ancêtres, aucun lien mort.
+
+### Filiations : mesurées, elles sont justes
+
+Sur une famille calquée sur la sienne (Attilio → Judith ; Judith × Marius → 5 enfants) :
+**13 filiations sur 13** dessinées de haut en bas, et les enfants répartis **symétriquement
+sous le couple** (−111 px du père / +111 px de la mère pour celui du milieu). Ce que Kevin
+voyait venait donc des **données** (mère manquante → personne placée à côté au lieu d'en
+dessous), pas du dessin — et c'est ce que corrigent les fichiers appliqués.
+
+---
+
 ## 2026-09-27 — L'arbre sur ORDINATEUR : pleine page (v3.33)
 
 Kevin, capture de son portable : « Revois l'affichage sur ordi. Mauvaise qualité et pas assez

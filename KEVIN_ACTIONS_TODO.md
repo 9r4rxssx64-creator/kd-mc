@@ -9,6 +9,23 @@
 
 ---
 
+## 🔴 CE SOIR : le domaine a répondu 429 à tout le monde (27.09, ~22h00 UTC) — 1 décision, 5 $/mois
+
+Mesuré par la vérification réelle : **48 surfaces sur 48** en « HTTP 429 », Lingua incluse. Ce n'est pas
+un bug du code (aucun 429 de page n'y existe) : c'est **Cloudflare** qui refuse, très probablement le
+**plafond du plan Workers gratuit — 100 000 requêtes par jour** pour le worker qui sert *toutes* tes
+adresses et *tous* leurs fichiers. Le même jour, le stockage a atteint ses **1 000 écritures**. Les deux
+sont la même chose : ton domaine a dépassé le gratuit. Ça se remet à zéro à **02h00** (00:00 UTC).
+
+**Ce que j'ai fait** : les robots de vérification ne s'inscrivent plus nulle part et ne chargent plus
+images/polices/sons (≈ −70 % de requêtes). **Ce que je ne peux pas faire** : changer ton plan.
+
+→ **Cloudflare → Workers & Pages → Plans → Workers Paid (5 $/mois)** : 10 M de requêtes et 1 M
+d'écritures par mois, effet immédiat. Pour 260 personnes + les robots, le gratuit ne tient plus.
+Si tu préfères rester gratuit : dis-le, je plafonne les robots à 2 vérifs réelles par jour.
+
+---
+
 ## 🔧 Un rouge qui ne veut rien dire : « Workers Builds: kdmc-router » (27.09 soir) — 1 clic, quand tu veux
 
 Sur **chaque** commit de `main`, GitHub affiche un contrôle rouge « Workers Builds: kdmc-router : failure ».

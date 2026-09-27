@@ -510,6 +510,12 @@ async function lireVersionServie(page) {
    OSINT) : un en-tête inconnu déclenche un contrôle CORS que leurs workers refusent → 14
    surfaces « rouges » en une heure, alors que rien n'avait changé pour un vrai visiteur.
    Le routeur ne fiche que les pages (`estUnePage`) : marquer les documents suffit. */
+/* SOBRIÉTÉ (27.09, 22h05 UTC) : tout le domaine a répondu 429 sur 48 surfaces — très probablement
+   le plafond de REQUÊTES du plan Workers gratuit (100 000 / jour, un seul worker sert tout), après une journée de
+   vérifications automatiques qui chargeaient chaque image, police et son. Une sonde n'a besoin
+   que du HTML et des scripts : le reste est coupé à la source (route → abort). */
+const INUTILE_POUR_SONDER = /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf)($|\?)/i;
+const sobre = (cible) => cible.route((u) => INUTILE_POUR_SONDER.test(u.pathname), (route) => route.abort());
 /* On n'intercepte que ce qui PEUT être une page (pas les .js/.css/images/sons/json) : intercepter
    les centaines de fichiers d'une app coûte un aller-retour chacun — mesuré le 27.09 nuit, l'audit
    Lingua a dépassé ses 15 min là où il en prenait 9. Le test `resourceType` reste en garde-fou. */
@@ -525,6 +531,7 @@ const report = [];
 for (const s of SURFACES) {
   const page = await browser.newPage();
   await marquerSonde(page, 'audit-live');
+  await sobre(page);
   const jsErrors = [];      // exceptions JS non catchées → BLOQUANT
   const failedProject = []; // requête projet BLOQUÉE (ERR_FAILED/CORS) → BLOQUANT (classe commande)
   const failedTol = [];     // requête échouée tolérée (tierce OU ERR_ABORTED app) → non bloquant

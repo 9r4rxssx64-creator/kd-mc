@@ -1,5 +1,35 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (soir) — « Fais un point des bots » puis « Go tout » : le rouge était surtout du bruit, et la cuisine n'est pas cassée
+
+**Mesuré sur 48 h** : dépôt public **137 échecs / 300**, dont **119** venaient de 4 robots qui ne peuvent JAMAIS réussir
+là-bas (ils lisent `index.html` / `tools/departs/version.txt`, absents du public, ou Pages, éteint). **Mis en pause**
+(132 actifs / 4 en pause, vérifié). Coffre : 225 ✅ / 41 ❌. **0 cron** dans les deux dépôts (vérifié).
+
+**Le site** : 21/27 vert (run `verif-reelle` 36338529559). Les 6 rouges (cuisine ×4, `kd-mc.com/worldmonitor/`,
+`kd-mc.com/osint/`) **ne sont pas des pannes** : c'est la porte « fiche » du 27.09. Preuve (run 36340745642) : les 9
+adresses gardées répondent **401 « Connexion au domaine requise. »** (29 octets, `x-kdmc-porte: fiche`), Lingua sert sa
+page. **Déjà corrigé côté sonde** par la session lingua-code (leçon #349, `d136af48` + `e5100ac8`) après mon 1er contrôle :
+ma mesure le **confirme** indépendamment ; je n'ai rien refait de leur travail.
+
+**Versions / MAJ auto** : mesurées au coffre, 4 adresses en **v9.925 / v1.58**, `version.txt` cohérent → **ça marche**.
+(Le robot a dit « 4 en retard » : faux, ma branche partait d'un `main` plus vieux. Toujours mesurer depuis `main` à jour.)
+
+**Livré** : le robot « chaîne privée » nomme désormais le test qui casse (avant : « 44 OK / 1 FAIL » et rien d'autre),
+garde `test:rapport-chaine-privee` 11/0, **3 sabotages** ; robot `coffre-sonde-ce-qui-est-servi` (0 cron, au coffre).
+
+**Pièges** : ① ma 1re garde recopiait le code au lieu de l'exécuter → verte sous sabotage (leçon ajoutée) ; ② GitHub ne
+garde que **10 annotations par type et par étape** → un rapport = une annotation ; ③ l'exporteur range un robot au coffre
+s'il lance `node|bash <fichier privé>`, mais pas s'il le **lit** (`grep … index.html`) — c'est ainsi que
+`verifier-maj-auto` est parti au public et y a échoué 43 fois ; d'autres robots peuvent être dans le cas.
+
+**Revérifié depuis `main`** (run 36341051921) : les 6 anciens rouges sont VERTS, World Monitor v2.42 / OSINT v2.6
+vérifiés pour de vrai. Mais « 1 surface en échec » sans nom : le rapport `verif-reelle` coupait par la fin (`tail -72`).
+**Corrigé** : rouges d'abord, coupe par la fin (`head -72`) ; garde `test:rapport-lisible` 16/0, 2 sabotages.
+
+**Reste, à dire à Kevin** : `test:fiches-privees` est vert en local (45/0) et rouge en CI (44/1) — le cas sera nommé au
+prochain passage de la chaîne privée. Une décision à lui : rallumer `verifier-maj-auto` au coffre (minutes) — ou
+se contenter de `coffre-sonde-ce-qui-est-servi`, lancé à la main.
 ## 2026-09-27 (19h25 UTC) — test:fiches-privees rouge par intermittence : cause racine corrigée (v9.926)
 
 - **Cause** : la relecture du privé chez l'admin (toutes les 15 s) remettait l'ancien numéro sans comparer les dates → une correction pouvait être annulée. `tools/shared/fiche-privee.js` `appliquer()` applique maintenant « la plus récente gagne », comme la fusion.

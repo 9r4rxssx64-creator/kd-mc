@@ -63,9 +63,33 @@ for (const [i, e] of privees.entries()) {
   else {
     echecs.push(e);
     console.log(`  ❌ ${String(i + 1).padStart(3)}/${privees.length}  ${e}  (${s}s)`);
-    const fin = ((r.stdout || '') + (r.stderr || '')).trim().split('\n').slice(-12);
+    const brut = ((r.stdout || '') + (r.stderr || '')).trim().split('\n');
+    const fin = brut.slice(-12);
     fin.forEach((l) => console.log('        ' + l));
-    console.log(`::error title=${e}::${(fin[fin.length - 1] || 'échec').slice(0, 300)}`);
+    /* L'annotation ne gardait que la DERNIÈRE ligne de la sortie. Pour un test qui
+       compte ses cas, cette ligne est le total — « === 44 OK / 1 FAIL === » : on
+       apprend qu'un cas casse, jamais LEQUEL. Mesuré le 27.09.2026 sur le run
+       36336413696 (job 108667994323, test:fiches-privees, 44 OK / 1 FAIL : l'annotation
+       publiée portait ce total et RIEN d'autre) : le journal du job est le SEUL endroit
+       qui nomme le cas, et il est servi par *.blob.core.windows.net — que le proxy
+       d'agent refuse (vérifié : CONNECT rejeté). Un contrôle qu'on ne peut pas LIRE
+       ne vaut pas mieux qu'un contrôle qui n'a pas tourné (leçon #322). On joint donc
+       les lignes qui NOMMENT les cas fautifs, comme verif-reelle.yml le fait depuis
+       le 27.09 pour la raison de chaque rouge.
+       Anti-fuite : on élargit ce qui sort d'ici, donc on re-barre le code admin et les
+       empreintes — mêmes motifs que le filtre de verif-reelle.yml. Garde :
+       test:rapport-chaine-privee (prouvée discriminante). */
+    const FUITE = /code admin|pinhash|PIN_HASH|[0-9a-f]{8,}/i;
+    const fautifs = brut
+      .filter((l) => /(^|\s)(FAIL|✗|✘|not ok|AssertionError|Error:)/.test(l))
+      .filter((l) => !FUITE.test(l))
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .slice(0, 10);
+    const resume = (fin[fin.length - 1] || 'échec').trim();
+    const msg = [...fautifs, resume].join('\n').slice(0, 800)
+      .replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+    console.log(`::error title=${e}::${msg}`);
   }
 }
 const min = Math.round((Date.now() - debut) / 60000);

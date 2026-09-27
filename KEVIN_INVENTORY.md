@@ -3086,3 +3086,11 @@ officiels les retirent eux-mêmes avant publication.
 
 **Commandes** : `npm run maj-tout` (tout, réseau) · `npm run maj-tout:rapide` (local, < 2 s) ·
 `npm run test:maj-tout` (refuse un document périmé, dans `test:ci`).
+
+### 2026-09-27 (soir) — Les robots disent enfin CE QUI casse, et ce que le site sert vraiment
+
+| Fichier | À quoi ça sert | Liens |
+|---|---|---|
+| `.github/workflows/coffre-sonde-ce-qui-est-servi.yml` | Robot **au coffre**, lancé à la main (0 cron) : regarde ce que chaque adresse sert **vraiment** (vraie page, porte « fiche », autre chose) et contrôle les versions / la MAJ auto. Rapport lisible depuis l'iPhone (annotations). | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/coffre-sonde-ce-qui-est-servi.yml) |
+| `tools/audit/sonde-ce-qui-est-servi.mjs` | La sonde elle-même : lit le HTML servi comme un navigateur, dit « 🚪 porte », « ✅ vraie page » ou « ❓ autre chose » | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/sonde-ce-qui-est-servi.mjs) |
+| `tests/verify-rapport-chaine-privee.mjs` | `npm run test:rapport-chaine-privee` — le rapport du robot « chaîne privée » doit **nommer** le test qui casse, sans jamais laisser sortir le code admin (dans `test:ci`, prouvée sur 3 sabotages) | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-rapport-chaine-privee.mjs) |

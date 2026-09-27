@@ -317,7 +317,10 @@ const cle = createHash('sha256').update('audit-lingua-sonde-' + Date.now()).dige
 try {
   const pos = await ctx.request.post(BASE + '/__lingua/save', { data: { k: cle, data: { v: 2, sonde: true } }, timeout: 25000 });
   const jp = await pos.json().catch(() => ({}));
-  chk(jp && jp.ok === true, `9.1 écriture en ligne acceptée (HTTP ${pos.status()})`);
+  /* Le refus dit toujours POURQUOI (`reason`) : on l'écrit, sinon un « HTTP 200 » en
+     rouge ne se comprend pas (mesuré run 36346527479 : 200 + ok:false, raison absente
+     du rapport → impossible de trancher entre panne du KV et sonde mal fichue). */
+  chk(jp && jp.ok === true, `9.1 écriture en ligne acceptée (HTTP ${pos.status()}${jp && jp.ok === true ? '' : ' — ' + JSON.stringify(jp).slice(0, 80)})`);
   const get = await ctx.request.get(BASE + '/__lingua/load?k=' + cle, { timeout: 25000 });
   const jg = await get.json().catch(() => ({}));
   chk(jg && jg.ok === true && jg.data && jg.data.sonde === true,

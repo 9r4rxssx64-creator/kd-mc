@@ -91,5 +91,37 @@ dit(sorti.includes('AUDIT LIVE ÉCHEC') && sorti.includes('=== AUDIT LIVE'),
     'les verdicts global et d\'ouverture sont conservés');
 dit(!sorti.includes('ligne de bruit'), 'les lignes sans verdict restent écartées');
 
+/* 5) UN ROUGE NE TOMBE JAMAIS DANS LA PARTIE COUPÉE (27.09, soir).
+   Mesuré sur le run 36341051921 : « AUDIT LIVE ÉCHEC (1 surface(s)) », 33 ✅ visibles,
+   ZÉRO ❌ — le rapport est plafonné et l'ancienne coupe (`tail -72`) gardait la FIN du
+   journal, là où il n'y avait que des verts. On lit la VRAIE coupe dans le workflow
+   (head/tail + nombre) et on l'applique à la sortie du VRAI awk, sur un journal où le
+   rouge arrive tôt et 80 verts suivent. */
+const mCoupe = wf.match(/\|\s*(head|tail) -(\d+) > \/tmp\/rapport\.txt/);
+dit(!!mCoupe, 'le workflow porte bien une coupe du rapport (head/tail -N)');
+if (mCoupe) {
+  const gros = [
+    '=== AUDIT LIVE https://kd-mc.com ===',
+    '❌ SURFACE-ROUGE-TOT  https://kd-mc.com/rouge/',
+    '   · RAISON-DU-ROUGE-TOT élément clé absent',
+    ...Array.from({ length: 80 }, (_, k) => `✅ Surface verte ${k + 1}  https://kd-mc.com/v${k + 1}/`),
+    'AUDIT LIVE ÉCHEC (1 surface(s))',
+  ].join('\n') + '\n';
+  let trie = '';
+  try { trie = execFileSync('awk', [mAwk[1]], { input: gros, encoding: 'utf8' }); }
+  catch (e) { trie = '<<awk a échoué : ' + String(e.message).slice(0, 120) + '>>'; }
+  const L = trie.split('\n').filter(Boolean);
+  const n = Number(mCoupe[2]);
+  const garde = mCoupe[1] === 'head' ? L.slice(0, n) : L.slice(-n);
+  const rapport = garde.join('\n');
+  dit(L.length > n, `le journal d'essai déborde bien du plafond (${L.length} lignes > ${n}) — sinon ce contrôle ne prouverait rien`);
+  dit(rapport.includes('SURFACE-ROUGE-TOT'),
+      'la surface ❌ est NOMMÉE dans le rapport même quand 80 verts débordent du plafond');
+  dit(rapport.includes('RAISON-DU-ROUGE-TOT'),
+      '… avec sa RAISON');
+  dit(rapport.includes('AUDIT LIVE ÉCHEC'),
+      '… et le verdict global');
+}
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

@@ -23,6 +23,7 @@
   "coffre-chaine-privee.yml",
   "coffre-fiches-privees.yml",
   "coffre-previent-public.yml",
+  "coffre-secrets-cmc.yml",
   "coffre-synchronise-public.yml",
   "deces-cors-check.yml",
   "deces-live-check.yml",

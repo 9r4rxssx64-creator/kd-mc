@@ -49,7 +49,7 @@ export default {
     try {
       // --- /health ---
       if (url.pathname === "/health" && request.method === "GET") {
-        return jsonResp({ ok: true, version: "v1.0", ts: Date.now() }, corsHeaders);
+        return jsonResp({ ok: true, version: "v1.1", capacites: ["cmc_secret", "cmc_code"], ts: Date.now() }, corsHeaders);
       }
 
       // --- /login ---
@@ -114,15 +114,20 @@ export default {
         if (!uid || !password) {
           return jsonResp({ ok: false, error: "missing_uid_or_password" }, corsHeaders, 400);
         }
+        if (!cmcIdOk(uid)) return jsonResp({ ok: false, error: "bad_uid" }, corsHeaders, 400);
 
-        // Rate-limit par IP (clé distincte de /login Apex)
+        // Rate-limit par IP (clé distincte de /login Apex) ET par compte (27.09.2026 : les
+        // mots de passe ne sont plus lisibles par les téléphones → le seul moyen d'en deviner
+        // un est ICI ; 10 essais / 15 min par compte, quel que soit le nombre d'adresses IP).
         const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-        const rateKey = `rlc:${ip}`;
+        const rateKey = `rlc:${ip}`, rateUid = `rlu:${uid}`;
         const attempts = parseInt(await env.AUTH_KV.get(rateKey) || "0");
-        if (attempts >= 5) {
+        const attemptsUid = parseInt(await env.AUTH_KV.get(rateUid) || "0");
+        if (attempts >= 5 || attemptsUid >= 10) {
           return jsonResp({ ok: false, error: "rate_limited", retry_after: 900 }, corsHeaders, 429);
         }
         await env.AUTH_KV.put(rateKey, String(attempts + 1), { expirationTtl: 900 });
+        await env.AUTH_KV.put(rateUid, String(attemptsUid + 1), { expirationTtl: 900 });
 
         // Lecture cmc_pw/<uid> en admin (service account) → survit aux règles strictes.
         // Le mot de passe en clair ne transite QUE sur HTTPS, jamais loggé (RGPD).
@@ -136,6 +141,7 @@ export default {
         }
 
         await env.AUTH_KV.delete(rateKey);
+        await env.AUTH_KV.delete(rateUid);
         const customToken = await generateCustomToken(uid, env, "cmc");
         ctx.waitUntil(auditLog(env, uid, "login_cmc_success", ip));
 
@@ -143,6 +149,19 @@ export default {
         const idt = await exchangeForIdToken(customToken, env);
         if (idt) { out.id_token = idt.idToken; out.refresh_token = idt.refreshToken; out.expires_in = parseInt(idt.expiresIn, 10) || 3600; }
         return jsonResp(out, corsHeaders);
+      }
+
+      // --- /cmc/code/new : code d'inscription CMCteams tiré ICI, rangé au secret (27.09.2026) ---
+      if (url.pathname === "/cmc/code/new" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const [data, status] = await cmcCodeNew(body, request, env, ctx);
+        return jsonResp(data, corsHeaders, status);
+      }
+      // --- /cmc/code/check : vérifie le code ICI, valide le compte, ouvre la session ---
+      if (url.pathname === "/cmc/code/check" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const [data, status] = await cmcCodeCheck(body, request, env, ctx);
+        return jsonResp(data, corsHeaders, status);
       }
 
       // --- /refresh ---
@@ -341,6 +360,10 @@ async function refreshIdToken(refreshToken, env) {
  * Lecture authentifiée service account (survit aux règles strictes), fallback anonyme.
  */
 async function readCmcPw(uid, env, ctx) {
+  // 27.09.2026 : le hash vit désormais dans /cmcteams_secret/pw (illisible par tout téléphone).
+  // Avant la migration, il n'y est pas encore → on relit l'ancien emplacement public.
+  const sec = await rtdb(env, ctx, "GET", `cmcteams_secret/pw/${encodeURIComponent(uid)}`);
+  if (sec.ok && sec.value && (typeof sec.value === "string" || sec.value.h)) return { ok: true, value: sec.value, mode: "secret" };
   const base = `https://${env.FIREBASE_PROJECT_ID}-default-rtdb.europe-west1.firebasedatabase.app/cmcteams/cmc_pw/${encodeURIComponent(uid)}.json`;
   let token = null;
   try { token = await getGoogleAccessToken(env, ctx); } catch (_) { /* fallback anon */ }
@@ -353,6 +376,8 @@ async function readCmcPw(uid, env, ctx) {
   if (!text || text.trim() === "null") return { ok: false, status: 404, detail: "user_not_found" };
   let value;
   try { value = JSON.parse(text); } catch (_) { value = cleanFbVal(text); }
+  // Une fois migré, l'ancien emplacement ne garde qu'un repère sans hash → compte inconnu ici.
+  if (value && typeof value === "object" && !value.h) return { ok: false, status: 404, detail: "user_not_found" };
   return { ok: true, value, mode: token ? "admin" : "anon" };
 }
 
@@ -433,4 +458,108 @@ export async function importPrivateKey(pem) {
     false,
     ["sign"]
   );
+}
+
+/* ───────────── CMCteams : secrets vérifiés ICI, jamais sur les téléphones (27.09.2026) ─────────────
+   Mesuré ce jour : /cmcteams/cmc_pw (hash rapides, sel fixe) et /cmcteams/cmc_verif_codes (codes à
+   6 chiffres EN CLAIR) étaient lisibles par n'importe quel visiteur (jeton anonyme). Ils déménagent
+   dans /cmcteams_secret (illisible par tout téléphone ; les codes au rôle admin seulement) :
+   - /login-cmc lit le hash au secret ;
+   - le code d'inscription est tiré, rangé et vérifié ICI ; l'admin le voit dans son écran. */
+export const CMC_ADMIN_UID = "U11804";
+export function cmcIdOk(uid) { return typeof uid === "string" && /^[A-Za-z0-9_-]{2,40}$/.test(uid); }
+
+/** Lecture / écriture RTDB au compte de service (les règles ne s'appliquent pas à lui). */
+export async function rtdb(env, ctx, method, path, body) {
+  let token;
+  try { token = await getGoogleAccessToken(env, ctx); } catch (e) { return { ok: false, status: 0, detail: "sa_" + String(e.message || e).slice(0, 60) }; }
+  const url = `https://${env.FIREBASE_PROJECT_ID}-default-rtdb.europe-west1.firebasedatabase.app/${path}.json?access_token=${encodeURIComponent(token)}`;
+  const init = { method, headers: { "Content-Type": "application/json" } };
+  if (body !== undefined) init.body = JSON.stringify(body);
+  const r = await fetch(url, init);
+  if (!r.ok) return { ok: false, status: r.status, detail: `rtdb_${method.toLowerCase()}_${r.status}` };
+  const t = await r.text();
+  let value = null;
+  try { value = t ? JSON.parse(t) : null; } catch (_) { value = cleanFbVal(t); }
+  return { ok: true, status: r.status, value };
+}
+
+/** 6 chiffres tirés au hasard cryptographique (sans biais de modulo). */
+export function genCode6() {
+  const a = new Uint32Array(1);
+  do { crypto.getRandomValues(a); } while (a[0] >= 4294000000);
+  return String(a[0] % 1000000).padStart(6, "0");
+}
+/** Comparaison en temps constant (longueur comprise). */
+export function ctEq(a, b) {
+  a = String(a || ""); b = String(b || "");
+  let d = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) d |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return d === 0;
+}
+async function limite(env, cle, max, ttl) {
+  const n = parseInt((await env.AUTH_KV.get(cle)) || "0", 10);
+  if (n >= max) return false;
+  await env.AUTH_KV.put(cle, String(n + 1), { expirationTtl: ttl });
+  return true;
+}
+const CODE_TTL_MS = 15 * 60 * 1000, CODE_ESSAIS_MAX = 5;
+
+/**
+ * POST /cmc/code/new {uid, email, nom, prenom} → {ok, expiresAt}. Le code n'est JAMAIS renvoyé :
+ * il part au secret, où l'écran admin le lit (rôle admin). Refusé pour un compte déjà validé
+ * (sinon le code servirait à ouvrir la session de quelqu'un d'autre) et pour l'admin.
+ */
+export async function cmcCodeNew(body, request, env, ctx) {
+  const uid = body && body.uid;
+  if (!cmcIdOk(uid)) return [{ ok: false, error: "bad_uid" }, 400];
+  if (uid === CMC_ADMIN_UID) return [{ ok: false, error: "refuse" }, 403];
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (!(await limite(env, `rcn:${ip}`, 10, 3600)) || !(await limite(env, `rcu:${uid}`, 5, 3600))) {
+    return [{ ok: false, error: "rate_limited", retry_after: 3600 }, 429];
+  }
+  const reg = await rtdb(env, ctx, "GET", `cmcteams/cmc_reg/${encodeURIComponent(uid)}`);
+  if (!reg.ok) return [{ ok: false, error: reg.detail || "rtdb" }, 502];
+  if (reg.value && (reg.value.verified === true || reg.value.verifiedByAdmin === true)) return [{ ok: false, error: "deja_valide" }, 409];
+  const txt = (v, n) => String(v == null ? "" : v).slice(0, n);
+  const now = Date.now();
+  const entry = { code: genCode6(), email: txt(body.email, 120), nom: txt(body.nom, 60), prenom: txt(body.prenom, 60), createdAt: now, expiresAt: now + CODE_TTL_MS, used: false, essais: 0 };
+  const w = await rtdb(env, ctx, "PUT", `cmcteams_secret/codes/${encodeURIComponent(uid)}`, entry);
+  if (!w.ok) return [{ ok: false, error: w.detail || "rtdb" }, 502];
+  ctx.waitUntil(auditLog(env, uid, "cmc_code_new", ip));
+  return [{ ok: true, expiresAt: entry.expiresAt }, 200];
+}
+
+/**
+ * POST /cmc/code/check {uid, code} → {ok, id_token?, refresh_token?, custom_token?}. Vérifie ICI,
+ * 5 essais par code, marque le code utilisé, valide la fiche (verified) et ouvre la session du compte.
+ */
+export async function cmcCodeCheck(body, request, env, ctx) {
+  const uid = body && body.uid, code = String((body && body.code) || "").trim();
+  if (!cmcIdOk(uid) || !/^\d{6}$/.test(code)) return [{ ok: false, error: "bad_input" }, 400];
+  if (uid === CMC_ADMIN_UID) return [{ ok: false, error: "refuse" }, 403];
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (!(await limite(env, `rcc:${ip}`, 20, 900))) return [{ ok: false, error: "rate_limited", retry_after: 900 }, 429];
+  const p = `cmcteams_secret/codes/${encodeURIComponent(uid)}`;
+  const g = await rtdb(env, ctx, "GET", p);
+  if (!g.ok) return [{ ok: false, error: g.detail || "rtdb" }, 502];
+  const e = g.value;
+  if (!e || !e.code) return [{ ok: false, error: "aucun_code" }, 404];
+  if (e.used) return [{ ok: false, error: "deja_utilise" }, 409];
+  if (Date.now() > (+e.expiresAt || 0)) return [{ ok: false, error: "expire" }, 410];
+  if ((+e.essais || 0) >= CODE_ESSAIS_MAX) return [{ ok: false, error: "trop_essais" }, 429];
+  if (!ctEq(code, e.code)) {
+    await rtdb(env, ctx, "PATCH", p, { essais: (+e.essais || 0) + 1 });
+    return [{ ok: false, error: "code_incorrect", restants: CODE_ESSAIS_MAX - (+e.essais || 0) - 1 }, 401];
+  }
+  const now = Date.now();
+  const u = await rtdb(env, ctx, "PATCH", p, { used: true, usedAt: now });
+  if (!u.ok) return [{ ok: false, error: u.detail || "rtdb" }, 502];
+  await rtdb(env, ctx, "PATCH", `cmcteams/cmc_reg/${encodeURIComponent(uid)}`, { verified: true, verifiedAt: now });
+  ctx.waitUntil(auditLog(env, uid, "cmc_code_ok", ip));
+  const customToken = await generateCustomToken(uid, env, "cmc");
+  const out = { ok: true, uid, scope: "cmc", custom_token: customToken, expires_in: 3600 };
+  const idt = await exchangeForIdToken(customToken, env);
+  if (idt) { out.id_token = idt.idToken; out.refresh_token = idt.refreshToken; out.expires_in = parseInt(idt.expiresIn, 10) || 3600; }
+  return [out, 200];
 }

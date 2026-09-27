@@ -49,7 +49,12 @@ export function hashPwV2(pw, salt) {
  */
 export function verifyCmcPw(pw, stored) {
   if (!stored) return false;
-  if (typeof stored === "string") return hashPw(pw) === stored; // legacy DJB2
+  if (typeof stored === "string") {
+    // Parité avec l'app (verifyPw) : une chaîne peut aussi être un hash "v2:"/"s1:".
+    if (stored.indexOf("v2:") === 0) { var p = stored.split(":"); return p.length >= 3 && hashPwV2(pw, p[1]) === stored; }
+    if (stored.indexOf("s1:") === 0) return hashPwStrong(pw) === stored;
+    return hashPw(pw) === stored; // legacy DJB2
+  }
   if (stored.h) {
     if (stored.h.indexOf("v2:") === 0) {
       var parts = stored.h.split(":");

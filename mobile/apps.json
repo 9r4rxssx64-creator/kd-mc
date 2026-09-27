@@ -20,7 +20,8 @@
         "tools/shared/seances-ui.js",
         "tools/shared/planning-seed-emps.js",
         "tools/shared/fiche-auto.js",
-        "tools/shared/fiche-privee.js"
+        "tools/shared/fiche-privee.js",
+        "tools/shared/secrets-cmc.js"
       ],
       "icon": "icon.svg",
       "site": "https://cmcteams.kd-mc.com",

@@ -36,6 +36,11 @@ const ORDERS_READ = (process.env.ORDERS_READ || 'keep').toLowerCase();
 // role:admin sur cmc_admin_cfg/cmc_motd) ; 'off' = write parent auth!=null (rollback) ;
 // 'keep' (défaut) = préserve l'état LIVE. LECTURE /cmcteams inchangée dans tous les cas.
 const CMC_ADMIN_LOCK = (process.env.CMC_ADMIN_LOCK || 'keep').toLowerCase();
+// Verrou SECRETS CMCteams (27.09.2026) : 'on' = /cmcteams/cmc_pw/<uid>/h et /cmcteams/cmc_verif_codes
+// refusent toute écriture non nulle (les secrets vivent dans /cmcteams_secret, vérifiés par
+// apex-auth-worker). Posé par le robot coffre-secrets-cmc APRÈS la migration. 'keep' (défaut) =
+// état LIVE préservé ; 'off' = rollback (l'ancien emplacement réécrivable).
+const SECRETS_LOCK = (process.env.SECRETS_LOCK || 'keep').toLowerCase();
 
 const { getAccessToken } = require('./sa-token.cjs');
 
@@ -163,6 +168,35 @@ const { getAccessToken } = require('./sa-token.cjs');
     if (JSON.stringify(rules.coffre_vault['.read']) !== '"auth != null"') throw new Error('SECURITÉ : /coffre_vault .read attendu "auth != null" dans le fichier, abort');
     console.log('🔒 HARDEN : /apex + /coffre_vault .read/.write = auth != null');
   }
+  // Secrets CMCteams (27.09.2026) : /cmcteams_secret illisible par TOUS (hash de mots de passe) ;
+  // seuls les codes d'inscription se lisent au rôle admin. Jamais publié autrement, même en rollback.
+  const cs = rules.cmcteams_secret;
+  if (!cs || cs['.read'] !== false || !cs.pw || !cs.pw.$uid || cs.pw.$uid['.read'] != null || cs.pw['.read'] != null
+      || !cs.codes || !/auth\.token\.role === 'admin'/.test(String(cs.codes['.read'] || ''))) {
+    throw new Error('SECURITÉ : /cmcteams_secret doit rester illisible (codes : rôle admin seulement), abort');
+  }
+  let secretsLock = SECRETS_LOCK;
+  if (STATE === 'open') secretsLock = 'off';
+  else if (secretsLock === 'keep') {
+    try {
+      const cur = await fetch(DB + '/.settings/rules.json?access_token=' + encodeURIComponent(token)).then(r => r.json());
+      const c = cur && cur.rules && cur.rules.cmcteams;
+      secretsLock = (c && c.cmc_verif_codes && c.cmc_verif_codes['.validate'] === 'false') ? 'on' : 'off';
+      console.log('🔎 SECRETS_LOCK=keep → état live détecté : ' + secretsLock);
+    } catch (e) {
+      throw new Error('SECRETS_LOCK=keep : lecture des règles live impossible (' + e.message + '), abort');
+    }
+  }
+  if (secretsLock === 'on') {
+    const c = rules.cmcteams;
+    c.cmc_pw = Object.assign({}, c.cmc_pw);
+    c.cmc_pw.$uid = Object.assign({}, c.cmc_pw.$uid, { h: { '.validate': 'false' } });
+    c.cmc_verif_codes = Object.assign({}, c.cmc_verif_codes, { '.validate': 'false' });
+    console.log('🔒 SECRETS_LOCK=on : /cmcteams/cmc_pw/<uid>/h et /cmcteams/cmc_verif_codes refusent toute écriture');
+  } else {
+    console.log('🛟 SECRETS_LOCK=off : ancien emplacement des secrets réécrivable (avant migration / rollback)');
+  }
+
   // Fiches privées CMCteams (27.09.2026) : /cmcteams_prive se lit au rôle admin SEULEMENT.
   // Garde-fou : jamais publié ouvert, même en rollback (rules_state=open ne concerne que /cmcteams).
   const cp = rules.cmcteams_prive;
@@ -217,6 +251,18 @@ const { getAccessToken } = require('./sa-token.cjs');
   const lp = live?.rules?.cmcteams_prive;
   if (!lp || !/role/.test(String(lp['.read'] || ''))) throw new Error('Vérif KO : /cmcteams_prive absent ou lisible sans rôle admin en live, abort');
   console.log('🔒 Fiches privées /cmcteams_prive : lecture rôle admin seulement');
+
+  // Vérif COMPORTEMENTALE des secrets : un visiteur ne doit JAMAIS lire /cmcteams_secret.
+  const sSecret = await anonProbe('/cmcteams_secret');
+  console.log('🔬 Probe anonyme : /cmcteams_secret=' + sSecret + ' (attendu 401)');
+  if (sSecret === 200) throw new Error('DANGER : /cmcteams_secret lisible SANS auth, abort');
+  const ls2 = live?.rules?.cmcteams_secret;
+  if (!ls2 || ls2['.read'] !== false) throw new Error('Vérif KO : /cmcteams_secret absent ou lisible en live, abort');
+  if (secretsLock === 'on') {
+    const lcs = live?.rules?.cmcteams;
+    if (!(lcs?.cmc_verif_codes?.['.validate'] === 'false' && lcs?.cmc_pw?.$uid?.h?.['.validate'] === 'false')) throw new Error('Vérif KO : verrou secrets absent en live, abort');
+  }
+  console.log('🔒 Secrets /cmcteams_secret : illisibles (codes : admin) · verrou ancien emplacement : ' + secretsLock);
 
   // Vérif COMPORTEMENTALE du verrou lecture commandes (lesson #95).
   const sOrders = await anonProbe('/shops_admin_v1/orders');

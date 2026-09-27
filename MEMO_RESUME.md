@@ -207,6 +207,20 @@ Si elle est encore sur l'iPhone, elle repartira toute seule ; sinon elle est à 
 
 ---
 
+## 2026-09-27 (soir) — Phase 2 : mots de passe et codes vérifiés par le serveur (v9.924, Kevin « Go tout auto »)
+
+- Mesuré : `cmc_pw` (hash rapides, sel fixe) et `cmc_verif_codes` (codes EN CLAIR) lisibles par tout téléphone, vérifiés
+  dans la page. Correctif : `/cmcteams_secret` (pw illisible par tous ; codes au rôle admin) ; apex-auth-worker lit le
+  secret (`/login-cmc`, 10 essais/15 min PAR COMPTE) et gère les codes (`/cmc/code/new|check`) ; appli v9.924 :
+  `tools/shared/secrets-cmc.js` (repère `{set:true}` public, connexion et code au serveur, jeton de la personne,
+  codes admin relus au secret) ; robot privé `coffre-secrets-cmc.yml` (attend règles + serveur + appli v9.924, range,
+  relit, drapeau `cmc_secret_actif`, nettoie, verrouille l'ancien emplacement, prouve comme un téléphone anonyme).
+- Gardes : `test:secrets-cmc` **41/0** (7 sabotages rouges), `test:auth-worker` **18/0** (6 sabotages). Leçon #349.
+- Deux pièges attrapés par le test : effacement au secret d'un compte simplement absent de la copie reçue ; hash
+  gardé dans le stockage (l'appli range la copie brute avant fusion).
+- Reste (phase 2b) : écritures partagées (`cmc_e`, `cmc_audit`, `cmc_known_identities`…) encore ouvertes à tout jeton ;
+  maintenant que chaque employé a SON jeton (auth.uid), on peut les restreindre par personne / rôle admin.
+
 ## 2026-09-27 (16h10) — Fiches privées ACTIVES (feu vert de Kevin) — règles publiées et prouvées
 
 - PR #4059 fusionnée (le robot des fiches publie lui-même les règles), puis `coffre-fiches-privees` lancé à la main

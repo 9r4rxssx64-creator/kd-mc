@@ -56,6 +56,38 @@ Sur une famille calquée sur la sienne (Attilio → Judith ; Judith × Marius �
 sous le couple** (−111 px du père / +111 px de la mère pour celui du milieu). Ce que Kevin
 voyait venait donc des **données** (mère manquante → personne placée à côté au lieu d'en
 dessous), pas du dessin — et c'est ce que corrigent les fichiers appliqués.
+## 2026-09-27 — Lingua : « Quel est mon code ? » — l'app sait enfin répondre (v2.126.0)
+
+Kevin : « Quel est mon code, je n'arrive pas à le connecter ».
+
+**Réponse honnête d'abord, avant toute ligne de code : je ne l'ai pas et je ne peux pas le
+retrouver.** En ligne, le code n'existe que **haché** (`cloudKeyFor` = `sha256(prénom+nom + ":" +
+code)`) — irréversible, y compris pour nous. Aucun fichier, aucun commit, aucun test de ce dépôt
+ne contient le code de qui que ce soit, et ça ne changera pas.
+
+**Le vrai défaut, mesuré** : le code dort **en clair** dans le téléphone depuis le premier jour
+(`lingua_g_accounts[].code`, écrit par `createAccount`) et l'app ne l'affichait **nulle part**.
+Elle réclamait donc une clé qu'elle savait lire mais refusait de rappeler. Code oublié = compte
+perdu, sans recours et sans bruit. C'était le seul cul-de-sac de l'app.
+
+**v2.126.0 — trois ajouts, à l'endroit où l'on bute :**
+- **Profil → Mémoire en ligne → « Voir mon code »** : rappelle le **prénom+nom exact enregistré**
+  (sans lui le code seul ne rouvre rien : l'identité = prénom + nom depuis le 5.09) et le code,
+  **masqué** tant qu'on n'appuie pas sur « Afficher », avec un bouton « Copier ».
+- **Écran de connexion → « Code oublié ? »** : liste les comptes présents **sur cet appareil** et
+  mène au même rappel — c'est là qu'on s'aperçoit qu'on l'a oublié. Ailleurs, la vérité est
+  écrite en toutes lettres : en ligne le code est brouillé, personne ne peut le relire.
+- **« Changer mon code »** (profil seulement, là où `cloudSaveNow` sait réécrire) : prévient que
+  l'ancien code ne reconnectera plus ailleurs.
+
+**Pourquoi ce n'est pas un trou de sécurité** : sur cet appareil, taper la carte du compte y entre
+**déjà** sans aucun code (`vAccounts`). Le code ne protège que l'arrivée depuis un **autre**
+appareil. Montrer à quelqu'un ce à quoi il a déjà pleinement accès ne lui donne rien de neuf.
+
+**Preuve** : `npm run test:lingua-mon-code` — **20 OK / 0 FAIL**. Discriminant vérifié : sur le
+`lingua/app.js` d'avant, le même test tombe à **8 OK / 12 FAIL**. Voisins tous verts :
+parcours 11/0 · connexion 20/0 · voix 26/0 · `no-pin-leak`, `xss-guard`, `file-size-guard`,
+`innerhtml-mesure`, `check-syntax` OK.
 
 ---
 

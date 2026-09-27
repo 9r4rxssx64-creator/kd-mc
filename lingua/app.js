@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.125.1";
+var APP_VER="v2.126.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -969,6 +969,9 @@ function openLogin(){
       toast("Aucune sauvegarde pour ce prénom + code 🤔"+(noms.length?" — sur ce téléphone : "+esc(noms.join(", ")):""));
     }); };
   m.body.appendChild(ok);
+  /* Le code est la porte : il faut pouvoir le retrouver ici même, pas dans un mail. */
+  var oub=el("button","btn-ghost small"); oub.textContent="Code oublié ?";
+  oub.onclick=function(){ m.close(); openForgotCode(); }; m.body.appendChild(oub);
   setTimeout(function(){ var i=m.body.querySelector("#lgPrenom"); if(i)i.focus(); },100);
 }
 function openEnableCloud(){
@@ -979,6 +982,65 @@ function openEnableCloud(){
   ok.onclick=function(){ var c=(m.body.querySelector("#ecCode").value||"").trim(); if(c.length<4){ toast("Code trop court (4 min)"); return; } setAccountCode(ACC,c); cloudSaveNow(); m.close(); toast("☁️ Mémoire en ligne activée !"); render(); };
   m.body.appendChild(ok);
   setTimeout(function(){ var i=m.body.querySelector("#ecCode"); if(i)i.focus(); },100);
+}
+/* ===== « Quel est mon code ? » (Kevin, 2026-09-27 : « je n'arrive pas à le connecter »)
+   L'app réclamait un code qu'elle ne savait pas rappeler : il dort en clair dans le
+   téléphone depuis toujours, mais n'était affiché nulle part.
+   Ce n'est pas un trou de sécurité : sur CET appareil, taper la carte du compte y
+   entre déjà sans code (vAccounts). Le code ne protège que l'arrivée depuis un AUTRE
+   appareil. En ligne il n'existe que haché (cloudKeyFor) — donc irrécupérable ailleurs
+   qu'ici, et on le dit au lieu de le laisser croire. */
+function openMyCode(id){
+  var a=accMeta(id)||{};
+  if(!a.code){ toast("Ce compte n'a pas encore de code 🔑"); return; }
+  var m=modal();
+  m.body.innerHTML='<h3>🔑 Ton code</h3><p class="mini">Sur un autre appareil, entre <b>exactement</b> ces deux lignes pour retrouver ta progression.</p>'+
+    '<input class="txt" id="mcName" readonly>'+
+    '<input class="txt" id="mcCode" readonly value="••••••">'+
+    '<p class="mini">Lisible seulement ici. En ligne ton code n\'est stocké que brouillé : personne ne peut le relire à ta place, pas même nous.</p>';
+  m.body.querySelector("#mcName").value=a.name||"";
+  var champ=m.body.querySelector("#mcCode");
+  var voir=el("button","btn-main"); voir.textContent="👁️ Afficher mon code";
+  var copier=el("button","btn-ghost"); copier.textContent="📋 Copier le code"; copier.style.display="none";
+  copier.onclick=function(){ try{ champ.select(); }catch(_){}
+    var p=(navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(String(a.code)):Promise.reject();
+    p.then(function(){ toast("Code copié 📋"); }).catch(function(){ toast("Le code est sélectionné — copie-le 🙂"); }); };
+  voir.onclick=function(){ champ.value=String(a.code); voir.style.display="none"; copier.style.display=""; };
+  m.body.appendChild(voir); m.body.appendChild(copier);
+  /* Changer le code réécrit la sauvegarde en ligne sous une nouvelle clé : ça n'a de
+     sens que pour le compte ouvert (cloudSaveNow ne sait sauver que celui-là). */
+  if(id===ACC){ var ch=el("button","btn-ghost small"); ch.textContent="Changer mon code";
+    ch.onclick=function(){ m.close(); openChangeCode(id); }; m.body.appendChild(ch); }
+}
+function openChangeCode(id){
+  var a=accMeta(id)||{}; var m=modal();
+  m.body.innerHTML='<h3>🔒 Changer mon code</h3><p class="mini">Ta progression reste sur cet appareil et repart en ligne sous le nouveau code. <b>L\'ancien code ne te reconnectera plus</b> ailleurs.</p>'+
+    '<input id="ccCode" class="txt" placeholder="Nouveau code (4 chiffres min)" inputmode="numeric" maxlength="10" autocomplete="off">';
+  var ok=el("button","btn-main"); ok.textContent="Enregistrer";
+  ok.onclick=function(){ var c=(m.body.querySelector("#ccCode").value||"").trim();
+    if(c.length<4){ toast("Code trop court (4 min)"); return; }
+    if(c===String(a.code)){ m.close(); toast("C'est déjà ton code 🙂"); return; }
+    setAccountCode(id,c); if(ACC===id) cloudSaveNow();
+    m.close(); toast("🔑 Nouveau code enregistré"); render(); };
+  m.body.appendChild(ok);
+  setTimeout(function(){ var i=m.body.querySelector("#ccCode"); if(i)i.focus(); },100);
+}
+/* « Code oublié ? » depuis l'écran de connexion. On ne peut le retrouver QUE sur un
+   appareil où le compte est encore là ; ailleurs on le dit franchement plutôt que de
+   laisser chercher. */
+function openForgotCode(){
+  var m=modal();
+  var avec=accounts().filter(function(a){ return a&&a.code; });
+  m.body.innerHTML='<h3>🔑 Code oublié</h3>'+
+    (avec.length?'<p class="mini">Comptes présents sur <b>cet</b> appareil — choisis le tien pour revoir son code.</p>'
+               :'<p class="mini">Aucun compte avec code sur cet appareil.</p>');
+  avec.forEach(function(a){ var b=el("button","btn-ghost");
+    b.innerHTML='<span>'+(a.avatar||"🦊")+' '+esc(a.name)+'</span>';
+    b.onclick=function(){ m.close(); openMyCode(a.id); }; m.body.appendChild(b); });
+  var note=el("p","mini"); note.style.marginTop="14px";
+  note.innerHTML='Sur un appareil où tu es <b>encore connecté·e</b> : <b>Profil → Mémoire en ligne → Voir mon code</b>. Nulle part ailleurs : en ligne, le code est brouillé à sens unique et personne ne peut le relire.';
+  m.body.appendChild(note);
+  var fin=el("button","btn-ghost small"); fin.textContent="Fermer"; fin.onclick=function(){ m.close(); }; m.body.appendChild(fin);
 }
 
 /* ---------- Topbar ---------- */
@@ -1635,7 +1697,8 @@ function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",
   // (Une seule voix pour tout — voir la section « 🔊 Voix » plus bas. Fini les 2 réglages qui se contredisaient.)
   // mémoire en ligne
   var cloud=el("div","freeze-card");
-  if(me.code){ cloud.innerHTML='<div><b>☁️ Mémoire en ligne active</b><span> — ta progression est sauvegardée. Retrouve-la partout avec ton prénom + ton code.</span></div><div class="fx">'+(_cloudState==="off"?"⚠️":"✓")+'</div>'; }
+  if(me.code){ cloud.innerHTML='<div><b>☁️ Mémoire en ligne active</b><span> — ta progression est sauvegardée. Retrouve-la partout avec ton prénom + ton code.</span></div><div class="fx">'+(_cloudState==="off"?"⚠️":"✓")+'</div>';
+    var vb=el("button","btn-buy"); vb.textContent="Voir mon code"; vb.onclick=function(){ openMyCode(ACC); }; cloud.appendChild(vb); }
   else { cloud.innerHTML='<div><b>☁️ Mémoire en ligne</b><span> — inactive (progression seulement sur cet appareil).</span></div>'; var eb=el("button","btn-buy"); eb.textContent="Activer"; eb.onclick=openEnableCloud; cloud.appendChild(eb); }
   d.appendChild(cloud);
   // gel de série

@@ -353,7 +353,7 @@ async function handleArbre(request, url, env) {
   return J({ ok: false, reason: 'not_found' }, null, 404);
 }
 
-export default {
+const ROUTEUR = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const host = url.hostname.toLowerCase();
@@ -586,6 +586,36 @@ export default {
   /* Cron 5 min (wrangler.toml [triggers]) : sentinelle « robot en surface » — no-op tant
      que Tuya n'est pas lié ; notifie Kevin à CHAQUE remontée du robot (transition seule). */
   async scheduled(event, env, ctx) { ctx.waitUntil(Promise.all([tuyaSurfaceCheck(env), tuyaScheduleTick(env), tuyaHistoryTick(env)])); },
+};
+
+/* PORTE D'ENTRÉE UNIQUE (audit du domaine, 27.09.2026 — sonde run 36336678721).
+   Mesuré de l'extérieur : les en-têtes de sécurité n'étaient posés QUE sur le chemin
+   « page servie par l'hébergeur ». Toutes les réponses fabriquées par le routeur lui-même
+   (porte fermée 401 de cuisine/osint/ia/outils/tor/worldmonitor/dossiers, admin.kd-mc.com,
+   autorisations, beatbot) partaient SANS HSTS, sans anti-iframe, sans nosniff — note 0/100.
+   Et http://kd-mc.com/ répondait 200 en clair au lieu de rediriger vers https.
+   Ici, CHAQUE réponse passe par le même durcissement, quel que soit le chemin qui l'a faite :
+   un nouveau `return new Response(...)` ne peut plus l'oublier. */
+export function durcirReponse(res) {
+  if (!res || res.status === 101 || res.webSocket) return res;   // WebSocket : on n'y touche pas
+  const h = new Headers(res.headers);
+  if (!h.has('x-content-type-options')) h.set('x-content-type-options', 'nosniff');
+  if (!h.has('referrer-policy')) h.set('referrer-policy', 'strict-origin-when-cross-origin');
+  if (!h.has('x-frame-options')) h.set('x-frame-options', 'SAMEORIGIN');
+  if (!h.has('strict-transport-security')) h.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    const u = new URL(request.url);
+    if (u.protocol === 'http:' && /(^|\.)kd-mc\.com$/i.test(u.hostname)) {
+      u.protocol = 'https:';
+      return durcirReponse(new Response(null, { status: 301, headers: { location: u.toString() } }));
+    }
+    return durcirReponse(await ROUTEUR.fetch(request, env, ctx));
+  },
+  scheduled(event, env, ctx) { return ROUTEUR.scheduled(event, env, ctx); },
 };
 
 /* Réécrit le « Location » d'une redirection de l'amont vers l'adresse publique.

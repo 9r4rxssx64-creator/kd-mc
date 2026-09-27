@@ -9,6 +9,18 @@
 
 ---
 
+## 🛡 Audit du domaine (27.09) — 2 réponses attendues (je fais le travail dès que tu réponds)
+
+1. **Codes maladie dans le planning public.** Les plannings restent visibles comme tu l'as décidé le 10.09.
+   Mais le fichier contient le **motif** des absences (M = maladie : 1 045 cases, AT, MT, sanctions).
+   Je propose de remplacer ces motifs par « ABS » pour tout le monde sauf toi. → réponds **« oui masque »** ou **« non »**.
+2. **Responsable affiché dans la page confidentialité** : aujourd'hui « SBM / DPO @sbm.mc ». Je mets
+   **ton nom** et **une seule adresse** ? → réponds **« oui »** + l'adresse voulue, ou **« non »**.
+
+Rapport complet (privé) : [audit/prive/AUDIT-DOMAINE-2026-09-27.md](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/prive/AUDIT-DOMAINE-2026-09-27.md)
+
+---
+
 ## 🌳 Arbre — 3 réponses attendues (je fais le travail dès que tu réponds)
 
 1. **Jeanne ROSSI ou Yvonne ?** L'arbre portait déjà une « Yvonne » (fiche sans nom de famille)

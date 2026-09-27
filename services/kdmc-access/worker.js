@@ -218,7 +218,11 @@ export default {
     if (url.pathname === '/log' && request.method === 'POST') return handleLog(request, env, origin);
     if (url.pathname === '/history' && request.method === 'GET') return handleHistory(request, env, origin);
     if (url.pathname === '/' || url.pathname === '') {
-      return new Response(PAGE_HTML, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+      /* Audit du domaine 27.09.2026 : cette page (admin.kd-mc.com) partait sans aucun en-tête de
+         sécurité (note 0/100). Page admin → jamais encadrable, jamais de référent, HTTPS forcé. */
+      return new Response(PAGE_HTML, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+        'X-Frame-Options': 'DENY', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains', 'Content-Security-Policy': "frame-ancestors 'none'" } });
     }
     return json({ ok: false, error: 'not_found' }, 404, origin);
   },

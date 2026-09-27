@@ -38,7 +38,9 @@
     "tools/cuisine/livre.pdf",
     "patches/",
     "tools/arbre/",
-    "tools/patrimoine/"
+    "tools/patrimoine/",
+    "tools/audit/sonde-domaine.mjs",
+    "audit/prive/"
   ],
   "_prive_toujours_pourquoi": {
     "index.html / sw.js / app 2.js / manifest.json / version.txt": "l'application CMCteams elle-même (la liste des 260 employés est écrite dedans)",
@@ -47,7 +49,8 @@
     "apex-ai-v13/": "le paquet construit d'Apex contient la liste des cadres SBM ; il est reconstruit au coffre",
     "arbre/": "l'arbre généalogique : noms et photos de la famille",
     "coffre-fort/, crypto-bot/, clayscore/, patrimoine-demande.txt, NOTES_USER.md": "notes et outils personnels",
-    "patches/": "anciens correctifs d'Apex v12 : inutiles au public, et ils citent des numéros d'établissements"
+    "patches/": "anciens correctifs d'Apex v12 : inutiles au public, et ils citent des numéros d'établissements",
+    "tools/audit/sonde-domaine.mjs, audit/prive/": "audit du domaine (27.09.2026) : la sonde mesure des failles pas encore toutes corrigées (lecture Firebase anonyme, relais) et le rapport les décrit — les publier serait un mode d'emploi"
   },
   "chemins_qui_rendent_un_test_prive": [
     "tools/departs",
@@ -180,9 +183,10 @@
     ".github/workflows/coffre-previent-public.yml",
     ".github/workflows/coffre-chaine-privee.yml",
     ".github/workflows/coffre-fiches-privees.yml",
-    ".github/workflows/coffre-secrets-cmc.yml"
+    ".github/workflows/coffre-secrets-cmc.yml",
+    ".github/workflows/audit-domaine.yml"
   ],
-  "_workflows_prives_pourquoi": "Dans un dépôt public, les journaux ET les artefacts d'un robot sont lisibles par tous. Ces robots se connectent en tant que Kevin et prennent des captures des vraies pages (plannings), ou manipulent des sauvegardes de données : ils restent au coffre. Règle automatique en plus : un robot qui lance un test ou un fichier resté au coffre reste au coffre. coffre-chaine-privee.yml : il lance les etapes de test:ci qui ont besoin des fichiers PRIVES (CMCteams, Light, plannings, arbre) — au public elles ne peuvent pas tourner, et depuis la bascule du 26.09 elles ne tournaient plus nulle part (109 etapes sur 221, mesure).",
+  "_workflows_prives_pourquoi": "Dans un dépôt public, les journaux ET les artefacts d'un robot sont lisibles par tous. Ces robots se connectent en tant que Kevin et prennent des captures des vraies pages (plannings), ou manipulent des sauvegardes de données : ils restent au coffre. Règle automatique en plus : un robot qui lance un test ou un fichier resté au coffre reste au coffre. coffre-chaine-privee.yml : il lance les etapes de test:ci qui ont besoin des fichiers PRIVES (CMCteams, Light, plannings, arbre) — au public elles ne peuvent pas tourner, et depuis la bascule du 26.09 elles ne tournaient plus nulle part (109 etapes sur 221, mesure). audit-domaine.yml : ses résultats (check-run) listent ce qu'un inconnu peut lire — au public, ce serait un mode d'emploi.",
   "_test_prive_index_racine": "Un test est aussi privé s'il lit la page RACINE index.html (CMCteams) : « 'index.html' » seul, « ../index.html », « /CMCteams/index.html ». Pas « apex-ai/index.html » ni « tools/x/index.html » (autres applications).",
   "scripts_npm_prives": [
     {

@@ -1,5 +1,10 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🛡 Audit de ton domaine : 36/100, un trou fermé ce soir (27.09.2026)
+
+- 📄 **Le rapport** (privé, dans le coffre) : [audit/prive/AUDIT-DOMAINE-2026-09-27.md](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/prive/AUDIT-DOMAINE-2026-09-27.md)
+- 🔎 **La sonde « sécurité vue de l'extérieur »** : [tools/audit/sonde-domaine.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/sonde-domaine.mjs) · robot [audit-domaine.yml](https://github.com/9r4rxssx64-creator/CMCteams/actions/workflows/audit-domaine.yml)
+- 🧱 **Le test du routeur durci** : [services/kdmc-router/durci.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/durci.test.mjs)
 ### 🔒 L’icône du livre ne part plus jamais sur CMCteams (27.09.2026, nuit)
 
 - 📱 **À essayer** : touche l’icône du livre. Tu restes sur « 🔒 A Cüjina de Mùnegu » ; touche **Face ID**, le livre s’ouvre. Rien ne part tout seul vers CMCteams.

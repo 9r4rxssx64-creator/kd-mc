@@ -17,6 +17,7 @@
   "arbre-nuage.yml",
   "arbre-recherche-web.yml",
   "arbre-recherche.yml",
+  "audit-domaine.yml",
   "audit-live.yml",
   "auto-backup.yml",
   "cmc-runtime-audit.yml",

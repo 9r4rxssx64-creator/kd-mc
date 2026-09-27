@@ -83,7 +83,7 @@ for (const chemin of ['CLAUDE.md', '.claude/skills/x.md', 'tools/memory/apex-mem
   verifier(
     `« ${chemin} » est lu dans le bon dépôt`,
     r.status === 200 &&
-      derniereUrl === `https://raw.githubusercontent.com/9r4rxssx64-creator/CMCteams/main/${chemin}`,
+      derniereUrl === `https://raw.githubusercontent.com/9r4rxssx64-creator/kd-mc/main/${chemin}`,
     derniereUrl,
   );
 }
@@ -91,7 +91,7 @@ for (const chemin of ['CLAUDE.md', '.claude/skills/x.md', 'tools/memory/apex-mem
   const r = await appeler({ action: 'list', path: '.claude/skills' }, ORIGINE_OK);
   verifier(
     'lister un dossier interroge le bon dépôt',
-    r.status === 200 && derniereUrl.includes('/repos/9r4rxssx64-creator/CMCteams/contents/'),
+    r.status === 200 && derniereUrl.includes('/repos/9r4rxssx64-creator/kd-mc/contents/'),
     derniereUrl,
   );
 }
@@ -173,7 +173,7 @@ console.log('\n5. CHAQUE adresse du domaine peut-elle lire ?');
 
 console.log(
   echecs === 0
-    ? '\n✅ Tout est conforme : le relais est refermé et ne sort pas de CMCteams.\n'
+    ? '\n✅ Tout est conforme : le relais est refermé et ne lit que le dépôt public kd-mc.\n'
     : `\n❌ ${echecs} vérification(s) en échec — NE PAS DÉPLOYER.\n`,
 );
 process.exit(echecs === 0 ? 0 : 1);

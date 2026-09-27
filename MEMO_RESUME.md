@@ -1,5 +1,32 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (soir) — Audit du domaine : 36/100, un trou du coffre fermé, deux à fermer
+
+Kevin : « Fais ton audit du domaine et un d'améliorations détaillé ». Rapport **privé** :
+`audit/prive/AUDIT-DOMAINE-2026-09-27.md` (template pro, 6 axes, P0→P3, plan détaillé).
+
+**Mesuré par une sonde neuve** (`tools/audit/sonde-domaine.mjs` + `audit-domaine.yml`, tous deux
+**au coffre** via `regles.json`, résultat en check-run « audit-domaine ») :
+- **Relais Apex** : `Origin: https://kd-mc.com` suffisait pour lire `index.html` du COFFRE (2 Mo).
+  L'origine n'est pas une authentification. **Corrigé** : `ALLOWED_REPO` = dépôt public `kd-mc`
+  (`test:depot-relais`, 5 échecs au sabotage). **Redéployé** (run 36337831637, activer → lancer → pause) et revérifié de l'extérieur : fausse origine → 404
+  (sonde 36337898618). Piège vécu : le 1er déploiement (36337681295) est parti AVANT le push du correctif → il a
+  redéployé l'ancienne version ; seule la re-mesure l'a montré.
+- **Firebase** : session anonyme → `/cmcteams` 200 (70 clés, `cmc_e` 280). Écriture ouverte d'après les
+  règles. **Ouvert**, m145 à la session CMCteams.
+- **Planning public** : 5 adresses servent le planning avec **1 045 cellules « M »** (maladie). Décision
+  du 10.09 respectée (on ne rouvre pas le SSO) ; question posée : masquer seulement les **motifs**.
+- **En-têtes** : 39/100 en moyenne ; 0/100 sur toutes les réponses fabriquées par le routeur (401 de
+  9 apps, SSO, autorisations, beatbot) et sur admin.kd-mc.com ; `http` servi en clair. **Corrigé** :
+  `durcirReponse()` à la porte d'entrée du routeur + 301 vers https ; en-têtes sur la page admin
+  (`test:routeur-durci` 7/7 ; 3 et 2 échecs au sabotage).
+- DMARC, CAA, DNSSEC absents (plan P1). Portes admin 403, CORS sain, TLS 1.3, Firebase racine 401 ✅.
+- Lighthouse Apex mobile 25/100 : logo SVG de 960 Ko chargé 2 fois, `MEMO_RESUME.md` lu 6 fois.
+- audit-live : 6 rouges = sondes non adaptées à la fiche obligatoire (m145), pas une panne.
+
+**Pièges** : deux constats d'auditeurs étaient périmés depuis la bascule (test:ci « nulle part »,
+sauvegardes « publiques ») — toujours recouper avec l'état du jour. Leçon #350.
+
 ## 2026-09-27 (nuit) — « L’icône emmène encore sur CMCteams » : la porte ne part plus JAMAIS toute seule
 
 **Mesuré** (Zapier, vraie requête, comme une page iPhone sans session) : `cuisine.kd-mc.com/`, `/index.html`

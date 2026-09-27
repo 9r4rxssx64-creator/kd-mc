@@ -18,10 +18,20 @@
  * - Le PAT reste côté Worker (jamais exposé au navigateur)
  * - CORS limité à ton domaine github.io
  * - Rate limit natif Cloudflare (100k requests/jour gratuit)
- * - Whitelist du repo : uniquement 9r4rxssx64-creator/CMCteams
+ * - Whitelist du repo : uniquement le dépôt PUBLIC 9r4rxssx64-creator/kd-mc (27.09.2026)
  */
 
-const ALLOWED_REPO = "9r4rxssx64-creator/CMCteams";
+/* ⚠️ DÉPÔT PUBLIC SEULEMENT — audit du domaine du 27.09.2026 (sonde run 36336971746).
+ * Mesuré de l'extérieur : avec l'en-tête « Origin: https://kd-mc.com » (qu'un script hors
+ * navigateur écrit à sa guise), ce relais renvoyait `index.html` du COFFRE PRIVÉ — l'app
+ * CMCteams, 2 Mo, le fichier même que le coffre existe pour protéger. L'adresse du relais est
+ * écrite dans un fichier JS public d'Apex : n'importe qui pouvait lire tout le coffre avec le
+ * jeton de Kevin. L'origine n'est PAS une authentification.
+ * Correctif par construction : le relais ne lit plus que le dépôt PUBLIC `kd-mc` (même contenu
+ * que ce que tout le monde voit déjà, documents caviardés). Plus rien de privé ne peut sortir
+ * par ici, quelle que soit l'origine annoncée. Si Apex a un jour besoin d'un document privé,
+ * il passera par le domaine avec la session admin vérifiée — jamais par ce relais. */
+const ALLOWED_REPO = "9r4rxssx64-creator/kd-mc";
 
 /* Les seules pages autorisées à lire le dépôt par ce relais. */
 const ORIGINES_AUTORISEES = [

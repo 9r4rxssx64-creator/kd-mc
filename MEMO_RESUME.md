@@ -24,6 +24,17 @@ Si elle est encore sur l'iPhone, elle repartira toute seule ; sinon elle est à 
 
 ---
 
+## 2026-09-27 (16h10) — Fiches privées ACTIVES (feu vert de Kevin) — règles publiées et prouvées
+
+- PR #4059 fusionnée (le robot des fiches publie lui-même les règles), puis `coffre-fiches-privees` lancé à la main
+  (run 36324428817, succès en 26 s). Règles : `/cmcteams_prive` publié, autres états relus et gardés (shops on,
+  orders on, cmc_admin on), preuves anonymes 401 sur `/apex`, `/coffre_vault`, `/cmcteams`, `/cmcteams_prive`, commandes.
+- Rangement : **1 seule fiche** portait des champs personnels (rangée, relue identique, champ par champ) ; drapeau posé ;
+  0 fiche publique avec un champ perso ; visiteur et téléphone anonymes → 401 sur le privé. Revérifié depuis l'extérieur
+  (Firecrawl) : `/cmcteams_prive.json` → 401.
+- Reste phase 2 (à proposer) : `cmc_pw`, `cmc_verif_codes`, et l'écriture anonyme des clés partagées (`cmc_e`, `cmc_audit`,
+  `cmc_known_identities`).
+
 ## 2026-09-27 (15h55) — Fiches privées : v9.923 en ligne, mais les règles ne sont PAS publiées (en attente de Kevin)
 
 - En ligne (mesuré, cmcteams.kd-mc.com) : `APP_VER="v9.923"`, `sw.js` `cmcteams-v9.923`, garde `_fbVideInterdit` présente,

@@ -7,6 +7,19 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy to GitHub Pages — 27/09/2026 11:46 UTC
+
+- **Branche** : `main` · **Commit** : `ab8586b6` · **Run** : `36316757354`
+- **Ce qui a lâché** : deploy › Setup Pages
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/36316757354
+- **Ce que la machine a dit** :
+
+```
+##[warning]Get Pages site failed. Error: Not Found - https://docs.github.com/rest/pages/pages#get-a-apiname-pages-site
+##[error]Create Pages site failed. Error: Resource not accessible by integration - https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site
+##[error]HttpError: Resource not accessible by integration - https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site
+```
+
 ## ❌ Deploy kdmc-vente Worker — 27/09/2026 11:46 UTC
 
 - **Branche** : `main` · **Commit** : `ab8586b6` · **Run** : `36316757468`
@@ -555,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

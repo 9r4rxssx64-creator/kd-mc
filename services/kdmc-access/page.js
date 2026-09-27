@@ -229,7 +229,8 @@ export const PAGE_HTML = `<!doctype html>
   }
   async function load(hash){
     try{
-      var r=await fetch('/history',{headers:hash?{'x-apex-pin':hash}:{},credentials:'include'});
+      var tk='';try{tk=localStorage.getItem('kdmc_sso_token')||''}catch(e){}   /* (27.09) app installée : le pass du domaine vaut le code */
+      var r=await fetch('/history',{headers:hash?{'x-apex-pin':hash}:(tk?{'Authorization':'Bearer '+tk}:{}),credentials:'include'});
       if(r.status===401){if(hash)renderLock('Code incorrect.');return false}   /* sans code = simple essai de session : silencieux */
       if(!r.ok){renderLock('Souci serveur ('+r.status+'), réessaie.');return false}
       DATA=await r.json();window._pinhash=hash;await loadConn(hash);renderMain();startAuto();return true;

@@ -38,5 +38,15 @@ console.log('\nAdmin reconnu par n\'importe quel chemin\n');
 { const deja = signe('kdmc_admin', 1);
   const r = await post('kd-mc.com', '/__admin/login', { code: '424242' }, { authorization: 'Bearer ' + deja }); const j = await r.json();
   ok(j.ok === true && j.token === deja && cookies(r).length === 1, '6. une session vérifiée déjà présente est conservée (pas de second cookie de session)', String(cookies(r).length)); }
+/* 7-9. LE GRANT SANS CODE : « moi tout s'ouvre automatiquement » */
+{ const r = await mod.fetch(new Request('https://cmcteams.kd-mc.com/__admin/grant', { headers: { authorization: 'Bearer ' + signe('kdmc_admin', 1) } }), env, { waitUntil() {} });
+  const j = await r.json(); const c = cookies(r).join('|');
+  ok(j.ok === true && typeof j.grant === 'string' && j.via === 'session' && /kdmc_admin=/.test(c), '7. session vérifiée de Kevin (Bearer, app installée) → grant admin SANS code, cookie posé', JSON.stringify(j).slice(0, 80));
+  const fb = await mod.fetch(new Request('https://cmcteams.kd-mc.com/__admin/fbtoken', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-admin': j.grant }, body: '{}' }), env, { waitUntil() {} });
+  ok((await fb.json()).reason !== 'need_admin_code', '7 bis. ce grant ouvre les fiches privées (/__admin/fbtoken ne réclame plus de code)'); }
+{ const r = await mod.fetch(new Request('https://kd-mc.com/__admin/grant', { headers: { authorization: 'Bearer ' + signe('kdmc_admin', 0) } }), env, { waitUntil() {} });
+  ok(r.status === 403, '8. une session NON vérifiée qui se dit admin → refus (le nom seul ne donne rien)'); }
+{ const r = await mod.fetch(new Request('https://kd-mc.com/__admin/grant', { headers: { authorization: 'Bearer ' + signe('marie-curie', 1) } }), env, { waitUntil() {} });
+  ok(r.status === 403, '9. une session vérifiée d\'un NON-admin → refus'); }
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

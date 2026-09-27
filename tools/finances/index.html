@@ -1213,9 +1213,15 @@
   var _ensureGrantBusy=false;
   async function ensureGrant(){
     var g=adminGrantTok(); if(g) return g;
-    var h=(VAULT&&VAULT.aiPinHash)||''; if(!h) return '';
     if(_ensureGrantBusy) return '';
     _ensureGrantBusy=true;
+    /* (27.09) D'abord SANS rien : la session vérifiée de Kevin (Face ID / code admin déjà prouvé au domaine)
+       vaut le code → /__admin/grant. Le hash du coffre reste le secours. */
+    try{ var hd={}; try{ var pt=localStorage.getItem('kdmc_sso_token')||''; if(pt) hd.Authorization='Bearer '+pt; }catch(e){}
+      var r0=await fetch('/__admin/grant',{ credentials:'include', headers:hd }); var j0=await r0.json().catch(function(){return{};});
+      if(j0&&j0.ok&&j0.grant){ try{ localStorage.setItem(LS_GRANT,j0.grant); }catch(e){} _ensureGrantBusy=false; return j0.grant; }
+    }catch(e){}
+    var h=(VAULT&&VAULT.aiPinHash)||''; if(!h){ _ensureGrantBusy=false; return ''; }
     try{ var r=await fetch('/__admin/login',{ method:'POST', credentials:'include',
         headers:{'content-type':'application/json'}, body:JSON.stringify({hash:h}) });
       var j=await r.json().catch(function(){return{};});

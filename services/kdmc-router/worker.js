@@ -2821,6 +2821,19 @@ async function handleAdmin(request, url, env) {
     }
     return J({ ok: true, grant, token, uid: CANON_UID, admin: true, verified: true }, cookies);
   }
+  /* LE GRANT SANS CODE (Kevin 27.09 : « moi tout s'ouvre automatiquement : fiches privées, chaque app,
+     domaine ») : une session VÉRIFIÉE de l'admin (Face ID ou code admin déjà prouvé) vaut le code. Les
+     apps qui gardaient un grant (fiches privées, admin, écritures boutiques, bot, arbre, finances)
+     l'obtiennent ici sans rien demander ; le code admin ne reste que pour un appareil que le domaine
+     ne connaît pas. GET ou POST, tous canaux (Bearer, x-kdmc-sso, cookie). */
+  if (path === '/__admin/grant' && (request.method === 'GET' || request.method === 'POST')) {
+    const me = await adminSession(request, env);
+    if (!me) return J({ ok: false, reason: 'need_admin_code' }, undefined, 403);
+    const grant = me.grant ? adminGrantTok(request) : await ssoSign(secret, '__kdmc_admin__', 'admin', 1);
+    const cookie = `kdmc_admin=${grant}; Domain=.kd-mc.com; Path=/; Max-Age=43200; Secure; HttpOnly; SameSite=Lax`;
+    if (!me.grant) await audLog(env, { ev: 'admin_grant_session', uid: me.uid });
+    return J({ ok: true, grant, via: me.grant ? 'grant' : 'session' }, cookie);
+  }
   if (path === '/__admin/logout' && request.method === 'POST') {
     return J({ ok: true }, 'kdmc_admin=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');
   }

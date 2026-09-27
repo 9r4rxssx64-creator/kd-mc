@@ -1,5 +1,31 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (21h35 UTC) — « Moi tout s'ouvre automatiquement » : plus aucun code à Kevin quand le domaine le connaît (CMCteams v9.928, Chez Lolo v2.0.16)
+
+Kevin : « Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. »
+
+**Mesuré avant** (relevé m149) : 9 endroits redemandaient un code à Kevin alors que le domaine avait déjà sa
+session vérifiée — CMCteams (PIN local après une déconnexion ✕), fiches privées (`/__admin/fbtoken` sans le
+pass), admin.kd-mc.com, Finances, arbre (`prompt()` à chaque publication), bot (lisait `kdmc_sso_pass`
+seulement), Chez Lolo (mot de passe demandé 300 ms avant la réponse du domaine, studio idem), kdmc-access.
+
+**Fait** — **routeur** : `GET|POST /__admin/grant` = un laissez-passer admin **sans code** pour qui porte déjà
+une session **vérifiée admin** (Bearer, `x-kdmc-sso`, cookie) ou un grant ; 403 sinon (session non vérifiée
+ou non-admin) ; journalisé `admin_grant_session`. **Apps** : CMCteams `_cmcAdminSansCode()`
+(`tools/shared/fiche-privee.js`, appelé à l'écran du code admin) → si le domaine dit oui, Kevin entre sans
+PIN (ni création de PIN) ; fiche-privee `jeton()`, admin.js `adminHeaders()`, kdmc-fb-auth `mint()`,
+kdmc-access `load()`, bot `hdrs()` envoient le pass (`kdmc_sso_token` en Bearer) ; admin.js, Finances
+(`ensureGrant`), bot (403 → `/__admin/grant` avant l'écran du code), arbre (`_adminSansCode()` avant
+`prompt()`) tentent le grant par la session d'abord ; Chez Lolo attend `whoami` avant le mot de passe et
+son studio ouvre à Kevin vérifié (comme La Détente). Le code n'est **jamais** vérifié dans une page.
+**Mono-fichier** : la fonction vit HORS d'`index.html` (+0 ligne) ; garde de taille rebaselinée à l'exact
+(elle était rouge sur `main` depuis #4112, +4 lignes, vue par personne).
+**Gardes** : test:admin-partout 11/11 (grant par session, ouvre fbtoken ; faible → 403 ; non-admin → 403),
+**test:admin-sans-code 7/7** (vraie app CMCteams + vrai routeur, Chromium : Kevin connu → ✕ → matricule →
+entré sans PIN ; téléphone neuf → écran du code ; non-admin vérifié → écran du code ; **sabotage** module
+amputé → écran du code), 41 tests routeur verts, no-pin-leak, p0-secu, xss, sso-client, bot 61, chez-lolo 15.
+**Reste** (pas de cette session) : Apex « Activer l'IA » (proxy TS exige sha256 du PIN), Apex Chat ignore le cookie.
+
 ## 2026-09-27 (nuit) — Plus de validation si l'inscription est complète : une alerte à Kevin à la place (CMCteams v9.927, light v1.61)
 
 Kevin : « Pas besoin que je valide si tous les champs des renseignements sont fournis, juste une alerte pour moi

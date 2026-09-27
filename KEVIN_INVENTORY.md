@@ -52,6 +52,13 @@
 - 🎯 **La Détente** (galerie) : [la-detente.kd-mc.com](https://la-detente.kd-mc.com/) · boutique : [shops.kd-mc.com/la-detente/](https://shops.kd-mc.com/la-detente/)
 - 📜 **Le texte unique des conditions** (servi par le domaine) : [kd-mc.com/__sso/cgu](https://kd-mc.com/__sso/cgu) · preuve [services/kdmc-router/cgu.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/cgu.test.mjs)
 
+### 🔓 Tout s'ouvre pour toi, sans code, quand le domaine te connaît (27.09.2026)
+
+- 🧪 **La preuve dans la vraie app CMCteams** (Chromium : ✕ puis matricule → entré sans PIN ; téléphone neuf → code ; sabotage) : [tests/verify-admin-sans-code-cmcteams.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-admin-sans-code-cmcteams.mjs)
+- 🔑 **Le guichet du domaine** `/__admin/grant` (laissez-passer admin sans code pour ta session vérifiée) : [services/kdmc-router/worker.js](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) · preuve [services/kdmc-router/admin-partout.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/admin-partout.test.mjs)
+- 🧩 **La fonction CMCteams « reconnu = entré »** (hors du gros fichier) : [tools/shared/fiche-privee.js](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/shared/fiche-privee.js)
+- 🛍 **Chez Lolo v2.0.16** (attend le domaine avant le mot de passe ; studio ouvert à toi) : [shops.kd-mc.com/chez-lolo/](https://shops.kd-mc.com/chez-lolo/)
+
 ### 👑 Toi, reconnu par n'importe quel chemin (27.09.2026)
 
 - 🖥 **Le portail, bouton « 👑 Je suis l'administrateur »** (PC, navigateur neuf) : [kd-mc.com](https://kd-mc.com/)

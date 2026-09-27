@@ -975,7 +975,7 @@ function clSaveNewProduct(){
  try{var u=new URLSearchParams(location.search);
    if(localStorage.getItem("ld_admin_trust")==="1"||localStorage.getItem("ld_admin")==="1"){localStorage.setItem("ld_admin_trust","1");LD_ADMIN=true;}
    if(u.get("ld_logout")!==null||u.get("ld_admin")==="0"){ldAdminLogout();}
-   else if(u.get("ld_admin")!==null&&!LD_ADMIN){setTimeout(ldAdminPrompt,300);}
+   else if(u.get("ld_admin")!==null&&!LD_ADMIN){/* (27.09) on laisse d'abord le domaine répondre (Kevin reconnu = pas de mot de passe) */var _t0=Date.now();var _att=function(){if(LD_ADMIN)return;if(window._kdmcWhoamiFini||Date.now()-_t0>2500){ldAdminPrompt();}else setTimeout(_att,120);};setTimeout(_att,300);}
  }catch(_){}
  /* Compte unique kd-mc.com : déverrouillage AUTO de l'admin boutique si le domaine
     PROUVE l'identité par Face ID (whoami.verified===true) ET propriétaire (admin===true).
@@ -992,7 +992,7 @@ function clSaveNewProduct(){
    var hdr={};if(tok)hdr.Authorization="Bearer "+tok;
    fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hdr})
      .then(function(r){return r.ok?r.json():null;})
-     .then(function(j){
+     .catch(function(){return null;}).then(function(j){window._kdmcWhoamiFini=true;
        if(!j||!j.ok||j.verified!==true||j.admin!==true)return; /* jamais sans preuve Face ID + proprio */
        if(LD_ADMIN)return;
        try{localStorage.setItem("ld_admin_trust","1");localStorage.setItem("ld_admin_who",j.name||"Kevin");}catch(_){}
@@ -1012,7 +1012,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.15"
+        data-version="v2.0.16"
         data-color="#e8b830"
         defer></script>
 

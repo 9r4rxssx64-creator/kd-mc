@@ -432,7 +432,9 @@
   /* Le grant admin (preuve du code) voyage en header x-kdmc-admin pour marcher
      même en PWA installée (cookie isolé par app sur iOS). */
   var ADMIN_TOK = 'kdmc_admin_token';
-  function adminHeaders() { var t = ''; try { t = localStorage.getItem(ADMIN_TOK) || ''; } catch (e) { /* */ } return t ? { 'x-kdmc-admin': t } : {}; }
+  function adminHeaders() { var t = '', p = ''; try { t = localStorage.getItem(ADMIN_TOK) || ''; p = localStorage.getItem('kdmc_sso_token') || ''; } catch (e) { /* */ }
+    var h = {}; if (t) h['x-kdmc-admin'] = t; if (p) h['Authorization'] = 'Bearer ' + p;   /* (27.09) la session vérifiée de Kevin vaut le code */
+    return h; }
 
   function denyViaWhoami() {
     var who = window.kdmcSSO ? window.kdmcSSO.whoami() : Promise.resolve(null);
@@ -485,7 +487,12 @@
         var j = res.j;
         if (res.st === 403 || !j || !j.ok) {
           if (silent) return; /* refresh auto : ne casse pas la vue si hoquet réseau/grant */
-          if (j && j.reason === 'need_admin_code') { try { localStorage.removeItem(ADMIN_TOK); } catch (e) { /* */ } promptAdminCode(); return; }
+          if (j && j.reason === 'need_admin_code') { try { localStorage.removeItem(ADMIN_TOK); } catch (e) { /* */ }
+            /* (27.09) d'abord le grant SANS code, par la session vérifiée du domaine ; le code seulement si le domaine ne connaît pas cet appareil */
+            fetch('/__admin/grant', { credentials: 'include', headers: adminHeaders() }).then(function (r) { return r.json().catch(function () { return null; }); })
+              .then(function (g) { if (g && g.ok && g.grant) { try { localStorage.setItem(ADMIN_TOK, g.grant); } catch (e) { /* */ } loading(); loadAccounts(0); } else promptAdminCode(); })
+              .catch(function () { promptAdminCode(); });
+            return; }
           denyViaWhoami(); return; /* rollout sans hash : ancien diag par nom */
         }
         var accounts = j.accounts || [];

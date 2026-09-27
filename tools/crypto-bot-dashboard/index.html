@@ -217,7 +217,16 @@
   // fragment (#kdmc_sso=…, non envoyé aux serveurs). On le garde puis on nettoie l'URL.
   try{ var _m=(location.hash||'').match(/[#&]kdmc_sso=([^&]+)/); if(_m){ localStorage.setItem(SSO_KEY, decodeURIComponent(_m[1])); history.replaceState(null,'',location.pathname+location.search); } }catch(e){}
 
-  function hdrs(){ var h={}; try{ var g=localStorage.getItem(GRANT_KEY); if(g) h['x-kdmc-admin']=g; var sp=localStorage.getItem(SSO_KEY); if(sp) h['x-kdmc-sso']=sp; }catch(e){} return h; }
+  function hdrs(){ var h={}; try{ var g=localStorage.getItem(GRANT_KEY); if(g) h['x-kdmc-admin']=g; var sp=localStorage.getItem(SSO_KEY); if(sp) h['x-kdmc-sso']=sp; var st=localStorage.getItem('kdmc_sso_token'); if(st) h['Authorization']='Bearer '+st; }catch(e){} return h; }
+  /* (27.09.2026) « Moi tout s'ouvre automatiquement » : avant d'afficher l'écran du code, on demande au
+     domaine (/__admin/grant) s'il connaît déjà Kevin — session vérifiée admin ou laissez-passer admin
+     posé par une autre app (cookie .kd-mc.com). Oui → laissez-passer rangé, tableau ouvert ; non → code. */
+  function grantSansCode(){
+    return fetch(API+'/__admin/grant',{credentials:'include',cache:'no-store',headers:hdrs()})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ if(j&&j.ok&&j.grant){ try{localStorage.setItem(GRANT_KEY,j.grant);}catch(e){} return true; } return false; })
+      .catch(function(){ return false; });
+  }
 
   // « Se connecter avec Face ID » = passer par le portail (qui gère déjà Face ID) et
   // revenir ici authentifié. Aucune crypto en double : on réutilise le SSO du domaine.
@@ -244,11 +253,14 @@
       box.appendChild(d);
     });
   }
-  function loadConfig(){
+  function loadConfig(deuxieme){
     fetch(API+'/__bot/config',{credentials:'include',headers:hdrs()})
     .then(function(r){ return r.json().then(function(j){return {st:r.status,j:j};}); })
     .then(function(x){
-      if(x.st===403){ show('login',true); show('dash',false); return; }
+      if(x.st===403){
+        if(!deuxieme) return grantSansCode().then(function(ok){ if(ok) loadConfig(true); else { show('login',true); show('dash',false); } });
+        show('login',true); show('dash',false); return;
+      }
       if(!x.j.ok) return;
       var c=x.j.config||{};
       selected={}; (c.SYMBOLS||'BTC/USDT').split(',').forEach(function(s){ var b=s.split('/')[0].trim().toUpperCase(); if(b){ selected[b]=1; if(COIN_LIST.indexOf(b)<0) COIN_LIST.push(b); } });

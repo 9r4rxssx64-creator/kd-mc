@@ -10651,6 +10651,12 @@ Plus `bloque:[…]` : l'admin ferme **une app précise**, même à quelqu'un qui
   renvoyée à la fiche ; Kevin entre au studio et à l'admin boutique par sa session, sans mot de passe.
 - Gardes : `test:cgu-une-fois` (6), `test:lingua-compte` (4), `test:lingua-compte-domaine` (5, vrai
   navigateur, 4 téléphones), `test:identite-domaine`, `test:laissez-passer`.
+- **« Moi tout s'ouvre automatiquement » (Kevin 27.09, 21h35)** : toute porte ADMIN d'une app demande d'abord
+  `/__admin/grant` (credentials + `Authorization: Bearer` du pass rangé) — le domaine rend un laissez-passer
+  admin à une session **vérifiée admin**, 403 à tout le reste — et n'affiche l'écran du code que sur refus.
+  Un auto-login au démarrage ne suffit pas : après un ✕, l'écran du code revenait (mesuré, CMCteams). Fait :
+  CMCteams v9.928, fiches privées, admin.kd-mc.com, Finances, arbre, bot, Chez Lolo v2.0.16, kdmc-access.
+  Garde `test:admin-sans-code` (7, vraie app CMCteams + vrai routeur, sabotage), `test:admin-partout` (11).
 
 ### 5. Parité obligatoire `ROUTES` ⇄ `APPS`
 

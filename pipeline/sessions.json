@@ -618,6 +618,16 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "kevin-tout-ouvert": {
+      "titre": "Tout s'ouvre pour Kevin (aucun code quand le domaine le connaît)",
+      "branche": "claude/kevin-tout-ouvert",
+      "sujet": "/__admin/grant + 9 portes admin (CMCteams, fiches privées, admin, Finances, arbre, bot, Chez Lolo, studio, kdmc-access)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -2960,6 +2970,15 @@
       "sujet": "Apex AI rouge à chaque vérif réelle : l'app appelle encore le relais fermé au démarrage (HTTP 404 NOTES_USER.md)",
       "corps": "Mesuré (run 36351199440, annotations) : « STATUT PROJET 404/5xx : HTTP 404 https://apex-depot-relais.9r4rxssx64.workers.dev/?action=read&path=NOTES_USER.md&branch=main » ×3. Le relais a été fermé au coffre ce soir (#4088, décision d'audit) ; l'app Apex AI v13 (apex-ai-v13/chunks/apex-tools-dispatch-misc-*.js, source apex-ai/v13/services/integrations/depot-github.ts) le lit encore au démarrage. Rien ne casse pour l'utilisateur (fail-open), mais chaque vérif réelle compte un 404 projet = rouge. À décider par la session Apex : ne plus lire NOTES_USER.md par le relais (ou le lire ailleurs), puis rebuild. Je n'ai pas touché au bundle. Note : cette raison n'apparaissait pas dans les rapports jusqu'à ce soir — trois filtres l'effaçaient (hexa, « code admin », notes déportées) ; corrigés #4110, #4114 et celui-ci.",
       "ts": "2026-09-27 21:37",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m155-kevin-tout-ouvert",
+      "de": "kevin-tout-ouvert",
+      "a": "toutes",
+      "sujet": "RÈGLE KEVIN 27.09 « Moi tout s'ouvre automatiquement » : /__admin/grant en ligne après fusion — toute porte admin d'une app demande d'abord au domaine, code seulement sur refus",
+      "corps": "Kevin : « Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. » SOCLE (routeur, PR kevin-tout-ouvert) : GET|POST /__admin/grant → {ok, grant, via:'session'|'grant'} + cookie kdmc_admin (.kd-mc.com, 12 h) pour toute session VÉRIFIÉE admin (Authorization: Bearer <kdmc_sso_token>, x-kdmc-sso, ou cookie) ; 403 need_admin_code pour une session faible ou non-admin ; journal admin_grant_session. RÈGLE POUR VOS PORTES ADMIN : (1) fetch('/__admin/grant',{credentials:'include',headers:{Authorization:'Bearer '+localStorage.kdmc_sso_token}}) AVANT d'afficher un code/PIN/mot de passe ; ok → rangez j.grant (x-kdmc-admin) et ouvrez ; 403 → seulement alors l'écran du code ; (2) envoyez TOUJOURS le pass avec x-kdmc-admin (Bearer) : adminSession l'accepte ; (3) un auto-login au démarrage ne suffit pas — après un ✕ l'écran du code revient : c'est l'ÉCRAN du code qui doit demander (leçon #360). FAIT PAR MOI : CMCteams v9.928 (_cmcAdminSansCode() dans tools/shared/fiche-privee.js — pas dans index.html, garde mono-fichier rebaselinée à l'exact ; elle était rouge sur main depuis #4112) ; fiche-privee jeton(), kdmc-home/admin/admin.js adminHeaders()+grant auto, tools/shared/kdmc-fb-auth.js mint(), tools/finances ensureGrant(), arbre publishDomain() (_adminSansCode avant prompt), crypto-bot-dashboard hdrs()+403→grant, kdmc-access page.js load() Bearer, Chez Lolo v2.0.16 (index attend whoami avant le mot de passe ; studio ouvre à Kevin vérifié). PREUVES : test:admin-partout 11/11, test:admin-sans-code 7/7 (vraie app CMCteams + vrai routeur, Chromium, sabotage prouvé). RESTE À VOUS : Apex « Activer l'IA » (proxy-pin-activation.ts exige sha256 du PIN → accepter une session vérifiée admin via /__admin/grant ou whoami) ; Apex Chat 1109 ignore le cookie ; Light : si une porte admin y redemande un code, même schéma.",
+      "ts": "2026-09-27 21:34",
       "etat": "ouvert"
     }
   ]

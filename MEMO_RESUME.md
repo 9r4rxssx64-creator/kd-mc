@@ -1,5 +1,42 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (midi) — Un visiteur neuf vidait le planning partagé ; les tests CI lisaient la vraie base (v9.923)
+
+- Déclencheur : `test:departs-algo` rouge sur `main` depuis 11h44 (« 0 avec numéro ») et vert en local.
+  Le test ouvrait l'app SANS simuler Firebase → en CI il lisait la base de PRODUCTION (en local, le proxy la bloque).
+- En cherchant, mesuré avec une fausse base aussi stricte que la vraie : tout appareil NEUF, sans se connecter,
+  envoyait `cmc_ov = {}` (planning de tous effacé), `cmc_ov_meta = {}` et `cmc_e` (ménage v9.705, 6 s après le
+  démarrage). Refusé sans jeton → mis en file → renvoyé AVEC le jeton au retour sur l'onglet.
+- Correctif : ménage v9.705 rendu local ; vider tout le planning = admin seulement (à l'envoi ET à la vidange de
+  la file, qui jette aussi les files déjà empoisonnées) ; l'admin garde « tout effacer ». Test des départs
+  hermétique ; les 2 robots de test coupent la base de production avant tout (`tools/ci/couper-base-prod.sh`).
+- Garde : `test:visiteur-ne-vide-pas` **14/0**, 6 sabotages rouges. `test:departs-algo` 12/0 hermétique. Leçon #348.
+- Reste (phase 2, à proposer à Kevin) : les règles laissent encore tout jeton anonyme écrire `cmc_e`, `cmc_audit`,
+  `cmc_known_identities`… (mesuré : 280 envois de `cmc_known_identities` au démarrage d'un visiteur). Vraie
+  fermeture = règles serveur « rôle admin » pour les clés partagées, avec le jeton admin déjà en place (v9.922).
+
+## 2026-09-27 (matin) — Fiches CMCteams privées : e-mail, téléphone, adresse, naissance, USM → admin seul (v9.922)
+
+- **Kevin : « Go »** (chaque employé ne voit que sa fiche, l'admin voit tout).
+- **Mesuré** : au démarrage, AVANT toute connexion, chaque téléphone lisait tout `/cmcteams`
+  (`.read: auth != null`, rempli par un jeton ANONYME) → les fiches de TOUT le monde. En RTDB un droit
+  de lecture posé sur un dossier ne se retire pas plus bas (leçon **#347**).
+- **Fait** : nœud racine `/cmcteams_prive` (lecture rôle admin, écriture par fiche, champs bornés) ;
+  `tools/shared/fiche-privee.js` (écriture triée, SA fiche gardée, fiches des autres retirées du
+  téléphone + copies de secours, l'admin relit le privé via `/__admin/fbtoken`, pastille + code admin
+  envoyé au domaine si pas de pass) ; `anniv` jj/mm public pour les anniversaires ; robot PRIVÉ
+  `coffre-fiches-privees.yml` + `fiches-privees-migrer.cjs` (attend les règles, recopie, relit champ
+  par champ, pose le drapeau, nettoie ×3, prouve comme un téléphone anonyme) ; marqueur des règles.
+- **Ordre sûr** : tant que le drapeau `cmc_prive_actif` n'est pas posé par le robot, la copie publique
+  reste ENTIÈRE → aucune donnée ne peut se perdre. Aucune suppression automatique du privé.
+- Garde : `test:fiches-privees` **45/0**, 4 sabotages rouges. La light n'est pas touchée (elle ne lit
+  pas `cmc_reg` ; sa fiche va au dossier du domaine).
+- **Reste (phase 2, à proposer)** : `cmc_pw` (mots de passe brouillés) et `cmc_verif_codes` (codes
+  e-mail en clair) lisibles par tout téléphone → vérification par le domaine.
+- **SonarCloud (PR #4054, fiabilité C)** : `sa-token.cjs` réécrit en petites fonctions (`base64url`,
+  `replaceAll`) — jeton identique prouvé sur 5 formes de secret ; robot découpé en étapes nommées
+  (l'ordre est vérifié par le test) ; test : faux Firebase en petites fonctions, attentes par condition
+  au lieu de délais fixes (45/0 ×5, dont 2 en parallèle sous charge ; sabotage → 6 échecs).
 ## 2026-09-27 (nuit) — Arbre v3.29 : un champ MÉTIER, et des notes qui s'ajoutent sans écraser
 
 Deuxième manuscrit (branche ‹employé›) : des métiers et des circonstances (arrestation, cause d'un

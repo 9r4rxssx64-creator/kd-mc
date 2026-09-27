@@ -3,6 +3,6 @@
   "rules_state": "hardened",
   "apex_state": "hardened",
   "shops_lock": "on",
-  "requested_at": "2026-09-05",
-  "reason": "Arbre v3.16 (fait n°12, dépôt PUBLIC) : /arbre n'est plus lisible en entier (plus de listing des empreintes de code) — lecture/écriture UNIQUEMENT par enfant /arbre/<empreinte 64-hex> + auth. Le code famille se vérifie désormais sur le domaine (kdmc-router /__arbre/unlock), plus dans le fichier public. Les états cmcteams/apex/shops sont inchangés (keep/hardened). Rollback : remettre la règle parent .read/.write auth != null sur /arbre."
+  "requested_at": "2026-09-27",
+  "reason": "Fiches CMCteams privées (Kevin « Go », 27.09.2026) : nouveau nœud racine /cmcteams_prive (email, téléphone, adresse, date de naissance, n° USM) — lecture rôle admin seulement, écriture par fiche (auth != null, champs bornés). Les états cmcteams/apex/shops sont inchangés. Le robot privé coffre-fiches-privees.yml attend ces règles avant de déplacer quoi que ce soit. Rollback : retirer cmcteams_prive du fichier (le robot « annuler » remet d'abord les champs dans cmc_reg)."
 }

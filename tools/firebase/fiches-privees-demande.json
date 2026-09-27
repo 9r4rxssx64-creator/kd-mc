@@ -1,0 +1,6 @@
+{
+  "_comment": "MARQUEUR — le modifier sur `main` lance le robot PRIVÉ .github/workflows/coffre-fiches-privees.yml. action = migrer (ranger e-mail/téléphone/adresse/naissance/USM dans /cmcteams_prive, lecture admin seul) ou annuler (tout remettre dans /cmcteams/cmc_reg et couper le drapeau).",
+  "action": "migrer",
+  "requested_at": "2026-09-27",
+  "reason": "Kevin « Go » (27.09.2026) : chaque employé ne voit que sa fiche, l'admin voit tout. Mesuré : toute session anonyme (la light comprise) lisait les fiches de tout le monde dans /cmcteams/cmc_reg."
+}

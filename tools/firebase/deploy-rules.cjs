@@ -9,7 +9,6 @@
  * Étapes : (1) JWT RS256 signé SA → access_token Google ; (2) PUT /.settings/rules.json ;
  * (3) GET de vérif → confirme l'état de /cmcteams. Échoue fort + détaillé (règle CLAUDE.md).
  */
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -38,49 +37,7 @@ const ORDERS_READ = (process.env.ORDERS_READ || 'keep').toLowerCase();
 // 'keep' (défaut) = préserve l'état LIVE. LECTURE /cmcteams inchangée dans tous les cas.
 const CMC_ADMIN_LOCK = (process.env.CMC_ADMIN_LOCK || 'keep').toLowerCase();
 
-function b64url(buf){ return Buffer.from(buf).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
-
-async function getAccessToken(){
-  let email = process.env.FIREBASE_CLIENT_EMAIL;
-  let raw = (process.env.FIREBASE_PRIVATE_KEY || '').trim();
-  if (!email || !raw) throw new Error('Secrets manquants : FIREBASE_CLIENT_EMAIL et/ou FIREBASE_PRIVATE_KEY');
-  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) raw = raw.slice(1, -1);
-
-  let raw2 = raw;
-  // secret = JSON complet du service account → extraire private_key
-  if (raw2.startsWith('{')) { try { const j = JSON.parse(raw2); if (j.private_key) raw2 = j.private_key; if (j.client_email && !email) email = j.client_email; } catch (_) {} }
-  raw2 = raw2.replace(/\\r/g, '').replace(/\\n/g, '\n');
-
-  // MÉTHODE FIDÈLE au worker qui marche (apex-auth-worker importPrivateKey) :
-  // strip armure + tout caractère non-base64 → DER → createPrivateKey pkcs8.
-  let keyObj = null, how = '';
-  if (/-----BEGIN/.test(raw2)) { try { keyObj = crypto.createPrivateKey(raw2); how = 'pem'; } catch (_) {} }
-  if (!keyObj) {
-    let b64 = raw2.replace(/-----BEGIN[^-]*-----/g, '').replace(/-----END[^-]*-----/g, '').replace(/[^A-Za-z0-9+/]/g, '');
-    while (b64.length % 4) b64 += '=';
-    try { const der = Buffer.from(b64, 'base64'); keyObj = crypto.createPrivateKey({ key: der, format: 'der', type: 'pkcs8' }); how = 'der-pkcs8(b64=' + b64.length + ' der=' + der.length + ')'; }
-    catch (e) { how = 'der KO: ' + e.message; }
-  }
-  console.log('   clé: ' + (keyObj ? ('OK ' + how) : ('ÉCHEC ' + how)));
-  if (!keyObj) throw new Error('FIREBASE_PRIVATE_KEY illisible (PEM + DER pkcs8 échoués) — ' + how);
-  const now = Math.floor(Date.now() / 1000);
-  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const claim = b64url(JSON.stringify({
-    iss: email,
-    scope: 'https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now, exp: now + 3600
-  }));
-  const signed = crypto.createSign('RSA-SHA256').update(header + '.' + claim).sign(keyObj);
-  const jwt = header + '.' + claim + '.' + b64url(signed);
-  const r = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=' + encodeURIComponent(jwt)
-  });
-  const j = await r.json().catch(() => null);
-  if (!r.ok || !j || !j.access_token) throw new Error('OAuth token KO : HTTP ' + r.status + ' ' + JSON.stringify(j));
-  return j.access_token;
-}
+const { getAccessToken } = require('./sa-token.cjs');
 
 (async () => {
   const doc = JSON.parse(fs.readFileSync(RULES_FILE, 'utf8'));
@@ -206,6 +163,11 @@ async function getAccessToken(){
     if (JSON.stringify(rules.coffre_vault['.read']) !== '"auth != null"') throw new Error('SECURITÉ : /coffre_vault .read attendu "auth != null" dans le fichier, abort');
     console.log('🔒 HARDEN : /apex + /coffre_vault .read/.write = auth != null');
   }
+  // Fiches privées CMCteams (27.09.2026) : /cmcteams_prive se lit au rôle admin SEULEMENT.
+  // Garde-fou : jamais publié ouvert, même en rollback (rules_state=open ne concerne que /cmcteams).
+  const cp = rules.cmcteams_prive;
+  if (!cp || !/auth\.token\.role === 'admin'/.test(String(cp['.read'] || '')) || cp.$uid['.read'] == null
+      || /true/.test(String(cp.$uid['.read']))) throw new Error('SECURITÉ : /cmcteams_prive doit se lire au rôle admin seulement, abort');
   // garde-fou : ne JAMAIS perdre le deny racine
   if (rules['.read'] !== false || rules['.write'] !== false) throw new Error('SECURITÉ : deny racine perdu, abort');
 
@@ -247,6 +209,14 @@ async function getAccessToken(){
   }
   if (STATE !== 'open' && sCmc === 200) throw new Error('DANGER : /cmcteams lisible SANS auth malgré hardened, abort');
   console.log('✅ Vérif OK — /cmcteams ' + (STATE === 'open' ? 'ouvert' : 'fermé') + ' · /apex + /coffre_vault ' + (APEX_STATE === 'open' ? 'ouverts' : 'fermés (auth requise)'));
+
+  // Vérif COMPORTEMENTALE des fiches privées : un visiteur ne doit JAMAIS pouvoir les lire.
+  const sPrive = await anonProbe('/cmcteams_prive');
+  console.log('🔬 Probe anonyme : /cmcteams_prive=' + sPrive + ' (attendu 401)');
+  if (sPrive === 200) throw new Error('DANGER : /cmcteams_prive lisible SANS auth, abort');
+  const lp = live?.rules?.cmcteams_prive;
+  if (!lp || !/role/.test(String(lp['.read'] || ''))) throw new Error('Vérif KO : /cmcteams_prive absent ou lisible sans rôle admin en live, abort');
+  console.log('🔒 Fiches privées /cmcteams_prive : lecture rôle admin seulement');
 
   // Vérif COMPORTEMENTALE du verrou lecture commandes (lesson #95).
   const sOrders = await anonProbe('/shops_admin_v1/orders');

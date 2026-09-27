@@ -63,6 +63,12 @@ cookie ; admin.kd-mc.com (`kdmc-access`) et `/__admin/domain-log` acceptent la s
 **Gardes** : test:entrer 7/7, test:admin-partout 7/7, test:compte-unique-portail 10/10 (Chromium : PC
 sans passkey, app installée CMCteams), webauthn-endpoints 22/22, self-service 25/25, bee-iphone 21/21 —
 chacun prouvé par sabotage. Leçon #352.
+**Mesuré EN LIGNE après fusion (#4106, sonde 36349451893)** : `/__sso/pass` sans session → `{ok:false}`
+(avant : `not_found` = route absente), `cmcteams…/__sso/entrer` avec un pass faux → 302 vers `/` sans
+cookie, `/__sso/login` nom inventé → 401. Déploiement public du routeur : le run de 20h35 UTC
+(36348600177) a échoué sur **1 contrôle d'admin.test.mjs (40/41)** que je n'ai pas pu reproduire (6 runs
+locaux au même commit + 2 runs CI suivants verts, dont un relancé exprès : 36349567249) ; le journal du
+job est sur blob.core.windows.net (illisible d'ici). Non élucidé, dit tel quel.
 **Reste** : Lingua / La Détente / Coffre sans identité domaine (Coffre : voulu) ; `autoLogin` sans
 consommateur (règle recopiée ≥ 8 fois) ; Autorisations : PIN local créé par le premier venu (derrière la
 porte admin du routeur).

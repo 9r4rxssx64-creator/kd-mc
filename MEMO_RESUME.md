@@ -1,5 +1,22 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Arbre v3.29 : un champ MÉTIER, et des notes qui s'ajoutent sans écraser
+
+Deuxième manuscrit (branche ‹employé›) : des métiers et des circonstances (arrestation, cause d'un
+décès, dates de mariage). Deux manques empêchaient de les transcrire :
+
+- **aucun champ métier** → tout aurait fini mélangé aux notes ;
+- **l'import écrasait les notes** → transcrire une ligne aurait supprimé les sources, les
+  « ✅ confirmé au fichier INSEE » et des semaines de recherche, **en silence**.
+
+v3.29 : champ `metier` (affiché sur la fiche, éditable, enregistré) + **`notesAjout`** qui ajoute
+un paragraphe **à la suite** (anti-doublon si on réimporte, remplacement toujours possible s'il est
+demandé explicitement). Vérifié en vrai navigateur (9 contrôles) ; sabotage → 1 échec hors ligne,
+2 en navigateur. L'outil `patch-liens.mjs` refuse désormais aussi si l'app en ligne n'a pas cette
+capacité. Leçon **#268**.
+
+---
+
 ## 2026-09-27 (soir, suite) — Le DOCUMENT FAMILIAL photographié : deux dates corrigées, la fratrie complète
 
 Kevin a envoyé la photo du manuscrit. Il tranche ce que deux transcriptions antérieures avaient

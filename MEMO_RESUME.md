@@ -1,5 +1,35 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (soir) — Arbre v3.27 : relier quelqu'un PAR SON NOM (la fratrie ‹employé› débloquée)
+
+Kevin : *« Josette est la sœur de Monique, de Germaine, Marie-Thérèse et Hélène et Alexandre.
+Enfants Marius et Judith. »*
+
+- **Deux points contredisaient l'arbre**, posés à Kevin avec les dates plutôt que devinés :
+  Monique (16.08.1955) était enregistrée comme **fille** de Josette, et la seule Hélène connue
+  était une « Hélène 20/01/49 » notée *incertaine* chez Marie-Thérèse. **Il a tranché** :
+  Monique = **sœur** (sa branche — Marielle, Noémi, Léa — remonte d'une génération), Hélène =
+  **sœur née le 20.01.1949**. Réserve dite et assumée : cela ferait deux naissances à 59 et 65 ans
+  pour Marius.
+- **Le vrai blocage, structurel** : pour écrire « sa mère, c'est Judith », il faut l'identifiant
+  interne de Judith — et depuis la v3.16 les personnes ne sont **plus** dans le fichier public
+  (le dépôt est public, c'est voulu). Autrement dit : **aucune correction de lien ne pouvait plus
+  être préparée à distance**, et personne ne l'avait vu.
+- **v3.27** : dans un fichier à importer, père / mère / conjoints — et la fiche visée (`ref`) —
+  peuvent désigner quelqu'un **par son nom**. Strict : on ne relie que si **une seule** personne
+  porte ce prénom + ce nom (accents et majuscules ignorés, l'année départage). Sinon **rien n'est
+  écrit**, le lien existant est gardé, et l'app dit « n lien(s) non posé(s) ».
+- **Mesuré** : garde hors ligne qui exécute les vraies fonctions de la page (17 contrôles ;
+  sabotage « on prend le premier homonyme » → 3 échecs) · vérification en vrai navigateur
+  (9 contrôles) · **essai du fichier réel** sur une réplique de l'arbre de Kevin : 1 créée,
+  5 complétées, **0 lien en plan**, Monique devenue sœur **avec sa branche qui suit**, l'aïeul
+  homonyme Alexandre (1856) intact, aucun doublon.
+- **Outil** : `tools/arbre/patch-liens.mjs` (plan hors dépôt → fichier à importer). Il **refuse**
+  d'écrire si l'app en ligne ne sait pas encore relier par le nom — vérifié : il refuse
+  aujourd'hui, l'app publiée étant en v3.26. Leçon **#267**.
+
+---
+
 ## 2026-09-27 (midi) — Boutiques : fiche obligatoire À LA COMMANDE (choix de Kevin)
 
 - **Chez Lolo** : prénom, nom, e-mail, adresse complète et CGV exigés avant PayPal, Revolut et le RIB.

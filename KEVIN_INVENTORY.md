@@ -1,5 +1,12 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🧪 Tests remis d'aplomb après la fiche obligatoire de la light (27.09.2026, nuit)
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tests/verify-seances.mjs`, `tests/verify-seances-individuel.mjs` | **Modifiés.** Ouvrent la light comme une personne inscrite complètement (fiche posée). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-seances.mjs) |
+| `tools/smoke/session-kevin.mjs`, `tests/verif-live-rapport.mjs` | **Modifiés.** Sondes en ligne : fiche de sonde marquée envoyée, jamais écrite dans ton dossier. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/smoke/session-kevin.mjs) |
+
 ### 🔐 CMCteams et light : on n'entre qu'inscrit complètement (27.09.2026, nuit — v9.925 / v1.58)
 
 - 📱 **À essayer** : [cmcteams-light.kd-mc.com](https://cmcteams-light.kd-mc.com/) sur un appareil neuf → prénom + nom + conditions, puis la fiche SBM **obligatoire** ; rien d'autre ne s'affiche avant. [cmcteams.kd-mc.com](https://cmcteams.kd-mc.com/) : après la connexion, la fiche SBM couvre tout l'écran tant qu'elle n'est pas remplie.

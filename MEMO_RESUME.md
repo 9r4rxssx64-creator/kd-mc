@@ -1,5 +1,31 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit, suite) — Chaîne privée rouge après « inscription complète » : 2 tests à moi, 1 d'une autre session
+
+`coffre-chaine-privee` (run 36339556605, sur la branche de la PR #4089) : **3 échecs**, causes lues dans les annotations.
+- **À moi** : `test:seances` (2 ✗) et `test:seances-individuel` (1 ✗) ouvrent la light avec une identité mais **sans
+  fiche** → depuis la v1.58 la page est cachée, les séances ne se voient plus. Corrigé : ces tests entrent comme une
+  personne **inscrite complètement** (fiche posée). Même correction, par prudence, pour les deux sondes EN LIGNE qui
+  ouvrent la light comme Kevin (`tools/smoke/session-kevin.mjs`, `tests/verif-live-rapport.mjs`) : fiche de sonde
+  marquée « déjà envoyée », donc **jamais** écrite dans le dossier de Kevin sur le domaine.
+- **Pas à moi, réparé quand même** : la PR #4088 (audit du domaine) a effacé par erreur la DÉFINITION du script
+  `test:fidelity` alors que `test:ci` l'appelle toujours (et qu'une règle l'annonce comme garde « IMPORT LOSSLESS ») →
+  « script absent » pour toutes les sessions. Remis tel qu'avant ; le test lui-même passe (« 0 écart »), et
+  `rules-compliance` ne signale plus de garde absente.
+- Local : `test:seances-individuel` 23/0 ; `test:seances` 39/1 — le 1 restant est **mon environnement** (paquet
+  `pdfjs-dist` absent ici, le générateur ne se lance pas) ; en CI ce contrôle passe. Également verts : mois-ouverture,
+  noms-prives, session-kevin 32/0, departs-xss 8/0, departs-gate 10/0.
+
+- **À moi aussi, trouvé au run suivant** (36341721508) : `test:seed-remplace` — en montant CMCteams en v9.925 je
+  n'avais pas regénéré `tools/shared/planning-seed.js`, qui doit porter la version de l'app (`"parser"`). Regénéré
+  avec le vrai générateur (`_gen-seed.mjs`, `pdfjs-dist` installé sans toucher aux paquets) : **seule la version
+  change**, contenu identique à l'octet. seed-remplace ✅, seed 9/0, generateurs-reproductibles ✅, seances 40/0,
+  seances-individuel 23/0, fidelity ✅. **Règle** : monter `APP_VER` de CMCteams = regénérer le seed dans le même commit.
+
+**Leçon (complète #354)** : changer une porte, c'est changer **l'entrée de chaque test** qui ouvre la page — chercher
+`cmc_dep_identity` dans tous les tests **avant** de pousser, pas après la chaîne rouge.
+
+---
 ## 2026-09-27 (18h40 UTC) — Compte unique : un nom + un code, partout, reconnu auto
 
 Kevin : « Lorsqu'une personne crée son compte et code dans le domaine ou une app, il peut se connecter

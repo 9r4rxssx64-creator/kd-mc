@@ -528,6 +528,16 @@
       "maj": "2026-09-26",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "lingua-code": {
+      "titre": "Lingua : retrouver son code, et rendre la vérif réelle lisible",
+      "branche": "claude/message-6-rouges",
+      "sujet": "Lingua v2.126.0 « Voir mon code » (livré) ; chaîne de vérif réelle : cause de chaque rouge + version servie ; robot auto-merge diagnostiqué (pas cassé, pause voulue)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -2757,6 +2767,15 @@
       "sujet": "AUCUNE synchro ne doit remplacer un ENSEMBLE : 6 personnes effacées de l'arbre partagé par un appareil en retard (mesuré 125 → 119) — corrigé v3.34",
       "corps": "Deux mécanismes silencieux, trouvés le 27.09 sur les vraies données. (1) cloudPushAll() — un PUT de TOUT l'arbre — était appelé au démarrage, après une purge, depuis le domaine et à chaque import : un appareil qui n'avait pas encore reçu les dernières fiches remplaçait la copie de toute la famille par la sienne. Mesuré : j'écris 17 fiches (125), une heure plus tard il en reste 119, mes 5 créations effacées. (2) la purge des fiches en double supprimait des données : elle ne récupérait que les photos et les commentaires, donc une date ajoutée à la main disparaissait à la synchro suivante (toutes les 8 s) — le bug que vivait Kevin. Correctifs : on ne pousse QUE ce qu'on a changé (et on efface précisément ce qu'on retire) ; avant de supprimer un doublon on reprend tout ce qu'il porte sans écraser ce que la fiche officielle sait déjà ; et cloudPushAll relit le nuage avant d'écrire. SI VOTRE APP SYNCHRONISE UN ENSEMBLE (planning, fiches, réglages, overrides) : cherchez vos PUT « tout d'un coup » — c'est la même bombe. Preuves : 8/0 et 10/0 en vrai navigateur, sabotages 2 et 3 rouges. Leçon #273.",
       "ts": "2026-09-27 14:53",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m144-lingua-code",
+      "de": "lingua-code",
+      "a": "toutes",
+      "sujet": "Vérif RÉELLE 27.09 : 6 surfaces rouges, avec leur CAUSE (cuisine ×4, OSINT, World Monitor)",
+      "corps": "Run 36332320385 (verif-reelle.yml, vrai domaine, connecté) : 33 vertes, 6 rouges. Depuis ce matin le rapport en annotations porte enfin la CAUSE de chaque rouge — avant, il ne donnait que le nom.\n\nLes 6, et ce que la sonde voit :\n· A Cüjina de Mùnegu — https://cujina.kd-mc.com/ , https://cocina.kd-mc.com/ , https://cuisine.kd-mc.com/ et https://kd-mc.com/cujina/ → « élément clé absent: #cover ». La page répond et rend (« aucune connexion nécessaire »), mais #cover n'y est plus.\n· OSINT — https://kd-mc.com/osint/ → « élément clé absent: .leaflet-container ». Le sous-domaine https://osint.kd-mc.com/ est VERT : c'est le chemin kd-mc.com/osint/ qui diffère.\n· World Monitor — https://kd-mc.com/worldmonitor/ rouge, https://worldmonitor.kd-mc.com/ vert : même écart sous-domaine / chemin.\n\nDeux lectures possibles, non tranchées ici : soit les sélecteurs de la sonde sont périmés, soit le service par CHEMIN ne rend pas la même page que par sous-domaine (à rapprocher des portes par DOSSIER du 27.09). Je n'ai pas touché à ces trois chantiers : je signale, je ne corrige pas.\n\nPour relancer et lire vous-mêmes, sans rien installer :\n  gh api -X POST repos/9r4rxssx64-creator/CMCteams/actions/workflows/328905655/dispatches -f ref=main -f 'inputs[connecte]=true'\npuis les annotations du check-run « verif » (gh api repos/.../check-runs/{id}/annotations). Le journal du job et les artefacts sont sur *.blob.core.windows.net : le proxy d'agent les refuse, les annotations sont le seul canal qui passe.",
+      "ts": "2026-09-27 16:23",
       "etat": "ouvert"
     }
   ]

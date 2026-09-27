@@ -14,6 +14,35 @@ bouton. Script servi en `porte.js?v=2`, `cache-control: no-cache`. Garde `test:p
 (4 contrôles nouveaux ; sabotage « ancien départ automatique » → 4 ✗). Leçon **#353**.
 
 ---
+## 2026-09-27 — AUDIT LINGUA sur le vrai domaine : 74 vérifiés, 0 en échec
+
+Run **36338455035**, `https://lingua.kd-mc.com`, **version servie v2.126.0**.
+
+**Les 16 langues**, ouvertes une par une : 14 à **189 unités / 585 leçons**, monégasque
+**17 / 130**, LSF **39 / 142**. **Une leçon jouée** : 6 exercices, **6 verdicts sur 6**.
+**6 onglets = 6 écrans DIFFÉRENTS** (pas six fois le même). 24 histoires · 2 jeux ·
+84 cases de calendrier · atelier prononciation · 4 verbes · dictionnaire. **Mémoire en
+ligne** : écriture puis relecture, la sauvegarde revient à l'identique. **« Voir mon
+code »** : masqué, puis affiché, avec le prénom+nom exact. Service worker enregistré.
+**0 erreur JavaScript sur tout le parcours.**
+
+**Les voix, écoutées et non comptées** : les **12 voix cloud rendent bien de l'audio**
+(`audio/mpeg`, 14 964 à 36 864 octets) et leurs **12 empreintes sont toutes DIFFÉRENTES** —
+aucune n'est la copie d'une autre. La 13ᵉ, « voix du téléphone (hors-ligne) », est proposée
+et nommée comme telle. Le 🔊 déclenche **un seul** appel (le bug « dit deux fois » ne
+revient pas).
+
+**Le premier passage disait 3 rouges. Les trois étaient de MA faute** — et la preuve
+tient en un chiffre. Les 12 voix rendaient « 200, application/json, **36 octets**, même
+empreinte » : 36, c'est exactement la longueur de `{"ok":false,"reason":"hors_domaine"}`.
+`/__lingua/tts` **refuse** ce qui ne vient pas d'une page du domaine ; ma sonde appelait
+l'adresse en direct. L'app se protégeait, correctement. Même chose pour la mémoire en
+ligne : `bad_key`, parce que `okKey = /^[a-f0-9]{16,64}$/` et que j'envoyais une clé
+préfixée. **Rien à corriger dans Lingua ; tout à corriger dans la sonde.** Le verrou est
+devenu un contrôle à part entière (`8.verrou`) : un appel venu du dehors DOIT être refusé.
+
+**Leçon** : une sonde qui parle à l'API « par le côté » ne mesure pas ce que vit
+l'utilisateur — elle mesure sa propre porte d'entrée. On demande depuis la page.
 
 ## 2026-09-27 — Audit LINGUA : tout, sur le vrai domaine (sonde neuve)
 

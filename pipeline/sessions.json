@@ -81,11 +81,11 @@
       "surfaces": [
         "arbre"
       ],
-      "etat": "termine",
-      "maj": "2026-09-10",
+      "etat": "actif",
+      "maj": "2026-09-27",
       "attend_kevin": "changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…",
       "attend_session": "lingua-voix : test:lingua-voix : 26 OK / 0 FAIL — les 5 rouges sont corriges, et il y avait un vrai bug derriere",
-      "note": "Branche supprimee par le menage du 10.09 (levee du ruleset). Travail VERIFIE dans main : PR #3721 fusionnee. Pour repartir : branche neuve depuis main + pipeline.mjs enregistrer."
+      "note": "v3.30 : import unifié (importerPaquet) + fichier Hélène vérifié sur réplique ; Hélène confirmée unique dans les documents"
     },
     "lingua": {
       "titre": "Duolingo reverse-engineering",
@@ -2703,6 +2703,24 @@
       "sujet": "Le routeur verrouille désormais par DOSSIER (plus par adresse) : PoolPilot/Autorisations s'ouvraient sans code par kd-mc.com/CMCteams/tools/… (mesuré 27.09) — et /__sso/issue exige prénom+nom+conditions pour un NOUVEAU compte",
       "corps": "1) Liste PORTES dans services/kdmc-router/worker.js : admin (tools/poolrobot, tools/approvals) et fiche obligatoire avant d'entrer (tools/cuisine, kdmc-home/worldmonitor|osint|ia|outils, tools/tor, dossiers) — choix de Kevin ; boutiques et pages de vente restent visibles. Si vous ajoutez une app privée ou un site d'information : ajoutez son DOSSIER à PORTES, pas un test sur host. Garde test:portes-dossier (53/0). 2) /__sso/issue refuse (400 renseignements_requis) une fiche NEUVE sans prénom ET nom (2 mots de 2 lettres) + cgu:true — si votre app déclare des comptes, envoyez cgu:true (après l'avoir fait accepter) et le nom complet. Apex Chat corrigé. 3) Tests Finances : l'autofocus 80 ms volait la saisie de fill('#g-pass2') sous charge — si vos tests remplissent un champ juste après l'affichage, vérifiez la valeur écrite. Leçons #344, #345.",
       "ts": "2026-09-27 11:05",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m138-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "Une vérification ne RECOPIE jamais la logique de l'app : mes 3 verify de l'arbre recopiaient la boucle d'import — elles testaient la copie (et la copie avait raté un correctif). Corrigé en extrayant importerPaquet() (arbre v3.30)",
+      "corps": "Mesuré le 27.09 : (1) pour une fiche qui N'EXISTE PAS ENCORE, l'import ne passait pas par fusionnerFiche → « notesAjout » restait en faux champ et les notes restaient vides (la ligne transcrite d'un document n'apparaissait nulle part) ; (2) tools/arbre/verify-liens-par-nom.mjs, verify-metier-notes.mjs et verify-photo-fusion.mjs RECOPIAIENT la boucle d'import dans page.evaluate : elles mesuraient la copie, pas l'app — et la copie de verify-liens-par-nom n'avait jamais reçu le correctif v3.28. Fix : la boucle vit dans importerPaquet(d) dans arbre/index.html ; doImport l'appelle, et les vérifications font « const importer = (d) => importerPaquet(d) ». Créer une fiche passe par fusionnerFiche(null,rp,true) : notes/listes/faux champs traités au même endroit. SI VOUS AVEZ UN TEST QUI RECOPIE UNE BOUCLE DE VOTRE APP (import, calcul de planning, rendu) : extrayez la fonction et appelez-la, sinon votre test reste vert pendant que l'app casse. Et un test « deux fois de suite » doit mesurer AUSSI la première passe (la 2e peut réparer le défaut). Preuves : verify-metier-notes 12/0, verify-liens-par-nom 9/0, verify-photo-fusion 12/0, test:arbre-liens-nom 30/0, sabotage → 2 rouges. Leçon #269.",
+      "ts": "2026-09-27 13:03",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m139-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "test:croupier-entrainement bloquait test:ci pour TOUTES les sessions : chemin du dépôt écrit en dur (/home/user/CMCteams) — corrigé, 40/40",
+      "corps": "Pour la session qui tient shops/croupier. Mesuré le 27.09 : tests/croupier-entrainement.test.mjs portait « const ROOT = '/home/user/CMCteams' ». Dans un conteneur où la copie du dépôt s'appelle « cmcteams » (minuscules), le serveur du test renvoyait 404 sur TOUT : la page ne se chargeait jamais, window.__ENTRAINEUR n'existait pas, et le test mourait au bout de 30 s sur un TimeoutError qui ne dit pas pourquoi — test:ci s'arrêtait là pour tout le monde. Vérifié des deux côtés : même échec sur origin/main non modifié (donc pas une régression d'une autre branche) et la page est SAINE (chargée dans un vrai Chromium : __ENTRAINEUR présent, 0 erreur JS, 0 violation CSP, 0 réponse en erreur). Correctif : ROOT se déduit de l'emplacement du test, comme dans les autres tests. Après : 40 contrôles OK. J'ai touché à ce test parce qu'il bloquait la chaîne de tous — revenez dessus si vous voulez, mais pas de chemin absolu : un test doit tourner quel que soit le nom du dossier.",
+      "ts": "2026-09-27 13:58",
       "etat": "ouvert"
     }
   ]

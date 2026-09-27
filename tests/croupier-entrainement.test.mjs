@@ -9,8 +9,13 @@ import { chromium } from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = '/home/user/CMCteams';
+/* Le chemin du dépôt se DÉDUIT de l'emplacement du test : écrit en dur, il ne marchait
+   que dans un conteneur où la copie s'appelle exactement « CMCteams » — ailleurs (copie
+   en minuscules), le serveur renvoyait 404 sur tout et le test échouait au bout de 30 s
+   sans dire pourquoi (mesuré 27.09 : test:ci bloqué ici pour les autres sessions). */
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIME = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css' };
 const srv = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);

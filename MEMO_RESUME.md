@@ -1,5 +1,71 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Hélène : une seule, vérifiée dans les documents · arbre v3.30 (l'import ne se recopie plus)
+
+**La question de Kevin** : « Hélène est née le 20.01.1919, décédée le 23.01.1919. Il n'y a qu'une
+Hélène. Vérifie sur les documents. » **Vérifié, document par document** :
+
+- **Manuscrit familial (photo du 27.09)** : Hélène figure dans la liste des enfants de Marius
+  ‹employé› et Judith ‹employé› — née le **20.01.1919** à Beaulieu (2 h), **† 23.01.1919**. Conforme
+  à ce que dit Kevin, au jour près.
+- **Instantané de l'arbre (81 fiches, `arbre/research/cloudraw/cloud-before.json`)** : **UNE seule**
+  occurrence du mot « Hélène » dans tout le fichier, et ce n'est **pas une fiche** — c'est la
+  phrase « une "Hélène 20/01/49" incertaine » **dans les notes de Marie-Thérèse**. Aucune fiche
+  Hélène n'a jamais existé : il n'y a donc pas de doublon à supprimer, il y a une **phrase à
+  corriger**.
+- **Fichier INSEE des décès (21 noms, 2026-09-01)** : deux Hélène **‹employé›** (autre
+  orthographe), aucune de la famille — 1898–1983 Cannes et **1948–2005** (née à Moulins, morte à
+  Aimargues). C'est probablement cette dernière qui a fait croire à une « Hélène de 1949 ».
+- **REGISTRES.md** : « ‹employé› Réparate Joséphine **Hélène** », mariage 1918 — troisième prénom
+  de quelqu'un d'autre.
+- **Limite dite honnêtement** : aucun **acte officiel** ne confirme ces dates. Le fichier INSEE
+  commence en 1970 : un bébé mort en 1919 n'y sera jamais. Il faudrait l'état civil de
+  Beaulieu-sur-Mer (1919). Bonne nouvelle : les cibles de `research-registres.mjs` se **déduisent
+  de l'arbre** — dès que sa fiche existe, sa naissance de 1919 entre automatiquement dans la
+  prochaine chasse aux actes.
+
+**Fichier envoyé à Kevin** (hors dépôt) : crée/complète **une seule** Hélène (20.01.1919 –
+23.01.1919, fille de Marius et de Judith, désignés par leur **nom**) et **ajoute** à la fiche de
+Marie-Thérèse la correction (« l'Hélène 20/01/49 n'est pas sa fille, c'est sa sœur ; l'année avait
+été lue 49 au lieu de 19 ; ne pas en recréer une seconde »). Essayé sur une réplique **deux
+scènes** : avec Judith (comme chez Kevin) **0 lien en échec**, et **sans** Judith (pire cas)
+**aucune mère inventée**, 1 lien signalé — dans les deux cas une seule Hélène après deux imports,
+la note de recherche de Marie-Thérèse intacte, la correction non dupliquée.
+
+**v3.30 — un défaut de la v3.29 trouvé en préparant ce fichier**, et mesuré : pour une fiche
+**qui n'existe pas encore**, l'import ne passait pas par `fusionnerFiche` → `notesAjout` restait
+en **faux champ** et les notes restaient **vides** : la ligne transcrite du document
+n'apparaissait nulle part. Et mes trois vérifications navigateur **recopiaient** la boucle
+d'import au lieu de l'appeler (la copie de `verify-liens-par-nom` avait même raté le correctif
+v3.28). Correctif : `importerPaquet(d)` — une seule boucle, appelée par la page **et** par les
+vérifications ; la création passe par `fusionnerFiche(null, rp, true)`.
+**Mesures** : `verify-metier-notes` **12/0**, `verify-liens-par-nom` **9/0**,
+`verify-photo-fusion` **12/0**, garde hors ligne **30/0** ; sabotage → **2 rouges**.
+Leçon **#269**.
+
+### « Intègre tout toi auto » — l'arbre se corrige maintenant SANS l'iPhone
+
+Kevin ne devait plus avoir à faire « Réglages → Importer ». L'app garde une copie partagée
+dans Firebase (`/arbre/<empreinte du code>`) que tous les appareils relisent (`cloudPull`
+prend la fiche distante quand elle est plus récente) : **écrire là, c'est corriger partout**.
+La session Claude n'a pas d'accès sortant vers Firebase (proxy 403, mesuré) — le runner, si.
+
+- **`tools/arbre/appliquer-nuage.mjs`** : lit l'empreinte du code **dans D1** avec le jeton
+  Cloudflare déjà en place (jamais affichée, jamais écrite), lit le nuage, applique les
+  corrections avec les **vraies fonctions de la page** (`importerPaquet`…), **n'écrit que ce
+  qui change vraiment** (un `conjoints: []` ajouté par la normalisation n'est pas un
+  changement : 17 fiches au lieu de 58), **refuse** toute fiche qui perdrait une photo, un
+  document, un commentaire ou son nom, puis **relit et recompte**. Mode `--simuler` pour
+  tout vérifier hors ligne, mode inspection par défaut (aucune écriture).
+- **`.github/workflows/arbre-nuage.yml`** : le bouton (à la main, jamais de cron), corrections
+  passées en base64 — **rien de familial n'est commité**.
+- **Garde `test:arbre-nuage`** (24 contrôles, câblée dans `test:ci`) : elle fait tourner
+  l'outil POUR DE VRAI en simulation sur la famille inventée. Sabotage (filet retiré) →
+  **2 rouges**. Essai complet sur une réplique de l'arbre : 6 créées, 17 complétées,
+  **17 fiches écrites**, photo de test **conservée**, relecture conforme.
+
+---
+
 ## 2026-09-27 (midi) — Un visiteur neuf vidait le planning partagé ; les tests CI lisaient la vraie base (v9.923)
 
 - Déclencheur : `test:departs-algo` rouge sur `main` depuis 11h44 (« 0 avec numéro ») et vert en local.

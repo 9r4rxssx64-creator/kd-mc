@@ -1,5 +1,27 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Plus de validation si l'inscription est complète : une alerte à Kevin à la place (CMCteams v9.927, light v1.61)
+
+Kevin : « Pas besoin que je valide si tous les champs des renseignements sont fournis, juste une alerte pour moi
+d'une nouvelle connexion ».
+- **Avant (mesuré)** : un nouvel inscrit CMCteams recevait un code que SEUL l'écran admin lit (`/cmc/code/new` range
+  le code au secret) → Kevin validait chaque inscription à la main ; sinon « En attente de validation par Kevin ».
+- **Maintenant** : inscription **complète** (nom, prénom, e-mail valide, matricule U…, années d'entrée SBM et jeux)
+  → `verified: true` + `verifiedAuto: true`, la personne entre tout de suite, la fiche SBM obligatoire complète le
+  téléphone. Inscription **incomplète** → chemin d'avant (code / validation). `_cmcConnecterNouveau()` extrait de
+  `stepVerifyCode` (partagé) ; il reconstruit l'index des employés (sinon « Compte introuvable », mesuré).
+- **L'alerte** : `POST /__notify-kevin {kind:"nouveau"}` → notification « 🆕 Nouvelle connexion — Prénom NOM » sur
+  l'iPhone de Kevin (worker de push, jeton posé au déploiement : aucun avertissement « absent » dans les runs),
+  UNE par personne et par app sur 12 h, + trace dans le journal admin (`audLog`) + liste `cmc_reg_alerts`.
+  Envoyée par CMCteams (nouvelle inscription) et par la light (première connexion par code ou Face ID). Pas pour Kevin.
+- **Tests** : `test:inscription-sans-validation` 9/0 (ancienne page : 5 ✗), `test:alerte-nouveau` 9/0 (aussi dans le
+  déploiement du routeur), `test:light-faceid-code` 27/0 (+2 : alerte, pas pour Kevin). Verts : secrets-cmc 41/0,
+  fiche-premiere-connexion 35/0, fiches-privees 46/0, visiteur 14/0, departs-gate 11/0, maj-forcee, seed-remplace, seed,
+  generateurs-reproductibles, parite 7/0, portes 75/0, jamais-cmcteams 17/0, sso/self-service/admin. Seed regénéré
+  (`"parser":"v9.927"`, contenu identique). Leçon **#359**.
+- **Pas vérifiable d'ici** : que l'iPhone de Kevin est bien abonné aux notifications du worker de push.
+
+---
 ## 2026-09-27 (nuit) — Conditions une fois, Lingua et La Détente sur le compte du domaine, codes redemandés : relevés
 
 Kevin : « Le CGU doit être demandé qu'une seule fois… CGU rapide, vague, simplifié. Sécurisé partout… On me

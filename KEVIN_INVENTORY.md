@@ -1,5 +1,16 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🆕 Plus de validation à faire : une alerte pour toi à chaque nouvelle connexion (27.09.2026, nuit — v9.927 / light v1.61)
+
+- 📱 Tu reçois « 🆕 Nouvelle connexion — Prénom NOM » quand quelqu'un s'inscrit à CMCteams avec tous ses renseignements, ou entre pour la première fois dans la light. Le détail : [Qui se connecte](https://admin.kd-mc.com/).
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `index.html` | **Modifié (v9.927).** Inscription complète → validée seule, la personne entre, alerte pour toi. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/index.html) |
+| `tools/departs/index.html` | **Modifié (v1.61).** Première connexion à la light → alerte pour toi. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/departs/index.html) |
+| `services/kdmc-router/worker.js` | **Modifié.** Relais d'alerte « nouvelle connexion » (une par personne et par app sur 12 h). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `tests/verify-inscription-sans-validation.mjs`, `services/kdmc-router/alerte-nouveau.test.mjs` | **Nouveaux.** 9 + 9 contrôles. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-inscription-sans-validation.mjs) |
+
 ### 🔓 Light v1.60 : Face ID ou code, et toi dispensé (27.09.2026, nuit)
 
 - 📱 **À essayer** : [cmcteams-light.kd-mc.com](https://cmcteams-light.kd-mc.com/) → touche **Face ID** : tu entres directement, sans fiche. Un employé : Face ID, ou matricule + son code CMCteams, puis sa fiche.

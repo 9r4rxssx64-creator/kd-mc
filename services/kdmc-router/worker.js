@@ -1970,6 +1970,24 @@ async function handleNotifyKevin(request, env) {
     const name = String((b && b.name) || '').slice(0, 60).replace(/[\r\n]+/g, ' ').trim() || 'Employé';
     const text = String((b && b.text) || '').slice(0, 140).replace(/[\r\n]+/g, ' ').trim();
     if (!text) return J({ ok: true, skipped: 'empty' });
+    /* NOUVELLE CONNEXION (Kevin 27.09 : « Pas besoin que je valide si tous les champs des
+       renseignements sont fournis, juste une alerte pour moi d'une nouvelle connexion »).
+       Un nouvel inscrit CMCteams (validé tout seul) ou une première connexion à la light →
+       notification dédiée. Son propre anti-doublon : UNE alerte par personne et par app sur 12 h
+       (clé KV), jamais avalée par le frein des messages (12 s). */
+    if (b && b.kind === 'nouveau') {
+      const app = appDe(host) || host;
+      if (env && env.ACCOUNTS) {
+        try {
+          const cle = 'push:nouveau:' + app + ':' + name.toLowerCase().replace(/[^a-z0-9àâäçéèêëîïôöùûüÿ]+/g, '_').slice(0, 60);
+          if (await env.ACCOUNTS.get(cle)) return J({ ok: true, deja: true });
+          await env.ACCOUNTS.put(cle, '1', { expirationTtl: 12 * 3600 });
+        } catch { /* fail-open */ }
+      }
+      await notifyPush(env, '🆕 Nouvelle connexion — ' + name, text, { tag: 'kdmc-nouveau', url: 'https://admin.kd-mc.com/' });
+      await audLog(env, { type: 'nouvelle_connexion', app, name, text });
+      return J({ ok: true, alerte: true });
+    }
     if (env && env.ACCOUNTS) {
       try {
         const last = parseInt((await env.ACCOUNTS.get('push:kevin_last')) || '0', 10) || 0;

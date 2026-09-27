@@ -1,5 +1,56 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 — Le robot de fusion n'est pas cassé, et la vérif réelle ne disait pas POURQUOI
+
+Kevin : « Répare le robot si besoin. Trouve des solutions pour te connecter et vérifier
+réellement partout. »
+
+**Le robot — mesuré avant de toucher quoi que ce soit.** `auto-merge-claude.yml` est
+`disabled_manually` dans le coffre depuis le **26.09 à 17:35:54 UTC**. Il n'a pas été visé :
+**134 des 170 robots** ont été mis en pause dans la même minute (une par seconde, ordre
+alphabétique) — c'est la bascule « deux dépôts » d'ETAT-DU-MOMENT, **voulue**. Sa copie existe
+bien au dépôt public `kd-mc` (137 robots), mais elle se déclenche sur `push: claude/**` **du
+dépôt public** : elle ne verra jamais une branche du coffre. **Donc aucun robot ne fusionne
+ici, et aucun ne le peut.**
+
+Je l'ai rallumé pour vérifier (`état = active`), constaté qu'aucune exécution ne partait, et
+**remis en pause** — état d'origine rétabli, aucun run consommé. Deux raisons de ne pas le
+laisser allumé : c'est le **1er poste de dépense** (569 min en septembre, sur 2 000) à quatre
+jours de la remise à zéro, et il ferait **deux fusionneurs en concurrence** — le piège connu
+« le bot fusionne avant ton push de suite ».
+
+**Le vrai chemin existe déjà et coûte 0 minute** : `gh api -X POST …/pulls` puis
+`gh api -X PUT …/pulls/{n}/merge -f merge_method=squash`. Preuve : les 5 dernières PR
+(#4067, #4070, #4072, #4074 — plusieurs sessions différentes) ont **toutes** été fusionnées
+ainsi. La ligne d'ETAT-DU-MOMENT qui disait « il peut refusionner » était donc **fausse** :
+corrigée, avec les deux commandes écrites noir sur blanc.
+
+**Se connecter et vérifier pour de vrai.** Le proxy d'agent répond **403 au CONNECT** sur
+`*.kd-mc.com` (`recentRelayFailures` du proxy le nomme) : un `curl` depuis une session ne
+prouve rien, et ça ne se contourne pas. Le contrôle réel se **lance** et se **lit** d'ici :
+`workflows/328905655/dispatches` (`verif-reelle.yml`, actif) puis lecture des **annotations**
+du check-run — le seul canal qui traverse (journal du job et artefacts sont servis par
+`*.blob.core.windows.net`, refusé aussi : vérifié, téléchargement d'artefact = 403).
+
+**Ce que ça a donné (run 36331224956, vrai domaine, connecté) : 33 surfaces vertes, 6 rouges.**
+`✅ KDMC Lingua` en profondeur (16 langues · 189 unités · 6 voix HD distinctes). Rouges :
+**A Cüjina de Mùnegu** sur ses 4 adresses (`cujina`, `cocina`, `cuisine`, `kd-mc.com/cujina`),
+**World Monitor** et **OSINT** sur leur chemin `kd-mc.com/…` — leurs sous-domaines, eux, sont
+verts. À rapprocher du changement de portes par DOSSIER du 27.09.
+
+**Et le défaut que ça a révélé** : le rapport nommait les 6 rouges et **pas une seule cause**.
+audit-live.mjs écrit la raison SOUS la surface (`   · …`) et le `grep` de tri ne retenait pas
+ces lignes. Un contrôle qu'on ne peut pas lire ne vaut pas mieux qu'un contrôle qui n'a pas
+tourné. Le tri est maintenant un petit programme **awk** : verdicts + **la raison de chaque
+❌** (les notes des ✅ restent écartées pour ne pas chasser les rouges du `tail`). Et la sonde
+Lingua rapporte désormais **la version réellement servie** (`APP_VER` lu dans la page) : un
+vert ne prouvait pas qu'un correctif fusionné était en ligne.
+
+`npm run test:rapport-lisible` passe de 6 à **11 OK / 0 FAIL**, et il **exécute** le vrai
+programme awk extrait du workflow au lieu d'en recopier une imitation. Sabotage prouvé : notes
+coupées → **2 échecs**. Au passage, `test:maj-tout` était **déjà rouge sur `main`** avant mes
+changements (chiffres de TRANSFERT-COMPLET périmés) — remis à jour.
+
 ## 2026-09-27 — Le mail de Laure ‹employé› intégré dans l'arbre (124 → 126 fiches)
 
 Kevin transmet un mail de **Laure ‹employé›** à Marie-Noëlle ‹employé›. Lu d'abord ce que

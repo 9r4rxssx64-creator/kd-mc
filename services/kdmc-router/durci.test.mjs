@@ -35,6 +35,8 @@ console.log('\nRouteur durci : en-têtes sur TOUTES les réponses + http → htt
   ok(r.headers.get('x-frame-options') === 'DENY', `6. un en-tête posé par l'hébergeur n'est PAS écrasé (DENY conservé)  [${r.headers.get('x-frame-options')}]`); }
 { const r = await acces.fetch(new Request('https://admin.kd-mc.com/'), {});
   ok(r.headers.get('x-frame-options') === 'DENY' && /max-age=31536000/.test(r.headers.get('strict-transport-security') || '') && r.headers.get('x-content-type-options') === 'nosniff', `7. page admin.kd-mc.com (worker kdmc-access) : jamais encadrable, HSTS, nosniff  [${r.headers.get('x-frame-options')}]`); }
+{ const r = await acces.fetch(new Request('http://admin.kd-mc.com/?x=1'), {});
+  ok(r.status === 301 && r.headers.get('location') === 'https://admin.kd-mc.com/?x=1', `8. http://admin.kd-mc.com → 301 https  [${r.status}]`); }
 
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

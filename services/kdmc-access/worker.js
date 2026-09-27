@@ -212,6 +212,8 @@ async function handleHistory(request, env, origin) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    /* Audit du domaine 27.09.2026 (sonde run 36339597151) : http://admin.kd-mc.com/ répondait 200 en clair. */
+    if (url.protocol === 'http:') { url.protocol = 'https:'; return new Response(null, { status: 301, headers: { location: url.toString() } }); }
     const origin = request.headers.get('origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (url.pathname === '/health') return json({ ok: true, service: 'kdmc-access' }, 200, origin);

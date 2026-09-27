@@ -84,6 +84,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 | CMCteams — fidélité au PDF (planning/équipes/départs) | `claude/verify-cmcteams-light-data-rzlvau` | 🟢 septembre 2026 : 248/248 personnes et 7 440/7 440 cellules identiques au PDF, des deux côtés (6.09) |
 | Coffre, quota GitHub, état du moment (`coffre-etat`) | `claude/etat-du-moment` | 🟢 ETAT-DU-MOMENT.md servi à chaque réveil de session (26.09) |
 | Audit du domaine 27.09 (`audit-domaine`) | `claude/audit-domaine-2709` | 🟢 Rapport privé 36/100, sonde audit-domaine, routeur durci, relais Apex fermé (27.09) |
+| Audit domaine : admin en https (`audit-domaine-admin`) | `claude/audit-domaine-admin-https` | 🟢 http→https sur admin.kd-mc.com (27.09) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 
 ## 📅 État RÉEL mesuré le 10.09.2026 — `git for-each-ref` + `git rev-list origin/main..<branche>`

@@ -47,6 +47,8 @@ Kevin : « Fais ton audit du domaine et un d'améliorations détaillé ». Rappo
   `durcirReponse()` à la porte d'entrée du routeur + 301 vers https ; en-têtes sur la page admin
   (`test:routeur-durci` 7/7 ; 3 et 2 échecs au sabotage).
 - DMARC, CAA, DNSSEC absents (plan P1). Portes admin 403, CORS sain, TLS 1.3, Firebase racine 401 ✅.
+- **Mesuré en ligne après fusion (#4088, sonde 36339597151)** : en-têtes 39 → 61/100, 0 adresse à 0/100, http→https 32/33
+  (admin.kd-mc.com : redirection ajoutée au lot suivant, `test:routeur-durci` n° 8).
 - Lighthouse Apex mobile 25/100 : logo SVG de 960 Ko chargé 2 fois, `MEMO_RESUME.md` lu 6 fois.
 - audit-live : 6 rouges = sondes non adaptées à la fiche obligatoire (m145), pas une panne.
 

@@ -558,6 +558,16 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "audit-domaine-admin": {
+      "titre": "Audit domaine : admin en https",
+      "branche": "claude/audit-domaine-admin-https",
+      "sujet": "Redirection http→https de admin.kd-mc.com (suite de l'audit du 27.09)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

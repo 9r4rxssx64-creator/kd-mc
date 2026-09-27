@@ -16,5 +16,23 @@ routes = [
 [ai]
 binding = "AI"
 
-# Pas de KV/D1 : worker = pur relais sans état. Rate-limit best-effort via quotas
-# upstream. Les clés externes sont posées en secrets par deploy-kdmc-apis.yml.
+# Pas de KV/D1 : worker = pur relais sans état. Les clés externes sont posées en secrets
+# par deploy-kdmc-apis.yml.
+#
+# PLAFOND PAR APPAREIL sur /ai (audit Bee 27.09.2026, mesuré : l'en-tête Origin se falsifie
+# d'une ligne, 200 appels Anthropic payés d'un seul script, AUCUN plafond). Binding « Rate
+# Limiting » de Cloudflare : compteur en mémoire, GRATUIT, ZÉRO écriture KV (le plafond
+# d'écritures KV du compte a été atteint le 27.09). Forme « unsafe » : celle que wrangler 3
+# (épinglé dans le déploiement) comprend ; Cloudflare la garde en service après le GA.
+# Si le binding manque, le worker laisse passer (jamais de panne) — voir limiteOk().
+[[unsafe.bindings]]
+name = "LIMITE_IA"
+type = "ratelimit"
+namespace_id = "2701"
+simple = { limit = 30, period = 60 }
+
+[[unsafe.bindings]]
+name = "LIMITE_IA_PREMIUM"
+type = "ratelimit"
+namespace_id = "2702"
+simple = { limit = 6, period = 60 }

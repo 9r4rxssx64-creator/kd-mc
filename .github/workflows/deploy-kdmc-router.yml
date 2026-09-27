@@ -284,6 +284,20 @@ jobs:
             echo "::warning::GEMINI_API_KEY absente → pas de dernier repli Gemini pour le Coach IA."
           fi
 
+      - name: Anthropic — le moteur « expert » du cerveau de Bee (/__javis/ai, réservé à Kevin, fail-open si absente)
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "${ANTHROPIC_KEY:-}" ]; then
+            printf '%s' "$ANTHROPIC_KEY" | wrangler secret put ANTHROPIC_API_KEY 2>&1 | tail -2 \
+              || echo "::warning::ANTHROPIC_API_KEY non posée (Bee répond avec les IA gratuites seulement)"
+          else
+            echo "::warning::ANTHROPIC_API_KEY absente → Bee répond avec les IA gratuites seulement (Qwen, Groq, Mistral, Gemini)."
+          fi
+
       - name: Health check des belles adresses
         run: |
           for H in kd-mc.com www.kd-mc.com cmcteams.kd-mc.com apex-ai.kd-mc.com \

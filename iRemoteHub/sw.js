@@ -29,6 +29,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if(new URL(event.request.url).pathname.indexOf('/__')===0)return; /* SW-IDENTITE : /__sso (qui es-tu ?), /__demande… = réponses du domaine, jamais en cache (sinon identité périmée) */
   const req = event.request;
   const url = new URL(req.url);
 

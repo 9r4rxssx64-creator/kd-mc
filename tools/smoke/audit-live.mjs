@@ -67,13 +67,24 @@ const SURFACES = [
      elle ne jette rien, et elle DIT clairement pourquoi Bee n'est pas là — jamais un
      écran noir inexpliqué. */
   { url: 'https://javis.' + ROOT + '/', name: 'Bee (app installable)', selKey: 'body', deep: async (page) => {
-      const t = await page.evaluate(() => document.body.innerText || '');
       const bee = await page.locator('#javis-launcher .bee-rig').count().catch(() => 0);
       if (bee > 0) return { ok: true, note: 'Bee est affichée (session reconnue admin prouvé)' };
-      return { ok: /personnelle à Kevin|Bee/i.test(t),
-        note: /personnelle à Kevin/i.test(t)
-          ? 'fail-closed correct : Bee cachée + message clair (session nommée, pas Face ID)'
-          : 'PAGE MUETTE : ni Bee ni explication' };
+      /* L'écran de verrou (role=alert) et SA raison, lue sur son titre — les 5 raisons du widget.
+         Avant (audit 27.09) : le verdict passait sur le seul mot « Bee » (n'importe quel texte), et
+         la note ne connaissait que « personnelle à Kevin » → un écran CORRECT était annoncé
+         « PAGE MUETTE ». Un verrou sans bouton de sortie est une impasse : c'est un échec. */
+      const v = await page.evaluate(() => {
+        const a = document.querySelector('[role=alert]');
+        return { titre: a ? ((a.querySelector('b') || {}).textContent || '') : '',
+          boutons: a ? a.querySelectorAll('button, a[href]').length : 0 };
+      });
+      const RAISONS = { 'ne te reconnaît pas ici': 'aucune session ici (attendu en CI)', 'Il manque Face ID': 'session sans Face ID',
+        'personnelle à Kevin': 'compte qui n\'est pas Kevin', 'ne répond pas': 'domaine muet', 'a un souci': 'domaine en erreur' };
+      const cle = Object.keys(RAISONS).find((k) => v.titre.indexOf(k) >= 0);
+      return { ok: !!cle && v.boutons >= 1,
+        note: !cle ? 'PAGE MUETTE : ni Bee ni écran de verrou reconnu' + (v.titre ? ' (titre : « ' + v.titre + ' »)' : '')
+          : v.boutons < 1 ? 'IMPASSE : verrou « ' + v.titre + ' » SANS aucun bouton de sortie'
+            : 'fail-closed correct : « ' + v.titre + ' » (' + RAISONS[cle] + '), ' + v.boutons + ' bouton(s) de sortie' };
     } },
   /* Admin du domaine (le hub de tuiles). Deux exigences, pour deux raisons :
      1. sans session → le VERROU, jamais les tuiles (le verrou est tenu par le

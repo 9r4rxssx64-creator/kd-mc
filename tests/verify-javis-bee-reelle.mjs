@@ -34,6 +34,16 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascr
 /* --- petit serveur : l'app Bee, telle qu'elle est dans le dépôt --------------- */
 const srv = http.createServer((req, res) => {
   const p = (req.url || '/').split('?')[0];
+  if (p === '/__javis/ai') {                         /* le cerveau de Bee (le domaine, réservé à Kevin) */
+    let corps = '';
+    req.on('data', (c) => { corps += c; });
+    req.on('end', () => {
+      IA_RECUES.push({ corps, entetes: req.headers });
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, provider: 'qwen', gratuit: true, text: IA_REPONSES.shift() || 'Coucou Kevin !' }));
+    });
+    return;
+  }
   if (p === '/__sso/whoami') {                       /* le domaine dit qui tu es */
     res.writeHead(200, { 'content-type': 'application/json' });
     return res.end(JSON.stringify(SSO));
@@ -44,6 +54,9 @@ const srv = http.createServer((req, res) => {
   res.end(fs.readFileSync(f));
 });
 let SSO = { ok: true, uid: 'kdmc_admin', name: 'Kevin DESARZENS', verified: true, admin: true };
+const IA_RECUES = [];
+const IA_REPONSES = [];
+let ttsDemandes = 0;
 await new Promise((r) => srv.listen(0, r));
 const BASE = `http://127.0.0.1:${srv.address().port}`;
 
@@ -163,12 +176,13 @@ async function ouvre({ casse = null } = {}) {
     return route.fulfill({ status: 200, contentType: TYPES[f.slice(f.lastIndexOf('.'))] || 'application/octet-stream',
       body: fs.readFileSync(f) });
   });
-  await page.route('https://apis.kd-mc.com/**', (r) => r.fulfill({ status: 200,
-    contentType: 'application/json', body: JSON.stringify({ ok: true, provider: 'qwen', text: 'Coucou Kevin !' }) }));
+  /* plus aucun appel à apis.kd-mc.com : s'il en partait un, on le compterait comme une faute */
+  await page.route('https://apis.kd-mc.com/**', (r) => { IA_RECUES.push({ fuite: r.request().url() }); r.fulfill({ status: 410, body: 'plus utilisé' }); });
   /* Sa voix : en production c'est le domaine qui la fabrique. Ici on sert un VRAI son
      (fort puis silencieux) pour pouvoir MESURER que la bouche suit l'amplitude —
      et pas un minuteur. `muet: true` simule une voix injoignable (test du repli). */
   await page.route(/lingua\.kd-mc\.com\/__lingua\/tts/, (route) => {
+    ttsDemandes++;
     if (voixKO) return route.fulfill({ status: 503, body: 'indisponible' });
     return route.fulfill({ status: 200, contentType: 'audio/mpeg',
       headers: { 'access-control-allow-origin': '*' }, body: sonDeTest() });
@@ -601,6 +615,54 @@ if (FFMPEG) {
   await ctx.close();
 }
 
+/* === 4 ter-a. audit perf 27.09 : rien ne tourne pour rien =========================== */
+{
+  const { ctx, page, erreurs } = await ouvre();
+  await page.waitForSelector('#javis-launcher .bee-rig', { timeout: 8000 }).catch(() => {});
+  if (VIDEO_TESTABLE) {
+    await page.waitForFunction(() => document.querySelector('#javis-launcher .bee-rig.vid') !== null, null, { timeout: 12000 }).catch(() => {});
+    /* (a) changement de personnage : l'ANCIENNE vidéo s'arrête vraiment */
+    const a = await page.evaluate(async () => {
+      const vieille = document.querySelector('#javis-launcher .javis-vid');
+      const autre = [...document.querySelectorAll('.javis-mpick')].find((b) => !b.classList.contains('on'));
+      if (!vieille || !autre) return { ok: false, pourquoi: 'pas de vidéo ou pas de 2e personnage' };
+      autre.click();
+      await new Promise((r) => setTimeout(r, 800));
+      return { ok: true, detachee: !vieille.isConnected, enPause: vieille.paused, src: vieille.getAttribute('src') };
+    });
+    chk(a.ok && a.detachee && a.enPause && !a.src, a.ok ? `changement de personnage : l'ancienne vidéo est ARRÊTÉE (pause=${a.enPause}, source retirée=${!a.src})`
+      : 'changement de personnage : ' + a.pourquoi);
+    /* (b) page cachée : la vidéo se met en pause, et repart au retour */
+    await page.waitForFunction(() => document.querySelector('#javis-launcher .bee-rig.vid') !== null, null, { timeout: 12000 }).catch(() => {});
+    const b = await page.evaluate(async () => {
+      const v = document.querySelector('#javis-launcher .javis-vid');
+      if (!v) return { ok: false };
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+      document.dispatchEvent(new Event('visibilitychange'));
+      await new Promise((r) => setTimeout(r, 200));
+      const cachee = v.paused;
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+      document.dispatchEvent(new Event('visibilitychange'));
+      await new Promise((r) => setTimeout(r, 600));
+      return { ok: true, cachee, revenue: !v.paused };
+    });
+    chk(b.ok && b.cachee && b.revenue, `page cachée → vidéo en PAUSE (${b.cachee}), page revenue → elle repart (${b.revenue})`);
+  } else {
+    R.na.push('arrêt de la vidéo (changement de personnage, page cachée) : ce Chromium ne lit pas la vidéo');
+  }
+  /* (c) au repos (aucun geste 20 s) : les animations infinies s'arrêtent */
+  await page.evaluate(() => { const i = document.querySelector('#javis-input'); if (i) i.blur(); });
+  await dors(26000);
+  const repos = await page.evaluate(() => document.body.classList.contains('javis-repos')
+    && getComputedStyle(document.querySelector('#javis-launcher')).animationPlayState === 'paused');
+  chk(repos, repos ? 'sans geste depuis 20 s : animations EN PAUSE (plus 60 images/s calculées pour rien)' : 'au repos, les animations tournent toujours');
+  await page.mouse.click(5, 5);
+  const reveil = await page.evaluate(() => !document.body.classList.contains('javis-repos'));
+  chk(reveil, 'un toucher la réveille aussitôt');
+  chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS (repos, page cachée, changement de personnage)');
+  await ctx.close();
+}
+
 /* === 4 ter. voix du domaine injoignable → elle parle quand même ============== */
 {
   voixKO = true;
@@ -623,6 +685,57 @@ if (FFMPEG) {
   chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS malgré la voix en panne');
   await ctx.close();
   voixKO = false;
+}
+
+/* === 4 quater. audit Bee 27.09 : UNE seule voix, le bon cerveau, et les boutons ON/OFF ======== */
+{
+  const { ctx, page, erreurs } = await ouvre();
+  await page.waitForSelector('#javis-launcher .bee-rig', { timeout: 8000 }).catch(() => {});
+  IA_RECUES.length = 0;
+  IA_REPONSES.push('Première réponse de Bee.', 'Deuxième réponse de Bee.');
+  const dites = await page.evaluate(async () => {
+    const dites = [];
+    window.speechSynthesis.speak = function (u) { dites.push(String(u && u.text || '')); };
+    const envoie = async (q) => {
+      document.querySelector('#javis-input').value = q;
+      document.querySelector('#javis-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise((r) => setTimeout(r, 2200));
+    };
+    await envoie('question une');
+    await envoie('question deux');
+    await new Promise((r) => setTimeout(r, 1500));
+    return dites;
+  });
+  const relue = dites.filter((t) => /Première/.test(t));
+  chk(!relue.length, relue.length ? `DOUBLE VOIX : l'ancienne phrase est relue par-dessus la nouvelle (« ${relue[0]} »)`
+    : 'une nouvelle réponse coupe la précédente SANS la relire par-dessus (une seule voix)');
+  const corps = IA_RECUES.filter((x) => x.corps).map((x) => { try { return JSON.parse(x.corps); } catch (_) { return {}; } });
+  chk(corps.length === 2, `les 2 questions sont parties au cerveau du domaine /__javis/ai (${corps.length})`);
+  chk(corps.every((c) => !('system' in c) && (c.messages || []).every((m) => m.role === 'user' || m.role === 'assistant')),
+    'la page n\'envoie AUCUN caractère « system » (le domaine le fixe) — seulement user / assistant');
+  chk(!IA_RECUES.some((x) => x.fuite), 'aucun appel à apis.kd-mc.com (la passerelle ouverte n\'est plus utilisée)');
+  const bulles = await page.locator('.javis-bub.js small').count();
+  chk(bulles === 0, 'plus de nom de moteur technique sous les réponses (jargon)');
+  /* 🔊 → 🔇 : plus aucune voix demandée */
+  await page.click('#javis-voix');
+  const etat = await page.evaluate(() => ({ cle: localStorage.getItem('javis_widget_voice_on'), p: document.querySelector('#javis-voix').getAttribute('aria-pressed') }));
+  chk(etat.cle === '0' && etat.p === 'false', `bouton Voix → coupée et retenue (clé=${etat.cle}, aria-pressed=${etat.p})`);
+  const avant = ttsDemandes;
+  IA_REPONSES.push('Réponse silencieuse.');
+  await page.evaluate(async () => {
+    document.querySelector('#javis-input').value = 'question trois';
+    document.querySelector('#javis-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((r) => setTimeout(r, 1800));
+  });
+  chk(ttsDemandes === avant, `voix coupée → aucune voix fabriquée pour la réponse suivante (${ttsDemandes - avant} demande)`);
+  /* 🗑 : la conversation gardée sur le téléphone est effacée */
+  await page.click('#javis-oublie');
+  const h = await page.evaluate(() => localStorage.getItem('javis_widget_history'));
+  chk(!h, 'bouton Effacer → la conversation gardée sur le téléphone est effacée');
+  const ver = await page.locator('#javis-ver').textContent().catch(() => '');
+  chk(/v\d+\.\d+/.test(ver || ''), `la version de Bee est visible à l'écran (« ${ver} »)`);
+  chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS (deux réponses, voix coupée, effacement)');
+  await ctx.close();
 }
 
 /* === 5. pas admin → Bee ne s'affiche pas (fail-closed) ====================== */

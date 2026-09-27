@@ -1,5 +1,29 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Audit de Bee (Javis) + audit d'amélioration : Bee v1.10, 24 apps protégées
+
+Kevin : « Fais ton audit de Javis et un audit d'amélioration détaillé ». 6 auditeurs indépendants (sécurité,
+UX, performance, architecture, IA/persona, live + 2ᵉ avis), chacun a MESURÉ (vrai navigateur, vrai routeur).
+Chaque constat reproduit par moi, puis corrigé avec un test prouvé par sabotage.
+- **Domaine (au-delà de Bee)** : 23 service workers gardaient `/__sso/whoami` en cache (10 le resservaient en
+  ligne → identité figée) → `/__` jamais en cache, garde `test:sw-identite` (290). `apis/ai` jetait le champ
+  `system` de TOUTES les apps → transmis ; plafond par appareil (binding Rate Limiting, 0 écriture KV —
+  dry-run wrangler 3.114 OK). Voix payante : plafond GLOBAL du jour (1000 voix, 30 appels directs ; env
+  `TTS_PLAFOND_JOUR` / `RT_PLAFOND_JOUR`).
+- **Bee** : cerveau `/__javis/ai` au routeur (admin vérifié, caractère fixé serveur, Anthropic posé par le
+  déploiement du routeur si le secret existe, sinon IA gratuites) ; double voix ; fixation `#kdmc_sso` ; écran
+  « pas Kevin » avec sortie ; erreurs Face ID simples ; `apex-ai.kd-mc.com` (apex.kd-mc.com n'existe pas) ;
+  repères du dessin « vive » = Lingua ; Bourricot voix onyx ; boutons Voix/Effacer/version ; aria-live ;
+  micro qui explique ; clavier ; croix cachée en app ; CSP sans unsafe-inline ; au repos : 0 clip après 2 min,
+  animations en pause après 20 s, vidéo en pause page cachée. Oracle live Bee réécrit ; `bee-gardes.yml`
+  couvre routeur + SW + iPhone.
+- **Rouges trouvés sur main, pas à moi** : `test:crea-song` et les 6 `test:crea-*` (le `#gate` de Créa Studio
+  intercepte les clics depuis #4095) ; `test:theme-signature`, `test:improvements-guard` (déjà signalés m147).
+- **Reste (plan d'amélioration dans le rapport)** : jeton 30 j en localStorage ; Apex qui lirait `#chat?q=` ;
+  clips en mémoire (CORS lingua absent) ; mp4 faststart ; `/health` qui liste les clés ; voix en POST.
+  Leçons **#359–#362**.
+
+---
 ## 2026-09-27 (21h35 UTC) — « Moi tout s'ouvre automatiquement » : plus aucun code à Kevin quand le domaine le connaît (CMCteams v9.928, Chez Lolo v2.0.16)
 
 Kevin : « Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. »

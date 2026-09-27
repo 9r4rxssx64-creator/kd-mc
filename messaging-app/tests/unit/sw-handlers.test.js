@@ -171,6 +171,18 @@ describe('sw-handlers — handleFetch routing', () => {
     expect(r).toBeTruthy();
   });
 
+  // SW-IDENTITE (audit Bee 27.09) : « qui es-tu ? » du domaine = toujours réseau, jamais en cache
+  it('/__sso/whoami → réseau direct, jamais servi ni rangé en cache (identité périmée)', async () => {
+    const u = 'https://chat.kd-mc.com/__sso/whoami';
+    const perime = new Map([[u, new MockResponse('{"ok":true,"admin":true}', { status: 200 })]]);
+    deps.caches.stores.set(sw.RUNTIME_CACHE, perime);
+    deps.fetch = vi.fn(async () => new MockResponse('{"ok":false}', { status: 200 }));
+    const r = await sw.handleFetch({ request: new MockRequest(u) }, deps);
+    expect(deps.fetch).toHaveBeenCalled();
+    expect(r.body).toBe('{"ok":false}');
+    expect(deps.caches.stores.get(sw.RUNTIME_CACHE).get(u).body).toBe('{"ok":true,"admin":true}');
+  });
+
   // v1.1.35 — règle Kevin "MAJ auto forcée" : version-check URLs DOIVENT bypass SW cache
   it('version-check URL avec ?_v= → skip SW cache, fetch direct', async () => {
     deps.fetch = vi.fn(async (req) => new MockResponse('fresh-from-network', { status: 200 }));

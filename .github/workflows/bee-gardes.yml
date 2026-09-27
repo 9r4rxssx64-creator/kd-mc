@@ -29,6 +29,17 @@ on:
       - 'tests/verify-javis-bee.mjs'
       - 'tests/verify-javis-bee-reelle.mjs'
       - 'tests/verify-lingua-bee-vivante.mjs'
+      - 'tests/verify-bee-connexion-iphone.mjs'
+      # Audit Bee 27.09 : un changement du ROUTEUR (whoami, Face ID, cerveau /__javis/ai, voix)
+      # ou d'un service worker pouvait casser Bee sans que cette garde ne tourne.
+      - 'services/kdmc-router/worker.js'
+      - 'services/kdmc-router/webauthn.js'
+      - 'services/kdmc-router/bee-ia.test.mjs'
+      - 'services/_shared/ia-route.js'
+      - 'kdmc-home/kdmc-portal.js'
+      - 'kdmc-home/kdmc-sso.js'
+      - '**/sw.js'
+      - 'tests/verify-sw-identite.mjs'
       - '.github/workflows/bee-gardes.yml'
   push:
     branches: [main]
@@ -39,6 +50,11 @@ on:
       - 'arbre/javis-widget.js'
       - 'tests/verify-javis-bee*.mjs'
       - 'tests/verify-lingua-bee-vivante.mjs'
+      - 'tests/verify-bee-connexion-iphone.mjs'
+      - 'services/kdmc-router/worker.js'
+      - 'services/kdmc-router/webauthn.js'
+      - 'services/_shared/ia-route.js'
+      - '**/sw.js'
       - '.github/workflows/bee-gardes.yml'
   # ⛔ Pas de cron : le compte a été suspendu le 15/08/2026 pour VOLUME d'exécutions.
   #    Ce workflow ne tourne que sur un vrai changement, ou à la main.
@@ -88,3 +104,16 @@ jobs:
 
       - name: "Lingua — Bee est vivante : clignement, saut, regard (vrai navigateur)"
         run: npm run -s test:lingua-bee
+
+      # Audit Bee 27.09 : ces gardes existaient mais ne tournaient sur AUCUNE pull request.
+      - name: "Bee — le cerveau du domaine /__javis/ai : Kevin seul, caractère fixé par le serveur"
+        run: node services/kdmc-router/bee-ia.test.mjs
+
+      - name: "Bee — depuis l'iPhone : Face ID sur place, app neuve, lien piégé (vrai routeur)"
+        run: npm run -s test:bee-iphone
+
+      - name: "Laissez-passer du domaine (#kdmc_sso) : qui le reçoit, et comment"
+        run: npm run -s test:laissez-passer
+
+      - name: "Service workers : aucune app ne garde « qui es-tu ? » en mémoire"
+        run: npm run -s test:sw-identite

@@ -259,6 +259,27 @@ console.log('\n5. Quand la voix payante ne peut pas répondre, la voix GRATUITE 
   ok(rf.status === 200 && jf.ok === false, `(f) sans clé Gemini : repli propre (ok=${jf.ok})`);
 }
 
+console.log('\n7. Plafond GLOBAL du jour (audit Bee 27.09) : 200 IP différentes ne passent plus 200 fois');
+{
+  /* Mesuré avant : le plafond était PAR IP → 200 textes, 200 IP = 200 voix payées. */
+  const env = envNeuf(); env.TTS_PLAFOND_JOUR = '25'; env.RT_PLAFOND_JOUR = '3';
+  appelsOpenAI = [];
+  for (let i = 0; i < 60; i++) {
+    const req = new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=' + encodeURIComponent('ip-' + i),
+      { headers: { Referer: 'https://lingua.kd-mc.com/', 'CF-Connecting-IP': '10.0.' + Math.floor(i / 250) + '.' + (i % 250) } });
+    const r = await mod.fetch(req, env);
+    ok(r.status === 200, `voix n°${i} (IP ${i}) : réponse ${r.status} (jamais une erreur)`);
+  }
+  ok(appelsOpenAI.length === 25, `voix : ${appelsOpenAI.length} voix payées pour 60 demandes de 60 IP (plafond du jour 25)`);
+  appelsOpenAI = [];
+  for (let i = 0; i < 10; i++) {
+    await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/rt-session', { method: 'POST',
+      headers: { Origin: 'https://lingua.kd-mc.com', 'content-type': 'application/json', 'CF-Connecting-IP': '10.9.9.' + i },
+      body: JSON.stringify({ langName: 'anglais' }) }), env);
+  }
+  ok(appelsOpenAI.length === 3, `appel en direct : ${appelsOpenAI.length} jetons pour 10 demandes de 10 IP (plafond du jour 3)`);
+}
+
 console.log(`\n${pass} contrôle(s) OK · ${fail} échec(s)`);
 if (fail) console.log('❌ La voix ou l’appel en direct peuvent être utilisés hors du domaine, ou sans plafond — c’est la facture de Kevin.');
 else console.log('✅ La voix et l’appel en direct ne partent que depuis le domaine, et sous plafond.');

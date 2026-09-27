@@ -1,5 +1,16 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🐝 Audit de Bee : 6 auditeurs, 24 apps protégées, Bee v1.10 (27.09.2026, nuit)
+
+- 📱 **À essayer** : [javis.kd-mc.com](https://javis.kd-mc.com/) → pose deux questions d'affilée (une seule voix), touche **🔊 Voix** pour la couper, **🗑 Effacer** pour vider la conversation ; la version « Bee v1.10 » est en haut.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tools/javis/javis-widget.js` | **Modifié (Bee v1.10).** Une seule voix, cerveau réservé à toi, boutons Voix / Effacer / version, bonnes adresses, au repos elle ne consomme plus rien. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/javis/javis-widget.js) |
+| `services/kdmc-router/worker.js` | **Modifié.** Nouveau cerveau de Bee `/__javis/ai` (toi seul) + plafond du jour sur la voix payante. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `services/kdmc-router/bee-ia.test.mjs` | **Nouveau.** 22 contrôles : personne d'autre que toi ne fait parler Bee. `npm run test:bee-cerveau`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/bee-ia.test.mjs) |
+| `tests/verify-sw-identite.mjs` | **Nouveau.** 290 contrôles : aucune des 24 apps ne garde « qui es-tu ? » en mémoire. `npm run test:sw-identite`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-sw-identite.mjs) |
+| `services/kdmc-apis/worker.js` | **Modifié.** Le caractère des assistants arrive enfin à l'IA ; plafond par appareil. `npm run test:apis-worker`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-apis/worker.js) |
 ### 🆕 Plus de validation à faire : une alerte pour toi à chaque nouvelle connexion (27.09.2026, nuit — v9.927 / light v1.61)
 
 - 📱 Tu reçois « 🆕 Nouvelle connexion — Prénom NOM » quand quelqu'un s'inscrit à CMCteams avec tous ses renseignements, ou entre pour la première fois dans la light. Le détail : [Qui se connecte](https://admin.kd-mc.com/).

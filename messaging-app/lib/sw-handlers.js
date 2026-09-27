@@ -163,6 +163,9 @@ export async function handleFetch(event, deps) {
     return deps.fetch(req);
   }
   const url = new deps.URL(urlStr);
+  // SW-IDENTITE (audit Bee 27.09) : /__sso/whoami (qui es-tu ?), /__demande… sont des réponses
+  // du domaine. Jamais en cache : un « qui es-tu » périmé rouvrirait une session fermée.
+  if (url.pathname.startsWith('/__')) return deps.fetch(req);
   if (isApiHost(url)) return handleFetchApi(req, deps);
   if (req.mode === 'navigate') return handleFetchNavigation(req, deps);
   if (isStaticAsset(url)) return handleFetchStatic(req, deps);

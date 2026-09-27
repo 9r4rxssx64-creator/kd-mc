@@ -12,6 +12,7 @@ self.addEventListener('activate', function (e) {
   }).then(function () { return self.clients.claim(); }));
 });
 self.addEventListener('fetch', function (e) {
+  if(new URL(e.request.url).pathname.indexOf('/__')===0)return; /* SW-IDENTITE : /__sso (qui es-tu ?), /__demande… = réponses du domaine, jamais en cache (sinon identité périmée) */
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = req.url;

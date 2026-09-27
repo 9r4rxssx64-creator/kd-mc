@@ -2,13 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#171008">
 <title>Bee</title>
 <meta name="description" content="Bee — l'assistante personnelle de Kevin, gratuit d'abord.">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-512.png" type="image/png">
-<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bee">
@@ -16,8 +16,12 @@
      media-src : ses VRAIES vidéos (bee/live/*.mp4), hébergées par Lingua elles aussi.
        ⚠ une balise <video> n'est PAS couverte par img-src : sans media-src, la vidéo est
        bloquée SANS message et on ne verrait que la marionnette (piège CSP⇄fetch, CLAUDE.md).
-     connect-src : le hub IA gratuit + la météo. Un hôte oublié ici = échec SILENCIEUX. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://lingua.kd-mc.com; media-src 'self' https://lingua.kd-mc.com; connect-src 'self' https://apis.kd-mc.com https://api.open-meteo.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'">
+     connect-src : 'self' (le domaine : identité, Face ID, et le cerveau de Bee /__javis/ai,
+       réservé à Kevin) + la météo. Un hôte oublié ici = échec SILENCIEUX.
+     script-src : PLUS de 'unsafe-inline' (audit Bee 27.09) — les 2 petits scripts de cette page
+       sont autorisés par leur EMPREINTE. Modifier l'un d'eux sans recalculer son empreinte le
+       bloque : test:javis-bee recalcule et compare (npm run test:javis-bee). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-sYhI1/3eAAiiGOj0vzmx3/UkVdeM0vt56TtBUJtpTRE=' 'sha256-d0pnvxgap8L9hsXsYw1NN7Zr+k+MIndgCCGAHf/vjsc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://lingua.kd-mc.com; media-src 'self' https://lingua.kd-mc.com; connect-src 'self' https://api.open-meteo.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'">
 <style>
   html,body{margin:0;height:100%;background:#0e0a04;color:#f7efd9;
     font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}

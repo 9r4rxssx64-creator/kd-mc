@@ -22,19 +22,21 @@
  *     prouvé) — même pattern éprouvé que tools/departs/_depSsoAutoAdmin.
  *     Fail-CLOSED sur la visibilité, fail-OPEN sur le réseau (SSO muet = pas de
  *     bouton, page intacte).
- *  2. Le chat parle à `apis.kd-mc.com/ai` (DÉJÀ en prod) → gratuit Qwen d'abord,
- *     bascule Anthropic pour code/raisonnement/action. Zéro backend nouveau.
- *  3. Bee PARLE sa réponse (Web Speech API, native, gratuite) et sa bouche
- *     s'anime pendant — pas un lip-sync phonétique, un vrai mouvement synchronisé.
+ *  2. Le chat parle au DOMAINE, à la même adresse : `/__javis/ai`, servi par le routeur et
+ *     réservé à Kevin (Face ID ou code, vérifié par le domaine). Le caractère de Bee y est fixé
+ *     côté serveur. Qwen gratuit d'abord, bascule vers l'IA la plus adaptée selon la question.
+ *  3. Bee PARLE sa réponse : sa voix est un fichier audio fabriqué par le domaine
+ *     (/__lingua/tts — OpenAI, payant, sous plafond du jour ; voix gratuite au-delà), et la
+ *     voix du téléphone en repli. Sa bouche suit le son réel. Un bouton « Voix » la coupe.
  *  4. Intentions locales (ouvrir une app du domaine, météo) exécutées directement dans le
- *     navigateur. Une ACTION sur tes données part vers Apex authentifié
- *     (`apex_v13_chat_prefill`) : un script public ne détient jamais de secret
- *     d'écriture.
+ *     navigateur, avec un vrai bouton « Ouvrir » dans la bulle. Une ACTION sur tes données
+ *     part vers Apex (apex-ai.kd-mc.com) : la phrase est copiée, à coller là-bas — un script
+ *     public ne détient jamais de secret d'écriture.
  *
  * ── À ajouter sur une page ──────────────────────────────────────────────────
  *   <script src="javis-widget.js" defer></script>
- *   + CSP : `img-src` doit inclure https://lingua.kd-mc.com (les images de Bee)
- *           `connect-src` doit inclure https://apis.kd-mc.com https://api.open-meteo.com
+ *   + CSP : `img-src` ET `media-src` doivent inclure https://lingua.kd-mc.com (dessin, voix, vidéo)
+ *           `connect-src` doit inclure 'self' https://api.open-meteo.com
  *   (sinon échec silencieux : piège CSP⇄fetch déjà documenté dans CLAUDE.md)
  */
 (function () {
@@ -46,13 +48,17 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.9';
+  var JAVIS_VER = 'v1.10';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
   window.__javisWidgetLoaded = true;
 
-  var AI_ENDPOINT = 'https://apis.kd-mc.com/ai';
+  /* LE CERVEAU DE BEE est servi par le DOMAINE, à la même adresse que la page, et SEULEMENT
+     pour Kevin (audit Bee 27.09). Avant : la passerelle IA publique du domaine, que n'importe qui pouvait faire
+     payer en écrivant lui-même l'en-tête Origin, et qui JETAIT le caractère de Bee. Le caractère
+     (« ne prétends jamais avoir agi, n'invente jamais ») est maintenant fixé côté serveur. */
+  var AI_ENDPOINT = '/__javis/ai';
   /* LE CHOIX DU PERSONNAGE (Kevin 2026-09-17 : « integre l'ane de Lingua, avoir le choix »).
      Les DEUX personnages existent DEJA dans Lingua -- dessins ET videos. On les reutilise
      tels quels : aucun fichier duplique (lecon #142). Si leur dessin evolue chez Lingua,
@@ -69,9 +75,9 @@
   var LINGUA = 'https://lingua.kd-mc.com/';
   var MASCOTTES = [
     { id: 'bee', rig: 'bee/v2', live: 'bee', nom: 'Bee', titre: "Bee l'abeille",
-      emoji: '\uD83D\uDC1D', pieces: ['wing-l', 'wing-r'], gen: 'f' },
+      emoji: '\uD83D\uDC1D', pieces: ['wing-l', 'wing-r'], gen: 'f', voix: 'nova', hauteur: 1.35 },
     { id: 'donkey', rig: 'donkey', live: 'donkey', nom: 'Bourricot', titre: "Bourricot l'\u00e2ne",
-      emoji: '\uD83E\uDECF', pieces: [], gen: 'm' }
+      emoji: '\uD83E\uDECF', pieces: [], gen: 'm', voix: 'onyx', hauteur: 0.8 }
   ];
   var CLIPS = ['idle', 'hello', 'dance', 'jump', 'fly', 'walk'];
   var MASC_CLE = 'javis_mascotte';
@@ -91,7 +97,9 @@
      audio, c'est un SON QU'ON PEUT ANALYSER : la bouche s'ouvre sur l'amplitude reelle.
      La voix du telephone (Web Speech) reste le repli : elle parle mais ne s'analyse pas. */
   var BEE_TTS = 'https://lingua.kd-mc.com/__lingua/tts';
-  var BEE_VOIX = 'nova'; /* la meme voix que Bee dans Lingua */
+  /* VOIX RÉELLEMENT DIFFÉRENTES (règle Kevin 18.05) : Bee parle avec nova (sa voix dans Lingua),
+     Bourricot avec onyx (voix d'homme) — avant, l'âne parlait avec la voix de l'abeille. */
+  function voixDe(m) { return (m || mascCfg()).voix || 'nova'; }
   var STORAGE_HIST = 'javis_widget_history';
   var STORAGE_VOICE = 'javis_widget_voice_on';
   var MAX_HISTORY = 40;
@@ -99,16 +107,22 @@
   /* ============================================================
      0. Qui es-tu ? (SSO domaine — même pattern que tools/departs)
      ============================================================ */
-  function ssoToken() {
+  /* Un laissez-passer arrivé par l'adresse (#kdmc_sso=) n'ÉCRASE plus celui déjà rangé
+     (audit Bee 27.09, mesuré : un lien piégé portant le jeton d'un AUTRE compte enfermait
+     Kevin sur « Bee est personnelle à Kevin », sans aucun bouton, même après rechargement).
+     Il est d'abord ESSAYÉ ; il n'est rangé que s'il ouvre Bee, ou s'il n'y avait rien avant. */
+  function ssoCandidat() {
     try {
       var m = (location.hash || '').match(/[#&]kdmc_sso=([^&]+)/);
-      if (m) {
-        try { localStorage.setItem('kdmc_sso_token', decodeURIComponent(m[1])); } catch (_) {}
-        try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
-      }
-      return localStorage.getItem('kdmc_sso_token') || '';
+      if (!m) return '';
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+      return decodeURIComponent(m[1]);
     } catch (_) { return ''; }
   }
+  function ssoToken() {
+    try { return localStorage.getItem('kdmc_sso_token') || ''; } catch (_) { return ''; }
+  }
+  function rangeJeton(t) { try { if (t) localStorage.setItem('kdmc_sso_token', t); } catch (_) {} }
 
   function checkAdmin(cb) {
     /* Un /__sso/whoami qui ECHOUE est deja traite (fail-CLOSED). Mais un whoami qui
@@ -122,28 +136,40 @@
        mais l'écran doit dire LAQUELLE des trois situations c'est, et offrir la sortie. */
     var fin = function (ok, raison) { if (!fini) { fini = true; cb(ok, raison || (ok ? 'ok' : 'inconnu')); } };
     try {
-      var tok = ssoToken();
-      var hdr = {};
-      if (tok) hdr.Authorization = 'Bearer ' + tok;
+      var cand = ssoCandidat(), ancien = ssoToken();
+      /* le nouveau d'abord, l'ancien ensuite : le premier qui ouvre Bee gagne */
+      var essais = (cand && cand !== ancien) ? [cand, ancien] : [ancien];
       var ctrl = null;
       try { ctrl = new AbortController(); } catch (_) {}
       var minuteur = setTimeout(function () {
         try { if (ctrl) ctrl.abort(); } catch (_) {}
         fin(false, 'muet');
       }, 4000);
-      var opts = { credentials: 'include', cache: 'no-store', headers: hdr };
-      if (ctrl) opts.signal = ctrl.signal;
-      fetch('/__sso/whoami', opts)
-        .then(function (r) { return r && r.ok ? r.json() : null; })
-        .then(function (j) {
-          clearTimeout(minuteur);
-          if (j && j.ok && j.verified === true && j.admin === true) return fin(true, 'ok');
-          if (!j) return fin(false, 'muet');                       /* réponse illisible */
-          if (!j.ok) return fin(false, 'inconnu');                 /* pas de session ICI */
-          if (j.verified !== true) return fin(false, 'sans-faceid'); /* connecté, mais pas prouvé */
-          return fin(false, 'pas-kevin');                          /* prouvé, mais pas l'admin */
-        })
-        .catch(function () { clearTimeout(minuteur); fin(false, 'muet'); });
+      var premiere = null;
+      var essai = function (n) {
+        var tok = essais[n];
+        var hdr = {};
+        if (tok) hdr.Authorization = 'Bearer ' + tok;
+        var opts = { credentials: 'include', cache: 'no-store', headers: hdr };
+        if (ctrl) opts.signal = ctrl.signal;
+        fetch('/__sso/whoami', opts)
+          .then(function (r) { return r && r.ok ? r.json() : null; })
+          .then(function (j) {
+            var raison = (j && j.ok && j.verified === true && j.admin === true) ? 'ok'
+              : !j ? 'panne'                                   /* le domaine a répondu une erreur */
+                : !j.ok ? 'inconnu'                            /* pas de session ICI */
+                  : j.verified !== true ? 'sans-faceid'        /* connecté, mais pas prouvé */
+                    : 'pas-kevin';                             /* prouvé, mais pas l'admin */
+            if (raison === 'ok') { clearTimeout(minuteur); if (tok === cand) rangeJeton(cand); return fin(true, 'ok'); }
+            if (premiere === null) premiere = raison;
+            if (n + 1 < essais.length && essais[n + 1]) return essai(n + 1);
+            clearTimeout(minuteur);
+            if (cand && !ancien) rangeJeton(cand);             /* rien avant : on garde le nouveau */
+            fin(false, premiere);
+          })
+          .catch(function () { clearTimeout(minuteur); fin(false, 'muet'); });
+      };
+      essai(0);
     } catch (_) { fin(false, 'muet'); }
   }
 
@@ -165,11 +191,21 @@
     return h;
   }
 
+  /* Une pièce du dessin qui ne charge pas est retirée (au lieu d'une icône cassée). Écouteur en
+     phase de CAPTURE (« error » ne remonte pas) : plus de gestionnaire écrit dans le HTML, que la CSP
+     sans 'unsafe-inline' de l'app bloquerait. */
+  try {
+    document.addEventListener('error', function (e) {
+      var t = e && e.target;
+      if (t && t.classList && t.classList.contains('rig-piece') && t.parentNode) t.parentNode.removeChild(t);
+    }, true);
+  } catch (_) {}
+
   function buildBeeRig(avecVideo) {
     var M = mascCfg(), B = rigBase(M), ailes = '';
     for (var i = 0; i < M.pieces.length; i++) {
       ailes += '<img class="rig-piece rig-' + (M.pieces[i] === 'wing-l' ? 'wl' : 'wr') + '" src="' +
-               B + M.pieces[i] + '.webp" alt="" onerror="this.remove()">';
+               B + M.pieces[i] + '.webp" alt="">';   /* image absente → retirée (écouteur plus bas, sans code en ligne : CSP) */
     }
     return (
       '<div class="bee-rig" data-mascot="' + M.id + '"' + (M.id === 'bee' ? ' data-art="vive"' : '') + '>' +
@@ -207,6 +243,14 @@
       '--ll-l:28.1%;--ll-t:29.6%;--ll-w:15.5%;--ll-h:15.0%;' +
       '--lr-l:56.3%;--lr-t:29.7%;--lr-w:15.5%;--lr-h:15.5%;' +
       '--mo-l:51.1%;--mo-t:54.9%}' +
+      /* Le dessin « vive » (bee/v2, celui que Bee porte ici) n'a PAS ses yeux et sa bouche au même
+         endroit que le « doux » : valeurs MESURÉES dans lingua/index.html (audit Bee 27.09 : la
+         bouche qui parle tombait sur le col, les paupières sur les joues). Garde de parité :
+         test:javis-bee compare ces valeurs à celles de Lingua. */
+      '.bee-rig[data-mascot="bee"][data-art="vive"]{--lid:rgb(253,225,87);' +
+      '--ll-l:32.2%;--ll-t:27.4%;--ll-w:18.2%;--ll-h:15.0%;' +
+      '--lr-l:51.3%;--lr-t:27.2%;--lr-w:17.4%;--lr-h:15.2%;' +
+      '--mo-l:52.4%;--mo-t:42.6%}' +
       /* L'ANE : geometrie MESUREE sur SON dessin dans lingua/index.html, recopiee a
          l'identique. Ses yeux sont plus petits et plus bas que ceux de Bee, sa bouche
          plus bas encore : reutiliser les valeurs de l'abeille lui mettrait les
@@ -276,7 +320,7 @@
       '@keyframes javis-sparkFly{0%{transform:translate(0,0) scale(.6);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1.25);opacity:0}}' +
       '.javis-bubble{position:fixed;right:14px;bottom:calc(env(safe-area-inset-bottom) + 172px);z-index:2147483002;max-width:240px;' +
       'background:#241905;border:1px solid rgba(246,183,60,.6);border-radius:16px 16px 4px 16px;padding:10px 13px;' +
-      'font:13.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif;color:#f0e2bd;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer;' +
+      'font:14px/1.45 -apple-system,BlinkMacSystemFont,sans-serif;color:#f0e2bd;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer;' +
       'animation:javis-bubblePop .35s cubic-bezier(.34,1.56,.64,1)}' +
       '@keyframes javis-bubblePop{0%{transform:scale(.5) translateY(10px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}' +
       '.javis-bubble.bye{opacity:0;transform:translateY(8px);transition:all .4s}' +
@@ -285,7 +329,8 @@
       '.javis-typing i{width:7px;height:7px;border-radius:50%;background:#f6b73c;opacity:.4;animation:javis-dot 1.1s ease-in-out infinite}' +
       '.javis-typing i:nth-child(2){animation-delay:.18s}.javis-typing i:nth-child(3){animation-delay:.36s}' +
       '@keyframes javis-dot{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}' +
-      '@media (prefers-reduced-motion:reduce){.javis-spark{display:none}.javis-bubble,.javis-typing i{animation:none}}' +
+      '@media (prefers-reduced-motion:reduce){.javis-spark{display:none}.javis-bubble,.javis-typing i{animation:none}' +
+      '#javis-launcher,body.javis-app #javis-launcher,.bee-rig[class*="mv-"],#javis-panel.javis-open,.disc-mouth{animation:none!important}}' +
       /* ---- habillage du widget ---- */
       '#javis-launcher{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 96px);' +
       'z-index:2147483000;width:68px;height:68px;border:0;border-radius:50%;padding:0;cursor:pointer;' +
@@ -294,6 +339,13 @@
       'animation:javis-float 3.4s ease-in-out infinite}' +
       '@keyframes javis-float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1.5deg)}}' +
       '#javis-launcher:active{transform:scale(.93)}' +
+      /* au repos (aucun geste depuis 20 s) : les animations infinies s'arrêtent — 0 image calculée */
+      /* (#javis-root en plus : doit battre « body.javis-app #javis-launcher{animation:…} », dont le
+         raccourci remet la lecture en marche) */
+      'body.javis-repos #javis-root #javis-launcher,body.javis-repos #javis-root .rig-wl,body.javis-repos #javis-root .rig-wr,' +
+      'body.javis-repos #javis-root .bee-rig.vivant .rig-base{animation-play-state:paused}' +
+      /* quand la vraie vidéo joue, la respiration de l'image CACHÉE dessous ne sert à rien */
+      '.bee-rig.vid .rig-base{animation:none}' +
       '#javis-panel{position:fixed;z-index:2147483001;right:12px;left:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);' +
       'max-width:420px;margin-left:auto;background:#171008;border:1px solid rgba(246,183,60,.3);border-radius:20px;' +
       'box-shadow:0 24px 60px rgba(0,0,0,.55);display:none;flex-direction:column;overflow:hidden;' +
@@ -304,20 +356,30 @@
       'border-bottom:1px solid rgba(246,183,60,.2)}' +
       '#javis-head .javis-mini{width:46px;height:46px;flex:0 0 auto;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px rgba(246,183,60,.45)}' +
       '#javis-head b{color:#f6b73c;font-size:15px}' +
-      '#javis-head span{display:block;color:#c9b98a;font-size:11px}' +
+      '#javis-head span{display:block;color:#d8c9a0;font-size:14px}' +
       '#javis-masc{margin-left:auto;display:flex;gap:6px}' +
       '.javis-mpick{width:44px;height:44px;border-radius:12px;border:2px solid transparent;background:rgba(246,183,60,.10);' +
       'font-size:20px;line-height:1;cursor:pointer;padding:0;color:inherit}' +
       '.javis-mpick.on{border-color:#f6b73c;background:rgba(246,183,60,.22)}' +
-      '#javis-close{background:none;border:0;color:#c9b98a;font-size:20px;line-height:1;padding:6px;cursor:pointer}' +
+      '#javis-close{flex:0 0 44px;width:44px;height:44px;background:none;border:0;color:#d8c9a0;font-size:20px;line-height:1;padding:0;cursor:pointer}' +
+      /* la barre d'outils : couper la voix, effacer la conversation, et la VERSION (règle Kevin :
+         un badge de version visible dans chaque projet) */
+      '#javis-outils{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid rgba(246,183,60,.12)}' +
+      '#javis-outils button{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid rgba(246,183,60,.28);' +
+      'background:rgba(246,183,60,.08);color:#f0e2bd;font:600 14px/1 -apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer}' +
+      '#javis-outils button[aria-pressed="false"]{opacity:.75}' +
+      '#javis-ver{margin-left:auto;color:#b8a57c;font-size:14px}' +
+      '.javis-lien{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;padding:0 14px;border-radius:12px;' +
+      'background:#f6b73c;color:#1a1204;font-weight:700;text-decoration:none}' +
       '#javis-msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}' +
       '.javis-bub{max-width:88%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word}' +
       '.javis-bub.me{align-self:flex-end;background:#3a2c16;color:#f7efd9;border-bottom-right-radius:4px}' +
       '.javis-bub.js{align-self:flex-start;background:#241905;color:#f0e2bd;border:1px solid rgba(246,183,60,.18);border-bottom-left-radius:4px}' +
-      '.javis-bub.js small{display:block;margin-top:4px;color:#8a7550;font-size:10px}' +
+      '.javis-bub{font-size:15px}' +
       '#javis-form{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(246,183,60,.2);background:#171008}' +
       '#javis-input{flex:1;background:#241905;border:1px solid rgba(246,183,60,.25);color:#f7efd9;border-radius:12px;' +
-      'padding:10px 12px;font-size:14px;min-height:44px;resize:none;font-family:inherit}' +
+      'padding:10px 12px;font-size:16px;min-height:44px;resize:none;font-family:inherit}' +
+      '#javis-input::placeholder{color:#b8a57c}' +
       '#javis-send,#javis-mic{flex:0 0 44px;height:44px;border-radius:12px;border:0;background:linear-gradient(135deg,#f6b73c,#ffd75e);' +
       'color:#241905;font-size:18px;font-weight:700;cursor:pointer}' +
       '#javis-mic.on{background:linear-gradient(135deg,#c8506a,#e2748f)}' +
@@ -332,6 +394,12 @@
       'body.javis-app #javis-panel{position:static;display:flex;flex:1;max-width:none;max-height:none;' +
       'margin:0;border:0;border-radius:20px 20px 0 0;box-shadow:none;animation:none}' +
       'body.javis-app #javis-head .javis-mini{display:none}' +
+      /* dans l'app, le panneau est TOUJOURS ouvert : la croix ne fermait rien (mesuré) → cachée */
+      'body.javis-app #javis-close{display:none}' +
+      /* la barre de saisie au-dessus de la barre d'accueil de l'iPhone */
+      'body.javis-app #javis-form{padding-bottom:calc(10px + env(safe-area-inset-bottom))}' +
+      /* clavier ouvert : la grosse Bee se fait petite, sinon il restait 24 px pour lire (iPhone SE) */
+      'body.javis-app.javis-saisie #javis-launcher{width:72px;height:72px;margin:calc(env(safe-area-inset-top) + 6px) auto 4px;animation:none}' +
       'body.javis-app.javis-closeup #javis-launcher{animation:none;transform:scale(1.18)}' +
       'body.javis-app #javis-launcher{transition:transform .45s cubic-bezier(.2,.8,.3,1)}';
     var s = document.createElement('style');
@@ -461,11 +529,11 @@
       var zone = rigZone(rig, ev);
       vibrate(zone === 'ventre' ? 18 : 10);
       if (etaitEndormie) { bubble(pick(RX_LINES.reveil)); return; }
-      if (zone === 'aile') { move(rig, 'fly', 2200); }
+      if (zone === 'aile' && mascCfg().pieces.length) { move(rig, 'fly', 2200); }
       else { react(rig, 'poke', 900); move(rig, zone === 'ventre' ? 'dance' : 'jump', 1600); }
       sparkles(rig, zone === 'ventre' ? 10 : 6);
       tone([760, 980], .18);
-      bubble(pick(RX_LINES[zone] || RX_LINES.tete), 3500);
+      bubble(pick(RX_LINES[(zone === 'aile' && !mascCfg().pieces.length) ? 'tete' : zone] || RX_LINES.tete), 3500);
     }, { passive: true });
   }
 
@@ -548,6 +616,15 @@
                                                 marionnette — JAMAIS d'écran vide
      ============================================================ */
   var VID = { pret: false, absent: {}, retour: 0 };
+  /* LE DERNIER GESTE de Kevin (audit perf 27.09, mesuré : app ouverte sans y toucher =
+     3,1 à 3,9 Mo de vidéos retéléchargées PAR MINUTE, et 60 images calculées par seconde).
+     Sans geste depuis 2 min, Bee se repose : plus de clips (0 octet), animations en pause. */
+  var DERNIER_GESTE = Date.now();
+  var REPOS_CLIPS = 120000, REPOS_ANIM = 20000;
+  function gesteVu() {
+    DERNIER_GESTE = Date.now();
+    try { document.body.classList.remove('javis-repos'); } catch (_) {}
+  }
 
   function initVideo(rig) {
     if (!rig) return;
@@ -612,6 +689,7 @@
   function allMouths(root) { return Array.prototype.slice.call(root.querySelectorAll('.disc-mouth')); }
   var APP_MODE = (window.JAVIS_MODE === 'app');
   function startTalking(root) {
+    gesteVu();                                   /* elle parle : elle n'est pas au repos */
     allRigs(root).forEach(function (r) {
       r.classList.add('talk');
       var m = r.querySelector('.disc-mouth'); if (m) m.classList.add('talking');
@@ -662,7 +740,7 @@
      Si le moteur n'a pas ete reveille par un VRAI geste, le son serait COUPE. Donc :
      moteur pas pret -> on n'y touche pas, la bouche bat en CSS et le son sort normalement.
      ============================================================ */
-  var AC = null;
+  /* AC : le moteur audio, déclaré plus haut (avec tone) — une seule déclaration */
   function audioUnlock() {
     try {
       AC = AC || new (window.AudioContext || window.webkitAudioContext)();
@@ -684,6 +762,9 @@
   }
   function desarmerAudio() {
     if (!audioArme) return;
+    /* changer de personnage remplace les dessins : l'ANCIEN s'en va, mais Bee est toujours là
+       (mesuré 27.09 : les 4 écouteurs partaient, le son calé sur les lèvres était perdu) */
+    try { if (document.querySelector('#javis-root .bee-rig')) return; } catch (_) {}
     audioArme = false;
     try { AUDIO_EV.forEach(function (ev) { document.removeEventListener(ev, audioUnlock); }); } catch (_) {}
   }
@@ -860,7 +941,10 @@
 
   function voixStop() {
     if (_lipStop) { try { _lipStop(); } catch (_) {} _lipStop = null; }
-    if (_voixAudio) { try { _voixAudio.pause(); _voixAudio.src = ''; } catch (_) {} _voixAudio = null; }
+    /* ⚠ vider src déclenche l'événement « error » de l'ANCIEN son : son repli relisait alors
+       l'ancienne phrase par-dessus la nouvelle, à CHAQUE réponse sauf la première (mesuré 27.09).
+       On le marque abandonné AVANT de le vider : ses écouteurs se taisent. */
+    if (_voixAudio) { try { _voixAudio._abandon = true; _voixAudio.pause(); _voixAudio.src = ''; } catch (_) {} _voixAudio = null; }
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (_) {}
   }
 
@@ -871,16 +955,23 @@
     try {
       var u = new SpeechSynthesisUtterance(text.slice(0, 600));
       u.lang = 'fr-FR'; u.rate = 1.02;
-      u.pitch = 1.35; /* voix claire et enjouee, comme Bee dans Lingua */
+      u.pitch = mascCfg().hauteur || 1.35; /* Bee claire et enjouée, Bourricot plus grave */
       u.onend = function () { stopTalking(root); };
       u.onerror = function () { stopTalking(root); };
       window.speechSynthesis.speak(u);
     } catch (_) { stopTalking(root); }
   }
 
+  /* Ce qui se DIT n'est pas ce qui s'ÉCRIT : pas d'adresse web ni d'émoji lus à voix haute. */
+  function aDire(text) {
+    return String(text || '').replace(/https?:\/\/\S+/g, '')
+      .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]\uFE0F?|\uFE0F|\u200D/g, '')
+      .replace(/\s{2,}/g, ' ').trim();
+  }
   function speak(root, text) {
     var on = true;
     try { on = localStorage.getItem(STORAGE_VOICE) !== '0'; } catch (_) {}
+    text = aDire(text);
     if (!on || !text) return;
     voixStop();
     startTalking(root);
@@ -893,12 +984,12 @@
     a.preload = 'auto';
     var repli = false;
     function versTelephone() {
-      if (repli) return; repli = true;
+      if (repli || a._abandon) return; repli = true;
       try { a.pause(); } catch (_) {}
       voixTelephone(root, text);
     }
     a.addEventListener('canplay', function () {
-      if (repli) return;
+      if (repli || a._abandon) return;
       _lipStop = lipSync(a, allMouths(root)); /* null = moteur audio pas reveille -> bouche CSS */
       var p = a.play();
       if (p && p.catch) p.catch(function () { versTelephone(); });
@@ -906,19 +997,28 @@
     a.addEventListener('ended', function () { stopTalking(root); }, { once: true });
     a.addEventListener('error', versTelephone, { once: true });
     /* le son ne vient jamais : on ne la laisse pas muette */
-    setTimeout(function () { if (!repli && a.readyState < 2) versTelephone(); }, 4000);
+    setTimeout(function () { if (!repli && !a._abandon && a.readyState < 2) versTelephone(); }, 4000);
     try {
-      a.src = BEE_TTS + '?v=' + BEE_VOIX + '&t=' + encodeURIComponent(text.slice(0, 600));
+      a.src = BEE_TTS + '?v=' + voixDe() + '&t=' + encodeURIComponent(text.slice(0, 600));
       _voixAudio = a;
       a.load();
     } catch (_) { versTelephone(); }
   }
 
+  /* ⚠ « apex.kd-mc.com » N'EXISTE PAS (mesuré 27.09 : le nom ne se résout même pas) — l'adresse
+     d'Apex est apex-ai.kd-mc.com (kdmc-home/apps.json). Bee envoyait Kevin dans le vide.
+     Garde : test:javis-bee vérifie que chaque adresse ici est une app du domaine (apps.json). */
+  var APEX = 'https://apex-ai.kd-mc.com';
   var DOMAIN_APPS = {
     'arbre|généalog|famille|arrière.grand.père|arrière grand père': 'https://arbre.kd-mc.com',
     'lingua|langue|apprendre.*(langue|anglais|italien)|monégasque': 'https://lingua.kd-mc.com',
-    'apex|assistant ia avancé': 'https://apex.kd-mc.com',
+    'apex|assistant ia avancé': APEX,
     'planning|cmcteams|équipe|départ': 'https://cmcteams.kd-mc.com',
+    '\\bbot\\b|crypto': 'https://bot.kd-mc.com',
+    '\\bstudio\\b|créa studio': 'https://studio.kd-mc.com',
+    'cuisine|recette': 'https://cuisine.kd-mc.com',
+    'boutique|shop': 'https://shops.kd-mc.com',
+    'mes apps|mon domaine|accueil|portail': 'https://kd-mc.com',
   };
 
   function tryLocalIntent(text, respond) {
@@ -926,8 +1026,11 @@
     for (var pattern in DOMAIN_APPS) {
       if (new RegExp(pattern, 'i').test(t) && /ouvre|va sur|montre|affiche|lance/.test(t)) {
         var url = DOMAIN_APPS[pattern];
-        respond('J\'ouvre ça pour toi 👉 ' + url);
-        setTimeout(function () { window.open(url, '_blank', 'noopener'); }, 300);
+        /* Ouvert TOUT DE SUITE (dans le geste : sinon Safari iPhone bloque la fenêtre), et un
+           VRAI bouton dans la bulle — seul moyen sûr quand la demande est dictée à la voix. */
+        var w = null;
+        try { w = window.open(url, '_blank', 'noopener'); } catch (_) {}
+        respond(w ? 'J\'ouvre ça pour toi.' : 'C\'est prêt, touche le bouton pour l\'ouvrir.', url);
         return true;
       }
     }
@@ -955,16 +1058,27 @@
       return true;
     }
     if (/envoie.*message|écris.*à|planning.*modifi|change.*planning/.test(t)) {
-      try { localStorage.setItem('apex_v13_chat_prefill', text); } catch (_) {}
-      respond('Ça, je te l\'ouvre dans Apex (lui a accès à ton compte et peut vraiment agir) — ta question est déjà écrite, tu n\'as qu\'à valider.');
-      setTimeout(function () { window.open('https://apex.kd-mc.com/#chat', '_blank', 'noopener'); }, 500);
+      /* HONNÊTE (audit Bee 27.09) : la mémoire du navigateur est propre à CHAQUE adresse — Apex
+         (apex-ai.kd-mc.com) ne voit pas ce que Bee range ici. Bee disait « ta question est déjà
+         écrite » : c'était faux. On copie la phrase dans le presse-papiers, et on le DIT. */
+      var dire = function (copie) {
+        respond('Ça, c\'est Apex qui peut le faire : lui a accès à ton compte et peut vraiment agir. ' +
+          (copie ? 'J\'ai copié ta phrase : dans Apex, touche le champ puis « Coller ».'
+                 : 'Écris-lui ta demande là-bas.'), APEX + '/#chat');
+      };
+      try { window.open(APEX + '/#chat', '_blank', 'noopener'); } catch (_) {}
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { dire(true); }, function () { dire(false); });
+        } else { dire(false); }
+      } catch (_) { dire(false); }
       return true;
     }
     return false;
   }
 
   /* ============================================================
-     5. Chat — apis.kd-mc.com/ai (Qwen gratuit d'abord, déjà en prod)
+     5. Chat — /__javis/ai (le domaine, réservé à Kevin ; Qwen gratuit d'abord)
      ============================================================ */
   function loadHistory() {
     try { return JSON.parse(localStorage.getItem(STORAGE_HIST) || '[]'); } catch (_) { return []; }
@@ -986,12 +1100,17 @@
     } else if (t) { t.remove(); }
   }
 
-  function addBubble(root, role, text, meta) {
+  function addBubble(root, role, text, lien) {
     var list = root.querySelector('#javis-msgs');
     var b = document.createElement('div');
     b.className = 'javis-bub ' + (role === 'user' ? 'me' : 'js');
     b.textContent = text;
-    if (meta) { var small = document.createElement('small'); small.textContent = meta; b.appendChild(small); }
+    if (lien && /^https:\/\/([a-z0-9-]+\.)*kd-mc\.com(\/|$)/.test(lien)) {
+      var a = document.createElement('a');
+      a.className = 'javis-lien'; a.href = lien; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = 'Ouvrir \u2197';
+      b.appendChild(document.createElement('br')); b.appendChild(a);
+    }
     list.appendChild(b);
     list.scrollTop = list.scrollHeight;
   }
@@ -1002,8 +1121,8 @@
     hist.push({ role: 'user', content: text });
     saveHistory(hist);
 
-    var handled = tryLocalIntent(text, function (reply) {
-      addBubble(root, 'javis', reply);
+    var handled = tryLocalIntent(text, function (reply, lien) {
+      addBubble(root, 'javis', reply, lien);
       var h = loadHistory(); h.push({ role: 'assistant', content: reply }); saveHistory(h);
       speak(root, reply);
     });
@@ -1011,36 +1130,48 @@
 
     setThinking(root, true);
     showTyping(root, true);
-    var messages = hist.slice(-10).map(function (m) { return { role: m.role, content: m.content }; });
+    var messages = hist.slice(-10)
+      .filter(function (m) { return m && (m.role === 'user' || m.role === 'assistant'); })
+      .map(function (m) { return { role: m.role, content: m.content }; });
+    var tok = ssoToken();
+    var hdrs = { 'Content-Type': 'application/json' };
+    if (tok) hdrs['x-kdmc-sso'] = tok;
+    /* 25 s maximum : avant, les petits points « elle écrit… » pouvaient tourner à l'infini */
+    var ctrlIa = null; try { ctrlIa = new AbortController(); } catch (_) {}
+    var minuteurIa = setTimeout(function () { try { if (ctrlIa) ctrlIa.abort(); } catch (_) {} }, 25000);
+    var statut = 0;
     fetch(AI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: messages,
-        system: 'Tu es Bee, l\'assistante personnelle de Kevin sur son domaine kd-mc.com (le même personnage que dans son app Lingua). ' +
-          'Réponds court, chaleureuse, enjouée, tutoiement, en français. Si la demande exige une action réelle ' +
-          '(envoyer un message, modifier des données), dis-le clairement plutôt que de prétendre l\'avoir faite.',
-        max_tokens: 500,
-      }),
+      credentials: 'include',
+      headers: hdrs,
+      signal: ctrlIa ? ctrlIa.signal : undefined,
+      body: JSON.stringify({ messages: messages }),
     })
-      .then(function (r) { return r.json(); })
+      .then(function (r) { statut = r.status; return r.json(); })
       .then(function (j) {
+        clearTimeout(minuteurIa);
         setThinking(root, false);
         showTyping(root, false);
         var ok = !!(j && j.ok && j.text);
-        var out = ok ? j.text : 'Je n\'ai pas réussi à répondre là, réessaie dans un instant.';
-        var meta = ok ? (j.provider + (j.provider === 'qwen' ? ' (gratuit)' : '')) : null;
-        addBubble(root, 'javis', out, meta);
+        /* la CAUSE exacte, en mots simples (règle Kevin : détailler les erreurs) */
+        var out = ok ? j.text
+          : statut === 403 ? 'Je ne te reconnais plus (ta session a expiré). Ferme Bee et rouvre-la : Face ID te reconnaîtra.'
+            : statut === 503 ? 'Aucune intelligence artificielle ne répond en ce moment. Réessaie dans une minute.'
+              : 'Je n\'ai pas réussi à répondre là, réessaie dans un instant.';
+        addBubble(root, 'javis', out);
         allRigs(root).forEach(function (r) { react(r, ok ? 'joie' : 'triste', ok ? 1200 : 1600); });
         if (ok) { tone([660, 880], .2); vibrate(8); }
         var h = loadHistory(); h.push({ role: 'assistant', content: out }); saveHistory(h);
         speak(root, out);
       })
-      .catch(function () {
+      .catch(function (e) {
+        clearTimeout(minuteurIa);
         setThinking(root, false);
         showTyping(root, false);
         allRigs(root).forEach(function (r) { react(r, 'triste', 1600); });
-        addBubble(root, 'javis', 'Le réseau ne répond pas là, réessaie dans un instant.');
+        addBubble(root, 'javis', (e && e.name === 'AbortError')
+          ? 'Ça prend trop de temps (plus de 25 secondes). Réessaie, ou pose une question plus courte.'
+          : 'Le réseau ne répond pas là, réessaie dans un instant.');
       });
   }
 
@@ -1061,7 +1192,7 @@
   /* Où sommes-nous ? (pour qu'elle commente la page où elle apparaît) */
   function lieu() {
     var h = (location.hostname || '').toLowerCase();
-    if (h.indexOf('arbre') === 0) return { nom: 'ton arbre de famille', quoi: 'Tu cherches quelqu\'un ? Je peux t\'aider à retrouver une fiche.' };
+    if (h.indexOf('arbre') === 0) return { nom: 'ton arbre de famille', quoi: 'Une question ? Je ne vois pas les fiches de l\'arbre, mais je peux t\'aider à chercher des idées.' };
     if (h.indexOf('lingua') === 0) return { nom: 'Lingua', quoi: 'Ma maison ! On révise un peu ?' };
     if (h.indexOf('cmcteams') === 0) return { nom: 'tes plannings', quoi: 'Besoin d\'un coup d\'oeil sur une équipe ?' };
     if (h.indexOf('apex') === 0) return { nom: 'Apex', quoi: 'Je te laisse la main, il fait les grosses actions.' };
@@ -1090,7 +1221,8 @@
         if (!document.contains(root)) return;
         var panel = root.querySelector('#javis-panel');
         var ouvert = panel && panel.classList.contains('javis-open');
-        if (!ouvert && fois < 3) {
+        if (fois >= 3) return;                 /* 3 fois, puis elle se tient tranquille (la boucle s'arrête) */
+        if (!ouvert) {
           fois++;
           var rig = root.querySelector('#javis-launcher .bee-rig');
           if (rig) {
@@ -1118,9 +1250,13 @@
       '<div><b>' + mascCfg().nom + '</b><span>Ton assistant' + MG('e', '') + ' · gratuit d\'abord</span></div>' +
       '<div id="javis-masc" role="group" aria-label="Choisir le personnage">' + boutonsMascottes() + '</div>' +
       '<button id="javis-close" type="button" aria-label="Fermer">✕</button></div>' +
-      '<div id="javis-msgs"></div>' +
-      '<form id="javis-form"><textarea id="javis-input" placeholder="Demande-moi n\'importe quoi…" rows="1"></textarea>' +
-      '<button id="javis-mic" type="button" aria-label="Dicter">🎙</button>' +
+      /* ON/OFF (règle Kevin) : couper la voix, effacer la conversation — et la version visible */
+      '<div id="javis-outils"><button id="javis-voix" type="button" aria-pressed="true">\uD83D\uDD0A Voix</button>' +
+      '<button id="javis-oublie" type="button">\uD83D\uDDD1 Effacer</button>' +
+      '<span id="javis-ver">Bee ' + JAVIS_VER + '</span></div>' +
+      '<div id="javis-msgs" role="log" aria-live="polite" aria-label="Conversation"></div>' +
+      '<form id="javis-form"><textarea id="javis-input" aria-label="Ta question" placeholder="Demande-moi n\'importe quoi…" rows="1"></textarea>' +
+      '<button id="javis-mic" type="button" aria-label="Dicter" aria-pressed="false">🎙</button>' +
       '<button id="javis-send" type="submit" aria-label="Envoyer">➤</button></form>' +
       '</div>';
     document.body.appendChild(wrap);
@@ -1137,6 +1273,11 @@
       try { localStorage.setItem(MASC_CLE, id); } catch (e) {}
       var M = mascCfg();
       var lanceur = wrap.querySelector('#javis-launcher');
+      /* l'ANCIENNE vidéo s'arrête vraiment (mesuré 27.09 : détachée de la page, elle continuait
+         de jouer et de télécharger, pendant que le nouveau personnage ne bougeait plus) */
+      var vieille = lanceur && lanceur.querySelector('.javis-vid');
+      if (vieille) { try { vieille.pause(); vieille.removeAttribute('src'); vieille.load(); } catch (_) {} }
+      if (VID.retour) { clearTimeout(VID.retour); VID.retour = 0; }
       var mini = wrap.querySelector('#javis-head .javis-mini');
       if (lanceur) { lanceur.innerHTML = buildBeeRig(APP_MODE); lanceur.setAttribute('aria-label', 'Parler à ' + M.nom); }
       if (mini) mini.innerHTML = buildBeeRig();
@@ -1168,19 +1309,43 @@
     /* Dans l'app : on branche la vraie vidéo, et elle vit d'elle-même entre deux phrases
        (elle vole, marche, danse) — porté de la vue Discussion de Lingua. */
     if (APP_MODE) {
-      var grosRig = wrap.querySelector('#javis-launcher .bee-rig');
-      initVideo(grosRig);
+      initVideo(wrap.querySelector('#javis-launcher .bee-rig'));
       (function vieLoop() {
         setTimeout(function () {
           if (!document.contains(wrap)) return;
-          if (VID.pret && !document.body.classList.contains('javis-closeup')) {
+          var calme = false;
+          try { calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
+          /* relu À CHAQUE tour : après un changement de personnage, l'ancien dessin n'existe plus */
+          var gros = wrap.querySelector('#javis-launcher .bee-rig');
+          var repos = Date.now() - DERNIER_GESTE > REPOS_CLIPS;
+          if (VID.pret && gros && !calme && !repos && !document.hidden && !document.body.classList.contains('javis-closeup')) {
             var ks = ['fly', 'walk', 'dance'];
-            clip(grosRig, ks[Math.floor(Math.random() * ks.length)], 2.6 + Math.random() * 1.8);
+            clip(gros, ks[Math.floor(Math.random() * ks.length)], 2.6 + Math.random() * 1.8);
           }
           vieLoop();
         }, 9000 + Math.random() * 7000);
       })();
+      /* page cachée : la vidéo s'arrête (elle continuait de jouer et de télécharger) */
+      document.addEventListener('visibilitychange', function () {
+        var v = wrap.querySelector('#javis-launcher .javis-vid');
+        if (!v) return;
+        try {
+          if (document.hidden) { v.pause(); if (VID.retour) { clearTimeout(VID.retour); VID.retour = 0; } }
+          else if (VID.pret) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+        } catch (_) {}
+      });
     }
+    /* le dernier geste : un toucher, une touche ou une question réveille Bee */
+    ['pointerdown', 'keydown', 'focusin'].forEach(function (ev) { document.addEventListener(ev, gesteVu, { passive: true }); });
+    (function repos() {
+      setTimeout(function () {
+        if (!document.contains(wrap)) return;
+        if (!document.hidden && Date.now() - DERNIER_GESTE > REPOS_ANIM && !document.body.classList.contains('javis-closeup')) {
+          document.body.classList.add('javis-repos');
+        }
+        repos();
+      }, 5000);
+    })();
 
     var panel = wrap.querySelector('#javis-panel');
     var form = wrap.querySelector('#javis-form');
@@ -1197,6 +1362,8 @@
     if (APP_MODE) { panel.classList.add('javis-open'); } else { ennui(wrap); }
 
     wrap.querySelector('#javis-launcher').addEventListener('click', function () {
+      /* dans l'app, le panneau est toujours là : toucher Bee ne doit pas ouvrir le clavier */
+      if (APP_MODE) return;
       panel.classList.toggle('javis-open');
       var ouvert = panel.classList.contains('javis-open');
       if (ouvert) {
@@ -1209,6 +1376,34 @@
     wrap.querySelector('#javis-close').addEventListener('click', function () {
       panel.classList.remove('javis-open');
     });
+    /* Échap ferme le panneau (bouton flottant) */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !APP_MODE && panel.classList.contains('javis-open')) panel.classList.remove('javis-open');
+    });
+    /* 🔊 / 🔇 : la voix se coupe d'un toucher, et reste coupée (les tons aussi) */
+    var bVoix = wrap.querySelector('#javis-voix');
+    var majVoix = function () {
+      var on = true; try { on = localStorage.getItem(STORAGE_VOICE) !== '0'; } catch (_) {}
+      bVoix.setAttribute('aria-pressed', on ? 'true' : 'false');
+      bVoix.textContent = on ? '\uD83D\uDD0A Voix' : '\uD83D\uDD07 Muette';
+    };
+    majVoix();
+    bVoix.addEventListener('click', function () {
+      var on = true; try { on = localStorage.getItem(STORAGE_VOICE) !== '0'; } catch (_) {}
+      try { localStorage.setItem(STORAGE_VOICE, on ? '0' : '1'); } catch (_) {}
+      if (on) { voixStop(); stopTalking(wrap); }
+      majVoix();
+    });
+    /* 🗑 : la conversation gardée sur ce téléphone est effacée */
+    wrap.querySelector('#javis-oublie').addEventListener('click', function () {
+      try { localStorage.removeItem(STORAGE_HIST); } catch (_) {}
+      voixStop(); stopTalking(wrap);
+      var l = wrap.querySelector('#javis-msgs'); if (l) l.textContent = '';
+      addBubble(wrap, 'javis', 'C\'est effacé. On repart de zéro !');
+    });
+    /* clavier ouvert : la grosse Bee se fait petite (app), pour laisser lire la conversation */
+    input.addEventListener('focus', function () { document.body.classList.add('javis-saisie'); });
+    input.addEventListener('blur', function () { document.body.classList.remove('javis-saisie'); });
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var v = (input.value || '').trim();
@@ -1226,16 +1421,31 @@
       var rec = new Recognition();
       rec.lang = 'fr-FR';
       rec.interimResults = false;
+      var micMinuteur = null;
+      var micOff = function () { mic.classList.remove('on'); mic.setAttribute('aria-pressed', 'false'); clearTimeout(micMinuteur); };
       mic.addEventListener('click', function () {
         if (mic.classList.contains('on')) { try { rec.stop(); } catch (_) {} return; }
-        try { rec.start(); mic.classList.add('on'); } catch (_) {}
+        try {
+          rec.start(); mic.classList.add('on'); mic.setAttribute('aria-pressed', 'true');
+          /* jamais un micro allumé pour rien : arrêt tout seul au bout de 10 s */
+          micMinuteur = setTimeout(function () { try { rec.stop(); } catch (_) {} micOff(); }, 10000);
+        } catch (_) { micOff(); }
       });
       rec.onresult = function (e) {
         var t = e.results && e.results[0] && e.results[0][0] && e.results[0][0].transcript;
         if (t) { input.value = t; form.requestSubmit(); }
       };
-      rec.onend = function () { mic.classList.remove('on'); };
-      rec.onerror = function () { mic.classList.remove('on'); };
+      rec.onend = micOff;
+      /* un micro qui échoue le DIT (avant : il s'éteignait sans un mot) */
+      rec.onerror = function (e) {
+        micOff();
+        var c = e && e.error;
+        if (c === 'aborted') return;
+        addBubble(wrap, 'javis', (c === 'not-allowed' || c === 'service-not-allowed')
+          ? 'Je n\'ai pas accès au micro. Sur iPhone : Réglages › Safari › Micro › Autoriser. En attendant, écris-moi.'
+          : c === 'no-speech' ? 'Je n\'ai rien entendu. Touche 🎙 et parle juste après.'
+            : 'Le micro n\'a pas marché cette fois. Écris-moi, ou réessaie.');
+      };
     } else { mic.style.display = 'none'; }
   }
 
@@ -1257,10 +1467,22 @@
       'sans-faceid': ['Il manque Face ID',
         'Tu es bien connecté, mais sans Face ID. Bee est réservée à toi seul : elle demande la preuve Face ID. Touche Face ID, et c\'est ouvert.'],
       'pas-kevin': ['Bee est personnelle à Kevin',
-        'Ce compte n\'est pas celui de Kevin : Bee reste fermée.'],
+        'Ce compte n\'est pas celui de Kevin : Bee reste fermée. Si c\'est toi, Kevin, touche Face ID.'],
       'muet': ['Le domaine ne répond pas',
-        'Pas de réponse en 4 secondes — réseau lent ou coupé. Réessaie dans un instant.']
+        'Pas de réponse en 4 secondes — réseau lent ou coupé. Réessaie dans un instant.'],
+      'panne': ['Le domaine a un souci',
+        'Il a répondu, mais par une erreur. Ce n\'est pas toi : réessaie dans un instant.']
     };
+    var aFaceId = !!window.PublicKeyCredential;
+    var installee = false;
+    try { installee = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); } catch (_) {}
+    if (raison === 'inconnu' && !installee) {
+      TXT.inconnu = ['Bee ne te reconnaît pas ici',
+        aFaceId ? 'Touche Face ID : Bee te reconnaît directement, puis toute seule les fois suivantes.'
+                : 'Touche « Me connecter » : tu reviens ici reconnu.'];
+    } else if (raison === 'inconnu' && !aFaceId) {
+      TXT.inconnu[1] = 'Sur iPhone, une app posée sur l\'écran d\'accueil garde sa propre mémoire. Touche « Me connecter » : tu reviens ici reconnu.';
+    }
     var t = TXT[raison] || TXT.inconnu;
     var d = document.createElement('div');
     d.setAttribute('role', 'alert');
@@ -1268,7 +1490,7 @@
       'justify-content:center;gap:14px;padding:24px;text-align:center;background:#0e0a04;' +
       'color:#a4906a;font:15px/1.5 -apple-system,sans-serif';
     var ic = document.createElement('div'); ic.style.fontSize = '44px';
-    ic.textContent = raison === 'muet' ? '\uD83D\uDCE1' : '\uD83D\uDD12';
+    ic.textContent = (raison === 'muet' || raison === 'panne') ? '\uD83D\uDCE1' : '\uD83D\uDD12';
     var b = document.createElement('b'); b.style.cssText = 'color:#f6b73c;font-size:17px';
     b.textContent = t[0];
     var p = document.createElement('p'); p.style.cssText = 'max-width:320px;margin:0';
@@ -1284,7 +1506,7 @@
        passer par kd-mc.com menait à « Créer mon compte ». Le passkey de Kevin (rpId kd-mc.com,
        trousseau iCloud) marche ICI : on le prouve sans quitter Bee, le domaine vérifie la signature
        et rend une session FORTE, gardée 30 jours dans CETTE app → reconnu tout seul ensuite. */
-    var faceId = (raison === 'inconnu' || raison === 'sans-faceid') && !!window.PublicKeyCredential;
+    var faceId = (raison === 'inconnu' || raison === 'sans-faceid' || raison === 'pas-kevin') && aFaceId;
     if (faceId) {
       var f = document.createElement('button');
       f.id = 'bee-faceid'; f.type = 'button';
@@ -1298,11 +1520,11 @@
         faceIdIci(function (ok, pourquoi) {
           if (ok) {
             try { localStorage.setItem('bee_faceid_ok', '1'); } catch (_) {}
-            location.replace(location.pathname + location.search);   /* rechargée : reconnue */
+            location.reload();   /* rechargée : reconnue (le fragment #kdmc_sso est déjà retiré) */
             return;
           }
           f.disabled = false; f.textContent = '\uD83D\uDD13 Face ID';
-          if (!auto) err.textContent = 'Face ID n\'a pas abouti (' + pourquoi + '). Réessaie, ou passe par kd-mc.com.';
+          if (!auto) err.textContent = 'Face ID n\'a pas abouti (' + motSimple(pourquoi) + '). Réessaie, ou passe par kd-mc.com.';
         });
       };
       f.addEventListener('click', function () { lancer(false); });
@@ -1312,20 +1534,33 @@
       var deja = false; try { deja = localStorage.getItem('bee_faceid_ok') === '1'; } catch (_) {}
       if (deja) setTimeout(function () { lancer(true); }, 300);
     }
-    if (raison !== 'pas-kevin') {
+    if (raison === 'pas-kevin') {
+      /* Plus d'impasse : on oublie ce compte-là (le laissez-passer rangé ICI), et on recommence. */
+      var o = document.createElement('button');
+      o.id = 'bee-oublier'; o.type = 'button';
+      o.style.cssText = CREUX;
+      o.textContent = 'Changer de compte';
+      o.addEventListener('click', function () {
+        try { localStorage.removeItem('kdmc_sso_token'); localStorage.removeItem('bee_faceid_ok'); } catch (_) {}
+        location.reload();
+      });
+      d.appendChild(o);
+    } else if (raison === 'muet' || raison === 'panne') {
+      var re = document.createElement('button');
+      re.id = 'bee-connexion'; re.type = 'button';
+      re.style.cssText = faceId ? CREUX : PLEIN;
+      re.textContent = 'Réessayer';
+      re.addEventListener('click', function () { location.reload(); });
+      d.appendChild(re);
+    } else {
       var a = document.createElement('a');
       a.id = 'bee-connexion';
       a.style.cssText = faceId ? CREUX : PLEIN;
-      if (raison === 'muet') {
-        a.textContent = 'Réessayer';
-        a.href = location.pathname + location.search;
-      } else {
-        a.textContent = faceId ? 'Passer par kd-mc.com'
-          : (raison === 'sans-faceid' ? 'Valider avec Face ID' : 'Me connecter');
-        /* Retour vers CETTE page, sans fragment (un vieux #kdmc_sso ne doit pas repartir). */
-        var ret = location.origin + location.pathname + location.search;
-        a.href = 'https://kd-mc.com/?return=' + encodeURIComponent(ret);
-      }
+      a.textContent = faceId ? 'Passer par kd-mc.com'
+        : (raison === 'sans-faceid' ? 'Valider avec Face ID' : 'Me connecter');
+      /* Retour vers CETTE page, sans fragment (un vieux #kdmc_sso ne doit pas repartir). */
+      var ret = location.origin + location.pathname + location.search;
+      a.href = 'https://kd-mc.com/?return=' + encodeURIComponent(ret);
       d.appendChild(a);
     }
     document.body.textContent = '';
@@ -1336,13 +1571,28 @@
      chaque adresse). Sans uid connu : le passkey du trousseau se présente lui-même, son userHandle
      porte l'uid ; le domaine vérifie la signature avec la clé qu'IL a enregistrée. Bee ne décide
      rien : elle range le laissez-passer rendu, puis redemande /__sso/whoami au rechargement. */
+  /* Ce que Kevin LIT quand Face ID échoue : jamais le message technique (anglais, JSON…) —
+     mesuré 27.09 : « Unexpected token '<' … is not valid JSON », « The relying party ID is not a
+     registrable domain suffix… », « Failed to fetch ». Le détail part dans la console. */
+  function motSimple(p) {
+    p = String(p || '');
+    if (p === 'annulé') return 'annulé';
+    if (p === 'aucun compte sur ce Face ID' || /passkey inconnu|inconnu/i.test(p)) return 'ce Face ID n\'est pas lié à ton compte';
+    if (/fetch|network|réseau|indisponible|json|token/i.test(p)) return 'le domaine ne répond pas';
+    if (p === 'non disponible') return 'Face ID n\'est pas disponible ici';
+    return 'refusé';
+  }
   function faceIdIci(cb) {
     function versBuf(s) { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
       var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
     function versB64u(buf) { var u = new Uint8Array(buf), s = ''; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
       return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
     var fini = false;
-    var fin = function (ok, pourquoi) { if (!fini) { fini = true; cb(ok, pourquoi || ''); } };
+    var fin = function (ok, pourquoi) {
+      if (fini) return; fini = true;
+      if (!ok) { try { console.warn('[Bee] Face ID :', pourquoi); } catch (_) {} }
+      cb(ok, pourquoi || '');
+    };
     var POST = { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' } };
     try {
       fetch('/__sso/webauthn/auth/options', Object.assign({ body: '{"uid":""}' }, POST))

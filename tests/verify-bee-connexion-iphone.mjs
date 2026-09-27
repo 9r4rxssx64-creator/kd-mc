@@ -165,6 +165,21 @@ try {
   const faible = jIssue && (jIssue.token || jIssue.t || '');
   ok(!!faible, 'le domaine émet bien une session SANS Face ID (auto-déclarée) pour le test');
   if (faible) {
+    /* 4a. UN LIEN PIÉGÉ n'écrase plus le laissez-passer de Kevin (audit Bee 27.09, mesuré avant :
+       un #kdmc_sso= d'un autre compte ou plus faible REMPLAÇAIT celui rangé → Kevin enfermé).
+       Kevin a son laissez-passer FORT (étape 3) ; un lien arrive avec une session faible :
+       Bee reste ouverte, et c'est toujours le laissez-passer fort qui est rangé. */
+    const fort = await page.evaluate(() => localStorage.getItem('kdmc_sso_token') || '');
+    ok(!!fort && fort !== faible, 'Kevin a bien un laissez-passer Face ID rangé (étape 3)');
+    await page.goto('about:blank');
+    await page.goto('https://javis.kd-mc.com/#kdmc_sso=' + encodeURIComponent(faible));
+    await page.waitForSelector('#javis-launcher, #bee-connexion, #bee-faceid', { timeout: 8000 }).catch(() => {});
+    const r4a = await page.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher'), jeton: localStorage.getItem('kdmc_sso_token') || '', url: location.href }));
+    ok(r4a.bee, 'un lien portant une AUTRE session n\'enferme plus Kevin : Bee reste ouverte');
+    ok(r4a.jeton === fort, 'et le laissez-passer Face ID de Kevin est TOUJOURS celui rangé (pas écrasé)');
+    ok(!/kdmc_sso=/.test(r4a.url), 'le laissez-passer du lien est quand même retiré de l\'adresse');
+    /* 4b. La session faible SEULE (appareil sans rien d'autre) : fermée, et l'écran le dit. */
+    await page.evaluate(() => { try { localStorage.removeItem('kdmc_sso_token'); } catch (_) {} });
     await ctx.clearCookies();
     /* PIÈGE payé en écrivant ce test : aller sur « même adresse + #fragment » ne RECHARGE pas la
        page — Bee, ouverte à l'étape 3, restait affichée et le contrôle aurait mesuré l'état

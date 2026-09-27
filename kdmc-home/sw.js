@@ -17,7 +17,7 @@ self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
-  if (url.pathname.indexOf('/__sso/') >= 0) return; /* jamais cacher l'auth */
+  if (url.pathname.indexOf('/__') === 0 || url.pathname.indexOf('/__sso/') >= 0) return; /* SW-IDENTITE : /__sso, /__demande… = réponses du domaine, jamais en cache */
   if (req.url.indexOf('_force_upd_') >= 0 || req.url.indexOf('?_v=') >= 0 || req.url.indexOf('&_v=') >= 0) return; /* MAJ forcée : réseau direct */
   e.respondWith(
     fetch(req).then(function (res) {

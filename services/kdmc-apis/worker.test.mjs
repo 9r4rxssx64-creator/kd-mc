@@ -309,3 +309,40 @@ test('/ai : question difficile → CONSEIL de voix gratuites + juge (provider co
     assert.equal(anthropicCalled, true, 'raisonnement sans conseil → Anthropic (la plus pertinente), Qwen en secours');
   } finally { globalThis.fetch = orig; }
 });
+
+test('/ai : la consigne `system` envoyée à côté des messages ARRIVE au modèle (audit Bee 27.09)', async () => {
+  const vus = [];
+  const fakeAI = { run: async (model, input) => { const m = input.messages || []; if (/classificateur/i.test(String(m[0] && m[0].content))) return { response: '?' }; vus.push(m); return { response: 'ok' }; } };
+  const r = await call('/ai', {
+    method: 'POST',
+    headers: { Origin: 'https://javis.kd-mc.com', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: 'Tu es Bee, ne prétends jamais avoir agi.', messages: [{ role: 'user', content: 'salut' }] }),
+    env: { AI: fakeAI },
+  });
+  assert.equal(r.status, 200);
+  assert.ok(vus.length >= 1, 'au moins un appel de réponse');
+  for (const m of vus) {
+    assert.equal(m[0].role, 'system', 'la consigne est en tête');
+    assert.ok(m[0].content.includes('Tu es Bee'), 'et c\'est bien la sienne');
+    assert.equal(m.filter((x) => x.role === 'system').length, 1, 'une seule fois');
+  }
+});
+
+test('/ai : plafond PAR APPAREIL (IP) — l\'Origin se falsifie, pas l\'IP (audit Bee 27.09)', async () => {
+  const faux = (max) => { const n = new Map(); return { limit: async ({ key }) => { n.set(key, (n.get(key) || 0) + 1); return { success: n.get(key) <= max }; } }; };
+  const fakeAI = { run: async () => ({ response: 'ok' }) };
+  const env = { AI: fakeAI, LIMITE_IA: faux(3), LIMITE_IA_PREMIUM: faux(1) };
+  const q = (ip, premium) => call('/ai', { method: 'POST', env,
+    headers: { Origin: 'https://javis.kd-mc.com', 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+    body: JSON.stringify({ premium: !!premium, messages: [{ role: 'user', content: 'salut' }] }) });
+  const st = [];
+  for (let i = 0; i < 5; i++) st.push((await q('1.1.1.1')).status);
+  assert.deepEqual(st, [200, 200, 200, 429, 429], 'au-delà de 3 (ici), le même appareil est refusé');
+  assert.equal((await q('2.2.2.2')).status, 200, 'un autre appareil n\'est pas puni');
+  assert.equal((await q('3.3.3.3', true)).status, 200, '1er moteur payant forcé : passe');
+  assert.equal((await q('3.3.3.3', true)).status, 429, '2e moteur payant forcé : refusé (plafond plus serré)');
+  const sans = await call('/ai', { method: 'POST', env: { AI: fakeAI },
+    headers: { Origin: 'https://javis.kd-mc.com', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'salut' }] }) });
+  assert.equal(sans.status, 200, 'binding absent → on laisse passer (jamais de panne de l\'IA du domaine)');
+});

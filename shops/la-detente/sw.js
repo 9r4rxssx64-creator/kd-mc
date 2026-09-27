@@ -28,6 +28,7 @@ self.addEventListener('notificationclick',function(e){
   e.waitUntil(self.clients.openWindow?self.clients.openWindow(u):Promise.resolve());
 });
 self.addEventListener('fetch',function(e){
+  if(new URL(e.request.url).pathname.indexOf('/__')===0)return; /* SW-IDENTITE : /__sso (qui es-tu ?), /__demande… = réponses du domaine, jamais en cache (sinon identité périmée) */
   var req=e.request; if(req.method!=='GET')return;
   if(req.url.indexOf('_force_upd_')>=0||req.url.indexOf('?_v=')>=0||req.url.indexOf('&_v=')>=0)return; /* MAJ forcée : laisser passer en réseau direct */
   var isNav=req.mode==='navigate'||(req.headers.get('accept')||'').indexOf('text/html')>=0;

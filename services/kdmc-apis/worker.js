@@ -361,6 +361,13 @@ async function handleAi(request, env, origin) {
   if (!opts || !Array.isArray(opts.messages) || !opts.messages.length) {
     return err('messages[] requis', 400, origin);
   }
+  /* La consigne `system` envoyée À CÔTÉ des messages était JETÉE (audit Bee 27.09, mesuré :
+     « Tu es Bee… ne prétends pas avoir agi » n'arrivait à AUCUN des 4 appels modèle). Toute
+     app du domaine qui l'envoyait ainsi parlait sans son caractère ni ses garde-fous. On la
+     remet en tête des messages : routage commun, secours et dernier recours la voient tous. */
+  if (typeof opts.system === 'string' && opts.system.trim() && !opts.messages.some((m) => m && m.role === 'system')) {
+    opts.messages = [{ role: 'system', content: opts.system.slice(0, 8000) }].concat(opts.messages);
+  }
   const tried = [];
   // 1) Routage commun du domaine (sauf provider forcé « à l'ancienne ») : Qwen Workers AI
   //    d'abord pour les questions courantes, bascule par TYPE de question sinon.
@@ -429,6 +436,19 @@ async function handleAi(request, env, origin) {
     }
   }
   return err('aucun provider IA disponible', 503, origin, tried);
+}
+
+/* Binding Cloudflare « Rate Limiting » : { success } ; ABSENT ou en panne → on laisse passer
+   (fail-open : une limite qui casse l'IA de tout le domaine serait pire que le mal). */
+export async function limiteOk(limiteur, cle) {
+  try {
+    if (!limiteur || typeof limiteur.limit !== 'function') return true;
+    const r = await limiteur.limit({ key: cle });
+    return !(r && r.success === false);
+  } catch (_) { return true; }
+}
+async function premiumDemande(request) {
+  try { const b = await request.clone().json(); return !!(b && b.premium); } catch (_) { return false; }
 }
 
 // Nom de secret EXACT (leçon "noms secrets matchent exactement").
@@ -605,7 +625,16 @@ export default {
       if (!isTrustedOrigin(origin)) {
         return err('origine non autorisée', 403, origin, 'Origin doit être *.kd-mc.com, Pages ou localhost');
       }
-      if (routeName === 'ai') return handleAi(request, env, origin);
+      if (routeName === 'ai') {
+        /* Plafond PAR APPAREIL (IP) : l'en-tête Origin se falsifie, l'IP non. 30 questions par
+           minute suffisent à n'importe quelle app ; le moteur PAYANT forcé (premium) : 6. */
+        const ip = request.headers.get('CF-Connecting-IP') || 'inconnu';
+        if (!(await limiteOk(env.LIMITE_IA, 'ai:' + ip))) return err('trop de questions d\'affilée — réessaie dans une minute', 429, origin);
+        if (await premiumDemande(request) && !(await limiteOk(env.LIMITE_IA_PREMIUM, 'prem:' + ip))) {
+          return err('moteur payant : trop de demandes d\'affilée — réessaie dans une minute', 429, origin);
+        }
+        return handleAi(request, env, origin);
+      }
       if (routeName === 'search') return handleSearch(request, env, origin);
       if (routeName === 'finance') return handleFinance(p, env, origin);
       if (routeName === 'images') return handleImages(p, env, origin);

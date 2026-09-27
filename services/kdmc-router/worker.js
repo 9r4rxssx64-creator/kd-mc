@@ -12,7 +12,7 @@ import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } f
 import { mintShopsAdminIdToken } from './fb-token.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
-import { routeText } from '../_shared/ia-route.js';
+import { routeText, routeSmart, FREE_PROVIDERS } from '../_shared/ia-route.js';
 
 /* D'où viennent les pages. Historiquement GitHub Pages — mais le dépôt est
    PRIVÉ depuis le 23/09/2026 (« que personne ne voie mon code ») et GitHub
@@ -423,6 +423,14 @@ const ROUTEUR = {
     // Demande de démonstration Rotaplan (formulaire SANS script : champs obligatoires imposés par le
     // navigateur, REVÉRIFIÉS ici). Kevin 27.09 « renseignements obligatoires partout pour les nouveaux ».
     if (url.pathname === '/__demande') return handleDemande(request, env, host);
+    /* 🐝 LE CERVEAU DE BEE — même adresse que la page, et SEULEMENT pour Kevin (audit Bee 27.09).
+       Avant : Bee appelait apis.kd-mc.com/ai, que n'importe qui pouvait faire payer en écrivant
+       lui-même l'en-tête Origin (mesuré : 200 appels Anthropic d'un seul curl, aucun plafond),
+       et le serveur JETAIT le caractère de Bee (« ne prétends pas avoir agi »). Ici : la session
+       admin est vérifiée PAR LE DOMAINE (Face ID ou code), le caractère est fixé côté serveur,
+       et le client ne peut envoyer que des messages « user » / « assistant ». */
+    if (url.pathname === '/__javis/ai') return handleBeeIa(request, env);
+
     if (url.pathname === '/__demandes' && request.method === 'GET') {
       if (!(await adminSession(request, env))) return new Response(JSON.stringify({ ok: false, reason: 'admin requis' }), { status: 403, headers: { 'content-type': 'application/json' } });
       const idx = (env && env.ACCOUNTS) ? JSON.parse((await env.ACCOUNTS.get('demandes:idx')) || '[]') : [];
@@ -1040,6 +1048,16 @@ async function souslePlafond(env, quoi, request, max, fenetreS) {
  * pas la cause du prélèvement, et il faut chercher ailleurs (un autre outil,
  * un autre appareil). Lisible sur /__lingua/depense (admin seulement).
  * FAIL-OPEN total : si le compteur tombe, la voix marche quand même. */
+/* Plafond GLOBAL du jour, tous appareils confondus : LIT le compteur que compteDepense tient déjà
+   (aucune écriture de plus : le plafond d'écritures KV du compte a été atteint le 27.09). */
+async function sousLePlafondDuJour(env, quoi, max) {
+  try {
+    if (!env || !env.ACCOUNTS) return true;
+    const n = parseInt((await env.ACCOUNTS.get('dep:' + new Date().toISOString().slice(0, 10) + ':' + quoi)) || '0', 10) || 0;
+    return n < max;
+  } catch { return true; }
+}
+
 async function compteDepense(env, quoi) {
   try {
     if (!env || !env.ACCOUNTS) return;
@@ -1568,7 +1586,10 @@ async function handleLingua(request, url, env) {
       if (cached) return new Response(cached, { status: 200, headers: audioHdr });
       /* Le plafond ne compte QUE ce qui coûte : un mot déjà en cache est gratuit,
          il ne doit donc pas être décompté (sinon une leçon normale serait bridée). */
-      const peutPayer = await souslePlafond(env, 'tts', request, 150, 3600);
+      /* Plafond GLOBAL du jour (audit Bee 27.09) : le plafond par IP ne tient pas face à 200 IP
+         (mesuré : 200 voix payées). Au-delà, la voix gratuite prend le relais — jamais de silence. */
+      const peutPayer = (await sousLePlafondDuJour(env, 'tts', parseInt(env && env.TTS_PLAFOND_JOUR, 10) || 1000))
+        && (await souslePlafond(env, 'tts', request, 150, 3600));
       if (!env.OPEN_AI_API_KEY || !peutPayer) {
         const g = await voixGratuite(env, text, ckey);
         if (g) return g;
@@ -1651,6 +1672,7 @@ async function handleLingua(request, url, env) {
       /* Le produit OpenAI le plus cher : plafond BEAUCOUP plus serré que la voix.
          6 appels par heure et par appareil suffisent largement à un apprenant. */
       if (!vientDuDomaine(request)) return JL({ ok: false, reason: 'hors_domaine' });
+      if (!(await sousLePlafondDuJour(env, 'appel-direct', parseInt(env && env.RT_PLAFOND_JOUR, 10) || 30))) return JL({ ok: false, reason: 'plafond_jour' });
       if (!(await souslePlafond(env, 'rt', request, 6, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
       if (!env.OPEN_AI_API_KEY) return JL({ ok: false, reason: 'no_key' });
       let b = {}; try { b = await request.json(); } catch (_) { /* corps optionnel */ }
@@ -2737,6 +2759,33 @@ function adminGrantTok(request) {
   if (m && m[1].trim()) return m[1].trim();
   return ssoCookie(request, 'kdmc_admin');
 }
+/* ═══ BEE — le caractère, écrit côté serveur (le client ne peut pas le remplacer) ═══ */
+export const BEE_CARACTERE = "Tu es Bee, l'assistante personnelle de Kevin sur son domaine kd-mc.com (le même personnage que dans son app Lingua). "
+  + "Réponds court, chaleureuse, enjouée, avec le tutoiement, en français, sans jargon technique (Kevin n'est pas codeur). "
+  + "Tu n'as AUCUN accès aux données de Kevin (planning, messages, fiches, comptes) et tu ne peux agir sur rien : "
+  + "ne prétends jamais avoir fait une action, et n'invente jamais une donnée (un horaire, un planning, un chiffre, une adresse web). "
+  + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Si la demande exige une vraie action, dis que c'est Apex qui peut la faire.";
+
+async function handleBeeIa(request, env) {
+  const JB = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  if (request.method !== 'POST') return JB({ ok: false, reason: 'methode' }, 405);
+  /* Une autre page du web ne peut pas faire parler Bee au nom de Kevin : JSON obligatoire
+     (préflight CORS, auquel on ne répond pas) + Origin, s'il est là, sur le domaine. */
+  if (!/^application\/json/i.test(request.headers.get('content-type') || '')) return JB({ ok: false, reason: 'json_requis' }, 415);
+  const origine = request.headers.get('origin');
+  if (origine && !/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i.test(origine)) return JB({ ok: false, reason: 'hors_domaine' }, 403);
+  if (!(await adminSession(request, env))) return JB({ ok: false, reason: 'kevin_seulement' }, 403);
+  let b = {}; try { b = await request.json(); } catch (_) { return JB({ ok: false, reason: 'json_invalide' }, 400); }
+  const messages = (Array.isArray(b && b.messages) ? b.messages : [])
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
+    .slice(-10)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
+  if (!messages.length || messages[messages.length - 1].role !== 'user') return JB({ ok: false, reason: 'question_requise' }, 400);
+  const r = await routeSmart(env, { messages, system: BEE_CARACTERE, maxTokens: 500, temperature: 0.7, timeoutMs: 20000 });
+  if (!r || !r.ok || !r.text) return JB({ ok: false, reason: 'ia_indisponible' }, 503);
+  return JB({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 || r.provider === 'council' });
+}
+
 async function adminSession(request, env) {
   const secret = env && env.KDMC_SSO_SECRET;
   if (!secret) return null;

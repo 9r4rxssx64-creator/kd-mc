@@ -14,6 +14,7 @@
 
 - 🖥 **Le portail** (bouton « J'ai déjà un compte — nom + code ») : [kd-mc.com](https://kd-mc.com/)
 - 🧪 **Le test des deux téléphones** : [tests/verify-compte-unique-portail.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-compte-unique-portail.mjs)
+- 🎨 **Créa Studio branché sur ton compte unique** (et plus d'admin « au nom tapé ») : [studio.kd-mc.com](https://studio.kd-mc.com/) · test [tests/verify-crea-comptes.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-crea-comptes.mjs)
 - 🧪 **Le test du code vérifié par le domaine** : [services/kdmc-router/code-compte.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/code-compte.test.mjs)
 
 ### 🛡 Audit de ton domaine : 36/100, un trou fermé ce soir (27.09.2026)

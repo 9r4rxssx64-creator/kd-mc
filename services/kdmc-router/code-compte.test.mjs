@@ -44,8 +44,11 @@ ok(r.st === 401 && r.j.reason === 'code_incorrect', '4. avec un mauvais code →
 r = await login({ name: 'Marie Curie', code: '314159' });
 ok(r.j.ok === true && r.j.uid === 'marie-curie' && !!r.j.token, '5. appareil NEUF : nom + code → la session de son compte', JSON.stringify(r.j).slice(0, 120));
 const tok = r.j.token;
-ok((await whoami('cuisine.kd-mc.com', tok)).ok === true && (await whoami('lingua.kd-mc.com', tok)).ok === true,
-  '6. reconnue AUTOMATIQUEMENT dans les autres apps (cuisine, Lingua)');
+{ const w = await whoami('cuisine.kd-mc.com', tok);
+  ok(w.ok === true && (await whoami('lingua.kd-mc.com', tok)).ok === true && w.code === true && w.admin === false && w.verified === false,
+    '6. reconnue AUTOMATIQUEMENT dans les autres apps (cuisine, Lingua) ; elles voient « code prouvé » (jamais admin)', JSON.stringify(w)); }
+{ const w = await whoami('cuisine.kd-mc.com', signe('marie-curie', 0));
+  ok(w.ok === true && w.code === false, '6 bis. une session SANS code prouvé est marquée comme telle (les apps peuvent faire la différence)', JSON.stringify(w)); }
 r = await login({ name: 'curie marie', code: '314159' }, 'cuisine.kd-mc.com');
 ok(r.j.ok === true && r.j.uid === 'marie-curie', '7. nom dans l\'autre sens, depuis une autre app → même compte', JSON.stringify(r.j).slice(0, 100));
 const faux = await login({ name: 'Marie Curie', code: '999999' });

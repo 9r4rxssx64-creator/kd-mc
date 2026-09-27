@@ -15,7 +15,6 @@
 import { chromium } from 'playwright';
 import http from 'http'; import fs from 'fs'; import path from 'path';
 import worker from '../services/kdmc-crea-famille/worker.js';
-const ADMIN_CODE = process.env.KDMC_ADMIN_CODE || '200807'; // code de TEST ; en CI → secret KDMC_ADMIN_CODE (le vrai code ne s'écrit jamais ici)
 
 const ROOT = path.resolve(new URL('../tools/crea-studio', import.meta.url).pathname);
 const PORT_APP = 8259, PORT_API = 8260;
@@ -84,16 +83,23 @@ const R = { ok: [], ko: [] }; const chk = (c, m) => (c ? R.ok : R.ko).push(m);
 const browser = await chromium.launch();
 const errs = [];
 
-async function telephone(nom, code) {                 // un téléphone = un navigateur isolé
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+async function telephone(nom, code, domaineAdmin) {   // un téléphone = un navigateur isolé
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const page = await ctx.newPage();
+  /* Depuis le 27.09 l'admin du Studio vient du DOMAINE (session vérifiée Face ID), plus d'un nom
+     tapé : le téléphone de Kevin est reconnu par le domaine, il ne tape rien. */
+  if (domaineAdmin) await page.route(/__sso\/whoami/, (rt) => rt.fulfill({ status: 200, contentType: 'application/json',
+    body: JSON.stringify({ ok: true, uid: 'kdmc_admin', name: nom, verified: true, admin: true }) }));
   page.on('pageerror', e => errs.push(nom + ' PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(nom + ' CONSOLE: ' + m.text()); });
   await page.addInitScript((p) => { window.CREA_FAM_URL = 'http://127.0.0.1:' + p; }, PORT_API);
   await page.goto(`http://127.0.0.1:${PORT_APP}/index.html`, { waitUntil: 'load' });
   await page.waitForTimeout(350);
-  await page.fill('#gateName', nom); await page.fill('#gateCode', code || '1234');
-  await page.click('#gateGo'); await page.waitForTimeout(250);
+  if (domaineAdmin) await page.waitForTimeout(900);
+  else {
+    await page.fill('#gateName', nom); await page.fill('#gateCode', code || '123456');   // 6 chiffres : le même code sert au domaine (compte unique, 27.09)
+    await page.click('#gateGo'); await page.waitForTimeout(600);
+  }
   await page.click('#bnav button[data-go="fam"]'); await page.waitForTimeout(200);
   return { ctx, page };
 }
@@ -112,7 +118,7 @@ const creer = (page, label) => page.evaluate(async (l) => {
 }, label);
 
 // ── 1) sans code, on n'entre pas ────────────────────────────────────────────
-const M = await telephone('Marie Dupont', '1234');
+const M = await telephone('Marie Dupont', '123412');
 await rejoindre(M.page, 'Desarzens', '12');
 let dedans = await M.page.evaluate(() => !document.getElementById('famCard').classList.contains('hidden'));
 let hint = await M.page.textContent('#famHint');
@@ -127,7 +133,7 @@ await M.page.click('#famShare');
 await M.page.waitForTimeout(900);
 
 // ── 3) Paul, sur SON téléphone, voit la création de Marie ───────────────────
-const P = await telephone('Paul Dupont', '5678');
+const P = await telephone('Paul Dupont', '567856');
 await rejoindre(P.page, 'Desarzens', 'noel2026');
 await P.page.waitForTimeout(800);
 let n = await P.page.locator('#famFeed .fam-it').count();
@@ -159,7 +165,7 @@ const msgs = await M.page.textContent('#famMsgs');
 chk(/Trop belle/.test(msgs || '') && /paul/i.test(msgs || ''), 'Marie lit le message de Paul, avec son nom');
 
 // ── 6) un cousin avec un AUTRE code ne voit rien ────────────────────────────
-const C = await telephone('Luc Martin', '9999');
+const C = await telephone('Luc Martin', '999999');
 await rejoindre(C.page, 'Desarzens', 'jessaie1234');     // même nom, mauvais code
 await C.page.waitForTimeout(800);
 const nC = await C.page.locator('#famFeed .fam-it').count();
@@ -172,7 +178,7 @@ await rejoindre(C.page, 'Cousins', 'autre-code');        // Luc crée sa vraie f
 await creer(C.page, 'Chez les cousins');
 await C.page.click('#famShare'); await C.page.waitForTimeout(900);
 
-const K = await telephone('Kevin Desarzens', ADMIN_CODE);
+const K = await telephone('Kevin Desarzens', '', true);
 // Le téléphone de Kevin porte le pass SSO du domaine (session vérifiée Face ID ailleurs) :
 // c'est CE jeton — pas son nom — qui le rend admin famille (règle « ADMIN UNIVERSEL »).
 await K.page.evaluate(() => localStorage.setItem('crea_sso_token', 'jeton-sso-kevin-test'));

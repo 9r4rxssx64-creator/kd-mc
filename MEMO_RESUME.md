@@ -22,8 +22,12 @@ personne, et le même nom + code ne marchait nulle part ailleurs ; (3) 8 apps on
 - Gardes : `test:perimetre-apps`, `test:code-compte` 15/15, `test:compte-unique-portail` 5/5 (vrai
   Chromium, 2 téléphones) — chacun prouvé par sabotage.
 
-**Reste (phase 2)** : brancher les apps qui ont LEUR compte (Lingua, Apex, Créa, Light, CMCteams,
-Messagerie) sur `/__sso/login` + enregistrement du code au domaine. Message m146.
+**Phase 2, lot 1 (fusionné après #4094)** : Créa Studio v9.18.3 — connexion d'abord au compte du domaine
+(nom + code), un compte créé dans le Studio envoie son code au domaine ; **faille fermée** : taper
+« Kevin Desarzens » + le code de TEST (empreinte djb2 `h1r79tmw` dans la page publique) donnait l'admin du
+Studio → admin = domaine vérifié seulement. Jeton de session : `k=1` = « code prouvé », `whoami.code`.
+Sonde `audit-domaine` : vérifie que `/__sso/login` est en ligne (401 sur un nom inventé).
+**Reste** : Lingua, Apex IA, Light, CMCteams (matricule ↔ fiche), Messagerie — m146.
 
 ## 2026-09-27 (nuit) — « Personne ne doit atterrir sur CMCteams ou light sans se connecter ou s'inscrire complètement » (CMCteams v9.925, light v1.58)
 

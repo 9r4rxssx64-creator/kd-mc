@@ -86,6 +86,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Audit du domaine 27.09 (`audit-domaine`) | `claude/audit-domaine-2709` | 🟢 Rapport privé 36/100, sonde audit-domaine, routeur durci, relais Apex fermé (27.09) |
 | Audit domaine : admin en https (`audit-domaine-admin`) | `claude/audit-domaine-admin-https` | 🟢 http→https sur admin.kd-mc.com (27.09) |
 | Compte unique du domaine (`compte-unique`) | `claude/compte-unique-domaine` | 🟢 Code vérifié au domaine, /__sso/login, reconnu partout sauf apps perso (27.09) |
+| Compte unique : apps (`compte-unique-apps`) | `claude/compte-unique-apps` | 🟢 Créa Studio sur le compte du domaine, jeton « code prouvé » (27.09) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 
 ## 📅 État RÉEL mesuré le 10.09.2026 — `git for-each-ref` + `git rev-list origin/main..<branche>`

@@ -727,10 +727,12 @@ async function sha256Hex(str) {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
-async function ssoSign(secret, uid, name, cgu, verified) {
+async function ssoSign(secret, uid, name, cgu, verified, codeProuve) {
   /* v=1 → identité FORTE (prouvée par passkey/Face ID). v=0 → faible (nom+code
      auto-asserté). Les apps ne doivent accorder de confiance qu'à v=1. */
-  const p = b64urlStr(JSON.stringify({ u: uid, n: name, c: cgu ? 1 : 0, v: verified ? 1 : 0, iat: Date.now(), exp: Date.now() + SSO_TTL * 1000 }));
+  /* k=1 → le CODE du compte a été prouvé au domaine (27.09) : plus que « auto-déclaré », moins
+     que Face ID. N'accorde JAMAIS l'admin (seul v=1 le peut). */
+  const p = b64urlStr(JSON.stringify({ u: uid, n: name, c: cgu ? 1 : 0, v: verified ? 1 : 0, k: codeProuve ? 1 : 0, iat: Date.now(), exp: Date.now() + SSO_TTL * 1000 }));
   return p + '.' + (await ssoHmac(secret, p));
 }
 /* ===== CODE DU COMPTE, VÉRIFIÉ PAR LE DOMAINE (Kevin 2026-09-27) =====
@@ -790,7 +792,7 @@ async function ssoVerify(secret, token) {
   if (diff !== 0) return null;
   let d; try { d = JSON.parse(b64urlToStr(p)); } catch { return null; }
   if (!d || !d.u || !d.exp || d.exp < Date.now()) return null;
-  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, iat: d.iat || 0, exp: d.exp };
+  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, code: d.k === 1, iat: d.iat || 0, exp: d.exp };
 }
 /* Révocation à distance (« Déconnecter partout ») : un token émis AVANT
    acc.revoked_at est refusé. Le user peut se RE-connecter (nouveau token,
@@ -2208,7 +2210,7 @@ async function handleSso(request, url, env) {
         });
       }
       await enrich(env, request, s.uid, s.name, s.cgu, acc);
-      return J({ ok: true, uid: s.uid, name: s.name, cgu: s.cgu, verified: !!s.verified, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' });
+      return J({ ok: true, uid: s.uid, name: s.name, cgu: s.cgu, verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' });
     }
     return J({ ok: false });
   }
@@ -2405,7 +2407,7 @@ async function handleSso(request, url, env) {
       }
     }
     await enrich(env, request, uid, name, cgu, undefined, { origine });
-    const token = await ssoSign(secret, uid, name, cgu);
+    const token = await ssoSign(secret, uid, name, cgu, false, codeProuve);
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
     /* token renvoyé dans le corps : le portail le met dans le lien de retour
        (#kdmc_sso=) pour les apps installées (où le cookie ne traverse pas). */
@@ -2439,7 +2441,7 @@ async function handleSso(request, url, env) {
     const per = perimetre(acc, appDe(request.headers.get('host')));
     if (!per.ok) return J({ ok: false, reason: per.raison, hors_perimetre: true, message: 'Ton compte n\'est pas ouvert sur cette application.' });
     await enrich(env, request, acc.uid, acc.name || name, true, undefined, {});
-    const token = await ssoSign(secret, acc.uid, acc.name || name, true);
+    const token = await ssoSign(secret, acc.uid, acc.name || name, true, false, true);
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, uid: acc.uid, name: acc.name || name, cgu: true, token, admin: false, code: true }, cookie);
   }

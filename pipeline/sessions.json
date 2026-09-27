@@ -578,6 +578,16 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "compte-unique-apps": {
+      "titre": "Compte unique : apps",
+      "branche": "claude/compte-unique-apps",
+      "sujet": "Brancher les apps à compte propre sur le compte du domaine (Créa d'abord)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

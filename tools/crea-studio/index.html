@@ -1080,7 +1080,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.18.2';
+var APP_VER='v9.18.3';
 document.getElementById('vbadge').textContent=APP_VER;
 
 /* ---------- utils ---------- */
@@ -1358,12 +1358,22 @@ var Domaine=(function(){
   }
   /* On dit au domaine qui vient d'entrer : la personne est alors reconnue dans
      TOUTES les apps, et sa visite apparaît dans « Qui se connecte ». */
-  function annoncer(nom,uid){
+  /* COMPTE UNIQUE (27.09) : le même nom + code que sur tout le domaine. */
+  function connexion(nom,code){
+    return fetch(BASE+'/__sso/login',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nom,code:String(code||'')})})
+      .then(function(r){return r.json();}).then(function(j){
+        if(j&&j.ok&&j.token){try{localStorage.setItem(CLE,j.token);}catch(e){}}
+        return j;
+      }).catch(function(){return null;});
+  }
+  function annoncer(nom,uid,code){
     var toks=String(nom||'').trim().split(/\s+/).filter(Boolean);
     if(toks.length<2)return Promise.resolve(null);      /* jamais un prénom seul */
     return fetch(BASE+'/__sso/issue',{method:'POST',credentials:'include',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({uid:uid||('crea_'+toks.join('-').toLowerCase()),name:nom,cgu:true})})
+      body:JSON.stringify({uid:uid||('crea_'+toks.join('-').toLowerCase()),name:nom,cgu:true,
+        code:(code&&String(code).length>=6)?String(code):undefined})})
       .then(function(r){return r.json();}).then(function(j){
         if(j&&j.ok&&j.token){try{localStorage.setItem(CLE,j.token);}catch(e){}}
         return j;
@@ -1382,7 +1392,7 @@ var Domaine=(function(){
           meta:meta||{}})}).catch(function(){});
     }catch(e){}
   }
-  return {quiSuisJe:quiSuisJe,annoncer:annoncer,trace:trace,
+  return {quiSuisJe:quiSuisJe,annoncer:annoncer,connexion:connexion,trace:trace,
           dernier:function(){return dernier;},base:BASE};
 })();
 
@@ -1400,7 +1410,9 @@ var Users=(function(){
      HONNÊTE : cette porte reste CÔTÉ CLIENT et l'empreinte est faible (djb2 32 bits) — elle
      empêche la lecture directe, pas un calcul déterminé. La vraie porte doit être le SSO
      serveur déjà présent (`/__sso/whoami`, l.~1166) : à basculer (P1 du rapport d'audit). */
-  var ADMIN_PIN_H='h1r79tmw';
+  /* (27.09.2026) Plus d'empreinte de code admin dans la page : l'admin du Studio vient UNIQUEMENT
+     du domaine (session vérifiée, Face ID). Une empreinte djb2 d'un code à 6 chiffres se retrouve
+     en une fraction de seconde — et « Kevin Desarzens » + ce code suffisait à devenir admin. */
   function norm(v){return String(v||'').toLowerCase().normalize('NFD')
     .replace(/[̀-ͯ]/g,'').replace(/[\s\-_.]+/g,' ').trim();}
   function uidOf(name){var n=norm(name).split(' ').filter(Boolean).sort().join('-');
@@ -1427,12 +1439,10 @@ var Users=(function(){
   function login(name,code){
     var toks=norm(name).split(' ').filter(function(t){return t.length>=2;});
     if(toks.length<2)return {ok:false,why:'Tape ton PRÉNOM et ton NOM (les deux).'};
-    var admin=isAdminName(name), uid=uidOf(name), m=all(), u=m[uid];
-    if(admin&&hash(String(code||''))!==ADMIN_PIN_H)return {ok:false,why:'Code administrateur incorrect.'};
-    if(!admin){
-      if(!code||String(code).length<4)return {ok:false,why:'Choisis un code d\'au moins 4 chiffres.'};
-      if(u&&u.pin&&u.pin!==hash(code))return {ok:false,why:'Code incorrect pour ce compte.'};
-    }
+    var uid=uidOf(name), m=all(), u=m[uid], admin=false;
+    if(isAdminName(name))return {ok:false,why:'Kevin : ouvre d\'abord kd-mc.com avec Face ID — le Studio te reconnaîtra tout seul, en administrateur.'};
+    if(!code||String(code).length<(u&&u.pin?4:6))return {ok:false,why:'Choisis un code d\'au moins 6 chiffres (le même servira dans toutes tes apps).'};
+    if(u&&u.pin&&u.pin!==hash(code))return {ok:false,why:'Code incorrect pour ce compte.'};
     if(!u){
       u={uid:uid,name:String(name).trim().slice(0,60),admin:admin,pin:admin?'':hash(code),
          created:Date.now(),seen:Date.now(),memory:[],prefs:{},count:0};
@@ -1485,7 +1495,7 @@ var Users=(function(){
     var uid=uidOf(nom),m=all(),u=m[uid];
     if(!u)u={uid:uid,name:String(nom).trim().slice(0,60),pin:'',created:Date.now(),
              memory:[],prefs:{},count:0};
-    u.admin=!!admin||isAdminName(nom); u.seen=Date.now(); u.parDomaine=true;
+    u.admin=!!admin; u.seen=Date.now(); u.parDomaine=true;   /* admin = verdict du DOMAINE seul (session vérifiée) */
     u.name=String(nom).trim().slice(0,60);
     m[uid]=u; saveAll(m); localStorage.setItem(CUR,uid);
     return {ok:true,user:u};
@@ -2419,16 +2429,30 @@ var Account=(function(){
     setTimeout(function(){try{$('gateName').focus();}catch(e){}},60);}}
   function hide(){var g=gate();if(g)g.classList.add('hidden');}
   function hint(t){var e=$('gateHint');if(e)e.textContent=t||'';}
-  function go(){
-    var n=$('gateName').value.trim(), c=$('gateCode').value.trim();
-    var r=Users.login(n,c);
-    if(!r.ok){hint('⚠️ '+r.why);return;}
+  function entrer(r){
     hint('');$('gateCode').value='';
     hide(); paint(); ouvert();
-    /* on prévient le domaine : la personne sera reconnue dans TOUTES ses apps */
-    try{Domaine.annoncer(r.user.name,r.user.uid);}catch(e){}
     toast((r.user.admin?'👑 ':'👋 ')+'Bonjour '+r.user.name.split(' ')[0]+' !',2000);
     if(window.Mine)Mine.refresh();
+  }
+  function go(){
+    var n=$('gateName').value.trim(), c=$('gateCode').value.trim();
+    /* COMPTE UNIQUE (Kevin 27.09) : on essaie d'abord le compte du DOMAINE (même nom + code que
+       partout ailleurs). S'il ne le connaît pas, compte du Studio — et son code est alors
+       enregistré au domaine, pour qu'il marche dans toutes les autres apps. */
+    hint('…');
+    Domaine.connexion(n,c).then(function(j){
+      if(j&&j.ok){var rd=Users.loginDomaine(j.name,false); if(rd.ok){entrer(rd);return;}}
+      if(j&&j.reason==='trop_essais'){hint('⚠️ '+j.message);return;}
+      var r=Users.login(n,c);
+      if(!r.ok){hint('⚠️ '+r.why);return;}
+      Domaine.annoncer(r.user.name,r.user.uid,c).then(function(a){
+        if(a&&!a.ok&&(a.reason==='code_requis'||a.reason==='code_incorrect')){
+          toast('ℹ️ Ce nom a déjà un compte KDMC avec un autre code : le Studio marche, mais pour tes autres apps utilise ton code KDMC.',5000);
+        }
+      });
+      entrer(r);
+    });
   }
   function logout(){Users.logout();if(window.Mine)Mine.setSeeAll(false);
     var b=$('adminSeeAll');if(b)b.checked=false;show();}

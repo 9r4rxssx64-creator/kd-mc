@@ -1,5 +1,20 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — « L’icône emmène encore sur CMCteams » : la porte ne part plus JAMAIS toute seule
+
+**Mesuré** (Zapier, vraie requête, comme une page iPhone sans session) : `cuisine.kd-mc.com/`, `/index.html`
+et `kd-mc.com/cujina/index.html` servent tous la porte (200, `x-kdmc-porte: fiche`). Le serveur n’envoyait
+plus vers CMCteams. **C’est le script de la porte** : s’il ne se croyait pas dans une « app plein écran »
+(`navigator.standalone` / `display-mode: standalone`), il faisait `location.replace(portail)` — et le
+portail `kd-mc.com` affiche **CMCteams**. Ce test n’est pas fiable (icône ouverte dans Safari, réglage
+« Ouvrir comme app web » coupé), et l’ancien script restait **1 h en cache** sur l’iPhone.
+
+**Corrigé** : plus aucun départ automatique — la porte reste, Face ID proposé, le portail n’est plus qu’un
+bouton. Script servi en `porte.js?v=2`, `cache-control: no-cache`. Garde `test:portes-dossier` **74/0**
+(4 contrôles nouveaux ; sabotage « ancien départ automatique » → 4 ✗). Leçon **#353**.
+
+---
+
 ## 2026-09-27 — Audit LINGUA : tout, sur le vrai domaine (sonde neuve)
 
 Kevin : « Fais ton audit de lingua, toutes les fonctions, voix, etc. Tout. Réel tjs. »

@@ -166,8 +166,19 @@ const LIVRE = 'https://cuisine.kd-mc.com/index.html';
   ok(r.replaced === LIVRE && r.tok === anne && r.hash === '', 'pass reçu du portail dans l\'adresse (#kdmc_sso=) → gardé, adresse nettoyée, on entre'); }
 { const r = await porte({ url: LIVRE, standalone: true, storage: { kdmc_sso_token: 'faux.' + anne.split('.')[1] } });
   ok(r.replaced === '' && r.tok === '' && r.acts, 'pass FALSIFIÉ dans l\'app → jeté, la porte reste avec fiche/Face ID (pas de boucle)'); }
+/* Kevin 27.09 soir : « L'icône emmène encore sur CMCteams ». L'icône s'ouvrait comme une page
+   Safari (détection « écran d'accueil » fausse) → le script partait TOUT SEUL au portail, qui
+   affiche CMCteams. Désormais personne n'est emmené ailleurs sans l'avoir touché. */
 { const r = await porte({ url: LIVRE, standalone: false, storage: {} });
-  ok(r.replaced === 'https://kd-mc.com/?return=' + encodeURIComponent(LIVRE), 'navigateur ORDINAIRE sans pass → part remplir sa fiche au portail, puis retour ici (comme avant)'); }
+  ok(r.replaced === '' && r.acts, "icône ouverte comme une page Safari (pas « app plein écran »), sans pass → la porte RESTE, Face ID proposé, AUCUN départ vers CMCteams  [" + r.msg + ']'); }
+{ const r = await porte({ url: LIVRE, standalone: false, storage: {}, faceId: { id: 'c1', response: { userHandle: new TextEncoder().encode('anne-martin'), clientDataJSON: new Uint8Array(3), authenticatorData: new Uint8Array(3), signature: new Uint8Array(3) } } });
+  ok(r.replaced === '' && r.acts && r.pk, 'même cas avec Face ID disponible → le bouton Face ID est là, rien ne part tout seul'); }
+ok(!/location\.replace\(portail\)/.test(porteJs), "le script de la porte ne contient plus AUCUN départ automatique vers le portail");
+{ const r = await mod.fetch(new Request('https://cuisine.kd-mc.com/index.html', { headers: { 'sec-fetch-dest': 'document' } }), env, ctx);
+  const h = await r.text();
+  ok(h.includes('/__sso/porte.js?v=2'), "la porte charge porte.js?v=2 (l'ancien script, gardé 1 h par l'iPhone, n'est plus utilisé)"); }
+{ const r = await mod.fetch(new Request('https://cuisine.kd-mc.com/__sso/porte.js?v=2'), env, ctx);
+  ok(!/max-age=3600/.test(r.headers.get('cache-control') || ''), "porte.js n'est plus gardé 1 h en cache (un correctif doit arriver tout de suite)"); }
 { const r = await porte({ url: 'https://osint.kd-mc.com/', standalone: true, storage: { kdmc_sso_token: signe('lea-noir', 0) }, fake: { '/__sso/cookie': { ok: false, hors_perimetre: true, message: 'Ton compte n\'est pas ouvert sur cette application.' } } });
   ok(r.replaced === '' && /pas ouvert/.test(r.msg) && !r.pk, 'connue mais pas ouverte ici → message clair dans l\'app, sans Face ID inutile'); }
 

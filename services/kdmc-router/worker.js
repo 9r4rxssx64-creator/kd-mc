@@ -1054,7 +1054,7 @@ function portePage(g, url) {
     + '<div id="acts" hidden><button id="pk" type="button">🔓 Face ID — j&#39;ai déjà un compte</button>'
     + '<a class="b s" id="fiche" href="' + esc(portail) + '">Remplir ma fiche sur kd-mc.com</a></div>'
     + '<noscript><a class="b" href="' + esc(portail) + '">Remplir ma fiche sur kd-mc.com</a></noscript></div>'
-    + '<script src="/__sso/porte.js?v=1"></script></body></html>';
+    + '<script src="/__sso/porte.js?v=2"></script></body></html>';
   return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
     'x-kdmc-porte': 'fiche', 'referrer-policy': 'strict-origin-when-cross-origin',
     'content-security-policy': "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
@@ -1099,9 +1099,12 @@ if(pk) pk.addEventListener('click',function(){ pk.disabled=true; say('Face ID…
 cookieDepuisPass().then(function(j){
   if(j.ok){ say('Bonjour '+(j.name||'')+' — ouverture…'); entrer(); return; }
   if(j.hors_perimetre){ say(j.message||'Ton compte n\\'est pas ouvert sur cette application.'); if(acts)acts.hidden=false; if(pk)pk.hidden=true; return; }
-  if(!standalone()){ location.replace(portail); return; }
-  /* app de l'écran d'accueil : on reste ICI — le portail ne serait pas le livre */
-  say('Réservé aux personnes connues du domaine.');
+  /* On reste ICI, TOUJOURS — plus aucun départ automatique vers le portail (Kevin 27.09 soir :
+     « L'icône emmène encore sur CMCteams »). Le portail kd-mc.com affiche CMCteams : y partir
+     tout seul, c'est exactement ce que Kevin voit. Et « suis-je une app de l'écran d'accueil ? »
+     n'est pas fiable (icône ouverte dans Safari, réglage « Ouvrir comme app web » coupé) : ce
+     test décidait du renvoi, il ne sert plus qu'au message. Le portail reste UN BOUTON. */
+  say(standalone()?'Réservé aux personnes connues du domaine.':'Réservé aux personnes connues du domaine — touche Face ID pour entrer.');
   if(acts)acts.hidden=false;
   if(pk&&!pkOk())pk.hidden=true;
 });
@@ -1999,7 +2002,7 @@ async function handleSso(request, url, env) {
   if (!secret) return J({ ok: false, reason: 'sso_not_configured' });
   const path = url.pathname;
   if (path === '/__sso/porte.js' && request.method === 'GET') {
-    return new Response(PORTE_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=3600', 'x-content-type-options': 'nosniff' } });
+    return new Response(PORTE_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' } });
   }
   if (path === '/__sso/cookie' && request.method === 'POST') {
     /* Repose le cookie de session à partir du laissez-passer (Bearer) que l'app garde en

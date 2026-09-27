@@ -1,5 +1,14 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔒 L’icône du livre ne part plus jamais sur CMCteams (27.09.2026, nuit)
+
+- 📱 **À essayer** : touche l’icône du livre. Tu restes sur « 🔒 A Cüjina de Mùnegu » ; touche **Face ID**, le livre s’ouvre. Rien ne part tout seul vers CMCteams.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `services/kdmc-router/worker.js` | **Modifié.** Le script de la porte ne renvoie plus tout seul au portail (qui affiche CMCteams) ; `porte.js?v=2` sans cache long. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `services/kdmc-router/portes.test.mjs` | **Modifié.** 74 contrôles : icône ouverte comme une page Safari → la porte reste, Face ID proposé. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/portes.test.mjs) |
+
 ### ✅ En ligne : livre illustré + porte dans l'app ; la sonde du déploiement corrigée (27.09.2026, soir)
 
 - 📱 **À essayer** : [cuisine.kd-mc.com](https://cuisine.kd-mc.com/) — sommaire en photos ; depuis l'icône de l'écran d'accueil, plus de renvoi vers CMCteams.

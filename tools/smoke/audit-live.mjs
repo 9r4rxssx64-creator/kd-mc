@@ -499,7 +499,8 @@ let hardFail = 0;
 const report = [];
 
 for (const s of SURFACES) {
-  const page = await browser.newPage();
+  /* `x-kdmc-sonde` : le routeur ne fiche ni ne compte une sonde (quota KV, 27.09). */
+  const page = await browser.newPage({ extraHTTPHeaders: { 'x-kdmc-sonde': 'audit-live' } });
   const jsErrors = [];      // exceptions JS non catchées → BLOQUANT
   const failedProject = []; // requête projet BLOQUÉE (ERR_FAILED/CORS) → BLOQUANT (classe commande)
   const failedTol = [];     // requête échouée tolérée (tierce OU ERR_ABORTED app) → non bloquant
@@ -784,5 +785,9 @@ for (const r of report) {
   console.log((r.ok ? '✅' : '❌') + ' ' + r.name + '  ' + r.url);
   for (const n of r.notes) console.log('   · ' + n);
 }
-console.log(hardFail === 0 ? '\nAUDIT LIVE OK — toutes les surfaces rendent, 0 requête projet bloquée.' : '\nAUDIT LIVE ÉCHEC (' + hardFail + ' surface(s))');
+/* La ligne de verdict NOMME les surfaces en échec (27.09 soir) : le rapport en annotations
+   disait « ÉCHEC (1 surface) » sans qu'aucune ligne ❌ n'y survive (filtres en aval,
+   journal du job illisible depuis l'agent). Un verdict qui ne dit pas QUOI ne se répare pas. */
+const rouges = report.filter((r) => !r.ok).map((r) => r.name);
+console.log(hardFail === 0 ? '\nAUDIT LIVE OK — toutes les surfaces rendent, 0 requête projet bloquée.' : '\nAUDIT LIVE ÉCHEC (' + hardFail + ' surface(s)) : ' + rouges.join(' · '));
 process.exit(hardFail === 0 ? 0 : 1);

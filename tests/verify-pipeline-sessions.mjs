@@ -121,11 +121,34 @@ const ROBOTS = new Set(['kdmc-bot', 'github-actions[bot]', 'claude-bot']);
    **0 commit hors de main**. Il criait donc au loup sur du travail TERMINÉ, et le
    cliquet ne servait qu'à taire ce bruit. On ne signale plus qu'une branche qui
    porte réellement du travail que personne ne suit. */
+/* ⚠️ « rev-list --count main..branche » NE SAIT PAS qu'une branche est fusionnée quand la
+   fusion est un SQUASH (un seul commit neuf dans main, aucun des commits de la branche) :
+   il compte alors tous ses commits comme « hors de main » — pour toujours. Mesuré le 27.09 :
+   4 branches de la même session, chacune fusionnée par PR (#4082, #4085, #4087, #4092),
+   toutes signalées « travail que personne ne suit ». Et une branche sans ancêtre commun
+   (conteneur recyclé) est illisible par l'historique, point.
+   On regarde donc le CONTENU : la branche est fusionnée si, pour les fichiers qu'elle a
+   touchés (ou tous ses fichiers, faute d'ancêtre), il existe un état de main — aujourd'hui
+   ou à un moment depuis l'ancêtre commun — identique au sien. « Identique à main
+   MAINTENANT » ne suffit pas : main continue de bouger après la fusion (vécu : mes propres
+   fichiers réédités le soir même faisaient passer la branche du matin pour « non fusionnée »). */
 function porteDuTravailNonFusionne(branche) {
+  const git = (args) => execFileSync('git', args, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  const lignes = (t) => t.split('\n').filter(Boolean);
   try {
-    const n = execFileSync('git', ['rev-list', '--count', `origin/main..origin/${branche}`],
-      { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-    return Number(n) > 0;
+    let base = null, fichiers;
+    try { base = git(['merge-base', 'origin/main', `origin/${branche}`]); } catch (_) { base = null; }
+    fichiers = base ? lignes(git(['diff', '--name-only', base, `origin/${branche}`]))
+                    : lignes(git(['ls-tree', '-r', '--name-only', `origin/${branche}`]));
+    if (!fichiers.length) return false;                                  /* rien touché = rien à perdre */
+    const identique = (ref) => { try { git(['diff', '--quiet', ref, `origin/${branche}`, '--', ...fichiers]); return true; } catch (_) { return false; } };
+    if (identique('origin/main')) return false;
+    /* main a bougé depuis : un de ses états passés, parmi les commits qui ont touché ces
+       fichiers, est-il celui de la branche ? (borné à 400 commits — au-delà, on signale) */
+    const plage = base ? `${base}..origin/main` : 'origin/main';
+    const candidats = lignes(git(['log', '--format=%H', '-n', '400', plage, '--', ...fichiers]));
+    for (const c of candidats) { if (identique(c)) return false; }
+    return true;
   } catch (_) { return true; }        /* illisible → on préfère signaler que taire */
 }
 

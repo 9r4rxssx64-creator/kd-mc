@@ -1303,6 +1303,16 @@ function estUnePage(request) {
 async function ficheLaVisite(request, url, env, host) {
   try {
     if (!env || !env.ACCOUNTS || !estUnePage(request)) return;
+    /* LES SONDES NE S'ÉCRIVENT PAS (27.09 soir). Le stockage KV est plafonné à 1 000 écritures
+       PAR JOUR pour tout le compte ; mesuré ce soir : plafond atteint (« KV put() limit exceeded
+       for the day »), toutes les apps sans écriture jusqu'à minuit UTC. Or chaque robot de
+       vérification vient d'une adresse IP neuve et ouvre ~39 surfaces : 2 écritures par
+       surface (marqueur + compteur) — 13 « Audit domaine » + 5 « Vérif LIVE » + 2 « Vérif
+       RÉELLE » + 4 « Audit Lingua » dans la même soirée suffisaient à vider le quota. Un
+       contrôle qui casse ce qu'il contrôle est pire que pas de contrôle. Une sonde se déclare
+       par l'en-tête `x-kdmc-sonde` et n'est ni fichée ni comptée. Quelqu'un qui le poserait à
+       la main n'obtient rien de plus que de ne pas figurer dans un compteur de visites. */
+    if (request.headers.get('x-kdmc-sonde')) return;
     const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request));
     if (s && s.uid) {
       const acc = await accGet(env, s.uid);

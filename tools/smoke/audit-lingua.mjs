@@ -36,7 +36,8 @@ const gris = (m) => R.gris.push(m);          // mesuré « pas concluant » — 
 const chk = (c, m) => (c ? ok(m) : ko(m));
 
 const nav = await chromium.launch();
-const ctx = await nav.newContext({ locale: 'fr-FR' });
+/* `x-kdmc-sonde` : le routeur ne fiche ni ne compte une sonde (quota KV, 27.09). */
+const ctx = await nav.newContext({ locale: 'fr-FR', extraHTTPHeaders: { 'x-kdmc-sonde': 'audit-lingua' } });
 const page = await ctx.newPage();
 
 const erreurs = [];

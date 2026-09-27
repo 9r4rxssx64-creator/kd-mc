@@ -530,9 +530,9 @@
       "attend_session": null
     },
     "lingua-code": {
-      "titre": "Lingua : retrouver son code, vérif réelle, une seule adresse, MAJ à la main",
-      "branche": "claude/lingua-icone-maj",
-      "sujet": "Lingua v2.127.0 : 301 des chemins kd-mc.com vers lingua.kd-mc.com (icône → CMCteams, code non reconnu) + bouton « Mettre à jour » + vérif auto ; audit complet 74/0",
+      "titre": "Lingua : retrouver son code, vérif réelle, une seule adresse, MAJ à la main, écritures KV",
+      "branche": "claude/kv-ecritures",
+      "sujet": "Sondes = 0 écriture KV (x-kdmc-sonde) ; Lingua v2.128.0 regroupe ses sauvegardes ; garde des branches jugée sur le contenu ; verdict d'audit nommé",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-27",

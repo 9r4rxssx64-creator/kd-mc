@@ -9,6 +9,20 @@
 
 ---
 
+## 🔧 Un rouge qui ne veut rien dire : « Workers Builds: kdmc-router » (27.09 soir) — 1 clic, quand tu veux
+
+Sur **chaque** commit de `main`, GitHub affiche un contrôle rouge « Workers Builds: kdmc-router : failure ».
+Vérifié le 27.09 : le routeur **se déploie quand même**, par un autre chemin (j'ai relu le code en
+ligne : la règle fusionnée à 20h25 y était quelques minutes après). Ce rouge est donc un **faux
+signal** — et un faux rouge permanent finit par cacher un vrai. Je ne peux pas le retirer d'ici :
+c'est une connexion Git réglée dans **ton** tableau de bord Cloudflare.
+
+→ Cloudflare → Workers & Pages → **kdmc-router** → Settings → **Builds** : soit **débrancher**
+la connexion au dépôt (le déploiement actuel continue sans elle), soit corriger le « root
+directory » en `services/kdmc-router` si tu préfères la garder. Une minute, aucune urgence.
+
+---
+
 ## 🛡 Audit du domaine (27.09) — 2 réponses attendues (je fais le travail dès que tu réponds)
 
 1. **Codes maladie dans le planning public.** Les plannings restent visibles comme tu l'as décidé le 10.09.

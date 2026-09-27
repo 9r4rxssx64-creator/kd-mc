@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.127.0";
+var APP_VER="v2.128.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -254,12 +254,29 @@ function _applySnapshot(id,snap){ var d=(snap&&snap.data)||{}; Object.keys(d).fo
          remplace donc jamais un prénom+nom par un mot unique. */
       if(snap.name && (fullNameOk(snap.name) || !fullNameOk(accs[i].name))) accs[i].name=snap.name;
       if(snap.avatar)accs[i].avatar=snap.avatar; } } gs("accounts",accs); }
-var _syncT=null;
-function scheduleCloudSave(){ if(!ACC)return; var m=accMeta(ACC); if(!m||!m.code)return; if(_syncT)clearTimeout(_syncT); _syncT=setTimeout(cloudSaveNow,1500); }
+var _syncT=null,_cloudDernier="";
+/* ÉCRITURES EN LIGNE : LE MOINS POSSIBLE (27.09 soir). Le stockage du domaine est plafonné à
+   1 000 écritures PAR JOUR pour tout le compte (mesuré : « KV put() limit exceeded for the
+   day », toutes les apps bloquées jusqu'à minuit UTC). Avant : une écriture 1,5 s après CHAQUE
+   action d'élève — une leçon de 20 min en coûtait des dizaines, pour réécrire souvent la même
+   chose. Maintenant : on regroupe 20 s d'activité en une seule écriture, on n'envoie RIEN si le
+   contenu n'a pas changé depuis le dernier envoi réussi, et on écrit tout de suite quand l'app
+   passe en arrière-plan (sinon les 20 dernières secondes se perdraient en fermant). */
+function scheduleCloudSave(){ if(!ACC)return; var m=accMeta(ACC); if(!m||!m.code)return; if(_syncT)clearTimeout(_syncT); _syncT=setTimeout(cloudSaveNow,20000); }
 function cloudSaveNow(){ if(!ACC)return; var m=accMeta(ACC); if(!m||!m.code)return; var id=ACC;
-  try{ localStorage.setItem("lingua_a_"+id+"_syncTs", JSON.stringify(Date.now())); }catch(e){}
-  cloudKeyFor(m.name,m.code).then(function(k){ return fetch(SYNC_BASE+"/save",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({k:k,data:_acctSnapshot(id)})}); })
-    .then(function(r){ return r&&r.json(); }).then(function(j){ _cloudState=(j&&j.ok)?"ok":"off"; }).catch(function(){ _cloudState="off"; }); }
+  if(_syncT){ clearTimeout(_syncT); _syncT=null; }
+  var snap=_acctSnapshot(id);
+  /* Comparé SANS les horodatages (haut et dans data) : sinon chaque envoi diffère du
+     précédent par sa seule date, et « rien de neuf » ne se déclencherait jamais. */
+  var sansTs=Object.assign({},snap,{syncTs:0,data:Object.assign({},snap.data)}); delete sansTs.data.syncTs;
+  var corps=JSON.stringify(sansTs); if(corps===_cloudDernier) return;   /* rien de neuf : 0 écriture */
+  var now=Date.now();
+  try{ localStorage.setItem("lingua_a_"+id+"_syncTs", JSON.stringify(now)); }catch(e){}
+  snap.syncTs=now; snap.data.syncTs=JSON.stringify(now);
+  cloudKeyFor(m.name,m.code).then(function(k){ return fetch(SYNC_BASE+"/save",{method:"POST",keepalive:true,headers:{"content-type":"application/json"},body:JSON.stringify({k:k,data:snap})}); })
+    .then(function(r){ return r&&r.json(); }).then(function(j){ _cloudState=(j&&j.ok)?"ok":"off"; if(j&&j.ok) _cloudDernier=corps; }).catch(function(){ _cloudState="off"; }); }
+/* L'app part en arrière-plan (écran verrouillé, autre app) : on écrit ce qui attend. */
+document.addEventListener("visibilitychange",function(){ if(document.hidden && _syncT) cloudSaveNow(); });
 function cloudRestoreInto(id){ var m=accMeta(id); if(!m||!m.code) return Promise.resolve(false);
   return cloudKeyFor(m.name,m.code).then(function(k){ return fetch(SYNC_BASE+"/load?k="+encodeURIComponent(k)); })
     .then(function(r){ return r&&r.json(); }).then(function(j){ if(!j||!j.ok){ _cloudState="off"; return false; } _cloudState="ok"; if(!j.data) return false;

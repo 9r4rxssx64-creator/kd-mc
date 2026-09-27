@@ -1,5 +1,40 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — « Répare tout ce qui doit l'être » : les écritures KV, la garde des branches, le verdict muet
+
+**1. Le plafond KV (1 000 écritures/jour, tout le compte) : trois postes réduits, mesurés.**
+- **Les sondes n'écrivent plus rien.** Chaque robot de vérification arrive d'une IP neuve et ouvre
+  ~39 surfaces = 2 écritures par surface (marqueur + compteur). 24 vérifications dans la soirée
+  ≈ le quota entier. Toute sonde se déclare par l'en-tête `x-kdmc-sonde` ; le routeur ne la fiche
+  ni ne la compte (`ficheLaVisite`). Posé dans les 5 scripts qui frappent le domaine (audit-live,
+  audit-lingua, verif-live-rapport, sonde-domaine, rien-de-public). Garde
+  `test:sonde-sans-ecriture` **10/0** : visiteur ordinaire → 2 écritures, sonde → **0**, même page
+  servie, et chaque script du dépôt se déclare (sinon la protection n'existe que sur le papier).
+- **Lingua regroupe** (v2.128.0) : 20 s d'activité = 1 écriture (au lieu d'une 1,5 s après
+  chaque action), **rien n'est envoyé si le contenu n'a pas changé** (comparé sans les
+  horodatages — sinon « rien de neuf » ne se déclenchait jamais), et écriture immédiate quand
+  l'app passe en arrière-plan (`keepalive`). `test:lingua-maj` 14/0, `mon-code` 20/0,
+  `parcours` 11/0, `connexion` 20/0, `voix` 26/0.
+- **Pas touché** : `rlc:` (compte unique, #4094, une écriture par tentative — chantier d'une
+  autre session, sécurité), et la cadence de 2 min d'`enrich()` (liée à la mesure des sessions).
+  Le plan payant reste la décision de Kevin.
+
+**2. La garde « branche que personne ne suit » criait sur du travail fusionné.** Elle jugeait par
+`rev-list --count main..branche` : avec des fusions **squash**, une branche fusionnée a « tous ses
+commits hors de main » pour toujours. Mesuré : mes 4 branches du jour, toutes fusionnées par PR,
+signalées. Elle juge maintenant par le **contenu** : fusionnée si un état de main (aujourd'hui ou
+depuis l'ancêtre commun) est identique à la branche sur les fichiers qu'elle a touchés. Reste
+signalées : `claude/arbre-listes-vides` (autre session) et `claude/lingua-mon-code-2026-09-27`
+(ma première version, remplacée par `-v2` — son contenu n'est effectivement nulle part).
+
+**3. Le verdict muet.** La dernière Vérif RÉELLE dit « ÉCHEC (1 surface) » et **aucune ligne ❌
+ne survit** dans les annotations : impossible de savoir laquelle. La ligne de verdict
+d'audit-live **nomme** désormais les surfaces en échec — quoi que fassent les filtres en aval.
+
+**4. Workers Builds rouge sur chaque commit** : faux signal (le routeur se déploie par un autre
+chemin, prouvé sur le code en ligne). Pas réparable d'ici : un clic dans le tableau Cloudflare,
+écrit dans KEVIN_ACTIONS_TODO.
+
 ## 2026-09-27 — Arbre v3.35 : écrire un nom qui n'est pas encore dans l'arbre
 
 Kevin : « possibilité d'ajouter un nouveau nom prénom etc pour chaque fiche, pas seulement

@@ -37,6 +37,15 @@ Les seuls rouges hors ligne sont les 15 contrôles qui exigent le worker
 (`/__lingua/tts` ×12, le bilan des empreintes, `save`, `load`) — attendus sur un serveur
 statique local, verts seulement sur le vrai domaine.
 
+## 2026-09-27 (soir, fin) — Capture du test Tor ignorée par git
+
+`tests/verify-tor-page.mjs` écrit sa capture `tor-iphone.png` à la racine du dépôt : elle restait
+en fichier non suivi après chaque passage (le garde de fin de session le signalait). Ajoutée à
+`.gitignore` — c’est une sortie de test, jamais un livrable. Preuve en ligne du déploiement du
+routeur tout vert après la sonde corrigée : run 36337784479 (étapes 8 à 22 ✅).
+
+---
+
 ## 2026-09-27 (soir, suite) — Fusionné et EN LIGNE ; la sonde du déploiement ne prend plus une porte pour une panne
 
 **Fusion** : PR #4080 (cuisine illustrée + porte dans l'app) ouverte et fusionnée **par l'API**

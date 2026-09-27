@@ -71,7 +71,7 @@
 
 ---
 
-## 📜 Les 184 règles — le texte de Kevin, une par une
+## 📜 Les 185 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -254,6 +254,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### ⏱ RÈGLE ABSOLUE — TEMPS RÉEL / LIVE OU PRESQUE, TOUJOURS PARTOUT (Kevin 2026-07-05, ABSOLUE)
 **« Temps réel, live ou presque tjs partout »** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-temps-réel-live-ou-presque-toujours-partout-kevin-2026-07-05-absolue)
+
+### 🔬 RÈGLE ABSOLUE — RÉEL TOUJOURS : RIEN N'EST « FAIT » TANT QUE LE VRAI DOMAINE NE L'A PAS MONTRÉ (Kevin 2026-09-27, ABSOLUE)
+**« Fais ton audit de lingua, toutes les fonctions, voix, etc. Tout. Réel tjs »** — puis, le soir même : **« Toujours, rappelle-toi »** — Kevin 2026-09-27
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-réel-toujours-rien-nest-fait-tant-que-le-vrai-domaine-ne-la-pas-montré-kevin-2026-09-27-absolue)
 
 ### 🔗 RÈGLE ABSOLUE — VÉRIFIER TOUJOURS SES LIENS EN RÉEL AVANT DE LES DONNER (Kevin 2026-09-23, ABSOLUE)
 **« Vérifie toujours réel tes liens avant. »** — Kevin 2026-09-23

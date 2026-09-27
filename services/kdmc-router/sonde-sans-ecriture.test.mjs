@@ -69,6 +69,13 @@ const SCRIPTS = ['tools/smoke/audit-live.mjs', 'tools/smoke/audit-lingua.mjs', '
 for (const f of SCRIPTS) {
   let src = ''; try { src = readFileSync(join(RACINE, f), 'utf8'); } catch { /* absent = échec ci-dessous */ }
   ok(/x-kdmc-sonde/.test(src), `${f} se déclare comme sonde`);
+  /* Dans un navigateur, l'en-tête ne doit partir QUE sur les navigations : posé sur toutes les
+     requêtes (`extraHTTPHeaders`), il casse les appels cross-origin des pages (contrôle CORS) —
+     mesuré le 27.09 nuit : 14 surfaces rouges en une heure, rien de changé pour un visiteur. */
+  if (/playwright/.test(src)) {
+    ok(!/extraHTTPHeaders[^}]*x-kdmc-sonde/.test(src), `${f} ne pose PAS l'en-tête sur toutes les requêtes (extraHTTPHeaders)`);
+    ok(/resourceType\(\) !== 'document'/.test(src), `${f} ne le pose que sur les navigations de page`);
+  }
 }
 
 console.log(`\n${pass} OK · ${fail} échec(s)`);

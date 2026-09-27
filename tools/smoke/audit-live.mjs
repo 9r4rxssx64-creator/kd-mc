@@ -494,13 +494,22 @@ async function lireVersionServie(page) {
   } catch (e) { return ''; }
 }
 
+/* `x-kdmc-sonde` sur les seules NAVIGATIONS de page (27.09 nuit). Posé via `extraHTTPHeaders`,
+   l'en-tête partait aussi sur les appels cross-origin des pages (Kit IA, Apex, World Monitor,
+   OSINT) : un en-tête inconnu déclenche un contrôle CORS que leurs workers refusent → 14
+   surfaces « rouges » en une heure, alors que rien n'avait changé pour un vrai visiteur.
+   Le routeur ne fiche que les pages (`estUnePage`) : marquer les documents suffit. */
+const marquerSonde = (cible, nom) => cible.route('**/*', (route, req) => {
+  if (req.resourceType() !== 'document') return route.continue();
+  return route.continue({ headers: Object.assign({}, req.headers(), { 'x-kdmc-sonde': nom }) });
+});
 const browser = await chromium.launch();
 let hardFail = 0;
 const report = [];
 
 for (const s of SURFACES) {
-  /* `x-kdmc-sonde` : le routeur ne fiche ni ne compte une sonde (quota KV, 27.09). */
-  const page = await browser.newPage({ extraHTTPHeaders: { 'x-kdmc-sonde': 'audit-live' } });
+  const page = await browser.newPage();
+  await marquerSonde(page, 'audit-live');
   const jsErrors = [];      // exceptions JS non catchées → BLOQUANT
   const failedProject = []; // requête projet BLOQUÉE (ERR_FAILED/CORS) → BLOQUANT (classe commande)
   const failedTol = [];     // requête échouée tolérée (tierce OU ERR_ABORTED app) → non bloquant

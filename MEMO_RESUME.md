@@ -1,5 +1,22 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — Ma sonde muette a aveuglé 14 surfaces pendant une heure — corrigé, et la règle « Réel toujours » écrite
+
+**Ce que j'ai cassé** (run 36348099463, 22h27) : en posant `x-kdmc-sonde` par `extraHTTPHeaders`, Playwright
+l'envoyait sur **toutes** les requêtes du navigateur, y compris les appels cross-origin des pages (Kit IA →
+son worker de vente, Apex, World Monitor, OSINT). Un en-tête inconnu déclenche un contrôle **CORS** que
+ces workers refusent → « worker muet », « sommaire 0 entrées », connexion Apex impossible : **14 rouges**,
+là où le passage précédent en avait 1. **Rien n'a changé pour un vrai visiteur** : lui n'envoie jamais cet
+en-tête ; seules les sondes se sont aveuglées. Corrigé dans l'heure : l'en-tête n'est posé que sur les
+**navigations de page** (`route` + `resourceType() === 'document'`) — c'est tout ce que `ficheLaVisite`
+regarde. Prouvé dans un vrai navigateur : navigation → en-tête présent, `fetch()` → absent. La garde
+`test:sonde-sans-ecriture` (**16/0**) interdit désormais `extraHTTPHeaders` avec cet en-tête et exige la
+route sur les documents.
+
+**« Toujours, rappelle-toi »** (Kevin) → règle absolue écrite dans CLAUDE-HISTOIRE.md, index régénéré
+(`test:claude-md` 9/0) : **RÉEL TOUJOURS — rien n'est « fait » tant que le vrai domaine ne l'a pas
+montré**, avec le chemin concret (dispatch → annotations → `x-kdmc-sonde`). Leçon #276.
+
 ## 2026-09-27 (soir) — Kevin reconnu par n'importe quel chemin : PC, app installée, chaque app
 
 Kevin : « Je dois pouvoir être reconnu par n'importe quel chemin sur mes appareils. Domaine, chaque app,

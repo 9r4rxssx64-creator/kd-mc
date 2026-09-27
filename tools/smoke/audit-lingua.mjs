@@ -35,9 +35,18 @@ const ko = (m) => R.ko.push(m);
 const gris = (m) => R.gris.push(m);          // mesuré « pas concluant » — jamais compté vert
 const chk = (c, m) => (c ? ok(m) : ko(m));
 
+/* `x-kdmc-sonde` sur les seules NAVIGATIONS de page (27.09 nuit). Posé via `extraHTTPHeaders`,
+   l'en-tête partait aussi sur les appels cross-origin des pages (Kit IA, Apex, World Monitor,
+   OSINT) : un en-tête inconnu déclenche un contrôle CORS que leurs workers refusent → 14
+   surfaces « rouges » en une heure, alors que rien n'avait changé pour un vrai visiteur.
+   Le routeur ne fiche que les pages (`estUnePage`) : marquer les documents suffit. */
+const marquerSonde = (cible, nom) => cible.route('**/*', (route, req) => {
+  if (req.resourceType() !== 'document') return route.continue();
+  return route.continue({ headers: Object.assign({}, req.headers(), { 'x-kdmc-sonde': nom }) });
+});
 const nav = await chromium.launch();
-/* `x-kdmc-sonde` : le routeur ne fiche ni ne compte une sonde (quota KV, 27.09). */
-const ctx = await nav.newContext({ locale: 'fr-FR', extraHTTPHeaders: { 'x-kdmc-sonde': 'audit-lingua' } });
+const ctx = await nav.newContext({ locale: 'fr-FR' });
+await marquerSonde(ctx, 'audit-lingua');
 const page = await ctx.newPage();
 
 const erreurs = [];

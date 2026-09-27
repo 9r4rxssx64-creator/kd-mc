@@ -3203,6 +3203,44 @@ au boot se charge TOUJOURS (même puce OFF) pour un premier affichage instantan�
 
 ---
 
+## 🔬 RÈGLE ABSOLUE — RÉEL TOUJOURS : RIEN N'EST « FAIT » TANT QUE LE VRAI DOMAINE NE L'A PAS MONTRÉ (Kevin 2026-09-27, ABSOLUE)
+
+> **« Fais ton audit de lingua, toutes les fonctions, voix, etc. Tout. Réel tjs »** — puis, le soir même : **« Toujours, rappelle-toi »** — Kevin 2026-09-27
+
+**Règle absolue, NON-NÉGOCIABLE, chapeau de « VÉRIFIER TOUJOURS SES LIENS EN RÉEL », « PREUVE >
+DÉCLARATION » et « J'AI INTERNET ET DES OUTILS »** — Claude Code, Apex, tous projets présents et futurs.
+
+### 1. Ce que ça veut dire, sans échappatoire
+
+- Un test qui passe en local, une PR fusionnée, une « republication réussie » : **ce ne sont pas des
+  preuves**. La preuve, c'est **la page réelle, sur le vrai domaine, vue par un vrai navigateur**, avec
+  **la version réellement servie** lue dans la page (`window.LINGUA_VER`, `lireVersionServie`).
+- « Réel » vaut pour **tout** : les fonctions (cliquées comme un élève le ferait), les voix
+  (**écoutées** : octets audio reçus et empreintes comparées — pas comptées dans une liste), la mémoire
+  en ligne (écrite **puis relue**), les adresses (le 301 constaté), l'icône (ce qu'elle ouvre).
+- Une sonde qui appelle l'API « par le côté » mesure sa propre porte d'entrée, pas ce que vit
+  l'utilisateur (vécu le 27.09 : douze voix « identiques » — c'était le verrou du domaine qui refusait
+  la sonde). **On demande depuis la page.**
+- Ce qui n'a pas pu être mesuré est dit **« non mesuré »**, jamais compté vert, jamais tu.
+
+### 2. Comment, concrètement (le seul chemin qui traverse depuis une session)
+
+Le proxy d'agent répond **403** au CONNECT sur `*.kd-mc.com` : `curl` d'ici ne prouve rien.
+1. Lancer un robot qui a Internet : `gh api -X POST repos/…/actions/workflows/<id>/dispatches -f ref=main`
+   (`verif-reelle.yml` = 39 surfaces connecté ; `audit-lingua.yml` = Lingua à fond).
+2. Lire le rapport dans les **annotations** du check-run (`gh api …/check-runs/{id}/annotations`) —
+   journal du job et artefacts sont servis par un hôte que le proxy refuse.
+3. Toute sonde pose `x-kdmc-sonde` (elle n'est ni fichée ni comptée : le stockage KV est plafonné à
+   1 000 écritures/jour, et 24 vérifications l'ont vidé le 27.09).
+4. Le verdict **nomme** ce qui est rouge, et la raison suit sous la surface.
+
+### 3. Ce que ça a déjà rapporté (27.09)
+
+Le premier audit « réel » de Lingua a rendu 3 rouges — tous dans la sonde, aucun dans l'app —, puis
+**74 verts** ; il a prouvé que « Voir mon code » était en ligne ; il a attrapé le **plafond KV** que
+personne ne voyait ; et il a montré que six onglets « verts » regardaient six fois le même écran.
+Sans le réel, tout cela aurait été **déclaré** fait.
+
 ## 🔗 RÈGLE ABSOLUE — VÉRIFIER TOUJOURS SES LIENS EN RÉEL AVANT DE LES DONNER (Kevin 2026-09-23, ABSOLUE)
 
 > **« Vérifie toujours réel tes liens avant. »** — Kevin 2026-09-23

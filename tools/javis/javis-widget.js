@@ -138,6 +138,8 @@
     try {
       var cand = ssoCandidat(), ancien = ssoToken();
       /* le nouveau d'abord, l'ancien ensuite : le premier qui ouvre Bee gagne */
+      /* sans rien de rangé, on essaie AUSSI « sans jeton » (la session par cookie, Safari) : un lien
+         piégé ne doit pas remplacer Kevin reconnu par son cookie (contre-audit 27.09) */
       var essais = (cand && cand !== ancien) ? [cand, ancien] : [ancien];
       var ctrl = null;
       try { ctrl = new AbortController(); } catch (_) {}
@@ -162,7 +164,7 @@
                     : 'pas-kevin';                             /* prouvé, mais pas l'admin */
             if (raison === 'ok') { clearTimeout(minuteur); if (tok === cand) rangeJeton(cand); return fin(true, 'ok'); }
             if (premiere === null) premiere = raison;
-            if (n + 1 < essais.length && essais[n + 1]) return essai(n + 1);
+            if (n + 1 < essais.length) return essai(n + 1);
             clearTimeout(minuteur);
             if (cand && !ancien) rangeJeton(cand);             /* rien avant : on garde le nouveau */
             fin(false, premiere);
@@ -343,7 +345,7 @@
       /* (#javis-root en plus : doit battre « body.javis-app #javis-launcher{animation:…} », dont le
          raccourci remet la lecture en marche) */
       'body.javis-repos #javis-root #javis-launcher,body.javis-repos #javis-root .rig-wl,body.javis-repos #javis-root .rig-wr,' +
-      'body.javis-repos #javis-root .bee-rig.vivant .rig-base{animation-play-state:paused}' +
+      'body.javis-repos #javis-root .bee-rig.vivant .rig-base,body.javis-repos #javis-root .rig-zzz{animation-play-state:paused}' +
       /* quand la vraie vidéo joue, la respiration de l'image CACHÉE dessous ne sert à rien */
       '.bee-rig.vid .rig-base{animation:none}' +
       '#javis-panel{position:fixed;z-index:2147483001;right:12px;left:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);' +
@@ -624,6 +626,11 @@
   function gesteVu() {
     DERNIER_GESTE = Date.now();
     try { document.body.classList.remove('javis-repos'); } catch (_) {}
+    /* la vidéo de repos, arrêtée après 2 min, repart au premier geste */
+    try {
+      var v = VID.pret && !document.hidden && document.querySelector('#javis-launcher .javis-vid');
+      if (v && v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+    } catch (_) {}
   }
 
   function initVideo(rig) {
@@ -964,7 +971,7 @@
 
   /* Ce qui se DIT n'est pas ce qui s'ÉCRIT : pas d'adresse web ni d'émoji lus à voix haute. */
   function aDire(text) {
-    return String(text || '').replace(/https?:\/\/\S+/g, '')
+    return String(text || '').replace(/<[^>]*>/g, ' ').replace(/https?:\/\/\S+/g, '')
       .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]\uFE0F?|\uFE0F|\u200D/g, '')
       .replace(/\s{2,}/g, ' ').trim();
   }
@@ -1340,9 +1347,13 @@
     (function repos() {
       setTimeout(function () {
         if (!document.contains(wrap)) return;
-        if (!document.hidden && Date.now() - DERNIER_GESTE > REPOS_ANIM && !document.body.classList.contains('javis-closeup')) {
+        var calme = Date.now() - DERNIER_GESTE;
+        if (!document.hidden && calme > REPOS_ANIM && !document.body.classList.contains('javis-closeup')) {
           document.body.classList.add('javis-repos');
         }
+        /* 2 min sans geste : la vidéo de repos s'arrête aussi (plus aucune image décodée) */
+        var vr = wrap.querySelector('#javis-launcher .javis-vid');
+        if (vr && calme > REPOS_CLIPS && !vr.paused) { try { vr.pause(); } catch (_) {} }
         repos();
       }, 5000);
     })();

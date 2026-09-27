@@ -1055,6 +1055,14 @@ async function sousLePlafondDuJour(env, quoi, max) {
     if (!env || !env.ACCOUNTS) return true;
     const n = parseInt((await env.ACCOUNTS.get('dep:' + new Date().toISOString().slice(0, 10) + ':' + quoi)) || '0', 10) || 0;
     return n < max;
+  } catch { return false; }   /* compteur illisible → on NE paie PAS (la voix gratuite prend le relais) */
+}
+/* Barrière GLOBALE sans KV (binding Rate Limiting, clé unique) ; absente ou en panne → laisse passer. */
+async function limiteTous(limiteur, quoi) {
+  try {
+    if (!limiteur || typeof limiteur.limit !== 'function') return true;
+    const r = await limiteur.limit({ key: 'tous:' + quoi });
+    return !(r && r.success === false);
   } catch { return true; }
 }
 
@@ -1589,6 +1597,7 @@ async function handleLingua(request, url, env) {
       /* Plafond GLOBAL du jour (audit Bee 27.09) : le plafond par IP ne tient pas face à 200 IP
          (mesuré : 200 voix payées). Au-delà, la voix gratuite prend le relais — jamais de silence. */
       const peutPayer = (await sousLePlafondDuJour(env, 'tts', parseInt(env && env.TTS_PLAFOND_JOUR, 10) || 1000))
+        && (await limiteTous(env && env.LIMITE_VOIX, 'tts'))
         && (await souslePlafond(env, 'tts', request, 150, 3600));
       if (!env.OPEN_AI_API_KEY || !peutPayer) {
         const g = await voixGratuite(env, text, ckey);
@@ -1673,6 +1682,7 @@ async function handleLingua(request, url, env) {
          6 appels par heure et par appareil suffisent largement à un apprenant. */
       if (!vientDuDomaine(request)) return JL({ ok: false, reason: 'hors_domaine' });
       if (!(await sousLePlafondDuJour(env, 'appel-direct', parseInt(env && env.RT_PLAFOND_JOUR, 10) || 30))) return JL({ ok: false, reason: 'plafond_jour' });
+      if (!(await limiteTous(env && env.LIMITE_APPEL, 'rt'))) return JL({ ok: false, reason: 'plafond_atteint' });
       if (!(await souslePlafond(env, 'rt', request, 6, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
       if (!env.OPEN_AI_API_KEY) return JL({ ok: false, reason: 'no_key' });
       let b = {}; try { b = await request.json(); } catch (_) { /* corps optionnel */ }
@@ -2810,7 +2820,10 @@ async function adminSession(request, env) {
   const ssoRaw = (request.headers.get('x-kdmc-sso') || '').replace(/^Bearer\s+/i, '').trim() || ssoToken(request);
   if (ssoRaw) {
     const s = await ssoVerify(secret, ssoRaw);
-    if (s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0) return { uid: s.uid, name: s.name, faceid: true };
+    /* « Déconnecter partout » doit AUSSI couper l'admin (contre-audit Bee 27.09, mesuré : un jeton de
+       Kevin révoqué — whoami répondait « session_revoquee » — ouvrait encore Bee, /__demandes et
+       /__admin/accounts). Même règle que whoami : un jeton émis avant la révocation ne vaut plus rien. */
+    if (s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !revoked(await accGet(env, s.uid), s)) return { uid: s.uid, name: s.name, faceid: true };
   }
   return null;
 }

@@ -46,6 +46,8 @@ const srv = http.createServer((req, res) => {
   }
   if (p === '/__sso/whoami') {                       /* le domaine dit qui tu es */
     res.writeHead(200, { 'content-type': 'application/json' });
+    /* un laissez-passer PIÉGÉ (lien d'un autre compte) : le domaine le reconnaît… comme Bob */
+    if (req.headers.authorization === 'Bearer PIEGE') return res.end(JSON.stringify({ ok: true, uid: 'bob', name: 'Bob', verified: true, admin: false }));
     return res.end(JSON.stringify(SSO));
   }
   const f = join(ROOT, 'javis', p === '/' ? 'index.html' : p.replace(/^\//, ''));
@@ -735,6 +737,20 @@ if (FFMPEG) {
   const ver = await page.locator('#javis-ver').textContent().catch(() => '');
   chk(/v\d+\.\d+/.test(ver || ''), `la version de Bee est visible à l'écran (« ${ver} »)`);
   chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS (deux réponses, voix coupée, effacement)');
+  await ctx.close();
+}
+
+/* === 4 quinquies. contre-audit 27.09 : Kevin reconnu par COOKIE seul + lien piégé ============ */
+{
+  const { ctx, page } = await ouvre();
+  await page.waitForSelector('#javis-launcher .bee-rig', { timeout: 8000 }).catch(() => {});
+  await page.evaluate(() => { try { localStorage.removeItem('kdmc_sso_token'); } catch (_) {} });
+  await page.goto('about:blank');
+  await page.goto(BASE + '/#kdmc_sso=PIEGE', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#javis-launcher .bee-rig, [role=alert]', { timeout: 8000 }).catch(() => {});
+  const r = await page.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher .bee-rig'), jeton: localStorage.getItem('kdmc_sso_token') }));
+  chk(r.bee && !r.jeton, r.bee && !r.jeton ? 'Kevin reconnu par son cookie + lien piégé : Bee reste OUVERTE et le jeton piégé n\'est PAS rangé'
+    : `FIXATION : lien piégé → Bee ${r.bee ? 'ouverte' : 'FERMÉE'}, jeton rangé = ${r.jeton}`);
   await ctx.close();
 }
 

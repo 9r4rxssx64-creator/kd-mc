@@ -90,6 +90,23 @@ database_id = "a10e750d-de49-47b5-b1d8-0e937eccbec8"
 # 9r4rxssx64, jamais un nom deviné — leçon #85). URL publique ici ; le JETON est un
 # secret (KDMC_PUSH_TOKEN, posé par le workflow depuis PUSH_ADMIN_TOKEN). Sans jeton,
 # l'alerte no-op (le journal admin reste la trace) — fail-open total.
+# PLAFOND GLOBAL DE LA VOIX PAYANTE, sans KV (contre-audit Bee 27.09, mesuré : 60 demandes en
+# parallèle passaient un plafond de 25 — le compteur KV est lu avant d'être écrit —, et quand
+# l'écriture KV échoue (plafond d'écritures du compte atteint le 27.09) le compteur ne bouge plus :
+# 300 voix payées). Binding « Rate Limiting » : compteur en mémoire, gratuit, ZÉRO écriture KV.
+# Clé UNIQUE « tous » = tous appareils confondus. Absent → la barrière KV du jour reste.
+[[unsafe.bindings]]
+name = "LIMITE_VOIX"
+type = "ratelimit"
+namespace_id = "2703"
+simple = { limit = 40, period = 60 }
+
+[[unsafe.bindings]]
+name = "LIMITE_APPEL"
+type = "ratelimit"
+namespace_id = "2704"
+simple = { limit = 2, period = 60 }
+
 [vars]
 KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 

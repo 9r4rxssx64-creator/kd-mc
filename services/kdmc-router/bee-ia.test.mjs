@@ -45,6 +45,15 @@ const kevin = signe('kdmc_admin', 1);
 { const r = await bee({ 'x-kdmc-sso': signe('kdmc_admin', 1, 'autre-secret') }); ok(r.st === 403 && appels.length === 0, 'jeton « Kevin » signé avec un faux secret → refusé  [' + r.st + ']'); }
 { const r = await bee({ Origin: 'https://javis.kd-mc.com' }); ok(r.st === 403 && appels.length === 0, 'Origin du domaine écrite à la main, sans session → refusé (l\'ancienne faille)  [' + r.st + ']'); }
 
+/* ---- 1 bis. « Déconnecter partout » coupe aussi l'admin (contre-audit 27.09 : un jeton révoqué ouvrait encore Bee) ---- */
+{ const vieux = signe('kdmc_admin', 1);
+  kv.set('acc:kdmc_admin', JSON.stringify({ uid: 'kdmc_admin', revoked_at: Date.now() + 5 }));
+  const r = await bee({ 'x-kdmc-sso': vieux });
+  ok(r.st === 403 && appels.length === 0, 'jeton de Kevin RÉVOQUÉ (« déconnecter partout ») → refusé, 0 appel IA  [' + r.st + ']');
+  const d = await mod.fetch(new Request('https://kd-mc.com/__demandes', { headers: { 'x-kdmc-sso': vieux } }), env, { waitUntil() {} });
+  ok(d.status === 403, 'et les demandes clients (admin) aussi  [' + d.status + ']');
+  kv.delete('acc:kdmc_admin'); }
+
 /* ---- 2. Kevin parle à Bee ---- */
 { const r = await bee({ 'x-kdmc-sso': kevin, Origin: 'https://javis.kd-mc.com' });
   ok(r.st === 200 && r.j && r.j.ok && /Bee/.test(r.j.text), 'Kevin (Face ID) → Bee répond  [' + r.st + ']');

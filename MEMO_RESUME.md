@@ -69,6 +69,12 @@ Chaque constat reproduit par moi, puis corrigé avec un test prouvé par sabotag
 - **Reste (plan d'amélioration dans le rapport)** : jeton 30 j en localStorage ; Apex qui lirait `#chat?q=` ;
   clips en mémoire (CORS lingua absent) ; mp4 faststart ; `/health` qui liste les clés ; voix en POST.
   Leçons **#359–#362**.
+- **Contre-audit indépendant (après, mesuré)** : Performance 60→72, IA 50→70, Conformité 45→58, Archi 62→68,
+  Code 64→68, Tests 66→74, Fonctionnel 72→80, UX 64→76 ; Sécurité 58→51 **sur le barème** (défauts restants
+  trouvés en attaquant). Corrigés dans la foulée (PR 2) : révocation ignorée par `adminSession` (P1), plafond
+  voix contournable en parallèle / KV en panne (P1 → binding `LIMITE_VOIX`/`LIMITE_APPEL`), fixation par
+  cookie seul (P2), « zzz » + vidéo de repos au repos (P2), balisage lu à voix haute. Reste P1 : `apis/ai`
+  payable par n'importe qui qui change d'IP (auth du domaine à brancher pour toutes les apps). Leçon **#363**.
 
 ---
 ## 2026-09-27 (22h10 UTC) — Le domaine entier coupé par la limite du plan gratuit Cloudflare (1027) — mesuré, pas de panne de code

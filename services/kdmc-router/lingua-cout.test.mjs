@@ -280,6 +280,34 @@ console.log('\n7. Plafond GLOBAL du jour (audit Bee 27.09) : 200 IP différentes
   ok(appelsOpenAI.length === 3, `appel en direct : ${appelsOpenAI.length} jetons pour 10 demandes de 10 IP (plafond du jour 3)`);
 }
 
+console.log('\n8. Contre-audit 27.09 : le plafond tient EN PARALLÈLE et quand le KV flanche');
+{
+  const faux = (max) => { let n = 0; return { limit: async () => ({ success: ++n <= max }) }; };
+  /* (a) 60 demandes EN MÊME TEMPS, 60 IP : la barrière globale sans KV en laisse passer 10 */
+  const env = envNeuf(); env.TTS_PLAFOND_JOUR = '25'; env.LIMITE_VOIX = faux(10);
+  appelsOpenAI = [];
+  await Promise.all(Array.from({ length: 60 }, (_, i) => mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=' + encodeURIComponent('para-' + i),
+    { headers: { Referer: 'https://lingua.kd-mc.com/', 'CF-Connecting-IP': '10.1.0.' + i } }), env)));
+  ok(appelsOpenAI.length <= 10, `60 voix en parallèle : ${appelsOpenAI.length} payées (barrière globale 10)`);
+  /* (b) le KV qui n'écrit plus (plafond d'écritures atteint) : la barrière globale tient seule */
+  const kvMuet = kv(); kvMuet.put = async () => { throw new Error('KV write limit'); };
+  const env2 = { ACCOUNTS: kvMuet, OPEN_AI_API_KEY: 'sk-factice', TTS_PLAFOND_JOUR: '25', LIMITE_VOIX: faux(5), LIMITE_APPEL: faux(2) };
+  appelsOpenAI = [];
+  for (let i = 0; i < 30; i++) await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=' + encodeURIComponent('kvko-' + i),
+    { headers: { Referer: 'https://lingua.kd-mc.com/', 'CF-Connecting-IP': '10.2.0.' + i } }), env2);
+  ok(appelsOpenAI.length <= 5, `KV qui n'écrit plus : ${appelsOpenAI.length} voix payées sur 30 (barrière 5)`);
+  appelsOpenAI = [];
+  for (let i = 0; i < 20; i++) await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/rt-session', { method: 'POST',
+    headers: { Origin: 'https://lingua.kd-mc.com', 'content-type': 'application/json', 'CF-Connecting-IP': '10.3.0.' + i }, body: '{}' }), env2);
+  ok(appelsOpenAI.length <= 2, `KV qui n'écrit plus : ${appelsOpenAI.length} appels directs sur 20 (barrière 2)`);
+  /* (c) le compteur du jour ILLISIBLE : on ne paie pas (la voix gratuite prend le relais) */
+  const kvKO = kv(); kvKO.get = async () => { throw new Error('KV read'); };
+  appelsOpenAI = [];
+  const r = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=lecture-ko', { headers: { Referer: 'https://lingua.kd-mc.com/' } }),
+    { ACCOUNTS: kvKO, OPEN_AI_API_KEY: 'sk-factice' });
+  ok(appelsOpenAI.length === 0 && r.status === 200, `compteur illisible → 0 voix payée, réponse ${r.status} (jamais une panne)`);
+}
+
 console.log(`\n${pass} contrôle(s) OK · ${fail} échec(s)`);
 if (fail) console.log('❌ La voix ou l’appel en direct peuvent être utilisés hors du domaine, ou sans plafond — c’est la facture de Kevin.');
 else console.log('✅ La voix et l’appel en direct ne partent que depuis le domaine, et sous plafond.');

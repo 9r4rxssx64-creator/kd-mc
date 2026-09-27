@@ -1,5 +1,42 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (soir, suite) — Fusionné et EN LIGNE ; la sonde du déploiement ne prend plus une porte pour une panne
+
+**Fusion** : PR #4080 (cuisine illustrée + porte dans l'app) ouverte et fusionnée **par l'API**
+(le robot auto-merge est en pause dans le coffre, voir ETAT-DU-MOMENT) après deux rattrapages
+de `main` (#4076, #4079 — conflits sur `package.json` et l'en-tête d'ETAT-DU-MOMENT, journaux en
+union ; leçons renumérotées **#350/#351**, les numéros #272/#273 étant déjà pris par d'autres sessions).
+Squash `7735d9f67`.
+
+**Chaîne de publication mesurée** : `coffre-synchronise-public` run 36336428309 ✅ → dépôt public
+`kd-mc` commit `06ddefb5c` → `publier-site-prive` run 36336460678 ✅ (le sommaire illustré est
+servi : `class="pdj"`, `fam fam-ph`, `platDuJour` lus dans la page publiée) → `deploy-kdmc-router`
+run 36336460747 : **le routeur est déployé (étape 8 ✅)**, puis **rouge à l'étape 18** « les 31
+adresses ».
+
+**Vérifié en ligne (Zapier, vraie requête)** : `cuisine.kd-mc.com/index.html` demandé comme une
+page, sans session → **200**, `x-kdmc-porte: fiche`, page « 🔒 A Cüjina de Mùnegu » avec
+`/__sso/porte.js?v=1` ; `porte.js` servi (200, `text/javascript`, cache 1 h). Plus de renvoi vers
+le portail : l'app de l'écran d'accueil reste chez elle.
+
+**Pourquoi l'étape 18 était rouge — et depuis ce matin, pas depuis moi** : run 36314626122 (11h05,
+avant ma fusion) échouait déjà. La sonde `tools/audit/sonde-site-publie.mjs` ne se présentait pas
+comme un navigateur (pas de `Sec-Fetch-Dest`) → depuis les portes par DOSSIER du matin, le routeur
+lui répond **401 texte** sur cuisine / cocina / cujina → 3 ❌ → déploiement rouge à chaque
+livraison, alors que le routeur sert très bien. **Corrigé** : la sonde envoie les en-têtes d'un
+navigateur, reconnaît la porte (`x-kdmc-porte`) et va vérifier que le contenu existe **derrière**,
+chez l'hébergeur (`UPSTREAM_BASE` lu dans `wrangler.toml`). Une porte fermée n'est plus une panne ;
+un contenu absent derrière une porte reste une panne. Garde `npm run test:sonde-porte` (faux
+routeur local, 10/0 ; sabotage avec l'ancienne sonde : 8 ✗). Leçon **#352**.
+
+**Rouges qui restent, pas à moi, causes lues dans les annotations** : `kdmc-sso-e2e` (public)
+échoue depuis le 26.09 22h47 sur « auto-login E2E » ; `cross-app-preservation` échoue sur
+« /index.html exists » (le dépôt public n'a pas `index.html`, par construction) ; `deploy.yml`
+(GitHub Pages, éteint). Voix Lingua : `/__lingua/tts` renvoie du JSON, pas de l'audio (clé OpenAI
+absente/quota, avertissement du déploiement).
+
+---
+
 ## 2026-09-27 (soir) — L'app du livre de cuisine sur l'écran d'accueil ouvrait le portail : la porte se montre maintenant DANS l'app
 
 Kevin : « Quand je clique sur l'app de l'écran d'accueil j'atterris sur CMCteams ! »

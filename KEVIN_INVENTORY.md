@@ -1,5 +1,15 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### ✅ En ligne : livre illustré + porte dans l'app ; la sonde du déploiement corrigée (27.09.2026, soir)
+
+- 📱 **À essayer** : [cuisine.kd-mc.com](https://cuisine.kd-mc.com/) — sommaire en photos ; depuis l'icône de l'écran d'accueil, plus de renvoi vers CMCteams.
+- 🔀 La fusion : [PR #4080](https://github.com/9r4rxssx64-creator/CMCteams/pull/4080) · publication du site : [run 36336460678](https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/36336460678) · routeur déployé : [run 36336460747](https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/36336460747) (rouge à l'étape 18 pour la raison corrigée ci-dessous).
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tools/audit/sonde-site-publie.mjs` | **Modifié.** La sonde des 31 adresses se présente comme un navigateur, reconnaît une **porte** du routeur (`x-kdmc-porte`) et vérifie le contenu **derrière**, chez l'hébergeur. Avant : 401 texte sur cuisine/cocina/cujina → déploiement rouge à chaque livraison. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/sonde-site-publie.mjs) |
+| `tests/verify-sonde-porte.mjs` | **Nouveau.** Faux routeur local : porte fermée + contenu présent → 0 échec ; contenu absent derrière la porte → échec ; en-tête `Sec-Fetch-Dest` bien envoyé. `npm run test:sonde-porte` (dans `test:ci`). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-sonde-porte.mjs) |
+
 ### 🔓 L'app de l'écran d'accueil ne renvoie plus sur le portail : la porte se montre dans l'app (27.09.2026, soir)
 
 - 🧪 **À essayer sur l'iPhone** : ouvre l'icône du livre de cuisine. La première fois, une page « 🔒 A Cüjina de Mùnegu » te propose **Face ID** sur place ; ensuite le livre s'ouvre directement.

@@ -48,23 +48,63 @@ if (ROUTES.length < 20) {
 }
 
 /* --- où interroger chaque adresse ----------------------------------------- */
+/* SONDE_HOTE_BASE : réservé au test de cette sonde (tests/verify-sonde-porte.mjs) —
+   « https://<hôte>/ » devient « <base>/<hôte>/ » sur un faux routeur local. */
+const HOTE_BASE = (process.env.SONDE_HOTE_BASE || '').replace(/\/+$/, '');
 function adresse({ hote, dossier }) {
   if (RACINE) return `${base}/${dossier ? dossier + '/' : ''}`;          // Pages sert à la racine
+  if (HOTE_BASE) return `${HOTE_BASE}/${hote}/`;                         // test : faux routeur
   return `https://${hote}/`;                                             // le domaine, à son nom
 }
 
+/* --- l'hébergeur derrière le routeur (pour regarder DERRIÈRE une porte) ----
+   Depuis le 27.09.2026 le routeur ferme certains dossiers (cuisine, World Monitor,
+   OSINT…) derrière une porte « fiche » : sans session, il ne sert pas l'app mais
+   une petite page 200 marquée `x-kdmc-porte`. Mesuré le 27.09 : cette sonde, qui
+   ne se présentait pas comme un navigateur (pas de Sec-Fetch-Dest), recevait un
+   401 texte sur les 3 adresses du livre de cuisine → le déploiement du routeur
+   restait ROUGE à chaque livraison (runs 36314626122 et 36336460747), alors que
+   le routeur servait très bien. Une porte fermée n'est pas une adresse morte :
+   on se présente comme un navigateur, on reconnaît la porte, et on va vérifier
+   que le contenu existe bien chez l'hébergeur (lu dans wrangler.toml). */
+function upstreamBase() {
+  if (process.env.SONDE_UPSTREAM) return process.env.SONDE_UPSTREAM.replace(/\/+$/, '');
+  try {
+    const toml = readFileSync('services/kdmc-router/wrangler.toml', 'utf8');
+    const m = toml.match(/^\s*UPSTREAM_BASE\s*=\s*"([^"]+)"/m);
+    const p = toml.match(/^\s*UPSTREAM_PREFIX\s*=\s*"([^"]*)"/m);
+    return m ? m[1].replace(/\/+$/, '') + (p ? p[1] : '') : '';
+  } catch { return ''; }
+}
+const UPSTREAM = RACINE ? '' : upstreamBase();
+
 /* --- la sonde ------------------------------------------------------------- */
 const TEMPS = 25000;
+const ENTETES = {
+  'cache-control': 'no-cache', 'user-agent': 'kdmc-sonde/1',
+  /* comme un navigateur qui ouvre une page : c'est ce que le routeur regarde
+     pour décider entre « page de porte » et « 401 texte » (estUnePage). */
+  'sec-fetch-dest': 'document', 'sec-fetch-mode': 'navigate', accept: 'text/html,*/*;q=0.8',
+};
 async function sonder(r) {
   const url = adresse(r);
   const t0 = Date.now();
   try {
-    const rep = await fetch(url, {
-      redirect: 'follow',
-      headers: { 'cache-control': 'no-cache', 'user-agent': 'kdmc-sonde/1' },
-      signal: AbortSignal.timeout(TEMPS),
-    });
-    const texte = await rep.text();
+    let rep = await fetch(url, { redirect: 'follow', headers: ENTETES, signal: AbortSignal.timeout(TEMPS) });
+    let texte = await rep.text();
+    const porte = rep.status === 200 ? (rep.headers.get('x-kdmc-porte') || '') : '';
+    let derriere = '';
+    if (porte) {
+      /* Porte fermée = le routeur connaît l'adresse et son dossier. Reste à
+         prouver que le contenu existe DERRIÈRE : on l'ouvre chez l'hébergeur. */
+      if (!UPSTREAM) {
+        return { ...r, url, http: rep.status, octets: texte.length, ok: false, porte, ms: Date.now() - t0,
+          erreur: 'porte « ' + porte + ' » mais hébergeur inconnu (UPSTREAM_BASE absent de wrangler.toml)' };
+      }
+      derriere = `${UPSTREAM}/${r.dossier ? r.dossier + '/' : ''}`;
+      rep = await fetch(derriere, { redirect: 'follow', headers: ENTETES, signal: AbortSignal.timeout(TEMPS) });
+      texte = await rep.text();
+    }
     /* Une page vide ou un 404 déguisé en 200 ne compte pas comme « servie ».
        On exige un vrai document HTML avec du contenu.
        ⚠️ On n'exige PAS <!doctype> ni <html> : mesuré le 15.09, la page cuisine
@@ -76,7 +116,7 @@ async function sonder(r) {
     const assez = texte.length >= 500;
     const doctype = /^\s*<!doctype/i.test(texte);
     return {
-      ...r, url, http: rep.status, octets: texte.length, html, assez, doctype,
+      ...r, url, http: rep.status, octets: texte.length, html, assez, doctype, porte, derriere,
       /* Empreinte du contenu : sert à repérer deux adresses qui servent la
          MÊME page alors qu'elles ne devraient pas (cf. contrôle plus bas). */
       tete: texte.slice(0, 2000),
@@ -98,11 +138,17 @@ console.log('adresse                        HTTP   contenu   ');
 console.log('────────────────────────────────────────────────');
 for (const r of res) {
   const etat = r.ok ? '✅' : '❌';
-  console.log(`${etat} ${r.hote.padEnd(28)} ${String(r.http).padStart(3)}  ${String(r.octets).padStart(7)} car.  ${r.erreur || ''}`);
+  const verrou = r.porte ? `🔒 porte « ${r.porte} » → contenu vérifié derrière (${r.derriere})` : '';
+  console.log(`${etat} ${r.hote.padEnd(28)} ${String(r.http).padStart(3)}  ${String(r.octets).padStart(7)} car.  ${r.erreur || verrou}`);
 }
 
 const ko = res.filter((r) => !r.ok);
+const fermees = res.filter((r) => r.porte);
 console.log(`\n=== ${res.length - ko.length} servies / ${ko.length} en échec ===`);
+if (fermees.length) {
+  console.log(`🔒 ${fermees.length} adresse(s) derrière une porte du routeur (fiche obligatoire) — le contenu a été vérifié chez l'hébergeur : ` +
+    [...new Set(fermees.map((r) => r.hote))].join(', '));
+}
 
 /* Signalé, pas caché : une page sans <!doctype> s'affiche en « mode bizarre »
    (quirks) — le navigateur applique des règles de mise en page d'avant 2001.

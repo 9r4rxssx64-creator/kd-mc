@@ -3,7 +3,7 @@
    en ligne (plus jamais bloqué sur une ancienne page « collée » en mémoire), et on
    garde une copie en cache pour marcher hors-ligne. Aligné sur la règle « MAJ auto
    forcée toujours » : une nouvelle version publiée s'affiche dès la prochaine ouverture. */
-var CACHE = "lingua-v2.126.0";
+var CACHE = "lingua-v2.127.0";
 var ASSETS = ["./","./index.html","./app.js","./data.js","./histoires-langues.js","./mc-voix.js","./sources-langues.js","./data-mc.js","./data-lsf.js","./manifest.webmanifest","./icon.svg","./bee/wave.webp","./bee/party.webp","./bee/read.webp","./bee/point.webp","./bee/rig/base.webp","./bee/rig/wing-l.webp","./bee/rig/wing-r.webp","./donkey/wave.webp","./donkey/party.webp","./donkey/read.webp","./donkey/point.webp","./donkey/rig/base.webp"];
 
 self.addEventListener("install", function(e){
@@ -27,6 +27,10 @@ self.addEventListener("fetch", function(e){
      Le navigateur les gère très bien tout seul. */
   if(req.headers.get("range")) return;
   try{ if(new URL(req.url).origin!==self.location.origin) return; }catch(_){ return; }
+  /* Les sondes de mise à jour (app.js?_v=…) et les rechargements forcés (?_upd=…) portent
+     un numéro unique à chaque fois : les mettre en cache ferait grossir celui-ci d'une
+     entrée par minute, pour rien. On laisse le réseau répondre, sans copie. */
+  if(/[?&]_(v|upd)=/.test(req.url)) return;
   // RÉSEAU D'ABORD : dernière version en ligne, cache en repli hors-ligne.
   e.respondWith(
     fetch(req).then(function(r){

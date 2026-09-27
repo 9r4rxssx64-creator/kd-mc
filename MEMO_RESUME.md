@@ -26,6 +26,48 @@ c'est une déclaration, pas une preuve. Le durcir (code ou Face ID) changerait l
 de décider.
 
 ---
+## 2026-09-27 (soir) — Lingua : une seule adresse, et la mise à jour à la main (v2.127.0)
+
+Kevin, capture de son iPhone (Profil, v2.126.0) : « Je ne peux pas mettre à jour la version
+manuellement comme dans les autres apps. L'icône envoie toujours sur CMCteams. Il ne reconnaît
+pas mon code sauf en passant par mon domaine. »
+
+**1. L'icône et le code : la même cause — Lingua existait à TROIS adresses.** Lu dans
+`worker.js` : depuis le domaine principal, `kd-mc.com/CMCteams/lingua/` servait Lingua sur une
+**deuxième origine** (autre mémoire locale : le compte n'y est pas, donc « il ne reconnaît pas
+mon code »), et `kd-mc.com/lingua/` demandait `/kdmc-home/lingua/` à l'hébergeur, qui répond
+« 200 + page d'accueil » à ce qu'il ne connaît pas — au dernier relevé (19/09, run 35458650075)
+cette page était **CMCteams**. Une icône posée depuis l'une de ces adresses donne exactement les
+deux symptômes. Lingua n'est **pas** derrière une porte du routeur (pas dans `PORTES`) : ce
+n'est pas le bug de Cuisine corrigé le même soir (#4086), même si ça y ressemble.
+**Corrigé** : tout chemin de Lingua sur `kd-mc.com` / `www` part en **301 vers
+`lingua.kd-mc.com`**, même page, même requête, casse des fichiers gardée — règle KDMC_ADRESSES
+« une belle adresse par projet ». `lingua.kd-mc.com` et `/__lingua/…` ne bougent pas. Garde
+`test:lingua-adresse` (**18/0**, discriminant : sans la règle **10 ✗**).
+**Ce que je n'ai PAS pu mesurer** : à quelle adresse pointe l'icône de Kevin (invisible d'ici),
+et ce que l'hébergeur sert aujourd'hui en repli (`pages.dev` injoignable depuis l'agent). D'où
+la consigne : **retirer l'icône, en reposer une depuis `lingua.kd-mc.com`**.
+
+**2. La mise à jour à la main.** Lingua n'avait ni bouton ni vérification : le service worker
+sert « réseau d'abord », donc la nouvelle version arrivait à la réouverture suivante, sans le
+dire et sans moyen de la forcer. Modèle de l'arbre repris : **« 🔄 Mettre à jour l'app »** dans
+Profil (vide caches + service worker, recharge avec `?_upd=`), et **vérification automatique**
+(2,5 s après l'ouverture, à chaque retour sur l'app, toutes les minutes) qui ne recharge **que
+vers une version strictement plus récente**, 1 fois / 90 s au plus — jamais de boucle si un
+point du CDN traîne. Le SW ne met plus en cache les sondes `?_v=` ni les `?_upd=` (sinon +1
+entrée par minute). Garde `test:lingua-maj` (**14/0**, discriminant : `app.js`+`sw.js` de main
+→ **8 ✗**).
+
+**Piège attrapé en écrivant la garde** : la sonde se taisait « dès qu'une fenêtre est
+ouverte » — or la fenêtre du test de niveau reste affichée au premier démarrage tant qu'on ne
+l'a pas fermée : la mise à jour ne serait **jamais** partie. Elle ne se tait plus qu'en leçon
+ou pendant une saisie.
+
+Voisins verts : parcours 11/0 · mon-code 20/0 · connexion 20/0 · voix 26/0 · portes-dossier ·
+cuisine-chemin · redirection-amont · perimetre-apps · apps-domaine · tuiles-apps ·
+portail-adresses · amont-404 · chemins-domaine · identite-domaine · file-size-guard ·
+xss-guard · innerhtml-mesure · check-syntax.
+
 ## 2026-09-27 (soir) — Audit du domaine : 36/100, un trou du coffre fermé, deux à fermer
 
 Kevin : « Fais ton audit du domaine et un d'améliorations détaillé ». Rapport **privé** :

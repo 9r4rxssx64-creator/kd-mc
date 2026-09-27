@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.126.0";
+var APP_VER="v2.127.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -1750,6 +1750,12 @@ function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",
       [10,20,30,50,75,100,150,200,300,500].concat(S.goal).filter(function(g,i,a){return a.indexOf(g)===i;}).sort(function(a,b){return a-b;})
         .map(function(g){return '<option value="'+g+'"'+(S.goal===g?" selected":"")+'>'+g+' XP'+(g>=200?' 🔥':(g>=100?' 💪':''))+'</option>';}).join("")+'</select></label>';
   var sw=el("button","row switch"); sw.innerHTML='<span>👥 Changer de compte</span><span>›</span>'; sw.onclick=function(){ PICK=true; render(); }; st.appendChild(sw);
+  /* Kevin 27.09 : « Je ne peux pas mettre à jour la version manuellement comme dans les
+     autres apps ». Même geste que l'arbre : on vide le cache et le service worker, on
+     recharge — la dernière version publiée, tout de suite, sans attendre la prochaine
+     ouverture ni chercher un réglage caché dans Safari. */
+  var maj=el("button","row switch"); maj.id="btnMaj"; maj.innerHTML='<span>🔄 Mettre à jour l\'app</span><span>'+esc(APP_VER)+' ›</span>';
+  maj.onclick=function(){ toast("🔄 Mise à jour…"); majForcee(); }; st.appendChild(maj);
   var rs=el("button","row danger"); rs.textContent="♻️ Réinitialiser ce compte"; rs.onclick=function(){ if(confirm("Effacer TOUTE la progression de ce compte ?")){ ["hearts","gems","xp","streak","lastDay","freeze","dailyXP","prog","srs","league","achv","words","today","qClaim","course"].forEach(function(k){ localStorage.removeItem(pfx()+k); }); loadS(); VIEW="home"; render(); } }; st.appendChild(rs);
   d.appendChild(st);
   var ver=el("div","ver"); ver.textContent="KDMC Lingua "+APP_VER+" · app originale"; d.appendChild(ver);
@@ -3182,6 +3188,43 @@ function MASCOT_SVG(pose,size){ size=size||100;
     blush+eyes+eyeShine+mouth+props+'</g></svg>';
 }
 
+/* ============ Mise à jour : forcée à la main, automatique en arrière-plan ============
+   (Kevin 27.09 : « Je ne peux pas mettre à jour la version manuellement comme dans les
+   autres apps »). Lingua n'avait NI bouton NI vérification : le service worker sert le
+   réseau d'abord, donc la nouvelle version arrive à la réouverture suivante… sans le dire,
+   et sans moyen de la forcer. Modèle repris de l'arbre (checkUpdate), avec ses deux gardes :
+   on ne recharge QUE vers une version strictement plus récente (jamais de boucle si un
+   point du CDN sert encore l'ancienne), et 1 rechargement au plus par 90 s. */
+var _updTs=0;
+function verNum(s){ var g=String(s||"").match(/(\d+)\.(\d+)(?:\.(\d+))?/); return g?(+g[1]*1e6+ +g[2]*1e3+ +(g[3]||0)):0; }
+/* Ce que le domaine sert EN CE MOMENT — lu dans app.js lui-même, jamais dans un cache. */
+function versionServie(){ return fetch("app.js?_v="+Date.now(),{cache:"reload"}).then(function(r){ if(!r.ok) return ""; return r.text(); })
+  .then(function(t){ var m=String(t).match(/APP_VER\s*=\s*"([^"]+)"/); return m?m[1]:""; }).catch(function(){ return ""; }); }
+/* Purge tout ce qui pourrait retenir l'ancienne version, puis recharge la page avec un
+   cache-buster. Le service worker se réinscrit tout seul au démarrage suivant (boot). */
+function majForcee(){
+  var fini=function(){ try{ location.replace(location.pathname+"?_upd="+Date.now()); }catch(e){ location.reload(); } };
+  var p=Promise.resolve();
+  if("serviceWorker" in navigator){ p=p.then(function(){ return navigator.serviceWorker.getRegistrations(); }).then(function(rs){ return Promise.all((rs||[]).map(function(r){ return r.unregister().catch(function(){}); })); }).catch(function(){}); }
+  if(window.caches){ p=p.then(function(){ return caches.keys(); }).then(function(ks){ return Promise.all((ks||[]).map(function(k){ return caches.delete(k).catch(function(){}); })); }).catch(function(){}); }
+  p.then(fini,fini);
+}
+function checkUpdate(){
+  if(Date.now()-_updTs<25000) return; _updTs=Date.now();
+  /* Jamais au milieu d'une leçon, ni pendant qu'on tape dans un champ. (Pas « dès qu'une
+     fenêtre est ouverte » : au premier démarrage la fenêtre du test de niveau reste
+     affichée tant qu'on ne l'a pas fermée — la sonde ne serait jamais partie.) */
+  var ae=document.activeElement, tag=ae&&ae.tagName;
+  if(VIEW==="lesson"||tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT") return;
+  versionServie().then(function(v){
+    if(!v || verNum(v)<=verNum(APP_VER)) return;
+    var last=+(localStorage.getItem("lingua_upd_ts")||0); if(Date.now()-last<90000) return;
+    try{ localStorage.setItem("lingua_upd_ts",String(Date.now())); }catch(e){}
+    toast("🔄 Nouvelle version "+v+" — mise à jour…");
+    setTimeout(majForcee,600);
+  });
+}
+
 /* ============ Boot ============ */
 function boot(){ app=document.getElementById("app");
   var accs=accounts();
@@ -3193,6 +3236,11 @@ function boot(){ app=document.getElementById("app");
   if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=function(){}; speechSynthesis.getVoices(); }
   setInterval(function(){ if(ACC&&VIEW!=="lesson"&&!PICK){ var b=S.hearts; regenHearts(); if(S.hearts!==b&&VIEW==="home")render(); } },20000);
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
+  /* MAJ auto : au démarrage, à chaque retour sur l'app, et toutes les minutes. */
+  setTimeout(checkUpdate,2500);
+  window.addEventListener("focus",checkUpdate);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden) checkUpdate(); });
+  setInterval(checkUpdate,60000);
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot); else boot();
 })();

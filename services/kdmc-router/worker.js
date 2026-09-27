@@ -429,6 +429,26 @@ const ROUTEUR = {
 
     let p = url.pathname;
 
+    /* UNE SEULE ADRESSE POUR LINGUA (Kevin 27.09 soir : « L'icône envoie toujours sur CMCteams.
+       Il ne reconnaît pas mon code sauf en passant par mon domaine »).
+       Mesuré dans ce fichier : depuis kd-mc.com, /CMCteams/lingua/ servait Lingua sur une
+       DEUXIÈME origine (autre mémoire locale → le compte n'y est pas, le code « n'est pas
+       reconnu »), et /lingua/ demandait /kdmc-home/lingua/ à l'hébergeur, qui répond « 200 +
+       page d'accueil » à ce qu'il ne connaît pas — la dernière fois que ça a été mesuré
+       (19/09, run 35458650075), cette page d'accueil était CMCteams. Une icône posée depuis
+       l'une de ces adresses reproduit exactement les deux symptômes.
+       Règle KDMC_ADRESSES.md : UNE belle adresse par projet. Tout chemin de Lingua sur le
+       domaine principal renvoie donc, en 301, vers lingua.kd-mc.com — même page, même requête. */
+    if (host === 'kd-mc.com' || host === 'www.kd-mc.com') {
+      /* Le reste du chemin est repris tel quel : les fichiers de l'app gardent leur casse. */
+      const cl = p.match(/^\/+(?:cmcteams\/+)?lingua(\/.*)?$/i);
+      if (cl) {
+        const reste = cl[1] || '/';
+        const canon = new URL('https://lingua.kd-mc.com' + reste + url.search);
+        return new Response(null, { status: 301, headers: { location: canon.toString(), 'cache-control': 'no-store', 'x-kdmc-router': host + ' (lingua vers belle adresse)' } });
+      }
+    }
+
     /* PORTES PAR DOSSIER (Kevin 27.09 : « le domaine comme chaque app doit être bien sécurisé.
        Personne ne peut entrer ou modifier. Renseignements obligatoires partout pour les nouveaux »).
        Avant, PoolPilot et le coffre d'autorisations n'étaient verrouillés que sur LEUR adresse :

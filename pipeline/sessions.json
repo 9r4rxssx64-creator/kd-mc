@@ -530,9 +530,9 @@
       "attend_session": null
     },
     "lingua-code": {
-      "titre": "Lingua : retrouver son code, et rendre la vérif réelle lisible",
-      "branche": "claude/message-6-rouges",
-      "sujet": "Lingua v2.126.0 « Voir mon code » (livré) ; chaîne de vérif réelle : cause de chaque rouge + version servie ; robot auto-merge diagnostiqué (pas cassé, pause voulue)",
+      "titre": "Lingua : retrouver son code, vérif réelle, une seule adresse, MAJ à la main",
+      "branche": "claude/lingua-icone-maj",
+      "sujet": "Lingua v2.127.0 : 301 des chemins kd-mc.com vers lingua.kd-mc.com (icône → CMCteams, code non reconnu) + bouton « Mettre à jour » + vérif auto ; audit complet 74/0",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-27",

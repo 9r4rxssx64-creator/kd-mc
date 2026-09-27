@@ -353,6 +353,20 @@ const listeLangues = await texte();
 chk(/Monégasque/i.test(listeLangues), '12.1 le monégasque est réellement proposé (pas seulement dans le dépôt)');
 chk(/signes|LSF/i.test(listeLangues), '12.2 la langue des signes est réellement proposée');
 
+/* ─── 14. UNE SEULE ADRESSE (27.09 soir : « l'icône envoie sur CMCteams », « il ne
+   reconnaît pas mon code sauf en passant par mon domaine ») ───────────────────────────
+   Les anciens chemins sur le domaine principal doivent renvoyer ICI, en 301 — sinon une
+   icône posée depuis l'un d'eux ouvre une DEUXIÈME Lingua, avec une autre mémoire
+   locale (le compte « n'existe pas »), ou la page de repli de l'hébergeur (CMCteams). */
+for (const ancien of ['https://kd-mc.com/CMCteams/lingua/', 'https://kd-mc.com/lingua/', 'https://kd-mc.com/CMCteams/lingua/index.html']) {
+  try {
+    const r = await ctx.request.get(ancien, { maxRedirects: 0, timeout: 20000 });
+    const loc = r.headers()['location'] || '';
+    chk(r.status() === 301 && loc.startsWith(BASE + '/'),
+        `14.${ancien.replace('https://kd-mc.com', '')} → ${r.status()} ${loc || '(pas de Location)'}${r.status() === 301 && loc.startsWith(BASE + '/') ? ' — renvoie bien sur la seule adresse' : ' — DEUXIÈME Lingua ou page de repli : l\'icône y resterait'}`);
+  } catch (e) { ko(`14.${ancien} injoignable : ${String(e.message).slice(0, 60)}`); }
+}
+
 /* ─── Verdict ────────────────────────────────────────────────────────────── */
 chk(erreurs.length === 0, `13.∑ erreurs JavaScript sur TOUT le parcours : ${erreurs.length}${erreurs.length ? ' — 1re : ' + erreurs[0] : ''}`);
 

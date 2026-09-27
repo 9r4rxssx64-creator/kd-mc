@@ -1,5 +1,14 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🧭 Plus jamais CMCteams par erreur depuis une icône (27.09.2026, nuit)
+
+- 📱 **À essayer** : touche l’icône qui t’amenait sur CMCteams — elle ouvre maintenant la bonne app. Le mieux : supprime-la et repose-la depuis [cuisine.kd-mc.com](https://cuisine.kd-mc.com/).
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `services/kdmc-router/worker.js` | **Modifié.** Une page d’app ouverte sous kd-mc.com part vers sa vraie adresse ; CMCteams n’est plus jamais servi ailleurs qu’à cmcteams.kd-mc.com. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `services/kdmc-router/jamais-cmcteams.test.mjs` | **Nouveau.** 17 contrôles, dont le cas exact de ta capture. `npm run test:jamais-cmcteams`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/jamais-cmcteams.test.mjs) |
+
 ### 🧪 Tests remis d'aplomb après la fiche obligatoire de la light (27.09.2026, nuit)
 
 | Fichier | À quoi ça sert | Ouvrir |

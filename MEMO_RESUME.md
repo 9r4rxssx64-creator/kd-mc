@@ -1,5 +1,29 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (nuit) — « L’app du bureau m’amène là » (capture : kd-mc.com + connexion CMCteams) → jamais CMCteams par accident
+
+**Mesuré** (Zapier, requête d’iPhone) : `https://kd-mc.com/tools/cuisine/index.html` → **200 + CMCteams v9.926**. L’hébergeur
+ne connaît pas `/kdmc-home/tools/cuisine/` et répond par sa page d’accueil = CMCteams. (`kd-mc.com/?return=…` sert bien le
+portail KDMC APEX ; `kd-mc.com/CMCteams/tools/cuisine/` sert bien la porte.) « Berceau » introuvable dans le code : lu comme
+« bureau » = écran d’accueil (Kevin disait déjà « l’app sur bureau »).
+
+**Corrigé dans le routeur** (`services/kdmc-router/worker.js`) : `belleAdresseDe()` — sur kd-mc.com, une PAGE ouverte dans le
+dossier d’une app (`/tools/cuisine/…`, `/CMCteams/tools/…`) → 301 vers son sous-domaine (généralise ce qu’une autre session
+avait fait pour Lingua seule) ; scripts/images chargés par le portail non touchés. `sansCmcteamsParAccident()` — hors de
+`cmcteams.kd-mc.com`, une réponse qui EST la page CMCteams (titre « CMCteams — Planning » ou `APP_VER` v9) n’est jamais
+servie : 404 « Cette page n’existe pas ici », ou 301 vers cmcteams.kd-mc.com si c’était son accueil. La light (« CMCteams
+light ») n’est pas visée — vérifié sur tout le dépôt.
+
+**Gardes** : `test:jamais-cmcteams` 17/0 (sabotage ancien routeur : 7 ✗), dans `test:ci` ET dans le déploiement du routeur
+(autonome : pages de secours quand le dépôt public n’a pas CMCteams/light). `test:portes-dossier` 75/0 (2 contrôles mis à jour :
+`kd-mc.com/CMCteams/tools/{approvals,tor}/` → 301 vers leur adresse, où la porte s’applique). Aussi verts : amont-404,
+cuisine-chemin, redirection-amont, perimetre-apps, sonde-porte, routeur-durci 8/0, router-secours 62/0, sso 12/0,
+self-service 25/0, admin 41/0, workflows-valides. Leçon **#357**.
+
+**Pour Kevin** : l’icône ancienne (posée sur la mauvaise adresse) s’ouvre maintenant sur le livre. Mieux : la supprimer et la
+reposer depuis cuisine.kd-mc.com.
+
+---
 ## 2026-09-27 (nuit) — « Répare tout ce qui doit l'être » : les écritures KV, la garde des branches, le verdict muet
 
 **1. Le plafond KV (1 000 écritures/jour, tout le compte) : trois postes réduits, mesurés.**

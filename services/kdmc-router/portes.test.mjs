@@ -40,14 +40,20 @@ const CHEMINS_ADMIN = [
 ];
 for (const u of CHEMINS_ADMIN) { const r = await va(u); ok(!r.servi, 'SANS code admin, ' + u + ' ne sert PAS l\'app privée  [' + r.st + ']'); }
 const grant = signe('__kdmc_admin__', 1);
-for (const u of ['https://beatbot.kd-mc.com/', 'https://kd-mc.com/CMCteams/tools/approvals/']) {
+for (const u of ['https://beatbot.kd-mc.com/', 'https://autorisations.kd-mc.com/']) {
   const r = await va(u, { 'x-kdmc-admin': grant }); ok(r.servi, 'AVEC le code admin, ' + u + ' s\'ouvre');
 }
+/* Depuis le 27.09 nuit (jamais-cmcteams.test.mjs) : une PAGE d'app ouverte sous kd-mc.com part vers
+   sa belle adresse — où la même porte s'applique. Même avec le code admin, rien n'est servi ICI. */
+{ const r = await va('https://kd-mc.com/CMCteams/tools/approvals/', { 'x-kdmc-admin': grant });
+  ok(r.st === 301 && r.loc === 'https://autorisations.kd-mc.com/' && !r.servi, 'kd-mc.com/CMCteams/tools/approvals/ → autorisations.kd-mc.com (sa porte admin y est)  [' + r.st + ' ' + r.loc + ']'); }
 
 /* ---- 2. FICHE : les 7 sites d'information ---- */
 const INFOS = ['https://cuisine.kd-mc.com/', 'https://cujina.kd-mc.com/', 'https://kd-mc.com/cujina/', 'https://worldmonitor.kd-mc.com/',
   'https://osint.kd-mc.com/', 'https://kd-mc.com/osint/', 'https://kd-mc.com/CMCteams/kdmc-home/osint/', 'https://ia.kd-mc.com/',
-  'https://outils.kd-mc.com/', 'https://tor.kd-mc.com/', 'https://dossiers.kd-mc.com/', 'https://kd-mc.com/CMCteams/tools/tor/'];
+  'https://outils.kd-mc.com/', 'https://tor.kd-mc.com/', 'https://dossiers.kd-mc.com/'];
+{ const r = await va('https://kd-mc.com/CMCteams/tools/tor/');
+  ok(r.st === 301 && r.loc === 'https://tor.kd-mc.com/' && !r.servi, 'kd-mc.com/CMCteams/tools/tor/ → tor.kd-mc.com (la porte « fiche » s\'y montre, contrôle ci-dessous)  [' + r.st + ' ' + r.loc + ']'); }
 /* Depuis le 27.09 (soir) : la porte se montre SUR PLACE — plus de 302 vers le portail. Une app de
    l'écran d'accueil (cookies à part) restait sinon bloquée sur le portail KDMC (Kevin : « j'atterris
    sur CMCteams »). La page de porte porte le lien « remplir ma fiche » (retour ici), le bouton Face

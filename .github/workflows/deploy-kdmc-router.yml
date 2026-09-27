@@ -55,6 +55,8 @@ jobs:
           node sso.test.mjs
           node self-service.test.mjs
           node admin.test.mjs
+          # 27/09/2026 : une page d'app sous kd-mc.com → sa belle adresse ; jamais CMCteams servi par le repli de l'hébergeur
+          node jamais-cmcteams.test.mjs
           node ../../tools/lingua/verify-coach.mjs
 
       - name: Install wrangler

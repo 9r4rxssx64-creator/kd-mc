@@ -464,6 +464,17 @@ const ROUTEUR = {
         const canon = new URL('https://lingua.kd-mc.com' + reste + url.search);
         return new Response(null, { status: 301, headers: { location: canon.toString(), 'cache-control': 'no-store', 'x-kdmc-router': host + ' (lingua vers belle adresse)' } });
       }
+      /* MÊME RÈGLE POUR TOUTES LES APPS (Kevin 27.09 nuit, capture : l'icône de l'écran d'accueil
+         ouvre « kd-mc.com » et montre la connexion CMCteams). MESURÉ en vrai :
+         https://kd-mc.com/tools/cuisine/index.html → 200 + CMCteams v9.926 — l'hébergeur ne
+         trouve pas /kdmc-home/tools/cuisine/ et répond par SA page d'accueil (CMCteams). Une page
+         d'app ouverte sous le portail part donc, en 301, vers la belle adresse de l'app.
+         Seulement pour une PAGE qu'on ouvre : images, scripts et données que le portail charge
+         depuis ces dossiers restent servis tels quels (aucune requête d'arrière-plan redirigée). */
+      if (estUnePage(request)) {
+        const vers = belleAdresseDe(p);
+        if (vers) return new Response(null, { status: 301, headers: { location: vers + url.search, 'cache-control': 'no-store', 'x-kdmc-router': host + ' (page d\'app vers sa belle adresse)' } });
+      }
     }
 
     /* PORTES PAR DOSSIER (Kevin 27.09 : « le domaine comme chaque app doit être bien sécurisé.
@@ -507,12 +518,14 @@ const ROUTEUR = {
           body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
           redirect: 'manual',
         }));
-        const oh2 = new Headers(res2.headers);
+        const res2g = await sansCmcteamsParAccident(res2, host, p, request);
+        if (res2g !== res2 && (res2g.status === 301 || res2g.status === 404)) return res2g;
+        const oh2 = new Headers(res2g.headers);
         oh2.set('x-kdmc-router', host + ' (cuisine-path)');
         if (!oh2.has('x-content-type-options')) oh2.set('x-content-type-options', 'nosniff');
         if (!oh2.has('x-frame-options')) oh2.set('x-frame-options', 'SAMEORIGIN');
         if (!oh2.has('strict-transport-security')) oh2.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
-        return new Response(res2.body, { status: res2.status, statusText: res2.statusText, headers: oh2 });
+        return new Response(res2g.body, { status: res2g.status, statusText: res2g.statusText, headers: oh2 });
       }
     }
 
@@ -617,6 +630,9 @@ const ROUTEUR = {
         return new Response(null, { status: res.status, headers: h });
       }
     }
+    /* Jamais CMCteams par accident (repli de l'hébergeur) hors de cmcteams.kd-mc.com — voir sansCmcteamsParAccident. */
+    res = await sansCmcteamsParAccident(res, host, p, request);
+    if (res.status === 301 || res.status === 404 && /repli/.test(res.headers.get('x-kdmc-router') || '')) return res;
     const outHeaders = new Headers(res.headers);
     outHeaders.delete('content-security-policy-report-only');
     outHeaders.set('x-kdmc-router', host);
@@ -643,6 +659,55 @@ const ROUTEUR = {
    Et http://kd-mc.com/ répondait 200 en clair au lieu de rediriger vers https.
    Ici, CHAQUE réponse passe par le même durcissement, quel que soit le chemin qui l'a faite :
    un nouveau `return new Response(...)` ne peut plus l'oublier. */
+/* ─── UNE APP N'EST SERVIE QU'À SA BELLE ADRESSE — et CMCteams jamais par accident ───────────
+   Kevin 27.09 nuit : « Personne ne doit atterrir sur CMCteams ou light sans se connecter ou
+   s'inscrire complètement », puis une capture : icône → « kd-mc.com » → connexion CMCteams.
+   Deux causes, deux protections :
+   1. belleAdresseDe(chemin) : sur kd-mc.com, un chemin qui est le DOSSIER d'une app
+      (/tools/cuisine/…, /CMCteams/tools/cuisine/…) → https://<son sous-domaine>/<reste>.
+   2. estPageCmcteams(texte) : l'hébergeur répond « 200 + SA page d'accueil » (= CMCteams) à
+      tout chemin qu'il ne connaît pas. Hors de cmcteams.kd-mc.com, une telle réponse n'est
+      JAMAIS servie : page « introuvable » honnête (404), ou renvoi vers cmcteams.kd-mc.com
+      quand c'est vraiment l'accueil de CMCteams qui était demandé. */
+export function belleAdresseDe(chemin) {
+  const c = cheminNormal(chemin);
+  for (const h of Object.keys(ROUTES)) {
+    if (h === 'kd-mc.com' || h === 'www.kd-mc.com') continue;
+    const dossier = ROUTES[h].toLowerCase();                          // ex. /cmcteams/tools/cuisine
+    const rel = dossier.replace(/^\/cmcteams/, '');                   // ex. /tools/cuisine
+    if (!rel || rel.startsWith('/kdmc-home')) continue;               // CMCteams lui-même / pages du portail
+    for (const pre of [dossier, rel]) {
+      if (c === pre || c.startsWith(pre + '/')) {
+        const reste = String(chemin).slice(pre.length) || '/';        // casse d'origine gardée
+        return 'https://' + h + (reste.startsWith('/') ? reste : '/' + reste);
+      }
+    }
+  }
+  return '';
+}
+export function estPageCmcteams(texte) {
+  const debut = String(texte || '').slice(0, 20000);
+  /* La page PRINCIPALE de CMCteams seulement : « CMCteams light » (départs) et « CMCteams - Force MAJ »
+     sont d'autres pages, légitimes à leurs adresses — mesuré sur tout le dépôt. */
+  return /<title>\s*CMCteams\s*[—–-]\s*Planning/i.test(debut) || /var APP_VER="v9\.\d+"/.test(String(texte || ''));
+}
+/* Garde appliquée à une page HTML de l'hébergeur avant de la servir (hors cmcteams.kd-mc.com). */
+async function sansCmcteamsParAccident(res, host, chemin, request) {
+  if (host === 'cmcteams.kd-mc.com') return res;
+  if (!res || res.status !== 200 || request.method !== 'GET') return res;
+  if (!/text\/html/i.test(res.headers.get('content-type') || '')) return res;
+  const texte = await res.text();
+  if (!estPageCmcteams(texte)) { const h = new Headers(res.headers); h.delete('content-length'); return new Response(texte, { status: res.status, statusText: res.statusText, headers: h }); }
+  const c = cheminNormal(chemin);
+  if (/^\/cmcteams\/?(index\.html)?$/.test(c)) {
+    return new Response(null, { status: 301, headers: { location: 'https://cmcteams.kd-mc.com/', 'cache-control': 'no-store', 'x-kdmc-router': host + ' (CMCteams à sa belle adresse)' } });
+  }
+  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>Page introuvable — kd-mc.com</title>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
+    + '<body><div class="c"><div style="font-size:44px">🧭</div><h1>Cette page n’existe pas ici</h1><p>L’adresse ouverte ne correspond à aucune page. Si c’est une icône de ton écran d’accueil, supprime-la et repose-la depuis l’app.</p><a href="https://kd-mc.com/">Aller à mon espace</a></div></body></html>';
+  return new Response(html, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-router': host + ' (repli de l\'hébergeur refusé)' } });
+}
+
 export function durcirReponse(res) {
   if (!res || res.status === 101 || res.webSocket) return res;   // WebSocket : on n'y touche pas
   const h = new Headers(res.headers);

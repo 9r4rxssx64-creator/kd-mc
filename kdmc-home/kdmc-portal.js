@@ -79,7 +79,11 @@
       var host = ''; try { host = new URL(r).hostname; } catch (e) { /* */ }
       var t = SSO_PASS_CONSUMERS[host] && window.kdmcSSO && window.kdmcSSO.token ? window.kdmcSSO.token() : '';
       if (t) r += (r.indexOf('#') >= 0 ? '&' : '#') + 'kdmc_sso=' + encodeURIComponent(t);
-      location.replace(r);
+      /* ET, pour TOUTES les apps (27.09.2026, « reconnu par n'importe quel chemin ») : on passe
+         par la porte /__sso/entrer de l'app, qui dépose la session dans le stockage de l'app
+         installée — y compris CMCteams, qui ne peut pas lire le fragment. */
+      if (window.kdmcSSO && window.kdmcSSO.porte) { window.kdmcSSO.porte(r).then(function (u) { location.replace(u); }); }
+      else location.replace(r);
       return true;
     }
     return false;
@@ -343,6 +347,8 @@
       +   '<button class="btn" id="l-go" type="button">Me connecter</button>'
       +   '<p class="g-err" id="l-err" role="alert" aria-live="polite"></p>'
       + '</div>'
+      + '<button class="btn ghost" id="f-admin" type="button">👑 Je suis l\'administrateur</button>'
+      + adminBlock()
       + '<p class="g-sub" style="text-align:center;margin:10px 0 14px">— ou, première fois ici —</p>'
       + '<h2 class="g-title">Créer mon compte KDMC</h2>'
       + '<p class="g-sub">Première connexion. Un seul compte pour tout ton univers.</p>'
@@ -360,6 +366,7 @@
       if (!box.hidden) document.getElementById('l-nom').focus();
     });
     document.getElementById('l-go').addEventListener('click', doLoginCode);
+    wireAdmin();
     document.getElementById('l-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLoginCode(); });
     var bpk = document.getElementById('f-pk');
     if (bpk) bpk.addEventListener('click', function () {
@@ -433,14 +440,59 @@
           throw { deja: true };
         }
         if (j && !j.ok && j.message) throw { message: j.message };
+        if (j && j.ok && j.admin_requis) { localStorage.removeItem(LS_ACCOUNT); throw { admin: true }; }
         return acc;   /* domaine muet (null) → le compte local marche quand même (fail-open) */
       });
     }).then(function (acc) {
       _postLogin(acc);
     }).catch(function (e) {
+      if (e && e.admin) { btn.disabled = false; btn.textContent = 'Créer mon compte'; montrerAdmin('Tu es l\'administrateur : entre ton code admin, tu seras reconnu partout.'); return; }
       err.textContent = (e && e.deja) ? 'Ce nom a déjà un compte. Touche « J\'ai déjà un compte — nom + code » ci-dessus.'
         : ((e && e.message) || 'Erreur, réessaie.');
       btn.disabled = false; btn.textContent = 'Créer mon compte';
+    });
+  }
+
+  /* JE SUIS L'ADMINISTRATEUR (Kevin 27.09.2026 : « reconnu par n'importe quel chemin sur mes
+     appareils : domaine, chaque app, internet, bureau »). Sur un appareil sans Face ID (le PC, un
+     navigateur neuf), le code admin — vérifié par le domaine, jamais gardé ici — donne la session
+     vérifiée de l'admin, reconnue par toutes les apps ; on propose ensuite Face ID / Windows Hello
+     pour ne plus jamais le retaper sur cet appareil. */
+  function adminBlock() {
+    return '<div id="f-admin-box" hidden>'
+      + '<input class="fld" id="a-code" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="Code administrateur">'
+      + '<button class="btn" id="a-go" type="button">Me reconnaître partout</button>'
+      + '<p class="g-err" id="a-err" role="alert" aria-live="polite"></p>'
+      + '</div>';
+  }
+  function wireAdmin() {
+    var b = document.getElementById('f-admin'); if (!b) return;
+    b.addEventListener('click', function () { montrerAdmin(); });
+    document.getElementById('a-go').addEventListener('click', doAdminCode);
+    document.getElementById('a-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doAdminCode(); });
+  }
+  function montrerAdmin(message) {
+    var box = document.getElementById('f-admin-box'); if (!box) return;
+    box.hidden = false;
+    if (message) document.getElementById('a-err').textContent = message;
+    try { document.getElementById('a-code').focus(); } catch (e) { /* */ }
+  }
+  function doAdminCode() {
+    var code = (document.getElementById('a-code').value || '').trim();
+    var err = document.getElementById('a-err'); err.textContent = '';
+    if (!code) { err.textContent = 'Ton code administrateur.'; return; }
+    var b = document.getElementById('a-go'); b.disabled = true; b.textContent = '…';
+    window.kdmcSSO.adminCode(code).then(function (j) {
+      document.getElementById('a-code').value = '';
+      if (!j || !j.ok) {
+        err.textContent = (j && j.reason === 'rate_limited') ? 'Trop d\'essais. Réessaie dans ' + Math.ceil((j.wait || 900) / 60) + ' min.' : 'Code administrateur incorrect.';
+        b.disabled = false; b.textContent = 'Me reconnaître partout'; return;
+      }
+      /* Le compte admin est gardé sur CET appareil (sans code) : la prochaine fois, Face ID —
+         ou de nouveau le code admin (jamais un « code de compte » pour l'admin). */
+      var acc = { uid: j.uid || 'kdmc_admin', name: 'Kevin Desarzens', salt: '', codeHash: '', admin: true, created: Date.now() };
+      ls(LS_ACCOUNT, acc); ls(LS_CGU, { at: Date.now(), v: 1 });
+      _postLogin(acc);
     });
   }
 
@@ -470,6 +522,14 @@
     var err = document.getElementById('u-err'); err.textContent = '';
     if (!code) { err.textContent = 'Entre ton code.'; return; }
     var btn = document.getElementById('u-go'); btn.disabled = true; btn.textContent = '…';
+    if (acc.admin || !acc.codeHash) {
+      /* Compte admin sur cet appareil : le code tapé est le code ADMIN, vérifié par le domaine. */
+      return window.kdmcSSO.adminCode(code).then(function (j) {
+        document.getElementById('u-code').value = '';
+        if (!j || !j.ok) { err.textContent = 'Code administrateur incorrect.'; btn.disabled = false; btn.textContent = 'Se connecter'; return; }
+        _postLogin(acc);
+      });
+    }
     hashCode(code, acc.salt).then(function (h) {
       if (!timingEq(h, acc.codeHash)) { err.textContent = 'Code incorrect.'; btn.disabled = false; btn.textContent = 'Se connecter'; return; }
       if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) { _postLogin(acc); return; }
@@ -511,6 +571,7 @@
       var b = document.getElementById('pk-go'); b.disabled = true; b.textContent = '…';
       window.kdmcSSO.registerPasskey().then(function (j) {
         if (j && j.ok) { _setPasskey(acc.uid, j.credId); showHub(acc.name); }
+        else if (j && /code admin/i.test(j.reason || '')) { renderCreate(); montrerAdmin('Ce compte est protégé : entre ton code admin, puis active Face ID.'); }
         else { document.getElementById('pk-err').textContent = 'Face ID non activé (' + ((j && j.reason) || 'annulé') + '). Tu peux réessayer plus tard.'; b.disabled = false; b.textContent = 'Activer Face ID / Touch ID'; }
       });
     });

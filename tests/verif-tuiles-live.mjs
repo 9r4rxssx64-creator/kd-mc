@@ -22,6 +22,7 @@
  * Lecture seule sur le domaine, aucun secret, aucun code admin.
  * Lancer : node tests/verif-tuiles-live.mjs   (hors CI : le domaine est injoignable → il le DIT)
  */
+import { classerDestination } from '../tools/audit/classer-destination.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -56,7 +57,7 @@ function dire(ok, texte, info) {
 async function lire(url) {
   try {
     const r = await fetch(url, { headers: { 'user-agent': 'CMCteams-verif-tuiles/1.0 (+https://kd-mc.com)' }, redirect: 'follow' });
-    return { ok: r.ok, status: r.status, txt: r.ok ? await r.text() : '' };
+    return { ok: r.ok, status: r.status, porte: r.headers.get('x-kdmc-porte') || '', txt: r.ok ? await r.text() : '' };
   } catch (e) { return { ok: false, err: String((e && e.message) || e).slice(0, 140) }; }
 }
 
@@ -160,16 +161,22 @@ for (const s of SURFACES) {
 /* ── Chaque destination répond-elle ? Une tuile vers une 404 est pire que pas de tuile. ── */
 lignes.push('## Chaque tuile mène-t-elle quelque part ?');
 const mortes = [];
+const derrierePorte = [];   // 401 + x-kdmc-porte : la porte « fiche » fait son travail (voir classer-destination.mjs)
 for (const [url, info] of destinations) {
   const r = await lire(url);
   info.status = r.ok ? 200 : (r.status || r.err);
-  if (!r.ok) mortes.push({ url, status: info.status, venantDe: info.venantDe });
+  const classe = classerDestination(r);
+  if (classe === 'porte') derrierePorte.push({ url, status: info.status, porte: r.porte, venantDe: info.venantDe });
+  else if (classe === 'morte') mortes.push({ url, status: info.status, venantDe: info.venantDe });
 }
 mesures.destinations_total = destinations.size;
 mesures.destinations_mortes = mortes.length;
+mesures.destinations_derriere_porte = derrierePorte.length;
 mesures.tuiles_en_construction = chantiers.length;
-dire(mortes.length === 0, `les ${destinations.size} destinations de tuiles répondent`,
+dire(mortes.length === 0, `aucune des ${destinations.size} destinations de tuiles n'est morte (${destinations.size - derrierePorte.length} vivantes vérifiées + ${derrierePorte.length} derrière la porte)`,
   mortes.length ? mortes.map((m) => `${m.url} → ${m.status} (${m.venantDe[0]})`).join(' · ') : 'aucune tuile ne mène à une page morte');
+if (derrierePorte.length) dire(null, derrierePorte.length + ' destination(s) derrière la porte « fiche » — 401 VOLONTAIRE (en-tête x-kdmc-porte), pas une page morte ; leur contenu est vérifié connecté par verif-reelle',
+  derrierePorte.map((m) => `${m.url} (${m.venantDe[0]})`).join(' · '));
 if (chantiers.length) dire(null, chantiers.length + ' tuile(s) « en construction » non sonnée(s) (grisées exprès, elles annoncent un chantier)', chantiers.join(' · '));
 if (mortes.length) {
   lignes.push('', '| Adresse | Réponse | Tuile qui y mène |', '|---|---|---|');
@@ -204,7 +211,7 @@ lignes.push('- Les tuiles du **tableau admin** (`kdmc-home/admin/admin.js`) sont
   '  elles sont prouvées en vrai navigateur par `npm run test:admin-tuiles-reel` (15/0), pas ici.',
   '- Un cache d\'iPhone déjà chargé peut retarder ce que Kevin voit de quelques minutes.');
 lignes.push('', '---', '', echecs === 0
-  ? '**Conclusion : ' + mesures.tuiles_total + ' tuiles servies, ' + mesures.destinations_total + ' destinations vivantes, 0 écart.**'
+  ? '**Conclusion : ' + mesures.tuiles_total + ' tuiles servies, ' + (mesures.destinations_total - mesures.destinations_derriere_porte) + ' destinations vivantes vérifiées, ' + mesures.destinations_derriere_porte + ' derrière la porte « fiche », 0 écart.**'
   : '**Conclusion : ' + echecs + ' écart(s) mesuré(s) — détail ci-dessus.**');
 
 fs.mkdirSync(SORTIE, { recursive: true });

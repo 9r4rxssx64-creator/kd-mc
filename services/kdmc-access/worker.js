@@ -161,12 +161,27 @@ async function handleLog(request, env, origin) {
   return new Response(null, { status: 204, headers: corsHeaders(origin) });
 }
 
-// ── GET /history : agrégé par personne (PIN admin requis) ──
+/* (27.09.2026, « reconnu par n'importe quel chemin ») : la session VÉRIFIÉE de Kevin (cookie kdmc_sso
+   du domaine, envoyé à admin.kd-mc.com aussi, ou Bearer) vaut le code admin. Ce worker n'a pas le
+   secret du domaine : il demande au domaine lui-même (/__sso/whoami), qui est la seule vérité. */
+async function sessionAdmin(request, env) {
+  try {
+    const auth = request.headers.get('authorization') || '';
+    const m = auth.match(/^Bearer\s+(.+)$/i);
+    const c = (request.headers.get('cookie') || '').match(/(?:^|;\s*)kdmc_sso=([^;]+)/);
+    const token = m ? m[1].trim() : (c ? decodeURIComponent(c[1]) : '');
+    if (!token) return false;
+    const r = await fetch((env.KDMC_SSO_URL || 'https://kd-mc.com') + '/__sso/whoami', { headers: { authorization: 'Bearer ' + token } });
+    const j = await r.json();
+    return !!(j && j.ok && j.admin === true && j.verified === true);
+  } catch (_) { return false; }
+}
+// ── GET /history : agrégé par personne (PIN admin OU session vérifiée de l'admin) ──
 async function handleHistory(request, env, origin) {
   const pin = (request.headers.get('x-apex-pin') || new URL(request.url).searchParams.get('pin') || '').toLowerCase().trim();
   const expected = String(env.APEX_ADMIN_PIN_SHA256 || '').toLowerCase().trim();
   if (!expected) return json({ ok: false, error: 'pin_not_configured' }, 503, origin);
-  if (!safeEqual(pin, expected)) return json({ ok: false, error: 'unauthorized' }, 401, origin);
+  if (!safeEqual(pin, expected) && !(await sessionAdmin(request, env))) return json({ ok: false, error: 'unauthorized' }, 401, origin);
   const token = await getAccessToken(env);
   if (!token) return json({ ok: false, error: 'fb_unavailable' }, 503, origin);
   let raw;

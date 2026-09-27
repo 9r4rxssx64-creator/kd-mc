@@ -182,6 +182,36 @@
       .catch(function () { return { ok: false, reason: 'neterr', message: 'Le domaine ne répond pas. Réessaie dans un instant.' }; });
   }
 
+  /* ENTRER PAR N'IMPORTE QUELLE PORTE (27.09.2026). Une app installée (iPhone, PC) a ses cookies
+     à elle : on passe par SON adresse /__sso/entrer, qui dépose la session (et le grant admin)
+     dans SON stockage, puis renvoie sur la page voulue. Marche pour toute adresse du domaine.
+     → Promise<string> : l'adresse à ouvrir (l'adresse d'origine si rien à déposer). */
+  function porte(url) {
+    var u; try { u = new URL(String(url), location.origin); } catch (e) { return Promise.resolve(String(url)); }
+    if (u.protocol !== 'https:' || !/(^|\.)kd-mc\.com$/.test(u.hostname)) return Promise.resolve(u.href);
+    var t = storedToken();
+    var lire = t ? Promise.resolve({ ok: true, token: t, grant: '' })
+      : fetch(BASE + '/pass', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return null; });
+    return lire.then(function (j) {
+      if (!j || !j.ok || !j.token) return u.href;
+      var to = u.pathname + u.search + u.hash;
+      return u.origin + '/__sso/entrer?to=' + encodeURIComponent(to) + '&t=' + encodeURIComponent(j.token) + (j.grant ? '&g=' + encodeURIComponent(j.grant) : '');
+    });
+  }
+
+  /* JE SUIS L'ADMINISTRATEUR (27.09.2026). Le code admin, vérifié par le domaine, donne la
+     session VÉRIFIÉE de l'admin sur cet appareil (celle que toutes les apps reconnaissent), plus le
+     grant des portes admin — même sans Face ID (PC, navigateur neuf). Le code ne reste nulle part. */
+  function adminCode(code) {
+    return fetch('/__admin/login', {
+      method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: String(code || '') }),
+    })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, reason: 'neterr' }; }); })
+      .then(function (j) { if (j && j.ok && j.token) setToken(j.token); return j || { ok: false }; })
+      .catch(function () { return { ok: false, reason: 'neterr' }; });
+  }
+
   function logout() {
     setToken('');
     return fetch(BASE + '/logout', { method: 'POST', credentials: 'include', headers: authHeaders() })
@@ -271,6 +301,8 @@
     issue: issue,
     issueDetail: issueDetail,
     login: login,
+    porte: porte,
+    adminCode: adminCode,
     logout: logout,
     consumeHashToken: consumeHashToken,
     ensureSession: ensureSession,

@@ -4,11 +4,12 @@
    (KV, session, origin, claim verified). node webauthn-endpoints.test.mjs */
 import mod from './worker.js';
 import { b64uDec, b64uEnc } from './webauthn.js';
+import { createHash } from 'crypto';
 
 const te = new TextEncoder();
 const store = new Map();
 const ACCOUNTS = { get: async (k) => (store.has(k) ? store.get(k) : null), put: async (k, v) => { store.set(k, v); } };
-const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };
 const ORIGIN = 'https://kd-mc.com', RPID = 'kd-mc.com';
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : (fail++, console.log('  ✗ ' + m)); };
 const REQ = (path, opt = {}) => new Request('https://kd-mc.com' + path, { method: opt.method || 'GET', headers: opt.headers || {}, body: opt.body });
@@ -48,10 +49,23 @@ const run = async () => {
   const regAuthData = cat(rpIdHash, Uint8Array.of(0x45), Uint8Array.of(0, 0, 0, 0), new Uint8Array(16), Uint8Array.of(0, credId.length), credId, cose);
   const attObj = cat(head(5, 3), enc('fmt'), enc('none'), enc('attStmt'), head(5, 0), enc('authData'), enc(regAuthData));
   const regCD = te.encode(JSON.stringify({ type: 'webauthn.create', challenge: ro.challenge, origin: ORIGIN }));
+  /* (27.09.2026) PLUS DE « BOOTSTRAP » : même avec une liste de passkeys VIDE, une session faible
+     qui se dit « kevin-desarzens » n'enrôle rien sur le compte admin. C'était le trou : un inconnu
+     tapant le nom de Kevin sur un appareil neuf devenait admin avec SON Face ID. */
   r = await mod.fetch(POST('/__sso/webauthn/register/verify', { attestationObject: b64uEnc(attObj), clientDataJSON: b64uEnc(regCD) }, { cookie }), env);
+  const rv0 = await r.json();
+  ok(rv0.ok === false && /admin protégé/i.test(rv0.reason || '') && !store.has('pk:kdmc_admin') && !store.has('pk:kevin-desarzens'),
+    'liste VIDE + session faible « kevin-desarzens » → REFUS (plus de bootstrap sur le compte admin)');
+  /* Kevin, lui, prouve le code admin (/__admin/login) : le grant ET une session vérifiée arrivent. */
+  const ra0 = await mod.fetch(POST('/__admin/login', { code: '424242' }, { cookie }), env);
+  const grant = ((ra0.headers.get('set-cookie') || '').match(/kdmc_admin=([^;]+)/) || [])[1];
+  ok(!!grant && (await ra0.json()).verified === true, 'code admin prouvé → grant + session vérifiée');
+  const ro2 = await (await mod.fetch(POST('/__sso/webauthn/register/options', {}, { cookie }), env)).json();
+  const regCD1 = te.encode(JSON.stringify({ type: 'webauthn.create', challenge: ro2.challenge, origin: ORIGIN }));
+  r = await mod.fetch(POST('/__sso/webauthn/register/verify', { attestationObject: b64uEnc(attObj), clientDataJSON: b64uEnc(regCD1) }, { cookie: cookie + '; kdmc_admin=' + grant }), env);
   const rv = await r.json();
-  ok(rv.ok && rv.verified === true && typeof rv.token === 'string', 'register/verify → enregistré + token FORT (verified)');
-  ok(store.has('pk:kevin-desarzens'), 'passkey stocké en KV (pk:<uid>)');
+  ok(rv.ok && rv.verified === true && typeof rv.token === 'string', 'register/verify (avec le grant admin) → enregistré + token FORT (verified)');
+  ok(store.has('pk:kdmc_admin') && !store.has('pk:kevin-desarzens'), 'passkey stocké en KV sous la clé CANONIQUE de l\'admin (pk:kdmc_admin), jamais sous l\'uid de session');
 
   /* 4) auth/options */
   r = await mod.fetch(POST('/__sso/webauthn/auth/options', { uid: 'kevin-desarzens' }), env);
@@ -110,7 +124,7 @@ const run = async () => {
   ra = await mod.fetch(POST('/__sso/webauthn/register/verify', { attestationObject: b64uEnc(attObj2), clientDataJSON: b64uEnc(regCD2) }, { cookie: cookieAtk }), env);
   const rvA = await ra.json();
   ok(rvA.ok === false && /admin protégé/i.test(rvA.reason || ''), 'attaquant (session faible) NE greffe PAS de passkey sur admin → REFUS');
-  const pkList = JSON.parse(store.get('pk:kevin-desarzens') || '[]');
+  const pkList = JSON.parse(store.get('pk:kdmc_admin') || '[]');
   ok(!pkList.some((k) => k.credId === b64uEnc(credId2)), 'le passkey de l\'attaquant n\'est PAS entré en KV');
 
   /* 10) FACE ID DEPUIS NOS APPS (Kevin 26.09, « Oui aux 2 ») : l'app Bee de l'écran d'accueil a

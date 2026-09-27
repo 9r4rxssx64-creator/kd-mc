@@ -26,6 +26,12 @@
 | `tools/departs/index.html` | **Modifié (v1.58).** light : départs cachés tant que portillon + fiche ne sont pas faits ; plus de « Plus tard ». | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/departs/index.html) |
 | `tests/verify-fiche-premiere-connexion.mjs` | **Modifié.** 35 contrôles en vrai navigateur, dans les deux applis. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-fiche-premiere-connexion.mjs) |
 
+### 👑 Toi, reconnu par n'importe quel chemin (27.09.2026)
+
+- 🖥 **Le portail, bouton « 👑 Je suis l'administrateur »** (PC, navigateur neuf) : [kd-mc.com](https://kd-mc.com/)
+- 🧪 **Le test « PC sans Face ID + app installée »** : [tests/verify-compte-unique-portail.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-compte-unique-portail.mjs)
+- 🧪 **La porte des apps installées** : [services/kdmc-router/entrer.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/entrer.test.mjs) · **admin partout** : [services/kdmc-router/admin-partout.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/admin-partout.test.mjs)
+
 ### 🔑 Un seul compte + un seul code pour tout ton domaine (27.09.2026)
 
 - 🖥 **Le portail** (bouton « J'ai déjà un compte — nom + code ») : [kd-mc.com](https://kd-mc.com/)
@@ -3105,3 +3111,5 @@ officiels les retirent eux-mêmes avant publication.
 | `.github/workflows/coffre-sonde-ce-qui-est-servi.yml` | Robot **au coffre**, lancé à la main (0 cron) : regarde ce que chaque adresse sert **vraiment** (vraie page, porte « fiche », autre chose) et contrôle les versions / la MAJ auto. Rapport lisible depuis l'iPhone (annotations). | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/coffre-sonde-ce-qui-est-servi.yml) |
 | `tools/audit/sonde-ce-qui-est-servi.mjs` | La sonde elle-même : lit le HTML servi comme un navigateur, dit « 🚪 porte », « ✅ vraie page » ou « ❓ autre chose » | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/sonde-ce-qui-est-servi.mjs) |
 | `tests/verify-rapport-chaine-privee.mjs` | `npm run test:rapport-chaine-privee` — le rapport du robot « chaîne privée » doit **nommer** le test qui casse, sans jamais laisser sortir le code admin (dans `test:ci`, prouvée sur 3 sabotages) | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-rapport-chaine-privee.mjs) |
+| `tools/audit/classer-destination.mjs` | Règle partagée : une tuile qui mène derrière la porte « fiche » n'est pas une tuile morte (401 + en-tête du routeur) — une vraie morte le reste | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/classer-destination.mjs) |
+| `tests/verify-classer-destination.mjs` | `npm run test:classer-destination` — la règle, les 8 réponses réellement mesurées, et la preuve que la sonde des tuiles l'utilise (dans `test:ci`, 5 sabotages) | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-classer-destination.mjs) |

@@ -1,6 +1,6 @@
 {
-  "le": "2026-09-27T20:05:31.413Z",
-  "echecs": 1,
+  "le": "2026-09-27T20:32:03.381Z",
+  "echecs": 0,
   "surfaces": [
     {
       "nom": "Portail kd-mc.com",
@@ -23,8 +23,9 @@
   ],
   "tuiles_total": 49,
   "tuiles_absentes_en_ligne": 0,
-  "destinations_mortes": 8,
+  "destinations_mortes": 0,
   "destinations_total": 41,
+  "destinations_derriere_porte": 8,
   "tuiles_en_construction": 8,
   "javis": {
     "hote": "javis.kd-mc.com",

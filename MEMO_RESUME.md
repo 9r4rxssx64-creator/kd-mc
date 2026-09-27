@@ -1,5 +1,30 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-27 (soir) — Kevin reconnu par n'importe quel chemin : PC, app installée, chaque app
+
+Kevin : « Je dois pouvoir être reconnu par n'importe quel chemin sur mes appareils. Domaine, chaque app,
+internet, bureau, etc. »
+
+**Mesuré avant** (inventaire des 32 adresses, 4 chemins chacune) : (1) sur un appareil NEUF sans passkey
+(le Lenovo), Kevin n'avait AUCUN chemin : `/__sso/login` refuse l'admin, « Créer » donnait une session
+faible, l'enrôlement Face ID répondait « compte admin protégé » sans issue ; (2) apps installées
+(cookies isolés) : CMCteams et Apex AI hors de la liste du laissez-passer, Créa envoyait son pass en
+`?t=`/`x-kdmc-sso` que `whoami` ignorait, grant admin à retaper par app toutes les 12 h ; (3) la page
+« Qui se connecte » ne connaissait que le code ; (4) **trou** : `pk:kevin-desarzens` vide → un inconnu
+déclarant ce nom passait le « bootstrap » et enrôlait SON Face ID sur le compte admin.
+
+**Fait** : `/__admin/login` émet la session VÉRIFIÉE de l'admin (+ grant), anti-essais fermé en cas de
+doute ; portail v1.0.38 « 👑 Je suis l'administrateur », `admin_requis` ; `/__sso/entrer` sur chaque
+hôte dépose session + grant dans le stockage de l'app installée puis redirige proprement ;
+`/__sso/pass` ; `kdmcSSO.porte()` / `adminCode()` ; `ssoToken` lit Bearer, `x-kdmc-sso`, `?t=`,
+cookie ; admin.kd-mc.com (`kdmc-access`) et `/__admin/domain-log` acceptent la session vérifiée
+(Allow-Credentials) ; passkeys admin sous `pk:kdmc_admin`, plus de bootstrap.
+**Gardes** : test:entrer 7/7, test:admin-partout 7/7, test:compte-unique-portail 10/10 (Chromium : PC
+sans passkey, app installée CMCteams), webauthn-endpoints 22/22, self-service 25/25, bee-iphone 21/21 —
+chacun prouvé par sabotage. Leçon #352.
+**Reste** : Lingua / La Détente / Coffre sans identité domaine (Coffre : voulu) ; `autoLogin` sans
+consommateur (règle recopiée ≥ 8 fois) ; Autorisations : PIN local créé par le premier venu (derrière la
+porte admin du routeur).
 ## 2026-09-27 (nuit) — « L’app du bureau m’amène là » (capture : kd-mc.com + connexion CMCteams) → jamais CMCteams par accident
 
 **Mesuré** (Zapier, requête d’iPhone) : `https://kd-mc.com/tools/cuisine/index.html` → **200 + CMCteams v9.926**. L’hébergeur
@@ -112,6 +137,10 @@ vérifiés pour de vrai. Mais « 1 surface en échec » sans nom : le rapport `v
 **Chaîne privée relancée avec le nouveau rapport** (run 36346393620) : `fiches-privees` ne casse plus ; rouges nommés =
 `seances` 38/2 et `seances-individuel` 22/1 (light, « Formation CMS » — chantier de `claude/seances-light`) et
 `seed-remplace` (cas NON nommé : mon filtre ignorait « ❌ » → corrigé, + total en double, garde 17/0, 4 sabotages).
+
+**« Vérif LIVE → rapport » (rouge sur les branches dès le 26.09 22h46 UTC, sur `main` le 27.09 19h07 UTC)** : les 8 « destinations mortes » étaient les 8 adresses de la porte
+« fiche » (401 + `x-kdmc-porte`) — la 2e sonde en direct, celle des tuiles, oubliée par #349. Corrigé par une règle partagée
+(`classer-destination.mjs`) qui ne masque aucune vraie morte ; garde 14/0, 5 sabotages ; vrai domaine 27/09 20:28 UTC : 0 écart. Leçon #356.
 
 **Reste, à dire à Kevin** : `test:fiches-privees` est vert en local (45/0) et rouge en CI (44/1) — le cas sera nommé au
 prochain passage de la chaîne privée. Une décision à lui : rallumer `verifier-maj-auto` au coffre (minutes) — ou

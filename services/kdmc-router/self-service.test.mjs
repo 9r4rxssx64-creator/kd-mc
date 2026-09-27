@@ -7,7 +7,8 @@ import { b64uDec, b64uEnc } from './webauthn.js';
 const te = new TextEncoder();
 const store = new Map();
 const ACCOUNTS = { get: async (k) => (store.has(k) ? store.get(k) : null), put: async (k, v) => { store.set(k, v); }, delete: async (k) => { store.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS };
+import { createHash } from 'crypto';
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };
 const ORIGIN = 'https://kd-mc.com', RPID = 'kd-mc.com';
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : (fail++, console.log('  ✗ ' + m)); };
 const REQ = (path, opt = {}) => new Request('https://kd-mc.com' + path, { method: opt.method || 'GET', headers: opt.headers || {}, body: opt.body });
@@ -34,7 +35,14 @@ async function enroll(uid, name) {
   const regAuthData = cat(rpIdHash, Uint8Array.of(0x45), Uint8Array.of(0, 0, 0, 0), new Uint8Array(16), Uint8Array.of(0, credId.length), credId, cose);
   const attObj = cat(head(5, 3), enc('fmt'), enc('none'), enc('attStmt'), head(5, 0), enc('authData'), enc(regAuthData));
   const regCD = te.encode(JSON.stringify({ type: 'webauthn.create', challenge: ro.challenge, origin: ORIGIN }));
-  r = await mod.fetch(POST('/__sso/webauthn/register/verify', { attestationObject: b64uEnc(attObj), clientDataJSON: b64uEnc(regCD) }, { cookie }), env);
+  /* (27.09.2026) Un uid ADMIN n'a plus de « bootstrap » : Kevin prouve d'abord le code admin
+     (grant), comme sur un vrai appareil neuf. Les autres comptes s'enrôlent comme avant. */
+  let cookies = cookie;
+  if (/kevin|kdmc_admin/.test(uid)) {
+    const g = ((await mod.fetch(POST('/__admin/login', { code: '424242' }), env)).headers.get('set-cookie') || '').match(/kdmc_admin=([^;]+)/);
+    cookies = cookie + '; kdmc_admin=' + (g ? g[1] : '');
+  }
+  r = await mod.fetch(POST('/__sso/webauthn/register/verify', { attestationObject: b64uEnc(attObj), clientDataJSON: b64uEnc(regCD) }, { cookie: cookies }), env);
   const rv = await r.json();
   return { strong: 'Bearer ' + rv.token, weakCookie: cookie, credId: b64uEnc(credId).slice(0, 12) };
 }

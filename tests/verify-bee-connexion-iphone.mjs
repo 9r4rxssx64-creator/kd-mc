@@ -37,6 +37,7 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 function chargerPlaywright() {
@@ -50,7 +51,7 @@ const worker = (await import('file://' + ROOT + '/services/kdmc-router/worker.js
 
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'bee-iphone-e2e', ACCOUNTS };   /* RP par défaut : kd-mc.com — les vraies valeurs */
+const env = { KDMC_SSO_SECRET: 'bee-iphone-e2e', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };   /* RP par défaut : kd-mc.com — les vraies valeurs */
 const CODE = '123456';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.json': 'application/json',
   '.png': 'image/png', '.css': 'text/css', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml' };
@@ -70,6 +71,12 @@ const routeur = async (route) => {
     const corps = ['GET', 'HEAD'].includes(req.method()) ? undefined : req.postDataBuffer();
     const r = await worker.fetch(new Request(u.href, { method: req.method(), headers: h, body: corps }), env);
     const hs = {}; r.headers.forEach((v, k) => { hs[k] = v; });
+    const sc = r.headers.getSetCookie ? r.headers.getSetCookie() : [];
+    if (sc.length) hs['set-cookie'] = sc.join('\n');
+    /* /__sso/entrer (27.09) répond 302 : Chromium refuse une redirection fabriquée par l'interception →
+       on la rejoue en redirection de page, cookies identiques (le vrai 302 est prouvé par entrer.test.mjs). */
+    if (r.status === 302) return route.fulfill({ status: 200, headers: Object.assign({ 'content-type': 'text/html' }, sc.length ? { 'set-cookie': sc.join('\n') } : {}),
+      body: '<meta http-equiv="refresh" content="0;url=' + String(r.headers.get('location') || '/').replace(/"/g, '') + '">' });
     return route.fulfill({ status: r.status, headers: hs, body: Buffer.from(await r.arrayBuffer()) });
   }
   const dossier = DOSSIERS[u.hostname];
@@ -111,6 +118,11 @@ try {
   await page.fill('#f-prenom', 'Kevin'); await page.fill('#f-nom', 'Desarzens');
   await page.fill('#f-code', CODE); await page.fill('#f-code2', CODE);
   await page.check('#cgu-ok'); await page.click('#f-create');
+  /* (27.09.2026) Kevin n'a plus de « compte faible » : son nom → le portail demande le code ADMIN,
+     qui donne la session vérifiée ; Face ID est proposé juste après (et le passkey se range sous
+     le compte canonique de l'admin). C'est le vrai 1er parcours d'un appareil neuf. */
+  await page.waitForSelector('#f-admin-box:not([hidden])', { timeout: 8000 });
+  await page.fill('#a-code', '424242'); await page.click('#a-go');
   await page.waitForSelector('#pk-go', { timeout: 8000 });
   await page.click('#pk-go');
   await page.waitForFunction(() => { const h = document.getElementById('hub'); return h && !h.hidden; }, null, { timeout: 10000 });

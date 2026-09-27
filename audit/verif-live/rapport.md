@@ -1,4 +1,4 @@
-# Vérif LIVE — page Départs + CMCteams (2026-09-27 20:05 UTC)
+# Vérif LIVE — page Départs + CMCteams (2026-09-27 20:32 UTC)
 
 > Contrôle exécuté par la CI (réseau ouvert) sur le VRAI domaine, puis écrit ici pour être
 > relu depuis la session (le domaine est injoignable depuis l'agent). Lecture seule.

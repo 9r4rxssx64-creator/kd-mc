@@ -10568,6 +10568,29 @@ Plus `bloque:[…]` : l'admin ferme **une app précise**, même à quelqu'un qui
 - Gardes : `test:perimetre-apps`, `test:code-compte` (15), `test:compte-unique-portail` (vrai
   navigateur, deux téléphones).
 
+### 4 ter. RECONNU PAR N'IMPORTE QUEL CHEMIN — l'admin sur tous ses appareils (Kevin 2026-09-27)
+
+> **« Je dois pouvoir être reconnu par n'importe quel chemin sur mes appareils. Domaine, chaque app, internet, bureau, etc. »** — Kevin 2026-09-27
+
+- **Le code admin prouvé = la session VÉRIFIÉE de Kevin.** `/__admin/login` émet, en plus du grant, le pass
+  `kdmc_sso` de l'uid canonique avec `v=1` : sur un PC, un navigateur neuf, sans Face ID synchronisé, Kevin
+  tape son code admin une fois et toutes les apps le voient admin. Le portail a le bouton « 👑 Je suis
+  l'administrateur » ; Kevin qui tape son nom dans « Créer mon compte » est renvoyé vers ce code
+  (`admin_requis`), jamais vers un compte faible. Face ID / Windows Hello est proposé juste après.
+- **Une app installée reçoit la session dans SON stockage** : le portail renvoie par
+  `https://<app>/__sso/entrer?to=…&t=…[&g=…]` (servi sur les 32 adresses par le routeur), qui pose le
+  cookie de session (et le grant admin, 12 h) dans le pot de l'app puis redirige sur une adresse propre.
+  Plus besoin que l'app lise `#kdmc_sso=` ; CMCteams (routeur par « # ») est couvert.
+  `/__sso/pass` donne le pass courant à une page du domaine ; `kdmcSSO.porte(url)` fabrique l'adresse.
+- **Toutes les portes du domaine lisent les mêmes canaux** : Bearer, `x-kdmc-sso`, `?t=`, cookie.
+- **La page « Qui se connecte » (admin.kd-mc.com) et `/__admin/domain-log` acceptent la session vérifiée** :
+  plus de code à retaper.
+- **Plus de « bootstrap » de passkey sur le compte admin** : un passkey admin s'ajoute avec une session
+  vérifiée ou le grant du code admin, et se range sous `pk:kdmc_admin` quel que soit l'uid de session
+  (trou fermé le 27.09 : `pk:kevin-desarzens` vide laissait un inconnu enrôler SON Face ID).
+- Gardes : `test:entrer` (7), `test:admin-partout` (7), `test:compte-unique-portail` (10, vrai navigateur :
+  PC sans passkey, app installée), `webauthn-endpoints` (22), `bee-iphone` (21).
+
 ### 5. Parité obligatoire `ROUTES` ⇄ `APPS`
 
 Un sous-domaine servi sans clé d'app **échappe au périmètre en silence** — pire que pas de périmètre. `npm run test:perimetre-apps` (dans `test:ci`) le refuse, et `test:perimetre-page` prouve dans un **vrai navigateur** que Kevin peut le régler au doigt.

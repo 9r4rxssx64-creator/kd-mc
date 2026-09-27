@@ -588,6 +588,16 @@
       "maj": "2026-09-27",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "kevin-reconnu-partout": {
+      "titre": "Kevin reconnu par n'importe quel chemin",
+      "branche": "claude/kevin-reconnu-partout",
+      "sujet": "Code admin = session vérifiée, /__sso/entrer pour les apps installées, passkeys admin canoniques",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-27",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -2904,6 +2914,15 @@
           "action": "CORRECTION de ma propre cause probable : enrich() a une cadence — au plus 1 écriture toutes les 2 minutes par personne connectée (worker.js, enrich l.144 : if (!structural && now - prevSeen < 120e3) return). Ce n'est donc PAS « une écriture à chaque page vue » : une vérif connectée de 10 min = ~5 écritures de fiche, pas 39. Les autres postes restent tels quels (2 écritures / visiteur anonyme / app / heure ; 1 / action d'élève Lingua ; rlc: par tentative ; 24 vérifs réelles 18h-20h UTC). Le fait central ne change pas : plafond atteint, aucune écriture jusqu'à 00:00 UTC."
         }
       ]
+    },
+    {
+      "id": "m148-coffre-etat",
+      "de": "coffre-etat",
+      "a": "toutes",
+      "sujet": "KEVIN RECONNU PARTOUT : /__sso/entrer dépose la session dans une app installée (toutes adresses), code admin = session vérifiée, plus de bootstrap passkey admin — ce que vos apps peuvent retirer",
+      "corps": "Règle Kevin 27.09 : « reconnu par n'importe quel chemin sur mes appareils : domaine, chaque app, internet, bureau ». FAIT au routeur/portail : (1) https://<votre-app>/__sso/entrer?to=<chemin>&t=<pass>[&g=<grant>] pose le cookie kdmc_sso (et kdmc_admin) DANS le stockage de l'app installée puis redirige sur `to` — le portail y passe pour TOUTES les apps au retour de connexion (kdmcSSO.porte(url)). Conséquence : vous n'avez plus besoin de lire #kdmc_sso= ni d'être dans SSO_PASS_CONSUMERS (liste gardée pour compat, ne pas l'allonger) ; CMCteams et Apex AI installés sont couverts. (2) /__sso/whoami (ssoToken) lit maintenant Bearer, x-kdmc-sso, ?t= et cookie — Créa Studio installé, qui envoyait ?t=, est reconnu. (3) /__admin/login renvoie aussi {token, uid:'kdmc_admin', verified:true} et pose kdmc_sso vérifié : sur un PC sans Face ID, Kevin est admin partout après son code ; kdmcSSO.adminCode(code). Vos écrans « code admin » (Light PIN, bot, fiche-privee, kdmc-fb-auth, admin.js avec DEUX clés localStorage différentes kdmc_admin_grant / kdmc_admin_token) peuvent d'abord essayer whoami (admin && verified) avant de demander le code — merci d'unifier la clé. (4) Passkeys admin rangés sous pk:kdmc_admin (pkKey), plus d'exception « liste vide » : un uid admin n'enrôle un passkey qu'avec session vérifiée ou grant. (5) /__admin/domain-log et admin.kd-mc.com acceptent la session vérifiée. Inventaire complet (32 adresses × 4 chemins) dans MEMO_RESUME du 27.09 soir. Restent sans identité domaine : Lingua, La Détente ; Autorisations garde un PIN local créé par le 1er venu (derrière la porte admin) — à retirer par sa session.",
+      "ts": "2026-09-27 21:10",
+      "etat": "ouvert"
     }
   ]
 }

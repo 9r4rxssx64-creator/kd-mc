@@ -936,13 +936,22 @@ function ssoToken(request) {
   const auth = request.headers.get('authorization') || '';
   const m = auth.match(/^Bearer\s+(.+)$/i);
   if (m) return m[1].trim();
+  /* (27.09.2026, inventaire « reconnu partout ») : Créa Studio installé envoyait son pass en
+     en-tête x-kdmc-sso et en ?t= — que seule adminSession lisait. Toute porte du domaine lit
+     désormais les mêmes canaux : Bearer, x-kdmc-sso, ?t=, cookie. */
+  const x = (request.headers.get('x-kdmc-sso') || '').trim();
+  if (x) return x;
+  try { const t = new URL(request.url).searchParams.get('t'); if (t) return t.trim(); } catch { /* */ }
   return ssoCookie(request, SSO_COOKIE);
 }
+/* Les passkeys de l'admin vivent sous UNE clé (l'uid canonique), quel que soit l'uid de la session
+   qui les a enrôlés : sinon `pk:kevin-desarzens` pouvait être VIDE pendant que `pk:kdmc_admin` était
+   plein, et un inconnu déclarant « kevin-desarzens » passait le « bootstrap » (trou trouvé le 27.09). */
+function pkKey(uid) { return 'pk:' + (ADMIN_UIDS.indexOf(uid) >= 0 ? CANON_UID : uid); }
 function J(o, setCookie, status) {
-  return new Response(JSON.stringify(o), {
-    status: status || 200,
-    headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-sso': '1', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' }, setCookie ? { 'set-cookie': setCookie } : {}),
-  });
+  const h = new Headers({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-sso': '1', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' });
+  for (const c of Array.isArray(setCookie) ? setCookie : (setCookie ? [setCookie] : [])) h.append('set-cookie', c);
+  return new Response(JSON.stringify(o), { status: status || 200, headers: h });
 }
 
 /* ===== Mémoire cloud KDMC Lingua (progression apprenants) =====
@@ -2322,7 +2331,7 @@ async function handleSso(request, url, env) {
     if (!RP_ORIGINS.includes(reg.origin)) return J({ ok: false, reason: 'origin non autorisée' });
     if ((await challengeConsume(env, b.clientDataJSON)) === 'replay') return J({ ok: false, reason: 'challenge déjà utilisé (rejeu)' });
     if (env && env.ACCOUNTS) {
-      const list = JSON.parse((await env.ACCOUNTS.get('pk:' + s.uid)) || '[]');
+      const list = JSON.parse((await env.ACCOUNTS.get(pkKey(s.uid))) || '[]');
       const already = list.some((k) => k.credId === reg.credId);
       /* SÉCU (leçon #99) : l'identité SSO est AUTO-DÉCLARÉE. Interdit de GREFFER un
          passkey sur un UID ADMIN dont la liste est déjà NON VIDE depuis une session
@@ -2331,15 +2340,19 @@ async function handleSso(request, url, env) {
          une session déjà vérifiée OU une preuve du code admin (grant /__admin/login)
          autorise l'ajout d'un nouvel appareil → Kevin n'est JAMAIS bloqué (il connaît
          le PIN admin). Les comptes non-admin (Laurence, etc.) restent multi-appareils. */
+      /* (27.09.2026) PLUS D'EXCEPTION « liste vide » : depuis que le code admin donne à Kevin une session
+         vérifiée sur n'importe quel appareil (/__admin/login), il n'a jamais besoin du bootstrap — et
+         ce bootstrap était le seul chemin par lequel un inconnu pouvait greffer SON Face ID sur le
+         compte admin. Un passkey admin s'ajoute avec une session vérifiée OU le grant du code admin. */
       const isAdminUid = ADMIN_UIDS.indexOf(s.uid) >= 0;
-      if (isAdminUid && list.length > 0 && !already && !s.verified) {
+      if (isAdminUid && !already && !s.verified) {
         const g = await ssoVerify(secret, adminGrantTok(request));
         if (!(g && g.uid === '__kdmc_admin__')) {
           return J({ ok: false, reason: 'compte admin protégé — prouve le code admin (/__admin/login) pour ajouter un appareil' });
         }
       }
       if (!already) list.push({ credId: reg.credId, jwk: reg.jwk, created: Date.now() });
-      await env.ACCOUNTS.put('pk:' + s.uid, JSON.stringify(list.slice(-10)));
+      await env.ACCOUNTS.put(pkKey(s.uid), JSON.stringify(list.slice(-10)));
       const acc = await accGet(env, s.uid);
       if (acc) { acc.passkey = true; acc.passkey_at = acc.passkey_at || Date.now(); await accPut(env, acc); }
     }
@@ -2354,7 +2367,7 @@ async function handleSso(request, url, env) {
     const uid = String(b.uid || '').slice(0, 80).trim();
     let allow = [];
     if (env && env.ACCOUNTS && uid) {
-      const list = JSON.parse((await env.ACCOUNTS.get('pk:' + uid)) || '[]');
+      const list = JSON.parse((await env.ACCOUNTS.get(pkKey(uid))) || '[]');
       allow = list.map((k) => ({ type: 'public-key', id: k.credId }));
     }
     const challenge = await makeChallenge(secret, 'auth');
@@ -2365,7 +2378,7 @@ async function handleSso(request, url, env) {
     const uid = String(b.uid || '').slice(0, 80).trim();
     const credId = String(b.credId || '');
     if (!uid || !credId) return J({ ok: false, reason: 'uid+credId requis' });
-    const list = (env && env.ACCOUNTS) ? JSON.parse((await env.ACCOUNTS.get('pk:' + uid)) || '[]') : [];
+    const list = (env && env.ACCOUNTS) ? JSON.parse((await env.ACCOUNTS.get(pkKey(uid))) || '[]') : [];
     const rec = list.find((k) => k.credId === credId);
     if (!rec) return J({ ok: false, reason: 'passkey inconnu' });
     const r = await verifyAssertion(secret, rec.jwk, { clientDataJSON: b.clientDataJSON, authenticatorData: b.authenticatorData, signature: b.signature }, { origins: RP_ORIGINS_AUTH, rpId: RP_ID });
@@ -2376,7 +2389,7 @@ async function handleSso(request, url, env) {
        synchronisés, qui restent à 0 — jamais de faux rejet, jamais de lockout). */
     if (env && env.ACCOUNTS) {
       if (r.count > 0 && (rec.count || 0) > 0 && r.count <= rec.count) return J({ ok: false, reason: 'compteur de signature régressé (clone suspecté)' });
-      if ((r.count || 0) > (rec.count || 0)) { rec.count = r.count; try { await env.ACCOUNTS.put('pk:' + uid, JSON.stringify(list)); } catch { /* fail-open */ } }
+      if ((r.count || 0) > (rec.count || 0)) { rec.count = r.count; try { await env.ACCOUNTS.put(pkKey(uid), JSON.stringify(list)); } catch { /* fail-open */ } }
     }
     const acc = await accGet(env, uid);
     const name = (acc && acc.name) || uid;
@@ -2488,7 +2501,10 @@ async function handleSso(request, url, env) {
        (#kdmc_sso=) pour les apps installées (où le cookie ne traverse pas). */
     /* /issue = identité AUTO-DÉCLARÉE (aucune preuve) → jamais admin/verified ici.
        L'admin ne s'obtient que par un passkey Face ID vérifié (auth/verify). */
-    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve }, cookie);
+    /* L'identité admin ne se prouve pas par un code de compte : on le dit au portail, qui propose
+       alors le code ADMIN (→ session vérifiée) au lieu de laisser Kevin « auto-déclaré ». */
+    const adminRequis = (await canonFor(env, uid, name, { sansCreer: true })) === CANON_UID;
+    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve, admin_requis: adminRequis }, cookie);
   }
   /* CONNEXION SUR UN APPAREIL NEUF (ou dans n'importe quelle app) : nom + code → la session du
      compte. Même message pour « nom inconnu » et « mauvais code » (on ne confirme pas qu'un nom
@@ -2519,6 +2535,45 @@ async function handleSso(request, url, env) {
     const token = await ssoSign(secret, acc.uid, acc.name || name, true, false, true);
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, uid: acc.uid, name: acc.name || name, cgu: true, token, admin: false, code: true }, cookie);
+  }
+  /* ENTRER PAR N'IMPORTE QUELLE PORTE (Kevin 2026-09-27 : « reconnu par n'importe quel chemin sur
+     mes appareils : domaine, chaque app, internet, bureau »). Une app INSTALLÉE sur l'écran
+     d'accueil (iPhone, PC) a un stockage de cookies ISOLÉ : la session posée sur kd-mc.com ne
+     la suit pas. Jusqu'ici le portail passait le laissez-passer en fragment (#kdmc_sso=) — que
+     seules les apps de la liste SSO_PASS_CONSUMERS savaient lire, et jamais CMCteams (routeur
+     par « # »). Ici, le laissez-passer est déposé DANS le stockage de l'app elle-même : cette
+     adresse est servie sur CHAQUE hôte du domaine par le même routeur ; elle vérifie le pass,
+     pose le cookie (dans le pot de l'app installée) et renvoie vers la page demandée, adresse
+     propre. Marche pour les 32 adresses, sans une ligne à changer dans les apps.
+     Sécurité : pass vérifié (signature + expiration + révocation) ; `to` = chemin du MÊME hôte
+     seulement (jamais une autre adresse) ; le grant admin (`g`) n'est accepté que signé.
+     Fail-closed : pass invalide → on renvoie quand même vers la page, sans rien poser. */
+  /* Mon laissez-passer, pour le déposer dans une app installée (via /__sso/entrer). Même
+     niveau d'exposition que /issue et /login, qui renvoient déjà le pass dans le corps.
+     Lisible seulement par une page du domaine (aucun en-tête CORS → un site tiers n'y lit rien). */
+  if (path === '/__sso/pass' && request.method === 'GET') {
+    const t = ssoToken(request);
+    const s = await ssoVerify(secret, t);
+    if (!s || revoked(await accGet(env, s.uid), s)) return J({ ok: false });
+    const g = adminGrantTok(request);
+    const gs = g ? await ssoVerify(secret, g) : null;
+    return J({ ok: true, token: t, grant: (gs && gs.uid === '__kdmc_admin__') ? g : '' });
+  }
+  if (path === '/__sso/entrer' && request.method === 'GET') {
+    const t = url.searchParams.get('t') || '';
+    const g = url.searchParams.get('g') || '';
+    let to = url.searchParams.get('to') || '/';
+    if (!/^\/(?!\/)/.test(to) || /[\r\n]/.test(to)) to = '/';
+    const h = new Headers({ location: to, 'cache-control': 'no-store' });
+    const s = await ssoVerify(secret, t);
+    if (s && !revoked(await accGet(env, s.uid), s)) {
+      h.append('set-cookie', `${SSO_COOKIE}=${t}; Domain=.kd-mc.com; Path=/; Max-Age=${Math.max(60, Math.floor((s.exp - Date.now()) / 1000))}; Secure; HttpOnly; SameSite=Lax`);
+    }
+    const gs = g ? await ssoVerify(secret, g) : null;
+    if (gs && gs.uid === '__kdmc_admin__') {
+      h.append('set-cookie', `kdmc_admin=${g}; Domain=.kd-mc.com; Path=/; Max-Age=${Math.max(60, Math.min(43200, Math.floor((gs.exp - Date.now()) / 1000)))}; Secure; HttpOnly; SameSite=Lax`);   // 12 h, comme /__admin/login
+    }
+    return new Response(null, { status: 302, headers: h });
   }
   if (path === '/__sso/logout' && request.method === 'POST') {
     return J({ ok: true }, `${SSO_COOKIE}=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`);
@@ -2552,7 +2607,7 @@ async function handleSso(request, url, env) {
     if (!s) return J({ ok: false, reason: 'session requise' });
     if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session_revoquee' });
     let list = [];
-    if (env && env.ACCOUNTS) { try { list = JSON.parse((await env.ACCOUNTS.get('pk:' + s.uid)) || '[]'); } catch { /* fail-open */ } }
+    if (env && env.ACCOUNTS) { try { list = JSON.parse((await env.ACCOUNTS.get(pkKey(s.uid))) || '[]'); } catch { /* fail-open */ } }
     /* On ne renvoie JAMAIS la clé publique/jwk — juste un aperçu non sensible. */
     const items = list.map((k) => ({ id: String(k.credId || '').slice(0, 12), created: k.created || 0 }));
     return J({ ok: true, passkeys: items, count: items.length });
@@ -2568,9 +2623,9 @@ async function handleSso(request, url, env) {
     let b = {}; try { b = await request.json(); } catch { /* ignore */ }
     const id = String(b.id || b.credId || '').trim();
     if (!id || !env || !env.ACCOUNTS) return J({ ok: false, reason: 'id requis' });
-    let list = []; try { list = JSON.parse((await env.ACCOUNTS.get('pk:' + s.uid)) || '[]'); } catch { /* */ }
+    let list = []; try { list = JSON.parse((await env.ACCOUNTS.get(pkKey(s.uid))) || '[]'); } catch { /* */ }
     const next = list.filter((k) => String(k.credId || '').slice(0, 12) !== id && k.credId !== id);
-    await env.ACCOUNTS.put('pk:' + s.uid, JSON.stringify(next));
+    await env.ACCOUNTS.put(pkKey(s.uid), JSON.stringify(next));
     if (next.length === 0) { const acc = await accGet(env, s.uid); if (acc && acc.passkey) { acc.passkey = false; await accPut(env, acc, true); } }
     return J({ ok: true, removed: list.length - next.length, remaining: next.length });
   }
@@ -2670,7 +2725,11 @@ async function handleAdmin(request, url, env) {
     const adminHash = env && env.KDMC_ADMIN_PIN_SHA256;
     if (!secret || !adminHash) return J({ ok: false, reason: 'admin_pin_not_configured' });
     const ipHash = await sha256Hex((request.headers.get('CF-Connecting-IP') || '') + '|kdmc-al');
-    const wait = await rlBlocked(env, ipHash);
+    /* FERMÉ EN CAS DE DOUTE (audit du domaine 27.09, P1) : si le registre des essais est illisible,
+       on refuse d'essayer un code plutôt que de laisser deviner sans limite. */
+    let wait = 0;
+    try { if (env.ACCOUNTS) { await env.ACCOUNTS.get('al:' + ipHash); } wait = await rlBlocked(env, ipHash); }
+    catch { return J({ ok: false, reason: 'rate_limited', wait: 900 }, undefined, 429); }
     if (wait) return J({ ok: false, reason: 'rate_limited', wait });
     let b = {}; try { b = await request.json(); } catch { /* ignore */ }
     const code = String(b.code || '').trim();
@@ -2689,7 +2748,24 @@ async function handleAdmin(request, url, env) {
     await audLog(env, { ev: 'admin_login_ok', ip: ipHash.slice(0, 12) });
     const grant = await ssoSign(secret, '__kdmc_admin__', 'admin', 1);
     const cookie = `kdmc_admin=${grant}; Domain=.kd-mc.com; Path=/; Max-Age=43200; Secure; HttpOnly; SameSite=Lax`;
-    return J({ ok: true, grant }, cookie);
+    /* RECONNU PAR N'IMPORTE QUEL CHEMIN (Kevin 2026-09-27 : « domaine, chaque app, internet, bureau »).
+       Le code admin prouvé = c'est Kevin. Sur un appareil sans Face ID synchronisé (le PC, un
+       navigateur neuf), la seule preuve d'identité forte possible est ce code : on émet donc AUSSI
+       la session VÉRIFIÉE de l'admin (v=1), celle que toutes les apps reconnaissent — au lieu de le
+       laisser avec une session « auto-déclarée » que rien ne distingue d'un inconnu. Une session
+       vérifiée déjà présente est conservée telle quelle. Le pass revient dans le corps pour les apps
+       installées (cookie isolé) ; le portail le dépose via /__sso/entrer. */
+    const dejaVerifiee = await ssoVerify(secret, ssoToken(request));
+    let token = (dejaVerifiee && dejaVerifiee.verified && ADMIN_UIDS.indexOf(dejaVerifiee.uid) >= 0) ? ssoToken(request) : '';
+    const cookies = [cookie];
+    if (!token) {
+      const accA = await accGet(env, CANON_UID);
+      const nomA = (accA && accA.name) || 'Kevin Desarzens';
+      await enrich(env, request, CANON_UID, nomA, true, undefined, {});
+      token = await ssoSign(secret, CANON_UID, nomA, true, true);
+      cookies.push(`${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`);
+    }
+    return J({ ok: true, grant, token, uid: CANON_UID, admin: true, verified: true }, cookies);
   }
   if (path === '/__admin/logout' && request.method === 'POST') {
     return J({ ok: true }, 'kdmc_admin=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');
@@ -2708,6 +2784,7 @@ async function handleAdmin(request, url, env) {
     const origin = request.headers.get('origin') || '';
     const cors = {
       'Access-Control-Allow-Origin': origin === 'https://admin.kd-mc.com' ? origin : 'https://admin.kd-mc.com',
+      'Access-Control-Allow-Credentials': 'true',   /* (27.09) la session vérifiée de Kevin suffit, plus besoin de retaper le code */
       'Access-Control-Allow-Methods': 'GET,OPTIONS',
       'Access-Control-Allow-Headers': 'x-apex-pin',
       'Access-Control-Max-Age': '86400',
@@ -2720,6 +2797,10 @@ async function handleAdmin(request, url, env) {
     /* Comparaison en temps constant + fail-closed si le code n'est pas configuré. */
     let same = !!expected && given.length === expected.length;
     if (same) { let d = 0; for (let i = 0; i < expected.length; i++) d |= expected.charCodeAt(i) ^ given.charCodeAt(i); same = d === 0; }
+    /* (27.09.2026) OU la session VÉRIFIÉE de l'admin (Face ID / code admin déjà prouvé au domaine) :
+       Kevin ne retape pas son code sur la page « Qui se connecte ». Lecture seule, réponse lisible
+       par admin.kd-mc.com seulement (CORS) → aucune surface CSRF utile. */
+    if (!same) { const s = await ssoVerify(secret, ssoToken(request)); same = !!(s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !revoked(await accGet(env, s.uid), s)); }
     if (!same) return jc({ ok: false, reason: 'unauthorized' }, 401);
     if (!env.ACCOUNTS) return jc({ ok: true, people: [], kv: false });
     const idx = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');

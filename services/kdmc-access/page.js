@@ -229,8 +229,8 @@ export const PAGE_HTML = `<!doctype html>
   }
   async function load(hash){
     try{
-      var r=await fetch('/history',{headers:{'x-apex-pin':hash}});
-      if(r.status===401){renderLock('Code incorrect.');return false}
+      var r=await fetch('/history',{headers:hash?{'x-apex-pin':hash}:{},credentials:'include'});
+      if(r.status===401){if(hash)renderLock('Code incorrect.');return false}   /* sans code = simple essai de session : silencieux */
       if(!r.ok){renderLock('Souci serveur ('+r.status+'), réessaie.');return false}
       DATA=await r.json();window._pinhash=hash;await loadConn(hash);renderMain();startAuto();return true;
     }catch(e){renderLock('Réseau indisponible, réessaie.');return false}
@@ -238,10 +238,10 @@ export const PAGE_HTML = `<!doctype html>
   /* Vraies connexions du domaine — fail-open : si indisponible, on affiche quand même
      les actions (ne JAMAIS montrer une page vide à cause d'une source secondaire). */
   async function loadConn(hash){
-    try{var r=await fetch(DOMAIN_LOG,{headers:{'x-apex-pin':hash}});if(r.ok)CONN=await r.json()}catch(e){}
+    try{var r=await fetch(DOMAIN_LOG,{headers:hash?{'x-apex-pin':hash}:{},credentials:'include'});if(r.ok)CONN=await r.json()}catch(e){}
   }
   function startAuto(){if(TIMER)clearInterval(TIMER);TIMER=setInterval(function(){if(window._pinhash&&document.visibilityState==='visible')refresh()},30000)}
-  async function refresh(){try{var r=await fetch('/history',{headers:{'x-apex-pin':window._pinhash}});if(r.ok)DATA=await r.json();await loadConn(window._pinhash);renderMain(true)}catch(e){}}
+  async function refresh(){try{var r=await fetch('/history',{headers:window._pinhash?{'x-apex-pin':window._pinhash}:{},credentials:'include'});if(r.ok)DATA=await r.json();await loadConn(window._pinhash);renderMain(true)}catch(e){}}
 
   var Q='';var OPEN={};
   /* Robots masqués par défaut (choix mémorisé sur l'appareil). */
@@ -376,7 +376,9 @@ export const PAGE_HTML = `<!doctype html>
 
   // Auto-déverrouillage si appareil de confiance (rule : reconnu auto après 1re connexion)
   var saved=null;try{saved=localStorage.getItem(KEY)}catch(e){}
-  if(saved){load(saved).then(function(ok){if(!ok)renderLock('')})}else{renderLock('')}
+  /* (27.09.2026) D'abord la session du domaine (Kevin déjà reconnu, Face ID ou code admin prouvé) :
+     aucun code à retaper. Sinon le code mémorisé sur cet appareil, sinon la porte. */
+  load('').then(function(ok){ if(ok)return; if(saved){load(saved).then(function(ok2){if(!ok2)renderLock('')})}else{renderLock('')} })
 })();
 </script>
 </body></html>`;

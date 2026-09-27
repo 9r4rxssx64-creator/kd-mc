@@ -15,11 +15,12 @@
  * node tests/verify-compte-unique-portail.mjs */
 import { readFileSync, existsSync } from 'node:fs';
 import { chromium } from 'playwright';
+import { createHash } from 'node:crypto';
 import mod from '../services/kdmc-router/worker.js';
 
 const kv = new Map();
 const env = {
-  KDMC_SSO_SECRET: 'sec', ACCOUNTS: {
+  KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS: {
     get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); },
   },
 };
@@ -29,7 +30,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
 async function brancher(ctx) {
   await ctx.route('https://kd-mc.com/**', async (route) => {
     const req = route.request(); const u = new URL(req.url());
-    if (u.pathname.startsWith('/__sso/')) {
+    if (u.pathname.startsWith('/__sso/') || u.pathname.startsWith('/__admin/')) {
       const r = await mod.fetch(new Request(u.href, { method: req.method(), headers: req.headers(), body: req.method() === 'GET' ? undefined : req.postData() }), env, { waitUntil() {} });
       const headers = {}; r.headers.forEach((v, k) => { headers[k] = v; });
       return route.fulfill({ status: r.status, headers, body: Buffer.from(await r.arrayBuffer()) });
@@ -79,6 +80,53 @@ try {
   await pc.waitForTimeout(1500);
   const errC = (await pc.locator('#f-err').textContent({ timeout: 2000 }).catch(() => '')) || '';
   ok(!(await accueilVisible(pc)) && /déjà un compte/.test(errC), '4. téléphone C : « recréer » Marie Curie avec un autre code → refusé', errC.slice(0, 90));
+
+  /* 5. Téléphone D : une app INSTALLÉE (CMCteams, routeur « # ») renvoie au portail ; après la connexion,
+        le portail passe par la porte /__sso/entrer de l'app, qui pose le cookie et ramène sur la page. */
+  const D = await browser.newContext(); await brancher(D);
+  const vus = [];
+  await D.route('https://cmcteams.kd-mc.com/**', async (route) => {
+    const u = new URL(route.request().url()); vus.push(u.pathname + u.search);
+    if (u.pathname.startsWith('/__sso/')) {
+      const r = await mod.fetch(new Request(u.href, { method: 'GET', headers: route.request().headers() }), env, { waitUntil() {} });
+      const headers = {}; r.headers.forEach((v, k) => { headers[k] = v; });
+      const sc = r.headers.getSetCookie ? r.headers.getSetCookie() : [];
+      /* Chromium refuse une 302 fabriquée par l'interception (chrome-error) : on la rejoue en
+         redirection de page, les cookies posés à l'identique. Le VRAI 302 est prouvé par entrer.test.mjs. */
+      if (r.status === 302) return route.fulfill({ status: 200, contentType: 'text/html', headers: Object.assign({}, sc.length ? { 'set-cookie': sc.join('\n') } : {}),
+        body: '<meta http-equiv="refresh" content="0;url=' + r.headers.get('location').replace(/"/g, '') + '">' });
+      return route.fulfill({ status: r.status, headers, body: Buffer.from(await r.arrayBuffer()) });
+    }
+    return route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body id="app">CMCteams ' + (route.request().headers().cookie || 'SANS COOKIE') + '</body></html>' });
+  });
+  const pd = await D.newPage(); await pd.goto('https://kd-mc.com/?return=' + encodeURIComponent('https://cmcteams.kd-mc.com/index.html?v=9#plan'));
+  await pd.click('#f-deja'); await pd.fill('#l-nom', 'Curie Marie'); await pd.fill('#l-code', '314159'); await pd.click('#l-go');
+  await pd.waitForURL(/cmcteams\.kd-mc\.com\/index\.html/, { timeout: 8000 }).catch(() => {});
+  await fermerOffreFaceId(pd).catch(() => {});
+  const entree = vus.find((v) => v.startsWith('/__sso/entrer?')) || '';
+  ok(/to=%2Findex\.html%3Fv%3D9%23plan/.test(entree) && /&t=/.test(entree), '5. téléphone D : le retour vers l\'app passe par SA porte /__sso/entrer (session + page demandée)', entree.slice(0, 90) || vus.join(' '));
+  await pd.waitForTimeout(800); const finale = await pd.evaluate(() => location.href).catch(() => pd.url()); const corps = await pd.locator('body').textContent().catch(() => '');
+  ok(finale === 'https://cmcteams.kd-mc.com/index.html?v=9#plan' && /kdmc_sso=/.test(corps), '5 bis. l\'app reçoit son cookie et s\'ouvre sur la page demandée, adresse propre (pas de jeton dans l\'adresse)', finale + ' | ' + corps.slice(0, 40));
+
+  /* 6. Téléphone E = le PC de Kevin (aucun passkey) : « 👑 Je suis l'administrateur » + code admin
+        → reconnu ADMIN, zone privée visible. Puis Kevin qui tape son nom dans « Créer mon compte »
+        est renvoyé vers le code admin (jamais un « code de compte » pour l'admin). */
+  const E = await browser.newContext(); await brancher(E);
+  const pe = await E.newPage(); await pe.goto('https://kd-mc.com/');
+  await pe.click('#f-admin'); await pe.fill('#a-code', '000000'); await pe.click('#a-go'); await pe.waitForTimeout(800);
+  const errA = (await pe.locator('#a-err').textContent({ timeout: 2000 }).catch(() => '')) || '';
+  ok(!(await accueilVisible(pe)) && /incorrect/i.test(errA), '6. PC : mauvais code admin → refusé', errA);
+  await pe.fill('#a-code', '424242'); await pe.click('#a-go'); await pe.waitForTimeout(1500); await fermerOffreFaceId(pe); await pe.waitForTimeout(600);
+  const priv = await pe.locator('#priv-zone').isVisible().catch(() => false);
+  const helloE = (await pe.locator('#hello').textContent().catch(() => '')) || '';
+  ok(await accueilVisible(pe) && priv && /Kevin/.test(helloE), '6 bis. PC : bon code admin → accueil admin (zone privée visible), identité vérifiée sans Face ID', helloE + ' priv=' + priv);
+  const F = await browser.newContext(); await brancher(F);
+  const pf = await F.newPage(); await pf.goto('https://kd-mc.com/');
+  await pf.fill('#f-prenom', 'Kevin'); await pf.fill('#f-nom', 'Desarzens'); await pf.fill('#f-code', '111111'); await pf.fill('#f-code2', '111111');
+  await pf.check('#cgu-ok'); await pf.click('#f-create'); await pf.waitForTimeout(1200);
+  const boxVisible = await pf.locator('#f-admin-box').isVisible().catch(() => false);
+  const errF = (await pf.locator('#a-err').textContent({ timeout: 2000 }).catch(() => '')) || '';
+  ok(!(await accueilVisible(pf)) && boxVisible && /code admin/i.test(errF), '7. Kevin qui tape son nom + un code de compte → pas de compte faible : on lui demande le code ADMIN', errF);
 } finally { await browser.close(); }
 
 console.log(`\n${pass} OK / ${fail} échec(s)`);

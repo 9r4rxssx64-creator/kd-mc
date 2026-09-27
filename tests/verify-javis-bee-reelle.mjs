@@ -491,11 +491,23 @@ if (FFMPEG) {
       obs.disconnect();
       return n;
     };
+    /* LE CAS DIFFICILE, provoqué exprès (27.09) : on cache la page PILE au début d'un clignement
+       DOUBLE — son 2ᵉ battement est déjà programmé. Math.random bas = le prochain clignement sera
+       double ; on attend qu'il commence, puis on cache. Sans ce cas forcé, le défaut n'apparaissait
+       qu'une fois sur cinq (hasard du clignement double) : la garde n'était pas discriminante. */
+    const hasard = Math.random;
+    Math.random = () => 0.1;
+    await new Promise((res) => {
+      const o = new MutationObserver(() => { if (rig.classList.contains('blink')) { o.disconnect(); res(); } });
+      o.observe(rig, { attributes: true, attributeFilter: ['class'] });
+      setTimeout(() => { o.disconnect(); res(); }, 9000);
+    });
     /* on fait croire au widget que la page est cachée — comme quand Kevin passe à une autre app */
     const vrai = Object.getOwnPropertyDescriptor(Document.prototype, 'hidden');
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
     document.dispatchEvent(new Event('visibilitychange'));
     const cachee = await compte(9000);
+    Math.random = hasard;
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
     document.dispatchEvent(new Event('visibilitychange'));
     const visible = await compte(9000);
@@ -511,7 +523,11 @@ if (FFMPEG) {
        elles — un rapport tient même sur une machine lente. La garde reste
        discriminante : sans elle, le sabotage donne 5 cachée contre 4 visible, et ce
        rapport-là échoue. */
-    chk(m.cachee <= 2 || m.cachee * 2 <= m.visible,
+    /* 27.09 : la vraie cause des « 3 battements » était un battement DÉJÀ PROGRAMMÉ (2ᵉ temps d'un
+       double clignement) qui ne regardait pas si la page était cachée. Corrigé dans le widget :
+       au passage en arrière-plan, tout ce qui était prévu est annulé. Il ne reste au plus que la
+       FIN d'un clignement commencé (1 changement) — on l'exige, quelle que soit la charge. */
+    chk(m.cachee <= 1,
       `page pas regardée : elle s'arrête (${m.cachee} battement(s) en 9 s contre ${m.visible} page regardée)`);
     chk(m.visible > m.cachee,
       `page regardée : elle recligne aussitôt (${m.visible} battement(s) en 9 s contre ${m.cachee} cachée)`);

@@ -19,7 +19,7 @@
  */
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync, readFileSync } from 'fs';
-import { connecte, masque } from './session-kevin.mjs';
+import { connecte, masque, passPortail } from './session-kevin.mjs';
 
 const BASE = (process.argv[2] || 'https://kd-mc.com').replace(/\/$/, '');
 const ROOT = BASE.replace(/^https?:\/\//, '').replace(/^www\./, ''); // ex: kd-mc.com
@@ -277,8 +277,8 @@ const SURFACES = [
     } },
   /* Belles adresses ajoutées le 2026-08-13 (Kevin « pourquoi les adresses ne sont pas
      pareilles ») : elles doivent RÉELLEMENT répondre, pas seulement exister au routeur. */
-  { url: 'https://worldmonitor.' + ROOT + '/', name: 'World Monitor (belle adresse)', selKey: 'body' },
-  { url: 'https://osint.' + ROOT + '/', name: 'OSINT (belle adresse)', selKey: 'body' },
+  { url: 'https://worldmonitor.' + ROOT + '/', name: 'World Monitor (belle adresse)', selKey: '.leaflet-container' },
+  { url: 'https://osint.' + ROOT + '/', name: 'OSINT (belle adresse)', selKey: '.leaflet-container' },
   { url: 'https://ia.' + ROOT + '/', name: 'Outils IA (belle adresse)', selKey: 'body' },
   { url: 'https://outils.' + ROOT + '/', name: 'Mes outils (belle adresse)', selKey: 'body' },
   { url: 'https://shops.' + ROOT + '/', name: 'Portail boutiques (belle adresse)', selKey: 'body' },
@@ -635,7 +635,48 @@ for (const s of SURFACES) {
     if (!resp || status >= 400) { res.ok = false; res.notes.push('page HTTP ' + status); }
     await page.waitForTimeout(5000); // laisse le JS/live faire ses appels réseau
 
-    if (!(await page.$(s.selKey))) { res.ok = false; res.notes.push('élément clé absent: ' + s.selKey); }
+    /* PORTE « FICHE OBLIGATOIRE » (routeur, 27.09 — choix de Kevin : sites d'information = fiche
+       AVANT d'entrer). Détectée EN DIRECT, sans liste recopiée : la page renvoie au portail avec
+       ?return=<cette adresse>. Mesuré le 27.09 (run 36332320385) : sans ça, cuisine ×4, OSINT et
+       World Monitor par chemin sortaient ROUGES (« élément clé absent ») — et les sous-domaines
+       VERTS à tort, car leur élément clé était « body », présent sur la page du portail.
+       · connecté : on prend une vraie session du domaine (cookie) et on revisite → contenu vérifié ;
+       · anonyme : on vérifie que la porte fait son travail (fiche demandée, retour prévu ICI). */
+    let selKey = s.selKey, sauteDeep = false;
+    {
+      const finale = page.url();
+      const estPortail = /^https:\/\/(www\.)?kd-mc\.com\/(\?|#|$)/.test(url);
+      /* Deux formes de la porte : RENVOI au portail (?return=…, première version du 27.09) ou page
+         servie SUR PLACE (en-tête x-kdmc-porte: fiche, depuis le 27.09 soir — l'app de l'écran
+         d'accueil ne doit pas quitter son adresse). On reconnaît les deux. */
+      let hdrPorte = ''; try { hdrPorte = (resp && resp.headers()['x-kdmc-porte']) || ''; } catch (e) { hdrPorte = ''; }
+      const surPlace = hdrPorte === 'fiche' || !!(await page.$('body[data-portail]').catch(() => null));
+      const renvoi = /^https:\/\/kd-mc\.com\/\?return=/.test(finale);
+      if (!estPortail && (surPlace || renvoi)) {
+        let retour = '';
+        try {
+          retour = renvoi ? (new URL(finale).searchParams.get('return') || '')
+            : (new URL((await page.getAttribute('body', 'data-portail')) || 'https://x/').searchParams.get('return') || '');
+        } catch (e) { retour = ''; }
+        if (AS_KEVIN) {
+          const pp = await passPortail('https://' + ROOT).catch((e) => ({ ok: false, note: String(e && e.message || e) }));
+          if (pp && pp.ok) {
+            await page.context().addCookies([{ name: 'kdmc_sso', value: pp.jeton, domain: '.' + ROOT, path: '/', secure: true, httpOnly: true, sameSite: 'Lax' }]);
+            await page.goto(url, { waitUntil: 'load', timeout: 45000 });
+            await page.waitForTimeout(5000);
+            res.notes.push('fiche du domaine exigée → entré avec une session du domaine');
+          } else { res.ok = false; res.notes.push('fiche exigée, mais aucune session obtenue : ' + ((pp && (pp.note || pp.statut)) || '?')); }
+        } else {
+          const preuve = renvoi ? '#gate' : '#fiche';
+          if (retour === url && (await page.$(preuve))) {
+            res.notes.push('fiche du domaine exigée : porte vérifiée (' + (renvoi ? 'portail' : 'sur place') + ' + retour ici)');
+            selKey = preuve; sauteDeep = true;
+          } else { res.ok = false; res.notes.push('renvoyé au portail, mais retour incorrect (' + retour.slice(0, 80) + ') ou fiche absente'); }
+        }
+      }
+    }
+
+    if (!(await page.$(selKey))) { res.ok = false; res.notes.push('élément clé absent: ' + selKey); }
 
     /* lue AVANT le `deep` : les globales sont posées au chargement, et le badge de version
        vit sur le PREMIER écran — après une navigation interne, il a déjà disparu. */
@@ -650,7 +691,7 @@ for (const s of SURFACES) {
     res.notes.push('version servie : ' + (verServie || '❓ non exposée par la page')
       + (verBee && verBee !== verServie ? ' · Bee ' + verBee : ''));
 
-    if (s.deep) { try { const d = await s.deep(page); res.notes.push('deep: ' + d.note); if (!d.ok) res.ok = false; } catch (e) { res.ok = false; res.notes.push('deep KO: ' + (e && e.message ? e.message : e)); } }
+    if (s.deep && !sauteDeep) { try { const d = await s.deep(page); res.notes.push('deep: ' + d.note); if (!d.ok) res.ok = false; } catch (e) { res.ok = false; res.notes.push('deep KO: ' + (e && e.message ? e.message : e)); } }
 
     /* ENQUÊTE 404 /%22/%22 (intermittent malgré les gardes v9.876-880) : quand la requête
        polluée est vue, on DÉSIGNE le consommateur exact dans le DOM — élément, attribut,

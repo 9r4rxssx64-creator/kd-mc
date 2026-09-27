@@ -403,6 +403,16 @@ const ROUTEUR = {
     // de compte » (hash nom+code = capacité). Données NON sensibles (XP/série/nom choisi).
     // ISOLÉ (préfixe KV lingua:), FAIL-OPEN (jamais throw → la mémoire locale reste).
     if (url.pathname.startsWith('/__lingua/')) return handleLingua(request, url, env);
+    // Demande de démonstration Rotaplan (formulaire SANS script : champs obligatoires imposés par le
+    // navigateur, REVÉRIFIÉS ici). Kevin 27.09 « renseignements obligatoires partout pour les nouveaux ».
+    if (url.pathname === '/__demande') return handleDemande(request, env, host);
+    if (url.pathname === '/__demandes' && request.method === 'GET') {
+      if (!(await adminSession(request, env))) return new Response(JSON.stringify({ ok: false, reason: 'admin requis' }), { status: 403, headers: { 'content-type': 'application/json' } });
+      const idx = (env && env.ACCOUNTS) ? JSON.parse((await env.ACCOUNTS.get('demandes:idx')) || '[]') : [];
+      const liste = [];
+      for (const k of idx.slice(-100).reverse()) { const v = await env.ACCOUNTS.get(k); if (v) liste.push(JSON.parse(v)); }
+      return new Response(JSON.stringify({ ok: true, n: liste.length, demandes: liste }), { headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+    }
 
     const base = ROUTES[host];
     if (!base) return Response.redirect('https://kd-mc.com/', 302);
@@ -1148,6 +1158,54 @@ function ficheRefusee(g, raison) {
     + '.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
     + '<body><div class="c"><div style="font-size:44px">🔒</div><h1>' + esc(g.nom) + '</h1><p>' + esc(msg) + '</p><a href="https://kd-mc.com/">Retour à mon espace</a></div></body></html>';
   return new Response(html, { status: 403, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'x-kdmc-porte': 'perimetre' } });
+}
+/* ===== DEMANDE DE DÉMO (Rotaplan) ======================================================
+   La page Rotaplan n'exécute AUCUN script (CSP script-src 'none', voulu) : ses champs sont
+   obligatoires par l'attribut HTML `required` (le navigateur bloque l'envoi tout seul), et ce
+   routeur les REVÉRIFIE — une règle affichée à l'écran seulement ne tient que pour les honnêtes.
+   Prénom + nom (2 lettres min.), e-mail, établissement, conditions acceptées. Piège à robots
+   (champ caché « site ») + 5 demandes par jour et par connexion. Rangée en KV (liste pour
+   l'admin : GET /__demandes), et Kevin est prévenu sur son iPhone (push existant). */
+function lettres2(v) { return (String(v || '').match(/\p{L}/gu) || []).length >= 2; }
+function pageDemande(titre, texte, ok) {
+  const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Rotaplan — ' + esc(titre) + '</title>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6f4ef;color:#1d1d1b;font:16px/1.55 -apple-system,sans-serif;padding:24px}'
+    + '.c{max-width:420px;text-align:center}h1{font-size:22px}a{display:inline-block;margin-top:16px;min-height:48px;line-height:48px;padding:0 22px;border-radius:12px;background:#1d1d1b;color:#fff;text-decoration:none;font-weight:700}</style></head>'
+    + '<body><div class="c"><div style="font-size:44px">' + (ok ? '✅' : '✍️') + '</div><h1>' + esc(titre) + '</h1><p>' + esc(texte) + '</p>'
+    + '<a href="https://rotaplan.kd-mc.com/' + (ok ? '' : '#demander') + '">' + (ok ? 'Retour à Rotaplan' : 'Compléter ma demande') + '</a></div></body></html>';
+  return new Response(html, { status: ok ? 200 : 400, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
+}
+async function handleDemande(request, env, host) {
+  if (request.method !== 'POST') return pageDemande('Demande de démonstration', 'Utilise le formulaire de la page Rotaplan.', false);
+  if (!ssoOriginOk(request.headers.get('origin'), host)) return pageDemande('Envoi refusé', 'Cette demande ne vient pas du site Rotaplan.', false);
+  let f;
+  try { f = new URLSearchParams(await request.text()); } catch { return pageDemande('Envoi illisible', 'Réessaie depuis la page Rotaplan.', false); }
+  const v = (k, n) => String(f.get(k) || '').trim().replace(/\s+/g, ' ').slice(0, n || 120);
+  if (v('site')) return pageDemande('Merci', 'Ta demande est bien partie.', true);       /* robot : on ne dit rien */
+  const d = { prenom: v('prenom', 40), nom: v('nom', 40), email: v('email', 120).toLowerCase(), fonction: v('fonction', 80),
+    etablissement: v('etablissement', 120), effectif: v('effectif', 20), rotations: String(f.get('rotations') || '').trim().slice(0, 1500) };
+  const manque = [];
+  if (!lettres2(d.prenom)) manque.push('ton prénom');
+  if (!lettres2(d.nom)) manque.push('ton nom');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) manque.push('une adresse e-mail valide');
+  if (!lettres2(d.etablissement)) manque.push('ton établissement');
+  if (f.get('cgu') !== 'on') manque.push('l\'acceptation des conditions');
+  if (manque.length) return pageDemande('Il manque quelque chose', 'Pour qu\'on te réponde : ' + manque.join(', ') + '.', false);
+  if (env && env.ACCOUNTS) {
+    const jour = new Date().toISOString().slice(0, 10);
+    const ip = await sha256Hex((request.headers.get('CF-Connecting-IP') || '') + '|kdmc-dem');
+    const cleIp = 'dem:ip:' + ip.slice(0, 24) + ':' + jour;
+    const n = parseInt((await env.ACCOUNTS.get(cleIp)) || '0', 10) || 0;
+    if (n >= 5) return pageDemande('Déjà reçu', 'On a déjà plusieurs demandes depuis cette connexion aujourd\'hui. On te répond sous 24 h ouvrées.', false);
+    await env.ACCOUNTS.put(cleIp, String(n + 1), { expirationTtl: 86400 * 2 });
+    const cle = 'demande:' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    await env.ACCOUNTS.put(cle, JSON.stringify({ ...d, produit: 'rotaplan', cgu: { acceptees: true, ts_iso: new Date().toISOString() }, ts: Date.now() }), { expirationTtl: 86400 * 400 });
+    const idx = JSON.parse((await env.ACCOUNTS.get('demandes:idx')) || '[]'); idx.push(cle);
+    await env.ACCOUNTS.put('demandes:idx', JSON.stringify(idx.slice(-500)));
+  }
+  await notifyPush(env, '🗓️ Rotaplan — demande de démo', d.prenom + ' ' + d.nom + ' · ' + d.etablissement + ' · ' + d.email, { tag: 'rotaplan-demo', url: 'https://kd-mc.com/__demandes' });
+  return pageDemande('Demande bien reçue', 'Merci ' + d.prenom + '. On te répond sous 24 h ouvrées, à ' + d.email + '.', true);
 }
 function estUnePage(request) {
   if (request.method !== 'GET') return false;

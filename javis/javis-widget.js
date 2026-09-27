@@ -46,7 +46,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.8';
+  var JAVIS_VER = 'v1.9';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
@@ -365,21 +365,29 @@
        travail et on repasse plus tard -- et elle repart des que la page redevient visible,
        sans attendre le prochain tour. UNE SEULE boucle (surtout pas une deuxieme en
        parallele : elles se marcheraient dessus et elle clignerait deux fois plus). */
-    var tBlink = 0;
+    var tBlink = 0, tDouble = 0;
     function blink() {
       if (!document.contains(rig)) return;
       if (document.hidden) { tBlink = setTimeout(blink, 10000); return; }
       if (!dormi) {
         var ms = 110 + Math.random() * 70;
         unClin(ms);
-        if (Math.random() < 0.2) setTimeout(function () { if (!dormi) unClin(ms); }, ms + 90);
+        /* le 2ᵉ battement d'un double clignement vérifie AUSSI que la page est regardée
+           (mesuré le 27.09 : il partait quand même après le passage en arrière-plan). */
+        if (Math.random() < 0.2) tDouble = setTimeout(function () { if (!dormi && !document.hidden) unClin(ms); }, ms + 90);
       }
       tBlink = setTimeout(blink, dormi ? 9000 : (2200 + Math.random() * 3600));
     }
     blink();
     function onVisible() {
-      if (document.hidden || !document.contains(rig)) return;
-      try { clearTimeout(tBlink); } catch (_) {}
+      if (!document.contains(rig)) return;
+      try { clearTimeout(tBlink); clearTimeout(tDouble); } catch (_) {}
+      if (document.hidden) {
+        /* Passage en arrière-plan : on coupe TOUT ce qui était programmé, tout de suite
+           (avant, un battement déjà prévu partait encore — 3 en 9 s, page cachée). */
+        tBlink = setTimeout(blink, 10000);
+        return;
+      }
       tBlink = setTimeout(blink, 400);          /* elle repart tout de suite */
     }
     document.addEventListener('visibilitychange', onVisible);

@@ -653,6 +653,15 @@ Enfants Marius et Judith. »*
   aujourd'hui, l'app publiée étant en v3.26. Leçon **#267**.
 
 ---
+## 2026-09-27 (après-midi) — « Corrige tout auto » : Rotaplan a sa fiche obligatoire, Croupier reste gelé
+
+- **Rotaplan** : vraie fiche (prénom, nom, e-mail, établissement, conditions) **sans aucun script** —
+  le navigateur bloque l'envoi incomplet, le routeur revérifie (`POST /__demande`), range la demande
+  et prévient Kevin sur son iPhone ; liste admin `GET /__demandes`. `test:rotaplan-demande` 17/0.
+- **Croupier** : PAS ouvert à la vente — gelé par Kevin le 16.09, page « entretien » inexistante.
+- **Hébergeur `pages.dev` direct** : laissé ouvert, expliqué à Kevin — il ne sert que le dépôt PUBLIC
+  (déjà lisible sur GitHub) ; le fermer coûterait des requêtes payantes sans rien protéger de plus.
+- Leçon **#347**.
 
 ## 2026-09-27 (midi) — Boutiques : fiche obligatoire À LA COMMANDE (choix de Kevin)
 

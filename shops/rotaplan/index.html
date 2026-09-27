@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rotaplan — Le planning des équipes qui tournent</title>
 <meta name="description" content="Le logiciel de planning conçu pour les rotations complexes : équipes miroir, cycles variables, ordres de passage, repos légaux. Prix fixe, utilisateurs illimités.">
@@ -139,6 +139,16 @@ header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surfa
 .btn-vide{background:var(--surface);color:var(--texte);border-color:var(--bord-fort)}
 .btn-vide:hover{border-color:var(--accent);color:var(--accent-txt)}
 .btn-vide:active{transform:translateY(1px)}
+.demande{display:grid;gap:var(--e12,12px);max-width:560px;margin:var(--e16,16px) auto 0;text-align:left}
+.demande label{display:grid;gap:6px;font-weight:600;font-size:var(--t16,16px)}
+.demande .opt{font-weight:400;color:var(--texte2,#666);font-size:var(--t14,14px)}
+.demande input:not([type=checkbox]),.demande textarea{min-height:48px;padding:10px 12px;font:inherit;font-size:16px;border-radius:10px;border:1px solid var(--bord-fort,#bbb);background:var(--surface,#fff);color:var(--texte,#111);width:100%;box-sizing:border-box}
+.demande .duo{display:grid;grid-template-columns:1fr 1fr;gap:var(--e12,12px)}
+.demande .cgu{display:flex;gap:10px;align-items:flex-start;font-weight:400;min-height:44px}
+.demande .cgu input{width:22px;height:22px;flex:0 0 auto;margin-top:2px}
+.demande .cgu a{display:inline-block;min-height:44px;line-height:44px}
+.demande .piege{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.demande .note a{display:inline-block;min-height:44px;line-height:44px}
 .btn-petit{min-height:44px;padding:0 var(--e16);font-size:var(--t14)}
 
 /* ---------- Accroche ---------- */
@@ -487,9 +497,24 @@ footer nav a{min-height:44px;display:inline-flex;align-items:center}
         Vingt minutes, avec vos rotations à vous.
         Si ce n'est pas adapté, on vous le dit — ça vous fera gagner du temps à tous les deux.
       </p>
-      <div class="actions">
-        <a class="btn btn-plein" href="mailto:contact@kd-mc.com?subject=Rotaplan%20%E2%80%94%20demande%20de%20d%C3%A9monstration&body=Bonjour%2C%0A%0AJe%20souhaite%20voir%20Rotaplan.%0A%0APr%C3%A9nom%20et%20nom%20%3A%0AFonction%20%3A%0A%C3%89tablissement%20%3A%0ANombre%20de%20personnes%20%C3%A0%20planifier%20%3A%0ANos%20rotations%20(en%20deux%20mots)%20%3A%0A%0AMerci.">Demander une démonstration</a>
-      </div>
+      <!-- FICHE OBLIGATOIRE, SANS SCRIPT (Kevin 27.09 : « renseignements obligatoires partout pour les
+           nouveaux »). Le navigateur bloque l'envoi tant qu'un champ `required` est vide ; le routeur
+           (POST /__demande) REVÉRIFIE tout, range la demande et prévient Kevin sur son iPhone. -->
+      <form class="demande" method="post" action="/__demande" autocomplete="on">
+        <div class="duo">
+          <label>Prénom<input name="prenom" required minlength="2" maxlength="40" autocomplete="given-name"></label>
+          <label>Nom<input name="nom" required minlength="2" maxlength="40" autocomplete="family-name"></label>
+        </div>
+        <label>E-mail professionnel<input name="email" type="email" required maxlength="120" autocomplete="email" inputmode="email"></label>
+        <label>Fonction <span class="opt">(facultatif)</span><input name="fonction" maxlength="80" autocomplete="organization-title"></label>
+        <label>Établissement<input name="etablissement" required minlength="2" maxlength="120" autocomplete="organization"></label>
+        <label>Nombre de personnes à planifier <span class="opt">(facultatif)</span><input name="effectif" inputmode="numeric" maxlength="20"></label>
+        <label>Vos rotations en deux mots <span class="opt">(facultatif)</span><textarea name="rotations" rows="3" maxlength="1500"></textarea></label>
+        <label class="piege" aria-hidden="true">Site<input name="site" tabindex="-1" autocomplete="off"></label>
+        <label class="cgu"><input type="checkbox" name="cgu" required> <span>J'accepte que mes informations servent à me recontacter pour cette démonstration (<a href="/shops/legal/confidentialite.html">confidentialité</a>).</span></label>
+        <div class="actions"><button class="btn btn-plein" type="submit">Demander une démonstration</button></div>
+        <p class="note">Ou par e-mail : <a href="mailto:contact@kd-mc.com?subject=Rotaplan%20%E2%80%94%20demande%20de%20d%C3%A9monstration&body=Bonjour%2C%0A%0AJe%20souhaite%20voir%20Rotaplan.%0A%0APr%C3%A9nom%20et%20nom%20%3A%0AFonction%20%3A%0A%C3%89tablissement%20%3A%0ANombre%20de%20personnes%20%C3%A0%20planifier%20%3A%0ANos%20rotations%20(en%20deux%20mots)%20%3A%0A%0AMerci.">contact@kd-mc.com</a></p>
+      </form>
       <p class="note">Réponse sous 24 h ouvrées. Aucune carte bancaire demandée.</p>
     </div>
   </section>

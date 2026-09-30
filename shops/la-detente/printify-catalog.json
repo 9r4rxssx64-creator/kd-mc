@@ -1,0 +1,100 @@
+{
+  "generated_at": "2026-09-30T13:54:42.225Z",
+  "shop_note": "Mapping pour commandes auto Printify (print-on-the-fly via URL design)",
+  "image_base": "https://9r4rxssx64-creator.github.io/CMCteams/shops/la-detente/img/designs/",
+  "garments": {
+    "tee": {
+      "blueprint_id": 6,
+      "blueprint_title": "Unisex Heavy Cotton Tee",
+      "print_provider_id": 26,
+      "print_provider_title": "Textildruck Europa",
+      "variants": {
+        "Black": {
+          "L": 12124,
+          "M": 12125,
+          "S": 12126,
+          "XL": 12127,
+          "XXL": 12128
+        },
+        "White": {
+          "L": 12100,
+          "M": 12101,
+          "S": 12102,
+          "XL": 12103,
+          "XXL": 12104
+        },
+        "Military Green": {
+          "L": 12190,
+          "M": 12191,
+          "S": 12192,
+          "XL": 12193,
+          "XXL": 12194
+        },
+        "Forest Green": {
+          "L": 12142,
+          "M": 12143,
+          "S": 12144,
+          "XL": 12145,
+          "XXL": 12146
+        },
+        "Dark Heather": {
+          "L": 11902,
+          "M": 11903,
+          "S": 11904,
+          "XL": 11905,
+          "XXL": 11906
+        },
+        "Navy": {
+          "L": 11986,
+          "M": 11987,
+          "S": 11988,
+          "XL": 11989,
+          "XXL": 11990
+        },
+        "Sand": {
+          "L": 12052,
+          "M": 12053,
+          "S": 12054,
+          "XL": 12055,
+          "XXL": 12056
+        }
+      }
+    },
+    "hoodie": {
+      "blueprint_id": 66,
+      "blueprint_title": "Unisex Heavy Blend™ Full Zip Hooded Sweatshirt",
+      "print_provider_id": 34,
+      "print_provider_title": "The Print Bar",
+      "variants": {
+        "Black": {
+          "S": 31930,
+          "M": 31940,
+          "L": 31950,
+          "XXL": 31970
+        },
+        "White": {
+          "L": 31949,
+          "XXL": 31969
+        },
+        "Navy": {
+          "S": 31925,
+          "M": 31935,
+          "L": 31945,
+          "XL": 31955,
+          "XXL": 31965
+        }
+      }
+    },
+    "cap": {
+      "blueprint_id": 1395,
+      "blueprint_title": "Unisex Distressed Cap",
+      "print_provider_id": 61,
+      "print_provider_title": "Dimona Tee",
+      "variants": {
+        "Black": {
+          "One size": 103870
+        }
+      }
+    }
+  }
+}

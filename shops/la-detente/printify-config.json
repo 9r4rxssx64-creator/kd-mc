@@ -1,15 +1,15 @@
 {
   "connected": true,
   "shop_id": 27791653,
-  "shop_title": "My new store",
-  "sales_channel": "disconnected",
+  "shop_title": "LA DÉTENTE ",
+  "sales_channel": "custom_integration",
   "all_shops": [
     {
       "id": 27791653,
-      "title": "My new store",
-      "channel": "disconnected"
+      "title": "LA DÉTENTE ",
+      "channel": "custom_integration"
     }
   ],
   "api_base": "https://api.printify.com/v1",
-  "checked_at": "2026-06-03T21:29:50.829Z"
+  "checked_at": "2026-09-30T13:55:19.904Z"
 }

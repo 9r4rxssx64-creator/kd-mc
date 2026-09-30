@@ -84,7 +84,7 @@ jobs:
           echo "worker_domain=$WD" >> "$GITHUB_OUTPUT"
           RT=$(j "$CF/zones/$Z/workers/routes" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));(r.result||[]).map(x=>x.pattern+"→"+(x.script||"?")).join(" | ")||"(aucune route de zone)"')
           echo "routes de zone : $RT"; echo "- routes de zone : $RT" >> "$GITHUB_STEP_SUMMARY"
-          PP=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects?per_page=50" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?((r.result||[]).map(p=>p.name+"("+(p.domains||[]).length+" dom.)").join(", ")||"(aucun)"):"REFUSÉ: "+JSON.stringify(r.errors)')
+          PP=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?((r.result||[]).map(p=>p.name+"("+(p.domains||[]).length+" dom.)").join(", ")||"(aucun)"):"REFUSÉ: "+JSON.stringify(r.errors)')
           echo "projets Pages : $PP"; echo "- projets Pages : $PP" >> "$GITHUB_STEP_SUMMARY"
           DNS=$(j "$CF/zones/$Z/dns_records?name=$HOTE" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?((r.result||[]).map(x=>x.type+" "+x.content+" proxied="+x.proxied).join(" | ")||"(aucun enregistrement visible)"):"REFUSÉ: "+JSON.stringify(r.errors)')
           echo "DNS $HOTE : $DNS"; echo "- DNS $HOTE : $DNS" >> "$GITHUB_STEP_SUMMARY"
@@ -108,12 +108,16 @@ jobs:
           printf '<!doctype html><meta charset="utf-8"><title>Introuvable</title><p>Cette page n\x27existe pas sur javis.kd-mc.com.</p>\n' > /tmp/javis-pages/404.html
           npm i -g wrangler@3 --no-audit --no-fund >/dev/null 2>&1
           echo "1. projet Pages $PROJET"
-          wrangler pages project create "$PROJET" --production-branch=main 2>&1 | tail -2 || echo "(projet déjà là ?)"
+          C1=$(wrangler pages project create "$PROJET" --production-branch=main 2>&1 | tail -2 | tr '\n' ' ' || true); echo "   $C1"
           echo "2. envoi de $(find /tmp/javis-pages -type f | wc -l) fichiers"
-          wrangler pages deploy /tmp/javis-pages --project-name="$PROJET" --branch=main --commit-dirty=true 2>&1 | tail -3
+          C2=$(wrangler pages deploy /tmp/javis-pages --project-name="$PROJET" --branch=main --commit-dirty=true 2>&1 | tail -3 | tr '\n' ' ' || true); echo "   $C2"
+          PJ=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?(r.result.subdomain+" | dernier envoi : "+((r.result.latest_deployment||{}).url||"aucun")):"REFUSÉ: "+JSON.stringify(r.errors)')
+          echo "   projet côté Cloudflare : $PJ"
+          echo "::notice title=Pilote javis (essai, envoi)::création: $C1 · envoi: $C2 · projet: $PJ"
+          SUB=${PJ%% *}
           sleep 8
-          P=$(curl -s -o /tmp/pd.html -w "%{http_code} %header{x-kdmc-par}" --max-time 20 "https://$PROJET.pages.dev/" || true)
-          echo "   $PROJET.pages.dev → $P"; grep -qi "javis\|bee" /tmp/pd.html || { echo "::error::$PROJET.pages.dev ne sert pas Javis"; exit 1; }
+          P=$(curl -s -o /tmp/pd.html -w "%{http_code} %header{x-kdmc-par}" --max-time 20 "https://$SUB/" || true)
+          echo "   $SUB → $P"; grep -qi "javis\|bee" /tmp/pd.html || { echo "::error::$SUB ne sert pas Javis ($P)"; exit 1; }
           echo "3. domaine personnalisé $HOTE_ESSAI (adresse neuve)"
           j -X POST "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET/domains" --data "{\"name\":\"$HOTE_ESSAI\"}" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?"   ✅ "+JSON.stringify(r.result).slice(0,300):"   ❌ "+JSON.stringify(r.errors)'
           echo "4. Cloudflare a-t-il posé le DNS tout seul ? (le jeton n'a pas le droit DNS — on regarde ce qui répond)"
@@ -123,7 +127,7 @@ jobs:
           if [ "${R%% *}" = "200" ] && grep -qi "javis\|bee" /tmp/pe.html; then
             echo "::notice title=Pilote javis (essai)::✅ $HOTE_ESSAI sert Javis en statique ($R) — Cloudflare a posé le DNS tout seul · Pages=$D"
           else
-            echo "::notice title=Pilote javis (essai)::⚠️ $HOTE_ESSAI ne répond pas encore ($R) — Pages=$D · $PROJET.pages.dev=$P. Sans droit DNS sur le jeton, le CNAME doit être posé (Kevin, 1 clic) ou le jeton étendu."
+            echo "::notice title=Pilote javis (essai)::⚠️ $HOTE_ESSAI ne répond pas encore ($R) — Pages=$D · $SUB=$P. Sans droit DNS sur le jeton, le CNAME doit être posé (Kevin, 1 clic) ou le jeton étendu."
           fi
 
       - name: BASCULER — projet Pages kdmc-javis ← javis/ (+ _headers, 404.html)

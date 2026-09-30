@@ -29,7 +29,7 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **64** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **65** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
@@ -46,7 +46,7 @@
 <!-- MAJ-AUTO:debut etat-live -->
 | Ce qui bouge | État au 2026-09-30 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **326** | `git ls-remote` |
+| Branches dans le dépôt | **327** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
 | État de la CI | 🔴 **à l'arrêt** — 25/30 runs échouent en moins de 15 s | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->

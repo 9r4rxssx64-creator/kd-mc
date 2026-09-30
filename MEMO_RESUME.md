@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (20h50 UTC) — Essai 1 : rouge, mais pas là où on croit
+
+Run public (mode `essai`) : l'étape s'arrête à « kdmc-javis.pages.dev ne sert pas Javis ». Deux causes possibles,
+non départageables sans les journaux (blob Azure illisible d'ici) : le sous-domaine Pages porte un suffixe
+(`kdmc-site` → `kdmc-site-bj5.pages.dev`, vécu) et mon contrôle visait `kdmc-javis.pages.dev` ; ou l'envoi a
+échoué. Corrigé : le robot lit le vrai `subdomain` du projet par l'API, annonce création / envoi / projet en
+annotation, puis contrôle le bon sous-domaine. Et la liste Pages ne prend pas `per_page` (erreur 8000024 :
+« Invalid list options », ce n'était pas un refus de droit).
+
 ## 2026-09-30 (20h45 UTC) — Le pilote en mode « lire » a parlé : le jeton n'a pas le droit DNS → mode « essai » sur une adresse neuve
 
 Run public 36773826689 (`lire`, rien changé) : zone `kd-mc.com` lisible ✅ ; domaine Worker de javis

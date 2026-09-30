@@ -727,6 +727,17 @@
       "branche": "claude/pilote-javis-essai",
       "sujet": "lire : DNS refusé 10000 ; essai sur adresse neuve, la vraie ne bouge pas",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4140 ; essai 1 : sous-domaine pages.dev inconnu"
+    },
+    "pilote-javis-essai-2": {
+      "titre": "Pilote javis : essai, lecture du vrai sous-domaine pages.dev",
+      "branche": "claude/pilote-javis-essai-2",
+      "sujet": "run 36774… : kdmc-javis.pages.dev ne répondait pas (suffixe du sous-domaine), liste Pages sans per_page",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-30",
       "attend_kevin": null,

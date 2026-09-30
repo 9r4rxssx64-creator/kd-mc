@@ -148,11 +148,11 @@
 <div id="app"></div>
 <div id="toast"></div>
 
-<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.14.0" data-color="#e8b830" defer></script>
+<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.1" data-color="#e8b830" defer></script>
 <script>
 (function(){
   'use strict';
-  var APP_VER = 'v0.15.0';
+  var APP_VER = 'v0.15.1';
   var PROXY = 'https://apex-secrets-proxy.9r4rxssx64.workers.dev';
 
   /* ============================ Utils ============================ */
@@ -1211,8 +1211,13 @@
      → Kevin ne retape JAMAIS de code : une seule connexion (déverrouillage du coffre) suffit,
      mails + sauvegarde s'authentifient seuls et se renouvellent seuls (fini « code requis »). */
   var _ensureGrantBusy=false;
+  /* Le domaine ne garde un grant que 12 h (audit Bee 30.09 : il valait 30 jours) : un grant rangé depuis
+     plus de 11 h est oublié et redemandé, sinon mails et sauvegarde s'arrêtaient en silence (403). */
+  function grantFrais(g){ try{ var p=g.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'); while(p.length%4)p+='=';
+      var d=JSON.parse(atob(p)); return (Date.now()-(+d.iat||0))<11*3600*1000; }catch(e){ return false; } }
   async function ensureGrant(){
-    var g=adminGrantTok(); if(g) return g;
+    var g=adminGrantTok(); if(g&&grantFrais(g)) return g;
+    if(g){ try{ localStorage.removeItem(LS_GRANT); }catch(e){} }
     if(_ensureGrantBusy) return '';
     _ensureGrantBusy=true;
     /* (27.09) D'abord SANS rien : la session vérifiée de Kevin (Face ID / code admin déjà prouvé au domaine)

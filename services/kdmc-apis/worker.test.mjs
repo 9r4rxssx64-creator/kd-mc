@@ -225,6 +225,8 @@ const { createHmac } = await import('node:crypto');
 const jeton = (uid, v, secret) => { const p = b64uT(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: Date.now(), exp: Date.now() + 1e9 }));
   return p + '.' + b64uT(createHmac('sha256', secret || 'sec').update(p).digest()); };
 const KEVIN = jeton('kdmc_admin', 1);
+/* Le KV des comptes (le même que le routeur), vide = aucune révocation. */
+const KV_VIDE = { get: async () => null, put: async () => {}, delete: async () => {} };
 
 test('/ai : une ACTION va à Anthropic (outils) même avec Qwen disponible — POUR KEVIN ; réponse vide Qwen → secours', async () => {
   const calls = [];
@@ -240,7 +242,7 @@ test('/ai : une ACTION va à Anthropic (outils) même avec Qwen disponible — P
       method: 'POST',
       headers: { Origin: 'https://cmcteams.kd-mc.com', 'Content-Type': 'application/json', 'x-kdmc-sso': KEVIN },
       body: JSON.stringify({ messages: [{ role: 'user', content: 'déploie le worker maintenant' }] }),
-      env: { AI: fakeAI, ANTHROPIC_API_KEY: 'k', KDMC_SSO_SECRET: 'sec' },
+      env: { AI: fakeAI, ANTHROPIC_API_KEY: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE },
     });
     const b = await r.json();
     assert.equal(r.status, 200);
@@ -309,13 +311,13 @@ test('/ai : question difficile → CONSEIL de voix gratuites + juge (provider co
     /* sans le laissez-passer de Kevin : jamais de moteur payant (plan audit Bee), Qwen répond */
     const a = await call('/ai', { method: 'POST', body: corpsSansConseil,
       headers: { Origin: 'https://cmcteams.kd-mc.com', 'Content-Type': 'application/json' },
-      env: { AI: fakeAI, ANTHROPIC_API_KEY: 'k', KDMC_SSO_SECRET: 'sec' } });
+      env: { AI: fakeAI, ANTHROPIC_API_KEY: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE } });
     assert.equal((await a.json()).domain, 'reasoning');
     assert.equal(anthropicCalled, false, 'raisonnement, sans Kevin → pas d\'Anthropic');
     /* Kevin : raisonnement sans conseil → Anthropic (la plus pertinente), Qwen en secours */
     const s = await call('/ai', { method: 'POST', body: corpsSansConseil,
       headers: { Origin: 'https://cmcteams.kd-mc.com', 'Content-Type': 'application/json', 'x-kdmc-sso': KEVIN },
-      env: { AI: fakeAI, ANTHROPIC_API_KEY: 'k', KDMC_SSO_SECRET: 'sec' } });
+      env: { AI: fakeAI, ANTHROPIC_API_KEY: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE } });
     const sb = await s.json();
     assert.equal(sb.domain, 'reasoning');
     assert.equal(anthropicCalled, true, 'raisonnement sans conseil, Kevin → Anthropic (la plus pertinente), Qwen en secours');
@@ -368,7 +370,7 @@ test('/ai : les moteurs PAYANTS sont réservés à Kevin — sans son laissez-pa
     if (/anthropic|openai|x\.ai|deepseek|perplexity|together/.test(u)) { payes.push(u); return new Response(JSON.stringify({ content: [{ type: 'text', text: 'payant' }], choices: [{ message: { content: 'payant' } }] }), { status: 200 }); }
     return new Response('{}', { status: 500 });
   };
-  const env = { AI: fakeAI, ANTHROPIC_API_KEY: 'k', DEEPSEEK_API_KEY: 'k', XAI_API_KEY: 'k', PERPLEXITI_API_KEY: 'k', TOGETHER_API_KEY: 'k', KDMC_SSO_SECRET: 'sec' };
+  const env = { AI: fakeAI, ANTHROPIC_API_KEY: 'k', DEEPSEEK_API_KEY: 'k', XAI_API_KEY: 'k', PERPLEXITI_API_KEY: 'k', TOGETHER_API_KEY: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE };
   const q = (entetes, corps) => call('/ai', { method: 'POST', env,
     headers: Object.assign({ Origin: 'https://javis.kd-mc.com', 'Content-Type': 'application/json' }, entetes),
     body: JSON.stringify(Object.assign({ messages: [{ role: 'user', content: 'déploie le worker maintenant' }] }, corps || {})) });
@@ -408,9 +410,37 @@ test('/ai : le laissez-passer que le ROUTEUR accepte comme « Kevin, Face ID » 
   const w = await r.json();
   assert.equal(w.ok && w.verified && w.admin, true, 'le routeur le reconnaît : Kevin, Face ID');
   const { kevinVerifie } = await import('./worker.js');
-  assert.equal(await kevinVerifie(new Request('https://apis.kd-mc.com/ai', { headers: { 'x-kdmc-sso': KEVIN } }), { KDMC_SSO_SECRET: 'sec' }), true, 'apis aussi');
+  assert.equal(await kevinVerifie(new Request('https://apis.kd-mc.com/ai', { headers: { 'x-kdmc-sso': KEVIN } }), { KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE }), true, 'apis aussi');
 });
 
 test('CORS : x-kdmc-sso est autorisé (sinon le navigateur ne l\'envoie jamais)', () => {
   assert.ok(corsHeaders('https://javis.kd-mc.com')['Access-Control-Allow-Headers'].includes('x-kdmc-sso'));
+});
+
+test('« Déconnecter partout » coupe AUSSI les moteurs payants d\'apis (audit complet 30.09)', async () => {
+  const { kevinVerifie } = await import('./worker.js');
+  const req = () => new Request('https://apis.kd-mc.com/ai', { headers: { 'x-kdmc-sso': KEVIN } });
+  assert.equal(await kevinVerifie(req(), { KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE }), true, 'jeton de Kevin, non révoqué → oui');
+  const revoque = { get: async (k) => (k === 'acc:kdmc_admin' ? JSON.stringify({ uid: 'kdmc_admin', revoked_at: Date.now() + 5 }) : null) };
+  assert.equal(await kevinVerifie(req(), { KDMC_SSO_SECRET: 'sec', ACCOUNTS: revoque }), false, 'jeton émis AVANT la révocation → non');
+  const revoqueAlias = { get: async (k) => (k === 'acc:kevin-desarzens' ? JSON.stringify({ uid: 'kevin-desarzens', revoked_at: Date.now() + 5 }) : null) };
+  assert.equal(await kevinVerifie(req(), { KDMC_SSO_SECRET: 'sec', ACCOUNTS: revoqueAlias }), false, 'révocation posée sur l\'alias kevin-desarzens → non aussi');
+  assert.equal(await kevinVerifie(req(), { KDMC_SSO_SECRET: 'sec', ACCOUNTS: { get: async () => { throw new Error('KV'); } } }), false, 'KV illisible → non (les gratuits répondent)');
+  assert.equal(await kevinVerifie(req(), { KDMC_SSO_SECRET: 'sec' }), false, 'sans KV → non');
+});
+
+test('sans le laissez-passer de Kevin, le MODÈLE demandé est ignoré (openrouter + claude-opus, gemini-2.5-pro…) — audit complet 30.09', async () => {
+  const orig = globalThis.fetch; const vus = [];
+  globalThis.fetch = async (url, init) => { vus.push({ url: String(url), body: init && init.body ? String(init.body) : '' });
+    return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }], candidates: [{ content: { parts: [{ text: 'ok' }] } }] }), { status: 200 }); };
+  try {
+    const env = { OPENROUTER_API_KEY: 'k', GEMINI_API_KEY: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE };
+    for (const [provider, model] of [['openrouter', 'anthropic/claude-opus-4'], ['gemini', 'gemini-2.5-pro']]) {
+      vus.length = 0;
+      await worker.fetch(new Request('https://apis.kd-mc.com/ai', { method: 'POST', headers: { 'content-type': 'application/json', Origin: 'https://javis.kd-mc.com' },
+        body: JSON.stringify({ provider, model, models: { [provider]: model }, messages: [{ role: 'user', content: 'bonjour' }] }) }), env, { waitUntil() {} });
+      assert.ok(vus.length >= 1, provider + ' appelé');
+      assert.ok(vus.every((v) => !v.url.includes(model) && !v.body.includes(model)), provider + ' : le modèle « ' + model + ' » n\'est jamais parti');
+    }
+  } finally { globalThis.fetch = orig; }
 });

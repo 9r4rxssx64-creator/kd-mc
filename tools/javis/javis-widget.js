@@ -48,7 +48,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.11';
+  var JAVIS_VER = 'v1.13';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
@@ -93,7 +93,7 @@
      Sans ca on lit « Bourricot est prete » -- faux et moche. */
   function MG(f, m) { return mascCfg().gen === 'm' ? m : f; }
   /* Sa VRAIE voix + le vrai lip-sync : le domaine sait deja fabriquer la parole
-     (routeur kd-mc.com, /__lingua/tts, cache a vie, CORS ouvert, fail-open). Un fichier
+     (routeur kd-mc.com, /__lingua/tts, cache a vie, CORS limite aux pages du domaine, fail-open). Un fichier
      audio, c'est un SON QU'ON PEUT ANALYSER : la bouche s'ouvre sur l'amplitude reelle.
      La voix du telephone (Web Speech) reste le repli : elle parle mais ne s'analyse pas. */
   var BEE_TTS = 'https://lingua.kd-mc.com/__lingua/tts';
@@ -367,7 +367,7 @@
       /* la barre d'outils : couper la voix, effacer la conversation, et la VERSION (règle Kevin :
          un badge de version visible dans chaque projet) */
       '#javis-outils{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid rgba(246,183,60,.12)}' +
-      '#javis-outils button{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid rgba(246,183,60,.28);' +
+      '#javis-outils button{min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;border:1px solid rgba(246,183,60,.28);' +
       'background:rgba(246,183,60,.08);color:#f0e2bd;font:600 14px/1 -apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer}' +
       '#javis-outils button[aria-pressed="false"]{opacity:.75}' +
       '#javis-ver{margin-left:auto;color:#b8a57c;font-size:14px}' +
@@ -398,6 +398,10 @@
       'body.javis-app #javis-head .javis-mini{display:none}' +
       /* dans l'app, le panneau est TOUJOURS ouvert : la croix ne fermait rien (mesuré) → cachée */
       'body.javis-app #javis-close{display:none}' +
+      /* iPhone À L'HORIZONTALE (audit complet 30.09, mesuré en 667×375 : l'abeille de 270 px poussait
+         le bouton Envoyer à 501 px pour un écran de 375 — impossible d'écrire) : l'abeille rapetisse. */
+      '@media (orientation:landscape) and (max-height:500px){body.javis-app #javis-launcher{width:84px;height:84px;' +
+      'margin:calc(env(safe-area-inset-top) + 4px) auto 4px}}' +
       /* la barre de saisie au-dessus de la barre d'accueil de l'iPhone */
       'body.javis-app #javis-form{padding-bottom:calc(10px + env(safe-area-inset-bottom))}' +
       /* clavier ouvert : la grosse Bee se fait petite, sinon il restait 24 px pour lire (iPhone SE) */
@@ -691,7 +695,7 @@
   }
 
   /* la voix en cours + l'arret de l'analyse du son (partages : stopTalking les nettoie) */
-  var _voixAudio = null, _lipStop = null;
+  var _voixAudio = null, _lipStop = null, _voixEl = null;
   function allRigs(root) { return Array.prototype.slice.call(root.querySelectorAll('.bee-rig')); }
   function allMouths(root) { return Array.prototype.slice.call(root.querySelectorAll('.disc-mouth')); }
   var APP_MODE = (window.JAVIS_MODE === 'app');
@@ -938,6 +942,9 @@
       raf = requestAnimationFrame(frame);
       return function () {
         try { cancelAnimationFrame(raf); } catch (_) {}
+        /* le lecteur est RÉUTILISÉ (audit complet 30.09) : on le débranche de CET analyseur,
+           sinon chaque phrase en ajoutait un de plus, jamais libéré */
+        try { audioEl._srcNode.disconnect(an); } catch (_) {}
         try { an.disconnect(); } catch (_) {}
         bouches.forEach(function (m) {
           try { m.classList.remove('talking'); m.style.transform = ''; m.style.opacity = ''; } catch (_) {}
@@ -946,12 +953,15 @@
     } catch (_) { return null; }
   }
 
+  var _parole = 0;                          /* numéro de la phrase en cours */
   function voixStop() {
+    _parole++;
     if (_lipStop) { try { _lipStop(); } catch (_) {} _lipStop = null; }
     /* ⚠ vider src déclenche l'événement « error » de l'ANCIEN son : son repli relisait alors
        l'ancienne phrase par-dessus la nouvelle, à CHAQUE réponse sauf la première (mesuré 27.09).
        On le marque abandonné AVANT de le vider : ses écouteurs se taisent. */
-    if (_voixAudio) { try { _voixAudio._abandon = true; _voixAudio.pause(); _voixAudio.src = ''; } catch (_) {} _voixAudio = null; }
+    /* removeAttribute + load() : l'ancien son s'arrête SANS événement « error » (spec HTML) */
+    if (_voixAudio) { try { _voixAudio._abandon = true; _voixAudio.pause(); _voixAudio.removeAttribute('src'); _voixAudio.load(); } catch (_) {} _voixAudio = null; }
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (_) {}
   }
 
@@ -962,23 +972,39 @@
     try {
       var u = new SpeechSynthesisUtterance(text.slice(0, 600));
       u.lang = 'fr-FR'; u.rate = 1.02;
-      u.pitch = mascCfg().hauteur || 1.35; /* Bee claire et enjouée, Bourricot plus grave */
-      u.onend = function () { stopTalking(root); };
-      u.onerror = function () { stopTalking(root); };
+      /* Hauteur BRIDÉE à 1,25 (même borne que Lingua : au-delà, la voix du téléphone devient
+         métallique — plainte « trop robot » de Kevin) et une VRAIE voix par genre quand le téléphone
+         en a (audit complet 30.09 : les deux mascottes avaient la même voix, seule la hauteur changeait). */
+      var cfg = mascCfg();
+      u.pitch = Math.min(1.25, cfg.hauteur || 1.2);
+      try {
+        var vs = window.speechSynthesis.getVoices().filter(function (v) { return v.lang && v.lang.indexOf('fr') === 0; });
+        var FEM = /am[eé]lie|audrey|aur[eé]lie|c[eé]line|chantal|julie|marie|virginie|female|femme|woman/i;
+        var MASC = /thomas|daniel|nicolas|henri|jacques|paul|male|homme|man\b/i;
+        var choisie = vs.filter(function (v) {
+          return cfg.gen === 'm' ? (MASC.test(v.name) && !FEM.test(v.name)) : FEM.test(v.name);   /* « female » contient « male » */
+        })[0];
+        if (choisie) u.voice = choisie;
+      } catch (_) {}
+      var id = _parole;
+      u.onend = function () { if (id === _parole) stopTalking(root); };
+      u.onerror = function () { if (id === _parole) stopTalking(root); };
       window.speechSynthesis.speak(u);
     } catch (_) { stopTalking(root); }
   }
 
   /* Ce qui se DIT n'est pas ce qui s'ÉCRIT : pas d'adresse web ni d'émoji lus à voix haute. */
   function aDire(text) {
-    return String(text || '').replace(/<[^>]*>/g, ' ').replace(/https?:\/\/\S+/g, '')
+    /* ni le CONTENU d'un <script>/<style>, ni le Markdown (« ** », « # », « ` ») ne sont lus à voix haute */
+    return String(text || '').replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, ' ').replace(/<[^>]*>/g, ' ')
+      .replace(/\*\*|__|`+/g, '').replace(/^\s*#{1,6}\s+/gm, '').replace(/https?:\/\/\S+/g, '')
       .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]\uFE0F?|\uFE0F|\u200D/g, '')
       .replace(/\s{2,}/g, ' ').trim();
   }
   function speak(root, text) {
     var on = true;
     try { on = localStorage.getItem(STORAGE_VOICE) !== '0'; } catch (_) {}
-    text = aDire(text);
+    text = Array.from(aDire(text)).slice(0, 600).join('');
     if (!on || !text) return;
     voixStop();
     startTalking(root);
@@ -986,27 +1012,33 @@
     /* 1) SA voix (le domaine la fabrique et la garde en cache) + VRAI lip-sync :
           la bouche suit l'amplitude du son. crossOrigin est OBLIGATOIRE pour pouvoir
           analyser un son d'une autre adresse — sans lui, l'analyse rend du silence. */
-    var a = new Audio();
+    /* UN SEUL lecteur, réutilisé : chaque createMediaElementSource garde son <audio> en vie tant que
+       le moteur audio vit (mesuré : 6 réponses = 6 lecteurs retenus). Exception : s'il est déjà branché
+       au moteur et que le moteur dort, il serait MUET → un lecteur neuf, non branché, pour cette phrase. */
+    var brancheMuet = _voixEl && _voixEl._srcNode && !(AC && AC.state === 'running');
+    var a = brancheMuet ? new Audio() : (_voixEl || (_voixEl = new Audio()));
+    a._abandon = false;
     a.crossOrigin = 'anonymous';
     a.preload = 'auto';
-    var repli = false;
+    var id = _parole, repli = false;
     function versTelephone() {
-      if (repli || a._abandon) return; repli = true;
+      if (repli || id !== _parole) return; repli = true;
       try { a.pause(); } catch (_) {}
       voixTelephone(root, text);
     }
-    a.addEventListener('canplay', function () {
-      if (repli || a._abandon) return;
+    a.oncanplay = function () {
+      if (repli || id !== _parole) return;
+      a.oncanplay = null;
       _lipStop = lipSync(a, allMouths(root)); /* null = moteur audio pas reveille -> bouche CSS */
       var p = a.play();
       if (p && p.catch) p.catch(function () { versTelephone(); });
-    }, { once: true });
-    a.addEventListener('ended', function () { stopTalking(root); }, { once: true });
-    a.addEventListener('error', versTelephone, { once: true });
+    };
+    a.onended = function () { if (id === _parole) stopTalking(root); };
+    a.onerror = versTelephone;
     /* le son ne vient jamais : on ne la laisse pas muette */
-    setTimeout(function () { if (!repli && !a._abandon && a.readyState < 2) versTelephone(); }, 4000);
+    setTimeout(function () { if (!repli && id === _parole && a.readyState < 2) versTelephone(); }, 4000);
     try {
-      a.src = BEE_TTS + '?v=' + voixDe() + '&t=' + encodeURIComponent(text.slice(0, 600));
+      a.src = BEE_TTS + '?v=' + voixDe() + '&t=' + encodeURIComponent(text);
       _voixAudio = a;
       a.load();
     } catch (_) { versTelephone(); }
@@ -1016,55 +1048,114 @@
      d'Apex est apex-ai.kd-mc.com (kdmc-home/apps.json). Bee envoyait Kevin dans le vide.
      Garde : test:javis-bee vérifie que chaque adresse ici est une app du domaine (apps.json). */
   var APEX = 'https://apex-ai.kd-mc.com';
+  /* Les apps que Bee sait OUVRIR. Chaque clé est la FIN de la phrase (« ouvre mon arbre »,
+     « lance le bot crypto ») : un mot au milieu d'une phrase ne suffit plus (audit complet 30.09 :
+     « montre-moi l'équipe de France de rugby » ouvrait CMCteams, « la famille royale » l'arbre). */
   var DOMAIN_APPS = {
-    'arbre|généalog|famille|arrière.grand.père|arrière grand père': 'https://arbre.kd-mc.com',
-    'lingua|langue|apprendre.*(langue|anglais|italien)|monégasque': 'https://lingua.kd-mc.com',
+    'arbre(?: généalogique)?|généalogie|famille|arrière.grand.père|arrière grand père': 'https://arbre.kd-mc.com',
+    'lingua|langues?|monégasque': 'https://lingua.kd-mc.com',
     'apex|assistant ia avancé': APEX,
-    'planning|cmcteams|équipe|départ': 'https://cmcteams.kd-mc.com',
-    '\\bbot\\b|crypto': 'https://bot.kd-mc.com',
+    'planning|cmcteams|équipes?|départs?': 'https://cmcteams.kd-mc.com',
+    '\\bbot\\b(?: crypto)?|crypto': 'https://bot.kd-mc.com',
     '\\bstudio\\b|créa studio': 'https://studio.kd-mc.com',
-    'cuisine|recette': 'https://cuisine.kd-mc.com',
-    'boutique|shop': 'https://shops.kd-mc.com',
+    'cuisine|recettes?': 'https://cuisine.kd-mc.com',
+    'boutiques?|shop': 'https://shops.kd-mc.com',
     'mes apps|mon domaine|accueil|portail': 'https://kd-mc.com',
   };
 
+  /* Une fenêtre ouverte SANS lien de retour vers cette page. window.open(…, 'noopener') rend
+     TOUJOURS null (norme HTML) : Bee disait « touche le bouton » alors que l'onglet était déjà
+     ouvert, et un toucher en ouvrait un deuxième (audit complet 30.09, 9 apps sur 9). */
+  function ouvrir(url) {
+    var w = null;
+    try { w = window.open(url, '_blank'); if (w) { try { w.opener = null; } catch (_) {} } } catch (_) { w = null; }
+    return w;
+  }
+
+  /* LA PHRASE, SANS SES FIORITURES : « Bee, dis-moi quelle heure il est, s'il te plaît ? » →
+     « quelle heure il est ». Les règles locales comparent la phrase ENTIÈRE : un mot trouvé au
+     milieu d'une autre question ne la détourne plus (contre-audit 30.09 : « à quelle heure ferme le
+     casino ? » donnait l'heure, « réécris ce message » ouvrait Apex, « les météorites » la météo). */
+  function nettoie(text) {
+    return String(text || '').toLowerCase().replace(/’/g, "'").replace(/\s+/g, ' ').trim()
+      .replace(/^(?:(?:dis|hey|eh|ok|coucou)\s+)?(?:bee|bourricot|javis)\s*[,!:]?\s*/, '')
+      .replace(/^(?:dis-moi|tu sais|sais-tu|tu peux me dire|peux-tu me dire|tu pourrais me dire)\s+/, '')
+      .replace(/\s*,?\s*(?:s'il te pla[iî]t|stp|merci)\s*([?!.…]*)$/, '$1')
+      .replace(/\s*[?!.…]+$/, '').trim();
+  }
+  var RE_HEURE = /^(?:quelle heure (?:est-il|il est|est il)|il est quelle heure|t'as l'heure|tu as l'heure|as-tu l'heure|donne-moi l'heure|l'heure qu'il est|l'heure)$/;
+  var RE_DATE = /^(?:(?:on est|nous sommes|on se trouve) (?:quel jour|le combien)(?: aujourd'hui)?|quel jour (?:on est|sommes-nous|est-on|nous sommes|c'est|est-ce|aujourd'hui)(?: aujourd'hui)?|c'est quel jour(?: aujourd'hui)?|quelle (?:est la )?date(?: d'aujourd'hui| aujourd'hui| on est)?|quelle date sommes-nous|la date(?: d'aujourd'hui)?)$/;
+  /* L'heure et la date : celles du téléphone, sans IA (« quelle heure est-il ? » partait à une IA
+     qui ne connaît pas l'heure). Une question PLUS longue (« quelle heure est-il à New York ? »,
+     « quel jour tombe Noël ? ») va à l'IA, qui connaît la date du jour (le serveur la lui donne). */
+  function heureOuDate(t) {
+    var d = new Date();
+    if (RE_HEURE.test(t)) return 'Il est ' + d.getHours() + ' h ' + ('0' + d.getMinutes()).slice(-2) + '.';
+    if (RE_DATE.test(t)) {
+      var j = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][d.getDay()];
+      var m = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][d.getMonth()];
+      return 'On est ' + j + ' ' + (d.getDate() === 1 ? '1er' : d.getDate()) + ' ' + m + ' ' + d.getFullYear() + '.';
+    }
+    return '';
+  }
+  /* « ouvre / va sur / lance… » (poliment ou non) PUIS le nom de l'app, et RIEN après */
+  var VERBE = "^(?:(?:tu peux|peux-tu|pourrais-tu|tu pourrais|je veux|j'aimerais|je voudrais)\\s+)?" +
+    "(?:ouvre|ouvrir|va sur|vas sur|aller sur|montre|montrer|affiche|afficher|lance|lancer)(?:[- ](?:moi|nous))?\\s+" +
+    "(?:(?:l[ae]s?|mon|ma|mes|le|l')\\s*)?(?:(?:app|appli|application|site)\\s+(?:de |d')?)?";
+  /* la météo : le mot « météo » ENTIER, ou une vraie question sur le temps qu'il fait */
+  var RE_METEO = /(?:^|[^a-zà-ÿ])m[eé]t[eé]o(?![a-zà-ÿ])|^quel temps (?:il )?(?:fait|fera|va faire|fera-t-il|fait-il)(?: (?:aujourd'hui|demain|dehors|ce soir|cet après-midi|ici|à monaco))?$|^(?:va-t-il|il va|est-ce qu'il va) pleuvoir(?: (?:aujourd'hui|demain|ce soir))?$|^il pleut(?: dehors)?$|^il fait (?:combien|chaud|froid)(?: dehors)?$|^quelle (?:est la )?température(?: dehors| qu'il fait| aujourd'hui| demain)?$|^combien de degrés(?: dehors| aujourd'hui| demain)?$/;
+  /* une vraie ACTION sur ses données → Apex : ENVOYER un message, écrire un message À quelqu'un,
+     changer le planning. « réécris ce message », « écris un poème » vont à l'IA. */
+  var RE_APEX = /(?:^|\s)(?:envoie|envoyer|envoies)(?:[- ](?:lui|leur|moi))?\s.*\b(?:message|mail|e-mail|sms|texto)\b|(?:^|\s)(?:écris|écrire|ecris)(?:[- ](?:lui|leur))?\s.*\b(?:message|mail|e-mail|sms|texto)\b.*\sà\s|(?:^|\s)(?:modifie|change|échange|déplace)\b.*\bplanning\b|\bplanning\b.*\bmodifi/;
+
   function tryLocalIntent(text, respond) {
-    var t = text.toLowerCase();
+    var t = nettoie(text);
+    var hd = heureOuDate(t);
+    if (hd) { respond(hd); return true; }
     for (var pattern in DOMAIN_APPS) {
-      if (new RegExp(pattern, 'i').test(t) && /ouvre|va sur|montre|affiche|lance/.test(t)) {
+      if (new RegExp(VERBE + '(?:' + pattern + ')$', 'iu').test(t)) {
         var url = DOMAIN_APPS[pattern];
         /* Ouvert TOUT DE SUITE (dans le geste : sinon Safari iPhone bloque la fenêtre), et un
-           VRAI bouton dans la bulle — seul moyen sûr quand la demande est dictée à la voix. */
-        var w = null;
-        try { w = window.open(url, '_blank', 'noopener'); } catch (_) {}
-        respond(w ? 'J\'ouvre ça pour toi.' : 'C\'est prêt, touche le bouton pour l\'ouvrir.', url);
+           VRAI bouton dans la bulle si la fenêtre a été bloquée (demande dictée à la voix). */
+        var w = ouvrir(url);
+        respond(w ? 'Je l\'ai ouverte dans un nouvel onglet.' : 'C\'est prêt, touche le bouton pour l\'ouvrir.', w ? null : url);
         return true;
       }
     }
-    if (/m[eé]t[eé]o|temps.*(fera|fait)|pleuvoir|prévisions?/.test(t)) {
+    if (RE_METEO.test(t)) {
+      var demain = /demain/.test(t);
       var give = function (lat, lon, place) {
         fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
-              '&current=temperature_2m,weather_code&timezone=auto')
+              '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&forecast_days=2&timezone=auto')
           .then(function (r) { return r.json(); })
           .then(function (j) {
+            var ici = place ? ' à ' + place : '';
+            if (demain) {   /* « quel temps fera-t-il demain ? » : la prévision de DEMAIN, pas l'heure actuelle */
+              var dy = j && j.daily, mx = dy && dy.temperature_2m_max && dy.temperature_2m_max[1], mn = dy && dy.temperature_2m_min && dy.temperature_2m_min[1];
+              return respond(mx != null && mn != null
+                ? ('Demain' + ici + ' : entre ' + Math.round(mn) + ' et ' + Math.round(mx) + '°C.')
+                : 'Je n\'ai pas réussi à lire la prévision de demain, réessaie.');
+            }
             var c = j && j.current;
             var temp = c ? Math.round(c.temperature_2m) : null;
             respond(temp !== null
-              ? ('Il fait ' + temp + '°C' + (place ? ' à ' + place : '') + ' en ce moment.')
+              ? ('Il fait ' + temp + '°C' + ici + ' en ce moment.')
               : 'Je n\'ai pas réussi à lire la météo, réessaie.');
           })
           .catch(function () { respond('Météo indisponible là, réessaie.'); });
       };
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          function (pos) { give(pos.coords.latitude, pos.coords.longitude, ''); },
+          /* arrondi à ~1 km (2 décimales) : la météo n'a pas besoin de la position exacte de Kevin
+             (audit complet 30.09 : 6 décimales partaient chez open-meteo, ~10 cm) */
+          function (pos) { give(Math.round(pos.coords.latitude * 100) / 100, Math.round(pos.coords.longitude * 100) / 100, ''); },
           function () { give(43.7325, 7.4197, 'Monaco'); },
           { timeout: 4000 }
         );
       } else { give(43.7325, 7.4197, 'Monaco'); }
       return true;
     }
-    if (/envoie.*message|écris.*à|planning.*modifi|change.*planning/.test(t)) {
+    if (RE_APEX.test(t)) {
       /* HONNÊTE (audit Bee 27.09) : la mémoire du navigateur est propre à CHAQUE adresse — Apex
          (apex-ai.kd-mc.com) ne voit pas ce que Bee range ici. Bee disait « ta question est déjà
          écrite » : c'était faux. On copie la phrase dans le presse-papiers, et on le DIT. */
@@ -1073,7 +1164,7 @@
           (copie ? 'J\'ai copié ta phrase : dans Apex, touche le champ puis « Coller ».'
                  : 'Écris-lui ta demande là-bas.'), APEX + '/#chat');
       };
-      try { window.open(APEX + '/#chat', '_blank', 'noopener'); } catch (_) {}
+      ouvrir(APEX + '/#chat');
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(function () { dire(true); }, function () { dire(false); });
@@ -1107,11 +1198,13 @@
     } else if (t) { t.remove(); }
   }
 
+  var MAX_BULLES = 60;   /* le fil à l'écran ne grossit pas sans fin (mesuré : 61 bulles après 30 échanges) */
   function addBubble(root, role, text, lien) {
     var list = root.querySelector('#javis-msgs');
     var b = document.createElement('div');
     b.className = 'javis-bub ' + (role === 'user' ? 'me' : 'js');
-    b.textContent = text;
+    /* le gras/titres Markdown de l'IA ne s'affichent pas en « ** » bruts (texte seulement, jamais du HTML) */
+    b.textContent = role === 'user' ? text : String(text).replace(/\*\*|__/g, '').replace(/^#{1,6}\s+/gm, '');
     if (lien && /^https:\/\/([a-z0-9-]+\.)*kd-mc\.com(\/|$)/.test(lien)) {
       var a = document.createElement('a');
       a.className = 'javis-lien'; a.href = lien; a.target = '_blank'; a.rel = 'noopener';
@@ -1119,21 +1212,43 @@
       b.appendChild(document.createElement('br')); b.appendChild(a);
     }
     list.appendChild(b);
+    while (list.children.length > MAX_BULLES) list.removeChild(list.firstChild);
     list.scrollTop = list.scrollHeight;
+    return b;
+  }
+  /* Session refusée en cours de route (403) : Face ID ICI, dans la bulle. Avant (audit complet 30.09),
+     Bee disait « ferme et rouvre », mais l'identité n'était revérifiée qu'au chargement : même message
+     en boucle. */
+  function boutonFaceId(root, bulle) {
+    var bt = document.createElement('button');
+    bt.type = 'button'; bt.className = 'javis-lien'; bt.style.border = '0'; bt.style.cursor = 'pointer';
+    bt.textContent = 'Face ID';
+    bt.addEventListener('click', function () {
+      bt.disabled = true;
+      faceIdIci(function (ok, pourquoi) {
+        bt.disabled = false;
+        if (ok) { addBubble(root, 'javis', 'C\'est bon, je te reconnais. Repose ta question.'); bt.remove(); }
+        else addBubble(root, 'javis', 'Face ID : ' + motSimple(pourquoi) + '. Tu peux réessayer.');
+      });
+    });
+    bulle.appendChild(document.createElement('br')); bulle.appendChild(bt);
   }
 
   function askJavis(root, text) {
+    if (root._attente) return false;          /* une réponse est déjà attendue : on ne mélange pas */
     addBubble(root, 'user', text);
     var hist = loadHistory();
     hist.push({ role: 'user', content: text });
     saveHistory(hist);
+    /* askJavis rend true quand la question part (ou est traitée ici) */
 
     var handled = tryLocalIntent(text, function (reply, lien) {
       addBubble(root, 'javis', reply, lien);
       var h = loadHistory(); h.push({ role: 'assistant', content: reply }); saveHistory(h);
       speak(root, reply);
     });
-    if (handled) return;
+    if (handled) return true;
+    root._attente = true;
 
     setThinking(root, true);
     showTyping(root, true);
@@ -1152,26 +1267,33 @@
       credentials: 'include',
       headers: hdrs,
       signal: ctrlIa ? ctrlIa.signal : undefined,
-      body: JSON.stringify({ messages: messages }),
+      body: JSON.stringify({ messages: messages, mascotte: mascCfg().id }),   /* Bourricot répond en Bourricot */
     })
-      .then(function (r) { statut = r.status; return r.json(); })
+      .then(function (r) { statut = r.status; return r.json().catch(function () { return null; }); })
       .then(function (j) {
+        root._attente = false;
         clearTimeout(minuteurIa);
         setThinking(root, false);
         showTyping(root, false);
         var ok = !!(j && j.ok && j.text);
         /* la CAUSE exacte, en mots simples (règle Kevin : détailler les erreurs) */
         var out = ok ? j.text
-          : statut === 403 ? 'Je ne te reconnais plus (ta session a expiré). Ferme Bee et rouvre-la : Face ID te reconnaîtra.'
+          : statut === 403 ? 'Je ne te reconnais plus (ta session a expiré). Touche Face ID : je te reconnais tout de suite.'
+            : statut === 429 ? 'Doucement : beaucoup de questions d\'un coup. Attends une minute et repose-la.'
             : statut === 503 ? 'Aucune intelligence artificielle ne répond en ce moment. Réessaie dans une minute.'
+            : statut >= 500 ? 'Le domaine a un souci en ce moment (erreur ' + statut + '). Réessaie dans un instant.'
               : 'Je n\'ai pas réussi à répondre là, réessaie dans un instant.';
-        addBubble(root, 'javis', out);
+        var bulle = addBubble(root, 'javis', out);
+        if (statut === 403) boutonFaceId(root, bulle);
         allRigs(root).forEach(function (r) { react(r, ok ? 'joie' : 'triste', ok ? 1200 : 1600); });
         if (ok) { tone([660, 880], .2); vibrate(8); }
-        var h = loadHistory(); h.push({ role: 'assistant', content: out }); saveHistory(h);
+        /* seule une VRAIE réponse entre dans la mémoire : un message d'erreur de Bee repartait à l'IA
+           comme si elle l'avait dit (audit complet 30.09) */
+        if (ok) { var h = loadHistory(); h.push({ role: 'assistant', content: out }); saveHistory(h); }
         speak(root, out);
       })
       .catch(function (e) {
+        root._attente = false;
         clearTimeout(minuteurIa);
         setThinking(root, false);
         showTyping(root, false);
@@ -1180,6 +1302,7 @@
           ? 'Ça prend trop de temps (plus de 25 secondes). Réessaie, ou pose une question plus courte.'
           : 'Le réseau ne répond pas là, réessaie dans un instant.');
       });
+    return true;
   }
 
   /* ============================================================
@@ -1263,7 +1386,7 @@
       '<button id="javis-info" type="button" aria-label="Où vont mes messages">\u2139\uFE0F</button>' +
       '<span id="javis-ver">Bee ' + JAVIS_VER + '</span></div>' +
       '<div id="javis-msgs" role="log" aria-live="polite" aria-label="Conversation"></div>' +
-      '<form id="javis-form"><textarea id="javis-input" aria-label="Ta question" placeholder="Demande-moi n\'importe quoi…" rows="1"></textarea>' +
+      '<form id="javis-form"><textarea id="javis-input" aria-label="Ta question" placeholder="Demande-moi n\'importe quoi…" rows="1" maxlength="2000"></textarea>' +
       '<button id="javis-mic" type="button" aria-label="Dicter" aria-pressed="false">🎙</button>' +
       '<button id="javis-send" type="submit" aria-label="Envoyer">➤</button></form>' +
       '</div>';
@@ -1416,10 +1539,13 @@
     /* ℹ️ OÙ VONT MES MESSAGES (plan d'amélioration de l'audit, vie privée) : dit, en clair et sans
        rien cacher, qui voit quoi. Chaque phrase ici doit rester VRAIE (garde test:javis-bee). */
     wrap.querySelector('#javis-info').addEventListener('click', function () {
+      /* Audit complet 30.09 : l'ancien texte taisait OpenAI (qui reçoit aussi des questions quand le
+         gratuit manque), la position météo, la dictée et les durées de conservation. */
       addBubble(wrap, 'javis', 'Où vont tes messages : ta question part à ton domaine kd-mc.com, qui vérifie que c\'est bien toi. ' +
-        'Il la confie à une IA gratuite (Qwen de Cloudflare, Groq, Gemini ou Mistral) ou, pour une question difficile, à l\'IA experte (Anthropic). ' +
-        'Ma voix est fabriquée par OpenAI, puis gardée par ton domaine pour ne pas la repayer. ' +
-        'La conversation reste sur ce téléphone : le bouton Effacer la supprime.');
+        'Il la confie d\'abord à une IA gratuite (Qwen de Cloudflare, Groq, Gemini ou Mistral) ; si aucune ne répond, à une IA payante (Anthropic ou OpenAI), avec un plafond par jour. ' +
+        'Ma voix est fabriquée par OpenAI (au-delà d\'un plafond par jour, par la voix gratuite de Cloudflare), gardée par ton domaine jusqu\'à 400 jours pour ne pas la repayer, et jusqu\'à 1 an dans ce téléphone. ' +
+        'La météo envoie ta position arrondie à 1 km à open-meteo. La dictée passe par le service vocal de ton téléphone. ' +
+        'La conversation reste dans ce navigateur, pour cette adresse seulement : Effacer la supprime ici (pas dans l\'arbre ni sur une autre adresse du domaine).');
     });
     /* clavier ouvert : la grosse Bee se fait petite (app), pour laisser lire la conversation */
     input.addEventListener('focus', function () { document.body.classList.add('javis-saisie'); });
@@ -1428,9 +1554,15 @@
       e.preventDefault();
       var v = (input.value || '').trim();
       if (!v) return;
+      if (askJavis(wrap, v) === false) {   /* texte gardé : renvoyable après la réponse */
+        vibrate(30);
+        /* Safari iPhone ne vibre pas : un signal VISIBLE, une seule fois (contre-audit 30.09) */
+        var der = wrap.querySelector('#javis-msgs .javis-bub:last-child');
+        if (!der || !der._patiente) { var pb = addBubble(wrap, 'javis', 'Une seconde : je réponds d\'abord à ta question précédente. La tienne reste dans le champ.'); pb._patiente = true; }
+        return;
+      }
       input.value = '';
       vibrate(6);
-      askJavis(wrap, v);
     });
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
@@ -1489,7 +1621,7 @@
       'pas-kevin': ['Bee est personnelle à Kevin',
         'Ce compte n\'est pas celui de Kevin : Bee reste fermée. Si c\'est toi, Kevin, touche Face ID.'],
       'muet': ['Le domaine ne répond pas',
-        'Pas de réponse en 4 secondes — réseau lent ou coupé. Réessaie dans un instant.'],
+        'Pas de réponse du domaine — réseau lent ou coupé. Réessaie dans un instant.'],
       'panne': ['Le domaine a un souci',
         'Il a répondu, mais par une erreur. Ce n\'est pas toi : réessaie dans un instant.']
     };
@@ -1641,6 +1773,8 @@
 
   function boot() {
     checkAdmin(function (isAdmin, raison) {
+      /* le « Bee arrive… » part dès que le domaine a tranché (avant : écran noir entre 0,9 s et le verdict) */
+      try { var bt = document.getElementById('boot'); if (bt) bt.remove(); } catch (_) {}
       if (!isAdmin) {
         /* Sur une page normale : rien du tout, la page reste intacte.
            Dans l'app dédiée : on le DIT, sinon écran noir inexplicable. */

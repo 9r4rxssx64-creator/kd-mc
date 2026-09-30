@@ -30,12 +30,18 @@ on:
       - 'tests/verify-javis-bee-reelle.mjs'
       - 'tests/verify-lingua-bee-vivante.mjs'
       - 'tests/verify-bee-connexion-iphone.mjs'
+      - 'tests/verify-bee-comportements.mjs'
+      - 'tests/verify-bee-portes.mjs'
       # Audit Bee 27.09 : un changement du ROUTEUR (whoami, Face ID, cerveau /__javis/ai, voix)
       # ou d'un service worker pouvait casser Bee sans que cette garde ne tourne.
       - 'services/kdmc-router/worker.js'
       - 'services/kdmc-router/webauthn.js'
       - 'services/kdmc-router/bee-ia.test.mjs'
+      - 'services/kdmc-router/lingua-cout.test.mjs'
+      - 'services/kdmc-router/wrangler.toml'
+      - 'services/kdmc-apis/**'
       - 'services/_shared/ia-route.js'
+      - 'services/_shared/ia-route.test.mjs'
       - 'kdmc-home/kdmc-portal.js'
       - 'kdmc-home/kdmc-sso.js'
       - '**/sw.js'
@@ -48,13 +54,24 @@ on:
       - 'tools/javis/**'
       - 'javis/**'
       - 'arbre/javis-widget.js'
+      - 'arbre/index.html'
       - 'tests/verify-javis-bee*.mjs'
       - 'tests/verify-lingua-bee-vivante.mjs'
       - 'tests/verify-bee-connexion-iphone.mjs'
+      - 'tests/verify-bee-comportements.mjs'
+      - 'tests/verify-bee-portes.mjs'
       - 'services/kdmc-router/worker.js'
       - 'services/kdmc-router/webauthn.js'
+      - 'services/kdmc-router/bee-ia.test.mjs'
+      - 'services/kdmc-router/lingua-cout.test.mjs'
+      - 'services/kdmc-router/wrangler.toml'
+      - 'services/kdmc-apis/**'
       - 'services/_shared/ia-route.js'
+      - 'services/_shared/ia-route.test.mjs'
+      - 'kdmc-home/kdmc-portal.js'
+      - 'kdmc-home/kdmc-sso.js'
       - '**/sw.js'
+      - 'tests/verify-sw-identite.mjs'
       - '.github/workflows/bee-gardes.yml'
   # ⛔ Pas de cron : le compte a été suspendu le 15/08/2026 pour VOLUME d'exécutions.
   #    Ce workflow ne tourne que sur un vrai changement, ou à la main.
@@ -112,8 +129,23 @@ jobs:
       - name: "Bee — depuis l'iPhone : Face ID sur place, app neuve, lien piégé (vrai routeur)"
         run: npm run -s test:bee-iphone
 
+      # Audit complet 30.09 : 29 sabotages sur 66 passaient inaperçus. Ces deux fichiers les attrapent.
+      - name: "Bee — ses comportements (XSS, une voix, une question à la fois, phrases comprises, heure, paysage…)"
+        run: npm run -s test:bee-comportements
+
+      - name: "Bee — ses portes, son service worker et sa CSP (liste blanche exacte)"
+        run: npm run -s test:bee-portes
+
       - name: "Laissez-passer du domaine (#kdmc_sso) : qui le reçoit, et comment"
         run: npm run -s test:laissez-passer
 
       - name: "Service workers : aucune app ne garde « qui es-tu ? » en mémoire"
         run: npm run -s test:sw-identite
+
+      # Audit complet 30.09 : les plafonds de la voix payante, le routage IA et le relais apis ne
+      # tournaient sur AUCUNE pull request. Hors ligne, fetch simulé, < 30 s à eux trois.
+      - name: "Le coût est borné : voix payante (plafonds), routage IA (délais), relais apis (moteurs payants à Kevin)"
+        run: |
+          node services/kdmc-router/lingua-cout.test.mjs
+          node --test services/_shared/ia-route.test.mjs
+          node services/kdmc-apis/worker.test.mjs

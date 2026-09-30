@@ -1,5 +1,20 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🐝 Audit complet de Bee : 8 auditeurs + 2 contre-audits, Bee v1.13 (30.09.2026, soir)
+
+- 📊 **Le rapport** (notes avant → après, plan, la décision qui t'attend) : [Audit complet de Bee](https://claude.ai/artifact/5ontF6hhp6N8ZDxtis3twt)
+- 📱 **À essayer** (après la mise en ligne) : dans [javis.kd-mc.com](https://javis.kd-mc.com/), dis « quelle heure est-il ? », « ouvre moi l'arbre », « quel temps fera-t-il demain ? », puis tourne l'iPhone à l'horizontale : tu peux toujours écrire.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tools/javis/javis-widget.js` | **Modifié (Bee v1.13).** Phrases comprises en entier, heure/date/météo de demain, un seul lecteur audio, une question à la fois, bouton Face ID, paysage, ℹ️ exact. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/javis/javis-widget.js) |
+| `services/kdmc-router/worker.js` | **Modifié.** Bee gratuite d'abord et plafonnée, voix payante vraiment plafonnée, accès admin vérifié partout. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `services/_shared/ia-route.js` | **Modifié.** Chaque IA a sa limite de temps : plus d'attente sans fin. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/_shared/ia-route.js) |
+| `apex-ai/v13/core/apex-identity.ts` | **Modifié.** Apex reçoit les 8 traits de Javis et le tutoiement. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/apex-ai/v13/core/apex-identity.ts) |
+| `tests/verify-bee-comportements.mjs` | **Nouveau.** 34 contrôles en vrai navigateur, dont 41 phrases-pièges. `npm run test:bee-comportements`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-bee-comportements.mjs) |
+| `tests/verify-bee-portes.mjs` | **Nouveau.** 23 contrôles : portes admin, mémoire hors ligne, protection de la page. `npm run test:bee-portes`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-bee-portes.mjs) |
+| `services/kdmc-router/grant-faceid.test.mjs` | **Nouveau.** Personne ne greffe un Face ID sur ton compte avec un accès périmé. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/grant-faceid.test.mjs) |
+| `tools/finances/index.html` | **Modifié (Finances v0.15.1).** Renouvelle son accès admin toute seule. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/finances/index.html) |
 ### 🔍 L'audit complet et sa Phase 1 : CMCteams v9.930 (30.09.2026, soir)
 
 - 📱 **Ce que tu verras** : rien de nouveau à l'écran. Sous le capot, l'app n'envoie plus 317 écritures à Firebase à chaque ouverture (6 restent) et ne retélécharge plus ses 3,4 Mo toutes les minutes (6 octets).

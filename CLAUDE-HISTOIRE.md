@@ -53,8 +53,15 @@ politesse creuse.
   la synthèse lisible des 100+ règles absolues qui suivent. Pas de fichier séparé à maintenir :
   une nouvelle règle absolue ajoutée ici enrichit Javis automatiquement.
 - **Apex** (`apex-ai/v13/core/apex-identity.ts`) : `APEX_IDENTITY.persona` porte le même nom, le
-  même ton, les mêmes 8 traits en version compacte, injectée par `buildIdentitySection()` (system
-  prompt, toujours en tête) et en détail par `buildExtendedIdentitySection()`. Si Apex répond à
+  même ton, les mêmes 8 traits. **Corrigé le 30.09 (audit complet Bee, mesuré : 0 trait sur 8 et pas
+  de tutoiement n'arrivaient au modèle)** : la section RÉELLEMENT injectée, `buildIdentitySection()`
+  (system prompt, toujours en tête), porte maintenant « tu tutoies toujours » + la tête des 8 traits
+  en une ligne ; le détail reste dans `buildExtendedIdentitySection()`. Garde :
+  `apex-identity.test.ts` (« la section RÉELLEMENT injectée porte le tutoiement ET les 8 traits »).
+- **Bee / Bourricot** (`services/kdmc-router/worker.js`, `BEE_CARACTERE` / `BOURRICOT_CARACTERE`) :
+  même tutoiement, sans jargon, sans flatterie, honnête (« ne prétends jamais avoir fait une action,
+  n'invente jamais une donnée ») ; **exception voulue au trait « agit à ta place »** : Bee n'a accès à
+  rien, elle renvoie vers Apex pour toute vraie action. Si Apex répond à
   « qui es-tu / comment tu travailles » → il cite Javis, pas une réponse générique.
 - **CMCteams / autres apps** : IA locale (`buildIASystemPrompt`) hérite du même persona via les
   règles CLAUDE.md déjà injectées — pas de duplication de personnalité, une seule source.
@@ -94,15 +101,16 @@ futurs qui parlent directement à Kevin ou à un utilisateur final.
   des yeux, bouche qui parle), fail-CLOSED sur la visibilité (`/__sso/whoami` — invisible pour
   quiconque n'est pas Kevin admin vérifié, même pattern éprouvé que `tools/departs/_depSsoAutoAdmin`),
   fail-OPEN sur le réseau (une panne SSO cache juste le bouton, ne casse jamais la page).
-- Le chat parle à **`apis.kd-mc.com/ai`** (`services/kdmc-apis`, DÉJÀ en prod) — donc **gratuit
-  Qwen d'abord automatiquement**, zéro logique dupliquée (leçon #142 : un seul routage IA,
+- Le chat parle à **`/__javis/ai`** du routeur (depuis le 27.09 ; avant : `apis.kd-mc.com/ai`, ouvert
+  à quiconque falsifiait l'Origin) — Kevin seul, caractère posé par le serveur, **gratuit Qwen
+  d'abord**, 1 appel modèle par question, plafond du jour sur le payant (30.09), zéro logique dupliquée (leçon #142 : un seul routage IA,
   `services/_shared/ia-route.js`, jamais recopié dans un nouveau worker).
 - `javis/` — app PWA autonome installable (« Ajouter à l'écran d'accueil ») : personnage plein
   écran + chat, même moteur que le widget, séparée pour ne dépendre d'aucune autre app.
 - Intentions locales exécutées sans appel IA : ouvrir une app du domaine, météo (open-meteo,
   gratuit). Une action qui touche de vraies données (« envoie un message », « modifie le
-  planning ») n'est **jamais exécutée par ce script public** — il ouvre Apex avec la question
-  déjà écrite (`apex_v13_chat_prefill`) : Apex a la session authentifiée + le vrai registre
+  planning ») n'est **jamais exécutée par ce script public** — il copie la phrase et ouvre Apex
+  (`apex-ai.kd-mc.com/#chat` — Apex ne lit pas encore la question dans l'adresse, d'où la copie) : Apex a la session authentifiée + le vrai registre
   d'outils, un widget embarqué sur des pages publiques ne doit **jamais** détenir de secret
   d'écriture (règle sécurité domaine public déjà en place plus haut).
 
@@ -252,7 +260,7 @@ futurs qui parlent directement à Kevin ou à un utilisateur final.
 - Câblé sur **1 app (`arbre`) + l'app installable** pour l'instant, pas les 26 adresses du
   domaine — chaque app statique garde sa propre copie du widget (pas de bundler ici), donc
   l'étendre = copier `tools/javis/javis-widget.js` dans chaque `index.html` visé + ajouter les
-  hôtes (`apis.kd-mc.com`, `api.open-meteo.com` en `connect-src`, `lingua.kd-mc.com` en
+  hôtes (`'self'` pour `/__javis/ai`, `api.open-meteo.com` en `connect-src`, `lingua.kd-mc.com` en
   `img-src`, + `media-src` si l'app veut la vidéo) et **déclarer la page dans la garde**.
 - **Deux gardes mécaniques** (la règle ne vit plus seulement dans ce document — leçon #142 :
   le 16.09 j'avais amélioré Bee et oublié de recopier dans `arbre/`, deux Bee en ligne sans
@@ -314,7 +322,7 @@ futurs qui parlent directement à Kevin ou à un utilisateur final.
 
 ### 6. Test mental obligatoire avant d'étendre Javis à une nouvelle app
 
-> *« Cette app a-t-elle déjà sa CSP `connect-src` ouverte vers `apis.kd-mc.com` (sinon fetch
+> *« Cette app a-t-elle déjà sa CSP `connect-src` ouverte vers `'self'` (le cerveau est `/__javis/ai`, même adresse ; sinon fetch
 > silencieusement bloqué, leçon CSP⇄fetch) — et `media-src` si elle veut la vidéo (une balise
 > `<video>` n'est PAS couverte par `img-src`) — et `media-src` **aussi pour sa voix**, parce
 > qu'une balise `<audio>` en dépend exactement pareil ? Ai-je ajouté la page à `tests/verify-javis-bee.mjs`

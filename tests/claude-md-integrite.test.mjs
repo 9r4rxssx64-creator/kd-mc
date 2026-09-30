@@ -72,7 +72,7 @@ dit(taille <= PLAFOND_INDEX,
   taille > PLAFOND_INDEX ? "l'index regonfle : le récit doit accueillir le détail, pas l'index." : '');
 
 /* 6 — l'index garde bien ses règles d'or et ses interdits (l'en-tête écrit à la main) */
-for (const attendu of ["LES 10 RÈGLES D'OR", 'LES INTERDITS', 'LE TEST MENTAL', 'OÙ TROUVER QUOI']) {
+for (const attendu of ["LES 10 RÈGLES D'OR", 'LES INTERDITS', 'JAVIS — le personnage', 'Tutoiement toujours', 'LE TEST MENTAL', 'OÙ TROUVER QUOI']) {
   dit(index.includes(attendu), `l'en-tête contient « ${attendu} »`);
 }
 

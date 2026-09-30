@@ -177,6 +177,15 @@ describe('APEX_IDENTITY.persona — "Javis" (Kevin 2026-09-16, "Go tout")', () =
     const section = buildIdentitySection();
     expect(section).toContain('Javis');
   });
+
+  /* Audit complet Bee 30.09 : la section INJECTÉE ne portait que le mot « Javis » — 0 trait sur 8,
+     pas de tutoiement. Parité Claude Code ⇄ Apex : les 8 traits arrivent au modèle. */
+  it('la section RÉELLEMENT injectée porte le tutoiement ET les 8 traits (pas seulement le nom)', () => {
+    const section = buildIdentitySection();
+    expect(section).toMatch(/tu tutoies toujours/);
+    for (const t of APEX_IDENTITY.persona.traits) expect(section).toContain(t.split(' — ')[0]);
+    expect(section.length).toBeLessThanOrEqual(2400);
+  });
 });
 
 describe('persona.javis — toggle ON/OFF (Kevin 2026-09-16, "que je puisse l\'activer et le désactiver quand je veux")', () => {

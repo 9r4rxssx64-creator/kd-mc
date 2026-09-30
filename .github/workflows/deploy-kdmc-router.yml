@@ -47,19 +47,11 @@ jobs:
         working-directory: services/kdmc-router
         shell: bash -eo pipefail {0}
         run: |
-          node voix-tts.test.mjs
-          node antonin-tts.test.mjs
-          node arbre.test.mjs
-          # 11/09/2026 (Strix vuln-0001) : les tests SSO ne tournaient dans AUCUN workflow — le
-          # correctif (Origin sur /issue, Face ID exigé pour /me/history et /me/revoke) est
-          # gardé ici, avant chaque déploiement du routeur.
-          node sso.test.mjs
-          node self-service.test.mjs
-          node admin.test.mjs
-          # 27/09/2026 : une page d'app sous kd-mc.com → sa belle adresse ; jamais CMCteams servi par le repli de l'hébergeur
-          node jamais-cmcteams.test.mjs
-          # 27/09/2026 : alerte « nouvelle connexion » pour Kevin (une par personne et par app sur 12 h)
-          node alerte-nouveau.test.mjs
+          # TOUS les tests du routeur, pas une liste recopiée (audit complet Bee 30.09, mesuré : 11 sur 40
+          # tournaient ici — ni le cerveau de Bee, ni les plafonds de la voix payante). Un nouveau
+          # *.test.mjs est couvert d'office. Hors ligne, fetch simulé, ~9 s au total.
+          for t in *.test.mjs; do echo "── $t"; node "$t"; done
+          node --test ../_shared/ia-route.test.mjs
           node ../../tools/lingua/verify-coach.mjs
 
       - name: Install wrangler

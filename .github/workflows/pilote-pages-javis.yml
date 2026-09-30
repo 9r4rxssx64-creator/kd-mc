@@ -169,11 +169,22 @@ jobs:
           else echo "2. aucun domaine Worker à retirer"; fi
           echo "3. domaine personnalisé Pages"
           j -X POST "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET/domains" --data "{\"name\":\"$HOTE\"}" | ok || echo "(domaine déjà attaché ?)"
-          echo "4. DNS CNAME $HOTE → $PROJET.pages.dev (si absent)"
-          N=$(j "$CF/zones/$Z/dns_records?name=$HOTE" | node -pe 'JSON.parse(require("fs").readFileSync(0)).result.length')
-          if [ "$N" = "0" ]; then
+          echo "4. DNS : retirer l'enregistrement laissé par le domaine Worker (AAAA 100::), puis CNAME $HOTE → $PROJET.pages.dev"
+          for i in $(seq 1 8); do
+            sleep 5
+            RESTE=$(j "$CF/zones/$Z/dns_records?name=$HOTE" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0)).result||[];r.map(x=>x.id+" "+x.type+" "+x.content).join("\n")')
+            echo "   enregistrements : ${RESTE:-(aucun)}"
+            [ -z "$RESTE" ] && break
+            SUP=0
+            while read -r ID T C; do
+              [ -z "$ID" ] && continue
+              if [ "$C" = "100::" ] || [ "$T" = "AAAA" ] || [ "$T" = "A" ]; then echo "   retire $T $C ($ID)"; j -X DELETE "$CF/zones/$Z/dns_records/$ID" | ok; SUP=1; fi
+            done <<< "$RESTE"
+            [ "$SUP" = "0" ] && break
+          done
+          if [ -z "$RESTE" ] || ! printf '%s' "$RESTE" | grep -q "CNAME"; then
             j -X POST "$CF/zones/$Z/dns_records" --data "{\"type\":\"CNAME\",\"name\":\"$HOTE\",\"content\":\"$PROJET.pages.dev\",\"proxied\":true,\"ttl\":1}" | ok
-          else echo "   déjà $N enregistrement(s) — laissé tel quel"; fi
+          else echo "   CNAME déjà présent — laissé tel quel"; fi
           echo "5. attendre et vérifier"
           for i in $(seq 1 12); do
             sleep 10

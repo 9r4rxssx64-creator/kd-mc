@@ -261,3 +261,32 @@ test('routeSmart : question difficile → conseil gratuit (Anthropic pas appelé
     assert.equal(s.analyse.complexity, 1);
   } finally { f.restore(); }
 });
+
+test('délais (audit Bee 30.09) : un Qwen MUET ne bloque plus la réponse — le suivant répond, et toute la chaîne tient dans budgetMs', async () => {
+  const muet = { run() { return new Promise(() => {}); } };   // Workers AI qui ne répond jamais
+  const f = mockFetch(() => openaiReply('Réponse de secours'));
+  try {
+    const t0 = Date.now();
+    const r = await routeText({ AI: muet, GROQ_API_KEY: 'x' }, { prompt: 'bonjour', budgetMs: 8000, qwenModelMs: 300 });
+    assert.equal(r.ok, true, 'le suivant (gratuit) répond');
+    assert.equal(r.provider, 'groq');
+    assert.ok(Date.now() - t0 < 3000, 'pas d\'attente sans fin (' + (Date.now() - t0) + ' ms)');
+    /* sous échéance, un Qwen LENT laisse la place au secours gratuit (5 s gardées) */
+    const t2 = Date.now();
+    const r3 = await routeText({ AI: muet, GROQ_API_KEY: 'x' }, { prompt: 'bonjour', budgetMs: 7000 });
+    assert.equal(r3.provider, 'groq', 'Qwen muet sous échéance → Groq répond quand même');
+    assert.ok(Date.now() - t2 < 6000, 'Groq essayé à temps (' + (Date.now() - t2) + ' ms)');
+    const t1 = Date.now();
+    const r2 = await routeText({ AI: muet }, { prompt: 'bonjour', timeoutMs: 20000, budgetMs: 1800 });
+    assert.equal(r2.ok, false);
+    assert.ok(Date.now() - t1 < 2500, 'budgetMs respecté (' + (Date.now() - t1) + ' ms)');
+  } finally { f.restore(); }
+});
+
+test('délais (contre-audit 30.09) : SANS échéance, un Qwen lent MAIS qui répond n\'est pas coupé (Apex Chat, timeoutMs 8 s)', async () => {
+  let n = 0;
+  const lent = { run() { n++; return new Promise((res) => setTimeout(() => res({ response: 'Réponse lente' }), 1200)); } };
+  const r = await routeText({ AI: lent }, { prompt: 'bonjour', timeoutMs: 300 });
+  assert.equal(r.ok, true, 'Qwen lent répond');
+  assert.equal(n, 1, '1 seule inférence (pas 4 lancées pour rien)');
+});

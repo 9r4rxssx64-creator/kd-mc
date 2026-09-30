@@ -1,5 +1,60 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (23h UTC) — « Le plus complet des audits » de Javis/Bee : 8 auditeurs, 2 contre-audits, Bee v1.13
+
+Kevin : « Fais le plus complet des audit de fonctionnalité, d'architecture, du code, d'amélioration, etc. Complet ».
+Périmètre : Bee (widget, app javis, bulle de l'arbre) + tout ce dont elle dépend (routeur `/__javis/ai`, SSO,
+Face ID, voix Lingua, route IA commune `ia-route.js`, relais `kdmc-apis`, service workers, chaîne de publication).
+
+**Méthode** : 8 auditeurs indépendants en lecture seule (fonctionnel en vrai Chromium iPhone, architecture, code,
+tests avec matrice de sabotage de 66 mutants, sécurité par exploits exécutés, perf/stabilité CPU×4 Slow 4G,
+IA/persona/vie privée, en ligne + second avis) → correctifs avec test prouvé par sabotage → 2 contre-audits
+indépendants qui REJOUENT les exploits sur le code corrigé → correctifs des régressions trouvées.
+
+**Notes mesurées (même barème, avant → après contre-audit)** : sécurité 55 → 54 (N1, trouvé par le
+contre-audit, corrigé depuis ; reste le jeton 30 j en localStorage) · architecture 22 → 61 · code serveur
+56 → 77, widget 70 → 87 · tests serveur 76 → 85 · IA/persona 20 → 77 · fonctionnel 66 → 90 · perf 53 → 80.
+Rapport + plan d'amélioration : artifact « Audit complet Bee » (lien dans KEVIN_INVENTORY).
+
+**Corrigé (chaque point a son test, prouvé par sabotage)** :
+- Coût : `/__javis/ai` gratuit d'abord QUEL QUE SOIT le type, 1 appel modèle (4 à 7 avant), barrière 8/min sans
+  KV (`LIMITE_BEE`), payant seulement sous plafond du jour ET dépense réservée avant de payer ; réponse avant 22 s.
+- `ia-route` : délai par modèle Qwen (un Qwen muet bloquait > 600 s), budget global, réserve de 5 s aux secours
+  gratuits ; hors échéance ≥ 30 s (Apex Chat ne perd plus un Qwen lent).
+- Voix payante : une seule décision pour OpenAI ET Replicate (Antonin passait sous tous les plafonds), on ne paie
+  que ce qui est compté (400/400 payées quand le KV n'écrivait plus), voix gratuite rangée à part (elle
+  remplaçait la belle voix 400 jours) et avec CORS du domaine ; CORS Lingua limité au domaine.
+- Admin : `grantValide()` unique (12 h, révocation, alias) — l'enrôlement Face ID acceptait un grant expiré ou
+  révoqué (N1, contre-audit) ; `/__lingua/depense` et `domain-log` sans `?t=` ; cookie mal encodé sans 1101.
+- apis : révocation lue dans le KV (lecture), modèle imposé ignoré sans Kevin, alias révoqué.
+- Persona : les 8 traits + tutoiement arrivent VRAIMENT au modèle d'Apex (0/8 avant) ; Bourricot a son
+  caractère ; date de Monaco donnée à l'IA ; bloc JAVIS en tête de CLAUDE.md (gardé).
+- Bee v1.13 : phrases comprises par la phrase ENTIÈRE (table de 41 pièges), heure/date/météo de demain locales,
+  un lecteur audio réutilisé (30 → 1), une question à la fois (+ message visible), 403 → bouton Face ID,
+  erreurs hors mémoire, paysage, ℹ️ exact et 44 px, GPS arrondi, voix du téléphone par genre ≤ 1,25,
+  Markdown ni lu ni affiché, preconnect + dessin de LA mascotte (LCP 3,17 → 2,36 s), SW : copie gardée sur
+  429/5xx (plus d'« Error 1027 »), ajout fichier par fichier ; 12 clips en démarrage rapide (identiques
+  image par image, MD5 12/12). Finances v0.15.1 renouvelle son grant.
+- Déploiement du routeur : TOUS ses tests (11 sur 40 avant) ; bee-gardes : plafonds + routage + apis + 2
+  nouveaux fichiers (`test:bee-comportements` 34, `test:bee-portes` 23), `grant-faceid.test.mjs`.
+
+**Reste ouvert (plan d'amélioration, rien ne casse aujourd'hui)** : jeton de 30 jours en localStorage (P1 —
+décision de Kevin : Face ID plus souvent vs confort), arbre en `unsafe-inline`, clips réencodés (−67 %,
+essai SSIM 0,97–0,99) + cache long, micro-chargeur de Bee sur l'arbre, `/health` qui liste les clés, CORS `*`
+d'apis `/ai`, `/__sso/entrer` avec le jeton dans l'adresse, découpage du routeur (monolithe 4 200 l.),
+compteur de voix partagé avec Lingua, contrat de version widget ⇄ routeur, test « réelle » à rendre robuste.
+**À coordonner** : la session publication-manuelle prend javis comme pilote « fichiers sans Worker » —
+`/__javis/ai`, `/__sso/*` et la voix doivent RESTER sur le routeur.
+**Hors Bee, rouge d'avant** : `test:improvements-guard` (19 → 22 règles sans garde, autre session).
+## 2026-09-30 (23h35 UTC) — Kevin a donné le droit DNS au jeton « Edit Cloudflare Workers » : la bascule de javis peut partir
+
+Capture de Kevin : deux jetons (« Workers Builds - 2026-08-07 01:11 », créé par Cloudflare pour Workers Builds ; « Edit
+Cloudflare Workers », celui de GitHub). Après ajout de Zone → DNS → Edit : run public 36791698603 (mode `lire`) → **DNS
+lisible : `javis.kd-mc.com` = AAAA `100::` proxied** (l'enregistrement que pose un domaine personnalisé Worker), projets Pages
+`kdmc-site` + `kdmc-javis`. Le mode `basculer` retire maintenant cet AAAA (et tout A/AAAA restant) après le retrait du domaine
+Worker, puis pose le CNAME vers `kdmc-javis.pages.dev` — sinon la vérification « 0 enregistrement » aurait laissé javis
+sans DNS. Bascule lancée juste après la fusion ; mesure « après » à 00h00 UTC (plafond du jour remis à zéro).
+
 ## 2026-09-30 (21h30 UTC) — v9.930 PUBLIÉE à la main (PR #4144 → export → push public cfa6081 → dispatch)
 
 Run public `publier-site-prive` **36779606214 ✅** (21h28 UTC) : fichiers privés récupérés depuis le coffre `main`

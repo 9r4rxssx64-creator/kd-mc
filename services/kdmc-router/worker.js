@@ -12,7 +12,7 @@ import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } f
 import { mintShopsAdminIdToken } from './fb-token.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
-import { routeText, routeSmart, FREE_PROVIDERS } from '../_shared/ia-route.js';
+import { routeText, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
 
 /* D'où viennent les pages. Historiquement GitHub Pages — mais le dépôt est
    PRIVÉ depuis le 23/09/2026 (« que personne ne voie mon code ») et GitHub
@@ -880,7 +880,8 @@ function revoked(acc, s) { return !!(acc && acc.revoked_at && (s.iat || 0) < acc
 function ssoCookie(request, name) {
   const c = request.headers.get('cookie') || '';
   const m = c.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
-  return m ? decodeURIComponent(m[1]) : '';
+  if (!m) return '';
+  try { return decodeURIComponent(m[1]); } catch (_) { return ''; }   /* cookie mal encodé = pas de cookie, jamais une exception (erreur 1101) */
 }
 /* Source du pass de session : header Authorization Bearer EN PRIORITÉ (marche
    même avec les PWA installées sur iOS, où chaque app a un jar de cookies isolé),
@@ -1033,8 +1034,8 @@ async function souslePlafond(env, quoi, request, max, fenetreS) {
  *
  * HONNÊTE : ce moteur gratuit n'a pas la finesse de la voix payante. Il n'est
  * donc PAS mis par défaut — la voix normale de Lingua ne change pas d'un iota.
- * Le résultat est rangé dans le MÊME cache : une phrase dépannée en gratuit
- * n'est synthétisée qu'une fois.
+ * Le résultat est rangé À PART (« gratuite: », 1 jour — audit complet 30.09) : une
+ * phrase dépannée en gratuit ne prend jamais la place de la belle voix.
  *
  * DÉFENSIF : selon les modèles, Workers AI renvoie soit du binaire, soit un
  * objet { audio: "<base64>" }. On accepte les deux, et si on ne reconnaît
@@ -1052,7 +1053,8 @@ async function souslePlafond(env, quoi, request, max, fenetreS) {
  * C'est une mesure, pas une estimation : 0 appel compté = notre domaine n'est
  * pas la cause du prélèvement, et il faut chercher ailleurs (un autre outil,
  * un autre appareil). Lisible sur /__lingua/depense (admin seulement).
- * FAIL-OPEN total : si le compteur tombe, la voix marche quand même. */
+ * Si le compteur ne peut pas être écrit, on NE PAIE PAS (audit complet 30.09) : la voix
+ * gratuite prend le relais — la voix marche quand même, sans facture hors compteur. */
 /* Plafond GLOBAL du jour, tous appareils confondus : LIT le compteur que compteDepense tient déjà
    (aucune écriture de plus : le plafond d'écritures KV du compte a été atteint le 27.09). */
 async function sousLePlafondDuJour(env, quoi, max) {
@@ -1071,14 +1073,18 @@ async function limiteTous(limiteur, quoi) {
   } catch { return true; }
 }
 
+/* Rend true si la dépense a bien été COMPTÉE. Audit complet 30.09 (mesuré) : quand l'écriture KV
+   échoue (plafond d'écritures du compte, atteint le 27.09), le compteur restait figé et 400 voix sur
+   400 étaient payées sous un plafond de 300. Les appelants qui paient ne paient donc QUE si c'est compté. */
 async function compteDepense(env, quoi) {
   try {
-    if (!env || !env.ACCOUNTS) return;
+    if (!env || !env.ACCOUNTS) return false;
     const jour = new Date().toISOString().slice(0, 10);
     const cle = 'dep:' + jour + ':' + quoi;
     const n = parseInt((await env.ACCOUNTS.get(cle)) || '0', 10) || 0;
     await env.ACCOUNTS.put(cle, String(n + 1), { expirationTtl: 60 * 60 * 24 * 100 });
-  } catch (_) { /* jamais bloquant */ }
+    return true;
+  } catch (_) { return false; }
 }
 
 /* ═══ LA VOIX GRATUITE DE QUALITÉ — Google Gemini ════════════════════════
@@ -1151,7 +1157,16 @@ async function voixGemini(env, texte, voix, consigne, cleCache) {
 }
 
 const VOIX_GRATUITE_MODELE = '@cf/myshell-ai/melotts';
-async function voixGratuite(env, texte, cleCache) {
+/* cleCache = la clé de la voix PAYANTE ; le son gratuit est rangé À PART (« gratuite: », 1 jour).
+   Audit complet 30.09 (sonde exécutée) : rangé sous la clé payante pour 400 jours, un dépannage gratuit
+   remplaçait à jamais la belle voix de cette phrase — même le lendemain, une fois le plafond remis à zéro. */
+async function voixGratuite(env, texte, cleCache, cors) {
+  const cleG = cleCache ? 'gratuite:' + cleCache : '';
+  /* les MÊMES en-têtes CORS que la belle voix : Bee sur javis ou l'arbre lit ce son (contre-audit 30.09) */
+  const entetes = Object.assign({ 'content-type': 'audio/mpeg', 'cache-control': 'private, max-age=86400', 'x-voix': 'gratuite' }, cors || {});
+  try {
+    if (cleG && env && env.ACCOUNTS) { const deja = await env.ACCOUNTS.get(cleG, 'arrayBuffer'); if (deja) return new Response(deja, { status: 200, headers: entetes }); }
+  } catch (_) { /* cache best-effort */ }
   try {
     if (!env || !env.AI || typeof env.AI.run !== 'function') return null;
     const sortie = await env.AI.run(VOIX_GRATUITE_MODELE, { prompt: String(texte || '').slice(0, 1000), lang: 'fr' });
@@ -1164,8 +1179,8 @@ async function voixGratuite(env, texte, cleCache) {
       buf = u8.buffer;
     } else if (sortie && typeof sortie.arrayBuffer === 'function') buf = await sortie.arrayBuffer();
     if (!buf || buf.byteLength < 64) return null;   // rien d'exploitable → repli téléphone
-    try { if (cleCache) await env.ACCOUNTS.put(cleCache, buf, { expirationTtl: 60 * 60 * 24 * 400 }); } catch (_) { /* cache best-effort */ }
-    return new Response(buf, { status: 200, headers: { 'content-type': 'audio/mpeg', 'cache-control': 'public, max-age=31536000, immutable', 'x-voix': 'gratuite' } });
+    try { if (cleG) await env.ACCOUNTS.put(cleG, buf, { expirationTtl: 60 * 60 * 24 }); } catch (_) { /* cache best-effort */ }
+    return new Response(buf, { status: 200, headers: entetes });
   } catch (_) { return null; }
 }
 
@@ -1456,7 +1471,12 @@ async function ficheLaVisite(request, url, env, host) {
 }
 
 async function handleLingua(request, url, env) {
-  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type' };
+  /* CORS : les pages DU DOMAINE seulement (audit complet 30.09 : « * » laissait n'importe quel site lire
+     la voix, et la progression dès qu'il tenait une clé). Bee sur l'arbre ou javis lit la voix de Lingua :
+     son adresse est renvoyée telle quelle ; une page hors domaine ne reçoit AUCUN en-tête CORS. */
+  const origineL = request.headers.get('origin') || '';
+  const cors = { 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type', vary: 'Origin' };
+  if (/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i.test(origineL)) cors['access-control-allow-origin'] = origineL;
   const JL = (o, s) => new Response(JSON.stringify(o), { status: s || 200, headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }, cors) });
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   if (!env || !env.ACCOUNTS) return JL({ ok: false, reason: 'kv_absent' }); // fail-open (200)
@@ -1513,6 +1533,16 @@ async function handleLingua(request, url, env) {
       if (!(speed >= 0.25 && speed <= 2)) speed = 1;
       speed = Math.round(speed * 100) / 100;
       if (!text.trim()) return JL({ ok: false, reason: 'no_text' }, 400);
+      /* UNE seule décision « peut-on payer ? » pour TOUTES les voix payantes, OpenAI ET Replicate
+         (audit complet 30.09, mesuré : la voix clonée « antonin » passait sous tous les plafonds —
+         20 appels Replicate sur 20 au-delà du plafond, jamais comptés). Plafond global du jour,
+         barrière par minute sans KV, plafond par appareil, et la dépense doit être COMPTÉE avant. */
+      let _peut;
+      const peutPayerVoix = async () => (_peut !== undefined ? _peut : (_peut =
+        (await sousLePlafondDuJour(env, 'tts', parseInt(env && env.TTS_PLAFOND_JOUR, 10) || 300))
+        && (await limiteTous(env && env.LIMITE_VOIX, 'tts'))
+        && (await souslePlafond(env, 'tts', request, 150, 3600))
+        && (await compteDepense(env, 'tts'))));
       const audioHdr = Object.assign({ 'content-type': 'audio/mpeg', 'cache-control': 'public, max-age=31536000' }, cors);
       const hashOf = async (s) => { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
         return Array.prototype.map.call(new Uint8Array(b), (x) => ('0' + x.toString(16)).slice(-2)).join(''); };
@@ -1525,7 +1555,7 @@ async function handleLingua(request, url, env) {
         const akey = 'ltts:' + (await hashOf('antonin:' + aSpeed + ':' + text));
         const acached = await env.ACCOUNTS.get(akey, 'arrayBuffer');
         if (acached) return new Response(acached, { status: 200, headers: audioHdr });
-        if (env.AX_REPLICATE_KEY) {
+        if (env.AX_REPLICATE_KEY && (await peutPayerVoix())) {
           try {
             const rp = await fetch('https://api.replicate.com/v1/models/minimax/speech-02-hd/predictions', {
               method: 'POST',
@@ -1601,13 +1631,11 @@ async function handleLingua(request, url, env) {
          il ne doit donc pas être décompté (sinon une leçon normale serait bridée). */
       /* Plafond GLOBAL du jour (audit Bee 27.09) : le plafond par IP ne tient pas face à 200 IP
          (mesuré : 200 voix payées). Au-delà, la voix gratuite prend le relais — jamais de silence. */
-      const peutPayer = (await sousLePlafondDuJour(env, 'tts', parseInt(env && env.TTS_PLAFOND_JOUR, 10) || 300))
-        && (await limiteTous(env && env.LIMITE_VOIX, 'tts'))
-        && (await souslePlafond(env, 'tts', request, 150, 3600));
-      if (!env.OPEN_AI_API_KEY || !peutPayer) {
-        const g = await voixGratuite(env, text, ckey);
+      const peutPayer = !!env.OPEN_AI_API_KEY && (await peutPayerVoix());
+      if (!peutPayer) {
+        const g = await voixGratuite(env, text, ckey, cors);
         if (g) return g;
-        return JL({ ok: false, reason: !peutPayer ? 'plafond_atteint' : 'tts_absent' }); // fail-open (200) → repli navigateur
+        return JL({ ok: false, reason: env.OPEN_AI_API_KEY ? 'plafond_atteint' : 'tts_absent' }); // fail-open (200) → repli navigateur
       }
       const synth = async (m) => {
         const corps = { model: m, voice: voixPour(m), input: text, response_format: 'mp3' };
@@ -1618,11 +1646,11 @@ async function handleLingua(request, url, env) {
           body: JSON.stringify(corps),
         });
       };
-      await compteDepense(env, 'tts');   // on va vraiment payer : on le compte
+      /* (la dépense est déjà comptée par peutPayerVoix : on ne paie jamais sans l'avoir comptée) */
       let mUse = modele, rr = await synth(mUse);
       if (!rr.ok && mUse === HD_MODELE) { mUse = 'tts-1'; rr = await synth(mUse); } // repli honnête, jamais de silence
       if (!rr.ok) {
-        const g = await voixGratuite(env, text, ckey);
+        const g = await voixGratuite(env, text, ckey, cors);
         if (g) return g;
         return JL({ ok: false, reason: 'tts_err', status: rr.status }); // fail-open (200)
       }
@@ -1642,8 +1670,9 @@ async function handleLingua(request, url, env) {
       /* Même exigence que partout ailleurs sur le domaine (leçon #99) : être
          admin ne suffit pas, il faut une identité FORTE (Face ID prouvé). Un
          jeton auto-déclaré reste verified:false → refusé ici aussi. */
-      const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoToken(request));
-      if (!sess || !sess.verified || ADMIN_UIDS.indexOf(sess.uid) < 0) return JL({ ok: false, reason: 'admin_seulement' }, 403);
+      /* Porte ADMIN : jamais par l'adresse (?t=), et « déconnecter partout » la ferme (audit complet 30.09). */
+      const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoTokenSansAdresse(request));
+      if (!sess || !sess.verified || ADMIN_UIDS.indexOf(sess.uid) < 0 || revoked(await accGet(env, sess.uid), sess)) return JL({ ok: false, reason: 'admin_seulement' }, 403);
       const jours = [];
       const d0 = new Date();
       for (let i = 0; i < 30; i++) {
@@ -2419,8 +2448,7 @@ async function handleSso(request, url, env) {
          compte admin. Un passkey admin s'ajoute avec une session vérifiée OU le grant du code admin. */
       const isAdminUid = ADMIN_UIDS.indexOf(s.uid) >= 0;
       if (isAdminUid && !already && !s.verified) {
-        const g = await ssoVerify(secret, adminGrantTok(request));
-        if (!(g && g.uid === '__kdmc_admin__')) {
+        if (!(await grantValide(env, secret, adminGrantTok(request)))) {
           return J({ ok: false, reason: 'compte admin protégé — prouve le code admin (/__admin/login) pour ajouter un appareil' });
         }
       }
@@ -2645,8 +2673,7 @@ async function handleSso(request, url, env) {
     const s = await ssoVerify(secret, t);
     if (!s || revoked(await accGet(env, s.uid), s)) return J({ ok: false });
     const g = adminGrantTok(request);
-    const gs = g ? await ssoVerify(secret, g) : null;
-    return J({ ok: true, token: t, grant: (gs && gs.uid === '__kdmc_admin__') ? g : '' });
+    return J({ ok: true, token: t, grant: (await grantValide(env, secret, g)) ? g : '' });
   }
   if (path === '/__sso/entrer' && request.method === 'GET') {
     const t = url.searchParams.get('t') || '';
@@ -2658,8 +2685,8 @@ async function handleSso(request, url, env) {
     if (s && !revoked(await accGet(env, s.uid), s)) {
       h.append('set-cookie', `${SSO_COOKIE}=${t}; Domain=.kd-mc.com; Path=/; Max-Age=${Math.max(60, Math.floor((s.exp - Date.now()) / 1000))}; Secure; HttpOnly; SameSite=Lax`);
     }
-    const gs = g ? await ssoVerify(secret, g) : null;
-    if (gs && gs.uid === '__kdmc_admin__') {
+    const gs = await grantValide(env, secret, g);
+    if (gs) {
       h.append('set-cookie', `kdmc_admin=${g}; Domain=.kd-mc.com; Path=/; Max-Age=${Math.max(60, Math.min(43200, Math.floor((gs.exp - Date.now()) / 1000)))}; Secure; HttpOnly; SameSite=Lax`);   // 12 h, comme /__admin/login
     }
     return new Response(null, { status: 302, headers: h });
@@ -2774,13 +2801,48 @@ function adminGrantTok(request) {
   if (m && m[1].trim()) return m[1].trim();
   return ssoCookie(request, 'kdmc_admin');
 }
+/* LE grant du code admin, vérifié AU MÊME ENDROIT partout (contre-audit 30.09, prouvé : l'enrôlement
+   Face ID acceptait encore un grant expiré ou révoqué — de quoi greffer un Face ID sur le compte admin
+   et rouvrir tout le reste). Valide = signé, uid admin, moins de 12 h (= Max-Age de son cookie), et émis
+   APRÈS le dernier « déconnecter partout » de l'admin. */
+const GRANT_TTL_MS = 43200 * 1000;
+async function adminRevoque(env, s) {
+  for (const u of ADMIN_UIDS) if (revoked(await accGet(env, u), s)) return true;   /* alias compris (kevin-desarzens) */
+  return false;
+}
+async function grantValide(env, secret, tok) {
+  const g = tok ? await ssoVerify(secret, tok) : null;
+  if (!(g && g.uid === '__kdmc_admin__')) return null;
+  if (!(Date.now() - (g.iat || 0) < GRANT_TTL_MS)) return null;
+  if (await adminRevoque(env, g)) return null;
+  return g;
+}
+
 /* ═══ BEE — le caractère, écrit côté serveur (le client ne peut pas le remplacer) ═══ */
-export const BEE_CARACTERE = "Tu es Bee, l'assistante personnelle de Kevin sur son domaine kd-mc.com (le même personnage que dans son app Lingua). "
-  + "Réponds court, chaleureuse, enjouée, avec le tutoiement, en français, sans jargon technique (Kevin n'est pas codeur). "
+const BEE_REGLES = "Réponds court, chaleureuse, enjouée, avec le tutoiement, en français, sans jargon technique (Kevin n'est pas codeur), sans flatterie. "
   + "Tu n'as AUCUN accès aux données de Kevin (planning, messages, fiches, comptes) et tu ne peux agir sur rien : "
   + "ne prétends jamais avoir fait une action, et n'invente jamais une donnée (un horaire, un planning, un chiffre, une adresse web). "
   + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Si la demande exige une vraie action, dis que c'est Apex qui peut la faire.";
-
+export const BEE_CARACTERE = "Tu es Bee, l'assistante personnelle de Kevin sur son domaine kd-mc.com (le même personnage que dans son app Lingua). " + BEE_REGLES;
+/* Bourricot (l'âne, 2e mascotte) : MÊMES règles, autre voix. Avant (audit 30.09), le serveur ignorait le
+   choix de mascotte et l'âne répondait « Je suis Bee ». Les règles sont écrites UNE fois. */
+export const BOURRICOT_CARACTERE = "Tu es Bourricot, l'âne malicieux et bon vivant, assistant personnel de Kevin sur son domaine kd-mc.com (l'autre mascotte, à côté de Bee l'abeille). "
+  + BEE_REGLES.replace('chaleureuse, enjouée', 'chaleureux, pince-sans-rire').replace("pas sûre", "pas sûr");
+/* La date du jour à Monaco (audit 30.09 : « quel jour on est ? » partait à une IA qui ne la connaît pas). */
+function dateMonaco(d) {
+  try { return new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Monaco', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d || new Date()); }
+  catch (_) { return new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; }
+}
+/* COÛT DE BEE (audit complet 30.09, mesuré : 200 questions → 200 appels IA, 0 refus ; sans IA gratuite,
+   bascule payante sans limite ; 4 à 7 appels modèle par question ; réponse jusqu'à 36 s alors que le
+   widget abandonne à 25 s). Désormais :
+     · barrière par minute SANS KV (binding LIMITE_BEE) : une boucle de la page s'arrête net ;
+     · les IA GRATUITES d'abord, toujours ; le payant seulement si elles ont toutes échoué, sous un
+       plafond du JOUR, et après avoir RÉSERVÉ la dépense (KV qui n'écrit plus → pas de payant) ;
+     · le type de question est deviné par mots-clés (0 appel IA), plus de « conseil » : 1 appel par
+       question dans le cas normal, Qwen gratuit d'abord (règle Kevin 05.09) ;
+     · tout tient dans 22 s. */
+const BEE_BUDGET_MS = 22000;
 async function handleBeeIa(request, env) {
   const JB = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
   if (request.method !== 'POST') return JB({ ok: false, reason: 'methode' }, 405);
@@ -2790,15 +2852,42 @@ async function handleBeeIa(request, env) {
   const origine = request.headers.get('origin');
   if (origine && !/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i.test(origine)) return JB({ ok: false, reason: 'hors_domaine' }, 403);
   if (!(await adminSession(request, env))) return JB({ ok: false, reason: 'kevin_seulement' }, 403);
+  if (!(await limiteTous(env && env.LIMITE_BEE, 'bee'))) return JB({ ok: false, reason: 'trop_vite' }, 429);
   let b = {}; try { b = await request.json(); } catch (_) { return JB({ ok: false, reason: 'json_invalide' }, 400); }
-  const messages = (Array.isArray(b && b.messages) ? b.messages : [])
-    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
-    .slice(-10)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
+  /* Tours alternés user/assistant (Gemini et Anthropic l'exigent) : deux tours de suite du même rôle
+     sont fusionnés, et la conversation commence par Kevin. */
+  const messages = [];
+  for (const m of (Array.isArray(b && b.messages) ? b.messages : [])
+    .filter((x) => x && (x.role === 'user' || x.role === 'assistant') && typeof x.content === 'string' && x.content.trim())
+    .slice(-10)) {
+    const c = m.content.slice(0, 2000), d = messages[messages.length - 1];
+    if (d && d.role === m.role) d.content = (d.content + '\n' + c).slice(0, 2000); else messages.push({ role: m.role, content: c });
+  }
+  while (messages.length && messages[0].role !== 'user') messages.shift();
   if (!messages.length || messages[messages.length - 1].role !== 'user') return JB({ ok: false, reason: 'question_requise' }, 400);
-  const r = await routeSmart(env, { messages, system: BEE_CARACTERE, maxTokens: 500, temperature: 0.7, timeoutMs: 20000 });
+  const caractere = (b && b.mascotte === 'donkey' ? BOURRICOT_CARACTERE : BEE_CARACTERE) + ' Nous sommes le ' + dateMonaco() + ' (heure de Monaco).';
+  /* Bee n'agit sur rien : une « action » (planning, déploiement…) n'a pas à réveiller un moteur payant
+     juste pour répondre « c'est Apex » → traitée comme une question simple (Qwen d'abord). */
+  let domaine = detectDomain(messages[messages.length - 1].content);
+  if (domaine === 'admin') domaine = 'general';
+  /* GRATUIT D'ABORD, QUEL QUE SOIT LE TYPE DE QUESTION (contre-audit 30.09, mesuré : un poème ou une
+     recherche partait chez Anthropic alors que Qwen marchait, et le ℹ️ disait « d'abord une IA
+     gratuite »). Le type de question choisit l'ORDRE parmi les gratuites, puis parmi les payantes. */
+  const ordre = planChain(domaine, availableProviders(env), {});
+  const gratuites = ordre.filter((p) => FREE_PROVIDERS.indexOf(p) >= 0);
+  const payantes = ordre.filter((p) => FREE_PROVIDERS.indexOf(p) < 0);
+  const fin = Date.now() + BEE_BUDGET_MS;
+  const base = { messages, system: caractere, domain: domaine, maxTokens: 500, temperature: 0.7, timeoutMs: 12000 };
+  /* on garde 8 s au payant s'il est permis, sinon tout le budget aux gratuites */
+  let r = gratuites.length ? await routeText(env, Object.assign({}, base, { chain: gratuites, finMs: payantes.length ? fin - 8000 : fin })) : null;
+  if (!(r && r.ok && r.text) && payantes.length && fin - Date.now() > 3000
+      && (await sousLePlafondDuJour(env, 'bee-payant', parseInt(env && env.BEE_PLAFOND_PAYANT_JOUR, 10) || 100))
+      /* la dépense est RÉSERVÉE (comptée) AVANT de payer : KV qui n'écrit plus → on ne paie pas (leçon #368) */
+      && (await compteDepense(env, 'bee-payant'))) {
+    r = await routeText(env, Object.assign({}, base, { chain: payantes, finMs: fin }));
+  }
   if (!r || !r.ok || !r.text) return JB({ ok: false, reason: 'ia_indisponible' }, 503);
-  return JB({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 || r.provider === 'council' });
+  return JB({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 });
 }
 
 async function adminSession(request, env) {
@@ -2812,8 +2901,9 @@ async function adminSession(request, env) {
      plutôt que de l'ouvrir. L'accès exige un GRANT signé prouvé via /__admin/login. */
   if (!adminHash) return null;
   /* 1) GRANT prouvé par le CODE admin (/__admin/login) — cookie kdmc_admin ou header x-kdmc-admin. */
-  const g = await ssoVerify(secret, adminGrantTok(request));
-  if (g && g.uid === '__kdmc_admin__') return { uid: '__kdmc_admin__', name: 'Admin', grant: true };
+  /* Le grant ne vit pas plus que son cookie (Max-Age 12 h) et « déconnecter partout » le coupe aussi
+     (audit complet 30.09, mesuré : un grant restait valable 30 jours, révocation ignorée). */
+  if (await grantValide(env, secret, adminGrantTok(request))) return { uid: '__kdmc_admin__', name: 'Admin', grant: true };
   /* 2) Session SSO FORTE (Face ID = verified) d'un UID ADMIN connu. Une session verified
      n'est émise QUE par le flux WebAuthn (passkey), et un passkey ne peut être GREFFÉ sur
      un uid admin qu'après bootstrap + preuve du code pour tout appareil suivant (voir
@@ -2830,7 +2920,7 @@ async function adminSession(request, env) {
     /* « Déconnecter partout » doit AUSSI couper l'admin (contre-audit Bee 27.09, mesuré : un jeton de
        Kevin révoqué — whoami répondait « session_revoquee » — ouvrait encore Bee, /__demandes et
        /__admin/accounts). Même règle que whoami : un jeton émis avant la révocation ne vaut plus rien. */
-    if (s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !revoked(await accGet(env, s.uid), s)) return { uid: s.uid, name: s.name, faceid: true };
+    if (s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !(await adminRevoque(env, s))) return { uid: s.uid, name: s.name, faceid: true };
   }
   return null;
 }
@@ -2936,7 +3026,7 @@ async function handleAdmin(request, url, env) {
     /* (27.09.2026) OU la session VÉRIFIÉE de l'admin (Face ID / code admin déjà prouvé au domaine) :
        Kevin ne retape pas son code sur la page « Qui se connecte ». Lecture seule, réponse lisible
        par admin.kd-mc.com seulement (CORS) → aucune surface CSRF utile. */
-    if (!same) { const s = await ssoVerify(secret, ssoToken(request)); same = !!(s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !revoked(await accGet(env, s.uid), s)); }
+    if (!same) { const s = await ssoVerify(secret, ssoTokenSansAdresse(request)); same = !!(s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !revoked(await accGet(env, s.uid), s)); }
     if (!same) return jc({ ok: false, reason: 'unauthorized' }, 401);
     if (!env.ACCOUNTS) return jc({ ok: true, people: [], kv: false });
     const idx = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');

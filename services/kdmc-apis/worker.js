@@ -373,7 +373,18 @@ export async function kevinVerifie(request, env) {
     let diff = 0; for (let j = 0; j < sig.length; j++) diff |= sig.charCodeAt(j) ^ attendu.charCodeAt(j);
     if (diff !== 0) return false;
     const d = JSON.parse(b64uVersTexte(p));
-    return !!(d && d.v === 1 && d.exp && d.exp > Date.now() && ADMIN_UIDS_IA.indexOf(d.u) >= 0);
+    if (!(d && d.v === 1 && d.exp && d.exp > Date.now() && ADMIN_UIDS_IA.indexOf(d.u) >= 0)) return false;
+    /* « Déconnecter partout » coupe AUSSI les moteurs payants (audit complet 30.09, mesuré : un jeton
+       révoqué rendait true ici pendant que le routeur le refusait — 30 jours de moteurs payants avec
+       un téléphone perdu). Même règle que le routeur (revoked) : lue dans le MÊME KV, en lecture seule.
+       Sans KV ou KV illisible → pas de moteur payant (les gratuits répondent). */
+    if (!env.ACCOUNTS || typeof env.ACCOUNTS.get !== 'function') return false;
+    /* tous les uid de Kevin (alias compris) : « déconnecter partout » posé sur l'un coupe l'autre (contre-audit 30.09) */
+    for (const u of ADMIN_UIDS_IA) {
+      const acc = JSON.parse((await env.ACCOUNTS.get('acc:' + u)) || 'null');
+      if (acc && acc.revoked_at && (d.iat || 0) < acc.revoked_at) return false;
+    }
+    return true;
   } catch (_) { return false; }
 }
 export function sansMoteursPayants(env) {
@@ -406,6 +417,10 @@ async function handleAi(request, env0, origin) {
   if (!payant && opts.provider && MOTEURS_PAYANTS.indexOf(opts.provider) >= 0) {
     return err('moteur payant réservé à Kevin — sans son laissez-passer, les IA gratuites répondent', 403, origin);
   }
+  /* Le COÛT dépend aussi du MODÈLE, pas seulement du fournisseur (audit complet 30.09, mesuré : sans
+     laissez-passer, openrouter + « anthropic/claude-opus-4 », gemini-2.5-pro… passaient en 200). Sans
+     Kevin, le modèle est TOUJOURS celui par défaut, gratuit. */
+  if (!payant) { delete opts.model; delete opts.models; }
   /* La consigne `system` envoyée À CÔTÉ des messages était JETÉE (audit Bee 27.09, mesuré :
      « Tu es Bee… ne prétends pas avoir agi » n'arrivait à AUCUN des 4 appels modèle). Toute
      app du domaine qui l'envoyait ainsi parlait sans son caractère ni ses garde-fous. On la

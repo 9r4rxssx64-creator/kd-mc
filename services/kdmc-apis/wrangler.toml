@@ -16,9 +16,13 @@ routes = [
 [ai]
 binding = "AI"
 
-# Pas de KV/D1 : worker = pur relais sans état. Les clés externes sont posées en secrets
-# par deploy-kdmc-apis.yml.
-#
+# KV ACCOUNTS = le MÊME que kdmc-router, lu en LECTURE SEULE (aucune écriture ici) : « déconnecter
+# partout » doit couper AUSSI les moteurs payants d'apis (audit complet Bee 30.09). Les clés
+# externes sont posées en secrets par deploy-kdmc-apis.yml.
+[[kv_namespaces]]
+binding = "ACCOUNTS"
+id = "8cfa33a28ac045adb7b7a9556ca8a073"
+
 # PLAFOND PAR APPAREIL sur /ai (audit Bee 27.09.2026, mesuré : l'en-tête Origin se falsifie
 # d'une ligne, 200 appels Anthropic payés d'un seul script, AUCUN plafond). Binding « Rate
 # Limiting » de Cloudflare : compteur en mémoire, GRATUIT, ZÉRO écriture KV (le plafond

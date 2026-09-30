@@ -107,6 +107,14 @@ type = "ratelimit"
 namespace_id = "2704"
 simple = { limit = 2, period = 60 }
 
+# BEE (/__javis/ai) — audit complet 30.09 (mesuré : 200 questions → 200 appels IA, 0 refus). Barrière
+# par minute SANS KV : une page qui boucle s'arrête net. 8/min laisse Kevin parler normalement.
+[[unsafe.bindings]]
+name = "LIMITE_BEE"
+type = "ratelimit"
+namespace_id = "2705"
+simple = { limit = 8, period = 60 }
+
 [vars]
 KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 

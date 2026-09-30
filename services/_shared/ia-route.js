@@ -148,9 +148,19 @@ function withTimeout(ms) {
 
 async function callQwen(env, messages, o) {
   const tried = [];
-  for (const model of QWEN_MODELS) {
+  /* Chaque modèle a SON délai (audit Bee 30.09, mesuré : un Qwen muet bloquait la réponse plus de
+     600 s — env.AI.run n'avait aucun délai).
+     · SOUS ÉCHÉANCE (finMs, ex. Bee) : 2 modèles au plus, ≤ 8 s chacun, et on LAISSE 5 s aux secours
+       gratuits suivants (contre-audit 30.09 : un Qwen lent mangeait tout, Groq/Gemini jamais essayés) ;
+     · SANS échéance (les autres apps) : un délai large (≥ 30 s) — un Qwen lent mais qui répond
+       n'est jamais coupé (contre-audit : Apex Chat, timeoutMs 8 s, perdait un Qwen à 12 s). */
+  const modeles = o.finMs ? QWEN_MODELS.slice(0, 2) : QWEN_MODELS;
+  for (const model of modeles) {
+    const reste = o.finMs ? o.finMs - Date.now() - (o.reserveMs == null ? 5000 : o.reserveMs) : Infinity;
+    const delai = o.finMs ? Math.min(o.qwenModelMs || 8000, reste) : Math.max(o.timeoutMs || 20000, 30000);
+    if (delai < 1500) { tried.push(model + ':échéance'); break; }
     try {
-      const r = await env.AI.run(model, { messages, max_tokens: o.maxTokens, temperature: o.temperature });
+      const r = await withDeadline(env.AI.run(model, { messages, max_tokens: o.maxTokens, temperature: o.temperature }), delai);
       const text = stripThink(r && (r.response || (r.result && r.result.response) || r.text));
       if (text) return { text, model };
       tried.push(model + ':vide');
@@ -240,8 +250,12 @@ export async function routeText(env, opts) {
   const available = availableProviders(env);
   const chain = Array.isArray(o.chain) ? o.chain.filter((p) => available.includes(p)) : planChain(domain, available, o);
   const tried = [];
+  /* budgetMs : TOUTE la chaîne tient dans ce temps (le widget de Bee abandonne à 25 s) */
+  const finMs = o.finMs || (o.budgetMs ? Date.now() + o.budgetMs : 0);
   for (const provider of chain) {
-    const po = Object.assign({}, o, { model: o.models && o.models[provider] });
+    const reste = finMs ? finMs - Date.now() : Infinity;
+    if (reste < 1500) { tried.push({ provider, skipped: 'échéance' }); break; }
+    const po = Object.assign({}, o, { model: o.models && o.models[provider], finMs, timeoutMs: Math.min(o.timeoutMs, reste) });
     try {
       let r;
       if (provider === 'qwen') r = await callQwen(env, messages, po);
@@ -305,7 +319,10 @@ function parseJsonLoose(text) {
 }
 
 function withDeadline(promise, ms) {
-  return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('délai ' + ms + ' ms')), ms))]);
+  /* le minuteur est TOUJOURS annulé (un minuteur oublié gardait le processus 20 s en vie) */
+  let t;
+  return Promise.race([promise, new Promise((_, rej) => { t = setTimeout(() => rej(new Error('délai ' + ms + ' ms')), ms); })])
+    .finally(() => clearTimeout(t));
 }
 
 /**
@@ -400,7 +417,8 @@ export async function routeSmart(env, opts) {
   let analyse = null;
   let domain = o.domain;
   if (!domain) {
-    analyse = o.analyse === 'concert' ? await analyseQuestion(env, text, o) : null;
+    /* l'analyse a SON délai (6 s), pas celui de la réponse (mesuré : 20 s de Bee passaient à l'analyse) */
+    analyse = o.analyse === 'concert' ? await analyseQuestion(env, text, Object.assign({}, o, { timeoutMs: o.analyseMs || 6000 })) : null;
     domain = analyse ? analyse.domain : detectDomain(text);
   }
   const wantCouncil = o.council === true || (o.council === 'auto' && COUNCIL_DOMAINS.includes(domain) && ((analyse && analyse.complexity >= 3) || String(text).length > 400));

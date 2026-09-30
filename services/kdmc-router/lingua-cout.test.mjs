@@ -301,11 +301,80 @@ console.log('\n8. Contre-audit 27.09 : le plafond tient EN PARALLÈLE et quand l
     headers: { Origin: 'https://lingua.kd-mc.com', 'content-type': 'application/json', 'CF-Connecting-IP': '10.3.0.' + i }, body: '{}' }), env2);
   ok(appelsOpenAI.length <= 2, `KV qui n'écrit plus : ${appelsOpenAI.length} appels directs sur 20 (barrière 2)`);
   /* (c) le compteur du jour ILLISIBLE : on ne paie pas (la voix gratuite prend le relais) */
-  const kvKO = kv(); kvKO.get = async () => { throw new Error('KV read'); };
+  /* Seul le COMPTEUR (« dep: ») est illisible — le cache, lui, répond « rien ». Avant (faux vert trouvé par
+     l'audit complet 30.09), TOUT le KV échouait : la voix s'arrêtait dès la lecture du cache, avant le
+     plafond, et un plafond qui paie quand le compteur est illisible passait ce contrôle. */
+  const kvKO = kv(); const getKO = kvKO.get; kvKO.get = async (k, t) => { if (String(k).startsWith('dep:')) throw new Error('KV read'); return getKO(k, t); };
   appelsOpenAI = [];
   const r = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=lecture-ko', { headers: { Referer: 'https://lingua.kd-mc.com/' } }),
     { ACCOUNTS: kvKO, OPEN_AI_API_KEY: 'sk-factice' });
   ok(appelsOpenAI.length === 0 && r.status === 200, `compteur illisible → 0 voix payée, réponse ${r.status} (jamais une panne)`);
+}
+
+console.log('\n9. Audit complet 30.09 : payer SEULEMENT ce qui est compté, Antonin sous plafond, voix gratuite rangée à part, portes admin');
+{
+  const { createHmac } = await import('node:crypto');
+  const b64u = (x) => Buffer.from(x).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const signe = (uid, v) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
+  const jour = new Date().toISOString().slice(0, 10);
+  const AI_GRATUITE = { run: async () => new Uint8Array(200).fill(7).buffer };
+  /* (a) le KV n'écrit plus ET aucune barrière sans KV : la dépense ne peut pas être comptée → on ne paie pas */
+  const kvMuet = kv(); kvMuet.put = async () => { throw new Error('KV write limit'); };
+  appelsOpenAI = [];
+  for (let i = 0; i < 12; i++) await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=' + encodeURIComponent('muet-' + i),
+    { headers: { Referer: 'https://lingua.kd-mc.com/', 'CF-Connecting-IP': '10.4.0.' + i } }), { ACCOUNTS: kvMuet, OPEN_AI_API_KEY: 'sk-factice', AI: AI_GRATUITE });
+  ok(appelsOpenAI.length === 0, `(a) compteur impossible à écrire, sans barrière : ${appelsOpenAI.length} voix payées sur 12 (mesuré avant : 400/400)`);
+  /* (b) la voix clonée Antonin (Replicate, payante) passe par le MÊME plafond */
+  const vraiF = globalThis.fetch; let replicate = 0;
+  globalThis.fetch = async (u, init) => { if (String(u).includes('replicate')) { replicate++; return new Response('{}', { status: 500 }); } return vraiF(u, init); };
+  try {
+    const envA = { ACCOUNTS: kv(), OPEN_AI_API_KEY: 'sk-factice', AX_REPLICATE_KEY: 'r8_factice', AI: AI_GRATUITE, TTS_PLAFOND_JOUR: '3' };
+    await envA.ACCOUNTS.put('dep:' + jour + ':tts', '3');
+    appelsOpenAI = [];
+    for (let i = 0; i < 10; i++) await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=antonin&t=' + encodeURIComponent('antonin-' + i),
+      { headers: { Origin: 'https://lingua.kd-mc.com', 'CF-Connecting-IP': '10.5.0.' + i } }), envA);
+    ok(replicate === 0 && appelsOpenAI.length === 0, `(b) plafond du jour atteint : Replicate appelé ${replicate} fois, OpenAI ${appelsOpenAI.length} (mesuré avant : 20/20 Replicate)`);
+    await envA.ACCOUNTS.put('dep:' + jour + ':tts', '0');
+    await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=antonin&t=sous-plafond', { headers: { Origin: 'https://lingua.kd-mc.com' } }), envA);
+    ok(replicate === 1 && (await envA.ACCOUNTS.get('dep:' + jour + ':tts')) === '1', `(b) sous le plafond, Antonin part ET est compté (compteur ${await envA.ACCOUNTS.get('dep:' + jour + ':tts')})`);
+  } finally { globalThis.fetch = vraiF; }
+  /* (c) la voix gratuite de dépannage ne prend JAMAIS la place de la belle voix */
+  const envG = { ACCOUNTS: kv(), OPEN_AI_API_KEY: 'sk-factice', AI: AI_GRATUITE, TTS_PLAFOND_JOUR: '1' };
+  await envG.ACCOUNTS.put('dep:' + jour + ':tts', '1');
+  appelsOpenAI = [];
+  const rg = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=depannage', { headers: { Origin: 'https://lingua.kd-mc.com' } }), envG);
+  ok(rg.status === 200 && rg.headers.get('x-voix') === 'gratuite' && appelsOpenAI.length === 0, '(c) plafond atteint → voix gratuite');
+  const rgc = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=depannage', { headers: { Origin: 'https://javis.kd-mc.com' } }), envG);
+  ok(rgc.headers.get('x-voix') === 'gratuite' && rgc.headers.get('access-control-allow-origin') === 'https://javis.kd-mc.com',
+    `(c) la voix gratuite (même servie de sa réserve) porte le CORS du domaine : Bee sur javis/l'arbre peut la lire (« ${rgc.headers.get('access-control-allow-origin')} »)`);
+  ok(![...envG.ACCOUNTS.m.keys()].some((k) => String(k).startsWith('ltts:')) && [...envG.ACCOUNTS.m.keys()].some((k) => String(k).startsWith('gratuite:ltts:')), '(c) rangée À PART (« gratuite: »), jamais sous la clé de la belle voix');
+  ok(!/public|immutable/.test(rg.headers.get('cache-control') || ''), `(c) ni publique ni « à vie » dans le téléphone (${rg.headers.get('cache-control')})`);
+  await envG.ACCOUNTS.put('dep:' + jour + ':tts', '0');
+  const rg2 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=depannage', { headers: { Origin: 'https://lingua.kd-mc.com' } }), envG);
+  ok(appelsOpenAI.length === 1 && rg2.headers.get('x-voix') !== 'gratuite', `(c) le plafond remis à zéro, la MÊME phrase retrouve la belle voix (OpenAI ${appelsOpenAI.length})`);
+  /* (d) le plafond par défaut est 300 (un retour à 1000 passait tous les contrôles) */
+  const envD = { ACCOUNTS: kv(), OPEN_AI_API_KEY: 'sk-factice', AI: AI_GRATUITE };
+  await envD.ACCOUNTS.put('dep:' + jour + ':tts', '300'); appelsOpenAI = [];
+  await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=trois-cents', { headers: { Origin: 'https://lingua.kd-mc.com' } }), envD);
+  ok(appelsOpenAI.length === 0, `(d) 300 voix payées aujourd'hui → la 301e ne part pas (plafond par défaut 300)`);
+  await envD.ACCOUNTS.put('dep:' + jour + ':tts', '299');
+  await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=deux-cent-quatre-vingt-dix-neuf', { headers: { Origin: 'https://lingua.kd-mc.com' } }), envD);
+  ok(appelsOpenAI.length === 1, '(d) la 300e part');
+  /* (e) /__lingua/depense = porte ADMIN : jamais par l'adresse, et « déconnecter partout » la ferme */
+  const envE = { ACCOUNTS: kv(), KDMC_SSO_SECRET: 'sec' };
+  const kev = signe('kdmc_admin', 1);
+  const d1 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/depense?t=' + encodeURIComponent(kev)), envE);
+  const d2 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/depense', { headers: { Authorization: 'Bearer ' + kev } }), envE);
+  ok(d1.status === 403 && d2.status === 200, `(e) laissez-passer de Kevin dans l'ADRESSE → ${d1.status} ; en EN-TÊTE → ${d2.status}`);
+  await envE.ACCOUNTS.put('acc:kdmc_admin', JSON.stringify({ uid: 'kdmc_admin', revoked_at: Date.now() + 5 }));
+  const d3 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/depense', { headers: { Authorization: 'Bearer ' + kev } }), envE);
+  ok(d3.status === 403, `(e) jeton de Kevin RÉVOQUÉ → ${d3.status}`);
+  /* (f) CORS : les pages du domaine seulement (« * » laissait n'importe quel site lire la voix et la progression) */
+  const envF = { ACCOUNTS: kv(), OPEN_AI_API_KEY: 'sk-factice' };
+  const cf1 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&t=cors', { headers: { Origin: 'https://javis.kd-mc.com' } }), envF);
+  const cf2 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/load?k=' + 'a'.repeat(32), { headers: { Origin: 'https://site-pirate.example' } }), envF);
+  ok(cf1.headers.get('access-control-allow-origin') === 'https://javis.kd-mc.com' && cf2.headers.get('access-control-allow-origin') === null,
+    `(f) CORS Lingua : javis.kd-mc.com → « ${cf1.headers.get('access-control-allow-origin')} » ; site pirate → « ${cf2.headers.get('access-control-allow-origin')} » (rien)`);
 }
 
 console.log(`\n${pass} contrôle(s) OK · ${fail} échec(s)`);

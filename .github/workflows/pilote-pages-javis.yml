@@ -1,0 +1,161 @@
+name: Pilote — javis.kd-mc.com servi en statique par Pages (lire / basculer / revenir)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LE CHANTIER « FICHIERS SANS WORKER » (CLAUDE-HISTOIRE, règle gratuit par défaut, § 7), PILOTE.
+# Mesuré le 30.09 (robot « Mesure — requêtes par le Worker ») : javis.kd-mc.com = 3 requêtes par
+# ouverture, 3 par le Worker (100 %). Objectif : seuls les appels /__* passent par le Worker, les
+# fichiers sont servis par Cloudflare Pages (gratuit, non compté dans les 100 000 requêtes/jour).
+#
+# TROIS MODES, jamais programmés, toujours à la main :
+#   lire      (défaut) : LECTURE SEULE — ce que le jeton peut faire, la zone, le domaine Worker
+#                        de javis, les projets Pages, les enregistrements DNS. Ne change RIEN.
+#   basculer  (confirmer=javis) : projet Pages `kdmc-javis` ← dossier javis/ (+ _headers, 404.html)
+#                        → route Worker `javis.kd-mc.com/__*` → retire le domaine Worker de javis
+#                        → domaine personnalisé Pages + CNAME → vérifie que la page répond.
+#   revenir   (confirmer=javis) : l'inverse, dans l'ordre inverse (le Worker reprend javis).
+#
+# Destination (règle « chaque automatisation a une destination écrite ») : GitHub, au DÉPÔT PUBLIC
+# (minutes illimitées), jeton Cloudflare du dépôt. ZÉRO tâche programmée. Après « basculer »,
+# `services/kdmc-router/wrangler.toml` doit suivre (route au lieu du custom_domain) — PR séparée.
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "lire (rien ne change) · basculer · revenir"
+        type: choice
+        options: [lire, basculer, revenir]
+        default: lire
+      confirmer:
+        description: "Écrire « javis » pour basculer ou revenir (garde-fou)"
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pilote-pages-javis
+  cancel-in-progress: false
+
+jobs:
+  pilote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10   # gratuit par défaut (Kevin 30.09) : quelques appels d'API, un envoi de 6 fichiers
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      HOTE: javis.kd-mc.com
+      PROJET: kdmc-javis
+      WORKER: kdmc-router
+      ZONE_NOM: kd-mc.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Garde-fou — basculer/revenir exigent confirmer=javis
+        shell: bash -eo pipefail {0}
+        run: |
+          echo "mode=${{ inputs.mode }}"
+          if [ "${{ inputs.mode }}" != "lire" ] && [ "${{ inputs.confirmer }}" != "javis" ]; then
+            echo "::error::mode ${{ inputs.mode }} sans confirmer=javis — rien n'est fait"; exit 1
+          fi
+          [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::jeton ou compte Cloudflare absent des secrets"; exit 1; }
+
+      - name: LIRE — jeton, zone, domaine Worker, projets Pages, DNS (ne change rien)
+        id: lire
+        shell: bash -eo pipefail {0}
+        run: |
+          CF="https://api.cloudflare.com/client/v4"; H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          j() { curl -sS -H "$H" -H "Content-Type: application/json" "$@"; }
+          echo "## Pilote javis — lecture" >> "$GITHUB_STEP_SUMMARY"
+          V=$(j "$CF/user/tokens/verify"); echo "jeton : $(echo "$V" | node -pe 'JSON.parse(require("fs").readFileSync(0)).result.status')"
+          Z=$(j "$CF/zones?name=$ZONE_NOM" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0)).result;r&&r[0]?r[0].id:""')
+          [ -n "$Z" ] || { echo "::error::zone $ZONE_NOM invisible avec ce jeton (droit Zone:Read manquant)"; exit 1; }
+          echo "zone_id=$Z" >> "$GITHUB_OUTPUT"; echo "- zone $ZONE_NOM : lue ✅" >> "$GITHUB_STEP_SUMMARY"
+          WD=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));(r.result||[]).filter(d=>d.hostname===process.env.HOTE).map(d=>d.id+" "+d.service).join(",")||"(aucun)"')
+          echo "domaine Worker de $HOTE : $WD"; echo "- domaine Worker de $HOTE : \`$WD\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "worker_domain=$WD" >> "$GITHUB_OUTPUT"
+          RT=$(j "$CF/zones/$Z/workers/routes" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));(r.result||[]).map(x=>x.pattern+"→"+(x.script||"?")).join(" | ")||"(aucune route de zone)"')
+          echo "routes de zone : $RT"; echo "- routes de zone : $RT" >> "$GITHUB_STEP_SUMMARY"
+          PP=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects?per_page=50" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));(r.result||[]).map(p=>p.name+"("+(p.domains||[]).length+" dom.)").join(", ")||"(aucun)"')
+          echo "projets Pages : $PP"; echo "- projets Pages : $PP" >> "$GITHUB_STEP_SUMMARY"
+          DNS=$(j "$CF/zones/$Z/dns_records?name=$HOTE" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?((r.result||[]).map(x=>x.type+" "+x.content+" proxied="+x.proxied).join(" | ")||"(aucun enregistrement visible)"):"REFUSÉ: "+JSON.stringify(r.errors)')
+          echo "DNS $HOTE : $DNS"; echo "- DNS $HOTE : $DNS" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Pilote javis (lire)::domaine Worker=$WD · DNS=$DNS · Pages=$PP"
+
+      - name: BASCULER — projet Pages kdmc-javis ← javis/ (+ _headers, 404.html)
+        if: inputs.mode == 'basculer'
+        shell: bash -eo pipefail {0}
+        run: |
+          rm -rf /tmp/javis-pages && mkdir -p /tmp/javis-pages && cp -a javis/. /tmp/javis-pages/
+          cat > /tmp/javis-pages/_headers <<'EOF'
+          /*
+            Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+            X-Content-Type-Options: nosniff
+            X-Frame-Options: DENY
+            Referrer-Policy: strict-origin-when-cross-origin
+            X-Kdmc-Par: statique
+          EOF
+          printf '<!doctype html><meta charset="utf-8"><title>Introuvable</title><p>Cette page n\x27existe pas sur javis.kd-mc.com.</p>\n' > /tmp/javis-pages/404.html
+          echo "fichiers : $(find /tmp/javis-pages -type f | wc -l)"
+          npm i -g wrangler@3 --no-audit --no-fund >/dev/null 2>&1
+          wrangler pages project create "$PROJET" --production-branch=main 2>/dev/null || echo "(projet déjà là)"
+          wrangler pages deploy /tmp/javis-pages --project-name="$PROJET" --branch=main --commit-dirty=true 2>&1 | tee /tmp/deploy.log
+          sleep 8
+          C=$(curl -s --max-time 20 "https://$PROJET.pages.dev/" | head -c 400)
+          echo "$C" | grep -qi "javis\|bee" || { echo "::error::$PROJET.pages.dev ne sert pas la page Javis"; exit 1; }
+          echo "✅ $PROJET.pages.dev sert Javis"
+
+      - name: BASCULER — route Worker /__* puis domaine Pages + DNS (le Worker lâche javis)
+        if: inputs.mode == 'basculer'
+        shell: bash -eo pipefail {0}
+        run: |
+          CF="https://api.cloudflare.com/client/v4"; H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"; Z="${{ steps.lire.outputs.zone_id }}"
+          j() { curl -sS -H "$H" -H "Content-Type: application/json" "$@"; }
+          ok() { node -pe 'const r=JSON.parse(require("fs").readFileSync(0));if(!r.success){console.error(JSON.stringify(r.errors));process.exit(1)};JSON.stringify(r.result).slice(0,200)'; }
+          echo "1. route $HOTE/__* → $WORKER"
+          j -X POST "$CF/zones/$Z/workers/routes" --data "{\"pattern\":\"$HOTE/__*\",\"script\":\"$WORKER\"}" | ok || echo "(route déjà présente ?)"
+          WD="${{ steps.lire.outputs.worker_domain }}"
+          if [ "$WD" != "(aucun)" ]; then
+            ID=${WD%% *}; echo "2. retire le domaine Worker $ID"
+            j -X DELETE "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains/$ID" | ok
+          else echo "2. aucun domaine Worker à retirer"; fi
+          echo "3. domaine personnalisé Pages"
+          j -X POST "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET/domains" --data "{\"name\":\"$HOTE\"}" | ok || echo "(domaine déjà attaché ?)"
+          echo "4. DNS CNAME $HOTE → $PROJET.pages.dev (si absent)"
+          N=$(j "$CF/zones/$Z/dns_records?name=$HOTE" | node -pe 'JSON.parse(require("fs").readFileSync(0)).result.length')
+          if [ "$N" = "0" ]; then
+            j -X POST "$CF/zones/$Z/dns_records" --data "{\"type\":\"CNAME\",\"name\":\"$HOTE\",\"content\":\"$PROJET.pages.dev\",\"proxied\":true,\"ttl\":1}" | ok
+          else echo "   déjà $N enregistrement(s) — laissé tel quel"; fi
+          echo "5. attendre et vérifier"
+          for i in $(seq 1 12); do
+            sleep 10
+            R=$(curl -s -o /tmp/p.html -w "%{http_code} %header{x-kdmc-par} %header{strict-transport-security}" --max-time 20 "https://$HOTE/" || true)
+            echo "   essai $i : $R"
+            case "$R" in "200 statique"*) break;; esac
+          done
+          grep -qi "javis\|bee" /tmp/p.html && [ "${R%% *}" = "200" ] || { echo "::error::$HOTE ne sert pas Javis après bascule ($R) — lancer le mode revenir"; exit 1; }
+          W=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 -H "x-kdmc-sonde: pilote" "https://$HOTE/__sso/whoami")
+          echo "   /__sso/whoami → $W (attendu 200, par le Worker)"; [ "$W" = "200" ] || { echo "::error::/__sso/whoami ne répond plus par le Worker"; exit 1; }
+          echo "::notice title=Pilote javis (basculer)::✅ $HOTE servi en statique par Pages (x-kdmc-par=statique), /__sso/whoami par le Worker ($W)"
+          echo "- ✅ bascule faite : $R · whoami $W" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: REVENIR — le Worker reprend javis (domaine Pages retiré, CNAME retiré, domaine Worker remis)
+        if: inputs.mode == 'revenir'
+        shell: bash -eo pipefail {0}
+        run: |
+          CF="https://api.cloudflare.com/client/v4"; H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"; Z="${{ steps.lire.outputs.zone_id }}"
+          j() { curl -sS -H "$H" -H "Content-Type: application/json" "$@"; }
+          ok() { node -pe 'const r=JSON.parse(require("fs").readFileSync(0));if(!r.success){console.error(JSON.stringify(r.errors));process.exit(1)};JSON.stringify(r.result).slice(0,200)'; }
+          echo "1. retire le domaine Pages"; j -X DELETE "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET/domains/$HOTE" | ok || echo "(absent)"
+          echo "2. retire le CNAME"
+          for ID in $(j "$CF/zones/$Z/dns_records?name=$HOTE&type=CNAME" | node -pe 'JSON.parse(require("fs").readFileSync(0)).result.map(x=>x.id).join(" ")'); do j -X DELETE "$CF/zones/$Z/dns_records/$ID" | ok; done
+          echo "3. retire la route /__*"
+          for ID in $(j "$CF/zones/$Z/workers/routes" | node -pe 'JSON.parse(require("fs").readFileSync(0)).result.filter(x=>x.pattern===process.env.HOTE+"/__*").map(x=>x.id).join(" ")'); do j -X DELETE "$CF/zones/$Z/workers/routes/$ID" | ok; done
+          echo "4. remet le domaine Worker"
+          j -X PUT "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" --data "{\"hostname\":\"$HOTE\",\"service\":\"$WORKER\",\"zone_id\":\"$Z\",\"environment\":\"production\"}" | ok
+          for i in $(seq 1 12); do sleep 10; R=$(curl -s -o /tmp/p.html -w "%{http_code} %header{x-kdmc-par}" --max-time 20 "https://$HOTE/" || true); echo "   essai $i : $R"; case "$R" in "200 "*) [ "$R" = "200 " ] && break;; esac; done
+          grep -qi "javis\|bee" /tmp/p.html || { echo "::error::$HOTE ne sert pas Javis après retour"; exit 1; }
+          echo "::notice title=Pilote javis (revenir)::✅ le Worker sert à nouveau $HOTE ($R)"

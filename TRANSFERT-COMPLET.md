@@ -29,11 +29,11 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **62** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **63** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
-| Automatisations actives | **136** (+ 37 rangées) | `.github/workflows/` |
+| Automatisations actives | **137** (+ 37 rangées) | `.github/workflows/` |
 | Gardes / tests | **127** fichiers, **185** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **106** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **168** dont **92** ouvertes | `pipeline/sessions.json` |

@@ -7,7 +7,9 @@
  *
  * Comment on sait qu'une réponse vient du Worker : le routeur pose `strict-transport-security` sur
  * TOUTES ses réponses (garde test:routeur-durci). Un fichier servi en statique par l'hébergeur ne le
- * porte pas (aucun `_headers` dans le paquet public, mesuré le 30.09). Donc : HSTS = Worker.
+ * porte pas (aucun `_headers` dans le paquet public, mesuré le 30.09). Donc : HSTS = Worker — SAUF
+ * si la réponse se déclare elle-même `x-kdmc-par: statique` (le `_headers` d'un projet Pages du
+ * pilote garde HSTS pour la sécurité ET dit d'où il vient) : alors c'est du statique.
  *
  * Lecture seule, en-tête `x-kdmc-sonde` sur les seules navigations (le routeur ne fiche ni ne compte
  * une sonde ; JAMAIS `extraHTTPHeaders` : ça casse le CORS des pages, vécu le 27.09 22h27).
@@ -21,11 +23,12 @@ import { writeFileSync } from 'node:fs';
 
 export const HOTES_DEFAUT = ['javis.kd-mc.com', 'cmcteams.kd-mc.com'];
 
-/* Pure : classe les réponses d'un même hôte. reponses = [{ url, status, hsts: bool }]. */
+/* Pure : classe les réponses d'un même hôte. reponses = [{ url, status, hsts: bool, par?: 'statique' }]. */
+export const parLeWorker = (r) => !!r.hsts && r.par !== 'statique';
 export function classer(hote, reponses) {
   const memeHote = reponses.filter((r) => { try { return new URL(r.url).host === hote; } catch { return false; } });
-  const worker = memeHote.filter((r) => r.hsts);
-  const statique = memeHote.filter((r) => !r.hsts);
+  const worker = memeHote.filter(parLeWorker);
+  const statique = memeHote.filter((r) => !parLeWorker(r));
   const chemin = (r) => { try { return new URL(r.url).pathname; } catch { return r.url; } };
   const sso = memeHote.filter((r) => /^\/__/.test(chemin(r)));
   const fichiers = memeHote.filter((r) => !/^\/__/.test(chemin(r)));
@@ -33,8 +36,8 @@ export function classer(hote, reponses) {
   return {
     hote, total: memeHote.length, worker: worker.length, statique: statique.length,
     sso: sso.length, fichiers: fichiers.length, erreurs: erreurs.length,
-    fichiersParLeWorker: fichiers.filter((r) => r.hsts).length,
-    detail: memeHote.map((r) => ({ chemin: chemin(r), status: r.status, par: r.hsts ? 'worker' : 'statique' })),
+    fichiersParLeWorker: fichiers.filter(parLeWorker).length,
+    detail: memeHote.map((r) => ({ chemin: chemin(r), status: r.status, par: parLeWorker(r) ? 'worker' : 'statique' })),
   };
 }
 
@@ -59,7 +62,7 @@ async function mesurer(hote, chromium) {
     const page = await ctx.newPage();
     page.on('response', (r) => {
       const h = r.headers();
-      reponses.push({ url: r.url(), status: r.status(), hsts: !!h['strict-transport-security'] });
+      reponses.push({ url: r.url(), status: r.status(), hsts: !!h['strict-transport-security'], par: (h['x-kdmc-par'] || '').trim() });
     });
     page.on('requestfailed', (r) => reponses.push({ url: r.url(), status: 0, hsts: false }));
     try { await page.goto(`https://${hote}/`, { waitUntil: 'networkidle', timeout: 25000 }); } catch { /* on compte ce qui est arrivé */ }

@@ -28,6 +28,9 @@ t(classer('a.kd-mc.com', [R('/', true), { url: 'https://b.kd-mc.com/y.js', statu
 t(classer('a.kd-mc.com', [R('/', true), R('/manque.png', false, 404), R('/casse.js', false, 0)]).erreurs === 2, 'sabotage : 404 et échec réseau comptés en erreur (une page cassée ne passe pas pour « statique »)');
 t(/❌/.test(ligne(classer('a.kd-mc.com', []))), 'sabotage : aucune réponse → ligne ❌ (pas un « 0 par le Worker » triomphant)');
 t(classer('a.kd-mc.com', [{ url: 'pas une url', status: 200, hsts: true }]).total === 0, 'sabotage : une URL invalide ne fait pas planter la mesure');
+const pilote = classer('a.kd-mc.com', [{ url: 'https://a.kd-mc.com/', status: 200, hsts: true, par: 'statique' }, R('/__sso/whoami', true)]);
+t(pilote.worker === 1 && pilote.statique === 1 && pilote.fichiersParLeWorker === 0, 'une page Pages du pilote (HSTS par _headers + x-kdmc-par: statique) compte en STATIQUE, pas en Worker');
+t(classer('a.kd-mc.com', [{ url: 'https://a.kd-mc.com/', status: 200, hsts: true, par: 'worker' }]).worker === 1, 'sabotage : un x-kdmc-par autre que « statique » ne retire rien au Worker');
 
 /* 3. le script et le robot */
 const src = readFileSync(join(ROOT, 'tools/audit/mesure-worker.mjs'), 'utf8');

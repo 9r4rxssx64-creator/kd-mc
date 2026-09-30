@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (20h00 UTC) — Le « AVANT » est mesuré ; le pilote javis a son robot (lire / basculer / revenir)
+
+**Mesuré sur le vrai domaine** (robot `mesure-worker`, run public 36767782924, 19h44 UTC, 1re des 2 vérifs du
+jour) : **`cmcteams.kd-mc.com` : 17 requêtes pour une ouverture — 17 par le Worker (100 %)**, 15 fichiers
+(tous par le Worker) + 2 appels `/__`, 0 erreur ; **`javis.kd-mc.com` : 3 requêtes — 3 par le Worker (100 %)**,
+2 fichiers + 1 appel `/__`. C'est le point de départ : après le pilote, l'objectif mesurable pour javis est
+« 1 par le Worker sur 3 ».
+
+**Robot du pilote** `pilote-pages-javis.yml` (dispatch seul, 10 min, dépôt public, jeton Cloudflare du dépôt) :
+mode **lire** (défaut, ne change rien : ce que le jeton peut faire, zone, domaine Worker de javis, routes de
+zone, projets Pages, DNS) ; mode **basculer** (`confirmer=javis`) : projet Pages `kdmc-javis` ← `javis/` +
+`_headers` (HSTS, nosniff, DENY, referrer, **`X-Kdmc-Par: statique`**) + `404.html` honnête → route Worker
+`javis.kd-mc.com/__*` → retire le domaine Worker → domaine Pages + CNAME → vérifie `200 statique` et
+`/__sso/whoami` 200 ; mode **revenir** : l'inverse. Après « basculer », `wrangler.toml` doit suivre (route au
+lieu du `custom_domain`) dans une PR à part — sinon le prochain déploiement du routeur tenterait de recréer
+le domaine Worker sur un CNAME et échouerait (le routeur en ligne, lui, ne bouge pas). La mesure reconnaît
+désormais le marqueur `x-kdmc-par: statique` (garde 16/0). **Doc Cloudflare lue** : un domaine personnalisé
+Worker ne peut pas coexister avec un CNAME sur le même hôte — d'où l'ordre route → retrait → Pages → CNAME.
+Prochaine étape : lancer `lire`, puis `basculer` si le jeton a les droits, puis re-mesurer (2e vérif du jour).
+
 ## 2026-09-30 (18h00 UTC) — « Continu » : l'outil de MESURE du chantier « fichiers sans Worker » (avant de toucher quoi que ce soit)
 
 Kevin : « Continu ». Les deux inconnues du plan, lues dans la doc Cloudflare le 30.09 : (1) une expression

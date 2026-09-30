@@ -8,7 +8,10 @@
 |---|---|---|
 | `tools/audit/mesure-worker.mjs` | **Nouveau.** Ouvre une adresse dans un vrai navigateur et compte ce qui vient du Worker et ce qui est servi en statique. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/mesure-worker.mjs) |
 | `.github/workflows/mesure-worker.yml` | **Nouveau.** Le robot qui lance cette mesure sur le vrai domaine (à la main seulement, compté dans les 2 vérifications par jour). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/mesure-worker.yml) |
-| `tests/verify-mesure-worker.mjs` | **Nouveau.** La garde qui prouve que la mesure ne peut pas mentir (14 cas, 4 sabotages). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-mesure-worker.mjs) |
+| `tests/verify-mesure-worker.mjs` | **Nouveau.** La garde qui prouve que la mesure ne peut pas mentir (16 cas, 5 sabotages). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-mesure-worker.mjs) |
+| `.github/workflows/pilote-pages-javis.yml` | **Nouveau.** Le robot du pilote : `lire` (ne change rien), `basculer` (javis.kd-mc.com servi par Pages, le Worker ne garde que `/__*`), `revenir` (retour arrière). Toujours à la main. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/pilote-pages-javis.yml) |
+
+- 📏 **Mesuré le 30.09 à 19h44 UTC, avant tout changement** : ouvrir CMCteams = **17 requêtes, 17 par le Worker** ; ouvrir Javis = **3 requêtes, 3 par le Worker**.
 
 ### 🔒 L'IA payante réservée à toi, Bee v1.11 (30.09.2026)
 

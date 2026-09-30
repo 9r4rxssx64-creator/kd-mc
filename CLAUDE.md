@@ -71,7 +71,7 @@
 
 ---
 
-## 📜 Les 186 règles — le texte de Kevin, une par une
+## 📜 Les 187 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -254,6 +254,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### ⏱ RÈGLE ABSOLUE — TEMPS RÉEL / LIVE OU PRESQUE, TOUJOURS PARTOUT (Kevin 2026-07-05, ABSOLUE)
 **« Temps réel, live ou presque tjs partout »** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-temps-réel-live-ou-presque-toujours-partout-kevin-2026-07-05-absolue)
+
+### 🆓 RÈGLE ABSOLUE — GRATUIT PAR DÉFAUT : TOUT LE TRAVAIL RESTE DANS LES FORFAITS GRATUITS, AVEC UNE PERFORMANCE ÉGALE AU PAYANT (Kevin 2026-09-30, ABSOLUE)
+**« Fais en sorte qu'à l'avenir toutes les branches, tout ton travail, respecte toutes les règles pour rester dans le gratuit […] que ça me consomme le moins de forfait ou le minimum […] je veux […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-gratuit-par-défaut-tout-le-travail-reste-dans-les-forfaits-gratuits-avec-une-performance-égale-au-payant-kevin-2026-09-30-absolue)
 
 ### 🔓 RÈGLE ABSOLUE — POUR KEVIN, TOUT S'OUVRE AUTOMATIQUEMENT : AUCUN CODE À QUI LE DOMAINE CONNAÎT, ET C'EST L'ÉCRAN DU CODE QUI DEMANDE (Kevin 2026-09-27, ABSOLUE)
 **« Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. »** — puis **« Note le »** — Kevin 2026-09-27

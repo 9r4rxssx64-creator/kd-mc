@@ -55,6 +55,12 @@ for (const f of FICHIERS) {
   dit(/steps\.plafond\.outputs\.ok\s*==\s*'true'/.test(s), `${f}.yml : les étapes qui frappent le domaine sont conditionnées sur le plafond`);
   dit(/actions:\s*read/.test(s), `${f}.yml : \`actions: read\` (sans lui, l'API ne répond pas et le plafond ne sait pas compter)`);
   dit(/forcer:/.test(s) && /FORCER:/.test(s), `${f}.yml : entrée « forcer » (Kevin seul peut passer outre) transmise au script`);
+  /* Un run PLAFONNÉ doit rester VERT : aucune étape d'après-coup (« if: always() » nu) ne doit
+     chercher un rapport qui n'existe pas — sauf celles qui savent dire « pas de journal ». */
+  const TOLERANTES = ['Rapport lisible depuis l\'agent (annotations)', 'Journal complet en artefact (si on peut le télécharger un jour)', 'Combien GitHub nous facture ce mois-ci (mesure réelle)'];
+  const apres = s.slice(s.indexOf('id: plafond'));
+  const nus = [...apres.matchAll(/- name: ([^\n]+)\n\s+if: always\(\)\s*(#[^\n]*)?\n/g)].map((m) => m[1].trim()).filter((n) => !TOLERANTES.includes(n));
+  dit(nus.length === 0, `${f}.yml : aucune étape d'après-coup ne présume d'un rapport quand le run est plafonné${nus.length ? ' — ' + nus.join(' · ') : ''}`);
 }
 for (const n of noms) dit(VERIFS.includes(n), `« ${n} » est dans la liste VERIFS du script (sinon non compté)`);
 dit(VERIFS.length === FICHIERS.length, `la liste VERIFS compte exactement les ${FICHIERS.length} familles`);

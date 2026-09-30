@@ -16,6 +16,7 @@ on:
 jobs:
   syntax-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v6
 
@@ -89,6 +90,7 @@ jobs:
   # node seul — vérifié en local avec node_modules absent.
   gardes-depot-public:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     permissions:
       contents: read
       actions: read   # lire la DATE des derniers deploiements (test:code-admin-a-jour)
@@ -130,6 +132,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     needs: syntax-check
     steps:
       - uses: actions/checkout@v6

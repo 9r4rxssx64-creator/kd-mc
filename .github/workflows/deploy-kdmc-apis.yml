@@ -113,6 +113,20 @@ jobs:
             put "$s"
           done
 
+      - name: Laissez-passer du domaine — pour réserver les moteurs PAYANTS à Kevin (sans lui → IA gratuites)
+        working-directory: services/kdmc-apis
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # MÊME expression que deploy-kdmc-router.yml : les deux workers vérifient le même jeton.
+          SSO_SECRET: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
+        run: |
+          if [ -n "${SSO_SECRET:-}" ]; then
+            printf '%s' "$SSO_SECRET" | wrangler secret put KDMC_SSO_SECRET 2>&1 | tail -1
+          else
+            echo "::warning::Ni KDMC_SSO_SECRET ni JWT_SECRET → personne n'est reconnu Kevin : /ai répond en IA GRATUITES seulement (fermé, jamais payant)."
+          fi
+
       - name: Deploy
         working-directory: services/kdmc-apis
         env:

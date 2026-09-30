@@ -18,6 +18,7 @@ permissions:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - name: Cloner AITMPL en superficie (lecture seule)
         run: git clone --depth 1 https://github.com/davila7/claude-code-templates.git aitmpl 2>&1 | tail -2

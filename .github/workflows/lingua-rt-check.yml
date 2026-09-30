@@ -22,6 +22,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - name: "Frappe /__lingua/rt-session en direct et affiche la réponse"
         run: |

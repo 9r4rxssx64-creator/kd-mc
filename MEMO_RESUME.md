@@ -1,5 +1,109 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (12h00 UTC) — « Gratuit par défaut » : la règle, ses mesures, sa garde
+
+Kevin : « toutes les branches, tout ton travail, respecte toutes les règles pour rester dans le gratuit […]
+performance et résultat équivalents à une fonction payante. Trouve des solutions, mais tout en place. »
+
+**Mesuré** (API GitHub, 1 000 derniers runs du coffre, 23→30.09) : **5 241 min bord à bord en une semaine**
+(forfait privé : 2 000/mois) ; par branche : `claude/*` 3 915, `main` 1 326 ; chaîne privée ~18 min × 86
+(chaque push de PR) ; runtime-audit 1,8 min × 131 ; audit live 6 min × 26 ; **111 workflows / 170 sans borne**.
+Public `kd-mc` : 700 min / 672 runs, gratuit. Une ouverture d'app (Chromium + vrai routeur) : CMCteams
+14 fichiers + 2 `/__`, Lingua 10 + 1, Chez Lolo 6 + 1, portail 6 + 3, arbre 3 + 1 — tout compté par le Worker.
+**Fait** : bornes sur 121 jobs (115 fichiers), `coffre-chaine-privee` sans `pull_request`, écritures/secrets
+CMCteams 60 → 20/15, runtime-audit 15 → 10, socle sans-timeout 110 → 0, `tests/coffre-workflows-actifs.json`
+(39) + `tools/audit/coffre-actifs.mjs`, garde `test:gratuit` R1-R5 (3/3, 8 sabotages), règle absolue dans
+CLAUDE-HISTOIRE (index régénéré), message m166. **Non fait (chantier routeur)** : assets Cloudflare servis sans
+Worker (levier n° 1, ~14/16 requêtes par ouverture). **Non mesurable d'ici** : facture GitHub, compteur
+Cloudflare du jour.
+
+## 2026-09-30 (11h10 UTC) — « Tout s'ouvre » MESURÉ sur le vrai domaine ; fin du 1027 constatée
+
+Rappel programmé à 00h12 UTC le 28.09 ; la session ne s'est réveillée que le 30.09 à 11h04 UTC. La sonde du
+coffre (`audit-domaine`, run 36361470803) **n'a pas démarré** : « The job was not started because an Actions
+budget is preventing further use » (le budget de Kevin est épuisé, #4127/#4128). Mesure faite **sans robot**,
+par lecture directe depuis l'extérieur (Firecrawl, `maxAge: 0`), 5 requêtes au domaine :
+
+| Adresse | Réponse |
+|---|---|
+| `cmcteams.kd-mc.com/__admin/grant` (sans session) | **403** `{"ok":false,"reason":"need_admin_code"}` |
+| `cmcteams.kd-mc.com/version.txt` | 200 (l'hébergeur renvoie l'app : `APP_VER="v9.928"` dans le code servi) |
+| `shops.kd-mc.com/chez-lolo/sw.js` | 200, `CACHE='kdmc-chez-lolo-v2.0.16'` |
+| `shops.kd-mc.com/la-detente/sw.js` | 200, `CACHE='kdmc-la-detente-v1.53.24'` |
+| `kd-mc.com/__sso/whoami` | 200 `{"ok":false}` → **plus de 429, le 1027 est terminé** |
+
+Donc : le guichet sans code est **en ligne et fermé à l'anonyme**, et les trois apps livrées par #4118 sont
+exactement celles servies. **Non mesuré** : le parcours complet ✕ → matricule → entré sans PIN sur le vrai
+domaine (il faut une session admin réelle ; prouvé en Chromium local avec le vrai routeur, 7/7).
+⚠️ `main` est en v9.929 (#4104, 28.09) mais le site sert v9.928 : la synchro coffre → public est bloquée par le
+budget Actions (voir ETAT-DU-MOMENT) — rien de fusionné depuis le 27.09 22h16 n'est en ligne.
+
+## 2026-09-27 — Arbre v3.37 : vue Paysage, familles ouvertes, netteté au zoom
+
+Kevin : « Améliore aussi la qualité générale… sur ordi quand on zoom c'est pas beau / Vérifie
+de ne rien mélanger, abîmer / Ajoute une vue **paysage** où l'on voit tout clairement… que
+l'on puisse choisir **une famille ou toutes**. Il y aura d'autres familles : **Bruno,
+Lorenzi, Pizzio** ».
+
+**Le flou au zoom : trouvé la cause.** `#stage` portait `will-change:transform` en permanence
+et les étiquettes un `backdrop-filter` : le navigateur **fige la scène en image** et
+l'agrandit — d'où le flou, quelles que soient les polices et les photos. Le raccourci n'est
+plus posé que **pendant** le geste et retiré 160 ms après. Mesuré : **0 élément figé** dans la
+scène après un zoom, sur les 10 appareils ; sabotage → 2 rouges.
+
+**Vue Paysage** : l'arbre **couché** — générations en colonnes, personnes empilées, une
+personne par ligne (pastille, prénom, NOM, dates), fond clair. Elle ne recalcule rien : elle
+**transpose** l'arbre déjà vérifié, donc elle hérite de toutes ses règles. Sur iPhone : une
+vingtaine de personnes lisibles d'un coup, contre 5 illisibles en vue photo.
+
+**Familles ouvertes** : une table `FAMILLES` remplace deux clés en dur — Sauvaigo·Maiffret,
+Desarzens, **Bruno, Lorenzi, Pizzio** prêtes, sélecteur dynamique, bouton **« Toutes »**, et
+jamais de famille vide proposée. **Personne ne disparaît** : un nom inconnu des deux troncs
+reste visible dans les deux (« oc »), ‹employé› devient « ocb » — il gagne son filtre sans
+quitter les arbres où Kevin le voit.
+
+**Rien d'abîmé** : l'empreinte des données est prise avant de dessiner les 8 vues et
+recomparée après — identique octet pour octet, même nombre de fiches.
+
+**Mesure** : `npm run arbre:verif-visuel` — **89 personnes × 10 appareils × 8 vues**
+(2 familles × 3 styles + « toutes » × 2), **1270 filiations tracées**, tout vert ; sabotage
+(4 défauts) → 4 rouges distincts. Les 10 vérifications navigateur et 10 gardes hors ligne de
+l'arbre : vertes. Leçons **#360**, **#361**, **#362**.
+
+**⚠️ Pas encore mesuré sur le VRAI arbre** : le budget GitHub Actions est épuisé depuis 22h16
+(run 36358389931 : « The job was not started because an Actions budget is preventing further
+use »). La v3.36, elle, a bien été mesurée sur les 126 vraies fiches (tout vert). Et le site
+lui-même renvoie **Cloudflare 1027** (quota Workers) : rien n'est servi tant que Kevin n'a pas
+relevé ces deux plafonds.
+
+---
+
+## 2026-09-27 (21h50 UTC) — v9.929 : le même correctif, plus la VRAIE cause du rouge en CI (LZ chargé trop tard)
+
+- **Collision de version** : #4112 (autre session) a pris v9.927 → cette PR passe à **v9.929** (8ad6f1dc9 a pris v9.928 entre-temps) (APP_VER, sw.js, version.txt, parseur du seed). Light : v1.61 (de main), pas touchée.
+- **Rouge en CI, vert en local** (`chaine-privee` run 36350442856 : 16/22) : LZString venait d'un CDN 500 ms après le démarrage ; `cmc_e` compressé en « __LZ__… » était illisible au lancement suivant → liste des employés remise à la liste de base. En local le CDN était bloqué (jamais compressé). Correctif : `tools/shared/lz-string.js` chargé avant le script, repli synchrone dans `_cmcCompress/_cmcDecompress`, plus de CDN. Test : compression exigée puis relue (24/0) ; sabotage S4 → 6 rouges identiques à la CI. Leçon #358.
+- **Plafond du monofichier** : `main` (#4112) l'a franchi (3 441 255 o > 3 439 007) ; `setRetrait` + `vRetrait` déplacés dans `tools/shared/retraite-cmc.js` → index.html 3 435 525 o (marge 3 Ko).
+- Rouges de la chaîne qui ne sont pas à cette PR : `test:improvements-guard` (rouge sur `main` propre, mesuré : « règles sans garde 19 → 20 »), `test:crea-comptes` (erreur console CORS sur `admin.kd-mc.com/log`, réseau CI ; plafond KV du jour atteint, m151).
+
+## 2026-09-27 (20h30 UTC) — CMCteams v9.927 : un retraité s'ajoute à la main (Barthelemy Fabrice)
+
+Kevin : « je ne peux pas ajouter un employé manuellement, écrire un nom prénom, pour le départ
+retraite. Barthelemy Fabrice est parti à la retraite. »
+
+- **Mesuré** : la page « Retraités » n'avait qu'une liste déroulante ; « + Ajouter » exigeait un
+  matricule ; et le nettoyage du démarrage (`migrateEmployees`) effaçait tout employé hors DEF_EMP /
+  hors `cmc_reg` puis renvoyait `cmc_e` à la base → un ajout à la main disparaissait au lancement
+  suivant, sur chaque téléphone.
+- **Fait** : `tools/shared/retraite-cmc.js` (formulaire nom + prénom + mois + motif, `manuel: true`,
+  jamais de planning : `fromMo = toMo`), `_cmcEmpGarde` respecté par les 3 purges d'index.html,
+  matricule facultatif dans « + Ajouter », corbeille pour les ajouts à la main, sélecteur de mois
+  des actifs réparé (affichait « undefined »). Bannière IA raccourcie pour rester sous le plafond
+  (3 438 940 o / 3 439 007).
+- **Vérifié** : `test:retraite-manuelle` 22/0 dans un vrai navigateur, 3 sabotages rouges (purge
+  sans garde 6 FAIL, formulaire retiré 2 FAIL, matricule obligatoire 2 FAIL). Branché dans `test:ci`.
+- **Light** : pas concernée (aucune gestion d'employés). Leçon #357.
+- **Reste à Kevin** : ouvrir Retraités et écrire « Barthelemy / Fabrice » + le mois (je ne connais
+  pas le mois exact : rien n'est inventé).
 ## 2026-09-27 (nuit) — « Plafonne et mets tous les docs à jour » : 2 vérifications réelles par jour, écrit dans le code
 
 **Le plafond** : `tools/ci/plafond-verifs.mjs`, appelé par les **6 robots qui frappent le domaine**
@@ -68,6 +172,23 @@ affirmations de `test:arbre-ordi` / `verify-ordinateur` **inversées** (elles di
 de plein écran sur téléphone ») — jamais désactivées. Leçons **#357** et **#358**.
 
 ---
+## 2026-09-30 — Plan d'amélioration de l'audit Bee : IA payante fermée aux inconnus, Bee v1.11
+
+Kevin : « Continu ». Points du plan d'amélioration faits (chacun testé + sabotage → rouge) :
+- **P1 `apis.kd-mc.com/ai`** : sans le laissez-passer de Kevin (Face ID, `x-kdmc-sso` ou `Authorization: Bearer`),
+  les clés payantes sont RETIRÉES de l'environnement avant le routage → IA gratuites seulement ; moteur payant
+  forcé → 403. `KDMC_SSO_SECRET` posé par `deploy-kdmc-apis.yml` (même expression que le routeur ; absent =
+  fermé, jamais payant). CORS autorise `x-kdmc-sso`. Parité du jeton prouvée contre le routeur.
+- **Portes admin** : plus de laissez-passer lu dans l'adresse (`?t=`) — `whoami` le lit toujours (Créa Studio).
+- **Voix payante** : plafond du jour 1000 → 300 par défaut (barrière globale sans KV déjà en place).
+- **Bee v1.11** : bouton ℹ️ « où vont mes messages » (domaine, IA gratuites, Anthropic, OpenAI pour la voix,
+  Effacer), vérifié vrai en navigateur ; barre d'outils mesurée à 375 px sans débordement.
+- ⚠️ **Mise en ligne en attente** : les Actions du coffre sont bloquées par le budget (ETAT-DU-MOMENT) → la
+  synchro vers le dépôt public (qui déploie) ne part pas avant la remise à zéro du 1.10. Vérif en ligne programmée.
+- Leçon **#364**.
+
+---
+
 ## 2026-09-27 (nuit) — Audit de Bee (Javis) + audit d'amélioration : Bee v1.10, 24 apps protégées
 
 Kevin : « Fais ton audit de Javis et un audit d'amélioration détaillé ». 6 auditeurs indépendants (sécurité,
@@ -96,6 +217,10 @@ Chaque constat reproduit par moi, puis corrigé avec un test prouvé par sabotag
   voix contournable en parallèle / KV en panne (P1 → binding `LIMITE_VOIX`/`LIMITE_APPEL`), fixation par
   cookie seul (P2), « zzz » + vidéo de repos au repos (P2), balisage lu à voix haute. Reste P1 : `apis/ai`
   payable par n'importe qui qui change d'IP (auth du domaine à brancher pour toutes les apps). Leçon **#363**.
+- **EN LIGNE, vérifié le 28.09 00:21 UTC** (Firecrawl, après la levée du plafond Cloudflare) : `javis.kd-mc.com/
+  javis-widget.js` 200 `JAVIS_VER='v1.10'` + correctif du contre-audit présent ; `sw.js` = `javis-v1.10` avec
+  `SW-IDENTITE` ; `GET /__javis/ai` → 405 `{"reason":"methode"}` (la route du routeur est déployée). Non vu en
+  ligne : le 403 d'un POST anonyme (outil GET seulement ; prouvé en local). Rapport : claude.ai/artifact/NrVgBPUakQgEUvjHegh6vZ.
 
 ---
 ## 2026-09-27 (22h20 UTC) — « Note le » : la règle « tout s'ouvre pour Kevin » écrite noir sur blanc
@@ -401,6 +526,8 @@ se contenter de `coffre-sonde-ce-qui-est-servi`, lancé à la main.
 - PR #4084 : `main` refusionné (tests séances d'#4093, `test:code-compte`, `test:compte-unique-portail` gardés dans `test:ci`).
 
 ## 2026-09-27 (21h00) — Phase 2b : le planning et les réglages à l'admin seul (v9.926 / light v1.59, Kevin « Go »)
+
+> **ACTIF EN LIGNE le 27.09 à 20h04 UTC** — PR #4084 fusionnée à 20h00 (6b46f76e2), robot `coffre-ecritures-cmc` run 36346387201 ✅ : appli v9.926 + light v1.59 vues en ligne, drapeau posé, verrou publié, preuves (anonyme 401 ×6, admin 200, clé employés 200, lecture 200), 8 sondes effacées. Tâche #46 terminée.
 
 - Mesuré : tout jeton (même anonyme) réécrivait cmc_ov / cmc_t / cmc_access / cmc_docs… en entier, et chaque
   téléphone renvoyait au démarrage sa copie réparée du planning. Classement exhaustif des 648 écritures de l'appli :

@@ -54,6 +54,14 @@ const kevin = signe('kdmc_admin', 1);
   ok(d.status === 403, 'et les demandes clients (admin) aussi  [' + d.status + ']');
   kv.delete('acc:kdmc_admin'); }
 
+/* ---- 1 ter. une porte ADMIN ne lit JAMAIS le laissez-passer dans l'adresse (?t=) — plan audit Bee ---- */
+{ const d = await mod.fetch(new Request('https://kd-mc.com/__demandes?t=' + encodeURIComponent(kevin)), env, { waitUntil() {} });
+  ok(d.status === 403, 'porte admin : le laissez-passer de Kevin dans l\'ADRESSE (?t=) est ignoré  [' + d.status + ']');
+  const e = await mod.fetch(new Request('https://kd-mc.com/__demandes', { headers: { Authorization: 'Bearer ' + kevin } }), env, { waitUntil() {} });
+  ok(e.status === 200, 'porte admin : le même laissez-passer en EN-TÊTE ouvre  [' + e.status + ']');
+  const w = await mod.fetch(new Request('https://kd-mc.com/__sso/whoami?t=' + encodeURIComponent(kevin)), env, { waitUntil() {} });
+  ok((await w.json()).ok === true, '« qui es-tu ? » lit toujours ?t= (Créa Studio installé en a besoin) — seules les portes admin le refusent'); }
+
 /* ---- 2. Kevin parle à Bee ---- */
 { const r = await bee({ 'x-kdmc-sso': kevin, Origin: 'https://javis.kd-mc.com' });
   ok(r.st === 200 && r.j && r.j.ok && /Bee/.test(r.j.text), 'Kevin (Face ID) → Bee répond  [' + r.st + ']');

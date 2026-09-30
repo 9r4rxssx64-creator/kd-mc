@@ -47,6 +47,7 @@ jobs:
   cleanup-merged:
     name: Delete merged claude/* branches
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     if: github.event.schedule == '0 4 * * *' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'workflow_run'
     steps:
       - name: Checkout
@@ -185,6 +186,7 @@ jobs:
   cleanup-stale:
     name: Delete stale claude/* branches > 30 days no activity
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     if: github.event.schedule == '0 4 * * 0' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout

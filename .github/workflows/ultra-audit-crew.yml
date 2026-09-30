@@ -314,6 +314,7 @@ jobs:
     name: 📊 Crew Synthesis + auto-issue
     needs: [security, architecture, code-quality, performance, tests]
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     if: always()
     permissions:
       issues: write

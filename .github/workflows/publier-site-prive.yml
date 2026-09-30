@@ -82,6 +82,7 @@ jobs:
       || vars.PUBLICATION_PAR != 'public'
       || github.ref_name != 'main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 1 }

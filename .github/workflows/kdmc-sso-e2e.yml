@@ -39,6 +39,7 @@ permissions:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -30,6 +30,7 @@ jobs:
   sync-v12:
     name: Sync v12 (apex-ai/sw.js <-> apex-ai/index.html)
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v6
         with:
@@ -76,6 +77,7 @@ jobs:
   sync-v13:
     name: Sync v13 (apex-ai/v13/ — bootstrap.ts <-> sw.js <-> index.html)
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     needs: sync-v12
     if: always()
     steps:

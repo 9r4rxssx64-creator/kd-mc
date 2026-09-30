@@ -1,5 +1,14 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔒 L'IA payante réservée à toi, Bee v1.11 (30.09.2026)
+
+- 📱 **À essayer** (après la mise en ligne) : dans Bee, touche **ℹ️** : elle te dit où vont tes messages.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `services/kdmc-apis/worker.js` | **Modifié.** Sans ton Face ID, l'IA du domaine ne répond qu'en IA gratuites. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-apis/worker.js) |
+| `tools/javis/javis-widget.js` | **Modifié (Bee v1.11).** Bouton ℹ️ « où vont mes messages ». | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/javis/javis-widget.js) |
+
 ### 🐝 Audit de Bee : 6 auditeurs, 24 apps protégées, Bee v1.10 (27.09.2026, nuit)
 
 - 📱 **À essayer** : [javis.kd-mc.com](https://javis.kd-mc.com/) → pose deux questions d'affilée (une seule voix), touche **🔊 Voix** pour la couper, **🗑 Effacer** pour vider la conversation ; la version « Bee v1.10 » est en haut.
@@ -62,6 +71,12 @@
 - 🗣 **Lingua** (reconnu sans code, progression qui te suit) : [lingua.kd-mc.com](https://lingua.kd-mc.com/) · preuve [tests/verify-lingua-compte-domaine.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-lingua-compte-domaine.mjs)
 - 🎯 **La Détente** (galerie) : [la-detente.kd-mc.com](https://la-detente.kd-mc.com/) · boutique : [shops.kd-mc.com/la-detente/](https://shops.kd-mc.com/la-detente/)
 - 📜 **Le texte unique des conditions** (servi par le domaine) : [kd-mc.com/__sso/cgu](https://kd-mc.com/__sso/cgu) · preuve [services/kdmc-router/cgu.test.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/cgu.test.mjs)
+
+### 🆓 Gratuit par défaut (30.09.2026)
+
+- 🧪 **La garde qui refuse un robot trop cher** (bornes, PR courtes, pas de cron) : [tests/verify-gratuit.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-gratuit.mjs)
+- 📋 **Les robots qui dépensent ton forfait au coffre** (relevé du 30.09, 39) : [tests/coffre-workflows-actifs.json](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/coffre-workflows-actifs.json) · rafraîchir : [tools/audit/coffre-actifs.mjs](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/coffre-actifs.mjs)
+- 📜 **La règle, avec les mesures** : [CLAUDE-HISTOIRE.md](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/CLAUDE-HISTOIRE.md) (🆓 GRATUIT PAR DÉFAUT)
 
 ### 🔓 Tout s'ouvre pour toi, sans code, quand le domaine te connaît (27.09.2026)
 
@@ -788,6 +803,7 @@ le **03** pour ce qui était cassé, le **05** pour ce que je n'ai pas pu voir.
 | `tools/arbre/verify-nouvelle-personne.mjs` | Preuve en vrai navigateur : on peut écrire un père, une mère ou un conjoint **qui n'est pas encore dans l'arbre**, sans créer de doublon. `npm run arbre:verif-nouvelle`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/verify-nouvelle-personne.mjs) |
 | `tools/arbre/audit-arbre.mjs` | **Contrôle de cohérence de l'arbre** : liens qui pointent dans le vide, couples déclarés d'un seul côté, dates impossibles, boucles d'ancêtres, doublons de nom, personnes seules, groupes à part. Lecture seule. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/audit-arbre.mjs) |
 | `tools/arbre/verify-doublons-sans-perte.mjs` | Preuve en vrai navigateur : supprimer un doublon ne perd plus la date saisie à la main. `npm run arbre:verif-doublons`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/verify-doublons-sans-perte.mjs) |
+| `tools/arbre/audit-arbre.mjs` — `rapportFiches()` | Ce qu'on SAIT de chaque personne et ce qui manque (9 informations par fiche) : la liste de travail pour les archives. Via la CI : case « infos » du workflow arbre-nuage. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/audit-arbre.mjs) |
 | `tools/arbre/verify-visuel-appareils.mjs` | Le visuel de **chaque personne sur chaque appareil** : 10 appareils réels (iPhone SE/13/14 Pro Max, Pixel 7, Galaxy S8, iPad mini/Pro, portable, Full HD, 2K) × 4 vues — personne d'invisible, chaque enfant sous ses parents, époux côte à côte, aucun chevauchement, pleine page, dates en entier. Captures dans `audit/arbre-visuel/` (hors dépôt). `npm run arbre:verif-visuel`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/verify-visuel-appareils.mjs) |
 | `tests/arbre-dates-visuel.test.mjs` | Garde hors ligne (31 contrôles, dans `test:ci`) : les dates s'écrivent en entier dans les fiches, la pleine page marche sans l'API du navigateur, un couple « à relier » ne se coupe pas. `npm run test:arbre-dates-visuel`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/arbre-dates-visuel.test.mjs) |
 | `tools/arbre/verify-ordinateur.mjs` | Mesure réelle de l'affichage sur ordinateur (1920×1080) : part de la fenêtre occupée, échelle de l'arbre, taille des noms, captures avant/après. `npm run arbre:verif-ordi`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/verify-ordinateur.mjs) |
@@ -949,6 +965,9 @@ le **03** pour ce qui était cassé, le **05** pour ce que je n'ai pas pu voir.
 | `tests/verify-secrets-cmc.mjs` **(nouveau, 27.09)** | Vérifie tout le parcours dans un vrai navigateur : connexion, inscription, admin, rien ne fuit (41 contrôles). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-secrets-cmc.mjs) |
 | `services/apex-auth-worker/test/cmc-secret.test.mjs` **(nouveau, 27.09)** | Vérifie le serveur de connexion : lecture au secret, limite d'essais par compte, codes (10 tests). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/apex-auth-worker/test/cmc-secret.test.mjs) |
 | `tools/shared/ecritures-cmc.js` **(nouveau, 27.09)** | CMCteams : le planning, les équipes et les réglages ne partent plus que du téléphone de l'admin (avec son pass admin) ; pastille si le pass manque. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/shared/ecritures-cmc.js) |
+| `tools/shared/retraite-cmc.js` **(nouveau, 27.09)** | CMCteams v9.927 : page Retraités → écrire nom + prénom + mois + motif d'une personne absente de la liste (Barthelemy Fabrice) ; un ajout à la main n'est plus effacé au démarrage. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/shared/retraite-cmc.js) |
+| `tools/shared/lz-string.js` **(nouveau, 27.09)** | La compression du stockage de CMCteams, servie par nous AVANT l'appli (plus de CDN) : ce que le téléphone a enregistré se relit dès l'ouverture — avant, une liste compressée pouvait repartir de zéro au lancement suivant. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/shared/lz-string.js) |
+| `tests/verify-retraite-manuelle.mjs` **(nouveau, 27.09)** | Vérifie dans un vrai navigateur : le formulaire (44 px), l'ajout, le motif, aucun planning, et surtout que la personne survit au redémarrage et au nettoyage admin (22 contrôles, 3 sabotages). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-retraite-manuelle.mjs) |
 | `tools/firebase/verrou-ecritures.cjs` **(nouveau, 27.09)** | Le verrou « admin seul » des règles de la base, en un seul endroit (utilisé par la publication ET par le test). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/firebase/verrou-ecritures.cjs) |
 | `tools/firebase/ecritures-migrer.cjs` **(nouveau, 27.09)** | Robot : attend l'appli v9.925 et la light v1.58 en ligne, pose le drapeau, puis prouve le verrou comme un téléphone anonyme et comme un admin. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/firebase/ecritures-migrer.cjs) |
 | `.github/workflows/coffre-ecritures-cmc.yml` **(nouveau, 27.09)** | Lance ce robot (privé) : drapeau → verrou → preuves ; se déverrouille tout seul si une preuve échoue. Se relance en changeant `tools/firebase/ecritures-demande.json`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/coffre-ecritures-cmc.yml) |

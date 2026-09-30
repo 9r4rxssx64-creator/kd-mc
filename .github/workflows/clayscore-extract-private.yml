@@ -45,6 +45,7 @@ permissions:
 jobs:
   extraire:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       # ⚠️ PAS `actions/checkout` ici, et c'est VOLONTAIRE — deux raisons
       # mesurées :

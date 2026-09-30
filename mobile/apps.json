@@ -22,7 +22,9 @@
         "tools/shared/fiche-auto.js",
         "tools/shared/fiche-privee.js",
         "tools/shared/secrets-cmc.js",
-        "tools/shared/ecritures-cmc.js"
+        "tools/shared/ecritures-cmc.js",
+        "tools/shared/retraite-cmc.js",
+        "tools/shared/lz-string.js"
       ],
       "icon": "icon.svg",
       "site": "https://cmcteams.kd-mc.com",

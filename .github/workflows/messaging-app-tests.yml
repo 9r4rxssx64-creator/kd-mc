@@ -30,6 +30,7 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     defaults:
       run:
         working-directory: messaging-app
@@ -113,6 +114,7 @@ jobs:
   e2e:
     needs: tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     defaults:
       run:
         working-directory: messaging-app

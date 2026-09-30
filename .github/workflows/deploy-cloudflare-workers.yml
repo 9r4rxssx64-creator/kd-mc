@@ -19,6 +19,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     name: Deploy Apex services to Cloudflare Workers
     permissions:
       contents: read   # triage sécu 10/09 (zizmor « excessive-permissions ») : ce job ne touche qu'à Cloudflare, jamais au dépôt

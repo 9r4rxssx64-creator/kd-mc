@@ -32,6 +32,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     permissions:
       contents: read
     steps:
@@ -103,6 +104,7 @@ jobs:
 
   apex-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     permissions:
       contents: read
     steps:

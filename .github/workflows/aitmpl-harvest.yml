@@ -15,6 +15,7 @@ permissions:
 jobs:
   harvest:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - name: Cloner AITMPL en superficie (lecture seule, sans exécuter son code)
         run: |

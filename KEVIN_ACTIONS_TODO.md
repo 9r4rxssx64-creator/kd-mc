@@ -9,24 +9,36 @@
 
 ---
 
-## 🔴 CE SOIR : le domaine a répondu 429 à tout le monde (27.09, ~22h00 UTC) — 1 décision, 5 $/mois
+## ✅ GitHub Actions bloquées par le budget (depuis le 27.09, 22h16 UTC) — NE RELÈVE PAS le budget, ça revient le 1er octobre
 
-Mesuré par la vérification réelle : **48 surfaces sur 48** en « HTTP 429 », Lingua incluse. Ce n'est pas
-un bug du code (aucun 429 de page n'y existe) : c'est **Cloudflare** qui refuse, très probablement le
-**plafond du plan Workers gratuit — 100 000 requêtes par jour** pour le worker qui sert *toutes* tes
-adresses et *tous* leurs fichiers. Le même jour, le stockage a atteint ses **1 000 écritures**. Les deux
-sont la même chose : ton domaine a dépassé le gratuit. Ça se remet à zéro à **02h00** (00:00 UTC).
+« The job was not started because an Actions budget is preventing further use » : le budget de 20 $ posé
+le 26.09 est épuisé. **Plus aucun robot ne tourne au coffre** jusqu'au **1er octobre** (quota gratuit de
+2 000 minutes remis à zéro). Avec ta règle « gratuit par défaut » (30.09), la bonne réponse n'est **pas**
+de remonter le budget : les robots sont maintenant bornés et sobres (voir ci-dessous), et le 1er octobre
+ils repartent dans le gratuit. Le site est resté en **v9.928** (la v9.929 du 28.09 attend la reprise) :
+rien ne manque aux utilisateurs, c'est une amélioration de l'écran « retraité » qui attend un jour.
 
-**Ce que j'ai fait** : les robots de vérification ne s'inscrivent plus nulle part et ne chargent plus
-images/polices/sons (≈ −70 % de requêtes). **Ce que je ne peux pas faire** : changer ton plan.
+---
 
-**✅ FAIT (27.09 nuit, « Plafonne ») : les robots sont plafonnés à 2 vérifications réelles par jour,
-toutes familles confondues** — au-delà, un run reste vert mais ne frappe rien et le dit. Toi seul
-peux passer outre (entrée « forcer » au lancement).
+## 🆓 GRATUIT PAR DÉFAUT (ta règle du 30.09) — RIEN À PAYER, 0 clic pour toi ✅
 
-→ Reste ta décision, sans urgence : **Workers Paid (5 $/mois)** — 10 M de requêtes et 1 M
-d'écritures par mois. Avec le plafond, le gratuit devrait tenir pour 260 personnes ; si un jour
-le domaine répond encore 429 sans robot en cause, c'est le signe qu'il faut y passer.
+Tu as demandé que tout reste dans le gratuit, avec la même performance que du payant. J'ai mesuré, puis
+mis en place, le 30.09 :
+
+- **Pourquoi ton budget GitHub s'est vidé** : mes robots (et ceux des autres sessions) ont consommé
+  **5 241 minutes en une semaine** sur un forfait de **2 000 minutes par mois** — 75 % à cause de pushs sur
+  des branches de travail, et une « chaîne privée » de 18 minutes qui repartait à chaque push de chaque PR.
+- **Ce qui est fait** : une durée maximale sur chaque robot (121 n'en avaient pas : un robot bloqué =
+  6 heures gaspillées), la chaîne privée ne tourne plus qu'à la fusion, les branches de travail ne
+  peuvent plus lancer de robot long, et un garde automatique (`test:gratuit`) refuse tout nouveau robot
+  qui coûterait trop. Le 1er octobre, tes 2 000 minutes gratuites reviennent : **elles suffiront** si
+  les règles sont respectées, et le garde est là pour ça.
+- **Cloudflare (le 429 du 27.09)** : pas besoin du plan payant à 5 $/mois. Les sondes sont plafonnées
+  à 2 par jour, et le prochain chantier (servir les fichiers des apps sans passer par le « Worker »,
+  ce qui est gratuit et illimité chez Cloudflare) divisera les requêtes comptées par environ 8 — je te
+  dirai quand c'est mesuré et en ligne.
+- **Ton budget GitHub Actions** : laisse-le à **0 $**. Si un robot doit tourner d'urgence avant le
+  1er octobre, dis-le-moi : je le lance à la main, une fois.
 
 ---
 

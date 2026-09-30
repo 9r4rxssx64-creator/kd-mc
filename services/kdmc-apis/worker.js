@@ -42,7 +42,7 @@ export function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': allow,
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type,x-apex-pin,x-kdmc-app',
+    'Access-Control-Allow-Headers': 'Content-Type,x-apex-pin,x-kdmc-app,x-kdmc-sso,Authorization',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
@@ -343,7 +343,49 @@ export function extractAiText(provider, data) {
   }
 }
 
-async function handleAi(request, env, origin) {
+/* ═══ LES MOTEURS PAYANTS : SEULEMENT POUR KEVIN (plan d'amélioration de l'audit Bee, 27.09) ═══
+   Mesuré au contre-audit : l'en-tête Origin se falsifie, et en changeant d'IP à chaque requête
+   200 appels payants passaient (Anthropic d'abord avec premium:true). Désormais : une question
+   SANS le laissez-passer de Kevin (Face ID prouvé, signé par le domaine) ne voit que les IA
+   GRATUITES (Qwen, Groq, Gemini, Mistral…) — exactement la règle « gratuit d'abord ». Les apps
+   ne cassent pas : elles répondent en gratuit. Kevin garde tout (en-tête x-kdmc-sso). */
+export const MOTEURS_PAYANTS = ['anthropic', 'openai', 'xai', 'deepseek', 'perplexity', 'together'];
+const ADMIN_UIDS_IA = ['kdmc_admin', 'kevin-desarzens'];
+function b64uVersTexte(t) { t = t.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; return atob(t); }
+async function hmacB64u(secret, msg) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const b = new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)));
+  let x = ''; for (let i = 0; i < b.length; i++) x += String.fromCharCode(b[i]);
+  return btoa(x).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+/* Même vérification que le routeur (ssoVerify) : signature HMAC en temps constant, expiration,
+   Face ID prouvé (v=1), uid admin. Parité prouvée par test:apis-worker (jeton signé par le routeur). */
+export async function kevinVerifie(request, env) {
+  try {
+    const secret = env && env.KDMC_SSO_SECRET;
+    if (!secret) return false;
+    const brut = (request.headers.get('x-kdmc-sso') || request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    const i = brut.indexOf('.');
+    if (i < 1) return false;
+    const p = brut.slice(0, i), sig = brut.slice(i + 1);
+    const attendu = await hmacB64u(secret, p);
+    if (sig.length !== attendu.length) return false;
+    let diff = 0; for (let j = 0; j < sig.length; j++) diff |= sig.charCodeAt(j) ^ attendu.charCodeAt(j);
+    if (diff !== 0) return false;
+    const d = JSON.parse(b64uVersTexte(p));
+    return !!(d && d.v === 1 && d.exp && d.exp > Date.now() && ADMIN_UIDS_IA.indexOf(d.u) >= 0);
+  } catch (_) { return false; }
+}
+export function sansMoteursPayants(env) {
+  const e = Object.assign({}, env);
+  for (const p of MOTEURS_PAYANTS) { const n = secretName(p); if (n) delete e[n]; }
+  delete e.ANTHROPIC_API_KEY; delete e.OPEN_AI_API_KEY; delete e.OPENAI_API_KEY; delete e.PERPLEXITI_API_KEY;
+  return e;
+}
+
+async function handleAi(request, env0, origin) {
+  const payant = await kevinVerifie(request, env0);
+  const env = payant ? env0 : sansMoteursPayants(env0);
   let opts;
   try {
     opts = await request.json();
@@ -360,6 +402,9 @@ async function handleAi(request, env, origin) {
   }
   if (!opts || !Array.isArray(opts.messages) || !opts.messages.length) {
     return err('messages[] requis', 400, origin);
+  }
+  if (!payant && opts.provider && MOTEURS_PAYANTS.indexOf(opts.provider) >= 0) {
+    return err('moteur payant réservé à Kevin — sans son laissez-passer, les IA gratuites répondent', 403, origin);
   }
   /* La consigne `system` envoyée À CÔTÉ des messages était JETÉE (audit Bee 27.09, mesuré :
      « Tu es Bee… ne prétends pas avoir agi » n'arrivait à AUCUN des 4 appels modèle). Toute
@@ -384,7 +429,7 @@ async function handleAi(request, env, origin) {
       council: opts.council === false ? false : (opts.council === true ? true : 'auto'),
       maxTokens: Math.min(4000, Math.max(50, parseInt(opts.max_tokens, 10) || 800)),
       temperature: typeof opts.temperature === 'number' ? opts.temperature : 0.7,
-      premium: !!opts.premium,
+      premium: payant && !!opts.premium,
       timeoutMs: 20000,
     });
     if (routed.ok) {

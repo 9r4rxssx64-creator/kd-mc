@@ -946,6 +946,11 @@ function ssoOriginOk(origin, selfHost) {
   const hn = host.replace(/:\d+$/, '');
   return hn === 'kd-mc.com' || hn.endsWith('.kd-mc.com');
 }
+function ssoTokenSansAdresse(request) {
+  const m = (request.headers.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+  if (m) return m[1].trim();
+  return (request.headers.get('x-kdmc-sso') || '').trim() || ssoCookie(request, SSO_COOKIE);
+}
 function ssoToken(request) {
   const auth = request.headers.get('authorization') || '';
   const m = auth.match(/^Bearer\s+(.+)$/i);
@@ -1596,7 +1601,7 @@ async function handleLingua(request, url, env) {
          il ne doit donc pas être décompté (sinon une leçon normale serait bridée). */
       /* Plafond GLOBAL du jour (audit Bee 27.09) : le plafond par IP ne tient pas face à 200 IP
          (mesuré : 200 voix payées). Au-delà, la voix gratuite prend le relais — jamais de silence. */
-      const peutPayer = (await sousLePlafondDuJour(env, 'tts', parseInt(env && env.TTS_PLAFOND_JOUR, 10) || 1000))
+      const peutPayer = (await sousLePlafondDuJour(env, 'tts', parseInt(env && env.TTS_PLAFOND_JOUR, 10) || 300))
         && (await limiteTous(env && env.LIMITE_VOIX, 'tts'))
         && (await souslePlafond(env, 'tts', request, 150, 3600));
       if (!env.OPEN_AI_API_KEY || !peutPayer) {
@@ -2817,7 +2822,9 @@ async function adminSession(request, env) {
      kdmc_sso (Safari). Permet le Face ID sur bot.kd-mc.com sans retaper le code. */
   /* (27.09.2026) Les MÊMES canaux que whoami (Bearer, x-kdmc-sso, ?t=, cookie) : une app installée qui
      n'a que son pass en localStorage et l'envoie en Bearer était traitée comme inconnue → « code admin ». */
-  const ssoRaw = (request.headers.get('x-kdmc-sso') || '').replace(/^Bearer\s+/i, '').trim() || ssoToken(request);
+  /* JAMAIS par l'adresse (?t=) pour une porte ADMIN (plan audit Bee 27.09) : une adresse fuit par
+     l'historique, les journaux et l'en-tête Referer. En-tête ou cookie seulement. */
+  const ssoRaw = (request.headers.get('x-kdmc-sso') || '').replace(/^Bearer\s+/i, '').trim() || ssoTokenSansAdresse(request);
   if (ssoRaw) {
     const s = await ssoVerify(secret, ssoRaw);
     /* « Déconnecter partout » doit AUSSI couper l'admin (contre-audit Bee 27.09, mesuré : un jeton de

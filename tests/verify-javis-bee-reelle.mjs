@@ -734,6 +734,14 @@ if (FFMPEG) {
   await page.click('#javis-oublie');
   const h = await page.evaluate(() => localStorage.getItem('javis_widget_history'));
   chk(!h, 'bouton Effacer → la conversation gardée sur le téléphone est effacée');
+  await page.click('#javis-info');
+  const info = await page.evaluate(() => { const b = [...document.querySelectorAll('.javis-bub.js')].pop(); return b ? b.textContent : ''; });
+  chk(/OpenAI/.test(info) && /Anthropic/.test(info) && /Effacer/.test(info), `bouton ℹ️ → Bee dit où vont les messages (« ${info.slice(0, 40)}… »)`);
+  await page.setViewportSize({ width: 375, height: 700 });
+  const barre = await page.evaluate(() => { const o = document.querySelector('#javis-outils'); const bs = [...o.querySelectorAll('button')];
+    return { deborde: o.scrollWidth > o.clientWidth + 1, petit: bs.filter((b) => b.getBoundingClientRect().height < 44).length }; });
+  chk(!barre.deborde && barre.petit === 0, `barre d'outils à 375 px : rien ne déborde, boutons ≥ 44 px (déborde=${barre.deborde}, trop petits=${barre.petit})`);
+  await page.setViewportSize({ width: 390, height: 844 });
   const ver = await page.locator('#javis-ver').textContent().catch(() => '');
   chk(/v\d+\.\d+/.test(ver || ''), `la version de Bee est visible à l'écran (« ${ver} »)`);
   chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS (deux réponses, voix coupée, effacement)');

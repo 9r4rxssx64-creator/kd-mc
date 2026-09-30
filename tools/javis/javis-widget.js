@@ -48,7 +48,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.10';
+  var JAVIS_VER = 'v1.11';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
@@ -1260,6 +1260,7 @@
       /* ON/OFF (règle Kevin) : couper la voix, effacer la conversation — et la version visible */
       '<div id="javis-outils"><button id="javis-voix" type="button" aria-pressed="true">\uD83D\uDD0A Voix</button>' +
       '<button id="javis-oublie" type="button">\uD83D\uDDD1 Effacer</button>' +
+      '<button id="javis-info" type="button" aria-label="Où vont mes messages">\u2139\uFE0F</button>' +
       '<span id="javis-ver">Bee ' + JAVIS_VER + '</span></div>' +
       '<div id="javis-msgs" role="log" aria-live="polite" aria-label="Conversation"></div>' +
       '<form id="javis-form"><textarea id="javis-input" aria-label="Ta question" placeholder="Demande-moi n\'importe quoi…" rows="1"></textarea>' +
@@ -1411,6 +1412,14 @@
       voixStop(); stopTalking(wrap);
       var l = wrap.querySelector('#javis-msgs'); if (l) l.textContent = '';
       addBubble(wrap, 'javis', 'C\'est effacé. On repart de zéro !');
+    });
+    /* ℹ️ OÙ VONT MES MESSAGES (plan d'amélioration de l'audit, vie privée) : dit, en clair et sans
+       rien cacher, qui voit quoi. Chaque phrase ici doit rester VRAIE (garde test:javis-bee). */
+    wrap.querySelector('#javis-info').addEventListener('click', function () {
+      addBubble(wrap, 'javis', 'Où vont tes messages : ta question part à ton domaine kd-mc.com, qui vérifie que c\'est bien toi. ' +
+        'Il la confie à une IA gratuite (Qwen de Cloudflare, Groq, Gemini ou Mistral) ou, pour une question difficile, à l\'IA experte (Anthropic). ' +
+        'Ma voix est fabriquée par OpenAI, puis gardée par ton domaine pour ne pas la repayer. ' +
+        'La conversation reste sur ce téléphone : le bouton Effacer la supprime.');
     });
     /* clavier ouvert : la grosse Bee se fait petite (app), pour laisser lire la conversation */
     input.addEventListener('focus', function () { document.body.classList.add('javis-saisie'); });

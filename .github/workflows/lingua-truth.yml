@@ -37,6 +37,7 @@ concurrency:
 jobs:
   structure:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -80,6 +81,7 @@ jobs:
   semantique:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }

@@ -3203,6 +3203,77 @@ au boot se charge TOUJOURS (même puce OFF) pour un premier affichage instantan�
 
 ---
 
+## 🆓 RÈGLE ABSOLUE — GRATUIT PAR DÉFAUT : TOUT LE TRAVAIL RESTE DANS LES FORFAITS GRATUITS, AVEC UNE PERFORMANCE ÉGALE AU PAYANT (Kevin 2026-09-30, ABSOLUE)
+
+> **« Fais en sorte qu'à l'avenir toutes les branches, tout ton travail, respecte toutes les règles pour rester dans le gratuit […] que ça me consomme le moins de forfait ou le minimum […] je veux que ce soit en gratuit avec une performance, un travail et un résultat équivalents à une fonction payante. Trouve des solutions, mais tout en place. »** — Kevin 2026-09-30
+
+### 1. Mesuré le 30.09.2026 (pas supposé)
+
+| Forfait | Limite gratuite | Mesuré | Source |
+|---|---|---|---|
+| GitHub Actions, dépôt privé (coffre) | **2 000 min / mois** | **5 241 min bord à bord en UNE semaine** (23→30.09, 1 000 derniers runs) ; 75 % depuis des pushs `claude/*` ; chaîne privée ~18 min × 86 runs (à chaque push de PR) ; 111 workflows / 170 sans borne | API `actions/runs` |
+| GitHub Actions, dépôt public `kd-mc` | illimité | 700 min / 672 runs (27→30.09) — gratuit, mais chaque fusion sur `main` lance ~10 robots contre le domaine | API |
+| Cloudflare Workers (tout le compte) | **100 000 requêtes / jour** | atteint le 27.09 ~21h45 : 33 adresses / 33 en 429 « Error 1027 » jusqu'à 00h00 UTC | sonde 36352979439 + lecture directe |
+| Cloudflare KV | **1 000 écritures / jour** | atteint le 27.09 20h50 (`KV put() limit exceeded`) | run 36346907568 |
+| Une ouverture d'app | — | CMCteams = **14 fichiers + 2 appels `/__`** ; Lingua 10 + 1 ; Chez Lolo 6 + 1 ; portail 6 + 3 — avec `run_worker_first = true`, **tout** passe par le Worker et compte | Chromium + vrai routeur |
+| Outils à crédits (Firecrawl, MCP payants) | selon le forfait de Kevin | 1 crédit par lecture (5 lectures le 30.09 pour mesurer le domaine, faute de robot) | résultat `creditsUsed` |
+
+Le prix de l'insouciance, vécu deux fois en trois jours : le **27.09** le domaine entier coupé pour 260 employés
+(1027), le **28.09** plus aucun robot ne démarre au coffre (« an Actions budget is preventing further use ») et
+le site ne se republie plus (`main` v9.929, site v9.928 depuis le 27.09 22h16).
+
+### 2. La règle
+
+- **Gratuit par défaut, sobriété par construction.** On ne paie pas un plan pour absorber nos propres robots :
+  on rend les robots sobres. Aucun plan payant (Workers Paid, budget Actions > 0 $) sans décision de Kevin,
+  et jamais comme premier réflexe.
+- **Un robot du coffre coûte du forfait ; il doit le mériter** : borne `timeout-minutes` sur CHAQUE job
+  (≤ 45 min au coffre, = durée max mesurée + marge) ; un push sur `claude/**` ne déclenche que des robots
+  filtrés par `paths` et ≤ 20 min ; une `pull_request` ne déclenche que des robots ≤ 10 min filtrés par
+  `paths` ; la chaîne privée tourne **une fois, à la fusion sur `main`** (et à la main) — la session la lance
+  **en local** avant de fusionner ; pas de cron, pas de fan-out `workflow_run`. Un robot qu'on active se
+  remet en pause après usage (enable → dispatch → disable) et figure dans `tests/coffre-workflows-actifs.json`.
+- **Le domaine a un budget de requêtes partagé avec les vrais utilisateurs** (leçon #361) : 2 vérifications
+  réelles par jour, toutes sessions confondues (`test:plafond-verifs`) ; les sondes n'écrivent jamais en KV ;
+  on fusionne groupé (chaque fusion = ~10 robots publics contre le domaine) ; **le levier n° 1 est
+  architectural** : servir les fichiers statiques SANS invoquer le Worker (assets Cloudflare : gratuits,
+  illimités, mesuré 14 fichiers sur 16 par ouverture de CMCteams) — chantier du routeur, à faire avec mesure
+  avant/après, jamais « à la lecture ».
+- **Performance égale au payant, par le gratuit bien utilisé** : Workers AI (Qwen) pour l'IA, Rate Limiting
+  binding (mémoire, 0 écriture) pour les compteurs, D1 pour les données, cache navigateur + service worker
+  pour les pages, GitHub public (minutes illimitées) pour tout robot qui ne touche pas un fichier privé.
+- **Un outil à crédits (Firecrawl, MCP payants, IA payantes) s'emploie en dernier**, quand la CI et les canaux
+  gratuits ne peuvent pas, et on écrit combien il a coûté.
+- **Le forfait Claude de Kevin est un forfait aussi** : mémoire compacte plutôt que gros documents
+  rechargés, `CLAUDE.md` = index (règle du 17.09), pas de relecture inutile.
+
+### 3. Mis en place le 30.09 (PR gratuit-par-defaut)
+
+Bornes sur les **121 jobs** qui n'en avaient pas (115 fichiers ; 15 min, 30 pour audits/e2e, durée max mesurée
++ marge pour les gros : chaîne privée 120 → 35, écritures/secrets CMCteams 60 → 20/15, runtime-audit 15 → 10,
+vérif live 10, audit live 20) ; `coffre-chaine-privee` sans `pull_request` ; socle « sans timeout » 110 → **0** ;
+relevé des robots actifs au coffre (39) + `tools/audit/coffre-actifs.mjs` ; garde **`test:gratuit`** (R1-R5)
+dans `test:ci`.
+
+### 4. Prouvée discriminante
+
+`node tests/verify-gratuit.mjs --sabotage` : 8 cas fabriqués — job sans borne, borne > 45, push `claude/**`
+sans `paths`, push `claude/**` > 20 min, PR sans `paths`, PR > 10 min, `schedule:`, fichier sain — chacun
+rougit (ou reste vert) comme attendu. Câblé dans `test:ci` avec le vrai garde.
+
+### 5. Limite honnête
+
+Les minutes sont mesurées **bord à bord** (durée des runs), pas sur la facture GitHub (l'API de facturation
+est refusée à cette session) ; les runs annulés après une longue attente gonflent la première mesure (la
+médiane de « Vérif LIVE » est 1,7 min). Le nombre de requêtes Cloudflare par jour n'est pas lisible d'ici
+(analytics inaccessibles) : on connaît la limite, la coupure, et le coût d'une ouverture d'app — pas le
+compteur du jour. Le chantier « assets sans Worker » n'est pas fait : il touche le routeur en production.
+
+### 6. Test mental
+
+> *« Ce robot, ce déclencheur, cette lecture : qui paie, combien de fois par jour, et est-ce que Kevin le
+> saurait avant la coupure ? Si la réponse est "le forfait, à chaque push, non" — c'est non. »*
+
 ## 🔓 RÈGLE ABSOLUE — POUR KEVIN, TOUT S'OUVRE AUTOMATIQUEMENT : AUCUN CODE À QUI LE DOMAINE CONNAÎT, ET C'EST L'ÉCRAN DU CODE QUI DEMANDE (Kevin 2026-09-27, ABSOLUE)
 
 > **« Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. »** — puis **« Note le »** — Kevin 2026-09-27

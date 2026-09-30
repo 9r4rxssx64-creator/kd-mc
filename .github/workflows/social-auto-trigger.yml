@@ -24,6 +24,7 @@ permissions:
 jobs:
   trigger-social-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - name: Trigger social-publish workflow
         uses: actions/github-script@v9

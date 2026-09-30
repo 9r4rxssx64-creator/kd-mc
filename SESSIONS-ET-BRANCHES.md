@@ -100,7 +100,8 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Mesure « requêtes par le Worker » (`mesure-worker`) | `claude/mesure-worker` | ✅ fusionnée #4138 ; AVANT mesuré 30.09 19h44 : CMCteams 17/17 par le Worker, javis 3/3 |
 | Pilote javis en statique (`pilote-javis`) | `claude/pilote-javis` | ✅ fusionnée #4139 ; `lire` (run 36773826689) : zone OK, domaine Worker OK, DNS refusé (jeton sans droit DNS) |
 | Pilote javis : essai sur adresse neuve (`pilote-javis-essai`) | `claude/pilote-javis-essai` | ✅ fusionnée #4140 ; essai 1 : le sous-domaine pages.dev porte un suffixe, non lu |
-| Pilote javis : essai 2 (`pilote-javis-essai-2`) | `claude/pilote-javis-essai-2` | 🟢 lit le vrai sous-domaine du projet Pages et l'annonce en annotation ; liste Pages sans per_page (30.09) |
+| Pilote javis : essai 2 (`pilote-javis-essai-2`) | `claude/pilote-javis-essai-2` | ✅ fusionnée #4141 ; kdmc-javis.pages.dev EN LIGNE, 200 statique ; domaine javis-statique pending (pas de DNS par l'API) |
+| Pilote javis : bilan (`pilote-javis-bilan`) | `claude/pilote-javis-bilan` | 🟢 docs : copie statique 0/3 par le Worker (mesuré 20h47), action Kevin = droit DNS sur le jeton (TODO 🔑), leçon #366, message m169 (30.09) |
 | Kevin reconnu partout : mesures (`kevin-reconnu-mesure`) | `claude/kevin-reconnu-partout-mesure` | ✅ fusionnée #4109 (docs seulement) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 

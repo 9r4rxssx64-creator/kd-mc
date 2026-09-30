@@ -1,5 +1,24 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (21h00 UTC) — Essai 2 : la copie statique de Javis est EN LIGNE ; il ne manque que le droit DNS
+
+Run public (mode `essai`, 20h44 UTC) : projet Pages **`kdmc-javis` créé**, 8 fichiers envoyés (`javis/` +
+`_headers` + `404.html`), **`kdmc-javis.pages.dev` → `200` avec `x-kdmc-par: statique`** (Javis servi sans le
+Worker). Domaine personnalisé `javis-statique.kd-mc.com` ajouté côté Pages : **`pending` (validation http)** —
+Cloudflare **ne pose pas le DNS tout seul** par l'API, et l'adresse ne résout pas (000). Le jeton n'a pas le droit
+DNS (10000). Liste Pages OK sans `per_page` : `kdmc-javis (1 dom.)`, `kdmc-site (1 dom.)`.
+**Ce qui est prouvé** : toute la chaîne « fichiers d'une app servis par Pages, en-têtes de sécurité, 404 honnête,
+marqueur statique » marche. **Ce qui manque** : un droit (Zone → DNS → Modifier sur kd-mc.com) sur le jeton que
+GitHub utilise — écrit dans KEVIN_ACTIONS_TODO (2 minutes, une fois) ; ou un CNAME posé à la main pour l'essai.
+**Rien n'a bougé pour les utilisateurs** : `javis.kd-mc.com` est toujours servi par le Worker. Le domaine `pending`
+sur le projet est inoffensif ; `revenir` ne le retire pas (à faire au moment de la vraie bascule, ou à la main).
+
+**APRÈS (copie statique), mesuré 20h47 UTC** (robot `mesure-worker`, 2e et dernière vérif du jour) : **`kdmc-javis.pages.dev`
+= 3 requêtes, 0 par le Worker (0 %), 3 en statique**, 1 en erreur = l'appel `/__sso/whoami` qui n'a pas de Worker sur
+pages.dev (attendu : dans le vrai montage, la route `javis.kd-mc.com/__*` le garde) ; témoin le même jour :
+`javis.kd-mc.com` = 3 requêtes, 3 par le Worker. Donc, pour Javis, la bascule complète donnera **1 requête Worker
+sur 3 au lieu de 3 sur 3** — et pour CMCteams, 2 sur 17 au lieu de 17 sur 17, si le même montage tient.
+
 ## 2026-09-30 (20h50 UTC) — Essai 1 : rouge, mais pas là où on croit
 
 Run public (mode `essai`) : l'étape s'arrête à « kdmc-javis.pages.dev ne sert pas Javis ». Deux causes possibles,

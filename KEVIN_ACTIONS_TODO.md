@@ -34,6 +34,29 @@ doit sortir avant le 1er octobre, dis-le : même chemin, 10 minutes.
 
 ---
 
+## 🔑 Un droit à donner au jeton Cloudflare (2 minutes, une seule fois) — pour que tes apps ne passent plus par le « Worker » 👆
+
+**Pourquoi** : Cloudflare gratuit compte 100 000 requêtes par jour sur le « Worker » (c'est lui qui a coupé le domaine
+le 27.09). Mesuré le 30.09 : ouvrir CMCteams = **17 requêtes, toutes par le Worker** ; ouvrir Javis = 3, toutes par le
+Worker. Servir les fichiers des apps directement (Cloudflare Pages) est **gratuit et illimité**. J'ai fait l'essai sur
+Javis : la copie statique est **en ligne et marche** (`kdmc-javis.pages.dev`, mesuré 30.09 20h45). Il ne manque qu'une
+chose pour brancher une adresse `kd-mc.com` dessus : **le jeton que GitHub utilise chez Cloudflare n'a pas le droit de
+toucher au DNS** (mesuré : « Authentication error » sur les enregistrements DNS). Sans ce droit je n'ai PAS basculé la
+vraie adresse (elle aurait pu s'éteindre). Rien n'est cassé, rien n'a bougé pour les utilisateurs.
+
+**Ce que tu fais (sur iPhone, dans Safari)** :
+1. https://dash.cloudflare.com/profile/api-tokens → la liste de tes jetons.
+2. Touche le jeton que GitHub utilise (celui qui a déjà les droits **Workers** et **Pages** ; s'il y en a plusieurs, dis-moi
+   leurs noms et je te dis lequel).
+3. **Modifier** → sous « Autorisations », **Ajouter** : **Zone** · **DNS** · **Modifier** → « Ressources de zone » :
+   **kd-mc.com** → **Continuer vers le résumé** → **Mettre à jour le jeton**.
+4. Dis-moi « c'est fait ». Je lance le pilote (Javis d'abord), je mesure avant/après, et je te dis le résultat en chiffres.
+
+*(Si tu préfères ne pas toucher au jeton : dans DNS de kd-mc.com, ajoute un CNAME `javis-statique` → `kdmc-javis.pages.dev`,
+proxy activé. Ça ne sert que pour l'essai ; pour les 28 apps, le jeton est la bonne solution.)*
+
+---
+
 ## 🆓 GRATUIT PAR DÉFAUT (ta règle du 30.09) — RIEN À PAYER, 0 clic pour toi ✅
 
 Tu as demandé que tout reste dans le gratuit, avec la même performance que du payant. J'ai mesuré, puis

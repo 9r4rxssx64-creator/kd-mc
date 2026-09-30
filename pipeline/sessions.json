@@ -738,6 +738,17 @@
       "branche": "claude/pilote-javis-essai-2",
       "sujet": "run 36774… : kdmc-javis.pages.dev ne répondait pas (suffixe du sous-domaine), liste Pages sans per_page",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4141 ; essai 2 : kdmc-javis.pages.dev en ligne, 200 statique"
+    },
+    "pilote-javis-bilan": {
+      "titre": "Pilote javis : bilan mesuré (copie statique 0/3 par le Worker), action Kevin = droit DNS",
+      "branche": "claude/pilote-javis-bilan",
+      "sujet": "docs : MEMO, ETAT, TODO 🔑, leçon #366",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-30",
       "attend_kevin": null,
@@ -3413,6 +3424,15 @@
       "sujet": "PUBLIER SANS ROBOT DU COFFRE (chemin gratuit, prouvé 30.09 13h58) + leçon #365 (un push au public qui touche des workflows = une rafale de robots) + plan « fichiers sans Worker » (ÉCRIT, PAS FAIT — session du routeur)",
       "corps": "Budget Actions du coffre épuisé jusqu'au 1.10 : rien ne se publiait (site v9.928, main v9.929). Chemin gratuit, prouvé : node tools/depot-public/exporter.mjs --sortie <dir> → node tools/depot-public/verifier.mjs --sortie <dir> (vert) → clone de 9r4rxssx64-creator/kd-mc → vider sauf .git → cp -a → commit → push → POST /repos/…/kd-mc/dispatches {event_type: coffre-a-change} (204). Mesuré : push 52e1155 13h54 UTC, runs 36725086807 / 36725145530 / 36725086675 ✅, cmcteams.kd-mc.com/sw.js = cmcteams-v9.929 à 13h58 UTC. 0 minute du coffre. LEÇON #365 : ce push portait aussi les 115 workflows modifiés (commentaires timeout) → 65 robots publics lancés d'un coup (contre 6 le 27.09), 19 rouges : 8 déjà rouges avant, 11 jamais lancés au public qui cassent tous à leur étape « Publier … dans main » / « Auto-commit coffre-fort/config.json » / « Trigger … » (écriture dans le dépôt ou dispatch : interdit au GITHUB_TOKEN du public ; étape métier verte). Aucun effet sur la production. RÈGLE : avant un push au public, git diff --stat origin/main -- .github/workflows = le nombre de robots qui partiront ; un changement de masse des workflows se pousse SEUL ; un robot qui écrit dans le dépôt ou dispatch un autre va dans workflows_prives ou en pause au public. PLAN « FICHIERS SANS WORKER » (levier n° 1 Cloudflare, CLAUDE-HISTOIRE règle gratuit § 7) : mesuré 16 requêtes Worker par ouverture de CMCteams (14 fichiers) ; paquet 4 363 fichiers / 284 Mo ; 33 adresses → 28 dossiers ; 9 portes ; Pages gratuit 20 000 fichiers, 25 Mio, 100 domaines/projet, 500 builds/mois (450 déjà ce mois). Le nœud : un fichier se sert par CHEMIN, pas par hôte → rangement /_h/<hôte>/ + réécriture au bord (Transform Rule) ou run_worker_first en liste ; pilote javis.kd-mc.com ; 6 gardes à adapter (routeur-durci, jamais-cmcteams, portes-dossier, sonde-domaine, sonde des 31 adresses, wrangler-assets). SESSION DU ROUTEUR : c'est à vous, avec mesure avant/après et Kevin prévenu — pas à la lecture. Non mesurable d'ici : le compteur Cloudflare du jour.",
       "ts": "2026-09-30 16:53",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m169-pilote-javis-bilan",
+      "de": "pilote-javis-bilan",
+      "a": "toutes",
+      "sujet": "PILOTE « fichiers sans Worker » : la copie statique de Javis est EN LIGNE (0 requête Worker sur 3), la bascule attend UN droit du jeton Cloudflare (DNS) — ne touchez pas au domaine Worker de javis",
+      "corps": "Mesuré 30.09 : AVANT javis.kd-mc.com 3 requêtes / 3 par le Worker, cmcteams.kd-mc.com 17 / 17 (robot mesure-worker, dépôt public, plafond 2/jour). Pilote (robot pilote-pages-javis.yml, modes lire / essai / basculer / revenir, confirmer=javis) : mode lire → le jeton Cloudflare du dépôt N'A PAS le droit DNS (dns_records → 10000 Authentication error) ; mode essai → projet Pages kdmc-javis créé, javis/ + _headers (HSTS, nosniff, DENY, referrer, X-Kdmc-Par: statique) + 404.html, kdmc-javis.pages.dev → 200 statique ; domaine javis-statique.kd-mc.com en pending (Cloudflare ne pose PAS le DNS par l'API). APRÈS sur la copie : 3 requêtes, 0 par le Worker, 3 statiques (1 erreur = /__sso/whoami sans Worker sur pages.dev, attendu). RÈGLES : (1) NE LANCEZ PAS le mode basculer tant que le jeton n'a pas Zone → DNS → Modifier (kd-mc.com) — il retirerait le domaine Worker de javis sans pouvoir poser le CNAME : adresse noire ; Kevin a l'action (KEVIN_ACTIONS_TODO 🔑, 2 min). (2) La mesure reconnaît x-kdmc-par: statique (test:mesure-worker). (3) Après basculer, wrangler.toml doit suivre (route javis.kd-mc.com/__* zone kd-mc.com au lieu du custom_domain) dans la PR qui suit immédiatement, sinon le prochain déploiement du routeur échoue (le routeur en ligne ne bouge pas). (4) Leçon #366 : tout robot qui touche DNS/routes/domaines a un mode lire, un mode essai sur une adresse neuve, un mode retour, un garde-fou, des annotations, et n'avale jamais une erreur d'API. Sous-domaine Pages = à lire par l'API (suffixe), per_page refusé sur la liste Pages.",
+      "ts": "2026-09-30 20:49",
       "etat": "ouvert"
     }
   ]

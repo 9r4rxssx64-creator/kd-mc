@@ -1,5 +1,43 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (22h00 UTC) — Audit, Phase 1 : CMCteams v9.930 — 317 écritures Firebase → 6, et 3,4 Mo par minute → 6 octets
+
+Les deux P0 « d'une heure trente » de l'audit (R1, R2), corrigés et **mesurés** (garde `test:boot-sobre`, Chromium,
+vraie app, Firebase compté) : **PUT Firebase dans les 12 s après l'ouverture, avant login : 317 → 6** (les 6 qui
+restent = amorce des collections quand la base répond vide : `cmc_e, cmc_t, cmc_chefs_t, cmc_pw, cmc_reg, cmc_audit`
+— sujet R6 « last-write-wins / amorce », pas celui-ci) ; **`cmc_known_identities` : 317 PUT → 0 au boot** (1 PUT groupé
+30 s plus tard, 0 si inchangé) ; **vérif de version : `version.txt?_v=` (6 octets) au lieu de `index.html?_v=`
+(3 435 912 o)**, toutes les 60 s comme la règle l'exige, repli lourd gardé mais 1×/h. Sabotage prouvé : l'ancien
+`ls() → fbWrite` remis → **323 PUT** → le garde rougit. Comment : `lsLocal()` (écriture locale seule) pour
+`cmc_known_identities` et `cmc_last_force_update_check` (qui faisait aussi 1 PUT/min) ; `_cmcCheckRemoteVersion`
+lit `version.txt` puis `_cmcApplyRemoteVersion` ; `_cmcCheckRemoteVersionLourde` en repli. Gardes adaptées :
+`test:maj-forcee` (la sonde attendue est `version.txt?_v=`, et `index.html?_v=` ne doit PAS repartir), `test:boot-sobre`
+câblé dans `test:ci`. `sw.js` = `version.txt` = `APP_VER` = v9.930 (`test:sw-identite`), taille sous le socle
+(3 438 250 o / 51 051 l.). Light : déjà en `version.txt`, rien à changer. Aussi : ETAT-DU-MOMENT dédoublonné (la ligne
+« 🔴🔴 429 » en double, P2 de l'audit) et 5 branches actives non inscrites ajoutées au registre. **À mesurer en ligne
+demain** (plafond) : requêtes Worker par ouverture (17 aujourd'hui : reste 17 mais la 2ᵉ pèse 6 o) et surtout par heure.
+
+## 2026-09-30 (21h15 UTC) — « Fais le plus complet des audits » : 40 / 100, 4 P0 mesurés, rapport privé
+
+Kevin : « Fais le plus complet des audits de fonctionnalité, d'architecture, du code, d'amélioration, etc. Complet. »
+Gabarit AUDIT_TEMPLATE_PRO ; 6 auditeurs en parallèle (architecture, code, sécurité, données + conformité,
+performance + mobile, processus + coûts) ; **tout mesuré, rien estimé** ; domaine non frappé (plafond du jour
+dépensé) ; `test:ci` complet lancé en local. Rapport : **`audit/prive/AUDIT-COMPLET-2026-09-30.md`** (privé).
+**Note 40 / 100** (27.09 : 36) = sécurité 44 · performance 37 · conformité 25 · architecture 51 · code 44 · données 41.
+**Les apps marchent** (12 tests métier 12 verts en 262 s, fidélité PDF 0 écart, 280/280 plannings, parité light
+285/285, syntaxe 21/21, duplication 0,25 %, 0 `pageerror` sur 6 apps). **Le socle, non** — 4 P0 : (1) **317 PUT
+Firebase par ouverture avant login** (`_autoLearnFromEmployees` → `ls` → `fbWrite`) ; (2) **vérif de version =
+3,4 Mo toutes les 60 s** (57 Mo/h, 60 req Worker/h par appareil — la light fait 6 octets) ; (3) **291 noms +
+plannings servis sans connexion** (`boards-gen.js`) ; (4) coffre à l'arrêt (43/43 runs rouges). Chiffres clés :
+index.html 51 023 lignes / 5 244 fonctions / `doImport` 2 914 lignes / profondeur 13 / 10 544 `var` / **1 136 catch
+vides sur 1 142** / 63 fonctions mortes / 694 `onclick` inline ; DCL 3,6-4,1 s et heap 40-69 Mo sur l'écran de
+connexion, 26 timers vivants avant login ; règles Firebase : boutiques écrivables sans auth, `cmcteams .write:
+auth != null` + signup anonyme, **deux fichiers de règles divergents (diff 433 lignes)** ; `npm audit` 1 critical /
+8 high sans lockfile ; 8 % d'actions épinglées ; aucune sauvegarde depuis le 14.08 ; privacy « SBM »/DPO et loi
+1.165 abrogée toujours là ; public : 25 % d'échec sur 100 runs, 19 robots jamais verts ; 236 branches distantes
+pour 66 inscrites. Plan : 24 lignes R1-R24, Phase 1 ≈ 3 j (R1 + R2 = 1 h 30). Non vérifié : en ligne, iPhone réel,
+contraste, console Firebase, minutes facturées.
+
 ## 2026-09-30 (21h00 UTC) — Essai 2 : la copie statique de Javis est EN LIGNE ; il ne manque que le droit DNS
 
 Run public (mode `essai`, 20h44 UTC) : projet Pages **`kdmc-javis` créé**, 8 fichiers envoyés (`javis/` +

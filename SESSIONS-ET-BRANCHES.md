@@ -101,7 +101,14 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Pilote javis en statique (`pilote-javis`) | `claude/pilote-javis` | ✅ fusionnée #4139 ; `lire` (run 36773826689) : zone OK, domaine Worker OK, DNS refusé (jeton sans droit DNS) |
 | Pilote javis : essai sur adresse neuve (`pilote-javis-essai`) | `claude/pilote-javis-essai` | ✅ fusionnée #4140 ; essai 1 : le sous-domaine pages.dev porte un suffixe, non lu |
 | Pilote javis : essai 2 (`pilote-javis-essai-2`) | `claude/pilote-javis-essai-2` | ✅ fusionnée #4141 ; kdmc-javis.pages.dev EN LIGNE, 200 statique ; domaine javis-statique pending (pas de DNS par l'API) |
-| Pilote javis : bilan (`pilote-javis-bilan`) | `claude/pilote-javis-bilan` | 🟢 docs : copie statique 0/3 par le Worker (mesuré 20h47), action Kevin = droit DNS sur le jeton (TODO 🔑), leçon #366, message m169 (30.09) |
+| Pilote javis : bilan (`pilote-javis-bilan`) | `claude/pilote-javis-bilan` | ✅ fusionnée #4142 : copie statique 0/3 par le Worker (mesuré 20h47), action Kevin = droit DNS sur le jeton (TODO 🔑), leçon #366, message m169 (30.09) |
+| Audit complet 30.09 (`audit-complet`) | `claude/audit-complet` | ✅ fusionnée #4143 : rapport privé 40/100 (4 P0 mesurés), message m170 |
+| Audit, Phase 1 (`audit-suite`) | `claude/audit-suite` | 🟢 v9.930 : R1 version.txt (6 o au lieu de 3,4 Mo/min), R2 lsLocal (317 PUT → 6, sabotage 323), garde test:boot-sobre ; ETAT dédoublonné ; 5 branches inscrites (30.09) |
+| Branche vue active, session non identifiée (`vue-arbre-listes-vides`) | `claude/arbre-listes-vides` | ⚪ inscrite par audit-suite le 30.09 (garde pipeline) ; la session propriétaire complète |
+| Branche vue active, session non identifiée (`vue-arbre-nouvelle-personne`) | `claude/arbre-nouvelle-personne` | ⚪ inscrite par audit-suite le 30.09 (garde pipeline) ; la session propriétaire complète |
+| Branche vue active, session non identifiée (`vue-berceau`) | `claude/berceau` | ⚪ inscrite par audit-suite le 30.09 (garde pipeline) ; la session propriétaire complète |
+| Branche vue active, session non identifiée (`vue-kv-ecritures`) | `claude/kv-ecritures` | ⚪ inscrite par audit-suite le 30.09 (garde pipeline) ; la session propriétaire complète |
+| Branche vue active, session non identifiée (`vue-lingua-mon-code-2026-09-27`) | `claude/lingua-mon-code-2026-09-27` | ⚪ inscrite par audit-suite le 30.09 (garde pipeline) ; la session propriétaire complète |
 | Kevin reconnu partout : mesures (`kevin-reconnu-mesure`) | `claude/kevin-reconnu-partout-mesure` | ✅ fusionnée #4109 (docs seulement) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 

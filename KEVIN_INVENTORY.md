@@ -1,5 +1,15 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔍 L'audit complet et sa Phase 1 : CMCteams v9.930 (30.09.2026, soir)
+
+- 📱 **Ce que tu verras** : rien de nouveau à l'écran. Sous le capot, l'app n'envoie plus 317 écritures à Firebase à chaque ouverture (6 restent) et ne retélécharge plus ses 3,4 Mo toutes les minutes (6 octets).
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `audit/prive/AUDIT-COMPLET-2026-09-30.md` | **Nouveau (privé).** L'audit complet : 40/100, tout mesuré, plan R1-R24. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/prive/AUDIT-COMPLET-2026-09-30.md) |
+| `index.html` | **Modifié (v9.930).** `lsLocal()` : écriture locale sans Firebase ; vérif de version par `version.txt`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/index.html) |
+| `tests/verify-boot-sobre.mjs` | **Nouveau.** La garde qui compte les écritures Firebase d'une ouverture (≤ 8, sabotage 323). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-boot-sobre.mjs) |
+
 ### 📏 La mesure « combien de requêtes passent par le Worker » (30.09.2026)
 
 - 🎯 **Pourquoi** : le plan gratuit Cloudflare compte 100 000 requêtes par jour et, aujourd'hui, TOUT ce que ton domaine sert passe par le « Worker ». Avant de changer ça, on mesure ; après, on remesure. Rien à faire de ton côté.

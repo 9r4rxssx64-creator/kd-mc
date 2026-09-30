@@ -34,6 +34,18 @@ doit sortir avant le 1er octobre, dis-le : même chemin, 10 minutes.
 
 ---
 
+## 🔍 L'audit complet du 30.09 : 40 / 100 — rien à faire de ton côté, je corrige les 4 points critiques en premier
+
+Tu as demandé « le plus complet des audits ». Il est fait, tout mesuré (rapport privé `audit/prive/AUDIT-COMPLET-2026-09-30.md`).
+En une phrase : **tes apps marchent** (tous les tests métier sont verts, 0 écart avec le PDF, 0 erreur de page), **mais quatre
+choses sous le capot coûtent cher ou exposent des données** : (1) CMCteams envoie 317 écritures à Firebase à chaque ouverture,
+avant même la connexion ; (2) l'app retélécharge ses 3,4 Mo toutes les 60 secondes pour vérifier sa version (la light le fait avec
+6 octets) — c'est une des raisons de la coupure du 27.09 ; (3) la liste des 291 noms et leurs plannings est servie sans connexion ;
+(4) le coffre est à l'arrêt jusqu'au 1er octobre. **Les deux premiers sont corrigés (v9.930, mesuré : 317 écritures → 6, et 6 octets
+au lieu de 3,4 Mo par minute)** ; je publie à la main comme ce matin. Tu n'as rien à faire.
+
+---
+
 ## 🔑 Un droit à donner au jeton Cloudflare (2 minutes, une seule fois) — pour que tes apps ne passent plus par le « Worker » 👆
 
 **Pourquoi** : Cloudflare gratuit compte 100 000 requêtes par jour sur le « Worker » (c'est lui qui a coupé le domaine

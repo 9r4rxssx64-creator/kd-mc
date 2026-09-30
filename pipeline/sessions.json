@@ -749,6 +749,78 @@
       "branche": "claude/pilote-javis-bilan",
       "sujet": "docs : MEMO, ETAT, TODO 🔑, leçon #366",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4142"
+    },
+    "audit-complet": {
+      "titre": "Audit complet du 30.09 (40/100, 4 P0) + Phase 1",
+      "branche": "claude/audit-complet",
+      "sujet": "rapport privé audit/prive/AUDIT-COMPLET-2026-09-30.md ; puis R1 (version.txt), R2 (1 PUT), R3 (boards-gen derrière connexion), R4 (privacy/cgu)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "rapport fusionné #4143"
+    },
+    "vue-arbre-listes-vides": {
+      "titre": "Branche vue active, session non identifiée : arbre-listes-vides",
+      "branche": "claude/arbre-listes-vides",
+      "sujet": "inscrite par audit-suite (30.09) pour que le registre suive toutes les branches actives ; la session propriétaire complète",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "vue-arbre-nouvelle-personne": {
+      "titre": "Branche vue active, session non identifiée : arbre-nouvelle-personne",
+      "branche": "claude/arbre-nouvelle-personne",
+      "sujet": "inscrite par audit-suite (30.09) pour que le registre suive toutes les branches actives ; la session propriétaire complète",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "vue-berceau": {
+      "titre": "Branche vue active, session non identifiée : berceau",
+      "branche": "claude/berceau",
+      "sujet": "inscrite par audit-suite (30.09) pour que le registre suive toutes les branches actives ; la session propriétaire complète",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "vue-kv-ecritures": {
+      "titre": "Branche vue active, session non identifiée : kv-ecritures",
+      "branche": "claude/kv-ecritures",
+      "sujet": "inscrite par audit-suite (30.09) pour que le registre suive toutes les branches actives ; la session propriétaire complète",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "vue-lingua-mon-code-2026-09-27": {
+      "titre": "Branche vue active, session non identifiée : lingua-mon-code-2026-09-27",
+      "branche": "claude/lingua-mon-code-2026-09-27",
+      "sujet": "inscrite par audit-suite (30.09) pour que le registre suive toutes les branches actives ; la session propriétaire complète",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "audit-suite": {
+      "titre": "Audit : Phase 1 — R1 version.txt + R2 une écriture Firebase (v9.930), ETAT dédoublonné",
+      "branche": "claude/audit-suite",
+      "sujet": "317 PUT → 6 au boot, 3,4 Mo/min → 6 octets ; garde test:boot-sobre (sabotage 323)",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-30",
       "attend_kevin": null,
@@ -3433,6 +3505,15 @@
       "sujet": "PILOTE « fichiers sans Worker » : la copie statique de Javis est EN LIGNE (0 requête Worker sur 3), la bascule attend UN droit du jeton Cloudflare (DNS) — ne touchez pas au domaine Worker de javis",
       "corps": "Mesuré 30.09 : AVANT javis.kd-mc.com 3 requêtes / 3 par le Worker, cmcteams.kd-mc.com 17 / 17 (robot mesure-worker, dépôt public, plafond 2/jour). Pilote (robot pilote-pages-javis.yml, modes lire / essai / basculer / revenir, confirmer=javis) : mode lire → le jeton Cloudflare du dépôt N'A PAS le droit DNS (dns_records → 10000 Authentication error) ; mode essai → projet Pages kdmc-javis créé, javis/ + _headers (HSTS, nosniff, DENY, referrer, X-Kdmc-Par: statique) + 404.html, kdmc-javis.pages.dev → 200 statique ; domaine javis-statique.kd-mc.com en pending (Cloudflare ne pose PAS le DNS par l'API). APRÈS sur la copie : 3 requêtes, 0 par le Worker, 3 statiques (1 erreur = /__sso/whoami sans Worker sur pages.dev, attendu). RÈGLES : (1) NE LANCEZ PAS le mode basculer tant que le jeton n'a pas Zone → DNS → Modifier (kd-mc.com) — il retirerait le domaine Worker de javis sans pouvoir poser le CNAME : adresse noire ; Kevin a l'action (KEVIN_ACTIONS_TODO 🔑, 2 min). (2) La mesure reconnaît x-kdmc-par: statique (test:mesure-worker). (3) Après basculer, wrangler.toml doit suivre (route javis.kd-mc.com/__* zone kd-mc.com au lieu du custom_domain) dans la PR qui suit immédiatement, sinon le prochain déploiement du routeur échoue (le routeur en ligne ne bouge pas). (4) Leçon #366 : tout robot qui touche DNS/routes/domaines a un mode lire, un mode essai sur une adresse neuve, un mode retour, un garde-fou, des annotations, et n'avale jamais une erreur d'API. Sous-domaine Pages = à lire par l'API (suffixe), per_page refusé sur la liste Pages.",
       "ts": "2026-09-30 20:49",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m170-audit-complet",
+      "de": "audit-complet",
+      "a": "toutes",
+      "sujet": "AUDIT COMPLET 30.09 : 40/100, 4 P0 MESURÉS — lisez audit/prive/AUDIT-COMPLET-2026-09-30.md avant de toucher index.html, les règles Firebase, boards-gen.js ou la vérif de version",
+      "corps": "6 auditeurs, tout mesuré. P0-1 : CMCteams fait 317 PUT Firebase (cmc_known_identities) à chaque ouverture AVANT login : _autoLearnFromEmployees (index.html:34709) → learnIdentity → ls() (3744) → fbWrite (4204) — corrigé par la session audit-complet (R2 : 1 PUT groupé, 0 si inchangé). P0-2 : la vérif de version retélécharge index.html (3,4 Mo) toutes les 60 s (index.html:49817-49850) = 60 requêtes Worker/h par appareil, cause directe du plafond 100 000/j du 27.09 — corrigé par audit-complet (R1 : version.txt comme la light l.1106). P0-3 : tools/departs/boards-gen.js (291 noms + plannings) chargé sans connexion — R3 par audit-complet (servir derrière /__sso/whoami au routeur). P0-4 : coffre à l'arrêt (43/43 runs rouges aujourd'hui, budget). P1 à NE PAS ignorer : règles Firebase des boutiques écrivables sans auth (products/logos/selection/push_sub, orders lisibles) ; cmcteams .write: auth != null + signup anonyme côté client = tout visiteur peut écrire le planning ; DEUX fichiers de règles Firebase divergents (firebase-rules-apex.json via deploy-rules.cjs vs apex-ai/v13/database.rules.json via deploy-firebase-rules.yml, diff 433 lignes, le second n'a pas de nœud cmcteams) — ne déployez AUCUN des deux sans lire le § 3.a ; aucune sauvegarde Firebase depuis le 14.08 ; cmcDeleteMyData = PUT de toute la collection cmc_reg ; test:ci (271 étapes) n'est lancé par AUCUN robot ; 1 136 catch vides / 1 142 ; npm audit 1 critical / 8 high (pdf.js 3.11.174) sans lockfile ; 8 % d'actions épinglées, 2 curl|sh. Toujours ouverts depuis le 27.09 : privacy.html responsable « SBM » + DPO sbm.mc, loi 1.165 abrogée (cgu.html, messaging-app/cgu.html), BRANCH_PATCH.patch 47 Mo suivi, 0 lockfile. Public : 25 % d'échec sur 100 runs, 19 robots jamais verts ; 236 branches claude/* distantes pour 66 inscrites. RÈGLE : chaque session qui touche un de ces points lit d'abord la ligne R correspondante du § 4 et remesure après (audit POST-FIX, phase 6 du gabarit). Plan R1-R24 dans le rapport.",
+      "ts": "2026-09-30 21:11",
       "etat": "ouvert"
     }
   ]

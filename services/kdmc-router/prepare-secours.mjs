@@ -132,7 +132,10 @@ const PORTAILS = [
 ];
 /* cmcteams.kd-mc.com pointe sur la RACINE du dépôt : on ne recopie donc que
    les fichiers de l'app, surtout pas les 500 Mo de coulisses. */
-const RACINE_FICHIERS = ['index.html', 'sw.js', 'manifest.webmanifest', 'manifest.json', 'favicon.ico', 'robots.txt'];
+/* `version.txt` MANQUAIT (mesuré le 30.09.2026 par test:paquet-pages, APRÈS la publication de v9.930) :
+   la sonde de version allégée de CMCteams (v9.930) lit ce fichier de 6 octets toutes les 60 s ; absent du
+   paquet, le domaine répondait 404 et l'app retombait sur la sonde lourde (index.html entier, 1×/h). */
+const RACINE_FICHIERS = ['index.html', 'sw.js', 'manifest.webmanifest', 'manifest.json', 'favicon.ico', 'robots.txt', 'version.txt'];
 
 /* Dossiers jamais recopiés. « tests » et « workers » s'ajoutent au ménage
    habituel : mesuré le 15/08/2026 sur l'ancien site, on publiait 77 fichiers de

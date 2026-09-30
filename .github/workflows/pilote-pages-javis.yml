@@ -19,8 +19,14 @@ name: Pilote — javis.kd-mc.com servi en statique par Pages (lire / basculer / 
 #   revenir   (confirmer=javis) : l'inverse, dans l'ordre inverse (le Worker reprend javis).
 #
 # Destination (règle « chaque automatisation a une destination écrite ») : GitHub, au DÉPÔT PUBLIC
-# (minutes illimitées), jeton Cloudflare du dépôt. ZÉRO tâche programmée. Après « basculer »,
-# `services/kdmc-router/wrangler.toml` doit suivre (route au lieu du custom_domain) — PR séparée.
+# (minutes illimitées), jeton Cloudflare du dépôt. ZÉRO tâche programmée.
+#
+# FAIT LE 30.09.2026 (23h37 UTC) : « basculer » a réussi au 2e passage (le 1er s'est arrêté dans l'étape
+# DNS sans journal lisible d'ici → javis noir ~4 min ; d'où le `trap ERR` ci-dessous, qui NOMME la
+# commande fautive dans une annotation). javis.kd-mc.com = Pages (x-kdmc-par: statique), /__sso/whoami
+# = Worker (200). `services/kdmc-router/wrangler.toml` porte depuis la route `javis.kd-mc.com/__*`
+# (zone_name) à la place du custom_domain. Si « revenir » est lancé un jour, remettre le custom_domain
+# dans wrangler.toml dans la même foulée, sinon le prochain déploiement du routeur perd la route.
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   workflow_dispatch:
@@ -160,6 +166,7 @@ jobs:
           CF="https://api.cloudflare.com/client/v4"; H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"; Z="${{ steps.lire.outputs.zone_id }}"
           j() { curl -sS -H "$H" -H "Content-Type: application/json" "$@"; }
           ok() { node -pe 'const r=JSON.parse(require("fs").readFileSync(0));if(!r.success){console.error(JSON.stringify(r.errors));process.exit(1)};JSON.stringify(r.result).slice(0,200)'; }
+          trap 'echo "::error title=Pilote javis (${{ inputs.mode }})::ARRÊT à la ligne $LINENO : $BASH_COMMAND"' ERR
           echo "1. route $HOTE/__* → $WORKER"
           j -X POST "$CF/zones/$Z/workers/routes" --data "{\"pattern\":\"$HOTE/__*\",\"script\":\"$WORKER\"}" | ok || echo "(route déjà présente ?)"
           WD="${{ steps.lire.outputs.worker_domain }}"
@@ -205,6 +212,7 @@ jobs:
           CF="https://api.cloudflare.com/client/v4"; H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"; Z="${{ steps.lire.outputs.zone_id }}"
           j() { curl -sS -H "$H" -H "Content-Type: application/json" "$@"; }
           ok() { node -pe 'const r=JSON.parse(require("fs").readFileSync(0));if(!r.success){console.error(JSON.stringify(r.errors));process.exit(1)};JSON.stringify(r.result).slice(0,200)'; }
+          trap 'echo "::error title=Pilote javis (${{ inputs.mode }})::ARRÊT à la ligne $LINENO : $BASH_COMMAND"' ERR
           echo "1. retire le domaine Pages"; j -X DELETE "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET/domains/$HOTE" | ok || echo "(absent)"
           echo "2. retire le CNAME"
           for ID in $(j "$CF/zones/$Z/dns_records?name=$HOTE&type=CNAME" | node -pe 'JSON.parse(require("fs").readFileSync(0)).result.map(x=>x.id).join(" ")'); do j -X DELETE "$CF/zones/$Z/dns_records/$ID" | ok; done

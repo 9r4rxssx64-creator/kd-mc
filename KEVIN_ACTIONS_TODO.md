@@ -46,7 +46,14 @@ au lieu de 3,4 Mo par minute)** ; je publie à la main comme ce matin. Tu n'as r
 
 ---
 
-## 🔑 Un droit à donner au jeton Cloudflare (2 minutes, une seule fois) — pour que tes apps ne passent plus par le « Worker » 👆
+## ✅ FAIT (30.09, 23h30) — le droit DNS sur le jeton Cloudflare 👆
+
+Tu l'as donné ; j'ai vérifié (le DNS de `javis.kd-mc.com` se lit), puis **basculé Javis** : `javis.kd-mc.com` est servi
+par Cloudflare Pages depuis 23h37 UTC (plus par le Worker, sauf ses appels `/__…`). Un raté au 1er passage a rendu Javis
+injoignable ~4 minutes, le 2e a réussi. Je mesure le résultat en chiffres après minuit UTC. Rien à faire de ton côté.
+
+<details><summary>Ce que c'était (gardé pour mémoire)</summary>
+
 
 **Pourquoi** : Cloudflare gratuit compte 100 000 requêtes par jour sur le « Worker » (c'est lui qui a coupé le domaine
 le 27.09). Mesuré le 30.09 : ouvrir CMCteams = **17 requêtes, toutes par le Worker** ; ouvrir Javis = 3, toutes par le
@@ -66,6 +73,8 @@ vraie adresse (elle aurait pu s'éteindre). Rien n'est cassé, rien n'a bougé p
 
 *(Si tu préfères ne pas toucher au jeton : dans DNS de kd-mc.com, ajoute un CNAME `javis-statique` → `kdmc-javis.pages.dev`,
 proxy activé. Ça ne sert que pour l'essai ; pour les 28 apps, le jeton est la bonne solution.)*
+
+</details>
 
 ---
 

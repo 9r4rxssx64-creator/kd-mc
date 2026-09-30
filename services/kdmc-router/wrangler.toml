@@ -39,7 +39,12 @@ routes = [
   { pattern = "kit.kd-mc.com", custom_domain = true },
   { pattern = "dossiers.kd-mc.com", custom_domain = true },
   { pattern = "croupier.kd-mc.com", custom_domain = true },
-  { pattern = "javis.kd-mc.com", custom_domain = true },
+  # javis : PILOTE « fichiers statiques sans Worker » (30.09.2026, pilote-pages-javis.yml mode
+  # « basculer »). Les pages sont servies par Cloudflare Pages (projet kdmc-javis, DNS CNAME) ;
+  # le Worker ne reçoit plus que les chemins /__* (whoami, cerveau Bee, voix…) par une ROUTE de
+  # zone. Surtout PAS custom_domain ici : un domaine Worker ne coexiste pas avec un CNAME — le
+  # redéclarer ferait échouer `wrangler deploy` ou reprendrait javis à Pages (mesuré le 30.09).
+  { pattern = "javis.kd-mc.com/__*", zone_name = "kd-mc.com" },
   { pattern = "cuisine.kd-mc.com", custom_domain = true },
   { pattern = "cocina.kd-mc.com", custom_domain = true },
   { pattern = "cujina.kd-mc.com", custom_domain = true },

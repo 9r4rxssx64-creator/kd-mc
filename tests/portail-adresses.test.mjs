@@ -64,7 +64,10 @@ const hotes = [...new Set(cartes
   .filter((h) => h.endsWith('.kd-mc.com') && h !== 'admin.kd-mc.com'))]; // admin = worker séparé (kdmc-access)
 for (const h of hotes) {
   ok(worker.includes(`'${h}'`), `${h} absent des ROUTES du routeur → page morte`);
-  ok(wrangler.includes(`"${h}"`), `${h} absent de wrangler.toml → ni DNS ni certificat`);
+  /* `"hôte"` = custom_domain (DNS + certificat par wrangler) ; `"hôte/…"` = route de zone : le DNS
+     est porté par un autre hébergeur (pilote javis 30.09 : Cloudflare Pages, CNAME), le Worker ne
+     prend que ses chemins /__*. Les deux formes servent l'adresse. */
+  ok(wrangler.includes(`"${h}"`) || wrangler.includes(`"${h}/`), `${h} absent de wrangler.toml → ni DNS ni certificat`);
 }
 
 /* 4. Les 5 belles adresses ajoutées ce jour restent en place (anti-retour en arrière). */

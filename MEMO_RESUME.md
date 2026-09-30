@@ -1,5 +1,23 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (23h55 UTC) — javis.kd-mc.com SERVI PAR PAGES (pilote « fichiers sans Worker » bouclé) · routeur en cohérence · version.txt manquait au paquet
+
+- **Kevin a donné Zone→DNS→Edit au jeton « Edit Cloudflare Workers » (23h30 UTC)** ; `lire` : DNS lisible (AAAA `100::`
+  du domaine Worker). **`basculer` 1er passage : ROUGE dans l'étape DNS** après le retrait du domaine Worker et avant le
+  CNAME → javis noir ~4 min, journal illisible d'ici (leçon #369). **2e passage : ✅** — `javis.kd-mc.com` = Pages
+  (`x-kdmc-par: statique`), `/__sso/whoami` = Worker (200), CNAME → `kdmc-javis.pages.dev`.
+- **Routeur** (`claude/routeur-javis-route`) : `wrangler.toml` → `{ pattern = "javis.kd-mc.com/__*", zone_name = "kd-mc.com" }`
+  à la place du `custom_domain` (sinon le prochain déploiement redéclare un domaine Worker par-dessus le CNAME).
+  `test:portail-adresses` accepte la forme `"hôte/…"` ; apps-consistency 7/0 ; 16 gardes routeur/domaine verts.
+- **Trouvé en passant, PAS VU AVANT LA PUBLICATION de v9.930** : `test:paquet-pages` → « fichier manquant :
+  /version.txt » — `prepare-secours.mjs` ne mettait pas `version.txt` à la racine du paquet, donc le domaine répond 404
+  à la sonde « 6 octets » et l'app retombe sur la sonde lourde 1×/h. Corrigé (`RACINE_FICHIERS`), garde dans
+  `test:maj-forcee` (sabotage rouge), paquet refabriqué 723 fichiers, `test:paquet-pages` 85/0. Leçon #368.
+  **À republier** (chemin « Publier sans robot ») pour que le domaine serve `version.txt`.
+- Pilote : `trap ERR` dans `basculer`/`revenir` (annotation qui nomme la commande) ; en-tête mis à jour.
+- **Reste** : mesure « après » sur le vrai domaine après 00h00 UTC (plafond 2/jour) : attendu javis 1 requête Worker
+  sur 3 ; étendre aux autres adresses (CMCteams en dernier) avec avant/après ; R3-R7, R10 de l'audit.
+
 ## 2026-09-30 (23h UTC) — « Le plus complet des audits » de Javis/Bee : 8 auditeurs, 2 contre-audits, Bee v1.13
 
 Kevin : « Fais le plus complet des audit de fonctionnalité, d'architecture, du code, d'amélioration, etc. Complet ».

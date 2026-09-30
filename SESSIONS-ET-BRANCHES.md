@@ -96,6 +96,8 @@ oubliée du registre ou que deux sessions partagent une branche.
 | « Note le » : règle tout s'ouvre (`note-tout-ouvert`) | `claude/note-tout-ouvert` | 🟢 règle absolue dans CLAUDE-HISTOIRE + index CLAUDE.md + mémoire (27.09) |
 | Tout s'ouvre : mesure réelle (`mesure-tout-ouvert`) | `claude/mesure-tout-ouvert` | 🟢 30.09 11h05 UTC : /__admin/grant 403 en ligne, v9.928 / Chez Lolo v2.0.16 servis, 1027 terminé |
 | Gratuit par défaut (`gratuit-par-defaut`) | `claude/gratuit-par-defaut` | 🟢 règle absolue + garde test:gratuit (R1-R5, sabotage), 121 jobs bornés, chaîne privée à la fusion seulement (30.09) |
+| Publication à la main + plan « fichiers sans Worker » (`publication-manuelle`) | `claude/publication-manuelle` | ✅ fusionnée #4137 : site en v9.929 sans robot du coffre, leçon #365, plan mesuré du levier Cloudflare (30.09) |
+| Mesure « requêtes par le Worker » (`mesure-worker`) | `claude/mesure-worker` | 🟢 outil Chromium + robot dispatch (plafond 2/jour, 10 min, dépôt public) + garde test:mesure-worker ; puis pilote javis.kd-mc.com (30.09) |
 | Kevin reconnu partout : mesures (`kevin-reconnu-mesure`) | `claude/kevin-reconnu-partout-mesure` | ✅ fusionnée #4109 (docs seulement) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 

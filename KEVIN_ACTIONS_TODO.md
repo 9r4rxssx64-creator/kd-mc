@@ -18,6 +18,20 @@ de remonter le budget : les robots sont maintenant bornés et sobres (voir ci-de
 ils repartent dans le gratuit. Le site est resté en **v9.928** (la v9.929 du 28.09 attend la reprise) :
 rien ne manque aux utilisateurs, c'est une amélioration de l'écran « retraité » qui attend un jour.
 
+**MAJ 30.09, 13h52 UTC — toujours bloqué, et maintenant ça se voit :** le site sert **CMCteams v9.928**
+alors que le coffre a **v9.929** depuis le 28.09 (retraité ajouté à la main, plus effacé au démarrage),
+et **Arbre v3.37** (vue Paysage) attend aussi. Lingua v2.129.0, elle, est bien en ligne (publiée avant le
+blocage). Le 429 du 27.09 et le 1027 du 28.09 sont terminés. Tant que tu ne relèves pas le budget
+(**Settings → Billing → Budgets**), rien de ce que les sessions fusionnent n'arrive sur le site ; le
+quota gratuit repart le **1er octobre** (demain), ce qui débloquera tout seul si tu ne fais rien.
+
+**✅ MAJ 30.09, 14h00 UTC — tu as dit « Go » : la v9.929 est EN LIGNE, publiée à la main, 0 minute du coffre.**
+J'ai fait moi-même ce que le robot du coffre ne pouvait plus faire : préparé le paquet public sur ma machine,
+poussé au dépôt public (qui a des minutes illimitées), lancé sa publication. Mesuré de l'extérieur à 13h58 UTC :
+`cmcteams.kd-mc.com` sert **v9.929** (le retraité ajouté à la main ne s'efface plus au démarrage). L'Arbre v3.37
+est parti dans le même paquet. **Rien à faire de ton côté, et toujours 0 $ à payer.** Si une autre correction
+doit sortir avant le 1er octobre, dis-le : même chemin, 10 minutes.
+
 ---
 
 ## 🆓 GRATUIT PAR DÉFAUT (ta règle du 30.09) — RIEN À PAYER, 0 clic pour toi ✅

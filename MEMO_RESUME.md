@@ -1,5 +1,52 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (18h00 UTC) — « Continu » : l'outil de MESURE du chantier « fichiers sans Worker » (avant de toucher quoi que ce soit)
+
+Kevin : « Continu ». Les deux inconnues du plan, lues dans la doc Cloudflare le 30.09 : (1) une expression
+de réécriture (Transform Rule) ne peut contenir que `http.request.uri.*`, `http.request.headers.*` et
+`http.request.accepted_languages` — pas `http.host` en direct (l'en-tête `host` reste à essayer) ; le
+nombre de règles du plan gratuit n'est pas dans la page lue ; (2) la page Limits ne dit pas si un envoi
+direct `wrangler pages deploy` compte dans les 500 builds/mois. Rien ne se décide « à la lecture » : d'abord
+la mesure. **Fait** : `tools/audit/mesure-worker.mjs` (Chromium, vrai domaine, une ouverture par adresse,
+compte les réponses par le Worker = HSTS présent, garde `test:routeur-durci`, contre statique ; sonde sur
+les seules navigations) + robot `mesure-worker.yml` (dispatch seul, 10 min, plafond 2/jour AVANT Chromium,
+destination : dépôt public) + garde **`test:mesure-worker`** (14 cas, dont les deux extrêmes avant/après et
+4 sabotages) dans `test:ci` ; inscrit dans `VERIFS` (plafond) et dans la liste des sondes (`test:sonde-sans-
+ecriture`). Aucun changement de production. Prochaine étape : le « avant » mesuré sur javis + CMCteams.
+
+## 2026-09-30 (17h00 UTC) — « Go » : la v9.929 publiée À LA MAIN sans robot du coffre, et le plan « fichiers sans Worker »
+
+Kevin : « Go » (à « je fais la publication à la main, sans robot » + « le levier n° 1 côté Cloudflare est
+architectural, à faire avec mesure avant et après »).
+
+**Publication, mesurée** : le coffre ne peut plus publier (budget Actions épuisé depuis le 27.09 22h16), le
+dépôt public a des minutes illimitées → chemin gratuit : `node tools/depot-public/exporter.mjs --sortie <dir>`
+→ `node tools/depot-public/verifier.mjs --sortie <dir>` (vert) → clone de `kd-mc` → vider (sauf `.git`) →
+`cp -a` → commit → `git push` (52e1155, 13h54 UTC) → `POST /repos/…/kd-mc/dispatches {"event_type":
+"coffre-a-change"}` (204). Résultat : `publier-site-prive` **36725086807 ✅**, dispatch **36725145530 ✅**,
+routeur **36725086675 ✅** ; **`cmcteams.kd-mc.com/sw.js` → `CACHE='cmcteams-v9.929'` à 13h58 UTC** (lecture
+directe de l'extérieur). Le site sert la v9.929 (retraité ajouté à la main) — Arbre v3.37 est parti dans le
+même paquet (non revérifié page par page : plafond 2 vérifs/jour, aucune dépensée aujourd'hui, gardée).
+
+**Effet de bord mesuré, leçon #365** : ce commit unique a lancé **65 robots** au dépôt public (contre 6 pour
+la synchro du 27.09) parce qu'il portait aussi le commentaire `timeout-minutes` des 115 workflows — chaque
+fichier .yml touché est un chemin filtré par `paths:` de son propre robot. 28 ✅ / 13 sautés / 5 annulés /
+**19 ❌** : 8 déjà rouges le 27.09, **11 jamais lancés au public** qui cassent tous à leur étape « Publier …
+dans main » / « Auto-commit … coffre-fort/config.json » / « Trigger … » (écriture dans le dépôt ou dispatch :
+interdit au `GITHUB_TOKEN` du public ; leur étape métier était verte). Aucun effet sur la production. Les
+journaux de jobs (`*.blob.core.windows.net`) restent illisibles d'ici : diagnostic fait par les **étapes**
+(API `/jobs`), pas par les logs.
+
+**Plan « fichiers sans Worker » (levier n° 1 Cloudflare), écrit dans CLAUDE-HISTOIRE § 7 de la règle
+« gratuit par défaut »** — mesuré aujourd'hui : paquet public **4 363 fichiers / 284 Mo** (aucun > 20 Mo,
+aucun `_headers`/`_redirects`/`404.html`), **33 adresses → 28 dossiers** dans `ROUTES`, **9 portes**
+(2 admin, 7 fiche), limites Pages gratuit lues le 30.09 : 20 000 fichiers/site, 25 Mio/fichier, 100 domaines
+personnalisés/projet, 500 builds/mois (Git ; le décompte des envois directs par wrangler n'est pas écrit —
+Pages a déjà reçu 450 publications ce mois-ci, 125 public + 325 coffre). Deux mécanismes candidats, un
+pilote (javis.kd-mc.com, 6 fichiers, sans porte), la mesure avant/après (requêtes qui passent par le Worker
+par ouverture d'app, aujourd'hui 16 pour CMCteams), et les 6 gardes à adapter. **Non implémenté** : il
+touche le routage de production et se fait par la session du routeur, avec Kevin au courant (message m168).
+
 ## 2026-09-30 (12h00 UTC) — « Gratuit par défaut » : la règle, ses mesures, sa garde
 
 Kevin : « toutes les branches, tout ton travail, respecte toutes les règles pour rester dans le gratuit […]

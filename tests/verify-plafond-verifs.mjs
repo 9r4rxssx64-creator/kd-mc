@@ -42,7 +42,7 @@ dit(verdict([run(1, V, 120, 600), run(2, 'CMCteams Runtime Audit', 60, 300)], { 
 dit(verdict([run(1, V, 60 * 26, 600), run(2, L, 60 * 25, 600)], { now: NOW }).ok, 'les exécutions d\'HIER (jour UTC) ne comptent plus');
 
 /* ---------- 2 + 3 + 4. les fichiers ---------- */
-const FICHIERS = ['verif-reelle', 'audit-lingua', 'verif-live-rapport', 'audit-live', 'voir-comme-kevin', 'audit-domaine'];
+const FICHIERS = ['verif-reelle', 'audit-lingua', 'verif-live-rapport', 'audit-live', 'voir-comme-kevin', 'audit-domaine', 'mesure-worker'];
 const noms = [];
 for (const f of FICHIERS) {
   const p = `.github/workflows/${f}.yml`;

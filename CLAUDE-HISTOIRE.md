@@ -3255,6 +3255,13 @@ vérif live 10, audit live 20) ; `coffre-chaine-privee` sans `pull_request` ; so
 relevé des robots actifs au coffre (39) + `tools/audit/coffre-actifs.mjs` ; garde **`test:gratuit`** (R1-R5)
 dans `test:ci`.
 
+**Et le chemin de publication gratuit quand le coffre ne peut plus (PR publication-manuelle, Kevin « Go »)** :
+la session exporte le paquet public en local (`exporter.mjs` → `verifier.mjs`), le pousse au dépôt public
+(minutes illimitées) et déclenche `coffre-a-change` ; le robot public récupère les fichiers privés avec son
+PAT et déploie. **Prouvé le 30.09 à 13h58 UTC** : `cmcteams.kd-mc.com` en v9.929, 0 minute du coffre.
+Leçon #365 : un tel push ne doit porter QUE l'app — 115 workflows modifiés dans le même commit ont lancé
+65 robots publics d'un coup (19 rouges, aucun sur la production).
+
 ### 4. Prouvée discriminante
 
 `node tests/verify-gratuit.mjs --sabotage` : 8 cas fabriqués — job sans borne, borne > 45, push `claude/**`
@@ -3267,12 +3274,59 @@ Les minutes sont mesurées **bord à bord** (durée des runs), pas sur la factur
 est refusée à cette session) ; les runs annulés après une longue attente gonflent la première mesure (la
 médiane de « Vérif LIVE » est 1,7 min). Le nombre de requêtes Cloudflare par jour n'est pas lisible d'ici
 (analytics inaccessibles) : on connaît la limite, la coupure, et le coût d'une ouverture d'app — pas le
-compteur du jour. Le chantier « assets sans Worker » n'est pas fait : il touche le routeur en production.
+compteur du jour. Le chantier « assets sans Worker » n'est pas fait : il touche le routeur en production —
+son plan mesuré est au § 7.
 
 ### 6. Test mental
 
 > *« Ce robot, ce déclencheur, cette lecture : qui paie, combien de fois par jour, et est-ce que Kevin le
 > saurait avant la coupure ? Si la réponse est "le forfait, à chaque push, non" — c'est non. »*
+
+### 7. Le levier n° 1 Cloudflare — « les fichiers des apps servis SANS le Worker » : plan mesuré (30.09), pas fait
+
+**Le problème, chiffré.** Le routeur `kdmc-router` porte les 33 adresses du domaine (`wrangler.toml`
+`routes`, `custom_domain`) avec `[assets] run_worker_first = true` : **chaque** requête, fichier compris,
+invoque le Worker et compte dans les 100 000 requêtes/jour du plan gratuit (coupure 1027 vécue le 27.09).
+Mesuré en Chromium avec le vrai routeur : ouvrir CMCteams = **16 requêtes Worker dont 14 fichiers**, Lingua
+11 dont 10, Chez Lolo 7 dont 6, portail 9 dont 6, arbre 4 dont 3. Chez Cloudflare, une requête servie comme
+**fichier statique** (Pages, ou asset d'un Worker sans invocation) est **gratuite et non comptée**. Diviser par
+~8 les requêtes comptées, c'est ne faire passer par le Worker que les `/__*` et les portes.
+
+**Ce qui rend le chantier non trivial, mesuré le 30.09** :
+
+| Fait | Mesure | Conséquence |
+|---|---|---|
+| Un seul arbre Pages (`kdmc-site-bj5.pages.dev`) à la racine | paquet public **4 363 fichiers, 284 Mo** (+ arbre, départs, index.html, tools/shared ajoutés par le robot privé) ; plus gros dossier `shops` 542 fichiers / 168 Mo ; aucun fichier > 20 Mo ; **aucun** `_headers`, `_redirects`, `404.html` | Sous les limites Pages gratuit lues le 30.09 (20 000 fichiers/site, 25 Mio/fichier) ; les en-têtes de sécurité et le 404 honnête sont aujourd'hui rendus par le Worker, il faudra les porter |
+| Adresse → dossier | `ROUTES` : **33 adresses → 28 dossiers** distincts (`cmcteams.` → `/`, `arbre.` → `/arbre`, `departs.` et `cmcteams-light.` → `/tools/departs`, 3 alias cuisine…) | Un fichier statique se sert par **chemin**, pas par hôte : `cmcteams.kd-mc.com/tools/shared/x.js` ne correspond à aucun chemin de l'arbre unique. C'est LE nœud du chantier |
+| Portes | `PORTES` : **9 dossiers** (2 admin : PoolPilot, Autorisations ; 7 fiche : cuisine ×3 alias, World Monitor, OSINT, IA, Outils, Tor, Dossiers) + `belleAdresseDe` + 404 honnête + HSTS/nosniff sur toutes les réponses | Ces dossiers **restent derrière le Worker** (route sur tout l'hôte) ; les autres hôtes n'ont besoin du Worker que pour `/__*` |
+| Quotas Pages | 500 builds/mois (Git) ; **450 publications Pages déjà ce mois** (125 public + 325 coffre) ; 100 domaines personnalisés par projet, 100 projets par compte ; le décompte des envois directs `wrangler pages deploy` n'est pas écrit dans la page Limits | Un projet Pages par app (28) multiplierait les publications par 28 : à écarter tant que ce décompte n'est pas mesuré |
+| Priorité des routes | Doc Cloudflare (lue le 30.09) : une **route Worker** sur un motif l'emporte sur le domaine personnalisé Pages du même hôte | On peut poser `<hôte>/__*` (et l'hôte entier pour les 9 portes) en routes Worker, et laisser le reste à Pages |
+
+**Deux mécanismes candidats (à départager par la mesure, pas au jugé)** :
+
+- **A. Réécriture d'adresse au bord** (Transform Rule « URL Rewrite », gratuite, sans Worker) : l'export
+  range en plus chaque app sous `/_h/<hôte>/…` (28 dossiers dupliqués, ≈ ×2 sur 284 Mo et 4 363 fichiers :
+  toujours sous 20 000) ; **une** règle réécrit le chemin en `concat("/_h/", http.host, path)` sauf `/__*` ;
+  les hôtes deviennent des domaines personnalisés du projet Pages. Reste à lire : le nombre de Transform
+  Rules du plan gratuit et si `http.host` est utilisable dans l'expression de réécriture (non vérifié le 30.09).
+- **B. Assets du Worker + `run_worker_first` en liste** : le routeur a déjà un `[assets] directory=public`
+  (la « bouée de secours », fabriquée par `prepare-secours.mjs`) ; `run_worker_first = ["/__*", …portes]`
+  ferait servir les fichiers sans invocation. Même nœud hôte→chemin que A : il faut le même rangement
+  `/_h/<hôte>/` ET une réécriture avant l'asset — donc A moins la moitié, ou pas du tout.
+
+**Le pilote** : `javis.kd-mc.com` (6 fichiers, 540 Ko, aucune porte, aucune donnée). Avant : 100 % des
+requêtes par le Worker (mesure Chromium : compter les réponses portant les en-têtes que seul le routeur
+pose, `strict-transport-security` + `x-kdmc-*`). Après : seules `/__*`. Si la mesure est bonne et que rien
+d'autre ne change (portes, 404, SSO, cookies `.kd-mc.com`), étendre hôte par hôte, les portes en dernier.
+
+**Gardes à adapter avant de toucher la production** : `test:routeur-durci` (HSTS sur toutes les réponses →
+`_headers`), `test:jamais-cmcteams` (404 honnête → `404.html`), `test:portes-dossier` (les 9 restent
+derrière le Worker), `test:sonde-domaine` et la sonde des 31 adresses de `deploy-kdmc-router.yml`
+(elles supposent le Worker partout), `test:wrangler-assets` (le dossier `public/` change de rôle).
+
+**Ce qui n'est pas mesurable d'ici** : le compteur de requêtes Cloudflare du jour (analytics inaccessibles)
+— on mesure donc **par ouverture d'app**, avant et après, et on lit la coupure (1027) comme témoin final.
+**Qui fait** : la session du routeur, Kevin prévenu (ça change qui sert chaque adresse), jamais « à la lecture ».
 
 ## 🔓 RÈGLE ABSOLUE — POUR KEVIN, TOUT S'OUVRE AUTOMATIQUEMENT : AUCUN CODE À QUI LE DOMAINE CONNAÎT, ET C'EST L'ÉCRAN DU CODE QUI DEMANDE (Kevin 2026-09-27, ABSOLUE)
 

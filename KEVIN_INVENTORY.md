@@ -1,5 +1,15 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 📏 La mesure « combien de requêtes passent par le Worker » (30.09.2026)
+
+- 🎯 **Pourquoi** : le plan gratuit Cloudflare compte 100 000 requêtes par jour et, aujourd'hui, TOUT ce que ton domaine sert passe par le « Worker ». Avant de changer ça, on mesure ; après, on remesure. Rien à faire de ton côté.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `tools/audit/mesure-worker.mjs` | **Nouveau.** Ouvre une adresse dans un vrai navigateur et compte ce qui vient du Worker et ce qui est servi en statique. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/mesure-worker.mjs) |
+| `.github/workflows/mesure-worker.yml` | **Nouveau.** Le robot qui lance cette mesure sur le vrai domaine (à la main seulement, compté dans les 2 vérifications par jour). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/mesure-worker.yml) |
+| `tests/verify-mesure-worker.mjs` | **Nouveau.** La garde qui prouve que la mesure ne peut pas mentir (14 cas, 4 sabotages). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-mesure-worker.mjs) |
+
 ### 🔒 L'IA payante réservée à toi, Bee v1.11 (30.09.2026)
 
 - 📱 **À essayer** (après la mise en ligne) : dans Bee, touche **ℹ️** : elle te dit où vont tes messages.

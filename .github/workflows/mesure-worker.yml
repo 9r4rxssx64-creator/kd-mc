@@ -1,0 +1,71 @@
+name: Mesure — requêtes par le Worker (une ouverture d'app, vrai domaine)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POURQUOI (30.09.2026, règle « gratuit par défaut ») : le plan gratuit Workers compte 100 000
+# requêtes/jour et TOUT ce que le domaine sert passe aujourd'hui par le Worker. Le chantier
+# « fichiers servis sans Worker » se MESURE avant et après (CLAUDE-HISTOIRE, gratuit § 7).
+# Ce robot ouvre une ou deux adresses dans un vrai Chromium et compte, réponse par réponse,
+# ce qui vient du Worker (HSTS présent) et ce qui est servi en statique.
+#
+# Destination (règle « chaque automatisation a une destination écrite ») : GitHub, au DÉPÔT PUBLIC
+# (minutes illimitées) — lancé à la main seulement, jamais programmé. Compte dans le plafond des
+# 2 vérifications réelles par jour (tools/ci/plafond-verifs.mjs). Lecture seule, 0 écriture KV.
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  workflow_dispatch:
+    inputs:
+      forcer:
+        description: "Passer outre le plafond de 2 vérifications réelles par jour (Kevin seulement — chaque run coûte du quota Cloudflare)"
+        type: boolean
+        default: false
+      hotes:
+        description: "Adresses à ouvrir (séparées par des espaces)"
+        default: "javis.kd-mc.com cmcteams.kd-mc.com"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: mesure-worker
+  cancel-in-progress: false
+
+jobs:
+  mesure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10   # gratuit par défaut (Kevin 30.09) : deux pages à ouvrir, pas plus
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Plafond — 2 vérifications réelles par jour, toutes familles confondues (Kevin 27.09)
+        id: plafond
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FORCER: ${{ inputs.forcer }}
+        run: node tools/ci/plafond-verifs.mjs
+
+      - name: La classification marche sans réseau (selftest)
+        run: node tools/audit/mesure-worker.mjs --selftest
+
+      - name: Installer Chromium
+        if: steps.plafond.outputs.ok == 'true'
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Ouvrir les adresses et compter (vrai domaine)
+        if: steps.plafond.outputs.ok == 'true'
+        shell: bash -eo pipefail {0}
+        run: |
+          node tools/audit/mesure-worker.mjs --sortie /tmp/mesure.json ${{ inputs.hotes }} 2>&1 | tee /tmp/mesure.log
+
+      - name: Rapport lisible depuis l'agent (annotations)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/mesure.log ] || { echo "::notice title=Mesure Worker::(pas de journal — run plafonné ?)"; exit 0; }
+          { echo "### Requêtes par le Worker, une ouverture d'app"; echo; echo '```'; cat /tmp/mesure.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          grep -E '✅|❌' /tmp/mesure.log | while IFS= read -r l; do echo "::notice title=Mesure Worker::$l"; done

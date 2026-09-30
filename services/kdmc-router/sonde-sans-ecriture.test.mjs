@@ -65,7 +65,7 @@ const encore = await visite({ 'x-kdmc-sonde': 'test' });
 ok(encore.n === 0, 'toujours 0 écriture au passage suivant');
 
 /* 4. Chaque script de vérification du dépôt pose l'en-tête. */
-const SCRIPTS = ['tools/smoke/audit-live.mjs', 'tools/smoke/audit-lingua.mjs', 'tests/verif-live-rapport.mjs', 'tools/audit/sonde-domaine.mjs', 'tests/verify-rien-de-public.mjs'];
+const SCRIPTS = ['tools/smoke/audit-live.mjs', 'tools/smoke/audit-lingua.mjs', 'tests/verif-live-rapport.mjs', 'tools/audit/sonde-domaine.mjs', 'tests/verify-rien-de-public.mjs', 'tools/audit/mesure-worker.mjs'];
 for (const f of SCRIPTS) {
   let src = ''; try { src = readFileSync(join(RACINE, f), 'utf8'); } catch { /* absent = échec ci-dessous */ }
   ok(/x-kdmc-sonde/.test(src), `${f} se déclare comme sonde`);

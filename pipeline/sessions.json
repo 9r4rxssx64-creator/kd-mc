@@ -821,6 +821,17 @@
       "branche": "claude/audit-suite",
       "sujet": "317 PUT → 6 au boot, 3,4 Mo/min → 6 octets ; garde test:boot-sobre (sabotage 323)",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4144 ; v9.930 publiée 21h28 UTC (run public 36779606214 ✅)"
+    },
+    "audit-suite-publiee": {
+      "titre": "v9.930 publiée à la main (Phase 1 audit) — docs",
+      "branche": "claude/audit-suite-publiee",
+      "sujet": "publication 21h28 UTC, run 36779606214 ✅ ; domaine à lire demain (plafond)",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-30",
       "attend_kevin": null,

@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (21h30 UTC) — v9.930 PUBLIÉE à la main (PR #4144 → export → push public cfa6081 → dispatch)
+
+Run public `publier-site-prive` **36779606214 ✅** (21h28 UTC) : fichiers privés récupérés depuis le coffre `main`
+(v9.930), paquet fabriqué, garde « aucun document de travail » verte, **« Attendre que l'adresse STABLE serve LE
+paquet qu'on vient d'envoyer » verte** (Pages sert le paquet v9.930), 26 adresses sondées ✅. Le domaine relaie
+Pages (prouvé ce matin, même chaîne : v9.929 servie 4 min après). **Non lu depuis ici** : `cmcteams.kd-mc.com/
+version.txt` (le proxy de l'agent bloque le domaine ; Firecrawl coûte un crédit ; le plafond des 2 vérifs du jour
+est dépensé) — à lire demain à la première mesure, avec les requêtes Worker par heure.
+
 ## 2026-09-30 (22h00 UTC) — Audit, Phase 1 : CMCteams v9.930 — 317 écritures Firebase → 6, et 3,4 Mo par minute → 6 octets
 
 Les deux P0 « d'une heure trente » de l'audit (R1, R2), corrigés et **mesurés** (garde `test:boot-sobre`, Chromium,

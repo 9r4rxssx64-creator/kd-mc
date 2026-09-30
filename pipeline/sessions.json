@@ -716,6 +716,17 @@
       "branche": "claude/pilote-javis",
       "sujet": "robot pilote-pages-javis.yml ; avant mesuré 3/3 par le Worker ; objectif 1/3",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-09-30",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4139 ; lire : jeton sans droit DNS"
+    },
+    "pilote-javis-essai": {
+      "titre": "Pilote javis : mode essai sur javis-statique.kd-mc.com (jeton sans droit DNS)",
+      "branche": "claude/pilote-javis-essai",
+      "sujet": "lire : DNS refusé 10000 ; essai sur adresse neuve, la vraie ne bouge pas",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-09-30",
       "attend_kevin": null,

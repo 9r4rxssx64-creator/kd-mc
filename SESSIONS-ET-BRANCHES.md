@@ -98,7 +98,8 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Gratuit par défaut (`gratuit-par-defaut`) | `claude/gratuit-par-defaut` | 🟢 règle absolue + garde test:gratuit (R1-R5, sabotage), 121 jobs bornés, chaîne privée à la fusion seulement (30.09) |
 | Publication à la main + plan « fichiers sans Worker » (`publication-manuelle`) | `claude/publication-manuelle` | ✅ fusionnée #4137 : site en v9.929 sans robot du coffre, leçon #365, plan mesuré du levier Cloudflare (30.09) |
 | Mesure « requêtes par le Worker » (`mesure-worker`) | `claude/mesure-worker` | ✅ fusionnée #4138 ; AVANT mesuré 30.09 19h44 : CMCteams 17/17 par le Worker, javis 3/3 |
-| Pilote javis en statique (`pilote-javis`) | `claude/pilote-javis` | 🟢 robot pilote-pages-javis.yml (lire / basculer / revenir, confirmer=javis) ; la mesure reconnaît x-kdmc-par: statique (30.09) |
+| Pilote javis en statique (`pilote-javis`) | `claude/pilote-javis` | ✅ fusionnée #4139 ; `lire` (run 36773826689) : zone OK, domaine Worker OK, DNS refusé (jeton sans droit DNS) |
+| Pilote javis : essai sur adresse neuve (`pilote-javis-essai`) | `claude/pilote-javis-essai` | 🟢 mode essai : projet Pages + javis-statique.kd-mc.com, la vraie adresse ne bouge pas ; basculer interdit sans droit DNS (30.09) |
 | Kevin reconnu partout : mesures (`kevin-reconnu-mesure`) | `claude/kevin-reconnu-partout-mesure` | ✅ fusionnée #4109 (docs seulement) |
 | Sonde jetable 26.09 (`zz-sonde-1er-octobre`) | `claude/zz-sonde-1er-octobre` | ⚪ Branche de sonde CI, à supprimer par le ménage des branches (suppression refusée au proxy) |
 

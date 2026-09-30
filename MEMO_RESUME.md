@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-09-30 (20h45 UTC) — Le pilote en mode « lire » a parlé : le jeton n'a pas le droit DNS → mode « essai » sur une adresse neuve
+
+Run public 36773826689 (`lire`, rien changé) : zone `kd-mc.com` lisible ✅ ; domaine Worker de javis
+présent (`ffaff0655…`, service `kdmc-router`) ✅ ; **DNS refusé** (`dns_records` → code 10000 « Authentication
+error ») ; liste Pages « (aucun) » (erreur masquée par mon script — corrigé : les erreurs brutes s'affichent).
+Conséquence : `basculer` retirerait le domaine Worker sans pouvoir poser le CNAME → javis noir. **Interdit
+tant que le jeton n'a pas le droit DNS.** À la place, mode **`essai`** : même projet Pages, même `_headers`,
+mais domaine personnalisé sur une adresse NEUVE `javis-statique.kd-mc.com` — la vraie adresse ne bouge pas.
+Il dit si Cloudflare pose le DNS tout seul (zone du même compte) ; sinon, le seul geste manquant est un
+CNAME (Kevin, 1 clic) ou un jeton étendu au droit DNS.
+
 ## 2026-09-30 (20h00 UTC) — Le « AVANT » est mesuré ; le pilote javis a son robot (lire / basculer / revenir)
 
 **Mesuré sur le vrai domaine** (robot `mesure-worker`, run public 36767782924, 19h44 UTC, 1re des 2 vérifs du

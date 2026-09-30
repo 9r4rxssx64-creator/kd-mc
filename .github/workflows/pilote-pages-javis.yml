@@ -9,6 +9,10 @@ name: Pilote — javis.kd-mc.com servi en statique par Pages (lire / basculer / 
 # TROIS MODES, jamais programmés, toujours à la main :
 #   lire      (défaut) : LECTURE SEULE — ce que le jeton peut faire, la zone, le domaine Worker
 #                        de javis, les projets Pages, les enregistrements DNS. Ne change RIEN.
+#   essai     (confirmer=javis) : projet Pages `kdmc-javis` ← javis/ + domaine personnalisé
+#                        javis-statique.kd-mc.com (une adresse NEUVE : la vraie ne bouge pas).
+#                        Dit si Cloudflare crée le DNS tout seul — mesuré le 30.09 : le jeton du
+#                        dépôt n'a PAS le droit DNS (10000 Authentication error sur dns_records).
 #   basculer  (confirmer=javis) : projet Pages `kdmc-javis` ← dossier javis/ (+ _headers, 404.html)
 #                        → route Worker `javis.kd-mc.com/__*` → retire le domaine Worker de javis
 #                        → domaine personnalisé Pages + CNAME → vérifie que la page répond.
@@ -22,12 +26,12 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "lire (rien ne change) · basculer · revenir"
+        description: "lire (rien ne change) · essai (adresse neuve javis-statique) · basculer · revenir"
         type: choice
-        options: [lire, basculer, revenir]
+        options: [lire, essai, basculer, revenir]
         default: lire
       confirmer:
-        description: "Écrire « javis » pour basculer ou revenir (garde-fou)"
+        description: "Écrire « javis » pour essai, basculer ou revenir (garde-fou)"
         default: ""
 
 permissions:
@@ -45,6 +49,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       HOTE: javis.kd-mc.com
+      HOTE_ESSAI: javis-statique.kd-mc.com
       PROJET: kdmc-javis
       WORKER: kdmc-router
       ZONE_NOM: kd-mc.com
@@ -79,11 +84,47 @@ jobs:
           echo "worker_domain=$WD" >> "$GITHUB_OUTPUT"
           RT=$(j "$CF/zones/$Z/workers/routes" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));(r.result||[]).map(x=>x.pattern+"→"+(x.script||"?")).join(" | ")||"(aucune route de zone)"')
           echo "routes de zone : $RT"; echo "- routes de zone : $RT" >> "$GITHUB_STEP_SUMMARY"
-          PP=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects?per_page=50" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));(r.result||[]).map(p=>p.name+"("+(p.domains||[]).length+" dom.)").join(", ")||"(aucun)"')
+          PP=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects?per_page=50" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?((r.result||[]).map(p=>p.name+"("+(p.domains||[]).length+" dom.)").join(", ")||"(aucun)"):"REFUSÉ: "+JSON.stringify(r.errors)')
           echo "projets Pages : $PP"; echo "- projets Pages : $PP" >> "$GITHUB_STEP_SUMMARY"
           DNS=$(j "$CF/zones/$Z/dns_records?name=$HOTE" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?((r.result||[]).map(x=>x.type+" "+x.content+" proxied="+x.proxied).join(" | ")||"(aucun enregistrement visible)"):"REFUSÉ: "+JSON.stringify(r.errors)')
           echo "DNS $HOTE : $DNS"; echo "- DNS $HOTE : $DNS" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Pilote javis (lire)::domaine Worker=$WD · DNS=$DNS · Pages=$PP"
+
+      - name: ESSAI — projet Pages kdmc-javis ← javis/ + adresse NEUVE javis-statique.kd-mc.com (la vraie ne bouge pas)
+        if: inputs.mode == 'essai'
+        shell: bash -eo pipefail {0}
+        run: |
+          CF="https://api.cloudflare.com/client/v4"; H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"; Z="${{ steps.lire.outputs.zone_id }}"
+          j() { curl -sS -H "$H" -H "Content-Type: application/json" "$@"; }
+          rm -rf /tmp/javis-pages && mkdir -p /tmp/javis-pages && cp -a javis/. /tmp/javis-pages/
+          cat > /tmp/javis-pages/_headers <<'EOF'
+          /*
+            Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+            X-Content-Type-Options: nosniff
+            X-Frame-Options: DENY
+            Referrer-Policy: strict-origin-when-cross-origin
+            X-Kdmc-Par: statique
+          EOF
+          printf '<!doctype html><meta charset="utf-8"><title>Introuvable</title><p>Cette page n\x27existe pas sur javis.kd-mc.com.</p>\n' > /tmp/javis-pages/404.html
+          npm i -g wrangler@3 --no-audit --no-fund >/dev/null 2>&1
+          echo "1. projet Pages $PROJET"
+          wrangler pages project create "$PROJET" --production-branch=main 2>&1 | tail -2 || echo "(projet déjà là ?)"
+          echo "2. envoi de $(find /tmp/javis-pages -type f | wc -l) fichiers"
+          wrangler pages deploy /tmp/javis-pages --project-name="$PROJET" --branch=main --commit-dirty=true 2>&1 | tail -3
+          sleep 8
+          P=$(curl -s -o /tmp/pd.html -w "%{http_code} %header{x-kdmc-par}" --max-time 20 "https://$PROJET.pages.dev/" || true)
+          echo "   $PROJET.pages.dev → $P"; grep -qi "javis\|bee" /tmp/pd.html || { echo "::error::$PROJET.pages.dev ne sert pas Javis"; exit 1; }
+          echo "3. domaine personnalisé $HOTE_ESSAI (adresse neuve)"
+          j -X POST "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET/domains" --data "{\"name\":\"$HOTE_ESSAI\"}" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?"   ✅ "+JSON.stringify(r.result).slice(0,300):"   ❌ "+JSON.stringify(r.errors)'
+          echo "4. Cloudflare a-t-il posé le DNS tout seul ? (le jeton n'a pas le droit DNS — on regarde ce qui répond)"
+          R="000"; for i in $(seq 1 12); do sleep 10; R=$(curl -s -o /tmp/pe.html -w "%{http_code} %header{x-kdmc-par}" --max-time 15 "https://$HOTE_ESSAI/" 2>/dev/null || echo "000 (ne résout pas)"); echo "   essai $i : $R"; case "$R" in "200 statique"*) break;; esac; done
+          D=$(j "$CF/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET/domains/$HOTE_ESSAI" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?(r.result.status+" / "+JSON.stringify(r.result.validation_data||{}).slice(0,160)):"REFUSÉ: "+JSON.stringify(r.errors)')
+          echo "   état du domaine côté Pages : $D"
+          if [ "${R%% *}" = "200" ] && grep -qi "javis\|bee" /tmp/pe.html; then
+            echo "::notice title=Pilote javis (essai)::✅ $HOTE_ESSAI sert Javis en statique ($R) — Cloudflare a posé le DNS tout seul · Pages=$D"
+          else
+            echo "::notice title=Pilote javis (essai)::⚠️ $HOTE_ESSAI ne répond pas encore ($R) — Pages=$D · $PROJET.pages.dev=$P. Sans droit DNS sur le jeton, le CNAME doit être posé (Kevin, 1 clic) ou le jeton étendu."
+          fi
 
       - name: BASCULER — projet Pages kdmc-javis ← javis/ (+ _headers, 404.html)
         if: inputs.mode == 'basculer'

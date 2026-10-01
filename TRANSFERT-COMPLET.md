@@ -33,7 +33,7 @@
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
-| Automatisations actives | **139** (+ 37 rangées) | `.github/workflows/` |
+| Automatisations actives | **138** (+ 37 rangées) | `.github/workflows/` |
 | Gardes / tests | **135** fichiers, **196** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **180** dont **103** ouvertes | `pipeline/sessions.json` |

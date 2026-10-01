@@ -21,6 +21,7 @@
   "audit-live.yml",
   "auto-backup.yml",
   "cmc-runtime-audit.yml",
+  "coffre-arme-sauvegarde.yml",
   "coffre-chaine-privee.yml",
   "coffre-ecritures-cmc.yml",
   "coffre-fiches-privees.yml",

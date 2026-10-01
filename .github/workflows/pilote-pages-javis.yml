@@ -17,6 +17,12 @@ name: Pilote — javis.kd-mc.com servi en statique par Pages (lire / basculer / 
 #                        → route Worker `javis.kd-mc.com/__*` → retire le domaine Worker de javis
 #                        → domaine personnalisé Pages + CNAME → vérifie que la page répond.
 #   revenir   (confirmer=javis) : l'inverse, dans l'ordre inverse (le Worker reprend javis).
+#   publier   (01.10, session javis-bee) : RENVOIE SEULEMENT LES FICHIERS de javis/ au projet Pages
+#                        (aucune route, aucun domaine, aucun DNS). Part TOUT SEUL quand javis/ change sur
+#                        `main` : mesuré le 01.10 08h20 UTC, Bee v1.14 publiée partout (arbre, coffre,
+#                        dépôt public) SAUF javis.kd-mc.com, restée en v1.13 — après « basculer », plus
+#                        rien ne renvoyait les fichiers (Kevin : « Il n'y a pas de sons », le correctif
+#                        était dans la v1.14 non servie).
 #
 # Destination (règle « chaque automatisation a une destination écrite ») : GitHub, au DÉPÔT PUBLIC
 # (minutes illimitées), jeton Cloudflare du dépôt. ZÉRO tâche programmée.
@@ -29,12 +35,18 @@ name: Pilote — javis.kd-mc.com servi en statique par Pages (lire / basculer / 
 # dans wrangler.toml dans la même foulée, sinon le prochain déploiement du routeur perd la route.
 # ─────────────────────────────────────────────────────────────────────────────
 on:
+  # Les FICHIERS seulement (mode publier) quand javis/ change sur main — jamais de DNS ni de route par ce chemin.
+  push:
+    branches: [main]
+    paths:
+      - 'javis/**'
+      - '.github/workflows/pilote-pages-javis.yml'
   workflow_dispatch:
     inputs:
       mode:
-        description: "lire (rien ne change) · essai (adresse neuve javis-statique) · basculer · revenir"
+        description: "lire (rien ne change) · publier (fichiers seulement) · essai (adresse neuve javis-statique) · basculer · revenir"
         type: choice
-        options: [lire, essai, basculer, revenir]
+        options: [lire, publier, essai, basculer, revenir]
         default: lire
       confirmer:
         description: "Écrire « javis » pour essai, basculer ou revenir (garde-fou)"
@@ -68,8 +80,8 @@ jobs:
       - name: Garde-fou — basculer/revenir exigent confirmer=javis
         shell: bash -eo pipefail {0}
         run: |
-          echo "mode=${{ inputs.mode }}"
-          if [ "${{ inputs.mode }}" != "lire" ] && [ "${{ inputs.confirmer }}" != "javis" ]; then
+          echo "mode=${{ inputs.mode || 'publier' }} (événement ${{ github.event_name }})"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" != "lire" ] && [ "${{ inputs.mode }}" != "publier" ] && [ "${{ inputs.confirmer }}" != "javis" ]; then
             echo "::error::mode ${{ inputs.mode }} sans confirmer=javis — rien n'est fait"; exit 1
           fi
           [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::jeton ou compte Cloudflare absent des secrets"; exit 1; }
@@ -95,6 +107,29 @@ jobs:
           DNS=$(j "$CF/zones/$Z/dns_records?name=$HOTE" | node -pe 'const r=JSON.parse(require("fs").readFileSync(0));r.success?((r.result||[]).map(x=>x.type+" "+x.content+" proxied="+x.proxied).join(" | ")||"(aucun enregistrement visible)"):"REFUSÉ: "+JSON.stringify(r.errors)')
           echo "DNS $HOTE : $DNS"; echo "- DNS $HOTE : $DNS" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Pilote javis (lire)::domaine Worker=$WD · DNS=$DNS · Pages=$PP"
+
+      - name: PUBLIER — renvoie les fichiers de javis/ au projet Pages kdmc-javis (ni route, ni domaine, ni DNS)
+        if: github.event_name == 'push' || inputs.mode == 'publier'
+        shell: bash -eo pipefail {0}
+        run: |
+          rm -rf /tmp/javis-pages && mkdir -p /tmp/javis-pages && cp -a javis/. /tmp/javis-pages/
+          cat > /tmp/javis-pages/_headers <<'EOF'
+          /*
+            Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+            X-Content-Type-Options: nosniff
+            X-Frame-Options: DENY
+            Referrer-Policy: strict-origin-when-cross-origin
+            X-Kdmc-Par: statique
+          EOF
+          printf '<!doctype html><meta charset="utf-8"><title>Introuvable</title><p>Cette page n\x27existe pas sur javis.kd-mc.com.</p>\n' > /tmp/javis-pages/404.html
+          V=$(grep -o "JAVIS_VER = '[^']*'" javis/javis-widget.js | head -1)
+          echo "fichiers : $(find /tmp/javis-pages -type f | wc -l) · $V"
+          npm i -g wrangler@3 --no-audit --no-fund >/dev/null 2>&1
+          wrangler pages deploy /tmp/javis-pages --project-name="$PROJET" --branch=main --commit-dirty=true 2>&1 | tail -4
+          sleep 10
+          EN_LIGNE=$(curl -s --max-time 20 "https://$HOTE/javis-widget.js?_v=$(date +%s)" | grep -o "JAVIS_VER = '[^']*'" | head -1 || true)
+          echo "en ligne sur $HOTE : ${EN_LIGNE:-illisible}"
+          if [ "$EN_LIGNE" = "$V" ]; then echo "::notice title=Javis publié::$HOTE sert $V"; else echo "::warning title=Javis publié ?::envoyé $V, lu en ligne « ${EN_LIGNE:-rien} » (cache ? relire dans une minute)"; fi
 
       - name: ESSAI — projet Pages kdmc-javis ← javis/ + adresse NEUVE javis-statique.kd-mc.com (la vraie ne bouge pas)
         if: inputs.mode == 'essai'

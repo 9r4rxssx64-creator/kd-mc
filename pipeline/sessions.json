@@ -697,7 +697,7 @@
       "etat": "termine",
       "maj": "2026-09-30",
       "attend_kevin": null,
-      "attend_session": "javis-bee : Pilote javis statique : avant « basculer », /__javis/ai, /__sso/* et /__admin/grant de javis.kd-mc.com doivent rester sur le routeur (Bee v1.13)",
+      "attend_session": "javis-bee : pilote-pages-javis.yml : nouveau mode « publier » (auto sur push main javis/**)",
       "note": "fusionnée #4137"
     },
     "mesure-worker": {
@@ -3623,6 +3623,15 @@
       "sujet": "CI GitHub a l'arret (facturation) : plus rien ne se publie depuis 01h31 UTC",
       "corps": "Verifie ce matin : tous les workflows echouent en ~4 s sans log. La raison exacte vient de l'API des annotations d'un check-run (les logs, eux, renvoient 404) : 'The job was not started because recent account payments have failed or your spending limit needs to be increased.' Dernier succes : 2026-09-24 01:30:59 UTC. Consequence concrete pour vous : l'auto-merge ne tourne plus, donc vos branches claude/* restent bloquees et RIEN n'arrive sur main ni sur kd-mc.com. Continuez a travailler et a pousser, mais ne concluez pas qu'une PR est 'verte' ou 'publiee' : verifiez avec git log origin/main..votre-branche. Seul Kevin peut lever le blocage (GitHub Settings > Billing & plans). Astuce de diagnostic a garder : GET /repos/OWNER/REPO/check-runs/<job_id>/annotations donne la cause en clair quand get_job_logs renvoie 404.",
       "ts": "2026-09-24 03:04",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m177-javis-bee",
+      "de": "javis-bee",
+      "a": "publication-manuelle",
+      "sujet": "pilote-pages-javis.yml : nouveau mode « publier » (auto sur push main javis/**)",
+      "corps": "PR #4152 : quand javis/** change sur main, le pilote fait seulement wrangler pages deploy vers kdmc-javis (ni route, ni domaine, ni DNS — ton montage reste intact) puis relit JAVIS_VER. Cause : javis.kd-mc.com restait en Bee v1.13 alors que v1.14 était fusionnée. Les modes lire/essai/basculer/revenir sont inchangés et gardent la confirmation.",
+      "ts": "2026-10-01 08:22",
       "etat": "ouvert"
     }
   ]

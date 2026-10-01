@@ -192,6 +192,15 @@ qu'elles sont **gratuites et illimitées sur un dépôt public**.
 **Conséquence** : plus rien ne se déploie ni ne se publie — y compris ce repli d'IBAN, la
 publication du site et la chaîne de pub. C'est le blocage numéro 1.
 
+## 2026-10-01 (08h30 UTC) — javis.kd-mc.com restait en Bee v1.13 : les fichiers Pages ne partaient qu'à la main
+
+Vérification de 08h20 : Lingua v2.129.1 en ligne, routeur + apis redéployés, Bee v1.14 sur l'arbre — mais
+`javis.kd-mc.com` servait encore v1.13. **Cause** : depuis le passage à Pages (30.09), les fichiers de
+`javis/` n'étaient envoyés au projet `kdmc-javis` que par un lancement manuel du pilote. **Fait** : le
+pilote `pilote-pages-javis.yml` part tout seul sur `main` quand `javis/**` change (mode `publier` :
+`wrangler pages deploy`, ni route, ni domaine, ni DNS — le montage reste à la session publication-manuelle),
+puis relit `JAVIS_VER` en ligne. Garde dans `test:javis-bee` (98, sabotage du déclencheur → 1 échec).
+
 ## 2026-10-01 (00h UTC) — « Il n'y a pas de sons » : l'iPhone en mode silencieux ; Bee v1.14, Lingua v2.129.1
 
 Kevin, capture de Bee v1.13 en ligne (01h45) : pas de son, et Bee répond « Bonjour Javi ! ». **Cause 1**

@@ -85,6 +85,12 @@ const REGISTRE = [
   // Regle « LES DOCUMENTS SE METTENT A JOUR TOUT SEULS » (24.09.2026) : garde ecrit et cable
   // le jour meme — un document perime fait echouer la chaine.
   [/LES DOCUMENTS SE METTENT À JOUR TOUT SEULS/i, ['npm:test:maj-tout']],
+  // Ajoutés le 1.10.2026 : trois règles de fin septembre (27 et 30.09) avaient DÉJÀ leurs gardes
+  // dans test:ci (ou le workflow réel), mais pas leur entrée ici → ratchet 19 → 22, test:ci rouge
+  // pour tout le monde. Cinquième fois : règle nouvelle = entrée ICI dans le même commit.
+  [/GRATUIT PAR DÉFAUT/i, ['npm:test:gratuit']],
+  [/TOUT S'OUVRE AUTOMATIQUEMENT/i, ['npm:test:admin-partout', 'npm:test:admin-sans-code', 'npm:test:sso-duree']],
+  [/RÉEL TOUJOURS : RIEN N'EST/i, ['wf:verif-reelle.yml', 'wf:audit-lingua.yml', 'file:tools/ci/plafond-verifs.mjs']],
   [/LISTE DE COMMANDES COMPLÈTE/i, ['file:apex-ai/v13/tests/unit/v13_4_317-commands-completeness.test.ts']],
   [/SÉCURITÉ MAXIMALE PARTOUT/i, ['wf:security-suite.yml', 'npm:test:xss-guard', 'npm:test:ia-key-privacy']],
   [/ARCHITECTURE AUDITÉE EN PREMIER/i, ['npm:test:render-views', 'npm:audit:improvements']],

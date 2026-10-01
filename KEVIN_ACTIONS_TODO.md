@@ -658,6 +658,28 @@ Les deux portes envoient maintenant le même paquet trié : les applications, et
 
 ## 🟠 UNE RÉPONSE SUFFIT — je fais le travail derrière
 
+### 🔐 Firebase, dernier morceau (R6, phase 2c) : « Go » ou « pas maintenant » ? — ajouté le 1.10
+
+**Mesuré le 1.10 à 15h01 UTC** (robot `coffre-lire-verrous-firebase`, lecture seule, run 36880819034) : tous les
+verrous que tu as validés fin septembre sont bien **en ligne** — boutiques (produits, logos, sélection) écrites par
+toi/Lolo seulement, commandes clients illisibles pour un inconnu, planning et réglages CMCteams écrits par l'admin
+seulement, secrets et fiches privées fermés. **Donc le point « boutiques ouvertes » de l'audit du 30.09 était faux**
+(j'avais lu le fichier du dépôt, pas la base en ligne — leçon #381, rectifié dans le rapport).
+
+**Ce qui reste ouvert, et qui demande TA réponse** : un visiteur anonyme (sans être connecté) peut encore écrire
+dans CMCteams les clés que les employés remplissent eux-mêmes — la liste des employés (`cmc_e`), les inscriptions
+(`cmc_reg`), le chat, la présence, les journaux. Les fermer = chaque employé doit avoir un vrai jeton (pas anonyme),
+morceau par morceau, et ça touche la connexion des 260 personnes. Je peux le faire par étapes avec rollback à chaque
+pas (comme pour le planning le 27.09), mais pas sans ton « Go » : si une étape rate, quelqu'un ne peut plus
+s'inscrire ou écrire dans le chat pendant le temps de revenir en arrière.
+- **Réponse A : « Go, phase 2c »** → je commence par le chat et la présence (le moins risqué), un morceau à la fois.
+- **Réponse B : « pas maintenant »** → je laisse tel quel, c'est noté P2 (pas P1).
+- **En plus, sans te demander (mais pas aujourd'hui)** : fermer la **lecture** de ton abonnement push
+  (`/ld_detente/push_sub`, lisible par n'importe qui ; personne ne peut pousser sans la clé privée du worker, mais c'est
+  une donnée à toi). Mesuré : le worker de commandes de La Détente le lit **en anonyme** (`worker-order/worker.js:311`) —
+  il faut d'abord lui donner un jeton du compte de service, sinon plus d'alerte de commande. Je le ferai dans cet ordre,
+  avec preuve que l'alerte passe encore.
+
 Rien à installer, rien à configurer. Tu réponds, je m'occupe du reste.
 
 | # | Ma question | Ce que je fais avec ta réponse |

@@ -23,9 +23,17 @@
   `coffre-lire-verrous-firebase.yml` (coffre, à la main, borné 5 min, `::notice`) ; garde `test:lire-verrous` (9 contrôles,
   sabotage : un PUT glissé → rouge) dans `test:ci`. Robot gardé au coffre (`workflows_prives`) : son résultat liste ce
   qu'un anonyme peut lire.
-- **Ensuite** : lancer le robot, coller le résultat dans ETAT (ligne audit), puis décider R5 (`shops_lock=on` +
-  `orders_read=on`, interrupteurs existants de `deploy-cmcteams-rules.yml`, rollback `off`) avec preuve que l'écriture
-  admin passe encore, et R6 (phase 2c des écritures employés + fournisseur anonyme) — en le disant à Kevin avant.
+- **MESURÉ (run 36880819034, 15h01 UTC, après fusion #4164 — un `workflow_dispatch` n'existe qu'une fois le fichier sur
+  `main` : 404 depuis la branche)** : racine deny · **shops_lock=on · orders_read=on · cmc_admin_lock=on · secrets_lock=on ·
+  ecritures_lock=on** ; produits/logos/sélection/push_sub `.write` = rôle admin ; commandes : écriture anonyme (voulu),
+  lecture anonyme 401 ; lecture anonyme 401 sur /cmcteams, /cmcteams_prive, /cmcteams_secret, /apex, /coffre_vault, /arbre ;
+  200 sur products/logos/selection (catalogue public) et **sur `/ld_detente/push_sub` (abonnement push de Kevin : P3)**.
+- **Conclusion** : R5 était déjà fait en ligne (26-27.09) ; le P1 R6 « tout visiteur peut écrire le planning » est faux
+  depuis le 27.09. L'audit avait lu le fichier, pas la base → leçon #381, rectificatif dans le rapport. Reste : phase 2c
+  des écritures employés (décision Kevin, 🟠) + fermer la lecture de `push_sub`.
+- ⚠️ Fusionner #4164 à 14h59 a **annulé** la chaîne privée de #4163 (run 36879323614 « Canceling since a higher priority
+  waiting request exists ») : la preuve CI du correctif SW vient du run suivant (36880768496, 5d5cdaf) — on ne fusionne
+  pas pendant qu'une chaîne tourne si on veut lire SA preuve.
 
 ## 2026-10-01 (14h50 UTC) — `test:donnees-rh-app` rouge au coffre, vert ici : le navigateur de la CI installe le service worker DE PRODUCTION (leçon #380)
 

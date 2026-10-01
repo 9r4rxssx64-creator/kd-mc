@@ -1,5 +1,17 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (14h30 UTC) — R10 : le robot « Tests E2E + Validation » du public était rouge à chaque push depuis le 27.09 — pour rien
+
+- **Mesuré** (runs kd-mc 36339745592 et 4 autres, tous rouges) : `syntax-check` vérifie `index.html`, qui vit au coffre ;
+  `gardes-depot-public` appelle `test:documents-travail`, que l'export retire depuis le 27.09 → « missing script ».
+  Un rouge permanent cache les vrais rouges (déjà la leçon des 4 robots mis en pause le 27.09).
+- **Fait** : au public, les étapes `index.html` et le job E2E se sautent avec une annotation « au coffre » ; une garde
+  dont le script est absent de la copie publique est signalée « au coffre » et sautée (elle tourne dans
+  `coffre-chaine-privee`). Au coffre, rien ne change.
+- **État de R10** : la chaîne complète tourne bien en deux moitiés — `coffre-chaine-privee` (coffre, à chaque fusion sur
+  main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
+  chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
+
 ## 2026-10-01 (14h45 UTC) — chaîne privée du coffre : rouge sur mes 4 fusions du jour, réparée (v9.932 / light v1.63)
 
 - **Mesuré** (runs coffre 36837694784, 36848131209, 36850989145, 36871768992/36872184393) : `coffre-chaine-privee` rouge

@@ -15,6 +15,8 @@ on:
 
 jobs:
   syntax-check:
+    outputs:
+      present: ${{ steps.prive.outputs.present }}
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
@@ -25,7 +27,15 @@ jobs:
         with:
           node-version: '22'
 
+      # DÉPÔT PUBLIC (mesuré le 1.10.2026) : index.html vit au coffre — ce job rougissait à chaque push
+      # depuis le 27.09 sans rien vérifier. Au public, ces étapes se SAUTENT et le disent ; au coffre,
+      # elles tournent comme avant (le fichier est là).
+      - name: index.html au coffre ? (dépôt public)
+        id: prive
+        run: |
+          if [ -f index.html ]; then echo "present=oui" >> "$GITHUB_OUTPUT"; else echo "present=non" >> "$GITHUB_OUTPUT"; echo "::notice title=index.html::au coffre — la syntaxe et la taille de l'app sont vérifiées là-bas (coffre-chaine-privee)"; fi
       - name: Validate index.html JS syntax
+        if: steps.prive.outputs.present == 'oui'
         run: |
           node -e "
             const fs = require('fs');
@@ -69,6 +79,7 @@ jobs:
           echo "✅ Aucun marqueur de conflit"
 
       - name: Check file sizes (sanity)
+        if: steps.prive.outputs.present == 'oui'
         run: |
           size=$(wc -c < index.html)
           echo "📏 index.html = $size octets ($(($size / 1024)) KB)"
@@ -123,6 +134,12 @@ jobs:
                    test:cuisine-chemin test:redirection-amont \
                    test:depot-relais test:code-admin-a-jour test:memoire-apex \
                    test:lingua-cout test:lingua-tts test:lingua-antonin; do
+            # Mesuré le 1.10.2026 : l'export retire les scripts qui lisent des fichiers privés (test:documents-travail
+            # depuis le 27.09) → « missing script » → job rouge à chaque push, et personne ne lisait pourquoi.
+            # Une garde rangée au coffre n'est pas une garde cassée : on le dit, elle tourne dans coffre-chaine-privee.
+            if ! node -e "process.exit(require('./package.json').scripts['$g'] ? 0 : 1)"; then
+              echo "::notice title=$g::script au coffre (retiré de la copie publique) — tourne dans coffre-chaine-privee"; continue
+            fi
             echo "::group::$g"
             if npm run -s "$g"; then echo "::endgroup::"; else
               echo "::endgroup::"; echo "::error title=$g::garde en échec — voir le groupe $g ci-dessus"; exit 1
@@ -134,6 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     needs: syntax-check
+    if: needs.syntax-check.outputs.present == 'oui'   # l'app vit au coffre : rien à ouvrir au public
     steps:
       - uses: actions/checkout@v6
 

@@ -17,9 +17,10 @@
  * node services/kdmc-router/sonde-sans-ecriture.test.mjs
  */
 import mod from './worker.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { scriptAuCoffre } from '../../tools/depot-public/au-coffre.mjs';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 let ecritures = 0;
@@ -67,6 +68,12 @@ ok(encore.n === 0, 'toujours 0 écriture au passage suivant');
 /* 4. Chaque script de vérification du dépôt pose l'en-tête. */
 const SCRIPTS = ['tools/smoke/audit-live.mjs', 'tools/smoke/audit-lingua.mjs', 'tests/verif-live-rapport.mjs', 'tools/audit/sonde-domaine.mjs', 'tests/verify-rien-de-public.mjs', 'tools/audit/mesure-worker.mjs'];
 for (const f of SCRIPTS) {
+  /* Dépôt coupé en deux (24.09) : trois de ces sondes restent au coffre par règle (regles.json). Dans la
+     copie publique, elles sont ABSENTES mais pas supprimées — le coffre les vérifie. Mesuré le 30.09 à
+     23h38 UTC : ce test, lancé au public par le déploiement du routeur, les comptait « absentes » → rouge,
+     routeur NON déployé (correctifs de l'audit Bee en attente). Au coffre, `scriptAuCoffre` dit toujours
+     non : rien n'y est « ailleurs », une sonde manquante y reste un échec. */
+  if (!existsSync(join(RACINE, f)) && scriptAuCoffre(f)) { console.log(`  ℹ️ ${f} : au coffre (copie publique) — vérifié là-bas`); continue; }
   let src = ''; try { src = readFileSync(join(RACINE, f), 'utf8'); } catch { /* absent = échec ci-dessous */ }
   ok(/x-kdmc-sonde/.test(src), `${f} se déclare comme sonde`);
   /* Dans un navigateur, l'en-tête ne doit partir QUE sur les navigations : posé sur toutes les

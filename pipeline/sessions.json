@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-09-30",
+  "maj": "2026-10-01",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -854,8 +854,19 @@
       "branche": "claude/routeur-javis-route",
       "sujet": "wrangler.toml : javis.kd-mc.com/__* + zone_name au lieu du custom_domain ; version.txt ajouté au paquet publié",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4148, synchro publique 72ea84f ; routeur non déployé (robot rouge depuis l'audit Bee) → suite dans routeur-tests-public"
+    },
+    "routeur-tests-public": {
+      "titre": "Routeur : ses tests au dépôt public (sondes au coffre)",
+      "branche": "claude/routeur-tests-public",
+      "sujet": "déploiement du routeur rouge au public depuis 23h38 (sonde-sans-ecriture cherche 3 sondes privées) → au-coffre.json scripts + scriptAuCoffre",
+      "surfaces": [],
       "etat": "actif",
-      "maj": "2026-09-30",
+      "maj": "2026-10-01",
       "attend_kevin": null,
       "attend_session": null
     }

@@ -17,6 +17,14 @@
 - Pilote : `trap ERR` dans `basculer`/`revenir` (annotation qui nomme la commande) ; en-tête mis à jour.
 - **Reste** : mesure « après » sur le vrai domaine après 00h00 UTC (plafond 2/jour) : attendu javis 1 requête Worker
   sur 3 ; étendre aux autres adresses (CMCteams en dernier) avec avant/après ; R3-R7, R10 de l'audit.
+- **1.10 00h00-00h15 UTC — synchro publique de #4148 (push 72ea84f, dispatch 204) : publication ✅ (2 runs), mais le
+  DÉPLOIEMENT DU ROUTEUR ROUGE** (36793847663, étape « Tests du worker ») — **et déjà rouge à 23h38** (36792129278),
+  donc depuis la synchro de l'audit Bee : son robot lance TOUS les tests du routeur, et `sonde-sans-ecriture.test.mjs`
+  cherche 3 sondes qui restent au coffre par règle. Trouvé en rejouant la boucle sur l'export public en local.
+  Correctif `claude/routeur-tests-public` : `au-coffre.json` porte aussi les `scripts` privés, `scriptAuCoffre()`,
+  le test dit « au coffre, vérifié là-bas » au public et reste strict au coffre (2 sabotages rouges) ; boucle publique
+  40/40 en local. Leçon #370. Lint (index.html absent au public), Bee gardes (depuis le 27.09) et SSO E2E (depuis 13h54)
+  étaient déjà rouges avant — pas touchés ici.
 
 ## 2026-09-30 (23h UTC) — « Le plus complet des audits » de Javis/Bee : 8 auditeurs, 2 contre-audits, Bee v1.13
 

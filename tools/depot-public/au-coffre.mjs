@@ -15,8 +15,12 @@ let LISTE = null;
 function liste() {
   if (LISTE) return LISTE;
   const f = join(RACINE, 'tools/depot-public/au-coffre.json');
-  LISTE = existsSync(f) ? new Set(JSON.parse(readFileSync(f, 'utf8')).workflows || []) : new Set();
+  const j = existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : {};
+  LISTE = { workflows: new Set(j.workflows || []), scripts: new Set(j.scripts || []) };
   return LISTE;
 }
 /** Ce workflow (nom de fichier) vit-il au coffre, alors qu'on est dans le dépôt public ? */
-export const workflowAuCoffre = (nom) => liste().has(basename(nom));
+export const workflowAuCoffre = (nom) => liste().workflows.has(basename(nom));
+/** Ce script (chemin depuis la racine, ex. `tools/audit/sonde-domaine.mjs`) vit-il au coffre ?
+ *  Au coffre même, la réponse est toujours non : rien n'est « ailleurs », tout doit être là. */
+export const scriptAuCoffre = (chemin) => liste().scripts.has(chemin.replace(/^\.\//, ''));

@@ -1,5 +1,22 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (14h00 UTC) — R7 : sauvegarde Firebase refaite et remise en route quotidienne, sans cron GitHub
+
+- **Mesuré** : dernière sauvegarde le 14.08 (robots `firebase-backup` / `auto-backup` en `workflow_dispatch` seul depuis le
+  retrait des crons du 15.08). **Relancée à la main à 13h40 UTC** (run coffre 36870448158 ✅, 1 min 10, archive 5,7 Mo,
+  gardée 30 j → ≈ 170 Mo sur les 500 Mo gratuits).
+- **Chaîne quotidienne** : `services/kdmc-outlook/worker.js` `declencherSauvegarde()` dans le cron (2 h) → au premier tick
+  ≥ 03h UTC, `POST /repos/…/CMCteams/dispatches {event_type: sauvegarde-quotidienne}` ; marque KV `sauvegarde:jour`
+  (1 écriture/jour) ; 401 → nouvel essai au tick suivant ; sans jeton → rien. `firebase-backup.yml` écoute
+  `repository_dispatch` et refuse une archive vide/tronquée (JSON complet, ≥ 1 Ko). Jeton = secret Cloudflare
+  `GITHUB_SAUVEGARDE_TOKEN`, posé par `coffre-arme-sauvegarde.yml` (coffre, à la main, depuis APEX_GITHUB_PAT —
+  le dépôt public n'a pas ce secret et n'en a pas besoin).
+- Garde `tests/verify-sauvegarde-quotidienne.mjs` 15/0 (horloge et fetch simulés, sabotage : sans marque KV → 2 POST,
+  rouge). `verify-actions-conformes` : exception justifiée pour `firebase-backup.yml` (1 run/jour, données de Kevin).
+  Leçon #378.
+- **Reste à lire** : le passage du robot d'armement (après fusion), puis le premier déclenchement automatique le 2.10
+  vers 04h UTC (run `firebase-backup` avec `event: repository_dispatch`).
+
 ## 2026-10-01 (11h30 UTC) — KV MESURÉ : 1 264 écritures avant 10h27, pics la nuit sans robot → le battement de présence ; cadence 10 min
 
 - **Mesure** (run public 36850395794, `mesure-kv.yml`, API Analytics GraphQL — le jeton avait le droit) : espace

@@ -1,5 +1,16 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 💾 Tes données Firebase sont de nouveau sauvegardées chaque jour (1.10.2026, après-midi)
+
+- 📱 **Ce que tu verras** : rien. Chaque nuit, une archive de tes données (plannings, comptes, coffre) est faite et gardée 30 jours au coffre. La dernière datait du 14 août.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `services/kdmc-outlook/worker.js` | **Modifié.** Son réveil de 2 h demande la sauvegarde une fois par jour après 03h UTC. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-outlook/worker.js) |
+| `.github/workflows/firebase-backup.yml` | **Modifié.** Écoute cette demande et vérifie que l'archive est complète. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/firebase-backup.yml) |
+| `.github/workflows/coffre-arme-sauvegarde.yml` | **Nouveau.** Pose une fois le jeton qui permet au worker de parler au coffre. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/coffre-arme-sauvegarde.yml) |
+| `tests/verify-sauvegarde-quotidienne.mjs` | **Nouveau.** 15 contrôles (une fois par jour, refus = nouvel essai, sabotage). `npm run test:sauvegarde-quotidienne`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-sauvegarde-quotidienne.mjs) |
+
 ### ⚖️ Pages légales vraies + mesure des écritures KV (1.10.2026, matin)
 
 - 📱 **Ce que tu verras** : les pages « confidentialité » et « conditions » disent maintenant que l'app est la tienne, à titre personnel, avec ton adresse et la loi en vigueur. Une relecture par un juriste est dans tes actions.

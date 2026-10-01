@@ -316,10 +316,44 @@ export default {
     // Fail-open : un échec ici ne touche jamais la synchro mail ci-dessous.
     const ping = pingUptime(env);
     if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(ping);
+    /* SAUVEGARDE QUOTIDIENNE (audit 30.09.2026, R7 : aucune sauvegarde depuis le 14.08, 47 jours). Ce cron
+       est le seul réveil automatique gratuit qui reste (5 crons max, GitHub sans cron) : au premier passage
+       après 03h UTC, il demande au coffre de lancer `firebase-backup.yml` (repository_dispatch). Une fois par
+       jour, marque dans le KV. Fail-open : jamais la synchro mail ni le ping ne dépendent de ceci. */
+    const sauvegarde = declencherSauvegarde(env).catch(() => ({ fait: false, raison: 'erreur' }));
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(sauvegarde);
     try { await syncOnce(env, { backfill: false }); } catch { /* fail-safe */ }
-    if (!ctx || typeof ctx.waitUntil !== 'function') await ping;
+    if (!ctx || typeof ctx.waitUntil !== 'function') { await ping; await sauvegarde; }
   }
 };
+
+/* ---------- SAUVEGARDE QUOTIDIENNE — déclencheur ---------------------------------------------------
+   Pourquoi ici : la règle « pas de cron sur GitHub » (suspension du 15.08) et les 5 crons gratuits de
+   Cloudflare déjà pris. Ce worker tourne toutes les 2 h ; au premier tick ≥ SAUVEGARDE_HEURE_UTC, il
+   envoie UN `repository_dispatch` au coffre (le dépôt privé, où vivent les données et le secret Firebase).
+   Le jeton GitHub (portée repo) vit en secret Cloudflare `GITHUB_SAUVEGARDE_TOKEN`, posé une fois par le
+   robot du coffre `coffre-arme-sauvegarde.yml` — jamais dans le code, jamais au dépôt public.
+   Garde-fous : 1 écriture KV par jour (`sauvegarde:jour`), aucun déclenchement si le jeton manque, un
+   refus de GitHub ne marque pas le jour (nouvel essai au tick suivant). Testable : `fetchFn` et `maintenant`. */
+export const SAUVEGARDE_DEPOT = '9r4rxssx64-creator/CMCteams';
+export const SAUVEGARDE_EVENEMENT = 'sauvegarde-quotidienne';
+export const SAUVEGARDE_HEURE_UTC = 3;
+export async function declencherSauvegarde(env, maintenant = new Date(), fetchFn = fetch) {
+  const jeton = env && env.GITHUB_SAUVEGARDE_TOKEN;
+  if (!jeton) return { fait: false, raison: 'jeton absent (coffre-arme-sauvegarde.yml pas encore passé)' };
+  if (maintenant.getUTCHours() < SAUVEGARDE_HEURE_UTC) return { fait: false, raison: 'trop tôt' };
+  const jour = maintenant.toISOString().slice(0, 10);
+  const kv = env && env.ACCOUNTS;
+  if (kv) { try { if ((await kv.get('sauvegarde:jour')) === jour) return { fait: false, raison: 'déjà demandée aujourd\'hui' }; } catch { /* fail-open */ } }
+  const r = await fetchFn('https://api.github.com/repos/' + SAUVEGARDE_DEPOT + '/dispatches', {
+    method: 'POST',
+    headers: { authorization: 'Bearer ' + jeton, accept: 'application/vnd.github+json', 'content-type': 'application/json', 'user-agent': 'kdmc-outlook cron (sauvegarde quotidienne)' },
+    body: JSON.stringify({ event_type: SAUVEGARDE_EVENEMENT, client_payload: { jour, origine: 'kdmc-outlook cron' } }),
+  });
+  if (!r || r.status !== 204) return { fait: false, raison: 'GitHub HTTP ' + (r && r.status) };
+  if (kv) { try { await kv.put('sauvegarde:jour', jour, { expirationTtl: 86400 * 3 }); } catch { /* fail-open */ } }
+  return { fait: true, jour };
+}
 
 /* Surveillance du domaine — appelée par le cron ci-dessus (services/kdmc-uptime/wrangler.toml).
    Service Binding UPTIME (wrangler.toml [[services]]) : pas de saut HTTP public ; repli sur

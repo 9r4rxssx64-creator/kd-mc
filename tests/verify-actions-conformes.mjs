@@ -64,7 +64,11 @@ const CONSTRUIT = /npm (run|ci|test)|actions\/setup-node|wrangler(@[\w.]+)? (dep
    (crypto-bot-deploy.yml en faisait partie — supprimé le 2.09, voir règle 3.) */
 /* clayscore-extract-private.yml a été déplacé dans workflows-desactives le
    4.09 (il portait un cron) — l'exception n'a plus d'objet. */
-const TOLERES = new Set();
+/* firebase-backup.yml (1.10.2026, audit R7) : la SAUVEGARDE QUOTIDIENNE des données de Kevin (sa propre base
+   Firebase, pas un site tiers). Elle ne part plus d'un cron GitHub mais d'un `repository_dispatch` envoyé par son
+   propre worker Cloudflare, UNE fois par jour (marque KV, garde test:sauvegarde-quotidienne). Mesuré : 1 run de
+   1 min 10, archive 5,7 Mo — contre ~97 exécutions/jour avant la suspension. Volume borné par construction. */
+const TOLERES = new Set(['firebase-backup.yml']);
 /* La règle ne vise que ce qui peut PARTIR TOUT SEUL. GitHub reprochait un
    VOLUME d'exécutions automatiques (~97/jour) ; un workflow qu'on ne peut
    lancer qu'à la main ne produit aucun volume — il tourne quand un humain

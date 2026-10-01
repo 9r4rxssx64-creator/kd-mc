@@ -909,6 +909,17 @@
       "branche": "claude/kv-cadence-presence",
       "sujet": "mesuré 1 264 écritures/jour avant 10h27 ; whoami 60 s + écriture dès 2 min = 30/h/personne → cadence 10 min",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4158, routeur déployé 10h45 ; après à mesurer le 2.10"
+    },
+    "sauvegarde-quotidienne": {
+      "titre": "R7 : sauvegarde Firebase quotidienne sans cron GitHub",
+      "branche": "claude/sauvegarde-quotidienne",
+      "sujet": "cron Cloudflare kdmc-outlook → repository_dispatch coffre 1/jour → firebase-backup.yml ; sauvegarde refaite le 1.10",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
       "attend_kevin": null,

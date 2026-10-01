@@ -25,6 +25,7 @@
   "coffre-chaine-privee.yml",
   "coffre-ecritures-cmc.yml",
   "coffre-fiches-privees.yml",
+  "coffre-lire-verrous-firebase.yml",
   "coffre-previent-public.yml",
   "coffre-secrets-cmc.yml",
   "coffre-sonde-ce-qui-est-servi.yml",

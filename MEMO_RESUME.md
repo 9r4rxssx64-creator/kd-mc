@@ -12,6 +12,21 @@
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-01 (15h10 UTC) — R5-R6, étape 0 : lire l'état RÉEL des verrous Firebase avant de toucher quoi que ce soit
+
+- **Constat** : l'audit du 30.09 a lu `firebase-rules-apex.json` (le fichier). Mais `tools/firebase/deploy-rules.cjs` applique
+  des verrous par-dessus le fichier au moment de publier (`SHOPS_LOCK`, `ORDERS_READ`, `CMC_ADMIN_LOCK`, `SECRETS_LOCK`,
+  `ECRITURES_LOCK` — ce dernier en ligne depuis le 27.09 : planning + réglages au rôle admin). L'état qui compte est celui
+  de `/.settings/rules.json` en ligne, et personne ne l'avait relu. Mesurer avant d'agir (règle n° 3).
+- **Fait** : `tools/firebase/lire-verrous.cjs` (lecture seule : compte de service → GET des règles → déduction de chaque
+  verrou, même lecture que le mode `keep` de deploy-rules ; + 11 GET anonymes : ce qu'un inconnu lit) ; robot
+  `coffre-lire-verrous-firebase.yml` (coffre, à la main, borné 5 min, `::notice`) ; garde `test:lire-verrous` (9 contrôles,
+  sabotage : un PUT glissé → rouge) dans `test:ci`. Robot gardé au coffre (`workflows_prives`) : son résultat liste ce
+  qu'un anonyme peut lire.
+- **Ensuite** : lancer le robot, coller le résultat dans ETAT (ligne audit), puis décider R5 (`shops_lock=on` +
+  `orders_read=on`, interrupteurs existants de `deploy-cmcteams-rules.yml`, rollback `off`) avec preuve que l'écriture
+  admin passe encore, et R6 (phase 2c des écritures employés + fournisseur anonyme) — en le disant à Kevin avant.
+
 ## 2026-10-01 (14h50 UTC) — `test:donnees-rh-app` rouge au coffre, vert ici : le navigateur de la CI installe le service worker DE PRODUCTION (leçon #380)
 
 - **Mesuré** : run coffre 36874003734 (chaîne privée après #4161, lue comme promis) : rouge sur ce seul test — « 2 chargements

@@ -170,6 +170,20 @@ for (const [cours, base] of Object.entries(ATTENDU)) {
     '6bis. on n\'accuse plus la connexion de Kevin : les 12 belles voix passent par le MÊME serveur, en changer n\'y change rien');
 }
 
+/* 7. iPhone en MODE SILENCIEUX (Kevin 01.10 : « Il n'y a pas de sons ») : la voix passe par le moteur audio,
+      coupé par l'interrupteur silencieux → « lecture voulue » AVANT de créer le moteur ; le micro rend la main */
+{
+  const src = readFileSync('lingua/app.js', 'utf8');
+  const creations = [...src.matchAll(/AC=AC\|\|new\(window\.AudioContext/g)].map((m) => m.index);
+  const avant = (i) => { const deb = src.lastIndexOf('function ', i); return src.slice(deb, i); };
+  const sansLecture = creations.filter((i) => !/_sonLecture\(\)/.test(avant(i)) && !/beeLipSyncStream/.test(avant(i)));
+  chk(/navigator\.audioSession\.type="playback"/.test(src) && creations.length >= 3 && !sansLecture.length,
+    `7. mode silencieux : « lecture voulue » posée avant chaque création du moteur audio (${creations.length} créations, ${sansLecture.length} sans)`);
+  const dict = src.slice(src.indexOf('function dictate('), src.indexOf('function dictate(') + 1200);
+  chk(/_sonEcoute\(\);\s*r\.start\(\)/.test(dict) && /_sonEcoute\(\);\s*return navigator\.mediaDevices\.getUserMedia/.test(src),
+    '7bis. la dictée et l\'appel en direct rendent la session au système avant d\'écouter');
+}
+
 await nav.close();
 R.ko.forEach((m) => console.log('  FAIL ' + m));
 R.ok.forEach((m) => console.log('  OK   ' + m));

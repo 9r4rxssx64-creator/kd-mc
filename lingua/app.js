@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.129.0";
+var APP_VER="v2.129.1";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -884,12 +884,18 @@ function _lsSpeak(text,qi,delay){
   if(coursSignes()) return;
   setTimeout(function(){ if(LESSON&&LESSON.i===qi&&S.sound)speak(text); }, delay||0); }
 var AC=null;
+/* iPhone EN MODE SILENCIEUX (Kevin 01.10 : « Il n'y a pas de sons » — même cause que Bee) : la voix passe par
+   le moteur audio (bouche synchronisée), que l'interrupteur silencieux COUPE sur iPhone. Safari 16.4+ :
+   navigator.audioSession.type='playback' = « lecture voulue », le son sort comme une vidéo. Le micro
+   (dictée, appel en direct) rend la session au système ('auto') le temps d'écouter. */
+function _sonLecture(){ try{ if(navigator.audioSession&&navigator.audioSession.type!=="playback") navigator.audioSession.type="playback"; }catch(_){} }
+function _sonEcoute(){ try{ if(navigator.audioSession&&navigator.audioSession.type==="playback") navigator.audioSession.type="auto"; }catch(_){} }
 /* Contexte audio partagé (récompenses + sons de leçon). Respecte le réglage « son » :
    si Kevin coupe le son, AUCUN bruit ne sort, même pour une récompense. */
 function _ac(){ if(!S.sound)return null;
-  try{ AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+  try{ _sonLecture(); AC=AC||new(window.AudioContext||window.webkitAudioContext)();
     if(AC.state==="suspended"){ try{AC.resume();}catch(_){} } return AC; }catch(_){ return null; } }
-function tone(freqs,dur){ if(!S.sound)return; try{ AC=AC||new(window.AudioContext||window.webkitAudioContext)(); var o=AC.createOscillator(),g=AC.createGain(); o.connect(g);g.connect(AC.destination);o.type="sine";
+function tone(freqs,dur){ if(!S.sound)return; try{ _sonLecture(); AC=AC||new(window.AudioContext||window.webkitAudioContext)(); var o=AC.createOscillator(),g=AC.createGain(); o.connect(g);g.connect(AC.destination);o.type="sine";
   freqs.forEach(function(f,i){ o.frequency.setValueAtTime(f,AC.currentTime+i*0.08); });
   g.gain.setValueAtTime(.14,AC.currentTime); g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur); o.start(); o.stop(AC.currentTime+dur);}catch(e){} }
 function beep(ok){ ok?tone([660,880],.3):tone([200,140],.3); }
@@ -1527,6 +1533,7 @@ function pronDiffSyl(target,heard){ var sy=pronSyllables(target).split("·").fil
    "running". Une fois débloqué, la bouche de Bee peut s'animer sur le VRAI son sans jamais couper le son. */
 function _audioUnlock(){
   try{
+    _sonLecture();
     AC=AC||new(window.AudioContext||window.webkitAudioContext)();
     if(AC.state!=="running"&&AC.resume){ AC.resume(); }
     var b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination);
@@ -2372,6 +2379,7 @@ function discLiveStart(){ if(DISC.live||DISC.liveConnecting)return; var c=coachL
    .then(function(j){
      if(!j||!j.ok||!j.client_secret){ throw new Error("token"); }
      var tok=j.client_secret, model=j.model||"gpt-4o-realtime-preview";
+     _sonEcoute();
      return navigator.mediaDevices.getUserMedia({audio:true}).then(function(mic){
        DISC.liveMic=mic;
        var pc=new RTCPeerConnection(); DISC.livePc=pc;
@@ -2837,7 +2845,7 @@ function _webSpeakLang(text,lang,fem,cfg){ if(!S.sound||!text)return; try{ var u
   var femV=fem?vs.filter(function(v){return /am[eé]lie|audrey|aur[eé]lie|c[eé]line|chantal|julie|marie|virginie|alice|elsa|paulina|monica|petra|anna|female|femme|woman/i.test(v.name);})[0]:null;
   var best=femV||vs.filter(function(v){return v.localService;})[0]||vs[0]; if(best)u.voice=best; _wsSpeak(u);}catch(e){} }
 function _srOk(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
-function dictate(cb,lang){ try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast("Micro non dispo sur ce navigateur"); cb&&cb("",[]); return; } var r=new SR(); r.lang=lang||"fr-FR"; r.interimResults=false; r.maxAlternatives=6; /* 6 hypothèses : le bon mot est souvent dans la 2e/3e */ r.onresult=function(e){ var alts=[]; try{ var res=e.results[0]; for(var i=0;i<res.length;i++){ if(res[i]&&res[i].transcript) alts.push(res[i].transcript); } }catch(_){} cb&&cb(alts[0]||"", alts); }; r.onerror=function(){ cb&&cb("",[]); }; r.start(); toast("🎤 Parle…"); }catch(e){ toast("Micro indisponible"); cb&&cb("",[]); } }
+function dictate(cb,lang){ try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast("Micro non dispo sur ce navigateur"); cb&&cb("",[]); return; } var r=new SR(); r.lang=lang||"fr-FR"; r.interimResults=false; r.maxAlternatives=6; /* 6 hypothèses : le bon mot est souvent dans la 2e/3e */ r.onresult=function(e){ var alts=[]; try{ var res=e.results[0]; for(var i=0;i<res.length;i++){ if(res[i]&&res[i].transcript) alts.push(res[i].transcript); } }catch(_){} cb&&cb(alts[0]||"", alts); }; r.onerror=function(){ cb&&cb("",[]); }; _sonEcoute(); r.start(); toast("🎤 Parle…"); }catch(e){ toast("Micro indisponible"); cb&&cb("",[]); } }
 
 /* ============ LEÇON ============ */
 function startLesson(ui,li,rev){ if(!UNLIMITED && S.hearts<=0){ outOfHearts(); return; }

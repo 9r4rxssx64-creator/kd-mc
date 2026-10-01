@@ -790,6 +790,18 @@ const CGU_TEXTE = 'Un seul compte pour toutes les apps KDMC. Tes informations re
 const SSO_TTL = 30 * 24 * 3600;
 /* Admins du domaine (peuvent voir les fiches clients). uid = slug prénom-nom. */
 const ADMIN_UIDS = ['kdmc_admin', 'kevin-desarzens'];
+/* LE LAISSEZ-PASSER ADMIN VIT 24 H (Kevin 30.09 : « B » — « 24 heures, puis Face ID une fois par jour »).
+   Audit complet Bee 30.09 : le laissez-passer VÉRIFIÉ de l'admin (v=1) valait 30 jours et est rangé dans
+   chaque app installée (localStorage, obligatoire sur iPhone) : une faille dans UNE app du domaine
+   = l'admin de tout le domaine pendant 30 jours. Désormais 24 h pour lui ; les autres comptes gardent
+   30 jours (leur laissez-passer n'ouvre que LEURS données — règle « reconnu auto après 1re connexion »). */
+const SSO_TTL_ADMIN = 24 * 3600;
+function ssoTtl(uid, verified) { return verified && ADMIN_UIDS.indexOf(uid) >= 0 ? SSO_TTL_ADMIN : SSO_TTL; }
+/* la durée du cookie = celle qui reste au laissez-passer qu'il porte (jamais plus longue) */
+function maxAgeDe(token) {
+  try { const d = JSON.parse(b64urlToStr(String(token).split('.')[0])); return Math.max(60, Math.floor(((d.exp || 0) - Date.now()) / 1000)); }
+  catch (_) { return 60; }
+}
 
 function b64url(bytes) {
   let s = '';
@@ -811,7 +823,7 @@ async function ssoSign(secret, uid, name, cgu, verified, codeProuve) {
      auto-asserté). Les apps ne doivent accorder de confiance qu'à v=1. */
   /* k=1 → le CODE du compte a été prouvé au domaine (27.09) : plus que « auto-déclaré », moins
      que Face ID. N'accorde JAMAIS l'admin (seul v=1 le peut). */
-  const p = b64urlStr(JSON.stringify({ u: uid, n: name, c: cgu ? 1 : 0, v: verified ? 1 : 0, k: codeProuve ? 1 : 0, iat: Date.now(), exp: Date.now() + SSO_TTL * 1000 }));
+  const p = b64urlStr(JSON.stringify({ u: uid, n: name, c: cgu ? 1 : 0, v: verified ? 1 : 0, k: codeProuve ? 1 : 0, iat: Date.now(), exp: Date.now() + ssoTtl(uid, verified) * 1000 }));
   return p + '.' + (await ssoHmac(secret, p));
 }
 /* ===== CODE DU COMPTE, VÉRIFIÉ PAR LE DOMAINE (Kevin 2026-09-27) =====
@@ -2460,7 +2472,7 @@ async function handleSso(request, url, env) {
     /* Émet immédiatement une session FORTE (verified) — l'enrôlement prouve Face ID. */
     await enrich(env, request, s.uid, s.name, s.cgu);
     const token = await ssoSign(secret, s.uid, s.name, s.cgu, true);
-    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
+    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, verified: true, token }, cookie);
   }
   if (path === '/__sso/webauthn/auth/options' && request.method === 'POST') {
@@ -2496,7 +2508,7 @@ async function handleSso(request, url, env) {
     const name = (acc && acc.name) || uid;
     await enrich(env, request, uid, name, true);
     const token = await ssoSign(secret, uid, name, true, true);
-    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
+    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, uid, name, verified: true, token }, cookie);
   }
   if (path === '/__sso/issue' && request.method === 'POST') {
@@ -2597,7 +2609,7 @@ async function handleSso(request, url, env) {
     }
     await enrich(env, request, uid, name, cgu, undefined, { origine });
     const token = await ssoSign(secret, uid, name, cgu, false, codeProuve);
-    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
+    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     /* token renvoyé dans le corps : le portail le met dans le lien de retour
        (#kdmc_sso=) pour les apps installées (où le cookie ne traverse pas). */
     /* /issue = identité AUTO-DÉCLARÉE (aucune preuve) → jamais admin/verified ici.
@@ -2634,7 +2646,7 @@ async function handleSso(request, url, env) {
     if (!per.ok) return J({ ok: false, reason: per.raison, hors_perimetre: true, message: 'Ton compte n\'est pas ouvert sur cette application.' });
     await enrich(env, request, acc.uid, acc.name || name, true, undefined, {});
     const token = await ssoSign(secret, acc.uid, acc.name || name, true, false, true);
-    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
+    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, uid: acc.uid, name: acc.name || name, cgu: true, token, admin: false, code: true }, cookie);
   }
   /* ENTRER PAR N'IMPORTE QUELLE PORTE (Kevin 2026-09-27 : « reconnu par n'importe quel chemin sur
@@ -2780,7 +2792,7 @@ async function handleSso(request, url, env) {
     await accPut(env, acc, true);
     /* token frais pour CE device (iat >= revoked_at → survit ; les autres non) */
     const token = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified);
-    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`;
+    const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, token, revoked_at: acc.revoked_at }, cookie);
   }
   return J({ ok: false, reason: 'not_found' });
@@ -2823,10 +2835,14 @@ const BEE_REGLES = "Réponds court, chaleureuse, enjouée, avec le tutoiement, e
   + "Tu n'as AUCUN accès aux données de Kevin (planning, messages, fiches, comptes) et tu ne peux agir sur rien : "
   + "ne prétends jamais avoir fait une action, et n'invente jamais une donnée (un horaire, un planning, un chiffre, une adresse web). "
   + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Si la demande exige une vraie action, dis que c'est Apex qui peut la faire.";
-export const BEE_CARACTERE = "Tu es Bee, l'assistante personnelle de Kevin sur son domaine kd-mc.com (le même personnage que dans son app Lingua). " + BEE_REGLES;
+/* Tu parles TOUJOURS à Kevin (seul lui ouvre Bee), et « Javis » est TON autre nom (Kevin 01.10, capture :
+   « Bonjour Javi » → Bee répondait « Bonjour Javi ! », comme si c'était le prénom de Kevin). */
+const QUI_PARLE = "Tu parles toujours à Kevin : c'est lui, et lui seul, qui t'écrit. Il t'appelle parfois Javis (ou Javi) : c'est ton autre nom, jamais le sien. ";
+export const BEE_CARACTERE = "Tu es Bee, l'assistante personnelle de Kevin sur son domaine kd-mc.com (le même personnage que dans son app Lingua). " + QUI_PARLE + BEE_REGLES;
 /* Bourricot (l'âne, 2e mascotte) : MÊMES règles, autre voix. Avant (audit 30.09), le serveur ignorait le
    choix de mascotte et l'âne répondait « Je suis Bee ». Les règles sont écrites UNE fois. */
 export const BOURRICOT_CARACTERE = "Tu es Bourricot, l'âne malicieux et bon vivant, assistant personnel de Kevin sur son domaine kd-mc.com (l'autre mascotte, à côté de Bee l'abeille). "
+  + "Tu parles toujours à Kevin : c'est lui, et lui seul, qui t'écrit. "
   + BEE_REGLES.replace('chaleureuse, enjouée', 'chaleureux, pince-sans-rire').replace("pas sûre", "pas sûr");
 /* La date du jour à Monaco (audit 30.09 : « quel jour on est ? » partait à une IA qui ne la connaît pas). */
 function dateMonaco(d) {
@@ -2976,7 +2992,7 @@ async function handleAdmin(request, url, env) {
       const nomA = (accA && accA.name) || 'Kevin Desarzens';
       await enrich(env, request, CANON_UID, nomA, true, undefined, {});
       token = await ssoSign(secret, CANON_UID, nomA, true, true);
-      cookies.push(`${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${SSO_TTL}; Secure; HttpOnly; SameSite=Lax`);
+      cookies.push(`${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`);
     }
     return J({ ok: true, grant, token, uid: CANON_UID, admin: true, verified: true }, cookies);
   }

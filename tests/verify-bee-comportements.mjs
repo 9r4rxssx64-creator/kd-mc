@@ -348,6 +348,17 @@ try {
     chk(branche >= 1 && a.length === 2 && /sommeil/.test(der.src) && !der.paused, `moteur audio endormi → un lecteur NEUF dit la phrase (${a.length} lecteurs, ${branche} moteur(s))`);
     await ctx.close(); }
 
+  /* (g bis) iPhone en MODE SILENCIEUX (Kevin 01.10 : « Il n'y a pas de sons ») : la voix passe par le moteur
+            audio, que l'interrupteur silencieux coupe — Bee déclare une LECTURE voulue (audioSession = playback) */
+  { IA.push({ ok: true, text: 'Tu m\'entends ?' });
+    const { ctx, page } = await ouvre(() => { try { Object.defineProperty(navigator, 'audioSession', { value: { type: 'auto' }, configurable: true }); } catch (_) {} });
+    await page.waitForSelector('#javis-launcher');
+    const avant = await page.evaluate(() => navigator.audioSession.type);
+    await page.mouse.click(200, 700); await demande(page, 'son ?'); await dors(900);
+    const apres = await page.evaluate(() => navigator.audioSession.type);
+    chk(avant === 'auto' && apres === 'playback', `mode silencieux : la session audio passe en « lecture » (${avant} → ${apres}), le son sort comme une vidéo`);
+    await ctx.close(); }
+
   /* (h) « Bee arrive… » reste jusqu'au verdict du domaine, puis part ; (i) le dessin préchargé est celui de LA mascotte,
          seulement sur un appareil déjà reconnu */
   { const { ctx, page } = await ouvre(() => { try { localStorage.setItem('kdmc_sso_token', 'x.y'); localStorage.setItem('javis_mascotte', 'donkey'); } catch (_) {} });

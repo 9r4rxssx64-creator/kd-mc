@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (00h UTC) — « Il n'y a pas de sons » : l'iPhone en mode silencieux ; Bee v1.14, Lingua v2.129.1
+
+Kevin, capture de Bee v1.13 en ligne (01h45) : pas de son, et Bee répond « Bonjour Javi ! ». **Cause 1**
+(cloche barrée sur la capture) : la voix passe par Web Audio pour la bouche synchronisée, et iOS rend Web
+Audio muet en mode silencieux. **Fait** : `navigator.audioSession.type='playback'` avant de créer le moteur
+audio (Bee `sonMemeEnSilencieux`, Lingua `_sonLecture`), rendu au système avant le micro. **Cause 2** :
+le caractère ne disait pas que Bee parle toujours à Kevin → `QUI_PARLE` (« Javis/Javi est ton autre nom,
+jamais le sien »). Gardes : test:javis-bee, test:bee-comportements (35), test:lingua-voix §7, bee-ia (52),
+sabotages tués. Leçon #372. **Non vérifiable ici** : le vrai son sur l'iPhone (à confirmer par Kevin après
+publication). À faire ailleurs : Créa Studio a le même montage (`createMediaElementSource`).
+
+## 2026-09-30 (23h50 UTC) — Kevin : « B » → le laissez-passer admin vit 24 h
+
+Suite de l'audit complet de Bee (décision A/B posée dans le rapport). **Fait** : `ssoTtl()` dans
+`services/kdmc-router/worker.js` — laissez-passer VÉRIFIÉ de l'admin 24 h (avant 30 j), cookie aligné sur
+la durée restante du laissez-passer (`maxAgeDe`) ; comptes ordinaires inchangés (30 j). Garde
+`test:sso-duree` (5 contrôles, vrai routeur, 2 sabotages tués), dans `test:ci` ; les 42 tests du routeur
+et 16 suites de connexion (CMCteams, Light, portail, Lingua, Bee) verts. Règle notée dans CLAUDE-HISTOIRE
+(complément de « tout s'ouvre automatiquement ») + ETAT-DU-MOMENT + mémoire compacte. En ligne au prochain
+déploiement du routeur (budget Actions du coffre remis à zéro le 1.10 ; vérification programmée 08h15 UTC).
 ## 2026-10-01 (00h30 UTC) — MESURÉ : javis 3 → 1 requête Worker par ouverture · routeur redéployé · coffre reparti · v9.930 servie
 
 - **Après** (run public `mesure-worker` 36794683653, 00h10 UTC) : **`javis.kd-mc.com` = 3 requêtes, 1 par le Worker (33 %),

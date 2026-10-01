@@ -48,7 +48,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.13';
+  var JAVIS_VER = 'v1.14';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
@@ -582,9 +582,19 @@
 
   /* Petit son (porté de Lingua : tone) — muet si la voix est coupée */
   var AC = null;
+  /* iPhone EN MODE SILENCIEUX (Kevin 01.10 : « Il n'y a pas de sons », capture : cloche barrée).
+     Pour que la bouche suive la voix, le son passe par le moteur audio (Web Audio) — et sur iPhone ce
+     moteur se TAIT quand l'interrupteur est sur silencieux, alors qu'une vidéo ou une musique joue.
+     Safari (16.4+) permet de dire « ceci est une LECTURE voulue » : navigator.audioSession.type =
+     'playback' → le son sort comme une vidéo, silencieux ou pas. Kevin a demandé à entendre Bee :
+     c'est une lecture voulue. Sans cette API (autre navigateur) : rien ne change. */
+  function sonMemeEnSilencieux() {
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (_) {}
+  }
   function tone(freqs, dur) {
     try {
       if (localStorage.getItem(STORAGE_VOICE) === '0') return;
+      sonMemeEnSilencieux();
       AC = AC || new (window.AudioContext || window.webkitAudioContext)();
       var o = AC.createOscillator(), g = AC.createGain();
       o.connect(g); g.connect(AC.destination); o.type = 'sine';
@@ -754,6 +764,7 @@
   /* AC : le moteur audio, déclaré plus haut (avec tone) — une seule déclaration */
   function audioUnlock() {
     try {
+      sonMemeEnSilencieux();   /* AVANT de créer le moteur : iOS fixe la catégorie audio à sa création */
       AC = AC || new (window.AudioContext || window.webkitAudioContext)();
       if (AC.state !== 'running' && AC.resume) AC.resume();
       var b = AC.createBuffer(1, 1, 22050), s = AC.createBufferSource();
@@ -1006,6 +1017,7 @@
     try { on = localStorage.getItem(STORAGE_VOICE) !== '0'; } catch (_) {}
     text = Array.from(aDire(text)).slice(0, 600).join('');
     if (!on || !text) return;
+    sonMemeEnSilencieux();
     voixStop();
     startTalking(root);
 
@@ -1578,6 +1590,9 @@
       mic.addEventListener('click', function () {
         if (mic.classList.contains('on')) { try { rec.stop(); } catch (_) {} return; }
         try {
+          /* le micro a besoin d'une session « écoute » : la session « lecture » (mode silencieux) est
+             rendue au système le temps de la dictée, et reprise à la prochaine phrase de Bee */
+          try { if (navigator.audioSession && navigator.audioSession.type === 'playback') navigator.audioSession.type = 'auto'; } catch (_) {}
           rec.start(); mic.classList.add('on'); mic.setAttribute('aria-pressed', 'true');
           /* jamais un micro allumé pour rien : arrêt tout seul au bout de 10 s */
           micMinuteur = setTimeout(function () { try { rec.stop(); } catch (_) {} micOff(); }, 10000);

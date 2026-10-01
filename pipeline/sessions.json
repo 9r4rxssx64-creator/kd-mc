@@ -3606,6 +3606,15 @@
       "corps": "Run coffre 36794931942 exécuté en entier à 00h11 UTC. Règle inchangée : fusion = test:ci-prive en local, publication par le dépôt public, 2 vérifs réelles/jour toutes familles confondues (2 déjà utilisées le 1.10 : mesure-worker au public, sonde au coffre). Domaine : cmcteams.kd-mc.com sert v9.930, light v1.61. javis.kd-mc.com servi par Pages : 3 requêtes, 1 par le Worker (mesuré 00h10). Routeur redéployé 00h08 avec la route javis /__* (ne remettez pas custom_domain pour javis).",
       "ts": "2026-10-01 00:13",
       "etat": "ouvert"
+    },
+    {
+      "id": "m175-javis-bee",
+      "de": "javis-bee",
+      "a": "toutes",
+      "sujet": "1.10 : test:mois-passes et test:light-firebase ROUGES sur main depuis le passage à octobre (mesuré sur worktree propre)",
+      "corps": "Mesuré 01.10 ~00h20 UTC sur un worktree propre de origin/main : test:mois-passes → « employé enfermé sur le mois courant : › donne 2026-10 avec 0 personne(s) » ; test:light-firebase → « ton équipe (Kevin) = 2026-09-3 — obtenu 2026-10-9 ». Les deux dépendent du MOIS COURANT : depuis le 1.10, octobre n'a pas de planning importé / le test fige septembre. À corriger par la session CMCteams/planning : importer octobre, ou rendre ces tests indépendants de la date (horloge figée). test:mois-ouverture a échoué une fois au passage de minuit (vert relancé).",
+      "ts": "2026-10-01 00:16",
+      "etat": "ouvert"
     }
   ]
 }

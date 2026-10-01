@@ -3340,6 +3340,15 @@ derrière le Worker), `test:sonde-domaine` et la sonde des 31 adresses de `deplo
 
 > **« Moi tout s'ouvre automatiquement : fiches privées, chaque app, domaine, etc. »** — puis **« Note le »** — Kevin 2026-09-27
 
+> **Complément du 30.09.2026 — « B » (Kevin) : le laissez-passer admin vit 24 heures, puis Face ID une fois
+> par jour.** Question posée après l'audit complet de Bee (le laissez-passer VÉRIFIÉ de l'admin valait
+> 30 jours et est rangé dans chaque app installée : une faille dans UNE app = l'admin du domaine pendant
+> 30 jours). A = garder 30 jours, B = 24 h puis Face ID une fois par jour → **Kevin a répondu « B »**.
+> Donc : « tout s'ouvre automatiquement » reste vrai **dans la journée** ; une fois par jour, Face ID (un
+> geste) rouvre tout. Les autres comptes gardent 30 jours (leur laissez-passer n'ouvre que leurs données).
+> Code : `ssoTtl()` / `SSO_TTL_ADMIN` dans `services/kdmc-router/worker.js` ; garde `npm run test:sso-duree`
+> (prouvée par sabotage). **Ne jamais remonter à 30 jours sans que Kevin le redemande.**
+
 ### 1. Mesuré avant (le 27.09, relevé m149)
 
 Neuf portes redemandaient un code à Kevin alors que le domaine tenait déjà sa session **vérifiée admin** :

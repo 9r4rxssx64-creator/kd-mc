@@ -92,6 +92,8 @@ const kevin = signe('kdmc_admin', 1);
   ok(appels.every((m) => /Nous sommes le [a-zéû]+ \d{1,2} [a-zéû]+ 20\d\d/.test(m[0].content)), 'Bee connaît la date du jour (heure de Monaco)  [' + String(appels[0] && appels[0][0].content).slice(-70) + ']');
   ok(appels.length === 1, '1 SEUL appel modèle par question (avant : 4 à 7 — analyse à 3 voix + conseil)  [' + appels.length + ']');
   ok(/n'invente jamais/.test(BEE_CARACTERE) && /ne prétends jamais avoir fait/.test(BEE_CARACTERE) && /tutoiement/.test(BEE_CARACTERE), 'le caractère dit : tutoiement, ne jamais prétendre avoir agi, ne jamais inventer'); }
+{ ok(/Tu parles toujours à Kevin/.test(BEE_CARACTERE) && /Javis \(ou Javi\) : c'est ton autre nom, jamais le sien/.test(BEE_CARACTERE) && /Tu parles toujours à Kevin/.test(BOURRICOT_CARACTERE),
+    'Bee sait qu\'elle parle à Kevin et que « Javis/Javi » est SON nom (capture Kevin 01.10 : « Bonjour Javi ! »)'); }
 { const r = await bee({ 'x-kdmc-admin': signe('__kdmc_admin__', 1) }); ok(r.st === 200 && appels.length >= 1, 'Kevin avec le code admin → Bee répond aussi  [' + r.st + ']'); }
 { const r = await bee({ 'x-kdmc-sso': kevin }, null, { hote: 'https://arbre.kd-mc.com' }); ok(r.st === 200, 'même cerveau depuis l\'arbre (Bee y vit aussi)  [' + r.st + ']'); }
 

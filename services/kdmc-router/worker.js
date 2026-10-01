@@ -13,6 +13,8 @@ import { mintShopsAdminIdToken } from './fb-token.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { routeText, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
+/* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
+import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
 
 /* D'où viennent les pages. Historiquement GitHub Pages — mais le dépôt est
    PRIVÉ depuis le 23/09/2026 (« que personne ne voie mon code ») et GitHub
@@ -495,6 +497,9 @@ const ROUTEUR = {
       const cheminCMC = p.startsWith(PAGES_PREFIX_DEFAUT + '/') ? p : (p === '/' || p === '' ? base + '/' : base + p);
       const ferme = await porteFermee(request, url, env, cheminCMC);
       if (ferme) return ferme;
+      /* DONNÉES RH (audit 30.09, P0-3) : 291 noms + plannings ne sortent qu'à une personne reconnue. */
+      const rh = await donneesRhFermees(request, env, cheminCMC);
+      if (rh) return rh;
     }
 
     // Livre de cuisine « A Cüjina de Mùnegu » aussi accessible en CHEMIN du domaine
@@ -1292,6 +1297,41 @@ async function porteFermee(request, url, env, cheminCMC) {
   if (estUnePage(request)) return portePage(g, url);
   return new Response('Connexion au domaine requise.', { status: 401,
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
+}
+/* ===== DONNÉES RH NOMINATIVES (audit complet du 30.09.2026, P0-3 / R3) ==========================
+   Mesuré : `tools/departs/boards-gen.js` (291 noms + plannings), `planning-seed.js`, `seances-seed.js`
+   (154 personnes) étaient servis à QUICONQUE connaissait l'adresse — les apps les chargent par
+   <script> avant toute connexion. Ici : sans session du domaine (cookie, Bearer, x-kdmc-sso, ?t=),
+   401 + `x-kdmc-porte: fiche` ; les apps (CMCteams v9.931, light v1.62) se font reconnaître à la
+   connexion puis se rechargent UNE fois. Avec session non révoquée et non bloquée sur CMCteams :
+   on sert la copie déposée dans le KV par la publication (clé `fichier:<chemin>`), et si elle n'y
+   est pas encore, on laisse l'hébergeur répondre (le fichier y reste jusqu'à l'étape B du chantier).
+   Pas de « fail-open » sur le secret : comme les portes « fiche », un domaine sans KDMC_SSO_SECRET
+   (tests) reste ouvert — en production le secret est injecté à chaque déploiement.
+   Les fichiers d'installation (manifest, sw, icônes) ne sont pas dans la liste : rien de nominatif. */
+async function donneesRhFermees(request, env, cheminCMC) {
+  const c = cheminNormal(cheminCMC);
+  if (!DONNEES_RH_NORMALISEES.has(c)) return null;
+  const secret = env && env.KDMC_SSO_SECRET;
+  if (!secret) return null;
+  const refus = () => new Response('Connexion au domaine requise.', { status: 401,
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche', 'x-kdmc-donnees': 'rh' } });
+  const s = await ssoVerify(secret, ssoToken(request));
+  if (!s || !s.uid) return refus();
+  const acc = await accGet(env, s.uid);
+  if (revoked(acc, s)) return refus();
+  const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
+  if (!estAdmin && !perimetre(acc, 'cmcteams').ok) return refus();  /* bloqué sur CMCteams par l'admin : pas de planning */
+  if (env.ACCOUNTS && typeof env.ACCOUNTS.get === 'function') {
+    let corps = null;
+    try { corps = await env.ACCOUNTS.get(cleKV(c), { type: 'stream', cacheTtl: 300 }); } catch { corps = null; }
+    if (corps) {
+      return new Response(request.method === 'HEAD' ? null : corps, { status: 200,
+        headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'private, no-cache',
+          'x-content-type-options': 'nosniff', 'x-kdmc-donnees': 'rh-kv' } });
+    }
+  }
+  return null;                                                 /* reconnu, KV vide : l'hébergeur répond */
 }
 /* PORTE « FICHE » SANS QUITTER L'APP (Kevin 27.09 : « Quand je clique sur l'app de l'écran
    d'accueil j'atterris sur CMCteams ! »).

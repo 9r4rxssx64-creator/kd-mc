@@ -161,6 +161,7 @@
   "tests/verify-departs-integrity.mjs",
   "tests/verify-documents-travail-parite.mjs",
   "tests/verify-donnees-a-jour.mjs",
+  "tests/verify-donnees-rh-app.mjs",
   "tests/verify-ecritures-cmc.mjs",
   "tests/verify-entetes-light.mjs",
   "tests/verify-equipe-miroir-employes.mjs",

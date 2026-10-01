@@ -1,5 +1,21 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔒 Les noms et plannings de tes 291 collègues ne sortent plus sans connexion (1.10.2026, nuit)
+
+- 📱 **Ce que tu verras** : rien de nouveau. Sur un téléphone où l'app n'était pas encore reconnue, la page se recharge une fois toute seule juste après la connexion — c'est le moment où elle reçoit les plannings.
+- 🔐 **Ce qui change** : les trois fichiers qui portent les noms et les plannings ne sont plus donnés à n'importe qui ; seul un téléphone reconnu par le domaine les reçoit.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `services/kdmc-router/donnees-rh.js` | **Nouveau.** La liste unique des 4 fichiers nominatifs (routeur, publication, paquet la lisent). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/donnees-rh.js) |
+| `services/kdmc-router/worker.js` | **Modifié.** `donneesRhFermees` : 401 sans session, sinon la copie du KV. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `services/kdmc-router/donnees-rh.test.mjs` | **Nouveau.** 27 contrôles du routeur (sabotage : 19 rouges). `npm run test:donnees-rh`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/donnees-rh.test.mjs) |
+| `tests/verify-donnees-rh-app.mjs` | **Nouveau.** Les deux apps dans un vrai navigateur avec le vrai routeur : 12 contrôles, sabotage prouvé. `npm run test:donnees-rh-app`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-donnees-rh-app.mjs) |
+| `index.html` | **Modifié (v9.931).** Se recharge une fois dès que le domaine la reconnaît, si ses données manquaient. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/index.html) |
+| `tools/departs/index.html` | **Modifié (light v1.62).** Même mécanisme. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/departs/index.html) |
+| `.github/workflows/publier-site-prive.yml` | **Modifié.** Dépose les 4 fichiers dans le KV du routeur à chaque publication, taille vérifiée. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/publier-site-prive.yml) |
+| `tools/audit/sonde-ressources-app.mjs` | **Modifié.** Reconnaît la porte (401 + x-kdmc-porte) au lieu de rougir le déploiement. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/sonde-ressources-app.mjs) |
+
 ### 🐝 Audit complet de Bee : 8 auditeurs + 2 contre-audits, Bee v1.13 (30.09.2026, soir)
 
 - 📊 **Le rapport** (notes avant → après, plan, la décision qui t'attend) : [Audit complet de Bee](https://claude.ai/artifact/5ontF6hhp6N8ZDxtis3twt)

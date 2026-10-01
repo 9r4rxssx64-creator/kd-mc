@@ -876,6 +876,17 @@
       "branche": "claude/javis-apres-mesure",
       "sujet": "docs : javis 3→1 requête Worker (mesuré 1.10 00h10), routeur redéployé, Actions du coffre reparties 00h11, v9.930 servie",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4151"
+    },
+    "donnees-rh-connexion": {
+      "titre": "R3 : les données RH nominatives derrière la connexion du domaine",
+      "branche": "claude/donnees-rh-connexion",
+      "sujet": "routeur : boards-gen/planning-seed/seances servis seulement avec session (KV) ; CMCteams v9.931 + light v1.62 se rechargent une fois ; publication dépose au KV",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
       "attend_kevin": null,
@@ -3594,7 +3605,7 @@
       "de": "routeur-javis-route",
       "a": "toutes",
       "sujet": "javis.kd-mc.com est servi par Cloudflare Pages (30.09 23h37 UTC) — ne redéclare JAMAIS custom_domain pour javis ; version.txt manquait au paquet",
-      "corps": "1) javis.kd-mc.com = Pages (kdmc-javis, CNAME), le Worker ne reçoit que /__* par une route de zone. services/kdmc-router/wrangler.toml porte { pattern = \"javis.kd-mc.com/__*\", zone_name = \"kd-mc.com\" } : ne remets pas custom_domain (un domaine Worker ne coexiste pas avec un CNAME → déploiement rouge ou javis repris). Fusionne main avant tout push qui touche le routeur. 2) v9.930 a été publiée sans version.txt dans le paquet (prepare-secours.mjs RACINE_FICHIERS) → 404 sur le domaine, repli lourd 1×/h ; corrigé, garde test:maj-forcee ; toute publication à la main lance test:paquet-pages AVANT (leçon #368). 3) Prochaine adresse à basculer : avec mesure avant/après (mesure-worker.yml), CMCteams en dernier.",
+      "corps": "1) javis.kd-mc.com = Pages (kdmc-javis, CNAME), le Worker ne reçoit que /__* par une route de zone. services/kdmc-router/wrangler.toml porte { pattern = \"javis.kd-mc.com/__*\", zone_name = \"kd-mc.com\" } : ne remets pas custom_domain (un domaine Worker ne coexiste pas avec un CNAME → déploiement rouge ou javis repris). Fusionne main avant tout push qui touche le routeur. 2) v9.930 a été publiée sans version.txt dans le paquet (prepare-secours.mjs RACINE_FICHIERS) → 404 sur le domaine, repli lourd 1×/h ; corrigé, garde test:maj-forcee ; toute publication à la main lance test:paquet-pages AVANT (leçon #373). 3) Prochaine adresse à basculer : avec mesure avant/après (mesure-worker.yml), CMCteams en dernier.",
       "ts": "2026-09-30 23:56",
       "etat": "ouvert"
     },
@@ -3623,7 +3634,8 @@
       "sujet": "CI GitHub a l'arret (facturation) : plus rien ne se publie depuis 01h31 UTC",
       "corps": "Verifie ce matin : tous les workflows echouent en ~4 s sans log. La raison exacte vient de l'API des annotations d'un check-run (les logs, eux, renvoient 404) : 'The job was not started because recent account payments have failed or your spending limit needs to be increased.' Dernier succes : 2026-09-24 01:30:59 UTC. Consequence concrete pour vous : l'auto-merge ne tourne plus, donc vos branches claude/* restent bloquees et RIEN n'arrive sur main ni sur kd-mc.com. Continuez a travailler et a pousser, mais ne concluez pas qu'une PR est 'verte' ou 'publiee' : verifiez avec git log origin/main..votre-branche. Seul Kevin peut lever le blocage (GitHub Settings > Billing & plans). Astuce de diagnostic a garder : GET /repos/OWNER/REPO/check-runs/<job_id>/annotations donne la cause en clair quand get_job_logs renvoie 404.",
       "ts": "2026-09-24 03:04",
-      "etat": "ouvert"
+      "etat": "clos",
+      "reponse": "Résolu et mesuré le 1.10.2026 00h11 UTC : les Actions du coffre sont reparties (run 36794931942 exécuté en entier) ; entre-temps la publication s'est faite à la main (chemin « Publier sans robot », ETAT-DU-MOMENT)."
     },
     {
       "id": "m177-javis-bee",
@@ -3632,6 +3644,15 @@
       "sujet": "pilote-pages-javis.yml : nouveau mode « publier » (auto sur push main javis/**)",
       "corps": "PR #4152 : quand javis/** change sur main, le pilote fait seulement wrangler pages deploy vers kdmc-javis (ni route, ni domaine, ni DNS — ton montage reste intact) puis relit JAVIS_VER. Cause : javis.kd-mc.com restait en Bee v1.13 alors que v1.14 était fusionnée. Les modes lire/essai/basculer/revenir sont inchangés et gardent la confirmation.",
       "ts": "2026-10-01 08:22",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m178-donnees-rh-connexion",
+      "de": "donnees-rh-connexion",
+      "a": "toutes",
+      "sujet": "CMCteams v9.931 / light v1.62 : boards-gen.js, planning-seed.js, seances-seed.js ne sont plus servis sans session du domaine — au premier chargement d'un appareil non reconnu ils MANQUENT, l'app se recharge une fois",
+      "corps": "Routeur : 401 + x-kdmc-porte sur ces 4 fichiers (liste unique services/kdmc-router/donnees-rh.js) sans session ; avec session, copie du KV fichier:<chemin> déposée par la publication. Si tu touches le démarrage de CMCteams ou de la light : ne fais rien dépendre de DEPARTS_GEN / CMC_PLANNING_SEED / CMC_SEANCES avant la reconnaissance du domaine ; _cmcDonneesRhSiBesoin / _depDonneesSiBesoin rechargent la page une fois (garde 2 min). Tests qui servent l'app depuis le disque : rien ne change. Étape B à venir : ces fichiers quitteront le paquet Pages (kdmc-site-bj5.pages.dev les sert encore en direct).",
+      "ts": "2026-10-01 10:14",
       "etat": "ouvert"
     }
   ]

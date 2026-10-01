@@ -1,5 +1,26 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (01h30 UTC) — R3 (P0-3) étape A : les 291 noms + plannings ne sortent plus sans connexion — CMCteams v9.931, light v1.62, routeur
+
+- **Trou mesuré** : `boards-gen.js` (499 Ko, 291 noms + plannings), `planning-seed.js` (544 Ko), `seances-seed.js` (154 personnes)
+  chargés par `<script>` avant toute connexion, servis à quiconque — ET aussi en direct par `kdmc-site-bj5.pages.dev` (hors routeur).
+- **Routeur** : `donnees-rh.js` (liste unique, 4 fichiers) ; `donneesRhFermees` : sans session → 401 + `x-kdmc-porte: fiche` +
+  `x-kdmc-donnees: rh` ; session non révoquée, non bloquée sur CMCteams (ou admin vérifié) → copie du KV `fichier:<chemin>`
+  (`text/javascript`, `private, no-cache`), KV vide → l'hébergeur répond. Garde `donnees-rh.test.mjs` 27/0 (tourne aussi
+  au public), sabotage : 19 rouges.
+- **Apps** : CMCteams v9.931 `_cmcDonneesRhSiBesoin()` (après déclaration, quand le domaine nous connaît déjà, et 2,5 s après
+  le démarrage) : whoami → `POST /__sso/cookie` avec le pass gardé → `location.reload()` une fois (garde 2 min en
+  sessionStorage). Light v1.62 `_depDonneesSiBesoin()` (portillon, Face ID, admin, rattrapage, démarrage). Garde
+  `tests/verify-donnees-rh-app.mjs` **12/0 en vrai Chromium avec le VRAI routeur** : appareil inconnu (401 ×3, écran de
+  connexion, 0 recharge), connexion par code → 1 recharge → données présentes, app installée sans cookie (pass gardé) →
+  cookie reposé → 1 recharge, light rattrapage → 1 recharge, anti-boucle (hébergeur en 500 → ≤ 1 recharge), sabotage.
+- **Publication** (`publier-site-prive.yml`) : étape « Données RH → KV du routeur » avant le paquet, production seulement,
+  taille relue = taille du fichier sinon arrêt. **Le paquet garde encore les fichiers** (étape B après lecture de A en
+  ligne — sinon 260 personnes sans planning le temps du déploiement). `sonde-ressources-app.mjs` reconnaît la porte.
+- Leçon #376 ; mes leçons #368-370 renumérotées #373-375 (collision avec la session Bee, fusion union).
+- **Reste** : lire le déploiement (routeur + publication au public), puis PR B (paquet sans les fichiers, sonde-fuite les
+  interdit, verify-paquet-pages les sert depuis le dépôt), puis R4-R7.
+
 ## 2026-10-01 — Les minutes GitHub sont revenues : ma branche rattrapée
 
 - Les robots GitHub retournent depuis la nuit (runs du 1.10 à 00h16 en succès).
@@ -240,7 +261,7 @@ déploiement du routeur (budget Actions du coffre remis à zéro le 1.10 ; véri
 
 - **Kevin a donné Zone→DNS→Edit au jeton « Edit Cloudflare Workers » (23h30 UTC)** ; `lire` : DNS lisible (AAAA `100::`
   du domaine Worker). **`basculer` 1er passage : ROUGE dans l'étape DNS** après le retrait du domaine Worker et avant le
-  CNAME → javis noir ~4 min, journal illisible d'ici (leçon #369). **2e passage : ✅** — `javis.kd-mc.com` = Pages
+  CNAME → javis noir ~4 min, journal illisible d'ici (leçon #374). **2e passage : ✅** — `javis.kd-mc.com` = Pages
   (`x-kdmc-par: statique`), `/__sso/whoami` = Worker (200), CNAME → `kdmc-javis.pages.dev`.
 - **Routeur** (`claude/routeur-javis-route`) : `wrangler.toml` → `{ pattern = "javis.kd-mc.com/__*", zone_name = "kd-mc.com" }`
   à la place du `custom_domain` (sinon le prochain déploiement redéclare un domaine Worker par-dessus le CNAME).
@@ -248,7 +269,7 @@ déploiement du routeur (budget Actions du coffre remis à zéro le 1.10 ; véri
 - **Trouvé en passant, PAS VU AVANT LA PUBLICATION de v9.930** : `test:paquet-pages` → « fichier manquant :
   /version.txt » — `prepare-secours.mjs` ne mettait pas `version.txt` à la racine du paquet, donc le domaine répond 404
   à la sonde « 6 octets » et l'app retombe sur la sonde lourde 1×/h. Corrigé (`RACINE_FICHIERS`), garde dans
-  `test:maj-forcee` (sabotage rouge), paquet refabriqué 723 fichiers, `test:paquet-pages` 85/0. Leçon #368.
+  `test:maj-forcee` (sabotage rouge), paquet refabriqué 723 fichiers, `test:paquet-pages` 85/0. Leçon #373.
   **À republier** (chemin « Publier sans robot ») pour que le domaine serve `version.txt`.
 - Pilote : `trap ERR` dans `basculer`/`revenir` (annotation qui nomme la commande) ; en-tête mis à jour.
 - **Reste** : mesure « après » sur le vrai domaine après 00h00 UTC (plafond 2/jour) : attendu javis 1 requête Worker
@@ -259,7 +280,7 @@ déploiement du routeur (budget Actions du coffre remis à zéro le 1.10 ; véri
   cherche 3 sondes qui restent au coffre par règle. Trouvé en rejouant la boucle sur l'export public en local.
   Correctif `claude/routeur-tests-public` : `au-coffre.json` porte aussi les `scripts` privés, `scriptAuCoffre()`,
   le test dit « au coffre, vérifié là-bas » au public et reste strict au coffre (2 sabotages rouges) ; boucle publique
-  40/40 en local. Leçon #370. Lint (index.html absent au public), Bee gardes (depuis le 27.09) et SSO E2E (depuis 13h54)
+  40/40 en local. Leçon #375. Lint (index.html absent au public), Bee gardes (depuis le 27.09) et SSO E2E (depuis 13h54)
   étaient déjà rouges avant — pas touchés ici.
 
 ## 2026-09-30 (23h UTC) — « Le plus complet des audits » de Javis/Bee : 8 auditeurs, 2 contre-audits, Bee v1.13

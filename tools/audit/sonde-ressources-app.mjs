@@ -42,8 +42,13 @@ for (const c of CIBLES) {
     /* Le repli de l'hébergeur renvoie la page d'accueil : du HTML, code 200.
        C'est LE cas qu'on veut attraper — un 200 ne suffit donc jamais. */
     const estHtml = /<(!doctype|html)\b/i.test(t.slice(0, 400));
-    const bon = r.status === 200 && !estHtml && c.attendu.test(t);
-    res.push({ ...c, http: r.status, octets: t.length, estHtml, bon });
+    /* Audit 30.09 (P0-3 / R3) : les fichiers RH nominatifs (boards-gen, planning-seed, seances) ne
+       sortent plus qu'à une personne reconnue. Une sonde n'a pas de session : la bonne réponse pour
+       elle est 401 + x-kdmc-porte (le routeur connaît le fichier et le garde). Le contenu lui-même
+       est vérifié par la publication (taille relue dans le KV) et par tests/verify-donnees-rh-app.mjs. */
+    const porte = r.status === 401 && !!r.headers.get('x-kdmc-porte') && r.headers.get('x-kdmc-donnees') === 'rh';
+    const bon = porte || (r.status === 200 && !estHtml && c.attendu.test(t));
+    res.push({ ...c, http: r.status, octets: t.length, estHtml, porte, bon });
   } catch (e) {
     res.push({ ...c, http: 0, octets: 0, erreur: String(e.message).slice(0, 50), bon: false });
   }
@@ -52,7 +57,8 @@ for (const c of CIBLES) {
 console.log('ce que la page charge          HTTP    taille   verdict');
 console.log('──────────────────────────────────────────────────────────────');
 for (const r of res) {
-  const v = r.bon ? '✅ vrai fichier de données'
+  const v = r.porte ? '🔒 derrière la connexion du domaine (401 + x-kdmc-porte, routeur)'
+    : r.bon ? '✅ vrai fichier de données'
     : r.estHtml ? '❌ page d\'accueil renvoyée à la place (repli hébergeur)'
       : r.http === 200 ? '❌ servi, mais le contenu attendu est absent'
         : `❌ HTTP ${r.http}${r.erreur ? ' — ' + r.erreur : ''}`;
@@ -65,7 +71,7 @@ const ko = res.filter((r) => !r.bon);
    caractères). Une vraie panne du site serait PARTIELLE, ou renverrait un 200
    avec la page d'accueil. « Pas une seule réponse 200 » = c'est le réseau
    d'ici, pas kd-mc.com. */
-if (res.every((r) => r.http !== 200)) {
+if (res.every((r) => r.http !== 200 && !r.porte)) {
   console.log('\n⚠️  aucune adresse n\'a répondu 200 : c\'est le réseau d\'ici, pas le site.');
   console.log('   Relancer depuis un runner CI (réseau ouvert) avant de conclure.');
   process.exit(2);

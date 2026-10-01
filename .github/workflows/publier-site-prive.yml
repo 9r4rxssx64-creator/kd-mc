@@ -159,10 +159,11 @@ jobs:
             [ -s "$FICHIER" ] || { echo "::error::$FICHIER absent ou vide — les fichiers privés ne sont pas arrivés dans l'espace de travail"; exit 1; }
             ATTENDU=$(wc -c < "$FICHIER")
             if ! SORTIE=$(wrangler kv key put --namespace-id="$NS" "$CLE" --path="$FICHIER" 2>&1); then
-              echo "::error title=Données RH → KV::put $CLE a échoué : $(printf '%s' "$SORTIE" | tr '\n' ' ' | cut -c1-600)"; exit 1
+              # sans les couleurs ni le rappel de version de wrangler : le message d'erreur lui-même, en entier
+              echo "::error title=Données RH → KV::put $CLE a échoué : $(printf '%s' "$SORTIE" | sed 's/\x1b\[[0-9;]*m//g' | grep -v 'out-of-date\|update available\|npm install\|npx wrangler\|^-*$' | tr '\n' ' ' | cut -c1-1800)"; exit 1
             fi
             if ! wrangler kv key get --namespace-id="$NS" "$CLE" > /tmp/relu 2>/tmp/relu.err; then
-              echo "::error title=Données RH → KV::get $CLE a échoué : $(tr '\n' ' ' < /tmp/relu.err | cut -c1-600)"; exit 1
+              echo "::error title=Données RH → KV::get $CLE a échoué : $(sed 's/\x1b\[[0-9;]*m//g' /tmp/relu.err | tr '\n' ' ' | cut -c1-1800)"; exit 1
             fi
             RELU=$(wc -c < /tmp/relu)
             if [ "$RELU" -lt "$ATTENDU" ] || [ "$RELU" -gt $((ATTENDU + 1)) ]; then echo "::error::$CLE : relu $RELU octets, attendu $ATTENDU"; exit 1; fi

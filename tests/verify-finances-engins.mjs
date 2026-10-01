@@ -41,7 +41,7 @@ const FACTURE = JSON.stringify({ meta:{ kind:'facture', vendor:'EASYFLEX', invoi
   { date:'2026-07-23', label:'BANJO BSP', amount:-22.34, category:'Véhicule / Réparations', asset:'', qty:2, unit_price:9.31 } ] });
 
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   // Hors ligne SAUF le serveur local qui sert la page : sur un runner AVEC réseau,
   // `networkidle` n'arrive JAMAIS (la page rappelle Firebase en boucle) → timeout 30 s
   // et un rouge qui n'a rien à voir avec le rendu (leçon #220).

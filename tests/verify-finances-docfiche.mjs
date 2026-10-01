@@ -35,7 +35,7 @@ const fails = [], oks = [];
 const rec = (cond, msg) => { (cond ? oks : fails).push(msg); console.log((cond ? 'OK ' : 'FAIL ') + msg); };
 
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   // Hors ligne SAUF le serveur local qui sert la page : sur un runner AVEC réseau,
   // `networkidle` n'arrive JAMAIS (la page rappelle Firebase en boucle) → timeout 30 s
   // et un rouge qui n'a rien à voir avec le rendu (leçon #220).

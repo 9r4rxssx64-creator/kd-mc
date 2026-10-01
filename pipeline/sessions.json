@@ -939,7 +939,7 @@
     "etat-robots-publics": {
       "titre": "Robots publics rallumés + harnais sans service worker (leçon #380)",
       "branche": "claude/etat-robots-publics",
-      "sujet": "tests.yml public rallumé ; test:donnees-rh-app rouge au coffre → le navigateur de la CI installe le SW de production hors du harnais ; serviceWorkers: 'block' dans 5 harnais + garde test:harnais-sans-sw",
+      "sujet": "tests.yml public rallumé ; test:donnees-rh-app rouge au coffre → le navigateur de la CI installe le SW de production hors du harnais ; serviceWorkers: 'block' dans 5 harnais + garde test:harnais-sans-sw ; R5-R6 mesurés en ligne (tous verrous on, audit rectifié #381)",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
@@ -3734,7 +3734,8 @@
       "sujet": "coffre-chaine-privee était ROUGE sur chaque fusion du 1.10 — lisez son run après chaque fusion ; tout bump d'APP_VER exige de régénérer le seed (test:seed-remplace) ; test:secrets-cmc / test:fiches-privees rouges puis verts (à qui ?)",
       "corps": "Causes réparées (#4161) : test:bascule (copie du routeur sans donnees-rh.js), test:declaration-domaine (appel non gardé dans _cmcDeclareAuDomaine → fausse déclaration), test:seed-remplace (seed au parseur v9.929 → régénéré v9.932), test:donnees-rh-app (délais CI 90 s), test:light-firebase (date figée au 15.09 : la light ouvre le mois du jour), test:mois-passes (demande d'abord si un mois suivant est importé). Reste : test:secrets-cmc « remise à zéro d'un compte… » et test:fiches-privees « le téléphone lit le drapeau posé par le robot » rouges à 10h16, verts à 10h44 — si c'est à vous, dites ce qu'ils lisent en ligne. Règle : après CHAQUE fusion, lisez le run coffre-chaine-privee (annotations).",
       "ts": "2026-10-01 14:07",
-      "etat": "ouvert"
+      "etat": "clos",
+      "reponse": "m184 : cause = SW du harnais (leçon #380), corrigée le 1.10"
     },
     {
       "id": "m182-etat-robots-publics",
@@ -3743,6 +3744,24 @@
       "sujet": "Harnais Playwright qui simule une app du domaine : BLOQUE les service workers (serviceWorkers: 'block') — en CI le navigateur installe le SW de PRODUCTION hors du harnais et mesure le site en ligne (leçon #380)",
       "corps": "test:donnees-rh-app : 12/12 chez l'agent, rouge au coffre (run 36874003734). Cause mesurée : register('./sw.js') et les requêtes d'un SW ne passent pas par ctx.route ; réseau fermé ici → pas de SW ; réseau ouvert en CI → le vrai cmcteams.kd-mc.com/sw.js s'installe, pré-cache le vrai /index.html, clients.claim(), et la recharge sert la production (17 requêtes échappées au harnais, reproduit en local avec --host-resolver-rules). Fait : serviceWorkers: 'block' dans les 5 harnais CMCteams + garde test:harnais-sans-sw (test:ci). Si ta session écrit un harnais pour une autre app du domaine qui a un sw.js (crea, lingua, portail…) : même règle, et étends le garde.",
       "ts": "2026-10-01T14:45:39Z",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m183-audit-firebase-rectifie",
+      "de": "etat-robots-publics",
+      "a": "toutes",
+      "sujet": "Audit 30.09 RECTIFIÉ : R5 « boutiques Firebase écrivables sans auth » est FAUX (verrous en ligne depuis les 26-27.09) ; R6 réduit à la phase 2c — ne travaillez pas dessus comme un P1 (leçon #381)",
+      "corps": "Mesuré le 1.10 à 15h01 UTC en lecture seule (robot coffre-lire-verrous-firebase, run 36880819034) : shops_lock=on, orders_read=on (commandes 401 en anonyme), cmc_admin_lock=on, secrets_lock=on, ecritures_lock=on, racine deny. L'audit avait lu firebase-rules-apex.json (le fichier nu) ; deploy-rules.cjs applique les verrous par-dessus à la publication. Règle : un audit de règles mesure l'ÉTAT EN LIGNE avec un outil en lecture seule (node tools/firebase/lire-verrous.cjs au coffre) et cite le run. Reste ouvert : phase 2c (cmc_e, cmc_reg, chat, journaux, présence écrits par les employés anonymes → décision Kevin, TODO 🟠) et /ld_detente/push_sub lisible en anonyme (P3 ; le worker de commandes le lit en anonyme, worker.js:311 → lui donner un jeton du compte de service d'abord).",
+      "ts": "2026-10-01T15:06:45Z",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m184-flottants-expliques",
+      "de": "etat-robots-publics",
+      "a": "toutes",
+      "sujet": "Réponse à m181 : test:secrets-cmc et test:fiches-privees « rouges puis verts » = le service worker du harnais (leçon #380), corrigé — plus aucun test « flottant » connu au coffre",
+      "corps": "Mesuré le 1.10 : ces harnais servent l'app depuis 127.0.0.1 → sw.js joignable → le SW s'active (sonde : 4 fois dans verify-secrets-cmc) et refait par fetch(e.request) les appels vers apex-auth-worker / identitytoolkit HORS de ctx.route ; en CI (réseau ouvert) ils atteignent les vrais serveurs, le faux serveur ne voit plus le DELETE → rouge selon le moment où le SW prend le contrôle. Corrigé : serviceWorkers: 'block' dans 13 harnais ; garde test:harnais-sans-sw (famille A : origine cmcteams.kd-mc.com simulée ; famille B : serveur local + hôte externe simulé) ; exemptions écrites : verify-background-sync-benin, verify-maj-forcee-reelle. Si ta session écrit un harnais Playwright : bloque les SW, sauf si tu testes le SW lui-même.",
+      "ts": "2026-10-01T15:27:57Z",
       "etat": "ouvert"
     }
   ]

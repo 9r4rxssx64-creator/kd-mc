@@ -70,7 +70,7 @@ const nav = await chromium.launch({ headless: true, args: ['--autoplay-policy=no
    on rejoue SES VRAIES IMAGES dans un format que ce navigateur-là lit (VP9), avec ffmpeg.
    Si même ça est impossible, on le DIT en clair au lieu d'afficher un vert trompeur. */
 const sonde = await (async () => {
-  const c = await nav.newContext(); const p = await c.newPage(); await p.goto('about:blank');
+  const c = await nav.newContext({ serviceWorkers: 'block' }); const p = await c.newPage(); await p.goto('about:blank');
   const r = await p.evaluate(() => { const v = document.createElement('video');
     return { h264: !!v.canPlayType('video/mp4; codecs="avc1.42E01E"'), vp9: !!v.canPlayType('video/webm; codecs="vp9"') }; });
   await c.close(); return r;
@@ -165,7 +165,7 @@ function sonDeTest(hz = sonHz) {
   return b;
 }
 async function ouvre({ casse = null } = {}) {
-  const ctx = await nav.newContext({ viewport: { width: 390, height: 844 } });
+  const ctx = await nav.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
   const erreurs = [];
   page.on('pageerror', (e) => erreurs.push(String(e && e.message)));

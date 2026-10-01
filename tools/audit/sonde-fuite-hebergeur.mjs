@@ -47,6 +47,12 @@ const INTERDITS = [
   ['services/kdmc-router/worker.js', 'le code serveur du domaine'],
   ['.github/workflows/deploy.yml', 'les automatisations (noms des secrets)'],
   ['audit/00-INVENTAIRE.md', "les rapports d'audit internes"],
+  /* R3 étape B (1.10.2026, leçon #376) : les données RH nominatives (291 noms + plannings) ne sortent QUE par le
+     routeur, derrière la connexion (401 + x-kdmc-porte sinon). L'hébergeur (pages.dev) ne doit plus les porter. */
+  ['tools/departs/boards-gen.js', 'DONNÉES RH : 291 noms + plannings (servies seulement derrière la connexion)'],
+  ['tools/shared/planning-seed.js', 'DONNÉES RH : le planning nominatif (servi seulement derrière la connexion)'],
+  ['tools/shared/seances-seed.js', 'DONNÉES RH : les séances nominatives (servies seulement derrière la connexion)'],
+  ['tools/departs/seances-gen.js', 'DONNÉES RH : copie des séances pour la light (servie seulement derrière la connexion)'],
 ];
 
 const TEMPS = 20000;

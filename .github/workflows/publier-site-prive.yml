@@ -166,7 +166,11 @@ jobs:
               # depuis l'hébergeur (ils restent dans le paquet tant que l'étape B n'est pas faite). On le DIT, on
               # continue — un plafond ne doit pas priver 260 personnes de la nouvelle version de l'app.
               if printf '%s' "$MSG" | grep -q '10048'; then
-                echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) — $CLE NON déposé ; le routeur sert ce fichier depuis l'hébergeur. L'étape B (retrait du paquet) reste INTERDITE tant qu'un dépôt n'a pas réussi. Relancer la publication après 00h00 UTC."
+                # R3 étape B (1.10.2026) : prepare-secours --pages ne met plus ce fichier dans le paquet. Sans dépôt KV, le routeur
+                # irait le chercher chez l'hébergeur et ne le trouverait pas → on le REMET dans le paquet pour CETTE publication
+                # (pages.dev le sert alors encore en direct, leçon #376), et on le dit. Il disparaîtra au dépôt KV suivant.
+                mkdir -p "services/kdmc-router/pages-upload/$(dirname "$FICHIER")" && cp "$FICHIER" "services/kdmc-router/pages-upload/$FICHIER"
+                echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) — $CLE NON déposé ; $FICHIER REMIS dans le paquet Pages pour cette publication (l'hébergeur le sert encore en direct, leçon #376) : relancer la publication après 00h UTC."
                 PLAFOND=1; continue
               fi
               echo "::error title=Données RH → KV::put $CLE a échoué : $MSG"; exit 1
@@ -178,10 +182,13 @@ jobs:
             if [ "$RELU" -lt "$ATTENDU" ] || [ "$RELU" -gt $((ATTENDU + 1)) ]; then echo "::error::$CLE : relu $RELU octets, attendu $ATTENDU"; exit 1; fi
             echo "  ✅ $CLE ← $FICHIER ($ATTENDU octets, relu $RELU)"; N=$((N + 1))
           done
+          # Vérité du paquet, mesurée sur le disque : sans plafond, AUCUN fichier RH ne doit y rester (R3 étape B).
+          RESTANTS=""; for LIGNE in $(printf '%s\n' "$LISTE" | tr ' ' '|'); do RESTE=${LIGNE#*|}; FICHIER=${RESTE%%|*}; [ ! -e "services/kdmc-router/pages-upload/$FICHIER" ] || RESTANTS="$RESTANTS $FICHIER"; done
           if [ "$PLAFOND" = "1" ]; then
-            echo "::warning title=Données RH::$N fichier(s) déposé(s) seulement — plafond KV du jour. Les autres sont servis depuis l'hébergeur, derrière la porte du routeur. Ne PAS retirer ces fichiers du paquet."
+            echo "::warning title=Données RH::$N fichier(s) déposé(s) seulement — plafond KV du jour. REMIS dans le paquet Pages (l'hébergeur les sert encore en direct, derrière la porte du routeur seulement sur le domaine) :$RESTANTS — relancer la publication après 00h UTC."
           else
-            echo "::notice title=Données RH::$N fichiers nominatifs déposés dans le KV du routeur (taille relue = taille du fichier), servis derrière la connexion"
+            [ -z "$RESTANTS" ] || { echo "::error title=Données RH::déposés dans le KV mais ENCORE dans le paquet Pages :$RESTANTS — prepare-secours --pages doit les exclure"; exit 1; }
+            echo "::notice title=Données RH::$N fichiers nominatifs déposés dans le KV du routeur (taille relue = taille du fichier), servis derrière la connexion — le paquet Pages ne les porte plus (vérifié sur le disque)"
           fi
 
       # ── Publication ────────────────────────────────────────────────────────

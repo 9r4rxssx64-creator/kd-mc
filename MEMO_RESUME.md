@@ -12,6 +12,20 @@
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-01 (15h30 UTC) — R3 étape B : les 4 fichiers RH quittent le paquet Pages (avec filet si le KV est plafonné)
+
+- **Pourquoi maintenant, sans attendre un dépôt KV réussi** : l'étape B était gardée pour « après un dépôt KV lu », parce
+  que sans KV ni paquet, le routeur ne trouverait plus les fichiers nulle part. Le filet rend B sûre dès aujourd'hui :
+  `publier-site-prive.yml` REMET chaque fichier non déposé (plafond 10048) dans le paquet, en l'écrivant (warning
+  « REMIS dans le paquet ») ; sans plafond, il VÉRIFIE sur le disque qu'aucun n'y reste (erreur sinon, notice « le paquet
+  Pages ne les porte plus »).
+- **Fait** : `prepare-secours.mjs --pages` exclut `DONNEES_RH` (import de `donnees-rh.js`) ; `sonde-fuite-hebergeur.mjs`
+  les compte comme fuite (le robot du routeur rougit tant que pages.dev les sert — voulu, cesse au 1er dépôt réussi) ;
+  `verify-paquet-pages.mjs` exige leur absence du paquet et les sert « depuis le KV » (= depuis le dépôt) pour que les
+  apps se montent. Sabotage : exclusion retirée → les 4 fichiers reviennent dans le paquet → `test:paquet-pages` rouge.
+- **Preuve réelle = 2.10 après 00h UTC** : publication → notice « déposés … le paquet ne les porte plus » → mesurer
+  `kdmc-site-bj5.pages.dev/tools/departs/boards-gen.js` (attendu : page d'accueil/404, plus le fichier).
+
 ## 2026-10-01 (15h10 UTC) — R5-R6, étape 0 : lire l'état RÉEL des verrous Firebase avant de toucher quoi que ce soit
 
 - **Constat** : l'audit du 30.09 a lu `firebase-rules-apex.json` (le fichier). Mais `tools/firebase/deploy-rules.cjs` applique
@@ -52,7 +66,13 @@
   boot-sobre, compte-unique-portail, bee-comportements) ; garde `test:harnais-sans-sw` dans `test:ci` (2 sabotages
   rouges) ; `test:donnees-rh-app` 12/0 ici. Hors champ, et pourquoi : `verif-live-rapport` (regarde le vrai site sans
   rien servir), `verify-background-sync-benin` (sert l'app depuis 127.0.0.1 pour éprouver le vrai SW).
-- Preuve qui compte : le run `coffre-chaine-privee` après la fusion (voir ETAT, ligne audit / R10).
+- **Preuve CI lue (run 36880768496, 15h14 UTC, après #4164)** : `test:donnees-rh-app` VERT. Deux rouges : `test:runner-interrupteur`
+  (mon robot lire-verrous avec `runs-on` en dur → corrigé) et `test:secrets-cmc` — le « flottant ». **Cause mesurée, même
+  famille** : ce harnais sert l'app depuis 127.0.0.1, donc `sw.js` est joignable et le SW s'active (sonde : 4 fois) ; en CI ses
+  `fetch` vers apex-auth-worker partent sur le VRAI worker, le faux serveur ne voit pas le DELETE. Pareil pour
+  `test:fiches-privees`. Blocage posé dans 13 harnais (famille A : origine cmcteams.kd-mc.com ; famille B : serveur local +
+  hôte externe simulé), garde `test:harnais-sans-sw` étendu (14 contrôles, 2 exemptions écrites : background-sync-benin,
+  maj-forcee-reelle). Réponse à la question de m181 « rouges puis verts, à qui ? » : à personne — au harnais.
 
 ## 2026-10-01 (14h45 UTC) — chaîne privée du coffre : rouge sur mes 4 fusions du jour, réparée (v9.932 / light v1.63)
 

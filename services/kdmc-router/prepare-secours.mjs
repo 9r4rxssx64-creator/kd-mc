@@ -24,6 +24,12 @@
 import { cpSync, existsSync, mkdirSync, rmSync, statSync, readdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DONNEES_RH, cheminDepot } from './donnees-rh.js';
+/* R3 étape B (1.10.2026) : les 4 fichiers RH nominatifs (boards-gen, planning-seed, seances-seed, seances-gen) ne vont
+   PLUS dans le paquet Pages — le routeur les sert depuis son KV, derrière la connexion (leçon #376 : pages.dev les
+   servait en direct, sans porte). Si le dépôt KV échoue (plafond du jour), publier-site-prive.yml les REMET dans le
+   paquet pour cette publication, en le disant. Garde : test:paquet-pages (le paquet ne les porte pas, les apps marchent). */
+const RH_EXCLUS = new Set(DONNEES_RH.map(cheminDepot));
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = resolve(ICI, '../..');
@@ -168,6 +174,7 @@ function filtre(src) {
   const base = src.split('/').pop();
   const rel = src.startsWith(RACINE + '/') ? src.slice(RACINE.length + 1) : '';
   if (TRAVAIL.has(rel)) return false;
+  if (POUR_PAGES && RH_EXCLUS.has(rel)) return false;           // données RH : KV du routeur, pas l'hébergeur (R3 étape B)
   if (IGNORER.has(base)) return false;
   if (/\.(mp4|mov|avi|zip|patch)$/i.test(base)) return false;   // trop lourd, inutile au dépannage
   if (/\.map$/i.test(base)) return false;                       // carte de code source = tout le source exposé

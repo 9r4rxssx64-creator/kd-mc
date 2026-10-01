@@ -19,10 +19,23 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d ? '  → ' + d : ''}`); };
 
 const fichiers = readdirSync('tests').filter((f) => f.endsWith('.mjs') && f !== 'verify-harnais-sans-sw.mjs').map((f) => 'tests/' + f);
-const harnais = fichiers.filter((f) => { const s = readFileSync(f, 'utf8'); return /newContext\(/.test(s) && /fulfill\(/.test(s) && /https:\/\/cmcteams\.kd-mc\.com/.test(s); });
+/* Deux familles de harnais exposés :
+ *   A. ceux qui simulent l'origine https://cmcteams.kd-mc.com et répondent eux-mêmes (fulfill) ;
+ *   B. ceux qui servent l'app depuis un serveur local (createServer) ET simulent par ctx.route un hôte EXTERNE que le
+ *      SW relaie (workers.dev, *.kd-mc.com) — mesuré le 1.10 : test:secrets-cmc et test:fiches-privees « flottants » en CI
+ *      parce que le SW refaisait leurs fetch vers le VRAI apex-auth-worker.
+ * Exemptions écrites, avec leur raison : un test qui éprouve le vrai SW ne peut pas le bloquer. */
+const TOLERES = {
+  'tests/verify-background-sync-benin.mjs': 'éprouve le vrai SW : reg.sync.register() refusé ne doit pas tuer l\'app',
+  'tests/verify-maj-forcee-reelle.mjs': 'éprouve la MAJ forcée AVEC le SW qui contrôle la page (controllerchange → reload)',
+};
+const estA = (s) => /fulfill\(/.test(s) && /https:\/\/cmcteams\.kd-mc\.com/.test(s);
+const estB = (s) => /createServer\(/.test(s) && /route\((\/[^/\n]*workers\\\.dev|\/[a-z-]*\\\.kd-mc|'https:\/\/[a-z-]*\.kd-mc\.com|\/apex-)/.test(s);
+const harnais = fichiers.filter((f) => { if (TOLERES[f]) return false; const s = readFileSync(f, 'utf8'); return /newContext\(/.test(s) && (estA(s) || estB(s)); });
+for (const f of Object.keys(TOLERES)) if (existsSync(f)) console.log(`  ℹ️  exempté : ${f} — ${TOLERES[f]}`);
 /* au coffre les 5 harnais sont là ; au dépôt public, ceux qui lisent index.html (CMCteams) restent au coffre */
 const auCoffre = existsSync('tests/verify-donnees-rh-app.mjs');
-ok(harnais.length >= (auCoffre ? 5 : 1), `${harnais.length} harnais simulent cmcteams.kd-mc.com (attendu ≥ ${auCoffre ? 5 : 1}${auCoffre ? ' : admin-sans-code, bee-comportements, boot-sobre, compte-unique-portail, donnees-rh-app' : ' au dépôt public'})`, harnais.join(', '));
+ok(harnais.length >= (auCoffre ? 12 : 1), `${harnais.length} harnais exposés (attendu ≥ ${auCoffre ? 12 : 1}${auCoffre ? ' : 5 de la famille A + secrets-cmc, fiches-privees, ecritures-cmc, finances ×4, javis-bee-reelle, light-equipes-firebase' : ' au dépôt public'})`, harnais.join(', '));
 for (const f of harnais) {
   const s = readFileSync(f, 'utf8');
   /* chaque newContext( … ) doit porter serviceWorkers: 'block' — soit dans ses accolades, soit via une constante

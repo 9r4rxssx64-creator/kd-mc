@@ -104,7 +104,7 @@ const dossier = await mkdtemp(join(tmpdir(), 'routeur-'));
 await mkdir(join(dossier, 'kdmc-router'), { recursive: true });
 await mkdir(join(dossier, '_shared'), { recursive: true });
 await writeFile(join(dossier, 'kdmc-router', 'worker.js'), deploye);
-for (const m of ['webauthn.js', 'fb-token.js']) {
+for (const m of ['webauthn.js', 'fb-token.js', 'donnees-rh.js']) {   /* donnees-rh.js : porte RH (1.10.2026) */
   await writeFile(join(dossier, 'kdmc-router', m), gitShow(`services/kdmc-router/${m}`));
 }
 await writeFile(join(dossier, '_shared', 'ia-route.js'), gitShow('services/_shared/ia-route.js'));

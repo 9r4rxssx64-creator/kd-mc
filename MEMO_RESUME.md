@@ -1,5 +1,19 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (14h45 UTC) — chaîne privée du coffre : rouge sur mes 4 fusions du jour, réparée (v9.932 / light v1.63)
+
+- **Mesuré** (runs coffre 36837694784, 36848131209, 36850989145, 36871768992/36872184393) : `coffre-chaine-privee` rouge
+  à chaque fusion. **À moi** : `test:bascule` (donnees-rh.js absent de la copie du routeur), `test:declaration-domaine`
+  (appel non gardé → ReferenceError dans le bac à sable → fausse déclaration), `test:seed-remplace` (seed au parseur
+  v9.929 : jamais régénéré depuis deux bumps), `test:donnees-rh-app` (délais CI). **Changement de mois** :
+  `test:light-firebase` (date figée au 15.09 dans le test), `test:mois-passes` (demande d'abord si un mois suivant est
+  importé). **Pas à moi, à surveiller** : `test:secrets-cmc` et `test:fiches-privees` rouges à 10h16, verts à 10h44
+  (lisent un drapeau en ligne ?).
+- Fait : gardes `typeof` + `try` dans les deux apps, **v9.932 / light v1.63**, seed régénéré (`parser: v9.932`, contenu
+  identique — generateurs-reproductibles vert), boards identiques, délais 90 s. 17 gardes verts en local. Leçon #379.
+- **Règle à retenir** : chaque bump d'APP_VER → `node tools/shared/_gen-seed.mjs` + `node tools/departs/_gen-boards.mjs`
+  dans le même commit ; après chaque fusion → lire le run `coffre-chaine-privee`.
+
 ## 2026-10-01 (14h00 UTC) — R7 : sauvegarde Firebase refaite et remise en route quotidienne, sans cron GitHub
 
 - **Mesuré** : dernière sauvegarde le 14.08 (robots `firebase-backup` / `auto-backup` en `workflow_dispatch` seul depuis le

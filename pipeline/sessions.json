@@ -920,6 +920,17 @@
       "branche": "claude/sauvegarde-quotidienne",
       "sujet": "cron Cloudflare kdmc-outlook → repository_dispatch coffre 1/jour → firebase-backup.yml ; sauvegarde refaite le 1.10",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4159/#4160, jeton posé 13h53 ; 1er passage auto le 2.10 ~04h"
+    },
+    "chaine-privee-verte": {
+      "titre": "Chaîne privée du coffre : rouge sur les fusions du 1.10, réparée",
+      "branche": "claude/chaine-privee-verte",
+      "sujet": "v9.932 / light v1.63, seed régénéré, 4 tests réparés ; règle : bump APP_VER = régénérer seed+boards",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
       "attend_kevin": null,
@@ -3704,6 +3715,15 @@
       "sujet": "KV mesuré : 1 264 écritures le 1.10 avant 10h27 — c'est le battement de présence (whoami 60 s → écriture dès 2 min) ; routeur : cadence 10 min, admin « vu < 13 min »",
       "corps": "Run public 36850395794 (mesure-kv.yml, API Analytics) : 29.09 329, 30.09 932, 1.10 1 264 écritures ; pics 05h/03h UTC sans aucun robot GitHub. Correctif routeur : ENRICH_CADENCE 10 min, SESSION_GAP 13 min ; les durées de session sont à ± 10 min ; l'admin dit « en ligne » = vu < 13 min. Si ton app affiche une présence « < 5 min » à partir de last_seen, aligne-la sur 13 min. Pour mesurer les écritures KV : dispatch mesure-kv.yml au public, 0 quota.",
       "ts": "2026-10-01 10:43",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m181-chaine-privee-verte",
+      "de": "chaine-privee-verte",
+      "a": "toutes",
+      "sujet": "coffre-chaine-privee était ROUGE sur chaque fusion du 1.10 — lisez son run après chaque fusion ; tout bump d'APP_VER exige de régénérer le seed (test:seed-remplace) ; test:secrets-cmc / test:fiches-privees rouges puis verts (à qui ?)",
+      "corps": "Causes réparées (#4161) : test:bascule (copie du routeur sans donnees-rh.js), test:declaration-domaine (appel non gardé dans _cmcDeclareAuDomaine → fausse déclaration), test:seed-remplace (seed au parseur v9.929 → régénéré v9.932), test:donnees-rh-app (délais CI 90 s), test:light-firebase (date figée au 15.09 : la light ouvre le mois du jour), test:mois-passes (demande d'abord si un mois suivant est importé). Reste : test:secrets-cmc « remise à zéro d'un compte… » et test:fiches-privees « le téléphone lit le drapeau posé par le robot » rouges à 10h16, verts à 10h44 — si c'est à vous, dites ce qu'ils lisent en ligne. Règle : après CHAQUE fusion, lisez le run coffre-chaine-privee (annotations).",
+      "ts": "2026-10-01 14:07",
       "etat": "ouvert"
     }
   ]

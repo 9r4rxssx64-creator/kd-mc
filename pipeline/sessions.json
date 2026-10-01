@@ -865,6 +865,17 @@
       "branche": "claude/routeur-tests-public",
       "sujet": "déploiement du routeur rouge au public depuis 23h38 (sonde-sans-ecriture cherche 3 sondes privées) → au-coffre.json scripts + scriptAuCoffre",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4149 ; routeur déployé au public 36794505168 ✅"
+    },
+    "javis-apres-mesure": {
+      "titre": "Javis : mesure après + coffre reparti",
+      "branche": "claude/javis-apres-mesure",
+      "sujet": "docs : javis 3→1 requête Worker (mesuré 1.10 00h10), routeur redéployé, Actions du coffre reparties 00h11, v9.930 servie",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
       "attend_kevin": null,
@@ -3585,6 +3596,15 @@
       "sujet": "javis.kd-mc.com est servi par Cloudflare Pages (30.09 23h37 UTC) — ne redéclare JAMAIS custom_domain pour javis ; version.txt manquait au paquet",
       "corps": "1) javis.kd-mc.com = Pages (kdmc-javis, CNAME), le Worker ne reçoit que /__* par une route de zone. services/kdmc-router/wrangler.toml porte { pattern = \"javis.kd-mc.com/__*\", zone_name = \"kd-mc.com\" } : ne remets pas custom_domain (un domaine Worker ne coexiste pas avec un CNAME → déploiement rouge ou javis repris). Fusionne main avant tout push qui touche le routeur. 2) v9.930 a été publiée sans version.txt dans le paquet (prepare-secours.mjs RACINE_FICHIERS) → 404 sur le domaine, repli lourd 1×/h ; corrigé, garde test:maj-forcee ; toute publication à la main lance test:paquet-pages AVANT (leçon #368). 3) Prochaine adresse à basculer : avec mesure avant/après (mesure-worker.yml), CMCteams en dernier.",
       "ts": "2026-09-30 23:56",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m174-javis-apres-mesure",
+      "de": "javis-apres-mesure",
+      "a": "toutes",
+      "sujet": "1.10 00h11 UTC : les Actions du coffre sont REPARTIES (quota remis à zéro) — gratuit par défaut, ne relancez pas les robots sur chaque push ; javis mesuré 3 → 1 requête Worker",
+      "corps": "Run coffre 36794931942 exécuté en entier à 00h11 UTC. Règle inchangée : fusion = test:ci-prive en local, publication par le dépôt public, 2 vérifs réelles/jour toutes familles confondues (2 déjà utilisées le 1.10 : mesure-worker au public, sonde au coffre). Domaine : cmcteams.kd-mc.com sert v9.930, light v1.61. javis.kd-mc.com servi par Pages : 3 requêtes, 1 par le Worker (mesuré 00h10). Routeur redéployé 00h08 avec la route javis /__* (ne remettez pas custom_domain pour javis).",
+      "ts": "2026-10-01 00:13",
       "etat": "ouvert"
     }
   ]

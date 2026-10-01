@@ -50,7 +50,7 @@ au lieu de 3,4 Mo par minute)** ; je publie à la main comme ce matin. Tu n'as r
 
 Tu l'as donné ; j'ai vérifié (le DNS de `javis.kd-mc.com` se lit), puis **basculé Javis** : `javis.kd-mc.com` est servi
 par Cloudflare Pages depuis 23h37 UTC (plus par le Worker, sauf ses appels `/__…`). Un raté au 1er passage a rendu Javis
-injoignable ~4 minutes, le 2e a réussi. Je mesure le résultat en chiffres après minuit UTC. Rien à faire de ton côté.
+injoignable ~4 minutes, le 2e a réussi. **Mesuré le 1.10 à 00h10 UTC sur la vraie adresse : ouvrir Javis = 3 requêtes, 1 seule par le Worker (avant : 3 sur 3).** Rien à faire de ton côté ; je continue adresse par adresse, CMCteams en dernier.
 
 <details><summary>Ce que c'était (gardé pour mémoire)</summary>
 

@@ -1,5 +1,20 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (00h30 UTC) — MESURÉ : javis 3 → 1 requête Worker par ouverture · routeur redéployé · coffre reparti · v9.930 servie
+
+- **Après** (run public `mesure-worker` 36794683653, 00h10 UTC) : **`javis.kd-mc.com` = 3 requêtes, 1 par le Worker (33 %),
+  2 en statique, 0 erreur** — avant (30.09 19h44) : 3 sur 3. `cmcteams.kd-mc.com` = 16, toutes par le Worker (inchangé).
+  Le pilote « fichiers sans Worker » est prouvé de bout en bout sur une vraie adresse.
+- **Routeur redéployé** avec la route `javis.kd-mc.com/__*` (run public 36794505168 ✅, 00h08 UTC, 31 adresses servies,
+  tous les tests du routeur verts au public après #4149). Deux avertissements déjà connus : `/__lingua/tts` et
+  `v=antonin` renvoient du JSON (clés OpenAI/Replicate) — pas de ce chantier.
+- **Publication** 36794505949 ✅ : le paquet porte désormais `version.txt` (prouvé par `test:paquet-pages` ; pas relu
+  sur le domaine d'ici).
+- **Le coffre a retrouvé ses Actions** : `coffre-sonde-ce-qui-est-servi` lancé à 00h11 UTC a tourné en entier
+  (36794931942) → `cmcteams.kd-mc.com` sert **v9.930**, Départs/light **v1.61**, 4/4 à jour. Plafond du jour : 2 vérifs
+  utilisées (mesure-worker au public, sonde au coffre) — **plus aucune vérif réelle aujourd'hui**. Message m174.
+- Reste : adresse suivante du plan (avec avant/après, CMCteams en dernier) ; audit R3-R7, R10.
+
 ## 2026-09-30 (23h55 UTC) — javis.kd-mc.com SERVI PAR PAGES (pilote « fichiers sans Worker » bouclé) · routeur en cohérence · version.txt manquait au paquet
 
 - **Kevin a donné Zone→DNS→Edit au jeton « Edit Cloudflare Workers » (23h30 UTC)** ; `lire` : DNS lisible (AAAA `100::`

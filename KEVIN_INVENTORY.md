@@ -3178,6 +3178,14 @@ officiels les retirent eux-mêmes avant publication.
 | `services/kdmc-router/cuisine-chemin.test.mjs` | Vérifie l'**adresse** que le domaine demande pour le livre de cuisine (la bascule d'hébergeur y était oubliée) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/cuisine-chemin.test.mjs) |
 | `services/kdmc-router/redirection-amont.test.mjs` | Vérifie qu'une **redirection** de l'hébergeur ramène sur la bonne page (les 11 pages du Kit affichaient CMCteams) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/redirection-amont.test.mjs) |
 
+## 🛒 La preuve sur la page de vente (2026-09-24)
+
+| Fichier | À quoi ça sert | Lien |
+|---|---|---|
+| `tests/verify-page-preuve-reelle.mjs` | Vrai navigateur : la page **montre** le produit avant de demander 17 € (20 contrôles, clair + sombre, iPhone 375 px) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-page-preuve-reelle.mjs) |
+| `tools/produits/pages.mjs` | Le générateur des pages de vente — c'est lui qui pose le bloc de preuve (`blocDemo`) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/produits/pages.mjs) |
+| `tests/produits-prix-honnete.test.mjs` | Interdit un **prix barré inventé** : une promo doit avoir été réellement pratiquée (`avantPratiqueDu`) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/produits-prix-honnete.test.mjs) |
+| `tools/produits/catalogue.json` | Le contenu montré : les deux cas d'avis et leurs réponses (champ `demo`) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/produits/catalogue.json) |
 ## 🗝️ Deux dépôts : coffre privé + dépôt public — session 2026-09-24
 
 | Fichier | Rôle | Lien |

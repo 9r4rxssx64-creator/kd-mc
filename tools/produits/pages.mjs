@@ -23,6 +23,43 @@ const cspMere = () => readFileSync(new URL('index.html', DIR), 'utf8').match(/Co
 const premierePhrase = (brief) => { const t = String(brief).split(';')[0].trim(); return t.charAt(0).toUpperCase() + t.slice(1); };
 const cible = (p) => { const t = String(p.cible).split(',')[0].replace(/^un(e)? /, ''); return 'Pour ' + (p.cibleTitre || t.replace(/^(\w)/, (c) => c.toUpperCase())); };
 
+/* LA PREUVE. Mesuré le 24.09.2026 : une page de vente à 17 € qui ne contient
+   NI image NI vidéo NI extrait — on demandait de payer pour du texte qui promet
+   du texte. Ce bloc montre le produit AVANT l'achat : un vrai cas, la réponse
+   qu'on obtient, et pourquoi elle marche. Rien d'inventé sur des clients : ce
+   sont des EXEMPLES, et la page le dit noir sur blanc (règle « rien de faux »).
+   Optionnel : un produit sans `demo` rend exactement la page d'avant. */
+const etoiles = (n) => '★'.repeat(Math.max(0, Math.min(5, Number(n) || 0))) + '☆'.repeat(5 - Math.max(0, Math.min(5, Number(n) || 0)));
+/* PRIX BARRÉ — INTERDIT SANS PREUVE (24.09.2026).
+   Les 4 produits affichaient un « avant » (79/59/39/149 €) auquel ils n'ont JAMAIS
+   été vendus : une fausse promotion. Interdit par la règle « rien de faux, partout
+   toujours », et par le droit de la consommation européen, qui impose que le prix
+   barré soit le prix le plus bas réellement pratiqué dans les 30 jours précédents.
+   Le mécanisme reste là pour une VRAIE baisse : il suffit de remettre `avant` dans
+   le catalogue — mais alors il doit correspondre à un prix réellement pratiqué.
+   Garde : tests/produits-prix-honnete.test.mjs. */
+export function blocDemo(p) {
+  const d = p && p.demo;
+  if (!d || !Array.isArray(d.cas) || !d.cas.length) return '';
+  const cas = d.cas.map((c) => `    <figure class="demo-cas">
+      <figcaption class="demo-avant">
+        <span class="demo-note" aria-label="${esc(c.etoiles)} sur 5">${etoiles(c.etoiles)}</span>
+        <span class="demo-src">${esc(c.source)}</span>
+      </figcaption>
+      <blockquote class="demo-avis">${esc(c.avis)}</blockquote>
+      <p class="demo-fleche" aria-hidden="true">↓</p>
+      <blockquote class="demo-reponse"><span class="demo-tag">Ta réponse</span>${esc(c.reponse)}</blockquote>
+      <p class="demo-pourquoi"><strong>Pourquoi ça marche —</strong> ${esc(c.pourquoi)}</p>
+    </figure>`).join('\n');
+  return `
+  <section class="demo" aria-labelledby="demo-t">
+    <h2 id="demo-t">${esc(d.titre)}</h2>
+    <p class="petit">${esc(d.sous)}</p>
+${cas}
+  </section>
+`;
+}
+
 export function page(p, csp = cspMere()) {
   const url = 'https://kit.kd-mc.com/' + p.slug + '.html';
   const lire = 'lire.html?produit=' + p.id;
@@ -61,7 +98,7 @@ export function page(p, csp = cspMere()) {
 
   <p><a class="btn btn-primaire" href="${lire}">Lire le module 1 gratuitement</a></p>
   <p class="petit">Pas d'inscription. Tu vois exactement ce que tu achètes avant de payer.</p>
-
+${blocDemo(p)}
   <h2>Les ${p.modules.length} modules</h2>
   <ol class="modules">
 ${modules}
@@ -69,8 +106,8 @@ ${modules}
 
   <div class="encart" id="acheter">
     <p class="sur">Accès complet</p>
-    <div class="prix"><span class="maintenant">${prix}</span><span class="avant">${p.avant} €</span></div>
-    <p>Prix de lancement. Accès pendant <strong>2 ans</strong>, mises à jour comprises, lecture sur téléphone et ordinateur. Chaque consigne se copie en un geste.</p>
+    <div class="prix"><span class="maintenant">${prix}</span>${p.avant ? `<span class="avant">${p.avant} €</span>` : ''}</div>
+    <p><strong>Un seul paiement</strong>, pas d'abonnement. Accès pendant <strong>2 ans</strong>, mises à jour comprises, lecture sur téléphone et ordinateur. Chaque consigne se copie en un geste.</p>
     <label for="mail-${p.slug}">Ton adresse e-mail (c'est là qu'arrive ton accès)</label>
     <input id="mail-${p.slug}" type="email" inputmode="email" autocomplete="email" placeholder="toi@exemple.fr" data-caisse-email>
     <label class="consent"><input type="checkbox" data-caisse-consentement><span>${esc(CONSENTEMENT)}</span></label>

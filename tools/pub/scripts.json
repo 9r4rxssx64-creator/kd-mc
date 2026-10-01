@@ -1,5 +1,5 @@
 {
-  "maj": "2026-09-21",
+  "maj": "2026-09-26",
   "note": "Scripts PUBLICS des vidéos courtes sans visage (9:16, 20-40 s). Chaque ligne = une carte à l'écran ET une phrase lue par la voix du domaine. Tutoiement, zéro jargon, zéro chiffre invérifiable, zéro promesse de résultat : on montre CE QUE ça fait, jamais ce que ça rapporte. Le module 1 de chaque kit est gratuit : c'est la seule promesse.",
   "marque": "kit.kd-mc.com",
   "videos": [
@@ -378,6 +378,81 @@
         "#commercant",
         "#independant",
         "#assistantia",
+        "#ia"
+      ]
+    },
+    {
+      "id": "avis-04",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "avis": {
+        "etoiles": 1,
+        "texte": "Une heure d'attente pour une table réservée. Je ne remettrai pas les pieds ici."
+      },
+      "lignes": [
+        "Tu as envie de répondre tout de suite. Attends demain matin.",
+        "Tu reconnais ce qui est vrai. Rien de plus.",
+        "Tu proposes d'en parler en privé, en trois lignes calmes.",
+        "Ta réponse est pour ceux qui liront cet avis dans six mois.",
+        "Réponses aux avis clients. Module un gratuit."
+      ],
+      "legende": "Un avis à une étoile tombe le soir, après le service. Ne réponds pas à chaud : trois lignes calmes le lendemain, pour les clients qui liront. Réponses aux avis clients, le module 1 est gratuit. Lien dans la bio : kit.kd-mc.com/avis.html",
+      "hashtags": [
+        "#avisclients",
+        "#restaurateur",
+        "#commercant",
+        "#avisgoogle",
+        "#ia"
+      ]
+    },
+    {
+      "id": "avis-05",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "clair",
+      "avis": {
+        "etoiles": 5,
+        "texte": "Super accueil, on s'est régalés. Mention spéciale au dessert !"
+      },
+      "lignes": [
+        "Un cinq étoiles. Et tu réponds « Merci pour votre avis » ?",
+        "Reprends un détail précis de ce qu'il a écrit.",
+        "Cite qui s'en est occupé dans ton équipe.",
+        "Deux lignes, et le client se sent vraiment lu.",
+        "Réponses aux avis clients. Module un gratuit."
+      ],
+      "legende": "Un cinq étoiles mérite mieux qu'un « merci pour votre avis ». Un détail repris, un prénom de l'équipe, deux lignes. Réponses aux avis clients, le module 1 est gratuit. Lien dans la bio : kit.kd-mc.com/avis.html",
+      "hashtags": [
+        "#avisclients",
+        "#petitcommerce",
+        "#restaurant",
+        "#coiffeur",
+        "#ia"
+      ]
+    },
+    {
+      "id": "avis-06",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "avis": {
+        "etoiles": 1,
+        "texte": "Personnel désagréable, accueil glacial. À fuir absolument."
+      },
+      "lignes": [
+        "Un avis blessant, et aucun détail. Tu fais quoi ?",
+        "Tu ne te justifies pas en dix lignes.",
+        "Un fait simple de ton côté. Une porte ouverte.",
+        "Les futurs clients voient quelqu'un de calme.",
+        "Réponses aux avis clients. Module un gratuit."
+      ],
+      "legende": "Un avis blessant, sans aucun détail. Pas de justification en dix lignes : un fait simple, une porte ouverte, et les futurs clients voient quelqu'un de calme. Le module 1 est gratuit. Lien dans la bio : kit.kd-mc.com/avis.html",
+      "hashtags": [
+        "#avisclients",
+        "#hotel",
+        "#restaurateur",
+        "#tripadvisor",
         "#ia"
       ]
     }

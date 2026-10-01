@@ -57,6 +57,15 @@ jobs:
           # à lancer 5 workflows d'une liste fermée (WORKFLOWS du worker), derrière l'admin
           # SSO vérifié (Face ID). Absent → les boutons deviennent des liens GitHub, rien ne casse.
           push GITHUB_DISPATCH_TOKEN "${{ secrets.APEX_GITHUB_PAT }}" "les boutons « Lancer » du tableau de bord Commerce renvoient vers GitHub au lieu de lancer"
+          # ── VIREMENT (Kevin 24.09 « récupère mon IBAN, il est déjà quelque part ») ──
+          # Son IBAN n'est écrit NULLE PART dans le dépôt, ni dans ses mails, ni dans son
+          # Drive (cherché, mesuré). Le seul endroit où il peut déjà être, hors du coffre
+          # du worker, c'est ce secret — cité par sync-secrets-to-cloudflare.yml, jamais
+          # lancé. On le pousse ici : il passe de secret à secret, personne ne le relit.
+          # Le coffre (posé depuis Commerce) reste prioritaire ; ce secret n'est qu'un repli,
+          # et le worker le REFUSE s'il ne passe pas la clé 97.
+          push IBAN_KEVIN "${{ secrets.IBAN_KEVIN }}" "le bouton « virement » reste fermé — pose ton IBAN dans Commerce → 🏦 Virement, ou crée le secret IBAN_KEVIN"
+          push BIC_KEVIN  "${{ secrets.BIC_KEVIN }}"  "pas de BIC (facultatif : un IBAN suffit dans la zone SEPA)"
 
       - name: Deploy worker
         id: deploy

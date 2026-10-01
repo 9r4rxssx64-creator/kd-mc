@@ -309,3 +309,58 @@ test('le compteur de relances annonce le VRAI nombre avant le clic', async () =>
   assert.equal(r.relancables, 1, 'un seul est relançable : déjà relancé, trop récent, sans e-mail et « dit avoir payé » ne comptent pas');
   assert.equal(r.n, 5);
 });
+
+/* ── L'IBAN de secours : le secret IBAN_KEVIN (Kevin 24.09.2026) ───────────────
+   « Récupère mon IBAN, il est déjà quelque part. » Il n'est ni dans le dépôt, ni
+   dans ses mails, ni dans son Drive, ni dans le coffre du worker (mesuré : le
+   déploiement du 18.09 disait « virement FERMÉ, aucun IBAN rangé »). Le seul
+   endroit possible restant est le secret GitHub `IBAN_KEVIN`. Le worker le lit
+   donc en REPLI — mais jamais aveuglément : un secret mal saisi enverrait chaque
+   virement d'acheteur dans le vide. Trois règles, testées en les exécutant. */
+test('IBAN de secours : le coffre passe avant le secret, et un secret faux est ignoré', async () => {
+  const { banqueDeSecours } = await import('../services/kdmc-vente/worker.js');
+
+  // 1. Pas de secret → rien. Le bouton « virement » restera fermé, c'est voulu.
+  assert.deepEqual(banqueDeSecours({}), {}, 'sans secret, aucune banque de secours');
+  assert.deepEqual(banqueDeSecours(undefined), {}, 'env absent ne doit pas jeter');
+
+  // 2. Secret INVALIDE (clé 97 fausse) → ignoré. Jamais servi à un acheteur.
+  assert.deepEqual(banqueDeSecours({ IBAN_KEVIN: 'FR7630006000011234567890188' }), {},
+    'un IBAN qui rate la clé 97 doit être ignoré, pas servi');
+  assert.deepEqual(banqueDeSecours({ IBAN_KEVIN: 'pas-un-iban' }), {}, 'texte libre ignoré');
+
+  // 3. Secret VALIDE → servi, normalisé (espaces retirés, majuscules).
+  const b = banqueDeSecours({ IBAN_KEVIN: 'mc58 1122 2000 0101 2345 6789 030' });
+  assert.equal(b.iban, 'MC5811222000010123456789030', 'IBAN normalisé');
+  assert.equal(b.titulaire, 'Kevin DESARZENS', 'titulaire par défaut');
+  assert.equal(b.source, 'secret', 'la provenance est dite');
+  assert.equal(b.bic, null, 'pas de BIC = null, pas une chaîne vide');
+  assert.equal(banqueDeSecours({ IBAN_KEVIN: 'MC5811222000010123456789030', BIC_KEVIN: ' cmcimcmx ' }).bic,
+    'CMCIMCMX', 'BIC nettoyé et en majuscules');
+});
+
+test('le coffre gagne toujours sur le secret (sinon un vieux secret écraserait son vrai IBAN)', async () => {
+  const { __test } = await import('../services/kdmc-vente/worker.js');
+  const COFFRE = 'FR7630006000011234567890189';   // celui posé depuis Commerce
+  const SECRET = 'MC5811222000010123456789030';   // celui du secret GitHub
+  const env = (valeurKV, secret) => ({
+    VENTES: { get: async () => valeurKV },
+    IBAN_KEVIN: secret,
+  });
+
+  // Coffre posé + secret présent → c'est le COFFRE qui sert.
+  let b = await __test.lireBanque(env(JSON.stringify({ iban: COFFRE }), SECRET));
+  assert.equal(b.iban, COFFRE, 'ce que Kevin pose dans Commerce doit primer sur un secret');
+
+  // Coffre vide → le secret prend le relais.
+  b = await __test.lireBanque(env(null, SECRET));
+  assert.equal(b.iban, SECRET, 'sans coffre, le secret ouvre le virement');
+
+  // Ni l'un ni l'autre → rien, et le virement reste fermé.
+  b = await __test.lireBanque(env(null, ''));
+  assert.equal(b.iban, undefined, 'sans rien, aucun IBAN : le bouton virement reste fermé');
+
+  // Le coffre illisible ne doit pas empêcher le secours.
+  b = await __test.lireBanque({ VENTES: { get: async () => { throw new Error('KV KO'); } }, IBAN_KEVIN: SECRET });
+  assert.equal(b.iban, SECRET, 'un coffre en panne ne doit pas fermer le virement');
+});

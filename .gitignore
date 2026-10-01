@@ -53,6 +53,7 @@ audit/captures-commerce/
 audit/captures-perimetre/
 # Idem : capture des tuiles de l'admin, refaite à chaque contrôle (24.09.2026).
 audit/captures-admin/
+audit/captures-vente/
 
 # Paquet de reprise (fabrique par npm run transfert — copie locale, pas a versionner)
 /transfert/

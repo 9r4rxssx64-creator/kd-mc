@@ -1,5 +1,197 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 — Les minutes GitHub sont revenues : ma branche rattrapée
+
+- Les robots GitHub retournent depuis la nuit (runs du 1.10 à 00h16 en succès).
+- Ma branche avait **17 commits jamais arrivés sur main** : la PR #4032 était bloquée par des conflits depuis le 26.09. Conflits résolus à la main (pub-media-r2 : on garde l'interrupteur KDMC_RUNNER de main ; cleanup : on garde main sans le déclencheur workflow_run que j'avais retiré ; package.json : liste de main + mes 2 gardes `test:page-preuve-reelle` et `test:prix-honnete` ; worker vente : union des exports ; mémoire et registre des sessions fusionnés). Tests relancés : prix-honnete 4/0, pub-videos 12/0, vente 39/0, fabrique 9/0, tableau commerce 13/0, page-preuve-reelle 20/0, workflows-valides 862/0.
+- **Pas fait** : les 3 vidéos avis-04..06. `pub-videos.yml` reste éteint à la main (choix de Kevin ou d'une autre session) : je ne le rallume pas.
+
+## 2026-09-28 — Club IA, routine du lundi : rien publié (robot éteint à la main)
+
+- `club-semaine.yml` est **désactivé manuellement** depuis le 26.09 à 19h35 (état GitHub `disabled_manually`) → le déclenchement a été refusé. Et GitHub refuse de toute façon tous les robots jusqu'à la remise à zéro du forfait (~1er octobre).
+- Rien rallumé de mon côté (choix de Kevin ou d'une autre session, à respecter). Bilan envoyé à Kevin par e-mail, avec le lien pour le rallumer s'il le veut.
+- **Routine Pub du lundi** : `pub-videos.yml` aussi `disabled_manually` → rien créé ni programmé. Semaine passée (21-28.09) : 11 vidéos × 4 réseaux = 44 envois, **43 publiés, 1 erreur** (YouTube, vidéo « étudiant » du 24 : titre de plus de 100 caractères) + 1 post-lien Facebook publié. Encore **7 publications programmées jusqu'au 1er octobre** (3 vidéos, 4 posts-liens). Bilan + correction envoyés à Kevin (j'avais d'abord écrit « plus rien de programmé » sans avoir regardé après ce matin : erreur corrigée par un 2e mail).
+- **À corriger dans la chaîne pub** : tronquer le titre YouTube à 100 caractères (cause de l'erreur du 24).
+
+## 2026-09-26 (soir) — « Quelque chose d'autonome, très rentable » : 4 recherches croisées
+
+- **Encaisser depuis Monaco** : Polar.sh, Lemon Squeezy, Gumroad versent à Monaco et gèrent la TVA européenne. Stripe, Etsy, Shopify Payments, Amazon Seller Europe, Revolut Business et la vente Google Play refusent un vendeur monégasque (pages officielles lues). Inscription réelle avec adresse monégasque : **pas encore testée**.
+- **Copier un succès anglais en français** : 11 idées sur 13 déjà prises en français (photos pro IA, déco IA, relevés bancaires, discours, Excel, DUERP, Qualiopi…).
+- **Seul modèle solo aux revenus certifiés Stripe avec peu de trafic** : la préparation d'examen en paiement unique (Tree Nerd Academy 30 832 $ sur 30 jours avec 9 183 visiteurs ; FreeTCF 25 062 $ sur 30 jours). TEF/TCF, AMF, permis de chasse, capacité de transport : déjà occupés → l'examen doit être choisi par un tri chiffré.
+- **Légal Monaco** : toute activité économique régulière demande l'autorisation de la Direction de l'Expansion Économique (loi n° 1.144). Vaut pour n'importe quelle vente.
+- Proposé à Kevin : ce modèle + un tri de ~30 examens francophones avant de construire.
+- **Tri fait (Kevin « Continu »)** : ~70 examens testés (France métiers, France concours/santé, Belgique-Suisse-Luxembourg, Québec-Afrique). **Aucun** ne réunit gros volume + obligation + QCM + place libre. Fluides frigorigènes 2029 écarté (formation d'une demi-journée chez un organisme, pas d'autoformation). Restent de petites niches : **diplôme de cafetier à Genève** (obligatoire, QCM, examen à CHF 500, concurrent à CHF 299-499 → on peut viser ~CHF 59 ; volume à demander au PCTN), concours IADE (1 965 inscrits, mais contenu médical), conseiller funéraire (~1 000/an, non vérifié). Afrique : gros volumes mais 2-8 € et paiement mobile local.
+- **Kevin : « trouve autre chose »** → 4 nouvelles recherches (stores logiciels, contenu IA sur plateformes, pub/partage de revenus, services à l'unité). **YouTube ne paie pas à Monaco** (liste officielle) ; AdSense oui. Banques d'images : IA interdite presque partout, centimes ailleurs. KDP : 0-300 €/mois. Apify : niches évidentes déjà prises (BOAMP, TED). Services à l'unité : gratuits ou saturés. **Proposé** : jeux web gratuits sur les portails CrazyGames puis Poki (le portail apporte les joueurs, la pub paie, zéro client à gérer), 500-2 000 €/mois avec 3-5 bons jeux (ESTIMÉ), et dit honnêtement qu'aucune piste ne coche « 100 % auto + très rentable + sans audience ».
+
+## 2026-09-26 — Pourquoi 0 vente : mesuré sur 10 jours de pub, et la réparation prête pour le 1er octobre
+
+**Les vrais chiffres (Metricool, du 16 au 26.09)** :
+
+| Réseau | Vues | Temps regardé en moyenne |
+|---|---|---|
+| TikTok (13 vidéos) | **4 011** | non fourni |
+| Facebook Reels (12) | **3 394** | **1 à 7 secondes** |
+| Instagram Reels (13) | **65** | **1,2 à 2,9 secondes** |
+
+≈ **7 470 vues, 0 paiement** trouvé dans la boîte mail que je peux lire.
+
+**Trois causes, toutes mesurées :**
+1. **Les gens partent en 1 à 3 secondes.** La vidéo s'ouvre sur une phrase abstraite, sur fond
+   uni (« L'avis est faux. Ou injuste. »). Rien ne retient le pouce.
+2. **Le lien n'est pas cliquable.** Sur TikTok et Instagram, un lien écrit dans la légende ne se
+   clique pas. Même quelqu'un d'intéressé ne peut pas aller acheter.
+3. **Les ~250 vues par vidéo sont l'essai automatique** que chaque réseau offre à toute vidéo ;
+   aucune n'a été poussée plus loin — parce que personne ne restait (cause 1).
+
+**Le sujet qui marche le mieux, c'est les avis** : la meilleure vidéo des 10 jours (903 vues sur
+TikTok) est celle sur l'avis à une étoile. Ça confirme le choix d'une seule offre.
+
+**Réparé (prêt, fabriqué au retour de GitHub)** : une **carte avis** en ouverture des vidéos.
+Dès la 1re seconde, on voit l'avis que le commerçant reconnaît — les étoiles, la phrase du
+client — marqué **« EXEMPLE D'AVIS »** (ce n'est pas un vrai client, on le dit). La voix lit
+l'avis, puis vient la réponse. **3 nouvelles vidéos** (avis-04 : 1 étoile / attente ;
+avis-05 : 5 étoiles ; avis-06 : avis blessant), légendes avec **« Lien dans la bio »**.
+**Vérifié en vrai** : fabriquées ici avec ffmpeg (sans la voix, joignable seulement depuis
+GitHub), images regardées dans les deux thèmes. Garde : 3 nouveaux contrôles dans
+`test:pub-videos` (12/12), **prouvée discriminante** (mention « exemple » retirée → rouge).
+
+**Ce que toi seul peux faire (2 minutes)** : mettre **https://kit.kd-mc.com/avis.html** comme
+lien de ta **bio** TikTok et Instagram. Aucun outil ne peut modifier une bio à ta place.
+
+## 2026-09-24 (soir) — On attend la remise à zéro de GitHub : en attendant, le kit à 17 € est vérifié, corrigé et mis en avant
+
+**Ton choix** : attendre que les 2 000 minutes gratuites de GitHub reviennent (0 €, rien à faire).
+**Cause mesurée** : le dépôt privé n'a que 2 000 minutes par mois, pas de carte → GitHub s'arrête
+au lieu de facturer. Depuis le 22.09 au soir : **711 exécutions, ~3 000 minutes** (durées réelles
+lues sur l'API). Les plus gourmands : fusion automatique 392 min, contrôles visuels 365, relecture
+IA 280, lint 252, tests 244, gitleaks 238, contrôle cross-app 235.
+
+**Le produit à 17 € (Réponses aux avis) — enfin LU, pas deviné.** La base qui le contient me
+refusait la liste, mais acceptait la lecture directe. J'ai lu en entier le module des avis 1-2 ★
+et celui de la routine du lundi : **il est à niveau** — méthode en étapes, 3 consignes prêtes à
+copier, 10 exemples de réponses, listes de vérification, et il prévient que l'IA peut inventer.
+Contrôle automatique des 7 modules : aucun mot interdit par tes règles (« garanti », « rendement »,
+« prompt »…). Une faute corrigée (« Tu te demande » → « Tu te demandes »), **déjà en ligne pour les
+acheteurs** : le contenu est servi directement par la base, sans passer par GitHub.
+
+**« Vends-le »** : il n'avait qu'**une** publication prévue (le 25.09). J'en ai ajouté **3 sur
+Facebook**, sur des créneaux libres parmi les meilleurs de ta page : ven. 26.09 17 h, lun. 29.09
+17 h, mer. 01.10 11 h. Textes au tutoiement, sans promesse d'argent, lien vers la page du kit.
+**Honnête** : une page Facebook qui a peu d'abonnés touche peu de monde sans publicité payée — ces
+publications ne garantissent aucune vente.
+
+**Pour que ça ne recommence pas en octobre** (fusionnera avec le reste quand GitHub repartira) :
+- le ménage des branches tournait **deux fois** (l'auto-merge le fait déjà) → doublon retiré,
+  ~120 min rendues ;
+- le contrôle cross-app tournait **trois fois sur le même code** → gardé sur la demande de fusion
+  et sur `main` seulement ;
+- j'avais moi-même ajouté hier une automatisation **sans limite de temps** (pub → R2) : bornée à 20 min.
+**Limite honnête** : une grosse journée de travail consomme encore ~750 minutes. Ces coupes
+repoussent le mur, elles ne le suppriment pas.
+
+## 2026-09-24 — Le prix barré était FAUX sur les 4 pages : retiré
+
+En relisant la page des avis comme un client, j'ai vu ça : **17 €** ~~39 €~~ « Prix de lancement ».
+
+**Ce 39 € n'a jamais existé.** Le produit n'a jamais été vendu à ce prix. Pareil sur les trois
+autres : 79 €, 59 €, 149 € — quatre fausses promotions. Deux raisons de le retirer, pas une :
+
+1. **Ta règle « rien de faux, partout toujours »** ne fait pas d'exception pour le marketing.
+2. **C'est illégal en Europe** : un prix barré doit être le prix le plus bas réellement pratiqué
+   dans les 30 jours précédents. Tu vends à des clients européens.
+
+Et surtout : ça faisait exactement l'effet inverse de celui recherché. Un faux prix barré, c'est
+le réflexe des pages qui sentent l'arnaque. **17 € affiché seul, avec « un seul paiement, pas
+d'abonnement », est plus crédible qu'un faux −56 %.**
+
+**Le mécanisme reste** : le jour où tu baisses vraiment un prix, il suffit de remettre `avant`
+dans le catalogue — mais la garde exige alors `avantPratiqueDu`, la période où ce prix a
+réellement été demandé. Une vraie promo passe, une fausse est bloquée.
+
+**Garde** : `npm run test:prix-honnete` (dans la chaîne de tests) — **4 contrôles, 0 échec**,
+**prouvée discriminante** : j'ai remis le faux 39 € → elle est passée au rouge, retiré → vert.
+
+## 2026-09-24 — « Ça n'a jamais été au niveau commercialisable » : la page montre enfin le produit
+
+Tu as raison, et c'était mesurable : la page qui demande **17 €** contenait **0 image, 0 vidéo,
+0 extrait**. On demandait de payer pour du texte qui promet du texte. Personne n'achète ça.
+
+**Ce qui change** (page des avis, `avis.kd-mc.com` / `kit.kd-mc.com/avis.html`) : un bloc
+**« Voilà exactement ce que tu vas envoyer »**, placé **avant le prix**, avec deux vrais cas —
+un avis 1 ★ (« une heure d'attente… je ne remettrai pas les pieds ici ») et la réponse complète
+qu'on obtient (**507 caractères**, pas un extrait), puis un 5 ★ et sa réponse courte. Sous chaque
+cas, **pourquoi ça marche**. Et écrit noir sur blanc : *« Ce sont des exemples, pas de vrais
+clients »* — on ne fabrique pas de faux témoignages.
+
+**Ce n'est pas une page bricolée** : le bloc vit dans le **générateur** (`tools/produits/pages.mjs`)
+et son contenu dans le **catalogue** (`tools/produits/catalogue.json`). Les trois autres produits
+sont inchangés tant qu'ils n'ont pas leur propre démo — on ne bâcle pas les quatre d'un coup.
+
+**Vérifié en vrai navigateur** (`npm run test:page-preuve-reelle`, dans la chaîne de tests) :
+**20 contrôles, 0 échec**, en clair ET en sombre, sur iPhone 375 px — le bloc est rendu, visible,
+avant le prix, sans débordement, texte à 16 px, aucune exception. **Prouvé discriminant par
+sabotage** : bloc retiré → **16 contrôles tombent**. Captures : `audit/captures-vente/`.
+
+**Une erreur corrigée en cours de route, honnêtement** : j'ai cru voir la barre d'achat recouvrir
+la fin de la page sur une capture, j'ai « corrigé ». Mesuré ensuite : l'écart réel était de
+**−59 px**, la barre ne cachait rien — **c'était un artefact de capture** (une capture d'élément
+rend les barres fixes par-dessus). Correctif retiré. *Une capture n'est pas une mesure.*
+
+**Ce qui n'est PAS fait, et que je ne cache pas** : un seul produit sur quatre a sa preuve, il n'y
+a toujours ni image ni vidéo (que du texte mis en scène), et le paiement reste **PayPal perso +
+validation à la main** — c'est ton choix assumé. La CI est par ailleurs **à l'arrêt pour
+facturation** depuis ~01 h 35 : rien ne tourne côté GitHub tant que ce n'est pas débloqué.
+
+## 2026-09-24 — « Récupère mon IBAN, il est déjà quelque part » : cherché partout, et la suite
+
+### Où j'ai cherché (mesuré, pas supposé)
+
+| Endroit | Résultat |
+|---|---|
+| Tout le dépôt, tous fichiers suivis (`git grep`, sans filtre d'extension) | seulement `FR7630006000011234567890189` — l'IBAN **d'exemple** des tests |
+| Historique git (`git log -S`, 400 révisions) | rien |
+| Gmail (`IBAN OR RIB OR relevé d'identité bancaire`) | 1 fil : **mon propre e-mail** d'hier |
+| Google Drive | 2 zips de sauvegarde du dépôt, rien d'autre |
+| Le coffre du worker de vente | **« virement FERMÉ — aucun IBAN rangé »** (journal du déploiement du 18.09) |
+
+⚠️ **Le `MC98 •••• •••• ••••` qu'on voit dans les anciennes boutiques n'est PAS son IBAN** :
+c'était un **faux** posé en dur dans e-KDMC — le bouton « Copier l'IBAN » copiait des points.
+C'est écrit noir sur blanc dans `KEVIN_ACTIONS_TODO.md` du 16.09 : « Donne-moi le vrai ».
+
+### Le seul endroit où il peut être sans que je puisse le lire
+
+Le secret GitHub **`IBAN_KEVIN`**, cité par `sync-secrets-to-cloudflare.yml` — un workflow qui
+n'a **jamais tourné** (0 exécution). Les noms de secrets ne sont pas lisibles depuis cette
+session (403 du proxy), donc je ne peux pas dire s'il existe.
+
+### Ce que j'ai construit pour le récupérer SANS JAMAIS LE VOIR
+
+`services/kdmc-vente/worker.js` lit maintenant l'IBAN dans cet ordre :
+1. le **coffre** du worker (posé depuis Commerce → 🏦 Virement) ;
+2. à défaut, le secret **`IBAN_KEVIN`**, poussé au déploiement par `deploy-kdmc-vente.yml`.
+
+Il passe donc **de secret à secret** : ni moi ni le dépôt ne le voient jamais. Et le journal du
+prochain déploiement **répond à la question** : soit « IBAN_KEVIN poussé », soit « IBAN_KEVIN
+ABSENT ».
+
+**Trois garde-fous, testés en les exécutant** (`tests/caisse-complete.test.mjs`, dans `test:ci`) :
+- un secret qui **rate la clé 97** est **ignoré**, jamais servi — un acheteur ne paiera pas dans
+  le vide à cause d'une faute de frappe ; sabotage (servir sans vérifier) → **1 échec** ;
+- le **coffre gagne toujours** sur le secret, sinon un vieux secret écraserait le vrai IBAN
+  qu'il vient de poser ; sabotage (inverser) → **1 échec** ;
+- un **coffre en panne** ne ferme pas le virement (le secours prend le relais) ; sabotage → **1 échec**.
+39 tests du worker de vente toujours verts.
+
+### ⛔ MAIS : GitHub Actions est à l'arrêt (facturation)
+
+Mesuré à 01 h 35 : toutes les exécutions échouent avec *« The job was not started because recent
+account payments have failed or your spending limit needs to be increased »*. Cause probable :
+le dépôt est **privé depuis le 23.09** — les minutes d'Actions sont alors **facturées**, alors
+qu'elles sont **gratuites et illimitées sur un dépôt public**.
+
+**Conséquence** : plus rien ne se déploie ni ne se publie — y compris ce repli d'IBAN, la
+publication du site et la chaîne de pub. C'est le blocage numéro 1.
+
 ## 2026-10-01 (00h UTC) — « Il n'y a pas de sons » : l'iPhone en mode silencieux ; Bee v1.14, Lingua v2.129.1
 
 Kevin, capture de Bee v1.13 en ligne (01h45) : pas de son, et Bee répond « Bonjour Javi ! ». **Cause 1**

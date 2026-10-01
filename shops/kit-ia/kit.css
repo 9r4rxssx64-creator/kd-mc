@@ -111,3 +111,23 @@ footer a,.petit a,.sur a{display:inline-flex;align-items:center;min-height:44px}
 .consent{display:flex;align-items:center;gap:var(--e16);font-weight:400;color:var(--texte2);font-size:var(--t14);margin:var(--e8) 0 var(--e16)}
 .consent input[type=checkbox]{width:44px;height:44px;min-height:44px;flex:0 0 auto;margin:0;accent-color:var(--accent);cursor:pointer}
 .consent span{flex:1 1 auto}
+
+/* ── LA PREUVE (24.09.2026) ───────────────────────────────────────────────
+   La page demandait 17 € sans jamais montrer le produit : 0 image, 0 vidéo,
+   0 extrait. Ce bloc met sous les yeux un cas réel et la réponse obtenue.
+   Tout en jetons du thème : lisible en clair comme en sombre, sans image à
+   charger, sans style en ligne (la CSP `style-src 'self'` les refuse). */
+.demo{margin:var(--e48) 0}
+.demo>.petit{margin-top:calc(var(--e8) * -1);margin-bottom:var(--e24)}
+.demo-cas{margin:0 0 var(--e32);padding:var(--e16);border:1px solid var(--bord);border-radius:var(--r);background:var(--surface2)}
+.demo-avant{display:flex;align-items:baseline;gap:var(--e8);margin-bottom:var(--e8)}
+.demo-note{color:var(--attention);font-size:var(--t18);letter-spacing:.08em;line-height:1}
+.demo-src{font-size:var(--t13);font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--texte3)}
+.demo-avis{margin:0;padding:var(--e16);border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--bord);
+  color:var(--texte2);font-size:var(--t16);line-height:1.55}
+.demo-fleche{margin:var(--e8) 0;text-align:center;color:var(--accent);font-size:var(--t20);line-height:1}
+.demo-reponse{margin:0;padding:var(--e16);border-radius:var(--r-sm);background:var(--encart);
+  border-left:4px solid var(--accent);color:var(--texte);font-size:var(--t16);line-height:1.6}
+.demo-tag{display:block;font-size:var(--t13);font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:var(--e8)}
+.demo-pourquoi{margin:var(--e16) 0 0;font-size:var(--t14);color:var(--texte2);line-height:1.55}

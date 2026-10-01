@@ -10,7 +10,7 @@
       "nom": "Kit IA au bureau — 7 modules pour les salariés qui veulent finir plus tôt",
       "slug": "bureau",
       "prix": 37,
-      "prixBarre": 79,
+      "prixBarre": null,
       "page": "https://kit.kd-mc.com/bureau.html",
       "lecteur": "https://kit.kd-mc.com/lire.html?produit=bureau-ia",
       "modulesAttendus": 7,
@@ -25,7 +25,7 @@
       "nom": "Kit IA de l'étudiant — réviser, comprendre et rendre mieux, sans tricher",
       "slug": "etudiant",
       "prix": 27,
-      "prixBarre": 59,
+      "prixBarre": null,
       "page": "https://kit.kd-mc.com/etudiant.html",
       "lecteur": "https://kit.kd-mc.com/lire.html?produit=etudiant-ia",
       "modulesAttendus": 7,
@@ -40,7 +40,7 @@
       "nom": "40 réponses aux avis clients, prêtes à adapter — Google, Facebook, TripAdvisor",
       "slug": "avis",
       "prix": 17,
-      "prixBarre": 39,
+      "prixBarre": null,
       "page": "https://kit.kd-mc.com/avis.html",
       "lecteur": "https://kit.kd-mc.com/lire.html?produit=avis-ia",
       "modulesAttendus": 7,
@@ -55,7 +55,7 @@
       "nom": "Kit IA de l'agent immobilier — annonces, prospection, visites, suivi",
       "slug": "immo",
       "prix": 67,
-      "prixBarre": 149,
+      "prixBarre": null,
       "page": "https://kit.kd-mc.com/immo.html",
       "lecteur": "https://kit.kd-mc.com/lire.html?produit=immo-ia",
       "modulesAttendus": 7,
@@ -311,6 +311,39 @@
       "post": 380995009,
       "date": "2026-09-30T10:00:00+02:00",
       "legende": "Un avis négatif tombe un jeudi soir. Tu ouvres la consigne du club, tu copies, tu réponds calmement, puis tu passes à au"
+    },
+    {
+      "id": "avis-04",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/avis-04.mp4",
+      "post": null,
+      "date": null,
+      "legende": "Un avis à une étoile tombe le soir, après le service. Ne réponds pas à chaud : trois lignes calmes le lendemain, pour le"
+    },
+    {
+      "id": "avis-05",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "clair",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/avis-05.mp4",
+      "post": null,
+      "date": null,
+      "legende": "Un cinq étoiles mérite mieux qu'un « merci pour votre avis ». Un détail repris, un prénom de l'équipe, deux lignes. Répo"
+    },
+    {
+      "id": "avis-06",
+      "produit": "avis-ia",
+      "page": "https://kit.kd-mc.com/avis.html",
+      "theme": "sombre",
+      "cartes": 5,
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/avis-06.mp4",
+      "post": null,
+      "date": null,
+      "legende": "Un avis blessant, sans aucun détail. Pas de justification en dix lignes : un fait simple, une porte ouverte, et les futu"
     }
   ],
   "liens": [
@@ -399,7 +432,7 @@
       "ic": "🎬",
       "nom": "Vidéos de pub",
       "url": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/index.json",
-      "quoi": "18 MP4 publics"
+      "quoi": "21 MP4 publics"
     },
     {
       "ic": "📅",

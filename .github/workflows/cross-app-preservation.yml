@@ -23,6 +23,10 @@ concurrency:
 # Note : ne protège PAS apex-ai/index.html (en cours de rebuild v13.0)
 
 on:
+  # 'claude/**' RETIRÉ du push le 24.09.2026 : le même code était contrôlé TROIS
+  # fois (envoi sur la branche + demande de fusion + main). 88 passages et ~235
+  # minutes en deux jours, sur un forfait de 2 000/mois (dépôt privé). La demande de
+  # fusion et main restent contrôlées ; l'auto-merge n'attendait pas ce contrôle.
   push:
     branches:
       - main

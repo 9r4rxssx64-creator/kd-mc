@@ -128,3 +128,49 @@ test('l\'image BOUGE : le texte monte et se révèle, le trait d\'accent se remp
 test('la voix de la pub demande le style « pub », pas la voix de l\'école', () => {
   assert.equal(V.STYLE_VOIX, 'pub');
 });
+
+/* ── CARTE AVIS (26.09.2026) ────────────────────────────────────────────────
+   Mesuré sur Metricool : ~7 400 vues en 10 jours, temps de visionnage moyen 1 à
+   3 s, 0 vente. La 1re seconde doit MONTRER l'avis que le commerçant reconnaît,
+   et dire honnêtement que c'est un exemple. */
+test('carte avis : validée à part, bornée, et toujours marquée EXEMPLE', () => {
+  const base = S.videos.find((v) => v.id === 'avis-04');
+  assert.ok(base && base.avis, 'avis-04 doit ouvrir sur une carte avis');
+  const connus = V.produitsConnus();
+  assert.ok(V.valideScript(base, { produits: connus }).ok, 'le script réel passe');
+  const refus = (avis, motif) => {
+    const r = V.valideScript({ ...base, avis }, { produits: connus });
+    assert.ok(!r.ok && r.erreurs.some((e) => motif.test(e)), 'refus attendu (' + motif + ') : ' + r.erreurs.join(' ; '));
+  };
+  refus({ etoiles: 0, texte: base.avis.texte }, /étoiles/);
+  refus({ etoiles: 6, texte: base.avis.texte }, /étoiles/);
+  refus({ etoiles: 2.5, texte: base.avis.texte }, /étoiles/);
+  refus({ etoiles: 1, texte: 'Trop court' }, /20 à 140/);
+  refus({ etoiles: 1, texte: 'x'.repeat(141) }, /20 à 140/);
+  refus({ etoiles: 1, texte: 'Ils garantissent un résultat et puis rien du tout.' }, /mot interdit/);
+});
+
+test('carte avis : l\'avis est LU en premier, puis les lignes de réponse', () => {
+  const v = S.videos.find((x) => x.id === 'avis-04');
+  const lus = V.textesLus(v);
+  assert.equal(lus.length, v.lignes.length + 1);
+  assert.equal(lus[0], v.avis.texte);
+  assert.deepEqual(lus.slice(1), v.lignes);
+  const sans = S.videos.find((x) => !x.avis);
+  assert.deepEqual(V.textesLus(sans), sans.lignes, 'une vidéo sans avis est rendue exactement comme avant');
+});
+
+test('carte avis : fiche blanche, étoiles, mention EXEMPLE ; les autres cartes inchangées', () => {
+  assert.equal(V.etoiles(1), '★☆☆☆☆');
+  assert.equal(V.etoiles(5), '★★★★★');
+  const carte = { i: 0, texte: 'Une heure d\'attente pour une table réservée.', duree: 3, avis: { etoiles: 1, texte: 'x' } };
+  const a = V.argsCarte({ carte, n: 6, theme: 'sombre', marque: 'kit.kd-mc.com', fichierTexte: '/tmp/t.txt', audio: null, sortie: '/tmp/o.mp4' });
+  const vf = a[a.indexOf('-vf') + 1];
+  assert.match(vf, /EXEMPLE D’AVIS/, 'la carte doit dire que c\'est un exemple (rien de faux)');
+  assert.match(vf, /text='★☆☆☆☆'/, 'une étoile pleine, quatre vides');
+  assert.match(vf, /color=0xFFFFFF:t=fill/, 'une fiche blanche');
+  assert.match(vf, /textfile=\/tmp\/t\.txt/, 'le texte vient d\'un fichier');
+  assert.ok(a.includes('anullsrc=r=24000:cl=mono'), 'toujours une piste audio');
+  const normale = V.argsCarte({ carte: { i: 1, texte: 'Tu reconnais ce qui est vrai.', duree: 3 }, n: 6, theme: 'sombre', marque: 'kit.kd-mc.com', fichierTexte: '/tmp/t.txt', audio: null, sortie: '/tmp/o.mp4' });
+  assert.ok(!/EXEMPLE/.test(normale[normale.indexOf('-vf') + 1]), 'une carte ordinaire ne porte pas la fiche');
+});

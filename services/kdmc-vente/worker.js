@@ -389,9 +389,33 @@ export function ibanValide(v) {
 }
 export function normaliseIban(v) { return String(v || '').toUpperCase().replace(/[\s-]/g, ''); }
 
+/* D'où vient l'IBAN, dans cet ordre (Kevin 24.09.2026 : « récupère mon IBAN, il est
+   déjà quelque part ») :
+     1. le COFFRE du worker (KV), posé depuis Commerce → 🏦 Virement ;
+     2. à défaut, le secret `IBAN_KEVIN` — Kevin l'a peut-être déjà déposé dans les
+        secrets GitHub (`sync-secrets-to-cloudflare.yml` le cite), et il part alors
+        vers ce worker au déploiement. Personne n'a besoin de le relire : il passe
+        de secret à secret.
+   L'IBAN de secours est VÉRIFIÉ (clé 97) avant d'être servi : mieux vaut un bouton
+   « virement » absent qu'un acheteur qui paie sur un IBAN faux à cause d'une faute
+   de frappe dans un secret. Un secret invalide est ignoré, jamais servi. */
+export function banqueDeSecours(env) {
+  const iban = normaliseIban(env && env.IBAN_KEVIN);
+  if (!iban || !ibanValide(iban)) return {};
+  return {
+    iban,
+    bic: String((env && env.BIC_KEVIN) || '').trim().toUpperCase() || null,
+    titulaire: String((env && env.TITULAIRE_VIREMENT) || 'Kevin DESARZENS').slice(0, 80),
+    source: 'secret',
+  };
+}
+
 async function lireBanque(env) {
-  try { const v = await env.VENTES.get('reglage:banque'); return v ? JSON.parse(v) : {}; }
-  catch (_) { return {}; }
+  let coffre = {};
+  try { const v = await env.VENTES.get('reglage:banque'); coffre = v ? JSON.parse(v) : {}; }
+  catch (_) { coffre = {}; }
+  if (coffre && coffre.iban) return coffre;
+  return banqueDeSecours(env);
 }
 
 export function lienPaypalMe(produit) {
@@ -1287,4 +1311,4 @@ export default {
 };
 
 /* Export pour les tests hors-ligne (le worker n'en dépend pas). */
-export const __test = { ficheAcheteur, nomPlausible, PRODUITS, WORKFLOWS, masqueEmail, nouveauCode, memeMontant, nettoieEmail, emailPlausible, ALPHABET, origineDuDomaine, lireContenu, envoieCode, EMAILJS };
+export const __test = { ficheAcheteur, nomPlausible, PRODUITS, WORKFLOWS, masqueEmail, nouveauCode, memeMontant, nettoieEmail, emailPlausible, ALPHABET, origineDuDomaine, lireContenu, envoieCode, EMAILJS, lireBanque };

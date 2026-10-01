@@ -84,6 +84,17 @@ export function valideScript(v, { produits = [] } = {}) {
     if (INTERDIT.test(String(l))) e.push('mot interdit (jargon, promesse ou chiffre invérifiable) : « ' + l + ' »');
   }
   if (!lignes.some((l) => /gratuit|l'année/i.test(l))) e.push('la dernière carte doit rappeler le module 1 gratuit (ou l\'année du Club)');
+  /* CARTE AVIS (26.09.2026, mesuré sur Metricool : ~7 400 vues en 10 jours, temps de
+     visionnage moyen 1 à 3 secondes, 0 vente). Une phrase abstraite sur fond uni se
+     fait balayer avant d'être lue. La 1re seconde doit MONTRER ce que le commerçant
+     reconnaît : l'avis lui-même, avec ses étoiles. Optionnelle ; toujours marquée
+     EXEMPLE (règle « rien de faux » : ce n'est pas l'avis d'un vrai client). */
+  if (v.avis !== undefined) {
+    const a = v.avis || {};
+    if (!Number.isInteger(a.etoiles) || a.etoiles < 1 || a.etoiles > 5) e.push('avis : 1 à 5 étoiles (entier)');
+    if (typeof a.texte !== 'string' || a.texte.trim().length < 20 || a.texte.length > 140) e.push('avis : texte de 20 à 140 caractères');
+    if (INTERDIT.test(String(a.texte))) e.push('avis : mot interdit');
+  }
   if (typeof v.legende !== 'string' || v.legende.length < 60 || v.legende.length > 600) e.push('légende : 60 à 600 caractères');
   if (INTERDIT.test(String(v.legende))) e.push('légende : mot interdit');
   const h = Array.isArray(v.hashtags) ? v.hashtags : [];
@@ -92,7 +103,7 @@ export function valideScript(v, { produits = [] } = {}) {
   if (emoji) e.push('émoji interdit');
   /* Accents (mesuré le 17.09 : le modèle a livré « ca arrive », « prepare tes reponses » — du texte
      écrit sans accents, à l'écran ET dans la légende). Un mot courant sans son accent = refus. */
-  const texte = lignes.join(' ') + ' ' + String(v.legende || '');
+  const texte = lignes.join(' ') + ' ' + String(v.legende || '') + ' ' + String((v.avis && v.avis.texte) || '');
   const sans = texte.match(SANS_ACCENT) || [];
   if (sans.length) e.push('accents manquants : « ' + [...new Set(sans.map((m) => m.trim()))].join(' », « ') + ' »');
   if ((texte.match(/[àâäéèêëîïôöùûüçœ]/gi) || []).length < 2) e.push('texte sans accents (français écrit sans é/è/à/ç)');
@@ -117,6 +128,10 @@ export function enveloppe(texte, max = 20) {
 export function taillePolice(nbLignes) { return nbLignes <= 2 ? 88 : nbLignes <= 4 ? 76 : 64; }
 
 /* ── Le plan : durée de chaque carte à partir des durées audio ───────────── */
+/* Ce qui est LU, carte par carte. Avec une carte avis, la voix lit d'abord l'avis
+   (c'est l'accroche), puis les lignes de réponse. */
+export function textesLus(v) { return v && v.avis ? [String(v.avis.texte), ...v.lignes] : [...v.lignes]; }
+export function etoiles(n) { const k = Math.max(0, Math.min(5, n | 0)); return '\u2605'.repeat(k) + '\u2606'.repeat(5 - k); }
 export function planCartes(lignes, durees) {
   return lignes.map((texte, i) => {
     const audio = durees[i];
@@ -129,6 +144,7 @@ export function planCartes(lignes, durees) {
 const couleurFF = (hex) => '0x' + String(hex).replace('#', '');
 export function argsCarte({ carte, n, theme, marque, fichierTexte, audio, sortie, police = POLICE, riche = true }) {
   const t = THEMES[theme] || THEMES.sombre;
+  if (carte.avis) return argsCarteAvis({ carte, n, theme, marque, fichierTexte, audio, sortie, police, riche });
   const lignes = enveloppe(carte.texte);
   const taille = taillePolice(lignes.length);
   const d = carte.duree;
@@ -151,6 +167,37 @@ export function argsCarte({ carte, n, theme, marque, fichierTexte, audio, sortie
   ].join(',');
   /* Fond : un dégradé LENT au lieu d'un aplat. `speed` très bas = respiration,
      pas clignotement. Repli (riche=false) : l'aplat d'origine, jamais d'échec. */
+  const fond = riche
+    ? `gradients=s=1080x1920:c0=${t.fond}:c1=${t.fond2}:c2=${t.halo}:n=3:speed=0.008:x0=140:y0=200:x1=940:y1=1720:r=30:d=${d}`
+    : `color=c=${couleurFF(t.fond)}:s=1080x1920:r=30:d=${d}`;
+  const args = ['-y', '-f', 'lavfi', '-i', fond];
+  if (audio) args.push('-i', audio); else args.push('-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono');
+  args.push('-vf', filtres, '-t', String(d), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-r', '30',
+    '-c:a', 'aac', '-b:a', '96k', '-ar', '48000', '-ac', '1', '-shortest', sortie);
+  return args;
+}
+/* La carte AVIS : une fiche blanche au centre, les étoiles en or, l'avis en noir,
+   « EXEMPLE D'AVIS » au-dessus (honnêteté), et la marque en bas. Le texte de l'avis
+   vient d'un FICHIER (aucun échappement fragile), comme les autres cartes. */
+export function argsCarteAvis({ carte, n, theme, marque, fichierTexte, audio, sortie, police = POLICE, riche = true }) {
+  const t = THEMES[theme] || THEMES.sombre;
+  const d = carte.duree;
+  const nb = enveloppe(carte.texte, 26).length;
+  const taille = nb <= 3 ? 58 : 50;
+  const haut = 260 + nb * (taille + 18);
+  const y0 = `(ih-${haut})/2`;
+  const filtres = [
+    ...(riche ? ['noise=alls=5:allf=t+u', 'vignette=PI/4.5'] : []),
+    `drawbox=x=72:y=${y0}:w=iw-144:h=${haut}:color=0xFFFFFF:t=fill`,
+    `drawbox=x=72:y=${y0}:w=iw-144:h=${haut}:color=${couleurFF(t.accent)}:t=6`,
+    `drawtext=fontfile=${police}:text='EXEMPLE D\u2019AVIS':fontcolor=0x5B6475:fontsize=34:x=120:y=(h-${haut})/2+48`,
+    `drawtext=fontfile=${police}:text='${etoiles(carte.avis.etoiles)}':fontcolor=${couleurFF('#E8A200')}:fontsize=84:x=120:y=(h-${haut})/2+100`,
+    `drawtext=fontfile=${police}:textfile=${fichierTexte}:fontcolor=0x0D0F14:fontsize=${taille}:line_spacing=18:x=120:y=(h-${haut})/2+220`,
+    `drawtext=fontfile=${police}:text='${marque}':fontcolor=${couleurFF(t.accent)}:fontsize=44:x=(w-text_w)/2:y=h-220`,
+    `drawbox=x=96:y=ih-140:w=(iw-192)*${(carte.i + 1) / n}:h=8:color=${couleurFF(t.accent)}:t=fill`,
+    `fade=t=in:st=0:d=0.15,fade=t=out:st=${Math.max(0, d - 0.25).toFixed(2)}:d=0.25`,
+    'format=yuv420p',
+  ].join(',');
   const fond = riche
     ? `gradients=s=1080x1920:c0=${t.fond}:c1=${t.fond2}:c2=${t.halo}:n=3:speed=0.008:x0=140:y0=200:x1=940:y1=1720:r=30:d=${d}`
     : `color=c=${couleurFF(t.fond)}:s=1080x1920:r=30:d=${d}`;
@@ -206,15 +253,16 @@ export async function rendVideo(v, { marque, dossier, log }) {
   const dir = join(dossier, v.id); mkdirSync(dir, { recursive: true });
   let riches = true;   // rendu riche obtenu pour TOUTES les cartes ?
   const durees = []; const audios = [];
-  for (let i = 0; i < v.lignes.length; i++) {
-    const buf = await voix(v.lignes[i], { log });
-    if (buf) { const f = join(dir, 'voix-' + i + '.mp3'); writeFileSync(f, buf); const d = dureeAudio(f); audios.push(d ? f : null); durees.push(d); log('  voix ' + (i + 1) + '/' + v.lignes.length + ' : ' + (d ? d.toFixed(2) + ' s' : 'fichier illisible → carte muette')); }
-    else { audios.push(null); durees.push(null); log('  voix ' + (i + 1) + '/' + v.lignes.length + ' : absente → carte muette 3,2 s'); }
+  const lus = textesLus(v);
+  for (let i = 0; i < lus.length; i++) {
+    const buf = await voix(lus[i], { log });
+    if (buf) { const f = join(dir, 'voix-' + i + '.mp3'); writeFileSync(f, buf); const d = dureeAudio(f); audios.push(d ? f : null); durees.push(d); log('  voix ' + (i + 1) + '/' + lus.length + ' : ' + (d ? d.toFixed(2) + ' s' : 'fichier illisible → carte muette')); }
+    else { audios.push(null); durees.push(null); log('  voix ' + (i + 1) + '/' + lus.length + ' : absente → carte muette 3,2 s'); }
   }
-  const cartes = planCartes(v.lignes, durees);
+  const cartes = planCartes(lus, durees).map((c) => (v.avis && c.i === 0 ? { ...c, avis: v.avis } : c));
   const morceaux = [];
   for (const c of cartes) {
-    const ft = join(dir, 'texte-' + c.i + '.txt'); writeFileSync(ft, enveloppe(c.texte).join('\n'));
+    const ft = join(dir, 'texte-' + c.i + '.txt'); writeFileSync(ft, enveloppe(c.texte, c.avis ? 26 : 20).join('\n'));
     const out = join(dir, 'carte-' + c.i + '.mp4');
     /* Rendu RICHE d'abord (dégradé animé, grain, vignettage, texte qui monte).
        Si le ffmpeg de la machine n'a pas un de ces filtres, on REFAIT en simple

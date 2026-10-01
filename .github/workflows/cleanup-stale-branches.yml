@@ -32,9 +32,11 @@ on:
   # Kevin 2026-05-20 "branches propres autonome" : le push de l'auto-merge bot
   # utilise GITHUB_TOKEN → ne déclenche pas les workflows push. workflow_run
   # se déclenche APRÈS chaque auto-merge → cleanup vraiment automatique.
-  workflow_run:
-    workflows: ["Auto-merge Claude branches into main"]
-    types: [completed]
+  # workflow_run RETIRÉ le 24.09.2026 : l'auto-merge fait déjà ce ménage dans sa
+  # propre étape « Menage (branches fusionnees + annulations dormantes) ». Ce
+  # déclencheur relançait le même travail après CHAQUE fusion : 62 passages et
+  # ~120 minutes en deux jours, alors que le dépôt privé n'en a que 2 000 par mois.
+  # Le bouton (workflow_dispatch) reste pour un ménage à la demande.
 
 permissions:
   contents: write
@@ -48,7 +50,7 @@ jobs:
     name: Delete merged claude/* branches
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
-    if: github.event.schedule == '0 4 * * *' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'workflow_run'
+    if: github.event.schedule == '0 4 * * *' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     steps:
       - name: Checkout
         uses: actions/checkout@v6

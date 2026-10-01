@@ -1,6 +1,6 @@
 {
  "maj": "2026-09-17",
- "note": "Fiches PUBLIQUES des produits fabriqués par tools/produits/fabrique.mjs : titres, promesses, briefs. Le CONTENU payant (le texte des modules) n'est JAMAIS ici : il est écrit par la fabrique directement en base D1 kdmc-contenu. Un prix ne doit être partagé par aucun autre produit (la caisse reconnaît un paiement PayPal par son montant).",
+ "note": "Fiches PUBLIQUES des produits fabriqués par tools/produits/fabrique.mjs : titres, promesses, briefs. Le CONTENU payant (le texte des modules) n'est JAMAIS ici : il est écrit par la fabrique directement en base D1 kdmc-contenu. Un prix ne doit être partagé par aucun autre produit (la caisse reconnaît un paiement PayPal par son montant). Le prix barré (`avant`) est INTERDIT tant que le produit n'a pas réellement été vendu à ce prix : une fausse promotion est illégale en Europe et décrédibilise la page.",
  "produits": [
   {
    "id": "bureau-ia",
@@ -8,7 +8,6 @@
    "court": "Kit IA au bureau",
    "slug": "bureau",
    "prix": 37,
-   "avant": 79,
    "cible": "un salarié, un assistant, un manager de proximité, PAS technicien, qui travaille sur Outlook, Teams ou Gmail et lit sur son téléphone",
    "promesse": "Faire écrire tes e-mails, tes comptes rendus et tes présentations par un assistant IA gratuit, en gardant ta voix et sans rien coller de confidentiel.",
    "phrase": "Tu tapes moins, tu relis, tu envoies. Le reste de la journée est à toi.",
@@ -54,7 +53,6 @@
    "court": "Kit IA de l'étudiant",
    "slug": "etudiant",
    "prix": 27,
-   "avant": 59,
    "cible": "un lycéen ou un étudiant, qui révise sur son téléphone, et qui veut comprendre plus vite et rendre des travaux plus propres, sans se faire écrire ses devoirs",
    "promesse": "Transformer n'importe quel cours en fiches, en quiz et en explications claires, et te faire interroger avant l'examen.",
    "phrase": "L'IA ne passe pas l'examen à ta place. Elle te fait arriver prêt.",
@@ -100,7 +98,6 @@
    "court": "Réponses aux avis",
    "slug": "avis",
    "prix": 17,
-   "avant": 39,
    "cible": "un commerçant, un restaurateur, un coiffeur, un hôtelier, un artisan, qui reçoit des avis en ligne et n'a pas le temps d'y répondre",
    "promesse": "Répondre à tous tes avis, bons et mauvais, en quinze minutes par semaine, avec ta voix et sans t'énerver.",
    "phrase": "Un avis sans réponse, c'est un client qui parle dans le vide. Une réponse calme, c'est dix clients qui lisent.",
@@ -142,7 +139,27 @@
      "titre": "La routine du lundi : quinze minutes pour tout traiter",
      "brief": "la routine hebdomadaire pas à pas ; coller les avis de la semaine et obtenir les réponses d'un coup, dans sa voix ; relire et publier ; suivre la note moyenne et les mots qui reviennent"
     }
-   ]
+   ],
+   "demo": {
+    "titre": "Voilà exactement ce que tu vas envoyer",
+    "sous": "Deux avis comme tu en reçois, et la réponse que la méthode te donne. Ce sont des exemples, pas de vrais clients.",
+    "cas": [
+     {
+      "etoiles": 1,
+      "source": "Google",
+      "avis": "Une heure d'attente pour une table réservée, et personne ne s'excuse. Le plat était froid. Je ne remettrai pas les pieds ici.",
+      "reponse": "Bonjour Marc, une heure d'attente sur une table réservée, c'est une soirée gâchée et je le comprends. Ce samedi-là, nous avons eu deux absences en cuisine et nous avons continué à servir au lieu de fermer : c'était une mauvaise décision, et c'est la nôtre, pas la vôtre. Pour le plat froid, il aurait dû repartir sans discussion. Si vous nous laissez une seconde chance, écrivez-moi à l'adresse du restaurant en citant cet avis : je réserve votre table moi-même et je m'en occupe personnellement.",
+      "pourquoi": "On nomme le tort, on donne la vraie raison sans se cacher derrière, on ne discute pas l'avis, et on propose une suite concrète. Les dix futurs clients qui lisent ça voient un patron présent."
+     },
+     {
+      "etoiles": 5,
+      "source": "Google",
+      "avis": "Super accueil, on s'est régalés. Mention spéciale au dessert !",
+      "reponse": "Merci Julie. Le dessert, c'est Sofiane qui le monte à la minute — je lui fais passer, ça va lui faire plaisir. À très vite, et venez me dire bonjour la prochaine fois.",
+      "pourquoi": "Court, un détail précis repris de l'avis, un prénom d'équipe, aucune formule toute faite. C'est ce qui différencie une réponse lue d'une réponse copiée-collée."
+     }
+    ]
+   }
   },
   {
    "id": "immo-ia",
@@ -150,7 +167,6 @@
    "court": "Kit IA de l'agent immobilier",
    "slug": "immo",
    "prix": 67,
-   "avant": 149,
    "cible": "un agent, un mandataire ou un négociateur immobilier, indépendant ou en agence, qui travaille sur son téléphone entre deux visites",
    "promesse": "Faire écrire tes annonces, tes messages de prospection, tes comptes rendus de visite et tes relances par un assistant IA gratuit, en une minute chacun, sans jamais coller les données d'un client.",
    "phrase": "Une annonce qui fait cliquer, un vendeur rassuré, un acheteur relancé : trois choses que l'IA écrit pendant que tu conduis.",

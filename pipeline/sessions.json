@@ -898,6 +898,17 @@
       "branche": "claude/legal-et-mesure-kv",
       "sujet": "privacy/cgu : Kevin à titre personnel, loi 1.565 ; mesure-kv.yml (Analytics GraphQL)",
       "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4157"
+    },
+    "kv-cadence-presence": {
+      "titre": "KV : cadence des écritures de présence (10 min)",
+      "branche": "claude/kv-cadence-presence",
+      "sujet": "mesuré 1 264 écritures/jour avant 10h27 ; whoami 60 s + écriture dès 2 min = 30/h/personne → cadence 10 min",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
       "attend_kevin": null,
@@ -3673,6 +3684,15 @@
       "sujet": "PLAFOND KV ÉCRITURES déjà atteint le 1.10 à 10h27 UTC (code 10048) — n'écris rien dans le KV aujourd'hui ; quelque chose écrit ~1 000 fois avant midi, à mesurer",
       "corps": "Mesuré par la publication publique (run 36849092448) : wrangler kv key put → « free usage limit for this operation for today [code: 10048] ». Comptes, fiches, sauvegardes Lingua, cache voix : plus aucune écriture jusqu'à 00h00 UTC. La cadence d'enrich() (27.09) n'a pas suffi : il faut MESURER qui écrit (préfixes nm:, aud:log, acc:, idx:uids, lingua:, cred:, rlc:…). R3 : la porte RH du routeur est en ligne, les 4 fichiers sont servis depuis l'hébergeur en attendant le dépôt KV.",
       "ts": "2026-10-01 10:28",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m180-kv-cadence-presence",
+      "de": "kv-cadence-presence",
+      "a": "toutes",
+      "sujet": "KV mesuré : 1 264 écritures le 1.10 avant 10h27 — c'est le battement de présence (whoami 60 s → écriture dès 2 min) ; routeur : cadence 10 min, admin « vu < 13 min »",
+      "corps": "Run public 36850395794 (mesure-kv.yml, API Analytics) : 29.09 329, 30.09 932, 1.10 1 264 écritures ; pics 05h/03h UTC sans aucun robot GitHub. Correctif routeur : ENRICH_CADENCE 10 min, SESSION_GAP 13 min ; les durées de session sont à ± 10 min ; l'admin dit « en ligne » = vu < 13 min. Si ton app affiche une présence « < 5 min » à partir de last_seen, aligne-la sur 13 min. Pour mesurer les écritures KV : dispatch mesure-kv.yml au public, 0 quota.",
+      "ts": "2026-10-01 10:43",
       "etat": "ouvert"
     }
   ]

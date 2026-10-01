@@ -786,6 +786,8 @@ function rewriteLocation(loc, base, host, baseAmont, upstream) {
 
 /* ===================== SSO transverse kd-mc.com ===================== */
 const SSO_COOKIE = 'kdmc_sso';
+/* Un battement de présence (whoami toutes les 60 s) n'écrit la fiche qu'à cette cadence — voir enrich(). */
+const ENRICH_CADENCE = 10 * 60e3;
 /* CONDITIONS — UN SEUL TEXTE POUR TOUT LE DOMAINE (Kevin 2026-09-27 : « le CGU doit être demandé
    qu'une seule fois dans n'importe quelle app et sauvegardé pour chaque app du domaine. CGU rapide,
    vague, simplifié »). Servi par /__sso/cgu ; l'acceptation vit dans la fiche (`cgu_at`) et vaut
@@ -2272,7 +2274,16 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
      reste ouverte, TERMINÉE dès ~3 min sans ping (= app fermée). Durée = end - ts.
      Les pings ne créent PAS de doublon (ils prolongent la session en cours).
      hits = nombre de vraies sessions. */
-  const SESSION_GAP = 3 * 60e3;
+  /* CADENCE DES ÉCRITURES DE PRÉSENCE (mesuré le 1.10.2026, API Analytics KV, robot mesure-kv) : 1 264
+     écritures avant 10h27 UTC, pics à 05h (428) et 03h (235) — aucun robot GitHub à ces heures. Lecture du
+     code : chaque app ouverte envoie /__sso/whoami toutes les 60 s, et une écriture partait dès que
+     last_seen avait 2 min → 30 écritures par heure et par personne, app simplement ouverte. 260 personnes,
+     plafond 1 000/jour tout le compte (fiches, codes, sauvegardes Lingua, voix…) : il tombait avant midi.
+     Maintenant : un battement sans rien de nouveau n'écrit que toutes les ENRICH_CADENCE (10 min) → ÷ 5.
+     Ce qui est NOUVEAU (fiche, appareil, lieu, session, CGU) s'écrit toujours tout de suite. Le gap de
+     session suit la cadence (sinon chaque écriture ouvrirait une « nouvelle session »). Précision des
+     durées : ± 10 min ; « en ligne » dans l'admin = vu depuis moins de ENRICH_CADENCE + 3 min. */
+  const SESSION_GAP = ENRICH_CADENCE + 3 * 60e3;
   acc.apps = acc.apps || {};
   acc.history = acc.history || [];
   if (host) {
@@ -2303,11 +2314,9 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   } else if (!acc.hits) {
     acc.hits = 1;
   }
-  /* THROTTLE écritures KV (quota free = 1000 writes/jour, partagé compte) : un
-     heartbeat qui ne change rien de structurel n'écrit que si last_seen stocké a
-     plus de 2 min. Présence « en ligne < 5 min » intacte (écriture ≤ toutes les
-     2 min) ; SESSION_GAP 3 min intact (2 min < 3 min). Précision durée : ±2 min. */
-  if (!structural && now - prevSeen < 120e3) return;
+  /* THROTTLE écritures KV (quota free = 1 000 writes/jour, partagé compte) : un battement qui ne change
+     rien de structurel n'écrit que si last_seen stocké a plus de ENRICH_CADENCE (voir plus haut). */
+  if (!structural && now - prevSeen < ENRICH_CADENCE) return;
   /* Nouvel appareil sur une fiche EXISTANTE → trace dans le journal admin
      (signal fort avec si peu d'utilisateurs) + alerte push si configurée. */
   /* NOUVEL INSCRIT fermé à une app → Kevin doit le SAVOIR, sinon la personne

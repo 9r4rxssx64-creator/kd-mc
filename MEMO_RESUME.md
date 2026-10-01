@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (11h30 UTC) — KV MESURÉ : 1 264 écritures avant 10h27, pics la nuit sans robot → le battement de présence ; cadence 10 min
+
+- **Mesure** (run public 36850395794, `mesure-kv.yml`, API Analytics GraphQL — le jeton avait le droit) : espace
+  ACCOUNTS `8cfa33…` : 29.09 → 329 écritures, 30.09 → 932, **1.10 → 1 264 à 10h27 UTC** ; lectures 3 428 ; heures les
+  plus chargées : 05h UTC 428, 00h 244, 03h 235, 30.09 20h 184. **0 run GitHub** (coffre et public) entre 02h et 07h.
+- **Cause lue dans le code, cohérente avec les heures** : `/__sso/whoami` toutes les 60 s par app ouverte (CMCteams,
+  light, 12 autres pages) → `enrich()` écrivait dès 2 min → 30 écritures/h/personne. 05h UTC = 07h à Monaco, prise de
+  poste. **Correctif** : `ENRICH_CADENCE = 10 min` (÷ 5), `SESSION_GAP` = cadence + 3 min, admin « vu < 13 min ».
+  Garde `services/kdmc-router/enrich-cadence.test.mjs` (horloge simulée : 40 battements → 5 écritures, 1 session,
+  durée 30 min, nouvel appareil écrit tout de suite ; sabotage cadence 2 min → 21 écritures, rouge). Leçon #377.
+- **Après** à mesurer le 2.10 par le même robot. Les autres écrivains (anonv/anon 2 par visiteur anonyme/app/heure,
+  aud:log réécrit par événement, compteurs q:/dep:) restent à chiffrer si le ÷ 5 ne suffit pas.
+
 ## 2026-10-01 (11h05 UTC) — R4 fait (pages légales vraies) · robot de mesure des écritures KV
 
 - **R4 (P0)** : les 4 pages légales disaient « Responsable : Kevin DESARZENS, Casino de Monte-Carlo (SBM) », « Contact DPO :

@@ -102,7 +102,9 @@
 
   function kvp(k, v) { return '<div><span>' + k + '</span><br>' + v + '</div>'; }
   /* ---- Présence : qui est connecté, combien, cliquable → fiche ---- */
-  var ONLINE_MS = 5 * 60e3, RECENT_MS = 60 * 60e3;
+  /* « En ligne » = vu depuis moins de 13 min : le routeur n'écrit la présence que toutes les 10 min
+     (ENRICH_CADENCE, services/kdmc-router/worker.js — plafond KV 1 000 écritures/jour, mesuré 1.10.2026). */
+  var ONLINE_MS = 13 * 60e3, RECENT_MS = 60 * 60e3;
   function ini(a) { return (String(a.name || a.uid || '?').trim().charAt(0) || '?').toUpperCase(); }
   function prow(a) {
     var on = Date.now() - (a.last_seen || 0) < ONLINE_MS;
@@ -130,7 +132,7 @@
     var rec = accounts.filter(function (a) { return a.last_seen && now - a.last_seen >= ONLINE_MS && now - a.last_seen < RECENT_MS; });
     var h = '<h2 class="cat">🟢 Connectés <button class="refresh" id="prefresh" type="button">↻ Rafraîchir</button></h2>'
       + '<div class="stat">'
-      + '<div class="pill kdmc-in"><b>' + on.length + '</b> en ligne <span style="color:var(--subtle)">vus &lt; 5 min</span></div>'
+      + '<div class="pill kdmc-in"><b>' + on.length + '</b> en ligne <span style="color:var(--subtle)">vus &lt; 13 min</span></div>'
       + '<div class="pill kdmc-in"><b>' + rec.length + '</b> récents <span style="color:var(--subtle)">&lt; 1 h</span></div>'
       + '</div>'
       + (on.length ? '<div>' + on.map(prow).join('') + '</div>'

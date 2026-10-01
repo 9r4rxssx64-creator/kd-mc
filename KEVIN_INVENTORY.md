@@ -10,6 +10,8 @@
 | `tests/verify-pages-legales.mjs` | **Nouveau.** 22 contrôles : plus de loi abrogée, plus d'adresse SBM, plus de « DPO ». `npm run test:pages-legales`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-pages-legales.mjs) |
 | `tools/audit/mesure-kv.mjs` | **Nouveau.** Lit chez Cloudflare combien d'écritures KV sont faites, par espace, par jour et par heure. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/mesure-kv.mjs) |
 | `.github/workflows/mesure-kv.yml` | **Nouveau.** Le robot (public, lancé à la main) qui fait cette mesure et la met dans ses annotations. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/mesure-kv.yml) |
+| `services/kdmc-router/enrich-cadence.test.mjs` | **Nouveau.** La présence n'écrit plus que toutes les 10 min (40 battements → 5 écritures, sabotage 21). `npm run test:enrich-cadence`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/enrich-cadence.test.mjs) |
+| `services/kdmc-router/worker.js`, `kdmc-home/admin/admin.js` | **Modifiés.** Cadence 10 min des écritures de présence ; « en ligne » = vu < 13 min. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
 | `tests/verify-mesure-kv.mjs` | **Nouveau.** La garde qui prouve que la mesure ne peut pas mentir (8 contrôles, sabotage). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-mesure-kv.mjs) |
 
 ### 🔒 Les noms et plannings de tes 291 collègues ne sortent plus sans connexion (1.10.2026, nuit)

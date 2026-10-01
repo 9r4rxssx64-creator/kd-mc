@@ -47,7 +47,7 @@ const browser = await chromium.launch(process.env.PW_EXE ? { executablePath: pro
 console.log('\nCompte unique, dans le vrai portail, sur deux téléphones\n');
 try {
   /* 1. Téléphone A : création */
-  const A = await browser.newContext(); await brancher(A);
+  const A = await browser.newContext({ serviceWorkers: 'block' }); await brancher(A);
   const pa = await A.newPage(); await pa.goto('https://kd-mc.com/');
   await pa.fill('#f-prenom', 'Marie'); await pa.fill('#f-nom', 'Curie');
   await pa.fill('#f-code', '314159'); await pa.fill('#f-code2', '314159');
@@ -57,7 +57,7 @@ try {
     '1. téléphone A : compte créé → accueil, et le domaine a enregistré l\'empreinte du code');
 
   /* 2. Téléphone B, neuf */
-  const B = await browser.newContext(); await brancher(B);
+  const B = await browser.newContext({ serviceWorkers: 'block' }); await brancher(B);
   const pb = await B.newPage(); await pb.goto('https://kd-mc.com/');
   await pb.click('#f-deja');
   await pb.fill('#l-nom', 'Marie Curie'); await pb.fill('#l-code', '000000'); await pb.click('#l-go');
@@ -72,7 +72,7 @@ try {
   ok(/"uid":"marie-curie"/.test(local) && !local.includes('314159'), '2 bis. le compte est gardé sur B (la prochaine fois, le code seul suffit) — sans le code en clair');
 
   /* 4. Téléphone C : tentative d'usurpation par recréation */
-  const C = await browser.newContext(); await brancher(C);
+  const C = await browser.newContext({ serviceWorkers: 'block' }); await brancher(C);
   const pc = await C.newPage(); await pc.goto('https://kd-mc.com/');
   await pc.fill('#f-prenom', 'Marie'); await pc.fill('#f-nom', 'Curie');
   await pc.fill('#f-code', '999999'); await pc.fill('#f-code2', '999999');
@@ -83,7 +83,7 @@ try {
 
   /* 5. Téléphone D : une app INSTALLÉE (CMCteams, routeur « # ») renvoie au portail ; après la connexion,
         le portail passe par la porte /__sso/entrer de l'app, qui pose le cookie et ramène sur la page. */
-  const D = await browser.newContext(); await brancher(D);
+  const D = await browser.newContext({ serviceWorkers: 'block' }); await brancher(D);
   const vus = [];
   await D.route('https://cmcteams.kd-mc.com/**', async (route) => {
     const u = new URL(route.request().url()); vus.push(u.pathname + u.search);
@@ -111,7 +111,7 @@ try {
   /* 6. Téléphone E = le PC de Kevin (aucun passkey) : « 👑 Je suis l'administrateur » + code admin
         → reconnu ADMIN, zone privée visible. Puis Kevin qui tape son nom dans « Créer mon compte »
         est renvoyé vers le code admin (jamais un « code de compte » pour l'admin). */
-  const E = await browser.newContext(); await brancher(E);
+  const E = await browser.newContext({ serviceWorkers: 'block' }); await brancher(E);
   const pe = await E.newPage(); await pe.goto('https://kd-mc.com/');
   await pe.click('#f-admin'); await pe.fill('#a-code', '000000'); await pe.click('#a-go'); await pe.waitForTimeout(800);
   const errA = (await pe.locator('#a-err').textContent({ timeout: 2000 }).catch(() => '')) || '';
@@ -120,7 +120,7 @@ try {
   const priv = await pe.locator('#priv-zone').isVisible().catch(() => false);
   const helloE = (await pe.locator('#hello').textContent().catch(() => '')) || '';
   ok(await accueilVisible(pe) && priv && /Kevin/.test(helloE), '6 bis. PC : bon code admin → accueil admin (zone privée visible), identité vérifiée sans Face ID', helloE + ' priv=' + priv);
-  const F = await browser.newContext(); await brancher(F);
+  const F = await browser.newContext({ serviceWorkers: 'block' }); await brancher(F);
   const pf = await F.newPage(); await pf.goto('https://kd-mc.com/');
   await pf.fill('#f-prenom', 'Kevin'); await pf.fill('#f-nom', 'Desarzens'); await pf.fill('#f-code', '111111'); await pf.fill('#f-code2', '111111');
   await pf.check('#cgu-ok'); await pf.click('#f-create'); await pf.waitForTimeout(1200);

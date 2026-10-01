@@ -66,7 +66,7 @@ const BASE = `http://127.0.0.1:${srv.address().port}`;
 const nav = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
 
 async function ouvre(init, opts) {
-  const ctx = await nav.newContext(Object.assign({ viewport: { width: 390, height: 844 } }, opts || {}));
+  const ctx = await nav.newContext(Object.assign({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }, opts || {}));
   await ctx.route('https://api.open-meteo.com/**', (r) => { METEO.push(r.request().url());
     r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
       body: JSON.stringify({ current: { temperature_2m: 21.2 }, daily: { temperature_2m_max: [22, 24.4], temperature_2m_min: [15, 16.2] } }) }); });
@@ -278,7 +278,7 @@ try {
     await ctx.close(); }
 
   /* 19. iPhone à l'horizontale (667×375) : on peut écrire ; 20. ℹ️ fait au moins 44 px */
-  { const ctx = await nav.newContext({ viewport: { width: 667, height: 375 } });
+  { const ctx = await nav.newContext({ viewport: { width: 667, height: 375 }, serviceWorkers: 'block' });
     await ctx.route('https://lingua.kd-mc.com/**', (r) => r.fulfill({ status: 404, body: '' }));
     const page = await ctx.newPage(); await page.goto(BASE + '/'); await page.waitForSelector('#javis-send', { timeout: 8000 });
     const r = await page.evaluate(() => { const s = document.querySelector('#javis-send').getBoundingClientRect(), i = document.querySelector('#javis-info').getBoundingClientRect();

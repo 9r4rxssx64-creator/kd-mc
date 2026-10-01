@@ -29,14 +29,14 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **83** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **84** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
 | Automatisations actives | **138** (+ 37 rangées) | `.github/workflows/` |
-| Gardes / tests | **135** fichiers, **196** commandes `npm run` | `tests/` + `package.json` |
+| Gardes / tests | **136** fichiers, **197** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
-| Discussions entre sessions | **181** dont **104** ouvertes | `pipeline/sessions.json` |
+| Discussions entre sessions | **182** dont **105** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **69 564 o ≈ 19 875 tokens** | `wc -c` |
 | `CLAUDE-HISTOIRE.md` (à la demande) | **626 998 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->

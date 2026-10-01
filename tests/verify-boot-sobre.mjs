@@ -26,7 +26,7 @@ const HOST = 'https://cmcteams.kd-mc.com';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d ? '  → ' + d : ''}`); };
 
 async function ouvrir(browser, opts = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, serviceWorkers: 'block' });
   const compte = { put: 0, lourde: 0, version: 0, autres: 0, cles: [] };
   await ctx.route('**/*', async (route) => {
     const req = route.request(); const u = new URL(req.url());

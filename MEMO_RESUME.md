@@ -12,6 +12,25 @@
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-01 (14h50 UTC) — `test:donnees-rh-app` rouge au coffre, vert ici : le navigateur de la CI installe le service worker DE PRODUCTION (leçon #380)
+
+- **Mesuré** : run coffre 36874003734 (chaîne privée après #4161, lue comme promis) : rouge sur ce seul test — « 2 chargements
+  mais les fichiers RH répondent encore 401 », « app installée : 1 chargement, jamais de recharge ». Même Playwright 1.56,
+  même Chromium 1194 des deux côtés : la seule différence est le réseau.
+- **Cause** : `navigator.serviceWorker.register('./sw.js')` et les requêtes d'un service worker ne passent PAS par
+  `ctx.route`. Ici (réseau fermé) : « An unknown error occurred when fetching the script » → aucun SW, tout passe par le
+  harnais. En CI (réseau ouvert) : le navigateur télécharge le VRAI `cmcteams.kd-mc.com/sw.js`, qui pré-cache le vrai
+  `/index.html`, prend le contrôle (`clients.claim`) et sert la recharge depuis la production — le test mesurait le site
+  en ligne, pas la branche.
+- **Reproduit en local** (serveur HTTPS + `--host-resolver-rules=MAP cmcteams.kd-mc.com 127.0.0.1:8443` +
+  `--ignore-certificate-errors`) : sans blocage, **17 requêtes échappent au harnais** après la recharge (1 chargement
+  compté, 3 réponses RH) ; avec `serviceWorkers: 'block'`, **0** (2 chargements, 6 réponses RH).
+- **Fait** : `serviceWorkers: 'block'` dans les 5 harnais qui simulent CMCteams (donnees-rh-app, admin-sans-code,
+  boot-sobre, compte-unique-portail, bee-comportements) ; garde `test:harnais-sans-sw` dans `test:ci` (2 sabotages
+  rouges) ; `test:donnees-rh-app` 12/0 ici. Hors champ, et pourquoi : `verif-live-rapport` (regarde le vrai site sans
+  rien servir), `verify-background-sync-benin` (sert l'app depuis 127.0.0.1 pour éprouver le vrai SW).
+- Preuve qui compte : le run `coffre-chaine-privee` après la fusion (voir ETAT, ligne audit / R10).
+
 ## 2026-10-01 (14h45 UTC) — chaîne privée du coffre : rouge sur mes 4 fusions du jour, réparée (v9.932 / light v1.63)
 
 - **Mesuré** (runs coffre 36837694784, 36848131209, 36850989145, 36871768992/36872184393) : `coffre-chaine-privee` rouge

@@ -7,6 +7,27 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ) — 01/10/2026 10:27 UTC
+
+- **Branche** : `main` · **Commit** : `183bd61e` · **Run** : `36849092448`
+- **Ce qui a lâché** : publier › Données RH → KV du routeur (servies derrière la connexion)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/36849092448
+- **Ce que la machine a dit** :
+
+```
+publier	Données RH → KV du routeur (servies derrière la connexion)	﻿2026-10-01T10:27:01.0082245Z ##[group]Run # Le journal du job est illisible depuis l'agent (leçon #374) : chaque échec se NOMME dans une annotation.
+^[[36;1m# Le journal du job est illisible depuis l'agent (leçon #374) : chaque échec se NOMME dans une annotation.^[[0m
+^[[36;1mtrap 'echo "::error title=Données RH → KV::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR^[[0m
+^[[36;1m[ -n "$NS" ] || { echo "::error::espace KV ACCOUNTS introuvable dans wrangler.toml"; exit 1; }^[[0m
+^[[36;1m[ -n "$LISTE" ] || { echo "::error::liste des données RH vide (services/kdmc-router/donnees-rh.js)"; exit 1; }^[[0m
+^[[36;1m  [ -s "$FICHIER" ] || { echo "::error::$FICHIER absent ou vide — les fichiers privés ne sont pas arrivés dans l'espace de travail"; exit 1; }^[[0m
+^[[36;1m    echo "::error title=Données RH → KV::put $CLE a échoué : $(printf '%s' "$SORTIE" | sed 's/\x1b\[[0-9;]*m//g' | grep -v 'out-of-date\|update available\|npm install\|npx wrangler\|^-*$' | tr '\n' ' ' | cut -c1-1800)"; exit 1^[[0m
+^[[36;1m    echo "::error title=Données RH → KV::get $CLE a échoué : $(sed 's/\x1b\[[0-9;]*m//g' /tmp/relu.err | tr '\n' ' ' | cut -c1-1800)"; exit 1^[[0m
+^[[36;1m  if [ "$RELU" -lt "$ATTENDU" ] || [ "$RELU" -gt $((ATTENDU + 1)) ]; then echo "::error::$CLE : relu $RELU octets, attendu $ATTENDU"; exit 1; fi^[[0m
+##[error]put fichier:/cmcteams/tools/departs/boards-gen.js a échoué :   Please update to the latest version to prevent critical errors. Writing the contents of tools/departs/boards-gen.js to the key "fichier:/cmcteams/tools/departs/boards-gen.js" on namespace 8cfa33a28ac045adb7b7a9556ca8a073. ✘ [ERROR] A request to the Cloudflare API (/accounts/***/storage/kv/namespaces/8cfa33a28ac045adb7b7a9556ca8a073/values/fichier%3A%2Fcmcteams%2Ftools%2Fdeparts%2Fboards-gen.js) failed.   your account has reached the free usage limit for this operation for today [code: 10048]      If you think this is a bug, please open an issue at: https://github.com/cloudflare/workers-sdk/issues/new/choose 🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-10-01_10-27-01_267.log"
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ) — 01/10/2026 10:26 UTC
 
 - **Branche** : `main` · **Commit** : `3d1cbdcb` · **Run** : `36849083849`
@@ -536,17 +557,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

@@ -7,23 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ) — 01/10/2026 10:19 UTC
-
-- **Branche** : `main` · **Commit** : `cb0779ad` · **Run** : `36848199815`
-- **Ce qui a lâché** : publier › Données RH → KV du routeur (servies derrière la connexion)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/36848199815
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m[ -n "$NS" ] || { echo "::error::espace KV ACCOUNTS introuvable dans wrangler.toml"; exit 1; }^[[0m
-^[[36;1m  [ -s "$FICHIER" ] || { echo "::error::$FICHIER absent ou vide — les fichiers privés ne sont pas arrivés"; exit 1; }^[[0m
-^[[36;1m  if [ "$RELU" -lt "$ATTENDU" ] || [ "$RELU" -gt $((ATTENDU + 1)) ]; then echo "::error::$CLE : relu $RELU octets, attendu $ATTENDU"; exit 1; fi^[[0m
-  Please update to the latest version to prevent critical errors.
-^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/storage/kv/namespaces/8cfa33a28ac045adb7b7a9556ca8a073/values/fichier%3A%2Fcmcteams%2Ftools%2Fdeparts%2Fboards-gen.js) failed.^[[0m
-  your account has reached the free usage limit for this operation for today [code: 10048]
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -545,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

@@ -1,5 +1,19 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (11h05 UTC) — R4 fait (pages légales vraies) · robot de mesure des écritures KV
+
+- **R4 (P0)** : les 4 pages légales disaient « Responsable : Kevin DESARZENS, Casino de Monte-Carlo (SBM) », « Contact DPO :
+  …@sbm.mc » et citaient la loi 1.165 (abrogée). Corrigé : Kevin **à titre personnel**, SBM nommée comme NON responsable,
+  contact `kevind@monaco.mc` (l'adresse qu'il utilise partout, 171 occurrences), plus de « DPO », **loi n° 1.565 du
+  3 décembre 2024** (publiée au JDM le 13.12.2024, en vigueur le 14.12.2024 — source : CMS Monaco, KPMG Monaco 2025 n°4).
+  Garde `tests/verify-pages-legales.mjs` (dans test:ci). **Relecture juriste** : action Kevin (TODO).
+- **KV** : `tools/audit/mesure-kv.mjs` + `mesure-kv.yml` (public, API Analytics GraphQL `kvOperationsAdaptiveGroups`,
+  lecture seule, ne touche pas au domaine) — écritures / lectures par espace KV, par jour et par heure ; si le jeton n'a
+  pas « Account Analytics : Read », il le dit. Garde `tests/verify-mesure-kv.mjs` 8/0 (sabotage : sans le type, 10 050
+  au lieu de 1 050). Lecture du code en attendant : candidats = `anonv:`/`anon:` (2 écritures par visiteur anonyme, par
+  app, par heure — 33 adresses exposées aux robots d'internet), `aud:log` réécrit à chaque événement, compteurs `q:`.
+  **Mesure d'abord** (dispatch du robot après synchro).
+
 ## 2026-10-01 (10h35 UTC) — R3 étape A EN LIGNE côté routeur ; le dépôt KV bute sur le plafond d'écritures du jour (déjà atteint à 10h27 UTC)
 
 - Synchro de #4153 à 10h17 UTC : **routeur déployé ✅ 10h19** (36848199703, 31 adresses, tests 40/40 au public) → la porte

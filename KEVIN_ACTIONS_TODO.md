@@ -46,6 +46,15 @@ au lieu de 3,4 Mo par minute)** ; je publie à la main comme ce matin. Tu n'as r
 
 ---
 
+## ⚖️ À faire relire par un juriste (quand tu veux, 10 minutes) — les pages légales ont été corrigées le 1.10
+
+Elles disaient que CMC Teams était éditée par le Casino / la SBM et donnaient une adresse SBM comme contact, et citaient une loi abrogée.
+Maintenant : **toi, à titre personnel**, ton adresse `kevind@monaco.mc`, et la **loi n° 1.565 du 3 décembre 2024**. Pages :
+[privacy.html](https://cmcteams.kd-mc.com/privacy.html) · [cgu.html](https://cmcteams.kd-mc.com/cgu.html). Je ne suis pas juriste :
+fais-les relire une fois par quelqu'un qui l'est (ou dis-moi si tu veux que je demande à la suite juridique). Rien d'urgent, rien de cassé.
+
+---
+
 ## ✅ FAIT (30.09, 23h30) — le droit DNS sur le jeton Cloudflare 👆
 
 Tu l'as donné ; j'ai vérifié (le DNS de `javis.kd-mc.com` se lit), puis **basculé Javis** : `javis.kd-mc.com` est servi

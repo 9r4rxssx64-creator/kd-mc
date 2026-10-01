@@ -1,5 +1,17 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### ⚖️ Pages légales vraies + mesure des écritures KV (1.10.2026, matin)
+
+- 📱 **Ce que tu verras** : les pages « confidentialité » et « conditions » disent maintenant que l'app est la tienne, à titre personnel, avec ton adresse et la loi en vigueur. Une relecture par un juriste est dans tes actions.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `privacy.html`, `cgu.html`, `messaging-app/cgu.html`, `shops/legal/confidentialite.html` | **Modifiés.** Responsable à titre personnel, contact kevind@monaco.mc, loi n° 1.565 du 3.12.2024. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/privacy.html) |
+| `tests/verify-pages-legales.mjs` | **Nouveau.** 22 contrôles : plus de loi abrogée, plus d'adresse SBM, plus de « DPO ». `npm run test:pages-legales`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-pages-legales.mjs) |
+| `tools/audit/mesure-kv.mjs` | **Nouveau.** Lit chez Cloudflare combien d'écritures KV sont faites, par espace, par jour et par heure. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/mesure-kv.mjs) |
+| `.github/workflows/mesure-kv.yml` | **Nouveau.** Le robot (public, lancé à la main) qui fait cette mesure et la met dans ses annotations. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/mesure-kv.yml) |
+| `tests/verify-mesure-kv.mjs` | **Nouveau.** La garde qui prouve que la mesure ne peut pas mentir (8 contrôles, sabotage). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-mesure-kv.mjs) |
+
 ### 🔒 Les noms et plannings de tes 291 collègues ne sortent plus sans connexion (1.10.2026, nuit)
 
 - 📱 **Ce que tu verras** : rien de nouveau. Sur un téléphone où l'app n'était pas encore reconnue, la page se recharge une fois toute seule juste après la connexion — c'est le moment où elle reçoit les plannings.

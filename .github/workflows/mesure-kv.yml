@@ -1,0 +1,47 @@
+name: Mesure — écritures KV par jour (qui épuise le plafond de 1 000 ?)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Mesuré le 1.10.2026 à 10h27 UTC (run public 36849092448) : `wrangler kv key put` → « your account has
+# reached the free usage limit for this operation for today [code: 10048] » — 1 000 écritures KV
+# (plafond gratuit, tout le compte) déjà consommées AVANT MIDI. Le 27.09 soir déjà (ETAT, ligne KV).
+# La cadence d'enrich() posée le 27.09 n'a pas suffi. Avant de corriger, on MESURE (règle Kevin) :
+# ce robot lit l'API Analytics de Cloudflare (GraphQL, jeu de données kvOperationsAdaptiveGroups) et
+# donne, pour hier et aujourd'hui, le nombre d'écritures / lectures / suppressions PAR ESPACE KV
+# et PAR HEURE. Il ne touche pas au domaine (pas dans le plafond des 2 vérifs/jour), n'écrit rien.
+# Si le jeton n'a pas le droit « Account Analytics : Read », il le DIT (annotation) au lieu de deviner.
+#
+# Destination : GitHub, dépôt PUBLIC (minutes illimitées), jeton Cloudflare du dépôt. Lancé à la main.
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  workflow_dispatch:
+    inputs:
+      jours:
+        description: "Nombre de jours à lire (1 = aujourd'hui seulement)"
+        default: "2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mesure-kv
+  cancel-in-progress: false
+
+jobs:
+  mesure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5   # gratuit par défaut : deux appels d'API, aucun navigateur
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Lire les opérations KV (API Analytics, lecture seule)
+        shell: bash -eo pipefail {0}
+        run: |
+          trap 'echo "::error title=Mesure KV::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR
+          [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::jeton ou compte Cloudflare absent des secrets"; exit 1; }
+          JOURS="${{ inputs.jours }}"; case "$JOURS" in ''|*[!0-9]*) JOURS=2;; esac
+          node tools/audit/mesure-kv.mjs "$JOURS"

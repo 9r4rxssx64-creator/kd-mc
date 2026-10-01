@@ -887,6 +887,17 @@
       "branche": "claude/donnees-rh-connexion",
       "sujet": "routeur : boards-gen/planning-seed/seances servis seulement avec session (KV) ; CMCteams v9.931 + light v1.62 se rechargent une fois ; publication dépose au KV",
       "surfaces": [],
+      "etat": "pause",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "étape A en ligne (routeur 10h19, publication 10h31) ; KV vide (plafond 10048) → dépôt KV et étape B après 00h00 UTC"
+    },
+    "legal-et-mesure-kv": {
+      "titre": "R4 pages légales + robot de mesure des écritures KV",
+      "branche": "claude/legal-et-mesure-kv",
+      "sujet": "privacy/cgu : Kevin à titre personnel, loi 1.565 ; mesure-kv.yml (Analytics GraphQL)",
+      "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
       "attend_kevin": null,

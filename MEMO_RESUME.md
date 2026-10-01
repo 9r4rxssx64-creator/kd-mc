@@ -1,5 +1,19 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (10h35 UTC) — R3 étape A EN LIGNE côté routeur ; le dépôt KV bute sur le plafond d'écritures du jour (déjà atteint à 10h27 UTC)
+
+- Synchro de #4153 à 10h17 UTC : **routeur déployé ✅ 10h19** (36848199703, 31 adresses, tests 40/40 au public) → la porte
+  RH est en ligne. **Publication ✗** (36848199815, 36848772302, 36848783145, 36849092448) à l'étape « Données RH → KV » :
+  d'abord « exit code 1 » sans cause (journal illisible) → deux passes de diagnostic (trap ERR, sortie de wrangler
+  dans l'annotation, sans couleurs) → **cause lue** : `your account has reached the free usage limit for this operation
+  for today [code: 10048]` — **le plafond KV (1 000 écritures/jour) était déjà atteint à 10h27 UTC**. Quelque chose
+  écrit ~1 000 fois avant midi : à mesurer (ligne KV d'ETAT).
+- Étape rendue **non bloquante sur 10048** (avertissement, fichiers servis depuis l'hébergeur derrière la porte) pour que
+  v9.931 / light v1.62 partent. **Étape B interdite** tant qu'un dépôt KV n'a pas réussi (relancer la publication après
+  00h00 UTC : `POST /repos/…/kd-mc/dispatches {"event_type":"coffre-a-change"}`).
+- Pendant l'incident : le domaine servait v9.930 avec la porte RH active → un appareil non reconnu n'avait pas de
+  planning jusqu'à sa réouverture après connexion (v9.931 règle ça par la recharge). Mesuré ≈ 20 min (10h19 → publication).
+
 ## 2026-10-01 (01h30 UTC) — R3 (P0-3) étape A : les 291 noms + plannings ne sortent plus sans connexion — CMCteams v9.931, light v1.62, routeur
 
 - **Trou mesuré** : `boards-gen.js` (499 Ko, 291 noms + plannings), `planning-seed.js` (544 Ko), `seances-seed.js` (154 personnes)

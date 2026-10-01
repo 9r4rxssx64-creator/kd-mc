@@ -3654,6 +3654,15 @@
       "corps": "Routeur : 401 + x-kdmc-porte sur ces 4 fichiers (liste unique services/kdmc-router/donnees-rh.js) sans session ; avec session, copie du KV fichier:<chemin> déposée par la publication. Si tu touches le démarrage de CMCteams ou de la light : ne fais rien dépendre de DEPARTS_GEN / CMC_PLANNING_SEED / CMC_SEANCES avant la reconnaissance du domaine ; _cmcDonneesRhSiBesoin / _depDonneesSiBesoin rechargent la page une fois (garde 2 min). Tests qui servent l'app depuis le disque : rien ne change. Étape B à venir : ces fichiers quitteront le paquet Pages (kdmc-site-bj5.pages.dev les sert encore en direct).",
       "ts": "2026-10-01 10:14",
       "etat": "ouvert"
+    },
+    {
+      "id": "m179-donnees-rh-connexion",
+      "de": "donnees-rh-connexion",
+      "a": "toutes",
+      "sujet": "PLAFOND KV ÉCRITURES déjà atteint le 1.10 à 10h27 UTC (code 10048) — n'écris rien dans le KV aujourd'hui ; quelque chose écrit ~1 000 fois avant midi, à mesurer",
+      "corps": "Mesuré par la publication publique (run 36849092448) : wrangler kv key put → « free usage limit for this operation for today [code: 10048] ». Comptes, fiches, sauvegardes Lingua, cache voix : plus aucune écriture jusqu'à 00h00 UTC. La cadence d'enrich() (27.09) n'a pas suffi : il faut MESURER qui écrit (préfixes nm:, aud:log, acc:, idx:uids, lingua:, cred:, rlc:…). R3 : la porte RH du routeur est en ligne, les 4 fichiers sont servis depuis l'hébergeur en attendant le dépôt KV.",
+      "ts": "2026-10-01 10:28",
+      "etat": "ouvert"
     }
   ]
 }

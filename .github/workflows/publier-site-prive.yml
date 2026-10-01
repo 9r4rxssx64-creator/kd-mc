@@ -153,14 +153,23 @@ jobs:
           LISTE=$(node -e "import('./services/kdmc-router/donnees-rh.js').then(m=>console.log(m.DONNEES_RH.map(c=>c+' '+m.cheminDepot(c)+' '+m.cleKV(c.toLowerCase())).join('\n')))" 2>/dev/null)
           [ -n "$LISTE" ] || { echo "::error::liste des données RH vide (services/kdmc-router/donnees-rh.js)"; exit 1; }
           echo "espace KV : ${NS:0:6}… · $(printf '%s\n' "$LISTE" | wc -l) fichiers"
-          N=0
+          N=0; PLAFOND=0
           for LIGNE in $(printf '%s\n' "$LISTE" | tr ' ' '|'); do
             CHEMIN=${LIGNE%%|*}; RESTE=${LIGNE#*|}; FICHIER=${RESTE%%|*}; CLE=${RESTE#*|}
             [ -s "$FICHIER" ] || { echo "::error::$FICHIER absent ou vide — les fichiers privés ne sont pas arrivés dans l'espace de travail"; exit 1; }
             ATTENDU=$(wc -c < "$FICHIER")
             if ! SORTIE=$(wrangler kv key put --namespace-id="$NS" "$CLE" --path="$FICHIER" 2>&1); then
-              # sans les couleurs ni le rappel de version de wrangler : le message d'erreur lui-même, en entier
-              echo "::error title=Données RH → KV::put $CLE a échoué : $(printf '%s' "$SORTIE" | sed 's/\x1b\[[0-9;]*m//g' | grep -v 'out-of-date\|update available\|npm install\|npx wrangler\|^-*$' | tr '\n' ' ' | cut -c1-1800)"; exit 1
+              MSG=$(printf '%s' "$SORTIE" | sed 's/\x1b\[[0-9;]*m//g' | grep -v 'out-of-date\|update available\|npm install\|npx wrangler\|^-*$' | tr '\n' ' ' | cut -c1-1800)
+              # Mesuré le 1.10.2026 à 10h27 UTC (run 36849092448) : « your account has reached the free usage limit
+              # for this operation for today [code: 10048] » — le plafond KV (1 000 écritures/jour, tout le compte)
+              # était DÉJÀ atteint. Ce n'est pas une panne de la publication : le routeur sert alors ces fichiers
+              # depuis l'hébergeur (ils restent dans le paquet tant que l'étape B n'est pas faite). On le DIT, on
+              # continue — un plafond ne doit pas priver 260 personnes de la nouvelle version de l'app.
+              if printf '%s' "$MSG" | grep -q '10048'; then
+                echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) — $CLE NON déposé ; le routeur sert ce fichier depuis l'hébergeur. L'étape B (retrait du paquet) reste INTERDITE tant qu'un dépôt n'a pas réussi. Relancer la publication après 00h00 UTC."
+                PLAFOND=1; continue
+              fi
+              echo "::error title=Données RH → KV::put $CLE a échoué : $MSG"; exit 1
             fi
             if ! wrangler kv key get --namespace-id="$NS" "$CLE" > /tmp/relu 2>/tmp/relu.err; then
               echo "::error title=Données RH → KV::get $CLE a échoué : $(sed 's/\x1b\[[0-9;]*m//g' /tmp/relu.err | tr '\n' ' ' | cut -c1-1800)"; exit 1
@@ -169,7 +178,11 @@ jobs:
             if [ "$RELU" -lt "$ATTENDU" ] || [ "$RELU" -gt $((ATTENDU + 1)) ]; then echo "::error::$CLE : relu $RELU octets, attendu $ATTENDU"; exit 1; fi
             echo "  ✅ $CLE ← $FICHIER ($ATTENDU octets, relu $RELU)"; N=$((N + 1))
           done
-          echo "::notice title=Données RH::$N fichiers nominatifs déposés dans le KV du routeur (taille relue = taille du fichier), servis derrière la connexion"
+          if [ "$PLAFOND" = "1" ]; then
+            echo "::warning title=Données RH::$N fichier(s) déposé(s) seulement — plafond KV du jour. Les autres sont servis depuis l'hébergeur, derrière la porte du routeur. Ne PAS retirer ces fichiers du paquet."
+          else
+            echo "::notice title=Données RH::$N fichiers nominatifs déposés dans le KV du routeur (taille relue = taille du fichier), servis derrière la connexion"
+          fi
 
       # ── Publication ────────────────────────────────────────────────────────
       # main            → production (c'est ce que le routeur ira chercher)

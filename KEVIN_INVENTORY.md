@@ -1,5 +1,13 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🗓 Bee connaît ta journée : planning, bonjour du matin, suggestions (2.10.2026, nuit — Bee v1.16)
+
+- **Demande-lui** : « Je travaille demain ? », « Avec qui je bosse aujourd'hui ? », « Je suis de repos quand ? »
+- **Chaque matin**, à la première ouverture, elle te donne ta journée et la météo de Monaco.
+- **3 boutons** sous le bonjour : 🗓 Ma semaine · ☀️ La météo · 🐝 Ma journée demain
+- **Ton app** : https://javis.kd-mc.com
+- **Tests** : `test:bee-planning`, `test:bee-comportements`
+
 ### 🐝 Bee niveau commercial, 100 % gratuite : audit externe de 6 experts, Bee v1.15 (2.10.2026, soir)
 
 - **Le rapport** (à ouvrir sur l'iPhone) : https://claude.ai/artifact/KeZTrWYosZqr3AoR7adNJb

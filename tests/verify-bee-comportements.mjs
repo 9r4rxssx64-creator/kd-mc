@@ -35,7 +35,16 @@ let IA_HTML = false;      /* le domaine répond une page d'erreur HTML (502 de C
 let TTS_KO = false;       /* la voix du domaine en panne → repli sur la voix du téléphone */
 const TTS = [];
 const METEO = [];
-let METEO_LENT = 0;     /* la météo met du temps à répondre (attente visible ?) */
+let METEO_LENT = 0;
+/* /__javis/moi (02.10) : un FAUX planning, au format que le domaine rend */
+const MOI_JOURS = [
+  { date: '2026-10-02', libelle: "aujourd'hui, vendredi 2 octobre", code: "14/19'c", texte: 'de 14 h à 19 h', travail: true, avec: ['ALPHA A', 'BRAVO B'] },
+  { date: '2026-10-03', libelle: 'demain, samedi 3 octobre', code: 'RH', texte: 'repos (repos hebdo)', travail: false, avec: [] },
+  { date: '2026-10-04', libelle: 'dimanche 4 octobre', code: 'R', texte: 'repos', travail: false, avec: [] },
+  { date: '2026-10-05', libelle: 'lundi 5 octobre', code: '20/5*', texte: 'de 20 h à 5 h du matin', travail: true, avec: ['ALPHA A'] },
+];
+let MOI = { ok: true, source: 'planning du PDF de octobre 2026 importé dans CMCteams', equipe: '9', miroir: '3', jours: MOI_JOURS };
+let MOI_APPELS = 0;     /* la météo met du temps à répondre (attente visible ?) */
 const srv = http.createServer((req, res) => {
   const p = (req.url || '/').split('?')[0];
   if (p === '/__sso/whoami') {
@@ -48,6 +57,7 @@ const srv = http.createServer((req, res) => {
   }
   if (p === '/__sso/webauthn/auth/options') { res.writeHead(200, { 'content-type': 'application/json' });
     return res.end(JSON.stringify({ ok: true, challenge: 'AAAAAAAAAAAAAAAAAAAAAA', rpId: '127.0.0.1' })); }
+  if (p === '/__javis/moi') { MOI_APPELS++; res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(MOI)); }
   if (p === '/__javis/ai') {
     let c = ''; req.on('data', (d) => { c += d; });
     req.on('end', () => { try { IA_CORPS.push(JSON.parse(c)); } catch (_) { IA_CORPS.push(null); }
@@ -80,6 +90,7 @@ async function ouvre(init, opts) {
     r.fulfill({ status: 200, contentType: 'audio/wav', headers: { 'access-control-allow-origin': '*' }, body: SON }); });
   const page = await ctx.newPage();
   await page.addInitScript(() => {
+    try { if (!window.__bonjourNeuf) localStorage.setItem('bee_bonjour_jour', new Date().toDateString()); } catch (_) {}
     window.__audios = []; const O = window.Audio;
     window.Audio = function () { const a = new O(); window.__audios.push(a); return a; };
     window.__ouvertes = []; window.open = (u, n, f) => { window.__ouvertes.push(String(u)); return /noopener/.test(f || '') ? null : {}; };   /* comme la norme : « noopener » rend TOUJOURS null */
@@ -197,7 +208,7 @@ try {
       /* → l'IA */
       ['Écris un poème à ma mère', 'ia'], ['Montre-moi comment on dit famille en anglais', 'ia'], ['Affiche une blague sur la famille', 'ia'],
       ['Prévision pour le match de ce soir', 'ia'], ['Depuis combien de temps ça fait ça ?', 'ia'], ['À quelle heure ferme le casino ce soir ?', 'ia'],
-      ['Je commence à quelle heure demain ?', 'ia'], ['Quel jour tombe Noël cette année ?', 'ia'], ['Quelle heure est-il à New York ?', 'ia'],
+      ['Je commence à quelle heure demain ?', 'journee'],   /* 02.10 : Bee connaît ton planning (avant : « ia », qui ne savait pas) */ ['Quel jour tombe Noël cette année ?', 'ia'], ['Quelle heure est-il à New York ?', 'ia'],
       ['Réécris ce message plus gentiment : salut toi', 'ia'], ["Montre-moi l'équipe de France de rugby", 'ia'], ['Parle-moi de la famille royale', 'ia'],
       ['Explique-moi les météorites', 'ia'], ['Il fait combien de kilomètres, le tour de Monaco ?', 'ia'], ["Écris-moi un message d'anniversaire", 'ia'],
       ['Lance-toi, raconte une histoire', 'ia'], ['Quelle est la meilleure recette de pâtes ?', 'ia'], ["Ouvre ton cœur, qu'est-ce qui te rend heureuse ?", 'ia'],
@@ -216,7 +227,7 @@ try {
     const rates = [];
     for (const [q, attendu] of TABLE) {
       IA_CORPS.length = 0; METEO.length = 0; await page.evaluate(() => { window.__ouvertes = []; });
-      IA.push({ ok: true, text: 'ok' }); await demande(page, q); await dors(attendu === 'meteo' || attendu === 'demain' ? 700 : 350);
+      IA.push({ ok: true, text: 'ok' }); await demande(page, q); await dors(attendu === 'meteo' || attendu === 'demain' || attendu === 'journee' ? 700 : 350);
       const o = await page.evaluate(() => window.__ouvertes);
       const b = await page.evaluate(() => [...document.querySelectorAll('.javis-bub.js')].pop().textContent);
       let vu;
@@ -227,6 +238,7 @@ try {
       else if (/^On est /.test(b)) vu = 'date';
       else if (/^Demain(?: à [^:]+)? : entre \d+ et \d+°C/.test(b)) vu = 'demain';
       else if (/°C|Météo/.test(b)) vu = 'meteo';
+      else if (/d'après le planning du PDF/.test(b)) vu = 'journee';
       else vu = '? ' + b.slice(0, 40);
       if (vu !== attendu) rates.push(`« ${q} » → ${vu} (attendu : ${attendu})`);
       /* la file d'attente de l'IA simulée ne doit pas déborder sur la phrase suivante */
@@ -432,6 +444,71 @@ try {
     const b = await page.evaluate(() => { const e = document.querySelector('.javis-bubble'); if (!e) return null; const r = e.getBoundingClientRect();
       return { haut: Math.round(r.top), centre: Math.round(r.left + r.width / 2), vw: innerWidth, vh: innerHeight }; });
     chk(b && b.haut < b.vh / 2 && Math.abs(b.centre - b.vw / 2) < 24, `bulle du toucher sous Bee, centrée en haut (${JSON.stringify(b)})`);
+    await ctx.close(); }
+
+  /* (k) TA JOURNÉE (02.10) — le planning du PDF, lu par le domaine, 0 IA */
+  const derniere = (page) => page.evaluate(() => [...document.querySelectorAll('.javis-bub.js')].map((b) => b.textContent).pop() || '');
+  { IA_CORPS.length = 0; MOI_APPELS = 0;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
+    await demande(page, 'Je travaille demain ?'); await dors(700);
+    const t = await derniere(page);
+    chk(/^Demain, samedi 3 octobre : repos \(repos hebdo\)\. \(d'après le planning du PDF de octobre 2026/.test(t) && IA_CORPS.length === 0 && MOI_APPELS === 1,
+      `« je travaille demain ? » → « ${t.slice(0, 90)} » (0 IA : ${IA_CORPS.length}, planning lu ${MOI_APPELS}×)`);
+    await demande(page, "avec qui je bosse aujourd'hui"); await dors(700);
+    const t2 = await derniere(page);
+    chk(/^Aujourd'hui, vendredi 2 octobre : de 14 h à 19 h, avec Alpha A\. et Bravo B\./.test(t2) && MOI_APPELS === 1,
+      `« avec qui… aujourd'hui » → « ${t2.slice(0, 80)} » (planning gardé 5 min : ${MOI_APPELS} lecture)`);
+    await demande(page, 'je suis de repos quand ?'); await dors(700);
+    const t3 = await derniere(page);
+    chk(/^Tes prochains repos : demain samedi 3 octobre et dimanche 4 octobre\./.test(t3), `« repos quand ? » → « ${t3.slice(0, 80)} »`);
+    await ctx.close(); }
+  { MOI = { ok: false, reason: 'planning_absent' }; IA_CORPS.length = 0;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
+    await demande(page, 'je travaille quand cette semaine ?'); await dors(700);
+    const t = await derniere(page);
+    chk(/pas encore dans le domaine/.test(t) && !/\d+ h/.test(t) && IA_CORPS.length === 0, `planning absent → dit honnêtement, AUCUN horaire inventé (« ${t.slice(0, 70)} »)`);
+    MOI = { ok: true, source: 'planning du PDF de octobre 2026 importé dans CMCteams', equipe: '9', miroir: '3', jours: MOI_JOURS }; await ctx.close(); }
+  { MOI_APPELS = 0;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
+    await demande(page, 'échange mon planning samedi avec Paul'); await dors(500);
+    const o = await page.evaluate(() => window.__ouvertes);
+    chk(MOI_APPELS === 0 && o.some((u) => /apex-ai\.kd-mc\.com/.test(u)), `« échange mon planning » reste une ACTION pour Apex (planning lu ${MOI_APPELS}×, ouvert : ${o.join(', ')})`);
+    await ctx.close(); }
+  /* (l) SUGGESTIONS : 3 boutons de 44 px sous le bonjour, qui posent la question, puis s'effacent */
+  { MOI_APPELS = 0; IA_CORPS.length = 0;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('.javis-chips button');
+    const r = await page.evaluate(() => [...document.querySelectorAll('.javis-chips button')].map((b) => ({ t: b.textContent, h: b.getBoundingClientRect().height })));
+    await page.click('.javis-chips button'); await dors(700);
+    const apres = await page.evaluate(() => ({ chips: !!document.querySelector('.javis-chips'), t: [...document.querySelectorAll('.javis-bub.js')].map((b) => b.textContent).pop() || '' }));
+    chk(r.length === 3 && r.every((b) => b.h >= 44) && !apres.chips && MOI_APPELS === 1 && /^Cette semaine tu travailles aujourd'hui vendredi 2 octobre de 14 h à 19 h et lundi 5 octobre/.test(apres.t),
+      `suggestions : ${r.length} boutons (${r.map((b) => Math.round(b.h)).join('/')} px), « Ma semaine » → « ${apres.t.slice(0, 70)} », puis effacées`);
+    await ctx.close(); }
+  /* (m) LE BONJOUR DU MATIN : ta journée + la météo de Monaco, une seule fois par jour */
+  { MOI_APPELS = 0;
+    const { ctx, page } = await ouvre(() => { window.__bonjourNeuf = 1; try { if (!sessionStorage.getItem('premier')) { sessionStorage.setItem('premier', '1'); localStorage.removeItem('bee_bonjour_jour'); } } catch (_) {} });
+    await page.waitForSelector('#javis-launcher'); await dors(900);
+    const b = await page.evaluate(() => [...document.querySelectorAll('.javis-bub.js')].map((x) => x.textContent).filter((t) => /^Ta journée/.test(t)));
+    await page.reload(); await page.waitForSelector('#javis-launcher'); await dors(900);
+    const b2 = await page.evaluate(() => [...document.querySelectorAll('.javis-bub.js')].map((x) => x.textContent).filter((t) => /^Ta journée/.test(t)));
+    chk(b.length === 1 && /Aujourd'hui, vendredi 2 octobre : de 14 h à 19 h, avec Alpha A\. et Bravo B\. Demain, samedi 3 octobre : repos/.test(b[0]) && /°C à Monaco/.test(b[0]) && b2.length === 0,
+      `bonjour du matin : « ${(b[0] || '').slice(0, 110)}… » ; rouvert le même jour : ${b2.length} bonjour de plus`);
+    await ctx.close(); }
+  /* (n) LE HALO : quand elle t'écoute, un anneau visible ; quand elle parle, sa lumière suit le son (variable CSS) */
+  { IA.push({ ok: true, text: 'Je parle avec mon halo.' });
+    const { ctx, page } = await ouvre(() => { window.SpeechRecognition = window.webkitSpeechRecognition = function () { this.start = () => {}; this.stop = () => {}; }; });
+    await page.waitForSelector('#javis-mic'); await page.click('#javis-mic'); await dors(200);
+    const ecoute = await page.evaluate(() => ({ cls: document.getElementById('javis-root').classList.contains('javis-ecoute'), anim: getComputedStyle(document.getElementById('javis-launcher')).animationName }));
+    chk(ecoute.cls && /javis-ecoute/.test(ecoute.anim), `🎙 touché → état « j'écoute » visible (classe ${ecoute.cls}, animation ${ecoute.anim})`);
+    await ctx.close(); }
+  /* (o) VIBRATION iPhone : Safari n'a pas navigator.vibrate → la case « switch » cachée est cochée au toucher */
+  { const { ctx, page } = await ouvre(() => { try { Object.defineProperty(Navigator.prototype, 'vibrate', { value: undefined, configurable: true }); } catch (_) {} });
+    await page.waitForSelector('#javis-launcher'); await dors(200);
+    await page.evaluate(() => { const r = document.querySelector('#javis-root .bee-rig'); const b = r.getBoundingClientRect();
+      r.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: b.left + b.width / 2, clientY: b.top + b.height / 5 })); });
+    await dors(200);
+    const h = await page.evaluate(() => { const l = document.querySelector('label.javis-haptique'); const c = l && l.querySelector('input');
+      return l ? { sw: c.hasAttribute('switch'), coche: c.checked, cache: l.getAttribute('aria-hidden') } : null; });
+    chk(h && h.sw && h.coche && h.cache === 'true', `iPhone sans navigator.vibrate : case « switch » cachée cochée au toucher (${JSON.stringify(h)})`);
     await ctx.close(); }
 } catch (e) { chk(false, 'exception : ' + (e && e.message)); }
 await nav.close(); srv.close();

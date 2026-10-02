@@ -17,6 +17,7 @@ import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
+import { KEVIN_MATRICULE, RE_PLANNING, lireSeed, prochainsJours, faitsPlanning } from './bee-planning.js';
 
 /* D'où viennent les pages. Historiquement GitHub Pages — mais le dépôt est
    PRIVÉ depuis le 23/09/2026 (« que personne ne voie mon code ») et GitHub
@@ -436,6 +437,7 @@ const ROUTEUR = {
        admin est vérifiée PAR LE DOMAINE (Face ID ou code), le caractère est fixé côté serveur,
        et le client ne peut envoyer que des messages « user » / « assistant ». */
     if (url.pathname === '/__javis/ai') return handleBeeIa(request, env);
+    if (url.pathname === '/__javis/moi') return handleBeeMoi(request, env);
 
     if (url.pathname === '/__demandes' && request.method === 'GET') {
       if (!(await adminSession(request, env))) return new Response(JSON.stringify({ ok: false, reason: 'admin requis' }), { status: 403, headers: { 'content-type': 'application/json' } });
@@ -3025,7 +3027,7 @@ async function grantValide(env, secret, tok) {
 
 /* ═══ BEE — le caractère, écrit côté serveur (le client ne peut pas le remplacer) ═══ */
 const BEE_REGLES = "Réponds court, chaleureuse, enjouée, avec le tutoiement, en français, sans jargon technique (Kevin n'est pas codeur), sans flatterie. "
-  + "Tu n'as AUCUN accès aux données de Kevin (planning, messages, fiches, comptes) et tu ne peux agir sur rien : "
+  + "Tu n'as accès à AUCUNE donnée de Kevin (messages, fiches, comptes), sauf les FAITS VÉRIFIÉS de son planning quand ils te sont donnés ici, et tu ne peux agir sur rien : "
   + "ne prétends jamais avoir fait une action, et n'invente jamais une donnée (un horaire, un planning, un chiffre, une adresse web). "
   + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Si la demande exige une vraie action, dis que c'est Apex qui peut la faire.";
 /* Tu parles TOUJOURS à Kevin (seul lui ouvre Bee), et « Javis » est TON autre nom (Kevin 01.10, capture :
@@ -3074,7 +3076,12 @@ async function handleBeeIa(request, env) {
   }
   while (messages.length && messages[0].role !== 'user') messages.shift();
   if (!messages.length || messages[messages.length - 1].role !== 'user') return JB({ ok: false, reason: 'question_requise' }, 400);
-  const caractere = (b && b.mascotte === 'donkey' ? BOURRICOT_CARACTERE : BEE_CARACTERE) + ' Nous sommes le ' + dateMonaco() + ' (heure de Monaco).';
+  let caractere = (b && b.mascotte === 'donkey' ? BOURRICOT_CARACTERE : BEE_CARACTERE) + ' Nous sommes le ' + dateMonaco() + ' (heure de Monaco).';
+  /* BEE CONNAÎT TA JOURNÉE (audit externe 02.10) : une question sur son planning reçoit les FAITS du PDF,
+     lus par le serveur (jamais envoyés à la page). L'IA formule ; l'horaire vient du PDF. 1 lecture KV. */
+  if (RE_PLANNING.test(messages[messages.length - 1].content)) {
+    try { caractere += ' ' + faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)); } catch (_) { /* sans planning, la règle « n'invente pas » tient */ }
+  }
   /* Bee n'agit sur rien : une « action » (planning, déploiement…) n'a pas à réveiller un moteur payant
      juste pour répondre « c'est Apex » → traitée comme une question simple (Qwen d'abord). */
   let domaine = detectDomain(messages[messages.length - 1].content);
@@ -3103,6 +3110,26 @@ async function handleBeeIa(request, env) {
   }
   if (!r || !r.ok || !r.text) return JB({ ok: false, reason: 'ia_indisponible' }, 503);
   return JB({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 });
+}
+
+/* L'adresse du planning chez l'hébergeur : le filet quand le KV est plafonné (la publication l'y remet). */
+function seedHebergeur(env) {
+  const up = ((env && env.UPSTREAM_BASE) || UPSTREAM_DEFAUT).trim().replace(/\/+$/, '');
+  return up + prefixeSortie(up, env && env.UPSTREAM_PREFIX) + '/tools/shared/planning-seed.js';
+}
+/* /__javis/moi — TA JOURNÉE, pour Bee seulement (Kevin, Face ID ou code) : les 14 prochains jours de son
+   planning (PDF importé), son équipe, l'équipe miroir, et qui travaille avec lui. Le widget répond seul à
+   « je travaille quand ? » (0 IA, 0 neurone) et fait le bonjour du matin. Jamais mis en cache. */
+async function handleBeeMoi(request, env) {
+  const JB = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  if (request.method !== 'GET') return JB({ ok: false, reason: 'methode' }, 405);
+  const origine = request.headers.get('origin');
+  if (origine && !/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i.test(origine)) return JB({ ok: false, reason: 'hors_domaine' }, 403);
+  if (!(await adminSession(request, env))) return JB({ ok: false, reason: 'kevin_seulement' }, 403);
+  if (!(await limiteTous(env && env.LIMITE_BEE, 'bee-moi'))) return JB({ ok: false, reason: 'trop_vite' }, 429);
+  const p = prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14);
+  if (!p.source) return JB({ ok: false, reason: 'planning_absent' });
+  return JB({ ok: true, source: p.source, equipe: p.equipe, miroir: p.miroir, jours: p.jours });
 }
 
 /* Outils du Cercle : QUI parle (dossier canonique, un compte par personne), et la notification de Kevin.

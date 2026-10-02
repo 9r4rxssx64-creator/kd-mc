@@ -7,7 +7,7 @@
   "scope": ".",
   "display": "standalone",
   "background_color": "#0e0a04",
-  "theme_color": "#171008",
+  "theme_color": "#0e0a04",
   "icons": [
     {
       "src": "icon-192.png",
@@ -26,6 +26,25 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "description": "Bee, ton assistante personnelle : ton planning, la météo, tes apps — gratuite, réservée à toi.",
+  "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "Ma semaine",
+      "short_name": "Semaine",
+      "url": "./?q=Je%20travaille%20quand%20cette%20semaine%20%3F"
+    },
+    {
+      "name": "Demain",
+      "short_name": "Demain",
+      "url": "./?q=Je%20travaille%20demain%20%3F"
+    },
+    {
+      "name": "La météo",
+      "short_name": "Météo",
+      "url": "./?q=Quel%20temps%20fait-il%20%3F"
     }
   ]
 }

@@ -106,7 +106,8 @@ const kevin = signe('kdmc_admin', 1);
 
 /* ---- 2 ter. Une « action » ne réveille pas un moteur payant (Bee n'agit sur rien) ---- */
 { const orig = globalThis.fetch; let payes = 0;
-  globalThis.fetch = async () => { payes++; return new Response(JSON.stringify({ content: [{ type: 'text', text: 'payant' }] }), { status: 200 }); };
+  /* seuls les moteurs PAYANTS comptent (02.10 : « …du planning » lit maintenant le planning, un appel gratuit) */
+  globalThis.fetch = async (u) => { if (/anthropic|openai/.test(String(u))) payes++; return new Response(JSON.stringify({ content: [{ type: 'text', text: 'payant' }] }), { status: 200 }); };
   env.ANTHROPIC_API_KEY = 'k';
   try {
     const r = await bee({ 'x-kdmc-sso': kevin }, { messages: [{ role: 'user', content: 'lance le déploiement du planning' }] });

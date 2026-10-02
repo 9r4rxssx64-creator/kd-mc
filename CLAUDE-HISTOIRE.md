@@ -374,8 +374,19 @@ innovant, etc. Va plus loin. Gratuit toujours. Note-le. »** — Kevin 2026-10-0
    - une phrase avec « photo » n'est plus envoyée à une IA d'images ;
    - la voix abandonnée après 4 s est coupée côté réseau ;
    - les copies ignorées par git ne font plus de faux rouge (`git ls-files`).
+4 bis. **Vague 2 (02.10, soir — Kevin : « tu ne peux pas faire mieux ? aller plus loin ? »)**, Bee v1.16 :
+   - **Bee connaît ta journée** : `/__javis/moi` (Kevin seulement, `no-store`) lit le planning du PDF côté serveur.
+     Elle lit le KV, sinon l'hébergeur, découpe la ligne de Kevin sans parser les 544 Ko, et garde le résultat pour la journée (leçon #391).
+     « je travaille quand / demain / avec qui / repos ? » est répondu par le widget, **0 IA**.
+     Une question libre reçoit des FAITS sourcés, **jamais un nom de collègue envoyé à l'IA**.
+     Les mois du seed sont **indexés à partir de 0** : l'audit avait lu « octobre manque », c'était faux.
+   - **Bonjour du matin**, une fois par jour : ta journée, plus la météo de Monaco (open-meteo, sans géolocalisation).
+   - **3 suggestions** de 44 px ; **halo** qui suit la voix ; **anneau « j'écoute »** ; **vibration iPhone** (case `switch`, Safari 18).
+   - **Manifeste** : barre = fond, raccourcis `?q=`, portrait.
+
+   Gardes : `test:bee-planning` 34/0, `test:bee-comportements` 51/0, `test:javis-bee` 76/0. **15 sabotages tués.**
 5. **La suite (feuille de route de l'audit, toujours gratuite)** :
-   - Bee connaît le planning de Kevin, lu par le serveur seulement. Prérequis : le mois en cours dans la source.
+   - ~~Bee connaît le planning de Kevin~~ (livré en vague 2 ; reste à faire : les échanges faits dans CMCteams, aujourd'hui seul le PDF compte).
    - Réponse en flux, avec la voix phrase par phrase.
    - `qwen3-30b-a3b` en premier, 9,5 fois moins de neurones selon le tarif publié. **À mesurer en A/B avant de basculer.**
    - Mémoire en D1.

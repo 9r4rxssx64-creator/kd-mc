@@ -1053,6 +1053,30 @@ qu'elles sont **gratuites et illimitées sur un dépôt public**.
 **Conséquence** : plus rien ne se déploie ni ne se publie — y compris ce repli d'IBAN, la
 publication du site et la chaîne de pub. C'est le blocage numéro 1.
 
+## 2026-10-02 (22h UTC) — Vague 2 : Bee connaît ta journée, bonjour du matin, suggestions, halo (Bee v1.16)
+
+Kevin : « Tu ne peux pas faire mieux ? Aller plus loin ? Améliorer encore plus tout ».
+
+**Fait :**
+- `services/kdmc-router/bee-planning.js` + `/__javis/moi` (Kevin seulement) : le planning du PDF est lu côté serveur
+  (KV, sinon l'hébergeur). Mesuré en local : 2 à 4 ms une fois l'outil chaud, 30 ms au tout premier appel, d'où la mémoire du jour.
+- Widget, 0 IA : « je travaille quand / demain / avec qui / repos ? » est répondu directement.
+- Le cerveau reçoit des FAITS sourcés pour les questions libres, **sans aucun nom de collègue**.
+- Bonjour du matin, une fois par jour ; 3 suggestions ; halo de voix ; anneau « j'écoute » ; vibration iPhone ;
+  manifeste corrigé et raccourcis.
+
+**Erreur de l'audit corrigée** : « octobre manque au seed » était faux, les mois y sont indexés à partir de 0 (« 2026-9 » = octobre).
+Vérifié sur le vrai fichier : le 2 octobre, Kevin travaille de 14 h à 19 h, avec 3 coéquipiers.
+
+**Gardes** : bee-planning 34/0, bee-comportements 51/0, javis-bee 76/0, bee-cerveau 54/0 ; 15 sabotages tués.
+
+**Au passage** : `test:all` (runtime-audit CMCteams) rougissait sous la charge de `test:ci-prive` (la vérif de version part après 60 s et lit `version.txt` en file://) — motif ajouté au filtre du bruit file://, vert 3/3 seul avant et après.
+
+**Pas vérifiable d'ici** :
+- le temps de calcul réel sur Cloudflare (limite de 10 ms : la mémoire du jour la protège, mais le 1er appel n'est pas mesuré en ligne) ;
+- la vibration sur un vrai iPhone ;
+- le planning réel après un échange fait dans CMCteams (seul le PDF compte).
+
 ## 2026-10-02 (19h UTC) — Audit externe « niveau commercial, gratuit toujours » de Javis/Bee : 6 experts, Bee v1.15
 
 Kevin : « audit externe d'amélioration extrême de mon Javis… niveau commercial… gratuit tjs, note-le ». **6 experts

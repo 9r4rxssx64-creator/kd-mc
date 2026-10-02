@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.131.1";
+var APP_VER="v2.132.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -2034,6 +2034,10 @@ function xpSemaine(){ var d=new Date(), lun=new Date(d); lun.setHours(0,0,0,0); 
   for(var x=new Date(lun); x<=d; x.setDate(x.getDate()+1)){ var k=x.getFullYear()+"-"+(x.getMonth()+1)+"-"+x.getDate(); t+=(S.hist&&S.hist[k])||0; } return t; }
 function ilYa(t){ if(!t) return "pas encore"; var s=Math.max(0,(Date.now()-t)/1000); if(s<90) return "à l'instant"; if(s<3600) return "il y a "+Math.round(s/60)+" min";
   if(s<86400) return "il y a "+Math.round(s/3600)+" h"; return "il y a "+Math.round(s/86400)+" j"; }
+function cercleDate(t){ try{ return new Date(t).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"}); }catch(e){ return ""; } }
+function cercleHeure(t){ try{ return new Date(t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }catch(e){ return ""; } }
+function cercleJour(j){ try{ return new Date(j+"T12:00:00Z").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"}); }catch(e){ return j; } }
+function cercleDuree(m){ m=Math.round(+m||0); if(m<60) return m+" min"; return Math.floor(m/60)+" h"+(m%60?" "+String(m%60).padStart(2,"0"):""); }
 function cercleNom(uid){ if(uid==="admin"||uid==="kdmc_admin") return "Admin KDMC"; if(uid==="systeme") return "🐝 KDMC Lingua";
   if(CERCLE){ for(var i=0;i<CERCLE.amis.length;i++) if(CERCLE.amis[i].uid===uid) return CERCLE.amis[i].nom; }
   if(CERCLE_TOUS){ for(var j=0;j<CERCLE_TOUS.personnes.length;j++) if(CERCLE_TOUS.personnes[j].uid===uid) return CERCLE_TOUS.personnes[j].nom; }
@@ -2158,10 +2162,21 @@ function vCercle(){ var d=el("div","screen cercle");
     var peindre=function(){ at.innerHTML=""; if(!CERCLE_TOUS){ at.textContent="Chargement…"; return; }
       var t=el("p","mini"); t.innerHTML='<b>'+CERCLE_TOUS.connectes+'</b> connecté(s) maintenant · '+CERCLE_TOUS.personnes.length+' personne(s) · <a href="https://admin.kd-mc.com/" target="_blank" rel="noopener">Qui se connecte (détails)</a>'; at.appendChild(t);
       CERCLE_TOUS.personnes.forEach(function(x){ var c=COURSES[x.cours]; var r=el("div","cercle-ami");
-        r.innerHTML='<span class="ca-av">'+esc(x.avatar)+'<i class="pt'+(x.enLigne?" on":"")+'"></i></span><span class="ca-tx"><b>'+esc(x.nom)+(x.enfant?" 👶":"")+'</b><i>'+(x.enLigne?"en ligne":"vu "+ilYa(x.vu))+(c?" · "+c.drapeau:"")+" · série "+x.serie+" · "+x.xpSem+" XP sem. · "+x.amis+" ami(s)</i></span>";
+        r.innerHTML='<span class="ca-av">'+esc(x.avatar)+'<i class="pt'+(x.enLigne?" on":"")+'"></i></span><span class="ca-tx"><b>'+esc(x.nom)+(x.enfant?" 👶":"")+'</b><i>'+(x.enLigne?"en ligne":"vu "+ilYa(x.vu))+(c?" · "+c.drapeau:"")+" · série "+x.serie+" · "+x.xpSem+" XP sem. · "+x.amis+" ami(s)"+(x.inscrit?"<br>inscrit le "+cercleDate(x.inscrit)+" · "+(x.jours30||0)+" j actif(s) sur 30 · "+(x.visites30||0)+" visite(s) · "+cercleDuree(x.minutes30||0):"")+"</i></span>";
         var w=el("button","vpick"); w.textContent="💬"; w.setAttribute("aria-label","Écrire à "+x.nom); w.onclick=function(){ cercleEcrire(x); }; r.appendChild(w); at.appendChild(r); });
       (CERCLE_TOUS.signalements||[]).slice(0,5).forEach(function(s){ var r=el("p","mini"); r.textContent="🚩 Signalement : "+cercleNom(s.de)+" contre "+cercleNom(s.contre)+" — "+ilYa(s.cree); at.appendChild(r); }); };
-    peindre(); cercleApi("/admin/tous").then(function(r){ if(r&&r.ok){ CERCLE_TOUS=r; peindre(); } }); }
+    peindre(); cercleApi("/admin/tous").then(function(r){ if(r&&r.ok){ CERCLE_TOUS=r; peindre(); } });
+    /* JOURNAL DES CONNEXIONS (Kevin 2.10) : par jour, qui, de quand à quand, visites, temps passé, app. 90 jours max. */
+    var jh=el("div","sec-h"); jh.textContent="📒 Journal des connexions"; d.appendChild(jh);
+    var jz=el("div","cercle-journal"); d.appendChild(jz);
+    var jb=el("button","vpick"); jb.textContent="Voir les 14 derniers jours"; jb.id="cxVoir"; jz.appendChild(jb);
+    jb.onclick=function(){ jz.textContent="Chargement…"; cercleApi("/admin/journal?jours=14").then(function(r){ jz.innerHTML="";
+      if(!r||!r.ok){ jz.textContent="Journal indisponible pour l'instant."; return; }
+      if(!r.lignes.length){ jz.textContent="Aucune connexion ces 14 derniers jours."; return; }
+      var parJour={}; r.lignes.forEach(function(l){ (parJour[l.jour]=parJour[l.jour]||[]).push(l); });
+      (r.resume||[]).forEach(function(rs){ var h=el("p","cx-jour"); h.innerHTML="<b>"+esc(cercleJour(rs.jour))+"</b> · "+rs.personnes+" personne(s) · "+rs.visites+" visite(s) · "+esc(cercleDuree(rs.minutes)); jz.appendChild(h);
+        (parJour[rs.jour]||[]).forEach(function(l){ var p=el("p","mini cx-l"); p.innerHTML=esc(l.nom)+" — "+cercleHeure(l.premiere)+" → "+cercleHeure(l.derniere)+" · "+l.visites+" visite(s) · "+esc(cercleDuree(l.minutes))+" · "+esc(l.app||""); jz.appendChild(p); }); });
+      var n=el("p","mini"); n.textContent="Gardé 90 jours, visible par toi seul (conditions du domaine)."; jz.appendChild(n); }); }; }
   return d; }
 
 function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",avatar:"🦊"};

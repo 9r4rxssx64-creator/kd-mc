@@ -2586,8 +2586,22 @@ async function handleSso(request, url, env) {
         });
       }
       await enrich(env, request, s.uid, s.name, s.cgu, acc);
+      /* CONNECTÉ EN PERMANENCE, DANS CHAQUE APP (Kevin 2.10 : « comme tout mon domaine, chaque application, je
+         reste connecté en permanence »). Toutes les apps demandent whoami : quand il reste moins de 15 jours, la
+         session est re-signée (30 jours) et le cookie commun à *.kd-mc.com repart — 0 écriture KV, 0 ligne à
+         changer dans les apps. Jamais la session admin Face ID (24 h, Face ID chaque jour : voulu). Le jeton neuf
+         n'est rendu dans le corps qu'à qui l'a envoyé en en-tête (app installée, stockage à elle). */
+      const reste = (s.exp || 0) - Date.now();
+      let neuf = null, cookieNeuf;
+      if (!estAdmin && reste > 0 && reste < 15 * 24 * 3600e3) {
+        neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code);
+        cookieNeuf = `${SSO_COOKIE}=${neuf}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(neuf)}; Secure; HttpOnly; SameSite=Lax`;
+      }
+      const parEnTete = !!(request.headers.get('authorization') || request.headers.get('x-kdmc-sso'));
       /* `cgu` = accepté UNE fois, n'importe où (fiche `cgu_at`), pas seulement dans ce pass. */
-      return J({ ok: true, uid: s.uid, name: s.name, cgu: !!(s.cgu || (acc && acc.cgu_at)), verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' });
+      const rep = { ok: true, uid: s.uid, name: s.name, cgu: !!(s.cgu || (acc && acc.cgu_at)), verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' };
+      if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
+      return J(rep, cookieNeuf);
     }
     return J({ ok: false });
   }

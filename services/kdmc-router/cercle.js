@@ -60,6 +60,12 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS signalements (id INTEGER PRIMARY KEY AUTOINCREMENT, de TEXT, contre TEXT, msg INTEGER, raison TEXT, cree INTEGER)`,
   `CREATE TABLE IF NOT EXISTS duos (a TEXT, b TEXT, serie INTEGER DEFAULT 0, jour TEXT, PRIMARY KEY (a, b))`,
   `CREATE TABLE IF NOT EXISTS quetes (uid TEXT, ami TEXT, sem TEXT, PRIMARY KEY (uid, ami, sem))`,
+  /* JOURNAL DES CONNEXIONS (Kevin 2.10 : « note-moi toutes les informations des connectés, des connexions »).
+     Une ligne par personne et par jour : 1re et dernière présence, nombre de visites, minutes passées, app.
+     Gardé 90 jours (conditions du domaine : durée limitée), lu par l'admin seul. */
+  `CREATE TABLE IF NOT EXISTS connexions (uid TEXT, jour TEXT, premiere INTEGER, derniere INTEGER, visites INTEGER DEFAULT 1,
+     minutes INTEGER DEFAULT 0, app TEXT, PRIMARY KEY (uid, jour))`,
+  `CREATE INDEX IF NOT EXISTS cx_jour ON connexions (jour, derniere)`,
 ];
 const pret = new WeakSet();
 async function schema(db) {
@@ -189,7 +195,7 @@ export async function handleCercle(request, url, env, outils) {
       const nonLus = (await un(db, 'SELECT COUNT(*) AS n FROM messages WHERE a = ? AND lu = 0', ADMIN)).n || 0;
       const derniers = await tous(db, `SELECT m.id, m.type, m.corps, m.cree, m.lu, p.nom FROM messages m LEFT JOIN profils p ON p.uid = m.de
                                         WHERE m.a = ? ORDER BY m.id DESC LIMIT 10`, ADMIN);
-      const connectes = (await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ?', now - LIMITES.enLigneMs)).n || 0;
+      const connectes = (await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIMITES.enLigneMs, ADMIN)).n || 0;   /* sans l'admin lui-même */
       return J({ ok: true, nonLus, connectes, derniers }, 200, cors);
     }
     if (!qui) return J({ ok: false, reason: 'compte_kdmc_requis' }, 401);
@@ -210,6 +216,14 @@ export async function handleCercle(request, url, env, outils) {
                          ON CONFLICT(uid) DO UPDATE SET nom=excluded.nom, avatar=excluded.avatar, enfant=excluded.enfant, cours=excluded.cours,
                          xp_sem=excluded.xp_sem, sem=excluded.sem, serie=excluded.serie, xp_total=excluded.xp_total, jour_lecon=excluded.jour_lecon, vu=excluded.vu, invisible=excluded.invisible`,
           moi, n.nom, n.avatar, n.enfant, n.cours, n.xp_sem, n.sem, n.serie, n.xp_total, n.jour_lecon, now, now, n.invisible);
+        /* même cadence que la présence (≤ 1 écriture / 2 min / personne) : visite neuve après 10 min d'absence */
+        const ecart = av && av.vu ? now - av.vu : Infinity;
+        const suite = ecart < 10 * 60e3;
+        const app = String((request.headers.get('origin') || '').replace(/^https:\/\//, '').split('.')[0] || 'lingua').slice(0, 20);
+        await faire(db, `INSERT INTO connexions (uid, jour, premiere, derniere, visites, minutes, app) VALUES (?, ?, ?, ?, 1, 0, ?)
+                         ON CONFLICT(uid, jour) DO UPDATE SET derniere = excluded.derniere,
+                         visites = visites + ?, minutes = minutes + ?`,
+          moi, auj, now, now, app, suite ? 0 : 1, suite ? Math.round(ecart / 60e3) : 0);
       }
       /* SÉRIE À DEUX : le jour où les DEUX ont fait une leçon, la série du duo avance (une fois par jour). */
       if (b.leconAujourdhui && !(av && av.jour_lecon === auj)) {
@@ -344,11 +358,25 @@ export async function handleCercle(request, url, env, outils) {
 
     /* ---------- ADMIN : tout le monde, en temps réel ---------- */
     if (p.startsWith('/admin/') && !qui.admin) return J({ ok: false, reason: 'admin_requis' }, 403);
+    if (p === '/admin/journal' && m === 'GET') {
+      if (!qui.admin) return J({ ok: false, reason: 'admin_requis' }, 403);
+      await faire(db, 'DELETE FROM connexions WHERE jour < ?', jour(now - 90 * 864e5));   /* 90 jours, pas plus */
+      await faire(db, 'DELETE FROM messages WHERE cree < ?', now - 365 * 864e5);           /* messages : 12 mois (privacy.html) */
+      const jours = Math.max(1, Math.min(90, +url.searchParams.get('jours') || 14));
+      const lignes = await tous(db, `SELECT c.*, p.nom FROM connexions c LEFT JOIN profils p ON p.uid = c.uid
+                                     WHERE c.jour >= ? ORDER BY c.jour DESC, c.derniere DESC LIMIT 2000`, jour(now - (jours - 1) * 864e5));
+      const parJour = {};
+      for (const l of lignes) { if (l.uid === ADMIN) continue; const d = parJour[l.jour] || (parJour[l.jour] = { jour: l.jour, personnes: 0, visites: 0, minutes: 0 }); d.personnes++; d.visites += l.visites || 0; d.minutes += l.minutes || 0; }
+      return J({ ok: true, maintenant: now, jours, resume: Object.values(parJour),
+        lignes: lignes.filter((l) => l.uid !== ADMIN).map((l) => ({ uid: l.uid, nom: l.nom || l.uid, jour: l.jour, premiere: l.premiere, derniere: l.derniere, visites: l.visites, minutes: l.minutes, app: l.app })) });
+    }
     if (p === '/admin/tous' && m === 'GET') {
       const ps = await tous(db, 'SELECT * FROM profils ORDER BY vu DESC LIMIT 500');
+      const act = Object.fromEntries((await tous(db, `SELECT uid, COUNT(*) AS jours, SUM(visites) AS visites, SUM(minutes) AS minutes
+                                                     FROM connexions WHERE jour >= ? GROUP BY uid`, jour(now - 29 * 864e5))).map((r) => [r.uid, r]));
       const nbAmis = Object.fromEntries((await tous(db, 'SELECT a, COUNT(*) AS n FROM liens GROUP BY a')).map((r) => [r.a, r.n]));
       const signal = await tous(db, 'SELECT * FROM signalements ORDER BY id DESC LIMIT 20');
-      return J({ ok: true, maintenant: now, personnes: ps.filter((x) => x.uid !== ADMIN).map((x) => Object.assign(vueProfil(x, now, true), { amis: nbAmis[x.uid] || 0, xpTotal: x.xp_total || 0 })),
+      return J({ ok: true, maintenant: now, personnes: ps.filter((x) => x.uid !== ADMIN).map((x) => Object.assign(vueProfil(x, now, true), { amis: nbAmis[x.uid] || 0, xpTotal: x.xp_total || 0, inscrit: x.cree || 0, dernier: x.vu || 0, jours30: (act[x.uid] || {}).jours || 0, visites30: (act[x.uid] || {}).visites || 0, minutes30: (act[x.uid] || {}).minutes || 0 })),
         connectes: ps.filter((x) => x.uid !== ADMIN && enLigne(x.vu, now)).length, signalements: signal });
     }
     return J({ ok: false, reason: 'introuvable' }, 404);

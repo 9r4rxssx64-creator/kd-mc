@@ -9,6 +9,15 @@
 
 ---
 
+## ✅ Lingua v2.132.0 (2.10, 23h) — ce qui manquait encore : fait
+
+- **Connecté en permanence dans CHAQUE app** du domaine (plus seulement Lingua) : la session se renouvelle toute
+  seule à chaque visite. Seul ton accès **admin** redemande Face ID une fois par jour (sécurité, voulu).
+- **Journal des connexions** : Lingua → 🤝 → « 📒 Journal des connexions » : par jour, qui, de quelle heure à
+  quelle heure, combien de visites, combien de temps. Gardé 90 jours, toi seul le vois. Et pour chaque personne :
+  inscrite le…, jours actifs, visites et temps sur 30 jours.
+- **Bandeau sur le portail kd-mc.com** : « 💬 1 nouveau message dans Lingua » en orange dès qu'on t'écrit.
+
 ## ✅ Lingua v2.131.0 (2.10 nuit) — ton cercle d'amis : fait, rien d'obligatoire de ton côté
 
 - **Inviter** : bouton 🤝 en haut de Lingua → « Inviter » → le lien part par Messages/WhatsApp. La personne

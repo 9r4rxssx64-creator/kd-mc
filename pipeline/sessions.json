@@ -1061,14 +1061,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/cmc-sso-e2e-public",
+      "branche": "claude/domaine-connexion-permanente",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "#4230 #4232 #4236 #4239 fusionnées le 2.10 ; suite : étape CMCteams sautée proprement au public (app privée absente), les 4 E2E SSO dans test:ci"
+      "note": "#4230 #4232 #4236 #4239 #4241 fusionnées ; suite v2.132.0 : session permanente par whoami (toutes apps), journal des connexions, bandeau portail"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

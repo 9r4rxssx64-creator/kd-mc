@@ -147,5 +147,25 @@ await bat('lea', { invisible: true }); await bat('tom');
 e = await bat('zoe', { enfant: true }); const leaVue = e.amis.find((x) => x.uid === 'lea-martin');
 ok(leaVue && leaVue.enLigne === false && leaVue.vu === 0, 'Léa « invisible » → son cercle la voit hors ligne', leaVue);
 adm = await appel('kev', '/admin/tous'); ok(adm.personnes.find((x) => x.uid === 'lea-martin').enLigne === true, 'mais l\'admin la voit toujours en ligne');
+/* journal des connexions (Kevin : « note-moi toutes les informations des connectés, des connexions ») */
+{
+  const avantT = T;
+  T += 3 * 60e3; await bat('tom');            /* même visite, +3 min */
+  T += 60 * 60e3; await bat('tom');           /* 1 h d'absence → nouvelle visite */
+  const j = await appel('kev', '/admin/journal?jours=7');
+  const ligne = j.lignes && j.lignes.find((l) => l.uid === 'tom-durand');
+  ok(j.ok && ligne && ligne.visites >= 2 && ligne.minutes >= 3 && ligne.app && ligne.nom, 'journal : Tom — visites, minutes, app, nom complet notés pour l\'admin', ligne);
+  ok(j.resume.length >= 1 && j.resume[0].personnes >= 2, 'journal : résumé par jour (personnes, visites, minutes)', j.resume);
+  ok(!j.lignes.some((l) => l.uid === 'kdmc_admin'), 'journal : l\'admin lui-même n\'y figure pas');
+  ok((await appel('lea', '/admin/journal'))._st === 403, 'journal : réservé à l\'admin');
+  const adm2 = await appel('kev', '/admin/tous'); const t = adm2.personnes.find((x) => x.uid === 'tom-durand');
+  ok(t && t.inscrit > 0 && t.dernier >= t.inscrit && t.jours30 >= 1 && t.visites30 >= 2, 'vue admin : inscrit le, vu le, jours / visites sur 30 jours', t);
+  db._s.prepare("INSERT INTO connexions (uid, jour, premiere, derniere) VALUES ('vieux', '2026-01-01', 1, 1)").run();
+  db._s.prepare("INSERT INTO messages (de, a, type, corps, cree, lu, recu) VALUES ('vieux', 'lea-martin', 'texte', 'ancien', 1, 0, 0)").run();
+  await appel('kev', '/admin/journal');
+  ok(!db._s.prepare("SELECT 1 FROM connexions WHERE uid = 'vieux'").get(), 'journal : effacé après 90 jours (conditions du domaine)');
+  ok(!db._s.prepare("SELECT 1 FROM messages WHERE de = 'vieux'").get(), 'messages : effacés après 12 mois (privacy.html)');
+  T = avantT;
+}
 ok(kvEcrit === 0, `ZÉRO écriture dans le KV (${kvEcrit}) — tout le Cercle vit dans D1`);
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`); process.exit(fail ? 1 : 0);

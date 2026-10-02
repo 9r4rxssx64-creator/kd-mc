@@ -93,6 +93,28 @@
   /* La zone Administration est cachée par défaut (hidden dans le HTML). On ne la
      révèle QUE si la session du domaine dit admin === true (vérifié côté serveur
      via whoami). Les clients/Laurence ne la voient jamais. */
+  /* MESSAGES LINGUA POUR L'ADMIN, SUR LE PORTAIL (Kevin 2.10 : « une notification dans une partie de mon domaine,
+     visible, pour ne pas la rater à chaque message »). La boîte n'est rendue qu'à la session admin (vérifiée par le
+     serveur) ; ailleurs le bandeau reste caché. Relu toutes les 2 min tant que la page est ouverte. */
+  var _alerteT = null;
+  function alerteCercle() {
+    var a = document.getElementById('cercle-alerte'); if (!a) return;
+    fetch('/__cercle/admin/boite', { credentials: 'include', cache: 'no-store', headers: window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token() ? { authorization: 'Bearer ' + window.kdmcSSO.token() } : {} })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.ok) { a.hidden = true; return; }
+        var n = j.nonLus || 0, c = j.connectes || 0;
+        a.textContent = '';
+        var t = document.createElement('span');
+        t.textContent = n ? '💬 ' + (n > 1 ? n + ' nouveaux messages' : '1 nouveau message') + ' dans Lingua' : '💬 Lingua : aucun message en attente';
+        a.appendChild(t);
+        if (n) { var b = document.createElement('span'); b.className = 'n'; b.textContent = String(n); a.appendChild(b); }
+        var d = document.createElement('span'); d.textContent = '· ' + c + ' connecté(s)'; a.appendChild(d);
+        a.className = n ? '' : 'calme'; a.hidden = false;
+      })
+      .catch(function () { /* réseau : on retentera */ });
+    if (!_alerteT) { try { _alerteT = setInterval(alerteCercle, 120000); } catch (e) { /* */ } }
+  }
   function applyAdminVisibility() {
     var priv = document.getElementById('priv-zone');
     if (!priv) return;
@@ -120,6 +142,7 @@
       /* Tor : même logique que le bot (sinon invisible sur l'iPhone de Kevin, Face ID non
          prouvé = fonction inexistante). Mais réservé à KEVIN seul : la page n'a rien de
          sensible, c'est un choix de discrétion, pas une protection. */
+      if (s && s.admin) alerteCercle();
       var torZone = document.getElementById('tor-zone');
       var estKevin = /kevin|desarzens/.test(norm(s && s.name || ''));
       if (torZone) torZone.hidden = !(!!(s && s.admin) || estKevin);

@@ -34,6 +34,8 @@ async function brancher(ctx) {
       const r = await mod.fetch(new Request(u.href, { method: req.method(), headers: req.headers(), body: ['GET', 'HEAD'].includes(req.method()) ? undefined : req.postData() }), env, { waitUntil() {} });
       const h = {}; r.headers.forEach((v, k) => { h[k] = v; }); const sc = r.headers.getSetCookie ? r.headers.getSetCookie() : []; if (sc.length) h['set-cookie'] = sc.join('\n');
       return route.fulfill({ status: r.status, headers: h, body: Buffer.from(await r.arrayBuffer()) }); }
+    if (u.hostname === 'kd-mc.com') { const f = 'kdmc-home' + (u.pathname === '/' ? '/index.html' : u.pathname);   /* le portail */
+      return existsSync(f) ? route.fulfill({ status: 200, contentType: TYPES[f.split('.').pop()] || 'application/octet-stream', body: readFileSync(f) }) : route.fulfill({ status: 404, body: '' }); }
     if (u.hostname !== 'lingua.kd-mc.com') return route.fulfill({ status: 404, body: '' });
     const p = 'lingua' + (u.pathname === '/' ? '/index.html' : u.pathname);
     return existsSync(p) ? route.fulfill({ status: 200, contentType: TYPES[p.split('.').pop()] || 'application/octet-stream', body: readFileSync(p) }) : route.fulfill({ status: 404, body: '' });
@@ -124,6 +126,21 @@ try {
   if (process.env.CAPTURE) { await K.p.screenshot({ path: process.env.CAPTURE.replace('.png', '-admin.png'), fullPage: true }); }
   ok(/Admin — toutes les personnes/.test(kt) && /Zoé Petit/.test(kt) && /Léa Martin/.test(kt) && /Tom Durand/.test(kt), '4b. Kevin (Face ID) voit TOUTES les personnes, noms complets, même hors de son cercle', kt.slice(0, 400));
   ok(/ma série a disparu/.test(kt), '4c. le message de Zoé est dans la boîte de l\'admin');
+  ok(/inscrit le .* j actif\(s\) sur 30/.test(kt), '4d. pour chaque personne : inscrit le, jours actifs, visites, temps (30 jours)', kt.slice(0, 300));
+  await K.p.evaluate(() => { const b = document.getElementById('cxVoir'); if (b) b.click(); }); await K.p.waitForTimeout(1500);
+  const kj = await texte(K.p);
+  ok(/Journal des connexions/.test(kj) && /Zoé Petit — \d\d:\d\d → \d\d:\d\d · \d+ visite/.test(kj) && /Gardé 90 jours/.test(kj) && /· 3 personne\(s\)/.test(kj), '4e. journal des connexions : qui, de quand à quand, visites (90 jours, admin seul)', kj.slice(kj.indexOf('Journal'), kj.indexOf('Journal') + 300));
+  if (process.env.CAPTURE) { await K.p.screenshot({ path: process.env.CAPTURE.replace('.png', '-journal.png'), fullPage: true }); }
+  /* 4f. le portail kd-mc.com : bandeau « messages Lingua » pour l'admin, à chaque nouveau message */
+  await Z.p.evaluate(() => fetch('/__cercle/message', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a: 'admin', type: 'texte', corps: 'Encore une question' }) }));
+  const KP = await K.ctx.newPage(); await KP.goto('https://kd-mc.com/'); await KP.waitForTimeout(2000);
+  await KP.evaluate(() => { const b = document.getElementById('pk-skip'); if (b) b.click(); }); await KP.waitForTimeout(2000);   /* l'appareil de test n'a pas Face ID : « Plus tard » */
+  const al = await KP.evaluate(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden ? a.textContent : null; });
+  ok(!!al && /1 nouveau message dans Lingua/.test(al) && /· 3 connecté/.test(al), '4f. portail kd-mc.com : l\'admin voit le bandeau « 1 nouveau message dans Lingua »', String(al) + ' | ' + (await KP.evaluate(() => document.body.innerText.slice(0, 200))));
+  if (process.env.CAPTURE) { await KP.screenshot({ path: process.env.CAPTURE.replace('.png', '-portail.png') }); }
+  const LP = await L.ctx.newPage(); await LP.goto('https://kd-mc.com/'); await LP.waitForTimeout(2500);
+  ok(await LP.evaluate(() => { const a = document.getElementById('cercle-alerte'); return !a || a.hidden; }), '4g. portail : un membre ne voit jamais ce bandeau');
+  await KP.close(); await LP.close();
   /* 5. anonymat + erreurs */
   for (const [n, P] of [['Léa', L.p], ['Tom', T.p], ['Zoé', Z.p]]) { await P.evaluate(() => document.querySelectorAll('.overlay,.modal').forEach((x) => x.remove())); await cercle(P); ok(!/Kevin|Desarzens/.test(await texte(P)), `5. ${n} ne voit jamais le nom de Kevin`); }
   const errs = [L, T, Z, K].flatMap((x) => x.p._err);

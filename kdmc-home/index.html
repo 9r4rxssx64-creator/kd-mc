@@ -55,6 +55,10 @@
   #hello{font-size:17px;font-weight:700;color:var(--gold2)}
   #logout{background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:9px 14px;font-size:13px;cursor:pointer;min-height:40px}
   #install{margin:10px 0 4px}
+  #cercle-alerte{display:flex;gap:10px;align-items:center;margin:10px 0;padding:12px 14px;border-radius:14px;border:2px solid #f59e0b;background:rgba(245,158,11,.12);color:inherit;text-decoration:none;font-weight:600}
+  #cercle-alerte[hidden]{display:none}
+  #cercle-alerte .n{background:#dc2626;color:#fff;border-radius:999px;padding:2px 9px;font-size:.9em}
+  #cercle-alerte.calme{border-color:rgba(127,127,127,.35);background:transparent;font-weight:500}
   .ios-tip{background:rgba(106,138,255,.1);border:1px solid rgba(106,138,255,.3);color:#cdd8ff;border-radius:13px;padding:12px 14px;font-size:13.5px}
   .cat{margin:24px 0 10px;display:flex;align-items:center;gap:10px;color:var(--gold);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
   .cat::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -115,6 +119,7 @@
         <button id="logout" type="button">Se déconnecter</button>
       </div>
       <div id="install" hidden></div>
+      <a id="cercle-alerte" href="https://lingua.kd-mc.com/#admin" hidden></a>
 
       <h2 class="cat">🎰 Pro &amp; métier</h2>
       <nav class="grid" aria-label="Projets pro">

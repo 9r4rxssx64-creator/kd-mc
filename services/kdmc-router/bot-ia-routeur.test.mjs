@@ -10,6 +10,7 @@
 import mod from './worker.js';
 import { reveillerIaBots } from '../kdmc-outlook/worker.js';
 import { createHash } from 'crypto';
+import { DatabaseSync } from 'node:sqlite';
 
 let ok = 0, ko = 0;
 const dit = (c, t) => { if (c) { ok++; console.log('  ✅ ' + t); } else { ko++; console.log('  ❌ ' + t); } };
@@ -151,6 +152,41 @@ dit(r.s === 200 && r.b.ok && r.b.robots.length === 5 && r.b.pret === false, 'ave
 dit(r.b.robots.every((x) => x.criteres.some((c) => c.cle === 'duree' && !c.ok)), 'chaque robot dit pourquoi (durée insuffisante)');
 r = await appel('/__bot/ia/vocal', { headers: HA });
 dit(r.s === 200 && /bitcoin/.test(r.b.texte) && /faux argent/.test(r.b.texte), 'point vocal : texte français prêt à lire (« ' + (r.b.texte || '').slice(0, 60) + '… »)');
+
+console.log('\n=== 9. Mémoire en D1 (kdmc-bot) : 0 écriture KV, journal des réveils lisible ===');
+function d1() {
+  const sq = new DatabaseSync(':memory:');
+  const stmt = (sql, p = []) => ({
+    bind: (...x) => stmt(sql, x),
+    first: async () => (d1.panne && /INTO etat/.test(sql) ? (() => { throw new Error('D1 indisponible'); })() : sq.prepare(sql).get(...p) ?? null),
+    all: async () => ({ results: sq.prepare(sql).all(...p) }),
+    run: async () => { if (d1.panne && /INTO etat/.test(sql)) throw new Error('D1 indisponible'); const x = sq.prepare(sql).run(...p); return { meta: { changes: Number(x.changes) } }; },
+    _exec: () => sq.prepare(sql).run(...p),
+  });
+  return { prepare: (sql) => stmt(sql), batch: async (l) => { for (const x of l) x._exec(); return []; }, _s: sq };
+}
+const db = d1();
+env.BOT_DB = db;
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [{ type: 'decision', t: Date.now() - 3600e3, bot: 'crypto-bot-p2', set: { STRATEGY: 'dipup' } }],
+  derniereDecision: Date.now() - 3600e3, enCours: { bot: 'crypto-bot-p2', debut: Date.now() - 3600e3, set: { STRATEGY: 'dipup' }, avant: { STRATEGY: 'ema' }, equite0: { 'crypto-bot-p2': 10000 }, depl0: {} } }));
+let putsIa = 0; const put0 = ACCOUNTS.put; ACCOUNTS.put = async (k, v) => { if (k === 'bot:ia') putsIa++; return put0(k, v); };
+store.delete('bot:hist'); mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+const etatD1 = JSON.parse(db._s.prepare("SELECT v FROM etat WHERE k = 'ia'").get().v);
+dit(r.b && r.b.action === 'attente' && etatD1.enCours && etatD1.enCours.bot === 'crypto-bot-p2', 'l\'essai en cours (venu du KV) est repris et écrit en D1');
+dit(putsIa === 0, 'aucune écriture KV pour l\'état de l\'IA');
+const rvD1 = db._s.prepare('SELECT * FROM reveils ORDER BY id DESC').get();
+dit(rvD1 && rvD1.origine === 'cron' && rvD1.action === 'attente' && /Peur/.test(rvD1.sources || ''), 'le réveil est journalisé en D1 avec l\'état des sources (' + (rvD1 && rvD1.action) + ')');
+const nRel = db._s.prepare('SELECT COUNT(*) AS n, MAX(btc) AS b FROM releves').get();
+dit(nRel.n === 6 && nRel.b === 60000 && !store.has('bot:hist'), 'relevé des 6 robots + BTC en D1, rien en KV');
+r = await appel('/__bot/reel', { headers: HA });
+dit(r.s === 200 && r.b.releves >= 1, '/__bot/reel lit les relevés D1 (' + (r.b && r.b.releves) + ')');
+db._s.prepare("UPDATE etat SET v = ?1 WHERE k = 'ia'").run(JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0 }));
+d1.panne = true; mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+d1.panne = false; ACCOUNTS.put = put0;
+dit(r.b && r.b.action === 'echec' && !mutations.some((q) => /variableUpsert|Redeploy/.test(q)), 'D1 refuse l\'écriture → AUCUNE mutation Railway');
+delete env.BOT_DB;
 
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

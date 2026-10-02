@@ -3431,12 +3431,87 @@ async function railGql(env, query) {
 const IA_KV = 'bot:ia';
 const IA_CHAINE_GRATUITE = ['qwen', 'gemini', 'groq', 'cerebras', 'mistral', 'openrouter'];
 const IA_CONTRE_AVIS_MODELE = '@cf/openai/gpt-oss-120b';
+/* MÉMOIRE DE L'IA EN D1 (base gratuite kdmc-bot, 100 000 écritures/jour) — 2.10.2026 : le KV du
+   domaine (1 000 écritures/jour) a saturé deux fois ce jour-là. D1 d'abord ; sans base liée, le KV
+   comme avant. La base est AUSSI lisible par l'agent (Cloudflare MCP) : le journal se vérifie en vrai
+   sans robot GitHub (règle crypto : jamais sur GitHub Actions) ni Face ID. */
+let botDbPret = false;
+async function botDb(env) {
+  const db = env && env.BOT_DB;
+  if (!db || typeof db.prepare !== 'function') return null;
+  if (!botDbPret) {
+    await db.batch([
+      db.prepare('CREATE TABLE IF NOT EXISTS etat (k TEXT PRIMARY KEY, v TEXT NOT NULL, t INTEGER NOT NULL)'),
+      db.prepare('CREATE TABLE IF NOT EXISTS reveils (id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER NOT NULL, origine TEXT, action TEXT, detail TEXT, sources TEXT)'),
+      db.prepare('CREATE TABLE IF NOT EXISTS releves (t INTEGER NOT NULL, nom TEXT NOT NULL, e REAL, n REAL, a INTEGER, v INTEGER, btc REAL, PRIMARY KEY (t, nom))'),
+    ]);
+    botDbPret = true;
+  }
+  return db;
+}
 async function iaEtat(env) {
   let st = null;
-  try { st = JSON.parse((await env.ACCOUNTS.get(IA_KV)) || 'null'); } catch { st = null; }
+  try {
+    const db = await botDb(env);
+    if (db) { const row = await db.prepare('SELECT v FROM etat WHERE k = ?1').bind('ia').first(); if (row) st = JSON.parse(row.v); }
+  } catch { st = null; }
+  if (!st) { try { st = JSON.parse((await env.ACCOUNTS.get(IA_KV)) || 'null'); } catch { st = null; } }   // reprise de l'état d'avant D1
   return Object.assign({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0, dernierTick: 0, dernier: '' }, st || {});
 }
-async function iaEcrire(env, st) { await env.ACCOUNTS.put(IA_KV, JSON.stringify(st)); }
+/* Lève une erreur si l'écriture échoue : iaTick en dépend (« enregistrer d'abord, agir ensuite »). */
+async function iaEcrire(env, st) {
+  const db = await botDb(env);
+  if (db) { await db.prepare('INSERT INTO etat (k, v, t) VALUES (?1, ?2, ?3) ON CONFLICT(k) DO UPDATE SET v = excluded.v, t = excluded.t').bind('ia', JSON.stringify(st), Date.now()).run(); return; }
+  await env.ACCOUNTS.put(IA_KV, JSON.stringify(st));
+}
+/* Une ligne par réveil : ce que l'IA a fait ET l'état de chaque source de marché. Garde 2 000 lignes. Fail-open. */
+async function iaJournaliserReveil(env, origine, res) {
+  try {
+    const db = await botDb(env); if (!db) return;
+    let sources = null; try { sources = (await botMarche(env)).sources || null; } catch { /* */ }
+    const t = Date.now();
+    await db.batch([
+      db.prepare('INSERT INTO reveils (t, origine, action, detail, sources) VALUES (?1, ?2, ?3, ?4, ?5)').bind(t, origine, String((res && res.action) || ''), String((res && res.detail) || '').slice(0, 600), sources ? JSON.stringify(sources) : null),
+      db.prepare('DELETE FROM reveils WHERE id <= (SELECT MAX(id) FROM reveils) - 2000'),
+    ]);
+  } catch { /* le journal de vérification ne bloque jamais l'IA */ }
+}
+async function iaTickJournalise(env, ctx, origine, force) {
+  let res;
+  try { res = await iaTick(env, ctx, origine, force); } catch (e) { res = { ok: false, action: 'erreur', detail: String((e && e.message) || e).slice(0, 300) }; }
+  await iaJournaliserReveil(env, origine, res);
+  return res;
+}
+/* Relevé des robots pour le passage au réel : D1 (1 par heure au plus), sinon l'ancien relevé KV. */
+async function botReleverD1(env, bots, now, btc) {
+  const db = await botDb(env).catch(() => null);
+  if (!db) return botSnapshot(env, bots, now, btc);
+  try {
+    const der = await db.prepare('SELECT MAX(t) AS t FROM releves').first();
+    if (der && der.t && now - Number(der.t) < BOT_SNAP_MS) return;
+    const lignes = (bots || []).filter((x) => x && x.name && x.equity != null && isFinite(Number(x.equity)));
+    if (!lignes.length) return;
+    await db.batch(lignes.map((x) => db.prepare('INSERT OR IGNORE INTO releves (t, nom, e, n, a, v, btc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)')
+      .bind(now, x.name, Math.round(Number(x.equity) * 100) / 100, Number(x.net) || 0, Number(x.buys) || 0, Number(x.sells) || 0, Number(btc) > 0 ? Number(btc) : null)));
+  } catch { /* fail-open */ }
+}
+/* Historique pour /__bot/reel : relevés KV d'avant + relevés D1, triés, au format de bot:hist. */
+async function botHistComplet(env) {
+  let hist = []; try { hist = JSON.parse((await env.ACCOUNTS.get('bot:hist')) || '[]'); } catch { hist = []; }
+  try {
+    const db = await botDb(env);
+    if (db) {
+      const r = await db.prepare('SELECT t, nom, e, n, a, v, btc FROM releves ORDER BY t').all();
+      const parT = new Map();
+      for (const l of (r && r.results) || []) {
+        if (!parT.has(l.t)) parT.set(l.t, { t: l.t, b: {} });
+        const p = parT.get(l.t); p.b[l.nom] = { e: l.e, n: l.n, a: l.a, v: l.v }; if (l.btc) p.btc = l.btc;
+      }
+      hist = hist.concat([...parT.values()]).sort((x, y) => x.t - y.t);
+    }
+  } catch { /* KV seul */ }
+  return hist;
+}
 async function iaCleReveil(env) {
   const base = env && env.KDMC_ADMIN_PIN_SHA256;
   if (!base) return '';
@@ -3586,7 +3661,7 @@ async function iaTick(env, ctx, origine, force) {
   st.dernierTick = now;
   /* Relevé de la flotte à chaque réveil (avec le prix du BTC) : l'historique du passage au réel ne dépend
      plus de l'ouverture de la page. 1 relevé par heure au plus (garde dans botSnapshot). */
-  await botSnapshot(env, tous, now, btc);
+  await botReleverD1(env, tous, now, btc);
   if (st.enCours) {
     const v = IA.arbitre(st.enCours, IA.equitesComparables(st.enCours, flotte), now, btc);
     if (v.verdict === 'attendre') { st.dernier = 'essai en cours sur ' + st.enCours.bot + ' : ' + v.raison; await iaEcrire(env, st); return { ok: true, action: 'attente', detail: v.raison }; }
@@ -4031,7 +4106,7 @@ async function handleBot(request, url, env) {
     if (!env.RAILWAY_TOKEN) return J({ ok: false, reason: 'railway_token_absent' });
     const ctxR = await botCtx(env);
     if (ctxR.err) return J({ ok: false, reason: ctxR.err });
-    return J(await iaTick(env, ctxR, 'cron', false));
+    return J(await iaTickJournalise(env, ctxR, 'cron', false));
   }
   const me = await adminSession(request, env);
   if (!me) {
@@ -4064,7 +4139,7 @@ async function handleBot(request, url, env) {
   /* MARCHÉS EN DIRECT + LIENS D'ANALYSE (Kevin 2026-10-02) : lecture seule, sans Railway. */
   /* PASSAGE AU RÉEL (contrôle seulement, jamais de bascule) + POINT VOCAL — Kevin 2026-10-02. */
   if (path === '/__bot/reel' && request.method === 'GET') {
-    let hist = []; try { hist = JSON.parse((await env.ACCOUNTS.get('bot:hist')) || '[]'); } catch { hist = []; }
+    const hist = await botHistComplet(env);
     const robots = IA.BOTS_PAPIER.map((n) => IA.pretPourLeReel(hist, n));
     const principal = IA.segmentDepuisRedemarrage(hist, 'crypto-bot');
     const joursTestnet = principal.length > 1 ? Math.floor((principal[principal.length - 1].t - principal[0].t) / 86400e3) : 0;
@@ -4094,7 +4169,7 @@ async function handleBot(request, url, env) {
     await audLog(env, { ev: 'bot_ia_mode', set: b.mode });
     return J({ ok: true, mode: b.mode });
   }
-  if (path === '/__bot/ia/tick' && request.method === 'POST') return J(await iaTick(env, ctx, 'kevin', true));
+  if (path === '/__bot/ia/tick' && request.method === 'POST') return J(await iaTickJournalise(env, ctx, 'kevin', true));
   if (path === '/__bot/ia/annuler' && request.method === 'POST') {
     const st = await iaEtat(env);
     if (!st.enCours) return J({ ok: false, reason: 'aucun_essai' });

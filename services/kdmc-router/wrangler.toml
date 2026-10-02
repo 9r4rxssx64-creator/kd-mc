@@ -99,6 +99,14 @@ binding = "CERCLE_DB"
 database_name = "kdmc-cercle"
 database_id = "0b49b8eb-8df8-49fe-93f7-1e385bf98b34"
 
+# IA pilote des robots crypto PAPIER (Kevin 2.10.2026) : état, journal des réveils, relevés des robots.
+# Base D1 GRATUITE (100 000 écritures/jour) — le KV (1 000/jour) saturait. Créée le 2.10 22h15 UTC
+# (Cloudflare MCP) ; le worker crée ses tables lui-même (CREATE TABLE IF NOT EXISTS) s'il le faut.
+[[d1_databases]]
+binding = "BOT_DB"
+database_name = "kdmc-bot"
+database_id = "a3743498-54bb-45b1-a47a-8fc00ddd32d9"
+
 # Alerte push « nouvel appareil » → worker de push existant (sous-domaine = le COMPTE
 # 9r4rxssx64, jamais un nom deviné — leçon #85). URL publique ici ; le JETON est un
 # secret (KDMC_PUSH_TOKEN, posé par le workflow depuis PUSH_ADMIN_TOKEN). Sans jeton,

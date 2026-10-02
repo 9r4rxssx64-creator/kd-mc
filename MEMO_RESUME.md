@@ -1,5 +1,22 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (22h20) — Crypto : vu en vrai + mémoire de l'IA en D1 lisible par l'agent
+
+Kevin : « vérifie maintenant », puis « trouve des solutions en respectant les règles ».
+- **Vu en vrai (Railway MCP, 40 déploiements lus depuis le 1.10 22h49)** : seul crypto-bot-p2 a bougé,
+  2 relances à 20h00:25/31 UTC sans auteur (variableUpsert + redeploy), journal : `stratégie=ema`
+  (11.09) → `stratégie=dipup` (20h01) ; rien à 22h00 (essai suivi) ; à 22h13 p2 = 10 000 $, HOLD.
+- **Pas de sonde GitHub** : un robot qui lit l'IA crypto sur GitHub Actions viole DESTINATIONS
+  (crypto → jamais). **Solution** : base D1 `kdmc-bot` créée par l'agent (Cloudflare MCP, 22h15,
+  `a3743498-54bb-45b1-a47a-8fc00ddd32d9`), liée au routeur (`BOT_DB`) : état de l'IA (`etat`),
+  1 ligne par réveil avec l'état des sources (`reveils`, 2 000 max), relevés des robots (`releves`).
+  L'agent lit tout avec `d1_database_query` : `SELECT * FROM reveils ORDER BY id DESC LIMIT 5`.
+  Bonus : 0 écriture KV pour l'IA (le KV a saturé deux fois le 2.10). Reprise automatique de l'essai
+  en cours depuis le KV. Écrire d'abord reste la règle (D1 refuse → aucun robot touché).
+- Gardes : bot-ia-routeur 39/0 (§ 9 D1), sabotages : écriture KV forcée (rouge), journal retiré (rouge).
+
+---
+
 ## 2026-10-02 (21h50) — Lingua v2.131.0 : cercle d'amis, Face ID, session permanente, voix
 
 Kevin : lien d'invitation → fiche → cercle de l'inviteur ; cadeaux, messages, encouragements, trophées ;

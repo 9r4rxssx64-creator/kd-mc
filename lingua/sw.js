@@ -3,8 +3,8 @@
    en ligne (plus jamais bloqué sur une ancienne page « collée » en mémoire), et on
    garde une copie en cache pour marcher hors-ligne. Aligné sur la règle « MAJ auto
    forcée toujours » : une nouvelle version publiée s'affiche dès la prochaine ouverture. */
-var CACHE = "lingua-v2.129.1";
-var ASSETS = ["./","./index.html","./app.js","./data.js","./histoires-langues.js","./mc-voix.js","./sources-langues.js","./data-mc.js","./data-lsf.js","./manifest.webmanifest","./icon.svg","./bee/wave.webp","./bee/party.webp","./bee/read.webp","./bee/point.webp","./bee/rig/base.webp","./bee/rig/wing-l.webp","./bee/rig/wing-r.webp","./donkey/wave.webp","./donkey/party.webp","./donkey/read.webp","./donkey/point.webp","./donkey/rig/base.webp"];
+var CACHE = "lingua-v2.130.0";
+var ASSETS = ["./","./index.html","./app.js","./data.js","./histoires-langues.js","./mc-voix.js","./sources-langues.js","./data-mc.js","./data-lsf.js","./translit.js","./manifest.webmanifest","./icon.svg","./bee/wave.webp","./bee/party.webp","./bee/read.webp","./bee/point.webp","./bee/rig/base.webp","./bee/rig/wing-l.webp","./bee/rig/wing-r.webp","./donkey/wave.webp","./donkey/party.webp","./donkey/read.webp","./donkey/point.webp","./donkey/rig/base.webp"];
 
 self.addEventListener("install", function(e){
   self.skipWaiting();
@@ -32,7 +32,19 @@ self.addEventListener("fetch", function(e){
      un numéro unique à chaque fois : les mettre en cache ferait grossir celui-ci d'une
      entrée par minute, pour rien. On laisse le réseau répondre, sans copie. */
   if(/[?&]_(v|upd)=/.test(req.url)) return;
-  // RÉSEAU D'ABORD : dernière version en ligne, cache en repli hors-ligne.
+  /* CONTENU VERSIONNÉ → DEPUIS LE TÉLÉPHONE (2.10, gratuit par défaut). Les gros fichiers de contenu
+     (data.js 813 Ko, LSF, histoires…) étaient retéléchargés par le domaine à CHAQUE ouverture : ~1,5 Mo
+     et autant de requêtes sur le quota gratuit. index.html (toujours frais, réseau d'abord) les appelle
+     avec ?v=<version> : une nouvelle version = une nouvelle adresse = téléchargée une fois ; une ancienne
+     copie ne peut jamais se mélanger à une app plus récente. Images : idem (elles changent rarement, et
+     le changement de nom de cache à chaque version les renouvelle). */
+  var pth=new URL(req.url).pathname;
+  if(/[?&]v=/.test(req.url) || /\.(webp|png|svg)$/.test(pth)){
+    e.respondWith(caches.match(req).then(function(hit){ return hit || fetch(req).then(function(r){
+      if(r && r.status===200 && r.type==="basic"){ var cp=r.clone(); caches.open(CACHE).then(function(c){ c.put(req,cp); }); }
+      return r; }).catch(function(){ return caches.match(req,{ignoreSearch:true}); }); }));
+    return; }
+  // RÉSEAU D'ABORD (index.html, app.js) : dernière version en ligne, cache en repli hors-ligne.
   e.respondWith(
     fetch(req).then(function(r){
       if(r && r.status===200 && r.type==="basic"){ var cp=r.clone(); caches.open(CACHE).then(function(c){ c.put(req,cp); }); }

@@ -1,0 +1,40 @@
+name: Coffre — comptes KDMC, retirer les comptes de robots
+
+# Kevin 2.10.2026 : « Je ne dois avoir qu'un compte KDMC, le mien. Chacun 1 seul compte. Normal. »
+# Retire UNIQUEMENT les uids donnés, et seulement s'ils sont reconnus comme robots (jamais Kevin).
+# Essai à blanc par défaut ; avec appliquer=oui, sauvegarde d'abord les fiches (corbeille 90 jours).
+# Lancement à la main / API uniquement — jamais de cron. Reste au coffre.
+
+on:
+  workflow_dispatch:
+    inputs:
+      uids:
+        description: "uids des comptes robots à retirer, séparés par des virgules"
+        required: true
+      appliquer:
+        description: "oui = retirer pour de vrai (sinon essai à blanc)"
+        default: "non"
+
+permissions:
+  contents: read
+
+jobs:
+  nettoyer:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 6   # gratuit par défaut (Kevin 30.09) : borné
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Retirer les comptes robots (essai à blanc par défaut)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          UIDS: ${{ inputs.uids }}
+          APPLIQUER: ${{ inputs.appliquer }}
+        shell: bash -eo pipefail {0}
+        run: |
+          NS=$(node -e "const t=require('fs').readFileSync('services/kdmc-router/wrangler.toml','utf8');const m=t.match(/binding\s*=\s*\"ACCOUNTS\"\s*\n\s*id\s*=\s*\"([a-f0-9]+)\"/);process.stdout.write(m?m[1]:'')")
+          [ -n "$NS" ] || { echo "::error::espace KV ACCOUNTS introuvable dans wrangler.toml"; exit 1; }
+          NS="$NS" node tools/audit/comptes-nettoyer-robots.mjs

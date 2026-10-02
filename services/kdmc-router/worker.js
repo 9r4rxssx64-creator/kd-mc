@@ -1213,7 +1213,22 @@ async function voixGratuite(env, texte, cleCache, cors) {
    heure (une seule écriture KV, pas un appel refusé par visiteur). Seulement si la page dit la langue (`l=`) :
    une voix fr-FR qui lirait de l'anglais aurait l'accent faux. Même nom de voix que Gemini (même famille Google)
    → chaque voix de l'app garde SA voix, toutes différentes (règle « voix réellement différentes »). */
-const GTTS_LANGUES = { fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT', de: 'de-DE', pt: 'pt-BR', nl: 'nl-NL' };
+/* Toutes les langues de Lingua (2.10) : Chirp 3 HD les couvre — liste officielle
+   https://cloud.google.com/text-to-speech/docs/chirp3-hd#language_availability (pt-PT absent → pt-BR,
+   ar → ar-XA « générique », zh → cmn-CN mandarin). */
+const GTTS_LANGUES = { fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT', de: 'de-DE', pt: 'pt-BR', nl: 'nl-NL',
+  pl: 'pl-PL', ru: 'ru-RU', uk: 'uk-UA', cs: 'cs-CZ', ar: 'ar-XA', zh: 'cmn-CN', ja: 'ja-JP', ko: 'ko-KR' };
+/* CACHE GRATUIT (2.10) : l'audio d'une phrase se garde dans le cache Cloudflare (Cache API, gratuit et
+   illimité) au lieu du KV, dont le plafond de 1 000 écritures/jour a été atteint le 27.09 et le 2.10.
+   Une phrase neuve passe de 2 écritures KV (compteur + audio) à 1 (le compteur, qui garantit le gratuit). */
+function cacheVoix(cle) { return new Request('https://voix.cache.kd-mc.com/' + encodeURIComponent(cle)); }
+async function lireCacheVoix(cle) {
+  try { if (typeof caches === 'undefined' || !caches.default || !cle) return null; const r = await caches.default.match(cacheVoix(cle)); return r ? await r.arrayBuffer() : null; } catch (_) { return null; }
+}
+async function ecrireCacheVoix(cle, buf) {
+  try { if (typeof caches === 'undefined' || !caches.default || !cle) return false;
+    await caches.default.put(cacheVoix(cle), new Response(buf, { headers: { 'content-type': 'audio/mpeg', 'cache-control': 'public, max-age=31536000' } })); return true; } catch (_) { return false; }
+}
 function gttsLangue(l) { const k = String(l || '').toLowerCase().slice(0, 2); return GTTS_LANGUES[k] || ''; }
 async function voixGoogle(env, texte, voix, langue, cleCache, cors) {
   try {
@@ -1239,7 +1254,8 @@ async function voixGoogle(env, texte, voix, langue, cleCache, cors) {
     const u8 = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
     if (u8.byteLength < 512) return null;
-    try { if (cleCache) await env.ACCOUNTS.put(cleCache, u8.buffer, { expirationTtl: 60 * 60 * 24 * 400 }); } catch (_) { /* cache best-effort */ }
+    /* Cache Cloudflare d'abord (0 écriture KV) ; le KV seulement s'il n'existe pas (tests, autre runtime). */
+    try { if (cleCache && !(await ecrireCacheVoix(cleCache, u8.buffer))) await env.ACCOUNTS.put(cleCache, u8.buffer, { expirationTtl: 60 * 60 * 24 * 400 }); } catch (_) { /* cache best-effort */ }
     return new Response(u8.buffer, { status: 200, headers: Object.assign({ 'content-type': 'audio/mpeg', 'cache-control': 'public, max-age=31536000', 'x-voix': 'google-chirp3hd' }, cors || {}) });
   } catch (_) { return null; }
 }
@@ -1603,6 +1619,16 @@ async function handleLingua(request, url, env) {
       await env.ACCOUNTS.put('lingua:' + k, s, { expirationTtl: 60 * 60 * 24 * 400 }); // ~400 j, renouvelé à chaque save
       return JL({ ok: true });
     }
+    /* EFFACER MES DONNÉES (2.10, droit à l'effacement) : même preuve que l'enregistrement — la clé (nom +
+       code) ou la session du compte KDMC. Qui peut écrire la sauvegarde peut l'effacer, personne d'autre. */
+    if (url.pathname === '/__lingua/effacer' && request.method === 'POST') {
+      let b; try { b = await request.json(); } catch { return JL({ ok: false, reason: 'bad_json' }, 400); }
+      let k = String(b && b.k || '');
+      if (!k) { k = await cleSession(); if (!k) return JL({ ok: false, reason: 'session_requise' }, 401); }
+      else if (!okKey(k)) return JL({ ok: false, reason: 'bad_key' }, 400);
+      try { await env.ACCOUNTS.delete('lingua:' + k); } catch (e) { return JL({ ok: false, reason: 'error', detail: String(e && e.message || e).slice(0, 120) }); }
+      return JL({ ok: true });
+    }
     // Voix naturelle : synthèse OpenAI TTS, mise en CACHE KV (1 mot = 1 synthèse à vie).
     // FAIL-OPEN : si clé absente ou erreur → le client repasse en voix navigateur.
     if (url.pathname === '/__lingua/tts' && request.method === 'GET') {
@@ -1734,7 +1760,7 @@ async function handleLingua(request, url, env) {
       }
       if (langue && (speed === 1 || moteurDemande === 'chirp')) {
         const gk = 'ltts:' + (await hashOf('gchirp:' + langue + ':' + vGoogle + ':' + text));
-        const gc = await env.ACCOUNTS.get(gk, 'arrayBuffer');
+        const gc = (await lireCacheVoix(gk)) || (await env.ACCOUNTS.get(gk, 'arrayBuffer'));
         if (gc) return new Response(gc, { status: 200, headers: Object.assign({}, audioHdr, { 'x-voix': 'google-chirp3hd' }) });
         const g = await voixGoogle(env, text, vGoogle, langue, gk, cors);
         if (g) return g;
@@ -2233,8 +2259,13 @@ function ispInfo(cf) {
   return { isp, vpn };
 }
 /* Enrichit (ou crée) la fiche à chaque connexion : MAX de renseignements. */
+/* Identités de ROBOT (sonde de déploiement) : leur session sert à prouver que la chaîne SSO marche,
+   mais un robot n'est pas une personne. Kevin 2.10 : « Chacun 1 seul compte » — et aucun compte
+   pour ce qui n'est pas quelqu'un. Mesuré le 2.10 : « CI Smoke » réécrit à chaque déploiement. */
+const UID_ROBOTS_SANS_FICHE = new Set(['ci_smoke']);
 async function enrich(env, request, uid, name, cgu, pre, opts) {
   if (!env || !env.ACCOUNTS) return;
+  if (UID_ROBOTS_SANS_FICHE.has(uid)) return;
   /* opts.origine = l'app d'où vient un NOUVEL inscrit (transmise par le portail).
      Ne sert qu'à la création de la fiche ; une fiche existante n'en tient pas compte. */
   const origine = (opts && opts.origine) || '';

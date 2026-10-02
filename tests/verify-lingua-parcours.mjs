@@ -70,7 +70,7 @@ const erreurs = [];
   await page.waitForTimeout(2500);
 
   const n = await page.evaluate(() => document.querySelectorAll('button').length);
-  chk(n > 100, `4. le cours s'affiche vraiment (${n} boutons — l'app cassée en rendait 2)`);
+  chk(n > 20, `4. le cours s'affiche vraiment (${n} boutons — l'app cassée en rendait 2 ; le parcours n'affiche plus que les unités autour de l'élève depuis le 2.10)`);
   chk(await page.evaluate(() => !!document.querySelector('.pod-say')),
     '5. le bouton d\'écoute 🔊 de la phrase du jour est là');
   await page.close();
@@ -91,7 +91,7 @@ for (const cours of ['en', 'es', 'it', 'de', 'mc']) {
   await page.goto(PAGE);
   await page.waitForTimeout(2000);
   const n = await page.evaluate(() => document.querySelectorAll('button').length);
-  chk(n > 100, `6. cours « ${cours} » sans progression → l'app s'ouvre quand même (${n} boutons)`);
+  chk(n > 20, `6. cours « ${cours} » sans progression → l'app s'ouvre quand même (${n} boutons)`);
   await page.close();
 }
 

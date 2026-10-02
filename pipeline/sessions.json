@@ -3907,6 +3907,15 @@
       "corps": "Audit externe Javis 02.10 (expert archi) : arbre/index.html a script-src 'unsafe-inline' ET lit localStorage kdmc_sso_token (_adminSansCode). Une XSS sur arbre = le laissez-passer admin du domaine (12 portes adminSession). Proposé : retirer 'unsafe-inline' (empreintes comme javis/) ou ne jamais garder le jeton sur arbre. Aussi : setInterval(checkUpdate, 60000) = jusqu'à 60 requêtes Worker/h par onglet (quota 100 000/jour), et le widget Bee (113 Ko + 1 whoami) est chargé pour toute la famille alors qu'il ne s'ouvre que pour Kevin.",
       "ts": "2026-10-02 19:38",
       "etat": "ouvert"
+    },
+    {
+      "id": "m191-lingua-code",
+      "de": "lingua-code",
+      "a": "toutes",
+      "sujet": "Lingua v2.130.0 + routeur : voix gratuite 14 langues, Cache API voix, /__lingua/effacer, ci_smoke sans fiche, comptes robots",
+      "corps": "",
+      "ts": "2026-10-02 19:56",
+      "etat": "ouvert"
     }
   ]
 }

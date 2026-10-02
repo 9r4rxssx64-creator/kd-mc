@@ -9,14 +9,17 @@
 
 ---
 
-## 🔍 Audit Lingua du 2.10 — 1 décision pour toi
+## ✅ Lingua v2.130.0 (2.10 soir) — « tous les axes au maximum, gratuit » : fait, rien à faire de ton côté
 
-Lingua marche (75 vérifications sur 77 en vrai). Rien à faire de ton côté pour ça. **Une décision** :
-les portes **payantes** de Lingua — l'appel en direct (OpenAI Realtime, à la minute), les 11 voix OpenAI,
-la voix d'Antonin (Replicate). Je propose : fermer l'appel en direct, passer toutes les voix sur Google
-(gratuit) avec la voix du téléphone en secours, et garder Antonin seulement si tu y tiens.
-Dis « répare Lingua » pour que je fasse la liste P0 (voix gratuite, mise à jour légère, accessibilité).
-Le rapport : https://claude.ai/artifact/Q5aVqjxtKwgS1pwfNTLm6n
+- **Un seul compte par personne** : tu as UN compte KDMC (vérifié dans le registre réel : 30 comptes, 1 à toi,
+  0 personne en double). Les **9 comptes de robots** (sondes de sécurité de septembre, « CI Smoke ») sont
+  retirés après minuit UTC (sauvegarde gardée 90 jours) et « CI Smoke » ne se recrée plus.
+- **Voix gratuite** dans les 14 langues (Google), plus de phrase payée chez OpenAI tant que Google répond.
+- **Nouveau** : révision FSRS (celle d'Anki), « 🎙️ Répète et compare », écriture latine (russe, ukrainien,
+  coréen, chinois, japonais), mode enfant avec code parent, thème clair, exporter / effacer mes données,
+  pastille sur l'icône. Accessibilité : 0 défaut (axe) dans les deux thèmes.
+- **Une décision reste à toi, sans urgence** : l'appel en direct (OpenAI Realtime, à la minute) et la voix
+  d'Antonin (Replicate) restent payants. Dis « ferme » et je les retire ; sinon ils restent derrière leurs plafonds.
 
 ## ✅ GitHub Actions bloquées par le budget (depuis le 27.09, 22h16 UTC) — NE RELÈVE PAS le budget, ça revient le 1er octobre
 

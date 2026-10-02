@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.129.1";
+var APP_VER="v2.130.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -13,7 +13,8 @@ try{ window.LINGUA_VER = APP_VER; }catch(e){}
 /* ============ Stockage : global vs par-compte ============ */
 function gg(k,d){ try{ var v=localStorage.getItem("lingua_g_"+k); return v==null?d:JSON.parse(v);}catch(e){return d;} }
 function gs(k,v){ try{ localStorage.setItem("lingua_g_"+k, JSON.stringify(v)); }catch(e){} }
-var ACC = gg("current", null);         // id du compte courant
+var ACC = gg("current", null);
+var PARCOURS_PLUS = {};                 // unités en plus ouvertes à la main sur le parcours (pas sauvegardé)         // id du compte courant
 function pfx(){ return "lingua_a_"+ACC+"_"; }
 function lg(k,d){ try{ if(!ACC)return d; var v=localStorage.getItem(pfx()+k); return v==null?d:JSON.parse(v);}catch(e){return d;} }
 function ls(k,v){ try{ if(ACC) localStorage.setItem(pfx()+k, JSON.stringify(v)); }catch(e){} }
@@ -71,6 +72,7 @@ function loadS(){
      c'est justement pour ca que le choix existe (j'ai devine faux deux fois). */
   S.beeArt=lg("beeArt","vive"); // dessin de Bee : "douce" ou "vive" (choix dans les reglages)
   S.beeVoice=lg("beeVoice","fillette"); // voix de Bee choisie (catalogue BEE_VOICES) — fillette mignonne par défaut
+  S.latin=lg("latin",true);   // 🔤 écriture latine sous le russe, l'ukrainien, le coréen, le chinois, le japonais (2.10)
   S.turtle=lg("turtle",false); // 🐢 mode tortue : les modèles de prononciation se jouent au ralenti partout
   S.coachScene=lg("coachScene",null); // 🎭 jeu de rôle en cours (id de SCENES) — null = conversation libre
   S.storiesDone=lg("storiesDone",{}); // 📖 histoires terminées : {courseId:{storyId:ts}}
@@ -105,7 +107,7 @@ function fixPlacementProg(){
     if(changed){ S.diff=null; /* le niveau estimé par ce test n'était pas fiable → retour en Auto (doux, selon les mots appris) */ save(); }
   }catch(e){}
 }
-function save(){ ["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","sound","voice","voixChoisie","league","leagueWeek","achv","words","today","qClaim","qDay","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","turtle","mascot","beeArt"].forEach(function(k){ ls(k,S[k]); }); try{ scheduleCloudSave(); }catch(e){} try{ reportProgress(); }catch(e){} }
+function save(){ ["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","sound","voice","voixChoisie","league","leagueWeek","achv","words","today","qClaim","qDay","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","latin","turtle","mascot","beeArt"].forEach(function(k){ ls(k,S[k]); }); try{ scheduleCloudSave(); }catch(e){} try{ reportProgress(); }catch(e){} }
 /* 📊 chaque XP gagné est daté — nourrit le calendrier d'activité (page Stats) */
 function _dayTs(k){ var p=String(k).split("-"); return new Date(+p[0],(+p[1]||1)-1,+p[2]||1).getTime(); }
 function histAdd(xp){ if(!xp)return; if(!S.hist)S.hist={}; var t=today(); S.hist[t]=(S.hist[t]||0)+xp;
@@ -133,7 +135,8 @@ function reportProgress(){
     var ua=navigator.userAgent||"";
     var dev=/iPhone/.test(ua)?"iPhone":/iPad/.test(ua)?"iPad":/Android/.test(ua)?"Android":/Macintosh/.test(ua)?"Mac":/Windows/.test(ua)?"PC Windows":"Autre";
     fetch("https://admin.kd-mc.com/log",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,mode:"cors",
-      body:JSON.stringify({app:"lingua",uid:"lingua_"+ACC,name:m.name,event:"progression",device:dev,tier:"lingua",meta:meta})}).catch(function(){});
+      /* Mode enfant (2.10) : ni prénom ni téléphone — juste la progression d'un compte anonyme. */
+      body:JSON.stringify(m.enfant?{app:"lingua",uid:"lingua_"+ACC,name:"Enfant (mode enfant)",event:"progression",tier:"lingua",meta:meta}:{app:"lingua",uid:"lingua_"+ACC,name:m.name,event:"progression",device:dev,tier:"lingua",meta:meta})}).catch(function(){});
   }catch(e){}
 }
 
@@ -157,10 +160,22 @@ function kdmcLogin(name,code){ return fetch("/__sso/login",{method:"POST",creden
 function kdmcIssue(uid,name,code,cgu){ return fetch("/__sso/issue",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({uid:uid,name:name,cgu:!!cgu,pour:location.host,code:(code&&String(code).length>=6)?String(code):undefined})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
 function kdmcSlug(name){ return norm(name).replace(/\s+/g,"-").slice(0,60); }
 /* Le compte local rattaché à cette personne du domaine (par uid, sinon par prénom+nom). */
+/* UN SEUL COMPTE PAR PERSONNE (Kevin 2.10 : « Je ne dois avoir qu'un compte KDMC, le mien. Chacun 1 seul
+   compte. Normal »). Quand le domaine dit qui est là, TOUS les comptes de cet appareil qui sont à
+   cette personne (même compte KDMC, ou même prénom + nom) n'en font plus qu'un : on garde le plus
+   avancé (XP), on le rattache au compte KDMC, et les autres QUITTENT la liste. Leurs données restent
+   sur l'appareil (clé `lingua_a_<id>_…` jamais effacée ici) : rien n'est perdu, rien n'est mélangé. */
+function xpDe(id){ try{ return +JSON.parse(localStorage.getItem("lingua_a_"+id+"_xp")||"0")||0; }catch(e){ return 0; } }
 function accountForDomain(j){ var accs=accounts(),k=nameKey(j.name||"");
-  for(var i=0;i<accs.length;i++){ if(accs[i].kdmcUid&&accs[i].kdmcUid===j.uid) return accs[i].id; }
-  for(var i2=0;i2<accs.length;i2++){ if(k&&nameKey(accs[i2].name||"")===k){ accs[i2].kdmcUid=j.uid; gs("accounts",accs); return accs[i2].id; } }
-  return null; }
+  var miens=accs.filter(function(a){ return (a.kdmcUid&&a.kdmcUid===j.uid) || (k&&nameKey(a.name||"")===k); });
+  if(!miens.length) return null;
+  miens.sort(function(a,b){ return (xpDe(b.id)-xpDe(a.id)) || ((b.kdmcUid===j.uid)-(a.kdmcUid===j.uid)); });
+  var garde=miens[0], partis=miens.slice(1).map(function(a){ return a.id; });
+  garde.kdmcUid=j.uid;
+  if(partis.length){ garde.fusionnes=(garde.fusionnes||[]).concat(partis);
+    accs=accs.filter(function(a){ return partis.indexOf(a.id)<0; }); }
+  gs("accounts",accs);
+  return garde.id; }
 /* Entrée par le domaine : on ouvre (ou crée) le compte local de la personne, sans code, et on
    récupère sa progression sauvegardée sous son compte KDMC. */
 function enterFromDomain(j){
@@ -375,16 +390,43 @@ function bumpStreak(){
 function srsKey(w){ return w.fr+"|"+w.t; }
 function srsGet(c){ if(!S.srs[c])S.srs[c]={}; return S.srs[c]; }
 function markWord(w){ if(!S.words[S.course])S.words[S.course]={}; S.words[S.course][srsKey(w)]=true; }
-function srsUpdate(w,ok){ var db=srsGet(S.course),k=srsKey(w),it=db[k]||{ease:2.5,int:0,reps:0,due:0};
-  if(ok){ it.reps++; it.ease=Math.max(1.3,it.ease+0.1); it.int=it.reps<=1?1:it.reps===2?3:Math.round(it.int*it.ease);}
-  else{ it.reps=0; it.ease=Math.max(1.3,it.ease-0.2); it.int=0; }
-  it.due=Date.now()+it.int*864e5; db[k]=it; markWord(w); save(); }
+/* ===== RÉVISION ESPACÉE FSRS (2.10, audit d'amélioration) =====
+   Remplace le SM-2 maison. FSRS (« Free Spaced Repetition Scheduler », celui d'Anki) modélise pour chaque
+   mot sa STABILITÉ (jours avant de tomber à 90 % de chances de s'en souvenir) et sa DIFFICULTÉ (1-10).
+   Sur ~10 000 collections Anki, il fait mieux que SM-2 pour 99,6 % des gens, avec 20 à 30 % de révisions
+   en moins à mémoire égale. Paramètres publiés par défaut de FSRS-4.5, rétention visée 90 %.
+   Les anciennes fiches {ease,int,reps,due} sont converties à la volée : personne ne perd son historique.
+   Champs gardés pour compatibilité : reps, int (jours), due ; ease est recalculé depuis la difficulté. */
+var FSRS_W=[0.4872,1.4003,3.7145,13.8206,5.1618,1.2298,0.8975,0.031,1.6474,0.1367,1.0461,2.1072,0.0793,0.3246,1.587,0.2272,2.8755];
+var FSRS_DECAY=-0.5, FSRS_FACTOR=19/81, FSRS_RETENTION=0.9;
+function fsrsBorne(x,a,b){ return Math.min(b,Math.max(a,x)); }
+function fsrsRappel(jours,st){ return Math.pow(1+FSRS_FACTOR*jours/Math.max(0.01,st),FSRS_DECAY); }
+function fsrsD0(g){ return fsrsBorne(FSRS_W[4]-(g-3)*FSRS_W[5],1,10); }
+function fsrsIntervalle(st){ return Math.max(1,Math.round(st/FSRS_FACTOR*(Math.pow(FSRS_RETENTION,1/FSRS_DECAY)-1))); }
+/* Ancienne fiche SM-2 → FSRS : stabilité ≈ dernier intervalle, difficulté depuis la facilité (1,3 → 10 ; 3,0 → 3). */
+function fsrsDepuisAncien(it){ if(it&&it.st) return it;
+  var o=it||{}; var ease=o.ease||2.5, iv=o.int||0;
+  return { st: iv>0?iv:(o.reps>0?1:0), d: fsrsBorne(10-(ease-1.3)*(7/1.7),1,10), reps:o.reps||0, lapses:o.lapses||0,
+           last: o.due&&iv>0 ? o.due-iv*864e5 : 0, due:o.due||0, int:iv, ease:ease }; }
+/* note : 1 = raté, 3 = réussi (4 = facile, réservé). Pure : testable sans l'app (garde test:lingua-fsrs). */
+function fsrsRevoir(it,note,maintenant){ it=fsrsDepuisAncien(it); var t=maintenant||Date.now();
+  var g=note, w=FSRS_W, n={ reps:it.reps||0, lapses:it.lapses||0 };
+  if(!it.st){ n.st=w[g-1]; n.d=fsrsD0(g); }
+  else { var jours=Math.max(0,(t-(it.last||t))/864e5), R=fsrsRappel(jours,it.st);
+    var d=it.d-w[6]*(g-3); n.d=fsrsBorne(w[7]*fsrsD0(4)+(1-w[7])*d,1,10);
+    if(g===1){ n.st=Math.min(it.st, w[11]*Math.pow(it.d,-w[12])*(Math.pow(it.st+1,w[13])-1)*Math.exp(w[14]*(1-R))); }
+    else { n.st=it.st*(Math.exp(w[8])*(11-it.d)*Math.pow(it.st,-w[9])*(Math.exp(w[10]*(1-R))-1)*(g===2?w[15]:1)*(g===4?w[16]:1)+1); } }
+  if(g===1){ n.reps=0; n.lapses++; n.int=0; n.due=t+10*60000; }       /* raté : on le revoit dans la séance (10 min) */
+  else { n.reps++; n.int=fsrsIntervalle(n.st); n.due=t+n.int*864e5; }
+  n.last=t; n.ease=Math.round((1.3+(10-n.d)*(1.7/7))*100)/100; return n; }
+function srsUpdate(w,ok){ var db=srsGet(S.course),k=srsKey(w);
+  db[k]=fsrsRevoir(db[k],ok?3:1); markWord(w); save(); }
 function dueWords(){ var c=COURSES[S.course]; if(!c)return []; var db=srsGet(S.course),out=[],n=Date.now();
   c.units.forEach(function(u){u.lessons.forEach(function(l){l.words.forEach(function(w){ var it=db[srsKey(w)]; if(it&&it.reps>0&&it.due<=n)out.push(w); });});}); return out; }
 function wordCount(){ var t=0; Object.keys(S.words).forEach(function(c){ t+=Object.keys(S.words[c]).length; }); return t; }
 /* Mots FAIBLES : déjà vus mais ratés (reps remis à 0) ou fragiles (ease basse) → à revoir en priorité (points faibles / erreurs). */
 function weakWords(){ var c=COURSES[S.course]; if(!c)return []; var db=srsGet(S.course),seen=S.words[S.course]||{},out=[];
-  c.units.forEach(function(u){u.lessons.forEach(function(l){l.words.forEach(function(w){ var k=srsKey(w),it=db[k]; if(seen[k]&&it&&(it.reps===0||it.ease<2.3)) out.push(w); });});}); return out; }
+  c.units.forEach(function(u){u.lessons.forEach(function(l){l.words.forEach(function(w){ var k=srsKey(w),it=db[k]; if(seen[k]&&it&&(it.reps===0||(it.d?it.d>7:it.ease<2.3))) out.push(w); });});}); return out; }
 /* Mots APPRIS dans l'ordre du programme (chronologique, depuis le début) — pour « revoir depuis le début ». */
 function learnedWords(){ var c=COURSES[S.course]; if(!c)return []; var seen=S.words[S.course]||{},out=[];
   c.units.forEach(function(u){u.lessons.forEach(function(l){l.words.forEach(function(w){ if(seen[srsKey(w)]) out.push(w); });});}); return out; }
@@ -842,6 +884,11 @@ function _repliVoixTelephone(text,req){
   if(_ttsRepliFait===req) return;    /* déjà basculé pour CETTE demande */
   _ttsRepliFait=req; _webSpeak(text);
 }
+/* VOIX GRATUITE (2.10) : le domaine ne prend la voix Google gratuite que si on lui dit la LANGUE de la
+   phrase (`&l=`). Sans elle, chaque phrase neuve partait chez OpenAI, payant. Monégasque et LSF : pas de
+   langue Google adaptée → on ne l'envoie pas (comportement d'avant). */
+function langueCours(){ var c=COURSES[S.course]; if(!c||S.course==="mc"||S.course==="lsf") return ""; return c.ttsLang||""; }
+function _lq(lang){ return lang ? "&l="+encodeURIComponent(lang) : ""; }
 function speak(text){ if(!S.sound||!text)return; text=texteADire(text); var vid=S.voice||"nova"; var myReq=++_ttsReq;
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(_){} _wsStopKA();   // coupe toute voix EN FILE (anti-décalage « répond à la question d'avant »)
   if(_isCloudVoice(vid)){
@@ -850,7 +897,7 @@ function speak(text){ if(!S.sound||!text)return; text=texteADire(text); var vid=
          Les effets « mignons » (vitesse 1,24 · pitch 1,7) rendaient le modèle robotique et
          méconnaissable — or c'est LA référence sur laquelle Kevin calque sa prononciation.
          Les effets restent pour les phrases de Bee, jamais pour le vocabulaire. */
-      var a=_ttsJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vr.tts||vid)+"&t="+encodeURIComponent(text)); if(!a){ _webSpeak(text); return; }
+      var a=_ttsJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vr.tts||vid)+_lq(langueCours())+"&t="+encodeURIComponent(text)); if(!a){ _webSpeak(text); return; }
       a.onerror=function(){ if(myReq===_ttsReq){ _voixCloudKO("media"); _repliVoixTelephone(text,myReq); } };   // ne parle que si c'est TOUJOURS la dernière demande
       _ttsChrono(a,myReq,function(){ _repliVoixTelephone(text,myReq); });
       var p=a.play(); if(p&&p.catch) p.catch(function(){ if(myReq===_ttsReq){ _voixCloudKO("refus"); _repliVoixTelephone(text,myReq); } });
@@ -903,7 +950,51 @@ function comboSound(n){ tone([660+ n*80, 880+n*80],.25); }
 
 /* ============ Rendu ============ */
 var app, VIEW="home", LESSON=null, PICK=false;
-function render(){
+/* ===== 🔤 ÉCRITURE LATINE (2.10, audit d'amélioration : aucune n'existait — indispensable à un débutant) =====
+   Russe, ukrainien : translittération par règles. Coréen : romanisation révisée (syllabe par syllabe, sans les
+   règles d'assimilation — une aide de lecture). Chinois (pinyin) et japonais (rōmaji) : pré-calculés une fois
+   (lingua/translit.js, tools/lingua/translit-gen.mjs) ; un mot japonais à lecture douteuse n'en a pas — rien de
+   faux. Arabe : non (sans voyelles écrites, toute transcription serait inventée).
+   Affichée par un attribut (data-latin) + CSS : le TEXTE des boutons ne change pas, la correction non plus. */
+var LAT_RU={"а":"a","б":"b","в":"v","г":"g","д":"d","е":"e","ё":"yo","ж":"zh","з":"z","и":"i","й":"y","к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u","ф":"f","х":"kh","ц":"ts","ч":"ch","ш":"sh","щ":"shch","ъ":"","ы":"y","ь":"","э":"e","ю":"yu","я":"ya"};
+var LAT_UK={"а":"a","б":"b","в":"v","г":"h","ґ":"g","д":"d","е":"e","є":"ye","ж":"zh","з":"z","и":"y","і":"i","ї":"yi","й":"y","к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u","ф":"f","х":"kh","ц":"ts","ч":"ch","ш":"sh","щ":"shch","ь":"","ю":"yu","я":"ya","'":"","’":""};
+/* Ukrainien : translittération NATIONALE officielle (2010) — є ї й ю я s'écrivent ye yi y yu ya en début de
+   mot, ie i i iu ia ailleurs (« Київ » → Kyiv, « дякую » → diakuiu). */
+var LAT_UK_MILIEU={"є":"ie","ї":"i","й":"i","ю":"iu","я":"ia"};
+function latUk(t){ return String(t).replace(/[^\s,.!?;:«»"()-]+/g,function(mot){ var o=""; for(var i=0;i<mot.length;i++){ var c=mot.charAt(i), l=c.toLowerCase();
+    var r=(i>0&&(l in LAT_UK_MILIEU))?LAT_UK_MILIEU[l]:((l in LAT_UK)?LAT_UK[l]:c); o+=(c!==l&&r)?r.charAt(0).toUpperCase()+r.slice(1):r; } return o; }); }
+function latCyr(t,map){ return String(t).split("").map(function(c){ var l=c.toLowerCase(); if(!(l in map)) return c; var r=map[l]; return c!==l&&r ? r.charAt(0).toUpperCase()+r.slice(1) : r; }).join(""); }
+var KO_I=["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
+var KO_V=["a","ae","ya","yae","eo","e","yeo","ye","o","wa","wae","oe","yo","u","wo","we","wi","yu","eu","ui","i"];
+var KO_F=["","k","k","k","n","n","n","t","l","k","m","l","l","l","p","l","m","p","p","t","t","ng","t","t","k","t","p","t"];
+var KO_LIAISON=["","g","kk","ks","n","nj","n","d","r","lg","lm","lb","ls","lt","lp","r","m","b","bs","s","ss","ng","j","ch","k","t","p",""];
+function latKo(t){ var out="",prevF=""; for(var i=0;i<t.length;i++){ var c=t.charCodeAt(i);
+    if(c>=0xAC00&&c<=0xD7A3){ var x=c-0xAC00, ini=Math.floor(x/588), med=Math.floor((x%588)/28), fin=x%28;
+      var n=t.charCodeAt(i+1), suivIni=(n>=0xAC00&&n<=0xD7A3)?Math.floor((n-0xAC00)/588):-1;
+      /* liaison : devant une syllabe muette (ㅇ initial), la consonne finale se prononce au début de la suivante */
+      var F=(fin&&suivIni===11)?KO_LIAISON[fin]:KO_F[fin];
+      out+=KO_I[ini]+KO_V[med]+F; prevF=F; }
+    else { out+=t.charAt(i); prevF=""; } }
+  /* nasalisation la plus fréquente (-ㅂ니다 → -mnida, 학년 → hangnyeon) et ㄹㄹ */
+  return out.replace(/pn/g,"mn").replace(/pm/g,"mm").replace(/kn/g,"ngn").replace(/km/g,"ngm").replace(/tn/g,"nn").replace(/tm/g,"nm").replace(/lr/g,"ll"); }
+function latinDe(t,cours){ t=String(t||"").trim(); if(!t) return "";
+  if(cours==="ru") return /[а-яё]/i.test(t)?latCyr(t,LAT_RU):"";
+  if(cours==="uk") return /[а-яєіїґ]/i.test(t)?latUk(t):"";
+  if(cours==="ko") return /[가-힣]/.test(t)?latKo(t):"";
+  if((cours==="zh"||cours==="ja")&&typeof TRANSLIT!=="undefined"&&TRANSLIT[cours]) return TRANSLIT[cours][t]||"";
+  return ""; }
+var ECRITURE_NON_LATINE=/[Ѐ-ӿ぀-ヿ一-鿿가-힣]/;
+function decorerLatin(racine){ if(!S.latin||!S.course||["ru","uk","ko","zh","ja"].indexOf(S.course)<0||!racine) return;
+  var els=racine.querySelectorAll("button, .q-word, .pron-word, b, span, div");
+  for(var i=0;i<els.length;i++){ var e=els[i]; if(e.hasAttribute("data-latin")) continue;
+    /* le texte PROPRE de l'élément (sans ses enfants : bouton 🔊, icône…) */
+    var t=""; for(var k=0;k<e.childNodes.length;k++){ if(e.childNodes[k].nodeType===3) t+=e.childNodes[k].nodeValue; }
+    t=t.replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu,"").trim();
+    if(!t||t.length>60||!ECRITURE_NON_LATINE.test(t)) continue;
+    var l=latinDe(t,S.course); if(l&&l!==t.trim()){ e.setAttribute("data-latin",l); e.classList.add("a-latin"); } } }
+/* Tout écran (leçon, jeux, atelier compris : ils sortent plus tôt) reçoit l'écriture latine après affichage. */
+function render(){ _renderEcran(); try{ decorerLatin(app); }catch(_){} }
+function _renderEcran(){
   if(!ACC || PICK){ app.innerHTML=""; app.appendChild(vAccounts()); return; }
   regenHearts(); checkDay(); checkAchv(); checkQuests();
   app.innerHTML="";
@@ -980,8 +1071,8 @@ function openCreate(){
   m.body.innerHTML='<h3>Nouveau compte</h3>'+
     '<input id="acPrenom" class="txt" placeholder="Ton prénom" maxlength="18" autocomplete="off">'+
     '<input id="acNom" class="txt" placeholder="Ton nom" maxlength="24" autocomplete="off">'+
-    '<input id="acCode" class="txt" placeholder="Code secret (facultatif)" inputmode="numeric" maxlength="10" autocomplete="off">'+
-    '<p class="mini">🔒 <b>Facultatif</b> : un code (6 chiffres min.) crée ton <b>compte KDMC</b> — le même nom + code te reconnaît dans toutes les apps du domaine et sur n\'importe quel téléphone. Tu peux commencer <b>sans</b>, et l\'ajouter plus tard.</p>'+
+    '<input id="acCode" class="txt" placeholder="Code secret, 6 chiffres (facultatif)" inputmode="numeric" maxlength="10" autocomplete="off">'+
+    '<p class="mini">🔒 <b>Un seul compte par personne</b> : avec un code (6 chiffres min.), c\'est ton <b>compte KDMC</b> — le même nom + code te reconnaît dans toutes les apps du domaine et sur n\'importe quel téléphone. Tu peux commencer <b>sans</b>, et l\'ajouter plus tard.</p>'+
     '<label class="mini" id="acCguWrap" style="display:block"><input type="checkbox" id="acCgu"> J\'accepte les <a href="#" id="acCguLink">conditions</a>.</label><div class="mini" id="acCguText" hidden>Un seul compte pour toutes les apps KDMC. Tes informations restent privées et ne servent qu\'à te reconnaître. Tu peux te déconnecter ou demander l\'effacement quand tu veux.</div>'+
     '<p class="mini">Choisis ton avatar</p>';
   /* Conditions : UNE fois pour tout le domaine. Déjà acceptées (session KDMC) → pas de case. Texte servi par le domaine. */
@@ -997,7 +1088,10 @@ function openCreate(){
     /* Prénom + nom obligatoires dès la création : sans nom, deux homonymes se
        partageraient le même compte en ligne (Kevin 2026-09-05). */
     if(!fullNameOk(n)){ toast("Entre ton prénom ET ton nom 🙂"); return; }
-    if(c && c.length<4){ toast("Le code doit faire au moins 4 chiffres (ou laisse-le vide) 🔒"); return; }
+    /* Plus de « compte Lingua seul » à 4-5 chiffres pour un NOUVEAU (Kevin 2.10 : un seul compte par
+       personne) : un code fait de toi un compte KDMC, valable partout. Les anciens codes courts
+       continuent de marcher à la connexion (« J'ai déjà un compte »). */
+    if(c && c.length<6){ toast("Ton code doit faire au moins 6 chiffres — c'est celui de ton compte KDMC (ou laisse-le vide) 🔒"); return; }
     var cguOk=!!(m.body.querySelector("#acCgu")&&m.body.querySelector("#acCgu").checked);
     if(!cguOk){ toast("Coche les conditions pour continuer 🙂"); return; }
     ok.disabled=true; ok.textContent="…";
@@ -1087,14 +1181,27 @@ function openMyCode(id){
 }
 function openChangeCode(id){
   var a=accMeta(id)||{}; var m=modal();
-  m.body.innerHTML='<h3>🔒 Changer mon code</h3><p class="mini">Ta progression reste sur cet appareil et repart en ligne sous le nouveau code. <b>L\'ancien code ne te reconnectera plus</b> ailleurs.</p>'+
-    '<input id="ccCode" class="txt" placeholder="Nouveau code (4 chiffres min)" inputmode="numeric" maxlength="10" autocomplete="off">';
-  var ok=el("button","btn-main"); ok.textContent="Enregistrer";
+  /* Compte KDMC : son code est celui du DOMAINE, le même dans toutes les apps. Le changer ici
+     seulement créerait deux codes pour une même personne (Kevin 2.10 : un seul compte) → on le dit. */
+  if(a.kdmcUid){
+    m.body.innerHTML='<h3>🔒 Ton code KDMC</h3><p class="mini">Ton compte Lingua <b>est</b> ton compte KDMC : un seul compte, un seul code, le même dans toutes les apps du domaine. Pour le changer, demande à l\'administrateur — il le change pour toutes les apps d\'un coup.</p>';
+    var fe=el("button","btn-main"); fe.textContent="Compris"; fe.onclick=function(){ m.close(); }; m.body.appendChild(fe); return; }
+  m.body.innerHTML='<h3>🔒 Relier à mon compte KDMC</h3><p class="mini">Choisis un code de <b>6 chiffres</b> : ce compte devient ton <b>compte KDMC</b>, le même dans toutes les apps du domaine et sur n\'importe quel téléphone. Ta progression te suit. <b>L\'ancien code ne te reconnectera plus</b>.</p>'+
+    '<input id="ccCode" class="txt" placeholder="Code, 6 chiffres min." inputmode="numeric" maxlength="10" autocomplete="off">';
+  var ok=el("button","btn-main"); ok.textContent="Relier mon compte";
   ok.onclick=function(){ var c=(m.body.querySelector("#ccCode").value||"").trim();
-    if(c.length<4){ toast("Code trop court (4 min)"); return; }
-    if(c===String(a.code)){ m.close(); toast("C'est déjà ton code 🙂"); return; }
-    setAccountCode(id,c); if(ACC===id) cloudSaveNow();
-    m.close(); toast("🔑 Nouveau code enregistré"); render(); };
+    if(c.length<6){ toast("6 chiffres minimum — c'est le code de ton compte KDMC 🔒"); return; }
+    ok.disabled=true; ok.textContent="…";
+    var rendre=function(t){ ok.disabled=false; ok.textContent="Relier mon compte"; toast(t); };
+    kdmcIssue(kdmcSlug(a.name||""),a.name||"",c,true).then(function(j){
+      /* `code:false` = le domaine connaît déjà ce nom sans nous laisser poser de code : ce compte
+         KDMC n'est pas prouvé à nous → on ne relie rien (sinon deux personnes partageraient un compte). */
+      if(j&&j.ok&&!j.code) return rendre("Ce nom a déjà un compte KDMC — touche « J'ai déjà un compte » pour y entrer 🔑");
+      if(j&&j.ok){ var accs=accounts(); accs.forEach(function(x){ if(x.id===id){ x.code=c; x.kdmcUid=j.uid; } }); gs("accounts",accs);
+        if(ACC===id) cloudSaveNow(); m.close(); toast("🔑 Relié à ton compte KDMC — un seul compte, partout"); render(); return; }
+      if(j&&(j.reason==="code_requis"||j.reason==="code_incorrect")) return rendre("Ce nom a déjà un compte KDMC avec un autre code — touche « J'ai déjà un compte » 🔑");
+      rendre("Le domaine n'a pas répondu — rien n'a changé, réessaie dans un moment"); })
+    .catch(function(){ rendre("Pas de réseau — rien n'a changé, réessaie dans un moment"); }); };
   m.body.appendChild(ok);
   setTimeout(function(){ var i=m.body.querySelector("#ccCode"); if(i)i.focus(); },100);
 }
@@ -1122,7 +1229,7 @@ function vTopbar(){ var t=el("div","topbar"); var c=S.course?COURSES[S.course]:n
     '<div class="tb-stat streak"><span>🔥</span>'+S.streak+'</div>'+
     '<div class="tb-stat gems"><span>💎</span>'+S.gems+'</div>'+
     '<div class="tb-stat hearts"><span>❤️</span>'+(UNLIMITED?'∞':S.hearts)+'</div>'+
-    '<button class="tb-av" id="tbAv" title="Comptes">'+me.avatar+'</button>';
+    '<button class="tb-av" id="tbAv" title="Comptes" aria-label="Changer de compte">'+me.avatar+'</button>';
   t.querySelector("#tbFlag").onclick=function(){ S.course=null; VIEW="home"; save(); render(); };
   t.querySelector("#tbAv").onclick=function(){ PICK=true; render(); };
   return t;
@@ -1235,11 +1342,19 @@ function vHome(){ var w=el("div","screen tree");
     row.innerHTML='<span class="qi">'+(done?"✅":"🎁")+'</span><span class="qt">'+qq.t+'</span><span class="qp">'+v+'/'+qq.g+'</span><span class="qr">+'+qq.r+'💎</span>'; q.appendChild(row); });
   w.appendChild(q);
   var c=COURSES[S.course];
-  c.units.forEach(function(u,ui){ var sec=el("div","unit"); sec.style.setProperty("--uc",u.couleur); var crowns=0; u.lessons.forEach(function(_,li){crowns+=unitDone(ui,li);});
+  /* PARCOURS FENÊTRÉ (audit 2.10) : 189 unités = 586 boutons d'un coup — lourd sur iPhone, et un lecteur
+     d'écran disait « 🔒 » 584 fois. On montre l'unité en cours, 2 avant, 3 après ; le reste s'ouvre à la demande. */
+  var cur=0; for(var cu=0;cu<c.units.length;cu++){ if(!unitLessonsAllDone(cu)||!examDone(cu)){ cur=cu; break; } cur=cu; }
+  var deb=Math.max(0,cur-2-(PARCOURS_PLUS.avant||0)), fin=Math.min(c.units.length-1,cur+3+(PARCOURS_PLUS.apres||0));
+  if(deb>0){ var av=el("button","path-more"); av.textContent="⬆️ Voir les unités précédentes ("+deb+")";
+    av.setAttribute("aria-label","Voir les "+deb+" unités précédentes");
+    av.onclick=function(){ PARCOURS_PLUS.avant=(PARCOURS_PLUS.avant||0)+10; render(); }; w.appendChild(av); }
+  c.units.forEach(function(u,ui){ if(ui<deb||ui>fin) return; var sec=el("div","unit"); sec.style.setProperty("--uc",u.couleur); var crowns=0; u.lessons.forEach(function(_,li){crowns+=unitDone(ui,li);});
     sec.innerHTML='<div class="unit-head"><div><div class="unit-k">UNITÉ '+(ui+1)+'</div><div class="unit-t">'+esc(u.titre)+'</div></div><div class="unit-crowns">👑 '+crowns+'/'+u.lessons.length+'</div></div>';
     var path=el("div","path");
     u.lessons.forEach(function(l,li){ var done=unitDone(ui,li),unl=unitUnlocked(ui,li),node=el("button","node"+(done>0?" done":"")+(unl?"":" locked"));
       node.style.marginLeft=(Math.sin(li*1.1)*54+54)+"px"; node.innerHTML=done>0?'<span class="ncrown">👑</span>':(unl?'⭐':'🔒'); node.title=esc(l.titre);
+      node.setAttribute("aria-label","Unité "+(ui+1)+", leçon "+(li+1)+" : "+l.titre+(done>0?" — terminée":(unl?" — à faire":" — verrouillée")));
       node.onclick= unl?function(){startLesson(ui,li);}:function(){toast("Termine la leçon précédente 🔒");};
       var lab=el("div","node-lab"); lab.textContent=l.titre; var cell=el("div","cell"); cell.appendChild(node); cell.appendChild(lab); path.appendChild(cell); });
     // Examen de l'unité (débloqué quand toutes les leçons sont finies)
@@ -1248,9 +1363,13 @@ function vHome(){ var w=el("div","screen tree");
     enode.style.marginLeft=(Math.sin(u.lessons.length*1.1)*54+54)+"px";
     enode.innerHTML=exd>0?'<span class="ncrown">🏆</span>':(exUnl?'📝':'🔒');
     enode.title="Examen de l'unité";
+    enode.setAttribute("aria-label","Examen de l'unité "+(ui+1)+(exd>0?" — réussi":(exUnl?" — à faire":" — verrouillé")));
     enode.onclick= exUnl?function(){startExam(ui);}:function(){toast("Termine toutes les leçons de l'unité pour l'examen 🔒");};
     var elab=el("div","node-lab"); elab.textContent="Examen"; var ecell=el("div","cell"); ecell.appendChild(enode); ecell.appendChild(elab); path.appendChild(ecell);
     sec.appendChild(path); w.appendChild(sec); });
+  if(fin<c.units.length-1){ var reste=c.units.length-1-fin, ap=el("button","path-more"); ap.textContent="⬇️ Voir la suite ("+reste+" unités)";
+    ap.setAttribute("aria-label","Voir les "+reste+" unités suivantes");
+    ap.onclick=function(){ PARCOURS_PLUS.apres=(PARCOURS_PLUS.apres||0)+10; render(); }; w.appendChild(ap); }
   return w;
 }
 
@@ -1609,7 +1728,7 @@ function pronSay(text,slow){ if(!S.sound||!text)return; var lang=COURSES[S.cours
   var bee=document.querySelector(".pron-bee"), mouth=bee&&bee.querySelector(".disc-mouth");
   if(_isCloudVoice(v)){ try{ if(_ttsAudio){ try{_ttsAudio.pause();}catch(_){} _ttsAudio=null; }
     var vr=voiceReal(v)||{};
-    var a=_pronJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vr.tts||v)+(slow?"&s=0.6":(vr.gen?"&s="+vr.gen:""))+"&t="+encodeURIComponent(text), (vr.rate&&!slow)?vr.rate:1);
+    var a=_pronJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vr.tts||v)+(slow?"&s=0.6":(vr.gen?"&s="+vr.gen:""))+_lq(S.course==="mc"?"":lang)+"&t="+encodeURIComponent(text), (vr.rate&&!slow)?vr.rate:1);
     if(!a){ _pronWeb(text,lang,slow,mouth,bee); return; }
     a.addEventListener("playing",function(){ if(myReq!==_ttsReq)return; if(bee)bee.classList.add("talk");
       if(mouth){ _pronLip=beeLipSync(a,mouth); if(!_pronLip)mouth.classList.add("talking"); } },{once:true});
@@ -1635,7 +1754,7 @@ function speakSyllables(text){ if(!S.sound||!text)return;
   var my=++_ttsReq, i=0;
   function playOne(seg,done){
     try{ if(_ttsAudio){ try{_ttsAudio.pause();}catch(_){ } }
-      var a=_pronJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vr.tts||v)+"&s=0.55&t="+encodeURIComponent(seg)); if(!a){ done(); return; }
+      var a=_pronJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vr.tts||v)+"&s=0.55"+_lq(S.course==="mc"?"":lang)+"&t="+encodeURIComponent(seg)); if(!a){ done(); return; }
       var fell=false, fb=function(){ if(fell)return; fell=true; try{ var u=new SpeechSynthesisUtterance(seg); u.lang=lang; u.rate=0.5; u.onend=done; u.onerror=done; speechSynthesis.speak(u); }catch(_){ done(); } };
       a.onended=done; a.onerror=fb; var p=a.play(); if(p&&p.catch)p.catch(fb);
     }catch(e){ done(); } }
@@ -1705,7 +1824,8 @@ function vPron(){ var d=el("div","screen pron"); if(!PRON){ VIEW="home"; return 
     +'<div class="pron-syl">'+esc(pronSyllables(w.t))+'</div>'
     +'<div class="pron-audio"><button class="pron-play" id="pnNorm">🔊 Écouter</button><button class="pron-play slow" id="pnSlow">🐢 Lent</button>'
     +(pronSyllables(w.t).indexOf("·")>=0?'<button class="pron-play slow" id="pnSyl">🐢 Syllabes</button>':'')+'</div>'
-    +'<button class="turtle-toggle'+(S.turtle?' on':'')+'" id="pnTurtle">🐢 Mode tortue : '+(S.turtle?'ON':'OFF')+'</button>';
+    +'<button class="turtle-toggle'+(S.turtle?' on':'')+'" id="pnTurtle">🐢 Mode tortue : '+(S.turtle?'ON':'OFF')+'</button>'
+    +'<button class="pron-play shadow" id="pnShadow">🎙️ Répète et compare</button><div class="shadow-zone" id="pnShadowZone" aria-live="polite"></div>';
   d.appendChild(card);
   // astuces d'élocution
   var tips=pronTips(w.t,c.id); var tw=el("div","pron-tips"); tw.innerHTML='<div class="pt-h">💡 Astuce d\'élocution</div>';
@@ -1755,11 +1875,107 @@ function vPron(){ var d=el("div","screen pron"); if(!PRON){ VIEW="home"; return 
   d.appendChild(zone);
   setTimeout(function(){ var n=document.getElementById("pnNorm"),s=document.getElementById("pnSlow"),sy=document.getElementById("pnSyl"),tt=document.getElementById("pnTurtle");
     if(n)n.onclick=function(){ pronSay(w.t,false); }; if(s)s.onclick=function(){ pronSay(w.t,true); };
-    if(sy)sy.onclick=function(){ speakSyllables(w.t); }; if(tt)tt.onclick=toggleTurtle; },0);
+    if(sy)sy.onclick=function(){ speakSyllables(w.t); }; if(tt)tt.onclick=toggleTurtle;
+    var sh=document.getElementById("pnShadow"); if(sh) sh.onclick=function(){ ecouteRepeteCompare(w, document.getElementById("pnShadowZone")); }; },0);
   return d;
+}
+/* 🎙️ ÉCOUTE, RÉPÈTE, COMPARE (« shadowing », 2.10) — la technique la mieux prouvée pour la prononciation
+   (gains d'intelligibilité, de fluidité et d'intonation). Et surtout : sur iPhone, une app installée sur
+   l'écran d'accueil n'a PAS la reconnaissance vocale — cet exercice marche sans elle. Tout reste dans le
+   téléphone : rien n'est envoyé, aucune requête au domaine. */
+var _shadowRec=null;
+function ecouteRepeteCompare(w,zone){ if(!zone) return;
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder)){
+    zone.innerHTML='<p class="mini">🎙️ Ce téléphone ne permet pas d\'enregistrer ici. Écoute le modèle et répète à voix haute — ça marche aussi.</p>'; return; }
+  if(_shadowRec) return;
+  zone.innerHTML='<p class="mini">👂 Écoute bien…</p>'; pronSay(w.t,false);
+  var duree=Math.min(6000,Math.max(2500,w.t.length*180));
+  setTimeout(function(){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(flux){
+      var morceaux=[], rec=new MediaRecorder(flux); _shadowRec=rec;
+      rec.ondataavailable=function(e){ if(e.data&&e.data.size) morceaux.push(e.data); };
+      rec.onstop=function(){ flux.getTracks().forEach(function(t){ t.stop(); }); _shadowRec=null;   /* micro rendu tout de suite (iPhone) */
+        var url=URL.createObjectURL(new Blob(morceaux,{type:rec.mimeType||"audio/mp4"}));
+        zone.innerHTML='<div class="shadow-cmp"><button class="pron-play" id="shMod">🐝 Le modèle</button><button class="pron-play" id="shMoi">🙋 Moi</button><button class="pron-play" id="shDeux">🔁 Les deux</button></div>'
+          +'<p class="mini">Comment c\'était ?</p><div class="shadow-cmp"><button class="pron-play" data-n="1" aria-label="À retravailler">😕</button><button class="pron-play" data-n="2" aria-label="Presque">🙂</button><button class="pron-play" data-n="3" aria-label="Pareil que le modèle">😄</button></div>';
+        var moi=function(){ try{ var a=new Audio(url); a.play().catch(function(){}); return a; }catch(_){ return null; } };
+        zone.querySelector("#shMod").onclick=function(){ pronSay(w.t,false); };
+        zone.querySelector("#shMoi").onclick=moi;
+        zone.querySelector("#shDeux").onclick=function(){ pronSay(w.t,false); setTimeout(moi, duree*0.8); };
+        zone.querySelectorAll("[data-n]").forEach(function(b){ b.onclick=function(){ var n=+b.getAttribute("data-n");
+          if(w.fr) srsUpdate(w, n>=2);                    /* l'auto-évaluation nourrit la révision espacée */
+          if(n===3){ S.xp+=2; S.dailyXP+=2; S.today.xp=(S.today.xp||0)+2; histAdd(2); save(); toast("😄 Bien imité ! +2 XP"); } else toast(n===2?"🙂 Encore une fois et ce sera parfait":"😕 Réécoute en 🐢 lent, puis recommence");
+          zone.innerHTML=''; }; });
+        setTimeout(function(){ zone.querySelector("#shDeux")&&zone.querySelector("#shDeux").onclick(); },150);
+      };
+      zone.innerHTML='<p class="mini">🔴 À toi ! Répète maintenant…</p>'; rec.start();
+      setTimeout(function(){ try{ if(rec.state!=="inactive") rec.stop(); }catch(_){} }, duree);
+    }).catch(function(){ _shadowRec=null; zone.innerHTML='<p class="mini">🎙️ Micro refusé : autorise-le dans les réglages du téléphone, ou répète simplement à voix haute.</p>'; });
+  }, Math.min(2500, 900+w.t.length*90));
 }
 
 /* ---------- Profil ---------- */
+/* ===== FAMILLE & VIE PRIVÉE (2.10, audit d'amélioration) =====
+   · Mode enfant : protégé par un CODE PARENT. Le Coach répond depuis le téléphone (rien vers une IA tierce)
+     et l'appel en direct est bloqué (ils enverraient la voix et le texte de l'enfant à des services tiers), et la progression envoyée à l'administrateur
+     ne porte plus le prénom ni le téléphone (recommandations CNIL pour les moins de 15 ans).
+   · Thème clair / sombre / comme le téléphone.
+   · Exporter mes données (fichier JSON) et les effacer (téléphone + copie en ligne) — droits RGPD. */
+function estEnfant(){ var m=ACC?accMeta(ACC):null; return !!(m&&m.enfant); }
+function setMeta(id,cle,val){ var accs=accounts(); accs.forEach(function(a){ if(a.id===id) a[cle]=val; }); gs("accounts",accs); }
+function codeParentOk(c){ return _sha256hex("parent:"+String(c||"")).then(function(h){ return h===gg("parentHash",""); }); }
+function demanderCodeParent(titre,suite){ var m=modal();
+  var neuf=!gg("parentHash","");
+  m.body.innerHTML='<h3>🔐 '+esc(titre)+'</h3><p class="mini">'+(neuf?'Choisis un <b>code parent</b> (4 chiffres min.). Il protège les réglages de l\'enfant sur cet appareil.':'Entre le <b>code parent</b>.')+'</p>'+
+    '<input id="pcCode" class="txt" type="password" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="Code parent" aria-label="Code parent">';
+  var ok=el("button","btn-main"); ok.textContent=neuf?"Enregistrer le code parent":"Valider";
+  ok.onclick=function(){ var c=(m.body.querySelector("#pcCode").value||"").trim();
+    if(c.length<4){ toast("4 chiffres minimum 🔐"); return; }
+    if(neuf){ _sha256hex("parent:"+c).then(function(h){ gs("parentHash",h); m.close(); suite(); }); return; }
+    codeParentOk(c).then(function(bon){ if(!bon){ toast("Ce n'est pas le code parent 🔐"); return; } m.close(); suite(); }); };
+  m.body.appendChild(ok); setTimeout(function(){ var i=m.body.querySelector("#pcCode"); if(i)i.focus(); },100); }
+function appliquerTheme(){ var t=gg("theme","sombre"), r=document.documentElement;
+  if(t==="clair") r.setAttribute("data-theme","clair");
+  else if(t==="auto" && window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches) r.setAttribute("data-theme","clair");
+  else r.removeAttribute("data-theme");
+  var mc=document.querySelector('meta[name="theme-color"]'); if(mc) mc.setAttribute("content", r.getAttribute("data-theme")==="clair" ? "#f4f7f5" : "#12b981"); }
+function exporterDonnees(){ if(!ACC) return; var m=accMeta(ACC)||{}, out={ app:"KDMC Lingua", version:APP_VER, exporte:new Date().toISOString(), compte:{ nom:m.name, avatar:m.avatar, compteKDMC:!!m.kdmcUid, cree:m.created }, progression:{} };
+  Object.keys(localStorage).forEach(function(k){ var p="lingua_a_"+ACC+"_"; if(k.indexOf(p)===0){ try{ out.progression[k.slice(p.length)]=JSON.parse(localStorage.getItem(k)); }catch(e){ out.progression[k.slice(p.length)]=localStorage.getItem(k); } } });
+  var txt=JSON.stringify(out,null,1), nom="lingua-"+String(m.name||"compte").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()+".json";
+  try{ var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"})); a.download=nom; document.body.appendChild(a); a.click(); setTimeout(function(){ a.remove(); },500); }catch(e){}
+  toast("📦 Tes données sont dans « "+nom+" »"); return out; }
+function effacerDonnees(){ var id=ACC, m=accMeta(id)||{}; var mm=modal();
+  mm.body.innerHTML='<h3>🗑️ Effacer mes données</h3><p class="mini">Tout ce que Lingua garde pour <b>'+esc(m.name||"ce compte")+'</b> sera effacé : sur ce téléphone <b>et</b> la copie en ligne. C\'est définitif. Pense à <b>exporter</b> d\'abord si tu veux garder une copie.</p>';
+  var oui=el("button","btn-main"); oui.textContent="Oui, tout effacer"; oui.style.background="#b42318";
+  var non=el("button","btn-ghost"); non.textContent="Annuler"; non.onclick=function(){ mm.close(); };
+  oui.onclick=function(){ oui.disabled=true; oui.textContent="…";
+    var enLigne = m.kdmcUid ? fetch(SYNC_BASE+"/effacer",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:"{}"})
+      : (m.code ? cloudKeyFor(m.name,m.code).then(function(k){ return fetch(SYNC_BASE+"/effacer",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({k:k})}); }) : Promise.resolve(null));
+    enLigne.then(function(r){ return r ? r.json().catch(function(){ return {ok:false}; }) : {ok:true,local:true}; })
+      .catch(function(){ return {ok:false}; })
+      .then(function(j){ deleteAccount(id); mm.close(); VIEW="home"; render();
+        toast(j&&j.ok ? "🗑️ Données effacées, ici et en ligne" : "🗑️ Effacées sur ce téléphone — la copie en ligne n'a pas répondu, elle expirera seule"); }); };
+  mm.body.appendChild(oui); mm.body.appendChild(non); }
+function carteFamille(me){ var c=el("div","voice-card famille");
+  var enf=!!me.enfant, th=gg("theme","sombre");
+  c.innerHTML='<div class="sec-h">👨‍👩‍👧 Famille &amp; vie privée</div>'
+    +'<div class="fam-row"><span><b>👶 Mode enfant</b><i>'+(enf?'Actif : le Coach répond sans IA en ligne, pas d\'appel en direct, prénom jamais envoyé.':'Pour un enfant : Coach sans IA en ligne, pas d\'appel en direct, prénom jamais envoyé.')+'</i></span><button class="vpick'+(enf?' on':'')+'" id="famEnf">'+(enf?'✓ Actif':'Activer')+'</button></div>'
+    +'<div class="fam-row"><span><b>🌗 Thème</b><i>Sombre, clair, ou comme le téléphone.</i></span><span class="fam-th">'
+    +[["sombre","Sombre"],["clair","Clair"],["auto","Auto"]].map(function(x){ return '<button class="vpick'+(th===x[0]?' on':'')+'" data-th="'+x[0]+'">'+x[1]+'</button>'; }).join("")+'</span></div>'
+    +'<div class="fam-row"><span><b>📦 Mes données</b><i>Les emporter (fichier) ou tout effacer.</i></span><span class="fam-th"><button class="vpick" id="famExp">Exporter</button><button class="vpick" id="famDel">Effacer</button></span></div>';
+  setTimeout(function(){
+    var b=c.querySelector("#famEnf"); if(b) b.onclick=function(){
+      if(!enf) demanderCodeParent("Mode enfant",function(){ setMeta(ACC,"enfant",true); toast("👶 Mode enfant activé"); render(); });
+      else demanderCodeParent("Quitter le mode enfant",function(){ setMeta(ACC,"enfant",false); toast("Mode enfant désactivé"); render(); }); };
+    c.querySelectorAll("[data-th]").forEach(function(x){ x.onclick=function(){ gs("theme",x.getAttribute("data-th")); appliquerTheme(); render(); }; });
+    var ex=c.querySelector("#famExp"); if(ex) ex.onclick=exporterDonnees;
+    var de=c.querySelector("#famDel"); if(de) de.onclick=function(){ if(enf) demanderCodeParent("Effacer les données",effacerDonnees); else effacerDonnees(); };
+  },0);
+  return c; }
+/* 🔴 PASTILLE SUR L'ICÔNE : le nombre de mots à revoir, calculé dans le téléphone (0 requête).
+   iPhone : seulement pour l'app installée, si les notifications sont autorisées (iOS 16.4+). */
+function majPastille(){ try{ if(!navigator.setAppBadge||!ACC||!S.course) return; var n=reviewPool().length;
+  (n?navigator.setAppBadge(Math.min(n,99)):navigator.clearAppBadge()).catch(function(){}); }catch(_){} }
 function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",avatar:"🦊"};
   var totL=0,done=0; if(S.course){ COURSES[S.course].units.forEach(function(u,ui){u.lessons.forEach(function(_,li){totL++; if(unitDone(ui,li)>0)done++;});}); }
   d.innerHTML='<div class="profile-head"><div class="pav">'+me.avatar+'</div><h2 class="pname">'+esc(me.name)+'</h2></div>'+
@@ -1776,6 +1992,7 @@ function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",
     var vb=el("button","btn-buy"); vb.textContent="Voir mon code"; vb.onclick=function(){ openMyCode(ACC); }; cloud.appendChild(vb); }
   else { cloud.innerHTML='<div><b>☁️ Mémoire en ligne</b><span> — inactive (progression seulement sur cet appareil).</span></div>'; var eb=el("button","btn-buy"); eb.textContent="Activer"; eb.onclick=openEnableCloud; cloud.appendChild(eb); }
   d.appendChild(cloud);
+  d.appendChild(carteFamille(me));
   // gel de série
   var freeze=el("div","freeze-card"); freeze.innerHTML='<div><b>🧊 Gel de série</b><span> — protège 1 jour manqué</span></div><div class="fx">x'+S.freeze+'</div>';
   var fb=el("button","btn-buy"); fb.textContent="Acheter (200 💎)"; fb.onclick=function(){ if(S.gems>=200){ S.gems-=200; S.freeze++; save(); toast("🧊 Gel ajouté !"); render(); } else toast("Pas assez de gemmes 💎"); };
@@ -1817,6 +2034,7 @@ function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",
   // réglages
   var st=el("div","settings");
   st.innerHTML='<label class="row"><span>🔊 Son & voix</span><input type="checkbox" id="setSound" '+(S.sound?"checked":"")+'></label>'+
+    '<label class="row"><span>🔤 Écriture latine (russe, ukrainien, coréen, chinois, japonais)</span><input type="checkbox" id="setLatin" '+(S.latin?"checked":"")+'></label>'+
     /* Kevin 2026-08-11 : « objectif max trop bas, Laurence vient de faire 284 sans y passer
        longtemps ». Le plafond de 50 XP était atteint en une seule séance -> l'objectif ne
        voulait plus rien dire. On monte jusqu'a 500, et la valeur enregistree reste proposee
@@ -1834,7 +2052,7 @@ function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",
   var rs=el("button","row danger"); rs.textContent="♻️ Réinitialiser ce compte"; rs.onclick=function(){ if(confirm("Effacer TOUTE la progression de ce compte ?")){ ["hearts","gems","xp","streak","lastDay","freeze","dailyXP","prog","srs","league","achv","words","today","qClaim","course"].forEach(function(k){ localStorage.removeItem(pfx()+k); }); loadS(); VIEW="home"; render(); } }; st.appendChild(rs);
   d.appendChild(st);
   var ver=el("div","ver"); ver.textContent="KDMC Lingua "+APP_VER+" · app originale"; d.appendChild(ver);
-  setTimeout(function(){ var s=d.querySelector("#setSound"); if(s)s.onchange=function(){S.sound=this.checked;save();}; var g=d.querySelector("#setGoal"); if(g)g.onchange=function(){S.goal=parseInt(this.value,10);save();toast("Objectif : "+S.goal+" XP/jour");}; },0);
+  setTimeout(function(){ var s=d.querySelector("#setSound"); if(s)s.onchange=function(){S.sound=this.checked;save();}; var la=d.querySelector("#setLatin"); if(la)la.onchange=function(){ S.latin=this.checked; save(); }; var g=d.querySelector("#setGoal"); if(g)g.onchange=function(){S.goal=parseInt(this.value,10);save();toast("Objectif : "+S.goal+" XP/jour");}; },0);
   return d;
 }
 
@@ -2130,6 +2348,7 @@ function sceneStart(id){ var sn=sceneById(id); if(!sn||_coachThinking)return; va
 function sceneStop(){ if(!S.coachScene)return; var sn=coachSceneMeta(); S.coachScene=null;
   coachSysPush("🎭 Fin de la scène"+(sn?(" "+sn.ic):"")+" — bien joué !"); render(); }
 function coachAsk(){ var c=coachLangMeta();
+  if(estEnfant()) return Promise.resolve(coachOffline());   /* mode enfant : le Coach répond depuis le téléphone, rien ne part vers une IA */
   var payload={ lang:c.id, langName:c.nom, level:diffLabel(), levelIndex:diffTier(), words:masteredCount(),
     weak:dueWords().slice(0,15).map(function(w){ return w.fr+" = "+w.t; }),
     scenario:(coachSceneMeta()||{}).sc||"",
@@ -2207,7 +2426,7 @@ function vCoach(){ var d=el("div","screen coach");
     '<div class="rig-zoom">'+beeRigHTML()+'</div></div>';
   d.appendChild(mas);
   var lastBot=""; for(var _i=S.coachMsgs.length-1;_i>=0;_i--){ if(S.coachMsgs[_i].role==="bot"){ lastBot=S.coachMsgs[_i].text; break; } }
-  var sub=el("div","coach-sub"); sub.textContent=_coachThinking?"…":(lastBot||coachGreeting(c));
+  var sub=el("div","coach-sub"); sub.tabIndex=0; sub.setAttribute("aria-live","polite"); sub.textContent=_coachThinking?"…":(lastBot||coachGreeting(c));
   d.appendChild(sub);
   /* Toucher le visage = réécouter la dernière réplique (cible 44px garantie par le CSS). */
   var faceEl=mas.querySelector(".coach-face");
@@ -2322,7 +2541,7 @@ function discSpeak(text,lang){ /* parle + anime la bouche + sous-titres SYNCHRON
     if(DISC.timer)clearTimeout(DISC.timer); DISC.timer=setTimeout(stop, dur+400); }
   try{ if(window.speechSynthesis)speechSynthesis.cancel(); }catch(_){}
   if(_isCloudVoice(vid)&&S.sound){ try{
-    var a=_ttsJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vid)+(vcfg.gen?"&s="+vcfg.gen:"")+"&t="+encodeURIComponent(text), vcfg.rate);
+    var a=_ttsJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vid)+(vcfg.gen?"&s="+vcfg.gen:"")+_lq(lang)+"&t="+encodeURIComponent(text), vcfg.rate);
     if(!a){ _webSpeakLang(text,lang,true,vcfg); startVisuals(estDur,null); return; }
     var started=false, fell=false;
     var fallback=function(){ if(fell||started||myReq!==_ttsReq)return; fell=true;
@@ -2369,7 +2588,8 @@ function _discLiveUI(on){ var b=_discLiveBtn(); if(b){ b.classList.toggle("on",!
   var ov=document.querySelector(".disc-overlay"); var sub=ov&&ov.querySelector(".disc-sub");
   if(on&&sub)sub.textContent="🔴 En direct — parle, "+MNAME()+" t'écoute…"; }
 function discLiveToggle(){ if(DISC.live){ discLiveStop(); toast("Appel terminé"); } else { discLiveStart(); } }
-function discLiveStart(){ if(DISC.live||DISC.liveConnecting)return; var c=coachLangMeta(); if(!c)return;
+function discLiveStart(){ if(DISC.live||DISC.liveConnecting)return;
+  if(estEnfant()){ toast("👶 Mode enfant : l'appel en direct est désactivé"); return; } var c=coachLangMeta(); if(!c)return;
   if(!(navigator.mediaDevices&&window.RTCPeerConnection)){ toast("Ton navigateur ne gère pas l'appel en direct — conversation normale gardée"); return; }
   DISC.liveConnecting=true; discStopSpeaking(); toast("📞 Connexion en direct…");
   var au;
@@ -2784,7 +3004,7 @@ function vTranslate(){ var d=el("div","screen");
   d.innerHTML='<h2 class="ttl">🌐 Traducteur</h2><p class="sub2">'+(TLANGS.length+1)+' langues, hors-ligne. Tape un mot ou une phrase.</p>';
   var bar=el("div","tr-bar");
   var langsOpt=[["auto","🔎 Auto"],["fr","🇫🇷 Français"]].concat(TLANGS.map(function(l){return [l,LMETA[l].drapeau+" "+LMETA[l].nom];}));
-  bar.innerHTML='<select id="trSrc">'+langsOpt.map(function(o){return '<option value="'+o[0]+'"'+(TR.src===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("")+'</select>';
+  bar.innerHTML='<select id="trSrc" aria-label="Langue du texte à traduire">'+langsOpt.map(function(o){return '<option value="'+o[0]+'"'+(TR.src===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("")+'</select>';
   var input=el("div","tr-in");
   input.innerHTML='<input id="trQ" class="txt" placeholder="ex : bonjour, chat, je t\'aime…" value="'+esc(TR.q)+'" autocomplete="off">'+
     '<button class="tr-mic" id="trMic" title="Dicter">🎤</button>';
@@ -2829,7 +3049,7 @@ function speakLang(text,lang,vid,fem){ if(!S.sound||!text)return; vid=vid||S.voi
   var myReq=++_ttsReq;
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(_){} _wsStopKA();
   if(_isCloudVoice(vid)){ try{
-    var a=_ttsJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vid)+(cfg&&cfg.gen?"&s="+cfg.gen:"")+"&t="+encodeURIComponent(text), cfg&&cfg.rate);
+    var a=_ttsJoue(SYNC_BASE+"/tts?v="+encodeURIComponent(vid)+(cfg&&cfg.gen?"&s="+cfg.gen:"")+_lq(lang)+"&t="+encodeURIComponent(text), cfg&&cfg.rate);
     if(!a){ _webSpeakLang(text,lang,fem,cfg); return; }
     a.onerror=function(){ if(myReq===_ttsReq){ _voixCloudKO("media"); _webSpeakLang(text,lang,fem,cfg); } };
     _ttsChrono(a,myReq,function(){ if(myReq===_ttsReq) _webSpeakLang(text,lang,fem,cfg); });
@@ -2910,7 +3130,8 @@ function ttsPrefetch(text){ /* fabrique le son EN AVANCE : un vrai fetch() réch
    ET le cache navigateur → à la lecture, la voix part INSTANTANÉMENT (fini « la voix arrive trop
    tard après le texte »). Anti-doublon via _ttsWarm. */
   if(!S.sound||!text)return; var vid=S.voice||"nova"; if(!_isCloudVoice(vid))return;
-  var url=SYNC_BASE+"/tts?v="+encodeURIComponent(vid)+"&t="+encodeURIComponent(text);
+  /* MÊME adresse que speak() (voix réelle + langue) : sinon on réchauffe une phrase que personne ne lira. */
+  var vrp=voiceReal(vid)||{}; var url=SYNC_BASE+"/tts?v="+encodeURIComponent(vrp.tts||vid)+_lq(langueCours())+"&t="+encodeURIComponent(text);
   if(_ttsWarm[url])return; if(Object.keys(_ttsWarm).length>400)_ttsWarm={}; _ttsWarm[url]=1;
   try{ fetch(url).catch(function(){}); }catch(_){} }
 function ttsPrefetchMany(list){ if(!list)return; try{ list.forEach(function(t){ if(t)ttsPrefetch(t); }); }catch(_){} }
@@ -3274,8 +3495,11 @@ function MASCOT_SVG(pose,size){ size=size||100;
 var _updTs=0;
 function verNum(s){ var g=String(s||"").match(/(\d+)\.(\d+)(?:\.(\d+))?/); return g?(+g[1]*1e6+ +g[2]*1e3+ +(g[3]||0)):0; }
 /* Ce que le domaine sert EN CE MOMENT — lu dans app.js lui-même, jamais dans un cache. */
-function versionServie(){ return fetch("app.js?_v="+Date.now(),{cache:"reload"}).then(function(r){ if(!r.ok) return ""; return r.text(); })
-  .then(function(t){ var m=String(t).match(/APP_VER\s*=\s*"([^"]+)"/); return m?m[1]:""; }).catch(function(){ return ""; }); }
+/* SONDE LÉGÈRE (audit 2.10) : on lisait app.js ENTIER (288 Ko) chaque minute pour un numéro de version —
+   1 440 requêtes et ~400 Mo par jour pour un onglet oublié, sur le quota gratuit du domaine. sw.js (3 Ko)
+   porte la même version (CACHE="lingua-vX", garde test:lingua-maj) : on lit celui-là. */
+function versionServie(){ return fetch("sw.js?_v="+Date.now(),{cache:"reload"}).then(function(r){ if(!r.ok) return ""; return r.text(); })
+  .then(function(t){ var m=String(t).match(/CACHE\s*=\s*"lingua-([^"]+)"/); return m?m[1]:""; }).catch(function(){ return ""; }); }
 /* Purge tout ce qui pourrait retenir l'ancienne version, puis recharge la page avec un
    cache-buster. Le service worker se réinscrit tout seul au démarrage suivant (boot). */
 function majForcee(){
@@ -3286,6 +3510,7 @@ function majForcee(){
   p.then(fini,fini);
 }
 function checkUpdate(){
+  if(document.hidden) return;          /* app cachée : personne ne verrait la mise à jour → aucune requête */
   if(Date.now()-_updTs<25000) return; _updTs=Date.now();
   /* Jamais au milieu d'une leçon, ni pendant qu'on tape dans un champ. (Pas « dès qu'une
      fenêtre est ouverte » : au premier démarrage la fenêtre du test de niveau reste
@@ -3302,7 +3527,8 @@ function checkUpdate(){
 }
 
 /* ============ Boot ============ */
-function boot(){ app=document.getElementById("app");
+function boot(){ app=document.getElementById("app"); appliquerTheme();
+  try{ if(window.matchMedia) matchMedia("(prefers-color-scheme: light)").addEventListener("change",function(){ if(gg("theme","sombre")==="auto"){ appliquerTheme(); } }); }catch(_){}
   var accs=accounts();
   if(ACC && accs.filter(function(a){return a.id===ACC;}).length){ loadS(); ensureLeague(); }
   else if(accs.length===1){ switchAccount(accs[0].id); }   /* reconnu auto : 1 seul compte → on entre direct (règle Kevin) */
@@ -3317,11 +3543,12 @@ function boot(){ app=document.getElementById("app");
   if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=function(){}; speechSynthesis.getVoices(); }
   setInterval(function(){ if(ACC&&VIEW!=="lesson"&&!PICK){ var b=S.hearts; regenHearts(); if(S.hearts!==b&&VIEW==="home")render(); } },20000);
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
-  /* MAJ auto : au démarrage, à chaque retour sur l'app, et toutes les minutes. */
+  /* MAJ auto : au démarrage, à chaque retour sur l'app, et toutes les 30 min si elle reste ouverte (2.10 : plus chaque minute). */
   setTimeout(checkUpdate,2500);
   window.addEventListener("focus",checkUpdate);
-  document.addEventListener("visibilitychange",function(){ if(!document.hidden) checkUpdate(); });
-  setInterval(checkUpdate,60000);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden) checkUpdate(); else majPastille(); });
+  setTimeout(majPastille,3000);
+  setInterval(checkUpdate,30*60000);
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot); else boot();
 })();

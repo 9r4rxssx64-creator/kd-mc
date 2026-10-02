@@ -122,17 +122,22 @@ const texte = (page) => page.evaluate(() => document.body.innerText || '');
 }
 
 /* ---------- 4. changer de code : l'ancien ne vaut plus --------------------- */
+/* Depuis le 2.10 (Kevin : « Chacun 1 seul compte »), un compte Lingua seul ne change plus son code
+   dans son coin : il se RELIE au compte KDMC, et le code (6 chiffres) est déclaré au domaine. Ici le
+   domaine est simulé (page en file://) : il accepte, puis on vérifie aussi qu'une panne ne change rien. */
 {
   const NOUVEAU = '730264';
   const page = await appareil();
+  await page.evaluate(() => { const f0 = window.fetch; window.fetch = (u, o) => (/__sso\/issue/.test(String(u))
+    ? Promise.resolve(new Response(JSON.stringify({ ok: true, uid: 'alix-martinier', code: true }), { status: 200 })) : f0(u, o)); });
   await clic(page, /Profil/);
   await page.waitForTimeout(600);
   await clic(page, /Voir mon code/);
   await page.waitForTimeout(400);
   chk(await clicM(page, /Changer mon code/), '17. on peut changer son code depuis son propre profil');
   await page.waitForTimeout(500);
-  try { await page.fill('#ccCode', NOUVEAU, { timeout: 5000 }); await clicM(page, /Enregistrer/); } catch (e) { /* signalé par 18/19 */ }
-  await page.waitForTimeout(600);
+  try { await page.fill('#ccCode', NOUVEAU, { timeout: 5000 }); await clicM(page, /Relier mon compte/); } catch (e) { /* signalé par 18/19 */ }
+  await page.waitForTimeout(800);
   const enregistre = await page.evaluate(() => JSON.parse(localStorage.getItem('lingua_g_accounts'))[0].code);
   chk(enregistre === NOUVEAU, '18. le nouveau code remplace vraiment l\'ancien dans le compte');
   chk(enregistre !== CODE, '19. l\'ancien code n\'est plus celui du compte');

@@ -3668,6 +3668,22 @@ alternatives essayées ET proposer le prochain essai, jamais un abandon sec. Cf.
 autorisé), #130/#133 (donnée à clé → worker-proxy). Test mental : *« Ai-je VRAIMENT
 épuisé toutes les architectures, ou est-ce que je capitule trop tôt ? »*
 
+**Renouvelée le 2.10.2026** — **« Trouve des solutions toujours note le … Trouve des solutions
+auto toujours »** — Kevin 2026-10-02, quand Geneanet, Dans nos cœurs, Antenati et la page
+d'accueil de Gallica refusaient encore la recherche généalogique, une fois le proxy ouvert.
+Ce que ça veut dire, concrètement :
+- **Un site qui refuse les robots, on passe par sa porte officielle ou par un autre site qui
+  publie la même information** : API, données ouvertes, agrégateurs. Les portes mesurées
+  ouvertes (HTTP 200) le 2.10 : matchID (décès INSEE), Legimonaco, Europeana (API),
+  catalogue BnF (SRU), FranceArchives, Léonore, extraits gratuits Retronews, Libramemoria,
+  avis-de-deces.net, BillionGraves, acte-deces.fr, et la recherche web.
+- **Automatiquement, sans attendre Kevin** : on essaie la porte suivante tout seul, puis on
+  lui dit seulement ce qui a été trouvé.
+- **Jamais contourner une protection anti-robot** (captcha, « vérification de sécurité »,
+  403 volontaire) : ce n'est pas une solution, c'est une infraction aux conditions du site.
+  Si aucune porte ouverte n'existe, on note le lien exact pour que Kevin l'ouvre en 1 clic.
+- **Jamais payer** sans l'accord de Kevin (règle « gratuit par défaut »).
+
 ---
 
 ## 🚀 RÈGLE ABSOLUE — AUTONOMIE TOTALE TOUJOURS PARTOUT (Kevin 2026-05-07, MAÎTRESSE)

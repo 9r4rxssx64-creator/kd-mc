@@ -82,41 +82,7 @@ export async function chargerPauses(providers) {
 export function pausesActives() { const out = {}; for (const [k, v] of pauses) if (enPause(k)) out[k] = { secondes: Math.round((v.jusqua - Date.now()) / 1000), raison: v.raison }; return out; }
 /** Vrai quand le cache du Worker existe (les pauses survivent au redémarrage de l'isolat). */
 export function pausesDurables() { return !!cachePauses(); }
-export function _resetPauses() { pauses.clear(); modelesRetires.clear(); competence.clear(); }
-
-/* COMPÉTENCE MESURÉE (conférence, 2.10 soir) : à chaque conférence, le juge note chaque voix (0-10) ; la note glisse
-   (moyenne mobile, alpha 0,3) par DOMAINE et par voix, en mémoire et dans le cache du Worker (7 jours). Elle sert à ranger
-   les voix, à choisir le juge, et /health la montre (`competence`). Rien d'estimé : seules les notes réelles comptent. */
-const competence = new Map();   // domaine → Map(voixId → { score, n })
-const CACHE_COMP = CACHE_PAUSE + 'competence/';
-export const voixId = (v) => v.provider + '/' + String(v.model || '').split('/').pop();
-export function competenceDe(domain, v) { const d = competence.get(domain); const e = d && d.get(voixId(v)); return e ? e.score : null; }
-export function noterCompetence(domain, v, note) {
-  const n = Number(note); if (!Number.isFinite(n)) return Promise.resolve(false);
-  const score = Math.max(0, Math.min(10, n));
-  if (!competence.has(domain)) competence.set(domain, new Map());
-  const d = competence.get(domain); const e = d.get(voixId(v));
-  d.set(voixId(v), e ? { score: Math.round((e.score * 0.7 + score * 0.3) * 100) / 100, n: e.n + 1 } : { score, n: 1 });
-  const c = cachePauses();
-  if (!c) return Promise.resolve(false);
-  try {
-    return Promise.resolve(c.put(new Request(CACHE_COMP + encodeURIComponent(domain)), new Response(JSON.stringify([...d.entries()]),
-      { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=' + (7 * 86400) } }))).then(() => true, () => false);
-  } catch (_) { return Promise.resolve(false); }
-}
-export async function chargerCompetence(domain) {
-  const c = cachePauses();
-  if (!c || competence.has(domain)) return false;
-  try {
-    const r = await c.match(new Request(CACHE_COMP + encodeURIComponent(domain)));
-    if (!r) return false;
-    const l = await r.json();
-    if (Array.isArray(l)) { competence.set(domain, new Map(l)); return true; }
-  } catch (_) { /* cache muet */ }
-  return false;
-}
-export function competenceStatus() { const out = {}; for (const [d, m] of competence) { out[d] = {}; for (const [k, v] of m) out[d][k] = { score: Math.round(v.score * 10) / 10, n: v.n }; } return out; }
-export function _resetCompetence() { competence.clear(); }
+export function _resetPauses() { pauses.clear(); modelesRetires.clear(); }
 
 /* MODÈLES DE SECOURS (2.10, mesuré par la sonde : Groq et Cerebras ont RETIRÉ « llama-3.3-70b » → 404, et toute la
    cascade gratuite est tombée sans qu'un robot le dise). Un fournisseur dont le modèle n'existe plus n'est pas perdu :
@@ -497,16 +463,11 @@ const ANALYSE_SYSTEM = 'Tu es un classificateur. Réponds UNIQUEMENT par un JSON
   + 'Règles : une demande d\'action → domain "admin". Du code → "code". Une image → "vision". Traduire → "translation". Résumer → "summary". Chercher une info récente sur le web → "search". Écrire/inventer → "creative". Réflexion longue → "reasoning". Sinon → "general".';
 
 /** Voix gratuites disponibles : chaque modèle Qwen de Workers AI compte pour une voix. */
-/* CONFÉRENCE (Kevin 2.10 soir : « Intègre toujours TOUTES les IA gratuites… elles réfléchissent chacune de leur côté pour
-   la même question, comparent et améliorent, et la meilleure, la plus compétente, travaille ») : les voix = TOUTES les
-   gratuites disponibles (chaque modèle Qwen de Workers AI + chaque gratuit à clé, hors pause), rangées par COMPÉTENCE
-   mesurée sur ce domaine (notes du juge, mémoire + cache du Worker). `max` borne le nombre de voix (8 par défaut). */
-export function freeVoices(env, max, domain) {
+export function freeVoices(env, max) {
   const out = [];
   if (env && env.AI) for (const m of QWEN_MODELS) out.push({ provider: 'qwen', model: m });
-  for (const p of FREE_PROVIDERS) if (p !== 'qwen' && env && env[SECRET_NAMES[p]] && !enPause(p)) out.push({ provider: p, model: modelesCandidats(p)[0] });
-  if (domain) out.sort((x, y) => (competenceDe(domain, y) ?? 5) - (competenceDe(domain, x) ?? 5));   // tri stable : à égalité, l'ordre d'avant
-  return out.slice(0, max || 8);
+  for (const p of FREE_PROVIDERS) if (p !== 'qwen' && env && env[SECRET_NAMES[p]]) out.push({ provider: p, model: DEFAULT_MODELS[p] });
+  return out.slice(0, max || 3);
 }
 
 async function askVoice(env, voice, messages, o) {
@@ -579,37 +540,14 @@ const JUDGE_SYSTEM = 'Tu es le JUGE d\'un conseil de plusieurs IA. On te donne l
  * CONSEIL de réponses : voix gratuites en parallèle + juge gratuit. Ne lève jamais :
  * { ok, text, provider:'council', model:'<juge>', voices:[{provider,model,ok}], judge:'qwen'|'first' }.
  */
-const COMPARE_SYSTEM = 'Tu es le JUGE d\'une conférence de plusieurs IA : elles ont répondu chacune de leur côté à la même question. '
-  + 'Compare les réponses : exactitude, complétude, clarté, respect de la consigne. Réponds UNIQUEMENT par un JSON compact, sans texte autour : '
-  + '{"notes":{"1":<0-10>,"2":<0-10>,...},"meilleure":<numéro de la meilleure réponse>,"manques":"<ce qui manque encore à la meilleure, en une phrase, ou vide>"}';
-const AMELIORE_SYSTEM = 'Tu as été désignée meilleure réponse d\'une conférence d\'IA. AMÉLIORE ta réponse : corrige ce que le juge te reproche, '
-  + 'reprends ce que les autres voix ont de juste et que tu n\'avais pas, garde ta structure et ta langue, ne mentionne ni juge ni voix, ne commente pas ton travail. '
-  + 'Réponds directement par la réponse finale complète.';
-function choisirJuge(env, voices, exclure, domain) {
-  /* le juge = la voix la plus compétente du domaine qui n'est pas celle qu'on juge ; à défaut Qwen (Workers AI). */
-  const cand = voices.filter((v) => !exclure.includes(voixId(v))).sort((x, y) => (competenceDe(domain, y) ?? 5) - (competenceDe(domain, x) ?? 5));
-  return cand[0] || voices[0] || null;
-}
-/**
- * CONFÉRENCE de réponses (v2, Kevin 2.10 soir) : TOUTES les voix gratuites répondent en parallèle (1), un juge gratuit les
- * COMPARE et les note (2), puis LA MEILLEURE retravaille sa réponse avec les apports des autres (3). Ne lève jamais :
- * { ok, text, provider:'council', model:<meilleure>, best:{provider,model,score}, scores, voices:[…], judge, rounds }.
- * Tient dans finMs / budgetMs : sans temps, on s'arrête après le tour possible (jamais bloqué, jamais rien perdu).
- */
 export async function councilText(env, opts) {
-  const o = Object.assign({ maxTokens: 800, temperature: 0.7, timeoutMs: 20000, voices: 8, rounds: 3 }, opts || {});
-  const domain = o.domain || 'general';
+  const o = Object.assign({ maxTokens: 800, temperature: 0.7, timeoutMs: 20000, voices: 3 }, opts || {});
   let messages = Array.isArray(o.messages) ? o.messages.slice() : [];
   if (!messages.length && o.prompt) messages = [{ role: 'user', content: String(o.prompt) }];
   if (o.system && !messages.some((m) => m.role === 'system')) messages.unshift({ role: 'system', content: String(o.system) });
-  await chargerCompetence(domain);
-  const voices = freeVoices(env, o.voices, domain);
+  const voices = freeVoices(env, o.voices);
   if (voices.length < 2) return { ok: false, text: '', provider: null, model: null, voices: [], error: 'moins de 2 voix gratuites' };
-  const budgetFin = o.finMs || (o.budgetMs ? Date.now() + o.budgetMs : 0);
-  const reste = () => (budgetFin ? budgetFin - Date.now() : Infinity);
-  const delai = (d) => Math.max(1500, Math.min(d, reste() - 500));
-  /* 1. chacune de son côté */
-  const settled = await Promise.allSettled(voices.map((v) => withDeadline(askVoice(env, v, messages, o), delai(o.timeoutMs))));
+  const settled = await Promise.allSettled(voices.map((v) => withDeadline(askVoice(env, v, messages, o), o.timeoutMs)));
   const answers = [];
   const report = settled.map((s, i) => {
     const v = voices[i];
@@ -617,58 +555,23 @@ export async function councilText(env, opts) {
     return { provider: v.provider, model: v.model, ok: false, error: String(s.reason && s.reason.message || s.reason).slice(0, 80) };
   });
   if (!answers.length) return { ok: false, text: '', provider: null, model: null, voices: report, error: 'aucune voix n\'a répondu' };
-  if (answers.length === 1) return { ok: true, text: answers[0].text, provider: answers[0].voice.provider, model: answers[0].voice.model, voices: report, judge: 'none', rounds: 1 };
+  if (answers.length === 1) return { ok: true, text: answers[0].text, provider: answers[0].voice.provider, model: answers[0].voice.model, voices: report, judge: 'none' };
   const question = [...messages].reverse().find((m) => m.role === 'user');
   const brief = 'QUESTION :\n' + String(question && question.content || '').slice(0, 3000) + '\n\n'
     + answers.map((a, i) => 'RÉPONSE DE LA VOIX ' + (i + 1) + ' (' + a.voice.model.split('/').pop() + ') :\n' + a.text.slice(0, 3000)).join('\n\n');
-  const consigne = o.system ? '\nConsignes du service : ' + String(o.system).slice(0, 1500) : '';
-  /* 2. comparer : le juge note chaque voix */
-  let verdict = null, juge = null, synthese = null;
-  if (reste() > 3000) {
-    juge = choisirJuge(env, voices, [], domain);
-    try {
-      const j = await withDeadline(askVoice(env, juge, [{ role: 'system', content: COMPARE_SYSTEM + consigne }, { role: 'user', content: brief }], Object.assign({}, o, { maxTokens: 400, temperature: 0.2 })), delai(o.timeoutMs));
-      verdict = parseJsonLoose(j.text);
-      if (!(verdict && verdict.notes)) { verdict = null; synthese = j.text; }   // un juge qui rédige au lieu de noter : sa synthèse sert (ancien conseil)
-    } catch (_) { /* juge muet : on continue sans notes */ }
-  }
-  const scores = {};
-  let bestIdx = -1, bestScore = -1;
-  if (verdict) {
-    for (let i = 0; i < answers.length; i++) {
-      const n = Number(verdict.notes[String(i + 1)]);
-      if (Number.isFinite(n)) { scores[voixId(answers[i].voice)] = n; await noterCompetence(domain, answers[i].voice, n); if (n > bestScore) { bestScore = n; bestIdx = i; } }
-    }
-    const m = parseInt(verdict.meilleure, 10);
-    if (m >= 1 && m <= answers.length) { bestIdx = m - 1; bestScore = scores[voixId(answers[bestIdx].voice)] ?? bestScore; }
-  }
-  /* 3. la meilleure travaille : elle améliore sa réponse avec ce que le juge et les autres apportent */
-  if (bestIdx >= 0) {
-    const best = answers[bestIdx];
-    let text = best.text, rounds = 2;
-    if (o.rounds >= 3 && reste() > 3000) {
-      const autres = answers.filter((_, i) => i !== bestIdx).map((a) => a.text.slice(0, 1500)).join('\n---\n');
-      const manques = String(verdict.manques || '').slice(0, 400);
-      try {
-        const r = await withDeadline(askVoice(env, best.voice, [{ role: 'system', content: AMELIORE_SYSTEM + consigne }, { role: 'user', content: 'QUESTION :\n' + String(question && question.content || '').slice(0, 3000) + '\n\nTA RÉPONSE :\n' + best.text.slice(0, 4000) + (manques ? '\n\nCE QUE LE JUGE TE REPROCHE : ' + manques : '') + '\n\nCE QUE LES AUTRES VOIX ONT RÉPONDU :\n' + autres }], Object.assign({}, o, { maxTokens: Math.max(o.maxTokens, 600), temperature: 0.4 })), delai(o.timeoutMs));
-        if (r && r.text) { text = r.text; rounds = 3; }
-      } catch (_) { /* elle n'a pas pu retravailler : sa première réponse reste la meilleure */ }
-    }
-    return { ok: true, text, provider: 'council', model: best.voice.model, best: { provider: best.voice.provider, model: best.voice.model, score: bestScore }, scores, voices: report, judge: juge ? voixId(juge) : 'none', rounds };
-  }
-  /* pas de notes (juge muet ou qui rédige) : la synthèse du juge, sinon l'ancien juge Qwen qui fusionne, sinon la 1re voix */
-  if (synthese) return { ok: true, text: synthese, provider: 'council', model: juge.model, voices: report, judge: voixId(juge), rounds: 2, scores };
+  const judgeMsgs = [{ role: 'system', content: JUDGE_SYSTEM + (o.system ? '\nConsignes du service : ' + String(o.system).slice(0, 1500) : '') }, { role: 'user', content: brief }];
   try {
     if (!env.AI) throw new Error('pas de juge Workers AI');
-    const j = await withDeadline(callQwen(env, [{ role: 'system', content: JUDGE_SYSTEM + consigne }, { role: 'user', content: brief }], { maxTokens: Math.max(o.maxTokens, 600), temperature: 0.3 }), delai(o.timeoutMs));
-    return { ok: true, text: j.text, provider: 'council', model: j.model, voices: report, judge: 'qwen', rounds: 2, scores };
+    const j = await withDeadline(callQwen(env, judgeMsgs, { maxTokens: Math.max(o.maxTokens, 600), temperature: 0.3 }), o.timeoutMs);
+    return { ok: true, text: j.text, provider: 'council', model: j.model, voices: report, judge: 'qwen' };
   } catch (e) {
-    return { ok: true, text: answers[0].text, provider: 'council', model: answers[0].voice.model, voices: report, judge: 'first', rounds: 1, scores, judge_error: String((e && e.message) || e).slice(0, 80) };
+    /* juge muet → la première voix qui a répondu (jamais rien perdre), cause conservée */
+    return { ok: true, text: answers[0].text, provider: 'council', model: answers[0].voice.model, voices: report, judge: 'first', judge_error: String((e && e.message) || e).slice(0, 80) };
   }
 }
 
 /* Domaines où un conseil de voix gratuites vaut mieux qu'une seule voix (question difficile). */
-export const COUNCIL_DOMAINS = ['reasoning', 'creative', 'long_context', 'general', 'summary', 'code', 'search'];   // 2.10 : code et recherche aussi (admin : actions ; vision : pas de texte)
+export const COUNCIL_DOMAINS = ['reasoning', 'creative', 'long_context', 'general', 'summary'];
 
 /**
  * Routage « concerté » : analyse par vote (si opts.analyse === 'concert'), puis conseil pour les
@@ -702,5 +605,5 @@ export function routingStatus(env) {
   const available = availableProviders(env);
   const first = {};
   for (const d of Object.keys(DOMAIN_PREFERENCES)) first[d] = planChain(d, available)[0] || null;
-  return { available, qwen_models: env && env.AI ? QWEN_MODELS : [], first_by_domain: first, niveaux: Object.fromEntries(available.map((p) => [p, NIVEAU[p] || 'B'])), en_pause: pausesActives(), pauses_durables: pausesDurables(), modeles_retires: modelesRetiresActifs(), competence: competenceStatus() };
+  return { available, qwen_models: env && env.AI ? QWEN_MODELS : [], first_by_domain: first, niveaux: Object.fromEntries(available.map((p) => [p, NIVEAU[p] || 'B'])), en_pause: pausesActives(), pauses_durables: pausesDurables(), modeles_retires: modelesRetiresActifs() };
 }

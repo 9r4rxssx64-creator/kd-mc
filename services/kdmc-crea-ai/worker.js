@@ -459,17 +459,6 @@ function enginesAvailable(env) {
 }
 async function anyText(env, prompt, wantJson, prefer) {
   const errs = [];
-  /* CONFÉRENCE (Kevin 2.10 soir : « pour toutes les apps du domaine ») : le texte passe d'abord par le routage commun —
-     question difficile → toutes les voix gratuites, un juge compare, la meilleure retravaille ; simple → Qwen. Un JSON
-     demandé reste une voix seule (le format ne doit pas bouger). Si rien ne répond, l'ancienne cascade reste là. */
-  try {
-    const { routeSmart } = await import('../_shared/ia-route.js');
-    const c = await routeSmart(env, { prompt, wantJson: !!wantJson, domain: wantJson ? 'code' : 'creative', analyse: 'regex', council: wantJson ? false : 'auto', budgetMs: 20000, maxTokens: 1200 });
-    const essais = (c && c.tried || []).filter((t) => t.error).map((t) => t.provider + '_' + String(t.error).replace(/^HTTP /, '').slice(0, 70));
-    errs.push(...essais);   // Kevin voit POURQUOI ça a basculé, même quand la conférence finit par répondre
-    if (c && c.ok && c.text) return { text: c.text, provider: 'conference:' + c.provider + '/' + String(c.model || '').split('/').pop(), tried: errs };
-    if (c && c.tried) errs.push('conference_' + (c.error || 'vide'));
-  } catch (e) { errs.push('conference_' + String((e && e.message) || e).slice(0, 80)); }
   /* Kevin 2026-09-05 « Fait tourner Apex sur Qwen l'IA gratuite… pareil dans mes autres
      projets » : QWEN (Workers AI, 0 clé) est essayé EN PREMIER par défaut — plus seulement
      quand le client le demande. S'il ne répond pas, la chaîne des IA gratuites à clé prend

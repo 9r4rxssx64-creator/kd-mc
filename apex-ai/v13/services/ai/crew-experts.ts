@@ -376,11 +376,8 @@ class CrewExpertsService {
       'garde le meilleur de chacune, signale les divergences importantes (« Gemini dit X, GPT dit Y »), ' +
       'et termine par la recommandation la plus fiable. Réponds en français, direct, sans préambule.';
     let collected = '';
-    /* TOUT GRATUIT + CONFÉRENCE (Kevin 2.10 soir) : le chef d'orchestre est la meilleure IA GRATUITE disponible
-     * (gpt-oss-120b chez Groq / Cerebras, sinon Qwen) ; Anthropic ne conduit que s'il ne reste aucun gratuit. */
-    const chef: CrewProvider = this.availableProviders().find((p) => (['groq', 'cerebras', 'qwen', 'gemini'] as CrewProvider[]).includes(p)) ?? 'anthropic';
     const call = await aiRouter.streamSingle(
-      chef,
+      'anthropic',
       [{ role: 'user', content: `Question d'origine :\n${task}\n\nRéponses des experts :\n\n${expertBlock}` }],
       conductorPrompt,
       (chunk) => {

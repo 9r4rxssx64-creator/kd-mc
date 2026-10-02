@@ -302,9 +302,9 @@ test('/ai : question difficile → CONSEIL de voix gratuites + juge (provider co
     const b = await r.json();
     assert.equal(r.status, 200);
     assert.equal(b.provider, 'council');
-    assert.match(String(b.judge), /^qwen/, 'juge gratuit (conférence v2 : la voix la plus compétente, Qwen ici)');
+    assert.equal(b.judge, 'qwen');
     assert.equal(b.text, 'Réponse fusionnée');
-    assert.ok(b.voices.length >= 3, 'toutes les voix gratuites siègent (' + b.voices.length + ')');
+    assert.equal(b.voices.length, 3);
     assert.equal(anthropicCalled, false);
     /* council:false → une seule voix (le routage classique), toujours gratuit */
     const corpsSansConseil = JSON.stringify({ messages: [{ role: 'user', content: 'explique en détail pourquoi la roulette européenne a un avantage maison plus faible' }], council: false });

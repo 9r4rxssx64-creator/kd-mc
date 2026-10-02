@@ -35,6 +35,7 @@
   "coffre-previent-public.yml",
   "coffre-secrets-cmc.yml",
   "coffre-sonde-ce-qui-est-servi.yml",
+  "coffre-sonde-ia-gratuites.yml",
   "coffre-sonde-voix.yml",
   "coffre-synchronise-public.yml",
   "deces-cors-check.yml",

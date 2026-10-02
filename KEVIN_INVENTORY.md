@@ -3311,3 +3311,5 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-02 | `tools/shared/docs-cmc.js` | CMCteams v9.934 : le fichier d'un document se charge à la demande (quitte cmc_docs pour /cmcteams_docs) | coffre |
 | 2026-10-02 | `tools/firebase/docs-migrer.cjs` + `.github/workflows/coffre-docs-migrer.yml` | Robot qui déplace les documents déjà en ligne (copie relue avant retrait, simulation par défaut) | coffre |
 | 2026-10-02 | `tests/verify-docs-a-la-demande.mjs` | Garde : règles, module, robot, câblage (22 contrôles, 2 sabotages) | coffre + public |
+| 2026-10-02 | `tools/ia/sonder-ia-gratuites.mjs` + `.github/workflows/coffre-sonde-ia-gratuites.yml` | « Go freellm » : sonde réelle des 13 IA gratuites dont Kevin a la clé (lecture seule) | coffre |
+| 2026-10-02 | `tests/verify-sonde-ia-gratuites.mjs` | Garde de la sonde (lecture seule, robot borné, paliers crédits jamais « gratuits ») | coffre + public |

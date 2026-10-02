@@ -320,6 +320,21 @@ Michel) — à confirmer.
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-02 (13h30 UTC) — Kevin « Go freellm » : les paliers gratuits empilés, dans NOTRE routeur (0 €, 0 serveur)
+
+- **Mesuré avant d'agir** : FreeLLMAPI (tashfeenahmed/freellmapi, MIT) = serveur Node + SQLite sur le port 3001, allumé 24/24
+  (« local-first, single-user ») — pas de machine gratuite allumée en permanence chez Kevin (Lenovo : état illisible d'ici,
+  API runners refusée ; Railway = payant). On prend l'IDÉE (paliers gratuits empilés + bascule + compteurs) dans
+  `services/_shared/ia-route.js`, qui fait déjà « gratuit d'abord » (qwen, groq, gemini, mistral, openrouter, cerebras).
+- **Clés déjà au coffre et déjà poussées au worker kdmc-apis par deploy-kdmc-apis.yml, mais PAS câblées dans la cascade** :
+  SAMBANOVA, NVIDIA, TOGETHER, HF_TOKEN, GLM (gratuit) ; DASHSCOPE, NEBIUS, SCALEWAY (crédits d'essai, s'épuisent) ; COHERE
+  (clé poussée, non câblée). Étape 1 = `tools/ia/sonder-ia-gratuites.mjs` + robot `coffre-sonde-ia-gratuites.yml`
+  (13 fournisseurs, 1 requête de 8 jetons chacun, lecture seule ; garde `test:sonde-ia-gratuites`, 9 contrôles). Un
+  nouveau robot ne se lance pas depuis une branche (404) : fusion d'abord, sonde depuis main ensuite.
+- Étape 2 (après la sonde) : câbler dans `ia-route.js` SEULEMENT les fournisseurs qui répondent, en gratuit d'abord ; les
+  paliers « crédits » restent hors de la tête de cascade sans l'accord de Kevin (règle gratuit par défaut). Parité Apex v13
+  (`ai-routing-policy`) à faire suivre. Mesure avant/après : `apis.kd-mc.com/health` → `ia_routing.available`.
+
 ## 2026-10-02 (11h55 UTC) — 🎙️ VOIX PRO GRATUITE EN LIGNE : Google Chirp 3 HD répond, mesuré
 
 - Kevin : « J'ai coché cloud… mais Gemini se décoche auto. Fais un test ». Sonde réelle **37003461786** : `google-chirp3hd-homme`

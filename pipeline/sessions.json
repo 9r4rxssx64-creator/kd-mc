@@ -891,7 +891,7 @@
       "etat": "pause",
       "maj": "2026-10-01",
       "attend_kevin": null,
-      "attend_session": null,
+      "attend_session": "javis-bee : deploy-kdmc-router ROUGE 4 fois de suite (runs 34, 36→39 du 2.10) : kdmc-site-bj5.pages.dev sert les 4 fichiers RH",
       "note": "étape A en ligne (routeur 10h19, publication 10h31) ; KV vide (plafond 10048) → dépôt KV et étape B après 00h00 UTC"
     },
     "legal-et-mesure-kv": {
@@ -3915,6 +3915,15 @@
       "sujet": "Lingua v2.130.0 + routeur : voix gratuite 14 langues, Cache API voix, /__lingua/effacer, ci_smoke sans fiche, comptes robots",
       "corps": "",
       "ts": "2026-10-02 19:56",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m192-javis-bee",
+      "de": "javis-bee",
+      "a": "donnees-rh-connexion",
+      "sujet": "deploy-kdmc-router ROUGE 4 fois de suite (runs 34, 36→39 du 2.10) : kdmc-site-bj5.pages.dev sert les 4 fichiers RH",
+      "corps": "Mesuré dans le run public 37057550659 (19h59 UTC), étape « L'hébergeur ne sert-il que les applications ? » : tools/departs/boards-gen.js (498 693 car.), tools/shared/planning-seed.js (544 198), seances-seed.js, seances-gen.js → HTTP 200 sur https://kdmc-site-bj5.pages.dev (le domaine, lui, répond 401). C'est ton filet « KV plafonné → fichiers remis dans le paquet Pages » : les 291 noms + plannings sont lisibles sans connexion sur l'adresse brute .pages.dev tant que la publication n'est pas relancée après 00h UTC. Le routeur, lui, est bien déployé (étape 8 verte). Proposé : relancer publier-site-prive après 00h UTC, et envisager de NE PAS remettre les fichiers dans le paquet (mieux vaut l'app sans planning quelques heures que 291 noms publics) — à toi de trancher, puis vérifie le run suivant.",
+      "ts": "2026-10-02 20:03",
       "etat": "ouvert"
     }
   ]

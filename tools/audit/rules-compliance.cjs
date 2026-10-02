@@ -89,9 +89,6 @@ const REGISTRE = [
   // dans test:ci (ou le workflow réel), mais pas leur entrée ici → ratchet 19 → 22, test:ci rouge
   // pour tout le monde. Cinquième fois : règle nouvelle = entrée ICI dans le même commit.
   [/GRATUIT PAR DÉFAUT/i, ['npm:test:gratuit']],
-  // Règle « TOUT GRATUIT, PARTOUT, TOUJOURS » (Kevin 2.10.2026 soir) : garde = test:tout-gratuit (chaque cascade du dépôt —
-  // ia-route, kdmc-apis, Créa, chat-svc, messagerie, outils Lingua, Apex — commence par un gratuit ; sabotage prouvé).
-  [/TOUT GRATUIT, PARTOUT, TOUJOURS/i, ['npm:test:tout-gratuit', 'npm:test:ia-route']],
   // Règle « QUAND UN GRATUIT S'ÉPUISE, LE RELAIS EST GRATUIT, DE MÊME NIVEAU, ET PRÉVU D'AVANCE » (Kevin 2.10.2026) :
   // ses gardes = ia-route.test.mjs (niveaux A/B, pauses d'épuisement durables, anticipation par en-têtes, relais de
   // modèle retiré — 26 contrôles, 2 sabotages) + la sonde réelle des paliers gratuits (test:sonde-ia-gratuites).

@@ -3272,42 +3272,6 @@ au boot se charge TOUJOURS (même puce OFF) pour un premier affichage instantan�
 
 ---
 
-## 🆓 RÈGLE ABSOLUE — TOUT GRATUIT, PARTOUT, TOUJOURS — PAS SEULEMENT EN PRODUCTION — ET LA MEILLEURE QUALITÉ GRATUITE (Kevin 2026-10-02, ABSOLUE)
-
-> **« Tout gratuit, pas seulement production. Toujours tout gratuit. Trouve des solutions pour la meilleure qualité toujours. Note tout. »** — Kevin 2026-10-02 (soir, après la mise en ligne de la règle du relais gratuit)
-
-### 1. Ce que ça veut dire
-
-- **Partout** : le domaine (routeur, apis, Créa, Bee, Lingua), **Apex** (l'app, son chat, son exécuteur), les **robots**
-  (outils Lingua, sondes, CI), la **messagerie**, les aperçus de branche, les tests, les sessions Claude Code. « Production
-  seulement » n'existe pas : une règle de gratuité qui ne vaut que pour une partie est une règle sautée ailleurs.
-- **Toujours** : un moteur payant n'est **jamais en tête** d'une cascade, dans aucun fichier, pour aucun domaine de question
-  (code, raisonnement, créatif, actions, recherche, image compris). Le payant reste un **secours**, derrière TOUS les
-  gratuits disponibles, et seulement avec le laissez-passer de Kevin (kdmc-apis retire les clés payantes sans lui).
-  La règle du 5.09 (« bascule vers Anthropic pour code / raisonnement / actions ») est **remplacée** sur ce point : la
-  bascule par question choisit désormais **le meilleur gratuit du domaine** (Qwen coder pour le code, QwQ / gpt-oss-120b
-  pour le raisonnement, Qwen3 30B pour le reste), Anthropic n'arrive qu'après.
-- **La meilleure qualité** : « gratuit » ne veut pas dire « petit modèle ». On empile les paliers gratuits de **niveau A**
-  (gpt-oss-120b chez Groq et Cerebras, Qwen3 30B / QwQ 32B / Qwen2.5-coder 32B sur Workers AI, Llama 70B chez SambaNova /
-  NVIDIA / Hugging Face quand les clés existent), on mesure (sonde réelle, GET /models), on relaie entre eux (règle du
-  2.10 ci-dessous), et quand une capacité n'existe pas en gratuit (outils, image, recherche web), **on la construit** au
-  lieu de payer : outils sur gpt-oss-120b (il les supporte), image sur Workers AI (`llama-3.2-11b-vision`), recherche web
-  par le `/search` sans clé de kdmc-apis. Tant qu'un de ces chantiers n'est pas fait, c'est écrit dans le TODO de Kevin,
-  pas caché derrière un moteur payant.
-- **Les plafonds gratuits se gèrent, ils ne se contournent pas en payant** : KV (1 000 écritures/jour → lire avant d'écrire,
-  compter par jour et non par heure, ne jamais ouvrir une porte privée pour « sauver » une disponibilité — leçon #384),
-  minutes GitHub (bornes, filtres de chemins), Workers AI (relais), voix (plafond de caractères, MeloTTS en repli).
-
-### 2. Où c'est câblé (2.10.2026)
-
-- `services/_shared/ia-route.js` : `DOMAIN_PREFERENCES` **commence par un gratuit pour chaque domaine** ; `planChain`
-  range les gratuits niveau A avant B, les payants après ; `premium` reste un choix explicite de Kevin.
-- `apex-ai/v13/services/ai/ai-routing-policy.ts` : mêmes préférences gratuit d'abord, `free-smart` par défaut pour
-  **tout le monde** (plus seulement l'admin), Cerebras et Cohere comptés parmi les gratuits servis par le proxy ;
-  `ai-router.ts` : modèles vivants (gpt-oss-120b) à la place des Llama retirés.
-- Garde **`test:tout-gratuit`** (`tests/verify-tout-gratuit.mjs`, dans test:ci) : lit CHAQUE cascade du dépôt (ia-route,
-  kdmc-apis, Créa, chat-svc, messagerie, outils Lingua, Apex) et refuse tout payant en tête ; sabotage prouvé.
-
 ## 🔁 RÈGLE ABSOLUE — QUAND UN GRATUIT S'ÉPUISE, LE RELAIS EST GRATUIT, DE MÊME NIVEAU, ET PRÉVU D'AVANCE (Kevin 2026-10-02, ABSOLUE)
 
 > **« Quand ça s'épuise, anticipe du gratuit en relais toujours, même qualité, même niveau. »** — Kevin 2026-10-02 (après « Go freellm »)

@@ -57,19 +57,18 @@ test('Qwen est le 1er gratuit et le principal des questions courantes', () => {
   assert.equal(planChain('speed', all)[0], 'groq');
 });
 
-test('TOUT GRATUIT (Kevin 2.10 soir) : chaque domaine commence par un gratuit — action/code/raisonnement/créatif → Qwen, image → Gemini, recherche → Qwen ; les payants sont des secours, jamais en tête', () => {
+test('bascule par question : action/code/raisonnement → Anthropic, image → Gemini, recherche → Perplexity', () => {
   const all = ['qwen', 'anthropic', 'gemini', 'groq', 'perplexity'];
-  for (const d of ['admin', 'code', 'reasoning', 'creative', 'search', 'general', 'summary', 'translation']) assert.equal(planChain(d, all)[0], 'qwen', d);
-  assert.equal(planChain('speed', all)[0], 'groq');
+  assert.equal(planChain('admin', all)[0], 'anthropic');
+  assert.equal(planChain('code', all)[0], 'anthropic');
+  assert.equal(planChain('reasoning', all)[0], 'anthropic');
+  assert.equal(planChain('creative', all)[0], 'anthropic');
   assert.equal(planChain('vision', all)[0], 'gemini');
-  for (const d of Object.keys(DOMAIN_PREFERENCES)) assert.ok(FREE_PROVIDERS.includes(DOMAIN_PREFERENCES[d][0]), d + ' commence par un gratuit : ' + DOMAIN_PREFERENCES[d][0]);
-  /* Anthropic reste en secours derrière TOUS les gratuits disponibles, et rien n'est perdu */
-  const g = planChain('general', all);
-  assert.ok(g.indexOf('anthropic') > g.indexOf('groq') && g.indexOf('anthropic') > g.indexOf('gemini'), g.join(' > '));
-  assert.ok(g.indexOf('perplexity') > g.indexOf('groq'), 'Perplexity (payant) après les gratuits');
-  assert.equal(g.length, all.length);
-  const c = planChain('code', all);
-  assert.ok(c.includes('anthropic') && c.indexOf('anthropic') > c.indexOf('groq'), 'code : Anthropic en secours, pas en tête : ' + c.join(' > '));
+  assert.ok(!planChain('vision', all).includes('qwen'), 'jamais Qwen pour une image');
+  assert.equal(planChain('search', all)[0], 'perplexity');
+  /* Anthropic reste en secours derrière Qwen, et rien n'est perdu */
+  assert.deepEqual(planChain('general', all).slice(0, 2), ['qwen', 'anthropic']);
+  assert.equal(planChain('general', all).length, all.length);
 });
 
 test('sans Anthropic ni clé : Qwen répond quand même (0 clé)', () => {
@@ -93,18 +92,19 @@ test('routeText : Qwen sert la question générale, <think> filtré, modèle nom
   } finally { f.restore(); }
 });
 
-test('routeText : une ACTION est reconnue (domaine admin) et va d\'abord au GRATUIT (Qwen) ; Anthropic seulement si tous les gratuits tombent', async () => {
-  const AI = fakeAI({ reply: 'Je prépare le déploiement.' });
+test('routeText : une ACTION va à Anthropic même si Qwen est là', async () => {
+  const AI = fakeAI();
   const env = { AI, ANTHROPIC_API_KEY: 'k' };
-  const f = mockFetch(() => okJson({ content: [{ type: 'text', text: 'Déploiement lancé.' }] }));
+  const f = mockFetch((url) => {
+    assert.match(url, /api\.anthropic\.com/);
+    return okJson({ content: [{ type: 'text', text: 'Déploiement lancé.' }] });
+  });
   try {
     const r = await routeText(env, { prompt: 'déploie le worker maintenant' });
+    assert.equal(r.provider, 'anthropic');
     assert.equal(r.domain, 'admin');
-    assert.equal(r.provider, 'qwen', 'tout gratuit, partout : même une action commence par Qwen');
-    assert.equal(f.calls.length, 0, 'Anthropic pas appelé');
-    const mort = { AI: fakeAI({ allDead: true }), ANTHROPIC_API_KEY: 'k' };
-    const r2 = await routeText(mort, { prompt: 'déploie le worker maintenant' });
-    assert.equal(r2.provider, 'anthropic', 'secours payant seulement quand tous les gratuits sont tombés');
+    assert.equal(r.text, 'Déploiement lancé.');
+    assert.equal(AI.calls.length, 0);
     assert.equal(f.calls[0].body.model, 'claude-haiku-4-5-20251001');
   } finally { f.restore(); }
 });
@@ -123,9 +123,8 @@ test('routeText : 1er modèle Qwen mort → le suivant, Qwen entièrement mort �
     const r2 = await routeText(env2, { prompt: 'bonjour' });
     assert.equal(r2.provider, 'groq');
     assert.equal(r2.text, 'Salut !', '<think> filtré aussi sur les moteurs OpenAI-compatibles');
-    /* TOUT GRATUIT : derrière Qwen vient Groq (gratuit), Anthropic n'est appelé que si tous les gratuits tombent */
-    assert.deepEqual(r2.tried.map((t) => t.provider), ['qwen']);
-    assert.ok(!f.calls.some((c) => /anthropic/.test(c.url)), 'Anthropic pas appelé tant qu\'un gratuit répond');
+    /* Anthropic est le secours n°1 derrière Qwen (réponse vide ici → on passe à Groq) */
+    assert.deepEqual(r2.tried.map((t) => t.provider), ['qwen', 'anthropic']);
   } finally { f.restore(); }
 
   const env3 = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g' };
@@ -158,8 +157,8 @@ test('secrets : noms EXACTS de Kevin (PERPLEXITI, OPEN_AI)', () => {
   assert.equal(stripThink('<think>coupé sans fin'), '');
   const st = routingStatus({ AI: {}, ANTHROPIC_API_KEY: 'a' });
   assert.equal(st.first_by_domain.general, 'qwen');
-  assert.equal(st.first_by_domain.code, 'qwen', 'tout gratuit : le code commence par Qwen (qwen2.5-coder), Anthropic en secours');
-  assert.equal(st.first_by_domain.vision, 'qwen', 'sans Gemini, une image va à Qwen (texte seul ; Workers AI vision à brancher) avant tout payant');
+  assert.equal(st.first_by_domain.code, 'anthropic');
+  assert.equal(st.first_by_domain.vision, 'anthropic', 'sans Gemini, une image va à Anthropic, jamais à Qwen');
 });
 
 /* ---- PALIERS GRATUITS EMPILÉS (Kevin 2026-10-02 « Go freellm ») ---- */
@@ -360,7 +359,7 @@ test('councilText : 3 voix répondent, le juge Qwen fusionne ; juge mort → 1re
   assert.equal(e.ok, false);
 });
 
-test('routeSmart : question difficile → conseil gratuit (Anthropic pas appelé) ; action → Qwen d\'abord (tout gratuit) ; simple → Qwen seul', async () => {
+test('routeSmart : question difficile → conseil gratuit (Anthropic pas appelé) ; action → Anthropic ; simple → Qwen seul', async () => {
   const AI = voicesAI({
     [QWEN_MODELS[0]]: '{"domain":"reasoning","needs_tools":false,"complexity":4}',
     [QWEN_MODELS[1]]: '{"domain":"reasoning","needs_tools":false,"complexity":5}',
@@ -379,8 +378,7 @@ test('routeSmart : question difficile → conseil gratuit (Anthropic pas appelé
       [QWEN_MODELS[2]]: '{"domain":"admin","needs_tools":true,"complexity":2}',
     });
     const a = await routeSmart({ AI: act, ANTHROPIC_API_KEY: 'a' }, { prompt: 'envoie le rapport à Laurence' });
-    assert.equal(a.provider, 'qwen', 'tout gratuit : une action commence par Qwen'); assert.equal(a.domain, 'admin');
-    assert.equal(f.calls.length, 0, 'Anthropic toujours pas appelé');
+    assert.equal(a.provider, 'anthropic'); assert.equal(a.domain, 'admin');
 
     const simple = voicesAI({
       [QWEN_MODELS[0]]: '{"domain":"general","needs_tools":false,"complexity":1}',

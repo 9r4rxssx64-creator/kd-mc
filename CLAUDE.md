@@ -78,7 +78,7 @@ va plus loin · honnête sur ses limites · sans flatterie. **Bee : niveau comme
 
 ---
 
-## 📜 Les 189 règles — le texte de Kevin, une par une
+## 📜 Les 188 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -261,10 +261,6 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### ⏱ RÈGLE ABSOLUE — TEMPS RÉEL / LIVE OU PRESQUE, TOUJOURS PARTOUT (Kevin 2026-07-05, ABSOLUE)
 **« Temps réel, live ou presque tjs partout »** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-temps-réel-live-ou-presque-toujours-partout-kevin-2026-07-05-absolue)
-
-### 🆓 RÈGLE ABSOLUE — TOUT GRATUIT, PARTOUT, TOUJOURS — PAS SEULEMENT EN PRODUCTION — ET LA MEILLEURE QUALITÉ GRATUITE (Kevin 2026-10-02, ABSOLUE)
-**« Tout gratuit, pas seulement production. Toujours tout gratuit. Trouve des solutions pour la meilleure qualité toujours. Note tout. »** — Kevin 2026-10-02 (soir, après la mise en ligne de la […]
-↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-gratuit-partout-toujours-pas-seulement-en-production-et-la-meilleure-qualité-gratuite-kevin-2026-10-02-absolue)
 
 ### 🔁 RÈGLE ABSOLUE — QUAND UN GRATUIT S'ÉPUISE, LE RELAIS EST GRATUIT, DE MÊME NIVEAU, ET PRÉVU D'AVANCE (Kevin 2026-10-02, ABSOLUE)
 **« Quand ça s'épuise, anticipe du gratuit en relais toujours, même qualité, même niveau. »** — Kevin 2026-10-02 (après « Go freellm »)

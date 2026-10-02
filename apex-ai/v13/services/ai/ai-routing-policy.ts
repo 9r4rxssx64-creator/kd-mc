@@ -26,7 +26,7 @@ import { consumptionMonitor } from '../observability/consumption-monitor.js';
 
 
 /* v13.4.366 : 'qwen' = Qwen GRATUIT servi par Cloudflare Workers AI via le proxy (0 clé). */
-export type ProviderId = 'anthropic' | 'openai' | 'groq' | 'gemini' | 'openrouter' | 'deepseek' | 'cohere' | 'mistral' | 'perplexity' | 'qwen' | 'cerebras';
+export type ProviderId = 'anthropic' | 'openai' | 'groq' | 'gemini' | 'openrouter' | 'deepseek' | 'cohere' | 'mistral' | 'perplexity' | 'qwen';
 
 export type TaskDomain =
   | 'general' /* Chat normal */
@@ -69,24 +69,32 @@ export interface RoutingDecision {
  *   - Qwen reste 2e partout où il est pertinent (secours gratuit), Anthropic reste en
  *     secours partout → une panne ne bloque jamais. */
 const DOMAIN_PREFERENCES: Record<TaskDomain, readonly ProviderId[]> = {
-  /* TOUT GRATUIT, PARTOUT, TOUJOURS (Kevin 2.10.2026 soir, « pas seulement production ») : CHAQUE domaine commence par
-   * le meilleur GRATUIT ; Anthropic / OpenAI / Perplexity ne sont que des SECOURS, derrière tous les gratuits.
-   * Actions (outils) : Qwen puis Groq gpt-oss-120b (il supporte les outils) ; Anthropic reste le dernier recours. */
-  admin: ['qwen', 'groq', 'cerebras', 'anthropic', 'openai', 'gemini'],
-  reasoning: ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
-  code: ['qwen', 'groq', 'cerebras', 'deepseek', 'anthropic', 'openai', 'gemini'],
-  vision: ['gemini', 'qwen', 'anthropic', 'openai'],
-  long_context: ['gemini', 'qwen', 'groq', 'anthropic', 'openai'],
-  speed: ['groq', 'cerebras', 'qwen', 'gemini', 'openrouter', 'anthropic'],
-  search: ['qwen', 'groq', 'gemini', 'perplexity', 'anthropic'],
+  /* Admin Kevin (actions, outils, sécurité) = TOUJOURS Anthropic d'abord (seul provider à outils) */
+  admin: ['anthropic', 'openai', 'gemini', 'qwen'],
+  /* Raisonnement complexe = Anthropic > Qwen (qwen3 raisonne, gratuit) > OpenAI > Gemini */
+  reasoning: ['anthropic', 'qwen', 'openai', 'gemini', 'groq'],
+  /* Code = Anthropic > Qwen (qwen2.5-coder gratuit) > DeepSeek > OpenAI */
+  code: ['anthropic', 'qwen', 'deepseek', 'openai', 'gemini'],
+  /* Vision = Gemini gratuit + Claude (Qwen texte seul sur Workers AI → absent) */
+  vision: ['gemini', 'anthropic', 'openai'],
+  /* Long context = Gemini 1M tokens gratuit, puis Qwen 3.8 (262k) */
+  long_context: ['gemini', 'anthropic', 'qwen', 'openai'],
+  /* Speed = Groq (500+ tok/sec), puis Qwen gratuit */
+  speed: ['groq', 'qwen', 'gemini', 'openrouter', 'anthropic'],
+  /* Search citations = Perplexity puis Anthropic */
+  search: ['perplexity', 'anthropic', 'gemini', 'qwen'],
+  /* Traduction simple = Qwen gratuit (multilingue) d'abord */
   translation: ['qwen', 'gemini', 'groq', 'openrouter', 'anthropic'],
+  /* Résumé court = Qwen gratuit d'abord */
   summary: ['qwen', 'groq', 'gemini', 'openrouter', 'anthropic'],
-  creative: ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
-  general: ['qwen', 'groq', 'gemini', 'openrouter', 'anthropic'],
+  /* Créatif = Anthropic en premier (qualité), Qwen en secours gratuit */
+  creative: ['anthropic', 'qwen', 'openai', 'gemini'],
+  /* Général = QWEN GRATUIT EN PRINCIPAL (Kevin 2026-09-05), Anthropic en secours */
+  general: ['qwen', 'anthropic', 'gemini', 'groq', 'openrouter'],
 };
 
 /* Qwen en tête : c'est lui que « gratuit d'abord » choisit quand plusieurs gratuits existent. */
-const FREE_PROVIDERS: readonly ProviderId[] = ['qwen', 'groq', 'cerebras', 'gemini', 'openrouter', 'cohere'];   /* 2.10 : Cerebras (gpt-oss-120b) et Cohere, servis par le proxy, mesurés par la sonde */
+const FREE_PROVIDERS: readonly ProviderId[] = ['qwen', 'groq', 'gemini', 'openrouter'];
 
 /* v13.4.362 — Providers IA servis par le proxy Cloudflare (clé côté serveur).
  * Quand le proxy est actif (défaut), ces providers sont DISPONIBLES même sans
@@ -94,7 +102,7 @@ const FREE_PROVIDERS: readonly ProviderId[] = ['qwen', 'groq', 'cerebras', 'gemi
  * Gemini/Groq. Source unique = PROXY_PROVIDERS du client proxy. */
 const PROXIED_AI: ReadonlySet<ProviderId> = new Set(
   (PROXY_PROVIDERS as readonly string[]).filter(
-    (p): p is ProviderId => (['anthropic', 'openai', 'groq', 'gemini', 'deepseek', 'cohere', 'mistral', 'perplexity', 'qwen', 'cerebras'] as string[]).includes(p),
+    (p): p is ProviderId => (['anthropic', 'openai', 'groq', 'gemini', 'deepseek', 'cohere', 'mistral', 'perplexity', 'qwen'] as string[]).includes(p),
   ),
 );
 
@@ -115,7 +123,6 @@ const COST_PER_M_TOKENS_EUR: Record<ProviderId, number> = {
   mistral: 4.0,      /* Large */
   perplexity: 5.0,   /* Sonar */
   qwen: 0,           /* v13.4.366 : Workers AI, palier gratuit — 0 € */
-  cerebras: 0,       /* 2.10 : palier gratuit (gpt-oss-120b) */
 };
 
 class AIRoutingPolicy {
@@ -176,8 +183,10 @@ class AIRoutingPolicy {
     const anthropicCritical = anthropicStatus.severity === 'critical';
     const anthropicWarn = anthropicStatus.severity === 'warn';
 
-    /* TOUT GRATUIT, PARTOUT (Kevin 2.10.2026) : même une action (admin) commence par le gratuit du domaine ;
-     * Anthropic reste en secours dans la chaîne (buildDecision), et en tête SEULEMENT en mode premium / forced. */
+    /* Domain admin = TOUJOURS Anthropic même si budget critique (réserve admin) */
+    if (domain === 'admin') {
+      return this.buildDecision('anthropic', domain, estimatedTokens, 'Admin task : Anthropic priority absolute');
+    }
 
     const preferences = DOMAIN_PREFERENCES[domain];
     const available = preferences.filter((p) => this.hasKey(p));
@@ -262,9 +271,7 @@ class AIRoutingPolicy {
     } catch {
       /* ignore */
     }
-    /* TOUT GRATUIT, PARTOUT (Kevin 2.10.2026) : le défaut de TOUT LE MONDE est free-smart (gratuit d'abord, Anthropic en
-     * secours) — plus seulement l'admin. 'auto' (Anthropic prioritaire) ne reste qu'un choix explicite. */
-    return 'free-smart';
+    return 'auto';
   }
 
   /**
@@ -287,7 +294,7 @@ class AIRoutingPolicy {
     try {
       const o = localStorage.getItem('apex_v13_routing_forced_provider');
       if (!o) return null;
-      const valid: ProviderId[] = ['anthropic', 'openai', 'groq', 'gemini', 'openrouter', 'deepseek', 'cohere', 'mistral', 'perplexity', 'qwen', 'cerebras'];
+      const valid: ProviderId[] = ['anthropic', 'openai', 'groq', 'gemini', 'openrouter', 'deepseek', 'cohere', 'mistral', 'perplexity', 'qwen'];
       return valid.includes(o as ProviderId) ? (o as ProviderId) : null;
     } catch {
       return null;

@@ -11,8 +11,8 @@ describe('AI Routing Policy (free-first + Anthropic priority)', () => {
   });
 
   describe('mode getMode/setMode', () => {
-    it('défaut mode=free-smart pour TOUT LE MONDE (tout gratuit, partout — Kevin 2.10)', () => {
-      expect(aiRoutingPolicy.getMode()).toBe('free-smart');
+    it('défaut mode=auto', () => {
+      expect(aiRoutingPolicy.getMode()).toBe('auto');
     });
 
     it('setMode persist', () => {
@@ -46,12 +46,11 @@ describe('AI Routing Policy (free-first + Anthropic priority)', () => {
   });
 
   describe('decide domain routing', () => {
-    it('admin task → le GRATUIT d\'abord (Qwen), Anthropic en secours dans la chaîne (tout gratuit, partout — Kevin 2.10)', () => {
+    it('admin task → toujours Anthropic (priorité absolue)', () => {
       localStorage.setItem('ax_anthropic_key', 'sk-ant-fake');
       const d = aiRoutingPolicy.decide('admin');
-      expect(d.primary).toBe('qwen');
-      expect(d.is_free_tier).toBe(true);
-      expect(d.fallback_chain).toContain('anthropic');
+      expect(d.primary).toBe('anthropic');
+      expect(d.reason).toContain('Anthropic');
     });
 
     it('vision → Gemini en premier (gratuit + bon vision)', () => {
@@ -173,9 +172,8 @@ describe('AI Routing Policy (free-first + Anthropic priority)', () => {
   });
 
   describe('estimated_cost_eur', () => {
-    it('Anthropic Sonnet ~ 8€/M tokens (seulement en mode premium explicite)', () => {
+    it('Anthropic Sonnet ~ 8€/M tokens', () => {
       localStorage.setItem('ax_anthropic_key', 'sk-ant-fake');
-      aiRoutingPolicy.setMode('premium', true);
       const d = aiRoutingPolicy.decide('admin', 1_000_000);
       expect(d.estimated_cost_eur).toBeGreaterThanOrEqual(7);
       expect(d.estimated_cost_eur).toBeLessThanOrEqual(10);

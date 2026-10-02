@@ -40,17 +40,18 @@
 - **Une décision reste à toi, sans urgence** : l'appel en direct (OpenAI Realtime, à la minute) et la voix
   d'Antonin (Replicate) restent payants. Dis « ferme » et je les retire ; sinon ils restent derrière leurs plafonds.
 
-## ✅ FAIT (2.10, 22h) — « Tout gratuit, pas seulement production. Toujours tout gratuit. » : règle écrite, câblée PARTOUT, gardée
+## 🔁 Ta règle du 2.10 (« quand ça s'épuise, relais gratuit, même niveau, prévu d'avance ») — faite pour le domaine, 1 décision pour Apex
 
-Ta phrase du soir est devenue une règle absolue (CLAUDE-HISTOIRE + index) avec son garde `test:tout-gratuit` (19 contrôles,
-2 sabotages, dans test:ci) : **aucun moteur payant n'est en tête d'aucune cascade**, nulle part — routage commun du domaine
-(code, raisonnement, actions, créatif, recherche compris : Qwen / Groq gpt-oss-120b / Cerebras d'abord, Anthropic en
-secours), kdmc-apis, Créa, chat-svc (était Anthropic en premier → corrigé), messagerie, outils Lingua, **et Apex** (politique
-gratuit d'abord pour tout le monde, plus seulement l'admin ; chaîne par défaut gratuite ; modèles Groq/Cerebras vivants ;
-86 tests Apex verts, TypeScript propre). Ce qui n'existe pas encore en gratuit est un chantier, pas un paiement : outils
-d'action sur gpt-oss-120b, image sur Workers AI, recherche web par le `/search` sans clé — je les fais dans cet ordre.
-**Rien à faire de ton côté.** La mise en ligne d'Apex passe par sa chaîne de construction (le rouge du 24.09 était le
-budget GitHub, pas le code — je la relance après la fusion et je te dis ce qu'elle donne).
+Faite et mesurée dans le routage IA commun (`apis.kd-mc.com`, routeur, Bee, Lingua, Créa) : un gratuit épuisé est mis en
+pause et sauté sans appel perdu, le relais est un gratuit de même niveau, les pauses survivent au redémarrage (cache du
+Worker, 0 écriture KV). **Apex v13 (l'app) ne suit pas encore cette règle** : elle choisit ses moteurs elle-même, et quand
+Qwen puis Groq sont épuisés elle passe à **Anthropic (payant)** au lieu d'un gratuit de même niveau. Deux façons de l'y mettre,
+dis laquelle :
+- **A (recommandé, 0 clic)** — Apex demande ses réponses texte au routage commun (`/ai` de apis.kd-mc.com) au lieu
+  d'appeler chaque moteur : la règle s'applique d'office, les actions (outils) restent sur Anthropic. Mais la chaîne de
+  construction d'Apex est **rouge depuis le 15.09** (apex-v13-ci) et la dernière mise en ligne automatique date du 23.09 :
+  je dois d'abord la réparer, c'est plusieurs heures de travail, sans rien pour toi.
+- **B** — on laisse Apex tel quel pour l'instant (il marche), et la règle vaut pour tout le reste du domaine.
 
 ## 🆓 IA gratuites : 8 clés que je croyais au coffre n'y sont pas — rien d'urgent, 0 € (mesuré le 2.10, sonde 37061173309)
 

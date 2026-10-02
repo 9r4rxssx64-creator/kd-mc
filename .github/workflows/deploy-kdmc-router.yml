@@ -323,14 +323,19 @@ jobs:
             && echo "  ✅ le livre est servi sur kd-mc.com/cujina" \
             || echo "  ::warning:: kd-mc.com/cujina pas encore servi (worker en cours de déploiement)"
           echo "== VOIX KDMC Lingua (/__lingua/tts) — vraie voix naturelle OU repli navigateur ? =="
-          CT=$(curl -fsS -m 25 -o /dev/null -w "%{content_type}" "https://lingua.kd-mc.com/__lingua/tts?v=nova&t=bonjour" 2>/dev/null || echo "erreur")
-          echo "  content-type=$CT"
+          # Depuis le 22.09 la voix n'accepte que les pages du domaine (Referer) : sans lui la réponse est un JSON
+          # « hors_domaine » — ce test l'a pris pour une panne OpenAI pendant 10 jours (run public 36945145103, 2.10).
+          # l=fr : la voix gratuite Google Chirp 3 HD passe en premier (1.10) ; x-voix dit QUEL moteur a répondu.
+          HDR=$(curl -fsS -m 25 -o /dev/null -D - -H "Referer: https://lingua.kd-mc.com/" "https://lingua.kd-mc.com/__lingua/tts?v=nova&l=fr&t=bonjour" 2>/dev/null || echo "erreur")
+          CT=$(printf '%s' "$HDR" | tr -d '\r' | awk -F': ' 'tolower($1)=="content-type"{print $2}' | tail -1)
+          XV=$(printf '%s' "$HDR" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-voix"{print $2}' | tail -1)
+          echo "  content-type=${CT:-aucun} x-voix=${XV:-(payante OpenAI ou cache)}"
           case "$CT" in
-            audio/*) echo "  ✅ VOIX NATURELLE OpenAI ACTIVE côté serveur (un vrai audio est servi)";;
-            *) echo "  ::warning:: /__lingua/tts NE renvoie PAS d'audio (=$CT) → l'app retombe sur la voix du navigateur (robotique). Cause probable : OPEN_AI_API_KEY absente/invalide/quota. Vérifier le secret GitHub OPEN_AI_API_KEY.";;
+            audio/*) echo "  ✅ une vraie voix est servie côté serveur (moteur : ${XV:-OpenAI/cache})";;
+            *) echo "  ::warning:: /__lingua/tts NE renvoie PAS d'audio (=${CT:-rien}) → l'app retombe sur la voix du navigateur. Causes possibles : refus du domaine (Referer), plafonds, aucun moteur disponible (OpenAI sans crédit ET Workers AI en panne).";;
           esac
           echo "== VOIX D'ANTONIN (/__lingua/tts?v=antonin) — clone Replicate OU repli onyx ? =="
-          CTA=$(curl -fsS -m 60 -o /dev/null -w "%{content_type}" "https://lingua.kd-mc.com/__lingua/tts?v=antonin&t=Adiou%20c%27est%20Antonin" 2>/dev/null || echo "erreur")
+          CTA=$(curl -fsS -m 60 -o /dev/null -w "%{content_type}" -H "Referer: https://lingua.kd-mc.com/" "https://lingua.kd-mc.com/__lingua/tts?v=antonin&t=Adiou%20c%27est%20Antonin" 2>/dev/null || echo "erreur")
           echo "  content-type=$CTA"
           case "$CTA" in
             audio/*) echo "  ✅ la voix d'Antonin répond en audio (clone Replicate ou repli onyx — les deux servent un mp3)";;

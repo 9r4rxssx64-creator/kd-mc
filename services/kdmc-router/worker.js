@@ -1182,7 +1182,8 @@ const VOIX_GRATUITE_MODELE = '@cf/myshell-ai/melotts';
 async function voixGratuite(env, texte, cleCache, cors) {
   const cleG = cleCache ? 'gratuite:' + cleCache : '';
   /* les MÊMES en-têtes CORS que la belle voix : Bee sur javis ou l'arbre lit ce son (contre-audit 30.09) */
-  const entetes = Object.assign({ 'content-type': 'audio/mpeg', 'cache-control': 'private, max-age=86400', 'x-voix': 'gratuite' }, cors || {});
+  /* audio/wav, pas audio/mpeg : MeloTTS rend du WAV (mesuré le 2.10, run 36943228057 : « RIFF … WAVE audio, PCM 16 bit, 44100 Hz ») */
+  const entetes = { 'content-type': 'audio/wav', 'cache-control': 'private, max-age=86400', 'x-voix': 'gratuite', ...cors };   // étaler undefined est permis : rien à ajouter
   try {
     if (cleG && env && env.ACCOUNTS) { const deja = await env.ACCOUNTS.get(cleG, 'arrayBuffer'); if (deja) return new Response(deja, { status: 200, headers: entetes }); }
   } catch (_) { /* cache best-effort */ }

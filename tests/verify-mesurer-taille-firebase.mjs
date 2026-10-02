@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { poids, cles } = require('../tools/firebase/mesurer-taille.cjs');
+const { poids, cles, detail } = require('../tools/firebase/mesurer-taille.cjs');
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d ? '  → ' + d : ''}`); };
 const src = readFileSync('tools/firebase/mesurer-taille.cjs', 'utf8');
 ok(!/method\s*:\s*['"](PUT|PATCH|DELETE|POST)['"]/i.test(src), '1. aucune écriture vers la base');
@@ -20,4 +20,10 @@ const faux = async (url) => { const u = new URL(url); const p = u.pathname.repla
 const k = await cles(faux, 't', '/cmcteams');
 const r = []; for (const x of k) r.push(await poids(faux, 't', '/cmcteams/' + x)); r.sort((a, b) => b.octets - a.octets);
 ok(k.length === 3 && r[0].chemin === '/cmcteams/cmc_photos' && r[0].octets === 5000 && r.find((x) => x.chemin.endsWith('cmc_e')).octets === Buffer.byteLength('{"a":"é"}') && r.find((x) => x.chemin.endsWith('refus')).octets === -1, '3. poids UTF-8, tri du plus lourd, clé refusée = -1 sans planter', JSON.stringify(r));
+/* 4. détail d'une clé (phase 2) : entrées triées du plus lourd, le champ qui pèse est nommé, le nom tronqué, rien recopié */
+const docs = [{ id: 'd1', name: 'Règlement intérieur très long nom de fichier.pdf', mime: 'application/pdf', cat: 'reglements', shared: true, dataUrl: 'data:application/pdf;base64,' + 'A'.repeat(4000) }, { id: 'd2', name: 'note.txt', mime: 'text/plain', shared: false, dataUrl: 'x'.repeat(100), notes: 'y'.repeat(300) }];
+const faux2 = async (url) => ({ ok: true, status: 200, json: async () => docs });
+const d = await detail(faux2, 't', 'cmc_docs');
+ok(d.entrees.length === 2 && d.entrees[0].id === 'd1' && d.entrees[0].shared === true && /^dataUrl /.test(d.entrees[0].champs) && d.entrees[0].nom.length === 28 && !JSON.stringify(d).includes('AAAA'), '4. détail : trié, champ lourd nommé (dataUrl), nom tronqué à 28, contenu jamais recopié', JSON.stringify(d).slice(0, 300));
+ok(/DETAIL: \$\{\{ github\.event\.inputs\.detail \}\}/.test(wf), '5. le robot accepte une clé à détailler (input detail)');
 console.log(`\n${pass} OK / ${fail} échec(s)`); process.exit(fail ? 1 : 0);

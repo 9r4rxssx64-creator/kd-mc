@@ -77,6 +77,7 @@ const ai = { run: async () => AUDIO.buffer };
 env = ENV({ AI: ai }); calls = [];
 r = await mod.fetch(req('v=nova&m=gratuite&t=melo'), env);
 ok(r.status === 200 && r.headers.get('x-voix') === 'gratuite' && calls.length === 0, '8b. m=gratuite → MeloTTS par la liaison AI, ni OpenAI ni Google', r.headers.get('x-voix'));
+ok(r.headers.get('content-type') === 'audio/wav', '8c. la voix gratuite est annoncée audio/wav (c\'est du WAV, mesuré)', r.headers.get('content-type'));
 
 console.log(`Voix Chirp test: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

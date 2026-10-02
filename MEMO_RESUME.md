@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (20h10 UTC) — KV : 1 406 écritures dans la journée (plafond atteint, 2e fois) ; robot « qui écrit ? »
+
+- **Mesuré** (mesure-kv au public, run 37058382438, jours=1) : **1 406 écritures** le 2.10 (1.10 : 1 277), 3 961 lectures,
+  18 listes. Nuit calme (10-22/h) ; pics **16h UTC = 303, 18h = 294, 13h = 168, 11h = 117, 10h = 103**. L'attendu « bien
+  sous 1 000 » était faux : le plafond gratuit est atteint à nouveau, donc les écritures de l'après-midi (fiches,
+  compteurs de voix, dépôt RH à chaque publication) ont pu échouer en silence.
+- Analytics dit combien et quand, pas **qui**. Les clés, elles, parlent : chaque écrivain a son préfixe (`anonv:`/`anon:`
+  = 2 écritures par visite anonyme par app et par heure, 33 adresses exposées aux robots d'internet ; `q:` plafonds par
+  appareil ; `gtts:` voix Google ; `dep:` ; `mon:`/`out:`/`mail:` workers). Nouveau robot **`coffre-kv-inventaire.yml`**
+  (`tools/audit/kv-inventaire.mjs`, lecture seule : liste des clés par préfixe + somme des compteurs `anon:<jour>:<hôte>`
+  = écritures des visites anonymes du jour, part des écritures mesurées). Garde `test:kv-inventaire` (8 contrôles, dans
+  test:ci). À lancer dès la fusion ; le chiffre dira si ce sont les robots d'internet (visites anonymes) ou nos propres
+  compteurs — et donc quoi couper (une seule écriture par visiteur par JOUR au lieu de par heure, par exemple).
 ## 2026-10-02 — Arbre : la recherche sur chaque personne est dans les fiches
 
 Kevin : recherche d'actes, de presse, de photos et de documents « pour chaque nom », vivants

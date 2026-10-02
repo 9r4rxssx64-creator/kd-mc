@@ -27,6 +27,7 @@
   "coffre-docs-migrer.yml",
   "coffre-ecritures-cmc.yml",
   "coffre-fiches-privees.yml",
+  "coffre-kv-inventaire.yml",
   "coffre-lire-domaine.yml",
   "coffre-lire-facturation-github.yml",
   "coffre-lire-factures-outlook.yml",

@@ -94,11 +94,15 @@ for (const r of res) {
    rien prouvé du tout — c'est un « faux vert », pas un résultat. */
 if (res.every((r) => r.http === 0)) {
   console.error('\n❌ MESURE IMPOSSIBLE : aucune réponse de cet hébergeur. Je ne conclus rien.');
+  if (process.env.GITHUB_ACTIONS) console.log('::error title=sonde-fuite-hebergeur::MESURE IMPOSSIBLE : aucune réponse de ' + base);
   process.exit(2);
 }
 
 const fuites = res.filter((r) => r.fuite);
 console.log(`\n=== ${fuites.length} fuite(s) sur ${res.length} chemins testés ===`);
+/* 2.10.2026 : le journal de la CI est illisible pour l'agent (run public 36995410892 rouge sans cause lisible) — la
+   cause exacte part en annotation, qui, elle, se lit par l'API. */
+if (process.env.GITHUB_ACTIONS) console.log((fuites.length ? '::error' : '::notice') + ' title=sonde-fuite-hebergeur (' + base + ')::' + fuites.length + ' fuite(s) sur ' + res.length + ' chemins' + (fuites.length ? ' — ' + fuites.map((r) => r.chemin + ' (HTTP ' + r.http + ')').join(' · ') : ''));
 if (fuites.length) {
   console.log('\nCe site publie des fichiers qui ne sont pas des applications.');
   console.log('Passer le dépôt en privé NE fermera PAS cette porte : c\'est un autre hébergeur.');

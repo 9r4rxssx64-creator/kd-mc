@@ -337,4 +337,8 @@ const VERROU = require('./verrou-ecritures.cjs');
       }
     }
   }
-})().catch(e => { console.error('❌ ' + e.message); process.exit(1); });
+})().catch(e => {   // 2.10.2026 : la cause en annotation, sur UNE ligne (journal CI illisible pour l'agent, run 36997127029)
+  console.error('❌ ' + e.message);
+  if (process.env.GITHUB_ACTIONS) console.log('::error title=deploy-rules::' + String(e.message).replace(/\s+/g, ' ').slice(0, 1200));
+  process.exit(1);
+});

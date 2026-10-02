@@ -247,6 +247,37 @@ Michel) — à confirmer.
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-02 (12h40 UTC) — ✅ PHASE 2 FAITE ET MESURÉE : /cmcteams = 1 002 Ko par ouverture (4 810 ce matin, −79 %)
+
+- `coffre-docs-migrer` **appliquer** (run 36997928197) : 4 documents déplacés, chacun « copie vérifiée, fiche sans fichier » —
+  `cmc_docs` **1 912,2 Ko → 0,7 Ko**. Re-mesure (run 36998014877) : **/cmcteams = 1 002,0 Ko, 55 clés** ; `/cmcteams_docs` =
+  1 911,7 Ko (les 4 photos, lues à la demande, admin seulement) ; `/cmcteams_archive` 1 896,2 Ko. Journée : 4 809,6 → 2 913,5
+  (phase 1) → **1 002,0 Ko**. Reste le plus lourd : `cmc_dep_img` 268 Ko (photos jointes aux départs, déjà lues à la demande
+  par identifiant mais encore dans la branche — même recette possible), `cmc_ov` 256 Ko (le planning : nécessaire).
+- **Chaîne privée de #4202 rouge (36996951135)** : `test:ios-config` (docs-cmc.js pas embarqué dans l'app iPhone) et `test:seed-remplace` (seed encore au parseur v9.933). Corrigé dans #4203 : `mobile/apps.json` + seed régénéré (`_gen-seed.mjs`, 1 ligne : parser v9.934). Leçon #383.
+- Non vérifié d'ici : l'ouverture réelle d'une photo par l'admin sur le vrai domaine (navigateur de l'agent bloqué) — demandé
+  à Kevin (1 geste : ouvrir un document dans CMCteams). Le module est prouvé dans un faux navigateur (22 contrôles).
+
+## 2026-10-02 (11h00-12h30 UTC) — phase 2 en ligne, et deux robots rendus lisibles
+
+- **Fusions** : #4201 (voix, synchro) puis **#4202 (phase 2, v9.934)** ; le robot `coffre-synchronise-public` pousse seul au
+  public à chaque fusion (80ecf3c 10h25, 4563f33 10h43) → **publication v9.934 verte** (36997018330 + dispatch 36997069783,
+  notice « 4 fichiers RH déposés au KV, le paquet ne les porte plus »). Sauvegarde fraîche 36996985791 (11/11, 11 950,9 Ko).
+  Simulation `coffre-docs-migrer` 36996983532 : 4 documents à déplacer, 1 912,2 Ko, 0 écriture.
+- **Deux rouges sans cause lisible** (le journal CI est refusé à l'agent : hôte des logs → CONNECT 403) :
+  (1) `deploy-cmcteams-rules` 36997127029 ; (2) au public, le déploiement du routeur 36995410892 sur la synchro de #4201,
+  étape « L'hébergeur ne sert-il que les applications ? » (sonde de fuite). → `claude/robots-qui-parlent` (#4203) :
+  `deploy-rules.cjs` et `sonde-fuite-hebergeur.mjs` écrivent leur cause en annotation (une ligne). Relancé depuis la branche
+  (enable → dispatch → disable) : **cause lue = Firebase « 1:7236: Expected '{' »** — ma NOTE `_cmcteams_docs` (une chaîne)
+  était DANS l'objet `rules` ; Firebase refuse tout le fichier. Note déplacée au niveau du fichier, garde A4 ajoutée
+  (aucune valeur simple dans `rules`). **Règles publiées : run 36997822719 ✅**, verrous `keep` (tous gardés).
+  Le workflow des règles est `disabled_manually` : enable → dispatch → disable à chaque fois (règle robots bornés).
+- Sonde de fuite au public : cause encore inconnue (annotation seulement après fusion de #4203 + synchro → relancer
+  `deploy-kdmc-router` au public par dispatch). `beatbot-smoke` (PoolPilot) rouge à CHAQUE synchro depuis au moins le 1.10
+  00h17 — préexistant, pas de ma branche, à regarder à part.
+- Branches fusionnées impossibles à supprimer depuis l'agent (API `DELETE git/refs` → 403, `git push --delete` refusé) :
+  inscrites « terminées » au registre pour que `test:pipeline-sessions` les suive (sauvegarde-voix, etat-robots-publics).
+
 ## 2026-10-02 (11h30 UTC) — Firebase phase 2 : les documents chargés à la demande (CMCteams v9.934)
 
 - **Mesuré d'abord** (robot `coffre-mesure-firebase-poids`, nouveau mode `detail`, run 36994458423) : `cmc_docs` = **4 entrées,

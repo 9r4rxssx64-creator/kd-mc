@@ -16,6 +16,7 @@
 
    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers node tools/kdmc-multiapp-e2e/run.mjs */
 import http from 'http';
+import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 /* CODE DE TEST — surtout PAS le vrai code de Kevin.
@@ -52,7 +53,9 @@ const PORT = 8794;
 const ORIGIN = 'http://localhost:' + PORT;
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); } };
-const env = { KDMC_SSO_SECRET: 'multiapp-e2e-secret', ACCOUNTS, KDMC_RP_ID: 'localhost', KDMC_RP_ORIGINS: ORIGIN };
+/* Empreinte du code de TEST (pas le vrai) : depuis #4106 le nom de l'admin passe par « Je suis
+   l'administrateur » — le domaine vérifie le code admin contre cette empreinte (2.10.2026). */
+const env = { KDMC_SSO_SECRET: 'multiapp-e2e-secret', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update(ADMIN_CODE).digest('hex'), ACCOUNTS, KDMC_RP_ID: 'localhost', KDMC_RP_ORIGINS: ORIGIN };
 const FILES = {
   '/': ['kdmc-home/index.html', 'text/html'],
   '/kdmc-sso.js': ['kdmc-home/kdmc-sso.js', 'application/javascript'],
@@ -84,7 +87,7 @@ const browser = await chromium.launch();
 /* Crée une personne dans un contexte ISOLÉ (cookies propres), avec un
    authentificateur virtuel (Face ID simulé). Optionnellement enrôle (Face ID)
    ou saute l'enrôlement. Renvoie {role, verified, admin, token}. */
-async function journey({ prenom, nom, code, enrolFaceId }) {
+async function journey({ prenom, nom, code, enrolFaceId, codeAdmin }) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   const client = await ctx.newCDPSession(page);
@@ -99,6 +102,18 @@ async function journey({ prenom, nom, code, enrolFaceId }) {
   await page.fill('#f-code2', code);
   await page.check('#cgu-ok');
   await page.click('#f-create');
+  /* Le nom de l'admin → le domaine demande le code ADMIN (admin_requis). Sans lui : aucune session. */
+  const boiteAdmin = await page.waitForSelector('#f-admin-box:not([hidden])', { timeout: 4000 }).then(() => true).catch(() => false);
+  if (boiteAdmin) {
+    if (!codeAdmin) {
+      const auto = await page.evaluate(() => window.kdmcSSO.autoLogin());
+      const who = await page.evaluate(() => window.kdmcSSO.whoami());
+      await ctx.close();
+      return { auto, who, token: null, boiteAdmin };
+    }
+    await page.fill('#a-code', codeAdmin);
+    await page.click('#a-go');
+  }
   await page.waitForSelector('#pk-go', { timeout: 6000 });
   if (enrolFaceId) {
     await page.click('#pk-go');
@@ -112,21 +127,21 @@ async function journey({ prenom, nom, code, enrolFaceId }) {
   const who = await page.evaluate(() => window.kdmcSSO.whoami());
   const token = await page.evaluate(() => window.kdmcSSO.token());
   await ctx.close();
-  return { auto, who, token };
+  return { auto, who, token, boiteAdmin };
 }
 
 try {
   /* 1) PROPRIÉTAIRE + Face ID → auto-login ADMIN */
-  const kevin = await journey({ prenom: 'Kevin', nom: 'Desarzens', code: ADMIN_CODE, enrolFaceId: true });
+  const kevin = await journey({ prenom: 'Kevin', nom: 'Desarzens', code: '777111', enrolFaceId: true, codeAdmin: ADMIN_CODE });
   ok(kevin.auto && kevin.auto.role === 'admin' && kevin.auto.verified === true,
     'Kevin (proprio) + Face ID → app autoLogin() = ADMIN  [' + JSON.stringify(kevin.auto) + ']');
 
   /* 2) SÉCURITÉ : PROPRIÉTAIRE mais SANS Face ID (nom tapé) → PAS d'auto-login admin */
-  const kevinNoFace = await journey({ prenom: 'Kevin', nom: 'Desarzens', code: ADMIN_CODE, enrolFaceId: false });
-  ok(kevinNoFace.auto === null,
-    'Kevin SANS Face ID (nom auto-déclaré) → autoLogin() = null (aucun admin auto) ');
-  ok(kevinNoFace.who && kevinNoFace.who.verified === false,
-    '  ↳ la session existe mais n\'est PAS vérifiée (verified:false) — la faille reste fermée');
+  const kevinNoFace = await journey({ prenom: 'Kevin', nom: 'Desarzens', code: '777111', enrolFaceId: false });
+  ok(kevinNoFace.boiteAdmin === true && kevinNoFace.auto === null,
+    'Quelqu\'un tape le nom de Kevin + un code quelconque → le domaine exige le code ADMIN, autoLogin() = null');
+  ok(!kevinNoFace.who || (kevinNoFace.who.admin !== true && kevinNoFace.who.verified !== true),
+    '  ↳ aucune session admin ni vérifiée n\'est donnée — la faille reste fermée  [' + JSON.stringify(kevinNoFace.who) + ']');
 
   /* 3) CLIENTE + Face ID → session NORMALE */
   const laurence = await journey({ prenom: 'Laurence', nom: 'Saint-Polit', code: '452100', enrolFaceId: true });
@@ -148,12 +163,12 @@ try {
     return r.ok ? r.json() : null;
   }, kevin.token);
   await appCtx.close();
-  ok(crossApp && crossApp.verified === true && crossApp.admin === true && crossApp.uid === 'kevin-desarzens',
+  ok(crossApp && crossApp.verified === true && crossApp.admin === true && crossApp.uid === 'kdmc_admin',
     '2e app (cookies isolés) reconnaît Kevin ADMIN via le seul pass signé  [' + JSON.stringify(crossApp) + ']');
 
   /* Les 4 identités sont bien distinctes (pas de fuite d\'une session sur l\'autre) */
   const uids = [kevin.who && kevin.who.uid, laurence.who && laurence.who.uid, alice.who && alice.who.uid];
-  ok(uids[0] === 'kevin-desarzens' && uids[1] === 'laurence-saint-polit' && uids[2] === 'alice-martin' && new Set(uids).size === 3,
+  ok(uids[0] === 'kdmc_admin' && uids[1] === 'laurence-saint-polit' && uids[2] === 'alice-martin' && new Set(uids).size === 3,
     'Identités distinctes et isolées : ' + JSON.stringify(uids));
 } finally {
   await browser.close();

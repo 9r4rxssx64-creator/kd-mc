@@ -1061,14 +1061,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/passkey-e2e",
+      "branche": "claude/multiapp-e2e",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "#4230 + #4232 fusionnées le 2.10 ; suite : robot Face ID (passkey E2E) rouge depuis #4106 réparé"
+      "note": "#4230, #4232, #4236 fusionnées le 2.10 ; suite : robot SSO navigateur — étapes multi-app et CMCteams par le vrai chemin admin"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

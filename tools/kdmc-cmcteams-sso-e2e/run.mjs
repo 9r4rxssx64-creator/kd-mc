@@ -5,6 +5,7 @@
    - SÉCURITÉ : client « verified » NON-admin (Laurence) → PAS d'admin auto.
    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers node tools/kdmc-cmcteams-sso-e2e/run.mjs */
 import http from 'http';
+import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 /* CODE DE TEST — surtout PAS le vrai code de Kevin.
@@ -41,7 +42,9 @@ const PORT = 8796;
 const ORIGIN = 'http://localhost:' + PORT;
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); } };
-const env = { KDMC_SSO_SECRET: 'cmc-sso-e2e', ACCOUNTS, KDMC_RP_ID: 'localhost', KDMC_RP_ORIGINS: ORIGIN };
+/* Empreinte du code de TEST (pas le vrai) : depuis #4106 le nom de l'admin passe par « Je suis
+   l'administrateur » — le domaine vérifie le code admin contre cette empreinte (2.10.2026). */
+const env = { KDMC_SSO_SECRET: 'cmc-sso-e2e', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update(ADMIN_CODE).digest('hex'), ACCOUNTS, KDMC_RP_ID: 'localhost', KDMC_RP_ORIGINS: ORIGIN };
 const FILES = {
   '/': ['kdmc-home/index.html', 'text/html'],
   '/kdmc-sso.js': ['kdmc-home/kdmc-sso.js', 'application/javascript'],
@@ -71,7 +74,7 @@ let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ✓ ' + m)) : (fail++, console.log('  ✗ ' + m)); };
 const browser = await chromium.launch();
 
-async function enroll(ctx, prenom, nom, code) {
+async function enroll(ctx, prenom, nom, code, codeAdmin) {
   const page = await ctx.newPage();
   const client = await ctx.newCDPSession(page);
   await client.send('WebAuthn.enable');
@@ -81,6 +84,8 @@ async function enroll(ctx, prenom, nom, code) {
   await page.fill('#f-prenom', prenom); await page.fill('#f-nom', nom);
   await page.fill('#f-code', code); await page.fill('#f-code2', code);
   await page.check('#cgu-ok'); await page.click('#f-create');
+  /* Le nom de l'admin → le domaine demande le code ADMIN (admin_requis, depuis #4106). */
+  if (codeAdmin) { await page.waitForSelector('#f-admin-box:not([hidden])', { timeout: 6000 }); await page.fill('#a-code', codeAdmin); await page.click('#a-go'); }
   await page.waitForSelector('#pk-go', { timeout: 6000 }); await page.click('#pk-go');
   await page.waitForFunction(() => { const h = document.getElementById('hub'); return h && !h.hidden; }, { timeout: 9000 });
   const token = await page.evaluate(() => window.kdmcSSO.token());
@@ -109,7 +114,7 @@ async function openCmc(ctx, token) {
 try {
   /* 1) KEVIN (proprio) + Face ID → CMCteams auto-login ADMIN U11804 */
   const c1 = await browser.newContext();
-  const kevTok = await enroll(c1, 'Kevin', 'Desarzens', ADMIN_CODE);
+  const kevTok = await enroll(c1, 'Kevin', 'Desarzens', '777111', ADMIN_CODE);
   const kev = await openCmc(c1, kevTok);
   ok(kev && kev.uid === 'U11804' && kev.isAdmin === true,
     'Kevin Face ID → CMCteams ouvre AUTO la session ADMIN (' + JSON.stringify(kev) + ')');

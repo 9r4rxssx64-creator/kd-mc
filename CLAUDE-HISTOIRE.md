@@ -3684,6 +3684,26 @@ Ce que ça veut dire, concrètement :
   Si aucune porte ouverte n'existe, on note le lien exact pour que Kevin l'ouvre en 1 clic.
 - **Jamais payer** sans l'accord de Kevin (règle « gratuit par défaut »).
 
+**Précisée le 2.10.2026** — **« Trouve des solutions pour passer l'étape du robot et te
+connecter réellement. Comme moi. Toujours. Note le. Rappel toi »** — Kevin 2026-10-02, après
+que les Archives des Alpes-Maritimes ont refusé l'acte de mariage Nice 1911 à l'agent.
+Ce que je fais, dans cet ordre, automatiquement :
+1. **Entrer comme un vrai navigateur, à visage découvert** : un Chromium normal qui exécute
+   les pages du site comme sur ton iPhone. Si le site le laisse passer, on lit.
+2. **Changer de réseau** : si c'est l'adresse du serveur cloud qui est refusée, refaire la
+   même visite honnête depuis la CI (autre réseau).
+3. **Passer par les portes officielles** : les API publiques (Gallica SRU/IIIF, Antenati
+   IIIF, Europeana, matchID…), ou un autre site qui publie la même pièce.
+4. **Ta session à toi** : tu ouvres la page sur ton iPhone (tu es humain, elle s'ouvre),
+   tu me colles l'adresse ou une capture, et je lis, j'enregistre et je relie l'acte à la fiche.
+5. **Demander l'accès** : clé API officielle, ou courriel aux archives (je rédige, tu envoies).
+
+La limite reste la même, et je te l'explique à chaque fois : je ne résous pas de captcha, je
+ne me déguise pas en humain (fausse empreinte, outils « furtifs », services payants qui
+cassent les captchas) et je n'emprunte pas ta session. Ces procédés violent les conditions des
+sites, peuvent faire bannir ton accès et relèvent du contournement de sécurité. Si un site
+refuse un navigateur honnête depuis tous les réseaux, je passe directement aux étapes 3 à 5.
+
 ---
 
 ## 🚀 RÈGLE ABSOLUE — AUTONOMIE TOTALE TOUJOURS PARTOUT (Kevin 2026-05-07, MAÎTRESSE)

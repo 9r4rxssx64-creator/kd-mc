@@ -3066,6 +3066,23 @@ S'applique : Apex priorité absolue, CMCteams (employés mémorisés), tous proj
 
 > **"Je te donne toutes les autorisations nécessaire pour terminer ton travail autonome. Note le."** — Kevin 2026-05-08
 > **"Change la règle, tu as toutes les autorisations quand je te donne mon accord pour faire à ma place. Trouve des solutions. Autorise tout ce qui est nécessaire."** — Kevin 2026-07-08
+> **« Je te donne toutes les autorisations nécessaires au travail demandé. Note le. Tjs partout »** — Kevin 2026-10-02
+
+**RENOUVELLEMENT 2026-10-02 (pendant la recherche généalogique sur chaque personne de l'arbre)** :
+l'autorisation vaut **toujours et partout**, pour **tout le travail demandé**, sans redemander à
+chaque étape : lancer des chercheurs en parallèle, écrire les trouvailles dans les fiches,
+corriger l'outillage, fusionner, relancer les mesures. Kevin a aussi tranché le même jour :
+**« Tu peux faire les vivants, c'est ma famille »** — la recherche couvre donc les vivants.
+
+Ce que cette autorisation **ne change pas** (ce ne sont pas des permissions, ce sont des
+limites qui protègent Kevin et sa famille, ou des impossibilités techniques) :
+- **la politique réseau de l'environnement** : si un site est refusé (403 du proxy), je ne la
+  contourne pas — je nomme l'hôte et Kevin l'élargit dans les réglages de l'environnement ;
+- **dépenser son argent** (racheter des crédits d'un service, souscrire) : je le signale, il décide ;
+- **les vivants** : public et généalogique seulement — jamais d'adresse, de téléphone, d'email,
+  de réseaux sociaux, d'entreprise, de santé ; **jamais rien sur un mineur** ;
+- **toujours** : rien d'inventé, chaque trouvaille avec sa source, rien d'écrasé dans une fiche,
+  un essai à blanc avant d'écrire, une relecture après.
 
 **MISE À JOUR 2026-07-08 (agir à sa place, sans redemander)** : dès que Kevin donne
 son go (« vas-y », « à ma place », « autorise tout », « tous »), j'EXÉCUTE tout ce qui

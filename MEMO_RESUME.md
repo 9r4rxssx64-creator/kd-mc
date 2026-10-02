@@ -247,6 +247,31 @@ Michel) — à confirmer.
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-02 (11h30 UTC) — Firebase phase 2 : les documents chargés à la demande (CMCteams v9.934)
+
+- **Mesuré d'abord** (robot `coffre-mesure-firebase-poids`, nouveau mode `detail`, run 36994458423) : `cmc_docs` = **4 entrées,
+  1 912,2 Ko — 4 photos JPEG PRIVÉES de l'admin** (676 / 673 / 508 / 55 Ko), le champ `dataUrl` (le fichier en base64) fait
+  tout le poids. Téléchargées par CHAQUE téléphone à CHAQUE ouverture, pour rien : un employé ne voit que les documents
+  partagés, et seulement s'il ouvre la page Documents. C'est 66 % de ce qui reste après la phase 1 (2 914 Ko).
+- **v9.934** : `tools/shared/docs-cmc.js`, maillon après `secrets-cmc.js` (même hameçon `_cmcSecPub`). Quand l'admin
+  enregistre un document, il part ENCORE avec son fichier (rien n'est perdu) ET une copie part vers **`/cmcteams_docs/<id>`**
+  (nœud frère de la racine : le flux de l'appli ne le reçoit pas) ; la copie est RELUE ; identique → le document est marqué
+  `ext:true` et la liste est republiée SANS le fichier. Ouvrir / télécharger charge le fichier à ce moment-là, en mémoire
+  seulement. Supprimé → copie retirée ; partage changé → copie mise à jour. Employé : rien n'écrit.
+- **Règles** : nouveau nœud `cmcteams_docs/$id` — lecture `role admin` OU `shared === true`, écriture `role admin`, `dataUrl`
+  chaîne bornée, aucun autre champ. À publier par `deploy-cmcteams-rules.yml` (le deny racine reste).
+- **Robot `coffre-docs-migrer.yml`** (`tools/firebase/docs-migrer.cjs`, simulation par défaut) : déplace les documents déjà en
+  ligne — copie → relecture → fiche sans fichier ; `cmc_docs` réécrit une fois ; copie différente = fichier gardé. En mode
+  appliquer il REFUSE de partir si les règles en ligne ne connaissent pas `/cmcteams_docs` ou si l'appli publiée est
+  < v9.934 (un ancien téléphone ne saurait plus ouvrir un document).
+- **Garde `test:docs-a-la-demande`** (22 contrôles) : règles, module dans un faux navigateur (7 scénarios), robot (4), câblage.
+  Sabotages : comparaison de relecture retirée du module → B3 rouge ; du robot → C3 rouge. `test:firebase-allege` A5 ne fige
+  plus « v9.933 » (même version partout, ≥ 933).
+- **Light** : pas de module Documents (vérifié : aucun `cmc_docs` dans tools/departs) — rien à faire.
+- **Ordre après fusion** : règles (deploy-cmcteams-rules) → synchro publique (v9.934 en ligne, vérifier `sw.js`) →
+  `firebase-backup` → `coffre-docs-migrer` simulation → appliquer → `coffre-mesure-firebase-poids` (attendu : /cmcteams ≈ 1 000 Ko).
+- Message m188 aux sessions (+ réponse à m186 : le dépassement de 43 o était le mien, corrigé #4198).
+
 ## 2026-10-01 (21h45 UTC) — Kevin : « Go » Firebase + « améliore toutes les voix en gratuit, niveau pro »
 
 - **Firebase, phase 1 (v9.933)** : `fbShouldSync` ne renvoie plus `ax_claude_todo` (journal Apex, 163 Ko, lu par personne côté

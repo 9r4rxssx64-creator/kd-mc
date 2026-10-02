@@ -3279,3 +3279,6 @@ officiels les retirent eux-mêmes avant publication.
 | `tests/verify-classer-destination.mjs` | `npm run test:classer-destination` — la règle, les 8 réponses réellement mesurées, et la preuve que la sonde des tuiles l'utilise (dans `test:ci`, 5 sabotages) | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-classer-destination.mjs) |
 | 2026-10-01 | `tools/firebase/sauvegarder.cjs` + `tests/verify-sauvegarde-firebase.mjs` | Sauvegarde Firebase de TOUTES les branches racine (réparée : rouge depuis le 1.10 14h) | coffre |
 | 2026-10-01 | `services/kdmc-router/voix-chirp.test.mjs` | Garde de la voix Google Chirp 3 HD gratuite (plafond du jour, repli, voix différentes) | coffre + public |
+| 2026-10-02 | `tools/shared/docs-cmc.js` | CMCteams v9.934 : le fichier d'un document se charge à la demande (quitte cmc_docs pour /cmcteams_docs) | coffre |
+| 2026-10-02 | `tools/firebase/docs-migrer.cjs` + `.github/workflows/coffre-docs-migrer.yml` | Robot qui déplace les documents déjà en ligne (copie relue avant retrait, simulation par défaut) | coffre |
+| 2026-10-02 | `tests/verify-docs-a-la-demande.mjs` | Garde : règles, module, robot, câblage (22 contrôles, 2 sabotages) | coffre + public |

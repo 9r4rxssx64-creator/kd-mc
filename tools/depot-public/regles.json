@@ -199,7 +199,8 @@
     ".github/workflows/coffre-lire-domaine.yml",
     ".github/workflows/coffre-mesure-firebase-poids.yml",
     ".github/workflows/coffre-archiver-firebase.yml",
-    ".github/workflows/coffre-sonde-voix.yml"
+    ".github/workflows/coffre-sonde-voix.yml",
+    ".github/workflows/coffre-docs-migrer.yml"
   ],
   "_workflows_prives_pourquoi": "Dans un dépôt public, les journaux ET les artefacts d'un robot sont lisibles par tous. Ces robots se connectent en tant que Kevin et prennent des captures des vraies pages (plannings), ou manipulent des sauvegardes de données : ils restent au coffre. Règle automatique en plus : un robot qui lance un test ou un fichier resté au coffre reste au coffre. coffre-chaine-privee.yml : il lance les etapes de test:ci qui ont besoin des fichiers PRIVES (CMCteams, Light, plannings, arbre) — au public elles ne peuvent pas tourner, et depuis la bascule du 26.09 elles ne tournaient plus nulle part (109 etapes sur 221, mesure). audit-domaine.yml : ses résultats (check-run) listent ce qu'un inconnu peut lire — au public, ce serait un mode d'emploi.",
   "_test_prive_index_racine": "Un test est aussi privé s'il lit la page RACINE index.html (CMCteams) : « 'index.html' » seul, « ../index.html », « /CMCteams/index.html ». Pas « apex-ai/index.html » ni « tools/x/index.html » (autres applications).",

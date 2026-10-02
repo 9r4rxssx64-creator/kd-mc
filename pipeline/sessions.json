@@ -939,8 +939,8 @@
     },
     "etat-robots-publics": {
       "titre": "Coûts, Firebase allégé, voix gratuites, R3-R7",
-      "branche": "claude/etat-voix-en-ligne",
-      "sujet": "ETAT : voix en ligne ; point KV ce soir",
+      "branche": "claude/memoire-veille",
+      "sujet": "Mémoire : veille du 2.10 (16 captures) ; point KV ce soir",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
@@ -1012,6 +1012,16 @@
       "titre": "Voix Chirp 3 HD en ligne (fusionnée #4205 le 2.10)",
       "branche": "claude/voix-chirp-en-ligne",
       "sujet": "Branche fusionnée (squash #4205) ; suppression refusée à l'agent (API 403)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "etat-voix-en-ligne-fusionnee": {
+      "titre": "ETAT voix en ligne (fusionnée #4206 le 2.10)",
+      "branche": "claude/etat-voix-en-ligne",
+      "sujet": "Branche fusionnée (squash #4206) ; suppression refusée à l'agent (API 403)",
       "surfaces": [],
       "etat": "termine",
       "maj": "2026-10-02",

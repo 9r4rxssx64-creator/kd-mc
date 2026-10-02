@@ -107,7 +107,9 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Audit, Phase 1 (`audit-suite`) | `claude/audit-suite` | ✅ fusionnée #4144, publiée 21h28 UTC (run 36779606214) : v9.930 : R1 version.txt (6 o au lieu de 3,4 Mo/min), R2 lsLocal (317 PUT → 6, sabotage 323), garde test:boot-sobre ; ETAT dédoublonné ; 5 branches inscrites (30.09) |
 | v9.930 publiée (`audit-suite-publiee`) | `claude/audit-suite-publiee` | ✅ fusionnée #4145 : docs : publication à la main 21h28 UTC, Pages sert le paquet ; domaine à lire demain (30.09) |
 | Pilote javis : bascule (`pilote-javis-bascule`) | `claude/pilote-javis-bascule` | ✅ fusionnée #4147 ; basculer ✅ au 2e passage 23h37 UTC : javis.kd-mc.com = Pages, /__sso/whoami = Worker ; Kevin a donné Zone→DNS→Edit (23h30) ; lire OK ; l'étape DNS retire l'AAAA 100:: du domaine Worker avant le CNAME (30.09) |
-| Coûts, Firebase allégé, voix gratuites, R3-R7 (`etat-robots-publics`) | `claude/etat-voix-en-ligne` |
+| Coûts, Firebase allégé, voix gratuites, R3-R7 (`etat-robots-publics`) | `claude/memoire-veille` |
+| ETAT voix en ligne (`etat-voix-en-ligne-fusionnee`, terminée) | `claude/etat-voix-en-ligne` | ✅ fusionnée #4206 | 2.10 |
+| (ancienne ligne) |
 | Voix Chirp 3 HD en ligne (`voix-chirp-en-ligne-fusionnee`, terminée) | `claude/voix-chirp-en-ligne` | ✅ fusionnée #4205 | 2.10 |
 | (ancienne ligne) |
 | Pipeline, branches suivies (`pipeline-branches-suivies-fusionnee`, terminée) | `claude/pipeline-branches-suivies` | ✅ fusionnée #4204 | 2.10 |

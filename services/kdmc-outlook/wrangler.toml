@@ -21,5 +21,11 @@ crons = ["0 */2 * * *"]
 binding = "UPTIME"
 service = "kdmc-uptime"
 
+# Même cron : réveil de l'IA pilote des robots crypto PAPIER (kdmc-router, POST /__bot/ia/tick,
+# clé dérivée du secret admin). Fail-open. Kevin 2026-10-02.
+[[services]]
+binding = "ROUTER"
+service = "kdmc-router"
+
 # Secret injecté par le workflow deploy-kdmc-outlook.yml (réutilise APEX_ADMIN_PIN_SHA256).
 # KDMC_ADMIN_PIN_SHA256 = sha256(code admin) → protège /setup, /config, /connect, /sync.

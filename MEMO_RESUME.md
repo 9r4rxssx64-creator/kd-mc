@@ -1,5 +1,52 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (soir, suite) — Crypto : prêt pour le réel (verrouillé), 2 IA gratuites, point vocal (v1.4.0)
+
+Kevin : « prépare tout pour passer en argent réel quand ce sera testé et prouvé… trouve l'IA la plus
+performante en gratuit… les voix aussi ».
+- **PR bloquée résolue** : le connecteur GitHub répond 404 sur le coffre, mais `GH_TOKEN` de
+  l'environnement a les droits (repos/9r4rxssx64-creator/CMCteams → 200, admin) : PR et fusion par l'API.
+- **IA** (mesuré dans la doc Cloudflare, 2.10) : DeepSeek V4 Pro, Kimi K2.6/2.7, GLM 5.x = **payants**
+  sur Workers AI. Gratuits les plus forts : `@cf/qwen/qwen3.8-27b` (déjà 1er de `QWEN_MODELS`) et
+  `@cf/openai/gpt-oss-120b`. Proposition = chaîne **gratuite seulement** (`IA_CHAINE_GRATUITE`) —
+  le domaine `reasoning` de `ia-route` mettait Anthropic (payant) en tête (leçon #385). Contre-avis
+  gpt-oss-120b (Responses API, `texteReponseIa`) : NON = aucun changement, nouvel essai dans 6 h.
+- **Réel** : `pretPourLeReel` (60 j sans redémarrage, ≥ 30 ventes, gain > 0, ≥ +2 pts vs BTC, pire
+  baisse ≤ 15 %, testnet ≥ 14 j) → carte « Passage au réel », jamais de bascule. Robot : 3ᵉ verrou
+  `LIVE_MAX_USDT` (refus de démarrer sans, capital plafonné). `LIVE_.*` dans `INTERDITS`.
+  Historique : relevé des 6 robots + prix BTC à chaque réveil, `BOT_HIST_CAP` 720 → 1500.
+- **Voix** : `/__bot/ia/vocal` (texte) → `/__lingua/tts?l=fr&v=…` (Chirp 3 HD gratuit), repli
+  `speechSynthesis`. CSP `media-src 'self' blob:`.
+- **Gardes** : cerveau 56/0, routeur 32/0, page 27/0, robot Python 64/0 (`test:crypto-bot`, nouveau
+  dans `test:bot-dashboard`). Sabotages : contre-avis ignoré (3), chaîne payante (1), critère BTC (2),
+  `LIVE_` autorisé (1), verrou Python retiré (crash), plafond retiré (3).
+
+---
+
+## 2026-10-02 (soir) — Crypto : IA pilote des 5 robots papier + marchés en direct (bot.kd-mc.com v1.3.0)
+
+Kevin : « intègre une IA indépendante gratuite qui gère en permanence les robots… tous les liens
+pour les analyses crypto en live… un vrai tableau de bord pour l'IA, crypto, bourse… on reste en virtuel ».
+
+- **Principe « l'IA propose, l'arbitre décide »** : toutes les 12 h au plus, l'IA gratuite (chaîne
+  `routeText`, Qwen d'abord) propose UN changement sur UN robot papier, dans une liste blanche bornée
+  (`REGLAGES_IA`). Une clé interdite (`INTERDITS` : TESTNET, PAPER, BOT_LIVE, BOT_KILL, clés, freins de
+  perte, RAILWAY_*) fait rejeter TOUTE la proposition ; le robot principal est hors de portée ; dernier
+  verrou dans `botAppliquer`. Après 24-72 h, l'arbitre compare le rendement du robot à la médiane des
+  autres sur la même période (seuil 0,2 %), BTC affiché comme barre à battre ; « annuler » remet les
+  anciens réglages (et SUPPRIME ceux qui n'existaient pas). Règle de secours si l'IA ne répond pas.
+- **Trouvé en route (leçon #384)** : un robot papier redémarré repart à 10 000 $ (`paper.py`) — comparer
+  des capitaux bruts aurait jugé chaque essai faux. Base 10 000 $ pour le robot essayé, un autre robot
+  redémarré pendant l'essai sort du calcul (`debutEssai`, `equitesComparables`, id de déploiement).
+- **Réveil** : cron `0 */2 * * *` de kdmc-outlook → Service Binding `ROUTER` → `POST /__bot/ia/tick`
+  avec `x-bot-ia-key` = sha256(KDMC_ADMIN_PIN_SHA256 + ':bot-ia-tick'). Aucun nouveau cron. Une
+  écriture KV (`bot:ia`) par réveil au plus ; marché en cache 5 min, liens 6 h.
+- **Gardes** (`test:bot-ia`, chaîné dans `test:bot-dashboard` donc dans `test:ci`) : 47 + 21 + 20 = 88/0.
+  Sabotages prouvés : porte sans vérif (6 rouges), « avant » non nul (1), base 10 000 $ retirée (1+2),
+  interdits vidés (1+11).
+- **Pas encore vu en vrai** : le sandbox n'atteint aucune source de marché (proxy 403). Preuve à lire
+  après déploiement : la carte « État des sources » sur bot.kd-mc.com, puis un `serviceInstanceRedeploy`
+  d'un robot papier par l'IA (Railway `list-deployments`). Railway reste payant (≈ 4 $/mois).
 ## 2026-10-02 — Arbre v3.47 : les sources s'AJOUTENT, elles ne se remplacent plus
 
 Kevin demande une recherche (actes, presse, photos, documents) sur chaque personne de l'arbre, à

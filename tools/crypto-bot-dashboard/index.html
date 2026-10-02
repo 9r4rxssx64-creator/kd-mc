@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kd-mc.com; frame-src https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kd-mc.com; media-src 'self' blob:; frame-src https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <title>🤖 Bot Crypto — kd-mc.com</title>
 <style>
   :root{--bg:#0b0e14;--card:#131826;--card2:#0f1420;--line:#232b3d;--txt:#e8ecf4;--mut:#8b94a8;
@@ -92,6 +92,31 @@
       </div>
     </div>
 
+
+    <!-- IA PILOTE (Kevin 2026-10-02) : une IA gratuite propose, l'arbitre décide sur les chiffres.
+         Robots PAPIER seulement — jamais le principal, jamais une clé ni un verrou de perte. -->
+    <div class="card" id="iaCard">
+      <div class="row"><h2 style="margin:0">🧠 IA pilote — robots papier</h2><span id="iaMode" class="pill p-warn">…</span></div>
+      <div class="sub" style="margin:6px 0 8px">Deux IA gratuites travaillent ensemble : <b>Qwen 3.8</b> propose, <b>gpt-oss-120b</b> (OpenAI) relit et peut refuser. Toutes les 12 h, l'IA propose <b>un seul</b> changement sur <b>un seul</b> robot papier. Après 24 à 72 h, l'arbitre compare ce robot aux autres sur la même période : mieux → gardé, moins bien → anciens réglages remis. Le BTC sert de barre à battre.</div>
+      <div id="iaEnCours" class="coins"></div>
+      <div class="kpis" style="grid-template-columns:1fr 1fr">
+        <div class="kpi"><div class="l">Dernier réveil</div><div class="v" style="font-size:14px" id="iaTick">—</div></div>
+        <div class="kpi"><div class="l">Essais jugés</div><div class="v" style="font-size:14px" id="iaScore">—</div></div>
+      </div>
+      <div class="hint" id="iaDernier" style="margin-top:8px"></div>
+      <div class="btns" style="margin-top:10px">
+        <button class="btn-gold" onclick="iaLancer()">⚡ Lancer maintenant</button>
+        <button class="btn-ghost" id="iaModeBtn" onclick="iaBasculer()">⏸ Mettre en pause</button>
+      </div>
+      <button class="btn-ghost" style="margin-top:10px" id="iaVoixBtn" onclick="iaEcouter()">🔊 Écouter le point du jour</button>
+      <div class="chips" id="voixChips" style="margin-top:6px"></div>
+      <button class="btn-ghost hid" id="iaAnnulerBtn" style="margin-top:10px" onclick="iaAnnuler()">↩️ Annuler l'essai en cours</button>
+      <div id="iaErr" class="err hid"></div><div id="iaOk" class="okmsg hid"></div>
+      <h2 style="margin:14px 0 6px">📓 Journal de l'IA</h2>
+      <div class="coins" id="iaJournal"><div class="sub">Chargement…</div></div>
+      <div class="hint" style="margin-top:10px">⚠️ Honnête : c'est du <b>faux argent</b>. Les résultats papier sont toujours plus flatteurs que le réel (pas de glissement, pas d'émotion). Une IA ne garantit aucun gain ; si les robots ne battent pas le simple fait de garder du BTC, ils ne servent à rien.</div>
+    </div>
+
     <!-- Par crypto -->
     <div class="card">
       <h2>💹 Par crypto (en direct)</h2>
@@ -112,6 +137,53 @@
       <h2>🧾 Bilan — depuis le premier relevé</h2>
       <div class="sub" style="margin:-4px 0 8px">Ce que le domaine a enregistré lui-même, relevé toutes les heures. Survit à l'effacement des journaux et aux redémarrages. Faux argent.</div>
       <div class="coins" id="bilan"><div class="sub">Chargement…</div></div>
+    </div>
+
+
+    <!-- PASSAGE AU RÉEL (Kevin 2026-10-02) : CONTRÔLE seulement. Aucun bouton ne bascule en argent réel :
+         c'est un geste de Kevin dans Railway, protégé par 3 verrous côté robot. -->
+    <div class="card">
+      <div class="row"><h2 style="margin:0">💶 Passage au réel</h2><span id="reelPill" class="pill p-warn">…</span></div>
+      <div class="sub" style="margin:6px 0 8px">Un robot papier devient <b>candidat</b> seulement s'il coche TOUT : 60 jours sans redémarrage, 30 trades bouclés, gain après frais, au moins 2 points de mieux que garder du BTC, jamais plus de −15 % en route. Et le robot testnet doit tourner depuis 14 jours.</div>
+      <div class="coins" id="reelRobots"><div class="sub">Chargement…</div></div>
+      <div class="hint" id="reelTestnet" style="margin-top:8px"></div>
+      <details style="margin-top:10px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700">📋 Le jour où un robot est prêt — les étapes</summary>
+        <ol style="margin:8px 0 0 18px;font-size:13.5px;line-height:1.6;color:var(--txt)">
+          <li>Sur Binance, crée un <b>sous-compte</b> dédié, et mets-y seulement la somme que tu acceptes de perdre.</li>
+          <li>Crée une clé d'API <b>sans droit de retrait</b>, limitée à l'adresse IP de Railway.</li>
+          <li>Dans Railway, sur le robot principal : copie les réglages du robot candidat, puis <b>LIVE_MAX_USDT=100</b> (le robot n'engagera jamais plus).</li>
+          <li>Puis <b>TESTNET=false</b> et <b>BOT_LIVE=true</b>. Sans les 3, le robot refuse de démarrer en réel.</li>
+          <li>Laisse tourner 30 jours avec ce petit montant ; compare au papier. N'augmente qu'après.</li>
+          <li>Le bouton 🛑 Couper (plus bas) vend tout et arrête, à tout moment.</li>
+        </ol></details>
+      <div class="hint" style="margin-top:10px">⚠️ L'IA ne peut ni basculer en réel, ni toucher au plafond : c'est verrouillé dans le code. Rien n'est garanti — le réel fait presque toujours moins bien que le papier.</div>
+    </div>
+
+    <!-- MARCHÉS EN DIRECT + LIENS (Kevin 2026-10-02) : ce que l'IA lit avant de décider. -->
+    <div class="card">
+      <div class="row"><h2 style="margin:0">🌍 Marchés en direct</h2><span class="upd" id="mkLe"></span></div>
+      <div class="sub" style="margin:6px 0 8px">Ce que l'IA lit avant chaque décision. Sources publiques gratuites, mises à jour toutes les 5 min.</div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Peur / avidité</div><div class="v" id="mkFg">—</div></div>
+        <div class="kpi"><div class="l">Capi crypto 24 h</div><div class="v" id="mkCap">—</div></div>
+        <div class="kpi"><div class="l">Dominance BTC</div><div class="v" id="mkDom">—</div></div>
+      </div>
+      <div class="hint" id="mkFund" style="margin-top:8px"></div>
+      <h2 style="margin:14px 0 6px">💰 Cryptos — 24 h</h2>
+      <div class="coins" id="mkCryptos"><div class="sub">Chargement…</div></div>
+      <h2 style="margin:14px 0 6px">🏛 Bourse &amp; or</h2>
+      <div class="coins" id="mkBourse"><div class="sub">Chargement…</div></div>
+      <h2 style="margin:14px 0 6px">📰 Actualités</h2>
+      <div class="coins" id="mkActus"><div class="sub">Chargement…</div></div>
+      <h2 style="margin:14px 0 6px">🔌 État des sources</h2>
+      <div class="coins" id="mkSources"></div>
+      <button class="btn-ghost" style="margin-top:10px" onclick="loadMarche(true)">🔄 Rafraîchir les marchés</button>
+    </div>
+
+    <div class="card">
+      <h2>🔗 Liens d'analyse — vérifiés en direct</h2>
+      <div class="sub" style="margin:-4px 0 8px">✅ s'ouvre · 🛡️ le site bloque les robots mais s'ouvre sur ton iPhone · ❌ ne répond pas. Vérifiés depuis le domaine toutes les 6 h.</div>
+      <div class="coins" id="liens"><div class="sub">Chargement…</div></div>
     </div>
 
     <!-- Analyse expert (calculée serveur sur vraies bougies Binance) -->
@@ -196,7 +268,7 @@
         <button class="btn-kill" onclick="botCmd('kill')">🛑 Couper</button>
         <button class="btn-start" onclick="botCmd('start')">▶️ Relancer</button>
       </div>
-      <div style="margin-top:10px"><button class="btn-ghost" onclick="refresh(true);loadFleet();loadBilan();loadAnalysis()">🔄 Actualiser</button></div>
+      <div style="margin-top:10px"><button class="btn-ghost" onclick="refresh(true);loadFleet();loadBilan();loadAnalysis();loadIa();loadMarche()">🔄 Actualiser</button></div>
       <div id="cmdErr" class="err hid"></div>
     </div>
 
@@ -206,7 +278,7 @@
   <div id="fatal" class="err hid"></div>
 </div>
 
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.2.0" data-color="#e8b830" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.4.0" data-color="#e8b830" defer></script>
 <script>
 (function(){
   var API = location.origin, GRANT_KEY = 'kdmc_admin_grant', SSO_KEY = 'kdmc_sso_pass', lastStatus = '';
@@ -493,11 +565,146 @@
     }).catch(function(e){ var el=document.getElementById('cmdErr'); el.textContent='Réseau : '+e.message; show('cmdErr',true); });
   };
 
-  function boot(){ renderChips(); loadConfig(); refresh(true); loadFleet(); loadBilan(); loadAnalysis(); renderTvChips(); }
+
+  /* ===== IA PILOTE + MARCHÉS + LIENS (Kevin 2026-10-02) — tout passe par esc() ===== */
+  function $(id){ return document.getElementById(id); }
+  function pct(x,d){ if(x===null||x===undefined||isNaN(x)) return '—'; var v=Number(x); return (v>=0?'+':'')+v.toFixed(d===undefined?2:d)+' %'; }
+  function pctR(x){ return (x===null||x===undefined)?'—':pct(Number(x)*100); }
+  function quand(t){ if(!t) return 'jamais'; var d=new Date(t); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+  function nomBot(n){ return String(n||'').replace('crypto-bot-','robot ').toUpperCase().replace('ROBOT ','Robot '); }
+  function diffSet(avant,set){ var o=[]; Object.keys(set||{}).forEach(function(k){ var a=(avant||{})[k]; o.push(esc(k)+' : '+esc(a===null||a===undefined?'(défaut)':a)+' → <b>'+esc(set[k])+'</b>'); }); return o.join('<br>'); }
+  function couleur(x){ return x===null||x===undefined?'var(--mut)':(Number(x)>=0?'var(--green)':'var(--red)'); }
+  var iaModeCourant='auto';
+  function iaMsg(ok,txt){ var e=$('iaErr'),k=$('iaOk'); e.classList.add('hid'); k.classList.add('hid'); var el=ok?k:e; el.textContent=txt; el.classList.remove('hid'); }
+  window.loadIa = loadIa;
+  function loadIa(){
+    fetch(API+'/__bot/ia',{credentials:'include',headers:hdrs()}).then(function(r){return r.json();}).then(function(j){
+      if(!j.ok){ $('iaJournal').innerHTML='<div class="sub">'+esc(j.reason||'indisponible')+'</div>'; return; }
+      iaModeCourant=j.mode;
+      var mp=$('iaMode'); mp.className='pill '+(j.mode==='auto'?'p-ok':'p-warn'); mp.innerHTML='<span class="dot"></span>'+(j.mode==='auto'?'Active':'En pause');
+      $('iaModeBtn').textContent=j.mode==='auto'?'⏸ Mettre en pause':'▶️ Réactiver';
+      $('iaTick').textContent=quand(j.dernierTick);
+      $('iaDernier').textContent=j.dernier?('Dernier état : '+j.dernier):'';
+      var ec=j.enCours;
+      $('iaAnnulerBtn').classList.toggle('hid',!ec);
+      $('iaEnCours').innerHTML=ec?('<div class="coin" style="display:block"><div class="row"><span class="nm">🧪 Essai en cours — '+esc(nomBot(ec.bot))+'</span><span class="tag t-buy">'+esc(ec.source==='secours'?'règle de secours':'IA')+'</span></div>'
+        +'<div class="px" style="margin-top:6px">'+diffSet(ec.avant,ec.set)+'</div>'
+        +'<div class="px" style="margin-top:6px">💬 '+esc(ec.raison||'')+(ec.attendu?'<br>🎯 Attendu : '+esc(ec.attendu):'')+'</div>'
+        +'<div class="px" style="margin-top:6px">Depuis '+esc(quand(ec.debut))+(ec.modele?' · '+esc(ec.modele):'')+'</div></div>'):'<div class="sub">Aucun essai en cours.</div>';
+      var jr=j.journal||[], g=0, a=0;
+      jr.forEach(function(e){ if(e.type==='verdict'){ if(e.verdict==='garder') g++; else if(e.verdict==='annuler') a++; } });
+      $('iaScore').textContent=g+' gardé(s) · '+a+' annulé(s)';
+      if(!jr.length){ $('iaJournal').innerHTML='<div class="sub">Pas encore de décision. La première arrive au prochain réveil (toutes les 2 h) ou avec « Lancer maintenant ».</div>'; return; }
+      $('iaJournal').innerHTML=jr.slice(0,25).map(function(e){
+        if(e.type==='verdict'){
+          var tg=e.verdict==='garder'?'t-buy':e.verdict==='annuler'?'t-sell':'t-hold';
+          return '<div class="coin" style="display:block"><div class="row"><span class="nm">⚖️ '+esc(nomBot(e.bot))+'</span><span class="tag '+tg+'">'+esc(e.verdict==='garder'?'gardé':e.verdict==='annuler'?'annulé':e.verdict)+'</span></div>'
+            +'<div class="px" style="margin-top:4px">'+diffSet(e.avant,e.set)+'</div>'
+            +(e.r_cible!==undefined&&e.r_cible!==null?'<div class="px" style="margin-top:4px">Robot <b style="color:'+couleur(e.r_cible)+'">'+pctR(e.r_cible)+'</b> · autres <b style="color:'+couleur(e.r_mediane)+'">'+pctR(e.r_mediane)+'</b> · BTC <b style="color:'+couleur(e.r_btc)+'">'+pctR(e.r_btc)+'</b>'+(e.heures?' · '+esc(e.heures)+' h':'')+'</div>':'')
+            +'<div class="px" style="margin-top:4px">'+esc(e.raison||'')+(e.restaure?'<br>↩️ '+esc(e.restaure):'')+'</div>'
+            +'<div class="px" style="margin-top:4px">'+esc(quand(e.t))+'</div></div>';
+        }
+        if(e.type==='refus'){
+          return '<div class="coin" style="display:block"><div class="row"><span class="nm">🛑 '+esc(nomBot(e.bot))+'</span><span class="tag t-sell">refusé par le contre-avis</span></div>'
+            +'<div class="px" style="margin-top:4px">'+diffSet({},e.set)+'</div>'
+            +'<div class="px" style="margin-top:4px">💬 Proposé : '+esc(e.raison||'')+'<br>⚖️ '+esc(e.modele_contre||'2e IA')+' : '+esc(e.contre_avis||'')+'</div>'
+            +'<div class="px" style="margin-top:4px">'+esc(quand(e.t))+'</div></div>';
+        }
+        return '<div class="coin" style="display:block"><div class="row"><span class="nm">🧠 '+esc(nomBot(e.bot))+'</span><span class="tag t-hold">'+esc(e.source==='secours'?'règle de secours':'décision IA')+'</span></div>'
+          +'<div class="px" style="margin-top:4px">'+diffSet(e.avant,e.set)+'</div>'
+          +'<div class="px" style="margin-top:4px">💬 '+esc(e.raison||'')+(e.attendu?'<br>🎯 '+esc(e.attendu):'')+(e.echec_ia?'<br>⚠️ IA indisponible : '+esc(e.echec_ia):'')+(e.contre_avis?'<br>✅ '+esc(e.modele_contre||'2e IA')+' : '+esc(e.contre_avis):'')+'</div>'
+          +'<div class="px" style="margin-top:4px">'+esc(quand(e.t))+(e.modele?' · '+esc(e.modele):'')+(e.origine?' · '+esc(e.origine==='kevin'?'lancé par toi':'réveil auto'):'')+'</div></div>';
+      }).join('');
+    }).catch(function(){ $('iaJournal').innerHTML='<div class="sub">Le domaine ne répond pas — réessaie dans un instant.</div>'; });
+  }
+  function iaPost(chemin,corps,okTxt){
+    return fetch(API+chemin,{method:'POST',credentials:'include',headers:Object.assign({'content-type':'application/json'},hdrs()),body:JSON.stringify(corps||{})})
+      .then(function(r){return r.json();}).then(function(j){ iaMsg(!!j.ok, j.ok?(okTxt||j.detail||'Fait.')+(j.detail&&okTxt?' — '+j.detail:''):('Refusé : '+(j.reason||j.detail||'erreur'))); loadIa(); })
+      .catch(function(){ iaMsg(false,'Le domaine ne répond pas.'); });
+  }
+  window.iaLancer=function(){ iaMsg(true,'L\'IA réfléchit… (jusqu\'à 30 s)'); iaPost('/__bot/ia/tick',{},'Réveil fait'); };
+  window.iaBasculer=function(){ iaPost('/__bot/ia/mode',{mode:iaModeCourant==='auto'?'off':'auto'}, iaModeCourant==='auto'?'IA en pause':'IA réactivée'); };
+  window.iaAnnuler=function(){ if(!confirm('Remettre les anciens réglages de ce robot et arrêter l\'essai ?')) return; iaPost('/__bot/ia/annuler',{},'Essai annulé, anciens réglages remis'); };
+
+  /* ===== VOIX (Kevin 2026-10-02 « les voix aussi ») : voix gratuite Google Chirp 3 HD du domaine ;
+     si elle ne répond pas, la voix française du téléphone. ===== */
+  var VOIX=[['onyx','Orus (homme)'],['nova','Aoede (femme)'],['shimmer','Leda (femme)'],['fable','Charon (homme grave)'],['echo','Puck (homme vif)']];
+  var voixChoisie='onyx'; try{ voixChoisie=localStorage.getItem('bot_voix')||'onyx'; }catch(e){}
+  function renderVoix(){ $('voixChips').innerHTML=VOIX.map(function(v){ return '<div class="chip'+(v[0]===voixChoisie?' on':'')+'" onclick="choisirVoix(\''+v[0]+'\')">'+esc(v[1])+'</div>'; }).join(''); }
+  window.choisirVoix=function(v){ voixChoisie=v; try{localStorage.setItem('bot_voix',v);}catch(e){} renderVoix(); };
+  var audioEnCours=null;
+  function voixTelephone(t){ try{ var u=new SpeechSynthesisUtterance(t); u.lang='fr-FR'; speechSynthesis.cancel(); speechSynthesis.speak(u); return true; }catch(e){ return false; } }
+  window.iaEcouter=function(){
+    var b=$('iaVoixBtn');
+    if(audioEnCours){ audioEnCours.pause(); audioEnCours=null; try{speechSynthesis.cancel();}catch(e){} b.textContent='🔊 Écouter le point du jour'; return; }
+    b.textContent='⏳ Préparation…';
+    fetch(API+'/__bot/ia/vocal',{credentials:'include',headers:hdrs()}).then(function(r){return r.json();}).then(function(j){
+      if(!j.ok||!j.texte){ b.textContent='🔊 Écouter le point du jour'; iaMsg(false,'Point vocal indisponible.'); return; }
+      return fetch(API+'/__lingua/tts?l=fr&v='+encodeURIComponent(voixChoisie)+'&t='+encodeURIComponent(j.texte),{credentials:'include'}).then(function(r){
+        var ct=r.headers.get('content-type')||'';
+        if(!/^audio\//.test(ct)) throw new Error('voix du domaine indisponible');
+        return r.blob();
+      }).then(function(bl){
+        var a=new Audio(URL.createObjectURL(bl)); audioEnCours=a; b.textContent='⏹ Arrêter';
+        a.onended=function(){ audioEnCours=null; b.textContent='🔊 Écouter le point du jour'; };
+        return a.play();
+      }).catch(function(){
+        b.textContent='🔊 Écouter le point du jour';
+        if(voixTelephone(j.texte)) iaMsg(true,'Voix du domaine indisponible : lecture avec la voix du téléphone.');
+        else iaMsg(false,'Lecture impossible sur cet appareil.');
+      });
+    }).catch(function(){ b.textContent='🔊 Écouter le point du jour'; iaMsg(false,'Le domaine ne répond pas.'); });
+  };
+  /* ===== PASSAGE AU RÉEL : lecture seule ===== */
+  var NOMS_CRIT={duree:'Durée',ventes:'Trades',rendement:'Gain',btc:'Mieux que le BTC',baisse:'Pire baisse'};
+  window.loadReel = loadReel;
+  function loadReel(){
+    fetch(API+'/__bot/reel',{credentials:'include',headers:hdrs()}).then(function(r){return r.json();}).then(function(j){
+      if(!j.ok){ $('reelRobots').innerHTML='<div class="sub">'+esc(j.reason||'indisponible')+'</div>'; return; }
+      var p=$('reelPill'); p.className='pill '+(j.pret?'p-ok':'p-warn'); p.innerHTML='<span class="dot"></span>'+(j.pret?'Un candidat existe':'Pas encore');
+      $('reelRobots').innerHTML=(j.robots||[]).map(function(x){
+        var n=(x.criteres||[]).filter(function(c){return c.ok;}).length, tot=(x.criteres||[]).length;
+        return '<div class="coin" style="display:block"><div class="row"><span class="nm">'+esc(nomBot(x.nom))+'</span><span class="tag '+(x.pret?'t-buy':'t-hold')+'">'+(x.pret?'✅ candidat':esc(n+' / '+Math.max(tot,5)))+'</span></div>'
+          +'<div class="px" style="margin-top:4px">'+(x.criteres||[]).map(function(c){ return (c.ok?'✅ ':'❌ ')+esc(NOMS_CRIT[c.cle]||c.cle)+' : '+esc(c.valeur)+' <span style="opacity:.7">('+esc(c.seuil)+')</span>'; }).join('<br>')+'</div></div>';
+      }).join('');
+      $('reelTestnet').textContent='Robot testnet (vrai Binance, faux argent) : '+(j.testnet?j.testnet.jours:0)+' j sans redémarrage ('+(j.testnet&&j.testnet.ok?'✅':'❌')+' 14 j requis). Relevés enregistrés : '+(j.releves||0)+'.';
+    }).catch(function(){ $('reelRobots').innerHTML='<div class="sub">Le domaine ne répond pas.</div>'; });
+  }
+  window.loadMarche = loadMarche;
+  function loadMarche(frais){
+    fetch(API+'/__bot/marche'+(frais?'?frais=1':''),{credentials:'include',headers:hdrs()}).then(function(r){return r.json();}).then(function(m){
+      if(!m.ok){ $('mkCryptos').innerHTML='<div class="sub">'+esc(m.reason||'indisponible')+'</div>'; return; }
+      $('mkLe').textContent=quand(m.le);
+      var fg=m.peur_avidite; $('mkFg').innerHTML=fg?esc(fg.valeur)+' <span style="font-size:11px;color:var(--mut)">'+esc(fg.libelle||'')+'</span>':'—';
+      var gl=m.global; $('mkCap').innerHTML=gl?'<span style="color:'+couleur(gl.var24h)+'">'+pct(gl.var24h)+'</span>':'—';
+      $('mkDom').textContent=gl&&gl.dom_btc!=null?Number(gl.dom_btc).toFixed(1)+' %':'—';
+      $('mkFund').textContent=m.funding_btc!=null?('Financement BTC (OKX) : '+(m.funding_btc*100).toFixed(4)+' % par 8 h — positif = les acheteurs à levier paient, signe d\'euphorie.'):'';
+      var cr=m.cryptos||[];
+      $('mkCryptos').innerHTML=cr.length?cr.map(function(c){ return '<div class="coin"><span class="nm">'+esc(c.paire)+'</span><span class="px">'+esc(Number(c.prix).toLocaleString('fr-FR',{maximumFractionDigits:c.prix<10?4:2}))+' $ · <b style="color:'+couleur(c.var24h)+'">'+pct(c.var24h)+'</b></span></div>'; }).join(''):'<div class="sub">Source indisponible pour le moment.</div>';
+      var bo=m.bourse||[];
+      $('mkBourse').innerHTML=bo.length?bo.map(function(b){ return '<div class="coin"><span class="nm">'+esc(b.nom||b.symbole)+'</span><span class="px">'+(b.cloture==null?'fermé / pas de cotation':esc(Number(b.cloture).toLocaleString('fr-FR',{maximumFractionDigits:4}))+' · <b style="color:'+couleur(b.var_jour)+'">'+pct(b.var_jour)+'</b>')+'</span></div>'; }).join(''):'<div class="sub">Source indisponible pour le moment.</div>';
+      var ac=m.actus||[];
+      $('mkActus').innerHTML=ac.length?ac.slice(0,12).map(function(a){ var t=esc(a.titre); var l=/^https:\/\//.test(a.lien||'')?'<a href="'+esc(a.lien)+'" target="_blank" rel="noopener noreferrer" style="color:var(--txt);text-decoration:none">'+t+'</a>':t; return '<div class="coin" style="display:block"><div style="font-size:13.5px">'+l+'</div><div class="px">'+esc(a.source)+'</div></div>'; }).join(''):'<div class="sub">Aucune actualité reçue.</div>';
+      var so=m.sources||{};
+      $('mkSources').innerHTML=Object.keys(so).map(function(k){ var ok=so[k]==='ok'; return '<div class="coin"><span class="px" style="color:var(--txt)">'+esc(k)+'</span><span class="tag '+(ok?'t-buy':'t-sell')+'">'+(ok?'✅ répond':'❌ '+esc(so[k]))+'</span></div>'; }).join('');
+    }).catch(function(){ $('mkCryptos').innerHTML='<div class="sub">Le domaine ne répond pas.</div>'; });
+  }
+  window.loadLiens = loadLiens;
+  function loadLiens(){
+    fetch(API+'/__bot/liens',{credentials:'include',headers:hdrs()}).then(function(r){return r.json();}).then(function(j){
+      var li=(j&&j.liens)||[]; if(!li.length){ $('liens').innerHTML='<div class="sub">Indisponible.</div>'; return; }
+      var cats={}; li.forEach(function(x){ (cats[x.cat]=cats[x.cat]||[]).push(x); });
+      $('liens').innerHTML=Object.keys(cats).map(function(c){ return '<div class="sub" style="margin:6px 0 0"><b>'+esc(c)+'</b></div>'+cats[c].map(function(x){
+        var ic=x.etat==='ok'?'✅':x.etat==='protege'?'🛡️':'❌';
+        return /^https:\/\//.test(x.url)?'<a class="coin" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer" style="color:var(--txt);text-decoration:none;min-height:44px"><span class="nm" style="font-weight:600">'+esc(x.nom)+'</span><span>'+ic+'</span></a>':'';
+      }).join(''); }).join('')+'<div class="hint" style="margin-top:6px">Vérifié le '+esc(quand(j.le))+'</div>';
+    }).catch(function(){ $('liens').innerHTML='<div class="sub">Le domaine ne répond pas.</div>'; });
+  }
+  function boot(){ renderChips(); loadConfig(); refresh(true); loadFleet(); loadBilan(); loadAnalysis(); renderTvChips(); loadIa(); loadMarche(); loadLiens(); loadReel(); renderVoix(); }
   boot();
   setInterval(function(){ refresh(false); }, 60000);
   setInterval(function(){ loadFleet(); loadBilan(); }, 120000); // flotte : 6 bots interrogés → toutes les 2 min suffit
-  setInterval(function(){ loadAnalysis(); }, 300000); // analyse expert : toutes les 5 min (bougies 1h+)
+  setInterval(function(){ loadAnalysis(); loadMarche(); loadIa(); }, 300000); // analyse expert : toutes les 5 min (bougies 1h+)
 })();
 </script>
 </body>

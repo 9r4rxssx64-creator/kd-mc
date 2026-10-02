@@ -1,5 +1,34 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 💶 Prêt pour l'argent réel (verrouillé) + 2 IA gratuites + point vocal (2.10.2026, soir)
+
+- 📱 **Ce que tu verras** sur https://bot.kd-mc.com : la carte **💶 Passage au réel** (chaque robot papier, critère par critère ✅/❌ : 60 j, 30 trades, gain, mieux que le BTC, pire baisse) et les étapes du jour J — **aucun bouton ne bascule en réel**. Dans la carte IA : **🔊 Écouter le point du jour** (5 voix gratuites Google Chirp 3 HD au choix, repli voix du téléphone) et les refus de la 2ᵉ IA.
+- 🧠 **IA** : Qwen 3.8 27B propose (le plus fort des gratuits), **gpt-oss-120b** (OpenAI, gratuit sur Cloudflare) relit et peut refuser. Jamais d'IA payante.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `crypto-bot/bot.py` + `config.py` | **Modifié.** 3ᵉ verrou : en argent réel, `LIVE_MAX_USDT` obligatoire ; le robot n'engage jamais plus. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/crypto-bot/bot.py) |
+| `crypto-bot/test_multi.py` | **Modifié.** +5 contrôles du plafond. `npm run test:crypto-bot` (désormais dans `test:ci`). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/crypto-bot/test_multi.py) |
+| `crypto-bot/DEPLOIEMENT_IPHONE.md` | **Modifié.** Étapes du passage au réel mises à jour. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/crypto-bot/DEPLOIEMENT_IPHONE.md) |
+| `services/kdmc-router/bot-ia.js` | **Modifié.** `pretPourLeReel`, `resumeVocal`, contre-avis, `LIVE_*` interdit à l'IA. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/bot-ia.js) |
+| `services/kdmc-router/worker.js` | **Modifié.** `/__bot/reel`, `/__bot/ia/vocal`, chaîne IA gratuite seulement, contre-avis, relevé des 6 robots à chaque réveil. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `tools/crypto-bot-dashboard/index.html` | **Modifié (v1.4.0).** | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/crypto-bot-dashboard/index.html) |
+
+### 🧠 Une IA gratuite pilote tes 5 robots crypto papier (2.10.2026, soir)
+
+- 📱 **Ce que tu verras** : sur https://bot.kd-mc.com (toi seul), trois nouvelles cartes. **🧠 IA pilote** : ce qu'elle a changé, sur quel robot, pourquoi, et le verdict chiffré (robot / autres robots / BTC). Boutons « Lancer maintenant », « Mettre en pause », « Annuler l'essai ». **🌍 Marchés en direct** : peur/avidité, capitalisation, dominance BTC, financement, cryptos 24 h, bourse et or, actualités, état de chaque source. **🔗 Liens d'analyse** : 19 sites, vérifiés depuis le domaine.
+- 🔒 Faux argent seulement. L'IA ne touche jamais le robot principal, ni TESTNET/PAPER/BOT_LIVE/BOT_KILL, ni une clé, ni un frein de perte.
+
+| Fichier | À quoi ça sert | Ouvrir |
+|---|---|---|
+| `services/kdmc-router/bot-ia.js` | **Nouveau.** Le cerveau sans réseau : liste blanche des réglages, interdits, arbitre (robot vs médiane des autres, BTC en référence), règle de secours, lecteurs des sources de marché, consigne donnée à l'IA. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/bot-ia.js) |
+| `services/kdmc-router/worker.js` | **Modifié.** Routes `/__bot/ia` (état, pause, lancer, annuler), `/__bot/marche`, `/__bot/liens` ; réveil `POST /__bot/ia/tick` protégé par une clé dérivée du secret admin. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/worker.js) |
+| `services/kdmc-outlook/worker.js` + `wrangler.toml` | **Modifié.** Son réveil de 2 h réveille aussi l'IA (Service Binding `ROUTER`), sans nouveau cron (5/5 pris). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-outlook/worker.js) |
+| `tools/crypto-bot-dashboard/index.html` | **Modifié (v1.3.0).** Les 3 cartes. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/crypto-bot-dashboard/index.html) |
+| `services/kdmc-router/bot-ia.test.mjs` | **Nouveau.** 47 contrôles du cerveau. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/bot-ia.test.mjs) |
+| `services/kdmc-router/bot-ia-routeur.test.mjs` | **Nouveau.** 21 contrôles de bout en bout dans le vrai routeur (mauvaise clé = 403, un seul robot papier touché, TESTNET jamais, annulation complète, réveil réel depuis kdmc-outlook). | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/bot-ia-routeur.test.mjs) |
+| `tests/verify-bot-ia-page.mjs` | **Nouveau.** 20 contrôles dans Chromium à 375 px (texte piégé jamais exécuté, boutons ≥ 44 px, 0 débordement). `npm run test:bot-ia`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-bot-ia-page.mjs) |
+
 ### 💾 Tes données Firebase sont de nouveau sauvegardées chaque jour (1.10.2026, après-midi)
 
 - 📱 **Ce que tu verras** : rien. Chaque nuit, une archive de tes données (plannings, comptes, coffre) est faite et gardée 30 jours au coffre. La dernière datait du 14 août.

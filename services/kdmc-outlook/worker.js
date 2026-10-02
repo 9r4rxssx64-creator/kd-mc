@@ -322,8 +322,12 @@ export default {
        jour, marque dans le KV. Fail-open : jamais la synchro mail ni le ping ne dépendent de ceci. */
     const sauvegarde = declencherSauvegarde(env).catch(() => ({ fait: false, raison: 'erreur' }));
     if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(sauvegarde);
+    /* IA PILOTE des robots crypto PAPIER (Kevin 2026-10-02) : même place de cron, réveil de
+       kdmc-router par le Service Binding ROUTER. Fail-open : ni la synchro mail ni le ping n'en dépendent. */
+    const ia = reveillerIaBots(env).catch(() => ({ fait: false }));
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(ia);
     try { await syncOnce(env, { backfill: false }); } catch { /* fail-safe */ }
-    if (!ctx || typeof ctx.waitUntil !== 'function') { await ping; await sauvegarde; }
+    if (!ctx || typeof ctx.waitUntil !== 'function') { await ping; await sauvegarde; await ia; }
   }
 };
 
@@ -372,6 +376,29 @@ async function pingUptime(env) {
     if (r.body) await r.body.cancel();
   } catch (e) {
     console.warn('uptime ping KO : ' + String((e && e.message) || e));
+  }
+}
+
+/* Réveil de l'IA pilote des robots papier (services/kdmc-router/bot-ia.js) toutes les 2 h.
+   Clé DÉRIVÉE du secret admin (sha256(KDMC_ADMIN_PIN_SHA256 + ':bot-ia-tick')), comparée en temps
+   constant par le routeur ; le secret lui-même ne circule jamais. Service Binding ROUTER d'abord
+   (pas de saut HTTP public), repli sur bot.kd-mc.com. Testable : `fetchFn`. */
+export const IA_BOTS_URL = 'https://bot.kd-mc.com/__bot/ia/tick';
+export async function reveillerIaBots(env, fetchFn) {
+  try {
+    const base = env && env.KDMC_ADMIN_PIN_SHA256;
+    if (!base) return { fait: false, raison: 'KDMC_ADMIN_PIN_SHA256 absent' };
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(base + ':bot-ia-tick'));
+    const key = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    const req = new Request(IA_BOTS_URL, { method: 'POST', headers: { 'x-bot-ia-key': key, 'user-agent': 'kdmc-outlook cron' } });
+    const f = fetchFn || (env && env.ROUTER && typeof env.ROUTER.fetch === 'function' ? (r) => env.ROUTER.fetch(r) : fetch);
+    const r = await f(req);
+    let corps = null; try { corps = await r.json(); } catch { /* corps non-JSON */ }
+    if (!r.ok) console.warn('IA bots KO : HTTP ' + r.status);
+    return { fait: r.ok, http: r.status, corps };
+  } catch (e) {
+    console.warn('IA bots KO : ' + String((e && e.message) || e));
+    return { fait: false, raison: String((e && e.message) || e).slice(0, 80) };
   }
 }
 

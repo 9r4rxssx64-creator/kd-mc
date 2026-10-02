@@ -13,6 +13,7 @@ import { mintShopsAdminIdToken } from './fb-token.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { routeText, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
+import * as IA from './bot-ia.js';
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
 
@@ -3327,6 +3328,249 @@ async function railGql(env, query) {
   let j = null; try { j = await r.json(); } catch { /* corps non-JSON */ }
   return { http: r.status, j };
 }
+
+/* ===== IA PILOTE des robots PAPIER (Kevin 2026-10-02) — orchestration =====
+   La logique (liste blanche, arbitre, lecteurs de marché, prompt) vit dans bot-ia.js, testée sans
+   réseau (bot-ia.test.mjs). Ici : les appels réels (Railway, sources de marché, IA gratuite, KV).
+   Réveil toutes les 2 h par le cron de kdmc-outlook (Service Binding ROUTER, clé DÉRIVÉE du secret
+   admin — le secret ne circule jamais) : le compte Cloudflare est déjà à 5 crons sur 5 (gratuit).
+   UNE écriture KV par réveil au plus (« bot:ia ») ; le marché passe par le cache, zéro écriture. */
+const IA_KV = 'bot:ia';
+const IA_CHAINE_GRATUITE = ['qwen', 'gemini', 'groq', 'cerebras', 'mistral', 'openrouter'];
+const IA_CONTRE_AVIS_MODELE = '@cf/openai/gpt-oss-120b';
+async function iaEtat(env) {
+  let st = null;
+  try { st = JSON.parse((await env.ACCOUNTS.get(IA_KV)) || 'null'); } catch { st = null; }
+  return Object.assign({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0, dernierTick: 0, dernier: '' }, st || {});
+}
+async function iaEcrire(env, st) { await env.ACCOUNTS.put(IA_KV, JSON.stringify(st)); }
+async function iaCleReveil(env) {
+  const base = env && env.KDMC_ADMIN_PIN_SHA256;
+  if (!base) return '';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(base + ':bot-ia-tick'));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function egalTempsConstant(a, b) {
+  a = String(a || ''); b = String(b || '');
+  if (!a || a.length !== b.length) return false;
+  let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+/* Stats de flotte (même calcul que /__bot/fleet, factorisé pour l'IA). */
+async function botFleetStats(env, ctx, names) {
+  return Promise.all(names.map(async (name) => {
+    const svc = (ctx.services || []).find((s) => s.name === name);
+    if (!svc) return { name, status: 'absent' };
+    const dp = await railGql(env, `query { deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${svc.id}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } } }`);
+    const node = ((((dp.j || {}).data || {}).deployments || { edges: [] }).edges[0] || {}).node;
+    if (!node) return { name, svcId: svc.id, status: 'aucun_deploiement' };
+    const rl = await railGql(env, `query { deploymentLogs(deploymentId: "${node.id}", limit: 1000) { message } }`);
+    const logs = (((rl.j || {}).data || {}).deploymentLogs || []);
+    const st = fleetTradeStats(logs);
+    let equity = null;
+    for (let i = logs.length - 1; i >= 0; i--) {
+      const m = String(logs[i].message || '').match(/equity=([0-9.]+)/);
+      if (m) { equity = Number(m[1]); break; }
+    }
+    return Object.assign({ name, svcId: svc.id, depl: node.id, status: node.status, equity }, st);
+  }));
+}
+async function botVarsVisibles(env, ctx, svcId) {
+  const vq = await railGql(env, `query { variables(projectId: "${ctx.projectId}", environmentId: "${ctx.environmentId}", serviceId: "${svcId}") }`);
+  return IA.reglagesVisibles(((vq.j || {}).data || {}).variables || {});
+}
+/* Applique des réglages DÉJÀ validés (liste blanche) à UN robot papier, puis le relance.
+   Dernier verrou : même ici, une clé hors liste blanche ou interdite est refusée. */
+async function botAppliquer(env, ctx, svcId, set) {
+  for (const [name, value] of Object.entries(set)) {
+    if (!IA.REGLAGES_IA[name] || IA.INTERDITS.test(name)) return { ok: false, err: 'réglage refusé au dernier verrou : ' + name };
+    const up = value === null
+      ? await railGql(env, `mutation { variableDelete(input: { projectId: "${ctx.projectId}", environmentId: "${ctx.environmentId}", serviceId: "${svcId}", name: "${name}" }) }`)
+      : await railGql(env, `mutation { variableUpsert(input: { projectId: "${ctx.projectId}", environmentId: "${ctx.environmentId}", serviceId: "${svcId}", name: "${name}", value: ${JSON.stringify(String(value))} }) }`);
+    if (!up.j || up.j.errors) return { ok: false, err: name + ' : ' + JSON.stringify((up.j && up.j.errors) || up.http).slice(0, 160) };
+  }
+  const rd = await railGql(env, `mutation { serviceInstanceRedeploy(environmentId: "${ctx.environmentId}", serviceId: "${svcId}") }`);
+  if (!rd.j || rd.j.errors) return { ok: false, err: 'relance : ' + JSON.stringify((rd.j && rd.j.errors) || rd.http).slice(0, 160) };
+  return { ok: true };
+}
+/* MARCHÉS EN DIRECT — sources publiques, sans clé ; chaque source dit si elle a répondu. */
+const BOURSE_NOMS = { '^SPX': 'S&P 500', '^NDQ': 'Nasdaq', '^DAX': 'DAX', '^CAC': 'CAC 40', 'XAUUSD': 'Or', 'EURUSD': 'EUR/USD' };
+async function lireSource(url, type) {
+  try {
+    const r = await fetch(url, { headers: { 'accept': type === 'json' ? 'application/json' : '*/*', 'user-agent': 'Mozilla/5.0 (kd-mc.com tableau de bord)' }, signal: AbortSignal.timeout(8000), cf: { cacheTtl: 120 } });
+    if (!r.ok) return { err: 'HTTP ' + r.status };
+    return { val: type === 'json' ? await r.json() : await r.text() };
+  } catch (e) { return { err: String((e && e.message) || e).slice(0, 60) }; }
+}
+async function botMarche(env, sansCache) {
+  const cle = new Request('https://bot.kd-mc.com/__cache/marche-v1');
+  const cache = (typeof caches !== 'undefined' && caches.default) ? caches.default : null;
+  if (cache && !sansCache) { try { const c = await cache.match(cle); if (c) return await c.json(); } catch { /* */ } }
+  const paires = encodeURIComponent(JSON.stringify(IA.PAIRES_LIQUIDES.map((p) => p.replace('/', ''))));
+  const [fg, gl, bn, okx, sq, ct, jdc, cd] = await Promise.all([
+    lireSource('https://api.alternative.me/fng/?limit=2', 'json'),
+    lireSource('https://api.coingecko.com/api/v3/global', 'json'),
+    lireSource('https://data-api.binance.vision/api/v3/ticker/24hr?symbols=' + paires, 'json'),
+    lireSource('https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP', 'json'),
+    lireSource('https://stooq.com/q/l/?s=%5Espx+%5Endq+%5Edax+%5Ecac+xauusd+eurusd&f=sd2t2ohlcv&h&e=csv', 'texte'),
+    lireSource('https://cointelegraph.com/rss', 'texte'),
+    lireSource('https://journalducoin.com/feed/', 'texte'),
+    lireSource('https://www.coindesk.com/arc/outboundfeeds/rss/', 'texte'),
+  ]);
+  const etat = (x, ok) => (x.err ? x.err : (ok ? 'ok' : 'format inattendu'));
+  const m = { le: Date.now() };
+  m.peur_avidite = fg.val ? IA.lireFearGreed(fg.val) : null;
+  m.global = gl.val ? IA.lireCoingeckoGlobal(gl.val) : null;
+  m.cryptos = bn.val ? IA.lireBinance24h(bn.val) : null;
+  m.funding_btc = okx.val ? IA.lireFundingOkx(okx.val) : null;
+  const bourse = sq.val ? IA.lireStooqCsv(sq.val) : null;
+  m.bourse = bourse ? bourse.map((b) => Object.assign({ nom: BOURSE_NOMS[String(b.symbole).toUpperCase()] || b.symbole }, b)) : null;
+  const actus = [];
+  for (const [src, x] of [['Cointelegraph', ct], ['Journal du Coin', jdc], ['CoinDesk', cd]]) {
+    if (x.val) IA.lireRss(x.val, 4).forEach((a) => actus.push(Object.assign({ source: src }, a)));
+  }
+  m.actus = actus;
+  m.sources = {
+    'Peur & avidité (alternative.me)': etat(fg, !!m.peur_avidite), 'Marché global (CoinGecko)': etat(gl, !!m.global),
+    'Prix 24 h (Binance)': etat(bn, !!(m.cryptos && m.cryptos.length)), 'Financement BTC (OKX)': etat(okx, m.funding_btc !== null),
+    'Bourse (Stooq)': etat(sq, !!(m.bourse && m.bourse.length)), 'Actus Cointelegraph': etat(ct, true),
+    'Actus Journal du Coin': etat(jdc, true), 'Actus CoinDesk': etat(cd, true),
+  };
+  if (cache) { try { await cache.put(cle, new Response(JSON.stringify(m), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=300' } })); } catch { /* */ } }
+  return m;
+}
+/* LIENS D'ANALYSE — vérifiés EN DIRECT depuis Cloudflare (règle « vérifie tes liens en réel ») :
+   ✅ s'ouvre ; 🛡️ le site refuse les robots (401/403/429) mais s'ouvre sur un iPhone ; ❌ mort. */
+const LIENS_ANALYSE = [
+  ['Crypto', 'TradingView — marchés crypto', 'https://www.tradingview.com/markets/cryptocurrencies/'],
+  ['Crypto', 'CoinGlass — liquidations & financement', 'https://www.coinglass.com/'],
+  ['Crypto', 'CoinMarketCap', 'https://coinmarketcap.com/'],
+  ['Crypto', 'CoinGecko', 'https://www.coingecko.com/'],
+  ['Crypto', 'Indice peur & avidité', 'https://alternative.me/crypto/fear-and-greed-index/'],
+  ['Crypto', 'DefiLlama — DeFi & stablecoins', 'https://defillama.com/'],
+  ['Crypto', 'Glassnode Studio — on-chain', 'https://studio.glassnode.com/'],
+  ['Crypto', 'CryptoQuant — flux des plateformes', 'https://cryptoquant.com/'],
+  ['Crypto', 'Whale Alert — gros transferts', 'https://whale-alert.io/'],
+  ['Crypto', 'Mempool — réseau Bitcoin', 'https://mempool.space/'],
+  ['Bourse', 'TradingView — carte des actions', 'https://www.tradingview.com/heatmap/stock/'],
+  ['Bourse', 'Finviz — carte du S&P 500', 'https://finviz.com/map.ashx'],
+  ['Bourse', 'Calendrier économique (Investing)', 'https://fr.investing.com/economic-calendar/'],
+  ['Bourse', 'Boursorama — bourse', 'https://www.boursorama.com/bourse/'],
+  ['Bourse', 'Yahoo Finance', 'https://finance.yahoo.com/'],
+  ['Bourse', 'FRED — taux et macro', 'https://fred.stlouisfed.org/'],
+  ['Actus', 'Cointelegraph (français)', 'https://fr.cointelegraph.com/'],
+  ['Actus', 'Journal du Coin', 'https://journalducoin.com/'],
+  ['Actus', 'CoinDesk', 'https://www.coindesk.com/'],
+];
+async function botLiens() {
+  const cle = new Request('https://bot.kd-mc.com/__cache/liens-v1');
+  const cache = (typeof caches !== 'undefined' && caches.default) ? caches.default : null;
+  if (cache) { try { const c = await cache.match(cle); if (c) return await c.json(); } catch { /* */ } }
+  const out = await Promise.all(LIENS_ANALYSE.map(async ([cat, nom, url]) => {
+    let code = 0;
+    try {
+      const r = await fetch(url, { method: 'GET', redirect: 'follow', headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' }, signal: AbortSignal.timeout(6000) });
+      code = r.status; if (r.body) await r.body.cancel();
+    } catch { code = 0; }
+    const etat = code >= 200 && code < 400 ? 'ok' : [401, 403, 429].includes(code) ? 'protege' : 'mort';
+    return { cat, nom, url, code, etat };
+  }));
+  const res = { le: Date.now(), liens: out };
+  if (cache) { try { await cache.put(cle, new Response(JSON.stringify(res), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=21600' } })); } catch { /* */ } }
+  return res;
+}
+/* LE RÉVEIL DE L'IA. `force` (bouton « lancer maintenant ») saute seulement l'attente de 12 h ;
+   un essai en cours est TOUJOURS jugé par l'arbitre d'abord. */
+async function iaTick(env, ctx, origine, force) {
+  const st = await iaEtat(env);
+  const now = Date.now();
+  if (st.mode === 'off') return { ok: true, action: 'arretee', detail: 'IA en pause (bouton du tableau de bord)' };
+  /* Les 6 robots pour le relevé (le principal testnet compte pour le passage au réel), mais l'IA ne voit
+     QUE les 5 papier. */
+  const [tous, marche] = await Promise.all([botFleetStats(env, ctx, [IA.BOT_PRINCIPAL].concat(IA.BOTS_PAPIER)), botMarche(env)]);
+  const flotte = tous.filter((b) => IA.BOTS_PAPIER.includes(b.name));
+  const btc = ((marche.cryptos || []).find((c) => c.paire === 'BTC/USDT') || {}).prix || null;
+  st.dernierTick = now;
+  /* Relevé de la flotte à chaque réveil (avec le prix du BTC) : l'historique du passage au réel ne dépend
+     plus de l'ouverture de la page. 1 relevé par heure au plus (garde dans botSnapshot). */
+  await botSnapshot(env, tous, now, btc);
+  if (st.enCours) {
+    const v = IA.arbitre(st.enCours, IA.equitesComparables(st.enCours, flotte), now, btc);
+    if (v.verdict === 'attendre') { st.dernier = 'essai en cours sur ' + st.enCours.bot + ' : ' + v.raison; await iaEcrire(env, st); return { ok: true, action: 'attente', detail: v.raison }; }
+    let restaure = null;
+    if (v.verdict === 'annuler') {
+      const b = flotte.find((x) => x.name === st.enCours.bot);
+      restaure = b && b.svcId ? await botAppliquer(env, ctx, b.svcId, st.enCours.avant || {}) : { ok: false, err: 'robot introuvable' };
+    }
+    st.journal = IA.ajouterJournal(st.journal, { type: 'verdict', t: now, bot: st.enCours.bot, set: st.enCours.set, avant: st.enCours.avant,
+      verdict: v.verdict, raison: v.raison, r_cible: v.r_cible, r_mediane: v.r_mediane, r_btc: v.r_btc, heures: v.heures,
+      restaure: restaure ? (restaure.ok ? 'anciens réglages remis' : 'ÉCHEC de la remise : ' + restaure.err) : null });
+    st.enCours = null; st.dernier = 'essai jugé : ' + v.verdict;
+    await iaEcrire(env, st);
+    await audLog(env, { ev: 'bot_ia_verdict', set: v.verdict });
+    return { ok: true, action: 'verdict', detail: v.verdict + ' — ' + v.raison };
+  }
+  if (!force && now - (st.derniereDecision || 0) < IA.ECART_DECISIONS_MS) {
+    st.dernier = 'prochaine décision dans ' + Math.ceil((IA.ECART_DECISIONS_MS - (now - st.derniereDecision)) / 3600e3) + ' h';
+    await iaEcrire(env, st);
+    return { ok: true, action: 'attente', detail: st.dernier };
+  }
+  const actuels = {};
+  await Promise.all(flotte.filter((b) => b.svcId).map(async (b) => { actuels[b.name] = await botVarsVisibles(env, ctx, b.svcId); }));
+  const { system, prompt } = IA.construirePrompt(IA.resumerMarche(marche), flotte, actuels, st.journal);
+  let prop = null, source = 'ia', modele = '', echecIa = '';
+  try {
+    /* GRATUIT SEULEMENT (Kevin 30.09 + 2.10) : jamais Anthropic ni OpenAI payants, même s'ils sont configurés.
+       Qwen 3.8 27B (Workers AI) d'abord = le plus fort des gratuits (mesure publique 09.2026), puis les paliers gratuits. */
+    const r = await routeText(env, { system, prompt, maxTokens: 500, temperature: 0.3, budgetMs: 25000, domain: 'reasoning', chain: IA_CHAINE_GRATUITE });
+    modele = [r.provider, r.model].filter(Boolean).join(' · ');
+    prop = IA.validerProposition(r.text || '', actuels);
+    if (!prop.ok) echecIa = prop.err;
+  } catch (e) { echecIa = String((e && e.message) || e).slice(0, 120); }
+  if (!prop || !prop.ok) { prop = IA.propositionDeSecours(flotte, actuels); source = 'secours'; }
+  if (!prop.ok) {
+    st.dernier = 'aucune proposition valable : ' + prop.err + (echecIa ? ' (IA : ' + echecIa + ')' : '');
+    await iaEcrire(env, st);
+    return { ok: true, action: 'rien', detail: st.dernier };
+  }
+  /* CONTRE-AVIS : une 2e IA gratuite d'une autre famille (gpt-oss-120b, OpenAI open-weight, Workers AI)
+     relit la proposition. NON = rien ne change ; on réessaie dans 6 h. Muette = on suit l'arbitre. */
+  let contre = null;
+  if (source === 'ia' && env.AI && typeof env.AI.run === 'function') {
+    try {
+      const ca = IA.consigneContreAvis(prop, IA.resumerMarche(marche));
+      const r2 = await Promise.race([
+        env.AI.run(IA_CONTRE_AVIS_MODELE, { instructions: ca.system, input: ca.prompt, reasoning: { effort: 'low' } }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('délai')), 20000)),
+      ]);
+      contre = IA.lireContreAvis(IA.texteReponseIa(r2));
+    } catch { contre = null; }
+    if (contre && contre.avis === 'NON') {
+      st.derniereDecision = now - IA.ECART_DECISIONS_MS + 6 * 3600e3;
+      st.journal = IA.ajouterJournal(st.journal, { type: 'refus', t: now, bot: prop.bot, set: prop.set, raison: prop.raison,
+        contre_avis: contre.raison, modele, modele_contre: IA_CONTRE_AVIS_MODELE.split('/').pop(), origine });
+      st.dernier = 'proposition refusée par le contre-avis : ' + contre.raison;
+      await iaEcrire(env, st);
+      return { ok: true, action: 'refus', detail: st.dernier };
+    }
+  }
+  const cible = flotte.find((b) => b.name === prop.bot);
+  if (!cible || !cible.svcId) { st.dernier = 'robot ' + prop.bot + ' introuvable sur Railway'; await iaEcrire(env, st); return { ok: false, action: 'rien', detail: st.dernier }; }
+  const avant = {}; const va = actuels[prop.bot] || {};
+  /* null = le réglage n'existait pas : l'annulation le SUPPRIME (sinon la nouvelle valeur resterait). */
+  Object.keys(prop.set).forEach((k) => { avant[k] = va[k] !== undefined ? va[k] : null; });
+  const ap = await botAppliquer(env, ctx, cible.svcId, prop.set);
+  if (!ap.ok) { st.dernier = 'application échouée : ' + ap.err; await iaEcrire(env, st); return { ok: false, action: 'echec', detail: st.dernier }; }
+  st.enCours = Object.assign({ bot: prop.bot, debut: now, btc0: btc, set: prop.set, avant, raison: prop.raison, attendu: prop.attendu, source, modele }, IA.debutEssai(prop.bot, flotte));
+  st.derniereDecision = now;
+  st.journal = IA.ajouterJournal(st.journal, { type: 'decision', t: now, bot: prop.bot, set: prop.set, avant, raison: prop.raison,
+    attendu: prop.attendu, source, modele, echec_ia: source === 'secours' ? echecIa : '', origine,
+    contre_avis: contre ? contre.raison : '', modele_contre: contre ? IA_CONTRE_AVIS_MODELE.split('/').pop() : '' });
+  st.dernier = 'nouvel essai sur ' + prop.bot;
+  await iaEcrire(env, st);
+  await audLog(env, { ev: 'bot_ia_decision', set: Object.keys(prop.set).join(',') });
+  return { ok: true, action: 'decision', detail: prop.bot + ' ' + JSON.stringify(prop.set) };
+}
 async function botCtx(env) {
   const pt = await railGql(env, 'query { projectToken { projectId environmentId } }');
   const projectId = pt.j && pt.j.data && pt.j.data.projectToken && pt.j.data.projectToken.projectId;
@@ -3478,8 +3722,8 @@ async function taScanPair(sym) {
    (date), ce bot est passé de X à Y », même bien au-delà des 30 jours.
    Fail-open total : une panne KV ne doit jamais casser l'affichage de la flotte. */
 const BOT_SNAP_MS = 60 * 60 * 1000;   /* au plus 1 relevé par heure */
-const BOT_HIST_CAP = 720;             /* ~30 jours en horaire */
-async function botSnapshot(env, bots, now) {
+const BOT_HIST_CAP = 1500;            /* ≥ 60 jours (relevé toutes les 1-2 h) : le critère « 60 j » du passage au réel */
+async function botSnapshot(env, bots, now, btc) {
   if (!env || !env.ACCOUNTS || !Array.isArray(bots)) return;
   const t = Number(now) || Date.now();
   try {
@@ -3492,7 +3736,7 @@ async function botSnapshot(env, bots, now) {
       b[x.name] = { e: Math.round(Number(x.equity) * 100) / 100, n: Number(x.net) || 0, a: Number(x.buys) || 0, v: Number(x.sells) || 0 };
     }
     if (!Object.keys(b).length) return;   /* rien de chiffré à enregistrer */
-    hist.push({ t, b });
+    hist.push(Number(btc) > 0 ? { t, b, btc: Number(btc) } : { t, b });
     await env.ACCOUNTS.put('bot:hist', JSON.stringify(hist.slice(-BOT_HIST_CAP)));
     /* Premier relevé par bot : écrit UNE fois, jamais modifié ensuite. */
     const first = JSON.parse((await env.ACCOUNTS.get('bot:first')) || '{}');
@@ -3675,6 +3919,16 @@ async function handleMail(request, url, env) {
 
 async function handleBot(request, url, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
+  /* Réveil de l'IA pilote par le cron de kdmc-outlook : clé DÉRIVÉE du secret admin, comparée en
+     temps constant. Sans clé valide → 403, et rien d'autre n'est accessible par ce chemin. */
+  if (url.pathname === '/__bot/ia/tick' && request.method === 'POST' && request.headers.get('x-bot-ia-key')) {
+    const attendue = await iaCleReveil(env);
+    if (!attendue || !egalTempsConstant(request.headers.get('x-bot-ia-key'), attendue)) return J({ ok: false, reason: 'cle_reveil_invalide' }, null, 403);
+    if (!env.RAILWAY_TOKEN) return J({ ok: false, reason: 'railway_token_absent' });
+    const ctxR = await botCtx(env);
+    if (ctxR.err) return J({ ok: false, reason: ctxR.err });
+    return J(await iaTick(env, ctxR, 'cron', false));
+  }
   const me = await adminSession(request, env);
   if (!me) {
     const needCode = !!(env && env.KDMC_ADMIN_PIN_SHA256);
@@ -3703,9 +3957,52 @@ async function handleBot(request, url, env) {
     return J({ ok: true, scanned: SCAN_PAIRS.length, results: out });
   }
 
+  /* MARCHÉS EN DIRECT + LIENS D'ANALYSE (Kevin 2026-10-02) : lecture seule, sans Railway. */
+  /* PASSAGE AU RÉEL (contrôle seulement, jamais de bascule) + POINT VOCAL — Kevin 2026-10-02. */
+  if (path === '/__bot/reel' && request.method === 'GET') {
+    let hist = []; try { hist = JSON.parse((await env.ACCOUNTS.get('bot:hist')) || '[]'); } catch { hist = []; }
+    const robots = IA.BOTS_PAPIER.map((n) => IA.pretPourLeReel(hist, n));
+    const principal = IA.segmentDepuisRedemarrage(hist, 'crypto-bot');
+    const joursTestnet = principal.length > 1 ? Math.floor((principal[principal.length - 1].t - principal[0].t) / 86400e3) : 0;
+    return J({ ok: true, seuils: IA.SEUILS_REEL, robots, testnet: { jours: joursTestnet, ok: joursTestnet >= 14 }, releves: hist.length,
+      depuis: hist.length ? hist[0].t : null, pret: robots.some((x) => x.pret) && joursTestnet >= 14 });
+  }
+  if (path === '/__bot/ia/vocal' && request.method === 'GET') {
+    const [st, marche] = await Promise.all([iaEtat(env), botMarche(env)]);
+    return J({ ok: true, texte: IA.resumeVocal(st, marche) });
+  }
+  if (path === '/__bot/marche' && request.method === 'GET') return J(Object.assign({ ok: true }, await botMarche(env, url.searchParams.get('frais') === '1')));
+  if (path === '/__bot/liens' && request.method === 'GET') return J(Object.assign({ ok: true }, await botLiens()));
   if (!env.RAILWAY_TOKEN) return J({ ok: false, reason: 'railway_token_absent', detail: 'Secret RAILWAY_TOKEN non déployé sur le worker (relancer deploy-kdmc-router).' });
   const ctx = await botCtx(env);
   if (ctx.err) return J({ ok: false, reason: ctx.err, detail: ctx.detail });
+  /* IA PILOTE (Kevin 2026-10-02) — état, pause/relance, lancer maintenant, annuler l'essai en cours. */
+  if (path === '/__bot/ia' && request.method === 'GET') {
+    const st = await iaEtat(env);
+    return J({ ok: true, mode: st.mode, enCours: st.enCours, derniereDecision: st.derniereDecision, dernierTick: st.dernierTick,
+      dernier: st.dernier, journal: (st.journal || []).slice().reverse(), robots: IA.BOTS_PAPIER,
+      rythme: { decision_h: IA.ECART_DECISIONS_MS / 3600e3, essai_min_h: IA.ESSAI_MIN_MS / 3600e3, essai_max_h: IA.ESSAI_MAX_MS / 3600e3 } });
+  }
+  if (path === '/__bot/ia/mode' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* */ }
+    if (!['auto', 'off'].includes(b.mode)) return J({ ok: false, reason: 'mode_invalide', detail: 'auto ou off' });
+    const st = await iaEtat(env); st.mode = b.mode; await iaEcrire(env, st);
+    await audLog(env, { ev: 'bot_ia_mode', set: b.mode });
+    return J({ ok: true, mode: b.mode });
+  }
+  if (path === '/__bot/ia/tick' && request.method === 'POST') return J(await iaTick(env, ctx, 'kevin', true));
+  if (path === '/__bot/ia/annuler' && request.method === 'POST') {
+    const st = await iaEtat(env);
+    if (!st.enCours) return J({ ok: false, reason: 'aucun_essai' });
+    const flotte = await botFleetStats(env, ctx, [st.enCours.bot]);
+    const ap = flotte[0] && flotte[0].svcId ? await botAppliquer(env, ctx, flotte[0].svcId, st.enCours.avant || {}) : { ok: false, err: 'robot introuvable' };
+    if (!ap.ok) return J({ ok: false, reason: 'remise_echouee', detail: ap.err });
+    st.journal = IA.ajouterJournal(st.journal, { type: 'verdict', t: Date.now(), bot: st.enCours.bot, set: st.enCours.set, avant: st.enCours.avant,
+      verdict: 'annuler', raison: 'annulé à la main par Kevin', restaure: 'anciens réglages remis' });
+    st.enCours = null; st.dernier = 'essai annulé par Kevin'; await iaEcrire(env, st);
+    await audLog(env, { ev: 'bot_ia_annule' });
+    return J({ ok: true });
+  }
 
   if (path === '/__bot/status' && request.method === 'GET') {
     const dp = await railGql(env, `query { deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${ctx.serviceId}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } } }`);
@@ -3722,22 +4019,8 @@ async function handleBot(request, url, env) {
      ne quitte jamais le worker ; les 6 services sont interrogés EN PARALLÈLE. */
   if (path === '/__bot/fleet' && request.method === 'GET') {
     const FLEET = ['crypto-bot', 'crypto-bot-p1', 'crypto-bot-p2', 'crypto-bot-p3', 'crypto-bot-p4', 'crypto-bot-p5'];
-    const bots = await Promise.all(FLEET.map(async (name) => {
-      const svc = (ctx.services || []).find((s) => s.name === name);
-      if (!svc) return { name, status: 'absent' };
-      const dp = await railGql(env, `query { deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${svc.id}", environmentId: "${ctx.environmentId}" }) { edges { node { id status } } } }`);
-      const node = ((((dp.j || {}).data || {}).deployments || { edges: [] }).edges[0] || {}).node;
-      if (!node) return { name, status: 'aucun_deploiement' };
-      const rl = await railGql(env, `query { deploymentLogs(deploymentId: "${node.id}", limit: 1000) { message } }`);
-      const logs = (((rl.j || {}).data || {}).deploymentLogs || []);
-      const st = fleetTradeStats(logs);
-      let equity = null;
-      for (let i = logs.length - 1; i >= 0; i--) {
-        const m = String(logs[i].message || '').match(/equity=([0-9.]+)/);
-        if (m) { equity = Number(m[1]); break; }
-      }
-      return Object.assign({ name, status: node.status, equity }, st);
-    }));
+    /* Même calcul que l'IA pilote (botFleetStats) ; l'identifiant Railway ne sort pas du worker. */
+    const bots = (await botFleetStats(env, ctx, FLEET)).map((b) => { const c = Object.assign({}, b); delete c.svcId; delete c.depl; return c; });
     /* Tri par net réalisé décroissant ; les bots absents/sans logs en dernier. */
     bots.sort((a, b) => (((b.net == null) ? -1e9 : b.net) - ((a.net == null) ? -1e9 : a.net)));
     /* Trace durable (survit à la purge des logs Railway et aux redéploiements). */

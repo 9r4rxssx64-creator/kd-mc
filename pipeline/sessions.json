@@ -1113,7 +1113,7 @@
     "conference-ia-gratuites": {
       "titre": "Conférence des IA gratuites, pour toutes les apps (règle Kevin 2.10 soir)",
       "branche": "claude/conference-ia-gratuites",
-      "sujet": "conférence v2, Bee/Créa/Apex, garde",
+      "sujet": "PR #4242 : conférence v2, Bee/Créa/Apex, garde",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",

@@ -1,5 +1,22 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (22h40 UTC) — KV : QUI écrit, mesuré → les visites anonymes se comptent par JOUR, les robots ne comptent plus ; fuite RH refermée (0/16)
+
+- **Mesuré** (robot `coffre-kv-inventaire`, run 37068701605, lecture seule) : 1 563 clés ; **514 visites anonymes comptées le
+  2.10 = ~1 028 écritures = 73 % des 1 406 du jour** (hier : 400 visites, ~800) — shops 86, kd-mc.com 72, apex-ai 30,
+  worldmonitor 26, arbre 23, studio 23, cmcteams 22, apex-chat 21, lingua 20… : des robots d'internet qui balaient les
+  33 adresses, comptés **par heure**. Le reste : `ltts` (cache voix, 1 093 clés, une écriture par phrase nouvelle), `mail`,
+  `acc`, workers `mon`. Plafonds `q:` vivants : 0, compteurs `dep:` : 0.
+- **Correctif** (`services/kdmc-router/worker.js`, `ficheLaVisite`) : un visiteur anonyme se compte **une fois par jour et
+  par app** (marqueur 25 h) au lieu d'une fois par heure ; un **robot déclaré** (User-Agent bot / crawler / spider / curl /
+  python / Go-http…) n'écrit rien. Le compteur garde son sens (visiteurs par jour) et coûte ≤ 2 écritures par visiteur
+  et par jour. Garde dans `fiche-visite.test.mjs` (10/10) : marqueur daté du jour, 6 pages = 2 écritures, 5 robots =
+  0 écriture, un iPhone = 2, sabotage sur la source (plus de « : + heure »). Effet attendu demain : relire mesure-kv
+  (jours=1) — pas d'estimation ici, le chiffre viendra du robot.
+- **Fuite RH refermée, mesurée** : publication 37069864124 (21h57) → « 4 fichiers nominatifs déposés dans le KV, le paquet
+  Pages ne les porte plus » ; déploiement public du routeur 37069864151 relancé → **sonde-fuite 0/16 sur pages.dev ET
+  0/16 sur cmcteams.kd-mc.com** (le premier passage voyait encore 3/16 : la sonde avait couru pendant la mise en ligne du
+  nouveau paquet).
 ## 2026-10-02 (22h15 UTC) — Kevin : « Tout gratuit, pas seulement production. Toujours tout gratuit. Trouve des solutions pour la meilleure qualité toujours. Note tout. »
 
 - **Noté** : nouvelle RÈGLE ABSOLUE dans CLAUDE-HISTOIRE (+ index régénéré, test:claude-md 11/0), entrée au registre des

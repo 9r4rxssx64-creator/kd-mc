@@ -129,6 +129,31 @@ test('on compte des VISITEURS, pas des pages (sinon le quota d’écritures saut
   assert.equal(env2.ACCOUNTS.m.get(cle2), '2', 'deux visiteurs distincts = 2');
 });
 
+test('PLAFOND KV (mesuré 2.10 : 514 visites anonymes = ~1 028 écritures = 73 % du jour) : un visiteur compte UNE fois PAR JOUR (plus par heure), un robot déclaré n’écrit RIEN', async () => {
+  const env = envNeuf();
+  const jour = new Date().toISOString().slice(0, 10);
+  await servir(page('shops.kd-mc.com'), env);
+  const marqueur = [...env.ACCOUNTS.m.keys()].find((k) => String(k).startsWith('anonv:'));
+  assert.ok(marqueur && marqueur.endsWith(':' + jour), 'le marqueur du visiteur est daté du JOUR, pas de l’heure : ' + marqueur);
+  assert.equal(env.ACCOUNTS.m.size, 2, 'une visite = 2 écritures (marqueur + compteur), pas plus');
+  for (let i = 0; i < 5; i++) await servir(page('shops.kd-mc.com'), env);
+  assert.equal(env.ACCOUNTS.m.size, 2, 'le même visiteur, le même jour : plus aucune écriture');
+  /* robots d'internet déclarés (ce sont eux qui balaient les 33 adresses) : rien, ni marqueur ni compteur */
+  for (const ua of ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'curl/8.4.0', 'python-requests/2.31', 'Mozilla/5.0 (compatible; AhrefsBot/7.0)', 'Go-http-client/1.1']) {
+    const envR = envNeuf();
+    await servir(new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': ua, 'CF-Connecting-IP': '5.5.5.5' } }), envR);
+    assert.equal(envR.ACCOUNTS.m.size, 0, 'robot « ' + ua.slice(0, 30) + ' » : aucune écriture');
+  }
+  /* un vrai navigateur (iPhone) compte, lui */
+  const envN = envNeuf();
+  await servir(new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'CF-Connecting-IP': '6.6.6.6' } }), envN);
+  assert.equal(envN.ACCOUNTS.m.size, 2, 'un iPhone compte (2 écritures)');
+  /* sabotage, dans la source : la clé est bâtie avec le jour et le marqueur vit ≥ 24 h */
+  assert.match(SRC, /'anonv:' \+ \(await sha256Hex\(ip \+ '\|' \+ host\)\)\.slice\(0, 20\) \+ ':' \+ jour/, 'marqueur par JOUR');
+  assert.match(SRC, /put\(dejaVu, '1', \{ expirationTtl: 90000 \}\)/, 'marqueur gardé 25 h');
+  assert.ok(!/':' \+ heure/.test(SRC), 'plus aucun marqueur par heure');
+});
+
 test('une image ou un script n’écrit RIEN (pas de bruit, pas de coût)', async () => {
   for (const dest of ['image', 'script', 'style', 'font']) {
     const env = envNeuf();

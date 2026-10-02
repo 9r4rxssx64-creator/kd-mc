@@ -1553,6 +1553,9 @@ function estUnePage(request) {
   if (dest) return dest === 'document';           // navigateur moderne : sans ambiguïté
   return /text\/html/i.test(request.headers.get('accept') || '');
 }
+/* Robots d'internet qui se déclarent (User-Agent) : ils n'ont rien à faire dans un compteur de visiteurs, et chacun
+   coûtait 2 écritures KV par app et par heure. Un navigateur ne contient aucun de ces mots. */
+const ROBOT_UA = /bot|crawl|spider|slurp|curl\/|wget|python-requests|python-urllib|go-http-client|java\/|libwww|httpclient|scrapy|headlesschrome|phantomjs|facebookexternalhit|preview|monitor|uptime|scan/i;
 async function ficheLaVisite(request, url, env, host) {
   try {
     if (!env || !env.ACCOUNTS || !estUnePage(request)) return;
@@ -1585,12 +1588,19 @@ async function ficheLaVisite(request, url, env, host) {
        FICHES des vraies personnes qui cesseraient de s'enregistrer. Un mécanisme
        de surveillance qui casse ce qu'il surveille est pire que pas de surveillance.
        On ne compte donc qu'une fois par visiteur, par app et par heure. */
+    /* MESURÉ le 2.10.2026 (robot coffre-kv-inventaire, run 37068701605) : 514 visites anonymes comptées dans la journée
+       = ~1 028 écritures = 73 % des 1 406 écritures du jour — le plafond gratuit (1 000) était crevé par CE compteur,
+       et ce sont des robots d'internet (shops 86, kd-mc.com 72, apex-ai 30, worldmonitor 26…) qui balaient 33 adresses.
+       Deux parades, 0 € : (1) un visiteur se compte UNE FOIS PAR JOUR et par app (marqueur 24 h), plus une fois par
+       heure ; (2) un robot déclaré (User-Agent bot / crawler / spider / curl / python…) ne se compte pas du tout.
+       Le compteur garde son sens (des visiteurs par jour), et il coûte ≤ 2 écritures par visiteur et par jour. */
+    const ua = request.headers.get('user-agent') || '';
+    if (ROBOT_UA.test(ua)) return;                           // robot d'internet : ni fiché ni compté
     const ip = request.headers.get('CF-Connecting-IP') || 'inconnu';
-    const heure = Math.floor(Date.now() / 3600000);
-    const dejaVu = 'anonv:' + (await sha256Hex(ip + '|' + host)).slice(0, 20) + ':' + heure;
-    if (await env.ACCOUNTS.get(dejaVu)) return;             // même visiteur, même heure → rien
-    await env.ACCOUNTS.put(dejaVu, '1', { expirationTtl: 7200 });
     const jour = new Date().toISOString().slice(0, 10);
+    const dejaVu = 'anonv:' + (await sha256Hex(ip + '|' + host)).slice(0, 20) + ':' + jour;
+    if (await env.ACCOUNTS.get(dejaVu)) return;             // même visiteur, même jour → rien
+    await env.ACCOUNTS.put(dejaVu, '1', { expirationTtl: 90000 });   // 25 h : couvre la journée, puis s'efface seul
     const cle = 'anon:' + jour + ':' + host;
     const n = parseInt((await env.ACCOUNTS.get(cle)) || '0', 10) || 0;
     await env.ACCOUNTS.put(cle, String(n + 1), { expirationTtl: 60 * 60 * 24 * 100 });

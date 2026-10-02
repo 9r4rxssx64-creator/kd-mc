@@ -3847,6 +3847,26 @@ Philippe, fils d'Emmanuel François ‹employé› (1909) ; et les ancêtres de 
 jusqu'en 1744 (Antoine et Félicité TIBAU, puis Pierre et Marie Catherine ERESEO) ; ceux de
 Jean-Baptiste ‹employé› (Louis Félix André et Marie Antoinette MARTIN).
 
+**2ᵉ passe du 2.10.2026 (24 fiches de plus, écrites et relues ; rejouer = 0 à écrire)** — à trancher :
+6. **Marie-Noëlle ‹employé› née en 1953, pas 1950** : c'est ce qu'écrit l'ordonnance de
+   naturalisation n° 10.405 (Journal de Monaco n°7006, 3.01.1992, date vérifiée sur l'image).
+7. **« Charlotte », l'épouse d'Émile**, s'appelle **Françoise Charlotte BOURTHOUMIEUX**, née le
+   24.03.1952 à Douala (ordonnance n° 10.404, même Journal). Je n'ai mis que la date et le lieu
+   de naissance, qui étaient vides.
+8. **PIZIO est confirmé** par un texte officiel : l'ordonnance 7.509 de 2019 (naturalisation de
+   Cécile ‹employé›, nom d'usage « Pizio »). Je corrige l'orthographe sur ton mot.
+9. **Monique « JAILLET » = Monique Jeanne Annie JAYET** (1931 Lunel-Viel – 2017), confirmé par
+   trois sources. L'avis est signé par les enfants BESQUEUT : c'est bien l'épouse de Jean.
+10. **Madeleine MATHIEU** (épouse de François Joseph Philippe ‹employé›) : il s'agit probablement de
+    Madeleine Marie Clémence, née en 1906 au Val-d'Ajol et morte en 1996 à Menton.
+11. **Le père de Judith et d'Attilio ‹employé›** pourrait être **Jean ‹employé›**, qui a repris un
+    restaurant au 22 rue Basse à Monaco en 1922. L'acte de mariage de Nice (1911) le dira.
+
+**L'acte de mariage de Nice (1911)** : les Archives des Alpes-Maritimes refusent tout robot,
+même un navigateur honnête lancé depuis la CI (« Request Rejected », mesuré le 2.10). Le
+seul chemin restant, c'est **toi** : ouvre-le sur ton iPhone et colle-moi l'adresse de la page ou
+une capture. Je le relie aux deux fiches et je lis les noms des parents.
+
 **Deux documents qui débloqueraient beaucoup** (gratuits, aux archives) :
 - l'acte de **mariage de Judith ‹employé› et Marius ‹employé›, Nice, 8.08.1911** (Archives 06,
   cote 2 E 728, vue 55/535) : il nomme les parents de Judith → Attilio, Francesca LEO, Eleonore ;

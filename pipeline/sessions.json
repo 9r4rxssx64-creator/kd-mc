@@ -938,9 +938,9 @@
       "attend_session": null
     },
     "etat-robots-publics": {
-      "titre": "Coûts, Firebase allégé, voix gratuites, R3-R7",
-      "branche": "claude/ia-gratuites-empilees",
-      "sujet": "Go freellm : paliers gratuits empilés dans ia-route (sonde d'abord)",
+      "titre": "IA gratuites — règle du relais (niveaux, pauses durables, 5 paliers)",
+      "branche": "claude/ia-gratuites-cablage",
+      "sujet": "ia-route : NIVEAU A/B, pauses d'épuisement durables (cache du Worker), 5 paliers gratuits câblés, Together = crédits ; à élaguer d'après la sonde avant PR",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
@@ -1037,6 +1037,27 @@
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "ia-gratuites-bascule": {
+      "titre": "IA gratuites — sonde /models + test:bascule réparé",
+      "branche": "claude/bascule-bot-ia",
+      "sujet": "Sonde réelle : Groq/Cerebras 404 (modèles retirés), 8 clés absentes, Cohere seul OK ; sonde lit GET /models ; bot-ia.js dans la copie de test:bascule",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "ia-gratuites-sonde": {
+      "titre": "Go freellm, étape 1 : sonde des IA gratuites (PR #4212)",
+      "branche": "claude/ia-gratuites-empilees",
+      "sujet": "Fusionnée (#4212, e7fe77a05) ; suppression refusée à l'agent (API 403) → session terminée",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée le 2.10 19h48 (#4212)"
     }
   },
   "messages": [

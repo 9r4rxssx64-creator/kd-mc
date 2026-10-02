@@ -46,10 +46,24 @@ export async function sonder(f, cle, fetchFn = fetch) {
   } catch (e) { return { id: f.id, ok: false, http: 0, ms: Date.now() - t0, detail: String(e && e.message || e).slice(0, 120) }; }
 }
 
+/* Un 404 « model does not exist » (Groq, Cerebras le 2.10 : llama-3.3-70b retiré) ne dit pas QUOI mettre à la place :
+   on lit la liste des modèles du fournisseur (GET /models, lecture seule) et on garde ceux de la classe 70B / Qwen /
+   gpt-oss — c'est ce qui permet de corriger le nom dans ia-route sans deviner. */
+export async function listerModeles(f, cle, fetchFn = fetch) {
+  try {
+    const r = await fetchFn(f.url.replace(/\/chat\/completions$/, '/models'), { method: 'GET', headers: { authorization: 'Bearer ' + cle } });
+    if (!r.ok) return { ok: false, http: r.status };
+    const j = JSON.parse(await r.text());
+    const ids = (Array.isArray(j.data) ? j.data : (Array.isArray(j.models) ? j.models : [])).map((m) => String(m.id || m.name || '')).filter(Boolean).sort();
+    const utiles = ids.filter((id) => /llama|qwen|gpt-oss|deepseek|mixtral|gemma|kimi|command/i.test(id) && !/whisper|tts|guard|embed|rerank|vision|audio/i.test(id));
+    return { ok: true, total: ids.length, utiles: utiles.slice(0, 15) };
+  } catch (e) { return { ok: false, http: 0, detail: String(e && e.message || e).slice(0, 80) }; }
+}
+
 export function ligne(f, r) {
   if (!r) return `${f.id} : clé absente (${f.cle})`;
   return r.ok ? `${f.id} ✅ ${r.ms} ms · ${r.modele} · « ${r.texte} »${f.deja ? '' : ' · À BRANCHER'} (${f.palier})`
-              : `${f.id} ❌ HTTP ${r.http} en ${r.ms} ms — ${r.detail} (${f.palier})`;
+              : `${f.id} ❌ HTTP ${r.http} en ${r.ms} ms — ${r.detail} (${f.palier})${r.modeles ? ' → ' + r.modeles : ''}`;
 }
 
 async function main() {
@@ -57,6 +71,10 @@ async function main() {
   for (const f of FOURNISSEURS) {
     const cle = process.env[f.cle];
     const r = cle ? await sonder(f, cle) : null;
+    if (r && !r.ok && r.http === 404) {
+      const l = await listerModeles(f, cle);
+      r.modeles = l.ok ? `modèles disponibles (${l.total}) : ${l.utiles.join(', ') || 'aucun de la classe cherchée'}` : `liste des modèles illisible (HTTP ${l.http})`;
+    }
     res.push({ f, r }); console.log(ligne(f, r));
   }
   const ok = res.filter((x) => x.r && x.r.ok);

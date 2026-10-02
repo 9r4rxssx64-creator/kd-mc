@@ -3324,3 +3324,4 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-02 | `tests/verify-docs-a-la-demande.mjs` | Garde : règles, module, robot, câblage (22 contrôles, 2 sabotages) | coffre + public |
 | 2026-10-02 | `tools/ia/sonder-ia-gratuites.mjs` + `.github/workflows/coffre-sonde-ia-gratuites.yml` | « Go freellm » : sonde réelle des 13 IA gratuites dont Kevin a la clé (lecture seule) | coffre |
 | 2026-10-02 | `tests/verify-sonde-ia-gratuites.mjs` | Garde de la sonde (lecture seule, robot borné, paliers crédits jamais « gratuits ») | coffre + public |
+| 2026-10-02 | `tools/ia/sonder-ia-gratuites.mjs` (+ garde 11 contrôles) | Sur un 404 « modèle inexistant », la sonde lit la liste des modèles du fournisseur (GET /models) pour corriger sans deviner (test:bascule réparé par #4217 d'une autre session) | coffre + public |

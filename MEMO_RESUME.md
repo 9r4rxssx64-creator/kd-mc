@@ -320,6 +320,28 @@ Michel) — à confirmer.
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-02 (19h50 UTC) — SONDE RÉELLE des IA gratuites (run 37056539492) : la cascade gratuite est presque MORTE, mesuré
+
+- **Mesuré, pas estimé** (1 question de 8 jetons par clé, depuis le coffre) : **1 fournisseur sur 5 répond**, et **8 clés
+  n'existent pas au coffre** (OPENROUTER, SAMBANOVA, NVIDIA, HF_TOKEN, GLM, DASHSCOPE, NEBIUS, SCALEWAY — le robot de
+  déploiement les « pose si présentes », donc personne ne l'avait vu). Je l'avais écrit à 13h30 comme « clés déjà au
+  coffre » : c'était une lecture du robot, pas une mesure — faux, corrigé ici.
+  - groq ❌ **404 : `llama-3.3-70b-versatile` n'existe plus** (c'est LE modèle de ia-route, kdmc-apis, Créa) → Groq est
+    mort en production depuis le retrait du modèle, sans qu'aucun robot le dise ;
+  - cerebras ❌ **404 : `llama-3.3-70b` retiré** → mort pareil ;
+  - mistral ❌ 429 « Rate limit exceeded » (palier gratuit : épuisé ou trop serré) ;
+  - together ❌ 401 clé invalide ; gemini : déjà 402 (crédits prépayés) ;
+  - **cohere ✅ 392 ms** (`command-r7b-12-2024`) — le seul gratuit à clé qui répond, et il n'est pas câblé.
+  → En vrai, « gratuit d'abord » = **Qwen (Workers AI) seul**, puis… Anthropic (payant). La règle du relais gratuit
+  n'a de sens que si les relais existent : d'abord remettre Groq et Cerebras debout avec des modèles qui existent.
+- **Fait** (branche `claude/bascule-bot-ia`) : la sonde lit maintenant la liste des modèles (GET /models, lecture seule)
+  quand un 404 tombe → le prochain passage dira QUOI mettre à la place, sans deviner (garde 11 contrôles). Même branche :
+  `test:bascule` rouge sur main depuis la fusion #4215 d'une autre session (`bot-ia.js` oublié dans la copie du test) : réparé
+  par cette autre session (#4217, les voisins sont lus dans les `import`) avant moi → ma ligne retirée, la sienne gardée.
+- **À faire ensuite** : fusionner (après la chaîne), relancer la sonde, corriger les noms de modèles dans ia-route /
+  kdmc-apis / Créa, câbler Cohere, déployer, mesurer `/health`. Pour les 8 clés absentes : rien à inventer, ce sont des
+  comptes gratuits que Kevin n'a pas (ou pas déposés) — à lister dans ses actions, sans urgence (Qwen répond).
+
 ## 2026-10-02 (13h30 UTC) — Kevin « Go freellm » : les paliers gratuits empilés, dans NOTRE routeur (0 €, 0 serveur)
 
 - **Mesuré avant d'agir** : FreeLLMAPI (tashfeenahmed/freellmapi, MIT) = serveur Node + SQLite sur le port 3001, allumé 24/24

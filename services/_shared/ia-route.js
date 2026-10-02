@@ -26,7 +26,130 @@ export const QWEN_MODELS = [
 ];
 
 /* Ordre des gratuits : c'est LUI que « gratuit d'abord » suit quand plusieurs existent. */
-export const FREE_PROVIDERS = ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'cerebras'];
+/* 2.10.2026 (Kevin « Go freellm ») : FreeLLMAPI empile ~34 paliers gratuits derrière un serveur — ici, la même idée
+   SANS serveur : les paliers gratuits dont Kevin détient déjà la clé entrent dans la cascade, après ceux d'avant
+   (l'ordre d'avant ne bouge pas). Mesuré avant câblage par tools/ia/sonder-ia-gratuites.mjs (robot coffre).
+   Together n'est PAS déclaré gratuit : kdmc-apis le range depuis toujours parmi les moteurs payants (MOTEURS_PAYANTS,
+   compte à crédits) — on l'appelle avec son modèle « -Free », mais seulement après les gratuits, et jamais sans la clé
+   que Kevin seul détient (règle : un palier à crédits n'est jamais déclaré gratuit sans Kevin). */
+export const FREE_PROVIDERS = ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'cerebras', 'sambanova', 'nvidia', 'huggingface', 'glm', 'cohere'];
+
+/* NIVEAU de qualité (Kevin 2.10.2026 : « quand ça s'épuise, anticipe du gratuit en relais, toujours même qualité, même
+   niveau ») : 'A' = classe Llama 3.3 70B / Qwen3 30B+ / Gemini Flash ; 'B' = petits modèles (mistral-small, glm-4-flash,
+   command-r7b). Un gratuit de niveau A épuisé est relayé par un gratuit de niveau A tant qu'il en reste. */
+export const NIVEAU = { qwen: 'A', groq: 'A', gemini: 'A', openrouter: 'A', cerebras: 'A', sambanova: 'A', nvidia: 'A', together: 'A', huggingface: 'A', mistral: 'B', glm: 'B', cohere: 'B', anthropic: 'A', openai: 'A', deepseek: 'A', perplexity: 'A' };
+const parNiveau = (a, b) => (NIVEAU[a] || 'B').localeCompare(NIVEAU[b] || 'B');
+
+/* ÉPUISEMENT ANTICIPÉ : un fournisseur qui dit « quota / crédits / 429 » est mis en pause et SAUTÉ d'office au tour
+   suivant — plus d'appel perdu, plus d'attente. Et AVANT même le refus : les en-têtes de quota (x-ratelimit-remaining-*)
+   presque à zéro mettent en pause tout de suite ; le relais prend sans que personne attende.
+   PAUSE DURABLE (2.10, « va plus loin ») : la mémoire de l'isolat s'efface quand le Worker redémarre ; la pause est
+   AUSSI écrite dans le cache du Worker (Cache API : gratuit, 0 écriture KV — le plafond KV est déjà atteint —, partagé
+   par les isolats d'un même centre Cloudflare, expire seul au terme de la pause). Un isolat neuf relit ces pauses avant
+   d'appeler qui que ce soit (chargerPauses). Hors Worker (tests, Node) : mémoire seule, rien ne casse. */
+const pauses = new Map();
+const CACHE_PAUSE = 'https://pause.ia-route.invalid/';
+function cachePauses() { try { const c = globalThis.caches; return c && c.default && typeof c.default.match === 'function' ? c.default : null; } catch (_) { return null; } }
+/** Met en pause (mémoire tout de suite, cache ensuite). Renvoie une promesse : true si la pause est aussi durable. */
+export function pauser(provider, ms, raison) {
+  if (!(ms > 0)) return Promise.resolve(false);
+  const p = { jusqua: Date.now() + ms, raison: String(raison || '').slice(0, 80) };
+  pauses.set(provider, p);
+  const c = cachePauses();
+  if (!c) return Promise.resolve(false);
+  try {
+    return Promise.resolve(c.put(new Request(CACHE_PAUSE + provider), new Response(JSON.stringify(p),
+      { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=' + Math.ceil(ms / 1000) } }))).then(() => true, () => false);
+  } catch (_) { return Promise.resolve(false); }
+}
+export function enPause(provider, maintenant) { const p = pauses.get(provider); if (!p) return null; if (p.jusqua <= (maintenant || Date.now())) { pauses.delete(provider); return null; } return p; }
+/** Relit les pauses durables (cache du Worker) pour les fournisseurs que la mémoire ne connaît pas : un isolat neuf
+    retrouve l'épuisement constaté par un autre. Renvoie le nombre de pauses retrouvées (0 hors Worker). */
+export async function chargerPauses(providers) {
+  const c = cachePauses();
+  if (!c) return 0;
+  let n = 0;
+  await Promise.all((providers || Object.keys(NIVEAU)).filter((p) => !pauses.has(p)).map(async (p) => {
+    try {
+      const r = await c.match(new Request(CACHE_PAUSE + p));
+      if (!r) return;
+      const j = await r.json();
+      if (j && j.jusqua > Date.now()) { pauses.set(p, { jusqua: j.jusqua, raison: j.raison || 'durable' }); n++; }
+    } catch (_) { /* cache muet : mémoire seule */ }
+  }));
+  return n;
+}
+export function pausesActives() { const out = {}; for (const [k, v] of pauses) if (enPause(k)) out[k] = { secondes: Math.round((v.jusqua - Date.now()) / 1000), raison: v.raison }; return out; }
+/** Vrai quand le cache du Worker existe (les pauses survivent au redémarrage de l'isolat). */
+export function pausesDurables() { return !!cachePauses(); }
+export function _resetPauses() { pauses.clear(); modelesRetires.clear(); }
+
+/* MODÈLES DE SECOURS (2.10, mesuré par la sonde : Groq et Cerebras ont RETIRÉ « llama-3.3-70b » → 404, et toute la
+   cascade gratuite est tombée sans qu'un robot le dise). Un fournisseur dont le modèle n'existe plus n'est pas perdu :
+   le modèle retiré est RETENU (mémoire + cache du Worker, 7 jours) et le suivant de SA liste prend, tout de suite, dans
+   le même appel. Les noms de MODELES_SECOURS viennent de la sonde (GET /models, robot coffre-sonde-ia-gratuites),
+   jamais devinés : Groq (11 modèles) → gpt-oss-120b, gpt-oss-20b, qwen3.8-27b ; Cerebras (2) → gpt-oss-120b, qwen-3.8-27b. */
+export const MODELES_SECOURS = {   // MESURÉ le 2.10.2026 (sonde 37061173309, GET /models) — rien d'inventé
+  groq: ['openai/gpt-oss-20b', 'qwen/qwen3.8-27b'],
+  cerebras: ['qwen-3.8-27b'],
+};
+const modelesRetires = new Map();   // provider → Set(modèles qui ont répondu « n'existe pas »)
+const CACHE_RETIRES = CACHE_PAUSE + 'modeles-retires/';
+export function modeleRetire(provider, model) { return !!(modelesRetires.get(provider) && modelesRetires.get(provider).has(model)); }
+/** Candidats dans l'ordre : le modèle demandé (ou celui par défaut), puis les secours — sans ceux connus retirés. */
+export function modelesCandidats(provider, demande) {
+  const liste = [demande || DEFAULT_MODELS[provider]].concat(MODELES_SECOURS[provider] || []).filter((m, i, a) => m && a.indexOf(m) === i);
+  const vivants = liste.filter((m) => !modeleRetire(provider, m));
+  return vivants.length ? vivants : liste.slice(0, 1);   // tout retiré ? on retente le premier plutôt que de ne rien faire
+}
+function retirerModele(provider, model) {
+  if (!modelesRetires.has(provider)) modelesRetires.set(provider, new Set());
+  modelesRetires.get(provider).add(model);
+  const c = cachePauses();
+  if (!c) return Promise.resolve(false);
+  try {
+    return Promise.resolve(c.put(new Request(CACHE_RETIRES + provider), new Response(JSON.stringify([...modelesRetires.get(provider)]),
+      { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=' + (7 * 86400) } }))).then(() => true, () => false);
+  } catch (_) { return Promise.resolve(false); }
+}
+export async function chargerModelesRetires(providers) {
+  const c = cachePauses();
+  if (!c) return 0;
+  let n = 0;
+  await Promise.all((providers || Object.keys(NIVEAU)).filter((p) => !modelesRetires.has(p)).map(async (p) => {
+    try {
+      const r = await c.match(new Request(CACHE_RETIRES + p));
+      if (!r) return;
+      const l = await r.json();
+      if (Array.isArray(l) && l.length) { modelesRetires.set(p, new Set(l)); n++; }
+    } catch (_) { /* cache muet */ }
+  }));
+  return n;
+}
+/** « Ce modèle n'existe pas » — le refus qui veut dire « change de modèle », pas « change de fournisseur ». */
+export function modeleInexistant(status, message) {
+  const m = String(message || '').toLowerCase();
+  return (status === 404 && /model/.test(m)) || /model.*(does not exist|not found|not exist|decommissioned|no longer (supported|available)|unknown model)|unknown model|invalid model/.test(m);
+}
+export function modelesRetiresActifs() { const out = {}; for (const [k, v] of modelesRetires) if (v.size) out[k] = [...v]; return out; }
+/** Durée de pause d'après le refus : crédits/quota épuisés → 6 h ; 429 → Retry-After ou 15 min ; sinon 0 (vraie panne, pas d'épuisement). */
+export function dureePause(status, message, retryAfter) {
+  const m = String(message || '').toLowerCase();
+  if (status === 402 || /insufficient|credit|quota|exceeded your|balance|billing/.test(m)) return 6 * 3600 * 1000;
+  if (status === 429) { const ra = parseFloat(retryAfter); return (ra > 0 ? Math.min(ra, 3600) * 1000 : 15 * 60 * 1000); }
+  return 0;
+}
+/** En-têtes de quota (OpenAI-compatibles) : presque à sec → pause courte AVANT le refus. */
+export async function anticiperDepuisEntetes(provider, headers) {
+  try {
+    const g = (n) => headers && headers.get ? headers.get(n) : null;
+    const req = parseFloat(g('x-ratelimit-remaining-requests')), tok = parseFloat(g('x-ratelimit-remaining-tokens'));
+    const reset = g('x-ratelimit-reset-requests') || g('x-ratelimit-reset-tokens') || '';
+    const sec = /^(\d+(\.\d+)?)s?$/.test(reset) ? parseFloat(reset) : (/(\d+)m/.test(reset) ? parseFloat(reset) * 60 : 60);
+    if ((req >= 0 && req <= 1) || (tok >= 0 && tok < 1500)) { await pauser(provider, Math.min(Math.max(sec, 10), 3600) * 1000, 'quota presque à sec (' + (req >= 0 ? req + ' req' : tok + ' jetons') + ')'); return true; }
+  } catch (_) { /* pas d'en-têtes : rien à anticiper */ }
+  return false;
+}
 
 /* Questions « simples » : la 1re IA GRATUITE de la préférence du domaine répond. */
 export const SIMPLE_FREE_DOMAINS = ['general', 'summary', 'translation', 'speed'];
@@ -56,18 +179,30 @@ export const SECRET_NAMES = {
   cerebras: 'CEREBRAS_API_KEY',
   deepseek: 'DEEPSEEK_API_KEY',
   perplexity: 'PERPLEXITI_API_KEY',
+  sambanova: 'SAMBANOVA_API_KEY',
+  nvidia: 'NVIDIA_API_KEY',
+  together: 'TOGETHER_API_KEY',
+  huggingface: 'HF_TOKEN',
+  glm: 'GLM_API_KEY',
+  cohere: 'COHERE_API_KEY',
 };
 
 export const DEFAULT_MODELS = {
   anthropic: 'claude-haiku-4-5-20251001',
   openai: 'gpt-4o-mini',
-  groq: 'llama-3.3-70b-versatile',
+  groq: 'openai/gpt-oss-120b',          // mesuré 2.10 (sonde 37061173309) : llama-3.3-70b-versatile retiré par Groq
   gemini: 'gemini-2.0-flash',
   mistral: 'mistral-small-latest',
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
-  cerebras: 'llama-3.3-70b',
+  cerebras: 'gpt-oss-120b',              // mesuré 2.10 : llama-3.3-70b retiré par Cerebras ; il reste gpt-oss-120b et qwen-3.8-27b
   deepseek: 'deepseek-chat',
   perplexity: 'sonar',
+  sambanova: 'Meta-Llama-3.3-70B-Instruct',
+  nvidia: 'meta/llama-3.3-70b-instruct',
+  together: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
+  huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
+  glm: 'glm-4-flash',
+  cohere: 'command-r7b-12-2024',
 };
 
 const OPENAI_COMPAT = {
@@ -78,6 +213,12 @@ const OPENAI_COMPAT = {
   cerebras: 'https://api.cerebras.ai/v1/chat/completions',
   deepseek: 'https://api.deepseek.com/chat/completions',
   perplexity: 'https://api.perplexity.ai/chat/completions',
+  sambanova: 'https://api.sambanova.ai/v1/chat/completions',
+  nvidia: 'https://integrate.api.nvidia.com/v1/chat/completions',
+  together: 'https://api.together.xyz/v1/chat/completions',
+  huggingface: 'https://router.huggingface.co/v1/chat/completions',
+  glm: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+  cohere: 'https://api.cohere.ai/compatibility/v1/chat/completions',
 };
 
 /* Une DEMANDE D'ACTION exige des outils → seul Anthropic les porte (domaine admin). */
@@ -135,6 +276,11 @@ export function planChain(domain, available, opts) {
   }
   for (const p of FREE_PROVIDERS) if (avail.includes(p) && !chain.includes(p)) chain.push(p);
   for (const p of avail) if (!chain.includes(p)) chain.push(p);
+  /* RELAIS DE MÊME NIVEAU (Kevin 2.10) : derrière le premier moteur, les GRATUITS se rangent niveau A avant niveau B
+     (tri stable : à niveau égal l'ordre d'avant reste) ; les payants gardent leur place. */
+  const libres = chain.slice(1).filter((p) => FREE_PROVIDERS.includes(p)).sort(parNiveau);
+  let i = 0;
+  chain = chain.map((p, k) => (k > 0 && FREE_PROVIDERS.includes(p) ? libres[i++] : p));
   /* Une image ne va jamais à une IA texte seul ; un domaine vision sans Gemini/Anthropic → vide. */
   if (dom === 'vision') chain = chain.filter((p) => ['gemini', 'anthropic', 'openai'].includes(p));
   return chain;
@@ -170,23 +316,34 @@ async function callQwen(env, messages, o) {
 }
 
 async function callOpenAiLike(provider, key, messages, o) {
-  const model = o.model || DEFAULT_MODELS[provider];
-  const body = { model, messages, max_tokens: o.maxTokens, temperature: o.temperature };
-  if (o.wantJson && provider !== 'perplexity') body.response_format = { type: 'json_object' };
-  const t = withTimeout(o.timeoutMs);
-  try {
-    const r = await fetch(OPENAI_COMPAT[provider], {
-      method: 'POST', signal: t.signal,
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key },
-      body: JSON.stringify(body),
-    });
-    const txt = await r.text();
-    if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + txt.slice(0, 120));
-    const j = JSON.parse(txt);
-    const text = stripThink(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content);
-    if (!text) throw new Error('réponse vide');
-    return { text, model };
-  } finally { t.done(); }
+  /* Un modèle retiré (404) → le suivant de la liste du fournisseur, dans le même appel ; le retiré est retenu. */
+  const candidats = modelesCandidats(provider, o.model);
+  let derniere = null;
+  for (let i = 0; i < candidats.length; i++) {
+    const model = candidats[i];
+    const body = { model, messages, max_tokens: o.maxTokens, temperature: o.temperature };
+    if (o.wantJson && provider !== 'perplexity') body.response_format = { type: 'json_object' };
+    const t = withTimeout(o.timeoutMs);
+    try {
+      const r = await fetch(OPENAI_COMPAT[provider], {
+        method: 'POST', signal: t.signal,
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key },
+        body: JSON.stringify(body),
+      });
+      const txt = await r.text();
+      if (!r.ok) {
+        const e = new Error('HTTP ' + r.status + ' ' + txt.slice(0, 120)); e.status = r.status; e.retryAfter = r.headers && r.headers.get ? r.headers.get('retry-after') : null;
+        if (modeleInexistant(r.status, txt) && i < candidats.length - 1) { await retirerModele(provider, model); derniere = e; continue; }
+        throw e;
+      }
+      await anticiperDepuisEntetes(provider, r.headers);
+      const j = JSON.parse(txt);
+      const text = stripThink(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content);
+      if (!text) throw new Error('réponse vide');
+      return { text, model, modele_relais: i > 0 ? candidats[0] + ' → ' + model : undefined };
+    } finally { t.done(); }
+  }
+  throw derniere || new Error('aucun modèle');
 }
 
 async function callGemini(key, messages, o) {
@@ -252,7 +409,10 @@ export async function routeText(env, opts) {
   const tried = [];
   /* budgetMs : TOUTE la chaîne tient dans ce temps (le widget de Bee abandonne à 25 s) */
   const finMs = o.finMs || (o.budgetMs ? Date.now() + o.budgetMs : 0);
+  await Promise.all([chargerPauses(chain), chargerModelesRetires(chain)]);   // isolat neuf : épuisements et modèles retirés connus AVANT d'appeler
   for (const provider of chain) {
+    const pause = enPause(provider);
+    if (pause) { tried.push({ provider, skipped: 'en pause : ' + pause.raison }); continue; }   // épuisé : sauté d'office, le relais prend
     const reste = finMs ? finMs - Date.now() : Infinity;
     if (reste < 1500) { tried.push({ provider, skipped: 'échéance' }); break; }
     const po = Object.assign({}, o, { model: o.models && o.models[provider], finMs, timeoutMs: Math.min(o.timeoutMs, reste) });
@@ -263,9 +423,13 @@ export async function routeText(env, opts) {
       else if (provider === 'anthropic') r = await callAnthropic(env[SECRET_NAMES.anthropic], messages, po);
       else if (OPENAI_COMPAT[provider]) r = await callOpenAiLike(provider, env[SECRET_NAMES[provider]], messages, po);
       else { tried.push({ provider, skipped: 'unsupported' }); continue; }
-      return { ok: true, text: r.text, provider, model: r.model, domain, tried };
+      return { ok: true, text: r.text, provider, model: r.model, modele_relais: r.modele_relais, domain, tried };
     } catch (e) {
-      tried.push({ provider, error: String((e && e.message) || e).slice(0, 160) });
+      const msg = String((e && e.message) || e);
+      const status = (e && e.status) || parseInt((/HTTP (\d{3})/.exec(msg) || [])[1], 10) || 0;
+      const ms = dureePause(status, msg, e && e.retryAfter);
+      if (ms) await pauser(provider, ms, 'HTTP ' + status + ' ' + msg.slice(0, 60));
+      tried.push({ provider, error: msg.slice(0, 160), pause_s: ms ? Math.round(ms / 1000) : undefined });
     }
   }
   return { ok: false, text: '', provider: null, model: null, domain, tried, error: chain.length ? 'tous les moteurs ont échoué' : 'aucune IA disponible' };
@@ -435,5 +599,5 @@ export function routingStatus(env) {
   const available = availableProviders(env);
   const first = {};
   for (const d of Object.keys(DOMAIN_PREFERENCES)) first[d] = planChain(d, available)[0] || null;
-  return { available, qwen_models: env && env.AI ? QWEN_MODELS : [], first_by_domain: first };
+  return { available, qwen_models: env && env.AI ? QWEN_MODELS : [], first_by_domain: first, niveaux: Object.fromEntries(available.map((p) => [p, NIVEAU[p] || 'B'])), en_pause: pausesActives(), pauses_durables: pausesDurables(), modeles_retires: modelesRetiresActifs() };
 }

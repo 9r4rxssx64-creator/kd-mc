@@ -1058,6 +1058,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "fusionnée le 2.10 19h48 (#4212)"
+    },
+    "kv-qui-ecrit": {
+      "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",
+      "branche": "claude/kv-qui-ecrit",
+      "sujet": "Robot coffre-kv-inventaire (PR #4224) : clés par préfixe + compteurs anon:<jour>, lecture seule",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

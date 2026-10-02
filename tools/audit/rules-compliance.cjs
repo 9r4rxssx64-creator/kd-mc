@@ -89,6 +89,11 @@ const REGISTRE = [
   // dans test:ci (ou le workflow réel), mais pas leur entrée ici → ratchet 19 → 22, test:ci rouge
   // pour tout le monde. Cinquième fois : règle nouvelle = entrée ICI dans le même commit.
   [/GRATUIT PAR DÉFAUT/i, ['npm:test:gratuit']],
+  // Règle « QUAND UN GRATUIT S'ÉPUISE, LE RELAIS EST GRATUIT, DE MÊME NIVEAU, ET PRÉVU D'AVANCE » (Kevin 2.10.2026) :
+  // ses gardes = ia-route.test.mjs (niveaux A/B, pauses d'épuisement durables, anticipation par en-têtes, relais de
+  // modèle retiré — 26 contrôles, 2 sabotages) + la sonde réelle des paliers gratuits (test:sonde-ia-gratuites).
+  // Cinquième fois que ce scénario se produit : l'entrée manquait ici → ratchet 19 → 20, test:ci-prive rouge (2.10).
+  [/QUAND UN GRATUIT S'ÉPUISE/i, ['npm:test:ia-route', 'npm:test:sonde-ia-gratuites']],
   [/TOUT S'OUVRE AUTOMATIQUEMENT/i, ['npm:test:admin-partout', 'npm:test:admin-sans-code', 'npm:test:sso-duree']],
   [/RÉEL TOUJOURS : RIEN N'EST/i, ['wf:verif-reelle.yml', 'wf:audit-lingua.yml', 'file:tools/ci/plafond-verifs.mjs']],
   [/LISTE DE COMMANDES COMPLÈTE/i, ['file:apex-ai/v13/tests/unit/v13_4_317-commands-completeness.test.ts']],

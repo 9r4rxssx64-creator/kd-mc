@@ -71,7 +71,7 @@ async function callGroq(messages, json) {
   if (!process.env.GROQ_API_KEY) return null;
   return appelJson('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST', headers: { authorization: 'Bearer ' + process.env.GROQ_API_KEY, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages, max_tokens: 4000, temperature: 0.3, ...(json ? { response_format: { type: 'json_object' } } : {}) }),
+    body: JSON.stringify({ model: 'openai/gpt-oss-120b', messages, max_tokens: 4000, temperature: 0.3, ...(json ? { response_format: { type: 'json_object' } } : {}) }),
   }, (j) => j?.choices?.[0]?.message?.content);
 }
 async function callMistral(messages, json) {

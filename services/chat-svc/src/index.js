@@ -134,7 +134,7 @@ function transformPayload(provider, body) {
     if (body.system) msgs.push({ role: "system", content: body.system });
     msgs.push(...(body.messages || []));
     return {
-      model: provider === "groq" ? "llama-3.3-70b-versatile" : "anthropic/claude-3.5-sonnet",
+      model: provider === "groq" ? "openai/gpt-oss-120b" : "anthropic/claude-3.5-sonnet",
       messages: msgs,
       stream: body.stream || false
     };

@@ -21,6 +21,28 @@
 - **Une décision reste à toi, sans urgence** : l'appel en direct (OpenAI Realtime, à la minute) et la voix
   d'Antonin (Replicate) restent payants. Dis « ferme » et je les retire ; sinon ils restent derrière leurs plafonds.
 
+## 🔁 Ta règle du 2.10 (« quand ça s'épuise, relais gratuit, même niveau, prévu d'avance ») — faite pour le domaine, 1 décision pour Apex
+
+Faite et mesurée dans le routage IA commun (`apis.kd-mc.com`, routeur, Bee, Lingua, Créa) : un gratuit épuisé est mis en
+pause et sauté sans appel perdu, le relais est un gratuit de même niveau, les pauses survivent au redémarrage (cache du
+Worker, 0 écriture KV). **Apex v13 (l'app) ne suit pas encore cette règle** : elle choisit ses moteurs elle-même, et quand
+Qwen puis Groq sont épuisés elle passe à **Anthropic (payant)** au lieu d'un gratuit de même niveau. Deux façons de l'y mettre,
+dis laquelle :
+- **A (recommandé, 0 clic)** — Apex demande ses réponses texte au routage commun (`/ai` de apis.kd-mc.com) au lieu
+  d'appeler chaque moteur : la règle s'applique d'office, les actions (outils) restent sur Anthropic. Mais la chaîne de
+  construction d'Apex est **rouge depuis le 15.09** (apex-v13-ci) et la dernière mise en ligne automatique date du 23.09 :
+  je dois d'abord la réparer, c'est plusieurs heures de travail, sans rien pour toi.
+- **B** — on laisse Apex tel quel pour l'instant (il marche), et la règle vaut pour tout le reste du domaine.
+
+## 🆓 IA gratuites : 8 clés que je croyais au coffre n'y sont pas — rien d'urgent, 0 € (mesuré le 2.10, sonde 37061173309)
+
+Qwen (Workers AI, 0 clé) répond, Groq et Cerebras remarchent avec les bons noms de modèles, Cohere est branché. Mais la
+sonde a prouvé que ces comptes gratuits n'ont **pas de clé au coffre** : OpenRouter, SambaNova, NVIDIA, Hugging Face, GLM
+(gratuits) et DashScope, Nebius, Scaleway (crédits d'essai). Together a une clé **invalide** (401), Mistral est **limité**
+(429 sur le palier gratuit). Si un jour tu veux plus de relais gratuits : crée le compte (gratuit), colle la clé dans les
+secrets GitHub du coffre sous le nom exact (`OPENROUTER_API_KEY`, `SAMBANOVA_API_KEY`, `NVIDIA_API_KEY`, `HF_TOKEN`,
+`GLM_API_KEY`), et dis « sonde les IA » : je mesure et je branche. Sans ça, tout marche déjà en gratuit.
+
 ## ✅ GitHub Actions bloquées par le budget (depuis le 27.09, 22h16 UTC) — NE RELÈVE PAS le budget, ça revient le 1er octobre
 
 « The job was not started because an Actions budget is preventing further use » : le budget de 20 $ posé

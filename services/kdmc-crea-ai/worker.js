@@ -368,7 +368,7 @@ async function cfText(env, prompt, wantJson, famille) {
    à quota, la suivante prend le relais SANS que l'app s'arrête.
    Les noms de secrets sont ceux EXACTS de Kevin (dont la typo PERPLEXITI). */
 const TEXT_PROVIDERS = [
-  { id: 'groq',       key: 'GROQ_API_KEY',       url: 'https://api.groq.com/openai/v1/chat/completions',        model: 'llama-3.3-70b-versatile',        free: true },
+  { id: 'groq',       key: 'GROQ_API_KEY',       url: 'https://api.groq.com/openai/v1/chat/completions',        model: 'openai/gpt-oss-120b',            free: true },   // 2.10 : llama-3.3-70b-versatile retiré par Groq
   { id: 'gemini',     key: 'GEMINI_API_KEY',     url: '',                                                      model: 'gemini-2.5-flash',               free: true },
   { id: 'mistral',    key: 'MISTRAL_API_KEY',    url: 'https://api.mistral.ai/v1/chat/completions',            model: 'mistral-small-latest',           free: true },
   { id: 'cohere',     key: 'COHERE_API_KEY',     url: 'https://api.cohere.ai/compatibility/v1/chat/completions', model: 'command-r-08-2024',            free: true },
@@ -383,7 +383,7 @@ const TEXT_PROVIDERS = [
   { id: 'xai',        key: 'XAI_API_KEY',        url: 'https://api.x.ai/v1/chat/completions',                  model: 'grok-2-latest',                  free: false },
   { id: 'perplexity', key: 'PERPLEXITI_API_KEY', url: 'https://api.perplexity.ai/chat/completions',            model: 'sonar',                          free: false },
   /* b) moteurs à généreux palier gratuit — il suffira d'ajouter la clé : */
-  { id: 'cerebras',   key: 'CEREBRAS_API_KEY',   url: 'https://api.cerebras.ai/v1/chat/completions',           model: 'llama-3.3-70b',                  free: true },
+  { id: 'cerebras',   key: 'CEREBRAS_API_KEY',   url: 'https://api.cerebras.ai/v1/chat/completions',           model: 'gpt-oss-120b',                   free: true },   // 2.10 : llama-3.3-70b retiré par Cerebras
   { id: 'nvidia',     key: 'NVIDIA_API_KEY',     url: 'https://integrate.api.nvidia.com/v1/chat/completions',  model: 'meta/llama-3.3-70b-instruct',    free: true },
   { id: 'sambanova',  key: 'SAMBANOVA_API_KEY',  url: 'https://api.sambanova.ai/v1/chat/completions',          model: 'Meta-Llama-3.3-70B-Instruct',    free: true },
   { id: 'huggingface',key: 'HF_TOKEN',           url: 'https://router.huggingface.co/v1/chat/completions',     model: 'meta-llama/Llama-3.3-70B-Instruct', free: true },

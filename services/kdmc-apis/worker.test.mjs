@@ -118,7 +118,7 @@ test('buildAiRequest groq : OpenAI-compatible + Bearer', () => {
   const req = buildAiRequest('groq', 'KEY', { messages: [{ role: 'user', content: 'x' }] });
   assert.ok(req.url.includes('api.groq.com'));
   assert.equal(req.headers.Authorization, 'Bearer KEY');
-  assert.equal(JSON.parse(req.body).model, 'llama-3.3-70b-versatile');
+  assert.equal(JSON.parse(req.body).model, 'openai/gpt-oss-120b');
 });
 
 test('buildAiRequest cohere : v2/chat', () => {

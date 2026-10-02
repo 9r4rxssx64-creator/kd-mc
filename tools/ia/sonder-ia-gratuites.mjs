@@ -12,13 +12,13 @@
    comparer. « gratuit » = palier gratuit permanent documenté par le fournisseur ; « crédits » = crédits d'essai qui
    s'épuisent (on les sonde mais on ne les met PAS en tête de cascade sans l'accord de Kevin). */
 export const FOURNISSEURS = [
-  { id: 'groq',       cle: 'GROQ_API_KEY',       url: 'https://api.groq.com/openai/v1/chat/completions',               modele: 'llama-3.3-70b-versatile',                         palier: 'gratuit', deja: true },
+  { id: 'groq',       cle: 'GROQ_API_KEY',       url: 'https://api.groq.com/openai/v1/chat/completions',               modele: 'openai/gpt-oss-120b',                            palier: 'gratuit', deja: true },
   { id: 'mistral',    cle: 'MISTRAL_API_KEY',    url: 'https://api.mistral.ai/v1/chat/completions',                    modele: 'mistral-small-latest',                            palier: 'gratuit', deja: true },
   { id: 'openrouter', cle: 'OPENROUTER_API_KEY', url: 'https://openrouter.ai/api/v1/chat/completions',                 modele: 'meta-llama/llama-3.3-70b-instruct:free',          palier: 'gratuit', deja: true },
-  { id: 'cerebras',   cle: 'CEREBRAS_API_KEY',   url: 'https://api.cerebras.ai/v1/chat/completions',                   modele: 'llama-3.3-70b',                                   palier: 'gratuit', deja: true },
+  { id: 'cerebras',   cle: 'CEREBRAS_API_KEY',   url: 'https://api.cerebras.ai/v1/chat/completions',                   modele: 'gpt-oss-120b',                                    palier: 'gratuit', deja: true },
   { id: 'sambanova',  cle: 'SAMBANOVA_API_KEY',  url: 'https://api.sambanova.ai/v1/chat/completions',                  modele: 'Meta-Llama-3.3-70B-Instruct',                     palier: 'gratuit' },
   { id: 'nvidia',     cle: 'NVIDIA_API_KEY',     url: 'https://integrate.api.nvidia.com/v1/chat/completions',          modele: 'meta/llama-3.3-70b-instruct',                     palier: 'gratuit' },
-  { id: 'together',   cle: 'TOGETHER_API_KEY',   url: 'https://api.together.xyz/v1/chat/completions',                  modele: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',    palier: 'gratuit' },
+  { id: 'together',   cle: 'TOGETHER_API_KEY',   url: 'https://api.together.xyz/v1/chat/completions',                  modele: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',    palier: 'crédits' },   // compte à crédits (MOTEURS_PAYANTS de kdmc-apis) même si ce modèle-ci est « -Free »
   { id: 'huggingface',cle: 'HF_TOKEN',           url: 'https://router.huggingface.co/v1/chat/completions',             modele: 'meta-llama/Llama-3.3-70B-Instruct',               palier: 'gratuit' },
   { id: 'glm',        cle: 'GLM_API_KEY',        url: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',         modele: 'glm-4-flash',                                     palier: 'gratuit' },
   { id: 'cohere',     cle: 'COHERE_API_KEY',     url: 'https://api.cohere.ai/compatibility/v1/chat/completions',       modele: 'command-r7b-12-2024',                             palier: 'gratuit' },

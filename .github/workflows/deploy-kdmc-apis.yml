@@ -186,6 +186,9 @@ jobs:
           txt = str(d.get('text') or d.get('detail') or '')[:70].replace('\n', ' ').replace('|', '/')
           ok = '✅' if att in str(prov) else '⚠️'
           print("| %s | %s | %s %s | %s | %s |" % (lbl, att, ok, prov, mod, txt), file=out)
+          # Annotation lisible par l'API (les journaux ne le sont pas d'ici) : qui a répondu, et qui a été sauté/épuisé.
+          tried = ' ; '.join('%s:%s' % (t.get('provider'), (t.get('skipped') or t.get('error') or 'ok'))[:60] for t in (d.get('tried') or [])[:8])
+          print("::notice title=preuve live %s::%s %s · modèle %s · essais : %s" % (lbl, ok, prov, mod, tried or 'aucun avant'))
           PY
 
           ask() {  # $1 = libellé, $2 = attendu, $3 = question, $4 = options JSON en plus
@@ -216,4 +219,6 @@ jobs:
           echo '```json' >> $GITHUB_STEP_SUMMARY
           curl -sS -m 15 "$BASE/health" | python3 -c "import json,sys;d=json.load(sys.stdin);print(json.dumps({'workers_ai':d.get('workers_ai'),'cles_presentes':[k for k,v in (d.get('keys') or {}).items() if v],'cles_absentes':[k for k,v in (d.get('keys') or {}).items() if not v],'premier_par_question':(d.get('ia_routing') or {}).get('first_by_domain')},ensure_ascii=False,indent=1))" >> $GITHUB_STEP_SUMMARY 2>&1
           echo '```' >> $GITHUB_STEP_SUMMARY
+          # Mesure lisible par l'API : la cascade réelle (disponibles, niveaux, pauses, pauses durables) — règle du 2.10.
+          curl -sS -m 15 "$BASE/health" | python3 -c "import json,sys;d=json.load(sys.stdin);r=d.get('ia_routing') or {};print('::notice title=ia_routing (mesuré sur %s)::disponibles=%s · niveaux=%s · en_pause=%s · pauses_durables=%s · premier(general)=%s' % ('$BASE', ','.join(r.get('available') or []), json.dumps(r.get('niveaux') or {},separators=(',',':')), json.dumps(r.get('en_pause') or {},ensure_ascii=False,separators=(',',':')), r.get('pauses_durables'), (r.get('first_by_domain') or {}).get('general')))" 2>&1 | tr '\n' ' '; echo
           exit 0

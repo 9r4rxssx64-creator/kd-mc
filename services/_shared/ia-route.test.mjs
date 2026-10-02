@@ -3,12 +3,16 @@
  * Prouve : Qwen gratuit en principal pour les questions courantes, bascule par TYPE de
  * question (action/code/raisonnement → Anthropic, image → Gemini, recherche → Perplexity),
  * secours en chaîne (Qwen mort → suivant), <think> jamais montré, cause exacte quand tout tombe. */
-import { test } from 'node:test';
+import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   detectDomain, planChain, routeText, stripThink, availableProviders, routingStatus,
   QWEN_MODELS, FREE_PROVIDERS, DOMAIN_PREFERENCES, SECRET_NAMES,
+  _resetPauses, enPause, pauser, dureePause, anticiperDepuisEntetes, NIVEAU,
 } from './ia-route.js';
+
+/* les pauses d'épuisement vivent en mémoire : chaque test repart à zéro */
+beforeEach(() => _resetPauses());
 
 const fakeAI = (opts = {}) => ({
   calls: [],
@@ -157,6 +161,131 @@ test('secrets : noms EXACTS de Kevin (PERPLEXITI, OPEN_AI)', () => {
   assert.equal(st.first_by_domain.vision, 'anthropic', 'sans Gemini, une image va à Anthropic, jamais à Qwen');
 });
 
+/* ---- PALIERS GRATUITS EMPILÉS (Kevin 2026-10-02 « Go freellm ») ---- */
+test('Go freellm : 5 paliers gratuits de plus, APRÈS les gratuits d\'avant (l\'ordre d\'avant ne bouge pas) ; Together câblé mais PAS déclaré gratuit', () => {
+  assert.deepEqual(FREE_PROVIDERS.slice(0, 6), ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'cerebras']);
+  for (const p of ['sambanova', 'nvidia', 'huggingface', 'glm', 'cohere']) {
+    assert.ok(FREE_PROVIDERS.includes(p), p + ' est un palier gratuit');
+    assert.ok(SECRET_NAMES[p], p + ' a un nom de secret');
+  }
+  assert.ok(!FREE_PROVIDERS.includes('together') && SECRET_NAMES.together, 'Together : compte à crédits (moteur payant pour kdmc-apis) → après les gratuits, jamais « gratuit »');
+  const avecTogether = planChain('general', availableProviders({ AI: {}, TOGETHER_API_KEY: 't', GLM_API_KEY: 'z' }));
+  assert.ok(avecTogether.indexOf('together') > avecTogether.indexOf('glm'), 'même un petit gratuit (B) passe avant Together : ' + avecTogether.join(' > '));
+  assert.equal(SECRET_NAMES.huggingface, 'HF_TOKEN');
+  const env = { AI: {}, GROQ_API_KEY: 'g', SAMBANOVA_API_KEY: 's', HF_TOKEN: 'h', GLM_API_KEY: 'z' };
+  const avail = availableProviders(env);
+  assert.deepEqual(avail, ['qwen', 'groq', 'sambanova', 'huggingface', 'glm']);
+  const chain = planChain('general', avail);
+  assert.equal(chain[0], 'qwen');
+  assert.equal(chain[1], 'groq', 'Groq reste devant les nouveaux');
+  assert.ok(chain.indexOf('sambanova') > chain.indexOf('groq') && chain.includes('huggingface') && chain.includes('glm'));
+});
+
+test('Go freellm : Qwen et Groq morts → SambaNova répond, à SON adresse, avec SA clé et SON modèle gratuit', async () => {
+  const env = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g', SAMBANOVA_API_KEY: 'samba-key', TOGETHER_API_KEY: 't' };
+  const m = mockFetch((url) => {
+    if (url.startsWith('https://api.groq.com/')) return new Response('{"error":"quota"}', { status: 429 });
+    if (url.startsWith('https://api.sambanova.ai/v1/chat/completions')) return openaiReply('réponse samba');
+    return new Response('inattendu ' + url, { status: 599 });
+  });
+  try {
+    const r = await routeText(env, { prompt: 'Bonjour', timeoutMs: 2000 });
+    assert.equal(r.ok, true);
+    assert.equal(r.provider, 'sambanova');
+    assert.equal(r.model, 'Meta-Llama-3.3-70B-Instruct');
+    const call = m.calls.find((c) => c.url.startsWith('https://api.sambanova.ai/'));
+    assert.equal(call.body.model, 'Meta-Llama-3.3-70B-Instruct');
+    assert.ok(!m.calls.some((c) => c.url.includes('together')), 'Together jamais appelé : SambaNova a répondu avant');
+    assert.ok(r.tried.some((t) => t.provider === 'groq' && /429/.test(t.error)), 'le refus de Groq est consigné');
+  } finally { m.restore(); }
+});
+
+/* ---- ÉPUISEMENT ANTICIPÉ + RELAIS DE MÊME NIVEAU (Kevin 2026-10-02 « quand ça s'épuise, anticipe du gratuit en relais, même qualité ») ---- */
+test('épuisement : un 429 met le fournisseur en pause ; au tour suivant il est SAUTÉ sans appel et le relais gratuit répond', async () => {
+  const env = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g', SAMBANOVA_API_KEY: 's' };
+  const m = mockFetch((url) => (/groq/.test(url) ? new Response('{"error":{"message":"Rate limit reached"}}', { status: 429, headers: { 'retry-after': '120' } }) : openaiReply('samba')));
+  try {
+    const r1 = await routeText(env, { prompt: 'bonjour' });
+    assert.equal(r1.provider, 'sambanova');
+    assert.ok(r1.tried.some((t) => t.provider === 'groq' && t.pause_s === 120), 'pause = Retry-After (120 s)');
+    assert.ok(enPause('groq'));
+    const avant = m.calls.length;
+    const r2 = await routeText(env, { prompt: 'encore' });
+    assert.equal(r2.provider, 'sambanova');
+    assert.ok(r2.tried.some((t) => t.provider === 'groq' && /en pause/.test(t.skipped)), 'Groq sauté d\'office');
+    assert.ok(!m.calls.slice(avant).some((c) => /groq/.test(c.url)), 'aucun appel perdu vers Groq');
+  } finally { m.restore(); }
+});
+
+test('épuisement : crédits épuisés (402 / « quota ») → pause longue ; une vraie panne (500) → pas de pause', () => {
+  assert.equal(dureePause(402, 'Payment required'), 6 * 3600 * 1000);
+  assert.equal(dureePause(400, 'You exceeded your current quota'), 6 * 3600 * 1000);
+  assert.equal(dureePause(429, 'slow down', '30'), 30 * 1000);
+  assert.equal(dureePause(429, 'slow down', null), 15 * 60 * 1000);
+  assert.equal(dureePause(500, 'internal error'), 0);
+});
+
+test('anticipation : un quota presque à sec dans les en-têtes met en pause AVANT le refus, la réponse en cours est gardée', async () => {
+  const env = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g', SAMBANOVA_API_KEY: 's' };
+  const m = mockFetch((url) => (/groq/.test(url)
+    ? new Response(JSON.stringify({ choices: [{ message: { content: 'dernière de Groq' } }] }), { status: 200, headers: { 'x-ratelimit-remaining-requests': '1', 'x-ratelimit-reset-requests': '45s' } })
+    : openaiReply('samba')));
+  try {
+    const r1 = await routeText(env, { prompt: 'a' });
+    assert.equal(r1.provider, 'groq'); assert.equal(r1.text, 'dernière de Groq');
+    const p = enPause('groq'); assert.ok(p && /presque à sec/.test(p.raison), 'pause posée depuis les en-têtes');
+    const r2 = await routeText(env, { prompt: 'b' });
+    assert.equal(r2.provider, 'sambanova', 'le relais a pris sans attendre un refus');
+  } finally { m.restore(); }
+});
+
+/* Cache du Worker simulé (Cache API : put/match par URL), comme caches.default sur apis.kd-mc.com. */
+const fauxCache = () => {
+  const store = new Map();
+  return {
+    store,
+    async put(req, res) { store.set(req.url, { body: await res.text(), cc: res.headers.get('cache-control') }); },
+    async match(req) { const e = store.get(req.url); return e ? new Response(e.body) : undefined; },
+  };
+};
+test('pause DURABLE : un isolat neuf (mémoire vide) retrouve l\'épuisement dans le cache du Worker et saute le fournisseur ; sans cache (sabotage) il le rappelle', async () => {
+  const env = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g', SAMBANOVA_API_KEY: 's' };
+  const m = mockFetch((url) => (/groq/.test(url) ? new Response('{"error":{"message":"Rate limit reached"}}', { status: 429, headers: { 'retry-after': '300' } }) : openaiReply('samba')));
+  globalThis.caches = { default: fauxCache() };
+  try {
+    const r1 = await routeText(env, { prompt: 'bonjour' });
+    assert.equal(r1.provider, 'sambanova');
+    const e = globalThis.caches.default.store.get('https://pause.ia-route.invalid/groq');
+    assert.ok(e && /max-age=300/.test(e.cc), 'pause écrite dans le cache, expire avec la pause (300 s)');
+    assert.equal(routingStatus(env).pauses_durables, true);
+    _resetPauses();   // = le Worker a redémarré : mémoire vide
+    assert.equal(enPause('groq'), null);
+    const avant = m.calls.length;
+    const r2 = await routeText(env, { prompt: 'encore' });
+    assert.equal(r2.provider, 'sambanova');
+    assert.ok(!m.calls.slice(avant).some((c) => /groq/.test(c.url)), 'Groq pas rappelé : la pause est revenue du cache');
+    assert.ok(r2.tried.some((t) => t.provider === 'groq' && /en pause/.test(t.skipped)));
+    assert.ok(enPause('groq') && enPause('groq').jusqua > Date.now(), 'pause rechargée en mémoire');
+    /* sabotage : sans cache, l'isolat neuf ne sait rien → il rappelle Groq (et perd un appel) */
+    delete globalThis.caches; _resetPauses();
+    assert.equal(routingStatus(env).pauses_durables, false);
+    const avant2 = m.calls.length;
+    const r3 = await routeText(env, { prompt: 'sans cache' });
+    assert.equal(r3.provider, 'sambanova');
+    assert.ok(m.calls.slice(avant2).some((c) => /groq/.test(c.url)), 'sans cache, Groq est rappelé : c\'est bien le cache qui évite l\'appel perdu');
+  } finally { m.restore(); delete globalThis.caches; }
+});
+
+test('relais de même niveau : après le gratuit choisi, les gratuits de niveau A passent avant les petits modèles (B)', () => {
+  const env = { AI: {}, MISTRAL_API_KEY: 'm', GLM_API_KEY: 'z', SAMBANOVA_API_KEY: 's', NVIDIA_API_KEY: 'n', COHERE_API_KEY: 'c' };
+  const chain = planChain('general', availableProviders(env));
+  assert.equal(chain[0], 'qwen');
+  const idx = (p) => chain.indexOf(p);
+  assert.ok(idx('sambanova') < idx('mistral') && idx('nvidia') < idx('glm') && idx('nvidia') < idx('cohere'), chain.join(' > '));
+  assert.equal(NIVEAU.sambanova, 'A'); assert.equal(NIVEAU.glm, 'B');
+  assert.ok(Object.keys(routingStatus(env).niveaux).includes('sambanova'), '/health dit le niveau de chaque fournisseur');
+});
+
 /* ---- CONCERTATION D'IA GRATUITES (Kevin 2026-09-06 « va plus loin ») ---- */
 import { analyseQuestion, councilText, routeSmart, freeVoices } from './ia-route.js';
 
@@ -289,4 +418,62 @@ test('délais (contre-audit 30.09) : SANS échéance, un Qwen lent MAIS qui rép
   const r = await routeText({ AI: lent }, { prompt: 'bonjour', timeoutMs: 300 });
   assert.equal(r.ok, true, 'Qwen lent répond');
   assert.equal(n, 1, '1 seule inférence (pas 4 lancées pour rien)');
+});
+
+/* ---- MODÈLE RETIRÉ → LE SUIVANT DE LA LISTE, SANS PERDRE LE FOURNISSEUR (2.10, mesuré : Groq/Cerebras 404 sur llama-3.3-70b) ---- */
+import { MODELES_SECOURS, modelesCandidats, modeleInexistant, modeleRetire, DEFAULT_MODELS } from './ia-route.js';
+
+test('modèle retiré : Groq dit « n\'existe pas » → le secours de Groq répond dans le même appel, le retiré est retenu, /health le montre', async () => {
+  const env = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g', COHERE_API_KEY: 'c' };
+  const refus = (m) => new Response(JSON.stringify({ error: { message: 'The model `' + m + '` does not exist or you do not have access to it.', code: 'model_not_found' } }), { status: 404 });
+  const m = mockFetch((url, init) => {
+    const body = JSON.parse(init.body);
+    if (/groq/.test(url)) return body.model === DEFAULT_MODELS.groq ? refus(body.model) : openaiReply('groq ' + body.model);
+    return openaiReply('cohere');
+  });
+  try {
+    const r1 = await routeText(env, { prompt: 'bonjour' });
+    assert.equal(r1.provider, 'groq', 'Groq n\'est PAS perdu : ' + JSON.stringify(r1.tried));
+    assert.equal(r1.model, MODELES_SECOURS.groq[0]);
+    assert.match(r1.modele_relais, /→/);
+    assert.equal(m.calls.filter((c) => /groq/.test(c.url)).length, 2, '1 refus + 1 réponse');
+    assert.ok(modeleRetire('groq', DEFAULT_MODELS.groq));
+    const r2 = await routeText(env, { prompt: 'encore' });
+    assert.equal(r2.provider, 'groq'); assert.equal(r2.model, MODELES_SECOURS.groq[0]);
+    assert.equal(m.calls.filter((c) => /groq/.test(c.url)).length, 3, 'le modèle retiré n\'est plus tenté : 1 seul appel');
+    assert.deepEqual(routingStatus(env).modeles_retires, { groq: [DEFAULT_MODELS.groq] });
+    assert.deepEqual(modelesCandidats('groq'), MODELES_SECOURS.groq);
+    assert.ok(!m.calls.some((c) => /cohere/.test(c.url)), 'Cohere jamais appelé : le relais de modèle a suffi');
+  } finally { m.restore(); }
+});
+
+test('modèle retiré : seul « n\'existe pas » change de modèle ; un 429 ou un 500 ne touche pas à la liste', async () => {
+  assert.ok(modeleInexistant(404, '{"error":{"message":"The model `x` does not exist"}}'));
+  assert.ok(modeleInexistant(400, 'Model does not exist or you do not have access to it.'));
+  assert.ok(modeleInexistant(400, 'model llama-3.3-70b has been decommissioned'));
+  assert.ok(!modeleInexistant(429, 'Rate limit exceeded') && !modeleInexistant(500, 'internal') && !modeleInexistant(404, 'route not found'));
+  const env = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g', COHERE_API_KEY: 'c' };
+  const m = mockFetch((url) => (/groq/.test(url) ? new Response('{"error":{"message":"Rate limit exceeded"}}', { status: 429 }) : openaiReply('cohere')));
+  try {
+    const r = await routeText(env, { prompt: 'a' });
+    assert.equal(r.provider, 'cohere');
+    assert.equal(m.calls.filter((c) => /groq/.test(c.url)).length, 1, 'un 429 ne fait pas défiler les modèles de Groq');
+    assert.deepEqual(routingStatus(env).modeles_retires, {});
+  } finally { m.restore(); }
+});
+
+test('modèle retiré : durable — un isolat neuf (mémoire vide) retrouve le modèle retiré dans le cache et ne le retente pas', async () => {
+  const env = { AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g' };
+  const m = mockFetch((url, init) => (JSON.parse(init.body).model === DEFAULT_MODELS.groq
+    ? new Response('{"error":{"message":"model does not exist"}}', { status: 404 }) : openaiReply('ok')));
+  globalThis.caches = { default: fauxCache() };
+  try {
+    await routeText(env, { prompt: 'a' });
+    _resetPauses();
+    assert.ok(!modeleRetire('groq', DEFAULT_MODELS.groq), 'mémoire vide');
+    const avant = m.calls.length;
+    const r = await routeText(env, { prompt: 'b' });
+    assert.equal(r.model, MODELES_SECOURS.groq[0]);
+    assert.equal(m.calls.length - avant, 1, 'le retiré n\'est pas retenté : il est revenu du cache');
+  } finally { m.restore(); delete globalThis.caches; }
 });

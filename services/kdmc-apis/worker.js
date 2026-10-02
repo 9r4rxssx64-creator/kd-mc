@@ -72,7 +72,7 @@ function err(message, status, origin, detail) {
 // données : on relaie l'upstream tel quel. Gratuit + anonyme → accessible aux origines '*'.
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal… pareil dans mes autres projets » :
    le routage IA commun du domaine (Qwen Workers AI d'abord, bascule par type de question). */
-import { routeText, routeSmart, analyseQuestion, detectDomain, routingStatus, DOMAIN_PREFERENCES, QWEN_MODELS } from '../_shared/ia-route.js';
+import { routeText, routeSmart, analyseQuestion, detectDomain, routingStatus, chargerPauses, chargerModelesRetires, DOMAIN_PREFERENCES, QWEN_MODELS } from '../_shared/ia-route.js';
 
 export const KEYLESS = {
   // Météo (anticiper l'affluence casino — Convention SBM art.17.6).
@@ -255,7 +255,7 @@ export const AI_CHAIN = [
 
 export const AI_DEFAULT_MODEL = {
   gemini: 'gemini-2.0-flash',
-  groq: 'llama-3.3-70b-versatile',
+  groq: 'openai/gpt-oss-120b',   // 2.10 : llama-3.3-70b-versatile retiré par Groq (sonde 37061173309)
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
   mistral: 'mistral-small-latest',
   cohere: 'command-r-plus',
@@ -263,7 +263,7 @@ export const AI_DEFAULT_MODEL = {
   together: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
   xai: 'grok-2-latest',
   perplexity: 'sonar',
-  cerebras: 'llama-3.3-70b',
+  cerebras: 'gpt-oss-120b',      // 2.10 : llama-3.3-70b retiré par Cerebras
   nvidia: 'meta/llama-3.3-70b-instruct',
   sambanova: 'Meta-Llama-3.3-70B-Instruct',
   huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
@@ -649,6 +649,7 @@ export default {
 
     // Health — aucune auth (utilisé par external-apis-health.yml + diagnostics apps).
     if (path === '/health' || path === '/') {
+      await Promise.all([chargerPauses(), chargerModelesRetires()]);   // épuisements et modèles retirés durables, montrés même par un isolat neuf
       return json(
         {
           ok: true,

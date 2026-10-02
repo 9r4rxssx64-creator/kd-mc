@@ -78,7 +78,7 @@ va plus loin · honnête sur ses limites · sans flatterie. **Bee : niveau comme
 
 ---
 
-## 📜 Les 187 règles — le texte de Kevin, une par une
+## 📜 Les 188 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -261,6 +261,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### ⏱ RÈGLE ABSOLUE — TEMPS RÉEL / LIVE OU PRESQUE, TOUJOURS PARTOUT (Kevin 2026-07-05, ABSOLUE)
 **« Temps réel, live ou presque tjs partout »** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-temps-réel-live-ou-presque-toujours-partout-kevin-2026-07-05-absolue)
+
+### 🔁 RÈGLE ABSOLUE — QUAND UN GRATUIT S'ÉPUISE, LE RELAIS EST GRATUIT, DE MÊME NIVEAU, ET PRÉVU D'AVANCE (Kevin 2026-10-02, ABSOLUE)
+**« Quand ça s'épuise, anticipe du gratuit en relais toujours, même qualité, même niveau. »** — Kevin 2026-10-02 (après « Go freellm »)
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-quand-un-gratuit-sépuise-le-relais-est-gratuit-de-même-niveau-et-prévu-davance-kevin-2026-10-02-absolue)
 
 ### 🆓 RÈGLE ABSOLUE — GRATUIT PAR DÉFAUT : TOUT LE TRAVAIL RESTE DANS LES FORFAITS GRATUITS, AVEC UNE PERFORMANCE ÉGALE AU PAYANT (Kevin 2026-09-30, ABSOLUE)
 **« Fais en sorte qu'à l'avenir toutes les branches, tout ton travail, respecte toutes les règles pour rester dans le gratuit […] que ça me consomme le moins de forfait ou le minimum […] je veux […]

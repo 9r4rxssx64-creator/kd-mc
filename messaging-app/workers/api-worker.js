@@ -4556,7 +4556,7 @@ export async function _callGroqIA(messages, systemPrompt, env, signal) {
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST', signal,
     headers: { 'Authorization': 'Bearer ' + env.GROQ_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: full, max_tokens: 1024 })
+    body: JSON.stringify({ model: 'openai/gpt-oss-120b', messages: full, max_tokens: 1024 })
   });
   if (!r.ok) throw new Error('Groq ' + r.status);
   const d = await r.json();

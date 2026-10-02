@@ -342,6 +342,46 @@ Michel) — à confirmer.
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-02 (19h30 UTC) — Kevin : « Quand ça s'épuise, anticipe du gratuit en relais tjs, même qualité, niveau » → règle + câblage
+
+- Nouvelle RÈGLE ABSOLUE (CLAUDE-HISTOIRE + index) : relais gratuit, de même niveau, prévu d'avance.
+- `ia-route.js` (branche `claude/ia-gratuites-cablage`) : `NIVEAU` A/B par fournisseur ; `planChain` range les gratuits
+  niveau A avant B derrière le premier moteur (tri stable, les payants ne bougent pas) ; pauses d'épuisement en mémoire
+  (429 → Retry-After ou 15 min ; 402 / « quota » / « credit » → 6 h ; vraie panne 500 → 0) ; anticipation par en-têtes
+  `x-ratelimit-remaining-*` (≤ 1 requête ou < 1 500 jetons → pause jusqu'au reset, la réponse en cours est gardée) ;
+  un fournisseur en pause est SAUTÉ sans appel, `tried` le dit (`skipped: en pause : …`, `pause_s`). `/health` →
+  `ia_routing.niveaux`, `ia_routing.en_pause`. 6 paliers gratuits ajoutés (SambaNova, NVIDIA, Together, Hugging Face,
+  GLM, Cohere) APRÈS l'ordre d'avant. Garde ia-route : 22 contrôles verts.
+- **« Va plus loin » (19h40) — pauses DURABLES** : la mémoire d'un isolat s'efface quand le Worker redémarre, et le KV
+  est hors de question (plafond d'écritures déjà atteint le 1.10, KV de kdmc-apis en lecture seule par règle). La pause est
+  donc AUSSI écrite dans le **cache du Worker** (Cache API : gratuit, 0 écriture KV, partagé par les isolats d'un même
+  centre Cloudflare, expire seul au terme de la pause). `routeText` relit ces pauses avant d'appeler qui que ce soit
+  (`chargerPauses`), `/health` de kdmc-apis aussi (`ia_routing.en_pause` montré même par un isolat neuf,
+  `pauses_durables: true/false`). Hors Worker (tests, Node) : mémoire seule, rien ne casse. Garde : 23 contrôles, dont le
+  sabotage « sans cache, l'isolat neuf rappelle Groq et perd un appel ». Limite honnête : l'effet réel du cache en
+  production ne se mesure qu'à un vrai épuisement (je ne vais pas en provoquer un) ; `/health` dira `pauses_durables`.
+- **Relais de MODÈLE prévu d'avance (20h00)** : la sonde réelle (run 37056539492) a montré Groq et Cerebras en 404 — leur
+  modèle « llama-3.3-70b » est retiré, et c'est celui de tous nos routeurs : la cascade gratuite était morte sans qu'un robot
+  le dise. Dans ia-route, un refus « ce modèle n'existe pas » (404 / « does not exist » / « decommissioned ») ne perd plus le
+  fournisseur : le modèle retiré est retenu (mémoire + cache du Worker, 7 jours) et le suivant de SA liste
+  (`MODELES_SECOURS`) répond dans le même appel ; un 429 ou un 500 ne touche pas à la liste. `/health` →
+  `ia_routing.modeles_retires`. 26 contrôles verts (3 nouveaux, dont « isolat neuf : le retiré revient du cache »).
+  Les noms de `MODELES_SECOURS` sont PROVISOIRES jusqu'à la lecture de GET /models par la sonde (PR #4219) — jamais devinés
+  dans ce qui part en ligne.
+- **Noms de modèles MESURÉS, plus devinés (20h35, sonde 37061173309, GET /models)** : Groq a 11 modèles, dont pour
+  nous `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.8-27b` (plus AUCUN llama) ; Cerebras en a 2 :
+  `gpt-oss-120b`, `qwen-3.8-27b`. Partout où « llama-3.3-70b-versatile » / « llama-3.3-70b » était écrit → gpt-oss-120b :
+  ia-route (`DEFAULT_MODELS` + `MODELES_SECOURS` = les 2 autres, mesurés), kdmc-apis (+ son test), Créa (`kdmc-crea-ai`),
+  chat-svc, les 2 workers messagerie, les 3 outils Lingua (grow-content, grow-vocab, translate-stories), la sonde.
+  Apex v13 (TypeScript, `ai-router.ts` lignes 448-450 et le modèle Groq) garde les anciens noms : sa chaîne de
+  construction est rouge depuis le 15.09 (décision Kevin dans le TODO). Cohere (`command-r7b-12-2024`, 466 ms mesuré)
+  est câblé via FREE_PROVIDERS (niveau B). Les 8 clés absentes du coffre restent absentes : rien n'est déclaré pour elles.
+- **Together remis à sa place** : kdmc-apis le range depuis toujours parmi les moteurs payants (compte à crédits) ; je l'avais
+  déclaré « gratuit » dans la sonde et dans ia-route à cause de son modèle « -Free ». Règle (gratuit par défaut) : un
+  palier à crédits n'est jamais déclaré gratuit sans Kevin → retiré de FREE_PROVIDERS (reste câblé, après tous les
+  gratuits, même les petits), palier « crédits » dans la sonde. Test ajusté (5 paliers gratuits, pas 6).
+- À faire après la sonde (#4212 attend une chaîne d'une autre session, 37053522915) : élaguer les fournisseurs qui ne
+  répondent pas, PR, déploiement kdmc-apis, mesure /health avant/après.
 ## 2026-10-02 (19h50 UTC) — SONDE RÉELLE des IA gratuites (run 37056539492) : la cascade gratuite est presque MORTE, mesuré
 
 - **Mesuré, pas estimé** (1 question de 8 jetons par clé, depuis le coffre) : **1 fournisseur sur 5 répond**, et **8 clés

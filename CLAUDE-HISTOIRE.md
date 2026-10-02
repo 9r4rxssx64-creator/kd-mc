@@ -3272,6 +3272,36 @@ au boot se charge TOUJOURS (même puce OFF) pour un premier affichage instantan�
 
 ---
 
+## 🔁 RÈGLE ABSOLUE — QUAND UN GRATUIT S'ÉPUISE, LE RELAIS EST GRATUIT, DE MÊME NIVEAU, ET PRÉVU D'AVANCE (Kevin 2026-10-02, ABSOLUE)
+
+> **« Quand ça s'épuise, anticipe du gratuit en relais toujours, même qualité, même niveau. »** — Kevin 2026-10-02 (après « Go freellm »)
+
+### 1. Ce que ça veut dire
+
+- Un palier gratuit qui s'épuise (quota du jour, crédits, 429) n'est jamais une panne pour Kevin : **un autre gratuit prend
+  le relais**, et il est **du même niveau de qualité** (un modèle de classe Llama 3.3 70B / Qwen3 30B+ / Gemini Flash est
+  relayé par un modèle de cette classe, pas par un petit modèle tant qu'il en reste un grand).
+- **Anticiper** = ne pas attendre le refus : les en-têtes de quota presque à zéro mettent le fournisseur en pause tout de
+  suite ; un refus « quota / crédits / 429 » le met en pause (Retry-After, 15 min, ou 6 h pour des crédits épuisés) et il est
+  **sauté d'office** au tour suivant — plus d'appel perdu, plus d'attente.
+- Les paliers à **crédits d'essai** (qui s'épuisent et peuvent facturer ensuite) ne sont jamais déclarés « gratuits » ni mis en
+  tête de cascade sans l'accord de Kevin (règle « gratuit par défaut »).
+
+### 2. Où c'est câblé (mesuré le 2.10.2026)
+
+- `services/_shared/ia-route.js` : `NIVEAU` (A / B par fournisseur), `planChain` (derrière le premier moteur, les gratuits
+  se rangent niveau A avant niveau B, tri stable), `pauser / enPause / dureePause / anticiperDepuisEntetes`, `routeText`
+  saute les fournisseurs en pause et consigne `pause_s` ; `routingStatus` (`/health`) montre `niveaux` et `en_pause`.
+- Les pauses vivent en mémoire de l'isolat (le KV du worker `kdmc-apis` est en lecture seule par règle) : honnêteté, une
+  pause ne survit pas à un redémarrage de l'isolat — elle se repose au premier refus suivant.
+- Garde : `services/_shared/ia-route.test.mjs` (22 contrôles : 429 → pause → sauté sans appel ; 402/quota → 6 h ; en-têtes
+  presque à sec → pause avant refus ; relais A avant B).
+
+### 3. Mesure
+
+- Sonde réelle des paliers : robot `coffre-sonde-ia-gratuites.yml` (13 fournisseurs, 8 jetons chacun) ; avant/après sur
+  `apis.kd-mc.com/health` → `ia_routing.available`, `niveaux`, `en_pause`.
+
 ## 🆓 RÈGLE ABSOLUE — GRATUIT PAR DÉFAUT : TOUT LE TRAVAIL RESTE DANS LES FORFAITS GRATUITS, AVEC UNE PERFORMANCE ÉGALE AU PAYANT (Kevin 2026-09-30, ABSOLUE)
 
 > **« Fais en sorte qu'à l'avenir toutes les branches, tout ton travail, respecte toutes les règles pour rester dans le gratuit […] que ça me consomme le moins de forfait ou le minimum […] je veux que ce soit en gratuit avec une performance, un travail et un résultat équivalents à une fonction payante. Trouve des solutions, mais tout en place. »** — Kevin 2026-09-30

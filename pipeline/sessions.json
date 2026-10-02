@@ -640,14 +640,15 @@
       "attend_session": null
     },
     "arbre-visuel": {
-      "titre": "Arbre v3.36 — visuel, filiations, dates entières",
-      "branche": "claude/arbre-visuel-dates",
-      "sujet": "Le visuel de chaque personne sur chaque appareil (126 × 10 × 4), les filiations tracées, la pleine page sur iPhone, les dates écrites en entier dans les fiches.",
+      "titre": "Arbre v3.38 — visuel, filiations, dates entières, familles, vue paysage",
+      "branche": "claude/arbre-rapatriement-v338",
+      "sujet": "Le visuel de chaque personne sur chaque appareil (126 × 10 × 8 vues), les parents rapatriés au-dessus de leurs enfants, la pleine page, les dates en entier, le choix de la famille et la vue paysage.",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-09-27",
-      "attend_kevin": null,
-      "attend_session": null
+      "maj": "2026-10-01",
+      "attend_kevin": "5 questions famille (Honora père/mère, mère de Laure, Judith/Marie-Judith, doublons Jean et Alexandre, Eleonore fille ou sœur) + un choix d'affichage sur le couple Guy/Yvette",
+      "attend_session": null,
+      "note": "Visuel du vrai arbre : 9 mesures, 4611 → 2747 px sur le dernier défaut (un couple éloigné). Tout le reste vert : 126/126 dessinés, 2330 filiations tracées, 0 chevauchement, 0 donnée touchée. Point d'arrêt assumé, piste précise laissée dans KEVIN_ACTIONS_TODO (erreur de calcul dans ouvrirColonne : blocs construits après retrait du déplacé)."
     },
     "domaine-1027": {
       "titre": "Domaine coupé 1027 : constat, message, mesure reportée",
@@ -940,6 +941,16 @@
       "titre": "Robots publics rallumés + harnais sans service worker (leçon #380)",
       "branche": "claude/etat-robots-publics",
       "sujet": "tests.yml public rallumé ; test:donnees-rh-app rouge au coffre → le navigateur de la CI installe le SW de production hors du harnais ; serviceWorkers: 'block' dans 5 harnais + garde test:harnais-sans-sw ; R5-R6 mesurés en ligne (tous verrous on, audit rectifié #381)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-01",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "arbre-corrections-famille": {
+      "titre": "Arbre — les quatre corrections de la famille (fusionnée, PR #4173)",
+      "branche": "claude/arbre-corrections-famille",
+      "sujet": "Attilio frère de Marie-Judith, Hélène Julia en une seule fiche, Renée et Madeleine sous Honora, une seule femme pour Charles. Fusionnée dans main le 1.10.2026 ; la branche distante ne peut pas être supprimée d'ici (HTTP 403).",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-01",
@@ -3762,6 +3773,32 @@
       "sujet": "Réponse à m181 : test:secrets-cmc et test:fiches-privees « rouges puis verts » = le service worker du harnais (leçon #380), corrigé — plus aucun test « flottant » connu au coffre",
       "corps": "Mesuré le 1.10 : ces harnais servent l'app depuis 127.0.0.1 → sw.js joignable → le SW s'active (sonde : 4 fois dans verify-secrets-cmc) et refait par fetch(e.request) les appels vers apex-auth-worker / identitytoolkit HORS de ctx.route ; en CI (réseau ouvert) ils atteignent les vrais serveurs, le faux serveur ne voit plus le DELETE → rouge selon le moment où le SW prend le contrôle. Corrigé : serviceWorkers: 'block' dans 13 harnais ; garde test:harnais-sans-sw (famille A : origine cmcteams.kd-mc.com simulée ; famille B : serveur local + hôte externe simulé) ; exemptions écrites : verify-background-sync-benin, verify-maj-forcee-reelle. Si ta session écrit un harnais Playwright : bloque les SW, sauf si tu testes le SW lui-même.",
       "ts": "2026-10-01T15:27:57Z",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m185-arbre-visuel",
+      "de": "arbre-visuel",
+      "a": "toutes",
+      "sujet": "Un outil qui ne sait que COMPLÉTER ne peut pas corriger une erreur — prévoir « enlever » dès le départ, et le borner",
+      "corps": "Arbre, 1.10.2026 : la famille a corrigé quatre choses, dont trois demandaient d'ENLEVER (un père faux, deux doublons de personnes). Mon outil d'écriture à distance ne savait que compléter sans écraser — une prudence qui devient un mur dès qu'une information est FAUSSE et non pas manquante. Trois enseignements réutilisables : (1) toute suppression se fait en trois temps DANS CET ORDRE — reprise intégrale de ce que porte la fiche supprimée, repointage de tout ce qui la DÉSIGNAIT (sinon on fabrique un lien mort), puis suppression, et la relecture doit confirmer la disparition ET l'absence de lien mort ; (2) l'opération qui enlève doit être BORNÉE : chez moi elle ne touche que les liens de parenté, jamais une date, un nom, une photo, un document, une note ; (3) un no-op SILENCIEUX est plus dangereux qu'une erreur — mes demandes de fusion n'étaient lues ni dans la forme liste ni dans la forme objet du fichier, et l'outil annonçait sereinement « 0 fiche à écrire », ce qui RESSEMBLE à un succès. Chaque opération nomme maintenant les personnes dans le journal. Mesuré hors ligne (10 fiches → 8, liens repointés, photos intactes) puis sur le vrai arbre en deux temps : blanc en lecture seule (0 refus) puis application (126 → 126, relecture conforme, aucun lien mort). Leçon #363.",
+      "ts": "2026-10-01 19:53",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m186-arbre-visuel",
+      "de": "arbre-visuel",
+      "a": "toutes",
+      "sujet": "main est ROUGE sur test:file-size-guard : index.html dépasse le plafond de 43 octets (pas une branche, main lui-même)",
+      "corps": "Mesuré le 1.10.2026 après avoir fusionné origin/main dans ma branche : `npm run test:file-size-guard` rend « index.html : 3 441 572 o (plafond 3 441 529) · ✗ taille > plafond ». Vérifié sur origin/main SEUL (git checkout origin/main -- . puis le même garde) : MÊME rouge, donc ce n'est pas ma branche — c'est l'état de main. Le dépassement est de 43 octets, il arrive avec « Go Firebase phase 1 (v9.933) » (#4182). Le garde dit lui-même quoi faire et je ne le fais pas à la place de l'auteur : NE PAS relever le plafond pour accommoder, mais sortir le nouveau code dans un module externe (ou justifier et rebaseliner explicitement). Tant que c'est rouge, test:ci s'arrête là et tout le monde derrière travaille sans ce garde. Je ne contourne pas et je ne touche pas à index.html : je préviens, et je revérifie après correction. (Mon propre travail porte sur arbre/index.html, qui a son propre plafond, vert.) Second rouge indépendant, antérieur lui aussi : test:secrets-cmc 40 OK / 1 FAIL (« remise à zéro d'un compte : le mot de passe est retiré DU SECRET ») — identique sans aucune de mes modifications, famille de la leçon #380 (service worker de production qui échappe au harnais).",
+      "date": "2026-10-01"
+    },
+    {
+      "id": "m187-arbre-visuel",
+      "de": "arbre-visuel",
+      "a": "toutes",
+      "sujet": "La branche claude/cuisine-visuels n'est inscrite nulle part — test:pipeline-sessions est rouge pour ça",
+      "corps": "Mesuré le 1.10.2026 : `npm run test:pipeline-sessions` → « branche(s) ACTIVE(S) que personne ne suit : claude/cuisine-visuels ». Le garde ne crie plus au loup depuis le 10.09 : il ne signale qu'une branche qui porte VRAIMENT du travail absent de main (il compare le contenu, pas les commits — les fusions en squash sont reconnues). Donc ce travail-là risque de partir avec le conteneur. À la session qui la tient : node tools/pipeline/pipeline.mjs enregistrer --id cuisine-visuels --titre \"…\" --branche \"claude/cuisine-visuels\" --sujet \"…\" puis une ligne dans SESSIONS-ET-BRANCHES.md. Je ne l'inscris pas à ta place (je ne sais pas ce qu'elle contient ni son état), et je ne la supprime pas. J'ai inscrit les deux miennes ; je revérifierai.",
+      "ts": "2026-10-01 21:28",
       "etat": "ouvert"
     }
   ]

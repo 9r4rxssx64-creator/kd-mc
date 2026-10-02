@@ -58,7 +58,8 @@ oubliée du registre ou que deux sessions partagent une branche.
 | Domain Kdmc | `publie-septembre` | ✅ sur GitLab — pilote la publication |
 | Livre numérique de cuisine | `claude/cuisine-ebook-1m9xm7` | 🔴 bloquée GitHub |
 | Duolingo reverse-engineering | `claude/duolingo-reverse-engineering-kocs92` | 🔴 bloquée GitHub |
-| Arbre v3.36 — visuel, filiations, dates entières | `claude/arbre-visuel-dates` | ✅ le visuel de chaque personne sur chaque appareil (126 × 10 × 4, vrai arbre), filiations tracées, pleine page iPhone, dates en entier |
+| Arbre v3.38 — visuel, filiations, dates entières, familles, vue paysage | `claude/arbre-rapatriement-v338` | ✅ le visuel de chaque personne sur chaque appareil (126 × 10 × 8 vues, vrai arbre), parents rapatriés au-dessus de leurs enfants, pleine page, dates en entier, choix de la famille, vue paysage |
+| Arbre — les quatre corrections de la famille (fusionnée, PR #4173) | `claude/arbre-corrections-famille` | ✅ Attilio frère de Marie-Judith, Hélène Julia en une seule fiche, Renée et Madeleine sous Honora, une seule femme pour Charles — branche fusionnée, non supprimable d'ici (HTTP 403) |
 | Arbre généalogique Sarzance | `claude/sarzance-family-tree-3jxi7i` | 🔴 attend `ETAT-INFRA.md` → **il est à la racine, lis-le** |
 | Divers | `claude/graphity-auto-install-sm3f92` | 🟠 à republier sur GitLab |
 | Meta | `claude/meta-krzqz8` | 🟠 en attente d'une décision de Kevin |

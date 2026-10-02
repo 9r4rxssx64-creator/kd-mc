@@ -135,18 +135,11 @@ Rapport complet (privé) : [audit/prive/AUDIT-DOMAINE-2026-09-27.md](https://git
 
 ---
 
-## 🌳 Arbre — 3 réponses attendues (je fais le travail dès que tu réponds)
+## 🌳 Arbre — questions : voir le bloc unique « 🌳 Arbre — questions (à jour) » plus bas
 
-1. **Jeanne ROSSI ou Yvonne ?** L'arbre portait déjà une « Yvonne » (fiche sans nom de famille)
-   comme épouse de **Charles ‹employé›** (1904-1969). Le mail de Laure dit **Jeanne ROSSI**.
-   Même personne (prénom mal retenu) ou **deuxième union** ? Rien n'a été supprimé.
-2. **La mère de Laure** est-elle bien **Françoise JEANNE** ? Le mail dit que Françoise est
-   l'épouse de Michel, et l'arbre dit que Laure est la fille de Michel — mais personne n'écrit
-   noir sur blanc que Françoise est sa mère. Je ne devine pas une filiation.
-3. **Jean Marius Victor ‹employé›** (12.07.1912 Nice – 9.09.1999) : c'est l'ANCIENNE hypothèse
-   pour Victor, que le manuscrit contredit (Victor : 21.12.1914 Vallauris – 19.03.1989 Beaulieu).
-   Je le supprime de l'arbre ? Et les doublons **Jean ‹employé›** (3 fiches) et
-   **Alexandre ‹employé›** (3 fiches) : lesquels sont la même personne ?
+(Ce bloc-ci datait d'avant tes corrections du 1.10. Sa question 1 — « Jeanne ROSSI ou Yvonne ? » —
+est **répondue** : « Charles n'a eu qu'une femme, Yvonne (Jeanne) » → une seule épouse, Yvonne ROSSI.
+Ses deux autres questions sont reprises dans le bloc unique, pour qu'il n'y ait plus deux listes.)
 
 ---
 
@@ -315,6 +308,7 @@ Seules les **automatisations** sont bloquées.
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
 - 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
+- 👤 **5 questions famille (Honora père/mère, mère de Laure, Judith/Marie-Judith, doublons Jean et Alexandre, Eleonore fille ou sœur) + un choix d'affichage sur le couple Guy/Yvette**  `arbre-visuel`
 <!-- MAJ-AUTO:fin attentes-kevin -->
 
 ---
@@ -656,7 +650,27 @@ Les deux portes envoient maintenant le même paquet trié : les applications, et
 
 ---
 
+## 💶 CE QUI TE COÛTE — trois clics qui font baisser (inventaire mesuré du 1.10, détail dans `COUTS-ET-ABONNEMENTS.md`)
+
+Tu m'as demandé « tout ce qui me coûte, sans rien oublier ». Mesuré dans ta boîte Gmail et dans le dépôt :
+**un seul poste est récurrent et variable — Google Cloud / Firebase (61,91 € payés le 1.09 pour août, budget de
+20 € de septembre dépassé le 19.09)** ; OpenAI s'est rechargé **5 fois en 3 heures le 17.09 (25,92 $)** ; Cloudflare 0 $ ;
+GitHub 0 $ dû (121,58 $ bruts effacés par les gratuités). Ce que je ne peux pas lire d'ici : ton abonnement Claude
+(App Store), les reçus GitHub et Railway (ils vont sur ton e-mail Apple relais → iCloud Mail), le prix du domaine.
+
+0. 👆 **Voix pro gratuite (Google Chirp 3 HD)** : ouvrir [Cloud Text-to-Speech API](https://console.developers.google.com/apis/api/texttospeech.googleapis.com/overview?project=577426384203) → « Activer ». Lien donné par Google lui-même dans son refus (sonde réelle du 1.10, run 36926219938). Ensuite tout est automatique : le routeur met Chirp 3 HD en tête, plafonné à 28 000 caractères par jour (≈ 870 000/mois, sous le million offert) — pas de facture possible.
+1. ✅ **OpenAI → recharge automatique COUPÉE le 1.10** (Kevin : « OpenAI coupé, la recharge auto »). Reste facultatif : [Facturation](https://platform.openai.com/settings/organization/billing/overview) → « Auto recharge » → Off ; [Limites](https://platform.openai.com/settings/organization/limits) → plafond mensuel ; [Consommation](https://platform.openai.com/usage). Rien ne casse : la voix passe toute seule sur la voix gratuite (vérifié dans le routeur).
+2b. 👆 **Claude Max à 300 €** : prix officiel web 100 $ (Max 5x) ou 200 $ (Max 20x) par mois hors taxes. Réglages → ton nom → Abonnements : si c'est facturé par Apple, résilier là et se réabonner sur claude.ai.
+2. 👆 **Firebase → lire ce qui coûte** : [console Firebase → cmcteams-c16ab → Usage and billing](https://console.firebase.google.com/project/cmcteams-c16ab/usage) → l'onglet « Realtime Database » (téléchargement en Go). Dis-moi le chiffre : la v9.930 (6 écritures au boot au lieu de 317) doit faire baisser, je le mesure à la facture d'octobre.
+3. ✅ **Claude → crédit de 250 $ RÉCLAMÉ le 1.10** (Kevin) — se dépense en premier, expire le 5 novembre ~~avant le 7 octobre~~ (sessions cloud Claude Code, expire le 5.11) — voir plus bas.
+4. 🟠 **Réponse** : combien paies-tu pour Claude chaque mois (Réglages → ton nom → Abonnements) ? Je le note dans le tableau ; je ne l'invente pas.
+5. 👆 **GitHub → lire ce que tu paies** : [github.com/settings/billing](https://github.com/settings/billing). J'ai lancé le robot `coffre-lire-facturation-github` (run 36903894898, 18h03) : il répond « Not Found » sur les 4 adresses de facturation — ton jeton `APEX_GITHUB_PAT` n'a pas le droit « Plan » (facturation). Soit tu lis la page, soit tu ajoutes ce droit au jeton et je relance le robot.
+
 ## 🟠 UNE RÉPONSE SUFFIT — je fais le travail derrière
+
+### 💶 Firebase : « Go » pour alléger ce que chaque téléphone télécharge ? — ajouté le 1.10
+
+Mesuré : chaque ouverture de CMCteams télécharge **4,8 Mo** de la base, dont environ 3,8 Mo inutiles au téléphone (sauvegardes d'août, journal d'Apex, documents et images qu'on peut charger seulement quand on les ouvre). C'est ce téléchargement que Google te facture (61,91 € en août). **Réponse « Go Firebase »** → je fais une sauvegarde vérifiée, je déplace l'inutile dans une archive (rien n'est effacé), je charge documents et images à la demande, CMCteams et light, avec mesure avant/après et retour arrière possible.
 
 ### 🔐 Firebase, dernier morceau (R6, phase 2c) : « Go » ou « pas maintenant » ? — ajouté le 1.10
 
@@ -3722,3 +3736,43 @@ validation d'Apple.
 qu'un site emballé (règle 4.2). Nos 3 apps ont un vrai contenu propre, donc une chance
 réelle, mais la décision lui appartient.
 
+## 🌳 Arbre — un défaut d'affichage qui reste (1.10.2026, surveillé)
+
+**Guy Édouard DESARZENS et sa femme Yvette** sont dessinés sur la **même rangée** mais à
+**2747 px l'un de l'autre** (environ 14 cartes ; c'était 4611 px au départ) dans la vue de la famille Maiffret · Sauvaigo ;
+leurs trois enfants (Patrice, Hervé, Sylvie) sont dessinés sous **elle**. C'est le **seul**
+défaut restant sur les 126 personnes × 10 appareils × 8 vues : tout le monde est dessiné, les
+**2330 filiations sont tracées**, rien ne se chevauche, aucune donnée n'est touchée.
+
+Mesuré, pas supposé : la rangée est **saturée** autour d'Yvette (les cartes y sont espacées de
+222 à 262 px alors qu'il faut 198 px de libre de chaque côté), et Guy est retenu par son propre
+père Émile. L'app écrit elle-même pourquoi elle n'y arrive pas, et la vérification l'affiche à
+chaque passage — donc si ça s'aggrave, on le saura.
+
+**Ce n'est pas une information fausse**, c'est deux cartes trop éloignées.
+
+**Piste précise laissée pour la suite** (mesurée, pas supposée) : l'app dit « *case encore
+occupée après écart de 0 px* ». Or après avoir écarté la rangée, la place visée **devrait** être
+libre par construction : c'est donc une erreur de calcul dans `ouvrirColonne`, pas une fatalité
+de la famille. Cause la plus probable, à vérifier : la liste des blocs de la rangée est construite
+en **retirant** le bloc de celui qui se déplace — si celui-ci était **au milieu** d'une suite
+d'époux, le bloc voisin devient **discontinu** et ses bords (`deb`) ne veulent plus rien dire.
+À reprendre en construisant les blocs **avant** de retirer le déplacé. Trois pistes si tu veux
+que je m'y remette : (a) déplacer l'ensemble de la branche Desarzens d'un bloc ; (b) accepter de
+désaligner légèrement d'autres parents pour réunir le couple (c'est un choix, pas un calcul) ;
+(c) laisser tel quel — un trait relie déjà Guy à ses enfants.
+
+## 🌳 Arbre — questions (à jour)
+
+1. ✅ **Honora ‹employé› = la MÈRE** — ta réponse du 1.10.2026 (« mère »). Écrit dans le vrai arbre
+   et relu (run 36940383309 : 1 fiche complétée, 126 → 126, aucune photo perdue). Le doute reste
+   lisible dans l'historique de sa fiche, suivi de ta réponse.
+2. **La mère de Laure** est posée sur **Françoise JEANNE** — c'est une **déduction** : tu dis
+   que Charles n'a eu qu'une petite-fille, Laure est la fille de Michel, et la seule épouse
+   connue de Michel est Françoise. À confirmer (ou dire si Michel a eu une autre union).
+3. **Marie-Judith ‹employé›** : tu écris « Marie-Judith », l'arbre affiche « Judith ». Je renomme ?
+4. **Eleonore ‹employé›** était notée **fille d'Attilio**. Si Attilio est le frère de Marie-Judith,
+   Eleonore est-elle sa **fille** (donc leur nièce) ou une **troisième sœur** ?
+5. Toujours ouvert : **3 fiches « Jean ‹employé› »** et **3 « Alexandre ‹employé› »** — lesquelles
+   sont la même personne ? Et **Jean Marius Victor ‹employé›** (fausse piste pour Victor) :
+   je le supprime ?

@@ -1050,7 +1050,7 @@
     /* le son ne vient jamais : on ne la laisse pas muette */
     setTimeout(function () { if (!repli && id === _parole && a.readyState < 2) versTelephone(); }, 4000);
     try {
-      a.src = BEE_TTS + '?v=' + voixDe() + '&t=' + encodeURIComponent(text);
+      a.src = BEE_TTS + '?v=' + voixDe() + '&l=fr&t=' + encodeURIComponent(text);   // l=fr : voix Google Chirp 3 HD gratuite en tête (1.10.2026)
       _voixAudio = a;
       a.load();
     } catch (_) { versTelephone(); }

@@ -1,0 +1,82 @@
+/* GARDE — voix Google Chirp 3 HD en tête, gratuite GARANTIE (Kevin 1.10.2026 : « améliore toutes les voix en
+   permanence en gratuit, niveau commercial professionnel »). Sans réseau (fetch simulé) :
+   1. `l=fr` + vitesse normale → Google Chirp 3 HD, voix « fr-FR-Chirp3-HD-<nom> », OpenAI jamais appelé ;
+   2. voix différentes : nova, echo, onyx → trois noms Google différents ;
+   3. sans `l=` → le chemin d'avant (OpenAI), Google jamais appelé (accent faux évité) ;
+   4. Google refuse (403, API pas activée) → repli OpenAI, ET pause d'une heure : le 2e appel ne retente pas Google ;
+   5. plafond du jour atteint → Google pas appelé (gratuit garanti), repli ;
+   6. le compteur est écrit AVANT l'appel ; compteur KV en panne → Google pas appelé ;
+   7. 2e appel identique → servi du cache Chirp, 0 requête ;
+   8. `m=chirp` sans `l` → fr-FR ; `m=gratuite` → MeloTTS (liaison AI), jamais OpenAI ni Google ;
+   9. SABOTAGE prouvé à la main : retirer le test du plafond → (5) rougit.
+   node services/kdmc-router/voix-chirp.test.mjs */
+import mod from './worker.js';
+let pass = 0, fail = 0;
+const ok = (c, m, d) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m + (d ? ' → ' + d : '')); } };
+const kv = (panne) => { const m = new Map(); return { m,
+  async get(k) { const v = m.get(k); return v === undefined ? null : v; },
+  async put(k, v) { if (panne) throw new Error('KV plafonné'); m.set(k, v); } }; };
+const req = (qs) => new Request('https://lingua.kd-mc.com/__lingua/tts?' + qs, { headers: { Referer: 'https://lingua.kd-mc.com/' } });
+const AUDIO = new Uint8Array(2048).fill(7);
+const B64 = btoa(String.fromCharCode(...AUDIO));
+let calls = [], gStatut = 200;
+globalThis.fetch = async (input, init) => {
+  const u = typeof input === 'string' ? input : input.url;
+  const b = init && init.body ? JSON.parse(init.body) : {};
+  calls.push({ u, b });
+  if (u.startsWith('https://texttospeech.googleapis.com/')) return gStatut === 200 ? new Response(JSON.stringify({ audioContent: B64 }), { status: 200 }) : new Response('{"error":{}}', { status: gStatut });
+  if (u.startsWith('https://api.openai.com/')) return new Response(new Uint8Array([73, 68, 51]).buffer, { status: 200, headers: { 'content-type': 'audio/mpeg' } });
+  return new Response('inattendu', { status: 599 });
+};
+const g = () => calls.filter((c) => c.u.startsWith('https://texttospeech'));
+const o = () => calls.filter((c) => c.u.startsWith('https://api.openai.com'));
+const ENV = (extra) => Object.assign({ ACCOUNTS: kv(), OPEN_AI_API_KEY: 'sk', GEMINI_API_KEY: 'gk' }, extra || {});
+
+let env = ENV(); calls = [];
+let r = await mod.fetch(req('v=nova&l=fr&t=Bonjour%20Kevin'), env);
+ok(r.status === 200 && r.headers.get('x-voix') === 'google-chirp3hd' && g().length === 1 && o().length === 0, '1a. l=fr → Chirp 3 HD, OpenAI jamais appelé', JSON.stringify(calls.map((c) => c.u.slice(0, 40))));
+ok(g()[0] && g()[0].b.voice.name === 'fr-FR-Chirp3-HD-Aoede' && g()[0].b.voice.languageCode === 'fr-FR', '1b. voix fr-FR-Chirp3-HD-Aoede pour nova', g()[0] && JSON.stringify(g()[0].b.voice));
+
+const noms = [];
+for (const v of ['nova', 'echo', 'onyx']) { env = ENV(); calls = []; await mod.fetch(req('v=' + v + '&l=fr&t=Salut'), env); noms.push(g()[0] && g()[0].b.voice.name); }
+ok(new Set(noms).size === 3, '2. nova / echo / onyx → trois voix Google différentes', noms.join());
+
+env = ENV(); calls = [];
+await mod.fetch(req('v=nova&t=hello'), env);
+ok(g().length === 0 && o().length === 1, '3. sans l= → chemin d\'avant (OpenAI), Google jamais appelé');
+
+env = ENV(); calls = []; gStatut = 403;
+r = await mod.fetch(req('v=nova&l=fr&t=un'), env);
+ok(r.status === 200 && g().length === 1 && o().length === 1, '4a. Google 403 → repli OpenAI, jamais de silence');
+calls = [];
+await mod.fetch(req('v=nova&l=fr&t=deux'), env);
+ok(g().length === 0 && o().length === 1 && env.ACCOUNTS.m.get('gtts:pause') === '403', '4b. pause d\'une heure : le 2e appel ne retente pas Google');
+gStatut = 200;
+
+env = ENV({ GTTS_PLAFOND_JOUR: '10' }); calls = [];
+await mod.fetch(req('v=nova&l=fr&t=' + encodeURIComponent('une phrase plus longue que dix')), env);
+ok(g().length === 0 && o().length === 1, '5. plafond du jour atteint → Google pas appelé (gratuit garanti)');
+
+env = ENV(); calls = [];
+await mod.fetch(req('v=nova&l=fr&t=compte'), env);
+const kj = 'gtts:' + new Date().toISOString().slice(0, 10);
+ok(env.ACCOUNTS.m.get(kj) === '6', '6a. compteur du jour = caractères envoyés (6)', env.ACCOUNTS.m.get(kj));
+env = ENV({ ACCOUNTS: kv(true) }); calls = [];
+await mod.fetch(req('v=nova&l=fr&t=panne'), env);
+ok(g().length === 0, '6b. compteur KV en panne → Google pas appelé (on ne dépense jamais sans compter)');
+
+env = ENV(); calls = [];
+await mod.fetch(req('v=echo&l=fr&t=cache'), env); calls = [];
+r = await mod.fetch(req('v=echo&l=fr&t=cache'), env);
+ok(r.status === 200 && calls.length === 0 && r.headers.get('x-voix') === 'google-chirp3hd', '7. 2e appel identique → cache Chirp, 0 requête');
+
+env = ENV(); calls = [];
+await mod.fetch(req('v=onyx&m=chirp&t=force'), env);
+ok(g()[0] && g()[0].b.voice.languageCode === 'fr-FR' && o().length === 0, '8a. m=chirp sans l → fr-FR, pas d\'OpenAI');
+const ai = { run: async () => AUDIO.buffer };
+env = ENV({ AI: ai }); calls = [];
+r = await mod.fetch(req('v=nova&m=gratuite&t=melo'), env);
+ok(r.status === 200 && r.headers.get('x-voix') === 'gratuite' && calls.length === 0, '8b. m=gratuite → MeloTTS par la liaison AI, ni OpenAI ni Google', r.headers.get('x-voix'));
+
+console.log(`Voix Chirp test: ${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

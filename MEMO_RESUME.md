@@ -1,5 +1,240 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-01 (soir) — Arbre : Honora ‹employé› confirmée MÈRE
+
+Kevin : « 1- mère ». Le lien était déjà posé en mère ; la fiche reçoit `sexe: F` et une ligne
+« ✅ confirmé par Kevin » à la suite du doute (rien n'est effacé). Blanc d'abord (1 fiche à
+compléter, 0 refus), puis écriture : 1 fiche écrite, relecture conforme, 126 → 126, aucune photo
+perdue (run 36940383309). Dans KEVIN_ACTIONS_TODO, les **deux** blocs de questions sur l'arbre
+(l'ancien, en partie déjà répondu, et le récent) sont fusionnés en un seul.
+
+---
+
+## 2026-10-01 — Arbre : dernière mesure (v3.46) et point d'arrêt assumé
+
+| Version | Écart Guy ↔ Yvette (vrai arbre) |
+|---|---|
+| v3.37 (départ) | baronne Brancalasso à **4611 px** de sa fille |
+| v3.39 | baronne **réparée** ; Guy à **3917 px** de sa femme |
+| v3.43 | 3541 px |
+| v3.46 | **2747 px** (943 px en vue paysage) |
+
+**Je m'arrête ici**, après neuf mesures, et je laisse une piste **précise** au lieu d'un dixième
+essai : l'app dit « *case encore occupée après écart de 0 px* » — or après avoir écarté la rangée,
+la place visée **devrait** être libre par construction. C'est donc une **erreur de calcul dans
+`ouvrirColonne`**, pas une fatalité de la famille. Cause la plus probable, à vérifier : les blocs
+de la rangée sont construits en **retirant** le bloc du déplacé ; s'il était **au milieu** d'une
+suite d'époux, le bloc voisin devient **discontinu** et ses bords ne veulent plus rien dire. À
+reprendre en construisant les blocs **avant** de retirer le déplacé.
+
+**Vert sur le vrai arbre, inchangé** : 126/126 dessinés, 2330 filiations tracées, aucun
+chevauchement, aucune donnée touchée, dates en entier, pleine page et netteté au zoom sur les
+10 appareils, 0 erreur JavaScript.
+
+---
+
+## 2026-10-01 — Arbre v3.46 : un garde plus strict que la règle bloque la règle
+
+Le diagnostic complet (run 36936806492) a livré la cause, et elle était **chez moi** :
+« *écarter de 204 px désalignerait Jeanne Françoise 1937 : 222 → **425 px*** ». 425 px = **2,1
+cartes**, alors que la règle annoncée tolère **3 cartes**. Mes gardes internes étaient plus
+sévères (une demi-carte pour le déplacé, deux cartes pour les voisins) et refusaient donc des
+réparations pourtant **autorisées**.
+
+v3.46 : une seule tolérance, `TOLER = 3 cartes`, celle qu'on annonce — ni plus, ni moins. Et les
+motifs ne sont plus tronqués à 8 mais à 12 (ceux de l'échange tombaient à leur tour).
+
+**Mesures** : famille d'essai 89 × 10 appareils × 8 vues → tout vert ; 4 bancs d'essai verts ;
+garde hors ligne verte. Vrai arbre : relancé.
+
+---
+
+## 2026-10-01 — Arbre : bilan du visuel sur le VRAI arbre, et ce qui reste (v3.45)
+
+**Huit mesures sur le vrai arbre** (126 fiches × 10 appareils × 8 vues) pour un seul rouge de
+départ. Résultat :
+
+| | Écart mesuré |
+|---|---|
+| v3.37 | baronne Brancalasso à **4611 px** de sa fille |
+| v3.39 | baronne **réparée** ; Guy à **3917 px** de sa femme Yvette |
+| v3.43 | **3541 px** |
+| v3.44/45 | 3541 px — **rangée saturée**, je m'arrête et je documente |
+
+**Vert sur le vrai arbre** : 126/126 dessinés, **2330 filiations tracées** (aucune orpheline),
+aucun enfant au-dessus de son parent, **aucun chevauchement**, aucune donnée touchée (empreinte
+identique avant/après, 126 → 126), dates en entier, pleine page sur les 10 appareils, netteté au
+zoom (0 calque figé), 0 erreur JavaScript.
+
+**Reste** : Guy et Yvette sur la même rangée à 18 cartes l'un de l'autre, leurs 3 enfants sous
+elle. Ce n'est pas une information fausse — c'est deux cartes trop éloignées, et c'est inscrit
+dans KEVIN_ACTIONS_TODO avec trois pistes, surveillé automatiquement à chaque mesure.
+
+**Ce qui a vraiment coûté ces huit tours** (leçon **#383**) : l'app ne disait pas pourquoi elle
+renonçait (deux tours de devinette), puis mon rapport **cachait** la raison (4 affichées, les 4
+identiques, recomptées une fois par vue), puis la liste était tronquée à 4 motifs par personne.
+Dédoublonner par CONTENU et annoncer le total a rendu le défaut lisible en une mesure.
+
+---
+
+## 2026-10-01 — Arbre v3.44 : une rangée saturée n'ouvre aucune colonne — alors on ÉCHANGE
+
+Suite mesurée (v3.43) : Guy est passé de **3917 à 3541 px** d'Yvette (elle a fait 375 px vers
+lui), et la raison écrite par l'app est devenue : « *case encore occupée après écart de 420 px* ».
+Autrement dit : la rangée est **saturée**, aucune colonne ne peut s'ouvrir.
+
+Or un **échange** ne demande aucune place : la carte qui occupe la case voulue et la carte
+éloignée prennent la place l'une de l'autre. Refusé si l'un des deux y perd (même garde, dans
+les deux sens) et jamais avec un couple — on ne sépare pas un couple pour en réunir un autre.
+
+**Mesures** : famille d'essai 89 × 10 appareils × 8 vues → tout vert ; 4 bancs d'essai verts ;
+garde hors ligne verte (la décision ET son refus sont vérifiés). Vrai arbre : relancé.
+
+---
+
+## 2026-10-01 — Arbre v3.42/v3.43 : l'app dit POURQUOI, et la raison dicte la correction
+
+Trois tours de mesure sur le vrai arbre pour un seul défaut restant — **Guy dessiné à 3917 px
+de sa femme Yvette** — et deux de ces tours ont été perdus parce que **je devinais** :
+
+1. **v3.42** : l'étape « rapprocher les époux » ne disait pas pourquoi elle renonçait. Elle écrit
+   maintenant sa raison **chiffrée** (case prise, garde refusé avec les écarts avant/après,
+   frontière trop loin, case encore occupée après tel écart).
+2. **Le rapport les cachait** : il n'affichait que 4 raisons, et les 4 étaient la **même**
+   (celle d'Émile), recomptée une fois par vue — celle de Guy tombait. Dédoublonnées par contenu,
+   8 affichées, total annoncé.
+3. **v3.43, dicté par la raison enfin lisible** (run 36935237758) : « *rejoindre Yvette : la case
+   à gauche est prise ; frontière à 1057 px (>3 cartes)* ». Deux corrections : on vise le **bord
+   du bloc** du conjoint (il peut avoir une autre union collée à lui, et « juste à côté de lui »
+   tombait sur cette carte) ; et le **plafond de 3 cartes ne s'applique plus** à cette étape —
+   c'est une préférence pour « au-dessus de ses enfants », alors qu'ici la place visée **est**
+   l'objectif.
+
+**Mesures** : famille d'essai 89 × 10 appareils × 8 vues → tout vert ; 4 bancs d'essai verts ;
+garde hors ligne verte. Vrai arbre : relancé.
+
+---
+
+## 2026-10-01 — Arbre v3.41 : la colonne s'ouvre aussi pour rejoindre son époux
+
+v3.40 a fait ce qu'il fallait côté **mesure** : elle VOIT maintenant le défaut (run 36930957045,
+« Guy Édouard DESARZENS | Yvette | 3917 px », et 1345 px en vue paysage). Mais le rapprochement
+n'a pas pu se faire : **la rangée est pleine autour d'Yvette**, et je n'avais branché l'ouverture
+de colonne que sur le rapatriement des parents, pas sur le rapprochement des époux.
+
+v3.41 : on vise d'abord **la droite** de l'époux resté en place — ouvrir la colonne là ne le
+déplace pas (il est à gauche de la coupe), donc les deux finissent vraiment collés.
+
+**Mesures** : famille d'essai 89 × 10 appareils × 8 vues → tout vert ; 4 bancs d'essai verts ;
+garde hors ligne verte. Vrai arbre : relancé.
+
+---
+
+## 2026-10-01 — Arbre v3.40 : deux époux ne restent plus à l'autre bout de leur rangée
+
+Troisième mesure sur le vrai arbre (v3.39, run 36929915190) : la baronne Brancalasso est
+**réparée**, il ne reste **qu'un cas** — et l'app le nomme : **Guy** dessiné à **3916 px
+(20 cartes) de sa femme Yvette**, sur la même rangée, alors que leurs trois enfants sont
+dessinés sous elle. Le contrôle « les époux sont côte à côte » ne regardait que la **rangée**,
+pas la **distance** : un couple visiblement séparé passait au vert.
+
+Deux corrections :
+1. **la page** rapproche celui des deux époux dont le déplacement n'abîme rien (mêmes gardes :
+   place libre, et on n'arrache personne à ses enfants ni à ses parents) ;
+2. **la vérification mesure enfin la distance entre époux** (une carte de tolérance, pour laisser
+   place à une autre union) — c'est elle qui aurait dû voir ce défaut depuis le début.
+
+**Honnêteté sur la preuve** : les deux premiers cas (rangée pleine, cascade mère/fille) sont
+reproduits dans la garde hors ligne. Celui-ci, je n'ai pas réussi à le fabriquer en arbre
+d'essai : trois tentatives ont donné un couple correctement placé. Sa preuve est donc la
+**mesure sur le vrai arbre** (avant : 3916 px ; après : à lire dans le prochain run), et la
+**mesure permanente** qui le surveillera désormais à chaque passage.
+
+---
+
+## 2026-10-01 — Arbre v3.39 : la mère SUIT sa fille quand le couple se déplace
+
+Deuxième mesure sur le vrai arbre avec v3.38 (run 36929000988) : l'écart de la baronne
+Brancalasso est passé de **4611 à 2454 px**, et surtout **l'app a écrit elle-même pourquoi**
+(« Renée Gilberte ‹employé› : rangée pleine, et c'est un couple (jamais séparé) »). Ce que la
+raison a révélé : la baronne n'était **même pas examinée** — sa fille avait bien un trait
+(tracé par l'unité de sa mère), mais elle avait ensuite été **emmenée ailleurs par l'unité de
+son mari**, et la mère restait seule.
+
+Trois corrections, v3.39 :
+1. **tout parent dessiné est examiné**, pas seulement celui dont un enfant a perdu son trait
+   (un parent normalement placé est déjà pile à la médiane de ses enfants : il ne bouge pas
+   d'un pixel, seuls les cas abîmés bougent) ;
+2. le garde est **symétrique** : un déplacement ne doit éloigner ni un parent de ses enfants,
+   ni les **parents** du déplacé — sauf si ce parent pourra **suivre** (tous ses enfants
+   dessinés partent dans le même bloc) ;
+3. **plusieurs passes** (4 au plus, on s'arrête dès que rien ne bouge) : déplacer un couple
+   oblige parfois la mère de l'épouse à suivre, et elle a déjà été examinée. Et l'ouverture de
+   colonne marche maintenant **pour un couple** (elle tient compte de sa largeur), ce qui était
+   précisément le blocage de Renée Gilberte ‹employé›.
+
+**Mesures** : famille d'essai 89 × 10 appareils × 8 vues → **tout vert** ; bancs d'essai
+(rangée pleine des deux côtés, rangée pleine sans trou, cascade mère/fille) → verts ; garde
+hors ligne verte, 10 rouges au sabotage. Vrai arbre : relancé.
+
+---
+
+## 2026-10-01 — Arbre v3.38 : plus personne n'est dessiné à l'autre bout de sa rangée
+
+La vérification visuelle du **vrai** arbre (126 fiches × 10 appareils × 8 vues, run
+36923398302) a rendu **un seul rouge** : la **baronne Francesca di ‹employé›** dessinée à
+**4611 px** de sa fille **Francesca LEO** (1504 px sur l'autre axe en vue paysage). Le trait
+était bien là — une ligne qui traverse tout l'écran.
+
+**Cause mesurée, pas devinée** (banc d'essai avec la vraie fonction de la page) : le garde du
+rapatriement comparait **la distance parcourue** (3520 px) à **l'écart de départ** (3124 px),
+donc il refusait exactement les déplacements qui réparent. Une case libre existait à 2 cartes.
+
+Corrigé en v3.38, chaque point mesuré : le garde raisonne sur **l'écart obtenu** ; l'aplomb
+visé est celui de **tous** les enfants dessinés (première version : le couple partait à 6 000 px
+de ses quatre autres enfants — attrapé par la famille d'essai) ; **un couple se déplace d'un
+bloc** ; si la rangée est pleine on **ouvre une colonne** entre deux blocs, jamais au milieu
+d'un couple, et seules la rangée du parent et celles du dessus glissent ; les **traits sont
+dérivés des cartes**, donc ils suivent. L'app **écrit maintenant elle-même** pourquoi un
+rapatriement est impossible, et la vérification l'affiche.
+
+**Mesures** : famille d'essai 89 personnes × 10 appareils × 8 vues → **tout vert** (v3.37 avait
+encore 1 rouge ici) ; garde hors ligne avec 2 arbres fabriqués (rangée pleine des deux côtés,
+puis rangée pleine sans aucun trou) → **15,3 et 12,5 cartes d'écart sur le code d'avant, 1,5 et
+1,1 après**, 10 rouges au sabotage. Leçon **#382**. Reste à faire : relancer la vérification
+sur le vrai arbre avec v3.38.
+
+**Signalé, pas contourné** : `test:secrets-cmc` est rouge (40 OK / 1 FAIL) — **identique sans
+mes modifications**, donc antérieur (famille de la leçon #380, service worker de production).
+
+---
+
+## 2026-10-01 — Arbre : quatre corrections de la famille, appliquées et vérifiées sur le vrai arbre
+
+Kevin rapporte ce que dit la famille. Les quatre sont faites, chacune relue dans le nuage :
+
+| Ce que dit la famille | Ce que l'arbre disait | Maintenant |
+|---|---|---|
+| Attilio Bricco était le **frère** de Marie-Judith | il était son **père** | lien de père retiré ; Judith rattachée à Francesca LEO, la mère d'Attilio → **frère et sœur** |
+| **Hélène Julia** Maiffret, sœur de mamy, 20/01/1919 – 23/01/1919 | **deux fiches** (une avec le nom, une avec les dates) | **une seule** : Hélène-Julia ‹employé›, 20.01.1919 Beaulieu-sur-Mer † 23.01.1919 |
+| Renée Gilberte Dejean doit être **sous Honora Dejean**, sœur de **Madeleine (tata Mado)** | aucun parent | Honora ‹employé› et Madeleine ‹employé› créées ; Renée et Madeleine toutes deux sous Honora |
+| Charles n'a eu qu'**une** femme, Yvonne (Jeanne), 1 fils Michel, 1 petite-fille Laure | **deux** épouses (Yvonne + Jeanne ROSSI) | **une** : Yvonne ROSSI. Michel = fils de Charles **et** d'Yvonne. Laure = fille de Michel et de Françoise JEANNE |
+
+**L'outil a dû apprendre à ENLEVER** : il ne savait que compléter sans écraser. Deux
+opérations ajoutées — **fusionner** deux fiches (reprise intégrale → repointage des liens →
+suppression → relecture qui confirme) et **retirer** un lien de parenté faux (borné aux
+liens : jamais une date, un nom, une photo, un document, une note). Leçon **#363**.
+
+**Mesure** : blanc en lecture seule (10 fiches à écrire, **0 refus**), puis application —
+10 écrites, 2 doublons supprimés, **126 → 126**, relecture conforme, **aucun lien mort**,
+aucune photo perdue (runs 36917119350 et 36917254520).
+
+**Deux points attendent Kevin** : Honora ‹employé› est-elle le **père** ou la **mère** (lien posé
+en mère, basculable en un geste) ? Et la mère de Laure est **déduite** (seule épouse connue de
+Michel) — à confirmer.
+
+---
+
 ## 2026-10-01 (14h30 UTC) — R10 : le robot « Tests E2E + Validation » du public était rouge à chaque push depuis le 27.09 — pour rien
 
 - **Mesuré** (runs kd-mc 36339745592 et 4 autres, tous rouges) : `syntax-check` vérifie `index.html`, qui vit au coffre ;
@@ -11,6 +246,113 @@
 - **État de R10** : la chaîne complète tourne bien en deux moitiés — `coffre-chaine-privee` (coffre, à chaque fusion sur
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
+
+## 2026-10-01 (21h45 UTC) — Kevin : « Go » Firebase + « améliore toutes les voix en gratuit, niveau pro »
+
+- **Firebase, phase 1 (v9.933)** : `fbShouldSync` ne renvoie plus `ax_claude_todo` (journal Apex, 163 Ko, lu par personne côté
+  serveur — sentinels écrit dans /apex) ni `cmc_verif_AAAA-M` plus vieux que le mois précédent (925 Ko pour août) ; ils restent
+  sur l'appareil. `tools/firebase/archiver.cjs` + robot `coffre-archiver-firebase.yml` (simulation par défaut) déplacent vers
+  `/cmcteams_archive/<jour>/` ces clés + les `cmc_agent_backup_*` (plus synchronisées depuis longtemps) : copie → relecture
+  identique → retrait ; copie différente = original gardé. Garde `test:firebase-allege` (10 contrôles, 2 sabotages rouges).
+  Ordre : sauvegarde (`firebase-backup.yml`) → simulation → appliquer → re-mesure du poids.
+- **Chaîne 36923037103 rouge (`test:secrets-cmc`, 40/1, reproduit en local)** : vrai défaut de `secrets-cmc.js` — un compte effacé sur un appareil admin neuf n'était jamais retiré du secret (réinscription impossible). Corrigé : les comptes de la dernière copie reçue sont examinés ; 41/0 (leçon #382). Pas le SW (#380 ne l'expliquait pas).
+- **OpenAI** : recharge automatique coupée par Kevin le 1.10.
+- **Sauvegarde Firebase rouge depuis le 1.10 14h** (runs 36872931313, 36925968030 : « coffre-2026-10-01.json n'est pas une sauvegarde valide ») : le contrôle « ≥ 1 Ko » visait aussi `/coffre_vault` (vide) ; et seules 3 branches en dur étaient prises (`/kdmc_access` 1,2 Mo jamais sauvegardée). `tools/firebase/sauvegarder.cjs` : TOUTES les branches racine, essentielles (cmcteams, apex) exigées pleines, autres vides notées. Garde `test:sauvegarde-firebase` (9 contrôles, sabotage). L'archivage « appliquer » attend une sauvegarde verte.
+- **Chaîne 36937369470 rouge `test:file-size-guard`** (index.html 3 441 572 o > plafond 3 441 529, +43 o) : c'était mon ajout v9.933. Raccourci (même logique, garde firebase-allege 10/0, sabotage rouge) → 3 441 026 o ; plafond NON relevé.
+- **Archivage Firebase, simulation (run 36926222708)** : 17 clés, **1 895,7 Ko** (ax_claude_todo 163 Ko, 15 cmc_agent_backup ~54 Ko, cmc_verif_2026-8 925 Ko) — rien touché.
+- **✅ GO FIREBASE FAIT (1.10, ~23h30 UTC) — mesuré** : sauvegarde verte (run 36940745446 : 10/10 branches, 11 899,7 Ko) → archivage appliqué (run 36941055104 : 17 clés, 1 895,7 Ko, chaque copie relue identique avant retrait) → re-mesure (run 36941130187) : **/cmcteams = 2 913,5 Ko au lieu de 4 809,6 Ko (−39 %), 55 clés au lieu de 72** ; `/cmcteams_archive` = 1 896,2 Ko (lu par le seul compte de service). Reste le plus lourd : `cmc_docs` 1 912 Ko (66 %) et `cmc_dep_img` 268 Ko → phase 2 (chargement à la demande), puis `/apex` 5,6 Mo. v9.933 (ces clés ne repartent plus) à publier à la synchro publique.
+- **Voix : Google Chirp 3 HD en tête dans le routeur** (`voixGoogle`, `/__lingua/tts?l=fr`) : seulement si la page dit la langue ; compteur de caractères du jour compté AVANT l'appel (défaut 28 000, `GTTS_PLAFOND_JOUR`) ; refus 401/403 → pause 1 h ; cache séparé ; `m=chirp` / `m=gratuite` pour écouter un moteur. Bee/Javis (3 copies du widget) demande `l=fr`. Garde `test:voix-chirp` (12 contrôles, sabotage du plafond rouge). La sonde passe aussi par le routeur. Attend Kevin : activer l'API (lien dans TODO).
+- **Sonde des voix (run 36926219938) — toutes refusées, mesuré** : Google Cloud TTS (Chirp 3 HD / Neural2) = API non activée sur le projet 577426384203 ; **Gemini TTS = 402 « prepayment credits depleted »** (la clé Gemini n'est plus gratuite : projet en prépaiement épuisé — `voixGemini` ne marche plus) ; MeloTTS par REST = jeton Cloudflare sans droit Workers AI (le routeur, lui, passe par sa liaison `AI`). kd-mc.com injoignable depuis l'agent (proxy 403) → sondes par la CI.
+- **Voix** : recherche (sources) — Google Cloud TTS **Chirp 3 HD : 1 M caractères/mois offerts** (puis 30 $/M), WaveNet 4 M ;
+  Gemini TTS gratuit mais **15 demandes/jour** ; MeloTTS (Workers AI) gratuit ~500 min/jour ; Deepgram Aura sur Workers AI =
+  anglais/espagnol seulement. Robot `coffre-sonde-voix.yml` : même phrase par chaque moteur gratuit, statut réel + sons publiés
+  en release privée pour que Kevin écoute.
+
+## 2026-10-01 (21h20 UTC) — Firebase mesuré : 4,8 Mo téléchargés à chaque ouverture de CMCteams
+
+- **Mesuré le 1.10 à 19h40 UTC** (robot `coffre-mesure-firebase-poids`, run 36923293943, lecture seule) : **`/cmcteams` = 4 809 Ko, 72 clés — téléchargés en entier à CHAQUE ouverture de CMCteams** (`fbStartListening` écoute toute la branche). Les plus lourdes : `cmc_docs` 1 912 Ko (40 %), `cmc_verif_2026-8` 925 Ko (19 %), `cmc_dep_img` 268 Ko, `cmc_ov` 256 Ko (le planning, utile), `ax_claude_todo` 163 Ko (journal Apex/Claude, inutile au téléphone), ≥ 14 `cmc_agent_backup_2026-08-*` d'environ 54 Ko chacun (sauvegardes d'août). Autres : `/apex` 5 664 Ko (Apex écoute toute sa branche), `/kdmc_access` 1 193 Ko.
+- Robot corrigé d'abord (adresse de la racine mal formée → « fetch failed », run 36923069501).
+- Plan proposé à Kevin (déplacer des données en production = son « Go ») : archiver l'inutile hors de la branche écoutée après sauvegarde, charger documents et images à la demande, puis `/apex`.
+
+## 2026-10-01 (21h UTC) — « Encore du gratuit pour ce que je paie » : Firebase d'abord (mesure du poids)
+
+- Lu dans le code : CMCteams ouvre un flux sur **toute** la branche `/cmcteams` à chaque ouverture (`fbStartListening`) →
+  chaque ouverture télécharge son poids entier ; Firebase Blaze facture ce téléchargement (61,91 € en août).
+- **Fait** : `tools/firebase/mesurer-taille.cjs` + robot `coffre-mesure-firebase-poids.yml` (lecture seule, coffre) : poids
+  de chaque clé, trié ; garde `test:mesurer-taille-firebase` (3 contrôles, sabotage PUT → rouge).
+- Créa Studio (kdmc-crea-ai) est déjà « gratuit d'abord » (Gemini gratuit, Workers AI flux/qwen/melotts ; Replicate en secours).
+
+## 2026-10-01 (20h45 UTC) — Prix de Claude Max vérifié ; OpenAI : liens pour bloquer + remplaçants gratuits
+
+- **Prix officiel** (claude.com/pricing + support.claude.com, lus le 1.10) : Max 5x 100 $/mois, Max 20x 200 $/mois, hors taxes,
+  web ; « mobile pricing may vary ». Kevin paie 300 € → plus que les deux prix web : sans doute via l'App Store → TODO.
+- **OpenAI** : liens Facturation / Limites / Consommation dans TODO et COUTS § 7. Vérifié dans le routeur : sans crédit OpenAI,
+  la voix bascule sur `voixGratuite` (MeloTTS Workers AI, fr), l'appel en direct retombe sur la conversation, le texte est
+  déjà sur Qwen → bloquer OpenAI ne casse rien. Remplaçants gratuits : MeloTTS / Gemini TTS / voix iPhone ; Whisper + Qwen + MeloTTS.
+
+## 2026-10-01 (20h30 UTC) — Kevin envoie l'écran « Utilisation » de Claude
+
+- Lu sur la capture (22h25 heure de Monaco) : session 4 % ; semaine tous modèles **13 %**, Fable **22 %** (remise à zéro jeudi
+  04h) ; **crédits d'utilisation activés, limite 40 crédits/mois, solde 0** = rien payé en plus du forfait à ce jour.
+- Le crédit de 250 $ réclamé n'apparaît pas sur cet écran (solde 0) : il couvre les sessions cloud de Claude Code, affiché
+  ailleurs ou pas encore versé — non vérifiable d'ici, à regarder dans quelques jours.
+- Tableau : ligne « Crédits d'utilisation Claude », statut « Plafonné » (40 crédits/mois, 0 dépensé).
+
+## 2026-10-01 (19h45 UTC) — Kevin : « Crédit réclamé »
+
+- Crédit Claude **250 $ réclamé le 1.10** (sessions cloud, expire le 5.11, se dépense en premier) : tableau (ligne « Réclamé », −250 $), PDF, TODO ✅, ETAT, COUTS.
+
+## 2026-10-01 (19h30 UTC) — Kevin : « Claude Max 300 € » + « où je vois le prix du domaine ? »
+
+- **Abonnement Claude Max = 300 €/mois** (déclaré par Kevin) → 3 600 €/an, **le plus gros poste** ; mis dans le tableau
+  (statut « Déclaré par Kevin », total mensuel et annuel séparés des reçus), le PDF des coûts, COUTS, ETAT.
+- **Domaine** : robot `coffre-lire-domaine.yml` (coffre, lecture seule) lit chez Cloudflare Registrar la fiche (expiration,
+  renouvellement, frais) et le prix courant de `kd-mc.com` — **lancé (run 36921868467) : « Authentication error »**, le jeton Cloudflare n'a pas le droit Registrar → Kevin lit le prix lui-même : dash.cloudflare.com/<compte>/domains (Gérer) ou Facturation → Historique (achat du 6.06).
+
+## 2026-10-01 (19h15 UTC) — Kevin : « un tableau avec toutes les dépenses, organisé intelligemment »
+
+- `tools/couts/tableau-depenses.py` → `livrables/Depenses-organisees.xlsx` (onglet principal par catégorie : IA, base et
+  hébergement, sécurité et outils, domaine, gratuits ; colonnes type, rythme, date, €, $, statut coloré, preuve, geste ;
+  sous-totaux et total « payé » par formule ; filtres ; onglet Résumé par mois et par catégorie) + `.pdf` paysage (2 pages,
+  rendu vérifié). Total payé contrôlé : 87,11 € et 213,68 $ (€ et $ jamais convertis). Envoyés à Kevin.
+
+## 2026-10-01 (19h UTC) — Kevin : « des dossiers, pas les .md » → PDF + Excel des coûts
+
+- **Kevin** : « donne-moi aussi des dossiers, pas les Md que je ne peux pas copier ou ouvrir ».
+- **Fait** : `tools/couts/fabriquer-dossiers.py` fabrique `livrables/Ce-qui-te-coute.pdf` (3 pages, vérifié en image) et
+  `livrables/Ce-qui-te-coute.xlsx` (5 onglets : payé avec totaux calculés, chaque mois, toutes les API, pas lu d'ici, gestes),
+  envoyés à Kevin. `livrables/` reste au coffre (`prive_toujours`).
+- **Règle retenue (mémoire)** : un livrable pour Kevin = PDF (+ Excel si tableau) envoyé en fichier ; le .md est pour les sessions.
+
+## 2026-10-01 (18h UTC) — « Tout ce qui me coûte » : inventaire mesuré (reçus Gmail + dépôt) → `COUTS-ET-ABONNEMENTS.md`
+
+- **Kevin** : « fais-moi un résumé de tous les abonnements, tout ce qui me coûte par mois ou par an […] sans rien
+  oublier. Note tout, mets à jour. » Méthode : reçus lus dans Gmail (liens), chiffres du dépôt (fichiers cités), connecteur
+  Railway ; rien d'estimé.
+- **Mesuré** : Google Cloud / Firebase Blaze **61,91 €** (1.09, août) + 0,20 € + 25 €, budget 20 €/mois dépassé le 19.09
+  (facture de septembre attendue) = **le seul poste récurrent variable** ; OpenAI 50 $ + **25,92 $ en 3 h le 17.09**
+  (recharge auto ×5 : voix + appel en direct) ; Anthropic API 109,99 $ (mai), bloquée depuis le 11.09 ; Cloudflare **0 $** ;
+  GitHub sept. **121,58 $ bruts → 0 $ dû** ; Railway ≈ 4 $/mois (calcul) ; Strix 27,77 $ ; domaine Cloudflare Registrar
+  (prix non noté) ; abonnement Claude Max (prix non lu : App Store). Crédit Claude **250 $ à réclamer avant le 7.10**.
+- **Fait** : `COUTS-ET-ABONNEMENTS.md` (6 sections, chaque montant avec son reçu ou son fichier), ligne ETAT, TODO (3 gestes),
+  robot `coffre-lire-facturation-github.yml` (lecture seule) **lancé à 18h03 (run 36903894898) : « Not Found » ×4 — le
+  jeton APEX_GITHUB_PAT n'a pas le droit « Plan » → la facturation GitHub se lit sur github.com/settings/billing (1 clic)** ;
+  limites dites : abonnement Claude, GitHub et Railway facturés sur l'e-mail relais Apple → reçus dans iCloud, pas Gmail.
+- **Kevin (2e demande, 18h) : « vérifie aussi dans mes boîtes mails, les API aussi »** → Gmail re-fouillé (abonnements,
+  App Store, > 6 mois : rien de plus — cette boîte ne reçoit que des services de développement depuis avril 2026) ;
+  la boîte Outlook `kevind@monaco.mc` n'est pas lisible d'ici, mais le worker kdmc-outlook y collecte déjà les mails
+  facture/reçu/abonnement → robot `coffre-lire-factures-outlook.yml` (coffre, lecture seule : expéditeur, sujet, date,
+  fichier) ; § 6 du document : **toutes les API et clés**, payant / gratuit / inconnu, avec ce qui est mesuré.
+- **Robot Outlook lancé (run 36907030657, 18h28)** : 42 fiches du 21 au 30.09 — EDF ×9, Revolut ×3 (conditions des
+  abonnements payants), Monaco Telecom ×2 (devis, reçu Alma), SG, Canal+, Carglass, AliExpress, SBM : factures de la
+  maison, rien du projet, et **aucun reçu Apple / Claude** (pas de pièce jointe → pas collecté). Le statut « connecté »
+  affiché par le robot est faux (sortie wrangler bavarde sur une clé absente) : à corriger, les fiches prouvent la collecte.
+- **Chaîne privée de #4167 (run 110509292516, 18h02 → 18h27) : VERTE, 0 rouge** — première chaîne entièrement verte du jour
+  (SW bloqués + relecture rapide du drapeau prouvés en CI).
+- **Au passage, chaîne privée de #4166 (run 36884814210) lue** : `test:fiches-privees` seul rouge, cette fois PAS le SW :
+  la 1re lecture du drapeau part avant le jeton anonyme (401) et le tour suivant est 15 s plus tard = le délai du test →
+  `fiche-privee.js` réessaie en 1,5 s (6 fois) — un téléphone lent allume le mode privé plus vite — et le test attend 30 s.
+  46/0, 7/0, 42/0 en local.
 
 ## 2026-10-01 (15h30 UTC) — R3 étape B : les 4 fichiers RH quittent le paquet Pages (avec filet si le KV est plafonné)
 

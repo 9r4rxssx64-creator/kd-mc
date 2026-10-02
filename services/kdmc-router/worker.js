@@ -1203,6 +1203,45 @@ async function voixGratuite(env, texte, cleCache, cors) {
   } catch (_) { return null; }
 }
 
+/* 🎙️ VOIX GOOGLE CHIRP 3 HD — gratuite jusqu'à 1 M de caractères par mois (Kevin 1.10.2026 : « améliore toutes les
+   voix en permanence en gratuit, niveau commercial professionnel »). Sonde réelle (run 36926219938) : l'API Cloud
+   Text-to-Speech n'était pas activée sur le projet de la clé → 403 ; dès que Kevin l'active, ce moteur prend la tête,
+   sans redéploiement. GRATUIT GARANTI : compteur de caractères du JOUR (1 M ÷ 31 ≈ 30 000 → défaut 28 000, réglable
+   par GTTS_PLAFOND_JOUR) compté AVANT d'appeler ; compteur illisible = on n'appelle pas. Refus 401/403 → pause d'une
+   heure (une seule écriture KV, pas un appel refusé par visiteur). Seulement si la page dit la langue (`l=`) :
+   une voix fr-FR qui lirait de l'anglais aurait l'accent faux. Même nom de voix que Gemini (même famille Google)
+   → chaque voix de l'app garde SA voix, toutes différentes (règle « voix réellement différentes »). */
+const GTTS_LANGUES = { fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT', de: 'de-DE', pt: 'pt-BR', nl: 'nl-NL' };
+function gttsLangue(l) { const k = String(l || '').toLowerCase().slice(0, 2); return GTTS_LANGUES[k] || ''; }
+async function voixGoogle(env, texte, voix, langue, cleCache, cors) {
+  try {
+    const cle = env && (env.GOOGLE_TTS_KEY || env.GEMINI_API_KEY);
+    if (!cle || !env.ACCOUNTS || !langue) return null;
+    if (await env.ACCOUNTS.get('gtts:pause')) return null;
+    const t = String(texte || '').slice(0, 1000);
+    const kj = 'gtts:' + new Date().toISOString().slice(0, 10);
+    const deja = parseInt((await env.ACCOUNTS.get(kj)) || '0', 10) || 0;
+    const plafond = parseInt(env.GTTS_PLAFOND_JOUR, 10) || 28000;
+    if (deja + t.length > plafond) return null;
+    await env.ACCOUNTS.put(kj, String(deja + t.length), { expirationTtl: 60 * 60 * 48 });   // compté AVANT (si l'écriture échoue → catch → null)
+    const nom = langue + '-Chirp3-HD-' + (GEMINI_VOIX[voix] || 'Kore');
+    const rr = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + cle, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: { text: t }, voice: { languageCode: langue, name: nom }, audioConfig: { audioEncoding: 'MP3' } }),
+    });
+    if (rr.status === 401 || rr.status === 403) { try { await env.ACCOUNTS.put('gtts:pause', String(rr.status), { expirationTtl: 3600 }); } catch (_) { /* best-effort */ } return null; }
+    if (!rr.ok) return null;
+    const j = await rr.json().catch(() => null);
+    if (!j || !j.audioContent) return null;
+    const bin = atob(j.audioContent);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    if (u8.byteLength < 512) return null;
+    try { if (cleCache) await env.ACCOUNTS.put(cleCache, u8.buffer, { expirationTtl: 60 * 60 * 24 * 400 }); } catch (_) { /* cache best-effort */ }
+    return new Response(u8.buffer, { status: 200, headers: Object.assign({ 'content-type': 'audio/mpeg', 'cache-control': 'public, max-age=31536000', 'x-voix': 'google-chirp3hd' }, cors || {}) });
+  } catch (_) { return null; }
+}
+
 /* ═══ PERSONNE N'ENTRE SANS ÊTRE FICHÉ — au ROUTEUR, pas dans chaque app ══
  *
  * Kevin, 22.09.2026 : « vérifie les connexions au domaine, les logins etc.
@@ -1677,6 +1716,24 @@ async function handleLingua(request, url, env) {
         const g = await voixGemini(env, text, voice, HD_CONSIGNE, gkey);
         if (g) return g;
         return JL({ ok: false, reason: 'gemini_indisponible' }); // fail-open (200) → repli navigateur
+      }
+      /* 🆓 GOOGLE CHIRP 3 HD EN TÊTE (gratuit par défaut, Kevin 30.09 + 1.10) : quand la page dit la langue (`l=`) et
+         vitesse normale. Cache SÉPARÉ (moteur + langue dans la clé). Refus/plafond → la suite d'avant, inchangée.
+         `?m=chirp` / `?m=gratuite` : écoute forcée d'un moteur (page de comparaison, robot de sonde). */
+      const vGoogle = VOIX_HD[voice] || voice;
+      const langue = gttsLangue(url.searchParams.get('l')) || (moteurDemande === 'chirp' ? 'fr-FR' : '');
+      if (moteurDemande === 'gratuite') {
+        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
+        const g = await voixGratuite(env, text, '', cors);
+        return g || JL({ ok: false, reason: 'gratuite_indisponible' });
+      }
+      if (langue && (speed === 1 || moteurDemande === 'chirp')) {
+        const gk = 'ltts:' + (await hashOf('gchirp:' + langue + ':' + vGoogle + ':' + text));
+        const gc = await env.ACCOUNTS.get(gk, 'arrayBuffer');
+        if (gc) return new Response(gc, { status: 200, headers: Object.assign({}, audioHdr, { 'x-voix': 'google-chirp3hd' }) });
+        const g = await voixGoogle(env, text, vGoogle, langue, gk, cors);
+        if (g) return g;
+        if (moteurDemande === 'chirp') return JL({ ok: false, reason: 'chirp_indisponible' });
       }
       const ckey = await cle(modele);
       const cached = await env.ACCOUNTS.get(ckey, 'arrayBuffer');

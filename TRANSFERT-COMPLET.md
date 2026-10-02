@@ -29,14 +29,14 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **84** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **85** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **31** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
 | Automatisations actives | **138** (+ 37 rangées) | `.github/workflows/` |
-| Gardes / tests | **137** fichiers, **198** commandes `npm run` | `tests/` + `package.json` |
+| Gardes / tests | **139** fichiers, **201** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
-| Discussions entre sessions | **184** dont **106** ouvertes | `pipeline/sessions.json` |
+| Discussions entre sessions | **187** dont **109** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **69 564 o ≈ 19 875 tokens** | `wc -c` |
 | `CLAUDE-HISTOIRE.md` (à la demande) | **626 998 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
@@ -58,6 +58,7 @@
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
 - 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
+- 👤 **5 questions famille (Honora père/mère, mère de Laure, Judith/Marie-Judith, doublons Jean et Alexandre, Eleonore fille ou sœur) + un choix d'affichage sur le couple Guy/Yvette**  `arbre-visuel`
 <!-- MAJ-AUTO:fin attentes-kevin -->
 
 ⚠️ **Honnêteté sur l'historique git** : le dépôt est cloné en « superficiel » (*shallow*) dans

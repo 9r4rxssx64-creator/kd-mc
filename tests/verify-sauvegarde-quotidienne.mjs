@@ -18,7 +18,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
 const wf = readFileSync('.github/workflows/firebase-backup.yml', 'utf8');
 ok(/repository_dispatch:\s*\n\s*types:\s*\[sauvegarde-quotidienne\]/.test(wf), '1a. firebase-backup.yml écoute repository_dispatch sauvegarde-quotidienne');
 ok(!/^\s*schedule:/m.test(wf), '1b. firebase-backup.yml n\'a aucun cron GitHub');
-ok(/JSON\.parse/.test(wf) && /t\.length<1024/.test(wf), '1c. firebase-backup.yml refuse une archive vide ou tronquée');
+const sv = readFileSync('tools/firebase/sauvegarder.cjs', 'utf8');
+ok(/node tools\/firebase\/sauvegarder\.cjs/.test(wf) && /JSON\.parse/.test(sv) && /texte\.length < 1024/.test(sv), '1c. firebase-backup.yml passe par sauvegarder.cjs, qui refuse une archive essentielle vide ou tronquée');
 const worker = readFileSync('services/kdmc-outlook/worker.js', 'utf8');
 const sched = worker.slice(worker.indexOf('async scheduled('), worker.indexOf('async scheduled(') + 1500);
 ok(/declencherSauvegarde\(env\)/.test(sched), '2a. le cron du worker appelle declencherSauvegarde');

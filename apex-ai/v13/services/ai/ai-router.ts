@@ -367,9 +367,9 @@ const PROVIDERS: Record<Provider, ProviderConfig> = {
   groq: {
     endpoint: 'https://api.groq.com/openai/v1/chat/completions',
     keyName: 'ax_groq_key',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     buildBody: (messages, system) => ({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       stream: true,
       messages: [{ role: 'system', content: system }, ...messages],
     }),
@@ -445,9 +445,9 @@ const PROVIDERS: Record<Provider, ProviderConfig> = {
   cerebras: {
     endpoint: 'https://api.cerebras.ai/v1/chat/completions',
     keyName: 'ax_cerebras_key',
-    model: 'llama-3.3-70b',
+    model: 'gpt-oss-120b',
     buildBody: (messages, system) => ({
-      model: 'llama-3.3-70b',
+      model: 'gpt-oss-120b',
       stream: true,
       messages: [{ role: 'system', content: system }, ...messages],
     }),
@@ -790,7 +790,8 @@ const PROVIDERS_WITH_TOOLS: ReadonlySet<Provider> = new Set<Provider>(['anthropi
  * Total effectif : 6 endpoints distincts → si 2 KO, reste 4 actifs minimum.
  */
 /* v13.4.366 : qwen (gratuit, Workers AI) juste après anthropic — avant tout provider payant. */
-const DEFAULT_CHAIN: readonly Provider[] = ['anthropic', 'qwen', 'openai', 'openrouter', 'groq', 'gemini', 'mistral', 'cerebras', 'openclaw'];
+/* TOUT GRATUIT, PARTOUT (Kevin 2.10.2026) : les gratuits d'abord (Qwen, Groq, Cerebras, Gemini, OpenRouter), les payants en secours. */
+const DEFAULT_CHAIN: readonly Provider[] = ['qwen', 'groq', 'cerebras', 'gemini', 'openrouter', 'mistral', 'anthropic', 'openai', 'openclaw'];
 
 /**
  * v13.3.74 H2 — Liste extensive des providers logiques supportés (incluant proxiés).
@@ -1744,7 +1745,7 @@ class AIRouter {
       /* Map policy ProviderId → router Provider (filtre supportés) */
       /* v13.4.366 : qwen (Workers AI via proxy) supporté nativement — sans lui ici, la décision
        * policy « qwen en principal » serait silencieusement ignorée (déclaré ≠ déployé, #28). */
-      const supported: readonly Provider[] = ['anthropic', 'qwen', 'openai', 'openrouter', 'groq', 'gemini', 'openclaw'];
+      const supported: readonly Provider[] = ['qwen', 'groq', 'cerebras', 'gemini', 'openrouter', 'anthropic', 'openai', 'openclaw'];
       const mapToRouter = (p: string): Provider | null => {
         if ((supported as readonly string[]).includes(p)) return p as Provider;
         /* Providers policy non implémentés ai-router : openai, deepseek, cohere, mistral, perplexity

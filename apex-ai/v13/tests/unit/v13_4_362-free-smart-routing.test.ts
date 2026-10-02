@@ -37,24 +37,27 @@ describe('v13.4.362 — free-smart routing (IA gratuites selon la question)', ()
     }
   });
 
-  it('question COMPLEXE (code) → Anthropic (qualité)', () => {
+  it('question COMPLEXE (code) → le meilleur GRATUIT (Qwen coder), Anthropic en secours (tout gratuit, partout — Kevin 2.10)', () => {
     const d = aiRoutingPolicy.decide('code');
-    expect(d.primary).toBe('anthropic');
-    /* mais le gratuit reste en fallback → 0 blocage */
-    expect(d.fallback_chain.some((p) => ['qwen', 'gemini', 'groq', 'openrouter'].includes(p))).toBe(true);
+    expect(d.primary).toBe('qwen');
+    expect(d.is_free_tier).toBe(true);
+    /* Anthropic reste en secours → 0 blocage, mais jamais en tête */
+    expect(d.fallback_chain).toContain('anthropic');
+    expect(d.fallback_chain.indexOf('anthropic')).toBeGreaterThan(d.fallback_chain.indexOf('groq'));
   });
 
-  it('reasoning / admin / creative = complexes → Anthropic', () => {
+  it('reasoning / admin / creative = complexes → quand même un GRATUIT en tête, Anthropic derrière les gratuits', () => {
     for (const dom of ['reasoning', 'admin', 'creative'] as const) {
-      expect(aiRoutingPolicy.decide(dom).primary).toBe('anthropic');
+      const d = aiRoutingPolicy.decide(dom);
+      expect(['qwen', 'groq', 'cerebras', 'gemini', 'openrouter', 'cohere']).toContain(d.primary);
+      expect(d.fallback_chain).toContain('anthropic');
     }
   });
 
-  it('detectDomain classe correctement simple vs complexe', () => {
-    expect(aiRoutingPolicy.decide(aiRoutingPolicy.detectDomain('traduis ceci en anglais')).primary)
-      .not.toBe('anthropic'); /* traduction → gratuit */
-    expect(aiRoutingPolicy.decide(aiRoutingPolicy.detectDomain('debug ce code typescript')).primary)
-      .toBe('anthropic'); /* code → Anthropic */
+  it('detectDomain classe correctement simple vs complexe (les deux partent en gratuit)', () => {
+    expect(aiRoutingPolicy.detectDomain('traduis ceci en anglais')).toBe('translation');
+    expect(aiRoutingPolicy.detectDomain('debug ce code typescript')).toBe('code');
+    expect(aiRoutingPolicy.decide('code').primary).not.toBe('anthropic');
   });
 
   it('hasKey proxy-aware : Gemini/Groq dispo via proxy même sans clé locale', () => {
@@ -76,8 +79,10 @@ describe('v13.4.362 — free-smart routing (IA gratuites selon la question)', ()
     expect(aiRoutingPolicy.decide('translation').primary).toBe('anthropic');
   });
 
-  it('mode auto (client non-admin) inchangé', () => {
+  it('client non-admin : free-smart aussi (tout gratuit, partout — Kevin 2.10) ; « auto » reste un choix explicite', () => {
     localStorage.setItem('apex_v13_uid', 'client_x');
+    expect(aiRoutingPolicy.getMode()).toBe('free-smart');
+    aiRoutingPolicy.setMode('auto', true);
     expect(aiRoutingPolicy.getMode()).toBe('auto');
   });
 });

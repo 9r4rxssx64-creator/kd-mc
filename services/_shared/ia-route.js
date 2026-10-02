@@ -154,18 +154,24 @@ export async function anticiperDepuisEntetes(provider, headers) {
 /* Questions « simples » : la 1re IA GRATUITE de la préférence du domaine répond. */
 export const SIMPLE_FREE_DOMAINS = ['general', 'summary', 'translation', 'speed'];
 
+/* TOUT GRATUIT, PARTOUT, TOUJOURS (Kevin 2.10.2026 soir) : CHAQUE domaine commence par le meilleur GRATUIT du domaine —
+   code → Qwen (qwen2.5-coder 32B), raisonnement → Qwen (QwQ 32B) puis gpt-oss-120b (Groq / Cerebras), actions → Qwen
+   (texte ; les outils gratuits sur gpt-oss-120b sont le chantier suivant), créatif → Qwen puis Groq. Un payant (Anthropic,
+   OpenAI, Perplexity) n'est JAMAIS en tête : secours seulement, derrière tous les gratuits (garde test:tout-gratuit).
+   Image : Gemini (gratuit) puis Qwen — Workers AI llama-3.2-11b-vision à brancher ; recherche : Qwen puis le /search sans
+   clé de kdmc-apis à brancher, Perplexity (payant) en secours seulement. */
 export const DOMAIN_PREFERENCES = {
-  admin:        ['anthropic', 'openai', 'gemini', 'qwen'],
-  reasoning:    ['anthropic', 'qwen', 'openai', 'gemini', 'groq'],
-  code:         ['anthropic', 'qwen', 'deepseek', 'openai', 'gemini'],
-  vision:       ['gemini', 'anthropic', 'openai'],
-  long_context: ['gemini', 'anthropic', 'qwen', 'openai'],
-  speed:        ['groq', 'qwen', 'gemini', 'openrouter', 'anthropic'],
-  search:       ['perplexity', 'anthropic', 'gemini', 'qwen'],
+  admin:        ['qwen', 'groq', 'cerebras', 'anthropic', 'openai', 'gemini'],
+  reasoning:    ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
+  code:         ['qwen', 'groq', 'cerebras', 'deepseek', 'anthropic', 'openai', 'gemini'],
+  vision:       ['gemini', 'qwen', 'anthropic', 'openai'],
+  long_context: ['gemini', 'qwen', 'groq', 'anthropic', 'openai'],
+  speed:        ['groq', 'cerebras', 'qwen', 'gemini', 'openrouter', 'anthropic'],
+  search:       ['qwen', 'groq', 'gemini', 'perplexity', 'anthropic'],
   translation:  ['qwen', 'gemini', 'groq', 'mistral', 'openrouter', 'anthropic'],
   summary:      ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'anthropic'],
-  creative:     ['anthropic', 'qwen', 'openai', 'gemini'],
-  general:      ['qwen', 'anthropic', 'gemini', 'groq', 'mistral', 'openrouter'],
+  creative:     ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
+  general:      ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'anthropic'],
 };
 
 /* Noms de secrets EXACTS de Kevin (PERPLEXITI sans Y, OPEN_AI avec underscore). */
@@ -282,7 +288,7 @@ export function planChain(domain, available, opts) {
   let i = 0;
   chain = chain.map((p, k) => (k > 0 && FREE_PROVIDERS.includes(p) ? libres[i++] : p));
   /* Une image ne va jamais à une IA texte seul ; un domaine vision sans Gemini/Anthropic → vide. */
-  if (dom === 'vision') chain = chain.filter((p) => ['gemini', 'anthropic', 'openai'].includes(p));
+  if (dom === 'vision') chain = chain.filter((p) => ['gemini', 'qwen', 'anthropic', 'openai'].includes(p));   // qwen : texte seul (Workers AI vision à brancher)
   return chain;
 }
 

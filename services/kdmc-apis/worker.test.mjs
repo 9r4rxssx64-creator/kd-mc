@@ -228,7 +228,7 @@ const KEVIN = jeton('kdmc_admin', 1);
 /* Le KV des comptes (le même que le routeur), vide = aucune révocation. */
 const KV_VIDE = { get: async () => null, put: async () => {}, delete: async () => {} };
 
-test('/ai : une ACTION va à Anthropic (outils) même avec Qwen disponible — POUR KEVIN ; réponse vide Qwen → secours', async () => {
+test('/ai : une ACTION (domaine admin) commence par Qwen GRATUIT, même pour Kevin — tout gratuit, partout (2.10) ; Anthropic en secours', async () => {
   const calls = [];
   /* les appels d'ANALYSE (classificateur) ne comptent pas : seuls les appels de RÉPONSE sont tracés */
   const fakeAI = { run: async (model, input) => { const sys = String(input.messages[0].content); if (/classificateur/i.test(sys)) return { response: '?' }; calls.push(model); return { response: '<think>hmm</think>Qwen répond' }; } };
@@ -246,9 +246,9 @@ test('/ai : une ACTION va à Anthropic (outils) même avec Qwen disponible — P
     });
     const b = await r.json();
     assert.equal(r.status, 200);
-    assert.equal(b.provider, 'anthropic');
+    assert.equal(b.provider, 'qwen', 'tout gratuit, partout : même une action de Kevin commence par Qwen');
     assert.equal(b.domain, 'admin');
-    assert.equal(calls.length, 0, 'Qwen pas appelé pour une action');
+    assert.ok(calls.length >= 1, 'Qwen appelé pour l\'action');
 
     const g = await call('/ai', {
       method: 'POST',
@@ -320,7 +320,8 @@ test('/ai : question difficile → CONSEIL de voix gratuites + juge (provider co
       env: { AI: fakeAI, ANTHROPIC_API_KEY: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE } });
     const sb = await s.json();
     assert.equal(sb.domain, 'reasoning');
-    assert.equal(anthropicCalled, true, 'raisonnement sans conseil, Kevin → Anthropic (la plus pertinente), Qwen en secours');
+    assert.equal(anthropicCalled, false, 'raisonnement sans conseil, même Kevin → Qwen (tout gratuit) ; Anthropic seulement si les gratuits tombent');
+    assert.equal(sb.provider, 'qwen');
   } finally { globalThis.fetch = orig; }
 });
 
@@ -398,8 +399,12 @@ test('/ai : les moteurs PAYANTS sont réservés à Kevin — sans son laissez-pa
     const kb = await k.json();
     assert.equal(kb.provider, 'anthropic', 'Kevin (Face ID) → le moteur expert payant reste à lui');
     assert.ok(payes.length >= 1);
-    const kc = await q({ Authorization: 'Bearer ' + KEVIN }, {});
-    assert.equal((await kc.json()).provider, 'anthropic', 'aussi par Authorization: Bearer');
+    const kc = await q({ Authorization: 'Bearer ' + KEVIN }, { premium: true });
+    assert.equal((await kc.json()).provider, 'anthropic', 'aussi par Authorization: Bearer (premium = choix explicite de Kevin ; sans premium, même Kevin commence par Qwen — tout gratuit)');
+    payes.length = 0;
+    const kq = await q({ Authorization: 'Bearer ' + KEVIN }, {});
+    assert.equal((await kq.json()).provider, 'qwen', 'Kevin sans premium : tout gratuit, Qwen d\'abord');
+    assert.equal(payes.length, 0);
   } finally { globalThis.fetch = orig; }
 });
 

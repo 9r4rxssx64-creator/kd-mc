@@ -56,20 +56,22 @@ describe('v13.4.366 — politique : Qwen gratuit en principal, bascule auto par 
     expect(aiRoutingPolicy.decide('translation').primary).toBe('qwen');
     const speed = aiRoutingPolicy.decide('speed');
     expect(speed.primary).toBe('groq');
-    expect(speed.fallback_chain[0]).toBe('qwen');
+    expect(speed.fallback_chain.slice(0, 2)).toContain('qwen');   /* 2.10 : Cerebras (gpt-oss-120b, aussi rapide) s'intercale */
   });
 
-  it('BASCULE AUTO : code / raisonnement / admin / créatif → Anthropic (la plus polyvalente), Qwen en secours gratuit', () => {
+  it('TOUT GRATUIT (Kevin 2.10, remplace la bascule du 5.09) : code / raisonnement / admin / créatif → Qwen d\'abord, Anthropic en secours derrière les gratuits', () => {
     for (const dom of ['code', 'reasoning', 'admin', 'creative'] as const) {
       const d = aiRoutingPolicy.decide(dom);
-      expect(d.primary).toBe('anthropic');
-      expect(d.fallback_chain).toContain('qwen');
+      expect(d.primary).toBe('qwen');
+      expect(d.fallback_chain).toContain('anthropic');
+      expect(d.fallback_chain.indexOf('anthropic')).toBeGreaterThan(d.fallback_chain.indexOf('groq'));
     }
   });
 
   it('BASCULE AUTO : vision → Gemini, recherche → Perplexity, très long contexte → Gemini', () => {
     expect(aiRoutingPolicy.decide('vision').primary).toBe('gemini');
-    expect(aiRoutingPolicy.decide('search').primary).toBe('perplexity');
+    expect(aiRoutingPolicy.decide('search').primary).toBe('qwen');   /* 2.10 : Perplexity (payant) n'est plus en tête, secours seulement */
+    expect(aiRoutingPolicy.decide('search').fallback_chain).toContain('perplexity');
     expect(aiRoutingPolicy.decide('long_context').primary).toBe('gemini');
     /* Qwen (texte seul sur Workers AI) n'est JAMAIS proposé pour une image */
     const v = aiRoutingPolicy.decide('vision');
@@ -78,10 +80,12 @@ describe('v13.4.366 — politique : Qwen gratuit en principal, bascule auto par 
     );
   });
 
-  it('une DEMANDE D\'ACTION va sur Anthropic (outils) — pas sur Qwen', () => {
+  it('une DEMANDE D\'ACTION est reconnue (admin) et part en GRATUIT (Qwen puis Groq gpt-oss-120b, outils compris) ; Anthropic en secours', () => {
     for (const msg of ['lance l\'audit complet', 'déploie la nouvelle version', 'corrige le bug du planning', 'vérifie que tout marche']) {
       expect(aiRoutingPolicy.detectDomain(msg)).toBe('admin');
-      expect(aiRoutingPolicy.decide(aiRoutingPolicy.detectDomain(msg)).primary).toBe('anthropic');
+      const d = aiRoutingPolicy.decide(aiRoutingPolicy.detectDomain(msg));
+      expect(d.primary).toBe('qwen');
+      expect(d.fallback_chain).toContain('anthropic');
     }
     /* une QUESTION sur une action reste une question courante → Qwen */
     expect(aiRoutingPolicy.detectDomain('comment lancer un audit ?')).not.toBe('admin');
@@ -120,8 +124,8 @@ describe('v13.4.366 — câblage réel (déclaré ≠ déployé, #28)', () => {
     const src = readSource('services/ai/ai-router.ts');
     expect(src).toMatch(/\|\s*'qwen'\s*\|/);                                    /* type Provider */
     expect(src).toMatch(/qwen:\s*\{\s*endpoint:\s*'https:\/\/apex-secrets-proxy\.9r4rxssx64\.workers\.dev\/qwen\/v1\/chat\/completions'/);
-    expect(src).toMatch(/DEFAULT_CHAIN[^\n]*=\s*\['anthropic',\s*'qwen'/);     /* gratuit juste après anthropic */
-    expect(src).toMatch(/const supported: readonly Provider\[\] = \['anthropic',\s*'qwen'/); /* sinon décision policy ignorée */
+    expect(src).toMatch(/DEFAULT_CHAIN[^\n]*=\s*\['qwen',\s*'groq'/);          /* 2.10 : gratuits d'abord, anthropic en secours */
+    expect(src).toMatch(/const supported: readonly Provider\[\] = \['qwen',\s*'groq'/); /* sinon décision policy ignorée */
     expect(src).toMatch(/nativeToWorker = u\.origin === workerBase/);         /* pas de /qwen/qwen/… */
     expect(src).toMatch(/case 'qwen':\s*\n\s*return 'qwen_cf'/);                /* coût 0 tracé */
   });

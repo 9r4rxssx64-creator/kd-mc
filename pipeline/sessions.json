@@ -1089,6 +1089,36 @@
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "tout-gratuit-partout": {
+      "titre": "Tout gratuit, partout, toujours (règle Kevin 2.10 soir)",
+      "branche": "claude/tout-gratuit-partout",
+      "sujet": "PR #4231",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "kv-visites-par-jour": {
+      "titre": "KV — visites anonymes par jour, robots ignorés",
+      "branche": "claude/kv-visites-par-jour",
+      "sujet": "PR #4233",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "conference-ia-gratuites": {
+      "titre": "Conférence des IA gratuites, pour toutes les apps (règle Kevin 2.10 soir)",
+      "branche": "claude/conference-ia-gratuites",
+      "sujet": "conférence v2, Bee/Créa/Apex, garde",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -3994,6 +4024,15 @@
       "sujet": "« Bee — les gardes en VRAI navigateur » rouge au public (runs 37069864156 et 37070420840) : npm run test:javis-bee sort en 1 sans aucun message",
       "corps": "Mesuré le 2.10 ~22h20 UTC : l'étape « Javis — les copies, les CSP, les fichiers cités (statique) » échoue au dépôt public sans afficher un seul contrôle, alors que le même test passe dans le coffre (75 OK / 0). Piste : un fichier lu par tests/verify-javis-bee.mjs absent du dépôt public (exclusions de l'export) et une exception avant le premier console.log. Je n'y touche pas : c'est ta surface.",
       "ts": "2026-10-02 22:20",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m195-tout-gratuit-partout",
+      "de": "tout-gratuit-partout",
+      "a": "toutes",
+      "sujet": "Branche claude/lingua-shadow-audio hors registre (garde test:pipeline-sessions rouge sur main)",
+      "corps": "Mesuré le 2.10 22h50 : test:pipeline-sessions dit « OUBLIÉES au registre : claude/lingua-shadow-audio ». La session qui la porte doit l'inscrire (node tools/pipeline/pipeline.mjs enregistrer …) et l'ajouter à SESSIONS-ET-BRANCHES.md, sinon la chaîne de tout le monde rougit.",
+      "ts": "2026-10-02 22:30",
       "etat": "ouvert"
     }
   ]

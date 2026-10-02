@@ -1,5 +1,28 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (22h15 UTC) — Kevin : « Tout gratuit, pas seulement production. Toujours tout gratuit. Trouve des solutions pour la meilleure qualité toujours. Note tout. »
+
+- **Noté** : nouvelle RÈGLE ABSOLUE dans CLAUDE-HISTOIRE (+ index régénéré, test:claude-md 11/0), entrée au registre des
+  gardes (test:improvements-guard 28/0), mémoire durable (`mem.cjs`, imp 95). Elle **remplace** sur un point la règle du
+  5.09 : la bascule par question ne va plus vers Anthropic pour code / raisonnement / actions / créatif — elle va vers le
+  **meilleur gratuit du domaine** (Qwen coder, QwQ, gpt-oss-120b), Anthropic n'est qu'un secours.
+- **Câblé partout, mesuré par le garde `test:tout-gratuit` (19 contrôles, 2 sabotages, dans test:ci)** :
+  - `ia-route.js` : `DOMAIN_PREFERENCES` commence par un gratuit pour les 11 domaines (recherche : Qwen puis Perplexity en
+    secours ; image : Gemini puis Qwen texte) ; 26 tests ia-route réécrits là où ils encodaient « Anthropic d'abord ».
+  - `kdmc-apis` : 3 tests réécrits (une action de Kevin commence par Qwen ; `premium: true` reste SON choix explicite →
+    Anthropic) ; 38/38.
+  - `chat-svc` : ordre de repli **était** `anthropic, openrouter, groq, gemini` et OpenRouter appelait `claude-3.5-sonnet`
+    (payant) → `groq, gemini, openrouter, anthropic`, modèle OpenRouter gratuit.
+  - **Apex v13** : `ai-routing-policy.ts` — préférences gratuit d'abord pour tous les domaines, `free-smart` par défaut pour
+    tout le monde (plus seulement l'admin ; « auto » = choix explicite), Cerebras et Cohere parmi les gratuits du proxy, plus
+    d'« admin → Anthropic absolu » ; `ai-router.ts` — `DEFAULT_CHAIN` et `supported` gratuits d'abord, Groq/Cerebras sur
+    gpt-oss-120b. 11 tests Apex réécrits, **86/86 verts, `tsc --noEmit` propre**. La mise en ligne d'Apex passe par
+    `auto-deploy-apex-v13-build.yml` après fusion (le rouge d'apex-v13-ci du 24.09 était le budget GitHub — annotation lue —,
+    pas le code) : à relancer et lire.
+  - Messagerie (2 workers) et outils Lingua (3) : déjà Groq, modèle vivant — contrôlés.
+- **Ce qui manque encore en gratuit, et qui se construit** (dans le TODO, pas derrière un paiement) : outils d'action sur
+  gpt-oss-120b (Groq, il les supporte) pour Apex ; image sur Workers AI (`llama-3.2-11b-vision`) dans ia-route ; recherche
+  web par le `/search` sans clé de kdmc-apis dans ia-route. Perplexity, Anthropic, OpenAI restent des secours.
 ## 2026-10-02 (22h45) — Crypto : mode AGRESSIF pour l'IA pilote (bot v1.5.0)
 
 Kevin : « stratégie féroce, beaucoup de trades, max d'opérations optimisées, trader pro agressif ».

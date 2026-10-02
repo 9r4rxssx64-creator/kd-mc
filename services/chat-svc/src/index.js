@@ -81,7 +81,7 @@ export default {
         return json({ ok: false, error: "unauthorized" }, cors, 401);
       }
       const body = await request.json().catch(() => ({}));
-      const order = body.failover || ["anthropic", "openrouter", "groq", "gemini"];
+      const order = body.failover || ["groq", "gemini", "openrouter", "anthropic"];   // TOUT GRATUIT, PARTOUT (Kevin 2.10) : gratuits d'abord, Anthropic en secours
 
       for (const provider of order) {
         const key = env[provider.toUpperCase() + "_API_KEY"];
@@ -134,7 +134,7 @@ function transformPayload(provider, body) {
     if (body.system) msgs.push({ role: "system", content: body.system });
     msgs.push(...(body.messages || []));
     return {
-      model: provider === "groq" ? "openai/gpt-oss-120b" : "anthropic/claude-3.5-sonnet",
+      model: provider === "groq" ? "openai/gpt-oss-120b" : "meta-llama/llama-3.3-70b-instruct:free",   // OpenRouter : modèle gratuit (2.10), plus Claude payant
       messages: msgs,
       stream: body.stream || false
     };

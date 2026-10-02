@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 — Arbre v3.47 : les sources s'AJOUTENT, elles ne se remplacent plus
+
+Kevin demande une recherche (actes, presse, photos, documents) sur chaque personne de l'arbre, à
+intégrer dans les fiches. En préparant l'intégration, mesuré : une liste `sources` envoyée à une
+fiche **remplaçait** la sienne, et le garde de l'outil ne comptait que le **nombre** de sources
+— 3 anciennes remplacées par 3 nouvelles passaient pour « rien de perdu ».
+
+Corrigé avant toute écriture : `sourcesAjout` (comme `notesAjout`) ajoute des liens dédoublonnés
+par adresse sans jamais remplacer ; le garde compare les **adresses**. Test `arbre-nuage` :
+3 nouvelles vérifications, **2 rouges au sabotage**.
+
+---
+
 ## 2026-10-01 (soir) — Arbre : Honora ‹employé› confirmée MÈRE
 
 Kevin : « 1- mère ». Le lien était déjà posé en mère ; la fiche reçoit `sexe: F` et une ligne

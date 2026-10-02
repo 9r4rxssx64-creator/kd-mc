@@ -1,5 +1,27 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 — Arbre : la recherche sur chaque personne est dans les fiches
+
+Kevin : recherche d'actes, de presse, de photos et de documents « pour chaque nom », vivants
+compris (« c'est ma famille »), gratuite et autonome. **10 chercheurs en parallèle**, une consigne
+commune (rien d'inventé, chaque trouvaille avec son lien, homonymes écartés, vivants = public et
+généalogique seulement, rien sur les mineurs).
+
+**Résultat** : 124 personnes cherchées sur 126 (Ronan et Paloma laissés de côté, âge inconnu) ;
+**167 trouvailles** — **75 confirmées, 56 probables, 36 pistes** — et **131 liens** ajoutés ;
+**101 fiches enrichies**, 10 champs vides complétés (seulement depuis du confirmé, jamais par-dessus
+une valeur connue). Blanc d'abord (101 à compléter, 0 refus), écriture en 4 morceaux, puis
+**réapplication des 4 morceaux = 0 fiche à écrire** : le nuage contient exactement le résultat
+voulu. 126 → 126 personnes, aucune photo perdue, nuage 96 → 198 Ko.
+
+**Ce qui a coûté / limité** : l'accès direct aux sites d'archives est bloqué par la politique
+réseau de l'environnement (Kevin peut l'ouvrir : réglages de l'environnement → Network access) ;
+le connecteur Firecrawl a épuisé ses crédits en cours de route (10 personnes reprises ensuite avec
+la recherche intégrée, qui ne voit que des résumés). Ce qui demande sa décision est dans
+KEVIN_ACTIONS_TODO (« ce que la grande recherche du 2.10.2026 te demande de trancher »).
+
+---
+
 ## 2026-10-02 (20h) — Crypto : #4215 fusionnée + l'IA enregistre AVANT d'agir
 
 - **#4215 fusionnée** (squash 9da27f9, par l'API `GH_TOKEN`). Déploiement public 19h31 : routeur

@@ -3774,6 +3774,44 @@ que je m'y remette : (a) déplacer l'ensemble de la branche Desarzens d'un bloc 
 désaligner légèrement d'autres parents pour réunir le couple (c'est un choix, pas un calcul) ;
 (c) laisser tel quel — un trait relie déjà Guy à ses enfants.
 
+## 🌳 Arbre — ce que la grande recherche du 2.10.2026 te demande de trancher
+
+Tout ce qui a été trouvé est **déjà dans les fiches** (notes « 📚 Recherche en ligne du 2.10.2026 »
+et liens cliquables dans « Actes / sources »). Ici, seulement ce qui demande **ta** décision :
+
+**Corrections probables (je n'ai rien changé tout seul) :**
+1. **Jean Auguste Désiré ‹employé›** (mari de Monique ‹employé›) est marqué vivant, mais l'index INSEE
+   a un ‹employé› aux trois mêmes prénoms, né à Nice le 14.09.1931, **décédé le 2.05.1984 à Velleron**.
+   C'est lui ?
+2. **‹employé› → PIZIO ?** Le Journal de Monaco (2025) écrit « Cécile Cresto Pizio », et l'avis de
+   décès de René PIZIO (Menton, 2024) cite « Henri Pizio, son fils ».
+3. **Doublons probables** : Brigitte, Olivier et Christophe « ‹employé› » seraient les trois
+   BESQUEUT (confirmés par l'avis de décès de leur père Jean Roger BESQUEUT, 2017) ; « Jean
+   ‹employé› 1925 » serait Jean Antoine Pierre ; et « Monique JAILLET » s'écrirait **JAYET**.
+4. **La mère de Marie-France ‹employé›** ne peut pas être Rosa Germaine (morte à 4 ans en 1929) :
+   probablement **Josette**.
+5. **Lucette ‹employé›** était mariée **CHOUVELON** (avis de décès, 2010) : ses enfants
+   Philippe, Laura et Christine sont sans doute des CHOUVELON.
+
+**Dates en désaccord entre l'arbre et les sources** (rien n'a été écrasé, l'écart est noté dans
+la fiche) : Roger ‹employé› né le 23 (INSEE) ou le 31.05.1913 ; Jean ‹employé› (1852) mort le
+30.03 ou le 30.09.1881 ; André né le 10 ou le 19.10.1879 ; mariage de Marie-Thérèse et Victor
+‹employé› le 02.09 ou le 03.05.1939 ; Judith ‹employé› née à Nice (INSEE) ou à Mazzè, Piémont ;
+Victoria DONATI morte en 1984 (INSEE) et non 1986.
+
+**Personnes trouvées qui ne sont PAS encore dans l'arbre** (prêtes à ajouter sur ton mot) :
+les parents de Stéphan ‹employé› (Raymond et Christiane) ; **Marie-José RUZICKA née ‹employé›**
+(1943-2021), sœur de Marie-Noëlle ; **Marie Augustine ‹employé›**, mère d'André ‹employé› ;
+Philippe, fils d'Emmanuel François ‹employé› (1909) ; et les ancêtres de Jean-Baptiste ‹employé›
+jusqu'en 1744 (Antoine et Félicité TIBAU, puis Pierre et Marie Catherine ERESEO) ; ceux de
+Jean-Baptiste ‹employé› (Louis Félix André et Marie Antoinette MARTIN).
+
+**Deux documents qui débloqueraient beaucoup** (gratuits, aux archives) :
+- l'acte de **mariage de Judith ‹employé› et Marius ‹employé›, Nice, 8.08.1911** (Archives 06,
+  cote 2 E 728, vue 55/535) : il nomme les parents de Judith → Attilio, Francesca LEO, Eleonore ;
+- la copie de l'**acte de décès n° 256 de 2005 à Nemours** (Guy Édouard DESARZENS) : ses parents
+  et sa dernière épouse.
+
 ## 🌳 Arbre — questions (à jour)
 
 1. ✅ **Honora ‹employé› = la MÈRE** — ta réponse du 1.10.2026 (« mère »). Écrit dans le vrai arbre

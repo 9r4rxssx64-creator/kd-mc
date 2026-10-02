@@ -158,6 +158,10 @@ jobs:
             CHEMIN=${LIGNE%%|*}; RESTE=${LIGNE#*|}; FICHIER=${RESTE%%|*}; CLE=${RESTE#*|}
             [ -s "$FICHIER" ] || { echo "::error::$FICHIER absent ou vide — les fichiers privés ne sont pas arrivés dans l'espace de travail"; exit 1; }
             ATTENDU=$(wc -c < "$FICHIER")
+            # LIRE D'ABORD (une lecture ne compte pas dans le plafond d'écritures, 2.10.2026) : la copie KV d'avant est-elle
+            # déjà là, à la même taille ? Alors 0 écriture — une publication sans changement de planning ne touche plus au KV.
+            DEJA=0; if wrangler kv key get --namespace-id="$NS" "$CLE" > /tmp/deja 2>/dev/null; then DEJA=$(wc -c < /tmp/deja); fi
+            if [ "$DEJA" -ge "$ATTENDU" ] && [ "$DEJA" -le $((ATTENDU + 1)) ]; then echo "  ✅ $CLE déjà dans le KV, identique ($ATTENDU octets) : 0 écriture"; N=$((N + 1)); continue; fi
             if ! SORTIE=$(wrangler kv key put --namespace-id="$NS" "$CLE" --path="$FICHIER" 2>&1); then
               MSG=$(printf '%s' "$SORTIE" | sed 's/\x1b\[[0-9;]*m//g' | grep -v 'out-of-date\|update available\|npm install\|npx wrangler\|^-*$' | tr '\n' ' ' | cut -c1-1800)
               # Mesuré le 1.10.2026 à 10h27 UTC (run 36849092448) : « your account has reached the free usage limit
@@ -166,11 +170,16 @@ jobs:
               # depuis l'hébergeur (ils restent dans le paquet tant que l'étape B n'est pas faite). On le DIT, on
               # continue — un plafond ne doit pas priver 260 personnes de la nouvelle version de l'app.
               if printf '%s' "$MSG" | grep -q '10048'; then
-                # R3 étape B (1.10.2026) : prepare-secours --pages ne met plus ce fichier dans le paquet. Sans dépôt KV, le routeur
-                # irait le chercher chez l'hébergeur et ne le trouverait pas → on le REMET dans le paquet pour CETTE publication
-                # (pages.dev le sert alors encore en direct, leçon #376), et on le dit. Il disparaîtra au dépôt KV suivant.
+                # VIE PRIVÉE D'ABORD (2.10.2026, mesuré : plafond atteint à 1 406 écritures, la publication de 19h31 avait REMIS les
+                # 4 fichiers RH sur l'hébergeur public → sonde-fuite rouge 4/16 jusqu'au soir). Si une copie KV d'avant existe,
+                # elle reste servie derrière la connexion (au pire un planning d'hier jusqu'à minuit) et le fichier NE retourne
+                # PAS dans le paquet Pages. Seul le cas « aucune copie KV » remet le fichier dans le paquet (leçon #376).
+                if [ "$DEJA" -gt 0 ]; then
+                  echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) — $CLE NON mis à jour ; la copie KV d'avant ($DEJA octets, fichier $ATTENDU) reste servie derrière la connexion ; le fichier NE retourne PAS dans le paquet Pages (vie privée d'abord) : relancer la publication après 00h UTC."
+                  PLAFOND=1; continue
+                fi
                 mkdir -p "services/kdmc-router/pages-upload/$(dirname "$FICHIER")" && cp "$FICHIER" "services/kdmc-router/pages-upload/$FICHIER"
-                echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) — $CLE NON déposé ; $FICHIER REMIS dans le paquet Pages pour cette publication (l'hébergeur le sert encore en direct, leçon #376) : relancer la publication après 00h UTC."
+                echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) et AUCUNE copie KV — $CLE NON déposé ; $FICHIER REMIS dans le paquet Pages pour cette publication (l'hébergeur le sert encore en direct, leçon #376) : relancer la publication après 00h UTC."
                 PLAFOND=1; continue
               fi
               echo "::error title=Données RH → KV::put $CLE a échoué : $MSG"; exit 1
@@ -185,7 +194,8 @@ jobs:
           # Vérité du paquet, mesurée sur le disque : sans plafond, AUCUN fichier RH ne doit y rester (R3 étape B).
           RESTANTS=""; for LIGNE in $(printf '%s\n' "$LISTE" | tr ' ' '|'); do RESTE=${LIGNE#*|}; FICHIER=${RESTE%%|*}; [ ! -e "services/kdmc-router/pages-upload/$FICHIER" ] || RESTANTS="$RESTANTS $FICHIER"; done
           if [ "$PLAFOND" = "1" ]; then
-            echo "::warning title=Données RH::$N fichier(s) déposé(s) seulement — plafond KV du jour. REMIS dans le paquet Pages (l'hébergeur les sert encore en direct, derrière la porte du routeur seulement sur le domaine) :$RESTANTS — relancer la publication après 00h UTC."
+            if [ -z "$RESTANTS" ]; then echo "::warning title=Données RH::$N fichier(s) à jour dans le KV seulement — plafond KV du jour ; les autres gardent leur copie KV d'avant, AUCUN fichier RH dans le paquet Pages (vie privée d'abord) — relancer la publication après 00h UTC."
+            else echo "::warning title=Données RH::$N fichier(s) déposé(s) seulement — plafond KV du jour et aucune copie KV pour :$RESTANTS → REMIS dans le paquet Pages (l'hébergeur les sert encore en direct, derrière la porte du routeur seulement sur le domaine) — relancer la publication après 00h UTC."; fi
           else
             [ -z "$RESTANTS" ] || { echo "::error title=Données RH::déposés dans le KV mais ENCORE dans le paquet Pages :$RESTANTS — prepare-secours --pages doit les exclure"; exit 1; }
             echo "::notice title=Données RH::$N fichiers nominatifs déposés dans le KV du routeur (taille relue = taille du fichier), servis derrière la connexion — le paquet Pages ne les porte plus (vérifié sur le disque)"

@@ -1068,6 +1068,16 @@
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "publication-rh-sans-fuite": {
+      "titre": "Publication — données RH jamais remises sur l'hébergeur (plafond KV)",
+      "branche": "claude/publication-rh-sans-fuite",
+      "sujet": "Mesuré 2.10 : plafond KV (10048) → la publication remettait les 4 fichiers RH sur pages.dev (sonde-fuite 4/16). Correctif : lecture KV d'abord, copie d'avant gardée, jamais dans le paquet si une copie existe",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

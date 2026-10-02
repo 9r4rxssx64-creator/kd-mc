@@ -1,5 +1,30 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (21h40 UTC) — FUITE mesurée : le plafond KV remettait les 4 fichiers RH sur l'hébergeur public → corrigé, garde 4/4
+
+- **Mesuré** (déploiements publics du routeur 37054714916 → 37066127795, de 19h31 à 21h19, cinq de suite) : sonde-fuite
+  **4 fuites sur 16** sur `kdmc-site-bj5.pages.dev` — `tools/departs/boards-gen.js`, `tools/shared/planning-seed.js`,
+  `tools/shared/seances-seed.js`, `tools/departs/seances-gen.js` en HTTP 200 (0/16 derrière le routeur). Cause lue dans
+  les annotations de la publication 37066127721 : **plafond KV du jour atteint (code 10048)** → « NON déposé ; REMIS dans
+  le paquet Pages » — le repli écrit le 1.10 pour ne pas priver l'app de ses données remettait les fichiers nominatifs sur
+  l'hébergeur public dès que le plafond est atteint, c'est-à-dire tous les après-midi en ce moment (1 277 puis 1 406).
+- **Correctif** (`publier-site-prive.yml`, étape « Données RH → KV ») : (1) LIRE d'abord — copie KV identique (même
+  taille) → 0 écriture (une publication sans changement de planning ne touche plus au KV : 4 écritures de moins par
+  publication, et il y en a eu 6 depuis 20h14) ; (2) plafond atteint ET copie d'avant → la copie reste servie derrière la
+  connexion (au pire la donnée d'hier jusqu'à minuit), le fichier NE retourne PAS dans le paquet, annotation claire ;
+  (3) plafond ET aucune copie → l'ancien repli, seul cas où le fichier retourne dans le paquet, dit « AUCUNE copie KV ».
+  Garde `test:publication-rh-plafond` (dans test:ci) : l'étape réelle est extraite du YAML et jouée avec un faux `wrangler`
+  — A identique → 0 écriture ; B plafond + copie → rien dans le paquet ; C plafond sans copie → remis ; **D sabotage :
+  l'ancienne étape (origin/main) en B remettait les fichiers → vu**. Leçon #384.
+- **Mesure après fusion** : la synchro republiera ; l'annotation « Données RH » dira « déjà dans le KV, identique » ou
+  « copie d'avant (X octets, fichier Y) », et le déploiement public du routeur doit repasser à 0 fuite / 16.
+- Même soir, **règle du relais gratuit en ligne** (#4228 fusionnée 21h17, déploiement public kdmc-apis 37066128171 ✅,
+  routeur 37066127795 déployé à l'étape 8 ✅ puis rouge à la sonde ci-dessus, Créa 37066127790 ✅). `/health` mesuré sur
+  apis.kd-mc.com : disponibles = qwen, anthropic, groq, gemini, mistral, cerebras, deepseek, perplexity, together, **cohere** ;
+  niveaux A/B publiés ; `en_pause` vide ; **`pauses_durables: true`** (le cache du Worker existe sur le domaine) ;
+  premier(general) = qwen. Preuve live : question courante → qwen ✅ (qwen3-30b), traduction → qwen ✅, action → qwen
+  (⚠️ attendu anthropic : sans le laissez-passer de Kevin, les moteurs payants sont retirés — comportement voulu).
+
 ## 2026-10-02 (20h10 UTC) — KV : 1 406 écritures dans la journée (plafond atteint, 2e fois) ; robot « qui écrit ? »
 
 - **Mesuré** (mesure-kv au public, run 37058382438, jours=1) : **1 406 écritures** le 2.10 (1.10 : 1 277), 3 961 lectures,

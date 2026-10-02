@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (20h) — Crypto : #4215 fusionnée + l'IA enregistre AVANT d'agir
+
+- **#4215 fusionnée** (squash 9da27f9, par l'API `GH_TOKEN`). Déploiement public 19h31 : routeur
+  déployé (étape « Déploiement » ✅, 31 adresses ✅, plannings ✅) ; worker Outlook ✅. Le run du routeur
+  est rouge sur la sonde « L'hébergeur ne sert-il que les applications ? » : 4 fichiers RH remis dans
+  le paquet Pages parce que le **KV est plafonné ce jour** (10048, publication 37054714890, leçon #376)
+  — sans lien avec #4215 ; se referme à la publication suivante après 00h UTC.
+- **Trouvé en lisant ce plafond (leçon #386)** : l'IA appliquait le changement sur Railway PUIS écrivait
+  son état ; KV plafonné ⇒ essai non suivi + 2e changement au réveil suivant. Désormais l'état est
+  écrit d'abord ; échec d'écriture ⇒ aucun robot touché (`bot-ia-routeur` § 3 ter, sabotage → rouge).
+
+---
+
 ## 2026-10-02 (soir, suite) — Crypto : prêt pour le réel (verrouillé), 2 IA gratuites, point vocal (v1.4.0)
 
 Kevin : « prépare tout pour passer en argent réel quand ce sera testé et prouvé… trouve l'IA la plus

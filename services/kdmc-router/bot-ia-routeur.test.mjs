@@ -97,6 +97,17 @@ dit(st2.journal[0].type === 'refus' && /pari/.test(st2.journal[0].contre_avis), 
 dit(Date.now() - st2.derniereDecision > 5 * 3600e3, 'nouvel essai dans 6 h, pas dans 12 h');
 store.set('bot:ia', sauve); contreAvis = '{"avis":"OUI","raison":"ok"}';
 
+console.log('\n=== 3 ter. Mémoire KV plafonnée : aucun robot modifié ===');
+const sauve2 = store.get('bot:ia');
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0 }));
+const putOrig = ACCOUNTS.put;
+ACCOUNTS.put = async (k, v) => { if (k === 'bot:ia') throw new Error('KV put() limit exceeded for the day (10048)'); return putOrig(k, v); };
+mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+ACCOUNTS.put = putOrig;
+dit(r.b && r.b.action === 'echec' && /KV/.test(r.b.detail) && !mutations.some((q) => /variableUpsert|Redeploy/.test(q)), 'KV refuse l\'écriture → AUCUNE mutation Railway (« ' + ((r.b && r.b.detail) || '').slice(0, 50) + ' »)');
+store.set('bot:ia', sauve2);
+
 console.log('\n=== 4. Deuxième réveil : l\'essai en cours bloque toute nouvelle décision ===');
 mutations = [];
 r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });

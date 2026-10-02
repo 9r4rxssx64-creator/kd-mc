@@ -3559,15 +3559,26 @@ async function iaTick(env, ctx, origine, force) {
   const avant = {}; const va = actuels[prop.bot] || {};
   /* null = le réglage n'existait pas : l'annulation le SUPPRIME (sinon la nouvelle valeur resterait). */
   Object.keys(prop.set).forEach((k) => { avant[k] = va[k] !== undefined ? va[k] : null; });
-  const ap = await botAppliquer(env, ctx, cible.svcId, prop.set);
-  if (!ap.ok) { st.dernier = 'application échouée : ' + ap.err; await iaEcrire(env, st); return { ok: false, action: 'echec', detail: st.dernier }; }
+  /* ENREGISTRER D'ABORD, APPLIQUER ENSUITE (2.10, KV plafonné ce jour-là, code 10048) : si le KV refuse
+     l'écriture, on ne touche à AUCUN robot — sinon l'essai tournerait sans être suivi ni jugé, et le
+     réveil suivant lancerait un 2e changement par-dessus. */
+  const journalAvant = st.journal;
   st.enCours = Object.assign({ bot: prop.bot, debut: now, btc0: btc, set: prop.set, avant, raison: prop.raison, attendu: prop.attendu, source, modele }, IA.debutEssai(prop.bot, flotte));
   st.derniereDecision = now;
   st.journal = IA.ajouterJournal(st.journal, { type: 'decision', t: now, bot: prop.bot, set: prop.set, avant, raison: prop.raison,
     attendu: prop.attendu, source, modele, echec_ia: source === 'secours' ? echecIa : '', origine,
     contre_avis: contre ? contre.raison : '', modele_contre: contre ? IA_CONTRE_AVIS_MODELE.split('/').pop() : '' });
   st.dernier = 'nouvel essai sur ' + prop.bot;
-  await iaEcrire(env, st);
+  try { await iaEcrire(env, st); } catch (e) {
+    return { ok: false, action: 'echec', detail: 'mémoire du domaine (KV) indisponible : aucun robot modifié — ' + String((e && e.message) || e).slice(0, 80) };
+  }
+  const ap = await botAppliquer(env, ctx, cible.svcId, prop.set);
+  if (!ap.ok) {
+    st.enCours = null; st.derniereDecision = 0; st.journal = journalAvant;
+    st.dernier = 'application échouée : ' + ap.err;
+    try { await iaEcrire(env, st); } catch { /* l'arbitre verra un essai sans effet et le gardera neutre */ }
+    return { ok: false, action: 'echec', detail: st.dernier };
+  }
   await audLog(env, { ev: 'bot_ia_decision', set: Object.keys(prop.set).join(',') });
   return { ok: true, action: 'decision', detail: prop.bot + ' ' + JSON.stringify(prop.set) };
 }

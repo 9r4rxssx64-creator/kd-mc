@@ -1061,14 +1061,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/lingua-shadow-audio",
+      "branche": "claude/passkey-e2e",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "#4230 fusionnée le 2.10 21h57 ; suite : v2.131.1 (balise audio réutilisée, contrôles Vérité dans test:ci)"
+      "note": "#4230 + #4232 fusionnées le 2.10 ; suite : robot Face ID (passkey E2E) rouge depuis #4106 réparé"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",
@@ -3985,6 +3985,15 @@
       "sujet": "Routeur : CERCLE_DB (D1 kdmc-cercle) + /__cercle/*, POST /__sso/prolonger, ssoVerify en UTF-8 (accents), MeloTTS dans la vraie langue",
       "corps": "(1) Nouvelle liaison D1 CERCLE_DB dans wrangler.toml — base kdmc-cercle (0b49b8eb-…) : ne la retire pas, le cercle Lingua en dépend ; 0 écriture KV. (2) POST /__sso/prolonger : une app du domaine renouvelle la session normale (30 j) quand il reste ≤ 15 j ; refuse une session révoquée et ne prolonge JAMAIS la session admin Face ID (24 h). (3) ssoVerify décode le jeton en UTF-8 : avant, tout nom accentué sortait brouillé (« ZoÃ© ») — si ton app recopiait s.name, elle est réparée sans rien faire. (4) voixGratuite(env, texte, cle, cors, l) : 5e argument = langue de la page ; hors fr/en/es/zh → null (voix du téléphone). (5) admin.kd-mc.com affiche un bandeau « 💬 Messages Lingua » (GET /__cercle/admin/boite, admin seulement).",
       "ts": "2026-10-02 21:50",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m194-lingua-code",
+      "de": "lingua-code",
+      "a": "javis-bee",
+      "sujet": "« Bee — les gardes en VRAI navigateur » rouge au public (runs 37069864156 et 37070420840) : npm run test:javis-bee sort en 1 sans aucun message",
+      "corps": "Mesuré le 2.10 ~22h20 UTC : l'étape « Javis — les copies, les CSP, les fichiers cités (statique) » échoue au dépôt public sans afficher un seul contrôle, alors que le même test passe dans le coffre (75 OK / 0). Piste : un fichier lu par tests/verify-javis-bee.mjs absent du dépôt public (exclusions de l'export) et une exception avant le premier console.log. Je n'y touche pas : c'est ta surface.",
+      "ts": "2026-10-02 22:20",
       "etat": "ouvert"
     }
   ]

@@ -76,8 +76,11 @@ try {
 
   await page.goto(ORIGIN + '/');
   await page.waitForSelector('#f-create', { timeout: 5000 });
-  await page.fill('#f-prenom', 'Kevin');
-  await page.fill('#f-nom', 'Desarzens');
+  /* Une personne ORDINAIRE (2.10.2026) : depuis #4106, le domaine renvoie le nom de l'admin vers « Je suis
+     l'administrateur » (admin_requis) — ce robot attendait #pk-go et était rouge à chaque exécution. Le chemin
+     Face ID de l'admin a ses propres gardes (admin-partout, grant-faceid) ; ici on prouve le passkey de tous. */
+  await page.fill('#f-prenom', 'Lucie');
+  await page.fill('#f-nom', 'Martin');
   await page.fill('#f-code', ADMIN_CODE);
   await page.fill('#f-code2', ADMIN_CODE);
   await page.check('#cgu-ok');
@@ -91,7 +94,7 @@ try {
   /* Enrôlement réussi → le hub s'affiche */
   const enrolled = await page.waitForFunction(() => { var h = document.getElementById('hub'); return h && !h.hidden; }, { timeout: 8000 }).then(() => true).catch(() => false);
   ok(enrolled, 'Enrôlement passkey (Face ID virtuel) → réussi, hub affiché');
-  ok(kv.has('pk:kevin-desarzens'), 'Clé publique du passkey stockée côté worker (KV pk:<uid>)');
+  ok(kv.has('pk:lucie-martin'), 'Clé publique du passkey stockée côté worker (KV pk:<uid>)');
 
   /* La session est FORTE (verified:true) */
   const who1 = await page.evaluate(() => window.kdmcSSO.whoami());
@@ -123,7 +126,7 @@ try {
   const back = await page.waitForFunction(() => { var h = document.getElementById('hub'); return h && !h.hidden; }, { timeout: 8000 }).then(() => true).catch(() => false);
   ok(back, 'Connexion par Face ID (sans code) → réussie, hub affiché');
   const who2 = await page.evaluate(() => window.kdmcSSO.whoami());
-  ok(who2 && who2.verified === true && who2.uid === 'kevin-desarzens', 'Session Face ID = FORTE (verified:true) + bonne identité');
+  ok(who2 && who2.verified === true && who2.uid === 'lucie-martin', 'Session Face ID = FORTE (verified:true) + bonne identité');
 
   /* Après reconnexion Face ID : toujours 1 SEULE clé + appareil reconnu (pas de doublon
      créé par l'assertion) — la connexion Face ID ne doit jamais empiler de passkey. */

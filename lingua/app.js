@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.131.0";
+var APP_VER="v2.131.1";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -1937,7 +1937,8 @@ function ecouteRepeteCompare(w,zone){ if(!zone) return;
         var url=URL.createObjectURL(new Blob(morceaux,{type:rec.mimeType||"audio/mp4"}));
         zone.innerHTML='<div class="shadow-cmp"><button class="pron-play" id="shMod">🐝 Le modèle</button><button class="pron-play" id="shMoi">🙋 Moi</button><button class="pron-play" id="shDeux">🔁 Les deux</button></div>'
           +'<p class="mini">Comment c\'était ?</p><div class="shadow-cmp"><button class="pron-play" data-n="1" aria-label="À retravailler">😕</button><button class="pron-play" data-n="2" aria-label="Presque">🙂</button><button class="pron-play" data-n="3" aria-label="Pareil que le modèle">😄</button></div>';
-        var moi=function(){ try{ var a=new Audio(url); a.play().catch(function(){}); return a; }catch(_){ return null; } };
+        /* la balise de l'atelier prononciation, pas une nouvelle à chaque appui (iPhone refuse de jouer quand elles s'accumulent — garde verify-voix) */
+        var moi=function(){ var a=_pronJoue(url,1); if(a){ try{ a.play().catch(function(){}); }catch(_){} } return a; };
         zone.querySelector("#shMod").onclick=function(){ pronSay(w.t,false); };
         zone.querySelector("#shMoi").onclick=moi;
         zone.querySelector("#shDeux").onclick=function(){ pronSay(w.t,false); setTimeout(moi, duree*0.8); };

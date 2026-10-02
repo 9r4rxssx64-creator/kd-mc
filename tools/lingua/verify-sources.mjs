@@ -57,7 +57,7 @@ const app = readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 const html = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const sw = readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 const branche = [
-  ['index.html charge sources-langues.js', /<script src="sources-langues\.js"><\/script>/.test(html)],
+  ['index.html charge sources-langues.js', /<script src="sources-langues\.js(\?v=[\w.]+)?"><\/script>/.test(html)],
   ['mise en cache hors-ligne (sw.js)', /sources-langues\.js/.test(sw)],
   ['les sources sont affichées dans la rubrique', /LANG_SOURCES/.test(app) && /srcLangue\(/.test(app)],
   ['SEULS les liens testés sont affichés', /etat==="ok"\|\|s\.etat==="robot"|etat === "ok"/.test(app)],

@@ -1061,13 +1061,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/lingua-cercle",
+      "branche": "claude/lingua-shadow-audio",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "#4230 fusionnée le 2.10 21h57 ; suite : v2.131.1 (balise audio réutilisée, contrôles Vérité dans test:ci)"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

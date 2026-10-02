@@ -111,7 +111,7 @@ if (!/langue à part entière/.test(app)) ko('la note ne dit plus que la LSF est
 if (!/rien n\\'est inventé/.test(app)) ko('la note ne dit plus que rien n\'est inventé');
 
 /* --- 4. C'est branché de bout en bout --- */
-if (!/<script src="data-lsf\.js"><\/script>/.test(html)) ko('data-lsf.js n\'est pas chargé par la page');
+if (!/<script src="data-lsf\.js(\?v=[\w.]+)?"><\/script>/.test(html)) ko('data-lsf.js n\'est pas chargé par la page');
 if (!/COURSES\.lsf = \{/.test(dataLsf)) ko('le cours n\'est pas ajouté à la liste des cours');
 if (!/\.\/data-lsf\.js/.test(sw)) ko('data-lsf.js n\'est pas dans le cache hors-ligne');
 [['lsfabc', 'vLsfAbc'], ['lsfdico', 'vLsfDico']].forEach(([vue, fn]) => {

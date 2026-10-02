@@ -81,7 +81,7 @@ Object.keys(LANG_HISTOIRE).forEach((lg) => {
 /* ---------- 2. Le contenu est-il VRAIMENT branché ? (Déclaration ≠ Déploiement) ---------- */
 const app = lire('app.js'), html = lire('index.html'), sw = lire('sw.js');
 const brancher = [
-  ['index.html charge histoires-langues.js', /<script src="histoires-langues\.js"><\/script>/.test(html)],
+  ['index.html charge histoires-langues.js', /<script src="histoires-langues\.js(\?v=[\w.]+)?"><\/script>/.test(html)],
   ['le fichier est mis en cache hors-ligne (sw.js)', /histoires-langues\.js/.test(sw)],
   ['la vue vHistoire existe', /function vHistoire\(\)/.test(app)],
   ['la vue est réellement affichée (render)', /VIEW==="histoire"\)\s*app\.appendChild\(vHistoire\(\)\)/.test(app)],

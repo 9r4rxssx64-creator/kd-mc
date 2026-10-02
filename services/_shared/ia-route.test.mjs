@@ -302,8 +302,12 @@ const voicesAI = (byModel, opts = {}) => ({
   },
 });
 
-test('freeVoices : chaque modèle Qwen est une voix, les gratuits à clé s\'ajoutent, 3 max par défaut', () => {
-  assert.equal(freeVoices({ AI: {} }).length, 3);
+test('freeVoices : chaque modèle Qwen est une voix, les gratuits à clé s\'ajoutent, TOUTES par défaut (8 max), un gratuit en pause ne siège pas', () => {
+  assert.equal(freeVoices({ AI: {} }).length, QWEN_MODELS.length);
+  assert.equal(freeVoices({ AI: {} }, 2).length, 2);
+  pauser('groq', 60000, 'test');
+  assert.ok(!freeVoices({ AI: {}, GROQ_API_KEY: 'g' }).some((v) => v.provider === 'groq'), 'Groq en pause : pas de voix');
+  _resetPauses();
   assert.equal(freeVoices({ AI: {}, GROQ_API_KEY: 'g' }, 5).map((v) => v.provider).filter((p) => p === 'groq').length, 1);
   assert.deepEqual(freeVoices({}), []);
 });
@@ -343,18 +347,19 @@ test('analyseQuestion : les voix disent « action » → admin (sécurité), dé
   assert.equal(c.by, 'regex'); assert.deepEqual(c.voices, []);
 });
 
-test('councilText : 3 voix répondent, le juge Qwen fusionne ; juge mort → 1re voix ; 1 voix → telle quelle', async () => {
+test('councilText : les voix répondent, un juge qui RÉDIGE au lieu de noter → sa synthèse sert (ancien conseil) ; juge mort → 1re voix ; 1 voix → telle quelle', async () => {
   const AI = voicesAI({});
   const c = await councilText({ AI }, { prompt: 'explique la relativité simplement' });
-  assert.equal(c.ok, true); assert.equal(c.provider, 'council'); assert.equal(c.judge, 'qwen');
+  assert.equal(c.ok, true); assert.equal(c.provider, 'council'); assert.match(c.judge, /^qwen\//);
   assert.match(c.text, /^SYNTHÈSE/);
-  assert.equal(c.voices.filter((v) => v.ok).length, 3);
+  assert.equal(c.voices.filter((v) => v.ok).length, QWEN_MODELS.length);
   assert.equal(AI.calls.filter((x) => /JUGE/.test(x.sys)).length, 1, 'un seul appel juge');
+  assert.equal(c.rounds, 2);
 
-  const dead = voicesAI({ [QWEN_MODELS[1]]: new Error('capacity'), [QWEN_MODELS[2]]: new Error('capacity') }, { judgeDead: true });
+  const dead = voicesAI({ [QWEN_MODELS[1]]: new Error('capacity'), [QWEN_MODELS[2]]: new Error('capacity'), [QWEN_MODELS[3]]: new Error('capacity') }, { judgeDead: true });
   const d = await councilText({ AI: dead }, { prompt: 'x' });
   assert.equal(d.ok, true); assert.equal(d.judge, 'none', 'une seule voix → sa réponse, sans juge');
-  assert.equal(d.voices.filter((v) => !v.ok).length, 2);
+  assert.equal(d.voices.filter((v) => !v.ok).length, 3);
 
   const e = await councilText({}, { prompt: 'x' });
   assert.equal(e.ok, false);
@@ -478,4 +483,64 @@ test('modèle retiré : durable — un isolat neuf (mémoire vide) retrouve le m
     assert.equal(r.model, MODELES_SECOURS.groq[0]);
     assert.equal(m.calls.length - avant, 1, 'le retiré n\'est pas retenté : il est revenu du cache');
   } finally { m.restore(); delete globalThis.caches; }
+});
+
+/* ---- CONFÉRENCE v2 (Kevin 2.10 soir : « toutes les IA gratuites… comparent, améliorent, la meilleure travaille ») ---- */
+import { competenceDe, competenceStatus, voixId, _resetCompetence, noterCompetence, chargerCompetence } from './ia-route.js';
+/* mock : chaque voix répond ; le JUGE note en JSON ; la voix désignée AMÉLIORE. */
+const conferenceAI = (byModel, verdict, opts = {}) => ({
+  calls: [],
+  run(model, input) {
+    const sys = String(input.messages[0].content);
+    this.calls.push({ model, sys: sys.slice(0, 120), user: String(input.messages[1] && input.messages[1].content || '').slice(0, 40) });
+    if (/JUGE/.test(sys)) { if (opts.judgeDead) throw new Error('juge mort'); return { response: typeof verdict === 'function' ? verdict(input) : verdict }; }
+    if (/AMÉLIORE/.test(sys)) { if (opts.amelioreDead) throw new Error('capacity'); return { response: 'AMÉLIORÉE par ' + model.split('/').pop() + ' : ' + String(input.messages[1].content).length }; }
+    const out = byModel[model];
+    if (out instanceof Error) throw out;
+    return { response: out === undefined ? 'réponse ' + model.split('/').pop() : out };
+  },
+});
+test('conférence : toutes les voix répondent, le juge COMPARE et note, LA MEILLEURE retravaille avec les apports des autres ; sa compétence est retenue', async () => {
+  _resetCompetence();
+  const AI = conferenceAI({}, '{"notes":{"1":6,"2":9,"3":4,"4":5},"meilleure":2,"manques":"il manque un exemple"}');
+  const c = await councilText({ AI }, { prompt: 'explique la relativité restreinte avec un exemple', domain: 'reasoning' });
+  assert.equal(c.ok, true); assert.equal(c.provider, 'council');
+  assert.equal(c.best.model, QWEN_MODELS[1], 'la voix 2 (notée 9) est la meilleure'); assert.equal(c.best.score, 9);
+  assert.equal(c.rounds, 3, '3 tours : chacune, comparer, améliorer');
+  assert.match(c.text, /^AMÉLIORÉE par qwen3-30b-a3b-fp8/, 'c\'est la meilleure qui a retravaillé, pas un juge qui fusionne');
+  assert.equal(AI.calls.filter((x) => /JUGE/.test(x.sys)).length, 1); assert.equal(AI.calls.filter((x) => /AMÉLIORE/.test(x.sys)).length, 1);
+  const am = AI.calls.find((x) => /AMÉLIORE/.test(x.sys)); assert.equal(am.model, QWEN_MODELS[1]);
+  assert.equal(c.scores[voixId({ provider: 'qwen', model: QWEN_MODELS[2] })], 4);
+  assert.equal(competenceDe('reasoning', { provider: 'qwen', model: QWEN_MODELS[1] }), 9, 'compétence retenue par domaine');
+  assert.equal(competenceDe('general', { provider: 'qwen', model: QWEN_MODELS[1] }), null, 'pas d\'autre domaine');
+  const ordre = freeVoices({ AI }, 8, 'reasoning').map((v) => v.model);
+  assert.equal(ordre[0], QWEN_MODELS[1]); assert.equal(ordre[ordre.length - 1], QWEN_MODELS[2]);
+  assert.equal(competenceStatus().reasoning[voixId({ provider: 'qwen', model: QWEN_MODELS[0] })].n, 1, '/health montre les notes');
+  await noterCompetence('reasoning', { provider: 'qwen', model: QWEN_MODELS[1] }, 5);
+  assert.equal(competenceDe('reasoning', { provider: 'qwen', model: QWEN_MODELS[1] }), 7.8, 'la note glisse (moyenne mobile)');
+});
+test('conférence : la meilleure qui ne peut pas retravailler garde sa 1re réponse ; budget serré → pas de 3e tour ; juge mort → fusion Qwen → 1re voix', async () => {
+  _resetCompetence();
+  const AI = conferenceAI({}, '{"notes":{"1":3,"2":8,"3":7,"4":7},"meilleure":2}', { amelioreDead: true });
+  const c = await councilText({ AI }, { prompt: 'x', domain: 'general' });
+  assert.equal(c.rounds, 2); assert.equal(c.text, 'réponse ' + QWEN_MODELS[1].split('/').pop(), 'sa première réponse reste');
+  const serre = conferenceAI({}, '{"notes":{"1":3,"2":8},"meilleure":2}');
+  const s = await councilText({ AI: serre }, { prompt: 'x', domain: 'general', finMs: Date.now() + 2500 });
+  assert.equal(s.ok, true); assert.ok(s.rounds <= 2, 'budget serré : pas de 3e tour (' + s.rounds + ')'); assert.ok(!serre.calls.some((x) => /AMÉLIORE/.test(x.sys)));
+  const mort = conferenceAI({}, '', { judgeDead: true });
+  const m = await councilText({ AI: mort }, { prompt: 'x' });
+  assert.equal(m.ok, true); assert.equal(m.judge, 'first'); assert.equal(m.rounds, 1);
+});
+test('conférence : la compétence est DURABLE (cache du Worker) — un isolat neuf range les voix comme l\'ancien', async () => {
+  _resetCompetence(); globalThis.caches = { default: fauxCache() };
+  try {
+    const AI = conferenceAI({}, '{"notes":{"1":2,"2":4,"3":9,"4":5},"meilleure":3}');
+    await councilText({ AI }, { prompt: 'x', domain: 'code' });
+    assert.equal(freeVoices({ AI }, 8, 'code')[0].model, QWEN_MODELS[2]);
+    _resetCompetence();
+    assert.equal(competenceDe('code', { provider: 'qwen', model: QWEN_MODELS[2] }), null, 'mémoire vide');
+    await chargerCompetence('code');
+    assert.equal(competenceDe('code', { provider: 'qwen', model: QWEN_MODELS[2] }), 9, 'revenue du cache');
+    assert.equal(freeVoices({ AI }, 8, 'code')[0].model, QWEN_MODELS[2]);
+  } finally { delete globalThis.caches; _resetCompetence(); }
 });

@@ -12,7 +12,7 @@ import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } f
 import { mintShopsAdminIdToken } from './fb-token.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
-import { routeText, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
+import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
@@ -3111,7 +3111,9 @@ async function handleBeeIa(request, env) {
   const fin = Date.now() + BEE_BUDGET_MS;
   const base = { messages, system: caractere, domain: domaine, maxTokens: 500, temperature: 0.7, timeoutMs: 12000 };
   /* on garde 8 s au payant s'il est permis, sinon tout le budget aux gratuites */
-  let r = gratuites.length ? await routeText(env, Object.assign({}, base, { chain: gratuites, finMs: payantes.length ? fin - 8000 : fin })) : null;
+  /* CONFÉRENCE (Kevin 2.10 soir) : pour une question difficile, TOUTES les voix gratuites répondent, un juge gratuit
+     compare, la meilleure retravaille (routeSmart → councilText) ; question simple → une seule voix. Tout dans le budget. */
+  let r = gratuites.length ? await routeSmart(env, Object.assign({}, base, { chain: gratuites, analyse: 'regex', council: 'auto', finMs: payantes.length ? fin - 8000 : fin })) : null;
   if (!(r && r.ok && r.text) && payantes.length && fin - Date.now() > 3000
       && (await sousLePlafondDuJour(env, 'bee-payant', parseInt(env && env.BEE_PLAFOND_PAYANT_JOUR, 10) || 100))
       /* la dépense est RÉSERVÉE (comptée) AVANT de payer : KV qui n'écrit plus → on ne paie pas (leçon #368) */

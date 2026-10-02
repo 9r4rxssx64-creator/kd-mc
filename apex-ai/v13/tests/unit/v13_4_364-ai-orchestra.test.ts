@@ -104,8 +104,9 @@ describe('v13.4.364 — Orchestre d\'IA', () => {
     const all = chunks.map((c) => c.text ?? '').join('');
     expect(all).toContain('Orchestre d\'IA');
     expect(all).toContain('IA ont répondu');
-    /* la synthèse = appel anthropic APRÈS les experts (dernier appel single) */
-    expect(singleCalls[singleCalls.length - 1]).toBe('anthropic');
+    /* la synthèse = le CHEF d'orchestre APRÈS les experts (dernier appel single) — depuis le 2.10 (tout gratuit +
+     * conférence) le chef est la meilleure IA GRATUITE disponible, Anthropic seulement s'il n'en reste aucune */
+    expect(['groq', 'cerebras', 'qwen', 'gemini']).toContain(singleCalls[singleCalls.length - 1]);
     expect(chunks[chunks.length - 1]?.done).toBe(true);
     expect(streamSpy).not.toHaveBeenCalled(); /* pas de fallback */
   });

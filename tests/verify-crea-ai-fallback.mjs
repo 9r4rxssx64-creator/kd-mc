@@ -102,7 +102,7 @@ globalThis.fetch = async (u, o) => {
 env = { GROQ_API_KEY: 'k', GEMINI_API_KEY: 'k', MISTRAL_API_KEY: 'k', COHERE_API_KEY: 'k' };
 r = await post('/lyrics', { theme: 'test', style: 'pop' }, env);
 j = await r.json();
-chk(r.status === 200 && j.provider === 'mistral' && /Par Mistral/.test(j.lyrics || ''),
+chk(r.status === 200 && /^(conference:)?mistral/.test(j.provider || '') && /Par Mistral/.test(j.lyrics || ''),   /* 2.10 : la conférence (routage commun) sert d'abord, et dit qui a répondu */
   `2 IA en panne → une 3e prend le relais toute seule (provider=${j.provider})`);
 chk(/groq_429/.test(j.fallback || ''), `et Kevin voit POURQUOI ça a basculé (${String(j.fallback).slice(0, 34)})`);
 
@@ -110,7 +110,7 @@ chk(/groq_429/.test(j.fallback || ''), `et Kevin voit POURQUOI ça a basculé ($
 env = { MISTRAL_API_KEY: 'k' };
 r = await post('/lyrics', { theme: 'test' }, env);
 j = await r.json();
-chk(r.status === 200 && j.provider === 'mistral' && !j.fallback,
+chk(r.status === 200 && /^(conference:)?mistral/.test(j.provider || '') && !j.fallback,
   'une IA sans clé est ignorée proprement (aucune erreur inventée)');
 
 globalThis.fetch = realFetch;

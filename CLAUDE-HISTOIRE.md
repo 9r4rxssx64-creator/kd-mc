@@ -3283,6 +3283,41 @@ au boot se charge TOUJOURS (même puce OFF) pour un premier affichage instantan�
 
 ---
 
+## 🧠 RÈGLE ABSOLUE — LA CONFÉRENCE DES IA GRATUITES : TOUTES RÉFLÉCHISSENT, COMPARENT, AMÉLIORENT, ET LA PLUS COMPÉTENTE TRAVAILLE — POUR TOUTES LES APPS, PRÉSENTES ET FUTURES (Kevin 2026-10-02, ABSOLUE)
+
+> **« Intègre toujours toutes les IA gratuites, la conférence, l'analyse et le travail de la meilleure, la plus compétente, pour toutes les apps du domaine que l'on utilise et les futures. Elles réfléchissent chacune de leur côté pour la même question, travail demandé, comparent et améliorent, et la meilleure, la plus compétente, travaille. Va plus loin. »** — Kevin 2026-10-02 (soir)
+
+### 1. Ce que ça veut dire
+
+- **Toutes les IA gratuites siègent** : chaque modèle Qwen de Workers AI (Qwen3 30B, Qwen3.8 27B, Qwen2.5-coder, QwQ) et
+  chaque gratuit à clé (Groq gpt-oss-120b, Cerebras, Gemini, Mistral, Cohere, OpenRouter, et ceux que Kevin ajoutera)
+  — sauf celles en pause d'épuisement. Pas « trois voix » : toutes, dans le temps imparti.
+- **Trois temps, mesurés** : (1) **l'analyse** — le type de question est voté par plusieurs voix (concert) ; (2) **chacune
+  réfléchit de son côté** à la même question, en parallèle ; (3) **comparer** — un juge gratuit (la voix la plus
+  compétente du domaine) note chaque réponse (0-10), désigne la meilleure et dit ce qui lui manque ; puis **améliorer** —
+  **la meilleure retravaille sa propre réponse** avec ce que le juge lui reproche et ce que les autres ont de juste.
+  C'est **elle qui travaille**, pas un juge qui fusionne (la fusion ne reste qu'un repli quand le juge ne note pas).
+- **La compétence se mesure, elle ne se décrète pas** : les notes du juge forment, par domaine et par voix, une moyenne
+  mobile gardée en mémoire et dans le cache du Worker (7 jours) ; elle range les voix (la meilleure parle en premier),
+  choisit le juge, et `/health` la montre (`ia_routing.competence`). Une question simple (complexité 1) reste une voix
+  seule : la conférence sert aux questions difficiles, pas à ralentir « bonjour ».
+- **Pour toutes les apps, présentes et futures** : une app du domaine n'appelle **jamais** un fournisseur d'IA en direct
+  pour du texte ; elle entre par le routage commun (`routeSmart` de `services/_shared/ia-route.js`, ou `/ai` de
+  apis.kd-mc.com). Un worker qui court-circuite la conférence rougit le garde — c'est la règle pour les apps à venir.
+- **Toujours dans le budget** : chaque tour tient dans le temps restant (`finMs` / `budgetMs`) ; sans temps, on s'arrête au
+  tour possible et on garde la meilleure réponse déjà obtenue. Jamais bloqué, jamais rien perdu, jamais payant.
+
+### 2. Où c'est câblé (2.10.2026)
+
+- `services/_shared/ia-route.js` : `freeVoices` (toutes, triées par compétence), `councilText` v2 (3 tours), `noterCompetence
+  / competenceDe / chargerCompetence / competenceStatus`, `COUNCIL_DOMAINS` (+ code, recherche), `routeSmart`.
+- Entrées : kdmc-apis `/ai` (toutes les apps qui parlent au domaine), Bee (routeur, `routeSmart` council auto, 100 %
+  gratuit), Créa (`anyText` → conférence d'abord, cascade de secours derrière), Apex (chef d'orchestre = meilleure
+  gratuite). Coach Lingua : routage commun à une voix (traductions courtes). Messagerie, chat-svc, balances : appels
+  directs gratuits déclarés, à faire passer par `/ai` (chantier noté).
+- Garde **`test:conference-partout`** (`tests/verify-conference-partout.mjs`, dans test:ci) : conférence v2 présente,
+  chaque app entre par le routage commun, balayage des workers (un appel direct inconnu = rouge), sabotage prouvé.
+  Comportement : `ia-route.test.mjs` (29 contrôles, dont 3 sur la conférence v2 et sa compétence durable).
 ## 🆓 RÈGLE ABSOLUE — TOUT GRATUIT, PARTOUT, TOUJOURS — PAS SEULEMENT EN PRODUCTION — ET LA MEILLEURE QUALITÉ GRATUITE (Kevin 2026-10-02, ABSOLUE)
 
 > **« Tout gratuit, pas seulement production. Toujours tout gratuit. Trouve des solutions pour la meilleure qualité toujours. Note tout. »** — Kevin 2026-10-02 (soir, après la mise en ligne de la règle du relais gratuit)

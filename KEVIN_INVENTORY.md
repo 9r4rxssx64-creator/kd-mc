@@ -3332,6 +3332,8 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-02 | `tests/verify-docs-a-la-demande.mjs` | Garde : règles, module, robot, câblage (22 contrôles, 2 sabotages) | coffre + public |
 | 2026-10-02 | `tools/ia/sonder-ia-gratuites.mjs` + `.github/workflows/coffre-sonde-ia-gratuites.yml` | « Go freellm » : sonde réelle des 13 IA gratuites dont Kevin a la clé (lecture seule) | coffre |
 | 2026-10-02 | `tests/verify-sonde-ia-gratuites.mjs` | Garde de la sonde (lecture seule, robot borné, paliers crédits jamais « gratuits ») | coffre + public |
+| 2026-10-02 | `services/_shared/ia-route.js` (conférence v2) | Toutes les voix gratuites, juge qui note, la meilleure retravaille, compétence mesurée et durable ; Bee, Créa, Apex y entrent | coffre + public |
+| 2026-10-02 | `tests/verify-conference-partout.mjs` | Garde : chaque app entre par la conférence, balayage des workers (futures apps), sabotages — `test:conference-partout` | coffre + public |
 | 2026-10-02 | `services/kdmc-router/worker.js` (`ficheLaVisite`) + `fiche-visite.test.mjs` | KV : visiteur anonyme compté une fois par JOUR (plus par heure), robots déclarés ignorés — 514 visites = 73 % des écritures mesurées | coffre + public |
 | 2026-10-02 | `tests/verify-tout-gratuit.mjs` | Garde de la règle « tout gratuit, partout, toujours » : chaque cascade du dépôt (ia-route, kdmc-apis, Créa, chat-svc, messagerie, Lingua, Apex) commence par un gratuit — 19 contrôles, 2 sabotages — `test:tout-gratuit` | coffre + public |
 | 2026-10-02 | `apex-ai/v13/services/ai/ai-routing-policy.ts` + `ai-router.ts` | Apex : gratuit d'abord pour tous les domaines et tout le monde (free-smart par défaut), chaîne par défaut gratuite, modèles Groq/Cerebras vivants (86 tests) | coffre + public |

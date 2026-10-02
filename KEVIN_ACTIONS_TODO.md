@@ -70,6 +70,14 @@ sonde a prouvé que ces comptes gratuits n'ont **pas de clé au coffre** : OpenR
 secrets GitHub du coffre sous le nom exact (`OPENROUTER_API_KEY`, `SAMBANOVA_API_KEY`, `NVIDIA_API_KEY`, `HF_TOKEN`,
 `GLM_API_KEY`), et dis « sonde les IA » : je mesure et je branche. Sans ça, tout marche déjà en gratuit.
 
+## ✅ FAIT (2.10, 22h30) — « Toutes les IA gratuites, la conférence… la meilleure travaille, pour toutes les apps et les futures »
+
+Règle écrite et câblée : pour une question difficile, **toutes** les IA gratuites répondent chacune de leur côté, un juge
+gratuit les compare et les note, et **la meilleure retravaille** sa réponse avec ce que les autres apportent. Sa compétence
+est mesurée (notes du juge) et retenue 7 jours : elle parle en premier la fois suivante. Branché dans apis.kd-mc.com (toutes
+les apps), Bee, Créa, Apex ; un garde rougit tout nouveau worker qui court-circuiterait la conférence. Restent 4 petits
+services à faire passer par le domaine (messagerie ×2, chat-svc, balances) — je les fais, rien à faire de ton côté.
+
 ## ✅ GitHub Actions bloquées par le budget (depuis le 27.09, 22h16 UTC) — NE RELÈVE PAS le budget, ça revient le 1er octobre
 
 « The job was not started because an Actions budget is preventing further use » : le budget de 20 $ posé

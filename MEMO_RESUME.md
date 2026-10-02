@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (22h30 UTC) — Kevin : « Intègre toujours toutes les IA gratuites, la conférence… la meilleure, la plus compétente, travaille. Pour toutes les apps, et les futures. Va plus loin. »
+
+- **Noté** : RÈGLE ABSOLUE « conférence des IA gratuites » (CLAUDE-HISTOIRE + index), registre des gardes, mémoire durable.
+- **Conférence v2** (`services/_shared/ia-route.js`, `councilText`) : (1) TOUTES les voix gratuites (chaque Qwen de Workers AI
+  + chaque gratuit à clé, hors pause ; 8 max) répondent en parallèle ; (2) un juge gratuit — la voix la plus compétente du
+  domaine — COMPARE et note chaque réponse (0-10, JSON), désigne la meilleure, dit ce qui lui manque ; (3) LA MEILLEURE
+  retravaille sa réponse avec les reproches du juge et les apports des autres : c'est elle qui travaille. Repli si le juge
+  rédige au lieu de noter (sa synthèse), s'il est muet (fusion Qwen), si tout tombe (1re voix). Tout tient dans le budget
+  (`finMs`) : tour par tour, jamais bloqué. **Compétence mesurée** : moyenne mobile des notes par domaine et par voix,
+  mémoire + cache du Worker (7 jours), range les voix, choisit le juge, visible dans `/health` (`competence`).
+  `COUNCIL_DOMAINS` + code et recherche. Tests ia-route : 29 (3 nouveaux : 3 tours ; budget serré / meilleure muette / juge
+  mort ; compétence durable).
+- **Toutes les apps** : kdmc-apis `/ai` (déjà routeSmart) ; **Bee** → `routeSmart` council auto (bee-cerveau 100 %) ; **Créa**
+  → la conférence d'abord pour les paroles / compositions, ancienne cascade en secours, les essais ratés restent visibles
+  (crea-fallback 14/14) ; **Apex** → le chef d'orchestre de la synthèse est la meilleure IA gratuite disponible, Anthropic
+  seulement s'il n'en reste aucune (orchestra 8/8, qwen 24/24, tsc propre). Coach Lingua : une voix (traductions courtes).
+- **Les futures** : garde `test:conference-partout` (12/12, 2 sabotages, dans test:ci) — balaie tous les workers du dépôt :
+  un appel direct à un fournisseur d'IA doit être connu et justifié (9 connus : ia-route lui-même, proxys, voix, secours,
+  et 4 « chantiers » : chat-svc, balances, 2 workers messagerie → à faire passer par `/ai`). Un nouveau worker qui
+  court-circuite la conférence rougit la chaîne.
 ## 2026-10-02 (22h40 UTC) — KV : QUI écrit, mesuré → les visites anonymes se comptent par JOUR, les robots ne comptent plus ; fuite RH refermée (0/16)
 
 - **Mesuré** (robot `coffre-kv-inventaire`, run 37068701605, lecture seule) : 1 563 clés ; **514 visites anonymes comptées le

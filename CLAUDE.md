@@ -78,7 +78,7 @@ va plus loin · honnête sur ses limites · sans flatterie. **Bee : niveau comme
 
 ---
 
-## 📜 Les 189 règles — le texte de Kevin, une par une
+## 📜 Les 190 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -261,6 +261,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### ⏱ RÈGLE ABSOLUE — TEMPS RÉEL / LIVE OU PRESQUE, TOUJOURS PARTOUT (Kevin 2026-07-05, ABSOLUE)
 **« Temps réel, live ou presque tjs partout »** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-temps-réel-live-ou-presque-toujours-partout-kevin-2026-07-05-absolue)
+
+### 🧠 RÈGLE ABSOLUE — LA CONFÉRENCE DES IA GRATUITES : TOUTES RÉFLÉCHISSENT, COMPARENT, AMÉLIORENT, ET LA PLUS COMPÉTENTE TRAVAILLE — POUR TOUTES LES APPS, PRÉSENTES ET FUTURES (Kevin 2026-10-02, ABSOLUE)
+**« Intègre toujours toutes les IA gratuites, la conférence, l'analyse et le travail de la meilleure, la plus compétente, pour toutes les apps du domaine que l'on utilise et les futures. Elles […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-la-conférence-des-ia-gratuites-toutes-réfléchissent-comparent-améliorent-et-la-plus-compétente-travaille-pour-toutes-les-apps-présentes-et-futures-kevin-2026-10-02-absolue)
 
 ### 🆓 RÈGLE ABSOLUE — TOUT GRATUIT, PARTOUT, TOUJOURS — PAS SEULEMENT EN PRODUCTION — ET LA MEILLEURE QUALITÉ GRATUITE (Kevin 2026-10-02, ABSOLUE)
 **« Tout gratuit, pas seulement production. Toujours tout gratuit. Trouve des solutions pour la meilleure qualité toujours. Note tout. »** — Kevin 2026-10-02 (soir, après la mise en ligne de la […]

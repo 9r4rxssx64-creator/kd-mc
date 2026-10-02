@@ -6,7 +6,7 @@
    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers node tools/kdmc-cmcteams-sso-e2e/run.mjs */
 import http from 'http';
 import { createHash } from 'crypto';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 /* CODE DE TEST — surtout PAS le vrai code de Kevin.
  *
@@ -29,6 +29,10 @@ import { createRequire } from 'module';
 const ADMIN_CODE = '123456';
 
 const ROOT = process.cwd();
+/* L'app CMCteams (index.html racine) est PRIVÉE : le dépôt public ne l'a pas (export du 26.09). Là, ce test
+   n'a rien à ouvrir — on le dit et on s'arrête proprement (avant : le serveur plantait en lisant le fichier
+   absent, ERR_HTTP_HEADERS_SENT, robot rouge à chaque fusion). Il tourne dans le coffre (test:ci). */
+if (!existsSync(ROOT + '/index.html')) { console.log('⏭️  KDMC × CMCteams : app privée absente de ce dépôt (public) — test sauté, il tourne au coffre.'); process.exit(0); }
 function loadPlaywright() {
   for (const base of [ROOT + '/', ROOT + '/apex-ai/v13/', ROOT + '/messaging-app/']) {
     try { return createRequire(base + 'package.json')('playwright'); } catch (e) { /* */ }
@@ -64,7 +68,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(wres.status, h); res.end(Buffer.from(await wres.arrayBuffer())); return;
     }
     const f = FILES[p];
-    if (f) { res.writeHead(200, { 'content-type': f[1] }); res.end(readFileSync(ROOT + '/' + f[0])); return; }
+    if (f) { const corps = readFileSync(ROOT + '/' + f[0]); res.writeHead(200, { 'content-type': f[1] }); res.end(corps); return; }   /* lu AVANT l'en-tête : un fichier absent donne un 500 propre */
     res.writeHead(404); res.end('nf');
   } catch (e) { res.writeHead(500); res.end('err:' + e.message); }
 });

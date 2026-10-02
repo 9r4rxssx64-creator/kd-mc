@@ -52,6 +52,7 @@ jobs:
         run: |
           node -e "
           const fs=require('fs');
+          if(!fs.existsSync('index.html')){console.log('No index.html (app CMCteams privée, absente du dépôt public), skip');process.exit(0);}
           const html=fs.readFileSync('index.html','utf8');
           const s=html.lastIndexOf('<script>');
           const e=html.lastIndexOf('</script>');

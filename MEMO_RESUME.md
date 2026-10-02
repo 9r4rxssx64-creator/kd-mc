@@ -1072,6 +1072,8 @@ Vérifié sur le vrai fichier : le 2 octobre, Kevin travaille de 14 h à 19 h, a
 
 **Au passage** : `test:all` (runtime-audit CMCteams) rougissait sous la charge de `test:ci-prive` (la vérif de version part après 60 s et lit `version.txt` en file://) — motif ajouté au filtre du bruit file://, vert 3/3 seul avant et après.
 
+**Publication bloquée puis réparée (23h21)** : un vrai nom de collègue, en exemple dans un commentaire du widget, l'a fait classer « privé » à l'export → absent du dépôt public → pilote en échec. Remplacé par un nom fictif ; garde « fichiers de Bee publiables » dans `test:javis-bee` (leçon #392).
+
 **Pas vérifiable d'ici** :
 - le temps de calcul réel sur Cloudflare (limite de 10 ms : la mémoire du jour la protège, mais le 1er appel n'est pas mesuré en ligne) ;
 - la vibration sur un vrai iPhone ;

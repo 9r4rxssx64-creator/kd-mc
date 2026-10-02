@@ -55,6 +55,15 @@ dit(ia.arbitre(essai, eq(1001), t0 + 30 * h, 61000).verdict === 'attendre', 'éc
 dit(ia.arbitre(essai, eq(1001), t0 + 80 * h, 61000).verdict === 'garder', 'écart trop faible après 72 h → gardé, sans effet mesurable');
 dit(ia.arbitre(essai, { 'crypto-bot-p2': 1000 }, t0 + 80 * h, 61000).verdict === 'annuler', 'plus aucune mesure du robot après 72 h → annulé par prudence');
 
+console.log('\n=== 3 ter. Mode agressif ===');
+dit(ia.validerProposition({ bot: 'p1', reglages: { TIMEFRAME: '1m', RISK_PER_TRADE_PCT: 4 }, raison: 'scalping BTC sur marché nerveux' }).ok, 'bougies 1 min et risque 4 % autorisés (papier)');
+dit(!ia.validerProposition({ bot: 'p1', reglages: { RISK_PER_TRADE_PCT: 8 }, raison: 'trop' }).ok, 'risque 8 % par trade → refusé (borne 5 %)');
+a = ia.arbitre(essai, eq(1001), t0 + 13 * h, 61000, 0);
+dit(a.verdict === 'annuler' && /inactif/.test(a.raison), 'robot SANS trade après 12 h → annulé (un robot agressif doit trader)');
+dit(ia.arbitre(essai, eq(1030), t0 + 13 * h, 61000, 0).verdict === 'garder', 'sans trade mais nettement meilleur → gardé (on ne punit pas un gain)');
+dit(ia.arbitre(essai, eq(1001), t0 + 13 * h, 61000, null).verdict === 'attendre', 'ventes inconnues → pas de verdict d\'inactivité');
+dit(/AGRESSIF/.test(ia.construirePrompt('m', [], {}, []).system) && /0,2 %/.test(ia.construirePrompt('m', [], {}, []).system), 'consigne : trader pro agressif, frais comptés');
+
 console.log('\n=== 3 bis. Un redémarrage remet le portefeuille papier à 10 000 $ ===');
 const fl0 = [{ name: 'crypto-bot-p1', equity: 10400, depl: 'd1' }, { name: 'crypto-bot-p2', equity: 9800, depl: 'd2' }, { name: 'crypto-bot-p3', equity: 10100, depl: 'd3' }];
 const e0 = Object.assign({ bot: 'crypto-bot-p1', debut: t0, btc0: 60000 }, ia.debutEssai('crypto-bot-p1', fl0));

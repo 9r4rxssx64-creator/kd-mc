@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (22h45) — Crypto : mode AGRESSIF pour l'IA pilote (bot v1.5.0)
+
+Kevin : « stratégie féroce, beaucoup de trades, max d'opérations optimisées, trader pro agressif ».
+- Bornes IA élargies (papier) : TIMEFRAME 1m/3m/5m en plus, RISK_PER_TRADE_PCT ≤ 5, MAX_POSITION_PCT ≤ 90,
+  EMA/DU plus courts. Verrous inchangés (INTERDITS, plafonds de perte, LIVE_*, robot principal).
+- Rythme : décision toutes les 6 h (12 h avant), essai jugé 12-48 h (24-72 h avant), contre-avis NON →
+  nouvel essai dans 3 h. **Robot inactif** (0 vente sur le nouveau déploiement après 12 h, sans avance
+  nette) → annulé (`VENTES_MIN_ESSAI`). Consigne : trader pro agressif, frais 0,2 % aller-retour comptés.
+- Gardes : bot-ia 62/0 (sabotage règle d'inactivité → rouge), routeur 39/0, page 27/0.
+- Honnête : plus de trades ≠ plus de gains (frais) ; l'arbitre tranche sur les chiffres.
+
+---
+
 ## 2026-10-02 (22h20) — Crypto : vu en vrai + mémoire de l'IA en D1 lisible par l'agent
 
 Kevin : « vérifie maintenant », puis « trouve des solutions en respectant les règles ».

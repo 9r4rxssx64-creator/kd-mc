@@ -3663,7 +3663,10 @@ async function iaTick(env, ctx, origine, force) {
      plus de l'ouverture de la page. 1 relevé par heure au plus (garde dans botSnapshot). */
   await botReleverD1(env, tous, now, btc);
   if (st.enCours) {
-    const v = IA.arbitre(st.enCours, IA.equitesComparables(st.enCours, flotte), now, btc);
+    const cibleEssai = flotte.find((b) => b.name === st.enCours.bot) || {};
+    /* Les ventes du robot ne comptent que si on lit son NOUVEAU déploiement (compteurs remis à 0 au redémarrage). */
+    const ventesEssai = cibleEssai.depl && (st.enCours.depl0 || {})[st.enCours.bot] && cibleEssai.depl !== st.enCours.depl0[st.enCours.bot] ? Number(cibleEssai.sells) || 0 : null;
+    const v = IA.arbitre(st.enCours, IA.equitesComparables(st.enCours, flotte), now, btc, ventesEssai);
     if (v.verdict === 'attendre') { st.dernier = 'essai en cours sur ' + st.enCours.bot + ' : ' + v.raison; await iaEcrire(env, st); return { ok: true, action: 'attente', detail: v.raison }; }
     let restaure = null;
     if (v.verdict === 'annuler') {
@@ -3702,7 +3705,7 @@ async function iaTick(env, ctx, origine, force) {
     return { ok: true, action: 'rien', detail: st.dernier };
   }
   /* CONTRE-AVIS : une 2e IA gratuite d'une autre famille (gpt-oss-120b, OpenAI open-weight, Workers AI)
-     relit la proposition. NON = rien ne change ; on réessaie dans 6 h. Muette = on suit l'arbitre. */
+     relit la proposition. NON = rien ne change ; on réessaie dans 3 h. Muette = on suit l'arbitre. */
   let contre = null;
   if (source === 'ia' && env.AI && typeof env.AI.run === 'function') {
     try {
@@ -3714,7 +3717,7 @@ async function iaTick(env, ctx, origine, force) {
       contre = IA.lireContreAvis(IA.texteReponseIa(r2));
     } catch { contre = null; }
     if (contre && contre.avis === 'NON') {
-      st.derniereDecision = now - IA.ECART_DECISIONS_MS + 6 * 3600e3;
+      st.derniereDecision = now - IA.ECART_DECISIONS_MS + 3 * 3600e3;
       st.journal = IA.ajouterJournal(st.journal, { type: 'refus', t: now, bot: prop.bot, set: prop.set, raison: prop.raison,
         contre_avis: contre.raison, modele, modele_contre: IA_CONTRE_AVIS_MODELE.split('/').pop(), origine });
       st.dernier = 'proposition refusée par le contre-avis : ' + contre.raison;

@@ -102,7 +102,7 @@ chk(tts.length === 1 && /l=fr/.test(tts[0]) && /v=shimmer/.test(tts[0]) && /faux
 chk(/voix du téléphone|Lecture impossible/.test(await t('iaOk') + await t('iaErr')), 'Voix du domaine indisponible → repli voix du téléphone annoncé');
 chk(erreurs.length === 0, '0 exception JS' + (erreurs.length ? ' : ' + erreurs.join(' | ') : ''));
 const src = await readFile('tools/crypto-bot-dashboard/index.html', 'utf8');
-chk(/data-version="v1\.4\.0"/.test(src), 'badge de version v1.4.0');
+chk(/data-version="v1\.5\.0"/.test(src), 'badge de version v1.5.0');
 await page.screenshot({ path: process.env.CAPTURE || '/dev/null', fullPage: false }).catch(() => {});
 await nav.close(); srv.close();
 

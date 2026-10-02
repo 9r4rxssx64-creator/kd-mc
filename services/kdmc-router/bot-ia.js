@@ -31,19 +31,19 @@ export const PAIRES_LIQUIDES = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'BNB/USDT', 
 /* Ce que l'IA a le droit de régler, avec des bornes. Noms = variables lues par crypto-bot/config.py. */
 export const REGLAGES_IA = {
   STRATEGY: { type: 'enum', valeurs: ['ema', 'meanrev', 'dipup'] },
-  TIMEFRAME: { type: 'enum', valeurs: ['15m', '30m', '1h', '4h'] },
-  EMA_FAST: { type: 'int', min: 3, max: 50 },
-  EMA_SLOW: { type: 'int', min: 10, max: 200 },
+  TIMEFRAME: { type: 'enum', valeurs: ['1m', '3m', '5m', '15m', '30m', '1h', '4h'] },   // 1m-5m : mode agressif (Kevin 2.10)
+  EMA_FAST: { type: 'int', min: 2, max: 50 },
+  EMA_SLOW: { type: 'int', min: 5, max: 200 },
   RSI_MAX: { type: 'num', min: 55, max: 85 },
   ATR_STOP_MULT: { type: 'num', min: 1, max: 5 },
   MR_STD_MULT: { type: 'num', min: 1, max: 3.5 },
   MR_RSI_BUY: { type: 'num', min: 15, max: 45 },
   MR_RSI_SELL: { type: 'num', min: 50, max: 80 },
-  DU_TREND_PERIOD: { type: 'int', min: 20, max: 200 },
+  DU_TREND_PERIOD: { type: 'int', min: 10, max: 200 },
   DU_RSI_BUY: { type: 'num', min: 15, max: 45 },
   DU_RSI_SELL: { type: 'num', min: 50, max: 80 },
-  RISK_PER_TRADE_PCT: { type: 'num', min: 0.2, max: 3 },
-  MAX_POSITION_PCT: { type: 'num', min: 5, max: 50 },
+  RISK_PER_TRADE_PCT: { type: 'num', min: 0.2, max: 5 },   // papier ; en réel, LIVE_MAX_USDT plafonne tout
+  MAX_POSITION_PCT: { type: 'num', min: 5, max: 90 },
   SYMBOLS: { type: 'paires', min: 1, max: 5 },
 };
 /* Jamais, quelle que soit la réponse de l'IA. HOLD_UNTIL_PROFIT (« ne jamais vendre à perte ») est
@@ -52,9 +52,12 @@ export const INTERDITS = /^(TESTNET|PAPER|BOT_LIVE|BOT_KILL|BOT_NAME|BINANCE_.*|
 export const MAX_CHANGEMENTS = 4;
 
 /* Rythme : une décision au plus toutes les 12 h ; un essai est jugé après 24 h, au plus tard 72 h. */
-export const ECART_DECISIONS_MS = 12 * 3600e3;
-export const ESSAI_MIN_MS = 24 * 3600e3;
-export const ESSAI_MAX_MS = 72 * 3600e3;
+/* Rythme AGRESSIF (Kevin 2.10 « beaucoup de trades, stratégie féroce ») : une décision toutes les 6 h,
+   un essai jugé entre 12 et 48 h (les robots en 1m-5m font assez de trades pour être jugés vite). */
+export const ECART_DECISIONS_MS = 6 * 3600e3;
+export const ESSAI_MIN_MS = 12 * 3600e3;
+export const ESSAI_MAX_MS = 48 * 3600e3;
+export const VENTES_MIN_ESSAI = 1;            // un robot qui ne trade plus pendant l'essai = changement raté
 export const SEUIL_ECART = 0.002;            // 0,2 % d'écart à la médiane pour trancher
 export const JOURNAL_MAX = 60;
 
@@ -174,7 +177,7 @@ export function equitesComparables(essai, flotte) {
   return out;
 }
 
-export function arbitre(essai, equites, now, btc) {
+export function arbitre(essai, equites, now, btc, ventesCible) {
   const age = now - essai.debut;
   const rend = (n) => {
     const a = Number((essai.equite0 || {})[n]), b = Number((equites || {})[n]);
@@ -186,17 +189,19 @@ export function arbitre(essai, equites, now, btc) {
   const rBtc = essai.btc0 > 0 && btc > 0 ? btc / essai.btc0 - 1 : null;
   const base = { r_cible: rc, r_mediane: m, r_btc: rBtc, heures: Math.round(age / 3600e3) };
   if (rc === null) {
-    if (age >= ESSAI_MAX_MS) return Object.assign(base, { verdict: 'annuler', raison: 'aucune mesure du robot depuis 72 h : on revient aux anciens réglages par prudence' });
+    if (age >= ESSAI_MAX_MS) return Object.assign(base, { verdict: 'annuler', raison: 'aucune mesure du robot depuis 48 h : on revient aux anciens réglages par prudence' });
     return Object.assign(base, { verdict: 'attendre', raison: 'pas encore de mesure du robot' });
   }
-  if (age < ESSAI_MIN_MS) return Object.assign(base, { verdict: 'attendre', raison: 'moins de 24 h d\'essai : trop tôt pour juger' });
+  if (age < ESSAI_MIN_MS) return Object.assign(base, { verdict: 'attendre', raison: 'moins de 12 h d\'essai : trop tôt pour juger' });
   const ecart = rc - (m === null ? 0 : m);
+  if (ventesCible !== undefined && ventesCible !== null && Number(ventesCible) < VENTES_MIN_ESSAI && ecart < SEUIL_ECART)
+    return Object.assign(base, { ecart, verdict: 'annuler', raison: 'robot inactif : aucun trade bouclé en ' + base.heures + ' h — un robot agressif doit trader ; anciens réglages remis' });
   base.ecart = ecart;
   const pct = (x) => (x === null ? '—' : (x >= 0 ? '+' : '') + (x * 100).toFixed(2) + ' %');
   const phrase = 'robot ' + pct(rc) + ' contre ' + pct(m) + ' pour la médiane des autres (BTC ' + pct(rBtc) + ')';
   if (ecart >= SEUIL_ECART) return Object.assign(base, { verdict: 'garder', raison: 'mieux que les autres sur la même période : ' + phrase });
   if (ecart <= -SEUIL_ECART) return Object.assign(base, { verdict: 'annuler', raison: 'moins bien que les autres sur la même période : ' + phrase });
-  if (age >= ESSAI_MAX_MS) return Object.assign(base, { verdict: 'garder', raison: 'aucune différence nette en 72 h (' + phrase + ') : gardé, sans effet mesurable' });
+  if (age >= ESSAI_MAX_MS) return Object.assign(base, { verdict: 'garder', raison: 'aucune différence nette en 48 h (' + phrase + ') : gardé, sans effet mesurable' });
   return Object.assign(base, { verdict: 'attendre', raison: 'écart encore trop faible pour conclure : ' + phrase });
 }
 
@@ -290,10 +295,13 @@ export function resumerMarche(m) {
 /* Le prompt : l'IA voit le marché, chaque robot et ses réglages, et le résultat de ses décisions
    passées ; elle doit répondre en JSON strict. */
 export function construirePrompt(marcheTexte, flotte, actuelsParBot, journal) {
-  const sys = 'Tu es le pilote de 5 robots de trading crypto en MODE PAPIER (argent virtuel). Ton rôle : proposer UN seul changement '
-    + 'de réglages sur UN seul robot, pour améliorer son résultat face aux autres. Un arbitre chiffré comparera ce robot à la médiane '
-    + 'des autres sur la même période, puis gardera ou annulera ton changement : sois prudent et précis, un petit changement bien '
-    + 'justifié vaut mieux qu\'un grand pari. Tu ne peux régler QUE : ' + Object.keys(REGLAGES_IA).join(', ')
+  const sys = 'Tu es un trader professionnel expérimenté et AGRESSIF qui pilote 5 robots de trading crypto en MODE PAPIER (argent '
+    + 'virtuel). Objectif : un maximum de trades GAGNANTS — beaucoup d\'opérations, des sorties rapides, du capital qui travaille. '
+    + 'Règle de pro : chaque trade paie ~0,2 % de frais aller-retour, donc un trade ne vaut que si le mouvement visé dépasse nettement '
+    + 'ce coût ; un robot qui trade beaucoup en perdant est pire qu\'un robot calme. Sur 1m-5m, préfère les paires les plus liquides '
+    + '(BTC, ETH, SOL). Ton rôle : proposer UN seul changement de réglages sur UN seul robot. Un arbitre chiffré comparera ce robot à '
+    + 'la médiane des autres sur la même période (12 à 48 h), puis gardera ou annulera ton changement ; un robot sans aucun trade est '
+    + 'annulé. Sois audacieux mais justifie par le marché décrit. Tu ne peux régler QUE : ' + Object.keys(REGLAGES_IA).join(', ')
     + ' (au plus ' + MAX_CHANGEMENTS + '). Paires autorisées : ' + PAIRES_LIQUIDES.join(', ') + '. '
     + 'Réponds UNIQUEMENT par un objet JSON : {"bot":"crypto-bot-pN","reglages":{...},"raison":"en français, 1 à 3 phrases","attendu":"ce que tu espères mesurer"}.';
   const bornes = Object.entries(REGLAGES_IA).map(([k, r]) => k + (r.type === 'enum' ? '∈{' + r.valeurs.join(',') + '}' : r.type === 'paires' ? ' (1-5 paires)' : '[' + r.min + '-' + r.max + ']')).join(' ; ');

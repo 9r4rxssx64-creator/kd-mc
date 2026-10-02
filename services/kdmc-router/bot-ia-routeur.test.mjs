@@ -95,7 +95,7 @@ r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': c
 let st2 = JSON.parse(store.get('bot:ia'));
 dit(r.b && r.b.action === 'refus' && mutations.length === 0, 'contre-avis NON → aucune mutation Railway');
 dit(st2.journal[0].type === 'refus' && /pari/.test(st2.journal[0].contre_avis), 'le refus et sa raison sont au journal');
-dit(Date.now() - st2.derniereDecision > 5 * 3600e3, 'nouvel essai dans 6 h, pas dans 12 h');
+dit(Date.now() - st2.derniereDecision > 2 * 3600e3 && Date.now() - st2.derniereDecision < 4 * 3600e3, 'nouvel essai dans 3 h, pas dans 6 h');
 store.set('bot:ia', sauve); contreAvis = '{"avis":"OUI","raison":"ok"}';
 
 console.log('\n=== 3 ter. Mémoire KV plafonnée : aucun robot modifié ===');

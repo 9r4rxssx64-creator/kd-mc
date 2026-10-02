@@ -272,8 +272,11 @@ Michel) — à confirmer.
   était DANS l'objet `rules` ; Firebase refuse tout le fichier. Note déplacée au niveau du fichier, garde A4 ajoutée
   (aucune valeur simple dans `rules`). **Règles publiées : run 36997822719 ✅**, verrous `keep` (tous gardés).
   Le workflow des règles est `disabled_manually` : enable → dispatch → disable à chaque fois (règle robots bornés).
-- Sonde de fuite au public : cause encore inconnue (annotation seulement après fusion de #4203 + synchro → relancer
-  `deploy-kdmc-router` au public par dispatch). `beatbot-smoke` (PoolPilot) rouge à CHAQUE synchro depuis au moins le 1.10
+- Sonde de fuite au public, relancée après la synchro de #4203 (dispatch `deploy-kdmc-router`, run public **36998837608 ✅**) :
+  **« 0 fuite(s) sur 16 chemins »** sur pages.dev ET sur cmcteams.kd-mc.com (annotations). Le rouge de 10h25 (36995410892)
+  était donc passager (publication de 80ecf3c en cours au même moment, ou réseau) — sa cause exacte est perdue (journal
+  illisible), les prochains rouges parleront. Le routeur en ligne porte désormais audio/wav + le test de voix avec Referer
+  (plus aucun warning « panne OpenAI »). `beatbot-smoke` (PoolPilot) rouge à CHAQUE synchro depuis au moins le 1.10
   00h17 — préexistant, pas de ma branche, à regarder à part.
 - Branches fusionnées impossibles à supprimer depuis l'agent (API `DELETE git/refs` → 403, `git push --delete` refusé) :
   inscrites « terminées » au registre pour que `test:pipeline-sessions` les suive (sauvegarde-voix, etat-robots-publics).

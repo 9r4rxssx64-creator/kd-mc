@@ -939,8 +939,8 @@
     },
     "etat-robots-publics": {
       "titre": "Coûts, Firebase allégé, voix gratuites, R3-R7",
-      "branche": "claude/docs-a-la-demande",
-      "sujet": "Firebase phase 2 : documents chargés à la demande (v9.934)",
+      "branche": "claude/pipeline-branches-suivies",
+      "sujet": "Suivi des branches fusionnées (garde pipeline) ; voix Google en attente de la clé ; KV ce soir",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
@@ -972,6 +972,26 @@
       "titre": "Robots publics + harnais sans SW (fusionnée #4163)",
       "branche": "claude/etat-robots-publics",
       "sujet": "Branche fusionnée (#4163) ; à supprimer (API 403 pour l'agent)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "docs-a-la-demande-fusionnee": {
+      "titre": "Firebase phase 2, documents à la demande (fusionnée #4202 le 2.10)",
+      "branche": "claude/docs-a-la-demande",
+      "sujet": "Branche fusionnée (squash #4202) ; suppression refusée à l'agent (API 403)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "robots-qui-parlent-fusionnee": {
+      "titre": "Robots qui parlent (annotations), note hors rules, iOS + seed (fusionnée #4203 le 2.10)",
+      "branche": "claude/robots-qui-parlent",
+      "sujet": "Branche fusionnée (squash #4203) ; suppression refusée à l'agent (API 403)",
       "surfaces": [],
       "etat": "termine",
       "maj": "2026-10-02",

@@ -147,7 +147,7 @@ const kevin = signe('kdmc_admin', 1);
   const orig = globalThis.fetch; let payes = 0;
   globalThis.fetch = async (u) => { if (String(u).includes('anthropic')) { payes++; return new Response(JSON.stringify({ content: [{ type: 'text', text: 'Réponse payante' }] }), { status: 200 }); } return new Response('{}', { status: 500 }); };
   const jour = new Date().toISOString().slice(0, 10);
-  const envP = Object.assign({}, env, { ANTHROPIC_API_KEY: 'k', AI: { run: async () => { throw new Error('Workers AI épuisé'); } } });
+  const envP = Object.assign({}, env, { ANTHROPIC_API_KEY: 'k', BEE_SECOURS_PAYANT: '1', AI: { run: async () => { throw new Error('Workers AI épuisé'); } } });
   try {
     kv.delete('dep:' + jour + ':bee-payant');
     const r1 = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-sso': kevin }, body: JSON.stringify(Q) }), envP, { waitUntil() {} });
@@ -207,6 +207,20 @@ const kevin = signe('kdmc_admin', 1);
     const dt = Date.now() - t0;
     ok(r.status === 503 && dt < 25000, 'IA muette → réponse honnête AVANT 25 s  [' + r.status + ' en ' + Math.round(dt / 1000) + ' s simulées]');
   } finally { globalThis.setTimeout = vraiST; Date.now = vraiNow; } }
+
+/* ---- 6. GRATUIT TOUJOURS (Kevin 02.10 « gratuit tjs ») + une phrase avec « photo » n'est pas une image ---- */
+{ /* a) gratuites en panne, clés payantes présentes, interrupteur ÉTEINT (défaut) → 503 honnête, 0 appel payant */
+  const orig = globalThis.fetch; let payes = 0;
+  globalThis.fetch = async (u) => { if (/anthropic|openai/.test(String(u))) payes++; return new Response('{}', { status: 500 }); };
+  const envS = Object.assign({}, env, { ANTHROPIC_API_KEY: 'k', OPENAI_API_KEY: 'k', AI: { run: async () => { throw new Error('Workers AI épuisé'); } } });
+  try {
+    const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-sso': kevin }, body: JSON.stringify(Q) }), envS, { waitUntil() {} });
+    ok(r.status === 503 && payes === 0, 'secours payant éteint par défaut : gratuites en panne → 503, AUCUN appel payant  [' + r.status + ', ' + payes + ' payé]');
+  } finally { globalThis.fetch = orig; } }
+{ /* b) « comment prendre une belle photo ? » est une question TEXTE : Qwen gratuit répond (avant : Qwen exclu) */
+  const r = await bee({ 'x-kdmc-sso': kevin }, { messages: [{ role: 'user', content: 'Comment prendre une belle photo de mon fils ?' }] });
+  ok(r.st === 200 && r.j && r.j.provider === 'qwen', '« belle photo » (texte seul) → Qwen gratuit répond  [' + r.st + ' ' + (r.j && r.j.provider) + ']');
+}
 
 console.log(`\n=== Cerveau de Bee (/__javis/ai) : ${pass} contrôles OK, ${fail} échec(s) ===`);
 process.exit(fail ? 1 : 0);

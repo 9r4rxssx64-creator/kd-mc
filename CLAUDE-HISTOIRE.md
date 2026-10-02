@@ -341,6 +341,50 @@ futurs qui parlent directement à Kevin ou à un utilisateur final.
 
 S'applique : Javis (priorité), toute app qui embarque un widget public sur le domaine.
 
+### 7. Javis au niveau commercial, et GRATUIT TOUJOURS (Kevin 02.10.2026)
+
+**« Fais un audit externe d'amélioration extrême de mon Javis. Niveau commercial, expert, pro, futuriste,
+innovant, etc. Va plus loin. Gratuit toujours. Note-le. »** — Kevin 2026-10-02
+
+1. **Gratuit toujours.** Bee n'appelle **aucune IA payante** et **aucune voix payante**.
+   - Le cerveau (`handleBeeIa`) n'essaie que les IA gratuites : Qwen, Groq, Gemini, Mistral, OpenRouter, Cerebras.
+   - Le secours payant (Anthropic/OpenAI) n'existe que si l'interrupteur `BEE_SECOURS_PAYANT` vaut `'1'`. Il est **éteint** par défaut. C'est un bouton ON/OFF, règle Kevin.
+   - Si toutes les IA gratuites échouent, Bee le dit (503). Jamais de facture.
+   - La voix est demandée avec `gratuit=1` : Google Chirp (palier gratuit), puis la voix gratuite de Cloudflare, puis la voix du téléphone. **Jamais OpenAI ni Replicate.**
+   - Gardes :
+     - `test:bee-cerveau` §6 : secours éteint → 0 appel payant ;
+     - `test:lingua-cout` §10 : gratuit=1 → 0 appel payant, pour les 3 voix ;
+     - `test:javis-bee` : le ℹ️ dit « jamais payant », et le code des deux côtés le confirme.
+
+   Tous les trois sont prouvés par sabotage.
+2. **Niveau commercial = mesuré contre les leaders** : ChatGPT Voice (GPT-Live-1), Gemini Live, Siri iOS 27, Alexa+, Sesame. Une amélioration se juge à l'écart qu'elle comble dans la matrice de l'audit externe du 02.10, pas à l'impression.
+3. **Le quota gratuit est une ressource, pas un détail.** Avant d'ajouter une capacité, on chiffre ce qu'elle coûte :
+   - les neurones Workers AI (10 000 par jour pour tout le compte) ;
+   - les requêtes Worker (100 000 par jour, déjà atteint le 27.09) ;
+   - les écritures KV (1 000 par jour, dépassé le 1.10).
+
+   Une mémoire ou un compteur **par message** dans le KV est **interdit**. On passe par D1 (100 000 écritures par jour) ou par un résumé quotidien.
+4. **Ce qui a été livré le 02.10**, chaque point avec son garde prouvé par sabotage :
+   - elle se tait quand on la touche ou quand on touche 🎙 (barge-in) ;
+   - la voix s'arrête en fin de phrase, jamais en plein mot ;
+   - « Dis Siri » est possible via `javis.kd-mc.com/?q=…`, lu une fois puis effacé, seulement pour Kevin reconnu ;
+   - la météo montre qu'elle cherche ;
+   - la bulle du toucher sort de Bee ;
+   - les antennes ne sont plus coupées ;
+   - une phrase avec « photo » n'est plus envoyée à une IA d'images ;
+   - la voix abandonnée après 4 s est coupée côté réseau ;
+   - les copies ignorées par git ne font plus de faux rouge (`git ls-files`).
+5. **La suite (feuille de route de l'audit, toujours gratuite)** :
+   - Bee connaît le planning de Kevin, lu par le serveur seulement. Prérequis : le mois en cours dans la source.
+   - Réponse en flux, avec la voix phrase par phrase.
+   - `qwen3-30b-a3b` en premier, 9,5 fois moins de neurones selon le tarif publié. **À mesurer en A/B avant de basculer.**
+   - Mémoire en D1.
+   - Briefing à l'ouverture, sans cron (les 5 crons Cloudflare gratuits sont pris).
+   - Fichiers de Lingua servis hors Worker.
+   - Minification à la publication (112 879 → 52 151 o).
+
+   Rapport complet : https://claude.ai/artifact/KeZTrWYosZqr3AoR7adNJb (« Bee, niveau commercial »).
+
 ---
 
 ## 🆓 RÈGLE ABSOLUE — QWEN GRATUIT EN IA PRINCIPALE + BASCULE AUTO PAR QUESTION (Kevin 2026-09-05, ABSOLUE)

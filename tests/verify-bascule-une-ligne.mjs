@@ -104,7 +104,11 @@ const dossier = await mkdtemp(join(tmpdir(), 'routeur-'));
 await mkdir(join(dossier, 'kdmc-router'), { recursive: true });
 await mkdir(join(dossier, '_shared'), { recursive: true });
 await writeFile(join(dossier, 'kdmc-router', 'worker.js'), deploye);
-for (const m of ['webauthn.js', 'fb-token.js', 'donnees-rh.js']) {   /* donnees-rh.js : porte RH (1.10.2026) */
+/* Les voisins sont LUS dans les import du routeur, pas écrits à la main (2.10.2026 : bot-ia.js ajouté
+   par #4215 manquait à la liste → ERR_MODULE_NOT_FOUND, test:bascule rouge sur main pour tout le monde). */
+const voisins = [...new Set([...deploye.matchAll(/from\s+'\.\/([\w.-]+\.js)'/g)].map((m) => m[1]))];
+chk(voisins.length >= 1, `voisins du routeur lus dans ses import : ${voisins.join(', ')}`);
+for (const m of voisins) {
   await writeFile(join(dossier, 'kdmc-router', m), gitShow(`services/kdmc-router/${m}`));
 }
 await writeFile(join(dossier, '_shared', 'ia-route.js'), gitShow('services/_shared/ia-route.js'));

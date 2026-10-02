@@ -13,6 +13,7 @@
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -32,8 +33,17 @@ function pagesPorteuses(dir = ROOT, out = []) {
   return out;
 }
 
+/* Seulement les pages SUIVIES par git (audit externe 02.10 : les copies des dossiers ignorés —
+   pages-upload/, public/, fabriqués par secours:prepare — rendaient test:javis-bee rouge en local).
+   Sans git (archive), on retombe sur la lecture du disque. */
+function pagesSuivies() {
+  try {
+    const l = execFileSync('git', ['ls-files', '-z', '--', '*.html'], { cwd: ROOT, encoding: 'utf8' }).split('\0').filter(Boolean);
+    return l.map((f) => join(ROOT, f)).filter((p) => /<script[^>]+src="[^"]*javis-widget\.js/.test(readFileSync(p, 'utf8')));
+  } catch { return pagesPorteuses(); }
+}
 const canon = readFileSync(join(ROOT, CANON));
-const cibles = [...new Set(pagesPorteuses().map((page) => join(dirname(page), 'javis-widget.js')))]
+const cibles = [...new Set(pagesSuivies().map((page) => join(dirname(page), 'javis-widget.js')))]
   .filter((c) => relative(ROOT, c) !== CANON);
 
 let divergentes = 0;

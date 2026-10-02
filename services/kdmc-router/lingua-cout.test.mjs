@@ -377,6 +377,32 @@ console.log('\n9. Audit complet 30.09 : payer SEULEMENT ce qui est compté, Anto
     `(f) CORS Lingua : javis.kd-mc.com → « ${cf1.headers.get('access-control-allow-origin')} » ; site pirate → « ${cf2.headers.get('access-control-allow-origin')} » (rien)`);
 }
 
+console.log('\n10. Bee demande une voix GRATUITE (gratuit=1, Kevin 02.10 « gratuit tjs ») : jamais OpenAI ni Replicate');
+{
+  const WAV = new Uint8Array(200).buffer;
+  const envB = { ACCOUNTS: kv(), OPEN_AI_API_KEY: 'sk-factice', AX_REPLICATE_KEY: 'r-factice', AI: { run: async () => WAV } };
+  const vrai = globalThis.fetch; let payes = 0;
+  globalThis.fetch = async (input) => { const u = typeof input === 'string' ? input : input.url;
+    if (/api\.openai\.com|api\.replicate\.com/.test(u)) payes++; return vrai(input); };
+  try {
+    for (const v of ['nova', 'onyx', 'antonin']) {
+      const r = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=' + v + '&l=fr&gratuit=1&t=' + encodeURIComponent('Bonjour Kevin ' + v),
+        { headers: { Origin: 'https://javis.kd-mc.com' } }), envB);
+      ok(r.status === 200 && r.headers.get('x-voix') === 'gratuite' && payes === 0,
+        `(a) voix « ${v} » + gratuit=1, Google absent → voix gratuite de Cloudflare, 0 appel payant  [${r.status} ${r.headers.get('x-voix')}, ${payes} payé]`);
+    }
+    const envSansIA = { ACCOUNTS: kv(), OPEN_AI_API_KEY: 'sk-factice' };
+    const r2 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&l=fr&gratuit=1&t=sans-ia',
+      { headers: { Origin: 'https://javis.kd-mc.com' } }), envSansIA);
+    const j2 = await r2.json().catch(() => ({}));
+    ok(r2.status === 200 && j2.ok === false && payes === 0,
+      `(b) aucune voix gratuite disponible → repli honnête sur la voix du téléphone, 0 appel payant  [${r2.status} ok=${j2.ok}, ${payes} payé]`);
+    const r3 = await mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/tts?v=nova&l=fr&t=' + encodeURIComponent('Lingua paie encore'),
+      { headers: { Origin: 'https://lingua.kd-mc.com' } }), envB);
+    ok(r3.status === 200 && payes === 1, `(c) SANS gratuit=1 (Lingua) rien ne change : la voix OpenAI sous plafond reste possible  [${payes} payé]`);
+  } finally { globalThis.fetch = vrai; }
+}
+
 console.log(`\n${pass} contrôle(s) OK · ${fail} échec(s)`);
 if (fail) console.log('❌ La voix ou l’appel en direct peuvent être utilisés hors du domaine, ou sans plafond — c’est la facture de Kevin.');
 else console.log('✅ La voix et l’appel en direct ne partent que depuis le domaine, et sous plafond.');

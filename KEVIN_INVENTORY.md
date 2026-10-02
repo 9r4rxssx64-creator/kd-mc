@@ -1,5 +1,16 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🐝 Bee niveau commercial, 100 % gratuite : audit externe de 6 experts, Bee v1.15 (2.10.2026, soir)
+
+- **Le rapport** (à ouvrir sur l'iPhone) : https://claude.ai/artifact/KeZTrWYosZqr3AoR7adNJb
+- **Ce qui change pour toi** :
+  - Bee n'appelle plus jamais d'IA ni de voix payante ;
+  - elle se tait quand tu la touches ;
+  - elle finit ses phrases ;
+  - « Dis Siri, Bee » marche via `https://javis.kd-mc.com/?q=` (les 3 étapes du raccourci sont dans le rapport).
+- **Ton app** : https://javis.kd-mc.com
+- **Les tests qui le gardent** : `test:bee-cerveau`, `test:lingua-cout`, `test:javis-bee`, `test:bee-comportements`
+
 ### 💶 Prêt pour l'argent réel (verrouillé) + 2 IA gratuites + point vocal (2.10.2026, soir)
 
 - 📱 **Ce que tu verras** sur https://bot.kd-mc.com : la carte **💶 Passage au réel** (chaque robot papier, critère par critère ✅/❌ : 60 j, 30 trades, gain, mieux que le BTC, pire baisse) et les étapes du jour J — **aucun bouton ne bascule en réel**. Dans la carte IA : **🔊 Écouter le point du jour** (5 voix gratuites Google Chirp 3 HD au choix, repli voix du téléphone) et les refus de la 2ᵉ IA.

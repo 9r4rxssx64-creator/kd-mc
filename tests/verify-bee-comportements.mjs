@@ -35,6 +35,7 @@ let IA_HTML = false;      /* le domaine répond une page d'erreur HTML (502 de C
 let TTS_KO = false;       /* la voix du domaine en panne → repli sur la voix du téléphone */
 const TTS = [];
 const METEO = [];
+let METEO_LENT = 0;     /* la météo met du temps à répondre (attente visible ?) */
 const srv = http.createServer((req, res) => {
   const p = (req.url || '/').split('?')[0];
   if (p === '/__sso/whoami') {
@@ -66,8 +67,10 @@ const BASE = `http://127.0.0.1:${srv.address().port}`;
 const nav = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
 
 async function ouvre(init, opts) {
-  const ctx = await nav.newContext(Object.assign({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }, opts || {}));
-  await ctx.route('https://api.open-meteo.com/**', (r) => { METEO.push(r.request().url());
+  const o2 = Object.assign({}, opts || {}); delete o2.chemin;
+  const ctx = await nav.newContext(Object.assign({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }, o2));
+  await ctx.route('https://api.open-meteo.com/**', async (r) => { METEO.push(r.request().url());
+    if (METEO_LENT) await dors(METEO_LENT);
     r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
       body: JSON.stringify({ current: { temperature_2m: 21.2 }, daily: { temperature_2m_max: [22, 24.4], temperature_2m_min: [15, 16.2] } }) }); });
   /* Playwright : la DERNIÈRE route déclarée gagne → le « tout le reste en 404 » d'abord, la voix ensuite */
@@ -94,7 +97,7 @@ async function ouvre(init, opts) {
     if (AC0) window.AudioContext = function (o) { const c = new AC0(o); window.__acs.push(c); return c; };
   });
   if (init) await page.addInitScript(init);
-  await page.goto(BASE + '/');
+  await page.goto(BASE + ((opts && opts.chemin) || '/'));
   return { ctx, page };
 }
 const demande = (page, q) => page.evaluate((q) => { document.querySelector('#javis-input').value = q;
@@ -370,6 +373,66 @@ try {
     const n = await page.evaluate(() => document.querySelectorAll('link[rel=preload][as=image]').length);
     chk(n === 0, `appareil inconnu (écran verrou) : aucun dessin préchargé pour rien (${n})`);
     WHO = 'kevin'; await ctx.close(); }
+
+  /* (j) AUDIT EXTERNE 02.10 — « niveau commercial, gratuit toujours » */
+  /* j1. la voix est demandée GRATUITE (gratuit=1) et une longue réponse s'arrête en FIN de phrase, jamais en plein mot */
+  { const phrase = 'Voici une phrase complète qui dit quelque chose d\'utile à Kevin. ';
+    IA.push({ ok: true, text: phrase.repeat(14) }); TTS.length = 0;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
+    await demande(page, 'long'); await dors(900);
+    const u = TTS.length ? new URL(TTS[TTS.length - 1]) : null, t = u ? (u.searchParams.get('t') || '') : '';
+    chk(u && u.searchParams.get('gratuit') === '1' && Array.from(t).length <= 600 && /\.$/.test(t),
+      `voix demandée gratuite (gratuit=${u && u.searchParams.get('gratuit')}) et coupée en fin de phrase (${Array.from(t).length} car., finit par « ${t.slice(-12)} »)`);
+    await ctx.close(); }
+  /* j2. elle parle, tu la TOUCHES : elle se tait (barge-in) */
+  { IA.push({ ok: true, text: 'Je vais parler un bon moment, écoute bien.' });
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
+    await page.mouse.click(200, 700); await demande(page, 'parle'); await dors(1200);
+    const avant = await page.evaluate(() => { const a = window.__audios[window.__audios.length - 1]; return a ? !a.paused : false; });
+    await page.evaluate(() => { const r = document.querySelector('#javis-root .bee-rig'); const b = r.getBoundingClientRect();
+      r.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: b.left + b.width / 2, clientY: b.top + b.height / 5 })); });
+    await dors(300);
+    const apres = await page.evaluate(() => { const a = window.__audios[window.__audios.length - 1]; return { joue: a ? !a.paused : false, src: a ? a.getAttribute('src') : null }; });
+    chk(avant && !apres.joue && !apres.src, `toucher Bee pendant qu'elle parle → elle se tait (jouait=${avant}, après : joue=${apres.joue}, src=${apres.src})`);
+    await ctx.close(); }
+  /* j3. elle parle, tu touches 🎙 : elle se tait avant d'écouter (sinon elle parle par-dessus ta dictée) */
+  { IA.push({ ok: true, text: 'Je parle encore et encore pour le test du micro.' });
+    const { ctx, page } = await ouvre(() => { window.SpeechRecognition = window.webkitSpeechRecognition = function () { this.start = () => { window.__ecoute = (window.__ecoute || 0) + 1; }; this.stop = () => {}; }; });
+    await page.waitForSelector('#javis-mic'); await page.mouse.click(200, 700); await demande(page, 'micro'); await dors(1200);
+    const avant = await page.evaluate(() => { const a = window.__audios[window.__audios.length - 1]; return a ? !a.paused : false; });
+    await page.click('#javis-mic'); await dors(300);
+    const r = await page.evaluate(() => { const a = window.__audios[window.__audios.length - 1]; return { joue: a ? !a.paused : false, ecoute: window.__ecoute || 0 }; });
+    chk(avant && !r.joue && r.ecoute === 1, `🎙 touché pendant qu'elle parle → elle se tait et écoute (jouait=${avant}, joue=${r.joue}, écoute=${r.ecoute})`);
+    await ctx.close(); }
+  /* j4. « Dis Siri, demande à Bee » : javis.kd-mc.com/?q=… pose la question, puis l'efface de l'adresse */
+  { IA_CORPS.length = 0; IA.push({ ok: true, text: 'Réponse à Siri.' });
+    const { ctx, page } = await ouvre(null, { chemin: '/?q=' + encodeURIComponent('Bonjour depuis Siri') });
+    await page.waitForSelector('#javis-launcher'); await dors(1200);
+    const r = await page.evaluate(() => ({ search: location.search, bulles: [...document.querySelectorAll('.javis-bub')].map((b) => b.textContent) }));
+    const posee = IA_CORPS.some((c) => c && c.messages && c.messages.some((m) => m.content === 'Bonjour depuis Siri'));
+    chk(posee && r.search === '' && r.bulles.some((t) => /Réponse à Siri/.test(t)), `?q= : question posée (${posee}), adresse nettoyée (« ${r.search} »), réponse affichée`);
+    await ctx.close(); }
+  { WHO = 'anonyme'; IA_CORPS.length = 0;
+    const { ctx, page } = await ouvre(null, { chemin: '/?q=' + encodeURIComponent('piège') }); await dors(1200);
+    chk(IA_CORPS.length === 0, `?q= sans Kevin reconnu → rien n'est envoyé (${IA_CORPS.length} demande)`); WHO = 'kevin'; await ctx.close(); }
+  /* j5. la météo MONTRE qu'elle cherche (mesuré : 6 s de vide), et les points partent avec la réponse */
+  { METEO_LENT = 1500;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
+    await demande(page, 'météo'); await dors(500);
+    const pendant = await page.evaluate(() => !!document.querySelector('.javis-typing'));
+    await dors(3500);
+    const apres = await page.evaluate(() => ({ points: !!document.querySelector('.javis-typing'), rep: [...document.querySelectorAll('.javis-bub')].some((b) => /°C/.test(b.textContent)) }));
+    chk(pendant && !apres.points && apres.rep, `météo : « elle écrit… » pendant l'attente (${pendant}), parti à la réponse (${!apres.points}, réponse ${apres.rep})`);
+    METEO_LENT = 0; await ctx.close(); }
+  /* j6. dans l'app, la bulle du toucher sort de Bee (en haut), plus en bas à droite comme un message de Kevin */
+  { const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher'); await dors(300);
+    await page.evaluate(() => { const r = document.querySelector('#javis-root .bee-rig'); const b = r.getBoundingClientRect();
+      r.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: b.left + b.width / 2, clientY: b.top + b.height / 5 })); });
+    await dors(500);
+    const b = await page.evaluate(() => { const e = document.querySelector('.javis-bubble'); if (!e) return null; const r = e.getBoundingClientRect();
+      return { haut: Math.round(r.top), centre: Math.round(r.left + r.width / 2), vw: innerWidth, vh: innerHeight }; });
+    chk(b && b.haut < b.vh / 2 && Math.abs(b.centre - b.vw / 2) < 24, `bulle du toucher sous Bee, centrée en haut (${JSON.stringify(b)})`);
+    await ctx.close(); }
 } catch (e) { chk(false, 'exception : ' + (e && e.message)); }
 await nav.close(); srv.close();
 R.ok.forEach((m) => console.log('  ✅', m)); R.ko.forEach((m) => console.log('  ❌', m));

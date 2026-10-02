@@ -864,6 +864,39 @@ qu'elles sont **gratuites et illimitées sur un dépôt public**.
 **Conséquence** : plus rien ne se déploie ni ne se publie — y compris ce repli d'IBAN, la
 publication du site et la chaîne de pub. C'est le blocage numéro 1.
 
+## 2026-10-02 (19h UTC) — Audit externe « niveau commercial, gratuit toujours » de Javis/Bee : 6 experts, Bee v1.15
+
+Kevin : « audit externe d'amélioration extrême de mon Javis… niveau commercial… gratuit tjs, note-le ». **6 experts
+indépendants** (benchmark marché avec sources datées, voix temps réel, cerveau/mémoire, UX iPhone en vrai Chromium,
+architecture/coût, produit + contre-avis). Constat : un personnage au-dessus des leaders (bouche synchronisée sur le son,
+2 mascottes), mais un cerveau qui **ne sait rien de Kevin**, sans flux, et 2 replis **payants** encore ouverts.
+**Livré (Bee v1.15)** :
+- **100 % gratuite** : secours payant derrière `BEE_SECOURS_PAYANT` (éteint), voix `gratuit=1` (Chirp → Cloudflare → téléphone) ;
+- ℹ️ exact (il disait « OpenAI » pour la voix) et gardé contre le code des deux côtés ;
+- se tait quand on la touche ou quand on touche 🎙 ;
+- voix coupée en fin de phrase ;
+- `?q=` pour « Dis Siri » ;
+- la météo montre qu'elle cherche ;
+- la bulle du toucher sort de Bee ;
+- les antennes ne sont plus coupées ;
+- « photo » n'est plus une question d'image ;
+- la voix abandonnée est coupée côté réseau ;
+- plus de faux rouge des copies ignorées.
+
+Gardes : bee-cerveau 54/0, lingua-cout 125/0, javis-bee 75/0, bee-comportements 42/0 ; **10 sabotages tués**.
+Règle notée : CLAUDE-HISTOIRE § PERSONA 7 + en-tête CLAUDE.md + mémoire compacte + leçon #386.
+
+**Feuille de route** :
+- planning de Kevin lu par le serveur (le seed s'arrête à 2026-9) ;
+- flux + voix phrase par phrase ;
+- qwen3-30b d'abord (A/B à mesurer) ;
+- mémoire D1 ;
+- briefing sans cron ;
+- Lingua hors Worker ;
+- minification.
+
+**Signalé** : arbre garde `kdmc_sso_token` sous une CSP `unsafe-inline` (risque XSS → admin).
+
 ## 2026-10-01 (08h30 UTC) — javis.kd-mc.com restait en Bee v1.13 : les fichiers Pages ne partaient qu'à la main
 
 Vérification de 08h20 : Lingua v2.129.1 en ligne, routeur + apis redéployés, Bee v1.14 sur l'arbre — mais

@@ -84,7 +84,7 @@
       "etat": "actif",
       "maj": "2026-09-27",
       "attend_kevin": "changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…",
-      "attend_session": "lingua-voix : test:lingua-voix : 26 OK / 0 FAIL — les 5 rouges sont corriges, et il y avait un vrai bug derriere",
+      "attend_session": "javis-bee : Sécurité : arbre garde kdmc_sso_token (admin 24 h) sous une CSP 'unsafe-inline'",
       "note": "v3.36 livrée : dates entières, pleine page iPhone/Android/ordi, visuel mesuré 126 personnes × 10 appareils × 4 vues sur le VRAI arbre (tout vert, run 36352174569)."
     },
     "lingua": {
@@ -3897,6 +3897,15 @@
       "sujet": "Audit Lingua 2.10 : Lingua n'envoie jamais l= → jamais la voix gratuite ; KV saturé ; checkUpdate 288 Ko/min",
       "corps": "",
       "ts": "2026-10-02 18:43",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m190-javis-bee",
+      "de": "javis-bee",
+      "a": "arbre",
+      "sujet": "Sécurité : arbre garde kdmc_sso_token (admin 24 h) sous une CSP 'unsafe-inline'",
+      "corps": "Audit externe Javis 02.10 (expert archi) : arbre/index.html a script-src 'unsafe-inline' ET lit localStorage kdmc_sso_token (_adminSansCode). Une XSS sur arbre = le laissez-passer admin du domaine (12 portes adminSession). Proposé : retirer 'unsafe-inline' (empreintes comme javis/) ou ne jamais garder le jeton sur arbre. Aussi : setInterval(checkUpdate, 60000) = jusqu'à 60 requêtes Worker/h par onglet (quota 100 000/jour), et le widget Bee (113 Ko + 1 whoami) est chargé pour toute la famille alors qu'il ne s'ouvre que pour Kevin.",
+      "ts": "2026-10-02 19:38",
       "etat": "ouvert"
     }
   ]

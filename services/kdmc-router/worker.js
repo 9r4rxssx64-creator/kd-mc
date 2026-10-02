@@ -1614,6 +1614,9 @@ async function handleLingua(request, url, env) {
          1000 couvre tout le contenu de l'app ; tts-1 accepte jusqu'à 4096, et l'URL GET
          reste largement sous les limites Workers/CDN. */
       const text = (url.searchParams.get('t') || '').slice(0, 1000);
+      /* Bee (gratuit=1) : Google Chirp (palier gratuit) puis la voix gratuite de Cloudflare, puis la voix
+         du téléphone — JAMAIS OpenAI ni Replicate (Kevin 02.10 « gratuit tjs »). */
+      const gratuitSeul = url.searchParams.get('gratuit') === '1';
       /* Kevin 2026-08-11 « la voix est trop robot » : les 6 voix historiques marchent sur les
          DEUX moteurs ; les 5 voix « HD » (coral, sage, ash, ballad, verse) n'existent QUE sur
          gpt-4o-mini-tts → REPLI obligatoire vers leur cousine tts-1, sinon OpenAI répond 400. */
@@ -1650,7 +1653,7 @@ async function handleLingua(request, url, env) {
         const akey = 'ltts:' + (await hashOf('antonin:' + aSpeed + ':' + text));
         const acached = await env.ACCOUNTS.get(akey, 'arrayBuffer');
         if (acached) return new Response(acached, { status: 200, headers: audioHdr });
-        if (env.AX_REPLICATE_KEY && (await peutPayerVoix())) {
+        if (env.AX_REPLICATE_KEY && !gratuitSeul && (await peutPayerVoix())) {
           try {
             const rp = await fetch('https://api.replicate.com/v1/models/minimax/speech-02-hd/predictions', {
               method: 'POST',
@@ -1736,6 +1739,11 @@ async function handleLingua(request, url, env) {
         const g = await voixGoogle(env, text, vGoogle, langue, gk, cors);
         if (g) return g;
         if (moteurDemande === 'chirp') return JL({ ok: false, reason: 'chirp_indisponible' });
+      }
+      if (gratuitSeul) {
+        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
+        const g = await voixGratuite(env, text, '', cors);
+        return g || JL({ ok: false, reason: 'gratuite_indisponible' });
       }
       const ckey = await cle(modele);
       const cached = await env.ACCOUNTS.get(ckey, 'arrayBuffer');
@@ -2993,13 +3001,19 @@ async function handleBeeIa(request, env) {
   /* Bee n'agit sur rien : une « action » (planning, déploiement…) n'a pas à réveiller un moteur payant
      juste pour répondre « c'est Apex » → traitée comme une question simple (Qwen d'abord). */
   let domaine = detectDomain(messages[messages.length - 1].content);
-  if (domaine === 'admin') domaine = 'general';
+  /* Bee n'envoie que du TEXTE : « photo » dans une phrase (« comment prendre une belle photo ? ») ne
+     fait pas d'elle une question d'image (audit externe 02.10, mesuré : classée « vision », Qwen était
+     exclu et seule Gemini restait). */
+  if (domaine === 'admin' || domaine === 'vision') domaine = 'general';
   /* GRATUIT D'ABORD, QUEL QUE SOIT LE TYPE DE QUESTION (contre-audit 30.09, mesuré : un poème ou une
      recherche partait chez Anthropic alors que Qwen marchait, et le ℹ️ disait « d'abord une IA
      gratuite »). Le type de question choisit l'ORDRE parmi les gratuites, puis parmi les payantes. */
   const ordre = planChain(domaine, availableProviders(env), {});
   const gratuites = ordre.filter((p) => FREE_PROVIDERS.indexOf(p) >= 0);
-  const payantes = ordre.filter((p) => FREE_PROVIDERS.indexOf(p) < 0);
+  /* GRATUIT TOUJOURS (Kevin 02.10 : « gratuit tjs ») : le secours payant est ÉTEINT par défaut.
+     Il ne se rallume que par l'interrupteur BEE_SECOURS_PAYANT = '1' (bouton ON/OFF, règle Kevin) ;
+     sinon, si toutes les gratuites échouent, Bee le dit honnêtement (503) — jamais une facture. */
+  const payantes = String(env && env.BEE_SECOURS_PAYANT) === '1' ? ordre.filter((p) => FREE_PROVIDERS.indexOf(p) < 0) : [];
   const fin = Date.now() + BEE_BUDGET_MS;
   const base = { messages, system: caractere, domain: domaine, maxTokens: 500, temperature: 0.7, timeoutMs: 12000 };
   /* on garde 8 s au payant s'il est permis, sinon tout le budget aux gratuites */

@@ -26,8 +26,8 @@
  *     réservé à Kevin (Face ID ou code, vérifié par le domaine). Le caractère de Bee y est fixé
  *     côté serveur. Qwen gratuit d'abord, bascule vers l'IA la plus adaptée selon la question.
  *  3. Bee PARLE sa réponse : sa voix est un fichier audio fabriqué par le domaine
- *     (/__lingua/tts — OpenAI, payant, sous plafond du jour ; voix gratuite au-delà), et la
- *     voix du téléphone en repli. Sa bouche suit le son réel. Un bouton « Voix » la coupe.
+ *     (/__lingua/tts?gratuit=1 — Google Chirp gratuit, puis la voix gratuite de Cloudflare, JAMAIS
+ *     une voix payante : Kevin 02.10 « gratuit tjs »), et la voix du téléphone en repli. Sa bouche suit le son réel. Un bouton « Voix » la coupe.
  *  4. Intentions locales (ouvrir une app du domaine, météo) exécutées directement dans le
  *     navigateur, avec un vrai bouton « Ouvrir » dans la bulle. Une ACTION sur tes données
  *     part vers Apex (apex-ai.kd-mc.com) : la phrase est copiée, à coller là-bas — un script
@@ -48,7 +48,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.14';
+  var JAVIS_VER = 'v1.15';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
 
   if (window.__javisWidgetLoaded) return;
@@ -107,6 +107,20 @@
   /* ============================================================
      0. Qui es-tu ? (SSO domaine — même pattern que tools/departs)
      ============================================================ */
+  /* « Dis Siri, demande à Bee… » : un raccourci iPhone ouvre javis.kd-mc.com/?q=<ta phrase> (audit externe
+     02.10 : rien ne permettait d'appeler Bee depuis Siri). Lue UNE fois, effacée tout de suite de l'adresse
+     (ni historique, ni rechargement qui la reposerait), et posée seulement dans l'app, une fois Kevin
+     reconnu par le domaine — sinon jetée. Bee n'agit sur rien : au pire, un lien piégé lui pose une question. */
+  var QUESTION_ADRESSE = (function () {
+    try {
+      if (window.JAVIS_MODE !== 'app' || !/[?&]q=/.test(location.search)) return '';
+      var p = new URLSearchParams(location.search), q = String(p.get('q') || '').trim().slice(0, 500);
+      p.delete('q');
+      var reste = p.toString();
+      try { history.replaceState(null, '', location.pathname + (reste ? '?' + reste : '') + location.hash); } catch (_) {}
+      return q;
+    } catch (_) { return ''; }
+  })();
   /* Un laissez-passer arrivé par l'adresse (#kdmc_sso=) n'ÉCRASE plus celui déjà rangé
      (audit Bee 27.09, mesuré : un lien piégé portant le jeton d'un AUTRE compte enfermait
      Kevin sur « Bee est personnelle à Kevin », sans aucun bouton, même après rechargement).
@@ -289,7 +303,7 @@
       '.bee-rig.rx-poke .rig-look{animation:javis-poke .9s cubic-bezier(.34,1.56,.64,1)}' +
       '@keyframes javis-poke{0%{transform:scale(1,1)}22%{transform:scale(1.1,.88) translateY(3%)}55%{transform:scale(.94,1.09) translateY(-4%)}100%{transform:scale(1,1)}}' +
       '.bee-rig.rx-joie .rig-look{animation:javis-joie 1.5s ease-in-out}' +
-      '@keyframes javis-joie{0%,100%{transform:translateY(0) rotate(0)}20%{transform:translateY(-13%) rotate(-8deg)}45%{transform:translateY(0) rotate(6deg)}70%{transform:translateY(-8%) rotate(-4deg)}}' +
+      '@keyframes javis-joie{0%,100%{transform:translateY(0) rotate(0)}20%{transform:translateY(-6%) rotate(-8deg)}45%{transform:translateY(0) rotate(6deg)}70%{transform:translateY(-4%) rotate(-4deg)}}' +
       '.bee-rig.rx-reflechit .rig-look{animation:javis-pense 2s ease-in-out infinite}' +
       '@keyframes javis-pense{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}' +
       '.bee-rig.rx-coucou .rig-look{animation:javis-coucou 1.4s ease-in-out}' +
@@ -306,7 +320,7 @@
       /* Saut : les 3 principes de l'animation classique — ANTICIPATION (elle se ramasse
          avant de partir), ÉTIREMENT en montant, ÉCRASEMENT à l'atterrissage, puis un petit
          rebond. Sans ça, un saut ressemble à un ascenseur. */
-      '@keyframes javis-jump{0%,100%{transform:translateY(0) scale(1,1)}10%{transform:translateY(4%) scale(1.09,.88)}30%{transform:translateY(-14%) scale(.93,1.12)}48%{transform:translateY(-18%) scale(.97,1.04)}66%{transform:translateY(0) scale(1.12,.86)}80%{transform:translateY(-4%) scale(.98,1.03)}92%{transform:translateY(0) scale(1.02,.98)}}' +
+      '@keyframes javis-jump{0%,100%{transform:translateY(0) scale(1,1)}10%{transform:translateY(4%) scale(1.09,.88)}30%{transform:translateY(-7%) scale(.93,1.12)}48%{transform:translateY(-9%) scale(.97,1.04)}66%{transform:translateY(0) scale(1.12,.86)}80%{transform:translateY(-4%) scale(.98,1.03)}92%{transform:translateY(0) scale(1.02,.98)}}' +
       '@keyframes javis-fly{0%,100%{transform:translate(0,0) rotate(0)}12%{transform:translate(7%,-9%) rotate(5deg)}30%{transform:translate(13%,2%) rotate(-3deg)}50%{transform:translate(0,6%) rotate(0)}70%{transform:translate(-13%,-4%) rotate(4deg)}88%{transform:translate(-6%,-10%) rotate(-4deg)}}' +
       '@keyframes javis-walk{0%,100%{transform:translateY(0) rotate(-2.5deg)}25%{transform:translateY(-3%) rotate(0)}50%{transform:translateY(0) rotate(2.5deg)}75%{transform:translateY(-3%) rotate(0)}}' +
       /* Elle regarde AILLEURS quand elle cherche (comme quelqu'un qui réfléchit),
@@ -390,6 +404,10 @@
          Même fichier, même Bee, même chat : l'app installable n'est qu'une coquille
          qui pose window.JAVIS_MODE='app'. Zéro logique dupliquée (leçon #142). */
       'body.javis-app{margin:0;background:#0e0a04;overflow:hidden}' +
+      /* dans l'app, la bulle du toucher sort de BEE (en haut, queue vers elle), plus en bas à droite où elle
+         ressemblait à un message de Kevin (audit externe 02.10, capture 12-app-375-toucher-bee) */
+      'body.javis-app .javis-bubble{right:16px;left:16px;bottom:auto;top:calc(env(safe-area-inset-top) + min(56vw,270px) + 6px);' +
+      'margin:0 auto;width:max-content;max-width:calc(100vw - 32px);border-radius:4px 16px 16px 16px;text-align:center}' +
       'body.javis-app #javis-launcher{position:static;width:min(56vw,270px);height:min(56vw,270px);' +
       'margin:calc(env(safe-area-inset-top) + 18px) auto 8px;display:block;animation:javis-float 3.4s ease-in-out infinite}' +
       'body.javis-app #javis-root{display:flex;flex-direction:column;height:100dvh}' +
@@ -530,6 +548,8 @@
        la tête = contente, le ventre = elle rit et danse, les ailes = elle s'envole. */
     rig.style.cursor = 'pointer';
     rig.addEventListener('pointerdown', function (ev) {
+      /* elle parle et tu la touches : elle se TAIT, comme on coupe quelqu'un (audit externe 02.10) */
+      if (parleEncore()) { voixStop(); var rt = rig.closest && rig.closest('#javis-root'); if (rt) stopTalking(rt); bubble('Je me tais, je t\'écoute.', 2200); return; }
       var etaitEndormie = dormi;
       reveille();
       var zone = rigZone(rig, ev);
@@ -965,6 +985,12 @@
   }
 
   var _parole = 0;                          /* numéro de la phrase en cours */
+  function parleEncore() {
+    try {
+      if (_voixAudio && !_voixAudio.paused && !_voixAudio.ended) return true;
+      return !!(window.speechSynthesis && window.speechSynthesis.speaking);
+    } catch (_) { return false; }
+  }
   function voixStop() {
     _parole++;
     if (_lipStop) { try { _lipStop(); } catch (_) {} _lipStop = null; }
@@ -1012,10 +1038,21 @@
       .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]\uFE0F?|\uFE0F|\u200D/g, '')
       .replace(/\s{2,}/g, ' ').trim();
   }
+  /* Jamais coupée en plein mot (audit externe 02.10 : la voix s'arrêtait net au 600e caractère) :
+     au-delà de 600, on s'arrête à la DERNIÈRE fin de phrase, sinon au dernier espace. */
+  function jusquAuBout(t, max) {
+    var c = Array.from(t);
+    if (c.length <= max) return t;
+    var debut = c.slice(0, max).join('');
+    var fin = Math.max(debut.lastIndexOf('. '), debut.lastIndexOf('! '), debut.lastIndexOf('? '), debut.lastIndexOf('… '));
+    if (fin >= max / 3) return debut.slice(0, fin + 1);
+    var esp = debut.lastIndexOf(' ');
+    return esp > 0 ? debut.slice(0, esp) : debut;
+  }
   function speak(root, text) {
     var on = true;
     try { on = localStorage.getItem(STORAGE_VOICE) !== '0'; } catch (_) {}
-    text = Array.from(aDire(text)).slice(0, 600).join('');
+    text = jusquAuBout(aDire(text), 600);
     if (!on || !text) return;
     sonMemeEnSilencieux();
     voixStop();
@@ -1035,7 +1072,9 @@
     var id = _parole, repli = false;
     function versTelephone() {
       if (repli || id !== _parole) return; repli = true;
-      try { a.pause(); } catch (_) {}
+      /* on COUPE la demande au domaine (audit externe 02.10 : abandonnée au bout de 4 s, elle continuait
+         côté serveur et écrivait son cache pour rien) — sans déclencher « error » (spec HTML) */
+      try { a._abandon = true; a.pause(); a.removeAttribute('src'); a.load(); } catch (_) {}
       voixTelephone(root, text);
     }
     a.oncanplay = function () {
@@ -1050,7 +1089,8 @@
     /* le son ne vient jamais : on ne la laisse pas muette */
     setTimeout(function () { if (!repli && id === _parole && a.readyState < 2) versTelephone(); }, 4000);
     try {
-      a.src = BEE_TTS + '?v=' + voixDe() + '&l=fr&t=' + encodeURIComponent(text);   // l=fr : voix Google Chirp 3 HD gratuite en tête (1.10.2026)
+      /* l=fr : voix Google Chirp 3 HD gratuite en tête (1.10.2026) ; gratuit=1 : jamais de voix payante (02.10) */
+      a.src = BEE_TTS + '?v=' + voixDe() + '&l=fr&gratuit=1&t=' + encodeURIComponent(text);
       _voixAudio = a;
       a.load();
     } catch (_) { versTelephone(); }
@@ -1120,7 +1160,7 @@
      changer le planning. « réécris ce message », « écris un poème » vont à l'IA. */
   var RE_APEX = /(?:^|\s)(?:envoie|envoyer|envoies)(?:[- ](?:lui|leur|moi))?\s.*\b(?:message|mail|e-mail|sms|texto)\b|(?:^|\s)(?:écris|écrire|ecris)(?:[- ](?:lui|leur))?\s.*\b(?:message|mail|e-mail|sms|texto)\b.*\sà\s|(?:^|\s)(?:modifie|change|échange|déplace)\b.*\bplanning\b|\bplanning\b.*\bmodifi/;
 
-  function tryLocalIntent(text, respond) {
+  function tryLocalIntent(text, respond, attente) {
     var t = nettoie(text);
     var hd = heureOuDate(t);
     if (hd) { respond(hd); return true; }
@@ -1136,6 +1176,9 @@
     }
     if (RE_METEO.test(t)) {
       var demain = /demain/.test(t);
+      /* elle MONTRE qu'elle cherche (audit externe 02.10, mesuré : 6 s de vide pendant que le
+         téléphone cherche la position) — les petits points partent à la réponse */
+      if (attente) attente(true);
       var give = function (lat, lon, place) {
         fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
               '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&forecast_days=2&timezone=auto')
@@ -1255,10 +1298,11 @@
     /* askJavis rend true quand la question part (ou est traitée ici) */
 
     var handled = tryLocalIntent(text, function (reply, lien) {
+      setThinking(root, false); showTyping(root, false);
       addBubble(root, 'javis', reply, lien);
       var h = loadHistory(); h.push({ role: 'assistant', content: reply }); saveHistory(h);
       speak(root, reply);
-    });
+    }, function (on) { setThinking(root, on); showTyping(root, on); });
     if (handled) return true;
     root._attente = true;
 
@@ -1292,7 +1336,7 @@
         var out = ok ? j.text
           : statut === 403 ? 'Je ne te reconnais plus (ta session a expiré). Touche Face ID : je te reconnais tout de suite.'
             : statut === 429 ? 'Doucement : beaucoup de questions d\'un coup. Attends une minute et repose-la.'
-            : statut === 503 ? 'Aucune intelligence artificielle ne répond en ce moment. Réessaie dans une minute.'
+            : statut === 503 ? 'Aucune intelligence artificielle gratuite ne répond en ce moment (je n\'en appelle jamais de payante). Réessaie dans une minute.'
             : statut >= 500 ? 'Le domaine a un souci en ce moment (erreur ' + statut + '). Réessaie dans un instant.'
               : 'Je n\'ai pas réussi à répondre là, réessaie dans un instant.';
         var bulle = addBubble(root, 'javis', out);
@@ -1507,6 +1551,7 @@
     addBubble(wrap, 'javis', salut());
     try { localStorage.setItem(STORAGE_SEEN, String(Date.now())); } catch (_) {}
     if (APP_MODE) { panel.classList.add('javis-open'); } else { ennui(wrap); }
+    if (APP_MODE && QUESTION_ADRESSE) setTimeout(function () { askJavis(wrap, QUESTION_ADRESSE); }, 300);
 
     wrap.querySelector('#javis-launcher').addEventListener('click', function () {
       /* dans l'app, le panneau est toujours là : toucher Bee ne doit pas ouvrir le clavier */
@@ -1554,8 +1599,8 @@
       /* Audit complet 30.09 : l'ancien texte taisait OpenAI (qui reçoit aussi des questions quand le
          gratuit manque), la position météo, la dictée et les durées de conservation. */
       addBubble(wrap, 'javis', 'Où vont tes messages : ta question part à ton domaine kd-mc.com, qui vérifie que c\'est bien toi. ' +
-        'Il la confie d\'abord à une IA gratuite (Qwen de Cloudflare, Groq, Gemini ou Mistral) ; si aucune ne répond, à une IA payante (Anthropic ou OpenAI), avec un plafond par jour. ' +
-        'Ma voix est fabriquée par OpenAI (au-delà d\'un plafond par jour, par la voix gratuite de Cloudflare), gardée par ton domaine jusqu\'à 400 jours pour ne pas la repayer, et jusqu\'à 1 an dans ce téléphone. ' +
+        'Il la confie à une IA GRATUITE (Qwen de Cloudflare, Groq, Gemini, Mistral, OpenRouter ou Cerebras) ; si aucune ne répond, je te le dis : je n\'appelle jamais d\'IA payante. ' +
+        'Ma voix est fabriquée gratuitement par Google (Chirp), sinon par la voix gratuite de Cloudflare, sinon par la voix de ton téléphone — jamais par une voix payante. Ton domaine la garde jusqu\'à 400 jours (1 jour pour celle de Cloudflare), et ce téléphone jusqu\'à 1 an. ' +
         'La météo envoie ta position arrondie à 1 km à open-meteo. La dictée passe par le service vocal de ton téléphone. ' +
         'La conversation reste dans ce navigateur, pour cette adresse seulement : Effacer la supprime ici (pas dans l\'arbre ni sur une autre adresse du domaine).');
     });
@@ -1589,6 +1634,8 @@
       var micOff = function () { mic.classList.remove('on'); mic.setAttribute('aria-pressed', 'false'); clearTimeout(micMinuteur); };
       mic.addEventListener('click', function () {
         if (mic.classList.contains('on')) { try { rec.stop(); } catch (_) {} return; }
+        /* tu parles : Bee se TAIT (audit externe 02.10 : elle continuait de parler pendant ta dictée) */
+        voixStop(); stopTalking(wrap);
         try {
           /* le micro a besoin d'une session « écoute » : la session « lecture » (mode silencieux) est
              rendue au système le temps de la dictée, et reprise à la prochaine phrase de Bee */
@@ -1672,7 +1719,7 @@
        chaque app », puis « Oui aux 2 »). Mesuré : depuis l'app de l'écran d'accueil (stockage VIDE),
        passer par kd-mc.com menait à « Créer mon compte ». Le passkey de Kevin (rpId kd-mc.com,
        trousseau iCloud) marche ICI : on le prouve sans quitter Bee, le domaine vérifie la signature
-       et rend une session FORTE, gardée 30 jours dans CETTE app → reconnu tout seul ensuite. */
+       et rend une session FORTE, gardée 24 h dans CETTE app (laissez-passer admin, choix « B » de Kevin) → reconnu tout seul ensuite. */
     var faceId = (raison === 'inconnu' || raison === 'sans-faceid' || raison === 'pas-kevin') && aFaceId;
     if (faceId) {
       var f = document.createElement('button');
@@ -1697,7 +1744,7 @@
       f.addEventListener('click', function () { lancer(false); });
       d.appendChild(f); d.appendChild(err);
       /* Déjà réussi une fois sur cet appareil → on le relance SANS attendre un toucher (session
-         expirée au bout de 30 jours). Si l'iPhone exige un toucher, rien ne s'affiche : le bouton reste. */
+         expirée au bout de 24 h). Si l'iPhone exige un toucher, rien ne s'affiche : le bouton reste. */
       var deja = false; try { deja = localStorage.getItem('bee_faceid_ok') === '1'; } catch (_) {}
       if (deja) setTimeout(function () { lancer(true); }, 300);
     }

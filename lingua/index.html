@@ -537,6 +537,35 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 :focus-visible{outline:3px solid #f6b73c;outline-offset:2px}
 .pron-play.shadow{display:block;width:100%;margin-top:10px}
 .a-latin::after{content:attr(data-latin);display:block;font-size:.62em;font-weight:600;opacity:.85;letter-spacing:.2px;margin-top:2px;line-height:1.2}
+/* 👥 Cercle (2.10) */
+.tb-cercle{position:relative;font-size:20px;padding:6px 8px;border-radius:12px;background:var(--card2)}
+.tb-badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#d92d20;color:#fff;font:700 11px/18px system-ui;font-style:normal;padding:0 4px}
+.tb-badge.on{background:#087a54}
+.cercle-inviter{margin:6px 0 14px}
+.cercle-faceid{display:block;text-align:center;margin:0 0 12px;padding:10px;border-radius:12px;border:2px dashed var(--line);color:var(--green-tx);font-weight:700;text-decoration:none}
+.cercle-ami{display:flex;gap:12px;align-items:center;padding:10px 12px;margin:8px 0;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.cercle-ami.admin{border-color:var(--green-tx)}
+.ca-av{position:relative;font-size:28px;width:40px;text-align:center;flex:0 0 auto}
+.ca-av .pt{position:absolute;right:-2px;bottom:2px;width:12px;height:12px;border-radius:50%;background:var(--tx2);border:2px solid var(--card)}
+.ca-av .pt.on{background:#22c55e}
+.ca-tx{display:grid;gap:2px;flex:1;min-width:0}
+.ca-tx i{font-style:normal;font-size:13px;color:var(--tx2)}
+.ca-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.duo{font-size:13px;color:var(--gold-tx)}
+.quete{display:block;height:6px;border-radius:3px;background:var(--card2);overflow:hidden;margin-top:4px}
+.quete span{display:block;height:100%;background:linear-gradient(90deg,#087a54,#12b981)}
+.cercle-classement{display:grid;gap:6px;margin:6px 0 14px}
+.cc{display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:12px;background:var(--card)}
+.cc b{flex:1}.cc i{font-style:normal;color:var(--tx2);font-variant-numeric:tabular-nums}
+.cc.moi{outline:2px solid var(--green-tx)}
+.cercle-boite{display:grid;gap:8px;margin-bottom:16px}
+.cm{position:relative;padding:10px 12px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.cm.moi{background:var(--card2)}.cm.nouveau{border-color:var(--gold-tx)}
+.cm-h{display:flex;justify-content:space-between;gap:8px;font-size:14px}.cm-h i{font-style:normal;color:var(--tx2);font-size:12px}
+.cm-c{margin:4px 0 6px;overflow-wrap:anywhere}.cm-cad{font-weight:700;color:var(--gold-tx)}
+.cm-signal{position:absolute;right:8px;bottom:6px;opacity:.6;font-size:14px}
+.ce-grille{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.ce-grille.st button{font-size:24px}
+.ce-enc,.ce-st{padding:8px 10px;border-radius:12px;background:var(--card2);border:1px solid var(--line);color:var(--tx);font-weight:600}
 .fam-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
 .fam-row>span:first-child{display:grid;gap:2px;min-width:0}
 .fam-row i{font-style:normal;font-size:13px;color:var(--tx2)}
@@ -936,13 +965,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 </head>
 <body>
 <div id="app"></div>
-<script src="data.js?v=v2.130.0"></script>
-<script src="histoires-langues.js?v=v2.130.0"></script>
-<script src="mc-voix.js?v=v2.130.0"></script>
-<script src="sources-langues.js?v=v2.130.0"></script>
-<script src="data-mc.js?v=v2.130.0"></script>
-<script src="data-lsf.js?v=v2.130.0"></script>
-<script src="translit.js?v=v2.130.0"></script>
+<script src="data.js?v=v2.131.0"></script>
+<script src="histoires-langues.js?v=v2.131.0"></script>
+<script src="mc-voix.js?v=v2.131.0"></script>
+<script src="sources-langues.js?v=v2.131.0"></script>
+<script src="data-mc.js?v=v2.131.0"></script>
+<script src="data-lsf.js?v=v2.131.0"></script>
+<script src="translit.js?v=v2.131.0"></script>
 <script>
 /* Icône iOS = la mascotte Bee 🐝 (création originale KDMC) */
 (function(){try{

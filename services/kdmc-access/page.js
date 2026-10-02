@@ -19,6 +19,10 @@ export const PAGE_HTML = `<!doctype html>
   .sub{color:var(--txt2);font-size:12.5px;margin-top:3px}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   input,button{font:inherit}
+  .msgbox{display:block;margin:10px 0 2px;padding:10px 12px;border-radius:12px;border:1px solid var(--bd);text-decoration:none;color:inherit}
+  .msgbox.on{border:2px solid #f59e0b;background:rgba(245,158,11,.12)}
+  .mb-h{font-weight:700}.mb-n{display:inline-block;background:#d92d20;color:#fff;border-radius:99px;padding:1px 8px;font-size:12px;margin-left:4px}
+  .mb-l{font-size:13px;opacity:.85;margin-top:4px;overflow-wrap:anywhere}.mb-l.nv{opacity:1;font-weight:600}
   .search{width:100%;margin:10px 0 4px;padding:11px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg2);color:var(--txt);font-size:16px}
   .btn{padding:10px 15px;border-radius:11px;border:1px solid var(--bd);background:var(--card);color:var(--txt);font-weight:600;cursor:pointer;min-height:44px}
   .btn.p{background:linear-gradient(135deg,#d8b23a,#9a7810);border:none;color:#0a0f0a;font-weight:800}
@@ -240,6 +244,17 @@ export const PAGE_HTML = `<!doctype html>
      les actions (ne JAMAIS montrer une page vide à cause d'une source secondaire). */
   async function loadConn(hash){
     try{var r=await fetch(DOMAIN_LOG,{headers:hash?{'x-apex-pin':hash}:{},credentials:'include'});if(r.ok)CONN=await r.json()}catch(e){}
+    /* 💬 Messages reçus dans Lingua (Cercle, Kevin 2.10 : « une notification visible pour ne pas la rater »). */
+    try{var b=await fetch('https://kd-mc.com/__cercle/admin/boite',{credentials:'include'});if(b.ok){var bj=await b.json();BOITE=bj&&bj.ok?bj:null}}catch(e){}
+  }
+  var BOITE=null;
+  function boiteBloc(){
+    if(!BOITE) return '';
+    var n=BOITE.nonLus||0;
+    var lignes=(BOITE.derniers||[]).slice(0,3).map(function(m){return '<div class="mb-l'+(m.lu?'':' nv')+'"><b>'+esc(m.nom||'Membre')+'</b> '+esc(String(m.corps||'').slice(0,90))+'</div>'}).join('');
+    return '<a class="msgbox'+(n?' on':'')+'" href="https://lingua.kd-mc.com/#admin">'
+      +'<div class="mb-h">💬 Messages Lingua'+(n?' <span class="mb-n">'+n+' nouveau'+(n>1?'x':'')+'</span>':' · rien de nouveau')+' · '+(BOITE.connectes||0)+' connecté(s) dans Lingua</div>'
+      +lignes+'</a>';
   }
   function startAuto(){if(TIMER)clearInterval(TIMER);TIMER=setInterval(function(){if(window._pinhash&&document.visibilityState==='visible')refresh()},30000)}
   async function refresh(){try{var r=await fetch('/history',{headers:window._pinhash?{'x-apex-pin':window._pinhash}:{},credentials:'include'});if(r.ok)DATA=await r.json();await loadConn(window._pinhash);renderMain(true)}catch(e){}}
@@ -266,6 +281,7 @@ export const PAGE_HTML = `<!doctype html>
       +'<input class="search" id="q" placeholder="🔎 Rechercher une personne, une app…" value="'+esc(Q)+'">'
       +(bots.length?'<div class="ss-bots"><button class="btn" id="tb" type="button">'+(SHOWBOTS?'🙈 Masquer':'🤖 Voir')+' les robots &amp; tests ('+bots.length+')</button></div>':'')
       +anonBloc()
+      +boiteBloc()
       +'</div></header><div class="wrap" id="list">';
     if(!shown.length){h+='<div class="empty">📭 '+(q?'Aucun résultat.':'Aucune connexion enregistrée pour le moment.')+'</div>'}
     shown.forEach(function(p){

@@ -14,6 +14,7 @@ import { mintShopsAdminIdToken } from './fb-token.js';
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { routeText, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
 import * as IA from './bot-ia.js';
+import { handleCercle } from './cercle.js';   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
 
@@ -423,6 +424,8 @@ const ROUTEUR = {
     // de compte » (hash nom+code = capacité). Données NON sensibles (XP/série/nom choisi).
     // ISOLÉ (préfixe KV lingua:), FAIL-OPEN (jamais throw → la mémoire locale reste).
     if (url.pathname.startsWith('/__lingua/')) return handleLingua(request, url, env);
+    /* CERCLE (Kevin 2.10) : invitations, amis, présence, messages, cadeaux — base D1 gratuite, jamais le KV. */
+    if (url.pathname.startsWith('/__cercle/')) return handleCercle(request, url, env, outilsCercle(env));
     // Demande de démonstration Rotaplan (formulaire SANS script : champs obligatoires imposés par le
     // navigateur, REVÉRIFIÉS ici). Kevin 27.09 « renseignements obligatoires partout pour les nouveaux ».
     if (url.pathname === '/__demande') return handleDemande(request, env, host);
@@ -889,7 +892,9 @@ async function ssoVerify(secret, token) {
   if (sig.length !== expect.length) return null;
   let diff = 0; for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expect.charCodeAt(i);
   if (diff !== 0) return null;
-  let d; try { d = JSON.parse(b64urlToStr(p)); } catch { return null; }
+  /* ACCENTS (2.10, mesuré) : ssoSign écrit le passe en UTF-8 (TextEncoder) mais on le relisait octet par octet
+     → « Zoé Lefèvre » revenait « ZoÃ© LefÃ¨vre » dans TOUTES les apps. On relit en UTF-8 (tous les passes émis le sont). */
+  let d; try { const bin = b64urlToStr(p); d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))); } catch { return null; }
   if (!d || !d.u || !d.exp || d.exp < Date.now()) return null;
   return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, code: d.k === 1, iat: d.iat || 0, exp: d.exp };
 }
@@ -1180,17 +1185,25 @@ const VOIX_GRATUITE_MODELE = '@cf/myshell-ai/melotts';
 /* cleCache = la clé de la voix PAYANTE ; le son gratuit est rangé À PART (« gratuite: », 1 jour).
    Audit complet 30.09 (sonde exécutée) : rangé sous la clé payante pour 400 jours, un dépannage gratuit
    remplaçait à jamais la belle voix de cette phrase — même le lendemain, une fois le plafond remis à zéro. */
-async function voixGratuite(env, texte, cleCache, cors) {
-  const cleG = cleCache ? 'gratuite:' + cleCache : '';
+/* Langues que MeloTTS sait dire (Cloudflare Workers AI). Audit voix 2.10 : la langue était figée sur « fr » →
+   une phrase anglaise ou chinoise sortait avec l'accent français. Langue hors liste (it, de, ru, ar, ja, ko…) →
+   null : la voix du téléphone (bonne langue, bon accent) prend le relais plutôt qu'un accent faux.
+   Sans `l=` (Bee, javis, l'arbre : pages françaises) → « fr », comme avant. */
+const MELO_LANGUES = { fr: 'fr', en: 'en', es: 'es', zh: 'zh' };
+function meloLangue(l) { if (!l) return 'fr'; return MELO_LANGUES[String(l).toLowerCase().slice(0, 2)] || ''; }
+async function voixGratuite(env, texte, cleCache, cors, l) {
+  const lang = meloLangue(l);
+  if (!lang) return null;
+  const cleG = cleCache ? 'gratuite:' + cleCache + (lang === 'fr' ? '' : ':' + lang) : '';
   /* les MÊMES en-têtes CORS que la belle voix : Bee sur javis ou l'arbre lit ce son (contre-audit 30.09) */
   /* audio/wav, pas audio/mpeg : MeloTTS rend du WAV (mesuré le 2.10, run 36943228057 : « RIFF … WAVE audio, PCM 16 bit, 44100 Hz ») */
   const entetes = { 'content-type': 'audio/wav', 'cache-control': 'private, max-age=86400', 'x-voix': 'gratuite', ...cors };   // étaler undefined est permis : rien à ajouter
   try {
-    if (cleG && env && env.ACCOUNTS) { const deja = await env.ACCOUNTS.get(cleG, 'arrayBuffer'); if (deja) return new Response(deja, { status: 200, headers: entetes }); }
+    if (cleG) { const deja = (await lireCacheVoix(cleG)) || (env && env.ACCOUNTS ? await env.ACCOUNTS.get(cleG, 'arrayBuffer') : null); if (deja) return new Response(deja, { status: 200, headers: entetes }); }
   } catch (_) { /* cache best-effort */ }
   try {
     if (!env || !env.AI || typeof env.AI.run !== 'function') return null;
-    const sortie = await env.AI.run(VOIX_GRATUITE_MODELE, { prompt: String(texte || '').slice(0, 1000), lang: 'fr' });
+    const sortie = await env.AI.run(VOIX_GRATUITE_MODELE, { prompt: String(texte || '').slice(0, 1000), lang });
     let buf = null;
     if (sortie instanceof ArrayBuffer) buf = sortie;
     else if (sortie && sortie.audio && typeof sortie.audio === 'string') {
@@ -1200,7 +1213,8 @@ async function voixGratuite(env, texte, cleCache, cors) {
       buf = u8.buffer;
     } else if (sortie && typeof sortie.arrayBuffer === 'function') buf = await sortie.arrayBuffer();
     if (!buf || buf.byteLength < 64) return null;   // rien d'exploitable → repli téléphone
-    try { if (cleG) await env.ACCOUNTS.put(cleG, buf, { expirationTtl: 60 * 60 * 24 }); } catch (_) { /* cache best-effort */ }
+    /* cache du bord d'abord (0 écriture KV : le quota de 1 000/jour est saturé), KV seulement s'il manque */
+    try { if (cleG && !(await ecrireCacheVoix(cleG, buf))) await env.ACCOUNTS.put(cleG, buf, { expirationTtl: 60 * 60 * 24 }); } catch (_) { /* cache best-effort */ }
     return new Response(buf, { status: 200, headers: entetes });
   } catch (_) { return null; }
 }
@@ -1755,7 +1769,7 @@ async function handleLingua(request, url, env) {
       const langue = gttsLangue(url.searchParams.get('l')) || (moteurDemande === 'chirp' ? 'fr-FR' : '');
       if (moteurDemande === 'gratuite') {
         if (!(await souslePlafond(env, 'gratuite', request, 60, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
-        const g = await voixGratuite(env, text, '', cors);
+        const g = await voixGratuite(env, text, '', cors, url.searchParams.get('l'));
         return g || JL({ ok: false, reason: 'gratuite_indisponible' });
       }
       if (langue && (speed === 1 || moteurDemande === 'chirp')) {
@@ -1768,7 +1782,7 @@ async function handleLingua(request, url, env) {
       }
       if (gratuitSeul) {
         if (!(await souslePlafond(env, 'gratuite', request, 60, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
-        const g = await voixGratuite(env, text, '', cors);
+        const g = await voixGratuite(env, text, '', cors, url.searchParams.get('l'));
         return g || JL({ ok: false, reason: 'gratuite_indisponible' });
       }
       const ckey = await cle(modele);
@@ -1780,7 +1794,7 @@ async function handleLingua(request, url, env) {
          (mesuré : 200 voix payées). Au-delà, la voix gratuite prend le relais — jamais de silence. */
       const peutPayer = !!env.OPEN_AI_API_KEY && (await peutPayerVoix());
       if (!peutPayer) {
-        const g = await voixGratuite(env, text, ckey, cors);
+        const g = await voixGratuite(env, text, ckey, cors, url.searchParams.get('l'));
         if (g) return g;
         return JL({ ok: false, reason: env.OPEN_AI_API_KEY ? 'plafond_atteint' : 'tts_absent' }); // fail-open (200) → repli navigateur
       }
@@ -1797,7 +1811,7 @@ async function handleLingua(request, url, env) {
       let mUse = modele, rr = await synth(mUse);
       if (!rr.ok && mUse === HD_MODELE) { mUse = 'tts-1'; rr = await synth(mUse); } // repli honnête, jamais de silence
       if (!rr.ok) {
-        const g = await voixGratuite(env, text, ckey, cors);
+        const g = await voixGratuite(env, text, ckey, cors, url.searchParams.get('l'));
         if (g) return g;
         return JL({ ok: false, reason: 'tts_err', status: rr.status }); // fail-open (200)
       }
@@ -2528,6 +2542,24 @@ async function handleSso(request, url, env) {
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${restant}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, uid: s.uid, name: s.name, verified: !!s.verified, admin: estAdmin }, cookie);
   }
+  /* CONNEXION PERMANENTE (Kevin 2.10 : « je reste connecté en permanence, partout ») : une session valide qui
+     approche de sa fin est renouvelée (30 jours de plus), avec EXACTEMENT les mêmes droits. Quelqu'un qui revient
+     au moins une fois par quinzaine ne se déconnecte jamais. Ne prolonge JAMAIS : une session révoquée (« déconnecter
+     partout » reste efficace), ni le laissez-passer ADMIN Face ID (règle Kevin 30.09 : 24 h, puis Face ID une fois par
+     jour). Même garde-fou d'origine que /__sso/issue. */
+  if (path === '/__sso/prolonger' && request.method === 'POST') {
+    if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
+    const tok = ssoTokenSansAdresse(request);
+    const s = tok ? await ssoVerify(secret, tok) : null;
+    if (!s) return J({ ok: false, reason: 'pas_de_session' }, undefined, 401);
+    if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session_revoquee' }, undefined, 401);
+    if (s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0) return J({ ok: true, prolonge: false, raison: 'admin_face_id_quotidien' });
+    const reste = (s.exp || 0) - Date.now();
+    if (reste > 15 * 24 * 3600e3) return J({ ok: true, prolonge: false, reste_jours: Math.floor(reste / 864e5) });
+    const neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code);
+    const cookie = `${SSO_COOKIE}=${neuf}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(neuf)}; Secure; HttpOnly; SameSite=Lax`;
+    return J({ ok: true, prolonge: true, token: neuf }, cookie);
+  }
   if (path === '/__sso/whoami' && request.method === 'GET') {
     const s = await ssoVerify(secret, ssoToken(request));
     /* SÉCU (leçon #99) : admin EXIGE une identité FORTE (verified = Face ID prouvé).
@@ -3059,6 +3091,22 @@ async function handleBeeIa(request, env) {
   return JB({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 });
 }
 
+/* Outils du Cercle : QUI parle (dossier canonique, un compte par personne), et la notification de Kevin.
+   L'admin = session Face ID vérifiée de Kevin OU laissez-passer admin (même règle que toutes les portes admin). */
+function outilsCercle(env) {
+  return {
+    qui: async (request) => {
+      const secret = env && env.KDMC_SSO_SECRET; if (!secret) return null;
+      if (await adminSession(request, env)) return { uid: 'kdmc_admin', nom: 'Admin KDMC', admin: true };
+      const s = await ssoVerify(secret, ssoTokenSansAdresse(request));
+      if (!s || !s.uid) return null;
+      const uid = await canonFor(env, s.uid, s.name, { sansCreer: true });
+      if (revoked(await accGet(env, uid), s)) return null;
+      return { uid, nom: s.name || '', admin: false };
+    },
+    notifier: (titre, texte) => notifyPush(env, titre, texte, { tag: 'kdmc-cercle', url: 'https://lingua.kd-mc.com/#admin' }),
+  };
+}
 async function adminSession(request, env) {
   const secret = env && env.KDMC_SSO_SECRET;
   if (!secret) return null;

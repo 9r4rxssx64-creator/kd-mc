@@ -91,6 +91,14 @@ binding = "ARBRE_DB"
 database_name = "kdmc-arbre"
 database_id = "a10e750d-de49-47b5-b1d8-0e937eccbec8"
 
+# Cercle Lingua (Kevin 2.10.2026) : invitations, amis, présence, messages, cadeaux. Base D1 GRATUITE
+# (100 000 écritures/jour) créée par .github/workflows/coffre-cercle-base.yml (run 37060577082) — le KV
+# (1 000 écritures/jour, saturé le 27.09 et le 2.10) n'en reçoit RIEN. Tables créées par le routeur.
+[[d1_databases]]
+binding = "CERCLE_DB"
+database_name = "kdmc-cercle"
+database_id = "0b49b8eb-8df8-49fe-93f7-1e385bf98b34"
+
 # Alerte push « nouvel appareil » → worker de push existant (sous-domaine = le COMPTE
 # 9r4rxssx64, jamais un nom deviné — leçon #85). URL publique ici ; le JETON est un
 # secret (KDMC_PUSH_TOKEN, posé par le workflow depuis PUSH_ADMIN_TOKEN). Sans jeton,

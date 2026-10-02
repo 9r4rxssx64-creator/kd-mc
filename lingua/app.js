@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.130.0";
+var APP_VER="v2.131.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -72,6 +72,7 @@ function loadS(){
      c'est justement pour ca que le choix existe (j'ai devine faux deux fois). */
   S.beeArt=lg("beeArt","vive"); // dessin de Bee : "douce" ou "vive" (choix dans les reglages)
   S.beeVoice=lg("beeVoice","fillette"); // voix de Bee choisie (catalogue BEE_VOICES) — fillette mignonne par défaut
+  S.social=lg("social",{offerts:0,quetes:0,encourages:0,stickers:[]}); S.boostJusqua=lg("boostJusqua",0);   // 👥 Cercle (2.10)
   S.latin=lg("latin",true);   // 🔤 écriture latine sous le russe, l'ukrainien, le coréen, le chinois, le japonais (2.10)
   S.turtle=lg("turtle",false); // 🐢 mode tortue : les modèles de prononciation se jouent au ralenti partout
   S.coachScene=lg("coachScene",null); // 🎭 jeu de rôle en cours (id de SCENES) — null = conversation libre
@@ -107,7 +108,7 @@ function fixPlacementProg(){
     if(changed){ S.diff=null; /* le niveau estimé par ce test n'était pas fiable → retour en Auto (doux, selon les mots appris) */ save(); }
   }catch(e){}
 }
-function save(){ ["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","sound","voice","voixChoisie","league","leagueWeek","achv","words","today","qClaim","qDay","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","latin","turtle","mascot","beeArt"].forEach(function(k){ ls(k,S[k]); }); try{ scheduleCloudSave(); }catch(e){} try{ reportProgress(); }catch(e){} }
+function save(){ ["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","sound","voice","voixChoisie","league","leagueWeek","achv","words","today","qClaim","qDay","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","social","boostJusqua","latin","turtle","mascot","beeArt"].forEach(function(k){ ls(k,S[k]); }); try{ scheduleCloudSave(); }catch(e){} try{ reportProgress(); }catch(e){} }
 /* 📊 chaque XP gagné est daté — nourrit le calendrier d'activité (page Stats) */
 function _dayTs(k){ var p=String(k).split("-"); return new Date(+p[0],(+p[1]||1)-1,+p[2]||1).getTime(); }
 function histAdd(xp){ if(!xp)return; if(!S.hist)S.hist={}; var t=today(); S.hist[t]=(S.hist[t]||0)+xp;
@@ -159,6 +160,26 @@ function kdmcWhoami(){ return fetch("/__sso/whoami",{credentials:"include",cache
 function kdmcLogin(name,code){ return fetch("/__sso/login",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({name:name,code:String(code||"")})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
 function kdmcIssue(uid,name,code,cgu){ return fetch("/__sso/issue",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({uid:uid,name:name,cgu:!!cgu,pour:location.host,code:(code&&String(code).length>=6)?String(code):undefined})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
 function kdmcSlug(name){ return norm(name).replace(/\s+/g,"-").slice(0,60); }
+/* 🔐 FACE ID SUR PLACE (2.10, Kevin : « reconnu par Face ID ») : le passkey du trousseau (domaine kd-mc.com) se
+   présente ici même, le domaine vérifie la signature et rend une session FORTE — pour Kevin, l'admin s'ouvre. */
+function faceIdDispo(){ return !!(window.PublicKeyCredential&&navigator.credentials&&navigator.credentials.get); }
+function _b64uBuf(s){ s=String(s||"").replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4)s+="="; var b=atob(s),a=new Uint8Array(b.length); for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a.buffer; }
+function _bufB64u(b){ var a=new Uint8Array(b),s=""; for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function kdmcFaceId(entrer){ if(!faceIdDispo()){ toast("Face ID n'est pas disponible sur cet appareil"); return Promise.resolve(null); }
+  return fetch("/__sso/webauthn/auth/options",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:'{"uid":""}'}).then(function(r){ return r.json(); })
+    .then(function(o){ if(!o||!o.ok) throw new Error((o&&o.reason)||"options");
+      return navigator.credentials.get({publicKey:{challenge:_b64uBuf(o.challenge),rpId:o.rpId,userVerification:"required",timeout:60000}}); })
+    .then(function(cred){ var a=cred.response, uid=""; try{ uid=new TextDecoder().decode(a.userHandle); }catch(e){}
+      return fetch("/__sso/webauthn/auth/verify",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},
+        body:JSON.stringify({uid:uid,credId:cred.id,clientDataJSON:_bufB64u(a.clientDataJSON),authenticatorData:_bufB64u(a.authenticatorData),signature:_bufB64u(a.signature)})}).then(function(r){ return r.json(); }); })
+    .then(function(j){ if(!j||!j.ok){ toast("Face ID n'a pas abouti — réessaie, ou entre ton nom et ton code"); return null; }
+      try{ if(j.token) localStorage.setItem("kdmc_sso_token",j.token); }catch(e){}
+      return kdmcWhoami().then(function(w){ if(w&&w.uid&&entrer!==false){ enterFromDomain(w).then(function(){ PICK=false; render(); toast("🔐 Bonjour "+esc((w.name||"").split(" ")[0])+" — reconnu·e par Face ID"); }); } CERCLE=null; cercleBattre(true); return w; }); })
+    .catch(function(e){ if(e&&e.name==="NotAllowedError") return null; toast("Face ID n'a pas abouti — réessaie"); return null; }); }
+/* CONNEXION PERMANENTE : une fois par jour, le domaine prolonge la session si elle approche de sa fin. */
+function kdmcProlonger(){ if(!cercleActif()) return; try{ var j=new Date().toISOString().slice(0,10); if(localStorage.getItem("kdmc_prolonge")===j) return; localStorage.setItem("kdmc_prolonge",j); }catch(e){ return; }
+  fetch("/__sso/prolonger",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:"{}"}).then(function(r){ return r.json(); })
+    .then(function(x){ if(x&&x.token){ try{ localStorage.setItem("kdmc_sso_token",x.token); }catch(e){} } }).catch(function(){}); }
 /* Le compte local rattaché à cette personne du domaine (par uid, sinon par prénom+nom). */
 /* UN SEUL COMPTE PAR PERSONNE (Kevin 2.10 : « Je ne dois avoir qu'un compte KDMC, le mien. Chacun 1 seul
    compte. Normal »). Quand le domaine dit qui est là, TOUS les comptes de cet appareil qui sont à
@@ -183,7 +204,7 @@ function enterFromDomain(j){
   if(!id){ id=createAccount(j.name||"Joueur","🦊","",j.uid); }
   switchAccount(id); return Promise.resolve(id);
 }
-function switchAccount(id){ ACC=id; gs("current",id); loadS(); ensureLeague(); PICK=false; try{ cloudRestoreInto(id); }catch(e){} }
+function switchAccount(id){ ACC=id; gs("current",id); loadS(); ensureLeague(); PICK=false; try{ cloudRestoreInto(id); }catch(e){} CERCLE=null; CERCLE_TOUS=null; setTimeout(function(){ cercleAccepterEnAttente(); cercleBattre(true); },1200); }
 function deleteAccount(id){
   gs("accounts", accounts().filter(function(x){return x.id!==id;}));
   Object.keys(localStorage).forEach(function(k){ if(k.indexOf("lingua_a_"+id+"_")===0) localStorage.removeItem(k); });
@@ -248,7 +269,7 @@ function setMascot(id){ S.mascot=id; save(); vibrate(10);
      (bug vu sur capture le 2026-08-11 ; MG() était bon, c'est la bulle qui était périmée). */
   try{ var b=document.querySelector(".bee-bubble"); if(b)b.remove(); _beeSaid={}; }catch(_){}
   toast(mascotCfg().emoji+" "+mascotCfg().titre+" est ta mascotte !"); render(); }
-var SYNC_KEYS=["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","sound","league","leagueWeek","achv","words","today","qClaim","qDay","hadPerfect","syncTs","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","turtle","mascot","beeArt"];
+var SYNC_KEYS=["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","social","boostJusqua","sound","league","leagueWeek","achv","words","today","qClaim","qDay","hadPerfect","syncTs","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","turtle","mascot","beeArt"];
 var _cloudState="";        // "ok" | "off" | ""
 function _sha256hex(str){ return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(buf){ return Array.prototype.map.call(new Uint8Array(buf),function(b){return ("0"+b.toString(16)).slice(-2);}).join(""); }); }
 /* ===== Identité = PRÉNOM + NOM (Kevin 2026-09-05 : « si 2 personnes ont le même
@@ -449,6 +470,13 @@ function leagueRows(){ return accounts().map(function(a){ return {name:a.name||"
 
 /* ============ Succès ============ */
 var ACHV=[
+  {id:"ami1",i:"🤝",t:"Premier ami",d:"Un ami dans ton cercle",f:function(){return !!(CERCLE&&CERCLE.amis.length>=1);}},
+  {id:"ami5",i:"👥",t:"Belle équipe",d:"5 amis dans ton cercle",f:function(){return !!(CERCLE&&CERCLE.amis.length>=5);}},
+  {id:"don1",i:"🎁",t:"Généreux",d:"Offre ton 1er cadeau",f:function(){return (S.social.offerts|0)>=1;}},
+  {id:"don10",i:"💝",t:"Cœur d'or",d:"Offre 10 cadeaux",f:function(){return (S.social.offerts|0)>=10;}},
+  {id:"enc10",i:"📣",t:"Supporter",d:"Envoie 10 encouragements",f:function(){return (S.social.encourages|0)>=10;}},
+  {id:"quete1",i:"🏅",t:"Duo gagnant",d:"Réussis une quête à deux",f:function(){return (S.social.quetes|0)>=1;}},
+  {id:"duo7",i:"🔥",t:"Inséparables",d:"7 jours de série à deux",f:function(){return !!(CERCLE&&CERCLE.amis.some(function(a){return a.duo&&a.duo.serie>=7;}));}},
   {id:"first",i:"🎓",t:"Première leçon",d:"Termine ta 1ʳᵉ leçon",f:function(){return anyLessonDone();}},
   {id:"perfect",i:"💯",t:"Sans faute",d:"Une leçon sans erreur",f:function(){return S.today.perfect>0||lg("hadPerfect",false);}},
   {id:"streak3",i:"🔥",t:"En feu",d:"3 jours de série",f:function(){return S.streak>=3;}},
@@ -1009,6 +1037,7 @@ function _renderEcran(){
   else if(VIEW==="dict") app.appendChild(vDict());
   else if(VIEW==="translate") app.appendChild(vTranslate());
   else if(VIEW==="league") app.appendChild(vLeague());
+  else if(VIEW==="cercle") app.appendChild(vCercle());
   else if(VIEW==="stories") app.appendChild(vStories());
   else if(VIEW==="histoire") app.appendChild(vHistoire());
   else if(VIEW==="lsfabc") app.appendChild(vLsfAbc());
@@ -1062,6 +1091,7 @@ function vAccounts(){
   add.onclick=openCreate; var addc=el("div","acc-cell"); addc.appendChild(add); grid.appendChild(addc);
   d.appendChild(grid);
   var login=el("button","btn-ghost small"); login.innerHTML="🔑 J'ai déjà un compte"; login.onclick=openLogin; d.appendChild(login);
+  if(faceIdDispo()){ var fi=el("button","btn-ghost small"); fi.innerHTML="🔐 Me connecter avec Face ID"; fi.onclick=function(){ kdmcFaceId(true); }; d.appendChild(fi); }
   if(ACC){ var back=el("button","btn-ghost small"); back.textContent="← Revenir"; back.onclick=function(){ PICK=false; render(); }; d.appendChild(back); }
   var note=el("div","legal-note"); note.textContent="Application originale KDMC — non affiliée à un tiers."; d.appendChild(note);
   return d;
@@ -1091,6 +1121,7 @@ function openCreate(){
     /* Plus de « compte Lingua seul » à 4-5 chiffres pour un NOUVEAU (Kevin 2.10 : un seul compte par
        personne) : un code fait de toi un compte KDMC, valable partout. Les anciens codes courts
        continuent de marcher à la connexion (« J'ai déjà un compte »). */
+    if(!c && gg("inviteEnAttente","")){ toast("Pour rejoindre le cercle qui t'invite, choisis un code de 6 chiffres (ton compte KDMC) 🔑"); return; }
     if(c && c.length<6){ toast("Ton code doit faire au moins 6 chiffres — c'est celui de ton compte KDMC (ou laisse-le vide) 🔒"); return; }
     var cguOk=!!(m.body.querySelector("#acCgu")&&m.body.querySelector("#acCgu").checked);
     if(!cguOk){ toast("Coche les conditions pour continuer 🙂"); return; }
@@ -1113,6 +1144,7 @@ function openLogin(){
     '<input id="lgPrenom" class="txt" placeholder="Ton prénom" maxlength="18" autocomplete="off">'+
     '<input id="lgNom" class="txt" placeholder="Ton nom" maxlength="24" autocomplete="off">'+
     '<input id="lgCode" class="txt" placeholder="Ton code" inputmode="numeric" maxlength="10" autocomplete="off">';
+  if(faceIdDispo()){ var fid=el("button","btn-ghost"); fid.textContent="🔐 Avec Face ID"; fid.onclick=function(){ m.close(); kdmcFaceId(true); }; m.body.appendChild(fid); }
   var ok=el("button","btn-main"); ok.textContent="Retrouver mon compte";
   ok.onclick=function(){
     var n=((m.body.querySelector("#lgPrenom").value||"")+" "+(m.body.querySelector("#lgNom").value||"")).trim().replace(/\s+/g," ");
@@ -1229,9 +1261,12 @@ function vTopbar(){ var t=el("div","topbar"); var c=S.course?COURSES[S.course]:n
     '<div class="tb-stat streak"><span>🔥</span>'+S.streak+'</div>'+
     '<div class="tb-stat gems"><span>💎</span>'+S.gems+'</div>'+
     '<div class="tb-stat hearts"><span>❤️</span>'+(UNLIMITED?'∞':S.hearts)+'</div>'+
+    '<button class="tb-cercle" id="tbCercle" title="Mon cercle" aria-label="Mon cercle">👥</button>'+
     '<button class="tb-av" id="tbAv" title="Comptes" aria-label="Changer de compte">'+me.avatar+'</button>';
   t.querySelector("#tbFlag").onclick=function(){ S.course=null; VIEW="home"; save(); render(); };
   t.querySelector("#tbAv").onclick=function(){ PICK=true; render(); };
+  t.querySelector("#tbCercle").onclick=function(){ VIEW="cercle"; render(); cercleBattre(true); };
+  setTimeout(majBadgeCercle,0);
   return t;
 }
 
@@ -1332,6 +1367,10 @@ function vHome(){ var w=el("div","screen tree");
     var hc=el("button","stories-card hist-link");
     hc.innerHTML='<span class="st-ic">📜</span><span class="st-tx"><b>Histoire &amp; anecdotes</b><i>'+esc(anec?anec.t:('d\'où vient '+(COURSES[S.course].nom||'').toLowerCase()))+'</i></span><span class="st-badge">'+((hL.faits||[]).length)+'</span>';
     hc.onclick=function(){ go("histoire"); }; w.appendChild(hc); }
+  // 👥 Mon cercle — amis en ligne, messages, quête à deux (2.10)
+  var cc=el("button","stories-card cercle-link"); var nEn=CERCLE?CERCLE.amis.filter(function(x){return x.enLigne;}).length:0, nMsg=CERCLE?CERCLE.nonLus:0;
+  cc.innerHTML='<span class="st-ic">👥</span><span class="st-tx"><b>Mon cercle</b><i>'+(!cercleActif()?'apprends avec tes amis — invite-les':(CERCLE&&CERCLE.amis.length?(nEn?nEn+' ami(s) en ligne':'tes amis, vos quêtes à deux')+(nMsg?' · '+nMsg+' message(s)':''):'invite quelqu\'un : 20 💎 chacun'))+'</i></span><span class="st-badge">'+(nMsg?'✉️ '+nMsg:(CERCLE?CERCLE.amis.length:'+'))+'</span>';
+  cc.onclick=function(){ go("cercle"); cercleBattre(true); }; w.appendChild(cc);
   // 📊 Statistiques — activité, records, calendrier
   var stq=el("button","stories-card stats-link");
   stq.innerHTML='<span class="st-ic">📊</span><span class="st-tx"><b>Mes statistiques</b><i>calendrier d\'activité, records, langues</i></span><span class="st-badge">🔥 '+S.streak+'</span>';
@@ -1962,12 +2001,14 @@ function carteFamille(me){ var c=el("div","voice-card famille");
     +'<div class="fam-row"><span><b>👶 Mode enfant</b><i>'+(enf?'Actif : le Coach répond sans IA en ligne, pas d\'appel en direct, prénom jamais envoyé.':'Pour un enfant : Coach sans IA en ligne, pas d\'appel en direct, prénom jamais envoyé.')+'</i></span><button class="vpick'+(enf?' on':'')+'" id="famEnf">'+(enf?'✓ Actif':'Activer')+'</button></div>'
     +'<div class="fam-row"><span><b>🌗 Thème</b><i>Sombre, clair, ou comme le téléphone.</i></span><span class="fam-th">'
     +[["sombre","Sombre"],["clair","Clair"],["auto","Auto"]].map(function(x){ return '<button class="vpick'+(th===x[0]?' on':'')+'" data-th="'+x[0]+'">'+x[1]+'</button>'; }).join("")+'</span></div>'
+    +'<div class="fam-row"><span><b>👁️ En ligne pour mon cercle</b><i>Mes amis voient quand j\'apprends. Désactivé : je parais hors ligne (l\'admin voit toujours).</i></span><button class="vpick'+(gg("cercleInvisible",false)?'':' on')+'" id="famVis">'+(gg("cercleInvisible",false)?'Masqué':'✓ Visible')+'</button></div>'
     +'<div class="fam-row"><span><b>📦 Mes données</b><i>Les emporter (fichier) ou tout effacer.</i></span><span class="fam-th"><button class="vpick" id="famExp">Exporter</button><button class="vpick" id="famDel">Effacer</button></span></div>';
   setTimeout(function(){
     var b=c.querySelector("#famEnf"); if(b) b.onclick=function(){
       if(!enf) demanderCodeParent("Mode enfant",function(){ setMeta(ACC,"enfant",true); toast("👶 Mode enfant activé"); render(); });
       else demanderCodeParent("Quitter le mode enfant",function(){ setMeta(ACC,"enfant",false); toast("Mode enfant désactivé"); render(); }); };
     c.querySelectorAll("[data-th]").forEach(function(x){ x.onclick=function(){ gs("theme",x.getAttribute("data-th")); appliquerTheme(); render(); }; });
+    var vi=c.querySelector("#famVis"); if(vi) vi.onclick=function(){ gs("cercleInvisible",!gg("cercleInvisible",false)); cercleBattre(true); render(); };
     var ex=c.querySelector("#famExp"); if(ex) ex.onclick=exporterDonnees;
     var de=c.querySelector("#famDel"); if(de) de.onclick=function(){ if(enf) demanderCodeParent("Effacer les données",effacerDonnees); else effacerDonnees(); };
   },0);
@@ -1976,6 +2017,152 @@ function carteFamille(me){ var c=el("div","voice-card famille");
    iPhone : seulement pour l'app installée, si les notifications sont autorisées (iOS 16.4+). */
 function majPastille(){ try{ if(!navigator.setAppBadge||!ACC||!S.course) return; var n=reviewPool().length;
   (n?navigator.setAppBadge(Math.min(n,99)):navigator.clearAppBadge()).catch(function(){}); }catch(_){} }
+/* ═══ 👥 LE CERCLE (Kevin 2.10.2026) — inviter, amis en ligne, messages, encouragements, cadeaux, quêtes et
+   séries à deux, classement de la semaine, trophées ; et pour l'admin : TOUS les connectés.
+   Le serveur (/__cercle/*, base D1 gratuite) décide de tout ce qui compte (limites, valeurs des cadeaux,
+   enfants protégés) ; l'app ne fait qu'afficher et appliquer ce qu'il accorde. Rien ne part sans compte KDMC. */
+var CERCLE=null, CERCLE_TOUS=null, _cercleT=0, _cercleEnCours=false;
+function cercleActif(){ var m=ACC?accMeta(ACC):null; return !!(m&&m.kdmcUid); }
+function cercleApi(chemin,corps){ return fetch("/__cercle"+chemin,{method:corps?"POST":"GET",credentials:"include",cache:"no-store",
+    headers:kdmcHeaders(corps?{"content-type":"application/json"}:{}),body:corps?JSON.stringify(corps):undefined})
+  .then(function(r){ return r.json(); }).catch(function(){ return {ok:false,reason:"reseau"}; }); }
+/* Même semaine que le serveur (ISO, en UTC). */
+function semaineIso(t){ var d=new Date(t); d.setUTCHours(0,0,0,0); d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7));
+  var an=new Date(Date.UTC(d.getUTCFullYear(),0,1)); return d.getUTCFullYear()+"-S"+String(Math.ceil(((d-an)/864e5+1)/7)).padStart(2,"0"); }
+function xpSemaine(){ var d=new Date(), lun=new Date(d); lun.setHours(0,0,0,0); lun.setDate(lun.getDate()-((lun.getDay()+6)%7)); var t=0;
+  for(var x=new Date(lun); x<=d; x.setDate(x.getDate()+1)){ var k=x.getFullYear()+"-"+(x.getMonth()+1)+"-"+x.getDate(); t+=(S.hist&&S.hist[k])||0; } return t; }
+function ilYa(t){ if(!t) return "pas encore"; var s=Math.max(0,(Date.now()-t)/1000); if(s<90) return "à l'instant"; if(s<3600) return "il y a "+Math.round(s/60)+" min";
+  if(s<86400) return "il y a "+Math.round(s/3600)+" h"; return "il y a "+Math.round(s/86400)+" j"; }
+function cercleNom(uid){ if(uid==="admin"||uid==="kdmc_admin") return "Admin KDMC"; if(uid==="systeme") return "🐝 KDMC Lingua";
+  if(CERCLE){ for(var i=0;i<CERCLE.amis.length;i++) if(CERCLE.amis[i].uid===uid) return CERCLE.amis[i].nom; }
+  if(CERCLE_TOUS){ for(var j=0;j<CERCLE_TOUS.personnes.length;j++) if(CERCLE_TOUS.personnes[j].uid===uid) return CERCLE_TOUS.personnes[j].nom; }
+  return "Ami·e"; }
+function cercleBattre(force){
+  if(!cercleActif()||_cercleEnCours) return Promise.resolve(null);
+  if(!force&&(document.hidden||Date.now()-_cercleT<20000)) return Promise.resolve(CERCLE);
+  _cercleEnCours=true; _cercleT=Date.now(); var me=accMeta(ACC)||{};
+  return cercleApi("/battement",{cours:S.course||"",xpSem:xpSemaine(),sem:semaineIso(Date.now()),serie:S.streak|0,xpTotal:S.xp|0,
+      avatar:me.avatar||"🙂",enfant:!!me.enfant,invisible:!!gg("cercleInvisible",false),leconAujourdhui:!!(S.today&&S.today.lessons>0)})
+    .then(function(j){ _cercleEnCours=false; if(!j||!j.ok) return null; CERCLE=j; majBadgeCercle(); checkAchv();
+      var ae=document.activeElement; if(VIEW==="cercle"&&!(ae&&/INPUT|TEXTAREA/.test(ae.tagName))&&!document.querySelector(".modal")) render();
+      return j; })
+    .catch(function(){ _cercleEnCours=false; return null; }); }
+function majBadgeCercle(){ var b=document.getElementById("tbCercle"); if(!b||!CERCLE) return;
+  var en=CERCLE.amis.filter(function(a){return a.enLigne;}).length, n=CERCLE.nonLus||0;
+  b.innerHTML='👥'+(n?'<i class="tb-badge">'+(n>9?"9+":n)+'</i>':(en?'<i class="tb-badge on">'+en+'</i>':''));
+  b.setAttribute("aria-label","Mon cercle"+(n?", "+n+" message(s) non lu(s)":"")+(en?", "+en+" ami(s) en ligne":"")); }
+/* ---- Invitation : le lien ?cercle=… ---- */
+function cercleLireInvitation(){ try{ var m=location.search.match(/[?&]cercle=([a-z0-9]{6,40})/i); if(!m) return;
+    gs("inviteEnAttente",m[1]); history.replaceState(null,"",location.pathname+location.hash); }catch(_){} }
+function cercleAccueilInvitation(){ var j=gg("inviteEnAttente",""); if(!j) return;
+  fetch("/__cercle/invitation?j="+encodeURIComponent(j),{cache:"no-store"}).then(function(r){return r.json();}).then(function(x){
+    if(!x||!x.ok){ gs("inviteEnAttente",""); toast("Ce lien d'invitation a expiré — demande-en un nouveau 🙂"); return; }
+    if(cercleActif()){ cercleAccepterEnAttente(); return; }
+    var m=modal(); m.body.innerHTML='<div class="mascot-mini big">'+MASCOT("party",130)+'</div><h3>🎉 '+esc(x.de)+' t\'invite dans son cercle !</h3>'
+      +'<p class="mini">Apprenez ensemble sur <b>KDMC Lingua</b> : vous verrez quand l\'autre apprend, vous pourrez vous encourager, vous offrir des cadeaux et réussir des quêtes à deux. Crée ton compte KDMC (gratuit) — un seul compte pour toutes les apps du domaine.</p>';
+    var c=el("button","btn-main"); c.textContent="Créer mon compte"; c.onclick=function(){ m.close(); openCreate(); }; m.body.appendChild(c);
+    var l=el("button","btn-ghost"); l.textContent="J'ai déjà un compte"; l.onclick=function(){ m.close(); openLogin(); }; m.body.appendChild(l);
+  }).catch(function(){}); }
+function cercleAccepterEnAttente(){ var j=gg("inviteEnAttente",""); if(!j||!cercleActif()) return;
+  cercleApi("/accepter",{j:j}).then(function(r){ if(r&&r.ok){ gs("inviteEnAttente",""); toast(r.deja?"👥 Tu es déjà dans le cercle de "+r.ami:"🎉 Tu fais partie du cercle de "+r.ami+" !"); cercleBattre(true); }
+    else if(r&&(r.reason==="invitation_expiree"||r.reason==="ta_propre_invitation")){ gs("inviteEnAttente",""); if(r.reason==="invitation_expiree") toast("Ce lien d'invitation a expiré 🙂"); } }); }
+function cercleInviter(){
+  if(!cercleActif()){ toast("Relie d'abord ton compte KDMC (Profil → Voir mon code → Changer mon code) 🔑"); return; }
+  cercleApi("/inviter",{}).then(function(r){
+    if(!r||!r.ok){ toast(r&&r.reason==="trop_d_invitations"?"10 invitations par jour, c'est le maximum 🙂":"L'invitation n'a pas pu être créée — réessaie"); return; }
+    var me=accMeta(ACC)||{}, txt="Viens apprendre les langues avec moi sur KDMC Lingua 🐝 (gratuit) — on se motivera ensemble : ";
+    if(navigator.share){ navigator.share({title:"KDMC Lingua",text:txt,url:r.url}).catch(function(){}); return; }
+    var m=modal(); m.body.innerHTML='<h3>🔗 Ton lien d\'invitation</h3><p class="mini">Envoie-le par message à qui tu veux. Valable 14 jours, pour 5 personnes. Chacun reçoit <b>20 💎</b> à son arrivée — et toi aussi.</p><input class="txt" id="invLien" readonly aria-label="Lien d\'invitation" value="'+esc(r.url)+'">';
+    var cp=el("button","btn-main"); cp.textContent="Copier le lien"; cp.onclick=function(){ var i=m.body.querySelector("#invLien"); i.select();
+      try{ navigator.clipboard.writeText(r.url).then(function(){ toast("📋 Lien copié"); }).catch(function(){ document.execCommand("copy"); toast("📋 Lien copié"); }); }catch(e){ try{ document.execCommand("copy"); toast("📋 Lien copié"); }catch(_){} } };
+    m.body.appendChild(cp); }); }
+/* ---- Appliquer ce que le serveur accorde ---- */
+function appliquerCadeau(c){ if(!c) return ""; if(c.type==="gemmes"){ S.gems+=c.n|0; save(); return "+"+(c.n|0)+" 💎"; }
+  if(c.type==="gel"){ S.freeze=(S.freeze|0)+1; save(); return "🧊 +1 gel de série"; }
+  if(c.type==="boost"){ S.boostJusqua=Math.max(Date.now(),S.boostJusqua||0)+(c.minutes||15)*60000; save(); return "⚡ XP x2 pendant "+(c.minutes||15)+" min"; }
+  if(c.type==="sticker"){ S.social.stickers=(S.social.stickers||[]).concat([c.id]).slice(-60); save(); return c.id+" ajouté à ta collection"; }
+  return ""; }
+function libCadeau(c){ if(!c) return ""; return c.type==="gemmes"?(c.n+" 💎"):c.type==="gel"?"🧊 gel de série":c.type==="boost"?"⚡ XP x2 (15 min)":c.type==="sticker"?c.id:""; }
+/* ---- Écrire, encourager, offrir ---- */
+function cercleEcrire(dest){ var m=modal(), enfant=estEnfant()||(dest.enfant&&dest.uid!=="admin"), versAdmin=dest.uid==="admin";
+  var libre=!enfant||versAdmin, encs=(CERCLE&&CERCLE.encouragements)||[], sts=(CERCLE&&CERCLE.stickers)||[];
+  m.body.innerHTML='<h3>'+(versAdmin?'🛡️ Écrire à l\'admin':'💬 À '+esc(dest.nom))+'</h3>'
+    +(versAdmin?'<p class="mini">Une question, un problème ? L\'admin reçoit ton message tout de suite, même s\'il n\'est pas connecté.</p>':'')
+    +(libre?'<textarea id="ceTexte" class="txt" rows="3" maxlength="300" placeholder="Ton message…" aria-label="Ton message"></textarea>':'<p class="mini">👶 En mode enfant, on s\'envoie des encouragements tout faits.</p>')
+    +(versAdmin?'':'<p class="mini"><b>Encouragements</b></p><div class="ce-grille" id="ceEnc">'+encs.map(function(e){ return '<button class="ce-enc" data-code="'+e[0]+'">'+esc(e[1])+'</button>'; }).join("")+'</div>'
+      +'<p class="mini"><b>Autocollants</b></p><div class="ce-grille st" id="ceSt">'+sts.map(function(s){ return '<button class="ce-st" data-st="'+s+'" aria-label="Autocollant '+s+'">'+s+'</button>'; }).join("")+'</div>'
+      +'<p class="mini"><b>🎁 Cadeau du jour</b> — gratuit pour toi, 3 par jour</p><div class="ce-grille" id="ceCad"><button class="ce-enc" data-cad="gemmes">10 💎</button><button class="ce-enc" data-cad="boost">⚡ XP x2 15 min</button><button class="ce-enc" data-cad="gel">🧊 Gel de série</button></div>');
+  var envoyer=function(corps,quoi){ cercleApi("/message",Object.assign({a:dest.uid},corps)).then(function(r){
+      if(r&&r.ok){ m.close(); if(quoi==="cadeau"){ S.social.offerts=(S.social.offerts|0)+1; } if(quoi==="enc"){ S.social.encourages=(S.social.encourages|0)+1; } save();
+        toast(quoi==="cadeau"?"🎁 Cadeau envoyé à "+dest.nom:"✉️ Envoyé"); cercleBattre(true); return; }
+      var raisons={trop_de_cadeaux:"3 cadeaux par jour, c'est le maximum 🎁",boite_pleine_aujourd_hui:"Sa boîte à cadeaux est pleine aujourd'hui 🙂",trop_de_messages:"Beaucoup de messages aujourd'hui — on reprend demain 🙂",
+        lien_interdit:"Pas de lien dans les messages (sécurité) 🔒",bloque:"Ce message ne peut pas être envoyé",mode_enfant_encouragements_seulement:"Mode enfant : encouragements tout faits seulement 👶",reseau:"Pas de réseau — réessaie"};
+      toast(raisons[r&&r.reason]||"Le message n'est pas parti — réessaie"); }); };
+  if(libre){ var b=el("button","btn-main"); b.textContent="Envoyer"; b.onclick=function(){ var t=(m.body.querySelector("#ceTexte").value||"").trim(); if(!t){ toast("Écris quelques mots 🙂"); return; } envoyer({type:"texte",corps:t},"texte"); }; m.body.appendChild(b); }
+  setTimeout(function(){ m.body.querySelectorAll("[data-code]").forEach(function(x){ x.onclick=function(){ envoyer({type:"encouragement",code:x.getAttribute("data-code")},"enc"); }; });
+    m.body.querySelectorAll("[data-st]").forEach(function(x){ x.onclick=function(){ envoyer({type:"sticker",id:x.getAttribute("data-st")},"enc"); }; });
+    m.body.querySelectorAll("[data-cad]").forEach(function(x){ x.onclick=function(){ envoyer({type:"cadeau",cadeau:{type:x.getAttribute("data-cad")}},"cadeau"); }; }); },0); }
+/* ---- L'écran ---- */
+function vCercle(){ var d=el("div","screen cercle");
+  d.innerHTML='<h2 class="ttl">👥 Mon cercle</h2>';
+  if(!cercleActif()){ var p=el("div","cercle-vide"); p.innerHTML='<p>Le cercle demande ton <b>compte KDMC</b> (un seul compte pour tout le domaine) : tes amis te reconnaissent partout.</p>';
+    var bb=el("button","btn-main"); bb.textContent="Relier mon compte KDMC"; bb.onclick=function(){ openChangeCode(ACC); }; p.appendChild(bb); d.appendChild(p); return d; }
+  if(!CERCLE){ d.appendChild(el("p","mini")).textContent="Chargement du cercle…"; cercleBattre(true); return d; }
+  var inv=el("button","btn-main cercle-inviter"); inv.innerHTML="🔗 Inviter quelqu'un"; inv.onclick=cercleInviter; d.appendChild(inv);
+  var meAdmin=CERCLE.moi&&CERCLE.moi.admin, me=accMeta(ACC)||{};
+  /* Kevin sans Face ID : son compte est reconnu, l'admin s'ouvre d'un geste. */
+  if(!meAdmin&&(me.kdmcUid==="kdmc_admin")){ var fa=el("a","cercle-faceid"); fa.href="https://kd-mc.com/?return="+encodeURIComponent("https://lingua.kd-mc.com/#cercle"); fa.textContent="🔐 Ouvrir l'admin avec Face ID";
+    if(faceIdDispo()) fa.onclick=function(ev){ ev.preventDefault(); kdmcFaceId(false).then(function(w){ if(w) render(); }); }; d.appendChild(fa); }
+  /* L'admin, visible de tous */
+  if(!meAdmin){ var a=CERCLE.admin, ra=el("div","cercle-ami admin");
+    ra.innerHTML='<span class="ca-av">🛡️<i class="pt'+(a.enLigne?" on":"")+'"></i></span><span class="ca-tx"><b>Admin KDMC</b><i>'+(a.enLigne?"en ligne":"vu "+ilYa(a.vu))+' · une question, un problème ?</i></span>';
+    var ea=el("button","vpick"); ea.textContent="Écrire"; ea.onclick=function(){ cercleEcrire({uid:"admin",nom:"Admin KDMC"}); }; ra.appendChild(ea); d.appendChild(ra); }
+  /* Les amis */
+  var h=el("div","sec-h"); var nEn=CERCLE.amis.filter(function(x){return x.enLigne;}).length;
+  h.textContent="Mes amis ("+CERCLE.amis.length+")"+(nEn?" · "+nEn+" en ligne":""); d.appendChild(h);
+  if(!CERCLE.amis.length){ var v=el("p","mini"); v.textContent="Ton cercle est encore vide : invite quelqu'un avec le bouton ci-dessus. Vous recevrez chacun 20 💎."; d.appendChild(v); }
+  CERCLE.amis.forEach(function(x){ var c=COURSES[x.cours]; var r=el("div","cercle-ami");
+    var q=x.quete||{}, pct=Math.min(100,Math.round((q.total||0)/(q.objectif||300)*100));
+    r.innerHTML='<span class="ca-av">'+esc(x.avatar)+'<i class="pt'+(x.enLigne?" on":"")+'"></i></span><span class="ca-tx"><b>'+esc(x.nom)+(x.duo&&x.duo.serie?' <span class="duo">🔥'+x.duo.serie+'</span>':'')+'</b>'
+      +'<i>'+(x.enLigne?"en ligne":"vu "+ilYa(x.vu))+(c?" · "+c.drapeau:"")+" · série "+x.serie+" · "+x.xpSem+" XP cette semaine</i>"
+      +'<span class="quete" title="Quête à deux de la semaine"><span style="width:'+pct+'%"></span></span><i>🤝 Quête à deux : '+(q.total||0)+'/'+(q.objectif||300)+' XP'+(q.reclamee?' — réussie ✓':'')+'</i></span>';
+    var act=el("span","ca-act");
+    var e1=el("button","vpick"); e1.textContent="💬"; e1.setAttribute("aria-label","Écrire à "+x.nom); e1.onclick=function(){ cercleEcrire(x); }; act.appendChild(e1);
+    if(!q.reclamee&&(q.total||0)>=(q.objectif||300)){ var qb=el("button","vpick on"); qb.textContent="🎁 "+(q.gemmes||30)+" 💎"; qb.onclick=function(){ cercleApi("/quete",{ami:x.uid}).then(function(rr){ if(rr&&rr.ok){ S.gems+=rr.gemmes; S.social.quetes=(S.social.quetes|0)+1; save(); toast("🤝 Quête à deux réussie ! +"+rr.gemmes+" 💎"); cercleBattre(true); } }); }; act.appendChild(qb); }
+    r.appendChild(act); d.appendChild(r); });
+  /* Classement de la semaine : le podium et MA place, jamais le bas du tableau mis en avant. */
+  if(CERCLE.amis.length){ var cl=[{nom:"Moi",xp:CERCLE.moi.xpSem||xpSemaine(),moi:true}].concat(CERCLE.amis.map(function(x){ return {nom:x.nom,xp:x.xpSem}; })).sort(function(a,b){ return b.xp-a.xp; });
+    var ch=el("div","sec-h"); ch.textContent="🏆 Classement de la semaine"; d.appendChild(ch); var ol=el("div","cercle-classement");
+    cl.forEach(function(x,i){ if(i>2&&!x.moi) return; var li=el("div","cc"+(x.moi?" moi":"")); li.innerHTML='<span>'+(["🥇","🥈","🥉"][i]||("#"+(i+1)))+'</span><b>'+esc(x.nom)+'</b><i>'+x.xp+' XP</i>'; ol.appendChild(li); });
+    d.appendChild(ol); }
+  /* Boîte de réception */
+  var bh=el("div","sec-h"); bh.textContent="📬 Messages"+(CERCLE.nonLus?" ("+CERCLE.nonLus+" nouveau"+(CERCLE.nonLus>1?"x":"")+")":""); d.appendChild(bh);
+  var nonLus=[]; var box=el("div","cercle-boite");
+  if(!CERCLE.messages.length){ var vm=el("p","mini"); vm.textContent="Aucun message pour l'instant."; box.appendChild(vm); }
+  CERCLE.messages.slice(0,40).forEach(function(mm){ if(!mm.moi&&!mm.lu) nonLus.push(mm.id);
+    var r=el("div","cm"+(mm.moi?" moi":"")+(!mm.moi&&!mm.lu?" nouveau":""));
+    var qui=mm.moi?("Moi → "+cercleNom(mm.a)):cercleNom(mm.de);
+    r.innerHTML='<div class="cm-h"><b>'+esc(qui)+'</b><i>'+ilYa(mm.cree)+'</i></div><div class="cm-c">'+esc(mm.corps||"")+(mm.cadeau?' <span class="cm-cad">🎁 '+esc(libCadeau(mm.cadeau))+'</span>':'')+'</div>';
+    if(!mm.moi&&mm.type==="cadeau"&&!mm.recu){ var o=el("button","vpick on"); o.textContent="Ouvrir 🎁"; o.onclick=function(){ cercleApi("/reclamer",{id:mm.id}).then(function(rr){ if(rr&&rr.ok){ toast("🎁 "+appliquerCadeau(rr.cadeau)); cercleBattre(true); } else toast("Déjà ouvert 🙂"); }); }; r.appendChild(o); }
+    if(!mm.moi&&mm.type==="cadeau"&&mm.recu&&!mm.remercie&&mm.de!=="systeme"&&!(mm.cadeau&&mm.cadeau.merci)){ var mc=el("button","vpick"); mc.textContent="🙏 Merci !"; mc.onclick=function(){ cercleApi("/merci",{id:mm.id}).then(function(rr){ if(rr&&rr.ok){ toast("🙏 Merci envoyé — "+cercleNom(mm.de)+" reçoit "+rr.gemmes+" 💎"); cercleBattre(true); } }); }; r.appendChild(mc); }
+    if(!mm.moi&&mm.de!=="systeme"&&mm.type!=="cadeau"){ var rp=el("button","vpick"); rp.textContent="↩︎ Répondre"; rp.onclick=function(){ var ami=(CERCLE.amis||[]).filter(function(a){return a.uid===mm.de;})[0];
+        cercleEcrire(mm.de==="admin"?{uid:"admin",nom:"Admin KDMC"}:(ami||{uid:mm.de,nom:cercleNom(mm.de)})); }; r.appendChild(rp); }
+    if(!mm.moi&&mm.de!=="admin"&&mm.de!=="systeme"){ var sg=el("button","cm-signal"); sg.textContent="🚩"; sg.setAttribute("aria-label","Signaler ce message"); sg.onclick=function(){ cercleApi("/signaler",{id:mm.id,raison:"signalé depuis l'app"}).then(function(){ toast("🚩 Signalé à l'admin. Merci."); }); }; r.appendChild(sg); }
+    box.appendChild(r); });
+  d.appendChild(box);
+  if(nonLus.length) setTimeout(function(){ cercleApi("/lu",{ids:nonLus}).then(function(){ if(CERCLE){ CERCLE.nonLus=0; majBadgeCercle(); } }); },1500);
+  /* ADMIN : toutes les personnes connectées, même hors cercle */
+  if(meAdmin){ var ah=el("div","sec-h"); ah.textContent="🛡️ Admin — toutes les personnes"; d.appendChild(ah);
+    var at=el("div","cercle-tous"); d.appendChild(at);
+    var peindre=function(){ at.innerHTML=""; if(!CERCLE_TOUS){ at.textContent="Chargement…"; return; }
+      var t=el("p","mini"); t.innerHTML='<b>'+CERCLE_TOUS.connectes+'</b> connecté(s) maintenant · '+CERCLE_TOUS.personnes.length+' personne(s) · <a href="https://admin.kd-mc.com/" target="_blank" rel="noopener">Qui se connecte (détails)</a>'; at.appendChild(t);
+      CERCLE_TOUS.personnes.forEach(function(x){ var c=COURSES[x.cours]; var r=el("div","cercle-ami");
+        r.innerHTML='<span class="ca-av">'+esc(x.avatar)+'<i class="pt'+(x.enLigne?" on":"")+'"></i></span><span class="ca-tx"><b>'+esc(x.nom)+(x.enfant?" 👶":"")+'</b><i>'+(x.enLigne?"en ligne":"vu "+ilYa(x.vu))+(c?" · "+c.drapeau:"")+" · série "+x.serie+" · "+x.xpSem+" XP sem. · "+x.amis+" ami(s)</i></span>";
+        var w=el("button","vpick"); w.textContent="💬"; w.setAttribute("aria-label","Écrire à "+x.nom); w.onclick=function(){ cercleEcrire(x); }; r.appendChild(w); at.appendChild(r); });
+      (CERCLE_TOUS.signalements||[]).slice(0,5).forEach(function(s){ var r=el("p","mini"); r.textContent="🚩 Signalement : "+cercleNom(s.de)+" contre "+cercleNom(s.contre)+" — "+ilYa(s.cree); at.appendChild(r); }); };
+    peindre(); cercleApi("/admin/tous").then(function(r){ if(r&&r.ok){ CERCLE_TOUS=r; peindre(); } }); }
+  return d; }
+
 function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",avatar:"🦊"};
   var totL=0,done=0; if(S.course){ COURSES[S.course].units.forEach(function(u,ui){u.lessons.forEach(function(_,li){totL++; if(unitDone(ui,li)>0)done++;});}); }
   d.innerHTML='<div class="profile-head"><div class="pav">'+me.avatar+'</div><h2 class="pname">'+esc(me.name)+'</h2></div>'+
@@ -3413,6 +3600,7 @@ function finishLesson(){ var L=LESSON;
      faut vider l'adresse). Sans ça, la balise reste chargée entre deux leçons. */
   try{ _ttsLibere(); }catch(_){}
  if(L.placement){ finishPlacement(L); return; } var base=L.exam?25:(L.review?10:15),bonus=L.wrong===0?5:0,combo=Math.max(0,L.comboMax-2); var xp=base+bonus+combo;
+  if((S.boostJusqua||0)>Date.now()) xp*=2;   /* ⚡ boost offert par un ami (Cercle) */
   /* VÉRITÉ : les gemmes AFFICHÉES = les gemmes réellement créditées (examen = 8/5, leçon = 3/1) */
   var gems=(L.exam?(L.wrong===0?8:5):(L.wrong===0?3:1));
   S.xp+=xp; S.dailyXP+=xp; histAdd(xp); S.gems+=gems;
@@ -3527,7 +3715,8 @@ function checkUpdate(){
 }
 
 /* ============ Boot ============ */
-function boot(){ app=document.getElementById("app"); appliquerTheme();
+function boot(){ app=document.getElementById("app"); appliquerTheme(); cercleLireInvitation();
+  if(/^#(cercle|admin)$/.test(location.hash||"")) VIEW="cercle";
   try{ if(window.matchMedia) matchMedia("(prefers-color-scheme: light)").addEventListener("change",function(){ if(gg("theme","sombre")==="auto"){ appliquerTheme(); } }); }catch(_){}
   var accs=accounts();
   if(ACC && accs.filter(function(a){return a.id===ACC;}).length){ loadS(); ensureLeague(); }
@@ -3546,7 +3735,10 @@ function boot(){ app=document.getElementById("app"); appliquerTheme();
   /* MAJ auto : au démarrage, à chaque retour sur l'app, et toutes les 30 min si elle reste ouverte (2.10 : plus chaque minute). */
   setTimeout(checkUpdate,2500);
   window.addEventListener("focus",checkUpdate);
-  document.addEventListener("visibilitychange",function(){ if(!document.hidden) checkUpdate(); else majPastille(); });
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden){ checkUpdate(); cercleBattre(true); } else majPastille(); });
+  /* 👥 présence du cercle : toutes les 45 s tant que l'app est visible (jamais cachée). */
+  setInterval(function(){ cercleBattre(false); },45000);
+  setTimeout(cercleAccueilInvitation,1800); setTimeout(function(){ cercleBattre(true); },2600); setTimeout(kdmcProlonger,4000);
   setTimeout(majPastille,3000);
   setInterval(checkUpdate,30*60000);
 }

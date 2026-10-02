@@ -1,5 +1,19 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-02 (21h50) — Lingua v2.131.0 : cercle d'amis, Face ID, session permanente, voix
+
+Kevin : lien d'invitation → fiche → cercle de l'inviteur ; cadeaux, messages, encouragements, trophées ;
+admin voit tous les connectés, chacun voit son cercle + l'admin (anonyme « Admin KDMC ») ; notification visible ;
+connecté en permanence + Face ID ; meilleures voix gratuites.
+- **Stockage** : D1 `kdmc-cercle` (liaison `CERCLE_DB`, créée par `coffre-cercle-base.yml`, #4225) — le KV est
+  saturé (1 000 écritures/jour), le cercle n'y écrit rien (contrôlé dans `test:cercle`).
+- **Sécurité** : liens refusés, tél./e-mail masqués, enfant = messages prêts seulement (sauf vers l'admin),
+  cadeaux fixés par le serveur, 3/jour envoyés et reçus, blocage, signalement → notification admin.
+- **Bug réel corrigé** : `ssoVerify` décodait le jeton sans UTF-8 → « ZoÃ© » (leçon #387).
+- **Voix** (recherche) : Chirp 3 HD reste en tête (gratuit 1 M/mois, MAIS facturation sans plafond dur chez
+  Google → notre compteur 28 000/jour) ; Azure F0 = meilleur secours à plafond dur (clé de Kevin, facultatif) ;
+  MeloTTS dit maintenant la vraie langue (leçon #388). Gemini TTS : palier gratuit exclu pour l'EEE → pas retenu.
+- **Piège** : la session admin Face ID n'est JAMAIS prolongée (24 h) ; `/__sso/prolonger` ne touche que la session normale.
 ## 2026-10-02 (21h40 UTC) — FUITE mesurée : le plafond KV remettait les 4 fichiers RH sur l'hébergeur public → corrigé, garde 4/4
 
 - **Mesuré** (déploiements publics du routeur 37054714916 → 37066127795, de 19h31 à 21h19, cinq de suite) : sonde-fuite

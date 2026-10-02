@@ -9,6 +9,25 @@
 
 ---
 
+## ✅ Lingua v2.131.0 (2.10 nuit) — ton cercle d'amis : fait, rien d'obligatoire de ton côté
+
+- **Inviter** : bouton 🤝 en haut de Lingua → « Inviter » → le lien part par Messages/WhatsApp. La personne
+  remplit sa fiche (domaine + Lingua) et entre **dans ton cercle**. Chacun voit **qui de SON cercle est en ligne**.
+- **Toi** : tu vois **tout le monde** (Lingua → 🤝 → section Admin, et admin.kd-mc.com). Les autres te voient
+  sous le nom **« Admin KDMC »**, jamais ton nom ; ils peuvent t'écrire même quand tu n'es pas là. Chaque
+  message → **notification + bandeau orange** sur admin.kd-mc.com.
+- **Motivation** : cadeaux (💎, ❄️ gel de série, ⚡ XP double 15 min), 16 encouragements, autocollants,
+  « 🙏 Merci » (+5 💎 à celui qui a offert), quête à deux de la semaine, série en duo, classement de la semaine,
+  7 nouveaux trophées. Sécurité : liens refusés, téléphone/e-mail masqués, enfants = messages prêts seulement,
+  bloquer / signaler.
+- **Connexion** : tu restes connecté (renouvelée seule avant 30 jours) ; « 🔐 Face ID » dans Lingua.
+  Ton accès **admin** redemande Face ID **une fois par jour** — c'est voulu (sécurité).
+- **Voix — 1 choix facultatif, gratuit** 👆 : une **clé Azure gratuite (F0)** ajouterait une 2ᵉ très bonne voix
+  en secours, avec un **plafond dur** (0,5 M caractères/mois, jamais de facture). Dis « Azure » et je te guide (5 min).
+  ⚠️ À savoir : Google Chirp (voix actuelle) a la facturation activée **sans plafond dur** chez Google — mon
+  compteur s'arrête à 28 000 caractères/jour avant d'appeler. Si la clé voix Google et la clé Gemini sont dans le
+  **même projet Google**, Gemini perd son palier gratuit : garde-les dans deux projets séparés.
+
 ## ✅ Lingua v2.130.0 (2.10 soir) — « tous les axes au maximum, gratuit » : fait, rien à faire de ton côté
 
 - **Un seul compte par personne** : tu as UN compte KDMC (vérifié dans le registre réel : 30 comptes, 1 à toi,

@@ -247,6 +247,18 @@ Michel) — à confirmer.
   main qui touche une surface privée, 17 min) + `tests.yml` au public (gardes node pur) — **mais il faut la LIRE** après
   chaque fusion (leçon #379). Pas de robot supplémentaire : minutes du coffre.
 
+## 2026-10-02 (11h55 UTC) — 🎙️ VOIX PRO GRATUITE EN LIGNE : Google Chirp 3 HD répond, mesuré
+
+- Kevin : « J'ai coché cloud… mais Gemini se décoche auto. Fais un test ». Sonde réelle **37003461786** : `google-chirp3hd-homme`
+  ✅ 37 Ko en 1,6 s · `google-chirp3hd-femme` ✅ 36 Ko · `google-neural2-femme` ✅ 65 Ko ; **par le routeur en ligne :
+  `m=chirp` → `x-voix: google-chirp3hd` (33-36 Ko, 2,2-2,4 s)** — la cascade gratuite d'abord est donc active pour Bee/Javis
+  (`l=fr`) et pour toute page qui donne la langue. MeloTTS reste le repli (729 Ko WAV en 1,9 s).
+- Gemini : la clé ne l'autorise plus (403 « GenerateContent are blocked ») — déjà mort avant (402 crédits prépayés
+  épuisés, 1.10) ; `kdmc-crea-ai` (Créa Studio) et `chat-svc` l'appellent encore avec repli (test:crea-fallback). Rien de
+  nouveau perdu ; si Kevin veut les deux, cocher Generative Language API ET Cloud Text-to-Speech dans la clé.
+- Échantillons dans `livrables/voix/` (5 fichiers) envoyés à Kevin. Plafond gratuit garanti : 28 000 caractères/jour
+  (compteur `gtts:<jour>`), pause 1 h sur refus, cache 400 jours par phrase.
+
 ## 2026-10-02 (12h40 UTC) — ✅ PHASE 2 FAITE ET MESURÉE : /cmcteams = 1 002 Ko par ouverture (4 810 ce matin, −79 %)
 
 - `coffre-docs-migrer` **appliquer** (run 36997928197) : 4 documents déplacés, chacun « copie vérifiée, fiche sans fichier » —

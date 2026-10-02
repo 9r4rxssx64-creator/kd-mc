@@ -939,8 +939,8 @@
     },
     "etat-robots-publics": {
       "titre": "Coûts, Firebase allégé, voix gratuites, R3-R7",
-      "branche": "claude/pipeline-branches-suivies",
-      "sujet": "Suivi des branches fusionnées (garde pipeline) ; voix Google en attente de la clé ; KV ce soir",
+      "branche": "claude/voix-chirp-en-ligne",
+      "sujet": "Voix Google Chirp 3 HD mesurée en ligne ; échantillons à Kevin",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
@@ -992,6 +992,16 @@
       "titre": "Robots qui parlent (annotations), note hors rules, iOS + seed (fusionnée #4203 le 2.10)",
       "branche": "claude/robots-qui-parlent",
       "sujet": "Branche fusionnée (squash #4203) ; suppression refusée à l'agent (API 403)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-02",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "pipeline-branches-suivies-fusionnee": {
+      "titre": "Pipeline, branches suivies (fusionnée #4204 le 2.10)",
+      "branche": "claude/pipeline-branches-suivies",
+      "sujet": "Branche fusionnée (squash #4204) ; suppression refusée à l'agent (API 403)",
       "surfaces": [],
       "etat": "termine",
       "maj": "2026-10-02",

@@ -9,6 +9,15 @@
 
 ---
 
+## 🔍 Audit Lingua du 2.10 — 1 décision pour toi
+
+Lingua marche (75 vérifications sur 77 en vrai). Rien à faire de ton côté pour ça. **Une décision** :
+les portes **payantes** de Lingua — l'appel en direct (OpenAI Realtime, à la minute), les 11 voix OpenAI,
+la voix d'Antonin (Replicate). Je propose : fermer l'appel en direct, passer toutes les voix sur Google
+(gratuit) avec la voix du téléphone en secours, et garder Antonin seulement si tu y tiens.
+Dis « répare Lingua » pour que je fasse la liste P0 (voix gratuite, mise à jour légère, accessibilité).
+Le rapport : https://claude.ai/artifact/Q5aVqjxtKwgS1pwfNTLm6n
+
 ## ✅ GitHub Actions bloquées par le budget (depuis le 27.09, 22h16 UTC) — NE RELÈVE PAS le budget, ça revient le 1er octobre
 
 « The job was not started because an Actions budget is preventing further use » : le budget de 20 $ posé

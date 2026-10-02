@@ -36,7 +36,7 @@
 | Automatisations actives | **138** (+ 37 rangées) | `.github/workflows/` |
 | Gardes / tests | **139** fichiers, **201** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
-| Discussions entre sessions | **188** dont **110** ouvertes | `pipeline/sessions.json` |
+| Discussions entre sessions | **189** dont **111** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **69 564 o ≈ 19 875 tokens** | `wc -c` |
 | `CLAUDE-HISTOIRE.md` (à la demande) | **626 998 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
@@ -44,11 +44,11 @@
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
 
 <!-- MAJ-AUTO:debut etat-live -->
-| Ce qui bouge | État au 2026-09-30 | Mesuré par |
+| Ce qui bouge | État au 2026-10-02 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **333** | `git ls-remote` |
+| Branches dans le dépôt | **390** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
-| État de la CI | 🔴 **à l'arrêt** — 28/30 runs échouent en moins de 15 s | API GitHub |
+| État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
 
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)

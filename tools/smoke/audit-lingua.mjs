@@ -100,7 +100,11 @@ ok(`1.5 page prête en ${(msCharge / 1000).toFixed(1)} s (mesure, pas un seuil)`
 
 /* ─── 2. Créer un compte (prénom + nom + code) ───────────────────────────── */
 const NOM = 'Audit Lingua';                              // compte de test, aucune donnée réelle
-const CODE = String(100000 + (Date.now() % 800000));     // code jetable, jamais réutilisé
+/* Code à 5 chiffres, PAS 6 (02.10) : dès 6 chiffres l'app crée un vrai compte KDMC sur le domaine
+   (/__sso/issue → écritures KV). La sonde en créait un « Audit Lingua » à chaque passage avec un code
+   différent : dès le 2e, le domaine répondait « ce nom a déjà un compte » et la sonde restait bloquée,
+   en plus de manger le quota d'écritures. 5 chiffres = compte Lingua seul, rien côté comptes KDMC. */
+const CODE = String(10000 + (Date.now() % 90000));       // code jetable, 5 chiffres
 await clicSel('.acc-card.add');
 await attends(900);
 let creable = true;
@@ -109,11 +113,17 @@ try {
   await page.fill('#acPrenom', 'Audit');
   await page.fill('#acNom', 'Lingua');
   await page.fill('#acCode', CODE);
+  /* Les conditions sont obligatoires depuis le 27.09 (#4111). Sans cette case, « Créer mon compte »
+     répond « Coche les conditions » et la sonde voyait 23 faux rouges en cascade (audit du 02.10). */
+  await page.evaluate(() => { const c = document.querySelector('#acCgu'); if (c) c.checked = true; });
 } catch { creable = false; }
-chk(creable, '2.1 la fenêtre « Nouveau compte » se remplit (prénom + nom + code)');
+chk(creable, '2.1 la fenêtre « Nouveau compte » se remplit (prénom + nom + code + conditions)');
 await clicSel('.modal .btn-main');
-await attends(2000);
-chk(!!(await page.$('.course-card')), '2.2 après création, on arrive au choix de la langue');
+await attends(2500);
+const arrive = !!(await page.$('.course-card'));
+/* Si on n'arrive pas au choix de la langue, on DIT pourquoi : le message affiché à l'écran. */
+const pourquoi = arrive ? '' : await page.evaluate(() => [...document.querySelectorAll('.toast, .modal')].map((e) => e.textContent.trim()).filter(Boolean).join(' | ').slice(0, 160)).catch(() => '');
+chk(arrive, '2.2 après création, on arrive au choix de la langue' + (pourquoi ? ` — l'écran dit : « ${pourquoi} »` : ''));
 
 /* ─── 3. LES LANGUES, une par une, en entrant vraiment dedans ────────────── */
 const noms = await page.$$eval('.course-card', (els) => els.map((e) => (e.querySelector('.cnom')?.textContent || e.textContent || '').split('\n')[0].trim()));

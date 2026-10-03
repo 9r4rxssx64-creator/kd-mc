@@ -3836,6 +3836,28 @@ que je m'y remette : (a) déplacer l'ensemble de la branche Desarzens d'un bloc 
 désaligner légèrement d'autres parents pour réunir le couple (c'est un choix, pas un calcul) ;
 (c) laisser tel quel — un trait relie déjà Guy à ses enfants.
 
+## 🌳 Arbre — tes gestes à faire quand tu auras un moment (mis à jour 3.10.2026 soir)
+
+Tout ce que je pouvais faire à ta place est fait ou tourne tout seul. Il reste **ce que seul toi peux
+faire** (ta signature, ton compte, tes yeux sur un site qui refuse les robots) :
+
+1. **Salon-de-Provence, mariage de Guy et Renée (1943)** — 1 clic : le mail est prêt dans ton Gmail
+   (brouillon « Service État civil – Demande de copie intégrale… DESARZENS / ‹employé› », destinataire
+   webcontact.mairie@salon-de-provence.org, ton adresse dedans) → **Envoyer**.
+2. **Paris 19e, mariage de Guy et Yvette (22.07.1950)** — 5 min : https://etatcivil.paris.fr/mariage
+   (compte « Mon Paris » gratuit ou FranceConnect). Copie intégrale · Paris 19e · 22/07/1950 ·
+   DESARZENS Guy Édouard (° 07/03/1918 Poissy) × MEZONNIAUD Yvette Marcelle (° 03/02/1923
+   Chevrainvilliers) · lien : petit-fils · envoi à ton adresse. Gratuit, ~15 jours par la poste.
+3. **Nice, mariage ‹employé› × ‹employé› (8.08.1911)** — ✅ mail envoyé le 3.10. Je relis ton Gmail le
+   8.10 au matin (relance automatique), puis tous les 5 jours.
+4. **Ton acte de naissance (PDF)** : il est lu et retranscrit dans ta fiche ; pour garder le PDF
+   lui-même, ouvre ta fiche → « 📎 Documents » → choisis le fichier (trop lourd pour mon canal).
+5. **Quand un acte arrive** (courrier ou mail) : photo → envoie-la-moi, j'intègre et je remonte.
+6. **Les questions en attente** (plus bas) : Ronan et Paloma sont-ils majeurs ? Marie-Noëlle née en
+   1950 ou 1953 ? PIZIO ? JAYET ? les doublons ? — un mot par ligne me suffit.
+7. **Test de la notification** (une fois) : Outils → ✏️ Mon nom → « Test » → change une note sur une
+   fiche → la notification doit arriver sur ton iPhone → remets « Kevin ».
+
 ## 🌳 Arbre — ce que la grande recherche du 2.10.2026 te demande de trancher
 
 Tout ce qui a été trouvé est **déjà dans les fiches** (notes « 📚 Recherche en ligne du 2.10.2026 »

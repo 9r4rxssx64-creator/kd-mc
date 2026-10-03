@@ -1983,6 +1983,21 @@ async function handleLingua(request, url, env) {
       const weak = Array.isArray(b && b.weak) ? b.weak.slice(0, 15).map((x) => String(x).slice(0, 60)) : [];
       const scenario = String((b && b.scenario) || '').slice(0, 120); // jeu de rôle (scène originale choisie côté app)
       const msgs = Array.isArray(b && b.messages) ? b.messages.slice(-12) : [];
+      /* 📞 APPEL DE LA MASCOTTE (Kevin 3.10 : « Bee ou Bourricot te téléphone réellement et te tient une
+         conversation, une leçon, un exercice ») — inspiré de l'appel vidéo de Duolingo Max, en mieux et
+         gratuit : la même IA gratuite, mais un appel STRUCTURÉ en phases, entièrement ORAL. */
+      const appel = b && b.mode === 'appel';
+      const PHASES = {
+        debut: "PHASE DÉBUT : c'est TOI qui appelles. Dis bonjour par son prénom avec chaleur, dis en une phrase que tu l'appelles pour sa petite leçon du jour sur le thème annoncé, puis pose une première question facile sur ce thème.",
+        lecon: "PHASE MINI-LEÇON : apprends-lui UN mot ou UNE tournure utile du thème (ou un mot à retravailler), dis-le clairement, donne son sens en français, puis demande-lui de l'utiliser dans une petite phrase.",
+        exercice: "PHASE EXERCICE ORAL : donne UN petit exercice à l'oral — traduire une phrase très courte du français vers la langue, ou répondre à une question précise avec le mot appris. Attends sa réponse, sans jamais donner la solution avant.",
+        libre: "PHASE CONVERSATION : discute naturellement avec lui sur le thème ou sur ce qu'il raconte, comme un ami au téléphone ; relance par une question ouverte simple.",
+        fin: "PHASE FIN : l'appel se termine. Félicite-le pour UNE chose précise qu'il a bien dite, rappelle en une phrase le mot ou la tournure du jour, et dis au revoir chaleureusement (« à demain ! »). Ne pose AUCUNE question.",
+      };
+      const phase = appel && PHASES[b.phase] ? b.phase : 'libre';
+      const theme = String((b && b.theme) || '').slice(0, 60);
+      const prenom = (String((b && b.prenom) || '').replace(/[^\p{L}\s'-]/gu, ' ').trim().split(/\s+/)[0] || '').slice(0, 24);   /* le prénom seul : pas de place pour une consigne cachée */
+      const mascotte = (b && b.mascotte === 'donkey') ? 'Bourricot, un âne malicieux et gentil' : 'Bee, une abeille joyeuse et bienveillante';
       const share = ['surtout en français, avec seulement quelques mots simples de ' + langName,
                      'moitié français, moitié ' + langName + ' (phrases très simples)',
                      'surtout en ' + langName + ', et en français uniquement si besoin',
@@ -2012,12 +2027,23 @@ async function handleLingua(request, url, env) {
         + "(3 ter) va droit au but : quand l'apprenant demande un exercice, donne-le tout de suite, sans enchaîner d'abord plusieurs questions de politesse ; "
         + "(4) quand il a répondu : dis d'abord si c'est juste, donne la forme correcte, explique en UNE phrase, puis propose la phrase SUIVANTE avec un nouveau ___. "
         + "N'utilise ni listes à puces ni titres : reste dans le style d'un vrai échange, avec une orthographe et une ponctuation irréprochables dans les deux langues.";
-      const chat = [{ role: 'system', content: sys }].concat(msgs.map((m) => ({ role: (m && m.role === 'user') ? 'user' : 'assistant', content: String((m && m.text) || '').slice(0, 500) })));
+      const sysAppel = !appel ? '' : ('Tu es ' + mascotte + ', professeur de ' + langName + ' pour un francophone. Tu lui TÉLÉPHONES : tout ce que tu écris sera LU À VOIX HAUTE par une voix de synthèse. '
+        + "Niveau de l'apprenant : " + level + '. Parle ' + share + '. '
+        + (prenom ? ('Son prénom : ' + prenom + '. ') : '') + (theme ? ('Thème de l\'appel du jour : ' + theme + '. ') : '')
+        + 'RÈGLES DE L\'APPEL, ABSOLUES : 1 à 2 phrases COURTES par réplique, comme au téléphone ; UNE seule question à la fois ; '
+        + 'aucun emoji, aucune liste, aucun titre, aucun astérisque, aucun tiret bas ___ (c\'est de l\'oral) ; jamais de traduction entre parenthèses longue ; '
+        + 'si sa réponse est confuse ou vide (la reconnaissance vocale se trompe parfois), ne le corrige pas sur ce qu\'il n\'a sans doute pas dit : demande gentiment de répéter ou reformule plus simplement ; '
+        + 'correction douce : reformule juste la bonne forme, en une phrase, puis continue. '
+        + (weak.length ? ('Mots à glisser si possible : ' + weak.slice(0, 6).join(', ') + '. ') : '')
+        + PHASES[phase]);
+      const chat = [{ role: 'system', content: appel ? sysAppel : sys }].concat(msgs.map((m) => ({ role: (m && m.role === 'user') ? 'user' : 'assistant', content: String((m && m.text) || '').slice(0, 500) })));
       if (!chat.some((m) => m.role === 'user')) chat.push({ role: 'user', content: 'Bonjour !' });
       /* Kevin 2026-09-05 : le coach = TRADUCTION/conversation multilingue → routage commun,
          QWEN (Workers AI, 0 clé, multilingue) en premier, puis Gemini / Groq / Mistral gratuits,
          Anthropic en secours s'il existe. On sait toujours qui a répondu (`by`). */
-      const ai = await routeText(env, { messages: chat, domain: 'translation', maxTokens: 300, temperature: 0.75, timeoutMs: 15000 });
+      const ai = await routeText(env, { messages: chat, domain: 'translation', maxTokens: appel ? 160 : 300, temperature: 0.75, timeoutMs: 15000 });
+      /* à l'oral, un reste de mise en forme se lirait à voix haute (« astérisque ») : on le retire */
+      if (ai.ok && appel) return JL({ ok: true, reply: String(ai.text).replace(/[*_#`>]+/g, '').replace(/\s{2,}/g, ' ').trim(), by: ai.provider, model: ai.model, phase });
       if (ai.ok) return JL({ ok: true, reply: ai.text, by: ai.provider, model: ai.model });
       return JL({ ok: false, reason: 'ai_absent', tried: ai.tried }); // aucune IA/erreur → message hors-ligne côté client (fail-open)
     }

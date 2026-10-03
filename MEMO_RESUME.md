@@ -1,5 +1,21 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (23h) — Lingua v2.133.0 : Bee (ou Bourricot) t'appelle
+
+Kevin : « Bee ou Bourricot te téléphone réellement et te tient une conversation, une leçon, un exercice
+supplémentaire régulièrement… copie, améliore, intègre intelligemment ».
+- **Construit sur l'existant gratuit** : discussion animée de Bee (`discSay`/`discSpeak`, bouche + sous-titres
+  synchronisés), IA gratuite `/__lingua/ai`, reconnaissance vocale du téléphone. Aucun moteur payant
+  (l'« appel en direct » OpenAI Realtime reste à part, derrière son plafond).
+- **Crochet ajouté** dans `discSpeak` → `DISC.apresParole` (après la parole : écouter, ou raccrocher en fin
+  d'appel) et `DISC.lent` (🐢). Ne change rien à la discussion normale.
+- **« Régulièrement » sans infrastructure** : pas de push par utilisateur ni de cron (5 crons Free déjà pris)
+  → sonnerie dans l'app (après la 1re leçon / heure fixe / retour sur l'app) + rappel quotidien en fichier
+  calendrier .ics (sonne app fermée, lien `#appel`).
+- **Piège** : `#appel` doit être lu au démarrage ET sur `hashchange` (leçon #398).
+
+---
+
 ## 2026-10-04 (00h35 UTC) — Boîte unique : la capture de Kevin montre la fenêtre EN LIGNE ; deux défauts corrigés
 
 - **Vu sur l'iPhone de Kevin (capture 00h31, portail v1.0.40)** : la fenêtre « Mes messages » s'ouvre, puces CMCteams et « Alertes du domaine · 14 », « Tout marquer comme lu (14) ».

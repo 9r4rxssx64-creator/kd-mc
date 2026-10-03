@@ -1063,14 +1063,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/audit-lingua-compte-local",
+      "branche": "claude/lingua-appel-bee",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "3.10 : ménage 9 robots FAIT, inventaire Kevin=1/robots=0 ; audit Lingua corrigé (compte local sans code) — relance réelle 4.10 00h05"
+      "note": "3.10 : Lingua v2.133.0 — l'appel de Bee/Bourricot (phases, sonnerie, calendrier) ; vérifs réelles 4.10 00h05"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

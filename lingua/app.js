@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.132.0";
+var APP_VER="v2.133.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -72,7 +72,7 @@ function loadS(){
      c'est justement pour ca que le choix existe (j'ai devine faux deux fois). */
   S.beeArt=lg("beeArt","vive"); // dessin de Bee : "douce" ou "vive" (choix dans les reglages)
   S.beeVoice=lg("beeVoice","fillette"); // voix de Bee choisie (catalogue BEE_VOICES) — fillette mignonne par défaut
-  S.social=lg("social",{offerts:0,quetes:0,encourages:0,stickers:[]}); S.boostJusqua=lg("boostJusqua",0);   // 👥 Cercle (2.10)
+  S.social=lg("social",{offerts:0,quetes:0,encourages:0,stickers:[]}); S.appels=lg("appels",{n:0,jours:{},heure:"",apresLecon:true,off:false,report:0,refus:""});   // 📞 appels de la mascotte (3.10) S.boostJusqua=lg("boostJusqua",0);   // 👥 Cercle (2.10)
   S.latin=lg("latin",true);   // 🔤 écriture latine sous le russe, l'ukrainien, le coréen, le chinois, le japonais (2.10)
   S.turtle=lg("turtle",false); // 🐢 mode tortue : les modèles de prononciation se jouent au ralenti partout
   S.coachScene=lg("coachScene",null); // 🎭 jeu de rôle en cours (id de SCENES) — null = conversation libre
@@ -108,7 +108,7 @@ function fixPlacementProg(){
     if(changed){ S.diff=null; /* le niveau estimé par ce test n'était pas fiable → retour en Auto (doux, selon les mots appris) */ save(); }
   }catch(e){}
 }
-function save(){ ["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","sound","voice","voixChoisie","league","leagueWeek","achv","words","today","qClaim","qDay","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","social","boostJusqua","latin","turtle","mascot","beeArt"].forEach(function(k){ ls(k,S[k]); }); try{ scheduleCloudSave(); }catch(e){} try{ reportProgress(); }catch(e){} }
+function save(){ ["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","sound","voice","voixChoisie","league","leagueWeek","achv","words","today","qClaim","qDay","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","social","appels","boostJusqua","latin","turtle","mascot","beeArt"].forEach(function(k){ ls(k,S[k]); }); try{ scheduleCloudSave(); }catch(e){} try{ reportProgress(); }catch(e){} }
 /* 📊 chaque XP gagné est daté — nourrit le calendrier d'activité (page Stats) */
 function _dayTs(k){ var p=String(k).split("-"); return new Date(+p[0],(+p[1]||1)-1,+p[2]||1).getTime(); }
 function histAdd(xp){ if(!xp)return; if(!S.hist)S.hist={}; var t=today(); S.hist[t]=(S.hist[t]||0)+xp;
@@ -269,7 +269,7 @@ function setMascot(id){ S.mascot=id; save(); vibrate(10);
      (bug vu sur capture le 2026-08-11 ; MG() était bon, c'est la bulle qui était périmée). */
   try{ var b=document.querySelector(".bee-bubble"); if(b)b.remove(); _beeSaid={}; }catch(_){}
   toast(mascotCfg().emoji+" "+mascotCfg().titre+" est ta mascotte !"); render(); }
-var SYNC_KEYS=["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","social","boostJusqua","sound","league","leagueWeek","achv","words","today","qClaim","qDay","hadPerfect","syncTs","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","turtle","mascot","beeArt"];
+var SYNC_KEYS=["course","hearts","heartTs","gems","xp","streak","lastDay","freeze","dailyXP","dailyDay","goal","prog","srs","social","appels","boostJusqua","sound","league","leagueWeek","achv","words","today","qClaim","qDay","hadPerfect","syncTs","diff","coachMsgs","coachProfile","beeVoice","coachScene","storiesDone","hist","blitzBest","pairsBest","pronGoodTotal","turtle","mascot","beeArt"];
 var _cloudState="";        // "ok" | "off" | ""
 function _sha256hex(str){ return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(buf){ return Array.prototype.map.call(new Uint8Array(buf),function(b){return ("0"+b.toString(16)).slice(-2);}).join(""); }); }
 /* ===== Identité = PRÉNOM + NOM (Kevin 2026-09-05 : « si 2 personnes ont le même
@@ -476,6 +476,9 @@ var ACHV=[
   {id:"don10",i:"💝",t:"Cœur d'or",d:"Offre 10 cadeaux",f:function(){return (S.social.offerts|0)>=10;}},
   {id:"enc10",i:"📣",t:"Supporter",d:"Envoie 10 encouragements",f:function(){return (S.social.encourages|0)>=10;}},
   {id:"quete1",i:"🏅",t:"Duo gagnant",d:"Réussis une quête à deux",f:function(){return (S.social.quetes|0)>=1;}},
+  {id:"appel1",i:"📞",t:"Allô ?",d:"Ton 1er appel avec ta mascotte",f:function(){return (S.appels&&S.appels.n|0)>=1;}},
+  {id:"appel10",i:"☎️",t:"Pipelette",d:"10 appels avec ta mascotte",f:function(){return (S.appels&&S.appels.n|0)>=10;}},
+  {id:"appel7j",i:"📆",t:"Rendez-vous tenu",d:"Un appel 7 jours de suite",f:function(){return appelSerieJours()>=7;}},
   {id:"duo7",i:"🔥",t:"Inséparables",d:"7 jours de série à deux",f:function(){return !!(CERCLE&&CERCLE.amis.some(function(a){return a.duo&&a.duo.serie>=7;}));}},
   {id:"first",i:"🎓",t:"Première leçon",d:"Termine ta 1ʳᵉ leçon",f:function(){return anyLessonDone();}},
   {id:"perfect",i:"💯",t:"Sans faute",d:"Une leçon sans erreur",f:function(){return S.today.perfect>0||lg("hadPerfect",false);}},
@@ -1367,6 +1370,10 @@ function vHome(){ var w=el("div","screen tree");
     var hc=el("button","stories-card hist-link");
     hc.innerHTML='<span class="st-ic">📜</span><span class="st-tx"><b>Histoire &amp; anecdotes</b><i>'+esc(anec?anec.t:('d\'où vient '+(COURSES[S.course].nom||'').toLowerCase()))+'</i></span><span class="st-badge">'+((hL.faits||[]).length)+'</span>';
     hc.onclick=function(){ go("histoire"); }; w.appendChild(hc); }
+  // 📞 L'appel de la mascotte (3.10)
+  if(appelPossible()){ var ap=el("button","stories-card appel-link");
+    ap.innerHTML='<span class="st-ic">📞</span><span class="st-tx"><b>Appeler '+esc(MNAME())+'</b><i>'+(appelFaitAujourdhui()?'appel du jour fait ✓ — on remet ça ?':'3 min au téléphone : mot du jour, exercice, conversation')+'</i></span><span class="st-badge">'+(appelSerieJours()?'📆 '+appelSerieJours():'NOUVEAU')+'</span>';
+    ap.onclick=appelReglages; w.appendChild(ap); }
   // 👥 Mon cercle — amis en ligne, messages, quête à deux (2.10)
   var cc=el("button","stories-card cercle-link"); var nEn=CERCLE?CERCLE.amis.filter(function(x){return x.enLigne;}).length:0, nMsg=CERCLE?CERCLE.nonLus:0;
   cc.innerHTML='<span class="st-ic">👥</span><span class="st-tx"><b>Mon cercle</b><i>'+(!cercleActif()?'apprends avec tes amis — invite-les':(CERCLE&&CERCLE.amis.length?(nEn?nEn+' ami(s) en ligne':'tes amis, vos quêtes à deux')+(nMsg?' · '+nMsg+' message(s)':''):'invite quelqu\'un : 20 💎 chacun'))+'</i></span><span class="st-badge">'+(nMsg?'✉️ '+nMsg:(CERCLE?CERCLE.amis.length:'+'))+'</span>';
@@ -2697,7 +2704,7 @@ function discSpeak(text,lang){ /* parle + anime la bouche + sous-titres SYNCHRON
   var overlay=document.querySelector(".disc-overlay"); if(!overlay)return;
   var mouth=overlay.querySelector(".disc-mouth"), sub=overlay.querySelector(".disc-sub"), img=overlay.querySelector(".disc-bee");
   var words=String(text||"").split(/\s+/).filter(Boolean);
-  var vcfg={rate:1,gen:1,wsRate:.95,wsPitch:1}, vid=S.voice||"nova";  /* voix choisie, claire, sans déformation (lip-sync ok) */
+  var vcfg={rate:(DISC.lent?.82:1),gen:1,wsRate:(DISC.lent?.72:.95),wsPitch:1}, vid=S.voice||"nova";   /* 🐢 appel : « plus lentement » */  /* voix choisie, claire, sans déformation (lip-sync ok) */
   var netR=(vcfg.rate||1)*(vcfg.gen||1);
   var estDur=Math.min(12000, Math.round((900+text.length*68)/netR));
   var myReq=++_ttsReq; /* un ancien son/repli en retard est ignoré */
@@ -2713,6 +2720,8 @@ function discSpeak(text,lang){ /* parle + anime la bouche + sous-titres SYNCHRON
     /* TEMPS RÉEL : s'il reste des phrases de la réponse, on enchaîne TOUT DE SUITE la suivante
        (Bee a déjà commencé à parler/mimer sur la 1re phrase → plus d'attente de toute la tirade). */
     if(DISC._q&&DISC._q.length&&DISC.open&&myReq===_ttsReq){ var _nx=DISC._q.shift(); setTimeout(function(){ if(DISC.open)discSpeak(_nx,lang); },70); return; }
+    /* 📞 appel : après la parole, l'appel décide (écouter, ou raccrocher à la fin) */
+    if(DISC.apresParole&&DISC.open){ var _ap=DISC.apresParole; setTimeout(function(){ if(DISC.open&&DISC.apresParole===_ap)_ap(); },450); return; }
     if(DISC.handsFree&&DISC.open){ setTimeout(function(){ discListen(); },500); } }
   function startVisuals(dur,audio){ if(!DISC.open||myReq!==_ttsReq)return;
     /* PENDANT qu'elle parle : marionnette + bouche qui articule sur le SON RÉEL (comme Speak).
@@ -2923,6 +2932,178 @@ function openDiscussion(){ if(DISC.open)return; var c=coachLangMeta(); if(!c){ t
   var last=null; for(var i=S.coachMsgs.length-1;i>=0;i--){ if(S.coachMsgs[i].role==="bot"){ last=S.coachMsgs[i].text; break; } }
   setTimeout(function(){ discSay(last||coachGreeting(c), coachTtsLang()); },450);
 }
+/* ============ 📞 L'APPEL DE BEE / BOURRICOT (Kevin 3.10.2026) ============
+   « Intègre des exercices comme dans Duolingo, où Bee ou Bourricot te téléphone réellement et te tient une
+   conversation, une leçon, un exercice supplémentaire régulièrement… copie, améliore, intègre intelligemment. »
+   Inspiré de l'appel vidéo de Duolingo Max (payant chez eux) — ici GRATUIT et plus complet :
+   · la mascotte T'APPELLE : écran d'appel entrant qui sonne et vibre, après ta 1re leçon du jour ou à
+     l'heure que tu choisis ; « Plus tard » (rappel dans 1 h), « Pas aujourd'hui » ; et un rappel quotidien
+     dans le CALENDRIER du téléphone (il sonne même app fermée, un toucher rouvre l'appel) ;
+   · un appel STRUCTURÉ (≈ 3 min, 8 répliques) : bonjour → mini-leçon (un mot du thème ou un mot à revoir)
+     → exercice oral → conversation → au revoir avec le mot du jour ; le thème change chaque jour ;
+   · mains libres : elle parle (voix gratuite, bouche et sous-titres synchronisés), puis t'écoute toute seule ;
+     tu peux la couper en touchant 🎤, demander 🐢 plus lentement, 🆘 répéter plus simplement, répondre en
+     🇫🇷 si tu bloques, ou ⌨️ écrire (sans micro) ;
+   · récompenses : XP selon les répliques, 💎 au 1er appel du jour, série entretenue, 3 succès.
+   L'IA reçoit le mode « appel » + la phase (services/kdmc-router : consigne orale, 1-2 phrases, une question
+   à la fois). Mode enfant et langue des signes : pas d'appel (rien ne part vers une IA ; rien à entendre). */
+var APPEL=null, APPEL_TOURS=8;
+var APPEL_THEMES=["ta journée","la cuisine et les repas","tes loisirs","la famille et les amis","les voyages","la météo et les saisons",
+  "le travail et les études","faire les courses","la musique","le sport","les animaux","ta ville et ton quartier","les films et les séries","tes projets du week-end"];
+function appelTheme(){ return APPEL_THEMES[Math.floor(Date.now()/864e5)%APPEL_THEMES.length]; }
+function appelPhase(n){ return n<=0?"debut":n<=2?"lecon":n<=4?"exercice":n<APPEL_TOURS?"libre":"fin"; }
+function appelFaitAujourdhui(){ return !!(S.appels&&S.appels.jours&&S.appels.jours[today()]); }
+function appelPossible(){ return !!(ACC&&S.course&&COURSES[S.course]&&!coursSignes()&&!estEnfant()); }
+function appelSerieJours(){ var j=(S.appels&&S.appels.jours)||{}, n=0, d=new Date();
+  for(var i=0;i<400;i++){ var k=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); if(j[k]) n++; else if(i>0) break; d.setDate(d.getDate()-1); } return n; }
+function _appelChrono(){ if(!APPEL)return "0:00"; var s=Math.floor((Date.now()-APPEL.debut)/1000); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+
+/* ---- l'appel ENTRANT : ça sonne ---- */
+function appelEntrant(force){ if(APPEL||DISC.open||!appelPossible())return; if(!force&&document.querySelector(".modal,.appel-ov"))return;
+  var c=COURSES[S.course]; var ov=el("div","appel-ov"); ov.setAttribute("role","dialog"); ov.setAttribute("aria-label",MNAME()+" t'appelle");
+  ov.innerHTML='<div class="ap-top"><div class="ap-qui">'+esc(MNAME())+'</div><div class="ap-sous">t\'appelle… · '+esc(c.drapeau||"")+' '+esc(c.nom)+'</div></div>'+
+    '<div class="ap-av sonne">'+MASCOT("wave",170)+'</div>'+
+    '<div class="ap-theme">Petite leçon au téléphone · <b>'+esc(appelTheme())+'</b> · ~3 min</div>'+
+    '<div class="ap-btns"><div><button class="ap-rond ap-refus" aria-label="Refuser l\'appel">✕</button><span>Pas aujourd\'hui</span></div>'+
+    '<div><button class="ap-rond ap-decroche" aria-label="Décrocher">📞</button><span>Décrocher</span></div></div>'+
+    '<button class="ap-plustard">⏰ Rappelle-moi dans 1 h</button>';
+  document.body.appendChild(ov);
+  var k=0, son=function(){ tone([880,660],.35); setTimeout(function(){ tone([880,660],.35); },450); vibrate([400,200,400]); };
+  son(); var iv=setInterval(function(){ if(!ov.isConnected){ clearInterval(iv); return; } son();
+    if(++k>=12){ clearInterval(iv); ov.remove(); S.appels.report=Date.now()+3600e3; save(); toast("📞 Appel manqué — "+MNAME()+" te rappelle dans 1 h"); } },2200);
+  var fermer=function(){ clearInterval(iv); ov.remove(); };
+  ov.querySelector(".ap-decroche").onclick=function(){ fermer(); appelDemarrer(); };
+  ov.querySelector(".ap-refus").onclick=function(){ fermer(); S.appels.refus=today(); save(); toast(MG("Elle","Il")+" te rappellera demain 🙂"); };
+  ov.querySelector(".ap-plustard").onclick=function(){ fermer(); S.appels.report=Date.now()+3600e3; save(); toast("⏰ "+MNAME()+" te rappelle dans 1 h"); };
+  setTimeout(function(){ var b=ov.querySelector(".ap-decroche"); if(b)b.focus(); },100); }
+
+/* Faut-il que ça sonne maintenant ? (appelé après une leçon, au retour sur l'app, et chaque minute) */
+function appelVerifier(){ if(!appelPossible()||APPEL||DISC.open||appelFaitAujourdhui()||VIEW!=="home"||PICK)return;
+  var a=S.appels||{}; if(a.refus===today()||(a.report&&Date.now()<a.report)||a.off)return;
+  if(document.querySelector(".modal,.appel-ov,.disc-overlay"))return;
+  var du=false;
+  if(a.heure){ var p=String(a.heure).split(":"), t=new Date(); t.setHours(+p[0]||0,+p[1]||0,0,0); if(Date.now()>=t.getTime()) du=true; }
+  if(!du&&a.apresLecon!==false&&S.today&&(S.today.lessons|0)>0) du=true;
+  if(du) appelEntrant(false); }
+
+/* ---- l'appel EN COURS ---- */
+function appelDemarrer(){ if(APPEL||DISC.open||!appelPossible())return; var c=COURSES[S.course];
+  DISC.open=true; DISC.lent=false;
+  var ov=el("div","disc-overlay appel-live"); ov.setAttribute("role","dialog"); ov.setAttribute("aria-label","Appel avec "+MNAME());
+  ov.innerHTML='<div class="ap-tete"><span class="ap-rec">●</span> '+esc(MNAME())+' · '+esc(c.drapeau||"")+' '+esc(c.nom)+' · <span class="ap-chrono">0:00</span></div>'+
+    '<div class="disc-stage"><div class="disc-bee bee-rig" data-mascot="'+mascotCfg().id+'" data-art="'+MART()+'">'+beeRigHTML()+'</div></div>'+
+    '<div class="disc-sub" aria-live="polite"></div>'+
+    '<div class="ap-toi" aria-live="polite"></div>'+
+    '<div class="ap-etat" aria-live="polite">📞 Connexion…</div>'+
+    '<div class="ap-clavier" hidden><input class="disc-input ap-input" type="text" autocomplete="off" placeholder="Écris ta réponse…"><button class="ap-envoi" aria-label="Envoyer">➤</button></div>'+
+    '<div class="ap-outils"><button class="ap-o ap-lent" aria-pressed="false" title="Plus lentement">🐢</button><button class="ap-o ap-aide" title="Répète plus simplement">🆘</button>'+
+    '<button class="ap-micro" aria-label="Parler">🎤</button>'+
+    '<button class="ap-o ap-fr" aria-pressed="false" title="Je réponds en français">🇫🇷</button><button class="ap-o ap-kb" title="Écrire">⌨️</button></div>'+
+    '<button class="ap-raccroche" aria-label="Raccrocher">📞 Raccrocher</button>';
+  document.body.appendChild(ov);
+  APPEL={ov:ov, debut:Date.now(), tours:0, msgs:[], lang:c.ttsLang, enFr:false, fini:false, mots:0, pense:false};
+  setTimeout(function(){ var rg=ov.querySelector(".bee-rig"); if(rg) mascotAlive(rg,{}); },150);
+  APPEL.chronoIv=setInterval(function(){ var t=ov.querySelector(".ap-chrono"); if(t)t.textContent=_appelChrono(); },1000);
+  ov.querySelector(".ap-raccroche").onclick=function(){ appelTerminer(true); };
+  ov.querySelector(".ap-micro").onclick=function(){ if(APPEL&&!APPEL.pense) appelEcoute(); };
+  ov.querySelector(".ap-lent").onclick=function(){ DISC.lent=!DISC.lent; this.setAttribute("aria-pressed",String(DISC.lent)); this.classList.toggle("on",DISC.lent); toast(DISC.lent?"🐢 "+MNAME()+" parle plus lentement":"Vitesse normale"); };
+  ov.querySelector(".ap-fr").onclick=function(){ APPEL.enFr=!APPEL.enFr; this.setAttribute("aria-pressed",String(APPEL.enFr)); this.classList.toggle("on",APPEL.enFr); toast(APPEL.enFr?"🇫🇷 Tu peux répondre en français":"🎯 Tu réponds en "+c.nom.toLowerCase()); };
+  ov.querySelector(".ap-aide").onclick=function(){ if(APPEL&&!APPEL.pense) appelRepondre("Je n'ai pas compris, tu peux répéter plus simplement et plus lentement ?", true); };
+  ov.querySelector(".ap-kb").onclick=function(){ appelClavier(); };
+  var envoi=function(){ var i=ov.querySelector(".ap-input"); var t=(i.value||"").trim(); if(!t||APPEL.pense)return; i.value=""; appelRepondre(t); };
+  ov.querySelector(".ap-envoi").onclick=envoi; ov.querySelector(".ap-input").onkeydown=function(e){ if(e.key==="Enter")envoi(); };
+  if(!(window.SpeechRecognition||window.webkitSpeechRecognition)) appelClavier(true);
+  appelDemander(); }
+function appelClavier(ouvrir){ if(!APPEL)return; var k=APPEL.ov.querySelector(".ap-clavier"); k.hidden=ouvrir===true?false:!k.hidden;
+  if(!k.hidden){ var i=k.querySelector("input"); setTimeout(function(){ try{i.focus();}catch(_){} },50); } }
+function appelEtat(e){ if(!APPEL)return; var s=APPEL.ov.querySelector(".ap-etat"), m=APPEL.ov.querySelector(".ap-micro");
+  var t={pense:"💭 "+MNAME()+" réfléchit…", parle:"🔊 "+MNAME()+" parle — touche 🎤 pour l'interrompre", ecoute:"🎤 Je t'écoute… parle maintenant", attente:"Touche 🎤 pour répondre"}[e]||"";
+  if(s)s.textContent=t; if(m){ m.classList.toggle("rec",e==="ecoute"); m.disabled=(e==="pense"); } APPEL.pense=(e==="pense"); }
+function appelDemander(){ if(!APPEL||APPEL.fini)return; var c=COURSES[S.course], me=accMeta(ACC)||{};
+  var phase=appelPhase(APPEL.tours); appelEtat("pense"); var img=APPEL.ov.querySelector(".disc-bee"); if(img)img.classList.add("think");
+  var corps={mode:"appel", phase:phase, theme:appelTheme(), prenom:String(me.name||"").split(" ")[0], mascotte:mascotCfg().id,
+    lang:c.id, langName:c.nom, level:diffLabel(), levelIndex:diffTier(), words:masteredCount(),
+    weak:dueWords().slice(0,6).map(function(w){ return w.fr+" = "+w.t; }), messages:APPEL.msgs.slice(-12)};
+  fetch(SYNC_BASE+"/ai",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(corps)})
+    .then(function(r){ return r.json(); }).catch(function(){ return null; })
+    .then(function(j){ if(!APPEL||APPEL.fini)return; if(img)img.classList.remove("think");
+      var rep=(j&&j.ok&&j.reply)?String(j.reply):null;
+      if(!rep){ rep="Oh, la ligne est mauvaise… On se rappelle un peu plus tard ? À tout à l'heure !"; phase="fin"; APPEL.coupe=true; }
+      APPEL.msgs.push({role:"bot",text:rep});
+      DISC.apresParole=(phase==="fin")?function(){ appelTerminer(false); }:function(){ appelEcoute(); };
+      appelEtat("parle"); discSay(rep, coachTtsLang()); }); }
+function appelEcoute(){ if(!APPEL||APPEL.fini)return; var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(DISC.talking) discStopSpeaking();
+  if(APPEL.rec){ try{ APPEL.rec.stop(); }catch(_){} return; }
+  if(!SR){ appelClavier(true); appelEtat("attente"); return; }
+  var toi=APPEL.ov.querySelector(".ap-toi"); if(toi)toi.textContent="";
+  try{ var r=new SR(); APPEL.rec=r; r.lang=APPEL.enFr?"fr-FR":APPEL.lang; r.interimResults=true; r.continuous=false; r.maxAlternatives=1;
+    var dit="", err=null;
+    r.onresult=function(e){ var t=""; for(var i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; dit=t; if(toi)toi.textContent="🗣️ "+t; };
+    r.onerror=function(e){ err=e&&e.error; };
+    r.onend=function(){ if(!APPEL)return; APPEL.rec=null; if(APPEL.fini)return; var t=dit.trim();
+      if(t) appelRepondre(t);
+      else if(err==="not-allowed"||err==="service-not-allowed"){ toast("🎤 Micro refusé — écris ta réponse ⌨️"); appelClavier(true); appelEtat("attente"); }
+      else appelEtat("attente"); };
+    _sonEcoute(); r.start(); appelEtat("ecoute"); }
+  catch(e){ APPEL.rec=null; appelClavier(true); appelEtat("attente"); } }
+function appelRepondre(texte, aide){ if(!APPEL||APPEL.fini)return;
+  APPEL.msgs.push({role:"user",text:String(texte).slice(0,400)});
+  if(!aide){ APPEL.tours++; APPEL.mots+=String(texte).trim().split(/\s+/).filter(Boolean).length; }
+  var toi=APPEL.ov.querySelector(".ap-toi"); if(toi)toi.textContent="🗣️ "+texte;
+  appelDemander(); }
+function appelTerminer(raccroche){ if(!APPEL||APPEL.fini)return; var A=APPEL; A.fini=true;
+  if(A.rec){ try{ A.rec.abort(); }catch(_){} A.rec=null; }
+  DISC.apresParole=null; if(raccroche) discStopSpeaking(); clearInterval(A.chronoIv);
+  var secs=Math.round((Date.now()-A.debut)/1000), premier=!appelFaitAujourdhui(), xp=0, gem=0;
+  if(A.tours>=2&&!A.coupe){ xp=10+2*Math.min(A.tours,APPEL_TOURS); gem=premier?5:0;
+    S.xp+=xp; S.dailyXP+=xp; histAdd(xp); S.gems+=gem;
+    if(!S.appels.jours)S.appels.jours={}; S.appels.jours[today()]=1; S.appels.n=(S.appels.n|0)+1; S.appels.dernier=Date.now();
+    S.today.appels=(S.today.appels|0)+1; bumpStreak(); save(); checkAchv(); checkQuests(); }
+  var fin=el("div","ap-fin");
+  fin.innerHTML='<div class="mascot-mini big">'+MASCOT(xp?"party":"wave",120)+'</div>'+
+    '<h3>'+(xp?"📞 Appel terminé — bravo !":"📞 Appel terminé")+'</h3>'+
+    '<p class="mini">'+Math.floor(secs/60)+' min '+String(secs%60).padStart(2,"0")+' s · '+A.tours+' réplique'+(A.tours>1?'s':'')+' · '+A.mots+' mot'+(A.mots>1?'s':'')+' dits</p>'+
+    (xp?'<div class="ap-gain">+'+xp+' XP'+(gem?' · +'+gem+' 💎':'')+(appelSerieJours()>1?' · 📆 '+appelSerieJours()+' jours d\'appels':'')+'</div>'
+       :'<p class="mini">'+(A.coupe?"La ligne a coupé (IA indisponible) — rien n'est perdu, réessaie dans un moment.":"Réponds au moins 2 fois pour gagner des XP 🙂")+'</p>');
+  var re=el("button","btn-ghost"); re.textContent="🔁 Rappeler "+MNAME();
+  re.onclick=function(){ appelFermer(); setTimeout(appelDemarrer,200); };
+  var ok=el("button","btn-main"); ok.textContent="Continuer"; ok.onclick=appelFermer;
+  var cal=el("button","btn-ghost small"); cal.textContent="📅 Qu'"+MG("elle","il")+" m'appelle chaque jour"; cal.onclick=appelReglages;
+  fin.appendChild(ok); fin.appendChild(re); fin.appendChild(cal);
+  var setFin=function(){ if(!A.ov.isConnected)return; A.ov.querySelectorAll(".ap-outils,.ap-raccroche,.ap-clavier,.ap-etat,.ap-toi,.disc-stage").forEach(function(x){ x.remove(); }); A.ov.appendChild(fin); };
+  if(raccroche||!DISC.talking) setFin(); else setTimeout(setFin,400);
+  if(xp){ var bee=A.ov.querySelector(".disc-bee"); if(bee) beeSparkles(bee,10); tone([660,880,1180],.3); } }
+function appelFermer(){ var A=APPEL; if(!A)return; discStopSpeaking(); DISC.open=false; DISC.talking=false; DISC.apresParole=null; DISC.lent=false;
+  if(A.rec){ try{ A.rec.abort(); }catch(_){} } clearInterval(A.chronoIv);
+  try{ A.ov.remove(); }catch(_){} APPEL=null; render(); }
+
+/* ---- réglages : l'heure de l'appel, l'appel après la leçon, et le rappel CALENDRIER (sonne app fermée) ---- */
+function appelReglages(){ var a=S.appels; var m=modal();
+  m.body.innerHTML='<div class="mascot-mini">'+MASCOT("wave",90)+'</div><h3>📞 Les appels de '+esc(MNAME())+'</h3>'+
+    '<p class="mini">'+esc(MNAME())+' t\'appelle pour une petite leçon de 3 minutes : un mot du jour, un exercice à l\'oral et une vraie conversation.</p>'+
+    '<label class="mini ap-l"><input type="checkbox" id="apLecon"'+(a.apresLecon!==false&&!a.off?' checked':'')+'> Après ma 1re leçon du jour</label>'+
+    '<label class="mini ap-l">À heure fixe : <input type="time" id="apHeure" class="txt" value="'+esc(a.heure||"")+'" style="width:auto;display:inline-block"></label>'+
+    '<label class="mini ap-l"><input type="checkbox" id="apOff"'+(a.off?' checked':'')+'> Ne plus m\'appeler (je l\'appelle moi-même)</label>'+
+    '<p class="mini">📅 <b>Même app fermée</b> : ajoute le rendez-vous à ton calendrier — ton téléphone sonne chaque jour à l\'heure choisie, un toucher et l\'appel commence.</p>';
+  var cal=el("button","btn-ghost"); cal.textContent="📅 Ajouter au calendrier"; cal.onclick=function(){ var h=m.body.querySelector("#apHeure").value||"18:30"; a.heure=h; save(); appelCalendrier(h); };
+  var go=el("button","btn-main"); go.textContent="📞 Appeler "+MNAME()+" maintenant"; go.onclick=function(){ m.close(); appelDemarrer(); };
+  var ok=el("button","btn-ghost"); ok.textContent="Enregistrer";
+  ok.onclick=function(){ a.apresLecon=m.body.querySelector("#apLecon").checked; a.heure=m.body.querySelector("#apHeure").value||""; a.off=m.body.querySelector("#apOff").checked; save(); m.close(); toast("📞 C'est noté"); };
+  m.body.appendChild(go); m.body.appendChild(ok); m.body.appendChild(cal); }
+function appelCalendrier(h){ var p=String(h||"18:30").split(":"), d=new Date(); d.setHours(+p[0]||18,+p[1]||30,0,0); if(d<new Date()) d.setDate(d.getDate()+1);
+  var z=function(n){ return String(n).padStart(2,"0"); };
+  var loc=function(x){ return x.getFullYear()+z(x.getMonth()+1)+z(x.getDate())+"T"+z(x.getHours())+z(x.getMinutes())+"00"; };
+  var n=new Date(), utc=n.getUTCFullYear()+z(n.getUTCMonth()+1)+z(n.getUTCDate())+"T"+z(n.getUTCHours())+z(n.getUTCMinutes())+"00Z";
+  var url="https://lingua.kd-mc.com/#appel";
+  var ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//KDMC//Lingua//FR","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+    "UID:lingua-appel-"+String(ACC||"moi").replace(/[^a-z0-9-]/gi,"")+"@kd-mc.com","DTSTAMP:"+utc,"DTSTART:"+loc(d),"DTEND:"+loc(new Date(d.getTime()+5*60000)),
+    "RRULE:FREQ=DAILY","SUMMARY:📞 "+MNAME()+" t'appelle — KDMC Lingua","DESCRIPTION:Ta petite leçon au téléphone (3 min) : "+url,"URL:"+url,
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+MNAME()+" t'appelle !","TRIGGER:PT0M","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  try{ var b=new Blob([ics],{type:"text/calendar;charset=utf-8"}), a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="appel-"+mascotCfg().id+".ics";
+    document.body.appendChild(a); a.click(); setTimeout(function(){ try{ URL.revokeObjectURL(a.href); a.remove(); }catch(_){} },4000);
+    toast("📅 Ouvre le fichier et touche « Ajouter » : "+MNAME()+" sonnera chaque jour à "+h); }
+  catch(e){ toast("Calendrier indisponible sur ce navigateur"); } }
 /* ============ 📖 HISTOIRES DE LA RUCHE — Bee raconte, tu comprends, tu gagnes ============
    Histoires 100% originales (data.js STORIES) : chaque ligne est DITE dans la langue
    cible (voix de Bee pour ses répliques) avec le français en dessous, puis un petit
@@ -3636,7 +3817,7 @@ function finishLesson(){ var L=LESSON;
   /* Coffre BONUS à ouvrir soi-même : le geste rend la récompense satisfaisante, et son
      contenu dépend VRAIMENT de la performance (or = zéro faute). */
   coffreLecon(L,m.body);
-  var b=el("button","btn-main"); b.textContent="Continuer"; b.onclick=function(){ m.close(); render(); }; m.body.appendChild(b);
+  var b=el("button","btn-main"); b.textContent="Continuer"; b.onclick=function(){ m.close(); render(); setTimeout(appelVerifier,1800); }; m.body.appendChild(b);
   setTimeout(function(){ var mi=m.body.querySelector(".bee-img"); if(mi){ beeAnimate(mi,"hop"); if(L.wrong===0)beeSparkles(mi,10); }
     /* Fin de leçon : le compagnon fait la fête aussi ET Bee annonce le résultat à voix haute */
     var cr=document.querySelector(".bee-companion .bee-rig"); if(cr)beeMove(cr, L.wrong===0?"dance":"jump", 3200); },200);
@@ -3755,6 +3936,12 @@ function boot(){ app=document.getElementById("app"); appliquerTheme(); cercleLir
   /* 👥 présence du cercle : toutes les 45 s tant que l'app est visible (jamais cachée). */
   setInterval(function(){ cercleBattre(false); },45000);
   setTimeout(cercleAccueilInvitation,1800); setTimeout(function(){ cercleBattre(true); },2600); setTimeout(kdmcProlonger,4000);
+  /* 📞 l'appel de la mascotte : lien du calendrier (#appel), au retour sur l'app, à l'heure choisie */
+  var _appelLien=function(attente){ if(!/^#appel$/.test(location.hash||""))return false; try{ history.replaceState(null,"",location.pathname+location.search); }catch(_){} setTimeout(function(){ appelEntrant(true); },attente); return true; };
+  if(!_appelLien(2200)) setTimeout(appelVerifier,7000);
+  window.addEventListener("hashchange",function(){ _appelLien(300); });   /* app déjà ouverte quand on touche le rappel du calendrier */
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden) setTimeout(appelVerifier,3000); });
+  setInterval(appelVerifier,60000);
   setTimeout(majPastille,3000);
   setInterval(checkUpdate,30*60000);
 }

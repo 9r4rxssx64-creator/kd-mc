@@ -9,6 +9,17 @@
 
 ---
 
+## ✅ Lingua v2.133.0 (3.10) — Bee (ou Bourricot) t'appelle : fait
+
+- **Ça sonne** : après ta 1re leçon du jour, Bee t'appelle (écran d'appel, sonnerie, vibration). Tu
+  décroches, « Plus tard » (rappel dans 1 h) ou « Pas aujourd'hui ».
+- **L'appel (3 minutes)** : elle te dit bonjour, t'apprend un mot du thème du jour, te fait un petit
+  exercice à l'oral, discute avec toi, puis te dit au revoir avec le mot du jour. Tu parles, elle t'écoute
+  toute seule. Boutons : 🐢 plus lentement, 🆘 répète plus simplement, 🇫🇷 répondre en français, ⌨️ écrire.
+- **Même app fermée** 👆 (1 fois, si tu veux) : Lingua → carte « 📞 Appeler Bee » → choisis l'heure →
+  « 📅 Ajouter au calendrier ». Ton iPhone sonnera chaque jour à cette heure, un toucher lance l'appel.
+- Récompenses : XP selon tes réponses, 💎 au 1er appel du jour, 3 nouveaux trophées. Tout est gratuit.
+
 ## ✅ Lingua v2.132.0 (2.10, 23h) — ce qui manquait encore : fait
 
 - **Vérifié « comme toi » (ta règle : « Vérifie réellement tjs. Comme moi iOS, android, navigateur »)** : un

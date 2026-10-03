@@ -280,6 +280,31 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* Mode discussion 🎬 : Bee en gros plan, bouche animée quand elle parle */
 .coach-cine{margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:1px;background:linear-gradient(90deg,var(--violet),#9333ea);border-radius:12px;padding:8px 12px;color:#fff;font-size:17px;font-weight:800;cursor:pointer;min-height:48px}
 .coach-cine span{font-size:10px;font-weight:700}
+.appel-ov{position:fixed;inset:0;z-index:1100;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 36px) 20px calc(env(safe-area-inset-bottom) + 28px);background:radial-gradient(120% 90% at 50% 25%,#1f3b2e 0%,#0f1d17 60%,#08110d 100%);color:#fff;text-align:center}
+.appel-ov .ap-qui{font-size:34px;font-weight:800;letter-spacing:.3px}.appel-ov .ap-sous{opacity:.8;margin-top:6px}
+.appel-ov .ap-av{width:190px;height:190px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06)}
+.appel-ov .ap-av.sonne{animation:apSonne 1.6s ease-in-out infinite}
+@keyframes apSonne{0%,100%{box-shadow:0 0 0 0 rgba(52,199,89,.55)}50%{box-shadow:0 0 0 26px rgba(52,199,89,0)}}
+@media (prefers-reduced-motion:reduce){.appel-ov .ap-av.sonne{animation:none;box-shadow:0 0 0 6px rgba(52,199,89,.5)}}
+.appel-ov .ap-theme{opacity:.85;font-size:15px;max-width:320px}
+.ap-btns{display:flex;gap:70px;justify-content:center}.ap-btns>div{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;opacity:.95}
+.ap-rond{width:76px;height:76px;border-radius:50%;border:0;font-size:32px;color:#fff;cursor:pointer}
+.ap-refus{background:#ff3b30}.ap-decroche{background:#34c759}
+.ap-plustard{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:10px 18px;font-size:14px;cursor:pointer}
+.appel-live .ap-tete{color:#dfe7ee;font-weight:700;margin-bottom:6px}.appel-live .ap-rec{color:#ff3b30}
+.appel-live .ap-toi{min-height:22px;color:#b9f3c9;font-size:15px;text-align:center;max-width:92vw;margin:6px 0}
+.appel-live .ap-etat{color:#cfd8e0;font-size:14px;min-height:20px;margin:4px 0 10px}
+.appel-live .ap-clavier{display:flex;gap:8px;width:min(92vw,520px);margin-bottom:10px}.appel-live .ap-clavier[hidden]{display:none}
+.appel-live .ap-clavier input{flex:1}.appel-live .ap-envoi{border:0;border-radius:12px;padding:0 16px;background:#1cb0f6;color:#fff;font-size:18px}
+.ap-outils{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.ap-o{width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:22px;cursor:pointer}
+.ap-o.on{background:#1cb0f6;border-color:#1cb0f6}
+.ap-micro{width:84px;height:84px;border-radius:50%;border:0;background:#1cb0f6;color:#fff;font-size:36px;cursor:pointer;box-shadow:0 6px 18px rgba(28,176,246,.35)}
+.ap-micro.rec{background:#34c759;animation:apSonne 1.2s ease-in-out infinite}.ap-micro:disabled{opacity:.45}
+.ap-raccroche{border:0;border-radius:999px;background:#ff3b30;color:#fff;font-weight:700;padding:12px 26px;font-size:16px;cursor:pointer}
+.ap-fin{display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff;text-align:center;max-width:420px}
+.ap-fin .mascot-mini,.ap-fin .mascot-mini.big{width:150px;height:150px}.ap-fin .mascot-mini .mascot{width:150px;height:150px}.ap-fin h3{margin:6px 0 0}
+.ap-fin .ap-gain{font-size:20px;font-weight:800;color:#ffd84d}.ap-l{display:block;margin:8px 0}
 .disc-overlay{position:fixed;inset:0;z-index:1000;background:radial-gradient(120% 90% at 50% 28%,#243447 0%,#0f1720 62%,#0a1016 100%);display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 12px);animation:discIn .3s ease-out}
 @keyframes discIn{0%{opacity:0}100%{opacity:1}}
 .disc-close{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px;width:44px;height:44px;border-radius:50%;background:var(--card2);color:var(--tx);font-size:18px;border:1px solid var(--line);cursor:pointer;z-index:2}
@@ -966,13 +991,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 </head>
 <body>
 <div id="app"></div>
-<script src="data.js?v=v2.132.0"></script>
-<script src="histoires-langues.js?v=v2.132.0"></script>
-<script src="mc-voix.js?v=v2.132.0"></script>
-<script src="sources-langues.js?v=v2.132.0"></script>
-<script src="data-mc.js?v=v2.132.0"></script>
-<script src="data-lsf.js?v=v2.132.0"></script>
-<script src="translit.js?v=v2.132.0"></script>
+<script src="data.js?v=v2.133.0"></script>
+<script src="histoires-langues.js?v=v2.133.0"></script>
+<script src="mc-voix.js?v=v2.133.0"></script>
+<script src="sources-langues.js?v=v2.133.0"></script>
+<script src="data-mc.js?v=v2.133.0"></script>
+<script src="data-lsf.js?v=v2.133.0"></script>
+<script src="translit.js?v=v2.133.0"></script>
 <script>
 /* Icône iOS = la mascotte Bee 🐝 (création originale KDMC) */
 (function(){try{

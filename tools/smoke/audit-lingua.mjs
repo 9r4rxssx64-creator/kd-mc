@@ -100,11 +100,14 @@ ok(`1.5 page prête en ${(msCharge / 1000).toFixed(1)} s (mesure, pas un seuil)`
 
 /* ─── 2. Créer un compte (prénom + nom + code) ───────────────────────────── */
 const NOM = 'Audit Lingua';                              // compte de test, aucune donnée réelle
-/* Code à 5 chiffres, PAS 6 (02.10) : dès 6 chiffres l'app crée un vrai compte KDMC sur le domaine
-   (/__sso/issue → écritures KV). La sonde en créait un « Audit Lingua » à chaque passage avec un code
-   différent : dès le 2e, le domaine répondait « ce nom a déjà un compte » et la sonde restait bloquée,
-   en plus de manger le quota d'écritures. 5 chiffres = compte Lingua seul, rien côté comptes KDMC. */
-const CODE = String(10000 + (Date.now() % 90000));       // code jetable, 5 chiffres
+/* SANS CODE (3.10, mesuré run 37081699075 : 21 rouges en cascade) : depuis la v2.130 « un seul compte par
+   personne », un code de 6 chiffres crée un VRAI compte KDMC sur le domaine (/__sso/issue, écritures KV —
+   interdit à une sonde, leçon #384) et un code de 1 à 5 chiffres est REFUSÉ par l'app (« au moins 6 chiffres »)
+   — l'ancien code jetable à 5 chiffres bloquait donc la sonde dès l'écran de création. Le code est facultatif :
+   sans code, c'est un compte local, rien côté domaine. On le prouve (2.3 : 0 appel /__sso/issue). */
+const CODE = '';
+const postesCompte = [];
+ctx.on('request', (r) => { if (r.method() === 'POST' && /\/__sso\/(issue|login)\b/.test(r.url())) postesCompte.push(new URL(r.url()).pathname); });
 await clicSel('.acc-card.add');
 await attends(900);
 let creable = true;
@@ -112,7 +115,7 @@ try {
   await page.waitForSelector('#acPrenom', { timeout: 8000 });
   await page.fill('#acPrenom', 'Audit');
   await page.fill('#acNom', 'Lingua');
-  await page.fill('#acCode', CODE);
+  /* pas de code : compte local (voir ci-dessus) */
   /* Les conditions sont obligatoires depuis le 27.09 (#4111). Sans cette case, « Créer mon compte »
      répond « Coche les conditions » et la sonde voyait 23 faux rouges en cascade (audit du 02.10). */
   await page.evaluate(() => { const c = document.querySelector('#acCgu'); if (c) c.checked = true; });
@@ -124,6 +127,7 @@ const arrive = !!(await page.$('.course-card'));
 /* Si on n'arrive pas au choix de la langue, on DIT pourquoi : le message affiché à l'écran. */
 const pourquoi = arrive ? '' : await page.evaluate(() => [...document.querySelectorAll('.toast, .modal')].map((e) => e.textContent.trim()).filter(Boolean).join(' | ').slice(0, 160)).catch(() => '');
 chk(arrive, '2.2 après création, on arrive au choix de la langue' + (pourquoi ? ` — l'écran dit : « ${pourquoi} »` : ''));
+chk(postesCompte.length === 0, `2.3 aucun compte créé sur le domaine (${postesCompte.length} appel(s) /__sso/issue — une sonde n'en crée jamais, leçon #384)`);
 
 /* ─── 3. LES LANGUES, une par une, en entrant vraiment dedans ────────────── */
 const noms = await page.$$eval('.course-card', (els) => els.map((e) => (e.querySelector('.cnom')?.textContent || e.textContent || '').split('\n')[0].trim()));
@@ -358,23 +362,16 @@ try {
       `9.2 relecture en ligne : ${jg && jg.ok ? (jg.data ? 'la sauvegarde revient à l\'identique' : 'réponse OK mais VIDE') : 'refusée (' + (jg && jg.reason || get.status()) + ')'}`);
 } catch (e) { ko('9.✗ mémoire en ligne injoignable : ' + String(e.message).slice(0, 70)); }
 
-/* ─── 10. « Voir mon code » (v2.126.0) sur le vrai domaine ───────────────── */
+/* ─── 10. Le compte de la sonde est LOCAL : le Profil le dit, rien côté domaine ───
+   (v2.130+ : « Voir mon code » n'apparaît qu'avec un code = compte KDMC ; une sonde n'en a jamais, leçon #384.
+   Le chemin « code → affiché après l'appui » est prouvé en local par test:lingua-mon-code, 20/0.) */
 await onglet('Profil'); await attends(1200);
-const aVoir = (await texte()).includes('Voir mon code');
-chk(aVoir, '10.1 le Profil propose « Voir mon code »');
-if (aVoir) {
-  await clicTexte('Voir mon code');
-  await attends(800);
-  const lireModale = () => page.evaluate(() => { const m = [...document.querySelectorAll('.modal')].pop(); return m ? [...m.querySelectorAll('.txt')].map((i) => i.value) : []; }).catch(() => []);
-  const avantC = await lireModale();
-  chk(!avantC.includes(CODE), '10.2 le code reste masqué tant qu\'on ne le demande pas');
-  chk(avantC.includes(NOM), `10.3 le prénom + nom exact enregistré est rappelé (« ${NOM} »)`);
-  await page.evaluate(() => { const m = [...document.querySelectorAll('.modal')].pop();
-    [...(m?.querySelectorAll('button') || [])].find((b) => /Afficher mon code/i.test(b.textContent))?.click(); }).catch(() => {});
-  await attends(600);
-  chk((await lireModale()).includes(CODE),
-      '10.4 après l\'appui, le code du compte s\'affiche — « quel est mon code ? » a enfin une réponse dans l\'app');
-} else gris('10.2-10.4 « Voir mon code » absent : NON MESURÉ (déploiement pas encore propagé ?)');
+const tProfil = await texte();
+chk(/Mémoire en ligne/.test(tProfil) && /inactive/i.test(tProfil) && /Activer/.test(tProfil),
+    '10.1 le Profil dit « Mémoire en ligne inactive » et propose « Activer » (compte local de la sonde : rien côté domaine, par choix)');
+chk(!/Voir mon code/.test(tProfil), '10.2 « Voir mon code » n\'apparaît PAS sans code (il n\'y aurait rien à voir) — cohérent');
+const stocke = await page.evaluate(() => { try { const a = JSON.parse(localStorage.getItem('lingua_g_accounts') || '[]'); const c = JSON.parse(localStorage.getItem('lingua_g_current') || 'null'); const x = a.find((y) => y.id === c); return x ? { nom: x.name, code: x.code || '', kdmc: x.kdmcUid || '' } : null; } catch { return null; } }).catch(() => null);
+chk(stocke && stocke.nom === NOM && stocke.code === '' && stocke.kdmc === '', `10.3 le compte de la sonde est bien LOCAL (nom « ${NOM} », sans code, sans compte KDMC) — ${JSON.stringify(stocke)}`);
 
 /* ─── 11. Hors-ligne ─────────────────────────────────────────────────────── */
 const sw = await page.evaluate(() => navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then((r) => r.length) : 0).catch(() => 0);

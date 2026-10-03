@@ -358,6 +358,12 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
 
+### 2026-10-03 (fin) — Arbre v3.65 : AD06 — site fermé aux robots et à l'étranger, outil de demande
+- **Mesuré** : `archives06.fr` renvoie un captcha F5 ; l'AD06 a bloqué les connexions internationales le 9.04.2026 (moissonnage par robots d'IA, aucune date de
+  réouverture — annonce relayée par RFGénéalogie). `basesdocumentaires-cg06.fr` redirige vers le même site. Pas de contournement (règle), donc pas de
+  collecte automatique AD06. **Outil** : fiche → 🔎 → « 🏛️ Obtenir l'acte aux Archives du 06 » = message prêt (naissance/mariage/décès, rempli depuis la fiche) +
+  formulaire de contact AD06 + FranceArchives + Geneanet + Filae ; Kevin envoie l'image reçue dans la conversation. Les 4 actes prioritaires sont dans KEVIN_ACTIONS_TODO.
+
 ### 2026-10-03 (fin) — Arbre v3.64 : CAUSE TROUVÉE du « Local » permanent
 - **Cause** : `purgeObsoleteSeeds` et `SEED_OBSOLETE` étaient déclarés À L'INTÉRIEUR de `startApp` ; `cloudPull` et `refreshFromDomain` les
   appellent → `ReferenceError` à chaque nouveauté reçue du nuage, AVANT l'enregistrement et le dessin (appareil en retard : 164 fiches au lieu de 167,

@@ -3962,3 +3962,18 @@ une capture. Je le relie aux deux fiches et je lis les noms des parents.
 6. **Marie-France ‹employé›** : sœur de Jean-Marie (retenu) ou son épouse ? (le trait du dessin manuscrit est ambigu).
 7. **Sur ton téléphone** : si la pastille reste « Local », ouvre Outils → « Dernière erreur » et dis-moi ce qu'elle écrit.
 
+### Archives du 06 (AD06) — pourquoi c'est fermé, et ce que tu peux faire en 2 minutes (3.10.2026)
+
+**Fait mesuré** : archives06.fr répond par un captcha (« testing whether you are a human visitor ») et l'AD06 a **bloqué les connexions internationales
+depuis le 9 avril 2026** (moissonnage massif par des robots d'IA ; aucune date de réouverture). Je ne contourne ni captcha ni blocage (ni VPN) : c'est
+une règle ferme. Ce qui est possible : **je prépare tout, tu fais le clic**.
+- 👤 **Dans l'arbre** : fiche → 🔎 → **« 🏛️ Obtenir l'acte aux Archives du 06 »** : message prêt (naissance / mariage / décès, déjà rempli avec les dates et la
+  filiation connues) → **📋 Copier** → coller dans le [formulaire de l'AD06](https://archives06.fr/wform/wform/fill/contact) (le formulaire est fait pour les
+  demandes de recherche à distance) → ajouter ton e-mail → envoyer. Réponse : copie de l'acte, ou cote + numéro.
+- 👤 **Les 4 actes qui débloquent le plus** (à demander en priorité) : ① **décès de Jean-Baptiste ‹employé›, Nice, 9.04.1903** et ② **naissance de Philippe Laurent
+  Jérôme ‹employé›, Nice, vers 1850** (relient la branche de 14 personnes de Monaco au tronc) ; ③ **décès de Jean ‹employé›, Nice, 30.03 ou 30.09.1881**
+  (tranche la date) ; ④ **naissance de Judith ‹employé›, Beaulieu-sur-Mer, 2 ou 3 février 1892** (tranche la date).
+- 👤 **Autres voies, si tu préfères chercher toi-même** : FranceArchives (lieu de conservation « Archives des Alpes-Maritimes »), registres numérisés sur
+  Geneanet, Filae (Nice : plus de 100 000 actes numérisés, payant). Dès que tu as l'image ou le PDF : **envoie-le moi dans la conversation**, je le lis et
+  j'intègre l'information avec sa cote.
+

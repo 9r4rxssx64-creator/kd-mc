@@ -37,8 +37,8 @@
 | Gardes / tests | **155** fichiers, **223** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **195** dont **117** ouvertes | `pipeline/sessions.json` |
-| `CLAUDE.md` rechargé à chaque message | **71 317 o ≈ 20 376 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **645 138 o** | `wc -c` |
+| `CLAUDE.md` rechargé à chaque message | **71 897 o ≈ 20 542 tokens** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **647 281 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)

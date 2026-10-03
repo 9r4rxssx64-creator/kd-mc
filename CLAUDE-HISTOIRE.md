@@ -3788,6 +3788,33 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 
 ---
 
+## 🌳 RÈGLE ABSOLUE — ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE, ET EXPLOITER CHAQUE LIEN QUI MARCHE JUSQU'AU BOUT (Kevin 2026-10-03, ABSOLUE)
+
+> **« Ajoute toujours intelligemment les nouveaux quand l'info est sûre. Profite du lien pour faire toutes les recherches, vérifications, etc. Note le. »** — Kevin 2026-10-03, après la lecture de l'acte de naissance de Guy (Poissy 1918) qui nommait ses parents.
+
+**Ajouter sans demander** une personne nouvelle quand elle est **sûre** :
+- « sûre » = nommée par un **acte d'état civil lu** (naissance, mariage, décès, mention en marge), un
+  **texte officiel** (Journal de Monaco, ordonnance, Journal officiel) ou **plusieurs sources
+  concordantes** dont une officielle. Un arbre en ligne seul, un homonyme, une date « probable » =
+  **pas sûr** → on le note dans la fiche comme piste, on ne crée personne.
+- « intelligemment » : chercher d'abord si elle existe déjà (même prénom + nom → on relie, on ne
+  double pas — `ref` dans le paquet) ; relier père / mère / conjoint ; ne remplir que ce que l'acte
+  dit ; une note qui cite la source mot pour mot ; le lien de l'acte dans « Actes / sources » ;
+  essai à blanc, écriture, puis rejouer = 0 à écrire.
+- On le dit ensuite à Kevin (qui a été ajouté, d'après quel acte) — on ne lui demande pas la permission.
+
+**Un lien qui marche = une porte à exploiter jusqu'au bout** : quand une source s'ouvre (ex. les
+Archives des Yvelines via la visite honnête depuis la CI, entrée `visite` du workflow `arbre-nuage`),
+on s'en sert tout de suite pour **toutes** les recherches et vérifications qu'elle permet (registres
+voisins, tables décennales, mariages, mentions en marge, frères et sœurs, parents), sans attendre
+qu'on le demande, et on intègre le résultat selon la règle ci-dessus.
+
+Premier cas (3.10.2026) : Armand Édouard DESARZENS (° Lausanne 17.04.1892, mécanicien) et
+Angéline Suzanne LEGRAND (21 ans en 1918, dactylographe), parents de Guy, ajoutés d'après l'acte
+n° 35 de Poissy 1918 — 126 → 128 fiches, relecture conforme, rejouer = 0.
+
+---
+
 ## 🚀 RÈGLE ABSOLUE — AUTONOMIE TOTALE TOUJOURS PARTOUT (Kevin 2026-05-07, MAÎTRESSE)
 
 > **"Autonomie totale toujours partout."** — Kevin 2026-05-07

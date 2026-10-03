@@ -131,5 +131,20 @@ dit(/64 sur 100/.test(voc) && /moins 1,3 pour cent/.test(voc) && /robot 4/.test(
 dit(ia.lireContreAvis('<think>hmm</think>{"avis":"non","raison":"pari"}').avis === 'NON' && ia.lireContreAvis('peut-être') === null, 'contre-avis : OUI/NON lu, réponse floue ignorée');
 dit(ia.texteReponseIa({ output: [{ type: 'reasoning', content: [{ type: 'reasoning_text', text: 'X' }] }, { type: 'message', content: [{ type: 'output_text', text: 'Y' }] }] }) === 'Y', 'réponse gpt-oss (Responses API) : texte final lu, raisonnement ignoré');
 
+console.log('\n=== 9. Sources de relais (vraies réponses du 3.10) ===');
+const cdc = { code: 0, result: { data: [{ i: 'ETH_USDT', a: '2670.38', c: '-0.0143', vv: '69011665.95' }, { i: 'BTCUSD-PERP', a: '84518.0', c: '-0.0046' }, { i: 'BTC_USDT', a: '84538.42', c: '-0.0048', vv: '208382921.54' }, { i: 'PEPE_USDT', a: '0.00001', c: '0.4' }] } };
+const lc = ia.lireCryptoComTickers(cdc);
+dit(lc.length === 2 && lc[0].paire === 'BTC/USDT' && lc[0].prix === 84538.42 && lc[0].var24h === -0.48 && lc[1].var24h === -1.43, 'Crypto.com : paires liquides seulement, variation en % (−0,0048 → −0,48 %)');
+const cp = ia.lireCoinpaprikaGlobal({ market_cap_usd: 3009222774304, market_cap_change_24h: -0.5, bitcoin_dominance_percentage: 56.42 });
+dit(cp && cp.dom_btc === 56.42 && cp.var24h === -0.5, 'CoinPaprika : capitalisation, variation, dominance BTC');
+const fk = ia.lireFundingKraken({ tickers: [{ symbol: 'PF_ETHUSD', fundingRate: 1, markPrice: 2 }, { symbol: 'PF_XBTUSD', fundingRate: -0.6236922938033616, markPrice: 84519.55529683831 }] });
+dit(Math.abs(fk - (-0.6236922938033616 / 84519.55529683831 * 8)) < 1e-15 && fk < 0 && fk > -0.001, 'Kraken : financement absolu converti en relatif sur 8 h');
+const cb = ia.lireCboe({ data: { symbol: '^SPX', current_price: 7722.7202, price_change_percent: 0.734 } }, 'S&P 500');
+dit(cb && cb.cloture === 7722.7202 && cb.var_jour === 0.734 && cb.nom === 'S&P 500', 'Cboe : S&P 500 et sa variation du jour');
+dit(ia.lireGoldApi({ price: 4141.799805 }).cloture === 4141.799805 && ia.lireFrankfurter({ rates: { USD: 1.1225 } }).cloture === 1.1225, 'or (gold-api) et EUR/USD (BCE)');
+const bg = ia.bougiesCryptoCom({ result: { data: [{ t: 2, o: '2', h: '3', l: '1', c: '2.5', v: '9' }, { t: 1, o: '1', h: '2', l: '0.5', c: '2', v: '4' }] } });
+dit(bg.length === 2 && bg[0][0] === 1 && bg[1][2] === '3' && bg[1][4] === '2.5', 'bougies Crypto.com au format Binance, triées dans le temps');
+dit(ia.lireCryptoComTickers({}) === null && ia.lireCoinpaprikaGlobal({}) === null && ia.lireFundingKraken({}) === null, 'réponse inattendue → vide, jamais un faux chiffre');
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

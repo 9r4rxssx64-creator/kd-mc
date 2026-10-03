@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (00h40) — Crypto : 1er journal réel lu en D1 → relais de sources + IA réparée (bot v1.5.1)
+
+Lu en vrai (Cloudflare MCP, base kdmc-bot) après le réveil de 00h00 UTC :
+- 1 réveil `cron` → `attente` (« moins de 12 h d'essai ») ; 6 relevés ; état repris du KV.
+- **La décision de 20h00 venait de la RÈGLE DE SECOURS** (`echec_ia` : « réponse sans JSON lisible ») :
+  p2 (le moins bon) copie la stratégie de p3 (le meilleur, 9 707 $).
+- Sources : alternative.me + 3 RSS OK ; **Binance 403, CoinGecko 429, OKX 429, Stooq 404** → pas de prix
+  BTC (`btc0` null, `releves.btc` null).
+- Capitaux papier à 00h00 : p1 7 132 $, p2 10 000 (redémarré), p3 9 707, p4 7 834, p5 7 227 (départ 10 000).
+Corrigé (formats relevés sur les vraies réponses du 3.10) :
+- Relais par donnée (`lireEnRelais`) : Crypto.com (prix), CoinPaprika (global), Kraken Futures (financement,
+  converti en relatif 8 h), Cboe (S&P 500, Nasdaq 100, VIX), gold-api (or), BCE/Frankfurter (EUR/USD) ;
+  Stooq retiré (timeout). La page affiche la source qui a servi (« ✅ Crypto.com »).
+- Bougies (`bougies()`) : Binance puis Crypto.com → l'Analyse expert et le scanner remarchent depuis Cloudflare.
+- IA : 1 500 jetons + `/no_think` ; relais gpt-oss-120b avant la règle de secours ; contre-avis toujours par
+  l'autre famille (Qwen relit gpt-oss) ; la cause d'un échec est gardée (« réponse VIDE … »).
+- Gardes : bot-ia 69/0, routeur 44/0 (§ 10), bot 61/0, page 28/0 ; sabotages relais/gpt-oss → rouges. Leçon #393.
+
+---
+
 ## 2026-10-02 (22h30 UTC) — Kevin : « Intègre toujours toutes les IA gratuites, la conférence… la meilleure, la plus compétente, travaille. Pour toutes les apps, et les futures. Va plus loin. »
 
 - **Noté** : RÈGLE ABSOLUE « conférence des IA gratuites » (CLAUDE-HISTOIRE + index), registre des gardes, mémoire durable.

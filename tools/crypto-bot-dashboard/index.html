@@ -278,7 +278,7 @@
   <div id="fatal" class="err hid"></div>
 </div>
 
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.0" data-color="#e8b830" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.1" data-color="#e8b830" defer></script>
 <script>
 (function(){
   var API = location.origin, GRANT_KEY = 'kdmc_admin_grant', SSO_KEY = 'kdmc_sso_pass', lastStatus = '';
@@ -686,7 +686,7 @@
       var ac=m.actus||[];
       $('mkActus').innerHTML=ac.length?ac.slice(0,12).map(function(a){ var t=esc(a.titre); var l=/^https:\/\//.test(a.lien||'')?'<a href="'+esc(a.lien)+'" target="_blank" rel="noopener noreferrer" style="color:var(--txt);text-decoration:none">'+t+'</a>':t; return '<div class="coin" style="display:block"><div style="font-size:13.5px">'+l+'</div><div class="px">'+esc(a.source)+'</div></div>'; }).join(''):'<div class="sub">Aucune actualité reçue.</div>';
       var so=m.sources||{};
-      $('mkSources').innerHTML=Object.keys(so).map(function(k){ var ok=so[k]==='ok'; return '<div class="coin"><span class="px" style="color:var(--txt)">'+esc(k)+'</span><span class="tag '+(ok?'t-buy':'t-sell')+'">'+(ok?'✅ répond':'❌ '+esc(so[k]))+'</span></div>'; }).join('');
+      $('mkSources').innerHTML=Object.keys(so).map(function(k){ var ok=/^ok/.test(String(so[k])); var via=(String(so[k]).match(/^ok \(([^;)]+)/)||[])[1]; return '<div class="coin"><span class="px" style="color:var(--txt)">'+esc(k)+'</span><span class="tag '+(ok?'t-buy':'t-sell')+'">'+(ok?'✅ '+esc(via||'répond'):'❌ '+esc(so[k]))+'</span></div>'; }).join('');
     }).catch(function(){ $('mkCryptos').innerHTML='<div class="sub">Le domaine ne répond pas.</div>'; });
   }
   window.loadLiens = loadLiens;

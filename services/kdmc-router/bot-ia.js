@@ -422,3 +422,47 @@ export function texteReponseIa(r) {
   const ch = r.choices && r.choices[0] && r.choices[0].message;
   return ch && typeof ch.content === 'string' ? ch.content : '';
 }
+
+/* ===== SOURCES DE RELAIS (3.10.2026, mesuré dans le journal D1 du réveil de 00h00) =====
+   Depuis Cloudflare : Binance 403 (adresses Cloudflare bloquées), CoinGecko 429, OKX 429, Stooq 404.
+   Relais gratuits, sans clé, formats relevés sur les vraies réponses du 3.10 : Crypto.com (tous les
+   prix en 1 requête), CoinPaprika (marché global), Kraken Futures (financement), Cboe (indices US
+   différés), gold-api (or), Frankfurter (BCE, EUR/USD). */
+export function lireCryptoComTickers(j) {
+  const d = j && j.result && Array.isArray(j.result.data) ? j.result.data : null;
+  if (!d) return null;
+  const voulues = new Map(PAIRES_LIQUIDES.map((p) => [p.replace('/', '_'), p]));
+  return d.filter((t) => t && voulues.has(t.i) && Number(t.a) > 0)
+    .map((t) => ({ paire: voulues.get(t.i), prix: Number(t.a), var24h: Math.round(Number(t.c) * 10000) / 100, vol_usdt: Number(t.vv) || 0 }))
+    .sort((a, b) => b.var24h - a.var24h);
+}
+export function lireCoinpaprikaGlobal(j) {
+  if (!j || !(Number(j.market_cap_usd) > 0)) return null;
+  return { capi_usd: Number(j.market_cap_usd), var24h: Number(j.market_cap_change_24h), dom_btc: Number(j.bitcoin_dominance_percentage), dom_eth: null };
+}
+/* Kraken Futures donne un financement ABSOLU par heure (USD par BTC) : relatif sur 8 h = taux / prix × 8,
+   pour rester comparable au taux OKX/Binance (par période de 8 h). */
+export function lireFundingKraken(j) {
+  const t = j && Array.isArray(j.tickers) ? j.tickers.find((x) => x && x.symbol === 'PF_XBTUSD') : null;
+  if (!t || !(Number(t.markPrice) > 0) || t.fundingRate === undefined) return null;
+  return Number(t.fundingRate) / Number(t.markPrice) * 8;
+}
+export function lireCboe(j, nom) {
+  const d = j && j.data;
+  if (!d || !(Number(d.current_price) > 0)) return null;
+  return { nom, symbole: String(d.symbol || ''), cloture: Number(d.current_price), var_jour: Number(d.price_change_percent) };
+}
+export function lireGoldApi(j) {
+  return j && Number(j.price) > 0 ? { nom: 'Or (once)', symbole: 'XAU', cloture: Number(j.price), var_jour: null } : null;
+}
+export function lireFrankfurter(j) {
+  const v = j && j.rates && Number(j.rates.USD);
+  return v > 0 ? { nom: 'EUR/USD', symbole: 'EURUSD', cloture: v, var_jour: null } : null;
+}
+/* Bougies Crypto.com → format Binance [t, o, h, l, c, v] (les calculs d'indicateurs restent identiques). */
+export const TF_CRYPTOCOM = { '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m', '1h': '1h', '4h': '4h', '1d': '1D' };
+export function bougiesCryptoCom(j) {
+  const d = j && j.result && Array.isArray(j.result.data) ? j.result.data : null;
+  if (!d) return null;
+  return d.map((b) => [Number(b.t), String(b.o), String(b.h), String(b.l), String(b.c), String(b.v)]).sort((a, b) => a[0] - b[0]);
+}

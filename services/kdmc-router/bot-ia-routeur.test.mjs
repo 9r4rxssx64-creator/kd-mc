@@ -20,13 +20,14 @@ const ACCOUNTS = { get: async (k) => (store.has(k) ? store.get(k) : null), put: 
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 const PIN_SHA = sha('424242');
 const cleReveil = sha(PIN_SHA + ':bot-ia-tick');
+let binanceBloque = false, propositionRelais = '';
 let reponseIa = '', contreAvis = '{"avis":"OUI","raison":"cohérent avec un marché calme"}';
 const appelsIa = [];
 const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: PIN_SHA, ACCOUNTS, RAILWAY_TOKEN: 'rt',
   ANTHROPIC_API_KEY: 'payant-a', OPEN_AI_API_KEY: 'payant-o',
   AI: { run: async (modele, p) => { appelsIa.push(modele); return /gpt-oss/.test(modele)
-    ? { output: [{ type: 'reasoning', content: [{ type: 'reasoning_text', text: 'je pense' }] }, { type: 'message', content: [{ type: 'output_text', text: contreAvis }] }] }
-    : { response: reponseIa }; } } };
+    ? { output: [{ type: 'reasoning', content: [{ type: 'reasoning_text', text: 'je pense' }] }, { type: 'message', content: [{ type: 'output_text', text: (propositionRelais && /Ta proposition/.test(String(p && p.input))) ? propositionRelais : contreAvis }] }] }
+    : { response: (p && Array.isArray(p.messages) && /gérant de risque/.test(p.messages[0].content)) ? '{"avis":"OUI","raison":"relu par Qwen : cohérent"}' : reponseIa }; } } };
 const appelsPayants = [];
 
 const SERVICES = [['S1', 'crypto-bot'], ['P1', 'crypto-bot-p1'], ['P2', 'crypto-bot-p2'], ['P3', 'crypto-bot-p3'], ['P4', 'crypto-bot-p4'], ['P5', 'crypto-bot-p5']];
@@ -48,6 +49,8 @@ globalThis.fetch = async (input, init) => {
     if (q.includes('variables(')) return j({ data: { variables: Object.assign({ TESTNET: 'true', BINANCE_API_KEY: 'secret-ne-doit-pas-sortir' }, VARS[svc] || {}) } });
     return j({ data: {} });
   }
+  if (u.includes('binance.vision') && binanceBloque) return new Response('blocked', { status: 403 });
+  if (u.includes('api.crypto.com/exchange/v1/public/get-tickers')) return j({ code: 0, result: { data: [{ i: 'BTC_USDT', a: '84538.42', c: '-0.0048', vv: '2e8' }, { i: 'ETH_USDT', a: '2670.38', c: '-0.0143', vv: '7e7' }] } });
   if (u.includes('binance.vision')) return j([{ symbol: 'BTCUSDT', lastPrice: '60000', priceChangePercent: '1', quoteVolume: '9e9' }]);
   if (u.includes('alternative.me')) return j({ data: [{ value: '50', value_classification: 'Neutral' }] });
   return new Response('indisponible', { status: 503 });
@@ -187,6 +190,22 @@ r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': c
 d1.panne = false; ACCOUNTS.put = put0;
 dit(r.b && r.b.action === 'echec' && !mutations.some((q) => /variableUpsert|Redeploy/.test(q)), 'D1 refuse l\'écriture → AUCUNE mutation Railway');
 delete env.BOT_DB;
+
+console.log('\n=== 10. Relais mesurés le 3.10 : Binance bloqué, Qwen sans JSON ===');
+binanceBloque = true;
+r = await appel('/__bot/marche?frais=1', { headers: HA });
+const btcRelais = r.b && (r.b.cryptos || []).find((c) => c.paire === 'BTC/USDT');
+dit(btcRelais && btcRelais.prix === 84538.42 && /^ok \(Crypto\.com ; Binance HTTP 403\)/.test(r.b.sources['Prix 24 h des cryptos']), 'Binance 403 → prix pris chez Crypto.com, et la page dit pourquoi (' + (r.b && r.b.sources['Prix 24 h des cryptos']) + ')');
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0 }));
+mutations = []; reponseIa = '<think>je réfléchis longtemps au marché et je n\'ai plus de place';
+propositionRelais = '{"bot":"crypto-bot-p4","reglages":{"TIMEFRAME":"5m"},"raison":"marché nerveux, sorties plus rapides","attendu":"plus de trades gagnants"}';
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+const stR = JSON.parse(store.get('bot:ia')); const decR = stR.journal[stR.journal.length - 1];
+dit(r.b && r.b.action === 'decision' && decR.source === 'ia-relais' && /gpt-oss/.test(decR.modele), 'Qwen sans JSON → gpt-oss-120b propose (relais gratuit), pas la règle de secours');
+dit(/réponse VIDE \(toute la place passée à réfléchir\)/.test(decR.echec_ia || ''), 'la cause du silence de Qwen est gardée au journal (début de sa réponse)');
+dit(appelsIa.includes('@cf/qwen/qwen3.8-27b') && decR.modele_contre === 'qwen3.8-27b', 'contre-avis par l\'AUTRE famille (Qwen relit gpt-oss)');
+dit(stR.enCours && stR.enCours.btc0 === 84538.42, 'le prix du BTC de départ est enregistré (barre à battre mesurable)');
+binanceBloque = false; propositionRelais = '';
 
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

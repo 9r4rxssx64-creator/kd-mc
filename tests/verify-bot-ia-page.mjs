@@ -27,7 +27,7 @@ const MARCHE = { ok: true, le: now, peur_avidite: { valeur: 64, libelle: 'Greed'
   cryptos: [{ paire: 'BTC/USDT', prix: 61000, var24h: 1.5 }, { paire: 'ETH/USDT', prix: 2500, var24h: -2 }],
   bourse: [{ nom: 'S&P 500', symbole: '^SPX', cloture: 5040, var_jour: 0.8 }, { nom: 'Or', symbole: 'XAUUSD', cloture: null, var_jour: null }],
   actus: [{ source: 'CoinDesk', titre: 'Bitcoin ' + PIEGE, lien: 'https://ex.com/a' }, { source: 'Journal du Coin', titre: 'Sans lien', lien: 'javascript:alert(1)' }],
-  sources: { 'Peur & avidité (alternative.me)': 'ok', 'Bourse (Stooq)': 'HTTP 503' } };
+  sources: { 'Peur & avidité (alternative.me)': 'ok', 'Prix 24 h des cryptos': 'ok (Crypto.com ; Binance HTTP 403)', 'Bourse (Stooq)': 'HTTP 503' } };
 const LIENS = { ok: true, le: now, liens: [{ cat: 'Crypto', nom: 'CoinGecko', url: 'https://www.coingecko.com/', etat: 'ok' }, { cat: 'Bourse', nom: 'Finviz', url: 'https://finviz.com/map.ashx', etat: 'protege' }, { cat: 'Actus', nom: 'Piège', url: 'javascript:alert(1)', etat: 'ok' }] };
 const REEL = { ok: true, pret: false, releves: 40, testnet: { jours: 3, ok: false }, robots: [
   { nom: 'crypto-bot-p1', pret: false, criteres: [{ cle: 'duree', ok: false, valeur: '2 j', seuil: '≥ 60 j sans redémarrage' }, { cle: 'btc', ok: true, valeur: '+3.0 % vs BTC', seuil: '≥ +2 pts' }] },
@@ -73,6 +73,7 @@ chk(/Greed/.test(await t('mkFg')) && /64/.test(await t('mkFg')), 'Marchés : peu
 chk(/BTC\/USDT/.test(await t('mkCryptos')) && /\+1\.50 %/.test(await t('mkCryptos')), 'Marchés : cryptos 24 h');
 chk(/S&P 500/.test(await t('mkBourse')) && /fermé/.test(await t('mkBourse')), 'Marchés : bourse, et « fermé » au lieu d\'un faux zéro');
 chk(/HTTP 503/.test(await t('mkSources')), 'Marchés : une source en panne est signalée');
+chk(/✅ Crypto\.com/.test(await t('mkSources')), 'Marchés : une source servie par un relais est verte et nomme le relais');
 chk((await page.$$('#liens a.coin')).length === 2, 'Liens : 2 liens https affichés, le lien javascript: écarté');
 chk((await page.$$('#mkActus a')).length === 1, 'Actus : seul le lien https devient cliquable');
 chk(!(await page.evaluate(() => window.__pwned)) && (await page.$$('#iaCard img, #mkActus img')).length === 0, 'Texte piégé : affiché en texte, jamais exécuté');
@@ -102,7 +103,7 @@ chk(tts.length === 1 && /l=fr/.test(tts[0]) && /v=shimmer/.test(tts[0]) && /faux
 chk(/voix du téléphone|Lecture impossible/.test(await t('iaOk') + await t('iaErr')), 'Voix du domaine indisponible → repli voix du téléphone annoncé');
 chk(erreurs.length === 0, '0 exception JS' + (erreurs.length ? ' : ' + erreurs.join(' | ') : ''));
 const src = await readFile('tools/crypto-bot-dashboard/index.html', 'utf8');
-chk(/data-version="v1\.5\.0"/.test(src), 'badge de version v1.5.0');
+chk(/data-version="v1\.5\.1"/.test(src), 'badge de version v1.5.1');
 await page.screenshot({ path: process.env.CAPTURE || '/dev/null', fullPage: false }).catch(() => {});
 await nav.close(); srv.close();
 

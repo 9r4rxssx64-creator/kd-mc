@@ -3549,6 +3549,7 @@ async function railGql(env, query) {
 const IA_KV = 'bot:ia';
 const IA_CHAINE_GRATUITE = ['qwen', 'gemini', 'groq', 'cerebras', 'mistral', 'openrouter'];
 const IA_CONTRE_AVIS_MODELE = '@cf/openai/gpt-oss-120b';
+const IA_QWEN_MODELE = '@cf/qwen/qwen3.8-27b';
 /* MÉMOIRE DE L'IA EN D1 (base gratuite kdmc-bot, 100 000 écritures/jour) — 2.10.2026 : le KV du
    domaine (1 000 écritures/jour) a saturé deux fois ce jour-là. D1 d'abord ; sans base liée, le KV
    comme avant. La base est AUSSI lisible par l'agent (Cloudflare MCP) : le journal se vérifie en vrai
@@ -3688,42 +3689,71 @@ async function lireSource(url, type) {
     return { val: type === 'json' ? await r.json() : await r.text() };
   } catch (e) { return { err: String((e && e.message) || e).slice(0, 60) }; }
 }
+/* Première source qui répond ET se lit ; garde la trace de chaque tentative (« Binance HTTP 403 → Crypto.com »). */
+async function lireEnRelais(essais) {
+  const traces = [];
+  for (const [nom, url, type, lecteur] of essais) {
+    const x = await lireSource(url, type);
+    const v = x.val !== undefined ? lecteur(x.val) : null;
+    if (v !== null && v !== undefined && !(Array.isArray(v) && !v.length)) return { val: v, etat: 'ok (' + nom + (traces.length ? ' ; ' + traces.join(', ') : '') + ')' };
+    traces.push(nom + ' ' + (x.err || 'format inattendu'));
+  }
+  return { val: null, etat: traces.join(', ') };
+}
 async function botMarche(env, sansCache) {
-  const cle = new Request('https://bot.kd-mc.com/__cache/marche-v1');
+  const cle = new Request('https://bot.kd-mc.com/__cache/marche-v2');
   const cache = (typeof caches !== 'undefined' && caches.default) ? caches.default : null;
   if (cache && !sansCache) { try { const c = await cache.match(cle); if (c) return await c.json(); } catch { /* */ } }
   const paires = encodeURIComponent(JSON.stringify(IA.PAIRES_LIQUIDES.map((p) => p.replace('/', ''))));
-  const [fg, gl, bn, okx, sq, ct, jdc, cd] = await Promise.all([
-    lireSource('https://api.alternative.me/fng/?limit=2', 'json'),
-    lireSource('https://api.coingecko.com/api/v3/global', 'json'),
-    lireSource('https://data-api.binance.vision/api/v3/ticker/24hr?symbols=' + paires, 'json'),
-    lireSource('https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP', 'json'),
-    lireSource('https://stooq.com/q/l/?s=%5Espx+%5Endq+%5Edax+%5Ecac+xauusd+eurusd&f=sd2t2ohlcv&h&e=csv', 'texte'),
+  /* Relais mesurés le 3.10 (journal D1) : Binance 403, CoinGecko 429, OKX 429, Stooq 404 depuis Cloudflare. */
+  const [fg, gl, cr, fu, spx, ndx, vix, or, eur, ct, jdc, cd] = await Promise.all([
+    lireEnRelais([['alternative.me', 'https://api.alternative.me/fng/?limit=2', 'json', IA.lireFearGreed]]),
+    lireEnRelais([['CoinGecko', 'https://api.coingecko.com/api/v3/global', 'json', IA.lireCoingeckoGlobal],
+      ['CoinPaprika', 'https://api.coinpaprika.com/v1/global', 'json', IA.lireCoinpaprikaGlobal]]),
+    lireEnRelais([['Binance', 'https://data-api.binance.vision/api/v3/ticker/24hr?symbols=' + paires, 'json', IA.lireBinance24h],
+      ['Crypto.com', 'https://api.crypto.com/exchange/v1/public/get-tickers', 'json', IA.lireCryptoComTickers]]),
+    lireEnRelais([['OKX', 'https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP', 'json', IA.lireFundingOkx],
+      ['Kraken', 'https://futures.kraken.com/derivatives/api/v3/tickers', 'json', IA.lireFundingKraken]]),
+    lireEnRelais([['Cboe', 'https://cdn.cboe.com/api/global/delayed_quotes/quotes/_SPX.json', 'json', (j) => IA.lireCboe(j, 'S&P 500')]]),
+    lireEnRelais([['Cboe', 'https://cdn.cboe.com/api/global/delayed_quotes/quotes/_NDX.json', 'json', (j) => IA.lireCboe(j, 'Nasdaq 100')]]),
+    lireEnRelais([['Cboe', 'https://cdn.cboe.com/api/global/delayed_quotes/quotes/_VIX.json', 'json', (j) => IA.lireCboe(j, 'VIX (peur bourse)')]]),
+    lireEnRelais([['gold-api', 'https://api.gold-api.com/price/XAU', 'json', IA.lireGoldApi]]),
+    lireEnRelais([['BCE (Frankfurter)', 'https://api.frankfurter.app/latest?from=EUR&to=USD', 'json', IA.lireFrankfurter]]),
     lireSource('https://cointelegraph.com/rss', 'texte'),
     lireSource('https://journalducoin.com/feed/', 'texte'),
     lireSource('https://www.coindesk.com/arc/outboundfeeds/rss/', 'texte'),
   ]);
-  const etat = (x, ok) => (x.err ? x.err : (ok ? 'ok' : 'format inattendu'));
   const m = { le: Date.now() };
-  m.peur_avidite = fg.val ? IA.lireFearGreed(fg.val) : null;
-  m.global = gl.val ? IA.lireCoingeckoGlobal(gl.val) : null;
-  m.cryptos = bn.val ? IA.lireBinance24h(bn.val) : null;
-  m.funding_btc = okx.val ? IA.lireFundingOkx(okx.val) : null;
-  const bourse = sq.val ? IA.lireStooqCsv(sq.val) : null;
-  m.bourse = bourse ? bourse.map((b) => Object.assign({ nom: BOURSE_NOMS[String(b.symbole).toUpperCase()] || b.symbole }, b)) : null;
+  m.peur_avidite = fg.val; m.global = gl.val; m.cryptos = cr.val; m.funding_btc = fu.val;
+  const bourse = [spx, ndx, vix, or, eur].map((x) => x.val).filter(Boolean);
+  m.bourse = bourse.length ? bourse : null;
   const actus = [];
   for (const [src, x] of [['Cointelegraph', ct], ['Journal du Coin', jdc], ['CoinDesk', cd]]) {
     if (x.val) IA.lireRss(x.val, 4).forEach((a) => actus.push(Object.assign({ source: src }, a)));
   }
   m.actus = actus;
+  const rss = (x) => (x.err ? x.err : 'ok');
   m.sources = {
-    'Peur & avidité (alternative.me)': etat(fg, !!m.peur_avidite), 'Marché global (CoinGecko)': etat(gl, !!m.global),
-    'Prix 24 h (Binance)': etat(bn, !!(m.cryptos && m.cryptos.length)), 'Financement BTC (OKX)': etat(okx, m.funding_btc !== null),
-    'Bourse (Stooq)': etat(sq, !!(m.bourse && m.bourse.length)), 'Actus Cointelegraph': etat(ct, true),
-    'Actus Journal du Coin': etat(jdc, true), 'Actus CoinDesk': etat(cd, true),
+    'Peur & avidité': fg.etat, 'Marché global': gl.etat, 'Prix 24 h des cryptos': cr.etat, 'Financement BTC': fu.etat,
+    'S&P 500': spx.etat, 'Nasdaq 100': ndx.etat, 'VIX': vix.etat, 'Or': or.etat, 'EUR/USD': eur.etat,
+    'Actus Cointelegraph': rss(ct), 'Actus Journal du Coin': rss(jdc), 'Actus CoinDesk': rss(cd),
   };
   if (cache) { try { await cache.put(cle, new Response(JSON.stringify(m), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=300' } })); } catch { /* */ } }
   return m;
+}
+/* Bougies : Binance d'abord, Crypto.com en relais (Binance refuse les adresses Cloudflare : 403 mesuré le 3.10). */
+async function bougies(pair, tf, limit) {
+  let cause = '';
+  try {
+    const r = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${tf}&limit=${limit}`);
+    if (r.ok) { const k = await r.json(); if (Array.isArray(k) && k.length) return { k, src: 'binance' }; cause = 'binance vide'; }
+    else cause = 'binance HTTP ' + r.status;
+  } catch (e) { cause = 'binance ' + String((e && e.message) || e).slice(0, 40); }
+  const inst = pair.replace(/USDT$/, '_USDT');
+  const r2 = await fetch(`https://api.crypto.com/exchange/v1/public/get-candlestick?instrument_name=${inst}&timeframe=${IA.TF_CRYPTOCOM[tf] || tf}&count=${Math.min(300, limit)}`);
+  if (!r2.ok) return { err: cause + ', crypto.com HTTP ' + r2.status };
+  const k = IA.bougiesCryptoCom(await r2.json());
+  return k && k.length ? { k, src: 'crypto.com' } : { err: 'bougies illisibles' };
 }
 /* LIENS D'ANALYSE — vérifiés EN DIRECT depuis Cloudflare (règle « vérifie tes liens en réel ») :
    ✅ s'ouvre ; 🛡️ le site refuse les robots (401/403/429) mais s'ouvre sur un iPhone ; ❌ mort. */
@@ -3811,11 +3841,28 @@ async function iaTick(env, ctx, origine, force) {
   try {
     /* GRATUIT SEULEMENT (Kevin 30.09 + 2.10) : jamais Anthropic ni OpenAI payants, même s'ils sont configurés.
        Qwen 3.8 27B (Workers AI) d'abord = le plus fort des gratuits (mesure publique 09.2026), puis les paliers gratuits. */
-    const r = await routeText(env, { system, prompt, maxTokens: 500, temperature: 0.3, budgetMs: 25000, domain: 'reasoning', chain: IA_CHAINE_GRATUITE });
+    /* 3.10 (journal D1) : à 500 jetons, Qwen 3 épuisait sa place à « réfléchir » et ne rendait aucun
+       JSON → règle de secours. 1 500 jetons + « /no_think » (interrupteur officiel de Qwen 3). */
+    const r = await routeText(env, { system, prompt: prompt + '\n/no_think', maxTokens: 1500, temperature: 0.3, budgetMs: 25000, domain: 'reasoning', chain: IA_CHAINE_GRATUITE });
     modele = [r.provider, r.model].filter(Boolean).join(' · ');
     prop = IA.validerProposition(r.text || '', actuels);
-    if (!prop.ok) echecIa = prop.err;
+    if (!prop.ok) {
+      const brut = String(r.text || '').replace(/\s+/g, ' ').trim();
+      echecIa = prop.err + (brut ? ' — début de la réponse : « ' + brut.slice(0, 140) + ' »' : ' — réponse VIDE (toute la place passée à réfléchir)') + (r.provider ? ' [' + r.provider + ']' : '');
+    }
   } catch (e) { echecIa = String((e && e.message) || e).slice(0, 120); }
+  /* RELAIS GRATUIT DE MÊME NIVEAU (règle Kevin 2.10) : gpt-oss-120b propose avant la règle de secours. */
+  if ((!prop || !prop.ok) && env.AI && typeof env.AI.run === 'function') {
+    try {
+      const r3 = await Promise.race([
+        env.AI.run(IA_CONTRE_AVIS_MODELE, { instructions: system, input: prompt, reasoning: { effort: 'medium' } }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('délai')), 25000)),
+      ]);
+      const p3 = IA.validerProposition(IA.texteReponseIa(r3), actuels);
+      if (p3.ok) { prop = p3; source = 'ia-relais'; modele = 'workers-ai · gpt-oss-120b (relais)'; }
+      else echecIa += ' | relais gpt-oss : ' + p3.err;
+    } catch (e) { echecIa += ' | relais gpt-oss : ' + String((e && e.message) || e).slice(0, 80); }
+  }
   if (!prop || !prop.ok) { prop = IA.propositionDeSecours(flotte, actuels); source = 'secours'; }
   if (!prop.ok) {
     st.dernier = 'aucune proposition valable : ' + prop.err + (echecIa ? ' (IA : ' + echecIa + ')' : '');
@@ -3825,11 +3872,14 @@ async function iaTick(env, ctx, origine, force) {
   /* CONTRE-AVIS : une 2e IA gratuite d'une autre famille (gpt-oss-120b, OpenAI open-weight, Workers AI)
      relit la proposition. NON = rien ne change ; on réessaie dans 3 h. Muette = on suit l'arbitre. */
   let contre = null;
-  if (source === 'ia' && env.AI && typeof env.AI.run === 'function') {
+  if ((source === 'ia' || source === 'ia-relais') && env.AI && typeof env.AI.run === 'function') {
     try {
       const ca = IA.consigneContreAvis(prop, IA.resumerMarche(marche));
+      /* Toujours une AUTRE famille que celle qui a proposé : gpt-oss relit Qwen, Qwen relit gpt-oss. */
       const r2 = await Promise.race([
-        env.AI.run(IA_CONTRE_AVIS_MODELE, { instructions: ca.system, input: ca.prompt, reasoning: { effort: 'low' } }),
+        source === 'ia-relais'
+          ? env.AI.run(IA_QWEN_MODELE, { messages: [{ role: 'system', content: ca.system }, { role: 'user', content: ca.prompt + '\n/no_think' }], max_tokens: 400 })
+          : env.AI.run(IA_CONTRE_AVIS_MODELE, { instructions: ca.system, input: ca.prompt, reasoning: { effort: 'low' } }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('délai')), 20000)),
       ]);
       contre = IA.lireContreAvis(IA.texteReponseIa(r2));
@@ -3837,7 +3887,7 @@ async function iaTick(env, ctx, origine, force) {
     if (contre && contre.avis === 'NON') {
       st.derniereDecision = now - IA.ECART_DECISIONS_MS + 3 * 3600e3;
       st.journal = IA.ajouterJournal(st.journal, { type: 'refus', t: now, bot: prop.bot, set: prop.set, raison: prop.raison,
-        contre_avis: contre.raison, modele, modele_contre: IA_CONTRE_AVIS_MODELE.split('/').pop(), origine });
+        contre_avis: contre.raison, modele, modele_contre: (source === 'ia-relais' ? IA_QWEN_MODELE : IA_CONTRE_AVIS_MODELE).split('/').pop(), origine });
       st.dernier = 'proposition refusée par le contre-avis : ' + contre.raison;
       await iaEcrire(env, st);
       return { ok: true, action: 'refus', detail: st.dernier };
@@ -3855,8 +3905,8 @@ async function iaTick(env, ctx, origine, force) {
   st.enCours = Object.assign({ bot: prop.bot, debut: now, btc0: btc, set: prop.set, avant, raison: prop.raison, attendu: prop.attendu, source, modele }, IA.debutEssai(prop.bot, flotte));
   st.derniereDecision = now;
   st.journal = IA.ajouterJournal(st.journal, { type: 'decision', t: now, bot: prop.bot, set: prop.set, avant, raison: prop.raison,
-    attendu: prop.attendu, source, modele, echec_ia: source === 'secours' ? echecIa : '', origine,
-    contre_avis: contre ? contre.raison : '', modele_contre: contre ? IA_CONTRE_AVIS_MODELE.split('/').pop() : '' });
+    attendu: prop.attendu, source, modele, echec_ia: source !== 'ia' ? echecIa : '', origine,
+    contre_avis: contre ? contre.raison : '', modele_contre: contre ? (source === 'ia-relais' ? IA_QWEN_MODELE : IA_CONTRE_AVIS_MODELE).split('/').pop() : '' });
   st.dernier = 'nouvel essai sur ' + prop.bot;
   try { await iaEcrire(env, st); } catch (e) {
     return { ok: false, action: 'echec', detail: 'mémoire du domaine (KV) indisponible : aucun robot modifié — ' + String((e && e.message) || e).slice(0, 80) };
@@ -3987,9 +4037,9 @@ const SCAN_PAIRS = [
 async function taScanPair(sym) {
   const pair = sym.replace('/', '');
   try {
-    const r = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1h&limit=60`);
-    if (!r.ok) return { symbol: sym, err: 'binance HTTP ' + r.status };
-    const k = await r.json();
+    const bg = await bougies(pair, '1h', 60);
+    if (bg.err) return { symbol: sym, err: bg.err };
+    const k = bg.k;
     if (!Array.isArray(k) || k.length < 30) return { symbol: sym, err: 'bougies insuffisantes (' + (k.length || 0) + ')' };
     const h = k.map((x) => Number(x[2])), l = k.map((x) => Number(x[3])), c = k.map((x) => Number(x[4]));
     const ciNow = taChoppiness(h, l, c, 14);
@@ -4354,9 +4404,9 @@ async function handleBot(request, url, env) {
     const out = await Promise.all(syms.map(async (sym) => {
       const pair = sym.replace('/', '');
       try {
-        const r = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${tf}&limit=250`);
-        if (!r.ok) return { symbol: sym, err: 'binance HTTP ' + r.status };
-        const k = await r.json();
+        const bg = await bougies(pair, tf, 250);
+        if (bg.err) return { symbol: sym, err: bg.err };
+        const k = bg.k;
         if (!Array.isArray(k) || k.length < 60) return { symbol: sym, err: 'bougies insuffisantes (' + (k.length || 0) + ')' };
         const h = k.map((x) => Number(x[2])), l = k.map((x) => Number(x[3])), c = k.map((x) => Number(x[4]));
         return Object.assign({ symbol: sym }, taRating(h, l, c));

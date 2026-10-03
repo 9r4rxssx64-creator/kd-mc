@@ -99,6 +99,9 @@ globalThis.fetch = async (input, init) => {
     if (q.includes('serviceInstanceRedeploy')) return j({ data: { serviceInstanceRedeploy: true } });
     return j({ errors: [{ message: 'query inconnue (mock)' }] });
   }
+  /* Relais Crypto.com (3.10) : jamais le vrai réseau en test. SOL échoue aussi ici, BNB/ETH/XRP sont servis
+     par Binance plus haut ; tout autre appel Crypto.com = 503 (le scan doit le dire, pas planter). */
+  if (u.includes('api.crypto.com')) return new Response('indisponible', { status: u.includes('SOL_USDT') ? 500 : 503 });
   return realFetch(input, init);
 };
 
@@ -332,7 +335,7 @@ ok(scBtc && scBtc.cat === 'neutre', 'BTC tendance stable → catégorie neutre (
 
 /* 35) Erreur HTTP sur une paire -> cause exacte remontée, le SCAN CONTINUE (les 23 autres) */
 const scSol = j.results.find((x) => x.symbol === 'SOL/USDT');
-ok(scSol && scSol.err === 'binance HTTP 500' && scSol.cat === undefined,
+ok(scSol && scSol.err === 'binance HTTP 500, crypto.com HTTP 500' && scSol.cat === undefined,
    'SOL en erreur HTTP → cause exacte, pas de crash du scan entier');
 
 /* 36) Trop peu de bougies -> cause exacte, pas un crash silencieux */

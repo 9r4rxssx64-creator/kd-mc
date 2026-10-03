@@ -705,6 +705,11 @@ const ROUTEUR = {
        HSTS (tous les sous-domaines kd-mc.com sont en HTTPS via Cloudflare). */
     if (!outHeaders.has('x-frame-options')) outHeaders.set('x-frame-options', 'SAMEORIGIN');
     if (!outHeaders.has('strict-transport-security')) outHeaders.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+    /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
+       depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
+    if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
+      return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }));
+    }
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders });
   },
   /* Cron 5 min (wrangler.toml [triggers]) : sentinelle « robot en surface » — no-op tant
@@ -769,6 +774,19 @@ async function sansCmcteamsParAccident(res, host, chemin, request) {
   return new Response(html, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-router': host + ' (repli de l\'hébergeur refusé)' } });
 }
 
+export const BOUTON_TAG = '<script src="/__boite/bouton.js" defer></script>';
+/* Ajoute le bouton avant </body>. En production : HTMLRewriter (flux, rien en mémoire). Hors Cloudflare (tests Node) : repli sur le texte. */
+export async function injecterBouton(res) {
+  try {
+    const h = new Headers(res.headers); h.delete('content-length');
+    if (typeof HTMLRewriter !== 'undefined') {
+      return new HTMLRewriter().on('body', { element(e) { e.append(BOUTON_TAG, { html: true }); } }).transform(new Response(res.body, { status: res.status, statusText: res.statusText, headers: h }));
+    }
+    const t = await res.text();
+    const i = t.toLowerCase().lastIndexOf('</body>');
+    return new Response(i >= 0 ? t.slice(0, i) + BOUTON_TAG + t.slice(i) : t + BOUTON_TAG, { status: res.status, statusText: res.statusText, headers: h });
+  } catch (e) { return res; }   /* un bouton ne doit JAMAIS empêcher une page de s'afficher */
+}
 export function durcirReponse(res) {
   if (!res || res.status === 101 || res.webSocket) return res;   // WebSocket : on n'y touche pas
   const h = new Headers(res.headers);

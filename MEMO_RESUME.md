@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (matin) — « Tu as tout branché ? Rien oublié ? » : NON, pas encore → le bouton « Écrire à l'admin » sur TOUTES les apps
+
+- **Réponse honnête à Kevin** : la boîte lisait Lingua, CMCteams, Rotaplan, l'arbre (corrections) et les alertes ; le dépôt `/__boite/deposer` existait mais AUCUNE app ne l'appelait → boutiques, arbre (visiteurs), Lingua… ne pouvaient pas écrire depuis leur compte.
+- **Fait (branche `claude/contacter-admin-partout`)** : `boite-bouton.js` servi sur `/__boite/bouton.js` et ajouté par le routeur (HTMLRewriter) avant `</body>` de toute page HTML de toute adresse (22 adresses ouvertes sur 31 ; les 9 gardées montrent leur porte à un inconnu, la vraie page ensuite) ;
+  identité = SESSION (pas la page), infos pour l'admin (compte, app + page, appareil, pays, contact), `/__boite/mes` (le compte relit ses messages ET les réponses, pastille rouge), migration de la table `boite` déjà en ligne, fenêtre de l'admin : lignes d'infos.
+- **Mesuré** : `test:boite` 66/66 (identité, mes messages, migration, bouton autonome sans innerHTML/<style>, injection sur 22 adresses lues dans le routeur) ; `test:boite-portail` 31/31 dans Chromium iPhone 375 px sous CSP STRICTE (connecté / non connecté / admin ; envoi, confirmation, réponse relue) ;
+  **bug trouvé par le test navigateur** : la confirmation « Envoyé » disparaissait au rafraîchissement de la liste → corrigé. Sabotages : nom pris dans la page → 2 échecs ; injection retirée → 2 ; confirmation effacée → 1.
+- **Non vérifié** : le rendu en ligne (le déploiement du routeur le contrôle : `bouton.js` 200 + balise dans la page de Lingua) ; une app dont la CSP interdit les scripts externes n'afficherait pas le bouton (échec silencieux, rien de cassé) ; adresses gardées avec un inconnu : pas de bouton volontairement.
+- **Pas couvert** : Apex Chat (chiffré de bout en bout, messages illisibles par le serveur) — le bouton y est tout de même posé pour écrire à l'admin.
+
 ## 2026-10-03 (23h) — Lingua v2.133.0 : Bee (ou Bourricot) t'appelle
 
 Kevin : « Bee ou Bourricot te téléphone réellement et te tient une conversation, une leçon, un exercice

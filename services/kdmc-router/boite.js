@@ -19,6 +19,7 @@
  * jour au total, texte 1 000 caractères, champ piège pour les robots, gardé 90 jours).
  * node services/kdmc-router/boite.test.mjs */
 import { ADMIN, LIMITES as LIM_CERCLE, texteOk, schema as schemaCercle } from './cercle.js';
+import { BOUTON_JS } from './boite-bouton.js';
 
 export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 20000 };
 export const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/cmcteams';
@@ -36,13 +37,28 @@ export const SOURCES_MESSAGES = ['lingua', 'cmcteams', 'depots', 'rotaplan', 'ar
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS boite (id INTEGER PRIMARY KEY AUTOINCREMENT, app TEXT, nom TEXT, texte TEXT, contact TEXT, ip TEXT,
-     suivi TEXT, cree INTEGER, lu INTEGER DEFAULT 0, reponse TEXT, repondu INTEGER)`,
+     suivi TEXT, cree INTEGER, lu INTEGER DEFAULT 0, reponse TEXT, repondu INTEGER, uid TEXT, page TEXT, appareil TEXT, pays TEXT)`,
   `CREATE INDEX IF NOT EXISTS boite_cree ON boite (cree)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS boite_suivi ON boite (suivi)`,
   `CREATE TABLE IF NOT EXISTS boite_lu (cle TEXT PRIMARY KEY, ts INTEGER)`,
 ];
 const pret = new WeakSet();
-async function schema(db) { if (pret.has(db)) return; await schemaCercle(db); await db.batch(SCHEMA.map((s) => db.prepare(s))); pret.add(db); }
+/* La table existait déjà sans ces colonnes (boîte en ligne depuis le 3.10 au soir) : on les ajoute, une erreur « colonne déjà là » est normale. */
+const COLONNES = ['uid', 'page', 'appareil', 'pays'];
+async function schema(db) {
+  if (pret.has(db)) return;
+  await schemaCercle(db); await db.batch(SCHEMA.map((s) => db.prepare(s)));
+  for (const c of COLONNES) { try { await db.prepare('ALTER TABLE boite ADD COLUMN ' + c + ' TEXT').run(); } catch { /* déjà présente */ } }
+  await db.prepare('CREATE INDEX IF NOT EXISTS boite_uid ON boite (uid, cree)').run();
+  pret.add(db);
+}
+/* « iPhone · Safari », « Windows · Chrome » : de quoi reconnaître l'appareil, rien de plus (pas de User-Agent brut conservé). */
+export function appareilDe(ua) {
+  const u = String(ua || '');
+  const sys = /iPhone|iPad/.test(u) ? 'iPhone' : /Android/.test(u) ? 'Android' : /Windows/.test(u) ? 'Windows' : /Macintosh|Mac OS/.test(u) ? 'Mac' : /Linux/.test(u) ? 'Linux' : 'appareil inconnu';
+  const nav = /Edg\//.test(u) ? 'Edge' : /Firefox|FxiOS/.test(u) ? 'Firefox' : /CriOS|Chrome/.test(u) ? 'Chrome' : /Safari/.test(u) ? 'Safari' : 'navigateur inconnu';
+  return sys + ' · ' + nav;
+}
 const un = async (db, sql, ...p) => db.prepare(sql).bind(...p).first();
 const tous = async (db, sql, ...p) => ((await db.prepare(sql).bind(...p).all()).results) || [];
 const faire = async (db, sql, ...p) => db.prepare(sql).bind(...p).run();
@@ -154,8 +170,10 @@ async function lireAlertes(env, db, now) {
 /* ── adaptateur : dépôts des autres apps (D1) ─────────────────────────────────────────────────────────────── */
 async function lireDepots(db) {
   const rows = await tous(db, 'SELECT * FROM boite ORDER BY id DESC LIMIT ?', LIMITES.convs);
-  return rows.map((r) => ({ cle: 'depot:' + r.id, source: 'depots', app: r.app + '.kd-mc.com', de: r.nom || 'Anonyme', ts: r.cree, texte: apercu(r.texte, 600), contact: r.contact || '',
+  return rows.map((r) => ({ cle: 'depot:' + r.id, source: 'depots', app: r.app + '.kd-mc.com', de: (r.nom || 'Anonyme') + (r.uid ? '' : ' (non connecté)'), ts: r.cree, texte: apercu(r.texte, 600), contact: r.contact || '',
     nonLus: r.lu ? 0 : 1, lu: !!r.lu, repondre: 'direct',
+    /* « j'ai toutes les infos » : qui (compte), depuis quelle app et quelle page, quel appareil, d'où */
+    infos: [r.uid ? '👤 Compte : ' + (r.nom || '?') + ' (' + r.uid + ')' : '👤 Non connecté', '📱 ' + r.app + '.kd-mc.com' + (r.page || ''), r.appareil ? '🖥️ ' + r.appareil + (r.pays ? ' · ' + r.pays : '') : '', r.contact ? '✉️ ' + r.contact : ''].filter(Boolean),
     fil: [{ moi: false, texte: apercu(r.texte, 600), ts: r.cree }].concat(r.reponse ? [{ moi: true, texte: apercu(r.reponse, 600), ts: r.repondu || r.cree }] : []) }));
 }
 
@@ -233,6 +251,19 @@ export async function handleBoite(request, url, env, outils) {
   try {
     if (m === 'OPTIONS') return new Response(null, { status: 204, headers: Object.assign({ 'Access-Control-Allow-Methods': 'GET,POST', 'Access-Control-Allow-Headers': 'content-type,authorization' }, cors) });
     await schema(db);
+    /* Le bouton « Écrire à l'admin », servi à TOUTES les apps (le routeur l'ajoute à chaque page). */
+    if (p === '/bouton.js' && m === 'GET') return new Response(BOUTON_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=600', 'x-content-type-options': 'nosniff' } });
+    /* « Mes messages » : ceux du compte connecté (toutes apps) + ceux d'un visiteur non connecté (ses suivis secrets). L'admin est reconnu : le bouton se retire. */
+    if (p === '/mes' && m === 'GET') {
+      const qui = await outils.qui(request).catch(() => null);
+      if (qui && qui.admin) return J({ ok: true, admin: true, connecte: true, messages: [] });
+      const suivis = String(url.searchParams.get('s') || '').split(',').filter((x) => /^[0-9a-f]{24}$/.test(x)).slice(0, 5);
+      const rows = [];
+      if (qui && qui.uid) rows.push(...await tous(db, 'SELECT app, texte, cree, reponse, repondu FROM boite WHERE uid = ? AND cree > ? ORDER BY id DESC LIMIT 10', qui.uid, now - LIMITES.garde));
+      if (suivis.length) rows.push(...await tous(db, `SELECT app, texte, cree, reponse, repondu FROM boite WHERE suivi IN (${suivis.map(() => '?').join(',')}) AND (uid IS NULL OR uid = '') ORDER BY id DESC LIMIT 10`, ...suivis));
+      rows.sort((a, b) => b.cree - a.cree);
+      return J({ ok: true, admin: false, connecte: !!(qui && qui.uid), nom: (qui && qui.nom) || '', messages: rows.slice(0, 10).map((r) => ({ app: r.app, texte: apercu(r.texte, 600), ts: r.cree, reponse: r.reponse || '', repondu: r.repondu || 0 })) });
+    }
     /* La réponse relue par l'expéditeur d'un dépôt : seul celui qui a reçu le « suivi » (secret, 96 bits) la voit. */
     if (p === '/reponse' && m === 'GET') {
       const s = propre(url.searchParams.get('suivi'), 40);
@@ -251,8 +282,13 @@ export async function handleBoite(request, url, env, outils) {
       if (((await un(db, 'SELECT COUNT(*) AS n FROM boite WHERE ip = ? AND cree > ?', ip, now - 36e5)).n || 0) >= LIMITES.depotHeure) return J({ ok: false, reason: 'trop_de_messages' }, 429);
       if (((await un(db, 'SELECT COUNT(*) AS n FROM boite WHERE cree > ?', now - 864e5)).n || 0) >= LIMITES.depotJour) return J({ ok: false, reason: 'boite_pleine_aujourd_hui' }, 429);
       const suivi = [...crypto.getRandomValues(new Uint8Array(12))].map((x) => x.toString(16).padStart(2, '0')).join('');
-      const nom = propre(b.nom, 60) || 'Anonyme', contact = propre(b.contact, 120);
-      await faire(db, 'INSERT INTO boite (app, nom, texte, contact, ip, suivi, cree) VALUES (?, ?, ?, ?, ?, ?, ?)', app, nom, texte, contact, ip, suivi, now);
+      /* L'identité vient de la SESSION du domaine, jamais de la page : une personne connectée ne peut pas écrire sous le nom d'une autre. */
+      const qui = await outils.qui(request).catch(() => null);
+      const connecte = qui && qui.uid && !qui.admin;
+      const nom = (connecte ? propre(qui.nom, 60) : propre(b.nom, 60)) || 'Anonyme', contact = propre(b.contact, 120);
+      const page = propre(b.page, 120).replace(/^(?!\/)/, '/').slice(0, 120);
+      await faire(db, 'INSERT INTO boite (app, nom, texte, contact, ip, suivi, cree, uid, page, appareil, pays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        app, nom, texte, contact, ip, suivi, now, connecte ? qui.uid : '', page, appareilDe(request.headers.get('user-agent')), propre(request.cf && request.cf.country, 3));
       await faire(db, 'DELETE FROM boite WHERE cree < ?', now - LIMITES.garde);
       memo.delete('depots');
       if (outils.notifier) await outils.notifier('📨 ' + app + ' — ' + nom, texte.slice(0, 140));

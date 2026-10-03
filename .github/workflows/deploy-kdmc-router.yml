@@ -371,6 +371,17 @@ jobs:
             sleep 20
           done
           [ "$ok" = "1" ] || { echo "::error title=Boîte unique::lecture sans session = HTTP $A (401 attendu), dépôt hors domaine = HTTP $D (403 attendu)"; exit 1; }
+          # Le bouton « Écrire à l'admin » : servi, ET présent dans une vraie page d'une app (le routeur l'ajoute à toutes).
+          ok=0
+          for i in 1 2 3 4; do
+            B=$(curl -sS -m 20 -o /tmp/bouton.js -w '%{http_code}' "https://lingua.kd-mc.com/__boite/bouton.js" || echo 000)
+            P=$(curl -sS -m 20 -L -H 'sec-fetch-dest: document' -H 'accept: text/html' -H 'x-kdmc-sonde: deploy' "https://lingua.kd-mc.com/" | grep -c '/__boite/bouton.js' || true)
+            if [ "$B" = "200" ] && grep -q kdmcBoite /tmp/bouton.js && [ "$P" -ge 1 ]; then ok=1; break; fi
+            sleep 20
+          done
+          [ "$ok" = "1" ] || { echo "::error title=Bouton admin::bouton.js = HTTP $B (200 attendu), balise présente dans la page de Lingua = $P (1 attendu)"; exit 1; }
+          echo "::notice title=Bouton admin::« Écrire à l'admin » EN LIGNE — /__boite/bouton.js servi (200) et la balise est dans la page de lingua.kd-mc.com"
+
           echo "::notice title=Boîte unique::EN LIGNE et fermée aux inconnus — /__boite/admin sans session = 401 admin_requis ; dépôt depuis un site hors domaine = 403 origine_refusee"
 
       # ── D'OÙ VIENNENT VRAIMENT LES PAGES ? (preuve par repère) ───────────

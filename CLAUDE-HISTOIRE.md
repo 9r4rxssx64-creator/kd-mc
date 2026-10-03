@@ -11604,6 +11604,16 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 - Gardes : `test:boite` (46 contrôles, D1 + Firebase simulés, sabotage) et `test:boite-portail` (le vrai portail dans Chromium, iPhone 375 px : bandeau, fenêtre,
   puces, réponse envoyée, refus clair, aucune injection, non-admin ne voit rien).
 
+### 2 bis. « Toutes les apps doivent pouvoir contacter l'admin simplement depuis leur compte » (Kevin 3.10, soir — « Tu as tout branché ? Rien oublié ? »)
+
+- **Le constat honnête** : la 1re version lisait Lingua, CMCteams, Rotaplan, l'arbre et les alertes, mais AUCUNE autre app n'avait de moyen d'écrire : le dépôt existait, personne ne l'appelait.
+- **Le bouton « ✉️ Écrire à l'admin »** est posé par le ROUTEUR sur toute page HTML de toute adresse du domaine (`injecterBouton`, couche partagée : la 33ᵉ adresse l'a sans qu'on y pense, aucune app modifiée).
+  Hors adresses gardées (la porte « fiche » d'un inconnu, qui n'a pas encore de compte) et hors `admin.kd-mc.com` ; l'admin ne le voit pas ; une app peut se retirer avec `<meta name="kdmc-contact" content="off">`.
+- **Depuis son compte** : le NOM vient de la session du domaine (jamais de la page : on ne peut pas écrire sous le nom d'un autre) ; non connecté, on demande nom + contact. L'admin reçoit
+  **toutes les infos** : compte (nom + identifiant), app et page, appareil (« iPhone · Safari »), pays, contact. Il répond depuis la fenêtre ; la personne relit la réponse dans le bouton
+  (`/__boite/mes`, ses messages de toutes les apps ; un visiteur non connecté, avec un suivi secret) ; pastille rouge quand une réponse est nouvelle.
+- Mise en forme uniquement par `element.style` (les CSP des apps refusent les `<style>`), texte par `textContent`, zéro écriture KV (D1).
+
 ### 3. OBLIGATIONS
 
 1. Toute app qui reçoit un message d'une personne (formulaire, contact, demande, chat) le rend lisible dans la boîte : adaptateur dans `boite.js` ou dépôt `/__boite/deposer`.

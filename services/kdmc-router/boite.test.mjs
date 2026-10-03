@@ -6,7 +6,9 @@
  * node services/kdmc-router/boite.test.mjs */
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
-import { handleBoite, lireBoite, LIMITES, SOURCES_MESSAGES, _viderMemo } from './boite.js';
+import { handleBoite, lireBoite, LIMITES, SOURCES_MESSAGES, _viderMemo, appareilDe } from './boite.js';
+import { BOUTON_JS } from './boite-bouton.js';
+import mod, { injecterBouton, BOUTON_TAG } from './worker.js';
 import { ADMIN, schema as schemaCercle } from './cercle.js';
 
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d !== undefined ? '  → ' + JSON.stringify(d).slice(0, 240) : ''}`); };
@@ -40,7 +42,7 @@ const fbFetch = async (u, o) => {
   return new Response('?', { status: 405 });
 };
 const notes = [];
-const personnes = { kev: { uid: ADMIN, nom: 'Admin KDMC', admin: true }, lea: { uid: 'lea-martin', nom: 'Léa Martin', admin: false } };
+const personnes = { max: { uid: 'max-roux', nom: 'Max Roux', admin: false }, kev: { uid: ADMIN, nom: 'Admin KDMC', admin: true }, lea: { uid: 'lea-martin', nom: 'Léa Martin', admin: false } };
 const outils = { qui: async (r) => personnes[r.headers.get('x-test')] || null, notifier: async (t, x) => { notes.push(t + ' | ' + x); }, now: () => T, fetch: fbFetch, fbToken: async () => 'jeton-test' };
 const appel = async (qui, chemin, corps, extra) => {
   const h = Object.assign({ 'x-test': qui || '', 'content-type': 'application/json', origin: 'https://kd-mc.com' }, extra || {});
@@ -165,6 +167,69 @@ ok(b.messages.length <= LIMITES.liste, '7b. la liste reste bornée (' + LIMITES.
 
 /* 8. ZÉRO écriture KV, partout */
 ok(kvEcrit === kvAvant && kvEcrit === 0, '8. TOUT ce qui précède (lectures, réponses, lus, dépôts) : ' + kvEcrit + ' écriture KV (le plafond gratuit est déjà vidé chaque jour)');
+
+
+/* 10. « Écrire à l'admin » depuis N'IMPORTE QUELLE app, depuis son compte (Kevin 3.10 : boutiques, arbre, Lingua… toutes) */
+const depotDe = (qui, corps, ua, page) => appel(qui, '/deposer', corps, { origin: 'https://shops.kd-mc.com', 'cf-connecting-ip': '192.0.2.' + (Math.floor(Math.random() * 200) + 20), 'user-agent': ua || '' });
+const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+ok(appareilDe(IPHONE) === 'iPhone · Safari' && appareilDe('Mozilla/5.0 (Windows NT 10.0) Chrome/130 Safari/537') === 'Windows · Chrome' && appareilDe('') === 'appareil inconnu · navigateur inconnu', '10a. l\'appareil est résumé (« iPhone · Safari »), jamais le User-Agent brut');
+d = await depotDe('lea', { nom: 'Quelqu\'un d\'autre', texte: 'Ma commande n\'est pas arrivée', page: '/commande/42', contact: '' }, IPHONE);
+const ligneD = db._s.prepare('SELECT * FROM boite WHERE suivi = ?').get(d.suivi);
+ok(d.ok && ligneD.nom === 'Léa Martin' && ligneD.uid === 'lea-martin' && ligneD.page === '/commande/42' && ligneD.appareil === 'iPhone · Safari' && ligneD.app === 'shops', '10b. connecté : le NOM vient de la session (pas de la page — impossible d\'écrire sous le nom d\'un autre), avec compte, page et appareil', ligneD);
+b = await boite();
+const dep2 = b.messages.find((x) => x.cle === 'depot:' + ligneD.id);
+ok(dep2 && /Léa Martin/.test(dep2.de) && !/non connecté/.test(dep2.de) && dep2.infos.some((l) => /Compte : Léa Martin \(lea-martin\)/.test(l)) && dep2.infos.some((l) => /shops\.kd-mc\.com\/commande\/42/.test(l)) && dep2.infos.some((l) => /iPhone · Safari/.test(l)), '10c. l\'admin voit TOUTES les infos : compte, app + page, appareil', dep2);
+d = await depotDe('', { nom: 'Visiteur', texte: 'Bonjour, une question', contact: 'v@exemple.fr' }, IPHONE);
+const anon = (await boite()).messages.find((x) => x.cle === 'depot:' + db._s.prepare('SELECT id FROM boite WHERE suivi = ?').get(d.suivi).id);
+ok(anon && /Visiteur \(non connecté\)/.test(anon.de) && anon.infos[0] === '👤 Non connecté' && anon.infos.some((l) => /v@exemple\.fr/.test(l)), '10d. non connecté : dit « non connecté » et garde le contact donné');
+/* « Mes messages » : le compte relit la réponse */
+await appel('kev', '/admin/repondre', { cle: 'depot:' + ligneD.id, texte: 'On regarde, merci Léa.' });
+let mes = await appel('lea', '/mes');
+ok(mes.ok && mes.connecte && mes.nom === 'Léa Martin' && mes.messages.some((x) => x.texte === 'Ma commande n\'est pas arrivée' && x.reponse === 'On regarde, merci Léa.' && x.app === 'shops'), '10e. depuis son compte, Léa relit ses messages ET la réponse de l\'admin (toutes apps)', mes);
+mes = await appel('max', '/mes');
+ok(mes.ok && mes.connecte && !mes.messages.some((x) => /commande/.test(x.texte)), '10f. un autre compte ne voit RIEN des messages de Léa', mes);
+mes = await appel('', '/mes?s=' + d.suivi);
+ok(mes.ok && !mes.connecte && mes.messages.length === 1 && /une question/.test(mes.messages[0].texte), '10g. un visiteur non connecté relit les siens avec son suivi secret, rien d\'autre', mes);
+mes = await appel('', '/mes');
+ok(mes.ok && mes.messages.length === 0, '10h. sans suivi ni compte : rien');
+ok((await appel('kev', '/mes')).admin === true, '10i. l\'admin est reconnu : le bouton se retire chez lui');
+/* migration : une table « boite » déjà en ligne, sans les nouvelles colonnes */
+const ancienneBase = d1(); await schemaCercle(ancienneBase);
+ancienneBase._s.exec('CREATE TABLE boite (id INTEGER PRIMARY KEY AUTOINCREMENT, app TEXT, nom TEXT, texte TEXT, contact TEXT, ip TEXT, suivi TEXT, cree INTEGER, lu INTEGER DEFAULT 0, reponse TEXT, repondu INTEGER)');
+ancienneBase._s.prepare('INSERT INTO boite (app, nom, texte, suivi, cree) VALUES (?, ?, ?, ?, ?)').run('lingua', 'Ancien', 'avant la migration', 'a'.repeat(24), T - 5000);
+const envV = { CERCLE_DB: ancienneBase, ACCOUNTS: env.ACCOUNTS };
+const rV = await handleBoite(new Request('https://kd-mc.com/__boite/admin', { headers: { 'x-test': 'kev', origin: 'https://kd-mc.com' } }), new URL('https://kd-mc.com/__boite/admin'), envV, outils);
+const jV = await rV.json();
+ok(jV.ok && jV.messages.some((x) => x.texte === 'avant la migration') && ancienneBase._s.prepare('PRAGMA table_info(boite)').all().map((c) => c.name).includes('appareil'), '10j. la table déjà en ligne reçoit les colonnes sans rien perdre (migration)', jV.sources);
+
+/* 11. le bouton est servi, autonome, sans <style> ni attribut style (les CSP des apps les refuseraient) */
+const rb = await handleBoite(new Request('https://shops.kd-mc.com/__boite/bouton.js'), new URL('https://shops.kd-mc.com/__boite/bouton.js'), env, outils);
+const jsb = await rb.text();
+let parse = true; try { new Function(jsb); } catch { parse = false; }
+ok(rb.status === 200 && /javascript/.test(rb.headers.get('content-type')) && parse && jsb === BOUTON_JS, '11a. /__boite/bouton.js est servi et c\'est du JavaScript valide');
+ok(!/innerHTML|document\.write|eval\(|<style|setAttribute\('style'|https?:\/\//.test(jsb), '11b. le bouton est autonome : aucun innerHTML, aucun <style>, aucun attribut style, aucune adresse extérieure', (jsb.match(/innerHTML|<style|setAttribute\('style'|https?:\/\/[^'" ]+/g) || []));
+
+/* 12. le routeur pose le bouton sur TOUTE page HTML (vrai routeur, pas une lecture de texte) */
+const page = '<!doctype html><html><body><h1>Boutique</h1></body></html>';
+const rI = await injecterBouton(new Response(page, { status: 200, headers: { 'content-type': 'text/html', 'content-length': String(page.length) } }));
+const tI = await rI.text();
+ok(tI.includes(BOUTON_TAG) && tI.indexOf(BOUTON_TAG) < tI.toLowerCase().indexOf('</body>') && !rI.headers.get('content-length'), '12a. le bouton est ajouté avant </body> (et la longueur périmée retirée)');
+const vraiFetch = globalThis.fetch;
+globalThis.fetch = async (u) => { const t = new URL(String(u && u.url || u)).pathname; return t.endsWith('.js') ? new Response('console.log(1)', { status: 200, headers: { 'content-type': 'text/javascript' } }) : t.endsWith('.json') ? new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }) : new Response(page, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }); };
+const envR = { KDMC_SSO_SECRET: 's', ACCOUNTS: env.ACCOUNTS, ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
+const servir = async (hote, chemin) => { const p = []; const r = await mod.fetch(new Request('https://' + hote + chemin, { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'x-kdmc-sonde': 't' } }), envR, { waitUntil: (x) => p.push(x) }); await Promise.all(p); return { r, t: await r.text() }; };
+const hotes = [...readFileSync(new URL('./worker.js', import.meta.url), 'utf8').match(/const ROUTES\s*=\s*\{[\s\S]*?\n\};/)[0].matchAll(/'([a-z0-9.-]+\.kd-mc\.com)':/g)].map((x) => x[1]).filter((h) => h !== 'admin.kd-mc.com');
+/* Une adresse gardée montre sa PORTE (fiche à remplir) à un inconnu : pas de bouton sur la porte, il n'a pas encore de compte. Dès qu'il est connu, il reçoit la vraie page. */
+const sans = [], portes = []; for (const h of hotes) { const x = await servir(h, '/'); if (x.r.headers.get('x-kdmc-porte')) { portes.push(h); continue; } if (x.r.status === 200 && !x.t.includes(BOUTON_TAG)) sans.push(h + ' (' + x.r.status + ')'); }
+ok(portes.length >= 5 && portes.length <= 12, '12b0. les adresses gardées montrent leur porte à un inconnu (' + portes.length + ' : ' + portes.join(', ') + ')');
+ok(hotes.length - portes.length >= 20 && sans.length === 0, '12b. le bouton est sur CHAQUE adresse ouverte du domaine (' + (hotes.length - portes.length) + ' adresses sur ' + hotes.length + ', lues dans le routeur)', sans);
+const xa = await servir('admin.kd-mc.com', '/');
+ok(!xa.t.includes(BOUTON_TAG), '12c. pas de bouton sur admin.kd-mc.com (l\'admin n\'écrit pas à l\'admin)');
+const xj = await servir('lingua.kd-mc.com', '/app.js'); const xk = await servir('lingua.kd-mc.com', '/data.json');
+ok(!xj.t.includes(BOUTON_TAG) && !xk.t.includes(BOUTON_TAG), '12d. scripts et données ne reçoivent jamais le bouton (HTML seulement)');
+globalThis.fetch = vraiFetch;
+const W2 = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
+ok(/return injecterBouton\(new Response\(res\.body/.test(W2) && /host !== 'admin\.kd-mc\.com'/.test(W2), '12e. le chemin de réponse du routeur appelle bien l\'injection (une fonction que personne n\'appelle ne protège rien)');
 
 /* 9. câblage : le routeur et le portail utilisent vraiment la boîte (une fonction que personne n'appelle ne protège rien) */
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');

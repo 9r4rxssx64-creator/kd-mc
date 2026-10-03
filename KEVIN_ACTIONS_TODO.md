@@ -65,6 +65,9 @@
 - **Une décision reste à toi, sans urgence** : l'appel en direct (OpenAI Realtime, à la minute) et la voix
   d'Antonin (Replicate) restent payants. Dis « ferme » et je les retire ; sinon ils restent derrière leurs plafonds.
 
+## ✅ FAIT (4.10) — ✉️ « Toutes les apps (boutiques, arbre, Lingua…) peuvent me contacter depuis leur compte »
+**Où** : un petit bouton ✉️ en bas à droite de chaque app (pas sur ta propre vue admin). La personne écrit, tu reçois dans « Mes messages » : son nom (pris dans son compte), l'app, la page, son appareil. Tu réponds depuis la même fenêtre ; elle relit ta réponse dans le bouton. **Aucun geste pour toi.**
+
 ## ✅ FAIT (3.10, soir) — 📬 « Tous les messages de n'importe quelle app, sur ma vue admin, je réponds par là »
 **Où** : portail kd-mc.com (connecté en admin) → le bandeau « 📬 … messages » reste collé en haut ; un toucher ouvre « Mes messages ».
 **Dedans** : Lingua, CMCteams (employés), toute autre app, demandes Rotaplan, corrections de l'arbre, alertes. **Répondre** : zone de texte + « Envoyer »

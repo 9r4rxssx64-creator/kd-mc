@@ -122,7 +122,8 @@
       var corps = el('div', 'bf-corps');
       (m.fil || []).forEach(function (x) { var b = el('div', 'bf-b ' + (x.moi ? 'moi' : 'eux')); b.appendChild(el('div', null, x.texte)); b.appendChild(el('div', 'bf-bt', (x.moi ? 'Toi · ' : '') + quand(x.ts))); corps.appendChild(b); });
       if (!(m.fil || []).length) corps.appendChild(el('div', 'bf-b eux', m.texte));
-      if (m.contact) corps.appendChild(el('div', 'bf-info', '✉️ ' + m.contact));
+      (m.infos || []).forEach(function (l) { corps.appendChild(el('div', 'bf-info', l)); });
+      if (m.contact && !(m.infos || []).length) corps.appendChild(el('div', 'bf-info', '✉️ ' + m.contact));
       var bas = el('div', 'bf-bas');
       if (m.repondre === 'direct') {
         var ta = el('textarea'); ta.rows = 2; ta.maxLength = 2000; ta.placeholder = 'Ta réponse…'; ta.value = saisie || ''; ta.setAttribute('aria-label', 'Ta réponse');

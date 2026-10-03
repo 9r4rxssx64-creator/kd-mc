@@ -1201,6 +1201,16 @@
       "maj": "2026-10-03",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "contacter-admin-partout": {
+      "titre": "Bouton « Écrire à l'admin » sur toutes les apps, depuis le compte",
+      "branche": "claude/contacter-admin-partout",
+      "sujet": "Kevin 4.10 : toutes les apps du domaine contactent l'admin depuis leur compte ; bouton posé par le routeur, infos complètes, réponse relue",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -15,7 +15,9 @@ import { handleBoite } from './boite.js';
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
 import * as IA from './bot-ia.js';
-import { handleCercle } from './cercle.js';   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
+import { handleCercle } from './cercle.js';
+import { handleAppelPush, AppelReveil } from './appel-push.js';
+export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wrangler.toml)   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
 import { KEVIN_MATRICULE, RE_PLANNING, lireSeed, prochainsJours, faitsPlanning } from './bee-planning.js';
@@ -464,6 +466,7 @@ const ROUTEUR = {
     // Mémoire cloud KDMC Lingua : sauvegarde/restauration de la progression par « clé
     // de compte » (hash nom+code = capacité). Données NON sensibles (XP/série/nom choisi).
     // ISOLÉ (préfixe KV lingua:), FAIL-OPEN (jamais throw → la mémoire locale reste).
+    if (url.pathname.startsWith('/__lingua/appel-')) return handleAppelPush(request, url, env);   /* 📞 Bee t'appelle, même app fermée */
     if (url.pathname.startsWith('/__lingua/')) return handleLingua(request, url, env);
     /* CERCLE (Kevin 2.10) : invitations, amis, présence, messages, cadeaux — base D1 gratuite, jamais le KV. */
     if (url.pathname.startsWith('/__cercle/')) return handleCercle(request, url, env, outilsCercle(env));

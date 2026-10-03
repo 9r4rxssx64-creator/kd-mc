@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.133.0";
+var APP_VER="v2.134.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -72,7 +72,7 @@ function loadS(){
      c'est justement pour ca que le choix existe (j'ai devine faux deux fois). */
   S.beeArt=lg("beeArt","vive"); // dessin de Bee : "douce" ou "vive" (choix dans les reglages)
   S.beeVoice=lg("beeVoice","fillette"); // voix de Bee choisie (catalogue BEE_VOICES) — fillette mignonne par défaut
-  S.social=lg("social",{offerts:0,quetes:0,encourages:0,stickers:[]}); S.appels=lg("appels",{n:0,jours:{},heure:"",apresLecon:true,off:false,report:0,refus:""});   // 📞 appels de la mascotte (3.10) S.boostJusqua=lg("boostJusqua",0);   // 👥 Cercle (2.10)
+  S.social=lg("social",{offerts:0,quetes:0,encourages:0,stickers:[]}); S.appels=lg("appels",{n:0,jours:{},heure:"",apresLecon:true,off:false,report:0,refus:"",push:false});   // 📞 appels de la mascotte (3.10) S.boostJusqua=lg("boostJusqua",0);   // 👥 Cercle (2.10)
   S.latin=lg("latin",true);   // 🔤 écriture latine sous le russe, l'ukrainien, le coréen, le chinois, le japonais (2.10)
   S.turtle=lg("turtle",false); // 🐢 mode tortue : les modèles de prononciation se jouent au ralenti partout
   S.coachScene=lg("coachScene",null); // 🎭 jeu de rôle en cours (id de SCENES) — null = conversation libre
@@ -2967,13 +2967,13 @@ function appelEntrant(force){ if(APPEL||DISC.open||!appelPossible())return; if(!
     '<div class="ap-btns"><div><button class="ap-rond ap-refus" aria-label="Refuser l\'appel">✕</button><span>Pas aujourd\'hui</span></div>'+
     '<div><button class="ap-rond ap-decroche" aria-label="Décrocher">📞</button><span>Décrocher</span></div></div>'+
     '<button class="ap-plustard">⏰ Rappelle-moi dans 1 h</button>';
-  document.body.appendChild(ov);
+  document.body.appendChild(ov); appelPushFait();   /* ça sonne déjà ici : pas de 2e sonnerie par notification aujourd'hui */
   var k=0, son=function(){ tone([880,660],.35); setTimeout(function(){ tone([880,660],.35); },450); vibrate([400,200,400]); };
   son(); var iv=setInterval(function(){ if(!ov.isConnected){ clearInterval(iv); return; } son();
     if(++k>=12){ clearInterval(iv); ov.remove(); S.appels.report=Date.now()+3600e3; save(); toast("📞 Appel manqué — "+MNAME()+" te rappelle dans 1 h"); } },2200);
   var fermer=function(){ clearInterval(iv); ov.remove(); };
   ov.querySelector(".ap-decroche").onclick=function(){ fermer(); appelDemarrer(); };
-  ov.querySelector(".ap-refus").onclick=function(){ fermer(); S.appels.refus=today(); save(); toast(MG("Elle","Il")+" te rappellera demain 🙂"); };
+  ov.querySelector(".ap-refus").onclick=function(){ fermer(); S.appels.refus=today(); save(); appelPushFait(); toast(MG("Elle","Il")+" te rappellera demain 🙂"); };
   ov.querySelector(".ap-plustard").onclick=function(){ fermer(); S.appels.report=Date.now()+3600e3; save(); toast("⏰ "+MNAME()+" te rappelle dans 1 h"); };
   setTimeout(function(){ var b=ov.querySelector(".ap-decroche"); if(b)b.focus(); },100); }
 
@@ -3059,7 +3059,7 @@ function appelTerminer(raccroche){ if(!APPEL||APPEL.fini)return; var A=APPEL; A.
   if(A.tours>=2&&!A.coupe){ xp=10+2*Math.min(A.tours,APPEL_TOURS); gem=premier?5:0;
     S.xp+=xp; S.dailyXP+=xp; histAdd(xp); S.gems+=gem;
     if(!S.appels.jours)S.appels.jours={}; S.appels.jours[today()]=1; S.appels.n=(S.appels.n|0)+1; S.appels.dernier=Date.now();
-    S.today.appels=(S.today.appels|0)+1; bumpStreak(); save(); checkAchv(); checkQuests(); }
+    S.today.appels=(S.today.appels|0)+1; bumpStreak(); save(); checkAchv(); checkQuests(); appelPushFait(); }
   var fin=el("div","ap-fin");
   fin.innerHTML='<div class="mascot-mini big">'+MASCOT(xp?"party":"wave",120)+'</div>'+
     '<h3>'+(xp?"📞 Appel terminé — bravo !":"📞 Appel terminé")+'</h3>'+
@@ -3078,6 +3078,29 @@ function appelFermer(){ var A=APPEL; if(!A)return; discStopSpeaking(); DISC.open
   if(A.rec){ try{ A.rec.abort(); }catch(_){} } clearInterval(A.chronoIv);
   try{ A.ov.remove(); }catch(_){} APPEL=null; render(); }
 
+/* ---- 🔔 MÊME APP FERMÉE : notification « 📞 Bee t'appelle » envoyée par le domaine à l'heure choisie (3.10, « Intègre »).
+   Gratuit : service de notifications déjà en ligne + horloge Durable Object côté routeur. Sur iPhone, Apple ne les
+   donne qu'à une app AJOUTÉE À L'ÉCRAN D'ACCUEIL (iOS 16.4+) : on le dit et on guide. */
+function appelPushDispo(){ return ("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window); }
+function appelSurIphone(){ return /iPhone|iPad|iPod/.test(navigator.userAgent||""); }
+function appelInstallee(){ try{ return !!(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)); }catch(_){ return false; } }
+function _appelCle(s){ s=String(s).replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4)s+="="; var b=atob(s),a=new Uint8Array(b.length); for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a; }
+function _appelSub(){ if(!appelPushDispo())return Promise.resolve(null); return navigator.serviceWorker.ready.then(function(r){ return r.pushManager.getSubscription(); }).catch(function(){ return null; }); }
+function _appelPost(chemin,corps){ return fetch(SYNC_BASE+"/"+chemin,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(corps)}).then(function(r){ return r.json(); }); }
+function appelPushAbonner(heure){
+  if(!appelPushDispo()) return Promise.reject(new Error("indispo"));
+  return Notification.requestPermission().then(function(p){ if(p!=="granted") throw new Error("refus");
+      return Promise.all([navigator.serviceWorker.ready, fetch(SYNC_BASE+"/appel-cle",{cache:"no-store"}).then(function(r){ return r.json(); })]); })
+    .then(function(x){ var reg=x[0], k=x[1]; if(!k||!k.ok||!k.cle) throw new Error("cle");
+      return reg.pushManager.getSubscription().then(function(sb){ return sb||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_appelCle(k.cle)}); }); })
+    .then(function(sub){ var c=COURSES[S.course]||{}, tz="UTC"; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"; }catch(_){}
+      return _appelPost("appel-abonnement",{sub:sub.toJSON(),heure:heure,tz:tz,langue:c.nom||"",mascotte:mascotCfg().id}); })
+    .then(function(j){ if(!j||!j.ok) throw new Error((j&&j.reason)||"refuse"); S.appels.push=true; S.appels.heure=heure; save(); return true; }); }
+function appelPushDesabonner(){ return _appelSub().then(function(sub){ S.appels.push=false; save(); if(!sub)return true;
+    return _appelPost("appel-abonnement",{sub:sub.toJSON(),actif:false}).catch(function(){}).then(function(){ return sub.unsubscribe().catch(function(){}); }); }); }
+/* appel fait / refusé / déjà en train de sonner dans l'app → pas de notification ce jour-là */
+function appelPushFait(){ if(!(S.appels&&S.appels.push))return; _appelSub().then(function(sub){ if(sub) _appelPost("appel-fait",{sub:sub.toJSON()}).catch(function(){}); }); }
+
 /* ---- réglages : l'heure de l'appel, l'appel après la leçon, et le rappel CALENDRIER (sonne app fermée) ---- */
 function appelReglages(){ var a=S.appels; var m=modal();
   m.body.innerHTML='<div class="mascot-mini">'+MASCOT("wave",90)+'</div><h3>📞 Les appels de '+esc(MNAME())+'</h3>'+
@@ -3085,12 +3108,30 @@ function appelReglages(){ var a=S.appels; var m=modal();
     '<label class="mini ap-l"><input type="checkbox" id="apLecon"'+(a.apresLecon!==false&&!a.off?' checked':'')+'> Après ma 1re leçon du jour</label>'+
     '<label class="mini ap-l">À heure fixe : <input type="time" id="apHeure" class="txt" value="'+esc(a.heure||"")+'" style="width:auto;display:inline-block"></label>'+
     '<label class="mini ap-l"><input type="checkbox" id="apOff"'+(a.off?' checked':'')+'> Ne plus m\'appeler (je l\'appelle moi-même)</label>'+
-    '<p class="mini">📅 <b>Même app fermée</b> : ajoute le rendez-vous à ton calendrier — ton téléphone sonne chaque jour à l\'heure choisie, un toucher et l\'appel commence.</p>';
+    '<div class="ap-push" id="apPush"></div>'+
+    '<p class="mini">📅 <b>Ou par le calendrier</b> : ajoute le rendez-vous — ton téléphone sonne chaque jour à l\'heure choisie, un toucher et l\'appel commence.</p>';
   var cal=el("button","btn-ghost"); cal.textContent="📅 Ajouter au calendrier"; cal.onclick=function(){ var h=m.body.querySelector("#apHeure").value||"18:30"; a.heure=h; save(); appelCalendrier(h); };
   var go=el("button","btn-main"); go.textContent="📞 Appeler "+MNAME()+" maintenant"; go.onclick=function(){ m.close(); appelDemarrer(); };
   var ok=el("button","btn-ghost"); ok.textContent="Enregistrer";
   ok.onclick=function(){ a.apresLecon=m.body.querySelector("#apLecon").checked; a.heure=m.body.querySelector("#apHeure").value||""; a.off=m.body.querySelector("#apOff").checked; save(); m.close(); toast("📞 C'est noté"); };
-  m.body.appendChild(go); m.body.appendChild(ok); m.body.appendChild(cal); }
+  m.body.appendChild(go); m.body.appendChild(ok); m.body.appendChild(cal);
+  /* 🔔 notification « Bee t'appelle » même app fermée */
+  var zp=m.body.querySelector("#apPush"); var peindre=function(){ zp.innerHTML="";
+    var t=el("p","mini");
+    if(appelSurIphone()&&!appelInstallee()){ t.innerHTML='🔔 <b>Pour qu\''+MG("elle","il")+' t\'appelle même app fermée</b> : ajoute d\'abord Lingua à ton écran d\'accueil (bouton Partager <b>⬆️</b> → « Sur l\'écran d\'accueil »), ouvre-la depuis l\'icône, puis reviens ici.'; zp.appendChild(t); return; }
+    if(!appelPushDispo()){ t.textContent="🔔 Ce navigateur ne reçoit pas les notifications : utilise le calendrier ci-dessous."; zp.appendChild(t); return; }
+    var b=el("button",S.appels.push?"btn-ghost":"btn-main");
+    if(S.appels.push){ t.innerHTML='🔔 <b>Activé</b> : '+esc(MNAME())+' t\'appelle chaque jour à <b>'+esc(S.appels.heure||"18:30")+'</b>, même app fermée.'; b.textContent="🔕 Ne plus m'appeler app fermée";
+      b.onclick=function(){ b.disabled=true; appelPushDesabonner().then(function(){ toast("🔕 C'est arrêté"); peindre(); }); }; }
+    else { t.innerHTML='🔔 <b>Même app fermée</b> : une notification « 📞 '+esc(MNAME())+' t\'appelle » à l\'heure choisie.'; b.textContent="🔔 Qu'"+MG("elle","il")+" m'appelle même app fermée";
+      b.onclick=function(){ var h=m.body.querySelector("#apHeure").value||"18:30"; b.disabled=true; b.textContent="…";
+        appelPushAbonner(h).then(function(){ toast("🔔 "+MNAME()+" t'appellera chaque jour à "+h); peindre(); })
+          .catch(function(e){ var r=String(e&&e.message||e); b.disabled=false; peindre();
+            toast(r==="refus"?"🔕 Notifications refusées — tu peux les autoriser dans les réglages du téléphone":"Impossible pour l'instant ("+r+") — le calendrier marche toujours 📅"); }); }; }
+    zp.appendChild(t); zp.appendChild(b); };
+  peindre();
+  /* l'heure change alors que c'est activé → on prévient le domaine */
+  m.body.querySelector("#apHeure").addEventListener("change",function(){ var h=this.value; if(S.appels.push&&h) appelPushAbonner(h).then(function(){ toast("🔔 Nouvelle heure : "+h); peindre(); }).catch(function(){}); }); }
 function appelCalendrier(h){ var p=String(h||"18:30").split(":"), d=new Date(); d.setHours(+p[0]||18,+p[1]||30,0,0); if(d<new Date()) d.setDate(d.getDate()+1);
   var z=function(n){ return String(n).padStart(2,"0"); };
   var loc=function(x){ return x.getFullYear()+z(x.getMonth()+1)+z(x.getDate())+"T"+z(x.getHours())+z(x.getMinutes())+"00"; };

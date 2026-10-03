@@ -3,7 +3,7 @@
    en ligne (plus jamais bloqué sur une ancienne page « collée » en mémoire), et on
    garde une copie en cache pour marcher hors-ligne. Aligné sur la règle « MAJ auto
    forcée toujours » : une nouvelle version publiée s'affiche dès la prochaine ouverture. */
-var CACHE = "lingua-v2.133.0";
+var CACHE = "lingua-v2.134.0";
 var ASSETS = ["./","./index.html","./app.js","./data.js","./histoires-langues.js","./mc-voix.js","./sources-langues.js","./data-mc.js","./data-lsf.js","./translit.js","./manifest.webmanifest","./icon.svg","./bee/wave.webp","./bee/party.webp","./bee/read.webp","./bee/point.webp","./bee/rig/base.webp","./bee/rig/wing-l.webp","./bee/rig/wing-r.webp","./donkey/wave.webp","./donkey/party.webp","./donkey/read.webp","./donkey/point.webp","./donkey/rig/base.webp"];
 
 self.addEventListener("install", function(e){
@@ -52,3 +52,24 @@ self.addEventListener("fetch", function(e){
     }).catch(function(){ return caches.match(req); })
   );
 });
+
+/* 📞 BEE T'APPELLE, MÊME APP FERMÉE (3.10.2026, Kevin : « Intègre ») : le domaine envoie la notification à
+   l'heure choisie (routeur /__lingua/appel-*, horloge Durable Object) ; on l'affiche comme un appel
+   (reste à l'écran, vibre), et un toucher ouvre Lingua sur l'écran qui sonne (#appel). */
+self.addEventListener("push", function(e){
+  var d={}; try{ d=e.data?e.data.json():{}; }catch(_){ d={}; }
+  e.waitUntil(self.registration.showNotification(d.title||"📞 Bee t'appelle", {
+    body:d.body||"Ta petite leçon au téléphone — touche pour décrocher", tag:d.tag||"lingua-appel", renotify:true,
+    requireInteraction:true, icon:"./icon.svg", badge:"./icon.svg", vibrate:[400,200,400,200,400],
+    data:{url:d.url||"./#appel"} }));
+});
+self.addEventListener("notificationclick", function(e){
+  e.notification.close(); var url=(e.notification.data&&e.notification.data.url)||"./#appel";
+  e.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(function(cs){
+    for(var i=0;i<cs.length;i++){ var c=cs[i]; if(c.url.indexOf(self.location.origin)===0&&c.focus){
+      /* app déjà ouverte : on la ramène et on change juste le « # » → l'app fait sonner (hashchange) */
+      return c.focus().then(function(w){ w=w||c; return w.navigate?w.navigate(url):null; }).catch(function(){ return self.clients.openWindow(url); }); } }
+    return self.clients.openWindow(url);
+  }));
+});
+

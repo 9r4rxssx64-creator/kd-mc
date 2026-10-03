@@ -167,3 +167,15 @@ UPSTREAM_PREFIX = ""
 # via un GitHub Actions cron dédié si besoin (ou passage Workers Paid). No-op sans clés Tuya.
 [triggers]
 crons = []
+
+# 📞 L'appel de Bee même app fermée (3.10.2026) : l'HORLOGE des notifications « Bee t'appelle ».
+# Un Durable Object (stockage SQLite = plan Workers GRATUIT, comme apex-chat-api) qui se réveille toutes les
+# 3 minutes tant qu'il reste un abonné — les 5 tâches planifiées gratuites du compte sont déjà prises.
+[[durable_objects.bindings]]
+name = "APPEL_REVEIL"
+class_name = "AppelReveil"
+
+[[migrations]]
+tag = "appel-v1"
+new_sqlite_classes = ["AppelReveil"]
+

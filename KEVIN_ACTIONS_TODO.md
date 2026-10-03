@@ -9,6 +9,15 @@
 
 ---
 
+## 👆 Lingua v2.134.0 (3.10, nuit) — Bee t'appelle MÊME APP FERMÉE : 1 réglage de ton côté (1 minute)
+
+1. Si ce n'est pas déjà fait : ouvre lingua.kd-mc.com dans Safari → bouton **Partager ⬆️** → **« Sur l'écran
+   d'accueil »** (Apple ne donne les notifications qu'aux apps posées sur l'écran d'accueil).
+2. Ouvre Lingua **depuis l'icône** → carte **« 📞 Appeler Bee »** → choisis ton heure → **« 🔔 Qu'elle m'appelle
+   même app fermée »** → **Autoriser**.
+3. Chaque jour à cette heure : notification « 📞 Bee t'appelle », un toucher et ça sonne. Pas de notification le
+   jour où tu as déjà fait ton appel. « 🔕 Ne plus m'appeler app fermée » pour arrêter.
+
 ## ✅ Lingua v2.133.0 (3.10) — Bee (ou Bourricot) t'appelle : fait
 
 - **Ça sonne** : après ta 1re leçon du jour, Bee t'appelle (écran d'appel, sonnerie, vibration). Tu

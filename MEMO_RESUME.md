@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (23h40) — Lingua v2.134.0 : Bee t'appelle même app fermée
+
+Kevin : « Intègre » (après ma limite « app fermée = service payant », qui était fausse — leçon #399).
+- **Envoi** : apex-push-worker `/web-push` {subscription, payload} + `Authorization: Bearer KDMC_PUSH_TOKEN` (déjà
+  dans le routeur) ; le téléphone s'abonne avec la clé publique lue sur `KDMC_PUSH_URL/health` (`/__lingua/appel-cle`,
+  mise en cache 1 jour).
+- **Stockage** : D1 `kdmc-cercle`, table `appel_push` (id = sha256 de l'adresse d'envoi, heure locale, fuseau IANA).
+- **Horloge** : Durable Object `AppelReveil` (nouvelle liaison `APPEL_REVEIL` + migration `appel-v1`
+  `new_sqlite_classes`) ; un seul objet « horloge », réveil 3 min, s'arrête sans abonné.
+- **Pièges** : la route `/__lingua/appel-*` doit passer AVANT `/__lingua/` (sinon handleLingua la mange) ;
+  `SYNC_BASE` est absolu (https://lingua.kd-mc.com/__lingua) → un test servi sur localhost doit router ce domaine.
+
+---
 ## 2026-10-04 (matin) — « Tu as tout branché ? Rien oublié ? » : NON, pas encore → le bouton « Écrire à l'admin » sur TOUTES les apps
 
 - **Réponse honnête à Kevin** : la boîte lisait Lingua, CMCteams, Rotaplan, l'arbre (corrections) et les alertes ; le dépôt `/__boite/deposer` existait mais AUCUNE app ne l'appelait → boutiques, arbre (visiteurs), Lingua… ne pouvaient pas écrire depuis leur compte.

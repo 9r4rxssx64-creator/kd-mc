@@ -10,6 +10,7 @@
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken } from './fb-token.js';
+import { handleBoite } from './boite.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
@@ -466,6 +467,8 @@ const ROUTEUR = {
     if (url.pathname.startsWith('/__lingua/')) return handleLingua(request, url, env);
     /* CERCLE (Kevin 2.10) : invitations, amis, présence, messages, cadeaux — base D1 gratuite, jamais le KV. */
     if (url.pathname.startsWith('/__cercle/')) return handleCercle(request, url, env, outilsCercle(env));
+    /* LA BOÎTE UNIQUE DE L'ADMIN (Kevin 3.10) : tous les messages de toutes les apps, réponse directe — D1, jamais le KV en écriture. */
+    if (url.pathname.startsWith('/__boite/')) return handleBoite(request, url, env, outilsBoite(env));
     // Demande de démonstration Rotaplan (formulaire SANS script : champs obligatoires imposés par le
     // navigateur, REVÉRIFIÉS ici). Kevin 27.09 « renseignements obligatoires partout pour les nouveaux ».
     if (url.pathname === '/__demande') return handleDemande(request, env, host);
@@ -3225,6 +3228,18 @@ async function handleBeeMoi(request, env) {
 
 /* Outils du Cercle : QUI parle (dossier canonique, un compte par personne), et la notification de Kevin.
    L'admin = session Face ID vérifiée de Kevin OU laissez-passer admin (même règle que toutes les portes admin). */
+let _fbJeton = { v: '', exp: 0 };
+function outilsBoite(env) {
+  return Object.assign({}, outilsCercle(env), {
+    /* Jeton Firebase admin gardé 50 min dans l'instance (un jeton dure 1 h) : une lecture de la boîte ne refait pas l'échange. */
+    fbToken: async () => {
+      if (_fbJeton.v && Date.now() < _fbJeton.exp) return _fbJeton.v;
+      const o = await mintShopsAdminIdToken(env);
+      if (o && o.ok && o.id_token) { _fbJeton = { v: o.id_token, exp: Date.now() + 50 * 60000 }; return o.id_token; }
+      return '';   /* sans jeton : les règles ouvertes de la base servent, comme pour la page des messages */
+    },
+  });
+}
 function outilsCercle(env) {
   return {
     qui: async (request) => {

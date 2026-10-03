@@ -136,7 +136,7 @@ try {
   const KP = await K.ctx.newPage(); await KP.goto('https://kd-mc.com/'); await KP.waitForTimeout(2000);
   await KP.evaluate(() => { const b = document.getElementById('pk-skip'); if (b) b.click(); }); await KP.waitForTimeout(2000);   /* l'appareil de test n'a pas Face ID : « Plus tard » */
   const al = await KP.evaluate(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden ? a.textContent : null; });
-  ok(!!al && /1 nouveau message dans Lingua/.test(al) && /· 3 connecté/.test(al), '4f. portail kd-mc.com : l\'admin voit le bandeau « 1 nouveau message dans Lingua »', String(al) + ' | ' + (await KP.evaluate(() => document.body.innerText.slice(0, 200))));
+  ok(!!al && /1 nouveau message/.test(al) && /Lingua 1/.test(al) && /· 3 connecté/.test(al), '4f. portail kd-mc.com : l\'admin voit le bandeau « 1 nouveau message » (Lingua 1, boîte unique)', String(al) + ' | ' + (await KP.evaluate(() => document.body.innerText.slice(0, 200))));
   if (process.env.CAPTURE) { await KP.screenshot({ path: process.env.CAPTURE.replace('.png', '-portail.png') }); }
   const LP = await L.ctx.newPage(); await LP.goto('https://kd-mc.com/'); await LP.waitForTimeout(2500);
   ok(await LP.evaluate(() => { const a = document.getElementById('cercle-alerte'); return !a || a.hidden; }), '4g. portail : un membre ne voit jamais ce bandeau');

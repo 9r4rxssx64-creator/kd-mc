@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.39 -->
+<!-- v1.0.40 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -59,6 +59,45 @@
   #cercle-alerte[hidden]{display:none}
   #cercle-alerte .n{background:#dc2626;color:#fff;border-radius:999px;padding:2px 9px;font-size:.9em}
   #cercle-alerte.calme{border-color:rgba(127,127,127,.35);background:transparent;font-weight:500}
+  #cercle-alerte{position:sticky;top:6px;z-index:20;flex-wrap:wrap;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);min-height:48px}
+  #cercle-alerte .bt{font-weight:700}
+  #cercle-alerte .qui{font-size:.82em;font-weight:500;opacity:.9}
+  #cercle-alerte .qui.warn{color:#fbbf24}
+  html.boite-ouverte,html.boite-ouverte body{overflow:hidden}
+  #boite-fen{position:fixed;inset:0;z-index:100;background:#0b110d;color:var(--txt);display:flex;flex-direction:column;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+  #boite-fen[hidden]{display:none}
+  #boite-fen .bf-tete{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  #boite-fen h2{flex:1;margin:0;font-size:19px;color:var(--gold2)}
+  #boite-fen .bf-x,#boite-fen .bf-r{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--txt);font-size:20px;cursor:pointer}
+  #boite-fen .bf-puces{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;-webkit-overflow-scrolling:touch}
+  #boite-fen .bf-p{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:14px;cursor:pointer;white-space:nowrap}
+  #boite-fen .bf-p.on{background:rgba(232,184,48,.16);border-color:rgba(232,184,48,.55);color:var(--gold2);font-weight:700}
+  #boite-fen .bf-liste{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 14px 18px}
+  #boite-fen .bf-warn{margin:0 14px 6px;padding:9px 12px;border-radius:11px;background:rgba(251,191,36,.12);color:#fbbf24;font-size:13px}
+  #boite-fen .bf-vide{color:var(--mut);text-align:center;padding:36px 12px;font-size:15px}
+  #boite-fen .bf-pied{margin:0;padding:8px 14px;color:var(--mut);font-size:12px;text-align:center;border-top:1px solid var(--line)}
+  #boite-fen .bf-tl{width:100%;min-height:44px;margin:6px 0 8px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:14px;cursor:pointer}
+  #boite-fen .bf-c{border:1px solid var(--line);border-radius:14px;margin:8px 0;background:linear-gradient(160deg,var(--card),#0c150f)}
+  #boite-fen .bf-c.nv{border-color:rgba(245,158,11,.7);box-shadow:0 0 0 1px rgba(245,158,11,.25)}
+  #boite-fen .bf-ch{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:12px 14px;cursor:pointer;min-height:48px;font:inherit}
+  #boite-fen .bf-l1{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut)}
+  #boite-fen .bf-src{flex:1}
+  #boite-fen .bf-n{background:#dc2626;color:#fff;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700}
+  #boite-fen .bf-de{font-weight:700;font-size:16px;margin:3px 0 2px}
+  #boite-fen .bf-ap{font-size:14.5px;color:var(--txt);opacity:.9;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  #boite-fen .bf-c.ouv .bf-ap{display:none}
+  #boite-fen .bf-corps{padding:0 14px 14px}
+  #boite-fen .bf-b{max-width:88%;padding:9px 12px;border-radius:14px;margin:6px 0;font-size:15px;white-space:pre-wrap;word-break:break-word}
+  #boite-fen .bf-b.eux{background:#17251b;border:1px solid #27402d;border-bottom-left-radius:4px}
+  #boite-fen .bf-b.moi{margin-left:auto;background:#3a2e08;border:1px solid #7a5f12;color:#ffe9a8;border-bottom-right-radius:4px}
+  #boite-fen .bf-bt{font-size:11px;opacity:.7;margin-top:3px}
+  #boite-fen .bf-info{font-size:13.5px;color:var(--gold2);margin:6px 0}
+  #boite-fen .bf-bas{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  #boite-fen textarea{width:100%;min-height:64px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0a120c;color:var(--txt);font:inherit;font-size:16px;resize:vertical}
+  #boite-fen .bf-env{display:flex;align-items:center;justify-content:center;min-height:48px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#11160c;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer}
+  #boite-fen .bf-env:disabled{opacity:.5}
+  #boite-fen .bf-ouvrir{display:flex;align-items:center;justify-content:center;min-height:44px;color:var(--gold);font-size:14px;text-decoration:none}
+  #boite-fen .bf-st{font-size:13px;color:#fbbf24;min-height:16px}
   .ios-tip{background:rgba(106,138,255,.1);border:1px solid rgba(106,138,255,.3);color:#cdd8ff;border-radius:13px;padding:12px 14px;font-size:13.5px}
   .cat{margin:24px 0 10px;display:flex;align-items:center;gap:10px;color:var(--gold);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
   .cat::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -244,8 +283,9 @@
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
   <script src="kdmc-sso.js?v=1.0.30"></script>
-  <script src="kdmc-portal.js?v=1.0.39"></script>
+  <script src="kdmc-boite.js?v=1.0.40"></script>
+  <script src="kdmc-portal.js?v=1.0.40"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.39" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.40" data-color="#c9a227" defer></script>
 </body>
 </html>

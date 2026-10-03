@@ -142,7 +142,7 @@
       /* Tor : même logique que le bot (sinon invisible sur l'iPhone de Kevin, Face ID non
          prouvé = fonction inexistante). Mais réservé à KEVIN seul : la page n'a rien de
          sensible, c'est un choix de discrétion, pas une protection. */
-      if (s && s.admin) alerteCercle();
+      if (s && s.admin) { if (window.kdmcBoite) window.kdmcBoite.demarrer(); else alerteCercle(); }   /* 3.10 : la boîte unique (toutes les apps) ; l'ancien bandeau Lingua reste en secours */
       var torZone = document.getElementById('tor-zone');
       var estKevin = /kevin|desarzens/.test(norm(s && s.name || ''));
       if (torZone) torZone.hidden = !(!!(s && s.admin) || estKevin);

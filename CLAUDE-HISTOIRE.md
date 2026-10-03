@@ -11579,6 +11579,36 @@ rend inévitable.
 
 S'applique : Claude Code (priorité absolue), Apex, tous projets présents et futurs.
 
+## 📬 RÈGLE ABSOLUE — LA BOÎTE UNIQUE : TOUS LES MESSAGES DE TOUTES LES APPS DU DOMAINE, SUR MA VUE ADMIN, AVEC RÉPONSE DIRECTE — PRÉSENTES ET FUTURES (Kevin 2026-10-03, ABSOLUE)
+
+> **« Intègre dans la nouvelle fenêtre des messages tous les messages que je peux recevoir de n'importe quel app du domaine sur ma vue admin pour avoir un visuel permanent, ne rien rater, je peux répondre directement par là, j'ai toutes les infos. Va plus loin. »** — Kevin 2026-10-03 (capture du portail : « Lingua : aucun message en attente · 0 connecté(s) » et la tuile « Messages employés »)
+
+### 1. Ce que ça veut dire
+
+- **Un seul endroit** : le bandeau du portail (kd-mc.com, vue admin) est collant, donc permanent ; un toucher ouvre la fenêtre « 📬 Mes messages ».
+  Toutes les apps y arrivent, avec : l'app d'origine, qui écrit, quand, le fil, le contact, un lien vers l'app.
+- **Répondre depuis là** : Lingua (message de « Admin KDMC » dans le cercle), CMCteams (même fil `cmc_dep_reply` que la page « Messages employés »),
+  toute autre app (dépôt, réponse relue par l'expéditeur), Rotaplan (e-mail prêt). Le texte d'un tiers n'est JAMAIS injecté en HTML.
+- **Ne rien rater** : les non lus passent en premier ; une app qui ne répond pas est NOMMÉE dans le bandeau (jamais un silence qui ressemble à « rien de
+  nouveau ») ; les alertes (nouvel appareil, nouvelle connexion) se lisent mais comptent à part pour que le rouge reste vrai.
+- **Futures apps** : une app nouvelle écrit à l'admin avec UN appel, `POST /__boite/deposer {app, nom, texte, contact?}` depuis une page du domaine
+  (5 par heure et par appareil, 200 par jour, 1 000 caractères, champ piège, gardé 90 jours) ; elle relit la réponse avec le `suivi` secret rendu
+  (`GET /__boite/reponse?suivi=…`). Une app qui reçoit des messages et ne passe ni par la boîte ni par un adaptateur est une app que Kevin ne voit pas.
+
+### 2. Comment c'est fait (mesuré, pas décrit)
+
+- `services/kdmc-router/boite.js` : on ne recopie rien, des **adaptateurs** lisent là où chaque app range ses messages (Lingua D1, CMCteams Firebase avec le
+  jeton admin du routeur, Rotaplan / Arbre / alertes en KV **lecture seule**). Réservé à la session admin PROUVÉE par le domaine, écritures avec origine du domaine.
+- **0 écriture KV** (le plafond gratuit est crevé chaque jour, leçon 394) : « lu » et dépôts vivent en D1, les réponses dans Firebase / D1. Mémo de 20 s par instance.
+- Une source en panne ne vide pas les autres (`Promise.allSettled`) ; une clé Firebase piégée (`../`, `a/b`) est refusée.
+- Gardes : `test:boite` (46 contrôles, D1 + Firebase simulés, sabotage) et `test:boite-portail` (le vrai portail dans Chromium, iPhone 375 px : bandeau, fenêtre,
+  puces, réponse envoyée, refus clair, aucune injection, non-admin ne voit rien).
+
+### 3. OBLIGATIONS
+
+1. Toute app qui reçoit un message d'une personne (formulaire, contact, demande, chat) le rend lisible dans la boîte : adaptateur dans `boite.js` ou dépôt `/__boite/deposer`.
+2. Jamais d'écriture KV pour ça (D1 ou Firebase) ; jamais d'HTML injecté ; jamais de lecture sans session admin prouvée.
+3. Une nouvelle source = son test dans `boite.test.mjs` (lecture, réponse ou refus, panne isolée).
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 
 > « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

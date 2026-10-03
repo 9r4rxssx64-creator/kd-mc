@@ -1,5 +1,23 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (soir) — 📬 BOÎTE UNIQUE : tous les messages de toutes les apps sur la vue admin (Kevin : « va plus loin »)
+
+- **Demande** : « Intègre dans la nouvelle fenêtre des messages tous les messages que je peux recevoir de n'importe quel app du domaine sur ma vue
+  admin, visuel permanent, ne rien rater, je peux répondre directement par là, j'ai toutes les infos. »
+- **Fait (branche `claude/messages-admin-unifies`)** : `services/kdmc-router/boite.js` (adaptateurs : Lingua D1, CMCteams Firebase via le jeton admin du
+  routeur, Rotaplan / Arbre / alertes en KV lecture seule, dépôt des apps futures en D1), `kdmc-home/kdmc-boite.js` (bandeau collant + fenêtre « Mes
+  messages » : puces par app, fil, zone de réponse, « lu », « tout marquer lu », mise à jour toute seule), portail v1.0.40, boîte de la page
+  admin.kd-mc.com aussi, règle écrite (CLAUDE-HISTOIRE + registre), deux gardes dans `test:ci`, étape bloquante au déploiement du routeur.
+- **Mesuré (local, rien d'estimé)** : `test:boite` 46/46 (D1 SQLite + Firebase simulés + KV qui compte : 0 écriture) ; `test:boite-portail` dans Chromium en
+  iPhone 375 px (bandeau collant ≥ 44 px, fenêtre, réponse envoyée à la bonne conversation, refus clair, HTML d'un tiers affiché en texte, non-admin ne
+  voit rien et ne déclenche aucune lecture) ; captures relues. **Sabotages** : contrôle admin retiré → 3 échecs ; clé Firebase non filtrée → 6 ;
+  écriture KV ajoutée au dépôt → 1 ; texte injecté en HTML → 1.
+- **Pourquoi D1/Firebase et jamais le KV** : le plafond gratuit d'écritures KV est crevé chaque jour (3.10 : 1 208) — leçon 394.
+- **Non vérifié** : le rendu EN LIGNE avec la vraie session de Kevin (la CI ne peut pas jouer l'admin) ; Firebase côté routeur dépend des secrets
+  `FIREBASE_*` du routeur (sinon CMCteams s'affichera « indisponible » dans le bandeau, nommée, rien de caché) ; le test live `verif-appareils` 4f a
+  été adapté au nouveau texte du bandeau, non rejoué ici. Les messages d'Apex Chat (chiffré de bout en bout) ne sont pas lisibles par le serveur : hors boîte.
+
+
 ## 2026-10-03 (12h30) — Crypto : réveil de 12h00 propre, mais l'IA ne décidait toujours pas → appel direct
 
 Journal D1 (Cloudflare MCP) :

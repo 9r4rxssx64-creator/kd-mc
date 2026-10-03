@@ -54,6 +54,12 @@
 - **Une décision reste à toi, sans urgence** : l'appel en direct (OpenAI Realtime, à la minute) et la voix
   d'Antonin (Replicate) restent payants. Dis « ferme » et je les retire ; sinon ils restent derrière leurs plafonds.
 
+## ✅ FAIT (3.10, soir) — 📬 « Tous les messages de n'importe quelle app, sur ma vue admin, je réponds par là »
+**Où** : portail kd-mc.com (connecté en admin) → le bandeau « 📬 … messages » reste collé en haut ; un toucher ouvre « Mes messages ».
+**Dedans** : Lingua, CMCteams (employés), toute autre app, demandes Rotaplan, corrections de l'arbre, alertes. **Répondre** : zone de texte + « Envoyer »
+(Lingua, CMCteams, autres apps) ou « Répondre par e-mail » (Rotaplan). Si une app ne répond pas, le bandeau la nomme. **Aucun geste pour toi.**
+Une seule chose à me dire si ça ne s'affiche pas : une capture de la fenêtre — je lis l'erreur exacte dans le bandeau.
+
 ## ✅ FAIT (2.10, 22h) — « Tout gratuit, pas seulement production. Toujours tout gratuit. » : règle écrite, câblée PARTOUT, gardée
 
 Ta phrase du soir est devenue une règle absolue (CLAUDE-HISTOIRE + index) avec son garde `test:tout-gratuit` (19 contrôles,

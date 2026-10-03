@@ -356,6 +356,23 @@ jobs:
           sleep 20
           node tools/audit/sonde-site-publie.mjs "https://kd-mc.com"
 
+      # ── LA BOÎTE UNIQUE DE L'ADMIN est-elle servie, et fermée ? (3.10, Kevin : tous les messages de toutes les apps) ──
+      # Deux contrôles SANS écriture : sans session admin la boîte répond 401 « admin_requis » (si c'était 404, le routeur
+      # n'a pas la route ; si c'était 200, elle serait ouverte à tout le monde) ; un dépôt venu d'un site hors domaine est refusé.
+      - name: La boîte unique est servie et fermée aux inconnus (bloquant)
+        shell: bash -eo pipefail {0}
+        run: |
+          trap 'echo "::error title=Boîte unique::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR
+          ok=0
+          for i in 1 2 3 4; do
+            A=$(curl -sS -m 20 -o /tmp/boite-a.json -w '%{http_code}' "https://kd-mc.com/__boite/admin" || echo 000)
+            D=$(curl -sS -m 20 -o /tmp/boite-d.json -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'origin: https://site-pirate.example' -d '{"texte":"sonde"}' "https://kd-mc.com/__boite/deposer" || echo 000)
+            if [ "$A" = "401" ] && grep -q admin_requis /tmp/boite-a.json && [ "$D" = "403" ] && grep -q origine_refusee /tmp/boite-d.json; then ok=1; break; fi
+            sleep 20
+          done
+          [ "$ok" = "1" ] || { echo "::error title=Boîte unique::lecture sans session = HTTP $A (401 attendu), dépôt hors domaine = HTTP $D (403 attendu)"; exit 1; }
+          echo "::notice title=Boîte unique::EN LIGNE et fermée aux inconnus — /__boite/admin sans session = 401 admin_requis ; dépôt depuis un site hors domaine = 403 origine_refusee"
+
       # ── D'OÙ VIENNENT VRAIMENT LES PAGES ? (preuve par repère) ───────────
       # « 31 adresses répondent 200 » ne dit PAS d'où elles viennent.
       # PREMIÈRE TENTATIVE, RATÉE (18.09) : comparer un fichier présent chez un

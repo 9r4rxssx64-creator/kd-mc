@@ -167,6 +167,7 @@
   "tests/verify-anciennete-fiche.mjs",
   "tests/verify-app-as-kevin.mjs",
   "tests/verify-background-sync-benin.mjs",
+  "tests/verify-boite-portail.mjs",
   "tests/verify-boutiques-fermees.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",
   "tests/verify-crea-comptes.mjs",

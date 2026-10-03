@@ -245,15 +245,19 @@ export const PAGE_HTML = `<!doctype html>
   async function loadConn(hash){
     try{var r=await fetch(DOMAIN_LOG,{headers:hash?{'x-apex-pin':hash}:{},credentials:'include'});if(r.ok)CONN=await r.json()}catch(e){}
     /* 💬 Messages reçus dans Lingua (Cercle, Kevin 2.10 : « une notification visible pour ne pas la rater »). */
-    try{var b=await fetch('https://kd-mc.com/__cercle/admin/boite',{credentials:'include'});if(b.ok){var bj=await b.json();BOITE=bj&&bj.ok?bj:null}}catch(e){}
+    /* 📬 3.10 : la boîte UNIQUE (toutes les apps) ; l'ancienne boîte Lingua reste en secours si le routeur n'a pas encore la nouvelle. */
+    BOITE=null;
+    try{var u=await fetch('https://kd-mc.com/__boite/admin',{credentials:'include'});if(u.ok){var uj=await u.json();if(uj&&uj.ok)BOITE={unifie:true,nonLus:uj.nonLus||0,connectes:uj.connectes||0,alertes:uj.nonLusAlertes||0,derniers:(uj.messages||[]).filter(function(m){return m.source!=='alertes'}).slice(0,3).map(function(m){return{nom:m.de,corps:m.texte,lu:!m.nonLus,app:String(m.app||'').replace('.kd-mc.com','')}})}}}catch(e){}
+    if(!BOITE){try{var b=await fetch('https://kd-mc.com/__cercle/admin/boite',{credentials:'include'});if(b.ok){var bj=await b.json();BOITE=bj&&bj.ok?bj:null}}catch(e){}}
   }
   var BOITE=null;
   function boiteBloc(){
     if(!BOITE) return '';
     var n=BOITE.nonLus||0;
-    var lignes=(BOITE.derniers||[]).slice(0,3).map(function(m){return '<div class="mb-l'+(m.lu?'':' nv')+'"><b>'+esc(m.nom||'Membre')+'</b> '+esc(String(m.corps||'').slice(0,90))+'</div>'}).join('');
-    return '<a class="msgbox'+(n?' on':'')+'" href="https://lingua.kd-mc.com/#admin">'
-      +'<div class="mb-h">💬 Messages Lingua'+(n?' <span class="mb-n">'+n+' nouveau'+(n>1?'x':'')+'</span>':' · rien de nouveau')+' · '+(BOITE.connectes||0)+' connecté(s) dans Lingua</div>'
+    var lignes=(BOITE.derniers||[]).slice(0,3).map(function(m){return '<div class="mb-l'+(m.lu?'':' nv')+'"><b>'+esc(m.nom||'Membre')+'</b>'+(m.app?' <i>'+esc(m.app)+'</i>':'')+' '+esc(String(m.corps||'').slice(0,90))+'</div>'}).join('');
+    var u=BOITE.unifie;
+    return '<a class="msgbox'+(n?' on':'')+'" href="'+(u?'https://kd-mc.com/#messages':'https://lingua.kd-mc.com/#admin')+'">'
+      +'<div class="mb-h">'+(u?'📬 Mes messages (toutes les apps)':'💬 Messages Lingua')+(n?' <span class="mb-n">'+n+' nouveau'+(n>1?'x':'')+'</span>':' · rien de nouveau')+(u&&BOITE.alertes?' · 🔔 '+BOITE.alertes+' alerte'+(BOITE.alertes>1?'s':''):'')+' · '+(BOITE.connectes||0)+' connecté(s)'+(u?'':' dans Lingua')+'</div>'
       +lignes+'</a>';
   }
   function startAuto(){if(TIMER)clearInterval(TIMER);TIMER=setInterval(function(){if(window._pinhash&&document.visibilityState==='visible')refresh()},30000)}

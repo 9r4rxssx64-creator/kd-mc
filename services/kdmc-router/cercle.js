@@ -68,7 +68,7 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS cx_jour ON connexions (jour, derniere)`,
 ];
 const pret = new WeakSet();
-async function schema(db) {
+export async function schema(db) {
   if (pret.has(db)) return;
   await db.batch(SCHEMA.map((s) => db.prepare(s)));
   pret.add(db);

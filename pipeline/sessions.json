@@ -1180,6 +1180,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "PR #4262 fusionnée 3.10 10h20 (211a0f9e0) ; effet KV à lire le 4.10 09h10"
+    },
+    "messages-admin-unifies": {
+      "titre": "Boîte unique : tous les messages de toutes les apps sur la vue admin, réponse directe",
+      "branche": "claude/messages-admin-unifies",
+      "sujet": "Kevin 3.10 : bandeau collant + fenêtre Mes messages (Lingua, CMCteams, autres apps, Rotaplan, Arbre, alertes), dépôt pour apps futures, 0 écriture KV",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

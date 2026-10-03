@@ -93,6 +93,9 @@ const REGISTRE = [
   // (chaque app entre par routeSmart / /ai, balayage des workers, sabotage) + test:ia-route (3 tours, compétence durable).
   // L'entrée avait été PERDUE à la fusion #4242 (résolution « version de main » du fichier) → ratchet 19 → 21 (3.10 00h23).
   [/CONFÉRENCE DES IA GRATUITES/i, ['npm:test:conference-partout', 'npm:test:ia-route']],
+  // Règle « LA BOÎTE UNIQUE : TOUS LES MESSAGES DE TOUTES LES APPS … » (Kevin 3.10.2026) : gardes = boite.test.mjs (adaptateurs
+  // Lingua / CMCteams / dépôts / Rotaplan / Arbre / alertes, réponse directe, 0 écriture KV) + portail réel dans Chromium.
+  [/LA BOÎTE UNIQUE/i, ['npm:test:boite', 'npm:test:boite-portail']],
   // Règle « ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE » (Kevin 3.10.2026, session arbre,
   // commit 23ed102f6 sans entrée → ratchet rouge pour tout le monde). Ce qui est MÉCANISABLE vit dans le robot d'écriture de
   // l'arbre (essai à blanc → écriture → rejouer = 0, anti-doublon par `ref`) et dans la section « à relier » ; le jugement

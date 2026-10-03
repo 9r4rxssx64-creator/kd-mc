@@ -332,6 +332,16 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
 
+### 2026-10-03 (suite) — Arbre v3.60 : vue Famille ; liens et rapports vérifiés
+- **Onglet 👪 Famille (par défaut)** : une personne au centre, parents, grands-parents, conjoints (marié/divorcé/séparé), fratrie
+  (demi), enfants, petits-enfants en grosses cartes ; toucher = recentrer, 📂 = fiche, ❔ = inconnu + 🔎 ; 🌳 = la voir dans l'arbre (mode Liens).
+- **Audit des rapports** (`audit-arbre.mjs`) : + sexe incohérent avec le rôle de parent, + parents d'un enfant non déclarés conjoints.
+  **Liens des fiches** : `arbre-nuage` → `liens` ouvre chaque source (419 liens, 241 adresses) : 0 lien 404 ; 58 refusés aux robots
+  (Geneanet, dansnoscoeurs… à ouvrir à la main) ; l'API INSEE répond 422 depuis le runner (200 ailleurs) → classée « refusé », pas « mort ».
+- **Pierre-Daniel DESARZENS résolu** (recherche DAVEL, actes lus) : UN SEUL Pierre-Daniel (1785-1863), père à 56-70 ans — documenté ; homonyme
+  Pierre Daniel fils de Jean François (Chavannes-le-Chêne, 1814). Ajoutés : Jeanne Susanne DESARZENS × Jean François CONTLIVRE (1810),
+  Pierre Frédéric DESARZENS (annonces 1818). Arbre : 167 fiches.
+
 ## 2026-10-02 — Arbre : la recherche sur chaque personne est dans les fiches
 
 Kevin : recherche d'actes, de presse, de photos et de documents « pour chaque nom », vivants

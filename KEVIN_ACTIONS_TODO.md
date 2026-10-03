@@ -3939,9 +3939,7 @@ une capture. Je le relie aux deux fiches et je lis les noms des parents.
 
 ### Arbre — questions restantes (3.10.2026, après contrôle total v3.58)
 
-1. **Pierre-Daniel DESARZENS (né 1785, mort 1863)** est donné père de Jean-Pierre (1849), Émile (1851), Pierre-Daniel-François (1852) et
-   Jean-Frédéric (1855) : 64 à 70 ans d'écart. Les actes de mariage disent bien « fils de feu Pierre-Daniel ». Y a-t-il deux Pierre-Daniel
-   (père né vers 1810-1820, et grand-père né en 1785) ? Seul un registre de Sarzens (DAVEL) tranche — je le cherche, pas de décision à prendre.
+1. ~~**Pierre-Daniel DESARZENS** (écart d'âge de 64 à 70 ans avec ses enfants)~~ → *résolu le 3.10.2026 : un seul Pierre-Daniel (1785-1863), actes de 1818, 1840, 1841-1855 et 1863 lus ; l'écart est documenté.*
 2. **Cinq personnes sans aucun lien** : Jean Marius Victor ‹employé› (1912), Claude Alain DE SARZENS, Guy Gilbert et André René MEZONNIAUD,
    Myriam Augusta Olga ‹employé›. Connais-tu leurs parents ou leur lien avec la famille ?
 3. **Branche de Philippe ‹employé› (Monaco, 14 personnes)** non reliée au tronc : sais-tu de qui il descend ?

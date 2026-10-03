@@ -3930,3 +3930,17 @@ une capture. Je le relie aux deux fiches et je lis les noms des parents.
 5. Toujours ouvert : **3 fiches « Jean ‹employé› »** et **3 « Alexandre ‹employé› »** — lesquelles
    sont la même personne ? Et **Jean Marius Victor ‹employé›** (fausse piste pour Victor) :
    je le supprime ?
+
+### Arbre — questions restantes (3.10.2026, après contrôle total v3.58)
+
+1. **Pierre-Daniel DESARZENS (né 1785, mort 1863)** est donné père de Jean-Pierre (1849), Émile (1851), Pierre-Daniel-François (1852) et
+   Jean-Frédéric (1855) : 64 à 70 ans d'écart. Les actes de mariage disent bien « fils de feu Pierre-Daniel ». Y a-t-il deux Pierre-Daniel
+   (père né vers 1810-1820, et grand-père né en 1785) ? Seul un registre de Sarzens (DAVEL) tranche — je le cherche, pas de décision à prendre.
+2. **Cinq personnes sans aucun lien** : Jean Marius Victor ‹employé› (1912), Claude Alain DE SARZENS, Guy Gilbert et André René MEZONNIAUD,
+   Myriam Augusta Olga ‹employé›. Connais-tu leurs parents ou leur lien avec la famille ?
+3. **Branche de Philippe ‹employé› (Monaco, 14 personnes)** non reliée au tronc : sais-tu de qui il descend ?
+4. **Mères d'Amélie DESARZENS et de Nadine ‹employé›** (Michèle ? Marielle ‹employé› ?) : à confirmer.
+5. **Dates divergentes** : Jean ‹employé› (décès 30.09 ou 30.03.1881), Judith ‹employé› (3 ou 2 février 1892), Roger ‹employé› (23 ou 31 mai 1913).
+6. **Marie-France ‹employé›** : sœur de Jean-Marie (retenu) ou son épouse ? (le trait du dessin manuscrit est ambigu).
+7. **Sur ton téléphone** : si la pastille reste « Local », ouvre Outils → « Dernière erreur » et dis-moi ce qu'elle écrit.
+

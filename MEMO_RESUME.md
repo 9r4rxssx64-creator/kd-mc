@@ -277,6 +277,32 @@ et **Kevin n'était jamais prévenu**.
 - **Pas vérifiable d'ici** : que l'iPhone de Kevin soit bien abonné aux notifications du
   worker de push (même réserve qu'en MEMO §push). La trace, elle, est toujours gardée.
 
+## 2026-10-03 — Arbre v3.49 → v3.58 : liens lisibles, familles, synchro, contrôle total
+
+Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », « contrôle tout, partout ») :
+- **Familles** : barre = Sauvaigo·Maiffret + Desarzens + 🔎 Autres (un arbre automatique par nom de famille
+  porté par ≥ 2 personnes, plus de « Bruno 2 »). **Traits** : une couleur vive par couple de parents, liseré,
+  pastille ; liens > 12 cartes en pointillés avec pastilles ⬆/⬇ qui sautent ; **mode 🔦 Liens** (toucher une
+  carte allume parents/conjoints/enfants, efface le reste, bandeau écrit).
+- **Mise à jour forcée** : toucher la pastille de version = vide service worker + caches, recharge ; contrôle
+  de version toutes les 60 s. **Synchro** : toucher la pastille « Local » = synchroniser maintenant + cause
+  affichée (Outils → Vérification du nuage) ; une fiche illisible ne bloque plus la lecture du nuage.
+- **Domaine** : la copie du domaine était restée à 119 personnes (1.09.2025) — republication automatique quand
+  Kevin est reconnu admin sans code et que le nuage vient d'être lu (jamais depuis un appareil « Local »).
+- **Onglet Actes** : montre actes, sources et documents déjà présents. Outils : les 3 liens GitHub (404, dépôt
+  privé) sont devenus des vues dans l'app.
+- **Défaut grave trouvé par le contrôle (v3.58)** : le ménage des « fantômes » fusionnait puis effaçait
+  Émile DESARZENS (1851) pris pour une copie d'Émile (1946). Garde-fou : une fiche avec sa propre date de
+  naissance n'est jamais un fantôme. Notes « ne pas confondre » posées sur les 7 homonymes ‹employé›.
+- **Données** : doublon Jean 1925 fusionné ; Marie-France ‹employé› fille de Josette ‹employé› et Roger ‹employé› ;
+  Ronan né le 20.08.2007 (majeur) ; Paloma mineure (rien écrit) ; Marie-France d'Émile ≠ Marie-France ‹employé›.
+- **Gardes** : `tests/arbre-familles-noms.test.mjs` (33), `arbre-corrections` (27), `arbre-dates-visuel` ;
+  contrôle réel = `arbre-nuage` `audit`+`visuel` puis `verify-visuel-appareils.mjs --arbre` (règle dans CLAUDE-HISTOIRE.md).
+- **Reste ouvert** : Pierre-Daniel DESARZENS (1785) donné père d'enfants nés 1841-1855 (écart > 60 ans : deux
+  Pierre-Daniel ?) ; 5 personnes isolées ; groupe de 14 (Philippe ‹employé›, Monaco) non relié ; mères d'Amélie
+  DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
+  dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
+
 ## 2026-10-02 — Arbre : la recherche sur chaque personne est dans les fiches
 
 Kevin : recherche d'actes, de presse, de photos et de documents « pour chaque nom », vivants

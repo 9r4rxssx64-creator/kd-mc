@@ -243,6 +243,7 @@
   "tools/arbre/research-registres.mjs",
   "tools/arbre/research-web.mjs",
   "tools/arbre/research.mjs",
+  "tools/arbre/test-synchro-reelle.mjs",
   "tools/arbre/verif-profonde-arbre.mjs",
   "tools/arbre/verify-ajout-famille.mjs",
   "tools/arbre/verify-cadrage.mjs",

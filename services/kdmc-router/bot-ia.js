@@ -413,6 +413,7 @@ export function texteReponseIa(r) {
   if (!r) return '';
   if (typeof r === 'string') return r;
   if (typeof r.response === 'string') return r.response;
+  if (r.response && typeof r.response === 'object') return JSON.stringify(r.response);   // Workers AI : JSON déjà décodé (3.10)
   if (typeof r.output_text === 'string') return r.output_text;
   if (Array.isArray(r.output)) {
     const t = [];

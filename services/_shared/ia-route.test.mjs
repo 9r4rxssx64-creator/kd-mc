@@ -544,3 +544,16 @@ test('conférence : la compétence est DURABLE (cache du Worker) — un isolat n
     assert.equal(freeVoices({ AI }, 8, 'code')[0].model, QWEN_MODELS[2]);
   } finally { delete globalThis.caches; _resetCompetence(); }
 });
+
+test('Qwen qui rend un objet JSON déjà décodé → texte JSON, jamais « [object Object] » (3.10)', async () => {
+  const env = { AI: { run: async () => ({ response: { bot: 'crypto-bot-p1', reglages: { EMA_SLOW: 30 } } }) } };
+  const r = await routeText(env, { prompt: 'propose un réglage', chain: ['qwen'] });
+  assert.equal(r.ok, true);
+  assert.equal(JSON.parse(r.text).bot, 'crypto-bot-p1');
+  assert.ok(!/object Object/.test(r.text));
+});
+test('Qwen au format chat (choices) → texte lu', async () => {
+  const env = { AI: { run: async () => ({ choices: [{ message: { content: 'bonjour' } }] }) } };
+  const r = await routeText(env, { prompt: 'salut', chain: ['qwen'] });
+  assert.equal(r.text, 'bonjour');
+});

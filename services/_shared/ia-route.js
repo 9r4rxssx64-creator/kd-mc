@@ -347,7 +347,10 @@ async function callQwen(env, messages, o) {
     if (delai < 1500) { tried.push(model + ':échéance'); break; }
     try {
       const r = await withDeadline(env.AI.run(model, { messages, max_tokens: o.maxTokens, temperature: o.temperature }), delai);
-      const text = stripThink(r && (r.response || (r.result && r.result.response) || r.text));
+      /* Workers AI rend parfois `response` DÉJÀ décodé (un objet JSON) quand le modèle répond en JSON :
+         String(objet) donnait « [object Object] » (mesuré 3.10, journal D1 de l'IA crypto). */
+      const brut = r && (r.response !== undefined ? r.response : (r.result && r.result.response !== undefined ? r.result.response : (r.text !== undefined ? r.text : (r.choices && r.choices[0] && r.choices[0].message ? r.choices[0].message.content : ''))));
+      const text = stripThink(brut && typeof brut === 'object' ? JSON.stringify(brut) : brut);
       if (text) return { text, model };
       tried.push(model + ':vide');
     } catch (e) { tried.push(model + ':' + String((e && e.message) || e).slice(0, 80)); }

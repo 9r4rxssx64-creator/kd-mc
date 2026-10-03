@@ -24,7 +24,7 @@ let binanceBloque = false, propositionRelais = '';
 let reponseIa = '', contreAvis = '{"avis":"OUI","raison":"cohérent avec un marché calme"}';
 const appelsIa = [];
 const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: PIN_SHA, ACCOUNTS, RAILWAY_TOKEN: 'rt',
-  ANTHROPIC_API_KEY: 'payant-a', OPEN_AI_API_KEY: 'payant-o',
+  ANTHROPIC_API_KEY: 'payant-a', OPEN_AI_API_KEY: 'payant-o', GEMINI_API_KEY: 'g', GROQ_API_KEY: 'q', MISTRAL_API_KEY: 'm', CEREBRAS_API_KEY: 'c',   /* comme en production (3.10) */
   AI: { run: async (modele, p) => { appelsIa.push(modele); return /gpt-oss/.test(modele)
     ? { output: [{ type: 'reasoning', content: [{ type: 'reasoning_text', text: 'je pense' }] }, { type: 'message', content: [{ type: 'output_text', text: (propositionRelais && /Ta proposition/.test(String(p && p.input))) ? propositionRelais : contreAvis }] }] }
     : { response: (p && Array.isArray(p.messages) && /gérant de risque/.test(p.messages[0].content)) ? '{"avis":"OUI","raison":"relu par Qwen : cohérent"}' : reponseIa }; } } };
@@ -225,7 +225,7 @@ dit(r.b && r.b.action === 'decision' && decR.source === 'ia-relais' && /gpt-oss/
 dit(/réponse VIDE \(toute la place passée à réfléchir\)/.test(decR.echec_ia || ''), 'la cause du silence de Qwen est gardée au journal (début de sa réponse)');
 dit(appelsIa.includes('@cf/qwen/qwen3.8-27b') && decR.modele_contre === 'qwen3.8-27b', 'contre-avis par l\'AUTRE famille (Qwen relit gpt-oss)');
 dit(stR.enCours && stR.enCours.btc0 === 84538.42, 'le prix du BTC de départ est enregistré (barre à battre mesurable)');
-dit(srTick <= 30, 'pire réveil (Qwen muet → gpt-oss → contre-avis Qwen → changement) : ' + srTick + ' sous-requêtes, sous le plafond de 30 (limite gratuite : 50, marge pour cache et D1)');
+dit(srTick <= 27, 'pire réveil (Qwen muet → gpt-oss → contre-avis Qwen → changement) : ' + srTick + ' sous-requêtes, sous le plafond de 27 (limite gratuite : 50 ; le reste sert au cache, à D1, au KV)');
 binanceBloque = false; propositionRelais = '';
 
 console.log(`\n${ok} OK · ${ko} échec(s)`);

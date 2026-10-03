@@ -1,5 +1,20 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (12h30) — Crypto : réveil de 12h00 propre, mais l'IA ne décidait toujours pas → appel direct
+
+Journal D1 (Cloudflare MCP) :
+- 12h00 : **12/12 sources ✅** (CoinLore, Crypto.com, Kraken, Cboe ×3, or, BCE, 3 RSS) — `attente`, essai p1 en cours.
+- Décision de ~11h20 (essai p1 `EMA_SLOW` 21 → 24) = **règle de secours** : `echec_ia` = « début de la réponse :
+  « [object Object] » [qwen] | relais gpt-oss : Too many subrequests ». btc0 = 84 589,97 $ (le BTC est bien mesuré).
+Corrigé :
+- `services/_shared/ia-route.js` `callQwen` : `response` objet → JSON texte (et format `choices`) ; tests ia-route 31/0.
+- IA crypto : `iaDirect` (Workers AI direct) Qwen 3.8 → gpt-oss → contre-avis ; plus de `routeText` dans `iaTick`.
+- Test de sous-requêtes avec les clés de production (Gemini/Groq/Mistral/Cerebras) : 25, plafond 27 ; sabotage
+  « chaîne routeText remise » → 30, rouge ; sabotage « objet non sérialisé » → ia-route rouge. Leçon #397.
+- Non lié, déjà rouge sur main : `test:qwen-gratuit` 11/1 (« provider=conference:… », chantier « conférence des IA »).
+
+---
+
 ## 2026-10-03 (10h30) — Crypto : réveil de 10h00 planté (« trop de sous-requêtes ») → appels groupés
 
 Journal D1 lu (Cloudflare MCP) :

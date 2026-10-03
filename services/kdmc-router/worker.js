@@ -3561,9 +3561,18 @@ async function railGql(env, query) {
    admin — le secret ne circule jamais) : le compte Cloudflare est déjà à 5 crons sur 5 (gratuit).
    UNE écriture KV par réveil au plus (« bot:ia ») ; le marché passe par le cache, zéro écriture. */
 const IA_KV = 'bot:ia';
-const IA_CHAINE_GRATUITE = ['qwen', 'gemini', 'groq', 'cerebras', 'mistral', 'openrouter'];
+/* (3.10) Plus de chaîne routeText ici : appels Workers AI directs, gratuits par construction (Qwen 3.8, gpt-oss-120b). */
 const IA_CONTRE_AVIS_MODELE = '@cf/openai/gpt-oss-120b';
 const IA_QWEN_MODELE = '@cf/qwen/qwen3.8-27b';
+/* Un appel Workers AI direct (format chat), délai 25 s ; rend le texte, objet JSON compris. */
+async function iaDirect(env, modele, system, prompt, maxTokens) {
+  if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Workers AI absent');
+  const r = await Promise.race([
+    env.AI.run(modele, { messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature: 0.3 }),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('délai 25 s')), 25000)),
+  ]);
+  return IA.texteReponseIa(r);
+}
 /* MÉMOIRE DE L'IA EN D1 (base gratuite kdmc-bot, 100 000 écritures/jour) — 2.10.2026 : le KV du
    domaine (1 000 écritures/jour) a saturé deux fois ce jour-là. D1 d'abord ; sans base liée, le KV
    comme avant. La base est AUSSI lisible par l'agent (Cloudflare MCP) : le journal se vérifie en vrai
@@ -3881,14 +3890,15 @@ async function iaTick(env, ctx, origine, force) {
   try {
     /* GRATUIT SEULEMENT (Kevin 30.09 + 2.10) : jamais Anthropic ni OpenAI payants, même s'ils sont configurés.
        Qwen 3.8 27B (Workers AI) d'abord = le plus fort des gratuits (mesure publique 09.2026), puis les paliers gratuits. */
-    /* 3.10 (journal D1) : à 500 jetons, Qwen 3 épuisait sa place à « réfléchir » et ne rendait aucun
-       JSON → règle de secours. 1 500 jetons + « /no_think » (interrupteur officiel de Qwen 3). */
-    const r = await routeText(env, { system, prompt: prompt + '\n/no_think', maxTokens: 1500, temperature: 0.3, budgetMs: 25000, domain: 'reasoning', chain: IA_CHAINE_GRATUITE });
-    modele = [r.provider, r.model].filter(Boolean).join(' · ');
-    prop = IA.validerProposition(r.text || '', actuels);
+    /* APPEL DIRECT (3.10, 11h20 : la chaîne routeText essayait jusqu'à 4 modèles Qwen + d'autres fournisseurs
+       + des lectures de cache → limite des 50 sous-requêtes, relais gpt-oss coupé). Ici : 1 appel Qwen 3.8,
+       puis 1 appel gpt-oss si besoin, puis 1 contre-avis = 3 appels IA au plus. 1 500 jetons + /no_think. */
+    const texte = await iaDirect(env, IA_QWEN_MODELE, system, prompt + '\n/no_think', 1500);
+    modele = 'workers-ai · ' + IA_QWEN_MODELE.split('/').pop();
+    prop = IA.validerProposition(texte, actuels);
     if (!prop.ok) {
-      const brut = String(r.text || '').replace(/\s+/g, ' ').trim();
-      echecIa = prop.err + (brut ? ' — début de la réponse : « ' + brut.slice(0, 140) + ' »' : ' — réponse VIDE (toute la place passée à réfléchir)') + (r.provider ? ' [' + r.provider + ']' : '');
+      const brut = String(texte || '').replace(/<think>[\s\S]*?(<\/think>|$)/g, '').replace(/\s+/g, ' ').trim();
+      echecIa = prop.err + (brut ? ' — début de la réponse : « ' + brut.slice(0, 140) + ' »' : ' — réponse VIDE (toute la place passée à réfléchir)') + ' [qwen]';
     }
   } catch (e) { echecIa = String((e && e.message) || e).slice(0, 120); }
   /* RELAIS GRATUIT DE MÊME NIVEAU (règle Kevin 2.10) : gpt-oss-120b propose avant la règle de secours. */

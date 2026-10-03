@@ -148,6 +148,15 @@ b = await boite();
 ok(r.ok && r.n === 3 && b.messages.find((x) => x.source === 'rotaplan').lu && b.messages.find((x) => x.source === 'arbre').lu && b.nonLusAlertes === 1, '6e. « marquer lu » mémorisé (en D1, pas en KV)', [r, b.nonLusAlertes]);
 ok((await appel('kev', '/admin/repondre', { cle: dm.cle, texte: 'bonjour' })).reason === 'reponse_par_email', '6f. Rotaplan : pas de réponse directe, on renvoie vers l\'e-mail');
 
+/* 6g. vieilles alertes : lues d'office, et jamais devant un vrai message non lu */
+kv.set('aud:log', JSON.stringify([{ ts: T - 6 * 864e5, ev: 'geo_anomaly', detail: 'FR → US en 5 min' }, { ts: T - 2000, ev: 'new_device', detail: 'iPhone · Nice' }]));
+msg('zoe-petit', ADMIN, 'Dernier message important', T - 1000);
+b = await boite();
+const vieille = b.messages.find((x) => x.source === 'alertes' && /FR → US/.test(x.texte)), fraiche = b.messages.find((x) => x.source === 'alertes' && /Nice/.test(x.texte));
+ok(vieille && vieille.nonLus === 0 && vieille.lu && fraiche && fraiche.nonLus === 1 && b.nonLusAlertes === 1, '6g. une alerte de 6 jours est lue d\'office (reste visible), une alerte du jour compte', [vieille, b.nonLusAlertes]);
+const iMsg = b.messages.findIndex((x) => x.source === 'lingua' && x.nonLus), iAl = b.messages.findIndex((x) => x.source === 'alertes' && x.nonLus);
+ok(iMsg >= 0 && iAl > iMsg, '6h. un vrai message non lu passe TOUJOURS avant une alerte non lue', [iMsg, iAl]);
+
 /* 7. tri : les non lus d'abord, puis le plus récent */
 b = await boite();
 const premiers = b.messages.slice(0, b.messages.filter((x) => x.nonLus).length);

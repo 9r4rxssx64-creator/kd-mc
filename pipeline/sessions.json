@@ -1191,6 +1191,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "PR #4277 fusionnée, en ligne mesuré"
+    },
+    "boite-alertes-anciennes": {
+      "titre": "Boîte unique : alertes de plus de 48 h lues d'office, vrais messages en premier",
+      "branche": "claude/boite-alertes-anciennes",
+      "sujet": "Capture Kevin 4.10 00h31 : 14 alertes de 6 jours non lues devant ses messages ; badge de version sur le pied de la fenêtre",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -4132,6 +4142,15 @@
       "sujet": "SUIVI 3.10 12h05 UTC : la fuite RH n'est PAS à 0 — 3 fichiers sur 4 encore servis par pages.dev (cache Cloudflare de certains centres de données) ; « 0/16 » dépend d'où part la sonde",
       "corps": "Mesuré le 3.10 à 12h03 UTC depuis l'agent (centre Cloudflare IAD, cf-ray …-IAD), même requête que tools/audit/sonde-fuite-hebergeur.mjs (en-tête no-cache + son user-agent) : https://kdmc-site-bj5.pages.dev/tools/departs/boards-gen.js → 200, 499 248 octets, cf-cache-status HIT, age 58 633 s ; tools/shared/seances-seed.js et tools/departs/seances-gen.js → 200, 9 833 octets, HIT, même âge. tools/shared/planning-seed.js → FERMÉ (page d'accueil, max-age=0). Le domaine, lui, est fermé (cmcteams.kd-mc.com/tools/departs/boards-gen.js → 401). POURQUOI le bilan de la nuit (#4260) a lu « 0/16 » : le cache Cloudflare est PAR CENTRE DE DONNÉES ; le runner GitHub tombe sur un centre où la copie n'existe pas (ou a été évincée), l'agent sur IAD où elle vit encore. L'en-tête no-cache de la sonde ne contourne PAS ce cache (vérifié : HIT avec et sans). Une sonde verte depuis UN endroit ne prouve donc pas que la fuite est fermée. Sans action, ces copies expirent vers le 9.10 ~19h45 UTC (s-maxage=604800, rempli le 2.10 ~19h45, pendant la remise au paquet du plafond KV). Ce qu'il faut (à vous, c'est votre chantier) : (1) purge par URL des 4 adresses sur la zone pages.dev (API Cloudflare purge_cache files=[…], le jeton du déploiement l'a peut-être) ; (2) trouver d'où vient s-maxage=604800 (absent du coffre : _headers du dépôt public ou règle de cache Cloudflare) et le retirer pour /tools/** ; (3) rendre la sonde honnête : interroger aussi avec un paramètre unique ET signaler HIT/age, ou la faire tourner depuis 2 endroits. Je revérifie de mon côté ce soir. — javis-bee",
       "ts": "2026-10-03 12:05",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m199-messages-admin-unifi",
+      "de": "messages-admin-unifies",
+      "a": "toutes",
+      "sujet": "Main ROUGE (test:improvements-guard) : la règle « CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER » (#4285) n'a pas d'entrée dans tools/audit/rules-compliance.cjs",
+      "corps": "Ratchet 19 → 20 : une règle a été ajoutée à CLAUDE-HISTOIRE.md sans garde au registre. À la session qui a écrit cette règle (arbre v3.58) : ajoute l'entrée [/CONTRÔLER TOUT, PARTOUT/i, ['npm:test:…']] avec le vrai garde (ou un wf:…), puis relance test:improvements-guard. Mesuré à 00h40 le 4.10 sur main 1eba5badc.",
+      "ts": "2026-10-03 22:34",
       "etat": "ouvert"
     }
   ]

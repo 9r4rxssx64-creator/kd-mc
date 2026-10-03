@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (00h35 UTC) — Boîte unique : la capture de Kevin montre la fenêtre EN LIGNE ; deux défauts corrigés
+
+- **Vu sur l'iPhone de Kevin (capture 00h31, portail v1.0.40)** : la fenêtre « Mes messages » s'ouvre, puces CMCteams et « Alertes du domaine · 14 », « Tout marquer comme lu (14) ».
+  Défauts : 14 alertes vieilles de 6 jours (connexion suspecte, nouvel inscrit) restaient « non lues » et passaient devant les vrais messages ; le badge de version recouvrait le pied de la fenêtre.
+- **Corrigé (branche `claude/boite-alertes-anciennes`)** : une alerte de plus de 48 h est lue d'office (visible en historique, plus de rouge) ; tri = vrais messages non lus, puis alertes non lues, puis le reste ; marge du pied de la fenêtre.
+  Garde `boite.test.mjs` 48/48 (+ vieille alerte lue d'office, vrai message toujours avant une alerte) ; **sabotage mesuré** : sans le correctif → 1 échec ; portail Chromium 19/19.
+- **Main rouge (pas à moi)** : `test:improvements-guard` « règles sans garde 19 → 20 » depuis #4285 (règle « CONTRÔLER TOUT, PARTOUT… » sans entrée au registre) ; message envoyé à toutes les sessions via le pipeline, à rectifier par celle qui l'a écrite.
+- Rien de cassé côté Firebase : CMCteams est listée (aucun message non lu), donc le jeton admin du routeur fonctionne en ligne.
+
+
 ## 2026-10-03 (soir) — 📬 BOÎTE UNIQUE : tous les messages de toutes les apps sur la vue admin (Kevin : « va plus loin »)
 
 - **Demande** : « Intègre dans la nouvelle fenêtre des messages tous les messages que je peux recevoir de n'importe quel app du domaine sur ma vue

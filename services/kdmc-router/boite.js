@@ -20,7 +20,7 @@
  * node services/kdmc-router/boite.test.mjs */
 import { ADMIN, LIMITES as LIM_CERCLE, texteOk, schema as schemaCercle } from './cercle.js';
 
-export const LIMITES = { liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 20000 };
+export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 20000 };
 export const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/cmcteams';
 
 export const SOURCES = {
@@ -139,14 +139,17 @@ async function lireArbre(env, db) {
 }
 const EV_ALERTES = { nouvelle_connexion: '🆕 Nouvelle connexion', nouvel_inscrit: '🆕 Nouvel inscrit', new_device: '🔐 Nouvel appareil', geo_anomaly: '⚠️ Connexion suspecte',
   quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé' };
-async function lireAlertes(env, db) {
+async function lireAlertes(env, db, now) {
   if (!env.ACCOUNTS) return [];
   let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
   j = (Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type]).slice(0, 15);
   const cles = j.map((e) => 'alerte:' + e.ts + '-' + (e.ev || e.type));
   const lues = await luesD1(db, cles);
-  return j.map((e, i) => ({ cle: cles[i], source: 'alertes', app: e.app || 'domaine', de: EV_ALERTES[e.ev || e.type], ts: e.ts,
-    texte: apercu(e.detail || e.text || e.name || '', 300), nonLus: lues.has(cles[i]) ? 0 : 1, lu: lues.has(cles[i]), repondre: null, fil: [] }));
+  /* Une alerte de plus de 48 h est lue d'office : elle reste visible (historique) mais ne fait plus de rouge — mesuré par Kevin le 4.10 :
+     14 alertes de 6 jours « non lues » passaient devant ses vrais messages. */
+  return j.map((e, i) => { const vue = lues.has(cles[i]) || now - e.ts > LIMITES.alerteFraicheur;
+    return { cle: cles[i], source: 'alertes', app: e.app || 'domaine', de: EV_ALERTES[e.ev || e.type], ts: e.ts,
+      texte: apercu(e.detail || e.text || e.name || '', 300), nonLus: vue ? 0 : 1, lu: vue, repondre: null, fil: [] }; });
 }
 /* ── adaptateur : dépôts des autres apps (D1) ─────────────────────────────────────────────────────────────── */
 async function lireDepots(db) {
@@ -161,7 +164,7 @@ export async function lireBoite(env, outils, now) {
   const db = env.CERCLE_DB;
   const essais = {
     lingua: () => lireLingua(db), cmcteams: () => lireCmcteams(outils), depots: () => lireDepots(db),
-    rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lireAlertes(env, db),
+    rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lireAlertes(env, db, now),
   };
   const noms = Object.keys(essais);
   const res = await Promise.allSettled(noms.map((n) => memoise(n, now, essais[n])));
@@ -171,7 +174,8 @@ export async function lireBoite(env, outils, now) {
     if (r.status === 'fulfilled') { sources[n] = Object.assign({ id: n, etat: 'ok', total: r.value.length, nonLus: r.value.reduce((s, x) => s + (x.nonLus || 0), 0) }, SOURCES[n]); messages = messages.concat(r.value); }
     else sources[n] = Object.assign({ id: n, etat: 'indisponible', total: 0, nonLus: 0, raison: String(r.reason && r.reason.message || r.reason).slice(0, 80) }, SOURCES[n]);
   });
-  messages.sort((a, b) => (b.nonLus ? 1 : 0) - (a.nonLus ? 1 : 0) || b.ts - a.ts);
+  const rang = (x) => (x.nonLus ? (x.source === 'alertes' ? 1 : 2) : 0);   // les vrais messages non lus d'abord, puis les alertes non lues
+  messages.sort((a, b) => rang(b) - rang(a) || b.ts - a.ts);
   const nonLus = SOURCES_MESSAGES.reduce((s, n) => s + sources[n].nonLus, 0);
   const connectes = db ? ((await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) || {}).n || 0 : 0;
   return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste), maj: now };

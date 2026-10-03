@@ -1186,10 +1186,11 @@
       "branche": "claude/messages-admin-unifies",
       "sujet": "Kevin 3.10 : bandeau collant + fenêtre Mes messages (Lingua, CMCteams, autres apps, Rotaplan, Arbre, alertes), dépôt pour apps futures, 0 écriture KV",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "PR #4277 fusionnée, en ligne mesuré"
     }
   },
   "messages": [

@@ -13,6 +13,7 @@
   voit rien et ne déclenche aucune lecture) ; captures relues. **Sabotages** : contrôle admin retiré → 3 échecs ; clé Firebase non filtrée → 6 ;
   écriture KV ajoutée au dépôt → 1 ; texte injecté en HTML → 1.
 - **Pourquoi D1/Firebase et jamais le KV** : le plafond gratuit d'écritures KV est crevé chaque jour (3.10 : 1 208) — leçon 394.
+- **EN LIGNE (mesuré)** : PR #4277 fusionnée (662f846a8) ; déploiement public du routeur 37155818663 : étape « boîte unique » ✅ (401 aux inconnus, 403 dépôt hors domaine), fuite 0/16 après relance (1re tentative 2/16 pages.dev = faux rouge de timing connu). La chaîne privée, relancée à chaque fusion d'une autre session, a retardé la fusion de ~1 h.
 - **Non vérifié** : le rendu EN LIGNE avec la vraie session de Kevin (la CI ne peut pas jouer l'admin) ; Firebase côté routeur dépend des secrets
   `FIREBASE_*` du routeur (sinon CMCteams s'affichera « indisponible » dans le bandeau, nommée, rien de caché) ; le test live `verif-appareils` 4f a
   été adapté au nouveau texte du bandeau, non rejoué ici. Les messages d'Apex Chat (chiffré de bout en bout) ne sont pas lisibles par le serveur : hors boîte.

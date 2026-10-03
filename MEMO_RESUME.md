@@ -348,6 +348,14 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
 
+### 2026-10-03 (fin) — Arbre v3.64 : CAUSE TROUVÉE du « Local » permanent
+- **Cause** : `purgeObsoleteSeeds` et `SEED_OBSOLETE` étaient déclarés À L'INTÉRIEUR de `startApp` ; `cloudPull` et `refreshFromDomain` les
+  appellent → `ReferenceError` à chaque nouveauté reçue du nuage, AVANT l'enregistrement et le dessin (appareil en retard : 164 fiches au lieu de 167,
+  pastille « Local »). Trouvée par le **test de synchro réelle** (`arbre-nuage` → bouton `synchro` : l'app lancée dans Chromium, agent iPhone, branchée
+  sur le vrai nuage avec l'empreinte du code jamais affichée). Corrigée v3.64 + 2 gardes (`arbre-familles-noms`). Avant : 🟠 erreur ; après : 🟢 167 fiches, vue Famille dessinée.
+- **Aussi** : bandeau de synchro sous les onglets (raison + Réessayer) ; mise à jour reçue pendant une fenêtre ouverte redessinée à sa fermeture ;
+  pastille de synchro cliquable. Règle : tout défaut « sur l'appareil de Kevin » se reproduit d'abord avec `synchro` avant d'être supposé.
+
 ### 2026-10-03 (suite) — Arbre v3.60 : vue Famille ; liens et rapports vérifiés
 - **Onglet 👪 Famille (par défaut)** : une personne au centre, parents, grands-parents, conjoints (marié/divorcé/séparé), fratrie
   (demi), enfants, petits-enfants en grosses cartes ; toucher = recentrer, 📂 = fiche, ❔ = inconnu + 🔎 ; 🌳 = la voir dans l'arbre (mode Liens).

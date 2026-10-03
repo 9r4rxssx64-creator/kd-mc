@@ -78,7 +78,7 @@ va plus loin · honnête sur ses limites · sans flatterie. **Bee : niveau comme
 
 ---
 
-## 📜 Les 191 règles — le texte de Kevin, une par une
+## 📜 Les 192 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -849,6 +849,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🧭 RÈGLE ABSOLUE — UNE SEULE VÉRITÉ DU MOMENT, SERVIE DEPUIS `main` À CHAQUE RÉVEIL (Kevin 2026-09-26, ABSOLUE)
 **« Que tout soit au courant de ce que font les autres branches… tout partagé en temps réel pour qu'il n'y ait pas un double travail ou une annulation d'un côté d'un travail de l'autre… […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-une-seule-vérité-du-moment-servie-depuis-main-à-chaque-réveil-kevin-2026-09-26-absolue)
+
+### 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
+« Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »
+↳ [récit](CLAUDE-HISTOIRE.md#règle-contrôler-tout-partout-sur-le-vrai-sans-rien-oublier-kevin-2026-10-03-absolue)
 
 ---
 

@@ -11578,3 +11578,18 @@ rend inévitable.
 > AUJOURD'HUI, ou vraie le jour où elle s'est endormie ? »*
 
 S'applique : Claude Code (priorité absolue), Apex, tous projets présents et futurs.
+
+## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
+
+> « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »
+
+À chaque livraison touchant l'arbre (arbre.kd-mc.com) :
+1. **Le vrai arbre, pas un arbre d'essai** : `arbre-nuage` avec `audit` + `visuel` (164 fiches × 10 appareils × 8 vues), puis rejouer la même
+   mesure en local (`verify-visuel-appareils.mjs --arbre <export>`, playwright lié dans `node_modules`).
+2. **Les liens** : tous les `href` du site servi (curl + vrai navigateur via `visite.sh` pour les sites qui refusent curl) ; un lien vers
+   le dépôt privé GitHub = 404 pour la famille, donc interdit dans l'app.
+3. **Les tests `arbre-*`** + les vérifications de rendu au navigateur (capture lue) ; la version `APP_VER` = cache du `sw.js` = version servie.
+4. **Les données** : audit (liens morts, doublons, filiations impossibles, isolés), et relire la fiche des personnes touchées (`--voir`).
+5. **Le contrôle a déjà servi** : il a trouvé le 3.10.2026 que le « ménage des fantômes » prenait Émile DESARZENS (né 1851) pour une copie
+   d'Émile (né 1946) et l'effaçait du nuage — corrigé v3.58 (garde-fou homonymes : une fiche qui a sa propre date de naissance n'est jamais un fantôme).
+Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas pu contrôler (écrans derrière le code famille) se dit aussi.

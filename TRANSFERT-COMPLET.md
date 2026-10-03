@@ -38,7 +38,7 @@
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **198** dont **120** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **71 897 o ≈ 20 542 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **648 265 o** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **649 743 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)

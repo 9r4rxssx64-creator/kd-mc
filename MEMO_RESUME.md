@@ -1,13 +1,5 @@
 # MEMO_RESUME — état de session
 
-## 2026-10-03 (00h20 UTC) — Apex v13.4.368 : version alignée, construction relancée
-
-- La construction d'Apex (run 37080085515, 23h59) a rougi à « Build production bundle » : cause lue en local (`npx vite
-  build`) = le `package.json` de la racine était invalide sur main pendant 6 minutes (fusion #4250 d'une autre session,
-  fragment de clé répété dans test:ci ; réparé par #4251). Sur main réparé : ✓ built in 8 s.
-- `index.html`, `sw.js`, `package.json` d'Apex étaient désaccordés (.364 / .367 / .355) → **v13.4.368** partout, pour que
-  la mise à jour forcée se déclenche chez Kevin avec « tout gratuit » + chef d'orchestre gratuit + modèles vivants.
-  Construction relancée après fusion (robot allumé → lancé → rééteint), PR auto-deploy à fusionner, puis version lue.
 ## 2026-10-03 (00h40) — Crypto : 1er journal réel lu en D1 → relais de sources + IA réparée (bot v1.5.1)
 
 Lu en vrai (Cloudflare MCP, base kdmc-bot) après le réveil de 00h00 UTC :

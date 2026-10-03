@@ -942,10 +942,11 @@
       "branche": "claude/ia-gratuites-cablage",
       "sujet": "ia-route : NIVEAU A/B, pauses d'épuisement durables (cache du Worker), 5 paliers gratuits câblés, Together = crédits ; à élaguer d'après la sonde avant PR",
       "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-10-02",
+      "etat": "termine",
+      "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
     },
     "arbre-corrections-famille": {
       "titre": "Arbre — les quatre corrections de la famille (fusionnée, PR #4173)",
@@ -1043,10 +1044,11 @@
       "branche": "claude/bascule-bot-ia",
       "sujet": "Sonde réelle : Groq/Cerebras 404 (modèles retirés), 8 clés absentes, Cohere seul OK ; sonde lit GET /models ; bot-ia.js dans la copie de test:bascule",
       "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-10-02",
+      "etat": "termine",
+      "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
     },
     "ia-gratuites-sonde": {
       "titre": "Go freellm, étape 1 : sonde des IA gratuites (PR #4212)",
@@ -1075,55 +1077,93 @@
       "branche": "claude/kv-qui-ecrit",
       "sujet": "Robot coffre-kv-inventaire (PR #4224) : clés par préfixe + compteurs anon:<jour>, lecture seule",
       "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-10-02",
+      "etat": "termine",
+      "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
     },
     "publication-rh-sans-fuite": {
       "titre": "Publication — données RH jamais remises sur l'hébergeur (plafond KV)",
       "branche": "claude/publication-rh-sans-fuite",
       "sujet": "Mesuré 2.10 : plafond KV (10048) → la publication remettait les 4 fichiers RH sur pages.dev (sonde-fuite 4/16). Correctif : lecture KV d'abord, copie d'avant gardée, jamais dans le paquet si une copie existe",
       "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-10-02",
+      "etat": "termine",
+      "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
     },
     "tout-gratuit-partout": {
       "titre": "Tout gratuit, partout, toujours (règle Kevin 2.10 soir)",
       "branche": "claude/tout-gratuit-partout",
       "sujet": "PR #4231",
       "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-10-02",
+      "etat": "termine",
+      "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
     },
     "kv-visites-par-jour": {
       "titre": "KV — visites anonymes par jour, robots ignorés",
       "branche": "claude/kv-visites-par-jour",
       "sujet": "PR #4233",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
     },
     "conference-ia-gratuites": {
       "titre": "Conférence des IA gratuites, pour toutes les apps (règle Kevin 2.10 soir)",
       "branche": "claude/conference-ia-gratuites",
       "sujet": "PR #4242 : conférence v2, Bee/Créa/Apex, garde",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-03",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
     },
     "bilan-2-10-soir": {
       "titre": "Bilan du 2.10 soir (leçon 393, ETAT/MEMO après mesures)",
       "branche": "claude/bilan-2-10-soir",
       "sujet": "Leçon 393 (marqueurs de conflit) ; ETAT/MEMO à compléter avec la construction d'Apex et la sonde du routeur",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
+    },
+    "registre-conference": {
+      "titre": "Registre des gardes : conférence + arbre (PR #4259)",
+      "branche": "claude/registre-conference",
+      "sujet": "fusionnée le 3.10 ; suppression refusée à l'agent (API 403)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
+    },
+    "apex-v13-368-gratuit": {
+      "titre": "Apex v13.4.368 : version alignée (PR #4253)",
+      "branche": "claude/apex-v13-368-gratuit",
+      "sujet": "fusionnée le 3.10 ; suppression refusée à l'agent (API 403)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée dans main (2-3.10), branche non supprimable par l'agent"
+    },
+    "registre-sessions-3-10": {
+      "titre": "Registre : sessions de la nuit terminées",
+      "branche": "claude/registre-sessions-3-10",
+      "sujet": "10 sessions fusionnées passées en termine ; message aux sessions hors registre",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-03",
@@ -4052,6 +4092,15 @@
       "sujet": "Règle « ARBRE : ajouter tout seul les nouvelles personnes… » sans entrée au registre des gardes → chaîne rouge (test:improvements-guard 19 → 21)",
       "corps": "Mesuré 3.10 00h50 : node tools/audit/rules-compliance.cjs liste la règle ARBRE (commit 23ed102f6) comme « sans garde ». La session arbre doit ajouter son entrée dans tools/audit/rules-compliance.cjs (REGISTRE : motif du titre → npm:test:… existant) dans le même commit qu'une règle. J'ai remis la mienne (conférence) ; sans la vôtre le ratchet reste à 20 et la chaîne de tout le monde reste rouge.",
       "ts": "2026-10-03 00:46",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m197-bilan-2-10-soir",
+      "de": "bilan-2-10-soir",
+      "a": "toutes",
+      "sujet": "3 branches hors registre → test:pipeline-sessions rouge pour tout le monde",
+      "corps": "Mesuré 3.10 00h55 sur main : OUBLIÉE au registre : claude/verif-appareils ; ACTIVES que personne ne suit : claude/bascule-imports-deduits, claude/visite-captures. Chaque session inscrit sa branche (node tools/pipeline/pipeline.mjs enregistrer --id … --branche …) + ligne dans SESSIONS-ET-BRANCHES.md, et passe en « termine » ses branches fusionnées (l'agent ne peut pas les supprimer). Mes 10 branches de la nuit sont passées « termine ».",
+      "ts": "2026-10-03 00:52",
       "etat": "ouvert"
     }
   ]

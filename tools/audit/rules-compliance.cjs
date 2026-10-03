@@ -89,6 +89,15 @@ const REGISTRE = [
   // dans test:ci (ou le workflow réel), mais pas leur entrée ici → ratchet 19 → 22, test:ci rouge
   // pour tout le monde. Cinquième fois : règle nouvelle = entrée ICI dans le même commit.
   [/GRATUIT PAR DÉFAUT/i, ['npm:test:gratuit']],
+  // Règle « CONFÉRENCE DES IA GRATUITES … POUR TOUTES LES APPS » (Kevin 2.10.2026 soir) : garde = test:conference-partout
+  // (chaque app entre par routeSmart / /ai, balayage des workers, sabotage) + test:ia-route (3 tours, compétence durable).
+  // L'entrée avait été PERDUE à la fusion #4242 (résolution « version de main » du fichier) → ratchet 19 → 21 (3.10 00h23).
+  [/CONFÉRENCE DES IA GRATUITES/i, ['npm:test:conference-partout', 'npm:test:ia-route']],
+  // Règle « ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE » (Kevin 3.10.2026, session arbre,
+  // commit 23ed102f6 sans entrée → ratchet rouge pour tout le monde). Ce qui est MÉCANISABLE vit dans le robot d'écriture de
+  // l'arbre (essai à blanc → écriture → rejouer = 0, anti-doublon par `ref`) et dans la section « à relier » ; le jugement
+  // « l'info est sûre » reste celui de la session. Entrée posée par la session conférence (3.10 00h55), à affiner par arbre.
+  [/ARBRE : AJOUTER TOUT SEUL/i, ['wf:arbre-nuage.yml', 'npm:test:arbre-relier']],
   // Règle « TOUT GRATUIT, PARTOUT, TOUJOURS » (Kevin 2.10.2026 soir) : garde = test:tout-gratuit (chaque cascade du dépôt —
   // ia-route, kdmc-apis, Créa, chat-svc, messagerie, outils Lingua, Apex — commence par un gratuit ; sabotage prouvé).
   [/TOUT GRATUIT, PARTOUT, TOUJOURS/i, ['npm:test:tout-gratuit', 'npm:test:ia-route']],

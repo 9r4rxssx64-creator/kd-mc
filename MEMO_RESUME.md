@@ -1,5 +1,19 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (10h30) — Crypto : réveil de 10h00 planté (« trop de sous-requêtes ») → appels groupés
+
+Journal D1 lu (Cloudflare MCP) :
+- 06h00 `attente` ; sources : Crypto.com ✅, CoinPaprika ✅, OKX ✅, Cboe ✅, or ✅, BCE ✅, RSS ✅.
+- 08h00 **verdict `annuler`** : « robot inactif, aucun trade bouclé en 12 h » → p2 revient en `ema` (règle du mode
+  agressif, voulue). CoinPaprika 402 ce coup-là, Kraken ✅ (OKX 429).
+- 10h00 **`erreur` : Too many subrequests** (plan gratuit : 50 par réveil) — 1er réveil de décision avec les relais.
+Corrigé : `botFleetStats` = 2 requêtes Railway pour toute la flotte (alias), `botVarsVisiblesTous` = 1 requête ;
+sources qui marchent depuis Cloudflare en tête (Crypto.com, Kraken, CoinLore → CoinPaprika → CoinGecko) ;
+CoinLore ajouté (format relevé le 3.10). Pire réveil mesuré en test : **26 sous-requêtes** (plafond de garde 30).
+Gardes : bot-ia 70/0, routeur 45/0, bot 61/0, page 28/0 ; sabotage « un appel par robot » → 36, rouge. Leçon #395.
+
+---
+
 ## 2026-10-03 (09h20 UTC) — KV : la rafale de minuit ATTRIBUÉE (mesuré) — ce sont nos robots ; correctif en PR
 
 - **Mesuré à 09h06** (rappel 09h05) : `mesure-kv` jours=1 (run public 37111933086) → **1 208 écritures le 3.10, 632 à 00h +

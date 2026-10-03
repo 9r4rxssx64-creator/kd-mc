@@ -146,5 +146,7 @@ const bg = ia.bougiesCryptoCom({ result: { data: [{ t: 2, o: '2', h: '3', l: '1'
 dit(bg.length === 2 && bg[0][0] === 1 && bg[1][2] === '3' && bg[1][4] === '2.5', 'bougies Crypto.com au format Binance, triées dans le temps');
 dit(ia.lireCryptoComTickers({}) === null && ia.lireCoinpaprikaGlobal({}) === null && ia.lireFundingKraken({}) === null, 'réponse inattendue → vide, jamais un faux chiffre');
 
+dit(ia.lireCoinlore([{ total_mcap: 2832738426140.09, mcap_change: '-3.88', btc_d: '59.63', eth_d: '11.59' }]).dom_btc === 59.63 && ia.lireCoinlore({}) === null, 'CoinLore : marché global (3e relais), réponse inattendue → vide');
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

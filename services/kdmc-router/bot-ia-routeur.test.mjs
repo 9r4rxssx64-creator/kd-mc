@@ -43,6 +43,12 @@ globalThis.fetch = async (input, init) => {
     if (q.startsWith('mutation')) { mutations.push(q); return j({ data: { ok: true } }); }
     if (q.includes('projectToken')) return j({ data: { projectToken: { projectId: 'PR', environmentId: 'EN' } } });
     if (q.includes('project(id')) return j({ data: { project: { name: 'CMCteams', services: { edges: SERVICES.map(([id, name]) => ({ node: { id, name } })) } } } });
+    const alD = parAlias(q, 'deployments', (args) => { const sv = (args.match(/serviceId: "([A-Z0-9]+)"/) || [])[1]; return { edges: [{ node: { id: 'D-' + sv, status: 'SUCCESS', createdAt: '2026-10-01T00:00:00Z' } }] }; });
+    if (alD) return j({ data: alD });
+    const alL = parAlias(q, 'deploymentLogs', (args) => { const sv = (args.match(/deploymentId: "D-([A-Z0-9]+)"/) || [])[1]; return [{ message: 'BTC/USDT HOLD | prix=60000.00 | equity=' + (EQUITE[sv] || 10000) + '.00 | rien' }]; });
+    if (alL) return j({ data: alL });
+    const alV = parAlias(q, 'variables', (args) => { const sv = (args.match(/serviceId: "([A-Z0-9]+)"/) || [])[1]; return Object.assign({ TESTNET: 'true', BINANCE_API_KEY: 'secret-ne-doit-pas-sortir' }, VARS[sv] || {}); });
+    if (alV) return j({ data: alV });
     const svc = (q.match(/serviceId: "([A-Z0-9]+)"/) || [])[1];
     if (q.includes('deployments(')) return j({ data: { deployments: { edges: [{ node: { id: 'D-' + svc, status: 'SUCCESS', createdAt: '2026-10-01T00:00:00Z' } }] } } });
     if (q.includes('deploymentLogs')) { const s = (q.match(/deploymentId: "D-([A-Z0-9]+)"/) || [])[1]; return j({ data: { deploymentLogs: [{ message: 'BTC/USDT HOLD | prix=60000.00 | equity=' + (EQUITE[s] || 10000) + '.00 | rien' }] } }); }
@@ -55,6 +61,18 @@ globalThis.fetch = async (input, init) => {
   if (u.includes('alternative.me')) return j({ data: [{ value: '50', value_classification: 'Neutral' }] });
   return new Response('indisponible', { status: 503 });
 };
+
+/* Requêtes groupées (alias GraphQL, 3.10) : « d0: deployments(...) d1: ... » → une réponse par alias. */
+function parAlias(q, champ, rep) {
+  const re = new RegExp('(\\w+): ' + champ + '\\(([^)]*)\\)', 'g');
+  const out = {}; let m, n = 0;
+  while ((m = re.exec(q))) { out[m[1]] = rep(m[2]); n++; }
+  return n ? out : null;
+}
+/* Compteur de sous-requêtes (limite 50 par réveil sur le plan gratuit Workers ; journal D1 du 3.10 10h00). */
+let sousRequetes = 0;
+{ const f0 = globalThis.fetch; globalThis.fetch = (...a) => { sousRequetes++; return f0(...a); }; }
+{ const r0 = env.AI.run; env.AI.run = (...a) => { sousRequetes++; return r0(...a); }; }
 const REQ = (path, o = {}) => new Request('https://bot.kd-mc.com' + path, Object.assign({ method: 'GET' }, o));
 const ctxW = { waitUntil() {}, passThroughOnException() {} };
 const appel = async (path, o) => { const r = await mod.fetch(REQ(path, o), env, ctxW); let b = null; try { b = await r.json(); } catch { /* */ } return { s: r.status, b }; };
@@ -88,7 +106,7 @@ dit(!JSON.stringify(st).includes('secret-ne-doit-pas-sortir'), 'aucune clé Bina
 dit(appelsPayants.length === 0, 'aucune IA PAYANTE appelée (OpenAI / Anthropic configurées mais exclues)');
 dit(appelsIa.includes('@cf/openai/gpt-oss-120b') && st.journal[st.journal.length - 1].contre_avis === 'cohérent avec un marché calme', 'le contre-avis gpt-oss-120b a relu et approuvé (raison au journal)');
 const releve = JSON.parse(store.get('bot:hist') || '[]');
-dit(releve.length === 1 && releve[0].btc === 60000 && releve[0].b['crypto-bot'] && releve[0].b['crypto-bot-p2'], 'le réveil fait le relevé des 6 robots avec le prix du BTC');
+dit(releve.length === 1 && releve[0].btc === 84538.42 && releve[0].b['crypto-bot'] && releve[0].b['crypto-bot-p2'], 'le réveil fait le relevé des 6 robots avec le prix du BTC');
 
 console.log('\n=== 3 bis. Contre-avis NON : rien ne change ===');
 const sauve = store.get('bot:ia');
@@ -181,7 +199,7 @@ dit(putsIa === 0, 'aucune écriture KV pour l\'état de l\'IA');
 const rvD1 = db._s.prepare('SELECT * FROM reveils ORDER BY id DESC').get();
 dit(rvD1 && rvD1.origine === 'cron' && rvD1.action === 'attente' && /Peur/.test(rvD1.sources || ''), 'le réveil est journalisé en D1 avec l\'état des sources (' + (rvD1 && rvD1.action) + ')');
 const nRel = db._s.prepare('SELECT COUNT(*) AS n, MAX(btc) AS b FROM releves').get();
-dit(nRel.n === 6 && nRel.b === 60000 && !store.has('bot:hist'), 'relevé des 6 robots + BTC en D1, rien en KV');
+dit(nRel.n === 6 && nRel.b === 84538.42 && !store.has('bot:hist'), 'relevé des 6 robots + BTC en D1, rien en KV');
 r = await appel('/__bot/reel', { headers: HA });
 dit(r.s === 200 && r.b.releves >= 1, '/__bot/reel lit les relevés D1 (' + (r.b && r.b.releves) + ')');
 db._s.prepare("UPDATE etat SET v = ?1 WHERE k = 'ia'").run(JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0 }));
@@ -195,16 +213,19 @@ console.log('\n=== 10. Relais mesurés le 3.10 : Binance bloqué, Qwen sans JSON
 binanceBloque = true;
 r = await appel('/__bot/marche?frais=1', { headers: HA });
 const btcRelais = r.b && (r.b.cryptos || []).find((c) => c.paire === 'BTC/USDT');
-dit(btcRelais && btcRelais.prix === 84538.42 && /^ok \(Crypto\.com ; Binance HTTP 403\)/.test(r.b.sources['Prix 24 h des cryptos']), 'Binance 403 → prix pris chez Crypto.com, et la page dit pourquoi (' + (r.b && r.b.sources['Prix 24 h des cryptos']) + ')');
+dit(btcRelais && btcRelais.prix === 84538.42 && /^ok \(Crypto\.com\)$/.test(r.b.sources['Prix 24 h des cryptos']), 'prix pris chez Crypto.com (1re source, Binance bloqué depuis Cloudflare) — la page nomme la source (' + (r.b && r.b.sources['Prix 24 h des cryptos']) + ')');
 store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0 }));
 mutations = []; reponseIa = '<think>je réfléchis longtemps au marché et je n\'ai plus de place';
 propositionRelais = '{"bot":"crypto-bot-p4","reglages":{"TIMEFRAME":"5m"},"raison":"marché nerveux, sorties plus rapides","attendu":"plus de trades gagnants"}';
+sousRequetes = 0;
 r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+const srTick = sousRequetes;
 const stR = JSON.parse(store.get('bot:ia')); const decR = stR.journal[stR.journal.length - 1];
 dit(r.b && r.b.action === 'decision' && decR.source === 'ia-relais' && /gpt-oss/.test(decR.modele), 'Qwen sans JSON → gpt-oss-120b propose (relais gratuit), pas la règle de secours');
 dit(/réponse VIDE \(toute la place passée à réfléchir\)/.test(decR.echec_ia || ''), 'la cause du silence de Qwen est gardée au journal (début de sa réponse)');
 dit(appelsIa.includes('@cf/qwen/qwen3.8-27b') && decR.modele_contre === 'qwen3.8-27b', 'contre-avis par l\'AUTRE famille (Qwen relit gpt-oss)');
 dit(stR.enCours && stR.enCours.btc0 === 84538.42, 'le prix du BTC de départ est enregistré (barre à battre mesurable)');
+dit(srTick <= 30, 'pire réveil (Qwen muet → gpt-oss → contre-avis Qwen → changement) : ' + srTick + ' sous-requêtes, sous le plafond de 30 (limite gratuite : 50, marge pour cache et D1)');
 binanceBloque = false; propositionRelais = '';
 
 console.log(`\n${ok} OK · ${ko} échec(s)`);

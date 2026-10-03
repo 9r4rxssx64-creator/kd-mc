@@ -3658,27 +3658,50 @@ function egalTempsConstant(a, b) {
   return d === 0;
 }
 /* Stats de flotte (même calcul que /__bot/fleet, factorisé pour l'IA). */
+/* 2 requêtes Railway pour TOUTE la flotte (alias GraphQL) au lieu de 2 par robot : le réveil de 10h00 le
+   3.10 a dépassé la limite de sous-requêtes d'un Worker gratuit (« Too many subrequests », journal D1). */
 async function botFleetStats(env, ctx, names) {
-  return Promise.all(names.map(async (name) => {
-    const svc = (ctx.services || []).find((s) => s.name === name);
-    if (!svc) return { name, status: 'absent' };
-    const dp = await railGql(env, `query { deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${svc.id}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } } }`);
-    const node = ((((dp.j || {}).data || {}).deployments || { edges: [] }).edges[0] || {}).node;
-    if (!node) return { name, svcId: svc.id, status: 'aucun_deploiement' };
-    const rl = await railGql(env, `query { deploymentLogs(deploymentId: "${node.id}", limit: 1000) { message } }`);
-    const logs = (((rl.j || {}).data || {}).deploymentLogs || []);
-    const st = fleetTradeStats(logs);
-    let equity = null;
-    for (let i = logs.length - 1; i >= 0; i--) {
-      const m = String(logs[i].message || '').match(/equity=([0-9.]+)/);
-      if (m) { equity = Number(m[1]); break; }
+  const svcs = names.map((name) => ({ name, svc: (ctx.services || []).find((s) => s.name === name) }));
+  const avec = svcs.filter((x) => x.svc);
+  const out = new Map(svcs.filter((x) => !x.svc).map((x) => [x.name, { name: x.name, status: 'absent' }]));
+  if (avec.length) {
+    const q1 = avec.map((x, i) => `d${i}: deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${x.svc.id}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } }`).join(' ');
+    const dp = await railGql(env, `query { ${q1} }`);
+    const data = (dp.j || {}).data || {};
+    const nodes = avec.map((x, i) => ({ x, node: (((data['d' + i] || { edges: [] }).edges || [])[0] || {}).node }));
+    const avecNode = nodes.filter((n) => n.node);
+    nodes.filter((n) => !n.node).forEach((n) => out.set(n.x.name, { name: n.x.name, svcId: n.x.svc.id, status: 'aucun_deploiement' }));
+    if (avecNode.length) {
+      const q2 = avecNode.map((n, i) => `l${i}: deploymentLogs(deploymentId: "${n.node.id}", limit: 1000) { message }`).join(' ');
+      const rl = await railGql(env, `query { ${q2} }`);
+      const dl = (rl.j || {}).data || {};
+      avecNode.forEach((n, i) => {
+        const logs = dl['l' + i] || [];
+        const st = fleetTradeStats(logs);
+        let equity = null;
+        for (let k = logs.length - 1; k >= 0; k--) {
+          const m = String(logs[k].message || '').match(/equity=([0-9.]+)/);
+          if (m) { equity = Number(m[1]); break; }
+        }
+        out.set(n.x.name, Object.assign({ name: n.x.name, svcId: n.x.svc.id, depl: n.node.id, status: n.node.status, equity }, st));
+      });
     }
-    return Object.assign({ name, svcId: svc.id, depl: node.id, status: node.status, equity }, st);
-  }));
+  }
+  return names.map((n) => out.get(n));
 }
 async function botVarsVisibles(env, ctx, svcId) {
   const vq = await railGql(env, `query { variables(projectId: "${ctx.projectId}", environmentId: "${ctx.environmentId}", serviceId: "${svcId}") }`);
   return IA.reglagesVisibles(((vq.j || {}).data || {}).variables || {});
+}
+/* Réglages de plusieurs robots en UNE requête (alias). */
+async function botVarsVisiblesTous(env, ctx, bots) {
+  const res = {};
+  if (!bots.length) return res;
+  const q = bots.map((b, i) => `v${i}: variables(projectId: "${ctx.projectId}", environmentId: "${ctx.environmentId}", serviceId: "${b.svcId}")`).join(' ');
+  const vq = await railGql(env, `query { ${q} }`);
+  const data = (vq.j || {}).data || {};
+  bots.forEach((b, i) => { res[b.name] = IA.reglagesVisibles(data['v' + i] || {}); });
+  return res;
 }
 /* Applique des réglages DÉJÀ validés (liste blanche) à UN robot papier, puis le relance.
    Dernier verrou : même ici, une clé hors liste blanche ou interdite est refusée. */
@@ -3722,12 +3745,15 @@ async function botMarche(env, sansCache) {
   /* Relais mesurés le 3.10 (journal D1) : Binance 403, CoinGecko 429, OKX 429, Stooq 404 depuis Cloudflare. */
   const [fg, gl, cr, fu, spx, ndx, vix, or, eur, ct, jdc, cd] = await Promise.all([
     lireEnRelais([['alternative.me', 'https://api.alternative.me/fng/?limit=2', 'json', IA.lireFearGreed]]),
-    lireEnRelais([['CoinGecko', 'https://api.coingecko.com/api/v3/global', 'json', IA.lireCoingeckoGlobal],
-      ['CoinPaprika', 'https://api.coinpaprika.com/v1/global', 'json', IA.lireCoinpaprikaGlobal]]),
-    lireEnRelais([['Binance', 'https://data-api.binance.vision/api/v3/ticker/24hr?symbols=' + paires, 'json', IA.lireBinance24h],
-      ['Crypto.com', 'https://api.crypto.com/exchange/v1/public/get-tickers', 'json', IA.lireCryptoComTickers]]),
-    lireEnRelais([['OKX', 'https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP', 'json', IA.lireFundingOkx],
-      ['Kraken', 'https://futures.kraken.com/derivatives/api/v3/tickers', 'json', IA.lireFundingKraken]]),
+    /* Ordre = ce qui répond depuis Cloudflare d'abord (mesuré 3.10, 06h-10h) : chaque essai raté coûte une
+       sous-requête sur les 50 d'un réveil gratuit. */
+    lireEnRelais([['CoinLore', 'https://api.coinlore.net/api/global/', 'json', IA.lireCoinlore],
+      ['CoinPaprika', 'https://api.coinpaprika.com/v1/global', 'json', IA.lireCoinpaprikaGlobal],
+      ['CoinGecko', 'https://api.coingecko.com/api/v3/global', 'json', IA.lireCoingeckoGlobal]]),
+    lireEnRelais([['Crypto.com', 'https://api.crypto.com/exchange/v1/public/get-tickers', 'json', IA.lireCryptoComTickers],
+      ['Binance', 'https://data-api.binance.vision/api/v3/ticker/24hr?symbols=' + paires, 'json', IA.lireBinance24h]]),
+    lireEnRelais([['Kraken', 'https://futures.kraken.com/derivatives/api/v3/tickers', 'json', IA.lireFundingKraken],
+      ['OKX', 'https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP', 'json', IA.lireFundingOkx]]),
     lireEnRelais([['Cboe', 'https://cdn.cboe.com/api/global/delayed_quotes/quotes/_SPX.json', 'json', (j) => IA.lireCboe(j, 'S&P 500')]]),
     lireEnRelais([['Cboe', 'https://cdn.cboe.com/api/global/delayed_quotes/quotes/_NDX.json', 'json', (j) => IA.lireCboe(j, 'Nasdaq 100')]]),
     lireEnRelais([['Cboe', 'https://cdn.cboe.com/api/global/delayed_quotes/quotes/_VIX.json', 'json', (j) => IA.lireCboe(j, 'VIX (peur bourse)')]]),
@@ -3849,7 +3875,7 @@ async function iaTick(env, ctx, origine, force) {
     return { ok: true, action: 'attente', detail: st.dernier };
   }
   const actuels = {};
-  await Promise.all(flotte.filter((b) => b.svcId).map(async (b) => { actuels[b.name] = await botVarsVisibles(env, ctx, b.svcId); }));
+  Object.assign(actuels, await botVarsVisiblesTous(env, ctx, flotte.filter((b) => b.svcId)));
   const { system, prompt } = IA.construirePrompt(IA.resumerMarche(marche), flotte, actuels, st.journal);
   let prop = null, source = 'ia', modele = '', echecIa = '';
   try {

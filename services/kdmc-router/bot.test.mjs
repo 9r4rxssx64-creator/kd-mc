@@ -22,6 +22,14 @@ const envBase = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha(CODE), ACCO
 const REQ = (o) => new Request('https://bot.kd-mc.com' + o.path, { method: o.method || 'GET', headers: o.headers || {}, body: o.body });
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : (fail++, console.log('  ✗ ' + m)); };
 
+
+/* Requêtes groupées (alias GraphQL, 3.10) : « d0: deployments(...) d1: ... » → une réponse par alias. */
+function parAlias(q, champ, rep) {
+  const re = new RegExp('(\\w+): ' + champ + '\\(([^)]*)\\)', 'g');
+  const out = {}; let m, n = 0;
+  while ((m = re.exec(q))) { out[m[1]] = rep(m[2]); n++; }
+  return n ? out : null;
+}
 /* ---- Mock Railway GraphQL (le worker appelle backboard.railway.com via fetch) ---- */
 const gqlCalls = [];
 const realFetch = globalThis.fetch;
@@ -86,6 +94,14 @@ globalThis.fetch = async (input, init) => {
     const j = (d) => new Response(JSON.stringify(d), { headers: { 'content-type': 'application/json' } });
     if (q.includes('projectToken')) return j({ data: { projectToken: { projectId: 'P1', environmentId: 'E1' } } });
     if (q.includes('project(id')) return j({ data: { project: { name: 'CMCteams', services: { edges: [{ node: { id: 'S0', name: 'CMCteams' } }, { node: { id: 'S1', name: 'crypto-bot' } }, { node: { id: 'S2', name: 'crypto-bot-p1' } }] } } } });
+    const alD = parAlias(q, 'deployments', () => ({ edges: [{ node: { id: 'D1', status: 'SUCCESS', createdAt: '2026-07-03T00:00:00Z' } }] }));
+    if (alD) return j({ data: alD });
+    const alL = parAlias(q, 'deploymentLogs', () => [
+      { message: '🟢 BTC/USDT ACHAT qty=0.5 @ 100.00 (stop 90.00)' },
+      { message: '🔻 BTC/USDT VENTE (signal) qty=0.5 @ 110.00' },
+      { message: 'HOLD | prix=61500.00 | equity=10005.00 | pas de signal' },
+    ]);
+    if (alL) return j({ data: alL });
     if (q.includes('deployments(')) return j({ data: { deployments: { edges: [{ node: { id: 'D1', status: 'SUCCESS', createdAt: '2026-07-03T00:00:00Z' } }] } } });
     /* /__bot/fleet lit limit: 1000 (avec trades) ; /__bot/status lit limit: 80 (ligne HOLD). */
     if (q.includes('deploymentLogs') && q.includes('limit: 1000')) return j({ data: { deploymentLogs: [

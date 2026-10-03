@@ -466,3 +466,9 @@ export function bougiesCryptoCom(j) {
   if (!d) return null;
   return d.map((b) => [Number(b.t), String(b.o), String(b.h), String(b.l), String(b.c), String(b.v)]).sort((a, b) => a[0] - b[0]);
 }
+/* CoinLore (3e relais du marché global, sans clé) — format relevé le 3.10 : [{ total_mcap, mcap_change, btc_d }]. */
+export function lireCoinlore(j) {
+  const d = Array.isArray(j) ? j[0] : null;
+  if (!d || !(Number(d.total_mcap) > 0)) return null;
+  return { capi_usd: Number(d.total_mcap), var24h: Number(d.mcap_change), dom_btc: Number(d.btc_d), dom_eth: Number(d.eth_d) || null };
+}

@@ -40,7 +40,10 @@ function serveur(port, dossier, hote, env) {
   });
 }
 const kv = new Map();
-const env = (avecCercle) => Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'a'.repeat(64),
+/* le service de notifications (appel de Bee, v2.134.0) : simulé ici, sa clé publique sur /health */
+const _vraiFetch = globalThis.fetch;
+globalThis.fetch = async (u, i) => (String(u) === 'https://push.test/health' ? new Response(JSON.stringify({ ok: true, vapidPublic: 'B'.repeat(87) })) : _vraiFetch(u, i));
+const env = (avecCercle) => Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'a'.repeat(64), KDMC_PUSH_URL: 'https://push.test',
   ACCOUNTS: { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } } }, avecCercle ? { CERCLE_DB: d1() } : {});
 
 /* asynchrone, OBLIGATOIRE : un lancement synchrone gèlerait la boucle d'événements… et donc le serveur

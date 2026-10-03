@@ -131,6 +131,11 @@ let versionServie = '';
     chk('cercle', tous.st === 401, 'la liste de toutes les personnes est fermée à un inconnu (401)', tous.st);
     const pirate = await lire('/__cercle/message', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://site-pirate.example' }, SONDE), data: '{"a":"admin","type":"texte","corps":"x"}' });
     chk('cercle', pirate.st === 403 && pirate.j && pirate.j.reason === 'origine_refusee', 'un site extérieur ne peut rien poster dans le cercle (403)', pirate.st + ' ' + JSON.stringify(pirate.j));
+    /* 📞 Bee t'appelle même app fermée (v2.134.0) : la clé des notifications répond, un site extérieur ne peut pas s'abonner */
+    const cle = await lire('/__lingua/appel-cle');
+    chk('appel', cle.j && cle.j.ok === true && String(cle.j.cle || '').length > 60, 'notifications « Bee t\'appelle » : la clé du service de notifications répond', cle.st + ' ' + JSON.stringify(cle.j).slice(0, 80));
+    const abo = await lire('/__lingua/appel-abonnement', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://site-pirate.example' }, SONDE), data: '{"sub":{"endpoint":"https://web.push.apple.com/x","keys":{"p256dh":"a","auth":"b"}},"heure":"18:30","tz":"Europe/Paris"}' });
+    chk('appel', abo.st === 403, 'un site extérieur ne peut pas abonner un téléphone aux appels (403)', abo.st);
     const qui = await lire('/__sso/whoami');
     chk('domaine', qui.j && qui.j.ok === false, 'sans session : le domaine ne reconnaît personne (whoami ok:false)', JSON.stringify(qui.j));
   } catch (e) { ko('cercle', 'portes du cercle injoignables : ' + String(e && e.message || e).slice(0, 160)); }

@@ -142,6 +142,27 @@ connecté en permanence + Face ID ; meilleures voix gratuites.
   = écritures des visites anonymes du jour, part des écritures mesurées). Garde `test:kv-inventaire` (8 contrôles, dans
   test:ci). À lancer dès la fusion ; le chiffre dira si ce sont les robots d'internet (visites anonymes) ou nos propres
   compteurs — et donc quoi couper (une seule écriture par visiteur par JOUR au lieu de par heure, par exemple).
+## 2026-10-03 — Arbre v3.48 : la famille corrige, Kevin est prévenu (qui, quoi, avant → après, pourquoi)
+
+Kevin 3.10.2026 : « possibilité à n'importe qui de rectifier, avec notif pour moi détaillée par qui,
+quoi, comment, pourquoi, à la place de ». Mesuré avant : tout porteur du code famille corrigeait
+déjà (l'app écrit dans Firebase), mais **rien ne gardait la trace** (seulement `updatedBy`, écrasé)
+et **Kevin n'était jamais prévenu**.
+- **App (v3.48)** : au moment d'enregistrer, copie « avant » → `diffFiche` (prénom, nom, sexe, vivant,
+  naissance, décès, père, mère, conjoints en NOMS, métier, notes, nombre de photos). Champ
+  « Pourquoi ce changement ? ». Prénom demandé s'il manque. `historique` dans la fiche (60 max,
+  voyage avec elle) → section « 🕓 Historique des modifications ». Suppression, commentaire, acte
+  et document préviennent aussi. Outils → « 📜 Journal des corrections » ; le lien de la
+  notification (`#journal`) l'ouvre directement. Les changements signés « Kevin » : notés, pas notifiés.
+- **Routeur** : `POST /__arbre/correction` (preuve = empreinte du code famille, textes bornés,
+  anti-rafale 120/h/appareil compté DANS le journal → aucune écriture KV en plus) → KV
+  `arbre:journal` (500 dernières) + `notifyPush` (titre « 🌳 Émile a modifié X », corps
+  « champ : avant → après · Pourquoi : … »). `GET /__arbre/journal` (code famille, IP retirée).
+- **Gardes** : `services/kdmc-router/arbre.test.mjs` (54 OK, sabotage notif → 3 rouges) et
+  `tests/arbre-corrections.test.mjs` (27 OK, câblé `test:ci`, sabotage suppression → 1 rouge).
+- **Pas vérifiable d'ici** : que l'iPhone de Kevin soit bien abonné aux notifications du
+  worker de push (même réserve qu'en MEMO §push). La trace, elle, est toujours gardée.
+
 ## 2026-10-02 — Arbre : la recherche sur chaque personne est dans les fiches
 
 Kevin : recherche d'actes, de presse, de photos et de documents « pour chaque nom », vivants

@@ -62,6 +62,7 @@
   "tests/_debug-team-history-cross-month.mjs",
   "tests/_debug-v1-team-diag.mjs",
   "tests/arbre-cadrage.test.mjs",
+  "tests/arbre-corrections.test.mjs",
   "tests/arbre-dates-visuel.test.mjs",
   "tests/arbre-liens-par-nom.test.mjs",
   "tests/arbre-nouvelle-personne.test.mjs",

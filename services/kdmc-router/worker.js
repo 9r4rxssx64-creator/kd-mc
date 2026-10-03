@@ -372,6 +372,45 @@ async function handleArbre(request, url, env) {
     await audLog(env, { ev: 'arbre_code_rotate', by: me ? 'admin' : 'famille' });
     return J({ ok: true });
   }
+  /* CORRECTIONS PAR LA FAMILLE (Kevin 3.10.2026 : « possibilité à n'importe qui de rectifier,
+     avec notif pour moi détaillée : par qui, quoi, comment, pourquoi, à la place de quoi »).
+     N'importe qui ayant le code famille corrige déjà une fiche (l'app écrit dans le nuage) ;
+     ici on garde la TRACE (journal, 500 dernières) et on PRÉVIENT Kevin sur son iPhone.
+     Preuve exigée : l'empreinte du code famille (comme GET /__arbre/seed). Bornes partout. */
+  if (path === '/__arbre/correction' && request.method === 'POST') {
+    const hash = String(request.headers.get('x-arbre-code') || '').trim().toLowerCase();
+    if (!stored) return J({ ok: false, reason: 'code_non_publie' });
+    if (!hexEq(hash, stored)) return J({ ok: false, reason: 'code_invalide' }, null, 403);
+    /* Garde-fou anti-rafale SANS écriture KV de plus (quota gratuit : 1 000/jour) : on compte,
+       dans le journal lui-même, les corrections du même appareil (IP hachée) sur la dernière heure. */
+    const ip = (await sha256Hex((request.headers.get('CF-Connecting-IP') || '') + '|arbre-corr')).slice(0, 12);
+    let journal = [];
+    try { journal = JSON.parse((await env.ACCOUNTS.get('arbre:journal')) || '[]'); } catch { journal = []; }
+    if (!Array.isArray(journal)) journal = [];
+    const recent = journal.filter((x) => x && x.ip === ip && x.ts > Date.now() - 3600000).length;
+    if (recent >= 120) return J({ ok: false, reason: 'rate_limited' }, null, 429);
+    let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'bad_json' }); }
+    const e = arbreCorrection(b);
+    if (!e) return J({ ok: false, reason: 'correction_vide' });
+    e.ip = ip;
+    journal.unshift(e);
+    await env.ACCOUNTS.put('arbre:journal', JSON.stringify(journal.slice(0, 500)));
+    let notifie = false;
+    if (!b.silencieux) {
+      const r = arbreResumePush(e);
+      await notifyPush(env, r.title, r.body, { tag: 'arbre-' + (e.id || 'x') + '-' + e.ts, url: 'https://arbre.kd-mc.com/#journal' });
+      notifie = !!(env.KDMC_PUSH_URL && env.KDMC_PUSH_TOKEN);
+    }
+    return J({ ok: true, ts: e.ts, notifie });
+  }
+  if (path === '/__arbre/journal' && request.method === 'GET') {
+    const hash = String(request.headers.get('x-arbre-code') || '').trim().toLowerCase();
+    if (!stored) return J({ ok: false, reason: 'code_non_publie' });
+    if (!hexEq(hash, stored)) return J({ ok: false, reason: 'code_invalide' }, null, 403);
+    let journal = [];
+    try { journal = JSON.parse((await env.ACCOUNTS.get('arbre:journal')) || '[]'); } catch { journal = []; }
+    return J({ ok: true, journal: (Array.isArray(journal) ? journal : []).map((x) => { const { ip, ...reste } = x || {}; return reste; }) });
+  }
   return J({ ok: false, reason: 'not_found' }, null, 404);
 }
 
@@ -2176,6 +2215,32 @@ async function accPut(env, acc, knownExisting) {
     const idx = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
     if (idx.indexOf(acc.uid) < 0) { idx.push(acc.uid); await env.ACCOUNTS.put('idx:uids', JSON.stringify(idx.slice(-5000))); }
   } catch { /* fail-open */ }
+}
+/* Nettoie une correction envoyée par l'app : que du texte, borné, jamais d'objet arbitraire. */
+const ARBRE_TYPES = ['modification', 'creation', 'suppression', 'commentaire', 'acte', 'document', 'photo'];
+function arbreCorrection(b) {
+  if (!b || typeof b !== 'object') return null;
+  const t = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, n);
+  const type = ARBRE_TYPES.includes(b.type) ? b.type : 'modification';
+  const champs = (Array.isArray(b.champs) ? b.champs : []).slice(0, 25)
+    .map((c) => ({ c: t(c && c.c, 40), avant: t(c && c.avant, 300), apres: t(c && c.apres, 300) }))
+    .filter((c) => c.c && (c.avant !== c.apres));
+  if (!champs.length) return null;
+  return {
+    ts: Date.now(), type,
+    id: t(b.id, 64), qui: t(b.qui, 120) || 'quelqu\'un',
+    par: t(b.par, 60) || 'un membre de la famille',
+    pourquoi: t(b.pourquoi, 400), appareil: t(b.appareil, 80), champs,
+  };
+}
+/* La notification : courte (l'iPhone coupe vers 180 caractères), le détail est dans le journal. */
+function arbreResumePush(e) {
+  const verbe = { modification: 'a modifié', creation: 'a ajouté', suppression: 'a SUPPRIMÉ', commentaire: 'a commenté', acte: 'a ajouté un acte à', document: 'a ajouté un document à', photo: 'a changé les photos de' }[e.type] || 'a modifié';
+  const title = ('🌳 ' + e.par + ' ' + verbe + ' ' + e.qui).slice(0, 110);
+  const lignes = e.champs.slice(0, 3).map((c) => c.c + ' : ' + (c.avant || '∅') + ' → ' + (c.apres || '∅'));
+  if (e.champs.length > 3) lignes.push('+' + (e.champs.length - 3) + ' autre(s)');
+  if (e.pourquoi) lignes.push('Pourquoi : ' + e.pourquoi);
+  return { title, body: lignes.join(' · ').slice(0, 300) };
 }
 /* Alerte push « nouvel appareil » vers l'iPhone de Kevin, via le worker de push
    existant (POST /send-all, Bearer). OPT-IN par config : sans KDMC_PUSH_URL +

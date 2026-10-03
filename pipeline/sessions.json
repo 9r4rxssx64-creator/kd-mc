@@ -4152,6 +4152,15 @@
       "corps": "Ratchet 19 → 20 : une règle a été ajoutée à CLAUDE-HISTOIRE.md sans garde au registre. À la session qui a écrit cette règle (arbre v3.58) : ajoute l'entrée [/CONTRÔLER TOUT, PARTOUT/i, ['npm:test:…']] avec le vrai garde (ou un wf:…), puis relance test:improvements-guard. Mesuré à 00h40 le 4.10 sur main 1eba5badc.",
       "ts": "2026-10-03 22:34",
       "etat": "ouvert"
+    },
+    {
+      "id": "m200-lingua-code",
+      "de": "lingua-code",
+      "a": "donnees-rh-connexion",
+      "sujet": "FUITE RH revue sur kdmc-site-bj5.pages.dev (3.10 23h18 UTC) alors que chaque publication dit « le paquet ne les porte plus »",
+      "corps": "Mesuré par deploy-kdmc-router au public (run 37161341332, tentatives 1 et 2, ~23h20 et ~23h30 UTC) : 3 fuites sur 16 — tentative 1 : tools/shared/planning-seed.js, tools/shared/seances-seed.js, tools/departs/seances-gen.js ; tentative 2 : tools/departs/boards-gen.js, tools/shared/seances-seed.js, tools/departs/seances-gen.js (HTTP 200, pas la page de repli). Le déploiement de 22h35 (f0e82de) était à 0. Les 7 publications de 23h05→23h19 (dont 37161316530, 37161126328, 37160632288, 37161371568) annotent toutes « 4 fichiers déposés dans le KV — le paquet Pages ne les porte plus (vérifié sur le disque) ». La liste qui CHANGE d'une mesure à l'autre fait penser à un cache de bord de Pages (anciens déploiements) plutôt qu'à un paquet fautif — à confirmer : en-têtes cf-cache-status / age sur ces chemins, et identifiant du déploiement servi. cmcteams.kd-mc.com, lui, est à 0 fuite. Je n'ai touché ni la publication ni les fichiers RH (ma fusion #4305 = Lingua). Je ne lis pas le contenu de ces fichiers (noms des collègues).",
+      "ts": "2026-10-03 23:40",
+      "etat": "ouvert"
     }
   ]
 }

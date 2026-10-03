@@ -37,7 +37,7 @@ const CIBLES = [
 const res = [];
 for (const c of CIBLES) {
   try {
-    const r = await fetch(c.url, { headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(25000) });
+    const r = await fetch(c.url, { headers: { 'cache-control': 'no-cache', 'x-kdmc-sonde': 'ressources-app' }, signal: AbortSignal.timeout(25000) });
     const t = await r.text();
     /* Le repli de l'hébergeur renvoie la page d'accueil : du HTML, code 200.
        C'est LE cas qu'on veut attraper — un 200 ne suffit donc jamais. */

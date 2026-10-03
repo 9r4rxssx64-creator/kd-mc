@@ -59,7 +59,7 @@ const lire = async (url) => {
   try {
     const r = await fetch(url, {
       redirect: 'follow',
-      headers: { 'cache-control': 'no-cache', 'user-agent': 'kdmc-sonde-maj/1' },
+      headers: { 'cache-control': 'no-cache', 'user-agent': 'kdmc-sonde-maj/1', 'x-kdmc-sonde': 'maj-auto' },
       signal: AbortSignal.timeout(TEMPS),
     });
     return { ok: true, http: r.status, txt: await r.text() };

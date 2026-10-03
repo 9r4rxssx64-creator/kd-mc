@@ -61,7 +61,7 @@ async function sonder([chemin, pourquoi]) {
   try {
     const r = await fetch(url, {
       redirect: 'follow',
-      headers: { 'cache-control': 'no-cache', 'user-agent': 'kdmc-sonde-fuite/1' },
+      headers: { 'cache-control': 'no-cache', 'user-agent': 'kdmc-sonde-fuite/1', 'x-kdmc-sonde': 'fuite-hebergeur' },
       signal: AbortSignal.timeout(TEMPS),
     });
     /* Un 200 qui rend la page d'accueil (repli SPA) n'est PAS une fuite : on

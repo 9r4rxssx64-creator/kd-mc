@@ -1,5 +1,34 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (09h20 UTC) — KV : la rafale de minuit ATTRIBUÉE (mesuré) — ce sont nos robots ; correctif en PR
+
+- **Mesuré à 09h06** (rappel 09h05) : `mesure-kv` jours=1 (run public 37111933086) → **1 208 écritures le 3.10, 632 à 00h +
+  570 à 01h UTC puis ~0** (plafond crevé à 01h ; 2.10 : 1 406 ; 1.10 : 1 277). `coffre-kv-inventaire` (run 37111987256,
+  1 907 clés) → **321 visites anonymes le 3.10 = ~642 écritures = 53 %**, 31 hôtes, **~9 visites sur CHAQUE adresse obscure**
+  (autorisations, coffre, dossiers, outils : 9 chacune) — la signature d'un balayage, pas d'humains ; `ltts` 1 093 clés
+  (cache des voix), `anonv` 327, 34 suppressions (nettoyage des comptes 00h21). Sauvegarde Firebase 04h00 ✅ (run 37095107451).
+- **Qui tournait à 00h-01h** (journal des runs publics 00h17-00h53, liste tronquée à 60) : **9 × « Publie le site sur Cloudflare
+  Pages »**, « Déploie le routeur », 4 × « Visual + Functional Regression » (vrai navigateur), « KDMC SSO — navigateur réel »,
+  « Bee — gardes en vrai navigateur », 6 × « Tests E2E », Lighthouse ×2, Axe, E2E Apex… Chaque run part d'une adresse IP GitHub
+  neuve ; `sonde-site-publie` (lancée par chaque publication) se présente comme un navigateur (`Sec-Fetch-Dest: document`,
+  `Accept: text/html`) avec l'User-Agent « kdmc-sonde/1 » — aucun mot de la liste robots — et **sans l'en-tête `x-kdmc-sonde`**
+  (règle du 27.09, appliquée aux 6 sondes de sa liste, jamais aux 5 écrites après). 9 publications × 31 adresses × 2 écritures
+  ≈ 560 : c'est la rafale. Le comptage « par jour » du 2.10 était juste mais ne pouvait rien contre des adresses IP neuves.
+- **Correctif (branche `claude/kv-rafale-minuit`)** : (1) les 5 sondes à `fetch` posent `x-kdmc-sonde` (site-publie,
+  ce-qui-est-servi, fuite-hebergeur, maj-auto, ressources-app) ; (2) liste robots + `sonde|kdmc-|lighthouse|linkcheck|playwright` ;
+  (3) **le routeur ne compte plus un visiteur venu d'un centre de données** (`request.cf.asn` ∈ Azure 8075 = GitHub Actions,
+  AWS 16509/14618, Google 15169/396982, Hetzner, OVH, DigitalOcean, Vultr, Linode, Oracle, Alibaba, Scaleway, Contabo, netcup) —
+  couvre les robots en vrai navigateur (UA d'un vrai Chrome) et les robots FUTURS sans liste à tenir ; Cloudflare 13335 et
+  Akamai volontairement gardés (sortie du Relais privé iCloud des iPhone). Gardes : `fiche-visite` 10/10 (+5 UA, +5 réseaux
+  nuage → 0 écriture, iPhone/Orange/Relais privé → comptés, filtre BRANCHÉ), `sonde-sans-ecriture` 26 OK (11 sondes se
+  déclarent, Azure → 0 écriture) ; **sabotage mesuré** : filtre retiré → 1 échec dans chaque garde. `sonde-porte`, `mesure-kv`,
+  `kv-inventaire`, `routeur-durci` verts.
+- **Non vérifié / reste** : l'effet réel se lit le **4.10 à 09h10** (rappel posé, mesure-kv) ; 1 208 > 1 000 → Analytics compte
+  aussi les tentatives refusées ou le plafond est souple : inconnu ; **~47 % des écritures non attribuées** (ltts, acc, mail:, mon:) ;
+  7 outils Playwright (`tools/kdmc-sso-e2e`, `kdmc-multiapp-e2e`, `approvals/e2e-local`, `produits/apercus`, `smoke/pages-smoke`,
+  `smoke/trace-404`, `voir/voir`) ne posent pas l'en-tête — couverts par le filtre réseau seulement ; Apex CI rouge au public
+  après la publication 00h41 (Bundle Size, Lighthouse, Axe, E2E, SW Cache Version Sync, npm audit) — pas encore regardé.
+
 ## 2026-10-03 (00h05 UTC) — Bilan de la nuit : conférence EN LIGNE (mesurée), 3 PR fusionnées, fuite 0/16, KV par jour en ligne
 
 - **Fusionnées** : #4231 (tout gratuit, partout — Apex compris), #4233 (KV : visites anonymes par jour, robots ignorés),

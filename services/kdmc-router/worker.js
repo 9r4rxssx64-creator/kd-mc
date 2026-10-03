@@ -1594,7 +1594,19 @@ function estUnePage(request) {
 }
 /* Robots d'internet qui se déclarent (User-Agent) : ils n'ont rien à faire dans un compteur de visiteurs, et chacun
    coûtait 2 écritures KV par app et par heure. Un navigateur ne contient aucun de ces mots. */
-const ROBOT_UA = /bot|crawl|spider|slurp|curl\/|wget|python-requests|python-urllib|go-http-client|java\/|libwww|httpclient|scrapy|headlesschrome|phantomjs|facebookexternalhit|preview|monitor|uptime|scan/i;
+const ROBOT_UA = /bot|crawl|spider|slurp|curl\/|wget|python-requests|python-urllib|go-http-client|java\/|libwww|httpclient|scrapy|headlesschrome|phantomjs|facebookexternalhit|preview|monitor|uptime|scan|sonde|kdmc-|lighthouse|linkcheck|playwright/i;
+/* RÉSEAUX DE CENTRES DE DONNÉES : aucun humain n'ouvre une page depuis Azure, AWS, Google Cloud, Hetzner ou OVH — ce sont
+   des robots (les nôtres, lancés par GitHub Actions = Azure, numéro de réseau 8075 ; et ceux d'internet). MESURÉ le 3.10
+   (mesure-kv run 37111933086 + inventaire 37111987256) : 1 208 écritures KV dans la journée, dont 632 à 00h et 570 à 01h
+   UTC, puis plus rien (plafond) ; dans la même heure, 9 publications du site + déploiement du routeur + robots de régression
+   en vrai navigateur ont balayé les 31 adresses depuis des adresses IP neuves → 9 « visites » sur autorisations, coffre,
+   dossiers, outils… = 321 visites = ~642 écritures (53 %). Les sondes à `fetch` disaient « kdmc-sonde/1 » (aucun mot de la
+   liste ci-dessus) et oubliaient l'en-tête `x-kdmc-sonde` ; les navigateurs de test ont l'User-Agent d'un vrai Chrome.
+   Le numéro de réseau (`request.cf.asn`, donné par Cloudflare) attrape tout cela d'un coup, robots présents ET futurs.
+   Volontairement ABSENTS de la liste : Cloudflare (13335) et Akamai (20940, 16625) — c'est par eux que sort le Relais privé
+   iCloud des iPhone : les retirer effacerait de vrais visiteurs. Un visiteur en VPN sur un de ces nuages n'est pas compté :
+   accepté, c'est un compteur anonyme, pas une fiche. */
+const ASN_NUAGES = new Set([8075, 16509, 14618, 15169, 396982, 24940, 16276, 14061, 20473, 63949, 31898, 45102, 12876, 51167, 197540]);
 async function ficheLaVisite(request, url, env, host) {
   try {
     if (!env || !env.ACCOUNTS || !estUnePage(request)) return;
@@ -1635,6 +1647,8 @@ async function ficheLaVisite(request, url, env, host) {
        Le compteur garde son sens (des visiteurs par jour), et il coûte ≤ 2 écritures par visiteur et par jour. */
     const ua = request.headers.get('user-agent') || '';
     if (ROBOT_UA.test(ua)) return;                           // robot d'internet : ni fiché ni compté
+    const asn = Number(request.cf && request.cf.asn) || 0;
+    if (ASN_NUAGES.has(asn)) return;                         // centre de données (GitHub Actions = Azure 8075…) : un robot, pas un visiteur
     const ip = request.headers.get('CF-Connecting-IP') || 'inconnu';
     const jour = new Date().toISOString().slice(0, 10);
     const dejaVu = 'anonv:' + (await sha256Hex(ip + '|' + host)).slice(0, 20) + ':' + jour;

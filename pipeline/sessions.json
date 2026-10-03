@@ -1169,6 +1169,16 @@
       "maj": "2026-10-03",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "kv-rafale-minuit": {
+      "titre": "KV — la rafale de minuit : sondes déclarées + filtre des centres de données",
+      "branche": "claude/kv-rafale-minuit",
+      "sujet": "Mesuré 3.10 : 632 + 570 écritures à 00h-01h = nos robots (9 publications) ; x-kdmc-sonde sur 5 sondes, ASN nuages ignorés",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

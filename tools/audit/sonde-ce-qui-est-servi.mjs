@@ -49,6 +49,7 @@ async function sonder([url, marqueur, quoi]) {
         'cache-control': 'no-cache',
         'accept': 'text/html,application/xhtml+xml',
         'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) kdmc-sonde-servi/2',
+        'x-kdmc-sonde': 'ce-qui-est-servi',   // le routeur ne compte pas une sonde comme visiteur (plafond KV, mesuré 3.10)
       },
       signal: AbortSignal.timeout(TEMPS),
     });

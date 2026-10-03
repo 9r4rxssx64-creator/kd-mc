@@ -66,7 +66,26 @@ const encore = await visite({ 'x-kdmc-sonde': 'test' });
 ok(encore.n === 0, 'toujours 0 écriture au passage suivant');
 
 /* 4. Chaque script de vérification du dépôt pose l'en-tête. */
-const SCRIPTS = ['tools/smoke/audit-live.mjs', 'tools/smoke/audit-lingua.mjs', 'tests/verif-live-rapport.mjs', 'tools/audit/sonde-domaine.mjs', 'tests/verify-rien-de-public.mjs', 'tools/audit/mesure-worker.mjs'];
+/* MESURÉ le 3.10 (mesure-kv 37111933086 + inventaire 37111987256) : les cinq sondes à `fetch` ci-dessous n'étaient PAS dans
+   cette liste et n'avaient pas l'en-tête ; « kdmc-sonde/1 » n'est pas un mot de la liste des robots ; chaque publication du site
+   (9 dans l'heure après minuit, depuis des adresses IP neuves) comptait ~31 visiteurs → 632 + 570 écritures à 00h-01h UTC,
+   plafond gratuit vidé. Une sonde qui ouvre une page du domaine se déclare, SANS exception — c'est cette liste qui le prouve. */
+const SCRIPTS = ['tools/smoke/audit-live.mjs', 'tools/smoke/audit-lingua.mjs', 'tests/verif-live-rapport.mjs', 'tools/audit/sonde-domaine.mjs', 'tests/verify-rien-de-public.mjs', 'tools/audit/mesure-worker.mjs',
+  'tools/audit/sonde-site-publie.mjs', 'tools/audit/sonde-ce-qui-est-servi.mjs', 'tools/audit/sonde-fuite-hebergeur.mjs', 'tools/audit/sonde-maj-auto.mjs', 'tools/audit/sonde-ressources-app.mjs'];
+/* Et le routeur ne compte pas un robot qui arrive d'un centre de données (GitHub Actions = Azure, réseau 8075), même sans
+   en-tête et avec l'User-Agent d'un vrai Chrome (robots de régression en navigateur) : c'est ce qui protège des robots FUTURS. */
+{
+  ecritures = 0; enAttente.length = 0;
+  const req = new Request('https://lingua.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'cf-connecting-ip': '20.1.2.3', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' } });
+  Object.defineProperty(req, 'cf', { value: { asn: 8075 } });
+  const r = await mod.fetch(req, env, ctx); await Promise.all(enAttente);
+  ok(r.status === 200 && ecritures === 0, `un navigateur lancé depuis Azure (GitHub Actions, réseau 8075) reçoit la page mais n'écrit RIEN (${ecritures})`);
+  ecritures = 0; enAttente.length = 0;
+  const req2 = new Request('https://lingua.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'cf-connecting-ip': '20.1.2.4', 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1' } });
+  Object.defineProperty(req2, 'cf', { value: { asn: 3215 } });   // Orange : un vrai réseau d'accès
+  await mod.fetch(req2, env, ctx); await Promise.all(enAttente);
+  ok(ecritures >= 1, `un iPhone sur un vrai réseau d'accès (Orange, 3215) est compté (${ecritures} écriture(s)) — le filtre ne vide pas le compteur`);
+}
 for (const f of SCRIPTS) {
   /* Dépôt coupé en deux (24.09) : trois de ces sondes restent au coffre par règle (regles.json). Dans la
      copie publique, elles sont ABSENTES mais pas supprimées — le coffre les vérifie. Mesuré le 30.09 à

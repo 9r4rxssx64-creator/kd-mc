@@ -139,7 +139,10 @@ test('PLAFOND KV (mesuré 2.10 : 514 visites anonymes = ~1 028 écritures = 73 %
   for (let i = 0; i < 5; i++) await servir(page('shops.kd-mc.com'), env);
   assert.equal(env.ACCOUNTS.m.size, 2, 'le même visiteur, le même jour : plus aucune écriture');
   /* robots d'internet déclarés (ce sont eux qui balaient les 33 adresses) : rien, ni marqueur ni compteur */
-  for (const ua of ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'curl/8.4.0', 'python-requests/2.31', 'Mozilla/5.0 (compatible; AhrefsBot/7.0)', 'Go-http-client/1.1']) {
+  /* + les NÔTRES, mesurés le 3.10 comme ~53 % des écritures du jour : « kdmc-sonde/1 » (publication), « kdmc-sonde-servi/2 »
+     (déguisé en iPhone), Lighthouse (Apex CI), kd-mc-linkcheck — aucun n'avait de mot de la liste. */
+  for (const ua of ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'curl/8.4.0', 'python-requests/2.31', 'Mozilla/5.0 (compatible; AhrefsBot/7.0)', 'Go-http-client/1.1',
+    'kdmc-sonde/1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) kdmc-sonde-servi/2', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Chrome-Lighthouse', 'Mozilla/5.0 (compatible; kd-mc-linkcheck/1.0; +https://kd-mc.com)', 'kdmc-uptime/1.0 (+https://kd-mc.com)']) {
     const envR = envNeuf();
     await servir(new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': ua, 'CF-Connecting-IP': '5.5.5.5' } }), envR);
     assert.equal(envR.ACCOUNTS.m.size, 0, 'robot « ' + ua.slice(0, 30) + ' » : aucune écriture');
@@ -148,6 +151,26 @@ test('PLAFOND KV (mesuré 2.10 : 514 visites anonymes = ~1 028 écritures = 73 %
   const envN = envNeuf();
   await servir(new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'CF-Connecting-IP': '6.6.6.6' } }), envN);
   assert.equal(envN.ACCOUNTS.m.size, 2, 'un iPhone compte (2 écritures)');
+  /* CENTRES DE DONNÉES (mesuré 3.10 : 632 + 570 écritures à 00h-01h UTC = 9 publications + robots en vrai navigateur depuis
+     GitHub Actions = Azure, réseau 8075) : un vrai Chrome qui arrive d'un nuage n'est pas un visiteur → rien. */
+  for (const asn of [8075, 16509, 15169, 24940, 16276]) {
+    const envA = envNeuf();
+    const rq = new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', 'CF-Connecting-IP': '20.0.0.' + (asn % 200) } });
+    Object.defineProperty(rq, 'cf', { value: { asn } });
+    await servir(rq, envA);
+    assert.equal(envA.ACCOUNTS.m.size, 0, 'réseau ' + asn + ' (centre de données) : aucune écriture');
+  }
+  /* …mais le Relais privé iCloud (Cloudflare 13335, Akamai 20940) et les vrais opérateurs (Orange 3215, Monaco Telecom 6758) comptent */
+  for (const asn of [13335, 20940, 3215, 6758]) {
+    const envB = envNeuf();
+    const rq = new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'CF-Connecting-IP': '7.0.0.' + (asn % 200) } });
+    Object.defineProperty(rq, 'cf', { value: { asn } });
+    await servir(rq, envB);
+    assert.equal(envB.ACCOUNTS.m.size, 2, 'réseau ' + asn + ' (iPhone, relais privé ou opérateur) : compté');
+  }
+  /* sabotage, dans la source : le filtre est bien BRANCHÉ (une liste sans appel ne protège rien — leçon #315 c) */
+  assert.match(SRC, /if \(ASN_NUAGES\.has\(asn\)\) return;/, 'le filtre des centres de données est appelé dans ficheLaVisite');
+  assert.match(SRC, /ASN_NUAGES = new Set\(\[8075,/, 'Azure (GitHub Actions) est le premier réseau de la liste');
   /* sabotage, dans la source : la clé est bâtie avec le jour et le marqueur vit ≥ 24 h */
   assert.match(SRC, /'anonv:' \+ \(await sha256Hex\(ip \+ '\|' \+ host\)\)\.slice\(0, 20\) \+ ':' \+ jour/, 'marqueur par JOUR');
   assert.match(SRC, /put\(dejaVu, '1', \{ expirationTtl: 90000 \}\)/, 'marqueur gardé 25 h');

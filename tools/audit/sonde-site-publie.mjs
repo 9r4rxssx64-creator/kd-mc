@@ -85,6 +85,10 @@ const ENTETES = {
   /* comme un navigateur qui ouvre une page : c'est ce que le routeur regarde
      pour décider entre « page de porte » et « 401 texte » (estUnePage). */
   'sec-fetch-dest': 'document', 'sec-fetch-mode': 'navigate', accept: 'text/html,*/*;q=0.8',
+  /* …mais un navigateur que le routeur NE COMPTE PAS comme visiteur (règle du 27.09, oubliée ici) : MESURÉ le 3.10,
+     cette sonde, lancée à chaque publication depuis une adresse IP neuve de GitHub, comptait pour ~31 visiteurs
+     (2 écritures KV chacun) — 9 publications dans l'heure = le plafond gratuit vidé à 01h UTC. */
+  'x-kdmc-sonde': 'site-publie',
 };
 async function sonder(r) {
   const url = adresse(r);

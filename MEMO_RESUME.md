@@ -1,5 +1,33 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (00h05 UTC) — Bilan de la nuit : conférence EN LIGNE (mesurée), 3 PR fusionnées, fuite 0/16, KV par jour en ligne
+
+- **Fusionnées** : #4231 (tout gratuit, partout — Apex compris), #4233 (KV : visites anonymes par jour, robots ignorés),
+  #4242 (conférence des IA gratuites, Bee/Créa/Apex). Les autres sessions fusionnaient sans arrêt (conflits à répétition
+  sur package.json, sessions, documents) → petit robot de fusion `fusionner.sh` (scratchpad) : fusion de main, union des
+  documents, main pour le code, scripts npm reposés, `test:no-conflicts` AVANT `git add`, fusion de la PR seulement si
+  aucune chaîne privée ne tourne. Le conteneur a redémarré en plein milieu (23h30) : dépôt recloné, file relancée.
+- **Mesuré en ligne, déploiement public kdmc-apis 37079660395 (23h53)** : `/health` → disponibles qwen, anthropic, groq,
+  gemini, mistral, cerebras, deepseek, perplexity, together, cohere ; `pauses_durables: true` ; premier(general) = qwen.
+  Preuve live : question courante → qwen ✅ ; traduction → qwen ✅ ; **question difficile → `council` (qwen3-30b) ✅ : la
+  conférence répond pour de vrai** ; action → qwen (sans laissez-passer, voulu).
+- **Fuite RH** : le déploiement public du routeur voit encore « 4/16 » à 23h53 PUIS « 0/16 » à la relance (tentative 2) —
+  comme à 21h57 (3/16 puis 0/16). Cause : les deux robots publics partent sur le même push et la sonde court pendant la
+  mise en ligne du nouveau paquet Pages. La publication, elle, dit « 4 fichiers déposés, le paquet ne les porte plus ».
+  **Chantier** : la sonde du routeur doit attendre que la publication soit finie (ou relire après 60 s) — sinon un faux
+  rouge à chaque fusion. Noté, pas encore fait.
+- **KV** : comptage par jour + robots ignorés en ligne depuis 23h53 (routeur déployé à l'étape 8 ✅). Effet à lire demain
+  09h05 (rappel posé) avec mesure-kv, pas d'estimation.
+- **Apex EN LIGNE en v13.4.368 (mesuré)** : 1re construction (run 37080085515, 23h59) rouge — `package.json` racine invalide
+  6 minutes sur main (fusion #4250 d'une autre session, réparée par #4251) ; version alignée (#4253), construction relancée
+  (run 37083171958 ✅), PR auto-deploy #4258 fusionnée par le robot à 00h45, `apex-ai-v13/index.html` sur main =
+  **data-app-ver v13.4.368**, publication publique 37083105780 ✅ → Apex sert la politique « tout gratuit » + chef
+  d'orchestre gratuit + modèles vivants. Robot de construction rééteint après usage.
+- **Chaîne privée rouge sur main (00h00 → 00h48)** : `test:improvements-guard` 19 → 21 — deux règles sans entrée au registre :
+  la mienne (conférence : l'entrée existait sur la branche, PERDUE par la résolution « version de main » de
+  `rules-compliance.cjs` à la fusion #4242 — leçon : un fichier de registre se fusionne en UNION, pas en « main ») et celle
+  de la session arbre (commit 23ed102f6). Les deux posées (#4259, 00h48, ratchet 19 ≤ 19), message pipeline m196 à la
+  session arbre pour affiner la sienne.
 ## 2026-10-03 (00h20 UTC) — Apex v13.4.368 : version alignée, construction relancée
 
 - La construction d'Apex (run 37080085515, 23h59) a rougi à « Build production bundle » : cause lue en local (`npx vite

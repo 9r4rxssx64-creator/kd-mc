@@ -1119,6 +1119,16 @@
       "maj": "2026-10-03",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bilan-2-10-soir": {
+      "titre": "Bilan du 2.10 soir (leçon 393, ETAT/MEMO après mesures)",
+      "branche": "claude/bilan-2-10-soir",
+      "sujet": "Leçon 393 (marqueurs de conflit) ; ETAT/MEMO à compléter avec la construction d'Apex et la sonde du routeur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-03",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

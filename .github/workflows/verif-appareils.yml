@@ -1,0 +1,102 @@
+name: Vérif APPAREILS (Lingua comme Kevin — iPhone Safari, Android Chrome, ordinateur)
+
+# Kevin 2.10.2026 : « Vérifie réellement tjs. Comme moi iOS, android, navigateur, etc ».
+#
+# Trois appareils simulés avec trois VRAIS moteurs : iPhone 13 sous WebKit (le moteur de Safari
+# iOS), Pixel 7 sous Chromium (Chrome Android), ordinateur 1280 px sous Chromium. Sur chacun, ce
+# qu'un visiteur voit et fait dans Lingua (comptes, accueil, Mon cercle, lien d'invitation) et sur
+# le portail — et ce qu'il ne doit pas voir (erreur, version dépareillée, porte du cercle ouverte).
+#
+# LECTURE SEULE : aucun compte créé sur le domaine (leçon #384), navigations marquées
+# `x-kdmc-sonde`, images/polices/sons coupés, service worker bloqué, aucune voix demandée.
+#
+# Pourquoi un robot et pas une session : le proxy d'agent répond 403 au CONNECT sur *.kd-mc.com.
+# Le rapport revient par les ANNOTATIONS du check-run (seul canal qui traverse le proxy).
+#
+# ⛔ PAS DE CRON (gratuit par défaut, Kevin 30.09 ; compte suspendu le 15/08 pour des robots en
+#    boucle). À la main, sous le plafond de 2 vérifications réelles par jour.
+
+on:
+  workflow_dispatch:
+    inputs:
+      forcer:
+        description: "Passer outre le plafond de 2 vérifications réelles par jour (Kevin seulement — chaque run coûte du quota Cloudflare)"
+        type: boolean
+        default: false
+      base:
+        description: "Adresse de Lingua"
+        default: "https://lingua.kd-mc.com"
+      portail:
+        description: "Adresse du portail"
+        default: "https://kd-mc.com"
+
+permissions:
+  actions: read   # le plafond compte les exécutions du jour par l'API
+  contents: read
+
+concurrency:
+  group: verif-appareils
+  cancel-in-progress: false
+
+jobs:
+  appareils:
+    runs-on: ubuntu-latest
+    # ~4 min quand tout va bien (3 appareils × 5 écrans). Sans borne, GitHub laisse tourner six heures.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Plafond — 2 vérifications réelles par jour, toutes familles confondues (Kevin 27.09)
+        # Le 27.09, les robots ont mis le domaine à terre (1 000 écritures KV, puis 100 000 requêtes :
+        # 48 surfaces en HTTP 429 pour tout le monde). Compté par l'API GitHub, jour UTC, sans écrire
+        # nulle part. Plafonné = run vert qui le DIT et ne frappe rien. Kevin seul passe outre (« forcer »).
+        id: plafond
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FORCER: ${{ inputs.forcer }}
+        run: node tools/ci/plafond-verifs.mjs
+
+      - name: Installer un vrai navigateur (WebKit = Safari, Chromium = Chrome)
+        if: steps.plafond.outputs.ok == 'true'
+        run: |
+          npm i -D playwright@1.56.1 --no-audit --no-fund
+          npx playwright install --with-deps webkit chromium
+
+      - name: Lingua et le portail, comme Kevin, sur les trois appareils (vrai domaine)
+        if: steps.plafond.outputs.ok == 'true'
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0) et une
+        # vérification qui dit « ÉCHEC » ressortirait VERTE.
+        shell: bash -euo pipefail {0}
+        run: stdbuf -oL -eL node tools/smoke/verif-appareils.mjs "${{ inputs.base || 'https://lingua.kd-mc.com' }}" --portail="${{ inputs.portail || 'https://kd-mc.com' }}" --captures=/tmp/captures 2>&1 | tee /tmp/appareils.log
+
+      - name: Rapport lisible depuis l'agent (annotations)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/appareils.log ] || { echo "::notice title=Vérif appareils::(pas de journal : plafonné ou rien lancé)"; exit 0; }
+          grep -aE '✅|❌|⚠|^— |=== VÉRIF APPAREILS|^   ·' /tmp/appareils.log \
+            | grep -avE 'code admin|pinhash|PIN_HASH' | sed -E 's/[0-9a-f]{16,}/…/g' \
+            | tail -120 > /tmp/rap.txt || tail -60 /tmp/appareils.log > /tmp/rap.txt
+          split -l 12 -d /tmp/rap.txt /tmp/bl_
+          n=0
+          for f in /tmp/bl_*; do
+            n=$((n+1))
+            msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Vérif appareils ${n}::${msg}"
+          done
+          echo "::notice title=Vérif appareils bilan::${n} bloc(s) publies en annotations"
+
+      - name: Journal complet en artefact (si on peut le télécharger un jour)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verif-appareils-${{ github.run_id }}
+          path: |
+            /tmp/appareils.log
+            /tmp/captures
+          if-no-files-found: ignore
+          retention-days: 7

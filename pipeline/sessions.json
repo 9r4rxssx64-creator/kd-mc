@@ -1061,14 +1061,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/lint-sans-app-privee",
+      "branche": "claude/verif-appareils",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "#4230 #4232 #4236 #4239 #4241 #4245 fusionnées le 2.10 ; suite : lint public rouge (index.html privé absent) sauté proprement"
+      "note": "#4230→#4247 fusionnées ; suite : robot « Vérif APPAREILS » (iPhone WebKit, Android, ordinateur) sur le vrai domaine, lancé après 00h UTC le 3.10"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

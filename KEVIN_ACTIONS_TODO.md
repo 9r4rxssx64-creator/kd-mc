@@ -11,6 +11,11 @@
 
 ## ✅ Lingua v2.132.0 (2.10, 23h) — ce qui manquait encore : fait
 
+- **Vérifié « comme toi » (ta règle : « Vérifie réellement tjs. Comme moi iOS, android, navigateur »)** : un
+  robot ouvre Lingua et le portail sur le vrai domaine avec **le moteur de Safari (iPhone)**, Chrome Android
+  et un navigateur d'ordinateur, sans rien créer. Lancé à chaque fois que je te livre quelque chose
+  d'important, sous le plafond de 2 vérifications réelles par jour. Résultat du 3.10 : voir « État du moment ».
+
 - **Connecté en permanence dans CHAQUE app** du domaine (plus seulement Lingua) : la session se renouvelle toute
   seule à chaque visite. Seul ton accès **admin** redemande Face ID une fois par jour (sécurité, voulu).
 - **Journal des connexions** : Lingua → 🤝 → « 📒 Journal des connexions » : par jour, qui, de quelle heure à

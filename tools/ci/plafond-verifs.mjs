@@ -37,6 +37,7 @@ export const VERIFS = [
   'Voir comme Kevin (vraies pages kd-mc.com, iPhone, connecté)',
   'Audit domaine — sécurité vue de l\'extérieur (lecture seule)',
   'Mesure — requêtes par le Worker (une ouverture d\'app, vrai domaine)',
+  'Vérif APPAREILS (Lingua comme Kevin — iPhone Safari, Android Chrome, ordinateur)',
 ];
 
 /* Pure : décide à partir d'une liste d'exécutions (format de l'API GitHub). */

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-02",
+  "maj": "2026-10-03",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -1106,7 +1106,7 @@
       "sujet": "PR #4233",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-10-02",
+      "maj": "2026-10-03",
       "attend_kevin": null,
       "attend_session": null
     },
@@ -1116,7 +1116,7 @@
       "sujet": "PR #4242 : conférence v2, Bee/Créa/Apex, garde",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-10-02",
+      "maj": "2026-10-03",
       "attend_kevin": null,
       "attend_session": null
     }

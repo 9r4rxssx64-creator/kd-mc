@@ -1061,14 +1061,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/verif-appareils",
+      "branche": "claude/verif-appareils-muette",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "#4230→#4247 fusionnées ; suite : robot « Vérif APPAREILS » (iPhone WebKit, Android, ordinateur) sur le vrai domaine, lancé après 00h UTC le 3.10"
+      "note": "Vérif APPAREILS réelle 3.10 00h00 (run 37080174445) : v2.132.0 servie, 49/52, 3 rouges = traces de la sonde → coupées"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

@@ -53,7 +53,14 @@ const chk = (a, c, m, d) => (c ? ok(a, m) : ko(a, m + (d !== undefined ? ' → '
 const INUTILE = /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf)($|\?)/i;
 const PAS_UNE_PAGE = /\.(js|mjs|css|map|json|webmanifest|png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf|pdf|txt|xml)($|\?)/i;
 const SONDE = { 'x-kdmc-sonde': 'verif-appareils' };
+/* UNE SONDE NE LAISSE PAS DE TRACE (mesuré run 37080174445, 3.10 00h00 UTC) : avec un compte local nommé, Lingua
+   envoie sa progression au journal « qui se connecte » (POST admin.kd-mc.com/log) — 6 lignes « Sonde Appareils »
+   chez l'admin ; et Cloudflare injecte sa balise d'analyse (POST /cdn-cgi/rum, bord Cloudflare, jamais le worker).
+   Les deux sont coupés à la source : rien n'est écrit, et on le DIT. */
+const TRACES = (u) => (u.hostname.startsWith('admin.') && u.pathname === '/log') || u.pathname.startsWith('/cdn-cgi/');
+const coupees = [];
 async function preparer(ctx) {
+  await ctx.route((u) => TRACES(u), (route, req) => { coupees.push(req.method() + ' ' + new URL(req.url()).host + new URL(req.url()).pathname); return route.abort(); });
   await ctx.route((u) => INUTILE.test(u.pathname), (route) => route.abort());
   await ctx.route((u) => !PAS_UNE_PAGE.test(u.pathname), (route, req) => {
     if (req.resourceType() !== 'document') return route.continue();
@@ -182,6 +189,8 @@ for (const ap of APPAREILS) {
 
     /* d. rien d'écrit, rien de cassé */
     chk(A, ecritures.length === 0, 'la page n\'a RIEN posté au domaine (0 requête non-GET : aucun compte créé, aucune écriture)', ecritures.join(', '));
+    if (coupees.length) gris(A, 'traces coupées à la source (journal admin, balise Cloudflare) : ' + [...new Set(coupees)].join(', ') + ' — rien d\'écrit');
+    coupees.length = 0;
     chk(A, erreurs.length === 0, 'aucune erreur JavaScript', erreurs.join(' | '));
     chk(A, mauvaises.length === 0, 'aucune réponse 5xx / 429 du domaine', mauvaises.join(', '));
 

@@ -3809,6 +3809,17 @@ on s'en sert tout de suite pour **toutes** les recherches et vérifications qu'e
 voisins, tables décennales, mariages, mentions en marge, frères et sœurs, parents), sans attendre
 qu'on le demande, et on intègre le résultat selon la règle ci-dessus.
 
+**Précisée le soir même** — **« Ajoute toujours les infos si elles sont certaines. »** — Kevin
+2026-10-03. Une info **certaine** ne reste pas dans les notes : elle **va dans le champ** de la fiche
+(nom, prénoms, date, lieu, parent), même si le champ était déjà rempli autrement. L'ancienne valeur
+et la preuve sont écrites dans la fiche (« ✏️ CORRIGÉ le … : avant → après. Preuve : … ») et le
+changement passe par le journal des corrections comme n'importe quelle rectification. Certaine =
+acte lu, texte officiel, ou fichier officiel (INSEE) **dont l'identité est verrouillée** (même
+naissance exacte, ou lien familial prouvé par une autre source). Pas certaine (homonyme possible,
+date approximative, deux sources officielles qui se contredisent) → note « probable », et la
+décision reste à Kevin. Premiers cas : DONATI † 1984 (pas 1986), JAILLET → JAYET, ‹employé› → PIZIO,
+« Charlotte » → Françoise Charlotte BOURTHOUMIEUX.
+
 Premier cas (3.10.2026) : Armand Édouard DESARZENS (° Lausanne 17.04.1892, mécanicien) et
 Angéline Suzanne LEGRAND (21 ans en 1918, dactylographe), parents de Guy, ajoutés d'après l'acte
 n° 35 de Poissy 1918 — 126 → 128 fiches, relecture conforme, rejouer = 0.

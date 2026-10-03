@@ -61,6 +61,7 @@
   "tests/_debug-morter.mjs",
   "tests/_debug-team-history-cross-month.mjs",
   "tests/_debug-v1-team-diag.mjs",
+  "tests/arbre-audit-liens.test.mjs",
   "tests/arbre-cadrage.test.mjs",
   "tests/arbre-corrections.test.mjs",
   "tests/arbre-dates-visuel.test.mjs",

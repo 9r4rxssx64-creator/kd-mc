@@ -3861,7 +3861,7 @@ async function botFleetStats(env, ctx, names) {
           const m = String(logs[k].message || '').match(/equity=([0-9.]+)/);
           if (m) { equity = Number(m[1]); break; }
         }
-        out.set(n.x.name, Object.assign({ name: n.x.name, svcId: n.x.svc.id, depl: n.node.id, status: n.node.status, equity }, st));
+        out.set(n.x.name, Object.assign({ name: n.x.name, svcId: n.x.svc.id, depl: n.node.id, status: n.node.status, equity, arrete: IA.robotArrete(logs) }, st));
       });
     }
   }
@@ -3884,6 +3884,12 @@ async function botVarsVisiblesTous(env, ctx, bots) {
 /* Applique des réglages DÉJÀ validés (liste blanche) à UN robot papier, puis le relance.
    Dernier verrou : même ici, une clé hors liste blanche ou interdite est refusée. */
 async function botAppliquer(env, ctx, svcId, set) {
+  /* Une exception (ex. « Too many subrequests », 3.10 11h20) devient un échec LISIBLE : l'appelant défait
+     l'essai au lieu de le laisser enregistré sans avoir été appliqué. */
+  try { return await botAppliquerSansFiltre(env, ctx, svcId, set); }
+  catch (e) { return { ok: false, err: 'Railway injoignable : ' + String((e && e.message) || e).slice(0, 120) }; }
+}
+async function botAppliquerSansFiltre(env, ctx, svcId, set) {
   for (const [name, value] of Object.entries(set)) {
     if (!IA.REGLAGES_IA[name] || IA.INTERDITS.test(name)) return { ok: false, err: 'réglage refusé au dernier verrou : ' + name };
     const up = value === null
@@ -4028,11 +4034,30 @@ async function iaTick(env, ctx, origine, force) {
   /* Relevé de la flotte à chaque réveil (avec le prix du BTC) : l'historique du passage au réel ne dépend
      plus de l'ouverture de la page. 1 relevé par heure au plus (garde dans botSnapshot). */
   await botReleverD1(env, tous, now, btc);
+  /* Robots PAPIER coupés par leur frein de perte : relancés (10 000 $ virtuels), 1 fois par 12 h au plus. */
+  const aRelancer = IA.robotsARelancer(flotte, st.enCours, st.relances, now);
+  if (aRelancer.length) {
+    st.relances = Object.assign({}, st.relances);
+    for (const b of aRelancer) {
+      let ok = false, err = '';
+      try {
+        const rd = await railGql(env, `mutation { serviceInstanceRedeploy(environmentId: "${ctx.environmentId}", serviceId: "${b.svcId}") }`);
+        ok = !!(rd.j && !rd.j.errors); if (!ok) err = JSON.stringify((rd.j && rd.j.errors) || rd.http).slice(0, 120);
+      } catch (e) { err = String((e && e.message) || e).slice(0, 120); }
+      st.relances[b.name] = now;
+      st.journal = IA.ajouterJournal(st.journal, { type: 'relance', t: now, bot: b.name, ok,
+        raison: 'robot papier arrêté par son frein (' + b.arrete + ', capital figé à ' + (b.equity || '?') + ' $) : ' + (ok ? 'relancé, il repart à 10 000 $ virtuels' : 'relance ÉCHOUÉE — ' + err) });
+    }
+    await iaEcrire(env, st);
+  }
   if (st.enCours) {
     const cibleEssai = flotte.find((b) => b.name === st.enCours.bot) || {};
     /* Les ventes du robot ne comptent que si on lit son NOUVEAU déploiement (compteurs remis à 0 au redémarrage). */
     const ventesEssai = cibleEssai.depl && (st.enCours.depl0 || {})[st.enCours.bot] && cibleEssai.depl !== st.enCours.depl0[st.enCours.bot] ? Number(cibleEssai.sells) || 0 : null;
-    const v = IA.arbitre(st.enCours, IA.equitesComparables(st.enCours, flotte), now, btc, ventesEssai);
+    const v = IA.essaiFantome(st.enCours, flotte, now)
+      ? { verdict: 'annuler', heures: Math.round((now - st.enCours.debut) / 3600e3), r_cible: null, r_mediane: null, r_btc: null,
+        raison: 'le robot n\'a jamais redémarré après le changement (réglage jamais appliqué) : essai annulé, anciens réglages remis' }
+      : IA.arbitre(st.enCours, IA.equitesComparables(st.enCours, flotte), now, btc, ventesEssai);
     if (v.verdict === 'attendre') { st.dernier = 'essai en cours sur ' + st.enCours.bot + ' : ' + v.raison; await iaEcrire(env, st); return { ok: true, action: 'attente', detail: v.raison }; }
     let restaure = null;
     if (v.verdict === 'annuler') {

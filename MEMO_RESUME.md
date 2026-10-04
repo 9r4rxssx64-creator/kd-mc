@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (06h30 UTC) — Crypto : vérification n°4 → essai fantôme sur p1 + p1 arrêté depuis le 25.09 (bot v1.5.2)
+
+Lu en vrai (D1 kdmc-bot + Railway) :
+- Réveils de 16h00 (3.10) à 06h00 (4.10) : tous « attente — pas encore de mesure du robot ». Aucune décision IA possible.
+- Cause 1 : la décision de 11h20 (secours, p1 EMA_SLOW 21→24) a été ENREGISTRÉE, puis l'appel Railway a levé
+  « Too many subrequests » → p1 jamais relancé (dernier déploiement : 11.09). Essai fantôme.
+- Cause 2 : p1 s'était coupé le 25.09 à 18h44 (« 🛑 Coupure risque : plafond de perte journalière −17,12 % ») et
+  ne tradait plus depuis 9 jours ; capital figé à 7 132,12 $.
+- Correctifs : exception Railway → échec qui défait l'essai ; essai annulé si le robot n'a pas redémarré en 2 h ;
+  robot PAPIER arrêté par son frein → relancé (12 h mini entre deux relances), jamais le principal ni un BOT_KILL ;
+  l'IA voit « ARRÊTÉ » dans sa consigne ; page v1.5.2 affiche « 🔄 relancé ». Leçons 418-419.
+- Gardes : bot-ia 80/0, bot-ia-routeur 53/0, page 29/0 ; 6 sabotages rouges.
+
 ## 2026-10-03 (nuit, suite 4) — Kevin : « Même la petite fenêtre, partout où il y a le personnage. Toujours tout auto, partout. Dis-le à tes autres branches. Toujours en 3D partout. Concert d'IA gratuite performante, relis tes docs. Couple-le à Apex. Va plus loin »
 
 **Relu** (règles du 2.10) : la conférence des IA gratuites est obligatoire pour les apps du domaine ; mon premier chemin « outils » la court-circuitait pour les questions difficiles → corrigé.

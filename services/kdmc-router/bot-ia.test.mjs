@@ -148,5 +148,25 @@ dit(ia.lireCryptoComTickers({}) === null && ia.lireCoinpaprikaGlobal({}) === nul
 
 dit(ia.lireCoinlore([{ total_mcap: 2832738426140.09, mcap_change: '-3.88', btc_d: '59.63', eth_d: '11.59' }]).dom_btc === 59.63 && ia.lireCoinlore({}) === null, 'CoinLore : marché global (3e relais), réponse inattendue → vide');
 
+console.log('\n=== 10. Essai fantôme et robot arrêté (vus en vrai le 4.10) ===');
+const T0 = 1791021647281;
+const ess = { bot: 'crypto-bot-p1', debut: T0, depl0: { 'crypto-bot-p1': 'D-ANCIEN' } };
+dit(ia.essaiFantome(ess, [{ name: 'crypto-bot-p1', depl: 'D-ANCIEN' }], T0 + 3 * 3600e3), 'robot encore sur son déploiement d\'origine 3 h après la décision → essai fantôme');
+dit(!ia.essaiFantome(ess, [{ name: 'crypto-bot-p1', depl: 'D-ANCIEN' }], T0 + 3600e3), 'seulement 1 h : on laisse à Railway le temps de relancer');
+dit(!ia.essaiFantome(ess, [{ name: 'crypto-bot-p1', depl: 'D-NOUVEAU' }], T0 + 30 * 3600e3), 'robot relancé (nouveau déploiement) → pas fantôme');
+dit(!ia.essaiFantome({ bot: 'crypto-bot-p1', debut: T0, depl0: {} }, [{ name: 'crypto-bot-p1', depl: 'D-X' }], T0 + 30 * 3600e3), 'sans déploiement d\'origine connu → on ne conclut rien');
+const logsP1 = [{ message: '[18:43:40] XRP/USDT HOLD | prix=1.57 | equity=7132.12 | position conservée' },
+  { message: '[18:44:20] 🔻 XRP/USDT VENTE (plafond de perte journalière atteint (-17.12% <= -10.0%)) qty=544.955725 @ 1.5698' },
+  { message: '[18:44:20] 🛑 Coupure risque : plafond de perte journalière atteint (-17.12% <= -10.0%). Efface state.json / relance pour repartir.' }];
+dit(/plafond de perte journalière atteint \(-17\.12% <= -10\.0%\)/.test(ia.robotArrete(logsP1)), 'vraies lignes de p1 (25.09) → arrêté par son frein, raison lue');
+dit(ia.robotArrete(logsP1.slice(0, 2)) === '', 'robot qui tourne → pas arrêté');
+dit(ia.robotArrete([{ message: '🛑 KILL détecté — tout soldé, arrêt.' }]) === '', 'arrêt d\'urgence BOT_KILL → jamais considéré comme « à relancer »');
+const fl = [{ name: 'crypto-bot-p1', svcId: 'S1', arrete: 'frein' }, { name: 'crypto-bot-p2', svcId: 'S2', arrete: '' }, { name: 'crypto-bot', svcId: 'S0', arrete: 'frein' }, { name: 'crypto-bot-p3', svcId: 'S3', arrete: 'frein' }];
+let rel = ia.robotsARelancer(fl, null, {}, T0).map((b) => b.name);
+dit(rel.join() === 'crypto-bot-p1,crypto-bot-p3', 'à relancer : les robots PAPIER arrêtés seulement, jamais le principal (testnet)');
+rel = ia.robotsARelancer(fl, { bot: 'crypto-bot-p1' }, { 'crypto-bot-p3': T0 - 3600e3 }, T0).map((b) => b.name);
+dit(rel.length === 0, 'pas le robot en essai (l\'arbitre s\'en charge), et pas deux relances en moins de 12 h');
+dit(/ARRÊTÉ par son frein/.test(ia.construirePrompt('', [{ name: 'crypto-bot-p1', equity: 7132, arrete: 'plafond' }], {}, []).prompt), 'l\'IA est prévenue qu\'un robot était arrêté');
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

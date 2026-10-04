@@ -228,5 +228,54 @@ dit(stR.enCours && stR.enCours.btc0 === 84538.42, 'le prix du BTC de départ est
 dit(srTick <= 27, 'pire réveil (Qwen muet → gpt-oss → contre-avis Qwen → changement) : ' + srTick + ' sous-requêtes, sous le plafond de 27 (limite gratuite : 50 ; le reste sert au cache, à D1, au KV)');
 binanceBloque = false; propositionRelais = '';
 
+console.log('\n=== 11. Essai fantôme (4.10) : Railway plante au moment d\'appliquer → l\'essai est défait ===');
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: 0 }));
+reponseIa = '{"bot":"crypto-bot-p4","reglages":{"TIMEFRAME":"5m"},"raison":"marché nerveux","attendu":"plus de trades"}';
+const f1 = globalThis.fetch;
+globalThis.fetch = async (input, init) => { const b = String((init && init.body) || ''); if (/variableUpsert/.test(b)) throw new Error('Too many subrequests by single Worker invocation.'); return f1(input, init); };
+mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+globalThis.fetch = f1;
+let stF = JSON.parse(store.get('bot:ia'));
+dit(r.s === 200 && r.b && r.b.action === 'echec' && /Too many subrequests/.test(r.b.detail), 'exception Railway → échec lisible (« ' + ((r.b && r.b.detail) || r.s).toString().slice(0, 60) + ' »), pas un plantage');
+dit(!stF.enCours && !stF.derniereDecision, 'aucun essai fantôme enregistré : le prochain réveil peut décider');
+
+console.log('\n=== 12. Essai jamais appliqué (robot pas relancé en 2 h) → annulé et robot relancé ===');
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], derniereDecision: Date.now() - 19 * 3600e3,
+  enCours: { bot: 'crypto-bot-p1', debut: Date.now() - 19 * 3600e3, btc0: 84589.97, set: { EMA_SLOW: '24' }, avant: { EMA_SLOW: '21' },
+    equite0: { 'crypto-bot-p1': 10000, 'crypto-bot-p2': 9982 }, depl0: { 'crypto-bot-p1': 'D-P1', 'crypto-bot-p2': 'D-P2' } } }));
+mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+stF = JSON.parse(store.get('bot:ia'));
+const vF = stF.journal[stF.journal.length - 1];
+dit(r.b && r.b.action === 'verdict' && vF.verdict === 'annuler' && /jamais redémarré/.test(vF.raison), 'verdict « annuler » : le robot n\'a jamais redémarré (' + ((r.b && r.b.detail) || '').slice(0, 50) + ')');
+dit(mutations.some((q) => /variableUpsert/.test(q) && /serviceId: "P1"/.test(q) && /"21"/.test(q)) && mutations.some((q) => /serviceInstanceRedeploy\(environmentId: "EN", serviceId: "P1"\)/.test(q)), 'anciens réglages remis ET p1 relancé');
+
+console.log('\n=== 13. Robot papier coupé par son frein → relancé, jamais le principal ===');
+const logsOrig = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  const q = JSON.parse((init && init.body) || '{}').query || '';
+  if (String(typeof input === 'string' ? input : input.url).includes('backboard.railway.com') && /deploymentLogs/.test(q)) {
+    const out = parAlias(q, 'deploymentLogs', (args) => { const sv = (args.match(/deploymentId: "D-([A-Z0-9]+)"/) || [])[1];
+      return (sv === 'P3' || sv === 'S1') ? [{ message: 'BTC/USDT HOLD | prix=60000.00 | equity=7132.12 | rien' }, { message: '[18:44:20] 🛑 Coupure risque : plafond de perte journalière atteint (-17.12% <= -10.0%). Efface state.json / relance pour repartir.' }]
+        : [{ message: 'BTC/USDT HOLD | prix=60000.00 | equity=10000.00 | rien' }]; });
+    sousRequetes++;
+    return j({ data: out });
+  }
+  return logsOrig(input, init);
+};
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: Date.now() }));
+mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+let stA = JSON.parse(store.get('bot:ia'));
+const rlc = stA.journal.filter((e) => e.type === 'relance');
+dit(rlc.length === 1 && rlc[0].bot === 'crypto-bot-p3' && rlc[0].ok && /7132\.12/.test(rlc[0].raison), 'p3 arrêté → relancé, au journal avec la raison et le capital figé');
+dit(mutations.some((q) => /serviceInstanceRedeploy\(environmentId: "EN", serviceId: "P3"\)/.test(q)) && !mutations.some((q) => /serviceId: "S1"/.test(q)), 'relance de p3 seulement ; le principal (testnet), lui aussi arrêté, n\'est JAMAIS relancé');
+dit(!mutations.some((q) => /variable/.test(q)), 'aucun réglage touché (les freins restent tels quels)');
+mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+dit(!mutations.some((q) => /Redeploy/.test(q)), 'réveil suivant : pas de 2e relance avant 12 h');
+globalThis.fetch = logsOrig;
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

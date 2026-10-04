@@ -177,6 +177,38 @@ export function equitesComparables(essai, flotte) {
   return out;
 }
 
+/* ESSAI FANTÔME (vu le 4.10 en D1) : le 3.10 à 11h20, la limite des sous-requêtes a fait planter l'appel
+   Railway APRÈS l'enregistrement de l'essai. Le robot n'a jamais redémarré, l'arbitre attendait une mesure
+   qui ne pouvait pas venir. Règle : 2 h après la décision, si le robot tourne encore sur son déploiement
+   d'origine, le changement n'a pas eu lieu → essai annulé (et anciens réglages remis, ce qui le relance). */
+export const RELANCE_MAX_MS = 2 * 3600e3;
+export function essaiFantome(essai, flotte, now) {
+  const d0 = ((essai && essai.depl0) || {})[essai && essai.bot];
+  const b = (flotte || []).find((x) => x.name === (essai && essai.bot));
+  return !!(d0 && b && b.depl && b.depl === d0 && now - essai.debut >= RELANCE_MAX_MS);
+}
+
+/* ROBOT PAPIER ARRÊTÉ PAR SON FREIN (vu le 4.10 : p1 coupé le 25.09 à −17 % sur la journée, figé à
+   7 132 $ depuis 9 jours). bot.py écrit « 🛑 Coupure risque : <raison>. » puis s'arrête pour de bon.
+   Un robot PAPIER arrêté ne produit plus aucune mesure : on le relance (il repart à 10 000 $ virtuels).
+   Les freins eux-mêmes ne sont PAS touchés. L'arrêt d'urgence BOT_KILL n'est jamais relancé. */
+export const RELANCE_ARRET_MS = 12 * 3600e3;
+export function robotArrete(logs) {
+  const l = logs || [];
+  for (let k = l.length - 1; k >= Math.max(0, l.length - 8); k--) {
+    const m = String((l[k] || {}).message || '');
+    if (/KILL/.test(m) && /🛑/.test(m)) return '';
+    const x = m.match(/🛑 Coupure risque : (.+?)\.(?: Efface|$)/);
+    if (x) return x[1].trim();
+  }
+  return '';
+}
+export function robotsARelancer(flotte, enCours, relances, now) {
+  const r = relances || {};
+  return (flotte || []).filter((b) => BOTS_PAPIER.includes(b.name) && b.arrete && b.svcId
+    && !(enCours && enCours.bot === b.name) && now - (Number(r[b.name]) || 0) >= RELANCE_ARRET_MS);
+}
+
 export function arbitre(essai, equites, now, btc, ventesCible) {
   const age = now - essai.debut;
   const rend = (n) => {
@@ -309,7 +341,8 @@ export function construirePrompt(marcheTexte, flotte, actuelsParBot, journal) {
     const b = (flotte || []).find((x) => x.name === n) || {};
     const v = reglagesVisibles((actuelsParBot || {})[n]);
     return n + ' : équité ' + (b.equity ?? '—') + ' $, net réalisé ' + (b.net ?? '—') + ' $, ventes ' + (b.sells ?? '—')
-      + ' (gagnantes ' + (b.wins ?? '—') + ') — réglages ' + JSON.stringify(v);
+      + ' (gagnantes ' + (b.wins ?? '—') + ') — réglages ' + JSON.stringify(v)
+      + (b.arrete ? ' — ARRÊTÉ par son frein de perte (' + b.arrete + ') : relancé à 10 000 $, ses chiffres ci-dessus sont ceux d\'avant l\'arrêt' : '');
   }).join('\n');
   const passe = (journal || []).filter((e) => e.type === 'verdict').slice(-6)
     .map((e) => e.bot + ' ' + JSON.stringify(e.set || {}) + ' → ' + e.verdict + ' (' + (e.raison || '') + ')').join('\n') || 'aucune décision jugée pour l\'instant';

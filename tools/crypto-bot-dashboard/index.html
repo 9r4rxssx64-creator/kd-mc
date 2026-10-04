@@ -278,7 +278,7 @@
   <div id="fatal" class="err hid"></div>
 </div>
 
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.1" data-color="#e8b830" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.2" data-color="#e8b830" defer></script>
 <script>
 (function(){
   var API = location.origin, GRANT_KEY = 'kdmc_admin_grant', SSO_KEY = 'kdmc_sso_pass', lastStatus = '';
@@ -602,6 +602,11 @@
             +'<div class="px" style="margin-top:4px">'+diffSet(e.avant,e.set)+'</div>'
             +(e.r_cible!==undefined&&e.r_cible!==null?'<div class="px" style="margin-top:4px">Robot <b style="color:'+couleur(e.r_cible)+'">'+pctR(e.r_cible)+'</b> · autres <b style="color:'+couleur(e.r_mediane)+'">'+pctR(e.r_mediane)+'</b> · BTC <b style="color:'+couleur(e.r_btc)+'">'+pctR(e.r_btc)+'</b>'+(e.heures?' · '+esc(e.heures)+' h':'')+'</div>':'')
             +'<div class="px" style="margin-top:4px">'+esc(e.raison||'')+(e.restaure?'<br>↩️ '+esc(e.restaure):'')+'</div>'
+            +'<div class="px" style="margin-top:4px">'+esc(quand(e.t))+'</div></div>';
+        }
+        if(e.type==='relance'){
+          return '<div class="coin" style="display:block"><div class="row"><span class="nm">🔄 '+esc(nomBot(e.bot))+'</span><span class="tag '+(e.ok?'t-hold':'t-sell')+'">'+(e.ok?'relancé':'relance échouée')+'</span></div>'
+            +'<div class="px" style="margin-top:4px">'+esc(e.raison||'')+'</div>'
             +'<div class="px" style="margin-top:4px">'+esc(quand(e.t))+'</div></div>';
         }
         if(e.type==='refus'){

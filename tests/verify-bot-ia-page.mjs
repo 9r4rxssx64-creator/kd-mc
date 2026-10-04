@@ -18,6 +18,7 @@ const H = 3600e3, now = Date.now();
 const IA = { ok: true, mode: 'auto', dernierTick: now - 600e3, dernier: 'essai en cours sur crypto-bot-p2', robots: [],
   enCours: { bot: 'crypto-bot-p2', debut: now - 5 * H, set: { EMA_SLOW: '30' }, avant: { EMA_SLOW: null }, raison: 'marché calme ' + PIEGE, attendu: 'moins de faux signaux', source: 'ia', modele: 'qwen · qwen3' },
   journal: [
+    { type: 'relance', t: now - 1 * H, bot: 'crypto-bot-p5', ok: true, raison: 'robot papier arrêté par son frein (plafond de perte journalière atteint, capital figé à 7132.12 $) : relancé, il repart à 10 000 $ virtuels' },
     { type: 'refus', t: now - 2 * H, bot: 'crypto-bot-p3', set: { STRATEGY: 'meanrev' }, raison: 'tenter le creux', contre_avis: 'pari contre la tendance', modele_contre: 'gpt-oss-120b' },
     { type: 'decision', t: now - 5 * H, contre_avis: 'cohérent', modele_contre: 'gpt-oss-120b', bot: 'crypto-bot-p2', set: { EMA_SLOW: '30' }, avant: { EMA_SLOW: null }, raison: 'marché calme', source: 'ia', modele: 'qwen', origine: 'cron' },
     { type: 'verdict', t: now - 30 * H, bot: 'crypto-bot-p4', set: { TIMEFRAME: '1h' }, avant: { TIMEFRAME: '15m' }, verdict: 'garder', raison: 'mieux que les autres', r_cible: 0.021, r_mediane: 0.004, r_btc: 0.012, heures: 26 },
@@ -90,6 +91,7 @@ chk(posts.some(([p, b]) => p === '/__bot/ia/mode' && /"off"/.test(b)), '« Mettr
 await page.click('#iaAnnulerBtn');
 await page.waitForTimeout(300);
 chk(posts.some(([p]) => p === '/__bot/ia/annuler'), '« Annuler l\'essai » → POST /__bot/ia/annuler (après confirmation)');
+chk(/🔄/.test(jr) && /relancé/.test(jr) && /capital figé à 7132\.12/.test(jr), 'Journal : un robot arrêté par son frein puis relancé est affiché avec sa raison');
 chk(/refusé par le contre-avis/.test(jr) && /pari contre la tendance/.test(jr), 'Journal : un refus du contre-avis est affiché avec sa raison');
 chk(/gpt-oss-120b : cohérent/.test(jr), 'Journal : l\'avis de la 2e IA est affiché sur la décision');
 const reel = await t('reelRobots');
@@ -103,7 +105,7 @@ chk(tts.length === 1 && /l=fr/.test(tts[0]) && /v=shimmer/.test(tts[0]) && /faux
 chk(/voix du téléphone|Lecture impossible/.test(await t('iaOk') + await t('iaErr')), 'Voix du domaine indisponible → repli voix du téléphone annoncé');
 chk(erreurs.length === 0, '0 exception JS' + (erreurs.length ? ' : ' + erreurs.join(' | ') : ''));
 const src = await readFile('tools/crypto-bot-dashboard/index.html', 'utf8');
-chk(/data-version="v1\.5\.1"/.test(src), 'badge de version v1.5.1');
+chk(/data-version="v1\.5\.2"/.test(src), 'badge de version v1.5.2');
 await page.screenshot({ path: process.env.CAPTURE || '/dev/null', fullPage: false }).catch(() => {});
 await nav.close(); srv.close();
 

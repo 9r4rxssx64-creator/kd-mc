@@ -60,12 +60,15 @@ const SONDE = { 'x-kdmc-sonde': 'verif-appareils' };
 const TRACES = (u) => (u.hostname.startsWith('admin.') && u.pathname === '/log') || u.pathname.startsWith('/cdn-cgi/');
 const coupees = [];
 async function preparer(ctx) {
-  await ctx.route((u) => TRACES(u), (route, req) => { coupees.push(req.method() + ' ' + new URL(req.url()).host + new URL(req.url()).pathname); return route.abort(); });
   await ctx.route((u) => INUTILE.test(u.pathname), (route) => route.abort());
   await ctx.route((u) => !PAS_UNE_PAGE.test(u.pathname), (route, req) => {
     if (req.resourceType() !== 'document') return route.continue();
     return route.continue({ headers: Object.assign({}, req.headers(), SONDE) });
   });
+  /* EN DERNIER, exprès : Playwright essaie les routes de la DERNIÈRE enregistrée à la première. Placée en
+     premier (run 37164514412, 4.10 00h20), celle-ci était court-circuitée par la route des pages juste au-dessus
+     (/log et /cdn-cgi/rum n'ont pas d'extension) : les traces partaient quand même (leçon #401). */
+  await ctx.route((u) => TRACES(u), (route, req) => { coupees.push(req.method() + ' ' + new URL(req.url()).host + new URL(req.url()).pathname); return route.abort(); });
 }
 /* Le compte de TEST : local, sans compte KDMC (→ la page ne poste rien), déjà sur un cours. */
 const SEED = { id: 'sonde', nom: 'Sonde Appareils', cours: 'en' };
@@ -149,8 +152,13 @@ for (const ap of APPAREILS) {
   dire(`\n— ${ap.nom}${moteurReel !== ap.moteur ? ' — joué par ' + moteurReel + ' (WebKit absent ici)' : ''}`);
   const ctx = await nav.newContext(Object.assign({ locale: 'fr-FR', serviceWorkers: 'block' }, ap.profil));
   await preparer(ctx);
-  const ecritures = [], erreurs = [], mauvaises = [];
-  ctx.on('request', (req) => { if (req.method() !== 'GET' && req.method() !== 'HEAD' && hote(req.url()).endsWith(DOMAINE)) ecritures.push(req.method() + ' ' + new URL(req.url()).pathname); });
+  const ecritures = [], erreurs = [], mauvaises = [], tracesParties = []; let tracesBloquees = 0;
+  /* une trace COUPÉE (route.abort) déclenche quand même l'événement « request » : on ne la compte pas comme écriture,
+     mais on vérifie qu'elle a bien été coupée (sinon le compte des coupures reste à 0 et le rapport le dit) */
+  ctx.on('request', (req) => { let u; try { u = new URL(req.url()); } catch { return; }
+    if (req.method() !== 'GET' && req.method() !== 'HEAD' && hote(req.url()).endsWith(DOMAINE) && !TRACES(u)) ecritures.push(req.method() + ' ' + u.pathname); });
+  ctx.on('requestfailed', (req) => { let u; try { u = new URL(req.url()); } catch { return; } if (TRACES(u)) tracesBloquees++; });
+  ctx.on('requestfinished', (req) => { let u; try { u = new URL(req.url()); } catch { return; } if (TRACES(u) && req.method() !== 'GET') tracesParties.push(req.method() + ' ' + u.host + u.pathname); });
   ctx.on('response', (res) => { const s = res.status(); if ((s >= 500 || s === 429) && hote(res.url()).endsWith(DOMAINE)) mauvaises.push(s + ' ' + new URL(res.url()).pathname); });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => erreurs.push(String(e && e.message || e).slice(0, 120)));
@@ -194,6 +202,7 @@ for (const ap of APPAREILS) {
 
     /* d. rien d'écrit, rien de cassé */
     chk(A, ecritures.length === 0, 'la page n\'a RIEN posté au domaine (0 requête non-GET : aucun compte créé, aucune écriture)', ecritures.join(', '));
+    chk(A, tracesParties.length === 0, 'aucune trace n\'est partie (journal admin, balise Cloudflare) — la sonde ne laisse rien chez l\'admin', [...new Set(tracesParties)].join(', '));
     if (coupees.length) gris(A, 'traces coupées à la source (journal admin, balise Cloudflare) : ' + [...new Set(coupees)].join(', ') + ' — rien d\'écrit');
     coupees.length = 0;
     chk(A, erreurs.length === 0, 'aucune erreur JavaScript', erreurs.join(' | '));

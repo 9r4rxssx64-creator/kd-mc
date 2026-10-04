@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (01h10) — Vrai domaine mesuré + sonde appareils sans traces
+
+Audit LINGUA run 37164677873 : **77/0** sur v2.135.0. Vérif APPAREILS run 37164514412 : tout vert sauf 3 ❌ venant
+de la sonde (ses traces partaient : route de coupure enregistrée en premier, or Playwright essaie la DERNIÈRE ; et
+`request` compte aussi les requêtes coupées) → coupure posée en dernier, `requestfinished` = vraiment parti,
+nouveau contrôle « aucune trace n'est partie » (leçon #401). Garde `test:verif-appareils` 7/0. Plafond du 4.10
+atteint : prochaine vérif réelle le 5.10 après 00h UTC.
+
+---
+
 ## 2026-10-04 (00h20) — Lingua v2.135.0 : chacun ses horaires d'appel
 
 Kevin : « Chacun choisit ses horaires d'appel, disponibilités etc ». Jusqu'à 4 créneaux {jours:[1..7], heure} +

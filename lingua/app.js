@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.134.0";
+var APP_VER="v2.135.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -72,7 +72,7 @@ function loadS(){
      c'est justement pour ca que le choix existe (j'ai devine faux deux fois). */
   S.beeArt=lg("beeArt","vive"); // dessin de Bee : "douce" ou "vive" (choix dans les reglages)
   S.beeVoice=lg("beeVoice","fillette"); // voix de Bee choisie (catalogue BEE_VOICES) — fillette mignonne par défaut
-  S.social=lg("social",{offerts:0,quetes:0,encourages:0,stickers:[]}); S.appels=lg("appels",{n:0,jours:{},heure:"",apresLecon:true,off:false,report:0,refus:"",push:false});   // 📞 appels de la mascotte (3.10) S.boostJusqua=lg("boostJusqua",0);   // 👥 Cercle (2.10)
+  S.social=lg("social",{offerts:0,quetes:0,encourages:0,stickers:[]}); S.appels=lg("appels",{n:0,jours:{},heure:"",apresLecon:true,off:false,report:0,refus:"",push:false,plan:null,pause:"",sonnes:{},faitA:0});   // 📞 appels de la mascotte (3.10) S.boostJusqua=lg("boostJusqua",0);   // 👥 Cercle (2.10)
   S.latin=lg("latin",true);   // 🔤 écriture latine sous le russe, l'ukrainien, le coréen, le chinois, le japonais (2.10)
   S.turtle=lg("turtle",false); // 🐢 mode tortue : les modèles de prononciation se jouent au ralenti partout
   S.coachScene=lg("coachScene",null); // 🎭 jeu de rôle en cours (id de SCENES) — null = conversation libre
@@ -2978,13 +2978,27 @@ function appelEntrant(force){ if(APPEL||DISC.open||!appelPossible())return; if(!
   setTimeout(function(){ var b=ov.querySelector(".ap-decroche"); if(b)b.focus(); },100); }
 
 /* Faut-il que ça sonne maintenant ? (appelé après une leçon, au retour sur l'app, et chaque minute) */
-function appelVerifier(){ if(!appelPossible()||APPEL||DISC.open||appelFaitAujourdhui()||VIEW!=="home"||PICK)return;
-  var a=S.appels||{}; if(a.refus===today()||(a.report&&Date.now()<a.report)||a.off)return;
+/* CHACUN SES HORAIRES (Kevin 4.10 : « chacun choisit ses horaires d'appel, disponibilités ») : jusqu'à 4 créneaux
+   { jours:[1..7] (lundi = 1), heure:"HH:MM" } et une pause « pas d'appels jusqu'au… ». Ancien réglage (une heure) repris. */
+var APPEL_JOURS=["L","M","M","J","V","S","D"], APPEL_JOURS_NOMS=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
+function appelPlan(){ var a=S.appels||{}; if(Array.isArray(a.plan)&&a.plan.length) return a.plan; return a.heure?[{jours:[1,2,3,4,5,6,7],heure:a.heure}]:[]; }
+function isoJour(d){ d=d||new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function appelEnPause(){ var p=(S.appels||{}).pause; return !!(p&&isoJour()<=p); }
+function _hAujourdhui(h){ var p=String(h).split(":"), t=new Date(); t.setHours(+p[0]||0,+p[1]||0,0,0); return t.getTime(); }
+/* le créneau d'aujourd'hui qui doit sonner maintenant (dans l'app) : passé, pas encore sonné, aucun appel fait depuis */
+function appelCreneauDu(){ if(appelEnPause())return null; var a=S.appels, jour=(new Date().getDay()+6)%7+1, faits=(a.sonnes&&a.sonnes[isoJour()])||[];
+  var pl=appelPlan(); for(var i=0;i<pl.length;i++){ var c=pl[i], t=_hAujourdhui(c.heure);
+    if(c.jours.indexOf(jour)<0||faits.indexOf(c.heure)>=0||Date.now()<t||(a.faitA||0)>=t) continue; return c.heure; } return null; }
+function appelResume(){ var pl=appelPlan(); if(!pl.length)return "pas d'heure fixe";
+  return pl.map(function(c){ var j=c.jours.slice().sort(); var txt=j.length===7?"tous les jours":(j.join()==="1,2,3,4,5"?"en semaine":(j.join()==="6,7"?"le week-end":j.map(function(x){ return APPEL_JOURS_NOMS[x-1].slice(0,3); }).join(" "))); return txt+" à "+c.heure; }).join(" · "); }
+/* Faut-il que ça sonne maintenant ? (appelé après une leçon, au retour sur l'app, et chaque minute) */
+function appelVerifier(){ if(!appelPossible()||APPEL||DISC.open||VIEW!=="home"||PICK)return;
+  var a=S.appels||{}; if(a.refus===today()||(a.report&&Date.now()<a.report)||a.off||appelEnPause())return;
   if(document.querySelector(".modal,.appel-ov,.disc-overlay"))return;
-  var du=false;
-  if(a.heure){ var p=String(a.heure).split(":"), t=new Date(); t.setHours(+p[0]||0,+p[1]||0,0,0); if(Date.now()>=t.getTime()) du=true; }
-  if(!du&&a.apresLecon!==false&&S.today&&(S.today.lessons|0)>0) du=true;
-  if(du) appelEntrant(false); }
+  var cr=appelCreneauDu();
+  if(cr){ if(!a.sonnes||typeof a.sonnes!=="object")a.sonnes={}; var k=isoJour(); Object.keys(a.sonnes).forEach(function(d){ if(d!==k) delete a.sonnes[d]; });
+    (a.sonnes[k]=a.sonnes[k]||[]).push(cr); save(); appelEntrant(false); return; }
+  if(!appelFaitAujourdhui()&&a.apresLecon!==false&&S.today&&(S.today.lessons|0)>0) appelEntrant(false); }
 
 /* ---- l'appel EN COURS ---- */
 function appelDemarrer(){ if(APPEL||DISC.open||!appelPossible())return; var c=COURSES[S.course];
@@ -3058,7 +3072,7 @@ function appelTerminer(raccroche){ if(!APPEL||APPEL.fini)return; var A=APPEL; A.
   var secs=Math.round((Date.now()-A.debut)/1000), premier=!appelFaitAujourdhui(), xp=0, gem=0;
   if(A.tours>=2&&!A.coupe){ xp=10+2*Math.min(A.tours,APPEL_TOURS); gem=premier?5:0;
     S.xp+=xp; S.dailyXP+=xp; histAdd(xp); S.gems+=gem;
-    if(!S.appels.jours)S.appels.jours={}; S.appels.jours[today()]=1; S.appels.n=(S.appels.n|0)+1; S.appels.dernier=Date.now();
+    if(!S.appels.jours)S.appels.jours={}; S.appels.jours[today()]=1; S.appels.n=(S.appels.n|0)+1; S.appels.dernier=Date.now(); S.appels.faitA=Date.now();
     S.today.appels=(S.today.appels|0)+1; bumpStreak(); save(); checkAchv(); checkQuests(); appelPushFait(); }
   var fin=el("div","ap-fin");
   fin.innerHTML='<div class="mascot-mini big">'+MASCOT(xp?"party":"wave",120)+'</div>'+
@@ -3087,15 +3101,16 @@ function appelInstallee(){ try{ return !!(navigator.standalone||(window.matchMed
 function _appelCle(s){ s=String(s).replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4)s+="="; var b=atob(s),a=new Uint8Array(b.length); for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a; }
 function _appelSub(){ if(!appelPushDispo())return Promise.resolve(null); return navigator.serviceWorker.ready.then(function(r){ return r.pushManager.getSubscription(); }).catch(function(){ return null; }); }
 function _appelPost(chemin,corps){ return fetch(SYNC_BASE+"/"+chemin,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(corps)}).then(function(r){ return r.json(); }); }
-function appelPushAbonner(heure){
+function appelPushAbonner(){
   if(!appelPushDispo()) return Promise.reject(new Error("indispo"));
+  var plan=appelPlan(); if(!plan.length){ plan=[{jours:[1,2,3,4,5,6,7],heure:"18:30"}]; S.appels.plan=plan; save(); }
   return Notification.requestPermission().then(function(p){ if(p!=="granted") throw new Error("refus");
       return Promise.all([navigator.serviceWorker.ready, fetch(SYNC_BASE+"/appel-cle",{cache:"no-store"}).then(function(r){ return r.json(); })]); })
     .then(function(x){ var reg=x[0], k=x[1]; if(!k||!k.ok||!k.cle) throw new Error("cle");
       return reg.pushManager.getSubscription().then(function(sb){ return sb||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_appelCle(k.cle)}); }); })
     .then(function(sub){ var c=COURSES[S.course]||{}, tz="UTC"; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"; }catch(_){}
-      return _appelPost("appel-abonnement",{sub:sub.toJSON(),heure:heure,tz:tz,langue:c.nom||"",mascotte:mascotCfg().id}); })
-    .then(function(j){ if(!j||!j.ok) throw new Error((j&&j.reason)||"refuse"); S.appels.push=true; S.appels.heure=heure; save(); return true; }); }
+      return _appelPost("appel-abonnement",{sub:sub.toJSON(),plan:plan,pause:S.appels.pause||"",tz:tz,langue:c.nom||"",mascotte:mascotCfg().id}); })
+    .then(function(j){ if(!j||!j.ok) throw new Error((j&&j.reason)||"refuse"); S.appels.push=true; save(); return true; }); }
 function appelPushDesabonner(){ return _appelSub().then(function(sub){ S.appels.push=false; save(); if(!sub)return true;
     return _appelPost("appel-abonnement",{sub:sub.toJSON(),actif:false}).catch(function(){}).then(function(){ return sub.unsubscribe().catch(function(){}); }); }); }
 /* appel fait / refusé / déjà en train de sonner dans l'app → pas de notification ce jour-là */
@@ -3103,17 +3118,42 @@ function appelPushFait(){ if(!(S.appels&&S.appels.push))return; _appelSub().then
 
 /* ---- réglages : l'heure de l'appel, l'appel après la leçon, et le rappel CALENDRIER (sonne app fermée) ---- */
 function appelReglages(){ var a=S.appels; var m=modal();
+  if(!Array.isArray(a.plan)||!a.plan.length) a.plan=appelPlan().length?appelPlan():[{jours:[1,2,3,4,5],heure:"18:30"}];
+  var plan=JSON.parse(JSON.stringify(a.plan));
   m.body.innerHTML='<div class="mascot-mini">'+MASCOT("wave",90)+'</div><h3>📞 Les appels de '+esc(MNAME())+'</h3>'+
-    '<p class="mini">'+esc(MNAME())+' t\'appelle pour une petite leçon de 3 minutes : un mot du jour, un exercice à l\'oral et une vraie conversation.</p>'+
-    '<label class="mini ap-l"><input type="checkbox" id="apLecon"'+(a.apresLecon!==false&&!a.off?' checked':'')+'> Après ma 1re leçon du jour</label>'+
-    '<label class="mini ap-l">À heure fixe : <input type="time" id="apHeure" class="txt" value="'+esc(a.heure||"")+'" style="width:auto;display:inline-block"></label>'+
+    '<p class="mini">'+esc(MNAME())+' t\'appelle pour une petite leçon de 3 minutes : un mot du jour, un exercice à l\'oral et une vraie conversation. <b>Tu choisis quand.</b></p>'+
+    '<div class="sec-h">🗓️ Mes horaires d\'appel</div><div id="apCren"></div>'+
+    '<label class="mini ap-l"><input type="checkbox" id="apLecon"'+(a.apresLecon!==false&&!a.off?' checked':'')+'> Aussi après ma 1re leçon du jour</label>'+
+    '<label class="mini ap-l">🏖️ Pause, pas d\'appels jusqu\'au : <input type="date" id="apPause" class="txt" value="'+esc(a.pause||"")+'" style="width:auto;display:inline-block"> <button class="btn-ghost small" id="apPauseX" type="button">✕</button></label>'+
     '<label class="mini ap-l"><input type="checkbox" id="apOff"'+(a.off?' checked':'')+'> Ne plus m\'appeler (je l\'appelle moi-même)</label>'+
     '<div class="ap-push" id="apPush"></div>'+
-    '<p class="mini">📅 <b>Ou par le calendrier</b> : ajoute le rendez-vous — ton téléphone sonne chaque jour à l\'heure choisie, un toucher et l\'appel commence.</p>';
-  var cal=el("button","btn-ghost"); cal.textContent="📅 Ajouter au calendrier"; cal.onclick=function(){ var h=m.body.querySelector("#apHeure").value||"18:30"; a.heure=h; save(); appelCalendrier(h); };
+    '<p class="mini">📅 <b>Ou par le calendrier</b> : ajoute tes créneaux — ton téléphone sonne aux jours et heures choisis, un toucher et l\'appel commence.</p>';
+  var zc=m.body.querySelector("#apCren");
+  var dessiner=function(){ zc.innerHTML="";
+    plan.forEach(function(c,i){ var r=el("div","ap-cren");
+      APPEL_JOURS.forEach(function(lettre,k){ var j=k+1, b=el("button","ap-jour"+(c.jours.indexOf(j)>=0?" on":"")); b.type="button"; b.textContent=lettre;
+        b.setAttribute("aria-label",APPEL_JOURS_NOMS[k]); b.setAttribute("aria-pressed",String(c.jours.indexOf(j)>=0));
+        b.onclick=function(){ var x=c.jours.indexOf(j); if(x>=0){ if(c.jours.length>1)c.jours.splice(x,1); } else c.jours.push(j); c.jours.sort(); dessiner(); }; r.appendChild(b); });
+      var h=el("input","txt ap-h"); h.type="time"; h.value=c.heure; h.setAttribute("aria-label","Heure du créneau "+(i+1)); h.onchange=function(){ if(h.value)c.heure=h.value; };
+      r.appendChild(h);
+      if(plan.length>1){ var del=el("button","btn-ghost small"); del.type="button"; del.textContent="🗑"; del.setAttribute("aria-label","Retirer ce créneau"); del.onclick=function(){ plan.splice(i,1); dessiner(); }; r.appendChild(del); }
+      zc.appendChild(r); });
+    if(plan.length<4){ var add=el("button","btn-ghost small"); add.type="button"; add.textContent="➕ Ajouter un créneau";
+      add.onclick=function(){ plan.push({jours:[6,7],heure:"10:00"}); dessiner(); }; zc.appendChild(add); }
+    var raccourcis=el("div","ap-raccourcis");
+    [["Tous les jours 18:30",[{jours:[1,2,3,4,5,6,7],heure:"18:30"}]],["Semaine 18:30 · week-end 10:00",[{jours:[1,2,3,4,5],heure:"18:30"},{jours:[6,7],heure:"10:00"}]],["Matin 08:00 et soir 20:00",[{jours:[1,2,3,4,5,6,7],heure:"08:00"},{jours:[1,2,3,4,5,6,7],heure:"20:00"}]]].forEach(function(x){
+      var b=el("button","coach-chip"); b.type="button"; b.textContent=x[0]; b.onclick=function(){ plan=JSON.parse(JSON.stringify(x[1])); dessiner(); }; raccourcis.appendChild(b); });
+    zc.appendChild(raccourcis); };
+  dessiner();
+  m.body.querySelector("#apPauseX").onclick=function(){ m.body.querySelector("#apPause").value=""; };
+  var enregistrer=function(){ a.plan=plan.filter(function(c){ return c.jours.length&&/^\d\d:\d\d$/.test(c.heure); }); a.heure=(a.plan[0]||{}).heure||"";
+    a.apresLecon=m.body.querySelector("#apLecon").checked; a.off=m.body.querySelector("#apOff").checked; a.pause=m.body.querySelector("#apPause").value||""; save(); };
+  var cal=el("button","btn-ghost"); cal.textContent="📅 Ajouter au calendrier"; cal.onclick=function(){ enregistrer(); appelCalendrier(a.plan); };
   var go=el("button","btn-main"); go.textContent="📞 Appeler "+MNAME()+" maintenant"; go.onclick=function(){ m.close(); appelDemarrer(); };
   var ok=el("button","btn-ghost"); ok.textContent="Enregistrer";
-  ok.onclick=function(){ a.apresLecon=m.body.querySelector("#apLecon").checked; a.heure=m.body.querySelector("#apHeure").value||""; a.off=m.body.querySelector("#apOff").checked; save(); m.close(); toast("📞 C'est noté"); };
+  ok.onclick=function(){ enregistrer(); m.close();
+    if(a.push) appelPushAbonner().then(function(){ toast("📞 C'est noté : "+appelResume()); }).catch(function(){ toast("📞 Noté ici — le domaine sera prévenu au prochain essai"); });
+    else toast("📞 C'est noté : "+appelResume()+(a.pause?" · pause jusqu'au "+a.pause:"")); };
   m.body.appendChild(go); m.body.appendChild(ok); m.body.appendChild(cal);
   /* 🔔 notification « Bee t'appelle » même app fermée */
   var zp=m.body.querySelector("#apPush"); var peindre=function(){ zp.innerHTML="";
@@ -3121,29 +3161,30 @@ function appelReglages(){ var a=S.appels; var m=modal();
     if(appelSurIphone()&&!appelInstallee()){ t.innerHTML='🔔 <b>Pour qu\''+MG("elle","il")+' t\'appelle même app fermée</b> : ajoute d\'abord Lingua à ton écran d\'accueil (bouton Partager <b>⬆️</b> → « Sur l\'écran d\'accueil »), ouvre-la depuis l\'icône, puis reviens ici.'; zp.appendChild(t); return; }
     if(!appelPushDispo()){ t.textContent="🔔 Ce navigateur ne reçoit pas les notifications : utilise le calendrier ci-dessous."; zp.appendChild(t); return; }
     var b=el("button",S.appels.push?"btn-ghost":"btn-main");
-    if(S.appels.push){ t.innerHTML='🔔 <b>Activé</b> : '+esc(MNAME())+' t\'appelle chaque jour à <b>'+esc(S.appels.heure||"18:30")+'</b>, même app fermée.'; b.textContent="🔕 Ne plus m'appeler app fermée";
+    if(S.appels.push){ t.innerHTML='🔔 <b>Activé</b> : '+esc(MNAME())+' t\'appelle <b>'+esc(appelResume())+'</b>, même app fermée.'; b.textContent="🔕 Ne plus m'appeler app fermée";
       b.onclick=function(){ b.disabled=true; appelPushDesabonner().then(function(){ toast("🔕 C'est arrêté"); peindre(); }); }; }
-    else { t.innerHTML='🔔 <b>Même app fermée</b> : une notification « 📞 '+esc(MNAME())+' t\'appelle » à l\'heure choisie.'; b.textContent="🔔 Qu'"+MG("elle","il")+" m'appelle même app fermée";
-      b.onclick=function(){ var h=m.body.querySelector("#apHeure").value||"18:30"; b.disabled=true; b.textContent="…";
-        appelPushAbonner(h).then(function(){ toast("🔔 "+MNAME()+" t'appellera chaque jour à "+h); peindre(); })
+    else { t.innerHTML='🔔 <b>Même app fermée</b> : une notification « 📞 '+esc(MNAME())+' t\'appelle » à tes horaires.'; b.textContent="🔔 Qu'"+MG("elle","il")+" m'appelle même app fermée";
+      b.onclick=function(){ enregistrer(); b.disabled=true; b.textContent="…";
+        appelPushAbonner().then(function(){ toast("🔔 "+MNAME()+" t'appellera "+appelResume()); peindre(); })
           .catch(function(e){ var r=String(e&&e.message||e); b.disabled=false; peindre();
             toast(r==="refus"?"🔕 Notifications refusées — tu peux les autoriser dans les réglages du téléphone":"Impossible pour l'instant ("+r+") — le calendrier marche toujours 📅"); }); }; }
     zp.appendChild(t); zp.appendChild(b); };
-  peindre();
-  /* l'heure change alors que c'est activé → on prévient le domaine */
-  m.body.querySelector("#apHeure").addEventListener("change",function(){ var h=this.value; if(S.appels.push&&h) appelPushAbonner(h).then(function(){ toast("🔔 Nouvelle heure : "+h); peindre(); }).catch(function(){}); }); }
-function appelCalendrier(h){ var p=String(h||"18:30").split(":"), d=new Date(); d.setHours(+p[0]||18,+p[1]||30,0,0); if(d<new Date()) d.setDate(d.getDate()+1);
+  peindre(); }
+function appelCalendrier(plan){ plan=plan&&plan.length?plan:[{jours:[1,2,3,4,5,6,7],heure:"18:30"}];
   var z=function(n){ return String(n).padStart(2,"0"); };
   var loc=function(x){ return x.getFullYear()+z(x.getMonth()+1)+z(x.getDate())+"T"+z(x.getHours())+z(x.getMinutes())+"00"; };
   var n=new Date(), utc=n.getUTCFullYear()+z(n.getUTCMonth()+1)+z(n.getUTCDate())+"T"+z(n.getUTCHours())+z(n.getUTCMinutes())+"00Z";
-  var url="https://lingua.kd-mc.com/#appel";
-  var ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//KDMC//Lingua//FR","CALSCALE:GREGORIAN","BEGIN:VEVENT",
-    "UID:lingua-appel-"+String(ACC||"moi").replace(/[^a-z0-9-]/gi,"")+"@kd-mc.com","DTSTAMP:"+utc,"DTSTART:"+loc(d),"DTEND:"+loc(new Date(d.getTime()+5*60000)),
-    "RRULE:FREQ=DAILY","SUMMARY:📞 "+MNAME()+" t'appelle — KDMC Lingua","DESCRIPTION:Ta petite leçon au téléphone (3 min) : "+url,"URL:"+url,
-    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+MNAME()+" t'appelle !","TRIGGER:PT0M","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  var url="https://lingua.kd-mc.com/#appel", BYDAY=["MO","TU","WE","TH","FR","SA","SU"];
+  var lignes=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//KDMC//Lingua//FR","CALSCALE:GREGORIAN"];
+  plan.forEach(function(c,i){ var p=String(c.heure).split(":"), d=new Date(); d.setHours(+p[0]||18,+p[1]||30,0,0);
+    for(var k=0;k<8;k++){ var jd=(d.getDay()+6)%7+1; if(c.jours.indexOf(jd)>=0&&d>new Date())break; d.setDate(d.getDate()+1); }
+    lignes.push("BEGIN:VEVENT","UID:lingua-appel-"+i+"-"+String(ACC||"moi").replace(/[^a-z0-9-]/gi,"")+"@kd-mc.com","DTSTAMP:"+utc,"DTSTART:"+loc(d),"DTEND:"+loc(new Date(d.getTime()+5*60000)),
+      "RRULE:FREQ=WEEKLY;BYDAY="+c.jours.map(function(j){ return BYDAY[j-1]; }).join(","),"SUMMARY:📞 "+MNAME()+" t'appelle — KDMC Lingua","DESCRIPTION:Ta petite leçon au téléphone (3 min) : "+url,"URL:"+url,
+      "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+MNAME()+" t'appelle !","TRIGGER:PT0M","END:VALARM","END:VEVENT"); });
+  lignes.push("END:VCALENDAR"); var ics=lignes.join("\r\n");
   try{ var b=new Blob([ics],{type:"text/calendar;charset=utf-8"}), a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="appel-"+mascotCfg().id+".ics";
     document.body.appendChild(a); a.click(); setTimeout(function(){ try{ URL.revokeObjectURL(a.href); a.remove(); }catch(_){} },4000);
-    toast("📅 Ouvre le fichier et touche « Ajouter » : "+MNAME()+" sonnera chaque jour à "+h); }
+    toast("📅 Ouvre le fichier et touche « Ajouter » : "+MNAME()+" sonnera "+appelResume()); }
   catch(e){ toast("Calendrier indisponible sur ce navigateur"); } }
 /* ============ 📖 HISTOIRES DE LA RUCHE — Bee raconte, tu comprends, tu gagnes ============
    Histoires 100% originales (data.js STORIES) : chaque ligne est DITE dans la langue

@@ -69,13 +69,21 @@ try {
   ok(/même app fermée/.test(avant), '1. réglages des appels : la section « même app fermée » est là', avant);
   await p.evaluate(() => [...document.querySelectorAll('#apPush button')].find((b) => /même app fermée/.test(b.innerText))?.click()); await p.waitForTimeout(1500);
   let L = lignes();
-  ok(L.length === 1 && L[0].heure === '18:30' && L[0].tz === 'Europe/Paris' && L[0].langue === 'Anglais' && L[0].mascotte === 'bee' && armees.length >= 1, '1b. le domaine enregistre heure 18:30, fuseau Europe/Paris, Anglais, Bee ; horloge armée', JSON.stringify(L.map((x) => ({ h: x.heure, tz: x.tz, l: x.langue, m: x.mascotte }))));
+  ok(L.length === 1 && L[0].heure === '18:30' && JSON.parse(L[0].plan || '[]')[0]?.jours.length === 7 && L[0].tz === 'Europe/Paris' && L[0].langue === 'Anglais' && L[0].mascotte === 'bee' && armees.length >= 1, '1b. le domaine enregistre le créneau (tous les jours 18:30, repris de l\'ancien réglage), fuseau Europe/Paris, Anglais, Bee ; horloge armée', JSON.stringify(L.map((x) => ({ h: x.heure, p: x.plan, tz: x.tz, l: x.langue, m: x.mascotte }))));
   const apres = await p.evaluate(() => (document.querySelector('#apPush') || {}).innerText || '');
-  ok(/Activé/.test(apres) && /18:30/.test(apres) && /Ne plus m'appeler/.test(apres), '1c. l\'écran dit « Activé : Bee t\'appelle chaque jour à 18:30 »', apres);
+  ok(/Activé/.test(apres) && /tous les jours à 18:30/.test(apres) && /Ne plus m'appeler/.test(apres), '1c. l\'écran dit « Activé : Bee t\'appelle tous les jours à 18:30 »', apres);
   /* 2 */
-  await p.fill('#apHeure', '07:15'); await p.dispatchEvent('#apHeure', 'change'); await p.waitForTimeout(1200);
-  ok(lignes()[0].heure === '07:15', '2. l\'heure change → le domaine est prévenu (07:15)', lignes()[0]?.heure);
-  await p.evaluate(() => [...document.querySelectorAll('.modal button')].find((b) => /Enregistrer/.test(b.innerText))?.click()); await p.waitForTimeout(400);
+  /* 2. CHACUN SES HORAIRES : raccourci « Semaine 18:30 · week-end 10:00 », le week-end passé à 09:15, pause jusqu'au 1er août */
+  await p.evaluate(() => [...document.querySelectorAll('.modal .coach-chip')].find((b) => /week-end 10:00/.test(b.innerText))?.click()); await p.waitForTimeout(200);
+  const hs = await p.$$('.ap-cren .ap-h'); await hs[1].fill('09:15'); await hs[1].dispatchEvent('change');
+  await p.fill('#apPause', '2026-08-01');
+  await p.evaluate(() => [...document.querySelectorAll('.modal button')].find((b) => /Enregistrer/.test(b.innerText))?.click()); await p.waitForTimeout(1500);
+  const L2 = lignes()[0] || {}; const pl2 = JSON.parse(L2.plan || '[]');
+  ok(pl2.length === 2 && pl2[0].heure === '18:30' && pl2[0].jours.join() === '1,2,3,4,5' && pl2[1].heure === '09:15' && pl2[1].jours.join() === '6,7' && L2.pause === '2026-08-01', '2. horaires choisis (semaine 18:30, week-end 09:15) + pause jusqu\'au 1er août → le domaine est prévenu', JSON.stringify({ plan: L2.plan, pause: L2.pause }));
+  const loc2 = await p.evaluate(() => JSON.parse(localStorage.getItem('lingua_a_k_appels')));
+  ok(loc2 && loc2.plan && loc2.plan.length === 2 && loc2.pause === '2026-08-01', '2b. gardé aussi sur le téléphone (et synchronisé avec le compte)', JSON.stringify(loc2 && loc2.plan));
+  await p.evaluate(() => [...document.querySelectorAll('button')].find((b) => /Appeler Bee/.test(b.innerText))?.click()); await p.waitForTimeout(500);
+  await p.fill('#apPause', ''); await p.evaluate(() => [...document.querySelectorAll('.modal button')].find((b) => /Enregistrer/.test(b.innerText))?.click()); await p.waitForTimeout(1200);
   /* 3 */
   await p.evaluate(() => { location.hash = '#appel'; }); await p.waitForTimeout(1500);
   ok(!!(await p.$('.appel-ov')) && !!lignes()[0].envoye, '3. l\'appel sonne dans l\'app → « appel fait » noté côté domaine (pas de 2e sonnerie par notification)', lignes()[0]?.envoye);

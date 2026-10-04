@@ -9,6 +9,12 @@
 
 ---
 
+## ✅ Lingua v2.135.0 (4.10) — chacun choisit ses horaires d'appel
+
+- Lingua → carte « 📞 Appeler Bee » → **Mes horaires d'appel** : coche les jours (L M M J V S D) et l'heure, jusqu'à
+  4 créneaux (ex. semaine 18:30 et week-end 10:00, ou matin et soir). Raccourcis prêts à toucher.
+- **🏖️ Pause** : « pas d'appels jusqu'au… » pour les vacances. Chaque personne règle les siens, sur son téléphone.
+
 ## 👆 Lingua v2.134.0 (3.10, nuit) — Bee t'appelle MÊME APP FERMÉE : 1 réglage de ton côté (1 minute)
 
 1. Si ce n'est pas déjà fait : ouvre lingua.kd-mc.com dans Safari → bouton **Partager ⬆️** → **« Sur l'écran

@@ -92,19 +92,33 @@ try {
   ok(!(await A.p.$('.disc-overlay')) && /appel du jour fait/.test(await texte(A.p)), '3c. « Continuer » ferme l\'appel ; la carte dit « appel du jour fait ✓ »');
 
   /* 4. Pas aujourd'hui / Plus tard */
-  const B = await appareil(nav, { appels: { n: 0, jours: {}, heure: '00:01', apresLecon: true } });
+  const B = await appareil(nav, { appels: { n: 0, jours: {}, heure: '00:00', apresLecon: true } });
   await B.p.goto('https://lingua.kd-mc.com/'); await B.p.waitForTimeout(8500);
-  ok(!!(await B.p.$('.appel-ov')), '4. heure fixe passée (00:01) → ça sonne tout seul sur l\'accueil');
+  ok(!!(await B.p.$('.appel-ov')), '4. heure fixe passée (00:00) → ça sonne tout seul sur l\'accueil');
   await B.p.click('.ap-refus'); await B.p.waitForTimeout(400);
   const refus = await lire(B.p, 'appels');
   ok(refus && refus.refus && !(await B.p.$('.appel-ov')), '4b. « Pas aujourd\'hui » → noté, plus d\'appel', JSON.stringify(refus));
   await B.p.evaluate(() => { document.dispatchEvent(new Event('visibilitychange')); }); await B.p.waitForTimeout(3600);
   ok(!(await B.p.$('.appel-ov')), '4c. au retour sur l\'app, ça ne resonne PAS le même jour');
-  const C = await appareil(nav, { appels: { n: 0, jours: {}, heure: '00:01' } });
+  const C = await appareil(nav, { appels: { n: 0, jours: {}, heure: '00:00' } });
   await C.p.goto('https://lingua.kd-mc.com/'); await C.p.waitForTimeout(8500);
   await C.p.click('.ap-plustard').catch(() => {}); await C.p.waitForTimeout(300);
   const tard = await lire(C.p, 'appels');
   ok(tard && tard.report > Date.now() + 3500e3 && tard.report < Date.now() + 3700e3, '4d. « Plus tard » → rappel dans 1 h', JSON.stringify(tard));
+
+  /* 4e-4g. CHACUN SES HORAIRES : un autre jour → rien ; en pause → rien ; l'éditeur de créneaux */
+  const auj = ((new Date().getDay() + 6) % 7) + 1, autre = auj === 7 ? 1 : auj + 1;
+  const F = await appareil(nav, { appels: { n: 0, jours: {}, plan: [{ jours: [autre], heure: '00:00' }], apresLecon: false } });
+  await F.p.goto('https://lingua.kd-mc.com/'); await F.p.waitForTimeout(8500);
+  ok(!(await F.p.$('.appel-ov')), '4e. créneau choisi pour un AUTRE jour de la semaine → ça ne sonne pas aujourd\'hui');
+  const iso = new Date(); const isoS = iso.getFullYear() + '-' + String(iso.getMonth() + 1).padStart(2, '0') + '-' + String(iso.getDate()).padStart(2, '0');
+  const G = await appareil(nav, { appels: { n: 0, jours: {}, plan: [{ jours: [1, 2, 3, 4, 5, 6, 7], heure: '00:00' }], pause: isoS, apresLecon: false } });
+  await G.p.goto('https://lingua.kd-mc.com/'); await G.p.waitForTimeout(8500);
+  ok(!(await G.p.$('.appel-ov')), '4f. en pause (vacances) jusqu\'à aujourd\'hui inclus → ça ne sonne pas');
+  await G.p.evaluate(() => [...document.querySelectorAll('button')].find((b) => /Appeler Bee/.test(b.innerText))?.click()); await G.p.waitForTimeout(600);
+  const ed = await G.p.evaluate(() => ({ cren: document.querySelectorAll('.ap-cren').length, jours: document.querySelectorAll('.ap-cren .ap-jour').length, ajout: /Ajouter un créneau/.test(document.body.innerText), pause: document.querySelector('#apPause')?.value }));
+  ok(ed.cren === 1 && ed.jours === 7 && ed.ajout && ed.pause === isoS, '4g. éditeur : mes créneaux (7 jours à cocher + heure), « ➕ Ajouter un créneau », la pause affichée', JSON.stringify(ed));
+  if (process.env.CAPTURE) { await G.p.evaluate(() => [...document.querySelectorAll('.modal .coach-chip')].find((b) => /week-end/.test(b.innerText))?.click()); await G.p.waitForTimeout(300); await G.p.evaluate(() => { const b = document.querySelector('.modal .modal-body, .modal'); if (b) b.scrollTop = 0; }); await G.p.locator('.modal').last().screenshot({ path: process.env.CAPTURE.replace('.png', '-horaires.png') }); }
 
   /* 5. sans micro + 6. lent / aide */
   const D = await appareil(nav, { sansMicro: true });
@@ -127,6 +141,6 @@ try {
   const E = await appareil(nav, { enfant: true });
   await E.p.goto('https://lingua.kd-mc.com/#appel'); await E.p.waitForTimeout(3500);
   ok(!/Appeler Bee/.test(await texte(E.p)) && !(await E.p.$('.appel-ov')), '7. mode enfant : ni carte, ni appel (rien ne part vers une IA)');
-  for (const [n, P] of [['A', A.p], ['B', B.p], ['C', C.p], ['D', D.p], ['E', E.p]]) ok(P._err.length === 0, `7b. aucune erreur JavaScript (${n})`, P._err.join(' | '));
+  for (const [n, P] of [['A', A.p], ['B', B.p], ['C', C.p], ['D', D.p], ['E', E.p], ['F', F.p], ['G', G.p]]) ok(P._err.length === 0, `7b. aucune erreur JavaScript (${n})`, P._err.join(' | '));
 } finally { await nav.close(); }
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`); process.exit(fail ? 1 : 0);

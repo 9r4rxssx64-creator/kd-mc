@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (00h20) — Lingua v2.135.0 : chacun ses horaires d'appel
+
+Kevin : « Chacun choisit ses horaires d'appel, disponibilités etc ». Jusqu'à 4 créneaux {jours:[1..7], heure} +
+pause (jusqu'au AAAA-MM-JJ), dans l'app (`S.appels.plan`, `pause`, `sonnes` par jour, `faitA`) et au domaine
+(`appel_push.plan` / `pause`, ALTER idempotent ; `envoye` = « date|HH:MM,HH:MM »). Ancien réglage (une heure)
+repris tel quel. Calendrier : un VEVENT WEEKLY;BYDAY par créneau. Question de Kevin « tu as copié Duolingo ? » :
+inspiré du principe (appel vidéo de Duolingo Max), rien de copié (code fermé, mascottes, textes, design à nous).
+
+---
+
 ## 2026-10-03 (23h40) — Lingua v2.134.0 : Bee t'appelle même app fermée
 
 Kevin : « Intègre » (après ma limite « app fermée = service payant », qui était fausse — leçon #399).

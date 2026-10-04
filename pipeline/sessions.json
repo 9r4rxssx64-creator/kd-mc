@@ -1063,14 +1063,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/verif-appel-push",
+      "branche": "claude/appel-horaires",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-02",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "3.10 (nuit) : #4311 fusionnée et déployée (Durable Object créé) ; sonde 3 appareils + clé des notifications"
+      "note": "4.10 : Lingua v2.135.0 — chacun ses horaires d'appel (créneaux, jours, pause)"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

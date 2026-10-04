@@ -23,25 +23,58 @@ const LANGUES = /^[\p{L} '-]{0,30}$/u;
 const SCHEMA = `CREATE TABLE IF NOT EXISTS appel_push (id TEXT PRIMARY KEY, sub TEXT NOT NULL, heure TEXT NOT NULL, tz TEXT NOT NULL,
   mascotte TEXT, langue TEXT, envoye TEXT, cree INTEGER, echecs INTEGER DEFAULT 0)`;
 const pret = new WeakSet();
-async function base(db) { if (!pret.has(db)) { await db.prepare(SCHEMA).run(); pret.add(db); } return db; }
+async function base(db) {
+  if (!pret.has(db)) { await db.prepare(SCHEMA).run();
+    /* 4.10 : créneaux et pause choisis par chacun — ajoutés à une table qui existe déjà en ligne */
+    for (const col of ['plan TEXT', 'pause TEXT']) { try { await db.prepare('ALTER TABLE appel_push ADD COLUMN ' + col).run(); } catch { /* déjà là */ } }
+    pret.add(db); }
+  return db; }
 const J = (o, s) => new Response(JSON.stringify(o), { status: s || 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 async function sha(t) { const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join(''); }
 
 /* L'heure et la date LOCALES d'un fuseau, maintenant. Fuseau invalide → null (l'abonnement est refusé). */
+const JOURS = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
 export function maintenantLocal(tz, now) {
   try {
-    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
       .formatToParts(new Date(now)).map((x) => [x.type, x.value]));
-    return { date: `${p.year}-${p.month}-${p.day}`, minutes: (+p.hour) * 60 + (+p.minute) };
+    return { date: `${p.year}-${p.month}-${p.day}`, minutes: (+p.hour) * 60 + (+p.minute), jour: JOURS[p.weekday] || 0 };
   } catch { return null; }
 }
 const enMinutes = (h) => { const m = String(h || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/); return m ? (+m[1]) * 60 + (+m[2]) : -1; };
-/* Faut-il sonner cet abonné maintenant ? (pure : testée sans réseau) */
-export function aSonner(ligne, now) {
-  const l = maintenantLocal(ligne.tz, now); const h = enMinutes(ligne.heure);
-  if (!l || h < 0 || ligne.envoye === l.date) return false;
-  return l.minutes >= h && l.minutes <= h + FENETRE_MIN;
+/* CHACUN SES HORAIRES (Kevin 4.10 : « chacun choisit ses horaires d'appel, disponibilités ») : jusqu'à 4 créneaux
+   { jours: [1..7] (lundi = 1), heure: "HH:MM" }, et une pause « pas d'appels jusqu'au AAAA-MM-JJ » (vacances).
+   Sans créneaux (abonnement d'avant) : l'heure unique, tous les jours. */
+export const MAX_CRENEAUX = 4;
+export function creneauxDe(ligne) {
+  let plan = null; try { plan = ligne.plan ? JSON.parse(ligne.plan) : null; } catch { plan = null; }
+  return Array.isArray(plan) && plan.length ? plan : [{ jours: [1, 2, 3, 4, 5, 6, 7], heure: ligne.heure }];
 }
+export function planValide(plan) {
+  if (!Array.isArray(plan) || !plan.length || plan.length > MAX_CRENEAUX) return null;
+  const out = [];
+  for (const c of plan) {
+    const jours = Array.isArray(c && c.jours) ? [...new Set(c.jours.map((j) => j | 0))].filter((j) => j >= 1 && j <= 7).sort() : [];
+    if (!jours.length || enMinutes(c.heure) < 0) return null;
+    out.push({ jours, heure: String(c.heure) });
+  }
+  return out;
+}
+/* « envoye » = la date locale + les heures déjà sonnées ce jour-là : « 2026-10-04|07:00,18:30 » */
+const dejaSonnes = (ligne, date) => { const [d, hs] = String(ligne.envoye || '').split('|'); return d === date ? (hs || (d ? '*' : '')).split(',').filter(Boolean) : []; };
+/* Le créneau à sonner maintenant (« HH:MM »), ou null. (pure : testée sans réseau) */
+export function aSonner(ligne, now) {
+  const l = maintenantLocal(ligne.tz, now); if (!l) return null;
+  if (ligne.pause && l.date <= ligne.pause) return null;
+  const faits = dejaSonnes(ligne, l.date); if (faits.includes('*')) return null;
+  for (const c of creneauxDe(ligne)) {
+    const h = enMinutes(c.heure);
+    if (h < 0 || !c.jours.includes(l.jour) || faits.includes(c.heure)) continue;
+    if (l.minutes >= h && l.minutes <= h + FENETRE_MIN) return c.heure;
+  }
+  return null;
+}
+const noter = (ligne, date, heures) => date + '|' + [...new Set(dejaSonnes(ligne, date).filter((h) => h !== '*').concat(heures))].join(',');
 export function messageAppel(ligne) {
   const nom = ligne.mascotte === 'donkey' ? 'Bourricot' : 'Bee';
   const lgn = String(ligne.langue || '').toLowerCase();
@@ -56,10 +89,10 @@ export async function tickAppels(env, now = Date.now()) {
   const lignes = (await db.prepare('SELECT * FROM appel_push LIMIT ?').bind(MAX_ABONNES).all()).results || [];
   let restants = lignes.length;
   for (const l of lignes) {
-    if (!aSonner(l, now)) continue;
+    const creneau = aSonner(l, now); if (!creneau) continue;
     const loc = maintenantLocal(l.tz, now);
     /* noté AVANT l'envoi : une panne au milieu ne fait jamais sonner deux fois (leçon #386) */
-    await db.prepare('UPDATE appel_push SET envoye = ? WHERE id = ?').bind(loc.date, l.id).run();
+    await db.prepare('UPDATE appel_push SET envoye = ? WHERE id = ?').bind(noter(l, loc.date, [creneau]), l.id).run();
     let statut = 0;
     try {
       if (!env.KDMC_PUSH_URL || !env.KDMC_PUSH_TOKEN) throw new Error('push non configuré');
@@ -122,27 +155,33 @@ export async function handleAppelPush(request, url, env) {
   const id = await sha(endpoint);
   if (p === '/__lingua/appel-abonnement') {
     if (b.actif === false) { await db.prepare('DELETE FROM appel_push WHERE id = ?').bind(id).run(); return J({ ok: true, actif: false }); }
-    const heure = String(b.heure || ''), tz = String(b.tz || '').slice(0, 60), langue = String(b.langue || '').slice(0, 30);
-    if (enMinutes(heure) < 0) return J({ ok: false, reason: 'heure_invalide' }, 400);
+    const tz = String(b.tz || '').slice(0, 60), langue = String(b.langue || '').slice(0, 30);
+    const plan = b.plan != null ? planValide(b.plan) : (enMinutes(b.heure) >= 0 ? [{ jours: [1, 2, 3, 4, 5, 6, 7], heure: String(b.heure) }] : null);
+    if (!plan) return J({ ok: false, reason: 'horaires_invalides' }, 400);
+    const heure = plan[0].heure;
+    const pause = b.pause ? String(b.pause) : '';
+    if (pause && !/^\d{4}-\d{2}-\d{2}$/.test(pause)) return J({ ok: false, reason: 'pause_invalide' }, 400);
     if (!maintenantLocal(tz, Date.now())) return J({ ok: false, reason: 'fuseau_invalide' }, 400);
     if (!LANGUES.test(langue)) return J({ ok: false, reason: 'langue_invalide' }, 400);
     const n = (await db.prepare('SELECT COUNT(*) AS n FROM appel_push').first()).n || 0;
     const existe = await db.prepare('SELECT 1 FROM appel_push WHERE id = ?').bind(id).first();
     if (!existe && n >= MAX_ABONNES) return J({ ok: false, reason: 'complet' }, 503);
     const clean = JSON.stringify({ endpoint, keys: { p256dh: String(sub.keys.p256dh).slice(0, 200), auth: String(sub.keys.auth).slice(0, 100) } });
-    await db.prepare(`INSERT INTO appel_push (id, sub, heure, tz, mascotte, langue, envoye, cree, echecs) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 0)
-                      ON CONFLICT(id) DO UPDATE SET sub = excluded.sub, heure = excluded.heure, tz = excluded.tz, mascotte = excluded.mascotte, langue = excluded.langue, echecs = 0`)
-      .bind(id, clean, heure, tz, b.mascotte === 'donkey' ? 'donkey' : 'bee', langue, Date.now()).run();
+    await db.prepare(`INSERT INTO appel_push (id, sub, heure, tz, mascotte, langue, envoye, cree, echecs, plan, pause) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 0, ?, ?)
+                      ON CONFLICT(id) DO UPDATE SET sub = excluded.sub, heure = excluded.heure, tz = excluded.tz, mascotte = excluded.mascotte, langue = excluded.langue, echecs = 0, plan = excluded.plan, pause = excluded.pause`)
+      .bind(id, clean, heure, tz, b.mascotte === 'donkey' ? 'donkey' : 'bee', langue, Date.now(), JSON.stringify(plan), pause || null).run();
     await armer(env);
-    return J({ ok: true, actif: true, heure, tz });
+    return J({ ok: true, actif: true, heure, tz, plan, pause: pause || null });
   }
   if (p === '/__lingua/appel-fait') {
     /* appel fait (ou refusé) aujourd'hui depuis l'app → pas de notification ce jour-là */
-    const l = await db.prepare('SELECT tz FROM appel_push WHERE id = ?').bind(id).first();
+    const l = await db.prepare('SELECT * FROM appel_push WHERE id = ?').bind(id).first();
     if (!l) return J({ ok: true, abonne: false });
     const loc = maintenantLocal(l.tz, Date.now());
-    await db.prepare('UPDATE appel_push SET envoye = ? WHERE id = ?').bind(loc.date, id).run();
-    return J({ ok: true, abonne: true, jour: loc.date });
+    /* l'appel du moment est fait : les créneaux d'aujourd'hui déjà passés ou dans les 2 h ne sonnent plus ; ceux de plus tard, si */
+    const couverts = creneauxDe(l).filter((c) => c.jours.includes(loc.jour) && enMinutes(c.heure) <= loc.minutes + 120).map((c) => c.heure);
+    await db.prepare('UPDATE appel_push SET envoye = ? WHERE id = ?').bind(noter(l, loc.date, couverts.length ? couverts : ['*']), id).run();
+    return J({ ok: true, abonne: true, jour: loc.date, couverts });
   }
   return J({ ok: false, reason: 'introuvable' }, 404);
 }

@@ -1,5 +1,55 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🔊 Bee : le son revient, réponses plus rapides, la vraie bouche bouge (3.10.2026, soir)
+
+- **Le son** ne dépend plus du « moteur audio » de l'iPhone (c'est lui qui la rendait muette)
+- **Plus rapide** : Bee demande d'abord aux IA gratuites les plus rapides (Cerebras, Groq)
+- **La bouche** : c'est sa vraie bouche dessinée qui s'ouvre quand elle parle, plus de rond rose collé dessus
+- **Bourricot** a une voix plus grave que Bee, même avec la voix gratuite
+- **Ton app** : https://javis.kd-mc.com
+
+### 🛠 Bee travaille pour toi : météo, date, calcul, recherche, lecture de page (3.10.2026)
+
+- **Demande-lui** : « Quel temps demain ? », « Et samedi à Nice ? », « 15 % de 240 ? », « Qui est Grace Kelly ? », « Les dernières nouvelles de Monaco », « Lis ce lien… »
+- **Il ne dit plus « je ne sais pas »** quand un outil sait. Gratuit. Il lit et cherche ; écrire / envoyer / modifier reste à Apex.
+- **Questions difficiles** : les outils trouvent les faits, puis toutes les IA gratuites en conférence rédigent la réponse. **Apex** a les mêmes outils (via l'entrée IA du domaine).
+- **Bouton 🧸 3D** dans la petite fenêtre de Bee, partout.
+- **Le code** : `services/_shared/outils-lecture.js` · **Test** : `npm run test:bee-outils`
+
+### 🧸 Bee et Bourricot en 3D, chez toi en réalité augmentée (3.10.2026, nuit)
+
+- **La page** : https://javis.kd-mc.com/3d.html — tourne-les au doigt, touche-les (ils sautent, rigolent, s'étonnent, font coucou)
+- **Sur iPhone** : « 📱 Le poser chez moi » → ils apparaissent sur ta table, en vrai, et bougent
+- **Depuis Bee** : dis « montre-toi en 3D » ou touche le bouton « 🧸 En 3D »
+- **Depuis Lingua** : bouton « 🧸 Bee (ou Bourricot) en 3D » sur l'accueil et dans Profil → Ta mascotte — ouvre la page sur ta mascotte
+- **Les modèles** : `javis/3d/` · **Les fabriquer** : `tools/3d/` · **Test** : `npm run test:3d`
+
+### 🛠 Publication du domaine débloquée (4.10.2026)
+
+- Le moteur 3D contenait un nombre que le contrôle de sécurité prenait pour un téléphone : la publication était arrêtée, rien de nouveau n'arrivait en ligne. Corrigé et testé.
+
+### 🧑‍✈️ Bee te suit dans TOUTES tes apps, et agit avec ton bouton ✅ (4.10.2026)
+
+- **Partout** : ouvre n'importe quelle app du domaine, Bee est là en bas à droite (en 3D) — elle sait dans quelle app tu es
+- **Seulement toi** : personne d'autre ne la voit ni ne peut lui parler (testé sur chaque adresse du domaine)
+- **Elle propose, tu confirmes** : « rappelle-moi lundi à 9 h 30… » → une carte avec ✅ Confirmer / ✖ Annuler ; rien ne part sans ton doigt
+- **Elle sait faire** : rappels, retenir/oublier un fait sur toi, lire tes messages de toutes les apps et y répondre, arrêter le robot de trading, te donner les liens
+- **Pour la couper** : `BEE_PARTOUT=0` (tout le domaine) ou `<meta name="kdmc-bee" content="off">` (une page) · **Tests** : `npm run test:bee-partout`, `test:bee-agir`, `test:bee-partout-navigateur`
+
+### 🧸 Bee et Bourricot en 3D, tout seuls, partout (4.10.2026 — Bee v1.17, Lingua v2.135.0)
+
+- **Sans bouton** : petite fenêtre Bee, app Javis, Lingua — ils sont en vraie 3D dès que la page s'ouvre
+- **Ils vivent** : la bouche suit la voix, la tête suit ton doigt, ils sautent de joie, dorment, réfléchissent…
+- **Si ton téléphone ne peut pas** (économiseur de données, vieux modèle) : l'animation d'avant reste, rien ne casse
+- **Le moteur** : `javis/perso3d.js` (fabriqué, ne pas modifier à la main) · **Les sources** : `tools/3d/` · **Test** : `npm run test:perso3d`
+
+### 🕺 Bee et Bourricot bougent de tout leur corps (3.10.2026 — Bee v1.17, Lingua v2.134.0)
+
+- **Oreilles, antennes, bras, jambes, queue, tête** : tout bouge, tout le temps, et suit l'humeur (parle, danse, fête, triste, dort…)
+- **Partout** : ton app Bee https://javis.kd-mc.com et Lingua https://lingua.kd-mc.com (même les images de coucou, fête, lecture)
+- **Touche-les** dans Lingua : ils font la fête
+- **Le moteur** : `tools/javis/marionnette.js` · **Test** : `npm run test:marionnette`
+
 ### 🗓 Bee connaît ta journée : planning, bonjour du matin, suggestions (2.10.2026, nuit — Bee v1.16)
 
 - **Demande-lui** : « Je travaille demain ? », « Avec qui je bosse aujourd'hui ? », « Je suis de repos quand ? »

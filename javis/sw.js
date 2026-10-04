@@ -1,7 +1,7 @@
 /* Javis — Service Worker : réseau d'abord (toujours à jour), repli cache hors-ligne.
  * Même pattern qu'arbre/sw.js (éprouvé) + règle MAJ AUTO FORCÉE (CLAUDE.md) :
  * les URLs marquées ?_v= / ?_force_upd_ passent TOUJOURS en direct réseau. */
-var CACHE = "javis-v1.16";   /* DOIT suivre JAVIS_VER du widget (garde test:javis-bee) */
+var CACHE = "javis-v1.17";   /* DOIT suivre JAVIS_VER du widget (garde test:javis-bee) */
 var ASSETS = ["./", "manifest.json", "icon-192.png", "javis-widget.js"]; /* « ./ » EST la page : « index.html » en plus la gardait en double (audit complet 30.09) */ /* icon-512 (370 Ko) : plus pré-chargée (audit perf 27.09), le manifeste la donne à l'installation */
 self.addEventListener("install", function (e) {
   self.skipWaiting();

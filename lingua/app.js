@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.135.0";
+var APP_VER="v2.136.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -263,6 +263,11 @@ function MLIEU(){ return mascotCfg().gen==="m" ? "du pr\u00e9" : "de la ruche"; 
 function setBeeArt(id){ S.beeArt=id; save(); vibrate(10);
   try{ var b=document.querySelector(".bee-bubble"); if(b)b.remove(); _beeSaid={}; }catch(_){}
   toast("\ud83c\udfa8 Dessin « "+beeArtCfg().nom+" » choisi !"); render(); }
+/* LA 3D (Kevin 3.10 : « les personnages servent aussi dans Lingua ») : Bee et Bourricot existent en vrai 3D / réalité augmentée
+   (page javis.kd-mc.com/3d.html, fabriquée par tools/3d/). Un toucher ouvre la page sur LA mascotte choisie. */
+function url3D(){ return "https://javis.kd-mc.com/3d.html#"+(mascotCfg().id==="bee"?"bee":"bourricot"); }
+function ouvrir3D(){ vibrate(10); var w=null; try{ w=window.open(url3D(),"_blank","noopener"); }catch(_){}
+  if(!w){ try{ location.href=url3D(); }catch(_){} } }
 function setMascot(id){ S.mascot=id; save(); vibrate(10);
   /* La bulle affichée appartient à l'ANCIENNE mascotte : on l'efface et on autorise la nouvelle
      à reparler. Sans ça, Bourricot gardait la phrase de Bee — « je suis fière de toi » au masculin
@@ -1322,6 +1327,7 @@ function vHome(){ var w=el("div","screen tree");
   var goal=el("div","goal-card");
   goal.innerHTML='<div class="goal-top"><b>🎯 Objectif du jour</b><span>'+S.dailyXP+' / '+S.goal+' XP</span></div><div class="bar"><div class="bar-fill" style="width:'+gp+'%"></div></div>'+(gp>=100?'<div class="goal-done">✅ Objectif atteint !</div>':'');
   w.appendChild(goal);
+  var d3=el("button","plan-diff b3d"); d3.innerHTML='🧸 <b>'+esc(mascotCfg().nom)+' en 3D</b> · le poser chez toi (réalité augmentée)'; d3.onclick=ouvrir3D; w.appendChild(d3);
   // 🇲🇨 Monégasque : dire franchement ce que ce cours est, et ce qu'il n'est pas.
   if(S.course==="mc"){ var mcn=el("div","mc-note");
     mcn.innerHTML='<b>🇲🇨 Munegascu — la langue du Rocher</b>'
@@ -2230,6 +2236,8 @@ function vProfile(){ var d=el("div","screen"); var me=accMeta(ACC)||{name:"Toi",
       arow.appendChild(b); });
     mc.appendChild(arow);
   }
+  var b3=el("button","row switch b3d"); b3.innerHTML='<span>🧸 Voir '+esc(mascotCfg().nom)+' en 3D — le poser chez toi</span><span>›</span>';
+  b3.onclick=ouvrir3D; mc.appendChild(b3);
   d.appendChild(mc);
   // voix (large choix, testables)
   var vc=el("div","voice-card");
@@ -2895,6 +2903,8 @@ function openDiscussion(){ if(DISC.open)return; var c=coachLangMeta(); if(!c){ t
      Si le navigateur ne la lit pas (erreur/codec) → repli marionnette, sans écran vide. */
   var dv=ov.querySelector(".disc-vid"), db=ov.querySelector(".disc-bee");
   DISC.vid=false; DISC.noClip=DISC.noClip||{};
+  /* 3D d'office (Kevin 3.10) : si la 3D est possible, c'est elle qui anime Bee/Bourricot — la vidéo ne se charge pas */
+  try{ if(dv&&window.KdmcMarionnette&&KdmcMarionnette.prefere3D&&KdmcMarionnette.prefere3D()){ dv.pause(); dv.removeAttribute("src"); dv.load(); dv.remove(); dv=null; } }catch(_){}
   if(dv){
     dv.addEventListener("canplay",function(){ if(!DISC.open)return; DISC.vid=true; db.classList.add("vid"); },{once:true});
     /* Un clip d'humeur qui manque (ex. l'âne n'a pas encore "jump") ne doit PAS tuer la vidéo :

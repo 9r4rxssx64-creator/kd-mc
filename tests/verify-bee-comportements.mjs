@@ -25,6 +25,13 @@ function wav(sec) {
   b.fill(128, 44); return b;
 }
 const SON = wav(3);
+/* une « voix » : 180 Hz modulés en syllabes (4 par seconde) — de quoi faire bouger une bouche */
+function wavVoix(sec) {
+  const b = wav(sec);
+  for (let i = 0; i < 8000 * sec; i++) { const env = Math.max(0, Math.sin(2 * Math.PI * 4 * i / 8000)); b[44 + i] = Math.round(128 + 110 * env * Math.sin(2 * Math.PI * 180 * i / 8000)); }
+  return b;
+}
+let SON_COURANT = SON;
 
 let WHO = 'kevin';
 const IA = [];
@@ -44,7 +51,9 @@ const MOI_JOURS = [
   { date: '2026-10-05', libelle: 'lundi 5 octobre', code: '20/5*', texte: 'de 20 h à 5 h du matin', travail: true, avec: ['ALPHA A'] },
 ];
 let MOI = { ok: true, source: 'planning du PDF de octobre 2026 importé dans CMCteams', equipe: '9', miroir: '3', jours: MOI_JOURS };
-let MOI_APPELS = 0;     /* la météo met du temps à répondre (attente visible ?) */
+let MOI_APPELS = 0;
+let WIDGET_SERVI = null;   /* mise à jour (3.10) : la version que le domaine SERT à la sonde « ?_v= » (null = celle du dépôt) ; la page, elle, charge sa copie ancienne */
+let WIDGET_LECTURES = 0;     /* la météo met du temps à répondre (attente visible ?) */
 const srv = http.createServer((req, res) => {
   const p = (req.url || '/').split('?')[0];
   if (p === '/__sso/whoami') {
@@ -70,7 +79,9 @@ const srv = http.createServer((req, res) => {
   const f = join(ROOT, 'javis', p === '/' ? 'index.html' : p.replace(/^\//, ''));
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': f.endsWith('.js') ? 'application/javascript' : f.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream' });
-  res.end(fs.readFileSync(f));
+  let corps = fs.readFileSync(f);
+  if (p === '/javis-widget.js') { WIDGET_LECTURES++; if (WIDGET_SERVI && /[?&]_v=/.test(req.url)) corps = Buffer.from(corps.toString().replace(/JAVIS_VER = '[^']+'/, `JAVIS_VER = '${WIDGET_SERVI}'`)); }
+  res.end(corps);
 });
 await new Promise((r) => srv.listen(0, r));
 const BASE = `http://127.0.0.1:${srv.address().port}`;
@@ -82,15 +93,18 @@ async function ouvre(init, opts) {
   await ctx.route('https://api.open-meteo.com/**', async (r) => { METEO.push(r.request().url());
     if (METEO_LENT) await dors(METEO_LENT);
     r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
-      body: JSON.stringify({ current: { temperature_2m: 21.2 }, daily: { temperature_2m_max: [22, 24.4], temperature_2m_min: [15, 16.2] } }) }); });
+      body: JSON.stringify({ current: { temperature_2m: 21.2, weather_code: 1 }, daily: { weather_code: [1, 61], temperature_2m_max: [22, 24.4], temperature_2m_min: [15, 16.2], precipitation_probability_max: [10, 70] } }) }); });
   /* Playwright : la DERNIÈRE route déclarée gagne → le « tout le reste en 404 » d'abord, la voix ensuite */
   await ctx.route('https://lingua.kd-mc.com/**', (r) => r.fulfill({ status: 404, body: '' }));
   await ctx.route(/lingua\.kd-mc\.com\/__lingua\/tts/, (r) => { TTS.push(r.request().url());
     if (TTS_KO) return r.fulfill({ status: 500, body: '' });
-    r.fulfill({ status: 200, contentType: 'audio/wav', headers: { 'access-control-allow-origin': '*' }, body: SON }); });
+    r.fulfill({ status: 200, contentType: 'audio/wav', headers: { 'access-control-allow-origin': '*' }, body: SON_COURANT }); });
   const page = await ctx.newPage();
   await page.addInitScript(() => {
     try { if (!window.__bonjourNeuf) localStorage.setItem('bee_bonjour_jour', new Date().toDateString()); } catch (_) {}
+    window.__mes = 0;
+    try { const C = window.AudioContext || window.webkitAudioContext; const o = C.prototype.createMediaElementSource;
+      C.prototype.createMediaElementSource = function (el) { window.__mes++; return o.call(this, el); }; } catch (_) {}
     window.__audios = []; const O = window.Audio;
     window.Audio = function () { const a = new O(); window.__audios.push(a); return a; };
     window.__ouvertes = []; window.open = (u, n, f) => { window.__ouvertes.push(String(u)); return /noopener/.test(f || '') ? null : {}; };   /* comme la norme : « noopener » rend TOUJOURS null */
@@ -154,10 +168,13 @@ try {
     await demande(page, 'un'); await dors(1200);
     await demande(page, 'deux'); await dors(1200);
     await demande(page, 'trois'); await dors(1200);
-    const r = await page.evaluate(() => window.__audios.map((a) => ({ paused: a.paused, src: decodeURIComponent(a.getAttribute('src') || '') })));
+    /* 3.10 : la voix est TÉLÉCHARGÉE puis jouée depuis la mémoire (blob:) — la phrase se lit donc dans la
+       DEMANDE de voix, plus dans l'adresse du lecteur */
+    const r = await page.evaluate(() => window.__audios.map((a) => ({ paused: a.paused, blob: /^blob:/.test(a.getAttribute('src') || '') })));
     const jouent = r.filter((a) => !a.paused);
-    chk(r.length >= 1 && r.length <= 2 && jouent.length <= 1 && (!jouent.length || /Troisi/.test(jouent[0].src)),
-      `trois réponses : ${r.length} lecteur(s) créé(s) (≤ 2), une seule voix à la fois, la dernière (${JSON.stringify(r).slice(0, 160)})`); await ctx.close(); }
+    const derniere = TTS.length ? (new URL(TTS[TTS.length - 1]).searchParams.get('t') || '') : '';
+    chk(r.length === 1 && jouent.length === 1 && jouent[0].blob && /Troisi/.test(derniere),
+      `trois réponses : ${r.length} lecteur réutilisé, une seule voix à la fois, la dernière (« ${derniere} », ${JSON.stringify(r)})`); await ctx.close(); }
 
   /* 6. vers Apex : la phrase de Kevin ne part PAS dans l'adresse (mutant W17) */
   { const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
@@ -221,6 +238,10 @@ try {
       ['On est quel jour ?', 'date'], ["Quelle est la date d'aujourd'hui ?", 'date'], ['Quel jour sommes-nous ?', 'date'],
       ['Quel temps fait-il ?', 'meteo'], ['Il fait combien dehors ?', 'meteo'], ['Quelle est la météo ?', 'meteo'], ["Va-t-il pleuvoir aujourd'hui ?", 'meteo'],
       ['Quel temps fera-t-il demain ?', 'demain'],
+      /* Kevin 3.10 (capture) : « Quel temps demain » n'était pas reconnu → l'IA répondait « je n'ai pas de données météo ». Aujourd'hui/demain
+         à Monaco = réponse locale ; après-demain, un jour précis, la semaine, une autre ville = l'IA, qui a l'OUTIL météo. */
+      ['Quel temps demain', 'demain'], ["Quel temps aujourd'hui ?", 'meteo'], ['Il fera beau demain ?', 'demain'], ['Quel temps ce soir', 'meteo'], ['La météo de demain', 'demain'],
+      ['Quel temps après-demain ?', 'ia'], ['La météo à Nice demain', 'ia'], ['météo samedi', 'ia'], ['Quel temps fera-t-il cette semaine ?', 'ia'], ['Il pleuvra dans 3 jours ?', 'ia'],
       /* → Apex (une vraie action sur ses données) */
       ['Envoie un message à Laurence : je rentre tard', 'apex'], ['Écris un SMS à Laurence pour lui dire bonjour', 'apex'], ['Change mon planning de demain', 'apex'],
     ];
@@ -352,15 +373,37 @@ try {
     chk(vd && vd.voix === 'Thomas' && vd.pitch <= 1.25, `Bourricot au téléphone : voix « ${vd && vd.voix} » (masculine), hauteur ${vd && vd.pitch}`);
     await d.ctx.close(); TTS_KO = false; }
 
-  /* (g) le moteur audio ENDORMI : un lecteur neuf (non branché) joue, sinon la voix serait muette */
+  /* (g ter) LA BOUCHE SUIT LE SON — sans moteur audio : le fichier est décodé à côté et analysé à l'instant
+             que joue le lecteur (voyelles, volume, halo). Et Bourricot, quand il reçoit la même voix gratuite
+             (WAV) que Bee, la prend plus grave (règle « voix réellement différentes »). */
+  { SON_COURANT = wavVoix(3); IA.push({ ok: true, text: 'Je parle pour faire bouger ma bouche.' }, { ok: true, text: 'Hi-han, je suis Bourricot.' });
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
+    await page.mouse.click(200, 700); await demande(page, 'bouche');
+    const mesures = [];
+    for (let k = 0; k < 12; k++) { await dors(110); mesures.push(await page.evaluate(() => ({ n: parseFloat(document.documentElement.style.getPropertyValue('--bee-niveau')) || 0,
+      tr: (document.querySelector('#javis-root .disc-mouth') || {}).style ? document.querySelector('#javis-root .disc-mouth').style.transform : '' }))); }
+    const nMax = Math.max(...mesures.map((m) => m.n)), formes = new Set(mesures.map((m) => m.tr).filter(Boolean)).size;
+    chk(nMax > 0.2 && formes >= 3, `la bouche suit SA voix sans moteur audio : volume jusqu'à ${nMax.toFixed(2)}, ${formes} formes de bouche en 1,3 s`);
+    await ctx.close();
+    const d = await ouvre(() => { try { localStorage.setItem('javis_mascotte', 'donkey'); } catch (_) {} }); await d.page.waitForSelector('#javis-launcher');
+    await d.page.mouse.click(200, 700); await demande(d.page, 'âne'); await dors(900);
+    const v = await d.page.evaluate(() => { const a = window.__audios[window.__audios.length - 1]; return a ? { rate: a.playbackRate, garde: a.preservesPitch, joue: !a.paused } : null; });
+    chk(v && v.joue && v.rate < 0.95 && v.garde === false, `Bourricot avec la voix gratuite commune : plus grave (vitesse ${v && v.rate}, hauteur conservée : ${v && v.garde})`);
+    await d.ctx.close(); SON_COURANT = SON; }
+
+  /* (g) le moteur audio ENDORMI (iPhone après Siri, une notification…) : la voix sort QUAND MÊME, par le même
+         lecteur, parce qu'elle n'est plus jamais branchée sur ce moteur (Kevin 3.10 : « il n'y a pas de sons »,
+         l'îlot de son iPhone montrait une lecture… muette) */
   { IA.push({ ok: true, text: 'Une.' }, { ok: true, text: 'Deux après le sommeil.' });
     const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-launcher');
     await page.mouse.click(200, 700); await demande(page, 'un'); await dors(1200);
     const branche = await page.evaluate(async () => { for (const c of window.__acs) { try { await c.suspend(); } catch (_) {} } return window.__acs.length; });
     await demande(page, 'deux'); await dors(1200);
-    const a = await page.evaluate(() => window.__audios.map((x) => ({ paused: x.paused, src: decodeURIComponent(x.getAttribute('src') || '') })));
-    const der = a[a.length - 1] || {};
-    chk(branche >= 1 && a.length === 2 && /sommeil/.test(der.src) && !der.paused, `moteur audio endormi → un lecteur NEUF dit la phrase (${a.length} lecteurs, ${branche} moteur(s))`);
+    const a = await page.evaluate(() => window.__audios.map((x) => ({ paused: x.paused, blob: /^blob:/.test(x.getAttribute('src') || '') })));
+    const der = a[a.length - 1] || {}, phrase = TTS.length ? (new URL(TTS[TTS.length - 1]).searchParams.get('t') || '') : '';
+    const branches = await page.evaluate(() => window.__mes || 0);
+    chk(branche >= 1 && a.length === 1 && der.blob && !der.paused && /sommeil/.test(phrase) && branches === 0,
+      `moteur audio endormi → la voix sort quand même (« ${phrase} », lecteur ${der.paused ? 'en pause' : 'qui joue'}, ${branches} branchement sur le moteur)`);
     await ctx.close(); }
 
   /* (g bis) iPhone en MODE SILENCIEUX (Kevin 01.10 : « Il n'y a pas de sons ») : la voix passe par le moteur
@@ -474,14 +517,61 @@ try {
     const o = await page.evaluate(() => window.__ouvertes);
     chk(MOI_APPELS === 0 && o.some((u) => /apex-ai\.kd-mc\.com/.test(u)), `« échange mon planning » reste une ACTION pour Apex (planning lu ${MOI_APPELS}×, ouvert : ${o.join(', ')})`);
     await ctx.close(); }
-  /* (l) SUGGESTIONS : 3 boutons de 44 px sous le bonjour, qui posent la question, puis s'effacent */
+  /* (l) SUGGESTIONS : 4 boutons de 44 px (dont « 🧸 En 3D », 3.10) sous le bonjour, qui posent la question, puis s'effacent */
   { MOI_APPELS = 0; IA_CORPS.length = 0;
     const { ctx, page } = await ouvre(); await page.waitForSelector('.javis-chips button');
     const r = await page.evaluate(() => [...document.querySelectorAll('.javis-chips button')].map((b) => ({ t: b.textContent, h: b.getBoundingClientRect().height })));
     await page.click('.javis-chips button'); await dors(700);
     const apres = await page.evaluate(() => ({ chips: !!document.querySelector('.javis-chips'), t: [...document.querySelectorAll('.javis-bub.js')].map((b) => b.textContent).pop() || '' }));
-    chk(r.length === 3 && r.every((b) => b.h >= 44) && !apres.chips && MOI_APPELS === 1 && /^Cette semaine tu travailles aujourd'hui vendredi 2 octobre de 14 h à 19 h et lundi 5 octobre/.test(apres.t),
+    chk(r.length === 4 && r.some((b) => /En 3D/.test(b.t)) && r.every((b) => b.h >= 44) && !apres.chips && MOI_APPELS === 1 && /^Cette semaine tu travailles aujourd'hui vendredi 2 octobre de 14 h à 19 h et lundi 5 octobre/.test(apres.t),
       `suggestions : ${r.length} boutons (${r.map((b) => Math.round(b.h)).join('/')} px), « Ma semaine » → « ${apres.t.slice(0, 70)} », puis effacées`);
+    await ctx.close(); }
+  /* (m) MISE À JOUR FORCÉE (Kevin 3.10 : « l'indicateur de version n'est pas cliquable pour mettre à jour. Maj auto forcée
+        normalement ») : le badge est un VRAI bouton, un toucher recharge avec ?_upd=, et une version plus récente servie
+        par le domaine est installée TOUTE SEULE (sauf pendant qu'on tape), sans jamais boucler */
+  { WIDGET_SERVI = null;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('#javis-ver');
+    const b = await page.evaluate(() => { const e = document.querySelector('#javis-ver'); const r = e.getBoundingClientRect(); return { tag: e.tagName, h: Math.round(r.height), t: e.textContent }; });
+    chk(b.tag === 'BUTTON' && b.h >= 44 && /v\d+\.\d+/.test(b.t), `le badge de version est un VRAI bouton de ${b.h} px (« ${b.t} »)`);
+    await dors(2500);
+    chk(!/_upd=/.test(page.url()) && !(await page.evaluate(() => document.querySelector('#javis-ver').classList.contains('javis-ver-neuve'))),
+      'même version servie → rien ne recharge, badge normal');
+    await page.click('#javis-ver'); await dors(2200);
+    chk(/_upd=\d+/.test(page.url()), `toucher le badge → purge + rechargement forcé (${page.url().replace(/^http:\/\/127.0.0.1:\d+/, '')})`);
+    await ctx.close(); }
+  { WIDGET_SERVI = 'v9.99'; WIDGET_LECTURES = 0;
+    const urls = []; const { ctx, page } = await ouvre((() => 0)); page.on('framenavigated', (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
+    await page.waitForSelector('#javis-ver'); await dors(5500);
+    const maj = urls.filter((u) => /_upd=/.test(u));
+    const gold = await page.evaluate(() => { const e = document.querySelector('#javis-ver'); return e ? { neuve: e.classList.contains('javis-ver-neuve'), t: e.textContent } : null; });
+    chk(maj.length === 1, `une version plus récente est servie (v9.99) → l'app se met à jour TOUTE SEULE, une seule fois, sans boucle (${maj.length} rechargement)`);
+    chk(gold && gold.neuve && /v9\.99/.test(gold.t), `après le rechargement (copie encore ancienne), le badge s'allume et dit la nouvelle version (« ${gold && gold.t} »)`);
+    await ctx.close(); }
+  { WIDGET_SERVI = 'v9.99';
+    const urls = []; const { ctx, page } = await ouvre(); page.on('framenavigated', (f) => { if (f === page.mainFrame()) urls.push(f.url()); });
+    await page.waitForSelector('#javis-input'); await page.fill('#javis-input', 'je suis en train d\'écrire une longue question'); await dors(4200);
+    const gold = await page.evaluate(() => document.querySelector('#javis-ver').classList.contains('javis-ver-neuve'));
+    chk(!urls.some((u) => /_upd=/.test(u)) && gold, 'pendant qu\'on écrit : pas de rechargement (on ne perd pas la question), mais le badge s\'allume en doré');
+    await ctx.close(); WIDGET_SERVI = null; }
+
+  /* (l ter) LE BOUTON « 🧸 3D » DE LA PETITE FENÊTRE (Kevin 3.10 : « même la petite fenêtre, partout où il y a le personnage ») : dans la barre
+        d'outils de TOUTES les Bee (app ET bouton flottant des autres sites), 44 px, il ouvre la 3D sur le personnage choisi */
+  for (const [masc, ancre] of [['bee', '#bee'], ['donkey', '#bourricot']]) {
+    const { ctx, page } = await ouvre(`try { localStorage.setItem('javis_mascotte', '${masc}'); } catch (_) {}`);
+    await page.waitForSelector('#javis-3d');
+    const b = await page.evaluate(() => { const e = document.querySelector('#javis-outils #javis-3d'); const r = e.getBoundingClientRect(); return { h: Math.round(r.height), t: e.textContent }; });
+    await page.click('#javis-3d'); await dors(300);
+    const o = await page.evaluate(() => window.__ouvertes);
+    chk(b.h >= 44 && /3D/.test(b.t) && o.length === 1 && o[0] === `https://javis.kd-mc.com/3d.html${ancre}` && IA_CORPS.length === 0,
+      `petite fenêtre (${masc}) : bouton « ${b.t} » de ${b.h} px dans la barre d'outils, ouvre ${o[0]} sans IA`);
+    await ctx.close(); }
+
+  /* (l bis) « 🧸 En 3D » (3.10) : ouvre la page où Bee et Bourricot sont en 3D / réalité augmentée, sans IA */
+  { IA_CORPS.length = 0;
+    const { ctx, page } = await ouvre(); await page.waitForSelector('.javis-chips button');
+    await page.evaluate(() => [...document.querySelectorAll('.javis-chips button')].find((b) => /En 3D/.test(b.textContent)).click()); await dors(500);
+    const o = await page.evaluate(() => window.__ouvertes);
+    chk(o.includes('https://javis.kd-mc.com/3d.html#bee') && IA_CORPS.length === 0, `« 🧸 En 3D » ouvre la page 3D sans IA (ouvert : ${o.join(', ') || 'rien'}, IA ${IA_CORPS.length}×)`);
     await ctx.close(); }
   /* (m) LE BONJOUR DU MATIN : ta journée + la météo de Monaco, une seule fois par jour */
   { MOI_APPELS = 0;

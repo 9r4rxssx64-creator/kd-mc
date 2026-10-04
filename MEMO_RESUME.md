@@ -1,5 +1,125 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-03 (nuit, suite 4) — Kevin : « Même la petite fenêtre, partout où il y a le personnage. Toujours tout auto, partout. Dis-le à tes autres branches. Toujours en 3D partout. Concert d'IA gratuite performante, relis tes docs. Couple-le à Apex. Va plus loin »
+
+**Relu** (règles du 2.10) : la conférence des IA gratuites est obligatoire pour les apps du domaine ; mon premier chemin « outils » la court-circuitait pour les questions difficiles → corrigé.
+**Fait** : (1) **conférence** : question difficile = les outils ramènent les FAITS (8 s) puis la conférence formule sur ces faits (repli = réponse des outils) ; relais gratuits à outils SambaNova / NVIDIA / Mistral derrière Cerebras et Groq.
+(2) **Couplé à Apex** : `outils-lecture.js` déplacé dans `services/_shared/` ; l'entrée IA du domaine (`kdmc-apis /ai`, celle d'Apex et des apps) offre la même boucle d'outils à Kevin (laissez-passer vérifié, sans planning, `outils:false` / `APIS_OUTILS=0`).
+Non couplé : l'ÉCRITURE d'Apex (ses actions/approbations vivent dans son app).
+(3) **Petite fenêtre** : bouton « 🧸 3D » dans la barre d'outils de TOUTES les Bee (app + bouton flottant), ouvre `#bee` / `#bourricot` ; texte ℹ️ complété (outils = ce qui part où).
+(4) **Garde `test:hygiene-depot`** (liens symboliques, étapes/scripts fantômes, noms-chemins, doublons, plafond d'orphelins = 0) après 3 accidents réels ; 11 tests orphelins câblés (`test:routeur-divers`, `test:kdmc-access`) ; message pipeline m202 à TOUTES les sessions.
+(5) Tests réels périmés remis d'aplomb (`verify-javis-bee-reelle` : marionnette + règle « jamais d'IA payante »).
+**Mesuré** : test:bee-outils 99/0 (8 sabotages rouges), test:bee-comportements 62/0, test:javis-bee-reelle 63/0, test:hygiene-depot 14/0 (symlink réel → rouge).
+**Honnêtement** : « 3D partout » = la PORTE est partout (petite fenêtre, app, Lingua) ; remplacer chaque image 2D par du 3D en direct coûterait ~1,5 Mo + GPU par page — pas fait, à décider avec Kevin.
+
+## 2026-10-03 (nuit, suite 3) — Kevin : « Il doit être des plus compétent pour travailler pour moi… parité comme Apex. Il ne me donne même pas la météo de demain »
+
+**Mesuré d'abord** (capture iPhone, Bourricot/Bee v1.16) : « Quel temps demain » → « Je n'ai pas de données météo… vérifie un service météo fiable ». Motif local trop étroit + IA sans outil.
+**Fait** : (1) `services/_shared/outils-lecture.js` — 6 outils gratuits en lecture seule (météo 0-7 jours/ville, date_heure, planning, calcul exact,
+rechercher Wikipédia/actualités, lire_page) appelés par l'IA gratuite rapide (Cerebras → Groq) via `chatAvecOutils` (ia-route.js) ; branché dans `/__javis/ai`
+pour les questions « donnée réelle » (13 s, repli ancien chemin, interrupteur BEE_OUTILS=0) ; caractère de Bee mis à jour côté serveur.
+(2) Widget : « Quel temps demain / aujourd'hui / ce soir », « il fera beau demain » = réponse locale riche (ciel, pluie) ; après-demain / jour précis / ville = l'IA + outil.
+**Mesuré après** : test:bee-outils 87/0 (5 sabotages), test:bee-comportements 60/0 (table 51/51), test:bee-cerveau 57/0, test:conference-partout 12/0, test:ia-route 31/0.
+**Pas fait, à décider avec Kevin** : écriture (envoyer, modifier le planning, déployer) avec bouton de confirmation. ⚠ Le routeur ne se déploie qu'à la fusion : **à vérifier en vrai après** (météo de demain sur javis.kd-mc.com).
+
+## 2026-10-03 (nuit, suite 2) — Kevin : « Les personnages servent aussi dans Lingua. Mets à jour ou fais mettre »
+
+**Fait** (Lingua v2.134.0, pas encore en ligne avec le reste) : Lingua avait déjà la marionnette (corps, yeux, tête qui tourne) via
+`lingua/marionnette.js` (même source que Bee) ; il lui manquait la 3D. Ajout d'un bouton **« 🧸 {Bee|Bourricot} en 3D »** sur
+l'accueil (`plan-diff b3d`, 53 px) ET dans Réglages → Ta mascotte (`row switch b3d`, 48 px) : ouvre `javis.kd-mc.com/3d.html#bee` ou
+`#bourricot` (selon la mascotte choisie, `noopener`). La page 3D scrolle sur le bon personnage (`vue.js`) et sa flèche ← ramène à Lingua.
+**Garde** : `test:3d` 73/0 (dont Lingua rendu pour de vrai avec Bee puis Bourricot) — 3 sabotages rouges. Session Lingua prévenue (pipeline).
+
+## 2026-10-03 (nuit, suite) — Kevin : « L'indicateur de version n'est pas cliquable pour mettre à jour. Maj auto forcée normalement »
+
+**Mesuré d'abord** : le badge de Bee (`#javis-ver`) était un `<span>` ; rien ne relisait la version servie (Lingua, lui, a les deux).
+**Fait** (tools/javis/javis-widget.js, Bee v1.17, copies resynchronisées) : badge = bouton 44 px « Bee v1.17 ↻ » (toucher → purge
+service worker + caches → recharge `?_upd=`) ; sonde de la version servie (8 Ko du widget, `?_v=`) à l'ouverture, au retour, puis
+toutes les 2 min ; app = mise à jour toute seule (sauf si on écrit / si elle parle) ; site hôte = badge doré « 🔄 vX — toucher » ;
+garde-fou 90 s anti-boucle. **Garde** : `test:bee-comportements` (m), 60/0, 3 sabotages rouges.
+⚠ Bee v1.16 (en ligne aujourd'hui) n'a PAS ce mécanisme : la v1.17 arrive à la prochaine ouverture (réseau d'abord) ; ensuite tout est automatique.
+
+## 2026-10-03 (nuit) — Kevin : « Bouge tout le corps, la queue aussi / Mets les personnages en dimension, vrais petits personnages animés, réagis, mimiques / Modélise en 3D les personnages pour une réalité augmentée »
+
+**Fait** (Bee v1.17, Lingua v2.134.0 — pas encore en ligne, même envoi que le son/délai/bouche) :
+- **Visage vivant** (marionnette) : yeux en os à part (regard, clignements, plissés de joie, écarquillés de surprise,
+  tombants quand triste), tête qui TOURNE vers où il regarde, lumière douce qui suit la tête ; table `EXPRESSIONS`.
+- **Corrigé** : un personnage de 300 px pile s'affichait écrasé et coupé (canvas 300 × 150, leçon 403).
+- **Vrai 3D** : `tools/3d/personnages.mjs` modélise Bee (11 pièces) et Bourricot (10 pièces) → `javis/3d/*.glb`
+  (624/551 Ko, 5 animations : vie + saute, rire, surprise, coucou) ; `tools/3d/usdz.py` → `*.usdz` iPhone
+  (341/309 Ko, 18 s qui enchaînent tout). Gratuit (three.js + glTF-Transform + usd-core de Pixar).
+- **Page** `javis/3d.html` (+ `3d/vue.js`) : model-viewer 4.3.1 figé par empreinte, « 📱 Le poser chez moi »,
+  4 boutons de réaction + toucher, petit bruit synthétisé, secours image + lien AR. Bee l'ouvre (« en 3D »,
+  « réalité augmentée », bouton 🧸). Pages : type `model/vnd.usdz+zip` posé pour /3d/*.usdz (pilote-pages-javis).
+
+- **Kevin : « Ils ne ressemblent plus à nos personnages. Beaucoup moins mignons »** → modèles REFAITS en copiant les
+  dessins de Lingua (lingua/bee/v2/rig/base.webp, lingua/donkey/rig/base.webp) : grands yeux brun foncé brillants
+  (gros reflet + petit), cils et sourcils, joues roses douces, bouche ouverte avec langue ; Bee : mèche, antennes
+  courbes à boules, collerette duveteuse (30 boules), chaîne + médaille hexagonale dorée, bras-moufles bruns ;
+  Bourricot : gros museau clair, narines, crinière en bataille, longues oreilles en feuille roses dedans, collier
+  de cuir + clochette, sabots gris, queue fine à touffe. Pelage mat, yeux et or brillants. 691/496 Ko (glb),
+  486/407 Ko (usdz) : index sur 2 octets + pistes immobiles retirées.
+**Mesuré** : test:3d 60/0 (6 sabotages rouges), test:marionnette 82/0, test:bee-comportements 54/0,
+test:javis-bee 85/0, test:gratuit 8/0. **À vérifier en vrai après publication** : la page sur javis.kd-mc.com,
+le type servi pour .usdz.
+
+## 2026-10-03 (22h) — Kevin (capture iPhone, Bourricot) : « Il n'y a pas de sons. Le délai de réponse est trop long. La bouche est mal sur le personnage. »
+
+**Mesuré d'abord (vrai domaine)** : voix gratuite 1,0-1,7 s (x-voix gratuite, MeloTTS) ; la belle voix Google
+`?m=chirp` → chirp_indisponible ; IA (même chaîne, /__lingua/ai) 4,5 / 5,2 / 8,0 s (Qwen de Workers AI qui réfléchit) ;
+la bouche de Bourricot (rond rose) à 51 %/58,9 % alors que l'ouverture dessinée est centrée à 48,6 %/58,6 %.
+
+**Fait** (Bee v1.17, Lingua v2.134.0, routeur) :
+- **Son** : la voix ne passe plus JAMAIS par le moteur audio (cause du silence iPhone, leçon 400) — téléchargée (même
+  adresse), jouée par un lecteur ordinaire amorcé au toucher, bouche analysée sur le fichier décodé ; CSP `media-src blob:`.
+  Bourricot plus grave quand il reçoit la même voix gratuite que Bee.
+- **Délai** : Bee → Cerebras puis Groq d'abord (gratuits, rapides), Qwen de Workers AI en relais ; 6 s max par moteur.
+- **Voix Google** : compteur qui survit au plafond KV (repli D1), cause exacte rendue par `?m=chirp`.
+- **Bouche** : la VRAIE bouche dessinée s'ouvre (mâchoire dans la marionnette, pilotée par la voix) ; le rond rose est
+  caché (sauf l'exercice de prononciation de Lingua) ; repli sans WebGL : rond recentré sur l'ouverture mesurée.
+
+**Mesuré après** : test:marionnette 72/0, test:bee-comportements 53/0, test:javis-bee 85/0, test:bee-cerveau 57/0,
+test:voix-chirp 16/0, voisins verts ; 8 sabotages rouges. **À vérifier en vrai après publication.**
+
+## 2026-10-04 (matin, suite) — la publication du domaine était bloquée par une constante de three.js
+
+Après la fusion #4316, « Coffre → dépôt public : synchroniser le CODE » s'est arrêté (6 « téléphone » = une constante sRGB de three.js dans `perso3d.js`) : routeur et Lingua non déployés. Corrigé à la source (`tools/3d/build-runtime.mjs` écrit la constante en notation scientifique) + garde dans `test:perso3d`. Leçon 417.
+
+## 2026-10-04 (matin) — BEE PARTOUT + ACTIONS AVEC BOUTON ✅ + LUI SEUL (Bee v1.17, routeur)
+
+Kevin : « Oui marionnette partout. Fais le bouton confirmation et donne-lui tous les accès, outils, liens… Vérifie que je sois le seul à pouvoir m'en servir. Partout, chaque app du domaine. Mon assistant personnel qui me suit. »
+
+**Fait** : le routeur pose `/__javis/partout.js` sur chaque page HTML (`services/kdmc-router/bee-partout.js`) ; un cadre de même origine charge Bee (marionnette + 3D) seulement si le domaine reconnaît Kevin. Actions : `services/kdmc-router/bee-agir.js` (proposer → carte ✅/✖ → `POST /__javis/agir` signé, une fois, session admin prouvée) : rappel, retenir/oublier, répondre à un message, marquer lu, arrêter le robot. Lectures : boîte unique, état du robot, rappels, mémoire, adresses (liens cliquables). Rappels sur l'horloge existante (±3 min, 0 cron). Gardes : `test:bee-partout` 42 (372 essais d'intrus), `test:bee-agir` 60, `test:bee-partout-navigateur` 33 ; sabotages prouvés. `test:bascule` réparé (suit les imports jusqu'au bout).
+**Reste** : vérifier sur le VRAI domaine après publication (Kevin ouvre une app : Bee apparaît ; un inconnu : rien) ; à ouvrir une par une avec Kevin : démarrer le robot, déploiements, coffre.
+
+## 2026-10-04 (nuit) — 3D D'OFFICE PARTOUT, SANS BOUTON (Bee v1.17, Lingua v2.135.0)
+
+Kevin : « Même la petite fenêtre, partout où il y a le personnage… tout toujours en 3D partout… 3D d'office partout, pas de bouton. »
+
+**Fait** : Bee et Bourricot sont en vraie 3D par défaut dans la petite fenêtre Bee (toutes les pages), l'app Javis et Lingua (rigs + 12 images fixes).
+`tools/3d/personnages-def.mjs` (description unique) → `.glb/.usdz` ET moteur en direct `tools/3d/perso3d-src.js` → `javis/perso3d.js` (`npm run build:3d`).
+Bouche mobile qui suit la voix, tête qui suit le doigt, 17 humeurs, fond crème et découpe ronde respectés, vidéos non chargées en 3D, repli 2D automatique.
+Garde `test:perso3d` (60 contrôles + sabotages) ; `test:javis-bee-reelle` 68 (section 3D). Lingua passée à v2.135.0 (v2.134.0 = l'appel de Bee app fermée, déjà dans main).
+**Reste** : voir sur le VRAI domaine après publication ; réalité augmentée à essayer sur un iPhone réel.
+
+## 2026-10-03 (soir) — La marionnette : Bee et Bourricot bougent de tout leur corps, partout (Bee v1.17, Lingua v2.134.0)
+
+Kevin : « Je veux que tout le corps bouge, bras jambes oreilles etc pour Bee et Bourricot, partout, toujours. Vrai petit personnage animé. Va plus loin ».
+
+**Fait :**
+- `tools/javis/marionnette.js` (source unique) : l'image posée sur un maillage WebGL 53 × 53, un os par partie
+  (oreilles, antennes, mèche, bras, jambes, queue, tête, corps), mesuré à la main sur **15 dessins** (3 marionnettes
+  + 12 images fixes de Lingua). Ressorts sur les parties molles, gestes spontanés, humeurs lues sur les classes des apps.
+- Partout : posée DANS le widget Bee par `npm run sync:javis` (app Javis, arbre) et recopiée en `lingua/marionnette.js`
+  (Lingua la charge avant app.js). Images fixes : un canvas prend la place de l'image avec SES classes (le toucher marche).
+- Sobre : le dessin déjà affiché est réutilisé (CORS), 1 contexte WebGL, pause hors écran / vidéo / page cachée,
+  30 i/s pour le bouton. Replis : pas de WebGL, CORS refusé, contexte perdu, réduire les animations → l'image d'avant.
+
+**Mesuré :** `test:marionnette` 68/0 (chaque membre bouge à l'écran et par lui-même ; plis au pire 2 triangles sur
+Bourricot, 0-1 sur Bee) ; 8 sabotages rouges ; `test:javis-bee` 77/0, `test:bee-comportements` 51/0, `test:lingua-maj` 17/0,
+`test:lingua-bee` 13/0, `test:lingua-verite` 0 bloquant. Lingua réelle en local (iPhone 13) : l'abeille de l'accueil bouge, ~50 i/s, 0 erreur.
+
+**Reste :** vérifier sur le VRAI domaine après publication (javis.kd-mc.com v1.17, lingua.kd-mc.com v2.133.0).
 ## 2026-10-04 (01h10) — Vrai domaine mesuré + sonde appareils sans traces
 
 Audit LINGUA run 37164677873 : **77/0** sur v2.135.0. Vérif APPAREILS run 37164514412 : tout vert sauf 3 ❌ venant

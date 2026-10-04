@@ -63,7 +63,23 @@ const kj = 'gtts:' + new Date().toISOString().slice(0, 10);
 ok(env.ACCOUNTS.m.get(kj) === '6', '6a. compteur du jour = caractères envoyés (6)', env.ACCOUNTS.m.get(kj));
 env = ENV({ ACCOUNTS: kv(true) }); calls = [];
 await mod.fetch(req('v=nova&l=fr&t=panne'), env);
-ok(g().length === 0, '6b. compteur KV en panne → Google pas appelé (on ne dépense jamais sans compter)');
+ok(g().length === 0, '6b. compteur KV en panne ET pas de D1 → Google pas appelé (on ne dépense jamais sans compter)');
+/* 6c-6e (3.10, Kevin « il n'y a pas de sons ») : le plafond d'écritures KV (atteint les 1er et 2.10) coupait la belle
+   voix pour TOUTE la journée, et `m=chirp` ne disait pas pourquoi. Le compteur passe alors dans D1, et la cause
+   exacte est rendue. */
+const d1 = () => { const t = new Map(); return { t, prepare(sql) { const st = { sql, args: [], bind(...a) { st.args = a; return st; },
+  async run() { return {}; },
+  async first() { if (/INSERT INTO compteurs/.test(sql)) { const [k, n] = st.args; t.set(k, (t.get(k) || 0) + n); return { n: t.get(k) }; } return null; } }; return st; } }; };
+env = ENV({ ACCOUNTS: kv(true), BOT_DB: d1() }); calls = [];
+r = await mod.fetch(req('v=onyx&l=fr&t=sans%20kv'), env);
+ok(r.headers.get('x-voix') === 'google-chirp3hd' && g().length === 1 && env.BOT_DB.t.get(kj) === 7, '6c. KV plafonné → le compteur passe dans D1 et la belle voix reste là', r.headers.get('x-voix') + ' ' + env.BOT_DB.t.get(kj));
+env = ENV({ ACCOUNTS: kv(true), BOT_DB: d1(), GTTS_PLAFOND_JOUR: '5' }); calls = [];
+await mod.fetch(req('v=onyx&l=fr&t=trop%20long'), env);
+ok(g().length === 0, '6d. le plafond du jour vaut aussi dans D1 (gratuit garanti)');
+env = ENV({ ACCOUNTS: kv(true) }); calls = [];
+r = await mod.fetch(req('v=onyx&m=chirp&t=cause'), env);
+const jc = await r.json().catch(() => ({}));
+ok(jc.reason === 'chirp_indisponible' && jc.cause === 'compteur_kv_refuse', '6e. m=chirp dit la CAUSE exacte (ici : compteur KV refusé)', JSON.stringify(jc));
 
 env = ENV(); calls = [];
 await mod.fetch(req('v=echo&l=fr&t=cache'), env); calls = [];

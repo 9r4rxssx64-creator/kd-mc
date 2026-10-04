@@ -86,6 +86,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .plan-tip{margin-top:10px;font-size:12.5px;color:var(--tx2);line-height:1.4}
 .plan-diff{margin-top:10px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--tx);font-size:13px;font-weight:700;text-align:left;cursor:pointer;min-height:44px}
 .plan-diff b{color:var(--gold-tx)}
+.voice-card .b3d{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;margin-top:12px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--tx);font-size:14px;font-weight:700;text-align:left;cursor:pointer}
 .type-input{width:100%;margin-top:18px;padding:15px 16px;font-size:18px;border-radius:14px;border:2px solid var(--line);background:var(--card2);color:var(--tx);outline:none}
 .type-input:focus{border-color:var(--green)}
 .type-input.tgood{border-color:#22c55e;color:#8ef0b0;background:#12321f;font-weight:800}
@@ -159,7 +160,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   --lid:rgb(253,225,87);
   --ll-l:32.2%;--ll-t:27.4%;--ll-w:18.2%;--ll-h:15.0%;
   --lr-l:51.3%;--lr-t:27.2%;--lr-w:17.4%;--lr-h:15.2%;
-  --mo-l:52.4%;--mo-t:42.6%
+  --mo-l:51%;--mo-t:43.6%
 }
 .coach-face[data-art="vive"] .rig-zoom{--zo:50% 30%;--zs:1.3}
 .masc-arth{margin:14px 0 2px;color:var(--tx2)}
@@ -369,15 +370,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   --lid:rgb(252,185,51);
   --ll-l:28.1%;--ll-t:29.6%;--ll-w:15.5%;--ll-h:15.0%;
   --lr-l:56.3%;--lr-t:29.7%;--lr-w:15.5%;--lr-h:15.5%;
-  --mo-l:51.1%;--mo-t:54.9%
+  --mo-l:49.8%;--mo-t:48.8%
 }
 .bee-rig[data-mascot="donkey"]{
-  /* MESURÉ sur son dessin doux : yeux 38,0/44,0 et 58,0/43,8 ; bouche 51,0/58,9 ;
+  /* MESURÉ sur son dessin doux : yeux 38,0/44,0 et 58,0/43,8 ; bouche 48,6/58,6 (remesurée le 3.10 au centre de l'ouverture dessinée — Kevin : « la bouche est mal sur le personnage ») ;
      pelage en anneau autour des yeux rgb(231,160,64). */
   --lid:rgb(231,160,64);
   --ll-l:34.3%;--ll-t:39.3%;--ll-w:7.5%;--ll-h:9.5%;
   --lr-l:54.0%;--lr-t:38.6%;--lr-w:8.0%;--lr-h:10.5%;
-  --mo-l:51%;--mo-t:58.9%
+  --mo-l:48.6%;--mo-t:58.6%
 }
 /* Selecteur de mascotte (reglages) — cibles tactiles larges, lisibles sur iPhone */
 .masc-row{display:flex;gap:10px;margin-top:8px}
@@ -995,13 +996,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 </head>
 <body>
 <div id="app"></div>
-<script src="data.js?v=v2.135.0"></script>
-<script src="histoires-langues.js?v=v2.135.0"></script>
-<script src="mc-voix.js?v=v2.135.0"></script>
-<script src="sources-langues.js?v=v2.135.0"></script>
-<script src="data-mc.js?v=v2.135.0"></script>
-<script src="data-lsf.js?v=v2.135.0"></script>
-<script src="translit.js?v=v2.135.0"></script>
+<script src="data.js?v=v2.136.0"></script>
+<script src="histoires-langues.js?v=v2.136.0"></script>
+<script src="mc-voix.js?v=v2.136.0"></script>
+<script src="sources-langues.js?v=v2.136.0"></script>
+<script src="data-mc.js?v=v2.136.0"></script>
+<script src="data-lsf.js?v=v2.136.0"></script>
+<script src="translit.js?v=v2.136.0"></script>
+<!-- La marionnette (3.10) : tout le corps de Bee et de Bourricot bouge (oreilles, antennes, bras, jambes, queue).
+     Source : tools/javis/marionnette.js, recopiée ici par npm run sync:javis (la même que dans Bee). -->
+<script src="marionnette.js?v=v2.136.0"></script>
 <script>
 /* Icône iOS = la mascotte Bee 🐝 (création originale KDMC) */
 (function(){try{

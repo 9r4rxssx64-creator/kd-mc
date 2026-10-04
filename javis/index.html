@@ -26,7 +26,7 @@
      script-src : PLUS de 'unsafe-inline' (audit Bee 27.09) — les 2 petits scripts de cette page
        sont autorisés par leur EMPREINTE. Modifier l'un d'eux sans recalculer son empreinte le
        bloque : test:javis-bee recalcule et compare (npm run test:javis-bee). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-J6wKyzlVIuJ85zZxUZeaETB4nyRczO6tsj+FRHcc6NU=' 'sha256-LGv35tdmI2UFdBR65d8r8VUIzKy3qyDn8G9ovo3g2Zg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://lingua.kd-mc.com; media-src 'self' https://lingua.kd-mc.com; connect-src 'self' https://api.open-meteo.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2zjIMI+xlCZglbFOtqsiouJEuXO7u7cCkvpTRGde1Tg=' 'sha256-LGv35tdmI2UFdBR65d8r8VUIzKy3qyDn8G9ovo3g2Zg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://lingua.kd-mc.com; media-src 'self' blob: https://lingua.kd-mc.com; connect-src 'self' https://lingua.kd-mc.com https://api.open-meteo.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'">
 <style>
   html,body{margin:0;height:100%;background:#0e0a04;color:#f7efd9;
     font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
@@ -44,7 +44,7 @@
 <script>window.JAVIS_MODE = 'app';
 /* le dessin de LA mascotte choisie, demandé tout de suite — seulement sur un appareil déjà reconnu
    (contre-audit 30.09 : l'abeille était préchargée pour Bourricot, et sur l'écran verrou) */
-try { if (localStorage.getItem('kdmc_sso_token')) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image';
+try { if (localStorage.getItem('kdmc_sso_token')) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.crossOrigin = 'anonymous';
   l.href = 'https://lingua.kd-mc.com/' + (localStorage.getItem('javis_mascotte') === 'donkey' ? 'donkey' : 'bee/v2') + '/rig/base.webp';
   document.head.appendChild(l); } } catch (e) {}</script>
 <script src="javis-widget.js" defer></script>

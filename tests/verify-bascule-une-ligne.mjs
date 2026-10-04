@@ -105,13 +105,25 @@ await mkdir(join(dossier, 'kdmc-router'), { recursive: true });
 await mkdir(join(dossier, '_shared'), { recursive: true });
 await writeFile(join(dossier, 'kdmc-router', 'worker.js'), deploye);
 /* Les voisins sont LUS dans les import du routeur, pas écrits à la main (2.10.2026 : bot-ia.js ajouté
-   par #4215 manquait à la liste → ERR_MODULE_NOT_FOUND, test:bascule rouge sur main pour tout le monde). */
-const voisins = [...new Set([...deploye.matchAll(/from\s+'\.\/([\w.-]+\.js)'/g)].map((m) => m[1]))];
-chk(voisins.length >= 1, `voisins du routeur lus dans ses import : ${voisins.join(', ')}`);
-for (const m of voisins) {
-  await writeFile(join(dossier, 'kdmc-router', m), gitShow(`services/kdmc-router/${m}`));
+   par #4215 manquait à la liste → ERR_MODULE_NOT_FOUND, test:bascule rouge sur main pour tout le monde).
+   ET leurs voisins à leur tour, jusqu'au bout (4.10.2026 : boite.js importe boite-bouton.js, appel-push.js importe bee-agir.js, le routeur
+   importe ../_shared/outils-lecture.js — une lecture à UN seul niveau les ratait : même rouge, même cause). Chaque fichier est rangé au
+   MÊME endroit relatif (services/<dossier>/<fichier>) dans le dossier temporaire. */
+const IMPORT = /(?:from|import)\s+'(\.{1,2}\/[\w./-]+\.js)'/g;
+const vus = new Set(['kdmc-router/worker.js']), file = [['kdmc-router', deploye]], voisins = [];
+while (file.length) {
+  const [dos, texte] = file.shift();
+  for (const m of texte.matchAll(IMPORT)) {
+    const rel = join(dos, m[1]).replace(/\\/g, '/');                       // ex. kdmc-router/boite.js  |  _shared/ia-route.js
+    if (vus.has(rel) || rel.startsWith('..')) continue;
+    vus.add(rel); voisins.push(rel);
+    const src = gitShow(`services/${rel}`);
+    await mkdir(join(dossier, ...rel.split('/').slice(0, -1)), { recursive: true });
+    await writeFile(join(dossier, ...rel.split('/')), src);
+    file.push([rel.split('/').slice(0, -1).join('/'), src]);
+  }
 }
-await writeFile(join(dossier, '_shared', 'ia-route.js'), gitShow('services/_shared/ia-route.js'));
+chk(voisins.length >= 1, `voisins du routeur lus dans ses import, jusqu'au bout : ${voisins.join(', ')}`);
 const routeur = (await import('file://' + join(dossier, 'kdmc-router', 'worker.js'))).default;
 chk(typeof routeur?.fetch === 'function', 'le routeur en ligne s\'importe tel quel (export default { fetch })');
 

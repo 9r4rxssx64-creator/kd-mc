@@ -101,6 +101,10 @@ const REGISTRE = [
   // l'arbre (essai à blanc → écriture → rejouer = 0, anti-doublon par `ref`) et dans la section « à relier » ; le jugement
   // « l'info est sûre » reste celui de la session. Entrée posée par la session conférence (3.10 00h55), à affiner par arbre.
   [/ARBRE : AJOUTER TOUT SEUL/i, ['wf:arbre-nuage.yml', 'npm:test:arbre-relier']],
+  // Règle « CONTRÔLER TOUT, PARTOUT, SUR LE VRAI » (Kevin 3.10.2026, ajoutée par la session arbre sans entrée ici → test:improvements-guard
+  // rouge 19 → 20) : ses contrôles existent déjà — le vrai nuage (arbre-nuage.yml + test:arbre-nuage, garde-fou homonymes),
+  // le rendu sur 10 appareils (verify-visuel-appareils.mjs, test:arbre-dates-visuel).
+  [/CONTRÔLER TOUT, PARTOUT, SUR LE VRAI/i, ['wf:arbre-nuage.yml', 'npm:test:arbre-nuage', 'npm:test:arbre-dates-visuel', 'file:tools/arbre/verify-visuel-appareils.mjs']],
   // Règle « TOUT GRATUIT, PARTOUT, TOUJOURS » (Kevin 2.10.2026 soir) : garde = test:tout-gratuit (chaque cascade du dépôt —
   // ia-route, kdmc-apis, Créa, chat-svc, messagerie, outils Lingua, Apex — commence par un gratuit ; sabotage prouvé).
   [/TOUT GRATUIT, PARTOUT, TOUJOURS/i, ['npm:test:tout-gratuit', 'npm:test:ia-route']],
@@ -110,6 +114,12 @@ const REGISTRE = [
   // Cinquième fois que ce scénario se produit : l'entrée manquait ici → ratchet 19 → 20, test:ci-prive rouge (2.10).
   [/QUAND UN GRATUIT S'ÉPUISE/i, ['npm:test:ia-route', 'npm:test:sonde-ia-gratuites']],
   [/TOUT S'OUVRE AUTOMATIQUEMENT/i, ['npm:test:admin-partout', 'npm:test:admin-sans-code', 'npm:test:sso-duree']],
+  // Règle « BEE ET BOURRICOT : TOUT LE CORPS BOUGE, PARTOUT, TOUJOURS » (Kevin 3.10.2026) : garde = la marionnette
+  // jouée dans Chromium + WebGL (chaque membre, 15 dessins sans pli, humeurs, replis, sobriété).
+  [/CHAQUE SESSION VÉRIFIE SON PROPRE TRAVAIL/i, ['npm:test:hygiene-depot', 'file:tests/verify-hygiene-depot.mjs']],
+  [/ASSISTANTE PERSONNELLE DE KEVIN/i, ['npm:test:bee-partout', 'npm:test:bee-agir', 'npm:test:bee-partout-navigateur', 'file:services/kdmc-router/bee-agir.js']],
+  [/BEE ET BOURRICOT SONT COMPÉTENTS/i, ['npm:test:bee-outils', 'file:services/_shared/outils-lecture.js']],
+  [/VRAIS PETITS PERSONNAGES ANIMÉS/i, ['npm:test:marionnette', 'file:tools/javis/marionnette.js', 'npm:test:3d', 'file:javis/3d.html']],
   [/RÉEL TOUJOURS : RIEN N'EST/i, ['wf:verif-reelle.yml', 'wf:audit-lingua.yml', 'file:tools/ci/plafond-verifs.mjs']],
   [/LISTE DE COMMANDES COMPLÈTE/i, ['file:apex-ai/v13/tests/unit/v13_4_317-commands-completeness.test.ts']],
   [/SÉCURITÉ MAXIMALE PARTOUT/i, ['wf:security-suite.yml', 'npm:test:xss-guard', 'npm:test:ia-key-privacy']],

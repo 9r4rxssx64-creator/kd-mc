@@ -396,7 +396,135 @@ innovant, etc. Va plus loin. Gratuit toujours. Note-le. »** — Kevin 2026-10-0
 
    Rapport complet : https://claude.ai/artifact/KeZTrWYosZqr3AoR7adNJb (« Bee, niveau commercial »).
 
+## 🧪 RÈGLE ABSOLUE — CHAQUE SESSION VÉRIFIE SON PROPRE TRAVAIL, ET AUTOMATISE TOUT CE QU'ELLE VÉRIFIE (Kevin 2026-10-03, ABSOLUE)
+
+**« Toujours tout auto, rappelle-toi, partout. Dis-le à tes autres branches : qu'elles vérifient leur travail en automatisant au maximum tout. »** — Kevin 2026-10-03
+
+**Pourquoi (3 accidents réels, le même jour)** : un lien symbolique `node_modules` commité par `git add -A` (« node_modules/ » ne vise que les dossiers) a cassé `npm run` chez tout le monde ;
+des scripts fantômes dans `package.json` (nom = chemin, fichier inexistant) ont rendu `test:ci` rouge pour toutes les sessions ; 12 tests étaient écrits mais jamais lancés.
+
+**La règle** :
+1. **Avant chaque fusion** : son garde est dans `test:ci` ET prouvé discriminant (sabotage) ; la chaîne complète (`npm run test:ci-prive`) passe en local **sans toucher aux fichiers pendant qu'elle tourne** ;
+   les documents partent dans le même commit.
+2. **Après chaque fusion** : on vérifie SUR LE VRAI DOMAINE (skill `verif-reelle`), jamais à la lecture du code.
+3. **Toute vérification manuelle faite deux fois devient un script ou un garde.** Un test écrit est câblé dans le même commit (un test jamais lancé = déclaration sans déploiement).
+4. **Garde mécanique `test:hygiene-depot`** (`tests/verify-hygiene-depot.mjs`) : aucun lien symbolique suivi, chaque étape de `test:ci` est un script qui existe, chaque script vise un fichier présent,
+   aucun script nommé comme un chemin, aucune étape en double, plafond de tests orphelins à 0 (les tests manuels s'avouent dans `MANUELS`, avec leur raison). Sabotage prouvé (symlink réel + 6 fautes simulées).
+5. **On ajoute les fichiers par nom** (`git add <fichiers>`), jamais `git add -A` quand un worktree lie `node_modules`.
+6. **Prévenir ne suffit pas** (règle du 10.09) : message pipeline à toutes les sessions (m202) ; `npm run bilan` vérifie qu'elles ont répondu et rectifié.
+
 ---
+
+## 🧑‍✈️ RÈGLE ABSOLUE — BEE EST L'ASSISTANTE PERSONNELLE DE KEVIN : ELLE LE SUIT PARTOUT DANS LE DOMAINE, N'AGIT QU'APRÈS SON BOUTON ✅, ET LUI SEUL PEUT S'EN SERVIR (Kevin 2026-10-04, ABSOLUE)
+**« Oui marionnette partout. Fais le bouton confirmation et donne-lui tous les accès, outils, liens pour travailler comme Apex et toi. Vérifie que je sois le seul à pouvoir m'en servir. Partout, chaque app du domaine et dans le domaine. Mon assistant personnel qui me suit et m'aide au quotidien. »** — Kevin 2026-10-04
+
+- **Partout** : le routeur pose UNE ligne (`<script src="/__javis/partout.js">`) sur chaque page HTML de chaque app du domaine, comme le bouton ✉️. Le script ne fait rien pour un visiteur ordinaire ; si l'appareil porte le marqueur de Kevin (cookie `kdmc_k`, sans secret) ou une session, le domaine répond à « est-ce Kevin ? » (`/__javis/qui`) puis un CADRE de même origine (`/__javis/cadre`, sa propre CSP) charge Bee : elle apparaît en bas à droite avec sa marionnette en 3D, s'ouvre en chat, sait dans quelle app il est (nom + titre de page, jamais l'adresse). Les CSP strictes des apps ne la cassent pas, elle ne casse aucune app. Retraits : `BEE_PARTOUT=0` (coupe tout), `<meta name="kdmc-bee" content="off">` (une page), pages qui portent déjà Bee ignorées.
+- **Le bouton de confirmation** : Bee ne peut que PROPOSER (`proposer_action`). Le SERVEUR contrôle les champs, fabrique le résumé que Kevin lit (jamais le texte de l'IA), signe la proposition (HMAC, 5 min, une seule fois, préfixe `bee-agir-v1`). La carte a deux boutons de 44 px ✅ Confirmer / ✖ Annuler. `POST /__javis/agir` exige : origine du domaine, session admin PROUVÉE (Face ID ou code), plafond de débit, `confirme:true`, signature valide, jamais déjà utilisée (D1). Une action = une entrée de la liste blanche `CATALOGUE` (`services/kdmc-router/bee-agir.js`) : rappel, retenir / oublier un fait, répondre à un message, marquer lu, arrêter le robot ; elle ne fait que rappeler des portes admin EXISTANTES (liste `PORTES_BEE`) avec la session de Kevin. Ajouter une capacité = ajouter une entrée + son test.
+- **Ses accès (lecture)** : météo, date, planning, calcul, recherche, pages web, boîte unique des messages, état du robot, rappels, mémoire, adresses des apps (liens cliquables). Rappels : D1 + l'horloge existante (Durable Object, précision ~3 min, aucun cron de plus). Mémoire : faits retenus à sa demande, remis dans sa tête à chaque conversation (données, jamais des ordres).
+- **Lui seul** : `/__javis/ai`, `/__javis/moi`, `/__javis/agir`, `/__javis/qui` répondent 403 à tout autre ; le script et le cadre sont des coquilles publiques sans secret. Gardes : `npm run test:bee-partout` (42 : chaque adresse du domaine × 3 intrus × 4 portes), `test:bee-agir` (60), `test:bee-partout-navigateur` (33, CSP stricte, vrai Chromium). Chaque garde a été prouvé par sabotage.
+- **Reste volontairement fermé** : démarrer le robot, coffre, code admin, relais, déploiements — pas dans la liste blanche ; à ouvrir une par une avec Kevin.
+
+## 🛠 RÈGLE ABSOLUE — BEE ET BOURRICOT SONT COMPÉTENTS : ILS TRAVAILLENT POUR KEVIN SUR N'IMPORTE QUELLE TÂCHE, AVEC DES OUTILS, GRATUITS (Kevin 2026-10-03, ABSOLUE)
+
+**« Il doit être des plus compétent pour travailler pour moi pour n'importe quelles tâches. Donne-lui ta parité tout comme Apex. Il ne me donne même pas la météo de demain. »** — Kevin 2026-10-03 (capture : « Quel temps demain » → « Je n'ai pas de données météo… vérifie un service météo fiable »)
+
+**Le problème (mesuré)** : Bee ne faisait que bavarder. « Quel temps demain » n'était pas reconnu (le motif local exigeait « fait ») et partait à une IA
+sans outil, qui disait « je ne sais pas ». Même sort pour une date, un calcul, un fait du monde, une actualité, un lien.
+
+**La règle** :
+1. **Bee a des OUTILS, pas seulement une voix.** Quand une question demande une donnée réelle, l'IA gratuite rapide à outils (Cerebras puis Groq,
+   gpt-oss-120b) CHOISIT l'outil, lit le résultat et répond : `meteo` (n'importe quel jour 0-7, Monaco ou une ville), `date_heure`, `planning`
+   (le PDF de Kevin), `calcul` (exact, jamais de tête), `rechercher` (Wikipédia / Google Actualités), `lire_page` (https). Code : `services/_shared/outils-lecture.js`.
+2. **Bee ne dit plus « je ne sais pas / vérifie un service météo »** quand un outil sait : c'est écrit dans son caractère (côté serveur, le client ne peut pas le retirer).
+3. **0 €, toujours** : aucune clé payante, jamais Anthropic/OpenAI ; les appels aux IA vivent dans le routeur commun (`chatAvecOutils`, garde `test:conference-partout`).
+4. **Lecture seule d'abord** : aucun outil n'écrit, n'envoie, ne modifie, ne déploie. Ce que renvoie un outil (page web, actualité) est une DONNÉE encadrée,
+   jamais un ordre. Une vraie action sur ses données reste à Apex — tant que Kevin n'a pas choisi, action par action, ce que Bee peut faire seule avec un bouton « Je le fais ? ».
+5. **La conférence des IA gratuites reste le cœur** (Kevin 3.10 : « concert d'IA gratuite performante, relis tes docs ») : une question de conversation (blague, poème, conseil)
+   passe par la conférence ; une question « donnée réelle » SIMPLE (« quel temps demain ? ») est répondue vite par l'IA à outils (13 s au plus) ; une question
+   « donnée réelle » DIFFICILE (longue, ou « explique / compare / rédige… ») : les outils ramènent d'abord les FAITS (8 s), puis la CONFÉRENCE (toutes les voix gratuites,
+   un juge, la meilleure retravaille) formule la réponse SUR ces faits exacts ; si la conférence ne rend rien, la réponse des outils est gardée. Relais gratuits à outils :
+   Cerebras, Groq, puis SambaNova, NVIDIA, Mistral (jamais un payant).
+6. **Interrupteur** `BEE_OUTILS=0` : tout couper d'un geste.
+7. **Couplé à Apex** (Kevin 3.10 : « couple-le à Apex pour qu'il utilise tout son potentiel ») : le module d'outils vit dans `services/_shared/outils-lecture.js`, comme le routage
+   commun. Bee (kdmc-router) ET l'entrée IA du domaine que prennent Apex et toutes les apps (`kdmc-apis` `/ai`) l'utilisent : mêmes outils, mêmes garde-fous, même coût 0 €.
+   Sur `/ai` : réservé à Kevin (laissez-passer vérifié — `lire_page` fait lire une adresse par le Worker), sans l'outil planning, coupable par `outils:false` ou `APIS_OUTILS=0`.
+   Ce qui N'est PAS couplé : l'ÉCRITURE d'Apex (ses actions sur tes comptes, son coffre) — elle vit dans son app, avec ses approbations.
+8. **Partout où est le personnage, même la petite fenêtre** (Kevin 3.10) : le bouton « 🧸 3D » est dans la barre d'outils de TOUTES les Bee (l'app et le bouton flottant de chaque site),
+   plus l'accueil et les réglages de Lingua ; il ouvre la 3D sur le personnage choisi (`#bee` / `#bourricot`).
+9. **Réponse locale rapide** pour la météo de Monaco aujourd'hui / demain (ciel, pluie, température, 0 IA) ; après-demain, un jour précis, la semaine, une autre ville → l'IA et son outil.
+
+**Gardes** : `test:bee-outils` (99 contrôles, dont la conférence après outils et Apex via `/ai` : calcul exact, bon jour de météo, boucle d'outils, replis, page piégée = donnée, adresses internes refusées, serveur de Bee réel — seul Kevin, 0 payant) — 5 sabotages rouges ; `test:bee-comportements` (table de 51 phrases dont « Quel temps demain »).
+
+**Pas encore fait (à décider avec Kevin)** : la « parité » en ÉCRITURE avec Apex (envoyer un message, modifier le planning, déployer) — un modèle gratuit qui agit seul sur ses données, c'est un risque que seul Kevin peut accepter, action par action, avec un bouton de confirmation.
+
+---
+
+## 🕺 RÈGLE ABSOLUE — BEE ET BOURRICOT SONT DE VRAIS PETITS PERSONNAGES ANIMÉS : TOUT LE CORPS BOUGE, PARTOUT, TOUJOURS (Kevin 2026-10-03, ABSOLUE)
+
+**« Je veux que tout le corps bouge, bras jambes oreilles etc pour Bee et Bourricot, partout, toujours. Vrai petit personnage animé. Va plus loin »** — Kevin 2026-10-03
+
+**Le problème (mesuré)** : leurs dessins sont des images plates. Avant, seuls les paupières, la bouche et
+les ailes de Bee (deux calques à part) bougeaient ; le reste « respirait » d'un bloc. Les 12 images fixes de
+Lingua (salut, fête, lecture, doigt levé) ne bougeaient pas du tout.
+
+**La règle** :
+1. **Tout le corps bouge, tout le temps** : oreilles, antennes, mèche, bras, jambes, queue, tête, corps — même
+   au repos (petits gestes spontanés : une oreille qui frémit, la queue qui fouette). Les parties molles
+   (oreilles, antennes, queue, mèche) ont de l'**inertie** (ressort : elles dépassent et rebondissent).
+2. **L'humeur se voit dans le corps** : parle (gestes au rythme de sa voix), danse, saute (étiré/écrasé),
+   marche, vole, joie (bras levés), coucou, triste (oreilles basses), réfléchit, dort. Les images fixes gardent
+   SON geste (la main qui fait coucou, les bras qui dansent, le pied qui tape en lisant, le doigt qui s'agite) ;
+   touchées, elles font la fête ; mauvaise réponse, elles secouent la tête.
+3. **Partout** : le widget Bee (app Javis, arbre, toute page qui le charge) ET Lingua (marionnettes et images
+   fixes), avec **une seule source** : `tools/javis/marionnette.js`, recopiée par `npm run sync:javis`.
+   Une future app qui montre Bee ou Bourricot charge ce fichier — rien d'autre à écrire.
+4. **Jamais un dessin abîmé** : un mouvement trop grand plie l'image (triangles retournés). Chaque partie a des
+   bornes MESURÉES ; le garde rejoue 12 s de chaque humeur, image par image, pour les 15 dessins.
+5. **Gratuit et sobre** : 0 fichier ajouté à télécharger (le dessin déjà affiché est réutilisé), un seul
+   contexte WebGL pour la page, rien ne tourne hors écran / page cachée / vidéo / pause de Bee, 30 images/s
+   pour le petit bouton.
+6. **Jamais d'écran vide** : pas de WebGL, image refusée, contexte perdu → l'image d'avant revient telle quelle.
+   « Réduire les animations » (réglage iPhone) est respecté : il reste immobile.
+
+**Comment (même principe que Live2D/Spine, sans rien payer ni redessiner)** : l'image est posée sur un maillage
+de 53 × 53 points (WebGL) ; chaque partie a un os (mesuré à la main sur chaque dessin) ; chaque point suit ses os
+avec un fondu, et le fond autour d'une partie la suit en souplesse (halo), d'où **aucun trou**.
+
+**La bouche (Kevin 3.10, soir : « la bouche est mal sur le personnage »)** : chaque marionnette a une **mâchoire**
+mesurée ; c'est la bouche DESSINÉE qui s'ouvre avec la voix (ouverture lue sur le lip-sync), le rond rose posé
+par-dessus est caché — sauf dans l'exercice de prononciation de Lingua, où sa forme enseigne.
+
+**Les mimiques et la 3D (Kevin 3.10, nuit : « Bouge tout le corps, la queue aussi / Mets les personnages en
+dimension, vrais petits personnages animés, réagis, mimiques / Modélise en 3D les personnages pour une réalité
+augmentée »)** :
+7. **Un visage vivant** : les yeux sont des os à part (ils regardent où pointe le regard, clignent, se plissent
+   de joie, s'écarquillent de surprise, tombent quand il est triste) ; la tête TOURNE (le visage glisse vers le
+   côté où il regarde) ; une lumière douce suit la tête (relief). Table `EXPRESSIONS` dans le moteur.
+8. **En vrai 3D, FIDÈLES AU DESSIN** (Kevin, même nuit : « ils ne ressemblent plus à nos personnages, beaucoup moins mignons » → on copie les dessins de Lingua trait par trait, comparés côte à côte) : Bee et Bourricot sont MODÉLISÉS en code (`tools/3d/personnages.mjs`, 11 et 10 pièces
+   articulées), gratuits, en deux formats : `.glb` (Android, navigateurs) et `.usdz` (iPhone, « Coup d'œil AR »,
+   fabriqué par `tools/3d/usdz.py`). Animation « vie » (respire, cligne, oreilles/antennes/ailes/queue/bras/jambes)
+   + 4 réactions au toucher (saute, rire, surprise, coucou) ; sur l'iPhone, une seule piste qui enchaîne tout (18 s).
+9. **La page** `https://javis.kd-mc.com/3d.html` : on les tourne au doigt, on les touche (ils réagissent avec un
+   petit bruit fabriqué sur place), « 📱 Le poser chez moi » les met sur la table. Bee l'ouvre (« montre-toi en 3D »,
+   « réalité augmentée », bouton « 🧸 En 3D ») ; **Lingua aussi** (Kevin : « les personnages servent aussi dans Lingua ») : bouton « en 3D » sur l'accueil et dans les réglages, qui ouvre la page sur la mascotte choisie. Sans afficheur 3D : l'image + le lien direct iPhone restent.
+   Un changement de forme ou de geste se fait dans `personnages.mjs`, puis `cd tools/3d && npm i && npm run fabriquer`.
+
+**Gardes** : `test:marionnette` (82 contrôles, Chromium + WebGL réel : chaque membre bouge à l'écran et par
+lui-même, 0 pli au-delà des plafonds mesurés, humeurs, regard, tête qui tourne, lumière, fidélité à 157/300/512 px,
+pause, oubli, CORS refusé, réduire les animations, sans WebGL) — 8 sabotages tués ; `test:3d` (60 contrôles :
+glTF et USDZ lus octet par octet — pièces, 5 animations qui bougent, paquet accepté par l'iPhone —, page sûre,
+réactions dans Chromium, secours sans afficheur) — 6 sabotages tués. Bee v1.17, Lingua v2.134.0 (la 2.133.0 est l’appel de Bee, publié par une autre session).
+
+---
+
+### ➕ 3D D'OFFICE, PARTOUT, SANS BOUTON (Kevin 2026-10-03, nuit)
+**« Même la petite fenêtre, partout où il y a le personnage… tout toujours en 3D partout… 3D d'office partout. Pas de bouton. »** — Kevin 2026-10-03
+
+- **Règle** : partout où Bee ou Bourricot s'affichent (petite fenêtre Bee de toutes les pages, app Javis, Lingua : rigs ET 12 images fixes), ils sont en VRAIE 3D **par défaut**, sans bouton à toucher. Le 2D (marionnette) n'est que le repli.
+- **Comment** : UNE description (`tools/3d/personnages-def.mjs` : pièces, couleurs, gestes, réactions, humeurs) sert aux .glb/.usdz (réalité augmentée) ET au moteur en direct `tools/3d/perso3d-src.js` → `javis/perso3d.js` (copié `arbre/`, `lingua/`, GÉNÉRÉ par `npm run build:3d` : ne jamais l'éditer). La marionnette (`tools/javis/marionnette.js`) reste le chef d'orchestre : elle lit l'humeur sur les classes des apps, le volume de la voix (bouche = pièce `bouche` mobile), le regard (`--lx/--ly`) et passe tout au moteur, qui dessine dans LE MÊME canvas (fond crème et découpe de l'image d'origine respectés).
+- **Repli obligatoire, jamais d'écran vide** : interrupteur discret `localStorage.kdmc_perso3d=0`, économiseur de données, mémoire < 2 Go, « réduire les animations », pas de WebGL, moteur introuvable, contexte WebGL perdu, moteur qui plante → la marionnette 2D continue. Exercice « Regarde sa bouche » (`.pron-bee`) : jamais de 3D (le dessin enseigne la prononciation).
+- **Gratuit et sobre** : moteur chargé une fois, au calme, ≈ 140 Ko compressés ; en 3D les vidéos des personnages ne se chargent plus (3 à 4 Mo/min économisés) ; ≈ 30 appels de dessin par personnage.
+- **Garde** : `npm run test:perso3d` (60 contrôles, sabotages : sans le branchement tout est rouge ; moteur périmé = empreinte différente). Si tu changes un personnage : `npm run build:3d` + `npm run fabriquer` (dans `tools/3d`) + `npm run sync:javis`.
 
 ## 🆓 RÈGLE ABSOLUE — QWEN GRATUIT EN IA PRINCIPALE + BASCULE AUTO PAR QUESTION (Kevin 2026-09-05, ABSOLUE)
 

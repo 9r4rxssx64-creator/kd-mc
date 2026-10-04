@@ -1,0 +1,15 @@
+{
+  "name": "kdmc-personnages-3d",
+  "private": true,
+  "description": "Fabrique Bee et Bourricot en 3D (javis/3d/*.glb) \u2014 outil hors ligne, jamais servi. Puis : pip install usd-core==26.8 && python3 usdz.py",
+  "type": "module",
+  "scripts": {
+    "fabriquer": "node personnages.mjs && python3 usdz.py",
+    "build:3d": "node build-runtime.mjs"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "three": "0.186.1",
+    "esbuild": "0.25.12"
+  }
+}

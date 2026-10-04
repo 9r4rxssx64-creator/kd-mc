@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0a04">
+<title>Bee et Bourricot en 3D</title>
+<meta name="description" content="Bee et Bourricot en 3D : tourne-les du doigt, touche-les pour qu'ils réagissent, pose-les chez toi en réalité augmentée.">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<!-- Kevin 3.10.2026 : « Modélise en 3D les personnages pour une réalité augmentée ».
+     Les modèles sont fabriqués par tools/3d/ (personnages.mjs → .glb, usdz.py → .usdz), gratuits.
+     script-src : 'self' (vue.js) + model-viewer de Google, version FIGÉE et vérifiée par son empreinte
+       (integrity) : si le fichier du CDN change d'un octet, le navigateur refuse de l'exécuter.
+     'wasm-unsafe-eval' : model-viewer compile un petit moteur WebAssembly (mesuré le 3.10 : sans lui,
+       « Refused to compile or instantiate WebAssembly » et RIEN ne s'affiche). Ce mot-clé autorise le
+       WebAssembly SEULEMENT — pas eval() ni le JavaScript fabriqué à la volée.
+     blob:/data: : model-viewer prépare l'éclairage et les textures en mémoire.
+     Aucun 'unsafe-inline' pour les scripts, aucun appel ailleurs (connect-src 'self'). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob: data:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js" integrity="sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW" crossorigin="anonymous"></script>
+<script src="3d/vue.js" defer></script>
+<style>
+  :root{--fond:#0e0a04;--carte:#1c140a;--bord:#3a2a14;--texte:#f7efd9;--doux:#a4906a;--or:#ffc72c}
+  html,body{margin:0;background:var(--fond);color:var(--texte);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  main{max-width:980px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+  header{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+  header a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:12px;
+    background:var(--carte);border:1px solid var(--bord);color:var(--texte);text-decoration:none;font-size:20px}
+  h1{font-size:20px;margin:0}
+  .aide{color:var(--doux);font-size:14px;margin:0 0 14px}
+  .grille{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:760px){.grille{grid-template-columns:1fr 1fr}}
+  .carte{background:var(--carte);border:1px solid var(--bord);border-radius:20px;overflow:hidden}
+  .carte h2{font-size:17px;margin:12px 14px 0}
+  model-viewer{width:100%;height:min(62vh,440px);background:radial-gradient(circle at 50% 40%,#3a2a14,#140d05 75%);
+    --poster-color:transparent;--progress-bar-color:var(--or)}
+  .ar{position:absolute;right:12px;bottom:12px;min-height:48px;padding:0 16px;border:0;border-radius:24px;
+    background:var(--or);color:#2a1a04;font-weight:700;font-size:15px;box-shadow:0 4px 14px #0008}
+  .gestes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px 14px}
+  .gestes button{min-height:48px;border-radius:14px;border:1px solid var(--bord);background:#2a1d0c;color:var(--texte);
+    font-size:14px;padding:4px 2px;touch-action:manipulation}
+  .gestes button:active{transform:scale(.96)}
+  .secours{display:none;text-align:center;padding:12px}
+  .secours img{width:min(70vw,300px);height:auto;border-radius:16px}
+  .secours a{color:var(--or)}
+  .sans-3d .secours{display:block}
+  .sans-3d model-viewer,.sans-3d .gestes{display:none}
+  footer{color:var(--doux);font-size:14px;margin-top:16px}
+  @media (prefers-reduced-motion:reduce){.gestes button:active{transform:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a href="./" id="retour" aria-label="Retour">←</a>
+    <h1>Bee et Bourricot en 3D</h1>
+  </header>
+  <p class="aide">Tourne-les avec le doigt. Touche-les : ils réagissent. Sur iPhone, « 📱 Le poser chez moi » les met sur ta table, en vrai.</p>
+
+  <div class="grille">
+    <section class="carte" data-perso="bee">
+      <h2>🐝 Bee</h2>
+      <model-viewer src="3d/bee.glb" ios-src="3d/bee.usdz" poster="3d/bee.webp" alt="Bee l'abeille en 3D, qui bouge"
+        ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" camera-controls touch-action="pan-y"
+        autoplay animation-name="vie" shadow-intensity="1" exposure="1.05" camera-orbit="15deg 80deg auto" interaction-prompt="none">
+        <button slot="ar-button" class="ar">📱 Le poser chez moi</button>
+      </model-viewer>
+      <div class="gestes">
+        <button data-anim="saute">🎉 Saute</button><button data-anim="rire">😂 Rigole</button>
+        <button data-anim="surprise">😮 Oh !</button><button data-anim="coucou">👋 Coucou</button>
+      </div>
+      <div class="secours"><a rel="ar" href="3d/bee.usdz"><img src="3d/bee.webp" alt="Bee en 3D — touche pour la poser chez toi" width="384" height="384"></a></div>
+    </section>
+
+    <section class="carte" data-perso="bourricot">
+      <h2>🫏 Bourricot</h2>
+      <model-viewer src="3d/bourricot.glb" ios-src="3d/bourricot.usdz" poster="3d/bourricot.webp" alt="Bourricot l'âne en 3D, qui bouge"
+        ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" camera-controls touch-action="pan-y"
+        autoplay animation-name="vie" shadow-intensity="1" exposure="1.05" camera-orbit="-15deg 80deg auto" interaction-prompt="none">
+        <button slot="ar-button" class="ar">📱 Le poser chez moi</button>
+      </model-viewer>
+      <div class="gestes">
+        <button data-anim="saute">🎉 Saute</button><button data-anim="rire">😂 Rigole</button>
+        <button data-anim="surprise">😮 Oh !</button><button data-anim="coucou">👋 Coucou</button>
+      </div>
+      <div class="secours"><a rel="ar" href="3d/bourricot.usdz"><img src="3d/bourricot.webp" alt="Bourricot en 3D — touche pour le poser chez toi" width="384" height="384"></a></div>
+    </section>
+  </div>
+
+  <footer>Chez toi (réalité augmentée), ils enchaînent tout seuls : la vie, un saut de joie, un fou rire, un coucou.</footer>
+</main>
+</body>
+</html>

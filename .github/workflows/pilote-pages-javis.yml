@@ -108,6 +108,8 @@ jobs:
           echo "DNS $HOTE : $DNS"; echo "- DNS $HOTE : $DNS" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Pilote javis (lire)::domaine Worker=$WD · DNS=$DNS · Pages=$PP"
 
+      # 3.10 (Bee et Bourricot en 3D, javis/3d.html) : l'iPhone n'ouvre « Coup d'œil AR » que si le .usdz arrive
+      # avec SON type (model/vnd.usdz+zip) — sinon il propose de télécharger un fichier. D'où les 2 lignes /3d/*.
       - name: PUBLIER — renvoie les fichiers de javis/ au projet Pages kdmc-javis (ni route, ni domaine, ni DNS)
         if: github.event_name == 'push' || inputs.mode == 'publier'
         shell: bash -eo pipefail {0}
@@ -120,6 +122,10 @@ jobs:
             X-Frame-Options: DENY
             Referrer-Policy: strict-origin-when-cross-origin
             X-Kdmc-Par: statique
+          /3d/*.usdz
+            Content-Type: model/vnd.usdz+zip
+          /3d/*.glb
+            Content-Type: model/gltf-binary
           EOF
           printf '<!doctype html><meta charset="utf-8"><title>Introuvable</title><p>Cette page n\x27existe pas sur javis.kd-mc.com.</p>\n' > /tmp/javis-pages/404.html
           V=$(grep -o "JAVIS_VER = '[^']*'" javis/javis-widget.js | head -1)
@@ -145,6 +151,10 @@ jobs:
             X-Frame-Options: DENY
             Referrer-Policy: strict-origin-when-cross-origin
             X-Kdmc-Par: statique
+          /3d/*.usdz
+            Content-Type: model/vnd.usdz+zip
+          /3d/*.glb
+            Content-Type: model/gltf-binary
           EOF
           printf '<!doctype html><meta charset="utf-8"><title>Introuvable</title><p>Cette page n\x27existe pas sur javis.kd-mc.com.</p>\n' > /tmp/javis-pages/404.html
           npm i -g wrangler@3 --no-audit --no-fund >/dev/null 2>&1
@@ -183,6 +193,10 @@ jobs:
             X-Frame-Options: DENY
             Referrer-Policy: strict-origin-when-cross-origin
             X-Kdmc-Par: statique
+          /3d/*.usdz
+            Content-Type: model/vnd.usdz+zip
+          /3d/*.glb
+            Content-Type: model/gltf-binary
           EOF
           printf '<!doctype html><meta charset="utf-8"><title>Introuvable</title><p>Cette page n\x27existe pas sur javis.kd-mc.com.</p>\n' > /tmp/javis-pages/404.html
           echo "fichiers : $(find /tmp/javis-pages -type f | wc -l)"

@@ -65,3 +65,6 @@ audit/arbre-visuel/
 
 # Capture produite par tests/verify-tor-page.mjs (sortie de test, jamais un livrable)
 tor-iphone.png
+
+# un lien symbolique node_modules (worktree) n est PAS couvert par « node_modules/ » (qui ne vise que les dossiers) : il s est retrouve commite le 3.10 et a casse npm run
+/node_modules

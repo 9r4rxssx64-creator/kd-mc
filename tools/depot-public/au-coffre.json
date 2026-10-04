@@ -198,6 +198,7 @@
   "tests/verify-lingua-contenu-local.mjs",
   "tests/verify-lingua-maj.mjs",
   "tests/verify-maj-forcee-reelle.mjs",
+  "tests/verify-marionnette.mjs",
   "tests/verify-messages-kevin.mjs",
   "tests/verify-mois-ouverture.mjs",
   "tests/verify-mois-passes.mjs",

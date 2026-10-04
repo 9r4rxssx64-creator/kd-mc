@@ -440,6 +440,27 @@ async function callAnthropic(key, messages, o) {
  * opts : { messages | prompt, system, domain, text (pour deviner le domaine), maxTokens,
  *          temperature, wantJson, timeoutMs, models:{provider:model}, premium, chain }
  */
+/** UN tour de conversation AVEC OUTILS (appel de fonctions) chez un fournisseur gratuit compatible OpenAI (cerebras, groq…).
+ *  Les appels directs aux IA vivent ICI, dans le routeur commun (garde test:conference-partout) : outils-lecture.js ne parle à personne.
+ *  Rend le message du modèle ({ content, tool_calls }) ; lève une erreur portant .status / .retryAfter en cas de refus.
+ *  opts : { messages, tools (liste de { name, description, parameters }) — absent = réponse finale —, maxTokens, temperature, timeoutMs } */
+export async function chatAvecOutils(env, provider, opts) {
+  const o = Object.assign({ maxTokens: 700, temperature: 0.4, timeoutMs: 9000 }, opts || {});
+  const url = OPENAI_COMPAT[provider], key = env && env[SECRET_NAMES[provider]];
+  if (!url || !key) throw new Error('fournisseur sans outils : ' + provider);
+  const body = { model: modelesCandidats(provider, o.model)[0], messages: o.messages, max_tokens: o.maxTokens, temperature: o.temperature };
+  if (Array.isArray(o.tools) && o.tools.length) { body.tools = o.tools.map((f) => ({ type: 'function', function: f })); body.tool_choice = 'auto'; }
+  const t = withTimeout(o.timeoutMs);
+  try {
+    const r = await fetch(url, { method: 'POST', signal: t.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key }, body: JSON.stringify(body) });
+    const txt = await r.text();
+    if (!r.ok) { const e = new Error('HTTP ' + r.status + ' ' + txt.slice(0, 120)); e.status = r.status; e.retryAfter = r.headers && r.headers.get ? r.headers.get('retry-after') : null; throw e; }
+    await anticiperDepuisEntetes(provider, r.headers);
+    const m = JSON.parse(txt).choices[0].message;
+    return { content: m && m.content ? m.content : '', tool_calls: m && Array.isArray(m.tool_calls) ? m.tool_calls : [], model: body.model };
+  } finally { t.done(); }
+}
+
 export async function routeText(env, opts) {
   const o = Object.assign({ maxTokens: 800, temperature: 0.7, timeoutMs: 20000 }, opts || {});
   let messages = Array.isArray(o.messages) ? o.messages.slice() : [];

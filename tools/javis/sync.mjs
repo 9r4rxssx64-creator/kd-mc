@@ -42,6 +42,27 @@ function pagesSuivies() {
     return l.map((f) => join(ROOT, f)).filter((p) => /<script[^>]+src="[^"]*javis-widget\.js/.test(readFileSync(p, 'utf8')));
   } catch { return pagesPorteuses(); }
 }
+/* LA MARIONNETTE (3.10) : une seule source, tools/javis/marionnette.js, posée DANS le widget
+   entre deux repères (le widget reste un seul fichier, chargé par toutes les pages porteuses)
+   et recopiée à côté de Lingua (lingua/marionnette.js), qui l'appelle par une balise <script>. */
+const SOURCE_MRN = 'tools/javis/marionnette.js';
+const COPIE_MRN = 'lingua/marionnette.js';
+const mrn = readFileSync(join(ROOT, SOURCE_MRN), 'utf8');
+{
+  const w = readFileSync(join(ROOT, CANON), 'utf8');
+  const re = /\/\*<marionnette>\*\/[\s\S]*?\/\*<\/marionnette>\*\//;
+  if (!re.test(w)) { console.error(`✗ repères /*<marionnette>*/ absents de ${CANON}`); process.exit(1); }
+  const voulu = w.replace(re, () => '/*<marionnette>*/\n' + mrn.trimEnd() + '\n/*</marionnette>*/');
+  if (voulu !== w) {
+    if (verifSeule) { console.log(`  ✗ ${CANON} : la marionnette DIVERGE de ${SOURCE_MRN}`); process.exitCode = 1; }
+    else { writeFileSync(join(ROOT, CANON), voulu); console.log(`  → ${CANON} : marionnette reposée depuis ${SOURCE_MRN}`); }
+  } else console.log(`  = ${CANON} : marionnette identique à ${SOURCE_MRN}`);
+  let l = null; try { l = readFileSync(join(ROOT, COPIE_MRN), 'utf8'); } catch { /* absente */ }
+  if (l !== mrn) {
+    if (verifSeule) { console.log(`  ✗ ${COPIE_MRN} DIVERGE de ${SOURCE_MRN}`); process.exitCode = 1; }
+    else { writeFileSync(join(ROOT, COPIE_MRN), mrn); console.log(`  → ${COPIE_MRN} ${l === null ? 'créée' : 'remise à jour'}`); }
+  } else console.log(`  = ${COPIE_MRN} (déjà identique)`);
+}
 const canon = readFileSync(join(ROOT, CANON));
 const cibles = [...new Set(pagesSuivies().map((page) => join(dirname(page), 'javis-widget.js')))]
   .filter((c) => relative(ROOT, c) !== CANON);
@@ -61,4 +82,4 @@ for (const cible of cibles) {
 console.log(verifSeule
   ? `Bee : ${cibles.length} copie(s) contrôlée(s), ${divergentes} divergente(s)`
   : `Bee : ${cibles.length} copie(s), ${divergentes} mise(s) à jour depuis ${CANON}`);
-process.exit(verifSeule && divergentes ? 1 : 0);
+process.exit(verifSeule && (divergentes || process.exitCode) ? 1 : 0);

@@ -164,8 +164,13 @@ function sonDeTest(hz = sonHz) {
   _sons.set(hz, b);
   return b;
 }
-async function ouvre({ casse = null } = {}) {
+let mp4Demandes = 0;
+/* Depuis la 3D d'office (3.10) Bee est animée en 3D et ne charge plus ses vidéos : les contrôles de la VIDÉO tournent donc avec la 3D
+   coupée (interrupteur discret localStorage kdmc_perso3d = 0, le même que pour un vieux téléphone) ; la section « 3D d'office » plus bas
+   éprouve l'autre cas. */
+async function ouvre({ casse = null, avec3D = false } = {}) {
   const ctx = await nav.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
+  if (!avec3D) await ctx.addInitScript(() => { try { localStorage.setItem('kdmc_perso3d', '0'); } catch (_) { /* rien */ } });
   const page = await ctx.newPage();
   const erreurs = [];
   page.on('pageerror', (e) => erreurs.push(String(e && e.message)));
@@ -174,7 +179,7 @@ async function ouvre({ casse = null } = {}) {
     if (casse && u.pathname.includes(casse)) return route.fulfill({ status: 404, body: 'absent' });
     const f = join(ROOT, 'lingua', u.pathname.replace(/^\//, ''));
     if (!fs.existsSync(f)) return route.fulfill({ status: 404, body: 'absent' });
-    if (f.endsWith('.mp4')) { const v = pourLeTest(f); return route.fulfill({ status: 200, contentType: v.type, body: v.body }); }
+    if (f.endsWith('.mp4')) { mp4Demandes++; const v = pourLeTest(f); return route.fulfill({ status: 200, contentType: v.type, body: v.body }); }
     return route.fulfill({ status: 200, contentType: TYPES[f.slice(f.lastIndexOf('.'))] || 'application/octet-stream',
       body: fs.readFileSync(f) });
   });
@@ -237,7 +242,8 @@ async function ouvre({ casse = null } = {}) {
   await dors(2500);
   const aVid = await page.locator('#javis-launcher .bee-rig.vid').count() > 0;
   chk(!aVid, !aVid ? 'vidéo injouable → la classe .vid n\'est JAMAIS posée' : 'la vidéo s\'est posée alors qu\'elle est cassée');
-  const dessin = await page.locator('#javis-launcher .rig-base').isVisible().catch(() => false);
+  /* depuis la marionnette (3.10) le dessin plat est CACHÉ et remplacé par un canvas qui porte le même dessin : l'un OU l'autre doit se voir */
+  const dessin = (await page.locator('#javis-launcher .rig-base:visible, #javis-launcher canvas:visible').count().catch(() => 0)) > 0;
   chk(dessin, dessin ? 'le dessin de Bee reste visible (marionnette) — aucun trou noir'
                      : 'ÉCRAN VIDE : ni vidéo ni dessin');
   const bouge = await page.evaluate(() => {
@@ -736,7 +742,7 @@ if (FFMPEG) {
   chk(!h, 'bouton Effacer → la conversation gardée sur le téléphone est effacée');
   await page.click('#javis-info');
   const info = await page.evaluate(() => { const b = [...document.querySelectorAll('.javis-bub.js')].pop(); return b ? b.textContent : ''; });
-  chk(/OpenAI/.test(info) && /Anthropic/.test(info) && /Effacer/.test(info), `bouton ℹ️ → Bee dit où vont les messages (« ${info.slice(0, 40)}… »)`);
+  chk(/IA GRATUITE/.test(info) && /jamais d'IA payante/.test(info) && /Effacer/.test(info) && /Wikip/.test(info) && /r\.jina\.ai/.test(info), `bouton ℹ️ → Bee dit où vont les messages (« ${info.slice(0, 40)}… »)`);
   await page.setViewportSize({ width: 375, height: 700 });
   const barre = await page.evaluate(() => { const o = document.querySelector('#javis-outils'); const bs = [...o.querySelectorAll('button')];
     return { deborde: o.scrollWidth > o.clientWidth + 1, petit: bs.filter((b) => b.getBoundingClientRect().height < 44).length }; });
@@ -759,6 +765,25 @@ if (FFMPEG) {
   const r = await page.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher .bee-rig'), jeton: localStorage.getItem('kdmc_sso_token') }));
   chk(r.bee && !r.jeton, r.bee && !r.jeton ? 'Kevin reconnu par son cookie + lien piégé : Bee reste OUVERTE et le jeton piégé n\'est PAS rangé'
     : `FIXATION : lien piégé → Bee ${r.bee ? 'ouverte' : 'FERMÉE'}, jeton rangé = ${r.jeton}`);
+  await ctx.close();
+}
+
+/* === 4 octies. 3D D'OFFICE (Kevin 3.10 : « 3D d'office partout, pas de bouton ») : la petite fenêtre est en 3D toute seule ======
+   Sans toucher à rien : le launcher passe en 3D, la VIDÉO ne se charge même plus (0 Mo), la bouche suit toujours la voix (3D),
+   et si la 3D est coupée (vieux téléphone / économiseur de données) la vidéo d'avant revient. */
+{
+  mp4Demandes = 0;
+  const { ctx, page, erreurs } = await ouvre({ avec3D: true });
+  await page.waitForSelector('#javis-launcher .bee-rig', { timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => window.KdmcMarionnette && KdmcMarionnette.etat().some((e) => e.p3d), null, { timeout: 25000 }).catch(() => {});
+  const e3 = await page.evaluate(() => ({ etat: KdmcMarionnette.etat(), moteur: KdmcMarionnette.moteur3D(), veut: KdmcMarionnette.prefere3D(),
+    classe: document.querySelector('#javis-launcher .bee-rig').className, video: document.querySelectorAll('#javis-launcher .javis-vid').length }));
+  chk(e3.veut && e3.moteur === 2 && e3.etat.some((e) => e.p3d), `la petite fenêtre est en 3D SANS bouton (moteur ${e3.moteur}, ${e3.etat.filter((e) => e.p3d).length} personnage(s) en 3D)`);
+  chk(/p3d-on/.test(e3.classe) && !/\bvid\b/.test(e3.classe), `elle porte p3d-on et jamais .vid (${e3.classe})`);
+  chk(e3.video === 0 && mp4Demandes === 0, `la vidéo n'est même pas chargée en 3D (${e3.video} balise, ${mp4Demandes} fichier mp4 demandé)`);
+  const px = await page.evaluate(() => { const c = document.querySelector('#javis-launcher .mrn-canvas'); const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let jaune = 0; for (let i = 0; i < x.length; i += 4) if (x[i] > 220 && x[i + 1] > 150 && x[i + 1] < 215 && x[i + 2] < 90) jaune++; return { jaune, n: x.length / 4, w: c.width }; });
+  chk(px.jaune > px.n * 0.03, `le canvas contient bien Bee en 3D (jaune d'abeille : ${(100 * px.jaune / px.n).toFixed(1)} % des points)`);
+  chk(erreurs.length === 0, erreurs.length ? 'ERREURS JS : ' + erreurs[0] : 'aucune erreur JS en 3D');
   await ctx.close();
 }
 

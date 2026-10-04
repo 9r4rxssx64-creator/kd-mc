@@ -13,6 +13,7 @@
  * sonnerie par jour ; pas de sonnerie le jour où l'appel est déjà fait (ou refusé) ; un abonnement mort
  * (404/410) est effacé. Seuls les services de notifications connus sont acceptés comme adresse d'envoi.
  */
+import { tickRappels } from './bee-agir.js';   // les rappels de Bee sonnent avec la même horloge
 export const REVEIL_MS = 3 * 60e3;
 export const FENETRE_MIN = 45;            // on sonne entre l'heure choisie et 45 min après (téléphone éteint, réveil manqué)
 export const MAX_ABONNES = 5000;
@@ -122,10 +123,12 @@ export class AppelReveil {
   async alarm() {
     let restants = 1;
     try { restants = await tickAppels(this.env); } catch { restants = 1; }   /* une panne D1 ne doit pas arrêter l'horloge */
+    /* les rappels de Bee (bee-agir.js) rejoignent la même horloge : aucun cron de plus (les 5 gratuits sont pris) */
+    try { restants += await tickRappels(this.env); } catch { restants = Math.max(restants, 1); }
     if (restants > 0) await this.state.storage.setAlarm(Date.now() + REVEIL_MS);
   }
 }
-async function armer(env) {
+export async function armer(env) {
   try { if (!env.APPEL_REVEIL) return; const id = env.APPEL_REVEIL.idFromName('horloge'); await env.APPEL_REVEIL.get(id).fetch('https://horloge/armer'); } catch { /* fail-open */ }
 }
 

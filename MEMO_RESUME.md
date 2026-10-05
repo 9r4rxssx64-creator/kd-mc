@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-05 (00h20) — Vérif APPAREILS : 0 ❌
+
+Run 37246274236 (5.10 00h08 UTC) : **57 ✅ / 0 ❌ / 4 ⚠**, v2.136.0 servie ; la correction #4315 est prouvée en vrai (aucune trace
+de la sonde n'est partie, sur iPhone/WebKit, Android et ordinateur). 1 vérif réelle sur 2 utilisée le 5.10.
+
+---
+
 ## 2026-10-04 (06h30 UTC) — Crypto : vérification n°4 → essai fantôme sur p1 + p1 arrêté depuis le 25.09 (bot v1.5.2)
 
 Lu en vrai (D1 kdmc-bot + Railway) :

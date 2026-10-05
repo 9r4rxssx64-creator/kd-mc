@@ -11761,3 +11761,30 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 5. **Le contrôle a déjà servi** : il a trouvé le 3.10.2026 que le « ménage des fantômes » prenait Émile DESARZENS (né 1851) pour une copie
    d'Émile (né 1946) et l'effaçait du nuage — corrigé v3.58 (garde-fou homonymes : une fiche qui a sa propre date de naissance n'est jamais un fantôme).
 Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas pu contrôler (écrans derrière le code famille) se dit aussi.
+
+## 🎓 RÈGLE MÉTIER ABSOLUE — FORMATION / ÉCOLE DE JEUX : MÊME ÉQUIPE, MAIS DÉPARTS ENTRE EUX (Kevin 2026-10-05, ABSOLUE)
+
+**« Lorsque des personnes sont en formation, école de jeux, donne un algorithme de départ, en gardant les personnes dans les mêmes équipes mais ils sortent des départs de l'équipe. Eux ont des départs entre eux à l'intérieur des équipes. Tout pareil mais des départs séparés du reste de l'équipe. »** — puis, sur la capture de CMC Éq.3 d'octobre : **« Tu remarques les gros traits rouges qui séparent les équipes. Il y a CRAPS groupe 1, qui sépare dans l'équipe les personnes en formation. De Schwietzer à Toulet tu leur donnes des départs et d'Abbas à Blanzieri d'autres départs. Ils tournent dans la même équipe mais ont leur algo de départs indépendant, pareil pour les autres équipes. Note tout. »** — Kevin 2026-10-05
+
+### 1. Ce que ça veut dire
+- Dans le PDF SBM, une ligne verte **« GR1 CRAPS »** (GR2, GR3…) à l'intérieur d'un bloc d'équipe sépare l'équipe de son **groupe de formation**.
+  Les noms **au-dessus** = l'équipe ; les noms **en dessous** (jusqu'au trait rouge suivant) = le groupe.
+- Le groupe **reste dans l'équipe** : même numéro d'équipe, même miroir, même planning, même page.
+- Mais il a **sa propre rotation de départs** : l'équipe tourne entre elle (6 → 1-6-4-2-3-5), le groupe entre lui (4 → 1-4-2-3).
+  Même algorithme, mêmes règles (rotation continue +1 par jour travaillé, numéro « mort » 1-3 jours d'absence, recompacté dès 4 jours).
+- Octobre 2026 (mesuré sur le PDF) : **6 équipes, 21 personnes** — CMC Éq.1 et 7 (GR3), Éq.3 et 9 (GR1), Éq.5 et 11 (GR2).
+  CMC Éq.3 : équipe = ‹employé›, ‹employé›, ‹employé›, ‹employé›, ‹employé›, ‹employé› ; GR1 CRAPS = ‹employé›, ‹employé›, ‹employé›, ‹employé›.
+
+### 2. Comment c'est fait (CMCteams v9.935 + light v1.64, mesuré)
+- **Lecture** : le récapitulatif de la page 1 du PDF (`_cmcRecapBlocks`, index.html) note le groupe de chaque nom sous la ligne « GR… ».
+  Rien n'est deviné : pas de ligne « GR » dans le PDF = pas de groupe. Reconnu aussi : « GROUPE 2 », « ÉCOLE … ».
+- **App** : `tools/shared/departs-groupes.js` — `calcDepPos` ne fait tourner que les personnes du même groupe ; l'écran Départs
+  met l'équipe d'abord, puis la ligne « 🎓 GR1 CRAPS — formation · départs entre eux », puis le groupe ; l'en-tête dit « 🎓 GR1 CRAPS : 4 (1→4→2→3) ».
+- **Light** : `compute()` fait un passage par groupe (`_computeGroupe`), même trait, même sous-titre.
+- **Données** : le planning vérifié (`planning-seed.js`, champ `grp`) et les tableaux de la light (`boards-gen.js`, champ `grp`) portent le groupe.
+
+### 3. OBLIGATIONS
+- **CMCteams ET light**, toujours les deux (garde `test:departs-compare` : 0 écart à la case près).
+- Garde **`test:departs-groupes`** (dans `test:ci`) : lecture du vrai PDF, contre-épreuve « chaque numéro = celui du groupe tournant seul »
+  sur les 6 équipes, équipes sans groupe inchangées, trait affiché et lisible sur 390 px (app + light). 6 sabotages prouvés (voir MEMO_RESUME 05.10.2026).
+- Un nouveau mois avec un groupe → régénérer `planning-seed.js` et `boards-gen.js` (`_gen-seed.mjs`, `_gen-boards.mjs`) : le groupe suit tout seul.

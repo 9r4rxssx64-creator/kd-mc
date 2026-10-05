@@ -105,6 +105,9 @@ const REGISTRE = [
   // rouge 19 → 20) : ses contrôles existent déjà — le vrai nuage (arbre-nuage.yml + test:arbre-nuage, garde-fou homonymes),
   // le rendu sur 10 appareils (verify-visuel-appareils.mjs, test:arbre-dates-visuel).
   [/CONTRÔLER TOUT, PARTOUT, SUR LE VRAI/i, ['wf:arbre-nuage.yml', 'npm:test:arbre-nuage', 'npm:test:arbre-dates-visuel', 'file:tools/arbre/verify-visuel-appareils.mjs']],
+  // Règle « FORMATION / ÉCOLE DE JEUX : MÊME ÉQUIPE, MAIS DÉPARTS ENTRE EUX » (Kevin 5.10.2026, PDF octobre « GR1 CRAPS ») :
+  // garde = lecture du vrai PDF + contre-épreuve « chaque numéro = groupe tournant seul » (app + light), parité app ⇄ light.
+  [/FORMATION \/ ÉCOLE DE JEUX/i, ['npm:test:departs-groupes', 'npm:test:departs-compare']],
   // Règle « TOUT GRATUIT, PARTOUT, TOUJOURS » (Kevin 2.10.2026 soir) : garde = test:tout-gratuit (chaque cascade du dépôt —
   // ia-route, kdmc-apis, Créa, chat-svc, messagerie, outils Lingua, Apex — commence par un gratuit ; sabotage prouvé).
   [/TOUT GRATUIT, PARTOUT, TOUJOURS/i, ['npm:test:tout-gratuit', 'npm:test:ia-route']],

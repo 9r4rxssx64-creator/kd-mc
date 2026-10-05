@@ -37,16 +37,16 @@
 | Gardes / tests | **161** fichiers, **237** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **204** dont **126** ouvertes | `pipeline/sessions.json` |
-| `CLAUDE.md` rechargé à chaque message | **75 235 o ≈ 21 496 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **671 756 o** | `wc -c` |
+| `CLAUDE.md` rechargé à chaque message | **75 718 o ≈ 21 634 tokens** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **675 125 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
 
 <!-- MAJ-AUTO:debut etat-live -->
-| Ce qui bouge | État au 2026-10-02 | Mesuré par |
+| Ce qui bouge | État au 2026-10-05 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **409** | `git ls-remote` |
+| Branches dans le dépôt | **495** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
 | État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->

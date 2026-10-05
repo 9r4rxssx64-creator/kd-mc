@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 197 règles — le texte de Kevin, une par une
+## 📜 Les 198 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -875,6 +875,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-contrôler-tout-partout-sur-le-vrai-sans-rien-oublier-kevin-2026-10-03-absolue)
+
+### 🎓 RÈGLE MÉTIER ABSOLUE — FORMATION / ÉCOLE DE JEUX : MÊME ÉQUIPE, MAIS DÉPARTS ENTRE EUX (Kevin 2026-10-05, ABSOLUE)
+**« Lorsque des personnes sont en formation, école de jeux, donne un algorithme de départ, en gardant les personnes dans les mêmes équipes mais ils sortent des départs de l'équipe. Eux ont des […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-formation-école-de-jeux-même-équipe-mais-départs-entre-eux-kevin-2026-10-05-absolue)
 
 ---
 

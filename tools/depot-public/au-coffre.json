@@ -173,6 +173,7 @@
   "tests/verify-cmc-ia-gratuite.mjs",
   "tests/verify-crea-comptes.mjs",
   "tests/verify-declaration-domaine.mjs",
+  "tests/verify-departs-groupes.mjs",
   "tests/verify-departs-integrity.mjs",
   "tests/verify-docs-a-la-demande.mjs",
   "tests/verify-documents-travail-parite.mjs",

@@ -1,5 +1,28 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-05 (soir) — CMCteams v9.935 + light v1.64 : les groupes de formation (GR CRAPS) ont leurs départs entre eux
+
+Kevin (PDF OCTOBRE_2026_V2 + capture CMC Éq.3) : « De Schwietzer à Toulet tu leur donnes des départs et d'Abbas à Blanzieri
+d'autres départs. Ils tournent dans la même équipe mais ont leur algo de départs indépendant, pareil pour les autres équipes. Note tout. »
+- **Lecture du PDF** : la ligne « GR1/GR2/GR3 CRAPS » du récapitulatif (page 1) marque le groupe de chaque nom en dessous
+  (`_cmcRecapBlocks` → `cmc_recap_teams[mois].g`). Octobre : **6 équipes, 21 personnes** (mesuré, import réel).
+- **App** : `tools/shared/departs-groupes.js` (nouveau) — `calcDepPos` ne fait tourner que le groupe de la personne ; écran Départs :
+  équipe, trait « 🎓 GR1 CRAPS — formation · départs entre eux », groupe. **Light** : `compute()` = un passage par groupe.
+- **Données** : `planning-seed.js` (parser v9.935, `grp` par mois) et `boards-gen.js` (`grp` par personne) régénérés depuis les 4 PDF.
+- **Place** : index.html était à 445 octets du plafond → `vImportTestResults` (vue admin des tests du lecteur PDF, 4,5 Ko)
+  déplacée telle quelle dans `tools/shared/tests-import-vue.js`.
+- **Preuves** : `test:departs-groupes` **42/0** (lecture du vrai PDF ; contre-épreuve « chaque numéro = celui du groupe tournant seul »
+  sur 1 151 cases des 6 équipes ; CMC Éq.3 : 19 jours où 1..6 et 1..4 coexistent ; équipes sans groupe inchangées ; trait app + light,
+  libellé visible sur 390 px à 5 positions de défilement). Captures iPhone (390 px) relues : app et light conformes.
+  **6 sabotages rouges** : app sans restriction (12 ❌), lecteur PDF sans groupe (4 ❌), light sans groupe (5 ❌), app sans trait (2 ❌),
+  libellé light centré = hors écran (1 ❌, défaut réel vu en capture puis corrigé), libellé app centré (1 ❌).
+- `test:departs-gate` : 1 rouge isolé sous 6 navigateurs en parallèle, non reproduit en 7 relances ; le test attendait 0,3 s fixes
+  puis lisait l'envoi de la fiche d'accès (qui part en arrière-plan) → il attend maintenant l'état (5 s au plus), rien d'assoupli.
+  `test:departs-compare` 0 écart sur 18 654 cases. `departs-integrity` et `departs-render` réécrites pour vérifier chaque rotation
+  à part (leçon #420). Leçon #421 (numéro de version remplacé globalement).
+
+---
+
 ## 2026-10-05 (00h20) — Vérif APPAREILS : 0 ❌
 
 Run 37246274236 (5.10 00h08 UTC) : **57 ✅ / 0 ❌ / 4 ⚠**, v2.136.0 servie ; la correction #4315 est prouvée en vrai (aucune trace

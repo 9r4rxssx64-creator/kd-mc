@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-05 (nuit, suite) — Contrôle qualité SonarCloud de la PR #4325 → corrigé (sans changer ce que voit Kevin)
+
+- **Pourquoi** : SonarCloud a refusé #4325 (note B de maintenabilité). Le portillon de la light était une seule fonction trop tordue (41 pour 15 permis).
+- **Fait** : portillon découpé en petites étapes (`_depLireGate`, `_depManqueGate`, `_depAdminLogin`, `_depCodeLogin`, `_depRefusAdmin`). Les `catch` vides disent pourquoi. La couleur du texte des cases (CMCteams) est écrite sur plusieurs lignes. Les tests de couleurs, du portillon et de Face ID suivent les remarques.
+- **Nouveau contrôle** : `test:departs-gate` vérifie aussi « Trop d'essais : réessaie dans 2 min » (18/0, sabotage = 17/1).
+- **Mesuré** : departs-gate 18/0 · light-faceid-code 27/0 · couleurs-parite OK (0 écart) · departs-groupes 44/0 · syntaxe OK · mono-fichier 3 439 847 o (plafond 3 441 529).
+- **Pas de nouvelle version** : rien ne change à l'écran, seulement la façon dont le code est rangé.
+
 ## 2026-10-05 (nuit) — Kevin : « Je n'arrive plus à me connecter à light » + « Respecte les couleurs d'import, CMCteams et light pareil » → light v1.66 + CMCteams v9.937
 
 **Connexion light (cause MESURÉE)** : `POST apex-auth-worker/login-cmc {uid:"U11804"}` → **404 user_not_found**. Le portillon

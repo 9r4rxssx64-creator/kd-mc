@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-05 (nuit, fin) — Kevin : « Je me connecte au domaine mais je n'arrive pas à me connecter à light ni CMCteams » → CMCteams v9.938
+
+- **Mesuré sur le vrai domaine (navigateur réel, 21h UTC)** : en ligne = CMCteams v9.935 et light v1.64. Les robots de publication de v9.937 / v1.66 ont été annulés pendant la panne GitHub Actions, puis remis en file.
+- **Light** : la cause est déjà corrigée en v1.66 (le code de Kevin part au domaine). Il faut seulement que la publication passe.
+- **CMCteams** : sur un appareil que le domaine ne reconnaît pas, l'écran du code admin vérifiait un PIN gardé sur l'appareil, jamais le domaine. Depuis le changement du code admin le 5.09, Kevin avait « Code incorrect » et un verrou. De plus, un appareil neuf laissait n'importe qui « créer » un code admin.
+- **v9.938** : sur kd-mc.com, le code tapé part à `/__admin/login` (`_cmcPinDomaine` dans `tools/shared/fiche-privee.js`). Si le domaine dit oui, Kevin entre et les données RH se rechargent. Un code faux sur un appareil neuf est refusé. Si le domaine ne répond pas, l'ancien chemin reprend. L'écran dit « tape ton code admin, c'est kd-mc.com qui le vérifie ».
+- **Mesuré** : `test:admin-sans-code` 13/0 (6 contrôles neufs E à I ; sabotage I prouvé).
+- **SonarCloud** : 4 doubles branches identiques dans `_cmcScopedWipe` et ses voisines (code du 3.10, vues comme neuves) sont réunies en une seule condition, sans changement de comportement (`runtime-audit-scoped-wipe` 10/0).
+- **Publication** : toujours bloquée par la panne GitHub Actions (tâches annulées sans démarrer, une relance faite et annulée elle aussi). Pas de secours GitLab : ses jetons sont révoqués.
+
 ## 2026-10-05 (nuit, suite) — Contrôle qualité SonarCloud de la PR #4325 → corrigé (sans changer ce que voit Kevin)
 
 - **Pourquoi** : SonarCloud a refusé #4325 (note B de maintenabilité). Le portillon de la light était une seule fonction trop tordue (41 pour 15 permis).

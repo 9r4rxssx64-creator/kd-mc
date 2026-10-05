@@ -11779,7 +11779,8 @@ Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas p
 - **Lecture** : le récapitulatif de la page 1 du PDF (`_cmcRecapBlocks`, index.html) note le groupe de chaque nom sous la ligne « GR… ».
   Rien n'est deviné : pas de ligne « GR » dans le PDF = pas de groupe. Reconnu aussi : « GROUPE 2 », « ÉCOLE … ».
 - **App** : `tools/shared/departs-groupes.js` — `calcDepPos` ne fait tourner que les personnes du même groupe ; l'écran Départs
-  met l'équipe d'abord, puis la ligne « 🎓 GR1 CRAPS — formation · départs entre eux », puis le groupe ; l'en-tête dit « 🎓 GR1 CRAPS : 4 (1→4→2→3) ».
+  met l'équipe d'abord, puis la ligne « 🎓 GR1 CRAPS — formation · départs entre eux » (**fond vert vif comme le PDF**, Kevin « Avec fond vert », v9.936),
+  puis le groupe ; l'en-tête dit « 🎓 GR1 CRAPS : 4 (1→4→2→3) ».
 - **Light** : `compute()` fait un passage par groupe (`_computeGroupe`), même trait, même sous-titre.
 - **Données** : le planning vérifié (`planning-seed.js`, champ `grp`) et les tableaux de la light (`boards-gen.js`, champ `grp`) portent le groupe.
 

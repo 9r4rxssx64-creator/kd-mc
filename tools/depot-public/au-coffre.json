@@ -171,6 +171,7 @@
   "tests/verify-boite-portail.mjs",
   "tests/verify-boutiques-fermees.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",
+  "tests/verify-couleurs-parite.mjs",
   "tests/verify-crea-comptes.mjs",
   "tests/verify-declaration-domaine.mjs",
   "tests/verify-departs-groupes.mjs",

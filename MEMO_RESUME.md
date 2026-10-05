@@ -1,5 +1,33 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-05 (nuit) — Kevin : « Je n'arrive plus à me connecter à light » + « Respecte les couleurs d'import, CMCteams et light pareil » → light v1.66 + CMCteams v9.937
+
+**Connexion light (cause MESURÉE)** : `POST apex-auth-worker/login-cmc {uid:"U11804"}` → **404 user_not_found**. Le portillon
+envoyait le code de Kevin (= le code ADMIN, qui ne vit que dans un secret du domaine) au serveur des codes CMCteams → « Aucun
+compte CMCteams avec ce matricule » dès que la session du domaine n'était plus reconnue. v1.66 : matricule U11804 → `/__admin/login`
+(le domaine), session vérifiée gardée. `test:departs-gate` 17/0 (5 contrôles neufs ; sabotage → le message exact « Aucun compte… »).
+`test:light-faceid-code` simulait un serveur des codes qui connaissait Kevin — faux : aligné sur le vrai (leçon #423). 27/0.
+
+**Couleurs** : l'app peignait des voiles transparents sur fond sombre (Café de Paris olive, RH sombre, PAT bleuté) ; la light pose
+les couleurs pleines du PDF. App alignée sur `codeStyle()` de la light (fonds + écriture) ; un « CLM » montrait une case VIDE dans
+Départs → code affiché ; une règle CSS de lisibilité (`.page [style*="color:#5a"]` → vert pâle !important) repeignait l'encre brune
+du Café de Paris → écriture rendue en rgb() (leçon #424). Garde neuve **`test:couleurs-parite`** (dans test:ci), écran Départs
+d'octobre, 7 440 cases : **avant 3 410 fonds + 426 écritures différents → après 0 / 0**. Captures iPhone relues (Départs + Planning).
+11 personnes absentes tout le mois : la light garde leur ligne, l'app les range dans « Absents tout le mois » (affichage, pas couleur).
+
+**Pas encore en ligne** : incident GitHub Actions (githubstatus : « Actions degraded ») — les robots de publication sont en file.
+
+---
+
+## 2026-10-05 (soir, suite 2) — Kevin « Avec fond vert » : CMCteams v9.936 + light v1.65
+
+- La ligne « 🎓 GR1 CRAPS — formation · départs entre eux » a maintenant le **fond vert vif** de la ligne « GR1 CRAPS » du PDF
+  (#9cf53c, texte foncé), dans l'app ET la light. Captures iPhone 390 px relues.
+- `test:departs-groupes` **44/0** : 2 contrôles neufs « fond vert vif » (couleur calculée par le navigateur) ; sabotage ancienne
+  couleur → 2 ❌. Planning vérifié et tableaux light régénérés (version du parseur = v9.936), empreintes notées.
+
+---
+
 ## 2026-10-05 (soir, suite) — #4322 fusionnée et EN LIGNE (v9.935 / v1.64) ; chaîne privée rouge sur 1 contrôle → corrigé
 
 - Fusion #4322 (aca342ee0). Vu en ligne (Firecrawl, HTTP 200) : `kd-mc.com/CMCteams/version.txt` = v9.935,

@@ -1,5 +1,5 @@
 {
-  "maj": "2026-09-26",
+  "maj": "2026-10-05",
   "note": "Scripts PUBLICS des vidéos courtes sans visage (9:16, 20-40 s). Chaque ligne = une carte à l'écran ET une phrase lue par la voix du domaine. Tutoiement, zéro jargon, zéro chiffre invérifiable, zéro promesse de résultat : on montre CE QUE ça fait, jamais ce que ça rapporte. Le module 1 de chaque kit est gratuit : c'est la seule promesse.",
   "marque": "kit.kd-mc.com",
   "videos": [
@@ -454,6 +454,48 @@
         "#restaurateur",
         "#tripadvisor",
         "#ia"
+      ]
+    },
+    {
+      "id": "immo-06",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "theme": "clair",
+      "lignes": [
+        "Vingt-deux heures, tu réponds encore à tes mails.",
+        "Tu dictes trois mots, l'assistant IA rédige la réponse.",
+        "Il reprend ton ton, poli et précis, prêt à envoyer.",
+        "Tes relances partent le soir même, depuis ton téléphone.",
+        "Le premier module est gratuit, à tester dès ce soir."
+      ],
+      "legende": "Vingt-deux heures, tu réponds encore à tes mails au lieu de souffler. Avec le Kit IA de l'agent immobilier, tu dictes l'idée, l'assistant rédige la réponse à ton image, prête à partir. Le premier module est gratuit sur kit.kd-mc.com",
+      "hashtags": [
+        "#immobilier",
+        "#agentimmobilier",
+        "#mandataire",
+        "#prospection",
+        "#ia"
+      ]
+    },
+    {
+      "id": "club-05",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "theme": "sombre",
+      "lignes": [
+        "Vingt-deux heures. Tu écris encore un mail à un client.",
+        "Tu décris la situation, l'assistant IA rédige la réponse.",
+        "Tu relis, tu ajustes le ton, et c'est déjà parti.",
+        "Ta soirée redevient une soirée.",
+        "Le Club IA au Boulot : cinquante-neuf euros l'année."
+      ],
+      "legende": "Vingt-deux heures et tu écris encore un mail à un client. Le Club IA au Boulot te donne une consigne prête à coller pour la situation que tu viens de vivre, et ta soirée redevient une soirée. Cinquante-neuf euros l'année, sur kit.kd-mc.com",
+      "hashtags": [
+        "#ia",
+        "#independant",
+        "#commercant",
+        "#artisan",
+        "#astuce"
       ]
     }
   ]

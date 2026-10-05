@@ -1,0 +1,50 @@
+{
+  "_doc": "GÉNÉRÉ par pub-videos.yml (programmation.mjs --prepare) : ce que la routine « Pub — vidéos de la semaine » programme dans Metricool (marque 7000185). Aucun secret.",
+  "marque": 7000185,
+  "fuseau": "Europe/Paris",
+  "reseaux": [
+    "facebook",
+    "instagram",
+    "tiktok",
+    "youtube"
+  ],
+  "rendu": "2026-10-05T08:13:42.984Z",
+  "videos": [
+    {
+      "id": "immo-06",
+      "produit": "immo-ia",
+      "page": "https://kit.kd-mc.com/immo.html",
+      "titre": "Vingt-deux heures, tu réponds encore à tes mails.",
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/immo-06.mp4",
+      "duree": 16,
+      "voix": "muet",
+      "legende": "Vingt-deux heures, tu réponds encore à tes mails au lieu de souffler. Avec le Kit IA de l'agent immobilier, tu dictes l'idée, l'assistant rédige la réponse à ton image, prête à partir. Le premier module est gratuit sur kit.kd-mc.com",
+      "hashtags": [
+        "#immobilier",
+        "#agentimmobilier",
+        "#mandataire",
+        "#prospection",
+        "#ia"
+      ],
+      "creneau": "2026-10-06T10:00:00+02:00"
+    },
+    {
+      "id": "club-05",
+      "produit": "club-ia",
+      "page": "https://kit.kd-mc.com/#club",
+      "titre": "Vingt-deux heures. Tu écris encore un mail à un client.",
+      "mp4": "https://pub-24d1694cc3dd4e4ea7cc0d337c4082c7.r2.dev/club-05.mp4",
+      "duree": 16,
+      "voix": "muet",
+      "legende": "Vingt-deux heures et tu écris encore un mail à un client. Le Club IA au Boulot te donne une consigne prête à coller pour la situation que tu viens de vivre, et ta soirée redevient une soirée. Cinquante-neuf euros l'année, sur kit.kd-mc.com",
+      "hashtags": [
+        "#ia",
+        "#independant",
+        "#commercant",
+        "#artisan",
+        "#astuce"
+      ],
+      "creneau": "2026-10-06T12:00:00+02:00"
+    }
+  ]
+}

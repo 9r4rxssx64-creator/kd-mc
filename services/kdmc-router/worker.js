@@ -975,6 +975,22 @@ async function ssoVerify(secret, token) {
    acc.revoked_at est refusé. Le user peut se RE-connecter (nouveau token,
    iat > revoked_at) — on tue les sessions perdues/volées, jamais le compte. */
 function revoked(acc, s) { return !!(acc && acc.revoked_at && (s.iat || 0) < acc.revoked_at); }
+/* LA SESSION PROUVÉE GAGNE (Kevin 5.10.2026 : « je me connecte à mon domaine, mais CMCteams et la light me
+   redemandent tout »). Une app garde parfois dans SA mémoire un vieux laissez-passer « déclaré » (non prouvé)
+   et l'envoie en en-tête : il passait AVANT le cookie, et la vraie session de Kevin — prouvée par Face ID ou
+   par le code admin, posée par le portail sur *.kd-mc.com — était ignorée. Désormais, si l'en-tête ne porte
+   qu'une session non prouvée et que le cookie du navigateur porte une session PROUVÉE et non révoquée, c'est
+   le cookie qui parle. Le cookie est HttpOnly et posé par le domaine seul : il ne donne rien qu'une app sans
+   en-tête n'aurait déjà eu. Dans tous les autres cas, rien ne change (l'en-tête garde la priorité). */
+async function ssoPreferePreuve(secret, env, request, tok) {
+  const s = await ssoVerify(secret, tok);
+  if (s?.verified) return { s, tok, cookie: false };
+  const c = ssoCookie(request, SSO_COOKIE);
+  if (!c || c === tok) return { s, tok, cookie: false };
+  const sc = await ssoVerify(secret, c);
+  if (!sc?.verified || revoked(await accGet(env, sc.uid), sc)) return { s, tok, cookie: false };
+  return { s: sc, tok: c, cookie: true };
+}
 function ssoCookie(request, name) {
   const c = request.headers.get('cookie') || '';
   const m = c.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
@@ -2737,7 +2753,8 @@ async function handleSso(request, url, env) {
     return J({ ok: true, prolonge: true, token: neuf }, cookie);
   }
   if (path === '/__sso/whoami' && request.method === 'GET') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const choix = await ssoPreferePreuve(secret, env, request, ssoToken(request));
+    const s = choix.s;
     /* SÉCU (leçon #99) : admin EXIGE une identité FORTE (verified = Face ID prouvé).
        Un uid admin auto-déclaré via /__sso/issue reste verified:false → admin:false. */
     if (s) {
@@ -2777,6 +2794,9 @@ async function handleSso(request, url, env) {
       /* `cgu` = accepté UNE fois, n'importe où (fiche `cgu_at`), pas seulement dans ce pass. */
       const rep = { ok: true, uid: s.uid, name: s.name, cgu: !!(s.cgu || (acc && acc.cgu_at)), verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
+      /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
+         qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
+      else if (choix.cookie && parEnTete) { rep.token = choix.tok; rep.remplace = true; }
       return J(rep, cookieNeuf);
     }
     return J({ ok: false });
@@ -3440,6 +3460,13 @@ async function adminSession(request, env) {
        /__admin/accounts). Même règle que whoami : un jeton émis avant la révocation ne vaut plus rien. */
     if (s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !(await adminRevoque(env, s))) return { uid: s.uid, name: s.name, faceid: true };
   }
+  /* (5.10.2026) Même règle que whoami : un vieux laissez-passer non prouvé en en-tête ne masque plus la
+     session PROUVÉE de Kevin portée par le cookie du navigateur. */
+  const ck = ssoCookie(request, SSO_COOKIE);
+  if (ck && ck !== ssoRaw) {
+    const s2 = await ssoVerify(secret, ck);
+    if (s2?.verified && ADMIN_UIDS.includes(s2.uid) && !(await adminRevoque(env, s2))) return { uid: s2.uid, name: s2.name, faceid: true };
+  }
   return null;
 }
 async function handleAdmin(request, url, env) {
@@ -3861,7 +3888,7 @@ async function botFleetStats(env, ctx, names) {
           const m = String(logs[k].message || '').match(/equity=([0-9.]+)/);
           if (m) { equity = Number(m[1]); break; }
         }
-        out.set(n.x.name, Object.assign({ name: n.x.name, svcId: n.x.svc.id, depl: n.node.id, status: n.node.status, equity, arrete: IA.robotArrete(logs) }, st));
+        out.set(n.x.name, { name: n.x.name, svcId: n.x.svc.id, depl: n.node.id, status: n.node.status, equity, arrete: IA.robotArrete(logs), ...st });
       });
     }
   }

@@ -548,6 +548,42 @@
     });
   }
 
+  /* KEVIN RECONNU PARTOUT (Kevin 5.10.2026 : « je me connecte à mon domaine, et CMCteams / la light me
+     redemandent nom, prénom, U… »). MESURÉ : le portail ouvrait Kevin avec une session seulement DÉCLARÉE
+     (son ancien code de compte, ou un nom) — le domaine le signalait (admin_requis) et le portail l'ignorait.
+     Les apps n'ouvrent l'admin qu'à une session PROUVÉE : elles lui redemandaient tout. Désormais, dès que la
+     session est celle de Kevin sans preuve, le portail demande la preuve UNE fois : Face ID (sa clé d'accès)
+     ou le code admin — et toutes les apps le reconnaissent ensuite. La liste ci-dessous ne sert qu'à
+     l'AFFICHAGE : la preuve reste décidée par le domaine (whoami verified/admin), jamais ici. */
+  var UID_KEVIN = { 'kdmc_admin': 1, 'kevin-desarzens': 1 };
+  function _kevinNonProuve(sess) { return !!(sess && sess.uid && UID_KEVIN[sess.uid] && !sess.verified); }
+  function renderPreuveAdmin(message) {
+    var pk = _pkSupported();
+    gate.innerHTML = '<h2 class="g-title">Bonjour Kevin</h2>'
+      + '<p class="g-sub">' + esc(message || 'Pour être reconnu tout seul dans CMCteams, la light et toutes tes apps, prouve que c\'est toi une fois : Face ID, ou ton code admin.') + '</p>'
+      + (pk ? '<button class="btn" id="pa-pk" type="button">🔓 Face ID — ma clé d\'accès</button>' : '')
+      + '<input class="fld" id="a-code" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="Code administrateur"' + (pk ? ' style="margin-top:8px"' : '') + '>'
+      + '<button class="btn' + (pk ? ' ghost' : '') + '" id="a-go" type="button">Me reconnaître partout</button>'
+      + '<p class="g-err" id="a-err" role="alert" aria-live="polite"></p>'
+      + '<button class="btn ghost" id="pa-plus-tard" type="button">Plus tard</button>';
+    show(gate); hide(hub);
+    document.getElementById('a-go').addEventListener('click', doAdminCode);
+    document.getElementById('a-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doAdminCode(); });
+    document.getElementById('pa-plus-tard').addEventListener('click', function () { var a0 = lg(LS_ACCOUNT, null); showHub((a0 && a0.name) || 'Kevin Desarzens'); });
+    var b = document.getElementById('pa-pk');
+    if (b) b.addEventListener('click', function () {
+      b.disabled = true; b.textContent = '…';
+      window.kdmcSSO.loginPasskey().then(function (j) {
+        if (j && j.ok && j.verified !== false && UID_KEVIN[j.uid]) {
+          ls(LS_ACCOUNT, { uid: j.uid, name: 'Kevin Desarzens', salt: '', codeHash: '', admin: true, created: Date.now() });
+          _setPasskey(j.uid, j.credId); showHub('Kevin Desarzens'); return;
+        }
+        document.getElementById('a-err').textContent = 'Face ID : ' + ((j && j.reason) || (j && j.ok ? 'ce n\'est pas la clé de l\'admin' : 'échec')) + ' — utilise ton code admin.';
+        b.disabled = false; b.textContent = '🔓 Face ID — ma clé d\'accès';
+      });
+    });
+  }
+
   function doUnlock(acc) {
     var code = (document.getElementById('u-code').value || '').trim();
     var err = document.getElementById('u-err'); err.textContent = '';
@@ -567,6 +603,9 @@
       /* Le code part au domaine : la 1re fois, il y est enregistré (migration), ensuite c'est
          le domaine qui a le dernier mot (un code changé ailleurs l'emporte). */
       return window.kdmcSSO.issueDetail(acc.uid, acc.name, true, safeReturnUrl(), code).then(function (j) {
+        /* (5.10.2026) Le domaine dit « c'est l'admin » : un code de compte n'en fait qu'une session DÉCLARÉE,
+           que CMCteams et la light refusent. On demande la preuve au lieu d'ouvrir le portail à moitié. */
+        if (j && j.ok && j.admin_requis) { renderPreuveAdmin(); return; }
         if (j && !j.ok && (j.reason === 'code_incorrect' || j.reason === 'trop_essais')) {
           err.textContent = j.reason === 'trop_essais' ? j.message : 'Ton code a été changé sur un autre appareil : utilise ce code-là.';
           btn.disabled = false; btn.textContent = 'Se connecter'; return;
@@ -659,6 +698,20 @@
       var base = a.href.replace(/([#&])kdmc_sso=[^&]*/, '$1').replace(/[#&]+$/, '');
       a.href = base + (base.indexOf('#') >= 0 ? '&' : '#') + 'kdmc_sso=' + encodeURIComponent(t);
     }, true);
+    /* (5.10.2026) LA SESSION SUIT LA TUILE, VERS TOUTES LES APPS (CMCteams compris). Une app installée sur
+       l'écran d'accueil a ses propres cookies : un simple lien y arrivait sans session, et Kevin devait tout
+       retaper. On passe par la porte /__sso/entrer de l'app (déjà utilisée au retour après connexion), qui
+       dépose la session du domaine dans SON stockage puis ouvre la page. Sans session : le lien tel quel. */
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest('a.card') : null;
+      if (!a || a.classList.contains('soon') || a.getAttribute('aria-disabled') === 'true' || a.target === '_blank') return;
+      var u; try { u = new URL(a.href); } catch (_) { return; }
+      if (u.protocol !== 'https:' || u.hostname === location.hostname || !/\.kd-mc\.com$/.test(u.hostname)) return;
+      if (!(window.kdmcSSO && window.kdmcSSO.porte)) return;
+      e.preventDefault();
+      window.kdmcSSO.porte(a.href).then(function (dest) { location.href = dest; }, function () { location.href = a.href; });
+    });
   }
   _decorateAppLinks();
 
@@ -666,6 +719,7 @@
   function boot() {
     var acc = lg(LS_ACCOUNT, null);
     var done = function (sess) {
+      if (_kevinNonProuve(sess)) { renderPreuveAdmin(); show(gate); return; }
       if (sess && sess.uid) { _postLogin({ uid: sess.uid, name: sess.name || (acc && acc.name) }); return; }
       if (acc) renderUnlock(acc); else renderCreate();
       show(gate);

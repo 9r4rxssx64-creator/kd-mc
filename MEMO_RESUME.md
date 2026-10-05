@@ -1,5 +1,20 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-05 (nuit, après) — Kevin : « Je me connecte à mon domaine… CMCteams et la light me redemandent tout, et ma clé d'accès n'est pas reconnue » → portail v1.0.41 + routeur + CMCteams v9.939 (light inchangée : elle profite du portail et du routeur)
+
+- **Causes (lues dans le code, puis reproduites dans un vrai navigateur avec un faux Face ID et le vrai routeur)** :
+  1. Le portail ouvrait Kevin avec son **ancien code de compte**. Le domaine n'en tire qu'une session *déclarée* et le signale (`admin_requis`), mais le portail l'ignorait. CMCteams et la light n'ouvrent l'admin qu'à une session *prouvée*.
+  2. Une app gardait un **vieux laissez-passer non prouvé** et l'envoyait en en-tête. Le domaine le lisait avant le cookie prouvé.
+  3. Les **tuiles** du portail n'emportaient pas la session vers une app installée, qui a ses propres cookies.
+  4. Le **Face ID de CMCteams** cherchait une clé propre à l'app, liée à une ancienne adresse, et pas la clé d'accès du domaine (rpId `kd-mc.com`). Mesuré en ligne : la clé est bien enregistrée, une seule, rangée sous les deux identifiants de l'admin.
+- **Corrigé** :
+  1. **Portail v1.0.41** : il demande la preuve (Face ID ou code admin) quand la session de Kevin n'est que déclarée. Ses tuiles passent par `/__sso/entrer`.
+  2. **Routeur** : la session prouvée du cookie gagne sur un vieux laissez-passer non prouvé (`ssoPreferePreuve`, whoami et `/__admin/grant`). Le bon laissez-passer est rendu (`remplace`).
+  3. **CMCteams v9.939** : bouton « 🔐 Face ID — ma clé d'accès kd-mc.com » (`_cmcFaceIdDomaine`, dans `tools/shared/fiche-privee.js`).
+  4. **Light** : aucun changement de code. Son Face ID utilisait déjà la clé du domaine ; vérifié par le test de bout en bout.
+- **SonarCloud** : 40 remarques sur la 1re version, surtout dans le nouveau test. Corrigées, dont une vraie erreur : la fonction d'attente ignorait son 4e argument, donc le contrôle « bouton Face ID présent » ne regardait rien. Le test du routeur est passé au format `node:test`.
+- **Mesuré** : `test:reconnu-domaine` 12/0 (sabotages portail, tuile et Face ID tous rouges), `test:preuve-gagne` 10/0 (sabotage 3 rouges), 59 tests du routeur verts, `test:sso-navigateur` 33/0, `admin-sans-code` 13/0, `departs-gate` 18/0, `light-faceid-code` 27/0.
+
 ## 2026-10-05 (nuit, fin) — Kevin : « Je me connecte au domaine mais je n'arrive pas à me connecter à light ni CMCteams » → CMCteams v9.938
 
 - **Mesuré sur le vrai domaine (navigateur réel, 21h UTC)** : en ligne = CMCteams v9.935 et light v1.64. Les robots de publication de v9.937 / v1.66 ont été annulés pendant la panne GitHub Actions, puis remis en file.

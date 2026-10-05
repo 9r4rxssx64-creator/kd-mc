@@ -8,7 +8,8 @@
 - **v9.938** : sur kd-mc.com, le code tapé part à `/__admin/login` (`_cmcPinDomaine` dans `tools/shared/fiche-privee.js`). Si le domaine dit oui, Kevin entre et les données RH se rechargent. Un code faux sur un appareil neuf est refusé. Si le domaine ne répond pas, l'ancien chemin reprend. L'écran dit « tape ton code admin, c'est kd-mc.com qui le vérifie ».
 - **Mesuré** : `test:admin-sans-code` 13/0 (6 contrôles neufs E à I ; sabotage I prouvé).
 - **SonarCloud** : 4 doubles branches identiques dans `_cmcScopedWipe` et ses voisines (code du 3.10, vues comme neuves) sont réunies en une seule condition, sans changement de comportement (`runtime-audit-scoped-wipe` 10/0).
-- **Publication** : toujours bloquée par la panne GitHub Actions (tâches annulées sans démarrer, une relance faite et annulée elle aussi). Pas de secours GitLab : ses jetons sont révoqués.
+- **Publication** : bloquée une heure par la panne GitHub Actions. Pas de secours possible par GitLab, dont les jetons sont révoqués. La fusion de #4327 a fini par passer : **en ligne à 21h51 UTC, CMCteams v9.938 et light v1.66**.
+- **Vérifié sur le VRAI domaine (navigateur iPhone 390 px, 21h55 UTC), 10/10** : les deux apps envoient le code de Kevin à `/__admin/login`. Un code faux est refusé par le domaine (« Code incorrect. »), rien ne s'ouvre, et aucun code n'est créé sur l'appareil. Aucun appel au serveur des codes, aucune erreur JS. L'écran CMCteams dit « tape ton code admin, c'est kd-mc.com qui le vérifie ». Ces 2 essais « code faux » viennent de ce contrôle.
 
 ## 2026-10-05 (nuit, suite) — Contrôle qualité SonarCloud de la PR #4325 → corrigé (sans changer ce que voit Kevin)
 

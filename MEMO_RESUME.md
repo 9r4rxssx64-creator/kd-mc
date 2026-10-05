@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-05 (soir, suite) — #4322 fusionnée et EN LIGNE (v9.935 / v1.64) ; chaîne privée rouge sur 1 contrôle → corrigé
+
+- Fusion #4322 (aca342ee0). Vu en ligne (Firecrawl, HTTP 200) : `kd-mc.com/CMCteams/version.txt` = v9.935,
+  `departs.kd-mc.com/version.txt` = v1.64, `tools/shared/departs-groupes.js` servi.
+- `coffre-chaine-privee` (run 37355063756) : 22 OK / 1 échec — `test:docs-a-la-demande` D2 exigeait « === v9.934 ».
+  Ce n'était pas un défaut de l'appli : le contrôle confondait prérequis et égalité. Corrigé en « ≥ v9.934 » (leçon #422),
+  sabotage APP_VER=v9.933 → rouge ; `test:ci-prive` relancé en entier en local.
+
+---
+
 ## 2026-10-05 (soir) — CMCteams v9.935 + light v1.64 : les groupes de formation (GR CRAPS) ont leurs départs entre eux
 
 Kevin (PDF OCTOBRE_2026_V2 + capture CMC Éq.3) : « De Schwietzer à Toulet tu leur donnes des départs et d'Abbas à Blanzieri

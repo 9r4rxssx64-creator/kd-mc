@@ -12,6 +12,7 @@
   2. **Routeur** : la session prouvée du cookie gagne sur un vieux laissez-passer non prouvé (`ssoPreferePreuve`, whoami et `/__admin/grant`). Le bon laissez-passer est rendu (`remplace`).
   3. **CMCteams v9.939** : bouton « 🔐 Face ID — ma clé d'accès kd-mc.com » (`_cmcFaceIdDomaine`, dans `tools/shared/fiche-privee.js`).
   4. **Light** : aucun changement de code. Son Face ID utilisait déjà la clé du domaine ; vérifié par le test de bout en bout.
+- **En ligne à 23h18 UTC (#4329)** : le routeur est déployé par le dépôt public (run 37387403702 ✅), CMCteams sert v9.939 et le portail sert v1.0.41. **Vérifié sur le vrai domaine** (navigateur iPhone 390 px) : le bouton « Face ID — ma clé d'accès kd-mc.com » est sur le 1er écran de CMCteams. La clé demandée est celle de tout le domaine (rpId kd-mc.com), sans erreur JS. Le portail neuf est bien servi. Pas vérifiable d'ici sans le code ni la clé de Kevin : son entrée réelle. Elle est prouvée par le test de bout en bout avec le vrai routeur.
 - **SonarCloud** : 40 remarques sur la 1re version, surtout dans le nouveau test. Corrigées, dont une vraie erreur : la fonction d'attente ignorait son 4e argument, donc le contrôle « bouton Face ID présent » ne regardait rien. Le test du routeur est passé au format `node:test`.
 - **Mesuré** : `test:reconnu-domaine` 12/0 (sabotages portail, tuile et Face ID tous rouges), `test:preuve-gagne` 10/0 (sabotage 3 rouges), 59 tests du routeur verts, `test:sso-navigateur` 33/0, `admin-sans-code` 13/0, `departs-gate` 18/0, `light-faceid-code` 27/0.
 

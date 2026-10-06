@@ -11,6 +11,7 @@
 
   Le hash (v2, sel aléatoire) est rangé au secret, la copie publique ne garde qu'un repère, la session s'ouvre comme `/login-cmc`, et l'action est journalisée.
 - **CMCteams v9.940** (`tools/shared/secrets-cmc.js`) : quand le serveur répond « compte inconnu », la fenêtre « 🔑 Recrée ton mot de passe » s'ouvre. Prénom et nom sont pré-remplis, puis 2 champs mot de passe. Si le serveur accepte, la personne entre et Kevin reçoit une notification « Mot de passe CMCteams recréé ».
+- **En ligne (#4334, 6.10 01h48 UTC)** : serveur des codes déployé par le dépôt public (« Deploy apex-auth-worker » ✅), CMCteams sert v9.940. **Vérifié sur le vrai domaine**, en lecture seule (aucun mot de passe créé) : le vrai serveur répond « compte inconnu », la fenêtre « 🔑 Recrée ton mot de passe » s'ouvre avec prénom et nom pré-remplis, aucune erreur JS.
 - **Mesuré** : `test:recreer-mdp` 10/0 (vraie app + vrai serveur ; sabotage app 7 rouges), `test:auth-worker` 24/0 (sabotage « écraser un mot de passe » rouge), `test:routeur-public` couvre maintenant aussi le serveur des codes (18 fichiers exportables).
 
 ## 2026-10-06 (nuit) — Kevin : « Mes collègues n'arrivent plus à se connecter non plus » → light v1.67 + routeur (`/__dep/membre`)

@@ -92,6 +92,8 @@ export function html(d) {
   </footer>
 </main>
 <script src="dossiers.js"></script>
+<!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="dossiers" data-version="v1.0.1" data-color="#c9a227" defer></script>
 </body>
 </html>
 `;

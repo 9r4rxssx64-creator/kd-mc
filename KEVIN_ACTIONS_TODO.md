@@ -9,6 +9,16 @@
 
 ---
 
+## 👆 (6.10, soir) Tes collègues coincés sur une vieille version — 1 action pour les débloquer tous d'un coup
+
+Mesuré : ils ont installé CMCteams / la light depuis l'ancienne adresse **kdmc-site.pages.dev**, qui sert encore **v9.891 / v1.39**
+et ne se met plus à jour (elle était publiée par GitLab, dont le jeton est mort). Les nouvelles versions savent déjà revenir toutes
+seules sur kd-mc.com ; il faut juste que l'ancienne adresse reçoive UNE dernière publication.
+- **Ta seule action** : recréer le jeton GitLab (voir plus bas « Recréer le jeton GitLab du secret `GITLAB_TOKEN` »). Ensuite je
+  lance tout : republication de l'ancienne adresse → chaque téléphone coincé se met à jour puis part sur cmcteams.kd-mc.com.
+- **En attendant** (à envoyer aux collègues) : « Ouvre https://cmcteams-light.kd-mc.com (ou https://cmcteams.kd-mc.com) dans Safari,
+  touche Partager → Sur l'écran d'accueil, puis supprime l'ancienne icône. »
+
 ## ✅ Lingua v2.135.0 (4.10) — chacun choisit ses horaires d'appel
 
 - Lingua → carte « 📞 Appeler Bee » → **Mes horaires d'appel** : coche les jours (L M M J V S D) et l'heure, jusqu'à

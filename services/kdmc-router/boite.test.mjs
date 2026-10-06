@@ -6,7 +6,7 @@
  * node services/kdmc-router/boite.test.mjs */
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
-import { handleBoite, lireBoite, LIMITES, SOURCES_MESSAGES, _viderMemo, appareilDe } from './boite.js';
+import { handleBoite, lireBoite, LIMITES, SOURCES, SOURCES_MESSAGES, _viderMemo, appareilDe, texteAlerte, grouperAlertes } from './boite.js';
 import { BOUTON_JS } from './boite-bouton.js';
 import mod, { injecterBouton, BOUTON_TAG } from './worker.js';
 import { ADMIN, schema as schemaCercle } from './cercle.js';
@@ -158,6 +158,19 @@ const vieille = b.messages.find((x) => x.source === 'alertes' && /FR → US/.tes
 ok(vieille && vieille.nonLus === 0 && vieille.lu && fraiche && fraiche.nonLus === 1 && b.nonLusAlertes === 1, '6g. une alerte de 6 jours est lue d\'office (reste visible), une alerte du jour compte', [vieille, b.nonLusAlertes]);
 const iMsg = b.messages.findIndex((x) => x.source === 'lingua' && x.nonLus), iAl = b.messages.findIndex((x) => x.source === 'alertes' && x.nonLus);
 ok(iMsg >= 0 && iAl > iMsg, '6h. un vrai message non lu passe TOUJOURS avant une alerte non lue', [iMsg, iAl]);
+
+/* 6i-6l. (Kevin 6.10, capture : 5 cartes « Code admin refusé » sans texte, bulle vide, lien qui ne marche pas) */
+kv.set('aud:log', JSON.stringify([0, 1, 2, 3, 4].map((i) => ({ ts: T - 1000 - i * 6e4, ev: 'admin_login_fail', ip: 'abcdef123456', app: 'cmcteams.kd-mc.com', pays: 'MC' }))
+  .concat([{ ts: T - 3 * 36e5, ev: 'admin_login_fail', ip: 'abcdef123456' }])));
+b = await boite();
+const refus = b.messages.filter((x) => x.source === 'alertes');
+ok(refus.length === 2 && /×5/.test(refus[0].de) && /5 fois en 4 min/.test(refus[0].texte), '6i. 5 refus du même appareil en 4 min = UNE carte « ×5 » (plus cinq cartes identiques)', refus);
+ok(/mauvais code admin/i.test(refus[0].texte) && /depuis cmcteams\.kd-mc\.com/.test(refus[0].texte) && /pays MC/.test(refus[0].texte) && refus.every((x) => x.texte.trim()), '6j. chaque alerte dit en clair ce qui s\'est passé, depuis quelle app et quel pays (jamais vide)', refus);
+ok(SOURCES.alertes.lien === 'https://kd-mc.com/admin/#journal', '6k. « Ouvrir » mène au journal qui MONTRE les alertes, sur l\'adresse du portail (plus admin.kd-mc.com qui les retire)', SOURCES.alertes.lien);
+ok(grouperAlertes([{ ts: 10e6, ev: 'a', ip: 'x' }, { ts: 10e6 - 60e6, ev: 'a', ip: 'x' }, { ts: 9e6, ev: 'a', ip: 'y' }]).length === 3 && texteAlerte({ ev: 'geo_anomaly', detail: 'FR → US', uid: 'lea' }) === 'FR → US — compte lea',
+  '6l. on ne regroupe pas des alertes éloignées (> 30 min) ni d\'appareils différents ; le compte concerné est nommé');
+const Wr = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
+ok(/ev: 'admin_login_fail', ip: ipHash\.slice\(0, 12\), app: appDeLaDemande\(request\), pays:/.test(Wr), '6m. le routeur note l\'app d\'origine et le pays d\'un code refusé');
 
 /* 7. tri : les non lus d'abord, puis le plus récent */
 b = await boite();

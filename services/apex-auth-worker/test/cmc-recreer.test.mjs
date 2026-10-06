@@ -90,9 +90,9 @@ test("on n'écrase JAMAIS un mot de passe existant (sinon nom + matricule suffir
   assert.ok(verifyCmcPw("ancien1", w.lire("cmcteams_secret/pw/U00015")), "l'ancien mot de passe est intact");
 });
 
-test("absent de la banque ET des imports, ou nom qui ne va pas avec le matricule → refusé, rien d'écrit", async () => {
+test("absent de la banque ET des imports (par le NOM) → refusé, rien d'écrit", async () => {
   const w = monde({ cmcteams: { cmc_e: BANQUE } }, '{"id":"U00015","name":"DUPONT M"}');
-  for (const b of [{ uid: "U09999", nom: "Dupont", prenom: "Marc" }, { uid: "U00015", nom: "Durand", prenom: "Marc" }, { uid: "U00015", nom: "Dupont", prenom: "Paul" }]) {
+  for (const b of [{ uid: "U09999", nom: "Inconnu", prenom: "Marc" }, { uid: "U00015", nom: "Durand", prenom: "Marc" }, { uid: "U00015", nom: "Dupont", prenom: "Paul" }]) {
     const r = await w.appel({ ...b, password: "nouveau1" });
     assert.equal(r.status, 403, JSON.stringify(b));
   }

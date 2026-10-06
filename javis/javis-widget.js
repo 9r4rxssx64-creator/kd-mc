@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.17';
+  var JAVIS_VER = 'v1.18';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -1488,15 +1488,11 @@
           })
           .catch(function () { respond('Météo indisponible là, réessaie.'); });
       };
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          /* arrondi à ~1 km (2 décimales) : la météo n'a pas besoin de la position exacte de Kevin
-             (audit complet 30.09 : 6 décimales partaient chez open-meteo, ~10 cm) */
-          function (pos) { give(Math.round(pos.coords.latitude * 100) / 100, Math.round(pos.coords.longitude * 100) / 100, ''); },
-          function () { give(43.7325, 7.4197, 'Monaco'); },
-          { timeout: 4000 }
-        );
-      } else { give(43.7325, 7.4197, 'Monaco'); }
+      /* v1.18 (Kevin 06.10 « la localisation partout à chaque fois ») : Bee ne DEMANDE plus jamais la position — déjà accordée
+         ici → elle s'en sert (arrondie à ~1 km, audit 30.09) ; sinon dernière position connue (6 h), sinon Monaco. */
+      var monaco = function () { var m = null; try { m = JSON.parse(localStorage.getItem('javis_meteo_pos') || 'null'); } catch (_) { m = null; } if (m && Date.now() - m.t < 216e5) give(m.lat, m.lon, ''); else give(43.7325, 7.4197, 'Monaco'); };
+      var gps = function () { navigator.geolocation.getCurrentPosition(function (pos) { var la = Math.round(pos.coords.latitude * 100) / 100, lo = Math.round(pos.coords.longitude * 100) / 100; try { localStorage.setItem('javis_meteo_pos', JSON.stringify({ lat: la, lon: lo, t: Date.now() })); } catch (_) { /* stockage plein */ } give(la, lo, ''); }, monaco, { timeout: 4000 }); };
+      if (navigator.geolocation && navigator.permissions && typeof navigator.permissions.query === 'function') navigator.permissions.query({ name: 'geolocation' }).then(function (st) { if (st.state === 'granted') gps(); else monaco(); }, monaco); else monaco();
       return true;
     }
     if (RE_APEX.test(t)) {

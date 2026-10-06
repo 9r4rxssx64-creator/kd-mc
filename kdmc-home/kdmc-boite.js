@@ -121,7 +121,9 @@
     if (ouvert === m.cle) {
       var corps = el('div', 'bf-corps');
       (m.fil || []).forEach(function (x) { var b = el('div', 'bf-b ' + (x.moi ? 'moi' : 'eux')); b.appendChild(el('div', null, x.texte)); b.appendChild(el('div', 'bf-bt', (x.moi ? 'Toi · ' : '') + quand(x.ts))); corps.appendChild(b); });
-      if (!(m.fil || []).length) corps.appendChild(el('div', 'bf-b eux', m.texte));
+      /* 6.10 (Kevin, capture : bulle verte VIDE sous « Code admin refusé ») : pas de bulle sans texte, et l'heure exacte toujours. */
+      if (!(m.fil || []).length && String(m.texte || '').trim()) corps.appendChild(el('div', 'bf-b eux', m.texte));
+      if (!(m.fil || []).length && m.ts) corps.appendChild(el('div', 'bf-info', '🕒 ' + new Date(m.ts).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })));
       (m.infos || []).forEach(function (l) { corps.appendChild(el('div', 'bf-info', l)); });
       if (m.contact && !(m.infos || []).length) corps.appendChild(el('div', 'bf-info', '✉️ ' + m.contact));
       var bas = el('div', 'bf-bas');
@@ -141,7 +143,7 @@
         var a = el('a', 'bf-env', '✉️ Répondre par e-mail'); a.href = m.mailto; bas.appendChild(a);
       }
       var src = (D.sources || []).filter(function (s) { return s.id === m.source; })[0];
-      if (src && src.lien) { var o = el('a', 'bf-ouvrir', 'Ouvrir ' + src.nom.split(' · ')[0] + ' ↗'); o.href = src.lien; bas.appendChild(o); }
+      if (src && src.lien) { var o = el('a', 'bf-ouvrir', (m.source === 'alertes' ? 'Ouvrir le journal des alertes' : 'Ouvrir ' + src.nom.split(' · ')[0]) + ' ↗'); o.href = src.lien; bas.appendChild(o); }
       corps.appendChild(bas); c.appendChild(corps);
     }
     return c;

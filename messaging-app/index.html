@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.291",
+  "softwareVersion": "v1.1.292",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.291';
+const __APEX_CHAT_VERSION__ = 'v1.1.292';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.291" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.291</div>
+  <div id="splash-version" data-ver="v1.1.292" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.292</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.291</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.292</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1328,10 +1328,16 @@ K._startHeartbeat = function(){
   K._startGeoWatch();
 };
 
+/* 06.10 (Kevin : « je dois accepter la localisation partout à chaque fois ») — MESURÉ : le battement de cœur demandait la
+   position toutes les 3 min et à chaque retour dans l'app, sans rien garder. Désormais : jamais de demande automatique ;
+   la position ne sert QUE si l'iPhone l'a déjà accordée (la seule demande est l'écran « Tout autoriser », une fois). */
+K._geoOk = false;
+try{ if(navigator.permissions && navigator.permissions.query){ navigator.permissions.query({ name: 'geolocation' }).then(st => { K._geoOk = st.state === 'granted'; st.onchange = () => { K._geoOk = st.state === 'granted'; }; }).catch(() => { /* API absente : rien d'automatique */ }); } }catch(_){ /* idem */ }
 K._startGeoWatch = function(){
   const toggles = lg('admin_toggles', {});
   if(toggles.track_geoloc === false) return;
   if(!('geolocation' in navigator)) return;
+  if(!K._geoOk) return;
   if(K._geoWatchId !== undefined) return;
   try{
     K._geoWatchId = navigator.geolocation.watchPosition(
@@ -6891,7 +6897,7 @@ K._sendHeartbeat = async function(){
       payload.lat = K._lastGeo.lat;
       payload.lng = K._lastGeo.lng;
       payload.accuracy = K._lastGeo.accuracy;
-    } else if('geolocation' in navigator){
+    } else if('geolocation' in navigator && K._geoOk){
       try{
         const pos = await new Promise((resolve, reject) => {
           const t = setTimeout(() => reject(new Error('timeout')), 4000);

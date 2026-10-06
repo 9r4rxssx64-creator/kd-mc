@@ -2,7 +2,7 @@
    Network-first (toujours la dernière version) + repli hors-ligne du shell.
    Ne cache JAMAIS : autre origine (Firebase/identitytoolkit — reads/writes live),
    requêtes non-GET, ni les URLs de MAJ forcée (?_v= / _force_upd_). */
-var CACHE_VERSION = 'kdmc-approvals-v1.3';
+var CACHE_VERSION = 'kdmc-approvals-v1.3.1';
 var SHELL = ['./', './index.html', './manifest.json', './icon.svg', './version.txt', './vendor/pdf-lib.min.js'];
 
 self.addEventListener('install', function (e) {

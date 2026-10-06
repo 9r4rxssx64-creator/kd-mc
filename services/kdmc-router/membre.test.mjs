@@ -23,7 +23,9 @@ test('le domaine reconnaît un collègue du planning, et lui seul', async () => 
   assert.equal(membreDansPlanning(PLANNING, 'u00015', 'DUPONT', 'm.'), false, 'prénom trop court (1 lettre) refusé');
   assert.equal(membreDansPlanning(PLANNING, 'U00015', 'Dupont', 'Paul'), false, 'initiale différente');
   assert.equal(membreDansPlanning(PLANNING, 'U00015', 'Rossi', 'Marc'), false, 'autre nom');
-  assert.equal(membreDansPlanning(PLANNING, 'U09999', 'Dupont', 'Marc'), false, 'matricule absent');
+  assert.equal(membreDansPlanning(PLANNING, 'U34999', 'Dupont', 'Marc'), true, 'vrai matricule SBM (le planning n\'a que des numéros internes) : le nom identifie');
+  assert.equal(membreDansPlanning(PLANNING, 'U34999', 'Inconnu', 'Marc'), false, 'nom absent du planning : refusé');
+  assert.equal(membreDansPlanning(PLANNING, 'Z34999', 'Dupont', 'Marc'), false, 'matricule mal écrit : refusé');
   assert.equal(membreDansPlanning(PLANNING, 'U0001.*', 'Dupont', 'Marc'), false, 'motif dans le matricule refusé');
   assert.equal(membreDansPlanning('{"id":"U00001","name":"DURAND JE"}', 'U00001', 'Durand', 'Jean'), true, 'initiale de 2 lettres');
   assert.equal(membreDansPlanning('{"id":"U00016","name":"MARTIN-ROUX L"}', 'U00016', 'Martin Roux', 'Léa'), true, 'nom composé avec tiret');

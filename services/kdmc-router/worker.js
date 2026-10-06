@@ -3353,6 +3353,13 @@ async function handleBeeIa(request, env, ctx) {
 /* L'adresse du planning chez l'hébergeur : le filet quand le KV est plafonné (la publication l'y remet). */
 /* /__dep/membre — la light demande au DOMAINE si prénom + nom + matricule sont dans le planning (5.10.2026,
    voir membre-planning.js). POST, depuis le domaine seulement ; ne rend que oui / non ; n'écrit rien. */
+/* L'app d'où vient une demande (« cmcteams.kd-mc.com »), lue dans Origin puis Referer ; vide si ce n'est pas le domaine. */
+function appDeLaDemande(request) {
+  for (const h of ['origin', 'referer']) {
+    try { const u = new URL(request.headers.get(h) || ''); if (/(^|\.)kd-mc\.com$/i.test(u.hostname)) return u.hostname.slice(0, 60); } catch { /* en-tête absent ou illisible */ }
+  }
+  return '';
+}
 async function handleMembre(request, env) {
   const JM = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
   if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
@@ -3519,7 +3526,8 @@ async function handleAdmin(request, url, env) {
     if (!code && !hash) return J({ ok: false, reason: 'code_requis' });
     const okHash = !!hash && hash === String(adminHash).toLowerCase();
     const okCode = !!code && (await sha256Hex(code)) === adminHash;
-    if (!okHash && !okCode) { await rlFail(env, ipHash); await audLog(env, { ev: 'admin_login_fail', ip: ipHash.slice(0, 12) }); return J({ ok: false, reason: 'code_invalide' }); }
+    /* 6.10 (Kevin : « Code admin refusé » ×5, sans rien dire) : l'alerte note DEPUIS QUELLE APP et quel pays, pour qu'il sache si c'est lui. */
+    if (!okHash && !okCode) { await rlFail(env, ipHash); await audLog(env, { ev: 'admin_login_fail', ip: ipHash.slice(0, 12), app: appDeLaDemande(request), pays: String(request.cf?.country || '').slice(0, 2) }); return J({ ok: false, reason: 'code_invalide' }); }
     await rlReset(env, ipHash);
     await audLog(env, { ev: 'admin_login_ok', ip: ipHash.slice(0, 12) });
     const grant = await ssoSign(secret, '__kdmc_admin__', 'admin', 1);

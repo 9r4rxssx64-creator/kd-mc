@@ -1080,7 +1080,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.18.3';
+var APP_VER='v9.18.4';
 document.getElementById('vbadge').textContent=APP_VER;
 
 /* ---------- utils ---------- */
@@ -7132,5 +7132,7 @@ try{ Fam.init(); }catch(e){}
 try{ Account.init(); }
 catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)); }catch(_){} }
 </script>
+<!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.18.4" data-color="#c9a227" defer></script>
 </body>
 </html>

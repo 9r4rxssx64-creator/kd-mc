@@ -375,7 +375,7 @@
 
 <script>
 "use strict";
-var VER="v2.42";
+var VER="v2.43";
 document.getElementById("ver").textContent="World Monitor "+VER;
 document.getElementById("ver").onclick=function(){ try{location.replace(location.pathname+"?_v="+Date.now());}catch(e){location.reload();} };
 
@@ -989,7 +989,9 @@ function initMap(){
   try{if(_wantBase&&_bases[_wantBase])setBase(_wantBase);if(_lastView)setMapView(_lastView);}catch(_e){}
   /* 📍 v2.41 — position mémorisée : si Kevin l'avait activée, on la relance
      (permission déjà accordée → aucun re-prompt ; révoquée → message clair + coupe). */
-  try{if(ON.pos)posStart();}catch(_e){}
+  /* v2.43 (Kevin 06.10 « je dois accepter la localisation partout à chaque fois ») : au retour, on ne relance la position
+     QUE si l'iPhone l'a déjà accordée (Permissions API) — sinon rien ne s'ouvre tout seul ; un toucher sur 📍 la redemande. */
+  try{if(ON.pos&&navigator.permissions&&navigator.permissions.query){navigator.permissions.query({name:"geolocation"}).then(function(st){if(st.state==="granted")posStart();}).catch(function(){/* API absente : on attend le toucher */});}}catch(_e){}
   /* 🌦 Météo en tout point (Kevin n°5) : tap sur la carte → météo live + 3 jours (Open-Meteo, gratuit sans clé) */
   MAP.on("click",function(ev){
     try{
@@ -1883,6 +1885,6 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)fast
   })();
 })();
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.40" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.43" data-color="#c9a227" defer></script>
 </body>
 </html>

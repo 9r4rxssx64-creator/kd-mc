@@ -2,7 +2,7 @@
    Réseau d'abord (page 100% live), cache = repli hors-ligne du shell uniquement.
    Règle CLAUDE.md #39/#52 : JAMAIS intercepter ?_v= / _force_upd_ (version-check
    du badge partagé) ; le cross-origin (APIs live, tuiles) n'est PAS intercepté. */
-var CACHE_VERSION = "wm-v2.42";
+var CACHE_VERSION = "wm-v2.43";
 self.addEventListener("install", function (e) { self.skipWaiting(); });
 self.addEventListener("activate", function (e) {
   e.waitUntil(caches.keys().then(function (ks) {

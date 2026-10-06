@@ -355,11 +355,13 @@
   var AUD_EV = {
     admin_login_ok: '🔓 Connexion admin réussie', admin_login_fail: '⛔️ Code admin refusé',
     revoke_sessions: '🚪 Déconnexion forcée', new_device: '📱 Nouvel appareil', fbtoken_mint: '🔥 Jeton Firebase admin émis',
-    perimetre: '🔐 Périmètre modifié', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)'
+    perimetre: '🔐 Périmètre modifié', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)',
+    geo_anomaly: '⚠️ Connexion suspecte', nouvelle_connexion: '🆕 Nouvelle connexion', quota_inscriptions_atteint: '🛑 Inscriptions suspendues'
   };
   function audRow(e) {
     return '<div class="tlrow">' + esc(dt(e.ts)) + ' · <b>' + esc(AUD_EV[e.ev] || e.ev) + '</b>'
-      + (e.uid ? ' · ' + esc(e.uid) : '') + (e.detail ? ' · ' + esc(e.detail) : '')
+      + (e.uid ? ' · ' + esc(e.uid) : '') + (e.detail ? ' · ' + esc(e.detail) : '') + (e.text ? ' · ' + esc(e.text) : '')
+      + (e.app ? ' · depuis ' + esc(e.app) : '') + (e.pays ? ' · ' + esc(e.pays) : '')
       + (e.ip ? ' · <span style="color:var(--subtle)">ip ' + esc(e.ip) + '</span>' : '') + '</div>';
   }
   function loadAudit() {
@@ -369,11 +371,14 @@
         var el2 = document.getElementById('audsec');
         if (!el2 || !j || !j.ok) return;
         var log = j.log || [];
-        el2.innerHTML = '<h2 class="cat">🛡 Journal admin</h2>'
-          + '<details class="histrow kdmc-card kdmc-in"><summary><span class="i">🛡</span>'
+        /* 6.10 : « Ouvrir le journal des alertes » de la boîte arrive ici (#journal) — section dépliée et amenée à l'écran. */
+        var viens = /^#(journal|alertes)$/.test(location.hash || '');
+        el2.innerHTML = '<h2 class="cat" id="journal">🛡 Journal admin</h2>'
+          + '<details class="histrow kdmc-card kdmc-in"' + (viens ? ' open' : '') + '><summary><span class="i">🛡</span>'
           + '<span class="ct"><span class="n">Événements sensibles</span>'
           + '<span class="d">' + log.length + ' entrée' + (log.length > 1 ? 's' : '') + ' — connexions admin, nouveaux appareils, déconnexions forcées</span></span></summary>'
           + '<div class="timeline">' + (log.length ? log.slice(0, 60).map(audRow).join('') : '<div class="tlrow" style="color:var(--subtle)">Rien pour l\'instant.</div>') + '</div></details>';
+        if (viens) { try { el2.scrollIntoView({ block: 'start' }); } catch (_) { /* vieux navigateur : la section est dépliée quand même */ } }
       })
       .catch(function () { /* silencieux : section optionnelle */ });
   }

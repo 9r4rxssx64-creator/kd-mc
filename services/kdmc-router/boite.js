@@ -30,7 +30,9 @@ export const SOURCES = {
   depots:   { nom: 'Autres apps',          icone: '📨', lien: '' },
   rotaplan: { nom: 'Rotaplan · demandes',  icone: '🗓️', lien: 'https://kd-mc.com/__demandes' },
   arbre:    { nom: 'Arbre · corrections',  icone: '🌳', lien: 'https://arbre.kd-mc.com/#journal' },
-  alertes:  { nom: 'Alertes du domaine',   icone: '🔔', lien: 'https://admin.kd-mc.com/' },
+  /* 6.10 (Kevin « lien ne fonctionne pas ») : admin.kd-mc.com ne montre PAS ces alertes (il les retire) et, sur iPhone, s'ouvre hors
+     de l'app du portail (redemande le code). Le journal qui les montre est sur la MÊME adresse que le portail : /admin/, ouvert à #journal. */
+  alertes:  { nom: 'Alertes du domaine',   icone: '🔔', lien: 'https://kd-mc.com/admin/#journal' },
 };
 /* Les alertes (connexions, appareils) se lisent mais ne font PAS monter le compteur rouge : il y en a des dizaines par jour. */
 export const SOURCES_MESSAGES = ['lingua', 'cmcteams', 'depots', 'rotaplan', 'arbre'];
@@ -155,17 +157,38 @@ async function lireArbre(env, db) {
 }
 const EV_ALERTES = { nouvelle_connexion: '🆕 Nouvelle connexion', nouvel_inscrit: '🆕 Nouvel inscrit', new_device: '🔐 Nouvel appareil', geo_anomaly: '⚠️ Connexion suspecte',
   quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé' };
+/* 6.10 (Kevin, capture « Code admin refusé » ×5 sans texte, bulle vide) : chaque alerte dit en clair ce qui s'est passé, depuis où,
+   et les répétitions (même événement, même appareil, à moins de 30 min d'écart) ne font qu'UNE carte « ×5 ». */
+const GROUPE_MS = 30 * 6e4;
+export function texteAlerte(e) {
+  const base = e.detail || e.text || e.name || (e.ev === 'admin_login_fail' ? 'Un mauvais code admin a été tapé' : '');
+  const ou = [e.app && e.app !== 'domaine' ? 'depuis ' + e.app : '', e.pays ? 'pays ' + e.pays : '', e.uid ? 'compte ' + e.uid : '',
+    e.ip ? 'appareil n° ' + String(e.ip).slice(0, 6) : ''].filter(Boolean).join(' · ');
+  return apercu(base + (base && ou ? ' — ' : '') + ou, 300);
+}
+export function grouperAlertes(liste) {
+  const out = [];
+  for (const e of liste) {
+    const g = out.at(-1);
+    const meme = g && (g.ev || g.type) === (e.ev || e.type) && (g.ip || g.uid || '') === (e.ip || e.uid || '') && (g.app || '') === (e.app || '');
+    if (meme && g._dernier - e.ts <= GROUPE_MS) { g._n++; g._dernier = e.ts; continue; }
+    out.push({ ...e, _n: 1, _dernier: e.ts });
+  }
+  return out;
+}
 async function lireAlertes(env, db, now) {
   if (!env.ACCOUNTS) return [];
   let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
-  j = (Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type]).slice(0, 15);
+  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type]).slice(0, 40)).slice(0, 15);
   const cles = j.map((e) => 'alerte:' + e.ts + '-' + (e.ev || e.type));
   const lues = await luesD1(db, cles);
   /* Une alerte de plus de 48 h est lue d'office : elle reste visible (historique) mais ne fait plus de rouge — mesuré par Kevin le 4.10 :
      14 alertes de 6 jours « non lues » passaient devant ses vrais messages. */
   return j.map((e, i) => { const vue = lues.has(cles[i]) || now - e.ts > LIMITES.alerteFraicheur;
-    return { cle: cles[i], source: 'alertes', app: e.app || 'domaine', de: EV_ALERTES[e.ev || e.type], ts: e.ts,
-      texte: apercu(e.detail || e.text || e.name || '', 300), nonLus: vue ? 0 : 1, lu: vue, repondre: null, fil: [] }; });
+    const n = e._n > 1 ? ' ×' + e._n : '';
+    const duree = e._n > 1 ? ' (' + e._n + ' fois en ' + Math.max(1, Math.round((e.ts - e._dernier) / 6e4)) + ' min)' : '';
+    return { cle: cles[i], source: 'alertes', app: e.app || 'domaine', de: EV_ALERTES[e.ev || e.type] + n, ts: e.ts,
+      texte: texteAlerte(e) + duree, nonLus: vue ? 0 : 1, lu: vue, repondre: null, fil: [] }; });
 }
 /* ── adaptateur : dépôts des autres apps (D1) ─────────────────────────────────────────────────────────────── */
 async function lireDepots(db) {

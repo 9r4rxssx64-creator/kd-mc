@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" data-app-ver="v1.3">
+<html lang="fr" data-app-ver="v1.3.1">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -204,7 +204,8 @@
   </div>
 </div>
 
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" defer></script>
+<!-- 06.10 : sans data-version le badge valait « ? » ≠ v1.3 → la page se rechargeait toute seule chaque minute (boucle) -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="autorisations" data-version="v1.3.1" data-color="#c9a227" defer></script>
 <script>
 "use strict";
 (function(){

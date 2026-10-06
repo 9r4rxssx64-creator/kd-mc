@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-06 (matin) — Kevin : « Il faut le matricule SBM obligatoire pour filtrer » → CMCteams v9.941
+
+- **Trou mesuré** : CMCteams accepte une connexion par **nom + prénom seulement**. La fenêtre « Recrée ton mot de passe » prenait alors le matricule trouvé à partir du nom. Il suffisait donc de connaître le nom d'un collègue pour recréer son mot de passe (prouvé : sabotage → « D2 » vert pour la mauvaise raison, l'inconnu entrait).
+- **v9.941** (`tools/shared/secrets-cmc.js`) : la fenêtre a un champ **« Matricule SBM (obligatoire) »**, jamais déduit du nom. Il n'est pré-rempli que s'il a été tapé à l'écran de connexion. Vide ou mal formé : refusé. Matricule d'un autre compte : refusé. C'est le matricule TAPÉ qui part au serveur, et le serveur revérifie qu'il va avec le prénom et le nom dans la banque ou les imports.
+- **Light** : le matricule SBM y était déjà obligatoire (v1.60+), et le domaine vérifie le trio (v1.67).
+- **Mesuré** : `test:recreer-mdp` 14/0 (4 contrôles neufs D1-D4 ; sabotage → 2 rouges).
+
 ## 2026-10-06 (nuit, suite) — Kevin : « Oui si ils sont présents dans les imports ou banque de données » → CMCteams v9.940 + serveur des codes `/cmc/pw/recreer`
 
 - **Demande** : laisser les collègues bloqués dans CMCteams (« Compte introuvable ») recréer eux-mêmes leur mot de passe, s'ils sont dans les imports ou la banque.

@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-06 (midi) — Kevin : « Pour l'inscription ou la connexion à light et CMCteams, u ou U identifiant SBM, obligatoire » → CMCteams v9.942 + light v1.68
+
+- **Mesuré avant** : CMCteams acceptait une connexion par e-mail seul ou par nom + prénom seuls (le matricule était facultatif à l'étape 1 et à l'inscription d'un compte temporaire). La light l'exigeait au formulaire, mais **Face ID laissait entrer un collègue sans matricule**.
+- **CMCteams v9.942** (`index.html`) : étape 1 → « Ton matricule SBM est obligatoire (U ou u puis les chiffres) » si vide ou mal écrit ; « u » minuscule accepté (rangé en U) ; un e-mail rattaché à un AUTRE matricule SBM est refusé ; inscription : champ « (obligatoire) », pré-rempli avec le matricule de l'étape 1.
+- **Light v1.68** (`tools/departs/index.html`) : libellé « Matricule SBM * (obligatoire — U ou u puis les chiffres) » ; Face ID d'un collègue → il doit aussi taper son matricule, que le domaine vérifie avec le nom du compte Face ID (`/__dep/membre`, dans les deux ordres prénom/nom). Kevin (admin prouvé) reste dispensé.
+- **Mesuré après** : `test:light-faceid-code` 37/0 (6 contrôles neufs ; sabotage « Face ID sans matricule » → 4 rouges) ; `test:recreer-mdp` 18/0 (E1-E4 neufs ; `SABOTAGE=matricule` → E1 rouge).
+
 ## 2026-10-06 (matin) — Kevin : « Il faut le matricule SBM obligatoire pour filtrer » → CMCteams v9.941
 
 - **Trou mesuré** : CMCteams accepte une connexion par **nom + prénom seulement**. La fenêtre « Recrée ton mot de passe » prenait alors le matricule trouvé à partir du nom. Il suffisait donc de connaître le nom d'un collègue pour recréer son mot de passe (prouvé : sabotage → « D2 » vert pour la mauvaise raison, l'inconnu entrait).

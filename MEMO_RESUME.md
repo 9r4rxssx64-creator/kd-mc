@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-06 (nuit) — Kevin : « Mes collègues n'arrivent plus à se connecter non plus » → light v1.67 + routeur (`/__dep/membre`)
+
+- **Mesuré** : le serveur des codes (`apex-auth-worker /login-cmc`) répond « compte inconnu » pour 12 matricules réels sur 12. Le déménagement des mots de passe du 27.09 (`coffre-secrets-cmc`) n'en avait rangé qu'**un** : il ne copiait que les hash présents dans la base en ligne. Les sauvegardes quotidiennes datent du 1.10 : trop tard pour les retrouver. Depuis la light v1.60 (27.09), le portillon **exigeait** ce mot de passe, donc tout collègue sans compte au serveur restait dehors. Ce code ne protégeait rien de plus, puisque les fichiers du planning s'ouvrent à toute session du domaine.
+- **Light v1.67** : le code devient **facultatif**. Sans code, ou si le serveur ne connaît pas le compte, le **domaine** vérifie que prénom + nom + matricule sont ensemble dans le planning publié (`/__dep/membre`, réponse oui/non, aucune écriture, refusé aux sites extérieurs). Un compte qui a un code doit toujours le donner juste (« Code incorrect »). Kevin : inchangé, code admin vérifié par le domaine ou Face ID.
+- **Routeur** : `services/kdmc-router/membre-planning.js` lit le planning publié, d'abord la copie du KV puis l'hébergeur, avec 10 min de cache.
+- **CMCteams (l'app complète)** : pas touché. Un collègue qui avait un mot de passe CMCteams avant le 27.09 et dont le hash n'a pas été déménagé voit « Compte introuvable — inscris-toi ». Il doit refaire son inscription, avec le code d'inscription que Kevin lit dans son écran admin. Ouvrir l'app complète (chat, profil) sur le seul nom + matricule serait trop faible : c'est à Kevin de décider.
+- **Mesuré** : `test:light-faceid-code` 32/0 (sabotage 5 rouges), `test:membre-planning` vert, 60 tests du routeur verts, `departs-gate` 18/0, `reconnu-domaine` 12/0, `sso-navigateur` vert.
+
 ## 2026-10-05 (nuit, après) — Kevin : « Je me connecte à mon domaine… CMCteams et la light me redemandent tout, et ma clé d'accès n'est pas reconnue » → portail v1.0.41 + routeur + CMCteams v9.939 (light inchangée : elle profite du portail et du routeur)
 
 - **Causes (lues dans le code, puis reproduites dans un vrai navigateur avec un faux Face ID et le vrai routeur)** :

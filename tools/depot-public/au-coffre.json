@@ -214,6 +214,7 @@
   "tests/verify-real-departs-render.mjs",
   "tests/verify-recherche-nom.mjs",
   "tests/verify-reconnu-par-le-domaine.mjs",
+  "tests/verify-recreer-mot-de-passe.mjs",
   "tests/verify-retraite-manuelle.mjs",
   "tests/verify-rien-de-public.mjs",
   "tests/verify-router-secours.mjs",

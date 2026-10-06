@@ -14,7 +14,8 @@ import { fileURLToPath } from 'node:url';
 import { nomsSensibles, classer } from '../tools/depot-public/exporter.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DEPART = 'services/kdmc-router/worker.js';
+/* Les deux serveurs du domaine qui se déploient depuis le dépôt public : le routeur et le serveur des codes. */
+const DEPARTS = ['services/kdmc-router/worker.js', 'services/apex-auth-worker/src/index.js'];
 const noms = nomsSensibles(ROOT);
 const lire = (f) => {
   const t = readFileSync(join(ROOT, f), 'utf8');
@@ -30,7 +31,7 @@ function importsDe(f) {
   return out.filter((x) => existsSync(join(ROOT, x)));
 }
 const vus = new Set();
-const pile = [DEPART];
+const pile = [...DEPARTS];
 while (pile.length) {
   const f = pile.pop();
   if (vus.has(f)) continue;
@@ -39,7 +40,7 @@ while (pile.length) {
 }
 const res = classer([...vus], lire, noms);
 let ko = 0;
-console.log(`\nRouteur du domaine : ${vus.size} fichier(s) importé(s), tous exportables au dépôt public ?\n`);
+console.log(`\nRouteur + serveur des codes : ${vus.size} fichier(s) importé(s), tous exportables au dépôt public ?\n`);
 for (const [f, v] of [...res].sort((x, y) => x[0].localeCompare(y[0]))) {
   const bon = v.classe === 'public';
   if (!bon) ko++;

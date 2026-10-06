@@ -28,7 +28,8 @@
  *   - Audit trail dans Firebase /apex/ax_auth_log (admin-only via rules)
  */
 
-import { verifyCmcPw } from "./cmc-hash.js";
+import { verifyCmcPw, hashPwV2 } from "./cmc-hash.js";
+import { dansLaBanque } from "./membre.js";
 
 const FIREBASE_AUTH_BASE = "https://identitytoolkit.googleapis.com/v1";
 
@@ -155,6 +156,12 @@ export default {
       if (url.pathname === "/cmc/code/new" && request.method === "POST") {
         const body = await request.json().catch(() => ({}));
         const [data, status] = await cmcCodeNew(body, request, env, ctx);
+        return jsonResp(data, corsHeaders, status);
+      }
+      // --- /cmc/pw/recreer : un collègue de la banque / des imports recrée SON mot de passe (6.10.2026) ---
+      if (url.pathname === "/cmc/pw/recreer" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const [data, status] = await cmcPwRecreer(body, request, env, ctx);
         return jsonResp(data, corsHeaders, status);
       }
       // --- /cmc/code/check : vérifie le code ICI, valide le compte, ouvre la session ---
@@ -528,6 +535,73 @@ export async function cmcCodeNew(body, request, env, ctx) {
   if (!w.ok) return [{ ok: false, error: w.detail || "rtdb" }, 502];
   ctx.waitUntil(auditLog(env, uid, "cmc_code_new", ip));
   return [{ ok: true, expiresAt: entry.expiresAt }, 200];
+}
+
+/**
+ * POST /cmc/pw/recreer {uid, nom, prenom, password} → {ok, id_token?, custom_token?} (Kevin 6.10.2026 : « Oui, s'ils
+ * sont présents dans les imports ou la banque de données »).
+ * MESURÉ le 5.10 : le déménagement des mots de passe du 27.09 n'en a rangé qu'UN au secret ; les autres collègues
+ * tombaient sur « compte inconnu » et devaient attendre un code de Kevin. Ici, la personne recrée SON mot de passe,
+ * SEULEMENT si :
+ *   1. le serveur ne lui connaît AUCUN mot de passe (on n'écrase jamais celui de quelqu'un : sinon, connaître le nom
+ *      et le matricule d'un collègue suffirait à lui voler son compte) ;
+ *   2. prénom + nom + matricule sont ensemble dans la BANQUE (cmcteams/cmc_e) ou dans les IMPORTS (planning publié,
+ *      vérifié par le domaine /__dep/membre) ;
+ *   3. essais limités (10 / heure par adresse, 5 / heure par compte) ; jamais pour l'admin.
+ * Le hash (v2, sel aléatoire) part au secret ; la copie publique ne garde qu'un repère ; la session s'ouvre comme
+ * /login-cmc. Journalisé (cmc_pw_recreer) ; l'app prévient Kevin.
+ */
+/* La demande, nettoyée : matricule en majuscules, nom et prénom bornés. */
+function demandeRecreer(body) {
+  return { uid: String(body?.uid || "").trim().toUpperCase(), nom: String(body?.nom || "").slice(0, 60),
+    prenom: String(body?.prenom || "").slice(0, 60), pw: String(body?.password || "") };
+}
+/* Ce qui est refusé avant même de toucher à la base. Rend [corps, statut] ou null. */
+function refusRecreer(d) {
+  if (!/^U\d{3,6}$/.test(d.uid)) return [{ ok: false, error: "bad_uid" }, 400];
+  if (d.uid === CMC_ADMIN_UID) return [{ ok: false, error: "refuse" }, 403];
+  if (d.pw.length < 6 || d.pw.length > 128) return [{ ok: false, error: "mot_de_passe_trop_court" }, 400];
+  return null;
+}
+/* Prénom + nom + matricule dans la BANQUE (cmcteams/cmc_e), sinon dans les IMPORTS (planning publié, domaine). */
+async function presentBanqueOuImports(env, ctx, d) {
+  const banque = await rtdb(env, ctx, "GET", "cmcteams/cmc_e");
+  if (banque.ok && dansLaBanque(banque.value, d.uid, d.nom, d.prenom)) return true;
+  try {
+    const r = await fetch(env.CMC_MEMBRE_URL || "https://kd-mc.com/__dep/membre", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ matricule: d.uid, nom: d.nom, prenom: d.prenom }) });
+    const j = r.ok ? await r.json().catch(() => null) : null;
+    return j?.ok === true;
+  } catch (_) {
+    return false;   /* domaine muet : la banque seule a décidé (non) */
+  }
+}
+/* Range le nouveau hash au secret (repère seul dans la copie publique) et ouvre la session, comme /login-cmc. */
+async function rangerEtOuvrir(env, ctx, d, ip) {
+  const sel = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const now = Date.now();
+  const w = await rtdb(env, ctx, "PUT", `cmcteams_secret/pw/${encodeURIComponent(d.uid)}`, { h: hashPwV2(d.pw, sel), setBy: "recreation", setAt: now });
+  if (!w.ok) return [{ ok: false, error: w.detail || "rtdb" }, 502];
+  await rtdb(env, ctx, "PUT", `cmcteams/cmc_pw/${encodeURIComponent(d.uid)}`, { set: true, setBy: "recreation", setAt: now });
+  ctx.waitUntil(auditLog(env, d.uid, "cmc_pw_recreer", ip));
+  const customToken = await generateCustomToken(d.uid, env, "cmc");
+  const out = { ok: true, uid: d.uid, scope: "cmc", custom_token: customToken, expires_in: 3600 };
+  const idt = await exchangeForIdToken(customToken, env);
+  if (idt) { out.id_token = idt.idToken; out.refresh_token = idt.refreshToken; out.expires_in = Number.parseInt(idt.expiresIn, 10) || 3600; }
+  return [out, 200];
+}
+export async function cmcPwRecreer(body, request, env, ctx) {
+  const d = demandeRecreer(body);
+  const refus = refusRecreer(d);
+  if (refus) return refus;
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (!(await limite(env, `rpr:${ip}`, 10, 3600)) || !(await limite(env, `rpu:${d.uid}`, 5, 3600))) {
+    return [{ ok: false, error: "rate_limited", retry_after: 3600 }, 429];
+  }
+  const deja = await readCmcPw(d.uid, env, ctx);
+  if (deja.ok) return [{ ok: false, error: "deja_un_mot_de_passe" }, 409];
+  if (deja.status !== 404) return [{ ok: false, error: deja.detail || "rtdb" }, 502];
+  if (!(await presentBanqueOuImports(env, ctx, d))) return [{ ok: false, error: "absent" }, 403];
+  return rangerEtOuvrir(env, ctx, d, ip);
 }
 
 /**

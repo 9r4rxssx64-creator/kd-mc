@@ -1,5 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-06 (nuit, suite) — Kevin : « Oui si ils sont présents dans les imports ou banque de données » → CMCteams v9.940 + serveur des codes `/cmc/pw/recreer`
+
+- **Demande** : laisser les collègues bloqués dans CMCteams (« Compte introuvable ») recréer eux-mêmes leur mot de passe, s'ils sont dans les imports ou la banque.
+- **Serveur des codes** (`services/apex-auth-worker`) : nouvelle route `POST /cmc/pw/recreer {uid, nom, prenom, password}`. Elle n'agit que si les quatre conditions sont réunies :
+  1. **aucun mot de passe** n'est déjà connu pour ce matricule, ni au secret ni à l'ancien emplacement. On n'écrase jamais : sinon nom + matricule suffiraient à voler un compte.
+  2. **prénom + nom + matricule** sont dans la banque `cmcteams/cmc_e`, ou à défaut dans les imports (planning publié, vérifié par le domaine `/__dep/membre`). Règle de nom identique au domaine, parité testée.
+  3. **essais limités** : 10 par heure et par adresse, 5 par heure et par compte.
+  4. **jamais pour l'admin.**
+
+  Le hash (v2, sel aléatoire) est rangé au secret, la copie publique ne garde qu'un repère, la session s'ouvre comme `/login-cmc`, et l'action est journalisée.
+- **CMCteams v9.940** (`tools/shared/secrets-cmc.js`) : quand le serveur répond « compte inconnu », la fenêtre « 🔑 Recrée ton mot de passe » s'ouvre. Prénom et nom sont pré-remplis, puis 2 champs mot de passe. Si le serveur accepte, la personne entre et Kevin reçoit une notification « Mot de passe CMCteams recréé ».
+- **Mesuré** : `test:recreer-mdp` 10/0 (vraie app + vrai serveur ; sabotage app 7 rouges), `test:auth-worker` 24/0 (sabotage « écraser un mot de passe » rouge), `test:routeur-public` couvre maintenant aussi le serveur des codes (18 fichiers exportables).
+
 ## 2026-10-06 (nuit) — Kevin : « Mes collègues n'arrivent plus à se connecter non plus » → light v1.67 + routeur (`/__dep/membre`)
 
 - **Mesuré** : le serveur des codes (`apex-auth-worker /login-cmc`) répond « compte inconnu » pour 12 matricules réels sur 12. Le déménagement des mots de passe du 27.09 (`coffre-secrets-cmc`) n'en avait rangé qu'**un** : il ne copiait que les hash présents dans la base en ligne. Les sauvegardes quotidiennes datent du 1.10 : trop tard pour les retrouver. Depuis la light v1.60 (27.09), le portillon **exigeait** ce mot de passe, donc tout collègue sans compte au serveur restait dehors. Ce code ne protégeait rien de plus, puisque les fichiers du planning s'ouvrent à toute session du domaine.

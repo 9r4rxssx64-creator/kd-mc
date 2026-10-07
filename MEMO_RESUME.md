@@ -761,6 +761,12 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
 
+### 2026-10-07 — Arbre v3.66–v3.67 : parenté sur chaque carte, recherche dans la vue Famille
+- Contrôle réel du 7.10 (`synchro` + `audit`) : 🟢 synchro active, 167 fiches, vue Famille centrée sur Kevin, aucune erreur ; audit inchangé (5 isolés, groupe de 14).
+- Vue Famille : chaque carte porte sa parenté avec « moi » (sinon Kevin) — « ton grand-père », « ta tante », accord « ton arrière-grand-mère » corrigé ;
+  champ « Aller à une personne » (recherche par nom, recentre). Audit : homonymes vérifiés (années distinctes + « ne pas confondre ») et écarts d'âge
+  documentés (« DOCUMENTÉ » dans la fiche du parent) ne sont plus signalés. En attente de Kevin : les 4 actes AD06 (voir KEVIN_ACTIONS_TODO).
+
 ### 2026-10-03 (fin) — Arbre v3.65 : AD06 — site fermé aux robots et à l'étranger, outil de demande
 - **Mesuré** : `archives06.fr` renvoie un captcha F5 ; l'AD06 a bloqué les connexions internationales le 9.04.2026 (moissonnage par robots d'IA, aucune date de
   réouverture — annonce relayée par RFGénéalogie). `basesdocumentaires-cg06.fr` redirige vers le même site. Pas de contournement (règle), donc pas de

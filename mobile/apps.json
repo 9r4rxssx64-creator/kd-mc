@@ -27,6 +27,7 @@
         "tools/shared/nr5e.js",
         "tools/shared/heures.js",
         "tools/shared/heures-cmc.js",
+        "tools/shared/lieu-live.js",
         "tools/shared/adresse-officielle.js",
         "tools/shared/erreurs-cmc.js",
         "tools/shared/secrets-cmc.js",

@@ -11,6 +11,7 @@
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken } from './fb-token.js';
 import { handleBoite } from './boite.js';
+import * as cptD1 from './compteurs-d1.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';

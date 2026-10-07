@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (matin) — « Il n'y a toujours pas de sons de voix » : cause MESURÉE (le plafond KV éteint Chirp) + correctif
+
+- **Mesuré sur le vrai domaine** (vérif voix lancée de la branche, annotations sur une ligne) : les 12 voix (coral, sage, … antonin) répondent du vrai son, MAIS toutes en `x-voix: gratuite` (MeloTTS, la même voix de repli) ; avec la langue comme l'app (`&l=en|fr|es`) aussi ; Bee (`gratuit=1`) aussi. Google Chirp 3 HD, lui, marche : sonde `coffre-sonde-voix` ✅ (37 Ko en 1,6 s) et `?m=chirp` servi par le routeur.
+- **Cause** : `voixGoogle` comptait ses caractères par un `put` KV avant l'appel ; plafond KV crevé chaque jour dès 01h UTC (leçon 394) → échec → `null` → plus jamais de Chirp. Toutes les voix = la même. (La vérif voix était en plus rouge depuis longtemps : la sonde n'envoyait pas le Referer → `hors_domaine`.)
+- **Corrigé (branche `claude/voix-son`)** : compteur + pause Chirp en D1 (`compteurs-d1.js`, global, exact), 0 écriture KV ; vérif voix : Referer, annotations d'une ligne, moteur servi (`x-voix`), appels « comme l'app » et « comme Bee ». `voix-chirp.test.mjs` 20/20 (+7 contrôles du scénario KV crevé : Chirp parle, voix différentes, plafond exact en D1, pause 403 en D1, sans D1 pas de dépense) ; sabotage → rouge.
+- **Aussi fait** : les 4 échantillons réels (Chirp 3 HD femme/homme, voix de repli, Neural2) envoyés à Kevin pour l'oreille.
+- **À confirmer en ligne** après le déploiement du routeur : revérif voix → `x-voix: google-chirp3hd` avec `&l=`. **Non vérifié** : le son sur l'iPhone de Kevin (interrupteur silence : sa capture montre le mode silencieux ; un `<audio>` joue malgré lui, la voix du téléphone `speechSynthesis` non). **Chantier** : inventorier les autres chemins critiques qui écrivent au KV (leçon 395).
+
 
 ## 2026-10-07 (soir) — Kevin : « V1,70 algorithme n'est toujours pas bon … 4235-4235… non ; 4235-2351-3514-… » · remise à zéro « seulement NR et/ou 5e, horaires pas possible » · noms tolérants · Casino de Monte-Carlo + Café de Paris seulement · carte réelle admin · vérifier en réel admin ET autre → CMCteams v9.948 + light v1.74
 

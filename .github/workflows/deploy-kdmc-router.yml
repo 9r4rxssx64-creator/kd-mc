@@ -413,7 +413,7 @@ jobs:
           fi
           REPERE=paquet-applications-kdmc
           HOTE=$(curl -s --max-time 20 "$ATTENDU/__paquet.txt" || true)
-          DOM=$(curl -s --max-time 20 "https://cmcteams.kd-mc.com/__paquet.txt" || true)
+          DOM=$(curl -s --max-time 20 -H "x-kdmc-sonde: deploy" "https://cmcteams.kd-mc.com/__paquet.txt" || true)
           if ! printf '%s' "$HOTE" | grep -q "$REPERE"; then
             echo "::warning::l'hébergeur $ATTENDU ne porte pas encore le repère du paquet — la publication n'a pas été refaite depuis son ajout. JE NE CONCLUS RIEN sur la provenance."
             exit 0

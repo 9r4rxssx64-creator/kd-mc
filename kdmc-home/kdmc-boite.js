@@ -38,19 +38,21 @@
   function bandeau() {
     var a = document.getElementById('cercle-alerte'); if (!a) return;
     if (!D) { a.hidden = true; return; }
-    var n = D.nonLus || 0;
+    var n = D.nonLus || 0, ni = (D.inscriptions || []).length;
     a.textContent = '';
-    var t = el('span', 'bt', n ? '📬 ' + (n > 1 ? n + ' nouveaux messages' : '1 nouveau message') : '📬 Aucun message en attente');
+    var t = el('span', 'bt', n ? '📬 ' + (n > 1 ? n + ' nouveaux messages' : '1 nouveau message') : ni ? '📬 Rien de nouveau dans les messages' : '📬 Aucun message en attente');
     a.appendChild(t);
-    if (n) a.appendChild(el('span', 'n', String(n)));
+    if (n + ni) a.appendChild(el('span', 'n', String(n + ni)));
+    /* 7.10 (Kevin : « je dois voir les inscriptions en attente dans le domaine, en dessous des messages ») : comptées dans l'alerte. */
+    if (ni) a.appendChild(el('span', 'qui', '📝 ' + ni + ' inscription' + (ni > 1 ? 's' : '') + ' à valider'));
     var qui = (D.sources || []).filter(function (s) { return s.nonLus && s.id !== 'alertes'; }).map(function (s) { return s.icone + ' ' + s.nom.split(' · ')[0] + ' ' + s.nonLus; });
     if (qui.length) a.appendChild(el('span', 'qui', qui.join(' · ')));
     if (D.nonLusAlertes) a.appendChild(el('span', 'qui', '🔔 ' + D.nonLusAlertes + ' alerte' + (D.nonLusAlertes > 1 ? 's' : '')));
     a.appendChild(el('span', 'qui', '· ' + (D.connectes || 0) + ' connecté(s)'));
     var hs = (D.sources || []).filter(function (s) { return s.etat !== 'ok'; });
     if (hs.length) a.appendChild(el('span', 'qui warn', '⚠️ ' + hs.map(function (s) { return s.nom.split(' · ')[0]; }).join(', ') + ' indisponible'));
-    a.className = n ? '' : 'calme'; a.hidden = false;
-    try { document.title = (n ? '(' + n + ') ' : '') + document.title.replace(/^\(\d+\)\s*/, ''); } catch (e) { /* */ }
+    a.className = n + ni ? '' : 'calme'; a.hidden = false;
+    try { document.title = (n + ni ? '(' + (n + ni) + ') ' : '') + document.title.replace(/^\(\d+\)\s*/, ''); } catch (e) { /* */ }
   }
 
   /* ── la fenêtre ───────────────────────────────────────────────────────────────────────────────────────── */
@@ -100,6 +102,7 @@
     if (!items.length) liste.appendChild(el('p', 'bf-vide', filtre === 'tous' ? 'Aucun message pour le moment. Cette fenêtre se met à jour toute seule.' : 'Rien dans cette app.'));
     items.forEach(function (m) { liste.appendChild(carte(m, garderSaisie ? saisie : '')); });
     r.appendChild(liste); liste.scrollTop = pos;
+    r.appendChild(inscriptions());
     r.appendChild(el('p', 'bf-pied', 'Mis à jour ' + quand(D.maj) + ' · se rafraîchit toute seule'));
   }
 
@@ -148,10 +151,34 @@
     }
     return c;
   }
+  /* 7.10 — LES INSCRIPTIONS EN ATTENTE, sous les messages : chacune se valide ici d'un geste (le domaine écrit, jamais la page). */
+  function inscriptions() {
+    var z = el('div', 'bf-ins'), L = D.inscriptions || [];
+    z.id = 'bf-inscriptions';
+    z.appendChild(el('h3', 'bf-ins-t', '📝 Inscriptions à valider' + (L.length ? ' (' + L.length + ')' : '')));
+    if (D.inscriptionsEtat && D.inscriptionsEtat !== 'ok') z.appendChild(el('p', 'bf-warn', '⚠️ Inscriptions CMCteams indisponibles pour le moment — réessaie avec ↻.'));
+    else if (!L.length) z.appendChild(el('p', 'bf-vide', 'Aucune inscription en attente.'));
+    L.forEach(function (i) {
+      var c = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
+      h.appendChild(el('div', 'bf-de', i.nom));
+      var info = el('div', 'bf-ap', (i.matricule ? 'Matricule ' + i.matricule + ' · ' : '') + 'CMCteams · ' + quand(i.ts) + (i.code ? ' · code envoyé' : ''));
+      h.appendChild(info); c.appendChild(h);
+      var b = el('button', 'bf-env', '✅ Valider l\'inscription'); b.type = 'button';
+      b.onclick = function () {
+        b.disabled = true; b.textContent = 'Validation…';
+        ecrire('valider', { id: i.id }).then(function (j) {
+          if (j && j.ok) { info.textContent = '✅ Validé — ' + i.nom + ' peut se connecter'; b.remove(); setTimeout(rafraichir, 800); }
+          else { b.disabled = false; b.textContent = '✅ Valider l\'inscription'; info.textContent = '❌ ' + raison(j && j.reason); }
+        });
+      };
+      c.appendChild(b); z.appendChild(c);
+    });
+    return z;
+  }
   function srcIcone(id) { var s = ((D && D.sources) || []).filter(function (x) { return x.id === id; })[0]; return s ? s.icone : '📨'; }
   function raison(r) {
     return ({ bloque: 'cette personne a bloqué les messages', conversation_introuvable: 'conversation introuvable', conversation_invalide: 'conversation invalide', reponse_vide: 'écris ta réponse',
-      reseau: 'pas de réseau, réessaie', admin_requis: 'session admin expirée, reconnecte-toi', reponse_par_email: 'réponds par e-mail' })[r] || 'impossible pour le moment (' + (r || '?') + ')';
+      reseau: 'pas de réseau, réessaie', inscription_introuvable: 'inscription introuvable (déjà supprimée ?)', admin_requis: 'session admin expirée, reconnecte-toi', reponse_par_email: 'réponds par e-mail' })[r] || 'impossible pour le moment (' + (r || '?') + ')';
   }
 
   var demarre = false;

@@ -22,7 +22,7 @@ import { handlePartout, PARTOUT_TAG, MARQUEUR } from './bee-partout.js';        
 export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wrangler.toml)   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
-import { membreDansPlanning, lirePlanning } from './membre-planning.js';
+import { lirePlanning, verifierEtRanger, corrigerMatricule, listeMatricules } from './membre-planning.js';
 import { KEVIN_MATRICULE, RE_PLANNING, lireSeed, prochainsJours, faitsPlanning } from './bee-planning.js';
 import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe } from '../_shared/outils-lecture.js';   // les mains de Bee : météo, date, planning, calcul, recherche, lecture de page (gratuits, lecture seule)
 
@@ -468,6 +468,7 @@ const ROUTEUR = {
     // Push « message CMCteams light » → Kevin même app fermée (token serveur, anti-spam KV).
     if (url.pathname === '/__notify-kevin' && request.method === 'POST') return handleNotifyKevin(request, env);
     if (url.pathname === '/__dep/membre') return handleMembre(request, env);
+    if (url.pathname === '/__dep/matricules') return handleMatricules(request, env);
     // Mémoire cloud KDMC Lingua : sauvegarde/restauration de la progression par « clé
     // de compte » (hash nom+code = capacité). Données NON sensibles (XP/série/nom choisi).
     // ISOLÉ (préfixe KV lingua:), FAIL-OPEN (jamais throw → la mémoire locale reste).
@@ -3352,7 +3353,8 @@ async function handleBeeIa(request, env, ctx) {
 
 /* L'adresse du planning chez l'hébergeur : le filet quand le KV est plafonné (la publication l'y remet). */
 /* /__dep/membre — la light demande au DOMAINE si prénom + nom + matricule sont dans le planning (5.10.2026,
-   voir membre-planning.js). POST, depuis le domaine seulement ; ne rend que oui / non ; n'écrit rien. */
+   voir membre-planning.js). POST, depuis le domaine seulement ; rend oui / non (et pourquoi, si le matricule ne va pas avec
+   celui rangé sur la fiche). Écrit UNE fois par personne : le matricule SBM de la première inscription. */
 /* L'app d'où vient une demande (« cmcteams.kd-mc.com »), lue dans Origin puis Referer ; vide si ce n'est pas le domaine. */
 function appDeLaDemande(request) {
   for (const h of ['origin', 'referer']) {
@@ -3367,7 +3369,31 @@ async function handleMembre(request, env) {
   let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
   const txt = await lirePlanning(env, cleKV, fichierHebergeur(env, '/tools/departs/boards-gen.js'));
   if (!txt) return JM({ ok: false, reason: 'planning_indisponible' }, 503);
-  return JM({ ok: membreDansPlanning(txt, b.matricule, b.nom, b.prenom) });
+  const app = appDeLaDemande(request) || 'auth';
+  const v = await verifierEtRanger(env, txt, b.matricule, b.nom, b.prenom, app);
+  if (v.reason) {
+    await audLog(env, { ev: 'matricule_refuse', app, pays: request.cf?.country,
+      detail: (v.reason === 'matricule_pris' ? 'Matricule déjà rangé sur un autre collègue' : 'Autre matricule que celui de sa fiche') + ' : '
+        + String(b.prenom || '').slice(0, 30) + ' ' + String(b.nom || '').slice(0, 40) + ' a tapé ' + String(b.matricule || '').slice(0, 8).toUpperCase() });
+    return JM({ ok: false, reason: v.reason });
+  }
+  return JM({ ok: v.ok });
+}
+/* /__dep/matricules — Kevin seul (session admin prouvée) : GET la liste des matricules rangés ; POST { id, m } corrige
+   (m vide = efface). */
+async function handleMatricules(request, env) {
+  const JM = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  if (!(await adminSession(request, env))) return JM({ ok: false, reason: 'admin requis' }, 403);
+  if (request.method === 'GET') {
+    const txt = await lirePlanning(env, cleKV, fichierHebergeur(env, '/tools/departs/boards-gen.js'));
+    return JM({ ok: true, liste: await listeMatricules(env, txt) });
+  }
+  if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
+  if (!ssoOriginOk(request.headers.get('origin'), new URL(request.url).host)) return JM({ ok: false, reason: 'origine refusée' }, 403);
+  let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
+  const r = await corrigerMatricule(env, b.id, b.m);
+  if (r.ok) await audLog(env, { ev: 'matricule_corrige', detail: String(b.id || '').slice(0, 8) + ' → ' + (String(b.m || '').slice(0, 8).toUpperCase() || '(effacé)') });
+  return JM(r, r.ok ? 200 : 400);
 }
 /* L'adresse d'un fichier chez l'hébergeur (même calcul que pour les pages). */
 function fichierHebergeur(env, chemin) {

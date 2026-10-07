@@ -17,7 +17,7 @@ async function pem() {
 const PEM = await pem();
 const BANQUE = [{ id: "U00015", name: "DUPONT M", team: "1" }, { id: "U00016", name: "MARTIN-ROUX L", team: "2" }];
 
-function monde(donnees, planning) {
+function monde(donnees, planning, reponseDomaine) {
   const db = structuredClone(donnees || {});
   const kv = new Map([["gtoken", "jeton-sa"]]);
   const env = { FIREBASE_PROJECT_ID: "p", FIREBASE_CLIENT_EMAIL: "sa@p.iam", FIREBASE_PRIVATE_KEY: PEM,
@@ -41,7 +41,7 @@ function monde(donnees, planning) {
     }
     if (u.pathname === "/__dep/membre") {
       const b = JSON.parse(init.body || "{}"); membre.push(b);
-      return { ok: true, status: 200, json: async () => ({ ok: membreDansPlanning(planning || "", b.matricule, b.nom, b.prenom) }) };
+      return { ok: true, status: 200, json: async () => (reponseDomaine || { ok: membreDansPlanning(planning || "", b.matricule, b.nom, b.prenom) }) };
     }
     return { ok: true, status: 200, json: async () => ({}), text: async () => "{}" };
   };
@@ -108,4 +108,23 @@ test("garde-fous : admin refusé, mot de passe trop court, matricule mal formé,
   let dernier = 0;
   for (let i = 0; i < 6; i++) dernier = (await w2.appel({ uid: "U00016", nom: "Faux", prenom: "Nom", password: "nouveau1" }, "9.9.9." + i)).status;
   assert.equal(dernier, 429, "6e essai sur le même compte en une heure : bloqué");
+});
+
+/* 6.10 (Kevin : « on sauvegarde [le matricule] sur chaque fiche au fur et à mesure des inscriptions ») : le domaine range le
+   matricule de la 1re inscription ; son refus (autre matricule pour ce nom, ou matricule d'un autre) l'emporte sur la banque. */
+test("le domaine connaît un AUTRE matricule pour ce nom → refusé même présent dans la banque, rien d'écrit", async () => {
+  for (const raison of ["matricule_autre", "matricule_pris"]) {
+    const w = monde({ cmcteams: { cmc_e: BANQUE } }, "", { ok: false, reason: raison });
+    const r = await w.appel({ uid: "U00015", nom: "Dupont", prenom: "Marc", password: "nouveau1" });
+    assert.equal(r.status, 403, raison);
+    assert.equal(r.corps.error, raison, "la raison remonte à l'écran");
+    assert.equal(w.lire("cmcteams/cmc_pw/U00015"), null, "aucun mot de passe écrit");
+    assert.equal(w.membre.length, 1, "le domaine a bien été consulté (il range / contrôle le matricule)");
+  }
+});
+test("présent dans la banque : le domaine est QUAND MÊME consulté (il range le matricule sur la fiche)", async () => {
+  const w = monde({ cmcteams: { cmc_e: BANQUE } }, "");
+  const r = await w.appel({ uid: "U00015", nom: "Dupont", prenom: "Marc", password: "nouveau1" });
+  assert.equal(r.status, 200);
+  assert.equal(w.membre.length, 1, "un appel au domaine");
 });

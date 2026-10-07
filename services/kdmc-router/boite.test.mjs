@@ -210,6 +210,7 @@ ok((await appel('kev', '/mes')).admin === true, '10i. l\'admin est reconnu : le 
 const ancienneBase = d1(); await schemaCercle(ancienneBase);
 ancienneBase._s.exec('CREATE TABLE boite (id INTEGER PRIMARY KEY AUTOINCREMENT, app TEXT, nom TEXT, texte TEXT, contact TEXT, ip TEXT, suivi TEXT, cree INTEGER, lu INTEGER DEFAULT 0, reponse TEXT, repondu INTEGER)');
 ancienneBase._s.prepare('INSERT INTO boite (app, nom, texte, suivi, cree) VALUES (?, ?, ?, ?, ?)').run('lingua', 'Ancien', 'avant la migration', 'a'.repeat(24), T - 5000);
+_viderMemo();   /* 7.10 : « /mes » de l'admin lit maintenant la boîte (compteurs) — autre base ici, on repart sans mémo */
 const envV = { CERCLE_DB: ancienneBase, ACCOUNTS: env.ACCOUNTS };
 const rV = await handleBoite(new Request('https://kd-mc.com/__boite/admin', { headers: { 'x-test': 'kev', origin: 'https://kd-mc.com' } }), new URL('https://kd-mc.com/__boite/admin'), envV, outils);
 const jV = await rV.json();

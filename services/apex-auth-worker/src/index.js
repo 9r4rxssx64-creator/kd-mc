@@ -563,17 +563,23 @@ function refusRecreer(d) {
   if (d.pw.length < 6 || d.pw.length > 128) return [{ ok: false, error: "mot_de_passe_trop_court" }, 400];
   return null;
 }
-/* Prénom + nom + matricule dans la BANQUE (cmcteams/cmc_e), sinon dans les IMPORTS (planning publié, domaine). */
+/* Prénom + nom + matricule dans la BANQUE (cmcteams/cmc_e), sinon dans les IMPORTS (planning publié, domaine).
+   6.10 (Kevin : « on sauvegarde [le matricule] sur chaque fiche au fur et à mesure des inscriptions ») : le DOMAINE est
+   TOUJOURS consulté — il range le matricule de la première inscription et refuse ensuite un autre matricule pour ce nom
+   (« matricule_autre ») ou le matricule d'un autre collègue (« matricule_pris »). Ce refus l'emporte sur la banque.
+   Rend true, false, ou la raison du refus. */
 async function presentBanqueOuImports(env, ctx, d) {
-  const banque = await rtdb(env, ctx, "GET", "cmcteams/cmc_e");
-  if (banque.ok && dansLaBanque(banque.value, d.uid, d.nom, d.prenom)) return true;
+  let dom = null;
   try {
     const r = await fetch(env.CMC_MEMBRE_URL || "https://kd-mc.com/__dep/membre", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ matricule: d.uid, nom: d.nom, prenom: d.prenom }) });
-    const j = r.ok ? await r.json().catch(() => null) : null;
-    return j?.ok === true;
+    dom = await r.json().catch(() => null);
   } catch (_) {
-    return false;   /* domaine muet : la banque seule a décidé (non) */
+    dom = null;   /* domaine muet : la banque seule décide */
   }
+  if (dom?.reason === "matricule_autre" || dom?.reason === "matricule_pris") return dom.reason;
+  const banque = await rtdb(env, ctx, "GET", "cmcteams/cmc_e");
+  if (banque.ok && dansLaBanque(banque.value, d.uid, d.nom, d.prenom)) return true;
+  return dom?.ok === true;
 }
 /* Range le nouveau hash au secret (repère seul dans la copie publique) et ouvre la session, comme /login-cmc. */
 async function rangerEtOuvrir(env, ctx, d, ip) {
@@ -600,7 +606,8 @@ export async function cmcPwRecreer(body, request, env, ctx) {
   const deja = await readCmcPw(d.uid, env, ctx);
   if (deja.ok) return [{ ok: false, error: "deja_un_mot_de_passe" }, 409];
   if (deja.status !== 404) return [{ ok: false, error: deja.detail || "rtdb" }, 502];
-  if (!(await presentBanqueOuImports(env, ctx, d))) return [{ ok: false, error: "absent" }, 403];
+  const present = await presentBanqueOuImports(env, ctx, d);
+  if (present !== true) return [{ ok: false, error: typeof present === "string" ? present : "absent" }, 403];
   return rangerEtOuvrir(env, ctx, d, ip);
 }
 

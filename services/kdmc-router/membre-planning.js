@@ -4,7 +4,7 @@
  * 27.09 n'en a rangé qu'UN ; 12 matricules réels sur 12 → « compte inconnu »). Résultat : tout collègue sans mot de
  * passe CMCteams restait dehors. Et ce code ne protégeait rien de plus : les fichiers du planning s'ouvrent à toute
  * session du domaine, même simplement déclarée.
- * Ici le DOMAINE vérifie, sans rien écrire : le matricule existe dans le planning publié (boards-gen.js) avec CE nom
+ * Ici le DOMAINE vérifie : le matricule existe dans le planning publié (boards-gen.js) avec CE nom
  * de famille, et l'initiale du prénom correspond. La page ne voit jamais la liste. Réponse : oui / non, rien d'autre. */
 const CHEMIN = '/cmcteams/tools/departs/boards-gen.js';
 let _cache = { t: 0, txt: '' };
@@ -36,10 +36,79 @@ function memeNom(nomSbm, nom, prenom) {
 export function membreDansPlanning(txt, matricule, nom, prenom) {
   const m = String(matricule || '').trim().toUpperCase();
   if (!/^U\d{3,6}$/.test(m)) return false;
+  return personnesDuPlanning(txt, nom, prenom).length > 0;
+}
+/* PURE : les numéros internes des personnes du planning qui portent ce nom (homonymes compris). */
+export function personnesDuPlanning(txt, nom, prenom) {
+  const ids = new Set();
   for (const x of String(txt || '').matchAll(/"id":"(U\d+)","name":"([^"]{1,80})"/g)) {
-    if (memeNom(x[2], nom, prenom) || memeNom(x[2], prenom, nom)) return true;
+    if (memeNom(x[2], nom, prenom) || memeNom(x[2], prenom, nom)) ids.add(x[1]);
   }
-  return false;
+  return [...ids];
+}
+/* LE MATRICULE SBM RANGÉ SUR LA FICHE (Kevin 6.10.2026 : « Pour les matricules, on sauvegarde sur chaque fiche au fur et à
+   mesure des inscriptions »). Le planning ne connaît pas les vrais matricules : la PREMIÈRE inscription range celui qui a été
+   tapé sur la personne du planning (KV matsbm:<numéro interne>, et matsbm-r:<matricule> → la personne). Ensuite :
+     - même nom + même matricule → oui (rien n'est réécrit) ;
+     - même nom + AUTRE matricule → non, « matricule_autre » (Kevin peut corriger depuis la fiche) ;
+     - un matricule déjà rangé sur QUELQU'UN D'AUTRE → non, « matricule_pris » (un matricule = une personne).
+   Un numéro interne tapé à la place du vrai est accepté s'il est CELUI de la personne, et n'est jamais rangé. Homonymes
+   (deux personnes du planning pour ce nom) : on accepte, mais on ne range rien — on ne saurait pas sur qui.
+   Sans registre (KV absent), le nom seul décide, comme avant. */
+export const cleMatricule = (id) => 'matsbm:' + id;
+export const cleProprietaire = (m) => 'matsbm-r:' + m;
+const lireFiche = async (kv, cle) => { try { return JSON.parse((await kv.get(cle)) || 'null'); } catch { return null; } };
+export async function verifierEtRanger(env, txt, matricule, nom, prenom, app) {
+  const m = String(matricule || '').trim().toUpperCase();
+  if (!/^U\d{3,6}$/.test(m)) return { ok: false };
+  const ids = personnesDuPlanning(txt, nom, prenom);
+  if (!ids.length) return { ok: false };
+  const internes = new Set([...String(txt || '').matchAll(/"id":"(U\d+)"/g)].map((x) => x[1]));
+  if (internes.has(m)) return { ok: ids.includes(m) };
+  const kv = env?.ACCOUNTS;
+  if (!kv?.get) return { ok: true };
+  const fiches = await Promise.all(ids.map((id) => lireFiche(kv, cleMatricule(id))));
+  if (fiches.some((f) => f && f.m === m)) return { ok: true };
+  const proprio = String((await kv.get(cleProprietaire(m))) || '');
+  if (proprio && !ids.includes(proprio)) return { ok: false, reason: 'matricule_pris' };
+  const libres = ids.filter((_, i) => !fiches[i]);
+  if (!libres.length) return { ok: false, reason: 'matricule_autre' };
+  if (libres.length === 1 && kv.put) {
+    await kv.put(cleMatricule(libres[0]), JSON.stringify({ m, ts: Date.now(), app: String(app || '').slice(0, 60) }));
+    await kv.put(cleProprietaire(m), libres[0]);
+    return { ok: true, range: libres[0] };
+  }
+  return { ok: true };
+}
+/* Kevin corrige (ou efface, m vide) le matricule rangé sur une personne. Le matricule pris ailleurs est libéré de l'autre. */
+export async function corrigerMatricule(env, id, matricule) {
+  const kv = env?.ACCOUNTS, m = String(matricule || '').trim().toUpperCase();
+  if (!kv?.put || !/^U\d{1,6}$/.test(String(id || '')) || (m && !/^U\d{3,6}$/.test(m))) return { ok: false, reason: 'invalide' };
+  const avant = await lireFiche(kv, cleMatricule(id));
+  if (avant?.m && avant.m !== m) await kv.delete(cleProprietaire(avant.m));
+  if (!m) { await kv.delete(cleMatricule(id)); return { ok: true }; }
+  const autre = String((await kv.get(cleProprietaire(m))) || '');
+  if (autre && autre !== id) await kv.delete(cleMatricule(autre));
+  await kv.put(cleMatricule(id), JSON.stringify({ m, ts: Date.now(), app: 'kevin' }));
+  await kv.put(cleProprietaire(m), id);
+  return { ok: true, libere: autre && autre !== id ? autre : '' };
+}
+/* La liste pour Kevin : numéro interne, nom du planning, matricule, date, app. */
+export async function listeMatricules(env, txt) {
+  const kv = env?.ACCOUNTS, noms = {};
+  for (const x of String(txt || '').matchAll(/"id":"(U\d+)","name":"([^"]{1,80})"/g)) noms[x[1]] = x[2];
+  if (!kv?.list) return [];
+  const out = [];
+  let curseur;
+  do {
+    const p = await kv.list({ prefix: 'matsbm:', cursor: curseur });
+    for (const k of p.keys || []) {
+      const id = k.name.slice(7), f = await lireFiche(kv, k.name);
+      if (f?.m) out.push({ id, nom: noms[id] || '', m: f.m, ts: f.ts || 0, app: f.app || '' });
+    }
+    curseur = p.list_complete ? undefined : p.cursor;
+  } while (curseur);
+  return out.sort((a, b) => a.nom.localeCompare(b.nom));
 }
 /* Le planning publié : la copie du KV (déposée par la publication), sinon l'hébergeur. 10 min en mémoire. */
 export async function lirePlanning(env, cleKV, upstreamUrl) {

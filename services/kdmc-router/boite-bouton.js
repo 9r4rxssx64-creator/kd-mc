@@ -33,7 +33,8 @@ export function bouton() {
 
     var requete = function (chemin, corps) {
       var o = { credentials: 'include', cache: 'no-store', headers: {} };
-      try { var t = window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token(); if (t) o.headers.authorization = 'Bearer ' + t; } catch (e) { /* */ }
+      try { var t = (window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token()) || lire('kdmc_sso_token'); if (t) o.headers.authorization = 'Bearer ' + t; } catch (e) { /* */ }
+      var g = lire('kdmc_admin_grant'); if (g) o.headers['x-kdmc-admin'] = g;   /* app installée : son laissez-passer admin (le domaine décide) */
       if (corps) { o.method = 'POST'; o.headers['content-type'] = 'application/json'; o.body = JSON.stringify(corps); }
       return fetch(chemin, o).then(function (r) { return r.json().catch(function () { return { ok: false, reason: 'illisible' }; }); }).catch(function () { return { ok: false, reason: 'reseau' }; });
     };
@@ -45,7 +46,9 @@ export function bouton() {
     var charger = function () {
       return requete('/__boite/mes?s=' + encodeURIComponent(suivis().join(','))).then(function (j) {
         if (!j || !j.ok) return;
-        if (j.admin) { if (btn.parentNode) btn.parentNode.removeChild(btn); if (panneau && panneau.parentNode) panneau.parentNode.removeChild(panneau); return; }   // l'admin n'écrit pas à l'admin
+        /* 7.10 (Kevin : « je débloque de partout où j'ai envie, j'ai une alerte visuelle d'un message ou inscription en attente ») :
+           chez l'admin, le bouton devient SON onglet « 📬 » — visible seulement s'il y a quelque chose en attente, avec le nombre. */
+        if (j.admin) { modeAdmin(j); return; }
         etat.connecte = !!j.connecte; etat.nom = j.nom || ''; etat.messages = j.messages || [];
         var vu = parseInt(lire(LV) || '0', 10) || 0;
         var neuf = etat.messages.some(function (x) { return x.repondu && x.repondu > vu; });
@@ -54,14 +57,56 @@ export function bouton() {
       });
     };
 
+    var modeAdmin = function (j) {
+      etat.admin = true; etat.nonLus = +j.nonLus || 0; etat.inscriptions = Array.isArray(j.inscriptions) ? j.inscriptions : [];
+      var n = etat.nonLus + etat.inscriptions.length;
+      btn.firstChild.nodeValue = '📬'; btn.setAttribute('aria-label', 'En attente : ' + n); btn.title = 'Messages et inscriptions en attente';
+      S(btn, { left: '0', right: 'auto', top: '38%', bottom: 'auto', width: '50px', height: '50px', borderRadius: '0 25px 25px 0', borderLeft: 'none', display: n || etat.ouvert ? 'block' : 'none' });
+      S(pastille, { display: n ? 'flex' : 'none', width: 'auto', minWidth: '20px', height: '20px', borderRadius: '10px', top: '-6px', right: '-6px', color: '#fff', fontSize: '12px',
+        fontWeight: '700', alignItems: 'center', justifyContent: 'center', padding: '0 5px', boxSizing: 'border-box' });
+      pastille.textContent = n > 99 ? '99+' : String(n);
+      if (etat.ouvert) dessiner();
+    };
+    var dessinerAdmin = function () {
+      panneau.textContent = '';
+      var tete = E('div', null, { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' });
+      tete.appendChild(E('div', '📬 En attente', { flex: '1', fontWeight: '700', fontSize: '18px', color: OR }));
+      var x = E('button', '✕', { minWidth: '44px', minHeight: '44px', background: 'transparent', border: '1px solid ' + LIG, color: TXT, borderRadius: '10px', fontSize: '18px', cursor: 'pointer' });
+      x.type = 'button'; x.setAttribute('aria-label', 'Fermer'); x.onclick = fermer; tete.appendChild(x); panneau.appendChild(tete);
+      (etat.faits || []).forEach(function (t) { panneau.appendChild(E('div', t, { background: '#12301a', border: '1px solid #2f6b3c', borderRadius: '10px', padding: '8px 10px', marginBottom: '8px', color: '#bff0c8', fontSize: '14px' })); });
+      var ins = etat.inscriptions || [];
+      panneau.appendChild(E('div', '📝 Inscriptions à valider' + (ins.length ? ' (' + ins.length + ')' : ''), { fontWeight: '700', fontSize: '16px', margin: '4px 0 8px' }));
+      if (!ins.length) panneau.appendChild(E('div', 'Aucune inscription en attente.', { color: MUT, fontSize: '14px', marginBottom: '10px' }));
+      ins.forEach(function (i) {
+        var c = E('div', null, { border: '1px solid ' + LIG, borderRadius: '12px', padding: '10px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '10px' });
+        var g = E('div', null, { flex: '1', minWidth: '0' });
+        g.appendChild(E('div', i.nom, { fontWeight: '700', fontSize: '15px', wordBreak: 'break-word' }));
+        g.appendChild(E('div', (i.matricule ? 'Matricule ' + i.matricule + ' · ' : '') + 'CMCteams · ' + quand(i.ts) + (i.code ? ' · code envoyé' : ''), { color: MUT, fontSize: '13px' }));
+        c.appendChild(g);
+        var v = E('button', '✅ Valider', { minHeight: '44px', padding: '0 14px', background: OR, color: '#1b1403', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' });
+        v.type = 'button';
+        v.onclick = function () {
+          v.disabled = true; v.textContent = '…';
+          void requete('/__boite/admin/valider', { id: i.id }).then(function (r) {
+            if (r && r.ok) { etat.faits = (etat.faits || []).concat('✅ Validé — ' + i.nom + ' peut se connecter').slice(-5); g.lastChild.textContent = '✅ Validé — ' + i.nom + ' peut se connecter'; c.removeChild(v); setTimeout(charger, 800); }
+            else { v.disabled = false; v.textContent = '✅ Valider'; g.lastChild.textContent = '❌ Pas validé (' + ((r && r.reason) || 'erreur') + ') — réessaie'; }
+          });
+        };
+        c.appendChild(v); panneau.appendChild(c);
+      });
+      panneau.appendChild(E('div', '✉️ Messages non lus : ' + (etat.nonLus || 0), { fontWeight: '700', fontSize: '16px', margin: '12px 0 8px' }));
+      var a = E('a', 'Ouvrir ma boîte', { display: 'block', textAlign: 'center', minHeight: '44px', lineHeight: '44px', borderRadius: '10px', border: '1px solid ' + OR, color: OR, textDecoration: 'none', fontWeight: '700' });
+      a.href = '/__boite/ouvrir';   /* même adresse que l'app : le domaine renvoie vers la boîte du portail */ panneau.appendChild(a);
+    };
     var dessiner = function () {
       if (!panneau) {
         panneau = E('div', null, { position: 'fixed', left: '0', right: '0', bottom: '0', zIndex: '2147483001', background: FOND, color: TXT, borderTop: '2px solid ' + OR,
           borderRadius: '18px 18px 0 0', padding: '14px 14px calc(env(safe-area-inset-bottom, 0px) + 14px)', maxHeight: '86vh', overflowY: 'auto', boxShadow: '0 -8px 30px rgba(0,0,0,.55)',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', fontSize: '16px', lineHeight: '1.4', boxSizing: 'border-box' });
-        panneau.setAttribute('role', 'dialog'); panneau.setAttribute('aria-label', "Écrire à l'admin");
+        panneau.setAttribute('role', 'dialog'); panneau.setAttribute('aria-label', etat.admin ? 'En attente' : "Écrire à l'admin");
         document.body.appendChild(panneau);
       }
+      if (etat.admin) { dessinerAdmin(); return; }
       panneau.textContent = '';
       var tete = E('div', null, { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' });
       tete.appendChild(E('div', "✉️ Écrire à l'admin", { flex: '1', fontWeight: '700', fontSize: '18px', color: OR }));
@@ -108,13 +153,14 @@ export function bouton() {
         });
       }
     };
-    var ouvrir = function () { etat.ouvert = true; dessiner(); ecrire(LV, String(Date.now())); pastille.style.display = 'none'; };
-    var fermer = function () { etat.ouvert = false; etat.confirme = ''; if (panneau && panneau.parentNode) { panneau.parentNode.removeChild(panneau); panneau = null; } };
+    var ouvrir = function () { etat.ouvert = true; dessiner(); if (etat.admin) { void charger(); return; } ecrire(LV, String(Date.now())); pastille.style.display = 'none'; };
+    var fermer = function () { etat.ouvert = false; etat.confirme = ''; if (panneau && panneau.parentNode) { panneau.parentNode.removeChild(panneau); panneau = null; } if (etat.admin) btn.style.display = (etat.nonLus || (etat.inscriptions || []).length) ? 'block' : 'none'; };
     btn.onclick = function () { if (etat.ouvert) fermer(); else ouvrir(); };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && etat.ouvert) fermer(); });
     document.body.appendChild(btn);
     charger();
     setInterval(function () { if (document.visibilityState === 'visible') charger(); }, 120000);
+    document.addEventListener('visibilitychange', function () { if (etat.admin && document.visibilityState === 'visible') void charger(); });   /* l'admin revient sur l'app : compteurs frais */
   } catch (e) { /* un bouton de contact ne doit JAMAIS casser une page */ }
 }
 export const BOUTON_JS = '(' + bouton.toString() + ')();';

@@ -22,6 +22,8 @@
         "tools/shared/fiche-auto.js",
         "tools/shared/fiche-privee.js",
         "tools/shared/autorisations-cmc.js",
+        "tools/shared/matricule-sbm.js",
+        "tools/shared/admin-attente-cmc.js",
         "tools/shared/adresse-officielle.js",
         "tools/shared/erreurs-cmc.js",
         "tools/shared/secrets-cmc.js",

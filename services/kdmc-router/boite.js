@@ -156,7 +156,7 @@ async function lireArbre(env, db) {
     nonLus: lues.has(cles[i]) ? 0 : 1, lu: lues.has(cles[i]), repondre: null, fil: [] }));
 }
 const EV_ALERTES = { nouvelle_connexion: '🆕 Nouvelle connexion', nouvel_inscrit: '🆕 Nouvel inscrit', new_device: '🔐 Nouvel appareil', geo_anomaly: '⚠️ Connexion suspecte',
-  quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé' };
+  quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé', matricule_refuse: '🪪 Matricule SBM refusé' };
 /* 6.10 (Kevin, capture « Code admin refusé » ×5 sans texte, bulle vide) : chaque alerte dit en clair ce qui s'est passé, depuis où,
    et les répétitions (même événement, même appareil, à moins de 30 min d'écart) ne font qu'UNE carte « ×5 ». */
 const GROUPE_MS = 30 * 6e4;
@@ -200,6 +200,58 @@ async function lireDepots(db) {
     fil: [{ moi: false, texte: apercu(r.texte, 600), ts: r.cree }].concat(r.reponse ? [{ moi: true, texte: apercu(r.reponse, 600), ts: r.repondu || r.cree }] : []) }));
 }
 
+/* ── INSCRIPTIONS EN ATTENTE (Kevin 7.10.2026 : « Je dois voir les inscriptions etc en attente dans le domaine en dessous des messages
+   et dans light. Je débloque de partout où j'ai envie. J'ai une alerte visuelle d'un message ou inscription en attente. ») ──────────
+   MESURÉ avant : CMCteams montrait « 1 code à valider » sur une carte SANS bouton, et la fonction de validation n'était reliée à aucun
+   écran ; une inscription INCOMPLÈTE (sans les renseignements qui la valident seule, v9.927) restait bloquée à la connexion (« En attente
+   de validation par Kevin ») sans que Kevin puisse rien faire. Ici, lues dans CMCteams (Firebase, jeton admin du domaine) :
+     - une fiche (cmc_reg) ni validée ni rattachée à une équipe du planning, créée il y a moins de 60 jours ;
+     - un code d'inscription (cmcteams_secret/codes) encore valable, pas utilisé.
+   Valider = la fiche passe « validée par Kevin » + le code est marqué utilisé. La personne entre à sa prochaine connexion. */
+export const INSCRIPTIONS_JOURS = 60;
+const ID_INSCRIT = /^[A-Za-z0-9_-]{2,40}$/;
+const FB_RACINE = FB_URL.replace(/\/cmcteams$/, '');
+async function fbRacine(outils, chemin, methode, corps) {
+  const f = outils.fetch || fetch;
+  let jeton = ''; try { jeton = (outils.fbToken && (await outils.fbToken())) || ''; } catch { jeton = ''; }
+  const r = await f(FB_RACINE + '/' + chemin.split('/').map(encodeURIComponent).join('/') + '.json' + (jeton ? '?auth=' + encodeURIComponent(jeton) : ''), {
+    method: methode || 'GET', headers: { 'content-type': 'application/json' }, body: corps === undefined ? undefined : JSON.stringify(corps), signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error('firebase ' + r.status);
+  return r.json();
+}
+const valide = (r) => r && (r.verified === true || r.verifiedByAdmin === true);
+/* PURE : la liste des inscriptions en attente (la plus récente d'abord, 30 au plus). */
+export function enAttente(reg, codes, employes, now) {
+  const equipe = new Set(liste(employes).filter((e) => e.id && e.team && e.team !== '?').map((e) => String(e.id)));
+  const R = reg && typeof reg === 'object' ? reg : {}, out = new Map();
+  const nomDe = (x, id) => propre(((x.prenom || '') + ' ' + (x.nom || '')).trim(), 80) || id;
+  for (const [id, r] of Object.entries(R)) {
+    if (!r || typeof r !== 'object' || !ID_INSCRIT.test(id) || valide(r) || r.refuse || equipe.has(id)) continue;
+    const ts = +r.createdAt || 0;
+    if (!ts || now - ts > INSCRIPTIONS_JOURS * 864e5) continue;
+    out.set(id, { id, nom: nomDe(r, id), matricule: propre(r.matricule || '', 10), ts, code: false });
+  }
+  for (const [id, c] of Object.entries(codes && typeof codes === 'object' ? codes : {})) {
+    if (!c || typeof c !== 'object' || c.used || !(+c.expiresAt > now) || !ID_INSCRIT.test(id) || valide(R[id])) continue;
+    const x = out.get(id) || { id, nom: nomDe(c, id), matricule: propre((R[id] && R[id].matricule) || '', 10), ts: +c.createdAt || now, code: true };
+    x.code = true; out.set(id, x);
+  }
+  return [...out.values()].sort((a, b) => b.ts - a.ts).slice(0, 30);
+}
+async function lireInscriptions(outils, now) {
+  const [reg, codes, employes] = await Promise.all([fb(outils, 'cmc_reg'), fbRacine(outils, 'cmcteams_secret/codes').catch(() => null), fb(outils, 'cmc_e').catch(() => null)]);
+  return enAttente(reg, codes, employes, now);
+}
+async function validerInscription(outils, id, now) {
+  if (!ID_INSCRIT.test(id)) return { ok: false, reason: 'inscription_invalide' };
+  const r = await fb(outils, 'cmc_reg/' + id).catch(() => null);
+  if (!r || typeof r !== 'object') return { ok: false, reason: 'inscription_introuvable' };
+  if (!valide(r)) await fb(outils, 'cmc_reg/' + id, 'PATCH', { verified: true, verifiedAt: now, verifiedByAdmin: true, updatedAt: now });
+  await fbRacine(outils, 'cmcteams_secret/codes/' + id, 'PATCH', { used: true, usedAt: now, validatedByAdmin: true }).catch(() => null);
+  memo.delete('inscriptions');
+  return { ok: true, nom: propre(((r.prenom || '') + ' ' + (r.nom || '')).trim(), 80) || id };
+}
+
 /* ── la réponse unique ────────────────────────────────────────────────────────────────────────────────────── */
 export async function lireBoite(env, outils, now) {
   const db = env.CERCLE_DB;
@@ -218,8 +270,11 @@ export async function lireBoite(env, outils, now) {
   const rang = (x) => (x.nonLus ? (x.source === 'alertes' ? 1 : 2) : 0);   // les vrais messages non lus d'abord, puis les alertes non lues
   messages.sort((a, b) => rang(b) - rang(a) || b.ts - a.ts);
   const nonLus = SOURCES_MESSAGES.reduce((s, n) => s + sources[n].nonLus, 0);
+  let inscriptions = [], inscriptionsEtat = 'ok';
+  try { inscriptions = await memoise('inscriptions', now, () => lireInscriptions(outils, now)); } catch (e) { inscriptionsEtat = 'indisponible'; }
   const connectes = db ? ((await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) || {}).n || 0 : 0;
-  return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste), maj: now };
+  return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
+    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', maj: now };
 }
 
 /* ── marquer lu / répondre ────────────────────────────────────────────────────────────────────────────────── */
@@ -276,10 +331,16 @@ export async function handleBoite(request, url, env, outils) {
     await schema(db);
     /* Le bouton « Écrire à l'admin », servi à TOUTES les apps (le routeur l'ajoute à chaque page). */
     if (p === '/bouton.js' && m === 'GET') return new Response(BOUTON_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=600', 'x-content-type-options': 'nosniff' } });
+    /* « Ouvrir ma boîte » depuis le bouton de n'importe quelle app : vers la boîte du portail (le bouton ne porte aucune adresse extérieure). */
+    if (p === '/ouvrir' && m === 'GET') return new Response(null, { status: 302, headers: { location: 'https://kd-mc.com/#messages', 'cache-control': 'no-store' } });
     /* « Mes messages » : ceux du compte connecté (toutes apps) + ceux d'un visiteur non connecté (ses suivis secrets). L'admin est reconnu : le bouton se retire. */
     if (p === '/mes' && m === 'GET') {
       const qui = await outils.qui(request).catch(() => null);
-      if (qui && qui.admin) return J({ ok: true, admin: true, connecte: true, messages: [] });
+      /* L'admin : pas de « écrire à l'admin », mais SES compteurs (messages non lus + inscriptions en attente) pour la pastille de chaque app. */
+      if (qui && qui.admin) {
+        const bo = await lireBoite(env, outils, now).catch(() => null);
+        return J({ ok: true, admin: true, connecte: true, messages: [], nonLus: (bo && bo.nonLus) || 0, inscriptions: (bo && bo.inscriptions) || [] });
+      }
       const suivis = String(url.searchParams.get('s') || '').split(',').filter((x) => /^[0-9a-f]{24}$/.test(x)).slice(0, 5);
       const rows = [];
       if (qui && qui.uid) rows.push(...await tous(db, 'SELECT app, texte, cree, reponse, repondu FROM boite WHERE uid = ? AND cree > ? ORDER BY id DESC LIMIT 10', qui.uid, now - LIMITES.garde));
@@ -328,6 +389,10 @@ export async function handleBoite(request, url, env, outils) {
       const cles = (Array.isArray(b.cles) ? b.cles : []).map((c) => propre(c, 120)).filter((c) => c.includes(':')).slice(0, 100);
       let n = 0; for (const c of cles) { if (await marquerLu(env, outils, c, now).catch(() => false)) n++; }
       return J({ ok: true, n });
+    }
+    if (p === '/admin/valider' && m === 'POST') {
+      const r = await validerInscription(outils, propre(b.id, 40), now);
+      return J(r, r.ok ? 200 : 400);
     }
     if (p === '/admin/repondre' && m === 'POST') {
       const texte = propre(b.texte, LIMITES.reponse);

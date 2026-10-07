@@ -108,24 +108,27 @@ const sc = b.sources.find((s) => s.id === 'cmcteams');
 ok(b.ok && sc.etat === 'indisponible' && b.messages.some((x) => x.source === 'lingua') && b.sources.find((s) => s.id === 'lingua').etat === 'ok', '4. Firebase en panne : CMCteams est marquée « indisponible », Lingua reste lisible', sc);
 
 /* 5. dépôts des autres apps (futures comprises) */
-const dep = (corps, extra, ip) => appel('', '/deposer', corps, Object.assign({ origin: 'https://chez-lolo.kd-mc.com', 'cf-connecting-ip': ip || '198.51.100.7' }, extra || {}));
+const dep = (corps, extra, ip) => appel((extra && extra['x-test'] !== undefined) ? extra['x-test'] : 'max', '/deposer', corps, Object.assign({ origin: 'https://chez-lolo.kd-mc.com', 'cf-connecting-ip': ip || '198.51.100.7' }, extra || {}));
 let d = await dep({ nom: 'Lolo', texte: 'La commande 12 est prête ?', contact: 'lolo@exemple.fr' });
-ok(d.ok && /^[0-9a-f]{24}$/.test(d.suivi) && notes.some((n) => /chez-lolo — Lolo/.test(n)), '5a. une app du domaine dépose un message : suivi secret rendu, l\'admin est prévenu (push)', [d, notes]);
+ok(d.ok && /^[0-9a-f]{24}$/.test(d.suivi) && notes.some((n) => /chez-lolo — Max Roux/.test(n)), '5a. une app du domaine dépose un message : suivi secret rendu, l\'admin est prévenu (push)', [d, notes]);
 b = await boite();
 const dp = b.messages.find((x) => x.source === 'depots');
-ok(dp && dp.app === 'chez-lolo.kd-mc.com' && dp.nonLus === 1 && dp.contact === 'lolo@exemple.fr' && dp.repondre === 'direct', '5b. le message arrive dans la boîte, avec l\'app d\'origine et le contact', dp);
+ok(dp && dp.app === 'chez-lolo.kd-mc.com' && dp.nonLus === 1 && dp.repondre === 'direct', '5b. le message arrive dans la boîte, avec l\'app d\'origine (nom pris de la SESSION : Max Roux)', dp);
 ok((await dep({ texte: 'pirate' }, { origin: 'https://site-pirate.example' }))._st === 403, '5c. un site hors domaine ne peut pas déposer');
 ok((await dep({ texte: 'robot', site: 'http://spam' })).ok && (await boite()).messages.filter((x) => x.source === 'depots').length === 1, '5d. champ piège rempli (robot) : réponse polie, rien déposé');
 ok((await dep({ texte: ' ' }))._st === 400, '5e. message vide refusé');
+{ const avant = db._s.prepare('SELECT COUNT(*) AS n FROM boite').get().n;
+  const sans = await dep({ nom: 'Pirate', texte: 'sans compte' }, { 'x-test': '' }); const adm = await dep({ texte: 'admin à admin' }, { 'x-test': 'kev' });
+  ok(sans._st === 401 && sans.reason === 'compte_requis' && adm._st === 401 && db._s.prepare('SELECT COUNT(*) AS n FROM boite').get().n === avant, '5e2. sans compte : refusé (401 compte_requis), rien déposé — aucun message anonyme (Kevin 3.10)', [sans, adm]); }
 const long = await dep({ nom: 'Long', texte: 'x'.repeat(5000) }, null, '198.51.100.8');
 ok(long.ok && db._s.prepare('SELECT LENGTH(texte) AS n FROM boite WHERE suivi = ?').get(long.suivi).n === LIMITES.texte, '5f. texte coupé à 1 000 caractères');
 let dernier = null; for (let i = 0; i < 6; i++) dernier = await dep({ texte: 'rafale ' + i }, null, '203.0.113.9');
 ok(dernier._st === 429 && dernier.reason === 'trop_de_messages', '5g. 6e message en une heure depuis le même appareil : 429 (5 par heure)');
 r = await appel('kev', '/admin/repondre', { cle: 'depot:' + dp.cle.split(':')[1], texte: 'Oui, dans 10 minutes.' });
 ok(r.ok, '5h. l\'admin répond à un dépôt', r);
-let s1 = await appel('', '/reponse?suivi=' + d.suivi);
+let s1 = await appel('max', '/reponse?suivi=' + d.suivi);
 ok(s1.ok && s1.repondu && s1.reponse === 'Oui, dans 10 minutes.', '5i. l\'expéditeur relit la réponse avec son suivi secret', s1);
-ok((await appel('', '/reponse?suivi=000000000000000000000000'))._st === 404 && (await appel('', '/reponse?suivi=abc'))._st === 404, '5j. un mauvais suivi ne rend rien');
+ok((await appel('max', '/reponse?suivi=000000000000000000000000'))._st === 404 && (await appel('max', '/reponse?suivi=abc'))._st === 404 && (await appel('', '/reponse?suivi=' + d.suivi))._st === 401 && (await appel('lea', '/reponse?suivi=' + d.suivi))._st === 404, '5j. un mauvais suivi ne rend rien ; sans compte : 401 ; un autre compte ne relit pas ce message');
 T += 91 * 864e5; await dep({ texte: 'plus tard' }, null, '192.0.2.5');
 ok(db._s.prepare('SELECT COUNT(*) AS n FROM boite WHERE cree < ?').get(T - 90 * 864e5).n === 0, '5k. les dépôts de plus de 90 jours sont effacés (durée limitée)');
 T -= 91 * 864e5;
@@ -193,16 +196,15 @@ b = await boite();
 const dep2 = b.messages.find((x) => x.cle === 'depot:' + ligneD.id);
 ok(dep2 && /Léa Martin/.test(dep2.de) && !/non connecté/.test(dep2.de) && dep2.infos.some((l) => /Compte : Léa Martin \(lea-martin\)/.test(l)) && dep2.infos.some((l) => /shops\.kd-mc\.com\/commande\/42/.test(l)) && dep2.infos.some((l) => /iPhone · Safari/.test(l)), '10c. l\'admin voit TOUTES les infos : compte, app + page, appareil', dep2);
 d = await depotDe('', { nom: 'Visiteur', texte: 'Bonjour, une question', contact: 'v@exemple.fr' }, IPHONE);
-const anon = (await boite()).messages.find((x) => x.cle === 'depot:' + db._s.prepare('SELECT id FROM boite WHERE suivi = ?').get(d.suivi).id);
-ok(anon && /Visiteur \(non connecté\)/.test(anon.de) && anon.infos[0] === '👤 Non connecté' && anon.infos.some((l) => /v@exemple\.fr/.test(l)), '10d. non connecté : dit « non connecté » et garde le contact donné');
+ok(d._st === 401 && d.reason === 'compte_requis' && !db._s.prepare("SELECT 1 FROM boite WHERE texte = 'Bonjour, une question'").get(), '10d. non connecté : refusé, rien enregistré (aucun message anonyme)');
 /* « Mes messages » : le compte relit la réponse */
 await appel('kev', '/admin/repondre', { cle: 'depot:' + ligneD.id, texte: 'On regarde, merci Léa.' });
 let mes = await appel('lea', '/mes');
 ok(mes.ok && mes.connecte && mes.nom === 'Léa Martin' && mes.messages.some((x) => x.texte === 'Ma commande n\'est pas arrivée' && x.reponse === 'On regarde, merci Léa.' && x.app === 'shops'), '10e. depuis son compte, Léa relit ses messages ET la réponse de l\'admin (toutes apps)', mes);
 mes = await appel('max', '/mes');
 ok(mes.ok && mes.connecte && !mes.messages.some((x) => /commande/.test(x.texte)), '10f. un autre compte ne voit RIEN des messages de Léa', mes);
-mes = await appel('', '/mes?s=' + d.suivi);
-ok(mes.ok && !mes.connecte && mes.messages.length === 1 && /une question/.test(mes.messages[0].texte), '10g. un visiteur non connecté relit les siens avec son suivi secret, rien d\'autre', mes);
+mes = await appel('', '/mes?s=' + 'a'.repeat(24));
+ok(mes.ok && !mes.connecte && mes.messages.length === 0, '10g. sans compte : « mes messages » est vide, même avec un suivi (plus de lecture anonyme)', mes);
 mes = await appel('', '/mes');
 ok(mes.ok && mes.messages.length === 0, '10h. sans suivi ni compte : rien');
 ok((await appel('kev', '/mes')).admin === true, '10i. l\'admin est reconnu : le bouton se retire chez lui');
@@ -231,7 +233,8 @@ ok(tI.includes(BOUTON_TAG) && tI.indexOf(BOUTON_TAG) < tI.toLowerCase().indexOf(
 const vraiFetch = globalThis.fetch;
 globalThis.fetch = async (u) => { const t = new URL(String(u && u.url || u)).pathname; return t.endsWith('.js') ? new Response('console.log(1)', { status: 200, headers: { 'content-type': 'text/javascript' } }) : t.endsWith('.json') ? new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }) : new Response(page, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }); };
 const envR = { KDMC_SSO_SECRET: 's', ACCOUNTS: env.ACCOUNTS, ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
-const servir = async (hote, chemin) => { const p = []; const r = await mod.fetch(new Request('https://' + hote + chemin, { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'x-kdmc-sonde': 't' } }), envR, { waitUntil: (x) => p.push(x) }); await Promise.all(p); return { r, t: await r.text() }; };
+/* Depuis le 3.10 (porte totale) une page n'est servie qu'à un compte ; la sonde du domaine (en-tête + centre de données, réseau 8075 = GitHub Actions) passe, comme en production. */
+const servir = async (hote, chemin) => { const p = []; const rq = new Request('https://' + hote + chemin, { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'x-kdmc-sonde': 't' } }); Object.defineProperty(rq, 'cf', { value: { asn: 8075 } }); const r = await mod.fetch(rq, envR, { waitUntil: (x) => p.push(x) }); await Promise.all(p); return { r, t: await r.text() }; };
 const hotes = [...readFileSync(new URL('./worker.js', import.meta.url), 'utf8').match(/const ROUTES\s*=\s*\{[\s\S]*?\n\};/)[0].matchAll(/'([a-z0-9.-]+\.kd-mc\.com)':/g)].map((x) => x[1]).filter((h) => h !== 'admin.kd-mc.com');
 /* Une adresse gardée montre sa PORTE (fiche à remplir) à un inconnu : pas de bouton sur la porte, il n'a pas encore de compte. Dès qu'il est connu, il reçoit la vraie page. */
 const sans = [], portes = []; for (const h of hotes) { const x = await servir(h, '/'); if (x.r.headers.get('x-kdmc-porte')) { portes.push(h); continue; } if (x.r.status === 200 && !x.t.includes(BOUTON_TAG)) sans.push(h + ' (' + x.r.status + ')'); }

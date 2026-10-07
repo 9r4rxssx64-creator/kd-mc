@@ -449,9 +449,16 @@ const ROUTEUR = {
     const PREFIX_SORTIE = prefixeSortie(UPSTREAM, env && env.UPSTREAM_PREFIX);
 
     // Recherche décès INSEE (proxy same-origin, public read-only) — pour l'arbre.
-    if (url.pathname === '/__deces') return handleDeces(request, url);
+    if (url.pathname === '/__deces') {
+      /* Aucune consultation sans compte (3.10) : la recherche de personnes décédées n'est plus anonyme. */
+      if (!(await compteConnu(request, env))) return new Response(JSON.stringify({ ok: false, reason: 'compte_requis' }), { status: 401, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
+      return handleDeces(request, url);
+    }
     // Arbre : code famille vérifié ici + données servies à qui le prouve (fait n°12).
-    if (url.pathname.startsWith('/__arbre/')) return handleArbre(request, url, env);
+    if (url.pathname.startsWith('/__arbre/')) {
+      if (request.method !== 'OPTIONS' && !(await compteConnu(request, env))) return new Response(JSON.stringify({ ok: false, reason: 'compte_requis' }), { status: 401, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
+      return handleArbre(request, url, env);
+    }
 
     // SSO transverse (session unique + CGU). Même origine par sous-domaine.
     if (url.pathname.startsWith('/__sso/')) return handleSso(request, url, env);
@@ -481,7 +488,10 @@ const ROUTEUR = {
     if (url.pathname.startsWith('/__boite/')) return handleBoite(request, url, env, outilsBoite(env));
     // Demande de démonstration Rotaplan (formulaire SANS script : champs obligatoires imposés par le
     // navigateur, REVÉRIFIÉS ici). Kevin 27.09 « renseignements obligatoires partout pour les nouveaux ».
-    if (url.pathname === '/__demande') return handleDemande(request, env, host);
+    if (url.pathname === '/__demande') {
+      if (request.method === 'POST' && !(await compteConnu(request, env))) return new Response(JSON.stringify({ ok: false, reason: 'compte_requis' }), { status: 401, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
+      return handleDemande(request, env, host);
+    }
     /* 🐝 LE CERVEAU DE BEE — même adresse que la page, et SEULEMENT pour Kevin (audit Bee 27.09).
        Avant : Bee appelait apis.kd-mc.com/ai, que n'importe qui pouvait faire payer en écrivant
        lui-même l'en-tête Origin (mesuré : 200 appels Anthropic d'un seul curl, aucun plafond),
@@ -1473,9 +1483,73 @@ function porteDe(cheminCMC) {
 function libreSansFiche(cheminCMC) {
   return /\/(manifest\.json|[^/]*\.webmanifest|sw\.js|robots\.txt|(apple-touch-icon|favicon|icon)[^/]*\.(png|svg|ico))$/.test(cheminNormal(cheminCMC));
 }
+/* 🔒 AUCUNE CONSULTATION SANS COMPTE, NULLE PART (Kevin 3.10.2026 : « Aucune consultation sans compte nulle part »).
+   Avant, 9 adresses sur 31 demandaient la fiche (PORTES) ; les 22 autres (boutiques, Lingua, Apex, arbre…) s'ouvraient à
+   n'importe qui, qui n'était alors que COMPTÉ (compteur anonyme). Désormais TOUTE PAGE (document HTML) de TOUTE adresse du
+   domaine montre la porte « fiche » tant que la personne n'a pas de compte du domaine non révoqué — la porte se montre ICI,
+   sans quitter l'app, et mène à la fiche du portail (Face ID ou prénom + nom + code + conditions). Ce qui reste ouvert, et
+   pourquoi : le PORTAIL kd-mc.com (c'est LA porte : inscription et connexion), les pages juridiques (confidentialité, CGU :
+   la loi veut qu'on les lise AVANT de s'inscrire), les fichiers d'installation (nom, icône — `libreSansFiche`), et tout ce
+   qui n'est pas une page (scripts, images, API : chaque API vérifie elle-même la session). Un robot de vérification du
+   domaine passe par l'en-tête `x-kdmc-sonde` SEULEMENT s'il vient d'un centre de données (GitHub Actions = Azure) : poser
+   l'en-tête depuis un téléphone n'ouvre rien. Retour arrière sans redéploiement de code : KDMC_PORTE_TOTALE = « 0 ». */
+/* Un compte du domaine, non révoqué (sans SSO configuré = domaine de test : ouvert, comme les portes). */
+async function compteConnu(request, env) {
+  if (!porteTotaleActive(env) || !(env && env.KDMC_SSO_SECRET)) return true;
+  const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request));
+  return !!(s && s.uid && !revoked(await accGet(env, s.uid), s));
+}
+export function porteTotaleActive(env) { return !(env && String(env.KDMC_PORTE_TOTALE) === '0'); }
+const PAGES_JURIDIQUES = /\/(privacy|cgu|conditions|mentions-legales)\.html$/;
+/* Le PORTAIL est LA porte : sa page de connexion/inscription et les cinq fichiers qu'elle charge AVANT qu'on soit connecté
+   (script du portail, client SSO, boîte, feuille de style, icône). Rien d'autre sur kd-mc.com : ni sous-dossier, ni liste des
+   apps (apps.json), ni les dossiers d'apps servis sous le portail (/CMCteams/<app>/…) — « ni voir le code ni quoi que ce soit ». */
+const FICHIERS_PORTAIL = /^\/cmcteams\/kdmc-home(\/(index\.html|kdmc-portal\.js|kdmc-sso\.js|kdmc-boite\.js|design-system\.css|icon\.svg))?$/;
+function pageDuPortail(host, cheminCMC) {
+  if (host !== 'kd-mc.com' && host !== 'www.kd-mc.com') return false;
+  const c = cheminNormal(cheminCMC).replace(/\/$/, '');
+  return FICHIERS_PORTAIL.test(c) || c === '/cmcteams/tools/shared/version-badge-pwa.js';
+}
+/* Une PAGE se reconnaît à ce que le navigateur dit (sec-fetch-dest = document) ; un client qui ne dit rien (curl, script, robot
+   d'internet) n'a pas le droit de lire une page pour autant : sans en-tête, c'est l'adresse qui décide (dossier, .html, ou sans
+   extension) — sinon `curl https://shops.kd-mc.com/` aurait contourné la porte. Scripts, images, données (.js, .png, .json…) restent libres. */
+function demandeDePage(request, cheminCMC) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return false;
+  const dest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
+  if (dest) return dest === 'document' || dest === 'iframe' || dest === 'frame';
+  if (/text\/html/i.test(request.headers.get('accept') || '')) return true;
+  const dernier = cheminNormal(cheminCMC).split('/').pop();
+  return dernier === '' || /\.html?$/.test(dernier) || dernier.indexOf('.') < 0;
+}
+async function porteGenerale(request, url, env, cheminCMC) {
+  if (!porteTotaleActive(env)) return null;
+  const secret = env && env.KDMC_SSO_SECRET;
+  if (!secret) return null;                                    /* domaine sans SSO (test) : ouvert */
+  if (request.method !== 'GET' && request.method !== 'HEAD') return null;   /* l'amont est statique : rien d'autre ne lit */
+  if (libreSansFiche(cheminCMC) || PAGES_JURIDIQUES.test(cheminNormal(cheminCMC))) return null;
+  const host = url.hostname.toLowerCase();
+  if (pageDuPortail(host, cheminCMC)) return null;
+  if (request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0)) return null;
+  const s = await ssoVerify(secret, ssoToken(request));
+  if (s && s.uid) {
+    const acc = await accGet(env, s.uid);
+    if (!revoked(acc, s)) {
+      const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
+      const per = perimetre(acc, appDe(host));
+      const nom = host.replace(/\.kd-mc\.com$/, '').replace(/-/g, ' ');
+      if (per.ok || estAdmin) return null;
+      return ficheRefusee({ nom: nom.charAt(0).toUpperCase() + nom.slice(1), app: host }, per.raison);
+    }
+  }
+  const nom = host.replace(/\.kd-mc\.com$/, '').replace(/-/g, ' ');
+  /* Script, feuille de style, image, donnée : rien à montrer, rien à lire (code compris) — 401 sec, sans contenu. */
+  if (!demandeDePage(request, cheminCMC)) return new Response('Connexion au domaine requise.', { status: 401,
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche' } });
+  return portePage({ nom: nom.charAt(0).toUpperCase() + nom.slice(1), app: host }, url);
+}
 async function porteFermee(request, url, env, cheminCMC) {
   const g = porteDe(cheminCMC);
-  if (!g) return null;
+  if (!g) return porteGenerale(request, url, env, cheminCMC);
   if (g.niveau === 'admin') {
     /* Fail-open si le code admin n'est pas déployé (anti-verrouillage au déploiement,
        leçons #99/#100) — comme les deux verrous d'avant, qui ne regardaient que l'adresse. */
@@ -1718,6 +1792,8 @@ async function ficheLaVisite(request, url, env, host) {
       await enrich(env, request, s.uid, s.name, s.cgu, acc, { hote: host });
       return;
     }
+    /* Porte totale (3.10) : un anonyme ne consulte plus rien (il voit la porte) → on ne le compte plus du tout. */
+    if (porteTotaleActive(env)) return;
     /* Anonyme : on compte, on ne nomme pas. Un compteur par app et par jour,
        gardé 100 jours. Aucune donnée personnelle — l'adresse IP ne sert qu'à
        fabriquer une empreinte à sens unique, jamais stockée en clair.

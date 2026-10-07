@@ -12,7 +12,7 @@ import { createHash } from 'crypto';
 
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', /* ce test prouve AUTRE chose que la porte totale (voir compte-obligatoire.test.mjs) */ KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };
 globalThis.fetch = async (input) => new Response('CONTENU', { status: 200, headers: { 'content-type': 'text/html', 'x-frame-options': 'DENY' } });
 
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}`); };

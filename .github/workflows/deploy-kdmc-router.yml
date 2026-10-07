@@ -304,7 +304,7 @@ jobs:
               || echo "  (pas encore 200 — le certificat custom domain peut mettre 1-2 min)"
           done
           echo "== CONTENU studio.kd-mc.com (l'app se charge-t-elle vraiment ?) =="
-          curl -fsS -m 20 -L "https://studio.kd-mc.com/" 2>/dev/null | grep -o "Créa Studio" | head -1 \
+          curl -fsS -m 20 -L -H "x-kdmc-sonde: deploy" "https://studio.kd-mc.com/" 2>/dev/null | grep -o "Créa Studio" | head -1 \
             && echo "  ✅ l'app Créa Studio est bien servie sur le domaine" \
             || echo "  ::warning:: studio.kd-mc.com ne renvoie pas encore l'app (cert/DNS en cours, ou routage à vérifier)"
           echo "== CONTENU cuisine.kd-mc.com (le livre se charge-t-il ?) =="

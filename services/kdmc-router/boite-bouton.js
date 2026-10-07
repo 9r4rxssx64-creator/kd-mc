@@ -96,8 +96,11 @@ export function bouton() {
         if (sansBouton) return;
         /* 7.10 (Kevin : « je débloque de partout où j'ai envie, j'ai une alerte visuelle d'un message ou inscription en attente ») :
            chez l'admin, le bouton devient SON onglet « 📬 » — visible seulement s'il y a quelque chose en attente, avec le nombre. */
-        if (j.admin) { modeAdmin(j); return; }
+        if (j.admin) { if (!btn.parentNode) document.body.appendChild(btn); modeAdmin(j); return; }
         etat.connecte = !!j.connecte; etat.nom = j.nom || ''; etat.messages = j.messages || [];
+        /* Pas de compte, pas de bouton (Kevin 3.10 : aucune consultation ni message sans compte). */
+        if (!etat.connecte) { if (btn.parentNode) btn.parentNode.removeChild(btn); if (panneau && panneau.parentNode) { panneau.parentNode.removeChild(panneau); panneau = null; } return; }
+        if (!btn.parentNode) document.body.appendChild(btn);
         var vu = parseInt(lire(LV) || '0', 10) || 0;
         var neuf = etat.messages.some(function (x) { return x.repondu && x.repondu > vu; });
         pastille.style.display = neuf ? 'block' : 'none';
@@ -160,13 +163,8 @@ export function bouton() {
       tete.appendChild(E('div', "✉️ Écrire à l'admin", { flex: '1', fontWeight: '700', fontSize: '18px', color: OR }));
       var x = E('button', '✕', { minWidth: '44px', minHeight: '44px', borderRadius: '12px', border: '1px solid ' + LIG, background: 'transparent', color: TXT, fontSize: '20px', cursor: 'pointer' });
       x.type = 'button'; x.setAttribute('aria-label', 'Fermer'); x.onclick = fermer; tete.appendChild(x); panneau.appendChild(tete);
-      panneau.appendChild(E('div', etat.connecte ? 'Tu écris en tant que ' + etat.nom + ' · depuis ' + app + '. Il reçoit ton nom, l\'app et la page.' : "Tu n'es pas connecté : dis-lui qui tu es pour qu'il puisse te répondre.", { color: MUT, fontSize: '13.5px', marginBottom: '10px' }));
+      panneau.appendChild(E('div', 'Tu écris en tant que ' + etat.nom + ' · depuis ' + app + '. Il reçoit ton nom, l\'app et la page.', { color: MUT, fontSize: '13.5px', marginBottom: '10px' }));
       var nom = null, contact = null;
-      if (!etat.connecte) {
-        var champ = { width: '100%', boxSizing: 'border-box', minHeight: '46px', padding: '10px 12px', margin: '0 0 8px', borderRadius: '12px', border: '1px solid ' + LIG, background: '#0a120c', color: TXT, fontSize: '16px', fontFamily: 'inherit' };
-        nom = S(document.createElement('input'), champ); nom.placeholder = 'Ton prénom et nom'; nom.maxLength = 60; nom.setAttribute('aria-label', 'Ton nom'); panneau.appendChild(nom);
-        contact = S(document.createElement('input'), champ); contact.placeholder = 'Un moyen de te répondre (e-mail ou téléphone)'; contact.maxLength = 120; contact.setAttribute('aria-label', 'Contact'); panneau.appendChild(contact);
-      }
       var piege = S(document.createElement('input'), { position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: '0' }); piege.tabIndex = -1; piege.setAttribute('aria-hidden', 'true'); piege.autocomplete = 'off'; panneau.appendChild(piege);
       var ta = S(document.createElement('textarea'), { width: '100%', boxSizing: 'border-box', minHeight: '96px', padding: '12px', borderRadius: '12px', border: '1px solid ' + LIG, background: '#0a120c', color: TXT, fontSize: '16px', fontFamily: 'inherit', resize: 'vertical' });
       ta.placeholder = 'Ton message…'; ta.maxLength = 1000; ta.setAttribute('aria-label', 'Ton message'); panneau.appendChild(ta);
@@ -206,10 +204,9 @@ export function bouton() {
     btn.onclick = function () { if (etat.ouvert) fermer(); else ouvrir(); };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && etat.ouvert) fermer(); });
     if (sansBouton) { void charger(); return; }   /* page sans bouton : la porte des conditions seulement, une lecture au chargement */
-    document.body.appendChild(btn);
-    void charger();
-    setInterval(function () { if (document.visibilityState === 'visible') void charger(); }, 120000);
-    document.addEventListener('visibilitychange', function () { if (etat.admin && document.visibilityState === 'visible') void charger(); });   /* l'admin revient sur l'app : compteurs frais */
+    void charger();   /* le bouton n'est posé que pour un compte connecté (aucun message anonyme, Kevin 3.10) */
+    setInterval(function () { if (document.visibilityState === 'visible') void charger(); }, 30000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') void charger(); });   /* retour sur l'app : compteurs frais */
   } catch (e) { /* un bouton de contact ne doit JAMAIS casser une page */ }
 }
 export const BOUTON_JS = '(' + bouton.toString() + ')();';

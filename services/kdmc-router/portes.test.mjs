@@ -93,11 +93,13 @@ kv.set('acc:kevin-desarzens', JSON.stringify({ uid: 'kevin-desarzens', name: 'Ke
 { const r = await va('https://dossiers.kd-mc.com/', { cookie: 'kdmc_sso=' + signe('kevin-desarzens', 1) }); ok(r.servi, 'Kevin (admin + Face ID) entre partout'); }
 { const r = await va('https://osint.kd-mc.com/', { cookie: 'kdmc_sso=' + 'faux.' + anne.split('.')[1] }); ok(!r.servi, 'jeton FALSIFIÉ → n\'entre pas'); }
 
-/* ---- 3. Boutiques et pages de vente : visibles (fiche à la commande, choix de Kevin) ---- */
+/* ---- 3. Boutiques et pages de vente : depuis le 3.10 (Kevin : « Aucune consultation sans compte nulle part ») elles montrent
+   la porte à un inconnu, comme les autres. Seul le portail (la porte elle-même) reste ouvert. Preuve complète : compte-obligatoire.test.mjs ---- */
 for (const u of ['https://shops.kd-mc.com/', 'https://la-detente.kd-mc.com/', 'https://chez-lolo.kd-mc.com/', 'https://rotaplan.kd-mc.com/',
-  'https://kit.kd-mc.com/', 'https://croupier.kd-mc.com/', 'https://kd-mc.com/']) {
-  const r = await va(u); ok(r.servi, 'page de vente / portail visible sans fiche : ' + u);
+  'https://kit.kd-mc.com/', 'https://croupier.kd-mc.com/']) {
+  const r = await va(u); ok(!r.servi && r.porte === 'fiche', 'page de vente : un inconnu voit la porte, pas la page : ' + u);
 }
+{ const r = await va('https://kd-mc.com/'); ok(r.servi, 'le portail reste ouvert (c\'est LA porte : inscription et connexion)'); }
 
 /* ---- 4. Renseignements obligatoires pour un NOUVEAU compte (vérifiés par le DOMAINE) ---- */
 const inscrit = async (corps) => { const r = await mod.fetch(new Request('https://kd-mc.com/__sso/issue', { method: 'POST',

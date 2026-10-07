@@ -30,7 +30,8 @@ const ACCOUNTS = {
   put: async (k, v) => { ecritures++; kv.set(k, v); },
   delete: async (k) => { kv.delete(k); },
 };
-const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS };
+/* KDMC_PORTE_TOTALE=0 : ce test mesure les ÉCRITURES du compteur anonyme (mode retour arrière) ; la porte totale par défaut est prouvée par compte-obligatoire.test.mjs */
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', ACCOUNTS };
 /* waitUntil : on ATTEND la promesse, sinon l'écriture partirait après la mesure. */
 const enAttente = [];
 const ctx = { waitUntil(p) { enAttente.push(p); } };

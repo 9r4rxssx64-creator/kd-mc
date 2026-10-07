@@ -345,22 +345,28 @@ export async function handleBoite(request, url, env, outils) {
       const suivis = String(url.searchParams.get('s') || '').split(',').filter((x) => /^[0-9a-f]{24}$/.test(x)).slice(0, 5);
       const rows = [];
       if (qui && qui.uid) rows.push(...await tous(db, 'SELECT app, texte, cree, reponse, repondu FROM boite WHERE uid = ? AND cree > ? ORDER BY id DESC LIMIT 10', qui.uid, now - LIMITES.garde));
-      if (suivis.length) rows.push(...await tous(db, `SELECT app, texte, cree, reponse, repondu FROM boite WHERE suivi IN (${suivis.map(() => '?').join(',')}) AND (uid IS NULL OR uid = '') ORDER BY id DESC LIMIT 10`, ...suivis));
+      /* plus de lecture « par suivi » sans compte (3.10) : les anciens messages anonymes ne se relisent plus, l'admin les voit toujours */
       rows.sort((a, b) => b.cree - a.cree);
       /* 7.10 (Kevin : « CGU une seule fois par compte, valables dans tout le domaine ; aucune connexion sans accord ») : un compte
          connecté qui n'a pas accepté les conditions EN COURS les reçoit ici — le bouton de chaque page les montre, une fois. */
       const cgu = qui && qui.uid && qui.cgu === false && outils.cgu ? Object.assign({ requise: true }, outils.cgu) : null;
       return J({ ok: true, admin: false, connecte: !!(qui && qui.uid), nom: (qui && qui.nom) || '', cgu, messages: rows.slice(0, 10).map((r) => ({ app: r.app, texte: apercu(r.texte, 600), ts: r.cree, reponse: r.reponse || '', repondu: r.repondu || 0 })) });
     }
-    /* La réponse relue par l'expéditeur d'un dépôt : seul celui qui a reçu le « suivi » (secret, 96 bits) la voit. */
+    /* La réponse relue par l'expéditeur d'un dépôt : seulement avec SON compte (aucune consultation sans compte, Kevin 3.10) et le suivi secret de CE message. */
     if (p === '/reponse' && m === 'GET') {
+      const qui = await outils.qui(request).catch(() => null);
+      if (!qui || !qui.uid || qui.admin) return J({ ok: false, reason: 'compte_requis' }, 401);
       const s = propre(url.searchParams.get('suivi'), 40);
-      const r = s.length >= 16 ? await un(db, 'SELECT reponse, repondu FROM boite WHERE suivi = ?', s) : null;
+      const r = s.length >= 16 ? await un(db, 'SELECT reponse, repondu FROM boite WHERE suivi = ? AND uid = ?', s, qui.uid) : null;
       return J(r ? { ok: true, repondu: !!r.reponse, reponse: r.reponse || '', ts: r.repondu || 0 } : { ok: false, reason: 'introuvable' }, r ? 200 : 404);
     }
     /* Dépôt : n'importe quelle app du domaine (présente ou future) écrit à l'admin avec UN appel. */
     if (p === '/deposer' && m === 'POST') {
       if (!ORIGINE_DOMAINE.test(origine)) return J({ ok: false, reason: 'origine_refusee' }, 403);
+      /* Aucune consultation ni message sans compte (Kevin 3.10) : l'identité vient de la SESSION du domaine, jamais de la page. */
+      const qui = await outils.qui(request).catch(() => null);
+      const connecte = qui && qui.uid && !qui.admin;
+      if (!connecte) return J({ ok: false, reason: 'compte_requis' }, 401);
       let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'json_illisible' }, 400); }
       if (propre(b.site, 10)) return J({ ok: true, suivi: 'x'.repeat(24) });                 // champ piège rempli = robot : on ne dit rien
       const texte = propre(b.texte, LIMITES.texte);
@@ -371,12 +377,10 @@ export async function handleBoite(request, url, env, outils) {
       if (((await un(db, 'SELECT COUNT(*) AS n FROM boite WHERE cree > ?', now - 864e5)).n || 0) >= LIMITES.depotJour) return J({ ok: false, reason: 'boite_pleine_aujourd_hui' }, 429);
       const suivi = [...crypto.getRandomValues(new Uint8Array(12))].map((x) => x.toString(16).padStart(2, '0')).join('');
       /* L'identité vient de la SESSION du domaine, jamais de la page : une personne connectée ne peut pas écrire sous le nom d'une autre. */
-      const qui = await outils.qui(request).catch(() => null);
-      const connecte = qui && qui.uid && !qui.admin;
-      const nom = (connecte ? propre(qui.nom, 60) : propre(b.nom, 60)) || 'Anonyme', contact = propre(b.contact, 120);
+      const nom = propre(qui.nom, 60) || 'Compte', contact = '';
       const page = propre(b.page, 120).replace(/^(?!\/)/, '/').slice(0, 120);
       await faire(db, 'INSERT INTO boite (app, nom, texte, contact, ip, suivi, cree, uid, page, appareil, pays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        app, nom, texte, contact, ip, suivi, now, connecte ? qui.uid : '', page, appareilDe(request.headers.get('user-agent')), propre(request.cf && request.cf.country, 3));
+        app, nom, texte, contact, ip, suivi, now, qui.uid, page, appareilDe(request.headers.get('user-agent')), propre(request.cf && request.cf.country, 3));
       await faire(db, 'DELETE FROM boite WHERE cree < ?', now - LIMITES.garde);
       memo.delete('depots');
       if (outils.notifier) await outils.notifier('📨 ' + app + ' — ' + nom, texte.slice(0, 140));

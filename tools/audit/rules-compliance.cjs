@@ -96,6 +96,8 @@ const REGISTRE = [
   // Règle « LA BOÎTE UNIQUE : TOUS LES MESSAGES DE TOUTES LES APPS … » (Kevin 3.10.2026) : gardes = boite.test.mjs (adaptateurs
   // Lingua / CMCteams / dépôts / Rotaplan / Arbre / alertes, réponse directe, 0 écriture KV) + portail réel dans Chromium.
   [/LA BOÎTE UNIQUE/i, ['npm:test:boite', 'npm:test:boite-portail']],
+  // Règle « AUCUNE CONSULTATION SANS COMPTE, NULLE PART » (Kevin 3.10.2026) : garde = compte-obligatoire.test.mjs (toutes les adresses, sabotage).
+  [/AUCUNE CONSULTATION SANS COMPTE/i, ['npm:test:compte-obligatoire']],
   // Règle « ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE » (Kevin 3.10.2026, session arbre,
   // commit 23ed102f6 sans entrée → ratchet rouge pour tout le monde). Ce qui est MÉCANISABLE vit dans le robot d'écriture de
   // l'arbre (essai à blanc → écriture → rejouer = 0, anti-doublon par `ref`) et dans la section « à relier » ; le jugement

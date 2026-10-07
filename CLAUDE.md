@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 200 règles — le texte de Kevin, une par une
+## 📜 Les 201 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -871,6 +871,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 📬 RÈGLE ABSOLUE — LA BOÎTE UNIQUE : TOUS LES MESSAGES DE TOUTES LES APPS DU DOMAINE, SUR MA VUE ADMIN, AVEC RÉPONSE DIRECTE — PRÉSENTES ET FUTURES (Kevin 2026-10-03, ABSOLUE)
 **« Intègre dans la nouvelle fenêtre des messages tous les messages que je peux recevoir de n'importe quel app du domaine sur ma vue admin pour avoir un visuel permanent, ne rien rater, je peux […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-la-boîte-unique-tous-les-messages-de-toutes-les-apps-du-domaine-sur-ma-vue-admin-avec-réponse-directe-présentes-et-futures-kevin-2026-10-03-absolue)
+
+### 🔒 RÈGLE ABSOLUE — AUCUNE CONSULTATION SANS COMPTE, NULLE PART, SUR TOUTES LES APPS DU DOMAINE — PRÉSENTES ET FUTURES (Kevin 2026-10-03, ABSOLUE)
+**« Aucune consultation sans compte nulle part. »**
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-aucune-consultation-sans-compte-nulle-part-sur-toutes-les-apps-du-domaine-présentes-et-futures-kevin-2026-10-03-absolue)
 
 ### 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

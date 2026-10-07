@@ -22,7 +22,7 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ✅ ' + m); } else { fail
 
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', /* ce test prouve AUTRE chose que la porte totale (voir compte-obligatoire.test.mjs) */ ACCOUNTS };
 const ctx = { waitUntil() {} };
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const jeton = (uid, opts = {}) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: opts.verified ? 1 : 0, iat: opts.iat || Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };

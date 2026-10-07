@@ -11747,6 +11747,27 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 1. Toute app qui reçoit un message d'une personne (formulaire, contact, demande, chat) le rend lisible dans la boîte : adaptateur dans `boite.js` ou dépôt `/__boite/deposer`.
 2. Jamais d'écriture KV pour ça (D1 ou Firebase) ; jamais d'HTML injecté ; jamais de lecture sans session admin prouvée.
 3. Une nouvelle source = son test dans `boite.test.mjs` (lecture, réponse ou refus, panne isolée).
+## 🔒 RÈGLE ABSOLUE — AUCUNE CONSULTATION SANS COMPTE, NULLE PART, SUR TOUTES LES APPS DU DOMAINE — PRÉSENTES ET FUTURES (Kevin 2026-10-03, ABSOLUE)
+
+> **« Aucune consultation sans compte nulle part. »**
+
+- **Ce que ça veut dire** : sur CHAQUE adresse du domaine (31, boutiques, Lingua, Apex, arbre, coffre… comprises), une PAGE n'est montrée qu'à un compte du
+  domaine non révoqué et ouvert sur cette app. Sinon : la porte (« 🔒 Face ID / remplir ma fiche »), SUR PLACE, jamais le contenu. Avant : 9 adresses sur 31.
+- **Ni le code, ni rien** (Kevin : « Ni voir le code ou quoi que ce soit. Nulle part ») : la porte vaut pour TOUT fichier — page, script, feuille de style, image, donnée —
+  (401 sec sans contenu pour ce qui n'est pas une page), et pour les API du routeur qui étaient anonymes (`/__deces`, `/__arbre/`, `/__demande`).
+- **Ce qui reste ouvert, et pourquoi** : la page de connexion du portail kd-mc.com et les SIX fichiers qu'elle charge avant connexion (liste fermée `FICHIERS_PORTAIL`,
+  rien d'autre sur ce domaine, pas même la liste des apps) ; les pages juridiques (à lire AVANT de s'inscrire) ; manifest, icônes et `sw.js` (l'iPhone les demande sans
+  cookie pour installer/mettre à jour l'app — aucun secret dedans). Limite connue : le dépôt GitHub public contient le code ; seul un dépôt privé règle ça (décision de Kevin).
+- **Où c'est fait** : `porteGenerale` (services/kdmc-router/worker.js), appelée par `porteFermee` pour toute adresse sans porte propre. Sans en-tête de navigateur,
+  l'adresse décide (`demandeDePage`) : `curl` n'est pas un contournement.
+- **Plus aucun visiteur anonyme** : plus de compteur `anon:`/`anonv:` (un inconnu ne consulte rien, donc ne se compte pas — et ça économise l'écriture KV),
+  plus de message anonyme à l'admin (`/__boite/deposer` et `/reponse` exigent le compte ; le bouton ✉️ n'apparaît que connecté).
+- **Les robots de vérification** passent par `x-kdmc-sonde` SEULEMENT depuis un centre de données (GitHub Actions = Azure) ; l'en-tête posé depuis un téléphone n'ouvre rien.
+  Tout NOUVEAU robot qui lit une page du domaine pose l'en-tête (liste dans `sonde-sans-ecriture.test.mjs`).
+- **Retour arrière** (sans toucher au code) : variable `KDMC_PORTE_TOTALE` = `0` sur le routeur. À n'utiliser que sur décision de Kevin.
+- **Garde** : `npm run test:compte-obligatoire` (vrai routeur, toutes les adresses lues dans ROUTES, comptes révoqué/falsifié/bloqué, sonde, 0 écriture, sabotage rouge).
+  Une 32ᵉ adresse est couverte d'office : la règle ne dépend d'aucune liste.
+
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 
 > « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

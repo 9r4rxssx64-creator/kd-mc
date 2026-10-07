@@ -33,7 +33,7 @@ const SECRET = 'sec';
 const signe = (uid, v) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', SECRET).update(p).digest()); };
 const kv = new Map(); const kvEcrit = [];
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); kvEcrit.push(k); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [], list_complete: true }) };
-const env = { KDMC_SSO_SECRET: SECRET, KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CERCLE_DB: d1(), ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
+const env = { KDMC_SSO_SECRET: SECRET, KDMC_PORTE_TOTALE: '0' /* ce test prouve l'injection de Bee, pas la porte (compte-obligatoire.test.mjs) */, KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CERCLE_DB: d1(), ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
 const pages = [];
 globalThis.fetch = async (u) => { const t = new URL(String(u && u.url || u)).pathname;
   return t.endsWith('.js') ? new Response('console.log(1)', { status: 200, headers: { 'content-type': 'text/javascript' } })

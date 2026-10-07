@@ -10,7 +10,7 @@ import { createHash, createHmac } from 'crypto';
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const signSso = (secret, uid, v) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', secret).update(p).digest()); };
 const sha = (s) => createHash('sha256').update(s).digest('hex');
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242') };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', /* ce test prouve AUTRE chose que la porte totale (voir compte-obligatoire.test.mjs) */ KDMC_ADMIN_PIN_SHA256: sha('424242') };
 const REQ = (path, headers) => new Request('https://beatbot.kd-mc.com' + path, { headers: headers || {} });
 
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : (fail++, console.log('  ✗ ' + m)); };

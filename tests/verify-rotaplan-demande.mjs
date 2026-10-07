@@ -18,7 +18,7 @@ const { chromium } = createRequire(ROOT + '/package.json')('playwright');
 const worker = (await import('file://' + ROOT + '/services/kdmc-router/worker.js')).default;
 const kv = new Map();
 const pushes = [];
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), KDMC_PUSH_URL: 'https://push.test', KDMC_PUSH_TOKEN: 't',
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), KDMC_PUSH_URL: 'https://push.test', KDMC_PUSH_TOKEN: 't',
   ACCOUNTS: { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } } };
 const vraiFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => { const u = typeof input === 'string' ? input : input.url; if (/push\.test/.test(u)) { pushes.push(JSON.parse((init && init.body) || '{}')); return new Response('{}'); } return vraiFetch(input, init); };

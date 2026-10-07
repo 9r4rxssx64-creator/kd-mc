@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (09h UTC) — KV : le filtre des robots a bien vidé la rafale de minuit (MESURÉ)
+
+- Run `mesure-kv` (public, jours=2) 37191391056 : **3.10 = 1 217 écritures** (plafond), dont 632 à 00h et 570 à 01h UTC ; **4.10 = 106 écritures**, dont 37 à 00h, 19 à 02h, 12 à 08h, 11 à 01h. Plafond non atteint. Routeur avec `ASN_NUAGES` déployé (run 37188230650 ✅ 08h13 UTC).
+- Pas fait : l'inventaire par préfixe du coffre (`coffre-kv-inventaire`) — inutile tant que le total reste à 106 ; à relancer si la journée dépasse ~700.
+## 2026-10-04 — « Aucune consultation sans compte nulle part » (branche `claude/compte-obligatoire`)
+
+- **Fait** : `porteGenerale` dans le routeur = la porte « fiche » sur TOUTES les pages de TOUTES les adresses (avant 9 sur 31). Ouvert : portail, pages juridiques, installation, scripts/données. `demandeDePage` : sans en-tête de navigateur, l'adresse décide (curl ne contourne pas). Robots : `x-kdmc-sonde` + réseau de centre de données. Plus de compteur anonyme, plus de message anonyme (`/__boite/deposer` et `/reponse` exigent le compte, bouton ✉️ seulement connecté, rafraîchi toutes les 30 s).
+- **Preuves** : `test:compte-obligatoire` (33 contrôles, sabotage rouge) ; anciens tests mis en phase (portes, boîte, fiche-visite, sonde-sans-ecriture, lingua-adresse ; approvals/beatbot/donnees-rh/durci épinglés avec `KDMC_PORTE_TOTALE=0`). `test:ci` contenait deux entrées invalides (`npm run <fichier>`) : retirées.
+- **Reste à faire** : vérifier en vrai après déploiement (pages d'une boutique sans compte = porte ; avec compte = page ; robots du déploiement toujours verts). « Comptes invités » : définition à confirmer avec Kevin (voir réponse) avant toute suppression. Lire le « travail » CMCteams (Firebase) dans la fiche : non fait.
+
 ## 2026-10-06 — « Qui se connecte ne fonctionne pas » (capture : `{"ok":false,"error":"not_found"}` sur admin.kd-mc.com)
 
 - **Cause mesurée** : le worker `kdmc-access` ne servait la page que sur « / » ; `/index.html` (mesuré en vrai : 404 + ce JSON exact) et tout autre chemin ouvert à la main ou depuis un raccourci tombaient sur l'erreur brute. « / » répondait 200 au même moment. Le chemin exact ouvert par Kevin n'est pas connu (la capture ne montre que le domaine).

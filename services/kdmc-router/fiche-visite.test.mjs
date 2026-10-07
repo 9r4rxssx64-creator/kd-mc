@@ -47,8 +47,9 @@ const kv = () => {
 };
 /* Pas de vrai réseau : l'amont renvoie une page quelconque. On ne teste pas le
    contenu servi, on teste ce que le routeur ÉCRIT au passage. */
-const envNeuf = () => ({
+const envNeuf = (porteOuverte) => ({
   KDMC_SSO_SECRET: SECRET,
+  ...(porteOuverte ? { KDMC_PORTE_TOTALE: '0' } : {}),   /* retour arrière : seul mode où un anonyme voit la page et se compte */
   ACCOUNTS: kv(),
   ASSETS: { fetch: async () => new Response('<html>page</html>', { status: 200, headers: { 'content-type': 'text/html' } }) },
 });
@@ -100,8 +101,8 @@ test('la fiche contient bien de quoi reconnaître la personne', async () => {
   assert.equal(f.last_app, 'lingua.kd-mc.com', 'on sait DANS QUELLE APP elle était');
 });
 
-test('un visiteur anonyme est COMPTÉ (son passage n’est plus invisible)', async () => {
-  const env = envNeuf();
+test('[retour arrière KDMC_PORTE_TOTALE=0] un visiteur anonyme est COMPTÉ (son passage n’est plus invisible)', async () => {
+  const env = envNeuf(true);
   await servir(page('cuisine.kd-mc.com'), env);
   const cles = [...env.ACCOUNTS.m.keys()].filter((k) => String(k).startsWith('anon:'));
   assert.equal(cles.length, 1, 'clés anonymes : ' + JSON.stringify(cles));
@@ -116,12 +117,12 @@ test('on compte des VISITEURS, pas des pages (sinon le quota d’écritures saut
      ferait sauter ce plafond sur une boutique visitée — et ce sont les FICHES des
      vraies personnes qui cesseraient de s'enregistrer. Un mécanisme de surveillance
      qui casse ce qu'il surveille est pire que pas de surveillance. */
-  const env = envNeuf();
+  const env = envNeuf(true);
   for (let i = 0; i < 12; i++) await servir(page('cuisine.kd-mc.com'), env);
   const cle = [...env.ACCOUNTS.m.keys()].find((k) => String(k).startsWith('anon:'));
   assert.equal(env.ACCOUNTS.m.get(cle), '1', '12 pages du même visiteur = 1 seule visite comptée');
   /* Un visiteur DIFFÉRENT compte bien pour un de plus. */
-  const env2 = envNeuf();
+  const env2 = envNeuf(true);
   await servir(page('cuisine.kd-mc.com'), env2);
   const r2 = new Request('https://cuisine.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', 'CF-Connecting-IP': '9.9.9.9' } });
   const c2 = ctxTest(); await mod.fetch(r2, env2, c2); await c2.fini();
@@ -130,7 +131,7 @@ test('on compte des VISITEURS, pas des pages (sinon le quota d’écritures saut
 });
 
 test('PLAFOND KV (mesuré 2.10 : 514 visites anonymes = ~1 028 écritures = 73 % du jour) : un visiteur compte UNE fois PAR JOUR (plus par heure), un robot déclaré n’écrit RIEN', async () => {
-  const env = envNeuf();
+  const env = envNeuf(true);
   const jour = new Date().toISOString().slice(0, 10);
   await servir(page('shops.kd-mc.com'), env);
   const marqueur = [...env.ACCOUNTS.m.keys()].find((k) => String(k).startsWith('anonv:'));
@@ -143,18 +144,18 @@ test('PLAFOND KV (mesuré 2.10 : 514 visites anonymes = ~1 028 écritures = 73 %
      (déguisé en iPhone), Lighthouse (Apex CI), kd-mc-linkcheck — aucun n'avait de mot de la liste. */
   for (const ua of ['Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'curl/8.4.0', 'python-requests/2.31', 'Mozilla/5.0 (compatible; AhrefsBot/7.0)', 'Go-http-client/1.1',
     'kdmc-sonde/1', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) kdmc-sonde-servi/2', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Chrome-Lighthouse', 'Mozilla/5.0 (compatible; kd-mc-linkcheck/1.0; +https://kd-mc.com)', 'kdmc-uptime/1.0 (+https://kd-mc.com)']) {
-    const envR = envNeuf();
+    const envR = envNeuf(true);
     await servir(new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': ua, 'CF-Connecting-IP': '5.5.5.5' } }), envR);
     assert.equal(envR.ACCOUNTS.m.size, 0, 'robot « ' + ua.slice(0, 30) + ' » : aucune écriture');
   }
   /* un vrai navigateur (iPhone) compte, lui */
-  const envN = envNeuf();
+  const envN = envNeuf(true);
   await servir(new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'CF-Connecting-IP': '6.6.6.6' } }), envN);
   assert.equal(envN.ACCOUNTS.m.size, 2, 'un iPhone compte (2 écritures)');
   /* CENTRES DE DONNÉES (mesuré 3.10 : 632 + 570 écritures à 00h-01h UTC = 9 publications + robots en vrai navigateur depuis
      GitHub Actions = Azure, réseau 8075) : un vrai Chrome qui arrive d'un nuage n'est pas un visiteur → rien. */
   for (const asn of [8075, 16509, 15169, 24940, 16276]) {
-    const envA = envNeuf();
+    const envA = envNeuf(true);
     const rq = new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', 'CF-Connecting-IP': '20.0.0.' + (asn % 200) } });
     Object.defineProperty(rq, 'cf', { value: { asn } });
     await servir(rq, envA);
@@ -162,7 +163,7 @@ test('PLAFOND KV (mesuré 2.10 : 514 visites anonymes = ~1 028 écritures = 73 %
   }
   /* …mais le Relais privé iCloud (Cloudflare 13335, Akamai 20940) et les vrais opérateurs (Orange 3215, Monaco Telecom 6758) comptent */
   for (const asn of [13335, 20940, 3215, 6758]) {
-    const envB = envNeuf();
+    const envB = envNeuf(true);
     const rq = new Request('https://shops.kd-mc.com/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'CF-Connecting-IP': '7.0.0.' + (asn % 200) } });
     Object.defineProperty(rq, 'cf', { value: { asn } });
     await servir(rq, envB);

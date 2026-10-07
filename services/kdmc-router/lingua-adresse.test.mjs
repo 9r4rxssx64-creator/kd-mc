@@ -21,7 +21,8 @@ import mod from './worker.js';
 
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS };
+/* KDMC_PORTE_TOTALE=0 : ce test prouve les redirections d'adresse, pas la porte (voir compte-obligatoire.test.mjs) */
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', ACCOUNTS };
 const ctx = { waitUntil() {} };
 
 let pass = 0, fail = 0;

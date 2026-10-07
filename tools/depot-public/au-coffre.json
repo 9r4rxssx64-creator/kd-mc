@@ -44,6 +44,7 @@
   "depot-public-bascule.yml",
   "firebase-backup.yml",
   "live-verify-departs.yml",
+  "verif-live-equipes.yml",
   "verif-live-rapport.yml",
   "verif-reelle.yml",
   "voir-comme-kevin.yml"
@@ -163,6 +164,7 @@
   "tests/runtime-audit.mjs",
   "tests/session-kevin.test.mjs",
   "tests/smoke-apex-messages.mjs",
+  "tests/verif-live-equipes.mjs",
   "tests/verif-live-rapport.mjs",
   "tests/verify-absence-courte-repos.mjs",
   "tests/verify-admin-sans-code-cmcteams.mjs",

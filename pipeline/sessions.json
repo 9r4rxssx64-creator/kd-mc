@@ -1211,6 +1211,16 @@
       "maj": "2026-10-03",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "alertes-utiles": {
+      "titre": "Alertes utiles seulement",
+      "branche": "claude/alertes-utiles",
+      "sujet": "PR #4307",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-07",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

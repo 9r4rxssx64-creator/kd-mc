@@ -90,6 +90,8 @@ seules sur kd-mc.com ; il faut juste que l'ancienne adresse reçoive UNE derniè
 - **Une décision reste à toi, sans urgence** : l'appel en direct (OpenAI Realtime, à la minute) et la voix
   d'Antonin (Replicate) restent payants. Dis « ferme » et je les retire ; sinon ils restent derrière leurs plafonds.
 
+## ✅ FAIT (4.10) — 🛡️ « Ignore les alertes inutiles, toutes les infos possibles »
+**Pourquoi tu avais « connexion suspecte »** : même compte vu dans deux pays à moins d'une heure — chez toi c'est le Relais privé iCloud de l'iPhone (il change de pays tout seul). **Maintenant** : plus d'alerte pour ça ni pour un VPN ; une vraie alerte (deux pays, réseaux ordinaires) arrive avec tout : qui, quelle app et page, quel appareil, d'où, quel opérateur, d'où la personne venait. Dans « Mes messages » → 🔔 Alertes, tape une alerte pour tout lire. **Aucun geste pour toi.**
 ## ✅ FAIT (4.10) — 🎙️ « Il n'y a toujours pas de sons de voix » : cause trouvée et corrigée
 **Ce que j'ai mesuré** : toutes les voix de Lingua sortaient avec la même voix de secours (robotique) parce que la belle voix (Google Chirp 3 HD) s'éteignait chaque jour dès 1 h du matin (le stockage gratuit était plein). Elle ne dépend plus de ce stockage. **Ton geste** : après le prochain déploiement, ouvre Lingua → Profil → 🔊 Voix et écoute ; si tu es en mode silencieux (la cloche barrée en haut de ton écran), une voix « du téléphone » ne sonne pas : dis-moi alors dans quelle app et à quel moment, avec une capture.
 ## ✅ FAIT (4.10) — ✉️ « Toutes les apps (boutiques, arbre, Lingua…) peuvent me contacter depuis leur compte »

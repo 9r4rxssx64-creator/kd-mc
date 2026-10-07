@@ -154,7 +154,7 @@ ok(r.ok && r.n === 3 && b.messages.find((x) => x.source === 'rotaplan').lu && b.
 ok((await appel('kev', '/admin/repondre', { cle: dm.cle, texte: 'bonjour' })).reason === 'reponse_par_email', '6f. Rotaplan : pas de réponse directe, on renvoie vers l\'e-mail');
 
 /* 6g. vieilles alertes : lues d'office, et jamais devant un vrai message non lu */
-kv.set('aud:log', JSON.stringify([{ ts: T - 6 * 864e5, ev: 'geo_anomaly', detail: 'FR → US en 5 min' }, { ts: T - 2000, ev: 'new_device', detail: 'iPhone · Nice' }]));
+kv.set('aud:log', JSON.stringify([{ ts: T - 6 * 864e5, ev: 'geo_anomaly', asn: '7922', detail: 'FR → US en 5 min' }, { ts: T - 2000, ev: 'new_device', detail: 'iPhone · Nice' }]));
 msg('zoe-petit', ADMIN, 'Dernier message important', T - 1000);
 b = await boite();
 const vieille = b.messages.find((x) => x.source === 'alertes' && /FR → US/.test(x.texte)), fraiche = b.messages.find((x) => x.source === 'alertes' && /Nice/.test(x.texte));

@@ -2587,6 +2587,12 @@ function ispInfo(cf) {
   const vpn = /vpn|proxy|host|server|cloud|data ?cent|ovh|hetzner|digitalocean|linode|vultr|amazon|aws|google|azure|m247|nordvpn|surfshark|expressvpn|mullvad|cloudflare warp/i.test(isp);
   return { isp, vpn };
 }
+/* RÉSEAUX QUI MASQUENT LE VRAI PAYS (Kevin 4.10 : « pourquoi connexion suspecte ? … ignore les alertes inutiles »). Mesuré sur son iPhone :
+   « FR → US en 5 min », « US → FR en 26 min », « MC → US en 7 min » = le Relais privé iCloud (sortie par Cloudflare / Akamai / Fastly) ou un VPN qui change
+   de pays à chaque connexion : aucun déplacement réel. Si la connexion d'avant OU celle d'aujourd'hui passe par un de ces réseaux, le changement de pays ne
+   dit RIEN → pas d'alerte. Un vrai changement de pays par des réseaux ordinaires (opérateur, box) reste signalé. */
+const ASN_RELAIS = new Set([13335, 20940, 16625, 36183, 54113]);   // Cloudflare (WARP, Relais privé), Akamai ×3, Fastly
+export function reseauMasque(asn, vpn) { const a = Number(asn) || 0; return !!vpn || ASN_RELAIS.has(a) || ASN_NUAGES.has(a); }
 /* Enrichit (ou crée) la fiche à chaque connexion : MAX de renseignements. */
 /* Identités de ROBOT (sonde de déploiement) : leur session sert à prouver que la chaîne SSO marche,
    mais un robot n'est pas une personne. Kevin 2.10 : « Chacun 1 seul compte » — et aucun compte
@@ -2649,6 +2655,7 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   };
   const prevSeen = acc.last_seen || 0;
   const prevCountry = acc.last_country || '';
+  const prevAsn = (acc.last_net && acc.last_net.asn) || '', prevVpn = !!acc.last_vpn, prevPlace = acc.last_place || '', prevIsp = acc.last_isp || '';   // AVANT d'être réécrits ci-dessous
   /* `structural` = quelque chose de NOUVEAU à persister tout de suite (nouvelle fiche,
      CGU, nouvel appareil/lieu, nouvelle session). Un simple heartbeat n'en est pas un. */
   let structural = isNew;
@@ -2693,7 +2700,8 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
      (compte partagé/volé, ou VPN). On FLAGUE (jamais on ne bloque : anti-lockout ;
      un VPN reste légitime). Le drapeau est affiché en admin + poussé en alerte. */
   const curCountry = cf.country || '';
-  const geoAnomaly = !isNew && curCountry && prevCountry && curCountry !== prevCountry && (now - prevSeen) < 60 * 60e3;
+  const geoAnomaly = !isNew && curCountry && prevCountry && curCountry !== prevCountry && (now - prevSeen) < 60 * 60e3
+    && !reseauMasque(cf.asn, NET.vpn) && !reseauMasque(prevAsn, prevVpn);   // Relais privé / VPN / hébergeur : le pays ne prouve rien
   if (geoAnomaly) { acc.anomaly = { at: now, from: prevCountry, to: curCountry, place: place, mins: Math.round((now - prevSeen) / 60e3) }; structural = true; }
   if (curCountry) acc.last_country = curCountry;
   /* Historique de connexions PAR SITE, avec DURÉE. Une "connexion" = une session :
@@ -2749,22 +2757,28 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   /* NOUVEL INSCRIT fermé à une app → Kevin doit le SAVOIR, sinon la personne
      attend une ouverture que personne ne sait devoir faire. Journal admin + push
      (opt-in par config, fail-open : jamais une connexion cassée par une notif). */
+  /* « TOUTES LES INFOS POSSIBLES » (Kevin 4.10) : chaque alerte porte qui (nom + compte), dans quelle app et sur quelle page, depuis quel appareil,
+     d'où (lieu, opérateur, numéro de réseau, VPN ou non), la langue et le fuseau, et pour un changement de pays : d'où il venait. Jamais l'adresse IP. */
+  const ctxAlerte = () => ({ name: acc.name || '', app: host, page: acc.last_path || '', device: acc.last_device || '', os, lang: acc.last_lang || '', tz: acc.last_tz || '',
+    place, country: curCountry, isp: NET.isp, asn: String(cf.asn || ''), vpn: !!NET.vpn, masque: reseauMasque(cf.asn, NET.vpn), mins: Math.round((now - prevSeen) / 60e3) });
+  const resumeReseau = () => (NET.isp ? NET.isp + (cf.asn ? ' (AS' + cf.asn + ')' : '') : '') + (NET.vpn ? ' · VPN/hébergeur' : '');
   if (isNew) {
     /* Compte unique (27.09) : un nouvel inscrit n'attend plus de décision de Kevin (il est
        reconnu partout sauf APPS_PRIVEES) → plus de notification sur l'iPhone (règle anti-spam),
        le JOURNAL admin garde chaque arrivée. */
     const arrivee = (acc.acces && acc.acces.length) ? acc.acces.join(', ') : 'portail';
-    await audLog(env, { ev: 'nouvel_inscrit', uid, detail: (acc.name || uid) + ' · arrivé par : ' + arrivee + ' · reconnu partout sauf ' + APPS_PRIVEES.join('/') });
+    await audLog(env, Object.assign({ ev: 'nouvel_inscrit', uid, detail: (acc.name || uid) + ' · arrivé par : ' + arrivee + ' · reconnu partout sauf ' + APPS_PRIVEES.join('/') }, ctxAlerte(), { arrivee }));
   }
   if (newDevice && !isNew) {
-    await audLog(env, { ev: 'new_device', uid, detail: devKey + (place ? ' · ' + place : '') });
+    await audLog(env, Object.assign({ ev: 'new_device', uid, detail: devKey + (place ? ' · ' + place : '') }, ctxAlerte(), { devkey: devKey }));
     await notifyPush(env, '🔐 KDMC — nouvel appareil',
-      'Nouvelle connexion (' + (acc.name || uid) + ') depuis ' + devKey + (place ? ' · ' + place : '') + '.');
+      'Nouvelle connexion (' + (acc.name || uid) + ') depuis ' + devKey + (place ? ' · ' + place : '') + (resumeReseau() ? ' · ' + resumeReseau() : '') + (host ? ' · ' + host.split('.')[0] : '') + '.');
   }
   if (geoAnomaly) {
-    await audLog(env, { ev: 'geo_anomaly', uid, detail: prevCountry + ' → ' + curCountry + ' en ' + acc.anomaly.mins + ' min' });
+    await audLog(env, Object.assign({ ev: 'geo_anomaly', uid, detail: prevCountry + ' → ' + curCountry + ' en ' + acc.anomaly.mins + ' min' }, ctxAlerte(),
+      { pays_precedent: prevCountry, lieu_precedent: prevPlace, isp_precedent: prevIsp, asn_precedent: String(prevAsn || '') }));
     await notifyPush(env, '⚠️ KDMC — connexion suspecte',
-      (acc.name || uid) + ' : ' + prevCountry + ' → ' + curCountry + ' en ' + acc.anomaly.mins + ' min (déplacement impossible).');
+      (acc.name || uid) + ' : ' + (prevPlace || prevCountry) + ' → ' + (place || curCountry) + ' en ' + acc.anomaly.mins + ' min (déplacement impossible) · ' + resumeReseau() + ' · avant : ' + (prevIsp || '?') + (host ? ' · ' + host.split('.')[0] : '') + '.');
   }
   await accPut(env, acc, !isNew);
   /* Fusion AUTOMATIQUE des fiches éparpillées, sans aucune action de Kevin. Rien n'est

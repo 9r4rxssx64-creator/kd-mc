@@ -158,6 +158,20 @@ async function lireArbre(env, db) {
 const EV_ALERTES = { nouvelle_connexion: '🆕 Nouvelle connexion', nouvel_inscrit: '🆕 Nouvel inscrit', new_device: '🔐 Nouvel appareil', geo_anomaly: '⚠️ Connexion suspecte',
   quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé', matricule_refuse: '🪪 Matricule SBM refusé',
   pointage_loin: '📍 Pointage loin du casino', inscription_refusee: '🚫 Inscription refusée' };
+/* « TOUTES LES INFOS POSSIBLES » (Kevin 4.10) : une alerte se déplie en lignes lisibles — qui, où, quel appareil, quel réseau, pourquoi. */
+export function infosAlerte(e) {
+  const l = [];
+  if (e.name || e.uid) l.push('👤 ' + (e.name || '?') + (e.uid ? ' (' + e.uid + ')' : ''));
+  if (e.app) l.push('📱 ' + e.app + (e.page || ''));
+  if (e.device) l.push('🖥️ ' + e.device + (e.os && !String(e.device).includes(e.os) ? ' · ' + e.os : ''));
+  if (e.place) l.push('🌍 ' + e.place);
+  if (e.ev === 'geo_anomaly') l.push('↔️ Avant : ' + (e.lieu_precedent || e.pays_precedent || '?') + (e.isp_precedent ? ' · ' + e.isp_precedent + (e.asn_precedent ? ' (AS' + e.asn_precedent + ')' : '') : '') + ' — il y a ' + (e.mins != null ? e.mins : '?') + ' min');
+  if (e.isp) l.push('🛰️ ' + e.isp + (e.asn ? ' (AS' + e.asn + ')' : '') + (e.vpn ? ' · VPN/hébergeur' : ''));
+  if (e.lang || e.tz) l.push('🗣️ ' + [e.lang, e.tz].filter(Boolean).join(' · '));
+  if (e.arrivee) l.push('🚪 Arrivé par : ' + e.arrivee);
+  if (e.ev === 'geo_anomaly') l.push('ℹ️ Même compte vu dans deux pays à moins d\'une heure, par des réseaux ordinaires (ni Relais privé iCloud, ni VPN) : à vérifier.');
+  return l;
+}
 /* 6.10 (Kevin, capture « Code admin refusé » ×5 sans texte, bulle vide) : chaque alerte dit en clair ce qui s'est passé, depuis où,
    et les répétitions (même événement, même appareil, à moins de 30 min d'écart) ne font qu'UNE carte « ×5 ». */
 const GROUPE_MS = 30 * 6e4;
@@ -180,7 +194,8 @@ export function grouperAlertes(liste) {
 async function lireAlertes(env, db, now) {
   if (!env.ACCOUNTS) return [];
   let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
-  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type]).slice(0, 40)).slice(0, 15);
+  /* Les changements de pays enregistrés AVANT le 4.10 n'ont pas de réseau noté : impossible de dire si c'était le Relais privé iCloud → écartés. */
+  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 40)).slice(0, 15);
   const cles = j.map((e) => 'alerte:' + e.ts + '-' + (e.ev || e.type));
   const lues = await luesD1(db, cles);
   /* Une alerte de plus de 48 h est lue d'office : elle reste visible (historique) mais ne fait plus de rouge — mesuré par Kevin le 4.10 :
@@ -189,7 +204,7 @@ async function lireAlertes(env, db, now) {
     const n = e._n > 1 ? ' ×' + e._n : '';
     const duree = e._n > 1 ? ' (' + e._n + ' fois en ' + Math.max(1, Math.round((e.ts - e._dernier) / 6e4)) + ' min)' : '';
     return { cle: cles[i], source: 'alertes', app: e.app || 'domaine', de: EV_ALERTES[e.ev || e.type] + n, ts: e.ts,
-      texte: texteAlerte(e) + duree, nonLus: vue ? 0 : 1, lu: vue, repondre: null, fil: [] }; });
+      texte: texteAlerte(e) + duree, infos: infosAlerte(e), nonLus: vue ? 0 : 1, lu: vue, repondre: null, fil: [] }; });
 }
 /* ── adaptateur : dépôts des autres apps (D1) ─────────────────────────────────────────────────────────────── */
 async function lireDepots(db) {
@@ -256,6 +271,7 @@ async function validerInscription(outils, id, now) {
 /* ── la réponse unique ────────────────────────────────────────────────────────────────────────────────────── */
 export async function lireBoite(env, outils, now) {
   const db = env.CERCLE_DB;
+  if (db) await schema(db);   // idempotent : les tables existent aussi quand on lit sans être passé par la route
   const essais = {
     lingua: () => lireLingua(db), cmcteams: () => lireCmcteams(outils), depots: () => lireDepots(db),
     rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lireAlertes(env, db, now),

@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (après-midi) — « Pourquoi connexion suspecte ? … Ignore les alertes inutiles. Je veux toutes les infos possibles »
+
+- **Pourquoi** : la règle compare le pays de la connexion précédente à l'actuelle ; changement à moins de 60 min = « déplacement impossible ». Les alertes de Kevin (FR→US 5 min, US→FR 26 min, MC→US 7 min) = très probablement le Relais privé iCloud / un VPN (non mesurable a posteriori : l'ancien journal n'avait pas gardé le réseau).
+- **Fait (branche `claude/alertes-utiles`)** : changement de pays ignoré quand la connexion d'avant OU d'aujourd'hui passe par un réseau qui masque le pays (Cloudflare 13335, Akamai 20940/16625/36183, Fastly 54113, VPN/hébergeur par nom, nuages `ASN_NUAGES`) ; alertes (changement de pays, nouvel appareil, nouvel inscrit) enrichies : nom + compte, app + page, appareil, lieu, opérateur + AS, VPN, langue, fuseau, d'où il venait, minutes — JAMAIS l'IP ; la boîte déplie ces lignes et écarte les anciens « pays » sans réseau noté ; notification push plus riche.
+- **Mesuré** : `alertes-utiles.test.mjs` 12/12 (Relais privé avant ou maintenant, VPN → aucune alerte ; réseaux ordinaires → alerte avec tout ; pas d'IP ; nouvel appareil riche ; boîte) ; `admin.test` 41/41 et `test:boite` 48/48 inchangés ; sabotage → 3 échecs.
+- **Non vérifié** : que ce soit bien le Relais privé de Kevin (déduit de ses alertes, pas mesuré) ; livraison des push à l'iPhone.
+
+
 ## 2026-10-04 (09h UTC) — KV : le filtre des robots a bien vidé la rafale de minuit (MESURÉ)
 
 - Run `mesure-kv` (public, jours=2) 37191391056 : **3.10 = 1 217 écritures** (plafond), dont 632 à 00h et 570 à 01h UTC ; **4.10 = 106 écritures**, dont 37 à 00h, 19 à 02h, 12 à 08h, 11 à 01h. Plafond non atteint. Routeur avec `ASN_NUAGES` déployé (run 37188230650 ✅ 08h13 UTC).

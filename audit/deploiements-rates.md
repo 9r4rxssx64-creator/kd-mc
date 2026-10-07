@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 07/10/2026 23:37 UTC
+
+- **Branche** : `main` · **Commit** : `07c205a7` · **Run** : `37703236155`
+- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/37703236155
+- **Ce que la machine a dit** :
+
+```
+# fail 0
+=== Face ID sur le compte admin : 4 contrôles OK, 0 échec(s) ===
+  ✅ D2. l'admin, depuis un site tiers : refusé
+  ✅ D3. un identifiant qui ressemble à un chemin : refusé
+  ✅ D8. une inscription inconnue : refus clair
+14 OK / 0 échec(s)
+Jamais CMCteams par accident : 17 passed, 0 failed
+18 OK · 0 échec(s)
+Lingua appel test: 15 passed, 0 failed
+  ✅ 3. sans clé ET sans session → refus (rien à deviner)
+4 OK / 0 échec(s)
+125 contrôle(s) OK · 0 échec(s)
+# Subtest: coach : Qwen mort → un gratuit à clé prend le relais ; rien → ai_absent + causes (fail-open)
+ok 2 - coach : Qwen mort → un gratuit à clé prend le relais ; rien → ai_absent + causes (fail-open)
+# fail 0
+# Subtest: par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
+ok 3 - par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
+# fail 0
+Portes par dossier : 75 passed, 0 failed
+10 OK / 0 échec(s)
+# fail 0
+  ✅ domaine étranger refusé (anti redirection ouverte) → https://kit.kd-mc.com/
+✅ redirection-amont : 5 OK / 0 FAIL
+Self-service test: 25 passed, 0 failed
+21 OK · 0 échec(s)
+sso-accents : 6 passed, 0 failed
+=== Laissez-passer admin 24 h : 5 contrôles OK, 0 échec(s) ===
+sso-permanent : 9 passed, 0 failed
+SSO router test: 11 passed, 1 failed
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

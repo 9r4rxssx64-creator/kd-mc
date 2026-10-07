@@ -181,6 +181,7 @@
   "tests/verify-crea-comptes.mjs",
   "tests/verify-declaration-domaine.mjs",
   "tests/verify-departs-ancre.mjs",
+  "tests/verify-departs-boot-robuste.mjs",
   "tests/verify-departs-cycle.mjs",
   "tests/verify-departs-groupes.mjs",
   "tests/verify-departs-integrity.mjs",

@@ -17,7 +17,8 @@ ok(/Domain=\.kd-mc\.com/.test(sc) && /HttpOnly/.test(sc) && /Secure/.test(sc) &&
 const token = (sc.match(/kdmc_sso=([^;]+)/) || [])[1];
 
 r = await mod.fetch(H({ path: '/__sso/whoami', headers: { cookie: 'kdmc_sso=' + token } }), env); j = await r.json();
-ok(j.ok === true && j.uid === 'kdmc_admin' && j.name === 'Kevin Desarzens' && j.cgu === true, 'whoami avec cookie → identité + cgu');
+/* Depuis le 7.10 (57c53c7dc) `cgu` = conditions de la version EN COURS acceptées sur la FICHE (cgu_at + cgu_v), pas ce que dit le pass : sans fiche (ce test n'a pas de KV), faux. */
+ok(j.ok === true && j.uid === 'kdmc_admin' && j.name === 'Kevin Desarzens' && j.cgu === false, 'whoami avec cookie → identité ; cgu lue sur la fiche (absente ici → false)');
 
 r = await mod.fetch(H({ path: '/__sso/whoami', headers: { cookie: 'kdmc_sso=' + token.slice(0, -2) + 'XY' } }), env); j = await r.json();
 ok(j.ok === false, 'token falsifié → rejeté (HMAC)');

@@ -117,3 +117,18 @@ test('GET / → sert la page admin HTML', async () => {
   assert.match(html, /Qui se connecte/);
   assert.match(html, /x-apex-pin/);
 });
+
+/* « Qui se connecte ne fonctionne pas » (6.10) : tout chemin de PAGE montre la page, jamais l'erreur brute. */
+{
+  const mod2 = (await import('./worker.js')).default;
+  let pass2 = 0, fail2 = 0;
+  for (const chemin of ['/index.html', '/qui', '/admin', '/?x=1', '/personnes/']) {
+    const r = await mod2.fetch(new Request('https://admin.kd-mc.com' + chemin), {});
+    const t = await r.text();
+    if (r.status === 200 && /Qui se connecte/.test(t)) pass2++; else { fail2++; console.log('  ❌ ' + chemin + ' → ' + r.status + ' ' + t.slice(0, 40)); }
+  }
+  const api = await mod2.fetch(new Request('https://admin.kd-mc.com/inconnu.json'), {});
+  if (api.status === 404) pass2++; else { fail2++; console.log('  ❌ API inconnue : ' + api.status); }
+  console.log(`  chemins de page : ${pass2} OK · ${fail2} échec(s)`);
+  if (fail2) process.exit(1);
+}

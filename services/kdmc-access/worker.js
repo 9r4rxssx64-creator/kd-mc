@@ -234,7 +234,12 @@ export default {
     if (url.pathname === '/health') return json({ ok: true, service: 'kdmc-access' }, 200, origin);
     if (url.pathname === '/log' && request.method === 'POST') return handleLog(request, env, origin);
     if (url.pathname === '/history' && request.method === 'GET') return handleHistory(request, env, origin);
-    if (url.pathname === '/' || url.pathname === '') {
+    /* « Qui se connecte ne fonctionne pas » (Kevin 6.10, capture : {"ok":false,"error":"not_found"} sur admin.kd-mc.com) :
+       seul « / » servait la page ; tout autre chemin ouvert à la main ou depuis un raccourci (/index.html, /qui, /?x…)
+       tombait sur l'erreur brute. Une PAGE demandée (GET/HEAD, hors API) montre donc toujours la page ; seules les
+       API inconnues (JSON) gardent le 404. */
+    const estApi = /^\/(health|log|history)\b/.test(url.pathname) || /\.(js|json|css|map|png|svg|ico|txt|xml)$/i.test(url.pathname);
+    if (url.pathname === '/' || url.pathname === '' || ((request.method === 'GET' || request.method === 'HEAD') && !estApi)) {
       /* Audit du domaine 27.09.2026 : cette page (admin.kd-mc.com) partait sans aucun en-tête de
          sécurité (note 0/100). Page admin → jamais encadrable, jamais de référent, HTTPS forcé. */
       return new Response(PAGE_HTML, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',

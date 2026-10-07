@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-06 — « Qui se connecte ne fonctionne pas » (capture : `{"ok":false,"error":"not_found"}` sur admin.kd-mc.com)
+
+- **Cause mesurée** : le worker `kdmc-access` ne servait la page que sur « / » ; `/index.html` (mesuré en vrai : 404 + ce JSON exact) et tout autre chemin ouvert à la main ou depuis un raccourci tombaient sur l'erreur brute. « / » répondait 200 au même moment. Le chemin exact ouvert par Kevin n'est pas connu (la capture ne montre que le domaine).
+- **Fix** : une PAGE demandée (GET/HEAD, hors /health /log /history et fichiers .js/.json…) montre toujours « Qui se connecte » ; les API inconnues gardent le 404. Test ajouté dans `access.test.mjs`. À confirmer en vrai après déploiement (`deploy-kdmc-access`).
 ## 2026-10-04 (matin) — « Il n'y a toujours pas de sons de voix » : cause MESURÉE (le plafond KV éteint Chirp) + correctif
 
 - **Mesuré sur le vrai domaine** (vérif voix lancée de la branche, annotations sur une ligne) : les 12 voix (coral, sage, … antonin) répondent du vrai son, MAIS toutes en `x-voix: gratuite` (MeloTTS, la même voix de repli) ; avec la langue comme l'app (`&l=en|fr|es`) aussi ; Bee (`gratuit=1`) aussi. Google Chirp 3 HD, lui, marche : sonde `coffre-sonde-voix` ✅ (37 Ko en 1,6 s) et `?m=chirp` servi par le routeur.

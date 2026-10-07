@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   var URL_BOITE = '/__boite/admin', PAS_BANDEAU = 30000, PAS_OUVERT = 12000;   /* quasi temps réel : relu aussi au retour sur l'onglet et dès qu'une notification ouvre #messages */
-  var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false;
+  var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false, HIST = {};
 
   function entetes(json) {
     var h = {}; try { var t = window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token(); if (t) h.authorization = 'Bearer ' + t; } catch (e) { /* */ }
@@ -130,6 +130,27 @@
       (m.infos || []).forEach(function (l) { corps.appendChild(el('div', 'bf-info', l)); });
       if (m.contact && !(m.infos || []).length) corps.appendChild(el('div', 'bf-info', '✉️ ' + m.contact));
       var bas = el('div', 'bf-bas');
+      /* HISTORIQUE COMPLET d'une personne (Kevin 4.10) : sa fiche + tous ses événements (pages, lieux, questions, enregistrements…), le plus récent d'abord. */
+      var uidP = /^perso:u:(.+)$/.exec(m.cle);
+      if (uidP) {
+        var hb = el('button', 'bf-ouvrir', HIST[uidP[1]] ? 'Masquer l\'historique' : '🕘 Historique complet'); hb.type = 'button';
+        hb.onclick = function () {
+          if (HIST[uidP[1]]) { delete HIST[uidP[1]]; dessiner(); return; }
+          HIST[uidP[1]] = { chargement: true }; dessiner();
+          fetch('/__boite/admin/personne?uid=' + encodeURIComponent(uidP[1]), { credentials: 'include', cache: 'no-store', headers: entetes(false) })
+            .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { HIST[uidP[1]] = j && j.ok ? j : { erreur: true }; dessiner(); })
+            .catch(function () { HIST[uidP[1]] = { erreur: true }; dessiner(); });
+        };
+        corps.appendChild(hb);
+        var H = HIST[uidP[1]];
+        if (H) {
+          var box = el('div', 'bf-hist');
+          if (H.chargement) box.appendChild(el('div', 'bf-info', 'Chargement…'));
+          else if (H.erreur) box.appendChild(el('div', 'bf-info', '❌ Historique indisponible pour le moment.'));
+          else (H.evenements || []).forEach(function (e) { var l = el('div', 'bf-hl'); l.appendChild(el('span', 'bf-hq', quand(e.ts))); l.appendChild(el('span', null, ' ' + e.texte)); if (e.appareil) l.appendChild(el('span', 'bf-hq', ' · 📲 ' + e.appareil)); box.appendChild(l); });
+          corps.appendChild(box);
+        }
+      }
       if (m.repondre === 'direct') {
         var ta = el('textarea'); ta.rows = 2; ta.maxLength = 2000; ta.placeholder = 'Ta réponse…'; ta.value = saisie || ''; ta.setAttribute('aria-label', 'Ta réponse');
         var st = el('div', 'bf-st'); var en = el('button', 'bf-env', 'Envoyer'); en.type = 'button';

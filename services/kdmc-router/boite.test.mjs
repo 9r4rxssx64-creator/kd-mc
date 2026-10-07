@@ -145,20 +145,20 @@ b = await boite();
 const dm = b.messages.find((x) => x.source === 'rotaplan'), ar = b.messages.find((x) => x.source === 'arbre'), al = b.messages.filter((x) => x.source === 'alertes');
 ok(dm && /Marc Roux/.test(dm.de) && dm.repondre === 'mailto' && /^mailto:marc@hotel\.mc\?subject=/.test(dm.mailto) && /Hôtel Mirage/.test(dm.texte), '6a. Rotaplan : la demande s\'affiche avec un lien e-mail prêt', dm);
 ok(ar && /Cousine Anne/.test(ar.de) && /naissance : 1950 → 1951/.test(ar.texte) && ar.repondre === null, '6b. Arbre : la correction s\'affiche (lecture)', ar);
-ok(al.length === 2 && !al.some((x) => /fbtoken/.test(x.de)), '6c. alertes : seulement les événements utiles (nouvel appareil, nouvelle connexion), pas le bruit technique', al);
+ok(al.length === 2 && al.some((x) => x.de === 'Léa' && x.fil.length === 1) && al.some((x) => x.de === 'Alertes du domaine') && !JSON.stringify(al).includes('fbtoken'), '6c. alertes : seulement les événements utiles, REGROUPÉS par personne (une carte « Léa », une carte « Alertes du domaine ») ; pas le bruit technique', al.map((x) => x.de));
 const attendu = SOURCES_MESSAGES.reduce((s, n) => s + b.sources.find((x) => x.id === n).nonLus, 0);
 ok(b.nonLus === attendu && b.nonLusAlertes === 2, '6d. le compteur rouge = messages seulement ; les alertes sont comptées à part', { nonLus: b.nonLus, attendu, alertes: b.nonLusAlertes });
-r = await appel('kev', '/admin/lu', { cles: [dm.cle, ar.cle, al[0].cle] });
+r = await appel('kev', '/admin/lu', { cles: [dm.cle, ar.cle].concat(al.map((x) => x.cle)) });
 b = await boite();
-ok(r.ok && r.n === 3 && b.messages.find((x) => x.source === 'rotaplan').lu && b.messages.find((x) => x.source === 'arbre').lu && b.nonLusAlertes === 1, '6e. « marquer lu » mémorisé (en D1, pas en KV)', [r, b.nonLusAlertes]);
+ok(r.ok && r.n === 4 && b.messages.find((x) => x.source === 'rotaplan').lu && b.messages.find((x) => x.source === 'arbre').lu && b.nonLusAlertes === 0, '6e. « marquer lu » mémorisé (en D1, pas en KV)', [r, b.nonLusAlertes]);
 ok((await appel('kev', '/admin/repondre', { cle: dm.cle, texte: 'bonjour' })).reason === 'reponse_par_email', '6f. Rotaplan : pas de réponse directe, on renvoie vers l\'e-mail');
 
 /* 6g. vieilles alertes : lues d'office, et jamais devant un vrai message non lu */
-kv.set('aud:log', JSON.stringify([{ ts: T - 6 * 864e5, ev: 'geo_anomaly', asn: '7922', detail: 'FR → US en 5 min' }, { ts: T - 2000, ev: 'new_device', detail: 'iPhone · Nice' }]));
-msg('zoe-petit', ADMIN, 'Dernier message important', T - 1000);
+kv.set('aud:log', JSON.stringify([{ ts: T - 6 * 864e5, ev: 'geo_anomaly', asn: '7922', detail: 'FR → US en 5 min' }, { ts: T + 4000, ev: 'new_device', detail: 'iPhone · Nice' }]));
+T += 5000; msg('zoe-petit', ADMIN, 'Dernier message important', T - 1000);
 b = await boite();
-const vieille = b.messages.find((x) => x.source === 'alertes' && /FR → US/.test(x.texte)), fraiche = b.messages.find((x) => x.source === 'alertes' && /Nice/.test(x.texte));
-ok(vieille && vieille.nonLus === 0 && vieille.lu && fraiche && fraiche.nonLus === 1 && b.nonLusAlertes === 1, '6g. une alerte de 6 jours est lue d\'office (reste visible), une alerte du jour compte', [vieille, b.nonLusAlertes]);
+const carteSys = b.messages.find((x) => x.cle === 'perso:systeme');
+ok(carteSys && carteSys.fil.some((x) => /FR → US en 5 min/.test(x.texte)) && carteSys.nonLus === 1 && b.nonLusAlertes === 1, '6g. une alerte de 6 jours reste dans le fil de la carte mais ne compte pas (lue d\'office) ; l\'alerte du jour compte', [carteSys && carteSys.nonLus, b.nonLusAlertes]);
 const iMsg = b.messages.findIndex((x) => x.source === 'lingua' && x.nonLus), iAl = b.messages.findIndex((x) => x.source === 'alertes' && x.nonLus);
 ok(iMsg >= 0 && iAl > iMsg, '6h. un vrai message non lu passe TOUJOURS avant une alerte non lue', [iMsg, iAl]);
 
@@ -166,9 +166,10 @@ ok(iMsg >= 0 && iAl > iMsg, '6h. un vrai message non lu passe TOUJOURS avant une
 kv.set('aud:log', JSON.stringify([0, 1, 2, 3, 4].map((i) => ({ ts: T - 1000 - i * 6e4, ev: 'admin_login_fail', ip: 'abcdef123456', app: 'cmcteams.kd-mc.com', pays: 'MC' }))
   .concat([{ ts: T - 3 * 36e5, ev: 'admin_login_fail', ip: 'abcdef123456' }])));
 b = await boite();
-const refus = b.messages.filter((x) => x.source === 'alertes');
-ok(refus.length === 2 && /×5/.test(refus[0].de) && /5 fois en 4 min/.test(refus[0].texte), '6i. 5 refus du même appareil en 4 min = UNE carte « ×5 » (plus cinq cartes identiques)', refus);
-ok(/mauvais code admin/i.test(refus[0].texte) && /depuis cmcteams\.kd-mc\.com/.test(refus[0].texte) && /pays MC/.test(refus[0].texte) && refus.every((x) => x.texte.trim()), '6j. chaque alerte dit en clair ce qui s\'est passé, depuis quelle app et quel pays (jamais vide)', refus);
+const carteSys6 = b.messages.find((x) => x.cle === 'perso:systeme');   /* sans compte nommé, les alertes se rangent sur la carte « Alertes du domaine » */
+const refus = carteSys6 ? carteSys6.fil : [];
+ok(refus.length === 2 && refus.some((x) => /×5/.test(x.texte) && /5 fois en 4 min/.test(x.texte)), '6i. 5 refus du même appareil en 4 min = UNE ligne « ×5 » (plus cinq lignes identiques)', refus);
+ok(refus.some((x) => /mauvais code admin/i.test(x.texte) && /depuis cmcteams\.kd-mc\.com/.test(x.texte) && /pays MC/.test(x.texte)) && refus.every((x) => x.texte.trim()), '6j. chaque alerte dit en clair ce qui s\'est passé, depuis quelle app et quel pays (jamais vide)', refus);
 ok(SOURCES.alertes.lien === 'https://kd-mc.com/admin/#journal', '6k. « Ouvrir » mène au journal qui MONTRE les alertes, sur l\'adresse du portail (plus admin.kd-mc.com qui les retire)', SOURCES.alertes.lien);
 ok(grouperAlertes([{ ts: 10e6, ev: 'a', ip: 'x' }, { ts: 10e6 - 60e6, ev: 'a', ip: 'x' }, { ts: 9e6, ev: 'a', ip: 'y' }]).length === 3 && texteAlerte({ ev: 'geo_anomaly', detail: 'FR → US', uid: 'lea' }) === 'FR → US — compte lea',
   '6l. on ne regroupe pas des alertes éloignées (> 30 min) ni d\'appareils différents ; le compte concerné est nommé');

@@ -19,6 +19,7 @@
  * jour au total, texte 1 000 caractères, champ piège pour les robots, gardé 90 jours).
  * node services/kdmc-router/boite.test.mjs */
 import { ADMIN, LIMITES as LIM_CERCLE, texteOk, schema as schemaCercle } from './cercle.js';
+import * as activite from './activite.js';
 import { BOUTON_JS } from './boite-bouton.js';
 
 export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 5000, memoKvMs: 60000 };
@@ -30,9 +31,7 @@ export const SOURCES = {
   depots:   { nom: 'Autres apps',          icone: '📨', lien: '' },
   rotaplan: { nom: 'Rotaplan · demandes',  icone: '🗓️', lien: 'https://kd-mc.com/__demandes' },
   arbre:    { nom: 'Arbre · corrections',  icone: '🌳', lien: 'https://arbre.kd-mc.com/#journal' },
-  /* 6.10 (Kevin « lien ne fonctionne pas ») : admin.kd-mc.com ne montre PAS ces alertes (il les retire) et, sur iPhone, s'ouvre hors
-     de l'app du portail (redemande le code). Le journal qui les montre est sur la MÊME adresse que le portail : /admin/, ouvert à #journal. */
-  alertes:  { nom: 'Alertes du domaine',   icone: '🔔', lien: 'https://kd-mc.com/admin/#journal' },
+  alertes:  { nom: 'Personnes & alertes',   icone: '👥', lien: 'https://kd-mc.com/admin/#journal' },
 };
 /* Les alertes (connexions, appareils) se lisent mais ne font PAS monter le compteur rouge : il y en a des dizaines par jour. */
 export const SOURCES_MESSAGES = ['lingua', 'cmcteams', 'depots', 'rotaplan', 'arbre'];
@@ -174,6 +173,85 @@ export function infosAlerte(e) {
   if (e.ev === 'geo_anomaly') l.push('ℹ️ Même compte vu dans deux pays à moins d\'une heure, par des réseaux ordinaires (ni Relais privé iCloud, ni VPN) : à vérifier.');
   return l;
 }
+const jourFr = (ts) => (ts ? new Date(ts).toISOString().slice(0, 10) : '?');
+const dureeFr = (ms) => { const m = Math.round((ms || 0) / 60e3); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0'); };
+/* Ce que le domaine sait d'une personne (sa fiche) + ce qu'elle a fait ces 7 jours : de quoi tout lire sur une seule carte. */
+export async function ficheLignes(env, db, uid, now) {
+  const l = [];
+  let acc = null; try { acc = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); } catch { acc = null; }
+  if (acc) {
+    l.push('👤 ' + (acc.name || '?') + ' (' + uid + ')' + (acc.created ? ' · inscrit le ' + jourFr(acc.created) : '') + ' · ' + (acc.hits || 0) + ' session(s) · vu pour la dernière fois ' + jourFr(acc.last_seen));
+    const apps = Object.entries(acc.apps || {}).sort((a, b) => (b[1].ms || 0) - (a[1].ms || 0)).slice(0, 5).map(([h, a]) => h.split('.')[0] + ' ' + (a.sessions || 0) + '× ' + dureeFr(a.ms));
+    if (apps.length) l.push('📱 Apps : ' + apps.join(' · '));
+    if ((acc.devices || []).length) l.push('🖥️ Appareils : ' + acc.devices.join(', '));
+    /* APPAREIL PAR APPAREIL (Kevin 4.10 : « appareil aussi ») : depuis l'historique des sessions de la fiche, ce que chaque appareil a fait — quand, où, par quel opérateur */
+    const A = new Map();
+    for (const h of acc.history || []) {
+      const k = h.dev || h.device; if (!k) continue;
+      const a = A.get(k) || { n: 0, first: h.ts, last: h.ts, lieux: new Set(), isps: new Set(), vpn: false };
+      a.n++; a.first = Math.min(a.first, h.ts); a.last = Math.max(a.last, h.end || h.ts); if (h.place) a.lieux.add(h.place.split(',')[0]); if (h.isp) a.isps.add(h.isp); if (h.vpn) a.vpn = true;
+      A.set(k, a);
+    }
+    const act = new Map((await activite.parAppareil(db, uid, now - 7 * 864e5).catch(() => [])).map((x) => [x.appareil, x]));
+    for (const k of act.keys()) if (!A.has(k)) A.set(k, { n: 0, first: act.get(k).dernier, last: act.get(k).dernier, lieux: new Set(), isps: new Set(), vpn: false });
+    for (const [k, a] of [...A.entries()].sort((x, y) => y[1].last - x[1].last).slice(0, 5)) {
+      l.push('📲 ' + k + ' — ' + (a.n ? a.n + ' session(s), ' : '') + 'du ' + jourFr(a.first) + ' au ' + jourFr(a.last) + (a.lieux.size ? ' · ' + [...a.lieux].slice(0, 3).join(', ') : '') + (a.isps.size ? ' · ' + [...a.isps].slice(0, 2).join(' / ') : '') + (a.vpn ? ' · VPN/hébergeur' : '') + (act.get(k) ? ' · ' + act.get(k).n + ' événement(s) en 7 jours' : ''));
+    }
+    if ((acc.places || []).length) l.push('📍 Lieux : ' + acc.places.slice(-4).join(' | '));
+    if (acc.last_isp) l.push('🛰️ ' + acc.last_isp + (acc.last_net && acc.last_net.asn ? ' (AS' + acc.last_net.asn + ')' : '') + (acc.last_vpn ? ' · VPN/hébergeur' : ''));
+    if (acc.last_lang || acc.last_tz) l.push('🗣️ ' + [acc.last_lang, acc.last_tz].filter(Boolean).join(' · '));
+    if (acc.portee) l.push('🔑 Portée : ' + acc.portee + ((acc.acces || []).length ? ' (' + acc.acces.join(', ') + ')' : ''));
+  }
+  const r = await activite.resume(db, uid, now - 7 * 864e5).catch(() => null);
+  if (r && r.total) {
+    const T = r.parType, n = (k) => T[k] || 0;
+    l.push('📊 7 jours : ' + [n('visite') && n('visite') + ' page(s) consultée(s)', n('question') && n('question') + ' question(s)', n('modif') && n('modif') + ' enregistrement(s)', n('message') + n('contact') && (n('message') + n('contact')) + ' message(s)', n('connexion') && n('connexion') + ' connexion(s)'].filter(Boolean).join(' · '));
+    if (r.pages.length) l.push('🔝 Pages les plus consultées : ' + r.pages.map(([p, c]) => p + ' ×' + c).join(' · '));
+    if (r.derniereQuestion) l.push('❓ Dernière question (' + r.derniereQuestion.app + ') : « ' + r.derniereQuestion.texte + ' »');
+  }
+  return l;
+}
+/* UNE CARTE PAR PERSONNE (Kevin 4.10 : « le même compte qui se connecte ne se multiplie pas, il s'ajoute dans sa fiche, remonte dans le fil »).
+   Les alertes du journal (nouvel appareil, changement de pays, nouvel inscrit) et l'activité de la personne (pages, questions, modifications, lieux) sont
+   REGROUPÉES par compte : une seule carte, un fil du plus ancien au plus récent, la dernière activité la fait remonter. Seules les ALERTES comptent en rouge. */
+async function lirePersonnes(env, db, now) {
+  if (!env.ACCOUNTS) return [];
+  let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
+  /* Les changements de pays enregistrés AVANT le 4.10 n'ont pas de réseau noté : impossible de dire si c'était le Relais privé iCloud (c'était le cas de ceux
+     que Kevin a vus) → ils sont écartés. Les nouvelles alertes de ce type ne partent que pour des réseaux ordinaires. */
+  /* Les répétitions (même événement, même appareil, < 30 min) ne font qu'UNE ligne « ×5 », et chaque ligne dit en clair ce qui s'est passé (texteAlerte). */
+  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 120)).slice(0, 80);
+  const P = new Map();
+  const dossier = (id, uid, nom) => { if (!P.has(id)) P.set(id, { id, uid, nom: nom || '', evts: [], alertes: [] }); const p = P.get(id); if (nom && !p.nom) p.nom = nom; return p; };
+  for (const e of j) {
+    const id = e.uid ? 'u:' + e.uid : e.name ? 'n:' + String(e.name).toLowerCase().slice(0, 40) : 'systeme';
+    const p = dossier(id, e.uid || '', e.name || '');
+    const x = e._n > 1 ? ' ×' + e._n + ' (' + e._n + ' fois en ' + Math.max(1, Math.round((e.ts - e._dernier) / 6e4)) + ' min)' : '';
+    const ev = { ts: e.ts, texte: EV_ALERTES[e.ev || e.type] + x + (texteAlerte(e) ? ' — ' + texteAlerte(e) : ''), alerte: true, infos: infosAlerte(e), app: e.app || '' };
+    p.evts.push(ev); p.alertes.push(ev);
+  }
+  for (const a of await activite.actives(db, now - 3 * 864e5, 20).catch(() => [])) dossier('u:' + a.uid, a.uid, a.nom);
+  const ids = [...P.keys()].map((id) => 'perso:' + id);
+  const marq = new Map();
+  if (ids.length) for (const r of await tous(db, `SELECT cle, ts FROM boite_lu WHERE cle IN (${ids.map(() => '?').join(',')})`, ...ids)) marq.set(r.cle, r.ts);
+  const out = [];
+  for (const p of P.values()) {
+    if (p.uid) for (const a of await activite.fil(db, p.uid, activite.LIM.fil).catch(() => [])) p.evts.push({ ts: a.ts, texte: (activite.TYPES[a.type] || a.type) + (a.detail ? ' ' + a.detail : '') + (a.app && a.type !== 'visite' && a.type !== 'connexion' ? ' (' + a.app.split('.')[0] + ')' : '') + (a.appareil ? ' · 📲 ' + activite.appareilCourt(a.appareil) : ''), app: a.app });
+    if (!p.evts.length) continue;
+    p.evts.sort((a, b) => a.ts - b.ts);
+    const fil = p.evts.slice(-activite.LIM.fil), dernier = fil[fil.length - 1];
+    const lu = marq.get('perso:' + p.id) || 0;
+    const nonLus = p.alertes.filter((e) => e.ts > lu && now - e.ts <= LIMITES.alerteFraicheur).length;
+    const nom = p.nom || (p.id === 'systeme' ? 'Alertes du domaine' : 'Inconnu');
+    const fiche = p.uid ? await ficheLignes(env, db, p.uid, now) : [];
+    /* les lignes de la DERNIÈRE alerte (réseau, d'où il venait, pourquoi) s'ajoutent à la fiche, sans répéter « qui » quand la fiche le dit déjà */
+    const derniereAlerte = p.alertes.length ? p.alertes[p.alertes.length - 1].infos.filter((x) => !(fiche.length && x.startsWith('👤'))) : [];
+    out.push({ cle: 'perso:' + p.id, source: 'alertes', app: (dernier.app || 'domaine'), de: nom, ts: dernier.ts, texte: apercu(dernier.texte, 300), perso: true,
+      infos: fiche.concat(derniereAlerte),
+      nonLus, lu: !nonLus, repondre: null, fil: fil.map((e) => ({ moi: false, texte: e.texte, ts: e.ts })) });
+  }
+  return out.sort((a, b) => b.ts - a.ts).slice(0, 20);
+}
 /* 6.10 (Kevin, capture « Code admin refusé » ×5 sans texte, bulle vide) : chaque alerte dit en clair ce qui s'est passé, depuis où,
    et les répétitions (même événement, même appareil, à moins de 30 min d'écart) ne font qu'UNE carte « ×5 ». */
 const GROUPE_MS = 30 * 6e4;
@@ -276,7 +354,7 @@ export async function lireBoite(env, outils, now) {
   if (db) await schema(db);   // idempotent : les tables existent aussi quand on lit sans être passé par la route
   const essais = {
     lingua: () => lireLingua(db), cmcteams: () => lireCmcteams(outils), depots: () => lireDepots(db),
-    rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lireAlertes(env, db, now),
+    rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lirePersonnes(env, db, now),
   };
   const noms = Object.keys(essais);
   const res = await Promise.allSettled(noms.map((n) => memoise(n, now, essais[n])));
@@ -304,7 +382,7 @@ async function marquerLu(env, outils, cle, now) {
   if (t === 'lingua') await faire(db, 'UPDATE messages SET lu = 1 WHERE a = ? AND de = ?', ADMIN, id);
   else if (t === 'cmc') await fb(outils, 'cmc_dep_read/' + id, 'PUT', now);
   else if (t === 'depot') await faire(db, 'UPDATE boite SET lu = 1 WHERE id = ?', +id || 0);
-  else if (['demande', 'arbre', 'alerte'].includes(t)) await faire(db, 'INSERT OR REPLACE INTO boite_lu (cle, ts) VALUES (?, ?)', cle.slice(0, 120), now);
+  else if (['demande', 'arbre', 'alerte', 'perso'].includes(t)) await faire(db, 'INSERT OR REPLACE INTO boite_lu (cle, ts) VALUES (?, ?)', cle.slice(0, 120), now);
   else return false;
   memo.clear(); return true;
 }
@@ -410,6 +488,13 @@ export async function handleBoite(request, url, env, outils) {
     if (!qui || !qui.admin) return J({ ok: false, reason: 'admin_requis' }, 401);
     if (m !== 'GET' && origine && !ORIGINE_DOMAINE.test(origine)) return J({ ok: false, reason: 'origine_refusee' }, 403);
     if (p === '/admin' && m === 'GET') return J(await lireBoite(env, outils, now));
+    /* L'historique COMPLET d'une personne (fiche + 200 derniers événements) : le bouton « Historique complet » de sa carte. */
+    if (p === '/admin/personne' && m === 'GET') {
+      const uid = propre(url.searchParams.get('uid'), 120);
+      if (!uid) return J({ ok: false, reason: 'uid_requis' }, 400);
+      const evts = await activite.fil(db, uid, 200);
+      return J({ ok: true, uid, infos: await ficheLignes(env, db, uid, now), evenements: evts.map((e) => ({ ts: e.ts, type: e.type, texte: (activite.TYPES[e.type] || e.type) + (e.detail ? ' ' + e.detail : ''), app: e.app, lieu: e.lieu, appareil: e.appareil || '' })).reverse() });
+    }
     let b = {}; if (m === 'POST') { try { b = await request.json(); } catch { b = {}; } }
     if (p === '/admin/lu' && m === 'POST') {
       const cles = (Array.isArray(b.cles) ? b.cles : []).map((c) => propre(c, 120)).filter((c) => c.includes(':')).slice(0, 100);

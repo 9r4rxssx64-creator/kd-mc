@@ -173,6 +173,7 @@
   "tests/verify-app-as-kevin.mjs",
   "tests/verify-attente-partout.mjs",
   "tests/verify-background-sync-benin.mjs",
+  "tests/verify-boite-personnes.mjs",
   "tests/verify-boite-portail.mjs",
   "tests/verify-boite-temps-reel.mjs",
   "tests/verify-boutiques-fermees.mjs",

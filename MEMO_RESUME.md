@@ -1,5 +1,21 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (nuit) — « Appareil aussi » : chaque événement porte son appareil, la carte résume appareil par appareil
+
+- **Fait (même branche `claude/fiche-activite`, PR #4309)** : colonne `appareil` du fil d'activité (même libellé partout : « iPhone · iOS 18.0 · Safari 18 », via `appareilLabel`, vide si pas d'en-tête — jamais un « Autre » inventé) sur les pages, connexions, lieux, appareils, questions, enregistrements et messages ; chaque ligne du fil dit « · 📲 iPhone · iOS 18.0 » ;
+  la carte d'une personne résume **appareil par appareil** (depuis l'historique des sessions de sa fiche + les événements des 7 jours) : sessions, période, lieux, opérateurs, VPN/hébergeur, nombre d'événements ; l'historique complet donne l'appareil de chaque événement.
+- **Mesuré** : `activite.test.mjs` 35/35 (+7 contrôles appareil) ; sabotages : appareil non enregistré → 6 échecs, résumé par appareil retiré → 3.
+- **Limite honnête** : le domaine ne voit que le User-Agent : le MODÈLE exact d'un iPhone (14, 15…) n'y est pas (Safari ne le donne pas), ni la taille d'écran ; l'iOS affiché est celui du User-Agent. Pas d'empreinte d'appareil côté navigateur (vie privée).
+
+
+## 2026-10-04 (soir) — « Affiche et organise intelligemment : le même compte ne se multiplie pas, il s'ajoute dans sa fiche, remonte dans le fil… Historique, infos+++ »
+
+- **Fait (branche `claude/fiche-activite`, empilée sur `claude/alertes-utiles`)** : `activite.js` — fil d'activité par compte en D1 (jamais KV) : pages consultées (chemin sans paramètres, 1 ligne par page et par 10 min), connexion (1 par session), nouveau lieu (+ opérateur, VPN), nouvel appareil, questions au coach de Lingua (160 caractères), enregistrements de progression, messages du cercle (le fait, pas le texte). 90 jours, 400 événements max par compte et par jour, jamais l'IP.
+  Crochets dans le routeur : `enrich` (visite via `opts.page`, connexion, lieu, appareil), `/__lingua/ai`, `/__lingua/save`, `outils.noter` du cercle.
+- **Boîte** : la source « Personnes & alertes » fait UNE carte par personne (alertes du journal + activité regroupées par compte, ou par nom si pas de compte ; fil du plus ancien au plus récent, 14 lignes ; la dernière activité la fait remonter ; seules les alertes comptent en rouge ; marquer lu = toute la carte) avec le RÉSUMÉ DE LA FICHE (sessions, temps par app, appareils, lieux, réseau, langue, portée) + 7 jours (pages, questions, top pages, dernière question) ; `GET /__boite/admin/personne?uid=` + bouton « 🕘 Historique complet » (200 événements). Page légale (privacy.html) mise à jour : ce qui est gardé, 90 jours, admin seul.
+- **Mesuré** : `activite.test.mjs` 28/28 (3 sabotages : regroupement retiré → 5 échecs, anti-doublon retiré → 3, crochet retiré → 2) ; `test:boite` 48/48, `alertes-utiles` 12/12 adaptés ; `verify-boite-personnes` 7/7 dans Chromium iPhone (captures relues). **Trouvé par le navigateur** : les lignes d'infos de la carte ne s'affichaient pas (code d'affichage dans une autre branche) → ajouté avec le MÊME texte que la PR #4290.
+- **Pas capté (dit à Kevin)** : le TRAVAIL dans CMCteams (modifs de planning : Firebase côté navigateur, le routeur ne les voit pas — il faudrait lire l'historique Firebase) ; les questions à Bee (Kevin seul), Créa, Apex Chat (chiffré) ; les consultations sans session ; les clics à l'intérieur d'une page.
+- **Process** : la file de fusion (`file-fusions.sh`) travaille maintenant dans une COPIE à part (`/home/user/fusion-wt`) : un `reset --hard` dans le dossier de travail aurait pu effacer des modifications non enregistrées.
 ## 2026-10-04 (midi) — « Tout est prévu pour les alertes, notifications, réponses ? Temps réel partout » : réponse honnête + correctifs
 
 - **Constat (relecture du code, puis tests)** : Lingua, CMCteams, Rotaplan, arbre, dépôts des apps poussaient bien une notification à Kevin, MAIS (1) toutes avec un repère COMMUN (`kdmc-cercle`, `cmc-msg`) → sur iPhone la 2ᵉ remplace la 1ʳᵉ ; (2) elles ouvraient l'app d'origine, pas la boîte ; (3) la boîte relisait toutes les 45-90 s.

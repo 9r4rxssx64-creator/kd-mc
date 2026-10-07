@@ -302,6 +302,7 @@ export async function handleCercle(request, url, env, outils) {
       }
       const r = await faire(db, 'INSERT INTO messages (de, a, type, corps, cadeau, cree) VALUES (?, ?, ?, ?, ?, ?)',
         moi, a, type, corps, cadeau ? JSON.stringify(cadeau) : null, now);
+      if (outils.noter) await outils.noter({ uid: moi, nom: qui.nom, type: 'message', app: 'lingua', detail: versAdmin ? 'à l\'admin' : 'à un ami', appareil: outils.appareilDe ? outils.appareilDe(request) : '' });   // fil d'activité : jamais le texte
       if (versAdmin && outils.notifier) {
         const p2 = await un(db, 'SELECT nom FROM profils WHERE uid = ?', moi);
         await outils.notifier('💬 Lingua — ' + ((p2 && p2.nom) || qui.nom || 'un membre'), (corps || (cadeau ? '🎁 un cadeau' : '')).slice(0, 140));

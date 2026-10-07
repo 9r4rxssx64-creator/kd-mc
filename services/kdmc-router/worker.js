@@ -11,6 +11,7 @@
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken } from './fb-token.js';
 import { handleBoite } from './boite.js';
+import * as activite from './activite.js';
 import * as cptD1 from './compteurs-d1.js';
 /* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
 const URL_MESSAGES = 'https://kd-mc.com/#messages';
@@ -1791,7 +1792,7 @@ async function ficheLaVisite(request, url, env, host) {
     if (s && s.uid) {
       const acc = await accGet(env, s.uid);
       if (revoked(acc, s)) return;                 // session révoquée : on ne fiche rien
-      await enrich(env, request, s.uid, s.name, s.cgu, acc, { hote: host });
+      await enrich(env, request, s.uid, s.name, s.cgu, acc, { hote: host, page: true });
       return;
     }
     /* Porte totale (3.10) : un anonyme ne consulte plus rien (il voit la porte) → on ne le compte plus du tout. */
@@ -1865,6 +1866,7 @@ async function handleLingua(request, url, env) {
       const s = JSON.stringify(b && b.data || {});
       if (s.length > 200000) return JL({ ok: false, reason: 'too_big' }, 413);
       await env.ACCOUNTS.put('lingua:' + k, s, { expirationTtl: 60 * 60 * 24 * 400 }); // ~400 j, renouvelé à chaque save
+      { const qui = await personneDe(env, request); if (qui) await activite.noter(env, { uid: qui.uid, nom: qui.nom, type: 'modif', app: 'lingua', detail: 'progression enregistrée', appareil: appareilLabel(request.headers.get('user-agent')) }); }
       return JL({ ok: true });
     }
     /* EFFACER MES DONNÉES (2.10, droit à l'effacement) : même preuve que l'enregistrement — la clé (nom +
@@ -2152,6 +2154,12 @@ async function handleLingua(request, url, env) {
       const weak = Array.isArray(b && b.weak) ? b.weak.slice(0, 15).map((x) => String(x).slice(0, 60)) : [];
       const scenario = String((b && b.scenario) || '').slice(0, 120); // jeu de rôle (scène originale choisie côté app)
       const msgs = Array.isArray(b && b.messages) ? b.messages.slice(-12) : [];
+      /* Les QUESTIONS posées au coach entrent dans le fil de la personne (début du texte seulement, 160 caractères ; pas pour les appels automatiques de la mascotte). */
+      if (!(b && b.mode === 'appel')) {
+        const dq = [...msgs].reverse().find((m) => m && m.role === 'user');
+        const qui = dq && await personneDe(env, request);
+        if (qui) await activite.noter(env, { uid: qui.uid, nom: qui.nom, type: 'question', app: 'lingua', detail: String(dq.text || dq.content || ''), appareil: appareilLabel(request.headers.get('user-agent')) });
+      }
       /* 📞 APPEL DE LA MASCOTTE (Kevin 3.10 : « Bee ou Bourricot te téléphone réellement et te tient une
          conversation, une leçon, un exercice ») — inspiré de l'appel vidéo de Duolingo Max, en mieux et
          gratuit : la même IA gratuite, mais un appel STRUCTURÉ en phases, entièrement ORAL. */
@@ -2582,6 +2590,12 @@ function uaParse(ua) {
   else if (/Safari/i.test(s)) { br = 'Safari'; }
   return { model, os, osv, br, brv };
 }
+/* « iPhone · iOS 18.0 · Safari 18 » : le MÊME libellé partout (fiche, historique des sessions, fil d'activité) pour pouvoir ranger chaque événement sous son appareil. */
+function appareilLabel(ua) {
+  if (!String(ua || '').trim()) return '';   // pas d'en-tête : pas d'appareil inventé (« Autre »)
+  const D = uaParse(ua);
+  return [D.model, D.os + (D.osv ? ' ' + D.osv : ''), D.br + (D.brv ? ' ' + D.brv : '')].filter(function (x) { return x && x.trim(); }).join(' · ');
+}
 /* Opérateur/hébergeur → distingue 4G, box maison, WiFi public… et signale un
    VPN/serveur (quelqu'un qui masque sa provenance). Signal de sécurité utile. */
 function ispInfo(cf) {
@@ -2595,6 +2609,14 @@ function ispInfo(cf) {
    dit RIEN → pas d'alerte. Un vrai changement de pays par des réseaux ordinaires (opérateur, box) reste signalé. */
 const ASN_RELAIS = new Set([13335, 20940, 16625, 36183, 54113]);   // Cloudflare (WARP, Relais privé), Akamai ×3, Fastly
 export function reseauMasque(asn, vpn) { const a = Number(asn) || 0; return !!vpn || ASN_RELAIS.has(a) || ASN_NUAGES.has(a); }
+/* Qui est connecté ? (uid canonique, sans jamais créer de fiche) — pour classer un événement dans le fil de LA bonne personne. */
+async function personneDe(env, request) {
+  try {
+    const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoToken(request));
+    if (!sess || !sess.uid) return null;
+    return { uid: await canonFor(env, sess.uid, sess.name, { sansCreer: true }), nom: sess.name || '' };
+  } catch { return null; }
+}
 /* Enrichit (ou crée) la fiche à chaque connexion : MAX de renseignements. */
 /* Identités de ROBOT (sonde de déploiement) : leur session sert à prouver que la chaîne SSO marche,
    mais un robot n'est pas une personne. Kevin 2.10 : « Chacun 1 seul compte » — et aucun compte
@@ -2633,6 +2655,8 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
      → évite une 2e lecture KV sur le chemin chaud. undefined = on lit nous-même. */
   const prev = pre !== undefined ? pre : await accGet(env, uid);
   const isNew = !prev;
+  /* FIL D'ACTIVITÉ (Kevin 4.10) : une page consultée par cette personne s'ajoute dans SA fiche (chemin seul, jamais les paramètres) ; les pings de présence n'en font pas. */
+  if (opts && opts.page) { let chemin = ''; try { chemin = new URL(request.url).pathname; } catch { chemin = ''; } await activite.noter(env, { uid, nom: name, type: 'visite', app: host, detail: chemin || '/', appareil: appareilLabel(request.headers && request.headers.get ? request.headers.get('user-agent') : '') }); }
   /* PÉRIMÈTRE — une NOUVELLE fiche naît fermée : elle n'existe que dans l'app où la
      personne s'est inscrite (Kevin 2026-09-15 : « quelqu'un d'extérieur peut
      s'enregistrer et être seulement dans une app »). C'est l'admin qui ouvre ensuite
@@ -2723,6 +2747,7 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   const SESSION_GAP = ENRICH_CADENCE + 3 * 60e3;
   acc.apps = acc.apps || {};
   acc.history = acc.history || [];
+  let nouvelleSession = false;
   if (host) {
     const a = acc.apps[host] || { first: now, last: 0, sessions: 0 };
     const prevLast = a.last || 0;
@@ -2735,6 +2760,7 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
       /* TEMPS CUMULÉ réellement passé sur cette app (somme des prolongations). */
       a.ms = (a.ms || 0) + Math.max(0, now - prevLast);
     } else {
+      nouvelleSession = true;
       a.sessions = (a.sessions || 0) + 1;
       acc.hits = (acc.hits || 0) + 1;
       /* Chaque session garde SON contexte (appareil détaillé, opérateur, VPN, coords)
@@ -2759,6 +2785,10 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   /* NOUVEL INSCRIT fermé à une app → Kevin doit le SAVOIR, sinon la personne
      attend une ouverture que personne ne sait devoir faire. Journal admin + push
      (opt-in par config, fail-open : jamais une connexion cassée par une notif). */
+  /* Dans le fil de la personne : nouvelle session, nouveau lieu, nouvel appareil (une seule ligne par chose nouvelle, jamais en double). */
+  if (nouvelleSession || isNew) await activite.noter(env, { uid, nom: acc.name, type: 'connexion', app: host, detail: (host || 'domaine') + (isNew ? ' · première connexion' : ''), lieu: place, appareil: devFull });
+  if (place && place !== prevPlace && !isNew) await activite.noter(env, { uid, nom: acc.name, type: 'lieu', app: host, detail: place + (NET.isp ? ' · ' + NET.isp : '') + (NET.vpn ? ' · VPN/hébergeur' : ''), lieu: place, appareil: devFull });
+  if (newDevice && !isNew) await activite.noter(env, { uid, nom: acc.name, type: 'appareil', app: host, detail: devFull || devKey, lieu: place, appareil: devFull });
   /* « TOUTES LES INFOS POSSIBLES » (Kevin 4.10) : chaque alerte porte qui (nom + compte), dans quelle app et sur quelle page, depuis quel appareil,
      d'où (lieu, opérateur, numéro de réseau, VPN ou non), la langue et le fuseau, et pour un changement de pays : d'où il venait. Jamais l'adresse IP. */
   const ctxAlerte = () => ({ name: acc.name || '', app: host, page: acc.last_path || '', device: acc.last_device || '', os, lang: acc.last_lang || '', tz: acc.last_tz || '',
@@ -3629,6 +3659,8 @@ function outilsCercle(env) {
       if (revoked(acc, s)) return null;
       return { uid, nom: s.name || '', admin: false, cgu: (ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified) || cguAcceptees(acc) };
     },
+    noter: (ev) => activite.noter(env, ev),
+    appareilDe: (request) => appareilLabel(request.headers.get('user-agent')),
     cgu: { version: CGU_VERSION, texte: CGU_TEXTE, points: CGU_POINTS },
     /* Un repère UNIQUE par message : avec un repère commun, la 2ᵉ notification remplaçait la 1ʳᵉ sur l'iPhone (un message perdu de vue). */
     notifier: (titre, texte) => notifyPush(env, titre, texte, { tag: 'kdmc-msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), url: URL_MESSAGES }),

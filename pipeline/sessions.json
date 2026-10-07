@@ -1231,6 +1231,16 @@
       "maj": "2026-10-07",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "fiche-activite": {
+      "titre": "Fiche par personne + activité",
+      "branche": "claude/fiche-activite",
+      "sujet": "PR #4309",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-07",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

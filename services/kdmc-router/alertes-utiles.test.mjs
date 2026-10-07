@@ -63,7 +63,7 @@ _viderMemo();
 const b = await lireBoite(envB, { fbToken: async () => '', fetch: async () => new Response('null') }, T);
 const al = b.messages.filter((x) => x.source === 'alertes');
 ok(al.length === 2 && !al.some((x) => x.texte === 'FR → US en 5 min'), '5a. la boîte écarte l\'ancien « FR → US en 5 min » (réseau inconnu : c\'était le Relais privé) et garde les alertes qui ont leur réseau', al.map((x) => x.texte));
-const geoAl = al.find((x) => x.de.includes('suspecte'));
+const geoAl = al.find((x) => x.fil.some((f) => /suspecte/.test(f.texte)));
 ok(geoAl.infos.some((l) => /👤 Marie Dupont \(marie-test\)/.test(l)) && geoAl.infos.some((l) => /📱 lingua\.kd-mc\.com\/lecon/.test(l)) && geoAl.infos.some((l) => /↔️ Avant : Nice, Provence, FR · Orange S\.A\. \(AS3215\) — il y a 10 min/.test(l)) && geoAl.infos.some((l) => /🛰️ Comcast Cable \(AS7922\)/.test(l)) && geoAl.infos.some((l) => /ni Relais privé iCloud, ni VPN/.test(l)), '5b. la carte d\'alerte se déplie : qui, app + page, d\'où il venait, réseau, et POURQUOI c\'est signalé', geoAl.infos);
 ok(infosAlerte({ ev: 'new_device', name: 'A', uid: 'a', app: 'x.kd-mc.com', device: 'iPhone · iOS 18', os: 'iOS', place: 'Nice', isp: 'Orange', asn: '3215', vpn: true, lang: 'fr', tz: 'Europe/Paris' }).length === 6, '5c. toutes les lignes d\'info sont produites (compte, app, appareil, lieu, réseau + VPN, langue + fuseau)');
 console.log(`\n${pass} OK · ${fail} échec(s)`);

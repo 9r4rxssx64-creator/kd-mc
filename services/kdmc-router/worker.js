@@ -12,6 +12,8 @@ import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } f
 import { mintShopsAdminIdToken } from './fb-token.js';
 import { handleBoite } from './boite.js';
 import * as cptD1 from './compteurs-d1.js';
+/* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
+const URL_MESSAGES = 'https://kd-mc.com/#messages';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
@@ -406,7 +408,7 @@ async function handleArbre(request, url, env) {
     let notifie = false;
     if (!b.silencieux) {
       const r = arbreResumePush(e);
-      await notifyPush(env, r.title, r.body, { tag: 'arbre-' + (e.id || 'x') + '-' + e.ts, url: 'https://arbre.kd-mc.com/#journal' });
+      await notifyPush(env, r.title, r.body, { tag: 'arbre-' + (e.id || 'x') + '-' + e.ts, url: URL_MESSAGES });
       notifie = !!(env.KDMC_PUSH_URL && env.KDMC_PUSH_TOKEN);
     }
     return J({ ok: true, ts: e.ts, notifie });
@@ -1748,7 +1750,7 @@ async function handleDemande(request, env, host) {
     const idx = JSON.parse((await env.ACCOUNTS.get('demandes:idx')) || '[]'); idx.push(cle);
     await env.ACCOUNTS.put('demandes:idx', JSON.stringify(idx.slice(-500)));
   }
-  await notifyPush(env, '🗓️ Rotaplan — demande de démo', d.prenom + ' ' + d.nom + ' · ' + d.etablissement + ' · ' + d.email, { tag: 'rotaplan-demo', url: 'https://kd-mc.com/__demandes' });
+  await notifyPush(env, '🗓️ Rotaplan — demande de démo', d.prenom + ' ' + d.nom + ' · ' + d.etablissement + ' · ' + d.email, { tag: 'rotaplan-demo-' + Date.now(), url: URL_MESSAGES });
   return pageDemande('Demande bien reçue', 'Merci ' + d.prenom + '. On te répond sous 24 h ouvrées, à ' + d.email + '.', true);
 }
 function estUnePage(request) {
@@ -2537,7 +2539,7 @@ async function handleNotifyKevin(request, env) {
         await env.ACCOUNTS.put('push:kevin_last', String(Date.now()));
       } catch { /* fail-open */ }
     }
-    await notifyPush(env, '💬 ' + name, text, { tag: 'cmc-msg', url: 'https://cmcteams.kd-mc.com/' });
+    await notifyPush(env, '💬 ' + name, text, { tag: 'cmc-msg-' + Date.now(), url: URL_MESSAGES });
     return J({ ok: true });
   } catch { return J({ ok: false }, 200); }
 }
@@ -3628,7 +3630,8 @@ function outilsCercle(env) {
       return { uid, nom: s.name || '', admin: false, cgu: (ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified) || cguAcceptees(acc) };
     },
     cgu: { version: CGU_VERSION, texte: CGU_TEXTE, points: CGU_POINTS },
-    notifier: (titre, texte) => notifyPush(env, titre, texte, { tag: 'kdmc-cercle', url: 'https://lingua.kd-mc.com/#admin' }),
+    /* Un repère UNIQUE par message : avec un repère commun, la 2ᵉ notification remplaçait la 1ʳᵉ sur l'iPhone (un message perdu de vue). */
+    notifier: (titre, texte) => notifyPush(env, titre, texte, { tag: 'kdmc-msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), url: URL_MESSAGES }),
   };
 }
 async function adminSession(request, env) {

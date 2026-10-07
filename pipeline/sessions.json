@@ -1221,6 +1221,16 @@
       "maj": "2026-10-07",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "temps-reel-messages": {
+      "titre": "Temps réel des messages",
+      "branche": "claude/temps-reel-messages",
+      "sujet": "PR #4297",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-07",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

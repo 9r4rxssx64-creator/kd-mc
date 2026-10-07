@@ -21,7 +21,7 @@
 import { ADMIN, LIMITES as LIM_CERCLE, texteOk, schema as schemaCercle } from './cercle.js';
 import { BOUTON_JS } from './boite-bouton.js';
 
-export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 20000 };
+export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 5000, memoKvMs: 60000 };
 export const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/cmcteams';
 
 export const SOURCES = {
@@ -68,11 +68,13 @@ const faire = async (db, sql, ...p) => db.prepare(sql).bind(...p).run();
 const propre = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b-\u001f\u007f]+/g, ' ').replace(/[ \t]+/g, ' ').trim().slice(0, n);
 const apercu = (v, n) => propre(v, 4000).replace(/\s+/g, ' ').slice(0, n);
 
-/* Mémo de 20 s par instance : une page ouverte relit toutes les minutes, plusieurs onglets ne multiplient pas les lectures. */
+/* Mémo par instance, par source : D1 et Firebase (Lingua, CMCteams, dépôts) 5 s = quasi temps réel, plusieurs onglets ne multiplient pas les lectures ;
+   les sources lues en KV (Rotaplan, Arbre, alertes : jusqu'à 17 lectures chacune) 60 s — le quota gratuit de lectures KV est de 100 000 par jour. */
 const memo = new Map();
+const TTL_SOURCE = { rotaplan: 'memoKvMs', arbre: 'memoKvMs', alertes: 'memoKvMs' };
 async function memoise(cle, now, fn) {
   const m = memo.get(cle);
-  if (m && now - m.t < LIMITES.memoMs) return m.v;
+  if (m && now - m.t < LIMITES[TTL_SOURCE[cle] || 'memoMs']) return m.v;
   const v = await fn(); memo.set(cle, { t: now, v }); return v;
 }
 export function _viderMemo() { memo.clear(); }

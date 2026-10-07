@@ -4,7 +4,7 @@
    (401 sinon → bandeau caché). Tout le texte reçu passe par textContent (jamais innerHTML : ce sont des messages de tiers). */
 (function () {
   'use strict';
-  var URL_BOITE = '/__boite/admin', PAS_BANDEAU = 90000, PAS_OUVERT = 45000;
+  var URL_BOITE = '/__boite/admin', PAS_BANDEAU = 30000, PAS_OUVERT = 12000;   /* quasi temps réel : relu aussi au retour sur l'onglet et dès qu'une notification ouvre #messages */
   var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false;
 
   function entetes(json) {
@@ -189,7 +189,11 @@
     a.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ouvrir(); } };
     a.tabIndex = 0;
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ouverte) fermer(); });
+    var surHash = function () { if (/[#&]messages\b/.test(location.hash)) { if (!ouverte) ouvrir(); else rafraichir(); } };
     if (/[#&]messages\b/.test(location.hash)) setTimeout(ouvrir, 400);
+    window.addEventListener('hashchange', surHash);                                   // une notification touchée alors que le portail est déjà ouvert
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') rafraichir(); });
+    window.addEventListener('focus', rafraichir); window.addEventListener('online', rafraichir); window.addEventListener('pageshow', rafraichir);
     rafraichir(); armer();
   }
   window.kdmcBoite = { demarrer: demarrer, rafraichir: rafraichir, ouvrir: ouvrir, fermer: fermer };

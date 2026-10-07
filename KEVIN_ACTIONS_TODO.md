@@ -90,6 +90,8 @@ seules sur kd-mc.com ; il faut juste que l'ancienne adresse reçoive UNE derniè
 - **Une décision reste à toi, sans urgence** : l'appel en direct (OpenAI Realtime, à la minute) et la voix
   d'Antonin (Replicate) restent payants. Dis « ferme » et je les retire ; sinon ils restent derrière leurs plafonds.
 
+## ✅ FAIT (4.10) — ⏱️ « Alertes, notifications, réponses : temps réel partout »
+**Ce que j'ai trouvé en relisant** : deux notifications rapprochées se remplaçaient sur ton iPhone (même repère) et elles t'envoyaient dans l'app d'origine ; la boîte ne se mettait à jour que toutes les 45 à 90 secondes. **Maintenant** : une notification par message, elle ouvre directement « Mes messages » (réponse en un geste) ; la boîte se met à jour toute seule (30 s, 12 s quand elle est ouverte, et tout de suite quand tu reviens sur l'écran). **Pas encore** : la personne à qui tu réponds ne reçoit pas de notification (elle voit ta réponse en ouvrant l'app, pastille rouge sur ✉️).
 ## ✅ FAIT (4.10) — 🛡️ « Ignore les alertes inutiles, toutes les infos possibles »
 **Pourquoi tu avais « connexion suspecte »** : même compte vu dans deux pays à moins d'une heure — chez toi c'est le Relais privé iCloud de l'iPhone (il change de pays tout seul). **Maintenant** : plus d'alerte pour ça ni pour un VPN ; une vraie alerte (deux pays, réseaux ordinaires) arrive avec tout : qui, quelle app et page, quel appareil, d'où, quel opérateur, d'où la personne venait. Dans « Mes messages » → 🔔 Alertes, tape une alerte pour tout lire. **Aucun geste pour toi.**
 ## ✅ FAIT (4.10) — 🎙️ « Il n'y a toujours pas de sons de voix » : cause trouvée et corrigée

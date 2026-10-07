@@ -174,6 +174,7 @@
   "tests/verify-attente-partout.mjs",
   "tests/verify-background-sync-benin.mjs",
   "tests/verify-boite-portail.mjs",
+  "tests/verify-boite-temps-reel.mjs",
   "tests/verify-boutiques-fermees.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",
   "tests/verify-connexion-tout-le-monde.mjs",

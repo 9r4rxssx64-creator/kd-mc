@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-04 (midi) — « Tout est prévu pour les alertes, notifications, réponses ? Temps réel partout » : réponse honnête + correctifs
+
+- **Constat (relecture du code, puis tests)** : Lingua, CMCteams, Rotaplan, arbre, dépôts des apps poussaient bien une notification à Kevin, MAIS (1) toutes avec un repère COMMUN (`kdmc-cercle`, `cmc-msg`) → sur iPhone la 2ᵉ remplace la 1ʳᵉ ; (2) elles ouvraient l'app d'origine, pas la boîte ; (3) la boîte relisait toutes les 45-90 s.
+- **Corrigé (branche `claude/temps-reel-messages`)** : repère unique par message ; toutes les notifications de messages ouvrent `https://kd-mc.com/#messages` (aussi si le portail est déjà ouvert) ; portail relu à 30 s (12 s fenêtre ouverte) + au retour sur l'onglet / focus / en ligne ; mémo serveur par source (5 s D1 et Firebase, 60 s KV pour ménager le quota de lectures).
+- **Mesuré** : `test:notifs-messages` 13/13 (vrai routeur : dépôt d'app et message d'employé → 2 notifications à repères différents qui ouvrent la boîte ; fraîcheur 5 s / 60 s ; 0 écriture KV) ; `test:boite-temps-reel` 5/5 dans Chromium (retour sur l'onglet → « 1 nouveau message » aussitôt ; #messages touché → fenêtre ouverte ; message de plus visible seul en < 15 s). Sabotages : repère commun → 3 échecs ; portail lent → 2. **Bug attrapé par le test** : `URL_MESSAGES` non défini (ancrage sur un import d'une autre branche) → leçon 396.
+- **Pas encore temps réel (dit à Kevin)** : (a) la RÉPONSE de l'admin à une personne : relue par le bouton (120 s, 30 s dès la fusion de #4290) et pastille rouge, mais PAS de notification push à la personne (il faudrait un abonnement Web Push par visiteur) ; (b) la page admin.kd-mc.com se rafraîchit toutes les 30 s ; (c) Apex Chat (chiffré) hors boîte ; (d) livraison du push à l'iPhone non mesurable d'ici (dépend des secrets `KDMC_PUSH_*` du routeur).
+- **Reste dans les PR en attente** : #4290 (bouton « Écrire à l'admin »), #4294 (voix) — la chaîne privée tourne en continu ; la relecture à 30 s du bouton est à ajouter une fois #4290 fusionnée.
+
+
 ## 2026-10-04 (après-midi) — « Pourquoi connexion suspecte ? … Ignore les alertes inutiles. Je veux toutes les infos possibles »
 
 - **Pourquoi** : la règle compare le pays de la connexion précédente à l'actuelle ; changement à moins de 60 min = « déplacement impossible ». Les alertes de Kevin (FR→US 5 min, US→FR 26 min, MC→US 7 min) = très probablement le Relais privé iCloud / un VPN (non mesurable a posteriori : l'ancien journal n'avait pas gardé le réseau).

@@ -97,32 +97,6 @@ ok(r.status === 200 && r.headers.get('x-voix') === 'gratuite' && calls.length ==
 ok(r.headers.get('content-type') === 'audio/wav', '8c. la voix gratuite est annoncée audio/wav (c\'est du WAV, mesuré)', r.headers.get('content-type'));
 
 
-/* 10. LE VRAI SCÉNARIO (mesuré le 3.10 sur le domaine : 12 voix sur 12 en voix de repli) — le plafond d'écritures KV est crevé,
-   Chirp doit PARLER quand même : le compteur et la pause vivent en D1. */
-const d1 = () => { const db = new DatabaseSync(':memory:'); const st = (sql, p = []) => ({ bind: (...x) => st(sql, x), first: async () => db.prepare(sql).get(...p) ?? null, run: async () => { const r = db.prepare(sql).run(...p); return { meta: { changes: Number(r.changes) } }; }, all: async () => ({ results: db.prepare(sql).all(...p) }) }); return { prepare: (q) => st(q), _db: db }; };
-const kvPlein = () => { const e = { puts: 0, cles: [], async get() { return null; }, async put(k) { e.puts++; e.cles.push(String(k)); throw new Error('KV put() limit exceeded for the day'); } }; return e; };
-const ecritGtts = (e) => e.cles.filter((k) => k.startsWith('gtts:'));   // le cache audio « ltts: » tente le KV hors Cloudflare (pas de Cache API en test) : seul le COMPTEUR et la PAUSE comptent ici
-env = ENV({ ACCOUNTS: kvPlein(), CERCLE_DB: d1() }); calls = [];
-r = await mod.fetch(req('v=nova&l=fr&t=compte'), env);
-ok(r.status === 200 && r.headers.get('x-voix') === 'google-chirp3hd' && g().length === 1 && o().length === 0, '10a. plafond KV crevé + D1 : Chirp 3 HD PARLE quand même (avant : la voix de repli, la même pour toutes)', r.headers.get('x-voix'));
-const kjj = 'gtts:' + new Date().toISOString().slice(0, 10);
-ok(env.CERCLE_DB._db.prepare('SELECT n FROM compteurs WHERE cle = ?').get(kjj).n === 6 && ecritGtts(env.ACCOUNTS).length === 0, '10b. le compteur de caractères est exact en D1 (6) et ne tente AUCUNE écriture KV', env.ACCOUNTS.cles);
-const nomsD = [];
-for (const v of ['nova', 'echo', 'onyx']) { env = ENV({ ACCOUNTS: kvPlein(), CERCLE_DB: d1() }); calls = []; await mod.fetch(req('v=' + v + '&l=fr&t=Salut'), env); nomsD.push(g()[0] && g()[0].b.voice.name); }
-ok(new Set(nomsD).size === 3, '10c. au plafond KV, les voix restent DIFFÉRENTES entre elles (nova / echo / onyx)', nomsD.join());
-env = ENV({ ACCOUNTS: kvPlein(), CERCLE_DB: d1(), GTTS_PLAFOND_JOUR: '10' }); calls = [];
-await mod.fetch(req('v=nova&l=fr&t=' + encodeURIComponent('une phrase plus longue que dix')), env);
-ok(g().length === 0, '10d. plafond Google du jour (compté en D1) atteint → Google pas appelé (gratuit garanti)');
-env = ENV({ ACCOUNTS: kvPlein(), CERCLE_DB: d1(), GTTS_PLAFOND_JOUR: '20' }); calls = [];
-for (const t of ['aaaaaaaaaa', 'bbbbbbbbbb', 'cccccccccc']) await mod.fetch(req('v=nova&l=fr&t=' + t), env);
-ok(g().length === 2, '10e. le plafond est global et exact : 20 caractères autorisés = 2 phrases de 10, la 3e refusée', g().length);
-gStatut = 403; env = ENV({ ACCOUNTS: kvPlein(), CERCLE_DB: d1() }); calls = [];
-await mod.fetch(req('v=nova&l=fr&t=un'), env); calls = [];
-await mod.fetch(req('v=nova&l=fr&t=deux'), env);
-ok(g().length === 0 && env.CERCLE_DB._db.prepare("SELECT texte FROM compteurs WHERE cle = 'gtts:pause'").get().texte === '403' && ecritGtts(env.ACCOUNTS).length === 0, '10f. Google refuse (403) : la pause d\'une heure est posée en D1, le 2e appel ne retente pas, 0 écriture KV');
-gStatut = 200;
-env = ENV({ ACCOUNTS: kvPlein() }); calls = [];
-await mod.fetch(req('v=nova&l=fr&t=sans-d1'), env);
-ok(g().length === 0, '10g. sans D1 ET KV plafonné : Google n\'est pas appelé (on ne dépense jamais sans compter)');
+/* (3.10) Le scénario « plafond KV crevé » est couvert par les contrôles 6c-6e ci-dessus (compteur de repli en D1). */
 console.log(`Voix Chirp test: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

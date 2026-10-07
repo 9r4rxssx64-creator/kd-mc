@@ -108,6 +108,10 @@ const REGISTRE = [
   // Règle « FORMATION / ÉCOLE DE JEUX : MÊME ÉQUIPE, MAIS DÉPARTS ENTRE EUX » (Kevin 5.10.2026, PDF octobre « GR1 CRAPS ») :
   // garde = lecture du vrai PDF + contre-épreuve « chaque numéro = groupe tournant seul » (app + light), parité app ⇄ light.
   [/FORMATION \/ ÉCOLE DE JEUX/i, ['npm:test:departs-groupes', 'npm:test:departs-compare']],
+  // Règle « INSCRIPTION UNIQUE DU DOMAINE » (Kevin 7.10.2026) : conditions une fois par compte, porte unique, refus hors planning.
+  // Règle « DÉPARTS : LES SÉRIES » (Kevin 7.10.2026 soir, « 4235-2351-3514 ») : son exemple exact verrouillé.
+  [/DÉPARTS : LES SÉRIES/i, ['npm:test:departs-cycle', 'npm:test:departs-render', 'npm:test:verif-live-robot']],
+  [/INSCRIPTION UNIQUE DU DOMAINE/i, ['npm:test:inscription-unique', 'npm:test:cgu-une-fois', 'npm:test:matricule-fiche']],
   // Règle « TOUT GRATUIT, PARTOUT, TOUJOURS » (Kevin 2.10.2026 soir) : garde = test:tout-gratuit (chaque cascade du dépôt —
   // ia-route, kdmc-apis, Créa, chat-svc, messagerie, outils Lingua, Apex — commence par un gratuit ; sabotage prouvé).
   [/TOUT GRATUIT, PARTOUT, TOUJOURS/i, ['npm:test:tout-gratuit', 'npm:test:ia-route']],

@@ -60,11 +60,13 @@ export const cleProprietaire = (m) => 'matsbm-r:' + m;
 const lireFiche = async (kv, cle) => { try { return JSON.parse((await kv.get(cle)) || 'null'); } catch { return null; } };
 export async function verifierEtRanger(env, txt, matricule, nom, prenom, app) {
   const m = String(matricule || '').trim().toUpperCase();
-  if (!/^U\d{3,6}$/.test(m)) return { ok: false };
+  /* 7.10 (Kevin : « U, identifiant SBM et un nom présent des imports, sinon refus. Et notif admin avec toutes les infos ») :
+     chaque refus dit POURQUOI — l'app affiche le bon message et le domaine prévient l'admin. */
+  if (!/^U\d{3,6}$/.test(m)) return { ok: false, reason: 'matricule_format' };
   const ids = personnesDuPlanning(txt, nom, prenom);
-  if (!ids.length) return { ok: false };
+  if (!ids.length) return { ok: false, reason: 'hors_planning' };
   const internes = new Set([...String(txt || '').matchAll(/"id":"(U\d+)"/g)].map((x) => x[1]));
-  if (internes.has(m)) return { ok: ids.includes(m) };
+  if (internes.has(m)) return ids.includes(m) ? { ok: true } : { ok: false, reason: 'matricule_autre' };
   const kv = env?.ACCOUNTS;
   if (!kv?.get) return { ok: true };
   const fiches = await Promise.all(ids.map((id) => lireFiche(kv, cleMatricule(id))));
@@ -110,7 +112,27 @@ export async function listeMatricules(env, txt) {
   } while (curseur);
   return out.sort((a, b) => a.nom.localeCompare(b.nom));
 }
-/* Le planning publié : la copie du KV (déposée par la publication), sinon l'hébergeur. 10 min en mémoire. */
+/* LA BANQUE DES NOMS (Kevin 7.10.2026 soir : « Historique banque de données exponentielle avec les imports ») : chaque personne
+   vue UNE fois dans un planning publié reste connue du domaine, import après import — un planning plus récent qui ne la montre
+   plus (mois suivants seulement, départ, longue absence) ne l'efface pas. KV planning:banque = { "<numéro interne>|<nom>": 1re
+   date }. Écrite seulement quand un nom NOUVEAU apparaît (quelques écritures par import : gratuit). La page ne la voit jamais.
+   Rend les personnes de la banque absentes du planning, au même format que lui (le reste du module les lit sans changement). */
+export const CLE_BANQUE = 'planning:banque';
+const BANQUE_MAX = 5000;
+export async function enrichirBanque(env, txt) {
+  const kv = env?.ACCOUNTS;
+  if (!kv?.get || !txt) return '';
+  let b = {};
+  try { b = JSON.parse((await kv.get(CLE_BANQUE)) || '{}') || {}; } catch { b = {}; }
+  const vus = [...String(txt).matchAll(/"id":"(U\d+)","name":"([^"]{1,80})"/g)].map((x) => x[1] + '|' + x[2]);
+  let neuf = 0, taille = Object.keys(b).length;
+  for (const c of vus) if (!b[c] && taille < BANQUE_MAX) { b[c] = Date.now(); neuf++; taille++; }
+  if (neuf && kv.put) { try { await kv.put(CLE_BANQUE, JSON.stringify(b)); } catch { /* relu au prochain rafraîchissement */ } }
+  const dans = new Set(vus);
+  return Object.keys(b).filter((c) => !dans.has(c) && /^U\d+\|[^"\\]{1,80}$/.test(c))
+    .map((c) => { const i = c.indexOf('|'); return '{"id":"' + c.slice(0, i) + '","name":"' + c.slice(i + 1) + '"}'; }).join(',');
+}
+/* Le planning publié : la copie du KV (déposée par la publication), sinon l'hébergeur — plus la banque des noms. 10 min en mémoire. */
 export async function lirePlanning(env, cleKV, upstreamUrl) {
   if (_cache.txt && Date.now() - _cache.t < 600000) return _cache.txt;
   let txt = '';
@@ -118,7 +140,12 @@ export async function lirePlanning(env, cleKV, upstreamUrl) {
   if (!txt && upstreamUrl) {
     try { const r = await fetch(upstreamUrl, { cf: { cacheTtl: 300 } }); if (r.ok) txt = await r.text(); } catch { txt = ''; }
   }
-  if (txt) _cache = { t: Date.now(), txt };
+  if (txt) {
+    let banque = '';
+    try { banque = await enrichirBanque(env, txt); } catch { banque = ''; }
+    if (banque) txt += '\n/* banque des noms du domaine */[' + banque + ']';
+    _cache = { t: Date.now(), txt };
+  }
   return txt;
 }
 export function _videCachePlanning() { _cache = { t: 0, txt: '' }; }

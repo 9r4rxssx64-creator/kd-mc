@@ -13,7 +13,8 @@ export function bouton() {
   try {
     if (window.__kdmcBoite || window.top !== window.self) return;                 // une seule fois ; jamais dans un cadre
     var m = document.querySelector('meta[name="kdmc-contact"]');
-    if (m && /^(off|non|0)$/i.test(m.getAttribute('content') || '')) return;      // une app peut se retirer (écran plein, jeu…)
+    /* une app peut retirer le BOUTON (écran plein, jeu…) — jamais la porte des conditions (règle du 7.10 : aucun accès sans accord) */
+    var sansBouton = !!(m && /^(off|non|0)$/i.test(m.getAttribute('content') || ''));
     window.__kdmcBoite = 1;
     var app = String(location.hostname).split('.')[0] || 'domaine';
     var LS = 'kdmc_boite_suivi', LV = 'kdmc_boite_vu';
@@ -43,9 +44,56 @@ export function bouton() {
       if (s < 86400) return 'il y a ' + Math.floor(s / 3600) + ' h'; return 'il y a ' + Math.floor(s / 86400) + ' j';
     };
     var suivis = function () { return lire(LS).split(',').filter(function (x) { return /^[0-9a-f]{24}$/.test(x); }).slice(-5); };
+    /* LES CONDITIONS DU DOMAINE, UNE SEULE FOIS PAR COMPTE (Kevin 7.10.2026 : « Les CGU du domaine et de chaque app demandées une
+       seule fois pour chaque compte, valables dans chaque app et dans tout le domaine. À la première connexion. Après plus. Aucune
+       connexion au domaine ou app sans inscription complète et accord. »). Le domaine dit (/__boite/mes → cgu.requise) qu'un compte
+       CONNECTÉ ne les a pas acceptées : un écran plein les montre (texte + autorisations résumées), case + « Accepter et continuer »
+       → POST /__sso/cgu (gravé dans le compte, valable partout). Refuser = se déconnecter. Rien d'autre de la page n'est utilisable
+       avant. Une seule porte, posée par le routeur sur CHAQUE page : les apps futures l'ont sans une ligne. */
+    var porte = null;
+    var porteCgu = function (c) {
+      try { ecrire('kdmc_cgu_v', ''); } catch (e) { /* */ }
+      if (porte || !c || !c.requise) return;
+      porte = E('div', null, { position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', zIndex: '2147483600', background: 'rgba(4,8,5,.96)', overflowY: 'auto',
+        padding: '16px 16px calc(env(safe-area-inset-bottom, 0px) + 16px)', boxSizing: 'border-box', fontFamily: '-apple-system,BlinkMacSystemFont,sans-serif', color: TXT });
+      porte.setAttribute('role', 'dialog'); porte.setAttribute('aria-modal', 'true'); porte.setAttribute('aria-label', 'Conditions du domaine KDMC');
+      var boite = E('div', null, { maxWidth: '560px', margin: '0 auto' });
+      boite.appendChild(E('div', '📜 Conditions du domaine KDMC', { fontSize: '20px', fontWeight: '800', color: OR, margin: '6px 0 6px' }));
+      boite.appendChild(E('div', 'Une seule fois pour ton compte : elles valent dans toutes les apps du domaine.', { fontSize: '15px', color: MUT, marginBottom: '10px' }));
+      boite.appendChild(E('div', c.texte || '', { fontSize: '16px', lineHeight: '1.45', marginBottom: '10px' }));
+      var ul = E('ul', null, { paddingLeft: '20px', margin: '0 0 12px', fontSize: '15px', lineHeight: '1.45' });
+      (c.points || []).forEach(function (t) { ul.appendChild(E('li', t, { marginBottom: '6px' })); });
+      boite.appendChild(ul);
+      var lab = E('label', null, { display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '16px', minHeight: '44px', cursor: 'pointer', marginBottom: '10px' });
+      var cb = document.createElement('input'); cb.type = 'checkbox'; S(cb, { width: '24px', height: '24px', flexShrink: '0', marginTop: '2px' });
+      lab.appendChild(cb); lab.appendChild(E('span', "J'ai lu et j'accepte ces conditions (version " + (c.version || '') + ').'));
+      boite.appendChild(lab);
+      var err = E('div', '', { color: '#ffb0a0', fontSize: '15px', minHeight: '20px', marginBottom: '6px' });
+      var oui = E('button', 'Accepter et continuer', { width: '100%', minHeight: '48px', borderRadius: '12px', border: 'none', background: OR, color: '#111', fontSize: '17px', fontWeight: '800', cursor: 'pointer', marginBottom: '10px' });
+      var non = E('button', 'Je refuse (me déconnecter)', { width: '100%', minHeight: '44px', borderRadius: '12px', border: '1px solid ' + LIG, background: 'transparent', color: MUT, fontSize: '15px', cursor: 'pointer' });
+      oui.type = 'button'; non.type = 'button';
+      oui.onclick = function () {
+        if (!cb.checked) { err.textContent = 'Coche la case pour accepter.'; return; }
+        oui.disabled = true; err.textContent = '';
+        void requete('/__sso/cgu', {}).then(function (j) {
+          oui.disabled = false;
+          if (j && j.ok) { ecrire('kdmc_cgu_v', String(j.version || c.version || '')); if (porte && porte.parentNode) porte.parentNode.removeChild(porte); porte = null; document.documentElement.style.overflow = ''; return; }
+          err.textContent = 'Pas enregistré (' + ((j && j.reason) || 'réseau') + '). Réessaie.';
+        });
+      };
+      non.onclick = function () {
+        void requete('/__sso/logout', {}).then(function () { try { localStorage.removeItem('kdmc_sso_token'); } catch (e) { /* */ } location.reload(); });
+      };
+      boite.appendChild(err); boite.appendChild(oui); boite.appendChild(non);
+      porte.appendChild(boite);
+      document.documentElement.style.overflow = 'hidden';
+      document.body.appendChild(porte);
+    };
     var charger = function () {
       return requete('/__boite/mes?s=' + encodeURIComponent(suivis().join(','))).then(function (j) {
         if (!j || !j.ok) return;
+        if (j.cgu && j.cgu.requise) porteCgu(j.cgu); else if (j.connecte && !j.admin) ecrire('kdmc_cgu_v', 'ok');
+        if (sansBouton) return;
         /* 7.10 (Kevin : « je débloque de partout où j'ai envie, j'ai une alerte visuelle d'un message ou inscription en attente ») :
            chez l'admin, le bouton devient SON onglet « 📬 » — visible seulement s'il y a quelque chose en attente, avec le nombre. */
         if (j.admin) { modeAdmin(j); return; }
@@ -133,7 +181,7 @@ export function bouton() {
         requete('/__boite/deposer', { texte: t, app: app, page: location.pathname + (location.search ? '?…' : ''), nom: nom ? nom.value.trim() : '', contact: contact ? contact.value.trim() : '', site: piege.value }).then(function (j) {
           if (j && j.ok) {
             if (j.suivi && !etat.connecte) { var l = suivis(); l.push(j.suivi); ecrire(LS, l.join(',')); }
-            ta.value = ''; etat.confirme = '✅ Envoyé. Tu verras sa réponse ici.'; st.style.color = '#86efac'; st.textContent = etat.confirme; env.disabled = false; env.style.opacity = '1'; charger();
+            ta.value = ''; etat.confirme = '✅ Envoyé. Tu verras sa réponse ici.'; st.style.color = '#86efac'; st.textContent = etat.confirme; env.disabled = false; env.style.opacity = '1'; void charger();
           } else {
             env.disabled = false; env.style.opacity = '1';
             st.textContent = '❌ ' + ({ trop_de_messages: 'tu as déjà écrit plusieurs fois, réessaie dans une heure', boite_pleine_aujourd_hui: 'la boîte est pleine aujourd\'hui, réessaie demain', reseau: 'pas de réseau, réessaie', message_vide: 'écris ton message' }[j && j.reason] || 'impossible pour le moment');
@@ -157,9 +205,10 @@ export function bouton() {
     var fermer = function () { etat.ouvert = false; etat.confirme = ''; if (panneau && panneau.parentNode) { panneau.parentNode.removeChild(panneau); panneau = null; } if (etat.admin) btn.style.display = (etat.nonLus || (etat.inscriptions || []).length) ? 'block' : 'none'; };
     btn.onclick = function () { if (etat.ouvert) fermer(); else ouvrir(); };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && etat.ouvert) fermer(); });
+    if (sansBouton) { void charger(); return; }   /* page sans bouton : la porte des conditions seulement, une lecture au chargement */
     document.body.appendChild(btn);
-    charger();
-    setInterval(function () { if (document.visibilityState === 'visible') charger(); }, 120000);
+    void charger();
+    setInterval(function () { if (document.visibilityState === 'visible') void charger(); }, 120000);
     document.addEventListener('visibilitychange', function () { if (etat.admin && document.visibilityState === 'visible') void charger(); });   /* l'admin revient sur l'app : compteurs frais */
   } catch (e) { /* un bouton de contact ne doit JAMAIS casser une page */ }
 }

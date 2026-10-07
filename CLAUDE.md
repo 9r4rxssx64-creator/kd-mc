@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 198 règles — le texte de Kevin, une par une
+## 📜 Les 200 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -879,6 +879,14 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🎓 RÈGLE MÉTIER ABSOLUE — FORMATION / ÉCOLE DE JEUX : MÊME ÉQUIPE, MAIS DÉPARTS ENTRE EUX (Kevin 2026-10-05, ABSOLUE)
 **« Lorsque des personnes sont en formation, école de jeux, donne un algorithme de départ, en gardant les personnes dans les mêmes équipes mais ils sortent des départs de l'équipe. Eux ont des […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-formation-école-de-jeux-même-équipe-mais-départs-entre-eux-kevin-2026-10-05-absolue)
+
+### 🪪 RÈGLE ABSOLUE — INSCRIPTION UNIQUE DU DOMAINE : CONDITIONS UNE SEULE FOIS PAR COMPTE, VALABLES PARTOUT ; AUCUN ACCÈS SANS INSCRIPTION COMPLÈTE ET ACCORD ; CMCteams / LIGHT = MATRICULE SBM + NOM DU PLANNING, SINON REFUS (Kevin 2026-10-07, ABSOLUE)
+**« Les CGU du domaine et chaque app du domaine doivent et demandent une seule fois pour chaque compte. Valable dans chaque app du domaine et dans tout le domaine. Un compte vaut pour toutes les […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-inscription-unique-du-domaine-conditions-une-seule-fois-par-compte-valables-partout-aucun-accès-sans-inscription-complète-et-accord-cmcteams-light-matricule-sbm-nom-du-planning-sinon-refus-kevin-2026-10-07-absolue)
+
+### 🔢 RÈGLE MÉTIER ABSOLUE — DÉPARTS : LES SÉRIES (« 4235-2351-3514 ») (Kevin 2026-10-07, ABSOLUE)
+**« Toujours pas bon. 4235-4235… non. 4235-2351-3514-… »** — Kevin 2026-10-07 (soir), après « V1,70 algorithme n'est toujours pas bon »
+↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-départs-les-séries-4235-2351-3514-kevin-2026-10-07-absolue)
 
 ---
 

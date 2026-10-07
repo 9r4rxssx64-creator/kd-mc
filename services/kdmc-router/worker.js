@@ -872,8 +872,23 @@ const ENRICH_CADENCE = 10 * 60e3;
    qu'une seule fois dans n'importe quelle app et sauvegardé pour chaque app du domaine. CGU rapide,
    vague, simplifié »). Servi par /__sso/cgu ; l'acceptation vit dans la fiche (`cgu_at`) et vaut
    dans toutes les apps. Changer la version redemande l'accord une fois, partout. */
-const CGU_VERSION = 2;
+/* v3 (Kevin 7.10.2026 : « Les CGU du domaine et de chaque app demandées une seule fois pour chaque compte, valables dans chaque
+   app et dans tout le domaine. Un compte vaut pour toutes les apps. Intégrer toutes les autorisations possibles et les informations
+   nécessaires, sommairement. À la première connexion / inscription. Après plus. ») : le texte court reste, et la liste résume
+   ce que le domaine et ses apps demandent. Accepter la v3 = POST /__sso/cgu (`cgu_v` 3) ; tant qu'un compte connecté ne l'a pas
+   fait, le bouton posé par le routeur sur CHAQUE page (boite-bouton.js) montre ces conditions, une seule fois. */
+const CGU_VERSION = 3;
 const CGU_TEXTE = 'Un seul compte pour toutes les apps KDMC. Tes informations restent privées et ne servent qu\'à te reconnaître. Tu peux te déconnecter ou demander l\'effacement quand tu veux.';
+const CGU_POINTS = [
+  'Un compte = toutes les apps du domaine kd-mc.com. Ces conditions valent partout et ne sont demandées qu\'une fois.',
+  'Ce que tu donnes : prénom et nom, un code (et Face ID si tu veux) ; pour CMCteams et la light : ton matricule SBM (U…), ton e-mail et ton téléphone. Ton nom doit figurer au planning importé.',
+  'Ce que le domaine note : l\'appareil, le pays, les apps ouvertes et la date de connexion — pour te reconnaître et protéger ton compte.',
+  'Localisation : seulement si tu l\'autorises (pointage, arrivée au casino). Elle n\'est jamais partagée avec tes collègues.',
+  'Notifications, caméra, micro, Face ID : seulement si tu les autorises, et seulement pour la fonction que tu utilises.',
+  'Tes plannings, départs, heures et messages ne sont visibles que par toi, ton équipe quand c\'est le planning commun, et l\'administrateur.',
+  'Aucune vente, aucune publicité. Tu peux te déconnecter partout, et demander à l\'administrateur de corriger ou d\'effacer tes informations.',
+];
+const cguAcceptees = (acc) => !!(acc && acc.cgu_at && (acc.cgu_v || 1) >= CGU_VERSION);
 const SSO_TTL = 30 * 24 * 3600;
 /* Admins du domaine (peuvent voir les fiches clients). uid = slug prénom-nom. */
 const ADMIN_UIDS = ['kdmc_admin', 'kevin-desarzens'];
@@ -2406,8 +2421,36 @@ async function handleNotifyKevin(request, env) {
           await env.ACCOUNTS.put(cle, '1', { expirationTtl: 12 * 3600 });
         } catch { /* fail-open */ }
       }
+      /* 7.10 (Kevin : « Et notif admin avec toutes les infos ») : l'app joint ce que la personne a donné (matricule SBM, e-mail,
+         téléphone, équipe, présence au planning) ; le domaine ajoute l'appareil, le pays et l'heure. Le tout part dans la boîte de
+         l'admin (carte détaillée) ; la notification garde un aperçu court. Chaque champ est borné et nettoyé. */
+      const inf = (b && b.infos && typeof b.infos === 'object') ? b.infos : {};
+      const net = (v, n) => String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim().slice(0, n);
+      const ua = uaParse(request.headers.get('user-agent'));
+      const morceaux = [
+        inf.matricule && ('matricule SBM ' + net(inf.matricule, 10).toUpperCase()), inf.email && ('e-mail ' + net(inf.email, 80)), inf.tel && ('tél. ' + net(inf.tel, 24)),
+        inf.equipe && ('équipe ' + net(inf.equipe, 30)), inf.planning === true ? 'nom trouvé au planning importé' : inf.planning === false ? '⚠ nom ABSENT du planning importé' : '',
+        inf.cgu ? 'conditions acceptées' : '', [ua.model, ua.os && (ua.os + ' ' + ua.osv).trim(), ua.br].filter(Boolean).join(' · '),
+      ].filter(Boolean);
+      const detail = (name + ' — ' + text + (morceaux.length ? ' — ' + morceaux.join(' — ') : '')).slice(0, 300);
       await notifyPush(env, '🆕 Nouvelle connexion — ' + name, text, { tag: 'kdmc-nouveau', url: 'https://admin.kd-mc.com/' });
-      await audLog(env, { type: 'nouvelle_connexion', app, name, text });
+      await audLog(env, { type: 'nouvelle_connexion', app, name, text, detail, pays: request.cf?.country });
+      return J({ ok: true, alerte: true });
+    }
+    /* POINTAGE LOIN D'UN CASINO (Kevin 7.10 « Compteur d'heures … avec la localisation. Entrée et sortie éloignée d'un casino ») :
+       le compteur d'heures (tools/shared/heures.js) prévient l'admin — lui seul reçoit le lieu (arrondi ~100 m), la base partagée
+       n'en garde aucun. Une alerte par personne et par app sur 10 min (deux pointages rapprochés = une carte). */
+    if (b && b.kind === 'pointage_loin') {
+      const app = appDe(host) || host;
+      if (env && env.ACCOUNTS) {
+        try {
+          const cle = 'push:loin:' + app + ':' + name.toLowerCase().replace(/[^a-z0-9àâäçéèêëîïôöùûüÿ]+/g, '_').slice(0, 60);
+          if (await env.ACCOUNTS.get(cle)) return J({ ok: true, deja: true });
+          await env.ACCOUNTS.put(cle, '1', { expirationTtl: 600 });
+        } catch { /* fail-open */ }
+      }
+      await notifyPush(env, '📍 Pointage loin du casino — ' + name, text, { tag: 'kdmc-pointage', url: 'https://kd-mc.com/#messages' });
+      await audLog(env, { type: 'pointage_loin', app, name, text });
       return J({ ok: true, alerte: true });
     }
     if (env && env.ACCOUNTS) {
@@ -2794,8 +2837,8 @@ async function handleSso(request, url, env) {
         cookieNeuf = `${SSO_COOKIE}=${neuf}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(neuf)}; Secure; HttpOnly; SameSite=Lax`;
       }
       const parEnTete = !!(request.headers.get('authorization') || request.headers.get('x-kdmc-sso'));
-      /* `cgu` = accepté UNE fois, n'importe où (fiche `cgu_at`), pas seulement dans ce pass. */
-      const rep = { ok: true, uid: s.uid, name: s.name, cgu: !!(s.cgu || (acc && acc.cgu_at)), verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' };
+      /* `cgu` = conditions de la version EN COURS acceptées une fois, n'importe où (fiche `cgu_at` + `cgu_v`) — pas ce que dit le pass. */
+      const rep = { ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
@@ -3061,7 +3104,7 @@ async function handleSso(request, url, env) {
   if (path === '/__sso/cgu' && request.method === 'GET') {
     const s = await ssoVerify(secret, ssoToken(request));
     const acc = s ? await accGet(env, s.uid) : null;
-    return J({ ok: true, version: CGU_VERSION, texte: CGU_TEXTE, acceptees: !!(acc && acc.cgu_at && (acc.cgu_v || 1) >= CGU_VERSION) || !!(s && s.cgu && !acc), session: !!s });
+    return J({ ok: true, version: CGU_VERSION, texte: CGU_TEXTE, points: CGU_POINTS, acceptees: cguAcceptees(acc) || !!(s && s.cgu && !acc), session: !!s });
   }
   if (path === '/__sso/cgu' && request.method === 'POST') {
     if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
@@ -3371,6 +3414,22 @@ async function handleMembre(request, env) {
   if (!txt) return JM({ ok: false, reason: 'planning_indisponible' }, 503);
   const app = appDeLaDemande(request) || 'auth';
   const v = await verifierEtRanger(env, txt, b.matricule, b.nom, b.prenom, app);
+  /* Hors planning / matricule mal formé = une INSCRIPTION REFUSÉE : l'admin la voit dans sa boîte avec tout ce qui a été tapé, et
+     reçoit une notification (une par nom et par app sur 12 h : une faute de frappe répétée ne le bombarde pas). */
+  if (v.reason === 'hors_planning' || v.reason === 'matricule_format') {
+    const ua = uaParse(request.headers.get('user-agent'));
+    const qui = (String(b.prenom || '').slice(0, 30) + ' ' + String(b.nom || '').slice(0, 40)).trim() || '(nom vide)';
+    const detail = qui + ' — matricule tapé : ' + (String(b.matricule || '').slice(0, 10).toUpperCase() || '(vide)') + ' — '
+      + (v.reason === 'hors_planning' ? 'ce nom n\'est pas dans le planning importé' : 'matricule SBM mal écrit (U puis les chiffres)')
+      + ' — depuis ' + app + ' · ' + [ua.model, ua.os && (ua.os + ' ' + ua.osv).trim(), ua.br].filter(Boolean).join(' · ');
+    await audLog(env, { ev: 'inscription_refusee', app, pays: request.cf?.country, detail: detail.slice(0, 280) });
+    let deja = false;
+    if (env && env.ACCOUNTS) {
+      try { const cle = 'push:refus:' + app + ':' + qui.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60); deja = !!(await env.ACCOUNTS.get(cle)); if (!deja) await env.ACCOUNTS.put(cle, '1', { expirationTtl: 12 * 3600 }); } catch { /* fail-open */ }
+    }
+    if (!deja) await notifyPush(env, '🚫 Inscription refusée — ' + qui.slice(0, 50), detail.slice(0, 140), { tag: 'kdmc-refus', url: 'https://kd-mc.com/#messages' });
+    return JM({ ok: false, reason: v.reason });
+  }
   if (v.reason) {
     await audLog(env, { ev: 'matricule_refuse', app, pays: request.cf?.country,
       detail: (v.reason === 'matricule_pris' ? 'Matricule déjà rangé sur un autre collègue' : 'Autre matricule que celui de sa fiche') + ' : '
@@ -3473,9 +3532,11 @@ function outilsCercle(env) {
       const s = await ssoVerify(secret, ssoTokenSansAdresse(request));
       if (!s || !s.uid) return null;
       const uid = await canonFor(env, s.uid, s.name, { sansCreer: true });
-      if (revoked(await accGet(env, uid), s)) return null;
-      return { uid, nom: s.name || '', admin: false };
+      const acc = await accGet(env, uid);
+      if (revoked(acc, s)) return null;
+      return { uid, nom: s.name || '', admin: false, cgu: (ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified) || cguAcceptees(acc) };
     },
+    cgu: { version: CGU_VERSION, texte: CGU_TEXTE, points: CGU_POINTS },
     notifier: (titre, texte) => notifyPush(env, titre, texte, { tag: 'kdmc-cercle', url: 'https://lingua.kd-mc.com/#admin' }),
   };
 }

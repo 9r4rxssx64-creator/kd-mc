@@ -156,7 +156,8 @@ async function lireArbre(env, db) {
     nonLus: lues.has(cles[i]) ? 0 : 1, lu: lues.has(cles[i]), repondre: null, fil: [] }));
 }
 const EV_ALERTES = { nouvelle_connexion: '🆕 Nouvelle connexion', nouvel_inscrit: '🆕 Nouvel inscrit', new_device: '🔐 Nouvel appareil', geo_anomaly: '⚠️ Connexion suspecte',
-  quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé', matricule_refuse: '🪪 Matricule SBM refusé' };
+  quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé', matricule_refuse: '🪪 Matricule SBM refusé',
+  pointage_loin: '📍 Pointage loin du casino', inscription_refusee: '🚫 Inscription refusée' };
 /* 6.10 (Kevin, capture « Code admin refusé » ×5 sans texte, bulle vide) : chaque alerte dit en clair ce qui s'est passé, depuis où,
    et les répétitions (même événement, même appareil, à moins de 30 min d'écart) ne font qu'UNE carte « ×5 ». */
 const GROUPE_MS = 30 * 6e4;
@@ -346,7 +347,10 @@ export async function handleBoite(request, url, env, outils) {
       if (qui && qui.uid) rows.push(...await tous(db, 'SELECT app, texte, cree, reponse, repondu FROM boite WHERE uid = ? AND cree > ? ORDER BY id DESC LIMIT 10', qui.uid, now - LIMITES.garde));
       if (suivis.length) rows.push(...await tous(db, `SELECT app, texte, cree, reponse, repondu FROM boite WHERE suivi IN (${suivis.map(() => '?').join(',')}) AND (uid IS NULL OR uid = '') ORDER BY id DESC LIMIT 10`, ...suivis));
       rows.sort((a, b) => b.cree - a.cree);
-      return J({ ok: true, admin: false, connecte: !!(qui && qui.uid), nom: (qui && qui.nom) || '', messages: rows.slice(0, 10).map((r) => ({ app: r.app, texte: apercu(r.texte, 600), ts: r.cree, reponse: r.reponse || '', repondu: r.repondu || 0 })) });
+      /* 7.10 (Kevin : « CGU une seule fois par compte, valables dans tout le domaine ; aucune connexion sans accord ») : un compte
+         connecté qui n'a pas accepté les conditions EN COURS les reçoit ici — le bouton de chaque page les montre, une fois. */
+      const cgu = qui && qui.uid && qui.cgu === false && outils.cgu ? Object.assign({ requise: true }, outils.cgu) : null;
+      return J({ ok: true, admin: false, connecte: !!(qui && qui.uid), nom: (qui && qui.nom) || '', cgu, messages: rows.slice(0, 10).map((r) => ({ app: r.app, texte: apercu(r.texte, 600), ts: r.cree, reponse: r.reponse || '', repondu: r.repondu || 0 })) });
     }
     /* La réponse relue par l'expéditeur d'un dépôt : seul celui qui a reçu le « suivi » (secret, 96 bits) la voit. */
     if (p === '/reponse' && m === 'GET') {

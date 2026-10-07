@@ -11789,3 +11789,44 @@ Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas p
 - Garde **`test:departs-groupes`** (dans `test:ci`) : lecture du vrai PDF, contre-épreuve « chaque numéro = celui du groupe tournant seul »
   sur les 6 équipes, équipes sans groupe inchangées, trait affiché et lisible sur 390 px (app + light). 6 sabotages prouvés (voir MEMO_RESUME 05.10.2026).
 - Un nouveau mois avec un groupe → régénérer `planning-seed.js` et `boards-gen.js` (`_gen-seed.mjs`, `_gen-boards.mjs`) : le groupe suit tout seul.
+
+## 🪪 RÈGLE ABSOLUE — INSCRIPTION UNIQUE DU DOMAINE : CONDITIONS UNE SEULE FOIS PAR COMPTE, VALABLES PARTOUT ; AUCUN ACCÈS SANS INSCRIPTION COMPLÈTE ET ACCORD ; CMCteams / LIGHT = MATRICULE SBM + NOM DU PLANNING, SINON REFUS (Kevin 2026-10-07, ABSOLUE)
+
+**« Les CGU du domaine et chaque app du domaine doivent et demandent une seule fois pour chaque compte. Valable dans chaque app du domaine et dans tout le domaine. Un compte vaut pour toutes les apps du domaine. Intégrer toutes les autorisations possibles et les nécessaires, les informations etc dans les CGU sommairement. Va plus loin. À la première connexion / inscription. Après plus. Aucune connexion au domaine ou app sans inscription complète et accord. Code compris ou et Face ID. Les personnes inscrites au domaine, pour aller sur CMCteams ou light, doivent fournir un U, identifiant SBM et un nom présent des imports, sinon refus. Et notif admin avec toutes les infos. »** — Kevin 2026-10-07
+
+### 1. Ce qui était faux (audit du 7.10, mesuré dans le code)
+- Le texte du domaine (v2) ne nommait **aucune** autorisation ; CMCteams et la light gardaient leurs **propres** accords par appareil et ne lisaient jamais celui du domaine.
+- CMCteams laissait **entrer** un nom absent du planning (identifiant temporaire puis « visiteur », équipe « ? ») et laissait passer quand le domaine ne répondait pas.
+- La light : un bon code CMCteams suffisait **sans** contrôle du planning ; une session Face ID du domaine entrait **sans matricule**.
+- Le portail créait un compte **local** quand le domaine ne répondait pas.
+- L'alerte « nouvelle connexion » ne portait qu'un nom et 140 caractères.
+
+### 2. Comment c'est fait (routeur + portail v1.0.44 + CMCteams v9.947 + light v1.73)
+- **Conditions v3** (`CGU_VERSION = 3`, `CGU_POINTS`) : le texte court + 7 points (un compte = toutes les apps ; ce qu'on donne ; ce que le domaine note ; localisation ; notifications / caméra / micro / Face ID ; qui voit quoi ; aucune vente, effacement). L'accord vit dans le **compte** (`cgu_at` + `cgu_v`), une seule fois.
+- **Une seule porte pour toutes les apps, présentes et futures** : le bouton que le routeur pose sur chaque page (`boite-bouton.js`) reçoit `cgu.requise` avec `/__boite/mes` (aucune requête de plus) → écran plein, case + « Accepter et continuer » (POST `/__sso/cgu`) ou « Je refuse » (déconnexion). Une page qui retire le bouton garde la porte. L'admin prouvé n'est jamais arrêté.
+- **Plus jamais redemandé** : `kdmc_cgu_v` (posé par la porte) → la light coche et cache sa case, CMCteams ne redemande plus ses autorisations (une révocation reste respectée) ; la case du portillon de la light et celle du portail **gravent** l'accord au domaine.
+- **Matricule SBM + nom du planning, sinon refus** : `/__dep/membre` dit pourquoi (`hors_planning`, `matricule_format`, `matricule_autre`, `matricule_pris`) ; CMCteams refuse (domaine muet = « réessaie ») ; la light exige le planning aussi après un bon code, et une session Face ID doit donner son matricule. Seuls l'admin et le compte visiteur U007 (ouvert par l'admin) passent sans.
+- **Notification admin complète** : un refus → carte « 🚫 Inscription refusée » (nom, matricule tapé, raison, app, appareil) + notification (une par nom sur 12 h) ; une inscription → carte avec matricule, e-mail, téléphone, équipe, planning, accord, appareil, pays.
+
+### 3. OBLIGATIONS
+- Garde **`test:inscription-unique`** (18 contrôles, vrai routeur + vrais navigateurs, sabotage → 6 rouges) ; `test:cgu-une-fois`, `test:matricule-fiche`, `test:membre-planning` mis à la nouvelle règle.
+- Toute nouvelle app du domaine a la porte **sans une ligne** (routeur) ; ne jamais y ajouter sa propre case de conditions.
+- Changer le texte des conditions = monter `CGU_VERSION` (l'accord est redemandé **une** fois, partout).
+
+## 🔢 RÈGLE MÉTIER ABSOLUE — DÉPARTS : LES SÉRIES (« 4235-2351-3514 ») (Kevin 2026-10-07, ABSOLUE)
+
+**« Toujours pas bon. 4235-4235… non. 4235-2351-3514-… »** — Kevin 2026-10-07 (soir), après « V1,70 algorithme n'est toujours pas bon »
+
+### 1. La règle
+- Dans une **série** de jours de travail de l'équipe (jours qui se suivent), chacun avance d'**un cran par jour** dans la suite officielle.
+- Chaque **nouvelle série** commence **un cran après le début** de la série précédente : 4235 → 2351 → 3514.
+- Une série **coupée par le 1er du mois** (plus courte que la série habituelle) est la **fin** de la série d'avant.
+- Inchangé : absence courte 1-3 jours = numéro mort ; congé ≥ 4 jours = recompacté ; groupes de formation entre eux.
+
+### 2. Comment c'est fait (CMCteams v9.948 + light v1.74)
+- `depRotCycle(workDays, wi)` — écrite à l'identique dans CMCteams (index.html) et la light (garde `test:departs-cycle`) ; jamais dans un fichier externe (si un fichier manquait, plus aucun départ).
+- Mesuré sur la ligne de Kevin (octobre, vraies données) : 2 3 | 4 2 3 5 | 4 2 3 1 | 3 1 4 2 … ; équité : écart moyen 1,6 point, pire 6,4, alternance 73,9 %.
+
+### 3. OBLIGATIONS
+- Gardes : **`test:departs-cycle`** (l'exemple de Kevin mot pour mot, vraie page), `test:departs-render` et `test:verif-live-robot` (oracle indépendant `tests/lib/series-departs.mjs`), `test:departs-compare` (app = light).
+- Avant de toucher à cette règle : reproduire la ligne réelle de Kevin en chiffres et la lui faire valider (LESSONS #441, #446).

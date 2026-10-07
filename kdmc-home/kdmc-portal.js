@@ -356,7 +356,10 @@
      que le repli hors ligne. */
   function chargerCgu() {
     if (!window.kdmcSSO || !window.kdmcSSO.cgu) return;
-    window.kdmcSSO.cgu().then(function (j) { var t = document.getElementById('cgu-text'); if (j && j.ok && j.texte && t) t.textContent = j.texte; });
+    window.kdmcSSO.cgu().then(function (j) { var t = document.getElementById('cgu-text'); if (!(j && j.ok && j.texte && t)) return;
+      /* 7.10 (Kevin : « toutes les autorisations et informations nécessaires dans les CGU, sommairement ») : le texte + la liste du domaine */
+      t.textContent = j.texte;
+      if (Array.isArray(j.points) && j.points.length) { var ul = document.createElement('ul'); j.points.forEach(function (x) { var li = document.createElement('li'); li.textContent = x; ul.appendChild(li); }); t.appendChild(ul); } });
   }
 
   function renderCreate() {
@@ -472,7 +475,11 @@
         }
         if (j && !j.ok && j.message) throw { message: j.message };
         if (j && j.ok && j.admin_requis) { localStorage.removeItem(LS_ACCOUNT); throw { admin: true }; }
-        return acc;   /* domaine muet (null) → le compte local marche quand même (fail-open) */
+        /* 7.10 (Kevin : « aucune connexion au domaine ou app sans inscription complète et accord ») : plus de compte « local » quand le
+           domaine ne répond pas — il n'existerait nulle part ailleurs. Et l'accord coché ici part au domaine, une fois pour toutes. */
+        if (!j || !j.ok) { localStorage.removeItem(LS_ACCOUNT); throw { message: 'Le domaine ne répond pas : ton compte n\'a pas pu être créé. Réessaie dans un instant.' }; }
+        if (window.kdmcSSO.accepterCgu) return window.kdmcSSO.accepterCgu().then(function (c) { try { if (c && c.ok) localStorage.setItem('kdmc_cgu_v', String(c.version || '')); } catch (_) { /* */ } return acc; }, function () { return acc; });
+        return acc;
       });
     }).then(function (acc) {
       _postLogin(acc);

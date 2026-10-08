@@ -126,7 +126,7 @@ const REGISTRE = [
   // Règle « BEE ET BOURRICOT : TOUT LE CORPS BOUGE, PARTOUT, TOUJOURS » (Kevin 3.10.2026) : garde = la marionnette
   // jouée dans Chromium + WebGL (chaque membre, 15 dessins sans pli, humeurs, replis, sobriété).
   [/CHAQUE SESSION VÉRIFIE SON PROPRE TRAVAIL/i, ['npm:test:hygiene-depot', 'file:tests/verify-hygiene-depot.mjs']],
-  [/ASSISTANTE PERSONNELLE DE KEVIN/i, ['npm:test:bee-partout', 'npm:test:bee-agir', 'npm:test:bee-partout-navigateur', 'file:services/kdmc-router/bee-agir.js']],
+  [/ASSISTANTE PERSONNELLE DE KEVIN/i, ['npm:test:bee-partout', 'npm:test:bee-agir', 'npm:test:bee-partout-navigateur', 'npm:test:bee-fil', 'npm:test:bee-fil-navigateur', 'file:services/kdmc-router/bee-agir.js', 'file:services/kdmc-router/bee-fil.js']],
   [/BEE ET BOURRICOT SONT COMPÉTENTS/i, ['npm:test:bee-outils', 'file:services/_shared/outils-lecture.js']],
   [/VRAIS PETITS PERSONNAGES ANIMÉS/i, ['npm:test:marionnette', 'file:tools/javis/marionnette.js', 'npm:test:3d', 'file:javis/3d.html']],
   [/RÉEL TOUJOURS : RIEN N'EST/i, ['wf:verif-reelle.yml', 'wf:audit-lingua.yml', 'file:tools/ci/plafond-verifs.mjs']],

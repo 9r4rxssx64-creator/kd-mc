@@ -21,6 +21,7 @@ import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availab
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
+import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
 import { handlePartout, PARTOUT_TAG, MARQUEUR } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
 export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wrangler.toml)   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
@@ -503,6 +504,7 @@ const ROUTEUR = {
        et le client ne peut envoyer que des messages « user » / « assistant ». */
     if (url.pathname === '/__javis/ai') return handleBeeIa(request, env, ctx);
     if (url.pathname === '/__javis/moi') return handleBeeMoi(request, env);
+    if (url.pathname === '/__javis/fil') return handleFil(request, env, outilsBee(env, ctx));
     /* 🖐 BEE AGIT — seulement après le bouton ✅ de Kevin (proposition signée, session admin prouvée) ; 🐝 BEE PARTOUT : le script posé sur chaque page, son cadre, et « est-ce Kevin ? ». */
     if (url.pathname === '/__javis/agir') return handleAgir(request, env, outilsBee(env, ctx));
     if (url.pathname === '/__javis/partout.js' || url.pathname === '/__javis/cadre' || url.pathname === '/__javis/qui') {

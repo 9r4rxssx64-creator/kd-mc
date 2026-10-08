@@ -1523,6 +1523,44 @@
   }
   function saveHistory(h) {
     try { localStorage.setItem(STORAGE_HIST, JSON.stringify(h.slice(-MAX_HISTORY))); } catch (_) {}
+    filPousser();
+  }
+  /* LE FIL (Kevin : « mon assistant qui me suit dans chaque app ») : chaque app est une adresse différente, donc un téléphone-stockage différent.
+     Le DOMAINE garde la conversation (/__javis/fil, Kevin seul) : on la lit à l'ouverture et on la renvoie après chaque échange.
+     Sans réseau, sans être Kevin, ou en cas d'erreur : la conversation locale reste, rien ne casse. */
+  var FIL_MAJ = 'javis_fil_maj', _filTimer = 0, _filEnCours = false;
+  function filEntetes(json) {
+    var h = {}; var tok = ssoToken(); if (tok) h['x-kdmc-sso'] = tok; if (json) h['Content-Type'] = 'application/json'; return h;
+  }
+  function filConnu() { return !!(window.__beeKevin || ssoToken() || /(?:^|;\s*)kdmc_k=1(?:;|$)/.test(document.cookie || '')); }
+  function filPousser() {
+    if (!filConnu()) return;
+    clearTimeout(_filTimer);
+    _filTimer = setTimeout(function () {
+      _filTimer = 0;
+      var corps = JSON.stringify({ fil: loadHistory().slice(-MAX_HISTORY) });
+      fetch('/__javis/fil', { method: 'POST', credentials: 'include', headers: filEntetes(true), body: corps })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j && j.ok) { try { localStorage.setItem(FIL_MAJ, String(j.maj)); } catch (_) {} } })
+        .catch(function () { /* hors ligne : ce sera renvoyé au prochain échange */ });
+    }, 700);
+  }
+  function filTirer(root) {
+    if (!filConnu() || _filEnCours || _filTimer || (root && root._attente)) return;
+    _filEnCours = true;
+    fetch('/__javis/fil', { credentials: 'include', headers: filEntetes(false), cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        _filEnCours = false;
+        if (!j || !j.ok || !Array.isArray(j.fil)) return;
+        var connu = 0; try { connu = +localStorage.getItem(FIL_MAJ) || 0; } catch (_) {}
+        if (!(j.maj > connu) || _filTimer || (root && root._attente)) return;   /* rien de plus récent, ou un échange est en train de partir */
+        try { localStorage.setItem(FIL_MAJ, String(j.maj)); } catch (_) {}
+        try { localStorage.setItem(STORAGE_HIST, JSON.stringify(j.fil.slice(-MAX_HISTORY))); } catch (_) {}
+        var l = root && root.querySelector('#javis-msgs');
+        if (l) { l.textContent = ''; j.fil.forEach(function (m) { addBubble(root, m.role === 'user' ? 'user' : 'javis', m.content); }); l.scrollTop = l.scrollHeight; }
+      })
+      .catch(function () { _filEnCours = false; });
   }
   function showTyping(root, on) {
     var list = root.querySelector('#javis-msgs');
@@ -1890,6 +1928,8 @@
     }
     /* Elle ouvre la conversation elle-même, avec l'heure et l'endroit (attitude). */
     addBubble(wrap, 'javis', salut());
+    filTirer(wrap);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) filTirer(wrap); });
     try { localStorage.setItem(STORAGE_SEEN, String(Date.now())); } catch (_) {}
     if (APP_MODE) { panel.classList.add('javis-open'); } else { ennui(wrap); }
     if (APP_MODE && QUESTION_ADRESSE) setTimeout(function () { askJavis(wrap, QUESTION_ADRESSE); }, 300);
@@ -1939,6 +1979,7 @@
     /* 🗑 : la conversation gardée sur ce téléphone est effacée */
     wrap.querySelector('#javis-oublie').addEventListener('click', function () {
       try { localStorage.removeItem(STORAGE_HIST); } catch (_) {}
+      if (filConnu()) { fetch('/__javis/fil', { method: 'POST', credentials: 'include', headers: filEntetes(true), body: JSON.stringify({ effacer: true }) }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.ok) { try { localStorage.setItem(FIL_MAJ, String(j.maj)); } catch (_) {} } }).catch(function () {}); }
       voixStop(); stopTalking(wrap);
       var l = wrap.querySelector('#javis-msgs'); if (l) l.textContent = '';
       addBubble(wrap, 'javis', 'C\'est effacé. On repart de zéro !');
@@ -1955,7 +1996,7 @@
         'La météo envoie ta position arrondie à 1 km à open-meteo (le bonjour du matin, lui, utilise Monaco). ' +
         'Quand je cherche pour toi : le nom d\'une ville part à open-meteo, tes mots de recherche partent à Wikipédia ou à Google Actualités, et l\'adresse d\'un lien que tu me donnes part à r.jina.ai (un lecteur de pages gratuit) — je ne fais que LIRE, je n\'écris nulle part. La dictée passe par le service vocal de ton téléphone. ' +
         'Pour AGIR (programmer un rappel, répondre à un message, retenir un fait, arrêter le robot), je prépare une carte : rien ne part tant que tu n\'as pas touché ✅ Confirmer, et seul toi peux le faire. Ce que tu me demandes de retenir est gardé sur ton domaine ; tu peux me demander de l\'oublier. ' +
-        'La conversation reste dans ce navigateur, pour cette adresse seulement : Effacer la supprime ici (pas dans l\'arbre ni sur une autre adresse du domaine).');
+        'Pour que je te suive d\'une app à l\'autre, ta conversation (les 40 derniers messages) est gardée sur ton domaine, visible par toi seul, et sur ce téléphone : Effacer la supprime PARTOUT, dans toutes les apps.');
     });
     /* clavier ouvert : la grosse Bee se fait petite (app), pour laisser lire la conversation */
     input.addEventListener('focus', function () { document.body.classList.add('javis-saisie'); });
@@ -2294,6 +2335,7 @@
         return;
       }
       marqueur(true);                  /* cet appareil est celui de Kevin : les autres apps le sauront */
+      window.__beeKevin = 1;           /* le domaine vient de le prouver : le fil de la conversation peut se synchroniser */
       armerAudio();
       mount();
       if (CADRE) {

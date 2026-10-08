@@ -34,7 +34,7 @@
 - **Seulement toi** : personne d'autre ne la voit ni ne peut lui parler (testé sur chaque adresse du domaine)
 - **Elle propose, tu confirmes** : « rappelle-moi lundi à 9 h 30… » → une carte avec ✅ Confirmer / ✖ Annuler ; rien ne part sans ton doigt
 - **Elle sait faire** : rappels, retenir/oublier un fait sur toi, lire tes messages de toutes les apps et y répondre, arrêter le robot de trading, te donner les liens
-- **Pour la couper** : `BEE_PARTOUT=0` (tout le domaine) ou `<meta name="kdmc-bee" content="off">` (une page) · **Tests** : `npm run test:bee-partout`, `test:bee-agir`, `test:bee-partout-navigateur`
+- **Pour la couper** : `BEE_PARTOUT=0` (tout le domaine) ou `<meta name="kdmc-bee" content="off">` (une page) · **Tests** : `npm run test:bee-partout`, `test:bee-agir`, `test:bee-partout-navigateur`, `test:bee-fil`, `test:bee-fil-navigateur` (+ `services/kdmc-router/bee-fil.js` : la conversation de Bee suit Kevin d'une app à l'autre, Kevin seul)
 
 ### 🧸 Bee et Bourricot en 3D, tout seuls, partout (4.10.2026 — Bee v1.17, Lingua v2.135.0)
 

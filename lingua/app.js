@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.137.0";
+var APP_VER="v2.138.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -1294,7 +1294,15 @@ function vCoursePick(){ var d=el("div","screen"); d.innerHTML='<h2 class="ttl">�
    unitDone ignore donc les -1 (pas de couronne, pas de % gonflé, examen verrouillé). */
 function unitDone(ui,li){ return Math.max(0, S.prog[S.course]["u"+ui+"-"+li]||0); }
 function unitPlaced(ui,li){ return (S.prog[S.course]["u"+ui+"-"+li]||0)===-1; }
-function unitUnlocked(ui,li){ if(ui===0&&li===0)return true; if(unitPlaced(ui,li))return true; var c=COURSES[S.course],pu=ui,pl=li-1; if(pl<0){pu=ui-1;pl=c.units[pu].lessons.length-1;} return unitDone(pu,pl)>0||unitPlaced(pu,pl); }
+function unitesLibres(){ var c=COURSES[S.course], r=[]; if(!c||!c.units)return r; c.units.forEach(function(u,ui){ if(u.libre)r.push(ui); }); return r; }
+function vraieVie(){ var m=modal(), c=COURSES[S.course]; var h=el("h3"); h.textContent="💬 La vraie vie"; m.body.appendChild(h);
+  var p=el("p","mini"); p.textContent="Des phrases entières pour les situations de tous les jours. Toutes ouvertes : commence par celle dont tu as besoin."; m.body.appendChild(p);
+  unitesLibres().forEach(function(ui){ var u=c.units[ui]; var t=el("div","vie-unite"); var b=el("b"); b.textContent=u.titre; t.appendChild(b);
+    u.lessons.forEach(function(le,li){ var bt=el("button","vie-lecon"+(unitDone(ui,li)>0?" done":"")); bt.textContent=(unitDone(ui,li)>0?"✅ ":"▶️ ")+le.titre+" · "+(le.phrases||[]).length+" phrases";
+      bt.onclick=function(){ m.close(); startLesson(ui,li); }; t.appendChild(bt); });
+    m.body.appendChild(t); });
+  var ok=el("button","btn-ghost"); ok.textContent="Fermer"; ok.onclick=m.close; m.body.appendChild(ok); }
+function unitUnlocked(ui,li){ if(ui===0&&li===0)return true; var cu=COURSES[S.course]; if(cu&&cu.units[ui]&&cu.units[ui].libre)return true; /* « La vraie vie » : ouvertes d'office */ if(unitPlaced(ui,li))return true; var c=COURSES[S.course],pu=ui,pl=li-1; if(pl<0){pu=ui-1;pl=c.units[pu].lessons.length-1;} return unitDone(pu,pl)>0||unitPlaced(pu,pl); }
 function unitLessonsAllDone(ui){ var c=COURSES[S.course]; for(var li=0;li<c.units[ui].lessons.length;li++){ if(!(unitDone(ui,li)>0))return false; } return true; }
 function examDone(ui){ return (S.prog[S.course]["ex"+ui]||0); }
 function masteredCount(){ return Object.keys((S.words&&S.words[S.course])||{}).length; }
@@ -1304,7 +1312,12 @@ function currentLevel(){ var m=masteredCount(),cur=LEVELS[0],next=null;
   return {cur:cur,next:next,pct:Math.max(0,Math.min(100,pct)),remain:remain,words:m}; }
 function nextLessonToDo(){ var c=COURSES[S.course]; for(var ui=0;ui<c.units.length;ui++){ for(var li=0;li<c.units[ui].lessons.length;li++){ if(unitPlaced(ui,li))continue; /* le test a ouvert celles-ci : la leçon CONSEILLÉE reprend après */ if(unitUnlocked(ui,li) && !(unitDone(ui,li)>0)) return {ui:ui,li:li,titre:c.units[ui].lessons[li].titre,unitTitre:c.units[ui].titre}; } } return null; }
 function teacherTip(){ return TEACHER_TIPS[dayHash(today())%TEACHER_TIPS.length]; }
-function phraseOfDayEntry(){ var ks=Object.keys(PHRASEBOOK); if(!ks.length)return null; var fr=ks[dayHash(today()+"p")%ks.length]; var e=PHRASEBOOK[fr]; return {fr:fr,t:(e&&e[COURSES[S.course].id])||fr}; }
+/* Phrase du jour : tirée parmi les SEULES phrases traduites dans la langue du cours (v2.138.0). Avant, 24 jours sur 32
+   en polonais, russe, chinois… (et tous les jours en monégasque) on affichait la phrase FRANÇAISE comme si c'était
+   la traduction, et la voix la lisait — rien de faux ne se publie : pas de traduction, pas de phrase du jour. */
+function phraseOfDayEntry(){ var id=COURSES[S.course]&&COURSES[S.course].id; if(!id)return null;
+  var ks=Object.keys(PHRASEBOOK).filter(function(k){ return PHRASEBOOK[k]&&PHRASEBOOK[k][id]; }); if(!ks.length)return null;
+  var fr=ks[dayHash(today()+"p")%ks.length]; return {fr:fr,t:PHRASEBOOK[fr][id]}; }
 function vHome(){ var w=el("div","screen tree");
   // ---- Parcours d'apprentissage (mode prof) ----
   var lv=currentLevel(), nx=nextLessonToDo(), dueN=dueWords().length, pod=phraseOfDayEntry();
@@ -1376,6 +1389,12 @@ function vHome(){ var w=el("div","screen tree");
     var hc=el("button","stories-card hist-link");
     hc.innerHTML='<span class="st-ic">📜</span><span class="st-tx"><b>Histoire &amp; anecdotes</b><i>'+esc(anec?anec.t:('d\'où vient '+(COURSES[S.course].nom||'').toLowerCase()))+'</i></span><span class="st-badge">'+((hL.faits||[]).length)+'</span>';
     hc.onclick=function(){ go("histoire"); }; w.appendChild(hc); }
+  // 💬 La vraie vie — phrases des situations réelles, ouvertes dès le premier jour (v2.138.0)
+  var vies=unitesLibres();
+  if(vies.length){ var nf=0,nt=0; vies.forEach(function(v){ COURSES[S.course].units[v].lessons.forEach(function(_,li){ nt++; if(unitDone(v,li)>0)nf++; }); });
+    var vc=el("button","stories-card vie-link");
+    vc.innerHTML='<span class="st-ic">💬</span><span class="st-tx"><b>La vraie vie</b><i>se présenter, commander, trouver son chemin, chez le médecin… en vraies phrases</i></span><span class="st-badge">'+nf+'/'+nt+'</span>';
+    vc.onclick=vraieVie; w.appendChild(vc); }
   // 📞 L'appel de la mascotte (3.10)
   if(appelPossible()){ var ap=el("button","stories-card appel-link");
     ap.innerHTML='<span class="st-ic">📞</span><span class="st-tx"><b>Appeler '+esc(MNAME())+'</b><i>'+(appelFaitAujourdhui()?'appel du jour fait ✓ — on remet ça ?':'3 min au téléphone : mot du jour, exercice, conversation')+'</i></span><span class="st-badge">'+(appelSerieJours()?'📆 '+appelSerieJours():'NOUVEAU')+'</span>';
@@ -3100,7 +3119,7 @@ function appelTerminer(raccroche){ if(!APPEL||APPEL.fini)return; var A=APPEL; A.
   var setFin=function(){ if(!A.ov.isConnected)return; A.ov.querySelectorAll(".ap-outils,.ap-raccroche,.ap-clavier,.ap-etat,.ap-toi,.disc-stage").forEach(function(x){ x.remove(); }); A.ov.appendChild(fin); };
   if(raccroche||!DISC.talking) setFin(); else setTimeout(setFin,400);
   if(xp){ var bee=A.ov.querySelector(".disc-bee"); if(bee) beeSparkles(bee,10); tone([660,880,1180],.3); } }
-/* 📝 BILAN DE L'APPEL (v2.137.0) : Bee relit ce que TU as dit et rend au plus 3 phrases corrigées
+/* 📝 BILAN DE L'APPEL (v2.138.0) : Bee relit ce que TU as dit et rend au plus 3 phrases corrigées
    (dit → mieux → pourquoi), à écouter. Les corrections sont gardées (12 au plus) et Bee les fait
    RÉUTILISER au prochain appel : la boucle « erreur → reprise → acquis ». Même IA gratuite. */
 function appelARevoir(){ var c=(S.appels&&S.appels.corrections)||[]; return c.slice(0,2).map(function(x){ return "phrase à faire réutiliser : "+x.mieux; }); }

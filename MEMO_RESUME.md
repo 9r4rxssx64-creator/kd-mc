@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (19h00) — Lingua v2.138.0 : « La vraie vie »
+
+`CURRICULUM_VIE` + `PHR_VIE` (data.js, avant la génération des cours), 10 unités `libre:true` en fin de tableau,
+60 phrases × 14 langues (sources : scratchpad/vague/*.json, 14 corrections des relecteurs). `COURSES[*].units[*].libre`
+copié aux deux générations ; `unitUnlocked` ouvre les `libre` ; `unitesLibres()` + `vraieVie()` (carte `.vie-link`).
+`phraseOfDayEntry` filtre les phrases traduites (plus de repli français). `.modal` : max-height + overflow-y (leçon #461).
+
+---
 ## 2026-10-08 (nuit) — Apex Chat : votes de sondage enfin relayés
 
 - Le moteur temps réel JETAIT les votes (« Type inconnu ») : personne ne voyait les votes des autres. Désormais :

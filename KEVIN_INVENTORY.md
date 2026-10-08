@@ -3481,3 +3481,5 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-08 | `messaging-app/e2e/fixtures.js` | Tests en ligne d'Apex Chat déclarés « sonde » (porte générale) |
 | 2026-10-08 | `messaging-app/tests/unit/_support/d1-sqlite.js` | Fausse base remplacée par un vrai SQLite aux vraies migrations |
 | 2026-10-08 | `messaging-app/d1-migrations/0010_users_kdmc_uid.sql` | Colonne `kdmc_uid` créée partout |
+| 2026-10-08 | [`lingua/data.js`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/lingua/data.js) → `CURRICULUM_VIE` | **La vraie vie** : 10 situations (se présenter, café, chemin, hôtel, médecin, téléphone, sorties, bureau, urgences, magasins), 60 vraies phrases dans les 14 langues, ouvertes dès le premier jour |
+| 2026-10-08 | [`tests/verify-lingua-vraie-vie.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-lingua-vraie-vie.mjs) | Garde : les 60 phrases dans les 14 langues, jamais le français recopié, phrase du jour honnête, fenêtres qui tiennent dans l'écran |

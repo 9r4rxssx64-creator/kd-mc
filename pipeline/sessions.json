@@ -1074,14 +1074,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/lingua-blanche",
+      "branche": "claude/lecons-enrichies",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-08",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "8.10 : sondes réparées après la porte générale (audit « page blanche » = sondes aveugles, leçon #450) ; 7.10 : Lingua v2.137.0 — bilan de fin d'appel (corrections redites au prochain appel) ; 4.10 : audit Lingua 77/0 sur v2.135.0 ; sonde appareils sans traces (leçon #401)"
+      "note": "8.10 soir : Lingua v2.138.0 « La vraie vie » (60 phrases × 14 langues) ; 8.10 : sondes réparées après la porte générale (audit « page blanche » = sondes aveugles, leçon #450) ; 7.10 : Lingua v2.137.0 — bilan de fin d'appel (corrections redites au prochain appel) ; 4.10 : audit Lingua 77/0 sur v2.135.0 ; sonde appareils sans traces (leçon #401)"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

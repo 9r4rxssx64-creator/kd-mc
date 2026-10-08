@@ -317,7 +317,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .ap-mieux{display:flex;align-items:center;gap:8px;font-weight:700;margin-top:3px}.ap-mieux span{flex:1}
 .ap-ecoute{flex:none;min-width:44px;min-height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:18px;cursor:pointer}
 .ap-pourquoi{opacity:.85;margin-top:3px}
-.overlay.ap-top{z-index:1200}.ap-transcript{max-height:60vh;overflow-y:auto;text-align:left;margin:8px 0 12px}
+.overlay.ap-top{z-index:1200}
+.vie-unite{margin:10px 0;text-align:left}.vie-unite b{display:block;margin-bottom:4px}.vie-lecon{display:block;width:100%;text-align:left;min-height:44px;margin:4px 0;padding:8px 12px;border-radius:12px;border:1px solid var(--line,rgba(127,127,127,.25));background:var(--card,transparent);color:inherit;font:inherit;cursor:pointer}.vie-lecon.done{opacity:.75}.ap-transcript{max-height:60vh;overflow-y:auto;text-align:left;margin:8px 0 12px}
 .ap-transcript p{margin:6px 0;padding:8px 10px;border-radius:12px;background:var(--card2,rgba(127,127,127,.12))}.ap-transcript .ap-t-toi{margin-left:24px;font-weight:600}.ap-l{display:block;margin:8px 0}
 .disc-overlay{position:fixed;inset:0;z-index:1000;background:radial-gradient(120% 90% at 50% 28%,#243447 0%,#0f1720 62%,#0a1016 100%);display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 12px);animation:discIn .3s ease-out}
 @keyframes discIn{0%{opacity:0}100%{opacity:1}}
@@ -628,6 +629,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .overlay.show{opacity:1}
 .modal{background:var(--card);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:26px 22px calc(env(safe-area-inset-bottom) + 22px);text-align:center;transform:translateY(30px);transition:.25s}
 .overlay.show .modal{transform:translateY(0)}
+/* v2.138.0 : une fenêtre plus haute que l'écran débordait PAR LE HAUT (overlay aligné en bas, sans défilement) — titre et
+   premiers boutons hors d'atteinte sur iPhone (vu sur « La vraie vie », 20 leçons ; idem réglages d'appel à 4 créneaux). */
+.modal{max-height:92vh;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .modal h3{font-size:22px;margin:10px 0 16px}
 .modal p{color:var(--tx2);font-size:15px;margin:0 0 16px;line-height:1.5}
 .reward-grid,.stat-grid{gap:12px}
@@ -1005,16 +1009,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 </head>
 <body>
 <div id="app"></div>
-<script src="data.js?v=v2.137.0"></script>
-<script src="histoires-langues.js?v=v2.137.0"></script>
-<script src="mc-voix.js?v=v2.137.0"></script>
-<script src="sources-langues.js?v=v2.137.0"></script>
-<script src="data-mc.js?v=v2.137.0"></script>
-<script src="data-lsf.js?v=v2.137.0"></script>
-<script src="translit.js?v=v2.137.0"></script>
+<script src="data.js?v=v2.138.0"></script>
+<script src="histoires-langues.js?v=v2.138.0"></script>
+<script src="mc-voix.js?v=v2.138.0"></script>
+<script src="sources-langues.js?v=v2.138.0"></script>
+<script src="data-mc.js?v=v2.138.0"></script>
+<script src="data-lsf.js?v=v2.138.0"></script>
+<script src="translit.js?v=v2.138.0"></script>
 <!-- La marionnette (3.10) : tout le corps de Bee et de Bourricot bouge (oreilles, antennes, bras, jambes, queue).
      Source : tools/javis/marionnette.js, recopiée ici par npm run sync:javis (la même que dans Bee). -->
-<script src="marionnette.js?v=v2.137.0"></script>
+<script src="marionnette.js?v=v2.138.0"></script>
 <script>
 /* Icône iOS = la mascotte Bee 🐝 (création originale KDMC) */
 (function(){try{

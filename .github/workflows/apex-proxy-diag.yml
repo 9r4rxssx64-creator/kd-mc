@@ -52,6 +52,8 @@ jobs:
             CODE=$(printf '%s' "$OUT" | grep -o '__HTTP:[0-9]*__' | tr -dc '0-9')
             printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//' | head -c 900 | redact; echo
             echo ">>> $NAME HTTP $CODE"; echo
+            # Verdict LISIBLE depuis l'agent (le journal CI ne l'est pas) : une annotation par appel, corps tronqué et masqué.
+            echo "::notice title=apex-diag::$NAME → HTTP $CODE · $(printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//' | tr '\n\r' '  ' | head -c 220 | redact)"
           }
 
           call "ANTHROPIC (suspect — modèle exact de l'app)" "/anthropic/v1/messages" \
@@ -74,6 +76,7 @@ jobs:
           CODE=$(printf '%s' "$OUT" | grep -o '__HTTP:[0-9]*__' | tr -dc '0-9')
           printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//' | head -c 700 | redact; echo
           echo ">>> ANTHROPIC APP-LIKE (stream+tools) HTTP $CODE"; echo
+          echo "::notice title=apex-diag::ANTHROPIC APP-LIKE (stream+tools) → HTTP $CODE · $(printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//' | tr '\n\r' '  ' | head -c 220 | redact)"
 
           echo "== PRÉFLIGHT CORS exact du navigateur (OPTIONS) =="
           curl -sS -m 15 -X OPTIONS "$W/anthropic/v1/messages" \

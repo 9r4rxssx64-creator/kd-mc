@@ -96,6 +96,8 @@ const SURFACES = [
         sans que rien ne vire au rouge. */
   { url: 'https://' + ROOT + '/admin/', name: 'Admin du domaine (hub)', selKey: '#app .msg', deep: async (page) => {
       const txt = await page.textContent('#app').catch(() => '');
+      /* Connecté comme Kevin (code admin prouvé) : la page doit S'OUVRIR, pas montrer le verrou. Anonyme : le verrou. */
+      if (cookieKevin) { if (/Accès administrateur/.test(txt) || txt.trim().length < 20) return { ok: false, note: 'Kevin connecté, mais la page reste verrouillée ou vide : « ' + txt.slice(0, 80) + ' »' }; return { ok: true, note: 'ouverte pour Kevin (admin prouvé) : « ' + txt.slice(0, 60) + ' »' }; }
       if (!/Accès administrateur/.test(txt)) return { ok: false, note: 'verrou absent : « ' + txt.slice(0, 80) + ' »' };
       /* 26.09.2026 — FAUX ROUGE corrigé : l'ancien test cherchait « cardrow » dans TOUT le HTML,
          or c'est le nom d'une règle CSS écrite dans <style> depuis le premier jour → « FUITE » à
@@ -116,6 +118,8 @@ const SURFACES = [
      statique doit être servi (sinon le tableau ne se construit jamais). */
   { url: 'https://' + ROOT + '/admin/commerce.html', name: 'Commerce — tableau de bord (admin)', selKey: '#app .msg', deep: async (page) => {
       const txt = await page.textContent('#app').catch(() => '');
+      /* Connecté comme Kevin (code admin prouvé) : la page doit S'OUVRIR, pas montrer le verrou. Anonyme : le verrou. */
+      if (cookieKevin) { if (/Accès administrateur/.test(txt) || txt.trim().length < 20) return { ok: false, note: 'Kevin connecté, mais la page reste verrouillée ou vide : « ' + txt.slice(0, 80) + ' »' }; return { ok: true, note: 'ouverte pour Kevin (admin prouvé) : « ' + txt.slice(0, 60) + ' »' }; }
       if (!/Accès administrateur/.test(txt)) return { ok: false, note: 'verrou absent : « ' + txt.slice(0, 80) + ' »' };
       const r = await page.request.get('https://' + ROOT + '/admin/commerce-data.json').catch(() => null);
       if (!r || r.status() !== 200) return { ok: false, note: 'commerce-data.json HTTP ' + (r ? r.status() : 'KO') };
@@ -129,6 +133,8 @@ const SURFACES = [
      ces chiffres disent combien l'app est utilisée, ça ne regarde personne d'autre. */
   { url: 'https://' + ROOT + '/admin/openai.html', name: 'OpenAI — ce qui consomme (admin)', selKey: '#app', deep: async (page) => {
       const txt = await page.textContent('#app').catch(() => '');
+      /* Connecté comme Kevin (code admin prouvé) : la page doit S'OUVRIR, pas montrer le verrou. Anonyme : le verrou. */
+      if (cookieKevin) { if (/Accès administrateur/.test(txt) || txt.trim().length < 20) return { ok: false, note: 'Kevin connecté, mais la page reste verrouillée ou vide : « ' + txt.slice(0, 80) + ' »' }; return { ok: true, note: 'ouverte pour Kevin (admin prouvé) : « ' + txt.slice(0, 60) + ' »' }; }
       if (!/Accès administrateur/.test(txt)) return { ok: false, note: 'verrou absent : « ' + txt.slice(0, 80) + ' »' };
       if (/Voix payées|Appels en direct/.test(txt)) return { ok: false, note: 'FUITE : les chiffres sont affichés sans session' };
       const r = await page.request.get('https://' + ROOT + '/__lingua/depense').catch(() => null);
@@ -552,6 +558,10 @@ for (const s of SURFACES) {
     const line = req.method() + ' ' + u.slice(0, 120) + ' [' + errText + ']';
     // ERR_ABORTED = requête annulée par l'app elle-même (navigation, retry auth, write non-authentifié)
     // = bruit. ERR_FAILED/BLOCKED = la CLASSE bug (blocage CORS commande, ressource refusée) → bloquant.
+    /* 8.10 (vérif réelle connectée) : les images, polices et sons sont COUPÉS par la sonde elle-même (sobriété, `sobre`) — Chromium
+       les rapporte en ERR_FAILED. Ce ne sont pas des pannes du site : comptés comme tolérés, jamais bloquants. */
+    let chemin = ''; try { chemin = new URL(u).pathname; } catch { chemin = ''; }
+    if (INUTILE_POUR_SONDER.test(chemin)) { failedTol.push(line + ' (coupé par la sonde)'); return; }
     if (isProjectHost(u) && !/ERR_ABORTED/i.test(errText)) failedProject.push(line);
     else failedTol.push(line);
   });
@@ -711,6 +721,7 @@ for (const s of SURFACES) {
       }
     }
 
+    if (cookieKevin && selKey === '#app .msg') selKey = '#app';   /* le message du verrou n'existe pas quand Kevin est connecté */
     if (!(await page.$(selKey))) { res.ok = false; res.notes.push('élément clé absent: ' + selKey); }
 
     /* lue AVANT le `deep` : les globales sont posées au chargement, et le badge de version

@@ -815,7 +815,8 @@ export function cspAccepteNosScripts(csp) {
   const m = c.match(/(?:^|;)\s*script-src\s+([^;]*)/) || c.match(/(?:^|;)\s*default-src\s+([^;]*)/);
   if (!m) return true;
   const v = ' ' + m[1].trim() + ' ';
-  return !/\s'none'\s/.test(v) && /\s'self'\s/.test(v);
+  /* 'strict-dynamic' (Apex) : 'self' y est IGNORÉ par le navigateur — seuls les scripts portant le nonce passent. */
+  return !/\s'none'\s/.test(v) && !/\s'strict-dynamic'\s/.test(v) && /\s'self'\s/.test(v);
 }
 export async function injecterBouton(res, extra) {
   try {

@@ -267,7 +267,7 @@ fbData.cmc_ia_log = null; fbData.cmc_audit = null;
   const tB = await (await injecterBouton(pg('<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'">'))).text();
   const tC = await (await injecterBouton(pg('', { 'content-security-policy': "script-src 'unsafe-inline'" }))).text();
   const tD = await (await injecterBouton(pg('<meta http-equiv="Content-Security-Policy" content="default-src \'self\'">'))).text();
-  ok(tA.includes(BOUTON_TAG) && !tB.includes(BOUTON_TAG) && !tC.includes(BOUTON_TAG) && tD.includes(BOUTON_TAG) && cspAccepteNosScripts("default-src 'none'; script-src 'self'") && !cspAccepteNosScripts("default-src 'none'"), '12f. la CSP de la page est respectée : pas de bouton là où nos scripts seraient refusés (en-tête ou balise meta)'); }
+  ok(tA.includes(BOUTON_TAG) && !tB.includes(BOUTON_TAG) && !tC.includes(BOUTON_TAG) && tD.includes(BOUTON_TAG) && cspAccepteNosScripts("default-src 'none'; script-src 'self'") && !cspAccepteNosScripts("default-src 'none'") && !cspAccepteNosScripts("default-src 'self'; script-src 'self' 'nonce-abc' 'strict-dynamic' https://cdn.x"), '12f. la CSP de la page est respectée : pas de bouton là où nos scripts seraient refusés (en-tête ou balise meta)'); }
 
 /* 9. câblage : le routeur et le portail utilisent vraiment la boîte (une fonction que personne n'appelle ne protège rien) */
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');

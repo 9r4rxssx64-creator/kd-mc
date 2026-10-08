@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (après-midi) — Vérif réelle connectée n°3 (run 37771449592) : ce qui reste, trié
+
+- **Faux rouges du robot (corrigés)** : images/sons coupés par la sonde elle-même comptés comme pannes (cuisine, Bee de Lingua, icône Beatbot) ; pages admin attendues « verrouillées » alors que Kevin est connecté (elles s'ouvrent : c'est le bon comportement).
+- **Vrai défaut corrigé** : Apex a une CSP `strict-dynamic` → le routeur y injectait encore le bouton/Bee (refusés) ; désormais `strict-dynamic` = pas d'injection (test 12f, sabotage rouge).
+- **À regarder ensuite** : Apex lit `NOTES_USER.md` via `apex-depot-relais` → 404 (le fichier n'est plus au dépôt public) ; OSINT « EXCEPTION JS: Object » ; Lingua connectée : le robot cherche l'écran « comptes » (anonyme) — attente à adapter.
+
 ## 2026-10-08 (12h00) — Sondes aveugles depuis la porte générale : corrigé
 
 Audit Lingua réel 37763496796 = « page blanche » (15/30). Cause : porte générale #4313 → 401 sur les scripts sans

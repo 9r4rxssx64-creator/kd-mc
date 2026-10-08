@@ -9,7 +9,7 @@
 //  WebKit-iPhone (CI Linux) ne supporte pas la permission notifications de façon
 //  fiable → tout ce fichier ne tourne que sur Chromium.
 // ════════════════════════════════════════════════════════════════════════
-import { test, expect } from '@playwright/test';
+import { test, expect, marquer } from './fixtures.js';
 
 const APEX = process.env.APEX_CHAT_URL || 'https://9r4rxssx64-creator.github.io/CMCteams/messaging-app/';
 const ORIGIN = new URL(APEX).origin;
@@ -20,6 +20,7 @@ test.describe('Notifications — chaîne SW → showNotification (Chromium)', ()
 
   test('permission accordée + le Service Worker affiche une notification', async ({ browser }) => {
     const ctx = await browser.newContext({ baseURL: APEX });
+    await marquer(ctx);
     // grantPermissions AVEC origin explicite : sinon Notification.permission reste
     // « default » et showNotification jette « No notification permission ».
     await ctx.grantPermissions(['notifications'], { origin: ORIGIN });

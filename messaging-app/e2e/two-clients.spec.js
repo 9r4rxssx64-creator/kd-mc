@@ -12,7 +12,7 @@
 //  1 compte + 1 conversation). Si l'OTP de test est désactivé (ALLOW_TEST_OTP
 //  off), le test se SKIP proprement (CI reste verte).
 // ════════════════════════════════════════════════════════════════════════
-import { test, expect, request as pwRequest } from '@playwright/test';
+import { test, expect, pwRequest, marquer } from './fixtures.js';
 
 const API = 'https://apex-chat-api.9r4rxssx64.workers.dev';
 const WS_BASE = API.replace(/^https?/, 'wss');
@@ -132,7 +132,9 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
 
     // 3) Deux contextes navigateur distincts = deux vrais clients connectés
     const ctxA = await browser.newContext();
+    await marquer(ctxA);
     const ctxB = await browser.newContext();
+    await marquer(ctxB);
     const pageA = await ctxA.newPage();
     const pageB = await ctxB.newPage();
     try {
@@ -196,7 +198,10 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
     expect(tb.status, 'ticket Bob HTTP').toBe(200);
 
     const ctxA = await browser.newContext();
+
+    await marquer(ctxA);
     const ctxB = await browser.newContext();
+    await marquer(ctxB);
     const pageA = await ctxA.newPage();
     const pageB = await ctxB.newPage();
     try {

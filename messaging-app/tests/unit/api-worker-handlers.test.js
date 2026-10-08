@@ -629,7 +629,7 @@ describe('PATCH /api/users/me', () => {
     const r = await worker.fetch(
       makeRequest({
         method: 'PATCH', path: '/api/users/me', token,
-        body: { display_name: 'Kevin', bio: 'Test', email: 'k@test.com', language: 'fr', timezone: 'Europe/Monaco', avatar_url: 'a' },
+        body: { display_name: 'Kevin', bio: 'Test', email: 'k@test.com', language: 'fr', timezone: 'Europe/Monaco', avatar_url: 'data:image/png;base64,AAAA' },   // Lot 2 (S) : avatar validé
       }),
       env,
     );

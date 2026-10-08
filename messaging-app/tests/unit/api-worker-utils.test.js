@@ -310,35 +310,38 @@ describe('fetchFirebasePublicKeys', () => {
     const env = {
       APEX_CHAT_CACHE: { get: vi.fn(async () => null), put: vi.fn(async () => {}) },
     };
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ kid1: 'cert1' })));
+    // Lot 2 (Y) : JWKS (clés JWK), plus des certificats PEM
+    const JWK = { kty: 'RSA', kid: 'kid1', n: 'n1', e: 'AQAB' };
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ keys: [JWK] })));
     const keys = await fetchFirebasePublicKeys(env);
-    expect(keys).toEqual({ kid1: 'cert1' });
+    expect(keys).toEqual([JWK]);
     expect(env.APEX_CHAT_CACHE.put).toHaveBeenCalled();
   });
 
   it('KV hit non-expired → utilise cache', async () => {
     const env = {
       APEX_CHAT_CACHE: {
-        get: vi.fn(async () => ({ keys: { kid: 'c' }, expires_at: Date.now() + 100000 })),
+        get: vi.fn(async () => ({ keys: [{ kid: 'c' }], expires_at: Date.now() + 100000 })),
         put: vi.fn(),
       },
     };
     globalThis.fetch = vi.fn();
     const keys = await fetchFirebasePublicKeys(env);
-    expect(keys).toEqual({ kid: 'c' });
+    expect(keys).toEqual([{ kid: 'c' }]);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it('KV hit expired → re-fetch', async () => {
     const env = {
       APEX_CHAT_CACHE: {
-        get: vi.fn(async () => ({ keys: { kid: 'old' }, expires_at: 1 })),
+        get: vi.fn(async () => ({ keys: [{ kid: 'old' }], expires_at: 1 })),
         put: vi.fn(async () => {}),
       },
     };
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ kid: 'new' })));
+    const NEW = { kty: 'RSA', kid: 'new', n: 'n2', e: 'AQAB' };
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ keys: [NEW] })));
     const keys = await fetchFirebasePublicKeys(env);
-    expect(keys).toEqual({ kid: 'new' });
+    expect(keys).toEqual([NEW]);
   });
 
   it('fetch fail → throw', async () => {
@@ -349,9 +352,10 @@ describe('fetchFirebasePublicKeys', () => {
 
   it('sans APEX_CHAT_CACHE → fetch direct', async () => {
     const env = {};
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ k: 'c' })));
+    const K = { kty: 'RSA', kid: 'k', n: 'n3', e: 'AQAB' };
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ keys: [K] })));
     const keys = await fetchFirebasePublicKeys(env);
-    expect(keys).toEqual({ k: 'c' });
+    expect(keys).toEqual([K]);
   });
 });
 

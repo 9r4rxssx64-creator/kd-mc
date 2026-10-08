@@ -52,7 +52,7 @@ describe('worker.queue()', () => {
       first: (sql) => sql.includes('letters_queue') ? {
         id: 'l1', conv_id: 'c1', deliver_at: Date.now() - 1000,
         sender_id: 'u', ciphertext: 'x', delivered: 0, cancelled: 0,
-      } : null,
+      } : (sql.includes('conversation_members') ? { 1: 1 } : null),   // Lot 2 (G) : l'expéditeur est encore membre
     });
     const msg = makeMsg({ queue_type: 'letters-deliver', letter_id: 'l1' });
     await worker.queue({ messages: [msg] }, env);

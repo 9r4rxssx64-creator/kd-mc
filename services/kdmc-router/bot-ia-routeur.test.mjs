@@ -277,5 +277,23 @@ r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': c
 dit(!mutations.some((q) => /Redeploy/.test(q)), 'réveil suivant : pas de 2e relance avant 12 h');
 globalThis.fetch = logsOrig;
 
+console.log('\n=== 14. Robot papier CRASHED (7.10 : bourse en panne au démarrage) → relancé ===');
+globalThis.fetch = async (input, init) => {
+  const q = JSON.parse((init && init.body) || '{}').query || '';
+  if (String(typeof input === 'string' ? input : input.url).includes('backboard.railway.com') && /deployments\(/.test(q) && !/deploymentLogs/.test(q)) {
+    const out = parAlias(q, 'deployments', (args) => { const sv = (args.match(/serviceId: "([A-Z0-9]+)"/) || [])[1];
+      return { edges: [{ node: { id: 'D-' + sv, status: sv === 'P5' ? 'CRASHED' : 'SUCCESS', createdAt: '2026-10-07T06:00:33Z' } }] }; });
+    return j({ data: out });
+  }
+  return logsOrig(input, init);
+};
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: Date.now() }));
+mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+stA = JSON.parse(store.get('bot:ia'));
+const rlc2 = stA.journal.filter((e) => e.type === 'relance');
+dit(rlc2.length === 1 && rlc2[0].bot === 'crypto-bot-p5' && /planté/.test(rlc2[0].raison) && mutations.some((q) => /serviceInstanceRedeploy\(environmentId: "EN", serviceId: "P5"\)/.test(q)), 'p5 CRASHED → relancé, au journal (« ' + ((rlc2[0] || {}).raison || '').slice(0, 60) + ' »)');
+globalThis.fetch = logsOrig;
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

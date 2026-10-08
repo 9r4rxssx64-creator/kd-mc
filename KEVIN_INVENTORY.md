@@ -3414,6 +3414,14 @@ officiels les retirent eux-mêmes avant publication.
 | `tests/verify-rapport-chaine-privee.mjs` | `npm run test:rapport-chaine-privee` — le rapport du robot « chaîne privée » doit **nommer** le test qui casse, sans jamais laisser sortir le code admin (dans `test:ci`, prouvée sur 3 sabotages) | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-rapport-chaine-privee.mjs) |
 | `tools/audit/classer-destination.mjs` | Règle partagée : une tuile qui mène derrière la porte « fiche » n'est pas une tuile morte (401 + en-tête du routeur) — une vraie morte le reste | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/audit/classer-destination.mjs) |
 | `tests/verify-classer-destination.mjs` | `npm run test:classer-destination` — la règle, les 8 réponses réellement mesurées, et la preuve que la sonde des tuiles l'utilise (dans `test:ci`, 5 sabotages) | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-classer-destination.mjs) |
+
+### 2026-10-08 — On arrête le business « kit IA » : les publications se retirent
+
+| Fichier | À quoi ça sert | Liens |
+|---|---|---|
+| `.github/workflows/youtube-retirer.yml` | Robot **au coffre**, bouton seulement (0 cron) : passe en **privé** les 17 Shorts de pub (réversible, rien n'est supprimé). `mode=sonde` regarde seulement quelle chaîne et quels droits le jeton donne. | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/youtube-retirer.yml) |
+| `tools/social/youtube-retirer.mjs` | Le script : s'arrête sans rien toucher si le jeton mène à une autre chaîne ou ne permet pas de modifier ; relit chaque vidéo pour prouver qu'elle est privée | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/social/youtube-retirer.mjs) |
+| `tests/youtube-retirer.test.mjs` | `npm run test:youtube-retirer` — jamais de suppression, statut recopié (déclarations enfants/IA gardées), gardes chaîne + droits, aucun cron (dans `test:ci`, prouvé par sabotage) | [📖 Voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/youtube-retirer.test.mjs) |
 | 2026-10-01 | `tools/firebase/sauvegarder.cjs` + `tests/verify-sauvegarde-firebase.mjs` | Sauvegarde Firebase de TOUTES les branches racine (réparée : rouge depuis le 1.10 14h) | coffre |
 | 2026-10-01 | `services/kdmc-router/voix-chirp.test.mjs` | Garde de la voix Google Chirp 3 HD gratuite (plafond du jour, repli, voix différentes) | coffre + public |
 | 2026-10-02 | `tools/shared/docs-cmc.js` | CMCteams v9.934 : le fichier d'un document se charge à la demande (quitte cmc_docs pour /cmcteams_docs) | coffre |

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-08 15:30",
+  "maj": "2026-10-08 17:05",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -4256,6 +4256,24 @@
       "sujet": "Import PDF : les absents des encadrés de la page 1 sont créés (M/CP/FORMATION/CSS), novembre 2026 en ligne, robot de vérif déclaré (x-kdmc-verif) — et le garde docs couvre maintenant TOUS les documents (R1→R6)",
       "corps": "1) Parseur (index.html _cmcApplyGeometricParse + tools/departs) : une personne écrite seulement dans un encadré d'absence de la page 1 est CRÉÉE dans son tableau (maladie/congés/formation/déplacement), jamais une cellule inventée ; « 0 M » se lit (le nombre d'en-tête n'est pas un compte) ; code CSS = congé sans solde → congés. Ne régresse pas : test:import-absents (11 d'octobre, sabotage) + audit:noms-manquants (0 manquant jul→nov, nom par nom). Toute modif du parseur se juge par la régénération complète (_gen-boards + _gen-seed, TARGETS identiques) et le diff des personnes : diff ADDITIF seulement. 2) Novembre 2026 : tests/fixtures/novembre-2026.pdf dans les deux TARGETS, boards-gen.js + planning-seed.js régénérés (196 tableaux, 5 mois) ; si tu régénères, pars de main (parser = APP_VER). 3) Robot verif-live-equipes : en-tête x-kdmc-verif: 1 → le routeur journalise admin_login_verif et n'enrichit pas la fiche de Kevin (test:verif-login). Tout robot qui se connecte au vrai domaine se déclare. 4) Kevin 8.10 : « Met toujours à jour tous les documents importants, leçons, sans que je te le répète sans cesse. Pareil pour toutes les branches. » → test:docs-frais couvre maintenant R1 code⇒MEMO_RESUME · R2 fichier créé⇒KEVIN_INVENTORY · R3 NOUVEAU TEST⇒LESSONS (un garde = une leçon) · R4 version.txt / tools/departs/version.txt bougé ⇒ la version ÉCRITE dans MEMO_RESUME · R5 tests/fixtures/*.pdf ajouté ⇒ IMPORTS-KEVIN · R6 services/kdmc-router/worker.js modifié ⇒ ETAT-DU-MOMENT. Preuve test:docs-frais-garde (21 cas). Vos branches rougiront si un document manque : c'est voulu, écrivez-le dans le même commit (leçon #457).",
       "ts": "2026-10-08 15:30",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m206-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "sujet": "Kevin 8.10 « Seul moi peut ajouter ou modifier, partout » (planning, équipes, PERSONNES, comptes, codes) : cmc_e et cmc_known_identities sont maintenant au rôle admin (phase 2c, CMCteams v9.954) — ne les rouvrez jamais",
+      "corps": "1) Les clés cmc_e (liste des personnes) et cmc_known_identities (identités apprises) sont dans _phase_cmc_ecritures._cles (firebase-rules-apex.json) ET dans CLES de tools/shared/ecritures-cmc.js : un téléphone non-admin les garde en local, l'admin les écrit avec son jeton (/__admin/fbtoken). Le verrou (tools/firebase/verrou-ecritures.cjs) refuse de publier des règles où elles ne seraient plus au rôle admin. 2) Si tu ajoutes une fonction qui écrit cmc_e / cmc_known_identities / cmc_ov / cmc_t… depuis un employé : NON — passe par le domaine (jeton admin côté serveur). Toute nouvelle donnée planning/équipe/personne/compte/code naît verrouillée (liste + règles + sonde dans ecritures-migrer.cjs). 3) Restent aux employés par décision de Kevin : cmc_reg (sa fiche), pointage, chat, échanges ; chefs : NR/5e. 4) Ajouter une clé au verrou = bump APP_VER + APP_MIN dans ecritures-migrer.cjs + toucher tools/firebase/ecritures-demande.json (le robot coffre-ecritures-cmc repart à la fusion, attend la version en ligne, prouve, déverrouille seul si une preuve échoue). Garde : test:ecritures-cmc (47 contrôles).",
+      "ts": "2026-10-08 16:45",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m207-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "sujet": "Branche ARBRE : ton adresse de mairie (orange.fr) dans KEVIN_ACTIONS_TODO.md a FIGÉ la publication du site (coffre-synchronise-public rouge depuis #4389) — déplacée dans audit/prive/, ne remets jamais un courriel dans un document exporté",
+      "corps": "Mesuré 8.10 16h46 (run 37811345217) : verifier.mjs refuse TOUT le dossier public dès qu'une adresse d'un domaine personnel (orange.fr, gmail, …) traîne dans un .md exporté — et KEVIN_ACTIONS_TODO.md est exporté. Conséquence : plus aucune mise en ligne de kd-mc.com depuis la fusion #4389, sans rouge visible côté branche. Fait : l'adresse de la mairie de Chevrainvilliers est dans audit/prive/arbre-demandes-actes-adresses.md (prive_toujours), la ligne 4 du tableau y renvoie ; export relancé en local : ✅. Règle : un courriel, un téléphone, une adresse postale d'une personne ou d'une mairie → fichier privé (audit/prive/, tools/arbre/, NOTES_USER.md) et un renvoi dans le document public. Avant de fusionner un .md : node tools/depot-public/exporter.mjs --sortie /tmp/pub && node tools/depot-public/verifier.mjs --sortie /tmp/pub.",
+      "ts": "2026-10-08 17:05",
       "etat": "ouvert"
     }
   ]

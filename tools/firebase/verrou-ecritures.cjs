@@ -1,4 +1,4 @@
-/* Verrou ÉCRITURES CMCteams (phase 2b, 27.09.2026) — la transformation des règles, seule copie.
+/* Verrou ÉCRITURES CMCteams (phase 2b, 27.09.2026 ; phase 2c PERSONNES, 08.10.2026) — la transformation des règles, seule copie.
    Utilisée par deploy-rules.cjs (publication) et par tests/verify-ecritures-cmc.mjs (qui l'exécute
    au lieu d'en recopier une imitation). PURE : ne touche ni au réseau ni au disque. */
 
@@ -9,7 +9,8 @@ function keyWrite(prefixes) {
 }
 
 /* Clés que les employés et les visiteurs écrivent encore (inscription, journal, chat…) : jamais ici. */
-const OUVERTES = ['cmc_e', 'cmc_reg', 'cmc_pw', 'cmc_chat', 'cmc_audit', 'cmc_presence', 'cmc_userlog', 'cmc_kevin_inbox', 'cmc_reg_alerts'];
+/* 8.10.2026 (Kevin « Seul moi peut ajouter ou modifier, partout ») : cmc_e et cmc_known_identities ont quitté cette liste (phase 2c). */
+const OUVERTES = ['cmc_reg', 'cmc_pw', 'cmc_chat', 'cmc_audit', 'cmc_presence', 'cmc_userlog', 'cmc_kevin_inbox', 'cmc_reg_alerts'];
 
 /* Pose le verrou sur rules.cmcteams (déjà passé par le verrou config admin). Lève une erreur au
    moindre doute : mieux vaut ne rien publier qu'un verrou qui bloque Kevin ou un employé. */
@@ -27,7 +28,8 @@ function appliquer(rules, E) {
   // GARDE-FOUS : lecture inchangée ; les clés des employés restent écrivables ; secrets toujours fermés.
   if (c['.read'] !== 'auth != null') throw new Error('/cmcteams .read doit rester "auth != null"');
   if (!c.cmc_admin_pin || c.cmc_admin_pin['.write'] !== false || !c.cmc_ia_key || c.cmc_ia_key['.write'] !== false) throw new Error('cmc_admin_pin/cmc_ia_key doivent rester .write:false');
-  ['cmc_e', 'cmc_pw'].forEach((k) => { if (!c[k] || c[k]['.write'] !== 'auth != null') throw new Error(k + ' doit rester écrivable par les employés (phase 2c pas faite)'); });
+  ['cmc_pw'].forEach((k) => { if (!c[k] || c[k]['.write'] !== 'auth != null') throw new Error(k + ' doit rester écrivable par les employés (inscription)'); });
+  ['cmc_e', 'cmc_known_identities'].forEach((k) => { if (!c[k] || c[k]['.write'] !== E.role_admin) throw new Error(k + ' doit être au rôle admin (phase 2c personnes, Kevin 8.10.2026)'); });
   return rules;
 }
 

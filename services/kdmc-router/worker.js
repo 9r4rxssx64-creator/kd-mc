@@ -4296,7 +4296,7 @@ async function botFleetStats(env, ctx, names) {
           const m = String(logs[k].message || '').match(/equity=([0-9.]+)/);
           if (m) { equity = Number(m[1]); break; }
         }
-        out.set(n.x.name, { name: n.x.name, svcId: n.x.svc.id, depl: n.node.id, status: n.node.status, equity, arrete: IA.robotArrete(logs), ...st });
+        out.set(n.x.name, { name: n.x.name, svcId: n.x.svc.id, depl: n.node.id, status: n.node.status, equity, arrete: IA.robotArrete(logs, n.node.status), ...st });
       });
     }
   }
@@ -4481,7 +4481,7 @@ async function iaTick(env, ctx, origine, force) {
       } catch (e) { err = String((e && e.message) || e).slice(0, 120); }
       st.relances[b.name] = now;
       st.journal = IA.ajouterJournal(st.journal, { type: 'relance', t: now, bot: b.name, ok,
-        raison: 'robot papier arrêté par son frein (' + b.arrete + ', capital figé à ' + (b.equity || '?') + ' $) : ' + (ok ? 'relancé, il repart à 10 000 $ virtuels' : 'relance ÉCHOUÉE — ' + err) });
+        raison: 'robot papier arrêté (' + b.arrete + ', capital figé à ' + (b.equity || '?') + ' $) : ' + (ok ? 'relancé, il repart à 10 000 $ virtuels' : 'relance ÉCHOUÉE — ' + err) });
     }
     await iaEcrire(env, st);
   }

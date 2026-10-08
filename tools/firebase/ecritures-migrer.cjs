@@ -7,7 +7,7 @@
  * les règles, donc on prouve tout nous-mêmes, comme un téléphone anonyme ET comme un admin.
  *
  * ECRITURES_ACTION=activer (défaut) :
- *   1. attendre le verrou config admin en ligne (write descendu au $key), l'appli CMCteams v9.926 et
+ *   1. attendre le verrou config admin en ligne (write descendu au $key), l'appli CMCteams v9.954 (phase 2c) et
  *      la page light v1.59 en ligne — sinon ARRÊT, rien touché ;
  *   2. poser /cmcteams/cmc_ecritures_actif = true (les téléphones à jour cessent d'envoyer ces clés,
  *      l'admin les envoie avec son jeton role:admin) ;
@@ -28,7 +28,7 @@ const ATTENTE_MAX_MS = +(process.env.ECRITURES_ATTENTE_MS || 25 * 60 * 1000);
 const PAUSE_DRAPEAU_MS = +(process.env.ECRITURES_PAUSE_MS || 150 * 1000);
 const APP_SW = process.env.CMC_APP_SW || 'https://cmcteams.kd-mc.com/sw.js';
 const LIGHT_VER = process.env.CMC_LIGHT_VER || 'https://departs.kd-mc.com/version.txt';
-const APP_MIN = 9926, LIGHT_MIN = 1059;
+const APP_MIN = 9954, LIGHT_MIN = 1059;   // 8.10.2026 : v9.954 garde cmc_e / cmc_known_identities sur le téléphone non-admin (phase 2c)
 
 /* PURE (testée) : « const CACHE='cmcteams-v9.926' » → 9926. */
 function versionSw(txt) { const m = /cmcteams-v(\d+)\.(\d+)/.exec(String(txt || '')); return m ? (+m[1]) * 1000 + (+m[2]) : 0; }
@@ -56,8 +56,8 @@ async function activer() {
   const token = await getAccessToken();
   await jusqua('Verrou config admin en ligne', async () => adminLockLive((await req('GET', '/.settings/rules', token) || {}).rules));
   console.log('✅ Verrou config admin en ligne (écriture descendue au $key)');
-  await jusqua('Appli CMCteams v9.926', async () => versionSw(await (await fetch(APP_SW, { cache: 'no-store' })).text()) >= APP_MIN);
-  console.log('✅ Appli en ligne ≥ v9.926 (sait écrire avec le jeton admin)');
+  await jusqua('Appli CMCteams v9.954', async () => versionSw(await (await fetch(APP_SW, { cache: 'no-store' })).text()) >= APP_MIN);
+  console.log('✅ Appli en ligne ≥ v9.954 (sait écrire avec le jeton admin, personnes comprises)');
   await jusqua('Page light v1.59', async () => versionLight(await (await fetch(LIGHT_VER, { cache: 'no-store' })).text()) >= LIGHT_MIN);
   console.log('✅ Page light en ligne ≥ v1.59 (planning et chefs écrits avec le jeton admin)');
   await req('PUT', '/cmcteams/cmc_ecritures_actif', token, true);
@@ -78,7 +78,8 @@ async function prouver() {
     // Un anonyme est refusé sur le planning, les équipes, les droits, la liste des chefs, une clé « cmc_ref_… ».
     // (Refusé = rien d'écrit. Si c'était accepté, la sonde est effacée juste après et le robot échoue.)
     const REFUS = ['/cmcteams/cmc_ov/zz_sonde_verrou', '/cmcteams/cmc_t/zz_sonde_verrou', '/cmcteams/cmc_access/zz_sonde_verrou',
-      '/cmcteams/cmc_dep_chefs/zz_sonde_verrou', '/cmcteams/cmc_ref_zz_sonde_verrou', '/cmcteams/cmc_verrou_sonde'];
+      '/cmcteams/cmc_dep_chefs/zz_sonde_verrou', '/cmcteams/cmc_ref_zz_sonde_verrou', '/cmcteams/cmc_verrou_sonde',
+      '/cmcteams/cmc_e/zz_sonde_verrou', '/cmcteams/cmc_known_identities/zz_sonde_verrou'];   // phase 2c : les personnes aussi (Kevin 8.10.2026)
     for (const p of REFUS) {
       const s = await ecrire('anonyme', anon, p);
       console.log('🔬 Téléphone anonyme écrit ' + p.replace('/cmcteams/', '') + ' : HTTP ' + s + ' (attendu 401)');
@@ -99,7 +100,7 @@ async function prouver() {
     console.log('🧹 ' + sondes.length + ' sonde(s) effacée(s) au compte de service');
   }
   if (erreurs.length) throw new Error(erreurs.join(' · '));
-  console.log('✅ Planning et réglages : écrits par l\'admin seul, prouvé comme un téléphone anonyme et comme un admin ; le reste inchangé');
+  console.log('✅ Planning, réglages et personnes : écrits par l\'admin seul, prouvé comme un téléphone anonyme et comme un admin ; le reste inchangé');
 }
 
 async function annuler() {

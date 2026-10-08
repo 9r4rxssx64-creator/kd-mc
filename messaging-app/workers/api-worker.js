@@ -138,19 +138,55 @@ export async function signJWT(payload, secret) {
 }
 
 export async function verifyJWT(token, secret) {
-  if (!token) return null;
-  const [h, p, s] = token.split('.');
-  if (!h || !p || !s) return null;
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
-  const sigBytes = Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(s.length + (4 - s.length % 4) % 4, '=')), c => c.charCodeAt(0));
-  const valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(`${h}.${p}`));
-  if (!valid) return null;
+  // Lot 2 (P) : un jeton mal formé (base64 invalide → atob lève) répondait 500.
+  // Toute la vérification est désormais dans le try : jeton illisible = null.
   try {
+    if (!token || typeof token !== 'string' || !secret) return null;
+    const [h, p, s] = token.split('.');
+    if (!h || !p || !s) return null;
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    const sigBytes = Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(s.length + (4 - s.length % 4) % 4, '=')), c => c.charCodeAt(0));
+    const valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(`${h}.${p}`));
+    if (!valid) return null;
     const payload = JSON.parse(atob(p.replace(/-/g, '+').replace(/_/g, '/').padEnd(p.length + (4 - p.length % 4) % 4, '=')));
+    if (!payload || typeof payload !== 'object') return null;
     if (payload.exp && payload.exp * 1000 < Date.now()) return null;
     return payload;
   } catch { return null; }
+}
+
+// Lot 2 (M) : un champ d'un mauvais type (objet / tableau là où une chaîne est
+// attendue) faisait échouer le bind D1 → 500. On le refuse en 400.
+function _isOptStr(v, max) {
+  return v === undefined || v === null || (typeof v === 'string' && (!max || v.length <= max));
+}
+
+// Lot 2 (R) : codes courts sans biais — l'alphabet fait 31 caractères ;
+// `b % 30` ne tirait jamais '9' et favorisait les premiers. Tirage par rejet.
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export function _randomCode(len = 8, alphabet = CODE_ALPHABET) {
+  const n = alphabet.length;
+  const limit = 256 - (256 % n);   // octets ≥ limit rejetés → distribution uniforme
+  let out = '';
+  while (out.length < len) {
+    for (const b of crypto.getRandomValues(new Uint8Array(len * 2))) {
+      if (b < limit) { out += alphabet[b % n]; if (out.length === len) break; }
+    }
+  }
+  return out;
+}
+
+// Nombre de lignes modifiées par un run() D1 (D1 renvoie TOUJOURS meta.changes).
+// null = pilote qui ne le dit pas (fausses bases de test) : l'appelant retombe
+// alors sur le comportement d'avant, jamais plus permissif que lui.
+function _changes(r) {
+  return (r && r.meta && typeof r.meta.changes === 'number') ? r.meta.changes : null;
+}
+
+// Lot 2 (P) : decodeURIComponent lève sur un « % » mal formé → 500.
+function _safeDecode(s) {
+  try { return decodeURIComponent(s); } catch (_) { return null; }
 }
 
 // Un ticket WS est à USAGE UNIQUE : son jti est consommé en base. La clé
@@ -290,37 +326,91 @@ const FREE_QUOTAS = {
   'image-describe': 10,    // 10 alt-text /jour gratuit
   'summarize': 3,          // 3 Memory Lane /jour gratuit
   'smart-reply': 30,       // 30 suggestions /jour gratuit
-  'translate': 20          // 20 traductions /jour gratuit
+  'translate': 20,         // 20 traductions /jour gratuit
+  'ia-chat': 30            // Lot 2 (E) : 30 messages Apex /jour gratuit (avant : illimité)
 };
-async function checkPremiumOrQuota(env, userId, feature) {
+// Lot 2 (E) : la lecture KV puis l'écriture KV après l'appel IA laissaient N
+// requêtes simultanées passer toutes sur « 0 utilisé » (coût IA non borné).
+// Le verrou est désormais un compteur D1 incrémenté ATOMIQUEMENT AVANT l'appel
+// (UPDATE … SET used=used+1 WHERE used < limite, on vérifie `changes`). La
+// réservation est rendue si la requête n'a finalement rien consommé (échec IA,
+// réponse en cache, corps invalide) — voir _releaseUnconsumedQuota(). Le KV
+// reste le miroir d'affichage (/api/premium/quota) et un pré-filtre rapide.
+const _pendingQuota = new WeakMap();   // request → réservations non consommées
+async function _reserveQuotaD1(env, userId, feature, day, limit, kvUsed) {
+  const DB = env.APEX_CHAT_DB;
+  // Amorce du jour (reprend l'usage déjà compté en KV, une seule fois).
+  await DB.prepare(
+    'INSERT OR IGNORE INTO ai_quota (user_id, feature, day, used) VALUES (?, ?, ?, ?)'
+  ).bind(userId, feature, day, Math.max(0, kvUsed | 0)).run();
+  const r = await DB.prepare(
+    'UPDATE ai_quota SET used = used + 1 WHERE user_id=? AND feature=? AND day=? AND used < ?'
+  ).bind(userId, feature, day, limit).run();
+  const c = _changes(r);
+  if (c === null) throw new Error('compteur D1 sans meta.changes');   // → repli KV (comportement d'avant)
+  return c === 1;
+}
+async function checkPremiumOrQuota(env, userId, feature, request) {
   if (!userId) return { ok: false, reason: 'no_user' };
+  let u;
   try {
-    const u = await env.APEX_CHAT_DB.prepare(
+    u = await env.APEX_CHAT_DB.prepare(
       'SELECT premium_until, premium_plan FROM users WHERE id=?'
     ).bind(userId).first();
-    const isPremium = u && u.premium_until && u.premium_until > Date.now();
-    if (isPremium) return { ok: true, premium: true, plan: u.premium_plan };
-    // Non-premium : check quota daily KV
-    const limit = FREE_QUOTAS[feature] || 5;
-    const today = new Date().toISOString().slice(0, 10);
-    const kvKey = `quota:${userId}:${feature}:${today}`;
-    const usedStr = env.APEX_CHAT_KV ? await env.APEX_CHAT_KV.get(kvKey) : null;
-    const used = parseInt(usedStr || '0', 10);
-    if (used >= limit) {
-      return { ok: false, reason: 'quota_exceeded', used, limit, feature };
-    }
-    return { ok: true, premium: false, used, limit, kvKey, _incr: true };
   } catch (e) {
     console.error('[premium-quota]', e);
-    return { ok: true, premium: false, error: 'check_failed' }; // fail open
+    return { ok: true, premium: false, error: 'check_failed' }; // fail open (base illisible)
   }
+  const isPremium = u && u.premium_until && u.premium_until > Date.now();
+  if (isPremium) return { ok: true, premium: true, plan: u.premium_plan };
+  const limit = FREE_QUOTAS[feature] || 5;
+  const today = new Date().toISOString().slice(0, 10);
+  const kvKey = `quota:${userId}:${feature}:${today}`;
+  let used = 0;
+  try {
+    const usedStr = env.APEX_CHAT_KV ? await env.APEX_CHAT_KV.get(kvKey) : null;
+    used = parseInt(usedStr || '0', 10) || 0;
+  } catch (_) { used = 0; }
+  if (used >= limit) return { ok: false, reason: 'quota_exceeded', used, limit, feature };
+  let reserved = false;
+  try {
+    reserved = await _reserveQuotaD1(env, userId, feature, today, limit, used);
+  } catch (e) {
+    // Table ai_quota absente (fenêtre de migration) : ancien comportement (KV seul).
+    console.warn('[premium-quota] compteur D1 indisponible :', e && e.message);
+    return { ok: true, premium: false, used, limit, kvKey, _incr: true };
+  }
+  if (!reserved) return { ok: false, reason: 'quota_exceeded', used: Math.max(used, limit), limit, feature };
+  const q = { ok: true, premium: false, used, limit, kvKey, _incr: true, _d1: { userId, feature, day: today } };
+  if (request && typeof request === 'object') {
+    const list = _pendingQuota.get(request) || [];
+    list.push(q);
+    _pendingQuota.set(request, list);
+  }
+  return q;
 }
 async function consumeQuota(env, quotaResult) {
-  if (!quotaResult || !quotaResult._incr || !quotaResult.kvKey || !env.APEX_CHAT_KV) return;
+  if (!quotaResult || !quotaResult._incr) return;
+  quotaResult._consumed = true;   // la réservation D1 est définitivement acquise
+  if (!quotaResult.kvKey || !env.APEX_CHAT_KV) return;
   try {
     const used = (quotaResult.used || 0) + 1;
     await env.APEX_CHAT_KV.put(quotaResult.kvKey, String(used), { expirationTtl: 90000 }); // ~25h
   } catch (e) { console.error('[quota-consume]', e); }
+}
+// Rend les réservations D1 d'une requête qui n'a rien consommé (échec, cache…).
+async function _releaseUnconsumedQuota(request, env) {
+  const list = _pendingQuota.get(request);
+  if (!list) return;
+  _pendingQuota.delete(request);
+  for (const q of list) {
+    if (q._consumed || !q._d1) continue;
+    try {
+      await env.APEX_CHAT_DB.prepare(
+        'UPDATE ai_quota SET used = used - 1 WHERE user_id=? AND feature=? AND day=? AND used > 0'
+      ).bind(q._d1.userId, q._d1.feature, q._d1.day).run();
+    } catch (_) { /* best-effort */ }
+  }
 }
 
 async function getModeConfig(env) {
@@ -330,10 +420,18 @@ async function getModeConfig(env) {
   return config;
 }
 
+// Lot 2 (A) : SEUL point d'écriture du journal d'audit. audit_log.id est un
+// INTEGER AUTOINCREMENT (0001_init.sql) : quatre routes y inséraient un UUID →
+// « datatype mismatch » → la route répondait 500 alors que l'action était faite.
+// Les valeurs non sérialisables par D1 (undefined, objet Request passé par erreur
+// en ip_hash) sont ramenées à NULL ; `details` est un OBJET (une chaîne déjà
+// encodée est gardée telle quelle, jamais ré-encodée).
 async function auditLog(env, actor_id, action, target_type, target_id, details, ipHash, ua) {
+  const s = (v) => (typeof v === 'string' ? v : null);
+  const d = typeof details === 'string' ? details : JSON.stringify(details || {});
   await env.APEX_CHAT_DB.prepare(
     'INSERT INTO audit_log (actor_id, action, target_type, target_id, details, ts, ip_hash, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(actor_id, action, target_type, target_id, JSON.stringify(details || {}), Date.now(), ipHash, ua).run();
+  ).bind(String(actor_id || 'system'), action, s(target_type), target_id == null ? null : String(target_id), d, Date.now(), s(ipHash), s(ua)).run();
 }
 
 // ============================================================================
@@ -549,29 +647,23 @@ export async function handleTrustedCircle(request, env, method) {
 
 export async function handleSendOtp(request, env) {
   const { phone, name } = await readJson(request);
-  if (!phone || !/^\+?\d{8,15}$/.test(phone)) return err('Numéro invalide', 400);
-  // Règle Kevin : prénom + nom obligatoires (2 tokens ≥2 chars), sécurité anti-impersonation
-  // Exception : admin Kevin reconnu via téléphone secret peut ne pas avoir 2 tokens
+  if (typeof phone !== 'string' || !/^\+?\d{8,15}$/.test(phone)) return err('Numéro invalide', 400);
+  // Règle Kevin : prénom + nom obligatoires (2 tokens ≥2 chars), sécurité anti-impersonation.
+  // Lot 2 (O) : la même règle pour TOUS les numéros. L'exception « numéro admin »
+  // permettait de deviner le numéro de Kevin (200 avec un seul mot, 400 ailleurs).
+  // L'app envoie toujours prénom + nom (et reconnaît Kevin par son nom, sans cet appel).
   const kevinSecret = normPhone(env.KEVIN_PHONE_E164);
   const cleanPhone = normPhone(phone);   // comparaison robuste 0X↔+33X, \n, espaces
-  if (!(kevinSecret && cleanPhone === kevinSecret)) {
-    const tokens = String(name || '').trim().split(/\s+/).filter(t => t.length >= 2);
-    if (tokens.length < 2) return err('Prénom ET nom requis (ex: Marie Dupont) — sécurité', 400, 'name_too_short');
-  }
+  const tokens = String(typeof name === 'string' ? name : '').trim().split(/\s+/).filter(t => t.length >= 2);
+  if (tokens.length < 2) return err('Prénom ET nom requis (ex: Marie Dupont) — sécurité', 400, 'name_too_short');
 
   const phoneHash = await sha256(cleanPhone);
-
-  // ============ BYPASS ADMIN (Kevin reconnu via numéro) ============
-  // Kevin admin auto-reconnu via KEVIN_PHONE_E164 → pas besoin d'OTP
-  // SECU : ne PAS retourner l'OTP fictif dans la réponse (audit P0)
-  if (kevinSecret && cleanPhone === kevinSecret) {
-    return json({
-      ok: true,
-      sessionId: phoneHash,
-      provider: 'admin-bypass',
-      _admin_bypass: true
-    });
-  }
+  // Lot 2 (O) : le numéro admin ne reçoit plus de réponse spéciale
+  // (`provider:'admin-bypass'`, `_admin_bypass`) qui révélait QUEL numéro est
+  // celui de l'admin, avant même le plafond. Il passe le plafond comme tout le
+  // monde, puis reçoit une réponse de la même forme qu'un envoi normal — sans
+  // qu'aucun code ne soit stocké ni envoyé (sa connexion passe par verify-otp).
+  const isAdminNumber = !!(kevinSecret && cleanPhone === kevinSecret);
 
   // ============ CERCLE DE CONFIANCE — SUPPRIMÉ (Kevin 2026-07-01 « annule cercle
   // confiance », audit sécu P1-1). Le login sans SMS par numéro seul (numéro = credential
@@ -596,6 +688,25 @@ export async function handleSendOtp(request, env) {
   // prédictible si l'état du PRNG est deviné. getRandomValues = imprévisible.
   const otp = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
   const otpHash = await sha256(otp + ':' + cleanPhone);
+
+  if (isAdminNumber) {
+    // Même forme qu'un envoi normal ; RIEN n'est stocké (aucun code valable n'existe
+    // pour ce numéro : la connexion admin reste réservée à verify-otp + garde MFA).
+    if (env.VONAGE_API_KEY && env.VONAGE_API_SECRET) {
+      return json({ ok: true, sessionId: phoneHash, provider: 'vonage' });
+    }
+    if (env.ALLOW_TEST_OTP === 'true') {
+      return json({
+        ok: true, sessionId: phoneHash, provider: 'inline',
+        _dev_otp: otp,
+        _dev_note: 'SMS indispo (config). Code affiche (mode cercle prive).',
+        _show_code_in_app: true
+      });
+    }
+    return err('Envoi du SMS impossible pour le moment, réessaie', 502, 'sms_unavailable', {
+      detail: 'aucun provider SMS disponible'
+    });
+  }
 
   // Stocke OTP hashé en D1 (TTL 5 min)
   await env.APEX_CHAT_DB.prepare(
@@ -693,31 +804,47 @@ export async function handleSendOtp(request, env) {
 //  Vérification réelle via Firebase JWKS public keys
 // ============================================================================
 
+// Lot 2 (Y) : l'ancienne version téléchargeait des CERTIFICATS X.509 (PEM) et les
+// importait comme « spki » — un certificat n'est pas une clé SPKI, l'import
+// échouait toujours (chemin Firebase mort). On lit désormais le JWKS officiel de
+// securetoken (clés publiques au format JWK) et on importe en 'jwk'. Fail-closed :
+// aucune clé exploitable → exception → connexion refusée.
+export const FIREBASE_JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 export async function fetchFirebasePublicKeys(env) {
-  // Cache 1h dans KV
-  const cached = await env.APEX_CHAT_CACHE?.get('firebase:public_keys', 'json');
-  if (cached && cached.expires_at > Date.now()) return cached.keys;
+  // Cache 1h dans KV (clé distincte de l'ancien cache de certificats PEM)
+  try {
+    const cached = await env.APEX_CHAT_CACHE?.get('firebase:jwks', 'json');
+    if (cached && cached.expires_at > Date.now() && Array.isArray(cached.keys)) return cached.keys;
+  } catch (_) { /* cache illisible → on refetch */ }
 
-  const response = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+  const response = await fetch(FIREBASE_JWKS_URL);
   if (!response.ok) throw new Error('Firebase JWKS fetch failed');
-  const keys = await response.json();
+  const data = await response.json();
+  const keys = (data && Array.isArray(data.keys)) ? data.keys.filter(k => k && k.kty === 'RSA' && k.kid && k.n && k.e) : [];
+  if (!keys.length) throw new Error('Firebase JWKS vide');
 
-  await env.APEX_CHAT_CACHE?.put('firebase:public_keys', JSON.stringify({
-    keys, expires_at: Date.now() + 3600000
-  }), { expirationTtl: 3600 }).catch(() => {});
+  try {
+    await env.APEX_CHAT_CACHE?.put('firebase:jwks', JSON.stringify({
+      keys, expires_at: Date.now() + 3600000
+    }), { expirationTtl: 3600 });
+  } catch (_) {}
 
   return keys;
 }
 
 export async function verifyFirebaseIdToken(idToken, env) {
   if (!env.FIREBASE_PROJECT_ID) throw new Error('FIREBASE_PROJECT_ID non configuré');
+  if (typeof idToken !== 'string') throw new Error('Token Firebase malformé');
 
   const [headerB64, payloadB64, sigB64] = idToken.split('.');
   if (!headerB64 || !payloadB64 || !sigB64) throw new Error('Token Firebase malformé');
 
   const decode = (s) => atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(s.length + (4 - s.length % 4) % 4, '='));
-  const header = JSON.parse(decode(headerB64));
-  const payload = JSON.parse(decode(payloadB64));
+  let header, payload;
+  try {
+    header = JSON.parse(decode(headerB64));
+    payload = JSON.parse(decode(payloadB64));
+  } catch (_) { throw new Error('Token Firebase malformé'); }
 
   // Vérifications RGPD/sécurité
   const now = Math.floor(Date.now() / 1000);
@@ -727,19 +854,17 @@ export async function verifyFirebaseIdToken(idToken, env) {
   if (payload.iss !== `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`) throw new Error('Token iss incorrect');
   if (!payload.sub) throw new Error('Token sub manquant');
   if (header.alg !== 'RS256') throw new Error('Token alg incorrect');
+  // Lot 2 (Y) : un jeton SANS exp valait à vie — exp est obligatoire.
+  if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) throw new Error('Token expiré (exp manquant)');
 
   // Vérifier signature
   const keys = await fetchFirebasePublicKeys(env);
-  const certPem = keys[header.kid];
-  if (!certPem) throw new Error('Token kid inconnu');
+  const jwk = keys.find(k => k.kid === header.kid);
+  if (!jwk) throw new Error('Token kid inconnu');
 
-  // Convertir cert PEM → SPKI public key
-  const certB64 = certPem.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s/g, '');
-  const certBytes = Uint8Array.from(atob(certB64), c => c.charCodeAt(0));
-  // Note: certificat X.509, on extrait la public key SPKI
-  // Pour simplifier, on importe directement via crypto.subtle
   const publicKey = await crypto.subtle.importKey(
-    'spki', certBytes, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']
+    'jwk', { kty: 'RSA', n: jwk.n, e: jwk.e, alg: 'RS256', ext: true },
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']
   );
   const sigBytes = Uint8Array.from(decode(sigB64), c => c.charCodeAt(0));
   const dataBytes = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
@@ -938,18 +1063,31 @@ export async function handleVerifyOtp(request, env) {
     if (pending.attempts >= 5) {
       return err('Trop de tentatives. Reessaie dans 5 min.', 429, 'otp_max_attempts');
     }
+    // Lot 2 (N) : lecture puis incrément séparés = N essais simultanés passaient
+    // tous sur « attempts=0 » (force brute parallèle). L'essai est désormais
+    // RÉSERVÉ atomiquement AVANT la comparaison ; 0 ligne modifiée = plus d'essai.
+    const slot = await env.APEX_CHAT_DB.prepare(
+      'UPDATE otp_pending SET attempts=attempts+1 WHERE phone_hash=? AND attempts<5'
+    ).bind(phoneHash).run();
+    const slotN = _changes(slot);
+    if (slotN !== null && slotN !== 1) {
+      return err('Trop de tentatives. Reessaie dans 5 min.', 429, 'otp_max_attempts');
+    }
     if (pending.otp_hash !== otpHash) {
-      await env.APEX_CHAT_DB.prepare('UPDATE otp_pending SET attempts=attempts+1 WHERE phone_hash=?').bind(phoneHash).run();
       return err('Code incorrect. Verifie tes 6 chiffres.', 401, 'otp_wrong');
     }
-    // OK : supprime l'OTP utilisé
-    await env.APEX_CHAT_DB.prepare('DELETE FROM otp_pending WHERE phone_hash=?').bind(phoneHash).run();
+    // OK : supprime l'OTP utilisé — une seule requête gagne (usage unique).
+    const used = await env.APEX_CHAT_DB.prepare('DELETE FROM otp_pending WHERE phone_hash=? AND otp_hash=?').bind(phoneHash, otpHash).run();
+    if (_changes(used) === 0) {
+      return err('Code déjà utilisé. Recommence l\'inscription.', 400, 'no_otp');
+    }
   }
   // Mode 2 : Firebase ID token (fallback si configuré)
   else if (firebase_id_token && firebase_id_token !== '') {
     try {
       var firebasePayload = await verifyFirebaseIdToken(firebase_id_token, env);
-      if (firebasePayload.phone_number !== phone) {
+      // Lot 2 (Y) : comparaison sur le numéro NORMALISÉ (0612… ≠ +33612… en brut).
+      if (!firebasePayload.phone_number || normPhone(firebasePayload.phone_number) !== phoneNorm) {
         return err('Numero ne correspond pas au token Firebase', 401, 'phone_mismatch');
       }
     } catch (e) {
@@ -1121,9 +1259,18 @@ export async function handleSsoFromApex(request, env) {
   // Le sub du token DOIT correspondre à apex_uid
   if (apexPayload.sub !== apex_uid) return err('apex_uid mismatch', 401, 'uid_mismatch');
 
-  // Token court TTL (5 min max pour SSO)
-  if (apexPayload.exp && apexPayload.exp * 1000 < Date.now()) return err('Token Apex expiré', 401);
-  if (apexPayload.iat && apexPayload.iat > Math.floor(Date.now() / 1000) + 60) return err('Token Apex futur', 401);
+  // Token court TTL (5 min max pour SSO).
+  // Lot 2 (Q) : exp et iat étaient OPTIONNELS — un jeton sans exp valait à vie.
+  // Les deux sont désormais exigés, et la durée de vie exp-iat ne dépasse pas 300 s.
+  const nowS = Math.floor(Date.now() / 1000);
+  if (!Number.isFinite(apexPayload.exp) || !Number.isFinite(apexPayload.iat)) {
+    return err('Token Apex sans exp/iat', 401, 'apex_token_no_exp');
+  }
+  if (apexPayload.exp - apexPayload.iat > 300 || apexPayload.exp <= apexPayload.iat) {
+    return err('Token Apex trop long (max 5 min)', 401, 'apex_token_ttl');
+  }
+  if (apexPayload.exp * 1000 < Date.now()) return err('Token Apex expiré', 401);
+  if (apexPayload.iat > nowS + 60) return err('Token Apex futur', 401);
 
   let user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE apex_uid=?').bind(apex_uid).first();
   if (!user) {
@@ -1214,19 +1361,33 @@ export async function handleSsoFromKdmc(request, env) {
   let user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE kdmc_uid=?').bind(uid).first();
   if (!user) {
     const id = 'kdmc_' + uid;
-    const pseudo = name.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20)
+    const basePseudo = name.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20)
       || ('user' + Date.now().toString(36).slice(-6));
-    try {
-      await env.APEX_CHAT_DB.prepare(
-        `INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias,
-         identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status, kdmc_uid)
-         VALUES (?, ?, ?, 'PENDING_SSO', 'PENDING_SSO', ?, ?, 'PENDING_PQXDH', 'PENDING_PQXDH', 'PENDING_PQXDH', ?, 'kdmc-sso', ?, 'active', ?)
-         ON CONFLICT(id) DO UPDATE SET kdmc_uid=excluded.kdmc_uid`
-      ).bind(id, pseudo, name, isAdmin ? 1 : 0, isAdmin ? 1 : 0, id, Date.now(), uid).run();
-      user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
-    } catch (e) {
-      return err('Création SSO kd-mc.com échouée : ' + e.message, 500, 'kdmc_create_failed');
+    // Lot 2 (X) : pseudo UNIQUE — un homonyme déjà inscrit faisait échouer
+    // l'INSERT À CHAQUE connexion (500 permanent). On ajoute un suffixe et on retente.
+    const insertWith = (pseudo) => env.APEX_CHAT_DB.prepare(
+      `INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias,
+       identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status, kdmc_uid)
+       VALUES (?, ?, ?, 'PENDING_SSO', 'PENDING_SSO', ?, ?, 'PENDING_PQXDH', 'PENDING_PQXDH', 'PENDING_PQXDH', ?, 'kdmc-sso', ?, 'active', ?)
+       ON CONFLICT(id) DO UPDATE SET kdmc_uid=excluded.kdmc_uid`
+    ).bind(id, pseudo, name, isAdmin ? 1 : 0, isAdmin ? 1 : 0, id, Date.now(), uid).run();
+    let lastErr = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const pseudo = attempt === 0 ? basePseudo
+        : basePseudo.slice(0, 13) + '_' + _randomCode(6, 'abcdefghijkmnpqrstuvwxyz23456789');
+      try {
+        await insertWith(pseudo);
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (!/UNIQUE/i.test(String(e && e.message)) || !/pseudo/i.test(String(e && e.message))) break;
+      }
     }
+    if (lastErr) {
+      return err('Création SSO kd-mc.com échouée : ' + lastErr.message, 500, 'kdmc_create_failed');
+    }
+    user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
   }
   if (!user) return err('User kd-mc.com introuvable après création', 500, 'kdmc_user_missing');
 
@@ -1412,6 +1573,25 @@ async function handleUserHeartbeat(request, env) {
   return json({ ok: true });
 }
 
+// Pseudo : même règle que l'inscription (handleVerifyOtp).
+const PSEUDO_RE = /^[a-zA-Z0-9_-]{3,20}$/;
+const AVATAR_MAX = 200 * 1024;
+// Lot 2 (S) : avatar_url modifiable par PATCH passait SANS la validation de
+// POST /api/users/me/avatar (n'importe quelle URL / javascript: / texte) et était
+// tronqué à 500 caractères (une vraie image data: devenait illisible).
+// Même règle partout : vide (= effacer) ou data:image/… ≤ 200 Ko.
+function _checkAvatarUrl(v) {
+  if (v === undefined) return { value: undefined };
+  if (v === null || v === '') return { value: null };
+  if (typeof v !== 'string' || !v.startsWith('data:image/')) {
+    return { error: err('avatar_url doit être une image base64 (data:image/...)', 400, 'bad_data_url') };
+  }
+  if (v.length > AVATAR_MAX) {
+    return { error: err('Avatar trop lourd (max 200KB)', 413, 'avatar_too_large', { size: v.length, max: AVATAR_MAX }) };
+  }
+  return { value: v };
+}
+
 // PATCH /api/users/me — update profil safe (avatar, bio, language, timezone, display_name)
 export async function handleUpdateMe(request, env) {
   const auth = await getAuthUser(request, env);
@@ -1427,17 +1607,22 @@ export async function handleUpdateMe(request, env) {
   ];
   const updates = [];
   const args = [];
-  // Validation pseudo : 3-20 chars, alphanum + underscore, pas de pattern auto
+  // Validation pseudo : 3-20 chars, alphanum + underscore + tiret (Lot 2 (S) :
+  // même règle qu'à l'inscription — un pseudo « jean-paul » choisi au signup
+  // ne pouvait plus être ré-enregistré depuis la fiche).
   if (body.pseudo !== undefined) {
     const p = String(body.pseudo).trim();
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(p)) {
-      return err('Pseudo invalide (3-20 caractères, lettres/chiffres/underscore)', 400, 'pseudo_invalid', {
-        received: body.pseudo, hint: 'ex: marie_d, kevin42'
+    if (!PSEUDO_RE.test(p)) {
+      return err('Pseudo invalide (3-20 caractères, lettres/chiffres/_/-)', 400, 'pseudo_invalid', {
+        received: body.pseudo, hint: 'ex: marie_d, jean-paul, kevin42'
       });
     }
   }
+  const av = _checkAvatarUrl(body.avatar_url);
+  if (av.error) return av.error;
   for (const k of ALLOWED) {
     if (body[k] !== undefined) {
+      if (k === 'avatar_url') { updates.push('avatar_url=?'); args.push(av.value); continue; }
       const v = String(body[k] || '').slice(0, 500);
       updates.push(`${k}=?`);
       args.push(v);
@@ -1466,7 +1651,7 @@ export async function handleUpdateMe(request, env) {
   }
 
   await auditLog(env, auth.sub, 'profile_update', 'user', auth.sub,
-    JSON.stringify(Object.keys(body)), null, request.headers.get('user-agent') || '');
+    { fields: Object.keys(body) }, null, request.headers.get('user-agent') || '');
 
   const user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(auth.sub).first();
   return json({ ok: true, user });
@@ -1505,6 +1690,7 @@ async function handleUploadMyAvatar(request, env) {
     return err('JSON body invalide', 400, 'bad_json', { detail: e?.message });
   }
   const dataUrl = body.data_url || '';
+  if (typeof dataUrl !== 'string') return err('data_url doit être une chaîne', 400, 'bad_data_url');
   if (dataUrl && !dataUrl.startsWith('data:image/')) {
     return err('data_url doit être une image base64 (data:image/...)', 400, 'bad_data_url');
   }
@@ -1526,6 +1712,20 @@ async function handleUploadMyAvatar(request, env) {
   }
 }
 
+// Fonctions pilotables (interrupteurs admin globaux + catalogue de l'app, K.FEATURE_CATALOG).
+const ADMIN_FEATURE_KEYS = [
+  'voice_messages', 'video_calls', 'time_capsule', 'letters_24h', 'memory_lane',
+  'stories', 'polls', 'reactions', 'mini_apps', 'e2e_strict', 'kevin_invisible',
+  'track_geoloc', 'track_devices', 'admin_audit_log', 'auto_invitations',
+  'magic_links', 'sms_otp', 'sso_apex', 'payment_qr', 'push_notifications',
+  'signalements', 'ia_chat'
+];
+const USER_TOGGLE_FEATURES = new Set([
+  ...ADMIN_FEATURE_KEYS,
+  'ai_assistant', 'anti_scam', 'audio_calls', 'auto_translate', 'file_sharing',
+  'location_sharing', 'push_notifs',
+]);
+
 // v1.1.169 — POST /api/admin/user-toggles
 // Per-user feature toggle. Frontend (K._userToggleCycle) appelait cet
 // endpoint depuis v1.1.152 mais il n'existait pas → .catch(()=>{}) masquait
@@ -1543,6 +1743,11 @@ async function handleAdminSetUserToggle(request, env) {
   const feature = String(body.feature || '').slice(0, 64);
   const value = body.value;
   if (!feature) return err('feature requis', 400, 'feature_missing');
+  // Lot 2 (T) : n'importe quel nom de fonction était écrit dans system_config
+  // (table des réglages GLOBAUX) — liste blanche des fonctions réelles.
+  if (!USER_TOGGLE_FEATURES.has(feature)) {
+    return err('Fonction inconnue', 400, 'feature_unknown', { feature });
+  }
   if (targetUid !== auth.sub) {
     // Modifie un autre user → admin obligatoire
     const u = await env.APEX_CHAT_DB.prepare('SELECT is_admin FROM users WHERE id=?').bind(auth.sub).first();
@@ -1594,14 +1799,22 @@ async function handleListConversations(request, env) {
   // à CHAQUE appel — et chaque client appelle cette route toutes les 60 s. Ils restent
   // automatiques mais au plus une fois toutes les 10 minutes (verrou KV), sinon on sert la
   // liste directement. Sans KV (tests, panne) : comportement d'avant.
-  let healDue = true;
-  try {
-    if (env.APEX_CHAT_KV) {
-      if (await env.APEX_CHAT_KV.get('heal:convlist')) healDue = false;
-      else await env.APEX_CHAT_KV.put('heal:convlist', String(Date.now()), { expirationTtl: 600 });
-    }
-  } catch (_) { healDue = true; }
-  if (healDue) try {
+  // Lot 2 (W) : UN SEUL verrou global « heal:convlist » faisait que le premier
+  // utilisateur de la fenêtre de 10 min était le seul soigné — les réparations
+  // PROPRES à chaque compte (fusion de ses doublons, ses DM surpeuplés, rattrapage
+  // admin) ne tournaient jamais pour les autres. Deux verrous désormais : un
+  // global pour les purges communes, un par utilisateur pour ses soins à lui.
+  const _due = async (key) => {
+    try {
+      if (!env.APEX_CHAT_KV) return true;
+      if (await env.APEX_CHAT_KV.get(key)) return false;
+      await env.APEX_CHAT_KV.put(key, String(Date.now()), { expirationTtl: 600 });
+      return true;
+    } catch (_) { return true; }
+  };
+  const userHealDue = await _due('heal:convlist:u:' + auth.sub);
+  const globalHealDue = await _due('heal:convlist');
+  if (userHealDue) try {
     // v1.1.195 — si c'est Kevin (admin) et que kdmc_admin n'a pas encore son VRAI
     // numéro (placeholder), on le lui donne MAINTENANT depuis sa session existante
     // (sans re-login) → résout les stubs local_+<numéro> dans la même requête.
@@ -1612,15 +1825,21 @@ async function handleListConversations(request, env) {
         await consolidateKevinIntoAdmin(env, want, await sha256(want), Date.now());
       }
     }
+  } catch (e) { console.warn('[auto-heal-convlist/admin]', e?.message); }
+  if (globalHealDue) try {
     await _healLocalConvMembers(env.APEX_CHAT_DB);   // v1.1.192 : local_+numéro → vrai compte
+  } catch (e) { console.warn('[auto-heal-convlist/local]', e?.message); }
+  if (userHealDue) try {
     const me = await env.APEX_CHAT_DB.prepare(
       'SELECT id, phone, real_name, pseudo FROM users WHERE id=?'
     ).bind(auth.sub).first();
     if (me) await autoHealPerson(env, me);
     await _healOverpopulatedDms(env, auth.sub);        // v1.1.215 : soigne les PAIRS des DM > 2 membres (doublons Laurence)
+  } catch (e) { console.warn('[auto-heal-convlist/user]', e?.message); }
+  if (globalHealDue) try {
     await cleanupEmptyConversations(env.APEX_CHAT_DB);  // v1.1.195 : purge convs vides/archivées
     await cleanupGhostMembers(env.APEX_CHAT_DB);        // v1.1.197 : retire membres supprimés/fusionnés
-  } catch (e) { console.warn('[auto-heal-convlist]', e?.message); }
+  } catch (e) { console.warn('[auto-heal-convlist/global]', e?.message); }
 
   // v1.1.172 FIX P0 (audit crew) : joindre la clé publique du pair (DM) pour
   // que le client puisse établir la session E2E. Sans ça, peer_pubkey restait
@@ -1782,7 +2001,20 @@ export async function handleMediaUpload(request, env) {
   if (!env.APEX_CHAT_MEDIA) return err('Stockage média indisponible', 503, 'no_r2');
   const mime = request.headers.get('content-type') || 'application/octet-stream';
   const nameRaw = request.headers.get('x-file-name') || 'fichier';
-  const name = decodeURIComponent(nameRaw).replace(/[^\w.\-() ]+/g, '_').slice(0, 120);
+  // Lot 2 (P) : un « % » mal formé dans x-file-name levait URIError → 500.
+  const decodedName = _safeDecode(nameRaw);
+  const name = (decodedName === null ? nameRaw : decodedName).replace(/[^\w.\-() ]+/g, '_').slice(0, 120) || 'fichier';
+  // Lot 2 (V) : le média est rattaché à SA conversation (si le client la donne),
+  // pour que seuls les membres de CETTE conversation puissent le lire.
+  let convId = null;
+  try { convId = new URL(request.url).searchParams.get('conv_id') || null; } catch (_) {}
+  if (convId !== null) {
+    if (convId.length > 128) return err('conv_id invalide', 400, 'bad_conv_id');
+    const member = await env.APEX_CHAT_DB.prepare(
+      'SELECT 1 FROM conversation_members WHERE conv_id=? AND user_id=?'
+    ).bind(convId, auth.sub).first();
+    if (!member) return err('Pas membre de cette conversation', 403, 'not_member');
+  }
   const buf = await request.arrayBuffer();
   const size = buf.byteLength;
   if (!size) return err('Fichier vide', 400, 'empty');
@@ -1795,13 +2027,19 @@ export async function handleMediaUpload(request, env) {
   const expires = now + (isPremium ? 90 : 30) * 86400000;
   try {
     await env.APEX_CHAT_MEDIA.put(r2key, buf, { httpMetadata: { contentType: mime } });
-    await env.APEX_CHAT_DB.prepare(
-      `INSERT INTO media (id, owner_id, r2_key, size, mime, uploaded_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).bind(id, auth.sub, r2key, size, mime, now, expires).run();
+    if (convId) {
+      await env.APEX_CHAT_DB.prepare(
+        `INSERT INTO media (id, owner_id, r2_key, size, mime, uploaded_at, expires_at, conv_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id, auth.sub, r2key, size, mime, now, expires, convId).run();
+    } else {
+      await env.APEX_CHAT_DB.prepare(
+        `INSERT INTO media (id, owner_id, r2_key, size, mime, uploaded_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id, auth.sub, r2key, size, mime, now, expires).run();
+    }
   } catch (e) {
     return err('Échec upload média', 500, 'r2_put_failed', { detail: e?.message });
   }
-  return json({ ok: true, id, url: '/api/media/' + id, mime, size, name });
+  return json({ ok: true, id, url: '/api/media/' + id, mime, size, name, conv_id: convId });
 }
 
 async function handleMediaGet(id, request, env) {
@@ -1810,12 +2048,31 @@ async function handleMediaGet(id, request, env) {
   const auth = await getAuthUser(request, env, { allowMediaTicket: true });
   if (!auth) return err('Non authentifié', 401);
   if (!env.APEX_CHAT_MEDIA) return err('Stockage média indisponible', 503, 'no_r2');
-  const row = await env.APEX_CHAT_DB.prepare('SELECT r2_key, mime, owner_id FROM media WHERE id=?').bind(id).first();
+  // Lot 2 (V) : conv_id (migration 0011) — repli sans la colonne pendant la fenêtre de déploiement.
+  let row;
+  try {
+    row = await env.APEX_CHAT_DB.prepare('SELECT r2_key, mime, owner_id, conv_id FROM media WHERE id=?').bind(id).first();
+  } catch (_) {
+    row = await env.APEX_CHAT_DB.prepare('SELECT r2_key, mime, owner_id FROM media WHERE id=?').bind(id).first();
+  }
   if (!row) return err('Média introuvable', 404, 'no_media');
+  // Lot 2 (V) : un média rattaché à une conversation n'est lisible que par les
+  // MEMBRES de cette conversation (avant : par quiconque partageait N'IMPORTE
+  // quelle conversation avec l'auteur — ex. une photo d'un DM privé lisible par
+  // les membres d'un groupe commun).
+  if (row.conv_id) {
+    if (row.owner_id !== auth.sub) {
+      const member = await env.APEX_CHAT_DB.prepare(
+        'SELECT 1 FROM conversation_members WHERE conv_id=? AND user_id=?'
+      ).bind(row.conv_id, auth.sub).first();
+      if (!member) return err('Accès refusé', 403, 'forbidden');
+    }
+  }
   // SÉCU (audit externe P1-2) : autorisation — seul le PROPRIÉTAIRE ou un membre d'une
   // conversation PARTAGÉE avec le propriétaire peut lire le média. Ferme l'IDOR « n'importe
   // quel média par son id ». (L'id reste un UUID 128 bits non énumérable = défense en profondeur.)
-  if (row.owner_id && row.owner_id !== auth.sub) {
+  // Règle conservée UNIQUEMENT pour les anciens médias sans conv_id.
+  else if (row.owner_id && row.owner_id !== auth.sub) {
     const shared = await env.APEX_CHAT_DB.prepare(
       'SELECT 1 FROM conversation_members a JOIN conversation_members b ON a.conv_id = b.conv_id WHERE a.user_id = ? AND b.user_id = ? LIMIT 1'
     ).bind(row.owner_id, auth.sub).first();
@@ -1843,6 +2100,11 @@ export async function handleCreateConversation(request, env) {
   const { type, name, members } = await readJson(request);
   if (!['dm', 'group', 'community', 'channel'].includes(type)) return err('Type invalide');
   if (!Array.isArray(members) || members.length < 1) return err('Membres requis');
+  // Lot 2 (M) : types stricts (un objet dans members/name faisait échouer le bind → 500).
+  if (members.length > 1024 || members.some(m => m !== null && m !== undefined && (typeof m !== 'string' || m.length > 128))) {
+    return err('Membres invalides (identifiants texte attendus)', 400, 'bad_members');
+  }
+  if (!_isOptStr(name, 200)) return err('Nom invalide', 400, 'bad_name');
   const DB = env.APEX_CHAT_DB;
 
   // v1.1.185 PRÉVENTION : résout chaque membre vers son compte CANONIQUE (suit
@@ -1864,6 +2126,11 @@ export async function handleCreateConversation(request, env) {
   }
   if (type === 'dm' && resolved.length === 0) {
     return err('Correspondant introuvable', 400, 'no_valid_peer');
+  }
+  // Lot 2 (U) : un « DM » à 3+ personnes était créé (le 1er pair servait à la
+  // déduplication, les autres entraient quand même) — un DM = exactement 1 pair.
+  if (type === 'dm' && resolved.length !== 1) {
+    return err('Un message direct se fait avec une seule personne', 400, 'dm_one_peer', { peers: resolved.length });
   }
 
   // Dédup DM côté serveur (sur la paire CANONIQUE) : réutilise le DM existant
@@ -2086,7 +2353,7 @@ async function handleConfigureCorePair(request, env) {
     }
     try {
       await auditLog(env, auth.sub, 'configure_core_pair', 'user', result.peer_user?.id,
-        { created: result.created, conv_id: result.conv_id }, request);
+        { created: result.created, conv_id: result.conv_id }, null);
     } catch(_) {}
     return json({ ok: true, ...result });
   } catch (e) {
@@ -2733,7 +3000,7 @@ async function handleHealDm(request, env) {
           .bind(cnt?.c || 2, last?.t || now, canonical.id).run();
         report.applied = done;
         try { await auditLog(env, auth.sub, 'heal_dm', 'conversation', canonical.id,
-          { cause: report.cause, peer: peer.id, actions: done.length }, request); } catch (_) {}
+          { cause: report.cause, peer: peer.id, actions: done.length }, null); } catch (_) {}
       }
     }
 
@@ -2746,7 +3013,7 @@ async function handleHealDm(request, env) {
       report.consolidated_fields = res.consolidated_fields;
       if (res.consolidate_error) report.consolidate_error = res.consolidate_error;
       try { await auditLog(env, auth.sub, 'merge_dup_accounts', 'user', peer.id,
-        { kept: peer.id, removed: dupAccounts.map(d => d.id) }, request); } catch (_) {}
+        { kept: peer.id, removed: dupAccounts.map(d => d.id) }, null); } catch (_) {}
     }
 
     // Réparation INTELLIGENTE complète du correspondant (même logique que l'auto
@@ -2941,6 +3208,10 @@ async function handleCreateInvitation(request, env) {
 
   const { phone, name, sent_via } = await readJson(request);
   if (!phone) return err('Numéro requis');
+  // Lot 2 (M) : `name.trim()` sur un objet levait → 500.
+  if (typeof phone !== 'string' || phone.length > 40 || !_isOptStr(name, 100) || !_isOptStr(sent_via, 40)) {
+    return err('Champs invalides', 400, 'bad_fields');
+  }
 
   const config = await getModeConfig(env);
   const maxPerDay = parseInt(config.MAX_INVITATIONS_PER_DAY || '50');
@@ -2959,8 +3230,7 @@ async function handleCreateInvitation(request, env) {
   const normalizedPhone = normPhone(phone);
   const phoneHash = await sha256(normalizedPhone);
   const niceName = (name || '').trim() || 'ami';
-  const code = Array.from(crypto.getRandomValues(new Uint8Array(8)))
-    .map(b => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[b % 30]).join('');
+  const code = _randomCode(8);
   const expiresAt = Date.now() + 7 * 86400000;
 
   // Pré-créer le user invité (ou marquer un existant comme authorisé)
@@ -3316,7 +3586,7 @@ export async function handleAdminWhitelistBulk(request, env) {
         exp: Math.floor(Date.now() / 1000) + 7 * 86400
       }, env.JWT_SIGN_KEY);
 
-      const code = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[b % 30]).join('');
+      const code = _randomCode(8);
       await env.APEX_CHAT_DB.prepare(
         `INSERT INTO invitations (code, inviter_id, invitee_phone_hash, sent_via, magic_token, created_at, expires_at)
          VALUES (?, ?, ?, 'admin-bulk', ?, ?, ?)`
@@ -3337,7 +3607,7 @@ export async function handleAdminWhitelistBulk(request, env) {
   }
 
   await auditLog(env, auth.sub, 'admin_whitelist_bulk', 'batch', null,
-    JSON.stringify({ count: results.length, ok_count: results.filter(r => r.ok).length }),
+    { count: results.length, ok_count: results.filter(r => r.ok).length },
     null, request.headers.get('user-agent') || '');
 
   return json({ ok: true, count: results.length, results });
@@ -3404,15 +3674,14 @@ export async function handleAdminInviteMagic(request, env) {
   }, env.JWT_SIGN_KEY);
 
   // Code court pour SMS (utilisable aussi)
-  const code = Array.from(crypto.getRandomValues(new Uint8Array(8)))
-    .map(b => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[b % 30]).join('');
+  const code = _randomCode(8);
   await env.APEX_CHAT_DB.prepare(
     `INSERT INTO invitations (code, inviter_id, invitee_phone_hash, sent_via, magic_token, created_at, expires_at)
      VALUES (?, ?, ?, 'admin-bypass', ?, ?, ?)`
   ).bind(code, auth.sub, phoneHash, magicToken, Date.now(), Date.now() + 7 * 86400000).run();
 
   await auditLog(env, auth.sub, 'admin_invite_magic', 'user', user.id,
-    JSON.stringify({ phone_last4: normalizedPhone.slice(-4), pseudo: user.pseudo }),
+    { phone_last4: normalizedPhone.slice(-4), pseudo: user.pseudo },
     null, request.headers.get('user-agent') || '');
 
   const baseUrl = env.APEX_CHAT_BASE_URL || 'https://9r4rxssx64-creator.github.io/CMCteams/messaging-app/';
@@ -3466,7 +3735,7 @@ export async function handleMagicLogin(request, env) {
   }, env.JWT_SIGN_KEY);
 
   await auditLog(env, user.id, 'magic_login_success', 'user', user.id,
-    JSON.stringify({ invited_by: payload.invited_by }),
+    { invited_by: payload.invited_by },
     null, request.headers.get('user-agent') || '');
   await captureConnection(env, request, user);
 
@@ -3591,11 +3860,18 @@ async function handleUpdateContact(id, request, env) {
   const body = await request.json().catch(() => ({}));
   const ALLOWED = ['display_name', 'first_name', 'last_name', 'real_name', 'email', 'bio',
     'address', 'city', 'country', 'job', 'birth_date', 'language', 'timezone', 'pseudo', 'avatar_url'];
-  if (body.pseudo !== undefined && !/^[a-zA-Z0-9_]{3,20}$/.test(String(body.pseudo).trim())) {
-    return err('Pseudo invalide (3-20, lettres/chiffres/_)', 400, 'pseudo_invalid');
+  // Lot 2 (S) : même règle de pseudo qu'à l'inscription (tiret accepté).
+  if (body.pseudo !== undefined && !PSEUDO_RE.test(String(body.pseudo).trim())) {
+    return err('Pseudo invalide (3-20, lettres/chiffres/_/-)', 400, 'pseudo_invalid');
   }
+  // Lot 2 (S) : avatar_url validé comme POST /api/users/me/avatar.
+  const av = _checkAvatarUrl(body.avatar_url);
+  if (av.error) return av.error;
   const sets = [], args = [];
-  for (const k of ALLOWED) if (body[k] !== undefined) { sets.push(`${k}=?`); args.push(String(body[k] || '').slice(0, 500)); }
+  for (const k of ALLOWED) if (body[k] !== undefined) {
+    sets.push(`${k}=?`);
+    args.push(k === 'avatar_url' ? av.value : String(body[k] || '').slice(0, 500));
+  }
   if (!sets.length) return err('Aucun champ à mettre à jour', 400, 'no_fields');
   sets.push('updated_at=?'); args.push(Date.now()); args.push(cid);
   try {
@@ -3605,7 +3881,7 @@ async function handleUpdateContact(id, request, env) {
     if (/UNIQUE.*pseudo|pseudo.*UNIQUE/i.test(msg)) return err('Pseudo déjà pris', 409, 'pseudo_taken', { detail: msg });
     return err('Échec mise à jour fiche', 500, 'update_failed', { detail: msg });
   }
-  try { await auditLog(env, auth.sub, 'contact_update', 'user', cid, JSON.stringify(Object.keys(body)), null, request.headers.get('user-agent') || ''); } catch (_) {}
+  try { await auditLog(env, auth.sub, 'contact_update', 'user', cid, { fields: Object.keys(body) }, null, request.headers.get('user-agent') || ''); } catch (_) {}
   const user = await DB.prepare('SELECT * FROM users WHERE id=?').bind(cid).first();
   return json({ ok: true, user });
 }
@@ -3625,7 +3901,7 @@ async function handleDeleteContact(id, request, env) {
     await DB.prepare("UPDATE users SET status='deleted', phone=?, updated_at=? WHERE id=?")
       .bind('deleted_' + cid, now, cid).run();
     await DB.prepare('DELETE FROM conversation_members WHERE user_id=?').bind(cid).run().catch(() => {});
-    await auditLog(env, auth.sub, 'contact_delete', 'user', cid, JSON.stringify({ pseudo: u.pseudo }), null, request.headers.get('user-agent') || '');
+    await auditLog(env, auth.sub, 'contact_delete', 'user', cid, { pseudo: u.pseudo }, null, request.headers.get('user-agent') || '');
   } catch (e) {
     return err('Échec suppression', 500, 'delete_failed', { detail: String(e?.message || '') });
   }
@@ -3736,7 +4012,7 @@ async function handleAdminUserAction(userId, action, request, env) {
   }
 
   await auditLog(env, auth.sub, 'admin_user_' + action, 'user', userId,
-    JSON.stringify({ action }),
+    { action },
     null, request.headers.get('user-agent') || '');
 
   return json(result);
@@ -3804,7 +4080,7 @@ async function handleAdminUserTimeline(userId, request, env) {
   ).bind(userId).first();
 
   await auditLog(env, auth.sub, 'admin_view_timeline', 'user', userId,
-    JSON.stringify({ limit, since }), null, request.headers.get('user-agent') || '');
+    { limit, since }, null, request.headers.get('user-agent') || '');
 
   return json({
     ok: true,
@@ -3964,13 +4240,7 @@ async function handleAdminGetToggles(request, env) {
 
   const config = await getModeConfig(env);
   // Tous les flags features sont stockés dans system_config (key/value)
-  const FEATURE_KEYS = [
-    'voice_messages', 'video_calls', 'time_capsule', 'letters_24h', 'memory_lane',
-    'stories', 'polls', 'reactions', 'mini_apps', 'e2e_strict', 'kevin_invisible',
-    'track_geoloc', 'track_devices', 'admin_audit_log', 'auto_invitations',
-    'magic_links', 'sms_otp', 'sso_apex', 'payment_qr', 'push_notifications',
-    'signalements', 'ia_chat'
-  ];
+  const FEATURE_KEYS = ADMIN_FEATURE_KEYS;
 
   const toggles = {};
   for (const key of FEATURE_KEYS) {
@@ -4012,7 +4282,7 @@ export async function handleAdminSetToggle(request, env) {
   }
 
   await auditLog(env, auth.sub, 'admin_toggle_set', user_id ? 'user' : 'global', user_id || feature,
-    JSON.stringify({ feature, enabled, user_id }),
+    { feature, enabled, user_id },
     null, request.headers.get('user-agent') || '');
 
   return json({ ok: true });
@@ -4137,6 +4407,13 @@ export async function handleAddMember(convId, request, env) {
 
   const { user_id, role } = await readJson(request);
   if (!user_id) return err('user_id requis');
+  if (typeof user_id !== 'string' || user_id.length > 128) return err('user_id invalide', 400, 'bad_user_id');
+  // Lot 2 (B) : le rôle était libre — un admin pouvait inscrire quelqu'un comme
+  // « owner » (ou tout autre texte). Seuls member et admin sont attribuables ici.
+  const newRole = role === undefined || role === null || role === '' ? 'member' : role;
+  if (newRole !== 'member' && newRole !== 'admin') {
+    return err('Rôle invalide (member ou admin)', 400, 'bad_role');
+  }
 
   // Vérifier que auth est owner ou admin de la conv
   const me = await env.APEX_CHAT_DB.prepare(
@@ -4145,6 +4422,15 @@ export async function handleAddMember(convId, request, env) {
   if (!me || !['owner', 'admin'].includes(me.role)) {
     return err('Droits insuffisants (owner/admin requis)', 403);
   }
+  // Lot 2 (B) : seul le propriétaire nomme un administrateur.
+  if (newRole === 'admin' && me.role !== 'owner') {
+    return err('Seul le propriétaire peut nommer un administrateur', 403, 'owner_required');
+  }
+  // Lot 2 (B) : la personne ajoutée doit exister (sinon membre fantôme).
+  const target = await env.APEX_CHAT_DB.prepare(
+    "SELECT id, status FROM users WHERE id=?"
+  ).bind(user_id).first();
+  if (!target || target.status === 'deleted') return err('Utilisateur introuvable', 404, 'user_not_found');
 
   // Vérifier que la conv n'est pas un DM (DM = 2 membres fixes)
   const conv = await env.APEX_CHAT_DB.prepare('SELECT type, member_count FROM conversations WHERE id=?').bind(convId).first();
@@ -4160,7 +4446,7 @@ export async function handleAddMember(convId, request, env) {
   await env.APEX_CHAT_DB.prepare(
     `INSERT OR IGNORE INTO conversation_members (conv_id, user_id, role, joined_at, kevin_invisible)
      VALUES (?, ?, ?, ?, 0)`
-  ).bind(convId, user_id, role || 'member', Date.now()).run();
+  ).bind(convId, user_id, newRole, Date.now()).run();
 
   // Update member_count
   const recount = await env.APEX_CHAT_DB.prepare(
@@ -4168,7 +4454,7 @@ export async function handleAddMember(convId, request, env) {
   ).bind(convId).first();
   await env.APEX_CHAT_DB.prepare('UPDATE conversations SET member_count=? WHERE id=?').bind(recount.c, convId).run();
 
-  await auditLog(env, auth.sub, 'add_member', 'conv', convId, { added: user_id, role: role || 'member' },
+  await auditLog(env, auth.sub, 'add_member', 'conv', convId, { added: user_id, role: newRole },
     await sha256(request.headers.get('CF-Connecting-IP') || ''), request.headers.get('User-Agent'));
 
   return json({ ok: true, member_count: recount.c });
@@ -4186,6 +4472,21 @@ export async function handleRemoveMember(convId, userId, request, env) {
   const isSelfLeave = auth.sub === userId;
   const isAdmin = me && ['owner', 'admin'].includes(me.role);
   if (!isSelfLeave && !isAdmin) return err('Droits insuffisants', 403);
+
+  // Lot 2 (B) : un admin pouvait retirer le PROPRIÉTAIRE ou un autre admin (prise
+  // de contrôle du groupe). Règles : personne ne retire le propriétaire ; seul le
+  // propriétaire retire un administrateur.
+  if (!isSelfLeave) {
+    const target = await env.APEX_CHAT_DB.prepare(
+      'SELECT role FROM conversation_members WHERE conv_id=? AND user_id=?'
+    ).bind(convId, userId).first();
+    if (target && target.role === 'owner') {
+      return err('Le propriétaire ne peut pas être retiré', 403, 'owner_protected');
+    }
+    if (target && target.role === 'admin' && me.role !== 'owner') {
+      return err('Seul le propriétaire peut retirer un administrateur', 403, 'owner_required');
+    }
+  }
 
   // Owner ne peut pas se retirer s'il y a d'autres membres (doit transférer ownership d'abord)
   if (me?.role === 'owner' && isSelfLeave) {
@@ -4216,8 +4517,27 @@ export async function handleRemoveMember(convId, userId, request, env) {
 export async function handleDeleteConversation(convId, request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
-  let step = 'leave';
+  let step = 'membership';
   try {
+    // Lot 2 (B) : un non-membre recevait le nombre de membres restants (fuite)
+    // et pouvait déclencher la purge d'une conversation vide qui n'est pas la sienne.
+    const me = await env.APEX_CHAT_DB.prepare(
+      'SELECT role FROM conversation_members WHERE conv_id=? AND user_id=?'
+    ).bind(convId, auth.sub).first();
+    if (!me) return err('Conversation introuvable', 404, 'not_member');
+    // Lot 2 (B) : même règle que handleRemoveMember — le propriétaire d'un GROUPE
+    // ne le laisse pas sans propriétaire (il transfère d'abord). Un DM reste
+    // toujours quittable (règle Kevin « jamais bloqué »).
+    if (me.role === 'owner') {
+      const conv = await env.APEX_CHAT_DB.prepare('SELECT type FROM conversations WHERE id=?').bind(convId).first();
+      if (conv && conv.type !== 'dm') {
+        const others = await env.APEX_CHAT_DB.prepare(
+          'SELECT user_id FROM conversation_members WHERE conv_id=? AND user_id != ? LIMIT 1'
+        ).bind(convId, auth.sub).first();
+        if (others) return err('Transférer ownership avant de quitter', 400, 'owner_must_transfer');
+      }
+    }
+    step = 'leave';
     await env.APEX_CHAT_DB.prepare(
       'DELETE FROM conversation_members WHERE conv_id=? AND user_id=?'
     ).bind(convId, auth.sub).run();
@@ -4295,7 +4615,17 @@ async function handleUpdateConv(convId, request, env) {
   if (!me || !['owner', 'admin'].includes(me.role)) return err('Droits insuffisants', 403);
 
   const body = await readJson(request);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return err('Corps invalide', 400, 'bad_body');
   const { name, description, avatar_url, disappearing_seconds } = body;
+  // Lot 2 (M) : un objet/tableau dans ces champs faisait échouer le bind D1 → 500.
+  if (!_isOptStr(name, 200) || !_isOptStr(description, 2000) || !_isOptStr(avatar_url, AVATAR_MAX)) {
+    return err('Champs invalides (texte attendu)', 400, 'bad_fields');
+  }
+  if (disappearing_seconds !== undefined && disappearing_seconds !== null &&
+      !(typeof disappearing_seconds === 'number' && Number.isFinite(disappearing_seconds)) &&
+      !(typeof disappearing_seconds === 'string' && /^\d{1,10}$/.test(disappearing_seconds))) {
+    return err('disappearing_seconds invalide', 400, 'bad_fields');
+  }
   const updates = [];
   const values = [];
   if (name !== undefined) { updates.push('name=?'); values.push(name); }
@@ -4321,6 +4651,10 @@ export async function handleCreateStory(request, env) {
 
   const { ciphertext, mime } = await readJson(request);
   if (!ciphertext) return err('ciphertext requis');
+  // Lot 2 (M) : un objet passait la garde de taille (`.length` indéfini) puis
+  // faisait échouer l'INSERT → 500.
+  if (typeof ciphertext !== 'string') return err('ciphertext doit être une chaîne', 400, 'bad_ciphertext');
+  if (!_isOptStr(mime, 100)) return err('mime invalide', 400, 'bad_mime');
   if (ciphertext.length > 200000) return err('Story trop volumineuse (max 200KB)', 413);
 
   const id = crypto.randomUUID();
@@ -4353,7 +4687,23 @@ async function handleListStories(request, env) {
      LIMIT 200`
   ).bind(Date.now(), auth.sub, auth.sub).all();
 
-  return json({ ok: true, stories: stories.results || [] });
+  // Lot 2 (F) : la liste des VUES (qui a vu, quand) était renvoyée à tout
+  // spectateur. Seul l'auteur d'une story voit qui l'a vue.
+  const list = (stories.results || []).map((s) => {
+    if (s.author_id === auth.sub) return s;
+    const { views, ...rest } = s;
+    return rest;
+  });
+  return json({ ok: true, stories: list });
+}
+
+// Lot 2 (F) : même audience que la liste — l'auteur, ou un contact MUTUEL de l'auteur.
+async function _canSeeStory(env, viewerId, authorId) {
+  if (viewerId === authorId) return true;
+  const c = await env.APEX_CHAT_DB.prepare(
+    'SELECT 1 FROM contacts WHERE user_id=? AND contact_id=? AND mutual_at IS NOT NULL'
+  ).bind(viewerId, authorId).first();
+  return !!c;
 }
 
 export async function handleViewStory(storyId, request, env) {
@@ -4364,19 +4714,24 @@ export async function handleViewStory(storyId, request, env) {
     'SELECT * FROM stories WHERE id=? AND expires_at > ?'
   ).bind(storyId, Date.now()).first();
   if (!story) return err('Story introuvable ou expirée', 404);
+  // Lot 2 (F) : n'importe quel compte lisait n'importe quelle story par son id.
+  // Même audience que la liste (même réponse 404 : on ne confirme pas l'existence).
+  if (!(await _canSeeStory(env, auth.sub, story.author_id))) {
+    return err('Story introuvable ou expirée', 404);
+  }
 
   // Ajouter à views (idempotent)
   let views = [];
   try { views = JSON.parse(story.views || '[]'); } catch {}
-  if (!views.some(v => v.user_id === auth.sub)) {
+  if (!Array.isArray(views)) views = [];
+  if (!views.some(v => v && v.user_id === auth.sub)) {
     views.push({ user_id: auth.sub, viewed_at: Date.now() });
     await env.APEX_CHAT_DB.prepare('UPDATE stories SET views=? WHERE id=?').bind(JSON.stringify(views), storyId).run();
   }
 
-  return json({
-    ok: true,
-    story: { id: story.id, ciphertext: story.ciphertext, mime: story.mime, ts: story.ts, expires_at: story.expires_at, views_count: views.length }
-  });
+  const out = { id: story.id, ciphertext: story.ciphertext, mime: story.mime, ts: story.ts, expires_at: story.expires_at };
+  if (story.author_id === auth.sub) out.views_count = views.length;   // compteur réservé à l'auteur
+  return json({ ok: true, story: out });
 }
 
 // ----- Polls -----
@@ -4388,6 +4743,12 @@ export async function handleCreatePoll(request, env) {
   const { conv_id, msg_id, question, options, multi_choice, anonymous, closes_at } = await readJson(request);
   if (!conv_id || !msg_id || !question || !Array.isArray(options) || options.length < 2) {
     return err('question + 2 options minimum requis');
+  }
+  // Lot 2 (M) : types stricts (bind D1 d'un objet → 500).
+  if (typeof conv_id !== 'string' || typeof msg_id !== 'string' || typeof question !== 'string' || question.length > 1000 ||
+      options.length > 50 || options.some(o => typeof o !== 'string' || o.length > 500) ||
+      !(closes_at === undefined || closes_at === null || (typeof closes_at === 'number' && Number.isFinite(closes_at)))) {
+    return err('Sondage invalide', 400, 'bad_poll');
   }
 
   // Vérifier membership
@@ -4415,7 +4776,7 @@ export async function handleVotePoll(pollId, request, env) {
   const { option_indexes } = await readJson(request);
   if (!Array.isArray(option_indexes) || option_indexes.length === 0) return err('option_indexes requis');
 
-  const poll = await env.APEX_CHAT_DB.prepare('SELECT * FROM polls WHERE id=?').bind(pollId).first();
+  let poll = await env.APEX_CHAT_DB.prepare('SELECT * FROM polls WHERE id=?').bind(pollId).first();
   if (!poll) return err('Poll introuvable', 404);
   if (poll.closes_at && poll.closes_at < Date.now()) return err('Vote fermé', 410);
 
@@ -4425,33 +4786,73 @@ export async function handleVotePoll(pollId, request, env) {
   ).bind(poll.conv_id, auth.sub).first();
   if (!member) return err('Pas membre de la conv', 403);
 
-  // Update votes
-  let votes = {};
-  try { votes = JSON.parse(poll.votes || '{}'); } catch {}
-
-  // Si pas multi-choice, retirer les anciens votes du user
-  if (!poll.multi_choice) {
-    for (const k of Object.keys(votes)) {
-      votes[k] = (votes[k] || []).filter(uid => uid !== auth.sub);
-    }
-  }
-
+  // Lot 2 (C) : les index n'étaient pas validés — « 99 », « -1 », « __proto__ »,
+  // « constructor » créaient des clés arbitraires (pollution / options fantômes),
+  // et un sondage à choix unique acceptait plusieurs votes du même utilisateur.
+  let options = [];
+  try { options = JSON.parse(poll.options || '[]'); } catch (_) { options = []; }
+  const nOpts = Array.isArray(options) ? options.length : 0;
+  const picked = [];
   for (const idx of option_indexes) {
-    const key = String(idx);
-    if (!votes[key]) votes[key] = [];
-    if (!votes[key].includes(auth.sub)) votes[key].push(auth.sub);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= nOpts) {
+      return err('Option invalide', 400, 'bad_option', { idx, options: nOpts });
+    }
+    if (!picked.includes(idx)) picked.push(idx);
+  }
+  if (!poll.multi_choice && picked.length !== 1) {
+    return err('Ce sondage n\'accepte qu\'un seul choix', 400, 'single_choice');
   }
 
-  await env.APEX_CHAT_DB.prepare('UPDATE polls SET votes=? WHERE id=?')
-    .bind(JSON.stringify(votes), pollId).run();
+  // Lot 2 (C) : lecture-modification-écriture sans garde = votes simultanés
+  // PERDUS (le dernier écrasait les autres). Écriture conditionnelle sur la
+  // valeur lue (compare-and-swap) ; en cas de course, on relit et on réessaie.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const before = poll.votes == null ? '{}' : String(poll.votes);
+    const votes = _parsePollVotes(before, nOpts);
+    // Si pas multi-choice, retirer les anciens votes du user
+    if (!poll.multi_choice) {
+      for (const k of Object.keys(votes)) votes[k] = votes[k].filter(uid => uid !== auth.sub);
+    }
+    for (const idx of picked) {
+      const key = String(idx);
+      if (!votes[key]) votes[key] = [];
+      if (!votes[key].includes(auth.sub)) votes[key].push(auth.sub);
+    }
+    const after = JSON.stringify(votes);
+    const w = await env.APEX_CHAT_DB.prepare(
+      poll.votes == null ? 'UPDATE polls SET votes=? WHERE id=? AND votes IS NULL' : 'UPDATE polls SET votes=? WHERE id=? AND votes=?'
+    ).bind(...(poll.votes == null ? [after, pollId] : [after, pollId, before])).run();
+    const wn = _changes(w);
+    if (wn === null || wn === 1) {
+      return json({ ok: true, votes: poll.anonymous ? null : votes,
+        counts: Object.fromEntries(Object.entries(votes).map(([k, v]) => [k, v.length])) });
+    }
+    poll = await env.APEX_CHAT_DB.prepare('SELECT * FROM polls WHERE id=?').bind(pollId).first();
+    if (!poll) return err('Poll introuvable', 404);
+  }
+  return err('Vote concurrent, réessaie', 409, 'vote_conflict');
+}
 
-  return json({ ok: true, votes: poll.anonymous ? null : votes,
-    counts: Object.fromEntries(Object.entries(votes).map(([k, v]) => [k, v.length])) });
+// Votes stockés {"<index>": [user_ids]} → objet SANS prototype, ne gardant que
+// des index valides et des listes de chaînes (aucune clé « __proto__ » possible).
+function _parsePollVotes(raw, nOpts) {
+  const out = Object.create(null);
+  let parsed = null;
+  try { parsed = JSON.parse(raw || '{}'); } catch (_) { parsed = null; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return out;
+  for (const k of Object.keys(parsed)) {
+    if (!/^\d{1,4}$/.test(k) || Number(k) >= nOpts) continue;
+    const v = parsed[k];
+    if (Array.isArray(v)) out[k] = v.filter(u => typeof u === 'string');
+  }
+  return out;
 }
 
 // ============================================================================
 //  Phase 7 — Time Capsule + Letters + Memory Lane + Apex Memo
 // ============================================================================
+
+export const TIMECAPSULE_PREVIEW_MAX = 280;
 
 export async function handleCreateTimeCapsule(request, env) {
   const auth = await getAuthUser(request, env);
@@ -4459,13 +4860,33 @@ export async function handleCreateTimeCapsule(request, env) {
 
   const { recipient_id, conv_id, ciphertext, mime, open_at, preview } = await readJson(request);
   if (!recipient_id || !ciphertext || !open_at) return err('recipient_id + ciphertext + open_at requis');
+  // Lot 2 (I/M) : types stricts.
+  if (typeof recipient_id !== 'string' || recipient_id.length > 128 || typeof ciphertext !== 'string' ||
+      !_isOptStr(conv_id, 128) || !_isOptStr(mime, 100)) {
+    return err('Champs de la capsule invalides', 400, 'bad_fields');
+  }
   if (ciphertext.length > 200000) return err('Capsule trop volumineuse (max 200KB)', 413);
+  // Lot 2 (I) : l'aperçu est stocké EN CLAIR et renvoyé dans les listes — borné.
+  if (!_isOptStr(preview, TIMECAPSULE_PREVIEW_MAX)) {
+    return err(`Aperçu invalide (texte, max ${TIMECAPSULE_PREVIEW_MAX} caractères)`, 400, 'bad_preview');
+  }
 
-  const openAtTs = parseInt(open_at);
+  // Lot 2 (I) : parseInt('abc') = NaN passait les deux gardes (NaN < x et NaN > x
+  // sont faux) → capsule à date NaN, jamais ouvrable. Nombre (ou chaîne de
+  // chiffres) fini exigé.
+  const openAtTs = typeof open_at === 'number' ? open_at
+    : (typeof open_at === 'string' && /^\d{1,16}$/.test(open_at.trim()) ? Number(open_at.trim()) : NaN);
+  if (!Number.isFinite(openAtTs) || !Number.isInteger(openAtTs)) {
+    return err('Date d\'ouverture invalide (horodatage en millisecondes attendu)', 400, 'bad_open_at');
+  }
   const minDelay = 5 * 60 * 1000;  // 5 min minimum
   const maxDelay = 50 * 365 * 86400 * 1000;  // 50 ans max
   if (openAtTs < Date.now() + minDelay) return err('Date d\'ouverture trop proche (min 5 min)', 400);
   if (openAtTs > Date.now() + maxDelay) return err('Date d\'ouverture trop lointaine (max 50 ans)', 400);
+
+  // Lot 2 (I) : le destinataire doit exister (sinon capsule perdue / id arbitraire).
+  const recipient = await env.APEX_CHAT_DB.prepare('SELECT id, status FROM users WHERE id=?').bind(recipient_id).first();
+  if (!recipient || recipient.status === 'deleted') return err('Destinataire introuvable', 404, 'recipient_not_found');
 
   const id = crypto.randomUUID();
   await env.APEX_CHAT_DB.prepare(
@@ -4539,6 +4960,10 @@ async function handleCreateLetter(request, env) {
 
   const { conv_id, ciphertext, delay_hours } = await readJson(request);
   if (!conv_id || !ciphertext) return err('conv_id + ciphertext requis');
+  // Lot 2 (M) : types stricts (bind D1 d'un objet → 500).
+  if (typeof conv_id !== 'string' || conv_id.length > 128 || typeof ciphertext !== 'string' || ciphertext.length > 200000) {
+    return err('conv_id / ciphertext invalides', 400, 'bad_fields');
+  }
 
   // Vérifier membership
   const member = await env.APEX_CHAT_DB.prepare(
@@ -4695,6 +5120,9 @@ export async function _callDeepSeekIA(messages, systemPrompt, env, signal) {
   return d.choices?.[0]?.message?.content || '';
 }
 
+export const IA_CHAT_MAX_MESSAGES = 40;
+export const IA_CHAT_MAX_CHARS = 32000;
+
 async function handleIAChat(request, env) {
   // SÉCU audit P1 — l'IA consomme les crédits API de Kevin (Anthropic/Groq/Gemini/DeepSeek).
   // Sans auth, n'importe qui pouvait épuiser le quota/facturer. Réservé aux users connectés.
@@ -4702,10 +5130,41 @@ async function handleIAChat(request, env) {
   if (!user) return err('Unauthorized', 401);
   const { messages, systemPrompt, context } = await readJson(request);
   if (!Array.isArray(messages) || messages.length === 0) return err('messages required');
-
-  const sysPrompt = systemPrompt || `Tu es Apex, l'assistant IA d'Apex Chat (messagerie privee).
-${context?.is_admin ? 'Tu parles a Kevin admin.' : 'Tu parles a ' + (context?.user_pseudo || 'un user')}.
+  // Lot 2 (E) : taille bornée (avant : N messages de taille libre → coût IA illimité).
+  if (messages.length > IA_CHAT_MAX_MESSAGES) {
+    return err(`Trop de messages (max ${IA_CHAT_MAX_MESSAGES})`, 413, 'too_many_messages');
+  }
+  let totalChars = 0;
+  for (const m of messages) {
+    if (!m || typeof m !== 'object' || (m.role !== 'user' && m.role !== 'assistant') || typeof m.content !== 'string') {
+      return err('Message invalide (role user/assistant + content texte)', 400, 'bad_message');
+    }
+    totalChars += m.content.length;
+  }
+  if (totalChars > IA_CHAT_MAX_CHARS) {
+    return err(`Conversation trop longue (max ${IA_CHAT_MAX_CHARS} caractères)`, 413, 'too_long');
+  }
+  // Lot 2 (E) : `is_admin` vient de la BASE (getAuthUser), jamais du corps de la
+  // requête ; le prompt système libre et le contexte client sont réservés à l'admin.
+  const isAdmin = !!user.is_admin;
+  // Lot 2 (E) : même quota quotidien que les autres fonctions IA pour les non-admins.
+  let quota = null;
+  if (!isAdmin) {
+    quota = await checkPremiumOrQuota(env, user.sub, 'ia-chat', request);
+    if (!quota.ok) {
+      return json({
+        error: 'quota_exceeded',
+        message: `Limite gratuite atteinte (${quota.used}/${quota.limit} messages Apex aujourd'hui). Premium = illimité.`,
+        used: quota.used, limit: quota.limit, feature: 'ia-chat'
+      }, 429);
+    }
+  }
+  const pseudo = String(user.pseudo || 'un user').replace(/[^\p{L}\p{N}_ .-]/gu, '').slice(0, 40) || 'un user';
+  const customSys = isAdmin && typeof systemPrompt === 'string' && systemPrompt.trim() ? systemPrompt.slice(0, 8000) : '';
+  const sysPrompt = customSys || `Tu es Apex, l'assistant IA d'Apex Chat (messagerie privee).
+${isAdmin ? 'Tu parles a Kevin admin.' : 'Tu parles a ' + pseudo}.
 Francais, tutoiement, concis (max 200 mots), pas d'erreur technique brute.`;
+  void context;   // le contexte envoyé par le client n'est plus cru
 
   /* Le TYPE de la question décide de l'ordre : courante → Qwen (gratuit) ; code / raisonnement /
      action → Anthropic ; puis les autres en secours. Essais en séquence (8 s chacun), cause
@@ -4718,6 +5177,7 @@ Francais, tutoiement, concis (max 200 mots), pas d'erreur technique brute.`;
   if (env.AI) {
     const r = await routeSmart(env, { messages: [{ role: 'system', content: sysPrompt }, ...messages], maxTokens: 1024, timeoutMs: 8000 });
     if (r.ok) {
+      if (quota) await consumeQuota(env, quota);
       return json({
         ok: true, content: r.text, provider: r.provider, model: r.model, domain: r.domain,
         analyse: r.analyse ? { by: r.analyse.by, votes: r.analyse.votes, complexity: r.analyse.complexity } : null,
@@ -4739,7 +5199,10 @@ Francais, tutoiement, concis (max 200 mots), pas d'erreur technique brute.`;
     try {
       const r = await fn(messages, sysPrompt, env, ctrl.signal);
       clearTimeout(to);
-      if (r) return json({ ok: true, content: r, provider: name, domain });
+      if (r) {
+        if (quota) await consumeQuota(env, quota);
+        return json({ ok: true, content: r, provider: name, domain });
+      }
       tried.push({ provider: name, error: 'réponse vide' });
     } catch (e) {
       clearTimeout(to);
@@ -4762,7 +5225,7 @@ export async function handleAiSummarize(request, env) {
   if (!auth) return err('Non authentifié', 401);
 
   // v1.1.30 : quota daily si non-premium
-  const quota = await checkPremiumOrQuota(env, auth.sub, 'summarize');
+  const quota = await checkPremiumOrQuota(env, auth.sub, 'summarize', request);
   if (!quota.ok) {
     return json({
       error: 'quota_exceeded',
@@ -4909,16 +5372,13 @@ export async function handlePremiumRequest(request, env) {
 
   // Notifie l'admin via audit_log (Kevin voit la demande dans l'historique admin).
   try {
-    await env.APEX_CHAT_DB?.prepare(
-      'INSERT INTO audit_log (id, actor_id, action, details, ts) VALUES (?, ?, ?, ?, ?)'
-    ).bind(crypto.randomUUID(), auth.sub, 'premium.request',
-      JSON.stringify(reqRecord), Date.now()
-    ).run();
+    await auditLog(env, auth.sub, 'premium.request', 'user', auth.sub, reqRecord, null, null);
   } catch (e) { console.warn('[premium-request] audit failed:', e.message); }
 
   // Semi-auto (Kevin « notif, 1 clic ») : PUSH à l'admin avec activation 1-tap.
   // Fail-open : si le push échoue, la demande reste visible dans le panneau admin.
-  try {
+  // Lot 2 (L) : notification plafonnée par utilisateur et par heure.
+  if (await _adminPushAllowed(env, 'premium', auth.sub)) try {
     let uname = auth.sub;
     try {
       const u = await env.APEX_CHAT_DB?.prepare('SELECT pseudo, real_name FROM users WHERE id=?').bind(auth.sub).first();
@@ -4974,15 +5434,15 @@ export async function handleAdminGrantPremium(request, env) {
       try { await env.APEX_CHAT_KV.delete(`premium_req:${userId}`); } catch (_) {}
     }
 
-    await env.APEX_CHAT_DB?.prepare(
-      'INSERT INTO audit_log (id, actor_id, action, details, ts) VALUES (?, ?, ?, ?, ?)'
-    ).bind(crypto.randomUUID(), auth.sub, 'premium.granted',
-      JSON.stringify({ user_id: userId, plan, premium_until: premiumUntil, by: auth.sub }),
-      Date.now()
-    ).run();
   } catch (e) {
     return err('DB error: ' + e.message, 500, 'db', { detail: e.message, step: 'grant_premium' });
   }
+  // Lot 2 (A) : l'activation est FAITE à ce stade — un souci d'écriture du journal
+  // ne doit plus transformer une activation réussie en « erreur 500 ».
+  try {
+    await auditLog(env, auth.sub, 'premium.granted', 'user', userId,
+      { user_id: userId, plan, premium_until: premiumUntil, by: auth.sub }, null, null);
+  } catch (e) { console.warn('[grant-premium] audit failed:', e && e.message); }
 
   return json({ ok: true, user_id: userId, plan, premium_until: premiumUntil });
 }
@@ -5020,7 +5480,7 @@ export async function handleAiSmartReply(request, env) {
   if (!auth) return err('Non authentifié', 401);
 
   // v1.1.30 : quota daily si non-premium
-  const quota = await checkPremiumOrQuota(env, auth.sub, 'smart-reply');
+  const quota = await checkPremiumOrQuota(env, auth.sub, 'smart-reply', request);
   if (!quota.ok) {
     return json({
       error: 'quota_exceeded',
@@ -5077,7 +5537,7 @@ export async function handleAiTranslate(request, env) {
   if (!auth) return err('Non authentifié', 401);
 
   // v1.1.30 : quota daily si non-premium
-  const quota = await checkPremiumOrQuota(env, auth.sub, 'translate');
+  const quota = await checkPremiumOrQuota(env, auth.sub, 'translate', request);
   if (!quota.ok) {
     return json({
       error: 'quota_exceeded',
@@ -5135,7 +5595,7 @@ export async function handleAiVoiceTranscribe(request, env) {
   if (!env.GROQ_API_KEY) return err('Groq Whisper non configuré (GROQ_API_KEY manquant)', 503);
 
   // v1.1.30 : quota daily si non-premium
-  const quota = await checkPremiumOrQuota(env, auth.sub, 'voice-transcribe');
+  const quota = await checkPremiumOrQuota(env, auth.sub, 'voice-transcribe', request);
   if (!quota.ok) {
     return json({
       error: 'quota_exceeded',
@@ -5223,7 +5683,7 @@ export async function handleAiImageDescribe(request, env) {
   if (!env.ANTHROPIC_API_KEY) return err('Anthropic Vision non configuré', 503);
 
   // v1.1.30 : quota daily si non-premium
-  const quota = await checkPremiumOrQuota(env, auth.sub, 'image-describe');
+  const quota = await checkPremiumOrQuota(env, auth.sub, 'image-describe', request);
   if (!quota.ok) {
     return json({
       error: 'quota_exceeded',
@@ -5301,7 +5761,7 @@ export async function handleAiRewrite(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
 
-  const quota = await checkPremiumOrQuota(env, auth.sub, 'translate'); // share translate quota bucket
+  const quota = await checkPremiumOrQuota(env, auth.sub, 'translate', request); // share translate quota bucket
   if (!quota.ok) {
     return json({
       error: 'quota_exceeded',
@@ -5368,7 +5828,7 @@ export async function handleAiSemanticSearch(request, env) {
   if (!auth) return err('Non authentifié', 401);
 
   // Quota gratuit (réutilise summarize bucket : recherche IA = aussi coûteuse)
-  const quota = await checkPremiumOrQuota(env, auth.sub, 'summarize');
+  const quota = await checkPremiumOrQuota(env, auth.sub, 'summarize', request);
   if (!quota.ok) {
     return json({
       error: 'quota_exceeded',
@@ -5434,6 +5894,17 @@ export async function handleAiSemanticSearch(request, env) {
 //   POST /api/push/subscribe   { subscription: PushSubscription.toJSON() }
 //   POST /api/push/unsubscribe { endpoint: string }
 // ============================================================================
+// Hôtes des services Web Push réels (Chrome/Edge/Android, Firefox, Safari/iOS, Windows).
+const PUSH_HOSTS_EXACT = new Set(['fcm.googleapis.com', 'updates.push.services.mozilla.com', 'web.push.apple.com']);
+const PUSH_HOST_SUFFIXES = ['.push.apple.com', '.notify.windows.com'];
+export function _isKnownPushEndpoint(endpoint) {
+  let u;
+  try { u = new URL(endpoint); } catch (_) { return false; }
+  if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return false;
+  const h = u.hostname.toLowerCase();
+  return PUSH_HOSTS_EXACT.has(h) || PUSH_HOST_SUFFIXES.some(s => h.endsWith(s) && h.length > s.length);
+}
+
 export async function handlePushSubscribe(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
@@ -5442,7 +5913,26 @@ export async function handlePushSubscribe(request, env) {
   if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
     return err('Subscription incomplète', 400);
   }
+  if (typeof sub.endpoint !== 'string' || typeof sub.keys.p256dh !== 'string' || typeof sub.keys.auth !== 'string' ||
+      sub.endpoint.length > 2048 || sub.keys.p256dh.length > 512 || sub.keys.auth.length > 256) {
+    return err('Subscription invalide', 400, 'bad_subscription');
+  }
+  // Lot 2 (J) : l'endpoint est une URL vers laquelle le serveur POSTe — on
+  // n'accepte que HTTPS vers un vrai service de notification.
+  if (!_isKnownPushEndpoint(sub.endpoint)) {
+    return err('Service de notification non reconnu', 400, 'bad_push_endpoint');
+  }
   try {
+    // Lot 2 (J) : l'ancien code SUPPRIMAIT la souscription de n'importe quel
+    // compte portant cet endpoint puis la réattribuait à l'appelant — quiconque
+    // connaissait l'endpoint d'un autre détournait ses notifications. Un endpoint
+    // déjà lié à un AUTRE compte est refusé (le propriétaire doit se désabonner).
+    const owners = await env.APEX_CHAT_DB.prepare(
+      'SELECT user_id FROM push_subscriptions WHERE endpoint=?'
+    ).bind(sub.endpoint).all();
+    if (((owners && owners.results) || []).some(r => r && r.user_id && r.user_id !== auth.sub)) {
+      return err('Cet appareil est déjà abonné pour un autre compte', 409, 'endpoint_taken');
+    }
     // v1.1.172 FIX P0 : l'INSERT visait des colonnes inexistantes (id, ua) et
     // omettait device_id NOT NULL + created_at NOT NULL → AUCUNE souscription
     // n'était jamais enregistrée → 0 push envoyé. On aligne sur le schéma réel
@@ -5450,10 +5940,10 @@ export async function handlePushSubscribe(request, env) {
     // re-souscrire le même device fasse un upsert propre.
     const now = Date.now();
     const deviceId = (await sha256(sub.endpoint)).slice(0, 32);
-    // Upsert : remove existing for same endpoint, then insert fresh
+    // Upsert : remove existing for same endpoint (du MÊME compte), then insert fresh
     await env.APEX_CHAT_DB?.prepare(
-      'DELETE FROM push_subscriptions WHERE endpoint=?'
-    ).bind(sub.endpoint).run();
+      'DELETE FROM push_subscriptions WHERE endpoint=? AND user_id=?'
+    ).bind(sub.endpoint, auth.sub).run();
     await env.APEX_CHAT_DB?.prepare(
       'INSERT OR REPLACE INTO push_subscriptions (user_id, device_id, endpoint, vapid_p256dh, vapid_auth, user_agent, last_seen, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(
@@ -5504,10 +5994,7 @@ export async function handleAdminForceUpdate(request, env) {
     ).bind('force_update_ts', String(ts), ts, auth.sub).run();
     // Audit log
     try {
-      await env.APEX_CHAT_DB?.prepare(
-        'INSERT INTO audit_log (id, actor_id, action, details, ts) VALUES (?, ?, ?, ?, ?)'
-      ).bind(crypto.randomUUID(), auth.sub, 'admin.force_update_all',
-        JSON.stringify({ ts }), ts).run();
+      await auditLog(env, auth.sub, 'admin.force_update_all', 'system', null, { ts }, null, null);
     } catch (_) {}
     return json({ ok: true, ts });
   } catch (e) {
@@ -5543,10 +6030,8 @@ export async function handleAdminForceUpdateViaToken(request, env) {
       'INSERT OR REPLACE INTO system_config (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)'
     ).bind('force_update_ts', String(ts), ts, 'cron:deploy').run();
     try {
-      await env.APEX_CHAT_DB?.prepare(
-        'INSERT INTO audit_log (id, actor_id, action, details, ts) VALUES (?, ?, ?, ?, ?)'
-      ).bind(crypto.randomUUID(), 'cron:deploy', 'admin.force_update_via_token',
-        JSON.stringify({ ts, source: 'github-action' }), ts).run();
+      await auditLog(env, 'cron:deploy', 'admin.force_update_via_token', 'system', null,
+        { ts, source: 'github-action' }, null, null);
     } catch (_) {}
     return json({ ok: true, ts, source: 'token' });
   } catch (e) {
@@ -5641,6 +6126,12 @@ export async function handleSignalement(request, env) {
 
   const { target_user_id, conv_id, msg_id, reason, description } = await readJson(request);
   if (!target_user_id || !reason) return err('target_user_id + reason requis');
+  // Lot 2 (M) : types stricts — un objet ici faisait échouer le bind D1 → 500.
+  if (typeof target_user_id !== 'string' || target_user_id.length > 128 ||
+      typeof reason !== 'string' || reason.length > 64 ||
+      !_isOptStr(description, 2000) || !_isOptStr(conv_id, 128) || !_isOptStr(msg_id, 128)) {
+    return err('Champs du signalement invalides', 400, 'bad_fields');
+  }
 
   const id = crypto.randomUUID();
   await env.APEX_CHAT_DB.prepare(
@@ -5648,16 +6139,38 @@ export async function handleSignalement(request, env) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(id, auth.sub, target_user_id, conv_id || null, msg_id || null, reason, description || null, Date.now()).run();
 
-  // Push notif Kevin admin
-  try {
-    await sendPushToUser('kdmc_admin', {
-      title: '⚠ Nouveau signalement',
-      body: `${reason} contre user ${target_user_id.slice(0,8)}...`,
-      data: { signalement_id: id, target: target_user_id }
-    }, env);
-  } catch (e) {}
+  // Push notif Kevin admin — Lot 2 (L) : plafonné par utilisateur (anti-inondation).
+  // Le signalement est TOUJOURS enregistré ; seule la notification est limitée.
+  if (await _adminPushAllowed(env, 'sig', auth.sub)) {
+    try {
+      await sendPushToUser('kdmc_admin', {
+        title: '⚠ Nouveau signalement',
+        body: `${reason} contre user ${target_user_id.slice(0,8)}...`,
+        data: { signalement_id: id, target: target_user_id }
+      }, env);
+    } catch (e) {}
+  }
 
   return json({ ok: true, id });
+}
+
+// Lot 2 (L) : un utilisateur pouvait inonder le téléphone de l'admin (une
+// notification par signalement / demande premium, sans limite). Compteur
+// horaire ATOMIQUE par utilisateur (même table que le plafond OTP, clé préfixée).
+export const ADMIN_PUSH_MAX_PER_HOUR = 5;
+async function _adminPushAllowed(env, kind, userId) {
+  try {
+    const key = 'adm-push:' + kind + ':' + String(userId).slice(0, 100);
+    const hourKey = new Date().toISOString().slice(0, 13);
+    const r = await env.APEX_CHAT_DB.prepare(
+      `INSERT INTO ratelimit_otp (ip_hash, hour_key, count) VALUES (?, ?, 1)
+       ON CONFLICT(ip_hash, hour_key) DO UPDATE SET count = count + 1 WHERE count < ?`
+    ).bind(key, hourKey, ADMIN_PUSH_MAX_PER_HOUR).run();
+    const c = _changes(r);
+    return c === null || c === 1;
+  } catch (_) {
+    return false;   // compteur illisible : pas de notification (la donnée, elle, est enregistrée)
+  }
 }
 
 // ============================================================================
@@ -5952,12 +6465,15 @@ const _workerHandler = {
       if (path === '/api/test/cleanup' && method === 'POST') return await handleTestCleanup(request, env);
       if (path === '/api/contacts' && method === 'GET') return await handleContacts(request, env);
       // Fiches de renseignement contacts (v1.1.201)
+      // Lot 2 (P) : un « % » mal formé dans le chemin levait URIError → 500 ; c'est un 400.
       const contactMatch = path.match(/^\/api\/contact\/([^/]+)$/);
-      if (contactMatch && method === 'GET') return await handleGetContact(decodeURIComponent(contactMatch[1]), request, env);
-      if (contactMatch && method === 'PATCH') return await handleUpdateContact(decodeURIComponent(contactMatch[1]), request, env);
-      if (contactMatch && method === 'DELETE') return await handleDeleteContact(decodeURIComponent(contactMatch[1]), request, env);
       const nickMatch = path.match(/^\/api\/contact\/([^/]+)\/nickname$/);
-      if (nickMatch && method === 'PUT') return await handleSetNickname(decodeURIComponent(nickMatch[1]), request, env);
+      const contactSeg = contactMatch ? _safeDecode(contactMatch[1]) : (nickMatch ? _safeDecode(nickMatch[1]) : undefined);
+      if ((contactMatch || nickMatch) && contactSeg === null) return err('Identifiant de contact invalide', 400, 'bad_path');
+      if (contactMatch && method === 'GET') return await handleGetContact(contactSeg, request, env);
+      if (contactMatch && method === 'PATCH') return await handleUpdateContact(contactSeg, request, env);
+      if (contactMatch && method === 'DELETE') return await handleDeleteContact(contactSeg, request, env);
+      if (nickMatch && method === 'PUT') return await handleSetNickname(contactSeg, request, env);
       if (path === '/api/admin/all-users' && method === 'GET') return await handleAdminAllUsers(request, env);
       const adminUserActionMatch = path.match(/^\/api\/admin\/users\/([^\/]+)\/(block|unblock|ban|unban|authorize|revoke|force_logout|delete)$/);
       if (adminUserActionMatch && method === 'POST') return await handleAdminUserAction(adminUserActionMatch[1], adminUserActionMatch[2], request, env);
@@ -5983,7 +6499,10 @@ const _workerHandler = {
       }
       console.error('API error', path, method, e.message, e.stack);
       // Push télémétrie vers Apex
+      // Lot 2 (H) : sans queue_type, le consommateur classait le message « unknown »
+      // et le jetait — aucune erreur serveur ne remontait jamais.
       ctx.waitUntil(env.TELEMETRY_QUEUE?.send({
+        queue_type: 'telemetry',
         sentinel: 'api-error',
         severity: 'err',
         msg: e.message,
@@ -6021,6 +6540,24 @@ const _workerHandler = {
               'SELECT * FROM letters_queue WHERE id=? AND delivered=0 AND cancelled=0'
             ).bind(body.letter_id).first();
             if (letter && letter.deliver_at <= Date.now()) {
+              // Lot 2 (G) : RÉCLAMER la lettre avant de la livrer. Le cron renvoie
+              // la même lettre toutes les 5 min tant qu'elle n'est pas livrée et la
+              // file peut rejouer un message : deux consommateurs la livraient deux
+              // fois. Une seule exécution gagne (changes === 1).
+              const claim = await env.APEX_CHAT_DB.prepare(
+                'UPDATE letters_queue SET delivered=1 WHERE id=? AND delivered=0 AND cancelled=0'
+              ).bind(letter.id).run();
+              const claimN = _changes(claim);
+              if (claimN !== null && claimN !== 1) break;   // déjà prise / annulée
+              // Lot 2 (G) : l'expéditeur a pu QUITTER (ou être retiré de) la
+              // conversation pendant le délai : sa lettre n'y entre plus.
+              const stillMember = await env.APEX_CHAT_DB.prepare(
+                'SELECT 1 FROM conversation_members WHERE conv_id=? AND user_id=?'
+              ).bind(letter.conv_id, letter.sender_id).first();
+              if (!stillMember) {
+                await env.APEX_CHAT_DB.prepare('UPDATE letters_queue SET cancelled=1 WHERE id=?').bind(letter.id).run();
+                break;
+              }
               const doStub = env.CONVERSATION_DO.get(env.CONVERSATION_DO.idFromName('do_' + letter.conv_id));
               // v1.1.172 FIX P1 (audit crew) : passer conv_id + ne marquer
               // delivered=1 QUE si l'injection réussit réellement (avant : .catch
@@ -6041,10 +6578,11 @@ const _workerHandler = {
               } catch (e) {
                 console.error('[letters-deliver] inject failed:', e.message);
               }
-              if (injected) {
-                await env.APEX_CHAT_DB.prepare('UPDATE letters_queue SET delivered=1 WHERE id=?').bind(letter.id).run();
+              if (!injected) {
+                // Échec d'injection : on RELÂCHE la réclamation → le cron 5 min réessaiera
+                // (livraison garantie, jamais perdue).
+                await env.APEX_CHAT_DB.prepare('UPDATE letters_queue SET delivered=0 WHERE id=? AND cancelled=0').bind(letter.id).run();
               }
-              // sinon : laissé delivered=0 → le cron 5 min réessaiera (livraison garantie)
             }
             break;
           }
@@ -6055,12 +6593,20 @@ const _workerHandler = {
               'SELECT * FROM time_capsules WHERE id=? AND opened_at IS NULL'
             ).bind(body.capsule_id).first();
             if (capsule && capsule.open_at <= Date.now()) {
-              await sendPushToUser(capsule.recipient_id, {
+              // Lot 2 (D) : opened_at n'est posé qu'une fois l'envoi RÉELLEMENT
+              // terminé avec succès. Avant, le push partait sans être attendu et
+              // opened_at était posé quoi qu'il arrive → notif perdue pour toujours.
+              // Échec de tous les envois → exception → msg.retry() (nouvel essai).
+              // Aucun appareil abonné → rien à réessayer : on clôt.
+              const res = await sendPushToUser(capsule.recipient_id, {
                 title: 'Apex Chat',
                 body: '🎁 Une capsule temporelle est arrivée à échéance',
                 tag: 'capsule-' + capsule.id,
                 payload: { capsuleId: capsule.id, senderId: capsule.sender_id }
               }, env);
+              if (res && res.total > 0 && res.ok === 0) {
+                throw new Error('timecapsule push failed (' + res.failed + ' envoi(s))');
+              }
               // v1.1.172 FIX P1 (audit crew) : poser opened_at → stoppe le
               // re-queue/push INFINI toutes les 5 min (le SELECT filtre opened_at
               // IS NULL). Le contenu reste révélé via /api/time-capsules/:id/open.
@@ -6231,12 +6777,27 @@ export async function sendPushToUser(userId, payload, env) {
 
   // v1.1.243 : envoi via Service Binding PUSH_WORKER (worker→worker autorisé).
   // Avant : fetch direct vers *.workers.dev = Cloudflare 1042 → 100% des pushs perdus.
+  // Lot 2 (D) : les envois partaient SANS être attendus (fire-and-forget) — le
+  // Worker peut être arrêté dès la réponse rendue, la notif était alors perdue, et
+  // l'appelant ne savait jamais si elle était partie. On attend tous les envois
+  // et on rend le bilan { total, ok, failed }.
+  const sends = [];
   for (const sub of (subs.results || [])) {
     if (sub.endpoint && sub.vapid_p256dh) {
-      sendPush(env, { endpoint: sub.endpoint, keys: { p256dh: sub.vapid_p256dh, auth: sub.vapid_auth } }, payload)
-        .catch((e) => console.warn('[sendPushToUser] web-push failed:', e && e.message));
+      sends.push(
+        Promise.resolve()
+          .then(() => sendPush(env, { endpoint: sub.endpoint, keys: { p256dh: sub.vapid_p256dh, auth: sub.vapid_auth } }, payload))
+          .then((r) => (!r || r.ok !== false))
+      );
     }
   }
+  const settled = await Promise.allSettled(sends);
+  let ok = 0;
+  for (const s of settled) {
+    if (s.status === 'fulfilled' && s.value) ok++;
+    else console.warn('[sendPushToUser] web-push failed:', s.status === 'rejected' ? (s.reason && s.reason.message) : 'HTTP error');
+  }
+  return { total: sends.length, ok, failed: sends.length - ok };
 }
 
 // ----------------------------------------------------------------------------
@@ -6249,6 +6810,7 @@ export async function sendPushToUser(userId, payload, env) {
 //  backup_last_error) et visible dans /api/admin/diag. Déchiffrement : tools/backup-decrypt.mjs.
 // ----------------------------------------------------------------------------
 export const BACKUP_RETENTION_DAYS = 14;
+export const BACKUP_ROW_LIMIT = 100000;
 export const BACKUP_TABLES_FALLBACK = ['users', 'conversations', 'conversation_members', 'messages', 'audit_log',
   'contacts', 'invitations', 'push_subscriptions', 'system_config', 'connections', 'media', 'cgu_acceptances'];
 
@@ -6297,14 +6859,22 @@ export async function performDailyBackup(env, now = new Date()) {
     if (!tables.length) tables = BACKUP_TABLES_FALLBACK;
     const backup = { ts: now.getTime(), version: 2, tables: {} };
     let rowsTotal = 0;
+    // Lot 2 (K) : une table qui atteint la limite est COUPÉE — la sauvegarde était
+    // pourtant notée « réussie ». On lit LIMIT+1 lignes pour le détecter, on garde
+    // LIMIT lignes, et la sauvegarde est signalée tronquée (jamais « complète »).
+    const truncated = [];
+    const failedTables = [];
     for (const t of tables) {
       if (!/^[a-z_][a-z0-9_]*$/i.test(t)) continue;
       try {
-        const stmt = await env.APEX_CHAT_DB.prepare(`SELECT * FROM ${t} LIMIT 100000`).all();
-        backup.tables[t] = stmt.results || [];
-        rowsTotal += backup.tables[t].length;
-      } catch (e) { backup.tables[t] = { error: e && e.message }; }
+        const stmt = await env.APEX_CHAT_DB.prepare(`SELECT * FROM ${t} LIMIT ${BACKUP_ROW_LIMIT + 1}`).all();
+        let rows = stmt.results || [];
+        if (rows.length > BACKUP_ROW_LIMIT) { rows = rows.slice(0, BACKUP_ROW_LIMIT); truncated.push(t); }
+        backup.tables[t] = rows;
+        rowsTotal += rows.length;
+      } catch (e) { backup.tables[t] = { error: e && e.message }; failedTables.push(t); }
     }
+    if (truncated.length) backup.truncated = truncated;
     // 2) Chiffrement avant toute écriture
     const enc = await encryptBackup(JSON.stringify(backup), env.JWT_SIGN_KEY);
     const key = `backups/d1-${dateKey}.json.enc`;
@@ -6324,14 +6894,25 @@ export async function performDailyBackup(env, now = new Date()) {
         if (m && Date.parse(m[1]) < limit) { await env.APEX_CHAT_MEDIA.delete(o.key); purged.push(o.key); }
       }
     } catch (e) { console.warn('[backup] rotation partielle :', e && e.message); }
-    await _noteBackup(env, 'backup_last_ok', JSON.stringify({ ts: now.getTime(), key, tables: Object.keys(backup.tables).length, rows: rowsTotal, bytes: enc.length, purged: purged.length }));
+    if (truncated.length) {
+      // Fichier écrit (mieux que rien) mais INCOMPLET : jamais noté backup_last_ok.
+      const info = { ts: now.getTime(), date: dateKey, key, truncated, limit: BACKUP_ROW_LIMIT, rows: rowsTotal,
+        error: 'sauvegarde tronquée : ' + truncated.join(', ') + ' dépasse ' + BACKUP_ROW_LIMIT + ' lignes' };
+      await _noteBackup(env, 'backup_last_error', JSON.stringify(info));
+      try {
+        await env.TELEMETRY_QUEUE?.send({ queue_type: 'telemetry', sentinel: 'backup-truncated', severity: 'err', msg: info.error, ts: Date.now() });
+      } catch (_) {}
+      console.error('Daily backup TRUNCATED', key, truncated);
+      return { ok: false, truncated, key, tables: tables.length, rows: rowsTotal, purged };
+    }
+    await _noteBackup(env, 'backup_last_ok', JSON.stringify({ ts: now.getTime(), key, tables: Object.keys(backup.tables).length, rows: rowsTotal, bytes: enc.length, purged: purged.length, failed_tables: failedTables }));
     console.log('Daily backup done', key, tables.length, 'tables', rowsTotal, 'rows');
     return { ok: true, key, tables: tables.length, rows: rowsTotal, purged };
   } catch (e) {
     console.error('Daily backup failed', e && e.message);
     await _noteBackup(env, 'backup_last_error', JSON.stringify({ ts: now.getTime(), date: dateKey, error: e && e.message }));
     try {
-      await env.TELEMETRY_QUEUE?.send({ sentinel: 'backup-failed', severity: 'err', msg: e && e.message, ts: Date.now() });
+      await env.TELEMETRY_QUEUE?.send({ queue_type: 'telemetry', sentinel: 'backup-failed', severity: 'err', msg: e && e.message, ts: Date.now() });
     } catch (_) {}
     return { ok: false, error: e && e.message };
   }
@@ -6351,7 +6932,12 @@ export async function performDailyBackup(env, now = new Date()) {
 export default {
   ..._workerHandler,
   async fetch(request, env, ctx) {
-    return applyCors(request, await _workerHandler.fetch(request, env, ctx));
+    try {
+      return applyCors(request, await _workerHandler.fetch(request, env, ctx));
+    } finally {
+      // Lot 2 (E) : rend le quota IA réservé par une requête qui n'a rien consommé.
+      await _releaseUnconsumedQuota(request, env);
+    }
   },
 };
 

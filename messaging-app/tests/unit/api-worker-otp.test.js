@@ -39,20 +39,22 @@ describe('handleSendOtp — validation', () => {
     expect(b.ok).toBe(true);
   });
 
-  it('admin Kevin via KEVIN_PHONE_E164 → bypass OTP', async () => {
+  // Lot 2 (O) : le numéro admin ne se distingue plus d'un autre (ni réponse
+  // « admin-bypass », ni exception sur le nom) — voir lot2-otp-admin-oracle.test.js.
+  it('numéro admin → réponse de forme normale, sans drapeau _admin_bypass', async () => {
     const env = ENV({ KEVIN_PHONE_E164: '+33600000001' });
-    const r = await sendOtp({ phone: '+33600000001', name: 'X' }, env);
+    const r = await sendOtp({ phone: '+33600000001', name: 'Kevin Desarzens' }, env);
     expect(r.status).toBe(200);
     const b = await r.json();
-    expect(b.provider).toBe('admin-bypass');
-    expect(b._admin_bypass).toBe(true);
+    expect(b.provider).not.toBe('admin-bypass');
+    expect(b._admin_bypass).toBeUndefined();
   });
 
-  it('admin Kevin avec name 1 token → bypass OTP (exception name)', async () => {
+  it('numéro admin avec name 1 token → même refus que tout le monde', async () => {
     const env = ENV({ KEVIN_PHONE_E164: '+33600000001' });
     const r = await sendOtp({ phone: '+33600000001' }, env);
-    expect(r.status).toBe(200);
-    expect((await r.json()).provider).toBe('admin-bypass');
+    expect(r.status).toBe(400);
+    expect((await r.json()).error).toBe('name_too_short');
   });
 
   it('rate limit dépassé → 429', async () => {

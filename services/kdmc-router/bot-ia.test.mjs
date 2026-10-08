@@ -160,6 +160,7 @@ const logsP1 = [{ message: '[18:43:40] XRP/USDT HOLD | prix=1.57 | equity=7132.1
   { message: '[18:44:20] 🛑 Coupure risque : plafond de perte journalière atteint (-17.12% <= -10.0%). Efface state.json / relance pour repartir.' }];
 dit(/plafond de perte journalière atteint \(-17\.12% <= -10\.0%\)/.test(ia.robotArrete(logsP1)), 'vraies lignes de p1 (25.09) → arrêté par son frein, raison lue');
 dit(ia.robotArrete(logsP1.slice(0, 2)) === '', 'robot qui tourne → pas arrêté');
+dit(/planté \(Railway : CRASHED\)/.test(ia.robotArrete([{ message: 'requests.exceptions.HTTPError: 502 Server Error: Bad Gateway' }], 'CRASHED')) && ia.robotArrete([], 'SUCCESS') === '', 'déploiement CRASHED (7.10, testnet en 502 au démarrage) → arrêté, à relancer ; SUCCESS → non');
 dit(ia.robotArrete([{ message: '🛑 KILL détecté — tout soldé, arrêt.' }]) === '', 'arrêt d\'urgence BOT_KILL → jamais considéré comme « à relancer »');
 const fl = [{ name: 'crypto-bot-p1', svcId: 'S1', arrete: 'frein' }, { name: 'crypto-bot-p2', svcId: 'S2', arrete: '' }, { name: 'crypto-bot', svcId: 'S0', arrete: 'frein' }, { name: 'crypto-bot-p3', svcId: 'S3', arrete: 'frein' }];
 let rel = ia.robotsARelancer(fl, null, {}, T0).map((b) => b.name);

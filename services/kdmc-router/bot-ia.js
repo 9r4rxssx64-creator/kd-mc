@@ -193,7 +193,10 @@ export function essaiFantome(essai, flotte, now) {
    Un robot PAPIER arrêté ne produit plus aucune mesure : on le relance (il repart à 10 000 $ virtuels).
    Les freins eux-mêmes ne sont PAS touchés. L'arrêt d'urgence BOT_KILL n'est jamais relancé. */
 export const RELANCE_ARRET_MS = 12 * 3600e3;
-export function robotArrete(logs) {
+export function robotArrete(logs, statut) {
+  /* 7.10 : testnet Binance en 502 au démarrage → 4 robots papier « CRASHED » (Railway abandonne après
+     5 essais en 1 minute). Un robot planté est un robot arrêté : on le relance aussi. */
+  if (statut === 'CRASHED' || statut === 'FAILED') return 'le robot a planté (Railway : ' + statut + ')';
   const l = logs || [];
   for (let k = l.length - 1; k >= Math.max(0, l.length - 8); k--) {
     const m = String((l[k] || {}).message || '');

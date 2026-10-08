@@ -296,10 +296,10 @@ describe('POST /api/admin/user-toggles (handleAdminSetUserToggle)', () => {
 
   it('un user change SON propre toggle → clé user_toggle:<uid>:<feature>, valeur JSON', async () => {
     const env = mkEnv();
-    const r = await worker.fetch(jreq('POST', '/api/admin/user-toggles', { feature: 'geoloc', value: false }, await userTok()), env);
-    expect(await r.json()).toEqual({ ok: true, uid: 'u_test_1', feature: 'geoloc', value: false });
+    const r = await worker.fetch(jreq('POST', '/api/admin/user-toggles', { feature: 'track_geoloc', value: false }, await userTok()), env);
+    expect(await r.json()).toEqual({ ok: true, uid: 'u_test_1', feature: 'track_geoloc', value: false });
     const w = calls(env, 'run', 'INSERT OR REPLACE INTO system_config')[0];
-    expect(w.args[0]).toBe('user_toggle:u_test_1:geoloc');
+    expect(w.args[0]).toBe('user_toggle:u_test_1:track_geoloc');
     expect(w.args[1]).toBe('false');
     expect(w.args[3]).toBe('u_test_1');
     // aucun contrôle admin en base quand on se modifie soi-même
@@ -308,7 +308,7 @@ describe('POST /api/admin/user-toggles (handleAdminSetUserToggle)', () => {
 
   it('un non-admin vise un AUTRE user → 403 forbidden_other', async () => {
     const env = mkEnv([['SELECT is_admin FROM users WHERE id=?', { first: { is_admin: 0 } }]]);
-    const r = await worker.fetch(jreq('POST', '/api/admin/user-toggles', { uid: 'u_autre', feature: 'geoloc', value: true }, await userTok()), env);
+    const r = await worker.fetch(jreq('POST', '/api/admin/user-toggles', { uid: 'u_autre', feature: 'track_geoloc', value: true }, await userTok()), env);
     expect(r.status).toBe(403);
     expect((await r.json()).error).toBe('forbidden_other');
   });
@@ -322,7 +322,7 @@ describe('POST /api/admin/user-toggles (handleAdminSetUserToggle)', () => {
 
   it('panne D1 (NOT NULL updated_at…) → 500 db_write_failed avec la cause', async () => {
     const env = mkEnv([['INSERT OR REPLACE INTO system_config', { run: boom('NOT NULL constraint failed: system_config.updated_at') }]]);
-    const r = await worker.fetch(jreq('POST', '/api/admin/user-toggles', { feature: 'x', value: 1 }, await userTok()), env);
+    const r = await worker.fetch(jreq('POST', '/api/admin/user-toggles', { feature: 'stories', value: 1 }, await userTok()), env);
     expect(r.status).toBe(500);
     const j = await r.json();
     expect(j.error).toBe('db_write_failed');
@@ -546,6 +546,7 @@ describe('DELETE /api/conversations/:id (handleDeleteConversation)', () => {
 
   it('dernier membre → purge messages + conv ; audit en panne (rappel catch) n\'empêche pas le 200', async () => {
     const env = mkEnv([
+      ['SELECT role FROM conversation_members WHERE conv_id=? AND user_id=?', { first: { role: 'member' } }],
       ['SELECT COUNT(*) as c FROM conversation_members WHERE conv_id=?', { first: { c: 0 } }],
       ['INSERT INTO audit_log', { run: boom('audit table missing') }],
     ]);
@@ -559,7 +560,7 @@ describe('DELETE /api/conversations/:id (handleDeleteConversation)', () => {
   });
 
   it('il reste des membres → member_count recalé, conv conservée', async () => {
-    const env = mkEnv([['SELECT COUNT(*) as c FROM conversation_members WHERE conv_id=?', { first: { c: 2 } }]]);
+    const env = mkEnv([['SELECT role FROM conversation_members WHERE conv_id=? AND user_id=?', { first: { role: 'member' } }], ['SELECT COUNT(*) as c FROM conversation_members WHERE conv_id=?', { first: { c: 2 } }]]);
     const r = await worker.fetch(jreq('DELETE', '/api/conversations/c1', undefined, await userTok()), env);
     expect(await r.json()).toEqual({ ok: true, remaining: 2 });
     expect(calls(env, 'run', 'UPDATE conversations SET member_count=?')[0].args).toEqual([2, 'c1']);
@@ -567,7 +568,7 @@ describe('DELETE /api/conversations/:id (handleDeleteConversation)', () => {
   });
 
   it('panne au recomptage → 500 delete_conv_fail avec l\'étape exacte', async () => {
-    const env = mkEnv([['SELECT COUNT(*) as c FROM conversation_members WHERE conv_id=?', { first: boom('D1 timeout') }]]);
+    const env = mkEnv([['SELECT role FROM conversation_members WHERE conv_id=? AND user_id=?', { first: { role: 'member' } }], ['SELECT COUNT(*) as c FROM conversation_members WHERE conv_id=?', { first: boom('D1 timeout') }]]);
     const r = await worker.fetch(jreq('DELETE', '/api/conversations/c1', undefined, await userTok()), env);
     expect(r.status).toBe(500);
     const j = await r.json();
@@ -668,7 +669,7 @@ describe('POST /api/ai/search (handleAiSemanticSearch)', () => {
 //  handlePushSubscribe / handlePushUnsubscribe / handlePushTest — /api/push/*
 // ===========================================================================
 describe('/api/push/subscribe + /api/push/unsubscribe', () => {
-  const SUB = { endpoint: 'https://push.example/abc', keys: { p256dh: 'p256', auth: 'auth' } };
+  const SUB = { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', keys: { p256dh: 'p256', auth: 'auth' } };
 
   it('subscribe : 401 sans jeton ; JSON invalide (rappel catch) ou clés absentes → 400', async () => {
     expect((await worker.fetch(jreq('POST', '/api/push/subscribe', { subscription: SUB }), mkEnv())).status).toBe(401);
@@ -683,7 +684,7 @@ describe('/api/push/subscribe + /api/push/unsubscribe', () => {
     const env = mkEnv();
     const r = await worker.fetch(jreq('POST', '/api/push/subscribe', { subscription: SUB }, await userTok(), { 'user-agent': 'iPhone-test' }), env);
     expect(await r.json()).toEqual({ ok: true });
-    expect(calls(env, 'run', 'DELETE FROM push_subscriptions WHERE endpoint=?')[0].args).toEqual([SUB.endpoint]);
+    expect(calls(env, 'run', 'DELETE FROM push_subscriptions WHERE endpoint=?')[0].args).toEqual([SUB.endpoint, 'u_test_1']);
     const ins = calls(env, 'run', 'INSERT OR REPLACE INTO push_subscriptions')[0].args;
     expect(ins[0]).toBe('u_test_1');
     expect(ins[1]).toMatch(/^[0-9a-f]{32}$/);
@@ -790,7 +791,7 @@ describe('force-update (handleAdminForceUpdate / ViaToken / Ts)', () => {
     expect(w[0]).toBe('force_update_ts');
     expect(w[1]).toBe(String(j.ts));
     expect(w[3]).toBe('kdmc_admin');
-    expect(calls(env, 'run', 'INSERT INTO audit_log')[0].args[2]).toBe('admin.force_update_all');
+    expect(calls(env, 'run', 'INSERT INTO audit_log')[0].args[1]).toBe('admin.force_update_all');
   });
 
   it('force-update : écriture system_config en panne → 500 avec la cause', async () => {
@@ -826,7 +827,7 @@ describe('force-update (handleAdminForceUpdate / ViaToken / Ts)', () => {
     const j = await r.json();
     expect(j).toMatchObject({ ok: true, source: 'token' });
     expect(calls(env, 'run', 'INSERT OR REPLACE INTO system_config')[0].args).toEqual(['force_update_ts', String(j.ts), j.ts, 'cron:deploy']);
-    expect(JSON.parse(calls(env, 'run', 'INSERT INTO audit_log')[0].args[3])).toEqual({ ts: j.ts, source: 'github-action' });
+    expect(JSON.parse(calls(env, 'run', 'INSERT INTO audit_log')[0].args[4])).toEqual({ ts: j.ts, source: 'github-action' });
   });
 
   it('via-token : panne D1 → 500 db_write_failed avec detail', async () => {
@@ -1194,7 +1195,7 @@ describe('rappels anonymes — admin diag, invitations, magic-login, contacts', 
 // ===========================================================================
 describe('rappels anonymes — stories, sondages, memory lane, heartbeat, CGU, prekeys, profil', () => {
   it('GET /api/stories/:id : déjà vue par ce user (rappel some) → pas de ré-écriture, views_count inchangé', async () => {
-    const env = mkEnv([['FROM stories WHERE id=?', { first: { id: 's1', ciphertext: 'c', mime: 'image/jpeg', ts: 1, expires_at: 9e12, views: JSON.stringify([{ user_id: 'u_test_1', viewed_at: 1 }, { user_id: 'u_autre', viewed_at: 2 }]) } }]]);
+    const env = mkEnv([['FROM stories WHERE id=?', { first: { id: 's1', author_id: 'u_test_1', ciphertext: 'c', mime: 'image/jpeg', ts: 1, expires_at: 9e12, views: JSON.stringify([{ user_id: 'u_test_1', viewed_at: 1 }, { user_id: 'u_autre', viewed_at: 2 }]) } }]]);
     const j = await (await worker.fetch(jreq('GET', '/api/stories/s1', undefined, await userTok()), env)).json();
     expect(j.story.views_count).toBe(2);
     expect(calls(env, 'run', 'UPDATE stories')).toHaveLength(0);
@@ -1202,7 +1203,7 @@ describe('rappels anonymes — stories, sondages, memory lane, heartbeat, CGU, p
 
   it('POST /api/polls/:id/vote : sondage à choix unique → l\'ancien vote du user est retiré (rappel filter)', async () => {
     const env = mkEnv([
-      ['SELECT * FROM polls WHERE id=?', { first: { id: 'p1', conv_id: 'c1', multi_choice: 0, anonymous: 0, votes: JSON.stringify({ 0: ['u_test_1', 'u_autre'], 1: [] }) } }],
+      ['SELECT * FROM polls WHERE id=?', { first: { id: 'p1', conv_id: 'c1', options: JSON.stringify(['a', 'b']), multi_choice: 0, anonymous: 0, votes: JSON.stringify({ 0: ['u_test_1', 'u_autre'], 1: [] }) } }],
       ['SELECT user_id FROM conversation_members WHERE conv_id=? AND user_id=?', { first: { user_id: 'u_test_1' } }],
     ]);
     const j = await (await worker.fetch(jreq('POST', '/api/polls/p1/vote', { option_indexes: [1] }, await userTok()), env)).json();
@@ -1279,9 +1280,10 @@ describe('rappels anonymes — stories, sondages, memory lane, heartbeat, CGU, p
   });
 
   it('fetchFirebasePublicKeys : mise en cache KV en panne absorbée → clés quand même renvoyées', async () => {
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ kid1: '-----BEGIN CERTIFICATE-----x' })));
+    const JWK = { kty: 'RSA', kid: 'kid1', n: 'nnn', e: 'AQAB', alg: 'RS256' };
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ keys: [JWK] })));
     const env = { APEX_CHAT_CACHE: { get: vi.fn(async () => null), put: vi.fn(async () => { throw new Error('KV KO'); }) } };
-    expect(await fetchFirebasePublicKeys(env)).toEqual({ kid1: '-----BEGIN CERTIFICATE-----x' });
+    expect(await fetchFirebasePublicKeys(env)).toEqual([JWK]);
     expect(env.APEX_CHAT_CACHE.put).toHaveBeenCalled();
   });
 });

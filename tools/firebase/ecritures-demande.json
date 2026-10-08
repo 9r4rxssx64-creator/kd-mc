@@ -1,6 +1,6 @@
 {
   "_comment": "MARQUEUR — le modifier sur `main` lance le robot PRIVÉ .github/workflows/coffre-ecritures-cmc.yml. action = activer (drapeau cmc_ecritures_actif, puis verrou ECRITURES_LOCK=on : planning + réglages au rôle admin, prouvé comme un anonyme et comme un admin) ou annuler (verrou retiré, drapeau coupé).",
   "action": "activer",
-  "requested_at": "2026-09-27",
-  "reason": "Kevin « Go » (27.09.2026, phase 2b) : mesuré — tout jeton, même anonyme avant connexion, pouvait réécrire le planning, les équipes, les droits et les réglages de CMCteams, et chaque téléphone renvoyait au démarrage sa copie réparée du planning. Le robot attend l'appli v9.926 et la page light v1.59 en ligne avant de toucher quoi que ce soit ; en cas d'échec d'une preuve, il déverrouille tout seul."
+  "requested_at": "2026-10-08",
+  "reason": "Kevin 8.10.2026 « Seul moi peut ajouter ou modifier, partout » — périmètre confirmé par lui : planning, équipes, personnes, comptes, codes (les employés gardent fiche, pointage, chat, échanges ; les chefs NR/5e). Phase 2c PERSONNES : cmc_e (liste des personnes) et cmc_known_identities (identités apprises) rejoignent le verrou. Le robot attend l'appli v9.954 en ligne (un téléphone non-admin garde ces clés pour lui, sans refus ni disjoncteur), republie les règles, puis prouve : anonyme → 401 sur cmc_e et cmc_known_identities, admin → 200, clés des employés → 200, lecture → 200. En cas d'échec d'une preuve, il déverrouille tout seul."
 }

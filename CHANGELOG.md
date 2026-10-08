@@ -15,6 +15,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ### v9.952 / light v1.79 — novembre 2026
 - `tests/fixtures/novembre-2026.pdf` ajouté aux deux générateurs (app + light) ; 196 tableaux sur 5 mois ; seed régénéré.
 
+### v9.954 — personnes verrouillées (Kevin 8.10 « Seul moi peut ajouter ou modifier, partout »)
+- `cmc_e` (liste des personnes) et `cmc_known_identities` (identités apprises) ne s'écrivent plus qu'au rôle admin (phase 2c du verrou des écritures) ; un téléphone non-admin garde sa copie, sans refus. Robot `coffre-ecritures-cmc` relancé (sondes ajoutées). Light inchangée.
+
 ### v9.953 / light v1.80 — journal admin propre + vérification réelle
 - Le robot `verif-live-equipes` se déclare (`x-kdmc-verif`) : journal « 🤖 Vérification automatique », fiche admin intacte (`test:verif-login`).
 - Vérifié en réel (run 37798486104) : versions servies, planning servi = PDF, 18 503 passages de départs conformes, 23 378 cases identiques app ⇄ light. PR #4372.

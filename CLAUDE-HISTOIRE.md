@@ -11860,6 +11860,35 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
   (création sans code refusée, code posé depuis sa session, compte ancien → attente). Inventaire : `coffre-comptes-inventaire` nomme les
   comptes sans code (à qui dire « reconnecte-toi et choisis ton code »).
 
+## 🔒 RÈGLE ABSOLUE — SEUL KEVIN AJOUTE OU MODIFIE : PLANNING, ÉQUIPES, PERSONNES, COMPTES, CODES — PARTOUT (Kevin 2026-10-08, ABSOLUE)
+
+> **« Seul moi peut ajouter ou modifier. partout »** — Kevin 2026-10-08. Périmètre confirmé par lui le même jour (question à un choix) :
+> **« Données de planning et comptes seulement »** — les employés gardent fiche, pointage, chat, échanges ; les chefs gardent NR/5e.
+
+### 1. Ce que ça veut dire
+- Planning, équipes, **personnes** (la liste et les identités), comptes, codes : **Kevin seul**, dans CMCteams, la light et le domaine.
+- Ce qui reste à chacun : sa fiche (`cmc_reg`), son pointage, le chat, ses demandes d'échange ; aux chefs : NR / 5e (décision du 7.10).
+- « Partout » = **côté serveur** (règles Firebase, routeur), jamais une page qui se contrôle elle-même (règle d'or n° 8).
+
+### 2. Comment c'est fait (mesuré le 8.10.2026)
+| Donnée | Qui écrit | Depuis | Preuve |
+|---|---|---|---|
+| Planning, équipes, réglages (32 clés + 9 préfixes) | rôle admin | 27.09 (phase 2b) | robot `coffre-ecritures-cmc` : anonyme → 401, admin → 200 |
+| **Personnes** `cmc_e` + identités `cmc_known_identities` | **rôle admin** | **8.10 (phase 2c, CMCteams v9.954)** | même robot, sondes ajoutées ; `test:ecritures-cmc` 47/0 (sabotage : 5 rouges) |
+| Mots de passe, codes d'inscription | domaine (apex-auth-worker), illisibles | 27.09 (SECRETS_LOCK) | `test:lire-verrous` |
+| Comptes du domaine (`acc:`) | la personne (sa fiche), l'admin (fusion) ; création sans code refusée, code proposé **attend Kevin** | 8.10 (#4382) | `test:code-attente`, `test:code-compte` |
+
+- Un téléphone qui n'est pas celui de l'admin **garde sa copie** des clés verrouillées (`tools/shared/ecritures-cmc.js`) : aucun refus,
+  donc jamais le disjoncteur d'écriture ; la base reste celle de l'admin, qui écrit avec son jeton (appareil armé ou guichet `/__admin/fbtoken`).
+- Une seule liste (`_phase_cmc_ecritures._cles` = `CLES` du module) ; le verrou (`tools/firebase/verrou-ecritures.cjs`) **refuse de publier**
+  si une clé des employés s'y glisse, ou si les personnes n'y sont plus.
+
+### 3. OBLIGATIONS
+- Toute nouvelle donnée « planning / équipe / personne / compte / code » naît **verrouillée au rôle admin** (liste + règles + sonde du robot).
+- Ne jamais rouvrir une clé verrouillée pour « faire marcher » une fonction employé : la fonction passe par le domaine (jeton admin côté serveur).
+- Ajouter une clé au verrou = bump de l'appli (le robot attend la version en ligne avant de republier, sinon les vieux téléphones déclenchent le disjoncteur).
+- Pour fermer `cmc_reg` par personne, il faudra un **jeton par employé** (`auth.uid`), pas ce verrou — à faire, pas fait.
+
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 
 > « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

@@ -1,5 +1,39 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (nuit) — Apex Chat : lot 2 de la revue (25 défauts moyens/faibles du serveur)
+
+- Corrigés + 46 tests (43 rouges sur l'ancien code) : journal d'audit (la remise Premium répondait 500), rôles de groupe
+  (propriétaire jamais retiré, rôles validés, DM = exactement 1 correspondant), sondages, stories, lettres et capsules
+  (validation, pas de double livraison), pushes attendus, quotas IA atomiques (D1, migration 0012) et chat IA borné,
+  OTP (essais atomiques, réponse admin identique), jetons mal formés → 401, SSO Apex ≤ 300 s, codes sans biais,
+  pseudo/avatar validés, interrupteurs en liste blanche, médias liés à LEUR conversation (migration 0011),
+  verrou de réparation par utilisateur, SSO kd-mc sans 500 sur pseudo pris, Firebase par JWK.
+- À savoir : un 2e compte qui se réabonne aux notifications sur le même navigateur reçoit 409 tant que le 1er ne s'est
+  pas désabonné ; la règle stricte des médias ne s'applique qu'aux médias envoyés avec `conv_id` (l'app ne l'envoie pas
+  encore). Tests : 1 458 / 1 464 (les 6 échecs IA préexistants).
+## 2026-10-05 — Club IA : consigne n° 3 publiée (le robot vit maintenant dans kd-mc)
+
+- Le robot du Club tourne depuis le **dépôt public kd-mc** (workflow 367845632, actif) ; sa copie au coffre est en pause exprès depuis la séparation en deux dépôts (26.09) → c'est pour ça que le 28.09 n'avait rien publié.
+- Run https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/37276834200 ✅ : « SEMAINE PUBLIÉE : s2026-41 · Relancer un devis sans réponse » (743 mots), **0 abonné actif**, 0 e-mail. Bilan envoyé à Kevin.
+- Routine du lundi (trig_01NRF9EF7ijFiENxU1KPDSHk) corrigée : elle déclenche désormais kd-mc, jamais la copie du coffre.
+- **Pub du lundi** : `pub-videos.yml` vit AUSSI dans kd-mc (id 367845740, actif ; ma 1re liste s'arrêtait à 100 workflows sur 143 → j'avais écrit à tort « il n'y est pas », corrigé auprès de Kevin). Run https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/37282210533 : immo-06 + club-05 rendus, release OK, branche `claude/pub-auto-2026-41` poussée, **PR refusée** (« GitHub Actions is not permitted to create pull requests » dans kd-mc). **Vidéos MUETTES et fond uni** : `/__lingua/tts` répond `hors_domaine` aux scripts (verrou `vientDuDomaine` posé exprès contre les dépenses OpenAI) + le rendu riche ffmpeg refusé. **Non programmées** (qualité dégradée). Semaine passée : 12/12 vidéos publiées ; posts-liens 2 publiés / 2 ERROR « You have reached your Metricool account limit ». Plus rien de programmé. Décision demandée à Kevin : accès voix réservé à la fabrique, ou pub en pause.
+## 2026-10-08 (16h45) — « Seul moi peut ajouter ou modifier, partout » : phase 2c PERSONNES (CMCteams v9.954)
+
+- **Kevin** : « Seul moi peut ajouter ou modifier. partout » → périmètre confirmé « Données de planning et comptes seulement » (planning, équipes, personnes, comptes, codes ; les employés gardent fiche / pointage / chat / échanges, les chefs NR/5e).
+- **Mesuré avant** : planning + équipes + réglages déjà au rôle admin (27.09) ; codes/mots de passe au domaine (SECRETS_LOCK) ; comptes : création sans code refusée, code en attente de Kevin (#4382). **Trou** : `cmc_e` (liste des personnes) et `cmc_known_identities` (identités apprises) écrivables par tout téléphone connecté (`auth != null`).
+- **Livré (CMCteams v9.954)** : les deux clés rejoignent `_phase_cmc_ecritures._cles` + `CLES` du module ; verrou refuse de publier sans elles ; robot `coffre-ecritures-cmc` : plancher v9.954, sondes `cmc_e` / `cmc_known_identities` ; marqueur `ecritures-demande.json` modifié → le robot repart à la fusion sur `main` (attend l'appli v9.954 en ligne, republie, prouve, déverrouille seul si une preuve échoue). `test:ecritures-cmc` 47/0, sabotage (cmc_e retiré du module) → 5 rouges. Light : inchangée (ne l'écrit jamais).
+- **Blocage trouvé en route (8.10, 16h46)** : la publication du site (`coffre-synchronise-public`) refusait TOUT depuis la fusion #4389 : une adresse e-mail (mairie, domaine orange.fr) dans `KEVIN_ACTIONS_TODO.md` ligne 4037, fichier exporté en public → site figé, et mon robot de verrou attendait une appli v9.954 qui ne pouvait pas arriver (annulé à temps : sans rollback, verrou 2b intact). Corrigé : adresse déplacée dans `audit/prive/arbre-demandes-actes-adresses.md` (privé toujours), export vérifié en local (✅ rien de sensible). Message m207 à la branche arbre.
+- **Réel** : preuve du robot à lire après la fusion (run coffre-ecritures-cmc, anonyme → 401 sur cmc_e). Vieux téléphones (< v9.954) : mise à jour forcée, sinon leurs écritures de `cmc_e` prennent un 401 (disjoncteur 60 s) jusqu'au rechargement.
+
+## 2026-10-08 (16h40 UTC) — Crypto : 4 robots papier sur 5 « CRASHED » depuis le 7.10 → démarrage qui réessaie + relance auto
+
+Lu en vrai (Railway ; D1 inaccessible ce jour : le connecteur Cloudflare demande une nouvelle autorisation) :
+- Les correctifs du 4.10 marchent : p1, p4, p5 ont été relancés plusieurs fois (4.10 → 7.10, « redeploy »).
+- Mais le 7.10 à 06h00/08h00 : testnet Binance en 502 au démarrage → p1, p2, p4, p5 CRASHED (Railway abandonne
+  après 5 essais en 1 minute). Seul p3 tournait (redéployé le 8.10 16h00).
+- Correctifs : `bot._connecter` (40 essais, 15 s → 5 min) ; CRASHED/FAILED = arrêté → relance par le réveil de l'IA.
+- Gardes : test_multi 69/0, bot-ia 81/0, bot-ia-routeur 54/0 ; 3 sabotages rouges. Leçon 459.
+
 ## 2026-10-08 (soir, suite) — Déploiement Apex Chat : migrations D1 réessayées 3 fois
 
 - Le déploiement v1.1.293 (kd-mc run 37807161669) s'arrêtait aux migrations D1 sur une erreur PASSAGÈRE de l'API
@@ -1660,7 +1694,9 @@ Michel) — à confirmer.
 
 - Les robots GitHub retournent depuis la nuit (runs du 1.10 à 00h16 en succès).
 - Ma branche avait **17 commits jamais arrivés sur main** : la PR #4032 était bloquée par des conflits depuis le 26.09. Conflits résolus à la main (pub-media-r2 : on garde l'interrupteur KDMC_RUNNER de main ; cleanup : on garde main sans le déclencheur workflow_run que j'avais retiré ; package.json : liste de main + mes 2 gardes `test:page-preuve-reelle` et `test:prix-honnete` ; worker vente : union des exports ; mémoire et registre des sessions fusionnés). Tests relancés : prix-honnete 4/0, pub-videos 12/0, vente 39/0, fabrique 9/0, tableau commerce 13/0, page-preuve-reelle 20/0, workflows-valides 862/0.
-- **Pas fait** : les 3 vidéos avis-04..06. `pub-videos.yml` reste éteint à la main (choix de Kevin ou d'une autre session) : je ne le rallume pas.
+- **PR #4032 fusionnée sur main** (merge 05b393a0b), après vérifs vertes (runtime-audit, audit-live, audit-domaine, vérif départs).
+- **Vu EN VRAI** (Firecrawl, HTTP 200, 1.10 07:31 UTC) : kit.kd-mc.com/avis.html montre le bloc « Voilà exactement ce que tu vas envoyer » (2 cas, 1★ et 5★) et le prix **17 € seul, sans prix barré**.
+- **Pas fait** : les 3 vidéos avis-04..06, donc pas de mesure « la carte avis retient-elle mieux ? ». `pub-videos.yml` reste éteint à la main (choix de Kevin ou d'une autre session) : je ne le rallume pas.
 
 ## 2026-09-28 — Club IA, routine du lundi : rien publié (robot éteint à la main)
 
@@ -15640,6 +15676,12 @@ propagée → détectée **dans les deux documents** · restauré → vert.
 **Règle écrite** dans `CLAUDE-HISTOIRE.md` (« LES DOCUMENTS SE METTENT À JOUR TOUT SEULS »),
 garde déclaré au registre → `rules-compliance` **19 (≤ 19)** ✅, `test:claude-md` **9/0** ✅.
 
+## 2026-10-08 — Kevin annule le business « kit IA » (« trop mauvaise qualité »)
+
+- Routines **en pause** (pas supprimées) : Pub `trig_01ARpUQ1bAwfMu51dduTdR14`, Club `trig_01NRF9EF7ijFiENxU1KPDSHk`.
+- Metricool : **0 post programmé** à venir (mesuré 8.10, getScheduledPosts 8.10→31.12). Déjà publiés : 17 Reels/Shorts × 4 réseaux + 3 posts-liens Facebook (18.09→01.10).
+- Retrait : Metricool n'a pas de suppression de posts publiés ; FB/IG/TikTok n'ont **aucun jeton** au coffre (mesuré 16.09) → Kevin, 3 réglages de compte. YouTube : robot `youtube-retirer.yml` (privé, réversible, garde chaîne UCnQ3nfsa5737ZmMub8fvkpQ).
+- Nouvelle niche : recherche en cours (4 agents), rapport à Kevin.
 ## 2026-10-08 (14h) — « Tout gratuit, mais que tout marche comme avant, performance optimale pour tout le monde » : mesuré, puis trois leviers
 
 **Mesuré d'abord** (API Analytics, run public 37782321279, `tools/audit/mesure-requetes.mjs`) : **7.10 = 49 008 requêtes Workers (49 % du

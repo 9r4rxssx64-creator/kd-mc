@@ -182,6 +182,7 @@ describe('sendPushToUser export (sanity)', () => {
       bind() { return this; },
       all: async () => ({ results: [] }),
     }));
-    await expect(sendPushToUser('kdmc_admin', { title: 't', body: 'b' }, env)).resolves.toBeUndefined();
+    // Lot 2 (D) : les envois sont attendus et le bilan est rendu.
+    await expect(sendPushToUser('kdmc_admin', { title: 't', body: 'b' }, env)).resolves.toEqual({ total: 0, ok: 0, failed: 0 });
   });
 });

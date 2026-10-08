@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 204 règles — le texte de Kevin, une par une
+## 📜 Les 205 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -887,6 +887,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🔐 RÈGLE ABSOLUE — CODE OBLIGATOIRE POUR TOUS : PERSONNE N'ENTRE SANS COMPTE + CODE, PERSONNE NE PREND LE COMPTE D'UN AUTRE (Kevin 2026-10-08, ABSOLUE)
 **« Ajoute code obligatoire pour tous dans la création, l'inscription. La connexion inconnue sur le compte de Laurence est un exemple qui ne doit plus jamais arriver. Trouve des solutions. […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-code-obligatoire-pour-tous-personne-nentre-sans-compte-code-personne-ne-prend-le-compte-dun-autre-kevin-2026-10-08-absolue)
+
+### 🔒 RÈGLE ABSOLUE — SEUL KEVIN AJOUTE OU MODIFIE : PLANNING, ÉQUIPES, PERSONNES, COMPTES, CODES — PARTOUT (Kevin 2026-10-08, ABSOLUE)
+**« Seul moi peut ajouter ou modifier. partout »** — Kevin 2026-10-08. Périmètre confirmé par lui le même jour (question à un choix) : **« Données de planning et comptes seulement »** — les […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-seul-kevin-ajoute-ou-modifie-planning-équipes-personnes-comptes-codes-partout-kevin-2026-10-08-absolue)
 
 ### 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

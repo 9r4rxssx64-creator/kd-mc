@@ -1,0 +1,33 @@
+# Kevin 08.10.2026 : « Arrête les publications et retire-les. On annule ce business. »
+# Passe en PRIVÉ (réversible, rien n'est supprimé) les Shorts de pub du kit IA.
+# Bouton seulement (aucun cron). Coffre : enable → dispatch → disable.
+name: YouTube — retirer les vidéos de pub (privé)
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "sonde (regarder seulement) ou prive (passer en privé)"
+        default: sonde
+      ids:
+        description: "identifiants des vidéos, séparés par des virgules"
+        default: "EWt0DefETZM,ja0q2Ifb994,fEM5zf3BsMw,2gebjce_boc,1QroW-FpSyU,KoM78fLUvj8,tCWWpAl9Qig,EGjIJk5RPjs,8jnjIl7SGVU,2pSvxmlNFqg,XRDbiQDObBk,YL3RuzCq7tw,JDvrWDHZqPI,2yhvfQl17b8,bYd8DEXYUbM,Fj2dcLHvHZs,86fjg83s2W0"
+permissions:
+  contents: read
+jobs:
+  retirer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/social/youtube-retirer.mjs
+          sparse-checkout-cone-mode: false
+      - name: Retirer
+        env:
+          YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          MODE: ${{ inputs.mode }}
+          IDS: ${{ inputs.ids }}
+          CHAINE: UCnQ3nfsa5737ZmMub8fvkpQ
+        run: node tools/social/youtube-retirer.mjs

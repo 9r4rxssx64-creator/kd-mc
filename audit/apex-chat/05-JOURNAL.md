@@ -265,3 +265,10 @@ produit assumé.
   accusés, positions).
 - **Non fait (décision)** : F36 (coffre de clé), chiffrement de groupe, ~40 points moyens/faibles listés au MEMO.
 - **Vérification en ligne APRÈS déploiement** : voir passe 7 (à écrire après le run e2e post-déploiement).
+
+## Passe 7 — 2026-10-08 — vérifié en production + lot 2
+
+- **APRÈS déploiement** (kd-mc deploy 37807825035 vert ; e2e 37808142564) : **17 réussis, 0 échec, 1 instable** —
+  le test « temps réel par TICKET », rouge avant, passe en prod.
+- Lot 2 (25 défauts serveur moyens/faibles) : voir MEMO_RESUME 08.10 nuit. Migrations 0011 (media.conv_id), 0012 (ai_quota).
+

@@ -204,7 +204,8 @@ describe('handleVotePoll success path', () => {
 // ---------------------------------------------------------------------------
 describe('handleCreateTimeCapsule success path', () => {
   it('full params → INSERT + 200', async () => {
-    const env = userEnvAuth();
+    // Lot 2 (I) : le destinataire doit exister.
+    const env = userEnvAuth({ first: (sql) => sql.includes('FROM users WHERE id=?') ? { id: 'peer', status: 'active' } : null });
     const token = await userToken();
     const req = makeReq('POST', '/api/time-capsules', {
       recipient_id: 'peer',

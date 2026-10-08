@@ -58,7 +58,7 @@ describe('verifyFirebaseIdToken — success bypass signature', () => {
       APEX_CHAT_CACHE: { get: vi.fn(async () => null), put: vi.fn(async () => {}) },
     };
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({
-      kid1: '-----BEGIN CERTIFICATE-----\nMIIDdjCCAl6gAwIBAgIJAKLk\n-----END CERTIFICATE-----',
+      keys: [{ kty: 'RSA', kid: 'kid1', n: 'nnn', e: 'AQAB', alg: 'RS256' }],   // Lot 2 (Y) : JWKS, plus des certificats PEM
     })));
     // Mock crypto.subtle pour bypass cert parse + verify
     const importKeySpy = vi.spyOn(globalThis.crypto.subtle, 'importKey').mockResolvedValue({ type: 'public' });
@@ -83,7 +83,7 @@ describe('verifyFirebaseIdToken — success bypass signature', () => {
       FIREBASE_PROJECT_ID: 'apex-chat',
       APEX_CHAT_CACHE: { get: vi.fn(async () => null), put: vi.fn(async () => {}) },
     };
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ kid1: '-----BEGIN CERTIFICATE-----\nMIIDdjCCAl6gAwIBAgIJAKLk\n-----END CERTIFICATE-----' })));
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ keys: [{ kty: 'RSA', kid: 'kid1', n: 'nnn', e: 'AQAB' }] })));
     vi.spyOn(globalThis.crypto.subtle, 'importKey').mockResolvedValue({});
     vi.spyOn(globalThis.crypto.subtle, 'verify').mockResolvedValue(false);
     const t = makeFirebaseToken({
@@ -115,7 +115,7 @@ describe('handleVerifyOtp — Firebase ID token path success', () => {
     env.APEX_CHAT_CACHE = { get: vi.fn(async () => null), put: vi.fn(async () => {}) };
 
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({
-      kid1: '-----BEGIN CERTIFICATE-----\nMIIDdjCCAl6gAwIBAgIJAKLk\n-----END CERTIFICATE-----',
+      keys: [{ kty: 'RSA', kid: 'kid1', n: 'nnn', e: 'AQAB', alg: 'RS256' }],   // Lot 2 (Y) : JWKS, plus des certificats PEM
     })));
     vi.spyOn(globalThis.crypto.subtle, 'importKey').mockResolvedValue({});
     vi.spyOn(globalThis.crypto.subtle, 'verify').mockResolvedValue(true);

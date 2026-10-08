@@ -4027,3 +4027,16 @@ La relance automatique du **13.10** relit ta boîte (réponses seulement), lit l
 (archives@ville-nice.fr) : les **4 actes anciens** (décès Jean-Baptiste ‹employé› 1903, naissance Philippe Laurent Jérôme ‹employé› ~1850, décès Jean ‹employé›
 1881, naissance Judith ‹employé› 1892 — tous à Nice) ; ③ Paris 19e : lettre sans destinataire, à copier dans le formulaire paris.fr ou à imprimer.
 
+**Tous les mails prêts (8.10.2026, soir)** — 6 brouillons dans Gmail, à relire puis envoyer (rien n'est envoyé à ta place) :
+
+| # | Destinataire | Ce qu'il débloque |
+|---|---|---|
+| 1 | Salon-de-Provence — relance (fil du 3.10) | mariage Guy × Renée ‹employé› 1943 → parents de Renée |
+| 2 | Archives municipales de Nice — **5 actes** | Jean-Baptiste 1903, Philippe ~1850 (relie la branche de 14), Jean 1881 (date), Judith 1892 (date), **Jean Marius Victor ‹employé› 1912** (ses parents → le rattacher) |
+| 3 | Paris 19e — lettre (formulaire paris.fr ou courrier) | mariage Guy × Yvette 1950 → parents d'Yvette |
+| 4 | **Mairie de Chevrainvilliers** (adresse : `audit/prive/arbre-demandes-actes-adresses.md`) | naissances d'Yvette 1923, André René 1924, Guy Gilbert 1928 MEZONNIAUD → **rattache les 2 MEZONNIAUD isolés** |
+| 5 | **Mairie de Monaco, état civil** (etatcivil@mairie.mc) | naissance de **Myriam ‹employé› 1935** → ses parents (Paula ou François ?) |
+| 6 | **Archives municipales de Marseille** (adresse à vérifier sur archives.marseille.fr) | naissance de **Claude Alain DE SARZENS 1941** → est-il de la famille ? |
+
+Ensemble, ces 6 mails couvrent **les 5 personnes isolées et le groupe de 14**. La relance du 13.10 surveille toutes les réponses.
+

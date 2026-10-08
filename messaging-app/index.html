@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.293",
+  "softwareVersion": "v1.1.294",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.293';
+const __APEX_CHAT_VERSION__ = 'v1.1.294';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.293" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.293</div>
+  <div id="splash-version" data-ver="v1.1.294" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.294</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.293</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.294</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1805,6 +1805,9 @@ K._refreshConvs = async function(){
             }
             K.conversations = K.conversations.filter(c => !K._deletedConvIds.includes(c.id));
           }
+          // v1.1.294 — TOFU aussi sur les clés venant de la LISTE (peer_pubkey) :
+          // 1ʳᵉ vue épinglée, clé différente = alerte persistante (jamais adoptée).
+          try{ K._tofuCheckConvList && K._tofuCheckConvList(K.conversations); }catch(_e){ _safeCatch('tofu-list', _e); }
           ls('conversations', K.conversations);
           // v1.1.188 : une fois les conversations chargées, fusionner les contacts
           // (ajoute le pair de chaque conv) → le contact ne se perd plus au login.
@@ -4786,10 +4789,36 @@ K._sendContactCard = function(){
   ls('messages_' + conv.id, K.messages[conv.id]);
   K._closeModal && K._closeModal();
   K.render();
-  toast('📇 Contact partagé', 'ok');
-  if(K.ws && K.ws.readyState === 1){
-    try { K.ws.send(JSON.stringify({ type: 'contact_card', msg_id: msg.id, contact: msg.contact_card })); } catch(_e){_safeCatch('silent',_e)}
-  }
+  // v1.1.294 : la carte partait dans une trame `contact_card` EN CLAIR (nom,
+  // téléphone, email) que le serveur ne relayait même pas (« Type inconnu ») →
+  // fuite + jamais reçue. Elle passe désormais par le chemin MESSAGE avec la
+  // même décision de chiffrement que le texte (marqueur APXVC1, chiffré en DM).
+  const marker = 'APXVC1:' + JSON.stringify(msg.contact_card);
+  return K._sendSecure(conv, marker, { id: msg.id, ts: msg.ts, mime: 'text/plain', msg }).then((r) => {
+    toast(r === 'pending' ? K._pendingToastText(conv) : (r === 'queued' ? '📭 Contact en attente d\'envoi' : '📇 Contact partagé'), r === 'sent' ? 'ok' : 'info', 2200);
+    if(r === 'pending' && K.render) K.render();
+    return r;
+  }).catch((e) => { _safeCatch('vc-send', e); return 'error'; });
+};
+// v1.1.294 — marqueurs reçus par le chemin MESSAGE (déchiffrés au besoin).
+K._parseContactMarker = function(txt){
+  if(typeof txt !== 'string' || txt.indexOf('APXVC1:') !== 0) return null;
+  try{
+    const j = JSON.parse(txt.slice(7));
+    if(!j || typeof j !== 'object' || typeof j.name !== 'string' || !j.name) return null;
+    const s = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+    return { name: s(j.name, 100), phone: s(j.phone, 30), email: s(j.email, 100), org: s(j.org, 100) };
+  }catch(_e){ return null; }
+};
+K._parsePollMarker = function(txt){
+  if(typeof txt !== 'string' || txt.indexOf('APXPOLL1:') !== 0) return null;
+  try{
+    const j = JSON.parse(txt.slice(9));
+    if(!j || typeof j.question !== 'string' || !j.question || !Array.isArray(j.options)) return null;
+    const options = j.options.filter(o => typeof o === 'string' && o).slice(0, 10).map(o => o.slice(0, 80));
+    if(options.length < 2) return null;
+    return { question: j.question.slice(0, 300), options, multi: !!j.multi, anon: !!j.anon, votes: {} };
+  }catch(_e){ return null; }
 };
 
 K._renderContactCard = function(m){
@@ -5326,6 +5355,10 @@ K._shareLocationOnce = function(){
 };
 
 K._liveLocationWatcher = null;
+// v1.1.294 — une mise à jour de position live est une trame EN CLAIR (lat/lng) :
+// autorisée seulement là où l'E2E ne s'applique pas (groupe assumé transit, ou
+// E2E coupé). Dans un DM chiffré, on ne la diffuse pas en clair.
+K._locationUpdateAllowed = function(conv){ return !K._e2eAppliesTo(conv); };
 K._shareLocationLive = function(minutes){
   const conv = K.viewData;
   if(!conv) return;
@@ -5350,7 +5383,9 @@ K._shareLocationLive = function(minutes){
             }
             ls('messages_' + conv.id, msgs);
             K.render();
-            if(K.ws && K.ws.readyState === 1){
+            // v1.1.294 : sous E2E (DM), les coordonnées ne partent JAMAIS en clair
+            // (et le serveur ne relaie pas ce type de trame : rien de perdu).
+            if(K._locationUpdateAllowed(conv) && K.ws && K.ws.readyState === 1){
               try { K.ws.send(JSON.stringify({ type: 'location_update', msg_id: msgId, lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy, updated_at: m.location.updated_at })); } catch(_e){_safeCatch('silent',_e)}
             }
           }
@@ -5392,24 +5427,14 @@ K._sendLocationMsg = function(lat, lng, accuracy, expiresAt){
   K.render();
   // Envoi via le chemin MESSAGE (chiffré + relayé + persisté). Le pair parse APXLOC1.
   const marker = 'APXLOC1:' + JSON.stringify(loc);
-  (async () => {
-    let ciphertext = marker;
+  // v1.1.294 : même décision de chiffrement que le texte (avant : si la session
+  // n'était pas établie, la position partait EN CLAIR malgré l'E2E ON).
+  K._lastLocationSend = (async () => {
     try{
-      if(K._e2eOn()){
-        await K._ensureSession(conv);
-        if(window.ApexCrypto && ApexCrypto.getSessionKey(conv.id)){
-          const ct = await ApexCrypto.encryptForConv(conv.id, marker);
-          if(ct) ciphertext = K._E2E_TAG + ct;
-        }
-      }
-    }catch(e){ _safeCatch('loc-encrypt', e); }
-    const wire = { type: 'message', ciphertext, mime: 'text/plain', ts: msg.ts, id: msg.id };
-    if(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === conv.id){
-      try{ K.ws.send(JSON.stringify(wire)); }
-      catch(e){ _safeCatch('loc-send', e); K._outboxAdd({ conv_id: conv.id, ciphertext: wire.ciphertext, mime: 'text/plain', ts: msg.ts, id: msg.id }); }
-    } else {
-      K._outboxAdd({ conv_id: conv.id, ciphertext: wire.ciphertext, mime: 'text/plain', ts: msg.ts, id: msg.id });
-    }
+      const r = await K._sendSecure(conv, marker, { id: msg.id, ts: msg.ts, mime: 'text/plain', msg });
+      if(r === 'pending'){ if(K.render) K.render(); toast(K._pendingToastText(conv), 'info', 2200); }
+      return r;
+    }catch(e){ _safeCatch('loc-send', e); return 'error'; }
   })();
   return msg.id;
 };
@@ -5510,11 +5535,15 @@ K._sendPoll = function(){
   ls('messages_' + conv.id, K.messages[conv.id]);
   K._closeModal && K._closeModal();
   K.render();
-  toast('📊 Sondage publié', 'ok');
-  // WS broadcast
-  if(K.ws && K.ws.readyState === 1){
-    try { K.ws.send(JSON.stringify({ type: 'poll', poll_id: msg.id, question, options, multi, anon })); } catch(_e){_safeCatch('silent',_e)}
-  }
+  // v1.1.294 : la trame `poll` partait EN CLAIR et le serveur ne la relayait pas
+  // (« Type inconnu »). Elle passe par le chemin MESSAGE, même décision de
+  // chiffrement que le texte (marqueur APXPOLL1, chiffré en DM).
+  const marker = 'APXPOLL1:' + JSON.stringify({ question, options, multi, anon });
+  return K._sendSecure(conv, marker, { id: msg.id, ts: msg.ts, mime: 'text/plain', msg }).then((r) => {
+    toast(r === 'pending' ? K._pendingToastText(conv) : (r === 'queued' ? '📭 Sondage en attente d\'envoi' : '📊 Sondage publié'), r === 'sent' ? 'ok' : 'info', 2200);
+    if(r === 'pending' && K.render) K.render();
+    return r;
+  }).catch((e) => { _safeCatch('poll-send', e); return 'error'; });
 };
 
 K._votePoll = function(msgId, optIdx){
@@ -5791,6 +5820,27 @@ K._e2eOn = function(){
   }catch(_){}
   return K._E2E_ENABLED;         // défaut = ON
 };
+// v1.1.294 — PORTÉE de l'E2E. L'E2E1 est une session ECDH 1:1 (moi ↔ UN pair).
+// Pour un groupe / une communauté / un canal, le serveur ne fournit qu'UN
+// peer_pubkey (le dernier membre vu) → chiffrer pour lui rendait le message
+// illisible pour tous les AUTRES membres (« impossible à lire ») et le « pair »
+// changeait avec last_seen (fausses alertes « clé changée »). Tant qu'il n'y a
+// pas de vrai E2E de groupe, un groupe passe par le chemin NON-E2E explicite
+// (decideWire mode « clear » = chiffré en transit HTTPS/WSS), avec un indicateur
+// HONNÊTE dans l'en-tête. Les DM sont inchangés.
+K._convIsDm = function(conv){
+  if(!conv) return false;
+  if(typeof conv.type === 'string' && conv.type) return conv.type === 'dm';
+  // Conversation locale ancienne sans type : groupe dès qu'elle a > 2 membres.
+  try{
+    if(Array.isArray(conv.members) && conv.members.filter(Boolean).length > 2) return false;
+    if(typeof conv.member_count === 'number' && conv.member_count > 2) return false;
+  }catch(_){}
+  return true;
+};
+// E2E réellement applicable à CETTE conversation (DM + mode E2E ON sur l'appareil).
+K._e2eAppliesTo = function(conv){ return !!conv && K._convIsDm(conv) && K._e2eOn(); };
+K._GROUP_E2E_NOTICE = '🔓 Groupe : chiffré en transit, pas de bout en bout';
 // Préfixe-sentinelle placé DANS le champ ciphertext (relayé/stocké tel quel par
 // le serveur) → le destinataire sait qu'un payload est chiffré, sans changer le
 // worker ni la base. Payload non-taggé = texte clair (transit). 100% rétro-compat.
@@ -5810,7 +5860,7 @@ K._peerSupports = function(conv, cap){
 // Média-E2E : ON forcé ('1'), OFF forcé ('0'), sinon AUTO = ON si le pair sait
 // le déchiffrer (négociation de capacités → sécurité par défaut, zéro casse).
 K._mediaE2eOn = function(conv){
-  if(!K._e2eOn()) return false;
+  if(!K._e2eAppliesTo(conv)) return false;   // v1.1.294 : jamais pour un groupe (clé 1:1)
   let v = null; try{ v = localStorage.getItem('apex_chat_media_e2e'); }catch(_){}
   if(v === '1') return true;
   if(v === '0') return false;
@@ -5847,8 +5897,10 @@ K._ensureRatchet = async function(conv, force){
     }catch(_){}
     // 2) sinon init depuis la session ECDH (nécessite la clé du pair)
     if(!(await K._ensureSession(conv))) return false;
-    if(!K._cryptoKeys || !conv.peer_pubkey) return false;
-    const peerKey = await ApexCrypto.importPublicKey(conv.peer_pubkey);
+    // v1.1.294 — TOFU : la clé ÉPINGLÉE prime sur celle (non acceptée) du serveur.
+    const rPub = (K._pinnedPeerKey && K._pinnedPeerKey(conv.id)) || conv.peer_pubkey;
+    if(!K._cryptoKeys || !rPub) return false;
+    const peerKey = await ApexCrypto.importPublicKey(rPub);
     await ApexCrypto.ratchetInit(conv.id, K._cryptoKeys.privateKey, peerKey);
     K._persistRatchet(conv.id);
     return true;
@@ -5882,7 +5934,7 @@ K._looksCiphertext = function(t){
     /^[A-Za-z0-9+/]+={0,2}$/.test(t) && t.indexOf(' ') < 0 && /[+/=]|[0-9]/.test(t);
 };
 K._e2eActive = function(conv){
-  if(!K._e2eOn()) return false;
+  if(!K._e2eAppliesTo(conv)) return false;   // v1.1.294 : jamais « E2E » pour un groupe
   try{
     return !!(conv && window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id));
   }catch(_e){ _safeCatch('e2e-active', _e); return false; }
@@ -5928,7 +5980,7 @@ K._updatePresenceHeader = function(){
   const conv = K.viewData;
   if(!conv) return;
   const sub = document.getElementById('chat-header-subtitle');
-  if(sub) sub.innerHTML = K._presenceLabel(conv);
+  if(sub) sub.innerHTML = K._chatHeaderSubtitle(conv);   // v1.1.294 : groupe = mention honnête, pas de cadenas
 };
 
 K._renderTypingIndicator = function(convId){
@@ -6165,48 +6217,56 @@ K._scheduleAt = function(isoTs){
 };
 
 K._scheduledCheckTimer = null;
+// v1.1.294 — envoi des messages programmés arrivés à échéance.
+// Avant : (1) le texte partait EN CLAIR dans `ciphertext` même sous E2E ;
+// (2) si la conversation n'était pas ouverte, RIEN ne partait mais le toast
+// disait « envoyé » ; (3) une conversation pas encore chargée → message retiré
+// de la liste et perdu. Désormais : même décision de chiffrement que le texte,
+// file d'attente (outbox / pending-encrypt) si le WS de CETTE conversation
+// n'est pas ouvert, et un message dont la conversation est introuvable reste
+// programmé (re-tenté au passage suivant).
+K._runScheduledDue = async function(){
+  const list = lg('ax_scheduled_msgs', []);
+  if(!list.length) return [];
+  const now = Date.now();
+  const due = [], keep = [];
+  for(const s of list){
+    if(s.sendAt > now){ keep.push(s); continue; }
+    const conv = K.conversations?.find(c => c.id === s.convId);
+    if(!conv){ console.warn('[scheduled] conv introuvable — gardé pour plus tard', s.convId); keep.push(s); continue; }
+    due.push({ s, conv });
+  }
+  if(!due.length) return [];
+  ls('ax_scheduled_msgs', keep);   // retiré AVANT l'envoi asynchrone (pas de double envoi)
+  const results = [];
+  for(const { s: sch, conv } of due){
+    try {
+      const msg = {
+        id: 'm_sch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+        from: K.user?.id,
+        text: sch.text,
+        ts: Date.now(),
+        encrypted: false,
+        scheduled_origin: sch.id,
+      };
+      K.messages = K.messages || {};
+      K.messages[sch.convId] = K.messages[sch.convId] || [];
+      K.messages[sch.convId].push(msg);
+      ls('messages_' + sch.convId, K.messages[sch.convId]);
+      const r = await K._sendSecure(conv, sch.text, { id: msg.id, ts: msg.ts, mime: 'text/plain', msg });
+      ls('messages_' + sch.convId, K.messages[sch.convId]);
+      results.push(r);
+      if(r === 'sent') toast(`📨 Message programmé envoyé à ${sch.convName}`, 'ok');
+      else if(r === 'queued') toast(`📭 Message programmé pour ${sch.convName} en attente d'envoi (partira à la reconnexion)`, 'info');
+      else toast(`🔒 Message programmé pour ${sch.convName} en attente : ${K._keyChangePending(conv) ? 'clé du contact changée, à vérifier' : 'clé du contact pas encore reçue'}`, 'info');
+    } catch(e){ console.warn('[scheduled] send fail', e); results.push('error'); }
+  }
+  if(K.view === 'chat' && K.render) K.render();
+  return results;
+};
 K._startScheduledChecker = function(){
   if(K._scheduledCheckTimer) return;
-  const run = () => {
-    const list = lg('ax_scheduled_msgs', []);
-    if(!list.length) return;
-    const now = Date.now();
-    const due = list.filter(s => s.sendAt <= now);
-    if(!due.length) return;
-    const remaining = list.filter(s => s.sendAt > now);
-    ls('ax_scheduled_msgs', remaining);
-    // Envoie les messages dûs
-    for(const sch of due){
-      try {
-        const conv = K.conversations?.find(c => c.id === sch.convId);
-        if(!conv){
-          console.warn('[scheduled] conv introuvable', sch.convId);
-          continue;
-        }
-        // Push msg dans K.messages + render si visible
-        const msg = {
-          id: 'm_sch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
-          from: K.user?.id,
-          text: sch.text,
-          ts: Date.now(),
-          encrypted: false,
-          scheduled_origin: sch.id,
-        };
-        K.messages = K.messages || {};
-        K.messages[sch.convId] = K.messages[sch.convId] || [];
-        K.messages[sch.convId].push(msg);
-        ls('messages_' + sch.convId, K.messages[sch.convId]);
-        // Envoi WS si conv ouverte, sinon le destinataire le verra à la sync suivante
-        if(K.ws && K.ws.readyState === 1 && K.viewData?.id === sch.convId){
-          try {
-            K.ws.send(JSON.stringify({ type: 'message', ciphertext: sch.text, mime: 'text/plain' }));
-          } catch(_e){_safeCatch('silent',_e)}
-        }
-        toast(`📨 Message programmé envoyé à ${sch.convName}`, 'ok');
-      } catch(e){ console.warn('[scheduled] send fail', e); }
-    }
-    if(K.view === 'chat' && K.render) K.render();
-  };
+  const run = () => { K._runScheduledDue().catch(e => _safeCatch('scheduled-run', e)); };
   // Check au boot + toutes 30s
   setTimeout(run, 2000);
   K._scheduledCheckTimer = setInterval(run, 30_000);
@@ -6274,9 +6334,13 @@ K._computeSafetyNumber = async function(myPubB64, peerPubB64){
 K._openSecurityVerification = async function(){
   const conv = K.viewData;
   if(!conv){ toast('Pas de conversation', 'warn'); return; }
+  if(!K._convIsDm(conv)){ toast(K._GROUP_E2E_NOTICE, 'info', 4000); return; }  // v1.1.294
   const sessionActive = K._e2eOn() && window.ApexCrypto && ApexCrypto.getSessionKey?.(conv.id);
   const myPub = lg('crypto_pub', null);
-  const peerPub = conv.peer_pubkey || null;
+  // v1.1.294 — clé changée en attente : on affiche le numéro de la NOUVELLE clé
+  // (c'est elle qu'il faut comparer avant de l'accepter) ; sinon la clé épinglée.
+  const pendingPub = K._pendingPeerKey ? K._pendingPeerKey(conv.id) : null;
+  const peerPub = pendingPub || (K._pinnedPeerKey && K._pinnedPeerKey(conv.id)) || conv.peer_pubkey || null;
   let safetyNum = null;
   if(myPub && peerPub){
     safetyNum = await K._computeSafetyNumber(myPub, peerPub);
@@ -6284,6 +6348,11 @@ K._openSecurityVerification = async function(){
   const verified = lg('verified_' + conv.id, false);
 
   K._showModal('🛡 Vérification sécurité E2E', `
+    ${pendingPub ? `<div role="alert" style="background:rgba(230,57,70,.12);border:1px solid #e63946;border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-weight:700;color:#e63946">⚠️ Nouvelle clé de sécurité (non acceptée)</div>
+      <div style="font-size:.8em;color:var(--ax-text-2);margin:4px 0 8px">Le numéro ci-dessous est celui de la NOUVELLE clé. Compare-le avec ton contact avant d'accepter. Tant que tu n'acceptes pas, rien n'est envoyé.</div>
+      <button class="btn btn-block" style="min-height:44px" onclick="K._acceptPeerKeyChange('${esc(conv.id)}')">J'ai vérifié, accepter la nouvelle clé</button>
+    </div>` : ''}
     <div style="background:${sessionActive ? 'rgba(46,213,115,.1)' : 'rgba(255,200,0,.1)'};
         border:1px solid ${sessionActive ? 'var(--ax-ok)' : 'var(--ax-warn, #ffa500)'};
         border-radius:10px;padding:12px;text-align:center;margin-bottom:14px">
@@ -7098,20 +7167,108 @@ K._publishPubkey = async function(){
 // tentative de MITM). Ne coupe jamais l'envoi.
 K._notifyKeyChange = function(conv){
   try{
-    const who = (conv && (conv.title || conv.peer_name)) || 'ce contact';
-    toast('⚠️ La clé de sécurité de ' + who + ' a changé — vérifie le numéro de sécurité (🛡) avant d\'envoyer du sensible', 'warn', 6000);
-    if(conv) conv._key_changed = true;
+    if(!conv || !K._convIsDm(conv)) return;   // v1.1.294 : jamais d'alerte « clé changée » pour un groupe
+    const who = (conv && (conv.title || conv.peer_name || conv.name)) || 'ce contact';
+    toast('⚠️ La clé de sécurité de ' + who + ' a changé — rien n\'est envoyé tant que tu ne l\'as pas vérifiée (bandeau en haut de la conversation)', 'warn', 8000);
+    conv._key_changed = true;
     if(typeof K.render === 'function' && K.view === 'chat' && K.viewData?.id === conv.id) K.render();
   }catch(_e){ _safeCatch('notify-keychange', _e); }
+};
+// v1.1.294 — TOFU STRICT (fin de l'adoption SILENCIEUSE d'une nouvelle clé).
+// Avant : le chemin « bundle » ré-épinglait la nouvelle clé avec un simple toast,
+// et le chemin « liste des conversations » (conv.peer_pubkey) ne vérifiait RIEN
+// → un serveur malveillant pouvait substituer la clé d'un contact sans que
+// personne ne s'en aperçoive. Désormais, pour TOUTE clé reçue (bundle OU liste) :
+//   1ʳᵉ vue → épinglée (peerkey_<conv>) ; identique → RAS ; DIFFÉRENTE → on garde
+//   la clé épinglée, la nouvelle attend (peerkey_pending_<conv>), bandeau
+//   persistant + bouton explicite « J'ai vérifié, accepter la nouvelle clé ».
+K._pinnedPeerKey = function(convId){
+  try{ return localStorage.getItem('peerkey_' + convId) || null; }catch(_){ return null; }
+};
+K._pendingPeerKey = function(convId){
+  try{ return localStorage.getItem('peerkey_pending_' + convId) || null; }catch(_){ return null; }
+};
+K._keyChangePending = function(conv){
+  if(!conv || !conv.id || !K._convIsDm(conv)) return false;
+  return !!K._pendingPeerKey(conv.id);
+};
+// Renvoie la clé à UTILISER pour la session (la clé épinglée si la clé reçue diffère).
+K._tofuPeerKey = function(conv, freshPub){
+  if(!conv || !conv.id || !freshPub) return freshPub || null;
+  if(!K._convIsDm(conv)) return freshPub;           // groupes : pas d'E2E 1:1, pas de TOFU
+  const pinK = 'peerkey_' + conv.id, pendK = 'peerkey_pending_' + conv.id;
+  const pinned = K._pinnedPeerKey(conv.id);
+  const r = (window.ApexCrypto && ApexCrypto.resolvePeerKey)
+    ? ApexCrypto.resolvePeerKey(pinned, freshPub)
+    : (!pinned ? { use: freshPub, pin: freshPub, pending: null, alert: false }
+      : (pinned === freshPub ? { use: pinned, pin: null, pending: null, alert: false }
+        : { use: pinned, pin: null, pending: freshPub, alert: true }));
+  try{
+    if(r.pin) localStorage.setItem(pinK, r.pin);
+    if(r.pending){
+      const prev = localStorage.getItem(pendK);
+      localStorage.setItem(pendK, r.pending);
+      conv._key_changed = true;
+      if(prev !== r.pending) K._notifyKeyChange(conv);   // alerte 1× par nouvelle clé (pas de spam)
+    } else if(localStorage.getItem(pendK)){
+      localStorage.removeItem(pendK);                    // la clé reçue redevient la clé épinglée
+      conv._key_changed = false;
+    }
+  }catch(e){ _safeCatch('tofu', e); }
+  return r.use;
+};
+// Passe TOFU sur les clés fournies par la liste des conversations (DM seulement).
+K._tofuCheckConvList = function(convs){
+  if(!Array.isArray(convs)) return 0;
+  let n = 0;
+  for(const c of convs){
+    if(c && c.id && c.peer_pubkey && K._convIsDm(c)){ K._tofuPeerKey(c, c.peer_pubkey); n++; }
+  }
+  return n;
+};
+// Action EXPLICITE de l'utilisateur, après comparaison du numéro de sécurité.
+K._acceptPeerKeyChange = async function(convId){
+  const conv = (K.viewData && K.viewData.id === convId) ? K.viewData : (K.conversations || []).find(c => c && c.id === convId);
+  const pend = K._pendingPeerKey(convId);
+  if(!conv || !pend) return false;
+  try{
+    localStorage.setItem('peerkey_' + convId, pend);
+    localStorage.removeItem('peerkey_pending_' + convId);
+  }catch(e){ _safeCatch('accept-key', e); return false; }
+  conv._key_changed = false;
+  conv.peer_pubkey = pend;
+  try{ ls('verified_' + convId, false); }catch(_e){ _safeCatch('silent', _e); } // la vérif portait sur l'ANCIENNE clé
+  try{ await K._ensureSession(conv, true); }catch(e){ _safeCatch('accept-key-session', e); }
+  try{ K._closeModal && K._closeModal(); }catch(_e){ _safeCatch('silent', _e); }
+  try{ if(K._flushPendingEncrypt) await K._flushPendingEncrypt(convId); }catch(e){ _safeCatch('accept-key-flush', e); }
+  toast('✅ Nouvelle clé acceptée — les messages en attente partent chiffrés', 'ok', 3000);
+  if(typeof K.render === 'function' && K.view === 'chat' && K.viewData?.id === convId) K.render();
+  return true;
+};
+// Bandeau PERSISTANT (tant que la nouvelle clé n'est pas acceptée).
+K._renderKeyChangeBanner = function(conv){
+  if(!K._keyChangePending(conv)) return '';
+  const who = (conv.title || conv.peer_name || conv.name || 'ton contact');
+  return `<div class="keychange-banner" role="alert" style="background:rgba(230,57,70,.12);border:1px solid #e63946;border-radius:10px;margin:6px 8px;padding:10px;font-size:.85em;color:var(--ax-text)">
+      <div style="font-weight:700;color:#e63946">⚠️ La clé de sécurité de ${esc(who)} a changé</div>
+      <div style="margin:4px 0 8px;color:var(--ax-text-2)">Réinstallation de son appli… ou tentative d'interception. Compare le numéro de sécurité avec ${esc(who)} (en personne ou en appel vidéo). Tant que tu n'as pas accepté, tes messages restent en attente et rien n'est envoyé.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-out btn-sm" style="min-height:44px" onclick="K._openSecurityVerification()">🛡 Vérifier le numéro</button>
+        <button class="btn btn-sm" style="min-height:44px" onclick="K._acceptPeerKeyChange('${esc(conv.id)}')">J'ai vérifié, accepter la nouvelle clé</button>
+      </div>
+    </div>`;
 };
 // v1.1.272 — param `force` : re-télécharge la clé ACTUELLE du pair et
 // ré-établit la session même si une session/clé est déjà en cache. Utilisé par
 // l'auto-réparation du déchiffrement (une clé de contact qui a tourné =
 // réinstallation → sans re-fetch, ses messages restaient « impossibles à lire »
 // pour toujours). Sans `force`, comportement inchangé (anti-régression).
+// v1.1.294 — jamais de session 1:1 pour un groupe ; TOFU strict sur TOUTE clé
+// reçue (bundle ET liste des conversations) via K._tofuPeerKey.
 K._ensureSession = async function(conv, force){
   try{
     if(!window.ApexCrypto || !conv) return false;
+    if(!K._convIsDm(conv)) return false;
     if(!force && ApexCrypto.getSessionKey(conv.id)) return true;
     if(!K._cryptoKeys) { try{ await _ensureCryptoKeys(); }catch(_){ } }
     if(!K._cryptoKeys) return false;
@@ -7121,27 +7278,16 @@ K._ensureSession = async function(conv, force){
         const r = await K._api('GET', '/api/keys/' + encodeURIComponent(conv.peer_id) + '/bundle');
         if(r && r.ok && r.bundle && r.bundle.identity_key_pub){
           peerPub = r.bundle.identity_key_pub;
-          conv.peer_pubkey = peerPub; // cache local
+          conv.peer_pubkey = peerPub; // cache local (la clé UTILISÉE reste décidée par le TOFU)
           conv._peer_caps = (typeof r.bundle.crypto_caps === 'string') ? r.bundle.crypto_caps : ''; // v1.1.262
-          // v1.1.262 — détection de changement de clé (TOFU, parité Signal).
-          try{
-            const storeK = 'peerkey_' + conv.id;
-            const stored = localStorage.getItem(storeK);
-            const chk = (ApexCrypto.checkKeyChange)
-              ? ApexCrypto.checkKeyChange(stored, peerPub)
-              : { firstSight: !stored, changed: !!stored && stored !== peerPub };
-            if(chk.changed){
-              localStorage.setItem(storeK, peerPub); // mémorise la nouvelle (alerte 1×)
-              K._notifyKeyChange && K._notifyKeyChange(conv);
-            } else if(chk.firstSight){
-              localStorage.setItem(storeK, peerPub); // 1ʳᵉ vue → mémorise, pas d'alerte
-            }
-          }catch(_k){ _safeCatch('keychange', _k); }
         }
       }catch(e){ /* 409 key_pending = le pair n'a pas encore publié sa clé */ }
     }
     // Repli : si le re-fetch forcé a échoué (réseau/409), on garde la clé en cache.
     if(!peerPub) peerPub = conv.peer_pubkey || null;
+    // TOFU : quelle que soit la source, une clé différente de la clé épinglée
+    // n'est JAMAIS adoptée sans l'accord explicite de l'utilisateur.
+    peerPub = K._tofuPeerKey(conv, peerPub);
     if(!peerPub) return false;
     const peerKey = await ApexCrypto.importPublicKey(peerPub);
     await ApexCrypto.establishSession(conv.id, K._cryptoKeys.privateKey, peerKey);
@@ -8021,6 +8167,7 @@ K._renderBubble = function(m, conv, msgs){
           ${m.location ? K._renderLocation(m) : ''}
           ${m.contact_card ? K._renderContactCard(m) : ''}
           ${m.deleted ? esc(m.text) : (m.text ? (K._looksCiphertext(m.text) ? '<span style="opacity:.55;font-style:italic">🔒 message chiffré (ancien — illisible)</span>' : K._renderHashtags(K._renderMentions(K._renderMarkdown(m.text)))) : (m.image_data || m.media_url || m.voice_data || m.poll || m.location || m.contact_card ? '' : '(message chiffré)'))}
+          ${K._unencryptedBadge(m)}
           ${scamReason ? `<div class="scam-warning"${kcall('_showScamInfo', [scamReason, m.id])} title="Message potentiellement suspect">⚠️ Suspect : ${esc(scamReason)}</div>` : ''}
           ${foreignLang ? `<div class="translate-hint"${kcall('_suggestTranslate', [m.id])} title="Traduire vers ${esc(K._USER_LANG.toUpperCase())}">🌐 ${esc(foreignLang.toUpperCase())} → traduire</div>` : ''}
           ${m.expires_at ? `<div class="ephemeral-badge" title="S'autodétruira ${esc(new Date(m.expires_at).toLocaleString('fr-FR'))}">💣 ${esc(K._ephemeralRemaining(m.expires_at))}</div>` : ''}
@@ -8082,6 +8229,17 @@ K._appendBubble = function(conv, m){
   return true;
 };
 
+// v1.1.294 — sous-titre HONNÊTE de l'en-tête : un groupe / une communauté / un
+// canal n'est PAS chiffré de bout en bout (pas de cadenas trompeur) ; un DM
+// garde son libellé E2E / présence habituel.
+K._chatHeaderSubtitle = function(conv){
+  if(!K._convIsDm(conv)){
+    const n = conv && (conv.member_count || (Array.isArray(conv.members) ? conv.members.length : 0));
+    return `${n ? `👥 ${esc(String(n))} membres · ` : ''}<span class="group-e2e-notice" style="color:var(--ax-warn, #ffa500)" title="Les messages de groupe sont protégés pendant le transport (HTTPS/WSS) mais le serveur peut techniquement les lire.">${esc(K._GROUP_E2E_NOTICE)}</span>`;
+  }
+  return K._presenceLabel(conv);
+};
+
 function renderChat(app){
   const conv = K.viewData;
   if(!conv){ K.sv('chats'); return; }
@@ -8092,13 +8250,14 @@ function renderChat(app){
       <div class="avatar">${esc((K._convName(conv) || '?')[0].toUpperCase())}</div>
       <div style="flex:1;min-width:0;cursor:pointer" onclick="${K._isGroup(conv) ? 'K._openGroupMenu()' : 'K._openSecurityVerification()'}" title="${K._isGroup(conv) ? 'Toucher pour gérer le groupe' : 'Toucher pour vérifier la sécurité E2E'}">
         <div class="chat-hname">${esc(K._convName(conv))}</div>
-        <div style="font-size:.68em;color:var(--ax-ok);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="chat-header-subtitle">${K._isGroup(conv) ? `👥 ${esc(String(conv.member_count || '?'))} membres · 🔒 chiffré (transit)` : K._presenceLabel(conv)}</div>
+        <div style="font-size:.68em;color:var(--ax-ok);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="chat-header-subtitle">${K._chatHeaderSubtitle(conv)}</div>
       </div>
       <button class="topbar-btn hdr-opt" onclick="K._toggleFindBar()" aria-label="Rechercher dans cette conversation">🔎</button>
       <button class="topbar-btn" onclick="K._call('audio','${esc(conv.id)}')" aria-label="Appel audio">📞</button>
       <button class="topbar-btn hdr-opt" onclick="K._call('video','${esc(conv.id)}')" aria-label="Appel vidéo">📹</button>
       <button class="topbar-btn" onclick="K._openConvActionsMenu('${esc(conv.id)}', event)" aria-label="Actions">⋯</button>
     </div>
+    ${K._renderKeyChangeBanner(conv)}
     ${K._findBarOpen ? `<div class="find-bar" id="find-bar">
       <input id="find-input" type="search" inputmode="search" autocomplete="off" placeholder="Rechercher dans le chat…"
              value="${esc(K._findQuery || '')}"
@@ -8230,6 +8389,78 @@ K.openConv = async function(convId){
   K.sv('chat', conv);
 };
 
+// ============================================================================
+//  v1.1.294 — Décision de chiffrement UNIQUE pour TOUT ce qui part sur le fil
+//  (texte, position, carte de contact, sondage, message programmé, édition,
+//  média). Avant, plusieurs chemins contournaient decideWire et envoyaient du
+//  texte clair alors que l'E2E était ON (position APXLOC1, message programmé,
+//  édition retombant sur new_text…).
+//   - DM + E2E ON + session    → 'cipher'  (E2E1:…)
+//   - DM + E2E ON sans session → 'pending' (rien en clair ; file pending-encrypt)
+//   - DM + clé du contact changée non acceptée → 'pending' (reason 'key_changed')
+//   - groupe / E2E OFF          → 'clear'   (chiffré en transit seulement, assumé
+//                                 et affiché dans l'en-tête pour un groupe)
+// ============================================================================
+K._encryptOutgoing = async function(conv, plaintext){
+  const e2e = K._e2eAppliesTo(conv);
+  const keyChanged = e2e && K._keyChangePending(conv);
+  let payload = null;
+  if(e2e && !keyChanged){
+    try{
+      await K._ensureFreshSession(conv);
+      if(!K._keyChangePending(conv) && window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id)){
+        const ct = await ApexCrypto.encryptForConv(conv.id, plaintext);
+        if(ct) payload = K._E2E_TAG + ct;
+      }
+    }catch(e){ _safeCatch('encrypt-outgoing', e); }
+  }
+  const d = (window.ApexCrypto && ApexCrypto.decideWire)
+    ? ApexCrypto.decideWire({ ciphertextPayload: payload, plaintext, e2eOn: e2e })
+    : { mode: (payload ? 'cipher' : (e2e ? 'pending' : 'clear')), wire: payload || (e2e ? null : plaintext) };
+  const keyChangedNow = e2e && K._keyChangePending(conv);
+  return { mode: d.mode, wire: d.wire, encrypted: d.mode === 'cipher', reason: (d.mode === 'pending' && keyChangedNow) ? 'key_changed' : (d.mode === 'pending' ? 'no_key' : null) };
+};
+// Met une trame sur le WS de SA conversation, sinon dans l'outbox (rejouée à la
+// reconnexion). Renvoie 'sent' ou 'queued' — jamais de perte silencieuse.
+K._dispatchWire = function(convId, wire){
+  const item = (wire.type === 'edit_message')
+    ? { conv_id: convId, kind: 'edit', id: 'edit_' + wire.message_id + '_' + (wire.edited_at || Date.now()), message_id: wire.message_id, ciphertext: (wire.ciphertext != null ? wire.ciphertext : null), new_text: (wire.new_text != null ? wire.new_text : null), edited_at: wire.edited_at, ts: wire.edited_at || Date.now() }
+    : { conv_id: convId, ciphertext: wire.ciphertext, mime: wire.mime || 'text/plain', ts: wire.ts, id: wire.id };
+  if(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === convId){
+    try{ K.ws.send(JSON.stringify(wire)); return 'sent'; }
+    catch(e){ _safeCatch('ws-send', e); }
+  }
+  K._outboxAdd(item);
+  return 'queued';
+};
+// Envoie un contenu (texte / marqueur) dans une conversation selon la décision
+// unique ci-dessus. opts : { id, ts, mime, msg (objet affiché à marquer),
+// edit: { message_id, edited_at } }. Renvoie 'sent' | 'queued' | 'pending'.
+K._sendSecure = async function(conv, plaintext, opts){
+  opts = opts || {};
+  const d = await K._encryptOutgoing(conv, plaintext);
+  const m = opts.msg || null;
+  if(d.mode === 'pending'){
+    K._queuePendingEncrypt(opts.edit
+      ? { conv_id: conv.id, id: 'edit_' + opts.edit.message_id + '_' + opts.edit.edited_at, kind: 'edit', message_id: opts.edit.message_id, edited_at: opts.edit.edited_at, text: plaintext, ts: opts.edit.edited_at }
+      : { conv_id: conv.id, id: opts.id, text: plaintext, mime: opts.mime || 'text/plain', ts: opts.ts });
+    if(m){ m.pending_encrypt = true; m.encrypted = false; try{ ls('messages_' + conv.id, K.messages[conv.id] || []); }catch(_e){ _safeCatch('silent', _e); } }
+    return 'pending';
+  }
+  if(m){ m.encrypted = d.encrypted; }
+  const wire = opts.edit
+    ? (d.mode === 'cipher'
+        ? { type: 'edit_message', message_id: opts.edit.message_id, ciphertext: d.wire, edited_at: opts.edit.edited_at }
+        : { type: 'edit_message', message_id: opts.edit.message_id, new_text: d.wire, edited_at: opts.edit.edited_at })
+    : { type: 'message', ciphertext: d.wire, mime: opts.mime || 'text/plain', ts: opts.ts, id: opts.id };
+  return K._dispatchWire(conv.id, wire);
+};
+K._pendingToastText = function(conv){
+  return K._keyChangePending(conv)
+    ? '⚠️ Clé du contact changée — vérifie-la (bandeau en haut) : message gardé en attente, rien n\'est envoyé'
+    : '🔒 En attente de la clé du contact — sera chiffré puis envoyé';
+};
+
 K._sendMsg = async function(){
   const input = $('#msg-input');
   let text = input.value.trim();
@@ -8253,7 +8484,10 @@ K._sendMsg = async function(){
   // ou global). Fail-open : si la session ne s'établit pas, on n'échoue jamais,
   // le message part chiffré en TRANSIT (HTTPS/WSS) comme avant.
   let ratchetPayload = null;
-  if(K._e2eOn()){
+  // v1.1.294 : E2E seulement pour un DM (jamais la session 1:1 d'un groupe) et
+  // jamais vers une clé de contact changée non acceptée (message gardé en attente).
+  const e2eConv = K._e2eAppliesTo(conv);
+  if(e2eConv && !K._keyChangePending(conv)){
     try{
       // v1.1.262 — forward secrecy prioritaire si activée : chaque message a sa
       // clé jetable (E2E2:<n>:<ct>). Sinon E2E1 statique. Fail-open sur E2E1.
@@ -8263,7 +8497,7 @@ K._sendMsg = async function(){
         K._persistRatchet(conv.id);
       } else {
         await K._ensureFreshSession(conv);
-        if(window.ApexCrypto && ApexCrypto.getSessionKey(conv.id)){
+        if(!K._keyChangePending(conv) && window.ApexCrypto && ApexCrypto.getSessionKey(conv.id)){
           ciphertext = await ApexCrypto.encryptForConv(conv.id, text);
         }
       }
@@ -8312,15 +8546,15 @@ K._sendMsg = async function(){
   // texte clair silencieux quand E2E est ON : sans clé du contact, le message
   // passe « en attente de chiffrement » et part chiffré dès que la clé arrive.
   const decision = (window.ApexCrypto && ApexCrypto.decideWire)
-    ? ApexCrypto.decideWire({ ciphertextPayload: payload, plaintext: text, e2eOn: K._e2eOn() })
-    : { mode: (payload ? 'cipher' : (K._e2eOn() ? 'pending' : 'clear')), wire: payload || (K._e2eOn() ? null : text) };
+    ? ApexCrypto.decideWire({ ciphertextPayload: payload, plaintext: text, e2eOn: e2eConv })
+    : { mode: (payload ? 'cipher' : (e2eConv ? 'pending' : 'clear')), wire: payload || (e2eConv ? null : text) };
   if(decision.mode === 'pending'){
     // Pas de clé pair → on ne met RIEN en clair. Marque + file pending-encrypt.
     msg.pending_encrypt = true;
     ls('messages_' + conv.id, K.messages[conv.id]);
     K._queuePendingEncrypt({ conv_id: conv.id, id: msg.id, text, mime: 'text/plain', ts: msg.ts });
     K.render();
-    toast('🔒 En attente de la clé du contact — sera chiffré puis envoyé', 'info', 2200);
+    toast(K._pendingToastText(conv), 'info', 2200);
     return;
   }
   const wire = { type: 'message', ciphertext: decision.wire, mime: 'text/plain', ts: msg.ts, id: msg.id };
@@ -8363,21 +8597,28 @@ K._flushPendingEncrypt = async function(convId){
     if(convId && item.conv_id !== convId){ rest.push(item); continue; }
     let sent = false;
     try{
-      const conv = { id: item.conv_id };
-      await K._ensureSession(conv);
-      if(window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(item.conv_id)){
-        const ct = await ApexCrypto.encryptForConv(item.conv_id, item.text);
-        if(ct){
-          const wire = { type:'message', ciphertext: K._E2E_TAG + ct, mime: item.mime || 'text/plain', ts: item.ts, id: item.id };
-          if(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === item.conv_id){
-            K.ws.send(JSON.stringify(wire)); sent = true;
-          } else {
-            K._outboxAdd({ conv_id: item.conv_id, ciphertext: wire.ciphertext, mime: wire.mime, ts: item.ts, id: item.id }); sent = true;
-          }
+      // v1.1.294 : la VRAIE conversation (type, peer_id) — pas un {id} nu — et
+      // la décision unique K._encryptOutgoing : jamais vers une clé changée non
+      // acceptée (reste en attente), jamais en clair pour un DM sous E2E.
+      const conv = (K.conversations || []).find(c => c && c.id === item.conv_id) ||
+        ((K.viewData && K.viewData.id === item.conv_id) ? K.viewData : { id: item.conv_id });
+      if(!K._keyChangePending(conv)){
+        const d = await K._encryptOutgoing(conv, item.text);
+        // Un message écrit sous E2E dans un DM ne repart JAMAIS en clair (même si
+        // l'E2E a été coupé depuis) : il reste visible « en attente ». Un groupe,
+        // lui, n'a pas d'E2E → chemin transit assumé (indiqué dans l'en-tête).
+        const clearDm = d.mode === 'clear' && K._convIsDm(conv);
+        if(d.mode !== 'pending' && d.wire && !clearDm){
+          const wire = (item.kind === 'edit')
+            ? (d.mode === 'cipher'
+                ? { type: 'edit_message', message_id: item.message_id, ciphertext: d.wire, edited_at: item.edited_at }
+                : { type: 'edit_message', message_id: item.message_id, new_text: d.wire, edited_at: item.edited_at })
+            : { type: 'message', ciphertext: d.wire, mime: item.mime || 'text/plain', ts: item.ts, id: item.id };
+          K._dispatchWire(item.conv_id, wire); sent = true;   // WS ouvert → envoyé ; sinon outbox
           // Retire le marqueur pending du message affiché
           const arr = K.messages[item.conv_id] || [];
-          const mm = arr.find(x => x.id === item.id);
-          if(mm){ delete mm.pending_encrypt; mm.encrypted = true; ls('messages_' + item.conv_id, arr); }
+          const mm = arr.find(x => x.id === (item.kind === 'edit' ? item.message_id : item.id));
+          if(mm){ delete mm.pending_encrypt; mm.encrypted = (d.mode === 'cipher'); ls('messages_' + item.conv_id, arr); }
         }
       }
     }catch(e){ _safeCatch('pending-encrypt-flush', e); }
@@ -8416,7 +8657,13 @@ K._flushOutboxFor = function(convId){
   let sent = 0;
   for(const it of mine){
     try{
-      K.ws.send(JSON.stringify({ type: 'message', ciphertext: it.ciphertext, mime: it.mime || 'text/plain', ts: it.ts, id: it.id }));
+      // v1.1.294 : l'outbox porte aussi les ÉDITIONS hors-ligne (avant : perdues).
+      const w = (it.kind === 'edit')
+        ? (it.ciphertext != null
+            ? { type: 'edit_message', message_id: it.message_id, ciphertext: it.ciphertext, edited_at: it.edited_at }
+            : { type: 'edit_message', message_id: it.message_id, new_text: it.new_text, edited_at: it.edited_at })
+        : { type: 'message', ciphertext: it.ciphertext, mime: it.mime || 'text/plain', ts: it.ts, id: it.id };
+      K.ws.send(JSON.stringify(w));
       K._outboxRemove(it.id);
       sent++;
     }catch(e){ _safeCatch('outbox-flush', e); break; }  // garde le reste pour la prochaine fois
@@ -8790,6 +9037,59 @@ K._applyLocationUpdate = function(convId, data){
   return true;
 };
 
+// v1.1.294 — décodage UNIQUE d'un payload reçu (live, historique, édition).
+//  - E2E2:/E2E1: → déchiffré (encrypted:true) ou note propre si impossible ;
+//  - E2E1: dans un GROUPE → jamais de session 1:1 : note honnête ;
+//  - payload SANS préfixe dans un DM où l'E2E est actif → affiché AVEC un
+//    marqueur visible « non chiffré » (unencrypted:true) au lieu de passer pour
+//    un message normal (un serveur ou un client compromis pourrait injecter du
+//    clair dans une conversation chiffrée).
+K._decodeIncoming = async function(convId, raw){
+  raw = (typeof raw === 'string') ? raw : '';
+  const conv = (K.viewData && K.viewData.id === convId) ? K.viewData
+    : ((K.conversations || []).find(c => c && c.id === convId) || { id: convId });
+  if(!raw) return { text: '', encrypted: false, unencrypted: false };
+  if(raw.indexOf(K._RATCHET_TAG) === 0){
+    return { text: await K._decryptRatchetPayload(convId, raw), encrypted: true, unencrypted: false };
+  }
+  if(raw.indexOf(K._E2E_TAG) === 0){
+    const ct = raw.slice(K._E2E_TAG.length);
+    if(!K._convIsDm(conv)){
+      return { text: '🔒 Ancien message chiffré pour un seul membre — illisible dans un groupe', encrypted: false, unencrypted: false, undecryptable: true };
+    }
+    if(K._e2eOn() && window.ApexCrypto){
+      // v1.1.272 — auto-réparant (re-fetch clé du pair + retry).
+      try{ return { text: await K._decryptE2EHeal(convId, ct), encrypted: true, unencrypted: false }; }
+      catch(e){
+        _safeCatch('decrypt-message', e);
+        return { text: K._keyChangePending(conv)
+          ? '🔒 Message chiffré — la clé de ton contact a changé : vérifie-la (bandeau en haut) pour lire les prochains'
+          : '🔒 Message chiffré (E2E) — impossible à lire sur cet appareil', encrypted: false, unencrypted: false, undecryptable: true };
+      }
+    }
+    return { text: '🔒 Message chiffré (E2E) — active le mode E2E bêta sur cet appareil pour le lire', encrypted: false, unencrypted: false, undecryptable: true };
+  }
+  // Texte clair (chiffré en transit seulement).
+  return { text: raw, encrypted: false, unencrypted: K._e2eAppliesTo(conv) };
+};
+// Champs d'affichage dérivés des marqueurs (média, position, contact, sondage).
+K._markerFields = function(txt){
+  const md = K._parseMediaMarker(txt);
+  if(md) return { text: md.text, media_url: md.media_url, media_type: md.media_type, media_name: md.media_name, media_size: md.media_size, media_enc: md.media_enc };
+  const loc = K._parseLocationMarker(txt);
+  if(loc) return { text: '', location: loc };
+  const vc = K._parseContactMarker ? K._parseContactMarker(txt) : null;
+  if(vc) return { text: '', contact_card: vc };
+  const poll = K._parsePollMarker ? K._parsePollMarker(txt) : null;
+  if(poll) return { text: '', poll };
+  return { text: txt };
+};
+// Marqueur visible d'un message reçu SANS chiffrement de bout en bout dans un DM chiffré.
+K._unencryptedBadge = function(m){
+  if(!m || !m.unencrypted || m.deleted) return '';
+  return '<div class="unenc-mark" title="Ce message est arrivé sans chiffrement de bout en bout alors que cette conversation est chiffrée. Il a pu être lu ou modifié en route." style="font-size:.72em;color:#e63946;font-weight:600;margin-top:2px">🔓 non chiffré</div>';
+};
+
 async function _handleWsMessage(data, convId){
   switch(data.type){
     case 'hello':
@@ -8807,21 +9107,15 @@ async function _handleWsMessage(data, convId){
         if(!sm || !sm.id || seen.has(sm.id)) continue;
         if(K._isDeletedLocal(convId, sm.id)) continue; // v1.1.269 : supprimé pour moi → ne pas ressusciter
         const _tomb = !sm.ciphertext;                   // v1.1.269 : contenu effacé serveur (suppr. pour tout le monde)
-        let txt = sm.ciphertext || '';
+        let txt = '';
+        let _dec = { encrypted: false, unencrypted: false };
         if(_tomb){
           txt = '🗑 Message supprimé';
-        } else if(txt.indexOf(K._RATCHET_TAG) === 0){
-          txt = await K._decryptRatchetPayload(convId, txt);
-        } else if(txt.indexOf(K._E2E_TAG) === 0){
-          const ct = txt.slice(K._E2E_TAG.length);
-          if(K._e2eOn() && window.ApexCrypto){
-            // v1.1.272 — auto-réparant (re-fetch clé du pair + retry) au lieu
-            // d'exiger une session déjà établie → fin des « impossible à lire ».
-            try{ txt = await K._decryptE2EHeal(convId, ct); }
-            catch(e){ _safeCatch('history-decrypt', e); txt = '🔒 Message chiffré (E2E) — impossible à lire sur cet appareil'; }
-          }else{
-            txt = '🔒 Message chiffré (E2E) — active le mode E2E bêta sur cet appareil pour le lire';
-          }
+        } else {
+          // v1.1.294 — décodage unique (déchiffrement auto-réparant, groupes,
+          // marqueur « non chiffré » pour un clair reçu dans un DM chiffré).
+          _dec = await K._decodeIncoming(convId, sm.ciphertext);
+          txt = _dec.text;
         }
         // v1.1.170 : dédup mes propres messages — l'historique serveur les
         // renvoie avec l'id officiel alors que je les ai en local avec id m_…
@@ -8832,7 +9126,8 @@ async function _handleWsMessage(data, convId){
             Math.abs((m.ts || 0) - (sm.ts || 0)) < 60000 &&
             // v1.1.246 : matche aussi mes positions/médias (texte local vide) → pas de doublon en historique
             (m.text === txt || m.text === sm.ciphertext || m.ciphertext === sm.ciphertext ||
-             (m.location && K._parseLocationMarker(txt)) || (m.media_url && K._parseMediaMarker(txt)))
+             (m.location && K._parseLocationMarker(txt)) || (m.media_url && K._parseMediaMarker(txt)) ||
+             (m.contact_card && K._parseContactMarker(txt)) || (m.poll && K._parsePollMarker(txt)))
           );
           if(localMatch){
             seen.delete(localMatch.id);
@@ -8845,15 +9140,14 @@ async function _handleWsMessage(data, convId){
         }
         let replyTo = sm.reply_to;
         if(typeof replyTo === 'string' && replyTo){ try{ replyTo = JSON.parse(replyTo); }catch(_e){_safeCatch('silent',_e)} }
-        const hmedia = K._parseMediaMarker(txt);   // v1.1.186 : média (photo/vidéo/fichier)
-        const hloc = K._parseLocationMarker(txt);   // v1.1.246 : position dans l'historique
+        // v1.1.186 média · v1.1.246 position · v1.1.294 contact / sondage
+        const hfields = _tomb ? { text: txt } : K._markerFields(txt);
         K.messages[convId].push({
-          id: sm.id, from: sm.sender_id, text: (hmedia || hloc) ? (hmedia ? hmedia.text : '') : txt,
-          ...(hmedia ? { media_url: hmedia.media_url, media_type: hmedia.media_type, media_name: hmedia.media_name, media_size: hmedia.media_size, media_enc: hmedia.media_enc } : {}),
-          ...(hloc ? { location: hloc } : {}),
+          id: sm.id, from: sm.sender_id, ...hfields,
           ts: sm.ts || Date.now(), mime: sm.mime || 'text/plain',
           reply_to: replyTo || undefined,
-          encrypted: !!sm.ciphertext, from_history: true,
+          encrypted: !!_dec.encrypted, from_history: true,
+          ...(_dec.unencrypted ? { unencrypted: true } : {}),
           ...(_tomb ? { deleted: true } : {})   // v1.1.269 : tombstone (supprimé pour tout le monde)
         });
         seen.add(sm.id); added++;
@@ -8878,36 +9172,16 @@ async function _handleWsMessage(data, convId){
       // v1.1.69 : trigger unread badge update après pousse du msg
       setTimeout(() => K._updateUnreadBadge && K._updateUnreadBadge(), 50);
       // Nouveau message reçu
-      let decryptedText = '';
-      {
-        const raw = data.ciphertext || '';
-        if(raw.indexOf(K._RATCHET_TAG) === 0){
-          decryptedText = await K._decryptRatchetPayload(convId, raw); // forward secrecy
-        } else if(raw.indexOf(K._E2E_TAG) === 0){
-          // Payload chiffré (E2E). Déchiffre si session dispo, sinon note propre.
-          const ct = raw.slice(K._E2E_TAG.length);
-          if(K._e2eOn() && window.ApexCrypto){
-            // v1.1.272 — auto-réparant (re-fetch clé du pair + retry).
-            try{ decryptedText = await K._decryptE2EHeal(convId, ct); }
-            catch(e){ _safeCatch('decrypt-message', e); decryptedText = '🔒 Message chiffré (E2E) — impossible à lire sur cet appareil'; }
-          }else{
-            decryptedText = '🔒 Message chiffré (E2E) — active le mode E2E bêta sur cet appareil pour le lire';
-          }
-        }else{
-          decryptedText = raw; // texte clair (chiffré en transit)
-        }
-      }
-
-      const lmedia = K._parseMediaMarker(decryptedText);   // v1.1.186 : média reçu
-      const lloc = K._parseLocationMarker(decryptedText);   // v1.1.246 : position reçue
+      // v1.1.294 — décodage unique (cf. K._decodeIncoming) : déchiffrement
+      // auto-réparant, groupes, marqueur « non chiffré » dans un DM chiffré.
+      const ldec = await K._decodeIncoming(convId, data.ciphertext || '');
       const msg = {
         id: data.id || 'm_' + Date.now(),
         from: data.sender_id,
-        text: (lmedia || lloc) ? (lmedia ? lmedia.text : '') : decryptedText,
-        ...(lmedia ? { media_url: lmedia.media_url, media_type: lmedia.media_type, media_name: lmedia.media_name, media_size: lmedia.media_size, media_enc: lmedia.media_enc } : {}),
-        ...(lloc ? { location: lloc } : {}),
+        ...K._markerFields(ldec.text),   // média · position · contact · sondage
         ts: data.ts || Date.now(),
-        encrypted: !!data.ciphertext
+        encrypted: !!ldec.encrypted,
+        ...(ldec.unencrypted ? { unencrypted: true } : {})
       };
       if(!K.messages[convId]) K.messages[convId] = [];
       // v1.1.246 : dédup de MON propre message renvoyé (broadcast vers une 2e session
@@ -9014,9 +9288,14 @@ async function _handleWsMessage(data, convId){
       // (data.ciphertext taggé E2E1:) en plus du legacy clair (data.new_text).
       const eMsgId = data.message_id;
       let newText = data.new_text;
+      let editClearInE2e = false;
       if(eMsgId && !newText && typeof data.ciphertext === 'string' && data.ciphertext.indexOf(K._E2E_TAG) === 0){
         try{ newText = await K._decryptE2EHeal(convId, data.ciphertext.slice(K._E2E_TAG.length)); }
         catch(e){ _safeCatch('edit-decrypt', e); }
+      } else if(newText){
+        // v1.1.294 : édition reçue EN CLAIR dans un DM chiffré → marquée « non chiffré ».
+        const econv = (K.viewData && K.viewData.id === convId) ? K.viewData : ((K.conversations || []).find(c => c && c.id === convId) || { id: convId });
+        editClearInE2e = K._e2eAppliesTo(econv);
       }
       if(eMsgId && newText && K.messages[convId]){
         const m = K.messages[convId].find(x => x.id === eMsgId);
@@ -9025,6 +9304,7 @@ async function _handleWsMessage(data, convId){
           if(m.edit_history.length === 0) m.edit_history.push({ text: m.text, ts: m.ts });
           m.text = newText;
           m.edited_at = data.edited_at || Date.now();
+          if(editClearInE2e) m.unencrypted = true;
           ls('messages_' + convId, K.messages[convId]);
           if(K.view === 'chat' && K.viewData?.id === convId) K.render();
         }
@@ -11475,22 +11755,20 @@ K._saveEditMsg = async function(msgId){
   // v1.1.262 — l'édition suit le mode E2E du message : si E2E est ON on
   // chiffre le nouveau texte (comme _sendMessage), sinon on retombe sur
   // new_text (E2E OFF assumé). Plus de texte clair silencieux sous E2E.
-  let editCipher = null;
-  if(K._e2eOn()){
-    try{
-      await K._ensureFreshSession(conv);
-      if(window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id)){
-        const ct = await ApexCrypto.encryptForConv(conv.id, newText);
-        if(ct) editCipher = K._E2E_TAG + ct;
-      }
-    }catch(e){ _safeCatch('edit-encrypt', e); }
+  // v1.1.294 : avant, sans session (E2E ON) l'édition retombait sur new_text EN
+  // CLAIR, et hors-ligne elle était perdue. Désormais : décision unique
+  // (chiffrée / en attente de clé / clair seulement si E2E ne s'applique pas) +
+  // file d'attente si le WS de la conversation n'est pas ouvert.
+  let r = 'error';
+  try{
+    r = await K._sendSecure(conv, newText, { edit: { message_id: msgId, edited_at: m.edited_at } });
+  }catch(e){ _safeCatch('edit-send', e); }
+  if(r === 'pending'){
+    m.pending_encrypt = true; ls('messages_' + conv.id, msgs);
+    if(K.render) K.render();
+    toast(K._pendingToastText(conv), 'info', 2200);
   }
-  if(K.ws && K.ws.readyState === 1){
-    const wire = editCipher
-      ? { type: 'edit_message', message_id: msgId, ciphertext: editCipher, edited_at: m.edited_at }
-      : { type: 'edit_message', message_id: msgId, new_text: newText, edited_at: m.edited_at };
-    try { K.ws.send(JSON.stringify(wire)); } catch(_e){_safeCatch('silent',_e)}
-  }
+  return r;
 };
 
 K._togglePinMsg = function(msgId){
@@ -12027,6 +12305,9 @@ K._uploadMedia = async function(file){
   if(!file) return;
   const conv = K.viewData; if(!conv){ toast('Pas de conversation active', 'warn'); return; }
   if(file.size > 100 * 1024 * 1024){ toast('Fichier > 100 Mo (max)', 'err', 5000); return; }
+  // v1.1.294 — clé du contact changée non acceptée : on n'uploade rien (ni chiffré
+  // vers l'ancienne clé, ni en clair). L'utilisateur vérifie d'abord (bandeau).
+  if(K._keyChangePending(conv)){ toast(K._pendingToastText(conv), 'warn', 4000); return; }
   const kind = (file.type||'').startsWith('video/') ? 'vidéo' : (file.type||'').startsWith('image/') ? 'image' : (file.type||'').startsWith('audio/') ? 'audio' : 'fichier';
   toast('📤 Envoi ' + kind + ' (' + K._fmtSize(file.size) + ')…', 'info', 3000);
   try{
@@ -12077,35 +12358,21 @@ K._sendMediaMessage = async function(media, captionOverride){
   const input = $('#msg-input');
   const caption = (typeof captionOverride === 'string') ? captionOverride : ((input && input.value.trim()) || '');
   const marker = 'APXMEDIA1:' + JSON.stringify({ u:media.url, m:media.mime, n:media.name, s:media.size, c:caption, e:media.enc ? 1 : 0 });
-  let ciphertext = null;
-  if(K._e2eOn()){ try{ await K._ensureFreshSession(conv); if(window.ApexCrypto && ApexCrypto.getSessionKey(conv.id)){ ciphertext = await ApexCrypto.encryptForConv(conv.id, marker); } }catch(e){ _safeCatch('media-encrypt', e); } }
-  const mediaPayload = ciphertext ? (K._E2E_TAG + ciphertext) : null;
   const msg = { id:'m_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), from:K.user.id, text:caption,
-    media_url:media.url, media_type:media.mime, media_name:media.name, media_size:media.size, ts:Date.now(), encrypted:!!ciphertext };
+    media_url:media.url, media_type:media.mime, media_name:media.name, media_size:media.size, ts:Date.now(), encrypted:false };
   if(!K.messages[conv.id]) K.messages[conv.id] = [];
   K.messages[conv.id].push(msg); ls('messages_' + conv.id, K.messages[conv.id]);
   if(input && typeof captionOverride !== 'string') input.value = '';
   K.render();
   // v1.1.262 — même politique anti-clair que le texte : le marqueur média
   // (URL+légende) ne part JAMAIS en clair sous E2E ON sans clé du contact.
-  const mDecision = (window.ApexCrypto && ApexCrypto.decideWire)
-    ? ApexCrypto.decideWire({ ciphertextPayload: mediaPayload, plaintext: marker, e2eOn: K._e2eOn() })
-    : { mode: (mediaPayload ? 'cipher' : (K._e2eOn() ? 'pending' : 'clear')), wire: mediaPayload || (K._e2eOn() ? null : marker) };
-  if(mDecision.mode === 'pending'){
-    msg.pending_encrypt = true; ls('messages_' + conv.id, K.messages[conv.id]);
-    K._queuePendingEncrypt({ conv_id: conv.id, id: msg.id, text: marker, mime: 'text/plain', ts: msg.ts });
-    K.render();
-    toast('🔒 Média en attente de la clé du contact — sera chiffré', 'info', 2200);
-    return;
-  }
-  const wire = { type:'message', ciphertext: mDecision.wire, mime:'text/plain', ts:msg.ts, id:msg.id };
-  if(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === conv.id){
-    try{ K.ws.send(JSON.stringify(wire)); toast('📨 Envoyé', 'ok', 1000); }
-    catch(e){ K._outboxAdd({ conv_id:conv.id, ciphertext:wire.ciphertext, mime:'text/plain', ts:msg.ts, id:msg.id }); }
-  } else {
-    K._outboxAdd({ conv_id:conv.id, ciphertext:wire.ciphertext, mime:'text/plain', ts:msg.ts, id:msg.id });
-    toast('📭 Hors-ligne — média en attente', 'info', 1800);
-  }
+  // v1.1.294 — via la décision unique (groupe = transit assumé, jamais la
+  // session 1:1 d'UN membre ; clé changée non acceptée = en attente).
+  const r = await K._sendSecure(conv, marker, { id: msg.id, ts: msg.ts, mime: 'text/plain', msg });
+  if(r === 'pending'){ K.render(); toast(K._pendingToastText(conv), 'info', 2200); }
+  else if(r === 'sent') toast('📨 Envoyé', 'ok', 1000);
+  else toast('📭 Hors-ligne — média en attente', 'info', 1800);
+  return r;
 };
 
 K._uploadImage = async function(file){

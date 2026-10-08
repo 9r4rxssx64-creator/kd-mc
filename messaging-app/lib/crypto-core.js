@@ -365,6 +365,30 @@ export function checkKeyChange(storedPub, newPub) {
   return { firstSight: false, changed, unchanged: !changed };
 }
 
+// v1.1.294 — Résolution TOFU STRICTE de la clé d'un contact (parité Signal).
+// Avant : une clé différente de la clé épinglée était adoptée SILENCIEUSEMENT
+// (toast éphémère puis session refaite avec la nouvelle clé → un MITM côté
+// serveur passait inaperçu). Désormais :
+//   - pas de clé épinglée  → on épingle la clé vue (1ʳᵉ vue, aucune alerte) ;
+//   - clé identique        → RAS ;
+//   - clé DIFFÉRENTE       → on CONTINUE d'utiliser la clé épinglée, la nouvelle
+//                            reste « en attente » jusqu'à acceptation EXPLICITE
+//                            par l'utilisateur (après vérification du numéro).
+// Fonction PURE (aucune crypto, aucun I/O).
+//   → { use, pin, pending, alert }
+//     use     : clé à utiliser pour la session (null si aucune) ;
+//     pin     : clé à épingler maintenant (1ʳᵉ vue) ou null ;
+//     pending : nouvelle clé NON acceptée (à présenter à l'utilisateur) ou null ;
+//     alert   : true si l'utilisateur doit être averti.
+export function resolvePeerKey(pinnedPub, freshPub) {
+  const pinned = pinnedPub || null;
+  const fresh = freshPub || null;
+  if (!fresh) return { use: pinned, pin: null, pending: null, alert: false };
+  if (!pinned) return { use: fresh, pin: fresh, pending: null, alert: false };
+  if (pinned === fresh) return { use: pinned, pin: null, pending: null, alert: false };
+  return { use: pinned, pin: null, pending: fresh, alert: true };
+}
+
 // ----------------------------------------------------------------------------
 //  Chiffrement des OCTETS d'un média (photo/fichier/vocal) — v1.1.256
 //  Même clé de session AES-GCM que les messages, mais sur du binaire : les
@@ -471,6 +495,7 @@ if (typeof window !== 'undefined') {
     decryptForConv,
     decideWire,
     checkKeyChange,
+    resolvePeerKey,
     ratchetInit,
     hasRatchet,
     ratchetEncrypt,

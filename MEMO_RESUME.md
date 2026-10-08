@@ -1,5 +1,17 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (nuit, suite) — Apex Chat v1.1.294 : lot 3, chiffrement côté app
+
+- Lot 2 EN LIGNE (kd-mc deploy 37813776290 vert, migrations 0011/0012 appliquées).
+- Lot 3 (27 tests, chaque correctif prouvé par une copie sabotée) : les GROUPES n'utilisent plus un chiffrement 1:1
+  vers un seul membre (les autres ne pouvaient rien lire) → envoi en transit, en-tête honnête « 🔓 Groupe : chiffré
+  en transit, pas de bout en bout » ; position, messages programmés, modifications, médias, fiche contact, sondage
+  passent par la même décision de chiffrement (plus rien en clair dans un DM chiffré, rien de perdu hors ligne) ;
+  changement de clé d'un contact = clé épinglée gardée + bandeau « J'ai vérifié, accepter la nouvelle clé » ;
+  message non chiffré reçu dans un DM chiffré = marqué « 🔓 non chiffré ».
+- Reste : chiffrement de bout en bout des groupes (à concevoir) ; si `e2e_strict` est activé, le serveur refusera les
+  messages de groupe ; F36 (coffre de clé) ; votes de sondage (`poll_vote`) non relayés par le serveur.
+
 ## 2026-10-08 (nuit) — Apex Chat : lot 2 de la revue (25 défauts moyens/faibles du serveur)
 
 - Corrigés + 46 tests (43 rouges sur l'ancien code) : journal d'audit (la remise Premium répondait 500), rôles de groupe

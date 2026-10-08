@@ -44,12 +44,14 @@ jobs:
         id: check
         run: |
           # __APEX_CHAT_VERSION__ dans index.html = source de vérité
-          APP_VER=$(grep -oE "__APEX_CHAT_VERSION__\s*=\s*'v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
-          SW_FALLBACK_VER=$(grep -oE "CACHE_VERSION:\s*'apex-chat-v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/sw.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
-          LIB_VER=$(grep -oE "CACHE_VERSION\s*=\s*'apex-chat-v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/lib/sw-handlers.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
-          BADGE_VER=$(grep -oE 'data-version="v[0-9]+\.[0-9]+\.[0-9]+"' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
-          SPLASH_VER=$(grep -oE 'id="splash-version"[^>]*>v[0-9]+\.[0-9]+\.[0-9]+' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
-          TOPBAR_VER=$(grep -oE 'id="topbar-version"[^>]*>v[0-9]+\.[0-9]+\.[0-9]+' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          # 08.10.2026 : `|| true` — sous pipefail, un repère ABSENT (data-version, sw.js CACHE_VERSION retirés)
+          # faisait planter tout le script : ce robot était rouge à CHAQUE passage depuis le 27.09.
+          APP_VER=$(grep -oE "__APEX_CHAT_VERSION__\s*=\s*'v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          SW_FALLBACK_VER=$(grep -oE "CACHE_VERSION:\s*'apex-chat-v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/sw.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          LIB_VER=$(grep -oE "CACHE_VERSION\s*=\s*'apex-chat-v[0-9]+\.[0-9]+\.[0-9]+'" messaging-app/lib/sw-handlers.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          BADGE_VER=$(grep -oE 'data-version="v[0-9]+\.[0-9]+\.[0-9]+"' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          SPLASH_VER=$(grep -oE 'id="splash-version"[^>]*>v[0-9]+\.[0-9]+\.[0-9]+' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          TOPBAR_VER=$(grep -oE 'id="topbar-version"[^>]*>v[0-9]+\.[0-9]+\.[0-9]+' messaging-app/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
 
           echo "APP_VER (source vérité): $APP_VER"
           echo "SW_FALLBACK_VER: $SW_FALLBACK_VER"

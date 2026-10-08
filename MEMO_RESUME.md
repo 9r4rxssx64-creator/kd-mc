@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (nuit, fin) — Robots rouges d'Apex Chat triés
+
+- **Corrigé** : « Apex Chat — Version + CACHE_VERSION Sync » était rouge à CHAQUE passage depuis le 27.09 (repère
+  `data-version` / `sw.js` absents + pipefail ; et l'écran d'accueil porte la version 2 fois → faux « décalage »).
+  `|| true` + `head -1` ; simulé : ancien exit 1, nouveau « ✅ Tout sync sur v1.1.294 ».
+- **Pas touché (à trancher)** : 6 tests `api-worker-ia-qwen` attendent « Anthropic d'abord pour les actions » alors que
+  le code passe d'abord par les IA gratuites (Qwen, Groq) — cohérent avec « tout gratuit » (2.10). Changé par une autre
+  session, historique absent : ne pas réécrire les tests sans savoir lequel est voulu.
+- **Pas Apex Chat** : `test:messages-suivis` rouge = ~40 messages de sessions sans suivi depuis 4-6 jours.
+
 ## 2026-10-08 (nuit, suite) — Apex Chat v1.1.294 : lot 3, chiffrement côté app
 
 - Lot 2 EN LIGNE (kd-mc deploy 37813776290 vert, migrations 0011/0012 appliquées).

@@ -4,6 +4,21 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.951 → v9.953 + light v1.78 → v1.80 (2026-10-07/08 — fidélité au PDF : 0 personne manquante, novembre 2026)
+
+> Entre v9.396 (avril) et v9.951, l'historique des versions a été tenu dans MEMO_RESUME.md / NOTES_USER.md (ce fichier n'était plus alimenté). Repris ici à partir de v9.951 ; garde `test:docs-frais` R4 : toute version livrée est écrite dans MEMO_RESUME.
+
+### v9.951 / light v1.78 — les absents des encadrés de la page 1 ont un planning
+- Import PDF : une personne écrite seulement dans un encadré d'absence (M, CP, CRH, CDP, CDH, CSS, AF, DEPL…) est créée dans son tableau d'absence ; « 0 M » lu (le nombre d'en-tête n'est pas un compte) ; code **CSS** (congé sans solde) → congés.
+- 11 personnes d'octobre 2026 retrouvées (7 maladie, 3 congés, 1 formation). Gardes `test:import-absents` (sabotage → 11 rouges), `audit:noms-manquants` (nom par nom, PDF réel → boards servis).
+
+### v9.952 / light v1.79 — novembre 2026
+- `tests/fixtures/novembre-2026.pdf` ajouté aux deux générateurs (app + light) ; 196 tableaux sur 5 mois ; seed régénéré.
+
+### v9.953 / light v1.80 — journal admin propre + vérification réelle
+- Le robot `verif-live-equipes` se déclare (`x-kdmc-verif`) : journal « 🤖 Vérification automatique », fiche admin intacte (`test:verif-login`).
+- Vérifié en réel (run 37798486104) : versions servies, planning servi = PDF, 18 503 passages de départs conformes, 23 378 cases identiques app ⇄ light. PR #4372.
+
 ## Apex v13.0.73 → v13.0.77 (2026-05-04 — MEGA SPRINT FINAL)
 
 **Session 2026-05-04 PM** : 17 subagents en parallèle, 5 commits poussés.

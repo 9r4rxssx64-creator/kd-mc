@@ -36,9 +36,9 @@
 | Automatisations actives | **144** (+ 37 rangées) | `.github/workflows/` |
 | Gardes / tests | **169** fichiers, **255** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **107** | `grep secrets.` sur les workflows |
-| Discussions entre sessions | **204** dont **126** ouvertes | `pipeline/sessions.json` |
+| Discussions entre sessions | **205** dont **127** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **78 777 o ≈ 22 508 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **691 322 o** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **694 195 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
@@ -46,7 +46,7 @@
 <!-- MAJ-AUTO:debut etat-live -->
 | Ce qui bouge | État au 2026-10-08 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **523** | `git ls-remote` |
+| Branches dans le dépôt | **531** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
 | État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->

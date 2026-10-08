@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (15h30) — Novembre en ligne, 0 personne manquante, journal admin propre — et les documents enfin à jour
+
+- **Livré et VÉRIFIÉ EN RÉEL (run verif-live-equipes 37798486104, 15h11 UTC, après fusion PR #4372)** : **CMCteams v9.953** + **light v1.80** servies ; 196 tableaux (5 mois, **novembre 2026** inclus, 293 personnes) ; planning servi = PDF ; 18 503 passages de départs conformes à la règle des séries ; 23 378 cases identiques app ⇄ light ; collègue non-admin OK.
+- **Les 11 d'octobre** (Kevin 7.10 « il manque des personnes ») : sans ligne de planning, écrits seulement dans les encadrés d'absence de la page 1 — « 0 M » (‹employé›, longue maladie), « CSS » (‹employé›, congé sans solde, nouveau code), « CP », « FORMATION ». Le parseur crée la personne dans son tableau d'absence (v9.951→v9.953 / v1.78→v1.80), jamais une cellule inventée. Oracle : régénération complète + diff personne par personne = **+11 octobre, 0 retiré, 0 changement ailleurs** (une 1ʳᵉ version par la grille inventait 3 fragments → rejetée). Gardes : `audit:noms-manquants` (0 manquant jul→nov), `test:import-absents` (sabotage 11 rouges).
+- **« Effaces tes connexions »** : le robot se déclare (`x-kdmc-verif: 1`) → `admin_login_verif`, pas d'`enrich` de la fiche admin ; `test:verif-login`.
+- **Reproche de Kevin (« tous les documents, leçons, sans que je te le répète »)** : cause = `test:docs-frais` ne couvrait que MEMO_RESUME + KEVIN_INVENTORY → vert pendant que LESSONS / NOTES_USER / ETAT-DU-MOMENT / IMPORTS-KEVIN / sessions.json restaient en retard. **Fait** : les 4 leçons (#454→#457), NOTES_USER (CSS, encadrés, novembre, « Toujours »), ETAT-DU-MOMENT, IMPORTS-KEVIN (3 lignes), CHANGELOG, message m205 aux branches, règle DOCS §8 dans CLAUDE-HISTOIRE ; **garde renforcé R1→R6** (code ⇒ MEMO · créé ⇒ INVENTORY · nouveau test ⇒ LESSONS · version ⇒ écrite dans MEMO · planning PDF ⇒ IMPORTS-KEVIN · routeur ⇒ ETAT-DU-MOMENT), prouvé par `test:docs-frais-garde` (21/0, dépôt git jetable), câblé dans test:ci.
+- **Non fait / à savoir** : CHANGELOG.md n'avait plus d'entrée CMCteams depuis avril (v9.396) ; repris à partir de v9.951 seulement, l'historique intermédiaire reste dans MEMO_RESUME / NOTES_USER.
+
 ## 2026-10-08 (après-midi) — Vérif réelle connectée n°3 (run 37771449592) : ce qui reste, trié
 
 - **Faux rouges du robot (corrigés)** : images/sons coupés par la sonde elle-même comptés comme pannes (cuisine, Bee de Lingua, icône Beatbot) ; pages admin attendues « verrouillées » alors que Kevin est connecté (elles s'ouvrent : c'est le bon comportement).

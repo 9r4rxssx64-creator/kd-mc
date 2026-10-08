@@ -83,6 +83,7 @@
   "tests/deep-audit-import-juin.mjs",
   "tests/departs-abs-parity.test.mjs",
   "tests/depot-public.test.mjs",
+  "tests/docs-fraicheur.test.mjs",
   "tests/generateurs-reproductibles.test.mjs",
   "tests/import-real-pdf.mjs",
   "tests/journal-erreurs-lisible.test.mjs",

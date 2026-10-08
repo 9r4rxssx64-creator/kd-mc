@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.45 -->
+<!-- v1.0.46 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -69,6 +69,7 @@
   #boite-fen .bf-tete{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
   #boite-fen h2{flex:1;margin:0;font-size:19px;color:var(--gold2)}
   #boite-fen .bf-x,#boite-fen .bf-r{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--txt);font-size:20px;cursor:pointer}
+  #boite-fen .bf-r.tourne{animation:bf-spin 1s linear infinite;opacity:.7}@keyframes bf-spin{to{transform:rotate(360deg)}}
   #boite-fen .bf-puces{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;-webkit-overflow-scrolling:touch}
   #boite-fen .bf-p{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:14px;cursor:pointer;white-space:nowrap}
   #boite-fen .bf-p.on{background:rgba(232,184,48,.16);border-color:rgba(232,184,48,.55);color:var(--gold2);font-weight:700}
@@ -291,9 +292,9 @@
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
   <script src="kdmc-sso.js?v=1.0.30"></script>
-  <script src="kdmc-boite.js?v=1.0.45"></script>
-  <script src="kdmc-portal.js?v=1.0.45"></script>
+  <script src="kdmc-boite.js?v=1.0.46"></script>
+  <script src="kdmc-portal.js?v=1.0.46"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.45" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.46" data-color="#c9a227" defer></script>
 </body>
 </html>

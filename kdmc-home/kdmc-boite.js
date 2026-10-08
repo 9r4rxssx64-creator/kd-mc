@@ -23,11 +23,24 @@
     var d = new Date(ts); return d.getDate() + '/' + (d.getMonth() + 1);
   }
   function lire() {
-    return fetch(URL_BOITE, { credentials: 'include', cache: 'no-store', headers: entetes(false) })
+    /* 8.10 (Kevin : « rafraîchir ne fonctionne pas ») : une lecture qui traîne (Firebase, D1, KV) bloquait `enCours` et chaque ↻ était ignoré
+       en silence. Bornée à 15 s : au-delà on rend la main (le prochain ↻ repart). */
+    var ctl = null; try { ctl = new AbortController(); setTimeout(function () { ctl.abort(); }, 15000); } catch (e) { ctl = null; }
+    return fetch(URL_BOITE, { credentials: 'include', cache: 'no-store', headers: entetes(false), signal: ctl ? ctl.signal : undefined })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { return j && j.ok ? j : null; })
       .catch(function () { return null; });
   }
+  /* L'EMPREINTE de ce qui s'affiche : si rien n'a changé, on ne redessine PAS (8.10, Kevin : « ça saute ») — redessiner toutes les 12 s
+     remettait le défilement en haut et faisait sauter la liste alors que seul « mis à jour il y a … » bougeait. */
+  function empreinte(j) {
+    if (!j) return '';
+    try {
+      return JSON.stringify([(j.messages || []).map(function (m) { return [m.cle, m.ts, m.nonLus, m.lu, (m.fil || []).length, m.texte, (m.infos || []).length]; }),
+        (j.inscriptions || []).map(function (i) { return [i.id, i.code]; }), (j.sources || []).map(function (s) { return [s.id, s.nonLus, s.total, s.etat]; }), j.nonLus, j.nonLusAlertes, j.inscriptionsEtat]);
+    } catch (e) { return String(Date.now()); }
+  }
+  var dessine = '';   /* l'empreinte du dernier dessin */
   function ecrire(chemin, corps) {
     return fetch('/__boite/admin/' + chemin, { method: 'POST', credentials: 'include', cache: 'no-store', headers: entetes(true), body: JSON.stringify(corps) })
       .then(function (r) { return r.json().catch(function () { return { ok: false, reason: 'reponse_illisible' }; }); })
@@ -67,21 +80,37 @@
     if (timer) clearInterval(timer);
     timer = setInterval(function () { if (document.visibilityState === 'visible') rafraichir(); }, ouverte ? PAS_OUVERT : PAS_BANDEAU);
   }
-  function rafraichir() {
-    if (enCours) return Promise.resolve(); enCours = true;
-    return lire().then(function (j) { enCours = false; D = j; bandeau(); if (ouverte) dessiner(true); }).catch(function () { enCours = false; });
+  function rafraichir(manuel) {
+    if (enCours) { if (manuel) enCoursManuel = true; return Promise.resolve(); } enCours = true;
+    var b = document.querySelector('#boite-fen .bf-r'); if (b && manuel) { b.classList.add('tourne'); b.disabled = true; }
+    return lire().then(function (j) {
+      enCours = false; var relancer = enCoursManuel; enCoursManuel = false;
+      if (j) { D = j; bandeau(); }
+      if (ouverte) {
+        /* on ne redessine que si quelque chose a changé (ou sur ↻ : au moins le pied « mis à jour » bouge) */
+        var e = empreinte(D);
+        if (e !== dessine || manuel) dessiner(true); else { var p = document.querySelector('#boite-fen .bf-pied'); if (p) p.textContent = 'Mis à jour ' + quand(D && D.maj) + ' · se rafraîchit toute seule'; }
+        var b2 = document.querySelector('#boite-fen .bf-r'); if (b2) { b2.classList.remove('tourne'); b2.disabled = false; b2.textContent = j ? '↻' : '⚠️ ↻'; }
+      }
+      if (relancer) return rafraichir(true);
+    }).catch(function () { enCours = false; enCoursManuel = false; var b3 = document.querySelector('#boite-fen .bf-r'); if (b3) { b3.classList.remove('tourne'); b3.disabled = false; } });
   }
+  var enCoursManuel = false;
 
   function dessiner(garderSaisie) {
     var r = racine(); if (r.hidden) return;
+    /* jamais redessiner sous les doigts de Kevin : s'il écrit une réponse, on attend (le prochain rafraîchissement reprendra) */
+    var actif = document.activeElement; if (garderSaisie && actif && actif.tagName === 'TEXTAREA' && r.contains(actif) && actif.value) return;
     var saisie = ''; if (garderSaisie) { var ta0 = r.querySelector('textarea'); if (ta0) saisie = ta0.value; }
-    var defil = r.querySelector('.bf-liste'); var pos = defil ? defil.scrollTop : 0;
+    /* le DÉFILEMENT se garde quel que soit l'élément qui défile (la fenêtre elle-même sur iPhone, la liste ailleurs) */
+    var defil = r.querySelector('.bf-liste'); var pos = defil ? defil.scrollTop : 0, posFen = r.scrollTop, posDoc = (document.scrollingElement || document.documentElement).scrollTop;
     r.textContent = '';
     var tete = el('div', 'bf-tete');
     var fer = el('button', 'bf-x', '✕'); fer.type = 'button'; fer.setAttribute('aria-label', 'Fermer'); fer.onclick = fermer;
     tete.appendChild(el('h2', null, '📬 Mes messages'));
-    var act = el('button', 'bf-r', '↻'); act.type = 'button'; act.setAttribute('aria-label', 'Actualiser'); act.onclick = function () { rafraichir(); };
+    var act = el('button', 'bf-r', '↻'); act.type = 'button'; act.setAttribute('aria-label', 'Actualiser'); act.onclick = function () { rafraichir(true); };
     tete.appendChild(act); tete.appendChild(fer); r.appendChild(tete);
+    dessine = empreinte(D);
     if (!D) { r.appendChild(el('p', 'bf-vide', 'Chargement… (si ça dure : ta session admin a peut-être expiré, reconnecte-toi).')); return; }
     /* puces : un clic = les messages d'une seule app */
     var puces = el('div', 'bf-puces');
@@ -104,6 +133,7 @@
     r.appendChild(liste); liste.scrollTop = pos;
     r.appendChild(inscriptions());
     r.appendChild(el('p', 'bf-pied', 'Mis à jour ' + quand(D.maj) + ' · se rafraîchit toute seule'));
+    try { r.scrollTop = posFen; if (posDoc) (document.scrollingElement || document.documentElement).scrollTop = posDoc; } catch (e) { /* */ }
   }
 
   function carte(m, saisie) {

@@ -185,6 +185,18 @@ ok(cL && cL.de === 'Laurence Saint-Polit' && cL.infos.some((l) => /Microsoft \(A
 ok(cP && cP.de === 'Paul Martin (compte paul-martin)' && !b.messages.some((x) => x.de === 'Inconnu'), '6o. sans fiche, le nom se lit dans l\'identifiant — plus jamais « Inconnu »', cP && cP.de);
 ok(nomDepuisUid('laurence-saint-polit') === 'Laurence Saint-Polit (compte laurence-saint-polit)' && nomDepuisUid('u11804') === 'Compte u11804' && nomDepuisUid('') === 'Inconnu', '6p. nomDepuisUid : deux mots → Prénom Nom ; un code → « Compte … »');
 kv.delete('acc:laurence-saint-polit');
+/* 6r. (Kevin 8.10, capture : « Andrea CASELLA » en alerte « nouvelle connexion » ET « Andrea Casella » en carte de compte) : UNE carte par personne */
+db._s.prepare('CREATE TABLE IF NOT EXISTS activite (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT, nom TEXT, ts INTEGER, type TEXT, app TEXT, detail TEXT, lieu TEXT, appareil TEXT)').run();
+db._s.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('andrea-casella', 'Andrea Casella', T - 1500, 'connexion', 'departs.kd-mc.com', 'departs.kd-mc.com · première connexion', 'Monaco, MC', 'iPhone · iOS 18.7');
+kv.set('acc:andrea-casella', JSON.stringify({ uid: 'andrea-casella', name: 'Andrea Casella', hits: 1 }));
+kv.set('aud:log', JSON.stringify([{ ts: T - 1000, type: 'nouvelle_connexion', app: 'departs', name: 'Andrea CASELLA', text: 'Première connexion à la light (Face ID) — matricule SBM U38373', pays: 'MC' }]));
+b = await boite();
+{ const cartes = b.messages.filter((x) => /andrea/i.test(x.de));
+  ok(cartes.length === 1 && cartes[0].cle === 'perso:u:andrea-casella' && cartes[0].fil.some((f) => /Nouvelle connexion/.test(f.texte)) && cartes[0].fil.some((f) => /s'est connecté/.test(f.texte)), '6r. l\'alerte « nouvelle connexion » (nom seul, en MAJUSCULES) rejoint la carte du compte « Andrea Casella » : une seule carte, les deux lignes dans son fil', cartes.map((c) => [c.cle, c.de, c.fil.map((f) => f.texte)])); }
+db._s.prepare("DELETE FROM activite WHERE uid = 'andrea-casella'").run(); kv.delete('acc:andrea-casella');
+/* 6s. (Kevin 8.10 : « ça saute, rafraîchir ne fonctionne pas ») : la page ne redessine que si l'empreinte change, garde le défilement, borne la lecture, et ↻ répond */
+{ const U2 = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
+  ok(/function empreinte\(/.test(U2) && /if \(e !== dessine \|\| manuel\) dessiner\(true\)/.test(U2) && /AbortController/.test(U2) && /rafraichir\(true\)/.test(U2) && /classList\.add\('tourne'\)/.test(U2) && /posFen = r\.scrollTop/.test(U2) && /actif\.tagName === 'TEXTAREA'/.test(U2), '6s. ↻ : redessin seulement si l\'empreinte change (sinon le pied seul), défilement gardé, lecture bornée 15 s, bouton qui tourne, jamais sous une réponse en cours'); }
 /* 6q. « sécurité +++ » (Kevin 8.10) : la carte d'une personne porte « Déconnecter ce compte partout » → /__admin/revoke (porte admin existante), jamais pour Kevin lui-même */
 const Ui = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
 ok(/Déconnecter ce compte partout/.test(Ui) && /fetch\('\/__admin\/revoke', \{ method: 'POST', credentials: 'include'/.test(Ui) && /uidP\[1\] !== 'kdmc_admin' && uidP\[1\] !== 'kevin-desarzens'/.test(Ui) && /window\.confirm\(/.test(Ui), '6q. la boîte propose « Déconnecter ce compte partout » (confirmation, porte /__admin/revoke, jamais sur le compte de Kevin)');

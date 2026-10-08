@@ -252,6 +252,17 @@ async function lirePersonnes(env, db, now, outils) {
   for (const a of await activite.actives(db, now - 3 * 864e5, 20).catch(() => [])) dossier('u:' + a.uid, a.uid, a.nom);
   /* le travail dans CMCteams : une carte par NOM (les identifiants de CMCteams ne sont pas ceux du domaine) */
   for (const t of outils ? await lireTravailCmc(outils, now).catch(() => []) : []) { const p = dossier('n:' + t.nom.toLowerCase().slice(0, 40), '', t.nom); p.evts.push({ ts: t.ts, texte: t.texte, app: t.app }); }
+  /* UNE SEULE CARTE PAR PERSONNE, même quand une alerte ne porte que le NOM (8.10, capture de Kevin : « Andrea CASELLA » en alerte
+     « nouvelle connexion » ET « Andrea Casella » en carte de compte) : un dossier « par nom » rejoint le dossier « par compte » du même nom. */
+  const cleNom = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const parNom = new Map();
+  for (const p of P.values()) if (p.uid && p.nom) parNom.set(cleNom(p.nom), p);
+  for (const [id, p] of [...P.entries()]) {
+    if (p.uid || id === 'systeme') continue;
+    const cible = parNom.get(cleNom(p.nom));
+    if (!cible) continue;
+    cible.evts.push(...p.evts); cible.alertes.push(...p.alertes); P.delete(id);
+  }
   const ids = [...P.keys()].map((id) => 'perso:' + id);
   const marq = new Map();
   if (ids.length) for (const r of await tous(db, `SELECT cle, ts FROM boite_lu WHERE cle IN (${ids.map(() => '?').join(',')})`, ...ids)) marq.set(r.cle, r.ts);

@@ -2135,7 +2135,7 @@ export function registerCoreSentinels(): void {
         /* 3. Docs racine — fraîcheur < 6h */
         const REQUIRED_DOCS = [
           'CLAUDE.md',
-          'NOTES_USER.md',
+          /* NOTES_USER.md : notes PRIVÉES de Kevin, retirées du dépôt public (regles.json) → le relais public répond 404 (vérif réelle 8.10). */
           'MEMO_RESUME.md',
           'KEVIN_INVENTORY.md',
           'KEVIN_ACTIONS_TODO.md',

@@ -5,6 +5,11 @@
    FERMÉ (le nom auto-asserté ne donne JAMAIS l'accès). L'accès exige un grant signé
    prouvé via /__admin/login. */
 import mod from './worker.js';
+import { createHmac as _hmacT } from 'node:crypto';
+const _b64uT = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/* Depuis le 8.10, /__sso/issue ne délivre plus de session au nom de Kevin : une session FAIBLE à son nom (comme en ont pu fabriquer
+   les anciens appels) se signe ici, pour prouver qu'elle n'ouvre toujours rien. */
+const passFaible = (uid, n, secret = 'sec') => { const p = _b64uT(JSON.stringify({ u: uid, n, c: 1, v: 0, k: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + _b64uT(_hmacT('sha256', secret).update(p).digest()); };
 import { createHash } from 'crypto';
 const store = new Map();
 const ACCOUNTS = { get: async (k) => (store.has(k) ? store.get(k) : null), put: async (k, v) => { store.set(k, v); }, delete: async (k) => { store.delete(k); } };
@@ -13,7 +18,7 @@ const REQ = (o) => new Request('https://kd-mc.com' + o.path, { method: o.method 
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : (fail++, console.log('  ✗ ' + m)); };
 const issue = async (uid, name) => { const r = await mod.fetch(REQ({ path: '/__sso/issue', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid, name, cgu: true }) }), env); return (r.headers.get('set-cookie').match(/kdmc_sso=([^;]+)/) || [])[1]; };
 
-const cKevin = await issue('kdmc_admin', 'Kevin Desarzens');
+const cKevin = passFaible('kdmc_admin', 'Kevin Desarzens');
 await issue('laurence-sp', 'Laurence Saint-Polit');
 await issue('marie-dupont', 'Marie Dupont');
 

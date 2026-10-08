@@ -120,13 +120,15 @@ try {
   const adminHidden1 = await page.evaluate(() => { var z = document.getElementById('admin-zone'); return !z || z.hidden === true; });
   ok(adminHidden1, 'Portail : Kevin auto-déclaré (nom+code, SANS Face ID) → Administration CACHÉE (leçon #99 ; admin AVEC Face ID prouvé par multiapp-e2e)');
   const tok = await page.evaluate(() => window.kdmcSSO.token());
-  ok(!!tok && tok.indexOf('.') > 0, 'Portail : pass signé stocké en localStorage (canal cross-PWA)');
+  /* 8.10 (faille fermée) : le nom de Kevin + un code de compte ne délivrent PLUS aucune session — le portail demande la preuve admin
+     (Face ID ou code admin). Aucun pass stocké. */
+  ok(!tok, 'Portail : « Kevin Desarzens » par son nom seul → AUCUN pass (preuve admin exigée)');
   /* le KV doit contenir la fiche Kevin — sous son uid CANONIQUE : depuis « un compte par
      personne » (05/08/2026, CANON_UID = kdmc_admin), « kevin-desarzens » déclaré au portail est
      fusionné dans la fiche kdmc_admin. Ce contrôle attendait encore l'ancienne clé
      (acc:kevin-desarzens) → rouge à chaque exécution depuis, sans que personne ne le voie :
      l'étape d'installation tombait avant (mesuré le 11/09/2026). */
-  ok(kv.has('acc:kdmc_admin') && !kv.has('acc:kevin-desarzens'), 'Worker : fiche client enrichie dans le registre KV (fiche canonique kdmc_admin, pas de doublon)');
+  ok(!kv.has('acc:kevin-desarzens'), 'Worker : aucune fiche en double créée au nom de Kevin (et aucune visite écrite sans preuve)');
   await page.close();
 
   /* ---- TEST 2 : portail — compte CLIENT (non-admin) → zone admin CACHÉE ---- */
@@ -155,13 +157,13 @@ try {
      #kdmc_sso=<token> (comme le ferait le retour depuis le domaine). */
   const ctx3 = await browser.newContext();
   page = await ctx3.newPage();
-  const issued = await page.request.post(ORIGIN + '/__sso/issue', { data: { uid: 'kevin-desarzens', name: 'Kevin Desarzens', cgu: true } });
+  const issued = await page.request.post(ORIGIN + '/__sso/issue', { data: { uid: 'marie-curie', name: 'Marie Curie', cgu: true } });
   const ij = await issued.json();
   ok(ij.ok && typeof ij.token === 'string', 'Worker : /__sso/issue renvoie le token signé dans le corps');
   await page.goto(ORIGIN + '/app.html#kdmc_sso=' + encodeURIComponent(ij.token));
   await page.waitForFunction(() => document.getElementById('status').textContent !== 'boot', { timeout: 6000 }).catch(() => {});
   const st = await page.evaluate(() => document.getElementById('status').textContent);
-  ok(/^OK\|Kevin Desarzens\|admin=false/.test(st), 'App PWA : pass du lien consommé → whoami via Bearer (SANS cookie) → session RECONNUE (uid/nom) mais admin=false sans Face ID (leçon #99 cross-PWA)  [' + st + ']');
+  ok(/^OK\|Marie Curie\|admin=false/.test(st), 'App PWA : pass du lien consommé → whoami via Bearer (SANS cookie) → session RECONNUE (uid/nom) mais admin=false sans Face ID (leçon #99 cross-PWA)  [' + st + ']');
   const hashCleared = await page.evaluate(() => location.hash.indexOf('kdmc_sso') < 0);
   ok(hashCleared, 'App PWA : le pass est retiré de l’URL après consommation (propre)');
   await ctx3.close();

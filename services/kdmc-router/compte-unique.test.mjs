@@ -11,6 +11,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import mod from './worker.js';
+import { createHash } from 'node:crypto';
 
 function mkEnv() {
   const store = new Map();
@@ -18,6 +19,7 @@ function mkEnv() {
     store,
     env: {
       KDMC_SSO_SECRET: 'sec',
+      KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'),
       ACCOUNTS: {
         get: async (k) => (store.has(k) ? store.get(k) : null),
         put: async (k, v) => { store.set(k, v); },
@@ -30,12 +32,17 @@ const issue = (env, uid, name) => mod.fetch(new Request('https://kd-mc.com/__sso
   method: 'POST', headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ uid, name, cgu: true }),
 }), env);
+/* Depuis le 8.10, le compte de Kevin ne s'ouvre plus sur la foi de son nom (/__sso/issue ne délivre plus rien) : sa visite passe par
+   la preuve forte, le code admin (/__admin/login), qui range aussi sa visite dans le dossier unique et déclenche la fusion. */
+const visiteKevin = (env) => mod.fetch(new Request('https://kd-mc.com/__admin/login', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: '424242' }),
+}), env);
 const acc = (store, uid) => JSON.parse(store.get('acc:' + uid) || 'null');
 
 test('les apps de Kevin alimentent UN SEUL dossier (kdmc_admin)', async () => {
   const { store, env } = mkEnv();
   await issue(env, 'U11804', 'Kevin DESARZENS');       /* CMCteams */
-  await issue(env, 'kdmc_admin', 'Kevin Desarzens');   /* Apex */
+  await visiteKevin(env);   /* Apex */
   await issue(env, 'lingua_7', 'kevin desarzens');     /* Lingua */
   const k = acc(store, 'kdmc_admin');
   assert.ok(k, 'le dossier canonique existe');
@@ -60,7 +67,7 @@ test('les fiches DÉJÀ éparpillées sont fusionnées, sans rien perdre', async
   }));
   store.set('acc:laurence-sp', JSON.stringify({ uid: 'laurence-sp', name: 'Laurence Saint-Polit', hits: 12, apps: {}, history: [] }));
 
-  await issue(env, 'kdmc_admin', 'Kevin Desarzens'); /* déclenche la fusion auto */
+  await visiteKevin(env); /* déclenche la fusion auto */
 
   const k = acc(store, 'kdmc_admin');
   assert.ok(k.hits >= 192, 'les 191 connexions sont RÉCUPÉRÉES (+ la nouvelle), got ' + k.hits);
@@ -87,7 +94,7 @@ test('les fiches fusionnées ne réapparaissent PAS comme des personnes', async 
   env.KDMC_ADMIN_PIN_SHA256 = PIN;
   store.set('idx:uids', JSON.stringify(['vieux_kevin']));
   store.set('acc:vieux_kevin', JSON.stringify({ uid: 'vieux_kevin', name: 'Kevin DESARZENS', hits: 191, apps: {}, history: [] }));
-  await issue(env, 'kdmc_admin', 'Kevin Desarzens');
+  await visiteKevin(env);
   const r = await mod.fetch(new Request('https://kd-mc.com/__admin/domain-log', { headers: { 'x-apex-pin': PIN } }), env);
   const d = await r.json();
   const noms = d.people.map((p) => p.uid);
@@ -160,7 +167,7 @@ test('un prénom seul auto-déclaré ne se range PAS dans le dossier admin', asy
 
 test('une fiche en double apparue APRÈS la 1re fusion est bien absorbée ensuite', async () => {
   const { store, env } = mkEnv();
-  await issue(env, 'kdmc_admin', 'Kevin Desarzens');           /* 1re fusion : rien à absorber */
+  await visiteKevin(env);           /* 1re fusion : rien à absorber */
   const k1 = acc(store, 'kdmc_admin');
   assert.ok(k1.merged_at, 'la date de dernière fusion est enregistrée');
 
@@ -175,7 +182,7 @@ test('une fiche en double apparue APRÈS la 1re fusion est bien absorbée ensuit
   k.last_seen = Date.now() - 8 * 24 * 3600e3; /* sinon la visite est « trop rapprochée » et rien n'est réécrit */
   store.set('acc:kdmc_admin', JSON.stringify(k));
 
-  await issue(env, 'kdmc_admin', 'Kevin Desarzens');           /* visite suivante */
+  await visiteKevin(env);           /* visite suivante */
 
   const k2 = acc(store, 'kdmc_admin');
   assert.ok(k2.hits >= 116, 'les 116 connexions du doublon sont récupérées, got ' + k2.hits);
@@ -184,7 +191,7 @@ test('une fiche en double apparue APRÈS la 1re fusion est bien absorbée ensuit
 
 test('Ronan Desarzens garde SON compte (même nom de famille ≠ même personne)', async () => {
   const { store, env } = mkEnv();
-  await issue(env, 'kdmc_admin', 'Kevin Desarzens');
+  await visiteKevin(env);
   await issue(env, 'ronan_1', 'Ronan Desarzens');
   const r = acc(store, 'ronan_1');
   assert.ok(r, 'Ronan a bien sa propre fiche');
@@ -200,7 +207,7 @@ test('« Desarzens K » (nom + initiale) reste bien reconnu comme l\'admin', asy
   /* Le dossier de Kevin existe (c'est le cas en vrai) : « DESARZENS K » n'est donc pas une
      inscription NOUVELLE — il doit être rangé chez l'admin, pas refusé ni dédoublé. (Seule une
      inscription neuve exige prénom + nom complets, depuis le 27.09.) */
-  await issue(env, 'kdmc_admin', 'Kevin Desarzens');
+  await visiteKevin(env);
   const r = await issue(env, 'u1', 'DESARZENS K');
   assert.equal(r.status, 200, 'accepté : ce n\'est pas un nouveau compte');
   assert.ok(acc(store, 'kdmc_admin'), 'rangé dans le dossier admin');

@@ -2,6 +2,11 @@
    /__sso/passkeys (liste), /passkeys/delete (verified), /me/history, /me/revoke.
    node self-service.test.mjs */
 import mod from './worker.js';
+import { createHmac as _hmacT } from 'node:crypto';
+const _b64uT = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/* Depuis le 8.10, /__sso/issue ne délivre plus de session au nom de Kevin : une session FAIBLE à son nom (comme en ont pu fabriquer
+   les anciens appels) se signe ici, pour prouver qu'elle n'ouvre toujours rien. */
+const passFaible = (uid, n, secret = 'sec') => { const p = _b64uT(JSON.stringify({ u: uid, n, c: 1, v: 0, k: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + _b64uT(_hmacT('sha256', secret).update(p).digest()); };
 import { b64uDec, b64uEnc } from './webauthn.js';
 
 const te = new TextEncoder();
@@ -23,8 +28,8 @@ async function sha256(b) { return new Uint8Array(await crypto.subtle.digest('SHA
 
 async function enroll(uid, name) {
   /* issue → register/options → register/verify (passkey simulé) → token FORT */
-  let r = await mod.fetch(POST('/__sso/issue', { uid, name, cgu: true }), env);
-  const cookie = 'kdmc_sso=' + cookieOf(r);
+  let r = ['kevin-desarzens', 'kdmc_admin'].includes(uid) ? null : await mod.fetch(POST('/__sso/issue', { uid, name, cgu: true }), env);
+  const cookie = 'kdmc_sso=' + (r ? cookieOf(r) : passFaible(uid, name));   /* Kevin : plus de session par son nom (8.10) */
   const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
   const pj = await crypto.subtle.exportKey('jwk', kp.publicKey);
   const x = b64uDec(pj.x), y = b64uDec(pj.y);
@@ -103,8 +108,7 @@ const run = async () => {
 
   /* 8) Strix vuln-0001 (11/09/2026) : un token FAIBLE se forge avec n'importe quel uid via
      /issue. Il ne doit NI lire l'historique de cet uid, NI révoquer ses sessions. */
-  const forged = await mod.fetch(POST('/__sso/issue', { uid: 'kevin-desarzens', name: 'Kevin Desarzens', cgu: true }), env);
-  const forgedCookie = 'kdmc_sso=' + cookieOf(forged);
+  const forgedCookie = 'kdmc_sso=' + passFaible('kevin-desarzens', 'Kevin Desarzens');
   r = await mod.fetch(REQ('/__sso/me/history', { headers: { cookie: forgedCookie } }), env);
   j = await r.json();
   ok(j.ok === false && /Face ID/.test(j.reason || '') && !j.history, 'token FAIBLE forgé sur kevin-desarzens → /me/history refusé (Face ID requis), rien de renvoyé');

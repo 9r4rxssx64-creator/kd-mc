@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 — « Connecte-toi comme moi réel partout » : faille trouvée et fermée
+
+- Vérification réelle lancée (run 37763492673, connecté) : 23 surfaces rouges, dont cuisine (images bloquées), Kit IA, Lingua, OSINT, Empreinte (bouton boîte refusé par la CSP de la page)… — détail limité à 4 blocs d'annotations, à reprendre après le correctif.
+- **Faille** : la session de Kevin se fabriquait avec son SEUL nom (`/__sso/issue`, contrôle du code sauté pour l'admin). Fermée : plus de session par le nom pour Kevin, sessions faibles d'un uid admin refusées aux portes, la vérification réelle passe par le vrai code admin (secret CI).
+
 ## 2026-10-08 — « Go tout » : Apex diag, comptes de test retirés, travail CMCteams dans la fiche
 
 - **Apex « Toutes les IA sont KO »** : diagnostic réel (robot `apex-proxy-diag`, 4 appels authentifiés au proxy) → **HTTP 200 partout** (Anthropic sonnet-4-6 et 4-5, OpenAI, appel « comme l'app » en stream + outils). Le serveur et les clés vont bien : la bannière du 4.10 vient du côté appareil (code non gardé en mémoire / version v13.4.367) ou d'une panne passagère. Robot remis en pause.

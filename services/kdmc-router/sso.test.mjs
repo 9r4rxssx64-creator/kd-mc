@@ -9,16 +9,20 @@ const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m); 
 let r = await mod.fetch(H({ path: '/__sso/whoami' }), env); let j = await r.json();
 ok(j.ok === false, 'whoami sans cookie → ok:false');
 
+/* FAILLE FERMÉE (8.10) : le compte de Kevin ne s'ouvre JAMAIS sur la foi de son nom — aucune session, aucun cookie, le portail propose la preuve admin. */
 r = await mod.fetch(H({ path: '/__sso/issue', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: 'kdmc_admin', name: 'Kevin Desarzens', cgu: true }) }), env);
 j = await r.json();
+ok(j.ok === true && j.admin_requis === true && !j.token && !r.headers.get('set-cookie'), 'issue au nom de Kevin → AUCUNE session (admin_requis : Face ID ou code admin)');
+r = await mod.fetch(H({ path: '/__sso/issue', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: 'marie_test', name: 'Marie Testeur', cgu: true }) }), env);
+j = await r.json();
 const sc = r.headers.get('set-cookie') || '';
-ok(j.ok === true && j.uid === 'kdmc_admin' && j.cgu === true, 'issue → ok+uid+cgu');
+ok(j.ok === true && j.uid === 'marie_test' && j.cgu === true, 'issue → ok+uid+cgu');
 ok(/Domain=\.kd-mc\.com/.test(sc) && /HttpOnly/.test(sc) && /Secure/.test(sc) && /SameSite=Lax/.test(sc), 'cookie .kd-mc.com HttpOnly Secure SameSite=Lax');
 const token = (sc.match(/kdmc_sso=([^;]+)/) || [])[1];
 
 r = await mod.fetch(H({ path: '/__sso/whoami', headers: { cookie: 'kdmc_sso=' + token } }), env); j = await r.json();
 /* Depuis le 7.10 (57c53c7dc) `cgu` = conditions de la version EN COURS acceptées sur la FICHE (cgu_at + cgu_v), pas ce que dit le pass : sans fiche (ce test n'a pas de KV), faux. */
-ok(j.ok === true && j.uid === 'kdmc_admin' && j.name === 'Kevin Desarzens' && j.cgu === false, 'whoami avec cookie → identité ; cgu lue sur la fiche (absente ici → false)');
+ok(j.ok === true && j.uid === 'marie_test' && j.name === 'Marie Testeur' && j.cgu === false, 'whoami avec cookie → identité ; cgu lue sur la fiche (absente ici → false)');
 
 r = await mod.fetch(H({ path: '/__sso/whoami', headers: { cookie: 'kdmc_sso=' + token.slice(0, -2) + 'XY' } }), env); j = await r.json();
 ok(j.ok === false, 'token falsifié → rejeté (HMAC)');
@@ -30,7 +34,7 @@ ok(j.ok === false, 'mauvais secret → rejeté (forge impossible)');
 r = await mod.fetch(H({ path: '/__sso/whoami', headers: { authorization: 'Bearer ' + token } }), env); j = await r.json();
 // SÉCU (leçon #99) : un uid admin AUTO-DÉCLARÉ (issue, sans Face ID) → admin:false.
 // L'admin n'est vrai qu'après un passkey vérifié (couvert par webauthn.test.mjs).
-ok(j.ok === true && j.uid === 'kdmc_admin' && j.verified === false && j.admin === false, 'whoami via Bearer (issue, non-vérifié) → identité, admin:false (nom auto-déclaré ≠ admin)');
+ok(j.ok === true && j.uid === 'marie_test' && j.verified === false && j.admin === false, 'whoami via Bearer (issue, non-vérifié) → identité, admin:false (nom auto-déclaré ≠ admin)');
 // issue renvoie le token dans le corps (pour le mettre dans le lien de retour)
 r = await mod.fetch(H({ path: '/__sso/issue', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: 'laurence_sp', name: 'Laurence Saint-Polit', cgu: true }) }), env); j = await r.json();
 ok(j.ok === true && typeof j.token === 'string' && j.token.indexOf('.') > 0 && j.admin === false, 'issue → token signé dans le corps + admin:false pour client');

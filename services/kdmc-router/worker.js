@@ -1502,8 +1502,11 @@ function libreSansFiche(cheminCMC) {
 async function compteConnu(request, env) {
   if (!porteTotaleActive(env) || !(env && env.KDMC_SSO_SECRET)) return true;
   const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request));
-  return !!(s && s.uid && !revoked(await accGet(env, s.uid), s));
+  return !!(s && s.uid && !faibleAdmin(s) && !revoked(await accGet(env, s.uid), s));
 }
+/* Une session FAIBLE (nom seul, sans Face ID ni code admin) au nom de l'admin n'ouvre aucune porte : jusqu'au 8.10, /__sso/issue
+   en délivrait une à quiconque postait « Kevin Desarzens ». Celles déjà émises (≤ 30 jours) sont refusées ici. */
+function faibleAdmin(s) { return !!(s && ADMIN_UIDS.indexOf(s.uid) >= 0 && !s.verified); }
 export function porteTotaleActive(env) { return !(env && String(env.KDMC_PORTE_TOTALE) === '0'); }
 const PAGES_JURIDIQUES = /\/(privacy|cgu|conditions|mentions-legales)\.html$/;
 /* Le PORTAIL est LA porte : sa page de connexion/inscription et les cinq fichiers qu'elle charge AVANT qu'on soit connecté
@@ -1536,7 +1539,7 @@ async function porteGenerale(request, url, env, cheminCMC) {
   if (pageDuPortail(host, cheminCMC)) return null;
   if (request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0)) return null;
   const s = await ssoVerify(secret, ssoToken(request));
-  if (s && s.uid) {
+  if (s && s.uid && !faibleAdmin(s)) {
     const acc = await accGet(env, s.uid);
     if (!revoked(acc, s)) {
       const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
@@ -1567,7 +1570,7 @@ async function porteFermee(request, url, env, cheminCMC) {
   if (!secret) return null;                                    /* domaine sans SSO (test) : ouvert */
   if (libreSansFiche(cheminCMC)) return null;
   const s = await ssoVerify(secret, ssoToken(request));
-  if (s && s.uid) {
+  if (s && s.uid && !faibleAdmin(s)) {
     const acc = await accGet(env, s.uid);
     if (!revoked(acc, s)) {
       const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
@@ -3148,6 +3151,14 @@ async function handleSso(request, url, env) {
           }, undefined, 429);
         }
       }
+    }
+    /* FAILLE FERMÉE (8.10, vérification réelle « connecte-toi comme moi ») : pour le compte de Kevin, la vérification du code
+       ci-dessous est SAUTÉE (cle === CANON_UID) — n'importe qui obtenait donc une session « kevin desarzens » (non admin, mais
+       valide) en postant son nom, et passait la porte « aucune consultation sans compte ». Le compte de Kevin ne s'ouvre QUE par
+       une preuve forte : Face ID (webauthn) ou son code admin (/__admin/login). Ici : aucune session émise, rien d'écrit ;
+       le portail reçoit `admin_requis` et propose la preuve admin (déjà câblé, kdmc-portal.js). */
+    if ((await canonFor(env, uid, name, { sansCreer: true })) === CANON_UID) {
+      return J({ ok: true, uid, name, cgu, token: '', admin: false, code: false, admin_requis: true });
     }
     /* CODE DU COMPTE (27.09) — voir credHash. `cle` = le dossier canonique de la personne. */
     let codeProuve = false;

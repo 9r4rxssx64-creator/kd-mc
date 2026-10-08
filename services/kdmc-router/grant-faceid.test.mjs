@@ -4,6 +4,11 @@
    Le grant est désormais vérifié AU MÊME ENDROIT partout (grantValide). Sans réseau.
    node grant-faceid.test.mjs */
 import mod from './worker.js';
+import { createHmac as _hmacT } from 'node:crypto';
+const _b64uT = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/* Depuis le 8.10, /__sso/issue ne délivre plus de session au nom de Kevin : une session FAIBLE à son nom (comme en ont pu fabriquer
+   les anciens appels) se signe ici, pour prouver qu'elle n'ouvre toujours rien. */
+const passFaible = (uid, n, secret = 'sec') => { const p = _b64uT(JSON.stringify({ u: uid, n, c: 1, v: 0, k: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + _b64uT(_hmacT('sha256', secret).update(p).digest()); };
 import { b64uDec, b64uEnc } from './webauthn.js';
 import { createHash, createHmac } from 'node:crypto';
 const te = new TextEncoder();
@@ -23,8 +28,8 @@ async function essai(nom, grant, revoque) {
   // 0) le grant seul ouvre-t-il encore une porte admin ?
   const direct = await mod.fetch(new Request('https://kd-mc.com/__admin/grant', { headers: { 'x-kdmc-admin': grant } }), env);
   // 1) l'attaquant se déclare « kevin-desarzens » (session FAIBLE, sans aucune preuve)
-  let r = await mod.fetch(POST('/__sso/issue', { uid: 'kevin-desarzens', name: 'Kevin Desarzens', cgu: true }), env);
-  const cookie = 'kdmc_sso=' + cookieOf(r);
+  let r;
+  const cookie = 'kdmc_sso=' + passFaible('kevin-desarzens', 'Kevin Desarzens');
   // 2) il enrôle SON authentificateur, en présentant le grant volé
   const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
   const pj = await crypto.subtle.exportKey('jwk', kp.publicKey);

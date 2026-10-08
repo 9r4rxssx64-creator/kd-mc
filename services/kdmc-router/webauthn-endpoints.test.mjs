@@ -3,6 +3,11 @@
    auth/options → auth/verify → whoami verified:true. Prouve le câblage complet
    (KV, session, origin, claim verified). node webauthn-endpoints.test.mjs */
 import mod from './worker.js';
+import { createHmac as _hmacT } from 'node:crypto';
+const _b64uT = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/* Depuis le 8.10, /__sso/issue ne délivre plus de session au nom de Kevin : une session FAIBLE à son nom (comme en ont pu fabriquer
+   les anciens appels) se signe ici, pour prouver qu'elle n'ouvre toujours rien. */
+const passFaible = (uid, n, secret = 'sec') => { const p = _b64uT(JSON.stringify({ u: uid, n, c: 1, v: 0, k: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + _b64uT(_hmacT('sha256', secret).update(p).digest()); };
 import { b64uDec, b64uEnc } from './webauthn.js';
 import { createHash } from 'crypto';
 
@@ -33,8 +38,8 @@ const run = async () => {
 
   /* 1) session (faible, nom+code) */
   let r = await mod.fetch(POST('/__sso/issue', { uid: 'kevin-desarzens', name: 'Kevin Desarzens', cgu: true }), env);
-  const cookie = 'kdmc_sso=' + cookieOf(r);
-  let j = await r.json(); ok(j.ok && j.verified !== true, 'issue → session faible (verified non true)');
+  let j = await r.json(); ok(j.ok && j.admin_requis === true && !j.token && !r.headers.get('set-cookie'), 'issue au nom de Kevin → AUCUNE session (8.10 : Face ID ou code admin)');
+  const cookie = 'kdmc_sso=' + passFaible('kevin-desarzens', 'Kevin Desarzens');   /* une session faible ancienne / forgée */
 
   /* 2) register/options (avec session) */
   r = await mod.fetch(POST('/__sso/webauthn/register/options', {}, { cookie }), env);
@@ -114,8 +119,8 @@ const run = async () => {
   const pj2 = await crypto.subtle.exportKey('jwk', kp2.publicKey);
   const x2 = b64uDec(pj2.x), y2 = b64uDec(pj2.y);
   const credId2 = crypto.getRandomValues(new Uint8Array(32));
-  let ra = await mod.fetch(POST('/__sso/issue', { uid: 'kevin-desarzens', name: 'Kevin Desarzens', cgu: true }), env);
-  const cookieAtk = 'kdmc_sso=' + cookieOf(ra);
+  let ra;
+  const cookieAtk = 'kdmc_sso=' + passFaible('kevin-desarzens', 'Kevin Desarzens');
   const roA = await (await mod.fetch(POST('/__sso/webauthn/register/options', {}, { cookie: cookieAtk }), env)).json();
   const cose2 = cat(head(5, 5), enc(1), enc(2), enc(3), enc(-7), enc(-1), enc(1), enc(-2), enc(x2), enc(-3), enc(y2));
   const regAuthData2 = cat(rpIdHash, Uint8Array.of(0x45), Uint8Array.of(0, 0, 0, 0), new Uint8Array(16), Uint8Array.of(0, credId2.length), credId2, cose2);

@@ -15656,3 +15656,17 @@ une annotation par fiche) ; (4) `test:lire-alertes` 7/0.
 - **Vérifications réelles** : `plafond-verifs.mjs` lit aussi le budget du jour (`budgetDuJour`, même seuil 60 %) ; les 8 workflows passent le
   jeton Cloudflare à l'étape plafond ; `test:plafond-verifs` 79/0.
 - **Apex** : build run 37778037594 reste « queued » sans job depuis 12h36 (comme 2 runs du 6.08 — file GitHub, pas nous) ; workflow rééteint.
+
+## 2026-10-08 (16h30) — Laurence : un PC Windows chez un hébergeur suédois à son nom → sessions révoquées ; « Protège ton compte par un code »
+
+- **Lu au coffre** (fiche brute) : vraies sessions de Laurence = iPhone iOS, Fréjus / Monaco / Paris / Marseille (dernière vraie : 6.08).
+  **7.10 04h30-04h40 UTC : « PC Windows · Windows 10/11 · Chrome 120 · Stockholm · No ACK Group Holding AB (AS30893) · Europe/Stockholm »**
+  sur apex-ai, cmcteams, apex-chat (3 apps en 10 min) — pas elle, pas un de nos robots (ni GitHub AS8075, ni Anthropic). Son compte :
+  **code posé : NON, Face ID : non** — un nom suffisait. Deux hypothèses, même remède : nom tapé par un inconnu, ou lien `#kdmc_sso=` collé
+  quelque part (un service a suivi les liens).
+- **Fait, pour de vrai** : `coffre-deconnecter-compte.yml` (session de Kevin → `/__admin/revoke`) : **sessions révoquées le 8.10 à 14h24 UTC,
+  relu sur la fiche ✅** (run 37792116246 ; essai à blanc 37792015720 avant). Le compte reste ; elle se reconnecte avec son nom.
+- **Le verrou qui manquait** (PR) : `/__sso/issue` et `whoami` disent `code_pose` (fiche `code_at`, posé à la 1re preuve du code — 0 lecture KV
+  de plus sur le chemin chaud) ; le portail affiche « 🔐 Ton compte n'a pas encore de code… Protéger mon compte » à tout compte sans code et
+  pose le code depuis SA session (un inconnu ne peut pas). Garde `code-compte` 4b-4g (22/0).
+- **Ménage** : `marie-curie` (ma sonde) retiré par `coffre-comptes-nettoyer-robots` (essai à blanc puis vrai) — voir le résultat ci-dessous.

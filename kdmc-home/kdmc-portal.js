@@ -152,8 +152,36 @@
       var javisZone = document.getElementById('javis-zone');
       if (javisZone) javisZone.hidden = !(!!(s && s.admin) || estKevin);
       renderSelfService(s); /* « Mes appareils / connexions » — pour TOUT connecté */
+      renderCodeNudge(s);   /* 8.10 : un compte sans code au domaine s'ouvre sur son seul nom → on propose d'en choisir un, ici, sur son appareil */
     };
     if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done).catch(function () { done(null); }); } else { done(null); }
+  }
+
+  /* ===== « Protège ton compte par un code » (8.10, sécurité +++) =====
+     Vécu : un PC Windows chez un hébergeur suédois a ouvert des sessions au nom de Laurence — son compte n'avait pas de code au
+     domaine, un nom suffisait. Le domaine le dit (whoami.code_pose === false) ; ici on propose de choisir le code TOUT DE SUITE,
+     sur l'appareil de la personne (le domaine n'accepte de poser le code d'un compte existant que depuis sa propre session).
+     Un compte qui a déjà un code (posé avant le 8.10, fiche sans `code_at`) le confirme une fois : le domaine le reconnaît. */
+  function renderCodeNudge(s) {
+    var old = document.getElementById('code-nudge'); if (old) old.remove();
+    if (!s || !s.uid || s.admin || s.code_pose !== false || !window.kdmcSSO || !window.kdmcSSO.issueDetail) return;
+    var box = document.createElement('div'); box.id = 'code-nudge'; box.className = 'g-sub'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Protéger mon compte');
+    box.innerHTML = '<p>🔐 <b>Ton compte n\'a pas encore de code.</b> Sans code, quelqu\'un qui tape ton nom pourrait entrer à ta place. Choisis-en un maintenant (6 chiffres ou plus) — il marchera dans toutes les apps KDMC.</p>'
+      + '<input class="fld" id="cn-code" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Mon code (6 chiffres ou plus)" aria-label="Mon code">'
+      + '<button class="btn" id="cn-go" type="button">Protéger mon compte</button>'
+      + '<p class="g-err" id="cn-err" role="alert" aria-live="polite"></p>';
+    var anchor = document.getElementById('self-svc');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor); else if (hub) hub.insertBefore(box, hub.firstChild);
+    document.getElementById('cn-go').addEventListener('click', function () {
+      var code = (document.getElementById('cn-code').value || '').trim(), err = document.getElementById('cn-err'), b = document.getElementById('cn-go');
+      if (code.length < 6) { err.textContent = 'Au moins 6 caractères.'; return; }
+      b.disabled = true; b.textContent = '…';
+      window.kdmcSSO.issueDetail(s.uid, s.name, true, safeReturnUrl(), code).then(function (j) {
+        if (j && j.ok && j.code) { box.innerHTML = '<p>✅ Ton compte est protégé : nom + code dans toutes les apps KDMC.</p>'; return; }
+        err.textContent = (j && j.reason === 'code_incorrect') ? 'Ce compte a déjà un code : entre celui-là pour le confirmer.' : (j && j.message) || 'Le domaine n\'a pas pu enregistrer le code, réessaie.';
+        b.disabled = false; b.textContent = 'Protéger mon compte';
+      }).catch(function () { err.textContent = 'Erreur réseau, réessaie.'; b.disabled = false; b.textContent = 'Protéger mon compte'; });
+    });
   }
 
   /* ===== Self-service : chacun voit/gère SES appareils + SON historique ===== */

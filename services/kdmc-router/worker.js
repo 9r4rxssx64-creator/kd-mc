@@ -3047,7 +3047,9 @@ async function handleSso(request, url, env) {
       }
       const parEnTete = !!(request.headers.get('authorization') || request.headers.get('x-kdmc-sso'));
       /* `cgu` = conditions de la version EN COURS acceptées une fois, n'importe où (fiche `cgu_at` + `cgu_v`) — pas ce que dit le pass. */
-      const rep = { ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' };
+      /* `code_pose` : le compte a-t-il un code au domaine (fiche `code_at`, posé à la première preuve du code) ? Un compte sans code
+         s'ouvre sur son seul nom : le portail propose d'en choisir un. Admin : toujours protégé (code admin + Face ID). */
+      const rep = { ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
@@ -3228,12 +3230,17 @@ async function handleSso(request, url, env) {
     }
     /* CODE DU COMPTE (27.09) — voir credHash. `cle` = le dossier canonique de la personne. */
     let codeProuve = false;
+    /* `codePose` (8.10, « sécurité +++ ») : le compte a-t-il un code au domaine ? Sans code, n'importe qui tapant ce nom
+       obtient une session (vécu : un PC Windows chez un hébergeur suédois au nom de Laurence). Le portail le DIT à la personne
+       et lui propose d'en choisir un, sur son appareil (memeSession) — jamais un inconnu. */
+    let codePose = null;
     {
       const code = typeof b.code === 'string' ? b.code : '';
       const accC = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));
       const cle = accC ? accC.uid : uid;
       if (cle !== CANON_UID && env.ACCOUNTS) {
         const rec = await credGet(env, cle);
+        codePose = !!rec;
         const sess = await ssoVerify(secret, ssoToken(request));
         const memeSession = !!(sess && (sess.uid === cle || sess.uid === uid) && !revoked(accC, sess));
         if (code) {
@@ -3250,7 +3257,7 @@ async function handleSso(request, url, env) {
             /* Nouveau compte, OU la personne elle-même (session déjà à elle, sur son appareil) :
                on enregistre son code au domaine. Un inconnu sur un appareil neuf ne peut PAS
                poser le code d'un compte existant (il enfermerait le vrai propriétaire dehors). */
-            await credSet(env, cle, code); codeProuve = true;
+            await credSet(env, cle, code); codeProuve = true; codePose = true;
           }
         } else if (rec && !memeSession) {
           /* Nom protégé par un code, et personne ne le prouve : on ne délivre plus la session de
@@ -3261,6 +3268,9 @@ async function handleSso(request, url, env) {
       }
     }
     await enrich(env, request, uid, name, cgu, undefined, { origine });
+    /* La fiche retient qu'un code existe (`code_at`) : whoami peut alors le dire SANS lire `cred:` à chaque battement (lecture KV
+       économisée sur le chemin chaud). Une seule écriture, la première fois que le code est prouvé. */
+    if (codeProuve) { try { const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true })); if (a && !a.code_at) { a.code_at = Date.now(); await accPut(env, a, true); } } catch { /* fail-open */ } }
     const token = await ssoSign(secret, uid, name, cgu, false, codeProuve);
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     /* token renvoyé dans le corps : le portail le met dans le lien de retour
@@ -3270,7 +3280,7 @@ async function handleSso(request, url, env) {
     /* L'identité admin ne se prouve pas par un code de compte : on le dit au portail, qui propose
        alors le code ADMIN (→ session vérifiée) au lieu de laisser Kevin « auto-déclaré ». */
     const adminRequis = (await canonFor(env, uid, name, { sansCreer: true })) === CANON_UID;
-    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve, admin_requis: adminRequis }, cookie);
+    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve, code_pose: codePose, admin_requis: adminRequis }, cookie);
   }
   /* CONNEXION SUR UN APPAREIL NEUF (ou dans n'importe quelle app) : nom + code → la session du
      compte. Même message pour « nom inconnu » et « mauvais code » (on ne confirme pas qu'un nom

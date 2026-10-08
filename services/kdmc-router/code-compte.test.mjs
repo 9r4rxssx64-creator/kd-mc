@@ -31,6 +31,7 @@ console.log('\nCompte unique : un nom + un code, vérifiés par le domaine, reco
 /* 1-2. Création d'un compte avec son code */
 let r = await issue({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159' });
 ok(r.j.ok === true && r.j.code === true, '1. création d\'un compte avec son code → session + code enregistré au domaine', JSON.stringify(r.j));
+const tokMarie = r.j.token, j1 = r.j;
 const cred = kv.get('cred:marie-curie') || '';
 ok(cred && !cred.includes('314159') && /"h":"[0-9a-f]{64}"/.test(cred), '2. le domaine garde une EMPREINTE (PBKDF2), jamais le code', cred.slice(0, 80));
 
@@ -39,6 +40,23 @@ r = await issue({ uid: 'marie-curie', name: 'Marie Curie', cgu: true });
 ok(r.st === 401 && r.j.reason === 'code_requis', '3. un inconnu qui tape juste « Marie Curie » ne reçoit PLUS sa session', `${r.st} ${r.j.reason}`);
 r = await issue({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '000000' });
 ok(r.st === 401 && r.j.reason === 'code_incorrect', '4. avec un mauvais code → refusé', `${r.st} ${r.j.reason}`);
+
+/* 4b-4d. (8.10, « sécurité +++ ») le domaine DIT si un compte a un code — et le portail propose d'en choisir un */
+ok(j1.code_pose === true, '4b. un compte protégé : la réponse dit code_pose:true', JSON.stringify(j1));
+{ const p = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true });
+  ok(p.j.ok === true && p.j.code_pose === false && p.j.code === false, '4c. un compte ouvert sur son seul nom (sans code) : code_pose:false (le portail affichera « Protège ton compte »)', JSON.stringify(p.j));
+  const wp = await whoami('kd-mc.com', p.j.token);
+  ok(wp.ok === true && wp.code_pose === false, '4d. whoami le dit aussi (sans lire cred: — la fiche porte code_at)', JSON.stringify(wp));
+  const p2 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + p.j.token });
+  const wp2 = await whoami('kd-mc.com', p2.j.token);
+  ok(p2.j.ok === true && p2.j.code === true && p2.j.code_pose === true && wp2.code_pose === true, '4e. depuis SA session, Paul pose son code → code_pose:true partout ; un inconnu ne le pourrait pas (contrôle 11)', JSON.stringify([p2.j, wp2]));
+  const wm = await whoami('kd-mc.com', tokMarie);
+  ok(wm.code_pose === true, '4f. le compte de Marie (code prouvé à la création) est marqué code_at → whoami code_pose:true', JSON.stringify(wm));
+}
+import { readFileSync, existsSync } from 'node:fs';
+{ const pf = new URL('../../kdmc-home/kdmc-portal.js', import.meta.url);
+  if (existsSync(pf)) { const P = readFileSync(pf, 'utf8'); ok(/s\.code_pose !== false/.test(P) && /issueDetail\(s\.uid, s\.name, true, safeReturnUrl\(\), code\)/.test(P) && /pas encore de code/.test(P), '4g. le portail propose « Protéger mon compte » quand code_pose est false, et pose le code depuis la session de la personne'); }
+  else ok(true, '4g. (portail absent de ce dépôt : contrôlé au coffre)'); }
 
 /* 5-8. Appareil neuf / autre app : nom + code */
 r = await login({ name: 'Marie Curie', code: '314159' });

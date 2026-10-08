@@ -42,7 +42,7 @@ function faireEnv(fiches) {
   const n = { get: 0, put: 0, del: 0 };
   for (const [uid, acc] of Object.entries(fiches || {})) kv.set('acc:' + uid, JSON.stringify(acc));
   return {
-    KDMC_SSO_SECRET: 'secret-de-test-quota',
+    KDMC_SSO_SECRET: 'secret-de-test-quota', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-attente.test.mjs */,
     ACCOUNTS: {
       get: async (k, t) => { n.get++; return t === 'arrayBuffer' ? null : (kv.has(k) ? kv.get(k) : null); },
       put: async (k, v) => { n.put++; kv.set(k, v); },

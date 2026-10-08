@@ -10,7 +10,7 @@
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken } from './fb-token.js';
-import { handleBoite } from './boite.js';
+import { handleBoite, codeAttenteDeposer } from './boite.js';
 import * as activite from './activite.js';
 import * as cptD1 from './compteurs-d1.js';
 /* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
@@ -993,12 +993,26 @@ async function sha256Hex(str) {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
-async function ssoSign(secret, uid, name, cgu, verified, codeProuve) {
+/* LA FAMILLE D'APPAREIL d'une session (8.10, « impossible de pirater un autre compte ») : un pass émis sur un iPhone ne vaut rien sur un PC
+   Windows. Famille = le système seulement (iPhone, iPad, Android, Windows, Mac, Linux) : une mise à jour d'iOS, une app installée sur l'écran
+   d'accueil (sans « Safari » dans son User-Agent) ou Chrome sur iPhone restent le MÊME appareil. Vécu : le pass de Laurence (iPhone) servi
+   depuis « PC Windows · Chrome 120 · Stockholm ». */
+export function empreinteAppareil(ua) {
+  const u = String(ua || '');
+  return /iPhone|iPod/.test(u) ? 'iphone' : /iPad|Macintosh.*Mobile/.test(u) ? 'ipad' : /Android/.test(u) ? 'android' : /Windows/.test(u) ? 'windows' : /Macintosh|Mac OS/.test(u) ? 'mac' : /Linux|X11/.test(u) ? 'linux' : 'autre';
+}
+const appareilDe = (request) => empreinteAppareil(request && request.headers && request.headers.get ? request.headers.get('user-agent') : '');
+async function ssoSign(secret, uid, name, cgu, verified, codeProuve, appareil) {
   /* v=1 → identité FORTE (prouvée par passkey/Face ID). v=0 → faible (nom+code
      auto-asserté). Les apps ne doivent accorder de confiance qu'à v=1. */
   /* k=1 → le CODE du compte a été prouvé au domaine (27.09) : plus que « auto-déclaré », moins
      que Face ID. N'accorde JAMAIS l'admin (seul v=1 le peut). */
-  const p = b64urlStr(JSON.stringify({ u: uid, n: name, c: cgu ? 1 : 0, v: verified ? 1 : 0, k: codeProuve ? 1 : 0, iat: Date.now(), exp: Date.now() + ssoTtl(uid, verified) * 1000 }));
+  /* d → la famille d'appareil qui a reçu le pass (8.10) ; vérifiée par ssoVerify quand la requête est connue. */
+  const corps = { u: uid, n: name, c: cgu ? 1 : 0, v: verified ? 1 : 0, k: codeProuve ? 1 : 0, iat: Date.now(), exp: Date.now() + ssoTtl(uid, verified) * 1000 };
+  /* « autre » = pas de navigateur reconnu (script, robot de vérification qui prend le pass de Kevin par fetch) : on ne lie pas — un pass lié à
+     « autre » serait refusé dès qu'un vrai navigateur le présente. Les pass des personnes (iPhone, Android, PC) sont tous liés. */
+  if (appareil && appareil !== 'autre') corps.d = appareil;
+  const p = b64urlStr(JSON.stringify(corps));
   return p + '.' + (await ssoHmac(secret, p));
 }
 /* ===== CODE DU COMPTE, VÉRIFIÉ PAR LE DOMAINE (Kevin 2026-09-27) =====
@@ -1020,12 +1034,18 @@ async function credGet(env, uid) {
   if (!env || !env.ACCOUNTS) return null;
   try { return JSON.parse((await env.ACCOUNTS.get('cred:' + uid)) || 'null'); } catch { return null; }
 }
-async function credSet(env, uid, code) {
+/* L'empreinte d'un code (sel aléatoire + PBKDF2), sans l'écrire : sert aussi aux codes EN ATTENTE de validation (8.10). */
+async function credRec(code) {
   const salt = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
-  const rec = { s: salt, h: await credHash(code, salt), i: CRED_ITER, at: Date.now() };
+  return { s: salt, h: await credHash(code, salt), i: CRED_ITER, at: Date.now() };
+}
+async function credSet(env, uid, code) {
+  const rec = await credRec(code);
   await env.ACCOUNTS.put('cred:' + uid, JSON.stringify(rec));
   return rec;
 }
+/* Code obligatoire (Kevin 8.10) : à la création, et pour tout compte existant qui n'en a pas. Coupe-circuit KDMC_CODE_OBLIGATOIRE=0 (tests seulement). */
+const codeObligatoire = (env) => String((env && env.KDMC_CODE_OBLIGATOIRE) || '1') !== '0';
 async function credOk(rec, code) {
   if (!rec || !rec.s || !rec.h) return false;
   return hexEq(await credHash(code, rec.s), rec.h);
@@ -1049,7 +1069,7 @@ async function credEchec(env, uid) {
 }
 async function credReussite(env, uid) { try { if (env.ACCOUNTS.delete) await env.ACCOUNTS.delete('rlc:' + uid); } catch { /* */ } }
 const CODE_VALIDE = (c) => typeof c === 'string' && c.length >= 6 && c.length <= 64;
-async function ssoVerify(secret, token) {
+async function ssoVerify(secret, token, request) {
   if (!token || token.indexOf('.') < 0) return null;
   const dot = token.indexOf('.'); const p = token.slice(0, dot); const sig = token.slice(dot + 1);
   const expect = await ssoHmac(secret, p);
@@ -1060,7 +1080,10 @@ async function ssoVerify(secret, token) {
      → « Zoé Lefèvre » revenait « ZoÃ© LefÃ¨vre » dans TOUTES les apps. On relit en UTF-8 (tous les passes émis le sont). */
   let d; try { const bin = b64urlToStr(p); d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))); } catch { return null; }
   if (!d || !d.u || !d.exp || d.exp < Date.now()) return null;
-  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, code: d.k === 1, iat: d.iat || 0, exp: d.exp };
+  /* Pass lié à sa famille d'appareil (8.10) : présenté depuis une autre famille → il ne vaut rien (un lien volé, un pass copié).
+     Un pass sans `d` (émis avant le 8.10) reste accepté jusqu'à son renouvellement, qui le lie. */
+  if (request && d.d && d.d !== appareilDe(request)) return null;
+  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, code: d.k === 1, iat: d.iat || 0, exp: d.exp, appareil: d.d || '' };
 }
 /* Révocation à distance (« Déconnecter partout ») : un token émis AVANT
    acc.revoked_at est refusé. Le user peut se RE-connecter (nouveau token,
@@ -1074,11 +1097,11 @@ function revoked(acc, s) { return !!(acc && acc.revoked_at && (s.iat || 0) < acc
    le cookie qui parle. Le cookie est HttpOnly et posé par le domaine seul : il ne donne rien qu'une app sans
    en-tête n'aurait déjà eu. Dans tous les autres cas, rien ne change (l'en-tête garde la priorité). */
 async function ssoPreferePreuve(secret, env, request, tok) {
-  const s = await ssoVerify(secret, tok);
+  const s = await ssoVerify(secret, tok, request);
   if (s?.verified) return { s, tok, cookie: false };
   const c = ssoCookie(request, SSO_COOKIE);
   if (!c || c === tok) return { s, tok, cookie: false };
-  const sc = await ssoVerify(secret, c);
+  const sc = await ssoVerify(secret, c, request);
   if (!sc?.verified || revoked(await accGet(env, sc.uid), sc)) return { s, tok, cookie: false };
   return { s: sc, tok: c, cookie: true };
 }
@@ -1558,7 +1581,7 @@ function libreSansFiche(cheminCMC) {
 /* Un compte du domaine, non révoqué (sans SSO configuré = domaine de test : ouvert, comme les portes). */
 async function compteConnu(request, env) {
   if (!porteTotaleActive(env) || !(env && env.KDMC_SSO_SECRET)) return true;
-  const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request));
+  const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request), request);
   return !!(s && s.uid && !faibleAdmin(s) && !revoked(await accGet(env, s.uid), s));
 }
 /* Une session FAIBLE (nom seul, sans Face ID ni code admin) au nom de l'admin n'ouvre aucune porte : jusqu'au 8.10, /__sso/issue
@@ -1595,7 +1618,7 @@ async function porteGenerale(request, url, env, cheminCMC) {
   const host = url.hostname.toLowerCase();
   if (pageDuPortail(host, cheminCMC)) return null;
   if (request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0)) return null;
-  const s = await ssoVerify(secret, ssoToken(request));
+  const s = await ssoVerify(secret, ssoToken(request), request);
   if (s && s.uid && !faibleAdmin(s)) {
     const acc = await accGet(env, s.uid);
     if (!revoked(acc, s)) {
@@ -1626,7 +1649,7 @@ async function porteFermee(request, url, env, cheminCMC) {
   const secret = env && env.KDMC_SSO_SECRET;
   if (!secret) return null;                                    /* domaine sans SSO (test) : ouvert */
   if (libreSansFiche(cheminCMC)) return null;
-  const s = await ssoVerify(secret, ssoToken(request));
+  const s = await ssoVerify(secret, ssoToken(request), request);
   if (s && s.uid && !faibleAdmin(s)) {
     const acc = await accGet(env, s.uid);
     if (!revoked(acc, s)) {
@@ -1660,7 +1683,7 @@ async function donneesRhFermees(request, env, cheminCMC) {
   if (!secret) return null;
   const refus = () => new Response('Connexion au domaine requise.', { status: 401,
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-porte': 'fiche', 'x-kdmc-donnees': 'rh' } });
-  const s = await ssoVerify(secret, ssoToken(request));
+  const s = await ssoVerify(secret, ssoToken(request), request);
   if (!s || !s.uid) return refus();
   const acc = await accGet(env, s.uid);
   if (revoked(acc, s)) return refus();
@@ -1854,7 +1877,7 @@ async function ficheLaVisite(request, url, env, host) {
        par l'en-tête `x-kdmc-sonde` et n'est ni fichée ni comptée. Quelqu'un qui le poserait à
        la main n'obtient rien de plus que de ne pas figurer dans un compteur de visites. */
     if (request.headers.get('x-kdmc-sonde')) return;
-    const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request));
+    const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request), request);
     if (s && s.uid) {
       const acc = await accGet(env, s.uid);
       if (revoked(acc, s)) return;                 // session révoquée : on ne fiche rien
@@ -1913,7 +1936,7 @@ async function handleLingua(request, url, env) {
        progression suit le compte KDMC sur tous les appareils. Les anciennes clés (empreinte nom+code)
        restent lisibles pour ne perdre personne. */
     const cleSession = async () => {
-      const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request));
+      const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request), request);
       if (!s || revoked(await accGet(env, s.uid), s)) return '';
       return 'u:' + s.uid.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80);
     };
@@ -2137,7 +2160,7 @@ async function handleLingua(request, url, env) {
          admin ne suffit pas, il faut une identité FORTE (Face ID prouvé). Un
          jeton auto-déclaré reste verified:false → refusé ici aussi. */
       /* Porte ADMIN : jamais par l'adresse (?t=), et « déconnecter partout » la ferme (audit complet 30.09). */
-      const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoTokenSansAdresse(request));
+      const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoTokenSansAdresse(request), request);
       if (!sess || !sess.verified || ADMIN_UIDS.indexOf(sess.uid) < 0 || revoked(await accGet(env, sess.uid), sess)) return JL({ ok: false, reason: 'admin_seulement' }, 403);
       const jours = [];
       const d0 = new Date();
@@ -2694,7 +2717,7 @@ export function reseauMasque(asn, vpn) { const a = Number(asn) || 0; return !!vp
 /* Qui est connecté ? (uid canonique, sans jamais créer de fiche) — pour classer un événement dans le fil de LA bonne personne. */
 async function personneDe(env, request) {
   try {
-    const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoToken(request));
+    const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoToken(request), request);
     if (!sess || !sess.uid) return null;
     return { uid: await canonFor(env, sess.uid, sess.name, { sansCreer: true }), nom: sess.name || '' };
   } catch { return null; }
@@ -2974,7 +2997,7 @@ async function handleSso(request, url, env) {
     if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
     const m = (request.headers.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
     const token = m ? m[1].trim() : '';
-    const s = token ? await ssoVerify(secret, token) : null;
+    const s = token ? await ssoVerify(secret, token, request) : null;
     if (!s) return J({ ok: false, reason: 'pass_invalide' }, undefined, 401);
     const acc = await accGet(env, s.uid);
     if (revoked(acc, s)) return J({ ok: false, reason: 'session_revoquee' }, undefined, 401);
@@ -2997,13 +3020,13 @@ async function handleSso(request, url, env) {
   if (path === '/__sso/prolonger' && request.method === 'POST') {
     if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
     const tok = ssoTokenSansAdresse(request);
-    const s = tok ? await ssoVerify(secret, tok) : null;
+    const s = tok ? await ssoVerify(secret, tok, request) : null;
     if (!s) return J({ ok: false, reason: 'pas_de_session' }, undefined, 401);
     if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session_revoquee' }, undefined, 401);
     if (s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0) return J({ ok: true, prolonge: false, raison: 'admin_face_id_quotidien' });
     const reste = (s.exp || 0) - Date.now();
     if (reste > 15 * 24 * 3600e3) return J({ ok: true, prolonge: false, reste_jours: Math.floor(reste / 864e5) });
-    const neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code);
+    const neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${neuf}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(neuf)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, prolonge: true, token: neuf }, cookie);
   }
@@ -3042,7 +3065,7 @@ async function handleSso(request, url, env) {
       const reste = (s.exp || 0) - Date.now();
       let neuf = null, cookieNeuf;
       if (!estAdmin && reste > 0 && reste < 15 * 24 * 3600e3) {
-        neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code);
+        neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request));
         cookieNeuf = `${SSO_COOKIE}=${neuf}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(neuf)}; Secure; HttpOnly; SameSite=Lax`;
       }
       const parEnTete = !!(request.headers.get('authorization') || request.headers.get('x-kdmc-sso'));
@@ -3074,14 +3097,14 @@ async function handleSso(request, url, env) {
   const RP_ORIGINS_AUTH = (env && env.KDMC_RP_ORIGINS) ? RP_ORIGINS
     : RP_ORIGINS.concat(Object.keys(ROUTES).map((h) => 'https://' + h).filter((o) => RP_ORIGINS.indexOf(o) < 0));
   if (path === '/__sso/webauthn/register/options' && request.method === 'POST') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session révoquée — reconnecte-toi' });
     const challenge = await makeChallenge(secret, 'reg');
     return J({ ok: true, challenge, rp: { id: RP_ID, name: 'KDMC APEX' }, user: { id: b64uEnc(new TextEncoder().encode(s.uid)), name: s.name || s.uid, displayName: s.name || s.uid }, pubKeyCredParams: [{ type: 'public-key', alg: -7 }] });
   }
   if (path === '/__sso/webauthn/register/verify' && request.method === 'POST') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session révoquée — reconnecte-toi' });
     let b = {}; try { b = await request.json(); } catch { /* ignore */ }
@@ -3117,7 +3140,7 @@ async function handleSso(request, url, env) {
     }
     /* Émet immédiatement une session FORTE (verified) — l'enrôlement prouve Face ID. */
     await enrich(env, request, s.uid, s.name, s.cgu);
-    const token = await ssoSign(secret, s.uid, s.name, s.cgu, true);
+    const token = await ssoSign(secret, s.uid, s.name, s.cgu, true, false, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, verified: true, token }, cookie);
   }
@@ -3153,7 +3176,7 @@ async function handleSso(request, url, env) {
     const acc = await accGet(env, uid);
     const name = (acc && acc.name) || uid;
     await enrich(env, request, uid, name, true);
-    const token = await ssoSign(secret, uid, name, true, true);
+    const token = await ssoSign(secret, uid, name, true, true, false, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, uid, name, verified: true, token }, cookie);
   }
@@ -3203,6 +3226,12 @@ async function handleSso(request, url, env) {
          Quelqu'un de déjà inscrit n'est jamais bloqué par ce contrôle. */
       if (!accCanon && !renseignementsComplets(name, cgu)) {
         return J({ ok: false, reason: 'renseignements_requis', message: 'Pour créer ton compte : prénom ET nom, et accepter les conditions.' }, undefined, 400);
+      }
+      /* CODE OBLIGATOIRE À LA CRÉATION (Kevin 8.10 : « code obligatoire pour tous dans la création, l'inscription ») : le portail l'envoyait
+         déjà, mais le DOMAINE ne l'exigeait pas — un script, une app qui « déclare » son utilisateur, créaient des comptes sans code, ouverts
+         sur leur seul nom (vécu : le compte de Laurence). Plus de compte neuf sans code. Coupe-circuit KDMC_CODE_OBLIGATOIRE=0 (tests). */
+      if (!accCanon && codeObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !CODE_VALIDE(typeof b.code === 'string' ? b.code : '')) {
+        return J({ ok: false, reason: 'code_requis_creation', message: 'Pour créer ton compte, choisis un code (6 caractères ou plus) : il te servira dans toutes les apps KDMC.' }, undefined, 400);
       }
       /* QUOTA — seulement pour une fiche NEUVE. Quelqu'un de déjà inscrit passe
          toujours, autant de fois qu'il veut : `accCanon` existe, on ne compte rien.
@@ -3256,14 +3285,31 @@ async function handleSso(request, url, env) {
           } else if (!accC || memeSession) {
             /* Nouveau compte, OU la personne elle-même (session déjà à elle, sur son appareil) :
                on enregistre son code au domaine. Un inconnu sur un appareil neuf ne peut PAS
-               poser le code d'un compte existant (il enfermerait le vrai propriétaire dehors). */
-            await credSet(env, cle, code); codeProuve = true; codePose = true;
+               poser le code d'un compte existant (il enfermerait le vrai propriétaire dehors).
+               Une sonde déclarée d'un centre de données n'écrit rien (pas de fiche → pas de code). */
+            if (!(request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0))) await credSet(env, cle, code);
+            codeProuve = true; codePose = true;
+          } else if (codeObligatoire(env)) {
+            /* COMPTE EXISTANT SANS CODE, appareil inconnu, un code proposé (8.10) : ni session, ni code posé en silence. La demande ATTEND
+               KEVIN (sa boîte : « Codes à valider », avec l'appareil, le lieu, le réseau). S'il accepte, ce code devient celui du compte et la
+               personne se connecte avec nom + code ; s'il refuse, rien ne change. Un inconnu ne peut plus ni entrer, ni s'approprier le compte. */
+            const rec2 = await credRec(code);
+            const cf = request.cf || {}, NET = ispInfo(cf);
+            await codeAttenteDeposer(env.CERCLE_DB, { uid: cle, nom: accC.name || name, rec: JSON.stringify(rec2), appareil: appareilLabel(request.headers.get('user-agent') || ''),
+              lieu: [cf.city, cf.country].filter(Boolean).join(', '), reseau: (NET.isp || '') + (cf.asn ? ' (AS' + cf.asn + ')' : '') + (NET.vpn ? ' · VPN/hébergeur' : ''), app: appDe(request.headers.get('host')) || 'portail' }).catch(() => false);
+            await audLog(env, { ev: 'code_attente', uid: cle, name: accC.name || name, app: appDe(request.headers.get('host')), device: appareilLabel(request.headers.get('user-agent') || ''), place: [cf.city, cf.country].filter(Boolean).join(', '), isp: NET.isp, asn: String(cf.asn || ''), detail: 'code proposé depuis un appareil inconnu — à valider' });
+            await notifyPush(env, '🔐 KDMC — code à valider', (accC.name || name) + ' propose un code depuis ' + appareilLabel(request.headers.get('user-agent') || '') + (cf.city ? ' · ' + cf.city : '') + ' — accepte ou refuse dans Mes messages.');
+            return J({ ok: false, reason: 'code_en_attente', message: 'Ce compte n\'avait pas encore de code. Ton code est transmis à l\'administrateur : dès qu\'il l\'accepte, tu te connectes avec ton nom et ce code.' }, undefined, 202);
           }
         } else if (rec && !memeSession) {
           /* Nom protégé par un code, et personne ne le prouve : on ne délivre plus la session de
              quelqu'un d'autre sur la foi de son nom. (Les apps qui déclarent leur utilisateur
              sans code restent fonctionnelles : leur appel est « jamais bloquant ».) */
           return J({ ok: false, reason: 'code_requis', message: 'Ce nom a un compte protégé par un code : connecte-toi avec ton nom et ton code.' }, undefined, 401);
+        } else if (!rec && accC && !memeSession && codeObligatoire(env)) {
+          /* COMPTE EXISTANT SANS CODE, sur un appareil inconnu, SANS code proposé (8.10) : plus jamais une session sur la foi du nom.
+             (C'est exactement la faille du compte de Laurence : un PC Windows chez un hébergeur suédois.) */
+          return J({ ok: false, reason: 'code_requis', message: 'Ce compte n\'a pas encore de code. Entre ton nom et choisis ton code : l\'administrateur le validera, puis tu te connecteras avec.' }, undefined, 401);
         }
       }
     }
@@ -3271,7 +3317,7 @@ async function handleSso(request, url, env) {
     /* La fiche retient qu'un code existe (`code_at`) : whoami peut alors le dire SANS lire `cred:` à chaque battement (lecture KV
        économisée sur le chemin chaud). Une seule écriture, la première fois que le code est prouvé. */
     if (codeProuve) { try { const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true })); if (a && !a.code_at) { a.code_at = Date.now(); await accPut(env, a, true); } } catch { /* fail-open */ } }
-    const token = await ssoSign(secret, uid, name, cgu, false, codeProuve);
+    const token = await ssoSign(secret, uid, name, cgu, false, codeProuve, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     /* token renvoyé dans le corps : le portail le met dans le lien de retour
        (#kdmc_sso=) pour les apps installées (où le cookie ne traverse pas). */
@@ -3303,12 +3349,22 @@ async function handleSso(request, url, env) {
     if (attente) return J({ ok: false, reason: 'trop_essais', attente, message: 'Trop d\'essais. Réessaie dans ' + Math.ceil(attente / 60) + ' min.' }, undefined, 429);
     const rec = await credGet(env, cle);
     const acc = await accGet(env, cle);
+    /* Compte existant SANS code (créé avant le 27.09, jamais rouvert) : nom + code sur un appareil inconnu → la demande attend Kevin (8.10). */
+    if (!rec && acc && codeObligatoire(env)) {
+      const rec2 = await credRec(code);
+      const cf = request.cf || {}, NET = ispInfo(cf);
+      await codeAttenteDeposer(env.CERCLE_DB, { uid: cle, nom: acc.name || name, rec: JSON.stringify(rec2), appareil: appareilLabel(request.headers.get('user-agent') || ''),
+        lieu: [cf.city, cf.country].filter(Boolean).join(', '), reseau: (NET.isp || '') + (cf.asn ? ' (AS' + cf.asn + ')' : '') + (NET.vpn ? ' · VPN/hébergeur' : ''), app: appDe(request.headers.get('host')) || 'portail' }).catch(() => false);
+      await audLog(env, { ev: 'code_attente', uid: cle, name: acc.name || name, app: appDe(request.headers.get('host')), device: appareilLabel(request.headers.get('user-agent') || ''), place: [cf.city, cf.country].filter(Boolean).join(', '), isp: NET.isp, asn: String(cf.asn || ''), detail: 'code proposé depuis un appareil inconnu — à valider' });
+      await notifyPush(env, '🔐 KDMC — code à valider', (acc.name || name) + ' propose un code depuis ' + appareilLabel(request.headers.get('user-agent') || '') + (cf.city ? ' · ' + cf.city : '') + ' — accepte ou refuse dans Mes messages.');
+      return J({ ok: false, reason: 'code_en_attente', message: 'Ce compte n\'avait pas encore de code. Ton code est transmis à l\'administrateur : dès qu\'il l\'accepte, tu te connectes avec ton nom et ce code.' }, undefined, 202);
+    }
     if (!rec || !acc || !(await credOk(rec, code))) { if (rec) await credEchec(env, cle); return J(NON, undefined, 401); }
     await credReussite(env, cle);
     const per = perimetre(acc, appDe(request.headers.get('host')));
     if (!per.ok) return J({ ok: false, reason: per.raison, hors_perimetre: true, message: 'Ton compte n\'est pas ouvert sur cette application.' });
     await enrich(env, request, acc.uid, acc.name || name, true, undefined, {});
-    const token = await ssoSign(secret, acc.uid, acc.name || name, true, false, true);
+    const token = await ssoSign(secret, acc.uid, acc.name || name, true, false, true, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, uid: acc.uid, name: acc.name || name, cgu: true, token, admin: false, code: true }, cookie);
   }
@@ -3330,13 +3386,13 @@ async function handleSso(request, url, env) {
   /* Les conditions : le texte (pour l'afficher au même endroit dans chaque app) et, avec une
      session, « déjà acceptées ? ». POST = j'accepte (une fois, pour tout le domaine). */
   if (path === '/__sso/cgu' && request.method === 'GET') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     const acc = s ? await accGet(env, s.uid) : null;
     return J({ ok: true, version: CGU_VERSION, texte: CGU_TEXTE, points: CGU_POINTS, acceptees: cguAcceptees(acc) || !!(s && s.cgu && !acc), session: !!s });
   }
   if (path === '/__sso/cgu' && request.method === 'POST') {
     if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     const acc = await accGet(env, s.uid);
     if (!acc || revoked(acc, s)) return J({ ok: false, reason: 'compte introuvable' });
@@ -3379,7 +3435,7 @@ async function handleSso(request, url, env) {
      anonyme) mais ICI, dans le dossier de la personne (KV ACCOUNTS), que seul l'admin lit
      (/__admin/accounts). Chacun ne lit et n'écrit QUE sa fiche : uid pris dans SON token. */
   if (path === '/__sso/fiche' && (request.method === 'GET' || request.method === 'POST')) {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     const acc = await accGet(env, s.uid);
     if (revoked(acc, s)) return J({ ok: false, reason: 'session_revoquee' });
@@ -3394,7 +3450,7 @@ async function handleSso(request, url, env) {
   }
   /* Mes appareils (passkeys Face ID) : liste. Session requise. */
   if (path === '/__sso/passkeys' && request.method === 'GET') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session_revoquee' });
     let list = [];
@@ -3407,7 +3463,7 @@ async function handleSso(request, url, env) {
      cette session) → un token faible volé ne peut pas retirer tes passkeys.
      Pas de lockout : sans passkey, le login retombe sur nom+code (fail-open). */
   if (path === '/__sso/passkeys/delete' && request.method === 'POST') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     if (!s.verified) return J({ ok: false, reason: 'Face ID requis pour gérer tes appareils' });
     if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session_revoquee' });
@@ -3422,7 +3478,7 @@ async function handleSso(request, url, env) {
   }
   /* Mon historique de connexions (le mien uniquement). Session requise. */
   if (path === '/__sso/me/history' && request.method === 'GET') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     /* SÉCU (Strix vuln-0001, 11/09) : un token FAIBLE se fabrique avec n'importe quel uid
        (/issue est auto-déclaré) → sans cette ligne, quiconque tapait « kdmc_admin » lisait
@@ -3443,7 +3499,7 @@ async function handleSso(request, url, env) {
   /* « Déconnecter mes AUTRES appareils » : je révoque mes sessions puis on émet un
      token frais pour CE device (il reste connecté) → les autres tombent. */
   if (path === '/__sso/me/revoke' && request.method === 'POST') {
-    const s = await ssoVerify(secret, ssoToken(request));
+    const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     /* SÉCU (Strix vuln-0001, 11/09) : avec un token FAIBLE forgé sur « kdmc_admin », n'importe
        qui posait revoked_at sur la fiche de Kevin → TOUTES ses sessions (Face ID comprises)
@@ -3454,7 +3510,7 @@ async function handleSso(request, url, env) {
     acc.revoked_at = Date.now();
     await accPut(env, acc, true);
     /* token frais pour CE device (iat >= revoked_at → survit ; les autres non) */
-    const token = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified);
+    const token = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, token, revoked_at: acc.revoked_at }, cookie);
   }
@@ -3743,6 +3799,7 @@ function listeApps() {
 }
 function outilsBoite(env) {
   return Object.assign({}, outilsCercle(env), {
+    journal: (e) => audLog(env, e),   /* « code accepté / refusé » dans le journal admin, comme toute décision */
     /* Jeton Firebase admin gardé 50 min dans l'instance (un jeton dure 1 h) : une lecture de la boîte ne refait pas l'échange. */
     fbToken: async () => {
       if (_fbJeton.v && Date.now() < _fbJeton.exp) return _fbJeton.v;
@@ -3757,7 +3814,7 @@ function outilsCercle(env) {
     qui: async (request) => {
       const secret = env && env.KDMC_SSO_SECRET; if (!secret) return null;
       if (await adminSession(request, env)) return { uid: 'kdmc_admin', nom: 'Admin KDMC', admin: true };
-      const s = await ssoVerify(secret, ssoTokenSansAdresse(request));
+      const s = await ssoVerify(secret, ssoTokenSansAdresse(request), request);
       if (!s || !s.uid) return null;
       const uid = await canonFor(env, s.uid, s.name, { sansCreer: true });
       const acc = await accGet(env, uid);
@@ -3797,7 +3854,7 @@ async function adminSession(request, env) {
      l'historique, les journaux et l'en-tête Referer. En-tête ou cookie seulement. */
   const ssoRaw = (request.headers.get('x-kdmc-sso') || '').replace(/^Bearer\s+/i, '').trim() || ssoTokenSansAdresse(request);
   if (ssoRaw) {
-    const s = await ssoVerify(secret, ssoRaw);
+    const s = await ssoVerify(secret, ssoRaw, request);
     /* « Déconnecter partout » doit AUSSI couper l'admin (contre-audit Bee 27.09, mesuré : un jeton de
        Kevin révoqué — whoami répondait « session_revoquee » — ouvrait encore Bee, /__demandes et
        /__admin/accounts). Même règle que whoami : un jeton émis avant la révocation ne vaut plus rien. */
@@ -3807,7 +3864,7 @@ async function adminSession(request, env) {
      session PROUVÉE de Kevin portée par le cookie du navigateur. */
   const ck = ssoCookie(request, SSO_COOKIE);
   if (ck && ck !== ssoRaw) {
-    const s2 = await ssoVerify(secret, ck);
+    const s2 = await ssoVerify(secret, ck, request);
     if (s2?.verified && ADMIN_UIDS.includes(s2.uid) && !(await adminRevoque(env, s2))) return { uid: s2.uid, name: s2.name, faceid: true };
   }
   return null;
@@ -3871,7 +3928,7 @@ async function handleAdmin(request, url, env) {
       const accA = await accGet(env, CANON_UID);
       const nomA = (accA && accA.name) || 'Kevin Desarzens';
       if (!estVerif) await enrich(env, request, CANON_UID, nomA, true, undefined, {});
-      token = await ssoSign(secret, CANON_UID, nomA, true, true);
+      token = await ssoSign(secret, CANON_UID, nomA, true, true, false, appareilDe(request));
       cookies.push(`${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`);
     }
     return J({ ok: true, grant, token, uid: CANON_UID, admin: true, verified: true }, cookies);
@@ -3922,7 +3979,7 @@ async function handleAdmin(request, url, env) {
     /* (27.09.2026) OU la session VÉRIFIÉE de l'admin (Face ID / code admin déjà prouvé au domaine) :
        Kevin ne retape pas son code sur la page « Qui se connecte ». Lecture seule, réponse lisible
        par admin.kd-mc.com seulement (CORS) → aucune surface CSRF utile. */
-    if (!same) { const s = await ssoVerify(secret, ssoTokenSansAdresse(request)); same = !!(s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !revoked(await accGet(env, s.uid), s)); }
+    if (!same) { const s = await ssoVerify(secret, ssoTokenSansAdresse(request), request); same = !!(s && s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0 && !revoked(await accGet(env, s.uid), s)); }
     if (!same) return jc({ ok: false, reason: 'unauthorized' }, 401);
     if (!env.ACCOUNTS) return jc({ ok: true, people: [], kv: false });
     const idx = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');

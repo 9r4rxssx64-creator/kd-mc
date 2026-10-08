@@ -13,7 +13,7 @@ const passFaible = (uid, n, secret = 'sec') => { const p = _b64uT(JSON.stringify
 import { createHash } from 'crypto';
 const store = new Map();
 const ACCOUNTS = { get: async (k) => (store.has(k) ? store.get(k) : null), put: async (k, v) => { store.set(k, v); }, delete: async (k) => { store.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS };
 const REQ = (o) => new Request('https://kd-mc.com' + o.path, { method: o.method || 'GET', headers: o.headers || {}, body: o.body });
 let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : (fail++, console.log('  ✗ ' + m)); };
 const issue = async (uid, name) => { const r = await mod.fetch(REQ({ path: '/__sso/issue', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid, name, cgu: true }) }), env); return (r.headers.get('set-cookie').match(/kdmc_sso=([^;]+)/) || [])[1]; };
@@ -44,7 +44,7 @@ ok(j.ok && j.admin === false, 'whoami client → admin:false');
 /* ---- Gate admin (hash du PIN présent) : le nom auto-asserté ne suffit pas ---- */
 const CODE = '424242';
 const HASH = createHash('sha256').update(CODE).digest('hex');
-const envH = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: HASH, ACCOUNTS };
+const envH = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, KDMC_ADMIN_PIN_SHA256: HASH, ACCOUNTS };
 r = await mod.fetch(REQ({ path: '/__admin/accounts', headers: { cookie: 'kdmc_sso=' + cKevin } }), envH); j = await r.json();
 ok(r.status === 403 && j.reason === 'need_admin_code', 'token nom-admin SANS code → 403 need_admin_code (trou fermé)');
 r = await mod.fetch(REQ({ path: '/__admin/login', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: '000000' }) }), envH); j = await r.json();
@@ -61,7 +61,7 @@ ok(r.status === 403, 'grant falsifié → 403');
 r = await mod.fetch(REQ({ path: '/__admin/accounts' }), envH);
 ok(r.status === 403, 'aucun grant → 403 (même avec hash configuré)');
 /* sans KV mais AVEC preuve admin valide → fail-open (0 fiche, pas d'erreur). */
-r = await mod.fetch(REQ({ path: '/__admin/accounts', headers: { 'x-kdmc-admin': grant } }), { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: HASH }); j = await r.json();
+r = await mod.fetch(REQ({ path: '/__admin/accounts', headers: { 'x-kdmc-admin': grant } }), { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, KDMC_ADMIN_PIN_SHA256: HASH }); j = await r.json();
 ok(j.ok === true && j.kv === false, 'sans KV → fail-open (0 fiche, pas d\'erreur)');
 /* sans secret du tout → fermé. */
 r = await mod.fetch(REQ({ path: '/__admin/accounts', headers: { 'x-kdmc-admin': grant } }), { ACCOUNTS });
@@ -70,7 +70,7 @@ ok(r.status === 403, 'sans secret → 403 (fermé)');
 /* ---- Rate-limit serveur du code admin (anti brute-force) ---- */
 const store2 = new Map();
 const ACC2 = { get: async (k) => (store2.has(k) ? store2.get(k) : null), put: async (k, v) => { store2.set(k, v); }, delete: async (k) => { store2.delete(k); } };
-const envR = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: HASH, ACCOUNTS: ACC2 };
+const envR = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, KDMC_ADMIN_PIN_SHA256: HASH, ACCOUNTS: ACC2 };
 const badLogin = () => mod.fetch(REQ({ path: '/__admin/login', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: '999999' }) }), envR);
 for (let i = 0; i < 5; i++) { j = await (await badLogin()).json(); }
 ok(j.reason === 'code_invalide', '5 codes faux → encore code_invalide (pas encore bloqué)');
@@ -79,7 +79,7 @@ ok(j.reason === 'rate_limited' && j.wait > 0, '6e tentative → rate_limited (lo
 j = await (await mod.fetch(REQ({ path: '/__admin/login', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: CODE }) }), envR)).json();
 ok(j.reason === 'rate_limited', 'lockout actif → même le BON code est bloqué');
 /* fail-open : sans KV, pas de blocage (jamais de lockout si KV KO) */
-const envNoKv = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: HASH };
+const envNoKv = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, KDMC_ADMIN_PIN_SHA256: HASH };
 for (let i = 0; i < 8; i++) { await mod.fetch(REQ({ path: '/__admin/login', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: '999999' }) }), envNoKv); }
 j = await (await mod.fetch(REQ({ path: '/__admin/login', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: CODE }) }), envNoKv)).json();
 ok(j.ok === true && typeof j.grant === 'string', 'sans KV → fail-open : bon code accepté même après 8 échecs (jamais de lockout)');
@@ -116,7 +116,7 @@ ok(j.log.some((e) => e.ev === 'revoke_sessions' && e.uid === 'marie-dupont'), 'r
 /* ---- Throttle écritures KV : un heartbeat rapproché n'écrit PAS (quota free) ---- */
 const store3 = new Map(); let puts3 = 0;
 const ACC3 = { get: async (k) => (store3.has(k) ? store3.get(k) : null), put: async (k, v) => { puts3++; store3.set(k, v); }, delete: async (k) => { store3.delete(k); } };
-const env3 = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: ACC3 };
+const env3 = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS: ACC3 };
 const r3 = await mod.fetch(REQ({ path: '/__sso/issue', method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: 'beat-user', name: 'Beat User', cgu: true }) }), env3);
 const tok3 = (r3.headers.get('set-cookie').match(/kdmc_sso=([^;]+)/) || [])[1];
 const putsAfterIssue = puts3;
@@ -142,7 +142,7 @@ try {
   const ISS = (env0, ua) => mod.fetch(REQ({ path: '/__sso/issue', method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, ua), body: JSON.stringify({ uid: 'push-user', name: 'Push User', cgu: true }) }), env0);
 
   /* NON configuré (pas de KDMC_PUSH_URL/TOKEN) : jamais d'appel push, même sur nouvel appareil */
-  const envNP = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: AK };
+  const envNP = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS: AK };
   await ISS(envNP, UA_A);                 /* création (isNew) → pas d'alerte */
   await ISS(envNP, UA_B);                 /* nouvel appareil, mais NON configuré */
   ok(pushCalls.length === 0, 'push NON configuré → aucun appel /send-all (repli = journal admin)');
@@ -150,7 +150,7 @@ try {
   /* Configuré : nouvel appareil sur fiche existante → 1 alerte push */
   const st2 = new Map();
   const AK2 = { get: async (k) => (st2.has(k) ? st2.get(k) : null), put: async (k, v) => { st2.set(k, v); }, delete: async (k) => { st2.delete(k); } };
-  const envP = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: AK2, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
+  const envP = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS: AK2, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
   pushCalls = [];
   await ISS(envP, UA_A);                   /* création → PAS d'alerte (isNew) */
   ok(pushCalls.length === 0, 'création de fiche → pas d\'alerte push (1er appareil)');
@@ -174,7 +174,7 @@ try {
   try {
     /* même pays, reconnexion rapide → PAS d'anomalie */
     const sa = new Map(); const AA = { get: async (k) => (sa.has(k) ? sa.get(k) : null), put: async (k, v) => { sa.set(k, v); }, delete: async (k) => { sa.delete(k); } };
-    const envA = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: AA, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
+    const envA = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS: AA, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
     await enrich(envA, mkReq('FR'), 'geo-a', 'Geo A', true);      /* isNew */
     sa.set('acc:geo-a', JSON.stringify(Object.assign(JSON.parse(sa.get('acc:geo-a')), { last_seen: Date.now() - 5 * 60e3 }))); /* rembobine 5 min */
     anomPush = [];
@@ -183,7 +183,7 @@ try {
 
     /* changement de pays < 60 min → anomalie flaggée + audit + push (jamais bloqué) */
     const sb = new Map(); const AB = { get: async (k) => (sb.has(k) ? sb.get(k) : null), put: async (k, v) => { sb.set(k, v); }, delete: async (k) => { sb.delete(k); } };
-    const envB = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: AB, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
+    const envB = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS: AB, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
     await enrich(envB, mkReq('FR'), 'geo-b', 'Geo B', true);
     sb.set('acc:geo-b', JSON.stringify(Object.assign(JSON.parse(sb.get('acc:geo-b')), { last_seen: Date.now() - 10 * 60e3 }))); /* 10 min avant */
     anomPush = [];
@@ -196,7 +196,7 @@ try {
 
     /* changement de pays MAIS > 60 min → déplacement légitime, pas d'anomalie */
     const sc = new Map(); const AC = { get: async (k) => (sc.has(k) ? sc.get(k) : null), put: async (k, v) => { sc.set(k, v); }, delete: async (k) => { sc.delete(k); } };
-    const envC = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: AC, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
+    const envC = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS: AC, KDMC_PUSH_URL: 'https://push.example.dev', KDMC_PUSH_TOKEN: 'tok' };
     await enrich(envC, mkReq('FR'), 'geo-c', 'Geo C', true);
     sc.set('acc:geo-c', JSON.stringify(Object.assign(JSON.parse(sc.get('acc:geo-c')), { last_seen: Date.now() - 3 * 60 * 60e3 }))); /* 3 h avant */
     anomPush = [];

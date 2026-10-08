@@ -197,6 +197,9 @@ db._s.prepare("DELETE FROM activite WHERE uid = 'andrea-casella'").run(); kv.del
 /* 6s. (Kevin 8.10 : « ça saute, rafraîchir ne fonctionne pas ») : la page ne redessine que si l'empreinte change, garde le défilement, borne la lecture, et ↻ répond */
 { const U2 = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
   ok(/function empreinte\(/.test(U2) && /if \(e !== dessine \|\| manuel\) dessiner\(true\)/.test(U2) && /AbortController/.test(U2) && /rafraichir\(true\)/.test(U2) && /classList\.add\('tourne'\)/.test(U2) && /posFen = r\.scrollTop/.test(U2) && /actif\.tagName === 'TEXTAREA'/.test(U2), '6s. ↻ : redessin seulement si l\'empreinte change (sinon le pied seul), défilement gardé, lecture bornée 15 s, bouton qui tourne, jamais sous une réponse en cours'); }
+/* 6t. (Kevin 8.10, code obligatoire) la boîte montre « 🔐 Codes à valider » avec ✅ Accepter / ✖ Refuser → /admin/code-valider ; la section est cachée sans demande ; comptée dans le bandeau */
+{ const U3 = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
+  ok(/Codes à valider/.test(U3) && /ecrire\('code-valider', \{ uid: c\.uid, accepter: accepter \}\)/.test(U3) && /if \(!L\.length\) \{ z\.hidden = true; return z; \}/.test(U3) && /\(D\.codes \|\| \[\]\)\.length/.test(U3) && /window\.confirm\('Refuser ce code/.test(U3), '6t. « Codes à valider » : accepter / refuser (confirmation), caché sans demande, compté dans le bandeau'); }
 /* 6q. « sécurité +++ » (Kevin 8.10) : la carte d'une personne porte « Déconnecter ce compte partout » → /__admin/revoke (porte admin existante), jamais pour Kevin lui-même */
 const Ui = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
 ok(/Déconnecter ce compte partout/.test(Ui) && /fetch\('\/__admin\/revoke', \{ method: 'POST', credentials: 'include'/.test(Ui) && /uidP\[1\] !== 'kdmc_admin' && uidP\[1\] !== 'kevin-desarzens'/.test(Ui) && /window\.confirm\(/.test(Ui), '6q. la boîte propose « Déconnecter ce compte partout » (confirmation, porte /__admin/revoke, jamais sur le compte de Kevin)');
@@ -258,7 +261,7 @@ const tI = await rI.text();
 ok(tI.includes(BOUTON_TAG) && tI.indexOf(BOUTON_TAG) < tI.toLowerCase().indexOf('</body>') && !rI.headers.get('content-length'), '12a. le bouton est ajouté avant </body> (et la longueur périmée retirée)');
 const vraiFetch = globalThis.fetch;
 globalThis.fetch = async (u) => { const t = new URL(String(u && u.url || u)).pathname; return t.endsWith('.js') ? new Response('console.log(1)', { status: 200, headers: { 'content-type': 'text/javascript' } }) : t.endsWith('.json') ? new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }) : new Response(page, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }); };
-const envR = { KDMC_SSO_SECRET: 's', ACCOUNTS: env.ACCOUNTS, ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
+const envR = { KDMC_SSO_SECRET: 's', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */, ACCOUNTS: env.ACCOUNTS, ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
 /* Depuis le 3.10 (porte totale) une page n'est servie qu'à un compte ; la sonde du domaine (en-tête + centre de données, réseau 8075 = GitHub Actions) passe, comme en production. */
 const servir = async (hote, chemin) => { const p = []; const rq = new Request('https://' + hote + chemin, { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'x-kdmc-sonde': 't' } }); Object.defineProperty(rq, 'cf', { value: { asn: 8075 } }); const r = await mod.fetch(rq, envR, { waitUntil: (x) => p.push(x) }); await Promise.all(p); return { r, t: await r.text() }; };
 const hotes = [...readFileSync(new URL('./worker.js', import.meta.url), 'utf8').match(/const ROUTES\s*=\s*\{[\s\S]*?\n\};/)[0].matchAll(/'([a-z0-9.-]+\.kd-mc\.com)':/g)].map((x) => x[1]).filter((h) => h !== 'admin.kd-mc.com');
@@ -296,7 +299,7 @@ fbData.cmc_ia_log = null; fbData.cmc_audit = null;
 
 /* 9. câblage : le routeur et le portail utilisent vraiment la boîte (une fonction que personne n'appelle ne protège rien) */
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
-ok(/url\.pathname\.startsWith\('\/__boite\/'\)\) return handleBoite\(request, url, env, outilsBoite\(env\)\)/.test(W) && /import \{ handleBoite \} from '\.\/boite\.js'/.test(W), '9a. le routeur sert /__boite/ avec les outils de l\'admin prouvé');
+ok(/url\.pathname\.startsWith\('\/__boite\/'\)\) return handleBoite\(request, url, env, outilsBoite\(env\)\)/.test(W) && /import \{ handleBoite[^}]*\} from '\.\/boite\.js'/.test(W), '9a. le routeur sert /__boite/ avec les outils de l\'admin prouvé');
 ok(/fbToken: async/.test(W) && /mintShopsAdminIdToken\(env\)/.test(W), '9b. le routeur donne à la boîte un jeton Firebase admin (gardé 50 min)');
 
 console.log(`\n${pass} OK · ${fail} échec(s)`);

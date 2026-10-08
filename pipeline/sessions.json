@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-07",
+  "maj": "2026-10-08 15:30",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -4247,6 +4247,15 @@
       "sujet": "Bee est maintenant posée sur CHAQUE page HTML de CHAQUE app (script /__javis/partout.js, Kevin seul) + actions avec bouton ✅ ; Lingua passe à v2.136.0 ; test:bascule suit les imports",
       "corps": "1) Le routeur pose <script src=/__javis/partout.js> sur toute page HTML (comme le bouton ✉️). Il ne fait rien pour un visiteur ordinaire ; pour Kevin seul, un cadre de même origine charge Bee. Pour retirer Bee d'UNE page : <meta name=\"kdmc-bee\" content=\"off\">. Coupe-circuit global : BEE_PARTOUT=0. Si tu ajoutes une route /__javis/* ou une action de Bee : liste blanche (services/kdmc-router/bee-agir.js, PORTES_BEE) + test, jamais l'inverse ; gardes test:bee-partout, test:bee-agir, test:bee-partout-navigateur. 2) Lingua : v2.136.0 (2.134 = appel app fermée, 2.135 = horaires d'appel, déjà dans main) — ne redescends pas ; lingua/perso3d.js et lingua/marionnette.js sont GÉNÉRÉS (npm run build:3d / sync:javis), ne les édite pas. 3) tests/verify-bascule-une-ligne.mjs lit maintenant les imports du routeur jusqu'au bout (boite-bouton.js, bee-agir.js…) : il était rouge sur main pour tout le monde. 4) test:ci contenait deux étapes fantômes (npm run services/kdmc-router/boite.test.mjs, npm run tests/verify-boite-portail.mjs) déjà couvertes par test:boite et test:boite-portail : retirées ; n'ajoute jamais un script nommé comme un chemin (test:hygiene-depot le voit). Vérifie ton travail avec ces gardes avant de fusionner.",
       "ts": "2026-10-04 01:12",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m205-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "sujet": "Import PDF : les absents des encadrés de la page 1 sont créés (M/CP/FORMATION/CSS), novembre 2026 en ligne, robot de vérif déclaré (x-kdmc-verif) — et le garde docs couvre maintenant TOUS les documents (R1→R6)",
+      "corps": "1) Parseur (index.html _cmcApplyGeometricParse + tools/departs) : une personne écrite seulement dans un encadré d'absence de la page 1 est CRÉÉE dans son tableau (maladie/congés/formation/déplacement), jamais une cellule inventée ; « 0 M » se lit (le nombre d'en-tête n'est pas un compte) ; code CSS = congé sans solde → congés. Ne régresse pas : test:import-absents (11 d'octobre, sabotage) + audit:noms-manquants (0 manquant jul→nov, nom par nom). Toute modif du parseur se juge par la régénération complète (_gen-boards + _gen-seed, TARGETS identiques) et le diff des personnes : diff ADDITIF seulement. 2) Novembre 2026 : tests/fixtures/novembre-2026.pdf dans les deux TARGETS, boards-gen.js + planning-seed.js régénérés (196 tableaux, 5 mois) ; si tu régénères, pars de main (parser = APP_VER). 3) Robot verif-live-equipes : en-tête x-kdmc-verif: 1 → le routeur journalise admin_login_verif et n'enrichit pas la fiche de Kevin (test:verif-login). Tout robot qui se connecte au vrai domaine se déclare. 4) Kevin 8.10 : « Met toujours à jour tous les documents importants, leçons, sans que je te le répète sans cesse. Pareil pour toutes les branches. » → test:docs-frais couvre maintenant R1 code⇒MEMO_RESUME · R2 fichier créé⇒KEVIN_INVENTORY · R3 NOUVEAU TEST⇒LESSONS (un garde = une leçon) · R4 version.txt / tools/departs/version.txt bougé ⇒ la version ÉCRITE dans MEMO_RESUME · R5 tests/fixtures/*.pdf ajouté ⇒ IMPORTS-KEVIN · R6 services/kdmc-router/worker.js modifié ⇒ ETAT-DU-MOMENT. Preuve test:docs-frais-garde (21 cas). Vos branches rougiront si un document manque : c'est voulu, écrivez-le dans le même commit (leçon #457).",
+      "ts": "2026-10-08 15:30",
       "etat": "ouvert"
     }
   ]

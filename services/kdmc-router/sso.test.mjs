@@ -1,7 +1,7 @@
 /* Test régression SSO transverse kd-mc.com (router). Lance: node sso.test.mjs
    Prouve la logique HMAC issue→whoami sans navigateur (sandbox-friendly). */
 import mod from './worker.js';
-const env = { KDMC_SSO_SECRET: 'test-secret-123' };
+const env = { KDMC_SSO_SECRET: 'test-secret-123', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */ };
 const H = (o) => new Request('https://apex-ai.kd-mc.com' + o.path, { method: o.method || 'GET', headers: o.headers || {}, body: o.body });
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m); } };
@@ -27,7 +27,7 @@ ok(j.ok === true && j.uid === 'marie_test' && j.name === 'Marie Testeur' && j.cg
 r = await mod.fetch(H({ path: '/__sso/whoami', headers: { cookie: 'kdmc_sso=' + token.slice(0, -2) + 'XY' } }), env); j = await r.json();
 ok(j.ok === false, 'token falsifié → rejeté (HMAC)');
 
-r = await mod.fetch(H({ path: '/__sso/whoami', headers: { cookie: 'kdmc_sso=' + token } }), { KDMC_SSO_SECRET: 'autre' }); j = await r.json();
+r = await mod.fetch(H({ path: '/__sso/whoami', headers: { cookie: 'kdmc_sso=' + token } }), { KDMC_SSO_SECRET: 'autre', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */ }); j = await r.json();
 ok(j.ok === false, 'mauvais secret → rejeté (forge impossible)');
 
 // Canal Bearer (pass signé) — cross-PWA iOS : whoami via Authorization header SANS cookie

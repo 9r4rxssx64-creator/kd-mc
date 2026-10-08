@@ -573,6 +573,7 @@
     if (code.length < 6) { err.textContent = 'Ton code (6 caractères minimum).'; return; }
     var b = document.getElementById('l-go'); b.disabled = true; b.textContent = '…';
     window.kdmcSSO.login(nom, code).then(function (j) {
+      /* 8.10 : compte sans code, appareil inconnu → le code proposé attend l'administrateur (le message vient du domaine) */
       if (!j || !j.ok) { err.textContent = (j && j.message) || 'Nom ou code incorrect.'; b.disabled = false; b.textContent = 'Me connecter'; return; }
       var salt = rndSalt();
       return hashCode(code, salt).then(function (h) {
@@ -645,6 +646,9 @@
           err.textContent = j.reason === 'trop_essais' ? j.message : 'Ton code a été changé sur un autre appareil : utilise ce code-là.';
           btn.disabled = false; btn.textContent = 'Se connecter'; return;
         }
+        /* 8.10 : compte sans code au domaine, appareil que le domaine ne connaît pas → le code attend l'administrateur (jamais une session sur un nom) */
+        if (j && !j.ok && j.reason === 'code_en_attente') { err.textContent = j.message || 'Ton code est transmis à l\'administrateur : dès qu\'il l\'accepte, reconnecte-toi avec ton nom et ce code.'; btn.disabled = false; btn.textContent = 'Se connecter'; return; }
+        if (j && !j.ok && j.reason === 'code_requis') { err.textContent = j.message || 'Ce compte a un code : entre-le.'; btn.disabled = false; btn.textContent = 'Se connecter'; return; }
         _postLogin(acc);
       });
     }).catch(function () { err.textContent = 'Erreur, réessaie.'; btn.disabled = false; btn.textContent = 'Se connecter'; });

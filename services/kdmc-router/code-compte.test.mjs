@@ -44,10 +44,12 @@ ok(r.st === 401 && r.j.reason === 'code_incorrect', '4. avec un mauvais code →
 /* 4b-4d. (8.10, « sécurité +++ ») le domaine DIT si un compte a un code — et le portail propose d'en choisir un */
 ok(j1.code_pose === true, '4b. un compte protégé : la réponse dit code_pose:true', JSON.stringify(j1));
 { const p = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true });
-  ok(p.j.ok === true && p.j.code_pose === false && p.j.code === false, '4c. un compte ouvert sur son seul nom (sans code) : code_pose:false (le portail affichera « Protège ton compte »)', JSON.stringify(p.j));
-  const wp = await whoami('kd-mc.com', p.j.token);
-  ok(wp.ok === true && wp.code_pose === false, '4d. whoami le dit aussi (sans lire cred: — la fiche porte code_at)', JSON.stringify(wp));
-  const p2 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + p.j.token });
+  ok(p.st === 400 && p.j.reason === 'code_requis_creation' && !kv.has('acc:paul-martin'), '4c. CODE OBLIGATOIRE (Kevin 8.10) : créer un compte sans code → refusé, aucune fiche (le portail envoie toujours le code ; un script ne crée plus rien)', JSON.stringify(p.j));
+  /* un compte d'AVANT le 27.09 (fiche sans code), avec une session encore valable sur SON appareil (cookie) */
+  kv.set('acc:paul-martin', JSON.stringify({ uid: 'paul-martin', name: 'Paul Martin' })); kv.set('nm:paul martin', 'paul-martin');
+  const wp = await whoami('kd-mc.com', signe('paul-martin', 0));
+  ok(wp.ok === true && wp.code_pose === false, '4d. whoami dit code_pose:false pour un compte sans code (sans lire cred: — la fiche porte code_at) → le portail affiche « Protège ton compte »', JSON.stringify(wp));
+  const p2 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 0) });
   const wp2 = await whoami('kd-mc.com', p2.j.token);
   ok(p2.j.ok === true && p2.j.code === true && p2.j.code_pose === true && wp2.code_pose === true, '4e. depuis SA session, Paul pose son code → code_pose:true partout ; un inconnu ne le pourrait pas (contrôle 11)', JSON.stringify([p2.j, wp2]));
   const wm = await whoami('kd-mc.com', tokMarie);
@@ -88,8 +90,10 @@ ok(r.st === 429 && r.j.reason === 'trop_essais', '9. après 5 mauvais codes, mê
 kv.set('acc:paul-ancien', JSON.stringify({ uid: 'paul-ancien', name: 'Paul Ancien' }));
 kv.set('nm:paul ancien', 'paul-ancien');
 r = await issue({ uid: 'paul-ancien', name: 'Paul Ancien', cgu: true, code: '222222' });
-ok(r.j.ok === true && r.j.code === false && !kv.has('cred:paul-ancien'),
-  '11. compte ancien, appareil INCONNU → session comme avant, mais le code n\'est PAS enregistré (sinon un inconnu enfermerait le vrai propriétaire dehors)', JSON.stringify(r.j).slice(0, 100));
+ok(r.st === 202 && r.j.ok === false && r.j.reason === 'code_en_attente' && !r.j.token && !kv.has('cred:paul-ancien'),
+  '11. compte ancien, appareil INCONNU, un code proposé → NI session NI code posé : la demande attend Kevin (8.10 ; avant : session sur la foi du nom = la faille Laurence)', JSON.stringify(r.j).slice(0, 140));
+{ const s = await issue({ uid: 'paul-ancien', name: 'Paul Ancien', cgu: true });
+  ok(s.st === 401 && s.j.reason === 'code_requis' && !s.j.token, '11b. compte ancien, appareil inconnu, SANS code → refusé (plus jamais une session sur un nom)', JSON.stringify(s.j).slice(0, 120)); }
 r = await issue({ uid: 'paul-ancien', name: 'Paul Ancien', cgu: true, code: '222222' }, { authorization: 'Bearer ' + signe('paul-ancien', 0) });
 ok(r.j.code === true && kv.has('cred:paul-ancien'), '12. le même, depuis SON appareil (sa session) → son code est enregistré au domaine (migration douce)');
 

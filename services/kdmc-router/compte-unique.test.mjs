@@ -18,7 +18,7 @@ function mkEnv() {
   return {
     store,
     env: {
-      KDMC_SSO_SECRET: 'sec',
+      KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-compte.test.mjs */,
       KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'),
       ACCOUNTS: {
         get: async (k) => (store.has(k) ? store.get(k) : null),

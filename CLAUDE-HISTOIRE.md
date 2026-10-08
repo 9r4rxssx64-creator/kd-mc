@@ -1918,6 +1918,42 @@ le **MÊME commit** que le code.
 **Test mental (mis à jour)** : *« Si Kevin ouvre MEMO_RESUME et KEVIN_INVENTORY maintenant,
 y voit-il ce que je viens de livrer — sans me l'avoir demandé ? »*
 
+### 8. RENFORCEMENT Kevin 2026-10-08 — « tous les documents importants, leçons » (LE GARDE COUVRE LA RÈGLE ENTIÈRE)
+
+> **« Met toujours à jour tous les documents importants, leçons, sans que je te le répète sans cesse. Pareil
+> pour toutes les branches, conversations, projets etc. Pourquoi, si c'est déjà la règle, tu ne l'appliques
+> pas toujours ? Suis bien tes méthodes de travail, tes documents, toutes tes règles, tes leçons, toujours
+> sans que je te le répète. »** — Kevin 2026-10-08
+
+**Constat honnête (3ᵉ rappel : 16.05, 12.08, 8.10)** : le garde du §7 ne regardait que `MEMO_RESUME.md` et
+`KEVIN_INVENTORY.md`. Une session entière (11 personnes retrouvées dans l'import, novembre 2026 dans les deux
+apps, journal admin propre, 3 nouveaux gardes, v9.951→v9.953 / light v1.78→v1.80, vérification réelle) est passée
+**verte** alors que `LESSONS.md`, `NOTES_USER.md`, `ETAT-DU-MOMENT.md`, `IMPORTS-KEVIN.md` et
+`pipeline/sessions.json` n'avaient pas bougé — j'avais « noté en mémoire compacte » et cru que ça suffisait.
+**Un garde vert qui ne couvre pas la règle rassure à tort** (leçon #457).
+
+**Correctif = le garde couvre chaque document, règle par règle** (`tools/audit/docs-fraicheur.cjs`) :
+
+| Règle | Si… | …alors ce document a bougé dans le même commit |
+|---|---|---|
+| R1 | du code a changé | `MEMO_RESUME.md` |
+| R2 | des fichiers de code ont été créés | `KEVIN_INVENTORY.md` (liens cliquables) |
+| R3 | un NOUVEAU test / garde a été créé | `LESSONS.md` (un garde = une leçon qui dit pourquoi) |
+| R4 | `version.txt` ou `tools/departs/version.txt` a bougé | la nouvelle version est **écrite** dans `MEMO_RESUME.md` |
+| R5 | un planning `tests/fixtures/*.pdf` a été ajouté | `IMPORTS-KEVIN.md` (règle du 8.10 : chaque import noté) |
+| R6 | `services/kdmc-router/worker.js` a changé | `ETAT-DU-MOMENT.md` (la vérité du jour) |
+
+- **Prouvé discriminant** : `npm run test:docs-frais-garde` (`tests/docs-fraicheur.test.mjs`, dépôt git jetable,
+  21 cas : chaque règle rougit sans son document, verdit avec, et le committé compte autant que l'en-cours).
+- Toujours **fail-open** : rien qui déclenche une règle → vert ; jamais de faux rouge sur une branche purement docs.
+- Ce qui reste à ma charge sans garde mécanique (et que je fais quand même, à chaque session) : prévenir les autres
+  branches (`pipeline/sessions.json`), une nouvelle règle de Kevin dans `CLAUDE-HISTOIRE.md` + `npm run claude-md:index`,
+  une info métier dans `NOTES_USER.md`, une action qui attend Kevin dans `KEVIN_ACTIONS_TODO.md`.
+
+**Test mental (8.10.2026)** : *« Si Kevin ouvre LESSONS, NOTES_USER, ETAT-DU-MOMENT, IMPORTS-KEVIN et MEMO_RESUME
+maintenant, y voit-il ce que je viens de livrer et ce que j'ai appris — sans me l'avoir demandé ? Et si je me trompe,
+quel garde rougit ? »*
+
 ---
 
 ## 🔑 RÈGLE ABSOLUE — NOMS SECRETS GITHUB DOIVENT MATCHER EXACTEMENT (Kevin 2026-05-16)
@@ -11801,6 +11837,28 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 - **Gardes** : `npm run test:budget-requetes` (décision pure, chaque robot de la liste porte l'étape ET conditionne ses coups), `npm run
   test:cache-fichiers` (politique + routeur + sabotage `public`), `npm run test:mesure-requetes` (sous-requêtes à part, part robots/personnes),
   `npm run test:portail-versions` (une version partout dans kdmc-home, sabotages : script en retard, sw.js divergent).
+
+## 🔐 RÈGLE ABSOLUE — CODE OBLIGATOIRE POUR TOUS : PERSONNE N'ENTRE SANS COMPTE + CODE, PERSONNE NE PREND LE COMPTE D'UN AUTRE (Kevin 2026-10-08, ABSOLUE)
+
+> **« Ajoute code obligatoire pour tous dans la création, l'inscription. La connexion inconnue sur le compte de Laurence est un exemple qui ne doit plus jamais arriver. Trouve des solutions. Personne ne doit pouvoir ouvrir ou se connecter sans compte et impossible de pirater un autre compte. Va plus loin. »**
+
+- **Ce qui est arrivé (journal brut, 8.10)** : le compte de Laurence n'avait pas de code au domaine ; le 7.10 à 04h30 UTC un PC Windows · Chrome 120
+  chez un hébergeur suédois (AS30893) a obtenu des sessions à son nom, **par le seul nom** (`/__sso/issue` auto-déclaré). Les apps « déclarent »
+  leur utilisateur sans code ; seul le portail envoyait un code, et le domaine ne l'exigeait pas.
+- **1. Code obligatoire à la création** (`/__sso/issue`, `code_requis_creation`) : plus aucun compte neuf sans code (6 caractères ou plus) —
+  script, app ou portail. Exception : `ci_smoke` (robot de déploiement, jamais de fiche). Coupe-circuit `KDMC_CODE_OBLIGATOIRE=0` (tests seuls).
+- **2. Compte existant sans code** (d'avant le 27.09) : **le nom seul ne l'ouvre plus** (`code_requis`). Un code proposé depuis un appareil
+  inconnu n'ouvre rien et ne se pose pas en silence : il **attend Kevin** (D1 `code_attente` : appareil, lieu, réseau, empreinte PBKDF2 du
+  code), notification push, journal `code_attente`. Dans « Mes messages », **🔐 Codes à valider** : ✅ Accepter (le code devient celui du
+  compte, `cred:<uid>`, fiche `code_at`) / ✖ Refuser. La personne sur SON appareil (session encore valable) pose son code sans Kevin.
+- **3. Pass lié à la famille d'appareil** (`d` dans le pass : iphone / ipad / android / windows / mac / linux) : un pass émis sur un iPhone
+  présenté depuis un PC Windows (lien volé, pass copié) **ne vaut rien** — porte, whoami, admin. Une mise à jour d'iOS, l'app posée sur
+  l'écran d'accueil, Chrome sur iPhone = même famille. Un pass d'avant le 8.10 (sans `d`) reste accepté jusqu'à son renouvellement.
+- **4. Ce qui existait déjà et reste** : porte totale (aucune page, aucun fichier sans compte), « Déconnecter ce compte partout », alerte
+  « nouvel appareil » avec réseau et AS, essais de code limités (`credVerrou`), Kevin = Face ID ou code admin seulement.
+- **Gardes** : `npm run test:code-attente` (les 6 points ci-dessus avec le vrai routeur + sabotage coupe-circuit), `npm run test:code-compte`
+  (création sans code refusée, code posé depuis sa session, compte ancien → attente). Inventaire : `coffre-comptes-inventaire` nomme les
+  comptes sans code (à qui dire « reconnecte-toi et choisis ton code »).
 
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 

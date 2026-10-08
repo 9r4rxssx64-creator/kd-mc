@@ -34,7 +34,7 @@ function faireEnv(fiches) {
   const kv = new Map();
   for (const [uid, acc] of Object.entries(fiches || {})) kv.set('acc:' + uid, JSON.stringify(acc));
   return {
-    KDMC_SSO_SECRET: 'secret-de-test-perimetre',
+    KDMC_SSO_SECRET: 'secret-de-test-perimetre', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-attente.test.mjs */,
     ACCOUNTS: {
       get: async (k, t) => (t === 'arrayBuffer' ? null : (kv.has(k) ? kv.get(k) : null)),
       put: async (k, v) => { kv.set(k, v); },

@@ -157,7 +157,7 @@ try {
      #kdmc_sso=<token> (comme le ferait le retour depuis le domaine). */
   const ctx3 = await browser.newContext();
   page = await ctx3.newPage();
-  const issued = await page.request.post(ORIGIN + '/__sso/issue', { data: { uid: 'marie-curie', name: 'Marie Curie', cgu: true } });
+  const issued = await page.request.post(ORIGIN + '/__sso/issue', { data: { uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159' } /* code obligatoire à la création (8.10) */ });
   const ij = await issued.json();
   ok(ij.ok && typeof ij.token === 'string', 'Worker : /__sso/issue renvoie le token signé dans le corps');
   await page.goto(ORIGIN + '/app.html#kdmc_sso=' + encodeURIComponent(ij.token));

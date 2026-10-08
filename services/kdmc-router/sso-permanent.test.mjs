@@ -12,7 +12,7 @@ import { createHash } from 'node:crypto';
 import mod from './worker.js';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m + (d ? ' → ' + d : '')); } };
 const kv = new Map(); let ecritures = 0;
-const env = { KDMC_SSO_SECRET: 's', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'),
+const env = { KDMC_SSO_SECRET: 's', KDMC_CODE_OBLIGATOIRE: '0' /* ce test crée des comptes par le nom ; le code obligatoire est prouvé par code-attente.test.mjs */, KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'),
   ACCOUNTS: { get: async (k) => kv.get(k) ?? null, put: async (k, v) => { ecritures++; kv.set(k, v); }, delete: async () => {} } };
 const ctx = { waitUntil() {} };
 const vrai = Date.now;

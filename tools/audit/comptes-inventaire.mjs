@@ -31,9 +31,14 @@ export const ROBOT = /(^|[\s_:-])(ci[\s_-]?smoke|smoke|audit|sonde|probe|robot|e
 const TEST_UID = /^(probe|bearer)\d{6,}$|^(marie-curie|alice-martin)$/;   /* 8.10 : les uids des tests SSO sont des robots, quel que soit leur nombre de sessions (vécu : ma sonde en avait fait 4) */
 /* 8.10 : « Marie Curie » et « Alice Martin » sont les identités des tests SSO (tools/kdmc-sso-e2e, kdmc-multiapp-e2e) — une fiche à ces
    noms avec une seule session est un robot (ou une sonde lancée depuis l'agent, vécu le 8.10 : « Marie Curie s'est connectée » chez Kevin). */
-const TEST_NOM = new Set(['bearer', 'tester', 'simple', 'marie curie', 'alice martin']);
+const TEST_NOM = new Set(['bearer', 'tester', 'simple', 'marie curie', 'alice martin',
+  /* 8.10 (inventaire au coffre) : les fiches laissées par l'audit de sécurité Strix du 10-11.09 sur apex-chat — des noms d'attaque, pas des personnes */
+  'cors user', 'csrf user', 'mitm user', 'plaintext user', 'scan user', 'text user', 'independent user', 'browser prefill', 'simple csrf']);
+/* un nom qui contient du code (injection, commande shell, balise) n'est jamais une personne */
+const NOM_ATTAQUE = /[<>`$(){}]|onload|uname|script/i;
 export function estRobot(a) {
-  return ROBOT.test(String(a.uid || '')) || ROBOT.test(normName(a.name)) || TEST_UID.test(String(a.uid || '')) || (TEST_NOM.has(normName(a.name)) && (a.hits || 0) <= 1);
+  return ROBOT.test(String(a.uid || '')) || ROBOT.test(normName(a.name)) || TEST_UID.test(String(a.uid || '')) || (TEST_NOM.has(normName(a.name)) && (a.hits || 0) <= 1)
+    || NOM_ATTAQUE.test(String(a.name || '')) || NOM_ATTAQUE.test(String(a.uid || ''));
 }
 
 /* Pure : liste de fiches → bilan. */
@@ -85,6 +90,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const idxR = await cf(`${base}/values/idx:uids`, T);
   const idx = idxR.ok ? JSON.parse(await idxR.text()) : [];
   for (const u of idx) cles.add(u);
+  /* 8.10 (Kevin : « code obligatoire pour tous ») : qui a un code au domaine ? On liste les clés `cred:` (jamais leur contenu). */
+  const avecCode = new Set();
+  { let cur = ''; for (let i = 0; i < 20; i++) {
+    const r = await cf(`${base}/keys?prefix=cred:&limit=1000${cur ? '&cursor=' + encodeURIComponent(cur) : ''}`, T);
+    const j = await r.json(); if (!j.success) break;
+    for (const k of j.result) avecCode.add(k.name.slice(5));
+    cur = j.result_info && j.result_info.cursor; if (!cur) break; } }
   /* 2. Les fiches, 8 à la fois. */
   const uids = [...cles];
   const fiches = [];
@@ -112,6 +124,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const reste = fiches.filter((f) => f && f.uid && !f.merged_into && !estKevin(f) && !estRobot(f) && !b.sansNomComplet.includes(f));
   const stat = { total: reste.length, unefois: reste.filter((a) => (a.hits || 0) <= 1).length, portee_app: reste.filter((a) => a.portee === 'app').length, bloques: reste.filter((a) => Array.isArray(a.bloque) && a.bloque.length).length, revoques: reste.filter((a) => a.revoked_at).length };
   lignes.push(`Autres personnes (noms non affichés) : ${stat.total} · une seule session ${stat.unefois} · portée restreinte (une app) ${stat.portee_app} · bloquées quelque part ${stat.bloques} · sessions révoquées ${stat.revoques}`);
+  /* Comptes SANS code au domaine : depuis le 8.10 ils ne s'ouvrent plus sur leur nom — leur prochain code (depuis un appareil inconnu) attend Kevin.
+     Nommés (coffre privé) pour que Kevin sache à qui dire « reconnecte-toi et choisis ton code ». */
+  const sansCode = fiches.filter((f) => f && f.uid && !f.merged_into && !estRobot(f) && !avecCode.has(f.uid));
+  lignes.push(`COMPTES SANS CODE AU DOMAINE (ne s'ouvrent plus sur leur nom depuis le 8.10) — ${sansCode.length} sur ${b.actives} :`);
+  for (const a of sansCode) lignes.push('  · ' + resume(a) + ` · ${a.hits || 0} session(s)` + (estKevin(a) ? ' · KEVIN (Face ID / code admin)' : ''));
   console.log(lignes.join('\n'));
   /* Annotations : le seul canal lisible depuis une session. 12 lignes par bloc, codes masqués. */
   const sur = lignes.map((l) => l.replace(/[0-9a-f]{16,}/g, '…'));

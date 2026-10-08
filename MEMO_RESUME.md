@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (15h30) — Novembre en ligne, 0 personne manquante, journal admin propre — et les documents enfin à jour
+
+- **Livré et VÉRIFIÉ EN RÉEL (run verif-live-equipes 37798486104, 15h11 UTC, après fusion PR #4372)** : **CMCteams v9.953** + **light v1.80** servies ; 196 tableaux (5 mois, **novembre 2026** inclus, 293 personnes) ; planning servi = PDF ; 18 503 passages de départs conformes à la règle des séries ; 23 378 cases identiques app ⇄ light ; collègue non-admin OK.
+- **Les 11 d'octobre** (Kevin 7.10 « il manque des personnes ») : sans ligne de planning, écrits seulement dans les encadrés d'absence de la page 1 — « 0 M » (‹employé›, longue maladie), « CSS » (‹employé›, congé sans solde, nouveau code), « CP », « FORMATION ». Le parseur crée la personne dans son tableau d'absence (v9.951→v9.953 / v1.78→v1.80), jamais une cellule inventée. Oracle : régénération complète + diff personne par personne = **+11 octobre, 0 retiré, 0 changement ailleurs** (une 1ʳᵉ version par la grille inventait 3 fragments → rejetée). Gardes : `audit:noms-manquants` (0 manquant jul→nov), `test:import-absents` (sabotage 11 rouges).
+- **« Effaces tes connexions »** : le robot se déclare (`x-kdmc-verif: 1`) → `admin_login_verif`, pas d'`enrich` de la fiche admin ; `test:verif-login`.
+- **Reproche de Kevin (« tous les documents, leçons, sans que je te le répète »)** : cause = `test:docs-frais` ne couvrait que MEMO_RESUME + KEVIN_INVENTORY → vert pendant que LESSONS / NOTES_USER / ETAT-DU-MOMENT / IMPORTS-KEVIN / sessions.json restaient en retard. **Fait** : les 4 leçons (#454→#457), NOTES_USER (CSS, encadrés, novembre, « Toujours »), ETAT-DU-MOMENT, IMPORTS-KEVIN (3 lignes), CHANGELOG, message m205 aux branches, règle DOCS §8 dans CLAUDE-HISTOIRE ; **garde renforcé R1→R6** (code ⇒ MEMO · créé ⇒ INVENTORY · nouveau test ⇒ LESSONS · version ⇒ écrite dans MEMO · planning PDF ⇒ IMPORTS-KEVIN · routeur ⇒ ETAT-DU-MOMENT), prouvé par `test:docs-frais-garde` (21/0, dépôt git jetable), câblé dans test:ci.
+- **Non fait / à savoir** : CHANGELOG.md n'avait plus d'entrée CMCteams depuis avril (v9.396) ; repris à partir de v9.951 seulement, l'historique intermédiaire reste dans MEMO_RESUME / NOTES_USER.
+
 ## 2026-10-08 (après-midi) — Vérif réelle connectée n°3 (run 37771449592) : ce qui reste, trié
 
 - **Faux rouges du robot (corrigés)** : images/sons coupés par la sonde elle-même comptés comme pannes (cuisine, Bee de Lingua, icône Beatbot) ; pages admin attendues « verrouillées » alors que Kevin est connecté (elles s'ouvrent : c'est le bon comportement).
@@ -15683,3 +15691,26 @@ une annotation par fiche) ; (4) `test:lire-alertes` 7/0.
 - **Vérifié en ligne (17h15)** : page servie `kdmc-boite.js?v=1.0.46` + `kdmc-portal.js?v=1.0.46`, fichier avec `empreinte` et « Déconnecter ce
   compte partout », routeur public 37794580900 ✅, publication 37794580729 ✅. **Ménage** : `marie-curie` retiré (run coffre, corbeille
   `corbeille:comptes:2026-10-08-14-44-20`, registre 27 → 26) ; la ligne « s'est connectée » du fil D1 s'efface d'elle-même (3 jours).
+
+## 2026-10-08 (18h) — « Code obligatoire pour tous… impossible de pirater un autre compte » → trois verrous dans le domaine
+
+**Mesuré avant** : seul le portail envoyait un code ; CMCteams, la light et Créa « déclarent » l'utilisateur à `/__sso/issue` sans code, et le
+domaine ne l'exigeait pas (compte neuf par le nom, compte ancien ouvert par le nom — la faille Laurence ; Origin se forge en une ligne).
+**Fait (PR)** :
+1. **Code obligatoire à la création** (`code_requis_creation`, serveur) — plus aucun compte neuf sans code, par aucune porte (`ci_smoke` seul exempt).
+2. **Compte existant sans code** : le nom seul → `code_requis`. Un code proposé depuis un appareil inconnu → **ni session ni code** : D1
+   `code_attente` (appareil, lieu, réseau, empreinte PBKDF2), push « code à valider », journal ; dans « Mes messages » → **🔐 Codes à valider**
+   ✅ / ✖ (`/__boite/admin/code-valider`). Sur son propre appareil (session encore valable) la personne pose son code sans Kevin.
+3. **Pass lié à la famille d'appareil** (`d` : iphone/ipad/android/windows/mac/linux ; « autre » = script, non lié) : vérifié par `ssoVerify`
+   quand la requête est connue (portes, whoami, admin, /__sso/me…) — le pass de Laurence (iPhone) depuis un PC Windows ne vaut rien.
+Gardes : `test:code-attente` 20/0 (vrai routeur + D1 + sabotage coupe-circuit), `code-compte` 22/0 ; 10 suites qui fabriquaient des comptes
+par le nom épinglent `KDMC_CODE_OBLIGATOIRE: '0'` avec la phrase qui dit quel test prouve la règle. Portail v1.0.47 (messages `code_en_attente`,
+nudge « Protège ton compte »), inventaire des comptes : liste **les comptes sans code** (à qui dire « reconnecte-toi et choisis ton code »).
+Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
+- **Vérifié en ligne (18h40 UTC)** : `POST /__sso/issue` sans code (Zoé Neuve, PC Windows) → **400 code_requis_creation**, aucune fiche ; routeur public
+  37801012927 ✅, site 37801013036 ✅, page servie `?v=1.0.47`, « Codes à valider » dans le fichier servi.
+- **Inventaire au coffre (run 37801082728)** : **19 comptes sur 21 n'ont pas de code au domaine**. 11 sont des fiches de l'audit Strix du
+  10-11.09 sur apex-chat (« Cors User », « Csrf User », « Mitm User », « `uname -a` », « <svg/onload=1> »…) → reconnues robots (`NOM_ATTAQUE`,
+  `TEST_NOM`), ménage lancé. **7 vraies personnes sans code** : Adrien Lorenzi, Théo Bruno, Romain Degiovanni, Marwan El Missouri, Marc Schwietzer,
+  Laurence Saint-Polit, Marie-Noëlle Sauvaigo (nom stocké « NoÃ«lle », mojibake d'avant le 2.10 — à réparer) ; Kevin = Face ID. Chacun, à sa
+  prochaine venue : nom + code choisi → « Codes à valider » chez Kevin → ✅ → entré.

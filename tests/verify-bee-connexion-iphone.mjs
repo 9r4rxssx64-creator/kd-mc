@@ -161,7 +161,7 @@ try {
   const rIssue = await worker.fetch(new Request('https://kd-mc.com/__sso/issue', { method: 'POST',
     headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' },
     /* 8.10 : le domaine ne délivre plus de session au nom de Kevin sans preuve → la session faible est celle d'un autre compte. */
-    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true }) }), env);
+    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159' } /* code obligatoire à la création (8.10) */) }), env);
   const jIssue = await rIssue.json().catch(() => ({}));
   const faible = jIssue && (jIssue.token || jIssue.t || '');
   ok(!!faible, 'le domaine émet bien une session SANS Face ID (auto-déclarée) pour le test');

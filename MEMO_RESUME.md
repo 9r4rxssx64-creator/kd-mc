@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (nuit) — v1.1.295 EN LIGNE ; test navigateur des photos mis à jour
+
+- kd-mc : déploiement vert, « Version + CACHE_VERSION Sync » enfin VERT, e2e prod 16 OK / 0 échec / 2 instables.
+- « Tests + Coverage » rouge sur 4 appareils = `tests/e2e/media-bigger-heal.spec.js` qui affichait une photo à une
+  adresse EXTERNE fictive, refusée depuis la correction de sécurité (aucune régression : les GIF sont re-téléversés
+  par `K._pickGif` vers l'API). Test passé à une adresse de l'API + vérification qu'une adresse externe n'affiche
+  rien. Local (Chromium réel) : 61/62 — le 62e (service worker) échoue ici avec OU sans le changement (certificat
+  local refusé), il passe en CI.
+
 ## 2026-10-08 (19h00) — Lingua v2.138.0 : « La vraie vie »
 
 `CURRICULUM_VIE` + `PHR_VIE` (data.js, avant la génération des cours), 10 unités `libre:true` en fin de tableau,

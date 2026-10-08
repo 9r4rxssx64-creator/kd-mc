@@ -16,13 +16,18 @@ test.describe('Média plus grand + GIF/photo auto-réparés (v1.1.275)', () => {
     const maxW = await page.evaluate(() => {
       const K = window.K;
       K.viewData = { id: 'cv' };
-      const html = K._renderMediaEl({ media_url: 'https://x/y.gif', media_type: 'image/gif', media_name: 'g' });
+      // 08.10.2026 : un média ne s'affiche que s'il vient de l'API d'Apex Chat (les GIF sont
+      // re-téléversés par K._pickGif) — une adresse externe n'est jamais chargée (jeton protégé).
+      const html = K._renderMediaEl({ media_url: API_BASE + '/api/media/y', media_type: 'image/gif', media_name: 'g' });
       const box = document.createElement('div'); box.style.width = '327px'; // ~bulle 84% de 390
       document.body.appendChild(box); box.innerHTML = html;
       const img = box.querySelector('img');
-      return parseFloat(getComputedStyle(img).maxWidth); // min(76vw,340px) → 76% de 390 = 296px
+      const ext = document.createElement('div'); document.body.appendChild(ext);
+      ext.innerHTML = K._renderMediaEl({ media_url: 'https://x/y.gif', media_type: 'image/gif', media_name: 'g' });
+      return { maxW: parseFloat(getComputedStyle(img).maxWidth), externeSansImage: !ext.querySelector('img') }; // min(76vw,340px) → ~296px
     });
-    expect(maxW).toBeGreaterThan(280); // avant : 260px → maintenant ~296px, moins de place perdue
+    expect(maxW.maxW).toBeGreaterThan(280); // avant : 260px → maintenant ~296px, moins de place perdue
+    expect(maxW.externeSansImage).toBe(true);
   });
 
   test('GIF/photo chiffré : clé du pair tournée → déchiffré après re-fetch (heal)', async ({ page }) => {

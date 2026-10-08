@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (soir) — Garde AVANT fusion pour la copie publique
+
+- Nouveau `npm run test:export-public-propre` (dans `test:ci`) : fait l'export public + le vérificateur en ≈ 5 s. Une PR qui remet
+  une donnée personnelle dans un document exporté échoue AVANT la fusion au lieu de bloquer toute la synchro après. Leçon #463.
+
 ## 2026-10-08 (soir) — Copie publique re-débloquée (2e fois : même adresse de mairie)
 
 - Depuis #4414 (18h23 UTC), « synchroniser le CODE » échouait à chaque commit : le vérificateur refusait une adresse

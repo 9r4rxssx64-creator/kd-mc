@@ -249,6 +249,17 @@ globalThis.fetch = vraiFetch;
 const W2 = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/return injecterBouton\(new Response\(res\.body/.test(W2) && /host !== 'admin\.kd-mc\.com'/.test(W2), '12e. le chemin de réponse du routeur appelle bien l\'injection (une fonction que personne n\'appelle ne protège rien)');
 
+/* 13. le TRAVAIL dans CMCteams rejoint la fiche (Kevin 4.10 « va lire partout, enregistre tout ») : questions à l'IA + modifications de planning, lecture seule */
+fbData.cmc_ia_log = { a1: { ts: T - 3600000, uid: 'u1', name: 'Camille Roux', team: 'Équipe 3', q: 'Quand est mon prochain repos ? ' + 'x'.repeat(300), a: 'réponse privée', mode: 'ia' }, a2: { ts: T - 20 * 864e5, name: 'Vieux Log', q: 'trop ancien' } };
+fbData.cmc_audit = { b1: { ts: T - 7200000, adminId: 'a9', eid: 'e5', name: 'Camille Roux', year: 2026, month: 10, day: 12, old: 'R', new: 'M' } };
+const putAvant = fbPut.length;
+_viderMemo(); b = await appel('kev', '/admin');
+const cTravail = b.messages.find((x) => x.cle === 'perso:n:camille roux');
+ok(cTravail && cTravail.fil.some((f) => /Question à l'IA de CMCteams \(Équipe 3\)/.test(f.texte) && f.texte.length < 260) && cTravail.fil.some((f) => /Planning modifié le 12\.10\.2026 : R → M/.test(f.texte)), '13a. la carte de Camille Roux montre sa question à l\'IA (coupée) et la modification de son planning', cTravail);
+ok(!JSON.stringify(b).includes('réponse privée') && !b.messages.some((x) => /Vieux Log/.test(x.de)), '13b. la réponse de l\'IA n\'est JAMAIS recopiée ; un log de plus de 7 jours est ignoré');
+ok(cTravail && cTravail.nonLus === 0 && fbPut.length === putAvant, '13c. le travail ne fait pas de rouge et rien n\'est écrit dans Firebase (lecture seule)');
+fbData.cmc_ia_log = null; fbData.cmc_audit = null;
+
 /* 9. câblage : le routeur et le portail utilisent vraiment la boîte (une fonction que personne n'appelle ne protège rien) */
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/url\.pathname\.startsWith\('\/__boite\/'\)\) return handleBoite\(request, url, env, outilsBoite\(env\)\)/.test(W) && /import \{ handleBoite \} from '\.\/boite\.js'/.test(W), '9a. le routeur sert /__boite/ avec les outils de l\'admin prouvé');

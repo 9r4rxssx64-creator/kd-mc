@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 — « Go tout » : Apex diag, comptes de test retirés, travail CMCteams dans la fiche
+
+- **Apex « Toutes les IA sont KO »** : diagnostic réel (robot `apex-proxy-diag`, 4 appels authentifiés au proxy) → **HTTP 200 partout** (Anthropic sonnet-4-6 et 4-5, OpenAI, appel « comme l'app » en stream + outils). Le serveur et les clés vont bien : la bannière du 4.10 vient du côté appareil (code non gardé en mémoire / version v13.4.367) ou d'une panne passagère. Robot remis en pause.
+- **Comptes** : inventaire réel (27 fiches, 22 actifs, 0 robot reconnu, 0 doublon) → 3 comptes à un seul mot créés le 10.09 par les sondes d'Apex Chat (« bearer », « tester », « simple », 1 session) = les « invités » ; reconnus comme comptes de test et **retirés** (corbeille `corbeille:comptes:2026-10-08-09-56-48`, 90 jours, remise possible). Registre 27 → 24. Restent 18 autres personnes (11 à une seule session, 3 à portée restreinte) : NON touchées.
+- **Travail CMCteams** : la carte de chaque personne lit en direct `cmc_ia_log` (questions, 160 car., sans réponse) et `cmc_audit` (modifs de planning), 7 jours, lecture seule, carte par nom. Test 13a-c. Non lu : `cmc_userlog`, `cmc_presence`, `cmc_import_log`.
+
 ## 2026-10-07 (05h00) — Lingua v2.137.0 : bilan de fin d'appel
 
 Kevin : « Continu ». Après l'appel de Bee : `appelBilanBloc` → `/__lingua/ai` mode `appel-bilan` (phrases `role:user`

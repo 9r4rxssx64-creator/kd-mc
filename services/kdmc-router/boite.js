@@ -95,10 +95,11 @@ async function lireLingua(db) {
 }
 
 /* ── adaptateur : CMCteams (Firebase) ─────────────────────────────────────────────────────────────────────── */
-async function fb(outils, chemin, methode, corps) {
+async function fb(outils, chemin, methode, corps, requete) {
   const f = outils.fetch || fetch;
   let jeton = ''; try { jeton = (outils.fbToken && (await outils.fbToken())) || ''; } catch { jeton = ''; }
-  const r = await f(FB_URL + '/' + chemin.split('/').map(encodeURIComponent).join('/') + '.json' + (jeton ? '?auth=' + encodeURIComponent(jeton) : ''), {
+  const q = [requete || '', jeton ? 'auth=' + encodeURIComponent(jeton) : ''].filter(Boolean).join('&');
+  const r = await f(FB_URL + '/' + chemin.split('/').map(encodeURIComponent).join('/') + '.json' + (q ? '?' + q : ''), {
     method: methode || 'GET', headers: { 'content-type': 'application/json' }, body: corps === undefined ? undefined : JSON.stringify(corps), signal: AbortSignal.timeout(8000) });
   if (!r.ok) throw new Error('firebase ' + r.status);
   return r.json();
@@ -127,6 +128,24 @@ async function lireCmcteams(outils) {
       texte: dernierEux ? dernierEux.texte : '', nonLus: nl, lu: !nl, repondre: 'direct', fil: c.msgs.slice(-LIMITES.fil) });
   }
   return items.sort((a, b) => b.ts - a.ts).slice(0, LIMITES.convs);
+}
+
+/* ── CMCteams : le TRAVAIL de chaque personne (Kevin 4.10 « va lire partout, enregistre tout ») ───────────────────────────
+   Lecture seule en direct dans Firebase, rien n'est recopié : les questions posées à l'IA (`cmc_ia_log`) et les modifications de planning
+   (`cmc_audit`) rejoignent la fiche de la personne (carte par nom). 60 dernières lignes de chaque, 7 jours, questions coupées à 160 caractères. */
+export async function lireTravailCmc(outils, now) {
+  const Q = 'orderBy=' + encodeURIComponent('"$key"') + '&limitToLast=60';
+  const [ia, audit] = await Promise.all([fb(outils, 'cmc_ia_log', 'GET', undefined, Q).catch(() => null), fb(outils, 'cmc_audit', 'GET', undefined, Q).catch(() => null)]);
+  const depuis = now - 7 * 864e5, ev = [];
+  for (const e of liste(ia)) {
+    const ts = +e.ts || 0, nom = propre(e.name, 60);
+    if (ts >= depuis && nom) ev.push({ nom, ts, app: 'cmcteams.kd-mc.com', texte: '💬 Question à l\'IA de CMCteams' + (e.team ? ' (' + propre(e.team, 20) + ')' : '') + ' : ' + apercu(e.q || e.question || '', 160) });
+  }
+  for (const e of liste(audit)) {
+    const ts = +e.ts || 0, nom = propre(e.name, 60);
+    if (ts >= depuis && nom) ev.push({ nom, ts, app: 'cmcteams.kd-mc.com', texte: '📅 Planning modifié' + (e.day ? ' le ' + e.day + '.' + e.month + '.' + e.year : '') + ' : ' + apercu(String(e.old == null ? '∅' : e.old), 40) + ' → ' + apercu(String(e.new == null ? '∅' : e.new), 40) });
+  }
+  return ev;
 }
 
 /* ── adaptateurs KV (lecture seule) + état « lu » en D1 ───────────────────────────────────────────────────── */
@@ -214,7 +233,7 @@ export async function ficheLignes(env, db, uid, now) {
 /* UNE CARTE PAR PERSONNE (Kevin 4.10 : « le même compte qui se connecte ne se multiplie pas, il s'ajoute dans sa fiche, remonte dans le fil »).
    Les alertes du journal (nouvel appareil, changement de pays, nouvel inscrit) et l'activité de la personne (pages, questions, modifications, lieux) sont
    REGROUPÉES par compte : une seule carte, un fil du plus ancien au plus récent, la dernière activité la fait remonter. Seules les ALERTES comptent en rouge. */
-async function lirePersonnes(env, db, now) {
+async function lirePersonnes(env, db, now, outils) {
   if (!env.ACCOUNTS) return [];
   let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
   /* Les changements de pays enregistrés AVANT le 4.10 n'ont pas de réseau noté : impossible de dire si c'était le Relais privé iCloud (c'était le cas de ceux
@@ -231,6 +250,8 @@ async function lirePersonnes(env, db, now) {
     p.evts.push(ev); p.alertes.push(ev);
   }
   for (const a of await activite.actives(db, now - 3 * 864e5, 20).catch(() => [])) dossier('u:' + a.uid, a.uid, a.nom);
+  /* le travail dans CMCteams : une carte par NOM (les identifiants de CMCteams ne sont pas ceux du domaine) */
+  for (const t of outils ? await lireTravailCmc(outils, now).catch(() => []) : []) { const p = dossier('n:' + t.nom.toLowerCase().slice(0, 40), '', t.nom); p.evts.push({ ts: t.ts, texte: t.texte, app: t.app }); }
   const ids = [...P.keys()].map((id) => 'perso:' + id);
   const marq = new Map();
   if (ids.length) for (const r of await tous(db, `SELECT cle, ts FROM boite_lu WHERE cle IN (${ids.map(() => '?').join(',')})`, ...ids)) marq.set(r.cle, r.ts);
@@ -354,7 +375,7 @@ export async function lireBoite(env, outils, now) {
   if (db) await schema(db);   // idempotent : les tables existent aussi quand on lit sans être passé par la route
   const essais = {
     lingua: () => lireLingua(db), cmcteams: () => lireCmcteams(outils), depots: () => lireDepots(db),
-    rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lirePersonnes(env, db, now),
+    rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lirePersonnes(env, db, now, outils),
   };
   const noms = Object.keys(essais);
   const res = await Promise.allSettled(noms.map((n) => memoise(n, now, essais[n])));

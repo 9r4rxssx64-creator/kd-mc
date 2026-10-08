@@ -3989,6 +3989,16 @@ Premier cas (3.10.2026) : Armand Édouard DESARZENS (° Lausanne 17.04.1892, mé
 Angéline Suzanne LEGRAND (21 ans en 1918, dactylographe), parents de Guy, ajoutés d'après l'acte
 n° 35 de Poissy 1918 — 126 → 128 fiches, relecture conforme, rejouer = 0.
 
+**Étendue aux mineurs** — **« Tu peux ajouter aussi pour les mineurs qui sont mon fils et ma petite
+cousine. Tout le monde est d'accord et content de l'arbre donc ajoute tout pour tout le monde
+toujours. »** — Kevin 2026-10-08. Les mineurs de la famille (Ronan, le fils de Kevin ; sa petite
+cousine ; et les autres enfants de la famille) sont des membres **à part entière** de l'arbre :
+fiche complète (date et lieu de naissance, parents, photos, notes), ajout et complétion **sans
+demander** dès que l'info vient de la famille (Kevin, un parent, un document de la famille) ou d'un
+acte. Ce qui reste exclu, pour eux seulement : **aucune recherche sur internet ni dans les
+fichiers publics à leur nom** (réseaux, moteurs, annuaires) — ce que la famille donne suffit, et un
+enfant n'a pas à être pisté en ligne. L'arbre reste derrière le code famille, comme tout le reste.
+
 ---
 
 ## 🚀 RÈGLE ABSOLUE — AUTONOMIE TOTALE TOUJOURS PARTOUT (Kevin 2026-05-07, MAÎTRESSE)

@@ -84,7 +84,7 @@
       "etat": "actif",
       "maj": "2026-09-27",
       "attend_kevin": "changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…",
-      "attend_session": null,
+      "attend_session": "crypto-bots : Kevin 8.10 : les MINEURS de la famille entrent dans l'arbre (Ronan, sa petite cousine, les autres enfants) — fiche complète, ajout sans demander",
       "note": "v3.36 livrée : dates entières, pleine page iPhone/Android/ordi, visuel mesuré 126 personnes × 10 appareils × 4 vues sur le VRAI arbre (tout vert, run 36352174569)."
     },
     "lingua": {
@@ -4354,6 +4354,15 @@
       "sujet": "Branche ARBRE : ton adresse de mairie (orange.fr) dans KEVIN_ACTIONS_TODO.md a FIGÉ la publication du site (coffre-synchronise-public rouge depuis #4389) — déplacée dans audit/prive/, ne remets jamais un courriel dans un document exporté",
       "corps": "Mesuré 8.10 16h46 (run 37811345217) : verifier.mjs refuse TOUT le dossier public dès qu'une adresse d'un domaine personnel (orange.fr, gmail, …) traîne dans un .md exporté — et KEVIN_ACTIONS_TODO.md est exporté. Conséquence : plus aucune mise en ligne de kd-mc.com depuis la fusion #4389, sans rouge visible côté branche. Fait : l'adresse de la mairie de Chevrainvilliers est dans audit/prive/arbre-demandes-actes-adresses.md (prive_toujours), la ligne 4 du tableau y renvoie ; export relancé en local : ✅. Règle : un courriel, un téléphone, une adresse postale d'une personne ou d'une mairie → fichier privé (audit/prive/, tools/arbre/, NOTES_USER.md) et un renvoi dans le document public. Avant de fusionner un .md : node tools/depot-public/exporter.mjs --sortie /tmp/pub && node tools/depot-public/verifier.mjs --sortie /tmp/pub.",
       "ts": "2026-10-08 17:05",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m208-crypto-bots",
+      "de": "crypto-bots",
+      "a": "arbre",
+      "sujet": "Kevin 8.10 : les MINEURS de la famille entrent dans l'arbre (Ronan, sa petite cousine, les autres enfants) — fiche complète, ajout sans demander",
+      "corps": "Kevin 8.10 : « Tu peux ajouter aussi pour les mineurs qui sont mon fils et ma petite cousine. Tout le monde est d'accord et content de l'arbre donc ajoute tout pour tout le monde toujours. » Règle complétée dans CLAUDE-HISTOIRE.md (§ ARBRE : AJOUTER TOUT SEUL…, paragraphe « Étendue aux mineurs ») + mémoire compacte m9s_muzuxmtc. Pour eux : date et lieu de naissance, parents, photos, notes = OUI dès que l'info vient de la famille ou d'un acte ; recherche internet ou fichiers publics à leur nom = NON. Constat : seed_ronan existe (père seed_kevin) sans date de naissance ni mère ; la petite cousine n'est pas identifiée — à demander à Kevin si elle n'est pas déjà dans l'arbre. Le code de l'app ne bloquait rien : la limite était seulement dans la mémoire.",
+      "ts": "2026-10-08 18:16",
       "etat": "ouvert"
     }
   ]

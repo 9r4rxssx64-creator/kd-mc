@@ -22,7 +22,7 @@ import { lireFichier as lireFichierDepot } from '../integrations/depot-github.js
 
 const DOC_FILES: readonly string[] = [
   'CLAUDE.md',
-  /* NOTES_USER.md : notes PRIVÉES de Kevin, retirées du dépôt public (regles.json) → le relais public répond 404 (vérif réelle 8.10). */
+  'NOTES_USER.md',
   'MEMO_RESUME.md',
   'KEVIN_INVENTORY.md',
   'KEVIN_ACTIONS_TODO.md',

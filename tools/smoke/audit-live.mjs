@@ -309,15 +309,6 @@ const SURFACES = [
       const tap = (sel) => page.$eval(sel, (el) => el.click()).then(() => true).catch(() => false);
       try {
         await page.waitForTimeout(1200);
-        /* Connecté comme Kevin (8.10) : Lingua s'ouvre directement sur SON compte (pas d'écran « comptes », réservé aux inconnus).
-           On vérifie alors que son espace est vraiment là : liste des langues, ou leçons, ou compteurs. */
-        if (cookieKevin && !(await page.$('.acc-card.add'))) {
-          await page.waitForTimeout(1500);
-          const vu = await page.evaluate(() => ({ langues: document.querySelectorAll('.course-card').length, unites: document.querySelectorAll('.unit').length,
-            stats: !!document.querySelector('.tb-stat'), texte: (document.body.innerText || '').trim().length }));
-          if (vu.langues >= 6 || vu.unites >= 1 || vu.stats) return { ok: true, note: 'ouvert sur le compte de Kevin (' + vu.langues + ' langues, ' + vu.unites + ' unités)' };
-          return { ok: false, note: 'Kevin connecté, mais Lingua n\'affiche ni langues ni leçons (' + vu.texte + ' caractères à l\'écran)' };
-        }
         if (!(await page.$('.acc-card.add'))) return { ok:false, note:'écran comptes absent' };
         await tap('.acc-card.add'); await page.waitForTimeout(600);
         // 05/09 (commit 1ed68de2e) : la création de compte demande PRÉNOM + NOM (deux champs
@@ -559,13 +550,7 @@ for (const s of SURFACES) {
                             // le comportement voulu, pas un bug). Ne pas crier au loup (leçon #83/#106).
   const consoleErr = [];    // bruit console → rapporté, non bloquant
 
-  /* 8.10 : « EXCEPTION JS: Object » ne disait rien (OSINT) — on garde le message, le type et la 1re ligne de la pile. */
-  page.on('pageerror', (e) => {
-    let d = '';
-    try { d = (e && (e.message || e.name)) ? (e.name ? e.name + ': ' : '') + (e.message || '') : JSON.stringify(e); } catch { d = ''; }
-    const pile = String((e && e.stack) || '').split('\n').slice(1, 2).join('').trim();
-    jsErrors.push((d || String(e)).slice(0, 200) + (pile ? ' @ ' + pile.slice(0, 160) : ''));
-  });
+  page.on('pageerror', (e) => jsErrors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') consoleErr.push(m.text().slice(0, 160)); });
   page.on('requestfailed', (req) => {
     const u = req.url();
@@ -736,8 +721,7 @@ for (const s of SURFACES) {
       }
     }
 
-    if (cookieKevin && selKey === '#app .msg') selKey = '#app';
-    if (cookieKevin && s.name === 'KDMC Lingua' && selKey === '.brand') selKey = 'body';   /* .brand appartient à l'écran « comptes » des inconnus */   /* le message du verrou n'existe pas quand Kevin est connecté */
+    if (cookieKevin && selKey === '#app .msg') selKey = '#app';   /* le message du verrou n'existe pas quand Kevin est connecté */
     if (!(await page.$(selKey))) { res.ok = false; res.notes.push('élément clé absent: ' + selKey); }
 
     /* lue AVANT le `deep` : les globales sont posées au chargement, et le badge de version

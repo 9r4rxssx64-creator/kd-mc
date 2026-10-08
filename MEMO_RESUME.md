@@ -4,7 +4,7 @@
 
 - **Faux rouges du robot (corrigés)** : images/sons coupés par la sonde elle-même comptés comme pannes (cuisine, Bee de Lingua, icône Beatbot) ; pages admin attendues « verrouillées » alors que Kevin est connecté (elles s'ouvrent : c'est le bon comportement).
 - **Vrai défaut corrigé** : Apex a une CSP `strict-dynamic` → le routeur y injectait encore le bouton/Bee (refusés) ; désormais `strict-dynamic` = pas d'injection (test 12f, sabotage rouge).
-- **Traité ensuite** : Apex ne relit plus `NOTES_USER.md` (privé, 404 au relais public) dans ses sentinelles (397 tests sentinelles verts ; 12 échecs `ai-router-tools` préexistants, sans lien) ; Lingua connectée : le robot vérifie l'espace de Kevin au lieu de l'écran « comptes » ; OSINT : le robot note désormais le message et la pile de l'erreur JS (le prochain passage dira laquelle).
+- **À regarder ensuite** : Apex lit `NOTES_USER.md` via `apex-depot-relais` → 404 (le fichier n'est plus au dépôt public) ; OSINT « EXCEPTION JS: Object » ; Lingua connectée : le robot cherche l'écran « comptes » (anonyme) — attente à adapter.
 
 ## 2026-10-08 (12h00) — Sondes aveugles depuis la porte générale : corrigé
 

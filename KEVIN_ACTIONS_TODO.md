@@ -4040,3 +4040,30 @@ La relance automatique du **13.10** relit ta boîte (réponses seulement), lit l
 
 Ensemble, ces 6 mails couvrent **les 5 personnes isolées et le groupe de 14**. La relance du 13.10 surveille toutes les réponses.
 
+### 📬 Un document officiel pour chaque personne — 14 demandes prêtes (8.10.2026, nuit)
+
+Inventaire réel (bouton `inventaire` du workflow arbre-nuage) : sur 167 personnes, **139 n'ont pas encore d'acte de naissance lié**, 59 personnes
+décédées n'ont pas d'acte de décès lié, 73 n'ont aucune source officielle. Ce qui était trouvable en ligne l'a été (INSEE, DAVEL, AD78, Journal de
+Monaco) ; le reste est **dans les mairies et archives**. Toutes les demandes sont prêtes en **brouillons Gmail** (rien n'est envoyé à ta place), et
+chaque fiche concernée porte une note « 📬 DEMANDE D'ACTE » (54 fiches) :
+
+| # | Service | Actes | Envoi |
+|---|---|---|---|
+| 1 | Archives municipales de Nice | 13 actes anciens (1850-1922) | e-mail prêt |
+| 2 | Mairie de Nice (état civil) | 3 actes 1935-1943 | e-mail prêt |
+| 3 | Salon-de-Provence | relance mariage 1943 | e-mail prêt |
+| 4 | Paris 19e | mariage 1950 | formulaire paris.fr (texte prêt) |
+| 5 | Chevrainvilliers | 3 naissances MEZONNIAUD | e-mail prêt |
+| 6 | État civil de Monaco | 8 actes ‹employé› / ‹employé› | e-mail prêt — ou au guichet, tu es sur place |
+| 7 | Archives municipales de Marseille | naissance Claude Alain DE SARZENS | adresse à prendre sur archives.marseille.fr |
+| 8 | Beaulieu-sur-Mer | 12 naissances + 3 décès | formulaire du site (texte prêt) |
+| 9 | Villefranche-sur-Mer | 3 naissances ‹employé› | formulaire du site (texte prêt) |
+| 10 | Vallauris | 2 naissances ‹employé› | formulaire du site (texte prêt) |
+| 11 | Cannes | naissance Victoria DONATI | courrier / formulaire (texte prêt) |
+| 12 | Sospel | naissance Pierre DANIEL | e-mail prêt |
+| 13 | Lunel-Viel | naissance Monique JAYET | e-mail prêt |
+| 14 | Archives cantonales vaudoises | registre des familles de Sarzens + 9 actes | e-mail prêt |
+
+**Pas demandé, volontairement** : les actes des personnes vivantes (règle de vie privée — c'est à toi de choisir), et les naissances au lieu inconnu (26 personnes) :
+il faut d'abord le lieu. La relance du 13.10 surveille les 14 services, lit les actes reçus et les intègre fiche par fiche.
+

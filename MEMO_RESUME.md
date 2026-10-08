@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-07 (05h00) — Lingua v2.137.0 : bilan de fin d'appel
+
+Kevin : « Continu ». Après l'appel de Bee : `appelBilanBloc` → `/__lingua/ai` mode `appel-bilan` (phrases `role:user`
+seules, 10 max) → `lireBilanAppel` (exporté du worker, testé) : 3 corrections max, phrase réellement dite, dédoublonnée.
+Corrections gardées dans `S.appels.corrections` (12) ; `appelARevoir()` en met 2 dans `weak` au prochain appel.
+« 📜 Revoir l'appel » = modal `.overlay.ap-top` (z-index 1200 > appel 1100). `test:lingua-appel` réparé (leçon #440).
+
+---
+
 ## 2026-10-04 (nuit) — « Appareil aussi » : chaque événement porte son appareil, la carte résume appareil par appareil
 
 - **Fait (même branche `claude/fiche-activite`, PR #4309)** : colonne `appareil` du fil d'activité (même libellé partout : « iPhone · iOS 18.0 · Safari 18 », via `appareilLabel`, vide si pas d'en-tête — jamais un « Autre » inventé) sur les pages, connexions, lieux, appareils, questions, enregistrements et messages ; chaque ligne du fil dit « · 📲 iPhone · iOS 18.0 » ;

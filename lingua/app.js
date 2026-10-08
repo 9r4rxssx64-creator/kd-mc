@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.136.0";
+var APP_VER="v2.137.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -3047,7 +3047,7 @@ function appelDemander(){ if(!APPEL||APPEL.fini)return; var c=COURSES[S.course],
   var phase=appelPhase(APPEL.tours); appelEtat("pense"); var img=APPEL.ov.querySelector(".disc-bee"); if(img)img.classList.add("think");
   var corps={mode:"appel", phase:phase, theme:appelTheme(), prenom:String(me.name||"").split(" ")[0], mascotte:mascotCfg().id,
     lang:c.id, langName:c.nom, level:diffLabel(), levelIndex:diffTier(), words:masteredCount(),
-    weak:dueWords().slice(0,6).map(function(w){ return w.fr+" = "+w.t; }), messages:APPEL.msgs.slice(-12)};
+    weak:appelARevoir().concat(dueWords().slice(0,6).map(function(w){ return w.fr+" = "+w.t; })).slice(0,6), messages:APPEL.msgs.slice(-12)};
   fetch(SYNC_BASE+"/ai",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(corps)})
     .then(function(r){ return r.json(); }).catch(function(){ return null; })
     .then(function(j){ if(!APPEL||APPEL.fini)return; if(img)img.classList.remove("think");
@@ -3094,10 +3094,38 @@ function appelTerminer(raccroche){ if(!APPEL||APPEL.fini)return; var A=APPEL; A.
   re.onclick=function(){ appelFermer(); setTimeout(appelDemarrer,200); };
   var ok=el("button","btn-main"); ok.textContent="Continuer"; ok.onclick=appelFermer;
   var cal=el("button","btn-ghost small"); cal.textContent="📅 Qu'"+MG("elle","il")+" m'appelle chaque jour"; cal.onclick=appelReglages;
+  if(xp) fin.appendChild(appelBilanBloc(A));
+  if(A.msgs.length>1){ var tr=el("button","btn-ghost small"); tr.textContent="📜 Revoir l'appel"; tr.onclick=function(){ appelTranscription(A); }; fin.appendChild(tr); }
   fin.appendChild(ok); fin.appendChild(re); fin.appendChild(cal);
   var setFin=function(){ if(!A.ov.isConnected)return; A.ov.querySelectorAll(".ap-outils,.ap-raccroche,.ap-clavier,.ap-etat,.ap-toi,.disc-stage").forEach(function(x){ x.remove(); }); A.ov.appendChild(fin); };
   if(raccroche||!DISC.talking) setFin(); else setTimeout(setFin,400);
   if(xp){ var bee=A.ov.querySelector(".disc-bee"); if(bee) beeSparkles(bee,10); tone([660,880,1180],.3); } }
+/* 📝 BILAN DE L'APPEL (v2.137.0) : Bee relit ce que TU as dit et rend au plus 3 phrases corrigées
+   (dit → mieux → pourquoi), à écouter. Les corrections sont gardées (12 au plus) et Bee les fait
+   RÉUTILISER au prochain appel : la boucle « erreur → reprise → acquis ». Même IA gratuite. */
+function appelARevoir(){ var c=(S.appels&&S.appels.corrections)||[]; return c.slice(0,2).map(function(x){ return "phrase à faire réutiliser : "+x.mieux; }); }
+function appelBilanBloc(A){ var b=el("div","ap-bilan"); var t=el("p","mini"); t.textContent="📝 "+MNAME()+" prépare ton bilan…"; b.appendChild(t);
+  var c=COURSES[S.course];
+  fetch(SYNC_BASE+"/ai",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"appel-bilan",lang:c.id,langName:c.nom,level:diffLabel(),messages:A.msgs.slice(-24)})})
+    .then(function(r){ return r.json(); }).catch(function(){ return null; })
+    .then(function(j){ b.innerHTML="";
+      if(!j||!j.ok){ var e=el("p","mini"); e.textContent="📝 Bilan indisponible pour l'instant — tes XP sont bien comptés."; b.appendChild(e); return; }
+      var h=el("h4"); h.textContent="📝 Ton bilan"; b.appendChild(h);
+      if(j.bravo){ var br=el("p","ap-bravo"); br.textContent="👏 "+j.bravo; b.appendChild(br); }
+      var cs=Array.isArray(j.corrections)?j.corrections:[];
+      if(!cs.length){ var p=el("p","mini"); p.textContent="✨ Aucune faute repérée — impeccable !"; b.appendChild(p); return; }
+      cs.forEach(function(x){ var it=el("div","ap-corr");
+        var d=el("div","ap-dit"); d.textContent="🗣️ "+x.dit; it.appendChild(d);
+        var m=el("div","ap-mieux"); var mt=el("span"); mt.textContent="✅ "+x.mieux; m.appendChild(mt);
+        var ec=el("button","ap-ecoute"); ec.textContent="🔊"; ec.title="Écouter"; ec.setAttribute("aria-label","Écouter la bonne phrase"); ec.onclick=function(){ pronSay(x.mieux); }; m.appendChild(ec); it.appendChild(m);
+        if(x.pourquoi){ var w=el("div","ap-pourquoi mini"); w.textContent="💡 "+x.pourquoi; it.appendChild(w); }
+        b.appendChild(it); });
+      var a=S.appels; a.corrections=cs.map(function(x){ return {mieux:x.mieux, pourquoi:x.pourquoi||"", d:isoJour()}; }).concat(a.corrections||[]).slice(0,12); save();
+      var n=el("p","mini"); n.textContent="🔁 "+MNAME()+" te les fera redire au prochain appel."; b.appendChild(n); });
+  return b; }
+function appelTranscription(A){ var m=modal(); m.body.parentNode.classList.add("ap-top"); var h=el("h3"); h.textContent="📜 L'appel, mot pour mot"; m.body.appendChild(h);
+  var l=el("div","ap-transcript"); A.msgs.forEach(function(x){ var r=el("p",x.role==="user"?"ap-t-toi":"ap-t-bee"); r.textContent=(x.role==="user"?"🗣️ Toi : ":MNAME()+" : ")+x.text; l.appendChild(r); });
+  m.body.appendChild(l); var ok=el("button","btn-main"); ok.textContent="Fermer"; ok.onclick=m.close; m.body.appendChild(ok); }
 function appelFermer(){ var A=APPEL; if(!A)return; discStopSpeaking(); DISC.open=false; DISC.talking=false; DISC.apresParole=null; DISC.lent=false;
   if(A.rec){ try{ A.rec.abort(); }catch(_){} } clearInterval(A.chronoIv);
   try{ A.ov.remove(); }catch(_){} APPEL=null; render(); }

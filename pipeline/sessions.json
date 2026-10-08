@@ -1061,16 +1061,27 @@
       "attend_session": null,
       "note": "fusionnée le 2.10 19h48 (#4212)"
     },
-    "lingua-cercle": {
-      "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/sonde-traces-ordre",
-      "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
+    "voix-son": {
+      "titre": "Voix : Chirp 3 HD ne dépend plus des écritures KV",
+      "branche": "claude/voix-son",
+      "sujet": "Chirp 3 HD sans écriture KV (12 voix sur 12 en repli, mesuré) — fusionné #4294",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-04",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "4.10 : audit Lingua 77/0 sur v2.135.0 ; sonde appareils sans traces (leçon #401)"
+      "note": "inscrit le 7.10 par la session lingua-cercle : la ligne était dans la carte mais pas au registre (PR #4294 fusionnée)"
+    },
+    "lingua-cercle": {
+      "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
+      "branche": "claude/appel-intelligent",
+      "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-07",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "7.10 : Lingua v2.137.0 — bilan de fin d'appel (corrections redites au prochain appel) ; 4.10 : audit Lingua 77/0 sur v2.135.0 ; sonde appareils sans traces (leçon #401)"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",

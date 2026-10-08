@@ -2154,6 +2154,22 @@ async function handleLingua(request, url, env) {
       const weak = Array.isArray(b && b.weak) ? b.weak.slice(0, 15).map((x) => String(x).slice(0, 60)) : [];
       const scenario = String((b && b.scenario) || '').slice(0, 120); // jeu de rôle (scène originale choisie côté app)
       const msgs = Array.isArray(b && b.messages) ? b.messages.slice(-12) : [];
+      /* 📝 BILAN DE L'APPEL (7.10) : à la fin de l'appel, les phrases DITES par l'apprenant (et seulement
+         elles) reviennent corrigées — ce qu'il a dit, la forme naturelle, pourquoi en une phrase. Même IA
+         gratuite. Réponse en JSON strict, vérifiée ici : rien d'inventé ne remonte à l'écran. */
+      if (b && b.mode === 'appel-bilan') {
+        const dites = (Array.isArray(b.messages) ? b.messages : []).filter((m) => m && m.role === 'user')
+          .map((m) => String(m.text || '').replace(/\s+/g, ' ').trim().slice(0, 200)).filter((t) => t.length > 1).slice(-10);
+        if (!dites.length) return JL({ ok: true, bravo: '', corrections: [] });
+        const sysB = 'Tu es un professeur de ' + langName + ' expert et bienveillant pour un francophone (niveau : ' + level + '). '
+          + "Voici les phrases qu'il a DITES à l'oral pendant un appel (transcrites par reconnaissance vocale, donc sans tenir compte de la ponctuation ni des majuscules). "
+          + 'Choisis au plus 3 phrases qui contiennent une VRAIE faute de ' + langName + ' (grammaire, conjugaison, accord, genre, préposition, mot inexact, tournure non naturelle). '
+          + "N'invente rien : si tout est juste, renvoie une liste vide. Ne corrige pas une phrase en français volontaire. "
+          + 'Réponds UNIQUEMENT par un objet JSON, sans texte autour : {"bravo":"une phrase courte en français qui félicite pour une chose précise bien dite","corrections":[{"dit":"la phrase exacte dite","mieux":"la phrase corrigée et naturelle en ' + langName + '","pourquoi":"une phrase simple en français"}]}';
+        const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: dites.map((t, i) => (i + 1) + '. ' + t).join('\n') }], domain: 'translation', maxTokens: 500, temperature: 0.2, timeoutMs: 15000 });
+        if (!ai.ok) return JL({ ok: false, reason: 'ai_absent' });
+        return JL(Object.assign({ ok: true, by: ai.provider }, lireBilanAppel(ai.text, dites)));
+      }
       /* Les QUESTIONS posées au coach entrent dans le fil de la personne (début du texte seulement, 160 caractères ; pas pour les appels automatiques de la mascotte). */
       if (!(b && b.mode === 'appel')) {
         const dq = [...msgs].reverse().find((m) => m && m.role === 'user');
@@ -5484,3 +5500,21 @@ async function tuyaScheduleTick(env) {
 
 /* Export nommé pour les tests régression (Cloudflare utilise seulement le default export). */
 export { APPS, ROUTES, appDe, perimetre, ssoSign, ficheNettoyee, enrich, adminGrant, quotaInscription, INSCR_PAR_IP_JOUR, INSCR_TOTAL_JOUR, beatbotTargetOk, tuyaStringToSign, tuyaSign, tuyaSha256Hex, tuyaHmacHex, tuyaSurfaceCheck, tuyaScheduleTick, tuyaStartClean, tuyaHistoryTick };
+
+/* 📝 Lecture PRUDENTE du bilan d'appel rendu par l'IA : JSON extrait même entouré de texte, au plus 3
+   corrections, chacune doit porter sur une phrase réellement dite (rapprochement souple), « mieux »
+   différent de « dit », textes nettoyés et bornés. Ce qui ne colle pas est jeté, jamais affiché. */
+export function lireBilanAppel(texte, dites) {
+  const net = (x, n) => String(x == null ? '' : x).replace(/<[^>]*>/g, '').replace(/[<>*_#`]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const cle = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  let j = null; const t = String(texte || ''); const a = t.indexOf('{'), z = t.lastIndexOf('}');
+  if (a >= 0 && z > a) { try { j = JSON.parse(t.slice(a, z + 1)); } catch { j = null; } }
+  if (!j || typeof j !== 'object') return { bravo: '', corrections: [] };
+  const vus = (dites || []).map(cle);
+  const corrections = (Array.isArray(j.corrections) ? j.corrections : []).map((c) => ({ dit: net(c && c.dit, 200), mieux: net(c && c.mieux, 200), pourquoi: net(c && c.pourquoi, 220) }))
+    .filter((c) => c.dit && c.mieux && cle(c.dit) !== cle(c.mieux))
+    .filter((c) => { const k = cle(c.dit); return k.length > 1 && vus.some((v) => v === k || v.includes(k) || k.includes(v)); })
+    .filter((c, i, l) => l.findIndex((x) => cle(x.dit) === cle(c.dit)) === i)   /* une phrase dite = une seule correction */
+    .slice(0, 3);
+  return { bravo: net(j.bravo, 200), corrections };
+}

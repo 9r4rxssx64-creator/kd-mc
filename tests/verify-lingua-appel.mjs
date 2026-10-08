@@ -18,7 +18,11 @@ import mod from '../services/kdmc-router/worker.js';
 
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d !== undefined ? '  → ' + String(d).slice(0, 260) : ''}`); };
 const kv = new Map(); const appelsIA = [];
-const AI = { run(model, input) { const sys = (input.messages || [])[0]?.content || ''; const ph = (sys.match(/PHASE ([A-ZÀ-Ü-]+)/) || [])[1] || 'COACH';
+const bilansIA = [];
+const AI = { run(model, input) { const sys = (input.messages || [])[0]?.content || '';
+  if (/UNIQUEMENT par un objet JSON/.test(sys)) { bilansIA.push((input.messages || []).map((m) => m.content).join('\n'));
+    return { response: '{"bravo":"Super, « I cook every day » !","corrections":[{"dit":"I eat pasta","mieux":"I am eating pasta","pourquoi":"Action en cours : présent continu."},{"dit":"phrase jamais dite","mieux":"x y","pourquoi":"z"}]}' }; }
+  const ph = (sys.match(/PHASE ([A-ZÀ-Ü-]+)/) || [])[1] || 'COACH';
   appelsIA.push({ sys, ph }); const r = { 'DÉBUT': 'Hi Kevin! Ready?', 'MINI-LEÇON': 'Say: delicious.', 'EXERCICE': 'Translate: I eat.', 'CONVERSATION': 'Nice! And you?', 'FIN': 'Great job. Bye!' }[ph] || 'Hello!';
   return { response: r }; } };
 const env = { KDMC_SSO_SECRET: 'sec', AI, ACCOUNTS: { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } } };
@@ -77,7 +81,7 @@ try {
   appelsIA.length = 0;
   await A.p.click('.ap-decroche');
   if (process.env.CAPTURE) { await A.p.waitForTimeout(3800); await A.p.screenshot({ path: process.env.CAPTURE.replace('.png', '-encours.png') }); }
-  await A.p.waitForFunction(() => !!document.querySelector('.ap-fin'), { timeout: 150000 }).catch(() => {});
+  await A.p.waitForFunction(() => !!document.querySelector('.ap-fin'), null, { timeout: 150000 }).catch(() => {});
   const fin = await A.p.evaluate(() => { const f = document.querySelector('.ap-fin'); return f ? f.innerText : ''; });
   if (process.env.CAPTURE) await A.p.screenshot({ path: process.env.CAPTURE.replace('.png', '-fin.png') });
   const phases = appelsIA.map((a) => a.ph);
@@ -88,8 +92,29 @@ try {
   ok(/Appel terminé — bravo/.test(fin) && /8 répliques/.test(fin) && /\+26 XP/.test(fin) && /\+5 💎/.test(fin), '3. fin d\'appel : 8 répliques, +26 XP, +5 💎 (1er appel du jour)', fin.slice(0, 200));
   const ap = await lire(A.p, 'appels'); const achv = await lire(A.p, 'achv');
   ok(ap && ap.n === 1 && Object.keys(ap.jours || {}).length === 1 && achv && achv.appel1, '3b. appel du jour noté (n = 1) et succès « Allô ? » débloqué', JSON.stringify(ap) + ' ' + JSON.stringify(Object.keys(achv || {})));
+  /* 📝 bilan de fin d'appel (v2.137.0) */
+  await A.p.waitForFunction(() => /Ton bilan/.test((document.querySelector('.ap-bilan') || {}).innerText || ''), null, { timeout: 15000 }).catch(() => {});
+  const bil = await A.p.evaluate(() => { const b = document.querySelector('.ap-bilan'); return b ? { t: b.innerText, ecoute: b.querySelectorAll('.ap-ecoute').length, corr: b.querySelectorAll('.ap-corr').length } : null; });
+  ok(bil && /I eat pasta/.test(bil.t) && /I am eating pasta/.test(bil.t) && /présent continu/.test(bil.t) && /I cook every day/.test(bil.t) && bil.ecoute === 1, '3d. bilan : ce que j\'ai dit → la bonne phrase (🔊 à écouter) → pourquoi, + un bravo précis', JSON.stringify(bil));
+  if (process.env.CAPTURE) await A.p.screenshot({ path: process.env.CAPTURE.replace('.png', '-bilan.png') });
+  ok(bil && bil.corr === 1 && !/jamais dite/.test(bil.t), '3e. une « correction » d\'une phrase jamais dite n\'est pas affichée', JSON.stringify(bil));
+  ok(bilansIA.length === 1 && /I eat pasta/.test(bilansIA[0]) && !/Great job\. Bye!/.test(bilansIA[0]), '3f. seules MES phrases partent au bilan (pas celles de Bee)', (bilansIA[0] || '').slice(-300));
+  const apB = await lire(A.p, 'appels');
+  ok(apB && Array.isArray(apB.corrections) && apB.corrections.length === 1 && apB.corrections[0].mieux === 'I am eating pasta', '3g. la correction est gardée pour le prochain appel', JSON.stringify(apB && apB.corrections));
+  await A.p.click('.ap-fin .btn-ghost.small:has-text("Revoir")');
+  await A.p.waitForTimeout(400);
+  const tr = await A.p.evaluate(() => { const t = document.querySelector('.overlay.ap-top .ap-transcript'); if (!t) return null; const r = t.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + 10); return { t: t.innerText, dessus: !!(top && top.closest('.overlay.ap-top')) }; });
+  ok(tr && /Toi : I eat pasta/.test(tr.t) && /Bee : Hi Kevin! Ready\?/.test(tr.t) && tr.dessus, '3i. « 📜 Revoir l\'appel » : l\'appel mot pour mot, AU-DESSUS de l\'écran d\'appel', JSON.stringify(tr).slice(0, 200));
+  await A.p.click('.overlay.ap-top .btn-main'); await A.p.waitForTimeout(400);
   await A.p.click('.ap-fin .btn-main'); await A.p.waitForTimeout(600);
   ok(!(await A.p.$('.disc-overlay')) && /appel du jour fait/.test(await texte(A.p)), '3c. « Continuer » ferme l\'appel ; la carte dit « appel du jour fait ✓ »');
+  /* 3h. au prochain appel, Bee reçoit la phrase corrigée à faire redire */
+  appelsIA.length = 0;
+  await A.p.evaluate(() => { location.hash = '#appel'; }); await A.p.waitForSelector('.ap-decroche', { timeout: 8000 }).catch(() => {});
+  await A.p.click('.ap-decroche').catch(() => {}); await A.p.waitForFunction(() => !!document.querySelector('.ap-toi, .ap-etat'), null, { timeout: 8000 }).catch(() => {});
+  await A.p.waitForTimeout(1500);
+  ok(/phrase à faire réutiliser : I am eating pasta/.test((appelsIA[0] || {}).sys || ''), '3h. au prochain appel, Bee reçoit la phrase corrigée à faire redire', ((appelsIA[0] || {}).sys || '').slice(-200));
+  await A.p.click('.ap-raccroche').catch(() => {}); await A.p.waitForTimeout(500);
 
   /* 4. Pas aujourd'hui / Plus tard */
   const B = await appareil(nav, { appels: { n: 0, jours: {}, heure: '00:00', apresLecon: true } });

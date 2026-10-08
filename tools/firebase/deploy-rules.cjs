@@ -46,6 +46,9 @@ const SECRETS_LOCK = (process.env.SECRETS_LOCK || 'keep').toLowerCase();
 // admin. Posé par le robot coffre-ecritures-cmc APRÈS l'appli v9.926 / light v1.59 en ligne.
 // Exige CMC_ADMIN_LOCK=on. 'keep' (défaut) = état LIVE préservé ; 'off' = rollback.
 const ECRITURES_LOCK = (process.env.ECRITURES_LOCK || 'keep').toLowerCase();
+// Fiches par personne (8.10.2026, Kevin « fermé au fur et à mesure des connexions ») : cmc_reg entier = admin ;
+// cmc_reg/<uid> fermée dès que cmc_ferme/<uid> existe (posée par la personne à sa connexion). Robot coffre-ecritures-cmc.
+const FICHES_LOCK = (process.env.FICHES_LOCK || 'keep').toLowerCase();
 
 const { getAccessToken } = require('./sa-token.cjs');
 const VERROU = require('./verrou-ecritures.cjs');
@@ -183,6 +186,26 @@ const VERROU = require('./verrou-ecritures.cjs');
   } else {
     console.log('🛟 ECRITURES_LOCK=off : planning et réglages écrivables par tout jeton (inchangé)');
   }
+  // Fiches par personne (phase fiches) : jamais sans le verrou config admin.
+  let fichesLock = FICHES_LOCK;
+  const F = doc._phase_cmc_fiches;
+  if (STATE === 'open') fichesLock = 'off';
+  else if (fichesLock === 'keep') {
+    try {
+      const cur = await fetch(DB + '/.settings/rules.json?access_token=' + encodeURIComponent(token)).then(r => r.json());
+      fichesLock = VERROU.fichesPosees(cur?.rules) ? 'on' : 'off';
+      console.log('🔎 FICHES_LOCK=keep → état live détecté : ' + fichesLock);
+    } catch (e) {
+      throw new Error('FICHES_LOCK=keep : lecture des règles live impossible (' + e.message + '), abort');
+    }
+  }
+  if (fichesLock === 'on') {
+    if (cmcLock !== 'on') throw new Error('FICHES_LOCK=on exige CMC_ADMIN_LOCK=on (write parent descendu), abort');
+    try { VERROU.appliquerFiches(rules, F); } catch (e) { throw new Error('FICHES_LOCK=on refusé : ' + e.message + ', abort'); }
+    console.log('🔒 FICHES_LOCK=on : cmc_reg entier = role:admin ; cmc_reg/<uid> = admin, ce numéro, ou fiche jamais fermée ; cmc_ferme/<uid> posée par la personne');
+  } else {
+    console.log('🛟 FICHES_LOCK=off : fiches écrivables par tout jeton (inchangé)');
+  }
   // /apex + /coffre_vault : hardened (défaut, état du fichier = auth != null) ou rollback open
   if (APEX_STATE === 'open') {
     rules.apex['.read'] = true;
@@ -311,6 +334,11 @@ const VERROU = require('./verrou-ecritures.cjs');
       const manque = E._cles.filter((k) => !(lc[k] && /auth\.token\.role === 'admin'/.test(String(lc[k]['.write'] || ''))));
       if (manque.length) throw new Error('Vérif KO : verrou écritures absent en live sur ' + manque.join(', ') + ', abort');
       console.log('🔒 Écritures /cmcteams : planning + réglages (' + E._cles.length + ' clés + ' + E._prefixes.length + ' préfixes) = role:admin en live');
+    }
+    if (fichesLock === 'on') {
+      const okF = lc.cmc_reg?.['.write'] === F.reg_write && lc.cmc_reg?.$uid?.['.write'] === F.reg_uid_write && lc.cmc_ferme?.$uid?.['.write'] === F.ferme_uid_write;
+      if (!okF) throw new Error('Vérif KO : fiches par personne absentes en live (cmc_reg / cmc_ferme), abort');
+      console.log('🔒 Fiches /cmcteams : cmc_reg entier = role:admin ; fiche fermée = son numéro ou admin (en live)');
     }
   } else {
     console.log('🛟 Config admin /cmcteams : écriture parent auth!=null (inchangé)');

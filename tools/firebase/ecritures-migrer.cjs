@@ -28,7 +28,7 @@ const ATTENTE_MAX_MS = +(process.env.ECRITURES_ATTENTE_MS || 15 * 60 * 1000);   
 const PAUSE_DRAPEAU_MS = +(process.env.ECRITURES_PAUSE_MS || 150 * 1000);
 const APP_SW = process.env.CMC_APP_SW || 'https://cmcteams.kd-mc.com/sw.js';
 const LIGHT_VER = process.env.CMC_LIGHT_VER || 'https://departs.kd-mc.com/version.txt';
-const APP_MIN = 9954, LIGHT_MIN = 1059;   // 8.10.2026 : v9.954 garde cmc_e / cmc_known_identities sur le téléphone non-admin (phase 2c)
+const APP_MIN = 9955, LIGHT_MIN = 1059;   // 8.10.2026 : v9.954 garde cmc_e / cmc_known_identities sur le téléphone non-admin (phase 2c)
 
 /* Lecture d'une page du domaine COMME UNE SONDE : depuis la porte générale (3.10.2026, « aucune consultation sans
    compte »), le routeur répond 401 à qui n'a ni compte ni en-tête `x-kdmc-sonde` venu d'un centre de données
@@ -66,13 +66,47 @@ async function activer() {
   const token = await getAccessToken();
   await jusqua('Verrou config admin en ligne', async () => adminLockLive((await req('GET', '/.settings/rules', token) || {}).rules));
   console.log('✅ Verrou config admin en ligne (écriture descendue au $key)');
-  await jusqua('Appli CMCteams v9.954', async () => { const r = await enLigne(APP_SW); return versionSw(r.texte) >= APP_MIN || pasPret('sw.js', r); });
-  console.log('✅ Appli en ligne ≥ v9.954 (sait écrire avec le jeton admin, personnes comprises)');
+  await jusqua('Appli CMCteams v9.955', async () => { const r = await enLigne(APP_SW); return versionSw(r.texte) >= APP_MIN || pasPret('sw.js', r); });
+  console.log('✅ Appli en ligne ≥ v9.955 (jeton admin pour planning, personnes, fiches entières ; un employé n\'envoie que sa fiche)');
   await jusqua('Page light v1.59', async () => { const r = await enLigne(LIGHT_VER); return versionLight(r.texte) >= LIGHT_MIN || pasPret('version.txt', r); });
   console.log('✅ Page light en ligne ≥ v1.59 (planning et chefs écrits avec le jeton admin)');
   await req('PUT', '/cmcteams/cmc_ecritures_actif', token, true);
   console.log('✅ Drapeau /cmcteams/cmc_ecritures_actif = true — pause ' + Math.round(PAUSE_DRAPEAU_MS / 1000) + ' s (les téléphones ouverts le relisent)');
   await attendre(PAUSE_DRAPEAU_MS);
+}
+
+/* Un contrôle = une ligne : ce qu'on a lu, ce qu'on attendait, et l'erreur à garder si ça ne colle pas. */
+function controle(erreurs, libelle, statut, attendu, erreur) {
+  console.log('🔬 ' + libelle + ' : HTTP ' + statut + ' (attendu ' + attendu + ')');
+  const mauvais = attendu === 200 ? statut !== 200 : statut === 200;
+  if (mauvais) erreurs.push(erreur + ' (HTTP ' + statut + ')');
+}
+/* Planning, réglages, personnes : un anonyme est refusé partout, l'admin passe, une clé des employés reste ouverte. */
+async function preuvesVerrou(ecrire, anon, admin, erreurs) {
+  // (Refusé = rien d'écrit. Si c'était accepté, la sonde est effacée juste après et le robot échoue.)
+  const REFUS = ['/cmcteams/cmc_ov/zz_sonde_verrou', '/cmcteams/cmc_t/zz_sonde_verrou', '/cmcteams/cmc_access/zz_sonde_verrou',
+    '/cmcteams/cmc_dep_chefs/zz_sonde_verrou', '/cmcteams/cmc_ref_zz_sonde_verrou', '/cmcteams/cmc_verrou_sonde',
+    '/cmcteams/cmc_e/zz_sonde_verrou', '/cmcteams/cmc_known_identities/zz_sonde_verrou'];   // phase 2c : les personnes aussi (Kevin 8.10.2026)
+  for (const p of REFUS) controle(erreurs, 'Téléphone anonyme écrit ' + p.replace('/cmcteams/', ''), await ecrire('anonyme', anon, p), 401, 'ACCEPTÉ pour un anonyme : ' + p);
+  // L'admin passe — prouvé sur la clé-sonde verrouillée (jamais dans le vrai planning).
+  controle(erreurs, 'Jeton admin écrit cmc_verrou_sonde (clé verrouillée)', await ecrire('admin', admin, '/cmcteams/cmc_verrou_sonde'), 200, 'REFUSÉ pour l\'admin : l\'admin ne pourrait plus enregistrer le planning');
+  controle(erreurs, 'Téléphone anonyme écrit une clé restée aux employés', await ecrire('anonyme', anon, '/cmcteams/cmc_zz_sonde_ouverte'), 200, 'Trop fermé : une clé des employés est refusée');
+}
+/* FICHES (phase fiches, 8.10.2026) : une fiche jamais connectée reste écrivable ; une fiche FERMÉE (cmc_ferme/<uid> posée)
+   ne s'écrit plus qu'à son numéro ou en admin ; personne ne ferme la fiche d'un autre. */
+async function preuvesFiches(ecrire, anon, token, sondes, erreurs) {
+  controle(erreurs, 'Téléphone anonyme écrit la fiche d\'une personne JAMAIS connectée', await ecrire('anonyme', anon, '/cmcteams/cmc_reg/zz_sonde_ouverte'), 200, 'Trop fermé : une fiche jamais connectée est refusée — une inscription depuis un autre appareil casserait');
+  sondes.push('/cmcteams/cmc_ferme/zz_sonde_fermee');
+  await req('PUT', '/cmcteams/cmc_ferme/zz_sonde_fermee', token, Date.now());   // la personne « s'est connectée » (compte de service, sonde)
+  controle(erreurs, 'Téléphone anonyme écrit une fiche FERMÉE', await ecrire('anonyme', anon, '/cmcteams/cmc_reg/zz_sonde_fermee'), 401, 'ACCEPTÉ pour un anonyme sur une fiche fermée : /cmcteams/cmc_reg/zz_sonde_fermee');
+  const emp = await jetonRole({ role: 'employee', scope: 'cmc' }, 'zz_sonde_fermee');
+  if (emp) {
+    controle(erreurs, 'La personne (jeton à son numéro) écrit SA fiche fermée', await ecrire('la personne', emp, '/cmcteams/cmc_reg/zz_sonde_fermee'), 200, 'REFUSÉ pour la personne elle-même : elle ne pourrait plus remplir sa fiche');
+    controle(erreurs, 'La personne tente de fermer la fiche d\'un AUTRE', await ecrire('la personne', emp, '/cmcteams/cmc_ferme/zz_sonde_autre', Date.now()), 401, 'ACCEPTÉ : une personne a fermé la fiche d\'un autre numéro');
+  } else {
+    erreurs.push('Jeton employé impossible : la preuve « la personne écrit sa fiche fermée » n\'a pas pu être faite.');
+  }
+  controle(erreurs, 'Téléphone anonyme pose une marque « fermée » sur un numéro', await ecrire('anonyme', anon, '/cmcteams/cmc_ferme/zz_sonde_autre', Date.now()), 401, 'ACCEPTÉ : un anonyme peut fermer la fiche de n\'importe qui');
 }
 
 async function prouver() {
@@ -82,35 +116,19 @@ async function prouver() {
   const admin = await jetonRole({ role: 'admin' }, 'zz-robot-verrou-ecritures');
   if (!admin) throw new Error('Jeton role:admin impossible : la preuve « l\'admin passe » n\'a pas pu être faite.');
   const sondes = [];
-  const ecrire = async (qui, jeton, chemin) => { sondes.push(chemin); return (await commeVisiteur('PUT', chemin, jeton, { sonde: qui, ts: Date.now() })).status; };
-  let erreurs = [];
+  const ecrire = async (qui, jeton, chemin, corps) => { sondes.push(chemin); return (await commeVisiteur('PUT', chemin, jeton, corps === undefined ? { sonde: qui, ts: Date.now() } : corps)).status; };
+  const erreurs = [];
   try {
-    // Un anonyme est refusé sur le planning, les équipes, les droits, la liste des chefs, une clé « cmc_ref_… ».
-    // (Refusé = rien d'écrit. Si c'était accepté, la sonde est effacée juste après et le robot échoue.)
-    const REFUS = ['/cmcteams/cmc_ov/zz_sonde_verrou', '/cmcteams/cmc_t/zz_sonde_verrou', '/cmcteams/cmc_access/zz_sonde_verrou',
-      '/cmcteams/cmc_dep_chefs/zz_sonde_verrou', '/cmcteams/cmc_ref_zz_sonde_verrou', '/cmcteams/cmc_verrou_sonde',
-      '/cmcteams/cmc_e/zz_sonde_verrou', '/cmcteams/cmc_known_identities/zz_sonde_verrou'];   // phase 2c : les personnes aussi (Kevin 8.10.2026)
-    for (const p of REFUS) {
-      const s = await ecrire('anonyme', anon, p);
-      console.log('🔬 Téléphone anonyme écrit ' + p.replace('/cmcteams/', '') + ' : HTTP ' + s + ' (attendu 401)');
-      if (s === 200) erreurs.push('ACCEPTÉ pour un anonyme : ' + p);
-    }
-    // L'admin passe — prouvé sur la clé-sonde verrouillée (jamais dans le vrai planning).
-    const a = await ecrire('admin', admin, '/cmcteams/cmc_verrou_sonde');
-    console.log('🔬 Jeton admin écrit cmc_verrou_sonde (clé verrouillée) : HTTP ' + a + ' (attendu 200)');
-    if (a !== 200) erreurs.push('REFUSÉ pour l\'admin (HTTP ' + a + ') : l\'admin ne pourrait plus enregistrer le planning');
-    const ouvert = await ecrire('anonyme', anon, '/cmcteams/cmc_zz_sonde_ouverte');
-    console.log('🔬 Téléphone anonyme écrit une clé restée aux employés : HTTP ' + ouvert + ' (attendu 200)');
-    if (ouvert !== 200) erreurs.push('Trop fermé : une clé des employés est refusée (HTTP ' + ouvert + ')');
+    await preuvesVerrou(ecrire, anon, admin, erreurs);
+    await preuvesFiches(ecrire, anon, token, sondes, erreurs);
     const lu = await commeVisiteur('GET', '/cmcteams/cmc_ov', anon);
-    console.log('🔬 Téléphone anonyme lit le planning : HTTP ' + lu.status + ' (attendu 200 — la lecture ne change pas)');
-    if (lu.status !== 200) erreurs.push('Le planning n\'est plus lisible (HTTP ' + lu.status + ')');
+    controle(erreurs, 'Téléphone anonyme lit le planning (la lecture ne change pas)', lu.status, 200, 'Le planning n\'est plus lisible');
   } finally {
     for (const p of sondes) await req('DELETE', p, token).catch(() => null);
     console.log('🧹 ' + sondes.length + ' sonde(s) effacée(s) au compte de service');
   }
   if (erreurs.length) throw new Error(erreurs.join(' · '));
-  console.log('✅ Planning, réglages et personnes : écrits par l\'admin seul, prouvé comme un téléphone anonyme et comme un admin ; le reste inchangé');
+  console.log('✅ Planning, réglages, personnes : admin seul ; fiches : fermées par personne au fur et à mesure des connexions — prouvé comme un anonyme, comme la personne et comme un admin ; le reste inchangé');
 }
 
 async function annuler() {

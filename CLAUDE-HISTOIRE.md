@@ -3953,6 +3953,23 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 
 ---
 
+## 📄 RÈGLE ABSOLUE — ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE, POUR TOUT LE MONDE, ET L'ORIGINAL VA DANS LA FICHE — LE LIEN RESTE LA RÉFÉRENCE (Kevin 2026-10-08, ABSOLUE)
+
+> **« Tu ajoutes tout ce que tu trouves pour vivant et mort toujours et tu cherches pour tout le monde toujours. »** puis
+> **« Intègre les originaux sans avoir besoin de cliquer sur des liens. Toujours pour tout. Garde les liens comme références. »** — Kevin 2026-10-08
+
+- **Tout s'ajoute** : confirmé, probable ET piste (la piste écrite comme piste, « 🔎 PISTE (non prouvé) »), recherches
+  négatives comprises. Vivants : info publique et généalogique (carrière, nominations, médailles, sociétés), jamais
+  d'adresse, de téléphone, de réseaux, de santé, d'affaires judiciaires ; rien sur les mineurs. Avant d'ajouter :
+  contrôle anti-doublon `arbre-nuage` `voir = ?<base64 [{id, mots}]>` (une ligne 🧩 par fiche).
+- **L'original dans la fiche** : chaque source qui a une image ou un PDF (Journal de Monaco, index d'archives, acte) est
+  rendue en image par `tools/arbre/originaux.py` (le nom **surligné**), rangée dans un **tiroir à part du nuage**
+  (`/arbre/<sha256(code+":originaux")>/<ref>`, que la synchro ne télécharge jamais en bloc) ; la fiche reçoit une entrée
+  légère (titre, vignette, `ref`, `src`). Un toucher = l'original s'ouvre dans l'app (v3.68) ; le lien en bas = la référence.
+  Bouton : workflow `arbre-nuage`, entrée `originaux` = base64 de `[{id, url, cherche, label}]` ; rejouer = 0 (même `ref`).
+- Une source sans image (fichier INSEE, page refusée aux robots) garde son lien, et on le dit à Kevin.
+- Garde : `tests/arbre-originaux.test.mjs` (dans `test:ci`).
+
 ## 🌳 RÈGLE ABSOLUE — ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE, ET EXPLOITER CHAQUE LIEN QUI MARCHE JUSQU'AU BOUT (Kevin 2026-10-03, ABSOLUE)
 
 > **« Ajoute toujours intelligemment les nouveaux quand l'info est sûre. Profite du lien pour faire toutes les recherches, vérifications, etc. Note le. »** — Kevin 2026-10-03, après la lecture de l'acte de naissance de Guy (Poissy 1918) qui nommait ses parents.
@@ -11897,7 +11914,19 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 - Toute nouvelle donnée « planning / équipe / personne / compte / code » naît **verrouillée au rôle admin** (liste + règles + sonde du robot).
 - Ne jamais rouvrir une clé verrouillée pour « faire marcher » une fonction employé : la fonction passe par le domaine (jeton admin côté serveur).
 - Ajouter une clé au verrou = bump de l'appli (le robot attend la version en ligne avant de republier, sinon les vieux téléphones déclenchent le disjoncteur).
-- Pour fermer `cmc_reg` par personne, il faudra un **jeton par employé** (`auth.uid`), pas ce verrou — à faire, pas fait.
+- Pour fermer `cmc_reg` par personne : fait le soir même, voir § 4.
+
+### 4. FICHES : fermées par personne, « au fur et à mesure des connexions » (Kevin 2026-10-08, CMCteams v9.955)
+
+> **« Fermé au fur à mesure des connexions »** — Kevin 2026-10-08, après « fermer `cmc_reg` par personne demandera un jeton par employé ».
+
+- La fiche d'une personne (`cmc_reg/<uid>`) se ferme **à sa première connexion vérifiée** : le domaine (`apex-auth-worker /login-cmc`)
+  rend un jeton à son numéro (`auth.uid`), le téléphone pose `cmc_ferme/<uid>` ; ensuite seuls ce numéro et l'admin l'écrivent
+  (règle Firebase `_phase_cmc_fiches`, FICHES_LOCK). Une fiche jamais connectée reste ouverte (inscription ailleurs, admin).
+- L'objet `cmc_reg` **entier** = rôle admin seulement ; un employé n'envoie que SA fiche (`fbWrite`, file hors ligne, « tout envoyer »).
+- La marque ne s'efface pas par un non-admin (`newData.exists()`), personne ne ferme la fiche d'un autre (`auth.uid === $uid`).
+- Gardes : `test:ecritures-cmc` (composition + 3 sabotages + téléphone employé + marque + admin), `test:fiches-privees` ; robot :
+  anonyme → 200 sur une fiche jamais connectée, 401 sur une fermée ; la personne → 200 sur la sienne, 401 pour fermer celle d'un autre.
 
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 

@@ -33,10 +33,32 @@ function appliquer(rules, E) {
   return rules;
 }
 
+/* FICHES (8.10.2026, Kevin « fermé au fur et à mesure des connexions ») : cmc_reg entier = rôle admin ;
+   cmc_reg/<uid> = admin, ou ce numéro, ou fiche jamais fermée (pas de cmc_ferme/<uid>) ; cmc_ferme/<uid> = admin ou ce numéro,
+   jamais effacée par un non-admin (newData.exists()). Lève au moindre doute. */
+function appliquerFiches(rules, F) {
+  if (!F || !/role === 'admin'/.test(String(F.reg_write)) || !/auth\.uid === \$uid/.test(String(F.reg_uid_write)) || !/cmc_ferme/.test(String(F.reg_uid_write))
+      || !/newData\.exists\(\)/.test(String(F.ferme_uid_write)) || !/auth\.uid === \$uid/.test(String(F.ferme_uid_write)) || !/isNumber/.test(String(F.ferme_uid_validate))) {
+    throw new Error('_phase_cmc_fiches invalide');
+  }
+  const c = rules?.cmcteams;
+  if (!c || c['.write'] != null || !c.$key?.['.write']) throw new Error('le verrou config admin (write descendu au $key) doit être posé avant');
+  c.cmc_reg = { ...c.cmc_reg, '.write': F.reg_write, $uid: { ...c.cmc_reg?.$uid, '.write': F.reg_uid_write } };
+  c.cmc_ferme = { $uid: { '.write': F.ferme_uid_write, '.validate': F.ferme_uid_validate } };
+  if (c['.read'] !== 'auth != null') throw new Error('/cmcteams .read doit rester "auth != null"');
+  if (c.cmc_reg['.read'] != null) throw new Error('cmc_reg ne porte pas de .read propre (lecture inchangée)');
+  return rules;
+}
+/* Les fiches sont-elles fermées par personne en live ? */
+function fichesPosees(rulesLive) {
+  const c = rulesLive?.cmcteams;
+  return !!(/cmc_ferme/.test(String(c?.cmc_reg?.$uid?.['.write'] || '')) && c?.cmc_ferme?.$uid);
+}
+
 /* Lecture d'un état live : le verrou est-il posé ? (clé témoin : cmc_access) */
 function estPose(rulesLive) {
   const c = rulesLive && rulesLive.cmcteams;
   return !!(c && c.cmc_access && /role/.test(String(c.cmc_access['.write'] || '')));
 }
 
-module.exports = { keyWrite, appliquer, estPose, OUVERTES };
+module.exports = { keyWrite, appliquer, estPose, OUVERTES, appliquerFiches, fichesPosees };

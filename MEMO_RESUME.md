@@ -1,5 +1,21 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (soir) — Copie publique re-débloquée (2e fois : même adresse de mairie)
+
+- Depuis #4414 (18h23 UTC), « synchroniser le CODE » échouait à chaque commit : le vérificateur refusait une adresse
+  @orange.fr (mairie de Chevrainvilliers) revenue dans `KEVIN_ACTIONS_TODO.md` — déjà retirée une fois par #4395.
+  Rien n'arrivait plus sur le dépôt public (dont Apex Chat v1.1.296). Correctif identique : renvoi vers
+  `audit/prive/arbre-demandes-actes-adresses.md` (qui la contient déjà). Mesuré : export 4536 fichiers, ✅ RIEN de sensible.
+- Branche arbre : ne JAMAIS remettre une adresse mail de service sur une messagerie grand public dans un document exporté ;
+  elle va dans `audit/prive/`.
+
+## 2026-10-08 (18h30) — « Fermé au fur et à mesure des connexions » : fiches par personne (CMCteams v9.955)
+
+- **Kevin** (réponse à « fermer la fiche par personne demandera un jeton par employé ») : « Fermé au fur à mesure des connexions ».
+- **Mesuré** : depuis v9.924 chaque employé reçoit DÉJÀ un jeton Firebase à son numéro à la connexion (`/login-cmc`, scope cmc, `_cmcSetRoleToken`) ; il n'était utilisé pour rien côté règles. `cmc_reg` était écrit en entier par tout téléphone (clobber possible, aucune règle par personne).
+- **Livré (CMCteams v9.955)** : `fbWrite` / file hors ligne / « tout envoyer » : un employé n'envoie que SA fiche (`cmc_reg/<uid>`) ; à la pose d'un jeton employé, le téléphone pose `cmc_ferme/<uid>` ; une fiche d'un autre reçue en direct (chemin enfant) se fond dans la copie locale. Règles `_phase_cmc_fiches` (FICHES_LOCK, `verrou-ecritures.cjs appliquerFiches`, vérif live) : `cmc_reg` entier = admin ; `cmc_reg/<uid>` = admin, ce numéro, ou fiche jamais fermée ; `cmc_ferme/<uid>` = admin ou ce numéro, jamais effacée par un non-admin. Robot : plancher v9.955, preuves fiches. Light inchangée.
+- **Gardes** : `test:ecritures-cmc` 62/0 (3 sabotages de règle + téléphone employé + marque + admin), `test:fiches-privees` 46/0 (harnais adapté : chacun sa fiche) ; sabotage « objet entier depuis un employé » → 2 + 3 rouges. Autres tests fiches (secrets-cmc 41, inscription-sans-validation 9, anciennete 11, boot-sobre 5) verts.
+- **✅ PROUVÉ EN LIGNE (run coffre-ecritures-cmc 37825313408, 18h38 UTC, déclenché par le marqueur à la fusion)** : appli v9.955 vue en ligne, règles publiées (34 clés + fiches), anonyme → 401 sur planning / personnes / fiche fermée, 200 sur une fiche jamais connectée ; la personne → 200 sur sa fiche fermée, 401 pour fermer celle d'un autre ; anonyme → 401 pour poser une marque ; lecture → 200 ; 16 sondes effacées. Quality gate SonarCloud : A après découpage des preuves (`controle`, `preuvesVerrou`, `preuvesFiches`).
 ## 2026-10-08 (nuit) — Gardes rouges de main remis au vert (sans baisser aucun seuil)
 
 - `test:harnais-sans-sw` : 3 harnais navigateur ouvraient un contexte sans `serviceWorkers: 'block'`
@@ -21,6 +37,17 @@ Lu en vrai (D1 de nouveau lisible, Railway) :
 - Correctifs : robots papier sur le VRAI marché (public, sans clé) ; saut de capital > 8 % en un cycle ignoré ; IA bornée
   à 2 % de risque / 40 % de position, consigne qui nomme le frein de −10 %/jour.
 - Gardes : test_multi 76/0, bot-ia 83/0, bot-ia-routeur 54/0 ; sabotages rouges. Leçon 462.
+## 2026-10-08 (nuit) — Apex Chat v1.1.296 : les GROUPES chiffrés de bout en bout
+
+- Avant : les groupes étaient « chiffrés en transit seulement » (affiché honnêtement). Maintenant : clé de groupe par membre
+  (E2EG1 messages, E2EGK1 distribution des clés, E2EGR1 demande de clé), nouvelle clé à chaque départ/arrivée, en-tête
+  « 🔒 Groupe chiffré de bout en bout ». Un membre sans clé (ancienne version) → repli honnête « chiffré en transit ».
+  Un membre dont la clé a changé est exclu de la clé jusqu'à l'acceptation (« ⚠️ n clé(s) à vérifier »), jamais d'envoi en clair.
+- Serveur : les messages de clés ne déclenchent plus de push ni ne font remonter la conversation (`MIMES_SILENCIEUX`).
+- Mesuré : 94 fichiers / 1583 tests, couverture sans ERROR ; 23 + 3 sabotages tous détectés. Leçon #462.
+- Reste (dit honnêtement) : pas de signature d'expéditeur dans un groupe, pas de confidentialité persistante dans une
+  génération de clé, pièces jointes de groupe pas encore chiffrées de bout en bout (seul le lien/la légende l'est).
+- À vérifier sur iPhone : groupe à 3 comptes réels.
 
 ## 2026-10-08 (nuit) — v1.1.295 EN LIGNE ; test navigateur des photos mis à jour
 
@@ -987,6 +1014,14 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   Pierre-Daniel ?) ; 5 personnes isolées ; groupe de 14 (Philippe ‹employé›, Monaco) non relié ; mères d'Amélie
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
+
+### 2026-10-08 (soir) — Arbre v3.68 : les ORIGINAUX dans la fiche, le lien en référence
+- Kevin : « Intègre les originaux sans avoir besoin de cliquer sur des liens. Toujours pour tout. Garde les liens comme références. »
+- `tools/arbre/originaux.py` (CI, pymupdf) : Journal de Monaco (numéro ou article → PDF du numéro), PDF, image → la page qui porte
+  le nom, rendue en JPEG, nom surligné, + vignette. `appliquer-nuage.mjs` (ORIGINAUX_FILE) range le fichier dans un tiroir à part
+  (`/arbre/<sha256(code+":originaux")>`) et ajoute à la fiche `{label, ref, src, thumb}` ; rejouer = 0. App : toucher = original
+  affiché dans l'app, « 🔗 Référence » en bas. Garde `tests/arbre-originaux.test.mjs` (12 contrôles).
+- Mesuré en local : JdM n° 5697 (1966) → page 9/24, « Desarzens » surligné, 166 Ko ; JdM n° 8757 (2025) → page 14/96, 141 Ko.
 
 ### 2026-10-08 — Arbre : « tout ajouter, pour tout le monde » sans doublon (`--voir "?…"`)
 - Kevin : « Tu ajoutes tout ce que tu trouves pour vivant et mort toujours et tu cherches pour tout le monde toujours. »

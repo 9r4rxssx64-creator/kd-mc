@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-08",
+  "maj": "2026-10-08 18:30",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -4363,6 +4363,15 @@
       "sujet": "Kevin 8.10 : les MINEURS de la famille entrent dans l'arbre (Ronan, sa petite cousine, les autres enfants) — fiche complète, ajout sans demander",
       "corps": "Kevin 8.10 : « Tu peux ajouter aussi pour les mineurs qui sont mon fils et ma petite cousine. Tout le monde est d'accord et content de l'arbre donc ajoute tout pour tout le monde toujours. » Règle complétée dans CLAUDE-HISTOIRE.md (§ ARBRE : AJOUTER TOUT SEUL…, paragraphe « Étendue aux mineurs ») + mémoire compacte m9s_muzuxmtc. Pour eux : date et lieu de naissance, parents, photos, notes = OUI dès que l'info vient de la famille ou d'un acte ; recherche internet ou fichiers publics à leur nom = NON. Constat : seed_ronan existe (père seed_kevin) sans date de naissance ni mère ; la petite cousine n'est pas identifiée — à demander à Kevin si elle n'est pas déjà dans l'arbre. Le code de l'app ne bloquait rien : la limite était seulement dans la mémoire.",
       "ts": "2026-10-08 18:16",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m208-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "sujet": "Fiches CMCteams fermées PAR PERSONNE au fur et à mesure des connexions (Kevin 8.10, v9.955) : un employé n'écrit plus jamais l'objet cmc_reg entier",
+      "corps": "1) fbWrite / flushSyncQueue / fbPushAll : si l'appareil n'est pas celui de l'admin, cmc_reg part en cmc_reg/<uid> (sa fiche seule) ; l'objet entier ne part qu'avec le jeton admin (ecritures-cmc.js ENTIER_ADMIN). N'ajoute jamais un PUT entier de cmc_reg depuis un employé. 2) À la pose d'un jeton employé (_cmcSetRoleToken → _cmcFermerMaFiche), le téléphone pose cmc_ferme/<uid> (nombre) : règle Firebase (_phase_cmc_fiches, FICHES_LOCK, deploy-rules + verrou-ecritures.cjs appliquerFiches) → cmc_reg/<uid> = admin, ce numéro, ou fiche jamais fermée. 3) fbApplyData accepte un chemin enfant cmc_reg/<uid> (mise à jour par personne) ; tout autre chemin enfant est ignoré (plus de clés localStorage 'x/y'). 4) Si tu touches à cmc_reg dans un test : le faux Firebase doit accepter PUT /cmcteams/cmc_reg/<uid>.json (voir verify-fiches-privees.mjs). Gardes : test:ecritures-cmc (62), test:fiches-privees (46).",
+      "ts": "2026-10-08 18:30",
       "etat": "ouvert"
     }
   ]

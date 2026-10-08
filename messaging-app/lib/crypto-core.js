@@ -425,6 +425,151 @@ export async function decryptBytes(convId, arrayBuffer) {
 }
 
 // ----------------------------------------------------------------------------
+//  E2E de GROUPE — « Sender Keys » simplifiées (v1.1.296, parité WhatsApp/Signal)
+//  Chaque membre a, par groupe et par ÉPOQUE, une clé d'envoi AES-GCM 256 bits
+//  aléatoire. Ses messages de groupe sont chiffrés avec SA clé courante (IV
+//  aléatoire de 12 octets par message, jamais réutilisé). La clé est distribuée
+//  à chaque autre membre INDIVIDUELLEMENT, emballée par l'ECDH 1:1 (clé privée
+//  d'identité de l'émetteur × clé publique d'identité du membre) dérivée avec un
+//  HKDF DISTINCT de celui des DM (séparation de domaine). Les données associées
+//  (AAD) lient chaque chiffré à (groupe, émetteur, [destinataire], époque, kid) :
+//  un serveur ne peut ni réattribuer un message à un autre membre, ni rejouer
+//  une clé emballée dans un autre groupe / une autre époque.
+//  Formats sur le fil (champ `ciphertext`, relayé tel quel par le serveur) :
+//    'E2EG1:'  + b64(JSON{v,epoch,kid,iv,ct})                  message de groupe
+//    'E2EGK1:' + b64(JSON{v,from,epoch,kid,keys:[{to,iv,w}]})  distribution (jamais affichée)
+//    'E2EGR1:' + b64(JSON{v,from,sender,epoch,kid})            demande de clé (jamais affichée)
+// ----------------------------------------------------------------------------
+export const GROUP_MSG_TAG = 'E2EG1:';
+export const GROUP_KEY_TAG = 'E2EGK1:';
+export const GROUP_REQ_TAG = 'E2EGR1:';
+// Taille max d'UNE trame de distribution (le serveur refuse > 100 000 caractères).
+export const GROUP_KEY_MSG_MAX = 60000;
+
+// b64 d'octets par tranches (pas de String.fromCharCode(...60 000 args) : limite Safari).
+function _bytesToB64(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function _jsonToB64(o) { return _bytesToB64(enc.encode(JSON.stringify(o))); }
+function _b64ToJson(b64) { return JSON.parse(dec.decode(new Uint8Array(b64ToBuf(b64)))); }
+
+export function groupAad(parts) {
+  return enc.encode(['apex-grp-v1'].concat(parts.map(String)).join('|'));
+}
+
+// Clé d'emballage 1:1 pour la distribution des clés d'envoi (NON extractible).
+export async function deriveGroupWrapKey(myPrivateKey, theirPublicKey) {
+  const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: theirPublicKey }, myPrivateKey, 256);
+  const hk = await crypto.subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: enc.encode('apex-chat-group-v1'), info: enc.encode('sender-key-wrap') },
+    hk, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'],
+  );
+}
+
+// Nouvelle clé d'envoi : 32 octets aléatoires + identifiant (kid) aléatoire.
+export function newGroupSenderKey() {
+  return { raw: randomBytes(32), kid: bufToHex(randomBytes(8)) };
+}
+
+// Octets → CryptoKey AES-GCM NON extractible (aucun script ne relit les octets).
+export function importGroupSenderKey(raw) {
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+export async function wrapGroupSenderKey(wrapKey, raw, aadParts) {
+  const iv = randomBytes(12);
+  const w = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: groupAad(aadParts) }, wrapKey, raw);
+  return { iv: bufToB64(iv), w: bufToB64(w) };
+}
+
+// Déballe → CryptoKey NON extractible ; les octets en clair sont effacés aussitôt.
+export async function unwrapGroupSenderKey(wrapKey, entry, aadParts) {
+  const raw = new Uint8Array(await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: new Uint8Array(b64ToBuf(entry.iv)), additionalData: groupAad(aadParts) },
+    wrapKey, b64ToBuf(entry.w),
+  ));
+  try { return await importGroupSenderKey(raw); } finally { raw.fill(0); }
+}
+
+export async function groupEncrypt(senderKey, plaintext, { conv, from, epoch, kid }) {
+  const iv = randomBytes(12); // IV FRAIS à chaque message (AES-GCM : jamais deux fois le même)
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: groupAad([conv, from, epoch, kid]) }, senderKey, enc.encode(plaintext),
+  );
+  return GROUP_MSG_TAG + _jsonToB64({ v: 1, epoch, kid, iv: bufToB64(iv), ct: bufToB64(ct) });
+}
+
+export async function groupDecrypt(senderKey, body, { conv, from }) {
+  const pt = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: new Uint8Array(b64ToBuf(body.iv)), additionalData: groupAad([conv, from, body.epoch, body.kid]) },
+    senderKey, b64ToBuf(body.ct),
+  );
+  return dec.decode(pt);
+}
+
+// Reconnaît une trame de groupe. → null (pas une trame de groupe) | { kind, body }
+// body = null si la trame est malformée (l'appelant affiche une note, jamais le brut).
+export function parseGroupWire(raw) {
+  if (typeof raw !== 'string') return null;
+  let kind = null; let tag = null;
+  if (raw.startsWith(GROUP_MSG_TAG)) { kind = 'msg'; tag = GROUP_MSG_TAG; }
+  else if (raw.startsWith(GROUP_KEY_TAG)) { kind = 'key'; tag = GROUP_KEY_TAG; }
+  else if (raw.startsWith(GROUP_REQ_TAG)) { kind = 'req'; tag = GROUP_REQ_TAG; }
+  if (!kind) return null;
+  let body = null;
+  try {
+    const o = _b64ToJson(raw.slice(tag.length));
+    if (o && typeof o === 'object' && o.v === 1 && Number.isInteger(o.epoch) && typeof o.kid === 'string') body = o;
+  } catch { body = null; }
+  return { kind, body };
+}
+
+// Distribution d'UNE clé d'envoi : entrées {to,iv,w} regroupées en trames de
+// taille bornée (une seule trame pour un groupe ordinaire ; plusieurs au-delà).
+export function buildGroupKeyMessages({ from, epoch, kid }, entries, maxLen = GROUP_KEY_MSG_MAX) {
+  const wire = (keys) => GROUP_KEY_TAG + _jsonToB64({ v: 1, from, epoch, kid, keys });
+  const out = [];
+  let cur = [];
+  for (const e of entries) {
+    if (cur.length && wire(cur.concat([e])).length > maxLen) { out.push(wire(cur)); cur = []; }
+    cur.push(e);
+  }
+  if (cur.length) out.push(wire(cur));
+  return out;
+}
+
+export function buildGroupKeyRequest({ from, sender, epoch, kid }) {
+  return GROUP_REQ_TAG + _jsonToB64({ v: 1, from, sender, epoch, kid });
+}
+
+// Décision PURE : le groupe peut-il être chiffré de bout en bout pour ce message ?
+// statuses : [{ uid, status }] des AUTRES membres, status ∈ 'ok' | 'pending' | autre.
+//   - 'ok'      → reçoit la clé d'envoi ;
+//   - 'pending' → clé changée NON acceptée : ne reçoit PAS la clé (jamais adoptée en silence) ;
+//   - autre     → aucune clé utilisable (pas publiée, appli trop ancienne) → le groupe
+//                 n'est PAS prêt : chemin honnête « chiffré en transit » pour ce message.
+export function groupReadiness(statuses) {
+  const recipients = []; const pending = []; const missing = [];
+  for (const s of statuses) {
+    if (s.status === 'ok') recipients.push(s.uid);
+    else if (s.status === 'pending') pending.push(s.uid);
+    else missing.push(s.uid);
+  }
+  return { ready: missing.length === 0, recipients, pending, missing };
+}
+
+// Nouvelle époque nécessaire ? (1ᵉʳ envoi, ou liste des membres changée : ajout/retrait)
+export function groupNeedsRotation(own, members) {
+  if (!own || !Array.isArray(own.members)) return true;
+  const a = own.members.slice().sort().join('\n');
+  const b = members.slice().sort().join('\n');
+  return a !== b;
+}
+
+// ----------------------------------------------------------------------------
 //  Fingerprint (safety number — vérification visuelle)
 // ----------------------------------------------------------------------------
 
@@ -510,6 +655,23 @@ if (typeof window !== 'undefined') {
     wrapWithPin,
     unwrapWithPin,
     computeFingerprint,
+    GROUP_MSG_TAG,
+    GROUP_KEY_TAG,
+    GROUP_REQ_TAG,
+    GROUP_KEY_MSG_MAX,
+    groupAad,
+    deriveGroupWrapKey,
+    newGroupSenderKey,
+    importGroupSenderKey,
+    wrapGroupSenderKey,
+    unwrapGroupSenderKey,
+    groupEncrypt,
+    groupDecrypt,
+    parseGroupWire,
+    buildGroupKeyMessages,
+    buildGroupKeyRequest,
+    groupReadiness,
+    groupNeedsRotation,
     selfTest,
     randomBytes,
     bufToB64,

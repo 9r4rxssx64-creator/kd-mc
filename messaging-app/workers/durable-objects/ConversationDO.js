@@ -31,6 +31,9 @@ const RATE_LIMITS = {
 };
 const SIGNALING_TYPES = new Set(['webrtc-offer', 'webrtc-answer', 'webrtc-candidate', 'call-end', 'call-busy']);
 const E2E_TAG_RE = /^E2E\d+:/;
+// Messages techniques du chiffrement de groupe (clés E2EGK1 / demandes E2EGR1) : relayés et gardés, mais
+// ni notification push ni remontée de la conversation (last_msg_ts) — ce ne sont pas des messages lus par un humain.
+const MIMES_SILENCIEUX = new Set(['application/x-apex-grpkey']);
 
 /** Erreur SQLite qui ne se résoudra jamais en réessayant (ligne invalide). */
 function isPermanentDbError(e) {
@@ -897,6 +900,8 @@ export class ConversationDO {
   }
 
   async notifyOfflineMembers(messageRecord) {
+    // Distribution de clés de groupe (E2EGK1/E2EGR1) : technique, jamais affichée → pas de « 💬 Nouveau message ».
+    if (MIMES_SILENCIEUX.has(messageRecord.mime)) return;
     try {
       // Récupérer tous les members de la conv
       const members = await this.env.APEX_CHAT_DB.prepare(
@@ -1102,8 +1107,10 @@ export class ConversationDO {
       for (const m of persisted) fails.delete(m.id);
 
       // Update conv last_msg_ts (un échec ici ne remet PAS les messages en file).
-      if (persisted.length) {
-        const lastMsg = persisted[persisted.length - 1];
+      // Une distribution de clés ne fait pas remonter la conversation : dernier message VISIBLE seulement.
+      const visibles = persisted.filter((m) => !MIMES_SILENCIEUX.has(m.mime));
+      if (visibles.length) {
+        const lastMsg = visibles[visibles.length - 1];
         try {
           await this.env.APEX_CHAT_DB.prepare(
             'UPDATE conversations SET last_msg_id=?, last_msg_ts=? WHERE id=?'

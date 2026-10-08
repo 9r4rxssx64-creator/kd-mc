@@ -15,6 +15,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ### v9.952 / light v1.79 — novembre 2026
 - `tests/fixtures/novembre-2026.pdf` ajouté aux deux générateurs (app + light) ; 196 tableaux sur 5 mois ; seed régénéré.
 
+### v9.955 — fiches fermées par personne, au fur et à mesure des connexions (Kevin 8.10)
+- Un employé n'envoie que SA fiche (`cmc_reg/<uid>`) ; à sa connexion vérifiée, son téléphone pose `cmc_ferme/<uid>` : ensuite seuls lui et l'admin écrivent sa fiche (règle Firebase, phase fiches). Mise à jour par personne reçue en direct. Light inchangée.
+
 ### v9.954 — personnes verrouillées (Kevin 8.10 « Seul moi peut ajouter ou modifier, partout »)
 - `cmc_e` (liste des personnes) et `cmc_known_identities` (identités apprises) ne s'écrivent plus qu'au rôle admin (phase 2c du verrou des écritures) ; un téléphone non-admin garde sa copie, sans refus. Robot `coffre-ecritures-cmc` relancé (sondes ajoutées). Light inchangée.
 

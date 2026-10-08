@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.295",
+  "softwareVersion": "v1.1.296",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.295';
+const __APEX_CHAT_VERSION__ = 'v1.1.296';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.295" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.295</div>
+  <div id="splash-version" data-ver="v1.1.296" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.296</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.295</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.296</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -798,6 +798,7 @@ K._KCALL_ALLOWED = new Set([
   '_scrubVoice', '_cycleVoiceSpeed', '_shareConvLink', '_shareInviteLink', '_createSuggestedLabel',
   '_reportUser', '_blockUser', '_startConvWithUser', '_deleteContact', '_rejectCall',
   '_answerIncomingCall', '_adminOpenTimeline', '_showTrajectory', '_copyDiag',
+  '_grpAcceptMemberKey',   // v1.1.296 : accepter la nouvelle clé d'un membre de groupe (après vérification)
   '_submitInviteFastLogin', '_submitOnboarding'
 ]);
 K._kcallSafeOpenUrl = function(u){
@@ -1808,6 +1809,7 @@ K._refreshConvs = async function(){
           // v1.1.294 — TOFU aussi sur les clés venant de la LISTE (peer_pubkey) :
           // 1ʳᵉ vue épinglée, clé différente = alerte persistante (jamais adoptée).
           try{ K._tofuCheckConvList && K._tofuCheckConvList(K.conversations); }catch(_e){ _safeCatch('tofu-list', _e); }
+          try{ K._grpOnConvsRefreshed && K._grpOnConvsRefreshed(K.conversations); }catch(_e){ _safeCatch('grp-list', _e); }   // v1.1.296
           ls('conversations', K.conversations);
           // v1.1.188 : une fois les conversations chargées, fusionner les contacts
           // (ajoute le pair de chaque conv) → le contact ne se perd plus au login.
@@ -5358,7 +5360,7 @@ K._liveLocationWatcher = null;
 // v1.1.294 — une mise à jour de position live est une trame EN CLAIR (lat/lng) :
 // autorisée seulement là où l'E2E ne s'applique pas (groupe assumé transit, ou
 // E2E coupé). Dans un DM chiffré, on ne la diffuse pas en clair.
-K._locationUpdateAllowed = function(conv){ return !K._e2eAppliesTo(conv); };
+K._locationUpdateAllowed = function(conv){ return !K._e2eAppliesTo(conv) && !(typeof K._grpReady === 'function' && K._grpReady(conv)); };
 K._shareLocationLive = function(minutes){
   const conv = K.viewData;
   if(!conv) return;
@@ -5853,7 +5855,7 @@ K._E2E_TAG = 'E2E1:';
 // v1.1.262 — capacités que CET appareil sait déchiffrer (publiées au serveur).
 // v1.1.267 — 'e2e2' retiré : on n'annonce plus le ratchet (désync bidirectionnelle),
 // pour que les contacts à jour négocient vers l'bas sur E2E1 stateless (fiable).
-K._CRYPTO_CAPS = 'media';
+K._CRYPTO_CAPS = 'media,grp1';   // v1.1.296 : 'grp1' = sait déchiffrer l'E2E de groupe (Sender Keys)
 K._peerSupports = function(conv, cap){
   try{ return !!(conv && typeof conv._peer_caps === 'string' && conv._peer_caps.split(',').indexOf(cap) >= 0); }catch(_){ return false; }
 };
@@ -7272,11 +7274,12 @@ K._publishPubkey = async function(){
   try{
     const pub = lg('crypto_pub', null);
     if(!pub || !K.token) return;                       // besoin d'être authentifié
-    if(lg('crypto_pub_published', null) === pub) return; // déjà publiée
+    // v1.1.296 : republiée si les capacités ont changé (sinon 'grp1' n'atteint jamais les contacts).
+    if(lg('crypto_pub_published', null) === pub && lg('crypto_caps_published', null) === K._CRYPTO_CAPS) return; // déjà publiée
     // v1.1.262 — publie AUSSI les capacités crypto qu'on sait déchiffrer, pour
     // que nos contacts activent auto le plus haut niveau commun.
     const r = await K._api('POST', '/api/keys/prekeys', { identity_key_pub: pub, crypto_caps: K._CRYPTO_CAPS });
-    if(r && r.ok){ ls('crypto_pub_published', pub); _logTelemetry('ok', 'pubkey-published', {}); }
+    if(r && r.ok){ ls('crypto_pub_published', pub); ls('crypto_caps_published', K._CRYPTO_CAPS); _logTelemetry('ok', 'pubkey-published', {}); }
   }catch(e){ _safeCatch('publish-pubkey', e); }  // jamais bloquant
 };
 
@@ -7468,6 +7471,422 @@ K._ensureFreshSession = async function(conv){
     }
   }catch(e){ _safeCatch('fresh-session', e); }
   return !!(window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id));
+};
+
+// ============================================================================
+//  v1.1.296 — E2E de GROUPE : « Sender Keys » simplifiées (parité WhatsApp/Signal)
+//  Avant (v1.1.294-295) : un groupe passait par le chemin NON-E2E explicite
+//  (« chiffré en transit, pas de bout en bout »). Désormais :
+//   - chaque membre a, par groupe et par ÉPOQUE, une clé d'envoi AES-GCM 256 bits
+//     aléatoire ; ses messages partent en « E2EG1: » (IV frais à chaque message) ;
+//   - la clé est envoyée à chaque autre membre, emballée par l'ECDH 1:1 (ma clé
+//     d'identité × la sienne, bundle /api/keys/:uid/bundle, TOFU épinglé PAR
+//     MEMBRE comme pour un DM) dans une trame « E2EGK1: » que l'écran n'affiche
+//     jamais ; un membre dont la clé a changé sans être acceptée ne reçoit RIEN ;
+//   - nouvelle époque au 1ᵉʳ envoi et à chaque changement de la liste des membres
+//     (ajout / retrait) → un membre retiré ne reçoit jamais les clés suivantes ;
+//   - clé manquante à la réception → « 🔒 clé de groupe pas encore reçue » +
+//     demande « E2EGR1: » à l'émetteur (qui redistribue s'il s'agit d'un membre
+//     actuel), jamais de charabia ;
+//   - un membre SANS clé utilisable (pas publiée, appli trop ancienne sans 'grp1')
+//     → ce message part par le chemin honnête (« chiffré en transit »), l'en-tête
+//     le dit ; dès que tous ont une clé : « 🔒 Groupe chiffré de bout en bout ».
+//  Clés stockées en IndexedDB (« kv ») comme CryptoKey NON EXTRACTIBLES (patron F36) ;
+//  ma propre clé d'envoi est en plus scellée par une clé locale non extractible
+//  (nécessaire pour la redistribuer à un membre qui la redemande).
+// ============================================================================
+K._GRP_TAG = 'E2EG1:';
+K._GRP_KEY_TAG = 'E2EGK1:';
+K._GRP_REQ_TAG = 'E2EGR1:';
+K._GRP_CAP = 'grp1';
+K._GRP_CTL_MIME = 'application/x-apex-grpkey';
+K._GROUP_E2E_ON_NOTICE = '🔒 Groupe chiffré de bout en bout';
+K._GROUP_KEY_MISSING = '🔒 clé de groupe pas encore reçue';
+K._grpState = K._grpState || {};
+K._grpMemCache = K._grpMemCache || new Map();
+K._grpMembersCache = K._grpMembersCache || {};
+K._grpBundleCache = K._grpBundleCache || {};
+K._grpReqAt = K._grpReqAt || {};
+K._grpAnsAt = K._grpAnsAt || {};
+K._grpLocks = K._grpLocks || {};
+K._grpInflight = K._grpInflight || {};
+// E2E de groupe possible sur CET appareil pour CETTE conversation (groupe + mode E2E ON).
+K._grpApplies = function(conv){
+  return !!conv && !!conv.id && !K._convIsDm(conv) && K._e2eOn() && !!(window.ApexCrypto && ApexCrypto.groupEncrypt);
+};
+// En-tête : le groupe est-il chiffré de bout en bout (tous les membres ont une clé) ?
+K._grpReady = function(conv){
+  const st = conv && conv.id ? K._grpState[conv.id] : null;
+  return !!(st && st.ready && K._grpApplies(conv));
+};
+// ---- stockage IndexedDB « kv » (repli mémoire si IndexedDB indisponible ; jamais localStorage)
+K._grpIdbGet = async function(key){
+  if(K._grpMemCache.has(key)) return K._grpMemCache.get(key);
+  try{
+    if(typeof indexedDB === 'undefined' || !indexedDB) return null;
+    const db = await idbOpen();
+    const v = await new Promise((resolve, reject) => {
+      const tx = db.transaction(['kv'], 'readonly');
+      const rq = tx.objectStore('kv').get(key);
+      rq.onsuccess = () => resolve(rq.result || null);
+      rq.onerror = () => reject(rq.error || new Error('idb-get'));
+    });
+    if(v) K._grpMemCache.set(key, v);
+    return v;
+  }catch(e){ _safeCatch('grp-idb-get', e); return null; }
+};
+K._grpIdbPut = async function(key, val){
+  K._grpMemCache.set(key, val);
+  try{
+    if(typeof indexedDB === 'undefined' || !indexedDB) return false;
+    const db = await idbOpen();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(['kv'], 'readwrite');
+      tx.objectStore('kv').put(val, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('idb-put'));
+      tx.onabort = () => reject(tx.error || new Error('idb-abort'));
+    });
+    return true;
+  }catch(e){ _safeCatch('grp-idb-put', e); return false; }
+};
+K._grpSkId = function(convId, sender, epoch, kid){ return 'gsk|' + convId + '|' + sender + '|' + epoch + '|' + kid; };
+K._grpStoreSenderKey = function(convId, sender, epoch, kid, key){
+  return K._grpIdbPut(K._grpSkId(convId, sender, epoch, kid), { v: 1, key, ts: Date.now() });
+};
+K._grpLoadSenderKey = async function(convId, sender, epoch, kid){
+  const r = await K._grpIdbGet(K._grpSkId(convId, sender, epoch, kid));
+  return (r && r.key) || null;
+};
+K._grpOwnLoad = function(convId){ return K._grpIdbGet('gown|' + convId); };
+K._grpOwnSave = function(convId, own){ return K._grpIdbPut('gown|' + convId, own); };
+// Clé locale NON extractible qui scelle mes propres clés d'envoi au repos.
+K._grpKek = function(){
+  if(!K._grpKekP){
+    K._grpKekP = (async () => {
+      const rec = await K._grpIdbGet('grp_kek');
+      if(rec && rec.kek) return rec.kek;
+      const kek = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+      await K._grpIdbPut('grp_kek', { v: 1, kek });
+      return kek;
+    })();
+    K._grpKekP.catch(() => { K._grpKekP = null; });
+  }
+  return K._grpKekP;
+};
+K._grpSeal = async function(raw){
+  const kek = await K._grpKek();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, kek, raw);
+  return { iv, ct: new Uint8Array(ct) };
+};
+K._grpUnseal = async function(sealed){
+  const kek = await K._grpKek();
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: sealed.iv }, kek, sealed.ct));
+};
+// ---- membres (liste serveur, rafraîchie au plus toutes les 20 s, ou forcée)
+K._grpMembers = async function(conv, force){
+  if(!conv || !conv.id) return null;
+  const c = K._grpMembersCache[conv.id];
+  if(!force && c && Date.now() - c.at < 20000) return c.ids;
+  try{
+    const r = await K._api('GET', '/api/conversations/' + encodeURIComponent(conv.id) + '/members');
+    if(!r || !r.ok || !Array.isArray(r.members)) return null;
+    const ids = Array.from(new Set(r.members.map(m => m && (m.user_id || m.id)).filter(x => typeof x === 'string' && x))).sort();
+    K._grpMembersCache[conv.id] = { at: Date.now(), ids };
+    return ids;
+  }catch(e){ _safeCatch('grp-members', e); return null; }
+};
+// Liste des conversations rafraîchie : un nombre de membres différent = liste à relire.
+K._grpOnConvsRefreshed = function(convs){
+  for(const c of (convs || [])){
+    const mc = c && K._grpMembersCache[c.id];
+    if(mc && typeof c.member_count === 'number' && c.member_count !== mc.ids.length) delete K._grpMembersCache[c.id];
+  }
+};
+// ---- clé d'identité d'un membre (TOFU STRICT, épinglée PAR MEMBRE, mêmes règles qu'un DM)
+K._grpPinnedKey = function(uid){ try{ return localStorage.getItem('gpeerkey_' + uid) || null; }catch(_){ return null; } };
+K._grpPendingKey = function(uid){ try{ return localStorage.getItem('gpeerkey_pending_' + uid) || null; }catch(_){ return null; } };
+// → { status: 'ok' | 'pending' (clé changée non acceptée) | 'nokey' | 'nocap' (appli sans E2E de groupe), pub }
+K._grpMemberKey = async function(uid, force){
+  let b = K._grpBundleCache[uid];
+  if(force || !b || Date.now() - b.at > (b.pub ? 300000 : 30000)){
+    b = { at: Date.now(), pub: null, caps: '' };
+    try{
+      const r = await K._api('GET', '/api/keys/' + encodeURIComponent(uid) + '/bundle');
+      if(r && r.ok && r.bundle && typeof r.bundle.identity_key_pub === 'string' && r.bundle.identity_key_pub){
+        b.pub = r.bundle.identity_key_pub;
+        b.caps = (typeof r.bundle.crypto_caps === 'string') ? r.bundle.crypto_caps : '';
+      }
+    }catch(_){ /* 409 key_pending : le membre n'a pas encore publié sa clé */ }
+    K._grpBundleCache[uid] = b;
+  }
+  if(!b.pub) return { status: 'nokey', pub: null };
+  const r = ApexCrypto.resolvePeerKey(K._grpPinnedKey(uid), b.pub);
+  try{
+    if(r.pin) localStorage.setItem('gpeerkey_' + uid, r.pin);
+    if(r.pending) localStorage.setItem('gpeerkey_pending_' + uid, r.pending);
+    else localStorage.removeItem('gpeerkey_pending_' + uid);
+  }catch(e){ _safeCatch('grp-tofu', e); }
+  if(r.pending) return { status: 'pending', pub: r.use };
+  if(b.caps.split(',').indexOf(K._GRP_CAP) < 0) return { status: 'nocap', pub: r.use };
+  return { status: 'ok', pub: r.use };
+};
+// Action EXPLICITE (après comparaison du numéro de sécurité) : accepter la nouvelle clé d'un membre.
+K._grpAcceptMemberKey = async function(uid){
+  const pend = K._grpPendingKey(uid);
+  if(!pend) return false;
+  try{ localStorage.setItem('gpeerkey_' + uid, pend); localStorage.removeItem('gpeerkey_pending_' + uid); }
+  catch(e){ _safeCatch('grp-accept', e); return false; }
+  for(const id of Object.keys(K._grpState)){
+    const st = K._grpState[id];
+    if(st && Array.isArray(st.pendingKey)) st.pendingKey = st.pendingKey.filter(x => x !== uid);
+  }
+  toast('✅ Nouvelle clé acceptée — ce membre recevra la clé du groupe au prochain message', 'ok', 3000);
+  if(typeof K.render === 'function' && K.view === 'chat') K.render();
+  return true;
+};
+// Bandeau PERSISTANT dans un groupe tant qu'une clé de membre changée n'est pas acceptée.
+K._grpRenderKeyBanner = function(conv){
+  const st = conv && conv.id ? K._grpState[conv.id] : null;
+  const pend = (st && Array.isArray(st.pendingKey)) ? st.pendingKey : [];
+  if(!pend.length || !K._grpApplies(conv)) return '';
+  const names = {};
+  for(const m of (conv.members_detail || [])){ if(m && m.id) names[m.id] = m.name; }
+  return `<div class="keychange-banner grp-keychange" role="alert" style="background:rgba(230,57,70,.12);border:1px solid #e63946;border-radius:10px;margin:6px 8px;padding:10px;font-size:.85em;color:var(--ax-text)">
+      <div style="font-weight:700;color:#e63946">⚠️ La clé de sécurité de ${pend.length > 1 ? esc(String(pend.length)) + ' membres' : 'un membre'} a changé</div>
+      <div style="margin:4px 0 8px;color:var(--ax-text-2)">Tant que tu n'as pas vérifié et accepté, ${pend.length > 1 ? 'ils ne reçoivent' : 'il ne reçoit'} pas la clé du groupe et ne peu${pend.length > 1 ? 'vent' : 't'} pas lire tes messages.</div>
+      ${pend.map(uid => `<button class="btn btn-sm" style="min-height:44px;margin:2px" ${kcall('_grpAcceptMemberKey', [uid])}>J'ai vérifié ${esc(names[uid] || uid)}, accepter</button>`).join('')}
+    </div>`;
+};
+// ---- distribution de MA clé d'envoi (une trame pour tout le groupe, découpée si énorme)
+K._grpDistribute = async function(conv, own, raw, recips){
+  const me = K.user.id;
+  const entries = [];
+  for(const r of recips){
+    try{
+      const wk = await ApexCrypto.deriveGroupWrapKey(K._cryptoKeys.privateKey, await ApexCrypto.importPublicKey(r.pub));
+      const e = await ApexCrypto.wrapGroupSenderKey(wk, raw, [conv.id, me, r.uid, own.epoch, own.kid]);
+      entries.push({ to: r.uid, iv: e.iv, w: e.w });
+    }catch(e){ _safeCatch('grp-wrap', e); }
+  }
+  if(!entries.length) return [];
+  const wires = ApexCrypto.buildGroupKeyMessages({ from: me, epoch: own.epoch, kid: own.kid }, entries);
+  const now = Date.now();
+  wires.forEach((w, i) => K._dispatchWire(conv.id, { type: 'message', ciphertext: w, mime: K._GRP_CTL_MIME, ts: now, id: 'gk_' + now + '_' + i + '_' + Math.random().toString(36).slice(2, 7) }));
+  return entries.map(e => e.to);
+};
+// ---- état du groupe + rotation + distribution. opts.check : lecture seule (ouverture du chat).
+K._grpPrepare = async function(conv, opts){
+  opts = opts || {};
+  if(!K._grpApplies(conv)) return { ready: false, reason: 'off', missing: [], pendingKey: [] };
+  const lockK = conv.id + (opts.check ? '|check' : '|send');
+  if(K._grpLocks[lockK]) return K._grpLocks[lockK];
+  const run = async () => {
+    const me = K.user && K.user.id;
+    const done = (r) => {
+      const st = Object.assign({ ready: false, missing: [], pendingKey: [], at: Date.now() }, r);
+      const pub = Object.assign({}, st); delete pub.own;
+      K._grpState[conv.id] = pub;
+      return st;
+    };
+    if(!K._cryptoKeys){ try{ await _ensureCryptoKeys(); }catch(_){ } }
+    if(!me || !K._cryptoKeys) return done({ reason: 'no_identity' });
+    const members = await K._grpMembers(conv, !!opts.force);
+    if(!members || members.indexOf(me) < 0) return done({ reason: 'members_unknown' });
+    const keys = {};
+    const statuses = [];
+    for(const uid of members){
+      if(uid === me) continue;
+      keys[uid] = await K._grpMemberKey(uid);
+      statuses.push({ uid, status: keys[uid].status });
+    }
+    const rd = ApexCrypto.groupReadiness(statuses);
+    if(!rd.ready) return done({ reason: 'member_without_key', missing: rd.missing, pendingKey: rd.pending });
+    if(opts.check) return done({ ready: true, pendingKey: rd.pending });
+    let own = await K._grpOwnLoad(conv.id);
+    let raw = null;
+    try{
+      if(ApexCrypto.groupNeedsRotation(own, members)){
+        // Nouvelle époque (1ᵉʳ envoi ou membres ajoutés/retirés) : nouvelle clé, jamais réutilisée.
+        const nk = ApexCrypto.newGroupSenderKey();
+        raw = nk.raw;
+        const past = own ? [{ epoch: own.epoch, kid: own.kid, members: own.members, sealed: own.sealed }].concat(own.past || []).slice(0, 10) : [];
+        own = { v: 1, epoch: ((own && own.epoch) || 0) + 1, kid: nk.kid, members, key: await ApexCrypto.importGroupSenderKey(raw), sealed: await K._grpSeal(raw), sentTo: [], past, ts: Date.now() };
+        await K._grpStoreSenderKey(conv.id, me, own.epoch, own.kid, own.key);   // mon propre historique reste lisible
+      }
+      const todo = rd.recipients.filter(u => own.sentTo.indexOf(u) < 0);
+      if(todo.length){
+        if(!raw) raw = await K._grpUnseal(own.sealed);
+        const got = await K._grpDistribute(conv, own, raw, todo.map(uid => ({ uid, pub: keys[uid].pub })));
+        own.sentTo = own.sentTo.concat(got);
+      }
+    } finally { if(raw) raw.fill(0); }
+    await K._grpOwnSave(conv.id, own);
+    return done({ ready: true, pendingKey: rd.pending, epoch: own.epoch, kid: own.kid, own });
+  };
+  const p = run();
+  K._grpLocks[lockK] = p;
+  try{ return await p; }
+  catch(e){
+    _safeCatch('grp-prepare', e);
+    K._grpState[conv.id] = { ready: false, reason: 'error', missing: [], pendingKey: [], at: Date.now() };
+    return K._grpState[conv.id];
+  }
+  finally{ if(K._grpLocks[lockK] === p) delete K._grpLocks[lockK]; }
+};
+// ---- décision d'envoi d'un groupe (appelée par K._encryptOutgoing et K._sendMsg)
+//  - groupe prêt → 'cipher' (E2EG1) ; échec de chiffrement → 'pending' (JAMAIS de clair) ;
+//  - un membre sans clé utilisable → 'clear' HONNÊTE (reason member_without_key), en-tête honnête ;
+//  - autre échec (liste des membres injoignable…) alors que le groupe a déjà été chiffré de
+//    bout en bout sur cet appareil → 'pending' ; jamais chiffré → 'clear' comme avant.
+K._grpEncryptOutgoing = async function(conv, plaintext){
+  if(!K._grpApplies(conv)) return { mode: 'clear', wire: plaintext, encrypted: false, reason: null, missing: [] };
+  let prep;
+  try{ prep = await K._grpPrepare(conv); }catch(e){ prep = { ready: false, reason: 'error' }; }
+  let payload = null;
+  if(prep.ready && prep.own){
+    try{ payload = await ApexCrypto.groupEncrypt(prep.own.key, plaintext, { conv: conv.id, from: K.user.id, epoch: prep.own.epoch, kid: prep.own.kid }); }
+    catch(e){ _safeCatch('grp-encrypt', e); payload = null; }
+  }
+  let claimed = !!prep.ready;
+  if(!claimed && prep.reason !== 'member_without_key'){
+    try{ claimed = !!(await K._grpOwnLoad(conv.id)); }catch(_){ claimed = false; }
+  }
+  const d = ApexCrypto.decideWire({ ciphertextPayload: payload, plaintext, e2eOn: claimed });
+  return {
+    mode: d.mode, wire: d.wire, encrypted: d.mode === 'cipher',
+    reason: d.mode === 'pending' ? 'group_key' : ((d.mode === 'clear' && prep.reason === 'member_without_key') ? 'member_without_key' : null),
+    missing: prep.missing || [],
+  };
+};
+// ---- réception
+K._grpCtlSeen = function(id){
+  if(!id) return false;
+  try{
+    const a = lg('grp_ctl_seen', []);
+    if(a.indexOf(id) >= 0) return true;
+    a.push(id);
+    while(a.length > 500) a.shift();
+    ls('grp_ctl_seen', a);
+  }catch(e){ _safeCatch('grp-ctl-seen', e); }
+  return false;
+};
+K._grpHandleKey = async function(conv, sender, body){
+  const me = K.user && K.user.id;
+  if(!me || body.from !== sender || !Array.isArray(body.keys)) return false;
+  const mine = body.keys.find(e => e && e.to === me && typeof e.iv === 'string' && typeof e.w === 'string');
+  if(!mine) return false;
+  if(await K._grpLoadSenderKey(conv.id, sender, body.epoch, body.kid)) return true;
+  if(!K._cryptoKeys){ try{ await _ensureCryptoKeys(); }catch(_){ } }
+  if(!K._cryptoKeys) return false;
+  let mk = await K._grpMemberKey(sender);
+  if(mk.status === 'nokey') mk = await K._grpMemberKey(sender, true);
+  if(!mk.pub || mk.status === 'pending') return false;   // clé de l'émetteur changée non acceptée : rien n'est adopté
+  const wk = await ApexCrypto.deriveGroupWrapKey(K._cryptoKeys.privateKey, await ApexCrypto.importPublicKey(mk.pub));
+  const key = await ApexCrypto.unwrapGroupSenderKey(wk, mine, [conv.id, sender, me, body.epoch, body.kid]);
+  await K._grpStoreSenderKey(conv.id, sender, body.epoch, body.kid, key);
+  await K._grpRetryPending(conv.id);
+  return true;
+};
+K._grpHandleRequest = async function(conv, requester, body){
+  const me = K.user && K.user.id;
+  if(!me || requester === me || body.sender !== me || body.from !== requester) return false;
+  const tk = conv.id + '|' + requester;
+  const now = Date.now();
+  if(now - (K._grpAnsAt[tk] || 0) < 30000) return false;
+  const own = await K._grpOwnLoad(conv.id);
+  if(!own) return false;
+  const ep = (own.epoch === body.epoch && own.kid === body.kid) ? own
+    : (own.past || []).find(p => p && p.epoch === body.epoch && p.kid === body.kid);
+  if(!ep || !Array.isArray(ep.members) || ep.members.indexOf(requester) < 0) return false;   // pas membre à cette époque
+  const members = await K._grpMembers(conv, true);                                            // liste FRAÎCHE
+  if(!members || members.indexOf(requester) < 0) return false;                                // membre retiré : rien
+  const mk = await K._grpMemberKey(requester);
+  if(mk.status !== 'ok') return false;                                                        // clé changée non acceptée : rien
+  K._grpAnsAt[tk] = now;
+  const raw = await K._grpUnseal(ep.sealed);
+  try{ await K._grpDistribute(conv, { epoch: ep.epoch, kid: ep.kid }, raw, [{ uid: requester, pub: mk.pub }]); }
+  finally{ raw.fill(0); }
+  if(ep === own && own.sentTo.indexOf(requester) < 0){ own.sentTo.push(requester); await K._grpOwnSave(conv.id, own); }
+  return true;
+};
+K._grpRequestKey = function(conv, sender, epoch, kid){
+  const me = K.user && K.user.id;
+  if(!me || !sender || sender === me) return false;
+  const k = conv.id + '|' + sender + '|' + epoch + '|' + kid;
+  const now = Date.now();
+  if(now - (K._grpReqAt[k] || 0) < 60000) return false;
+  K._grpReqAt[k] = now;
+  const wire = ApexCrypto.buildGroupKeyRequest({ from: me, sender, epoch, kid });
+  K._dispatchWire(conv.id, { type: 'message', ciphertext: wire, mime: K._GRP_CTL_MIME, ts: now, id: 'gr_' + now + '_' + Math.random().toString(36).slice(2, 7) });
+  return true;
+};
+// Messages affichés « clé pas encore reçue » : re-déchiffrés dès que la clé arrive.
+K._grpRetryPending = async function(convId){
+  const arr = (K.messages && K.messages[convId]) || [];
+  const conv = (K.viewData && K.viewData.id === convId) ? K.viewData
+    : ((K.conversations || []).find(c => c && c.id === convId) || { id: convId });
+  let changed = 0;
+  for(const m of arr){
+    if(!m || typeof m.grp_pending !== 'string') continue;
+    const d = await K._grpDecode(conv, m.grp_pending, { sender: m.from, retry: true });
+    if(d && d.encrypted){
+      Object.assign(m, K._markerFields(d.text));
+      m.encrypted = true;
+      delete m.grp_pending;
+      changed++;
+    }
+  }
+  if(changed){
+    ls('messages_' + convId, arr);
+    if(typeof K.render === 'function' && K.view === 'chat' && K.viewData && K.viewData.id === convId) K.render();
+  }
+  return changed;
+};
+// Décode une trame de groupe. → null (pas une trame de groupe) | résultat d'affichage.
+//  control:true = distribution / demande de clé : traitée, JAMAIS affichée.
+K._grpDecode = async function(conv, raw, meta){
+  meta = meta || {};
+  const isGrp = typeof raw === 'string' && (raw.indexOf(K._GRP_TAG) === 0 || raw.indexOf(K._GRP_KEY_TAG) === 0 || raw.indexOf(K._GRP_REQ_TAG) === 0);
+  if(!isGrp) return null;
+  const pw = (window.ApexCrypto && ApexCrypto.parseGroupWire) ? ApexCrypto.parseGroupWire(raw) : null;
+  if(!pw){
+    if(raw.indexOf(K._GRP_TAG) === 0) return { text: '🔒 Message de groupe chiffré (E2E)', encrypted: false, unencrypted: false, undecryptable: true };
+    return { text: '', encrypted: false, unencrypted: false, control: true };
+  }
+  const me = K.user && K.user.id;
+  const sender = meta.sender || null;
+  if(pw.kind === 'key'){
+    if(pw.body && sender && sender !== me){
+      // Mémorisée AVANT tout await : un message de groupe arrivé juste après l'attend.
+      const p = K._grpHandleKey(conv, sender, pw.body).catch(e => { _safeCatch('grp-key', e); return false; });
+      K._grpInflight[conv.id] = p;
+      await p;
+      if(K._grpInflight[conv.id] === p) delete K._grpInflight[conv.id];
+    }
+    return { text: '', encrypted: false, unencrypted: false, control: true };
+  }
+  if(pw.kind === 'req'){
+    // L'historique est renvoyé à chaque connexion : une demande n'est traitée qu'une fois.
+    if(pw.body && sender && sender !== me && !K._grpCtlSeen(meta.id)){
+      try{ await K._grpHandleRequest(conv, sender, pw.body); }catch(e){ _safeCatch('grp-req', e); }
+    }
+    return { text: '', encrypted: false, unencrypted: false, control: true };
+  }
+  if(!pw.body) return { text: '🔒 Message de groupe chiffré — format illisible', encrypted: false, unencrypted: false, undecryptable: true };
+  if(!meta.retry && K._grpInflight[conv.id]){ try{ await K._grpInflight[conv.id]; }catch(_){ } }
+  const key = sender ? await K._grpLoadSenderKey(conv.id, sender, pw.body.epoch, pw.body.kid) : null;
+  if(!key){
+    if(!meta.retry && sender && sender !== me){ try{ K._grpRequestKey(conv, sender, pw.body.epoch, pw.body.kid); }catch(e){ _safeCatch('grp-request', e); } }
+    return { text: K._GROUP_KEY_MISSING, encrypted: false, unencrypted: false, undecryptable: true, grp_pending: raw };
+  }
+  try{
+    return { text: await ApexCrypto.groupDecrypt(key, pw.body, { conv: conv.id, from: sender }), encrypted: true, unencrypted: false };
+  }catch(e){
+    _safeCatch('grp-decrypt', e);
+    return { text: '🔒 Message de groupe chiffré — impossible à lire sur cet appareil', encrypted: false, unencrypted: false, undecryptable: true };
+  }
 };
 
 // Étape A E2E : migre une clé privée stockée EN CLAIR vers une forme wrappée par PIN.
@@ -8363,6 +8782,12 @@ K._appendBubble = function(conv, m){
 K._chatHeaderSubtitle = function(conv){
   if(!K._convIsDm(conv)){
     const n = conv && (conv.member_count || (Array.isArray(conv.members) ? conv.members.length : 0));
+    // v1.1.296 — tous les membres ont une clé → E2E de groupe actif ; sinon mention honnête.
+    if(typeof K._grpReady === 'function' && K._grpReady(conv)){
+      const st = K._grpState[conv.id] || {};
+      const pend = Array.isArray(st.pendingKey) ? st.pendingKey.length : 0;
+      return `${n ? `👥 ${esc(String(n))} membres · ` : ''}<span class="group-e2e-on" title="Chaque message est chiffré sur ton appareil avec une clé que seuls les membres actuels du groupe possèdent : le serveur ne peut pas le lire. Pièces jointes : le lien et la légende sont chiffrés, le contenu du fichier pas encore.">${esc(K._GROUP_E2E_ON_NOTICE)}</span>${pend ? ` · <span style="color:#e63946">⚠️ ${esc(String(pend))} clé${pend > 1 ? 's' : ''} à vérifier</span>` : ''}`;
+    }
     return `${n ? `👥 ${esc(String(n))} membres · ` : ''}<span class="group-e2e-notice" style="color:var(--ax-warn, #ffa500)" title="Les messages de groupe sont protégés pendant le transport (HTTPS/WSS) mais le serveur peut techniquement les lire.">${esc(K._GROUP_E2E_NOTICE)}</span>`;
   }
   return K._presenceLabel(conv);
@@ -8386,6 +8811,7 @@ function renderChat(app){
       <button class="topbar-btn" onclick="K._openConvActionsMenu('${esc(conv.id)}', event)" aria-label="Actions">⋯</button>
     </div>
     ${K._renderKeyChangeBanner(conv)}
+    ${typeof K._grpRenderKeyBanner === 'function' ? K._grpRenderKeyBanner(conv) : ''}
     ${K._findBarOpen ? `<div class="find-bar" id="find-bar">
       <input id="find-input" type="search" inputmode="search" autocomplete="off" placeholder="Rechercher dans le chat…"
              value="${esc(K._findQuery || '')}"
@@ -8509,6 +8935,15 @@ K.openConv = async function(convId){
   // Phase 2 : établir session E2E (peer_pubkey joint par le serveur OU bundle
   // récupéré just-in-time). v1.1.173 FIX P0 (audit crew).
   try{ await K._ensureSession(conv); }catch(e){ _safeCatch('establish-session', e); }
+  // v1.1.296 — groupe : état E2E (tous les membres ont-ils une clé ?) → en-tête à jour.
+  try{
+    if(!K._convIsDm(conv) && typeof K._grpPrepare === 'function'){
+      K._grpPrepare(conv, { check: true }).then((st) => {
+        if(K.view !== 'chat' || !K.viewData || K.viewData.id !== conv.id) return;
+        if(st && st.pendingKey && st.pendingKey.length) K.render(); else K._updatePresenceHeader();
+      }).catch((e) => _safeCatch('grp-open', e));
+    }
+  }catch(_e){ _safeCatch('grp-open', _e); }
 
   // v1.1.268 — force le rafraîchissement de la photo du contact à l'ouverture
   // (une photo changée apparaît tout de suite, sans attendre le TTL).
@@ -8530,6 +8965,8 @@ K.openConv = async function(convId){
 //                                 et affiché dans l'en-tête pour un groupe)
 // ============================================================================
 K._encryptOutgoing = async function(conv, plaintext){
+  // v1.1.296 — groupe : E2E de groupe (Sender Keys) ou chemin honnête « en transit ».
+  if(conv && !K._convIsDm(conv) && typeof K._grpEncryptOutgoing === 'function') return K._grpEncryptOutgoing(conv, plaintext);
   const e2e = K._e2eAppliesTo(conv);
   const keyChanged = e2e && K._keyChangePending(conv);
   let payload = null;
@@ -8571,7 +9008,7 @@ K._sendSecure = async function(conv, plaintext, opts){
   if(d.mode === 'pending'){
     K._queuePendingEncrypt(opts.edit
       ? { conv_id: conv.id, id: 'edit_' + opts.edit.message_id + '_' + opts.edit.edited_at, kind: 'edit', message_id: opts.edit.message_id, edited_at: opts.edit.edited_at, text: plaintext, ts: opts.edit.edited_at }
-      : { conv_id: conv.id, id: opts.id, text: plaintext, mime: opts.mime || 'text/plain', ts: opts.ts });
+      : { conv_id: conv.id, id: opts.id, text: plaintext, mime: opts.mime || 'text/plain', ts: opts.ts, ...(K._convIsDm(conv) ? {} : { grp_e2e: true }) });
     if(m){ m.pending_encrypt = true; m.encrypted = false; try{ ls('messages_' + conv.id, K.messages[conv.id] || []); }catch(_e){ _safeCatch('silent', _e); } }
     return 'pending';
   }
@@ -8584,6 +9021,7 @@ K._sendSecure = async function(conv, plaintext, opts){
   return K._dispatchWire(conv.id, wire);
 };
 K._pendingToastText = function(conv){
+  if(conv && !K._convIsDm(conv)) return '🔒 Chiffrement de groupe en préparation — le message partira chiffré, rien n\'est envoyé en clair';
   return K._keyChangePending(conv)
     ? '⚠️ Clé du contact changée — vérifie-la (bandeau en haut) : message gardé en attente, rien n\'est envoyé'
     : '🔒 En attente de la clé du contact — sera chiffré puis envoyé';
@@ -8612,6 +9050,11 @@ K._sendMsg = async function(){
   // ou global). Fail-open : si la session ne s'établit pas, on n'échoue jamais,
   // le message part chiffré en TRANSIT (HTTPS/WSS) comme avant.
   let ratchetPayload = null;
+  // v1.1.296 — GROUPE : Sender Keys (E2EG1) via la décision unique du groupe
+  // (membre sans clé → chemin honnête « en transit » ; échec alors que l'E2E est
+  // revendiqué → en attente, jamais de clair).
+  const grpDecision = (conv && !K._convIsDm(conv) && typeof K._grpEncryptOutgoing === 'function')
+    ? await K._grpEncryptOutgoing(conv, text) : null;
   // v1.1.294 : E2E seulement pour un DM (jamais la session 1:1 d'un groupe) et
   // jamais vers une clé de contact changée non acceptée (message gardé en attente).
   const e2eConv = K._e2eAppliesTo(conv);
@@ -8632,7 +9075,8 @@ K._sendMsg = async function(){
     }catch(e){ _safeCatch('encrypt-message', e); }
   }
   // Payload transporté : ratchet (E2E2:) > E2E1: > clair (selon decideWire).
-  const payload = ratchetPayload || (ciphertext ? (K._E2E_TAG + ciphertext) : null);
+  const payload = grpDecision ? (grpDecision.mode === 'cipher' ? grpDecision.wire : null)
+    : (ratchetPayload || (ciphertext ? (K._E2E_TAG + ciphertext) : null));
 
   const msg = {
     id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
@@ -8640,7 +9084,7 @@ K._sendMsg = async function(){
     text: displayText,      // affichage local clair
     ciphertext: payload,    // envoyé au serveur (null si pas de session → clair)
     ts: Date.now(),
-    encrypted: !!ciphertext
+    encrypted: grpDecision ? grpDecision.encrypted : !!ciphertext
   };
 
   // v1.1.43 — Mode éphémère : ajoute expires_at + reset après envoi
@@ -8673,14 +9117,16 @@ K._sendMsg = async function(){
   // Phase 3 : politique de mise sur le fil (v1.1.262, leçon #90). JAMAIS de
   // texte clair silencieux quand E2E est ON : sans clé du contact, le message
   // passe « en attente de chiffrement » et part chiffré dès que la clé arrive.
-  const decision = (window.ApexCrypto && ApexCrypto.decideWire)
+  const decision = grpDecision ? { mode: grpDecision.mode, wire: grpDecision.wire }
+    : (window.ApexCrypto && ApexCrypto.decideWire)
     ? ApexCrypto.decideWire({ ciphertextPayload: payload, plaintext: text, e2eOn: e2eConv })
     : { mode: (payload ? 'cipher' : (e2eConv ? 'pending' : 'clear')), wire: payload || (e2eConv ? null : text) };
+  if(grpDecision){ try{ if(typeof K._updatePresenceHeader === 'function') K._updatePresenceHeader(); }catch(_e){ _safeCatch('grp-header', _e); } }
   if(decision.mode === 'pending'){
     // Pas de clé pair → on ne met RIEN en clair. Marque + file pending-encrypt.
     msg.pending_encrypt = true;
     ls('messages_' + conv.id, K.messages[conv.id]);
-    K._queuePendingEncrypt({ conv_id: conv.id, id: msg.id, text, mime: 'text/plain', ts: msg.ts });
+    K._queuePendingEncrypt({ conv_id: conv.id, id: msg.id, text, mime: 'text/plain', ts: msg.ts, ...(grpDecision ? { grp_e2e: true } : {}) });
     K.render();
     toast(K._pendingToastText(conv), 'info', 2200);
     return;
@@ -8689,7 +9135,8 @@ K._sendMsg = async function(){
   if(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === conv.id){
     try{
       K.ws.send(JSON.stringify(wire));
-      toast(ciphertext ? '🛡 Envoyé chiffré E2E' : '📨 Envoyé', 'ok', 1000);
+      toast((ciphertext || (grpDecision && grpDecision.encrypted)) ? '🛡 Envoyé chiffré E2E'
+        : ((grpDecision && grpDecision.reason === 'member_without_key') ? '🔓 Envoyé chiffré en transit seulement : un membre n\'a pas encore de clé de chiffrement' : '📨 Envoyé'), 'ok', 1000);
     }catch(e){
       _safeCatch('ws-send', e);
       K._outboxAdd({ conv_id: conv.id, ciphertext: wire.ciphertext, mime: 'text/plain', ts: msg.ts, id: msg.id });
@@ -8735,7 +9182,7 @@ K._flushPendingEncrypt = async function(convId){
         // Un message écrit sous E2E dans un DM ne repart JAMAIS en clair (même si
         // l'E2E a été coupé depuis) : il reste visible « en attente ». Un groupe,
         // lui, n'a pas d'E2E → chemin transit assumé (indiqué dans l'en-tête).
-        const clearDm = d.mode === 'clear' && K._convIsDm(conv);
+        const clearDm = d.mode === 'clear' && (K._convIsDm(conv) || !!item.grp_e2e);   // v1.1.296 : idem groupe E2E
         if(d.mode !== 'pending' && d.wire && !clearDm){
           const wire = (item.kind === 'edit')
             ? (d.mode === 'cipher'
@@ -9173,10 +9620,16 @@ K._applyLocationUpdate = function(convId, data){
 //    un message normal (un serveur ou un client compromis pourrait injecter du
 //    clair dans une conversation chiffrée).
 K._decodeIncoming = async function(convId, raw){
+  const meta = arguments[2] || {};   // v1.1.296 : { sender, id } du message (E2E de groupe)
   raw = (typeof raw === 'string') ? raw : '';
   const conv = (K.viewData && K.viewData.id === convId) ? K.viewData
     : ((K.conversations || []).find(c => c && c.id === convId) || { id: convId });
   if(!raw) return { text: '', encrypted: false, unencrypted: false };
+  // v1.1.296 — E2E de groupe : E2EG1 (message), E2EGK1 / E2EGR1 (contrôle, jamais affiché).
+  if(raw.indexOf('E2EG') === 0 && typeof K._grpDecode === 'function'){
+    const g = await K._grpDecode(conv, raw, meta);
+    if(g) return g;
+  }
   if(raw.indexOf(K._RATCHET_TAG) === 0){
     return { text: await K._decryptRatchetPayload(convId, raw), encrypted: true, unencrypted: false };
   }
@@ -9197,8 +9650,9 @@ K._decodeIncoming = async function(convId, raw){
     }
     return { text: '🔒 Message chiffré (E2E) — active le mode E2E bêta sur cet appareil pour le lire', encrypted: false, unencrypted: false, undecryptable: true };
   }
-  // Texte clair (chiffré en transit seulement).
-  return { text: raw, encrypted: false, unencrypted: K._e2eAppliesTo(conv) };
+  // Texte clair (chiffré en transit seulement). v1.1.296 : marqué aussi dans un groupe
+  // chiffré de bout en bout (repli honnête d'un membre, ou injection côté serveur).
+  return { text: raw, encrypted: false, unencrypted: K._e2eAppliesTo(conv) || (!K._convIsDm(conv) && typeof K._grpReady === 'function' && K._grpReady(conv)) };
 };
 // Champs d'affichage dérivés des marqueurs (média, position, contact, sondage).
 K._markerFields = function(txt){
@@ -9242,8 +9696,9 @@ async function _handleWsMessage(data, convId){
         } else {
           // v1.1.294 — décodage unique (déchiffrement auto-réparant, groupes,
           // marqueur « non chiffré » pour un clair reçu dans un DM chiffré).
-          _dec = await K._decodeIncoming(convId, sm.ciphertext);
+          _dec = await K._decodeIncoming(convId, sm.ciphertext, { sender: sm.sender_id, id: sm.id });
           txt = _dec.text;
+          if(_dec.control){ seen.add(sm.id); continue; }   // v1.1.296 : distribution / demande de clé de groupe
         }
         // v1.1.170 : dédup mes propres messages — l'historique serveur les
         // renvoie avec l'id officiel alors que je les ai en local avec id m_…
@@ -9276,6 +9731,7 @@ async function _handleWsMessage(data, convId){
           reply_to: replyTo || undefined,
           encrypted: !!_dec.encrypted, from_history: true,
           ...(_dec.unencrypted ? { unencrypted: true } : {}),
+          ...(_dec.grp_pending ? { grp_pending: _dec.grp_pending } : {}),   // v1.1.296 : re-déchiffré à l'arrivée de la clé
           ...(_tomb ? { deleted: true } : {})   // v1.1.269 : tombstone (supprimé pour tout le monde)
         });
         seen.add(sm.id); added++;
@@ -9302,14 +9758,16 @@ async function _handleWsMessage(data, convId){
       // Nouveau message reçu
       // v1.1.294 — décodage unique (cf. K._decodeIncoming) : déchiffrement
       // auto-réparant, groupes, marqueur « non chiffré » dans un DM chiffré.
-      const ldec = await K._decodeIncoming(convId, data.ciphertext || '');
+      const ldec = await K._decodeIncoming(convId, data.ciphertext || '', { sender: data.sender_id, id: data.id });
+      if(ldec.control) break;   // v1.1.296 : distribution / demande de clé de groupe — jamais affichée
       const msg = {
         id: data.id || 'm_' + Date.now(),
         from: data.sender_id,
         ...K._markerFields(ldec.text),   // média · position · contact · sondage
         ts: data.ts || Date.now(),
         encrypted: !!ldec.encrypted,
-        ...(ldec.unencrypted ? { unencrypted: true } : {})
+        ...(ldec.unencrypted ? { unencrypted: true } : {}),
+        ...(ldec.grp_pending ? { grp_pending: ldec.grp_pending } : {})
       };
       if(!K.messages[convId]) K.messages[convId] = [];
       // v1.1.246 : dédup de MON propre message renvoyé (broadcast vers une 2e session
@@ -9420,6 +9878,14 @@ async function _handleWsMessage(data, convId){
       if(eMsgId && !newText && typeof data.ciphertext === 'string' && data.ciphertext.indexOf(K._E2E_TAG) === 0){
         try{ newText = await K._decryptE2EHeal(convId, data.ciphertext.slice(K._E2E_TAG.length)); }
         catch(e){ _safeCatch('edit-decrypt', e); }
+      } else if(eMsgId && !newText && typeof data.ciphertext === 'string' && data.ciphertext.indexOf(K._GRP_TAG || 'E2EG1:') === 0){
+        // v1.1.296 — édition dans un groupe chiffré de bout en bout.
+        try{
+          const gconv = (K.viewData && K.viewData.id === convId) ? K.viewData : ((K.conversations || []).find(c => c && c.id === convId) || { id: convId });
+          const gd = (typeof K._grpDecode === 'function') ? await K._grpDecode(gconv, data.ciphertext, { sender: data.userId, retry: true }) : null;
+          if(gd && gd.encrypted) newText = gd.text;
+        }
+        catch(e){ _safeCatch('edit-grp-decrypt', e); }
       } else if(newText){
         // v1.1.294 : édition reçue EN CLAIR dans un DM chiffré → marquée « non chiffré ».
         const econv = (K.viewData && K.viewData.id === convId) ? K.viewData : ((K.conversations || []).find(c => c && c.id === convId) || { id: convId });

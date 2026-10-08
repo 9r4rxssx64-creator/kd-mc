@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 205 règles — le texte de Kevin, une par une
+## 📜 Les 206 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -315,6 +315,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### 💪 RÈGLE ABSOLUE — TROUVE DES SOLUTIONS, NE JAMAIS DIRE « JE NE PEUX PAS » (Kevin 2026-07-05, MAÎTRESSE)
 **"Trouve des solutions ne me dis jamais que tu ne peux pas"** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-trouve-des-solutions-ne-jamais-dire-je-ne-peux-pas-kevin-2026-07-05-maîtresse)
+
+### 📄 RÈGLE ABSOLUE — ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE, POUR TOUT LE MONDE, ET L'ORIGINAL VA DANS LA FICHE — LE LIEN RESTE LA RÉFÉRENCE (Kevin 2026-10-08, ABSOLUE)
+**« Tu ajoutes tout ce que tu trouves pour vivant et mort toujours et tu cherches pour tout le monde toujours. »** puis **« Intègre les originaux sans avoir besoin de cliquer sur des liens. […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-tout-ce-qui-est-trouvé-sajoute-pour-tout-le-monde-et-loriginal-va-dans-la-fiche-le-lien-reste-la-référence-kevin-2026-10-08-absolue)
 
 ### 🌳 RÈGLE ABSOLUE — ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE, ET EXPLOITER CHAQUE LIEN QUI MARCHE JUSQU'AU BOUT (Kevin 2026-10-03, ABSOLUE)
 **« Ajoute toujours intelligemment les nouveaux quand l'info est sûre. Profite du lien pour faire toutes les recherches, vérifications, etc. Note le. »** — Kevin 2026-10-03, après la lecture de […]

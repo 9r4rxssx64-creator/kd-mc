@@ -4047,22 +4047,23 @@ décédées n'ont pas d'acte de décès lié, 73 n'ont aucune source officielle.
 Monaco) ; le reste est **dans les mairies et archives**. Toutes les demandes sont prêtes en **brouillons Gmail** (rien n'est envoyé à ta place), et
 chaque fiche concernée porte une note « 📬 DEMANDE D'ACTE » (54 fiches) :
 
-| # | Service | Actes | Envoi |
-|---|---|---|---|
-| 1 | Archives municipales de Nice | 13 actes anciens (1850-1922) | e-mail prêt |
-| 2 | Mairie de Nice (état civil) | 3 actes 1935-1943 | e-mail prêt |
-| 3 | Salon-de-Provence | relance mariage 1943 | e-mail prêt |
-| 4 | Paris 19e | mariage 1950 | formulaire paris.fr (texte prêt) |
-| 5 | Chevrainvilliers | 3 naissances MEZONNIAUD | e-mail prêt |
-| 6 | État civil de Monaco | 8 actes ‹employé› / ‹employé› | e-mail prêt — ou au guichet, tu es sur place |
-| 7 | Archives municipales de Marseille | naissance Claude Alain DE SARZENS | adresse à prendre sur archives.marseille.fr |
-| 8 | Beaulieu-sur-Mer | 12 naissances + 3 décès | formulaire du site (texte prêt) |
-| 9 | Villefranche-sur-Mer | 3 naissances ‹employé› | formulaire du site (texte prêt) |
-| 10 | Vallauris | 2 naissances ‹employé› | formulaire du site (texte prêt) |
-| 11 | Cannes | naissance Victoria DONATI | courrier / formulaire (texte prêt) |
-| 12 | Sospel | naissance Pierre DANIEL | e-mail prêt |
-| 13 | Lunel-Viel | naissance Monique JAYET | e-mail prêt |
-| 14 | Archives cantonales vaudoises | registre des familles de Sarzens + 9 actes | e-mail prêt |
+| # | Service | Actes | Adresse mail (vérifiée sur le site officiel) | État |
+|---|---|---|---|---|
+| 1 | Archives municipales de Nice | 13 actes anciens (1850-1922) | archives@ville-nice.fr | ✅ envoyé le 8.10 |
+| 2 | Mairie de Nice (état civil) | 3 actes 1935-1943 | etat.civil@ville-nice.fr | ✅ envoyé le 8.10 |
+| 3 | Salon-de-Provence | relance mariage 1943 | webcontact.mairie@salon-de-provence.org | 👤 **d'abord cliquer « Cliquez ici ! » dans le mail Mailinblack du 3.10** (sinon rien n'arrive), puis envoyer la relance |
+| 4 | Paris 19e | mariage 1950 | dac.archives@paris.fr (Archives de Paris ; la mairie du 19e n'a aucune adresse mail publique) | 👤 brouillon prêt |
+| 5 | Chevrainvilliers | 3 naissances MEZONNIAUD | adresse : `audit/prive/arbre-demandes-actes-adresses.md` | ✅ envoyé le 8.10 |
+| 6 | État civil de Monaco | 8 actes ‹employé› / ‹employé› | etatcivil@mairie.mc | ✅ envoyé le 8.10 |
+| 7 | Archives municipales de Marseille | naissance Claude Alain DE SARZENS | dgac-archives@marseille.fr | 👤 brouillon prêt |
+| 8 | Beaulieu-sur-Mer | 12 naissances + 3 décès | mairie@beaulieusurmer.fr (adresse donnée pour l'état civil) | 👤 brouillon prêt |
+| 9 | Villefranche-sur-Mer | 3 naissances ‹employé› | population@villefranche-sur-mer.fr | 👤 brouillon prêt |
+| 10 | Vallauris | 2 naissances ‹employé› | mdahlem@vallauris.fr (archives, FranceArchives) + copie groupecabmaire@vallauris.fr | 👤 brouillon prêt |
+| 11 | Cannes | naissance Victoria DONATI | etatcivil@ville-cannes.fr + copie archives@ville-cannes.fr | 👤 brouillon prêt |
+| 12 | Sospel | naissance Pierre DANIEL | secretariat@sospel.fr | ✅ envoyé le 8.10 |
+| 13 | Lunel-Viel | naissance Monique JAYET | secretariat-general@ville-lunelviel.fr | 👤 brouillon prêt |
+| 14 | Archives cantonales vaudoises | registre des familles de Sarzens + 9 actes | info.acv@vd.ch | 👤 brouillon prêt |
+| 15 | **Archives des Alpes-Maritimes (AD06)** | 4 actes de Nice (Jean-Baptiste 1903, Philippe ~1850, Jean 1881, Judith 1892) | dad@departement06.fr — **la solution AD06** : leur site est fermé à l'étranger, mais leur boîte mail répond | 👤 brouillon prêt |
 
 **Pas demandé, volontairement** : les actes des personnes vivantes (règle de vie privée — c'est à toi de choisir), et les naissances au lieu inconnu (26 personnes) :
 il faut d'abord le lieu. La relance du 13.10 surveille les 14 services, lit les actes reçus et les intègre fiche par fiche.

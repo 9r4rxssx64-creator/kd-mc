@@ -50,8 +50,12 @@ export function analyser(src) {
   const jobsBloc = bloc('jobs');
   const jobs = [];
   for (const m of jobsBloc.matchAll(/^  ([A-Za-z0-9_"-]+):\s*$([\s\S]*?)(?=^  [A-Za-z0-9_"-]+:\s*$|$(?![\r\n]))/gm)) {
-    const corps = m[2]; const to = corps.match(/^\s{4}timeout-minutes:\s*(\d+)/m);
-    jobs.push({ nom: m[1], timeout: to ? +to[1] : null });
+    // Borne littérale (« 10 ») OU calculée (« ${{ cond && 45 || 10 }} », arbre-nuage 8.10) : on retient la PLUS GRANDE
+    // valeur possible — le plafond s'applique au pire cas. Une expression sans aucun nombre = sans borne.
+    const corps = m[2]; const to = corps.match(/^\s{4}timeout-minutes:\s*(.+?)\s*$/m);
+    const valeur = to ? to[1].replace(/\s+#.*$/, '') : '';   // le commentaire (« Kevin 30.09 ») n'est pas une borne
+    const nombres = (valeur.match(/\d+/g) || []).map(Number);
+    jobs.push({ nom: m[1], timeout: nombres.length ? Math.max(...nombres) : null });
   }
   return {
     schedule: /^  schedule:/m.test(on),
@@ -95,12 +99,16 @@ if (process.argv.includes('--sabotage')) {
   const cas = [
     ['R1 sans borne', base.replace('    timeout-minutes: 5\n', ''), /R1 .*sans timeout/],
     ['R1 trop long', base.replace('timeout-minutes: 5', 'timeout-minutes: 60'), /R1 .*> 45/],
+    ['R1 calculé trop long', base.replace('timeout-minutes: 5', "timeout-minutes: ${{ inputs.x != '' && 60 || 10 }}"), /R1 .*> 45/],
+    ['R1 calculé sans nombre', base.replace('timeout-minutes: 5', 'timeout-minutes: ${{ inputs.duree }}'), /R1 .*sans timeout/],
     ['R2 claude sans paths', 'on:\n  push:\n    branches: [claude/**]\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 5\n', /R2 .*sans filtre/],
     ['R2 claude trop long', 'on:\n  push:\n    branches: [claude/**]\n    paths: [a]\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 30\n', /R2 .*> 20/],
     ['R3 PR sans paths', 'on:\n  pull_request:\n    branches: [main]\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 5\n', /R3 .*sans filtre/],
     ['R3 PR trop long', 'on:\n  pull_request:\n    paths: [a]\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 18\n', /R3 .*> 10/],
     ['R4 schedule', base.replace('on:\n', 'on:\n  schedule:\n    - cron: "0 * * * *"\n'), /R4 .*schedule/],
     ['sain', base, null],
+    ['sain avec commentaire daté', base.replace('timeout-minutes: 5', 'timeout-minutes: 15   # Kevin 30.09'), null],
+    ['sain calculé', base.replace('timeout-minutes: 5', "timeout-minutes: ${{ inputs.x != '' && 45 || 10 }}"), null],
   ];
   for (const [nom, src, attendu] of cas) {
     const pb = verifier(['x.yml'], () => src);

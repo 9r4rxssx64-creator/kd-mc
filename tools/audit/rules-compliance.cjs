@@ -116,6 +116,9 @@ const REGISTRE = [
   // l'arbre (essai à blanc → écriture → rejouer = 0, anti-doublon par `ref`) et dans la section « à relier » ; le jugement
   // « l'info est sûre » reste celui de la session. Entrée posée par la session conférence (3.10 00h55), à affiner par arbre.
   [/ARBRE : AJOUTER TOUT SEUL/i, ['wf:arbre-nuage.yml', 'npm:test:arbre-relier']],
+  // Règle « ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE … L'ORIGINAL VA DANS LA FICHE » (Kevin 8.10.2026, #4415/#4419) :
+  // son garde est celui qu'elle cite elle-même — tests/arbre-originaux.test.mjs (dans test:ci).
+  [/ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE/i, ['npm:test:arbre-originaux', 'file:tests/arbre-originaux.test.mjs']],
   // Règle « CONTRÔLER TOUT, PARTOUT, SUR LE VRAI » (Kevin 3.10.2026, ajoutée par la session arbre sans entrée ici → test:improvements-guard
   // rouge 19 → 20) : ses contrôles existent déjà — le vrai nuage (arbre-nuage.yml + test:arbre-nuage, garde-fou homonymes),
   // le rendu sur 10 appareils (verify-visuel-appareils.mjs, test:arbre-dates-visuel).

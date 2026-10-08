@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (soir) — Deux gardes de main remis au vert (arbre v3.68)
+
+- `test:improvements-guard` (19 → 20) : la nouvelle règle « ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE … L'ORIGINAL VA DANS LA
+  FICHE » est reliée au garde qu'elle cite (`test:arbre-originaux`). Mesuré : 28 vérif OK, 0 échec.
+- `test:gratuit` R1 : `arbre-nuage.yml` a une borne CALCULÉE (`45` avec originaux, sinon `10`) que le garde lisait comme
+  « sans borne ». Le garde retient maintenant la plus grande valeur possible (pire cas), sans lire les commentaires.
+  Plafond 45 inchangé. Mesuré : 12 OK / 0 ; auto-tests + 3 nouveaux cas ; arbre-nuage passé à 60 → rouge.
+
 ## 2026-10-08 (soir) — Garde AVANT fusion pour la copie publique
 
 - Nouveau `npm run test:export-public-propre` (dans `test:ci`) : fait l'export public + le vérificateur en ≈ 5 s. Une PR qui remet

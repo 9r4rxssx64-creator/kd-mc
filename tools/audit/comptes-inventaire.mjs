@@ -31,9 +31,14 @@ export const ROBOT = /(^|[\s_:-])(ci[\s_-]?smoke|smoke|audit|sonde|probe|robot|e
 const TEST_UID = /^(probe|bearer)\d{6,}$|^(marie-curie|alice-martin)$/;   /* 8.10 : les uids des tests SSO sont des robots, quel que soit leur nombre de sessions (vécu : ma sonde en avait fait 4) */
 /* 8.10 : « Marie Curie » et « Alice Martin » sont les identités des tests SSO (tools/kdmc-sso-e2e, kdmc-multiapp-e2e) — une fiche à ces
    noms avec une seule session est un robot (ou une sonde lancée depuis l'agent, vécu le 8.10 : « Marie Curie s'est connectée » chez Kevin). */
-const TEST_NOM = new Set(['bearer', 'tester', 'simple', 'marie curie', 'alice martin']);
+const TEST_NOM = new Set(['bearer', 'tester', 'simple', 'marie curie', 'alice martin',
+  /* 8.10 (inventaire au coffre) : les fiches laissées par l'audit de sécurité Strix du 10-11.09 sur apex-chat — des noms d'attaque, pas des personnes */
+  'cors user', 'csrf user', 'mitm user', 'plaintext user', 'scan user', 'text user', 'independent user', 'browser prefill', 'simple csrf']);
+/* un nom qui contient du code (injection, commande shell, balise) n'est jamais une personne */
+const NOM_ATTAQUE = /[<>`$(){}]|onload|uname|script/i;
 export function estRobot(a) {
-  return ROBOT.test(String(a.uid || '')) || ROBOT.test(normName(a.name)) || TEST_UID.test(String(a.uid || '')) || (TEST_NOM.has(normName(a.name)) && (a.hits || 0) <= 1);
+  return ROBOT.test(String(a.uid || '')) || ROBOT.test(normName(a.name)) || TEST_UID.test(String(a.uid || '')) || (TEST_NOM.has(normName(a.name)) && (a.hits || 0) <= 1)
+    || NOM_ATTAQUE.test(String(a.name || '')) || NOM_ATTAQUE.test(String(a.uid || ''));
 }
 
 /* Pure : liste de fiches → bilan. */

@@ -15707,3 +15707,10 @@ Gardes : `test:code-attente` 20/0 (vrai routeur + D1 + sabotage coupe-circuit), 
 par le nom épinglent `KDMC_CODE_OBLIGATOIRE: '0'` avec la phrase qui dit quel test prouve la règle. Portail v1.0.47 (messages `code_en_attente`,
 nudge « Protège ton compte »), inventaire des comptes : liste **les comptes sans code** (à qui dire « reconnecte-toi et choisis ton code »).
 Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
+- **Vérifié en ligne (18h40 UTC)** : `POST /__sso/issue` sans code (Zoé Neuve, PC Windows) → **400 code_requis_creation**, aucune fiche ; routeur public
+  37801012927 ✅, site 37801013036 ✅, page servie `?v=1.0.47`, « Codes à valider » dans le fichier servi.
+- **Inventaire au coffre (run 37801082728)** : **19 comptes sur 21 n'ont pas de code au domaine**. 11 sont des fiches de l'audit Strix du
+  10-11.09 sur apex-chat (« Cors User », « Csrf User », « Mitm User », « `uname -a` », « <svg/onload=1> »…) → reconnues robots (`NOM_ATTAQUE`,
+  `TEST_NOM`), ménage lancé. **7 vraies personnes sans code** : Adrien Lorenzi, Théo Bruno, Romain Degiovanni, Marwan El Missouri, Marc Schwietzer,
+  Laurence Saint-Polit, Marie-Noëlle Sauvaigo (nom stocké « NoÃ«lle », mojibake d'avant le 2.10 — à réparer) ; Kevin = Face ID. Chacun, à sa
+  prochaine venue : nom + code choisi → « Codes à valider » chez Kevin → ✅ → entré.

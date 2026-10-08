@@ -179,6 +179,7 @@
   "tests/verify-boite-temps-reel.mjs",
   "tests/verify-boutiques-fermees.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",
+  "tests/verify-comptes-inventaire.mjs",
   "tests/verify-connexion-tout-le-monde.mjs",
   "tests/verify-couleurs-parite.mjs",
   "tests/verify-crea-comptes.mjs",

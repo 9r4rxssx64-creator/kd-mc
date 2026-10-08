@@ -228,7 +228,6 @@
     "test:bee-portes": "node tests/verify-bee-portes.mjs",
     "test:sso-duree": "node services/kdmc-router/sso-duree.test.mjs",
     "test:apis-worker": "node --test services/kdmc-apis/worker.test.mjs",
-    "test:comptes-inventaire": "node tests/verify-comptes-inventaire.mjs",
     "test:kv-inventaire": "node tests/verify-kv-inventaire.mjs",
     "test:publication-rh-plafond": "node tests/verify-publication-rh-plafond.mjs",
     "test:comptes-nettoyer": "node tests/verify-comptes-nettoyer.mjs",

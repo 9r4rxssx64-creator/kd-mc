@@ -45,3 +45,9 @@ jobs:
           [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::jeton ou compte Cloudflare absent des secrets"; exit 1; }
           JOURS="${{ inputs.jours }}"; case "$JOURS" in ''|*[!0-9]*) JOURS=2;; esac
           node tools/audit/mesure-kv.mjs "$JOURS"
+      - name: Lire les requêtes Workers (plafond 100 000/jour — la coupure du 27.09), lecture seule
+        if: always()
+        shell: bash -eo pipefail {0}
+        run: |
+          JOURS="${{ inputs.jours }}"; case "$JOURS" in ''|*[!0-9]*) JOURS=2;; esac
+          node tools/audit/mesure-requetes.mjs "$JOURS"

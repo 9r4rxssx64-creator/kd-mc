@@ -4008,7 +4008,7 @@ une règle ferme. Ce qui est possible : **je prépare tout, tu fais le clic**.
   demandes de recherche à distance) → ajouter ton e-mail → envoyer. Réponse : copie de l'acte, ou cote + numéro.
 - 👤 **Les 4 actes qui débloquent le plus** (à demander en priorité) : ① **décès de Jean-Baptiste ‹employé›, Nice, 9.04.1903** et ② **naissance de Philippe Laurent
   Jérôme ‹employé›, Nice, vers 1850** (relient la branche de 14 personnes de Monaco au tronc) ; ③ **décès de Jean ‹employé›, Nice, 30.03 ou 30.09.1881**
-  (tranche la date) ; ④ **naissance de Judith ‹employé›, Beaulieu-sur-Mer, 2 ou 3 février 1892** (tranche la date).
+  (tranche la date) ; ④ **naissance de Judith ‹employé›, Nice, 2 ou 3 février 1892** (tranche la date).
 - 👤 **Autres voies, si tu préfères chercher toi-même** : FranceArchives (lieu de conservation « Archives des Alpes-Maritimes »), registres numérisés sur
   Geneanet, Filae (Nice : plus de 100 000 actes numérisés, payant). Dès que tu as l'image ou le PDF : **envoie-le moi dans la conversation**, je le lis et
   j'intègre l'information avec sa cote.
@@ -4022,4 +4022,8 @@ une règle ferme. Ce qui est possible : **je prépare tout, tu fais le clic**.
 | Mariage DESARZENS × MEZONNIAUD, **Paris 19e**, 22.07.1950 | Ville de Paris | 👤 **À faire (5 min)** : [formulaire de la Ville de Paris](https://www.paris.fr/pages/demande-d-acte-d-etat-civil-15838) → acte de **mariage** → mairie du **19e** → date **22 juillet 1950** → époux **Guy Édouard DESARZENS** (né le 7.03.1918 à Poissy) → épouse **Yvette Marcelle MEZONNIAUD** (née le 3.02.1923 à Chevrainvilliers) → **copie intégrale** → lien : **petit-fils de l'époux**. L'acte a plus de 75 ans : librement communicable. Envoi postal gratuit, ~15 jours. Si le formulaire refuse la copie intégrale : courrier à la mairie du 19e (5-7 place Armand Carrel, 75019 Paris) — l'officier d'état civil ne peut pas refuser une demande écrite. **Cet acte donnera les parents d'Yvette** → rattache les 2 MEZONNIAUD isolés. |
 
 La relance automatique du **13.10** relit ta boîte (réponses seulement), lit les actes reçus et les intègre dans l'arbre.
+
+**Brouillons Gmail prêts (8.10.2026)** — à relire et envoyer : ① relance Salon-de-Provence (dans le fil du 3.10) ; ② Archives municipales de Nice
+(archives@ville-nice.fr) : les **4 actes anciens** (décès Jean-Baptiste ‹employé› 1903, naissance Philippe Laurent Jérôme ‹employé› ~1850, décès Jean ‹employé›
+1881, naissance Judith ‹employé› 1892 — tous à Nice) ; ③ Paris 19e : lettre sans destinataire, à copier dans le formulaire paris.fr ou à imprimer.
 

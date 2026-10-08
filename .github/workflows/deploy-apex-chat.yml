@@ -143,13 +143,23 @@ jobs:
           for mig in $(ls ../d1-migrations/0*.sql | sort); do
             [ -f "$mig" ] || continue
             echo "=== Migration: $mig ==="
-            if out=$(wrangler d1 execute apex-chat-main --file="$mig" --remote 2>&1); then
-              echo "$out" | tail -4
-            elif echo "$out" | grep -qiE "duplicate column|already exists"; then
-              echo "déjà appliquée (colonne/table existante) — ok"
-            else
+            # 08.10.2026 : des échecs PASSAGERS de l'API D1 (0006f au 1er essai, 0009 au 2e — jamais la
+            # même) bloquaient tout le déploiement. 3 essais espacés ; la cause exacte part en annotation
+            # (seul canal lisible sans télécharger les journaux).
+            ok=0; essai=1
+            while [ $essai -le 3 ]; do
+              if out=$(wrangler d1 execute apex-chat-main --file="$mig" --remote 2>&1); then
+                echo "$out" | tail -4; ok=1; break
+              elif echo "$out" | grep -qiE "duplicate column|already exists"; then
+                echo "déjà appliquée (colonne/table existante) — ok"; ok=1; break
+              fi
+              cause=$(echo "$out" | grep -iE "error|✘|failed|code:" | tail -3 | tr '\n' ' ' | cut -c1-350)
+              echo "::warning title=Migration $mig essai $essai/3::${cause:-aucune ligne erreur dans la sortie}"
+              essai=$((essai+1)); sleep $((essai*10))
+            done
+            if [ "$ok" != "1" ]; then
               echo "$out" | tail -40
-              echo "::error::Migration $mig ÉCHOUÉE (voir la sortie ci-dessus)"
+              echo "::error::Migration $mig ÉCHOUÉE après 3 essais : ${cause:-voir la sortie}"
               echec=1
             fi
           done

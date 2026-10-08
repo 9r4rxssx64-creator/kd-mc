@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (soir, suite) — Déploiement Apex Chat : migrations D1 réessayées 3 fois
+
+- Le déploiement v1.1.293 (kd-mc run 37807161669) s'arrêtait aux migrations D1 sur une erreur PASSAGÈRE de l'API
+  (0006f au 1er essai, 0009 au 2e — jamais la même ; aucune n'est nouvelle). Rien n'était mis en ligne.
+- `deploy-apex-chat.yml` : 3 essais espacés par migration + cause exacte en annotation (journaux illisibles d'ici).
+
 ## 2026-10-08 (soir) — Apex Chat : ultra-revue (5 relecteurs) + corrections, v1.1.293
 
 - **Revue** : ~70 défauts relevés (serveur, moteur temps réel, app). Les 7 plus graves contre-vérifiés, dont 5 en

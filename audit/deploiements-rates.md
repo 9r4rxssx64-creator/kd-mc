@@ -7,46 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ Deploy Apex Chat (Cloudflare Workers) — 08/10/2026 16:17 UTC
-
-- **Branche** : `main` · **Commit** : `ec437380` · **Run** : `37807161669`
-- **Ce qui a lâché** : Deploy Cloudflare Workers + Infra › Apply D1 migrations (toutes — glob auto)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/37807161669
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m# retour était celui de `tail` → un échec de migration ne se voyait JAMAIS. Désormais :^[[0m
-^[[36;1mechec=0^[[0m
-^[[36;1m    echo "::error::Migration $mig ÉCHOUÉE (voir la sortie ci-dessus)"^[[0m
-^[[36;1m    echec=1^[[0m
-^[[36;1m[ "$echec" = "0" ] || exit 1^[[0m
-Note: if the execution fails to complete, your DB will return to its original state and you can safely retry.
-^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/d1/database/afee673e-83e9-4ae3-a578-96fabbfdd023/import) failed.^[[0m
-  internal error; reference = e_Gz3hrU_bd1733f6f77248dc91a597dd8ec690f7 [code: 7500]
-##[error]Migration ../d1-migrations/0009_crypto_caps.sql ÉCHOUÉE (voir la sortie ci-dessus)
-##[error]Process completed with exit code 1.
-```
-
-## ❌ Deploy Apex Chat (Cloudflare Workers) — 08/10/2026 16:15 UTC
-
-- **Branche** : `main` · **Commit** : `ec437380` · **Run** : `37807161669`
-- **Ce qui a lâché** : Deploy Cloudflare Workers + Infra › Apply D1 migrations (toutes — glob auto)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/37807161669
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m# retour était celui de `tail` → un échec de migration ne se voyait JAMAIS. Désormais :^[[0m
-^[[36;1mechec=0^[[0m
-^[[36;1m    echo "::error::Migration $mig ÉCHOUÉE (voir la sortie ci-dessus)"^[[0m
-^[[36;1m    echec=1^[[0m
-^[[36;1m[ "$echec" = "0" ] || exit 1^[[0m
-Note: if the execution fails to complete, your DB will return to its original state and you can safely retry.
-^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/d1/database/afee673e-83e9-4ae3-a578-96fabbfdd023/import) failed.^[[0m
-  internal error; reference = e_Gz3hrU_1afe7e3e08d045489e457aeae096e12c [code: 7500]
-##[error]Migration ../d1-migrations/0006f_users_job.sql ÉCHOUÉE (voir la sortie ci-dessus)
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -554,5 +514,31 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cuisine.kd-mc.com            200   310280 car.
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
+##[error]Process completed with exit code 1.
+```
+
+## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
+- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
 ##[error]Process completed with exit code 1.
 ```

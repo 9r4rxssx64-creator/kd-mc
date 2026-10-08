@@ -15714,3 +15714,6 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
   `TEST_NOM`), ménage lancé. **7 vraies personnes sans code** : Adrien Lorenzi, Théo Bruno, Romain Degiovanni, Marwan El Missouri, Marc Schwietzer,
   Laurence Saint-Polit, Marie-Noëlle Sauvaigo (nom stocké « NoÃ«lle », mojibake d'avant le 2.10 — à réparer) ; Kevin = Face ID. Chacun, à sa
   prochaine venue : nom + code choisi → « Codes à valider » chez Kevin → ✅ → entré.
+- **Ménage fait (coffre, run 37803292187)** : les 11 fiches d'attaque de l'audit Strix retirées (corbeille `corbeille:comptes:2026-10-08-15-45-44`,
+  90 j) — **registre 26 → 15** (Kevin + 7 personnes sans code + 7 avec code). Piège du robot : la 1re exécution lancée juste après `enable`
+  reste « queued » pour toujours (3 fois vécu) → attendre 30 s après `enable`, et relancer si la file ne bouge pas en 3 min.

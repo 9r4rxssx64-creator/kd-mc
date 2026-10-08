@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (nuit) — Gardes rouges de main remis au vert (sans baisser aucun seuil)
+
+- `test:harnais-sans-sw` : 3 harnais navigateur ouvraient un contexte sans `serviceWorkers: 'block'`
+  (`tests/runtime-audit-departs-gate.mjs`, `tests/verify-bee-partout.mjs`, `tests/verify-boite-portail.mjs`) → corrigé.
+  Mesuré : garde 24 OK / 0 ; harnais en vrai navigateur 18/0, 31/0, 35/0.
+- `test:improvements-guard` (règles sans garde 19 → 20 → **19**) : la règle « SEUL KEVIN AJOUTE OU MODIFIE » reçoit ses gardes
+  (ecritures-cmc, lire-verrous, code-attente, code-compte) ; la sous-section « (LE GARDE COUVRE LA RÈGLE ENTIÈRE) » de
+  DOCS TEMPS RÉEL était lue comme une règle nommée « ENTIÈRE) » (l'extracteur coupe après le dernier « RÈGLE ») → reliée
+  à son vrai garde `test:docs-frais`. Mesuré : 28 vérif OK, 0 échec.
+- Laissé à son propriétaire : `test:file-size-guard` sur index.html CMCteams (session cmcteams-pdf) — plafond NON relevé.
+
 ## 2026-10-08 (19h00 UTC) — Crypto, Kevin « Fais au mieux tjs. Optimal rentabilité » : vrais prix + faux sauts ignorés + petites mises
 
 Lu en vrai (D1 de nouveau lisible, Railway) :

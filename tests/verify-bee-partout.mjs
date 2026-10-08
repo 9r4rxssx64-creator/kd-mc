@@ -59,7 +59,7 @@ const BASE = `http://127.0.0.1:${srv.address().port}`;
 const nav = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
 const MIME = { '.js': 'text/javascript', '.webp': 'image/webp', '.png': 'image/png', '.mp4': 'video/mp4' };
 async function ouvre({ marqueur = true, jeton = false, init, url = '/' } = {}) {
-  const ctx = await nav.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+  const ctx = await nav.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   /* les adresses « extérieures » du domaine pointent vers les vrais fichiers du dépôt */
   await ctx.route('https://javis.kd-mc.com/**', (rt) => {
     const p = new URL(rt.request().url()).pathname.replace(/^\//, '');
@@ -258,7 +258,7 @@ console.log('E. Le parent n\'obéit qu\'à son propre cadre');
   const apres = await cadreVisible(page);
   chk(avant && apres && apres.w === avant.w && apres.d === 'block', 'un message venu d\'ailleurs que du cadre de Bee (« ouvert », « cache ») est IGNORÉ : le cadre ne bouge pas');
   /* sabotage : sans la vérification de la source, le message d'ailleurs obéirait */
-  const ctx2 = await nav.newContext({ viewport: { width: 390, height: 844 } });
+  const ctx2 = await nav.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
   await ctx2.addCookies([{ name: 'kdmc_k', value: '1', url: BASE }]);
   const p2 = await ctx2.newPage();
   await p2.route('**/__javis/partout.js', (rt) => rt.fulfill({ status: 200, contentType: 'text/javascript', body: PARTOUT_JS.replace('e.source !== cadre.contentWindow', 'false') }));

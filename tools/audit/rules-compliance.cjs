@@ -104,6 +104,13 @@ const REGISTRE = [
   [/LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER/i, ['npm:test:budget-requetes', 'npm:test:cache-fichiers', 'npm:test:mesure-requetes', 'npm:test:portail-versions']],
   // Règle « CODE OBLIGATOIRE POUR TOUS » (Kevin 8.10.2026) : gardes = code à la création, code en attente de Kevin, pass lié à l'appareil.
   [/CODE OBLIGATOIRE POUR TOUS/i, ['npm:test:code-attente', 'npm:test:code-compte']],
+  // Sous-section « RENFORCEMENT 2026-10-08 … (LE GARDE COUVRE LA RÈGLE ENTIÈRE) » de la règle DOCS TEMPS RÉEL (commit
+  // 735ad3ab8) : l'extracteur garde le texte après le DERNIER « RÈGLE » du titre → titre lu = « ENTIÈRE) ».
+  // Elle comptait comme règle sans garde (ratchet 19 → 20). Son garde est celui qu'elle décrit : test:docs-frais.
+  [/^ENTIÈRE\)$/, ['npm:test:docs-frais', 'file:tools/audit/docs-fraicheur.cjs']],
+  // Règle « SEUL KEVIN AJOUTE OU MODIFIE : PLANNING, ÉQUIPES, PERSONNES, COMPTES, CODES » (Kevin 8.10.2026) : gardes citées
+  // par la règle elle-même — écritures CMCteams verrouillées côté serveur, verrous relus, codes en attente de Kevin.
+  [/SEUL KEVIN AJOUTE OU MODIFIE/i, ['npm:test:ecritures-cmc', 'npm:test:lire-verrous', 'npm:test:code-attente', 'npm:test:code-compte']],
   // Règle « ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE » (Kevin 3.10.2026, session arbre,
   // commit 23ed102f6 sans entrée → ratchet rouge pour tout le monde). Ce qui est MÉCANISABLE vit dans le robot d'écriture de
   // l'arbre (essai à blanc → écriture → rejouer = 0, anti-doublon par `ref`) et dans la section « à relier » ; le jugement

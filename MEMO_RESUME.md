@@ -93,6 +93,8 @@ Lu en vrai (Railway ; D1 inaccessible ce jour : le connecteur Cloudflare demande
 
 ## 2026-10-08 (12h00) — Sondes aveugles depuis la porte générale : corrigé
 
+**PROUVÉ 16h45 UTC** : audit Lingua réel 37810474839 (relancé par Kevin, « forcer ») = 77/0 sur v2.137.0.
+
 Audit Lingua réel 37763496796 = « page blanche » (15/30). Cause : porte générale #4313 → 401 sur les scripts sans
 compte/marque ; sondes marquaient seulement la navigation ; requêtes du SW hors routes Playwright. Fix :
 `tools/smoke/marquer-sonde.mjs` (marque tout ce qui va aux sites sondés + `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS`),

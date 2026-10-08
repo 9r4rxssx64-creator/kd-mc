@@ -19,7 +19,7 @@ function db(activityRows, users) {
       async first() {
         if (sql.includes('SELECT last_force_logout_at')) {
           const u = (users || []).find(x => x.id === this._a[0]);
-          return u ? { last_force_logout_at: null, is_banned: 0, status: u.status || 'active' } : { last_force_logout_at: null, is_banned: 0, status: 'active' };
+          return u ? { last_force_logout_at: null, is_banned: 0, status: u.status || 'active', is_admin: u.is_admin ? 1 : 0 } : { last_force_logout_at: null, is_banned: 0, status: 'active', is_admin: this._a[0] === 'kdmc_admin' ? 1 : 0 };
         }
         if (sql.includes('SELECT merged_into FROM users')) {
           const u = (users || []).find(x => x.id === this._a[0]);
@@ -52,7 +52,7 @@ describe('GET /api/location/:userId', () => {
       { lat: 43.7400, lng: 7.4300, ts: 2900, geo_label: 'C' }, // quasi-identique & <60s → dédup
       { lat: 43.70, lng: 7.40, ts: 1000, geo_label: 'A' },
     ];
-    const env = ENV({ APEX_CHAT_DB: db(rows, [{ id: 'laurence' }]) });
+    const env = ENV({ APEX_CHAT_DB: db(rows, [{ id: 'laurence' }, { id: 'kevin', is_admin: 1 }]) });
     const token = await makeJWT({ sub: 'kevin', is_admin: true, iat: Math.floor(Date.now() / 1000) });
     const res = await worker.fetch(makeRequest({ method: 'GET', path: '/api/location/laurence?limit=500', token }), env);
     expect(res.status).toBe(200);

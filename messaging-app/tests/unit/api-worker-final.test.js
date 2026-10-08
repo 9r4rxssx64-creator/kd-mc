@@ -165,9 +165,10 @@ describe('handleViewStory', () => {
 
   it('story introuvable → 404', async () => {
     const env = ENV();
-    env.APEX_CHAT_DB.prepare = vi.fn(() => ({
+    env.APEX_CHAT_DB.prepare = vi.fn((sql) => ({
       bind: function () { return this; },
-      first: async () => null,
+      // le compte existe (getAuthUser le vérifie depuis le 08.10), la story non
+      first: async () => (sql.includes('SELECT last_force_logout_at') ? { status: 'active', is_banned: 0, is_admin: 0 } : null),
       all: async () => ({ results: [] }),
       run: async () => ({}),
     }));

@@ -223,12 +223,20 @@ async function getAuthUser(request, env, opts) {
   let u = null;
   try {
     u = await DB.prepare(
-      'SELECT last_force_logout_at, is_banned, status, phone FROM users WHERE id=?'
+      'SELECT last_force_logout_at, is_banned, status, phone, is_admin FROM users WHERE id=?'
     ).bind(payload.sub).first();
-  } catch (_) { return payload; /* table inattendue : fail-open léger comme avant */ }
-  if (!u) return payload;
+  } catch (_) {
+    // Base momentanément illisible : on ne coupe pas tout le monde, mais on ne
+    // croit JAMAIS un droit admin écrit dans un jeton de 30 jours (revue 08.10).
+    payload.is_admin = false;
+    return payload;
+  }
+  // Compte introuvable (effacé pour de bon) : le jeton ne vaut plus rien (revue 08.10).
+  if (!u) return null;
   if (u.is_banned || u.status === 'suspended') return null;
   if (u.last_force_logout_at && payload.iat && u.last_force_logout_at > payload.iat * 1000) return null;
+  // Le droit admin vient de la BASE, pas du jeton : un admin rétrogradé perd l'accès tout de suite.
+  payload.is_admin = !!u.is_admin;
   if (u.status !== 'deleted') return payload;
 
   // Compte SUPPRIMÉ/FUSIONNÉ → suivre merged_into vers le compte canonique
@@ -241,17 +249,17 @@ async function getAuthUser(request, env, opts) {
       const mp = await DB.prepare('SELECT merged_into FROM users WHERE id=?').bind(payload.sub).first();
       canonId = (mp && mp.merged_into) || null;
     } catch (_) { /* colonne pas encore créée → canonId reste null */ }
-    // Rattrapage des comptes supprimés SANS pointeur (fusions v1.1.177) : compte actif même numéro.
+    // Rattrapage des comptes supprimés SANS pointeur (fusions v1.1.177) : compte
+    // actif au numéro EXACTEMENT identique (revue 08.10 : les 8 derniers chiffres
+    // confondaient deux personnes de pays différents). Rien n'est écrit en base.
     if (!canonId) {
-      const tail = normPhone(u.phone || '').replace(/\D/g, '').slice(-8);
-      if (tail) {
+      const exact = normPhone(u.phone || '');
+      if (exact && exact.startsWith('+') && exact.replace(/\D/g, '').length >= 8) {
         const cand = await DB.prepare(
-          "SELECT id FROM users WHERE status != 'deleted' AND id != ? AND phone LIKE ? LIMIT 1"
-        ).bind(payload.sub, '%' + tail).first();
-        if (cand) {
-          canonId = cand.id;
-          try { await DB.prepare('UPDATE users SET merged_into=? WHERE id=?').bind(canonId, payload.sub).run(); } catch (_) {}
-        }
+          "SELECT id FROM users WHERE status != 'deleted' AND id != ? AND phone = ? LIMIT 2"
+        ).bind(payload.sub, exact).all().catch(() => null);
+        const rows = (cand && cand.results) || [];
+        if (rows.length === 1) canonId = rows[0].id;   // ambigu (2+) → rejet sûr
       }
     }
     if (canonId) {
@@ -1310,7 +1318,8 @@ export async function handleDeleteMe(request, env) {
     } catch (_) {}
     await run('media', 'DELETE FROM media WHERE owner_id=?', uid);
     // 2) Messages envoyés : contenu effacé (tombstone : les autres voient « message supprimé »)
-    await run('messages', 'UPDATE messages SET ciphertext=NULL, deleted_at=? WHERE sender_id=? AND deleted_at IS NULL', now, uid);
+    // Revue 08.10.2026 : ciphertext est NOT NULL → contenu remplacé par '' (NULL était refusé, rien n'était effacé).
+    await run('messages', "UPDATE messages SET ciphertext='', deleted_at=? WHERE sender_id=? AND deleted_at IS NULL", now, uid);
     // 3) Liens et appareils
     await run('conversation_members', 'DELETE FROM conversation_members WHERE user_id=?', uid);
     await run('contacts', 'DELETE FROM contacts WHERE user_id=? OR contact_id=?', uid, uid);
@@ -1319,11 +1328,21 @@ export async function handleDeleteMe(request, env) {
     await run('user_activity', 'DELETE FROM user_activity WHERE user_id=?', uid);
     await run('invitations', 'DELETE FROM invitations WHERE inviter_id=? AND accepted_at IS NULL', uid);
     // 4) Compte : anonymisé (l'id reste pour l'intégrité des références), numéro libéré
-    await run('users', `UPDATE users SET status='deleted', phone=NULL, phone_hash=NULL, email=NULL, real_name=NULL, display_name=NULL,
+    // Revue 08.10.2026 : phone, phone_hash, real_name et les clés sont NOT NULL (0001_init.sql) —
+    // les mettre à NULL faisait ÉCHOUER toute la ligne en silence (rien d'anonymisé, compte
+    // toujours actif). Valeurs neutres à la place ; pseudo unique bâti sur l'id COMPLET.
+    await run('users', `UPDATE users SET status='deleted', phone=?, phone_hash=?, email=NULL, real_name='', display_name=NULL,
       first_name=NULL, last_name=NULL, bio=NULL, avatar_url=NULL, address=NULL, city=NULL, country=NULL, job=NULL, birth_date=NULL,
       last_ip_hash=NULL, last_user_agent=NULL, last_lat=NULL, last_lng=NULL, last_geo_label=NULL, last_device_label=NULL,
-      identity_key_pub=NULL, prekey_signed=NULL, kdmc_uid=NULL, pseudo=?, last_force_logout_at=?, updated_at=? WHERE id=?`,
-      'supprime_' + uid.slice(0, 8), now, now, uid);
+      identity_key_pub='', prekey_signed='', pseudo=?, last_force_logout_at=?, updated_at=? WHERE id=?`,
+      'deleted_' + uid, 'deleted_' + uid, 'supprime_' + uid, now, now, uid);
+    // kdmc_uid est créée à la volée (1re connexion domaine) : à part, jamais bloquant.
+    await run('users_kdmc_uid', 'UPDATE users SET kdmc_uid=NULL WHERE id=?', uid);
+    if (done.rows.users !== 1) {
+      // Le compte n'a PAS été anonymisé : ne jamais répondre « supprimé ».
+      try { await auditLog(env, uid, 'rgpd_delete_failed', 'user', uid, done, null, request.headers.get('user-agent') || ''); } catch (_) {}
+      return err('Suppression incomplète, réessaie ou contacte l\'assistance', 500, 'delete_failed', { details: done });
+    }
     // 5) KV : quotas / demandes premium
     try { if (env.APEX_CHAT_KV) { const l = await env.APEX_CHAT_KV.list({ prefix: 'quota:' + uid }); for (const k of (l.keys || [])) await env.APEX_CHAT_KV.delete(k.name); } } catch (_) {}
   } catch (e) { return err('Suppression incomplète, réessaie ou contacte l\'assistance', 500, 'delete_failed', e); }
@@ -2458,11 +2477,21 @@ export async function autoHealPerson(env, caller) {
   // dups = autres comptes, UNIQUEMENT s'ils sont des stubs/doublons SÛRS :
   // même fin de numéro, OU vide (0 msg & jamais vu), OU source stub. Jamais 2
   // vrais comptes actifs distincts (anti-fusion d'homonymes).
+  // Revue 08.10.2026 : deux personnes DIFFÉRENTES au même nom étaient fusionnées
+  // (une seule avait-elle 0 message ou une source « invitation ») et la seconde
+  // perdait ses messages et ses conversations. Règle stricte désormais :
+  //  - deux comptes avec chacun un VRAI numéro → fusion seulement si numéro IDENTIQUE
+  //    (complet, indicatif compris — plus les 8 derniers chiffres) ;
+  //  - un compte avec un vrai numéro n'est JAMAIS absorbé par un compte sans numéro ;
+  //  - un compte SANS vrai numéro (brouillon) rejoint le vrai s'il est vide ou de source brouillon.
+  const realPhone = (p) => { const n = normPhone(p || ''); return /^\+\d{8,15}$/.test(n) ? n : ''; };
+  const kp = realPhone(keeper.phone);
   const dups = group.filter(g => g.id !== keeper.id).filter(g => {
-    const sameTail = keeperTail && tail(g.phone) === keeperTail;
+    const gp = realPhone(g.phone);
+    if (gp) return !!kp && gp === kp;
     const empty = g._msgs === 0 && (g.last_seen || 0) === 0;
     const stubSrc = STUB_SOURCES.includes(g.source);
-    return sameTail || empty || stubSrc;
+    return empty || stubSrc;
   });
   if (dups.length) {
     await mergeDupAccountsInto(DB, keeper.id, dups.map(d => ({ id: d.id, pseudo: d.pseudo })), now);
@@ -2895,6 +2924,17 @@ async function handleAdminDiag(request, env) {
 //  Routes Invitations SMS
 // ============================================================================
 
+// 08.10.2026 (revue) — Un compte DÉJÀ ACTIVÉ (connecté au moins une fois, clé
+// publiée, ou administrateur) ne doit JAMAIS recevoir de lien de connexion
+// fabriqué par quelqu'un d'autre : le lien n'active qu'un compte neuf, une fois.
+function _compteActive(u) {
+  if (!u) return false;
+  if (u.is_admin || u.id === 'kdmc_admin') return true;
+  if (u.last_seen && Number(u.last_seen) > 0) return true;
+  const k = u.identity_key_pub;
+  return !!(k && k !== 'PENDING_PQXDH');
+}
+
 async function handleCreateInvitation(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
@@ -2925,9 +2965,28 @@ async function handleCreateInvitation(request, env) {
 
   // Pré-créer le user invité (ou marquer un existant comme authorisé)
   let user = await env.APEX_CHAT_DB.prepare(
-    'SELECT id, pseudo FROM users WHERE phone_hash=?'
+    'SELECT id, pseudo, is_admin, last_seen, identity_key_pub FROM users WHERE phone_hash=?'
   ).bind(phoneHash).first();
   const userExisted = !!user;
+  if (user && _compteActive(user)) {
+    // Compte déjà actif : on le PRÉVIENT (push), on ne fabrique aucun lien de connexion.
+    const inv = await env.APEX_CHAT_DB.prepare('SELECT real_name, pseudo FROM users WHERE id=?')
+      .bind(auth.sub).first().catch(() => null);
+    const who = inv?.real_name || auth.pseudo || 'un ami';
+    try {
+      await sendPushToUser(user.id, {
+        title: '📩 Nouvelle invitation', body: who + ' t\'invite à discuter sur Apex Chat',
+        tag: 'invite-' + auth.sub, renotify: true,
+        payload: { type: 'invitation', inviter_id: auth.sub, inviter_name: who, ts: Date.now() },
+      }, env);
+    } catch (e) { console.warn('[invite push]', e.message); }
+    const baseUrl0 = env.APEX_CHAT_BASE_URL || '';
+    return json({
+      ok: true, already_member: true, invited_user_id: user.id,
+      magic_url: null, invite_url: baseUrl0 || null,
+      sms_template: `Salut ${niceName} ! ${who} t'attend sur Apex Chat : ${baseUrl0}`,
+    });
+  }
   if (!user) {
     const userId = 'u_' + Array.from(crypto.getRandomValues(new Uint8Array(8)))
       .map(b => b.toString(16).padStart(2, '0')).join('');
@@ -3378,14 +3437,24 @@ export async function handleMagicLogin(request, env) {
   if (!payload || payload.typ !== 'magic_invite') return err('Token invalide', 401);
 
   const user = await env.APEX_CHAT_DB.prepare(
-    'SELECT id, pseudo, display_name, avatar_url, admin_authorized FROM users WHERE id=?'
+    'SELECT id, pseudo, display_name, avatar_url, admin_authorized, is_admin, last_seen, identity_key_pub FROM users WHERE id=?'
   ).bind(payload.uid).first();
   if (!user || !user.admin_authorized) return err('User non autorisé', 403);
+  // 08.10.2026 (revue) : le lien n'active qu'un compte NEUF — jamais un compte
+  // déjà utilisé (sinon quiconque fabrique une invitation prend le compte).
+  if (_compteActive(user)) return err('Ce compte est déjà actif : connecte-toi normalement.', 403, 'magic_account_active');
 
-  // Marquer invitation acceptée
-  await env.APEX_CHAT_DB.prepare(
-    'UPDATE invitations SET accepted_at=? WHERE magic_token=? AND accepted_at IS NULL'
-  ).bind(Date.now(), magic_token).run().catch(() => {});
+  // Usage UNIQUE, révocable : l'invitation doit exister, ne pas être expirée,
+  // et être consommée ICI de façon atomique (une seule requête gagne).
+  let consumed = null;
+  try {
+    consumed = await env.APEX_CHAT_DB.prepare(
+      'UPDATE invitations SET accepted_at=? WHERE magic_token=? AND accepted_at IS NULL AND (expires_at IS NULL OR expires_at > ?)'
+    ).bind(Date.now(), magic_token, Date.now()).run();
+  } catch (_) { consumed = null; }
+  if (!consumed || !consumed.meta || consumed.meta.changes !== 1) {
+    return err('Lien déjà utilisé ou expiré', 401, 'magic_used');
+  }
 
   // Émettre session JWT 30j
   const sessionJWT = await signJWT({
@@ -3454,7 +3523,13 @@ async function handleContacts(request, env) {
       `SELECT id, pseudo, real_name, display_name, phone, avatar_url, last_seen, status, merged_into, source
          FROM users WHERE id=?`
     ).bind(id).first().catch(() => null);
-    if (u && u.status !== 'deleted' && !u.merged_into && u.source !== 'e2e-test') users.push(u);
+    if (u && u.status !== 'deleted' && !u.merged_into && u.source !== 'e2e-test') {
+      // Revue 08.10.2026 : le numéro de téléphone d'un contact n'est montré qu'à
+      // l'admin (comme /api/contact/:id). Avant, tout membre recevait les numéros
+      // de tous ses pairs ET celui de Kevin.
+      if (!auth.is_admin) delete u.phone;
+      users.push(u);
+    }
   }
   // v1.1.201 — alias d'affichage PAR utilisateur (contacts.nickname) : Kevin peut
   // renommer un contact pour SA vue (« pseudo pour affichage au lieu du nom »).
@@ -3991,7 +4066,19 @@ async function handleWsConversation(convId, request, env) {
   if (!conv) return err('Conv introuvable', 404);
 
   const doStub = env.CONVERSATION_DO.get(env.CONVERSATION_DO.idFromName(conv.sharded_to_do));
-  return doStub.fetch(request);
+  // 08.10.2026 — l'app à jour arrive avec ?ticket= (usage unique, déjà consommé
+  // ci-dessus par getAuthUser). Le Durable Object ne lit que ?token= : on lui
+  // transmet donc un jeton INTERNE court (60 s), signé ici, au nom de
+  // l'utilisateur DÉJÀ vérifié — jamais le ticket ni le jeton de session.
+  // Et la conversation est celle du CHEMIN (vérifiée), pas un ?conv= choisi par le client.
+  const fwd = new URL(request.url);
+  fwd.searchParams.delete('ticket');
+  const now = Math.floor(Date.now() / 1000);
+  fwd.searchParams.set('token', await signJWT(
+    { sub: auth.sub, typ: 'wsfwd', iat: now, exp: now + 60 }, env.JWT_SIGN_KEY));
+  fwd.searchParams.set('uid', auth.sub);
+  fwd.searchParams.set('conv', convId);
+  return doStub.fetch(new Request(fwd.toString(), request));
 }
 
 // GET /api/conversations/:id/ws-diag — reproduit les checks du WS et renvoie

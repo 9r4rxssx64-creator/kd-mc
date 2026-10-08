@@ -39,11 +39,19 @@ export function makeDB(handlers = {}) {
       this._calls.push(sql);
       const dispatch = {};
       // Recherche dans handlers : la 1ère key qui matche en includes()
+      let matched = false;
       for (const [pattern, h] of Object.entries(handlers)) {
         if (sql.includes(pattern)) {
           Object.assign(dispatch, typeof h === 'function' ? { first: h } : h);
+          matched = true;
           break;
         }
+      }
+      // Revue 08.10.2026 : getAuthUser REJETTE un compte absent et lit is_admin
+      // EN BASE (plus dans le jeton). Par défaut, la fausse base répond donc
+      // « compte actif, non admin » — un test admin doit le DIRE explicitement.
+      if (!matched && sql.includes('SELECT last_force_logout_at')) {
+        dispatch.first = { status: 'active', is_banned: 0, is_admin: 0, last_force_logout_at: null };
       }
       return makeStmt(sql, dispatch);
     }),

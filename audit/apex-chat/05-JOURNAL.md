@@ -250,3 +250,18 @@ produit assumé.
   17 réussis, 3 sautés (WebKit WebSocket + 2 permissions notifications, connus), 0 échec →
   `two-clients` a bien **tourné** sur Chromium.
 - Reste ouvert : **F36** (clé privée E2E en clair dans localStorage, `key-vault.js` non chargé).
+
+## Passe 6 — 2026-10-08 — ultra-revue + corrections (v1.1.293)
+
+- 5 relecteurs (serveur en 2 moitiés, moteur temps réel + workers annexes, app) + 1 contre-vérificateur.
+  ~70 constats ; les 7 plus graves confirmés, 5 en rejouant le vrai code sur un SQLite aux vraies migrations.
+- **Preuve prod AVANT correctif** : e2e public run 37805038199 → seul échec = temps réel par ticket (fermé par le serveur).
+  Les e2e étaient en plus aveugles depuis la porte générale (non déclarés sonde) : corrigé (`e2e/fixtures.js`).
+- **Corrigé + testé (sabotage rouge à chaque fois)** : relais ticket → DO ; invitations (usage unique, jamais sur un
+  compte actif) ; admin lu en base ; compte absent = refus ; rattachement par numéro EXACT ; numéros cachés aux
+  non-admins ; fusion stricte des homonymes ; suppression de compte réelle (vrai schéma) + migration 0010 ; moteur
+  (auteur seul, validation, flush résilient, historique depuis l'arrivée, re-contrôle membre, limites, appels ciblés,
+  `client_id`) ; app (médias hors API, délégation `kcall` sans donnée dans les `onclick`, hashtags, socket périmée,
+  accusés, positions).
+- **Non fait (décision)** : F36 (coffre de clé), chiffrement de groupe, ~40 points moyens/faibles listés au MEMO.
+- **Vérification en ligne APRÈS déploiement** : voir passe 7 (à écrire après le run e2e post-déploiement).

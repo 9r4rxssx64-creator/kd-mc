@@ -15,7 +15,7 @@ function db(users) {
       return {
         _a: [], bind(...a) { return { ...this, _a: a }; },
         async first() {
-          if (sql.includes('SELECT last_force_logout_at')) { const u = users.find(x => x.id === this._a[0]); return u ? { last_force_logout_at: null, is_banned: 0, status: u.status || 'active', phone: u.phone } : null; }
+          if (sql.includes('SELECT last_force_logout_at')) { const u = users.find(x => x.id === this._a[0]); return u ? { last_force_logout_at: null, is_banned: 0, status: u.status || 'active', phone: u.phone, is_admin: u.is_admin ? 1 : 0 } : null; }
           if (sql.includes('SELECT merged_into FROM users')) { const u = users.find(x => x.id === this._a[0]); return u ? { merged_into: u.merged_into || null } : null; }
           if (sql.includes('FROM users WHERE id=?')) { return users.find(x => x.id === this._a[0]) || null; }
           return null;

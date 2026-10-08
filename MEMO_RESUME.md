@@ -1,5 +1,29 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (soir) — Apex Chat : ultra-revue (5 relecteurs) + corrections, v1.1.293
+
+- **Revue** : ~70 défauts relevés (serveur, moteur temps réel, app). Les 7 plus graves contre-vérifiés, dont 5 en
+  rejouant le vrai code du serveur sur une base SQLite construite avec les vraies migrations.
+- **Prouvé EN PRODUCTION avant correctif** (e2e public kd-mc, run 37805038199) : le temps réel par TICKET (chemin de
+  l'app à jour) est fermé par le serveur — 21 OK / 1 KO, le KO = ce test. Cause : le worker transmettait le ticket au
+  Durable Object qui ne lit que `?token=`. Corrigé (jeton interne 60 s + conv du chemin).
+- **Les e2e d'Apex Chat étaient aveugles depuis la porte générale** (#4313) : ils ne se déclaraient pas sonde →
+  page « connexion requise ». `e2e/fixtures.js` réutilise `tools/smoke/marquer-sonde.mjs` (origine Apex Chat seule).
+- **Sécurité serveur** : lien d'invitation = usage unique, jamais sur un compte déjà actif ; droit admin lu en BASE ;
+  compte introuvable = jeton refusé ; plus de rattachement « 8 derniers chiffres » ; numéros de téléphone des
+  contacts cachés aux non-admins ; fusion automatique stricte (jamais deux vrais numéros différents).
+- **RGPD** : la suppression de compte ne supprimait RIEN (NULL refusé par le schéma, erreur avalée) → valeurs
+  neutres + échec = 500 ; prouvé sur le vrai schéma. Migration `0010_users_kdmc_uid.sql` (colonne créée à la volée).
+- **Moteur temps réel** : modif/suppression par l'auteur seul, champs invalides refusés, enregistrement en base qui ne
+  se bloque plus, historique depuis l'arrivée du membre, re-contrôle d'appartenance, limites étendues, appels ciblés,
+  accusé avec `client_id`.
+- **App** : médias d'une autre origine jamais chargés avec le jeton ; plus aucune donnée d'autrui dans un `onclick`
+  (délégation `kcall`) ; hashtags/apostrophes ; socket périmée ; accusés ; positions validées.
+- **Tests** : 1 412 / 1 418 — les 6 échecs (IA : ordre Qwen/Groq/Anthropic) existaient AVANT sur `main`, non touchés.
+- **Reste ouvert** : F36 (clé privée E2E en clair, coffre `key-vault.js` non branché) ; chiffrement de groupe
+  (aujourd'hui un seul destinataire) ; ~40 points moyens/faibles de la revue (sondages, quotas IA, stories, lettres
+  programmées, push non attendus…) ; un compte pré-créé par invitation reste prenable par l'inviteur tant que
+  l'invité ne l'a pas activé (le code obligatoire du 08.10 doit le couvrir — à vérifier).
 ## 2026-10-08 (15h30) — Novembre en ligne, 0 personne manquante, journal admin propre — et les documents enfin à jour
 
 - **Livré et VÉRIFIÉ EN RÉEL (run verif-live-equipes 37798486104, 15h11 UTC, après fusion PR #4372)** : **CMCteams v9.953** + **light v1.80** servies ; 196 tableaux (5 mois, **novembre 2026** inclus, 293 personnes) ; planning servi = PDF ; 18 503 passages de départs conformes à la règle des séries ; 23 378 cases identiques app ⇄ light ; collègue non-admin OK.

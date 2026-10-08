@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.292",
+  "softwareVersion": "v1.1.293",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.292';
+const __APEX_CHAT_VERSION__ = 'v1.1.293';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.292" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.292</div>
+  <div id="splash-version" data-ver="v1.1.293" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.293</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.292</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.293</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -772,6 +772,73 @@ window.K = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const esc = (s) => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Sécurité (audit client 10/2026) — actions DÉLÉGUÉES. Une valeur qui vient d'un
+// message, d'un pair ou d'une API tierce ne doit JAMAIS être écrite dans le CODE
+// d'un onclick="K._x('${esc(v)}')" : le navigateur décode &#39; / &quot; en ' / "
+// AVANT d'exécuter le JS → esc() ne protège pas dans une chaîne JS. On écrit le nom
+// de l'action + ses arguments (JSON) en data-*, où esc() suffit, et un seul écouteur
+// (phase de capture → même ordre qu'un onclick posé sur l'élément) fait l'appel.
+//   kcall('_toggleReaction', [m.id, emo])            → appelle K._toggleReaction(id, emo)
+//   kcall('_x', [a], { close:true, stop:true, evt:true })
+//   kcall('__copy', [texte, 'Copié'])  · kcall('__open', [url])
+const kcall = (name, args, opts) => {
+  let s = ` data-kcall="${esc(name)}" data-kargs="${esc(JSON.stringify(Array.isArray(args) ? args : []))}"`;
+  if(opts){
+    if(opts.close) s += ' data-kclose="1"';
+    if(opts.stop) s += ' data-kstop="1"';
+    if(opts.evt) s += ' data-kevt="1"';
+  }
+  return s;
+};
+// Seules ces fonctions de K peuvent être appelées par data-kcall.
+K._KCALL_ALLOWED = new Set([
+  '_toggleReaction', '_scrollToMsg', '_showTranslateMenu', '_doTranslate', '_useRewritten',
+  '_searchByHashtag', '_pickGif', '_showScamInfo', '_suggestTranslate', '_togglePlayVoice',
+  '_scrubVoice', '_cycleVoiceSpeed', '_shareConvLink', '_shareInviteLink', '_createSuggestedLabel',
+  '_reportUser', '_blockUser', '_startConvWithUser', '_deleteContact', '_rejectCall',
+  '_answerIncomingCall', '_adminOpenTimeline', '_showTrajectory', '_copyDiag',
+  '_submitInviteFastLogin', '_submitOnboarding'
+]);
+K._kcallSafeOpenUrl = function(u){
+  u = String(u || '');
+  if(/^(https?:|blob:)/i.test(u)) return u;
+  if(/^data:image\/(png|jpe?g|gif|webp|avif|bmp);/i.test(u)) return u;
+  return '';
+};
+K._kcallDispatch = function(ev){
+  const t = ev && ev.target;
+  const el = (t && t.closest) ? t.closest('[data-kcall]') : null;
+  if(!el) return;
+  const name = el.getAttribute('data-kcall') || '';
+  let args;
+  try{ args = JSON.parse(el.getAttribute('data-kargs') || '[]'); }catch(_e){ return; }
+  if(!Array.isArray(args)) return;
+  if(el.hasAttribute('data-kstop')) ev.stopPropagation();
+  if(el.hasAttribute('data-kclose') && typeof K._closeModal === 'function'){ try{ K._closeModal(); }catch(_e){} }
+  try{
+    if(name === '__copy'){
+      const p = navigator.clipboard && navigator.clipboard.writeText(String(args[0] == null ? '' : args[0]));
+      const msg = args[1];
+      if(msg){ Promise.resolve(p).then(() => toast(String(msg), 'ok')).catch(() => toast('Copie impossible', 'warn')); }
+      if(args[2] && typeof K._closeModal === 'function') K._closeModal();
+      return;
+    }
+    if(name === '__open'){
+      const u = K._kcallSafeOpenUrl(args[0]);
+      if(u) window.open(u, '_blank', 'noopener');
+      return;
+    }
+    if(!K._KCALL_ALLOWED.has(name) || typeof K[name] !== 'function') return;
+    if(el.hasAttribute('data-kevt')) args.push(ev);
+    const r = K[name].apply(K, args);
+    if(r && typeof r.catch === 'function') r.catch(e => _safeCatch('kcall-' + name, e));
+  }catch(e){ _safeCatch('kcall-' + name, e); }
+};
+if(typeof document !== 'undefined' && !window.__kcallInstalled){
+  window.__kcallInstalled = true;
+  document.addEventListener('click', K._kcallDispatch, true);
+}
 
 function normalizeName(s){
   return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
@@ -2109,8 +2176,8 @@ K._copyConvDeepLink = function(convId){
       ${esc(url)}
     </div>
     <div style="display:grid;gap:6px;margin-top:14px">
-      <button class="btn btn-block" onclick="navigator.clipboard.writeText('${esc(url)}');K.toast?.('Lien copié','ok')">📋 Copier le lien</button>
-      ${navigator.share ? `<button class="btn btn-out btn-block" onclick="K._shareConvLink('${esc(url)}','${esc(conv.name || conv.pseudo || '?')}')">📨 Partager</button>` : ''}
+      <button class="btn btn-block" ${kcall('__copy', [url, 'Lien copié'])}>📋 Copier le lien</button>
+      ${navigator.share ? `<button class="btn btn-out btn-block"${kcall('_shareConvLink', [url, conv.name || conv.pseudo || '?'])}>📨 Partager</button>` : ''}
     </div>
     <p style="font-size:.72em;color:var(--ax-text-3);margin-top:12px">
       💡 iPhone : Safari → Partager → "Ajouter à l'écran d'accueil" pour épingler.
@@ -2569,7 +2636,7 @@ K._suggestConvTags = async function(convId){
           const emojis = ['🏷', '📋', '⭐', '🔥', '💡'];
           const c = colors[i % colors.length];
           const e = emojis[i % emojis.length];
-          return `<button class="btn" style="text-align:left;background:${c};color:#fff;border-color:${c}" onclick="K._createSuggestedLabel('${esc(convId)}','${esc(label)}','${esc(e)}','${esc(c)}')">${esc(e)} ${esc(label)} → Créer + tagger</button>`;
+          return `<button class="btn" style="text-align:left;background:${c};color:#fff;border-color:${c}" ${kcall('_createSuggestedLabel', [convId, label, e, c])}>${esc(e)} ${esc(label)} → Créer + tagger</button>`;
         }).join('')}
       </div>
       <button class="btn btn-out btn-block" onclick="K._closeModal()">↩ Plus tard</button>
@@ -3681,11 +3748,32 @@ K._parseHashtags = function(text){
   return matches;
 };
 
+// Correctif (audit client 10/2026) : _renderHashtags / _renderMentions tournent sur
+// du HTML DÉJÀ échappé + balisé (_renderMarkdown). L'ancien replace global
+// transformait l'entité « &#39; » en « &<span…>#39</span>; » (apostrophes cassées)
+// et pouvait insérer un <span …> DANS un href="…" (lien auto). On ne touche plus
+// qu'au TEXTE hors balises, hors <a>/<code>/<pre>, et un # doit suivre un début
+// ou un espace/une ponctuation (jamais « & » ni une lettre).
+K._mapHtmlText = function(html, fn){
+  const parts = String(html).split(/(<[^>]*>)/);
+  let skip = 0;
+  for(let i = 0; i < parts.length; i++){
+    const p = parts[i];
+    if(!p) continue;
+    if(p[0] === '<'){
+      const mt = /^<\s*(\/)?\s*(a|code|pre)\b/i.exec(p);
+      if(mt){ if(mt[1]) skip = Math.max(0, skip - 1); else if(!/\/\s*>$/.test(p)) skip++; }
+      continue;
+    }
+    if(skip === 0) parts[i] = fn(p);
+  }
+  return parts.join('');
+};
 K._renderHashtags = function(html){
   if(!html) return '';
-  return html.replace(/#([a-zA-Z0-9_]{2,30})/g, (match, tag) =>
-    `<span class="hashtag" onclick="K._searchByHashtag('${esc(tag)}')">#${esc(tag)}</span>`
-  );
+  return K._mapHtmlText(html, (txt) => txt.replace(/(^|[\s(\[{,;:!?])#([a-zA-Z0-9_]{2,30})(?![a-zA-Z0-9_])/g, (match, pre, tag) =>
+    `${pre}<span class="hashtag"${kcall('_searchByHashtag', [tag])}>#${esc(tag)}</span>`
+  ));
 };
 
 K._searchByHashtag = function(tag){
@@ -3717,10 +3805,11 @@ K._parseMentions = function(text){
 K._renderMentions = function(html){
   if(!html) return '';
   const myPseudo = (K.user?.pseudo || '').toLowerCase();
-  return html.replace(/@([a-zA-Z0-9._-]{1,30})/g, (match, handle) => {
+  // Texte hors balises / hors liens uniquement (cf. K._mapHtmlText).
+  return K._mapHtmlText(html, (txt) => txt.replace(/@([a-zA-Z0-9._-]{1,30})/g, (match, handle) => {
     const isMe = handle.toLowerCase() === myPseudo;
     return `<span class="mention${isMe ? ' mention-me' : ''}">${esc(match)}</span>`;
-  });
+  }));
 };
 
 K._isMentionedInMsg = function(msg){
@@ -4491,8 +4580,8 @@ K._openConvActionsMenu = function(convId, ev){
       <button class="btn btn-out btn-block" onclick="K._openExportMenu('${esc(convId)}')">💾 Exporter la conversation</button>
       <button class="btn btn-out btn-block" onclick="K._closeModal();K._openConvInfo('${esc(convId)}')">ℹ️ Infos & statistiques</button>
       <button class="btn btn-out btn-block" onclick="K._closeModal();K._openReactionStats('${esc(convId)}')">📊 Stats réactions</button>
-      ${conv.peer_id ? `<button class="btn btn-out btn-block" style="margin-top:8px" onclick="K._reportUser('${esc(conv.peer_id)}','${esc(convId)}','${esc(K._convName(conv))}')">⚠️ Signaler ${esc(K._convName(conv))}</button>
-      <button class="btn btn-out btn-block" style="color:#e63946;border-color:#e63946" onclick="K._blockUser('${esc(conv.peer_id)}','${esc(K._convName(conv))}')">🚫 Bloquer ${esc(K._convName(conv))}</button>` : ''}
+      ${conv.peer_id ? `<button class="btn btn-out btn-block" style="margin-top:8px" ${kcall('_reportUser', [conv.peer_id, convId, K._convName(conv)])}>⚠️ Signaler ${esc(K._convName(conv))}</button>
+      <button class="btn btn-out btn-block" style="color:#e63946;border-color:#e63946" ${kcall('_blockUser', [conv.peer_id, K._convName(conv)])}>🚫 Bloquer ${esc(K._convName(conv))}</button>` : ''}
       <button class="btn btn-out btn-block" style="color:#e63946;border-color:#e63946;margin-top:8px" onclick="K._clearConvMessages('${esc(convId)}')">🧹 Effacer les messages (garder la conv)</button>
       <button class="btn btn-out btn-block" style="color:#e63946;border-color:#e63946" onclick="K._deleteConv('${esc(convId)}')">🗑 Supprimer la conversation</button>
     </div>
@@ -5605,8 +5694,8 @@ K._inviteToGroup = function(){
     </div>
     <div style="background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:.72em;word-break:break-all;color:var(--ax-gold)">${esc(link)}</div>
     <div style="display:grid;gap:6px;margin-top:14px">
-      <button class="btn btn-block" onclick="navigator.clipboard.writeText('${esc(link)}');K.toast?.('Lien copié','ok')">📋 Copier le lien</button>
-      ${navigator.share ? `<button class="btn btn-out btn-block" onclick="K._shareInviteLink('${esc(link)}','${esc(conv.name || 'Groupe')}')">📨 Partager via...</button>` : ''}
+      <button class="btn btn-block" ${kcall('__copy', [link, 'Lien copié'])}>📋 Copier le lien</button>
+      ${navigator.share ? `<button class="btn btn-out btn-block"${kcall('_shareInviteLink', [link, conv.name || 'Groupe'])}>📨 Partager via...</button>` : ''}
     </div>
   `);
 };
@@ -6648,8 +6737,8 @@ K._openReactionPicker = function(msgId){
   const actions = [];
   if(hasText){
     actions.push(`<button class="btn btn-out btn-sm" onclick="K._openRewriteMenu('${esc(msgId)}')">✨ Reformuler avec IA</button>`);
-    actions.push(`<button class="btn btn-out btn-sm" onclick="K._showTranslateMenu(${JSON.stringify(msg.text).replace(/"/g,'&quot;')})">🌐 Traduire</button>`);
-    actions.push(`<button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(msg.text).replace(/"/g,'&quot;')});K.toast?.('Copié','ok');K._closeModal()">📋 Copier</button>`);
+    actions.push(`<button class="btn btn-out btn-sm" ${kcall('_showTranslateMenu', [msg.text])}>🌐 Traduire</button>`);
+    actions.push(`<button class="btn btn-out btn-sm" ${kcall('__copy', [msg.text, 'Copié', 1])}>📋 Copier</button>`);
     // v1.1.48 — Edit (own messages only, within 15 min)
     if(isMine && K._canEditMsg && K._canEditMsg(msg)){
       actions.push(`<button class="btn btn-out btn-sm" onclick="K._openEditMsg('${esc(msgId)}')">✏️ Modifier (15 min)</button>`);
@@ -6765,8 +6854,8 @@ K._doRewrite = async function(msgId, style){
         <div style="font-size:.72em;color:var(--ax-gold);margin-bottom:6px">✨ ${esc(style)} (${esc(data.provider || 'IA')})</div>
         <div style="color:var(--ax-text);white-space:pre-wrap;font-size:.92em;line-height:1.5;margin-bottom:10px">${esc(rewritten)}</div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-out btn-sm" style="flex:1" onclick="navigator.clipboard.writeText(${JSON.stringify(rewritten).replace(/"/g,'&quot;')});K.toast?.('Copié','ok')">📋 Copier</button>
-          <button class="btn btn-sm" style="flex:1" onclick="K._useRewritten(${JSON.stringify(rewritten).replace(/"/g,'&quot;')})">📝 Utiliser dans textarea</button>
+          <button class="btn btn-out btn-sm" style="flex:1" ${kcall('__copy', [rewritten, 'Copié'])}>📋 Copier</button>
+          <button class="btn btn-sm" style="flex:1" ${kcall('_useRewritten', [rewritten])}>📝 Utiliser dans textarea</button>
         </div>
       </div>
     `;
@@ -7909,22 +7998,22 @@ K._renderBubble = function(m, conv, msgs){
   const scamReason = !isMine && m.text ? K._detectScam(m.text) : null;
   return `
         <div class="msg ${isMine ? 'me' : 'them'}${grpCls}${m.deleted ? ' deleted-tombstone' : ''}${K._selectedMsgs && K._selectedMsgs.has(m.id) ? ' msg-selected' : ''}" data-msg-id="${esc(m.id)}" oncontextmenu="event.preventDefault();K._openReactionPicker('${esc(m.id)}')" onclick="if(K._selectedMsgs && K._selectedMsgs.size > 0){event.stopPropagation();K._toggleSelectMsg('${esc(m.id)}')}">
-          ${m.reply_to ? `<div class="reply-quote" onclick="K._scrollToMsg('${esc(m.reply_to.id)}')">
+          ${m.reply_to ? `<div class="reply-quote"${kcall('_scrollToMsg', [String(m.reply_to.id || '')])}>
             <div style="color:var(--ax-gold);font-size:.72em;font-weight:600">↩ ${esc(m.reply_to.from_name || '')}</div>
             <div style="color:var(--ax-text-2);font-size:.85em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.reply_to.text || '')}</div>
           </div>` : ''}
           ${m.forwarded ? `<div class="forwarded-mark" title="Transféré depuis ${esc(m.forwarded_from_conv || '')}">↗ Transféré</div>` : ''}
-          ${m.image_data ? `<img src="${esc(m.image_data)}" alt="${esc(m.alt || 'Image')}" style="${K._MEDIA_STYLE};cursor:pointer" loading="lazy" onload="K._onMediaLoad()" onclick="window.open('${esc(m.image_data)}','_blank')">` : ''}
+          ${m.image_data ? `<img src="${esc(m.image_data)}" alt="${esc(m.alt || 'Image')}" style="${K._MEDIA_STYLE};cursor:pointer" loading="lazy" onload="K._onMediaLoad()"${kcall('__open', [m.image_data])}>` : ''}
           ${m.media_url ? K._renderMediaEl(m) : ''}
           ${m.voice_data ? `<div class="voice-player" style="margin-bottom:4px">
             <audio id="aud-${esc(m.id)}" src="${esc(m.voice_data)}" preload="metadata" style="display:none"></audio>
             <div style="display:flex;align-items:center;gap:8px;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:18px;padding:6px 10px;max-width:280px">
-              <button onclick="K._togglePlayVoice('${esc(m.id)}')" id="play-${esc(m.id)}" style="background:var(--ax-gold);color:var(--ax-bg);width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;font-size:.9em;flex-shrink:0">▶</button>
+              <button${kcall('_togglePlayVoice', [m.id])} id="play-${esc(m.id)}" style="background:var(--ax-gold);color:var(--ax-bg);width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;font-size:.9em;flex-shrink:0">▶</button>
               <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
-                <canvas id="wf-${esc(m.id)}" width="180" height="20" style="width:100%;height:20px;cursor:pointer" onclick="K._scrubVoice('${esc(m.id)}',event)"></canvas>
+                <canvas id="wf-${esc(m.id)}" width="180" height="20" style="width:100%;height:20px;cursor:pointer"${kcall('_scrubVoice', [m.id], { evt:true })}></canvas>
                 <div style="font-size:.72em;color:var(--ax-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="dur-${esc(m.id)}">🎙️ ${esc(m.voice_text ? m.voice_text.slice(0, 26) + (m.voice_text.length > 26 ? '...' : '') : 'Audio')}</div>
               </div>
-              <button onclick="K._cycleVoiceSpeed('${esc(m.id)}')" id="spd-${esc(m.id)}" style="background:transparent;border:1px solid var(--ax-border);border-radius:10px;padding:2px 6px;font-size:.7em;cursor:pointer;color:var(--ax-text-2);flex-shrink:0">1×</button>
+              <button${kcall('_cycleVoiceSpeed', [m.id])} id="spd-${esc(m.id)}" style="background:transparent;border:1px solid var(--ax-border);border-radius:10px;padding:2px 6px;font-size:.7em;cursor:pointer;color:var(--ax-text-2);flex-shrink:0">1×</button>
             </div>
           </div>` : ''}
           ${m.voice_too_large && !m.voice_data ? `<div style="font-size:.78em;color:var(--ax-text-3);font-style:italic;margin-bottom:4px">🎙️ Audio non sauvegardé (trop volumineux)</div>` : ''}
@@ -7932,8 +8021,8 @@ K._renderBubble = function(m, conv, msgs){
           ${m.location ? K._renderLocation(m) : ''}
           ${m.contact_card ? K._renderContactCard(m) : ''}
           ${m.deleted ? esc(m.text) : (m.text ? (K._looksCiphertext(m.text) ? '<span style="opacity:.55;font-style:italic">🔒 message chiffré (ancien — illisible)</span>' : K._renderHashtags(K._renderMentions(K._renderMarkdown(m.text)))) : (m.image_data || m.media_url || m.voice_data || m.poll || m.location || m.contact_card ? '' : '(message chiffré)'))}
-          ${scamReason ? `<div class="scam-warning" onclick="K._showScamInfo('${esc(scamReason)}','${esc(m.id)}')" title="Message potentiellement suspect">⚠️ Suspect : ${esc(scamReason)}</div>` : ''}
-          ${foreignLang ? `<div class="translate-hint" onclick="K._suggestTranslate('${esc(m.id)}')" title="Traduire vers ${esc(K._USER_LANG.toUpperCase())}">🌐 ${esc(foreignLang.toUpperCase())} → traduire</div>` : ''}
+          ${scamReason ? `<div class="scam-warning"${kcall('_showScamInfo', [scamReason, m.id])} title="Message potentiellement suspect">⚠️ Suspect : ${esc(scamReason)}</div>` : ''}
+          ${foreignLang ? `<div class="translate-hint"${kcall('_suggestTranslate', [m.id])} title="Traduire vers ${esc(K._USER_LANG.toUpperCase())}">🌐 ${esc(foreignLang.toUpperCase())} → traduire</div>` : ''}
           ${m.expires_at ? `<div class="ephemeral-badge" title="S'autodétruira ${esc(new Date(m.expires_at).toLocaleString('fr-FR'))}">💣 ${esc(K._ephemeralRemaining(m.expires_at))}</div>` : ''}
           <div class="msg-time">
             ${formatTime(m.ts)}
@@ -7944,7 +8033,7 @@ K._renderBubble = function(m, conv, msgs){
             <div class="msg-reactions">
               ${Object.entries(m.reactions).map(([emo, users]) => `
                 <span class="msg-reaction ${users.includes(K.user.id) ? 'mine' : ''}"
-                      onclick="K._toggleReaction('${esc(m.id)}','${esc(emo)}')"
+                      ${kcall('_toggleReaction', [m.id, emo])}
                       title="${esc(users.length)} réaction(s)">${esc(emo)} ${users.length > 1 ? users.length : ''}</span>
               `).join('')}
             </div>
@@ -8549,6 +8638,7 @@ K._wsTicket = async function(){
 
 K._openWs = async function(convId){
   if(K.ws){ try{K.ws.close()}catch(_e){_safeCatch('silent',_e)}; K.ws = null; }
+  if(K.wsPing){ clearInterval(K.wsPing); K.wsPing = null; }
   if(!K.user || !K.token) return;
 
   try{
@@ -8560,10 +8650,14 @@ K._openWs = async function(convId){
       `/api/conversations/${encodeURIComponent(convId)}/ws` +
       `?${cred}&uid=${encodeURIComponent(K.user.id)}&conv=${encodeURIComponent(convId)}`;
 
-    K.ws = new WebSocket(wsUrl);
+    // Correctif (audit client 10/2026) : chaque écouteur vise SA socket. Avant,
+    // la fermeture (tardive) d'une ANCIENNE socket remettait K.ws à null alors
+    // qu'une nouvelle était déjà ouverte → la socket vivante était « tuée ».
+    const ws = new WebSocket(wsUrl);
+    K.ws = ws;
     K._wsConvId = convId;   // v1.1.173 : conv liée au WS courant (pour flush outbox)
 
-    K.ws.addEventListener('open', () => {
+    ws.addEventListener('open', () => {
       _logTelemetry('ok', 'ws-open', { convId });
       K._wsRetry = 0;   // reconnexion réussie → reset backoff
       // v1.1.173 FIX P0 (audit crew) : rejouer les messages écrits hors-ligne
@@ -8576,19 +8670,20 @@ K._openWs = async function(convId){
       }
     });
 
-    K.ws.addEventListener('message', async (event) => {
+    ws.addEventListener('message', async (event) => {
       try{
         const data = JSON.parse(event.data);
         await _handleWsMessage(data, convId);
       }catch(e){ _safeCatch('ws-message', e); }
     });
 
-    K.ws.addEventListener('error', (e) => {
+    ws.addEventListener('error', (e) => {
       _logTelemetry('warn', 'ws-error', { convId });
     });
 
-    K.ws.addEventListener('close', (e) => {
+    ws.addEventListener('close', (e) => {
       _logTelemetry('info', 'ws-close', { convId, code: e.code, reason: e.reason });
+      if(K.ws !== ws) return;   // socket périmée : la vivante n'est pas concernée
       K.ws = null;
       K._wsConvId = null;
       if(K.wsPing){ clearInterval(K.wsPing); K.wsPing = null; }
@@ -8643,6 +8738,56 @@ K._openWs = async function(convId){
 K._closeWs = function(){
   if(K.wsPing){ clearInterval(K.wsPing); K.wsPing = null; }
   if(K.ws){ try{K.ws.close()}catch(_e){_safeCatch('silent',_e)}; K.ws = null; }
+};
+
+// v1.1.170 : le serveur confirme la réception (ack) et donne l'id officiel ;
+// on l'adopte côté client → l'historique (ids serveur) se déduplique.
+// Correctif (audit client 10/2026) :
+//  • les acks d'ÉDITION / SUPPRESSION (edited_at / deleted_at, id d'un message
+//    existant) ne renomment plus le dernier message « m_… » ;
+//  • si le serveur renvoie l'id client (client_id / cid), on cible CE message.
+//  LIMITE CONNUE : le serveur actuel (ConversationDO) n'écho PAS l'id client
+//  (ack = {id, seq, ts}) alors que le client l'envoie (wire.id). Sans écho, on
+//  garde l'ancien repli « dernier m_* » — faux si 2 envois sont en vol.
+K._applyWsAck = function(convId, data){
+  if(!data || !data.id || !K.messages[convId]) return false;
+  const list = K.messages[convId];
+  if(data.edited_at || data.deleted_at) return false;
+  if(list.some(m => m && m.id === data.id)) return false;   // id déjà connu → pas un nouvel envoi
+  const cid = data.client_id || data.cid;
+  let target = null;
+  if(cid){
+    target = list.find(m => m && m.id === cid && m.from === K.user?.id) || null;
+    if(!target) return false;
+  } else {
+    const mine = list.filter(m => m && m.from === K.user?.id && String(m.id || '').startsWith('m_'));
+    target = mine[mine.length - 1] || null;
+  }
+  if(!target) return false;
+  target.id = data.id;
+  if(data.ts) target.ts = data.ts;
+  ls('messages_' + convId, list);
+  return true;
+};
+// v1.1.59 — position live d'un pair. Correctif (audit client 10/2026) : lat/lng
+// viennent du pair → on refuse tout ce qui n'est pas un nombre fini dans les
+// bornes (sinon NaN / chaîne / objet stockés puis injectés dans cartes et liens).
+K._applyLocationUpdate = function(convId, data){
+  if(!data) return false;
+  const lMsgId = data.msg_id;
+  if(!lMsgId || !K.messages[convId]) return false;
+  const lat = (typeof data.lat === 'number') ? data.lat : NaN;
+  const lng = (typeof data.lng === 'number') ? data.lng : NaN;
+  if(!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return false;
+  const m = K.messages[convId].find(x => x && x.id === lMsgId);
+  if(!m || !m.location) return false;
+  m.location.lat = lat;
+  m.location.lng = lng;
+  if(typeof data.accuracy === 'number' && Number.isFinite(data.accuracy) && data.accuracy >= 0) m.location.accuracy = data.accuracy;
+  const ua = (typeof data.updated_at === 'number' && Number.isFinite(data.updated_at)) ? data.updated_at : Date.now();
+  m.location.updated_at = ua;
+  ls('messages_' + convId, K.messages[convId]);
+  return true;
 };
 
 async function _handleWsMessage(data, convId){
@@ -8798,20 +8943,7 @@ async function _handleWsMessage(data, convId){
       }
       break;
     case 'ack': {
-      // v1.1.170 : le serveur confirme la réception et donne l'id officiel.
-      // On adopte cet id côté client → l'historique (qui utilise l'id serveur)
-      // se dédupera correctement, plus de message doublé.
-      if(data.id && K.messages[convId]){
-        const mine = K.messages[convId].filter(m =>
-          m && m.from === K.user?.id && String(m.id || '').startsWith('m_')
-        );
-        const last = mine[mine.length - 1];
-        if(last){
-          last.id = data.id;
-          if(data.ts) last.ts = data.ts;
-          ls('messages_' + convId, K.messages[convId]);
-        }
-      }
+      K._applyWsAck(convId, data);
       break;
     }
     case 'typing':
@@ -8838,19 +8970,7 @@ async function _handleWsMessage(data, convId){
       }
       break;
     case 'location_update': {
-      // v1.1.59 — Peer a updated sa position live
-      const lMsgId = data.msg_id;
-      if(lMsgId && K.messages[convId]){
-        const m = K.messages[convId].find(x => x.id === lMsgId);
-        if(m && m.location){
-          m.location.lat = data.lat;
-          m.location.lng = data.lng;
-          m.location.accuracy = data.accuracy;
-          m.location.updated_at = data.updated_at || Date.now();
-          ls('messages_' + convId, K.messages[convId]);
-          if(K.view === 'chat' && K.viewData?.id === convId) K.render();
-        }
-      }
+      if(K._applyLocationUpdate(convId, data) && K.view === 'chat' && K.viewData?.id === convId) K.render();
       break;
     }
     case 'poll_vote': {
@@ -9626,6 +9746,9 @@ K._onIncomingCall = function(msg){
   K._pendingIncoming = { from: msg.from, convId: msg.convId, type: msg.callType || 'audio',
     name: K._callPeerName(msg.convId, msg.callerName || msg.from_pseudo || msg.from) };
   const isVideo = msg.callType === 'video';
+  // Sécurité : l'offre entrante (données du pair) est gardée en mémoire et NON
+  // sérialisée dans un onclick (cf. kcall) — « Répondre » la relit ici.
+  K._incomingCallMsg = msg;
   $('#modal-host').innerHTML = `
     <div class="modal-back" role="dialog" aria-modal="true" aria-labelledby="call-incoming-title" style="background:rgba(0,0,0,.85)">
       <div class="modal" role="document" style="text-align:center;padding:32px 20px">
@@ -9633,14 +9756,19 @@ K._onIncomingCall = function(msg){
         <h3 id="call-incoming-title" style="color:var(--ax-gold);margin:14px 0 6px">Appel ${isVideo ? 'vidéo' : 'audio'} entrant</h3>
         <p style="color:var(--ax-text-2)">de <strong>${esc(msg.from || 'inconnu')}</strong></p>
         <div style="display:flex;gap:14px;justify-content:center;margin-top:24px">
-          <button class="btn btn-err" onclick="K._rejectCall('${esc(msg.from)}','${esc(msg.convId)}')" aria-label="Refuser" style="border-radius:50%;width:64px;height:64px;font-size:1.8em">📴</button>
-          <button class="btn" onclick='K._answerCall(${JSON.stringify(msg).replace(/'/g,"&#39;")})' aria-label="Répondre" style="background:var(--ax-ok);border-radius:50%;width:64px;height:64px;font-size:1.8em">${isVideo ? '📹' : '📞'}</button>
+          <button class="btn btn-err"${kcall('_rejectCall', [msg.from, msg.convId])} aria-label="Refuser" style="border-radius:50%;width:64px;height:64px;font-size:1.8em">📴</button>
+          <button class="btn"${kcall('_answerIncomingCall', [])} aria-label="Répondre" style="background:var(--ax-ok);border-radius:50%;width:64px;height:64px;font-size:1.8em">${isVideo ? '📹' : '📞'}</button>
         </div>
       </div>
     </div>
   `;
 };
 
+// Bouton « Répondre » de la modale d'appel entrant (action déléguée, cf. kcall).
+K._answerIncomingCall = function(){
+  const m = K._incomingCallMsg; K._incomingCallMsg = null;
+  if(m) return K._answerCall(m);
+};
 // Receiver : répond à l'appel entrant
 K._answerCall = async function(incoming){
   if(!navigator.mediaDevices){ return toast('WebRTC non supporté', 'err'); }
@@ -10149,7 +10277,7 @@ K._openContactSheet = async function(id){
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-      <button class="btn btn-sm" onclick="K._closeModal();K._startConvWithUser('${esc(c.id)}','${esc(nm)}')">💬 Message</button>
+      <button class="btn btn-sm" ${kcall('_startConvWithUser', [c.id, nm], { close:true })}>💬 Message</button>
       <button class="btn btn-sm btn-out" onclick="K._closeModal();K._callContact&&K._callContact('${esc(c.id)}','audio')">📞 Appel</button>
     </div>
     ${c.phone ? `<button class="btn btn-sm btn-block" style="margin-bottom:12px;background:var(--ax-gold);color:#000" onclick="K._inviteAndOpen('${esc(c.id)}')">📨 Inviter sur Apex Chat + ouvrir la conversation</button>` : ''}
@@ -10194,7 +10322,7 @@ K._openContactSheet = async function(id){
       ${ro('Localisation', geo)}${ro('Appareil', c.last_device_label)}${ro('Source', c.source)}${ro('Statut', c.status)}${ro('Vu', lastSeen)}
     </div>` : ''}
 
-    ${c.can_delete ? `<button class="btn btn-block" style="margin-top:12px;background:#e63946;color:#fff" onclick="K._deleteContact('${esc(c.id)}','${esc(nm)}')">🗑 Supprimer ce contact</button>` : ''}
+    ${c.can_delete ? `<button class="btn btn-block" style="margin-top:12px;background:#e63946;color:#fff" ${kcall('_deleteContact', [c.id, nm])}>🗑 Supprimer ce contact</button>` : ''}
   `;
   K._showModal('📇 Fiche contact', html);
 };
@@ -10980,12 +11108,12 @@ K._showTranslateMenu = function(messageText){
   K._showModal('🌐 Traduire', `
     <p style="color:var(--ax-text-2);font-size:.88em">Choisis la langue cible :</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
-      <button class="btn btn-out btn-sm" onclick="K._doTranslate(${JSON.stringify(messageText).replace(/"/g,'&quot;')},'fr')">🇫🇷 Français</button>
-      <button class="btn btn-out btn-sm" onclick="K._doTranslate(${JSON.stringify(messageText).replace(/"/g,'&quot;')},'en')">🇬🇧 English</button>
-      <button class="btn btn-out btn-sm" onclick="K._doTranslate(${JSON.stringify(messageText).replace(/"/g,'&quot;')},'es')">🇪🇸 Español</button>
-      <button class="btn btn-out btn-sm" onclick="K._doTranslate(${JSON.stringify(messageText).replace(/"/g,'&quot;')},'it')">🇮🇹 Italiano</button>
-      <button class="btn btn-out btn-sm" onclick="K._doTranslate(${JSON.stringify(messageText).replace(/"/g,'&quot;')},'de')">🇩🇪 Deutsch</button>
-      <button class="btn btn-out btn-sm" onclick="K._doTranslate(${JSON.stringify(messageText).replace(/"/g,'&quot;')},'ar')">🇸🇦 العربية</button>
+      <button class="btn btn-out btn-sm" ${kcall('_doTranslate', [messageText, 'fr'])}>🇫🇷 Français</button>
+      <button class="btn btn-out btn-sm" ${kcall('_doTranslate', [messageText, 'en'])}>🇬🇧 English</button>
+      <button class="btn btn-out btn-sm" ${kcall('_doTranslate', [messageText, 'es'])}>🇪🇸 Español</button>
+      <button class="btn btn-out btn-sm" ${kcall('_doTranslate', [messageText, 'it'])}>🇮🇹 Italiano</button>
+      <button class="btn btn-out btn-sm" ${kcall('_doTranslate', [messageText, 'de'])}>🇩🇪 Deutsch</button>
+      <button class="btn btn-out btn-sm" ${kcall('_doTranslate', [messageText, 'ar'])}>🇸🇦 العربية</button>
     </div>
     <div id="tr-result" style="margin-top:14px"></div>
   `);
@@ -11000,7 +11128,7 @@ K._doTranslate = async function(text, lang){
       <div style="background:rgba(232,184,48,.06);border:1px solid rgba(232,184,48,.2);border-radius:10px;padding:12px;margin-top:10px">
         <div style="font-size:.75em;color:var(--ax-text-3);margin-bottom:4px">📤 ${esc(lang.toUpperCase())} (${esc(result.provider || 'IA')})</div>
         <div style="color:var(--ax-text-1);white-space:pre-wrap">${esc(result.translated)}</div>
-        <button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(result.translated).replace(/"/g,'&quot;')});K.toast('Traduction copiée','ok')" style="margin-top:10px;width:100%">📋 Copier</button>
+        <button class="btn btn-out btn-sm" ${kcall('__copy', [result.translated, 'Traduction copiée'])} style="margin-top:10px;width:100%">📋 Copier</button>
       </div>
     `;
   } else {
@@ -11606,7 +11734,7 @@ K._loadGifs = async function(q){
       return;
     }
     grid.innerHTML = results.map(g =>
-      `<button class="gif-cell" onclick="K._pickGif('${esc(g.full)}','${esc((g.title||'GIF').replace(/'/g,''))}')" title="${esc(g.title||'GIF')}">
+      `<button class="gif-cell"${kcall('_pickGif', [String(g.full || ''), String(g.title || 'GIF').replace(/'/g,'')])} title="${esc(g.title||'GIF')}">
         <img src="${esc(g.preview)}" alt="${esc(g.title||'GIF')}" loading="lazy">
       </button>`).join('');
   }catch(e){
@@ -11771,9 +11899,30 @@ K._ensureMediaTicket = async function(){
   return K._mediaTicketInFlight;
 };
 
+// Sécurité (audit client 10/2026) : l'URL d'un média vient du marqueur APXMEDIA1
+// écrit par l'AUTRE personne. Avant, ?token= (jeton de session) ou ?mt= était collé
+// sur N'IMPORTE quelle URL http(s) → un message piégé envoyait nos identifiants à
+// un serveur tiers. Désormais : uniquement l'origine exacte de l'API (ou un chemin
+// relatif « /… » résolu sur l'API). Toute autre origine → '' (pas de média rendu,
+// pas de requête, pas d'identifiant envoyé).
+K._API_ORIGIN = (function(){ try{ return new URL(API_BASE).origin; }catch(_e){ return ''; } })();
+K._mediaUrlAllowed = function(url){
+  if(!url || typeof url !== 'string') return '';
+  const raw = url.trim();
+  let full;
+  if(/^https?:\/\//i.test(raw)) full = raw;
+  else if(raw[0] === '/' && raw[1] !== '/' && raw[1] !== '\\') full = API_BASE + raw;
+  else return '';
+  try{
+    const u = new URL(full);
+    if(!K._API_ORIGIN || u.origin !== K._API_ORIGIN || u.username || u.password) return '';
+    return u.href;
+  }catch(_e){ return ''; }
+};
 K._mediaSrc = function(url){
   if(!url) return '';
-  const full = String(url).startsWith('http') ? url : (API_BASE + url);
+  const full = K._mediaUrlAllowed(String(url));
+  if(!full) return '';
   const sep = full.indexOf('?') >= 0 ? '&' : '?';
   const t = K._mediaTicket;
   if(t && t.exp - 30000 > Date.now()) return full + sep + 'mt=' + encodeURIComponent(t.v);
@@ -11823,8 +11972,11 @@ K._renderMediaEl = function(m){
     const kind = t.indexOf('image/') === 0 ? 'image' : t.indexOf('video/') === 0 ? 'video' : t.indexOf('audio/') === 0 ? 'audio' : 'file';
     return `<div class="enc-media" data-enc-url="${esc(m.media_url)}" data-enc-mime="${esc(m.media_type||'')}" data-enc-kind="${kind}" data-enc-conv="${esc(K.viewData.id)}" data-enc-name="${esc(m.media_name||'fichier')}" style="min-width:120px;min-height:60px;display:flex;align-items:center;gap:8px;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:8px 10px;margin-bottom:4px;color:var(--ax-text-3);font-size:.82em">🔒 <span>Média chiffré — déchiffrement…</span></div>`;
   }
+  // URL hors de l'API (refusée par _mediaSrc) : rien de chargé, rien d'envoyé.
+  if(!src)
+    return `<div class="media-blocked" style="display:flex;align-items:center;gap:8px;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:8px 10px;margin-bottom:4px;color:var(--ax-text-3);font-size:.82em;max-width:260px">🚫 <span>Média non affiché (adresse externe) — ${esc(m.media_name || 'fichier')}</span></div>`;
   if(t.indexOf('image/') === 0)
-    return `<img src="${esc(src)}" alt="${esc(m.media_name || 'image')}" style="${cap};cursor:pointer" loading="lazy" onload="K._onMediaLoad()" onclick="window.open('${esc(src)}','_blank')">`;
+    return `<img src="${esc(src)}" alt="${esc(m.media_name || 'image')}" style="${cap};cursor:pointer" loading="lazy" onload="K._onMediaLoad()"${kcall('__open', [src])}>`;
   if(t.indexOf('video/') === 0)
     return `<video controls preload="metadata" playsinline src="${esc(src)}" style="${cap};background:#000"></video>`;
   if(t.indexOf('audio/') === 0)
@@ -11844,7 +11996,10 @@ K._hydrateEncMedia = async function(){
     const mime = el.getAttribute('data-enc-mime') || ''; const kind = el.getAttribute('data-enc-kind');
     const name = el.getAttribute('data-enc-name') || 'fichier';
     try{
-      const res = await fetch(K._mediaSrc(url), { headers:{ 'Authorization':'Bearer ' + (K.token||'') } });
+      const encSrc = K._mediaSrc(url);
+      // Jamais de jeton (en-tête Bearer) vers une origine autre que l'API.
+      if(!encSrc) throw new Error('media-origin-refused');
+      const res = await fetch(encSrc, { headers:{ 'Authorization':'Bearer ' + (K.token||'') } });
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const encBuf = await res.arrayBuffer();
       // v1.1.275 — auto-réparant : re-fetch la clé du pair + retry si la session
@@ -11852,7 +12007,7 @@ K._hydrateEncMedia = async function(){
       const clearBuf = await K._decryptBytesHeal(convId, encBuf);
       const blobUrl = URL.createObjectURL(new Blob([clearBuf], { type: mime || 'application/octet-stream' }));
       const cap = K._MEDIA_STYLE;
-      if(kind === 'image') el.innerHTML = `<img src="${esc(blobUrl)}" alt="${esc(name)}" style="${cap};cursor:pointer" onload="K._onMediaLoad()" onclick="window.open('${esc(blobUrl)}','_blank')">`;
+      if(kind === 'image') el.innerHTML = `<img src="${esc(blobUrl)}" alt="${esc(name)}" style="${cap};cursor:pointer" onload="K._onMediaLoad()"${kcall('__open', [blobUrl])}>`;
       else if(kind === 'video') el.innerHTML = `<video controls preload="metadata" playsinline src="${esc(blobUrl)}" style="${cap};background:#000"></video>`;
       else if(kind === 'audio') el.innerHTML = `<audio controls preload="metadata" src="${esc(blobUrl)}" style="max-width:260px;display:block"></audio>`;
       else el.innerHTML = `<a href="${esc(blobUrl)}" download="${esc(name)}" style="display:flex;align-items:center;gap:8px;color:var(--ax-text);text-decoration:none">📎 <span>${esc(name)}</span></a>`;
@@ -12538,7 +12693,7 @@ function renderContacts(app){
         const realName = c.display_name || c.real_name || c.pseudo || c.id;
         const name = c.nickname || realName;
         const initial = (name || '?')[0].toUpperCase();
-        return `<div class="card-row" style="padding:10px;cursor:pointer" onclick="K._startConvWithUser('${esc(c.id)}','${esc(name)}')">
+        return `<div class="card-row" style="padding:10px;cursor:pointer"${kcall('_startConvWithUser', [c.id, name])}>
           <div class="avatar${isOnline ? ' avatar-online' : ''}">${esc(initial)}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:600">${esc(name)}</div>
@@ -12964,7 +13119,7 @@ K._runDiag = async function(){
       <details open style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;padding:6px 0">🔁 Doublons</summary>${dupHtml}</details>
       <details open style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;padding:6px 0">💬 Conversations (${(d.conversations||[]).length})</summary>${convHtml}</details>
       <details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;padding:6px 0">👤 Comptes (${(d.users||[]).length})</summary>${userHtml}</details>
-      <button class="btn btn-out btn-sm btn-block" onclick="K._copyDiag(${JSON.stringify(JSON.stringify(d)).replace(/"/g,'&quot;')})">📋 Copier le diagnostic (JSON)</button>`;
+      <button class="btn btn-out btn-sm btn-block" ${kcall('_copyDiag', [JSON.stringify(d)])}>📋 Copier le diagnostic (JSON)</button>`;
   }catch(e){
     bodyEl.innerHTML = '<div class="card" style="color:#e63946;padding:12px">❌ '+esc((e&&e.message)||'erreur')+'</div>';
   }
@@ -14174,8 +14329,8 @@ K._adminMapRefresh = async function(){
         ${isOnline ? '🟢' : '⚫'} ${lastSeenStr}<br>
         ${u.last_geo_label ? '📍 ' + esc(u.last_geo_label) + '<br>' : ''}
         ${u.last_device_label ? '📱 ' + esc(u.last_device_label) + '<br>' : ''}
-        <button onclick="K._closeModal();K._adminOpenTimeline('${esc(u.id)}')" style="margin-top:6px;background:#c9a227;color:#000;border:none;padding:4px 10px;border-radius:6px;cursor:pointer">📜 Timeline</button>
-        <button onclick="K._showTrajectory('${esc(u.id)}','${esc(u.pseudo || '')}')" style="margin-top:6px;margin-left:4px;background:#6a8aff;color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer">🛤 Trajet</button>
+        <button${kcall('_adminOpenTimeline', [u.id], { close:true })} style="margin-top:6px;background:#c9a227;color:#000;border:none;padding:4px 10px;border-radius:6px;cursor:pointer">📜 Timeline</button>
+        <button${kcall('_showTrajectory', [u.id, u.pseudo || ''])} style="margin-top:6px;margin-left:4px;background:#6a8aff;color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer">🛤 Trajet</button>
       `);
       _adminMapMarkers.push(m);
     });
@@ -15182,7 +15337,7 @@ K._showInviteFastLogin = function(inviterUserId){
     </p>
     <label class="label">📱 Ton numéro de téléphone</label>
     <input id="ifl-phone" class="input" type="tel" placeholder="+33 6 12 34 56 78" inputmode="tel" autocomplete="tel">
-    <button class="btn btn-block" onclick="K._submitInviteFastLogin('${esc(inviterUserId || '')}')" style="margin-top:12px">
+    <button class="btn btn-block" ${kcall('_submitInviteFastLogin', [String(inviterUserId || '')])} style="margin-top:12px">
       🔓 Me reconnecter automatiquement
     </button>
     <button class="btn btn-out btn-block btn-sm" onclick="K._closeModal && K._closeModal()" style="margin-top:8px">
@@ -15327,7 +15482,7 @@ K._showOnboarding = function(opts){
         <input id="onb-cgu" type="checkbox" style="margin-top:2px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--ax-gold)">
         <span>J'accepte les <a href="./cgu.html" target="_blank" style="color:var(--ax-gold)">conditions d'utilisation</a> et la politique de confidentialité.</span>
       </label>` : ''}
-    <button class="btn btn-block" style="margin-top:16px" onclick="K._submitOnboarding(${opts.inviterUserId ? JSON.stringify(opts.inviterUserId).replace(/"/g,'&quot;') : 'null'})">✅ Démarrer</button>
+    <button class="btn btn-block" style="margin-top:16px" ${kcall('_submitOnboarding', [opts.inviterUserId ? String(opts.inviterUserId) : null])}>✅ Démarrer</button>
   `, { noClose: true });
   setTimeout(() => {
     const i = document.getElementById(showName ? 'onb-name' : 'onb-pin');

@@ -826,11 +826,11 @@ describe('handlePremiumStatus', () => {
     expect(r.status).toBe(401);
   });
 
-  it('user inconnu → premium false', async () => {
+  it('user sans ligne premium → premium false', async () => {
     const env = userEnv();
-    env.APEX_CHAT_DB.prepare = vi.fn(() => ({
+    env.APEX_CHAT_DB.prepare = vi.fn((sql) => ({
       bind: function () { return this; },
-      first: async () => null,
+      first: async () => (sql.includes('SELECT last_force_logout_at') ? { status: 'active', is_banned: 0, is_admin: 0 } : null),
     }));
     const tok = await userToken();
     const r = await handlePremiumStatus(makeReq('GET', '/api/premium/status', undefined, tok), env);

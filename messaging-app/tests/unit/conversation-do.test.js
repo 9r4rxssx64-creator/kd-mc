@@ -592,7 +592,9 @@ describe('ConversationDO — handleMessage', () => {
           prepare: vi.fn((sql) => ({
             bind: function (...args) { calls.push({ sql, args }); return this; },
             first: async () => null,
-            run: async () => ({ success: true }),
+            // Revue 08.10 : le DO ne diffuse une modif/suppression que si la base
+            // confirme qu'une ligne de l'AUTEUR a changé (meta.changes).
+            run: async () => ({ success: true, meta: { changes: 1 } }),
             all: async () => ({ results: [] }),
           })),
         },
@@ -652,13 +654,13 @@ describe('ConversationDO — handleMessage', () => {
     expect(e.message).toContain('trop grand');
   });
 
-  it('delete_message → tombstone D1 (deleted_at + ciphertext NULL) + broadcast + ack', async () => {
+  it('delete_message → tombstone D1 (deleted_at + ciphertext vide, NOT NULL) + broadcast + ack', async () => {
     const { env, calls } = editEnv();
     _do.env = env;
     const observer = new MockWebSocket();
     _do.sessions.set(observer, { userId: 'other', convId: 'conv1' });
     await _do.handleMessage(ws, { type: 'delete_message', message_id: 'm5', scope: 'everyone' });
-    const del = calls.find((c) => c.sql.includes('UPDATE messages SET deleted_at=?, ciphertext=NULL'));
+    const del = calls.find((c) => c.sql.includes("UPDATE messages SET deleted_at=?, ciphertext=''"));
     expect(del).toBeTruthy();
     expect(del.args).toContain('kdmc'); // garde sender_id
     const bc = observer.sent.map((m) => JSON.parse(m)).find((m) => m.type === 'delete_message');
@@ -673,7 +675,7 @@ describe('ConversationDO — handleMessage', () => {
     _do.pendingMessages.push({ id: 'md', sender_id: 'kdmc', ciphertext: 'secret' });
     await _do.handleMessage(ws, { type: 'delete_message', message_id: 'md' });
     expect(_do.pendingMessages[0].deleted_at).toBeTruthy();
-    expect(_do.pendingMessages[0].ciphertext).toBeNull();
+    expect(_do.pendingMessages[0].ciphertext).toBe('');
   });
 
   it('delete_message sans message_id → erreur', async () => {

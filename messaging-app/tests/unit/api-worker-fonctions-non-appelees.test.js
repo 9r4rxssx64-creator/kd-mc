@@ -39,6 +39,8 @@ import { ENV, makeRequest, makeJWT } from './api-worker-helpers.js';
 // ---------------------------------------------------------------------------
 const IAT = () => Math.floor(Date.now() / 1000);
 const userTok = () => makeJWT({ sub: 'u_test_1', pseudo: 'testeur', iat: IAT() });
+// Depuis le 08.10 le droit admin est lu EN BASE : la fausse base les connaît.
+const ADMIN_IDS = new Set(['kdmc_admin', 'u_admin_2']);
 const adminTok = () => makeJWT({ sub: 'kdmc_admin', is_admin: true, iat: IAT() });
 const admin2Tok = () => makeJWT({ sub: 'u_admin_2', is_admin: true, iat: IAT() });
 
@@ -52,7 +54,7 @@ const admin2Tok = () => makeJWT({ sub: 'u_admin_2', is_admin: true, iat: IAT() }
  */
 function db(rules = [], opts = {}) {
   const calls = [];
-  const all = [...rules, ['SELECT last_force_logout_at', { first: opts.authRow || { status: 'active', is_banned: 0 } }]];
+  const all = [...rules, ['SELECT last_force_logout_at', { first: opts.authRow || ((a) => ({ status: 'active', is_banned: 0, is_admin: a && ADMIN_IDS.has(a[0]) ? 1 : 0 })) }]];
   const find = (sql) => all.find(([p]) => (p instanceof RegExp ? p.test(sql) : sql.includes(p)));
   const exec = async (kind, sql, args, dflt) => {
     const rule = find(sql);
@@ -1064,11 +1066,14 @@ describe('rappels anonymes — admin diag, invitations, magic-login, contacts', 
     expect(calls(env, 'run', 'INSERT INTO users')).toHaveLength(0);
   });
 
-  it('POST /api/auth/magic-login : invitation valide, marquage accepted_at en panne absorbé → session émise', async () => {
+  // Revue 08.10.2026 : un lien d'invitation ne vaut qu'UNE fois, n'active
+  // qu'un compte NEUF, et si on ne peut pas le marquer « utilisé » → refus
+  // (avant : la panne était « absorbée » et le lien restait réutilisable 7 jours).
+  it('POST /api/auth/magic-login : invitation valide et consommée → session émise', async () => {
     const magic = await makeJWT({ typ: 'magic_invite', uid: 'u_inv', pseudo: 'inv', invited_by: 'kdmc_admin', iat: IAT(), exp: IAT() + 3600 });
     const env = mkEnv([
-      ['FROM users WHERE id=?', { first: { id: 'u_inv', pseudo: 'inv', display_name: 'Invité Test', admin_authorized: 1 } }],
-      ['UPDATE invitations SET accepted_at=?', { run: boom('invitations locked') }],
+      ['FROM users WHERE id=?', { first: { id: 'u_inv', pseudo: 'inv', display_name: 'Invité Test', admin_authorized: 1, last_seen: null, identity_key_pub: 'PENDING_PQXDH' } }],
+      ['UPDATE invitations SET accepted_at=?', { run: { success: true, meta: { changes: 1 } } }],
     ]);
     const r = await worker.fetch(jreq('POST', '/api/auth/magic-login', { magic_token: magic }), env);
     expect(r.status).toBe(200);
@@ -1076,6 +1081,28 @@ describe('rappels anonymes — admin diag, invitations, magic-login, contacts', 
     expect(j.user).toEqual({ id: 'u_inv', pseudo: 'inv', display_name: 'Invité Test', avatar_url: undefined });
     expect(j.jwt.split('.')).toHaveLength(3);
     expect(calls(env, 'run', 'UPDATE invitations SET accepted_at=?')[0].args[1]).toBe(magic);
+  });
+
+  it('POST /api/auth/magic-login : lien déjà utilisé (0 ligne) ou marquage en panne → 401, AUCUNE session', async () => {
+    const magic = await makeJWT({ typ: 'magic_invite', uid: 'u_inv', pseudo: 'inv', invited_by: 'kdmc_admin', iat: IAT(), exp: IAT() + 3600 });
+    const fresh = { id: 'u_inv', pseudo: 'inv', admin_authorized: 1, last_seen: null, identity_key_pub: 'PENDING_PQXDH' };
+    const used = mkEnv([['FROM users WHERE id=?', { first: fresh }], ['UPDATE invitations SET accepted_at=?', { run: { success: true, meta: { changes: 0 } } }]]);
+    const r1 = await worker.fetch(jreq('POST', '/api/auth/magic-login', { magic_token: magic }), used);
+    expect(r1.status).toBe(401);
+    expect((await r1.json()).jwt).toBeUndefined();
+    const broken = mkEnv([['FROM users WHERE id=?', { first: fresh }], ['UPDATE invitations SET accepted_at=?', { run: boom('invitations locked') }]]);
+    expect((await worker.fetch(jreq('POST', '/api/auth/magic-login', { magic_token: magic }), broken)).status).toBe(401);
+  });
+
+  it('POST /api/auth/magic-login : JAMAIS sur un compte déjà actif (ex. le compte admin) → 403', async () => {
+    const magic = await makeJWT({ typ: 'magic_invite', uid: 'kdmc_admin', pseudo: 'kevin', invited_by: 'u_x', iat: IAT(), exp: IAT() + 3600 });
+    const env = mkEnv([
+      ['FROM users WHERE id=?', { first: { id: 'kdmc_admin', pseudo: 'kevin', admin_authorized: 1, is_admin: 1, last_seen: Date.now() } }],
+      ['UPDATE invitations SET accepted_at=?', { run: { success: true, meta: { changes: 1 } } }],
+    ]);
+    const r = await worker.fetch(jreq('POST', '/api/auth/magic-login', { magic_token: magic }), env);
+    expect(r.status).toBe(403);
+    expect(calls(env, 'run', 'UPDATE invitations SET accepted_at=?')).toHaveLength(0);
   });
 
   it('GET /api/contacts : profil d\'un pair illisible (rappel catch) → ignoré, Kevin toujours présent', async () => {

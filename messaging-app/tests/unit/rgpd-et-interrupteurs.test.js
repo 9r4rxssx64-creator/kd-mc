@@ -15,7 +15,7 @@ const adminTok = () => makeJWT({ sub: 'kdmc_admin', is_admin: true, iat: IAT() }
 /** D1 mock à règles : [motif, {first|all|run}] ; enregistre chaque run. */
 function db(rules = []) {
   const runs = [];
-  const all = [...rules, ['SELECT last_force_logout_at', { first: { status: 'active', is_banned: 0 } }]];
+  const all = [...rules, ['SELECT last_force_logout_at', { first: (a) => ({ status: 'active', is_banned: 0, is_admin: a && a[0] === 'kdmc_admin' ? 1 : 0 }) }]];
   const find = (sql) => all.find(([p]) => (p instanceof RegExp ? p.test(sql) : sql.includes(p)));
   return {
     runs,
@@ -56,14 +56,16 @@ describe('DELETE /api/users/me — suppression de compte', () => {
     expect(j.deleted).toBe(true);
     expect(r2.delete).toHaveBeenCalledTimes(2);
     const sqls = env.APEX_CHAT_DB.runs.map((x) => x.sql);
-    expect(sqls.some((q) => q.includes('UPDATE messages SET ciphertext=NULL'))).toBe(true);
+    expect(sqls.some((q) => q.includes("UPDATE messages SET ciphertext=''"))).toBe(true);
     for (const t of ['DELETE FROM media', 'DELETE FROM conversation_members', 'DELETE FROM contacts', 'DELETE FROM push_subscriptions', 'DELETE FROM connections', 'DELETE FROM user_activity']) {
       expect(sqls.some((q) => q.includes(t)), t).toBe(true);
     }
     const anon = env.APEX_CHAT_DB.runs.find((x) => x.sql.includes("UPDATE users SET status='deleted'"));
     expect(anon).toBeTruthy();
-    expect(anon.sql).toContain('phone=NULL');
-    expect(anon.sql).toContain('identity_key_pub=NULL');
+    // Revue 08.10 : valeurs NEUTRES (le schéma interdit NULL) — prouvé sur le vrai
+    // schéma dans rgpd-suppression-schema-reel.test.js.
+    expect(anon.sql).toContain('phone=?');
+    expect(anon.sql).toContain("identity_key_pub=''");
     expect(anon.args[anon.args.length - 1]).toBe('u_del_1');
   });
 });

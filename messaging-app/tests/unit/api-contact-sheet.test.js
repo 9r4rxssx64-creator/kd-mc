@@ -16,7 +16,7 @@ function db(state) {
       const stmt = {
         _a: [], bind(...a) { return { ...stmt, _a: a }; },
         async first() {
-          if (sql.includes('SELECT last_force_logout_at')) { const u = state.users.find(x => x.id === this._a[0]); return u ? { last_force_logout_at: null, is_banned: 0, status: u.status || 'active', phone: u.phone } : null; }
+          if (sql.includes('SELECT last_force_logout_at')) { const u = state.users.find(x => x.id === this._a[0]); return u ? { last_force_logout_at: null, is_banned: 0, status: u.status || 'active', phone: u.phone, is_admin: u.is_admin ? 1 : 0 } : null; }
           if (sql.includes('SELECT merged_into FROM users')) { const u = state.users.find(x => x.id === this._a[0]); return u ? { merged_into: u.merged_into || null } : null; }
           if (sql.includes('FROM users WHERE id=?')) { return state.users.find(x => x.id === this._a[0]) || null; }
           if (sql.includes('SELECT nickname FROM contacts')) { const n = state.contacts.find(c => c.user_id === this._a[0] && c.contact_id === this._a[1]); return n ? { nickname: n.nickname } : null; }

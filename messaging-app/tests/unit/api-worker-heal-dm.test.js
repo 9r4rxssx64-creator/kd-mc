@@ -28,7 +28,7 @@ function statefulDB(state) {
       if (sql.includes('SELECT last_force_logout_at')) {
         const u = state.users.find(x => x.id === this._args[0]);
         return u ? { last_force_logout_at: u.last_force_logout_at ?? null, is_banned: u.is_banned ? 1 : 0,
-          status: u.status || 'active', merged_into: u.merged_into || null, phone: u.phone || '' } : null;
+          status: u.status || 'active', merged_into: u.merged_into || null, phone: u.phone || '', is_admin: u.is_admin ? 1 : 0 } : null;
       }
       // getAuthUser : lecture du pointeur de fusion seul
       if (sql.includes('SELECT merged_into FROM users WHERE id=?')) {

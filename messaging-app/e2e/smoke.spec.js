@@ -1,7 +1,7 @@
 // Smoke tests — vérifie que la prod Apex Chat est saine.
 // Volontairement non-destructifs : pas de login réel ni de modif state serveur.
 
-import { test, expect } from '@playwright/test';
+import { test, expect, marquer } from './fixtures.js';
 
 test.describe('Apex Chat prod smoke tests', () => {
 

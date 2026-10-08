@@ -15670,3 +15670,16 @@ une annotation par fiche) ; (4) `test:lire-alertes` 7/0.
   de plus sur le chemin chaud) ; le portail affiche « 🔐 Ton compte n'a pas encore de code… Protéger mon compte » à tout compte sans code et
   pose le code depuis SA session (un inconnu ne peut pas). Garde `code-compte` 4b-4g (22/0).
 - **Ménage** : `marie-curie` (ma sonde) retiré par `coffre-comptes-nettoyer-robots` (essai à blanc puis vrai) — voir le résultat ci-dessous.
+
+## 2026-10-08 (17h) — « Ça saute. Rafraîchir ne fonctionne pas… » (capture 16h07) → boîte v1.0.46
+
+- **Cause lue dans le code** : la fenêtre se REDESSINAIT ENTIÈREMENT toutes les 12 s (`r.textContent = ''`), même quand rien n'avait changé
+  → la liste sautait et le défilement repartait ; et une lecture `/__boite/admin` qui traînait (Firebase + D1 + KV) laissait `enCours` à vrai :
+  chaque ↻ était ignoré en silence, sans aucun signe à l'écran.
+- **Fait (PR #4378)** : empreinte des données → redessin seulement si elle change (sinon seul le pied « mis à jour » bouge) ; défilement gardé
+  (fenêtre + liste) ; jamais sous une réponse en cours d'écriture ; lecture bornée à 15 s (`AbortController`) ; ↻ tourne, force le redessin, ⚠️ si
+  le domaine n'a pas répondu ; **une seule carte par personne** (« Andrea CASELLA » en alerte nom-seul rejoint « Andrea Casella » du compte, 6r).
+- v1.0.46 partout (règle des fichiers `?v=` immuables, leçon #453, garde `test:portail-versions`).
+- **Vérifié en ligne (17h15)** : page servie `kdmc-boite.js?v=1.0.46` + `kdmc-portal.js?v=1.0.46`, fichier avec `empreinte` et « Déconnecter ce
+  compte partout », routeur public 37794580900 ✅, publication 37794580729 ✅. **Ménage** : `marie-curie` retiré (run coffre, corbeille
+  `corbeille:comptes:2026-10-08-14-44-20`, registre 27 → 26) ; la ligne « s'est connectée » du fil D1 s'efface d'elle-même (3 jours).

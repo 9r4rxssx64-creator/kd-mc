@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   var URL_BOITE = '/__boite/admin', PAS_BANDEAU = 30000, PAS_OUVERT = 12000;   /* quasi temps réel : relu aussi au retour sur l'onglet et dès qu'une notification ouvre #messages */
-  var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false, HIST = {};
+  var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false, HIST = {}, REV = {};
 
   function entetes(json) {
     var h = {}; try { var t = window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token(); if (t) h.authorization = 'Bearer ' + t; } catch (e) { /* */ }
@@ -142,6 +142,21 @@
             .catch(function () { HIST[uidP[1]] = { erreur: true }; dessiner(); });
         };
         corps.appendChild(hb);
+        /* 🚫 DÉCONNECTER PARTOUT (Kevin 8.10, « sécurité +++ » : un Windows inconnu à Stockholm sur le compte de Laurence) : d'un geste, toutes les
+           sessions de ce compte tombent (/__admin/revoke, porte admin du domaine) ; le compte reste intact, la personne se reconnecte avec
+           Face ID ou nom + code. Jamais sur le compte de Kevin lui-même (il se déconnecterait de sa propre boîte). */
+        if (uidP[1] !== 'kdmc_admin' && uidP[1] !== 'kevin-desarzens') {
+          var rb = el('button', 'bf-ouvrir bf-revoke', REV[uidP[1]] === 'ok' ? '✅ Déconnecté partout — il devra se reconnecter (Face ID ou nom + code)' : REV[uidP[1]] === 'ko' ? '❌ Déconnexion impossible pour le moment' : '🚫 Déconnecter ce compte partout'); rb.type = 'button';
+          rb.disabled = REV[uidP[1]] === 'ok';
+          rb.onclick = function () {
+            if (!window.confirm('Déconnecter « ' + m.de + ' » de toutes ses sessions, sur tous ses appareils ? Son compte reste, il devra juste se reconnecter.')) return;
+            rb.disabled = true; rb.textContent = 'Déconnexion…';
+            fetch('/__admin/revoke', { method: 'POST', credentials: 'include', cache: 'no-store', headers: entetes(true), body: JSON.stringify({ uid: uidP[1] }) })
+              .then(function (r) { return r.json(); }).then(function (j) { REV[uidP[1]] = j && j.ok ? 'ok' : 'ko'; dessiner(); })
+              .catch(function () { REV[uidP[1]] = 'ko'; dessiner(); });
+          };
+          corps.appendChild(rb);
+        }
         var H = HIST[uidP[1]];
         if (H) {
           var box = el('div', 'bf-hist');

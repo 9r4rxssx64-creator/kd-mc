@@ -66,6 +66,29 @@ ok(sonde.n === 0, `la sonde ne fait écrire AUCUNE clé (${sonde.n})`);
 const encore = await visite({ 'x-kdmc-sonde': 'test' });
 ok(encore.n === 0, 'toujours 0 écriture au passage suivant');
 
+/* 3b. (8.10, capture de Kevin : « Marie Curie s'est connectée » = une session de test) Une SONDE déclarée venue d'un centre de données qui
+   OUVRE UNE SESSION (/__sso/issue) reçoit son pass mais n'écrit RIEN : ni fiche, ni « nouvel appareil », ni « s'est connecté ».
+   Sabotage prouvé : la même demande SANS l'en-tête (ou hors centre de données) écrit la fiche — c'est bien la marque qui protège. */
+const issue = async (extra, asn) => {
+  ecritures = 0; enAttente.length = 0;
+  const rq = new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://kd-mc.com', 'cf-connecting-ip': '203.0.113.77' }, extra || {}),
+    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true }) });
+  Object.defineProperty(rq, 'cf', { value: { asn } });   /* le réseau d'origine, comme Cloudflare le pose (fiche-visite.test.mjs) */
+  const r = await mod.fetch(rq, env, ctx);
+  await Promise.all(enAttente);
+  return { st: r.status, j: await r.json().catch(() => ({})), n: ecritures, fiche: [...kv.keys()].some((k) => k.startsWith('acc:')), journal: kv.has('aud:log') };
+};
+const videFiches = () => { for (const k of [...kv.keys()]) if (/^(acc:|aud:|quota|canon|name:|idx)/.test(k)) kv.delete(k); };
+const sondeIssue = await issue({ 'x-kdmc-sonde': 'test' }, 8075);
+ok(sondeIssue.st === 200 && sondeIssue.j.ok && typeof sondeIssue.j.token === 'string' && sondeIssue.j.token.length > 20, 'une sonde (GitHub, AS8075) qui ouvre une session reçoit quand même son pass');
+ok(sondeIssue.n === 0 && !sondeIssue.fiche, `… mais n'écrit RIEN : ni fiche « Marie Curie », ni journal (${sondeIssue.n} écriture(s))`);
+const sondeHorsNuage = await issue({ 'x-kdmc-sonde': 'test' }, 3303);
+ok(sondeHorsNuage.n >= 1 && sondeHorsNuage.fiche, `SABOTAGE : le même en-tête posé depuis un réseau ordinaire (AS3303) ne protège pas — la fiche s'écrit (${sondeHorsNuage.n} écriture(s) ; personne ne peut se cacher du journal avec un en-tête)`);
+videFiches();
+const sansMarque = await issue({}, 8075);
+ok(sansMarque.n >= 1 && sansMarque.fiche, `SABOTAGE : sans l'en-tête, même depuis un centre de données, la fiche s'écrit (${sansMarque.n} écriture(s) ; un robot non déclaré est traité comme une personne : il se voit)`);
+videFiches();
+
 /* 4. Chaque script de vérification du dépôt pose l'en-tête. */
 /* MESURÉ le 3.10 (mesure-kv 37111933086 + inventaire 37111987256) : les cinq sondes à `fetch` ci-dessous n'étaient PAS dans
    cette liste et n'avaient pas l'en-tête ; « kdmc-sonde/1 » n'est pas un mot de la liste des robots ; chaque publication du site

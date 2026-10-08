@@ -10,7 +10,7 @@
  * Usage : CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… NS=<id KV> node tools/audit/lire-alertes.mjs [--uids=a,b] [--n=25]
  * Tests : tests/verify-lire-alertes.mjs (`formater` est pure ; sabotage : une IP glissée dans le journal n'est jamais imprimée). */
 const ARGS = Object.fromEntries(process.argv.slice(2).map((a) => { const m = a.match(/^--([^=]+)=(.*)$/); return m ? [m[1], m[2]] : [a, '1']; }));
-const CHAMPS_ALERTE = ['ev', 'type', 'name', 'uid', 'app', 'page', 'device', 'os', 'place', 'country', 'isp', 'asn', 'vpn', 'masque', 'mins', 'detail', 'devkey', 'pays_precedent', 'lieu_precedent', 'isp_precedent', 'asn_precedent', 'arrivee'];
+const CHAMPS_ALERTE = ['ev', 'type', 'name', 'uid', 'app', 'page', 'device', 'os', 'place', 'country', 'pays', 'isp', 'asn', 'vpn', 'masque', 'mins', 'detail', 'devkey', 'pays_precedent', 'lieu_precedent', 'isp_precedent', 'asn_precedent', 'arrivee'];
 const CHAMPS_SESSION = ['ts', 'end', 'app', 'device', 'dev', 'place', 'isp', 'vpn', 'tz'];
 const EV = { new_device: '🔐 nouvel appareil', geo_anomaly: '⚠️ changement de pays', nouvel_inscrit: '🆕 nouvel inscrit', nouvelle_connexion: '🆕 nouvelle connexion', admin_login_fail: '🚫 code admin refusé', matricule_refuse: '🪪 matricule refusé', quota_inscriptions_atteint: '🛑 quota', pointage_loin: '📍 pointage loin', inscription_refusee: '🚫 inscription refusée' };
 const ASN_NUAGES = new Set([8075, 16509, 14618, 15169, 396982, 24940, 16276, 14061, 20473, 63949, 31898, 45102, 12876, 51167, 197540, 13335]);
@@ -18,15 +18,20 @@ const quand = (ts) => (ts ? new Date(ts).toISOString().replace('T', ' ').slice(0
 const reseau = (asn, isp, vpn, masque) => (isp || '?') + (asn ? ' (AS' + asn + (ASN_NUAGES.has(Number(asn)) ? ' = centre de données/robot' : '') + ')' : '') + (vpn ? ' · VPN/hébergeur' : '') + (masque ? ' · réseau masqué (Relais privé ?)' : '');
 
 /* Pure : le journal + les fiches → lignes lisibles, champs en liste blanche seulement. */
-export function formater(log, comptes, n) {
+export function formater(log, comptes, n, filtre) {
   const out = [];
-  const liste = (Array.isArray(log) ? log : []).slice(0, n || 25);
-  out.push(`JOURNAL — ${liste.length} dernière(s) alerte(s) (sur ${Array.isArray(log) ? log.length : 0})`);
+  /* filtre : { uids: [...], ev: [...] } — par défaut seules les alertes qui parlent à Kevin (la table EV), pas le bruit technique (fbtoken_mint…) */
+  const f = filtre || {};
+  const evs = f.ev && f.ev.length ? new Set(f.ev) : new Set(Object.keys(EV));
+  const uids = f.uids && f.uids.length ? new Set(f.uids) : null;
+  const tout = (Array.isArray(log) ? log : []).filter((e) => e && evs.has(e.ev || e.type) && (!uids || uids.has(e.uid)));
+  const liste = tout.slice(0, n || 25);
+  out.push(`JOURNAL — ${liste.length} alerte(s) sur ${tout.length} retenue(s) (${Array.isArray(log) ? log.length : 0} lignes en tout${uids ? ', comptes : ' + [...uids].join(', ') : ''})`);
   for (const e0 of liste) {
     const e = Object.fromEntries(CHAMPS_ALERTE.filter((k) => e0 && e0[k] !== undefined && e0[k] !== '').map((k) => [k, e0[k]]));
     const ev = e.ev || e.type || '?';
     out.push(`• ${quand(e0 && e0.ts)} · ${EV[ev] || ev} · ${e.name || '(sans nom)'}${e.uid ? ' [' + e.uid + ']' : ''} · ${e.app || 'domaine'}${e.page || ''}`
-      + `\n    appareil : ${e.device || '?'}${e.os ? ' · ' + e.os : ''} · lieu : ${e.place || e.country || '?'} · réseau : ${reseau(e.asn, e.isp, e.vpn, e.masque)}`
+      + `\n    appareil : ${e.device || '?'}${e.os ? ' · ' + e.os : ''} · lieu : ${e.place || e.country || e.pays || '?'} · réseau : ${reseau(e.asn, e.isp, e.vpn, e.masque)}`
       + (e.detail ? `\n    détail : ${String(e.detail).slice(0, 160)}` : '')
       + (ev === 'geo_anomaly' ? `\n    avant : ${e.lieu_precedent || e.pays_precedent || '?'} · ${e.isp_precedent || '?'}${e.asn_precedent ? ' (AS' + e.asn_precedent + ')' : ''} — ${e.mins != null ? e.mins : '?'} min plus tôt` : ''));
   }
@@ -54,9 +59,15 @@ if (process.argv[1] && /lire-alertes\.mjs$/.test(process.argv[1]) && !process.en
     try { return JSON.parse(await r.text()); } catch { return null; }
   };
   const uids = String(ARGS.uids || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const ev = String(ARGS.ev || '').split(',').map((s) => s.trim()).filter(Boolean);
   const log = await lire('aud:log');
   const comptes = {}; for (const u of uids) comptes[u] = await lire('acc:' + u);
-  const t = formater(log, comptes, parseInt(ARGS.n || '25', 10) || 25);
+  const n = parseInt(ARGS.n || '25', 10) || 25;
+  /* `--tous=1` : le journal entier (pas seulement les comptes demandés) ; sinon, avec des comptes, le journal est filtré sur eux */
+  const t = formater(log, {}, n, { uids: ARGS.tous ? [] : uids, ev });
   console.log(t);
-  console.log(`::notice title=Alertes du domaine (brut)::${t.replace(/\n/g, '%0A').slice(0, 3900)}`);
+  const annot = (titre, texte) => console.log(`::notice title=${titre}::${texte.replace(/\n/g, '%0A').slice(0, 3900)}`);
+  annot('Journal (brut)', t);
+  /* une annotation PAR fiche : la limite de 4 000 caractères d'une annotation ne coupe plus les fiches (vécu : 1er passage) */
+  for (const u of uids) { const tf = formater([], { [u]: comptes[u] }, 0).replace(/^JOURNAL[^\n]*\n?/, ''); console.log(tf); annot('Fiche ' + u, tf); }
 }

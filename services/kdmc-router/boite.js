@@ -263,7 +263,10 @@ async function lirePersonnes(env, db, now, outils) {
     const fil = p.evts.slice(-activite.LIM.fil), dernier = fil[fil.length - 1];
     const lu = marq.get('perso:' + p.id) || 0;
     const nonLus = p.alertes.filter((e) => e.ts > lu && now - e.ts <= LIMITES.alerteFraicheur).length;
-    const nom = p.nom || (p.id === 'systeme' ? 'Alertes du domaine' : 'Inconnu');
+    /* LE NOM DU COMPTE, jamais « Inconnu » (Kevin 8.10, capture : « Inconnu — nouvel appareil… compte laurence-saint-polit ») : une alerte
+       enregistrée sans nom porte quand même le compte → on lit SA fiche ; sans fiche, le nom se lit dans l'identifiant lui-même. */
+    if (!p.nom && p.uid) { try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + p.uid)) || 'null'); if (a && a.name) p.nom = String(a.name); } catch { /* fiche illisible : on passe à l'identifiant */ } }
+    const nom = p.nom || (p.id === 'systeme' ? 'Alertes du domaine' : p.uid ? nomDepuisUid(p.uid) : 'Inconnu');
     const fiche = p.uid ? await ficheLignes(env, db, p.uid, now) : [];
     /* les lignes de la DERNIÈRE alerte (réseau, d'où il venait, pourquoi) s'ajoutent à la fiche, sans répéter « qui » quand la fiche le dit déjà */
     const derniereAlerte = p.alertes.length ? p.alertes[p.alertes.length - 1].infos.filter((x) => !(fiche.length && x.startsWith('👤'))) : [];
@@ -272,6 +275,16 @@ async function lirePersonnes(env, db, now, outils) {
       nonLus, lu: !nonLus, repondre: null, fil: fil.map((e) => ({ moi: false, texte: e.texte, ts: e.ts })) });
   }
   return out.sort((a, b) => b.ts - a.ts).slice(0, 20);
+}
+/* « laurence-saint-polit » → « Laurence Saint-Polit (compte laurence-saint-polit) » : lisible, et le compte reste nommé tel quel. */
+export function nomDepuisUid(uid) {
+  const u = String(uid || '').trim();
+  if (!u) return 'Inconnu';
+  /* « prenom-nom-compose » : le 1er mot est le prénom, le reste est le nom (ses traits d'union gardés : saint-polit). */
+  const mots = u.split(/[-_.\s]+/).filter(Boolean);
+  const cap = (m) => m[0].toUpperCase() + m.slice(1);
+  const joli = mots.length >= 2 && mots.every((m) => /^[a-zà-ÿ]+$/i.test(m)) ? cap(mots[0]) + ' ' + mots.slice(1).map(cap).join('-') : '';
+  return joli ? joli + ' (compte ' + u + ')' : 'Compte ' + u;
 }
 /* 6.10 (Kevin, capture « Code admin refusé » ×5 sans texte, bulle vide) : chaque alerte dit en clair ce qui s'est passé, depuis où,
    et les répétitions (même événement, même appareil, à moins de 30 min d'écart) ne font qu'UNE carte « ×5 ». */

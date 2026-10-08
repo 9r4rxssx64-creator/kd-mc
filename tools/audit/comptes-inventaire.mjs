@@ -29,7 +29,9 @@ export const ROBOT = /(^|[\s_:-])(ci[\s_-]?smoke|smoke|audit|sonde|probe|robot|e
    une seule session, jamais revenus ; « les comptes invités » de Kevin). Reconnus à l'identifiant de sonde (probe<horodatage>,
    bearer<horodatage>) ou au nom de fixture avec ≤ 1 session. Une vraie personne a un prénom ET un nom. */
 const TEST_UID = /^(probe|bearer)\d{6,}$/;
-const TEST_NOM = new Set(['bearer', 'tester', 'simple']);
+/* 8.10 : « Marie Curie » et « Alice Martin » sont les identités des tests SSO (tools/kdmc-sso-e2e, kdmc-multiapp-e2e) — une fiche à ces
+   noms avec une seule session est un robot (ou une sonde lancée depuis l'agent, vécu le 8.10 : « Marie Curie s'est connectée » chez Kevin). */
+const TEST_NOM = new Set(['bearer', 'tester', 'simple', 'marie curie', 'alice martin']);
 export function estRobot(a) {
   return ROBOT.test(String(a.uid || '')) || ROBOT.test(normName(a.name)) || TEST_UID.test(String(a.uid || '')) || (TEST_NOM.has(normName(a.name)) && (a.hits || 0) <= 1);
 }

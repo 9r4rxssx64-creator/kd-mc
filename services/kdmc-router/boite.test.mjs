@@ -6,7 +6,7 @@
  * node services/kdmc-router/boite.test.mjs */
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
-import { handleBoite, lireBoite, LIMITES, SOURCES, SOURCES_MESSAGES, _viderMemo, appareilDe, texteAlerte, grouperAlertes } from './boite.js';
+import { handleBoite, lireBoite, LIMITES, SOURCES, SOURCES_MESSAGES, _viderMemo, appareilDe, texteAlerte, grouperAlertes, nomDepuisUid } from './boite.js';
 import { BOUTON_JS } from './boite-bouton.js';
 import mod, { injecterBouton, BOUTON_TAG } from './worker.js';
 import { ADMIN, schema as schemaCercle } from './cercle.js';
@@ -175,6 +175,19 @@ ok(grouperAlertes([{ ts: 10e6, ev: 'a', ip: 'x' }, { ts: 10e6 - 60e6, ev: 'a', i
   '6l. on ne regroupe pas des alertes éloignées (> 30 min) ni d\'appareils différents ; le compte concerné est nommé');
 const Wr = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/ev: 'admin_login_fail', ip: ipHash\.slice\(0, 12\), app: appDeLaDemande\(request\), pays:/.test(Wr), '6m. le routeur note l\'app d\'origine et le pays d\'un code refusé');
+/* 6n. (Kevin 8.10, capture : « Inconnu — nouvel appareil … compte laurence-saint-polit ») le NOM DU COMPTE, jamais « Inconnu » */
+kv.set('acc:laurence-saint-polit', JSON.stringify({ uid: 'laurence-saint-polit', name: 'Laurence Saint-Polit', hits: 3 }));
+kv.set('aud:log', JSON.stringify([{ ts: T - 1000, ev: 'new_device', uid: 'laurence-saint-polit', name: '', detail: 'desktop·Windows · Stockholm, Stockholm, SE', asn: '8075', isp: 'Microsoft', device: 'desktop', os: 'Windows', place: 'Stockholm, Stockholm, SE' },
+  { ts: T - 2000, ev: 'new_device', uid: 'paul-martin', name: '', detail: 'iPhone · Nice' }]));
+b = await boite();
+const cL = b.messages.find((x) => x.cle === 'perso:u:laurence-saint-polit'), cP = b.messages.find((x) => x.cle === 'perso:u:paul-martin');
+ok(cL && cL.de === 'Laurence Saint-Polit' && cL.infos.some((l) => /Microsoft \(AS8075\)/.test(l)) && cL.infos.some((l) => /desktop · Windows/.test(l)), '6n. une alerte sans nom prend le nom de SA fiche (« Laurence Saint-Polit »), et dit le réseau et l\'appareil', cL && [cL.de, cL.infos]);
+ok(cP && cP.de === 'Paul Martin (compte paul-martin)' && !b.messages.some((x) => x.de === 'Inconnu'), '6o. sans fiche, le nom se lit dans l\'identifiant — plus jamais « Inconnu »', cP && cP.de);
+ok(nomDepuisUid('laurence-saint-polit') === 'Laurence Saint-Polit (compte laurence-saint-polit)' && nomDepuisUid('u11804') === 'Compte u11804' && nomDepuisUid('') === 'Inconnu', '6p. nomDepuisUid : deux mots → Prénom Nom ; un code → « Compte … »');
+kv.delete('acc:laurence-saint-polit');
+/* 6q. « sécurité +++ » (Kevin 8.10) : la carte d'une personne porte « Déconnecter ce compte partout » → /__admin/revoke (porte admin existante), jamais pour Kevin lui-même */
+const Ui = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
+ok(/Déconnecter ce compte partout/.test(Ui) && /fetch\('\/__admin\/revoke', \{ method: 'POST', credentials: 'include'/.test(Ui) && /uidP\[1\] !== 'kdmc_admin' && uidP\[1\] !== 'kevin-desarzens'/.test(Ui) && /window\.confirm\(/.test(Ui), '6q. la boîte propose « Déconnecter ce compte partout » (confirmation, porte /__admin/revoke, jamais sur le compte de Kevin)');
 
 /* 7. tri : les non lus d'abord, puis le plus récent */
 b = await boite();

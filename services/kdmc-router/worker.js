@@ -2707,6 +2707,10 @@ const UID_ROBOTS_SANS_FICHE = new Set(['ci_smoke']);
 async function enrich(env, request, uid, name, cgu, pre, opts) {
   if (!env || !env.ACCOUNTS) return;
   if (UID_ROBOTS_SANS_FICHE.has(uid)) return;
+  /* Une SONDE déclarée (en-tête x-kdmc-sonde) venue d'un centre de données (GitHub Actions = Azure…) n'est pas une personne :
+     ni fiche, ni « nouvel appareil », ni « s'est connecté » dans la boîte de Kevin (8.10 : une session de test apparaissait
+     comme une vraie connexion, et un robot peut ouvrir une session au nom de quelqu'un). Même règle que ficheLaVisite. */
+  if (request && request.headers && request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0)) return;
   /* opts.origine = l'app d'où vient un NOUVEL inscrit (transmise par le portail).
      Ne sert qu'à la création de la fiche ; une fiche existante n'en tient pas compte. */
   const origine = (opts && opts.origine) || '';
@@ -3199,8 +3203,9 @@ async function handleSso(request, url, env) {
         return J({ ok: false, reason: 'renseignements_requis', message: 'Pour créer ton compte : prénom ET nom, et accepter les conditions.' }, undefined, 400);
       }
       /* QUOTA — seulement pour une fiche NEUVE. Quelqu'un de déjà inscrit passe
-         toujours, autant de fois qu'il veut : `accCanon` existe, on ne compte rien. */
-      if (!accCanon) {
+         toujours, autant de fois qu'il veut : `accCanon` existe, on ne compte rien.
+         Une SONDE déclarée d'un centre de données ne crée pas de fiche (enrich) : elle ne compte pas non plus (0 écriture, 8.10). */
+      if (!accCanon && !(request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0))) {
         const ipHash = await sha256Hex((request.headers.get('CF-Connecting-IP') || '') + '|kdmc');
         const q = await quotaInscription(env, ipHash);
         if (!q.ok) {

@@ -20,6 +20,8 @@ dit(b.kevin.length === 2, 'Kevin a 2 comptes actifs dans cet exemple → signal�
 dit(!estKevin({ uid: 'u3', name: 'Ronan Desarzens' }), 'Ronan Desarzens n\'est PAS Kevin');
 dit(b.robots.map((r) => r.uid).sort().join() === 'audit-lingua,ci_smoke', 'robots : ci_smoke et audit-lingua, rien d\'autre');
 dit(!estRobot({ uid: 'u5', name: 'Batiste Martin' }), 'un vrai nom n\'est pas pris pour un robot');
+dit(estRobot({ uid: 'marie-curie', name: 'Marie Curie', hits: 1 }) && estRobot({ uid: 'alice-martin', name: 'Alice Martin', hits: 0 }), '8.10 : « Marie Curie » / « Alice Martin » (identités des tests SSO) à 1 session = robots');
+dit(!estRobot({ uid: 'marie-curie', name: 'Marie Curie', hits: 12 }), '… mais une vraie Marie Curie qui se connecte 12 fois n\'est pas un robot');
 dit(b.doublons.some((d) => d.nom === 'marie dupont' && d.comptes.length === 2), 'Marie Dupont × 2 (casse et espaces ignorés)');
 dit(b.doublons.some((d) => d.nom === 'kevin desarzens'), 'les doublons de Kevin apparaissent aussi');
 dit(b.sansNomComplet.length === 1, 'un compte à un seul mot est compté à part');

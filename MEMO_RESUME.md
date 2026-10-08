@@ -15627,6 +15627,22 @@ Règle « LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER » dans CLAUDE-HISTOIRE (r
 **Reste** : javis.kd-mc.com servi par Pages SANS la porte (200 sans session, mesuré) → pilote « revenir » ; Apex build run 37778037594
 bloqué « queued » sans job (comme 2 runs du 6.08) — workflow rééteint, à relancer quand la file de GitHub le prend.
 
+## 2026-10-08 (16h) — Capture « Mes messages » : Marie Curie, Inconnu, Stockholm — vérifié au journal brut, et sécurité +++
+
+**Lu au coffre (robot `coffre-lire-alertes.yml`, run 37790157110, KV `aud:log` + fiches, jamais l'IP)** :
+- « Marie Curie s'est connectée · Autre · il y a 33 min » = **MOI** (13h13 UTC, Chicago, Anthropic PBC AS396982, appareil « Autre ») — ma
+  session de test pour mesurer le cache. Leçon #452 : l'agent n'ouvre plus jamais de session sur le vrai domaine ; `enrich()` + quota
+  ignorent une sonde déclarée d'un centre de données (garde `sonde-sans-ecriture` 3b, 30/0) ; « Marie Curie »/« Alice Martin » = robots
+  pour l'inventaire (`estRobot`) → ménage `coffre-comptes-nettoyer-robots` à lancer (la ligne « s'est connectée » du fil D1 s'efface en 3 j).
+- **Ludovic Morter** (11h51, K · Android 10 · Chrome 143, Monaco, Monaco Telecom AS6758, première connexion à la light, matricule U30502,
+  CMC Éq.3) et **Andrea Casella** (14h04, iPhone iOS 18.7, Monaco, AS6758, U38373, Éq.8) = **vrais employés**, rien d'anormal.
+- « Inconnu — nouvel appareil Windows · Stockholm · compte laurence-saint-polit » (7.10) : **aucun de nos robots n'utilise ce compte sur le
+  vrai domaine** (les deux tests qui portent son nom tournent sur localhost). Détail (réseau, AS, VPN, historique de la fiche) : relance du
+  lecteur filtré `uids=laurence-saint-polit ev=new_device,geo_anomaly` — voir ETAT.
+**Fait (PR)** : (1) la carte porte le **nom du compte** (fiche, sinon « Laurence Saint-Polit (compte laurence-saint-polit) »), plus jamais
+« Inconnu » (`nomDepuisUid`, `test:boite` 6n-6p) ; (2) bouton **« 🚫 Déconnecter ce compte partout »** sur chaque carte de personne
+(confirmation → `/__admin/revoke`, porte admin existante ; jamais sur le compte de Kevin ; 6q) ; (3) lecteur brut filtrable (`--uids`, `--ev`,
+une annotation par fiche) ; (4) `test:lire-alertes` 7/0.
 ## 2026-10-08 (15h) — Mesuré en ligne, javis derrière la porte, les 8 vérifications réelles lisent le budget
 
 - **En ligne (déploiement public 37784616276 ✅, 13h35 UTC)** : `app.js` connecté → `private, max-age=300` + etag ; `?v=1` → 1 an immuable ;

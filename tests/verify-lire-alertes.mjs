@@ -20,6 +20,10 @@ ok(/⚠️ changement de pays · X Y \[x\][\s\S]*avant : Monaco, MC · Monaco Te
 ok(/FICHE laurence-saint-polit — Laurence Saint-Polit · inscrit 2026-08-01[\s\S]*appareils : mobile·iOS, desktop·Windows[\s\S]*Face ID : non[\s\S]*↳ 2026-10-07 09:12 UTC → 2026-10-07 09:40 UTC · kd-mc\.com · Windows 10 · Chrome 141 · Stockholm, Stockholm, SE · Microsoft · VPN\/hébergeur · Europe\/Stockholm/.test(t), '3. la fiche : appareils, lieux, Face ID, et chaque session (quand, où, quel réseau)', t);
 ok(/FICHE marie-curie : absente/.test(t), '3b. une fiche absente est dite absente');
 ok(!/203\.0\.113\.9|198\.51\.100\.7|abcd|zzz|ipHash/.test(t), '4. SABOTAGE : l\'adresse IP et son empreinte, présentes dans les données, ne sont JAMAIS imprimées');
+/* 5. filtres : par compte, par type ; le bruit technique (fbtoken_mint) jamais, sauf demandé */
+const bruit = log.concat([{ ts: 1, ev: 'fbtoken_mint' }, { ts: 2, ev: 'admin_login_ok' }]);
+ok(!/fbtoken_mint|admin_login_ok/.test(formater(bruit, {}, 25)) && /1 alerte\(s\) sur 1 retenue\(s\) \(4 lignes en tout, comptes : laurence-saint-polit\)/.test(formater(bruit, {}, 25, { uids: ['laurence-saint-polit'] })) && /nouvel appareil/.test(formater(bruit, {}, 25, { uids: ['laurence-saint-polit'] })) && !/changement de pays/.test(formater(bruit, {}, 25, { uids: ['laurence-saint-polit'] })), '5. filtré sur un compte : ses alertes seulement ; le bruit technique est écarté');
+ok(/admin_login_ok/.test(formater(bruit, {}, 25, { ev: ['admin_login_ok'] })) && !/nouvel appareil/.test(formater(bruit, {}, 25, { ev: ['admin_login_ok'] })), '5b. un type demandé explicitement (admin_login_ok) se lit');
 
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

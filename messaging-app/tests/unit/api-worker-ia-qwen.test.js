@@ -49,17 +49,22 @@ function userEnv(overrides = {}) {
 
 describe('ordre des fournisseurs par type de demande', () => {
   const fns = { qwen: () => {}, anthropic: () => {}, groq: () => {}, gemini: () => {} };
-  it('question courante → Qwen d\'abord, Anthropic en secours', () => {
+  // Kevin 08.10.2026 « Gratuit d'abord » (règles « tout gratuit » du 2.10) : TOUTES les demandes passent
+  // d'abord par les IA gratuites ; Anthropic (payant) n'est que le dernier secours.
+  it('question courante → Qwen d\'abord, puis Groq (gratuits), Anthropic en dernier', () => {
     const env = { AI: {}, ANTHROPIC_API_KEY: 'a', GROQ_API_KEY: 'g' };
-    expect(_iaOrdered(env, 'general', fns).map((p) => p.name)).toEqual(['qwen', 'anthropic', 'groq']);
+    expect(_iaOrdered(env, 'general', fns).map((p) => p.name)).toEqual(['qwen', 'groq', 'anthropic']);
     expect(_iaOrdered(env, 'summary', fns)[0].name).toBe('qwen');
     expect(_iaOrdered(env, 'translation', fns)[0].name).toBe('qwen');
   });
-  it('action / code / raisonnement → Anthropic d\'abord', () => {
+  it('action / code / raisonnement → gratuit d\'abord aussi, Anthropic en DERNIER secours', () => {
     const env = { AI: {}, ANTHROPIC_API_KEY: 'a', GROQ_API_KEY: 'g' };
-    expect(_iaOrdered(env, 'admin', fns)[0].name).toBe('anthropic');
-    expect(_iaOrdered(env, 'code', fns)[0].name).toBe('anthropic');
-    expect(_iaOrdered(env, 'reasoning', fns)[0].name).toBe('anthropic');
+    for (const d of ['admin', 'code', 'reasoning']) {
+      const order = _iaOrdered(env, d, fns).map((p) => p.name);
+      expect(order[0], d).toBe('qwen');
+      expect(order[order.length - 1], d).toBe('anthropic');
+      expect(order.indexOf('groq'), d).toBeLessThan(order.indexOf('anthropic'));
+    }
   });
   it('sans binding Workers AI ni clé → rien (503 plus haut), sans clé mais avec AI → Qwen seul', () => {
     expect(_iaOrdered({}, 'general', fns)).toEqual([]);
@@ -67,7 +72,7 @@ describe('ordre des fournisseurs par type de demande', () => {
   });
 });
 
-describe('POST /api/ia/chat (admin) — Qwen principal, Anthropic pour agir', () => {
+describe('POST /api/ia/chat (admin) — gratuit d\'abord, Anthropic en dernier secours', () => {
   it('question courante → Qwen répond, Anthropic pas appelé, <think> filtré', async () => {
     const AI = fakeAI({ reply: 'Il fait beau à Monaco.' });
     const env = userEnv({ AI, ANTHROPIC_API_KEY: 'k' });
@@ -98,14 +103,14 @@ describe('POST /api/ia/chat (admin) — Qwen principal, Anthropic pour agir', ()
     expect(j.analyse.by).toBe('concert');
     expect(j.domain).toBe('reasoning');
     expect(j.provider).toBe('council');
-    expect(j.judge).toBe('qwen');
+    expect(j.judge).toMatch(/^qwen/);   // juge GRATUIT (identifiant du modèle Qwen)
     expect(j.content).toBe('Synthèse du conseil');
-    expect(j.voices.filter((v) => v.ok).length).toBe(3);
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(j.voices.filter((v) => v.ok).length).toBeGreaterThanOrEqual(3);   // conférence élargie aux IA gratuites (2.10)
+    expect(globalThis.fetch.mock.calls.some(([u]) => String(u).includes('anthropic.com'))).toBe(false);   // payant jamais appelé
   });
 
-  it('ACTION → Anthropic, Qwen pas appelé', async () => {
-    const AI = fakeAI();
+  it('ACTION → Qwen gratuit agit, Anthropic (payant) pas appelé', async () => {
+    const AI = fakeAI({ reply: 'Je lance.' });
     const env = userEnv({ AI, ANTHROPIC_API_KEY: 'k' });
     globalThis.fetch = vi.fn(async (url) => {
       if (String(url).includes('anthropic.com')) return new Response(JSON.stringify({ content: [{ type: 'text', text: 'Je lance.' }] }), { status: 200 });
@@ -114,26 +119,31 @@ describe('POST /api/ia/chat (admin) — Qwen principal, Anthropic pour agir', ()
     const tok = await userToken();
     const r = await worker.fetch(makeReq('POST', '/api/ia/chat', { messages: [{ role: 'user', content: 'lance le nettoyage des DM' }] }, tok), env);
     const j = await r.json();
-    expect(j.provider).toBe('anthropic');
+    expect(j.provider).toBe('qwen');
     expect(j.domain).toBe('admin');
-    expect(AI.answerCalls().length).toBe(0, 'Qwen consulté pour ANALYSER, jamais pour AGIR');
+    expect(globalThis.fetch.mock.calls.some(([u]) => String(u).includes('anthropic.com'))).toBe(false);
   });
 
-  it('Qwen mort → secours Anthropic ; tout mort → 503 avec la cause par fournisseur', async () => {
+  it('Qwen mort → secours GRATUIT (Groq) avant Anthropic ; tout mort → 503 avec la cause par fournisseur', async () => {
     const env = userEnv({ AI: fakeAI({ dead: true }), ANTHROPIC_API_KEY: 'k' });
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ content: [{ type: 'text', text: 'Anthropic prend le relais' }] }), { status: 200 }));
+    globalThis.fetch = vi.fn(async (url) => (String(url).includes('groq.com')
+      ? new Response(JSON.stringify({ choices: [{ message: { content: 'Groq prend le relais' } }] }), { status: 200 })
+      : new Response(JSON.stringify({ content: [{ type: 'text', text: 'Anthropic' }] }), { status: 200 })));
     const tok = await userToken();
     const r = await worker.fetch(makeReq('POST', '/api/ia/chat', { messages: [{ role: 'user', content: 'bonjour' }] }, tok), env);
     const j = await r.json();
-    expect(j.provider).toBe('anthropic');
+    expect(j.provider).toBe('groq');
+    expect(globalThis.fetch.mock.calls.some(([u]) => String(u).includes('anthropic.com'))).toBe(false);
 
     globalThis.fetch = vi.fn(async () => new Response('overloaded', { status: 529 }));
     const r2 = await worker.fetch(makeReq('POST', '/api/ia/chat', { messages: [{ role: 'user', content: 'bonjour' }] }, tok), env);
     expect(r2.status).toBe(503);
     const j2 = await r2.json();
-    /* Qwen d'abord, Anthropic en 1er secours, puis les autres gratuits configurés (Groq dans ENV) */
-    expect(j2.tried.map((t) => t.provider).slice(0, 2)).toEqual(['qwen', 'anthropic']);
-    expect(j2.tried[1].error).toMatch(/529/);
+    /* gratuits d'abord (Qwen puis Groq), Anthropic en DERNIER */
+    const tried = j2.tried.map((t) => t.provider);
+    expect(tried.slice(0, 2)).toEqual(['qwen', 'groq']);
+    expect(tried[tried.length - 1]).toBe('anthropic');
+    expect(j2.tried[tried.length - 1].error).toMatch(/529/);
   });
 });
 

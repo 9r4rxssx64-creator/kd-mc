@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (nuit) — Apex Chat v1.1.295 : « gratuit d'abord », F36 fermé, interrupteur E2E réparé
+
+- **Kevin « Gratuit d'abord »** : tests IA alignés — Qwen, puis Groq (gratuits), Anthropic en DERNIER secours, pour
+  TOUTES les demandes (actions et recherche comprises). Anthropic remis en tête → 7 tests rouges (discriminant).
+- **F36 fermé (sur les appareils où IndexedDB marche)** : la clé privée E2E est une CryptoKey NON EXTRACTIBLE dans
+  IndexedDB ; migration vérifiée (import → relecture → contrôle contre la clé publique) avant d'effacer le clair ;
+  la copie en clair cachée dans IndexedDB effacée aussi ; IndexedDB indisponible → comportement d'avant. 14 tests.
+  À voir sur l'iPhone de Kevin (Safari, navigation normale + privée).
+- **e2e_strict** : ne s'applique plus qu'aux conversations à deux — activé, il coupait TOUS les groupes. 4 tests.
+- **Couverture** : moteur temps réel revenu aux planchers (100 % lignes). Suite : **1 537 / 1 537**, 0 erreur de couverture.
+
 ## 2026-10-08 (nuit, fin) — Robots rouges d'Apex Chat triés
 
 - **Corrigé** : « Apex Chat — Version + CACHE_VERSION Sync » était rouge à CHAQUE passage depuis le 27.09 (repère

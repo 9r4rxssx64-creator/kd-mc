@@ -615,13 +615,18 @@ describe('POST /api/ai/search (handleAiSemanticSearch)', () => {
   });
 
   it('nominal : index filtrés/bornés, scores clampés, snippet + ts, quota consommé, provider nommé', async () => {
-    // Recherche = raisonnement → Anthropic d'abord (ENV : Anthropic + Groq, pas de Workers AI)
-    globalThis.fetch = anthropicOk('```json\n{"results":[{"idx":0,"score":95,"reason":"parle du resto"},{"idx":1,"score":250},{"idx":7,"score":10},{"idx":"2","score":1},{"idx":-1}]}\n```');
+    // Kevin 08.10 « Gratuit d'abord » : la recherche passe par l'IA GRATUITE (Groq ; ENV sans Workers AI),
+    // Anthropic (payant) n'est que le dernier secours.
+    const reply = '```json\n{"results":[{"idx":0,"score":95,"reason":"parle du resto"},{"idx":1,"score":250},{"idx":7,"score":10},{"idx":"2","score":1},{"idx":-1}]}\n```';
+    globalThis.fetch = vi.fn(async (url) => (String(url).includes('groq.com')
+      ? new Response(JSON.stringify({ choices: [{ message: { content: reply } }] }), { status: 200 })
+      : new Response('{}', { status: 500 })));
     const env = mkEnv();
     const r = await worker.fetch(jreq('POST', '/api/ai/search', { query: 'restaurant', messages: MSGS }, await userTok()), env);
     expect(r.status).toBe(200);
     const j = await r.json();
-    expect(j.provider).toBe('anthropic');
+    expect(j.provider).toBe('groq');
+    expect(globalThis.fetch.mock.calls.some(([u]) => String(u).includes('anthropic.com'))).toBe(false);
     expect(j.premium).toBe(false);
     expect(j.results).toEqual([
       { idx: 0, score: 95, reason: 'parle du resto', snippet: 'On va au restaurant ce soir ?', ts: 1 },
@@ -629,7 +634,7 @@ describe('POST /api/ai/search (handleAiSemanticSearch)', () => {
     ]);
     // les messages ont été numérotés [i] dans le prompt envoyé
     const sent = JSON.parse(globalThis.fetch.mock.calls[0][1].body);
-    expect(sent.messages[0].content).toContain('[2] sujet sans rapport');
+    expect(sent.messages.map((m) => m.content).join('\n')).toContain('[2] sujet sans rapport');
     expect(await env.APEX_CHAT_KV.get(`quota:u_test_1:summarize:${today()}`)).toBe('1');
   });
 

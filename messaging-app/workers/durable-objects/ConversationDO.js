@@ -119,6 +119,22 @@ export class ConversationDO {
     } catch (_) { return false; }
   }
 
+  /** e2e_strict ne vaut que pour les conversations à DEUX (dm) : un groupe n'a pas de
+   *  chiffrement de bout en bout (l'app l'affiche honnêtement depuis v1.1.294) — sans cette
+   *  exception, activer l'interrupteur coupait TOUS les messages de groupe (08.10.2026).
+   *  Type mis en cache ; base illisible → on applique la règle (sûr). */
+  async e2eStrictFor(convId) {
+    if (!(await this.e2eStrict())) return false;
+    try {
+      if (!this._convTypes) this._convTypes = new Map();
+      if (!this._convTypes.has(convId)) {
+        const row = await this.env.APEX_CHAT_DB.prepare('SELECT type FROM conversations WHERE id=?').bind(convId).first();
+        this._convTypes.set(convId, (row && row.type) || 'dm');
+      }
+      return this._convTypes.get(convId) === 'dm';
+    } catch (_) { return true; }
+  }
+
   async loadConfig() {
     try {
       const stmt = await this.env.APEX_CHAT_DB.prepare('SELECT key, value FROM system_config').all();
@@ -523,7 +539,7 @@ export class ConversationDO {
         if (!v.ok) return ws.send(JSON.stringify({ type: 'error', code: 'invalid_message', message: v.error }));
         // Audit 17/09/2026 (P1) : l'interrupteur admin « e2e_strict » n'était lu nulle part.
         // Quand il est ON, un message non chiffré de bout en bout (préfixe E2E1:/E2E2:) est refusé.
-        if (await this.e2eStrict() && !E2E_TAG_RE.test(v.fields.ciphertext)) {
+        if (!E2E_TAG_RE.test(v.fields.ciphertext) && await this.e2eStrictFor(session.convId)) {
           return ws.send(JSON.stringify({ type: 'error', code: 'e2e_required', message: 'Chiffrement de bout en bout obligatoire : la clé de ton contact doit être établie avant d\'envoyer' }));
         }
 
@@ -684,7 +700,7 @@ export class ConversationDO {
         }
         // Revue 08.10.2026 : e2e_strict s'applique AUSSI à l'édition (sinon on contournait
         // l'interrupteur en envoyant un message chiffré puis en l'éditant en clair).
-        if (await this.e2eStrict() && !E2E_TAG_RE.test(editContent)) {
+        if (!E2E_TAG_RE.test(editContent) && await this.e2eStrictFor(session.convId)) {
           return ws.send(JSON.stringify({ type: 'error', code: 'e2e_required', message: 'Chiffrement de bout en bout obligatoire : modification en clair refusée' }));
         }
         const editedAt = Date.now();

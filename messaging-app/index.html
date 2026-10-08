@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.294",
+  "softwareVersion": "v1.1.295",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.294';
+const __APEX_CHAT_VERSION__ = 'v1.1.295';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.294" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.294</div>
+  <div id="splash-version" data-ver="v1.1.295" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.295</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.294</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.295</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -7078,15 +7078,129 @@ K._sendHeartbeat = async function(){
 // ============================================================================
 //  Crypto E2E — Génération / restoration des clés identité
 // ============================================================================
+// v1.1.295 — F36 (audit) : la clé privée E2E n'est plus lisible en octets par aucun script.
+// Elle vit en IndexedDB sous forme de CryptoKey NON EXTRACTIBLE (clonage structuré d'une
+// CryptoKey : Safari, Chrome, Firefox) ; WebCrypto s'en sert (deriveBits/deriveKey) sans
+// jamais rendre ses octets (exportKey refuse). La clé publique reste dans localStorage.
+// Migration au chargement : clé en clair trouvée → import non extractible → écrite en IndexedDB
+// → relue et VÉRIFIÉE (secret partagé avec une clé éphémère = celui calculé côté clé publique)
+// → SEULEMENT ALORS la copie en clair (localStorage + ombre IndexedDB « kv ») est effacée.
+// IndexedDB indisponible (navigation privée, quota…) → comportement d'avant (localStorage),
+// rien d'alarmant à l'écran, une seule ligne de console. Jamais de perte de clé.
+K._PRIV_IDB_KEY = 'crypto_priv_ck';
+K._keyStoreWarned = false;
+K._keyStoreWarnOnce = function(e){
+  if(K._keyStoreWarned) return;
+  K._keyStoreWarned = true;
+  try{ console.warn('[apex-chat:key-store] clé E2E gardée dans le stockage local (IndexedDB indisponible) :', e && e.message); }catch(_){}
+};
+K._keyStorePut = async function(rec){
+  const db = await idbOpen();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(['kv'], 'readwrite');
+    tx.objectStore('kv').put(rec, K._PRIV_IDB_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('idb-put'));
+    tx.onabort = () => reject(tx.error || new Error('idb-abort'));
+  });
+};
+K._keyStoreGet = async function(){
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['kv'], 'readonly');
+    const rq = tx.objectStore('kv').get(K._PRIV_IDB_KEY);
+    rq.onsuccess = () => resolve(rq.result || null);
+    rq.onerror = () => reject(rq.error || new Error('idb-get'));
+  });
+};
+// Efface des entrées « kv » (sans jamais lever) ; renvoie true si la transaction a abouti.
+K._keyStoreDrop = async function(keys){
+  try{
+    const db = await idbOpen();
+    return await new Promise((resolve) => {
+      const tx = db.transaction(['kv'], 'readwrite');
+      const st = tx.objectStore('kv');
+      for(const k of keys) st.delete(k);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
+    });
+  }catch(_){ return false; }
+};
+// Déconnexion / suppression de compte : la CryptoKey ET toute ombre en clair d'une ancienne version.
+K._keyStoreDelete = function(){
+  return K._keyStoreDrop([K._PRIV_IDB_KEY, 'crypto_priv', 'crypto_priv_wrapped']);
+};
+K._importPrivNonExtractable = function(privB64){
+  return crypto.subtle.importKey('jwk', JSON.parse(atob(privB64)), { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveKey', 'deriveBits']);
+};
+// Preuve que la clé privée correspond à la clé publique : ECDH(priv, E.pub) === ECDH(E.priv, pub)
+// avec une paire éphémère E jetée aussitôt.
+K._privMatchesPub = async function(priv, pub){
+  const eph = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+  const a = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: eph.publicKey }, priv, 256));
+  const b = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, eph.privateKey, 256));
+  if(a.length !== b.length || !a.length) return false;
+  let d = 0; for(let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+  return d === 0;
+};
+// Range la clé en IndexedDB (non extractible), vérifie, puis efface les copies en clair.
+// Renvoie la CryptoKey non extractible, ou null (rien n'a été effacé → la copie existante reste).
+K._migratePrivToIdb = async function(privB64, pubB64){
+  let wrote = false;
+  try{
+    if(typeof indexedDB === 'undefined' || !indexedDB) throw new Error('indexeddb absent');
+    const pub = await ApexCrypto.importPublicKey(pubB64);
+    const priv = await K._importPrivNonExtractable(privB64);
+    await K._keyStorePut({ v: 1, priv, pub: pubB64, ts: Date.now() });
+    wrote = true;
+    const back = await K._keyStoreGet();
+    if(!back || back.pub !== pubB64 || !back.priv || back.priv.extractable !== false) throw new Error('relecture IndexedDB invalide');
+    if(!(await K._privMatchesPub(back.priv, pub))) throw new Error('clé IndexedDB ≠ clé publique');
+    try{ localStorage.removeItem(PERSIST_PREFIX + 'crypto_priv'); localStorage.removeItem(PERSIST_PREFIX + 'crypto_priv_wrapped'); }catch(_){}
+    await K._keyStoreDrop(['crypto_priv', 'crypto_priv_wrapped']);   // ombre « kv » écrite par ls()
+    return back.priv;
+  }catch(e){
+    if(wrote){ try{ await K._keyStoreDrop([K._PRIV_IDB_KEY]); }catch(_){} }
+    K._keyStoreWarnOnce(e);
+    return null;
+  }
+};
+
+// Un seul chargement à la fois (unlock PIN, envoi, réception peuvent appeler en même temps :
+// sans ça, deux générations concurrentes = deux identités).
 async function _ensureCryptoKeys(){
   if(!window.ApexCrypto) return;
   if(K._cryptoKeys) return;
+  if(K._cryptoKeysLoading) return K._cryptoKeysLoading;
+  const p = K._loadCryptoKeys();
+  K._cryptoKeysLoading = p;
+  try{ return await p; } finally { if(K._cryptoKeysLoading === p) K._cryptoKeysLoading = null; }
+}
 
+K._loadCryptoKeys = async function(){
   // Étape A E2E : la clé privée n'est plus stockée en clair quand un PIN existe.
   const storedPub     = lg('crypto_pub', null);
   const storedPriv    = lg('crypto_priv', null);          // legacy = EN CLAIR
   const storedWrapped = lg('crypto_priv_wrapped', null);  // {ct,salt,v}
   const pin = K._sessionPin || null;
+
+  // 0) F36 : CryptoKey non extractible en IndexedDB, plus aucune copie legacy → la charger.
+  if(!storedPriv && !storedWrapped && typeof indexedDB !== 'undefined' && indexedDB){
+    let rec = null;
+    try{ rec = await K._keyStoreGet(); }catch(e){ K._keyStoreWarnOnce(e); }
+    if(rec && rec.priv && rec.pub){
+      try{
+        const publicKey = await ApexCrypto.importPublicKey(rec.pub);
+        K._cryptoKeys = { publicKey, privateKey: rec.priv };
+        // localStorage vidé (éviction iOS) mais IndexedDB intacte : la paire IndexedDB fait foi.
+        if(storedPub !== rec.pub){ ls('crypto_pub', rec.pub); K._publishPubkey(); }
+        _logTelemetry('ok', 'crypto-keys-restored-idb', {});
+        return;
+      }catch(e){ _safeCatch('crypto-restore-idb', e); }
+    }
+  }
+
   const plan = (window.ApexVault && ApexVault.planKeyMigration)
     ? ApexVault.planKeyMigration({
         hasCleartext: !!(storedPub && storedPriv),
@@ -7096,12 +7210,12 @@ async function _ensureCryptoKeys(){
       })
     : { action: (storedPub && storedPriv) ? 'keep-cleartext' : 'generate' };
 
-  // 1) Clé wrappée + PIN dispo → déwrapper en mémoire
+  // 1) Clé wrappée + PIN dispo → déwrapper, puis ranger en IndexedDB non extractible (F36)
   if(plan.action === 'unwrap'){
     try{
       const privB64    = await ApexVault.unwrapPrivKey(storedWrapped, pin);
       const publicKey  = await ApexCrypto.importPublicKey(storedPub);
-      const privateKey = await ApexCrypto.importPrivateKey(privB64);
+      const privateKey = (await K._migratePrivToIdb(privB64, storedPub)) || await ApexCrypto.importPrivateKey(privB64);
       K._cryptoKeys = { publicKey, privateKey };
       _logTelemetry('ok', 'crypto-keys-unwrapped', {});
       return;
@@ -7111,14 +7225,16 @@ async function _ensureCryptoKeys(){
   // 2) Clé wrappée mais PIN pas encore saisi → DEFER (ne JAMAIS générer = anti-clobber identité)
   if(plan.action === 'defer'){ _logTelemetry('ok', 'crypto-keys-deferred', {}); return; }
 
-  // 3) Clé en clair (user sans PIN, ou en attente de migration) → charger tel quel
+  // 3) Clé en clair (version d'avant) → MIGRATION F36 vers IndexedDB non extractible ;
+  //    IndexedDB indisponible → on la garde telle quelle (comportement d'avant).
   if((plan.action === 'keep-cleartext' || plan.action === 'migrate') && storedPub && storedPriv){
     try{
       const publicKey  = await ApexCrypto.importPublicKey(storedPub);
-      const privateKey = await ApexCrypto.importPrivateKey(storedPriv);
+      const idbKey     = await K._migratePrivToIdb(storedPriv, storedPub);
+      const privateKey = idbKey || await ApexCrypto.importPrivateKey(storedPriv);
       K._cryptoKeys = { publicKey, privateKey };
-      _logTelemetry('ok', 'crypto-keys-restored', {});
-      if(plan.action === 'migrate' && pin){ try{ await K._migrateKeyToPin(pin); }catch(_){} }
+      _logTelemetry('ok', idbKey ? 'crypto-key-migrated-idb' : 'crypto-keys-restored', {});
+      if(!idbKey && plan.action === 'migrate' && pin){ try{ await K._migrateKeyToPin(pin); }catch(_){} }
       return;
     }catch(e){ _safeCatch('crypto-restore', e); }
   }
@@ -7126,15 +7242,20 @@ async function _ensureCryptoKeys(){
   // 4) Génération nouvelle paire (rien stocké, OU unwrap raté = fallback zéro lockout)
   try{
     const keys = await ApexCrypto.generateIdentityKeys();
-    K._cryptoKeys = keys;
     const pubB64  = await ApexCrypto.exportPublicKey(keys.publicKey);
     const privB64 = await ApexCrypto.exportPrivateKey(keys.privateKey);
     ls('crypto_pub', pubB64);
-    if(pin && window.ApexVault){
-      try{ ls('crypto_priv_wrapped', await ApexVault.wrapPrivKey(privB64, pin)); localStorage.removeItem('crypto_priv'); }
-      catch(_){ ls('crypto_priv', privB64); } // si wrap échoue → clair (jamais de perte de clé)
+    const idbKey = await K._migratePrivToIdb(privB64, pubB64);   // F36 : jamais en clair si IndexedDB marche
+    if(idbKey){
+      K._cryptoKeys = { publicKey: keys.publicKey, privateKey: idbKey };
     } else {
-      ls('crypto_priv', privB64); // pas de PIN défini → comportement legacy inchangé
+      K._cryptoKeys = keys;
+      if(pin && window.ApexVault){
+        try{ ls('crypto_priv_wrapped', await ApexVault.wrapPrivKey(privB64, pin)); localStorage.removeItem(PERSIST_PREFIX + 'crypto_priv'); }
+        catch(_){ ls('crypto_priv', privB64); } // si wrap échoue → clair (jamais de perte de clé)
+      } else {
+        ls('crypto_priv', privB64); // IndexedDB indisponible, pas de PIN → comportement legacy
+      }
     }
     _logTelemetry('ok', 'crypto-keys-generated', { pub: pubB64.slice(0,20)+'...' });
     // v1.1.173 FIX P0 (audit crew) : PUBLIER la clé publique au serveur, sinon
@@ -7143,7 +7264,7 @@ async function _ensureCryptoKeys(){
   }catch(e){
     _safeCatch('crypto-generate', e);
   }
-}
+};
 
 // v1.1.173 FIX P0 (audit crew) — publie la clé publique d'identité au serveur.
 // Idempotent (marqueur crypto_pub_published) + best-effort (no-op sans token).
@@ -7358,7 +7479,10 @@ K._migrateKeyToPin = async function(pin){
   try{
     const wrapped = await ApexVault.wrapPrivKey(priv, pin);
     ls('crypto_priv_wrapped', wrapped);
-    localStorage.removeItem('crypto_priv');
+    // v1.1.295 (F36) : la vraie clé est préfixée « apex_chat_ » — l'ancien removeItem('crypto_priv')
+    // n'effaçait RIEN ; on retire aussi l'ombre IndexedDB « kv » écrite par ls().
+    localStorage.removeItem(PERSIST_PREFIX + 'crypto_priv');
+    try{ await K._keyStoreDrop(['crypto_priv']); }catch(_){}
     _logTelemetry('ok', 'crypto-key-migrated-to-pin', {});
   }catch(e){ _safeCatch('crypto-migrate', e); }
 };
@@ -7379,7 +7503,11 @@ K.logout = function(){
   }
   K.user = null; K.token = null; K.conversations = []; K.messages = {};
   K.view = 'splash';
-  location.reload();
+  K._cryptoKeys = null;
+  // v1.1.295 (F36) : la clé privée E2E vit en IndexedDB (CryptoKey non extractible) → l'effacer
+  // AUSSI, avant de recharger (plafond 1,5 s : la déconnexion ne reste jamais coincée).
+  const reload = () => location.reload();
+  Promise.race([K._keyStoreDelete(), new Promise((r) => setTimeout(r, 1500))]).then(reload, reload);
 };
 
 // ============================================================================
@@ -12755,6 +12883,10 @@ K._deleteMyAccountGo = async function(){
     toast('✅ Compte supprimé. À bientôt peut-être.', 'ok', 4000);
     // efface tout ce qui est local (dont les clés de chiffrement) sans confirmation supplémentaire
     try{ for(const k of Object.keys(localStorage)){ if(k.startsWith(PERSIST_PREFIX) || k.startsWith('draft_') || /^(crypto_|ratchet_|user_pin|user_unlock|apex_chat_)/.test(k)) localStorage.removeItem(k); } }catch(_){}
+    // v1.1.295 (F36) : la clé privée E2E (IndexedDB) d'abord, explicitement — même si la suppression
+    // de la base reste « bloquée » par un autre onglet, la clé, elle, est partie.
+    K._cryptoKeys = null;
+    try{ await K._keyStoreDelete(); }catch(_){}
     // Second avis indépendant (Qodo, PR #3890) : deleteDatabase() était lancé sans fermer notre
     // connexion ni attendre → suppression « bloquée » possible, page rechargée avec la base encore là
     // alors que l'écran annonçait un effacement local. On ferme, on attend chaque suppression

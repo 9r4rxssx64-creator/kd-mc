@@ -11769,6 +11769,17 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 - **Garde** : `npm run test:compte-obligatoire` (vrai routeur, toutes les adresses lues dans ROUTES, comptes révoqué/falsifié/bloqué, sonde, 0 écriture, sabotage rouge).
   Une 32ᵉ adresse est couverte d'office : la règle ne dépend d'aucune liste.
 
+## 📥 RÈGLE ABSOLUE — CHAQUE IMPORT DE KEVIN SERT LE DOMAINE : JE L'EXAMINE, J'APPLIQUE LE MEILLEUR, ET JE NOTE CE QUE J'EN AI FAIT — TOUJOURS (Kevin 2026-10-08, ABSOLUE)
+
+> **« Fais tout ce que tu dois faire avec tout ce que je t'ai donné. À chaque import, fais au mieux et améliore pour mon domaine. Toujours. »**
+
+- **Ce que ça veut dire** : chaque capture, lien, vidéo ou fichier que Kevin envoie (même sans un mot) est examiné pour kd-mc.com.
+  Ce qui améliore le domaine est APPLIQUÉ (code, tests, PR, en ligne, vérifié) ; le reste est écarté avec la raison, en une ligne.
+- **Le registre** : `IMPORTS-KEVIN.md`, une ligne par import, dans la même session (date · import · verdict ✅/🛠️/⏭️/🏠 · ce qui a été fait).
+- **Les photos personnelles** (maison, voiture, famille) ne sont pas analysées (Kevin 7.10 : « des photos ne sont pas pour toi ») : ligne 🏠.
+- **Pas de compte rendu sans action** : la réponse dit ce qui a changé dans le domaine, pas un avis sur la vidéo.
+- **Garde** : `npm run test:imports-kevin` (chaque ligne a un verdict et une action/raison ; un 🛠️ ne dépasse pas 7 jours).
+
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 
 > « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 201 règles — le texte de Kevin, une par une
+## 📜 Les 202 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -875,6 +875,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🔒 RÈGLE ABSOLUE — AUCUNE CONSULTATION SANS COMPTE, NULLE PART, SUR TOUTES LES APPS DU DOMAINE — PRÉSENTES ET FUTURES (Kevin 2026-10-03, ABSOLUE)
 **« Aucune consultation sans compte nulle part. »**
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-aucune-consultation-sans-compte-nulle-part-sur-toutes-les-apps-du-domaine-présentes-et-futures-kevin-2026-10-03-absolue)
+
+### 📥 RÈGLE ABSOLUE — CHAQUE IMPORT DE KEVIN SERT LE DOMAINE : JE L'EXAMINE, J'APPLIQUE LE MEILLEUR, ET JE NOTE CE QUE J'EN AI FAIT — TOUJOURS (Kevin 2026-10-08, ABSOLUE)
+**« Fais tout ce que tu dois faire avec tout ce que je t'ai donné. À chaque import, fais au mieux et améliore pour mon domaine. Toujours. »**
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-chaque-import-de-kevin-sert-le-domaine-je-lexamine-japplique-le-meilleur-et-je-note-ce-que-jen-ai-fait-toujours-kevin-2026-10-08-absolue)
 
 ### 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

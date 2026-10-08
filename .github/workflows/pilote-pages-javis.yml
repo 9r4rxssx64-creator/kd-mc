@@ -27,6 +27,10 @@ name: Pilote — javis.kd-mc.com servi en statique par Pages (lire / basculer / 
 # Destination (règle « chaque automatisation a une destination écrite ») : GitHub, au DÉPÔT PUBLIC
 # (minutes illimitées), jeton Cloudflare du dépôt. ZÉRO tâche programmée.
 #
+# 8.10.2026 : « revenir » lancé — Pages servait javis SANS la porte du compte (mesuré : 200 sans session), contraire à
+# « aucune consultation sans compte, nulle part » (Kevin 8.10). Le Worker reprend javis ; wrangler.toml a retrouvé son
+# custom_domain. Le mode « publier » continue d'envoyer javis/ au projet Pages (sans domaine : inoffensif, utile si on rebascule).
+#
 # FAIT LE 30.09.2026 (23h37 UTC) : « basculer » a réussi au 2e passage (le 1er s'est arrêté dans l'étape
 # DNS sans journal lisible d'ici → javis noir ~4 min ; d'où le `trap ERR` ci-dessous, qui NOMME la
 # commande fautive dans une annotation). javis.kd-mc.com = Pages (x-kdmc-par: statique), /__sso/whoami
@@ -133,7 +137,8 @@ jobs:
           npm i -g wrangler@3 --no-audit --no-fund >/dev/null 2>&1
           wrangler pages deploy /tmp/javis-pages --project-name="$PROJET" --branch=main --commit-dirty=true 2>&1 | tail -4
           sleep 10
-          EN_LIGNE=$(curl -s --max-time 20 "https://$HOTE/javis-widget.js?_v=$(date +%s)" | grep -o "JAVIS_VER = '[^']*'" | head -1 || true)
+          # 8.10 : javis est revenu derrière la porte du compte (Worker) — la sonde se déclare (x-kdmc-sonde + réseau GitHub)
+          EN_LIGNE=$(curl -s --max-time 20 -H "x-kdmc-sonde: pilote" "https://$HOTE/javis-widget.js?_v=$(date +%s)" | grep -o "JAVIS_VER = '[^']*'" | head -1 || true)
           echo "en ligne sur $HOTE : ${EN_LIGNE:-illisible}"
           if [ "$EN_LIGNE" = "$V" ]; then echo "::notice title=Javis publié::$HOTE sert $V"; else echo "::warning title=Javis publié ?::envoyé $V, lu en ligne « ${EN_LIGNE:-rien} » (cache ? relire dans une minute)"; fi
 

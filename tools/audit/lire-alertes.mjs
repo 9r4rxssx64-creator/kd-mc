@@ -40,7 +40,7 @@ export function formater(log, comptes, n, filtre) {
     out.push(`\nFICHE ${uid} — ${acc.name || '(sans nom)'} · inscrit ${quand(acc.created)} · ${acc.hits || 0} session(s) · vu ${quand(acc.last_seen)}`
       + `\n  appareils : ${(acc.devices || []).join(', ') || '?'}\n  lieux : ${(acc.places || []).join(' | ') || '?'}`
       + `\n  dernier réseau : ${reseau(acc.last_net && acc.last_net.asn, acc.last_isp, acc.last_vpn, false)} · pays ${acc.last_country || '?'}`
-      + `\n  code posé : ${acc.cred || acc.code_at ? 'oui' : 'non/inconnu'} · Face ID : ${(acc.webauthn || acc.passkeys || []).length ? 'oui' : 'non'} · sessions révoquées le : ${acc.revoked_at ? quand(acc.revoked_at) : 'jamais'}`);
+      + `\n  code posé : ${acc.__code === true ? 'oui' : acc.__code === false ? 'NON — n\'importe qui tapant ce nom obtient une session' : 'inconnu'} · Face ID : ${(acc.webauthn || acc.passkeys || []).length ? 'oui' : 'non'} · sessions révoquées le : ${acc.revoked_at ? quand(acc.revoked_at) : 'jamais'}`);
     for (const h0 of (acc.history || []).slice(0, 6)) {
       const h = Object.fromEntries(CHAMPS_SESSION.filter((k) => h0 && h0[k] !== undefined && h0[k] !== '').map((k) => [k, h0[k]]));
       out.push(`  ↳ ${quand(h.ts)} → ${quand(h.end)} · ${h.app || '?'} · ${h.dev || h.device || '?'} · ${h.place || '?'} · ${h.isp || '?'}${h.vpn ? ' · VPN/hébergeur' : ''}${h.tz ? ' · ' + h.tz : ''}`);
@@ -61,7 +61,12 @@ if (process.argv[1] && /lire-alertes\.mjs$/.test(process.argv[1]) && !process.en
   const uids = String(ARGS.uids || '').split(',').map((s) => s.trim()).filter(Boolean);
   const ev = String(ARGS.ev || '').split(',').map((s) => s.trim()).filter(Boolean);
   const log = await lire('aud:log');
-  const comptes = {}; for (const u of uids) comptes[u] = await lire('acc:' + u);
+  const comptes = {};
+  for (const u of uids) {
+    comptes[u] = await lire('acc:' + u);
+    /* le code du compte vit sous `cred:<uid>` (empreinte) : on ne lit que son EXISTENCE, jamais son contenu */
+    if (comptes[u]) comptes[u].__code = (await lire('cred:' + u)) !== null;
+  }
   const n = parseInt(ARGS.n || '25', 10) || 25;
   /* `--tous=1` : le journal entier (pas seulement les comptes demandés) ; sinon, avec des comptes, le journal est filtré sur eux */
   const t = formater(log, {}, n, { uids: ARGS.tous ? [] : uids, ev });

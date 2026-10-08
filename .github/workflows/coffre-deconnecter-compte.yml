@@ -1,0 +1,34 @@
+name: Coffre — déconnecter un compte partout (à la place de Kevin, sessions révoquées, compte intact)
+
+# 8.10.2026 (« sécurité +++ ») : un PC Windows chez un hébergeur suédois a ouvert des sessions au nom de Laurence (compte sans code
+# ni Face ID). Ce robot se connecte comme Kevin (code admin = empreinte, secret) et révoque TOUTES les sessions émises du compte
+# demandé (/__admin/revoke) : jetons, cookies, pass des apps installées. Le compte reste ; la personne se reconnecte. Jamais Kevin.
+# Reste au COFFRE (secret admin). Sans confirmer=oui : essai à blanc. À la main / API — jamais de cron.
+
+on:
+  workflow_dispatch:
+    inputs:
+      uid:
+        description: "Compte à déconnecter partout (ex. laurence-saint-polit)"
+        required: true
+      confirmer:
+        description: "oui = révoquer pour de vrai (sinon essai à blanc)"
+        default: "non"
+
+permissions:
+  contents: read
+
+jobs:
+  deconnecter:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5   # gratuit par défaut (Kevin 30.09) : 4 appels au domaine, marqués sonde
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Révoquer les sessions du compte (porte admin, session de Kevin)
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        shell: bash -eo pipefail {0}
+        run: node tools/smoke/deconnecter-compte.mjs "${{ inputs.uid }}" "--confirmer=${{ inputs.confirmer }}"

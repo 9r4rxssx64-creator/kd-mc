@@ -28,7 +28,7 @@ export const ROBOT = /(^|[\s_:-])(ci[\s_-]?smoke|smoke|audit|sonde|probe|robot|e
 /* Comptes de TEST créés par les sondes d'Apex Chat le 10.09.2026 (inventaire du 8.10 : « bearer », « tester », « simple » — un seul mot,
    une seule session, jamais revenus ; « les comptes invités » de Kevin). Reconnus à l'identifiant de sonde (probe<horodatage>,
    bearer<horodatage>) ou au nom de fixture avec ≤ 1 session. Une vraie personne a un prénom ET un nom. */
-const TEST_UID = /^(probe|bearer)\d{6,}$/;
+const TEST_UID = /^(probe|bearer)\d{6,}$|^(marie-curie|alice-martin)$/;   /* 8.10 : les uids des tests SSO sont des robots, quel que soit leur nombre de sessions (vécu : ma sonde en avait fait 4) */
 /* 8.10 : « Marie Curie » et « Alice Martin » sont les identités des tests SSO (tools/kdmc-sso-e2e, kdmc-multiapp-e2e) — une fiche à ces
    noms avec une seule session est un robot (ou une sonde lancée depuis l'agent, vécu le 8.10 : « Marie Curie s'est connectée » chez Kevin). */
 const TEST_NOM = new Set(['bearer', 'tester', 'simple', 'marie curie', 'alice martin']);

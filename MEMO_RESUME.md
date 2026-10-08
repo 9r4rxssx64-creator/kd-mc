@@ -966,6 +966,13 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
 
+### 2026-10-08 — Arbre : « tout ajouter, pour tout le monde » sans doublon (`--voir "?…"`)
+- Kevin : « Tu ajoutes tout ce que tu trouves pour vivant et mort toujours et tu cherches pour tout le monde toujours. »
+- Outil : `arbre-nuage` `voir = ?<base64 de [{id, mots:[…]}]>` répond « id ¦ mot ¦ oui|non » (le fait est-il DÉJÀ dans les notes/sources ?)
+  sans recopier les notes. Sert avant chaque ajout de trouvaille (confirmé, probable ET piste — la piste est écrite comme piste).
+- Limites inchangées : identité certaine avant rattachement ; vivants = info publique et généalogique seulement (jamais adresse,
+  téléphone, réseaux, santé, justice) ; rien sur les mineurs.
+
 ### 2026-10-07 — Arbre v3.66–v3.67 : parenté sur chaque carte, recherche dans la vue Famille
 - Contrôle réel du 7.10 (`synchro` + `audit`) : 🟢 synchro active, 167 fiches, vue Famille centrée sur Kevin, aucune erreur ; audit inchangé (5 isolés, groupe de 14).
 - Vue Famille : chaque carte porte sa parenté avec « moi » (sinon Kevin) — « ton grand-père », « ta tante », accord « ton arrière-grand-mère » corrigé ;

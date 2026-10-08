@@ -24,11 +24,21 @@ const { getAccessToken } = require('./sa-token.cjs');
 const { req, jetonAnonyme, jetonRole, commeVisiteur, attendre } = require('./rtdb-outils.cjs');
 
 const ACTION = (process.env.ECRITURES_ACTION || 'activer').toLowerCase();
-const ATTENTE_MAX_MS = +(process.env.ECRITURES_ATTENTE_MS || 25 * 60 * 1000);
+const ATTENTE_MAX_MS = +(process.env.ECRITURES_ATTENTE_MS || 15 * 60 * 1000);   // < timeout-minutes du robot (20) : c'est le script qui conclut « RIEN n'a été touché », pas GitHub
 const PAUSE_DRAPEAU_MS = +(process.env.ECRITURES_PAUSE_MS || 150 * 1000);
 const APP_SW = process.env.CMC_APP_SW || 'https://cmcteams.kd-mc.com/sw.js';
 const LIGHT_VER = process.env.CMC_LIGHT_VER || 'https://departs.kd-mc.com/version.txt';
 const APP_MIN = 9954, LIGHT_MIN = 1059;   // 8.10.2026 : v9.954 garde cmc_e / cmc_known_identities sur le téléphone non-admin (phase 2c)
+
+/* Lecture d'une page du domaine COMME UNE SONDE : depuis la porte générale (3.10.2026, « aucune consultation sans
+   compte »), le routeur répond 401 à qui n'a ni compte ni en-tête `x-kdmc-sonde` venu d'un centre de données
+   (GitHub Actions). Sans cet en-tête, le robot a attendu 20 min « Page light pas encore prêt » le 8.10.2026 alors
+   que v1.80 était en ligne. On dit aussi CE QU'ON A LU quand ce n'est pas prêt (cause exacte, jamais un ⏳ muet). */
+async function enLigne(url) {
+  const r = await fetch(url, { cache: 'no-store', headers: { 'x-kdmc-sonde': 'coffre-ecritures-cmc', 'cache-control': 'no-store' } });
+  return { status: r.status, texte: await r.text() };
+}
+function pasPret(nom, r) { console.log('   ↳ ' + nom + ' : HTTP ' + r.status + ' · ' + JSON.stringify(String(r.texte || '').slice(0, 60))); return false; }
 
 /* PURE (testée) : « const CACHE='cmcteams-v9.926' » → 9926. */
 function versionSw(txt) { const m = /cmcteams-v(\d+)\.(\d+)/.exec(String(txt || '')); return m ? (+m[1]) * 1000 + (+m[2]) : 0; }
@@ -56,9 +66,9 @@ async function activer() {
   const token = await getAccessToken();
   await jusqua('Verrou config admin en ligne', async () => adminLockLive((await req('GET', '/.settings/rules', token) || {}).rules));
   console.log('✅ Verrou config admin en ligne (écriture descendue au $key)');
-  await jusqua('Appli CMCteams v9.954', async () => versionSw(await (await fetch(APP_SW, { cache: 'no-store' })).text()) >= APP_MIN);
+  await jusqua('Appli CMCteams v9.954', async () => { const r = await enLigne(APP_SW); return versionSw(r.texte) >= APP_MIN || pasPret('sw.js', r); });
   console.log('✅ Appli en ligne ≥ v9.954 (sait écrire avec le jeton admin, personnes comprises)');
-  await jusqua('Page light v1.59', async () => versionLight(await (await fetch(LIGHT_VER, { cache: 'no-store' })).text()) >= LIGHT_MIN);
+  await jusqua('Page light v1.59', async () => { const r = await enLigne(LIGHT_VER); return versionLight(r.texte) >= LIGHT_MIN || pasPret('version.txt', r); });
   console.log('✅ Page light en ligne ≥ v1.59 (planning et chefs écrits avec le jeton admin)');
   await req('PUT', '/cmcteams/cmc_ecritures_actif', token, true);
   console.log('✅ Drapeau /cmcteams/cmc_ecritures_actif = true — pause ' + Math.round(PAUSE_DRAPEAU_MS / 1000) + ' s (les téléphones ouverts le relisent)');

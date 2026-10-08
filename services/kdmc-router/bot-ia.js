@@ -42,8 +42,11 @@ export const REGLAGES_IA = {
   DU_TREND_PERIOD: { type: 'int', min: 10, max: 200 },
   DU_RSI_BUY: { type: 'num', min: 15, max: 45 },
   DU_RSI_SELL: { type: 'num', min: 50, max: 80 },
-  RISK_PER_TRADE_PCT: { type: 'num', min: 0.2, max: 5 },   // papier ; en réel, LIVE_MAX_USDT plafonne tout
-  MAX_POSITION_PCT: { type: 'num', min: 5, max: 90 },
+  /* 8.10 : un trader pro agressif fait BEAUCOUP de petites mises, pas quelques grosses. Avec 5 % de
+     risque et 90 % de position, un mauvais quart d'heure touche le frein de −10 % par jour et le robot
+     s'arrête (zéro trade = zéro gain). Bornes ramenées à 2 % / 40 %. */
+  RISK_PER_TRADE_PCT: { type: 'num', min: 0.2, max: 2 },   // papier ; en réel, LIVE_MAX_USDT plafonne tout
+  MAX_POSITION_PCT: { type: 'num', min: 5, max: 40 },
   SYMBOLS: { type: 'paires', min: 1, max: 5 },
 };
 /* Jamais, quelle que soit la réponse de l'IA. HOLD_UNTIL_PROFIT (« ne jamais vendre à perte ») est
@@ -336,7 +339,7 @@ export function construirePrompt(marcheTexte, flotte, actuelsParBot, journal) {
     + 'ce coût ; un robot qui trade beaucoup en perdant est pire qu\'un robot calme. Sur 1m-5m, préfère les paires les plus liquides '
     + '(BTC, ETH, SOL). Ton rôle : proposer UN seul changement de réglages sur UN seul robot. Un arbitre chiffré comparera ce robot à '
     + 'la médiane des autres sur la même période (12 à 48 h), puis gardera ou annulera ton changement ; un robot sans aucun trade est '
-    + 'annulé. Sois audacieux mais justifie par le marché décrit. Tu ne peux régler QUE : ' + Object.keys(REGLAGES_IA).join(', ')
+    + 'annulé. Chaque robot a un frein : −10 % sur la journée = robot COUPÉ (zéro trade, la pire issue) ; vise donc beaucoup de petites mises, jamais une grosse. Si un réglage actuel dépasse les bornes ci-dessous, ramène-le dedans en priorité. Sois audacieux mais justifie par le marché décrit. Tu ne peux régler QUE : ' + Object.keys(REGLAGES_IA).join(', ')
     + ' (au plus ' + MAX_CHANGEMENTS + '). Paires autorisées : ' + PAIRES_LIQUIDES.join(', ') + '. '
     + 'Réponds UNIQUEMENT par un objet JSON : {"bot":"crypto-bot-pN","reglages":{...},"raison":"en français, 1 à 3 phrases","attendu":"ce que tu espères mesurer"}.';
   const bornes = Object.entries(REGLAGES_IA).map(([k, r]) => k + (r.type === 'enum' ? '∈{' + r.valeurs.join(',') + '}' : r.type === 'paires' ? ' (1-5 paires)' : '[' + r.min + '-' + r.max + ']')).join(' ; ');

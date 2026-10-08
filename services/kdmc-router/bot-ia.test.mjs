@@ -56,8 +56,10 @@ dit(ia.arbitre(essai, eq(1001), t0 + 80 * h, 61000).verdict === 'garder', 'écar
 dit(ia.arbitre(essai, { 'crypto-bot-p2': 1000 }, t0 + 80 * h, 61000).verdict === 'annuler', 'plus aucune mesure du robot après 72 h → annulé par prudence');
 
 console.log('\n=== 3 ter. Mode agressif ===');
-dit(ia.validerProposition({ bot: 'p1', reglages: { TIMEFRAME: '1m', RISK_PER_TRADE_PCT: 4 }, raison: 'scalping BTC sur marché nerveux' }).ok, 'bougies 1 min et risque 4 % autorisés (papier)');
-dit(!ia.validerProposition({ bot: 'p1', reglages: { RISK_PER_TRADE_PCT: 8 }, raison: 'trop' }).ok, 'risque 8 % par trade → refusé (borne 5 %)');
+dit(ia.validerProposition({ bot: 'p1', reglages: { TIMEFRAME: '1m', RISK_PER_TRADE_PCT: 2 }, raison: 'scalping BTC sur marché nerveux' }).ok, 'bougies 1 min et risque 2 % autorisés (papier)');
+dit(!ia.validerProposition({ bot: 'p1', reglages: { RISK_PER_TRADE_PCT: 4 }, raison: 'trop' }).ok, 'risque 4 % par trade → refusé (borne 2 % depuis le 8.10 : beaucoup de petites mises)');
+dit(!ia.validerProposition({ bot: 'p1', reglages: { MAX_POSITION_PCT: 60 }, raison: 'trop' }).ok && ia.validerProposition({ bot: 'p1', reglages: { MAX_POSITION_PCT: 40 }, raison: 'positions moyennes sur marché nerveux' }).ok, 'position 60 % → refusée, 40 % → acceptée (borne 40 %)');
+dit(/frein : −10 % sur la journée/.test(ia.construirePrompt('', [], {}, []).system), 'la consigne de l\'IA nomme le frein de −10 % par jour (robot coupé = pire issue)');
 a = ia.arbitre(essai, eq(1001), t0 + 13 * h, 61000, 0);
 dit(a.verdict === 'annuler' && /inactif/.test(a.raison), 'robot SANS trade après 12 h → annulé (un robot agressif doit trader)');
 dit(ia.arbitre(essai, eq(1030), t0 + 13 * h, 61000, 0).verdict === 'garder', 'sans trade mais nettement meilleur → gardé (on ne punit pas un gain)');

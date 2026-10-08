@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (19h00 UTC) — Crypto, Kevin « Fais au mieux tjs. Optimal rentabilité » : vrais prix + faux sauts ignorés + petites mises
+
+Lu en vrai (D1 de nouveau lisible, Railway) :
+- L'IA décide seule (relais gpt-oss quand Qwen dépasse 25 s), le contre-avis refuse 3 propositions les 7-8.10, l'arbitre
+  juge (p3 gardé le 5.10 ; p5, p1, p3 annulés).
+- Le 7.10, p2/p3/p4/p5 se sont coupés à « −12 à −24 % sur la journée » alors qu'ils étaient vers 9 700 $ : faux chiffres,
+  les robots papier lisaient le TESTNET Binance (faux marché, pannes 502).
+- Correctifs : robots papier sur le VRAI marché (public, sans clé) ; saut de capital > 8 % en un cycle ignoré ; IA bornée
+  à 2 % de risque / 40 % de position, consigne qui nomme le frein de −10 %/jour.
+- Gardes : test_multi 76/0, bot-ia 83/0, bot-ia-routeur 54/0 ; sabotages rouges. Leçon 462.
+
 ## 2026-10-08 (nuit) — v1.1.295 EN LIGNE ; test navigateur des photos mis à jour
 
 - kd-mc : déploiement vert, « Version + CACHE_VERSION Sync » enfin VERT, e2e prod 16 OK / 0 échec / 2 instables.

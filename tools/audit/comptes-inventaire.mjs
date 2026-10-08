@@ -25,8 +25,13 @@ export function estKevin(a) {
 }
 /* Un robot n'est pas une personne : identifiants et noms posés par nos sondes et nos CI. */
 export const ROBOT = /(^|[\s_:-])(ci[\s_-]?smoke|smoke|audit|sonde|probe|robot|e2e|test|testeur|bot|ci|demo|exemple|playwright)([\s_:-]|$)/i;
+/* Comptes de TEST créés par les sondes d'Apex Chat le 10.09.2026 (inventaire du 8.10 : « bearer », « tester », « simple » — un seul mot,
+   une seule session, jamais revenus ; « les comptes invités » de Kevin). Reconnus à l'identifiant de sonde (probe<horodatage>,
+   bearer<horodatage>) ou au nom de fixture avec ≤ 1 session. Une vraie personne a un prénom ET un nom. */
+const TEST_UID = /^(probe|bearer)\d{6,}$/;
+const TEST_NOM = new Set(['bearer', 'tester', 'simple']);
 export function estRobot(a) {
-  return ROBOT.test(String(a.uid || '')) || ROBOT.test(normName(a.name));
+  return ROBOT.test(String(a.uid || '')) || ROBOT.test(normName(a.name)) || TEST_UID.test(String(a.uid || '')) || (TEST_NOM.has(normName(a.name)) && (a.hits || 0) <= 1);
 }
 
 /* Pure : liste de fiches → bilan. */

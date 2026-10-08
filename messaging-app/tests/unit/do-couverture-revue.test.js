@@ -525,3 +525,69 @@ describe('I. alarme de flush avec un setAlarm synchrone', () => {
     expect(_do.pendingMessages).toHaveLength(1);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Sondages : votes relayés, votant imposé, gardés et rejoués (08.10.2026)', () => {
+  it('un vote est diffusé aux AUTRES avec le votant de la session (jamais celui envoyé par le client)', async () => {
+    const { _do } = await makeDO();
+    const alice = new MockWS(); const bob = new MockWS();
+    _do.sessions.set(alice, sess('alice')); _do.sessions.set(bob, sess('bob'));
+    await _do.handleMessage(alice, { type: 'poll_vote', poll_id: 'p1', voter: 'bob', votes: [1, 1, 2] });
+    const f = bob.frames('poll_vote')[0];
+    expect(f).toMatchObject({ poll_id: 'p1', voter: 'alice', votes: [1, 2] });
+    expect(alice.frames('poll_vote')).toHaveLength(0);
+    expect(await _do.state.storage.get('pollvotes:p1')).toEqual({ alice: [1, 2] });
+  });
+
+  it('retirer son vote (liste vide) l\'efface du stockage', async () => {
+    const { _do } = await makeDO();
+    const alice = new MockWS(); _do.sessions.set(alice, sess('alice'));
+    await _do.handleMessage(alice, { type: 'poll_vote', poll_id: 'p2', votes: [0] });
+    await _do.handleMessage(alice, { type: 'poll_vote', poll_id: 'p2', votes: [] });
+    expect(await _do.state.storage.get('pollvotes:p2')).toEqual({});
+  });
+
+  it('votes invalides refusés (id manquant, index hors bornes, pas un tableau) — rien diffusé', async () => {
+    const { _do } = await makeDO();
+    const alice = new MockWS(); const bob = new MockWS();
+    _do.sessions.set(alice, sess('alice')); _do.sessions.set(bob, sess('bob'));
+    for (const bad of [{ votes: [0] }, { poll_id: 'p', votes: [99] }, { poll_id: 'p', votes: 'x' }, { poll_id: 'p', votes: [1.5] }]) {
+      await _do.handleMessage(alice, { type: 'poll_vote', ...bad });
+    }
+    expect(alice.frames('error')).toHaveLength(4);
+    expect(bob.frames('poll_vote')).toHaveLength(0);
+  });
+
+  it('à la connexion, les votes gardés sont rejoués', async () => {
+    const { _do } = await makeDO();
+    await _do.state.storage.put('pollvotes:p3', { alice: [2] });
+    _do.state.storage.list = async ({ prefix }) => new Map([['pollvotes:p3', await _do.state.storage.get('pollvotes:p3')]].filter(([k]) => k.startsWith(prefix)));
+    const ws = await connect(_do, 'bob');
+    expect(ws.frames('poll_vote')[0]).toMatchObject({ poll_id: 'p3', voter: 'alice', votes: [2], replayed: true });
+  });
+
+  it('stockage en panne (lecture, écriture) ou valeur corrompue : le vote est quand même diffusé', async () => {
+    const { _do } = await makeDO();
+    const alice = new MockWS(); const bob = new MockWS();
+    _do.sessions.set(alice, sess('alice')); _do.sessions.set(bob, sess('bob'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    _do.state.storage.get = vi.fn(async () => { throw new Error('lecture KO'); });
+    _do.state.storage.put = vi.fn(async () => { throw new Error('écriture KO'); });
+    await _do.handleMessage(alice, { type: 'poll_vote', poll_id: 'p4', votes: [0] });
+    expect(bob.frames('poll_vote')[0]).toMatchObject({ poll_id: 'p4', voter: 'alice', votes: [0] });
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('[poll_vote]'))).toBe(true);
+    _do.state.storage.get = vi.fn(async () => ['corrompu']);
+    let saved = null; _do.state.storage.put = vi.fn(async (k, v) => { saved = v; });
+    await _do.handleMessage(alice, { type: 'poll_vote', poll_id: 'p4', votes: [1] });
+    expect(saved).toEqual({ alice: [1] });
+  });
+
+  it('rejeu à la connexion en panne : la connexion aboutit quand même', async () => {
+    const { _do } = await makeDO();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    _do.state.storage.list = async () => { throw new Error('list KO'); };
+    const ws = await connect(_do, 'bob');
+    expect(_do.sessions.has(ws) || [..._do.sessions.values()].some((x) => x.userId === 'bob')).toBe(true);   // session ouverte
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('[poll replay]'))).toBe(true);
+  });
+});

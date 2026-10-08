@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (nuit) — Apex Chat : votes de sondage enfin relayés
+
+- Le moteur temps réel JETAIT les votes (« Type inconnu ») : personne ne voyait les votes des autres. Désormais :
+  vote validé, votant imposé par la session (jamais celui du client), votes gardés dans le DO et rejoués à la
+  connexion (membre hors ligne). 6 tests (dont pannes de stockage) ; sabotage → rouge. Suite 1 543 / 1 543.
+
 ## 2026-10-08 (nuit) — Apex Chat v1.1.295 : « gratuit d'abord », F36 fermé, interrupteur E2E réparé
 
 - **Kevin « Gratuit d'abord »** : tests IA alignés — Qwen, puis Groq (gratuits), Anthropic en DERNIER secours, pour

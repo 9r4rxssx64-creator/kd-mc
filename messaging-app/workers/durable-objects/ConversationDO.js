@@ -27,7 +27,7 @@ const FLUSH_MAX_ATTEMPTS = 100;         // au-delà, une ligne qui échoue encor
 // Débits par socket et par minute (généreux : un humain n'atteint jamais ça).
 const RATE_LIMITS = {
   message: 100, reaction: 120, edit_message: 30, delete_message: 30,
-  read: 300, typing: 120, signaling: 600, other: 120,
+  read: 300, typing: 120, signaling: 600, poll_vote: 60, other: 120,
 };
 const SIGNALING_TYPES = new Set(['webrtc-offer', 'webrtc-answer', 'webrtc-candidate', 'call-end', 'call-busy']);
 const E2E_TAG_RE = /^E2E\d+:/;
@@ -397,6 +397,21 @@ export class ConversationDO {
       }
     } catch (e) {
       console.warn('[call replay] failed:', e && e.message);
+    }
+
+    // 08.10.2026 : rejouer les votes de sondage gardés (sinon un membre hors ligne ne les voit jamais).
+    try {
+      if (this.state.storage && typeof this.state.storage.list === 'function') {
+        const polls = await this.state.storage.list({ prefix: 'pollvotes:', limit: 200 });
+        for (const [k, all] of polls) {
+          const pollId = k.slice('pollvotes:'.length);
+          for (const [voter, votes] of Object.entries(all || {})) {
+            if (Array.isArray(votes)) server.send(JSON.stringify({ type: 'poll_vote', poll_id: pollId, voter, votes, convId, replayed: true }));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[poll replay] failed:', e && e.message);
     }
 
     server.addEventListener('message', async (event) => {
@@ -831,6 +846,29 @@ export class ConversationDO {
           this.pendingCall = null;
         }
         break;
+
+      case 'poll_vote': {
+        // 08.10.2026 : les votes de sondage étaient JETÉS (« Type inconnu ») → personne ne
+        // voyait les votes des autres. Le votant est imposé (session), jamais celui du client ;
+        // les votes sont gardés (stockage du DO) pour être rejoués à la reconnexion.
+        const pollId = msg.poll_id;
+        if (typeof pollId !== 'string' || !pollId || pollId.length > 128) {
+          return ws.send(JSON.stringify({ type: 'error', message: 'poll_vote: poll_id invalide' }));
+        }
+        const raw = Array.isArray(msg.votes) ? msg.votes : null;
+        if (!raw || raw.length > 50 || !raw.every((x) => Number.isInteger(x) && x >= 0 && x < 50)) {
+          return ws.send(JSON.stringify({ type: 'error', message: 'poll_vote: votes invalides' }));
+        }
+        const votes = [...new Set(raw)];
+        const key = 'pollvotes:' + pollId;
+        let all = {};
+        try { all = (await this.state.storage.get(key)) || {}; } catch (_) { all = {}; }
+        if (typeof all !== 'object' || Array.isArray(all)) all = {};
+        if (votes.length) all[session.userId] = votes; else delete all[session.userId];
+        try { await this.state.storage.put(key, all); } catch (e) { console.warn('[poll_vote] stockage:', e && e.message); }
+        this.broadcast({ type: 'poll_vote', poll_id: pollId, voter: session.userId, votes, convId: session.convId, ts: Date.now() }, ws);
+        break;
+      }
 
       default:
         ws.send(JSON.stringify({ type: 'error', message: 'Type inconnu: ' + msg.type }));

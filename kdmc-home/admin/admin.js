@@ -353,7 +353,7 @@
 
   /* ---- Journal admin (événements sensibles, tracés côté serveur) ---- */
   var AUD_EV = {
-    admin_login_ok: '🔓 Connexion admin réussie', admin_login_fail: '⛔️ Code admin refusé',
+    admin_login_ok: '🔓 Connexion admin réussie', admin_login_verif: '🤖 Vérification automatique (robot, lecture seule)', admin_login_fail: '⛔️ Code admin refusé',
     revoke_sessions: '🚪 Déconnexion forcée', new_device: '📱 Nouvel appareil', fbtoken_mint: '🔥 Jeton Firebase admin émis',
     perimetre: '🔐 Périmètre modifié', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)',
     geo_anomaly: '⚠️ Connexion suspecte', nouvelle_connexion: '🆕 Nouvelle connexion', quota_inscriptions_atteint: '🛑 Inscriptions suspendues',

@@ -3810,6 +3810,13 @@ async function handleAdmin(request, url, env) {
   if (path === '/__admin/login' && request.method === 'POST') {
     const adminHash = env && env.KDMC_ADMIN_PIN_SHA256;
     if (!secret || !adminHash) return J({ ok: false, reason: 'admin_pin_not_configured' });
+    /* Connexion du ROBOT de vérification (Claude « vérifie réel », lecture seule, en CI) :
+       en-tête x-kdmc-verif=1. On la TRACE quand même (admin_login_verif — rien n'est caché),
+       mais on n'ENRICHIT PAS la fiche de Kevin avec l'appareil/le pays du runner CI, qui
+       faisaient apparaître dans « Qui se connecte » un PC Linux à l'étranger — une fausse
+       « connexion suspecte » (Kevin 07.10 : « Efface tes connexions »). Une VRAIE connexion
+       admin (sans cet en-tête) reste enrichie → un intrus déclenche toujours l'alerte. */
+    const estVerif = request.headers.get('x-kdmc-verif') === '1';
     const ipHash = await sha256Hex((request.headers.get('CF-Connecting-IP') || '') + '|kdmc-al');
     /* FERMÉ EN CAS DE DOUTE (audit du domaine 27.09, P1) : si le registre des essais est illisible,
        on refuse d'essayer un code plutôt que de laisser deviner sans limite. */
@@ -3832,7 +3839,7 @@ async function handleAdmin(request, url, env) {
     /* 6.10 (Kevin : « Code admin refusé » ×5, sans rien dire) : l'alerte note DEPUIS QUELLE APP et quel pays, pour qu'il sache si c'est lui. */
     if (!okHash && !okCode) { await rlFail(env, ipHash); await audLog(env, { ev: 'admin_login_fail', ip: ipHash.slice(0, 12), app: appDeLaDemande(request), pays: String(request.cf?.country || '').slice(0, 2) }); return J({ ok: false, reason: 'code_invalide' }); }
     await rlReset(env, ipHash);
-    await audLog(env, { ev: 'admin_login_ok', ip: ipHash.slice(0, 12) });
+    await audLog(env, { ev: estVerif ? 'admin_login_verif' : 'admin_login_ok', ip: ipHash.slice(0, 12) });
     const grant = await ssoSign(secret, '__kdmc_admin__', 'admin', 1);
     const cookie = `kdmc_admin=${grant}; Domain=.kd-mc.com; Path=/; Max-Age=43200; Secure; HttpOnly; SameSite=Lax`;
     /* RECONNU PAR N'IMPORTE QUEL CHEMIN (Kevin 2026-09-27 : « domaine, chaque app, internet, bureau »).
@@ -3848,7 +3855,7 @@ async function handleAdmin(request, url, env) {
     if (!token) {
       const accA = await accGet(env, CANON_UID);
       const nomA = (accA && accA.name) || 'Kevin Desarzens';
-      await enrich(env, request, CANON_UID, nomA, true, undefined, {});
+      if (!estVerif) await enrich(env, request, CANON_UID, nomA, true, undefined, {});
       token = await ssoSign(secret, CANON_UID, nomA, true, true);
       cookies.push(`${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`);
     }

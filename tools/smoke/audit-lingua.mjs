@@ -25,6 +25,7 @@
  *
  * Lancer : node tools/smoke/audit-lingua.mjs [https://lingua.kd-mc.com]
  */
+import { marquerSonde } from './marquer-sonde.mjs';
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
 
@@ -46,17 +47,10 @@ const chk = (c, m) => (c ? ok(m) : ko(m));
    que du HTML et des scripts : le reste est coupé à la source (route → abort). */
 const INUTILE_POUR_SONDER = /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf)($|\?)/i;
 const sobre = (cible) => cible.route((u) => INUTILE_POUR_SONDER.test(u.pathname), (route) => route.abort());
-/* On n'intercepte que ce qui PEUT être une page (pas les .js/.css/images/sons/json) : intercepter
-   les centaines de fichiers d'une app coûte un aller-retour chacun — mesuré le 27.09 nuit, l'audit
-   Lingua a dépassé ses 15 min là où il en prenait 9. Le test `resourceType` reste en garde-fou. */
-const PAS_UNE_PAGE = /\.(js|mjs|css|map|json|webmanifest|png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf|pdf|txt|xml)($|\?)/i;
-const marquerSonde = (cible, nom) => cible.route((u) => !PAS_UNE_PAGE.test(u.pathname), (route, req) => {
-  if (req.resourceType() !== 'document') return route.continue();
-  return route.continue({ headers: Object.assign({}, req.headers(), { 'x-kdmc-sonde': nom }) });
-});
+/* Marquage partagé (tools/smoke/marquer-sonde.mjs) : la page + ses fichiers de même origine, depuis la porte générale du 8.10. */
 const nav = await chromium.launch();
 const ctx = await nav.newContext({ locale: 'fr-FR' });
-await marquerSonde(ctx, 'audit-lingua');
+await marquerSonde(ctx, 'audit-lingua', [BASE]);
 await sobre(ctx);
 const page = await ctx.newPage();
 
@@ -289,7 +283,7 @@ chk(voixListees.some((v) => /hors-ligne|téléphone/i.test(v)),
 /* Les identifiants sont lus dans le app.js RÉELLEMENT SERVI — pas dans le dépôt. */
 let ids = [];
 try {
-  const js = await (await ctx.request.get(BASE + '/app.js', { timeout: 30000 })).text();
+  const js = await (await ctx.request.get(BASE + '/app.js', { timeout: 30000, headers: { 'x-kdmc-sonde': 'audit-lingua' } })).text();
   const bloc = js.slice(js.indexOf('var VOICES=['), js.indexOf('];', js.indexOf('var VOICES=[')));
   ids = [...bloc.matchAll(/\{id:"([a-z]+)"[^}]*cloud:true/g)].map((m) => m[1]);
 } catch { /* signalé juste après */ }

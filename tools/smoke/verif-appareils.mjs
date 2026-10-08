@@ -24,6 +24,7 @@
  * Lancer : node tools/smoke/verif-appareils.mjs [https://lingua.kd-mc.com] [--portail=https://kd-mc.com]
  *          [--moteurs=webkit,chromium] [--captures=dossier]
  */
+import { marquerSonde } from './marquer-sonde.mjs';
 import { chromium, webkit, devices } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
@@ -51,7 +52,6 @@ const chk = (a, c, m, d) => (c ? ok(a, m) : ko(a, m + (d !== undefined ? ' → '
 
 /* Même sobriété que l'audit Lingua : marquer les pages, couper le superflu. */
 const INUTILE = /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf)($|\?)/i;
-const PAS_UNE_PAGE = /\.(js|mjs|css|map|json|webmanifest|png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf|pdf|txt|xml)($|\?)/i;
 const SONDE = { 'x-kdmc-sonde': 'verif-appareils' };
 /* UNE SONDE NE LAISSE PAS DE TRACE (mesuré run 37080174445, 3.10 00h00 UTC) : avec un compte local nommé, Lingua
    envoie sa progression au journal « qui se connecte » (POST admin.kd-mc.com/log) — 6 lignes « Sonde Appareils »
@@ -61,10 +61,8 @@ const TRACES = (u) => (u.hostname.startsWith('admin.') && u.pathname === '/log')
 const coupees = [];
 async function preparer(ctx) {
   await ctx.route((u) => INUTILE.test(u.pathname), (route) => route.abort());
-  await ctx.route((u) => !PAS_UNE_PAGE.test(u.pathname), (route, req) => {
-    if (req.resourceType() !== 'document') return route.continue();
-    return route.continue({ headers: Object.assign({}, req.headers(), SONDE) });
-  });
+  /* la page ET ses fichiers de même origine (porte générale du 8.10 : sinon app.js revient en 401) */
+  await marquerSonde(ctx, SONDE['x-kdmc-sonde'], [BASE, PORTAIL]);
   /* EN DERNIER, exprès : Playwright essaie les routes de la DERNIÈRE enregistrée à la première. Placée en
      premier (run 37164514412, 4.10 00h20), celle-ci était court-circuitée par la route des pages juste au-dessus
      (/log et /cdn-cgi/rum n'ont pas d'extension) : les traces partaient quand même (leçon #401). */

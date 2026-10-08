@@ -42,7 +42,34 @@ function serveur(port, dossier, hote, env) {
 const kv = new Map();
 /* le service de notifications (appel de Bee, v2.134.0) : simulé ici, sa clé publique sur /health */
 const _vraiFetch = globalThis.fetch;
-globalThis.fetch = async (u, i) => (String(u) === 'https://push.test/health' ? new Response(JSON.stringify({ ok: true, vapidPublic: 'B'.repeat(87) })) : _vraiFetch(u, i));
+globalThis.fetch = async (u, i) => {
+  const s = String((u && u.url) || u);
+  if (s === 'https://push.test/health') return new Response(JSON.stringify({ ok: true, vapidPublic: 'B'.repeat(87) }));
+  /* l'amont de Lingua (Cloudflare Pages) quand le ROUTEUR sert tout (cas 3, porte générale) : le dossier lingua/ */
+  const m = s.match(/pages\.dev\/lingua(\/[^?]*)?/);
+  if (m) { const f = 'lingua' + ((m[1] && m[1] !== '/') ? m[1] : '/index.html');
+    return existsSync(f) ? new Response(readFileSync(f), { headers: { 'content-type': TYPES[f.split('.').pop()] || 'application/octet-stream' } }) : new Response('', { status: 404 }); }
+  return _vraiFetch(u, i);
+};
+/* 3. PORTE GÉNÉRALE (8.10, #4313 : « aucune consultation sans compte ») : TOUT passe par le routeur — page, scripts,
+   service worker — comme sur le vrai domaine. `asn` = le réseau d'où vient la requête (8075 = Azure, d'où tournent
+   les robots GitHub ; 0 = un téléphone quelconque). */
+function serveurPorte(port, env, asn) {
+  return new Promise((res) => {
+    const srv = http.createServer(async (req, rep) => {
+      try {
+        const corps = ['GET', 'HEAD'].includes(req.method) ? undefined : await new Promise((r) => { let b = ''; req.on('data', (c) => (b += c)); req.on('end', () => r(b)); });
+        const h = Object.assign({}, req.headers); delete h.host;
+        const rq = new Request('https://lingua.kd-mc.com' + req.url, { method: req.method, headers: h, body: corps });
+        Object.defineProperty(rq, 'cf', { value: { asn } });
+        const r = await mod.fetch(rq, env, { waitUntil() {} });
+        const hh = {}; r.headers.forEach((v, k) => { if (k !== 'strict-transport-security') hh[k] = v; });
+        rep.writeHead(r.status, hh); rep.end(Buffer.from(await r.arrayBuffer()));
+      } catch (e) { rep.writeHead(500); rep.end(String(e)); }
+    });
+    srv.listen(port, () => res(srv));
+  });
+}
 const env = (avecCercle) => Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'a'.repeat(64), KDMC_PUSH_URL: 'https://push.test',
   ACCOUNTS: { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } } }, avecCercle ? { CERCLE_DB: d1() } : {});
 
@@ -70,6 +97,19 @@ L = await serveur(8796, 'lingua', 'lingua.kd-mc.com', env(false)); P = await ser
 r = await lancer(8796, 8797); out = r.out;
 ok(r.status === 1 && /=== VÉRIF APPAREILS ÉCHEC/.test(out), '2. SABOTAGE (base du cercle absente) : la sonde dit ÉCHEC (sortie 1)', out.slice(-300));
 ok(/❌ \[cercle\] un lien d'invitation inconnu est refusé proprement/.test(out), '2b. et nomme la porte qui ne répond pas (invitation)');
+L.close(); P.close();
+
+/* 3. la porte générale ACTIVE (secret SSO posé) : la sonde, venue d'Azure et marquée, voit quand même Lingua —
+   y compris ses scripts (sinon page blanche : audit réel du 8.10, run 37763496796, 30 ❌) */
+L = await serveurPorte(8796, env(true), 8075); P = await serveur(8797, 'kdmc-home', 'kd-mc.com', env(true));
+r = await lancer(8796, 8797); out = r.out;
+ok(r.status === 0 && /=== VÉRIF APPAREILS OK/.test(out), '3. porte générale active : la sonde (Azure + en-tête sur la page ET ses fichiers) voit Lingua sur les 3 appareils (sortie 0)', out.split('\n').filter((l) => /❌/.test(l)).slice(0, 6).join(' | ') || out.slice(-300));
+L.close(); P.close();
+/* 3b. SABOTAGE : la même sonde depuis un réseau quelconque (pas un centre de données) → la porte la refuse : la garde
+   prouve que la porte est bien là et que seul l'en-tête, venu d'Azure, l'ouvre */
+L = await serveurPorte(8796, env(true), 0); P = await serveur(8797, 'kdmc-home', 'kd-mc.com', env(true));
+r = await lancer(8796, 8797); out = r.out;
+ok(r.status === 1 && /❌ \[(iphone|android|ordinateur)/.test(out), '3b. SABOTAGE (réseau non reconnu) : la porte refuse, la sonde dit ÉCHEC sur les appareils', out.split('\n').filter((l) => /❌|ÉCHEC/.test(l)).slice(0, 3).join(' | ') || out.slice(-300));
 L.close(); P.close();
 
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`); process.exit(fail ? 1 : 0);

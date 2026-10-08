@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-08 (12h00) — Sondes aveugles depuis la porte générale : corrigé
+
+Audit Lingua réel 37763496796 = « page blanche » (15/30). Cause : porte générale #4313 → 401 sur les scripts sans
+compte/marque ; sondes marquaient seulement la navigation ; requêtes du SW hors routes Playwright. Fix :
+`tools/smoke/marquer-sonde.mjs` (marque tout ce qui va aux sites sondés + `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS`),
+branché dans audit-lingua / verif-appareils / audit-live ; `ctx.request.get(app.js)` marqué. Garde verif-appareils :
+cas 3 (routeur réel, porte active, cf.asn 8075) + 3b (asn 0 → refus). Leçon #450.
+
+---
 ## 2026-10-08 — « Connecte-toi comme moi réel partout » : faille trouvée et fermée
 
 - Vérification réelle lancée (run 37763492673, connecté) : 23 surfaces rouges, dont cuisine (images bloquées), Kit IA, Lingua, OSINT, Empreinte (bouton boîte refusé par la CSP de la page)… — détail limité à 4 blocs d'annotations, à reprendre après le correctif.

@@ -17,6 +17,7 @@
  * Exit 1 si un échec BLOQUANT (page KO, exception JS, ou requête vers un host
  * du projet — worker/firebase/domaine — échouée/bloquée = la classe « CORS commande »).
  */
+import { marquerSonde } from './marquer-sonde.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { connecte, masque, passPortail } from './session-kevin.mjs';
@@ -516,14 +517,7 @@ async function lireVersionServie(page) {
    que du HTML et des scripts : le reste est coupé à la source (route → abort). */
 const INUTILE_POUR_SONDER = /\.(png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf)($|\?)/i;
 const sobre = (cible) => cible.route((u) => INUTILE_POUR_SONDER.test(u.pathname), (route) => route.abort());
-/* On n'intercepte que ce qui PEUT être une page (pas les .js/.css/images/sons/json) : intercepter
-   les centaines de fichiers d'une app coûte un aller-retour chacun — mesuré le 27.09 nuit, l'audit
-   Lingua a dépassé ses 15 min là où il en prenait 9. Le test `resourceType` reste en garde-fou. */
-const PAS_UNE_PAGE = /\.(js|mjs|css|map|json|webmanifest|png|jpe?g|gif|webp|svg|ico|mp3|wav|ogg|mp4|webm|woff2?|ttf|otf|pdf|txt|xml)($|\?)/i;
-const marquerSonde = (cible, nom) => cible.route((u) => !PAS_UNE_PAGE.test(u.pathname), (route, req) => {
-  if (req.resourceType() !== 'document') return route.continue();
-  return route.continue({ headers: Object.assign({}, req.headers(), { 'x-kdmc-sonde': nom }) });
-});
+/* Marquage partagé (tools/smoke/marquer-sonde.mjs) : la page + ses fichiers de même origine, depuis la porte générale du 8.10. */
 const browser = await chromium.launch();
 let hardFail = 0;
 const report = [];

@@ -99,6 +99,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   lignes.push(`PERSONNES AVEC PLUSIEURS COMPTES — ${b.doublons.length} :`);
   for (const d of b.doublons) { lignes.push(`  « ${d.nom} » × ${d.comptes.length}`); for (const a of d.comptes) lignes.push('     · ' + resume(a)); }
   lignes.push(`Comptes sans prénom + nom (un seul mot) — ${b.sansNomComplet.length}`);
+  const detail = (a) => resume(a) + ` · ${a.hits || 0} session(s)` + (a.portee ? ' · portée ' + a.portee : '') + (Array.isArray(a.acces) && a.acces.length ? ' · accès ' + a.acces.join('/') : '') + (Array.isArray(a.bloque) && a.bloque.length ? ' · BLOQUÉ ' + a.bloque.join('/') : '') + (a.revoked_at ? ' · session révoquée' : '');
+  for (const a of b.sansNomComplet) lignes.push('  · ' + detail(a));   /* « comptes invités » (Kevin 4.10) : ce sont eux, un seul mot, jamais un nom complet */
+  /* Les autres personnes : AUCUN nom, seulement de quoi les classer (invitée = jamais revenue, portée restreinte, bloquée). */
+  const reste = fiches.filter((f) => f && f.uid && !f.merged_into && !estKevin(f) && !estRobot(f) && !b.sansNomComplet.includes(f));
+  const stat = { total: reste.length, unefois: reste.filter((a) => (a.hits || 0) <= 1).length, portee_app: reste.filter((a) => a.portee === 'app').length, bloques: reste.filter((a) => Array.isArray(a.bloque) && a.bloque.length).length, revoques: reste.filter((a) => a.revoked_at).length };
+  lignes.push(`Autres personnes (noms non affichés) : ${stat.total} · une seule session ${stat.unefois} · portée restreinte (une app) ${stat.portee_app} · bloquées quelque part ${stat.bloques} · sessions révoquées ${stat.revoques}`);
   console.log(lignes.join('\n'));
   /* Annotations : le seul canal lisible depuis une session. 12 lignes par bloc, codes masqués. */
   const sur = lignes.map((l) => l.replace(/[0-9a-f]{16,}/g, '…'));

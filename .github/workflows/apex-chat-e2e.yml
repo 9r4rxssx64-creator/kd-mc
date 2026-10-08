@@ -123,6 +123,8 @@ jobs:
             # Sans elles, « vert » ne distingue pas un test PASSÉ d'un test SAUTÉ.
             jq -r '.stats | "::notice::E2E prod — réussis=\(.expected) sautés=\(.skipped) échoués=\(.unexpected) instables=\(.flaky)"' results.json || true
             jq -r '.. | objects | select(has("projectName") and (.status? == "skipped")) | "::notice::sauté [\(.projectName)] — \([.annotations[]?.description // empty] | join(" / "))"' results.json | head -20 || true
+            # 08.10.2026 : un test « instable » (rouge puis vert au 2e essai) restait anonyme → on le nomme, avec la 1re erreur.
+            jq -r '[.. | objects | select(has("specs"))] | .[] | .file as $f | .specs[] | .title as $t | .tests[] | select(.status == "flaky") | "::warning title=Test instable::[\(.projectName)] \($f) › \($t) — 1er essai : \((.results[0].error.message // "?") | split("\n")[0] | .[0:160])"' results.json | head -20 || true
             echo "- 📦 Artefacts : voir 'playwright-report-${{ github.run_id }}'" >> $GITHUB_STEP_SUMMARY
           fi
 

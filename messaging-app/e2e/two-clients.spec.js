@@ -41,12 +41,15 @@ async function auth(request, u) {
 }
 
 // Ouvre un WebSocket DANS la page (origine prod valide) et collecte les frames.
-async function openWs(page, convId, token, uid) {
+// `cred` = 'token=…' (ancien repli) ou 'ticket=…' (ce que fait l'app à jour
+// depuis v1.1.286 : ticket à usage unique obtenu par POST /api/auth/ws-ticket).
+async function openWs(page, convId, token, uid, cred) {
   await page.goto('./', { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.evaluate(({ WS_BASE, convId, token, uid }) => {
+  cred = cred || ('token=' + encodeURIComponent(token));
+  await page.evaluate(({ WS_BASE, convId, cred, uid }) => {
     return new Promise((resolve, reject) => {
       const url = WS_BASE + '/api/conversations/' + encodeURIComponent(convId) + '/ws'
-        + '?token=' + encodeURIComponent(token)
+        + '?' + cred
         + '&uid=' + encodeURIComponent(uid)
         + '&conv=' + encodeURIComponent(convId);
       const ws = new WebSocket(url);
@@ -54,13 +57,24 @@ async function openWs(page, convId, token, uid) {
       ws.addEventListener('message', (e) => { try { window.__frames.push(JSON.parse(e.data)); } catch (_) {} });
       ws.addEventListener('open', () => resolve(true));
       ws.addEventListener('error', () => reject(new Error('ws error')));
+      // Le moteur peut ACCEPTER puis fermer aussitôt (1008 « Auth required ») :
+      // on garde le code de fermeture pour que l'échec dise sa vraie cause.
+      window.__closed = null;
+      ws.addEventListener('close', (e) => { window.__closed = { code: e.code, reason: e.reason }; });
       window.__ws = ws;
       setTimeout(() => reject(new Error('ws open timeout 12s')), 12000);
     });
-  }, { WS_BASE, convId, token, uid });
+  }, { WS_BASE, convId, cred, uid });
 }
 const wsSend = (page, obj) => page.evaluate((o) => window.__ws.send(JSON.stringify(o)), obj);
 const wsFrames = (page) => page.evaluate(() => window.__frames || []);
+const wsClosed = (page) => page.evaluate(() => window.__closed);
+// Ticket WebSocket à usage unique, exactement comme l'app (index.html K._wsTicket).
+async function wsTicket(request, tok) {
+  const r = await request.post(API + '/api/auth/ws-ticket', { headers: { Authorization: 'Bearer ' + tok } });
+  const d = await r.json().catch(() => ({}));
+  return { status: r.status(), ticket: d && d.ticket };
+}
 
 test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
   // v1.1.201 — Kevin « efface Alice et bob quand tu as terminé ». Les comptes de
@@ -149,6 +163,52 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
       await wsSend(pageB, { type: 'message', ciphertext: marker, mime: 'image/png' });
       await expect.poll(async () => (await wsFrames(pageA)).some(f => f.type === 'message' && typeof f.ciphertext === 'string' && f.ciphertext.includes('APXMEDIA1:') && f.ciphertext.includes(media.url)),
         { timeout: 15000, message: 'Alice doit recevoir la photo de Bob' }).toBe(true);
+    } finally {
+      await ctxA.close();
+      await ctxB.close();
+    }
+  });
+  // 08.10.2026 — revue de code : l'app à jour n'ouvre PLUS le WebSocket avec
+  // ?token= mais avec un ticket à usage unique (?ticket=). Le test ci-dessus
+  // passait par l'ancien chemin et ne voyait donc pas une panne de ce chemin-là.
+  // Ici on fait EXACTEMENT comme l'app : ticket → WebSocket → message livré.
+  test('temps réel par TICKET (chemin de l\'app à jour) : message livré', async ({ browser, request, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebSocket-from-page instable sur WebKit CI');
+    const aAuth = await auth(request, A);
+    const bAuth = await auth(request, B);
+    if (!aAuth.ok || !bAuth.ok) {
+      test.skip(true, `login de test indisponible — A:${aAuth.status} B:${bAuth.status}`);
+      return;
+    }
+    const aTok = aAuth.body.token, aId = aAuth.body.user.id;
+    const bTok = bAuth.body.token, bId = bAuth.body.user.id;
+    const convR = await request.post(API + '/api/conversations', {
+      headers: { Authorization: 'Bearer ' + bTok },
+      data: { type: 'dm', members: [aId] },
+    });
+    expect(convR.ok(), 'create conv HTTP ' + convR.status()).toBeTruthy();
+    const conv = await convR.json();
+    const convId = conv.id || conv.conv_id || (conv.conversation && conv.conversation.id);
+
+    const ta = await wsTicket(request, aTok);
+    const tb = await wsTicket(request, bTok);
+    expect(ta.status, 'ticket Alice HTTP').toBe(200);
+    expect(tb.status, 'ticket Bob HTTP').toBe(200);
+
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+    try {
+      await openWs(pageA, convId, aTok, aId, 'ticket=' + encodeURIComponent(ta.ticket));
+      await openWs(pageB, convId, bTok, bId, 'ticket=' + encodeURIComponent(tb.ticket));
+      await pageA.waitForTimeout(1500);
+      expect(await wsClosed(pageA), 'le WebSocket d\'Alice (ticket) ne doit pas être fermé par le serveur').toBeNull();
+      expect(await wsClosed(pageB), 'le WebSocket de Bob (ticket) ne doit pas être fermé par le serveur').toBeNull();
+      const t = 'E2E ticket ' + Date.now();
+      await wsSend(pageB, { type: 'message', ciphertext: t, mime: 'text/plain' });
+      await expect.poll(async () => (await wsFrames(pageA)).some(f => f.type === 'message' && f.ciphertext === t),
+        { timeout: 15000, message: 'Alice doit recevoir le message de Bob (chemin ticket)' }).toBe(true);
     } finally {
       await ctxA.close();
       await ctxB.close();

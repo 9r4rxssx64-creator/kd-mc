@@ -7,34 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 08/10/2026 00:13 UTC
-
-- **Branche** : `main` · **Commit** : `45c7093a` · **Run** : `37706568789`
-- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/37706568789
-- **Ce que la machine a dit** :
-
-```
-35 OK · 0 échec(s)
-  ✅ 4. registre des essais illisible → on REFUSE même le bon code (fermé, plus ouvert)
-  ✅ 8. une session NON vérifiée qui se dit admin → refus (le nom seul ne donne rien)
-  ✅ 9. une session vérifiée d'un NON-admin → refus
-11 OK / 0 échec(s)
-Admin domaine test: 41 passed, 0 failed
-  ✅ depuis une adresse hors du domaine → refusé
-Alerte nouvelle connexion : 9 passed, 0 failed
-12 OK · 0 échec(s)
-✅ amont-404 : 6 OK / 0 FAIL
-Antonin TTS test: 13 passed, 0 failed
-Appel push test: 35 passed, 0 failed
-Approvals private-admin gate test: 4 passed, 0 failed
-Apps consistency test: 7 passed, 0 failed
-Beatbot private-admin gate test: 5 passed, 0 failed
-Beatbot relay guard test: 17 passed, 0 failed
-Error: ENOENT: no such file or directory, open '/home/runner/work/kd-mc/kd-mc/arbre/javis-widget.js'
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -556,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

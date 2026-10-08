@@ -7,7 +7,7 @@
  *   5. effacer, méthodes, JSON, plafond de débit, base absente → réponses nettes ; 0 écriture KV ;
  *   6. câblage : le routeur appelle le gardien ; le widget n'envoie rien tant qu'il ne sait pas que c'est Kevin.
  * node services/kdmc-router/bee-fil.test.mjs */
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, createHmac } from 'node:crypto';
 import mod from './worker.js';
@@ -123,7 +123,8 @@ ok(/function filPousser\(\) \{\s*if \(!filConnu\(\)\) return;/.test(wd) && /func
 ok(/function saveHistory\(h\) \{[\s\S]{0,200}filPousser\(\);/.test(wd) && /filTirer\(wrap\)/.test(wd) && /visibilitychange/.test(wd), '6d. le widget renvoie après chaque échange et relit à l\'ouverture et au retour sur l\'app');
 ok(/if \(!\(j\.maj > connu\) \|\| _filTimer/.test(wd) && !/if \(!j\.fil\.length\) return;/.test(wd), '6e. il ne remplace jamais une conversation en cours d\'envoi, et reprend un fil vidé ailleurs');
 ok(/gardée sur ton domaine, visible par toi seul/.test(wd) && /Effacer la supprime PARTOUT/.test(wd) && !/pour cette adresse seulement/.test(wd), '6g. le texte « Où vont mes messages » dit la VÉRITÉ : la conversation est gardée sur le domaine, pour Kevin seul, et Effacer l\'efface partout');
-for (const f of ['javis', 'arbre']) ok(readFileSync(new URL('../../' + f + '/javis-widget.js', import.meta.url), 'utf8') === wd, '6f. copie ' + f + '/ identique à la source');
+/* le dépôt PUBLIC n'a pas le dossier arbre/ (privé) : on ne compare que les copies présentes — jamais un test qui casse la publication (4.10) */
+for (const f of ['javis', 'arbre']) { const u = new URL('../../' + f + '/javis-widget.js', import.meta.url); if (existsSync(u)) ok(readFileSync(u, 'utf8') === wd, '6f. copie ' + f + '/ identique à la source'); }
 
 console.log(`\n${pass} ✓ / ${fail} ✗`);
 process.exit(fail ? 1 : 0);

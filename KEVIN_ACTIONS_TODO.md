@@ -4013,3 +4013,13 @@ une règle ferme. Ce qui est possible : **je prépare tout, tu fais le clic**.
   Geneanet, Filae (Nice : plus de 100 000 actes numérisés, payant). Dès que tu as l'image ou le PDF : **envoie-le moi dans la conversation**, je le lis et
   j'intègre l'information avec sa cote.
 
+### Demandes d'actes aux mairies — état au 8.10.2026
+
+| Acte | Où | État |
+|---|---|---|
+| Mariage ‹employé› × ‹employé›, Nice, 8.08.1911 | Mairie de Nice → renvoie aux **Archives municipales** (archives@ville-nice.fr) | ✅ Mairie : réponse le 5.10 (« actes de moins de 100 ans seulement »). ✅ Demande envoyée aux Archives municipales le 8.10. En attente. |
+| Mariage DESARZENS × ‹employé›, Salon-de-Provence, 23.09.1943 | webcontact.mairie@salon-de-provence.org | ⏳ Aucune réponse depuis le 3.10. 👤 **Brouillon de relance prêt dans tes brouillons Gmail** (dans le même fil) : relire, envoyer. |
+| Mariage DESARZENS × MEZONNIAUD, **Paris 19e**, 22.07.1950 | Ville de Paris | 👤 **À faire (5 min)** : [formulaire de la Ville de Paris](https://www.paris.fr/pages/demande-d-acte-d-etat-civil-15838) → acte de **mariage** → mairie du **19e** → date **22 juillet 1950** → époux **Guy Édouard DESARZENS** (né le 7.03.1918 à Poissy) → épouse **Yvette Marcelle MEZONNIAUD** (née le 3.02.1923 à Chevrainvilliers) → **copie intégrale** → lien : **petit-fils de l'époux**. L'acte a plus de 75 ans : librement communicable. Envoi postal gratuit, ~15 jours. Si le formulaire refuse la copie intégrale : courrier à la mairie du 19e (5-7 place Armand Carrel, 75019 Paris) — l'officier d'état civil ne peut pas refuser une demande écrite. **Cet acte donnera les parents d'Yvette** → rattache les 2 MEZONNIAUD isolés. |
+
+La relance automatique du **13.10** relit ta boîte (réponses seulement), lit les actes reçus et les intègre dans l'arbre.
+

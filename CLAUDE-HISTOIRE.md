@@ -11796,9 +11796,11 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
   → 1 an immuable ; image/police/son → 1 jour ; script/style/JSON → 5 min, etag gardé). Les **pages HTML restent revalidées** (une mise à jour
   se voit tout de suite), sw.js/manifest jamais gardés, l'hébergeur qui a décidé (no-store, max-age positif) est respecté. `private`, jamais
   `public` : les fichiers sont derrière la porte du compte. Mesuré avant (8.10) : `max-age=0, must-revalidate` sur chaque fichier → une requête
-  Worker par fichier à chaque ouverture.
+  Worker par fichier à chaque ouverture. **Conséquence (leçon #453)** : un fichier appelé avec `?v=` est immuable un an → **tout changement
+  d'un fichier du portail bump sa version unique** (commentaire, badge, `sw.js`, chaque `?v=`), sinon personne ne voit le changement.
 - **Gardes** : `npm run test:budget-requetes` (décision pure, chaque robot de la liste porte l'étape ET conditionne ses coups), `npm run
-  test:cache-fichiers` (politique + routeur + sabotage `public`), `npm run test:mesure-requetes` (sous-requêtes à part, part robots/personnes).
+  test:cache-fichiers` (politique + routeur + sabotage `public`), `npm run test:mesure-requetes` (sous-requêtes à part, part robots/personnes),
+  `npm run test:portail-versions` (une version partout dans kdmc-home, sabotages : script en retard, sw.js divergent).
 
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 

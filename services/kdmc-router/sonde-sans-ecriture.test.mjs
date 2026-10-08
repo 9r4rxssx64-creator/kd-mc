@@ -72,7 +72,7 @@ ok(encore.n === 0, 'toujours 0 écriture au passage suivant');
 const issue = async (extra, asn) => {
   ecritures = 0; enAttente.length = 0;
   const rq = new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://kd-mc.com', 'cf-connecting-ip': '203.0.113.77' }, extra || {}),
-    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true }) });
+    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159' }) });   /* code obligatoire à la création (8.10) */
   Object.defineProperty(rq, 'cf', { value: { asn } });   /* le réseau d'origine, comme Cloudflare le pose (fiche-visite.test.mjs) */
   const r = await mod.fetch(rq, env, ctx);
   await Promise.all(enAttente);

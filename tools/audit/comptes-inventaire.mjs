@@ -85,6 +85,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const idxR = await cf(`${base}/values/idx:uids`, T);
   const idx = idxR.ok ? JSON.parse(await idxR.text()) : [];
   for (const u of idx) cles.add(u);
+  /* 8.10 (Kevin : « code obligatoire pour tous ») : qui a un code au domaine ? On liste les clés `cred:` (jamais leur contenu). */
+  const avecCode = new Set();
+  { let cur = ''; for (let i = 0; i < 20; i++) {
+    const r = await cf(`${base}/keys?prefix=cred:&limit=1000${cur ? '&cursor=' + encodeURIComponent(cur) : ''}`, T);
+    const j = await r.json(); if (!j.success) break;
+    for (const k of j.result) avecCode.add(k.name.slice(5));
+    cur = j.result_info && j.result_info.cursor; if (!cur) break; } }
   /* 2. Les fiches, 8 à la fois. */
   const uids = [...cles];
   const fiches = [];
@@ -112,6 +119,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const reste = fiches.filter((f) => f && f.uid && !f.merged_into && !estKevin(f) && !estRobot(f) && !b.sansNomComplet.includes(f));
   const stat = { total: reste.length, unefois: reste.filter((a) => (a.hits || 0) <= 1).length, portee_app: reste.filter((a) => a.portee === 'app').length, bloques: reste.filter((a) => Array.isArray(a.bloque) && a.bloque.length).length, revoques: reste.filter((a) => a.revoked_at).length };
   lignes.push(`Autres personnes (noms non affichés) : ${stat.total} · une seule session ${stat.unefois} · portée restreinte (une app) ${stat.portee_app} · bloquées quelque part ${stat.bloques} · sessions révoquées ${stat.revoques}`);
+  /* Comptes SANS code au domaine : depuis le 8.10 ils ne s'ouvrent plus sur leur nom — leur prochain code (depuis un appareil inconnu) attend Kevin.
+     Nommés (coffre privé) pour que Kevin sache à qui dire « reconnecte-toi et choisis ton code ». */
+  const sansCode = fiches.filter((f) => f && f.uid && !f.merged_into && !estRobot(f) && !avecCode.has(f.uid));
+  lignes.push(`COMPTES SANS CODE AU DOMAINE (ne s'ouvrent plus sur leur nom depuis le 8.10) — ${sansCode.length} sur ${b.actives} :`);
+  for (const a of sansCode) lignes.push('  · ' + resume(a) + ` · ${a.hits || 0} session(s)` + (estKevin(a) ? ' · KEVIN (Face ID / code admin)' : ''));
   console.log(lignes.join('\n'));
   /* Annotations : le seul canal lisible depuis une session. 12 lignes par bloc, codes masqués. */
   const sur = lignes.map((l) => l.replace(/[0-9a-f]{16,}/g, '…'));

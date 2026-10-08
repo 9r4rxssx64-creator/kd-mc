@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 203 règles — le texte de Kevin, une par une
+## 📜 Les 204 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -883,6 +883,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 💸 RÈGLE ABSOLUE — TOUT GRATUIT, ET TOUT MARCHE COMME AVANT : LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER, LE NAVIGATEUR GARDE LES FICHIERS (Kevin 2026-10-08, ABSOLUE)
 **« Je t'avais dit tout gratuit, mais trouve des solutions pour que tout fonctionne quand même comme avant. Performance optimale partout pour tout le monde. »**
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-gratuit-et-tout-marche-comme-avant-le-robot-regarde-le-budget-avant-de-frapper-le-navigateur-garde-les-fichiers-kevin-2026-10-08-absolue)
+
+### 🔐 RÈGLE ABSOLUE — CODE OBLIGATOIRE POUR TOUS : PERSONNE N'ENTRE SANS COMPTE + CODE, PERSONNE NE PREND LE COMPTE D'UN AUTRE (Kevin 2026-10-08, ABSOLUE)
+**« Ajoute code obligatoire pour tous dans la création, l'inscription. La connexion inconnue sur le compte de Laurence est un exemple qui ne doit plus jamais arriver. Trouve des solutions. […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-code-obligatoire-pour-tous-personne-nentre-sans-compte-code-personne-ne-prend-le-compte-dun-autre-kevin-2026-10-08-absolue)
 
 ### 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

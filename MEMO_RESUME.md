@@ -15683,3 +15683,19 @@ une annotation par fiche) ; (4) `test:lire-alertes` 7/0.
 - **Vérifié en ligne (17h15)** : page servie `kdmc-boite.js?v=1.0.46` + `kdmc-portal.js?v=1.0.46`, fichier avec `empreinte` et « Déconnecter ce
   compte partout », routeur public 37794580900 ✅, publication 37794580729 ✅. **Ménage** : `marie-curie` retiré (run coffre, corbeille
   `corbeille:comptes:2026-10-08-14-44-20`, registre 27 → 26) ; la ligne « s'est connectée » du fil D1 s'efface d'elle-même (3 jours).
+
+## 2026-10-08 (18h) — « Code obligatoire pour tous… impossible de pirater un autre compte » → trois verrous dans le domaine
+
+**Mesuré avant** : seul le portail envoyait un code ; CMCteams, la light et Créa « déclarent » l'utilisateur à `/__sso/issue` sans code, et le
+domaine ne l'exigeait pas (compte neuf par le nom, compte ancien ouvert par le nom — la faille Laurence ; Origin se forge en une ligne).
+**Fait (PR)** :
+1. **Code obligatoire à la création** (`code_requis_creation`, serveur) — plus aucun compte neuf sans code, par aucune porte (`ci_smoke` seul exempt).
+2. **Compte existant sans code** : le nom seul → `code_requis`. Un code proposé depuis un appareil inconnu → **ni session ni code** : D1
+   `code_attente` (appareil, lieu, réseau, empreinte PBKDF2), push « code à valider », journal ; dans « Mes messages » → **🔐 Codes à valider**
+   ✅ / ✖ (`/__boite/admin/code-valider`). Sur son propre appareil (session encore valable) la personne pose son code sans Kevin.
+3. **Pass lié à la famille d'appareil** (`d` : iphone/ipad/android/windows/mac/linux ; « autre » = script, non lié) : vérifié par `ssoVerify`
+   quand la requête est connue (portes, whoami, admin, /__sso/me…) — le pass de Laurence (iPhone) depuis un PC Windows ne vaut rien.
+Gardes : `test:code-attente` 20/0 (vrai routeur + D1 + sabotage coupe-circuit), `code-compte` 22/0 ; 10 suites qui fabriquaient des comptes
+par le nom épinglent `KDMC_CODE_OBLIGATOIRE: '0'` avec la phrase qui dit quel test prouve la règle. Portail v1.0.47 (messages `code_en_attente`,
+nudge « Protège ton compte »), inventaire des comptes : liste **les comptes sans code** (à qui dire « reconnecte-toi et choisis ton code »).
+Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.

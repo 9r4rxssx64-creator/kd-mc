@@ -37,7 +37,7 @@
     if (!j) return '';
     try {
       return JSON.stringify([(j.messages || []).map(function (m) { return [m.cle, m.ts, m.nonLus, m.lu, (m.fil || []).length, m.texte, (m.infos || []).length]; }),
-        (j.inscriptions || []).map(function (i) { return [i.id, i.code]; }), (j.sources || []).map(function (s) { return [s.id, s.nonLus, s.total, s.etat]; }), j.nonLus, j.nonLusAlertes, j.inscriptionsEtat]);
+        (j.inscriptions || []).map(function (i) { return [i.id, i.code]; }), (j.codes || []).map(function (c) { return [c.uid, c.ts]; }), (j.sources || []).map(function (s) { return [s.id, s.nonLus, s.total, s.etat]; }), j.nonLus, j.nonLusAlertes, j.inscriptionsEtat]);
     } catch (e) { return String(Date.now()); }
   }
   var dessine = '';   /* l'empreinte du dernier dessin */
@@ -51,7 +51,7 @@
   function bandeau() {
     var a = document.getElementById('cercle-alerte'); if (!a) return;
     if (!D) { a.hidden = true; return; }
-    var n = D.nonLus || 0, ni = (D.inscriptions || []).length;
+    var n = D.nonLus || 0, ni = (D.inscriptions || []).length + (D.codes || []).length;   /* les codes à valider comptent comme une inscription : Kevin doit trancher */
     a.textContent = '';
     var t = el('span', 'bt', n ? '📬 ' + (n > 1 ? n + ' nouveaux messages' : '1 nouveau message') : ni ? '📬 Rien de nouveau dans les messages' : '📬 Aucun message en attente');
     a.appendChild(t);
@@ -131,6 +131,7 @@
     if (!items.length) liste.appendChild(el('p', 'bf-vide', filtre === 'tous' ? 'Aucun message pour le moment. Cette fenêtre se met à jour toute seule.' : 'Rien dans cette app.'));
     items.forEach(function (m) { liste.appendChild(carte(m, garderSaisie ? saisie : '')); });
     r.appendChild(liste); liste.scrollTop = pos;
+    r.appendChild(codes());
     r.appendChild(inscriptions());
     r.appendChild(el('p', 'bf-pied', 'Mis à jour ' + quand(D.maj) + ' · se rafraîchit toute seule'));
     try { r.scrollTop = posFen; if (posDoc) (document.scrollingElement || document.documentElement).scrollTop = posDoc; } catch (e) { /* */ }
@@ -216,6 +217,36 @@
       corps.appendChild(bas); c.appendChild(corps);
     }
     return c;
+  }
+  /* 8.10 — LES CODES À VALIDER (Kevin : « la connexion inconnue sur le compte de Laurence ne doit plus jamais arriver ») : un compte sans code
+     ne s'ouvre plus sur son nom ; quand quelqu'un propose un code depuis un appareil inconnu, c'est ICI que Kevin tranche, avec l'appareil, le
+     lieu et le réseau sous les yeux. Accepter = ce code devient celui du compte ; refuser = rien ne change. Rien n'est affiché sans demande. */
+  function codes() {
+    var z = el('div', 'bf-ins'), L = D.codes || [];
+    z.id = 'bf-codes';
+    if (!L.length) { z.hidden = true; return z; }
+    z.appendChild(el('h3', 'bf-ins-t', '🔐 Codes à valider (' + L.length + ')'));
+    z.appendChild(el('p', 'bf-vide', 'Un compte sans code ne s\'ouvre plus sur son nom. Si c\'est bien la personne (son appareil, sa ville, son opérateur), accepte : ce code devient le sien. Sinon refuse.'));
+    L.forEach(function (c) {
+      var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
+      h.appendChild(el('div', 'bf-de', c.nom + ' (' + c.uid + ')'));
+      var info = el('div', 'bf-ap', [c.appareil, c.lieu, c.reseau].filter(Boolean).join(' · ') + ' · ' + quand(c.ts) + (c.app ? ' · depuis ' + c.app : ''));
+      h.appendChild(info); k.appendChild(h);
+      var bas = el('div', 'bf-bas');
+      var oui = el('button', 'bf-env', '✅ Accepter ce code'); oui.type = 'button';
+      var non = el('button', 'bf-ouvrir', '✖ Refuser'); non.type = 'button';
+      var decider = function (accepter) {
+        oui.disabled = true; non.disabled = true; info.textContent = accepter ? 'Acceptation…' : 'Refus…';
+        ecrire('code-valider', { uid: c.uid, accepter: accepter }).then(function (j) {
+          if (j && j.ok) { info.textContent = accepter ? '✅ Code accepté — ' + c.nom + ' se connecte avec son nom + ce code' : '✖ Refusé — rien n\'a changé'; oui.remove(); non.remove(); setTimeout(rafraichir, 800); }
+          else { oui.disabled = false; non.disabled = false; info.textContent = '❌ ' + raison(j && j.reason); }
+        });
+      };
+      oui.onclick = function () { decider(true); };
+      non.onclick = function () { if (window.confirm('Refuser ce code pour « ' + c.nom + ' » ? La personne devra en proposer un autre.')) decider(false); };
+      bas.appendChild(oui); bas.appendChild(non); k.appendChild(bas); z.appendChild(k);
+    });
+    return z;
   }
   /* 7.10 — LES INSCRIPTIONS EN ATTENTE, sous les messages : chacune se valide ici d'un geste (le domaine écrit, jamais la page). */
   function inscriptions() {

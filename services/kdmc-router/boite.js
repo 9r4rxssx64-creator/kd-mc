@@ -42,7 +42,38 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS boite_cree ON boite (cree)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS boite_suivi ON boite (suivi)`,
   `CREATE TABLE IF NOT EXISTS boite_lu (cle TEXT PRIMARY KEY, ts INTEGER)`,
+  /* CODES À VALIDER (8.10, Kevin : « la connexion inconnue sur le compte de Laurence ne doit plus jamais arriver ») : un compte SANS code au
+     domaine ne s'ouvre plus sur son nom ; le code posé depuis un appareil inconnu attend ici que Kevin l'accepte (empreinte PBKDF2 seulement). */
+  `CREATE TABLE IF NOT EXISTS code_attente (uid TEXT PRIMARY KEY, nom TEXT, rec TEXT, appareil TEXT, lieu TEXT, reseau TEXT, app TEXT, ts INTEGER)`,
 ];
+export const CODE_ATTENTE_SCHEMA = SCHEMA[SCHEMA.length - 1];
+/* Dépose (ou remplace) la demande de code d'un compte. Appelé par le routeur (/__sso/issue, /__sso/login). */
+export async function codeAttenteDeposer(db, r) {
+  if (!db) return false;
+  await db.prepare(CODE_ATTENTE_SCHEMA).run();
+  await db.prepare('INSERT OR REPLACE INTO code_attente (uid, nom, rec, appareil, lieu, reseau, app, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(propre(r.uid, 80), propre(r.nom, 80), String(r.rec || ''), propre(r.appareil, 90), propre(r.lieu, 80), propre(r.reseau, 80), propre(r.app, 60), r.ts || Date.now()).run();
+  return true;
+}
+export async function codesAttente(db) {
+  if (!db) return [];
+  await db.prepare(CODE_ATTENTE_SCHEMA).run();
+  const rows = ((await db.prepare('SELECT uid, nom, appareil, lieu, reseau, app, ts FROM code_attente ORDER BY ts DESC LIMIT 30').all()).results) || [];
+  return rows.map((r) => ({ uid: r.uid, nom: r.nom || r.uid, appareil: r.appareil || '', lieu: r.lieu || '', reseau: r.reseau || '', app: r.app || '', ts: r.ts }));
+}
+/* Kevin tranche : accepter = le code devient CELUI du compte (cred:<uid>) ; refuser = la demande disparaît. Dans les deux cas, journal. */
+export async function codeDecider(env, db, outils, uid, accepter, now) {
+  if (!db || !env || !env.ACCOUNTS) return { ok: false, reason: 'indisponible' };
+  const r = await db.prepare('SELECT uid, nom, rec, appareil, lieu, reseau FROM code_attente WHERE uid = ?').bind(uid).first();
+  if (!r) return { ok: false, reason: 'demande_introuvable' };
+  if (accepter) {
+    await env.ACCOUNTS.put('cred:' + uid, r.rec);
+    try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); if (a) { a.code_at = now; delete a.revoked_at_code; await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a)); } } catch { /* fiche illisible : le code vaut quand même */ }
+  }
+  await db.prepare('DELETE FROM code_attente WHERE uid = ?').bind(uid).run();
+  if (outils && outils.journal) { try { await outils.journal({ ev: accepter ? 'code_valide' : 'code_refuse', uid, name: r.nom, detail: (accepter ? 'code accepté par l\'admin' : 'code refusé par l\'admin') + ' · ' + (r.appareil || '?') + ' · ' + (r.lieu || '?') + ' · ' + (r.reseau || '?') }); } catch { /* */ } }
+  return { ok: true, uid, nom: r.nom, accepte: !!accepter };
+}
 const pret = new WeakSet();
 /* La table existait déjà sans ces colonnes (boîte en ligne depuis le 3.10 au soir) : on les ajoute, une erreur « colonne déjà là » est normale. */
 const COLONNES = ['uid', 'page', 'appareil', 'pays'];
@@ -415,8 +446,9 @@ export async function lireBoite(env, outils, now) {
   let inscriptions = [], inscriptionsEtat = 'ok';
   try { inscriptions = await memoise('inscriptions', now, () => lireInscriptions(outils, now)); } catch (e) { inscriptionsEtat = 'indisponible'; }
   const connectes = db ? ((await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) || {}).n || 0 : 0;
+  let codes = []; try { codes = await codesAttente(db); } catch { codes = []; }
   return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
-    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', maj: now };
+    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, maj: now };
 }
 
 /* ── marquer lu / répondre ────────────────────────────────────────────────────────────────────────────────── */
@@ -548,6 +580,11 @@ export async function handleBoite(request, url, env, outils) {
     }
     if (p === '/admin/valider' && m === 'POST') {
       const r = await validerInscription(outils, propre(b.id, 40), now);
+      return J(r, r.ok ? 200 : 400);
+    }
+    /* « 🔐 Codes à valider » : Kevin accepte (le code devient celui du compte) ou refuse (la demande disparaît). */
+    if (p === '/admin/code-valider' && m === 'POST') {
+      const r = await codeDecider(env, db, outils, propre(b.uid, 80), b.accepter === true, now);
       return J(r, r.ok ? 200 : 400);
     }
     if (p === '/admin/repondre' && m === 'POST') {

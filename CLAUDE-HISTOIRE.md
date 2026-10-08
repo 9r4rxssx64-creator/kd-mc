@@ -11802,6 +11802,28 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
   test:cache-fichiers` (politique + routeur + sabotage `public`), `npm run test:mesure-requetes` (sous-requêtes à part, part robots/personnes),
   `npm run test:portail-versions` (une version partout dans kdmc-home, sabotages : script en retard, sw.js divergent).
 
+## 🔐 RÈGLE ABSOLUE — CODE OBLIGATOIRE POUR TOUS : PERSONNE N'ENTRE SANS COMPTE + CODE, PERSONNE NE PREND LE COMPTE D'UN AUTRE (Kevin 2026-10-08, ABSOLUE)
+
+> **« Ajoute code obligatoire pour tous dans la création, l'inscription. La connexion inconnue sur le compte de Laurence est un exemple qui ne doit plus jamais arriver. Trouve des solutions. Personne ne doit pouvoir ouvrir ou se connecter sans compte et impossible de pirater un autre compte. Va plus loin. »**
+
+- **Ce qui est arrivé (journal brut, 8.10)** : le compte de Laurence n'avait pas de code au domaine ; le 7.10 à 04h30 UTC un PC Windows · Chrome 120
+  chez un hébergeur suédois (AS30893) a obtenu des sessions à son nom, **par le seul nom** (`/__sso/issue` auto-déclaré). Les apps « déclarent »
+  leur utilisateur sans code ; seul le portail envoyait un code, et le domaine ne l'exigeait pas.
+- **1. Code obligatoire à la création** (`/__sso/issue`, `code_requis_creation`) : plus aucun compte neuf sans code (6 caractères ou plus) —
+  script, app ou portail. Exception : `ci_smoke` (robot de déploiement, jamais de fiche). Coupe-circuit `KDMC_CODE_OBLIGATOIRE=0` (tests seuls).
+- **2. Compte existant sans code** (d'avant le 27.09) : **le nom seul ne l'ouvre plus** (`code_requis`). Un code proposé depuis un appareil
+  inconnu n'ouvre rien et ne se pose pas en silence : il **attend Kevin** (D1 `code_attente` : appareil, lieu, réseau, empreinte PBKDF2 du
+  code), notification push, journal `code_attente`. Dans « Mes messages », **🔐 Codes à valider** : ✅ Accepter (le code devient celui du
+  compte, `cred:<uid>`, fiche `code_at`) / ✖ Refuser. La personne sur SON appareil (session encore valable) pose son code sans Kevin.
+- **3. Pass lié à la famille d'appareil** (`d` dans le pass : iphone / ipad / android / windows / mac / linux) : un pass émis sur un iPhone
+  présenté depuis un PC Windows (lien volé, pass copié) **ne vaut rien** — porte, whoami, admin. Une mise à jour d'iOS, l'app posée sur
+  l'écran d'accueil, Chrome sur iPhone = même famille. Un pass d'avant le 8.10 (sans `d`) reste accepté jusqu'à son renouvellement.
+- **4. Ce qui existait déjà et reste** : porte totale (aucune page, aucun fichier sans compte), « Déconnecter ce compte partout », alerte
+  « nouvel appareil » avec réseau et AS, essais de code limités (`credVerrou`), Kevin = Face ID ou code admin seulement.
+- **Gardes** : `npm run test:code-attente` (les 6 points ci-dessus avec le vrai routeur + sabotage coupe-circuit), `npm run test:code-compte`
+  (création sans code refusée, code posé depuis sa session, compte ancien → attente). Inventaire : `coffre-comptes-inventaire` nomme les
+  comptes sans code (à qui dire « reconnecte-toi et choisis ton code »).
+
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 
 > « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

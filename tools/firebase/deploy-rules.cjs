@@ -158,7 +158,7 @@ const VERROU = require('./verrou-ecritures.cjs');
     if (c['.read'] !== 'auth != null') throw new Error('SECURITÉ : /cmcteams .read doit rester "auth != null", abort');
     if (c.cmc_admin_pin['.write'] !== false || c.cmc_ia_key['.write'] !== false) throw new Error('SECURITÉ : cmc_admin_pin/cmc_ia_key doivent rester .write:false, abort');
     ['cmc_e', 'cmc_ov', 'cmc_pw', 'cmc_motd', 'cmc_admin_cfg'].forEach((k) => { if (c[k]['.write'] == null) throw new Error('SECURITÉ : ' + k + ' perd son .write (écritures cassées), abort'); });
-    console.log('🔒 CMC_ADMIN_LOCK=on : cmc_admin_cfg + cmc_motd .write = role:admin ; cmc_e/cmc_ov/cmc_pw/$key .write = auth!=null (inchangé pour tous)');
+    console.log('🔒 CMC_ADMIN_LOCK=on : cmc_admin_cfg + cmc_motd .write = role:admin ; cmc_e/cmc_ov/cmc_pw/$key .write = auth!=null (le verrou écritures resserre ensuite cmc_ov, cmc_e…)');
   } else {
     console.log('🛟 CMC_ADMIN_LOCK=off : écriture /cmcteams = auth!=null au parent (inchangé)');
   }
@@ -304,7 +304,7 @@ const VERROU = require('./verrou-ecritures.cjs');
     const keyW = ecrLock === 'on' ? E.key_write : 'auth != null';
     const okLock = lc && lc['.write'] == null && lc.$key && lc.$key['.write'] === keyW
       && lc.cmc_motd && /role/.test(String(lc.cmc_motd['.write'] || '')) && lc.cmc_admin_cfg && /role/.test(String(lc.cmc_admin_cfg['.write'] || ''))
-      && ['cmc_e', 'cmc_pw'].concat(ecrLock === 'on' ? [] : ['cmc_ov']).every((k) => lc[k] && lc[k]['.write'] === 'auth != null');
+      && ['cmc_pw'].concat(ecrLock === 'on' ? [] : ['cmc_ov', 'cmc_e']).every((k) => lc[k] && lc[k]['.write'] === 'auth != null');   // 8.10 : cmc_e au rôle admin quand le verrou écritures est posé (phase 2c)
     if (!okLock) throw new Error('Vérif KO : structure verrou config admin incorrecte en live, abort');
     console.log('🔒 Config admin /cmcteams : cmc_admin_cfg + cmc_motd = role:admin (employés écrivent le reste, lecture inchangée)');
     if (ecrLock === 'on') {

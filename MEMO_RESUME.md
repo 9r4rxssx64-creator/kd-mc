@@ -15601,3 +15601,28 @@ propagée → détectée **dans les deux documents** · restauré → vert.
 
 **Règle écrite** dans `CLAUDE-HISTOIRE.md` (« LES DOCUMENTS SE METTENT À JOUR TOUT SEULS »),
 garde déclaré au registre → `rules-compliance` **19 (≤ 19)** ✅, `test:claude-md` **9/0** ✅.
+
+## 2026-10-08 (14h) — « Tout gratuit, mais que tout marche comme avant, performance optimale pour tout le monde » : mesuré, puis trois leviers
+
+**Mesuré d'abord** (API Analytics, run public 37782321279, `tools/audit/mesure-requetes.mjs`) : **7.10 = 49 008 requêtes Workers (49 % du
+plafond gratuit de 100 000/jour)** — kdmc-router 40 839, apex-depot-relais 5 899 (sentinelles Apex), kdmc-access 841 ; **pics 02h = 9 929,
+19h = 9 786, 00h = 9 272, 23h = 6 161 UTC** = des heures sans personne. Croisé avec le journal des runs : à 23h le 7.10, 13 fusions sur
+`main` → 13 × (SSO e2e + Bee gardes + régression visuelle + beatbot + PoolPilot + E2E…) ; à 02h et 12h et 18h : « Vérif RÉELLE ».
+8.10 à midi : 13 220 (13 %), dont 5 015 à 11h = ma vérification forcée. **KV** : 7.10 = 306 écritures, 8.10 = 105 (plafond 1 000 loin).
+Lu aussi sur le domaine, connecté : `lingua.kd-mc.com/app.js` → `cache-control: public, max-age=0, must-revalidate` — chaque ouverture
+redemande chaque fichier au Worker.
+
+**Trois leviers, code + gardes (PR de cette session)** :
+1. **Le robot regarde le budget avant de frapper** — `tools/ci/budget-requetes.mjs` (réutilise `resumer`/`requete` de la mesure) : 1 appel
+   Analytics, `ok=false` dès 60 % du plafond (`vars.KDMC_BUDGET_ROBOTS_PCT`), étape `id: budget` en tête de 6 workflows qui frappent le vrai
+   domaine (`kdmc-sso-e2e`, `bee-gardes`, `visual-regression-all-projects`, `beatbot-smoke`, `poolpilot-tuya-diag`, `live-verify-departs`),
+   coups conditionnés `if: steps.budget.outputs.ok == 'true'` ; les gardes hors ligne tournent toujours ; sans jeton → laisse passer et le
+   dit. Garde `test:budget-requetes` 16/0 (chaque robot de la liste porte l'étape ET conditionne ; sabotage sous-requêtes).
+2. **Le navigateur garde les fichiers** — `politiqueCache` (worker.js, bloc proxy) : fichier non-HTML 200 avec amont `max-age=0`/absent →
+   `private, max-age=300` (script/style/JSON), `86400` (image/police/son/3D), `31536000, immutable` (`?v=` ou nom haché) ; HTML, sw.js,
+   manifest, amont qui a décidé → inchangés ; jamais `public` (porte du compte). Garde `test:cache-fichiers` 17/0.
+3. **Qui frappe** — `mesure-requetes` lit aussi la zone (`httpRequestsAdaptiveGroups` par `clientASN`/jour, zone trouvée par nom) : 🤖 ASN
+   nuages (liste du routeur + Cloudflare) / 👤 personnes ; refus de droit nommé (« Zone → Analytics → Lire »), jamais fatal.
+Règle « LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER » dans CLAUDE-HISTOIRE (registre : 3 gardes). ETAT ligne « GRATUIT PAR DÉFAUT ».
+**Reste** : javis.kd-mc.com servi par Pages SANS la porte (200 sans session, mesuré) → pilote « revenir » ; Apex build run 37778037594
+bloqué « queued » sans job (comme 2 runs du 6.08) — workflow rééteint, à relancer quand la file de GitHub le prend.

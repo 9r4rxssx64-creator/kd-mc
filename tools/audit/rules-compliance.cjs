@@ -100,6 +100,8 @@ const REGISTRE = [
   [/AUCUNE CONSULTATION SANS COMPTE/i, ['npm:test:compte-obligatoire']],
   // Règle « CHAQUE IMPORT DE KEVIN SERT LE DOMAINE » (Kevin 8.10.2026) : garde = registre IMPORTS-KEVIN.md vérifié.
   [/CHAQUE IMPORT DE KEVIN SERT LE DOMAINE/i, ['npm:test:imports-kevin']],
+  // Règle « LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER » (Kevin 8.10.2026) : gardes = budget des robots + cache des fichiers.
+  [/LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER/i, ['npm:test:budget-requetes', 'npm:test:cache-fichiers', 'npm:test:mesure-requetes']],
   // Règle « ARBRE : AJOUTER TOUT SEUL LES NOUVELLES PERSONNES QUAND L'INFO EST SÛRE » (Kevin 3.10.2026, session arbre,
   // commit 23ed102f6 sans entrée → ratchet rouge pour tout le monde). Ce qui est MÉCANISABLE vit dans le robot d'écriture de
   // l'arbre (essai à blanc → écriture → rejouer = 0, anti-doublon par `ref`) et dans la section « à relier » ; le jugement

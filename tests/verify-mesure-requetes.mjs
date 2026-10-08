@@ -6,7 +6,7 @@
  *   5. SABOTAGE : si `resumer` additionnait les sous-requêtes aux requêtes, le 8.10 passerait pour plafonné (prouvé).
  * node tests/verify-mesure-requetes.mjs */
 process.env.MESURE_REQUETES_SELFTEST = '1';
-const { resumer, requete, texte, PLAFOND_REQUETES } = await import('../tools/audit/mesure-requetes.mjs');
+const { resumer, requete, texte, PLAFOND_REQUETES, requeteZone, resumerZone, texteZone, ASN_NUAGES } = await import('../tools/audit/mesure-requetes.mjs');
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d ? '  → ' + d : ''}`); };
 
 const ligne = (h, w, n, sub, err) => ({ dimensions: { datetimeHour: h, scriptName: w }, sum: { requests: n, subrequests: sub || 0, errors: err || 0 } });
@@ -34,6 +34,22 @@ ok(PLAFOND_REQUETES === 100000, '4b. le plafond est celui du plan gratuit (100 0
 /* 5. sabotage : un résumé qui ajouterait les sous-requêtes ferait passer le 8.10 (72 500) pour plafonné (139 400) */
 const avecSous = reel.data.viewer.accounts[0].workersInvocationsAdaptive.filter((x) => x.dimensions.datetimeHour.startsWith('2026-10-08')).reduce((s, x) => s + x.sum.requests + x.sum.subrequests, 0);
 ok(avecSous === 139400 && r.parJour['2026-10-08'] === 72500 && /🟠 2026-10-08/.test(t), '5. SABOTAGE : avec les sous-requêtes, le 8.10 ferait 139 400 (🔴) — le résumé compte 72 500 (🟠)');
+
+/* 6. qui frappe : robots (ASN de nuages) / personnes, par jour — et sabotage (sans la liste, tout passerait pour des personnes) */
+const lz = (date, asn, n) => ({ count: n, dimensions: { clientASN: asn, date } });
+const zone = { data: { viewer: { zones: [{ httpRequestsAdaptiveGroups: [
+  lz('2026-10-07', 8075, 30000), lz('2026-10-07', 16509, 8000), lz('2026-10-07', 3303, 900), lz('2026-10-07', 6830, 1100),
+  lz('2026-10-08', 8075, 5000), lz('2026-10-08', 3303, 400),
+] }] } } };
+const rz = resumerZone(zone);
+ok(rz.ok && rz.parJour['2026-10-07'].robots === 38000 && rz.parJour['2026-10-07'].personnes === 2000 && rz.parJour['2026-10-08'].robots === 5000, '6a. robots (AS8075 GitHub, AS16509 AWS) et personnes (Swisscom, Liberty) séparés par jour', JSON.stringify(rz.parJour));
+const tz = texteZone(rz);
+ok(/2026-10-07 : 40000 réponses — 🤖 robots 38000 \(95 %\) · 👤 personnes 2000 \(5 %\)/.test(tz) && /AS8075 \(nuage\) ×30000/.test(tz), '6b. le texte donne la part robots et nomme les réseaux', tz);
+ok(/Zone → Analytics → Lire/.test(texteZone(resumerZone({ errors: [{ message: 'not authorized' }] }))), '6c. refus → nomme le droit de zone à donner');
+const qz = requeteZone('z1', '2026-10-07T00:00:00Z', '2026-10-08T12:00:00Z');
+ok(/httpRequestsAdaptiveGroups/.test(qz.query) && /clientASN/.test(qz.query) && qz.variables.zone === 'z1', '6d. la requête vise la zone, par réseau d\'origine');
+const sab = resumerZone(zone, []);
+ok(sab.parJour['2026-10-07'].robots === 0 && rz.parJour['2026-10-07'].robots === 38000 && ASN_NUAGES.includes(8075), '6e. SABOTAGE : sans la liste des nuages, 38 000 coups de robots passeraient pour des personnes');
 
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

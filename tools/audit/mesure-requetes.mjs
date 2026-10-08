@@ -85,6 +85,56 @@ export function texte(r, jours) {
   return out.join('\n');
 }
 
+/* ── QUI FRAPPE : robots (réseaux de nuages) ou personnes ? (8.10, Kevin : « performance optimale pour tout le monde »)
+   Jeu de données de ZONE httpRequestsAdaptiveGroups, par réseau d'origine (ASN) et par jour. Le Worker ne sait pas
+   qui l'appelle ; la zone, si. Un ASN de nuage (GitHub Actions = Microsoft 8075, AWS, Google, Hetzner, OVH…) = un
+   robot — jamais une personne sur son iPhone. C'est la liste du routeur (ASN_NUAGES, worker.js) + Cloudflare 13335.
+   Attention : la zone compte TOUTES les réponses du domaine (Pages statique compris), pas seulement le Worker. */
+export const ASN_NUAGES = [8075, 16509, 14618, 15169, 396982, 24940, 16276, 14061, 20473, 63949, 31898, 45102, 12876, 51167, 197540, 13335];
+export function requeteZone(zone, depuis, jusqua) {
+  return {
+    query: `query ($zone: String!, $depuis: Time!, $jusqua: Time!) {
+      viewer { zones(filter: { zoneTag: $zone }) {
+        httpRequestsAdaptiveGroups(limit: 5000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) {
+          count
+          dimensions { clientASN date }
+        } } } }`,
+    variables: { zone, depuis, jusqua },
+  };
+}
+export function resumerZone(json, nuages = ASN_NUAGES) {
+  if (!json || !json.data || !json.data.viewer) {
+    const err = (json && json.errors && json.errors[0] && json.errors[0].message) || 'réponse vide';
+    return { ok: false, erreur: err, droit: /authoriz|permission|not authorized|access/i.test(err) };
+  }
+  const lignes = (json.data.viewer.zones || []).flatMap((z) => z.httpRequestsAdaptiveGroups || []);
+  const parJour = {};
+  for (const l of lignes) {
+    const d = l.dimensions || {}, n = l.count || 0;
+    const jour = String(d.date || d.datetimeHour || '').slice(0, 10);
+    if (!jour) continue;
+    const asn = Number(d.clientASN) || 0;
+    const j = parJour[jour] || (parJour[jour] = { robots: 0, personnes: 0, total: 0, asn: {} });
+    j.total += n; j.asn[asn] = (j.asn[asn] || 0) + n;
+    if (nuages.includes(asn)) j.robots += n; else j.personnes += n;
+  }
+  return { ok: true, parJour, lignes: lignes.length };
+}
+export function texteZone(rz) {
+  if (!rz.ok) {
+    return rz.droit
+      ? `⚠️ Qui frappe : l'API refuse (« ${rz.erreur} »). Il manque « Zone → Analytics → Lire » sur le jeton. Part robots/personnes non mesurée.`
+      : `⚠️ Qui frappe : lecture impossible (${rz.erreur}).`;
+  }
+  const out = ['\nqui frappe le domaine (zone entière, par réseau d\'origine) :'];
+  for (const [jour, j] of Object.entries(rz.parJour).sort()) {
+    const pr = j.total ? Math.round((j.robots / j.total) * 100) : 0;
+    const top = Object.entries(j.asn).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([a, n]) => `AS${a}${ASN_NUAGES.includes(Number(a)) ? ' (nuage)' : ''} ×${n}`).join(', ');
+    out.push(`  ${jour} : ${j.total} réponses — 🤖 robots ${j.robots} (${pr} %) · 👤 personnes ${j.personnes} (${100 - pr} %) · réseaux : ${top}`);
+  }
+  return out.join('\n');
+}
+
 /* ── main ──────────────────────────────────────────────────────────────────────────────────────────── */
 if (process.argv[1] && /mesure-requetes\.mjs$/.test(process.argv[1]) && !process.env.MESURE_REQUETES_SELFTEST) {
   if (!TOKEN || !COMPTE) { console.error('CLOUDFLARE_API_TOKEN et CLOUDFLARE_ACCOUNT_ID requis'); process.exit(2); }
@@ -104,4 +154,25 @@ if (process.argv[1] && /mesure-requetes\.mjs$/.test(process.argv[1]) && !process
   if (!r.ok) { annot('error', t); process.exit(1); }
   annot('notice', t);
   try { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, '## Mesure requêtes Workers\n\n```\n' + t + '\n```\n'); } catch { /* */ }
+  /* Qui frappe (zone) : jamais fatal — la mesure Workers ci-dessus reste valable même si ce droit manque. */
+  let tz = '';
+  try {
+    let zone = process.env.CLOUDFLARE_ZONE_ID || '';
+    if (!zone) {
+      const rz = await fetch('https://api.cloudflare.com/client/v4/zones?name=' + encodeURIComponent(process.env.KDMC_ZONE_NOM || 'kd-mc.com'), { headers: { authorization: 'Bearer ' + TOKEN }, signal: AbortSignal.timeout(20000) });
+      const jz = await rz.json().catch(() => null);
+      zone = (jz && jz.result && jz.result[0] && jz.result[0].id) || '';
+      if (!zone) tz = texteZone({ ok: false, erreur: 'zone introuvable avec ce jeton (droit Zone → Zone → Lire ?)', droit: true });
+    }
+    if (zone) {
+      const rep2 = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+        method: 'POST', headers: { authorization: 'Bearer ' + TOKEN, 'content-type': 'application/json' },
+        body: JSON.stringify(requeteZone(zone, iso(debut), iso(fin))), signal: AbortSignal.timeout(30000),
+      });
+      tz = texteZone(resumerZone(await rep2.json().catch(() => null)));
+    }
+  } catch (e) { tz = texteZone({ ok: false, erreur: String(e && e.message || e).slice(0, 120) }); }
+  console.log(tz);
+  annot(/^⚠️/.test(tz.trim()) ? 'warning' : 'notice', tz.trim());
+  try { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, '```\n' + tz.trim() + '\n```\n'); } catch { /* */ }
 }

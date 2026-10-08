@@ -36,7 +36,18 @@ jobs:
         with: { ref: main, fetch-depth: 1 }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+      # Garde budget (8.10) : le robot lit le compteur du jour (plafond gratuit 100 000 requêtes Workers, la coupure
+      # du 27.09) — au-delà de 60 %, il ne frappe pas le domaine : le reste du jour est pour les personnes.
+      - name: Budget du jour — le robot ne frappe pas un domaine déjà chargé (tools/ci/budget-requetes.mjs)
+        id: budget
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KDMC_BUDGET_ROBOTS_PCT: ${{ vars.KDMC_BUDGET_ROBOTS_PCT || '' }}
+        run: node tools/ci/budget-requetes.mjs
       - name: Attendre le déploiement (déploiements parallèles)
+        if: steps.budget.outputs.ok == 'true'
         run: sleep 45
       - name: Smoke réel beatbot.kd-mc.com
+        if: steps.budget.outputs.ok == 'true'
         run: node tools/smoke/beatbot-smoke.mjs

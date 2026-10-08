@@ -735,6 +735,11 @@ const ROUTEUR = {
        HSTS (tous les sous-domaines kd-mc.com sont en HTTPS via Cloudflare). */
     if (!outHeaders.has('x-frame-options')) outHeaders.set('x-frame-options', 'SAMEORIGIN');
     if (!outHeaders.has('strict-transport-security')) outHeaders.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+    /* 🗂️ LE NAVIGATEUR GARDE LES FICHIERS (Kevin 8.10 : « tout gratuit, mais que tout fonctionne comme avant, performance
+       optimale pour tout le monde »). Mesuré le 8.10 : l'hébergeur sert chaque fichier (app.js, css, images…) avec
+       `max-age=0, must-revalidate` → chaque ouverture de page redemande CHAQUE fichier au Worker : une requête du plafond
+       gratuit (100 000/jour, la coupure du 27.09) par fichier, et un aller-retour de plus pour la personne. Voir politiqueCache. */
+    { const cc = politiqueCache(request.method, res.status, p, url.search, outHeaders.get('content-type'), outHeaders.get('cache-control')); if (cc) outHeaders.set('cache-control', cc); }
     /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
        depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
     if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
@@ -746,6 +751,37 @@ const ROUTEUR = {
      que Tuya n'est pas lié ; notifie Kevin à CHAQUE remontée du robot (transition seule). */
   async scheduled(event, env, ctx) { ctx.waitUntil(Promise.all([tuyaSurfaceCheck(env), tuyaScheduleTick(env), tuyaHistoryTick(env)])); },
 };
+
+/* ─── POLITIQUE DE CACHE DES FICHIERS (8.10.2026) ─────────────────────────────────────────────────
+   Ce qu'un fichier qui n'est PAS une page reçoit comme durée de garde dans le navigateur :
+     · versionné (?v=, ?_v=, ou nom haché « app.3f9a2c1d.js ») → 1 an, immuable (le nom change avec le contenu) ;
+     · image / police / son / vidéo / 3D → 1 jour ;
+     · script, style, JSON, le reste → 5 minutes (une mise à jour est vue au plus tard 5 min après ; l'etag
+       de l'hébergeur est gardé : après expiration, c'est un 304 sans corps).
+   `private` : les fichiers sont derrière la porte du compte — aucun cache partagé (proxy, CDN) ne doit les garder,
+   seul le navigateur de la personne connectée.
+   Ce qui NE change PAS : les pages HTML (une page neuve se voit tout de suite), le service worker et le manifest
+   (le navigateur doit les relire), tout fichier pour lequel l'hébergeur a DÉJÀ décidé (no-store, no-cache, private,
+   ou un max-age positif), tout ce qui n'est pas un 200 en GET/HEAD. Retourne la valeur à poser, ou null. */
+const CACHE_UN_AN = 'private, max-age=31536000, immutable';
+const CACHE_UN_JOUR = 'private, max-age=86400';
+const CACHE_CINQ_MIN = 'private, max-age=300';
+const FICHIER_LOURD = /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp3|wav|ogg|m4a|mp4|webm|glb|gltf|usdz|pdf)$/i;
+const JAMAIS_GARDE = /(^|\/)(sw|service-worker|serviceworker|workbox[^/]*)\.js$|\.webmanifest$|(^|\/)manifest\.json$/i;
+const NOM_HACHE = /[.-][0-9a-f]{8,}\.(js|css|mjs)$/i;
+export function politiqueCache(methode, status, chemin, search, contentType, cacheAmont) {
+  if (status !== 200 || (methode !== 'GET' && methode !== 'HEAD')) return null;
+  const ct = String(contentType || '').toLowerCase();
+  if (!ct || /text\/html/.test(ct)) return null;
+  const c = String(chemin || '');
+  if (JAMAIS_GARDE.test(c)) return null;
+  const amont = String(cacheAmont || '').toLowerCase();
+  if (amont && !/max-age=0(\D|$)/.test(amont)) return null;            /* l'hébergeur a décidé (no-store, private, 1 h…) */
+  if (/no-store|no-cache|private/.test(amont)) return null;
+  if (/[?&](v|_v|ver|version|h|hash)=/.test(String(search || '')) || NOM_HACHE.test(c)) return CACHE_UN_AN;
+  if (FICHIER_LOURD.test(c)) return CACHE_UN_JOUR;
+  return CACHE_CINQ_MIN;
+}
 
 /* PORTE D'ENTRÉE UNIQUE (audit du domaine, 27.09.2026 — sonde run 36336678721).
    Mesuré de l'extérieur : les en-têtes de sécurité n'étaient posés QUE sur le chemin

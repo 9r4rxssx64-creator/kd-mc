@@ -11780,6 +11780,26 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 - **Pas de compte rendu sans action** : la réponse dit ce qui a changé dans le domaine, pas un avis sur la vidéo.
 - **Garde** : `npm run test:imports-kevin` (chaque ligne a un verdict et une action/raison ; un 🛠️ ne dépasse pas 7 jours).
 
+## 💸 RÈGLE ABSOLUE — TOUT GRATUIT, ET TOUT MARCHE COMME AVANT : LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER, LE NAVIGATEUR GARDE LES FICHIERS (Kevin 2026-10-08, ABSOLUE)
+
+> **« Je t'avais dit tout gratuit, mais trouve des solutions pour que tout fonctionne quand même comme avant. Performance optimale partout pour tout le monde. »**
+
+- **Le budget, mesuré, pas deviné** : `tools/audit/mesure-requetes.mjs` (robot `mesure-kv.yml`) lit chaque jour l'API Analytics — requêtes Workers
+  par jour / worker / heure (plafond gratuit **100 000/jour, tout le compte** — la coupure du 27.09 : 48 surfaces en 429 jusqu'à minuit UTC), et
+  **qui frappe** (zone, par réseau d'origine : 🤖 ASN de nuages = robots, 👤 le reste = personnes). Le 7.10 : **49 008 requêtes (49 %)**, pics à 0h,
+  2h, 19h, 23h UTC — chaque fusion sur `main` lance 6 à 8 robots à vrai navigateur ; le 8.10 à midi : 13 220.
+- **Le robot regarde le budget avant de frapper** : `tools/ci/budget-requetes.mjs`, étape `id: budget` en tête de chaque workflow qui frappe le
+  vrai domaine (liste `ROBOTS`) ; au-delà de **60 %** du plafond (`vars.KDMC_BUDGET_ROBOTS_PCT`), les coups sur le domaine sont **sautés**, les
+  gardes hors ligne tournent toujours : **40 % du jour restent aux personnes**. Sans jeton ou API en refus : laisse passer et le dit. Un contrôle
+  qui casse ce qu'il contrôle est pire que pas de contrôle (plafond 2 vérifs/jour du 27.09 : même famille). `FORCER=1` reste à Kevin.
+- **Le navigateur garde les fichiers** (`politiqueCache`, worker.js) : un fichier qui n'est pas une page reçoit `private, max-age` (versionné `?v=`
+  → 1 an immuable ; image/police/son → 1 jour ; script/style/JSON → 5 min, etag gardé). Les **pages HTML restent revalidées** (une mise à jour
+  se voit tout de suite), sw.js/manifest jamais gardés, l'hébergeur qui a décidé (no-store, max-age positif) est respecté. `private`, jamais
+  `public` : les fichiers sont derrière la porte du compte. Mesuré avant (8.10) : `max-age=0, must-revalidate` sur chaque fichier → une requête
+  Worker par fichier à chaque ouverture.
+- **Gardes** : `npm run test:budget-requetes` (décision pure, chaque robot de la liste porte l'étape ET conditionne ses coups), `npm run
+  test:cache-fichiers` (politique + routeur + sabotage `public`), `npm run test:mesure-requetes` (sous-requêtes à part, part robots/personnes).
+
 ## 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 
 > « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

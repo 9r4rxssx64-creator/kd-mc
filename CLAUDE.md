@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 202 règles — le texte de Kevin, une par une
+## 📜 Les 203 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -879,6 +879,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 📥 RÈGLE ABSOLUE — CHAQUE IMPORT DE KEVIN SERT LE DOMAINE : JE L'EXAMINE, J'APPLIQUE LE MEILLEUR, ET JE NOTE CE QUE J'EN AI FAIT — TOUJOURS (Kevin 2026-10-08, ABSOLUE)
 **« Fais tout ce que tu dois faire avec tout ce que je t'ai donné. À chaque import, fais au mieux et améliore pour mon domaine. Toujours. »**
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-chaque-import-de-kevin-sert-le-domaine-je-lexamine-japplique-le-meilleur-et-je-note-ce-que-jen-ai-fait-toujours-kevin-2026-10-08-absolue)
+
+### 💸 RÈGLE ABSOLUE — TOUT GRATUIT, ET TOUT MARCHE COMME AVANT : LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER, LE NAVIGATEUR GARDE LES FICHIERS (Kevin 2026-10-08, ABSOLUE)
+**« Je t'avais dit tout gratuit, mais trouve des solutions pour que tout fonctionne quand même comme avant. Performance optimale partout pour tout le monde. »**
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-gratuit-et-tout-marche-comme-avant-le-robot-regarde-le-budget-avant-de-frapper-le-navigateur-garde-les-fichiers-kevin-2026-10-08-absolue)
 
 ### 🔎 RÈGLE — CONTRÔLER TOUT, PARTOUT, SUR LE VRAI, SANS RIEN OUBLIER (Kevin 2026-10-03, ABSOLUE)
 « Contrôle toujours tout, sans rien oublier, partout. » — « Vérifie réel comme moi tout le site. »

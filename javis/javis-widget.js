@@ -150,6 +150,10 @@
   function ssoToken() {
     try { return localStorage.getItem('kdmc_sso_token') || ''; } catch (_) { return ''; }
   }
+  function uidDuJeton(t) {
+    try { var p = String(t || '').split('.')[0].replace(/-/g, '+').replace(/_/g, '/'); while (p.length % 4) p += '=';
+      return (JSON.parse(decodeURIComponent(escape(atob(p)))) || {}).u || ''; } catch (_) { return ''; }
+  }
   function rangeJeton(t) { try { if (t) localStorage.setItem('kdmc_sso_token', t); } catch (_) {} }
 
   function checkAdmin(cb) {
@@ -190,7 +194,10 @@
                 : !j.ok ? 'inconnu'                            /* pas de session ICI */
                   : j.verified !== true ? 'sans-faceid'        /* connecté, mais pas prouvé */
                     : 'pas-kevin';                             /* prouvé, mais pas l'admin */
-            if (raison === 'ok') { clearTimeout(minuteur); if (tok === cand) rangeJeton(cand); return fin(true, 'ok'); }
+            /* 8.10 : le domaine fait gagner la session PROUVÉE du cookie sur un jeton faible présenté (« la session prouvée gagne ») —
+               un lien piégé portant le jeton d'un AUTRE compte répondait donc « ok » (c'était Kevin, par son cookie) et ce jeton
+               était rangé à la place du sien. On ne range le nouveau que s'il est bien CELUI du compte reconnu. */
+            if (raison === 'ok') { clearTimeout(minuteur); if (tok === cand && uidDuJeton(cand) === j.uid) rangeJeton(cand); return fin(true, 'ok'); }
             if (premiere === null) premiere = raison;
             if (n + 1 < essais.length) return essai(n + 1);
             clearTimeout(minuteur);

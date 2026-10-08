@@ -260,6 +260,15 @@ ok(!JSON.stringify(b).includes('réponse privée') && !b.messages.some((x) => /V
 ok(cTravail && cTravail.nonLus === 0 && fbPut.length === putAvant, '13c. le travail ne fait pas de rouge et rien n\'est écrit dans Firebase (lecture seule)');
 fbData.cmc_ia_log = null; fbData.cmc_audit = null;
 
+/* 12f. (8.10, vérif réelle connectée) une page dont la CSP interdit nos scripts ne reçoit PAS le bouton (Rotaplan, Apex, Empreinte : refus + console rouge) */
+{ const { cspAccepteNosScripts } = await import('./worker.js');
+  const pg = (meta, hdr) => new Response('<html><head>' + meta + '</head><body>x</body></html>', { headers: Object.assign({ 'content-type': 'text/html' }, hdr || {}) });
+  const tA = await (await injecterBouton(pg(''))).text();
+  const tB = await (await injecterBouton(pg('<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'">'))).text();
+  const tC = await (await injecterBouton(pg('', { 'content-security-policy': "script-src 'unsafe-inline'" }))).text();
+  const tD = await (await injecterBouton(pg('<meta http-equiv="Content-Security-Policy" content="default-src \'self\'">'))).text();
+  ok(tA.includes(BOUTON_TAG) && !tB.includes(BOUTON_TAG) && !tC.includes(BOUTON_TAG) && tD.includes(BOUTON_TAG) && cspAccepteNosScripts("default-src 'none'; script-src 'self'") && !cspAccepteNosScripts("default-src 'none'"), '12f. la CSP de la page est respectée : pas de bouton là où nos scripts seraient refusés (en-tête ou balise meta)'); }
+
 /* 9. câblage : le routeur et le portail utilisent vraiment la boîte (une fonction que personne n'appelle ne protège rien) */
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/url\.pathname\.startsWith\('\/__boite\/'\)\) return handleBoite\(request, url, env, outilsBoite\(env\)\)/.test(W) && /import \{ handleBoite \} from '\.\/boite\.js'/.test(W), '9a. le routeur sert /__boite/ avec les outils de l\'admin prouvé');

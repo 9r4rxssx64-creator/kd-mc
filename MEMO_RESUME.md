@@ -12,6 +12,7 @@ cas 3 (routeur réel, porte active, cf.asn 8075) + 3b (asn 0 → refus). Leçon 
 ## 2026-10-08 — « Connecte-toi comme moi réel partout » : faille trouvée et fermée
 
 - Vérification réelle lancée (run 37763492673, connecté) : 23 surfaces rouges, dont cuisine (images bloquées), Kit IA, Lingua, OSINT, Empreinte (bouton boîte refusé par la CSP de la page)… — détail limité à 4 blocs d'annotations, à reprendre après le correctif.
+- **Vérif forcée (run 37767805460, avant le correctif des sondes)** : faux rouges Kit IA / Sourcing (scripts 401 : la sonde ne marquait que la page) ; vrais défauts : bouton boîte + Bee injectés dans des pages dont la CSP les interdit (Rotaplan, Apex, Empreinte) → le routeur respecte désormais la CSP. Et le test Bee a montré qu'un lien piégé (jeton d'un AUTRE compte) remplaçait le laissez-passer Face ID de Kevin (le domaine faisait gagner son cookie prouvé) → Bee et la porte ne rangent plus qu'un jeton du compte reconnu. La vérification réelle porte maintenant la vraie session vérifiée de Kevin sur TOUTES les requêtes.
 - **Faille** : la session de Kevin se fabriquait avec son SEUL nom (`/__sso/issue`, contrôle du code sauté pour l'admin). Fermée : plus de session par le nom pour Kevin, sessions faibles d'un uid admin refusées aux portes, la vérification réelle passe par le vrai code admin (secret CI).
 
 ## 2026-10-08 — « Go tout » : Apex diag, comptes de test retirés, travail CMCteams dans la fiche

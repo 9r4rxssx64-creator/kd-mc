@@ -160,7 +160,8 @@ try {
      Format lu dans le routeur (uid + name requis, origine du domaine), pas deviné. */
   const rIssue = await worker.fetch(new Request('https://kd-mc.com/__sso/issue', { method: 'POST',
     headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' },
-    body: JSON.stringify({ uid: 'kevin-desarzens', name: 'Kevin Desarzens', cgu: true }) }), env);
+    /* 8.10 : le domaine ne délivre plus de session au nom de Kevin sans preuve → la session faible est celle d'un autre compte. */
+    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true }) }), env);
   const jIssue = await rIssue.json().catch(() => ({}));
   const faible = jIssue && (jIssue.token || jIssue.t || '');
   ok(!!faible, 'le domaine émet bien une session SANS Face ID (auto-déclarée) pour le test');

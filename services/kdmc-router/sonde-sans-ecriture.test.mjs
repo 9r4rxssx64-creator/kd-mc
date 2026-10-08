@@ -101,7 +101,8 @@ for (const f of SCRIPTS) {
      mesuré le 27.09 nuit : 14 surfaces rouges en une heure, rien de changé pour un visiteur. */
   if (/playwright/.test(src)) {
     ok(!/extraHTTPHeaders[^}]*x-kdmc-sonde/.test(src), `${f} ne pose PAS l'en-tête sur toutes les requêtes (extraHTTPHeaders)`);
-    ok(/resourceType\(\) !== 'document'/.test(src), `${f} ne le pose que sur les navigations de page`);
+    /* Depuis la porte générale (8.10, marquer-sonde.mjs) : la page ET ses fichiers de MÊME origine — jamais les appels croisés. */
+    ok(/resourceType\(\) !== 'document'/.test(src) || (/marquerSonde/.test(src) && /aMarquer/.test(readFileSync(join(RACINE, 'tools/smoke/marquer-sonde.mjs'), 'utf8'))), `${f} ne le pose que sur la page et ses fichiers de même origine (pas d'appel croisé)`);
   }
 }
 

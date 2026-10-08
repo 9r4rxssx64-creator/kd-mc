@@ -522,8 +522,17 @@ const browser = await chromium.launch();
 let hardFail = 0;
 const report = [];
 
+/* « Connecte-toi comme moi réel partout » (Kevin 8.10) : en mode Kevin, la VRAIE session vérifiée de l'admin (code admin prouvé,
+   /__admin/login) part avec CHAQUE requête de CHAQUE adresse, page et fichiers — comme sur son iPhone. Sans code admin : anonyme. */
+let cookieKevin = null;
+if (AS_KEVIN) {
+  const pp = await passPortail('https://' + ROOT).catch((e) => ({ ok: false, note: String(e && e.message || e) }));
+  if (pp && pp.ok) cookieKevin = { name: 'kdmc_sso', value: pp.jeton, domain: '.' + ROOT, path: '/', secure: true, httpOnly: true, sameSite: 'Lax' };
+  console.log(cookieKevin ? `session Kevin vérifiée posée sur *.${ROOT} (${pp.masque})` : `session Kevin indisponible : ${(pp && (pp.note || pp.statut)) || '?'}`);
+}
 for (const s of SURFACES) {
   const page = await browser.newPage();
+  if (cookieKevin) await page.context().addCookies([cookieKevin]);
   await marquerSonde(page, 'audit-live');
   await sobre(page);
   const jsErrors = [];      // exceptions JS non catchées → BLOQUANT

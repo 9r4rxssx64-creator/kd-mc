@@ -806,15 +806,35 @@ async function sansCmcteamsParAccident(res, host, chemin, request) {
 
 export const BOUTON_TAG = '<script src="/__boite/bouton.js" defer></script>';
 /* Ajoute le bouton avant </body>. En production : HTMLRewriter (flux, rien en mémoire). Hors Cloudflare (tests Node) : repli sur le texte. */
+/* Une page dont la politique de sécurité (CSP) interdit nos scripts (`script-src 'none'`, ou sans 'self') ne reçoit PAS le bouton ni
+   Bee : mesuré 8.10 (vérif réelle connectée) — Rotaplan, Apex, Empreinte refusaient /__boite/bouton.js et /__javis/partout.js :
+   rien ne s'affichait et la console criait. On respecte la règle de la page au lieu de la forcer. */
+export function cspAccepteNosScripts(csp) {
+  const c = String(csp || '').toLowerCase();
+  if (!c) return true;
+  const m = c.match(/(?:^|;)\s*script-src\s+([^;]*)/) || c.match(/(?:^|;)\s*default-src\s+([^;]*)/);
+  if (!m) return true;
+  const v = ' ' + m[1].trim() + ' ';
+  return !/\s'none'\s/.test(v) && /\s'self'\s/.test(v);
+}
 export async function injecterBouton(res, extra) {
   try {
+    if (!cspAccepteNosScripts(res.headers.get('content-security-policy'))) return res;
     const h = new Headers(res.headers); h.delete('content-length');
+    const ajout = BOUTON_TAG + (extra || '');
     if (typeof HTMLRewriter !== 'undefined') {
-      return new HTMLRewriter().on('body', { element(e) { e.append(BOUTON_TAG + (extra || ''), { html: true }); } }).transform(new Response(res.body, { status: res.status, statusText: res.statusText, headers: h }));
+      let refuse = false;
+      return new HTMLRewriter()
+        .on('meta[http-equiv]', { element(e) { if (/content-security-policy/i.test(e.getAttribute('http-equiv') || '') && !cspAccepteNosScripts(e.getAttribute('content'))) refuse = true; } })
+        .on('body', { element(e) { if (!refuse) e.append(ajout, { html: true }); } })
+        .transform(new Response(res.body, { status: res.status, statusText: res.statusText, headers: h }));
     }
     const t = await res.text();
+    const balise = (t.match(/<meta[^>]*http-equiv=["']?content-security-policy[^>]*>/i) || [''])[0];
+    const contenu = (balise.match(/content="([^"]*)"/i) || balise.match(/content='([^']*)'/i) || [])[1];
+    if (contenu && !cspAccepteNosScripts(contenu)) return new Response(t, { status: res.status, statusText: res.statusText, headers: h });
     const i = t.toLowerCase().lastIndexOf('</body>');
-    return new Response(i >= 0 ? t.slice(0, i) + BOUTON_TAG + (extra || '') + t.slice(i) : t + BOUTON_TAG + (extra || ''), { status: res.status, statusText: res.statusText, headers: h });
+    return new Response(i >= 0 ? t.slice(0, i) + ajout + t.slice(i) : t + ajout, { status: res.status, statusText: res.statusText, headers: h });
   } catch (e) { return res; }   /* un bouton ne doit JAMAIS empêcher une page de s'afficher */
 }
 export function durcirReponse(res) {
@@ -1667,8 +1687,11 @@ function pkOk(){ return !!(window.PublicKeyCredential&&navigator.credentials&&na
 function b64uToBuf(s){ s=String(s||'').replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; var bin=atob(s),a=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i); return a.buffer; }
 function bufToB64u(b){ var a=new Uint8Array(b),s=''; for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]); return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,''); }
 function entrer(){ location.replace(ret); }
-/* 1. laissez-passer arrivé dans l'adresse (#kdmc_sso=…, posé par le portail) : on le garde */
-try{ var m=(location.hash||'').match(/[#&]kdmc_sso=([^&]+)/); if(m){ setTok(decodeURIComponent(m[1])); try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} } }catch(e){}
+/* 1. laissez-passer arrivé dans l'adresse (#kdmc_sso=…, posé par le portail). Il n'ÉCRASE PLUS celui déjà rangé (8.10, mesuré par
+   le test Bee depuis la porte totale : un lien piégé portant la session d'un AUTRE compte remplaçait le laissez-passer Face ID de
+   Kevin). Rangé d'office s'il n'y avait rien ; sinon ESSAYÉ seulement si celui qui est rangé ne marche plus. */
+var candidat='';
+try{ var m=(location.hash||'').match(/[#&]kdmc_sso=([^&]+)/); if(m){ candidat=decodeURIComponent(m[1]); if(!tok()){ setTok(candidat); candidat=''; } try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} } }catch(e){}
 /* 2. laissez-passer gardé → le domaine repose le cookie sur CETTE app, puis on entre */
 function cookieDepuisPass(){ var t=tok(); if(!t) return Promise.resolve({ok:false,reason:'aucun'});
   return fetch('/__sso/cookie',{method:'POST',credentials:'include',headers:{'authorization':'Bearer '+t,'content-type':'application/json'},body:'{}'})
@@ -1688,7 +1711,8 @@ function faceId(){ if(!pkOk()) return Promise.resolve({ok:false,reason:'non supp
 if(pk) pk.addEventListener('click',function(){ pk.disabled=true; say('Face ID…');
   faceId().then(function(j){ if(j.ok){ say('Bonjour '+(j.name||'')+' — ouverture…'); entrer(); }
     else { pk.disabled=false; say('Face ID refusé ('+(j.reason||'annulé')+'). Réessaie, ou remplis ta fiche.'); } }); });
-cookieDepuisPass().then(function(j){
+function essaiPass(){ return cookieDepuisPass().then(function(j){ if(!j.ok&&candidat&&candidat!==tok()){ setTok(candidat); candidat=''; return cookieDepuisPass(); } return j; }); }
+essaiPass().then(function(j){
   if(j.ok){ say('Bonjour '+(j.name||'')+' — ouverture…'); entrer(); return; }
   if(j.hors_perimetre){ say(j.message||'Ton compte n\\'est pas ouvert sur cette application.'); if(acts)acts.hidden=false; if(pk)pk.hidden=true; return; }
   /* On reste ICI, TOUJOURS — plus aucun départ automatique vers le portail (Kevin 27.09 soir :

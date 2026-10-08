@@ -24,6 +24,8 @@
  * Tests : tests/verify-plafond-verifs.mjs (la fonction `verdict` est pure et importable).
  */
 import { appendFileSync } from 'node:fs';
+import { decider, message as messageBudget } from './budget-requetes.mjs';
+import { requete, resumer } from '../audit/mesure-requetes.mjs';
 
 export const PLAFOND = 2;
 export const DUREE_REELLE_S = 90;
@@ -56,6 +58,26 @@ export function verdict(runs, { now = Date.now(), selfId = null, plafond = PLAFO
   }
   const ok = comptees.length < plafond;
   return { ok, jour, deja: comptees.length, plafond, noms: comptees.map((r) => r.name) };
+}
+
+/* 8.10 (Kevin : « tout gratuit, mais que tout marche comme avant pour tout le monde ») : en plus du compte des
+   exécutions, la vérification LIT LE BUDGET DU JOUR (requêtes Workers, API Analytics, 1 appel, hors domaine) —
+   une vérification réelle coûte 5 000 à 10 000 requêtes (mesuré le 8.10) ; au-delà du seuil (60 % du plafard
+   gratuit, `KDMC_BUDGET_ROBOTS_PCT`), elle ne frappe pas : le reste du jour est pour les personnes.
+   Sans jeton Cloudflare ou API en refus : laisse passer et le dit (même logique que budget-requetes.mjs). */
+export const budgetDuJour = (resume, jour, seuilPct) => decider(resume, { jour, seuilPct });
+async function lireBudget() {
+  const TOKEN = process.env.CLOUDFLARE_API_TOKEN || '', COMPTE = process.env.CLOUDFLARE_ACCOUNT_ID || '';
+  const seuilPct = Math.max(1, Math.min(100, parseInt(process.env.KDMC_BUDGET_ROBOTS_PCT || '', 10) || 60));
+  if (!TOKEN || !COMPTE) return budgetDuJour({ ok: false, erreur: 'pas de jeton Cloudflare dans ce dépôt' }, '', seuilPct);
+  const fin = new Date(), debut = new Date(fin); debut.setUTCHours(0, 0, 0, 0);
+  const iso = (x) => x.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const rep = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+    method: 'POST', headers: { authorization: 'Bearer ' + TOKEN, 'content-type': 'application/json' },
+    body: JSON.stringify(requete(COMPTE, iso(debut), iso(fin))), signal: AbortSignal.timeout(20000),
+  });
+  let json = null; try { json = await rep.json(); } catch { json = null; }
+  return budgetDuJour(resumer(json), iso(debut).slice(0, 10), seuilPct);
 }
 
 async function lireRuns(repo, token, jour) {
@@ -91,7 +113,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const v = verdict(await lireRuns(repo, token, jour), { selfId });
     if (v.ok) {
       console.log(`Plafond : ${v.deja}/${v.plafond} vérification(s) réelle(s) déjà faite(s) ce ${v.jour} (UTC) — celle-ci est la n° ${v.deja + 1}.`);
-      sortie('ok', 'true');
+      let b;
+      try { b = await lireBudget(); } catch (e) { b = budgetDuJour({ ok: false, erreur: String(e && e.message || e).slice(0, 120) }, '', 60); }
+      const mb = messageBudget(b);
+      console.log(mb);
+      if (!b.mesurable) console.log('::warning title=Budget non mesurable::' + mb);
+      if (b.mesurable && !b.ok) {
+        console.log('::warning title=Budget du jour::' + mb);
+        if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### ⛔ ' + mb + '\n');
+        sortie('ok', 'false');
+      } else sortie('ok', 'true');
     } else {
       const msg = `PLAFONNÉ — ${v.deja} vérification(s) réelle(s) déjà faite(s) ce ${v.jour} (UTC) : ${v.noms.join(' · ')}. Rien n'a été vérifié par ce run. Le compteur repart à 00:00 UTC. Kevin peut relancer avec l'entrée « forcer ».`;
       console.log('::warning title=Plafond atteint::' + msg);

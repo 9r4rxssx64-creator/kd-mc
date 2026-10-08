@@ -15626,3 +15626,17 @@ redemande chaque fichier au Worker.
 Règle « LE ROBOT REGARDE LE BUDGET AVANT DE FRAPPER » dans CLAUDE-HISTOIRE (registre : 3 gardes). ETAT ligne « GRATUIT PAR DÉFAUT ».
 **Reste** : javis.kd-mc.com servi par Pages SANS la porte (200 sans session, mesuré) → pilote « revenir » ; Apex build run 37778037594
 bloqué « queued » sans job (comme 2 runs du 6.08) — workflow rééteint, à relancer quand la file de GitHub le prend.
+
+## 2026-10-08 (15h) — Mesuré en ligne, javis derrière la porte, les 8 vérifications réelles lisent le budget
+
+- **En ligne (déploiement public 37784616276 ✅, 13h35 UTC)** : `app.js` connecté → `private, max-age=300` + etag ; `?v=1` → 1 an immuable ;
+  `/` et `sw.js` inchangés. La garde budget est verte dans `kdmc-sso-e2e`, `beatbot-smoke`, `visual-regression` (8.10 : 13 % du plafond).
+- **javis** : pilote `revenir` (run public 37784349187) ✅ → domaine Worker `kdmc-router` remis, CNAME Pages retiré (lu par le mode `lire` :
+  `DNS=AAAA 100::`, `domaine Worker=… kdmc-router`) ; `wrangler.toml` #4370 (custom_domain). Vu de l'extérieur (Firecrawl, sans compte) :
+  « Javis — connexion · Réservé aux personnes connues du domaine — touche Face ID pour entrer » : la porte, pas le code. Depuis l'agent,
+  `javis.kd-mc.com` reste en « CONNECT 502 » (cache DNS du mandataire de l'agent) — c'est le mandataire, pas le domaine.
+- **Déploiement public du routeur** : 37784326530 ❌ sur « Le domaine sert-il vraiment les 31 adresses ? » — javis en pleine bascule DNS à
+  cette minute-là ; 37784616276 ✅ juste après. Leçon : ne pas fusionner un routeur pendant un pilote DNS.
+- **Vérifications réelles** : `plafond-verifs.mjs` lit aussi le budget du jour (`budgetDuJour`, même seuil 60 %) ; les 8 workflows passent le
+  jeton Cloudflare à l'étape plafond ; `test:plafond-verifs` 79/0.
+- **Apex** : build run 37778037594 reste « queued » sans job depuis 12h36 (comme 2 runs du 6.08 — file GitHub, pas nous) ; workflow rééteint.

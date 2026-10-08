@@ -15,7 +15,8 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { verdict, VERIFS, PLAFOND, DUREE_REELLE_S } from '../tools/ci/plafond-verifs.mjs';
+process.env.BUDGET_REQUETES_SELFTEST = '1'; process.env.MESURE_REQUETES_SELFTEST = '1';
+import { verdict, VERIFS, PLAFOND, DUREE_REELLE_S, budgetDuJour } from '../tools/ci/plafond-verifs.mjs';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 let ok = 0, ko = 0;
@@ -40,6 +41,11 @@ dit(!verdict([run(1, V, 120, 600), run(2, L, 5, 0, 'in_progress', null)], { now:
 dit(verdict([run(1, V, 120, 600), run(2, L, 60, 300, 'completed', 'cancelled')], { now: NOW }).ok, 'une exécution annulée ne compte pas');
 dit(verdict([run(1, V, 120, 600), run(2, 'CMCteams Runtime Audit', 60, 300)], { now: NOW }).ok, 'un robot qui ne frappe pas le domaine ne compte pas');
 dit(verdict([run(1, V, 60 * 26, 600), run(2, L, 60 * 25, 600)], { now: NOW }).ok, 'les exécutions d\'HIER (jour UTC) ne comptent plus');
+/* 8.10 : le budget du jour (requêtes Workers) est lu aussi — une vérification réelle coûte 5 000 à 10 000 requêtes */
+const B = (n) => ({ ok: true, parJour: { '2026-10-08': n }, sousReqParJour: {} });
+dit(budgetDuJour(B(13220), '2026-10-08', 60).ok && budgetDuJour(B(13220), '2026-10-08', 60).mesurable, 'budget : 13 220 requêtes (13 %) → la vérification peut frapper');
+dit(!budgetDuJour(B(61000), '2026-10-08', 60).ok, 'budget : 61 000 requêtes (61 %) → la vérification ne frappe pas (le reste du jour est aux personnes)');
+dit(budgetDuJour({ ok: false, erreur: 'not authorized' }, '2026-10-08', 60).ok && !budgetDuJour({ ok: false, erreur: 'not authorized' }, '2026-10-08', 60).mesurable, 'budget : API en refus → laisse passer (non mesurable), jamais un faux plafond');
 
 /* ---------- 2 + 3 + 4. les fichiers ---------- */
 const FICHIERS = ['verif-reelle', 'audit-lingua', 'verif-live-rapport', 'audit-live', 'voir-comme-kevin', 'audit-domaine', 'mesure-worker', 'verif-appareils'];
@@ -55,6 +61,9 @@ for (const f of FICHIERS) {
   dit(/steps\.plafond\.outputs\.ok\s*==\s*'true'/.test(s), `${f}.yml : les étapes qui frappent le domaine sont conditionnées sur le plafond`);
   dit(/actions:\s*read/.test(s), `${f}.yml : \`actions: read\` (sans lui, l'API ne répond pas et le plafond ne sait pas compter)`);
   dit(/forcer:/.test(s) && /FORCER:/.test(s), `${f}.yml : entrée « forcer » (Kevin seul peut passer outre) transmise au script`);
+  const ip = s.indexOf('id: plafond');
+  const blocPlafond = s.slice(ip, s.indexOf('plafond-verifs.mjs', ip));   /* le nom du script peut apparaître avant, dans un commentaire */
+  dit(/CLOUDFLARE_API_TOKEN/.test(blocPlafond) && /CLOUDFLARE_ACCOUNT_ID/.test(blocPlafond), `${f}.yml : l'étape plafond reçoit le jeton Cloudflare (budget du jour lu avant de frapper, 8.10)`);
   /* Un run PLAFONNÉ doit rester VERT : aucune étape d'après-coup (« if: always() » nu) ne doit
      chercher un rapport qui n'existe pas — sauf celles qui savent dire « pas de journal ». */
   const TOLERANTES = ['Rapport lisible depuis l\'agent (annotations)', 'Journal complet en artefact (si on peut le télécharger un jour)', 'Combien GitHub nous facture ce mois-ci (mesure réelle)'];

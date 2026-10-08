@@ -58,6 +58,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           FORCER: ${{ inputs.forcer }}
+          # 8.10 : le budget du jour (requêtes Workers) est lu aussi — une vérification réelle coûte 5 000 à 10 000 requêtes
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KDMC_BUDGET_ROBOTS_PCT: ${{ vars.KDMC_BUDGET_ROBOTS_PCT || '' }}
         run: node tools/ci/plafond-verifs.mjs
 
       - name: Installer un vrai navigateur (WebKit = Safari, Chromium = Chrome)

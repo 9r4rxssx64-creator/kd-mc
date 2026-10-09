@@ -4073,6 +4073,7 @@ chaque fiche concernée porte une note « 📬 DEMANDE D'ACTE » (54 fiches) :
   seulement pour un ascendant/descendant direct, **sauf les actes de décès** (ouverts à tous).
 - **Sospel** : l'acte est aux Archives départementales, cote **2 Miec 137/4** (site AD06 avec captcha : je ne le contourne pas → la demande AD06 n° 15 le couvre).
 
+- 👤 **Monaco, registres d'avant 1900** (naissances de Julie 1880, d'Emmanuel, de François Louis ; mariage de Philippe × Caroline ‹employé› ; décès de Jérôme 1883) : le site archives.mairie.mc demande d'accepter une licence (« toute réutilisation d'informations publiques est interdite sauf autorisation préalable de la Mairie »). Je ne l'accepte pas à ta place : soit tu l'acceptes une fois sur le site, soit je prépare un brouillon de demande d'autorisation à la Mairie. Les registres de 1900 à 1925 ont été lus (22 actes, 29 pages rangées dans les fiches le 9.10).
 **Pas demandé, volontairement** : les actes des personnes vivantes (règle de vie privée — c'est à toi de choisir), et les naissances au lieu inconnu (26 personnes) :
 il faut d'abord le lieu. La relance du 13.10 surveille les 14 services, lit les actes reçus et les intègre fiche par fiche.
 

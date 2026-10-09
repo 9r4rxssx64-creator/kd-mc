@@ -1,7 +1,11 @@
 /* Page admin « Qui se connecte à mon domaine » — servie par kdmc-access GET /.
- * Autonome, mobile-first, dark. PIN admin (SHA-256) → auto-déverrouillage sur
- * appareil de confiance ensuite. Appelle GET /history (même origine). Le script
- * interne évite les template-literals pour rester dans ce backtick sans échappement. */
+ * Autonome, mobile-first, dark. Entrée par la SESSION DU DOMAINE (cookie kdmc_sso ou pass
+ * Bearer, vérifiés par kd-mc.com/__sso/whoami côté worker) ; à défaut, le code admin est
+ * demandé et vérifié PAR LE WORKER (jamais ici), sans aucune mémorisation sur l'appareil
+ * (audit 2026-10-08 : l'empreinte SHA-256 du code était gardée en localStorage et acceptée
+ * comme porteur — supprimé, règle absolue « le code admin ne s'écrit nulle part »).
+ * Appelle GET /history (même origine). Le script interne évite les template-literals pour
+ * rester dans ce backtick sans échappement. */
 export const PAGE_HTML = `<!doctype html>
 <html lang="fr"><head>
 <meta charset="utf-8">
@@ -70,7 +74,9 @@ export const PAGE_HTML = `<!doctype html>
 <script>
 (function(){
   var $=function(s,r){return (r||document).querySelector(s)};
-  var app=$('#app');var KEY='kdmc_access_pinhash';var DATA=null;var CONN=null;var TIMER=null;
+  var app=$('#app');var DATA=null;var CONN=null;var TIMER=null;
+  /* Ménage : une ancienne version mémorisait l'empreinte du code ici — on l'efface. */
+  try{localStorage.removeItem('kdmc_access_pinhash')}catch(e){}
   /* CONN = les VRAIES connexions du domaine (source unique : KV du routeur, déjà peuplée).
      DATA = le détail des actions dans les apps. Les deux sont fusionnés par personne :
      une seule page, plus de doublon avec « Mes connexions » du portail (Kevin 2026-08-05). */
@@ -219,17 +225,17 @@ export const PAGE_HTML = `<!doctype html>
       +'<input class="pin" id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••••">'
       +'<div class="err" id="err">'+(msg||'')+'</div>'
       +'<button class="btn p" id="go" style="width:100%">Déverrouiller</button>'
-      +'<label style="display:block;margin-top:14px;color:var(--txt3);font-size:12.5px"><input type="checkbox" id="rem" checked style="width:18px;height:18px;vertical-align:-3px"> Se souvenir de cet appareil</label></div>';
+      +'<div style="margin-top:14px;color:var(--txt3);font-size:12.5px">Astuce : connecté sur kd-mc.com (Face ID ou code), cette page s\\'ouvre toute seule. Rien n\\'est mémorisé ici.</div></div>';
     var pin=$('#pin');pin.focus();
-    var go=function(){submitPin(pin.value.trim(),$('#rem').checked)};
+    var go=function(){submitPin(pin.value.trim())};
     $('#go').onclick=go;pin.onkeydown=function(e){if(e.key==='Enter')go()};
   }
-  async function submitPin(v,remember){
+  /* Le code n'est JAMAIS comparé ici : son empreinte part au worker, qui seul connaît la bonne.
+     Et elle n'est gardée qu'en mémoire de la page, le temps de l'ouverture. */
+  async function submitPin(v){
     if(!v){return}
     var h=await sha(v);
-    var ok=await load(h);
-    if(ok&&remember){try{localStorage.setItem(KEY,h)}catch(e){}}
-    else if(!ok){try{localStorage.removeItem(KEY)}catch(e){}}
+    await load(h);
   }
   async function load(hash){
     try{
@@ -395,11 +401,9 @@ export const PAGE_HTML = `<!doctype html>
     Array.prototype.forEach.call(document.querySelectorAll('.pers'),function(el){el.onclick=function(){var k=el.getAttribute('data-k');OPEN[k]=!OPEN[k];var t=document.querySelector('[data-tl="'+CSS.escape(k)+'"]');if(t)t.classList.toggle('open',OPEN[k])}});
   }
 
-  // Auto-déverrouillage si appareil de confiance (rule : reconnu auto après 1re connexion)
-  var saved=null;try{saved=localStorage.getItem(KEY)}catch(e){}
   /* (27.09.2026) D'abord la session du domaine (Kevin déjà reconnu, Face ID ou code admin prouvé) :
-     aucun code à retaper. Sinon le code mémorisé sur cet appareil, sinon la porte. */
-  load('').then(function(ok){ if(ok)return; if(saved){load(saved).then(function(ok2){if(!ok2)renderLock('')})}else{renderLock('')} })
+     aucun code à retaper. Sinon la porte — plus aucune empreinte mémorisée sur l'appareil (8.10). */
+  load('').then(function(ok){ if(!ok)renderLock('') })
 })();
 </script>
 </body></html>`;

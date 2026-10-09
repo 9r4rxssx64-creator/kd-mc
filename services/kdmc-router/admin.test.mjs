@@ -88,7 +88,7 @@ ok(j.ok === true && typeof j.grant === 'string', 'sans KV → fail-open : bon co
 r = await mod.fetch(REQ({ path: '/__admin/audit', headers: { 'x-kdmc-admin': grant } }), envH); j = await r.json();
 ok(j.ok === true && Array.isArray(j.log)
   && j.log.some((e) => e.ev === 'admin_login_ok')
-  && j.log.some((e) => e.ev === 'admin_login_fail'), 'journal admin : connexion réussie + code refusé tracés');
+  && j.log.some((e) => e.ev === 'admin_login_fail' && typeof e.device === 'string' && 'asn' in e && 'place' in e), 'journal admin : connexion réussie + code refusé tracés — avec appareil, lieu et réseau (8.10)');
 r = await mod.fetch(REQ({ path: '/__admin/audit' }), envH);
 ok(r.status === 403, 'journal admin sans preuve → 403');
 

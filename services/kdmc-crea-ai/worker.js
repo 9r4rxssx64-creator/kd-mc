@@ -34,11 +34,68 @@ function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': ok ? origin : 'https://studio.kd-mc.com',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'content-type',
+    'Access-Control-Allow-Headers': 'content-type, authorization',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   };
 }
+
+/* ---------------- 🔐 PORTE : un compte VÉRIFIÉ du domaine, sinon rien ----------------
+   Audit 2026-10-08 : toutes les routes de génération étaient ouvertes à internet
+   (aucun compte, aucun plafond) — un script pouvait vider les quotas gratuits et,
+   via /animate, dépenser du Replicate payant. Modèle : requireAdmin de kdmc-balances,
+   en version « compte vérifié » (j.ok && j.verified). Ce worker n'a AUCUN secret du
+   domaine : il demande au domaine lui-même (/__sso/whoami), seule vérité.
+   Jeton : en-tête Authorization: Bearer <pass>, ou cookie kdmc_sso (même domaine). */
+const WHOAMI_URL = 'https://kd-mc.com/__sso/whoami';
+function porteurDe(req) {
+  const auth = req.headers.get('Authorization') || '';
+  const m = /^Bearer\s+(\S+)/i.exec(auth);
+  if (m) return m[1];
+  const c = (req.headers.get('cookie') || '').match(/(?:^|;\s*)kdmc_sso=([^;]+)/);
+  return c ? decodeURIComponent(c[1]) : '';
+}
+async function requireCompte(req, env) {
+  const tok = porteurDe(req);
+  if (!tok) return { ok: false, status: 401, error: 'compte_requis', detail: 'pass du domaine manquant (Authorization: Bearer)' };
+  try {
+    const r = await fetch((env && env.KDMC_SSO_URL ? env.KDMC_SSO_URL.replace(/\/$/, '') + '/__sso/whoami' : WHOAMI_URL),
+      { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store' });
+    if (!r.ok) return { ok: false, status: 502, error: 'whoami_http_' + r.status, detail: 'le domaine ne répond pas' };
+    const j = await r.json();
+    if (!j || !j.ok) return { ok: false, status: 401, error: 'session_invalide', detail: 'session inconnue ou expirée' };
+    if (!j.verified) return { ok: false, status: 403, error: 'compte_non_verifie', detail: 'compte pas encore vérifié (code ou Face ID)' };
+    return { ok: true, uid: String(j.uid || j.name || 'inconnu').slice(0, 80), name: j.name || '' };
+  } catch (e) {
+    return { ok: false, status: 502, error: 'whoami_exc', detail: String((e && e.message) || e).slice(0, 120) };
+  }
+}
+/* ---------------- ⏱ PLAFOND par compte (uid) ----------------
+   1) binding Cloudflare « ratelimit » LIMITE_CREA (wrangler.toml, gratuit, compteur mémoire) ;
+   2) sinon compteur en mémoire de l'isolat (même plafond) ;
+   3) si le compteur lui-même casse → on REFUSE (fail-closed) : jamais une porte grande
+      ouverte parce qu'un garde est tombé. */
+const LIMITE_PAR_MIN = 30;
+const _compteurs = new Map();
+async function limiteOk(env, uid) {
+  const cle = 'crea:' + uid;
+  try {
+    if (env && env.LIMITE_CREA && typeof env.LIMITE_CREA.limit === 'function') {
+      const r = await env.LIMITE_CREA.limit({ key: cle });
+      return !(r && r.success === false);
+    }
+    const now = Date.now();
+    let c = _compteurs.get(cle);
+    if (!c || now - c.t >= 60000) { c = { t: now, n: 0 }; _compteurs.set(cle, c); }
+    c.n++;
+    if (_compteurs.size > 5000) { for (const [k, v] of _compteurs) if (now - v.t >= 60000) _compteurs.delete(k); }
+    return c.n <= LIMITE_PAR_MIN;
+  } catch (_) { return false; }
+}
+/* Le PAYANT (Replicate) ne s'allume qu'avec l'interrupteur BEE_SECOURS_PAYANT=1 (Kevin 02.10 :
+   « aucune IA payante sans l'interrupteur »). Sans lui, le jeton Replicate est ignoré partout. */
+function payantOk(env) { return !!(env && env.BEE_SECOURS_PAYANT === '1'); }
+function jetonReplicate(env) { return payantOk(env) ? (env.REPLICATE_API_TOKEN || '') : ''; }
 function json(obj, headers, status) {
   return new Response(JSON.stringify(obj), {
     status: status || 200,
@@ -442,7 +499,7 @@ async function geminiText(key, model, prompt, wantJson) {
 /* Y a-t-il AU MOINS un moteur IA utilisable ? (une seule clé suffit) */
 function anyEngine(env) {
   if (env.AI) return true;
-  if (env.REPLICATE_API_TOKEN) return true;
+  if (jetonReplicate(env)) return true;
   if (env.GOOGLE_API_KEY) return true;
   return TEXT_PROVIDERS.some((p) => !!env[p.key]);
 }
@@ -454,7 +511,7 @@ function enginesAvailable(env) {
   if (env.AI) { out.push('cloudflare'); out.push('qwen-cloudflare(sans clé)'); }
   if (env.HF_TOKEN || env.HUGGINGFACE_API_KEY) { if (out.indexOf('huggingface') < 0) out.push('huggingface'); }
   out.push('pollinations(sans clé)');       /* toujours là : aucune clé requise */
-  if (env.REPLICATE_API_TOKEN) out.push('replicate(payant)');
+  if (jetonReplicate(env)) out.push('replicate(payant)');
   return out;
 }
 async function anyText(env, prompt, wantJson, prefer) {
@@ -680,8 +737,8 @@ async function editImageChain(env, kind, imgDataUrl, h) {
     const g = await geminiImage(env, PROMPTS[kind], imgDataUrl);
     return imgResponse(g.mime, g.b64, Object.assign({ 'x-crea-provider': g.provider }, h));
   } catch (e) { errs.push(String((e && e.message) || e)); }
-  /* 2. Replicate (payant) */
-  const token = env.REPLICATE_API_TOKEN;
+  /* 2. Replicate (payant — seulement si l'interrupteur BEE_SECOURS_PAYANT est à 1) */
+  const token = jetonReplicate(env);
   if (token) {
     const m = MODELS[kind];
     try {
@@ -738,8 +795,8 @@ async function textToImageChain(env, prompt, ratio, h) {
     const po = await pollinationsImage(full, ratio);
     return imgResponse(po.mime, po.b64, Object.assign({ 'x-crea-provider': po.provider }, h));
   } catch (e) { errs.push(String((e && e.message) || e)); }
-  /* 5) payant en tout dernier */
-  const token = env.REPLICATE_API_TOKEN;
+  /* 5) payant en tout dernier (seulement avec l'interrupteur BEE_SECOURS_PAYANT=1) */
+  const token = jetonReplicate(env);
   if (token) {
     try { return await runImageModel(BG, BG.input(prompt, ratio), token, Object.assign({ 'x-crea-provider': 'replicate' }, h)); }
     catch (e) { errs.push(String((e && e.message) || e)); }
@@ -752,10 +809,29 @@ export default {
     const url = new URL(req.url);
     const origin = req.headers.get('Origin') || '';
     const h = corsHeaders(origin);
-    const token = env.REPLICATE_API_TOKEN;
+    const token = jetonReplicate(env);
     const freeAI = !!(env.GEMINI_API_KEY || env.GOOGLE_API_KEY);
 
     if (req.method === 'OPTIONS') return new Response(null, { headers: h });
+    if (url.pathname === '/health') {
+      return json({
+        ok: true,
+        configured: anyEngine(env),
+        free: freeAI,                    // IA gratuite (Gemini) disponible
+        together: !!env.TOGETHER_API_KEY, // repli gratuit texte→image
+        cloudflare: !!env.AI,            // 2e IA gratuite (image + voix + texte)
+        engines: enginesAvailable(env),  // TOUTES les IA branchées, nommées
+        engines_count: enginesAvailable(env).length,
+        paid: !!token,                   // Replicate (secours payant, interrupteur allumé)
+        payant_coupe: !payantOk(env),    // l'interrupteur BEE_SECOURS_PAYANT est éteint
+        compte_requis: true              // toute génération exige un compte vérifié du domaine
+      }, h);
+    }
+    /* 🔐 PORTE (audit 2026-10-08) : tout le reste — génération, sonde, suivi Replicate —
+       exige un compte VÉRIFIÉ du domaine, puis respecte un plafond par compte. */
+    const compte = await requireCompte(req, env);
+    if (!compte.ok) return json({ ok: false, error: compte.error, detail: compte.detail, message: 'Connecte-toi avec ton compte KDMC (prénom + nom + code) pour utiliser l\'IA.' }, h, compte.status);
+    if (!(await limiteOk(env, compte.uid))) return json({ ok: false, error: 'trop_de_demandes', detail: 'plafond ' + LIMITE_PAR_MIN + ' demandes par minute et par compte', message: 'Trop de demandes d\'affilée — réessaie dans une minute.' }, h, 429);
     /* --- 🔎 SONDE MODÈLES (diagnostic) ---
        Je n'ai pas accès à Cloudflare depuis l'agent : cette sonde, lancée par la
        CI, dit QUELS modèles répondent vraiment aujourd'hui. Sans elle, un modèle
@@ -793,21 +869,9 @@ export default {
       return json(out, h);
     }
 
-    if (url.pathname === '/health') {
-      return json({
-        ok: true,
-        configured: anyEngine(env),
-        free: freeAI,                    // IA gratuite (Gemini) disponible
-        together: !!env.TOGETHER_API_KEY, // repli gratuit texte→image
-        cloudflare: !!env.AI,            // 2e IA gratuite (image + voix + texte)
-        engines: enginesAvailable(env),  // TOUTES les IA branchées, nommées
-        engines_count: enginesAvailable(env).length,
-        paid: !!token                    // Replicate (secours payant)
-      }, h);
-    }
-
-    // --- suivi d'un job vidéo Replicate (async) ---
+    // --- suivi d'un job vidéo Replicate (async, payant → même interrupteur) ---
     if (url.pathname === '/job' && req.method === 'GET') {
+      if (!payantOk(env)) return json({ error: 'payant_coupe', reason: 'payant_coupe' }, h, 503);
       if (!token) return json({ error: 'not_configured' }, h, 503);
       const id = url.searchParams.get('id') || '';
       if (!/^[a-zA-Z0-9]+$/.test(id)) return json({ error: 'bad_id' }, h, 400);
@@ -904,7 +968,7 @@ export default {
       /* 2) Replicate, ÉDITION guidée par l'instruction (l'identité est gardée).
             Si un modèle n'existe plus, latestVersion() échoue proprement et on
             passe au suivant — aucun risque de casse. */
-      const rtok = env.REPLICATE_API_TOKEN;
+      const rtok = jetonReplicate(env);
       if (rtok) {
         for (const m of MAGIC_EDIT) {
           try {
@@ -1066,9 +1130,10 @@ export default {
       /* 2) Secours : un vrai moteur d'ÉDITION (part de TA photo, garde ton
             visage). On ne fait que les 2 poses nécessaires pour animer, avec
             une attente écourtée — c'est ce qui tient dans le budget Cloudflare. */
-      if (frames.length < 2 && env.REPLICATE_API_TOKEN) {
+      const rtokFrames = jetonReplicate(env);
+      if (frames.length < 2 && rtokFrames) {
         try {
-          const ed = await firstUsableEditor(env.REPLICATE_API_TOKEN);
+          const ed = await firstUsableEditor(rtokFrames);
           const need = poses.slice(0, 2);
           /* allSettled, JAMAIS `all` — vécu le 2026-09-06 (auto-test CI) :
              34 s ne suffisaient pas à flux-kontext-pro, `Promise.all` rejetait
@@ -1079,7 +1144,7 @@ export default {
              pose au lieu de ~19, donc plus long À BUDGET DE SOUS-REQUÊTES
              ÉGAL (limite Cloudflare, cf. pollUntilDone). */
           const outs = await Promise.allSettled(need.map((p) =>
-            editToDataUrl(ed.model, ed.version, image, texte(p), env.REPLICATE_API_TOKEN, 46000, 4000)));
+            editToDataUrl(ed.model, ed.version, image, texte(p), rtokFrames, 46000, 4000)));
           const faites = [];
           outs.forEach((r, i) => {
             if (r.status === 'fulfilled') faites.push(r.value);
@@ -1092,7 +1157,7 @@ export default {
             const iRate = outs.findIndex((r) => r.status !== 'fulfilled');
             try {
               faites.push(await editToDataUrl(ed.model, ed.version, image, texte(need[iRate]),
-                env.REPLICATE_API_TOKEN, 40000, 4000));
+                rtokFrames, 40000, 4000));
             } catch (e2) { errs.push('edit-rattrapage:' + String((e2 && e2.message) || e2)); }
           }
           if (faites.length >= 2) {
@@ -1117,8 +1182,9 @@ export default {
       return json({ frames, provider, asked: n, got: frames.length, errors: errs.slice(0, 2) }, h);
     }
 
-    // --- lancement génération vidéo Replicate (payant) ---
+    // --- lancement génération vidéo Replicate (payant) : interrupteur BEE_SECOURS_PAYANT=1 obligatoire ---
     if (url.pathname === '/animate') {
+      if (!payantOk(env)) return json({ error: 'payant_coupe', reason: 'payant_coupe', message: 'La vidéo IA payante est coupée (tout gratuit). Utilise « poses de danse », gratuit.' }, h, 503);
       if (!token) return json({ error: 'not_configured' }, h, 503);
       if (badImage(image)) return json({ error: 'bad_image' }, h, 400);
       try {

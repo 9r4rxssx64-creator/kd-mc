@@ -27,10 +27,9 @@ function makeEnv(state) {
             const u = state.users.find(x => x.id === this._a[0]);
             return u ? { merged_into: u.merged_into || null } : null;
           }
-          if (sql.includes("status != 'deleted' AND phone LIKE")) {
-            const tail = String(this._a[0] || '').replace(/%/g, '').replace(/\D/g, '').slice(-8);
-            const u = state.users.find(x => x.status !== 'deleted' &&
-              String(x.phone || '').replace(/\D/g, '').slice(-8) === tail);
+          // Revue 08.10.2026 (D5) : résolution sur le numéro E.164 COMPLET (plus de LIKE sur 8 chiffres).
+          if (sql.includes("status != 'deleted' AND phone = ?")) {
+            const u = state.users.find(x => x.status !== 'deleted' && x.phone === this._a[0]);
             return u ? { id: u.id } : null;
           }
           if (sql.includes('SELECT MAX(ts)')) return { t: 1 };

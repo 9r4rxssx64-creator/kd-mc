@@ -15,9 +15,13 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else { fail++; 
 globalThis.fetch = async () => { throw new Error('réseau interdit'); };
 let vu = null, rep = 'Hello **Kevin** ! # Ready _for_ our call?';
 const AI = { run(model, input) { vu = input.messages || []; return { response: rep }; } };
-const env = { ACCOUNTS: { get: async () => null, put: async () => {} }, AI };
+const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: { get: async () => null, put: async () => {} }, AI };
+/* 8.10 (revue extérieure) : le coach exige une SESSION du domaine → les tests en portent une (signée avec le secret de test) */
+import { createHmac } from 'node:crypto';
+const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const SESSION = (() => { const p = b64u(JSON.stringify({ u: 'eleve-appel', n: 'Élève Appel', c: 1, v: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); })();
 const post = (body, ref = 'https://lingua.kd-mc.com/') => mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/ai', {
-  method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, ref ? { Referer: ref } : {}), body: JSON.stringify(body) }), env);
+  method: 'POST', headers: Object.assign({ 'content-type': 'application/json', authorization: 'Bearer ' + SESSION }, ref ? { Referer: ref } : {}), body: JSON.stringify(body) }), env);
 const base = { langName: 'anglais', level: 'Moyen', levelIndex: 2, weak: ['pomme = apple'], messages: [] };
 const sysDe = () => (vu && vu[0] && vu[0].content) || '';
 

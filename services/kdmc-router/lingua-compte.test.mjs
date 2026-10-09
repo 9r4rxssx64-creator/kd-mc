@@ -16,8 +16,13 @@ console.log('\nLingua : la progression suit le compte KDMC\n');
 { const r = await req('/__lingua/load', { headers: { authorization: 'Bearer ' + tok } }); const j = await r.json();
   ok(j.ok && j.data && j.data.xp === 42 && j.cle === 'compte', '2. lecture SANS clé, avec la session (autre appareil) → la même progression', JSON.stringify(j)); }
 { const r = await req('/__lingua/load'); ok(r.status === 401 && (await r.json()).reason === 'session_requise', '3. sans clé ET sans session → refus (rien à deviner)'); }
-{ const r = await req('/__lingua/save', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ k: 'a'.repeat(40), data: { xp: 1 } }) });
+{ const r = await req('/__lingua/save', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ k: 'a'.repeat(40), data: { xp: 1 } }) });
   const j = await (await req('/__lingua/load?k=' + 'a'.repeat(40))).json();
-  ok((await r.json()).ok === true && j.data && j.data.xp === 1 && j.cle === 'code', '4. un ancien compte Lingua (clé empreinte nom+code) marche comme avant'); }
+  ok((await r.json()).ok === true && j.data && j.data.xp === 1 && j.cle === 'code', '4. un ancien compte Lingua (clé empreinte nom+code) marche comme avant — depuis une page du domaine (session)'); }
+/* 8.10 (revue extérieure, P1) : écrire ou effacer sous une clé, SANS session, c'était ouvert à tout internet (200 Ko par clé) */
+{ const r = await req('/__lingua/save', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ k: 'b'.repeat(40), data: { xp: 1 } }) });
+  const e = await req('/__lingua/effacer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ k: 'a'.repeat(40) }) });
+  const j = await (await req('/__lingua/load?k=' + 'a'.repeat(40))).json();
+  ok(r.status === 401 && e.status === 401 && !kv.has('lingua:' + 'b'.repeat(40)) && j.data && j.data.xp === 1, '5. sans session : ni écrire ni effacer (401), rien n\'a bougé'); }
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

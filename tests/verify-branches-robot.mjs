@@ -127,6 +127,11 @@ if (existsSync(CFG)) {
   let g = {};
   try { g = (JSON.parse(readFileSync(CFG, 'utf8')).git || {}).deploymentEnabled || {}; } catch { g = {}; }
   chk(g['claude/voir-*'] === false, `${CFG} refuse aussi les branches de captures par motif (claude/voir-*)`);
+  /* 9.10.2026 (mesuré par l'API Vercel) : 100 déploiements en 19 h, 91 ANNULÉS par ignoreCommand — un déploiement
+     annulé compte quand même dans le quota gratuit (100/jour), et chaque push de CHAQUE branche en créait un.
+     deploymentEnabled empêche la CRÉATION : toutes les branches refusées (« ** »), main seule acceptée
+     (doc Vercel : si plusieurs motifs s'appliquent, un seul « true » suffit → main et ses crons déploient comme avant). */
+  chk(g['**'] === false && g.main === true, `${CFG} : seules les poussées sur main créent un déploiement (« ** »: false, main: true)`, JSON.stringify(g));
 }
 
 R.ok.forEach((m) => console.log('  OK ' + m));

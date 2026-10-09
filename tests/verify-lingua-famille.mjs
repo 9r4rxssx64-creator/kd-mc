@@ -62,6 +62,11 @@ const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }).ca
 let exp = null; if (dl) { try { exp = JSON.parse(readFileSync(await dl.path(), 'utf8')); } catch (e) {} }
 ok(exp && exp.compte && exp.compte.nom === 'Léo Petit' && exp.progression && exp.progression.xp === 42, `4. export JSON : compte + progression (${dl ? dl.suggestedFilename() : 'aucun fichier'})`);
 /* 5. effacer : on pose d'abord une copie en ligne, puis on efface */
+/* 8.10 (revue extérieure) : /__lingua/save et /effacer exigent une SESSION du domaine. En vrai, Lingua est derrière la porte du compte :
+   toute page ouverte en a une (cookie kdmc_sso). Le harnais la pose ici, juste avant l'enregistrement en ligne (les étapes 1-4 restent en mode enfant local). */
+{ const { createHmac } = await import('node:crypto'); const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const pl = b64u(JSON.stringify({ u: 'parent-famille', n: 'Parent Famille', c: 1, v: 0, k: 1, iat: Date.now(), exp: Date.now() + 1e9 }));
+  await ctx.addCookies([{ name: 'kdmc_sso', value: pl + '.' + b64u(createHmac('sha256', 'sec').update(pl).digest()), domain: '.kd-mc.com', path: '/', secure: true, httpOnly: true }]); }
 await sauver();
 await p.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
 await p.waitForTimeout(1500);

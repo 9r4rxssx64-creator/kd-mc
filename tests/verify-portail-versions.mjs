@@ -19,7 +19,8 @@ export function verifier(html, sw) {
   if (!page || page !== badge || page !== cache) e.push(`version de la page ${page || '?'} ≠ badge ${badge || '?'} ou sw.js ${cache || '?'}`);
   const vHtml = Object.fromEntries([...html.matchAll(/src="([a-z-]+\.js)\?v=(\d+\.\d+\.\d+)"/g)].map((m) => [m[1], m[2]]));
   const vSw = Object.fromEntries([...sw.matchAll(/'\.\/([a-z-]+\.js)\?v=(\d+\.\d+\.\d+)'/g)].map((m) => [m[1], m[2]]));
-  for (const f of ['kdmc-portal.js', 'kdmc-boite.js']) if (vHtml[f] !== page) e.push(`${f} : ?v=${vHtml[f] || '?'} dans index.html, page en ${page}`);
+  /* 8.10 (revue extérieure) : kdmc-sso.js manquait à la liste — un client SSO en retard sur la page (vécu : ?v=1.0.31 sur une page 1.0.48) */
+  for (const f of ['kdmc-portal.js', 'kdmc-boite.js', 'kdmc-sso.js']) if (vHtml[f] !== page) e.push(`${f} : ?v=${vHtml[f] || '?'} dans index.html, page en ${page}`);
   for (const [f, v] of Object.entries(vHtml)) if (vSw[f] && vSw[f] !== v) e.push(`${f} : ?v=${v} dans index.html mais ?v=${vSw[f]} dans sw.js`);
   return { ok: e.length === 0, erreurs: e, page };
 }

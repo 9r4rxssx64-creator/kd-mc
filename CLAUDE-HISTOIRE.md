@@ -1918,7 +1918,7 @@ le **MÊME commit** que le code.
 **Test mental (mis à jour)** : *« Si Kevin ouvre MEMO_RESUME et KEVIN_INVENTORY maintenant,
 y voit-il ce que je viens de livrer — sans me l'avoir demandé ? »*
 
-### 8. RENFORCEMENT Kevin 2026-10-08 — « tous les documents importants, leçons » (LE GARDE COUVRE LA RÈGLE ENTIÈRE)
+### 8. RENFORCEMENT Kevin 2026-10-08 — « tous les documents importants, leçons » (le garde couvre tout, pas une partie)
 
 > **« Met toujours à jour tous les documents importants, leçons, sans que je te le répète sans cesse. Pareil
 > pour toutes les branches, conversations, projets etc. Pourquoi, si c'est déjà la règle, tu ne l'appliques
@@ -11923,6 +11923,13 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
 - **Gardes** : `npm run test:code-attente` (les 6 points ci-dessus avec le vrai routeur + sabotage coupe-circuit), `npm run test:code-compte`
   (création sans code refusée, code posé depuis sa session, compte ancien → attente). Inventaire : `coffre-comptes-inventaire` nomme les
   comptes sans code (à qui dire « reconnecte-toi et choisis ton code »).
+- **5. Les anciens comptes sans code sont BLOQUÉS à leur prochaine connexion** (Kevin, 8.10 soir : *« Les anciens comptes sans code se
+  voient afficher à leur prochaine connexion la création d'un code obligatoire. Sinon pas d'accès »*). Une session valide dont le compte n'a
+  pas de code n'ouvre plus rien : page d'app → porte « Crée ton code » (statique, lien vers kd-mc.com, jamais le script de porte qui
+  rebouclerait), fichiers → 401, `whoami` → `code_requis` (uid + nom pour pré-remplir), re-déclaration par le nom → `code_requis`. Le portail
+  couvre tout l'écran (« Crée ton code », saisi 2 fois) ; le code est posé **depuis la session de la personne** (memeSession), sans attendre
+  Kevin, puis retour à l'app. Un code posé avant le 8.10 (fiche sans `code_at`) est reconnu une fois et retenu (1 lecture KV, une fois).
+  Exemptés : l'admin, `ci_smoke`, coupe-circuit. Garde : `test:code-attente` § 7 (13 points + sabotage).
 
 ## 🔒 RÈGLE ABSOLUE — SEUL KEVIN AJOUTE OU MODIFIE : PLANNING, ÉQUIPES, PERSONNES, COMPTES, CODES — PARTOUT (Kevin 2026-10-08, ABSOLUE)
 

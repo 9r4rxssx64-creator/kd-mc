@@ -1,5 +1,74 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-09 (matin) — PR #4434 : chaîne verte, SonarCloud remis sur ses vraies règles
+
+- PR #4434 ouverte (remplace #4397). Rouges hérités de main réparés à la fusion : lien node_modules suivi par git (#4427), règle arbre
+  « une famille choisie » sans entrée au registre (#4432), leçons 464-468 prises deux fois (les miennes → 469-473).
+- Fusion de main (9.10, 10 commits arbre) : règle « aucune question qu'un document en main tranche » (#4439) sans entrée au registre
+  → classée comportementale (conduite de recherche) ; sa part mécanisable (donnée sans source = « probable ») reste à garder par la branche arbre.
+- `test:lingua-connexion` : course réelle du test (focus automatique à 100 ms) → attend le curseur ; 2/12 rouges → 0/32. Leçon #474.
+- SonarCloud (D sécurité / D fiabilité) : en analyse automatique il lit `.sonarcloud.properties`, pas `sonar-project.properties`
+  → les tests étaient jugés comme du code d'app (118 « failles » dans tests/ sur main, des harnais `vm`). Fichier ajouté, mêmes règles.
+  Vrais défauts corrigés : 2 champs de la porte de Départs sans étiquette (VoiceOver) + tri sans comparateur. Garde : light-audit-8-10 n° 8.
+- Vercel (kdmc-agent-monaco) : quota du jour ÉPUISÉ à 10h03 (« more than 100 »). Mesuré par l'API : 100 déploiements en 19 h,
+  91 ANNULÉS par ignoreCommand — un annulé compte quand même. `tools/agent/vercel.json` : `"**": false, "main": true`
+  (les branches ne créent plus de déploiement ; main et ses 3 crons inchangés). Garde verify-branches-robot + sabotage.
+  À VÉRIFIER après fusion : un déploiement main READY (list_deployments) ; si main ne déploie plus → retirer « ** ». Leçon #475.
+
+## 2026-10-08 (nuit, fin) — Revue extérieure complète (8 relecteurs) et corrections (« Corige tout »)
+
+- Rapport : `audit/prive/AUDIT-COMPLET-2026-10-08.md`. 9 P0 / 46 P1 trouvés ; tout le socle corrigé le soir même, chaque correctif avec son
+  garde et son sabotage. Portail v1.0.49 ; routeur : enveloppe de porte 90 s, session non prouvée → attente Kevin, Lingua réservée aux
+  comptes et à la chaîne gratuite, plafond fermé si KV en panne, sonde depuis GitHub Actions seulement, données RH au périmètre de l'app.
+  CMCteams : domaine muet ≠ admin local, MAJ auto 5 min, Sentry coupé pour les harnais (−1 531 o) ; le « SSE d'abord » (1 seul téléchargement) a été retiré le soir même : la réparation admin des équipes dépend du GET initial (test:light-firebase).
+- Light **v1.82** : le code tapé part enfin au domaine (jamais rangé), code obligatoire pour tous au portillon, refus du domaine affiché (plus d'impasse muette), Bearer sur whoami, bouton « Oublier cet appareil », fiche réduite au matricule sur l'appareil, 44 px / 16 px / aria-live, version.txt 5 min, couleurs en jetons (theme-signature : dette −33). Tests navigateur adaptés : light-faceid-code (45/45), matricule-fiche, fiche-premiere-connexion (35/35).
+- Quatre agents correcteurs sur la même branche (Apex Chat, autres apps, light, robots/CI) : voir § 6 bis du rapport.
+- Robots (8.10) : `coffre-chaine-privee` ne s'annule plus (`cancel-in-progress: false`, filtre `paths` = fichiers privés seulement) ; `coffre-previent-public.yml` SUPPRIMÉ, son signal est la dernière étape de `coffre-synchronise-public.yml` (après export vérifié) ; 13 workflows sans `${{ inputs }}` dans le shell (règle `entreesDansShell` + dette figée 44) ; règle R6 (`test:gratuit`) : un robot à la main lourd porte une file à nom fixe sans annulation ; 7 robots qui frappaient le domaine depuis `claude/**` → `main` seul ; `exporter.mjs` : un test qui lit `prive_toujours` devient privé. Garde `test:coffre-sobre`.
+- Rôle « shops » (8.10) : `/__admin/acces {roles:["shops"]}` → `whoami.roles` → `/__sso/fbtoken` (jeton Firebase `role:'shops'`, session prouvée) ; règles `shops_*` acceptent admin OU shops. À poser pour Laurence après la fusion. Lingua v2.138.0 (trace d'accès avec session).
+- À décider par Kevin : Firebase (fermer l'original), budget GitHub (20 $ ou 0 $), planning par équipe. Leçons #469-#473.
+- **Audit d'amélioration+++** (Kevin, 8.10 soir) : 4 relecteurs (perf/forfaits, UX iPhone mesurée en Chromium local sur 16 pages, produit, code/CI) → `audit/prive/AUDIT-AMELIORATION-2026-10-08.md`, 20 améliorations gratuites classées ; 8 à faire d'office, 6 qui attendent un oui (KEVIN_ACTIONS_TODO n° 6).
+
+## 2026-10-08 (nuit) — Connecteurs : bilan mesuré, nouveaux accès (Cloudflare, Sentry, PayPal, Supabase, Zapier, Mem0)
+
+- `CONNECTEURS.md` : 30 connecteurs sondés en lecture. **Cloudflare Developer Platform** (28 Workers, 6 D1, 6 KV ; `code_attente` vide à
+  18h UTC) et **Sentry** (org kdmc, projet cmcteams : 3 erreurs ouvertes, toutes venues des harnais CI — `iaRespond` forEach ×52,
+  `toggleTVMode` requestFullscreen ×16) changent le travail : lire le domaine sans robot GitHub, lire les vraies erreurs.
+  Cassés : Vercel (404), Shopify (jeton expiré). Vides (voulu) : Railway, Netlify, Lovable, Replit, Supabase, Mem0. Apollo : 175 crédits,
+  0 utilisé — jamais sans demande. Garde `test:connecteurs`. Message m209 à toutes les branches.
+
+## 2026-10-08 (nuit) — Anciens comptes sans code : « Crée ton code », sinon pas d'accès (Kevin, soir)
+
+- Routeur (`codeManquant`) : une session valide dont le compte n'a pas de code → porte « Crée ton code » (statique, lien kd-mc.com),
+  fichiers 401 `x-kdmc-porte: code`, `whoami` → `code_requis` (uid + nom), re-déclaration par le nom → `code_requis` même depuis sa session.
+  Exemptés : admin, `ci_smoke`, `KDMC_CODE_OBLIGATOIRE=0`. Code d'avant le 8.10 (fiche sans `code_at`) reconnu une fois, retenu.
+- Client SSO v1.0.31 : 5e état `code_requis` (pass gardé, c'est lui qui prouve la personne au portail), `whoamiResult` exporté, les apps
+  renvoient au portail `?code=1&return=`. Portail v1.0.48 : écran bloquant plein écran, code saisi 2 fois, posé depuis la session
+  (memeSession → immédiat), retour à l'app. L'encart du matin ne s'affichait pas (leçon #462).
+- Garde : `test:code-attente` § 7 (13 points, sabotage coupe-circuit). Les 7 personnes sans code (inventaire du 8.10) verront cet écran.
+- **Rouges de main réparés au passage (mesurés sur main 299e18c73)** : `test:improvements-guard` (un sous-titre « ### 8. RENFORCEMENT … (LE
+  GARDE COUVRE LA RÈGLE ENTIÈRE) » de #4372 était lu comme une règle « ENTIÈRE) » → reformulé ; registre : entrée pour « SEUL KEVIN AJOUTE
+  OU MODIFIE » → test:ecritures-cmc + coffre-ecritures-cmc.yml) ; `test:bee-portes` (CSP de Bee en retard sur la page : connect-src
+  lingua.kd-mc.com, media-src blob:, justifiés dans javis-widget.js) ; `test:crea-song` et 7 harnais Créa (code « 1234 » refusé par le
+  Studio depuis le compte unique : 6 caractères) ; harnais Lingua/cercle : les fiches de test portent `code_at` (compte avec code).
+
+## 2026-10-08 (soir, réparations) — « Répare et corrige tout ce qui doit l'être, toujours »
+
+- **3 robots publics rouges, cause mesurée et corrigée** : `beatbot-smoke` (rouge depuis le 27.09 : `version.txt` de PoolPilot est
+  derrière la porte admin → la sonde attendait « vX.Y.Z » ; elle prouve maintenant le VERROU, 4/4) ; `bee-gardes` (rouge à chaque
+  push depuis le 2.10 : le garde citait un vrai nom en commentaire + importait l'exporteur du coffre → retiré du public →
+  « missing script » ; leçon #459, lanceur `tools/ci/garde-publique.sh`, filtre d'export qui saute `-s`) ; `tests.yml`
+  (37 signalements sans suivi : chacun porte son suivi daté, vérifié sur le vrai, voir pipeline/sessions.json).
+- **`main` était rouge sur la garde de taille** (3 443 263 o > 3 441 529 depuis #4372, invisible dans une chaîne de 400 pas) :
+  `_cmcCreerFicheAbsent` sorti d'index.html vers `tools/shared/matricule-sbm.js` (déjà chargé), commentaires condensés →
+  3 441 447 o, sous le plafond (82 o de marge), SANS rebaseline. `_cmcIsValidEmpName` RESTE dans index.html : les harnais
+  file:// (test:space-format) ne chargent pas les modules partagés — essayé, rouge, remis. v9.954 (sw, version.txt, seed
+  parser). test:import-absents 14/14, sabotage rouge ; test:space-format, generateurs, matricule-fiche verts.
+- **Nom abîmé** (fiche « NoÃ«lle », 13 sessions du 27.09) : robot `coffre-comptes-reparer-nom.yml` (leçon #460), inventaire
+  qui liste les « NOMS ABÎMÉS ». Lancé en essai à blanc puis appliqué : voir ETAT du soir.
+- **Apex v13 build** : relancé avec enable → 40 s → dispatch (run 37809075545, success), workflow re-désactivé, pas de nouvelle PR.
+- **Journal** : 16 « code admin refusé » (5.10 → 8.10, lieu US, appareil ?) — les robots GitHub tournent aux États-Unis ; les
+  horaires collent aux robots de vérification (23h30-23h47 le 7.10, 13h25 / 14h14 le 8.10 = mes lancements). Pas une attaque ;
+  à faire : journaliser l'ASN et l'app sur cet événement pour ne plus avoir à deviner.
 ## 2026-10-09 — Apex Chat v1.1.299 : prekey_signed libéré (Kevin « Personne n'est connecté, libère »)
 
 - Téléphone : la clé de signature de groupe ne s'écrit et ne se lit plus QUE dans `signing_key_pub`.

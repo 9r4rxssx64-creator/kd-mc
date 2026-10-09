@@ -9,3 +9,5 @@ test-results/
 .DS_Store
 tests/.localhost-cert.pem
 tests/.localhost-key.pem
+# un lien symbolique node_modules (worktree) n est pas couvert par « node_modules/ » : commite par #4427 (9.10), garde test:liens-absolus rouge
+/node_modules

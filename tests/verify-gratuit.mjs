@@ -19,6 +19,14 @@
  *   R4. Aucun `schedule:` (déjà interdit) et aucun `workflow_run` qui repart sur TOUT run
  *       (fan-out) sans condition sur la conclusion.
  *   R5. Le socle « sans timeout » est à ZÉRO (tests/workflows-timeout-baseline.json).
+ *   R6. (revue indépendante 8.10.2026) Un robot lancé À LA MAIN (`workflow_dispatch`) qui installe un
+ *       navigateur ou est borné à plus de 2 min porte une file : `concurrency` avec un groupe à NOM
+ *       FIXE (pas de numéro de run dedans : ce ne serait plus une file) et `cancel-in-progress: false`.
+ *       Mesuré : arbre-nuage.yml, « lancé à la main uniquement », 294 lancements en 7 jours, 157 à
+ *       moins de 2 min d'écart — et son groupe de visites portait le numéro du run. Avec un nom fixe,
+ *       GitHub ne garde qu'une exécution en attente : c'est lui qui fait le débounce, gratuitement.
+ *       Et `true` paierait les minutes des exécutions annulées (52 annulées = 412 min sur la chaîne
+ *       privée en 7 jours).
  *
  *   PÉRIMÈTRE : « sans borne » (R1) vaut pour TOUS les fichiers ; les plafonds (R1 ≤ 45, R2, R3, R4) ne
  *   visent que les robots qui DÉPENSENT le quota du coffre = les robots privés (regles.json
@@ -34,7 +42,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WF = join(ROOT, '.github/workflows');
-const R1_MAX = 45, R2_MAX = 20, R3_MAX = 10;
+const R1_MAX = 45, R2_MAX = 20, R3_MAX = 10, R6_MIN = 2;
 let pass = 0; const fails = [];
 const ok = (c, m) => (c ? pass++ : fails.push(m));
 const sansCommentaires = (t) => t.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
@@ -57,9 +65,16 @@ export function analyser(src) {
     const nombres = (valeur.match(/\d+/g) || []).map(Number);
     jobs.push({ nom: m[1], timeout: nombres.length ? Math.max(...nombres) : null });
   }
+  /* R6 : la file (concurrency) et ce qui rend un robot « lourd » (navigateur, ou borne > 2 min). */
+  const conc = bloc('concurrency');
+  /* Forme courte « concurrency: nom » = un groupe à nom fixe, sans annulation. */
+  const groupe = (conc.match(/^\s+group:\s*(.+)$/m) || t.match(/^concurrency:[ \t]*(\S[^\n]*)$/m) || [])[1] || '';
   return {
     schedule: /^  schedule:/m.test(on),
     workflowRun: /^  workflow_run:/m.test(on),
+    dispatch: /^  workflow_dispatch:/m.test(on) || /^\s*-\s*workflow_dispatch\s*$/m.test(on) || /^on:\s*\[.*\bworkflow_dispatch\b/m.test(t),
+    navigateur: /playwright install|browser-actions\/setup-chrome|apt-get install[^\n]*chrom|puppeteer/.test(t),
+    file: { presente: conc.trim() !== '', groupe, parRun: /run_id|run_number|run_attempt/.test(groupe), annule: /cancel-in-progress:\s*true/.test(conc) },
     push: /^  push:/m.test(on) || /^\s*-\s*push\s*$/m.test(on) || /^on:\s*push\s*$/m.test(t),
     pushClaude: surClaude && (/claude\//.test(push) || (!/branches/.test(push) && /^  push:/m.test(on))),
     pushPaths: /^\s+paths(-ignore)?:/m.test(push),
@@ -86,6 +101,12 @@ function verifier(fichiers, lire, dansPerimetre = () => true) {
     }
     if (a.schedule) pb.push(`R4 ${f} : schedule interdit`);
     if (a.workflowRun && !/conclusion|workflow_run\.event|if:/.test(sansCommentaires(lire(f)))) pb.push(`R4 ${f} : workflow_run sans condition (fan-out)`);
+    if (a.dispatch && (a.navigateur || a.jobs.some((j) => j.timeout > R6_MIN))) {
+      const lourd = a.navigateur ? 'installe un navigateur' : `borné à plus de ${R6_MIN} min`;
+      if (!a.file.presente || !a.file.groupe) pb.push(`R6 ${f} : lancé à la main et ${lourd}, sans file (concurrency.group)`);
+      else if (a.file.parRun) pb.push(`R6 ${f} : le groupe de file porte le numéro du run (${a.file.groupe.trim()}) — ce n'est plus une file`);
+      else if (a.file.annule) pb.push(`R6 ${f} : cancel-in-progress: true — une exécution annulée est payée quand même ; il faut false (GitHub ne garde qu'une attente par groupe)`);
+    }
   }
   return pb;
 }
@@ -106,6 +127,12 @@ if (process.argv.includes('--sabotage')) {
     ['R3 PR sans paths', 'on:\n  pull_request:\n    branches: [main]\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 5\n', /R3 .*sans filtre/],
     ['R3 PR trop long', 'on:\n  pull_request:\n    paths: [a]\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 18\n', /R3 .*> 10/],
     ['R4 schedule', base.replace('on:\n', 'on:\n  schedule:\n    - cron: "0 * * * *"\n'), /R4 .*schedule/],
+    ['R6 dispatch lourd sans file', 'on:\n  workflow_dispatch:\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 10\n', /R6 .*sans file/],
+    ['R6 dispatch navigateur sans file', 'on:\n  workflow_dispatch:\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 2\n    steps:\n      - run: npx playwright install --with-deps chromium\n', /R6 .*sans file/],
+    ['R6 groupe par run', 'on:\n  workflow_dispatch:\nconcurrency:\n  group: visite-${{ github.run_id }}\n  cancel-in-progress: false\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 10\n', /R6 .*numéro du run/],
+    ['R6 annule', 'on:\n  workflow_dispatch:\nconcurrency:\n  group: x-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 10\n', /R6 .*cancel-in-progress: true/],
+    ['R6 sain (file à nom fixe, false)', 'on:\n  workflow_dispatch:\nconcurrency:\n  group: x\n  cancel-in-progress: false\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 10\n', null],
+    ['R6 hors champ (dispatch léger)', 'on:\n  workflow_dispatch:\njobs:\n  j:\n    runs-on: x\n    timeout-minutes: 2\n', null],
     ['sain', base, null],
     ['sain avec commentaire daté', base.replace('timeout-minutes: 5', 'timeout-minutes: 15   # Kevin 30.09'), null],
     ['sain calculé', base.replace('timeout-minutes: 5', "timeout-minutes: ${{ inputs.x != '' && 45 || 10 }}"), null],

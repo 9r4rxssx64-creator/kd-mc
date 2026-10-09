@@ -24,7 +24,7 @@ const t = (c, m, d) => {
 function envNeuf() {
   const store = new Map();
   const ACCOUNTS = { get: async (k) => (store.has(k) ? store.get(k) : null), put: async (k, v) => { store.set(k, v); }, delete: async (k) => { store.delete(k); } };
-  return { store, env: { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS } };
+  return { store, env: { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* 8.10 : ce test ne porte pas sur le code du compte — le blocage « crée ton code » (codeManquant) est prouvé dans code-attente.test.mjs § 7 */, KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS } };
 }
 const whoami = async (env, hdr) => (await mod.fetch(new Request('https://cmcteams.kd-mc.com/__sso/whoami', { headers: hdr }), env, { waitUntil() {} })).json();
 const grant = async (env, hdr) => (await mod.fetch(new Request('https://cmcteams.kd-mc.com/__admin/grant', { headers: hdr }), env, { waitUntil() {} })).status;

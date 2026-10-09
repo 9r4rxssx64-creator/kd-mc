@@ -57,34 +57,56 @@ jobs:
 
       - name: Parse payload
         id: parse
+        # 8.10.2026 (revue indépendante) : les valeurs du payload et des entrées passent par `env:`,
+        # jamais directement dans le shell. Écrites en dur dans `run:`, une valeur comme
+        # `x"; rm -rf …` devenait une commande, avec `contents: write`. Garde : test:workflows-shell.
+        env:
+          EVENEMENT: ${{ github.event_name }}
+          CP_TASK: ${{ github.event.client_payload.task }}
+          CP_EXEC_ID: ${{ github.event.client_payload.exec_id }}
+          CP_SRC: ${{ github.event.client_payload.src }}
+          CP_SRC_VERSION: ${{ github.event.client_payload.src_version }}
+          # v13.4.38 Kevin "Donne accès apex à ta branche" — extraire target_branch
+          CP_TARGET_BRANCH: ${{ github.event.client_payload.params.target_branch }}
+          CP_PARAMS: ${{ toJSON(github.event.client_payload.params) }}
+          IN_TASK: ${{ github.event.inputs.task }}
+          IN_EXEC_ID: ${{ github.event.inputs.exec_id }}
+          IN_PARAMS: ${{ github.event.inputs.params_json }}
         run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            TASK="${{ github.event.client_payload.task }}"
-            EXEC_ID="${{ github.event.client_payload.exec_id }}"
-            SRC="${{ github.event.client_payload.src }}"
-            SRC_VERSION="${{ github.event.client_payload.src_version }}"
-            # v13.4.38 Kevin "Donne accès apex à ta branche" — extraire target_branch
-            TARGET_BRANCH="${{ github.event.client_payload.params.target_branch }}"
-            echo "params_json=$(echo '${{ toJSON(github.event.client_payload.params) }}' | jq -c .)" >> $GITHUB_OUTPUT
+          if [ "$EVENEMENT" = "repository_dispatch" ]; then
+            TASK="$CP_TASK"
+            EXEC_ID="$CP_EXEC_ID"
+            SRC="$CP_SRC"
+            SRC_VERSION="$CP_SRC_VERSION"
+            TARGET_BRANCH="$CP_TARGET_BRANCH"
+            PARAMS=$(printf '%s' "$CP_PARAMS" | jq -c .)
           else
-            TASK="${{ github.event.inputs.task }}"
-            EXEC_ID="${{ github.event.inputs.exec_id }}"
+            TASK="$IN_TASK"
+            EXEC_ID="$IN_EXEC_ID"
             SRC="manual"
             SRC_VERSION=""
             TARGET_BRANCH=""
-            echo "params_json=${{ github.event.inputs.params_json }}" >> $GITHUB_OUTPUT
+            [ -n "$IN_PARAMS" ] || IN_PARAMS='{}'
+            PARAMS=$(printf '%s' "$IN_PARAMS" | jq -c .)
           fi
-          echo "task=$TASK" >> $GITHUB_OUTPUT
-          echo "exec_id=$EXEC_ID" >> $GITHUB_OUTPUT
-          echo "src=$SRC" >> $GITHUB_OUTPUT
-          echo "src_version=$SRC_VERSION" >> $GITHUB_OUTPUT
-          echo "target_branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          # Une seule ligne par valeur dans la sortie : un retour à la ligne dans une valeur
+          # écrirait une AUTRE clé (même piège que l'interpolation). On refuse plutôt que deviner.
+          for v in "$TASK" "$EXEC_ID" "$SRC" "$SRC_VERSION" "$TARGET_BRANCH" "$PARAMS"; do
+            case "$v" in *$'\n'*) echo "::error::valeur sur plusieurs lignes refusée"; exit 1;; esac
+          done
+          echo "params_json=$PARAMS" >> "$GITHUB_OUTPUT"
+          echo "task=$TASK" >> "$GITHUB_OUTPUT"
+          echo "exec_id=$EXEC_ID" >> "$GITHUB_OUTPUT"
+          echo "src=$SRC" >> "$GITHUB_OUTPUT"
+          echo "src_version=$SRC_VERSION" >> "$GITHUB_OUTPUT"
+          echo "target_branch=$TARGET_BRANCH" >> "$GITHUB_OUTPUT"
           echo "Task: $TASK | Exec: $EXEC_ID | Src: $SRC | Target: $TARGET_BRANCH"
 
       - name: Security gate (whitelist + forbidden check)
         id: gate
+        env:
+          TASK: ${{ steps.parse.outputs.task }}
         run: |
-          TASK="${{ steps.parse.outputs.task }}"
           # v13.4.40 PARITÉ APEX Kevin 2026-05-14 — extensions tools Claude Code
           ALLOWED="modify_file create_file run_test run_lint audit_repo deploy_canary backup_user_data restore_from_backup create_skill modify_skill create_hook modify_hook modify_workflow register_sentinel unregister_sentinel modify_script create_script append_to_memory append_to_top_rules self_audit_and_fix rotate_credentials sync_memory_bridge release_version read_file list_files grep_code glob_pattern bash_safe web_fetch web_search spawn_subagent create_pr comment_on_pr merge_pr_safe create_issue close_issue_safe list_branches get_file_contents search_code"
           FORBIDDEN="delete_file force_push modify_user_credentials_external send_external_email_without_consent delete_skill delete_workflow modify_admin_kevin modify_top_rules_replace execute_shell_arbitrary disable_sentinel_security modify_csp_meta"
@@ -163,6 +185,14 @@ jobs:
       - name: Auto-commit changes (if any)
         if: steps.gate.outputs.result == 'allowed' && steps.claude.outcome == 'success'
         id: commit
+        # Les sorties de « Parse payload » viennent du payload (non vérifiées, sauf la tâche) :
+        # elles passent par env: elles aussi.
+        env:
+          TASK: ${{ steps.parse.outputs.task }}
+          EXEC_ID: ${{ steps.parse.outputs.exec_id }}
+          SRC: ${{ steps.parse.outputs.src }}
+          SRC_VERSION: ${{ steps.parse.outputs.src_version }}
+          TARGET_BRANCH_DEMANDEE: ${{ steps.parse.outputs.target_branch }}
         run: |
           git config user.name "apex-execute[bot]"
           git config user.email "apex-execute@kdmc.dev"
@@ -174,15 +204,19 @@ jobs:
             # v13.4.38 Kevin "Donne accès à apex à ta branche claude/test-699LQ" :
             # par défaut Apex push directement sur claude/test-699LQ (auto-merge bot
             # va merger dans main). Override possible via target_branch param.
-            TARGET_BRANCH="${{ steps.parse.outputs.target_branch }}"
+            TARGET_BRANCH="$TARGET_BRANCH_DEMANDEE"
             if [ -z "$TARGET_BRANCH" ]; then
               TARGET_BRANCH="claude/test-699LQ"
             fi
+            # Un nom de branche vient du payload : il doit ressembler à un nom de branche.
+            case "$TARGET_BRANCH" in
+              -*|*..*|*[!A-Za-z0-9/_.-]*) echo "::error::nom de branche refusé"; exit 1;;
+            esac
             git fetch origin "$TARGET_BRANCH" || true
             git checkout "$TARGET_BRANCH" 2>/dev/null || git checkout -b "$TARGET_BRANCH"
             git add -A
-            git commit -m "apex-execute: ${{ steps.parse.outputs.task }} (exec_id=${{ steps.parse.outputs.exec_id }})" \
-              -m "Source: ${{ steps.parse.outputs.src }} ${{ steps.parse.outputs.src_version }} | Target: $TARGET_BRANCH | Auto-generated via Claude Code Action."
+            git commit -m "apex-execute: $TASK (exec_id=$EXEC_ID)" \
+              -m "Source: $SRC $SRC_VERSION | Target: $TARGET_BRANCH | Auto-generated via Claude Code Action."
             git push origin "$TARGET_BRANCH" || echo "Push failed (non fatal)"
             echo "committed=true" >> $GITHUB_OUTPUT
             echo "branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
@@ -191,14 +225,23 @@ jobs:
       - name: Comment Issue tracker (callback Apex)
         if: always() && steps.parse.outputs.exec_id != ''
         uses: actions/github-script@v9
+        # Même règle pour le JavaScript : les valeurs du payload arrivent par process.env, pas
+        # dans le code (un `'` dans exec_id cassait ou détournait le script).
+        env:
+          EXEC_ID: ${{ steps.parse.outputs.exec_id }}
+          TASK: ${{ steps.parse.outputs.task }}
+          RESULT: ${{ steps.gate.outputs.result }}
+          CLAUDE_STATUS: ${{ steps.claude.outcome }}
+          COMMITTED: ${{ steps.commit.outputs.committed }}
+          BRANCH: ${{ steps.commit.outputs.branch }}
         with:
           script: |
-            const exec_id = '${{ steps.parse.outputs.exec_id }}';
-            const task = '${{ steps.parse.outputs.task }}';
-            const result = '${{ steps.gate.outputs.result }}';
-            const claudeStatus = '${{ steps.claude.outcome }}';
-            const committed = '${{ steps.commit.outputs.committed }}';
-            const branch = '${{ steps.commit.outputs.branch }}';
+            const exec_id = process.env.EXEC_ID || '';
+            const task = process.env.TASK || '';
+            const result = process.env.RESULT || '';
+            const claudeStatus = process.env.CLAUDE_STATUS || '';
+            const committed = process.env.COMMITTED || '';
+            const branch = process.env.BRANCH || '';
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             // Cherche issue existante apex-execute

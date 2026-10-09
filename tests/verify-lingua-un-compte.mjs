@@ -49,7 +49,7 @@ const topTexte = (pg) => pg.evaluate(() => { const ms = document.querySelectorAl
 const etat = (pg) => pg.evaluate(() => ({ comptes: JSON.parse(localStorage.getItem('lingua_g_accounts') || '[]'), cur: JSON.parse(localStorage.getItem('lingua_g_current') || 'null'), cles: Object.keys(localStorage) }));
 const toastTexte = (pg) => pg.evaluate(() => [...document.querySelectorAll('.toast')].map((t) => t.textContent).join(' | '));
 
-kv.set('acc:jean-dupont', JSON.stringify({ uid: 'jean-dupont', name: 'Jean Dupont', cgu_at: 1 }));
+kv.set('acc:jean-dupont', JSON.stringify({ uid: 'jean-dupont', name: 'Jean Dupont', cgu_at: 1, code_at: 1 /* 8.10 : sans code au domaine, plus d'accès (crée ton code) */ }));
 kv.set('nm:jean dupont', 'jean-dupont');
 const browser = await chromium.launch();
 console.log('\nLingua : un seul compte par personne, dans un vrai navigateur\n');

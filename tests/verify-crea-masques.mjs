@@ -39,7 +39,7 @@ page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_TUNNEL|ERR_NAME|ERR_CONNECTION/.test(m.text())) errs.push('CONSOLE: ' + m.text()); });
 await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'load' });
 await page.waitForTimeout(400);
-await page.fill('#gateName', 'Test Masques'); await page.fill('#gateCode', '1234');
+await page.fill('#gateName', 'Test Masques'); await page.fill('#gateCode', '123456');
 await page.click('#gateGo'); await page.waitForTimeout(300);
 await page.click('#bnav button[data-go="cam"]'); await page.waitForTimeout(300);
 

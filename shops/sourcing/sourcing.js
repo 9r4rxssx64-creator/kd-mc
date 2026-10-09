@@ -63,11 +63,22 @@
   /* ---------- sélection partagée (Firebase REST) ---------- */
   function selUrl(id) { return FB + '/' + SEL_PATH + (id ? '/' + encodeURIComponent(id) : '') + '.json'; }
   var _selCache = {};
+  /* La sélection se LIT aussi avec le jeton admin (règle Firebase shops_sourcing_v1/selection
+     .read = rôle admin depuis le 8.10) : kdmc-fb-auth.js (si chargé) le fournit en ?auth=.
+     Sans jeton, la lecture renvoie 401 → sélection vide, jamais une erreur bloquante. */
+  function jetonLecture() {
+    try {
+      var A = global.kdmcFbAuth;
+      if (!A || !A.ensure) return Promise.resolve('');
+      return A.ensure().then(function () { return A.qs ? A.qs() : ''; }).catch(function () { return ''; });
+    } catch (e) { return Promise.resolve(''); }
+  }
   function fetchSelection(cb) {
-    fetch(selUrl()).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-      _selCache = (j && typeof j === 'object') ? j : {};
-      try { cb(_selCache); } catch (e) { /* */ }
-    }).catch(function () { try { cb(_selCache); } catch (e) { /* */ } });
+    jetonLecture().then(function (q) { return fetch(selUrl() + q); })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+        _selCache = (j && typeof j === 'object') ? j : {};
+        try { cb(_selCache); } catch (e) { /* */ }
+      }).catch(function () { try { cb(_selCache); } catch (e) { /* */ } });
   }
   function itemId(p) {
     var raw = (p.supplier || '') + '|' + (p.sku || p.url || p.title || '');
@@ -142,16 +153,17 @@
   global.KDMCSourcing = {
     esc: esc, qs: qs, el: el, toast: toast, num: num,
     bootSSO: bootSSO, loginRedirect: loginRedirect, currentUser: function () { return _user; },
-    /* Accès réservé admin (Kevin) + Lolo (Laurence). Zone PRIVÉE sans secret local :
-       le nom auto-déclaré ne suffit JAMAIS (leçon #99) — on exige verified (Face ID).
+    /* Accès réservé : admin prouvé par le domaine, ou rôle « shops » donné par Kevin dans le
+       domaine. Zone PRIVÉE sans secret local : le nom auto-déclaré ne suffit JAMAIS (leçon #99)
+       — on exige verified (Face ID / code). Audit 2026-10-08 : plus de liste de prénoms dans le
+       code (un homonyme vérifié entrait) ; c'est le domaine qui porte les rôles.
        Pas de fail-open ici : si le SSO est injoignable, la porte renvoie au portail
        (re-connexion Face ID), ce n'est pas un lockout (aucun secret à taper). */
     isAllowed: function (u) {
       if (!u) return false;
-      if (u.admin) return true;                 // admin prouvé serveur (verified)
       if (u.verified !== true) return false;    // nom seul = zéro accès
-      var n = String(u.name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-      return /kevin|desarzens|laurence|lolo|saint.?polit/.test(n);
+      if (u.admin === true) return true;        // admin prouvé serveur (verified)
+      return Array.isArray(u.roles) && u.roles.indexOf('shops') >= 0;
     },
     fetchSelection: fetchSelection, addToSelection: addToSelection, removeFromSelection: removeFromSelection,
     selectionArray: selectionArray, isSelected: function (id) { return !!_selCache[id]; }, exportCsv: exportCsv,

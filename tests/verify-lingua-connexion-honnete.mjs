@@ -114,6 +114,10 @@ async function essai({ cloud, comptesLocaux, prenom = 'kevin', nom = 'desarzens'
   await page.evaluate(() => [...document.querySelectorAll('button')]
     .find((b) => /déjà un compte/i.test(b.textContent)).click());
   await page.waitForSelector('#lgPrenom', { timeout: 5000 });
+  /* l'app pose le curseur sur #lgPrenom 100 ms après l'ouverture : si ce focus tombe PENDANT
+     qu'on remplit #lgNom, le nom part dans le prénom (« kevindesarzens », mesuré 9.10 sous charge,
+     2 essais sur 12). On attend que l'app ait posé son curseur avant de taper, comme un humain. */
+  await page.waitForFunction(() => (document.activeElement || {}).id === 'lgPrenom', null, { timeout: 5000 });
   await page.fill('#lgPrenom', prenom);
   await page.fill('#lgNom', nom);
   await page.fill('#lgCode', ADMIN_CODE);

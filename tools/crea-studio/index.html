@@ -1347,7 +1347,9 @@ var Domaine=(function(){
   /* Qui es-tu ? Renvoie null si le domaine ne sait pas (ou ne répond pas). */
   function quiSuisJe(){
     var jeton=capterJeton();
-    var url=BASE+'/__sso/whoami'+(jeton?('?t='+encodeURIComponent(jeton)):'');
+    /* Le pass voyage dans un EN-TÊTE (x-kdmc-sso), jamais dans l'adresse : une adresse finit
+       dans les journaux, l'historique et les liens partagés (audit 2026-10-08). */
+    var url=BASE+'/__sso/whoami';
     var o={credentials:'include'};
     if(jeton)o.headers={'x-kdmc-sso':jeton};
     return fetch(url,o).then(function(r){return r.json();}).then(function(j){
@@ -1385,7 +1387,10 @@ var Domaine=(function(){
     try{
       var c=(window.Users&&Users.current&&Users.current());
       if(!c)return;
-      fetch(LOG+'/log',{method:'POST',headers:{'Content-Type':'application/json'},
+      /* Le journal n'accepte plus que les porteurs d'une session du domaine (8.10) : on joint le pass. */
+      var hdr={'Content-Type':'application/json'};
+      try{var pass=localStorage.getItem(CLE)||'';if(pass)hdr.Authorization='Bearer '+pass;}catch(e){}
+      fetch(LOG+'/log',{method:'POST',headers:hdr,credentials:'include',
         body:JSON.stringify({app:'crea-studio',uid:c.uid,name:c.name,
           event:String(event||'').slice(0,40),
           device:(navigator.userAgent||'').slice(0,90),
@@ -1398,9 +1403,12 @@ var Domaine=(function(){
 
 /* ================= 👤 COMPTES — un par personne, avec mémoire =================
    Chaque personne a son espace : ses créations, ses réglages, ses souvenirs.
-   Tout reste DANS le téléphone (rien n'est envoyé sur internet).
+   Les créations et les souvenirs restent DANS le téléphone. Les photos et textes
+   confiés à l'IA, eux, partent chez nos fournisseurs IA le temps de la génération
+   (ils ne sont pas gardés par le Studio). Le code n'est JAMAIS gardé ici, même en
+   empreinte : c'est le domaine (kd-mc.com) qui le vérifie (audit 2026-10-08).
    Connexion = PRÉNOM + NOM (2 mots minimum, jamais un seul) + code, comme dans
-   toutes les apps de Kevin. Kevin Desarzens + son code admin = admin : il voit tout. */
+   toutes les apps de Kevin. L'admin vient UNIQUEMENT du domaine (session vérifiée). */
 var Users=(function(){
   var LS='crea_users', CUR='crea_current_uid';
   /* v9.885 CORRECTIF SÉCU (audit 2026-08-09) — le PIN admin de Kevin était écrit EN CLAIR ici
@@ -1417,8 +1425,12 @@ var Users=(function(){
     .replace(/[̀-ͯ]/g,'').replace(/[\s\-_.]+/g,' ').trim();}
   function uidOf(name){var n=norm(name).split(' ').filter(Boolean).sort().join('-');
     return 'u_'+n.replace(/[^a-z0-9-]/g,'');}
-  function all(){try{return JSON.parse(localStorage.getItem(LS)||'{}')||{};}catch(e){return {};}}
-  function saveAll(m){try{localStorage.setItem(LS,JSON.stringify(m));}catch(e){}}
+  /* Ménage (8.10) : les anciennes fiches portaient une empreinte du code (`pin`) — on la retire
+     à la lecture, et la fiche est réécrite sans elle. Plus aucune empreinte de code sur l'appareil. */
+  function sansPin(m){var touche=false;Object.keys(m||{}).forEach(function(k){
+    if(m[k]&&typeof m[k]==='object'&&('pin' in m[k])){delete m[k].pin;touche=true;}});return touche;}
+  function all(){try{var m=JSON.parse(localStorage.getItem(LS)||'{}')||{};if(sansPin(m))saveAll(m);return m;}catch(e){return {};}}
+  function saveAll(m){try{sansPin(m);localStorage.setItem(LS,JSON.stringify(m));}catch(e){}}
   /* Kevin admin : nom + prénom (ou initiale) — un nom de famille seul ne suffit
      PAS (sinon un homonyme deviendrait admin, cf. leçon #166). */
   function isAdminName(name){
@@ -1428,23 +1440,19 @@ var Users=(function(){
     var pre=t.indexOf('kevin')>=0||t.indexOf('k')>=0;
     return fam&&pre;
   }
-  function hash(v){ /* empreinte simple du code — le code lui-même n'est jamais stocké */
-    var h=5381,x=String(v||'');
-    for(var i=0;i<x.length;i++)h=((h*33)^x.charCodeAt(i))>>>0;
-    return 'h'+h.toString(36);
-  }
   function current(){var u=localStorage.getItem(CUR)||'';var m=all();return (u&&m[u])?m[u]:null;}
   function isAdmin(){var c=current();return !!(c&&c.admin);}
-  /* Connexion / création de compte. Retourne {ok} ou {ok:false, why} */
+  /* Connexion / création de compte LOCAL (le domaine a déjà été interrogé par Account.go :
+     s'il connaît ce nom, c'est lui qui a dit oui ou non au code — ici aucune vérification
+     de code n'est possible ni souhaitée, aucune empreinte n'est gardée). Retourne {ok} ou {ok:false, why} */
   function login(name,code){
     var toks=norm(name).split(' ').filter(function(t){return t.length>=2;});
     if(toks.length<2)return {ok:false,why:'Tape ton PRÉNOM et ton NOM (les deux).'};
     var uid=uidOf(name), m=all(), u=m[uid], admin=false;
     if(isAdminName(name))return {ok:false,why:'Kevin : ouvre d\'abord kd-mc.com avec Face ID — le Studio te reconnaîtra tout seul, en administrateur.'};
-    if(!code||String(code).length<(u&&u.pin?4:6))return {ok:false,why:'Choisis un code d\'au moins 6 chiffres (le même servira dans toutes tes apps).'};
-    if(u&&u.pin&&u.pin!==hash(code))return {ok:false,why:'Code incorrect pour ce compte.'};
+    if(!code||String(code).length<6)return {ok:false,why:'Choisis un code d\'au moins 6 chiffres (le même servira dans toutes tes apps).'};
     if(!u){
-      u={uid:uid,name:String(name).trim().slice(0,60),admin:admin,pin:admin?'':hash(code),
+      u={uid:uid,name:String(name).trim().slice(0,60),admin:admin,
          created:Date.now(),seen:Date.now(),memory:[],prefs:{},count:0};
     }
     u.seen=Date.now(); u.admin=admin; u.name=String(name).trim().slice(0,60);
@@ -1493,15 +1501,17 @@ var Users=(function(){
     var toks=norm(nom).split(' ').filter(function(t){return t.length>=2;});
     if(toks.length<2)return {ok:false,why:'Le domaine n\'a pas donné un prénom ET un nom.'};
     var uid=uidOf(nom),m=all(),u=m[uid];
-    if(!u)u={uid:uid,name:String(nom).trim().slice(0,60),pin:'',created:Date.now(),
+    if(!u)u={uid:uid,name:String(nom).trim().slice(0,60),created:Date.now(),
              memory:[],prefs:{},count:0};
     u.admin=!!admin; u.seen=Date.now(); u.parDomaine=true;   /* admin = verdict du DOMAINE seul (session vérifiée) */
     u.name=String(nom).trim().slice(0,60);
     m[uid]=u; saveAll(m); localStorage.setItem(CUR,uid);
     return {ok:true,user:u};
   }
+  /* Ce nom a-t-il déjà un compte sur CET appareil ? (sert à refuser un mauvais code dit par le domaine) */
+  function existe(name){var m=all();return !!m[uidOf(name)];}
   return {login:login,loginDomaine:loginDomaine,logout:logout,current:current,isAdmin:isAdmin,list:list,
-          remember:remember,memory:memory,backup:backup,restore:restore,
+          remember:remember,memory:memory,backup:backup,restore:restore,existe:existe,
           update:update,uidOf:uidOf,isAdminName:isAdminName};
 })();
 
@@ -1674,6 +1684,15 @@ var Mine=(function(){
 
 /* ---------- IA (worker Cloudflare → Replicate) ---------- */
 var AI_URL=(window.CREA_AI_URL||localStorage.getItem('crea_ai_url')||'https://kdmc-crea-ai.9r4rxssx64.workers.dev').replace(/\/$/,'');
+/* Tout appel à l'IA porte le pass du domaine (Authorization: Bearer) : depuis le 8.10 le worker
+   refuse les demandes sans compte vérifié (avant, n'importe qui sur internet pouvait vider les
+   quotas). Le pass est celui de « qui suis-je » (crea_sso_token) ; sans pass, l'appel part quand
+   même et le worker répond 401 → message clair « connecte-toi » (aiErrMsg). */
+function aiFetch(chemin,o){
+  o=o||{};o.headers=Object.assign({},o.headers||{});
+  try{var pass=localStorage.getItem('crea_sso_token')||'';if(pass&&!o.headers.Authorization)o.headers.Authorization='Bearer '+pass;}catch(e){}
+  return fetch(AI_URL+chemin,o);
+}
 function aiShow(msg){$('aiMsg').textContent=msg||'IA en cours…';$('aiLoad').classList.remove('hidden');}
 function aiHide(){$('aiLoad').classList.add('hidden');}
 /* Traduit la vraie cause d'échec IA en message clair et actionnable (règle : jamais d'erreur générique). */
@@ -1691,6 +1710,9 @@ function aiWho(provider){
    promet plus « version rapide appliquée » quand rien n'est appliqué (mentir
    sur ce qui a été fait est pire que l'échec lui-même). */
 function aiErrMsg(e,suite){var m=String((e&&e.message)||e||'');suite=suite||'';
+  if(/compte_requis|session_invalide|compte_non_verifie|http_401|http_403|^401|^403/.test(m)) return {t:'Connecte-toi avec ton compte KDMC (prénom + nom + code) pour utiliser l\'IA.',ms:4200};
+  if(/payant_coupe/.test(m)) return {t:'Cette fonction utilise une IA payante, coupée pour l\'instant (tout gratuit). Essaie « poses de danse ».',ms:4200};
+  if(/trop_de_demandes/.test(m)) return {t:'Trop de demandes d\'affilée — réessaie dans une minute.',ms:3600};
   if(/402/.test(m))   return {t:'Crédit IA épuisé — recharge le compte (quelques €) pour réactiver l\'IA.'+suite,ms:5200};
   if(/429/.test(m))   return {t:'IA très demandée à l\'instant — réessaie dans 1 min.'+suite,ms:3600};
   if(/not_configured|503/.test(m)) return {t:'IA pas encore active (serveur en cours).'+suite,ms:3200};
@@ -1851,7 +1873,7 @@ var Credit=(function(){
     if(file.length){toast('⏳ Je réessaie ta création…',2200);dernier=Date.now();
       try{file[0].relancer();}catch(e){}return;}
     toast('⏳ Vérification…',1500);
-    fetch(AI_URL+'/',{method:'GET'}).then(function(r){
+    aiFetch('/',{method:'GET'}).then(function(r){
       toast(r.ok?'✅ Le serveur IA répond. Relance ta création pour confirmer le crédit.'
                 :'⚠️ Serveur IA joignable mais en erreur — réessaie dans un moment.',4000);
     }).catch(function(){toast('⚠️ Serveur IA injoignable — vérifie ta connexion.',3600);});
@@ -2444,6 +2466,10 @@ var Account=(function(){
     Domaine.connexion(n,c).then(function(j){
       if(j&&j.ok){var rd=Users.loginDomaine(j.name,false); if(rd.ok){entrer(rd);return;}}
       if(j&&j.reason==='trop_essais'){hint('⚠️ '+j.message);return;}
+      if(j&&j.reason==='code_en_attente'){hint('⏳ '+j.message);return;}
+      /* Le domaine CONNAÎT ce nom et dit que le code est faux : on refuse. Aucune vérification
+         locale n'existe plus (plus d'empreinte sur l'appareil, 8.10) — c'est lui qui tranche. */
+      if(j&&j.ok===false&&j.reason==='identifiants'&&Users.existe(n)){hint('⚠️ Code incorrect pour ce compte.');return;}
       var r=Users.login(n,c);
       if(!r.ok){hint('⚠️ '+r.why);return;}
       Domaine.annoncer(r.user.name,r.user.uid,c).then(function(a){
@@ -3419,7 +3445,7 @@ var Photo=(function(){
     }
     var ctrl,to=setTimeout(function(){if(ctrl)try{ctrl.abort();}catch(e){}},65000);
     try{ctrl=new AbortController();}catch(e){}
-    fetch(AI_URL+'/'+kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl}),signal:ctrl?ctrl.signal:undefined})
+    aiFetch('/'+kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl}),signal:ctrl?ctrl.signal:undefined})
       .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0){return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});}return r.blob();})
       .then(function(blob){var img=new Image();img.onload=function(){clearTimeout(to);
         srcCanvas.width=img.naturalWidth||img.width;srcCanvas.height=img.naturalHeight||img.height;
@@ -3582,7 +3608,7 @@ var Photo=(function(){
       if(!loaded){toast('Ouvre une photo d\'abord');return;}
       var p=$('bgPrompt').value.trim();if(!p){toast('Décris le décor voulu');return;}
       aiShow('Création du fond IA… 🌆');
-      fetch(AI_URL+'/bg',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,ratio:(srcCanvas.width>=srcCanvas.height?'16:9':'9:16')})})
+      aiFetch('/bg',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,ratio:(srcCanvas.width>=srcCanvas.height?'16:9':'9:16')})})
         .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0)return r.json().then(function(j){throw new Error(j&&j.error||'http');});return r.blob();})
         .then(function(b){var im=new Image();im.onload=function(){aiHide();Credit.ok();setBgImage(im);toast('Fond IA appliqué 🌆',1600);URL.revokeObjectURL(im.src);};im.onerror=function(){aiHide();toast('Fond illisible');};im.src=URL.createObjectURL(b);})
         /* fond IA : aucune version « sans IA » n'existe → on attend le crédit */
@@ -4801,7 +4827,7 @@ var Auto=(function(){
       var all=new Float32Array(n),o=0;
       parts.forEach(function(p){all.set(p,o);o+=p.length;});
       nettoyerSon(all,sr);          // son propre = beaucoup moins d'erreurs de texte
-      var r=await fetch(AI_URL+'/transcribe',{method:'POST',headers:{'content-type':'application/json'},
+      var r=await aiFetch('/transcribe',{method:'POST',headers:{'content-type':'application/json'},
         body:JSON.stringify({audio:b64(wav16(all,sr)),lang:'fr'})});
       var j=await r.json().catch(function(){return {};});
       if(!r.ok){
@@ -5315,7 +5341,7 @@ var AiVid=(function(){
   /* Récupère la vidéo, qu'elle vienne d'ici (blob: = gratuit) ou du serveur (https). */
   function fetchVideoBlob(u){
     return (String(u).indexOf('blob:')===0) ? fetch(u).then(function(r){return r.blob();})
-      : fetch(AI_URL+'/proxy?url='+encodeURIComponent(u)).then(function(r){return r.blob();});
+      : aiFetch('/proxy?url='+encodeURIComponent(u)).then(function(r){return r.blob();});
   }
   var VIBES=[
     {id:'dance',emoji:'🕺',label:'Danse',prompt:'dancing happily, funny energetic full-body dance, lively motion, trending tiktok style'},
@@ -5349,7 +5375,7 @@ var AiVid=(function(){
     /* 1) D'ABORD LA VOIE GRATUITE : l'IA dessine les poses de danse, la vidéo est
           montée ici dans le téléphone. Aucun crédit, aucune carte. */
     hint('⏳ L\'IA dessine les poses de danse… (gratuit, ~30-60 s) 🕺');
-    fetch(AI_URL+'/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,prompt:prompt,n:5})})
+    aiFetch('/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,prompt:prompt,n:5})})
       .then(function(r){return r.json();})
       .then(function(j){
         if(!j||!j.frames||j.frames.length<2)throw new Error((j&&(j.message||j.error))||'frames_failed');
@@ -5363,7 +5389,7 @@ var AiVid=(function(){
       .catch(function(e1){
         /* 2) SECOURS : le vrai modèle vidéo (Replicate) si du crédit est dispo. */
         hint('⏳ Passage sur le moteur vidéo avancé…');
-        fetch(AI_URL+'/animate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,prompt:prompt,model:model})})
+        aiFetch('/animate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,prompt:prompt,model:model})})
           .then(function(r){return r.json();})
           .then(function(j){if(j.error||!j.id)throw new Error(j.error||'no_id');startTs=Date.now();poll(j.id);})
           .catch(function(e2){fail(new Error(String(e1&&e1.message||e1)+' | '+String(e2&&e2.message||e2)));});
@@ -5415,7 +5441,7 @@ var AiVid=(function(){
     clearTimeout(pollT);
     if(Date.now()-startTs>300000){fail(new Error('timeout'));return;}
     hint('⏳ Génération en cours… '+Math.round((Date.now()-startTs)/1000)+'s (≈ 1 à 3 min) 🕺');
-    fetch(AI_URL+'/job?id='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){
+    aiFetch('/job?id='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){
       if(j.status==='succeeded'&&j.output){done(j.output);return;}
       if(j.status==='failed'||j.status==='canceled'||j.error){fail(new Error(j.error||j.status));return;}
       pollT=setTimeout(function(){poll(id);},3500);
@@ -5475,7 +5501,7 @@ var AiVid=(function(){
     hint('🎥 Lecture de la vidéo de référence…');
     extractPoses(file,5).then(function(poses){
       hint('🕺 L\'IA te met dans ces '+poses.length+' poses… (gratuit, ~40-60 s)');
-      return fetch(AI_URL+'/pose',{method:'POST',headers:{'Content-Type':'application/json'},
+      return aiFetch('/pose',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({image:photoData,poses:poses})}).then(function(r){return r.json();});
     }).then(function(j){
       if(!j||!j.frames||j.frames.length<2)throw new Error((j&&(j.message||j.error))||'pose_failed');
@@ -5687,7 +5713,7 @@ var Magic=(function(){
     body.keep_face=true; body.identity='preserve';     /* ignoré si inconnu du serveur */
     if(_retry)body.custom=(custom||'')+' '+GARDE_VISAGE;
     var to=setTimeout(function(){},1);
-    fetch(AI_URL+'/magic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    aiFetch('/magic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){var ct=r.headers.get('content-type')||'';
         if(!r.ok||ct.indexOf('image')<0)return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});
         _lastWho=aiWho(r.headers.get('x-crea-provider'));
@@ -5753,7 +5779,7 @@ var Magic=(function(){
     busy=true;aiShow('🎨 L\'IA invente une image…');
     var body=custom?{image:photoData,custom:custom}:{image:photoData,preset:preset};
     body.allow_recreate=true;
-    fetch(AI_URL+'/magic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    aiFetch('/magic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){var ct=r.headers.get('content-type')||'';
         if(!r.ok||ct.indexOf('image')<0)return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});
         return r.blob();})
@@ -5783,7 +5809,7 @@ var Magic=(function(){
     if(!photo2){toast('Choisis la 2ᵉ photo 📂');return;}
     if(busy){toast('Un traitement est déjà en cours…');return;}
     busy=true;$('magicDuoBtn').disabled=true;aiShow('L\'IA réunit les deux photos… 👥');
-    fetch(AI_URL+'/duo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,image2:photo2,preset:duoStyle})})
+    aiFetch('/duo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,image2:photo2,preset:duoStyle})})
       .then(function(r){var ct=r.headers.get('content-type')||'';
         if(!r.ok||ct.indexOf('image')<0)return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});
         _lastRecreated=(r.headers.get('x-crea-fallback')==='recreated');
@@ -5831,7 +5857,7 @@ var Magic=(function(){
     if(!songFile){toast('Choisis d\'abord la musique ou ta voix 🎵');return;}
     if(busy){toast('Un traitement est déjà en cours…');return;}
     busy=true;$('magicSingBtn').disabled=true;aiShow('L\'IA prépare ta bouche qui chante… 🎤');
-    fetch(AI_URL+'/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,mode:'sing',n:3})})
+    aiFetch('/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,mode:'sing',n:3})})
       .then(function(r){return r.json();})
       .then(function(j){if(!j||!j.frames||j.frames.length<2)throw new Error((j&&(j.message||j.error))||'frames_failed');
         aiShow('Montage de la vidéo… 🎬');
@@ -5909,7 +5935,7 @@ var Magic=(function(){
     if(!theme){toast('Écris le sujet de ta chanson');return;}
     if(busy){toast('Un traitement est déjà en cours…');return;}
     busy=true;$('magicSongBtn').disabled=true;aiShow('L\'IA écrit ta chanson… 🎼');
-    fetch(AI_URL+'/lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme:theme,style:songStyle,mode:songMode})})
+    aiFetch('/lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme:theme,style:songStyle,mode:songMode})})
       .then(function(r){return r.json();})
       .then(function(j){busy=false;$('magicSongBtn').disabled=false;aiHide();
         if(!j||!j.lyrics)throw new Error((j&&j.error)||'no_lyrics');
@@ -5981,7 +6007,7 @@ var Magic=(function(){
     busy=true;$('magicStudioBtn').disabled=true;songBlob=null;$('magicSaveSong').classList.add('hidden');
     aiShow('🎼 L\'IA compose ta musique…');studioHint('L\'IA écrit la partition…');
     var lyr=lastLyrics;
-    var step0=lyr?Promise.resolve(lyr):fetch(AI_URL+'/lyrics',{method:'POST',headers:{'Content-Type':'application/json'},
+    var step0=lyr?Promise.resolve(lyr):aiFetch('/lyrics',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({theme:theme,style:songStyle,mode:songMode})}).then(function(r){return r.json();});
     step0.then(function(L){
       if(!L||!L.lyrics)throw new Error((L&&L.error)||'no_lyrics');
@@ -5990,7 +6016,7 @@ var Magic=(function(){
       if(window.Users&&Users.remember){Users.remember('Chanson : '+(L.title||'sans titre')+
         (theme?' — sujet : '+theme:''),'chanson');}
       var el=$('magicLyrics');el.textContent=L.lyrics;el.classList.remove('hidden');
-      return fetch(AI_URL+'/compose',{method:'POST',headers:{'Content-Type':'application/json'},
+      return aiFetch('/compose',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({style:songStyle,mood:theme})}).then(function(r){return r.json();})
         .then(function(C){ if(C&&C.provider)_who.score=aiWho(C.provider);
           return {L:L,score:(C&&C.score)||null};});
@@ -6005,7 +6031,7 @@ var Magic=(function(){
       }
       aiShow('🎙 L\'IA chante ta chanson…');studioHint('Voix en cours…');
       var sung=singableText(o.L.lyrics);
-      return fetch(AI_URL+'/voice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:sung,lang:'fr'})})
+      return aiFetch('/voice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:sung,lang:'fr'})})
         .then(function(r){ if(!r.ok)return r.json().then(function(j){throw new Error(j&&j.error||'voice_http');});
           _who.voice=aiWho(r.headers.get('x-crea-provider'));
           return r.arrayBuffer(); })
@@ -6407,7 +6433,7 @@ var Mini=(function(){
     var txt=($('miniScript').value||'').trim();
     if(!txt)return Promise.reject(new Error('Écris ce que ton mini-moi doit dire ✍️'));
     aiShow('🔊 L\'IA fabrique ta voix…');
-    return fetch(AI_URL+'/voice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:txt,lang:'fr'})})
+    return aiFetch('/voice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:txt,lang:'fr'})})
       .then(function(r){ if(!r.ok)return r.json().then(function(j){throw new Error((j&&j.error)||'voice_http');}); return r.blob(); });
   }
 
@@ -6416,7 +6442,7 @@ var Mini=(function(){
      rejette avec 'CREDIT' si c'est le crédit (on attend au lieu de dégrader). */
   function maybeFrames(){
     if(quality!=='ai'||!photoImg)return Promise.resolve(null);
-    return fetch(AI_URL+'/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoImg.src,mode:'sing',n:3})})
+    return aiFetch('/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoImg.src,mode:'sing',n:3})})
       .then(function(r){ if(!r.ok)return r.json().then(function(j){throw new Error((j&&j.error)||('http_'+r.status));},function(){throw new Error('http_'+r.status);}); return r.json(); })
       .then(function(j){ if(!j||!j.frames||j.frames.length<2)throw new Error((j&&(j.message||j.error))||'frames_failed');
         return Promise.all(j.frames.map(loadImg)).then(function(a){a=a.filter(Boolean);
@@ -6445,7 +6471,7 @@ var Mini=(function(){
     var c=document.createElement('canvas');
     c.width=photoImg.naturalWidth;c.height=photoImg.naturalHeight;
     c.getContext('2d').drawImage(photoImg,0,0);
-    return fetch(AI_URL+'/cutout',{method:'POST',headers:{'Content-Type':'application/json'},
+    return aiFetch('/cutout',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({image:c.toDataURL('image/jpeg',0.9)})})
       .then(function(r){var ct=r.headers.get('content-type')||'';
         if(!r.ok||ct.indexOf('image')<0)return r.json().then(
@@ -6887,7 +6913,7 @@ var Mini=(function(){
     return new Blob([b],{type:'audio/wav'});
   }
   function voixDe(texte){
-    return fetch(AI_URL+'/voice',{method:'POST',headers:{'Content-Type':'application/json'},
+    return aiFetch('/voice',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({text:texte,lang:'fr'})})
       .then(function(r){ if(!r.ok)return r.json().then(
         function(j){throw new Error((j&&j.error)||'voice_http');},

@@ -123,10 +123,9 @@ describe('signJWT / verifyJWT roundtrip', () => {
     expect(await verifyJWT(t, SECRET)).toBeNull();
   });
 
-  it('verify without exp → ok', async () => {
+  it('verify without exp → REFUSÉ (revue 08.10.2026, A4 : exp obligatoire)', async () => {
     const t = await signJWT({ sub: 'u' }, SECRET);
-    const p = await verifyJWT(t, SECRET);
-    expect(p.sub).toBe('u');
+    expect(await verifyJWT(t, SECRET)).toBeNull();
   });
 });
 

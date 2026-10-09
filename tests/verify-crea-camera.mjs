@@ -42,7 +42,7 @@ page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|
 await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'load' });
 await page.waitForTimeout(400);
 // on se connecte comme une vraie personne
-await page.fill('#gateName', 'Test Camera'); await page.fill('#gateCode', '1234');
+await page.fill('#gateName', 'Test Camera'); await page.fill('#gateCode', '123456');
 await page.click('#gateGo'); await page.waitForTimeout(300);
 
 // 1) l'écran et ses réglages

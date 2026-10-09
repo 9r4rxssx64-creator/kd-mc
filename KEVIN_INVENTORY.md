@@ -3386,7 +3386,9 @@ officiels les retirent eux-mêmes avant publication.
 | `tools/depot-public/poser-secrets.mjs` | Recopie les secrets chiffrés vers le dépôt public | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/claude/verify-cmcteams-light-data-rzlvau/tools/depot-public/poser-secrets.mjs) |
 | `.github/actions/coffre/action.yml` | Récupère les fichiers privés au moment de publier (clé en lecture seule) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/claude/verify-cmcteams-light-data-rzlvau/.github/actions/coffre/action.yml) |
 | `.github/workflows/depot-public-bascule.yml` | Le robot qui fait la bascule en un bouton | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/claude/verify-cmcteams-light-data-rzlvau/.github/workflows/depot-public-bascule.yml) |
-| `.github/workflows/coffre-previent-public.yml` | Le coffre réveille la publication publique à chaque changement | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/claude/verify-cmcteams-light-data-rzlvau/.github/workflows/coffre-previent-public.yml) |
+| `audit/prive/AUDIT-COMPLET-2026-10-08.md` | Revue extérieure complète du 8.10 (8 relecteurs, 9 P0) et ce qui a été corrigé — privé, 8.10 | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/prive/AUDIT-COMPLET-2026-10-08.md) |
+| `audit/prive/AUDIT-AMELIORATION-2026-10-08.md` | Audit d'amélioration+++ gratuit (4 relecteurs), 20 améliorations classées bénéfice/effort — privé, 8.10 | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/audit/prive/AUDIT-AMELIORATION-2026-10-08.md) |
+| `.github/workflows/coffre-synchronise-public.yml` (étape `signal`, ex-`coffre-previent-public.yml`, fusionné le 8.10) | Le coffre réveille la publication publique à chaque changement | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/coffre-synchronise-public.yml) |
 | `tests/depot-public.test.mjs` · `tests/depot-public-secrets.test.mjs` | Gardes (29/0 et 8/0, prouvées par sabotage) | [voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/claude/verify-cmcteams-light-data-rzlvau/tests/depot-public.test.mjs) |
 ### 2026-09-24 — Le fichier de règles allégé
 
@@ -3483,6 +3485,9 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-08 | `messaging-app/e2e/fixtures.js` | Tests en ligne d'Apex Chat déclarés « sonde » (porte générale) |
 | 2026-10-08 | `messaging-app/tests/unit/_support/d1-sqlite.js` | Fausse base remplacée par un vrai SQLite aux vraies migrations |
 | 2026-10-08 | `messaging-app/d1-migrations/0010_users_kdmc_uid.sql` | Colonne `kdmc_uid` créée partout |
+| 2026-10-08 | `tools/audit/comptes-reparer-nom.mjs` + `.github/workflows/coffre-comptes-reparer-nom.yml` + `tests/verify-comptes-reparer-nom.mjs` | Robot à la main : répare un nom abîmé (UTF-8 relu en latin-1, « NoÃ«lle ») — même uid, jamais Kevin, jamais un autre nom, essai à blanc, corbeille 90 j | coffre |
+| 2026-10-08 | `CONNECTEURS.md` + `tests/verify-connecteurs.mjs` | Bilan mesuré des connecteurs du compte (8.10, 18h UTC) : état sondé, usage pour le domaine, forfait/règle — valable pour toutes les branches | coffre+public |
+| 2026-10-08 | `tools/ci/garde-publique.sh` | Lance un garde npm au dépôt public sans planter quand il est resté au coffre (annotation + coffre-chaine-privee) — bee-gardes.yml | public |
 | 2026-10-08 | `messaging-app/tests/unit/client-groupe-e2e-crypto.test.js` | Apex Chat : preuve du chiffrement des groupes (clés, IV jamais réutilisé, liaison groupe/expéditeur) |
 | 2026-10-08 | `messaging-app/tests/unit/client-groupe-e2e-flux.test.js` | Apex Chat : groupe à 3 en vrai code client — aucun clair au serveur, nouvelle clé au départ d'un membre |
 | 2026-10-08 | `messaging-app/tests/unit/do-cles-groupe-silencieuses.test.js` | Apex Chat : les échanges de clés n'envoient pas « Nouveau message » |

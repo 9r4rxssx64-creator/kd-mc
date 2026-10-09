@@ -10,6 +10,9 @@ name: La Détente — Boutique self-test (cloud)
 
 on:
   push:
+    # 8.10 (revue indépendante) : il n'avait AUCUN filtre de branche et écrit dans la base de
+    # production (RTDB) — chaque push de chaque branche le lançait. Désormais : main, et à la main.
+    branches: [main]
     paths:
       - 'shops/la-detente/**'
       - 'shops/_shared/firebase-orders.js'

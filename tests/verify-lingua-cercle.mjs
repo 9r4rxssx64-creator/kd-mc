@@ -59,7 +59,7 @@ const nav = await chromium.launch();
 console.log('\nLe Cercle dans Lingua — vrai navigateur, vrai routeur\n');
 try {
   /* 1. Léa */
-  kv.set('acc:lea-martin', JSON.stringify({ uid: 'lea-martin', name: 'Léa Martin', cgu_at: 1 })); kv.set('nm:lea martin', 'lea-martin');
+  kv.set('acc:lea-martin', JSON.stringify({ uid: 'lea-martin', name: 'Léa Martin', cgu_at: 1, code_at: 1 })); kv.set('nm:lea martin', 'lea-martin');
   const L = await appareil(nav, signe('lea-martin', 'Léa Martin'), seed('x', 'Léa Martin', 'lea-martin'));
   await L.p.goto('https://lingua.kd-mc.com/'); await L.p.waitForTimeout(2500);
   await cercle(L.p);
@@ -111,7 +111,7 @@ try {
   if (process.env.CAPTURE) { await T.p.screenshot({ path: process.env.CAPTURE, fullPage: true }); }
   ok(/Merci pour le cadeau/.test(await texte(T.p)), '3d. Tom reçoit le « Merci » de Léa (et ses 5 💎 à ouvrir)');
   /* 4. Zoé écrit à l'admin ; Kevin voit tout le monde */
-  kv.set('acc:zoe-petit', JSON.stringify({ uid: 'zoe-petit', name: 'Zoé Petit', cgu_at: 1 })); kv.set('nm:zoe petit', 'zoe-petit');
+  kv.set('acc:zoe-petit', JSON.stringify({ uid: 'zoe-petit', name: 'Zoé Petit', cgu_at: 1, code_at: 1 })); kv.set('nm:zoe petit', 'zoe-petit');
   const Z = await appareil(nav, signe('zoe-petit', 'Zoé Petit'), seed('z', 'Zoé Petit', 'zoe-petit'));
   await Z.p.goto('https://lingua.kd-mc.com/'); await Z.p.waitForTimeout(2500); await Z.p.evaluate(() => document.querySelectorAll('.overlay,.modal').forEach((x) => x.remove()));
   await cercle(Z.p);

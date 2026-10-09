@@ -51,7 +51,9 @@ jobs:
           AX_REPLICATE_KEY: ${{ secrets.AX_REPLICATE_KEY }}
           OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: node tools/cuisine/gen-images.mjs "${{ github.event.inputs.only }}"
+          # 8.10 : l'entrée passe par env:, jamais dans le shell (garde test:workflows-shell)
+          SEULEMENT: ${{ github.event.inputs.only }}
+        run: node tools/cuisine/gen-images.mjs "$SEULEMENT"
 
       - name: Commit des images directement sur main
         run: |

@@ -9,7 +9,7 @@
  */
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
-import { mintShopsAdminIdToken } from './fb-token.js';
+import { mintShopsAdminIdToken, mintShopsIdToken } from './fb-token.js';
 import { handleBoite, codeAttenteDeposer } from './boite.js';
 import * as activite from './activite.js';
 import * as cptD1 from './compteurs-d1.js';
@@ -1236,11 +1236,12 @@ function vientDuDomaine(request) {
   const r = request.headers.get('Referer') || '';
   return !!r && DOMAINE_PAGE.test(r);
 }
-/* Plafond simple : N demandes par appareil et par fenêtre. FAIL-OPEN si le KV
-   tombe (on ne casse pas la voix pour un souci de stockage). */
-async function souslePlafond(env, quoi, request, max, fenetreS) {
+/* Plafond simple : N demandes par appareil et par fenêtre. FERMÉ si le KV tombe (8.10, revue extérieure : un plafond qui s'ouvre
+   quand le compteur est en panne n'est pas un plafond — c'est par là que passerait une facture). `failOpen` = true seulement pour
+   un service qui ne coûte rien (quota gratuit) : là, on préfère servir que casser. */
+async function souslePlafond(env, quoi, request, max, fenetreS, failOpen) {
   try {
-    if (!env || !env.ACCOUNTS) return true;
+    if (!env || !env.ACCOUNTS) return !!failOpen;
     const ip = request.headers.get('CF-Connecting-IP') || 'inconnu';
     const seau = Math.floor(Date.now() / (fenetreS * 1000));
     const cle = 'q:' + quoi + ':' + (await sha256Hex(ip + '|' + quoi)).slice(0, 24) + ':' + seau;
@@ -1248,7 +1249,14 @@ async function souslePlafond(env, quoi, request, max, fenetreS) {
     if (n >= max) return false;
     await env.ACCOUNTS.put(cle, String(n + 1), { expirationTtl: fenetreS + 60 });
     return true;
-  } catch { return true; }
+  } catch { return !!failOpen; }
+}
+/* LA CHAÎNE GRATUITE (8.10, revue extérieure) : le coach Lingua partait dans la chaîne commune, qui atteint Anthropic/OpenAI s'ils ont une
+   clé — sans l'interrupteur BEE_SECOURS_PAYANT. Même règle que Bee : gratuites seulement, payantes seulement si l'interrupteur est à 1. */
+export function chaineGratuite(env, domaine) {
+  const ordre = planChain(domaine, availableProviders(env), {});
+  const gratuites = ordre.filter((p) => FREE_PROVIDERS.indexOf(p) >= 0);
+  return String(env && env.BEE_SECOURS_PAYANT) === '1' ? gratuites.concat(ordre.filter((p) => FREE_PROVIDERS.indexOf(p) < 0)) : gratuites;
 }
 
 /* ═══ LA VOIX GRATUITE, QUAND LA VOIX PAYANTE N'EST PAS DISPONIBLE ═════════
@@ -1579,10 +1587,29 @@ function libreSansFiche(cheminCMC) {
    domaine passe par l'en-tête `x-kdmc-sonde` SEULEMENT s'il vient d'un centre de données (GitHub Actions = Azure) : poser
    l'en-tête depuis un téléphone n'ouvre rien. Retour arrière sans redéploiement de code : KDMC_PORTE_TOTALE = « 0 ». */
 /* Un compte du domaine, non révoqué (sans SSO configuré = domaine de test : ouvert, comme les portes). */
+/* CODE OBLIGATOIRE, MÊME POUR LES ANCIENS COMPTES (Kevin 8.10 : « les anciens comptes sans code se voient afficher à leur prochaine
+   connexion la création d'un code obligatoire. Sinon pas d'accès »). Une session dont le compte n'a PAS de code au domaine n'ouvre
+   plus rien — ni page d'app, ni whoami, ni route gardée — tant que la personne n'a pas créé son code (portail, sur SON appareil :
+   memeSession → credSet, sans attendre Kevin). Exemptés : l'admin (Face ID + code admin), les robots sans fiche, et le coupe-circuit
+   KDMC_CODE_OBLIGATOIRE=0 (tests). Un code posé AVANT le 8.10 (cred: sans `code_at` sur la fiche) est reconnu une fois et la fiche le
+   retient : une seule lecture KV supplémentaire, une seule fois. Une session qui a PROUVÉ le code (k=1) ne relit rien. */
+async function codeManquant(env, s, acc) {
+  if (!codeObligatoire(env) || !s || !s.uid || !env || !env.ACCOUNTS) return false;
+  if (ADMIN_UIDS.indexOf(s.uid) >= 0 || UID_ROBOTS_SANS_FICHE.has(s.uid) || s.code) return false;
+  if (acc && acc.code_at) return false;
+  const cle = (acc && (acc.merged_into || acc.uid)) || s.uid;
+  if (await credGet(env, cle)) {
+    if (acc && !acc.code_at) { try { acc.code_at = Date.now(); await accPut(env, acc, true); } catch { /* fail-open */ } }
+    return false;
+  }
+  return true;
+}
 async function compteConnu(request, env) {
   if (!porteTotaleActive(env) || !(env && env.KDMC_SSO_SECRET)) return true;
   const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request), request);
-  return !!(s && s.uid && !faibleAdmin(s) && !revoked(await accGet(env, s.uid), s));
+  if (!(s && s.uid && !faibleAdmin(s))) return false;
+  const acc = await accGet(env, s.uid);
+  return !revoked(acc, s) && !(await codeManquant(env, s, acc));
 }
 /* Une session FAIBLE (nom seul, sans Face ID ni code admin) au nom de l'admin n'ouvre aucune porte : jusqu'au 8.10, /__sso/issue
    en délivrait une à quiconque postait « Kevin Desarzens ». Celles déjà émises (≤ 30 jours) sont refusées ici. */
@@ -1617,7 +1644,9 @@ async function porteGenerale(request, url, env, cheminCMC) {
   if (libreSansFiche(cheminCMC) || PAGES_JURIDIQUES.test(cheminNormal(cheminCMC))) return null;
   const host = url.hostname.toLowerCase();
   if (pageDuPortail(host, cheminCMC)) return null;
-  if (request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0)) return null;
+  /* 8.10 (revue extérieure, P2) : la sonde déclarée ne passe la porte QUE depuis le réseau de nos robots (GitHub Actions = Azure 8075).
+     Avant : les 15 réseaux de centres de données — quiconque louait une machine chez AWS/OVH/Hetzner et posait l'en-tête lisait tout. */
+  if (request.headers.get('x-kdmc-sonde') && ASN_SONDE.has(Number(request.cf && request.cf.asn) || 0)) return null;
   const s = await ssoVerify(secret, ssoToken(request), request);
   if (s && s.uid && !faibleAdmin(s)) {
     const acc = await accGet(env, s.uid);
@@ -1625,6 +1654,11 @@ async function porteGenerale(request, url, env, cheminCMC) {
       const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
       const per = perimetre(acc, appDe(host));
       const nom = host.replace(/\.kd-mc\.com$/, '').replace(/-/g, ' ');
+      if (!estAdmin && (await codeManquant(env, s, acc))) {
+        if (!demandeDePage(request, cheminCMC)) return new Response('Crée ton code sur kd-mc.com pour continuer.', { status: 401,
+          headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-porte': 'code' } });
+        return porteCodePage({ nom: nom.charAt(0).toUpperCase() + nom.slice(1), app: host }, url, s);
+      }
       if (per.ok || estAdmin) return null;
       return ficheRefusee({ nom: nom.charAt(0).toUpperCase() + nom.slice(1), app: host }, per.raison);
     }
@@ -1688,7 +1722,12 @@ async function donneesRhFermees(request, env, cheminCMC) {
   const acc = await accGet(env, s.uid);
   if (revoked(acc, s)) return refus();
   const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
-  if (!estAdmin && !perimetre(acc, 'cmcteams').ok) return refus();  /* bloqué sur CMCteams par l'admin : pas de planning */
+  /* 8.10 (revue extérieure) : le périmètre jugé est celui de l'app QUI DEMANDE (la light = « departs », CMCteams = « cmcteams »), le même
+     que pour sa page — avant, 'cmcteams' en dur : une personne bloquée sur la light recevait quand même le planning, et l'inverse ouvrait
+     une page sans données. Et un compte SANS code ne reçoit pas les données RH, porte totale ou pas (même règle que la page). */
+  let appDemande = 'cmcteams'; try { appDemande = appDe(new URL(request.url).hostname) || 'cmcteams'; } catch { /* */ }
+  if (!estAdmin && !perimetre(acc, appDemande).ok) return refus();  /* bloqué sur cette app par l'admin : pas de planning */
+  if (!estAdmin && (await codeManquant(env, s, acc))) return refus();
   if (env.ACCOUNTS && typeof env.ACCOUNTS.get === 'function') {
     let corps = null;
     try { corps = await env.ACCOUNTS.get(cleKV(c), { type: 'stream', cacheTtl: 300 }); } catch { corps = null; }
@@ -1712,6 +1751,23 @@ async function donneesRhFermees(request, env, cheminCMC) {
    (3) sinon renvoie remplir sa fiche au portail — un navigateur ordinaire sans laissez-passer y va
    tout seul, comme avant. Le CONTENU n'est jamais servi sans session valide : fail-closed inchangé
    (robots et scripts : 401 comme avant). Garde : portes.test.mjs (rejoue l'app de l'écran d'accueil). */
+/* La porte « CRÉE TON CODE » (8.10) : la personne EST connue (session valide), mais son compte n'a pas de code. Page statique, SANS
+   /__sso/porte.js (qui reposerait le cookie et rechargerait : boucle) — un seul geste, « Créer mon code sur kd-mc.com », qui ramène ici. */
+function porteCodePage(g, url, s) {
+  const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const portail = 'https://kd-mc.com/?code=1&return=' + encodeURIComponent(url.href);
+  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<meta name="robots" content="noindex"><meta name="theme-color" content="#0b1409"><title>' + esc(g.nom) + ' — crée ton code</title>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
+    + '.c{max-width:340px;width:100%}h1{font-size:19px;color:#f6d97a;margin:8px 0 6px}p{margin:0 0 14px;color:#cfd8cc}'
+    + 'a.b{display:block;width:100%;box-sizing:border-box;margin-top:12px;min-height:50px;line-height:50px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
+    + '<body><div class="c"><div style="font-size:44px">🔐</div><h1>' + esc(g.nom) + '</h1>'
+    + '<p><b>' + esc(s && s.name || 'Ton compte') + '</b>, ton compte n&#39;a pas encore de code. Pour continuer, choisis ton code (6 caractères ou plus) : il te servira dans toutes les apps KDMC. Sans code, plus d&#39;accès.</p>'
+    + '<a class="b" href="' + esc(portail) + '">Créer mon code sur kd-mc.com</a></div></body></html>';
+  return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
+    'x-kdmc-porte': 'code', 'referrer-policy': 'strict-origin-when-cross-origin',
+    'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
+}
 function portePage(g, url) {
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const portail = 'https://kd-mc.com/?return=' + encodeURIComponent(url.href);
@@ -1864,6 +1920,11 @@ const ROBOT_UA = /bot|crawl|spider|slurp|curl\/|wget|python-requests|python-urll
    iCloud des iPhone : les retirer effacerait de vrais visiteurs. Un visiteur en VPN sur un de ces nuages n'est pas compté :
    accepté, c'est un compteur anonyme, pas une fiche. */
 const ASN_NUAGES = new Set([8075, 16509, 14618, 15169, 396982, 24940, 16276, 14061, 20473, 63949, 31898, 45102, 12876, 51167, 197540]);
+/* Le SEUL réseau d'où une sonde déclarée passe la porte des pages : GitHub Actions (Azure, 8075). Les autres nuages restent « robots »
+   pour ne pas être fichés ni comptés, mais ne lisent rien (8.10, revue extérieure). */
+const ASN_SONDE = new Set([8075]);
+/* Les rôles nommés qu'une fiche peut porter (8.10) : « shops » = boutiques / sourcing / dashboard. */
+const ROLES_CONNUS = new Set(['shops']);
 async function ficheLaVisite(request, url, env, host) {
   try {
     if (!env || !env.ACCOUNTS || !estUnePage(request)) return;
@@ -1949,8 +2010,11 @@ async function handleLingua(request, url, env) {
     }
     if (url.pathname === '/__lingua/save' && request.method === 'POST') {
       let b; try { b = await request.json(); } catch { return JL({ ok: false, reason: 'bad_json' }, 400); }
+      /* 8.10 (revue extérieure, P1) : écrire 200 Ko en KV sous n'importe quelle clé, sans compte, c'était ouvert à tout internet.
+         Une SESSION du domaine est exigée pour écrire ; l'ancienne clé (empreinte nom+code) reste la clé de rangement de qui l'a. */
+      const sessK = await cleSession(); if (!sessK) return JL({ ok: false, reason: 'session_requise' }, 401);
       let k = String(b && b.k || '');
-      if (!k) { k = await cleSession(); if (!k) return JL({ ok: false, reason: 'session_requise' }, 401); }
+      if (!k) k = sessK;
       else if (!okKey(k)) return JL({ ok: false, reason: 'bad_key' }, 400);
       const s = JSON.stringify(b && b.data || {});
       if (s.length > 200000) return JL({ ok: false, reason: 'too_big' }, 413);
@@ -1962,8 +2026,9 @@ async function handleLingua(request, url, env) {
        code) ou la session du compte KDMC. Qui peut écrire la sauvegarde peut l'effacer, personne d'autre. */
     if (url.pathname === '/__lingua/effacer' && request.method === 'POST') {
       let b; try { b = await request.json(); } catch { return JL({ ok: false, reason: 'bad_json' }, 400); }
+      const sessK = await cleSession(); if (!sessK) return JL({ ok: false, reason: 'session_requise' }, 401);   /* 8.10 : même preuve que l'écriture */
       let k = String(b && b.k || '');
-      if (!k) { k = await cleSession(); if (!k) return JL({ ok: false, reason: 'session_requise' }, 401); }
+      if (!k) k = sessK;
       else if (!okKey(k)) return JL({ ok: false, reason: 'bad_key' }, 400);
       try { await env.ACCOUNTS.delete('lingua:' + k); } catch (e) { return JL({ ok: false, reason: 'error', detail: String(e && e.message || e).slice(0, 120) }); }
       return JL({ ok: true });
@@ -2082,7 +2147,7 @@ async function handleLingua(request, url, env) {
            lui aussi un quota. Un plafond large (assez pour comparer à l'oreille
            autant qu'on veut) empêche qu'une page emballée l'épuise pour tout le
            monde. Compté APRÈS le cache, comme pour la voix payante. */
-        if (!(await souslePlafond(env, 'gemini', request, 60, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
+        if (!(await souslePlafond(env, 'gemini', request, 60, 3600, true))) return JL({ ok: false, reason: 'plafond_atteint' });
         const g = await voixGemini(env, text, voice, HD_CONSIGNE, gkey);
         if (g) return g;
         return JL({ ok: false, reason: 'gemini_indisponible' }); // fail-open (200) → repli navigateur
@@ -2093,7 +2158,7 @@ async function handleLingua(request, url, env) {
       const vGoogle = VOIX_HD[voice] || voice;
       const langue = gttsLangue(url.searchParams.get('l')) || (moteurDemande === 'chirp' ? 'fr-FR' : '');
       if (moteurDemande === 'gratuite') {
-        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
+        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600, true))) return JL({ ok: false, reason: 'plafond_atteint' });
         const g = await voixGratuite(env, text, '', cors, url.searchParams.get('l'));
         return g || JL({ ok: false, reason: 'gratuite_indisponible' });
       }
@@ -2109,7 +2174,7 @@ async function handleLingua(request, url, env) {
         if (moteurDemande === 'chirp') return JL({ ok: false, reason: 'chirp_indisponible', cause: diag.cause || 'inconnue' });
       }
       if (gratuitSeul) {
-        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
+        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600, true))) return JL({ ok: false, reason: 'plafond_atteint' });
         const g = await voixGratuite(env, text, '', cors, url.searchParams.get('l'));
         return g || JL({ ok: false, reason: 'gratuite_indisponible' });
       }
@@ -2235,6 +2300,9 @@ async function handleLingua(request, url, env) {
       /* La chaîne est gratuite d'abord (Qwen), mais un repli peut atteindre un
          moteur payant : même verrou, plafond large (une conversation, ça parle). */
       if (!vientDuDomaine(request)) return JL({ ok: false, reason: 'hors_domaine' });
+      /* 8.10 (revue extérieure, P1) : Origin/Referer se falsifient en une ligne de curl → l'IA du coach n'est servie qu'à un COMPTE du
+         domaine (session). Lingua est derrière la porte totale : toute page ouverte a cette session. Sans elle : 401, rien ne part. */
+      if (!(await cleSession())) return JL({ ok: false, reason: 'session_requise' }, 401);
       if (!(await souslePlafond(env, 'ai', request, 120, 3600))) return JL({ ok: false, reason: 'plafond_atteint' });
       let b; try { b = await request.json(); } catch { return JL({ ok: false, reason: 'bad_json' }, 400); }
       const langName = String((b && b.langName) || 'la langue cible').slice(0, 40);
@@ -2255,7 +2323,7 @@ async function handleLingua(request, url, env) {
           + 'Choisis au plus 3 phrases qui contiennent une VRAIE faute de ' + langName + ' (grammaire, conjugaison, accord, genre, préposition, mot inexact, tournure non naturelle). '
           + "N'invente rien : si tout est juste, renvoie une liste vide. Ne corrige pas une phrase en français volontaire. "
           + 'Réponds UNIQUEMENT par un objet JSON, sans texte autour : {"bravo":"une phrase courte en français qui félicite pour une chose précise bien dite","corrections":[{"dit":"la phrase exacte dite","mieux":"la phrase corrigée et naturelle en ' + langName + '","pourquoi":"une phrase simple en français"}]}';
-        const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: dites.map((t, i) => (i + 1) + '. ' + t).join('\n') }], domain: 'translation', maxTokens: 500, temperature: 0.2, timeoutMs: 15000 });
+        const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: dites.map((t, i) => (i + 1) + '. ' + t).join('\n') }], domain: 'translation', chain: chaineGratuite(env, 'translation'), maxTokens: 500, temperature: 0.2, timeoutMs: 15000 });
         if (!ai.ok) return JL({ ok: false, reason: 'ai_absent' });
         return JL(Object.assign({ ok: true, by: ai.provider }, lireBilanAppel(ai.text, dites)));
       }
@@ -2323,7 +2391,7 @@ async function handleLingua(request, url, env) {
       /* Kevin 2026-09-05 : le coach = TRADUCTION/conversation multilingue → routage commun,
          QWEN (Workers AI, 0 clé, multilingue) en premier, puis Gemini / Groq / Mistral gratuits,
          Anthropic en secours s'il existe. On sait toujours qui a répondu (`by`). */
-      const ai = await routeText(env, { messages: chat, domain: 'translation', maxTokens: appel ? 160 : 300, temperature: 0.75, timeoutMs: 15000 });
+      const ai = await routeText(env, { messages: chat, domain: 'translation', chain: chaineGratuite(env, 'translation'), maxTokens: appel ? 160 : 300, temperature: 0.75, timeoutMs: 15000 });
       /* à l'oral, un reste de mise en forme se lirait à voix haute (« astérisque ») : on le retire */
       if (ai.ok && appel) return JL({ ok: true, reply: String(ai.text).replace(/[*_#`>]+/g, '').replace(/\s{2,}/g, ' ').trim(), by: ai.provider, model: ai.model, phase });
       if (ai.ok) return JL({ ok: true, reply: ai.text, by: ai.provider, model: ai.model });
@@ -3047,6 +3115,12 @@ async function handleSso(request, url, env) {
          de rangement enfermerait Kevin dehors de son propre domaine. */
       const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
       const app = appDe(request.headers.get('host'));
+      /* 8.10 : compte SANS code → pas reconnu, nulle part, tant que le code n'est pas créé (le portail affiche l'écran du code,
+         pré-rempli grâce à uid + name ; la session reste, c'est elle qui autorise la personne à poser SON code — memeSession). */
+      if (!estAdmin && (await codeManquant(env, s, acc))) {
+        return J({ ok: false, reason: 'code_requis', code_requis: true, uid: s.uid, name: s.name, code_pose: false, app,
+          message: 'Ton compte n\'a pas encore de code. Choisis ton code sur kd-mc.com pour continuer : il te servira dans toutes les apps KDMC.' });
+      }
       const per = perimetre(acc, app);
       if (!per.ok && !estAdmin) {
         return J({
@@ -3072,7 +3146,9 @@ async function handleSso(request, url, env) {
       /* `cgu` = conditions de la version EN COURS acceptées une fois, n'importe où (fiche `cgu_at` + `cgu_v`) — pas ce que dit le pass. */
       /* `code_pose` : le compte a-t-il un code au domaine (fiche `code_at`, posé à la première preuve du code) ? Un compte sans code
          s'ouvre sur son seul nom : le portail propose d'en choisir un. Admin : toujours protégé (code admin + Face ID). */
-      const rep = { ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine' };
+      /* `roles` (8.10, revue extérieure) : les droits que Kevin pose sur la fiche (ex. ['shops'] = boutiques/sourcing/dashboard) — plus jamais une
+         regex sur le nom dans les pages. Posés par /__admin/perimetre (champ roles), lus ici par toutes les apps. */
+      const rep = { ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
@@ -3272,6 +3348,11 @@ async function handleSso(request, url, env) {
         codePose = !!rec;
         const sess = await ssoVerify(secret, ssoToken(request));
         const memeSession = !!(sess && (sess.uid === cle || sess.uid === uid) && !revoked(accC, sess));
+        /* 8.10 (revue extérieure, P0) : « sa propre session » ne suffit pas à poser le code d'un compte existant — une session d'avant
+           le 8.10 a pu être ouverte sur le seul NOM par n'importe qui (la faille de Laurence : le PC de Stockholm AVAIT une telle session,
+           il aurait posé « son » code et enfermé la vraie Laurence dehors). Seule une session PROUVÉE (code déjà prouvé, ou Face ID)
+           pose un code sans attendre ; sinon le code proposé attend Kevin (règle 8.10 : « seul Kevin ajoute ou modifie… codes »). */
+        const sessionProuvee = memeSession && !!(sess.code || sess.verified);
         if (code) {
           if (!CODE_VALIDE(code)) return J({ ok: false, reason: 'code_invalide', message: 'Le code doit faire au moins 6 caractères.' }, undefined, 400);
           const attente = await credVerrou(env, cle);
@@ -3282,9 +3363,9 @@ async function handleSso(request, url, env) {
               return J({ ok: false, reason: 'code_incorrect', message: 'Ce nom a déjà un compte, et ce n\'est pas son code.' }, undefined, 401);
             }
             await credReussite(env, cle); codeProuve = true;
-          } else if (!accC || memeSession) {
-            /* Nouveau compte, OU la personne elle-même (session déjà à elle, sur son appareil) :
-               on enregistre son code au domaine. Un inconnu sur un appareil neuf ne peut PAS
+          } else if (!accC || sessionProuvee) {
+            /* Nouveau compte, OU la personne elle-même (session PROUVÉE, sur son appareil) :
+               on enregistre son code au domaine. Un inconnu sur un appareil neuf — ou une vieille session ouverte sur un nom — ne peut PAS
                poser le code d'un compte existant (il enfermerait le vrai propriétaire dehors).
                Une sonde déclarée d'un centre de données n'écrit rien (pas de fiche → pas de code). */
             if (!(request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0))) await credSet(env, cle, code);
@@ -3306,10 +3387,13 @@ async function handleSso(request, url, env) {
              quelqu'un d'autre sur la foi de son nom. (Les apps qui déclarent leur utilisateur
              sans code restent fonctionnelles : leur appel est « jamais bloquant ».) */
           return J({ ok: false, reason: 'code_requis', message: 'Ce nom a un compte protégé par un code : connecte-toi avec ton nom et ton code.' }, undefined, 401);
-        } else if (!rec && accC && !memeSession && codeObligatoire(env)) {
-          /* COMPTE EXISTANT SANS CODE, sur un appareil inconnu, SANS code proposé (8.10) : plus jamais une session sur la foi du nom.
-             (C'est exactement la faille du compte de Laurence : un PC Windows chez un hébergeur suédois.) */
-          return J({ ok: false, reason: 'code_requis', message: 'Ce compte n\'a pas encore de code. Entre ton nom et choisis ton code : l\'administrateur le validera, puis tu te connecteras avec.' }, undefined, 401);
+        } else if (!rec && accC && codeObligatoire(env)) {
+          /* COMPTE EXISTANT SANS CODE, SANS code proposé (8.10) : plus jamais une session sur la foi du nom — appareil inconnu (la faille du
+             compte de Laurence : un PC Windows chez un hébergeur suédois) comme appareil connu (8.10 soir, Kevin : « sinon pas d'accès ») :
+             sur son propre appareil, la personne crée son code ici même (memeSession) ; ailleurs, Kevin valide. */
+          return J({ ok: false, reason: 'code_requis', code_requis: true, uid: cle, name: accC.name || name, message: sessionProuvee
+            ? 'Ton compte n\'a pas encore de code. Choisis ton code (6 caractères ou plus) pour continuer : il te servira dans toutes les apps KDMC.'
+            : 'Ton compte n\'a pas encore de code. Choisis ton code (6 caractères ou plus) : l\'administrateur le valide, puis tu te connectes avec ton nom et ce code.' }, undefined, 401);
         }
       }
     }
@@ -3404,14 +3488,19 @@ async function handleSso(request, url, env) {
     const s = await ssoVerify(secret, t);
     if (!s || revoked(await accGet(env, s.uid), s)) return J({ ok: false });
     const g = adminGrantTok(request);
-    return J({ ok: true, token: t, grant: (await grantValide(env, secret, g)) ? g : '' });
+    const gOk = (await grantValide(env, secret, g)) ? g : '';
+    /* `porte` (8.10) : l'enveloppe signée, 90 s, que /__sso/entrer accepte — le grant admin ne voyage plus en clair dans l'adresse */
+    return J({ ok: true, token: t, grant: gOk, porte: await porteSign(secret, t, gOk) });
   }
   if (path === '/__sso/entrer' && request.method === 'GET') {
-    const t = url.searchParams.get('t') || '';
-    const g = url.searchParams.get('g') || '';
+    /* 8.10 (revue extérieure, P1) : le grant admin (12 h d'admin à qui le tient) passait en clair dans l'adresse (`g=`), donc dans les
+       journaux et l'historique. Il n'est plus lu QUE dans l'enveloppe signée `h` (90 s) ; `t` seul reste accepté (session, jamais le grant). */
+    const env_ = await porteVerify(secret, url.searchParams.get('h') || '');
+    const t = env_ ? env_.t : (url.searchParams.get('t') || '');
+    const g = env_ ? (env_.g || '') : '';
     let to = url.searchParams.get('to') || '/';
     if (!/^\/(?!\/)/.test(to) || /[\r\n]/.test(to)) to = '/';
-    const h = new Headers({ location: to, 'cache-control': 'no-store' });
+    const h = new Headers({ location: to, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
     const s = await ssoVerify(secret, t);
     if (s && !revoked(await accGet(env, s.uid), s)) {
       h.append('set-cookie', `${SSO_COOKIE}=${t}; Domain=.kd-mc.com; Path=/; Max-Age=${Math.max(60, Math.floor((s.exp - Date.now()) / 1000))}; Secure; HttpOnly; SameSite=Lax`);
@@ -3421,6 +3510,20 @@ async function handleSso(request, url, env) {
       h.append('set-cookie', `kdmc_admin=${g}; Domain=.kd-mc.com; Path=/; Max-Age=${Math.max(60, Math.min(43200, Math.floor((gs.exp - Date.now()) / 1000)))}; Secure; HttpOnly; SameSite=Lax`);   // 12 h, comme /__admin/login
     }
     return new Response(null, { status: 302, headers: h });
+  }
+  /* JETON FIREBASE « shops » (8.10, revue extérieure) : les nœuds des boutiques (catalogue, logos, sélection, commandes) ne sont plus ouverts
+     sans rôle. L'admin passe par /__admin/fbtoken (rôle admin) ; une personne à qui Kevin a donné le rôle « shops » (fiche : roles)
+     reçoit ici un jeton `role:'shops'` — session PROUVÉE exigée (Face ID ou code), jamais sur un nom. Les autres : 403. */
+  if (path === '/__sso/fbtoken' && request.method === 'POST') {
+    const s = await ssoVerify(secret, ssoToken(request), request);
+    const acc = s ? await accGet(env, s.uid) : null;
+    if (!s || !acc || revoked(acc, s)) return J({ ok: false, reason: 'session requise' }, undefined, 401);
+    const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
+    const roleShops = Array.isArray(acc.roles) && acc.roles.indexOf('shops') >= 0 && !!(s.verified || s.code);
+    if (!estAdmin && !roleShops) return J({ ok: false, reason: 'role_requis' }, undefined, 403);
+    const out = await mintShopsIdToken(env, s.uid, estAdmin ? 'admin' : 'shops');
+    if (out.ok) await audLog(env, { ev: 'fbtoken_mint', uid: s.uid, role: estAdmin ? 'admin' : 'shops' });
+    return out.ok ? J(out) : J(out, null, 503);
   }
   if (path === '/__sso/logout' && request.method === 'POST') {
     return J({ ok: true }, `${SSO_COOKIE}=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`);
@@ -3547,6 +3650,24 @@ async function grantValide(env, secret, tok) {
   if (!(Date.now() - (g.iat || 0) < GRANT_TTL_MS)) return null;
   if (await adminRevoque(env, g)) return null;
   return g;
+}
+/* ENVELOPPE DE PORTE (8.10, revue extérieure) : /__sso/pass → /__sso/entrer. Signée, 90 s : session + grant admin voyagent dans UNE
+   enveloppe à courte vie au lieu du grant en clair (12 h) dans l'adresse. Vérifiée comme un pass (HMAC, temps constant, expiration). */
+const PORTE_TTL_MS = 90 * 1000;
+async function porteSign(secret, t, g) {
+  const p = b64urlStr(JSON.stringify({ t: String(t || ''), g: String(g || ''), exp: Date.now() + PORTE_TTL_MS }));
+  return p + '.' + (await ssoHmac(secret, p));
+}
+async function porteVerify(secret, tok) {
+  if (!tok || tok.indexOf('.') < 0) return null;
+  const dot = tok.indexOf('.'); const p = tok.slice(0, dot); const sig = tok.slice(dot + 1);
+  const expect = await ssoHmac(secret, p);
+  if (sig.length !== expect.length) return null;
+  let diff = 0; for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expect.charCodeAt(i);
+  if (diff !== 0) return null;
+  let d; try { d = JSON.parse(b64urlToStr(p)); } catch { return null; }
+  if (!d || !d.t || !d.exp || d.exp < Date.now()) return null;
+  return d;
 }
 
 /* ═══ BEE — le caractère, écrit côté serveur (le client ne peut pas le remplacer) ═══ */
@@ -3909,7 +4030,10 @@ async function handleAdmin(request, url, env) {
     const okHash = !!hash && hash === String(adminHash).toLowerCase();
     const okCode = !!code && (await sha256Hex(code)) === adminHash;
     /* 6.10 (Kevin : « Code admin refusé » ×5, sans rien dire) : l'alerte note DEPUIS QUELLE APP et quel pays, pour qu'il sache si c'est lui. */
-    if (!okHash && !okCode) { await rlFail(env, ipHash); await audLog(env, { ev: 'admin_login_fail', ip: ipHash.slice(0, 12), app: appDeLaDemande(request), pays: String(request.cf?.country || '').slice(0, 2) }); return J({ ok: false, reason: 'code_invalide' }); }
+    if (!okHash && !okCode) { await rlFail(env, ipHash); /* 8.10 : appareil, lieu et réseau (ASN) aussi — 16 refus « lieu US, appareil ? » au journal du 5 au 8.10 sans pouvoir dire
+         s'il s'agissait d'un robot GitHub (ASN de centre de données) ou d'une personne : le lecteur d'alertes le dira désormais. */
+      const cfA = request.cf || {}, NETA = ispInfo(cfA);
+      await audLog(env, { ev: 'admin_login_fail', ip: ipHash.slice(0, 12), app: appDeLaDemande(request), pays: String(cfA.country || '').slice(0, 2), device: appareilLabel(request.headers.get('user-agent') || ''), place: [cfA.city, cfA.country].filter(Boolean).join(', '), isp: NETA.isp, asn: String(cfA.asn || '') }); return J({ ok: false, reason: 'code_invalide' }); }
     await rlReset(env, ipHash);
     await audLog(env, { ev: estVerif ? 'admin_login_verif' : 'admin_login_ok', ip: ipHash.slice(0, 12) });
     const grant = await ssoSign(secret, '__kdmc_admin__', 'admin', 1);
@@ -4101,6 +4225,9 @@ async function handleAdmin(request, url, env) {
     if (b.portee !== undefined) acc.portee = b.portee === 'app' ? 'app' : 'domaine';
     if (b.acces !== undefined) acc.acces = propre(b.acces);
     if (b.bloque !== undefined) acc.bloque = propre(b.bloque);
+    /* `roles` (8.10) : les droits nommés que Kevin donne à une personne. Un seul rôle connu aujourd'hui : « shops » (boutiques, sourcing,
+       dashboard — Laurence). Lu par whoami ; les pages ne devinent plus un droit d'après un nom. */
+    if (b.roles !== undefined) acc.roles = [...new Set((Array.isArray(b.roles) ? b.roles : []).map((x) => String(x || '').trim()))].filter((x) => ROLES_CONNUS.has(x)).slice(0, 10);
     /* Garde-fou : enfermer quelqu'un dans « une app » sans dire LAQUELLE le met
        dehors de partout, en silence. On refuse plutôt que de le faire à moitié. */
     if (acc.portee === 'app' && (!acc.acces || !acc.acces.length)) {
@@ -4108,8 +4235,8 @@ async function handleAdmin(request, url, env) {
     }
     acc.acces_at = Date.now();
     await accPut(env, acc, true);
-    await audLog(env, { ev: 'perimetre', uid, portee: acc.portee, acces: acc.acces, bloque: acc.bloque });
-    return J({ ok: true, uid, portee: acc.portee, acces: acc.acces || [], bloque: acc.bloque || [] });
+    await audLog(env, { ev: 'perimetre', uid, portee: acc.portee, acces: acc.acces, bloque: acc.bloque, roles: acc.roles || [] });
+    return J({ ok: true, uid, portee: acc.portee, acces: acc.acces || [], bloque: acc.bloque || [], roles: acc.roles || [] });
   }
   /* Code oublié : l'admin efface le code enregistré au domaine ; la personne en choisit un
      nouveau à sa prochaine connexion depuis son appareil (ou en recréant son compte). */

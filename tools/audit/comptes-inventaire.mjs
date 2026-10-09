@@ -17,6 +17,11 @@ export function normName(s) {
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, ' ').trim();
 }
+/* 8.10 : un nom passé d'UTF-8 à latin-1 porte « Ã » / « Â » suivi d'un signe — la signature du mojibake
+   (vécu le 8.10 sur la fiche d'une collègue). `relireUtf8` redonne le vrai nom. Réparation : comptes-reparer-nom.mjs. */
+export const ABIME = /[ÃÂ][\u0080-¿À-ÿ]/;
+export const estAbime = (nom) => ABIME.test(String(nom || ''));
+export const relireUtf8 = (nom) => Buffer.from(String(nom || ''), 'latin1').toString('utf8');
 export function estKevin(a) {
   if (!a) return false;
   if (a.uid === CANON_UID) return true;
@@ -129,6 +134,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const sansCode = fiches.filter((f) => f && f.uid && !f.merged_into && !estRobot(f) && !avecCode.has(f.uid));
   lignes.push(`COMPTES SANS CODE AU DOMAINE (ne s'ouvrent plus sur leur nom depuis le 8.10) — ${sansCode.length} sur ${b.actives} :`);
   for (const a of sansCode) lignes.push('  · ' + resume(a) + ` · ${a.hits || 0} session(s)` + (estKevin(a) ? ' · KEVIN (Face ID / code admin)' : ''));
+  /* 8.10 : un nom UTF-8 relu en latin-1 (« NoÃ«lle ») ne correspond plus au nom tapé → la personne serait prise pour une
+     inconnue. On le signale ici ; la réparation se fait par le robot coffre-comptes-reparer-nom.yml (uid + vrai nom). */
+  const abimes = fiches.filter((f) => f && f.uid && !f.merged_into && estAbime(f.name));
+  lignes.push(`NOMS ABÎMÉS (encodage, à réparer par coffre-comptes-reparer-nom) — ${abimes.length} :`);
+  for (const a of abimes) lignes.push('  · ' + resume(a) + ' → vrai nom probable « ' + relireUtf8(a.name) + ' »');
   console.log(lignes.join('\n'));
   /* Annotations : le seul canal lisible depuis une session. 12 lignes par bloc, codes masqués. */
   const sur = lignes.map((l) => l.replace(/[0-9a-f]{16,}/g, '…'));

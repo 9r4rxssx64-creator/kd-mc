@@ -38,8 +38,13 @@ function fakeAI(opts = {}) {
 }
 
 const realFetch = globalThis.fetch;
+/* Audit 2026-10-08 : le worker exige un compte VÉRIFIÉ du domaine (Bearer validé par
+   kd-mc.com/__sso/whoami). On simule la réponse du domaine, comme le reste du réseau. */
+const WHOAMI = (u) => String(u).includes('/__sso/whoami')
+  ? new Response(JSON.stringify({ ok: true, uid: 'test-compte', name: 'Marie Dupont', verified: true }), { status: 200 }) : null;
 function mockGemini(mode) {          // 'down' = panne, 'nokey' = pas appelé
   globalThis.fetch = async (u) => {
+    if (WHOAMI(u)) return WHOAMI(u);
     if (String(u).includes('generativelanguage')) {
       return new Response(JSON.stringify({ error: { message: 'quota exceeded' } }), { status: 429, headers: { 'content-type': 'application/json' } });
     }
@@ -47,7 +52,7 @@ function mockGemini(mode) {          // 'down' = panne, 'nokey' = pas appelé
   };
 }
 const post = (path, body, env) => worker.fetch(
-  new Request('https://x' + path, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, body: JSON.stringify(body) }),
+  new Request('https://x' + path, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com', authorization: 'Bearer pass-test' }, body: JSON.stringify(body) }),
   env);
 
 // ── 1) Gemini EN PANNE → Workers AI écrit les paroles ────────────────────────
@@ -94,6 +99,7 @@ chk(r.status === 502 && /gemini_429/.test(j.error || '') && /cloudflare_/.test(j
 // ── 6) TOUTES les IA gratuites : la 1re en panne, une AUTRE prend le relais ───
 globalThis.fetch = async (u, o) => {
   const url = String(u);
+  if (WHOAMI(u)) return WHOAMI(u);
   if (url.includes('groq.com')) return new Response('{"error":"rate limit"}', { status: 429 });
   if (url.includes('generativelanguage')) return new Response('{"error":{"message":"quota"}}', { status: 429 });
   if (url.includes('mistral.ai')) return new Response(JSON.stringify({ choices: [{ message: { content: 'TITRE: Par Mistral\nCOUPLET 1:\nune ligne' } }] }), { status: 200, headers: { 'content-type': 'application/json' } });

@@ -960,7 +960,8 @@ describe('rappels `.catch` des nettoyages D1 (handleTestCleanup, heal, cleanup*)
   it('_healLocalConvMembers : membre local_+numéro résolu ; UPDATE messages en panne absorbé ; fixed=1', async () => {
     const env = mkEnv([
       ["WHERE user_id LIKE 'local%'", { all: { results: [{ user_id: 'local_+33600000010' }, { user_id: 'local_+33699999999' }] } }],
-      ['phone LIKE ?', { first: (args) => (args[0] === '%00000010' ? { id: 'u_real' } : null) }],
+      // Revue 08.10.2026 (D5) : numéro E.164 complet, plus de LIKE sur 8 chiffres.
+      ["status != 'deleted' AND phone = ?", { first: (args) => (args[0] === '+33600000010' ? { id: 'u_real' } : null) }],
       ['UPDATE messages SET sender_id=?', { run: boom('messages locked') }],
     ]);
     expect(await _healLocalConvMembers(env.APEX_CHAT_DB)).toBe(1);

@@ -36,7 +36,7 @@ async function brancher(ctx) {
     return route.fulfill({ status: 404, body: '' });
   });
 }
-kv.set('acc:marie-curie', JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu_at: 1 }));
+kv.set('acc:marie-curie', JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu_at: 1, code_at: 1 /* 8.10 : un compte sans code n'ouvre plus rien (crée ton code) — Marie a le sien */ }));
 kv.set('nm:marie curie', 'marie-curie');
 const browser = await chromium.launch();
 console.log('\nLingua sur le compte du domaine, dans un vrai navigateur\n');

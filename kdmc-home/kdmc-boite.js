@@ -242,7 +242,8 @@
           else { oui.disabled = false; non.disabled = false; info.textContent = '❌ ' + raison(j && j.reason); }
         });
       };
-      oui.onclick = function () { decider(true); };
+      /* 8.10 (revue extérieure) : accepter un code, c'est donner le compte à qui l'a proposé — jamais sur un tap par erreur. */
+      oui.onclick = function () { if (window.confirm('Accepter ce code pour « ' + c.nom + ' » ? La personne (' + [c.appareil, c.lieu].filter(Boolean).join(', ') + ') se connectera avec.')) decider(true); };
       non.onclick = function () { if (window.confirm('Refuser ce code pour « ' + c.nom + ' » ? La personne devra en proposer un autre.')) decider(false); };
       bas.appendChild(oui); bas.appendChild(non); k.appendChild(bas); z.appendChild(k);
     });

@@ -59,6 +59,10 @@
             _refus = { app: j.app || '', reason: j.reason || 'hors_perimetre', message: j.message || 'Ton compte n\'est pas ouvert sur cette application.' };
             return { state: 'hors_perimetre', refus: _refus };
           }
+          /* 5e état — 'code_requis' (8.10, Kevin : « sinon pas d'accès ») : la session est VALIDE mais le compte n'a PAS de code au
+             domaine → plus rien ne s'ouvre tant que la personne n'a pas créé son code. On GARDE le pass : c'est lui qui prouve, au
+             portail, que c'est bien elle qui pose SON code (memeSession côté routeur), sans attendre l'administrateur. */
+          if (j && j.code_requis) return { state: 'code_requis', session: { uid: j.uid || '', name: j.name || '', code_pose: false, message: j.message || '' } };
           return { state: 'invalid' };
         }).catch(function () { return { state: 'neterr' }; });
       })
@@ -189,13 +193,15 @@
   function porte(url) {
     var u; try { u = new URL(String(url), location.origin); } catch (e) { return Promise.resolve(String(url)); }
     if (u.protocol !== 'https:' || !/(^|\.)kd-mc\.com$/.test(u.hostname)) return Promise.resolve(u.href);
-    var t = storedToken();
-    var lire = t ? Promise.resolve({ ok: true, token: t, grant: '' })
-      : fetch(BASE + '/pass', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return null; });
+    /* 8.10 (revue extérieure) : le domaine rend une ENVELOPPE signée de 90 s (`porte`) : session + grant admin voyagent dedans,
+       jamais le grant en clair dans l'adresse (journaux, historique). Repli : la session seule (`t`), sans grant. */
+    var lire = fetch(BASE + '/pass', { credentials: 'include', cache: 'no-store', headers: authHeaders() }).then(function (r) { return r.json(); }).catch(function () { return null; });
     return lire.then(function (j) {
-      if (!j || !j.ok || !j.token) return u.href;
       var to = u.pathname + u.search + u.hash;
-      return u.origin + '/__sso/entrer?to=' + encodeURIComponent(to) + '&t=' + encodeURIComponent(j.token) + (j.grant ? '&g=' + encodeURIComponent(j.grant) : '');
+      if (j && j.ok && j.porte) return u.origin + '/__sso/entrer?to=' + encodeURIComponent(to) + '&h=' + encodeURIComponent(j.porte);
+      var t = (j && j.ok && j.token) || storedToken();
+      if (!t) return u.href;
+      return u.origin + '/__sso/entrer?to=' + encodeURIComponent(to) + '&t=' + encodeURIComponent(t);
     });
   }
 
@@ -248,6 +254,11 @@
          chez elle ailleurs) et on ne renvoie PAS au portail (même réponse). L'app
          retombe sur son écran normal et peut afficher kdmcSSO.refus().message. */
       if (r.state === 'hors_perimetre') return null;
+      /* compte sans code (8.10) : on GARDE le pass et on envoie au portail, qui affiche l'écran « Crée ton code » et ramène ici. */
+      if (r.state === 'code_requis') {
+        try { location.replace('https://kd-mc.com/?code=1&return=' + encodeURIComponent(returnUrl || location.href)); } catch (e) { /* ignore */ }
+        return null;
+      }
       /* serveur a dit explicitement « pas de session » : si on avait déjà un pass,
          il est réellement invalide → on le jette, mais on NE reboucle PAS. */
       if (got || hadToken) { setToken(''); return null; }
@@ -309,6 +320,7 @@
 
   global.kdmcSSO = {
     whoami: whoami,
+    whoamiResult: whoamiResult,   /* 8.10 : le portail distingue « compte sans code » (écran bloquant) d'« aucune session » */
     issue: issue,
     issueDetail: issueDetail,
     login: login,

@@ -37,7 +37,7 @@ page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resourc
 page.on('dialog', (d) => d.accept());
 await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'load' });
 await page.waitForTimeout(400);
-await page.fill('#gateName', 'Test Selection'); await page.fill('#gateCode', '1234');
+await page.fill('#gateName', 'Test Selection'); await page.fill('#gateCode', '123456');
 await page.click('#gateGo'); await page.waitForTimeout(250);
 
 /* une « photo » avec UN visage à un endroit connu (50 % / 30 %) et un corps dessous */

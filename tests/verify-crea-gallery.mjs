@@ -32,7 +32,7 @@ async function seConnecter(page, nom, code) {
   });
   if (!besoin) return;
   await page.fill('#gateName', nom || 'Test Utilisateur');
-  await page.fill('#gateCode', code || '1234');
+  await page.fill('#gateCode', code || '123456');
   await page.click('#gateGo');
   await page.waitForTimeout(300);
 }
@@ -48,7 +48,7 @@ page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|
 const URL_APP = `http://127.0.0.1:${PORT}/index.html`;
 await page.goto(URL_APP, { waitUntil: 'load' });
 await page.waitForTimeout(400);
-await seConnecter(page, 'Test Galerie', '1234');
+await seConnecter(page, 'Test Galerie', '123456');
 
 // 1) l'écran existe et dit clairement qu'il est vide
 await page.click('#bnav button[data-go="mine"]');
@@ -74,7 +74,7 @@ chk(hasThumb === 1, 'vignette générée (galerie lisible d\'un coup d\'œil)');
 // 3) elle survit à un rechargement complet de l'app
 await page.reload({ waitUntil: 'load' });
 await page.waitForTimeout(400);
-await seConnecter(page, 'Test Galerie', '1234');
+await seConnecter(page, 'Test Galerie', '123456');
 await page.click('#bnav button[data-go="mine"]');
 await page.waitForTimeout(600);
 n = await page.locator('#mineGrid .mine-it').count();
@@ -129,7 +129,7 @@ for (const w of [320, 375, 390, 430]) {
   const c2 = await browser.newContext({ viewport: { width: w, height: 844 }, isMobile: true, hasTouch: true });
   const p2 = await c2.newPage();
   await p2.goto(URL_APP, { waitUntil: 'load' }); await p2.waitForTimeout(250);
-  await seConnecter(p2, 'Test Galerie', '1234');
+  await seConnecter(p2, 'Test Galerie', '123456');
   const m = await p2.evaluate(() => {
     const nav = document.getElementById('bnav');
     const bs = [...nav.querySelectorAll('button')].map((b) => b.getBoundingClientRect());

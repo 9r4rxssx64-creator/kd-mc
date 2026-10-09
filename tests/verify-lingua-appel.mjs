@@ -28,6 +28,9 @@ const AI = { run(model, input) { const sys = (input.messages || [])[0]?.content 
 const env = { KDMC_SSO_SECRET: 'sec', AI, ACCOUNTS: { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } } };
 const TYPES = { html: 'text/html', js: 'application/javascript', css: 'text/css', svg: 'image/svg+xml', webp: 'image/webp', webmanifest: 'application/manifest+json', mp4: 'video/mp4' };
 const ttsDemandes = [];
+import { createRequire as _cr } from 'node:module'; const require = _cr(import.meta.url);
+const SESSION_TEST = (() => { const { createHmac } = require('node:crypto'); const b64u = (x) => Buffer.from(x).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const pl = b64u(JSON.stringify({ u: 'eleve-appel', n: 'Élève Appel', c: 1, v: 0, k: 1, iat: Date.now(), exp: Date.now() + 1e9 })); return pl + '.' + b64u(createHmac('sha256', 'sec').update(pl).digest()); })();
 async function brancher(ctx) {
   await ctx.route(/^https:\/\/((lingua|admin)\.)?kd-mc\.com\//, async (route) => {
     const req = route.request(); const u = new URL(req.url());
@@ -35,6 +38,9 @@ async function brancher(ctx) {
     if (u.pathname.startsWith('/__lingua/tts')) { ttsDemandes.push(u.search); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":false,"reason":"test"}' }); }
     if (u.pathname.startsWith('/__')) {
       const h = Object.assign({}, req.headers(), { referer: 'https://lingua.kd-mc.com/' });
+      /* 8.10 (revue extérieure) : le coach exige une SESSION du domaine (en vrai, Lingua est derrière la porte du compte : la page en a
+         une). On la joint aux seuls appels du coach, pour ne pas changer le compte local que ce scénario teste. */
+      if (u.pathname.startsWith('/__lingua/ai') && !/kdmc_sso=/.test(h.cookie || '')) h.cookie = (h.cookie ? h.cookie + '; ' : '') + 'kdmc_sso=' + SESSION_TEST;
       const r = await mod.fetch(new Request(u.href, { method: req.method(), headers: h, body: ['GET', 'HEAD'].includes(req.method()) ? undefined : req.postData() }), env, { waitUntil() {} });
       const hh = {}; r.headers.forEach((v, k) => { hh[k] = v; }); return route.fulfill({ status: r.status, headers: hh, body: Buffer.from(await r.arrayBuffer()) }); }
     if (u.hostname !== 'lingua.kd-mc.com') return route.fulfill({ status: 404, body: '' });

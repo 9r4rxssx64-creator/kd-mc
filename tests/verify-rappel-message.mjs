@@ -18,7 +18,8 @@ const lancer = (prompt) => { const t0 = Date.now(); let out = '';
   let ctx = ''; try { ctx = out ? JSON.parse(out).hookSpecificOutput.additionalContext : ''; } catch { ctx = 'ILLISIBLE ' + out.slice(0, 80); }
   return { ctx, ms: Date.now() - t0 }; };
 const d = lancer('Les départs ne sont pas bons, ma ligne ne bouge pas. Équilibrer bon et mauvais départ.');
-ok(/rotation CONTINUE/.test(d.ctx) && /Équité des départs/.test(d.ctx), 'B. message sur les départs : la règle du glissement continu et la règle d\'équité sont rappelées', d.ctx.slice(0, 160));
+/* 8.10 : la « rotation CONTINUE » a été REMPLACÉE le 7.10 au soir par la règle des SÉRIES (4235-2351-3514) — leçon #447 : le rappel doit servir la règle en vigueur */
+ok(/RÈGLE DES DÉPARTS = LES SÉRIES/.test(d.ctx) && /Équité des départs/.test(d.ctx), 'B. message sur les départs : la règle des séries (en vigueur) et la règle d\'équité sont rappelées', d.ctx.slice(0, 160));
 const c = lancer('Les CGU du domaine une seule fois pour chaque compte, inscription complète');
 ok(/Inscription unique du domaine/.test(c.ctx), 'C. message sur les CGU / l\'inscription : la règle « inscription unique » est rappelée', c.ctx.slice(0, 160));
 ok(d.ms < 2000 && c.ms < 2000, `D. rapide (${d.ms} ms, ${c.ms} ms)`);

@@ -9,6 +9,36 @@
 
 ---
 
+## 🟠 (8.10, nuit) Revue extérieure complète : 3 réponses à me donner + 1 clic
+
+Tout est dans `audit/prive/AUDIT-COMPLET-2026-10-08.md` (8 relecteurs, 9 P0 trouvés, le socle est corrigé le soir même).
+
+1. **Firebase (P0, mesuré)** : n'importe qui peut lire tout `/cmcteams` (plannings, fiches, positions, ta boîte) avec un compte
+   anonyme. Je sais le fermer proprement en 2 étapes (les téléphones d'abord, les règles un jour après). **Tu dis « oui Firebase »** et je le fais.
+2. **Budget GitHub (P0, mesuré)** : 2 795 minutes de robots en 7 jours pour 2 000 par mois incluses, et ta limite de dépense est à
+   20 $. J'ai réduit les robots ; je lance le robot de facturation après la fusion. **Dis-moi si tu veux la limite à 0 $** (alors la CI
+   se bloque quand le forfait est fini) ou si tu gardes 20 $.
+3. **Planning servi entier (P1)** : chaque téléphone reçoit les 295 noms et les cases maladie de tout le monde. Je peux ne servir que
+   l'équipe + le miroir. **« oui équipe seule »** et je le fais après Firebase.
+
+4. **Rôle « boutiques » pour Laurence (1 réponse)** : les pages boutiques/sourcing/dashboard ne devinent plus un droit d'après le nom
+   (c'était une faille). Le droit se pose maintenant sur la fiche (`roles: ["shops"]`). **Dis « oui rôle shops Laurence »** et je le pose
+   après la fusion (sinon elle ne verra plus la sélection sourcing).
+5. **(facultatif)** Secret GitHub `KDMC_CI_PASS` (un pass de session du domaine) si tu veux que le robot de déploiement du Studio refasse
+   son auto-test de génération : sans lui, l'étape est simplement sautée (le Studio exige un compte, c'est voulu).
+
+6. **Audit d'amélioration+++ (gratuit)** : `audit/prive/AUDIT-AMELIORATION-2026-10-08.md`, 20 améliorations classées. Je fais sans te
+   redemander celles qui ne changent rien pour les utilisateurs (données hors du mono-fichier, cache du service worker, un seul mot pour
+   le code, écran Face ID qui ne revient plus, interrupteurs vrais, CLAUDE.md allégé, ménage du code mort). **Dis-moi oui ou non** pour :
+   notification « nouveau planning » app fermée (n° 3) · un collègue reconnu entre dans CMCteams sans refaire l'inscription (n° 6) ·
+   une seule boîte (supprimer tools/messages, n° 9) · hub par rôle (n° 10) · couper les restes payants (Realtime, Antonin, Vonage,
+   Revolut, clé Claude ; bot crypto hors Railway, n° 17) · archiver les 8 workers sans appelant + GitLab + Vercel (n° 20).
+
+👆 **1 clic** : le relecteur a créé **1 utilisateur anonyme** dans Firebase (projet `cmcteams-c16ab`, 8.10, sans e-mail) pour mesurer le
+trou. Console Firebase → Authentication → Users → supprimer. (Et le connecteur Vercel est mort : retire-le quand tu passes par là.)
+
+---
+
 ## 👆 (6.10, soir) Tes collègues coincés sur une vieille version — 1 action pour les débloquer tous d'un coup
 
 Mesuré : ils ont installé CMCteams / la light depuis l'ancienne adresse **kdmc-site.pages.dev**, qui sert encore **v9.891 / v1.39**

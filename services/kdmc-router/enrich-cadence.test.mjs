@@ -16,7 +16,7 @@ let pass = 0, fail = 0;
 const ok = (c, m, d) => { if (c) { pass++; console.log('  ✅ ' + m); } else { fail++; console.log('  ❌ ' + m + (d ? '  → ' + d : '')); } };
 const kv = new Map(); let ecrituresAcc = 0;
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { if (k.startsWith('acc:')) ecrituresAcc++; kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* 8.10 : ce test ne porte pas sur le code du compte — le blocage « crée ton code » (codeManquant) est prouvé dans code-attente.test.mjs § 7 */, ACCOUNTS };
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const jeton = (uid) => { const p = b64u(JSON.stringify({ u: uid, n: 'Marie Curie', c: 1, v: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
 

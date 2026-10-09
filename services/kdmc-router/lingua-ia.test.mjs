@@ -9,11 +9,18 @@ import mod from './worker.js';
    peuvent coûter de l'argent (voix, appel en direct, coach) n'acceptent que les
    demandes venant d'une page du domaine — un script sans provenance est refusé,
    pour que personne ne puisse dépenser le compte de Kevin. */
+/* 8.10 (revue extérieure) : l'IA du coach exige une SESSION du domaine (Origin/Referer se falsifient) ; et le plafond est fermé si le KV tombe
+   → les tests portent une session signée et un KV qui marche (un KV vide `{}` = plafond fermé, voulu). */
+import { createHmac } from 'node:crypto';
+const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const SESSION = (() => { const p = b64u(JSON.stringify({ u: 'eleve-test', n: 'Élève Test', c: 1, v: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); })();
+const kvMap = new Map();
+const KV = { get: async (k) => (kvMap.has(k) ? kvMap.get(k) : null), put: async (k, v) => { kvMap.set(k, v); }, delete: async (k) => { kvMap.delete(k); } };
 const post = (body, env) => mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/ai', {
   method: 'POST',
-  headers: { 'content-type': 'application/json', Referer: 'https://lingua.kd-mc.com/' },
+  headers: { 'content-type': 'application/json', Referer: 'https://lingua.kd-mc.com/', authorization: 'Bearer ' + SESSION },
   body: JSON.stringify(body),
-}), env);
+}), Object.assign({ KDMC_SSO_SECRET: 'sec' }, env, { ACCOUNTS: (env && env.ACCOUNTS && typeof env.ACCOUNTS.get === 'function') ? env.ACCOUNTS : KV }));
 const body = { langName: 'anglais', level: 'Débutant', levelIndex: 1, messages: [{ role: 'user', text: 'Hello, how are you?' }] };
 const fakeAI = (dead) => ({ calls: [], run(model) { this.calls.push(model); if (dead) throw new Error('capacity'); return { response: '<think>…</think>Great! And you?' }; } });
 

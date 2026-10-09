@@ -116,6 +116,14 @@ const VERROU = require('./verrou-ecritures.cjs');
       throw new Error('ORDERS_READ=keep : lecture des règles live impossible (' + e.message + '), abort');
     }
   }
+  /* 8.10.2026 (audit) : le FICHIER porte désormais le verrou (orders .read = role:admin). « keep » ne
+     rouvre plus une lecture que le fichier ferme : préserver l'état live ne vaut que si le fichier
+     est lui-même ouvert. Seul un ORDERS_READ=off EXPLICITE rouvre (rollback assumé). */
+  const fichierFerme = /role/.test(String(rules.shops_admin_v1.orders['.read'] || ''));
+  if (ORDERS_READ === 'keep' && ordersRead === 'off' && fichierFerme) {
+    ordersRead = 'on';
+    console.log('🔎 ORDERS_READ=keep : le live est public mais le FICHIER ferme la lecture → le fichier gagne (on)');
+  }
   if (ordersRead === 'on') {
     const expr = doc._phase_shops_rolelock && doc._phase_shops_rolelock.orders_read;
     if (!expr || !/role/.test(String(expr))) throw new Error('ORDERS_READ=on mais _phase_shops_rolelock.orders_read absent/invalide, abort');
@@ -123,7 +131,7 @@ const VERROU = require('./verrou-ecritures.cjs');
     console.log('🔒 ORDERS_READ=on : shops_admin_v1/orders .read = role:admin (dashboard seul)');
   } else {
     rules.shops_admin_v1.orders['.read'] = true;
-    console.log('🛟 ORDERS_READ=off : lecture des commandes publique (rollback/inchangé)');
+    console.log('🛟 ORDERS_READ=off : lecture des commandes publique (ROLLBACK EXPLICITE)');
   }
   // GARDE-FOU ABSOLU : l'écriture des commandes (checkout client) ne DOIT JAMAIS exiger role:admin.
   if (/role/.test(String(rules.shops_admin_v1.orders.$shop.$orderId['.write']))) {

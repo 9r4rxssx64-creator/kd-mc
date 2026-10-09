@@ -98,5 +98,75 @@ ok(sab.j.ok === true && !!sab.j.token && vrai.st === 401, '6. SABOTAGE : coupe-c
 const neuf = await appel('/__sso/issue', { method: 'POST', body: { uid: 'zoe-neuve', name: 'Zoé Neuve', cgu: true }, ua: UA.iphone });
 ok(neuf.st === 400 && neuf.j.reason === 'code_requis_creation' && !kv.has('acc:zoe-neuve'), '6b. créer un compte sans code → refusé, aucune fiche (code obligatoire à l\'inscription)');
 
+{ console.log('\n== 7. ANCIEN COMPTE SANS CODE : à la prochaine connexion, « crée ton code » — sinon pas d\'accès (Kevin 8.10 soir) ==');
+/* décor : Marc Ancien a une session de l'ancien monde (émise sur son nom, coupe-circuit à 0 = avant le 8.10), compte SANS code */
+const ENV0 = Object.assign({}, env, { KDMC_CODE_OBLIGATOIRE: '0' });
+const anc7 = await appel('/__sso/issue', { method: 'POST', body: { uid: 'marc-ancien', name: 'Marc Ancien', cgu: true }, ua: UA.iphone }, ENV0);
+const T0 = anc7.j.token;
+ok(anc7.j.ok === true && !!T0 && !kv.has('cred:marc-ancien'), '7.0 (décor) session d\'avant le 8.10, compte sans code', anc7);
+const page = async (host, tok, extra = {}) => mod.fetch(req('/', Object.assign({ ua: UA.iphone, headers: Object.assign({ 'sec-fetch-dest': 'document', accept: 'text/html', authorization: 'Bearer ' + tok, host }, extra) }, {})).clone(), env, { waitUntil() {} });
+const reqHost = (host, path, tok, headers = {}) => { const r = new Request('https://' + host + path, { headers: Object.assign({ 'user-agent': UA.iphone, authorization: 'Bearer ' + tok, 'cf-connecting-ip': '1.2.3.4' }, headers) }); Object.defineProperty(r, 'cf', { value: { asn: 6758, city: 'Monaco', country: 'MC' } }); return r; };
+let pg = await mod.fetch(reqHost('lingua.kd-mc.com', '/', T0, { 'sec-fetch-dest': 'document', accept: 'text/html' }), env, { waitUntil() {} });
+let html = await pg.text();
+ok(pg.status === 200 && pg.headers.get('x-kdmc-porte') === 'code' && /Crée ton code|crée ton code/i.test(html) && /Marc Ancien/.test(html) && /kd-mc\.com\/\?code=1&amp;return=/.test(html) && !/porte\.js/.test(html),
+  '7.1 une page d\'app avec cette session → la porte « crée ton code » (nom de la personne, lien vers kd-mc.com, SANS script qui rebouclerait)', { st: pg.status, porte: pg.headers.get('x-kdmc-porte') });
+pg = await mod.fetch(reqHost('lingua.kd-mc.com', '/app.js', T0, { 'sec-fetch-dest': 'script' }), env, { waitUntil() {} });
+ok(pg.status === 401 && pg.headers.get('x-kdmc-porte') === 'code', '7.2 … un script de l\'app → 401, rien ne se lit', { st: pg.status });
+let w = await mod.fetch(reqHost('lingua.kd-mc.com', '/__sso/whoami', T0), env, { waitUntil() {} }); let wj = await w.json();
+ok(w.status === 200 && wj.ok === false && wj.reason === 'code_requis' && wj.code_requis === true && wj.uid === 'marc-ancien' && wj.name === 'Marc Ancien', '7.3 whoami → pas reconnu : code_requis, avec uid + nom pour pré-remplir l\'écran', wj);
+let re = await appel('/__sso/issue', { method: 'POST', body: { uid: 'marc-ancien', name: 'Marc Ancien', cgu: true }, ua: UA.iphone, headers: { authorization: 'Bearer ' + T0 } });
+ok(re.st === 401 && re.j.reason === 'code_requis' && re.j.code_requis === true && /Choisis ton code/.test(re.j.message || ''), '7.4 se re-déclarer par le nom depuis sa propre session ne redonne plus de session : « choisis ton code »', re);
+re = await appel('/__sso/issue', { method: 'POST', body: { uid: 'marc-ancien', name: 'Marc Ancien', cgu: true, code: '987654' }, ua: UA.iphone, headers: { authorization: 'Bearer ' + T0 } });
+/* 8.10 (revue extérieure, P0) : une session de l'ancien monde a pu être ouverte sur le seul NOM par un inconnu (Stockholm en avait une au
+   nom de Laurence) → elle ne pose PAS le code toute seule : le code attend Kevin (sinon l'inconnu enfermait la vraie personne dehors). */
+ok(re.st === 202 && re.j.reason === 'code_en_attente' && !re.j.token && !kv.has('cred:marc-ancien') && db._s.prepare('SELECT 1 FROM code_attente WHERE uid = ?').get('marc-ancien'),
+  '7.5 depuis sa session NON prouvée (ouverte sur le nom), le code proposé ATTEND Kevin : ni code posé, ni session', re);
+const dv = await boite('/admin/code-valider', { uid: 'marc-ancien', accepter: true });
+re = await appel('/__sso/login', { method: 'POST', body: { name: 'Marc Ancien', code: '987654' }, ua: UA.iphone });
+const T1 = re.j.token;
+ok(dv.ok && dv.accepte === true && re.j.ok === true && re.j.code === true && !!T1 && kv.has('cred:marc-ancien') && JSON.parse(kv.get('acc:marc-ancien')).code_at > 0, '7.5b Kevin accepte (un geste dans sa boîte) → nom + ce code = la session « code prouvé », fiche avec code_at', [dv, re]);
+{ /* 7.5c : une session PROUVÉE (Face ID, v=1) pose son code sans attendre — c'est bien la preuve qui décide, pas la session */
+  const { createHmac } = await import('node:crypto');
+  const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const old = await appel('/__sso/issue', { method: 'POST', body: { uid: 'odile-ancienne', name: 'Odile Ancienne', cgu: true }, ua: UA.iphone }, ENV0);
+  const p = b64u(JSON.stringify({ u: 'odile-ancienne', n: 'Odile Ancienne', c: 1, v: 1, k: 0, iat: Date.now(), exp: Date.now() + 1e8 }));
+  const faceId = p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest());
+  const cr = await appel('/__sso/issue', { method: 'POST', body: { uid: 'odile-ancienne', name: 'Odile Ancienne', cgu: true, code: '246813' }, ua: UA.iphone, headers: { authorization: 'Bearer ' + faceId } });
+  ok(old.j.ok === true && cr.j.ok === true && cr.j.code === true && kv.has('cred:odile-ancienne') && !db._s.prepare('SELECT 1 FROM code_attente WHERE uid = ?').get('odile-ancienne'), '7.5c une session PROUVÉE (Face ID) pose son code tout de suite, sans attente', cr); }
+pg = await mod.fetch(reqHost('lingua.kd-mc.com', '/', T1, { 'sec-fetch-dest': 'document', accept: 'text/html' }), env, { waitUntil() {} });
+ok(pg.headers.get('x-kdmc-porte') !== 'code' && pg.headers.get('x-kdmc-porte') !== 'fiche', '7.6 … et la page de l\'app s\'ouvre', { porte: pg.headers.get('x-kdmc-porte'), st: pg.status });
+w = await mod.fetch(reqHost('lingua.kd-mc.com', '/__sso/whoami', T1), env, { waitUntil() {} }); wj = await w.json();
+ok(wj.ok === true && wj.uid === 'marc-ancien' && wj.code_pose === true, '7.7 whoami le reconnaît, code posé', wj);
+/* un code posé AVANT le 8.10 : cred: présent, fiche sans code_at, session de l'ancien monde → reconnu, et la fiche retient code_at */
+{ /* décor : session de l'ancien monde (sur le nom, k=0), puis le code posé depuis cette session, puis la fiche « d'avant » (sans code_at) */
+  const old = await appel('/__sso/issue', { method: 'POST', body: { uid: 'nina-avant', name: 'Nina Avant', cgu: true }, ua: UA.iphone }, ENV0);
+  /* le code a été posé AVANT le 8.10 (à l'époque, sa session suffisait) : on le pose ici par une session prouvée, puis on efface code_at */
+  const { createHmac } = await import('node:crypto'); const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const pv = b64u(JSON.stringify({ u: 'nina-avant', n: 'Nina Avant', c: 1, v: 1, k: 0, iat: Date.now(), exp: Date.now() + 1e8 }));
+  const cr = await appel('/__sso/issue', { method: 'POST', body: { uid: 'nina-avant', name: 'Nina Avant', cgu: true, code: '112233' }, ua: UA.iphone, headers: { authorization: 'Bearer ' + pv + '.' + b64u(createHmac('sha256', 'sec').update(pv).digest()) } });
+  const a0 = JSON.parse(kv.get('acc:nina-avant')); delete a0.code_at; kv.set('acc:nina-avant', JSON.stringify(a0));
+  w = await mod.fetch(reqHost('lingua.kd-mc.com', '/__sso/whoami', old.j.token), env, { waitUntil() {} }); wj = await w.json();
+  ok(old.j.ok === true && cr.j.ok === true && kv.has('cred:nina-avant') && wj.ok === true && JSON.parse(kv.get('acc:nina-avant')).code_at > 0, '7.8 un code posé avant le 8.10 (fiche sans code_at) : reconnu, et la fiche retient code_at (une seule lecture KV, une fois)', wj); }
+/* exemptions : la sonde sans fiche, le coupe-circuit */
+{ const ci = await appel('/__sso/issue', { method: 'POST', body: { uid: 'ci_smoke', name: 'CI Smoke', cgu: true }, ua: UA.iphone });
+  w = await mod.fetch(reqHost('lingua.kd-mc.com', '/__sso/whoami', ci.j.token), env, { waitUntil() {} }); wj = await w.json();
+  ok(ci.j.ok === true && wj.ok === true, '7.9 la sonde de déploiement (ci_smoke, sans fiche) n\'est pas bloquée'); }
+{ const m0 = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sans', name: 'Paul Sans', cgu: true }, ua: UA.iphone }, ENV0);
+  const p1 = await mod.fetch(reqHost('lingua.kd-mc.com', '/', m0.j.token, { 'sec-fetch-dest': 'document', accept: 'text/html' }), ENV0, { waitUntil() {} });
+  const p2 = await mod.fetch(reqHost('lingua.kd-mc.com', '/', m0.j.token, { 'sec-fetch-dest': 'document', accept: 'text/html' }), env, { waitUntil() {} });
+  ok(p1.headers.get('x-kdmc-porte') !== 'code' && p2.headers.get('x-kdmc-porte') === 'code', '7.10 SABOTAGE : coupe-circuit à 0 → la page s\'ouvre sans code ; par défaut → porte « crée ton code »'); }
+/* le portail et le client SSO sont câblés : état code_requis gardé (pas de pass jeté), écran bloquant, versions montées */
+{ const { readFileSync } = await import('node:fs');
+  const sso = readFileSync(new URL('../../kdmc-home/kdmc-sso.js', import.meta.url), 'utf8'), portail = readFileSync(new URL('../../kdmc-home/kdmc-portal.js', import.meta.url), 'utf8');
+  ok(/state: 'code_requis'/.test(sso) && /whoamiResult: whoamiResult/.test(sso) && /r\.state === 'code_requis'/.test(sso) && /kd-mc\.com\/\?code=1&return=/.test(sso), '7.11 client SSO : état code_requis (pass gardé), exporté, et les apps renvoient au portail');
+  ok(/function renderCodeObligatoire\(s\)/.test(portail) && /r\.state === 'code_requis'\) \{ renderCodeObligatoire\(r\.session\)/.test(portail) && /position:fixed;inset:0;z-index:9999/.test(portail) && /co-code2/.test(portail) && /issueDetail\(s\.uid, s\.name, true, safeReturnUrl\(\), c1\)/.test(portail),
+    '7.12 portail : écran « Crée ton code » plein écran (code saisi 2 fois), posé depuis la session de la personne, retour à l\'app');
+  /* 8.10 (revue extérieure, P0) : au démarrage ET avant de renvoyer vers l'app, le portail lit l'état détaillé — sinon l'écran n'est jamais atteint */
+  const boot = portail.slice(portail.indexOf('function boot()'), portail.indexOf('boot();'));
+  const hub = portail.slice(portail.indexOf('function showHub(name)'), portail.indexOf('function cguBlock()'));
+  ok(/whoamiResult\(\)/.test(boot) && /r\.state === 'code_requis'\) \{ renderCodeObligatoire\(r\.session\); return; \}/.test(boot), '7.13 portail : boot() lit whoamiResult → code_requis = l\'écran bloquant (plus whoami() qui l\'aplatissait en « aucune session »)');
+  ok(/whoamiResult\(\)/.test(hub) && hub.indexOf("r.state === 'code_requis'") < hub.indexOf('gotoReturnIfAny()'), '7.14 portail : showHub vérifie code_requis AVANT de renvoyer vers l\'app (fin du ping-pong app ⇄ portail)'); }
+
+}
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

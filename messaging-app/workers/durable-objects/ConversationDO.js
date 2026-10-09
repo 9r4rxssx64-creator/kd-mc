@@ -166,7 +166,10 @@ export class ConversationDO {
       const valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(`${h}.${p}`));
       if (!valid) return null;
       const payload = JSON.parse(atob(p.replace(/-/g, '+').replace(/_/g, '/').padEnd(p.length + (4 - p.length % 4) % 4, '=')));
-      if (payload.exp && payload.exp * 1000 < Date.now()) return null;
+      // Revue 08.10.2026 (A4) : exp obligatoire — un jeton sans exp valait à vie.
+      // Le jeton relais du worker (typ 'wsfwd') porte exp = 60 s.
+      if (!Number.isFinite(payload.exp)) return null;
+      if (payload.exp * 1000 < Date.now()) return null;
       return payload;
     } catch (e) {
       return null;

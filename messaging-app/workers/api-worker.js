@@ -151,9 +151,59 @@ export async function verifyJWT(token, secret) {
     if (!valid) return null;
     const payload = JSON.parse(atob(p.replace(/-/g, '+').replace(/_/g, '/').padEnd(p.length + (4 - p.length % 4) % 4, '=')));
     if (!payload || typeof payload !== 'object') return null;
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
+    // Revue 08.10.2026 (A4) : un jeton SANS exp valait à vie. exp est désormais
+    // obligatoire (nombre fini) — tous les jetons émis ici en portent un
+    // (sessions 30 j, tickets WS 60 s, média 300 s, invitations 7 j).
+    if (!Number.isFinite(payload.exp)) return null;
+    if (payload.exp * 1000 < Date.now()) return null;
     return payload;
   } catch { return null; }
+}
+
+// Revue 08.10.2026 (A1) — RÉCLAMATION d'un compte créé par invitation.
+// Un compte pré-créé par une invitation (source 'user-invitation' / 'invitation')
+// a pu recevoir une session AVANT que son vrai propriétaire ne prouve son numéro
+// (lien magique ouvert par l'inviteur lui-même, par exemple). À la PREMIÈRE
+// connexion prouvée (OTP ou SSO), on pose users.last_force_logout_at = maintenant
+// AVANT d'émettre le nouveau jeton : getAuthUser refuse alors toute session
+// antérieure (iat plus ancien) — dont celle de l'inviteur. Une seule fois par
+// compte (claimed_at). Si la colonne claimed_at manque encore (migration 0013
+// pas passée) on coupe quand même les anciennes sessions : jamais moins sûr.
+// Renvoie l'iat (secondes) à utiliser pour le jeton émis juste après.
+const INVITED_SOURCES = ['user-invitation', 'invitation'];
+export async function _claimInvitedAccount(env, user) {
+  const iat = Math.floor(Date.now() / 1000);
+  if (!user || !user.id || !INVITED_SOURCES.includes(user.source)) return iat;
+  if (user.claimed_at) return iat;
+  const DB = env.APEX_CHAT_DB;
+  // Borne = début de la seconde courante : le jeton signé avec cet iat (ou un
+  // iat plus tard) reste valide (getAuthUser refuse iat*1000 < last_force_logout_at).
+  const cutoff = iat * 1000;
+  let done = false;
+  try {
+    await DB.prepare(
+      'UPDATE users SET last_force_logout_at=?, claimed_at=?, updated_at=? WHERE id=? AND claimed_at IS NULL'
+    ).bind(cutoff, cutoff, cutoff, user.id).run();
+    done = true;
+  } catch (_) { /* colonne claimed_at absente → repli ci-dessous */ }
+  if (!done) {
+    try { await DB.prepare('UPDATE users SET last_force_logout_at=? WHERE id=?').bind(cutoff, user.id).run(); } catch (_) {}
+  }
+  user.last_force_logout_at = cutoff;
+  user.claimed_at = cutoff;
+  try { await auditLog(env, user.id, 'invited_account_claimed', 'user', user.id, { source: user.source }, null, ''); } catch (_) {}
+  return iat;
+}
+
+// Revue 08.10.2026 (F1) — id libre pour un compte SSO neuf : si l'id « naturel »
+// (apex_uid / kdmc_<uid>) est déjà tenu par une ligne SUPPRIMÉE (RGPD), on en
+// dérive un autre au lieu de ressusciter la ligne morte.
+async function _freshSsoId(env, base) {
+  try {
+    const row = await env.APEX_CHAT_DB.prepare('SELECT id, status FROM users WHERE id=?').bind(base).first();
+    if (row && row.status === 'deleted') return base + '_' + _randomCode(6, 'abcdefghijkmnpqrstuvwxyz23456789');
+  } catch (_) {}
+  return base;
 }
 
 // Lot 2 (M) : un champ d'un mauvais type (objet / tableau là où une chaîne est
@@ -945,10 +995,13 @@ export async function handleVerifyOtp(request, env) {
         }
         step = 'sign_jwt';
         if (!env.JWT_SIGN_KEY) return err('Config serveur incomplète', 503, 'jwt_key_unset');
+        // Revue 08.10 (A1) : compte pré-créé par invitation → réclamé ici, les
+        // sessions antérieures (inviteur) tombent AVANT l'émission du jeton.
+        const iatDirect = await _claimInvitedAccount(env, user);
         const jwt = await signJWT({
           sub: user.id, pseudo: user.pseudo, is_admin: !!user.is_admin,
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + 30 * 86400
+          iat: iatDirect,
+          exp: iatDirect + 30 * 86400
         }, env.JWT_SIGN_KEY);
         await auditLog(env, user.id, 'direct_signup', 'user', user.id, { phone_hash: phoneHash },
           await sha256(request.headers.get('CF-Connecting-IP') || ''), request.headers.get('User-Agent'))
@@ -1148,13 +1201,18 @@ export async function handleVerifyOtp(request, env) {
   // Best-effort, ne JAMAIS bloquer le login. Réparer un côté répare l'autre.
   try { await autoHealPerson(env, user); } catch (e) { console.warn('[auto-heal-login]', e?.message); }
 
+  // Revue 08.10.2026 (A1) : première preuve du numéro sur un compte pré-créé par
+  // invitation → les sessions antérieures (dont celle ouverte par l'inviteur via
+  // le lien magique) sont révoquées AVANT d'émettre le nouveau jeton.
+  const iatOtp = await _claimInvitedAccount(env, user);
+
   const jwt = await signJWT({
     sub: user.id,
     pseudo: user.pseudo,
     is_admin: !!user.is_admin,
     firebase_uid: (typeof firebasePayload !== 'undefined' && firebasePayload) ? firebasePayload.sub : null,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 30 * 86400  // 30 jours
+    iat: iatOtp,
+    exp: iatOtp + 30 * 86400  // 30 jours
   }, env.JWT_SIGN_KEY);
 
   await auditLog(env, user.id, 'login', 'user', user.id, { method: 'sms-otp' }, phoneHash, request.headers.get('User-Agent'));
@@ -1272,7 +1330,10 @@ export async function handleSsoFromApex(request, env) {
   if (apexPayload.exp * 1000 < Date.now()) return err('Token Apex expiré', 401);
   if (apexPayload.iat > nowS + 60) return err('Token Apex futur', 401);
 
-  let user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE apex_uid=?').bind(apex_uid).first();
+  // Revue 08.10.2026 (F1) : un compte SUPPRIMÉ (RGPD) ne se retrouve ni ne se
+  // ressuscite jamais par SSO — sinon jeton émis sur une ligne 'deleted' que
+  // getAuthUser refuse → 401 permanent.
+  let user = await env.APEX_CHAT_DB.prepare("SELECT * FROM users WHERE apex_uid=? AND status != 'deleted'").bind(apex_uid).first();
   if (!user) {
     // P0 FIX : isKevin via phone E.164 secret env (jamais via name string)
     const KEVIN_PHONE = env.KEVIN_PHONE_E164 || '';
@@ -1280,14 +1341,16 @@ export async function handleSsoFromApex(request, env) {
                     (apexPayload.phone === KEVIN_PHONE || phone === KEVIN_PHONE);
 
     const pseudo = String(name || apex_uid).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20) || 'user' + Date.now().toString(36).slice(-6);
-    const id = apex_uid;
+    const id = await _freshSsoId(env, apex_uid);
+    // apex_uid est UNIQUE : une ligne supprimée AVANT ce correctif peut encore le tenir.
+    try { await env.APEX_CHAT_DB.prepare("UPDATE users SET apex_uid=NULL WHERE apex_uid=? AND status='deleted'").bind(apex_uid).run(); } catch (_) {}
 
     try {
       await env.APEX_CHAT_DB.prepare(
         `INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias,
          identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING_PQXDH', 'PENDING_PQXDH', 'PENDING_PQXDH', ?, 'apex-sso', ?, 'active')
-         ON CONFLICT(id) DO UPDATE SET apex_uid=excluded.apex_uid`
+         ON CONFLICT(id) DO UPDATE SET apex_uid=excluded.apex_uid WHERE users.status != 'deleted'`
       ).bind(id, pseudo, name || pseudo, phone || 'PENDING_SSO',
         phone ? await sha256(phone) : 'PENDING_SSO',
         isKevin ? 1 : 0, isKevin ? 1 : 0, apex_uid, Date.now()).run();
@@ -1296,15 +1359,17 @@ export async function handleSsoFromApex(request, env) {
       return err('Création SSO échouée : ' + e.message, 500);
     }
   }
+  if (!user || user.status === 'deleted') return err('Compte SSO indisponible', 500, 'sso_user_missing');
 
+  const iatSso = await _claimInvitedAccount(env, user);
   const jwt = await signJWT({
     sub: user.id,
     pseudo: user.pseudo,
     is_admin: !!user.is_admin,
     apex_uid: user.apex_uid,
     sso: true,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 30 * 86400
+    iat: iatSso,
+    exp: iatSso + 30 * 86400
   }, env.JWT_SIGN_KEY);
 
   await auditLog(env, user.id, 'login_sso_apex', 'user', user.id, { apex_uid }, '', request.headers.get('User-Agent'));
@@ -1358,9 +1423,11 @@ export async function handleSsoFromKdmc(request, env) {
     await env.APEX_CHAT_DB.prepare('ALTER TABLE users ADD COLUMN kdmc_uid TEXT').run();
   } catch (_) { /* colonne déjà présente */ }
 
-  let user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE kdmc_uid=?').bind(uid).first();
+  // Revue 08.10.2026 (F1) : une ligne SUPPRIMÉE (RGPD) n'est ni retrouvée ni
+  // ressuscitée par l'upsert — on repart sur un compte neuf (id libre).
+  let user = await env.APEX_CHAT_DB.prepare("SELECT * FROM users WHERE kdmc_uid=? AND status != 'deleted'").bind(uid).first();
   if (!user) {
-    const id = 'kdmc_' + uid;
+    const id = await _freshSsoId(env, 'kdmc_' + uid);
     const basePseudo = name.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20)
       || ('user' + Date.now().toString(36).slice(-6));
     // Lot 2 (X) : pseudo UNIQUE — un homonyme déjà inscrit faisait échouer
@@ -1369,7 +1436,7 @@ export async function handleSsoFromKdmc(request, env) {
       `INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias,
        identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status, kdmc_uid)
        VALUES (?, ?, ?, 'PENDING_SSO', 'PENDING_SSO', ?, ?, 'PENDING_PQXDH', 'PENDING_PQXDH', 'PENDING_PQXDH', ?, 'kdmc-sso', ?, 'active', ?)
-       ON CONFLICT(id) DO UPDATE SET kdmc_uid=excluded.kdmc_uid`
+       ON CONFLICT(id) DO UPDATE SET kdmc_uid=excluded.kdmc_uid WHERE users.status != 'deleted'`
     ).bind(id, pseudo, name, isAdmin ? 1 : 0, isAdmin ? 1 : 0, id, Date.now(), uid).run();
     let lastErr = null;
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -1389,16 +1456,17 @@ export async function handleSsoFromKdmc(request, env) {
     }
     user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
   }
-  if (!user) return err('User kd-mc.com introuvable après création', 500, 'kdmc_user_missing');
+  if (!user || user.status === 'deleted') return err('User kd-mc.com introuvable après création', 500, 'kdmc_user_missing');
 
+  const iatKdmc = await _claimInvitedAccount(env, user);
   const jwt = await signJWT({
     sub: user.id,
     pseudo: user.pseudo,
     is_admin: !!user.is_admin,
     kdmc_uid: uid,
     sso: true,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 30 * 86400,
+    iat: iatKdmc,
+    exp: iatKdmc + 30 * 86400,
   }, env.JWT_SIGN_KEY);
 
   await auditLog(env, user.id, 'login_sso_kdmc', 'user', user.id, { kdmc_uid: uid }, '', request.headers.get('User-Agent'));
@@ -1495,8 +1563,11 @@ export async function handleDeleteMe(request, env) {
     await run('users', `UPDATE users SET status='deleted', phone=?, phone_hash=?, email=NULL, real_name='', display_name=NULL,
       first_name=NULL, last_name=NULL, bio=NULL, avatar_url=NULL, address=NULL, city=NULL, country=NULL, job=NULL, birth_date=NULL,
       last_ip_hash=NULL, last_user_agent=NULL, last_lat=NULL, last_lng=NULL, last_geo_label=NULL, last_device_label=NULL,
-      identity_key_pub='', prekey_signed='', pseudo=?, last_force_logout_at=?, updated_at=? WHERE id=?`,
+      identity_key_pub='', prekey_signed='', pseudo=?, apex_uid=NULL, last_force_logout_at=?, updated_at=? WHERE id=?`,
       'deleted_' + uid, 'deleted_' + uid, 'supprime_' + uid, now, now, uid);
+    // Revue 08.10.2026 (F1) : les liens SSO (apex_uid ci-dessus, kdmc_uid ici) sont
+    // coupés — sinon la prochaine connexion SSO retrouvait la ligne supprimée,
+    // émettait un jeton que getAuthUser refusait → 401 permanent.
     // kdmc_uid est créée à la volée (1re connexion domaine) : à part, jamais bloquant.
     await run('users_kdmc_uid', 'UPDATE users SET kdmc_uid=NULL WHERE id=?', uid);
     if (done.rows.users !== 1) {
@@ -2468,12 +2539,15 @@ export async function _canonicalId(DB, id) {
   // v1.1.192 — un id "local_+<numéro>" (contact ajouté par numéro côté client)
   // est résolu vers le VRAI compte par son numéro de téléphone.
   if (typeof cur === 'string' && cur.indexOf('local_') === 0) {
-    const tail = normPhone(cur.replace(/^local_/, '')).replace(/\D/g, '').slice(-8);
-    if (tail) {
+    // Revue 08.10.2026 (D5) : comparaison sur le numéro E.164 COMPLET normalisé
+    // (comme getAuthUser) — les 8 derniers chiffres confondaient deux personnes de
+    // pays différents, et _healLocalConvMembers réécrivait leurs messages.
+    const exact = normPhone(cur.replace(/^local_/, ''));
+    if (exact && exact.startsWith('+') && exact.replace(/\D/g, '').length >= 8) {
       try {
         const u = await DB.prepare(
-          "SELECT id FROM users WHERE status != 'deleted' AND phone LIKE ? ORDER BY (last_seen IS NOT NULL) DESC, last_seen DESC LIMIT 1"
-        ).bind('%' + tail).first();
+          "SELECT id FROM users WHERE status != 'deleted' AND phone = ? ORDER BY (last_seen IS NOT NULL) DESC, last_seen DESC LIMIT 1"
+        ).bind(exact).first();
         if (u && u.id) cur = u.id;
       } catch (_) {}
     }
@@ -3314,8 +3388,11 @@ async function handleCreateInvitation(request, env) {
   ).bind(code, auth.sub, phoneHash, sent_via || 'contact-picker', magicToken, Date.now(), expiresAt).run();
 
   const baseUrl = env.APEX_CHAT_BASE_URL || '';
-  const magicUrl = `${baseUrl}?invite=${encodeURIComponent(magicToken)}`;
-  const shortUrl = `${baseUrl}i/${code}`;
+  // Revue 08.10.2026 (A1) : le lien magique (session SANS code au nom de l'invité)
+  // n'est PLUS remis à l'inviteur — il pouvait l'ouvrir lui-même et devenir
+  // l'invité. L'invité reçoit un lien d'accueil (code court) : la page reconnaît
+  // l'invitation et il prouve son numéro par SMS comme tout le monde.
+  const shortUrl = `${baseUrl}?i=${code}`;
   const inviterRow = await env.APEX_CHAT_DB.prepare('SELECT real_name, pseudo FROM users WHERE id=?')
     .bind(auth.sub).first().catch(() => null);
   const inviterName = inviterRow?.real_name || auth.pseudo || 'un ami';
@@ -3337,7 +3414,6 @@ async function handleCreateInvitation(request, env) {
           type: 'invitation',
           inviter_id: auth.sub,
           inviter_name: inviterName,
-          magic_token: magicToken,
           ts: Date.now()
         }
       }, env);
@@ -3346,24 +3422,31 @@ async function handleCreateInvitation(request, env) {
 
   return json({
     ok: true, code, expires_at: expiresAt,
-    magic_url: magicUrl,
     invite_url: shortUrl,
     invited_user_id: (user && user.id) || null,   // v1.1.217 : pour ouvrir la conv direct depuis la fiche
-    sms_template: `Salut ${niceName} ! ${inviterName} t'invite sur Apex Chat (messagerie privée chiffrée). Clique direct (pas besoin de code) : ${magicUrl}`
+    sms_template: `Salut ${niceName} ! ${inviterName} t'invite sur Apex Chat (messagerie privée chiffrée) : ${shortUrl}`
   });
 }
 
 async function handleResolveInvitation(code, env) {
   const inv = await env.APEX_CHAT_DB.prepare(
-    'SELECT i.*, u.pseudo as inviter_pseudo, u.avatar_url as inviter_avatar FROM invitations i LEFT JOIN users u ON u.id = i.inviter_id WHERE i.code=?'
+    'SELECT i.*, u.pseudo as inviter_pseudo, u.avatar_url as inviter_avatar, u.is_admin as inviter_is_admin FROM invitations i LEFT JOIN users u ON u.id = i.inviter_id WHERE i.code=?'
   ).bind(code).first();
   if (!inv) return err('Invitation invalide', 404);
   if (inv.expires_at < Date.now()) return err('Invitation expirée', 410);
   if (inv.accepted_at) return err('Invitation déjà acceptée', 410);
   // Audit 17/09/2026 (P2) : route sans jeton — on ne renvoie que ce que la page utilise
   // (magic_token, qui invite, avatar), jamais l'empreinte du numéro invité ni les ids internes.
+  // Revue 08.10.2026 (A1) : le jeton magique (session sans code) ne sort QUE pour une
+  // invitation signée par un admin ; pour une invitation d'utilisateur, l'invité
+  // prouve son numéro par SMS (requires_otp).
   const { code: c, inviter_pseudo, inviter_avatar, magic_token, expires_at, sent_via } = inv;
-  return json({ ok: true, invitation: { code: c, inviter_pseudo, inviter_avatar, magic_token, expires_at, sent_via } });
+  const adminInvite = !!inv.inviter_is_admin || inv.inviter_id === 'kdmc_admin';
+  return json({ ok: true, invitation: {
+    code: c, inviter_pseudo, inviter_avatar, expires_at, sent_via,
+    magic_token: adminInvite ? magic_token : null,
+    requires_otp: !adminInvite,
+  } });
 }
 
 // ============================================================================
@@ -3721,6 +3804,19 @@ export async function handleMagicLogin(request, env) {
 
   const payload = await verifyJWT(magic_token, env.JWT_SIGN_KEY);
   if (!payload || payload.typ !== 'magic_invite') return err('Token invalide', 401);
+
+  // Revue 08.10.2026 (A1) : seule une invitation signée par un ADMIN ouvre une
+  // session sans code. Une invitation d'utilisateur pré-crée le compte, mais
+  // l'invité prouve son numéro par SMS (sinon l'inviteur pouvait ouvrir le lien
+  // lui-même et devenir l'invité).
+  let inviterIsAdmin = payload.invited_by === 'kdmc_admin';
+  if (!inviterIsAdmin && payload.invited_by) {
+    try {
+      const inviter = await env.APEX_CHAT_DB.prepare('SELECT is_admin FROM users WHERE id=?').bind(payload.invited_by).first();
+      inviterIsAdmin = !!(inviter && inviter.is_admin);
+    } catch (_) { inviterIsAdmin = false; }
+  }
+  if (!inviterIsAdmin) return err('Cette invitation demande une vérification par SMS : entre ton numéro.', 403, 'magic_requires_otp');
 
   const user = await env.APEX_CHAT_DB.prepare(
     'SELECT id, pseudo, display_name, avatar_url, admin_authorized, is_admin, last_seen, identity_key_pub FROM users WHERE id=?'

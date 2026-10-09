@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 210 règles — le texte de Kevin, une par une
+## 📜 Les 211 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -315,6 +315,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### 💪 RÈGLE ABSOLUE — TROUVE DES SOLUTIONS, NE JAMAIS DIRE « JE NE PEUX PAS » (Kevin 2026-07-05, MAÎTRESSE)
 **"Trouve des solutions ne me dis jamais que tu ne peux pas"** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-trouve-des-solutions-ne-jamais-dire-je-ne-peux-pas-kevin-2026-07-05-maîtresse)
+
+### 💾 RÈGLE ABSOLUE — ARBRE : LES MODIFICATIONS DE TOUT LE MONDE NE SE PERDENT JAMAIS, ET RIEN DE CE QUI A ÉTÉ RETIRÉ NE REVIENT ; SAUVEGARDE AUTOMATIQUE (Kevin 2026-10-09, ABSOLUE)
+**« Les modifications de tout le monde ne doivent jamais se perdre. Toujours sauvegarde auto. C'est affiché à plusieurs endroits que Luka est mon conjoint mari. Corrige partout »** — Kevin […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-les-modifications-de-tout-le-monde-ne-se-perdent-jamais-et-rien-de-ce-qui-a-été-retiré-ne-revient-sauvegarde-automatique-kevin-2026-10-09-absolue)
 
 ### 🇫🇷 RÈGLE ABSOLUE — JE PARLE FRANÇAIS À KEVIN, TOUJOURS (Kevin 2026-10-09, ABSOLUE)
 **« Français »** puis **« Parle-moi français, rappelle-toi, note-le »** — Kevin 2026-10-09 (après des réponses rédigées en anglais)

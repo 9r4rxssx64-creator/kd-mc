@@ -3953,6 +3953,23 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 
 ---
 
+## 💾 RÈGLE ABSOLUE — ARBRE : LES MODIFICATIONS DE TOUT LE MONDE NE SE PERDENT JAMAIS, ET RIEN DE CE QUI A ÉTÉ RETIRÉ NE REVIENT ; SAUVEGARDE AUTOMATIQUE (Kevin 2026-10-09, ABSOLUE)
+
+> **« Les modifications de tout le monde ne doivent jamais se perdre. Toujours sauvegarde auto. C'est affiché à plusieurs endroits
+> que Luka est mon conjoint mari. Corrige partout »** — Kevin 2026-10-09
+
+- Ce qu'une personne SAISIT sur son appareil arrive dans le nuage, même après un envoi raté (v3.74 : file « à envoyer »,
+  récupération à la synchro suivante).
+- Mais une vieille copie gardée sur un appareil ne fait JAMAIS revenir un lien retiré (v3.77) : un appareil ne rend au nuage que
+  les liens qu'une personne a posés SUR CET APPAREIL depuis la dernière synchro réussie ; le rangement automatique des couples
+  ne compte pas comme une modification (sinon une vieille copie paraît plus récente que le nuage).
+- Sauvegarde automatique : une copie complète du nuage par jour (déposée par le premier appareil qui le lit, 30 jours gardés)
+  et une copie avant CHAQUE écriture de l'outil (20 gardées, et rien n'est écrit si la copie n'est pas relue) — dans un tiroir à
+  part, hors synchro. Gardes : `tests/arbre-nuage-protege.test.mjs` (sabotages prouvés).
+- La raison d'une correction reste au journal de l'outil, jamais dans l'histoire de la personne.
+
+---
+
 ## 🇫🇷 RÈGLE ABSOLUE — JE PARLE FRANÇAIS À KEVIN, TOUJOURS (Kevin 2026-10-09, ABSOLUE)
 
 > **« Français »** puis **« Parle-moi français, rappelle-toi, note-le »** — Kevin 2026-10-09 (après des réponses rédigées en anglais)

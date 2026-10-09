@@ -3486,5 +3486,6 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-08 | `messaging-app/tests/unit/client-groupe-e2e-flux.test.js` | Apex Chat : groupe à 3 en vrai code client — aucun clair au serveur, nouvelle clé au départ d'un membre |
 | 2026-10-08 | `messaging-app/tests/unit/do-cles-groupe-silencieuses.test.js` | Apex Chat : les échanges de clés n'envoient pas « Nouveau message » |
 | 2026-10-08 | `tests/export-public-propre.mjs` | Avant chaque fusion : vérifie que la copie publique pourra partir (aucune donnée personnelle) |
+| 2026-10-09 | `messaging-app/tests/unit/do-historique-cles-groupe.test.js` | Apex Chat : à la connexion, les échanges de clés ne prennent plus la place des vrais messages |
 | 2026-10-08 | [`lingua/data.js`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/lingua/data.js) → `CURRICULUM_VIE` | **La vraie vie** : 10 situations (se présenter, café, chemin, hôtel, médecin, téléphone, sorties, bureau, urgences, magasins), 60 vraies phrases dans les 14 langues, ouvertes dès le premier jour |
 | 2026-10-08 | [`tests/verify-lingua-vraie-vie.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-lingua-vraie-vie.mjs) | Garde : les 60 phrases dans les 14 langues, jamais le français recopié, phrase du jour honnête, fenêtres qui tiennent dans l'écran |

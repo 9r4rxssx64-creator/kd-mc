@@ -340,7 +340,7 @@ describe('4. historique à la connexion — joined_at + messages supprimés', ()
     expect(hist.messages.find((m) => m.id === 'suppr').ciphertext).toBe('');
     // la requête D1 est bornée par joined_at
     const q = db._st.log.find((l) => l.sql.includes('FROM messages WHERE conv_id=?'));
-    expect(q.args).toEqual([CONV, 1000]);
+    expect(q.args.slice(0, 2)).toEqual([CONV, 1000]);   // + le mime des clés de groupe exclu (09.10.2026)
   });
 
   it('contrat worker → DO conservé : ?token= interne + uid + conv du chemin → session sur la bonne conv', async () => {

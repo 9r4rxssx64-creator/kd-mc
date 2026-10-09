@@ -341,11 +341,24 @@ export class ConversationDO {
     try {
       // Revue 08.10.2026 : un membre ajouté APRÈS coup ne reçoit pas les messages antérieurs
       // à son arrivée (joined_at), et un message supprimé n'expose jamais son contenu.
-      const hist = await this.env.APEX_CHAT_DB.prepare(
-        'SELECT id, sender_id, ciphertext, mime, ts, reply_to, view_once, expires_at, edited_at, deleted_at FROM messages WHERE conv_id=? AND ts >= ? ORDER BY ts DESC LIMIT 50'
-      ).bind(convId, joinedAt).all();
-      const rows = (hist.results || []).slice().reverse();
-      const seen = new Set(rows.map(r => r.id));
+      // 09.10.2026 : les messages de clés de groupe (MIMES_SILENCIEUX) ne prennent plus les 50 places des messages
+      // lisibles — sinon un groupe actif montrait moins de 50 vrais messages. Ils arrivent à part (50 derniers),
+      // car le téléphone en a besoin pour déchiffrer ce qu'il affiche.
+      const cols = 'SELECT id, sender_id, ciphertext, mime, ts, reply_to, view_once, expires_at, edited_at, deleted_at FROM messages';
+      const silencieux = [...MIMES_SILENCIEUX];
+      const marques = silencieux.map(() => '?').join(',');
+      const [hist, cles] = await Promise.all([
+        this.env.APEX_CHAT_DB.prepare(
+          cols + ' WHERE conv_id=? AND ts >= ? AND (mime IS NULL OR mime NOT IN (' + marques + ')) ORDER BY ts DESC LIMIT 50'
+        ).bind(convId, joinedAt, ...silencieux).all(),
+        this.env.APEX_CHAT_DB.prepare(
+          cols + ' WHERE conv_id=? AND ts >= ? AND mime IN (' + marques + ') ORDER BY ts DESC LIMIT 50'
+        ).bind(convId, joinedAt, ...silencieux).all(),
+      ]);
+      const seen = new Set();
+      const rows = [...(hist.results || []), ...(cles.results || [])]
+        .filter(r => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+        .sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));
       // Ajouter les messages encore en buffer (pas encore flushés en D1)
       for (const pm of this.pendingMessages) {
         if (pm.conv_id === convId && !seen.has(pm.id)) {

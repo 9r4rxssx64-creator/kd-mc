@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-09 — Apex Chat : l'historique ne se fait plus « manger » par les clés de groupe
+
+- Serveur : à la connexion, 50 vrais messages + les 50 derniers échanges de clés (avant : 50 en tout, clés comprises).
+- Mesuré : 95 fichiers / 1586 tests, couverture sans ERROR ; nouveau test sur vrai SQLite, ancien code → 2 échecs. Leçon #464.
+- En parallèle : agent sur le chiffrement des groupes côté téléphone (photos, signature de l'expéditeur, modifications liées au message).
+
 ## 2026-10-08 (soir) — Deux gardes de main remis au vert (arbre v3.68)
 
 - `test:improvements-guard` (19 → 20) : la nouvelle règle « ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE … L'ORIGINAL VA DANS LA

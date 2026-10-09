@@ -4065,6 +4065,14 @@ chaque fiche concernée porte une note « 📬 DEMANDE D'ACTE » (54 fiches) :
 | 14 | Archives cantonales vaudoises | registre des familles de Sarzens + 9 actes | info.acv@vd.ch | 👤 brouillon prêt |
 | 15 | **Archives des Alpes-Maritimes (AD06)** | 4 actes de Nice (Jean-Baptiste 1903, Philippe ~1850, Jean 1881, Judith 1892) | dad@departement06.fr — **la solution AD06** : leur site est fermé à l'étranger, mais leur boîte mail répond | 👤 brouillon prêt |
 
+**Réponses reçues le 9.10** (lues dans la boîte, rien envoyé) :
+- **Archives de Nice** : ne font pas de recherche — leurs registres anciens sont **en ligne** → je les lis moi-même (en cours).
+- **Mairie de Nice** : actes de moins de 100 ans **par service-public.fr** (formulaire, gratuit) ou au guichet → 👤 toi seul peux les commander
+  (actes de ta lignée directe) ; je prépare la liste exacte des actes à commander.
+- **Monaco** : actes de plus de 100 ans **en ligne** (archives.mairie.mc) → je les lis moi-même par la CI (en cours) ; moins de 100 ans :
+  seulement pour un ascendant/descendant direct, **sauf les actes de décès** (ouverts à tous).
+- **Sospel** : l'acte est aux Archives départementales, cote **2 Miec 137/4** (site AD06 avec captcha : je ne le contourne pas → la demande AD06 n° 15 le couvre).
+
 **Pas demandé, volontairement** : les actes des personnes vivantes (règle de vie privée — c'est à toi de choisir), et les naissances au lieu inconnu (26 personnes) :
 il faut d'abord le lieu. La relance du 13.10 surveille les 14 services, lit les actes reçus et les intègre fiche par fiche.
 

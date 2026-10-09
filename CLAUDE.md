@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 207 règles — le texte de Kevin, une par une
+## 📜 Les 208 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -315,6 +315,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### 💪 RÈGLE ABSOLUE — TROUVE DES SOLUTIONS, NE JAMAIS DIRE « JE NE PEUX PAS » (Kevin 2026-07-05, MAÎTRESSE)
 **"Trouve des solutions ne me dis jamais que tu ne peux pas"** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-trouve-des-solutions-ne-jamais-dire-je-ne-peux-pas-kevin-2026-07-05-maîtresse)
+
+### 📑 RÈGLE ABSOLUE — ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE ; SINON ALLER CHERCHER LE DOCUMENT, ET CHAQUE INFO EST CONFIRMÉE PAR UN DOCUMENT (Kevin 2026-10-09, ABSOLUE)
+**« Tu as bcp de questions dont tu as les documents qui te donnent les réponses. Sinon tu vas chercher les documents pour confirmer à chaque fois toutes les informations. Autonome et trouve des […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-aucune-question-quun-document-en-main-tranche-sinon-aller-chercher-le-document-et-chaque-info-est-confirmée-par-un-document-kevin-2026-10-09-absolue)
 
 ### 🌿 RÈGLE ABSOLUE — ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE, ET LA FILIATION SE LIT SANS EFFORT (Kevin 2026-10-09, ABSOLUE)
 **« Vérifie la filiation. C'est trop brouillon, trop fouillis, on s'y retrouve pas. Fais quelque chose de plus clair. Et quand on choisit une famille […] les autres doivent disparaître de […]

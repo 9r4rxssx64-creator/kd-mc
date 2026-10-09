@@ -3953,6 +3953,25 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 
 ---
 
+## 📑 RÈGLE ABSOLUE — ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE ; SINON ALLER CHERCHER LE DOCUMENT, ET CHAQUE INFO EST CONFIRMÉE PAR UN DOCUMENT (Kevin 2026-10-09, ABSOLUE)
+
+> **« Tu as bcp de questions dont tu as les documents qui te donnent les réponses. Sinon tu vas chercher les documents pour
+> confirmer à chaque fois toutes les informations. Autonome et trouve des solutions, crée, etc. »** — Kevin 2026-10-09
+
+- **Avant d'écrire une question** (ligne « ❓ » d'une fiche, question à la famille, brouillon à une mairie) : relire TOUT ce qui
+  est déjà en main — originaux rangés dans les fiches, actes reçus par mail, Journal de Monaco, notes et journal de recherche des
+  AUTRES fiches (l'âge de la mère dans l'acte de l'enfant, les témoins d'un mariage, la mention marginale…). Si un document répond,
+  la question disparaît et la réponse s'écrit avec sa source.
+- **Sinon, aller chercher le document soi-même** (registres en ligne Monaco > 100 ans, AD06 / Nice en ligne, Journal de Monaco,
+  presse ancienne, Geneanet/FamilySearch publics) — par la CI si la session est refusée. Ne rester en question que ce qu'aucun
+  document public accessible ne tranche, en écrivant **quel document précis** manque et **qui peut le délivrer**.
+- **Chaque information est confirmée par un document** : une donnée sans source reste marquée « probable » ou « piste », jamais
+  présentée comme sûre. Une contradiction entre deux documents s'écrit (ex. l'ordonnance de 1953 contre l'acte de 1950) avec celui
+  qu'on retient et pourquoi.
+- Toujours sans contournement (aucun captcha, aucun déguisement, rien de payant) et sans rien de privé sur les vivants.
+
+---
+
 ## 🌿 RÈGLE ABSOLUE — ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE, ET LA FILIATION SE LIT SANS EFFORT (Kevin 2026-10-09, ABSOLUE)
 
 > **« Vérifie la filiation. C'est trop brouillon, trop fouillis, on s'y retrouve pas. Fais quelque chose de plus clair. Et quand on

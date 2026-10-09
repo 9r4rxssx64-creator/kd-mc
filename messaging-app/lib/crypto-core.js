@@ -436,7 +436,8 @@ export async function decryptBytes(convId, arrayBuffer) {
 //  un serveur ne peut ni réattribuer un message à un autre membre, ni rejouer
 //  une clé emballée dans un autre groupe / une autre époque.
 //  Formats sur le fil (champ `ciphertext`, relayé tel quel par le serveur) :
-//    'E2EG1:'  + b64(JSON{v,epoch,kid,iv,ct})                  message de groupe
+//    'E2EG1:'  + b64(JSON{v,epoch,kid,iv,ct})                  message de groupe (v1.1.296)
+//    'E2EG1:'  + b64(JSON{v,epoch,kid,iv,ct,b:2,k,[mid]})      v1.1.297 : lié à l'identifiant
 //    'E2EGK1:' + b64(JSON{v,from,epoch,kid,keys:[{to,iv,w}]})  distribution (jamais affichée)
 //    'E2EGR1:' + b64(JSON{v,from,sender,epoch,kid})            demande de clé (jamais affichée)
 // ----------------------------------------------------------------------------
@@ -494,17 +495,112 @@ export async function unwrapGroupSenderKey(wrapKey, entry, aadParts) {
   try { return await importGroupSenderKey(raw); } finally { raw.fill(0); }
 }
 
-export async function groupEncrypt(senderKey, plaintext, { conv, from, epoch, kid }) {
+// v1.1.297 — LIAISON À L'IDENTIFIANT (format « b:2 ») : l'AAD lie AUSSI le type de
+// trame et l'identifiant du message :
+//   k:'m' (message)  → identifiant = `mid`, nonce choisi par l'émetteur, porté dans le corps ;
+//   k:'e' (édition)  → identifiant = l'id du message ÉDITÉ, que le destinataire prend dans
+//                      SON contexte (message_id de l'édition / id de la ligne d'historique),
+//                      JAMAIS dans le corps → un serveur ne peut pas rejouer le chiffré d'un
+//                      message X comme édition d'un message Y (même émetteur, même époque).
+// Corps sans `b` = format v1.1.296 (AAD sans identifiant) : encore lu pour un message,
+// refusé pour une édition (règle appliquée par l'appelant, cf. groupBoundId).
+// signer (optionnel, v1.1.297) : clé privée ECDSA de l'appareil → signature `sg` du corps lié
+// (cf. groupMsgSigParts) : l'émetteur est AUTHENTIFIÉ, pas seulement « détenteur de la clé ».
+export async function groupEncrypt(senderKey, plaintext, { conv, from, epoch, kid, kind, mid }, signer) {
   const iv = randomBytes(12); // IV FRAIS à chaque message (AES-GCM : jamais deux fois le même)
+  const bound = kind === 'm' || kind === 'e';
+  if (bound && (typeof mid !== 'string' || !mid)) throw new Error('identifiant de message requis');
+  if (signer && !bound) throw new Error('signature : message lié requis');
+  const parts = bound ? [conv, from, epoch, kid, kind, mid] : [conv, from, epoch, kid];
   const ct = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, additionalData: groupAad([conv, from, epoch, kid]) }, senderKey, enc.encode(plaintext),
+    { name: 'AES-GCM', iv, additionalData: groupAad(parts) }, senderKey, enc.encode(plaintext),
   );
-  return GROUP_MSG_TAG + _jsonToB64({ v: 1, epoch, kid, iv: bufToB64(iv), ct: bufToB64(ct) });
+  const body = { v: 1, epoch, kid, iv: bufToB64(iv), ct: bufToB64(ct) };
+  if (bound) { body.b = 2; body.k = kind; if (kind === 'm') body.mid = mid; }
+  if (signer) body.sg = await groupSign(signer, groupMsgSigParts(body, { conv, from, ctxId: mid }));
+  return GROUP_MSG_TAG + _jsonToB64(body);
 }
 
-export async function groupDecrypt(senderKey, body, { conv, from }) {
+// ----------------------------------------------------------------------------
+//  AUTHENTICITÉ DE L'ÉMETTEUR (v1.1.297) — signature ECDSA P-256 / SHA-256 par appareil.
+//  Sans elle, tout membre qui détient la clé d'envoi de A (tous les membres !) pouvait,
+//  avec l'aide du serveur (sender_id), fabriquer un message « de A ». Désormais chaque
+//  message (et chaque distribution de clé) porte `sg` = signature de A sur un encodage
+//  CANONIQUE qui lie : type, groupe, émetteur, époque, kid, identifiant, IV et chiffré.
+//  Clé privée NON extractible (IndexedDB, comme la clé d'identité) ; clé publique publiée
+//  avec le bundle (préfixe « GSIG1: », capacité « gsig1 »), épinglée PAR MEMBRE (TOFU).
+// ----------------------------------------------------------------------------
+export const GROUP_SIG_PREFIX = 'GSIG1:';
+const ECDSA = { name: 'ECDSA', namedCurve: 'P-256' };
+const ECDSA_SIG = { name: 'ECDSA', hash: 'SHA-256' };
+
+// Paire de signature : privée NON extractible (exportKey refuse), publique exportable.
+export function generateSigningKeys() {
+  return crypto.subtle.generateKey(ECDSA, false, ['sign', 'verify']);
+}
+export async function exportSigningPublicKey(publicKey) {
+  return GROUP_SIG_PREFIX + bufToB64(await crypto.subtle.exportKey('raw', publicKey));
+}
+export function importSigningPublicKey(s) {
+  if (typeof s !== 'string' || !s.startsWith(GROUP_SIG_PREFIX)) throw new Error('clé de signature invalide');
+  return crypto.subtle.importKey('raw', b64ToBuf(s.slice(GROUP_SIG_PREFIX.length)), ECDSA, true, ['verify']);
+}
+// Encodage canonique : tableau JSON de chaînes, préfixé du domaine (aucune ambiguïté de découpage).
+export function groupSigBytes(parts) {
+  return enc.encode(JSON.stringify(['apex-grp-sig-v1'].concat(parts.map(String))));
+}
+export async function groupSign(privateKey, parts) {
+  return bufToB64(await crypto.subtle.sign(ECDSA_SIG, privateKey, groupSigBytes(parts)));
+}
+// → true seulement si la signature est présente ET valide (jamais de levée).
+export async function groupVerify(publicKey, sig, parts) {
+  if (typeof sig !== 'string' || !sig) return false;
+  try { return await crypto.subtle.verify(ECDSA_SIG, publicKey, b64ToBuf(sig), groupSigBytes(parts)); }
+  catch { return false; }
+}
+// Message / édition : [k, groupe, émetteur, époque, kid, identifiant lié, iv, ct].
+export function groupMsgSigParts(body, { conv, from, ctxId }) {
+  return [body.k, conv, from, body.epoch, body.kid, groupBoundId(body, ctxId), body.iv, body.ct];
+}
+// Seul un corps LIÉ (b:2) peut être authentifié ; un contexte manquant → refus, jamais de levée.
+export async function groupVerifyMsg(publicKey, body, ctx) {
+  if (!body || body.b !== 2) return false;
+  let parts;
+  try { parts = groupMsgSigParts(body, ctx); } catch { return false; }
+  return groupVerify(publicKey, body.sg, parts);
+}
+// Distribution : [k, groupe, émetteur, époque, kid, entrées emballées].
+function _keySigParts(body, conv) {
+  return ['k', conv, body.from, body.epoch, body.kid, JSON.stringify(body.keys)];
+}
+// Signe des trames de distribution (déjà découpées) ; +~130 caractères chacune (< 100 000).
+export async function signGroupKeyMessages(privateKey, conv, wires) {
+  const out = [];
+  for (const w of wires) {
+    const body = _b64ToJson(w.slice(GROUP_KEY_TAG.length));
+    body.sg = await groupSign(privateKey, _keySigParts(body, conv));
+    out.push(GROUP_KEY_TAG + _jsonToB64(body));
+  }
+  return out;
+}
+export function groupVerifyKey(publicKey, body, conv) {
+  return groupVerify(publicKey, body.sg, _keySigParts(body, conv));
+}
+
+// Identifiant lié d'un corps « b:2 » : `mid` du corps (message) ou l'id du contexte
+// (édition). null pour un corps v1.1.296 (non lié). Lève si le contexte manque.
+export function groupBoundId(body, ctxId) {
+  if (body.b !== 2) return null;
+  const id = body.k === 'e' ? ctxId : body.mid;
+  if (typeof id !== 'string' || !id) throw new Error('identifiant de contexte requis');
+  return id;
+}
+
+export async function groupDecrypt(senderKey, body, { conv, from, ctxId }) {
+  const id = groupBoundId(body, ctxId);
+  const parts = id === null ? [conv, from, body.epoch, body.kid] : [conv, from, body.epoch, body.kid, body.k, id];
   const pt = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: new Uint8Array(b64ToBuf(body.iv)), additionalData: groupAad([conv, from, body.epoch, body.kid]) },
+    { name: 'AES-GCM', iv: new Uint8Array(b64ToBuf(body.iv)), additionalData: groupAad(parts) },
     senderKey, b64ToBuf(body.ct),
   );
   return dec.decode(pt);
@@ -522,7 +618,9 @@ export function parseGroupWire(raw) {
   let body = null;
   try {
     const o = _b64ToJson(raw.slice(tag.length));
-    if (o && typeof o === 'object' && o.v === 1 && Number.isInteger(o.epoch) && typeof o.kid === 'string') body = o;
+    if (o && typeof o === 'object' && o.v === 1 && Number.isInteger(o.epoch) && typeof o.kid === 'string' &&
+        (o.sg === undefined || typeof o.sg === 'string') &&
+        (o.b === undefined || (o.b === 2 && (o.k === 'e' || (o.k === 'm' && typeof o.mid === 'string' && o.mid !== ''))))) body = o;
   } catch { body = null; }
   return { kind, body };
 }
@@ -567,6 +665,39 @@ export function groupNeedsRotation(own, members) {
   const a = own.members.slice().sort().join('\n');
   const b = members.slice().sort().join('\n');
   return a !== b;
+}
+
+// ----------------------------------------------------------------------------
+//  Pièce jointe de GROUPE (v1.1.297) — les OCTETS du fichier, chiffrés de bout en bout.
+//  Clé AES-GCM 256 FRAÎCHE et ALÉATOIRE par fichier (jamais la clé d'envoi du groupe),
+//  IV aléatoire de 12 octets, AAD de domaine. Le stockage (R2) ne reçoit que le chiffré.
+//  La clé, l'IV et l'empreinte SHA-256 du chiffré voyagent DANS le message de groupe
+//  (lui-même chiffré E2EG1) ; au téléchargement : empreinte vérifiée PUIS déchiffrement
+//  (le tag GCM authentifie en plus le clair) — un octet modifié → erreur, jamais de contenu.
+// ----------------------------------------------------------------------------
+const GROUP_FILE_AAD = enc.encode('apex-grp-file-v1');
+
+export async function encryptGroupFile(data) {
+  const raw = randomBytes(32);
+  const iv = randomBytes(12);
+  const key = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt']);
+  const k = bufToB64(raw);
+  raw.fill(0);
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: GROUP_FILE_AAD }, key, data);
+  const h = bufToB64(await crypto.subtle.digest('SHA-256', ct));
+  return { ct, k, i: bufToB64(iv), h };
+}
+
+export async function decryptGroupFile(ctBuf, meta) {
+  if (!meta || typeof meta.k !== 'string' || typeof meta.i !== 'string' || typeof meta.h !== 'string') {
+    throw new Error('clé de pièce jointe absente');
+  }
+  const h = bufToB64(await crypto.subtle.digest('SHA-256', ctBuf));
+  if (h !== meta.h) throw new Error('pièce jointe altérée (empreinte différente)');
+  const key = await crypto.subtle.importKey('raw', b64ToBuf(meta.k), { name: 'AES-GCM' }, false, ['decrypt']);
+  return crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: new Uint8Array(b64ToBuf(meta.i)), additionalData: GROUP_FILE_AAD }, key, ctBuf,
+  );
 }
 
 // ----------------------------------------------------------------------------
@@ -667,11 +798,25 @@ if (typeof window !== 'undefined') {
     unwrapGroupSenderKey,
     groupEncrypt,
     groupDecrypt,
+    groupBoundId,
     parseGroupWire,
     buildGroupKeyMessages,
     buildGroupKeyRequest,
     groupReadiness,
     groupNeedsRotation,
+    encryptGroupFile,
+    decryptGroupFile,
+    GROUP_SIG_PREFIX,
+    generateSigningKeys,
+    exportSigningPublicKey,
+    importSigningPublicKey,
+    groupSigBytes,
+    groupSign,
+    groupVerify,
+    groupMsgSigParts,
+    groupVerifyMsg,
+    signGroupKeyMessages,
+    groupVerifyKey,
     selfTest,
     randomBytes,
     bufToB64,

@@ -5,6 +5,21 @@
 - Serveur : à la connexion, 50 vrais messages + les 50 derniers échanges de clés (avant : 50 en tout, clés comprises).
 - Mesuré : 95 fichiers / 1586 tests, couverture sans ERROR ; nouveau test sur vrai SQLite, ancien code → 2 échecs. Leçon #464.
 - En parallèle : agent sur le chiffrement des groupes côté téléphone (photos, signature de l'expéditeur, modifications liées au message).
+## 2026-10-09 — Apex Chat v1.1.297 : les 3 trous restants de l'E2E de groupe (côté client)
+
+- Éditions LIÉES à l'id du message (AAD « b:2 », k:'e') : le serveur ne peut plus rejouer le contenu d'un message comme
+  édition d'un autre (→ « ⚠️ modification refusée », jamais appliquée). Seul l'auteur du message peut l'éditer.
+- Pièces jointes de groupe (fichiers, photos, vocaux) : octets chiffrés par une clé AES-GCM FRAÎCHE par fichier avant
+  l'upload ; clé + IV + empreinte SHA-256 dans le message de groupe chiffré ; octet modifié → « Pièce jointe altérée ».
+  Un marqueur qui porte une clé ne part jamais en clair. DM inchangés.
+- Signature ECDSA P-256 par appareil (clé privée non extractible en IndexedDB) sur chaque message / distribution ;
+  clé publique publiée dans `prekey_signed` (« GSIG1: ») + capacité `gsig1`, épinglée par membre (TOFU, acceptation).
+  Signature absente/fausse → « ⚠️ message non authentifié », jamais le clair. Membre sans `gsig1` : comme avant.
+- Mesuré : 95 fichiers / 1618 tests (avant : 94 / 1583), couverture sans ERROR, crypto-core 100 %. Nouveau garde
+  `tests/unit/client-groupe-e2e-v297.test.js` (35 tests) ; 21 sabotages, tous détectés.
+- Reste (dit honnêtement) : champ serveur dédié à la clé de signature (aujourd'hui `prekey_signed`), TOFU à la 1ʳᵉ vue,
+  une seule clé par compte (multi-appareil), pas de détection de rejeu d'un message entier sous un autre id serveur,
+  anciennes époques (v1.1.296) non signées. À vérifier sur iPhone : groupe à 3 comptes réels + une photo.
 
 ## 2026-10-08 (soir) — Deux gardes de main remis au vert (arbre v3.68)
 

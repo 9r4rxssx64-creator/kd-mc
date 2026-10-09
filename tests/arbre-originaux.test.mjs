@@ -97,6 +97,14 @@ ok(py, 'originaux.py compile');
   const avec = await lancer2({ ORIGINAUX_LICENCE: 'acceptee' }, 'avec');
   ok(accepte && fs.existsSync(path.join(dir, 'avec-1.jpg')) && /licence acceptée au nom du titulaire/.test(avec), 'avec l\'autorisation écrite, licence acceptée puis image intégrale relue', avec.trim().slice(0, 160));
   srv2.close();
+  // une adresse ARK qui répond par le fichier image lui-même (téléchargement → net::ERR_ABORTED) : le fichier est gardé
+  const jpg = fs.readFileSync(path.join(dir, 'avec-1.jpg'));
+  const srv3 = http.createServer((q, r) => { r.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': 'attachment; filename="acte.jpg"' }); r.end(jpg); }).listen(0);
+  await new Promise((r) => srv3.once('listening', r));
+  let o3 = ''; try { const r = await promisify(execFile)('node', [path.join(ROOT, 'tools', 'arbre', 'visionneuse-image.mjs'), 'http://127.0.0.1:' + srv3.address().port + '/ark:/63956/a/b', path.join(dir, 'tel')], { encoding: 'utf8', timeout: 120000 }); o3 = r.stdout + r.stderr; } catch (e) { o3 = 'ÉCHEC ' + String(e.stdout || '') + String(e.stderr || ''); }
+  srv3.close();
+  const f3 = path.join(dir, 'tel-1.jpg');
+  ok(fs.existsSync(f3) && fs.readFileSync(f3).equals(jpg), 'une adresse qui répond par le fichier image (téléchargement) : le fichier est gardé tel quel', o3.trim().slice(0, 140));
   ok(/ORIGINAUX_LICENCE: acceptee/.test(wf), 'le workflow porte l\'autorisation (Monaco < 1900)');
 }
 console.log((ko ? '❌' : '✅') + ' arbre-originaux : v3.68 — les originaux s\'ouvrent dans la fiche, le lien reste la référence (' + (n - ko) + '/' + n + ')');

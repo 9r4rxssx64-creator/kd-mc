@@ -1090,6 +1090,7 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   🔎 pistes, 📬 en attente), sans adresses ni bruit de travail ; l'ancien texte est gardé mot pour mot dans `notesHistorique`,
   replié sous la note (« 🗂 Journal de recherche complet »). L'outil refuse une note réécrite si l'ancienne n'est pas gardée ; clé de paquet `notesReecrite` : l'outil range lui-même l'ancien texte (lu dans le nuage) dans `notesHistorique`.
 - v3.71 (même soir) : le renouvellement était bloqué par la politique de sécurité de la page (securetoken absent de `connect-src`) → ajouté, et un renouvellement raté retombe sur la création d'un compte. Vu par le contrôle réel.
+- v3.72 (9.10, « ne répète pas, n'insiste pas sur les décès ») : la fiche dit la vie UNE fois, sous le nom, lieux compris (« née le 25 septembre 1950 à Monaco · … ») ; les lignes Naissance / Décès qui redisaient la même chose dessous sont retirées. Garde : `tests/arbre-dates-visuel.test.mjs`. Les notes deviennent des histoires (consigne au bloc-notes, après intégration des registres Monaco/Nice) ; l'export `voir=!notes` emporte aussi sexe, parents, conjoints, métier, sources et originaux pour relier les histoires entre elles.
 - Superpositions de cartes mesurées sur les vraies fiches (3 vues × 3 familles) : 0.
 
 ### 2026-10-09 — Arbre v3.69 : une famille = sa famille, la Lignée, et le nuage qui ne perd plus rien

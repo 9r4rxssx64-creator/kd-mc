@@ -383,8 +383,10 @@ describe('3. authenticité de l\'émetteur (signature par appareil)', () => {
     await expect(crypto.subtle.exportKey('jwk', rec.priv)).rejects.toThrow();
     expect([...A.localStorage._m.keys()].some((x) => /sig/.test(x))).toBe(false);
     const post = srv.posts.find((p) => p.uid === 'alice');
-    expect(post.body.prekey_signed).toBe(rec.pub);
-    expect(post.body.prekey_signed.startsWith('GSIG1:')).toBe(true);
+    // v1.1.299 : publiée dans signing_key_pub (prekey_signed rendu à PQXDH, plus jamais écrit).
+    expect(post.body.signing_key_pub).toBe(rec.pub);
+    expect(post.body.signing_key_pub.startsWith('GSIG1:')).toBe(true);
+    expect('prekey_signed' in post.body).toBe(false);
     expect(post.body.crypto_caps.split(',')).toEqual(expect.arrayContaining(['grp1', 'gsig1']));
     await A.K._publishPubkey();                                   // idempotent
     expect(srv.posts.filter((p) => p.uid === 'alice')).toHaveLength(1);

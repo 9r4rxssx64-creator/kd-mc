@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import worker from '../../workers/api-worker.js';
 import { ENV, makeJWT, makeRequest } from './api-worker-helpers.js';
 import { d1Reel } from './_support/d1-sqlite.js';
+import { readFileSync } from 'node:fs';
 
 const CTX = { waitUntil() {} };
 beforeEach(() => { vi.restoreAllMocks(); globalThis.fetch = vi.fn(async () => new Response('{}')); });
@@ -58,5 +59,23 @@ describe('clé de signature de groupe : sa propre colonne', () => {
     const b = await (await call(env, 'GET', '/api/keys/alice/bundle', 'bob'));
     expect(b.status).toBe(200);
     expect((await b.json()).bundle.signing_key_pub).toBeNull();
+  });
+
+  it('v1.1.299 : une clé « GSIG1: » envoyée dans prekey_signed est ignorée (champ réservé à PQXDH)', async () => {
+    const { DB, env } = setup();
+    const r = await call(env, 'POST', '/api/keys/prekeys', 'alice', { identity_key_pub: IDK, prekey_signed: SIG });
+    expect(r.status).toBe(200);
+    expect(colonne(DB, 'alice').prekey_signed).toBe('k');
+  });
+
+  it('migration 0014 : une ancienne clé rangée dans prekey_signed passe dans signing_key_pub ; prekey_signed est libéré', async () => {
+    const { DB } = setup();
+    DB.raw.prepare("UPDATE users SET prekey_signed=?, signing_key_pub=NULL WHERE id='alice'").run(SIG);
+    DB.raw.prepare("UPDATE users SET prekey_signed=?, signing_key_pub=? WHERE id='bob'").run('GSIG1:ancienne', 'GSIG1:nouvelle');
+    const sql = readFileSync(new URL('../../d1-migrations/0014_prekey_signed_libere.sql', import.meta.url), 'utf8');
+    DB.raw.exec(sql);
+    DB.raw.exec(sql);   // rejouable sans effet
+    expect(colonne(DB, 'alice')).toEqual({ signing_key_pub: SIG, prekey_signed: 'PENDING_PQXDH' });
+    expect(colonne(DB, 'bob')).toEqual({ signing_key_pub: 'GSIG1:nouvelle', prekey_signed: 'PENDING_PQXDH' });   // la colonne déjà remplie gagne
   });
 });

@@ -1891,7 +1891,9 @@ async function handleUploadPrekeys(request, env) {
   }
   // Champs optionnels (placeholder PQXDH tant que Kyber n'est pas activé).
   const pq = (typeof body.pq_key_pub === 'string' && body.pq_key_pub.length <= 4000) ? body.pq_key_pub : null;
-  const signed = (typeof body.prekey_signed === 'string' && body.prekey_signed.length <= 4000) ? body.prekey_signed : null;
+  // v1.1.299 : prekey_signed est réservé à PQXDH — une clé de signature de groupe (« GSIG1: ») n'y entre plus
+  // (elle va dans signing_key_pub, ci-dessous) ; un vieux téléphone qui l'y enverrait est simplement ignoré.
+  const signed = (typeof body.prekey_signed === 'string' && body.prekey_signed.length <= 4000 && !body.prekey_signed.startsWith('GSIG1:')) ? body.prekey_signed : null;
   try {
     await env.APEX_CHAT_DB.prepare(
       `UPDATE users SET identity_key_pub=?,

@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-09 — Apex Chat v1.1.299 : prekey_signed libéré (Kevin « Personne n'est connecté, libère »)
+
+- Téléphone : la clé de signature de groupe ne s'écrit et ne se lit plus QUE dans `signing_key_pub`.
+- Serveur : une valeur « GSIG1: » envoyée dans `prekey_signed` est ignorée ; migration 0014 (rejouable) déplace une éventuelle
+  ancienne clé vers `signing_key_pub` (la colonne déjà remplie gagne) et remet `prekey_signed` à 'PENDING_PQXDH'.
+- Mesuré : 98 fichiers / 1629 tests, couverture sans ERROR ; contre-épreuves : téléphone v1.1.298 → 2 échecs,
+  serveur v1.1.298 → 1, migration retirée → 1. Le point « à faire plus tard » de v1.1.298 est fait.
+
 ## 2026-10-09 — CI Apex Chat : installation du navigateur bornée (3 essais × 4 min)
 
 - Run 37900675757 (v1.1.298) : `e2e (iphone-se)` tué à 15 min — l'installation WebKit a pris 14 min 30, AUCUN test n'a tourné

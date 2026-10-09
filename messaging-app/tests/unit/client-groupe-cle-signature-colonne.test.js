@@ -13,12 +13,12 @@ async function echange(sigField) {
 }
 
 describe('clé de signature de groupe : colonne dédiée', () => {
-  it('le téléphone publie la clé dans signing_key_pub (et encore prekey_signed pendant la transition)', async () => {
+  it('le téléphone publie la clé dans signing_key_pub UNIQUEMENT (v1.1.299 : prekey_signed rendu à PQXDH)', async () => {
     const { srv } = await echange('les-deux');
     const pub = srv.posts.filter((p) => p.uid === 'alice' && p.body.signing_key_pub);
     expect(pub.length).toBeGreaterThan(0);
     expect(pub.at(-1).body.signing_key_pub).toMatch(/^GSIG1:/);
-    expect(pub.at(-1).body.prekey_signed).toBe(pub.at(-1).body.signing_key_pub);
+    expect(srv.posts.some((p) => 'prekey_signed' in p.body)).toBe(false);
   });
 
   it('serveur « colonne » (prekey_signed rendu à PQXDH) : signature lue dans signing_key_pub, messages authentifiés', async () => {
@@ -30,9 +30,8 @@ describe('clé de signature de groupe : colonne dédiée', () => {
     expect([...B.errors, ...C.errors]).toEqual([]);
   });
 
-  it('serveur ancien (v1.1.297, prekey_signed seul) : toujours lu', async () => {
-    const { srv, B } = await echange('ancien');
-    expect(B.shown()).toEqual(['bonjour signé']);
-    expect(B.localStorage.getItem('gsigkey_alice')).toBe(srv.sig.alice);
+  it('v1.1.299 : une clé « GSIG1: » servie dans prekey_signed n\'est PLUS prise pour une clé de signature', async () => {
+    const { B } = await echange('ancien');
+    expect(B.localStorage.getItem('gsigkey_alice')).toBeNull();   // rien épinglé depuis le champ PQXDH
   });
 });

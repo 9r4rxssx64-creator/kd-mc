@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.298",
+  "softwareVersion": "v1.1.299",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.298';
+const __APEX_CHAT_VERSION__ = 'v1.1.299';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.298" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.298</div>
+  <div id="splash-version" data-ver="v1.1.299" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.299</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.298</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.299</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -7283,9 +7283,9 @@ K._publishPubkey = async function(){
     if(lg('crypto_pub_published', null) === pub && lg('crypto_caps_published', null) === caps && (!sigPub || lg('crypto_sig_published', null) === sigPub)) return; // déjà publiée
     // v1.1.262 — publie AUSSI les capacités crypto qu'on sait déchiffrer, pour
     // que nos contacts activent auto le plus haut niveau commun.
-    // v1.1.298 : la clé de signature part dans SA colonne (signing_key_pub) ; prekey_signed reste écrit pendant la
-    // transition (les téléphones en v1.1.297 le lisent), puis sera rendu au futur échange PQXDH.
-    const r = await K._api('POST', '/api/keys/prekeys', sigPub ? { identity_key_pub: pub, crypto_caps: caps, signing_key_pub: sigPub, prekey_signed: sigPub } : { identity_key_pub: pub, crypto_caps: caps });
+    // v1.1.298 : la clé de signature part dans SA colonne (signing_key_pub).
+    // v1.1.299 : prekey_signed n'est plus écrit (rendu au futur échange PQXDH — Kevin 09.10, « libère »).
+    const r = await K._api('POST', '/api/keys/prekeys', sigPub ? { identity_key_pub: pub, crypto_caps: caps, signing_key_pub: sigPub } : { identity_key_pub: pub, crypto_caps: caps });
     if(r && r.ok){ ls('crypto_pub_published', pub); ls('crypto_caps_published', caps); if(sigPub) ls('crypto_sig_published', sigPub); _logTelemetry('ok', 'pubkey-published', {}); }
   }catch(e){ _safeCatch('publish-pubkey', e); }  // jamais bloquant
 };
@@ -7655,8 +7655,8 @@ K._grpMemberKey = async function(uid, force){
         b.pub = r.bundle.identity_key_pub;
         b.caps = (typeof r.bundle.crypto_caps === 'string') ? r.bundle.crypto_caps : '';
         // v1.1.297 : clé publique de signature (champ prekey_signed, préfixe GSIG1:) + capacité gsig1.
-        // v1.1.298 : lue d'abord dans sa colonne dédiée, sinon (membre encore en v1.1.297) dans prekey_signed.
-        const sg = (typeof r.bundle.signing_key_pub === 'string' && r.bundle.signing_key_pub) ? r.bundle.signing_key_pub : r.bundle.prekey_signed;
+        // v1.1.299 : lue UNIQUEMENT dans sa colonne (signing_key_pub) ; prekey_signed appartient à PQXDH.
+        const sg = r.bundle.signing_key_pub;
         if(typeof sg === 'string' && sg.indexOf('GSIG1:') === 0 && b.caps.split(',').indexOf(K._GRP_SIG_CAP) >= 0) b.sig = sg;
       }
     }catch(_){ /* 409 key_pending : le membre n'a pas encore publié sa clé */ }

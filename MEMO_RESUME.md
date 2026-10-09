@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-09 — Apex Chat v1.1.298 : la clé de signature de groupe a sa propre colonne
+
+- Serveur : migration 0013 `users.signing_key_pub` ; `/api/keys/prekeys` l'accepte (format strict « GSIG1: »), le bundle la renvoie.
+- Téléphone : publie dans la colonne (+ `prekey_signed` pendant la transition), lit la colonne d'abord.
+- À faire plus tard : quand plus aucun téléphone n'est en v1.1.297, cesser d'écrire la clé dans `prekey_signed` (rendu à PQXDH).
+- Mesuré : 98 fichiers / 1627 tests, couverture sans ERROR ; sabotages serveur → 3 échecs, téléphone → 2. Leçon #466.
+
 ## 2026-10-09 — Lien `messaging-app/node_modules` retiré de main (commité par erreur avec v1.1.297)
 
 - En vérifiant le travail d'un agent dans un worktree, un lien `node_modules` a été créé puis emporté par `git add -A`

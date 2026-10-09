@@ -3489,5 +3489,8 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-09 | `messaging-app/tests/unit/do-historique-cles-groupe.test.js` | Apex Chat : à la connexion, les échanges de clés ne prennent plus la place des vrais messages |
 | 2026-10-09 | `messaging-app/tests/unit/client-groupe-e2e-v297.test.js` | Apex Chat : groupes — photos chiffrées, signature de l'expéditeur, modifications liées au bon message |
 | 2026-10-09 | `messaging-app/tests/unit/_support/groupe-e2e-harness.js` | Apex Chat : banc de test « groupe à plusieurs téléphones + serveur tricheur » |
+| 2026-10-09 | `messaging-app/d1-migrations/0013_users_signing_key.sql` | Apex Chat : colonne dédiée pour la clé de signature des groupes |
+| 2026-10-09 | `messaging-app/tests/unit/api-cle-signature-colonne.test.js` | Apex Chat : le serveur range et renvoie la clé de signature dans sa colonne |
+| 2026-10-09 | `messaging-app/tests/unit/client-groupe-cle-signature-colonne.test.js` | Apex Chat : le téléphone publie et lit la clé de signature dans sa colonne |
 | 2026-10-08 | [`lingua/data.js`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/lingua/data.js) → `CURRICULUM_VIE` | **La vraie vie** : 10 situations (se présenter, café, chemin, hôtel, médecin, téléphone, sorties, bureau, urgences, magasins), 60 vraies phrases dans les 14 langues, ouvertes dès le premier jour |
 | 2026-10-08 | [`tests/verify-lingua-vraie-vie.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-lingua-vraie-vie.mjs) | Garde : les 60 phrases dans les 14 langues, jamais le français recopié, phrase du jour honnête, fenêtres qui tiennent dans l'écran |

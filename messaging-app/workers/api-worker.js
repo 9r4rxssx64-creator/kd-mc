@@ -1907,6 +1907,14 @@ async function handleUploadPrekeys(request, env) {
           .bind(body.crypto_caps, auth.sub).run();
       } catch (_capErr) { /* colonne pas encore migrée → ignoré */ }
     }
+    // v1.1.298 — clé publique de signature de groupe dans SA colonne (migration 0013). Format strict :
+    // « GSIG1: » + base64, ≤ 300 caractères ; tout le reste est ignoré (jamais une valeur arbitraire stockée).
+    if (typeof body.signing_key_pub === 'string' && body.signing_key_pub.length <= 300 && /^GSIG1:[A-Za-z0-9+/=_-]+$/.test(body.signing_key_pub)) {
+      try {
+        await env.APEX_CHAT_DB.prepare('UPDATE users SET signing_key_pub=? WHERE id=?')
+          .bind(body.signing_key_pub, auth.sub).run();
+      } catch (_sigErr) { /* colonne pas encore migrée → ignoré */ }
+    }
     return json({ ok: true });
   } catch (e) {
     return err('Échec publication clé', 500, 'db_write_failed', {
@@ -1933,9 +1941,16 @@ async function handleKeyBundle(userId, request, env) {
     const c = await env.APEX_CHAT_DB.prepare('SELECT crypto_caps FROM users WHERE id=?').bind(userId).first();
     caps = (c && typeof c.crypto_caps === 'string') ? c.crypto_caps : null;
   } catch (_capErr) { caps = null; }
+  // v1.1.298 — clé de signature de groupe (best-effort : colonne absente → null).
+  let signingKey = null;
+  try {
+    const sk = await env.APEX_CHAT_DB.prepare('SELECT signing_key_pub FROM users WHERE id=?').bind(userId).first();
+    signingKey = (sk && typeof sk.signing_key_pub === 'string' && sk.signing_key_pub.startsWith('GSIG1:')) ? sk.signing_key_pub : null;
+  } catch (_sigErr) { signingKey = null; }
   return json({
     ok: true,
     bundle: {
+      signing_key_pub: signingKey,
       user_id: row.id,
       identity_key_pub: idk,
       pq_key_pub: row.pq_key_pub && !String(row.pq_key_pub).startsWith('PENDING') ? row.pq_key_pub : null,

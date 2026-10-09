@@ -130,6 +130,9 @@ export function makeIDB() {
 export function makeServer() {
   const srv = {
     members: [], keys: {}, caps: {}, sig: {}, history: [], queue: [], clients: {}, seq: 0, posts: [],
+    // v1.1.298 — où le serveur range/sert la clé de signature : 'les-deux' (transition), 'colonne'
+    // (signing_key_pub seul ; prekey_signed rendu à PQXDH), 'ancien' (serveur v1.1.297 : prekey_signed seul).
+    sigField: 'les-deux',
     storage: new Map(),          // ce que R2 stocke : url → octets EXACTS reçus à l'upload
     uploads: [],                 // journal des uploads { ctype, bytes }
     drop: () => false,
@@ -141,7 +144,8 @@ export function makeServer() {
         srv.posts.push({ uid, body });
         srv.keys[uid] = body.identity_key_pub;
         if (typeof body.crypto_caps === 'string') srv.caps[uid] = body.crypto_caps;
-        if (typeof body.prekey_signed === 'string') srv.sig[uid] = body.prekey_signed;   // COALESCE(?, prekey_signed)
+        if (srv.sigField !== 'ancien' && typeof body.signing_key_pub === 'string') srv.sig[uid] = body.signing_key_pub;
+        else if (typeof body.prekey_signed === 'string') srv.sig[uid] = body.prekey_signed;   // COALESCE(?, prekey_signed)
         return { ok: true };
       }
       if (method === 'GET' && path === '/api/conversations/' + CONV + '/members') {
@@ -153,7 +157,11 @@ export function makeServer() {
       if (method === 'GET' && m) {
         const who = decodeURIComponent(m[1]);
         if (!srv.keys[who]) throw new Error('409 key_pending');
-        return { ok: true, bundle: { user_id: who, identity_key_pub: srv.keys[who], prekey_signed: srv.sig[who] ?? null, crypto_caps: srv.caps[who] ?? 'media,grp1' } };
+        const sk = srv.sig[who] ?? null;
+        const champs = srv.sigField === 'colonne' ? { signing_key_pub: sk, prekey_signed: 'PQXDH:reserve-au-futur' }
+          : srv.sigField === 'ancien' ? { prekey_signed: sk }
+          : { signing_key_pub: sk, prekey_signed: sk };
+        return { ok: true, bundle: { user_id: who, identity_key_pub: srv.keys[who], ...champs, crypto_caps: srv.caps[who] ?? 'media,grp1' } };
       }
       return { ok: false };
     },
@@ -282,6 +290,7 @@ export async function trio() {
 // Trois membres v1.1.297 qui ont PUBLIÉ leur clé de signature (capacité gsig1).
 export async function trioSigned(opts = {}) {
   const srv = makeServer();
+  if (opts.sigField) srv.sigField = opts.sigField;
   srv.members = ['alice', 'bob', 'carol'];
   const A = await makeMember(srv, 'alice', { signing: true, ...(opts.alice || {}) });
   const B = await makeMember(srv, 'bob', { signing: true, ...(opts.bob || {}) });

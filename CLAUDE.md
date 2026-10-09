@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 206 règles — le texte de Kevin, une par une
+## 📜 Les 207 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -315,6 +315,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### 💪 RÈGLE ABSOLUE — TROUVE DES SOLUTIONS, NE JAMAIS DIRE « JE NE PEUX PAS » (Kevin 2026-07-05, MAÎTRESSE)
 **"Trouve des solutions ne me dis jamais que tu ne peux pas"** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-trouve-des-solutions-ne-jamais-dire-je-ne-peux-pas-kevin-2026-07-05-maîtresse)
+
+### 🌿 RÈGLE ABSOLUE — ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE, ET LA FILIATION SE LIT SANS EFFORT (Kevin 2026-10-09, ABSOLUE)
+**« Vérifie la filiation. C'est trop brouillon, trop fouillis, on s'y retrouve pas. Fais quelque chose de plus clair. Et quand on choisit une famille […] les autres doivent disparaître de […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-une-famille-choisie-naffiche-que-sa-famille-et-la-filiation-se-lit-sans-effort-kevin-2026-10-09-absolue)
 
 ### 📄 RÈGLE ABSOLUE — ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE, POUR TOUT LE MONDE, ET L'ORIGINAL VA DANS LA FICHE — LE LIEN RESTE LA RÉFÉRENCE (Kevin 2026-10-08, ABSOLUE)
 **« Tu ajoutes tout ce que tu trouves pour vivant et mort toujours et tu cherches pour tout le monde toujours. »** puis **« Intègre les originaux sans avoir besoin de cliquer sur des liens. […]

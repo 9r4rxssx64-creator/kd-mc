@@ -1073,6 +1073,19 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
 
+### 2026-10-09 — Arbre v3.69 : une famille = sa famille, la Lignée, et le nuage qui ne perd plus rien
+- Kevin : « filiation trop brouillon, trop fouillis […] quand on choisit une famille, les autres doivent disparaître ».
+- Cause du mélange : un nom inconnu des deux troncs était VOLONTAIREMENT montré dans les deux arbres (« oc »). Désormais
+  `membresFamille(k)` = nom + descendants + conjoints. Mesuré sur les vraies fiches (174) : Desarzens 50, Sauvaigo·Maiffret 112, Toutes 174.
+- Vue « 📜 Lignée » par défaut (clé `arbre_viewstyle2`) : mesuré réel — Desarzens 30 lignes, Sauvaigo·Maiffret 83, Toutes 129 :
+  0 doublon, 0 absent, 0 hors famille. Vue Arbre : une barre commune par fratrie (`_busY`).
+- **Perte mesurée** : 57 originaux → 32 dans la nuit du 8 au 9.10 (7 fiches ajoutées par la famille : parents et grands-parents
+  de Laurence). Cause : `refreshFromDomain` appliquait de force l'instantané texte du domaine (sans documents) sur les fiches
+  officielles, l'horodatait « maintenant » et le renvoyait au nuage, AVANT même de lire le nuage. Corrigé : nuage d'abord ;
+  l'instantané ne remplace qu'une fiche absente ou plus ancienne et ne repart pas ; `cloudPush` relit la fiche du nuage et garde
+  ses documents/photos/sources/notes (sauf retrait volontaire). Garde `tests/arbre-nuage-protege.test.mjs`. Données rétablies
+  après la mise en ligne (originaux « auto » + paquets de notes du 8.10 rejoués, rejouer = 0).
+
 ### 2026-10-08 (soir) — Arbre v3.68 : les ORIGINAUX dans la fiche, le lien en référence
 - Kevin : « Intègre les originaux sans avoir besoin de cliquer sur des liens. Toujours pour tout. Garde les liens comme références. »
 - `tools/arbre/originaux.py` (CI, pymupdf) : Journal de Monaco (numéro ou article → PDF du numéro), PDF, image → la page qui porte

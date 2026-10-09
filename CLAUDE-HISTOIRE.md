@@ -3953,6 +3953,24 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 
 ---
 
+## 🌿 RÈGLE ABSOLUE — ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE, ET LA FILIATION SE LIT SANS EFFORT (Kevin 2026-10-09, ABSOLUE)
+
+> **« Vérifie la filiation. C'est trop brouillon, trop fouillis, on s'y retrouve pas. Fais quelque chose de plus clair. Et quand on
+> choisit une famille […] les autres doivent disparaître de l'affichage […] Il faut qu'ils disparaissent, sauf à l'affichage de toutes
+> les familles. »** — Kevin 2026-10-09
+
+- **Une famille** = ceux qui portent le nom (ou rangés à la main dans `FAM_OVERRIDE`) + leurs **descendants** + les **conjoints** de
+  tous ceux-là (et l'autre parent d'un enfant). Rien d'autre : ni les parents d'un conjoint, ni une famille voisine, ni une personne
+  sans lien — ceux-là ne sont que dans « Toutes ». (`membresFamille(k)`, v3.69 ; remplace l'ancienne règle « un nom inconnu est vu dans
+  les deux arbres ».)
+- **Lisible** : vue par défaut « 📜 Lignée » (une ligne par personne, ses enfants dessous et décalés, le conjoint à côté ⚭, aucun
+  trait qui traverse l'écran) ; dans la vue Arbre, **une fratrie = une barre commune** (plus une courbe par enfant).
+- **Le nuage ne perd plus rien** (mesuré le 9.10 : 57 originaux → 32) : la copie texte du domaine ne passe plus devant le nuage, ne
+  remplace jamais une fiche plus récente, ne repart pas vers le nuage ; chaque envoi d'une fiche reprend d'abord ce que le nuage a
+  de plus (documents, photos, sources, notes complétées), sauf ce qu'on vient de retirer exprès.
+- Gardes : `tests/arbre-familles-noms.test.mjs` (filiation, Lignée, barre de fratrie), `tests/arbre-nuage-protege.test.mjs`.
+  Contrôle réel : `arbre-nuage` `synchro` (lignes de Lignée : 0 doublon, 0 absent, 0 hors famille).
+
 ## 📄 RÈGLE ABSOLUE — ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE, POUR TOUT LE MONDE, ET L'ORIGINAL VA DANS LA FICHE — LE LIEN RESTE LA RÉFÉRENCE (Kevin 2026-10-08, ABSOLUE)
 
 > **« Tu ajoutes tout ce que tu trouves pour vivant et mort toujours et tu cherches pour tout le monde toujours. »** puis

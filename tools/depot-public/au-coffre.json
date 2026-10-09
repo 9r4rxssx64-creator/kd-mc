@@ -69,6 +69,7 @@
   "tests/arbre-familles-noms.test.mjs",
   "tests/arbre-liens-par-nom.test.mjs",
   "tests/arbre-nouvelle-personne.test.mjs",
+  "tests/arbre-nuage-protege.test.mjs",
   "tests/arbre-nuage.test.mjs",
   "tests/arbre-ordinateur.test.mjs",
   "tests/arbre-photo-fusion.test.mjs",

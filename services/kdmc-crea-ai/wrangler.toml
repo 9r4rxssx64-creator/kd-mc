@@ -18,19 +18,3 @@ workers_dev = true
 # et de renfort en PARALLÈLE quand deux moteurs valent mieux qu'un.
 [ai]
 binding = "AI"
-
-# Interrupteur du PAYANT (Replicate) : « 0 » = coupé (tout gratuit, Kevin 02.10). Passer à "1"
-# seulement en connaissance de cause ; sans lui, /animate et /job répondent 503 payant_coupe et
-# les secours Replicate sont ignorés.
-[vars]
-BEE_SECOURS_PAYANT = "0"
-
-# PLAFOND PAR COMPTE (audit 2026-10-08) : toute génération exige un compte vérifié du domaine
-# (Authorization: Bearer validé par kd-mc.com/__sso/whoami) puis 30 demandes / minute / compte.
-# Même binding « ratelimit » que kdmc-apis (gratuit, compteur mémoire, 0 écriture KV). Si le
-# binding manque, le worker compte en mémoire avec le même plafond (voir limiteOk()).
-[[unsafe.bindings]]
-name = "LIMITE_CREA"
-type = "ratelimit"
-namespace_id = "2703"
-simple = { limit = 30, period = 60 }

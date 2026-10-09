@@ -38,8 +38,7 @@ concurrency:
 
 on:
   # Dépôt PUBLIC : quand CMCteams, Light ou les données changent au coffre, le coffre fait signe
-  # ici (dernière étape de coffre-synchronise-public.yml, depuis le 8.10) et on republie le site
-  # avec la dernière version.
+  # ici (robot coffre-previent-public.yml) et on republie le site avec la dernière version.
   repository_dispatch:
     types: [coffre-a-change]
   workflow_dispatch:

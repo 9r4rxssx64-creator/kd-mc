@@ -103,7 +103,7 @@ describe('Q — SSO Apex : exp et iat obligatoires, durée ≤ 300 s', () => {
   it('sans exp, sans iat, ou valable 1 h → 401 ; 5 min → 200', async () => {
     const env = ENV({ APEX_CHAT_DB: d1Reel(), APEX_SSO_SIGN_KEY: KEY });
     const now = Math.floor(Date.now() / 1000);
-    expect((await sso(env, { sub: 'apx1', iat: now, exp: null })).status).toBe(401);   // exp: null = jeton SANS exp (helper)
+    expect((await sso(env, { sub: 'apx1', iat: now })).status).toBe(401);
     expect((await sso(env, { sub: 'apx1', exp: now + 200 })).status).toBe(401);
     expect((await sso(env, { sub: 'apx1', iat: now, exp: now + 3600 })).status).toBe(401);
     expect((await sso(env, { sub: 'apx1', iat: now, exp: now + 300 })).status).toBe(200);

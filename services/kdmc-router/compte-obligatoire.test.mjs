@@ -17,7 +17,7 @@ const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replac
 const signe = (uid, v, iat) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: iat || Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
 let ecritures = 0; const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { ecritures++; kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0' /* 8.10 : ce test ne porte pas sur le code du compte — le blocage « crée ton code » (codeManquant) est prouvé dans code-attente.test.mjs § 7 */, KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) { pass++; } else { fail++; console.log('  ✗ ' + m); } };
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (input) => { const u = typeof input === 'string' ? input : input.url;

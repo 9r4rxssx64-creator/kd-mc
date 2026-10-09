@@ -35,7 +35,4 @@ jobs:
         env:
           KDMC_AS_KEVIN: "1"
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
-          # 8.10 : les entrées passent par env:, jamais dans le shell (garde test:workflows-shell)
-          URL_DEMANDEE: ${{ inputs.url }}
-          MOTIF: ${{ inputs.motif }}
-        run: node tools/smoke/trace-404.mjs "$URL_DEMANDEE" "$MOTIF"
+        run: node tools/smoke/trace-404.mjs "${{ inputs.url }}" "${{ inputs.motif }}"

@@ -41,7 +41,7 @@ async function seConnecter(page, nom, code) {
   });
   if (!besoin) return;
   await page.fill('#gateName', nom || 'Test Utilisateur');
-  await page.fill('#gateCode', code || '123456');
+  await page.fill('#gateCode', code || '1234');
   await page.click('#gateGo');
   await page.waitForTimeout(300);
 }
@@ -63,7 +63,7 @@ async function run(withVoice,voiceSec){
   await page.addInitScript(()=>{window.CREA_AI_URL='http://127.0.0.1:8244/ai';});
   await page.goto(`http://127.0.0.1:${PORT}/index.html`,{waitUntil:'load'});
   await page.waitForTimeout(500);
-  await seConnecter(page,'Test Chanson','123456');   /* 8.10 : le Studio exige un code de 6 caractères (compte unique du domaine) — '1234' laissait la porte fermée, garde rouge sur main */
+  await seConnecter(page,'Test Chanson','1234');
   await page.click('#bnav button[data-go="magic"]');
   await page.setInputFiles('#fileMagicPhoto',{name:'a.png',mimeType:'image/png',buffer:PNGBUF});
   await page.waitForTimeout(500);
@@ -125,7 +125,7 @@ chk(jsErr(r2.errs).length===0, `0 erreur JS (repli)${jsErr(r2.errs).length?': '+
   await pg.addInitScript(()=>{window.CREA_AI_URL='http://127.0.0.1:8244/ai';});
   await pg.goto(`http://127.0.0.1:${PORT}/index.html`,{waitUntil:'load'});
   await pg.waitForTimeout(400);
-  await seConnecter(pg,'Test Chanson','123456');
+  await seConnecter(pg,'Test Chanson','1234');
   await pg.click('#bnav button[data-go="magic"]');
   await pg.setInputFiles('#fileMagicPhoto',{name:'a.png',mimeType:'image/png',buffer:PNGBUF});
   await pg.waitForTimeout(400);

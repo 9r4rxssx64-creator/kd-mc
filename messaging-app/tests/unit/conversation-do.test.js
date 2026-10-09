@@ -227,9 +227,10 @@ describe('ConversationDO — verifyJWT', () => {
     expect(p.sub).toBe('kdmc');
   });
 
-  it('JWT sans exp → REFUSÉ (revue 08.10.2026, A4 : un jeton sans exp valait à vie)', async () => {
-    const noExp = await makeJWT({ sub: 'kdmc', exp: null }, SECRET);
-    expect(await _do.verifyJWT(noExp)).toBe(null);
+  it('JWT sans exp → accepted', async () => {
+    const noExp = await makeJWT({ sub: 'kdmc' }, SECRET);
+    const p = await _do.verifyJWT(noExp);
+    expect(p.sub).toBe('kdmc');
   });
 
   it('JWT format malformé (atob throw) → null', async () => {

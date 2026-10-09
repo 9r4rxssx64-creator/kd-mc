@@ -118,9 +118,6 @@ const REGISTRE = [
   [/ARBRE : AJOUTER TOUT SEUL/i, ['wf:arbre-nuage.yml', 'npm:test:arbre-relier']],
   // Règle « ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE … L'ORIGINAL VA DANS LA FICHE » (Kevin 8.10.2026, #4415/#4419) :
   // son garde est celui qu'elle cite elle-même — tests/arbre-originaux.test.mjs (dans test:ci).
-  // Règle « ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE … » (Kevin 9.10.2026, arbre v3.69, #4432, ajoutée sans entrée ici →
-  // ratchet 19 → 20 vu à la fusion) : ses gardes sont ceux du même commit — arbre-familles-noms (52) et arbre-nuage-protege (11), dans test:ci.
-  [/ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE/i, ['npm:test:arbre-familles-noms', 'npm:test:arbre-nuage-protege']],
   [/ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE/i, ['npm:test:arbre-originaux', 'file:tests/arbre-originaux.test.mjs']],
   // Règle « CONTRÔLER TOUT, PARTOUT, SUR LE VRAI » (Kevin 3.10.2026, ajoutée par la session arbre sans entrée ici → test:improvements-guard
   // rouge 19 → 20) : ses contrôles existent déjà — le vrai nuage (arbre-nuage.yml + test:arbre-nuage, garde-fou homonymes),
@@ -217,10 +214,6 @@ const REGISTRE = [
    malhonnête. On les compte à part pour ne pas gonfler artificiellement la « dette de gardes ».
    Ce qui reste en 🔴 est donc la VRAIE dette : mécanisable, mais pas encore mécanisé. */
 const COMPORTEMENTAL = [
-  /* « ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE » (Kevin 9.10.2026, #4439, ajoutée sans entrée → ratchet 19 → 20 vu à la
-     fusion) : relire ce qu'on a et aller chercher le document AVANT d'écrire une question = conduite de recherche, pas un état
-     du code. Sa part mécanisable (« donnée sans source = probable/piste ») mérite un garde sur les fiches : à faire par la branche arbre. */
-  /AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE/i,
   /AUTONOMIE TOTALE/i, /CARTE BLANCHE|PLEINE AUTONOMIE/i, /TOUT FAIRE À LA PLACE DE KEVIN/i,
   /SI AUCUN OUTIL N'EXISTE/i, /TROUVE DES SOLUTIONS/i, /NE JAMAIS DIRE/i,
   /EXPERT TOUJOURS PARTOUT/i, /NIVEAU EXPERT PRO/i, /EXPERT DES EXPERTS/i,

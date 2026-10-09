@@ -45,16 +45,10 @@ chk(modeles.some((m) => /^gemini-2\./.test(m)),
 chk(src.includes('gemErrs'),
   '1bis. l\'erreur de CHAQUE modèle est remontée — c\'est son absence qui a masqué la panne');
 
-/* Audit 2026-10-08 : le worker exige un compte VÉRIFIÉ du domaine (Bearer validé par whoami). */
-const WHOAMI = (u) => String(u).includes('/__sso/whoami')
-  ? new Response(JSON.stringify({ ok: true, uid: 'test-compte', name: 'Marie Dupont', verified: true }), { status: 200 }) : null;
-const HDR = { 'content-type': 'application/json', authorization: 'Bearer pass-test' };
-
 /* --- 2 & 3. secours réel : les 6 premiers tombent, un nouveau répond --- */
 let appeles = [];
 global.fetch = async (u, o) => {
   const url = String(u);
-  if (WHOAMI(u)) return WHOAMI(u);
   appeles.push(url);
   if (/groq|mistral|cohere|together|deepseek|openrouter|generativelanguage/.test(url)) {
     return new Response(JSON.stringify({ error: 'rate limit' }), { status: 429 });
@@ -69,7 +63,7 @@ const envBase = {
   DEEPSEEK_API_KEY: 'k', OPENROUTER_API_KEY: 'k', GEMINI_API_KEY: 'k', XAI_API_KEY: 'k',
 };
 let r = await worker.fetch(new Request('https://w/lyrics', {
-  method: 'POST', headers: HDR,
+  method: 'POST', headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ theme: 'test', style: 'pop' }) }), envBase);
 let j = await r.json().catch(() => ({}));
 chk(r.status === 200, '3. quand les 6 premiers tombent, la réponse arrive quand même (' + r.status + ')');
@@ -79,7 +73,7 @@ chk(appeles.some((u) => /api\.x\.ai/.test(u)), '3. le nouveau moteur a réelleme
 /* 2. sans la clé, le moteur est sauté sans bruit */
 appeles = [];
 r = await worker.fetch(new Request('https://w/lyrics', {
-  method: 'POST', headers: HDR,
+  method: 'POST', headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ theme: 'test' }) }), { GROQ_API_KEY: 'k' });
 chk(!appeles.some((u) => /cerebras|nvidia|sambanova/.test(u)),
   '2. une IA sans clé n\'est jamais appelée (aucune erreur inventée)');
@@ -88,7 +82,6 @@ chk(!appeles.some((u) => /cerebras|nvidia|sambanova/.test(u)),
 let pollAppele = false;
 global.fetch = async (u) => {
   const url = String(u);
-  if (WHOAMI(u)) return WHOAMI(u);
   if (/image\.pollinations\.ai/.test(url)) {
     pollAppele = true;
     return new Response(new Uint8Array(4000), { status: 200, headers: { 'content-type': 'image/jpeg' } });
@@ -96,7 +89,7 @@ global.fetch = async (u) => {
   return new Response(JSON.stringify({ error: 'down' }), { status: 503 });
 };
 r = await worker.fetch(new Request('https://w/bg', {
-  method: 'POST', headers: HDR,
+  method: 'POST', headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ prompt: 'un ciel bleu', ratio: '1:1' }) }), { GEMINI_API_KEY: 'k' });
 chk(r.status === 200, '5. image : une image sort même sans AUCUNE clé qui marche (' + r.status + ')');
 chk(pollAppele, '5. le filet SANS CLÉ (pollinations) a bien été utilisé');

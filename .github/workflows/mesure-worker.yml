@@ -63,13 +63,8 @@ jobs:
       - name: Ouvrir les adresses et compter (vrai domaine)
         if: steps.plafond.outputs.ok == 'true'
         shell: bash -eo pipefail {0}
-        # 8.10 : la liste d'hôtes passe par env:, jamais dans le shell (garde test:workflows-shell).
-        # Elle est découpée sur les espaces en arguments (read -a), sans jamais être relue comme du shell.
-        env:
-          HOTES: ${{ inputs.hotes }}
         run: |
-          read -r -a LISTE <<< "$HOTES"
-          node tools/audit/mesure-worker.mjs --sortie /tmp/mesure.json "${LISTE[@]}" 2>&1 | tee /tmp/mesure.log
+          node tools/audit/mesure-worker.mjs --sortie /tmp/mesure.json ${{ inputs.hotes }} 2>&1 | tee /tmp/mesure.log
 
       - name: Rapport lisible depuis l'agent (annotations)
         if: always()

@@ -115,7 +115,7 @@
       .catch(function () { /* réseau : on retentera */ });
     if (!_alerteT) { try { _alerteT = setInterval(alerteCercle, 120000); } catch (e) { /* */ } }
   }
-  function applyAdminVisibility(deja) {   /* `deja` : le résultat whoami déjà lu par showHub (un seul appel au domaine) */
+  function applyAdminVisibility() {
     var priv = document.getElementById('priv-zone');
     if (!priv) return;
     var done = function (s) {
@@ -154,56 +154,7 @@
       renderSelfService(s); /* « Mes appareils / connexions » — pour TOUT connecté */
       renderCodeNudge(s);   /* 8.10 : un compte sans code au domaine s'ouvre sur son seul nom → on propose d'en choisir un, ici, sur son appareil */
     };
-    /* 8.10 : « compte sans code » n'est pas « aucune session » — l'écran du code s'affiche, bloquant, et rien d'autre ne s'ouvre. */
-    var lu = function (r) {
-      if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); done(null); return; }
-      done(r && r.state === 'session' ? r.session : null);
-    };
-    if (deja && deja.state) { lu(deja); }
-    else if (window.kdmcSSO && window.kdmcSSO.whoamiResult) { window.kdmcSSO.whoamiResult().then(lu).catch(function () { done(null); }); }
-    else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done).catch(function () { done(null); }); } else { done(null); }
-  }
-
-  /* ===== « CRÉE TON CODE » — écran BLOQUANT (8.10 soir, Kevin : « Les anciens comptes sans code se voient afficher à leur prochaine
-     connexion la création d'un code obligatoire. Sinon pas d'accès ») =====
-     Le domaine a répondu code_requis : la session est à la personne, son compte n'a pas de code. Tout l'écran est couvert ; la seule
-     sortie est de choisir son code (2 fois). Le domaine n'accepte de poser le code d'un compte existant que depuis sa propre session
-     (memeSession) : ici, c'est le cas. Un compte qui a déjà un code (posé avant le 8.10) l'entre une fois : le domaine le reconnaît.
-     Ensuite : retour à l'app d'où l'on vient (?return=), sinon le portail se recharge, connecté. */
-  function renderCodeObligatoire(s) {
-    var old = document.getElementById('code-oblig'); if (old) old.remove();
-    if (!s || !s.uid || !window.kdmcSSO || !window.kdmcSSO.issueDetail) return;
-    var box = document.createElement('div'); box.id = 'code-oblig'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Crée ton code');
-    box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0b1409;color:#f3f0e6;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
-    box.innerHTML = '<div style="max-width:360px;width:100%"><div style="font-size:44px;text-align:center">🔐</div>'
-      + '<h1 style="font-size:19px;color:#f6d97a;margin:8px 0 6px;text-align:center">Crée ton code</h1>'
-      + '<p style="color:#cfd8cc;margin:0 0 14px"><b>' + esc(s.name || 'Ton compte') + '</b>, ton compte n\'a pas encore de code. Pour continuer, choisis ton code (6 caractères ou plus) : il te servira dans toutes les apps KDMC. Sans code, plus d\'accès.</p>'
-      + '<input class="fld" id="co-code" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Mon code (6 caractères ou plus)" aria-label="Mon code" style="min-height:48px;font-size:18px;width:100%;box-sizing:border-box;margin-bottom:10px">'
-      + '<input class="fld" id="co-code2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Le même code, une 2e fois" aria-label="Confirme ton code" style="min-height:48px;font-size:18px;width:100%;box-sizing:border-box;margin-bottom:10px">'
-      + '<button class="btn" id="co-go" type="button" style="min-height:50px;width:100%">Créer mon code</button>'
-      + '<p class="g-err" id="co-err" role="alert" aria-live="polite" style="min-height:22px"></p>'
-      + '<p style="font-size:12.5px;color:#93a58f;text-align:center">Tu as déjà un code ? Entre-le ici (2 fois) : le domaine le reconnaît.</p></div>';
-    document.body.appendChild(box);
-    var go = function () {
-      var c1 = (document.getElementById('co-code').value || '').trim(), c2 = (document.getElementById('co-code2').value || '').trim();
-      var err = document.getElementById('co-err'), b = document.getElementById('co-go');
-      if (c1.length < 6) { err.textContent = 'Au moins 6 caractères.'; return; }
-      if (c1 !== c2) { err.textContent = 'Les deux codes ne sont pas identiques.'; return; }
-      b.disabled = true; b.textContent = '…';
-      window.kdmcSSO.issueDetail(s.uid, s.name, true, safeReturnUrl(), c1).then(function (j) {
-        if (j && j.ok && j.code) {
-          box.querySelector('div').innerHTML = '<p style="text-align:center;font-size:17px">✅ Ton code est créé : nom + code dans toutes les apps KDMC.</p>';
-          setTimeout(function () { if (!gotoReturnIfAny()) location.reload(); }, 700); return;
-        }
-        err.textContent = (j && j.reason === 'code_incorrect') ? 'Ce compte a déjà un code, et ce n\'est pas celui-là.'
-          : (j && j.reason === 'code_en_attente') ? (j.message || 'Ton code est transmis à l\'administrateur : dès qu\'il l\'accepte, reconnecte-toi avec.')
-          : (j && j.message) || 'Le domaine n\'a pas pu enregistrer le code, réessaie.';
-        b.disabled = false; b.textContent = 'Créer mon code';
-      }).catch(function () { err.textContent = 'Erreur réseau, réessaie.'; b.disabled = false; b.textContent = 'Créer mon code'; });
-    };
-    document.getElementById('co-go').addEventListener('click', go);
-    document.getElementById('co-code2').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
-    try { document.getElementById('co-code').focus(); } catch (e) { /* */ }
+    if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done).catch(function () { done(null); }); } else { done(null); }
   }
 
   /* ===== « Protège ton compte par un code » (8.10, sécurité +++) =====
@@ -413,17 +364,11 @@
   }
 
   function showHub(name) {
-    var suite = function (r) {
-      /* 8.10 (revue extérieure) : un compte sans code renvoyé vers l'app AVANT l'écran du code = ping-pong app ⇄ portail.
-         Le domaine a le dernier mot : code_requis → l'écran bloquant, et on ne repart pas. */
-      if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
-      if (gotoReturnIfAny()) return; /* session posée → on rebascule dans l'app */
-      if (hello) hello.textContent = name ? ('Bonjour ' + name) : 'Bienvenue';
-      hide(gate); show(hub);
-      applyAdminVisibility(r);
-      maybeOfferInstall();
-    };
-    if (window.kdmcSSO && window.kdmcSSO.whoamiResult) { window.kdmcSSO.whoamiResult().then(suite).catch(function () { suite(null); }); } else { suite(null); }
+    if (gotoReturnIfAny()) return; /* session posée → on rebascule dans l'app */
+    if (hello) hello.textContent = name ? ('Bonjour ' + name) : 'Bienvenue';
+    hide(gate); show(hub);
+    applyAdminVisibility();
+    maybeOfferInstall();
   }
 
   function cguBlock() {
@@ -688,16 +633,9 @@
         _postLogin(acc);
       });
     }
-    /* 8.10 (revue extérieure, règle d'or 8 : « une page ne vérifie jamais un code elle-même ») : le code part AU DOMAINE, qui seul
-       le juge. L'ancienne empreinte locale (PBKDF2, d'avant le 27.09) ne sert plus qu'au repli SANS client SSO (jamais sur le domaine). */
-    var local = function () {
-      return hashCode(code, acc.salt).then(function (h) {
-        if (!timingEq(h, acc.codeHash)) { err.textContent = 'Code incorrect.'; btn.disabled = false; btn.textContent = 'Se connecter'; return; }
-        _postLogin(acc);
-      });
-    };
-    if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) return local().catch(function () { err.textContent = 'Erreur, réessaie.'; btn.disabled = false; btn.textContent = 'Se connecter'; });
-    Promise.resolve().then(function () {
+    hashCode(code, acc.salt).then(function (h) {
+      if (!timingEq(h, acc.codeHash)) { err.textContent = 'Code incorrect.'; btn.disabled = false; btn.textContent = 'Se connecter'; return; }
+      if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) { _postLogin(acc); return; }
       /* Le code part au domaine : la 1re fois, il y est enregistré (migration), ensuite c'est
          le domaine qui a le dernier mot (un code changé ailleurs l'emporte). */
       return window.kdmcSSO.issueDetail(acc.uid, acc.name, true, safeReturnUrl(), code).then(function (j) {
@@ -771,8 +709,6 @@
   var lo = document.getElementById('logout');
   if (lo) lo.addEventListener('click', function () {
     if (window.kdmcSSO) window.kdmcSSO.logout();
-    /* 8.10 (revue extérieure) : « Te déconnecter » laissait le cookie admin (kdmc_admin, 12 h) en place → on le retire aussi. Fail-safe. */
-    try { fetch('/__admin/logout', { method: 'POST', credentials: 'include' }).catch(function () { /* */ }); } catch (e) { /* */ }
     hide(hub);
     var acc = lg(LS_ACCOUNT, null);
     if (acc) renderUnlock(acc); else renderCreate();
@@ -827,14 +763,7 @@
       if (acc) renderUnlock(acc); else renderCreate();
       show(gate);
     };
-    /* 8.10 (revue extérieure) : au démarrage, whoami() aplatissait « compte sans code » en « aucune session » → l'écran bloquant
-       « Crée ton code » n'était jamais atteint depuis une app (?code=1&return=…). On lit l'état détaillé : code_requis → l'écran. */
-    if (window.kdmcSSO && window.kdmcSSO.whoamiResult) {
-      window.kdmcSSO.whoamiResult().then(function (r) {
-        if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
-        done(r && r.state === 'session' ? r.session : null);
-      }).catch(function () { done(null); });
-    } else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done); } else { done(null); }
+    if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done); } else { done(null); }
   }
   boot();
 

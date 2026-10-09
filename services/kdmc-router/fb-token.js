@@ -83,17 +83,13 @@ export async function fbExchangeForIdToken(customToken, env) {
 
 /* Point d'entrée : mint un id_token role:admin pour les écritures shops.
  * Renvoie { ok, id_token, expires_in } ou { ok:false, reason } (fail-safe). */
-export async function mintShopsAdminIdToken(env) { return mintShopsIdToken(env, 'kdmc_admin', 'admin'); }
-/* 8.10 (revue extérieure) : le rôle « shops » (Laurence : boutiques, sourcing, dashboard) reçoit un jeton `role:'shops'` — les règles
-   des nœuds shops_* l'acceptent, et RIEN d'autre (cmcteams_prive, secrets… restent au rôle admin). Jamais un rôle admin pour un non-admin. */
-export async function mintShopsIdToken(env, uid, role) {
+export async function mintShopsAdminIdToken(env) {
   if (!env || !env.FIREBASE_PRIVATE_KEY || !env.FIREBASE_CLIENT_EMAIL) {
     return { ok: false, reason: 'fb_not_configured' };
   }
-  const r = role === 'admin' ? 'admin' : 'shops';
   let customToken;
   try {
-    customToken = await fbSignCustomToken(env, r === 'admin' ? 'kdmc_admin' : 'shops_' + String(uid || 'x').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 60), { role: r, scope: 'shops' });
+    customToken = await fbSignCustomToken(env, 'kdmc_admin', { role: 'admin', scope: 'shops' });
   } catch (e) {
     return { ok: false, reason: 'sign_failed', detail: (e && e.message) || String(e) };
   }

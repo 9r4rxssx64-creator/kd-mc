@@ -6,13 +6,9 @@
  * La lecture (historique agrégé par personne) est réservée au PIN admin de Kevin.
  *
  * Endpoints :
- *   GET  /              → sert la page admin (entrée par la session du domaine, sinon code → /history)
- *   POST /log           → apps: {app,event,device,meta} + porteur de session du domaine
- *                         (Authorization: Bearer <pass> ou cookie kdmc_sso, vérifié par
- *                         kd-mc.com/__sso/whoami) → append Firebase ; l'uid et le nom sont
- *                         ceux de la session, jamais ceux du corps (audit 2026-10-08 : avant,
- *                         n'importe qui écrivait n'importe quel nom dans le journal). 401 sans session.
- *   GET  /history       → x-apex-pin = SHA-256(PIN admin) OU session admin vérifiée → {people:[…]}
+ *   GET  /              → sert la page admin (PIN-gated côté client → appelle /history)
+ *   POST /log           → apps: {app,uid,name,event,device,meta} → append Firebase (fail-open, 204)
+ *   GET  /history       → x-apex-pin = SHA-256(PIN admin) requis → {people:[…]} agrégé par personne
  *   GET  /health        → {ok:true}
  *   OPTIONS             → préflight CORS
  *
@@ -21,17 +17,13 @@
  *     AUCUN client ne peut le lire/écrire ; seul le service-account, qui bypass les
  *     règles, y touche). Pas de changement de règles Firebase nécessaire.
  *   - /history exige le SHA-256 du PIN admin (secret APEX_ADMIN_PIN_SHA256), comparé
- *     en temps constant — dans l'EN-TÊTE seulement, plus jamais dans l'adresse (?pin=,
- *     qui finissait dans les journaux). /log accepte les Origins kd-mc.com (allowlist CORS).
+ *     en temps constant. /log accepte les Origins kd-mc.com (allowlist CORS) — jamais *.
  *   - On journalise des MÉTADONNÉES d'action (nom d'évènement, app, appareil), JAMAIS
  *     le contenu privé (corps de message, texte de planning) — proportionné/RGPD.
- *   - L'adresse IP n'est plus gardée en clair : empreinte SHA-256 salée (secret KDMC_IP_SEL),
- *     tronquée ; sans sel, rien n'est gardé du tout.
- *   - FAIL-OPEN : si les secrets FB manquent, /log renvoie 204 sans rien casser (mais
- *     jamais sans session : la porte, elle, est fail-closed).
+ *   - FAIL-OPEN : si les secrets FB manquent, /log renvoie 204 sans rien casser.
  *
  * Secrets (posés par .github/workflows/deploy-kdmc-access.yml depuis les secrets GitHub) :
- *   FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, APEX_ADMIN_PIN_SHA256, KDMC_IP_SEL (optionnel).
+ *   FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, APEX_ADMIN_PIN_SHA256.
  */
 
 import { PAGE_HTML } from './page.js';
@@ -59,8 +51,7 @@ function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': ok ? origin : 'https://kd-mc.com',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,x-apex-pin,x-kdmc-app',
-    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'Content-Type,x-apex-pin,x-kdmc-app',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
@@ -121,14 +112,6 @@ async function getAccessToken(env) {
 }
 
 function clip(v, n) { return v == null ? '' : String(v).slice(0, n); }
-/* Empreinte salée et tronquée de l'adresse IP : permet de voir « même réseau / réseau différent »
-   sans garder l'adresse elle-même 120 jours. Sans sel (secret KDMC_IP_SEL) → rien n'est gardé. */
-async function ipEmpreinte(env, ip) {
-  const sel = env && env.KDMC_IP_SEL;
-  if (!sel || !ip) return '';
-  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(sel) + '|' + String(ip)));
-  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, '0')).join('').slice(0, 16);
-}
 
 // Purge auto (RGPD minimisation) : ~1 log sur 40 supprime les buckets-jour trop vieux.
 let _pruneN = 0;
@@ -150,27 +133,23 @@ async function maybePrune(env, token) {
   } catch (_) { /* fail-open */ }
 }
 
-// ── POST /log : append d'un évènement — porteur de session du domaine OBLIGATOIRE ──
+// ── POST /log : append d'un évènement (fail-open) ──
 async function handleLog(request, env, origin) {
-  const s = await sessionDomaine(request, env);
-  if (!s) return json({ ok: false, error: 'unauthorized', detail: 'session du domaine requise (Authorization: Bearer ou cookie kdmc_sso)' }, 401, origin);
   let body;
   try { body = await request.json(); } catch (_) { return json({ ok: false, error: 'bad_json' }, 400, origin); }
   const ev = {
     app: clip(body.app, 40) || 'inconnu',
-    /* uid et nom = ceux de la SESSION (imposés) : le corps ne peut pas se faire passer pour un autre. */
-    uid: clip(s.uid, 80),
-    name: clip(s.name, 120) || clip(body.name, 120) || 'Anonyme',
+    uid: clip(body.uid, 80),
+    name: clip(body.name, 120) || 'Anonyme',
     event: clip(body.event, 60) || 'connexion',
     device: clip(body.device, 40),
     ua: clip(body.ua || request.headers.get('user-agent'), 180),
-    tier: clip(s.admin === true ? 'admin' : body.tier, 24),
+    tier: clip(body.tier, 24),
     meta: body.meta && typeof body.meta === 'object' ? JSON.parse(clip(JSON.stringify(body.meta), 600)) : undefined,
-    ip_h: await ipEmpreinte(env, request.headers.get('cf-connecting-ip')),
+    ip: clip(request.headers.get('cf-connecting-ip'), 45),
     country: clip((request.cf && request.cf.country) || request.headers.get('cf-ipcountry'), 4),
     ts: Date.now(),
   };
-  if (!ev.ip_h) delete ev.ip_h;
   const token = await getAccessToken(env);
   if (!token) return new Response(null, { status: 204, headers: corsHeaders(origin) }); // fail-open
   try {
@@ -185,27 +164,21 @@ async function handleLog(request, env, origin) {
 /* (27.09.2026, « reconnu par n'importe quel chemin ») : la session VÉRIFIÉE de Kevin (cookie kdmc_sso
    du domaine, envoyé à admin.kd-mc.com aussi, ou Bearer) vaut le code admin. Ce worker n'a pas le
    secret du domaine : il demande au domaine lui-même (/__sso/whoami), qui est la seule vérité. */
-/* La session du domaine (Bearer ou cookie kdmc_sso), vérifiée par le domaine : { uid, name, admin, verified } ou null. */
-async function sessionDomaine(request, env) {
+async function sessionAdmin(request, env) {
   try {
     const auth = request.headers.get('authorization') || '';
     const m = auth.match(/^Bearer\s+(.+)$/i);
     const c = (request.headers.get('cookie') || '').match(/(?:^|;\s*)kdmc_sso=([^;]+)/);
     const token = m ? m[1].trim() : (c ? decodeURIComponent(c[1]) : '');
-    if (!token) return null;
-    const r = await fetch(((env && env.KDMC_SSO_URL) || 'https://kd-mc.com') + '/__sso/whoami', { headers: { authorization: 'Bearer ' + token } });
+    if (!token) return false;
+    const r = await fetch((env.KDMC_SSO_URL || 'https://kd-mc.com') + '/__sso/whoami', { headers: { authorization: 'Bearer ' + token } });
     const j = await r.json();
-    if (!j || !j.ok || !j.uid) return null;
-    return { uid: String(j.uid), name: String(j.name || ''), admin: j.admin === true, verified: j.verified === true };
-  } catch (_) { return null; }
+    return !!(j && j.ok && j.admin === true && j.verified === true);
+  } catch (_) { return false; }
 }
-async function sessionAdmin(request, env) {
-  const s = await sessionDomaine(request, env);
-  return !!(s && s.admin && s.verified);
-}
-// ── GET /history : agrégé par personne (PIN admin EN EN-TÊTE, OU session vérifiée de l'admin) ──
+// ── GET /history : agrégé par personne (PIN admin OU session vérifiée de l'admin) ──
 async function handleHistory(request, env, origin) {
-  const pin = (request.headers.get('x-apex-pin') || '').toLowerCase().trim();
+  const pin = (request.headers.get('x-apex-pin') || new URL(request.url).searchParams.get('pin') || '').toLowerCase().trim();
   const expected = String(env.APEX_ADMIN_PIN_SHA256 || '').toLowerCase().trim();
   if (!expected) return json({ ok: false, error: 'pin_not_configured' }, 503, origin);
   if (!safeEqual(pin, expected) && !(await sessionAdmin(request, env))) return json({ ok: false, error: 'unauthorized' }, 401, origin);

@@ -2,10 +2,9 @@
  *
  *   1. le script ne contient aucun PUT / PATCH / DELETE / POST vers la base (lecture seule, mesure « avant ») ;
  *   2. le robot coffre-lire-verrous-firebase.yml se lance à la main, sans cron, borné, et reste au coffre ;
- *   3. logique : sur l'objet rules du FICHIER → depuis l'audit du 8.10.2026 le fichier PORTE lui-même les
- *      verrous boutiques (shops_lock=on, orders_read=on : products/logos/selection/orders au rôle admin),
+ *   3. logique : sur l'objet rules du FICHIER (aucun verrou appliqué) → shops_lock=off, orders_read=off,
  *      cmc_admin_lock=off, ecritures_lock=off, commandes clients « anonyme » ; après application du bloc
- *      _phase_shops_rolelock (comme deploy-rules.cjs SHOPS_LOCK=on + ORDERS_READ=on) → toujours on / on ;
+ *      _phase_shops_rolelock (comme deploy-rules.cjs SHOPS_LOCK=on + ORDERS_READ=on) → on / on ;
  *      un cmcteams restructuré (write parent → $key, cmc_ov/cmc_t au rôle admin) → cmc_admin_lock=on, ecritures_lock=on ;
  *   4. sondes anonymes : fetch simulé → chaque chemin reçoit son statut, une erreur réseau ne plante pas ;
  *   5. SABOTAGE prouvé : un `method: 'PUT'` glissé dans le script → le contrôle 1 rougit.
@@ -29,10 +28,7 @@ ok(regles.workflows_prives.includes('.github/workflows/coffre-lire-verrous-fireb
 const doc = JSON.parse(readFileSync('firebase-rules-apex.json', 'utf8'));
 const clone = () => JSON.parse(JSON.stringify(doc.rules));
 const a = lireVerrous(clone());
-/* 8.10.2026 (audit) : le fichier nu ferme DÉJÀ les boutiques (lu tel quel : shops_lock=on, orders_read=on) ;
-   les verrous CMCteams restent « off » dans le fichier (posés à la publication). Avant, « off » partout
-   voulait dire : boutiques ouvertes à n'importe qui tant que le robot n'avait pas posé le bloc. */
-ok(a.racine === 'deny' && a.shops_lock === 'on' && a.orders_read === 'on' && a.cmc_admin_lock === 'off' && a.ecritures_lock === 'off' && a.orders_write_clients === 'anonyme (attendu)', '3a. fichier nu → boutiques déjà fermées (shops_lock/orders_read = on), verrous CMCteams « off », commandes clients anonymes, racine deny', JSON.stringify(a));
+ok(a.racine === 'deny' && a.shops_lock === 'off' && a.orders_read === 'off' && a.cmc_admin_lock === 'off' && a.ecritures_lock === 'off' && a.orders_write_clients === 'anonyme (attendu)', '3a. fichier nu → tous les verrous « off », commandes clients anonymes, racine deny', JSON.stringify(a));
 const b = clone(); const L = doc._phase_shops_rolelock;
 for (const p of Object.keys(L.writes)) { let n = b; for (const k of p.split('/')) { n[k] = n[k] || {}; n = n[k]; } n['.write'] = L.writes[p]; }
 b.shops_admin_v1.orders['.read'] = L.orders_read;

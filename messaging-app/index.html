@@ -958,19 +958,6 @@ async function idbGet(key){
   }catch(e){ return null; }
 }
 
-// Revue 08.10.2026 (A3) : retire une clé de l'ombre IndexedDB (déconnexion).
-async function idbDel(key){
-  try{
-    const db = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(['kv'], 'readwrite');
-      tx.objectStore('kv').delete(key);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
-  }catch(e){ _idbNoteError('idbDel', e); }
-}
-
 function _cleanupStorage(){
   // Garde whitelist + supprime entries volumineuses
   try{
@@ -1296,7 +1283,7 @@ K._accessLog = function(event, meta){
       try{var c=navigator.connection;if(c&&c.effectiveType)d.reseau=c.effectiveType;}catch(_e){}
       meta=Object.assign({},meta||{},{appareil:d});
     }catch(_e){}}
-    fetch('https://admin.kd-mc.com/log',{method:'POST',credentials:'include',headers:(function(){var h={'Content-Type':'application/json'};try{var s=localStorage.getItem('kdmc_sso_token');if(s)h.Authorization='Bearer '+s;}catch(_){}return h;})(),body:JSON.stringify({app:'apex-chat',uid:u.id,name:name,event:k,device:dev,tier:(u.is_admin?'admin':'client'),meta:meta||undefined}),keepalive:true,mode:'cors'}).catch(function(){});
+    fetch('https://admin.kd-mc.com/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app:'apex-chat',uid:u.id,name:name,event:k,device:dev,tier:(u.is_admin?'admin':'client'),meta:meta||undefined}),keepalive:true,mode:'cors'}).catch(function(){});
   }catch(_){}
 };
 try{ document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') K._accessLog('ouvre'); }); }catch(_){}
@@ -8069,16 +8056,11 @@ K.logout = function(){
   }
   K.user = null; K.token = null; K.conversations = []; K.messages = {};
   K.view = 'splash';
-  // Revue 08.10.2026 (A3) : ls() écrit aussi une ombre IndexedDB (user, token) que le
-  // démarrage rejoue quand le localStorage est vide → la session revenait toute seule
-  // après « Te déconnecter ». v1.1.295 (F36) : la clé privée E2E vit aussi en IndexedDB.
-  // On efface l'ombre ET la clé AVANT de recharger (plafond 1,5 s : jamais coincé).
   K._cryptoKeys = null;
-  let _rechargee = false;
-  const recharger = () => { if(_rechargee) return; _rechargee = true; location.reload(); };
-  const plafond = setTimeout(recharger, 1500);
-  Promise.all(['user', 'token'].map((k) => Promise.resolve(idbDel(k)).catch(() => {})).concat([Promise.resolve().then(() => K._keyStoreDelete()).catch(() => {})]))
-    .then(() => { clearTimeout(plafond); recharger(); }, () => { clearTimeout(plafond); recharger(); });
+  // v1.1.295 (F36) : la clé privée E2E vit en IndexedDB (CryptoKey non extractible) → l'effacer
+  // AUSSI, avant de recharger (plafond 1,5 s : la déconnexion ne reste jamais coincée).
+  const reload = () => location.reload();
+  Promise.race([K._keyStoreDelete(), new Promise((r) => setTimeout(r, 1500))]).then(reload, reload);
 };
 
 // ============================================================================
@@ -11387,9 +11369,7 @@ K._inviteAndOpen = async function(id){
     if(phone){
       toast('📨 Invitation en cours…', 'info', 1500);
       const r = await K._api('POST', '/api/invitations', { phone, name: nm, sent_via: 'fiche' });
-      /* Revue 08.10.2026 (A1) : le serveur ne remet plus de lien magique (session sans
-         code) à l'inviteur — on partage le lien d'accueil (code court). */
-      if(r && r.ok){ invitedId = r.invited_user_id || id; magic = r.invite_url || r.magic_url || ''; }
+      if(r && r.ok){ invitedId = r.invited_user_id || id; magic = r.magic_url || ''; }
     }
   }catch(_e){ /* best-effort : on ouvre la conversation quand même */ }
   K._closeModal();
@@ -16986,9 +16966,6 @@ async function _consumeInviteToken(token){
           }
         }, 800);
       }
-    } else if(data && data.error === 'magic_requires_otp'){
-      /* Revue 08.10.2026 (A1) : invitation d'un utilisateur → l'invité prouve son numéro par SMS. */
-      toast('📨 Invitation reconnue — entre ton numéro pour recevoir ton code', 'ok', 6000);
     } else {
       const cause = data.detail || data.message || ('HTTP ' + r.status);
       toast('Lien invitation : ' + cause, 'warn', 7000);
@@ -17092,11 +17069,10 @@ K._invitePickContactSend = async function(){
       const r = await K._api('POST', '/api/invitations', {
         phone, name: fullName, sent_via: 'contact-picker'
       });
-      /* Revue 08.10.2026 (A1) : plus de lien magique remis à l'inviteur → lien d'accueil. */
-      if(r && r.ok && (r.invite_url || r.magic_url)) inv = r;
+      if(r && r.ok && r.magic_url) inv = r;
     }catch(_){}
     const baseUrl = location.origin + location.pathname.replace(/[^\/]*$/, '');
-    const url = inv ? (inv.invite_url || inv.magic_url) : (baseUrl + '?inviter=' + encodeURIComponent(K.user?.id || ''));
+    const url = inv ? inv.magic_url : (baseUrl + '?inviter=' + encodeURIComponent(K.user?.id || ''));
     const msg = inv ? inv.sms_template :
       `Salut ${fullName} ! ${K.user?.real_name || K.user?.pseudo || 'Un ami'} t'invite sur Apex Chat : ${url}`;
     K._closeModal();
@@ -17148,21 +17124,20 @@ K._sendInvite1Click = async function(){
   let inv = null;
   try{
     const r = await K._api('POST', '/api/invitations', { phone, name, sent_via: 'native-share' });
-    /* Revue 08.10.2026 (A1) : plus de lien magique remis à l'inviteur → lien d'accueil (code court). */
-    if(r && r.ok && (r.invite_url || r.magic_url)) inv = r;
+    if(r && r.ok && r.magic_url) inv = r;
   }catch(e){
     toast('Création invitation : ' + ((e && (e.apiDetail || e.message)) || 'serveur indispo'), 'warn', 5000);
   }
   if(!inv){
-    // Fallback : pas de lien d'invitation, mais on partage quand même un lien d'accueil
+    // Fallback : pas de magic-link, mais on partage quand même un lien d'accueil
     const baseUrl = location.origin + location.pathname.replace(/[^\/]*$/, '');
-    inv = { invite_url: baseUrl, sms_template:
+    inv = { magic_url: baseUrl, sms_template:
       `Salut ${name} ! ${K.user?.real_name || K.user?.pseudo || 'Un ami'} t'invite sur Apex Chat : ${baseUrl}` };
   }
 
   K._closeModal();
   const msg = inv.sms_template;
-  const url = inv.invite_url || inv.magic_url;
+  const url = inv.magic_url;
 
   // 1) Web Share API natif (iOS + Android) — l'utilisateur choisit le canal
   if(navigator.share){
@@ -17819,12 +17794,6 @@ async function _boot(){
       if(r && r.ok && r.invitation && r.invitation.magic_token){
         // Rediriger avec magic token
         location.replace(location.pathname + '?magic=' + encodeURIComponent(r.invitation.magic_token));
-      } else if(r && r.ok && r.invitation){
-        /* Revue 08.10.2026 (A1) : invitation d'un utilisateur → pas de session sans code :
-           l'invité entre son numéro et reçoit son code SMS comme tout le monde. */
-        const qui = r.invitation.inviter_pseudo ? ('de ' + r.invitation.inviter_pseudo + ' ') : '';
-        toast('📨 Invitation ' + qui + 'reconnue — entre ton numéro pour recevoir ton code', 'ok', 6000);
-        history.replaceState({}, '', location.pathname);
       }
     }catch(_e){_safeCatch('silent',_e)}
   }

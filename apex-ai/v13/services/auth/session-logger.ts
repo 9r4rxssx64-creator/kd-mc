@@ -84,7 +84,7 @@ class SessionLogger {
       const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
       const dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Macintosh|Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'PC Windows' : /Linux/.test(ua) ? 'Linux' : 'Autre';
       void fetch('https://admin.kd-mc.com/log', {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, keepalive: true, mode: 'cors',   /* 8.10 : /log exige la session du domaine (cookie .kd-mc.com) */
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, mode: 'cors',
         body: JSON.stringify({ app: 'apex', uid: s.uid, name: s.user_name, event, device: dev, tier: s.is_admin ? 'admin' : 'client' }),
       }).catch(() => { /* fail-open */ });
     } catch { /* fail-open */ }

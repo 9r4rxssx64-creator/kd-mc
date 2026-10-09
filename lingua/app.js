@@ -135,7 +135,7 @@ function reportProgress(){
     };
     var ua=navigator.userAgent||"";
     var dev=/iPhone/.test(ua)?"iPhone":/iPad/.test(ua)?"iPad":/Android/.test(ua)?"Android":/Macintosh/.test(ua)?"Mac":/Windows/.test(ua)?"PC Windows":"Autre";
-    fetch("https://admin.kd-mc.com/log",{method:"POST",credentials:"include",headers:(typeof kdmcHeaders==="function"?kdmcHeaders({"Content-Type":"application/json"}):{"Content-Type":"application/json"}),keepalive:true,mode:"cors",
+    fetch("https://admin.kd-mc.com/log",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,mode:"cors",
       /* Mode enfant (2.10) : ni prénom ni téléphone — juste la progression d'un compte anonyme. */
       body:JSON.stringify(m.enfant?{app:"lingua",uid:"lingua_"+ACC,name:"Enfant (mode enfant)",event:"progression",tier:"lingua",meta:meta}:{app:"lingua",uid:"lingua_"+ACC,name:m.name,event:"progression",device:dev,tier:"lingua",meta:meta})}).catch(function(){});
   }catch(e){}

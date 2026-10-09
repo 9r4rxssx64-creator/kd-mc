@@ -105,10 +105,7 @@ ok((d['default-src'] || []).join(' ') === "'self'", `default-src = 'self' (lu : 
 ok((d['object-src'] || []).join(' ') === "'none'", "object-src 'none'");
 ok((d['base-uri'] || []).join(' ') === "'self'", "base-uri 'self'");
 ok((d['form-action'] || []).join(' ') === "'none'", "form-action 'none'");
-/* 8.10 (reparer-tout) : le garde avait pris du retard sur la page — connect-src lingua.kd-mc.com (la voix de Bee : /__lingua/tts, et le
-   fil gardé par le domaine, #4354) et media-src blob: (la voix est téléchargée puis jouée depuis la mémoire, javis-widget.js l.39, 3.10).
-   Rouge sur main depuis #4363 sans que personne ne le lise. Liste blanche EXACTE, toujours : rien d'autre n'est permis. */
-const permis = { 'connect-src': ["'self'", 'https://api.open-meteo.com', 'https://lingua.kd-mc.com'], 'media-src': ["'self'", 'https://lingua.kd-mc.com', 'blob:'],
+const permis = { 'connect-src': ["'self'", 'https://api.open-meteo.com'], 'media-src': ["'self'", 'https://lingua.kd-mc.com'],
   'img-src': ["'self'", 'data:', 'blob:', 'https://lingua.kd-mc.com'] };
 for (const [k, v] of Object.entries(permis)) {
   const en_trop = (d[k] || []).filter((x) => v.indexOf(x) < 0);

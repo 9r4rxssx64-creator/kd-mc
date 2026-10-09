@@ -28,8 +28,6 @@ function mock({ geminiOk = false, editeur = false, creationsKo = [], creation429
   creations = 0;
   global.fetch = async (u) => {
     const url = String(u);
-    /* Audit 2026-10-08 : le worker demande d'abord au domaine qui appelle (compte vérifié). */
-    if (url.includes('/__sso/whoami')) return new Response(JSON.stringify({ ok: true, uid: 'test-compte', name: 'Marie Dupont', verified: true }), { status: 200 });
     vus.push(url);
     if (/generativelanguage\.googleapis\.com/.test(url)) {
       if (!geminiOk) {
@@ -67,15 +65,12 @@ function mock({ geminiOk = false, editeur = false, creationsKo = [], creation429
     return new Response('{}', { status: 200 });
   };
 }
-/* Le secours Replicate est PAYANT : il ne s'allume qu'avec BEE_SECOURS_PAYANT=1 (sinon le jeton est
-   ignoré, règle « tout gratuit »). Les cas qui attendent ce secours posent donc l'interrupteur. */
-const PAYANT = { BEE_SECOURS_PAYANT: '1' };
 const call = (chemin, env, body) => worker.fetch(
-  new Request('https://w' + chemin, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer pass-test' }, body: JSON.stringify(body) }), env);
+  new Request('https://w' + chemin, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), env);
 
 /* A) Gemini à sec + moteur d'édition dispo → ça marche quand même */
 mock({ editeur: true });
-let r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't', ...PAYANT }, { image: PIX, mode: 'dance', n: 5 });
+let r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't' }, { image: PIX, mode: 'dance', n: 5 });
 let j = await r.json().catch(() => ({}));
 chk(r.status === 200, 'A. crédits Google à zéro → les poses sortent quand même (' + r.status + ')');
 chk((j.frames || []).length >= 2, 'A. au moins 2 poses (le minimum pour animer) : ' + (j.frames || []).length);
@@ -103,7 +98,7 @@ chk(/quelqu'un d'autre/.test(j.message || ''), 'B. et c\'est expliqué simplemen
 
 /* C) DISCRIMINANT — Gemini marche : le secours ne doit PAS être appelé */
 mock({ geminiOk: true, editeur: true });
-r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't', ...PAYANT }, { image: PIX, mode: 'dance', n: 5 });
+r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't' }, { image: PIX, mode: 'dance', n: 5 });
 j = await r.json().catch(() => ({}));
 chk(j.provider === 'gemini', 'C. Gemini dispo → c\'est lui qui sert (' + j.provider + ')');
 chk((j.frames || []).length === 5, 'C. et les 5 poses demandées sont là : ' + (j.frames || []).length);
@@ -111,7 +106,7 @@ chk(!vus.some((u) => /replicate/.test(u)), 'C. le payant n\'est PAS appelé pour
 
 /* D) /pose : pas de substitution silencieuse */
 mock({ editeur: true });
-r = await call('/pose', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't', ...PAYANT },
+r = await call('/pose', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't' },
   { image: PIX, poses: [PIX, PIX] });
 j = await r.json().catch(() => ({}));
 chk(r.status === 502, 'D. copie de pose impossible → refus (502), reçu ' + r.status);
@@ -124,7 +119,7 @@ chk(/indisponible/.test(j.message || ''), 'D. on explique pourquoi au lieu de re
       Maintenant : allSettled garde la bonne + rattrape la manquante seule.
       DISCRIMINANT : ce test échoue si on revient à `Promise.all`. */
 mock({ editeur: true, creationsKo: [2] });
-r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't', ...PAYANT }, { image: PIX, mode: 'dance', n: 2 });
+r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't' }, { image: PIX, mode: 'dance', n: 2 });
 j = await r.json().catch(() => ({}));
 chk(r.status === 200, 'E. 1 pose qui casse ne jette PLUS la pose réussie (' + r.status + ', avant : 502)');
 chk((j.frames || []).length >= 2, 'E. les 2 poses sont là après rattrapage : ' + (j.frames || []).length);
@@ -134,7 +129,7 @@ chk(/replicate-edit/.test(j.provider || ''), 'E. et c\'est bien le moteur d\'éd
 /* F) les DEUX poses cassent → refus honnête, mais la cause EXACTE de CHACUNE
       est dite (règle « toujours détailler les erreurs, cause exacte »). */
 mock({ editeur: true, creationsKo: [1, 2] });
-r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't', ...PAYANT }, { image: PIX, mode: 'dance', n: 2 });
+r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't' }, { image: PIX, mode: 'dance', n: 2 });
 j = await r.json().catch(() => ({}));
 chk(r.status === 502, 'F. les 2 poses cassées → refus (502), reçu ' + r.status);
 chk(/edit#1/.test(j.detail || '') && /edit#2/.test(j.detail || ''),
@@ -146,7 +141,7 @@ chk(!(j.frames || []).length, 'F. aucune image inventée');
       affichait `model_429` — impossible de savoir s'il fallait attendre ou
       recharger. DISCRIMINANT : sans la lecture de `detail`, ce test échoue. */
 mock({ editeur: true, creation429: true });
-r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't', ...PAYANT }, { image: PIX, mode: 'dance', n: 2 });
+r = await call('/frames', { GEMINI_API_KEY: 'k', REPLICATE_API_TOKEN: 't' }, { image: PIX, mode: 'dance', n: 2 });
 j = await r.json().catch(() => ({}));
 chk(r.status === 502, 'G. moteur d\'édition à sec → refus honnête (502), reçu ' + r.status);
 chk(/429/.test(j.detail || ''), 'G. le code du refus est dit : ' + String(j.detail || '').slice(0, 60));

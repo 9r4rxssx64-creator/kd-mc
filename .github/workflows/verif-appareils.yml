@@ -75,11 +75,7 @@ jobs:
         # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0) et une
         # vérification qui dit « ÉCHEC » ressortirait VERTE.
         shell: bash -euo pipefail {0}
-        # 8.10 : les adresses passent par env:, jamais dans le shell (garde test:workflows-shell)
-        env:
-          BASE: ${{ inputs.base || 'https://lingua.kd-mc.com' }}
-          PORTAIL: ${{ inputs.portail || 'https://kd-mc.com' }}
-        run: stdbuf -oL -eL node tools/smoke/verif-appareils.mjs "$BASE" --portail="$PORTAIL" --captures=/tmp/captures 2>&1 | tee /tmp/appareils.log
+        run: stdbuf -oL -eL node tools/smoke/verif-appareils.mjs "${{ inputs.base || 'https://lingua.kd-mc.com' }}" --portail="${{ inputs.portail || 'https://kd-mc.com' }}" --captures=/tmp/captures 2>&1 | tee /tmp/appareils.log
 
       - name: Rapport lisible depuis l'agent (annotations)
         if: always()

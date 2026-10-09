@@ -103,11 +103,8 @@ try {
   await pd.click('#f-deja'); await pd.fill('#l-nom', 'Curie Marie'); await pd.fill('#l-code', '314159'); await pd.click('#l-go');
   await pd.waitForURL(/cmcteams\.kd-mc\.com\/index\.html/, { timeout: 8000 }).catch(() => {});
   await fermerOffreFaceId(pd).catch(() => {});
-  /* 8.10 : showHub lit d'abord whoamiResult (code_requis ?) puis renvoie vers l'app — le départ n'est plus synchrone, on l'attend */
-  await pd.waitForURL(/cmcteams\.kd-mc\.com\/index\.html/, { timeout: 8000 }).catch(() => {});
   const entree = vus.find((v) => v.startsWith('/__sso/entrer?')) || '';
-  /* 8.10 (revue extérieure) : la session voyage dans l'ENVELOPPE signée 90 s (`h=`, via /__sso/pass) — plus jamais le grant en clair ; `t=` reste le repli sans grant */
-  ok(/to=%2Findex\.html%3Fv%3D9%23plan/.test(entree) && /&(h|t)=/.test(entree) && !/&g=/.test(entree), '5. téléphone D : le retour vers l\'app passe par SA porte /__sso/entrer (enveloppe signée + page demandée, jamais le grant en clair)', entree.slice(0, 90) || vus.join(' '));
+  ok(/to=%2Findex\.html%3Fv%3D9%23plan/.test(entree) && /&t=/.test(entree), '5. téléphone D : le retour vers l\'app passe par SA porte /__sso/entrer (session + page demandée)', entree.slice(0, 90) || vus.join(' '));
   await pd.waitForTimeout(800); const finale = await pd.evaluate(() => location.href).catch(() => pd.url()); const corps = await pd.locator('body').textContent().catch(() => '');
   ok(finale === 'https://cmcteams.kd-mc.com/index.html?v=9#plan' && /kdmc_sso=/.test(corps), '5 bis. l\'app reçoit son cookie et s\'ouvre sur la page demandée, adresse propre (pas de jeton dans l\'adresse)', finale + ' | ' + corps.slice(0, 40));
 

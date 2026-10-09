@@ -30,8 +30,5 @@ jobs:
       - name: Révoquer les sessions du compte (porte admin, session de Kevin)
         env:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
-          # 8.10 : les entrées passent par env:, jamais dans le shell (garde test:workflows-shell)
-          UID_DEMANDE: ${{ inputs.uid }}
-          CONFIRMER: ${{ inputs.confirmer }}
         shell: bash -eo pipefail {0}
-        run: node tools/smoke/deconnecter-compte.mjs "$UID_DEMANDE" "--confirmer=$CONFIRMER"
+        run: node tools/smoke/deconnecter-compte.mjs "${{ inputs.uid }}" "--confirmer=${{ inputs.confirmer }}"

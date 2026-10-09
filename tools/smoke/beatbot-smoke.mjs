@@ -26,16 +26,12 @@ async function runChecks() {
     let j = {}; try { j = await r.json(); } catch { /* */ }
     checks.push(['routes Tuya gardées (403 need_admin_code)', r.status === 403 && j.reason === 'need_admin_code']);
   } catch (e) { checks.push(['routes Tuya gardées', false, String(e)]); }
-  // 3) les fichiers de l'app ne se lisent PAS sans code : depuis le 27.09 (routeur, dossier /CMCteams/tools/poolrobot
-  //    au niveau admin) version.txt lui-même sert la page de verrouillage. Avant le 8.10 cette sonde attendait « vX.Y.Z »
-  //    en clair → rouge à chaque lancement depuis le 27.09. Règle Kevin 3.10 « aucune consultation sans compte » :
-  //    la preuve utile est le VERROU, pas le numéro. La version déployée se lit avec une session (robot vérif plafond).
+  // 3) app déployée (version valide, host non gaté)
   try {
-    const r = await fetch('https://cmcteams.kd-mc.com/tools/poolrobot/version.txt', { cache: 'no-store', redirect: 'manual' });
+    const r = await fetch('https://cmcteams.kd-mc.com/tools/poolrobot/version.txt', { cache: 'no-store' });
     const t = (await r.text()).trim();
-    const verrou = !/^v\d+\.\d+\.\d+$/.test(t) && (/PoolPilot/.test(t) && /espace priv/i.test(t) || r.status === 401 || r.status === 403);
-    checks.push(['fichiers PoolPilot verrouillés sans code (version.txt → ' + (verrou ? 'porte' : t.slice(0, 40)) + ')', verrou]);
-  } catch (e) { checks.push(['fichiers PoolPilot verrouillés sans code', false, String(e)]); }
+    checks.push(['PoolPilot déployé (' + t + ')', r.status === 200 && /^v\d+\.\d+\.\d+$/.test(t)]);
+  } catch (e) { checks.push(['PoolPilot déployé', false, String(e)]); }
   return checks;
 }
 

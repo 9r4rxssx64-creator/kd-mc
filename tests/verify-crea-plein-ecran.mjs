@@ -37,7 +37,7 @@ page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resourc
 page.on('dialog', (d) => d.accept());
 await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'load' });
 await page.waitForTimeout(400);
-await page.fill('#gateName', 'Test Plein'); await page.fill('#gateCode', '123456');
+await page.fill('#gateName', 'Test Plein'); await page.fill('#gateCode', '1234');
 await page.click('#gateGo'); await page.waitForTimeout(250);
 
 /* une photo nette de 1600×1200 : on pourra vérifier la pleine résolution */

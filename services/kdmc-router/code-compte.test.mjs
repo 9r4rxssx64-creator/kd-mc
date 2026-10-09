@@ -48,13 +48,10 @@ ok(j1.code_pose === true, '4b. un compte protégé : la réponse dit code_pose:t
   /* un compte d'AVANT le 27.09 (fiche sans code), avec une session encore valable sur SON appareil (cookie) */
   kv.set('acc:paul-martin', JSON.stringify({ uid: 'paul-martin', name: 'Paul Martin' })); kv.set('nm:paul martin', 'paul-martin');
   const wp = await whoami('kd-mc.com', signe('paul-martin', 0));
-  ok(wp.ok === false && wp.reason === 'code_requis' && wp.code_requis === true && wp.code_pose === false && wp.uid && wp.name, '4d. whoami ne reconnaît PLUS un compte sans code (8.10 soir : « sinon pas d\'accès ») : code_requis + uid + nom → le portail affiche l\'écran bloquant « Crée ton code »', wp);
-  /* 8.10 (revue extérieure, P0) : une session ouverte sur le seul nom (v=0, k=0) ne pose PAS le code → attente Kevin ; une session PROUVÉE (Face ID) le pose */
-  const p1 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 0) });
-  ok(p1.st === 202 && p1.j.reason === 'code_en_attente' && !kv.has('cred:paul-martin'), '4e. depuis une session NON prouvée (ouverte sur le nom), le code proposé attend Kevin (un inconnu avec une vieille session ne prend pas le compte)', JSON.stringify(p1.j).slice(0, 120));
-  const p2 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 1) });
+  ok(wp.ok === true && wp.code_pose === false, '4d. whoami dit code_pose:false pour un compte sans code (sans lire cred: — la fiche porte code_at) → le portail affiche « Protège ton compte »', JSON.stringify(wp));
+  const p2 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 0) });
   const wp2 = await whoami('kd-mc.com', p2.j.token);
-  ok(p2.j.ok === true && p2.j.code === true && p2.j.code_pose === true && wp2.code_pose === true, '4e bis. depuis SA session PROUVÉE (Face ID), Paul pose son code → code_pose:true partout', JSON.stringify([p2.j, wp2]));
+  ok(p2.j.ok === true && p2.j.code === true && p2.j.code_pose === true && wp2.code_pose === true, '4e. depuis SA session, Paul pose son code → code_pose:true partout ; un inconnu ne le pourrait pas (contrôle 11)', JSON.stringify([p2.j, wp2]));
   const wm = await whoami('kd-mc.com', tokMarie);
   ok(wm.code_pose === true, '4f. le compte de Marie (code prouvé à la création) est marqué code_at → whoami code_pose:true', JSON.stringify(wm));
 }
@@ -98,9 +95,7 @@ ok(r.st === 202 && r.j.ok === false && r.j.reason === 'code_en_attente' && !r.j.
 { const s = await issue({ uid: 'paul-ancien', name: 'Paul Ancien', cgu: true });
   ok(s.st === 401 && s.j.reason === 'code_requis' && !s.j.token, '11b. compte ancien, appareil inconnu, SANS code → refusé (plus jamais une session sur un nom)', JSON.stringify(s.j).slice(0, 120)); }
 r = await issue({ uid: 'paul-ancien', name: 'Paul Ancien', cgu: true, code: '222222' }, { authorization: 'Bearer ' + signe('paul-ancien', 0) });
-ok(r.st === 202 && !kv.has('cred:paul-ancien'), '11c. le même, avec une session ouverte sur le nom (non prouvée) → attend Kevin aussi (8.10, revue extérieure : la session de Stockholm en était une)');
-r = await issue({ uid: 'paul-ancien', name: 'Paul Ancien', cgu: true, code: '222222' }, { authorization: 'Bearer ' + signe('paul-ancien', 1) });
-ok(r.j.code === true && kv.has('cred:paul-ancien'), '12. le même, depuis SON appareil avec une session PROUVÉE (Face ID) → son code est enregistré au domaine (migration douce)');
+ok(r.j.code === true && kv.has('cred:paul-ancien'), '12. le même, depuis SON appareil (sa session) → son code est enregistré au domaine (migration douce)');
 
 /* 13. Identité admin : jamais de code ici (Face ID + code admin) */
 r = await issue({ uid: 'kevin-desarzens', name: 'Kevin Desarzens', cgu: true, code: '123456' });

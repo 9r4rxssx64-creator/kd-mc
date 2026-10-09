@@ -29,15 +29,10 @@ const tok = signe('marie-curie', 0);
   const r2 = await entrer('cuisine.kd-mc.com', 'to=' + encodeURIComponent('//attaquant.example/') + '&t=' + encodeURIComponent(tok));
   ok(r.headers.get('location') === '/' && r2.headers.get('location') === '/', '4. `to` vers une autre adresse → ignoré (jamais de redirection ouverte)', r.headers.get('location') + ' ' + r2.headers.get('location')); }
 { const grant = signe('__kdmc_admin__', 1);
-  /* 8.10 (revue extérieure) : le grant ne voyage plus en clair (`g=`) mais dans l'enveloppe signée `h` (90 s) rendue par /__sso/pass */
-  const env_ = (() => { const p = b64u(JSON.stringify({ t: signe('kdmc_admin', 1), g: grant, exp: Date.now() + 90000 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); })();
-  const r = await entrer('beatbot.kd-mc.com', 'to=%2F&h=' + encodeURIComponent(env_));
+  const r = await entrer('beatbot.kd-mc.com', 'to=%2F&t=' + encodeURIComponent(signe('kdmc_admin', 1)) + '&g=' + encodeURIComponent(grant));
   const c = cookies(r).join('|');
   ok(c.includes('kdmc_sso=') && c.includes('kdmc_admin=' + grant) && /Max-Age=43200/.test(c.split('|').find((x) => x.startsWith('kdmc_admin')) || ''),
-    '5. le grant admin (porte du robot piscine, autorisations) suit aussi, dans l\'enveloppe, 12 h maximum', c.slice(0, 120));
-  const r2 = await entrer('beatbot.kd-mc.com', 'to=%2F&t=' + encodeURIComponent(signe('kdmc_admin', 1)) + '&g=' + encodeURIComponent(grant));
-  const c2 = cookies(r2).join('|');
-  ok(c2.includes('kdmc_sso=') && !c2.includes('kdmc_admin='), '5b. le grant EN CLAIR dans l\'adresse (g=) n\'est plus lu : session posée, admin non (journaux, historique)', c2.slice(0, 120)); }
+    '5. le grant admin (porte du robot piscine, autorisations) suit aussi, 12 h maximum', c.slice(0, 120)); }
 { const r = await entrer('beatbot.kd-mc.com', 'to=%2F&t=' + encodeURIComponent(tok) + '&g=' + encodeURIComponent(signe('marie-curie', 1)));
   ok(!cookies(r).join('|').includes('kdmc_admin='), '6. un faux grant (signé pour un autre uid) n\'est PAS posé'); }
 { kv.set('acc:revoque', JSON.stringify({ uid: 'revoque', revoked_at: Date.now() + 1000 }));

@@ -51,7 +51,7 @@ page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_TUNNEL|ERR_NAME|ERR_CONNECTION|ERR_PROXY/.test(m.text())) errs.push('CONSOLE: ' + m.text()); });
 await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'load' });
 await page.waitForTimeout(400);
-await page.fill('#gateName', 'Test Montage'); await page.fill('#gateCode', '123456');
+await page.fill('#gateName', 'Test Montage'); await page.fill('#gateCode', '1234');
 await page.click('#gateGo'); await page.waitForTimeout(300);
 
 /* ---------- 1 & 2) écouter : où ça parle, à n'importe quel volume ---------- */

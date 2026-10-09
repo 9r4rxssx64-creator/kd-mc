@@ -21,11 +21,10 @@ name: ClayScore — Vérifier les prix sur les vraies pages
 
 on:
   # Déclencheur PUSH volontairement très étroit : uniquement quand l'outil ou
-  # la table des prix change.
-  # 8.10 (revue indépendante) : il n'avait AUCUN filtre de branche — chaque push de chaque
-  # branche touchant ces fichiers le lançait sur le forfait du coffre. Désormais : main, et à la main.
+  # la table des prix change. C'est ce qui permet de lancer la vérification
+  # depuis une branche, sans attendre que le workflow soit sur `main` (l'API
+  # `workflow_dispatch` ne voit que les workflows de la branche par défaut).
   push:
-    branches: [main]
     paths:
       - "clayscore/tools/verif_prix.py"
       - "clayscore/clayscore/site.py"

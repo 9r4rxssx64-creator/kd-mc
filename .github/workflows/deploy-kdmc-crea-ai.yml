@@ -157,9 +157,7 @@ jobs:
           echo "HEALTH_BASE=$ok" >> "$GITHUB_ENV"
 
       - name: Auto-test IA approfondi (appelle réellement les modèles gratuits)
-        if: ${{ inputs.selftest == true && secrets.KDMC_CI_PASS != '' }}   # 8.10 : crea-ai exige un compte du domaine → pass de session en secret, sinon l'essai est sauté
-        env:
-          KDMC_CI_PASS: ${{ secrets.KDMC_CI_PASS }}
+        if: ${{ inputs.selftest == true }}
         run: |
           set +e
           BASE="${HEALTH_BASE:-https://crea-ai.kd-mc.com}"
@@ -198,7 +196,7 @@ jobs:
           echo "image de test : ${#PNG} caractères"
           for EP in cutout cartoon; do
             echo "----- /$EP -----"
-            curl -sS -m 150 -X POST "$BASE/$EP" -H 'content-type: application/json' -H "authorization: Bearer $KDMC_CI_PASS" \
+            curl -sS -m 150 -X POST "$BASE/$EP" -H 'content-type: application/json' \
               -d "{\"image\":\"$PNG\"}" -o /tmp/out.bin -D /tmp/out.hdr \
               -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"
             grep -i "^x-crea-provider" /tmp/out.hdr 2>/dev/null || true
@@ -208,7 +206,7 @@ jobs:
             esac
           done
           echo "----- /bg (texte → image) -----"
-          curl -sS -m 150 -X POST "$BASE/bg" -H 'content-type: application/json' -H "authorization: Bearer $KDMC_CI_PASS" \
+          curl -sS -m 150 -X POST "$BASE/bg" -H 'content-type: application/json' \
             -d '{"prompt":"a calm blue sky with soft clouds","ratio":"1:1"}' -o /tmp/bg.bin -D /tmp/bg.hdr \
             -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"
           grep -i "^x-crea-provider" /tmp/bg.hdr 2>/dev/null || true
@@ -219,7 +217,7 @@ jobs:
           # Kevin 2026-08-12 : « les figurines… ce n'est pas moi ». Ce test dit
           # si /magic ÉDITE vraiment la photo envoyée, ou s'il en invente une.
           echo "----- /magic (figurine — DOIT partir de la photo envoyée) -----"
-          curl -sS -m 200 -X POST "$BASE/magic" -H 'content-type: application/json' -H "authorization: Bearer $KDMC_CI_PASS" \
+          curl -sS -m 200 -X POST "$BASE/magic" -H 'content-type: application/json' \
             -d "{\"image\":\"$PNG\",\"preset\":\"figurine\",\"keep_face\":true}" \
             -o /tmp/mg.bin -D /tmp/mg.hdr \
             -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"
@@ -233,7 +231,7 @@ jobs:
             head -c 400 /tmp/mg.bin | tr -d '\0'; echo
           fi
           echo "----- /frames (photo → poses de danse, GRATUIT) -----"
-          curl -sS -m 220 -X POST "$BASE/frames" -H 'content-type: application/json' -H "authorization: Bearer $KDMC_CI_PASS" \
+          curl -sS -m 220 -X POST "$BASE/frames" -H 'content-type: application/json' \
             -d "{\"image\":\"$PNG\",\"n\":2}" -o /tmp/fr.json \
             -w "HTTP %{http_code} | size=%{size_download}\n"
           python3 - <<'PY'
@@ -256,7 +254,7 @@ jobs:
           set +e
           BASE="${HEALTH_BASE:-https://crea-ai.kd-mc.com}"
           echo "== SONDE : je n'atteins pas Cloudflare depuis l'agent, la CI teste pour moi =="
-          curl -sS -m 220 -X POST "$BASE/aidiag" -H 'content-type: application/json' -H "authorization: Bearer $KDMC_CI_PASS" -d '{}' -o /tmp/diag.json \
+          curl -sS -m 220 -X POST "$BASE/aidiag" -H 'content-type: application/json' -d '{}' -o /tmp/diag.json \
             -w "HTTP %{http_code} | size=%{size_download}\n"
           python3 - <<'PY'
           import json
@@ -282,7 +280,7 @@ jobs:
           echo "== STUDIO — les 2 briques du morceau =="
 
           echo "----- /compose (l'IA écrit la partition) -----"
-          curl -sS -m 90 -X POST "$BASE/compose" -H 'content-type: application/json' -H "authorization: Bearer $KDMC_CI_PASS" \
+          curl -sS -m 90 -X POST "$BASE/compose" -H 'content-type: application/json' \
             -d '{"style":"pop","mood":"une soiree entre amis"}' -o /tmp/sc.json \
             -w "HTTP %{http_code} | size=%{size_download}\n"
           python3 - <<'PY'
@@ -300,7 +298,7 @@ jobs:
           PY
 
           echo "----- /voice (Workers AI chante — LE SECOURS GRATUIT) -----"
-          curl -sS -m 120 -X POST "$BASE/voice" -H 'content-type: application/json' -H "authorization: Bearer $KDMC_CI_PASS" \
+          curl -sS -m 120 -X POST "$BASE/voice" -H 'content-type: application/json' \
             -d '{"text":"une soiree entre amis, on chante tous ensemble","lang":"fr"}' \
             -o /tmp/v.bin -D /tmp/v.hdr \
             -w "HTTP %{http_code} | type=%{content_type} | size=%{size_download}\n"

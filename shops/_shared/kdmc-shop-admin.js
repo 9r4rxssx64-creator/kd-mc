@@ -9,13 +9,9 @@
  * Pilote les globals de la boutique : window.P (catalogue), window.dc (rendu),
  * window.toast, window.STORE_ID/STORE_NAME, window.CATS (optionnel). Aucune autre modif.
  *
- * - Auth : UNIQUEMENT le domaine (audit 2026-10-08). Avant : le sel + l'empreinte PBKDF2 du code
- *   admin étaient commités ici (dépôt PUBLIC → un calcul hors ligne retrouve un code à 6 chiffres),
- *   et un drapeau localStorage « kdmc_admin_<boutique>=1 » suffisait à devenir admin. Maintenant :
- *   kd-mc.com/__sso/whoami (session vérifiée, admin ou rôle « shops ») ou /__admin/grant (laissez-
- *   passer admin HttpOnly posé par le domaine). Aucune vérification locale, rien de mémorisé.
+ * - Auth : MÊME code admin que Chez Lolo (PBKDF2 200k) → identifiant uniforme.
  * - Thème : lit la variable CSS --p de la boutique → boutons à sa couleur.
- * - Isolation (règle Kevin) : produits stockés par boutique (clé STORE_ID).
+ * - Isolation (règle Kevin) : confiance + produits stockés par boutique (clé STORE_ID).
  * - Ouverture admin : ?admin=1 dans l'URL, ou #admin, ou window.kdmcAdminOpen().
  */
 (function () {
@@ -24,27 +20,31 @@
 
   var SID = (window.STORE_ID || 'shop');
   var SNAME = (window.STORE_NAME || 'Boutique');
+  var SALT = '0cc66855c92d79874f7e9eb95bea3294';
+  var HASH = '41f5f808dbc0f3d2ba1de7dac11cc9903f61ecf9e26d646d536da181030449e2';
+  var TRUST = 'kdmc_admin_' + SID;       /* par boutique = isolé */
   var PRODS = 'kdmc_prod_' + SID;        /* produits ajoutés (locaux) */
-  /* Admin = verdict du DOMAINE, gardé en mémoire de la page seulement (jamais en localStorage :
-     un drapeau local se pose en une ligne dans la console et ouvrait l'admin). */
-  var _admin = false;
-  /* Ménage des anciennes marques locales (drapeau de confiance + compteur d'essais). */
-  try { localStorage.removeItem('kdmc_admin_' + SID); localStorage.removeItem('kdmc_admin_lock_' + SID); } catch (_) {}
+  var LOCK = 'kdmc_admin_lock_' + SID;
 
   function T(msg, kind) { try { if (typeof window.toast === 'function') return window.toast(msg, kind); } catch (_) {} alert(msg); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  function isAdmin() { return _admin === true; }
+  function isAdmin() { return localStorage.getItem(TRUST) === '1'; }
   function theme() {
     try { var c = getComputedStyle(document.documentElement).getPropertyValue('--p').trim(); return c || '#c9a227'; } catch (_) { return '#c9a227'; }
   }
   function rerender() { try { if (typeof window.dc === 'function') window.dc(); } catch (_) {} }
 
-  /* ── Auth : on demande au DOMAINE, jamais de code vérifié ici ─────────────────── */
-  /* Portail du domaine : prouve l'identité (Face ID ou prénom + nom + code) puis revient ici. */
-  function allerAuPortail() {
-    try { location.href = 'https://kd-mc.com/?return=' + encodeURIComponent(location.href.replace(/#.*$/, '') + '#admin'); } catch (_) {}
+  /* ── Auth (même mécanisme/identifiant que Chez Lolo) ───────────────────── */
+  async function hashPw(pw, salt) {
+    var enc = new TextEncoder();
+    var k = await crypto.subtle.importKey('raw', enc.encode(pw), { name: 'PBKDF2' }, false, ['deriveBits']);
+    var b = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt || SALT), iterations: 200000, hash: 'SHA-256' }, k, 256);
+    return Array.prototype.map.call(new Uint8Array(b), function (x) { return x.toString(16).padStart(2, '0'); }).join('');
   }
-  /* ── UI : écran d'accès (plus aucun champ de code : c'est le portail qui le demande) ───── */
+  function lockState() { try { return JSON.parse(localStorage.getItem(LOCK) || '{}'); } catch (_) { return {}; } }
+  function lockMsg() { var s = lockState(), now = Date.now(); if (s.until && now < s.until) { var sec = Math.ceil((s.until - now) / 1000); return 'Trop d\'essais — réessaie dans ' + (sec >= 60 ? Math.ceil(sec / 60) + ' min' : sec + ' s'); } return ''; }
+
+  /* ── UI : modal de déverrouillage ──────────────────────────────────────── */
   function openUnlock() {
     if (isAdmin()) { installBar(); return; }
     if (document.getElementById('kdmcAdminModal')) return;
@@ -54,20 +54,38 @@
     d.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)';
     d.innerHTML = '<div style="background:#15171c;border:1px solid ' + p + '55;border-radius:16px;padding:22px;max-width:340px;width:100%;color:#f1f2f3;font-family:-apple-system,system-ui,sans-serif">'
       + '<div style="font-weight:800;font-size:17px;margin-bottom:4px">🔑 Accès admin — ' + esc(SNAME) + '</div>'
-      + '<div id="kdmcAdminMsg" style="font-size:12.5px;opacity:.7;margin-bottom:14px">On regarde si le domaine te reconnaît…</div>'
+      + '<div style="font-size:12.5px;opacity:.7;margin-bottom:14px">Code admin (le même que tes autres boutiques).</div>'
+      + '<input id="kdmcAdminPw" type="password" autocomplete="current-password" placeholder="Code admin" style="width:100%;min-height:46px;padding:12px;border-radius:11px;border:1px solid #2a2d31;background:#0a120c;color:#fff;font-size:16px;margin-bottom:12px">'
       + '<div style="display:flex;gap:8px">'
-      + '<button id="kdmcAdminGo" style="flex:1;min-height:46px;padding:12px;background:' + p + ';color:#11160c;border:none;border-radius:11px;font-weight:800;font-size:15px;cursor:pointer">Me connecter sur kd-mc.com</button>'
+      + '<button id="kdmcAdminGo" style="flex:1;min-height:46px;padding:12px;background:' + p + ';color:#11160c;border:none;border-radius:11px;font-weight:800;font-size:15px;cursor:pointer">Déverrouiller</button>'
       + '<button id="kdmcAdminX" style="min-height:46px;padding:12px 16px;background:transparent;color:#9aa0a6;border:1px solid #2a2d31;border-radius:11px;font-weight:600;cursor:pointer">Fermer</button>'
       + '</div></div>';
     document.body.appendChild(d);
     d.addEventListener('click', function (e) { if (e.target === d) d.remove(); });
     document.getElementById('kdmcAdminX').onclick = function () { d.remove(); };
-    document.getElementById('kdmcAdminGo').onclick = allerAuPortail;
-    ssoAutoAdmin().then(function (ok) {
-      var m = document.getElementById('kdmcAdminMsg');
-      if (ok) { d.remove(); T('🔓 Accès admin activé (reconnu par le domaine)'); return; }
-      if (m) m.textContent = 'Le domaine ne te reconnaît pas comme admin ici. Connecte-toi sur kd-mc.com (Face ID ou prénom + nom + code), tu reviendras ici tout seul.';
-    });
+    var go = document.getElementById('kdmcAdminGo');
+    var inp = document.getElementById('kdmcAdminPw');
+    go.onclick = tryUnlock;
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') tryUnlock(); });
+    setTimeout(function () { try { inp.focus(); } catch (_) {} }, 60);
+  }
+  async function tryUnlock() {
+    var lm = lockMsg(); if (lm) { T(lm, 'error'); return; }
+    var inp = document.getElementById('kdmcAdminPw'); if (!inp) return;
+    var pw = inp.value || '';
+    var ok = false;
+    try { ok = (await hashPw(pw, SALT)) === HASH; } catch (_) { ok = false; }
+    if (ok) {
+      localStorage.setItem(TRUST, '1'); localStorage.removeItem(LOCK);
+      var m = document.getElementById('kdmcAdminModal'); if (m) m.remove();
+      T('🔓 Accès admin activé sur cet appareil');
+      installBar(); rerender();
+    } else {
+      var s = lockState(), n = (s.n || 0) + 1;
+      var dl = [0, 0, 0, 0, 30000, 120000, 600000, 3600000, 86400000];
+      localStorage.setItem(LOCK, JSON.stringify({ n: n, until: Date.now() + (dl[Math.min(n, dl.length - 1)] || 86400000) }));
+      T(n >= 5 ? ('Code incorrect — ' + lockMsg()) : 'Code incorrect', 'error');
+    }
   }
 
   /* ── Barre admin thémée ────────────────────────────────────────────────── */
@@ -93,12 +111,7 @@
     on('kdmcSto', storageInfo);
     on('kdmcOut', logout);
   }
-  function logout() {
-    _admin = false; var b = document.getElementById('kdmcAdminBar'); if (b) b.remove();
-    /* Le laissez-passer admin est un cookie HttpOnly du domaine : seul lui peut l'effacer. */
-    try { fetch('/__admin/logout', { method: 'POST', credentials: 'include' }).catch(function () {}); } catch (_) {}
-    T('Déconnecté de l\'admin'); rerender();
-  }
+  function logout() { localStorage.removeItem(TRUST); var b = document.getElementById('kdmcAdminBar'); if (b) b.remove(); T('Déconnecté de l\'admin'); rerender(); }
 
   /* ── Produits (locaux, fusionnés dans window.P) ────────────────────────── */
   function loadProds() { try { return JSON.parse(localStorage.getItem(PRODS) || '[]'); } catch (_) { return []; } }
@@ -182,15 +195,11 @@
   }
 
   /* ── Admin UNIVERSEL du domaine (Kevin reconnu partout, sans code par boutique) ──
-     On demande à kd-mc.com « qui es-tu ? » : admin vérifié (Face ID) ou rôle « shops »
-     (Laurence) → l'admin s'ouvre. Sinon on tente /__admin/grant : le laissez-passer admin
-     (cookie HttpOnly posé après le code sur le portail) vaut preuve. Jamais le nom seul
-     (leçon #99), jamais une liste de prénoms dans le code, jamais de code vérifié ici.
-     Domaine injoignable → pas admin (rien de cassé pour les clients : la boutique s'affiche). */
-  function autorise(j) {
-    if (!j || !j.ok || j.verified !== true) return false;
-    return j.admin === true || (Array.isArray(j.roles) && j.roles.indexOf('shops') >= 0);
-  }
+     On demande à kd-mc.com « qui es-tu ? » : si c'est Kevin (ou Laurence) reconnu
+     par le domaine avec Face ID (verified), on ouvre l'admin tout seul — comme le
+     tableau de bord des boutiques. Le code PIN local reste un SECOURS si le domaine
+     est injoignable. Sécurité : admin EXIGE verified (Face ID), jamais le nom seul.
+     Si le SSO ne répond pas (autre origine, hors ligne) → on ne casse rien (PIN). */
   async function ssoAutoAdmin() {
     if (isAdmin()) return true;
     try {
@@ -201,24 +210,21 @@
       var hdr = {}; if (tok) hdr.Authorization = 'Bearer ' + tok;
       var rs = await fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store', headers: hdr });
       var j = rs && rs.ok ? await rs.json() : null;
-      var ok = autorise(j);
-      if (!ok) {
-        /* Laissez-passer admin déjà posé par une autre app du domaine (cookie .kd-mc.com) ? */
-        var rg = await fetch('/__admin/grant', { credentials: 'include', cache: 'no-store', headers: hdr });
-        var g = rg && rg.ok ? await rg.json() : null;
-        ok = !!(g && g.ok);
-      }
-      if (ok) { _admin = true; installBar(); rerender(); return true; }
-    } catch (_) { /* domaine injoignable → pas admin, rien de cassé */ }
+      var ok = j && j.ok && j.verified === true &&
+        (j.admin === true || /laurence|lolo|saint.?polit|kevin|desarzens/i.test(j.name || ''));
+      if (ok) { localStorage.setItem(TRUST, '1'); localStorage.removeItem(LOCK); installBar(); rerender(); return true; }
+    } catch (_) { /* SSO injoignable → on retombe sur le PIN, rien de cassé */ }
     return false;
   }
   /* ── Boot ──────────────────────────────────────────────────────────────── */
   window.kdmcAdminOpen = openUnlock;
   function boot() {
     mergeIntoCatalog(); if (loadProds().length) rerender();
-    var veut = false;
-    try { var q = location.search || '', h = location.hash || ''; veut = /[?&]admin=1\b/.test(q) || h === '#admin'; } catch (_) {}
-    ssoAutoAdmin().then(function (ok) { if (!ok && veut) openUnlock(); });
+    if (isAdmin()) installBar(); else ssoAutoAdmin();
+    try {
+      var q = location.search || '', h = location.hash || '';
+      if (/[?&]admin=1\b/.test(q) || h === '#admin') openUnlock();
+    } catch (_) {}
     window.addEventListener('hashchange', function () { if (location.hash === '#admin') openUnlock(); });
   }
   if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 300);

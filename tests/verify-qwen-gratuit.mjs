@@ -57,13 +57,11 @@ function fakeAI(opts = {}) {
   };
 }
 /* toutes les IA à clé sont muettes : on isole le comportement Cloudflare */
-globalThis.fetch = async (u) => String(u).includes('/__sso/whoami')
-  ? new Response(JSON.stringify({ ok: true, uid: 'test-compte', name: 'Marie Dupont', verified: true }), { status: 200 })  /* compte vérifié (porte du 8.10) */
-  : new Response(JSON.stringify({ error: 'rate limit' }), { status: 429 });
+globalThis.fetch = async () => new Response(JSON.stringify({ error: 'rate limit' }), { status: 429 });
 const post = (path, body, env) => worker.fetch(
   new Request('https://x' + path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com', authorization: 'Bearer pass-test' },
+    headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' },
     body: JSON.stringify(body),
   }), env);
 
@@ -72,8 +70,7 @@ let ai = fakeAI();
 let r = await post('/lyrics', { theme: 'un soir d\'ete', style: 'pop', moteur: 'qwen' }, { AI: ai });
 let j = await r.json();
 chk(r.status === 200 && /Qwen/.test(j.lyrics || ''), `3. Qwen a écrit les paroles (HTTP ${r.status})`);
-/* 8.10 : depuis la CONFÉRENCE des IA gratuites (Kevin 2.10), le worker peut répondre `conference:qwen/<modèle>` (Qwen a servi, les autres ont relu) — même vérité, autre étiquette ; rouge sur main depuis, réparé ici */
-chk(/^(cloudflare:@cf\/qwen\/|conference:qwen\/)/.test(j.provider || ''),
+chk(/^cloudflare:@cf\/qwen\//.test(j.provider || ''),
   `3. la réponse nomme le modèle EXACT qui a servi (provider=${j.provider})`);
 chk(/qwen/.test(ai.vus[0] || ''),
   `3. Qwen est bien essayé EN PREMIER quand on le demande (1er appel : ${ai.vus[0]})`);

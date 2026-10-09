@@ -185,7 +185,7 @@
     ".github/workflows/auto-backup.yml",
     ".github/workflows/firebase-backup.yml",
     ".github/workflows/depot-public-bascule.yml",
-    ".github/workflows/coffre-synchronise-public.yml",
+    ".github/workflows/coffre-previent-public.yml",
     ".github/workflows/coffre-chaine-privee.yml",
     ".github/workflows/coffre-fiches-privees.yml",
     ".github/workflows/coffre-secrets-cmc.yml",

@@ -52,10 +52,7 @@ async function run(env) {
       const rr = String(live.rules.shops_admin_v1.orders['.read'] || '');
       return { ok: !/role/.test(rr), status: /role/.test(rr) ? 401 : 200, json: async () => ({}) };
     }
-    /* 8.10.2026 : le déployeur sonde aussi /cmcteams_prive et /cmcteams_secret (ajoutés le 27.09) —
-       sans ces deux lignes, ce test échouait AVANT même d'atteindre ce qu'il mesure (vu sur main). */
-    if (anon && (u.includes('/apex.json') || u.includes('/coffre_vault.json') || u.includes('/cmcteams.json')
-        || u.includes('/cmcteams_prive.json') || u.includes('/cmcteams_secret.json'))) {
+    if (anon && (u.includes('/apex.json') || u.includes('/coffre_vault.json') || u.includes('/cmcteams.json'))) {
       return { ok: false, status: 401, json: async () => ({}) }; // hardened
     }
     return { ok: true, status: 200, json: async () => ({}), text: async () => '' };
@@ -89,21 +86,18 @@ async function run(env) {
     const rd = r.put && r.put.rules.shops_admin_v1.orders['.read'];
     ok(rd === true, 'off/ orders/.read = true (lecture publique, rollback)');
   }
-  // 8.10.2026 (audit) : le FICHIER ferme désormais orders/.read (role:admin). « keep » ne doit plus
-  // rouvrir une lecture que le fichier ferme : seul ORDERS_READ=off explicite rouvre (testé ci-dessus).
-  // ORDERS_READ=keep, live public → le fichier (fermé) gagne
+  // ORDERS_READ=keep, live public → reste public (préserve)
   {
     const r = await run({ ORDERS_READ: 'keep' });
     const rd = r.put && r.put.rules.shops_admin_v1.orders['.read'];
-    ok(rd === ORDERS_ADMIN, 'keep/ live public mais fichier fermé → publié FERMÉ (le fichier est la source de vérité)');
+    ok(rd === true, 'keep/ live public → reste public (aucun changement accidentel)');
   }
-  // défaut (ORDERS_READ absent) = keep → même chose : fermé
+  // défaut (ORDERS_READ absent) = keep → live public → reste public
   {
     const r = await run({});
     const rd = r.put && r.put.rules.shops_admin_v1.orders['.read'];
-    ok(rd === ORDERS_ADMIN, 'défaut (absent) = keep → publié FERMÉ (plus de réouverture silencieuse au merge)');
+    ok(rd === true, 'défaut (absent) = keep → reste public (0 régression au merge)');
   }
-  ok(/auth\.token\.role === 'admin'/.test(String(FILE.rules.shops_admin_v1.orders['.read'])), 'le fichier lui-même ferme orders/.read (role:admin)');
   // Garde-fou : si la source _phase_shops_rolelock.orders_read contenait role dans .write → abort
   ok(/auth\.token\.role === 'admin'/.test(ORDERS_ADMIN), 'expression armée = role:admin (fichier)');
 

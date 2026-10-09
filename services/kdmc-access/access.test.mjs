@@ -25,20 +25,10 @@ const FB_NESTED = {
   '2020-01-01': { old: { app: 'cmcteams', uid: 'x', name: 'Vieux', event: 'connexion', ts: 1577836800000 } }, // > rétention → à purger
 };
 
-/* Sessions du domaine simulées (kd-mc.com/__sso/whoami) : un pass → qui c'est. */
-const SESSIONS = {
-  'pass-kevin': { ok: true, uid: 'kdmc_admin', name: 'Kevin Desarzens', admin: true, verified: true },
-  'pass-marie': { ok: true, uid: 'marie-dupont', name: 'Marie Dupont', admin: false, verified: true },
-};
 function mockFetch(capture) {
   capture.patched = null; capture.posted = null;
   return async (url, opts) => {
     const u = String(url); const m = (opts && opts.method) || 'GET';
-    if (u.includes('/__sso/whoami')) {
-      const h = (opts && opts.headers && (opts.headers.authorization || opts.headers.Authorization)) || '';
-      const s = SESSIONS[String(h).replace(/^Bearer\s+/i, '')];
-      return new Response(JSON.stringify(s || { ok: false }), { status: 200 });
-    }
     if (u.startsWith('https://oauth2.googleapis.com/token')) return new Response(JSON.stringify({ access_token: 'AT', expires_in: 3600 }), { status: 200 });
     // écriture = POST dans un bucket-jour /kdmc_access/events/<jour>.json
     if (m === 'POST' && /\/kdmc_access\/events\/\d{4}-\d{2}-\d{2}\.json/.test(u)) { capture.posted = JSON.parse(opts.body); return new Response('{"name":"id"}', { status: 200 }); }
@@ -69,76 +59,29 @@ test('CORS : origine inconnue → pas reflétée (défaut kd-mc.com)', async () 
   assert.equal(r.headers.get('access-control-allow-origin'), 'https://kd-mc.com');
 });
 
-/* Audit 2026-10-08 : /log exige un porteur de session du domaine ; l'uid et le nom viennent de la
-   session (le corps ne choisit plus qui il est), l'IP n'est plus gardée en clair. */
-test('POST /log avec session → 204 + évènement écrit, uid/nom IMPOSÉS par la session', async () => {
+test('POST /log → 204 + évènement écrit dans Firebase', async () => {
   const cap = {};
   const orig = globalThis.fetch; globalThis.fetch = mockFetch(cap);
   try {
-    const r = await worker.fetch(req('/log', { method: 'POST', headers: { origin: 'https://apex-ai.kd-mc.com', 'content-type': 'application/json', authorization: 'Bearer pass-kevin', 'cf-connecting-ip': '203.0.113.9' }, body: JSON.stringify({ app: 'apex', uid: 'usurpe', name: 'Quelqu\'un d\'autre', event: 'connexion', device: 'iPhone' }) }), { ...ENV, KDMC_IP_SEL: 'sel-de-test' });
+    const r = await worker.fetch(req('/log', { method: 'POST', headers: { origin: 'https://apex-ai.kd-mc.com', 'content-type': 'application/json' }, body: JSON.stringify({ app: 'apex', uid: 'U11804', name: 'Kevin', event: 'connexion', device: 'iPhone' }) }), ENV);
     assert.equal(r.status, 204);
     assert.ok(cap.posted, 'un POST Firebase a eu lieu');
     assert.equal(cap.posted.app, 'apex');
     assert.equal(cap.posted.event, 'connexion');
-    assert.equal(cap.posted.uid, 'kdmc_admin', 'uid = celui de la session, pas celui du corps');
-    assert.equal(cap.posted.name, 'Kevin Desarzens', 'nom = celui de la session');
-    assert.equal(cap.posted.ip, undefined, 'IP en clair : absente');
-    assert.match(cap.posted.ip_h || '', /^[0-9a-f]{16}$/, 'IP : empreinte salée tronquée');
     assert.ok(cap.posted.ts > 0, 'horodaté serveur');
     assert.ok(cap.patched && cap.patched['2020-01-01'] === null, 'purge auto : bucket-jour hors rétention supprimé');
     assert.ok(!('2026-08-04' in (cap.patched || {})), 'purge : bucket récent conservé');
   } finally { globalThis.fetch = orig; }
 });
 
-test('POST /log SANS session → 401 (le journal ne s\'écrit plus depuis n\'importe où)', async () => {
-  const cap = {};
-  const orig = globalThis.fetch; globalThis.fetch = mockFetch(cap);
-  try {
-    const r = await worker.fetch(req('/log', { method: 'POST', headers: { origin: 'https://apex-ai.kd-mc.com', 'content-type': 'application/json' }, body: JSON.stringify({ app: 'apex', uid: 'U11804', name: 'Kevin', event: 'connexion' }) }), ENV);
-    assert.equal(r.status, 401);
-    assert.equal(cap.posted, null, 'rien n\'est écrit');
-    const r2 = await worker.fetch(req('/log', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer pass-inconnu' }, body: '{}' }), ENV);
-    assert.equal(r2.status, 401, 'pass inconnu du domaine → refusé');
-  } finally { globalThis.fetch = orig; }
-});
-
-test('POST /log sans sel IP → aucune trace d\'adresse (ni claire ni hachée)', async () => {
-  const cap = {};
-  const orig = globalThis.fetch; globalThis.fetch = mockFetch(cap);
-  try {
-    const r = await worker.fetch(req('/log', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer pass-marie', 'cf-connecting-ip': '203.0.113.9' }, body: JSON.stringify({ app: 'lingua', event: 'progression' }) }), ENV);
-    assert.equal(r.status, 204);
-    assert.equal(cap.posted.ip, undefined); assert.equal(cap.posted.ip_h, undefined);
-    assert.equal(cap.posted.uid, 'marie-dupont');
-  } finally { globalThis.fetch = orig; }
-});
-
-test('POST /log fail-open si secrets FB absents → 204 (jamais bloquer l\'app), mais seulement avec session', async () => {
-  const orig = globalThis.fetch; globalThis.fetch = mockFetch({});
-  try {
-    const r = await worker.fetch(req('/log', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer pass-marie' }, body: JSON.stringify({ app: 'x', event: 'y' }) }), { APEX_ADMIN_PIN_SHA256: PIN_SHA });
-    assert.equal(r.status, 204);
-  } finally { globalThis.fetch = orig; }
+test('POST /log fail-open si secrets FB absents → 204 (jamais bloquer l\'app)', async () => {
+  const r = await worker.fetch(req('/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ app: 'x', event: 'y' }) }), { APEX_ADMIN_PIN_SHA256: PIN_SHA });
+  assert.equal(r.status, 204);
 });
 
 test('GET /history sans PIN → 401', async () => {
   const r = await worker.fetch(req('/history'), ENV);
   assert.equal(r.status, 401);
-});
-
-test('GET /history avec le PIN dans l\'ADRESSE (?pin=) → 401 (plus jamais accepté en URL)', async () => {
-  const r = await worker.fetch(req('/history?pin=' + PIN_SHA), ENV);
-  assert.equal(r.status, 401);
-});
-
-test('GET /history avec session admin vérifiée du domaine → 200 (sans code)', async () => {
-  const orig = globalThis.fetch; globalThis.fetch = mockFetch({});
-  try {
-    const r = await worker.fetch(req('/history', { headers: { authorization: 'Bearer pass-kevin' } }), ENV);
-    assert.equal(r.status, 200);
-    const r2 = await worker.fetch(req('/history', { headers: { authorization: 'Bearer pass-marie' } }), ENV);
-    assert.equal(r2.status, 401, 'une session vérifiée NON admin ne lit pas le journal');
-  } finally { globalThis.fetch = orig; }
 });
 
 test('GET /history mauvais PIN → 401', async () => {
@@ -173,9 +116,6 @@ test('GET / → sert la page admin HTML', async () => {
   const html = await r.text();
   assert.match(html, /Qui se connecte/);
   assert.match(html, /x-apex-pin/);
-  /* Audit 2026-10-08 : plus de « se souvenir » ni d'empreinte du code gardée sur l'appareil. */
-  assert.ok(!/localStorage\.setItem\(\s*['"]?kdmc_access_pinhash/.test(html) && !/setItem\(KEY/.test(html), 'la page ne mémorise plus l\'empreinte du code');
-  assert.ok(!/Se souvenir de cet appareil/.test(html), 'plus de case « se souvenir »');
 });
 
 /* « Qui se connecte ne fonctionne pas » (6.10) : tout chemin de PAGE montre la page, jamais l'erreur brute. */

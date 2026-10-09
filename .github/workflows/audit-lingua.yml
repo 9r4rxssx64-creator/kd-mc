@@ -78,12 +78,9 @@ jobs:
         # (toujours 0) et un audit qui dit « ÉCHEC » ressortirait VERT. Un contrôle
         # qui ment est pire que pas de contrôle.
         shell: bash -euo pipefail {0}
-        # 8.10 : l'adresse passe par env:, jamais dans le shell (garde test:workflows-shell)
-        env:
-          BASE: ${{ inputs.base || 'https://lingua.kd-mc.com' }}
         # `stdbuf -oL` : vers un TUYAU, Node met sa sortie en mémoire tampon et
         # n'écrit qu'à la fin — dix minutes de silence qu'on prend pour un blocage.
-        run: stdbuf -oL -eL node tools/smoke/audit-lingua.mjs "$BASE" 2>&1 | tee /tmp/lingua.log
+        run: stdbuf -oL -eL node tools/smoke/audit-lingua.mjs "${{ inputs.base || 'https://lingua.kd-mc.com' }}" 2>&1 | tee /tmp/lingua.log
 
       - name: Rapport lisible depuis l'agent (annotations)
         if: always()

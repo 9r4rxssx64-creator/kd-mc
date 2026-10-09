@@ -33,18 +33,13 @@ jobs:
       - name: Pick story and split
         id: pick
         working-directory: tools/social
-        # 8.10.2026 : les entrées arrivent par env: et process.env — écrites dans le code
-        # JavaScript, un `'` dans story_id suffisait à en faire du code (garde test:workflows-shell).
-        env:
-          STORY_ID_DEMANDE: ${{ github.event.inputs.story_id }}
-          NICHE_DEMANDEE: ${{ github.event.inputs.niche }}
         run: |
           node --input-type=module -e "
           import fs from 'fs';
           const lib = JSON.parse(fs.readFileSync('config/content-library.json','utf8'));
           const cats = Object.keys(lib).filter(k=>!k.startsWith('_'));
-          const inputId = (process.env.STORY_ID_DEMANDE || '').trim();
-          const niche = (process.env.NICHE_DEMANDEE || '').trim();
+          const inputId = '${{ github.event.inputs.story_id }}'.trim();
+          const niche = '${{ github.event.inputs.niche }}'.trim();
           let story = null;
           if (inputId) {
             for (const cat of cats) { const f = lib[cat].find(s=>s.id===inputId); if(f){story=f;break;} }

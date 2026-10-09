@@ -121,16 +121,8 @@ export const ENV = (overrides = {}) => ({
   ...overrides,
 });
 
-/** Génère un JWT valide signé avec SECRET.
- *  Revue 08.10.2026 (A4) : exp est OBLIGATOIRE côté worker et DO. Un test qui ne
- *  précise pas exp reçoit 1 h (comme une vraie session) ; pour tester l'ABSENCE
- *  d'exp, passer `exp: null` explicitement. */
+/** Génère un JWT valide signé avec SECRET */
 export async function makeJWT(payload, secret = SECRET) {
-  if (payload && typeof payload === 'object' && payload.exp === undefined) {
-    payload = { ...payload, exp: Math.floor(Date.now() / 1000) + 3600 };
-  } else if (payload && typeof payload === 'object' && payload.exp === null) {
-    payload = { ...payload }; delete payload.exp;
-  }
   const enc = new TextEncoder();
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');

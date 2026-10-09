@@ -31,8 +31,6 @@ function fakeAI() {                       /* Cloudflare Workers AI : texte→ima
 function mockFetch({ geminiOk = false, replicateOk = false } = {}) {
   global.fetch = async (u, o) => {
     const url = String(u);
-    /* Audit 2026-10-08 : le worker demande d'abord au domaine qui appelle (compte vérifié). */
-    if (url.includes('/__sso/whoami')) return new Response(JSON.stringify({ ok: true, uid: 'test-compte', name: 'Marie Dupont', verified: true }), { status: 200 });
     if (/generativelanguage\.googleapis\.com/.test(url)) {
       if (!geminiOk) return new Response(JSON.stringify({ error: { message: 'quota exceeded' } }), { status: 429 });
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [
@@ -51,7 +49,7 @@ function mockFetch({ geminiOk = false, replicateOk = false } = {}) {
   };
 }
 const call = (env, body) => worker.fetch(
-  new Request('https://w/magic', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer pass-test' }, body: JSON.stringify(body) }),
+  new Request('https://w/magic', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
   env);
 
 /* A) rien pour éditer + keep_face → REFUS, pas d'image inventée */
@@ -65,18 +63,12 @@ chk(j && /gemini/.test(j.detail || ''), 'A. le détail dit POURQUOI (gemini…)'
 
 /* B) un moteur d'ÉDITION disponible → il prend le relais, on garde le visage */
 mockFetch({ replicateOk: true });
-/* Le secours Replicate est payant : il ne s'allume qu'avec BEE_SECOURS_PAYANT=1 (règle « tout gratuit »). */
-r = await call({ GEMINI_API_KEY: 'k', AI: fakeAI(), REPLICATE_API_TOKEN: 't', BEE_SECOURS_PAYANT: '1' },
+r = await call({ GEMINI_API_KEY: 'k', AI: fakeAI(), REPLICATE_API_TOKEN: 't' },
   { image: PIX, preset: 'figurine', keep_face: true });
 chk(r.status === 200, 'B. moteur d\'édition de secours → 200, reçu ' + r.status);
 chk(/replicate-edit/.test(r.headers.get('x-crea-provider') || ''),
   'B. c\'est bien un moteur d\'ÉDITION qui a servi (' + r.headers.get('x-crea-provider') + ')');
 chk(r.headers.get('x-crea-fallback') !== 'recreated', 'B. rien n\'a été inventé');
-/* B-bis) interrupteur ÉTEINT : le jeton Replicate est ignoré → refus honnête, pas de dépense. */
-mockFetch({ replicateOk: true });
-r = await call({ GEMINI_API_KEY: 'k', AI: fakeAI(), REPLICATE_API_TOKEN: 't' },
-  { image: PIX, preset: 'figurine', keep_face: true });
-chk(r.status === 502, 'B-bis. sans BEE_SECOURS_PAYANT=1, le payant n\'est PAS appelé (502 honnête), reçu ' + r.status);
 
 /* C) Kevin accepte explicitement une image inventée */
 mockFetch({});

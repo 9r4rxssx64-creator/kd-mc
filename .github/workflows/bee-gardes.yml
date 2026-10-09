@@ -114,16 +114,13 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
 
       - name: "Javis — les copies, les CSP, les fichiers cités (statique)"
-        # 8.10 : l'export retire un garde dès qu'il lit un fichier privé ou cite un vrai nom (vécu : test:javis-bee,
-        # test:laissez-passer → « missing script », robot rouge à chaque push du 2.10 au 8.10). Une garde rangée au
-        # coffre n'est pas une garde cassée : tools/ci/garde-publique.sh le dit, elle tourne dans coffre-chaine-privee.
-        run: bash tools/ci/garde-publique.sh test:javis-bee
+        run: npm run -s test:javis-bee
 
       - name: "Javis — Bee bouge, parle et la bouche suit le SON (vrai navigateur)"
-        run: bash tools/ci/garde-publique.sh test:javis-bee-reelle
+        run: npm run -s test:javis-bee-reelle
 
       - name: "Lingua — Bee est vivante : clignement, saut, regard (vrai navigateur)"
-        run: bash tools/ci/garde-publique.sh test:lingua-bee
+        run: npm run -s test:lingua-bee
 
       # Audit Bee 27.09 : ces gardes existaient mais ne tournaient sur AUCUNE pull request.
       - name: "Bee — le cerveau du domaine /__javis/ai : Kevin seul, caractère fixé par le serveur"
@@ -142,22 +139,22 @@ jobs:
 
       - name: "Bee — depuis l'iPhone : Face ID sur place, app neuve, lien piégé (vrai routeur)"
         if: steps.budget.outputs.ok == 'true'
-        run: bash tools/ci/garde-publique.sh test:bee-iphone
+        run: npm run -s test:bee-iphone
 
       # Audit complet 30.09 : 29 sabotages sur 66 passaient inaperçus. Ces deux fichiers les attrapent.
       - name: "Bee — ses comportements (XSS, une voix, une question à la fois, phrases comprises, heure, paysage…)"
-        run: bash tools/ci/garde-publique.sh test:bee-comportements
+        run: npm run -s test:bee-comportements
 
       - name: "Bee — ses portes, son service worker et sa CSP (liste blanche exacte)"
         if: steps.budget.outputs.ok == 'true'
-        run: bash tools/ci/garde-publique.sh test:bee-portes
+        run: npm run -s test:bee-portes
 
       - name: "Laissez-passer du domaine (#kdmc_sso) : qui le reçoit, et comment"
-        run: bash tools/ci/garde-publique.sh test:laissez-passer
+        run: npm run -s test:laissez-passer
 
       - name: "Service workers : aucune app ne garde « qui es-tu ? » en mémoire"
         if: steps.budget.outputs.ok == 'true'
-        run: bash tools/ci/garde-publique.sh test:sw-identite
+        run: npm run -s test:sw-identite
 
       # Audit complet 30.09 : les plafonds de la voix payante, le routage IA et le relais apis ne
       # tournaient sur AUCUNE pull request. Hors ligne, fetch simulé, < 30 s à eux trois.

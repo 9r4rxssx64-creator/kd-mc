@@ -18,9 +18,9 @@ function makeDB(state) {
             const u = state.users.find(x => x.id === this._a[0]);
             return u ? { merged_into: u.merged_into || null } : null;
           }
-          // Revue 08.10.2026 (D5) : résolution sur le numéro E.164 COMPLET (plus de LIKE sur 8 chiffres).
-          if (sql.includes("status != 'deleted' AND phone = ?")) {
-            const u = state.users.find(x => x.status !== 'deleted' && x.phone === this._a[0]);
+          if (sql.includes("status != 'deleted' AND phone LIKE")) {
+            const tail = String(this._a[0] || '').replace(/%/g, '');
+            const u = state.users.find(x => x.status !== 'deleted' && String(x.phone || '').replace(/\D/g, '').slice(-8) === tail.replace(/\D/g, '').slice(-8));
             return u ? { id: u.id } : null;
           }
           return null;

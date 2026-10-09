@@ -136,10 +136,12 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
   <div class="auth-box">
     <div class="auth-logo">🔒</div>
     <h1 class="serif">KDMC <em>Dashboard</em></h1>
-    <p class="auth-sub" id="authSub">On regarde si le domaine te reconnaît…</p>
-    <button class="auth-btn" id="loginBtn">Me connecter sur kd-mc.com</button>
+    <p class="auth-sub" id="authSub">Accès administrateur</p>
+    <input type="password" inputmode="numeric" autocomplete="off" maxlength="12" class="auth-pin" id="pin" placeholder="Ton code" autofocus>
+    <input type="password" inputmode="numeric" autocomplete="off" maxlength="12" class="auth-pin" id="pin2" placeholder="Confirme ton code" style="display:none;margin-top:10px">
+    <button class="auth-btn" id="loginBtn">Se connecter</button>
     <div class="auth-err" id="authErr"></div>
-    <div class="auth-foot">Accès réservé : compte du domaine vérifié (Face ID ou prénom + nom + code), admin ou rôle boutiques. Aucun code n'est gardé ni vérifié sur cet appareil.</div>
+    <a href="#" class="auth-foot" id="forgotLink" style="text-decoration:underline">Code oublié ? Le redéfinir sur cet appareil</a>
   </div>
 </div>
 
@@ -158,14 +160,11 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 
 <script>
 /* ============================================================
-   KDMC Dashboard v2 — connecté Firebase, entrée par le DOMAINE, live SSE
+   KDMC Dashboard v2 — connecté Firebase, auth PIN, live SSE
    Isolation : path 'shops_admin_v1/*' strict.
-   Audit 2026-10-08 : plus de PIN local (PBKDF2 en localStorage = une porte qui se vérifie
-   sur l'appareil, contraire à la règle « une page ne vérifie jamais un code »), plus de
-   liste de prénoms dans le code. L'accès = kd-mc.com/__sso/whoami : session vérifiée ET
-   (admin === true OU roles contient 'shops'). Sinon → portail. Rien n'est mémorisé.
-   LECTURE des commandes = token admin (role:admin) via ?auth= (firebase-orders.js) ;
-   le verrou orders/.read est posé dans firebase-rules-apex.json.
+   LECTURE des commandes = token admin (role:admin) via ?auth=, fail-open à
+   la lecture anonyme (marche tant que orders/.read reste ouvert ; une fois le
+   verrou posé, un code admin unique par appareil réactive l'accès — 0 lockout).
    ============================================================ */
 
 var FB_URL="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app";
@@ -178,11 +177,14 @@ var SHOPS=[
   {id:"digital-vault",name:"Digital Vault",icon:"🔐",color:"#d4af37"},
   {id:"pawsome",name:"Pawsome",icon:"🐾",color:"#f97316"}
 ];
-var SK={ // localStorage keys (scopées) — uniquement du confort d'affichage, jamais un secret
+var SESSION_TTL=8*3600*1000; // 8 h
+var SK={ // localStorage keys (scopées)
+  pinHash:"shops_admin_pin_hash",
+  pinSalt:"shops_admin_pin_salt",
+  lastact:"shops_admin_lastact",
+  fails:"shops_admin_fails",
   view:"shops_admin_view"
 };
-/* Ménage des anciennes clés (empreinte PBKDF2 du code, sel, compteur d'essais, session locale). */
-["shops_admin_pin_hash","shops_admin_pin_salt","shops_admin_lastact","shops_admin_fails"].forEach(function(k){try{localStorage.removeItem(k)}catch(_){}});
 
 /* --- utils --- */
 function esc(s){return s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
@@ -195,14 +197,26 @@ function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
 function rm(k){try{localStorage.removeItem(k)}catch(_){}}
 function shopFromId(id){for(var i=0;i<SHOPS.length;i++)if(SHOPS[i].id===id)return SHOPS[i];return{id:id,name:id,icon:"🏪",color:"#888"}}
 
-/* --- auth : le DOMAINE décide, jamais cette page --- */
-function autorise(j){
-  if(!j||!j.ok||j.verified!==true)return false;
-  return j.admin===true||(Array.isArray(j.roles)&&j.roles.indexOf("shops")>=0);
+/* --- crypto PIN (PBKDF2 200k) --- */
+async function hashPin(pin,salt){
+  var enc=new TextEncoder();
+  var key=await crypto.subtle.importKey("raw",enc.encode(String(pin)),{name:"PBKDF2"},false,["deriveBits"]);
+  var bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:enc.encode(salt),iterations:200000,hash:"SHA-256"},key,256);
+  return Array.from(new Uint8Array(bits)).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
 }
+function randSalt(){var a=new Uint8Array(16);crypto.getRandomValues(a);return Array.from(a).map(function(b){return b.toString(16).padStart(2,"0")}).join("")}
+
+/* --- auth --- */
+var _authMode="login"; // "create" au 1er lancement (aucun code par défaut)
 async function initAuth(){
-  // Compte unique kd-mc.com : entrée AUTO si le domaine PROUVE l'identité (verified) ET
-  // l'autorise (admin, ou rôle « shops » donné par Kevin). Jamais le nom seul (leçon #99).
+  // session encore valide ?
+  var last=lg(SK.lastact,0);
+  if(last && (Date.now()-last)<SESSION_TTL){enterApp();return}
+  // Compte unique kd-mc.com : déverrouillage AUTO si le domaine PROUVE l'identité par
+  // Face ID (whoami.verified===true) ET autorisé : admin (Kevin) OU Laurence (nom).
+  // Placé AVANT le PIN local pour que Laurence entre par Face ID sans créer de code.
+  // Un inconnu qui tape "Laurence" SANS Face ID n'est PAS verified → exclu (leçon #99).
+  // Additif + fail-open : SSO injoignable (servi hors *.kd-mc.com) → on retombe sur le PIN.
   try{
     var hsh=location.hash||"";var mm=hsh.match(/[#&]kdmc_sso=([^&]+)/);
     if(mm){try{localStorage.setItem("kdmc_sso_token",decodeURIComponent(mm[1]));}catch(_){}
@@ -211,34 +225,107 @@ async function initAuth(){
     var hdr={};if(tok)hdr.Authorization="Bearer "+tok;
     var rs=await fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hdr});
     var j=rs&&rs.ok?await rs.json():null;
-    if(autorise(j)){enterApp();return}
-    showLocked(j&&j.ok?"Ton compte n'a pas accès aux boutiques (admin ou rôle boutiques requis).":"");
-  }catch(_){showLocked("Le domaine ne répond pas — réessaie dans un instant.");}
+    var allowed=j&&(j.admin===true||/laurence|lolo|saint.?polit|kevin|desarzens/i.test(j.name||""));
+    if(j&&j.ok&&j.verified===true&&allowed){enterApp();return}
+  }catch(_){/* fail-open → PIN */}
+  // Anti-lockout : un code local DÉJÀ défini (appareil déjà configuré par une identité
+  // prouvée) reste accepté même si le SSO est momentanément injoignable.
+  if(lg(SK.pinHash)){showAuth();return}
+  // Sinon : aucune identité prouvée + aucun code local → VERROUILLÉ. La 1ʳᵉ entrée se
+  // fait TOUJOURS via le portail (prénom+nom+code OU Face ID). Jamais de code sans nom.
+  showLocked();
 }
-function showLocked(msg){
+function showLocked(){
+  _authMode="locked";
   document.getElementById("authSub").textContent="Connecte-toi sur le portail kd-mc.com (prénom + nom + code, ou Face ID).";
-  document.getElementById("loginBtn").textContent="Me connecter sur kd-mc.com";
-  document.getElementById("authErr").textContent=msg||"";
+  document.getElementById("pin").style.display="none";
+  document.getElementById("pin2").style.display="none";
+  document.getElementById("loginBtn").textContent="Aller au portail kd-mc.com";
+  document.getElementById("forgotLink").style.display="none";
+  document.getElementById("authErr").textContent="";
   document.getElementById("auth").style.display="flex";document.getElementById("app").classList.remove("on");
+}
+function showAuth(){
+  _authMode="login";
+  document.getElementById("authSub").textContent="Accès administrateur";
+  document.getElementById("pin").style.display="";
+  document.getElementById("pin").placeholder="Ton code";document.getElementById("pin").value="";
+  document.getElementById("pin2").style.display="none";document.getElementById("pin2").value="";
+  document.getElementById("loginBtn").textContent="Se connecter";
+  document.getElementById("authErr").textContent="";
+  document.getElementById("forgotLink").style.display="";
+  document.getElementById("auth").style.display="flex";document.getElementById("app").classList.remove("on");
+  setTimeout(function(){document.getElementById("pin").focus()},50);
+}
+function showCreate(){
+  _authMode="create";
+  document.getElementById("authSub").textContent="Choisis ton code (4 à 12 chiffres)";
+  document.getElementById("pin").placeholder="Nouveau code";document.getElementById("pin").value="";
+  document.getElementById("pin2").placeholder="Confirme ton code";document.getElementById("pin2").style.display="";document.getElementById("pin2").value="";
+  document.getElementById("loginBtn").textContent="Valider mon code";
+  document.getElementById("authErr").textContent="";
+  document.getElementById("forgotLink").style.display="none";
+  document.getElementById("auth").style.display="flex";document.getElementById("app").classList.remove("on");
+  setTimeout(function(){document.getElementById("pin").focus()},50);
 }
 function enterApp(){
   document.getElementById("auth").style.display="none";
   document.getElementById("app").classList.add("on");
+  ls(SK.lastact,Date.now());
   D.view=lg(SK.view,"home");
   renderSidebar();
   dc();
   startFbListener();
 }
 function logout(){
+  rm(SK.lastact);
   if(_es){try{_es.close()}catch(_){}_es=null;_connected=false}
-  /* La session est celle du domaine : on la ferme là-bas (cookie HttpOnly), puis l'écran se verrouille. */
-  try{fetch("/__sso/logout",{method:"POST",credentials:"include"}).catch(function(){})}catch(_){}
-  try{localStorage.removeItem("kdmc_sso_token")}catch(_){}
-  showLocked("Déconnecté.");
+  showAuth();
+  document.getElementById("pin").value="";
 }
-function doLogin(){
-  // Le portail prouve l'identité (prénom+nom+code OU Face ID) et revient ici.
-  location.href="https://kd-mc.com/?return="+encodeURIComponent(location.href);
+async function doLogin(){
+  // Mode verrouillé : aucune identité prouvée → on renvoie au portail (jamais d'entrée
+  // par code sans nom). Le portail prouve l'identité (prénom+nom+code OU Face ID).
+  if(_authMode==="locked"){location.href="https://kd-mc.com/?return="+encodeURIComponent(location.href);return;}
+  var btn=document.getElementById("loginBtn"),err=document.getElementById("authErr"),pin=document.getElementById("pin").value.trim();
+  err.textContent="";
+  // 1er lancement / réinit : Kevin définit SON code
+  if(_authMode==="create"){
+    var pin2=document.getElementById("pin2").value.trim();
+    if(!/^\d{4,12}$/.test(pin)){err.textContent="Code : 4 à 12 chiffres.";return}
+    if(pin!==pin2){err.textContent="Les deux codes ne sont pas identiques.";return}
+    btn.disabled=true;btn.textContent="…";
+    try{await changePin(pin);ls(SK.fails,{n:0,until:0});enterApp();}
+    catch(e){err.textContent=e.message||"Erreur.";}
+    btn.disabled=false;btn.textContent="Valider mon code";
+    return;
+  }
+  if(!pin){err.textContent="Saisis ton code.";return}
+  // rate-limit
+  var fails=lg(SK.fails,{n:0,until:0});
+  if(fails.until && Date.now()<fails.until){
+    var remain=Math.ceil((fails.until-Date.now())/1000);
+    err.textContent="Trop d'essais. Réessaie dans "+remain+" s.";return;
+  }
+  btn.disabled=true;btn.textContent="Vérification…";
+  var salt=lg(SK.pinSalt),expected=lg(SK.pinHash);
+  var h=await hashPin(pin,salt);
+  btn.disabled=false;btn.textContent="Se connecter";
+  if(h===expected){
+    ls(SK.fails,{n:0,until:0});
+    enterApp();
+  }else{
+    fails.n=(fails.n||0)+1;
+    var wait=fails.n>=8?86400:fails.n>=7?3600:fails.n>=6?600:fails.n>=5?120:fails.n>=4?30:0;
+    fails.until=wait?Date.now()+wait*1000:0;
+    ls(SK.fails,fails);
+    err.textContent="PIN incorrect"+(wait?" — bloqué "+wait+" s.":".");
+  }
+}
+async function changePin(newPin){
+  if(!/^\d{4,12}$/.test(newPin))throw new Error("PIN : 4 à 12 chiffres");
+  var salt=randSalt();ls(SK.pinSalt,salt);
+  var h=await hashPin(newPin,salt);ls(SK.pinHash,h);
 }
 
 /* --- Firebase REST + SSE --- */
@@ -374,7 +461,7 @@ var NAV=[
   {id:"analytics",ico:"📈",label:"Analytiques"},
   {id:"settings",ico:"⚙️",label:"Paramètres"}
 ];
-function sv(v){D.view=v;ls(SK.view,v);renderSidebar();dc()}
+function sv(v){D.view=v;ls(SK.view,v);ls(SK.lastact,Date.now());renderSidebar();dc()}
 function renderSidebar(){
   var sb=document.getElementById("sidebar"),h="";
   h+='<div class="sb-logo">KDMC <em>Admin</em></div>';
@@ -494,8 +581,9 @@ function vAnalytics(){
 
 function vSettings(){
   return topbar("Paramètres")+
-    '<div class="card"><h3>🔑 Accès</h3>'+
-    '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">L\'accès vient de ton compte du domaine kd-mc.com (Face ID ou prénom + nom + code). Aucun code n\'est gardé ni vérifié sur cet appareil. Pour changer ton code : sur le portail kd-mc.com.</p>'+
+    '<div class="card"><h3>🔑 Changer le PIN admin</h3>'+
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">PIN actuel = celui que tu utilises pour te connecter. 4 à 12 chiffres.</p>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;max-width:500px"><input class="input" type="password" inputmode="numeric" id="pinCur" placeholder="PIN actuel" style="flex:1;min-width:140px"><input class="input" type="password" inputmode="numeric" id="pinNew" placeholder="Nouveau PIN" style="flex:1;min-width:140px"><button class="btn btn-primary" onclick="doChangePin()">Changer</button></div>'+
     '</div>'+
     '<div class="card"><h3>☁️ Connexion Firebase</h3>'+
     '<div style="font-size:13px;color:var(--muted);line-height:1.7"><div><strong>Base :</strong> '+esc(FB_URL)+'</div><div><strong>Chemin isolé :</strong> <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">'+esc(FB_BASE)+'/orders/*</code></div><div><strong>État :</strong> <span id="conn2" class="conn-pill '+(_connected?"live":"off")+'">'+(_connected?"Live":"Hors-ligne")+'</span></div></div>'+
@@ -506,12 +594,32 @@ function vSettings(){
     '<button class="btn" onclick="window.open(\'https://console.firebase.google.com\',\'_blank\')">🔗 Ouvrir la console Firebase</button>'+
     '</div>'+
     '<div class="card"><h3>📦 Données locales</h3>'+
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Seule la vue affichée est mémorisée (<code>shops_admin_view</code>). Aucun secret sur cet appareil.</p>'+
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">PIN hashé (PBKDF2 200k) + session 8 h stockés en localStorage isolé (préfixe <code>shops_admin_</code>).</p>'+
+    '<button class="btn" onclick="if(confirm(\'Effacer ton code sur cet appareil et en redéfinir un ?\')){Object.values(SK).forEach(rm);location.reload()}">↩ Redéfinir mon code</button>'+
     '</div>';
+}
+
+async function doChangePin(){
+  var cur=document.getElementById("pinCur").value.trim(),nw=document.getElementById("pinNew").value.trim();
+  var salt=lg(SK.pinSalt),h=await hashPin(cur,salt);
+  if(h!==lg(SK.pinHash))return toast("PIN actuel incorrect ❌");
+  try{await changePin(nw);toast("PIN mis à jour ✅");document.getElementById("pinCur").value="";document.getElementById("pinNew").value=""}
+  catch(e){toast(e.message)}
 }
 
 /* --- bind --- */
 document.getElementById("loginBtn").addEventListener("click",doLogin);
+document.getElementById("pin").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin()});
+document.getElementById("pin2").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin()});
+document.getElementById("forgotLink").addEventListener("click",function(e){
+  e.preventDefault();
+  // Code oublié : on NE permet PAS de réinitialiser librement (sinon contournement du
+  // code sans identité). On reprouve l'identité via le portail (Face ID OU prénom+nom+code),
+  // qui rouvre le Dashboard automatiquement ; le code se redéfinit ensuite dans Réglages.
+  location.href="https://kd-mc.com/?return="+encodeURIComponent(location.href);
+});
+// auto-extend session sur activité
+document.addEventListener("click",function(){if(document.getElementById("app").classList.contains("on"))ls(SK.lastact,Date.now())});
 
 initAuth();
 </script>

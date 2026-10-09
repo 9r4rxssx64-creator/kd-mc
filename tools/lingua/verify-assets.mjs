@@ -36,7 +36,9 @@ const vus = new Set();
 const verifie = (rel, ou) => {
   const cle = rel + '|' + ou;
   if (vus.has(cle)) return; vus.add(cle);
-  if (!existsSync(path.join(ROOT, rel))) manquants.push({ rel, ou });
+  /* « /CMCteams/… » = le dépôt entier, comme sur le domaine (module partagé tools/shared, 9.10) — vérifié quand même. */
+  const f = rel.startsWith('/CMCteams/') ? path.join(ROOT, '..', rel.slice('/CMCteams/'.length)) : path.join(ROOT, rel);
+  if (!existsSync(f)) manquants.push({ rel, ou });
 };
 
 /* 1. chemins construits sur le dossier de la mascotte : '"+M+"/rig/base.webp" */

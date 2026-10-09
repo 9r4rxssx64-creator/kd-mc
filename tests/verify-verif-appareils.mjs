@@ -49,6 +49,11 @@ globalThis.fetch = async (u, i) => {
   const m = s.match(/pages\.dev\/lingua(\/[^?]*)?/);
   if (m) { const f = 'lingua' + ((m[1] && m[1] !== '/') ? m[1] : '/index.html');
     return existsSync(f) ? new Response(readFileSync(f), { headers: { 'content-type': TYPES[f.split('.').pop()] || 'application/octet-stream' } }) : new Response('', { status: 404 }); }
+  /* le site principal (Cloudflare Pages) : le routeur y prend les fichiers partagés /CMCteams/tools/… (bulle de version, 9.10)
+     — servi depuis le dépôt, jamais par le vrai réseau (un test ne dépend pas d'internet). */
+  const ms = s.match(/kdmc-site-bj5\.pages\.dev(\/[^?]*)/);
+  if (ms) { const f = ms[1].replace(/^\//, '');
+    return existsSync(f) && !f.endsWith('/') ? new Response(readFileSync(f), { headers: { 'content-type': TYPES[f.split('.').pop()] || 'application/octet-stream' } }) : new Response('', { status: 404 }); }
   return _vraiFetch(u, i);
 };
 /* 3. PORTE GÉNÉRALE (8.10, #4313 : « aucune consultation sans compte ») : TOUT passe par le routeur — page, scripts,

@@ -244,5 +244,7 @@ window.OCC={render:render,theme:function(t){st.theme=t;chips();render()},dlPng:d
 chips();render();
 </script>
 <script>(function(){if(!("serviceWorker" in navigator))return;navigator.serviceWorker.register("sw.js").then(function(reg){function chk(){try{reg.update()}catch(e){}if(reg.waiting)reg.waiting.postMessage("skipWaiting")}setInterval(chk,60000);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")chk()})}).catch(function(){})})();</script>
+<!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="la-detente-occasions" data-version="v1.53.24" data-color="#e8b830" defer></script>
 </body>
 </html>

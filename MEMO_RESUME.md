@@ -1,5 +1,19 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-09 (soir) — Bulles de version partout, touchables même avant la connexion (Kevin « chaque page a sa bulle »)
+
+- Tournée réelle (Chromium 375 px, 119 pages servies) : 33 bulles visibles au départ ; arbre, Lingua, Bee, Apex Chat cachaient
+  leur bulle derrière l'écran de connexion ; 15 pages secondaires sans bulle ; l'écran « porte fermée » de Bee emportait la bulle.
+- Module partagé `version-badge-pwa.js` : `data-version-global` / `data-version-el` (version lue dans l'app), `data-own-badge`
+  (s'efface quand la bulle de l'app est visible), bulle remise si la page vide son contenu. Posé sur 19 pages.
+- Exceptions écrites avec raison : vitrines Kit IA + légales (aucun script), Croupier/Rotaplan (CSP script-src 'none'),
+  Empreinte (réseau coupé exprès), page d'impression, pages techniques force-update/logout d'Apex Chat.
+- Garde `test:bulles-partout` (15 contrôles, 3 sabotages). Les apps à cache hors ligne (arbre, Lingua, Bee, Apex Chat, boutiques)
+  recevront la bulle avec leur prochaine version (pas de numéro changé ici : ces apps sont travaillées par d'autres branches).
+- Sauvegardes : Firebase quotidienne réelle (04:00, dernière 9.10 succès). `auto-backup` et `apex-chat-d1-backup` (GitHub) arrêtés
+  depuis le 14.08 MAIS remplacés : Firebase → firebase-backup (cron Cloudflare), Apex Chat → sauvegarde dans son propre worker
+  (chiffrée, 14 jours). Date de la dernière sauvegarde Apex Chat : lisible seulement dans /api/admin/diag (non lue ici).
+
 ## 2026-10-09 (matin) — PR #4434 : chaîne verte, SonarCloud remis sur ses vraies règles
 
 - PR #4434 ouverte (remplace #4397). Rouges hérités de main réparés à la fusion : lien node_modules suivi par git (#4427), règle arbre

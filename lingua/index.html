@@ -1026,5 +1026,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }catch(e){}})();
 </script>
 <script src="app.js"></script>
+<!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
+     passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "lingua", "data-version": "v2.138.0", "data-version-global": "LINGUA_VER", "data-auto-update": "false", "data-color": "#7fd3a8"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

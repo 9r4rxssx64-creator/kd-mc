@@ -121,6 +121,14 @@ const REGISTRE = [
   // Règle « ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE … » (Kevin 9.10.2026, arbre v3.69, #4432, ajoutée sans entrée ici →
   // ratchet 19 → 20 vu à la fusion) : ses gardes sont ceux du même commit — arbre-familles-noms (52) et arbre-nuage-protege (11), dans test:ci.
   [/ARBRE : UNE FAMILLE CHOISIE N'AFFICHE QUE SA FAMILLE/i, ['npm:test:arbre-familles-noms', 'npm:test:arbre-nuage-protege']],
+  // Règle « ARBRE : CHERCHER POUR CHAQUE PERSONNE … ET ACCEPTER PARTOUT LES CONDITIONS DES SITES À LA PLACE DE KEVIN » (Kevin 9.10.2026,
+  // #4447, ajoutée sans entrée → ratchet vu à la fusion) : sa part mécanisable — la licence acceptée SEULEMENT avec l'accord écrit
+  // (ORIGINAUX_LICENCE=acceptee) — est gardée par tests/arbre-originaux.test.mjs (#4450), dans test:ci.
+  [/ARBRE : CHERCHER POUR CHAQUE PERSONNE/i, ['npm:test:arbre-originaux']],
+  // Règle « ARBRE : LES MODIFICATIONS DE TOUT LE MONDE NE SE PERDENT JAMAIS, ET RIEN DE CE QUI EST RETIRÉ NE REVIENT » (Kevin 9.10.2026,
+  // arbre v3.77, #4456, ajoutée sans entrée → ratchet vu à la fusion) : gardée par tests/arbre-nuage-protege.test.mjs (envois notés
+  // avant / retirés après réussite, registre des suppressions, sauvegarde automatique), dans test:ci.
+  [/ARBRE : LES MODIFICATIONS DE TOUT LE MONDE NE SE PERDENT JAMAIS/i, ['npm:test:arbre-nuage-protege']],
   [/ARBRE : TOUT CE QUI EST TROUVÉ S'AJOUTE/i, ['npm:test:arbre-originaux', 'file:tests/arbre-originaux.test.mjs']],
   // Règle « CONTRÔLER TOUT, PARTOUT, SUR LE VRAI » (Kevin 3.10.2026, ajoutée par la session arbre sans entrée ici → test:improvements-guard
   // rouge 19 → 20) : ses contrôles existent déjà — le vrai nuage (arbre-nuage.yml + test:arbre-nuage, garde-fou homonymes),
@@ -217,6 +225,8 @@ const REGISTRE = [
    malhonnête. On les compte à part pour ne pas gonfler artificiellement la « dette de gardes ».
    Ce qui reste en 🔴 est donc la VRAIE dette : mécanisable, mais pas encore mécanisé. */
 const COMPORTEMENTAL = [
+  /* « JE PARLE FRANÇAIS À KEVIN, TOUJOURS » (Kevin 9.10.2026, #4446) : la langue de mes réponses, pas un état du code. */
+  /PARLE FRANÇAIS À KEVIN/i,
   /* « ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE » (Kevin 9.10.2026, #4439, ajoutée sans entrée → ratchet 19 → 20 vu à la
      fusion) : relire ce qu'on a et aller chercher le document AVANT d'écrire une question = conduite de recherche, pas un état
      du code. Sa part mécanisable (« donnée sans source = probable/piste ») mérite un garde sur les fiches : à faire par la branche arbre. */

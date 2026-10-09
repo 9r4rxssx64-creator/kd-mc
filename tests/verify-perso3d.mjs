@@ -115,13 +115,19 @@ console.log('B. SANS BOUTON : la 3D s\'allume toute seule, partout');
 
   /* ---------- C. ils vivent ---------- */
   console.log('C. Ils VIVENT en 3D');
-  const e0 = await etat(page);
+  /* 9.10.2026 : on compte AUSSI les images que le navigateur propose (requestAnimationFrame) pendant la même fenêtre.
+     « Redessiné en continu » = redessiné à (presque) chaque image proposée — vrai sur un iPhone (60/s) comme sur une
+     machine sans carte graphique (≈ 10/s, où l'ancien seuil fixe « ≥ 8 en 0,7 s » mesurait la machine, pas Bee :
+     8 le matin, 7 sur un conteneur plus lent, même code). Un personnage figé reste à 0 → toujours ROUGE. */
+  await page.evaluate(() => { window.__rafN = 0; const t = () => { window.__rafN++; requestAnimationFrame(t); }; requestAnimationFrame(t); });
+  const e0 = await etat(page); const r0 = await page.evaluate(() => window.__rafN);
   const snap = () => page.evaluate(() => [...document.querySelectorAll('canvas')].map((c) => c.getContext('2d').getImageData(0, 0, c.width, c.height).data.slice(0, 400000)));
   const s1 = await snap(); await dors(700); const s2 = await snap();
-  const e1 = await etat(page);
+  const e1 = await etat(page); const offertes = (await page.evaluate(() => window.__rafN)) - r0;
   const diffs = s1.map((a, i) => { let n = 0; for (let k = 0; k < a.length; k += 4) if (Math.abs(a[k] - s2[i][k]) + Math.abs(a[k + 1] - s2[i][k + 1]) + Math.abs(a[k + 2] - s2[i][k + 2]) > 40) n++; return n; });
   chk(diffs.every((n) => n > 40), `chaque personnage change à l'écran en 0,7 s (points qui bougent : ${diffs.join(' / ')})`);
-  chk(e1.every((x, i) => x.images - e0[i].images >= 8), `et il est redessiné en continu (${e1.map((x, i) => x.images - e0[i].images).join(' / ')} images en 0,7 s)`);
+  chk(offertes >= 3 && e1.every((x, i) => x.images - e0[i].images >= Math.max(3, Math.floor(offertes * 0.8))),
+    `et il est redessiné en continu (${e1.map((x, i) => x.images - e0[i].images).join(' / ')} images pour ${offertes} proposées par le navigateur en 0,7 s)`);
 
   /* ---------- D. bouche et regard ---------- */
   console.log('D. La bouche suit la voix, le regard suit le doigt');

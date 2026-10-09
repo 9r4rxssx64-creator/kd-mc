@@ -17865,5 +17865,8 @@ if(document.readyState !== 'loading') _boot();
      pour messaging-app. La topbar affiche déjà la version (#topbar-version) +
      l'auto-MAJ inline ligne 313 gère le force-reload. Règle CLAUDE.md "badge
      version visible permanent" satisfaite par la topbar pour ce projet. -->
+<!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
+     passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.299", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

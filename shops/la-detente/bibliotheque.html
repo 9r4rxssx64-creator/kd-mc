@@ -282,5 +282,7 @@ renderCats();renderGarments();renderSwatches();render();
 <script src="/CMCteams/shops/_shared/firebase-orders.js"></script>
 <script>loadMine();</script>
 <script>(function(){if(!("serviceWorker" in navigator))return;var had=!!navigator.serviceWorker.controller,rl=false;navigator.serviceWorker.addEventListener("controllerchange",function(){if(!had){had=true;return}if(rl)return;rl=true;location.reload()});navigator.serviceWorker.register("sw.js").then(function(reg){function chk(){try{reg.update()}catch(e){}if(reg.waiting)reg.waiting.postMessage("skipWaiting")}setInterval(chk,60000);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")chk()});window.addEventListener("focus",chk)})})();</script>
+<!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="la-detente-bibliotheque" data-version="v1.53.24" data-color="#e8b830" defer></script>
 </body>
 </html>

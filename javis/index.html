@@ -55,5 +55,7 @@ try { if (localStorage.getItem('kdmc_sso_token')) { var l = document.createEleme
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
   });
 </script>
+<!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="bee" data-version="v1.18" data-version-global="JAVIS_VER" data-own-badge="#javis-ver" data-auto-update="false" data-color="#f4c542" defer></script>
 </body>
 </html>

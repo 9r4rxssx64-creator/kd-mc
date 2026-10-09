@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-08",
+  "maj": "2026-10-09",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -1355,6 +1355,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "8.10 : fusionnée dans claude/audit-corrections ; branche à supprimer après la PR"
+    },
+    "bulles-versions": {
+      "titre": "Bulles de version partout, touchables même avant la connexion",
+      "branche": "claude/bulles-versions-maj",
+      "sujet": "Module version-badge-pwa (version lue dans l'app, s'efface devant la bulle de l'app, se remet si la page se vide, site seulement pour les apps iPhone) posé sur 19 pages ; garde test:bulles-partout",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-09",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-09 — Lien `messaging-app/node_modules` retiré de main (commité par erreur avec v1.1.297)
+
+- En vérifiant le travail d'un agent dans un worktree, un lien `node_modules` a été créé puis emporté par `git add -A`
+  (#4427). `test:hygiene-depot` le signalait (17 ✅ / 1 ❌) mais n'avait pas été lancé avant la fusion.
+- Correctif : lien retiré de l'index ; `.gitignore` reçoit `node_modules` sans barre (couvre un lien à toute profondeur,
+  vérifié : un lien créé dans messaging-app/ n'apparaît plus). Mesuré : `test:hygiene-depot` 18 ✅ / 0 ❌.
+- v1.1.297 elle-même : en ligne, E2E prod 18 réussis / 0 échec (le lien n'a pas cassé les robots).
+
 ## 2026-10-09 — Apex Chat : l'historique ne se fait plus « manger » par les clés de groupe
 
 - Serveur : à la connexion, 50 vrais messages + les 50 derniers échanges de clés (avant : 50 en tout, clés comprises).

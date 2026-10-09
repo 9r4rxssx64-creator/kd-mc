@@ -68,3 +68,5 @@ tor-iphone.png
 
 # un lien symbolique node_modules (worktree) n est PAS couvert par « node_modules/ » (qui ne vise que les dossiers) : il s est retrouve commite le 3.10 et a casse npm run
 /node_modules
+# 09.10.2026 : rebelote dans messaging-app/ (v1.1.297) — « node_modules » SANS barre couvre le lien à TOUTE profondeur.
+node_modules

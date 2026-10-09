@@ -1088,7 +1088,7 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
 - « L'arbre ne parle pas qu'à moi » : textes de l'app neutres (« l'administrateur de l'arbre est prévenu »), parentés des cartes
   « grand-père de Kevin » quand on ne sait pas qui regarde. Notes : réécrites au propre (📌 essentiel, ✅ confirmé, 🟡 probable,
   🔎 pistes, 📬 en attente), sans adresses ni bruit de travail ; l'ancien texte est gardé mot pour mot dans `notesHistorique`,
-  replié sous la note (« 🗂 Journal de recherche complet »). L'outil refuse une note réécrite si l'ancienne n'est pas gardée.
+  replié sous la note (« 🗂 Journal de recherche complet »). L'outil refuse une note réécrite si l'ancienne n'est pas gardée ; clé de paquet `notesReecrite` : l'outil range lui-même l'ancien texte (lu dans le nuage) dans `notesHistorique`.
 - Superpositions de cartes mesurées sur les vraies fiches (3 vues × 3 familles) : 0.
 
 ### 2026-10-09 — Arbre v3.69 : une famille = sa famille, la Lignée, et le nuage qui ne perd plus rien

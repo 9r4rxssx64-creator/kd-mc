@@ -106,6 +106,23 @@ ok(py, 'originaux.py compile');
   const f3 = path.join(dir, 'tel-1.jpg');
   ok(fs.existsSync(f3) && fs.readFileSync(f3).equals(jpg), 'une adresse qui répond par le fichier image (téléchargement) : le fichier est gardé tel quel', o3.trim().slice(0, 140));
   ok(/ORIGINAUX_LICENCE: acceptee/.test(wf), 'le workflow porte l\'autorisation (Monaco < 1900)');
+  // 9.10.2026 — PDF derrière une petite page JavaScript (davel-vd.ch : 302 → js_challenge.html) : un vrai navigateur la passe seul
+  {
+    const pdf = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n');
+    const srv4 = http.createServer((q, r) => {
+      const ok2 = /passe=1/.test(q.headers.cookie || '');
+      if (q.url.startsWith('/registre.pdf') && ok2) { r.writeHead(200, { 'content-type': 'application/pdf', 'content-disposition': 'attachment; filename="r.pdf"' }); return r.end(pdf); }
+      if (q.url.startsWith('/registre.pdf')) { r.writeHead(302, { location: '/js_challenge.html?redirect=/registre.pdf' }); return r.end(); }
+      r.writeHead(200, { 'content-type': 'text/html' }); r.end('<script>document.cookie="passe=1;path=/";setTimeout(()=>location.href="/registre.pdf",300)</script>');
+    }).listen(0);
+    await new Promise((r) => srv4.once('listening', r));
+    const out4 = path.join(dir, 'reg.pdf');
+    let o4 = ''; try { const r = await promisify(execFile)('node', [path.join(ROOT, 'tools', 'arbre', 'telecharger-navigateur.mjs'), 'http://127.0.0.1:' + srv4.address().port + '/registre.pdf', out4], { encoding: 'utf8', timeout: 180000 }); o4 = r.stdout + r.stderr; } catch (e) { o4 = 'ÉCHEC ' + String(e.stdout || '') + String(e.stderr || ''); }
+    srv4.close();
+    ok(fs.existsSync(out4) && fs.readFileSync(out4).equals(pdf), 'un PDF derrière une page JavaScript est téléchargé par un vrai navigateur, octet pour octet', o4.trim().slice(0, 140));
+    const outilO = fs.readFileSync(path.join(ROOT, 'tools', 'arbre', 'originaux.py'), 'utf8');
+    ok(/endswith\('\.pdf'\) and not _CACHE\[cible\]\[0\]\[:4\] == b'%PDF'/.test(outilO) && /telecharger-navigateur\.mjs/.test(outilO), 'originaux.py : un « PDF » qui n\'en est pas un repart par le navigateur');
+  }
 }
 console.log((ko ? '❌' : '✅') + ' arbre-originaux : v3.68 — les originaux s\'ouvrent dans la fiche, le lien reste la référence (' + (n - ko) + '/' + n + ')');
 process.exit(ko ? 1 : 0);

@@ -3953,6 +3953,18 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 
 ---
 
+## 🇫🇷 RÈGLE ABSOLUE — JE PARLE FRANÇAIS À KEVIN, TOUJOURS (Kevin 2026-10-09, ABSOLUE)
+
+> **« Français »** puis **« Parle-moi français, rappelle-toi, note-le »** — Kevin 2026-10-09 (après des réponses rédigées en anglais)
+
+- Chaque réponse à Kevin est **en français**, du premier au dernier mot : bilans, questions, résumés, messages d'attente,
+  explications d'erreurs. Aucune exception, même quand le travail technique (code, journaux, outils) est en anglais.
+- Les textes que Kevin lira ailleurs (brouillons d'e-mails, fiches de l'arbre, documents, descriptions de PR destinées à
+  Kevin) sont aussi en français.
+- Les agents lancés pour lui reçoivent la consigne de rédiger en français tout ce qui lui est destiné.
+
+---
+
 ## 📑 RÈGLE ABSOLUE — ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE ; SINON ALLER CHERCHER LE DOCUMENT, ET CHAQUE INFO EST CONFIRMÉE PAR UN DOCUMENT (Kevin 2026-10-09, ABSOLUE)
 
 > **« Tu as bcp de questions dont tu as les documents qui te donnent les réponses. Sinon tu vas chercher les documents pour

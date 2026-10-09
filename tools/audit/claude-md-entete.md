@@ -17,7 +17,7 @@
 
 ## ⭐ LES 10 RÈGLES D'OR — si tu ne lis que ça
 
-1. **Kevin n'est pas codeur, et il travaille sur iPhone.** Parler simple, décrire l'écran,
+1. **Kevin n'est pas codeur, et il travaille sur iPhone. Toujours lui parler FRANÇAIS.** Parler simple, décrire l'écran,
    zéro jargon. Boutons ≥ 44 px, largeur 375 px, rien qui exige un clavier.
 2. **Tout automatiser.** Ne jamais lui demander un clic qu'un script, un workflow ou un
    worker peut faire. Le seul clic légitime : login OAuth sur SON compte, KYC, carte

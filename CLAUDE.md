@@ -17,7 +17,7 @@
 
 ## ⭐ LES 10 RÈGLES D'OR — si tu ne lis que ça
 
-1. **Kevin n'est pas codeur, et il travaille sur iPhone.** Parler simple, décrire l'écran,
+1. **Kevin n'est pas codeur, et il travaille sur iPhone. Toujours lui parler FRANÇAIS.** Parler simple, décrire l'écran,
    zéro jargon. Boutons ≥ 44 px, largeur 375 px, rien qui exige un clavier.
 2. **Tout automatiser.** Ne jamais lui demander un clic qu'un script, un workflow ou un
    worker peut faire. Le seul clic légitime : login OAuth sur SON compte, KYC, carte
@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 208 règles — le texte de Kevin, une par une
+## 📜 Les 209 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -315,6 +315,10 @@ Kevin a demandé « qu'est-ce qu'un persona, un personnage Javis, et qu'est-ce q
 ### 💪 RÈGLE ABSOLUE — TROUVE DES SOLUTIONS, NE JAMAIS DIRE « JE NE PEUX PAS » (Kevin 2026-07-05, MAÎTRESSE)
 **"Trouve des solutions ne me dis jamais que tu ne peux pas"** — Kevin 2026-07-05
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-trouve-des-solutions-ne-jamais-dire-je-ne-peux-pas-kevin-2026-07-05-maîtresse)
+
+### 🇫🇷 RÈGLE ABSOLUE — JE PARLE FRANÇAIS À KEVIN, TOUJOURS (Kevin 2026-10-09, ABSOLUE)
+**« Français »** puis **« Parle-moi français, rappelle-toi, note-le »** — Kevin 2026-10-09 (après des réponses rédigées en anglais)
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-je-parle-français-à-kevin-toujours-kevin-2026-10-09-absolue)
 
 ### 📑 RÈGLE ABSOLUE — ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE ; SINON ALLER CHERCHER LE DOCUMENT, ET CHAQUE INFO EST CONFIRMÉE PAR UN DOCUMENT (Kevin 2026-10-09, ABSOLUE)
 **« Tu as bcp de questions dont tu as les documents qui te donnent les réponses. Sinon tu vas chercher les documents pour confirmer à chaque fois toutes les informations. Autonome et trouve des […]

@@ -136,12 +136,25 @@ jobs:
         run: npm install
 
       - name: Install Playwright browsers (${{ matrix.project }})
+        # 09.10.2026 : un téléchargement WebKit bloqué a pris 14 min 30 (run 37900675757) et le job a été
+        # tué à 15 min sans qu'AUCUN test ne tourne. 3 essais bornés à 4 min chacun, chacun annoncé ;
+        # si les 3 échouent, le job échoue en le DISANT (jamais un vert sans tests).
         run: |
-          if [ "${{ matrix.project }}" = "iphone-safari" ] || [ "${{ matrix.project }}" = "iphone-se" ]; then
-            npx playwright install --with-deps webkit
-          elif [ "${{ matrix.project }}" = "chromium-desktop" ] || [ "${{ matrix.project }}" = "pixel-android" ]; then
-            npx playwright install --with-deps chromium
-          fi
+          case "${{ matrix.project }}" in
+            iphone-safari|iphone-se) NAV=webkit ;;
+            chromium-desktop|pixel-android) NAV=chromium ;;
+            *) echo "::error::projet inconnu : ${{ matrix.project }}"; exit 1 ;;
+          esac
+          for essai in 1 2 3; do
+            if timeout 240 npx playwright install --with-deps "$NAV"; then
+              echo "::notice::navigateur $NAV installé (essai $essai)"
+              exit 0
+            fi
+            echo "::warning::installation de $NAV bloquée ou en échec (essai $essai sur 3), nouvel essai"
+            sleep 5
+          done
+          echo "::error::navigateur $NAV impossible à installer après 3 essais de 4 min : aucun test n'a pu tourner"
+          exit 1
 
       - name: Run Playwright E2E (${{ matrix.project }})
         run: npx playwright test --project=${{ matrix.project }}

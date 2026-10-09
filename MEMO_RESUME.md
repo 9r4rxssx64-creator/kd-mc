@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-09 — CI Apex Chat : installation du navigateur bornée (3 essais × 4 min)
+
+- Run 37900675757 (v1.1.298) : `e2e (iphone-se)` tué à 15 min — l'installation WebKit a pris 14 min 30, AUCUN test n'a tourné
+  (les 3 autres profils : 1 à 2 min, verts). Pas un défaut de l'app ; job relancé.
+- `messaging-app-tests.yml` : 3 essais bornés à 4 min, chacun annoncé ; 3 échecs → échec explicite « aucun test n'a pu tourner ».
+  Simulé en local : téléchargement bloqué → 3 avertissements + exit 1 ; téléchargement normal → exit 0. Gardes workflows vertes.
+
 ## 2026-10-09 — Apex Chat v1.1.298 : la clé de signature de groupe a sa propre colonne
 
 - Serveur : migration 0013 `users.signing_key_pub` ; `/api/keys/prekeys` l'accepte (format strict « GSIG1: »), le bundle la renvoie.

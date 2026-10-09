@@ -3965,6 +3965,23 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 
 ---
 
+## 🔓 RÈGLE ABSOLUE — ARBRE : CHERCHER POUR CHAQUE PERSONNE, PRÉSENTE ET FUTURE, ET ACCEPTER PARTOUT LES CONDITIONS DES SITES À LA PLACE DE KEVIN (Kevin 2026-10-09, ABSOLUE)
+
+> **« Accepte pour moi »** (la licence des registres de Monaco d'avant 1900), puis **« Publie tout pour tout le monde. Efface les
+> courriers qui ne servent plus et continue toutes tes recherches, accepte tout partout pour moi, trouve des solutions, pour
+> chaque personne de l'arbre et les futurs. Va plus loin. »** — Kevin 2026-10-09
+
+- **Accepter à sa place** : licences, conditions d'utilisation et bandeaux de consentement des sites d'archives et de presse.
+  Toujours interdit : captcha, contournement d'un blocage, paiement, compte créé avec ses données, e-mail envoyé à sa place.
+- **Chaque personne, et les futures** : une routine (lundi et jeudi) exporte l'arbre, repère les actes manquants (les
+  nouvelles fiches d'abord), cherche, intègre ce qui est prouvé (histoires, originaux), contrôle le vrai site et fait un bilan
+  en français. Consignes de travail dans `tools/arbre/consignes/` (RECHERCHES.md, HISTOIRES.md, valider-histoires.py).
+- **Publier pour tout le monde** = toute la famille qui a le code voit tout (nuage) ; la copie du domaine se republie seule
+  dès que Kevin ouvre l'arbre (v3.55). Jamais d'ouverture sans compte : règle « aucune consultation sans compte ».
+- **Courriers** : les brouillons devenus inutiles sont supprimés ; ceux des autres projets ne sont jamais touchés.
+
+---
+
 ## 📑 RÈGLE ABSOLUE — ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE ; SINON ALLER CHERCHER LE DOCUMENT, ET CHAQUE INFO EST CONFIRMÉE PAR UN DOCUMENT (Kevin 2026-10-09, ABSOLUE)
 
 > **« Tu as bcp de questions dont tu as les documents qui te donnent les réponses. Sinon tu vas chercher les documents pour

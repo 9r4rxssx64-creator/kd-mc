@@ -290,6 +290,7 @@
   "tools/arbre/verify-relier.mjs",
   "tools/arbre/verify-sync-photos.mjs",
   "tools/arbre/verify-visuel-appareils.mjs",
+  "tools/arbre/visionneuse-image.mjs",
   "tools/arbre/visite-honnete.mjs",
   "tools/audit/import-noms-manquants.mjs",
   "tools/audit/sonde-domaine.mjs",

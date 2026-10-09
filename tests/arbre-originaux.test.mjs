@@ -63,5 +63,25 @@ ok(/originaux:\n\s+description:/.test(wf) && /python3 tools\/arbre\/originaux\.p
 let py = true; try { execFileSync('python3', ['-m', 'py_compile', path.join(ROOT, 'tools', 'arbre', 'originaux.py')]); } catch (e) { py = false; }
 ok(py, 'originaux.py compile');
 
+// v3.73+ — visionneuses d'archives (Monaco, Arkotheque) : l'image intégrale, relue dans un vrai navigateur
+{
+  const outilV = fs.readFileSync(path.join(ROOT, 'tools', 'arbre', 'originaux.py'), 'utf8');
+  const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'arbre-nuage.yml'), 'utf8');
+  ok(/'archives\.mairie\.mc' in url and 'visionneuse' in url/.test(outilV) && /visionneuse-image\.mjs/.test(outilV), 'originaux.py : une page de visionneuse de Monaco passe par le navigateur (visionneuse-image.mjs)');
+  ok(/inputs\.synchro \|\| inputs\.originaux != ''/.test(wf), 'le workflow installe le navigateur quand il range des originaux');
+  const http = await import('node:http'); const os = await import('node:os');
+  const page = '<html><body><canvas id=c width=1600 height=1100></canvas><img id=i><script>var c=document.getElementById("c"),x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,1600,1100);x.fillStyle="#000";x.font="80px serif";x.fillText("ACTE N 56",300,500);document.getElementById("i").src=c.toDataURL("image/png");c.remove();</script></body></html>';
+  const srv = http.createServer((q, r) => { r.writeHead(200, { 'content-type': 'text/html' }); r.end(page); }).listen(0);
+  await new Promise((r) => srv.once('listening', r));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'visu-'));
+  let out = '';
+  /* exécution ASYNCHRONE : un appel synchrone bloquerait ce serveur, et la page ne répondrait jamais */
+  const { execFile } = await import('node:child_process'); const { promisify } = await import('node:util');
+  try { out = (await promisify(execFile)('node', [path.join(ROOT, 'tools', 'arbre', 'visionneuse-image.mjs'), 'http://127.0.0.1:' + srv.address().port + '/', path.join(dir, 'img')], { encoding: 'utf8', timeout: 120000 })).stdout; } catch (e) { out = String(e.stdout || '') + String(e.stderr || ''); }
+  srv.close();
+  const f1 = path.join(dir, 'img-1.jpg');
+  const tete = fs.existsSync(f1) ? fs.readFileSync(f1).subarray(0, 3).toString('hex') : '';
+  ok(tete === 'ffd8ff' && fs.statSync(f1).size > 5000, 'visionneuse-image.mjs relit l\'image INTÉGRALE affichée (1600 px) et l\'écrit en JPEG', out.trim().slice(0, 120));
+}
 console.log((ko ? '❌' : '✅') + ' arbre-originaux : v3.68 — les originaux s\'ouvrent dans la fiche, le lien reste la référence (' + (n - ko) + '/' + n + ')');
 process.exit(ko ? 1 : 0);

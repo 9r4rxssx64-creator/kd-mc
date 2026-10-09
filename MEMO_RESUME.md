@@ -1081,6 +1081,16 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
   DESARZENS et Nadine ‹employé› ; dates divergentes (Jean ‹employé›, Judith ‹employé›, Roger ‹employé›) ; un parent
   dessiné à 691 px de l'aplomb de son enfant (Pierre-Daniel, vue Maiffret).
 
+### 2026-10-09 (soir) — Arbre v3.70 : connexion qui tient, textes pour toute la famille, notes réécrites au propre
+- Capture de Kevin : « Pas de synchro… connexion anonyme refusée (HTTP 400) » → chaque ouverture créait un NOUVEL utilisateur
+  anonyme Firebase ; trop de créations depuis le même réseau = refus. Désormais le jeton de renouvellement est gardé
+  (`arbre_fb_rt`, securetoken) ; un compte n'est recréé que s'il est refusé ; le message exact de Google est affiché.
+- « L'arbre ne parle pas qu'à moi » : textes de l'app neutres (« l'administrateur de l'arbre est prévenu »), parentés des cartes
+  « grand-père de Kevin » quand on ne sait pas qui regarde. Notes : réécrites au propre (📌 essentiel, ✅ confirmé, 🟡 probable,
+  🔎 pistes, 📬 en attente), sans adresses ni bruit de travail ; l'ancien texte est gardé mot pour mot dans `notesHistorique`,
+  replié sous la note (« 🗂 Journal de recherche complet »). L'outil refuse une note réécrite si l'ancienne n'est pas gardée.
+- Superpositions de cartes mesurées sur les vraies fiches (3 vues × 3 familles) : 0.
+
 ### 2026-10-09 — Arbre v3.69 : une famille = sa famille, la Lignée, et le nuage qui ne perd plus rien
 - Kevin : « filiation trop brouillon, trop fouillis […] quand on choisit une famille, les autres doivent disparaître ».
 - Cause du mélange : un nom inconnu des deux troncs était VOLONTAIREMENT montré dans les deux arbres (« oc »). Désormais

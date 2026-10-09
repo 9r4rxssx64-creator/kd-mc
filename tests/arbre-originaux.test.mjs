@@ -67,7 +67,7 @@ ok(py, 'originaux.py compile');
 {
   const outilV = fs.readFileSync(path.join(ROOT, 'tools', 'arbre', 'originaux.py'), 'utf8');
   const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'arbre-nuage.yml'), 'utf8');
-  ok(/'archives\.mairie\.mc' in url and 'visionneuse' in url/.test(outilV) && /visionneuse-image\.mjs/.test(outilV), 'originaux.py : une page de visionneuse de Monaco passe par le navigateur (visionneuse-image.mjs)');
+  ok(/'archives\.mairie\.mc' in url and \('visionneuse' in url or '\/ark:\/' in url\)/.test(outilV) && /visionneuse-image\.mjs/.test(outilV), 'originaux.py : une page de visionneuse de Monaco passe par le navigateur (visionneuse-image.mjs)');
   ok(/inputs\.synchro \|\| inputs\.originaux != ''/.test(wf), 'le workflow installe le navigateur quand il range des originaux');
   const http = await import('node:http'); const os = await import('node:os');
   const page = '<html><body><canvas id=c width=1600 height=1100></canvas><img id=i><script>var c=document.getElementById("c"),x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,1600,1100);x.fillStyle="#000";x.font="80px serif";x.fillText("ACTE N 56",300,500);document.getElementById("i").src=c.toDataURL("image/png");c.remove();</script></body></html>';
@@ -82,6 +82,22 @@ ok(py, 'originaux.py compile');
   const f1 = path.join(dir, 'img-1.jpg');
   const tete = fs.existsSync(f1) ? fs.readFileSync(f1).subarray(0, 3).toString('hex') : '';
   ok(tete === 'ffd8ff' && fs.statSync(f1).size > 5000, 'visionneuse-image.mjs relit l\'image INTÉGRALE affichée (1600 px) et l\'écrit en JPEG', out.trim().slice(0, 120));
+  // 9.10.2026 — licence de réutilisation (Monaco < 1900) : acceptée SEULEMENT avec ORIGINAUX_LICENCE=acceptee (« Accepte pour moi »)
+  let accepte = false;
+  const lic = '<html><body><p>Vous devez accepter la licence de réutilisation.</p><a href="/accepte">J\'ACCEPTE LES CONDITIONS</a></body></html>';
+  const srv2 = http.createServer((q, r) => {
+    if (q.url === '/accepte') { accepte = true; r.writeHead(302, { location: '/visionneuse' }); return r.end(); }
+    r.writeHead(200, { 'content-type': 'text/html' }); r.end(accepte ? page : lic);
+  }).listen(0);
+  await new Promise((r) => srv2.once('listening', r));
+  const u2 = 'http://127.0.0.1:' + srv2.address().port + '/ark:/63956/x/y';
+  const lancer2 = async (env, pre) => { try { const r = await promisify(execFile)('node', [path.join(ROOT, 'tools', 'arbre', 'visionneuse-image.mjs'), u2, path.join(dir, pre)], { encoding: 'utf8', timeout: 120000, env: { ...process.env, ...env } }); return r.stdout + r.stderr; } catch (e) { return 'ÉCHEC ' + String(e.stdout || '') + String(e.stderr || ''); } };
+  const sans = await lancer2({ ORIGINAUX_LICENCE: '' }, 'sans');
+  ok(/ÉCHEC/.test(sans) && /licence demandée/.test(sans) && !accepte && !fs.existsSync(path.join(dir, 'sans-1.jpg')), 'sans autorisation, la licence n\'est PAS acceptée (arrêt dit)', sans.trim().slice(0, 120));
+  const avec = await lancer2({ ORIGINAUX_LICENCE: 'acceptee' }, 'avec');
+  ok(accepte && fs.existsSync(path.join(dir, 'avec-1.jpg')) && /licence acceptée au nom du titulaire/.test(avec), 'avec l\'autorisation écrite, licence acceptée puis image intégrale relue', avec.trim().slice(0, 160));
+  srv2.close();
+  ok(/ORIGINAUX_LICENCE: acceptee/.test(wf), 'le workflow porte l\'autorisation (Monaco < 1900)');
 }
 console.log((ko ? '❌' : '✅') + ' arbre-originaux : v3.68 — les originaux s\'ouvrent dans la fiche, le lien reste la référence (' + (n - ko) + '/' + n + ')');
 process.exit(ko ? 1 : 0);

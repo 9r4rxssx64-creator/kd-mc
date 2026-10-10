@@ -32,9 +32,20 @@ export const DESCRIPTION = 'KDMC — compteur Web Analytics coupé (Kevin 10.10.
 
 /* La page servie porte-t-elle la balise posée par Cloudflare ? */
 export const beaconPresent = (html) => BALISE.test(String(html ?? ''));
+/* L'hôte d'un « site » Web Analytics : `host` pour un site hors proxy, sinon le nom de la zone (site proxy, orange).
+   Mesuré le 10.10 (run 38075806653) : le site de kd-mc.com n'a PAS de champ host → il était ignoré (« undefined »). */
+export const hoteDe = (s) => String(s?.host ?? s?.ruleset?.zone_name ?? '');
 /* Les « sites » Web Analytics de l'hôte (et de ses sous-domaines) encore en injection automatique. */
 export const sitesACouper = (sites, hotes = HOTES) => (sites ?? []).filter((s) => s?.auto_install === true
-  && hotes.some((h) => s.host === h || String(s.host ?? '').endsWith('.' + h)));
+  && hotes.some((h) => hoteDe(s) === h || hoteDe(s).endsWith('.' + h)));
+/* Ce qu'on renvoie à l'API pour couper : l'injection à faux, la zone (site proxy) ou l'hôte (site hors proxy). */
+export const corpsCoupure = (s) => {
+  const c = { auto_install: false };
+  if (s?.host) c.host = s.host;
+  if (s?.ruleset?.zone_tag) c.zone_tag = s.ruleset.zone_tag;
+  else if (s?.zone_tag) c.zone_tag = s.zone_tag;
+  return c;
+};
 /* Une règle de configuration qui coupe déjà le RUM est-elle posée (et active) ? */
 export const regleDejaPosee = (regles) => (regles ?? []).some((r) => r?.enabled !== false && r?.action === 'set_config'
   && r?.action_parameters?.disable_rum === true);
@@ -67,7 +78,10 @@ async function cf(methode, chemin, corps) {
 export async function pagesServies() {
   return Promise.all(PAGES.map(async (url) => {
     try {
-      const r = await fetch(url, { headers: { 'x-kdmc-sonde': 'cloudflare-analytics-couper', 'cache-control': 'no-cache' } });
+      /* Un VRAI navigateur : Cloudflare ne pose pas la balise pour un robot (run 38075806653 : « absente » partout avec l'agent de Node,
+         alors que le navigateur du robot de vérification la voyait). */
+      const r = await fetch(url, { headers: { 'x-kdmc-sonde': 'cloudflare-analytics-couper', 'cache-control': 'no-cache', accept: 'text/html',
+        'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1' } });
       return { url, status: r.status, beacon: beaconPresent(await r.text()) };
     } catch (e) { return { url, status: 0, beacon: false, erreur: e?.message ?? String(e) }; }
   }));
@@ -90,16 +104,15 @@ async function voieCompte(idCompte) {
   const sites = sitesACouper(l.result);
   const tous = l.result ?? [];
   const etatSite = (s) => (s?.auto_install ? 'OUI' : 'non');
-  const liste = tous.map((s) => s?.host + ' (injection auto : ' + etatSite(s) + ')').join(', ');
+  const liste = tous.map((s) => (hoteDe(s) || '(sans hôte)') + ' (injection auto : ' + etatSite(s) + ')').join(', ');
   dire(`   compte : ${tous.length} site(s) Web Analytics — ${liste || 'aucun'}`);
   dire(`   à couper (hôtes ${HOTES.join(', ')} et sous-domaines) : ${sites.length}`);
   if (!sites.length) return { fait: false, rien: true };
-  const reponses = await Promise.all(sites.map((s) => cf('PUT', `/accounts/${idCompte}/rum/site_info/${identifiant(s.site_tag)}`,
-    { host: s.host, zone_tag: s.zone_tag, auto_install: false })));
+  const reponses = await Promise.all(sites.map((s) => cf('PUT', `/accounts/${idCompte}/rum/site_info/${identifiant(s.site_tag)}`, corpsCoupure(s))));
   const refus = [];
   reponses.forEach((p, i) => {
-    dire(`   ${sites[i].host} → auto_install=false : ${p.ok ? 'fait' : 'REFUSÉ HTTP ' + p.status + ' ' + p.erreurs}`);
-    if (!p.ok) refus.push(`${sites[i].host} : HTTP ${p.status} ${p.erreurs}`);
+    dire(`   ${hoteDe(sites[i])} → auto_install=false : ${p.ok ? 'fait' : 'REFUSÉ HTTP ' + p.status + ' ' + p.erreurs}`);
+    if (!p.ok) refus.push(`${hoteDe(sites[i])} : HTTP ${p.status} ${p.erreurs}`);
   });
   return refus.length ? { fait: false, erreur: refus.join(' | ') } : { fait: true };
 }

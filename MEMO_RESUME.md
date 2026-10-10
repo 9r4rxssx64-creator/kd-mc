@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-10 (midi) — #4460 fusionnée et déployée ; 3 robots publics rouges réparés
+
+- Fusion #4460 (squash 9888eb927). Déployés : routeur du domaine ✅, site (Pages) ✅, caisse kdmc-vente (en ligne, `/health` porte
+  `whatsapp_confirmation` — mais son robot finissait rouge, voir plus bas). SonarCloud : un seul point restant, `style-src 'unsafe-inline'`
+  de la page admin, déjà sur main (commentaire sur la PR) → PR à part.
+- Rouges du public, causes rejouées en vrai : `deploy-kdmc-vente` (commandes du robot sans la fiche obligatoire depuis le 27.09),
+  `lingua-truth` (badge privé absent de la copie publique, servi 200 par le domaine), `bee-gardes` (arbre privé → 1 page porteuse au
+  public). Corrigés + gardes `preuve-caisse-fiche`, `assets-prive` ; seuil adapté dans `javis-bee` (strict au coffre). Leçon #489.
+
 ## 2026-10-10 (nuit) — Les 4 rouges de la chaîne complète : causes trouvées
 
 - `test:heures` : date en dur (10-11-12.10) qui croisait le vrai pointage du jour → jour du scénario choisi selon aujourd'hui (leçon #485).

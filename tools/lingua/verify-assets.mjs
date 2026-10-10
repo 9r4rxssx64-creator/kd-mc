@@ -32,12 +32,17 @@ const dossiersMascotte = [];
 });
 
 const manquants = [];
+const horsCopie = [];   // fichiers privés que cette copie (publique) ne porte pas — vérifiés au coffre
 const vus = new Set();
 const verifie = (rel, ou) => {
   const cle = rel + '|' + ou;
   if (vus.has(cle)) return; vus.add(cle);
   /* « /CMCteams/… » = le dépôt entier, comme sur le domaine (module partagé tools/shared, 9.10) — vérifié quand même. */
   const f = rel.startsWith('/CMCteams/') ? path.join(ROOT, '..', rel.slice('/CMCteams/'.length)) : path.join(ROOT, rel);
+  /* Dépôt PUBLIC (10.10) : `tools/shared/` est « privé toujours » (tools/depot-public/regles.json) — l'export le retire en
+     entier et le site le republie depuis le coffre. Un dossier privé ABSENT EN ENTIER n'est pas un trou : on le dit, et le
+     contrôle strict tourne au coffre, où le dossier existe. Un fichier manquant DANS un dossier présent reste une erreur. */
+  if (rel.startsWith('/CMCteams/tools/shared/') && !existsSync(path.join(ROOT, '..', 'tools', 'shared'))) { horsCopie.push({ rel, ou }); return; }
   if (!existsSync(f)) manquants.push({ rel, ou });
 };
 
@@ -68,6 +73,7 @@ const listeSW = (sw.match(/var ASSETS\s*=\s*\[([\s\S]*?)\];/) || [])[1] || '';
 
 console.log('🖼️  Images et fichiers demandés par l\'app — ' + vus.size + ' chemin(s) contrôlé(s)'
   + ' · mascottes : ' + dossiersMascotte.join(', '));
+horsCopie.forEach((m) => console.log('ℹ️  privé, servi depuis le coffre (absent de cette copie publique) : ' + m.rel + '   (demandé par ' + m.ou + ')'));
 if (manquants.length) {
   console.log('\n❌ ' + manquants.length + ' fichier(s) demandé(s) mais ABSENT(s) — chaque affichage déclenche un 404 :');
   manquants.forEach((m) => console.log('   · ' + m.rel + '   (demandé par ' + m.ou + ')'));

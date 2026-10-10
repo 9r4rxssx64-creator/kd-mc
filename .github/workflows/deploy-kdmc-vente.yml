@@ -149,7 +149,7 @@ jobs:
 
           echo "— la caisse refuse un produit inventé —"
           curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' \
-            -d '{"produit":"gratuit-ia","email":"p@example.com","consentement":true}' | tee /tmp/c3.json; echo
+            -d '{"produit":"gratuit-ia","email":"p@example.com","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}' | tee /tmp/c3.json; echo
           grep -q '"error":"produit_inconnu"' /tmp/c3.json || { echo "DANGER : un produit hors catalogue est accepté"; exit 1; }
 
           echo "— une capture sur une référence inventée ne délivre rien —"
@@ -161,7 +161,7 @@ jobs:
           if grep -q '"caisse":true' /tmp/h.json; then
             echo "CAISSE ACTIVE : les clés PayPal sont posées, l'achat est automatique de bout en bout."
             curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' \
-              -d '{"produit":"avis-ia","email":"preuve@example.com","consentement":true}' > /tmp/c5.json
+              -d '{"produit":"avis-ia","email":"preuve@example.com","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}' > /tmp/c5.json
             node -e '
               const j = JSON.parse(require("fs").readFileSync("/tmp/c5.json","utf8"));
               if (!j.ok || !/^https:\/\/www\.(sandbox\.)?paypal\.com\//.test(j.approbation || "")) {
@@ -170,7 +170,7 @@ jobs:
               console.log("commande créée, réf", j.ref, "→ lien de paiement PayPal obtenu.");
             '
           else
-            grep -q '"error":"caisse_absente"' <(curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' -d '{"produit":"kit-ia","email":"p@example.com","consentement":true}') \
+            grep -q '"error":"caisse_absente"' <(curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' -d '{"produit":"kit-ia","email":"p@example.com","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}') \
               || { echo "ÉCHEC : sans clés PayPal, la caisse doit le DIRE (caisse_absente) pour que la page retombe sur paypal.me"; exit 1; }
             echo "CAISSE EN REPLI : clés PayPal absentes → le bouton rouvre paypal.me. Rien n'est cassé, mais la validation reste manuelle."
           fi
@@ -183,7 +183,7 @@ jobs:
             -d '{"produit":"kit-ia","consentement":true}' | tee /tmp/i1.json; echo
           grep -q '"error":"email"' /tmp/i1.json || { echo "DANGER : un panier sans e-mail ne serait livrable par personne"; exit 1; }
           curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
-            -d '{"produit":"gratuit-ia","email":"p@example.com","consentement":true}' | tee /tmp/i2.json; echo
+            -d '{"produit":"gratuit-ia","email":"p@example.com","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}' | tee /tmp/i2.json; echo
           grep -q '"error":"produit_inconnu"' /tmp/i2.json || { echo "DANGER : un produit hors catalogue ouvre un panier"; exit 1; }
           curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
             -d '{"produit":"kit-ia","email":"p@example.com"}' | tee /tmp/i3.json; echo
@@ -191,7 +191,7 @@ jobs:
 
           echo "— un panier complet rend une référence ET le bon lien PayPal —"
           curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
-            -d '{"produit":"avis-ia","email":"preuve@example.com","consentement":true}' > /tmp/i4.json
+            -d '{"produit":"avis-ia","email":"preuve@example.com","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}' > /tmp/i4.json
           cat /tmp/i4.json; echo
           node -e '
             const j = JSON.parse(require("fs").readFileSync("/tmp/i4.json","utf8"));
@@ -222,7 +222,7 @@ jobs:
           # ── REVOLUT + VIREMENT (Kevin 18.09 « Aussi mon Revolut et IBAN ») ────
           echo "— Revolut ouvre un panier et rend le bon lien —"
           curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
-            -d '{"produit":"avis-ia","email":"preuve@example.com","moyen":"revolut","consentement":true}' > /tmp/r1.json
+            -d '{"produit":"avis-ia","email":"preuve@example.com","moyen":"revolut","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}' > /tmp/r1.json
           cat /tmp/r1.json; echo
           node -e '
             const j = JSON.parse(require("fs").readFileSync("/tmp/r1.json","utf8"));
@@ -233,7 +233,7 @@ jobs:
 
           echo "— un moyen invente est refuse —"
           curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
-            -d '{"produit":"avis-ia","email":"p@example.com","moyen":"bitcoin","consentement":true}' | tee /tmp/r2.json; echo
+            -d '{"produit":"avis-ia","email":"p@example.com","moyen":"bitcoin","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}' | tee /tmp/r2.json; echo
           grep -q '"error":"moyen_inconnu"' /tmp/r2.json || { echo "DANGER : un moyen de paiement invente est accepte"; exit 1; }
 
           echo "— le virement suit l'IBAN range dans le coffre, jamais le depot —"
@@ -245,7 +245,7 @@ jobs:
           '
           if [ "$(cat /tmp/vir.txt)" = "0" ]; then
             curl -sS -X POST "$URL/caisse/intention" -H 'content-type: application/json' \
-              -d '{"produit":"avis-ia","email":"p@example.com","moyen":"virement","consentement":true}' | tee /tmp/r3.json; echo
+              -d '{"produit":"avis-ia","email":"p@example.com","moyen":"virement","consentement":true,"prenom":"Preuve","nom":"Robot","cgv":true}' | tee /tmp/r3.json; echo
             grep -q '"error":"moyen_indisponible"' /tmp/r3.json || { echo "DANGER : un virement est propose SANS IBAN — l acheteur paierait dans le vide"; exit 1; }
             echo "OK — sans IBAN, le virement se tait au lieu d envoyer l acheteur nulle part."
           fi

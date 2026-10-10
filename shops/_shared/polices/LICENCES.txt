@@ -1,0 +1,13 @@
+Polices servies par le domaine pour les boutiques (sous-ensemble latin, fichiers woff2 d'origine, non modifiés).
+Copiées le 10.10.2026 depuis Google Fonts (fonts.gstatic.com) pour ne plus bloquer l'affichage des pages.
+
+Gelasio            — Copyright The Gelasio Project Authors          — SIL Open Font License 1.1
+Ubuntu Mono        — Copyright Canonical Ltd                         — Ubuntu Font Licence 1.0
+Manrope            — Copyright The Manrope Project Authors          — SIL Open Font License 1.1
+Inter              — Copyright The Inter Project Authors             — SIL Open Font License 1.1
+Instrument Serif   — Copyright The Instrument Serif Project Authors  — SIL Open Font License 1.1
+JetBrains Mono     — Copyright The JetBrains Mono Project Authors    — SIL Open Font License 1.1
+Playfair Display   — Copyright The Playfair Display Project Authors  — SIL Open Font License 1.1
+
+SIL Open Font License 1.1 : https://openfontlicense.org/open-font-license-official-text/
+Ubuntu Font Licence 1.0   : https://ubuntu.com/legal/font-licence

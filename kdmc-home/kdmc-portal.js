@@ -183,15 +183,20 @@
         + '<button class="btn" id="aa-go" type="button" style="min-height:50px;width:100%">Vérifier maintenant</button>')
       + '<button class="btn ghost" id="aa-out" type="button" style="min-height:48px;width:100%;margin-top:8px">Me déconnecter</button></div>';
     document.body.appendChild(box);
-    var verifier = function () {
-      if (document.hidden || !window.kdmcSSO || !window.kdmcSSO.whoamiResult) return;
-      window.kdmcSSO.whoamiResult().then(function (r) {
-        if (r && r.state === 'session' && r.session && !r.session.attente_admin) { clearInterval(_attenteTimer); box.remove(); showHub(r.session.name); return; }
+    /* 10.10 (réactivité) : « Vérifier maintenant » réagit tout de suite (texte + bouton grisé), et demande une réponse NEUVE au domaine. */
+    var verifier = function (manuel) {
+      if ((!manuel && document.hidden) || !window.kdmcSSO || !window.kdmcSSO.whoamiResult) return;
+      var b = document.getElementById('aa-go'), e0 = document.getElementById('aa-etat');
+      if (manuel && b) { b.disabled = true; b.textContent = 'Vérification…'; if (e0) e0.textContent = 'Je demande au domaine…'; }
+      var rendre = function () { var b2 = document.getElementById('aa-go'); if (b2) { b2.disabled = false; b2.textContent = 'Vérifier maintenant'; } };
+      window.kdmcSSO.whoamiResult({ frais: !!manuel }).then(function (r) {
+        if (r && r.state === 'session' && r.session && !r.session.attente_admin) { clearInterval(_attenteTimer); box.remove(); showHub(r.session.name, r); return; }
         if (r && r.state === 'session' && r.session && r.session.attente_admin === 'refuse') { renderAttenteAdmin(r.session); return; }
+        rendre();
         var e = document.getElementById('aa-etat'); if (e) e.textContent = 'Pas encore validé — je revérifie dans 30 secondes.';
-      }).catch(function () { /* réseau : prochain tour */ });
+      }).catch(function () { rendre(); /* réseau : prochain tour */ });
     };
-    var go = document.getElementById('aa-go'); if (go) go.addEventListener('click', verifier);
+    var go = document.getElementById('aa-go'); if (go) go.addEventListener('click', function () { verifier(true); });
     document.getElementById('aa-out').addEventListener('click', function () {
       clearInterval(_attenteTimer); box.remove();
       if (window.kdmcSSO) window.kdmcSSO.logout();
@@ -449,7 +454,9 @@
     });
   }
 
-  function showHub(name) {
+  /* `deja` (10.10, réactivité) : le résultat whoami que l'appelant vient de lire. Sans lui, l'accueil redemandait whoami EN SÉRIE
+     (mesuré : 2 allers-retours avant de voir les tuiles, 3,3 s sur réseau mobile + processeur lent). */
+  function showHub(name, deja) {
     var suite = function (r) {
       /* 8.10 (revue extérieure) : un compte sans code renvoyé vers l'app AVANT l'écran du code = ping-pong app ⇄ portail.
          Le domaine a le dernier mot : code_requis → l'écran bloquant, et on ne repart pas. */
@@ -462,7 +469,10 @@
       hide(gate); show(hub);
       applyAdminVisibility(r);
       maybeOfferInstall();
+      /* la tuile touchée part sans attendre : le laissez-passer est lu pendant que Kevin regarde l'accueil */
+      if (r && r.state === 'session' && window.kdmcSSO && window.kdmcSSO.prechargerPorte) { try { window.kdmcSSO.prechargerPorte(); } catch (e) { /* */ } }
     };
+    if (deja && deja.state) { suite(deja); return; }
     if (window.kdmcSSO && window.kdmcSSO.whoamiResult) { window.kdmcSSO.whoamiResult().then(suite).catch(function () { suite(null); }); } else { suite(null); }
   }
 
@@ -521,6 +531,7 @@
     wireCgu();
     document.getElementById('f-create').addEventListener('click', doCreate);
     wireTel();
+    telExige();   /* lue d'avance (voir telExige) */
     document.getElementById('f-deja').addEventListener('click', function () {
       var box = document.getElementById('f-deja-box'); box.hidden = !box.hidden;
       if (!box.hidden) document.getElementById('l-nom').focus();
@@ -597,10 +608,16 @@
   function _tSaisi() { return _tCases().map(function (c) { return c.value; }).join(''); }
   function _tDit(t) { var e = document.getElementById('t-err'); if (e) e.textContent = t || ''; }
   function _tMin(fin) { var s = Math.max(0, Math.ceil((fin - Date.now()) / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  /* 10.10 (réactivité) : la question « le domaine exige-t-il le téléphone ? » est posée dès que l'écran d'inscription s'affiche,
+     pendant que la personne tape son nom — « Créer mon compte » n'attend plus cet aller-retour (mesuré : 1,5 s de moins).
+     Une réponse ratée n'est pas gardée (la suivante redemande) ; et si le domaine l'exige quand même, /issue répond tel_requis. */
+  var _telEtatP = null;
   function telExige() {
-    return fetch('/__sso/tel/etat', { credentials: 'include', cache: 'no-store' })
+    if (_telEtatP) return _telEtatP;
+    var p = _telEtatP = fetch('/__sso/tel/etat', { credentials: 'include', cache: 'no-store' })
       .then(function (r) { return r.json(); }).then(function (j) { return !!(j && j.obligatoire); })
-      .catch(function () { return false; });   /* si le domaine l'exige quand même, /issue répond tel_requis et on ouvre l'étape */
+      .catch(function () { if (_telEtatP === p) _telEtatP = null; return false; });
+    return p;
   }
   function telDemarrer() {
     var box = document.getElementById('t-box'); if (!box) return;
@@ -715,9 +732,9 @@
     if (!cgu) { err.textContent = 'Merci d\'accepter les conditions pour continuer.'; return; }
     /* Téléphone d'abord (9.10, Kevin « OTP pour toutes inscriptions ») — seulement si le domaine l'exige (WhatsApp branché). */
     if (!_telPreuve && _validation !== 'admin') {
-      var btn0 = document.getElementById('f-create'); btn0.disabled = true;
+      var btn0 = document.getElementById('f-create'); btn0.disabled = true; btn0.textContent = 'Vérification…';   /* 10.10 : réaction immédiate (le domaine répond en 1-2 s sur mobile) */
       return telExige().then(function (oblig) {
-        btn0.disabled = false;
+        btn0.disabled = false; btn0.textContent = 'Créer mon compte';
         if (oblig) { telDemarrer(); return; }
         creerCompte(prenom, nom, code);
       });
@@ -928,9 +945,9 @@
   function _myCred(uid) { try { var v = lg(LS_PASSKEY, {})[uid]; return (typeof v === 'string') ? v : ''; } catch (e) { return ''; } }
   function _pkSupported() { return !!(window.kdmcSSO && window.kdmcSSO.supportsPasskey && window.kdmcSSO.supportsPasskey()); }
   /* Après connexion : propose l'enrôlement Face ID si supporté + pas déjà fait. */
-  function _postLogin(acc) {
+  function _postLogin(acc, deja) {
     var skipped = false; try { skipped = !!sessionStorage.getItem('kdmc_pk_skip'); } catch (e) { /* */ }
-    if (_pkSupported() && !_hasPasskey(acc.uid) && !skipped) { renderPasskeyOffer(acc); } else { showHub(acc.name); }
+    if (_pkSupported() && !_hasPasskey(acc.uid) && !skipped) { renderPasskeyOffer(acc); } else { showHub(acc.name, deja); }
   }
   function renderPasskeyOffer(acc) {
     hide(hub); show(gate); /* boot avec session existante : le hub peut être affiché → on remontre la porte */
@@ -1016,7 +1033,26 @@
       if (u.protocol !== 'https:' || u.hostname === location.hostname || !/\.kd-mc\.com$/.test(u.hostname)) return;
       if (!(window.kdmcSSO && window.kdmcSSO.porte)) return;
       e.preventDefault();
+      /* 10.10 (réactivité, mesuré : 1,5 s sans AUCUN changement à l'écran → Kevin re-touchait) : la tuile réagit TOUT DE SUITE
+         (grisée, « ⏳ »), et un 2e toucher pendant le départ ne relance rien. */
+      if (a.classList.contains('ouvre')) return;
+      a.classList.add('ouvre'); a.setAttribute('aria-busy', 'true');
+      var arr = a.querySelector('.arr'); if (arr) { arr.setAttribute('data-arr', arr.textContent); arr.textContent = '⏳'; }
+      setTimeout(_tuilesNormales, 10000);
       window.kdmcSSO.porte(a.href).then(function (dest) { location.href = dest; }, function () { location.href = a.href; });
+    });
+    /* toucher = lire le laissez-passer dès le doigt posé (avant le « click », ~100-300 ms plus tard sur iPhone) */
+    document.addEventListener('pointerdown', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a.card') : null;
+      if (a && window.kdmcSSO && window.kdmcSSO.prechargerPorte && /\.kd-mc\.com$/.test(a.hostname || '')) { try { window.kdmcSSO.prechargerPorte(); } catch (_) { /* */ } }
+    }, { passive: true });
+    /* retour arrière (page gardée en mémoire par Safari), ou départ qui n'a pas abouti en 10 s : les tuiles redeviennent normales */
+    window.addEventListener('pageshow', _tuilesNormales);
+  }
+  function _tuilesNormales() {
+    document.querySelectorAll('a.card.ouvre').forEach(function (a) {
+      a.classList.remove('ouvre'); a.removeAttribute('aria-busy');
+      var arr = a.querySelector('.arr'); if (arr && arr.hasAttribute('data-arr')) { arr.textContent = arr.getAttribute('data-arr'); arr.removeAttribute('data-arr'); }
     });
   }
   _decorateAppLinks();
@@ -1024,9 +1060,9 @@
   /* ---------------------------- Boot ---------------------------- */
   function boot() {
     var acc = lg(LS_ACCOUNT, null);
-    var done = function (sess) {
+    var done = function (sess, r) {
       if (_kevinNonProuve(sess)) { renderPreuveAdmin(); show(gate); return; }
-      if (sess && sess.uid) { _postLogin({ uid: sess.uid, name: sess.name || (acc && acc.name) }); return; }
+      if (sess && sess.uid) { _postLogin({ uid: sess.uid, name: sess.name || (acc && acc.name) }, r); return; }   /* r : whoami déjà lu → l'accueil ne le redemande pas */
       if (acc) renderUnlock(acc); else renderCreate();
       show(gate);
     };
@@ -1035,7 +1071,7 @@
     if (window.kdmcSSO && window.kdmcSSO.whoamiResult) {
       window.kdmcSSO.whoamiResult().then(function (r) {
         if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
-        done(r && r.state === 'session' ? r.session : null);
+        done(r && r.state === 'session' ? r.session : null, r);
       }).catch(function () { done(null); });
     } else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done); } else { done(null); }
   }

@@ -333,7 +333,7 @@
   }
   function affiche(err) {
     app.innerHTML = rendu(DATA, LIVE, err);
-    var rf = document.getElementById('rf'); if (rf) rf.addEventListener('click', function () { rf.disabled = true; recharge(); });
+    var rf = document.getElementById('rf'); if (rf) rf.addEventListener('click', function () { rf.disabled = true; rf.textContent = '↻ Lecture…'; recharge(); });   /* 10.10 : réaction immédiate */
     var ig = document.getElementById('inv-go');
     if (ig) ig.addEventListener('click', function () {
       ig.disabled = true; ig.textContent = '…';
@@ -359,7 +359,7 @@
       b.addEventListener('click', function () {
         var refuser = b.hasAttribute('data-refuser'), id = b.getAttribute(refuser ? 'data-refuser' : 'data-valider');
         if (refuser && !confirm('Refuser cette demande ? Rien ne sera livré.')) return;
-        b.disabled = true;
+        b.disabled = true; b.textContent = '…';
         fetch(CAISSE + '/admin/valider', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()), body: JSON.stringify(refuser ? { demande: id, refuser: true } : { demande: id }) })
           .then(function (r) { return r.json(); })
           .then(function (j) { toast(j.ok ? (refuser ? 'Demande refusée.' : 'Livré : code ' + j.code + (j.email_envoye ? ' (e-mail envoyé)' : ' (e-mail non envoyé — à transmettre)')) : 'Échec : ' + (j.detail || j.error)); recharge(); })
@@ -372,7 +372,7 @@
       b.addEventListener('click', function () {
         var abandon = b.hasAttribute('data-abandon'), ref = b.getAttribute(abandon ? 'data-abandon' : 'data-livrer');
         if (!confirm(abandon ? 'Retirer le panier ' + ref + ' ? Rien ne sera livré.' : 'Tu as bien reçu le paiement de ' + ref + ' sur PayPal ? L\'accès part par e-mail.')) return;
-        b.disabled = true;
+        b.disabled = true; b.textContent = '…';
         fetch(CAISSE + '/admin/livrer-panier', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()), body: JSON.stringify(abandon ? { ref: ref, abandonner: true } : { ref: ref }) })
           .then(function (r) { return r.json(); })
           .then(function (j) {
@@ -400,7 +400,7 @@
         if (effacer && !confirm('Retirer ton IBAN ? Le bouton « virement » disparaîtra de tes pages.')) return;
         var iban = (document.getElementById('ibanIn') || {}).value || '';
         if (!effacer && !iban.trim()) { toast('Écris ton IBAN d\'abord.'); return; }
-        b.disabled = true;
+        var lib0 = b.textContent; b.disabled = true; b.textContent = '…';
         var corps = effacer ? { effacer: true } : {
           iban: iban, bic: (document.getElementById('bicIn') || {}).value || '',
           titulaire: (document.getElementById('titulaireIn') || {}).value || '',
@@ -409,9 +409,9 @@
           .then(function (r) { return r.json(); })
           .then(function (j) {
             toast(j.ok ? (effacer ? 'IBAN retiré.' : 'IBAN enregistré : ' + j.banque.iban) : 'Refusé : ' + (j.detail || j.error));
-            if (j.ok) recharge(); else b.disabled = false;
+            if (j.ok) recharge(); else { b.disabled = false; b.textContent = lib0; }
           })
-          .catch(function (e) { toast('Réseau : ' + e.message); b.disabled = false; });
+          .catch(function (e) { toast('Réseau : ' + e.message); b.disabled = false; b.textContent = lib0; });
       });
     });
     app.querySelectorAll('[data-lancer]').forEach(function (b) {
@@ -429,16 +429,22 @@
   }
   function recharge() { lireLive().then(function (j) { LIVE = j; affiche(null); publie(j); }).catch(function (e) { affiche(String(e.message || e)); publie(null); }); }
 
-  function boot() {
+  /* `deja` (10.10, réactivité) : la session que le tableau unique vient de vérifier — pas de 2e whoami. Les données « construit »
+     (commerce-data.json) et la caisse sont lues EN MÊME TEMPS (avant : données → puis caisse, en série). */
+  function boot(deja) {
     if (global.kdmcSSO && global.kdmcSSO.consumeHashToken) global.kdmcSSO.consumeHashToken();
-    var who = global.kdmcSSO ? global.kdmcSSO.whoami() : Promise.resolve(null);
+    var who = deja ? Promise.resolve(deja) : (global.kdmcSSO ? global.kdmcSSO.whoami() : Promise.resolve(null));
     who.then(function (s) {
       if (!s || !s.admin || !s.verified) return deny(s);
+      var liveP = lireLive().then(function (j) { return { j: j }; }, function (e) { return { e: e }; });
       return fetch('commerce-data.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
-        .then(function (d) { DATA = d; affiche('lecture en cours…'); recharge(); })
+        .then(function (d) {
+          DATA = d; affiche('lecture en cours…');
+          liveP.then(function (x) { if (x.j) { LIVE = x.j; affiche(null); publie(x.j); } else { affiche(String((x.e && x.e.message) || x.e)); publie(null); } });
+        })
         .catch(function (e) { app.innerHTML = '<div class="msg">Données du tableau introuvables (' + esc(e.message) + ') — relance la génération (npm run commerce:data).</div>'; });
     }).catch(function () { deny(null); });
   }
-  API.monter = function (el) { if (!el) return; app = el; boot(); };
+  API.monter = function (el, s) { if (!el) return; app = el; boot(s && s.admin && s.verified ? s : null); };
   if (!document.documentElement.hasAttribute('data-tableau-unique')) { app = document.getElementById('app'); if (app) boot(); }
 })(typeof window !== 'undefined' ? window : globalThis);

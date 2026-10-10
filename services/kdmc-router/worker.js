@@ -574,13 +574,32 @@ const ROUTEUR = {
        mesuré le 27.09, kd-mc.com/CMCteams/tools/poolrobot/ servait l'app SANS code (toute adresse
        du domaine peut demander un dossier par /CMCteams/…). La porte se décide donc sur le
        DOSSIER réellement demandé, quel que soit le chemin pris. Voir `porteFermee`. */
+    /* ⚡ LA PORTE ET L'HÉBERGEUR EN MÊME TEMPS (Kevin 10.10 : « on attend bcp trop avant l'exécution »).
+       Mesuré : chaque page ET chaque fichier attendait la porte (vérif du jeton + lecture du compte dans le KV, parfois une
+       2e lecture pour le code) PUIS seulement demandait le fichier à l'hébergeur — deux attentes à la suite, à chaque
+       requête (Lingua : 0,65 s avant le premier octet). Pour une simple lecture (GET/HEAD, l'hébergeur est statique, sans
+       effet de bord) on lance la demande à l'hébergeur TOUT DE SUITE, pendant que la porte décide. La sécurité ne change
+       pas : rien n'est renvoyé tant que la porte n'a pas dit oui ; porte fermée → la réponse de l'hébergeur est jetée.
+       Le portail (kd-mc.com, chemins spéciaux cuisine/lingua) garde son chemin d'avant. Sans jeton du tout (inconnu, robot),
+       la porte se fermera de toute façon : rien n'est demandé d'avance. Les fichiers de DONNÉES RH ne sont jamais demandés à
+       l'hébergeur avant la porte (donnees-rh.test.mjs). Garde : porte-parallele.test.mjs. */
+    let prechargeAmont = null;
+    if ((request.method === 'GET' || request.method === 'HEAD') && host !== 'kd-mc.com' && host !== 'www.kd-mc.com' && ssoToken(request)
+        && !DONNEES_RH_NORMALISEES.has(cheminNormal(p.startsWith(PAGES_PREFIX_DEFAUT + '/') ? p : (p === '/' || p === '' ? base + '/' : base + p)))) {
+      let cheminP = (p === '/' || p === '') ? base + '/' : (p.startsWith(PAGES_PREFIX_DEFAUT + '/') ? p : base + p);
+      if (PREFIX_SORTIE !== PAGES_PREFIX_DEFAUT && cheminP.startsWith(PAGES_PREFIX_DEFAUT + '/')) cheminP = PREFIX_SORTIE + cheminP.slice(PAGES_PREFIX_DEFAUT.length);
+      const urlP = UPSTREAM + cheminP + url.search;
+      const hP = new Headers(request.headers); hP.delete('host');
+      prechargeAmont = { url: urlP, rep: fetch(new Request(urlP, { method: request.method, headers: hP, redirect: 'manual' })).catch(() => new Response('upstream injoignable', { status: 502 })) };
+    }
+    const jeterPrecharge = () => { if (prechargeAmont) prechargeAmont.rep.then((r) => (r && r.body ? r.body.cancel() : null)).catch(() => { /* rien */ }); };
     {
       const cheminCMC = p.startsWith(PAGES_PREFIX_DEFAUT + '/') ? p : (p === '/' || p === '' ? base + '/' : base + p);
       const ferme = await porteFermee(request, url, env, cheminCMC);
-      if (ferme) return ferme;
+      if (ferme) { jeterPrecharge(); return ferme; }
       /* DONNÉES RH (audit 30.09, P0-3) : 291 noms + plannings ne sortent qu'à une personne reconnue. */
       const rh = await donneesRhFermees(request, env, cheminCMC);
-      if (rh) return rh;
+      if (rh) { jeterPrecharge(); return rh; }
     }
 
     // Livre de cuisine « A Cüjina de Mùnegu » aussi accessible en CHEMIN du domaine
@@ -655,10 +674,15 @@ const ROUTEUR = {
       redirect: 'manual',
     });
     let res;
-    try {
-      res = await fetch(upstreamReq);
-    } catch (e) {
-      res = new Response('upstream injoignable', { status: 502 });
+    if (prechargeAmont && prechargeAmont.url === upstreamUrl) {
+      res = await prechargeAmont.rep;                       /* déjà en route depuis la porte (voir « LA PORTE ET L'HÉBERGEUR EN MÊME TEMPS ») */
+    } else {
+      jeterPrecharge();
+      try {
+        res = await fetch(upstreamReq);
+      } catch (e) {
+        res = new Response('upstream injoignable', { status: 502 });
+      }
     }
     /* ---- BOUÉE DE SECOURS (Kevin 2026-08-14) --------------------------------
        Le compte GitHub a été suspendu → GitHub Pages s'est éteint et les 20

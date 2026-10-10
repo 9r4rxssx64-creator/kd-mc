@@ -192,6 +192,8 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/etat-du-moment` | +1 | **une seule page de vérité datée** (`ETAT-DU-MOMENT.md`) servie depuis `main` à chaque réveil de session, pour qu'une branche ancienne ne relise pas le monde de sa date de naissance *(branche active non inscrite par sa session : inscrite par `javis-bee` le 26.09 pour que le gate du registre passe pour tout le monde)* | `ETAT-DU-MOMENT.md`, `.claude/hooks/etat-du-moment.sh` |
 | `claude/printify-order-config-34459553021` | +1 | **branche écrite par un workflow** (La Détente) : URL du worker `ld-printify-order` + clé push VAPID. Aucune session humaine derrière — à fusionner ou supprimer par `la-detente` | `shops/la-detente/` |
 | `claude/worker-config-34459553323` | +1 | **branche écrite par un workflow** (La Détente) : URL du worker `ld-gemini-proxy`. Aucune session humaine derrière — à fusionner ou supprimer par `la-detente` | `shops/la-detente/` |
+| `claude/reactivite-tout` | 10.10 | **Réactivité de tout le domaine** (portail, admin, CMCteams, light, apps), boutons morts réparés, robots publics crea-ai et Bee | `reactivite-tout` |
+| `claude/reactivite-plus` | 10.10 | Branche de travail **contenue dans** `claude/reactivite-tout` — rien à fusionner séparément (suppression refusée par le dépôt le 10.10) | `reactivite-plus` |
 
 6 autres branches en avance sont fabriquées par des **workflows** (`printify-order-config-…`,
 `worker-config-…`, nom terminé par l'identifiant du run) : aucune session à inscrire.

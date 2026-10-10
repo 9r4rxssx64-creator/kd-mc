@@ -36,7 +36,9 @@
         "tools/shared/retraite-cmc.js",
         "tools/shared/departs-groupes.js",
         "tools/shared/tests-import-vue.js",
-        "tools/shared/lz-string.js"
+        "tools/shared/lz-string.js",
+        "tools/shared/reaction-immediate.js",
+        "tools/shared/identites-apprises.js"
       ],
       "icon": "icon.svg",
       "site": "https://cmcteams.kd-mc.com",

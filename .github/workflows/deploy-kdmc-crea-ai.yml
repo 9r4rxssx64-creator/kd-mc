@@ -157,10 +157,14 @@ jobs:
           echo "HEALTH_BASE=$ok" >> "$GITHUB_ENV"
 
       - name: Auto-test IA approfondi (appelle réellement les modèles gratuits)
-        if: ${{ inputs.selftest == true && secrets.KDMC_CI_PASS != '' }}   # 8.10 : crea-ai exige un compte du domaine → pass de session en secret, sinon l'essai est sauté
+        # 8.10 : crea-ai exige un compte du domaine → pass de session en secret, sinon l'essai est sauté.
+        # 10.10 : le test du secret se fait DANS l'étape — `secrets` est interdit dans un `if:`,
+        # GitHub refusait tout le fichier (0 tâche, rouge à chaque synchro). Garde : test:workflows-if-secrets.
+        if: ${{ inputs.selftest == true }}
         env:
           KDMC_CI_PASS: ${{ secrets.KDMC_CI_PASS }}
         run: |
+          if [ -z "$KDMC_CI_PASS" ]; then echo "Pas de KDMC_CI_PASS : auto-test sauté (crea-ai exige un compte)."; exit 0; fi
           set +e
           BASE="${HEALTH_BASE:-https://crea-ai.kd-mc.com}"
           echo "== Base testée : $BASE =="

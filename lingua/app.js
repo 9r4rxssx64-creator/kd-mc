@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.138.0";
+var APP_VER="v2.139.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -833,7 +833,7 @@ var _ttsEl=null, _ttsRaison="";
    l'app. Réutilisée elle aussi — sinon chaque écoute laissait une balise de plus derrière elle. */
 var _pronEl=null;
 function _pronJoue(url,rate){ if(!_pronEl){ try{ _pronEl=new Audio(); _pronEl.crossOrigin="anonymous"; _pronEl.preload="auto"; }catch(_){ return null; } }
-  var a=_pronEl; try{ a.pause(); }catch(_){}
+  var a=_pronEl; _voixAttente(a); try{ a.pause(); }catch(_){}
   try{ a.onerror=null; a.onended=null; a.volume=1; a.currentTime=0; }catch(_){}
   try{ if(rate&&rate!==1){ a.preservesPitch=false; a.webkitPreservesPitch=false; a.playbackRate=rate; }
        else { a.preservesPitch=true; a.webkitPreservesPitch=true; a.playbackRate=1; } }catch(_){}
@@ -842,7 +842,24 @@ function _pronJoue(url,rate){ if(!_pronEl){ try{ _pronEl=new Audio(); _pronEl.cr
 function _ttsBalise(){ if(!_ttsEl){ try{ _ttsEl=new Audio(); _ttsEl.preload="auto"; }catch(_){ return null; } } return _ttsEl; }
 /* Prépare la balise partagée : on remet TOUS les réglages à neuf (une balise réutilisée garde
    sinon la vitesse ou le mode d'une phrase précédente), puis on pose la nouvelle adresse. */
+/* 🔊 RÉACTION IMMÉDIATE (Kevin 10.10 : « vérifie la réactivité des boutons… on attend bcp trop avant l'exécution »).
+   Mesuré (iPhone simulé, CPU ×4, réseau +1,5 s) : un appui sur 🔊 ne changeait RIEN à l'écran tant que la belle voix
+   n'était pas arrivée du domaine — jusqu'à 2,5 s de « bouton mort » (puis repli sur la voix du téléphone). Désormais le
+   bouton touché s'allume TOUT DE SUITE (anneau qui pulse, aria-busy) et s'éteint dès que le son part, échoue, ou bascule.
+   Seuls les boutons d'écoute (🔊, say, audio, play, écoute) s'allument : une réponse de leçon suivie d'une lecture
+   automatique ne clignote pas. Garde : test:lingua-reactivite. */
+var _appui={el:null,t:0}, _voixCharge=null, _voixChargeT=0;
+try{ document.addEventListener("click",function(e){ var b=e.target&&e.target.closest?e.target.closest("button,[role=button]"):null; _appui={el:b,t:Date.now()}; },true); }catch(_){}
+function _boutonEcoute(b){ if(!b) return false; var c=String(b.className||""); return /🔊/.test(b.textContent||"") || /(^|[\s-])(say|audio|play|ecoute|listen)([\s-]|$)/i.test(c) || /(say|audio|play|ecoute)/i.test(b.id||""); }
+function _voixAttente(a){ _voixFin();
+  var b=_appui.el; if(!b || Date.now()-_appui.t>600 || !_boutonEcoute(b) || !document.contains(b)) return;
+  _voixCharge=b; b.classList.add("voix-charge"); try{ b.setAttribute("aria-busy","true"); }catch(_){}
+  _voixChargeT=setTimeout(_voixFin,4000);
+  if(a){ try{ a.addEventListener("playing",_voixFin,{once:true}); a.addEventListener("error",_voixFin,{once:true}); }catch(_){} } }
+function _voixFin(){ if(_voixChargeT){ clearTimeout(_voixChargeT); _voixChargeT=0; }
+  if(_voixCharge){ try{ _voixCharge.classList.remove("voix-charge"); _voixCharge.removeAttribute("aria-busy"); }catch(_){} _voixCharge=null; } }
 function _ttsJoue(url,rate){ var a=_ttsBalise(); if(!a) return null;
+  _voixAttente(a);
   try{ a.pause(); }catch(_){}
   try{ a.onerror=null; a.onended=null; }catch(_){}
   try{ a.volume=1; a.muted=false; a.currentTime=0; }catch(_){}
@@ -860,7 +877,7 @@ function _ttsLibere(){ try{ if(_ttsEl){ _ttsEl.pause(); _ttsEl.removeAttribute("
 var _wsKA=null,_wsKAFin=null;
 function _wsStopKA(){ if(_wsKA){ try{ clearInterval(_wsKA); }catch(_){} _wsKA=null; }
   if(_wsKAFin){ try{ clearTimeout(_wsKAFin); }catch(_){} _wsKAFin=null; } }
-function _wsSpeak(u){ if(!u)return; try{ speechSynthesis.cancel(); }catch(_){}  _wsStopKA();
+function _wsSpeak(u){ if(!u)return; _voixFin(); try{ speechSynthesis.cancel(); }catch(_){}  _wsStopKA();
   var done=function(){ _wsStopKA(); };
   u.onend=done; u.onerror=done;
   try{ speechSynthesis.speak(u);

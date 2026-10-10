@@ -82,9 +82,7 @@ export function page(p, csp = cspMere()) {
 <meta property="og:description" content="${esc(p.promesse)}">
 <meta property="og:url" content="${url}">
 <meta property="og:type" content="product">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/CMCteams/shops/_shared/polices/polices.css?v=1">
 <link rel="stylesheet" href="kit.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Product","name":"${jsonAttr(p.court)}","description":"${jsonAttr(p.promesse)}","brand":{"@type":"Brand","name":"KDMC"},"offers":{"@type":"Offer","price":"${p.prix}","priceCurrency":"EUR","availability":"https://schema.org/InStock","url":"${url}"}}

@@ -3,10 +3,10 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net https://analytics.tiktok.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://api.emailjs.com https://*.workers.dev https://api.printify.com https://api.openverse.org; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net https://analytics.tiktok.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://api.emailjs.com https://*.workers.dev https://api.printify.com https://api.openverse.org; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/CMCteams/shops/_shared/polices/polices.css?v=1">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>CHEZ LOLO — Textile, cosmétiques & goodies | KDMC Monaco</title>
 <meta property="og:title" content="CHEZ LOLO — Textile, cosmétiques & goodies | KDMC Monaco">
@@ -265,7 +265,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Store","name":"CHEZ LOLO","description":"La boutique multi-univers de Lolo : textile, cosmétiques, goodies & accessoires. Livraison Monaco & France.","url":"https://chez-lolo.kd-mc.com/","image":"https://chez-lolo.kd-mc.com/img/og.png?ignore=crop","address":{"@type":"PostalAddress","addressLocality":"Monaco","addressCountry":"MC"},"priceRange":"€€","paymentAccepted":"PayPal, Revolut, Virement bancaire"}</script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+<!-- async (10.10, réactivité) : utilisé seulement à l'envoi d'un message (garde « typeof emailjs ») ; en « defer » il retenait la fin du chargement derrière jsdelivr. -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js" integrity="sha384-SALc35EccAf6RzGw4iNsyj7kTPr33K7RoGzYu+7heZhT8s0GZouafRiCg1qy44AS" crossorigin="anonymous" async></script>
 <!-- PUB READY — Activer en ajoutant les IDs -->
 <!-- Google Ads: décommenter et ajouter ID -->
 <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=AW-XXXXXXXXX"></script>
@@ -1012,7 +1013,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.16"
+        data-version="v2.0.17"
         data-color="#e8b830"
         defer></script>
 

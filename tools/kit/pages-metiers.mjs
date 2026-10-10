@@ -21,7 +21,7 @@ export const SOURCE = join(RACINE, 'tools', 'kit', 'metiers.json');
 export const DOSSIER = join(RACINE, 'shops', 'kit-ia', 'pour');
 export const SITEMAP = join(RACINE, 'shops', 'sitemap.xml');
 export const BASE = 'https://kit.kd-mc.com/pour/';
-export const CSP = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://kdmc-vente.9r4rxssx64.workers.dev; object-src 'none'; base-uri 'self'; form-action 'none'";
+export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://kdmc-vente.9r4rxssx64.workers.dev; object-src 'none'; base-uri 'self'; form-action 'none'";
 const REPERE_DEBUT = '<!-- kit-ia/pour : généré par tools/kit/pages-metiers.mjs, ne pas éditer à la main -->';
 const REPERE_FIN = '<!-- /kit-ia/pour -->';
 
@@ -56,9 +56,7 @@ function tete({ titre, description, canonique, ldjson }) {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${canonique}">
 <meta property="og:type" content="article">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/CMCteams/shops/_shared/polices/polices.css?v=1">
 <link rel="stylesheet" href="../kit.css">
 <script type="application/ld+json">
 ${JSON.stringify(ldjson)}

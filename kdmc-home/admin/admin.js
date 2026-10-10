@@ -140,7 +140,16 @@
     if (rec.length) h += '<h2 class="cat" style="margin-top:14px">🟡 Récents <span style="color:var(--subtle);text-transform:none;letter-spacing:0;font-weight:500">— moins d\'une heure</span></h2><div>' + rec.map(prow).join('') + '</div>';
     return h;
   }
-  function wirePresence() { var b = document.getElementById('prefresh'); if (b) b.addEventListener('click', function () { loadAccounts(0, true); }); }
+  /* 10.10 (réactivité, mesuré : 1,5 s sans rien à l'écran) : le bouton réagit tout de suite, et revient à la réponse. */
+  function wirePresence() {
+    var b = document.getElementById('prefresh'); if (!b) return;
+    b.addEventListener('click', function () {
+      if (b.disabled) return;
+      b.disabled = true; b.textContent = '↻ …';
+      var rendre = function () { var b2 = document.getElementById('prefresh'); if (b2) { b2.disabled = false; b2.textContent = '↻ Rafraîchir'; } };
+      Promise.resolve(loadAccounts(0, true)).then(rendre, rendre);
+    });
+  }
 
   /* ---- Historique des connexions : 1 personne (pas de doublon), avec quels sites ---- */
   /* Copie de REPLI (hors-ligne). SOURCE UNIQUE = /apps.json (chargée au boot,
@@ -343,12 +352,12 @@
         .catch(function () { b.disabled = false; msg.textContent = '⚠️ Réseau — réessaie'; });
     });
   }
-  function chargerApps(puis) {
-    fetch('/__admin/acces', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
+  /* → une promesse qui ne rejette jamais (section optionnelle : sans la liste, le bloc ne s'affiche pas). */
+  function chargerApps() {
+    return fetch('/__admin/acces', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
       .then(function (r) { return r.json(); })
       .then(function (j) { if (j && j.apps) APPS_LISTE = j.apps; })
-      .catch(function () { /* section optionnelle : sans la liste, le bloc ne s'affiche pas */ })
-      .then(puis);
+      .catch(function () { /* fail-open */ });
   }
 
   /* ---- Journal admin (événements sensibles, tracés côté serveur) ---- */
@@ -478,19 +487,19 @@
     if (inp) { inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); }); inp.focus(); }
   }
 
-  var _appsCharge = false;
+  var _appsP = null;
   function loadAccounts(tries, silent) {
     /* La liste des apps du domaine est nécessaire pour afficher le bloc « Où elle
        peut aller ». Chargée UNE fois, avant le premier rendu. Son absence ne bloque
        rien : sans elle, les fiches s'affichent exactement comme avant (fail-open).
        Drapeau DÉDIÉ : réutiliser `silent` ici avalerait la demande du code admin
        au premier chargement (silent = « ne casse pas la vue sur hoquet réseau »). */
-    if (!_appsCharge) {
-      _appsCharge = true;
-      return chargerApps(function () { loadAccounts(tries, silent); });
-    }
-    return fetch('/__admin/accounts', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
-      .then(function (r) { return r.json().then(function (j) { return { st: r.status, j: j }; }).catch(function () { return { st: r.status, j: null }; }); })
+    /* 10.10 (réactivité) : la liste des apps et les comptes partent ENSEMBLE (avant : l'un après l'autre, 1 aller-retour de plus) ;
+       le premier rendu attend les deux, comme avant. */
+    if (!_appsP) _appsP = chargerApps();
+    var comptesP = fetch('/__admin/accounts', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
+      .then(function (r) { return r.json().then(function (j) { return { st: r.status, j: j }; }).catch(function () { return { st: r.status, j: null }; }); });
+    return Promise.all([comptesP, _appsP]).then(function (x) { return x[0]; })
       .then(function (res) {
         var j = res.j;
         if (res.st === 403 || !j || !j.ok) {

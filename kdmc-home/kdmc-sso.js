@@ -17,7 +17,10 @@
   var _refus = null;
 
   function storedToken() { try { return localStorage.getItem(LS_TOK) || ''; } catch (e) { return ''; } }
-  function setToken(t) { try { if (t) localStorage.setItem(LS_TOK, t); else localStorage.removeItem(LS_TOK); } catch (e) { /* quota */ } }
+  /* RÉACTIVITÉ (10.10.2026, Kevin : « on attend bcp trop avant l'exécution ») : `_gen` change à CHAQUE changement de session
+     (pass posé, retiré, connexion, déconnexion) → une réponse lue AVANT ne sert jamais APRÈS (whoami partagé, laissez-passer d'avance). */
+  var _gen = 0;
+  function setToken(t) { _gen++; try { if (t) localStorage.setItem(LS_TOK, t); else localStorage.removeItem(LS_TOK); } catch (e) { /* quota */ } }
   function authHeaders(extra) {
     var h = extra || {};
     var t = storedToken();
@@ -43,7 +46,19 @@
      - 'session' : session valide (avec l'objet session)
      - 'invalid' : le serveur a répondu explicitement « pas de session » (HTTP 200 ok:false)
      - 'neterr'  : réseau/serveur KO (non-200, JSON cassé, exception) → on NE jette PAS le pass */
-  function whoamiResult() {
+  /* UN SEUL whoami À LA FOIS (10.10.2026, mesuré : le portail en lançait 3 au démarrage — le battement de présence, le démarrage,
+     puis l'accueil — et le tableau admin 3 aussi). Deux demandes simultanées reçoivent la MÊME réponse (une seule requête au
+     domaine). Rien n'est gardé après la réponse : la demande suivante repart au domaine. Une session qui change entre-temps
+     (`_gen`) relance une vraie requête. `{ frais: true }` (bouton « Vérifier maintenant ») : toujours une requête neuve. */
+  var _whoP = null, _whoGen = -1;
+  function whoamiResult(opts) {
+    if (!(opts && opts.frais) && _whoP && _whoGen === _gen) return _whoP;
+    var g = _gen;
+    var p = _whoamiReseau().then(function (r) { if (_whoP === p) _whoP = null; return r; });
+    _whoP = p; _whoGen = g;
+    return p;
+  }
+  function _whoamiReseau() {
     return fetch(BASE + '/whoami', { method: 'GET', credentials: 'include', cache: 'no-store', headers: authHeaders() })
       .then(function (r) {
         if (!r.ok) return { state: 'neterr' };
@@ -194,12 +209,25 @@
      à elle : on passe par SON adresse /__sso/entrer, qui dépose la session (et le grant admin)
      dans SON stockage, puis renvoie sur la page voulue. Marche pour toute adresse du domaine.
      → Promise<string> : l'adresse à ouvrir (l'adresse d'origine si rien à déposer). */
+  /* LE LAISSEZ-PASSER LU D'AVANCE (10.10.2026, mesuré : toucher une tuile attendait un aller-retour complet à /__sso/pass AVANT de
+     partir — 1,5 s de « rien ne se passe » sur un réseau mobile). Le portail le lit dès que l'accueil s'affiche (prechargerPorte),
+     on le garde 60 s en mémoire de la page (l'enveloppe en vaut 90 : marge de 30 s), et une session qui change (`_gen`) le jette. */
+  var _passP = null, _passAt = 0, _passGen = -1, PASS_MS = 60000;
+  function _lirePass() {
+    if (_passP && _passGen === _gen && Date.now() - _passAt < PASS_MS) return _passP;
+    _passAt = Date.now(); _passGen = _gen;
+    var p = fetch(BASE + '/pass', { credentials: 'include', cache: 'no-store', headers: authHeaders() }).then(function (r) { return r.json(); }).catch(function () { return null; });
+    p.then(function (j) { if (_passP === p && !(j && j.ok)) _passP = null; });   /* pas de session : on ne garde pas le « non » */
+    _passP = p;
+    return p;
+  }
+  function prechargerPorte() { _lirePass(); }   /* le cookie de session est HttpOnly (invisible ici) : on demande, le domaine répond ok:false sans session */
   function porte(url) {
     var u; try { u = new URL(String(url), location.origin); } catch (e) { return Promise.resolve(String(url)); }
     if (u.protocol !== 'https:' || !/(^|\.)kd-mc\.com$/.test(u.hostname)) return Promise.resolve(u.href);
     /* 8.10 (revue extérieure) : le domaine rend une ENVELOPPE signée de 90 s (`porte`) : session + grant admin voyagent dedans,
        jamais le grant en clair dans l'adresse (journaux, historique). Repli : la session seule (`t`), sans grant. */
-    var lire = fetch(BASE + '/pass', { credentials: 'include', cache: 'no-store', headers: authHeaders() }).then(function (r) { return r.json(); }).catch(function () { return null; });
+    var lire = _lirePass();
     return lire.then(function (j) {
       var to = u.pathname + u.search + u.hash;
       if (j && j.ok && j.porte) return u.origin + '/__sso/entrer?to=' + encodeURIComponent(to) + '&h=' + encodeURIComponent(j.porte);
@@ -218,7 +246,7 @@
       body: JSON.stringify({ code: String(code || '') }),
     })
       .then(function (r) { return r.json().catch(function () { return { ok: false, reason: 'neterr' }; }); })
-      .then(function (j) { if (j && j.ok && j.token) setToken(j.token); return j || { ok: false }; })
+      .then(function (j) { _gen++; if (j && j.ok && j.token) setToken(j.token); return j || { ok: false }; })
       .catch(function () { return { ok: false, reason: 'neterr' }; });
   }
 
@@ -329,6 +357,7 @@
     issueDetail: issueDetail,
     login: login,
     porte: porte,
+    prechargerPorte: prechargerPorte,   /* 10.10 : le portail lit le laissez-passer dès l'accueil → la tuile part sans attendre */
     adminCode: adminCode,
     cgu: cgu,
     accepterCgu: accepterCgu,

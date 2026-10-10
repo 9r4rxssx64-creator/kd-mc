@@ -80,7 +80,7 @@ input,select{width:100%;min-height:48px;padding:10px 12px;font:inherit;font-size
 .barre .btn{flex:1}
 footer{margin:var(--e64) 0 var(--e24);font-size:var(--t14);color:var(--texte3)}
 footer a{color:inherit}
-footer a,.petit a,.sur a{display:inline-flex;align-items:center;min-height:44px}
+footer a,.petit a,.sur a,.faq p a{display:inline-flex;align-items:center;min-height:44px}   /* .faq p a (10.10) : avec la vraie police Manrope (servie par le domaine), le lien « Conditions de vente » de la FAQ mesurait 24 px */
 /* ── Lecteur ─────────────────────────────────────────────────────────── */
 .sommaire{padding:0;margin:0;list-style:none;display:flex;flex-direction:column;gap:2px}
 .sommaire a{display:flex;align-items:center;min-height:44px;padding:8px 12px;border-radius:var(--r-sm);color:var(--texte);text-decoration:none;font-weight:600}

@@ -72,7 +72,7 @@ verifie('école d\'intégration : 8 sur 20 éliminatoire, 3 mois minimum (art. 5
 verifie('système nommé cité en commentaire', h.includes('awesome-design-skills/skills/editorial'));
 verifie('primaire du système conservé', h.includes('--primaire:#111111'));
 verifie('serif Gelasio du système', h.includes('"Gelasio"'));
-verifie('mono Ubuntu Mono du système', h.includes('Ubuntu+Mono') && h.includes('"Ubuntu Mono"'));
+verifie('mono Ubuntu Mono du système (servie par le domaine depuis le 10.10)', h.includes('polices.css') && h.includes('"Ubuntu Mono"') && /'Ubuntu Mono'/.test(readFileSync(join(RACINE, 'shops/_shared/polices/polices.css'), 'utf8')));
 verifie('or assombri pour passer AA (l\'or vif ne passe pas)', h.includes('--accent:#8A6A1F'));
 verifie('variante sombre présente', h.includes('prefers-color-scheme: dark'));
 verifie('animations coupées si demandé', h.includes('prefers-reduced-motion'));

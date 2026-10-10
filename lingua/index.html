@@ -1005,29 +1005,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 :root[data-theme="clair"] .pron-result .pr-tip{color:var(--tx)}
 :root[data-theme="clair"] .pron-result .pr-tip b{color:var(--tx)}
 :root[data-theme="clair"] .pron-nomic{color:var(--tx)}
+/* v2.139.0 (Kevin 10.10, réactivité) : le bouton d'écoute touché s'allume TOUT DE SUITE pendant que la voix arrive du domaine */
+@keyframes voixCharge{0%,100%{box-shadow:0 0 0 0 rgba(127,211,168,.75)}50%{box-shadow:0 0 0 8px rgba(127,211,168,0)}}
+.voix-charge{animation:voixCharge .9s ease-in-out infinite;outline:2px solid #7fd3a8;outline-offset:2px;cursor:progress}
+@media (prefers-reduced-motion:reduce){.voix-charge{animation:none}}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<script src="data.js?v=v2.138.0"></script>
-<script src="histoires-langues.js?v=v2.138.0"></script>
-<script src="mc-voix.js?v=v2.138.0"></script>
-<script src="sources-langues.js?v=v2.138.0"></script>
-<script src="data-mc.js?v=v2.138.0"></script>
-<script src="data-lsf.js?v=v2.138.0"></script>
-<script src="translit.js?v=v2.138.0"></script>
+<script src="data.js?v=v2.139.0"></script>
+<script src="histoires-langues.js?v=v2.139.0"></script>
+<script src="mc-voix.js?v=v2.139.0"></script>
+<script src="sources-langues.js?v=v2.139.0"></script>
+<script src="data-mc.js?v=v2.139.0"></script>
+<script src="data-lsf.js?v=v2.139.0"></script>
+<script src="translit.js?v=v2.139.0"></script>
 <!-- La marionnette (3.10) : tout le corps de Bee et de Bourricot bouge (oreilles, antennes, bras, jambes, queue).
      Source : tools/javis/marionnette.js, recopiée ici par npm run sync:javis (la même que dans Bee). -->
-<script src="marionnette.js?v=v2.138.0"></script>
+<script src="marionnette.js?v=v2.139.0"></script>
 <script>
 /* Icône iOS = la mascotte Bee 🐝 (création originale KDMC) */
 (function(){try{
   var l=document.createElement("link");l.rel="apple-touch-icon";l.sizes="512x512";l.href="bee/icon-512.png";document.head.appendChild(l);
 }catch(e){}})();
 </script>
-<script src="app.js"></script>
+<script src="app.js?v=v2.139.0"></script>
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "lingua", "data-version": "v2.138.0", "data-version-global": "LINGUA_VER", "data-auto-update": "false", "data-color": "#7fd3a8"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "lingua", "data-version": "v2.139.0", "data-version-global": "LINGUA_VER", "data-auto-update": "false", "data-color": "#7fd3a8"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

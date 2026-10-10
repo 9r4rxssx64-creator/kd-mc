@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-09",
+  "maj": "2026-10-10",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -1373,6 +1373,26 @@
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-09",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "reactivite-tout": {
+      "titre": "Réactivité de tout le domaine",
+      "branche": "claude/reactivite-tout",
+      "sujet": "Boutons et ouvertures plus rapides (portail, admin, CMCteams, light, apps), boutons morts réparés, robots publics crea-ai et Bee",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-10",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "reactivite-plus": {
+      "titre": "Réactivité : boutons morts (contenue dans reactivite-tout)",
+      "branche": "claude/reactivite-plus",
+      "sujet": "Branche de travail intégrée dans claude/reactivite-tout — rien à fusionner séparément",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-10",
       "attend_kevin": null,
       "attend_session": null
     }

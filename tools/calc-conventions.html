@@ -95,7 +95,7 @@ function calcConge(){
   var label=sel.options[sel.selectedIndex].text;
   var jours=parseInt(v[1],10);
   var txt='Vous avez droit a '+jours+' jour'+(jours>1?'s':'')+' de conge paye pour : '+label.split(' (')[0]+'.';
-  var html='<div class="result"><b>'+jours+' jour'+(jours>1?'s':'')+'</b> de conge paye<br><div class="ref">Reference : Convention Collective SBM, Article 18 (conges pour evenements familiaux). Ces jours s\'ajoutent aux conges payes annuels et doivent etre pris au moment de l\'evenement, sur justificatif.</div><button class="outline" style="margin-top:10px" onclick="copyTxt('+JSON.stringify(txt)+')">Copier le resultat</button></div>';
+  var html='<div class="result"><b>'+jours+' jour'+(jours>1?'s':'')+'</b> de conge paye<br><div class="ref">Reference : Convention Collective SBM, Article 18 (conges pour evenements familiaux). Ces jours s\'ajoutent aux conges payes annuels et doivent etre pris au moment de l\'evenement, sur justificatif.</div><button class="outline" style="margin-top:10px" onclick="copyTxt('+esc(JSON.stringify(txt))+')">Copier le resultat</button></div>';
   document.getElementById('res-conge').innerHTML=html;
 }
 
@@ -116,14 +116,14 @@ function calcRetraite(){
   if(grp==='ferme'&&ans>=30){mois=3;palier='30 ans et + (groupe ferme)';}
   var montant=sal*mois;
   var txt='Indemnite retraite : '+mois+' mois de salaire = '+montant.toFixed(2)+' EUR (palier : '+palier+', anciennete '+ans+' ans).';
-  var html='<div class="result"><b>'+mois+' mois</b> de salaire<br>= <b>'+montant.toFixed(2)+' EUR</b><br><div class="ref">Palier : '+esc(palier)+' &middot; Reference : Convention SBM Article 26. Indemnite versee en une fois au depart en retraite. A verifier avec DRH selon contrat individuel.</div><button class="outline" style="margin-top:10px" onclick="copyTxt('+JSON.stringify(txt)+')">Copier le resultat</button></div>';
+  var html='<div class="result"><b>'+mois+' mois</b> de salaire<br>= <b>'+montant.toFixed(2)+' EUR</b><br><div class="ref">Palier : '+esc(palier)+' &middot; Reference : Convention SBM Article 26. Indemnite versee en une fois au depart en retraite. A verifier avec DRH selon contrat individuel.</div><button class="outline" style="margin-top:10px" onclick="copyTxt('+esc(JSON.stringify(txt))+')">Copier le resultat</button></div>';
   document.getElementById('res-retraite').innerHTML=html;
 }
 </script>
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="calc-conventions"
-        data-version="v1.0.0"
+        data-version="v1.0.1"
         data-color="#22cc77"
         defer></script>
 </body>

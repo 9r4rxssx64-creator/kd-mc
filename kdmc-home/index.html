@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.51 -->
+<!-- v1.0.52 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -44,6 +44,9 @@
   .fld:focus{outline:none;border-color:rgba(232,184,48,.55)}
   .btn{width:100%;padding:14px;border:none;border-radius:13px;font-weight:700;font-size:16px;cursor:pointer;min-height:48px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#11160c;margin-top:4px}
   .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.6;cursor:progress}
+  a.card.ouvre{opacity:.7;border-color:rgba(232,184,48,.6);pointer-events:none}
+  a.card.ouvre .arr{opacity:1}
   .btn.ghost{background:transparent;color:var(--mut);border:1px solid var(--line);margin-top:8px}
   .btn.install{background:rgba(106,138,255,.16);color:#cdd8ff;border:1px solid rgba(106,138,255,.4)}
   .cgu{display:block;font-size:13px;color:var(--mut);margin:6px 0 12px;line-height:1.45}
@@ -292,10 +295,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.51"></script>
-  <script src="kdmc-boite.js?v=1.0.51"></script>
-  <script src="kdmc-portal.js?v=1.0.51"></script>
+  <script src="kdmc-sso.js?v=1.0.52"></script>
+  <script src="kdmc-boite.js?v=1.0.52"></script>
+  <script src="kdmc-portal.js?v=1.0.52"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.51" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.52" data-color="#c9a227" defer></script>
 </body>
 </html>

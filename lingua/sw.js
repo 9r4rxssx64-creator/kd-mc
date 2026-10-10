@@ -3,7 +3,7 @@
    en ligne (plus jamais bloqué sur une ancienne page « collée » en mémoire), et on
    garde une copie en cache pour marcher hors-ligne. Aligné sur la règle « MAJ auto
    forcée toujours » : une nouvelle version publiée s'affiche dès la prochaine ouverture. */
-var CACHE = "lingua-v2.138.0";
+var CACHE = "lingua-v2.139.0";
 var ASSETS = ["./","./index.html","./app.js","./data.js","./histoires-langues.js","./mc-voix.js","./sources-langues.js","./data-mc.js","./data-lsf.js","./translit.js","./manifest.webmanifest","./icon.svg","./bee/wave.webp","./bee/party.webp","./bee/read.webp","./bee/point.webp","./bee/rig/base.webp","./bee/rig/wing-l.webp","./bee/rig/wing-r.webp","./donkey/wave.webp","./donkey/party.webp","./donkey/read.webp","./donkey/point.webp","./donkey/rig/base.webp"];
 
 self.addEventListener("install", function(e){
@@ -44,7 +44,10 @@ self.addEventListener("fetch", function(e){
       if(r && r.status===200 && r.type==="basic"){ var cp=r.clone(); caches.open(CACHE).then(function(c){ c.put(req,cp); }); }
       return r; }).catch(function(){ return caches.match(req,{ignoreSearch:true}); }); }));
     return; }
-  // RÉSEAU D'ABORD (index.html, app.js) : dernière version en ligne, cache en repli hors-ligne.
+  /* RÉSEAU D'ABORD (index.html seulement depuis v2.139.0) : dernière version en ligne, cache en repli hors-ligne.
+     app.js est appelé avec ?v=<version> depuis le 10.10 (Kevin : « on attend bcp trop ») : avant, ses 370 Ko repartaient
+     au domaine à CHAQUE ouverture (porte + hébergeur, ~0,65 s) ; maintenant il sort du téléphone, et une nouvelle version
+     = une nouvelle adresse (index.html, toujours frais, la donne). Garde : test:lingua-maj (point 9). */
   e.respondWith(
     fetch(req).then(function(r){
       if(r && r.status===200 && r.type==="basic"){ var cp=r.clone(); caches.open(CACHE).then(function(c){ c.put(req,cp); }); }

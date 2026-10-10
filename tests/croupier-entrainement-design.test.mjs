@@ -319,7 +319,7 @@ verifie('aucune erreur JS sur tout le parcours', erreurs.length === 0, erreurs[0
 const visuSrc = fs.readFileSync(path.join(ROOT, 'shops/croupier/entrainement-visuels.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'shops/croupier/entrainement-lecons.js'), 'utf8');
 verifie('visuels et leçons : aucun innerHTML / insertAdjacentHTML / outerHTML', !/innerHTML|insertAdjacentHTML|outerHTML|document\.write/.test(visuSrc));
 const html = fs.readFileSync(path.join(ROOT, 'shops/croupier/entrainement.html'), 'utf8');
-verifie('bulle de version v2.0.0 en bas de la page', /version-badge-pwa\.js"[^>]*data-version="v2\.0\.0"/.test(html));
+verifie('bulle de version v2.0.1 en bas de la page', /version-badge-pwa\.js"[^>]*data-version="v2\.0\.1"/.test(html));
 
 await ctx.close(); await nav.close(); srv.close();
 console.log(`ENTRAÎNEUR — DESIGN ET ACCÈS — ${ok.length} contrôle(s) OK, ${echecs.length} échec(s)`);

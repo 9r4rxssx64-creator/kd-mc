@@ -4,6 +4,16 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.956 + light v1.83 (2026-10-10 — réactivité : « on attend bcp trop avant l'exécution »)
+
+- **Ouverture** : les ~300 identités apprises s'écrivent en UNE fois (avant : une compression LZ du magasin entier par nom). Écran
+  utilisable 6,9 s → 2,2 s (admin) et 5,4 s → 2,0 s (employé) sur iPhone simulé (CPU ×4, réseau +1,5 s) ; pire tâche bloquante
+  5,4 s → 0,8 s. Code sorti du mono-fichier : `tools/shared/identites-apprises.js`.
+- **Boutons de navigation** (onglets, ‹ ›, retour ; light : « 🔁 Équipe miroir », « Aller à mon équipe ») : réaction visible en 5 à 23 ms
+  au lieu de 110 à 340 ms ; même fonction, même écran (`tools/shared/reaction-immediate.js`, copie exacte dans la light).
+- **Changement de mois** : un seul rendu complet au lieu de deux (le 2e était identique).
+- Outils de mesure : `tools/perf/mesure-reactivite.mjs`, `tools/perf/profil-chargement.mjs`. Garde `test:reactivite` (13 contrôles, 4 sabotages).
+
 ## CMCteams v9.951 → v9.953 + light v1.78 → v1.80 (2026-10-07/08 — fidélité au PDF : 0 personne manquante, novembre 2026)
 
 > Entre v9.396 (avril) et v9.951, l'historique des versions a été tenu dans MEMO_RESUME.md / NOTES_USER.md (ce fichier n'était plus alimenté). Repris ici à partir de v9.951 ; garde `test:docs-frais` R4 : toute version livrée est écrite dans MEMO_RESUME.

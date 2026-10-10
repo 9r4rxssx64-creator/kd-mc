@@ -125,7 +125,7 @@
     var nonLus = items.filter(function (m) { return m.nonLus; });
     if (nonLus.length) {
       var tl = el('button', 'bf-tl', '✓ Tout marquer comme lu (' + nonLus.length + ')'); tl.type = 'button';
-      tl.onclick = function () { ecrire('lu', { cles: nonLus.map(function (m) { return m.cle; }) }).then(rafraichir); };
+      tl.onclick = function () { tl.disabled = true; tl.textContent = '✓ Marquage…'; ecrire('lu', { cles: nonLus.map(function (m) { return m.cle; }) }).then(function () { return rafraichir(true); }); };   /* 10.10 : réaction immédiate */
       liste.appendChild(tl);
     }
     if (!items.length) liste.appendChild(el('p', 'bf-vide', filtre === 'tous' ? 'Aucun message pour le moment. Cette fenêtre se met à jour toute seule.' : 'Rien dans cette app.'));

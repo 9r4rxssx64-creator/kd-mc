@@ -163,7 +163,7 @@ ok(wj.ok === true && wj.uid === 'marc-ancien' && wj.code_pose === true, '7.7 who
     '7.12 portail : écran « Crée ton code » plein écran (code saisi 2 fois), posé depuis la session de la personne, retour à l\'app');
   /* 8.10 (revue extérieure, P0) : au démarrage ET avant de renvoyer vers l'app, le portail lit l'état détaillé — sinon l'écran n'est jamais atteint */
   const boot = portail.slice(portail.indexOf('function boot()'), portail.indexOf('boot();'));
-  const hub = portail.slice(portail.indexOf('function showHub(name)'), portail.indexOf('function cguBlock()'));
+  const hub = portail.slice(portail.indexOf('function showHub('), portail.indexOf('function cguBlock()'));
   ok(/whoamiResult\(\)/.test(boot) && /r\.state === 'code_requis'\) \{ renderCodeObligatoire\(r\.session\); return; \}/.test(boot), '7.13 portail : boot() lit whoamiResult → code_requis = l\'écran bloquant (plus whoami() qui l\'aplatissait en « aucune session »)');
   ok(/whoamiResult\(\)/.test(hub) && hub.indexOf("r.state === 'code_requis'") < hub.indexOf('gotoReturnIfAny()'), '7.14 portail : showHub vérifie code_requis AVANT de renvoyer vers l\'app (fin du ping-pong app ⇄ portail)'); }
 

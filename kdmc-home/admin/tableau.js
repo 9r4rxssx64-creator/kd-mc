@@ -282,14 +282,16 @@
     if (h && SECTIONS.some(function (s) { return s.id === h; })) { var el = document.getElementById(h); if (el) { el.open = true; try { el.scrollIntoView({ block: 'start' }); } catch (e) { /* */ } } }
   }
 
-  function demarrer() {
+  function demarrer(s) {
     coquille();
     dessinerCompteurs();
     brancherRecherche();
     document.getElementById('tb-boite').onclick = function () { aller('boite'); };
     document.addEventListener('kdmc-commerce-live', function (e) { LIVE = e.detail || null; LIVE_LU = true; dessinerCompteurs(); });
     if (global.kdmcAdmin) global.kdmcAdmin.monter(document.getElementById('admin-comptes'));
-    if (global.kdmcCommerce && global.kdmcCommerce.monter) global.kdmcCommerce.monter(document.getElementById('commerce-app'));
+    /* 10.10 (réactivité) : la session DÉJÀ vérifiée ici (admin + Face ID) est passée au commerce — il ne redemande plus whoami
+       (mesuré : un 2e whoami en série avant même de lire ses données, 1,5 s de plus sur réseau mobile). Le serveur garde son verrou. */
+    if (global.kdmcCommerce && global.kdmcCommerce.monter) global.kdmcCommerce.monter(document.getElementById('commerce-app'), s);
     if (global.kdmcBoite) {
       global.kdmcBoite.surMaj(surBoite);
       global.kdmcBoite.rafraichir();
@@ -305,7 +307,7 @@
     var who = global.kdmcSSO ? global.kdmcSSO.whoami() : Promise.resolve(null);
     who.then(function (s) {
       if (!s || !s.admin || !s.verified) return deny(s);
-      demarrer();
+      demarrer(s);
     }).catch(function () { deny(null); });
   }
   if (app) boot();

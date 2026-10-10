@@ -686,7 +686,9 @@ function renderHome(){
   CATS.forEach(function(c){
     var n=R.filter(function(r){return r.cat===c.name;}).length;
     var pid=famPhotoId(c.name);
-    h+='<button class="fam fam-ph" onclick="go(\'list\',{cat:'+JSON.stringify(c.name)+',tome:null,origine:null,style:null,q:\'\'})">'+
+    /* esc() (10.10, réactivité) : JSON.stringify met des guillemets " DANS l'attribut onclick="…" — il s'arrêtait au premier,
+       le clic levait une erreur de syntaxe et les 6 grandes cartes de famille du sommaire ne faisaient RIEN (mesuré). Garde : test:cuisine-boutons. */
+    h+='<button class="fam fam-ph" onclick="go(\'list\',{cat:'+esc(JSON.stringify(c.name))+',tome:null,origine:null,style:null,q:\'\'})">'+
        (pid!=null?'<img src="'+IMG_BASE+pid+'.jpg?v=2" alt="" loading="lazy" onerror="this.remove()">':'')+'<span class="sh"></span>'+
        illu(c.name,'illu-m')+'<span class="nm">'+esc(c.name)+'</span><span class="n">'+n+' recettes</span></button>';
   });
@@ -748,7 +750,7 @@ function renderSearch(){
   var h=topbar('Recherche',"go('home')");
   h+='<div class="searchbar" style="margin-top:14px"><span class="mag">🔍</span><input id="qin" class="ui" placeholder="Plat, ingrédient, mot-clé…" value="'+esc(STATE.q)+'"></div>';
   h+='<div class="chips" id="qchips"><button class="chip'+(!STATE.cat?' on':'')+'" onclick="STATE.cat=null;doSearch()">Tout</button>';
-  CATS.forEach(function(c){h+='<button class="chip'+(STATE.cat===c.name?' on':'')+'" onclick="STATE.cat=(STATE.cat==='+JSON.stringify(c.name)+'?null:'+JSON.stringify(c.name)+');doSearch()">'+c.icon+' '+esc(c.name.split(' ')[0])+'</button>';});
+  CATS.forEach(function(c){h+='<button class="chip'+(STATE.cat===c.name?' on':'')+'" onclick="STATE.cat=(STATE.cat==='+esc(JSON.stringify(c.name))+'?null:'+esc(JSON.stringify(c.name))+');doSearch()">'+c.icon+' '+esc(c.name.split(' ')[0])+'</button>';});
   h+='</div><div id="qres" class="rlist"></div>';
   APP.innerHTML=h;
   var inp=el('qin');
@@ -1079,4 +1081,4 @@ render(); // build behind cover
 kdmcWhoami(); // connexion sécurisée par le domaine (fail-open)
 </script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="cuisine" data-version="v1.0.1" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="cuisine" data-version="v1.0.2" data-color="#c9a227" defer></script>

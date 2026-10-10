@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-10 (soir) — robots publics : crea-ai et Bee
+- `deploy-kdmc-crea-ai` (public, 0 tâche depuis le 9.10) : `secrets.` dans un `if:` → GitHub refusait le fichier. Corrigé (test du secret dans l'étape) + garde `test:workflows-if-secrets`.
+- Bee public après #4464 : le test iPhone passe (62/62) ; la dernière étape `sw-identite` rougissait (18 service workers au public < 20). Seuil = 20 moins les privés absents (14 au public). Leçon #495.
+- Boutons morts (même défaut que la cuisine, `JSON.stringify` dans `onclick="…"`) : « Copier » des conventions (×2), « Partager » / « SMS au pit » du planning du week-end, « Copier » de l'historique des scans CMCteams → `esc()`. Garde `test:boutons-json-onclick` (scan + vrais clics, sabotage 2/9). App iPhone : les 2 nouveaux modules de la v9.956 embarqués (`mobile/apps.json`).
+- SonarCloud #4475 (7 remarques sécurité/fiabilité) corrigées : `.catch` du préchargement (routeur) et de la rafale des identités ; expression `\s*;?\s*$` → `\s*(?:;\s*)?$` (CMCteams + light, 0 différence sur 10 cas, texte piégé 50 k : 0 ms) ; emailjs de Chez Lolo figé en 4.4.1 avec empreinte SRI. Le sabotage de `boot-sobre` cherchait le texte exact → rendu robuste (leçon #496).
+
 ## 2026-10-10 (17h) — « Vérifie les info réel, comme moi » : les deux PDF renvoyés sont vérifiés sur le vrai domaine, en admin
 
 - **Les fichiers** : `NOVEMBRE_2026.pdf` et `OCTOBRE_2026_V2.pdf` renvoyés par Kevin sont IDENTIQUES aux fixtures du dépôt (sha256
@@ -31,6 +37,112 @@
   (run 38077032430, 18h45 UTC, même sonde navigateur qu'à 18h33) : balise ABSENTE sur kd-mc.com, la light, CMCteams et l'origine
   Pages — avant : PRÉSENTE sur les trois premières.** Le réglage Cloudflare reste ON (le jeton ne peut pas l'écrire) mais il n'a plus
   d'effet ; Cloudflare ne minifie plus les pages HTML et ne brouille plus les adresses mail (m212 envoyé).
+## 2026-10-10 (après-midi) — Réactivité du portail kd-mc.com et du tableau de bord admin : mesurée, puis corrigée
+
+Kevin : « Vérifie la réactivité des boutons, fonctions, etc partout. […] On attend bcp trop avant l'exécution. Va plus loin. »
+Mesure DÉTERMINISTE (pas d'impression) : Chromium 390×844, processeur ralenti ×4, +1500 ms sur chaque appel au domaine (/__*) et à
+la caisse, VRAI routeur (KV simulé). Outil = la garde elle-même : `MESURE=1 npm run test:reactivite-portail` (l'avant :
+`RACINE=<copie de kdmc-home d'origin/main>`). Portail v1.0.52.
+
+| Action | Avant (1re réaction / fin) | Après |
+|---|---|---|
+| Portail connecté : accueil visible | 3 263 ms · 3 whoami · 2 allers-retours EN SÉRIE | **1 760 ms · 1 whoami · 1 aller-retour** |
+| Tuile d'app touchée dès l'affichage | **AUCUNE réaction pendant 1 575 ms** (bouton mort) | réagit en 6 ms (⏳, grisée), part à la réponse |
+| Tuile d'app touchée (accueil affiché) | départ à 1 534 ms | **départ à 19 ms** (laissez-passer lu d'avance) |
+| « Créer mon compte » | rien pendant 1 523 ms · fin 6 246 ms | réagit en 4 ms · **fin 4 728 ms** (1 aller-retour de moins) |
+| « Vérifier maintenant » (compte en attente) | rien pendant 1 528 ms | 11 ms (« Vérification… ») |
+| Admin : section Commerce remplie | 3 492 ms · 3 allers-retours en série | **2 358 ms · 2** |
+| Admin : comptes affichés | 5 018 ms · 3 en série · 3 whoami | **3 768 ms · 2 en série · 1 whoami** |
+| Admin « ↻ Rafraîchir » | rien pendant 1 528 ms | 6 ms |
+| Admin « ↻ Relire la caisse » | rien pendant 1 559 ms | 4 ms |
+| Portail sans compte (écran d'inscription) | 1 710 ms · 2 whoami | 1 705 ms · 1 whoami |
+
+Correctifs : `kdmc-sso.js` (whoami partagé quand deux demandes se croisent ; laissez-passer `/__sso/pass` lu d'avance, gardé 60 s
+— l'enveloppe en vaut 90 —, jeté à tout changement de session) ; `kdmc-portal.js` (l'accueil réutilise le whoami du démarrage ;
+la tuile réagit tout de suite et ignore un 2e toucher ; lecture du laissez-passer dès le doigt posé ; « téléphone exigé ? »
+demandé à l'affichage ; « Vérifier maintenant » visible et toujours frais) ; `index.html` (bouton désactivé visible) ;
+`admin/tableau.js` + `commerce.js` (le commerce reçoit la session déjà vérifiée, données et caisse lues ensemble) ; `admin.js`
+(liste des apps et comptes ensemble, « ↻ Rafraîchir » visible) ; `kdmc-boite.js` (« Tout marquer comme lu » visible).
+Garde `test:reactivite-portail` (12 contrôles, dans `test:ci`), 12 sabotages tous rouges, l'avant tout rouge (0/12).
+Reste lent, et pourquoi : la porte `/__sso/entrer` de l'app (1 aller-retour côté app, inévitable : c'est elle qui dépose la session
+dans le stockage de l'app installée) ; le tableau admin attend whoami avant d'afficher quoi que ce soit (voulu : rien d'admin sans
+la preuve du domaine) ; « Se connecter (code) » = 2 allers-retours (le code, puis l'état du compte) ; tâches longues ≤ 200 ms
+au rendu du tableau admin (processeur ×4). Leçon #492.
+## 2026-10-10 (soir) — RÉACTIVITÉ CMCteams v9.956 + light v1.83 (Kevin « on attend bcp trop avant l'exécution… va plus loin »)
+
+- **Méthode (déterministe)** : vrai Chromium, 390×844, CPU ×4 (CDP, ≈ iPhone), +1 500 ms sur CHAQUE appel réseau (Firebase, `/__*`),
+  pages servies depuis le dépôt (aucune connexion au vrai domaine). Délai jusqu'à la 1re image changée + fin, tâches longues, profileur.
+  Outils gardés : `node tools/perf/mesure-reactivite.mjs` (tableau ; `INDEX=…` mesure une autre version) et
+  `node tools/perf/profil-chargement.mjs cmcadmin|light [s]` (`ACTION="sv('planning')"` profile un clic, `CHAUD=1` la 2e ouverture).
+- **Mesures avant → après (CMCteams, CPU ×4)** :
+  | | avant (main v9.955) | après (v9.956) |
+  |---|---|---|
+  | ouverture admin : écran utilisable · pire tâche bloquante | 6 923 ms · 5 448 ms | 2 222 ms · 821 ms |
+  | ouverture employé | 5 412 ms · 4 113 ms | 2 039 ms · 785 ms |
+  | script principal à l'ouverture (CPU ×1, profileur) | 1 207 ms (dont 1 081 ms `learnIdentity`) | 146 ms |
+  | onglet Équipe → 1re réaction visible (admin / employé) | 339 / 291 ms | 21 / 16 ms |
+  | onglet Départs | 312 / 272 ms | 14 / 12 ms |
+  | onglet Accueil / Mon planning / Admin | 180 / 128 / 122 ms | 16 / 8 / 10 ms |
+  | ‹ › mois (planning, départs) | 168–312 ms | 5–23 ms |
+  | rendus complets par changement de mois | 2 (le 2e identique) | 1 |
+  La vue complète arrive au même moment qu'avant (≈ 200–320 ms ×4 : vPlan ≈ 108 ms + mise en page/peinture) ; ce qui change :
+  le bouton répond dans l'image suivante au lieu de rester mort, et le main thread n'est plus bloqué 5 s à l'ouverture.
+- **Light** : rien au-dessus de 100 ms hors dialogues natifs (confirm) ; même cause côté « 🔁 Équipe miroir » (tableau reconstruit dans
+  le geste, ~100 ms ×4) → même remède (copie exacte du module partagé). Ouverture 0,6 s (3 rendus × ~70 ms).
+- **3 corrections** : K1 identités en une écriture (`tools/shared/identites-apprises.js`) ; R1-R3 réaction immédiate
+  (`tools/shared/reaction-immediate.js`, pure navigation seulement) ; R4 empreinte de la synchro des équipes → pas de 2e rendu.
+- **Preuve d'affichage identique** (même horloge figée, mêmes données, l'ancienne version servie avec SON version.txt) : CMCteams
+  employé 192/192 vues identiques (94 routes × 2 mois) ; admin 182/192, les 10 écarts = n° de version (admin ×2 mois), chrono de
+  diagnostic, tailles de stockage (`mois`, `persaudit` : le magasin d'identités, mêmes noms/sources/compteurs, se compresse mieux) ;
+  light 196/196 tableaux identiques (admin et employé).
+- **Garde** `test:reactivite` (13 contrôles) dans `test:ci` ; sabotages k1 / r1 / r4 / l1 → rouges. Plafond mono-fichier abaissé
+  (3 442 250 o). Leçon #493.
+- **Reste lent, et pourquoi** : (1) la vue Équipe/Départs met toujours ~200–320 ms ×4 à se construire (vPlan ~108 ms + 1 170–1 510
+  nœuds à mettre en page) — la raccourcir demande de toucher au rendu du planning (risque d'écart d'affichage) ; (2) des animations
+  infinies (pulsation du bouton IA en box-shadow, soleil, onglet flottant) occupent ~30 % du fil au repos sur CPU ×4 — les changer
+  modifierait l'aspect, à décider avec Kevin ; (3) l'Accueil admin appelle `detectRepoConflicts` 3 fois par rendu (clé de cache =
+  JSON du mois, ~5–8 ms chacune).
+## 2026-10-10 — Réactivité des apps du domaine (hors portail, admin, CMCteams, light) (Kevin « Vérifie la réactivité des boutons, fonctions, etc partout… on attend bcp trop avant l'exécution. Va plus loin. »)
+
+- **Méthode** : chaque app servie en local dans Chromium Playwright, écran 390×844, CPU ralenti ×4 (CDP), +1,5 s sur chaque appel
+  réseau (`/__*`, workers, IA, serveurs extérieurs) ; chaque bouton visible cliqué page fraîche, délai jusqu'au PREMIER changement
+  visible (mutations hors animation de la mascotte) ; au chargement : premier affichage (FCP), tâches longues, fichiers chargés.
+- **Mesures avant → après** :
+
+  | App | Action | Avant | Après |
+  |---|---|---|---|
+  | Toutes (routeur) | page ou fichier d'une app, compte reconnu (KV 200 ms + hébergeur 200 ms simulés) | 404-456 ms (porte PUIS hébergeur) | 202-204 ms (en même temps) |
+  | Lingua | 3e ouverture, service worker actif, serveur 650 ms | 2 523 ms, app.js (370 Ko) re-téléchargé | 1 912 ms, app.js sorti du téléphone |
+  | Lingua | appui 🔊, voix du domaine qui traîne | rien à l'écran jusqu'au son (≤ 2,5 s, puis voix du téléphone) | bouton allumé tout de suite (anneau, aria-busy), éteint dès que le son part/échoue |
+  | Entraîneur croupier | premier affichage, polices Google +1,5 s | 1 612 ms | 356 ms |
+  | Kit IA | idem | 1 632 ms | 300 ms |
+  | Rotaplan | idem | 1 604 ms | 420 ms |
+  | Chez Lolo | idem (+ fin du chargement retenue par emailjs) | FCP 1 568 / DCL 1 772 ms | FCP 312 / DCL 412 ms |
+  | Portail boutiques | idem | 1 588 ms | 332 ms |
+  | Boutiques | serveur de polices MUET | jamais affiché (écran blanc) | 92-116 ms |
+  | Livre de cuisine | les 6 cartes de famille + puces de la Recherche | MORTES (erreur de syntaxe au clic) | ouvrent leur liste |
+
+- **Mesuré sans défaut** : entraîneur du croupier (10 boutons, 3-9 ms), navigation Lingua (onglets, leçon : ~30 ms), arbre (« Entrer » 4 ms),
+  Bee (points « elle écrit » posés AVANT l'appel IA, code relu + harnais), Coach Lingua (indicateur immédiat), Apex Chat (« Recevoir le code »
+  grisé tant que les champs sont vides : voulu).
+- **Corrections** (5 gardes, 5 sabotages rouges puis restaurés) :
+  1. routeur : porte et hébergeur lancés ensemble pour une lecture (GET/HEAD) qui porte un jeton ; rien n'est rendu avant le oui de la porte ;
+     inconnus/robots, données RH et portail : chemin d'avant — `test:porte-parallele` (15 contrôles ; 73/73 tests du routeur verts) ;
+  2. Lingua v2.139.0 : `app.js?v=` (cache du téléphone) — `test:lingua-maj` point 9b ;
+  3. Lingua : bouton d'écoute allumé tout de suite — `test:lingua-reactivite` ;
+  4. boutiques : polices servies par le domaine (`shops/_shared/polices/`, 10 woff2 latins, licences libres, 254 Ko), CSP resserrée
+     (plus de fonts.googleapis/gstatic), générateurs `kit:metiers` et `produits:pages` alignés ; emailjs de Chez Lolo en `async` —
+     `test:boutiques-polices` ; versions : croupier entraînement v2.0.1, accès v1.1.1, Chez Lolo v2.0.17 (+ cache du SW), portail
+     boutiques v1.0.4, tableau de bord boutiques v2.0.5 ;
+  5. livre de cuisine v1.0.2 : `esc(JSON.stringify(...))` dans les onclick — `test:cuisine-boutons`.
+- **Reste lent, et pourquoi** : (a) ouverture de Lingua ≈ 1,3-1,6 s à CPU ×4 dont ~1,1 s de tâches longues, surtout le dessin de la
+  marionnette en WebGL logiciel (le navigateur de test n'a pas de carte graphique : non jugeable ici, et la règle « tout le corps bouge »
+  interdit de la brider à l'aveugle) ; (b) réponses de Bee non progressives (l'IA gratuite répond en bloc en 4-8 s ; l'indicateur est immédiat) ;
+  (c) Apex AI télécharge 8 documents du dépôt à chaque ouverture dont MEMO_RESUME.md (1,34 Mo) — en arrière-plan, mais lourd ; correction =
+  reconstruire le paquet vite d'Apex (non fait ici) ; (d) Bee attend `/__sso/whoami` (≤ 4 s) avant de s'afficher : c'est la sécurité
+  (fail-closed), pas un défaut. (e) Repéré dans le CODE, hors de mon périmètre (non vérifié en navigateur) : `tools/calc-conventions.html`
+  (« Copier le résultat ») et `tools/planning-weekend.html` (« Partager », « SMS au pit ») ont le même motif `onclick="…'+JSON.stringify(…)+'…"`
+  que le livre de cuisine → à corriger par la session CMCteams.
 
 ## 2026-10-10 (midi) — #4460 fusionnée et déployée ; 3 robots publics rouges réparés
 

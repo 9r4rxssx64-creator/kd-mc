@@ -62,7 +62,7 @@ let pass = 0; const fails = [];
 const ok = (c, m) => { if (c) { pass++; console.log('  ✅ ' + m); } else { fails.push(m); console.log('  ❌ ' + m); } };
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });   /* écran d'iPhone */
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });   /* écran d'iPhone. SW bloqué (10.10) : sur la machine GitHub (réseau ouvert), le VRAI sw.js de javis.kd-mc.com s'installait (« réseau d'abord ») et servait les pages du vrai domaine → « Connexion au domaine requise. » ; ici le relais bloquait son téléchargement, d'où vert ici / rouge là-bas (leçon #490) */
 const routeur = async (route) => {
   const req = route.request();
   const u = new URL(req.url());
@@ -92,7 +92,7 @@ await ctx.route(/^https:\/\/([a-z0-9-]+\.)?kd-mc\.com\//, routeur);
 /* Un navigateur NEUF = l'app de l'écran d'accueil : aucun cookie, aucun stockage. `passkeys` = ce que
    le trousseau iCloud synchronisé y apporte (rien pour un inconnu). */
 async function appNeuve(passkeys) {
-  const c = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   await c.route(/^https:\/\/([a-z0-9-]+\.)?kd-mc\.com\//, routeur);
   const p = await c.newPage();
   const s = await c.newCDPSession(p);

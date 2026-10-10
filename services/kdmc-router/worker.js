@@ -884,6 +884,16 @@ export function durcirReponse(res) {
   if (!h.has('referrer-policy')) h.set('referrer-policy', 'strict-origin-when-cross-origin');
   if (!h.has('x-frame-options')) h.set('x-frame-options', 'SAMEORIGIN');
   if (!h.has('strict-transport-security')) h.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+  /* 10.10.2026 (Kevin « Coupe ») : Cloudflare posait tout seul son compteur de visites (beacon.min.js, Web Analytics) dans chaque
+     page HTML du domaine, et la CSP des pages le refusait (erreur console à chaque ouverture, zéro visite comptée). Le jeton du
+     coffre n'a pas le droit de couper le réglage (403 mesuré, runs 38075806653 / 38076202810). La doc Cloudflare (FAQ Web Analytics) :
+     « Cache-Control … no-transform → the Beacon script will not be automatically injected ». Donc chaque page HTML sort avec
+     `no-transform` (sans toucher au reste de son Cache-Control) : Cloudflare ne modifie plus la page — ni compteur, ni minification,
+     ni brouillage des adresses mail. Prouvé : durci.test.mjs 9-11 ; mesuré en ligne par coffre-cloudflare-analytics-couper.yml. */
+  if (/^text\/html/i.test(h.get('content-type') || '')) {
+    const cc = h.get('cache-control') || '';
+    if (!/\bno-transform\b/i.test(cc)) h.set('cache-control', cc ? cc + ', no-transform' : 'no-transform');
+  }
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 

@@ -42,7 +42,7 @@ ok(png.headers.get('cache-control') === 'private, max-age=86400', 'R2. image →
 const v = await get('https://lingua.kd-mc.com/app.js?v=2026-10-08');
 ok(v.headers.get('cache-control') === 'private, max-age=31536000, immutable', 'R3. app.js?v=… → 1 an immuable', v.headers.get('cache-control'));
 const html = await mod.fetch(new Request('https://lingua.kd-mc.com/', { headers: { 'user-agent': 'Mozilla/5.0 (iPhone)', accept: 'text/html' } }), env);
-ok(html.status === 200 && /text\/html/.test(html.headers.get('content-type') || '') && html.headers.get('cache-control') === 'public, max-age=0, must-revalidate', 'R4. la page HTML garde sa revalidation (une page neuve est vue tout de suite)', html.status + ' ' + html.headers.get('cache-control'));
+ok(html.status === 200 && /text\/html/.test(html.headers.get('content-type') || '') && html.headers.get('cache-control') === 'public, max-age=0, must-revalidate, no-transform', 'R4. la page HTML garde sa revalidation (une page neuve est vue tout de suite) + no-transform (10.10 : Cloudflare n\'y pose plus son compteur)', html.status + ' ' + html.headers.get('cache-control'));
 ok(js.headers.get('strict-transport-security') && js.headers.get('x-content-type-options') === 'nosniff', 'R5. le durcissement (HSTS, nosniff) reste posé sur les fichiers gardés');
 
 console.log('\n== sabotage ==');

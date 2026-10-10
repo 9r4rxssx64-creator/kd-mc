@@ -143,7 +143,7 @@ async function attendreDisparition(essais = 6) {
 function nomVoie(a, b) {
   if (a.fait) return 'voie A : compte';
   if (b.fait) return 'voie B : règle de zone';
-  return 'déjà coupé';
+  return 'sans action de ce robot : le routeur sert chaque page HTML avec Cache-Control no-transform (ou l\'interrupteur Cloudflare est déjà coupé)';
 }
 
 async function principal() {

@@ -22,7 +22,12 @@
 - **Kevin : « Coupe »** (le compteur Cloudflare) → `tools/cloudflare/analytics-couper.mjs` + robot `coffre-cloudflare-analytics-couper.yml`
   (à la main, 5 min, jeton du coffre) : voie A compte (`auto_install:false` sur chaque site Web Analytics de kd-mc.com), sinon voie B
   règle de zone `disable_rum`, puis preuve sur la vraie page (balise absente). Garde `test:cloudflare-analytics-couper` (15/0). Leçon #491.
-  **Résultat du robot : voir plus bas (ajouté après le lancement).**
+  **Résultat mesuré (3 runs)** : 38075122744 « 1 site, 0 à couper, balise absente » (sonde avec l'agent de Node : Cloudflare ne pose
+  pas la balise aux robots ; et le site proxy n'a pas de champ `host`) ; 38075806653 idem ; 38076202810 (sonde en vrai navigateur,
+  hôte = zone) : **balise PRÉSENTE** sur kd-mc.com, light, CMCteams ; absente sur l'origine Pages ; 1 site = zone kd-mc.com, injection
+  auto ON ; **écriture refusée : HTTP 403** (`rum/site_info` PUT et règles de configuration de zone) — le jeton du coffre lit mais n'écrit
+  pas ces réglages. **Sans clic** : la FAQ Cloudflare dit qu'une page servie avec `Cache-Control … no-transform` n'est pas modifiée →
+  le routeur l'ajoute sur chaque page HTML (`durcirReponse`, `test:routeur-durci` 9-11). À mesurer après déploiement (robot relancé).
 
 ## 2026-10-10 (midi) — #4460 fusionnée et déployée ; 3 robots publics rouges réparés
 

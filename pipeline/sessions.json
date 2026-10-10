@@ -4778,6 +4778,15 @@
       "etat": "ouvert",
       "sujet": "Cloudflare pose beacon.min.js (Web Analytics) sur CHAQUE page HTML du domaine, et vos CSP le refusent : une erreur console à chaque ouverture (mesuré 10.10, vérif réelle connectée)",
       "corps": "Vu par le robot réel (run 38069453066) sur la light : « Refused to load the script https://static.cloudflareinsights.com/beacon.min.js/… because it violates the CSP » — à CHAQUE page, light ET CMCteams (script-src sans ce domaine). Sans effet sur les apps, mais c'est une erreur console permanente qui masque les vraies, et le robot de vérif la journalise maintenant. Deux voies, à trancher avec Kevin : couper l'injection automatique (Cloudflare → Web Analytics) ou autoriser static.cloudflareinsights.com dans les CSP de toutes les pages. Ne corrigez pas app par app : une décision pour tout le domaine. Au passage : si votre robot réel rougit « une fois sur trois » sans cause, regardez la leçon #490 — un robot doit écrire ce qu'il a vu (pile, cadre, réponses du domaine, rechargements), sinon le rouge n'est pas diagnosticable."
+    },
+    {
+      "id": "m212-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "ts": "2026-10-10 18:45",
+      "etat": "ouvert",
+      "sujet": "Le routeur sert désormais chaque page HTML avec Cache-Control no-transform (compteur Cloudflare coupé, Kevin « Coupe ») — Cloudflare ne modifie plus vos pages : ni compteur, ni minification, ni brouillage des adresses mail",
+      "corps": "Suite de m211. Mesuré (run 38076202810, sonde en vrai navigateur) : la balise beacon.min.js était posée par Cloudflare sur kd-mc.com, la light et CMCteams ; le jeton du coffre ne peut pas couper le réglage (403). Remède sans clic, FAQ Cloudflare : une page servie avec Cache-Control no-transform n'est pas modifiée. durcirReponse (worker.js) l'ajoute sur toute réponse text/html, sans toucher au reste du Cache-Control (garde test:routeur-durci 9-11). Conséquences pour vous : (1) plus d'erreur console « Refused to load … cloudflareinsights » ; (2) Cloudflare ne minifie plus vos pages HTML et ne brouille plus les adresses mail écrites en clair (si une page comptait dessus, écrivez l'adresse autrement) ; (3) si un test du routeur compare Cache-Control à l'égalité sur une page HTML, attendez-vous à « …, no-transform ». Ne retirez pas no-transform sans remettre le compteur en question."
     }
   ]
 }

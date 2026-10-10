@@ -10,7 +10,8 @@
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken } from './fb-token.js';
-import { handleBoite, codeAttenteDeposer } from './boite.js';
+import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer } from './boite.js';
+import { handleTel, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
 import * as cptD1 from './compteurs-d1.js';
 /* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
@@ -212,6 +213,8 @@ function perimetre(acc, app) {
      inscrivaient chacun directement sur son app, ce que le domaine ne fait jamais. */
   if (app === 'portail') return { ok: true, raison: 'portail' };
   if (!acc) return { ok: true, raison: 'sans_fiche' };
+  /* Inscrit SANS WhatsApp (Kevin 10.10 « validation admin, au choix ») : fermé partout sauf le portail tant que Kevin n'a pas ouvert. */
+  if (acc.attente_admin) return { ok: false, raison: acc.attente_admin === 'refuse' ? 'refuse_admin' : 'attente_admin' };
   const bloque = Array.isArray(acc.bloque) ? acc.bloque : [];
   if (bloque.indexOf(app) >= 0) return { ok: false, raison: 'bloque_ici' };
   const acces = Array.isArray(acc.acces) ? acc.acces : [];
@@ -3052,6 +3055,11 @@ async function handleSso(request, url, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (!secret) return J({ ok: false, reason: 'sso_not_configured' });
   const path = url.pathname;
+  /* Confirmation par téléphone (WhatsApp, gratuite) : demande, webhook Meta, vérification, état. */
+  if (path.startsWith('/__sso/tel/')) {
+    const rTel = await handleTel(request, url, env, secret, { J, originOk: ssoOriginOk });
+    if (rTel) return rTel;
+  }
   if (path === '/__sso/porte.js' && request.method === 'GET') {
     return new Response(PORTE_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' } });
   }
@@ -3127,6 +3135,8 @@ async function handleSso(request, url, env) {
           ok: false, reason: per.raison, hors_perimetre: true, app,
           message: per.raison === 'bloque_ici'
             ? 'Ton accès à cette application a été fermé par l\'administrateur.'
+            : per.raison === 'attente_admin' ? 'Ton compte attend la validation de l\'administrateur. Tu seras ouvert dès qu\'il l\'accepte.'
+            : per.raison === 'refuse_admin' ? 'L\'administrateur n\'a pas validé ce compte.'
             : 'Ton compte n\'est pas ouvert sur cette application.',
         });
       }
@@ -3148,7 +3158,8 @@ async function handleSso(request, url, env) {
          s'ouvre sur son seul nom : le portail propose d'en choisir un. Admin : toujours protégé (code admin + Face ID). */
       /* `roles` (8.10, revue extérieure) : les droits que Kevin pose sur la fiche (ex. ['shops'] = boutiques/sourcing/dashboard) — plus jamais une
          regex sur le nom dans les pages. Posés par /__admin/perimetre (champ roles), lus ici par toutes les apps. */
-      const rep = { ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
+      /* `attente_admin` : le portail montre « en attente de l'administrateur » au lieu des apps (elles le refuseraient une à une). */
+      const rep = { attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
@@ -3281,6 +3292,8 @@ async function handleSso(request, url, env) {
        pas le portail, qui n'est qu'une réception. Adresse contrôlée : si ce n'est
        pas un sous-domaine servi, on l'ignore (jamais d'app inventée). */
     const origine = appDe(String(b.pour || '').replace(/^https?:\/\//, '').split('/')[0]);
+    let telCreation = null;   // preuve de téléphone vérifiée, à ranger sur la fiche une fois créée
+    let attenteAdmin = false; // inscription sans WhatsApp : le compte attend la validation de Kevin
     {
       const app = appDe(request.headers.get('host'));
       /* `sansCreer` : on CHERCHE le dossier sans réserver le nom — une demande
@@ -3308,6 +3321,27 @@ async function handleSso(request, url, env) {
          sur leur seul nom (vécu : le compte de Laurence). Plus de compte neuf sans code. Coupe-circuit KDMC_CODE_OBLIGATOIRE=0 (tests). */
       if (!accCanon && codeObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !CODE_VALIDE(typeof b.code === 'string' ? b.code : '')) {
         return J({ ok: false, reason: 'code_requis_creation', message: 'Pour créer ton compte, choisis un code (6 caractères ou plus) : il te servira dans toutes les apps KDMC.' }, undefined, 400);
+      }
+      /* TÉLÉPHONE CONFIRMÉ À LA CRÉATION (Kevin 9.10 : « OTP pour toutes inscriptions au domaine, app etc ») : toutes les apps créent
+         leurs comptes ici, donc l'exiger ici le fait partout. La page apporte une PREUVE signée par le domaine (/__sso/tel/verifie) ;
+         elle ne juge rien. Exigé seulement quand WhatsApp est branché (secrets WA_*) et que l'interrupteur n'est pas coupé
+         (KDMC_TEL_OBLIGATOIRE=0) — jamais de porte fermée par une fonction pas prête. Quelqu'un de déjà inscrit n'est jamais touché. */
+      if (!accCanon && telObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid)) {
+        const pt = await verifiePreuve(secret, b.tel_preuve);
+        /* « Si pas de WhatsApp, validation admin. Au choix » (Kevin 10.10) : la personne CHOISIT d'attendre Kevin au lieu de WhatsApp.
+           Le compte est créé (nom + code) mais fermé partout sauf le portail, jusqu'à ce que Kevin l'ouvre dans sa boîte. */
+        if (!pt.ok && b.validation === 'admin') { attenteAdmin = true; }
+        else if (!pt.ok) return J({ ok: false, reason: 'tel_requis', validation_admin: true, message: 'Pour créer ton compte, confirme ton téléphone par WhatsApp (gratuit) — ou, sans WhatsApp, demande la validation à l\'administrateur.' }, undefined, 400);
+      }
+      if (!accCanon && telObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !attenteAdmin) {
+        const pt = await verifiePreuve(secret, b.tel_preuve);
+        /* usage unique : une preuve déjà servie ne crée pas un 2e compte (relecture 9.10) */
+        if (await preuveDejaUtilisee(env, pt)) return J({ ok: false, reason: 'tel_requis', message: 'Cette confirmation a déjà servi. Confirme ton téléphone à nouveau.' }, undefined, 400);
+        if ((await comptesDuTel(env, pt.empreinte)).length >= MAX_COMPTES_PAR_TEL) {
+          return J({ ok: false, reason: 'tel_plein', message: 'Ce téléphone a déjà ouvert ' + MAX_COMPTES_PAR_TEL + ' comptes. Demande à l’administrateur.' }, undefined, 409);
+        }
+        await bruleePreuve(env, pt);
+        telCreation = pt;
       }
       /* QUOTA — seulement pour une fiche NEUVE. Quelqu'un de déjà inscrit passe
          toujours, autant de fois qu'il veut : `accCanon` existe, on ne compte rien.
@@ -3398,6 +3432,29 @@ async function handleSso(request, url, env) {
       }
     }
     await enrich(env, request, uid, name, cgu, undefined, { origine });
+    if (attenteAdmin) {
+      let marque = false;
+      try {
+        const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));
+        if (a && !a.valide_admin_at) {
+          a.attente_admin = true; await accPut(env, a, true); marque = true;
+          const cf = request.cf || {}, NET = ispInfo(cf);
+          await inscriptionAdminDeposer(env.CERCLE_DB, { uid: a.uid, nom: a.name || name, appareil: appareilLabel(request.headers.get('user-agent') || ''),
+            lieu: [cf.city, cf.country].filter(Boolean).join(', '), reseau: (NET.isp || '') + (cf.asn ? ' (AS' + cf.asn + ')' : ''), app: origine || appDe(request.headers.get('host')) || 'portail' }).catch(() => false);
+          await audLog(env, { ev: 'inscription_admin_attente', uid: a.uid, name: a.name || name, detail: 'inscription sans WhatsApp — à valider' });
+          await notifyPush(env, '🪪 KDMC — inscription à valider', (a.name || name) + ' s\'est inscrit sans WhatsApp : ouvre ou refuse son compte dans Mes messages.');
+        }
+      } catch { /* on tranche juste après */ }
+      /* fail-closed : un compte « sans WhatsApp » qu'on n'a pas pu marquer « en attente » ne repart JAMAIS ouvert. */
+      if (!marque) return J({ ok: false, reason: 'indisponible', message: 'Impossible d\'enregistrer ta demande pour le moment. Réessaie dans un instant.' }, undefined, 503);
+    }
+    /* Le téléphone confirmé va sur la fiche neuve : empreinte + forme masquée, jamais le numéro. */
+    if (telCreation) {
+      try {
+        const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));
+        if (a) { a.tel = { empreinte: telCreation.empreinte, masque: telCreation.masque, at: Date.now() }; await accPut(env, a, true); await lierTel(env, a.uid, telCreation); }
+      } catch { /* fail-open : le compte existe, le lien téléphone se reposera */ }
+    }
     /* La fiche retient qu'un code existe (`code_at`) : whoami peut alors le dire SANS lire `cred:` à chaque battement (lecture KV
        économisée sur le chemin chaud). Une seule écriture, la première fois que le code est prouvé. */
     if (codeProuve) { try { const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true })); if (a && !a.code_at) { a.code_at = Date.now(); await accPut(env, a, true); } } catch { /* fail-open */ } }
@@ -3410,7 +3467,9 @@ async function handleSso(request, url, env) {
     /* L'identité admin ne se prouve pas par un code de compte : on le dit au portail, qui propose
        alors le code ADMIN (→ session vérifiée) au lieu de laisser Kevin « auto-déclaré ». */
     const adminRequis = (await canonFor(env, uid, name, { sansCreer: true })) === CANON_UID;
-    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve, code_pose: codePose, admin_requis: adminRequis }, cookie);
+    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve, code_pose: codePose, admin_requis: adminRequis,
+      attente_admin: attenteAdmin || undefined,
+      message: attenteAdmin ? 'Ton compte est créé. L\'administrateur va le valider : tu pourras entrer dans les apps dès qu\'il l\'aura accepté.' : undefined }, cookie);
   }
   /* CONNEXION SUR UN APPAREIL NEUF (ou dans n'importe quelle app) : nom + code → la session du
      compte. Même message pour « nom inconnu » et « mauvais code » (on ne confirme pas qu'un nom
@@ -3428,7 +3487,11 @@ async function handleSso(request, url, env) {
     let cle = await canonFor(env, '', name, { sansCreer: true });
     if (!cle && mots.length >= 2) cle = await canonFor(env, '', mots.slice(1).join(' ') + ' ' + mots[0], { sansCreer: true });
     if (!cle && mots.length >= 2) cle = await canonFor(env, '', mots[mots.length - 1] + ' ' + mots.slice(0, -1).join(' '), { sansCreer: true });
-    if (!cle || cle === CANON_UID) return J(NON, undefined, 401);
+    if (!cle) return J(NON, undefined, 401);
+    /* Le nom de l'administrateur ne s'ouvre JAMAIS par un code de compte : le portail envoie alors le code tapé comme code
+       ADMIN (/__admin/login, jugé ici). Remplace le bouton « Je suis l'administrateur » (Kevin 10.10 « inutile si je suis
+       reconnu auto »). Ce nom est déjà public (pied de page du portail) : le dire n'apprend rien à personne. */
+    if (cle === CANON_UID) return J({ ok: false, reason: 'admin_requis', message: 'Nom ou code incorrect.' }, undefined, 401);
     const attente = await credVerrou(env, cle);
     if (attente) return J({ ok: false, reason: 'trop_essais', attente, message: 'Trop d\'essais. Réessaie dans ' + Math.ceil(attente / 60) + ' min.' }, undefined, 429);
     const rec = await credGet(env, cle);

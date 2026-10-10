@@ -166,7 +166,9 @@ test('IBAN : la tuile dit « fermé » tant qu\'il n\'est pas posé, et ne montr
   /* Kevin est sur iPhone : un champ sans la classe `champ` retombe sur le style
      par défaut du navigateur — 44px perdus et iOS zoome dès qu'il le touche. */
   assert.ok(/<input class="champ" id="ibanIn"/.test(vide), 'le champ IBAN n\'est pas au gabarit tactile');
-  const html = readFileSync(new URL('../kdmc-home/admin/commerce.html', import.meta.url), 'utf8');
+  /* 10.10 : les styles sont partis dans commerce.css (partagé avec le tableau de bord unique) — on lit la page ET sa feuille. */
+  const html = readFileSync(new URL('../kdmc-home/admin/commerce.html', import.meta.url), 'utf8')
+    + readFileSync(new URL('../kdmc-home/admin/commerce.css', import.meta.url), 'utf8');
   const regle = html.match(/input\.champ\{([^}]+)\}/);
   assert.ok(regle, 'aucune règle CSS pour input.champ : le style ne suit pas le HTML');
   assert.match(regle[1], /min-height:44px/, 'cible tactile sous 44px');

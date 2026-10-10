@@ -173,6 +173,7 @@
   "tests/verif-live-rapport.mjs",
   "tests/verify-absence-courte-repos.mjs",
   "tests/verify-admin-sans-code-cmcteams.mjs",
+  "tests/verify-admin-unique.mjs",
   "tests/verify-adresse-officielle.mjs",
   "tests/verify-anciennete-fiche.mjs",
   "tests/verify-app-as-kevin.mjs",

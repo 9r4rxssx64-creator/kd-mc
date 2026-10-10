@@ -81,6 +81,17 @@ button[disabled]{opacity:.55;cursor:progress}
   padding:12px 20px;font-weight:700;text-decoration:none;border-radius:var(--r-sm);
   color:var(--surface);background:var(--succes);border:1px solid var(--succes);
 }
+#tel h2{font-size:var(--t24);margin:0 0 var(--e8)}
+.etape{font-size:var(--t16);margin:var(--e16) 0 var(--e8)}
+.lien-wa{display:inline-flex;align-items:center;justify-content:center;min-height:48px;width:100%;padding:12px 20px;
+  font-weight:700;text-decoration:none;border-radius:var(--r-sm);color:#fff;background:#128C4A;border:1px solid #128C4A}
+.otp{display:flex;gap:6px;margin:var(--e8) 0}
+.otp input{flex:1 1 0;min-width:0;max-width:56px;height:56px;padding:0;text-align:center;font-family:var(--mono);font-size:var(--t24);font-weight:700}
+.otp-infos{display:flex;justify-content:space-between;gap:var(--e8);font-family:var(--mono);font-size:var(--t14);color:var(--texte3);margin:0}
+button.vide{color:var(--texte);background:var(--surface);border-color:var(--bord-fort)}
+#telMessage{font-size:var(--t16);margin:var(--e16) 0 0;min-height:1em}
+#telMessage.ok{color:var(--succes);font-weight:700}
+#telMessage.erreur{color:var(--danger)}
 footer{margin-top:var(--e48);padding-top:var(--e24);border-top:1px solid var(--bord);font-size:var(--t14);color:var(--texte3)}
 /* Un lien de navigation seul sur sa ligne est un bouton déguisé : il se tape
    au pouce, donc 44 px minimum (Apple HIG) — mesuré par le test en navigateur. */
@@ -122,6 +133,32 @@ footer a{color:var(--texte2);display:inline-flex;align-items:center;min-height:4
 
   <div id="resultat" hidden role="status" aria-live="polite"></div>
 
+  <!-- Confirmation d'identité par WhatsApp (gratuit) : la page pose la question, le worker juge. -->
+  <section class="bloc" id="tel" hidden aria-labelledby="telTitre">
+    <h2 id="telTitre">Confirmer mon identité</h2>
+    <p class="aide">Gratuit, par WhatsApp. Ton accès est alors lié à ton téléphone.</p>
+    <div id="telEtape1" hidden>
+      <button type="button" id="telDemander">Recevoir mon code sur WhatsApp</button>
+    </div>
+    <div id="telEtape2" hidden>
+      <p class="etape"><b>1.</b> Ouvre WhatsApp et envoie le message déjà écrit. <b>C'est tout</b> : cette page se valide toute seule.</p>
+      <a class="lien-wa" id="telOuvrir" href="#" target="_blank" rel="noopener">Ouvrir WhatsApp</a>
+      <p class="etape"><b>2.</b> (Seulement si besoin) tape le code à 6 chiffres reçu en réponse.</p>
+      <div class="otp" role="group" aria-label="Code à 6 chiffres">
+        <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Chiffre 1">
+        <input type="text" inputmode="numeric" maxlength="6" aria-label="Chiffre 2">
+        <input type="text" inputmode="numeric" maxlength="6" aria-label="Chiffre 3">
+        <input type="text" inputmode="numeric" maxlength="6" aria-label="Chiffre 4">
+        <input type="text" inputmode="numeric" maxlength="6" aria-label="Chiffre 5">
+        <input type="text" inputmode="numeric" maxlength="6" aria-label="Chiffre 6">
+      </div>
+      <p class="otp-infos"><span id="telMinuteur"></span><span id="telEssais"></span></p>
+      <button type="button" id="telValider">Confirmer</button>
+      <button type="button" class="vide" id="telRenvoyer" hidden>Recevoir un nouveau code</button>
+    </div>
+    <p id="telMessage" role="status" aria-live="polite"></p>
+  </section>
+
   <footer>
     <p><a href="/">← Retour au guide gratuit</a></p>
     <p>Un souci&nbsp;? Ton paiement est enregistré même si la vérification automatique ne le voit pas encore&nbsp;: rien n'est perdu.</p>
@@ -129,6 +166,6 @@ footer a{color:var(--texte2);display:inline-flex;align-items:center;min-height:4
 </main>
 <script src="acces.js"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="croupier-acces" data-version="v1.0.0" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="croupier-acces" data-version="v1.1.0" data-color="#c9a227" defer></script>
 </body>
 </html>

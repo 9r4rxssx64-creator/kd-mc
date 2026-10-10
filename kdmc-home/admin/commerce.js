@@ -253,6 +253,41 @@
     return h + '</div>';
   }
 
+  /* INVITER GRATUITEMENT (Kevin 10.10 : « je peux inviter gratuit qui je veux, n'importe où »). L'entraîneur croupier en
+     premier ; les kits ensuite. Le code est créé par la caisse (admin vérifié) ; cette page ne fait que le montrer. */
+  var INVITABLES_FIXES = [
+    { id: 'croupier-pro', nom: 'Croupier — entraîneur complet' },
+    { id: 'croupier-entretien', nom: 'Croupier — réussir l\'entretien et les tests' },
+  ];
+  function invitables(data) {
+    var vus = {}, l = [];
+    INVITABLES_FIXES.concat(((data && data.produits) || []).map(function (p) { return { id: p.id, nom: p.court || p.nom }; }))
+      .forEach(function (p) { if (p && p.id && !vus[p.id]) { vus[p.id] = 1; l.push(p); } });
+    return l;
+  }
+  function sectionInviter(data) {
+    return '<div class="card" id="inviter">'
+      + '<p class="note">Un accès complet offert, comme un achat. Tu reçois un lien à envoyer par WhatsApp, SMS ou e-mail, à qui tu veux, où qu\'il soit.</p>'
+      + '<label class="note" for="inv-produit">Quoi offrir</label>'
+      + '<select id="inv-produit" style="width:100%;min-height:44px;margin:6px 0 10px">'
+      + invitables(data).map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.nom) + '</option>'; }).join('')
+      + '</select>'
+      + '<label class="note" for="inv-pour">À qui (prénom, facultatif)</label>'
+      + '<input id="inv-pour" type="text" autocomplete="off" maxlength="60" style="width:100%;min-height:44px;margin:6px 0 10px" placeholder="ex. Julie">'
+      + '<button class="refresh" id="inv-go" type="button" style="width:100%;min-height:48px">🎁 Créer le lien d\'invitation</button>'
+      + '<div id="inv-res" hidden style="margin-top:12px">'
+      + '<p class="note" id="inv-lien" style="word-break:break-all"></p>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:8px">'
+      + '<a class="refresh" id="inv-wa" target="_blank" rel="noopener" style="flex:1 1 140px;min-height:44px;display:flex;align-items:center;justify-content:center">WhatsApp</a>'
+      + '<a class="refresh" id="inv-sms" style="flex:1 1 140px;min-height:44px;display:flex;align-items:center;justify-content:center">SMS</a>'
+      + '<button class="refresh" id="inv-copier" type="button" style="flex:1 1 140px;min-height:44px">Copier</button>'
+      + '</div></div></div>';
+  }
+  function liensPartage(message) {
+    var m = encodeURIComponent(String(message || ''));
+    return { wa: 'https://wa.me/?text=' + m, sms: 'sms:?&body=' + m };
+  }
+
   function rendu(data, live, erreurLive) {
     var k = kpis(data, live);
     return '<div class="kpis">' + k.map(tuileKpi).join('') + '</div>'
@@ -260,6 +295,7 @@
       + '<h2 class="cat">💶 Ventes <button class="refresh" id="rf" type="button">↻ Relire la caisse</button></h2>' + sectionVentes(live)
       + sectionPaniers(live)
       + sectionFile(live)
+      + '<h2 class="cat">🎁 Inviter gratuitement</h2>' + sectionInviter(data)
       + '<h2 class="cat">🧰 Produits</h2>' + sectionProduits(data, live)
       + '<h2 class="cat">▶️ Commandes</h2>' + sectionCommandes(data, live)
       + '<h2 class="cat">🎬 Pub — vidéos sans visage</h2>' + sectionVideos(data)
@@ -269,14 +305,18 @@
       + '<h2 class="cat">⚙️ Caisse</h2>' + sectionBanque(live) + sectionConfig(live);
   }
 
-  var API = { esc: esc, euro: euro, etatRun: etatRun, etatLivraison: etatLivraison, etatContenu: etatContenu, kpis: kpis, moisBarres: moisBarres, rendu: rendu, sectionPaniers: sectionPaniers, sectionBanque: sectionBanque, sectionLiens: sectionLiens, CAISSE: CAISSE };
+  var API = { sectionInviter: sectionInviter, invitables: invitables, liensPartage: liensPartage, esc: esc, euro: euro, etatRun: etatRun, etatLivraison: etatLivraison, etatContenu: etatContenu, kpis: kpis, moisBarres: moisBarres, rendu: rendu, sectionPaniers: sectionPaniers, sectionBanque: sectionBanque, sectionLiens: sectionLiens, CAISSE: CAISSE };
   global.kdmcCommerce = API;
   if (typeof module === 'object' && module && module.exports) module.exports = API;
 
   /* ── DOM ──────────────────────────────────────────────────────────────── */
   if (typeof document === 'undefined') return;
-  var app = document.getElementById('app');
+  /* 10.10 — le tableau de bord unique (kd-mc.com/admin/) MONTE ce tableau dans sa section « Commerce » (kdmcCommerce.monter) ;
+     commerce.html, elle, le démarre seule dans #app (l'ancienne adresse reste valable). */
+  var app = null;
   var DATA = null, LIVE = null;
+  /* Le tableau unique compte « à livrer » à partir de la MÊME lecture de la caisse : on la publie, on ne la refait pas. */
+  function publie(live) { try { document.dispatchEvent(new CustomEvent('kdmc-commerce-live', { detail: live || null })); } catch (e) { /* vieux navigateur */ } }
 
   function deny(s) {
     var diag = !s ? 'Aucune <b>session du domaine</b> sur cet appareil.'
@@ -294,6 +334,27 @@
   function affiche(err) {
     app.innerHTML = rendu(DATA, LIVE, err);
     var rf = document.getElementById('rf'); if (rf) rf.addEventListener('click', function () { rf.disabled = true; recharge(); });
+    var ig = document.getElementById('inv-go');
+    if (ig) ig.addEventListener('click', function () {
+      ig.disabled = true; ig.textContent = '…';
+      fetch(CAISSE + '/admin/inviter', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()),
+        body: JSON.stringify({ produit: document.getElementById('inv-produit').value, pour: document.getElementById('inv-pour').value }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j.ok) { toast('Échec : ' + (j.detail || j.error)); return; }
+          var l = liensPartage(j.message);
+          document.getElementById('inv-lien').textContent = j.lien;
+          document.getElementById('inv-wa').href = l.wa;
+          document.getElementById('inv-sms').href = l.sms;
+          document.getElementById('inv-copier').onclick = function () {
+            try { navigator.clipboard.writeText(j.message).then(function () { toast('Copié ✓'); }); } catch (e) { toast(j.lien); }
+          };
+          document.getElementById('inv-res').hidden = false;
+          if (navigator.share) { try { navigator.share({ text: j.message }).catch(function () { /* annulé */ }); } catch (e) { /* */ } }
+        })
+        .catch(function (e) { toast('Réseau : ' + e.message); })
+        .then(function () { ig.disabled = false; ig.textContent = '🎁 Créer le lien d\'invitation'; });
+    });
     app.querySelectorAll('[data-valider],[data-refuser]').forEach(function (b) {
       b.addEventListener('click', function () {
         var refuser = b.hasAttribute('data-refuser'), id = b.getAttribute(refuser ? 'data-refuser' : 'data-valider');
@@ -366,7 +427,7 @@
       });
     });
   }
-  function recharge() { lireLive().then(function (j) { LIVE = j; affiche(null); }).catch(function (e) { affiche(String(e.message || e)); }); }
+  function recharge() { lireLive().then(function (j) { LIVE = j; affiche(null); publie(j); }).catch(function (e) { affiche(String(e.message || e)); publie(null); }); }
 
   function boot() {
     if (global.kdmcSSO && global.kdmcSSO.consumeHashToken) global.kdmcSSO.consumeHashToken();
@@ -378,5 +439,6 @@
         .catch(function (e) { app.innerHTML = '<div class="msg">Données du tableau introuvables (' + esc(e.message) + ') — relance la génération (npm run commerce:data).</div>'; });
     }).catch(function () { deny(null); });
   }
-  boot();
+  API.monter = function (el) { if (!el) return; app = el; boot(); };
+  if (!document.documentElement.hasAttribute('data-tableau-unique')) { app = document.getElementById('app'); if (app) boot(); }
 })(typeof window !== 'undefined' ? window : globalThis);

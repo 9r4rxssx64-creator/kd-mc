@@ -221,6 +221,29 @@ jobs:
             echo "::warning::RAILWAY_TOKEN absent → tableau de bord bot en railway_token_absent (fail-open)."
           fi
 
+      - name: WhatsApp — confirmation du téléphone à l'inscription (gratuite ; fail-open si absente)
+        # Kevin 9.10 « OTP pour toutes inscriptions » (services/kdmc-router/tel-inscription.js). Sans ces secrets, aucune
+        # inscription n'exige le téléphone (personne n'est enfermé dehors) ; avec, toutes l'exigent (KDMC_TEL_OBLIGATOIRE=0 coupe).
+        # Entrées passées par env:, jamais interpolées dans le script (règle « entrées hors du shell »).
+        working-directory: services/kdmc-router
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WA_ACCESS_TOKEN: ${{ secrets.WA_ACCESS_TOKEN }}
+          WA_PHONE_NUMBER_ID: ${{ secrets.WA_PHONE_NUMBER_ID }}
+          WA_APP_SECRET: ${{ secrets.WA_APP_SECRET }}
+          WA_VERIFY_TOKEN: ${{ secrets.WA_VERIFY_TOKEN }}
+          WA_NUMERO_PUBLIC: ${{ secrets.WA_NUMERO_PUBLIC }}
+        run: |
+          for n in WA_ACCESS_TOKEN WA_PHONE_NUMBER_ID WA_APP_SECRET WA_VERIFY_TOKEN WA_NUMERO_PUBLIC; do
+            v="${!n:-}"
+            if [ -n "$v" ]; then
+              printf '%s' "$v" | wrangler secret put "$n" 2>&1 | tail -2 || echo "::warning::$n non posé"
+            else
+              echo "::notice::$n absent → confirmation WhatsApp fermée, inscriptions sans téléphone (fail-open)."
+            fi
+          done
+
       - name: OpenAI — clé pour la voix naturelle KDMC Lingua (/__lingua/tts, fail-open si absente)
         working-directory: services/kdmc-router
         env:

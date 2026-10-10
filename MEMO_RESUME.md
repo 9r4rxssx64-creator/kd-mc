@@ -1,5 +1,143 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-10 (nuit) — Les 4 rouges de la chaîne complète : causes trouvées
+
+- `test:heures` : date en dur (10-11-12.10) qui croisait le vrai pointage du jour → jour du scénario choisi selon aujourd'hui (leçon #485).
+- `test:arbre-originaux` : la visionneuse ne reconnaissait qu'une des deux formes d'une navigation devenue téléchargement → corrigé + garde (#486).
+- `test:marionnette` : 18-20 images/s machine chargée, 27-33 au calme → cause = tests lancés en parallèle, seuil inchangé (#486).
+- `test:maj-tout` : chiffres de TRANSFERT-COMPLET régénérés (nombre de tests en hausse).
+- Chaîne complète sur l'état fusionné avec main : 402 étapes, 3 rouges, tous expliqués — `maj-tout` (un rapport `coverage/` ignoré comptait
+  comme une page : le compteur l'exclut), `perimetre-page` (faux domaine sans « admin » face au tableau unique plus strict, #487),
+  `javis-bee-reelle` (charge machine : tests lancés en parallèle ; 3/3 au calme). Et une étape MANQUANTE : `arbre-maj-auto` (main) sortie
+  de `test:ci` par ma résolution de conflit → remise + garde `test:tests-dans-ci` (#488).
+- PR #4460 : SonarCloud refusait la qualité du nouveau code (sécurité C, fiabilité C). Corrigé : hasard de l'entraîneur par
+  `crypto.getRandomValues` (24 `Math.random`), appel `verifieAcces()` marqué ignoré (il gère ses erreurs), robot WhatsApp avec
+  wrangler 4.135.0 figé et `--ignore-scripts` (vérifié : `wrangler --version` marche ainsi). CSP `style-src 'unsafe-inline'` de la page
+  admin : déjà sur main, laissée. Gardes ajoutées dans `croupier-entrainement-plus` et `whatsapp-brancher` (sabotages rouges).
+
+## 2026-10-10 — UN SEUL TABLEAU DE BORD ADMIN (kd-mc.com/admin/, v2.0.0) (Kevin « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et clairement. »)
+
+- **Inventaire mesuré (avant)** — pages et fonctions réservées à l'admin, lues dans le dépôt :
+  1. `kdmc-home/admin/index.html` + `admin.js` (v1.0.0) : verrou serveur (`/__admin/accounts` 403, grant par session vérifiée, code en
+     dernier recours) ; présence (en ligne < 13 min, récents < 1 h, relue 25 s) ; 4 pastilles (comptes, limités à une app, CGU, connexions) ;
+     historique par personne + filtre ; fiches clients (appareils, lieux, sites, renseignements, connexion suspecte) ; « Où elle peut aller »
+     (`/__admin/acces`) ; « Déconnecter partout » (`/__admin/revoke`) ; journal admin (`/__admin/audit`) ; tuiles `hub()` (Mon business,
+     fonctions communes, piloter le domaine, studios, + toutes les apps du registre : 37 tuiles mesurées).
+  2. `admin/commerce.html` + `commerce.js` (v1.1.0, verrou `/__sso/whoami` admin + Face ID) : 9 tuiles chiffrées, CA 6 mois, dernières ventes,
+     paniers (livrer / abandonné / relancer), file à valider (livrer / refuser), 🎁 inviter gratuitement, produits, commandes (workflows),
+     vidéos pub, posts-liens Facebook, marché, pages, IBAN, état de la caisse — tout via la caisse `kdmc-vente /admin/*`.
+  3. `admin/openai.html` + `openai.js` : `/__lingua/depense` (voix payées, appels en direct, 30 j) + écoute voix payante / gratuite.
+  4. La boîte (`kdmc-boite.js`, portail, API `/__boite/admin`) : messages de toutes les apps (répondre, lu, historique d'une personne,
+     déconnecter), 🔐 codes à valider, 📝 inscriptions à valider, bandeau collant.
+  5. Ailleurs : « Qui se connecte » (admin.kd-mc.com, `/__admin/domain-log`), Centre de contrôle (`/liens/`, santé des workers, soldes),
+     `/empreinte/` (code admin), apps à porte admin (bot, autorisations, coffre, Apex AI admin, Javis/Bee, dashboard boutiques, CMCteams).
+     Routes `/__admin/*` du routeur : login, grant, logout, domain-log, accounts, audit, revoke, acces, code, account, me, fbtoken.
+- **Regroupé** dans `kd-mc.com/admin/` (même adresse), du plus urgent au moins urgent : bandeau **« ⚡ À traiter maintenant »** (5 compteurs
+  touchables : messages non lus → ouvre la boîte ; inscriptions, codes, inscriptions sans WhatsApp → « À trancher » ; ventes à livrer → file
+  de la caisse), barre de thèmes collante, recherche **« Que veux-tu faire ? »** (25 actions), puis 7 sections repliables (ouvertes) :
+  Personnes & comptes · Messages · Commerce · Apps du domaine (avec version) · IA & robots (santé des services) · Coûts & quotas (OpenAI) · Réglages.
+- **Rien n'est réécrit** : `tableau.js` (nouveau) range et appelle. `admin.js` → `kdmcAdmin.monter()` (fiches, présence, journal) ;
+  `commerce.js` → `kdmcCommerce.monter()` + événement `kdmc-commerce-live` (le compteur « à livrer » lit la MÊME lecture de la caisse) ;
+  `kdmc-boite.js` → `surMaj()` + `blocs()` (mêmes blocs « à trancher » que la fenêtre) ; les tuiles de `hub()` sont DÉPLACÉES par thème
+  (une destination = une tuile). Les pages ne démarrent seules que sans `data-tableau-unique` : commerce.html et openai.html restent valables,
+  avec « ← Tableau de bord » vers `/admin/#commerce` et `/admin/#couts`.
+- **🪪 Inscriptions sans WhatsApp** (contrat du routeur, `claude/croupier-plus` f62474938) : bloc dans la boîte ET dans le tableau,
+  Accepter (confirmation) / Refuser → `POST /__boite/admin/inscription-admin {uid, accepter}` ; compté dans le bandeau du portail et le
+  tableau ; champ absent → rien d'affiché.
+- **Sécurité** : verrou identique à commerce.js (`/__sso/whoami` admin ET vérifié) AVANT tout appel ; mesuré : 0 appel aux portes admin
+  sans session / non admin / admin sans Face ID. Données reçues en `textContent` ou `esc()`.
+- Fichiers : `admin/tableau.js`, `admin/tableau.css`, `admin/commerce.css` (styles sortis de commerce.html), `/kdmc-boite.css` (copie des
+  styles de la fenêtre du portail — à la fusion, le portail peut lier ce fichier et retirer sa copie en ligne ; je n'ai PAS touché au portail),
+  `admin/apps-versions.json` généré par `tools/admin/apps-versions.mjs` (versions relevées dans le dépôt : 29/32, les 3 vitrines sans bulle
+  n'ont pas de version lisible). Versions : admin v2.0.0, admin-commerce v1.2.0, admin-openai v1.1.0.
+- Garde `test:admin-unique` (`tests/verify-admin-unique.mjs`, Chromium 375×812, branchée dans `test:ci`) : **53 contrôles**. Sabotages tous
+  ROUGES : contrôle admin affaibli (2 échecs), compteur faux (3), section retirée (4), bouton → mauvaise requête (3), lien ancien cassé (2).
+  `test:commerce-tableau` suit maintenant `commerce.css` (la règle `input.champ` y a déménagé).
+
+## 2026-10-10 — Validation WhatsApp automatique, robot de branchement, invitations gratuites, plus de bouton admin (Kevin)
+
+- « Automatise la validation WhatsApp » : (1) la page se valide TOUTE SEULE dès que le message WhatsApp arrive (`/__sso/tel/statut`
+  domaine, `/tel/statut` caisse ; jeton connu de la seule page qui demande, absent du message ; lecture seule tant que rien n'arrive,
+  consommé une fois) — le code à 6 chiffres reste un secours ; (2) robot `whatsapp-brancher.yml` (manuel) : à partir de 3 secrets
+  (jeton, id et secret de l'app Meta) il retrouve le compte WhatsApp et le numéro (debug_token + phone_numbers), invente le mot du
+  webhook, pose 5 secrets sur kdmc-router ET kdmc-vente, abonne l'app et règle le webhook, puis lit `/__sso/tel/etat`. Garde
+  `test:whatsapp-brancher` (11, découverte jouée avec de fausses réponses Meta).
+- « Je peux inviter gratuit qui je veux » : caisse `/admin/inviter` (admin vérifié) → vrai code d'accès marqué « invitation », lien
+  `…?c=CODE` + message prêt ; Commerce v1.1.0 : section 🎁 (WhatsApp, SMS, Copier, partage iPhone). Garde `test:vente-inviter` (3).
+  L'entraîneur reconnaît ce code (refonte en cours : déverrouillage par `/acces` du worker).
+- « Enlève je suis administrateur » : bouton retiré ; sur un appareil neuf, nom + code admin dans « J'ai déjà un compte » (le domaine
+  répond `admin_requis` pour ce nom, le portail envoie le code à `/__admin/login`). Test Bee iPhone a attrapé une régression (le champ
+  caché n'était plus branché) — corrigée.
+- « Si pas de WhatsApp, validation admin. Au choix » : à l'étape téléphone, bouton « Je n'ai pas WhatsApp — demander la validation à
+  l'administrateur ». `/__sso/issue` avec `validation:'admin'` crée le compte (nom + code) mais FERMÉ : fiche `attente_admin`, périmètre
+  `attente_admin` pour toutes les apps, seul le portail l'accueille (écran d'attente, revérifie toutes les 30 s). Kevin reçoit une alerte et
+  la demande dans sa boîte (`inscriptionsAdmin`, table D1 `inscription_admin`, décision `POST /__boite/admin/inscription-admin`) : accepter
+  ouvre, refuser garde fermé (`refuse_admin`). Fermé par défaut : si la fiche ne peut pas être marquée → 503, aucune session (leçon #482).
+  Garde `test:validation-admin` (24, 5 sabotages rouges). Affichage dans le tableau de bord admin : agent `claude/admin-unique`.
+- Refonte pro de l'entraîneur (design noir & or inspiré de Croupix, visuels tapis/cartes/jetons, pavé numérique, niveaux, leçons) :
+  confiée à un agent sur `claude/croupier-design`, à fusionner après ses gardes.
+## 2026-10-10 — Entraîneur de croupier v2.0.0 : design pro noir & or, visuels dessinés, niveaux, +9 exercices, accès par code (Kevin « Fais bcp plus professionnel… prends modèle sur Croupix »)
+
+- Repères Croupix (captures d'un ami de Kevin) : fond noir, or mat, titres serif en capitales, icônes par jeu, tapis vert avec jetons,
+  cartes dessinées, pavé maison, niveaux, glossaire avec recherche. RIEN copié (ni image, ni texte, ni logo, ni code) : identité KD-MC.
+- `shops/croupier/entrainement.html` v2.0.0 (bulle data-version) : écrans accueil (liste des jeux + série du jour) → jeu (fiche
+  « Apprendre » puis exercices) → table (visuel, énoncé, pavé numérique C rouge / ✓ or, chrono live) ; glossaire (recherche, 8 catégories,
+  FR/EN/IT — IT seulement quand le terme est sûr) ; mes progrès. Sombre par défaut + thème clair au choix (bouton ◐, gardé localement).
+  Bouton retour de l'iPhone géré (history). Cibles ≥ 44 px, 0 débordement à 375 px.
+- Découpé en 3 fichiers locaux : `entrainement.js` (moteur, niveaux, accès), `entrainement-visuels.js` (tapis vertical avec jetons sur
+  leurs cases, cylindre, cartes avec leurs points, dés, piles de jetons — SVG en createElementNS, jamais d'innerHTML),
+  `entrainement-lecons.js` (6 fiches et 54 termes de glossaire).
+- Niveaux Facile / Normal / Croupier sur les 28 exercices : mises rondes et petites → non rondes et grandes, plus de mises cumulées,
+  de cartes, de numéros à retenir, chrono ×1,5 / ×1 / ×0,75. « Normal » = l'ancien tirage exact.
+- 9 exercices ajoutés (tous verrouillés, règle de vente inchangée : 1 gratuit par jeu + examen) : lire le tapis (ramasser/payer),
+  complet d'un numéro (40 pièces / 392 au milieu, 30 / 294 au bord), décomposer une annonce, un numéro et ses voisins (2 ou 3),
+  split/double/égalité/assurance max, égalité 8 c/1 et paires 11 c/1 (« le plus courant », dit à l'écran), field (variante dite :
+  2 et 12 double), série chronométrée 35/17/11/8/5, additions de paiements.
+- Déverrouillage par code : `?c=` puis `localStorage kdmc_acces_code` → GET `kdmc-vente…/acces?c=` ; `{ok:true, produit:'croupier…'}`
+  ouvre tout (moteur ET écran, « Accès complet ✓ »). Refus / autre produit / réseau coupé : rien ne change, aucun message.
+  CSP `connect-src https://kdmc-vente.9r4rxssx64.workers.dev`. NB : `croupier-entretien` commence aussi par « croupier » → l'ouvre aussi (demande de Kevin).
+- Gardes : `test:croupier-entrainement` 41 (2 contrôles « aucun réseau » remplacés par 3 : un seul fetch vers /acces, sans corps ;
+  CSP limitée au worker), `test:croupier-entrainement-plus` 113 (28 générateurs × 200 tirages × 3 niveaux recalculés par ses
+  propres tables + effet des niveaux), NOUVEAU `test:croupier-entrainement-design` 40 (Chromium 375 px : jetons relus sur leurs cases,
+  cartes dessinées = énoncé, pavé, cylindre masqué/révélé, 6 cas de code d'accès simulés par page.route, 17 écrans ≥ 44 px).
+  10 sabotages → tous ROUGES (détail dans le commit).
+
+## 2026-10-09 (nuit, suite) — OTP WhatsApp pour TOUTES les inscriptions du domaine (Kevin « Opt pour toutes inscription au domaine, app etc »)
+
+- Lu « OTP pour toutes inscriptions ». Toutes les apps créent leurs comptes par la même porte (portail → `/__sso/issue`) : l'exigence y est
+  posée une fois pour toutes les apps, présentes et futures. `services/kdmc-router/tel-inscription.js` (`/__sso/tel/demande|webhook|verifie|etat`),
+  moteur partagé `services/_shared/whatsapp-otp.js` (utilisé aussi par la caisse). Preuve signée (clé des sessions), usage unique, 30 min,
+  3 comptes par téléphone ; la fiche garde le téléphone en HMAC + masque. Portail v1.0.50 : étape « Confirme ton téléphone » (6 cases,
+  minuteur 15 min, essais restants). Un seul webhook Meta (`https://kd-mc.com/__sso/tel/webhook`) qui renvoie les demandes « V… » à la caisse.
+- Fermé honnêtement tant que les secrets `WA_*` manquent : AUCUNE inscription n'est bloquée aujourd'hui. Interrupteur `KDMC_TEL_OBLIGATOIRE=0`.
+- Relecture indépendante (agent) : 15 points, tous corrigés avec garde + sabotage (leçon #480) — demande sans écriture KV, plafonds en cache,
+  envoi avant écriture, anti-doublon Meta, demande bloquée non effacée, version Graph v23 (réglable), minuteur ancré sur la demande, collage,
+  masque Monaco (+377), vieille fiche non rallongée, code d'accès déjà lié non réécrasable ; entraîneur : Entrée, clavier iPhone, arrondis.
+- Reste vrai et dit à Kevin : le contenu payant de l'entraîneur est dans le JavaScript public (comme avant) et aucun achat ne le débloque encore.
+
+## 2026-10-09 (nuit) — Entraîneur de croupier+++ et confirmation par WhatsApp (Kevin « Améliore +++, prends modèle sur Croupix »)
+
+- Repères pris sur Croupix (app d'un ami de Kevin, ancien du casino) et les écoles : roulette française et anglaise, blackjack,
+  punto banco, craps, poker Ultimate, pré-école (calcul, mémoire), glossaire, astuces. Rien n'est copié (ni textes, ni visuels, ni code) :
+  exercices réécrits, faits du métier seulement.
+- `shops/croupier/entrainement.*` v1.1.0 : 6 jeux, 19 exercices (annonces voisins/tiers/orphelins/jeu zéro, finales, cylindre,
+  compter une main, 3e carte du punto, odds/place/propositions du craps, main et Blind du poker Ultimate, tables, jetons, mémoire),
+  examen blanc (10 questions, 8 pour réussir), temps visé par exercice, révision des erreurs (gardée sur le téléphone), mes résultats,
+  glossaire FR/EN, astuces de calcul et du cylindre. Toujours aucun réseau (CSP connect-src 'none').
+- Règle de Kevin « comme aujourd'hui » : un exercice gratuit par jeu + l'examen blanc, le reste verrouillé dans le moteur ET à l'écran.
+  La révision des erreurs filtre ce qui vient d'un exercice verrouillé (pas de porte dérobée).
+- Garde `test:croupier-entrainement-plus` (68 contrôles) : ses PROPRES tables (cylindre, annonces posables sur le tapis, tableau du
+  punto, cotes du craps, classement poker par un autre chemin), 15 générateurs × 300 tirages recalculés. 7 sabotages → ROUGE.
+  Défaut trouvé en route : « Suivante » cachée après une question à boutons (leçon #478).
+- Page de vente mise à jour (liste des exercices, « un exercice par jeu gratuit »).
+- **Confirmation d'identité par WhatsApp, gratuite** (Kevin « intègre gratuit la confirmation par tel ») : le « WhatsApp déjà en place »
+  (Apex v13) vérifiait le code DANS la page et attendait Kevin → remplacé. `services/kdmc-vente/tel.js` : `/tel/demande` (lien wa.me
+  « KDMC XXXXXXXX »), `/webhook/whatsapp` (signature HMAC Meta, répond un code à 6 chiffres, message de service gratuit),
+  `/tel/verifie` (10 min, 5 essais, 5 demandes/h). Code et numéro jamais en clair. L'accès est lié au téléphone sans être rallongé.
+  `acces.html` v1.1.0 : écran à 6 cases (collage, remplissage iOS, minuteur, essais restants). Fermé honnêtement tant que les 5 secrets
+  `WA_*` manquent (7 gestes pour Kevin dans KEVIN_ACTIONS_TODO). Gardes `test:vente-tel` (13) + 2 contrôles navigateur dans
+  `test:croupier-acces`. 7 sabotages → ROUGE.
+
 ## 2026-10-09 (soir) — Bulles de version partout, touchables même avant la connexion (Kevin « chaque page a sa bulle »)
 
 - Tournée réelle (Chromium 375 px, 119 pages servies) : 33 bulles visibles au départ ; arbre, Lingua, Bee, Apex Chat cachaient

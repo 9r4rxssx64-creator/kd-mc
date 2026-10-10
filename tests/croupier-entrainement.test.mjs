@@ -181,10 +181,21 @@ verifie('dit qu\'on ne vend pas ce qu\'on ne peut pas livrer', m.honnete);
 verifie('un seul titre principal', m.h1 === 1, String(m.h1));
 
 /* ── 6. Rien ne sort du téléphone ─────────────────────────────────────────── */
-const src = fs.readFileSync(path.join(ROOT, 'shops/croupier/entrainement.js'), 'utf8');
-verifie('aucun appel réseau dans le moteur', !/fetch\(|XMLHttpRequest|navigator\.sendBeacon|WebSocket/.test(src));
+/* v2.0.0 (Kevin 10.10, déverrouillage par code) : UN SEUL appel réseau possible — la question « ce code
+   est-il valable ? » posée à /acces du worker de vente. Avant : « aucun réseau » et connect-src 'none'. */
+const DOSSIER = path.join(ROOT, 'shops/croupier');
+const sources = fs.readdirSync(DOSSIER).filter((f) => /^entrainement.*\.js$/.test(f)).map((f) => fs.readFileSync(path.join(DOSSIER, f), 'utf8'));
+const tout = sources.join('\n');
+const appels = (tout.match(/fetch\(/g) || []).length;
+const appelFetch = (tout.match(/fetch\([^\n]*/) || [''])[0];
+const api = (tout.match(/var API_ACCES = '([^']+)'/) || [])[1] || '';
+verifie('un seul appel réseau possible : fetch vers /acces du worker de vente, rien d\'autre',
+  appels === 1 && api === 'https://kdmc-vente.9r4rxssx64.workers.dev/acces?c=' && /fetch\(API_ACCES \+ encodeURIComponent\(code\), \{ method:'GET'/.test(appelFetch)
+  && !/XMLHttpRequest|sendBeacon|WebSocket|EventSource|importScripts/.test(tout), `appels=${appels} api=${api} ${appelFetch}`);
+verifie('la progression ne quitte jamais le téléphone (l\'appel ne porte que le code, sans corps)',
+  !/body\s*:|litScore|litErreurs|CLE_JOUR|localStorage/.test(appelFetch), appelFetch);
 const csp = (fs.readFileSync(path.join(ROOT, 'shops/croupier/entrainement.html'), 'utf8').match(/Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
-verifie('la CSP interdit toute connexion sortante', csp.includes("connect-src 'none'"), csp);
+verifie('la CSP n\'autorise QUE le worker de vente en sortie', /connect-src https:\/\/kdmc-vente\.9r4rxssx64\.workers\.dev;/.test(csp), csp);
 verifie('la CSP n\'autorise que les scripts du site', csp.includes("script-src 'self'") && !csp.includes("'unsafe-inline'; script"), csp);
 
 await ctx.close(); await nav.close(); srv.close();

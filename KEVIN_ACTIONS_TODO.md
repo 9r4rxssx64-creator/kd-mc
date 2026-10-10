@@ -9,6 +9,39 @@
 
 ---
 
+## ✅ (10.10) Inviter gratuitement qui tu veux, n'importe où — prêt dès la mise en ligne
+
+[kd-mc.com/admin/commerce.html](https://kd-mc.com/admin/commerce.html) → **🎁 Inviter gratuitement** : choisis quoi offrir (l'entraîneur
+croupier en premier), un prénom si tu veux, touche **Créer le lien d'invitation** → envoie-le par **WhatsApp**, **SMS** ou **Copier**.
+La personne ouvre le lien : accès complet, comme un achat. Réservé à toi (Face ID).
+
+Et le bouton « 👑 Je suis l'administrateur » a disparu du portail : tu es reconnu par Face ID ; sur un appareil neuf, tape ton nom
+et ton code admin dans « J'ai déjà un compte — nom + code ».
+
+---
+
+## 👆 (10.10) WhatsApp pour TOUTES les inscriptions : 3 copier-coller chez Meta, le robot fait le reste
+
+**Ce que ça fait une fois ouvert** : sur kd-mc.com, « Créer mon compte » → « Ouvrir WhatsApp » (le message est déjà écrit) →
+la personne l'envoie → **la page se valide toute seule**, sans code à taper. C'est gratuit (la personne écrit en premier).
+Ça vaut pour toutes les apps du domaine, et aussi pour un code d'accès croupier. Les comptes existants ne sont pas touchés.
+Tant que ce n'est pas ouvert, **rien ne change** (aucune inscription bloquée). Bouton OFF : secret `KDMC_TEL_OBLIGATOIRE` = `0`.
+
+La seule partie que je ne peux pas faire à ta place : te connecter à TON compte Meta.
+1. [developers.facebook.com/apps](https://developers.facebook.com/apps) → **Créer une app** → type **Business** → ajoute **WhatsApp** → **Démarrer**
+   (choisis le numéro qui répondra : pas ton WhatsApp perso).
+2. [business.facebook.com → Utilisateurs système](https://business.facebook.com/settings/system-users) → **Générer un jeton** (sans expiration)
+   en cochant `whatsapp_business_messaging` et `whatsapp_business_management`.
+3. Copie 3 choses dans [GitHub → Secrets → Actions](https://github.com/9r4rxssx64-creator/CMCteams/settings/secrets/actions) :
+   `WA_ACCESS_TOKEN` (le jeton), `WA_APP_ID` (Identifiant de l'app, en haut de la page de l'app), `WA_APP_SECRET`
+   (Paramètres de l'app → Général → Clé secrète).
+
+Ensuite je lance le robot **« WhatsApp — brancher la confirmation »** : il retrouve tout seul ton compte et ton numéro, invente le
+mot du webhook, pose les secrets sur le domaine ET la caisse, règle le webhook chez Meta (`https://kd-mc.com/__sso/tel/webhook`)
+et vérifie que le domaine dit « prêt ».
+
+---
+
 ## 🟠 (8.10, nuit) Revue extérieure complète : 3 réponses à me donner + 1 clic
 
 Tout est dans `audit/prive/AUDIT-COMPLET-2026-10-08.md` (8 relecteurs, 9 P0 trouvés, le socle est corrigé le soir même).

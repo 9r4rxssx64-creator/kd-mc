@@ -2,16 +2,15 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src https://kdmc-vente.9r4rxssx64.workers.dev; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>L'entraîneur de paiements — Devenir croupier</title>
-<meta name="description" content="L'exercice de calcul mental que les écoles de jeux testent réellement : une mise, un numéro qui sort, le paiement à annoncer juste et vite.">
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#101010" media="(prefers-color-scheme: dark)">
-<meta name="color-scheme" content="light dark">
+<title>L'entraîneur du croupier — Devenir croupier</title>
+<meta name="description" content="Roulette, blackjack, punto banco, craps, poker Ultimate : les gestes de table que les écoles de jeux testent, chronométrés, avec le tapis, les cartes et les jetons dessinés.">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="color-scheme" content="dark light">
 <link rel="canonical" href="https://croupier.kd-mc.com/entrainement.html">
-<meta property="og:title" content="L'entraîneur de paiements — Devenir croupier">
-<meta property="og:description" content="Les paiements de table, chronométrés. Gratuit pour la roulette.">
+<meta property="og:title" content="L'entraîneur du croupier — Devenir croupier">
+<meta property="og:description" content="Roulette, blackjack, punto banco, craps, poker Ultimate : les gestes de table, chronométrés. Un exercice gratuit par jeu.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="fr_FR">
 
@@ -20,170 +19,377 @@
 <link href="https://fonts.googleapis.com/css2?family=Gelasio:wght@400;500;600;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
-/* Système de design « editorial » — mêmes jetons que le guide.
-   Source : vendor/agent-toolkit/awesome-design-skills/skills/editorial/ */
+/* Identité KD-MC : noir profond et or mat, serif élégante (Gelasio) + mono (Ubuntu Mono).
+   Sombre par défaut (le look « table de casino ») ; un thème clair lisible au choix. */
 :root{
-  --primaire:#111111; --secondaire:#F1F1F1; --accent:#8A6A1F;   /* 5,5:1 sur blanc */
-  --succes:#15803D; --danger:#B91C1C;
-  --surface:#FFFFFF; --surface2:#FAFAF8; --papier:#F6F4EF;
-  --bord:#E3E1DB; --bord-fort:#C9C6BD;
-  --texte:#111827; --texte2:#4B5563; --texte3:#6B7280;
-  --t14:14px; --t16:16px; --t18:18px; --t24:24px; --t32:32px; --t40:40px;
-  --e8:8px; --e16:16px; --e24:24px; --e32:32px; --e48:48px;
-  --r-sm:4px; --r-md:8px;
+  --fond:#0A0A0A; --fond2:#111110; --carte:#161512; --carte2:#1D1B17; --bord:#2E2A22; --bord-fort:#4A4233;
+  --or:#D9B76A; --or-vif:#E8C978; --or-fonce:#A88A3E; --sur-or:#1A1408;
+  --texte:#F3F0E8; --texte2:#B9B3A6; --texte3:#948E82;
+  --succes:#5BD08A; --danger:#FF7A7A; --rouge:#C0262D; --rouge-touche:#B3222A;
   --serif:"Gelasio",Georgia,"Times New Roman",serif;
   --mono:"Ubuntu Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:14px; --r-sm:10px;
+  --ombre:0 10px 30px rgba(0,0,0,.45);
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --primaire:#F5F5F5; --secondaire:#1C1C1C; --accent:#D9B76A; --succes:#4ADE80; --danger:#F87171;
-    --surface:#101010; --surface2:#171716; --papier:#15150F;
-    --bord:#2B2B29; --bord-fort:#3E3E3A;
-    --texte:#F2F2F0; --texte2:#A8A8A2; --texte3:#8C8C87;
-  }
+:root[data-theme="clair"]{
+  --fond:#F7F4EC; --fond2:#FFFFFF; --carte:#FFFFFF; --carte2:#F3EFE4; --bord:#E2DBC9; --bord-fort:#C9BFA4;
+  --or:#8A6A1F; --or-vif:#7A5C14; --or-fonce:#6B5216; --sur-or:#FFFFFF;
+  --texte:#16130D; --texte2:#4A4438; --texte3:#5E574A;
+  --succes:#15803D; --danger:#B91C1C;
+  --ombre:0 8px 22px rgba(60,45,10,.12);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;background:var(--fond)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
-body{background:var(--surface);color:var(--texte);font-family:var(--serif);font-size:var(--t18);line-height:1.7;-webkit-font-smoothing:antialiased}
-.wrap{max-width:680px;margin:0 auto;padding:0 var(--e24)}
-h1{font-size:clamp(var(--t24),5vw,var(--t32));font-weight:700;letter-spacing:-.012em;line-height:1.2}
-p{margin:0 0 var(--e16)}
-.kicker{font-family:var(--mono);font-size:var(--t14);font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);display:block;margin-bottom:var(--e8)}
-.petit{font-size:var(--t16);color:var(--texte2)}
-.note{font-size:var(--t14);color:var(--texte3);line-height:1.6}
+body{background:var(--fond);color:var(--texte);font-family:var(--serif);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(120% 60% at 50% -10%, rgba(217,183,106,.10), transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.012) 0 2px, transparent 2px 5px);
+  min-height:100vh}
+:root[data-theme="clair"] body{background-image:radial-gradient(120% 60% at 50% -10%, rgba(138,106,31,.10), transparent 60%)}
+.app{max-width:540px;margin:0 auto;padding:0 16px calc(120px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none !important}
 a{color:inherit}
-a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:var(--r-sm)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--or);outline-offset:2px;border-radius:var(--r-sm)}
+h1{font-family:var(--serif);font-weight:700;font-size:30px;line-height:1.15;letter-spacing:.06em;text-transform:uppercase;color:var(--or);margin:6px 0 10px}
+h2{font-family:var(--serif);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--or)}
+.kicker{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--texte3)}
+.petit{font-size:16px;color:var(--texte2)}
+.note{font-size:14px;color:var(--texte3);line-height:1.55;margin:16px 0}
 
-header.tete{border-bottom:1px solid var(--bord);padding:var(--e16) 0}
-.marque{display:flex;align-items:center;gap:var(--e8);min-height:44px;font-family:var(--mono);font-size:var(--t14);
-  font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--texte2);text-decoration:none}
+/* barre du haut */
+.barre{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:60px;padding-top:env(safe-area-inset-top,0px)}
+.marque{display:inline-flex;align-items:center;gap:10px;min-height:44px;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--texte2);text-decoration:none}
+.marque b{color:var(--or)}
+.retour,.bouton-icone{min-height:44px;min-width:44px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;background:transparent;border:1px solid var(--bord);
+  border-radius:999px;color:var(--or);font-family:var(--mono);font-size:15px;cursor:pointer}
+.barre-titre{flex:1;text-align:center;font-family:var(--serif);font-weight:700;font-size:17px;letter-spacing:.04em;color:var(--texte);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chrono{min-width:74px;text-align:right;font-family:var(--mono);font-size:18px;font-weight:700;color:var(--or)}
+.chrono.depasse{color:var(--danger)}
 
-section{padding:var(--e32) 0}
+/* accueil */
+.hero{padding:6px 0 14px}
+.acces-ok{display:inline-flex;align-items:center;gap:8px;margin-top:6px;padding:8px 14px;border-radius:999px;background:rgba(91,208,138,.12);
+  border:1px solid var(--succes);color:var(--succes);font-family:var(--mono);font-weight:700;font-size:15px}
+.tuiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 22px}
+.tuile{background:var(--carte);border:1px solid var(--bord);border-radius:var(--r-sm);padding:10px 6px;text-align:center}
+.tuile b{display:block;font-family:var(--mono);font-size:22px;color:var(--or);line-height:1.2}
+.tuile span{display:block;font-size:12px;line-height:1.25;color:var(--texte3);margin-top:2px}
+.titre-section{text-transform:uppercase;color:var(--or);font-family:var(--serif);font-weight:700;font-size:15px;letter-spacing:.18em;margin:22px 0 10px;display:flex;align-items:center;gap:10px}
+.titre-section::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--bord-fort),transparent)}
 
-/* choix du mode */
-.modes{display:flex;flex-wrap:wrap;gap:var(--e8);margin:var(--e24) 0}
-.mode{min-height:44px;padding:0 var(--e16);border:1px solid var(--bord-fort);background:var(--surface);
-  color:var(--texte);border-radius:var(--r-md);font-family:var(--mono);font-size:var(--t14);cursor:pointer;
-  display:inline-flex;align-items:center;gap:var(--e8)}
-.mode[aria-pressed="true"]{background:var(--primaire);color:var(--surface);border-color:var(--primaire)}
-.mode[disabled]{cursor:not-allowed;opacity:.55;color:var(--texte3)}
-.mode .cadenas{font-size:var(--t14)}
+/* listes en lignes (jeux, exercices, raccourcis) */
+.liste{display:flex;flex-direction:column;gap:10px}
+.ligne{width:100%;min-height:64px;display:flex;align-items:center;gap:14px;padding:12px 14px;text-align:left;cursor:pointer;
+  background:linear-gradient(180deg,var(--carte2),var(--carte));border:1px solid var(--bord);border-radius:var(--r);color:var(--texte);
+  font-family:var(--serif);box-shadow:var(--ombre);transition:transform .12s ease,border-color .12s ease}
+.ligne:active{transform:scale(.985)}
+.ligne:hover{border-color:var(--bord-fort)}
+.ligne-icone,#jeu-icone{flex:0 0 auto;width:48px;height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--or);background:radial-gradient(circle at 30% 25%,rgba(217,183,106,.22),rgba(217,183,106,.05));border:1px solid rgba(217,183,106,.35)}
+.ligne-texte{flex:1;min-width:0;display:flex;flex-direction:column}
+.ligne-titre{font-weight:700;font-size:18px;letter-spacing:.02em;color:var(--texte)}
+.ligne-jeu .ligne-titre{text-transform:uppercase;letter-spacing:.08em;color:var(--or)}
+.ligne-sous{font-family:var(--mono);font-size:14px;color:var(--texte3);line-height:1.35}
+.ligne-fleche{color:var(--or);font-size:26px;line-height:1}
+.ligne[disabled]{cursor:not-allowed;opacity:.62;box-shadow:none}
+.ligne[disabled] .ligne-titre{color:var(--texte2)}
+.cadenas{color:var(--or-fonce);display:inline-flex}
+.ligne[disabled] .ligne-fleche{display:none}
+.carte-lecon{border-color:rgba(217,183,106,.5);background:linear-gradient(180deg,rgba(217,183,106,.14),var(--carte))}
+
+.tete-jeu{display:flex;align-items:center;gap:14px;margin:4px 0 16px}
+.tete-jeu h2{font-size:24px;line-height:1.15}
+.tete-jeu p{font-family:var(--mono);font-size:14px;color:var(--texte3)}
+.liste-modes{display:flex;flex-direction:column;gap:10px}
 
 /* la table d'exercice */
-.table{background:var(--papier);border:1px solid var(--bord);border-radius:var(--r-md);padding:var(--e24);margin:var(--e24) 0}
-#enonce{font-size:var(--t18);line-height:1.6;margin-bottom:var(--e16)}
-#question{font-family:var(--mono);font-size:var(--t14);text-transform:uppercase;letter-spacing:.08em;color:var(--texte3);margin-bottom:var(--e8)}
-.saisie{display:flex;flex-wrap:wrap;gap:var(--e8);align-items:stretch}
-#reponse{flex:1;min-width:140px;min-height:52px;padding:0 var(--e16);font-family:var(--mono);font-size:var(--t24);
-  border:1px solid var(--bord-fort);border-radius:var(--r-md);background:var(--surface);color:var(--texte)}
-#reponse:disabled{opacity:.65}
-.btn{min-height:52px;padding:0 var(--e24);border:1px solid transparent;border-radius:var(--r-md);cursor:pointer;
-  font-family:var(--mono);font-size:var(--t16);font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-  background:var(--primaire);color:var(--surface);display:inline-flex;align-items:center;justify-content:center}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-[hidden]{display:none !important}
-
-.btn.vide{background:var(--surface);color:var(--texte);border-color:var(--bord-fort)}
-.verdict{font-family:var(--mono);font-size:var(--t18);font-weight:700;margin-top:var(--e16);min-height:28px}
+.niveaux{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--carte);border:1px solid var(--bord);border-radius:999px;margin:4px 0 6px}
+.niveaux button{min-height:44px;border:0;border-radius:999px;background:transparent;color:var(--texte2);font-family:var(--serif);font-weight:700;font-size:15px;cursor:pointer}
+.niveaux button[aria-pressed="true"]{background:linear-gradient(180deg,var(--or-vif),var(--or));color:var(--sur-or);box-shadow:0 2px 10px rgba(217,183,106,.35)}
+#niveau-aide{text-align:center;font-family:var(--mono);font-size:13px;color:var(--texte3);margin-bottom:10px}
+.table{background:var(--carte);border:1px solid var(--bord);border-radius:18px;padding:14px;box-shadow:var(--ombre)}
+.visuel{margin:-2px 0 12px;display:flex;justify-content:center}
+.visuel .dessin{width:100%;max-width:360px;height:auto;max-height:340px;display:block}
+.visuel [data-visuel="cylindre"]{max-width:290px}
+#enonce{font-size:18px;line-height:1.55;margin-bottom:10px}
+#enonce b{color:var(--or-vif)}
+:root[data-theme="clair"] #enonce b{color:var(--or)}
+#enonce .variante{display:block;margin-top:6px;font-family:var(--mono);font-size:14px;color:var(--texte3)}
+.memo{font-family:var(--mono);font-size:32px;letter-spacing:.06em}
+#question{font-family:var(--mono);font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--texte2)}
+#objectif{font-family:var(--mono);font-size:13px;color:var(--texte3);margin-bottom:8px}
+#reponse{width:100%;min-height:58px;padding:0 16px;margin-bottom:10px;font-family:var(--mono);font-size:30px;font-weight:700;text-align:right;
+  color:var(--texte);background:var(--fond2);border:1px solid var(--or);border-radius:var(--r-sm);letter-spacing:.04em}
+#reponse::placeholder{color:var(--texte3);font-size:18px;font-weight:400}
+#reponse:disabled{opacity:.7}
+.pave{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.touche{min-height:56px;border-radius:12px;border:1px solid var(--bord);cursor:pointer;font-family:var(--mono);font-size:24px;font-weight:700;
+  background:linear-gradient(180deg,#232019,#16140F);color:var(--texte);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);touch-action:manipulation}
+:root[data-theme="clair"] .touche{background:linear-gradient(180deg,#fff,#efe9da);color:var(--texte)}
+.touche:active{transform:translateY(1px);filter:brightness(1.25)}
+.touche:disabled{opacity:.45;cursor:not-allowed}
+.touche.efface{background:linear-gradient(180deg,#C8323A,var(--rouge-touche));color:#fff;border-color:#8f1c22}
+.touche.retour-arr{color:var(--or);font-family:system-ui,-apple-system,sans-serif;font-size:26px}
+.touche.ok{grid-row:span 2;background:linear-gradient(180deg,var(--or-vif),var(--or));color:var(--sur-or);border-color:var(--or-fonce);font-size:30px}
+.btn{min-height:52px;padding:0 20px;border-radius:12px;border:1px solid var(--or);cursor:pointer;font-family:var(--serif);font-size:17px;font-weight:700;
+  letter-spacing:.04em;background:linear-gradient(180deg,var(--or-vif),var(--or));color:var(--sur-or);display:inline-flex;align-items:center;justify-content:center}
+.btn.vide{background:transparent;color:var(--texte);border-color:var(--bord-fort)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.choix{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.choix .btn{flex:1 1 140px;font-weight:600}
+.choix .btn:disabled{opacity:.6}
+.choix .btn.bon,.choix .btn.mauvais{opacity:1}
+.choix .btn.bon{border-color:var(--succes);color:var(--succes)}
+.choix .btn.mauvais{border-color:var(--danger);color:var(--danger)}
+.verdict{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:14px;min-height:26px}
 .verdict.juste{color:var(--succes)} .verdict.faux{color:var(--danger)}
-#explique{font-family:var(--mono);font-size:var(--t14);color:var(--texte2);margin-top:var(--e8);min-height:22px}
-.compteurs{display:flex;flex-wrap:wrap;gap:var(--e8) var(--e24);margin-top:var(--e24);
-  font-family:var(--mono);font-size:var(--t14);color:var(--texte3)}
+#explique{font-family:var(--mono);font-size:15px;color:var(--texte2);margin-top:6px;min-height:20px}
+.suivante{margin-top:14px;width:100%}
+.compteurs{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:14px;font-family:var(--mono);font-size:14px;color:var(--texte3)}
+.revoir{margin-top:12px;width:100%}
+
+/* leçon */
+.lecon-intro{font-size:18px;color:var(--texte);margin-bottom:8px}
+.lecon-bloc{background:var(--carte);border:1px solid var(--bord);border-radius:var(--r);padding:14px 16px;margin:12px 0}
+.lecon-h{font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--or);margin-bottom:8px}
+.lecon-liste{list-style:none}
+.lecon-liste li{position:relative;padding:6px 0 6px 20px;font-size:16px;color:var(--texte2);border-bottom:1px solid var(--bord)}
+.lecon-liste li:last-child{border-bottom:0}
+.lecon-liste li::before{content:"";position:absolute;left:2px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--or)}
+.rapports{width:100%;border-collapse:collapse;font-size:16px}
+.rapports td{padding:8px 4px;border-bottom:1px solid var(--bord);color:var(--texte2);vertical-align:top}
+.rapports td.rapport{text-align:right;font-family:var(--mono);font-weight:700;color:var(--or)}
+
+/* glossaire */
+.recherche{width:100%;min-height:50px;padding:0 18px;border-radius:999px;border:1px solid var(--bord-fort);background:var(--carte);color:var(--texte);
+  font-family:var(--serif);font-size:17px;margin:4px 0 12px}
+.pastilles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pastille{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--bord-fort);background:var(--carte);color:var(--texte2);
+  font-family:var(--serif);font-weight:700;font-size:15px;cursor:pointer}
+.pastille[aria-pressed="true"]{background:linear-gradient(180deg,var(--or-vif),var(--or));color:var(--sur-or);border-color:var(--or)}
+.pastille.langue{min-width:56px;font-family:var(--mono)}
+#gloss-compte{font-family:var(--mono);font-size:13px;color:var(--texte3);margin:4px 0 6px}
+.glossaire dt{font-weight:700;font-size:18px;color:var(--texte);margin-top:12px;padding:10px 14px 0;border-left:3px solid var(--or);background:var(--carte);border-radius:0 var(--r-sm) 0 0}
+.glossaire dd{margin:0;padding:2px 14px 12px;border-left:3px solid var(--or);background:var(--carte);border-radius:0 0 var(--r-sm) 0;display:flex;flex-direction:column}
+.glossaire dt.vide{border:0;background:none;color:var(--texte3);font-weight:400}
+.gloss-trad{font-family:var(--mono);font-size:15px;color:var(--or)}
+.gloss-trad.absent{color:var(--texte3)}
+.gloss-def{font-size:15px;color:var(--texte2)}
+
+/* progrès */
+.stats{list-style:none;display:flex;flex-direction:column;gap:8px}
+.stats li{background:var(--carte);border:1px solid var(--bord);border-radius:var(--r-sm);padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.stats li.vide{color:var(--texte3)}
+.stat-nom{font-weight:700;font-size:16px}
+.stat-val{font-family:var(--mono);font-size:14px;color:var(--texte2)}
+.jauge{display:block;height:6px;border-radius:3px;background:var(--bord);overflow:hidden;margin-top:4px}
+.jauge-plein{display:block;height:100%;background:linear-gradient(90deg,var(--or-fonce),var(--or-vif))}
 
 /* verrou */
-.verrou{background:var(--secondaire);border:1px solid var(--bord);border-radius:var(--r-md);padding:var(--e24);margin:var(--e32) 0}
-.verrou ul{list-style:none;margin:var(--e16) 0}
-.verrou li{padding:4px 0 4px 24px;position:relative;font-size:var(--t16);color:var(--texte2)}
-.verrou li::before{content:"—";position:absolute;left:0;color:var(--accent);font-family:var(--mono)}
+.verrou{background:var(--carte);border:1px solid var(--bord-fort);border-radius:var(--r);padding:16px;margin:24px 0 8px}
+.verrou ul{list-style:none;margin:10px 0}
+.verrou li{padding:4px 0 4px 22px;position:relative;font-size:15px;color:var(--texte2)}
+.verrou li::before{content:"—";position:absolute;left:0;color:var(--or);font-family:var(--mono)}
 
-footer{border-top:1px solid var(--bord);margin-top:var(--e48);padding:var(--e24) 0 var(--e48);font-size:var(--t14);color:var(--texte3)}
-footer nav{display:flex;flex-wrap:wrap;gap:var(--e8) var(--e24);margin-top:var(--e16)}
+footer{max-width:540px;margin:24px auto 0;padding:20px 16px calc(130px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--bord);font-size:14px;color:var(--texte3)}
+footer nav{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:12px}
 footer nav a{min-height:44px;display:inline-flex;align-items:center;color:var(--texte2)}
 </style>
 </head>
 <body>
 
-<header class="tete">
-  <div class="wrap"><a class="marque" href="/">← Devenir croupier</a></div>
-</header>
+<main class="app">
 
-<main>
-<div class="wrap">
-
-  <section>
-    <span class="kicker">Entraînement</span>
-    <h1>Les paiements, jusqu'à ce que ça devienne un réflexe.</h1>
-    <p class="petit">
-      Une mise sur la table, elle gagne, tu annonces. C'est l'exercice des écoles de jeux,
-      et c'est ce qui élimine le plus de candidats. Ici c'est chronométré, comme à la table.
-    </p>
-
-    <div class="modes" role="group" aria-label="Choisir un exercice">
-      <button class="mode" type="button" data-mode="roulette" aria-pressed="true">Roulette — une mise</button>
-      <button class="mode" type="button" data-mode="roulette-combinee" disabled><span class="cadenas" aria-hidden="true">🔒</span> Mises cumulées</button>
-      <button class="mode" type="button" data-mode="blackjack" disabled><span class="cadenas" aria-hidden="true">🔒</span> Blackjack 3 pour 2</button>
-      <button class="mode" type="button" data-mode="punto" disabled><span class="cadenas" aria-hidden="true">🔒</span> Punto Banco −5 %</button>
+  <!-- ═══ ACCUEIL : la liste des jeux ═══ -->
+  <section class="ecran" id="ecran-accueil">
+    <header class="barre">
+      <a class="marque" href="/"><b>KD-MC</b> · Devenir croupier</a>
+      <button class="bouton-icone" type="button" id="theme-bascule" aria-label="Changer de thème (sombre ou clair)">◐</button>
+    </header>
+    <div class="hero">
+      <span class="kicker">Entraînement de table</span>
+      <h1>L'entraîneur du croupier</h1>
+      <p class="petit">Payer juste et vite, lire le tapis, connaître le cylindre, compter une main, appliquer la règle de tirage.
+        Les exercices des écoles de jeux, chronométrés, avec le temps qu'elles visent.</p>
+      <p class="acces-ok" id="acces-ok" hidden>Accès complet ✓</p>
     </div>
 
-    <div class="table">
+    <div class="tuiles" aria-label="Ma journée">
+      <div class="tuile"><b id="jour-total">0</b><span>questions aujourd'hui</span></div>
+      <div class="tuile"><b id="jour-juste">—</b><span>justesse du jour</span></div>
+      <div class="tuile"><b id="jour-serie">0</b><span>meilleure série</span></div>
+      <div class="tuile"><b id="jour-jours">0</b><span>jours d'affilée</span></div>
+    </div>
+
+    <h2 class="titre-section">Les jeux</h2>
+    <nav class="liste" id="liste-jeux" aria-label="Les jeux"></nav>
+
+    <h2 class="titre-section">S'entraîner autrement</h2>
+    <div class="liste">
+      <button class="ligne mode" type="button" data-mode="examen" aria-pressed="false">
+        <span class="ligne-icone" data-icone="examen"></span>
+        <span class="ligne-texte"><span class="ligne-titre">Examen blanc</span><span class="ligne-sous">10 questions chronométrées, 8 pour réussir</span></span>
+        <span class="ligne-fleche">›</span>
+      </button>
+      <button class="ligne" type="button" id="revoir-accueil" hidden>
+        <span class="ligne-icone" data-icone="revision"></span>
+        <span class="ligne-texte"><span class="ligne-titre">Revoir mes erreurs</span><span class="ligne-sous"></span></span>
+        <span class="ligne-fleche">›</span>
+      </button>
+      <button class="ligne" type="button" data-va="glossaire">
+        <span class="ligne-icone" data-icone="glossaire"></span>
+        <span class="ligne-texte"><span class="ligne-titre">Glossaire</span><span class="ligne-sous">Les mots de la table · FR · EN · IT</span></span>
+        <span class="ligne-fleche">›</span>
+      </button>
+      <button class="ligne" type="button" data-va="progres">
+        <span class="ligne-icone" data-icone="progres"></span>
+        <span class="ligne-texte"><span class="ligne-titre">Mes progrès</span><span class="ligne-sous">Niveau école atteint : <span id="ecole-compte">0</span></span></span>
+        <span class="ligne-fleche">›</span>
+      </button>
+    </div>
+
+    <section class="verrou" id="la-suite">
+      <span class="kicker">La suite</span>
+      <p class="petit" style="margin-top:8px">
+        Un exercice par jeu est gratuit, pour toujours, ainsi que l'examen blanc.
+        Ce qui reste verrouillé, c'est exactement ce qui fait rater les tests :
+      </p>
+      <ul>
+        <li><b>Roulette</b> : mises cumulées, lire le tapis, complets, annonces et leur décomposition, finales, le cylindre, un numéro et ses voisins</li>
+        <li><b>Blackjack</b> : le 3 pour 2 sur des mises qui ne tombent pas rond, l'assurance, split, double, égalité</li>
+        <li><b>Punto Banco</b> : la commission de 5 % sans calculette, la règle de la 3e carte, égalité et paires</li>
+        <li><b>Craps</b> : place bets, field, propositions du stickman</li>
+        <li><b>Poker Ultimate</b> : le paiement de la Blind</li>
+        <li><b>Pré-école</b> : série chronométrée, additions, jetons et monnaie, mémoire des numéros</li>
+      </ul>
+      <p class="note">
+        Pas encore en vente : l'encaissement n'est pas branché, et on ne vend pas ce qu'on
+        ne peut pas livrer. Aucune préinscription, aucune adresse demandée.
+        Tu as reçu un lien d'invitation avec un code ? Ouvre-le : tout s'ouvre tout seul.
+      </p>
+    </section>
+
+    <p class="note">
+      Tout se calcule dans ton téléphone : ta progression, tes erreurs et ton niveau restent chez toi et ne sont jamais envoyés.
+      Le seul échange avec Internet : si tu as un code d'accès, la page demande au service de vente s'il est valable.
+    </p>
+  </section>
+
+  <!-- ═══ UN JEU : la fiche « Apprendre » puis les exercices ═══ -->
+  <section class="ecran" id="ecran-jeu" hidden>
+    <header class="barre"><button class="retour" type="button" data-va="accueil">‹ Jeux</button><span class="barre-titre"></span></header>
+    <div class="tete-jeu"><span id="jeu-icone"></span><div><h2 id="jeu-titre">Roulette</h2><p id="jeu-sous"></p></div></div>
+    <button class="ligne carte-lecon" type="button" data-va="lecon">
+      <span class="ligne-icone" data-icone="lecon"></span>
+      <span class="ligne-texte"><span class="ligne-titre">Apprendre</span><span class="ligne-sous">Règles, rapports, gestes, pièges — à lire avant</span></span>
+      <span class="ligne-fleche">›</span>
+    </button>
+    <h3 class="titre-section">Exercices</h3>
+    <div id="modes-jeu"></div>
+    <p class="note">Le cadenas marque ce qui est réservé à l'accès complet. Chaque exercice a trois niveaux : Facile, Normal, Croupier.</p>
+  </section>
+
+  <!-- ═══ LA FICHE « APPRENDRE » ═══ -->
+  <section class="ecran" id="ecran-lecon" hidden>
+    <header class="barre"><button class="retour" type="button" data-va="jeu">‹ Retour</button><span class="barre-titre"></span></header>
+    <h2 id="lecon-titre" style="font-size:22px;margin-bottom:10px">Apprendre</h2>
+    <div id="lecon-corps"></div>
+    <button class="btn" type="button" data-va="jeu" style="width:100%;margin-top:8px">S'entraîner</button>
+  </section>
+
+  <!-- ═══ LA TABLE : un exercice ═══ -->
+  <section class="ecran" id="ecran-table" hidden>
+    <header class="barre">
+      <button class="retour" type="button" data-va="jeu">‹</button>
+      <span class="barre-titre" id="table-titre">Exercice</span>
+      <span class="chrono" id="chrono" aria-label="Chronomètre">0,0 s</span>
+    </header>
+    <div class="niveaux" role="group" aria-label="Niveau de difficulté">
+      <button type="button" data-niveau="facile" aria-pressed="false">Facile</button>
+      <button type="button" data-niveau="normal" aria-pressed="true">Normal</button>
+      <button type="button" data-niveau="croupier" aria-pressed="false">Croupier</button>
+    </div>
+    <p id="niveau-aide"></p>
+    <div class="table" id="table">
+      <div class="visuel" id="visuel" hidden></div>
       <div id="enonce"></div>
       <p id="question"></p>
-      <div class="saisie">
+      <p id="objectif"></p>
+      <div class="saisie" id="saisie">
         <input id="reponse" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off"
-               spellcheck="false" aria-label="Montant à payer" placeholder="montant">
-        <button class="btn" type="button" id="valider">Valider</button>
-        <button class="btn vide" type="button" id="suivant" hidden>Suivante</button>
+               spellcheck="false" aria-label="Ta réponse" placeholder="ta réponse">
+        <div class="pave" id="pave" role="group" aria-label="Pavé numérique">
+          <button type="button" class="touche" data-touche="1">1</button>
+          <button type="button" class="touche" data-touche="2">2</button>
+          <button type="button" class="touche" data-touche="3">3</button>
+          <button type="button" class="touche efface" data-touche="C" aria-label="Tout effacer">C</button>
+          <button type="button" class="touche" data-touche="4">4</button>
+          <button type="button" class="touche" data-touche="5">5</button>
+          <button type="button" class="touche" data-touche="6">6</button>
+          <button type="button" class="touche retour-arr" data-touche="retour" aria-label="Effacer le dernier chiffre">⌫</button>
+          <button type="button" class="touche" data-touche="7">7</button>
+          <button type="button" class="touche" data-touche="8">8</button>
+          <button type="button" class="touche" data-touche="9">9</button>
+          <button type="button" class="touche ok" id="valider" data-touche="ok" aria-label="Valider">✓</button>
+          <button type="button" class="touche" data-touche="," aria-label="Virgule">,</button>
+          <button type="button" class="touche" data-touche="0">0</button>
+          <button type="button" class="touche" data-touche="00">00</button>
+        </div>
       </div>
+      <div class="choix" id="choix" hidden></div>
       <p class="verdict" id="verdict" role="status" aria-live="polite"></p>
       <p id="explique"></p>
+      <button class="btn suivante" type="button" id="suivant" hidden>Suivante</button>
       <p class="compteurs"><span id="serie"></span><span id="total"></span></p>
+      <button class="btn vide revoir" type="button" id="revoir" aria-pressed="false" hidden>Revoir mes erreurs</button>
     </div>
-
-    <p class="note">
-      Tout se calcule dans ton téléphone. Rien n'est envoyé nulle part, il n'y a pas de compte,
-      et ta progression reste chez toi. Appuie sur Entrée pour valider, puis Entrée pour la suivante.
-    </p>
+    <p class="note">La virgule sert aux montants (52,5) et à séparer des numéros (32,15). Entrée valide, puis Entrée passe à la suivante.</p>
   </section>
 
-  <section class="verrou">
-    <span class="kicker">La suite</span>
-    <p class="petit" style="margin-top:var(--e8)">
-      La roulette à une mise est gratuite, pour toujours. Ce qui reste verrouillé, c'est
-      exactement ce qui fait rater les tests :
-    </p>
-    <ul>
-      <li><b>Mises cumulées</b> — deux ou trois mises qui gagnent en même temps, à additionner de tête</li>
-      <li><b>Blackjack 3 pour 2</b> — sur des mises qui ne tombent pas rond, là où tout le monde se trompe</li>
-      <li><b>Punto Banco</b> — la commission de 5 % sans calculette</li>
-    </ul>
-    <p class="note">
-      Pas encore en vente : l'encaissement n'est pas branché, et on ne vend pas ce qu'on
-      ne peut pas livrer. Aucune préinscription, aucune adresse demandée.
-    </p>
+  <!-- ═══ GLOSSAIRE ═══ -->
+  <section class="ecran" id="ecran-glossaire" hidden>
+    <header class="barre"><button class="retour" type="button" data-va="accueil">‹ Accueil</button><span class="barre-titre"></span></header>
+    <h2 style="font-size:24px">Glossaire</h2>
+    <input class="recherche" id="gloss-recherche" type="search" placeholder="Rechercher un terme…" aria-label="Rechercher un terme" autocomplete="off">
+    <div class="pastilles" id="gloss-cats" role="group" aria-label="Catégories"></div>
+    <div class="pastilles" id="gloss-langues" role="group" aria-label="Langue"></div>
+    <p id="gloss-compte"></p>
+    <dl class="glossaire" id="gloss-liste"></dl>
+    <p class="note">Les tables de paiement du craps, du punto (égalité, paires) et du poker Ultimate peuvent changer d'un casino à l'autre :
+      on utilise la plus répandue, et on le dit. Vérifie toujours celle de ta maison de jeux.</p>
   </section>
 
-</div>
+  <!-- ═══ PROGRÈS ═══ -->
+  <section class="ecran" id="ecran-progres" hidden>
+    <header class="barre"><button class="retour" type="button" data-va="accueil">‹ Accueil</button><span class="barre-titre"></span></header>
+    <h2 style="font-size:24px;margin-bottom:12px">Mes progrès</h2>
+    <ul class="stats" id="stats"></ul>
+    <p class="note">« Niveau école » : au moins 90 % de justesse, sous le temps visé par l'école (niveau Normal).
+      Tout est gardé sur ce téléphone seulement.</p>
+  </section>
+
 </main>
 
 <footer>
-  <div class="wrap">
-    <p style="margin:0">L'entraîneur de paiements — Devenir croupier. Publié depuis Monaco.</p>
-    <p class="note" style="margin-top:var(--e8)">
-      Ce site ne propose aucun jeu d'argent et ne donne aucun conseil pour jouer.
-      Il entraîne un geste de métier. Les jeux d'argent comportent des risques :
-      isolement, endettement, dépendance. En France, aide et information au
-      <strong>09 74 75 13 13</strong> (appel non surtaxé).
-    </p>
-    <nav aria-label="Informations légales">
-      <a href="/shops/legal/mentions.html">Mentions légales</a>
-      <a href="/shops/legal/confidentialite.html">Confidentialité</a>
-    </nav>
-  </div>
+  <p style="margin:0">L'entraîneur du croupier — Devenir croupier. Publié depuis Monaco.</p>
+  <p class="note" style="margin-top:8px">
+    Ce site ne propose aucun jeu d'argent et ne donne aucun conseil pour jouer.
+    Il entraîne un geste de métier. Les jeux d'argent comportent des risques :
+    isolement, endettement, dépendance. En France, aide et information au
+    <strong>09 74 75 13 13</strong> (appel non surtaxé).
+  </p>
+  <nav aria-label="Informations légales">
+    <a href="/shops/legal/mentions.html">Mentions légales</a>
+    <a href="/shops/legal/confidentialite.html">Confidentialité</a>
+  </nav>
 </footer>
 
+<script src="entrainement-visuels.js"></script>
+<script src="entrainement-lecons.js"></script>
 <script src="entrainement.js"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="croupier-entrainement" data-version="v1.0.0" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="croupier-entrainement" data-version="v2.0.0" data-color="#c9a227" defer></script>
 </body>
 </html>

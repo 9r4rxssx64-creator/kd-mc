@@ -47,6 +47,37 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS code_attente (uid TEXT PRIMARY KEY, nom TEXT, rec TEXT, appareil TEXT, lieu TEXT, reseau TEXT, app TEXT, ts INTEGER)`,
 ];
 export const CODE_ATTENTE_SCHEMA = SCHEMA[SCHEMA.length - 1];
+/* INSCRIPTIONS « SANS WHATSAPP » À VALIDER (Kevin 10.10 : « Si pas de WhatsApp, validation admin. Au choix ») : le compte est créé
+   (nom + code) mais FERMÉ partout sauf le portail (fiche `attente_admin`) jusqu'à ce que Kevin l'ouvre ici. */
+export const INSCR_ADMIN_SCHEMA = 'CREATE TABLE IF NOT EXISTS inscription_admin (uid TEXT PRIMARY KEY, nom TEXT, appareil TEXT, lieu TEXT, reseau TEXT, app TEXT, ts INTEGER)';
+export async function inscriptionAdminDeposer(db, r) {
+  if (!db) return false;
+  await db.prepare(INSCR_ADMIN_SCHEMA).run();
+  await db.prepare('INSERT OR REPLACE INTO inscription_admin (uid, nom, appareil, lieu, reseau, app, ts) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(propre(r.uid, 80), propre(r.nom, 80), propre(r.appareil, 90), propre(r.lieu, 80), propre(r.reseau, 80), propre(r.app, 60), r.ts || Date.now()).run();
+  return true;
+}
+export async function inscriptionsAdmin(db) {
+  if (!db) return [];
+  await db.prepare(INSCR_ADMIN_SCHEMA).run();
+  const rows = ((await db.prepare('SELECT uid, nom, appareil, lieu, reseau, app, ts FROM inscription_admin ORDER BY ts DESC LIMIT 30').all()).results) || [];
+  return rows.map((r) => ({ uid: r.uid, nom: r.nom || r.uid, appareil: r.appareil || '', lieu: r.lieu || '', reseau: r.reseau || '', app: r.app || '', ts: r.ts }));
+}
+/* Kevin tranche : accepter = le compte s'ouvre (la fiche perd `attente_admin`) ; refuser = il reste fermé (`attente_admin: 'refuse'`). */
+export async function inscriptionAdminDecider(env, db, outils, uid, accepter, now) {
+  if (!db || !env || !env.ACCOUNTS) return { ok: false, reason: 'indisponible' };
+  await db.prepare(INSCR_ADMIN_SCHEMA).run();
+  const r = await db.prepare('SELECT uid, nom, appareil, lieu FROM inscription_admin WHERE uid = ?').bind(uid).first();
+  if (!r) return { ok: false, reason: 'demande_introuvable' };
+  let a = null; try { a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); } catch { a = null; }
+  if (a) {
+    if (accepter) { delete a.attente_admin; a.valide_admin_at = now; } else { a.attente_admin = 'refuse'; a.refuse_admin_at = now; }
+    await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a));
+  }
+  await db.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(uid).run();
+  if (outils && outils.journal) { try { await outils.journal({ ev: accepter ? 'inscription_admin_validee' : 'inscription_admin_refusee', uid, name: r.nom, detail: (accepter ? 'inscription sans WhatsApp ouverte par l\'admin' : 'inscription sans WhatsApp refusée par l\'admin') + ' · ' + (r.appareil || '?') + ' · ' + (r.lieu || '?') }); } catch { /* */ } }
+  return { ok: true, uid, nom: r.nom, accepte: !!accepter, fiche: !!a };
+}
 /* Dépose (ou remplace) la demande de code d'un compte. Appelé par le routeur (/__sso/issue, /__sso/login). */
 export async function codeAttenteDeposer(db, r) {
   if (!db) return false;
@@ -447,8 +478,9 @@ export async function lireBoite(env, outils, now) {
   try { inscriptions = await memoise('inscriptions', now, () => lireInscriptions(outils, now)); } catch (e) { inscriptionsEtat = 'indisponible'; }
   const connectes = db ? ((await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) || {}).n || 0 : 0;
   let codes = []; try { codes = await codesAttente(db); } catch { codes = []; }
+  let inscrAdmin = []; try { inscrAdmin = await inscriptionsAdmin(db); } catch { inscrAdmin = []; }
   return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
-    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, maj: now };
+    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, inscriptionsAdmin: inscrAdmin, maj: now };
 }
 
 /* ── marquer lu / répondre ────────────────────────────────────────────────────────────────────────────────── */
@@ -585,6 +617,11 @@ export async function handleBoite(request, url, env, outils) {
     /* « 🔐 Codes à valider » : Kevin accepte (le code devient celui du compte) ou refuse (la demande disparaît). */
     if (p === '/admin/code-valider' && m === 'POST') {
       const r = await codeDecider(env, db, outils, propre(b.uid, 80), b.accepter === true, now);
+      return J(r, r.ok ? 200 : 400);
+    }
+    /* « 🪪 Inscriptions sans WhatsApp » : Kevin ouvre le compte ou le refuse. */
+    if (p === '/admin/inscription-admin' && m === 'POST') {
+      const r = await inscriptionAdminDecider(env, db, outils, propre(b.uid, 80), b.accepter === true, now);
       return J(r, r.ok ? 200 : 400);
     }
     if (p === '/admin/repondre' && m === 'POST') {

@@ -14,11 +14,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUTIL = path.join(ROOT, 'tools', 'arbre', 'appliquer-nuage.mjs');
 const html = fs.readFileSync(path.join(ROOT, 'arbre', 'index.html'), 'utf8');
 const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'arbre-nuage.yml'), 'utf8');
+const visio = fs.readFileSync(path.join(ROOT, 'tools', 'arbre', 'visionneuse-image.mjs'), 'utf8');
 let n = 0, ko = 0;
 const ok = (c, m, d) => { n++; if (c) console.log('  ✅ ' + m); else { ko++; console.log('  ✗ ' + m + (d ? ' — ' + d : '')); } };
 
 // 1. l'app
 ok(/async function chargerOriginal\(ref\)/.test(html) && /sha256\(CODEHASH\+":originaux"\)/.test(html), 'l\'app lit l\'original dans le tiroir « originaux » (empreinte dérivée du code, jamais le code)');
+ok((visio.match(/ERR_ABORTED\|Download is starting/g) || []).length === 2, 'visionneuse : une navigation devenue téléchargement est reconnue sous SES DEUX formes (ERR_ABORTED et « Download is starting »), aux 2 endroits — sinon rouge une fois sur deux (10.10)');
 ok(/if\(d\.ref&&!d\.data\)\{ouvrirOriginal\(d\);return;\}/.test(html), 'toucher un document « ref » ouvre l\'original DANS l\'app');
 ok(/var vis=d\.preview\|\|d\.thumb\|\|/.test(html), 'la vignette de l\'original s\'affiche sur la carte du document');
 ok(/class="origsrc" href="'\+esc\(a\.src\)/.test(html) && /\^https\?:\\\/\\\//.test(html), 'le lien source reste affiché comme référence (échappé, http(s) seulement)');

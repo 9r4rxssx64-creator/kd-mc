@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   var URL_BOITE = '/__boite/admin', PAS_BANDEAU = 30000, PAS_OUVERT = 12000;   /* quasi temps réel : relu aussi au retour sur l'onglet et dès qu'une notification ouvre #messages */
-  var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false, HIST = {}, REV = {};
+  var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false, HIST = {}, REV = {}, ECOUTE = [];
 
   function entetes(json) {
     var h = {}; try { var t = window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token(); if (t) h.authorization = 'Bearer ' + t; } catch (e) { /* */ }
@@ -37,7 +37,7 @@
     if (!j) return '';
     try {
       return JSON.stringify([(j.messages || []).map(function (m) { return [m.cle, m.ts, m.nonLus, m.lu, (m.fil || []).length, m.texte, (m.infos || []).length]; }),
-        (j.inscriptions || []).map(function (i) { return [i.id, i.code]; }), (j.codes || []).map(function (c) { return [c.uid, c.ts]; }), (j.sources || []).map(function (s) { return [s.id, s.nonLus, s.total, s.etat]; }), j.nonLus, j.nonLusAlertes, j.inscriptionsEtat]);
+        (j.inscriptions || []).map(function (i) { return [i.id, i.code]; }), (j.codes || []).map(function (c) { return [c.uid, c.ts]; }), (j.inscriptionsAdmin || []).map(function (c) { return [c.uid, c.ts]; }), (j.sources || []).map(function (s) { return [s.id, s.nonLus, s.total, s.etat]; }), j.nonLus, j.nonLusAlertes, j.inscriptionsEtat]);
     } catch (e) { return String(Date.now()); }
   }
   var dessine = '';   /* l'empreinte du dernier dessin */
@@ -51,7 +51,7 @@
   function bandeau() {
     var a = document.getElementById('cercle-alerte'); if (!a) return;
     if (!D) { a.hidden = true; return; }
-    var n = D.nonLus || 0, ni = (D.inscriptions || []).length + (D.codes || []).length;   /* les codes à valider comptent comme une inscription : Kevin doit trancher */
+    var n = D.nonLus || 0, ni = (D.inscriptions || []).length + (D.codes || []).length + (D.inscriptionsAdmin || []).length;   /* les codes à valider et les inscriptions sans WhatsApp comptent comme une inscription : Kevin doit trancher */
     a.textContent = '';
     var t = el('span', 'bt', n ? '📬 ' + (n > 1 ? n + ' nouveaux messages' : '1 nouveau message') : ni ? '📬 Rien de nouveau dans les messages' : '📬 Aucun message en attente');
     a.appendChild(t);
@@ -85,7 +85,7 @@
     var b = document.querySelector('#boite-fen .bf-r'); if (b && manuel) { b.classList.add('tourne'); b.disabled = true; }
     return lire().then(function (j) {
       enCours = false; var relancer = enCoursManuel; enCoursManuel = false;
-      if (j) { D = j; bandeau(); }
+      if (j) { D = j; bandeau(); ECOUTE.forEach(function (f) { try { f(D); } catch (e) { /* un abonné en panne ne casse pas la boîte */ } }); }
       if (ouverte) {
         /* on ne redessine que si quelque chose a changé (ou sur ↻ : au moins le pied « mis à jour » bouge) */
         var e = empreinte(D);
@@ -132,6 +132,7 @@
     items.forEach(function (m) { liste.appendChild(carte(m, garderSaisie ? saisie : '')); });
     r.appendChild(liste); liste.scrollTop = pos;
     r.appendChild(codes());
+    r.appendChild(inscriptionsAdmin());
     r.appendChild(inscriptions());
     r.appendChild(el('p', 'bf-pied', 'Mis à jour ' + quand(D.maj) + ' · se rafraîchit toute seule'));
     try { r.scrollTop = posFen; if (posDoc) (document.scrollingElement || document.documentElement).scrollTop = posDoc; } catch (e) { /* */ }
@@ -249,6 +250,37 @@
     });
     return z;
   }
+  /* 10.10 — 🪪 LES INSCRIPTIONS SANS WHATSAPP (Kevin : quand WhatsApp ne peut pas confirmer le téléphone, c'est lui qui tranche) : même
+     modèle que les codes à valider. Le domaine renvoie `inscriptionsAdmin` [{uid, nom, appareil, lieu, reseau, app, ts}] ; la décision part en
+     POST /__boite/admin/inscription-admin {uid, accepter} → {ok, accepte}. Champ absent (routeur pas encore à jour) : rien n'est affiché. */
+  function inscriptionsAdmin() {
+    var z = el('div', 'bf-ins'), L = D.inscriptionsAdmin;
+    z.id = 'bf-inscriptions-admin';
+    if (!Array.isArray(L) || !L.length) { z.hidden = true; return z; }
+    z.appendChild(el('h3', 'bf-ins-t', '🪪 Inscriptions sans WhatsApp (' + L.length + ')'));
+    z.appendChild(el('p', 'bf-vide', 'Ces personnes n\'ont pas pu confirmer leur téléphone par WhatsApp. Si tu reconnais la personne (son appareil, sa ville, son opérateur), accepte : son compte s\'ouvre. Sinon refuse.'));
+    L.forEach(function (c) {
+      var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
+      h.appendChild(el('div', 'bf-de', (c.nom || '?') + ' (' + (c.uid || '?') + ')'));
+      var info = el('div', 'bf-ap', [c.appareil, c.lieu, c.reseau].filter(Boolean).join(' · ') + ' · ' + quand(c.ts) + (c.app ? ' · depuis ' + c.app : ''));
+      h.appendChild(info); k.appendChild(h);
+      var bas = el('div', 'bf-bas');
+      var oui = el('button', 'bf-env', '✅ Accepter'); oui.type = 'button'; oui.setAttribute('data-ins-admin', 'accepter'); oui.setAttribute('data-uid', c.uid || '');
+      var non = el('button', 'bf-ouvrir', '✖ Refuser'); non.type = 'button'; non.setAttribute('data-ins-admin', 'refuser'); non.setAttribute('data-uid', c.uid || '');
+      var decider = function (accepter) {
+        oui.disabled = true; non.disabled = true; info.textContent = accepter ? 'Acceptation…' : 'Refus…';
+        ecrire('inscription-admin', { uid: c.uid, accepter: accepter }).then(function (j) {
+          if (j && j.ok) { info.textContent = j.accepte ? '✅ Accepté — le compte de ' + (c.nom || c.uid) + ' est ouvert' : '✖ Refusé — le compte reste fermé'; oui.remove(); non.remove(); setTimeout(rafraichir, 800); }
+          else { oui.disabled = false; non.disabled = false; info.textContent = '❌ ' + raison(j && j.reason); }
+        });
+      };
+      /* Accepter ouvre un compte : jamais sur un tap par erreur (même règle que les codes). */
+      oui.onclick = function () { if (window.confirm('Accepter l\'inscription de « ' + (c.nom || c.uid) + ' » sans WhatsApp ? (' + [c.appareil, c.lieu].filter(Boolean).join(', ') + ')')) decider(true); };
+      non.onclick = function () { if (window.confirm('Refuser l\'inscription de « ' + (c.nom || c.uid) + ' » ?')) decider(false); };
+      bas.appendChild(oui); bas.appendChild(non); k.appendChild(bas); z.appendChild(k);
+    });
+    return z;
+  }
   /* 7.10 — LES INSCRIPTIONS EN ATTENTE, sous les messages : chacune se valide ici d'un geste (le domaine écrit, jamais la page). */
   function inscriptions() {
     var z = el('div', 'bf-ins'), L = D.inscriptions || [];
@@ -276,7 +308,7 @@
   function srcIcone(id) { var s = ((D && D.sources) || []).filter(function (x) { return x.id === id; })[0]; return s ? s.icone : '📨'; }
   function raison(r) {
     return ({ bloque: 'cette personne a bloqué les messages', conversation_introuvable: 'conversation introuvable', conversation_invalide: 'conversation invalide', reponse_vide: 'écris ta réponse',
-      reseau: 'pas de réseau, réessaie', inscription_introuvable: 'inscription introuvable (déjà supprimée ?)', admin_requis: 'session admin expirée, reconnecte-toi', reponse_par_email: 'réponds par e-mail' })[r] || 'impossible pour le moment (' + (r || '?') + ')';
+      reseau: 'pas de réseau, réessaie', inscription_introuvable: 'inscription introuvable (déjà supprimée ?)', demande_introuvable: 'demande introuvable (déjà traitée ?)', admin_requis: 'session admin expirée, reconnecte-toi', reponse_par_email: 'réponds par e-mail' })[r] || 'impossible pour le moment (' + (r || '?') + ')';
   }
 
   var demarre = false;
@@ -294,5 +326,14 @@
     window.addEventListener('focus', rafraichir); window.addEventListener('online', rafraichir); window.addEventListener('pageshow', rafraichir);
     rafraichir(); armer();
   }
-  window.kdmcBoite = { demarrer: demarrer, rafraichir: rafraichir, ouvrir: ouvrir, fermer: fermer };
+  /* 10.10 — le TABLEAU DE BORD UNIQUE (kd-mc.com/admin/) lit la même boîte, sans la recopier : il s'abonne aux lectures (surMaj) et
+     affiche les MÊMES blocs « à trancher » (codes, inscriptions sans WhatsApp, inscriptions), construits ici, une seule fois. */
+  function blocs() {
+    if (!D) return null;
+    var o = { codes: codes(), inscriptionsAdmin: inscriptionsAdmin(), inscriptions: inscriptions() };
+    Object.keys(o).forEach(function (k) { o[k].removeAttribute('id'); });   /* la fenêtre garde ses id ; ici, des copies sans id */
+    return o;
+  }
+  function surMaj(f) { if (typeof f === 'function') { ECOUTE.push(f); if (D) { try { f(D); } catch (e) { /* */ } } } }
+  window.kdmcBoite = { demarrer: demarrer, rafraichir: rafraichir, ouvrir: ouvrir, fermer: fermer, surMaj: surMaj, blocs: blocs, donnees: function () { return D; } };
 })();

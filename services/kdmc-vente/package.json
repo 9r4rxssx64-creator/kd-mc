@@ -2,5 +2,5 @@
   "name": "kdmc-vente",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test vente.test.mjs" }
+  "scripts": { "test": "node --test vente.test.mjs tel.test.mjs inviter.test.mjs" }
 }

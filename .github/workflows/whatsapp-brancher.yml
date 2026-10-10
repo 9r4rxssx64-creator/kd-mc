@@ -1,0 +1,138 @@
+name: WhatsApp — brancher la confirmation (tout automatique)
+
+# Kevin 10.10 : « Automatise la validation WhatsApp ». Ce robot fait TOUT ce qui peut l'être une fois l'app Meta créée
+# (la seule chose qu'on ne peut pas faire à sa place : se connecter à SON compte Meta) :
+#   1. retrouve tout seul le compte WhatsApp Business et le numéro (à partir du jeton) ;
+#   2. invente le mot d'abonnement du webhook ;
+#   3. pose les 5 secrets sur le domaine (kdmc-router) ET la caisse (kdmc-vente) ;
+#   4. abonne l'app au compte WhatsApp et règle le webhook chez Meta (https://kd-mc.com/__sso/tel/webhook) ;
+#   5. vérifie que le domaine dit « prêt ».
+# Kevin ne pose que 3 secrets GitHub : WA_ACCESS_TOKEN, WA_APP_ID, WA_APP_SECRET. Lancement manuel seulement (aucun cron).
+# Aucun secret n'est jamais affiché : tout passe par env: et ::add-mask::.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: whatsapp-brancher
+  cancel-in-progress: false
+
+jobs:
+  brancher:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WA_ACCESS_TOKEN: ${{ secrets.WA_ACCESS_TOKEN }}
+      WA_APP_ID: ${{ secrets.WA_APP_ID }}
+      WA_APP_SECRET: ${{ secrets.WA_APP_SECRET }}
+      WA_VERIFY_TOKEN_EXISTANT: ${{ secrets.WA_VERIFY_TOKEN }}
+      GRAPH: https://graph.facebook.com/v23.0
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 1. Les 3 secrets de Kevin sont-ils là ?
+        run: |
+          set -euo pipefail
+          manque=""
+          for n in WA_ACCESS_TOKEN WA_APP_ID WA_APP_SECRET; do
+            if [ -z "${!n:-}" ]; then manque="$manque $n"; fi
+          done
+          if [ -n "$manque" ]; then
+            echo "::error::Il manque :$manque — pose-les dans Settings → Secrets → Actions (voir KEVIN_ACTIONS_TODO.md)."
+            exit 1
+          fi
+          echo "::add-mask::$WA_ACCESS_TOKEN"; echo "::add-mask::$WA_APP_SECRET"
+          echo "Les 3 secrets sont là."
+
+      - name: 2. Retrouver le compte WhatsApp Business et le numéro (sans rien demander)
+        id: decouvre
+        run: |
+          set -euo pipefail
+          APP_TOKEN="$WA_APP_ID|$WA_APP_SECRET"; echo "::add-mask::$APP_TOKEN"
+          curl -sS -m 30 -G "$GRAPH/debug_token" --data-urlencode "input_token=$WA_ACCESS_TOKEN" --data-urlencode "access_token=$APP_TOKEN" -o /tmp/debug.json
+          WABA=$(python3 -c "
+          import json; d=json.load(open('/tmp/debug.json')).get('data') or {}
+          if not d.get('is_valid'): raise SystemExit('jeton refusé par Meta : ' + json.dumps(d.get('error') or d)[:200])
+          ids=[t for s in d.get('granular_scopes',[]) if s.get('scope') in ('whatsapp_business_management','whatsapp_business_messaging') for t in (s.get('target_ids') or [])]
+          print(ids[0] if ids else '')")
+          if [ -z "$WABA" ]; then echo "::error::Le jeton n'a pas accès à un compte WhatsApp Business (coche whatsapp_business_messaging + whatsapp_business_management en le générant)."; exit 1; fi
+          curl -sS -m 30 -G "$GRAPH/$WABA/phone_numbers" --data-urlencode "access_token=$WA_ACCESS_TOKEN" -o /tmp/phones.json
+          python3 - <<'PY' > /tmp/num.env
+          import json
+          d = json.load(open('/tmp/phones.json'))
+          ph = (d.get('data') or [])
+          if not ph: raise SystemExit('aucun numéro sur ce compte WhatsApp Business : ' + json.dumps(d)[:200])
+          p = ph[0]
+          print('PHONE_ID=' + p['id'])
+          print('NUMERO=' + ''.join(c for c in p.get('display_phone_number', '') if c.isdigit()))
+          PY
+          . /tmp/num.env
+          echo "waba=$WABA" >> "$GITHUB_OUTPUT"; echo "phone_id=$PHONE_ID" >> "$GITHUB_OUTPUT"; echo "numero=$NUMERO" >> "$GITHUB_OUTPUT"
+          echo "Compte WhatsApp trouvé, numéro qui répondra : +${NUMERO:0:3}•••${NUMERO: -2}"
+
+      - name: 3. Le mot d'abonnement du webhook (inventé s'il n'existe pas)
+        id: mot
+        run: |
+          set -euo pipefail
+          MOT="${WA_VERIFY_TOKEN_EXISTANT:-}"
+          if [ -z "$MOT" ]; then MOT=$(openssl rand -hex 24); fi
+          echo "::add-mask::$MOT"
+          echo "mot=$MOT" >> "$GITHUB_OUTPUT"
+
+      - name: Installer wrangler
+        # version figée (publiée le 18.09.2026) et sans scripts d'installation : vérifié, `wrangler --version` et `secret put` marchent ainsi
+        run: npm i -g --ignore-scripts --no-audit --no-fund wrangler@4.135.0
+
+      - name: 4. Poser les secrets sur le domaine ET la caisse
+        env:
+          WA_PHONE_NUMBER_ID: ${{ steps.decouvre.outputs.phone_id }}
+          WA_NUMERO_PUBLIC: ${{ steps.decouvre.outputs.numero }}
+          WA_VERIFY_TOKEN: ${{ steps.mot.outputs.mot }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then echo "::error::CLOUDFLARE_API_TOKEN absent : impossible de poser les secrets."; exit 1; fi
+          for dossier in services/kdmc-router services/kdmc-vente; do
+            for n in WA_ACCESS_TOKEN WA_APP_SECRET WA_PHONE_NUMBER_ID WA_NUMERO_PUBLIC WA_VERIFY_TOKEN; do
+              printf '%s' "${!n}" | (cd "$dossier" && wrangler secret put "$n" >/tmp/put.log 2>&1) \
+                || { echo "::error::$n non posé sur $dossier"; tail -3 /tmp/put.log; exit 1; }
+            done
+            echo "5 secrets posés sur $dossier"
+          done
+
+      - name: 5. Abonner l'app au compte WhatsApp et régler le webhook chez Meta
+        env:
+          WABA: ${{ steps.decouvre.outputs.waba }}
+          MOT: ${{ steps.mot.outputs.mot }}
+        run: |
+          set -euo pipefail
+          APP_TOKEN="$WA_APP_ID|$WA_APP_SECRET"; echo "::add-mask::$APP_TOKEN"
+          sleep 10   # le temps que les secrets posés soient servis par le domaine (Meta appelle /__sso/tel/webhook pour vérifier)
+          curl -sS -m 30 -X POST "$GRAPH/$WABA/subscribed_apps" --data-urlencode "access_token=$WA_ACCESS_TOKEN" -o /tmp/sub.json
+          python3 -c "import json;d=json.load(open('/tmp/sub.json'));assert d.get('success'), d;print('app abonnée au compte WhatsApp')"
+          curl -sS -m 30 -X POST "$GRAPH/$WA_APP_ID/subscriptions" \
+            --data-urlencode "object=whatsapp_business_account" \
+            --data-urlencode "callback_url=https://kd-mc.com/__sso/tel/webhook" \
+            --data-urlencode "verify_token=$MOT" \
+            --data-urlencode "fields=messages" \
+            --data-urlencode "access_token=$APP_TOKEN" -o /tmp/hook.json
+          python3 -c "import json;d=json.load(open('/tmp/hook.json'));assert d.get('success'), 'Meta refuse le webhook : ' + json.dumps(d)[:300];print('webhook réglé : https://kd-mc.com/__sso/tel/webhook (champ messages)')"
+
+      - name: 6. Le domaine dit-il « prêt » ?
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            R=$(curl -sS -m 15 -H 'x-kdmc-sonde: whatsapp-brancher' https://kd-mc.com/__sso/tel/etat || true)
+            echo "essai $i : $R"
+            if echo "$R" | grep -q '"pret":true'; then
+              echo "### ✅ WhatsApp branché : toute inscription confirme maintenant le téléphone (gratuit, automatique)." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Le domaine ne dit pas encore « prêt » : relance « deploy-kdmc-router » puis ce robot."
+          exit 1

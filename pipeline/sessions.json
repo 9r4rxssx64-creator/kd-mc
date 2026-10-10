@@ -1365,6 +1365,16 @@
       "maj": "2026-10-09",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "croupier-plus": {
+      "titre": "Entraîneur de croupier+++ et confirmation par WhatsApp (Kevin 9.10)",
+      "branche": "claude/croupier-plus",
+      "sujet": "shops/croupier : 6 jeux, 19 exercices, examen, révision ; confirmation d'identité par WhatsApp vérifiée par le worker",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-09",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

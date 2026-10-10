@@ -415,7 +415,7 @@
       + (accounts.length ? '<div id="list">' + accounts.map(fiche).join('') + '</div>'
         : '<div class="msg">Aucune fiche pour l\'instant.<br>Les comptes apparaissent ici dès leur 1ʳᵉ connexion sur le domaine.</div>')
       + '<div id="audsec"></div>'
-      + hub();
+      + (SANS_HUB ? '' : hub());   /* dans le tableau unique, les tuiles sont rangées par thème ailleurs (tableau.js) */
     wirePresence();
     wireHist();
     wireRevoke();
@@ -523,7 +523,12 @@
       .catch(function () { if (!silent) denyViaWhoami(); });
   }
   function boot() { loading(); loadAccounts(0); }
+  /* 10.10 — TABLEAU DE BORD UNIQUE (Kevin : « un seul tableau de bord admin pour tout ») : kd-mc.com/admin/ porte
+     data-tableau-unique ; tableau.js vérifie d'abord la session (admin + Face ID, /__sso/whoami), puis MONTE ces fiches dans
+     sa section « Personnes & comptes ». Le serveur garde son propre verrou (/__admin/* → 403 sans preuve). */
+  var SANS_HUB = false;
+  if (typeof window !== 'undefined') window.kdmcAdmin = { hub: hub, monter: function (el) { if (!el) return; app = el; SANS_HUB = true; boot(); } };
   /* On ne démarre que dans un navigateur : chargée par sa garde (node), la page
      n'a ni #app ni réseau — seul hub() est appelé, et il doit l'être sans effet de bord. */
-  if (app) boot();
+  if (app && !document.documentElement.hasAttribute('data-tableau-unique')) boot();
 })();

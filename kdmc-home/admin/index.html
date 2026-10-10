@@ -1,90 +1,72 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-tableau-unique>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
-<title>KDMC APEX — Admin domaine</title>
+<!-- connect-src : la caisse (kdmc-vente) pour la section Commerce, comme commerce.html. media-src : rien (pas de son ici). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://kdmc-vente.9r4rxssx64.workers.dev; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
+<title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
 <link rel="stylesheet" href="/design-system.css" />
+<link rel="stylesheet" href="/kdmc-boite.css?v=2.0.0" />
+<link rel="stylesheet" href="commerce.css?v=2.0.0" />
+<link rel="stylesheet" href="tableau.css?v=2.0.0" />
 <style>
-  .wrap{max-width:920px;margin:0 auto}
-  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 14px}
-  .logo{font-weight:800;font-size:22px;letter-spacing:1px;background:linear-gradient(135deg,var(--gold2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .logo b{font-weight:600;font-size:11px;color:var(--admin);-webkit-text-fill-color:var(--admin);letter-spacing:2px;margin-left:6px}
-  a.home{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 13px;min-height:40px;display:inline-flex;align-items:center}
-  .cat{margin:22px 0 10px;color:var(--gold);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:10px}
-  .cat::after{content:"";flex:1;height:1px;background:var(--line)}
-  .stat{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
-  .pill{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--mut)}
-  .pill b{color:var(--gold2);font-size:18px;display:block;line-height:1.2}
-  .search{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--txt);font-size:16px;margin:8px 0 12px}
-  .search:focus{outline:none;border-color:var(--line2)}
-  .fiche{padding:14px 16px;margin-bottom:10px}
-  .fhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .fiche h3{margin:0 0 2px;font-size:16px}
-  .fiche .uid{color:var(--subtle);font-size:12px;font-family:var(--mono)}
-  .when{color:var(--mut);font-size:12px;white-space:nowrap;display:flex;align-items:center;gap:6px}
-  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:12px;font-size:13px}
-  @media(max-width:520px){.kv{grid-template-columns:1fr}}
-  .kv span{color:var(--subtle);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-  .grid{display:grid;grid-template-columns:1fr;gap:11px}
-  @media(min-width:560px){.grid{grid-template-columns:1fr 1fr}}
-  .cardrow{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;padding:14px;min-height:64px}
-  .cardrow .i{font-size:24px;width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;background:var(--gold-glow);border-radius:11px}
-  .cardrow .ct{display:flex;flex-direction:column;min-width:0}
-  .cardrow .n{font-weight:700;font-size:15px}
-  .cardrow .d{color:var(--mut);font-size:12px;margin-top:2px}
-  .cardrow .arr{margin-left:auto;color:var(--gold);font-size:20px;opacity:.65}
-  .msg{text-align:center;padding:40px 16px;color:var(--mut);line-height:1.6}
-  .note{font-size:12.5px;color:var(--mut);background:rgba(106,138,255,.08);border:1px solid rgba(106,138,255,.25);border-radius:12px;padding:11px 14px;margin:8px 0;line-height:1.5}
-  .onrow{margin-bottom:8px}
-  .don{width:9px;height:9px;border-radius:50%;background:#22c55e;display:inline-block;vertical-align:middle;margin-right:5px;box-shadow:0 0 0 3px rgba(34,197,94,.18);animation:pulse 2.4s ease-in-out infinite}
-  .don.rec{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.18);animation:none}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
-  .fiche:target{border-color:var(--gold);box-shadow:0 0 0 2px rgba(232,184,48,.35);scroll-margin-top:14px}
-  .refresh{margin-left:auto;color:var(--mut);font-size:12px;border:1px solid var(--line);border-radius:10px;padding:7px 11px;background:transparent;cursor:pointer;min-height:34px;text-transform:none;letter-spacing:0;font-weight:500}
-  .refresh:active{transform:scale(.97)}
-  @media(prefers-reduced-motion:reduce){.don{animation:none}}
-  .histrow{padding:0;margin-bottom:8px;overflow:hidden}
-  .histrow>summary{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;list-style:none;min-height:60px}
-  .histrow>summary::-webkit-details-marker{display:none}
-  .histrow>summary::after{content:"▸";margin-left:6px;color:var(--gold);opacity:.6;transition:transform .15s}
-  .histrow[open]>summary::after{transform:rotate(90deg)}
-  .histrow .when{margin-left:auto}
-  .histrow[open]>summary{border-bottom:1px solid var(--line)}
-  .timeline{padding:8px 14px 12px}
-  .tlrow{font-size:12.5px;color:var(--mut);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-  .tlrow:last-child{border-bottom:none}
-  .tlrow b{color:var(--txt);font-weight:600}
-  .tlrow .tdur{color:var(--gold2);font-weight:600}
-  .anom{margin-top:10px;padding:9px 12px;border:1px solid rgba(255,107,107,.5);background:rgba(255,107,107,.1);border-radius:10px;color:#ff8a8a;font-size:12.5px;line-height:1.4}
-  .revoke{margin-top:12px;padding:9px 14px;border:1px solid rgba(255,107,107,.4);border-radius:10px;background:transparent;color:#ff8a8a;font-size:13px;cursor:pointer;min-height:40px;font-weight:600}
-  /* « Où cette personne peut aller » — Kevin 2026-09-15. Cibles tactiles >= 44 px
-     (règle Apple HIG), lisible à 375 px, aucune couleur en dur hors palette. */
-  .acces{margin-top:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden}
-  .acces>summary{padding:12px 14px;min-height:44px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .acces>summary b{font-weight:700}
-  .accbody{padding:4px 14px 14px}
-  .accradio{display:flex;align-items:center;gap:10px;min-height:44px;font-size:13px;cursor:pointer}
-  .accradio input{width:20px;height:20px;flex:0 0 auto}
-  .accradio .d,.accbody .d{color:var(--subtle);font-size:12px}
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-  .chipacc{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;
-    border:1px solid rgba(255,255,255,.16);border-radius:999px;font-size:13px;cursor:pointer}
-  .chipacc input{width:18px;height:18px}
-  .chipacc:has(input:checked){border-color:var(--gold,#e8b830);background:rgba(232,184,48,.12)}
-  .chipacc:has(input:disabled){cursor:default}
-  .sousbloc{margin-top:6px}
-  .sousbloc>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px}
-  .savacc{margin-top:10px;padding:10px 16px;min-height:44px;border-radius:10px;font-size:13px;font-weight:600;
-    cursor:pointer;border:1px solid rgba(232,184,48,.45);background:transparent;color:var(--gold,#e8b830)}
-  .savacc:active{transform:scale(.97)}
-  .savacc:disabled{opacity:.7;cursor:default}
-  .accmsg{margin-left:10px;font-size:12px}
-  .revoke:active{transform:scale(.97)}
-  .revoke:disabled{opacity:.7;cursor:default}
+  /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
+     clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
+  .wrap{max-width:980px}
+  /* overflow-x:hidden (design-system) fait du body un conteneur de défilement : la barre collante ne collait plus. clip coupe pareil sans ça. */
+  html,body{overflow-x:clip}
+  .traiter{margin:4px 0 12px;padding:14px;border-radius:18px;border:1px solid var(--line2);background:linear-gradient(160deg,rgba(232,184,48,.10),rgba(17,28,20,.7));scroll-margin-top:70px}
+  .traiter h1{margin:0;font-size:18px;color:var(--gold2);display:flex;align-items:center;gap:8px}
+  .traiter .sous{margin:4px 0 12px;color:var(--mut);font-size:13px}
+  .cpts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(min-width:640px){.cpts{grid-template-columns:repeat(5,1fr)}}
+  .cpt{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:4px;min-height:84px;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(10,18,12,.7);color:var(--txt);font:inherit;text-align:left;cursor:pointer}
+  .cpt:active{transform:scale(.98)}
+  .cpt .n{font-size:28px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--ok)}
+  .cpt .l{font-size:13px;font-weight:600;line-height:1.25}
+  .cpt .s{font-size:11.5px;color:var(--subtle)}
+  .cpt.urgent{border-color:rgba(245,158,11,.75);box-shadow:0 0 0 1px rgba(245,158,11,.3);background:rgba(245,158,11,.10)}
+  .cpt.urgent .n{color:#fbbf24}
+  .cpt.inconnu .n{color:var(--mut)}
+  .cpt[hidden]{display:none}
+  .tbnav{position:sticky;top:0;z-index:30;margin:0 -18px 10px;padding:8px 18px;background:rgba(8,13,7,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tbnav::-webkit-scrollbar{display:none}
+  .tbnav a{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:14px;white-space:nowrap}
+  .tbnav a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:12px}
+  .cherche{position:relative;margin:0 0 14px}
+  .cherche input{width:100%;min-height:50px;padding:12px 14px;border-radius:14px;border:1px solid var(--line2);background:var(--field);color:var(--txt);font-size:16px}
+  .cherche input:focus{outline:none;border-color:var(--gold)}
+  .res{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .res[hidden]{display:none}
+  .res button{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-size:15px;text-align:left;cursor:pointer}
+  .res button span{color:var(--subtle);font-size:12px;margin-left:auto;white-space:nowrap}
+  .res .rien{color:var(--mut);font-size:14px;padding:8px 2px}
+  details.sec{margin:0 0 12px;border:1px solid var(--line);border-radius:18px;background:rgba(17,28,20,.45);scroll-margin-top:68px}
+  details.sec>summary{display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 14px;cursor:pointer;list-style:none}
+  details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary .ic{font-size:22px;width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:11px;background:var(--gold-glow)}
+  details.sec>summary .tt{display:flex;flex-direction:column;min-width:0}
+  details.sec>summary .tt b{font-size:16px}
+  details.sec>summary .tt span{font-size:12.5px;color:var(--mut)}
+  details.sec>summary::after{content:"▸";margin-left:auto;color:var(--gold);transition:transform .15s}
+  details.sec[open]>summary::after{transform:rotate(90deg)}
+  details.sec[open]>summary{border-bottom:1px solid var(--line)}
+  .corps{padding:4px 14px 16px;min-width:0}
+  .corps>.cat:first-child{margin-top:12px}
+  .rien-ok{color:var(--ok);font-size:14px;margin:10px 2px}
+  .mess{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .mess button{display:block;width:100%;text-align:left;min-height:56px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(10,18,12,.6);color:var(--txt);font:inherit;cursor:pointer}
+  .mess button.nv{border-color:rgba(245,158,11,.7)}
+  .mess .qui{font-weight:700;font-size:14.5px}
+  .mess .quoi{font-size:13.5px;color:var(--mut);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  .srcs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  .grosbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#11160c;font-weight:700;font-size:16px;cursor:pointer;text-decoration:none}
+  .cardrow .ver{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--gold2);font-size:11px}
+  .info{font-size:13px;color:var(--mut);margin:10px 2px;line-height:1.5}
+  .info b{color:var(--txt)}
 </style>
 </head>
 <body>
@@ -96,8 +78,11 @@
     <div id="app"><div class="msg">Vérification de l'accès…</div></div>
   </div>
   <script src="/kdmc-sso.js"></script>
-  <script src="admin.js"></script>
+  <script src="/kdmc-boite.js?v=2.0.0"></script>
+  <script src="admin.js?v=2.0.0"></script>
+  <script src="commerce.js?v=2.0.0"></script>
+  <script src="tableau.js?v=2.0.0"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v1.0.0" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.0.0" data-color="#c9a227" defer></script>
 </body>
 </html>

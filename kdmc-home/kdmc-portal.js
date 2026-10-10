@@ -164,6 +164,43 @@
     else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done).catch(function () { done(null); }); } else { done(null); }
   }
 
+  /* ===== « EN ATTENTE DE L'ADMINISTRATEUR » (10.10, Kevin : « Si pas de WhatsApp, validation admin. Au choix ») =====
+     Le compte existe (nom + code) mais le domaine le garde fermé partout sauf ici tant que Kevin ne l'a pas ouvert. L'écran
+     redemande au domaine toutes les 30 s (en pause quand l'écran est caché) et s'ouvre tout seul dès que c'est accepté. */
+  var _attenteTimer = null;
+  function renderAttenteAdmin(s) {
+    var old = document.getElementById('attente-admin'); if (old) old.remove();
+    clearInterval(_attenteTimer); _attenteTimer = null;
+    var refuse = s && s.attente_admin === 'refuse';
+    var box = document.createElement('div'); box.id = 'attente-admin'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', refuse ? 'Compte non validé' : 'En attente de l\'administrateur');
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0b1409;color:#f3f0e6;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
+    box.innerHTML = '<div style="max-width:360px;width:100%;text-align:center"><div style="font-size:44px">' + (refuse ? '🚫' : '⏳') + '</div>'
+      + '<h1 style="font-size:19px;color:#f6d97a;margin:8px 0 6px">' + (refuse ? 'Compte non validé' : 'Ton compte attend l\'administrateur') + '</h1>'
+      + '<p style="color:#cfd8cc;margin:0 0 14px"><b>' + esc((s && s.name) || 'Ton compte') + '</b>, '
+      + (refuse ? 'l\'administrateur n\'a pas validé ce compte. Tu peux te déconnecter, ou recréer un compte en confirmant ton téléphone par WhatsApp.'
+        : 'ton compte est bien créé. Tu n\'as pas confirmé par WhatsApp : l\'administrateur le valide lui-même. Cette page s\'ouvrira toute seule dès qu\'il l\'aura accepté.') + '</p>'
+      + (refuse ? '' : '<p id="aa-etat" aria-live="polite" style="color:#93a58f;font-size:13px;margin:0 0 12px">Je vérifie toutes les 30 secondes…</p>'
+        + '<button class="btn" id="aa-go" type="button" style="min-height:50px;width:100%">Vérifier maintenant</button>')
+      + '<button class="btn ghost" id="aa-out" type="button" style="min-height:48px;width:100%;margin-top:8px">Me déconnecter</button></div>';
+    document.body.appendChild(box);
+    var verifier = function () {
+      if (document.hidden || !window.kdmcSSO || !window.kdmcSSO.whoamiResult) return;
+      window.kdmcSSO.whoamiResult().then(function (r) {
+        if (r && r.state === 'session' && r.session && !r.session.attente_admin) { clearInterval(_attenteTimer); box.remove(); showHub(r.session.name); return; }
+        if (r && r.state === 'session' && r.session && r.session.attente_admin === 'refuse') { renderAttenteAdmin(r.session); return; }
+        var e = document.getElementById('aa-etat'); if (e) e.textContent = 'Pas encore validé — je revérifie dans 30 secondes.';
+      }).catch(function () { /* réseau : prochain tour */ });
+    };
+    var go = document.getElementById('aa-go'); if (go) go.addEventListener('click', verifier);
+    document.getElementById('aa-out').addEventListener('click', function () {
+      clearInterval(_attenteTimer); box.remove();
+      if (window.kdmcSSO) window.kdmcSSO.logout();
+      try { localStorage.removeItem(LS_ACCOUNT); } catch (e) { /* */ }
+      hide(hub); renderCreate(); show(gate);
+    });
+    if (!refuse) _attenteTimer = setInterval(verifier, 30000);
+  }
+
   /* ===== « CRÉE TON CODE » — écran BLOQUANT (8.10 soir, Kevin : « Les anciens comptes sans code se voient afficher à leur prochaine
      connexion la création d'un code obligatoire. Sinon pas d'accès ») =====
      Le domaine a répondu code_requis : la session est à la personne, son compte n'a pas de code. Tout l'écran est couvert ; la seule
@@ -417,6 +454,9 @@
       /* 8.10 (revue extérieure) : un compte sans code renvoyé vers l'app AVANT l'écran du code = ping-pong app ⇄ portail.
          Le domaine a le dernier mot : code_requis → l'écran bloquant, et on ne repart pas. */
       if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
+      /* 10.10 : inscrit sans WhatsApp, pas encore ouvert par l'administrateur → l'écran d'attente, et on ne repart PAS vers l'app
+         (elle refuserait : ping-pong). Le domaine a le dernier mot (whoami.attente_admin). */
+      if (r && r.state === 'session' && r.session && r.session.attente_admin) { renderAttenteAdmin(r.session); return; }
       if (gotoReturnIfAny()) return; /* session posée → on rebascule dans l'app */
       if (hello) hello.textContent = name ? ('Bonjour ' + name) : 'Bienvenue';
       hide(gate); show(hub);
@@ -463,7 +503,9 @@
       +   '<button class="btn" id="l-go" type="button">Me connecter</button>'
       +   '<p class="g-err" id="l-err" role="alert" aria-live="polite"></p>'
       + '</div>'
-      + '<button class="btn ghost" id="f-admin" type="button">👑 Je suis l\'administrateur</button>'
+      /* « Je suis l'administrateur » RETIRÉ (Kevin 10.10 : « inutile si je suis reconnu auto ») : Kevin est reconnu par Face ID, et
+         sur un appareil neuf il tape simplement son nom + son code admin dans « J'ai déjà un compte » — c'est le DOMAINE qui
+         reconnaît son nom (admin_requis) et juge le code. Le bloc reste caché, ouvert seulement quand le domaine le demande. */
       + adminBlock()
       + '<p class="g-sub" style="text-align:center;margin:10px 0 14px">— ou, première fois ici —</p>'
       + '<h2 class="g-title">Créer mon compte KDMC</h2>'
@@ -474,9 +516,11 @@
       + '<input class="fld" id="f-code2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Confirme le code">'
       + cguBlock()
       + '<button class="btn" id="f-create">Créer mon compte</button>'
-      + '<p class="g-err" id="f-err" role="alert" aria-live="polite"></p>';
+      + '<p class="g-err" id="f-err" role="alert" aria-live="polite"></p>'
+      + telBlock();
     wireCgu();
     document.getElementById('f-create').addEventListener('click', doCreate);
+    wireTel();
     document.getElementById('f-deja').addEventListener('click', function () {
       var box = document.getElementById('f-deja-box'); box.hidden = !box.hidden;
       if (!box.hidden) document.getElementById('l-nom').focus();
@@ -526,6 +570,137 @@
     if (link) link.addEventListener('click', function (e) { e.preventDefault(); var t = document.getElementById('cgu-text'); if (t) t.hidden = !t.hidden; });
   }
 
+  /* ── CONFIRMATION DU TÉLÉPHONE PAR WHATSAPP (9.10, gratuite) ─────────────────────────────────────────────
+     La personne envoie « KDMC DXXXXXXX » depuis WhatsApp (lien prérempli), le domaine lui RÉPOND un code à 6
+     chiffres, elle le tape ici. Le domaine juge (/__sso/tel/verifie) et rend une preuve signée que l'inscription
+     emporte. Cette page ne range ni le code ni la preuve : tout reste en mémoire le temps de l'inscription. */
+  var _validation = '', _telPreuve = '', _telDemande = '', _telJeton = '', _telFin = 0, _telHorloge = null, _telEcoute = null;
+  function telBlock() {
+    var cases = '';
+    for (var i = 1; i <= 6; i++) cases += '<input class="fld t-case" type="text" inputmode="numeric" maxlength="6"' + (i === 1 ? ' autocomplete="one-time-code"' : '') + ' aria-label="Chiffre ' + i + '">';
+    return '<div id="t-box" hidden>'
+      + '<h2 class="g-title">Confirme ton téléphone</h2>'
+      + '<p class="g-sub">Gratuit, par WhatsApp : ouvre WhatsApp et envoie le message déjà écrit. <b>C\'est tout</b> — cette page se valide toute seule. (Sinon, tape le code à 6 chiffres reçu en réponse.)</p>'
+      + '<a class="btn" id="t-wa" href="#" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Ouvrir WhatsApp</a>'
+      + '<div class="t-otp" role="group" aria-label="Code à 6 chiffres" style="display:flex;gap:6px;margin:12px 0 4px">' + cases + '</div>'
+      + '<p class="g-sub" id="t-infos" style="display:flex;justify-content:space-between;gap:8px"><span id="t-min"></span><span id="t-ess"></span></p>'
+      + '<p class="g-sub" id="t-attente" aria-live="polite" style="text-align:center">⏳ En attente de ton message WhatsApp…</p>'
+      + '<button class="btn" id="t-go" type="button">Confirmer et créer mon compte</button>'
+      + '<button class="btn ghost" id="t-new" type="button" hidden>Recevoir un nouveau code</button>'
+      + '<p class="g-err" id="t-err" role="alert" aria-live="polite"></p>'
+      /* 10.10 (Kevin : « Si pas de WhatsApp, validation admin. Au choix ») : l'autre chemin, au choix de la personne. */
+      + '<button class="btn ghost" id="t-admin" type="button">Je n\'ai pas WhatsApp — demander la validation à l\'administrateur</button>'
+      + '<p class="g-sub" style="text-align:center;font-size:12.5px">Ton compte sera créé tout de suite, et ouvert dès que l\'administrateur l\'aura accepté.</p>'
+      + '</div>';
+  }
+  function _tCases() { return [].slice.call(document.querySelectorAll('#t-box .t-case')); }
+  function _tSaisi() { return _tCases().map(function (c) { return c.value; }).join(''); }
+  function _tDit(t) { var e = document.getElementById('t-err'); if (e) e.textContent = t || ''; }
+  function _tMin(fin) { var s = Math.max(0, Math.ceil((fin - Date.now()) / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function telExige() {
+    return fetch('/__sso/tel/etat', { credentials: 'include', cache: 'no-store' })
+      .then(function (r) { return r.json(); }).then(function (j) { return !!(j && j.obligatoire); })
+      .catch(function () { return false; });   /* si le domaine l'exige quand même, /issue répond tel_requis et on ouvre l'étape */
+  }
+  function telDemarrer() {
+    var box = document.getElementById('t-box'); if (!box) return;
+    _tDit('');
+    fetch('/__sso/tel/demande', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: '{}' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) { box.hidden = false; _tDit((j && j.message) || 'Ça n\'a pas marché. Réessaie.'); document.getElementById('t-new').hidden = false; return; }
+        _telDemande = j.demande; _telJeton = j.jeton || ''; _telFin = Date.now() + j.validite_s * 1000;
+        telEcouter();
+        document.getElementById('t-wa').href = j.lien;
+        document.getElementById('t-ess').textContent = j.essais + ' essais';
+        document.getElementById('t-min').textContent = 'Code valable encore ' + _tMin(_telFin);
+        document.getElementById('t-go').disabled = false; document.getElementById('t-new').hidden = true;
+        _tCases().forEach(function (c) { c.value = ''; });
+        box.hidden = false;
+        try { box.scrollIntoView({ block: 'start' }); } catch (e) { /* */ }
+        clearInterval(_telHorloge);
+        _telHorloge = setInterval(function () {
+          var reste = _telFin - Date.now();
+          document.getElementById('t-min').textContent = reste > 0 ? 'Code valable encore ' + _tMin(_telFin) : 'Code expiré';
+          if (reste <= 0) { clearInterval(_telHorloge); document.getElementById('t-go').disabled = true; document.getElementById('t-new').hidden = false; }
+        }, 1000);
+      })
+      .catch(function () { box.hidden = false; _tDit('Le domaine ne répond pas. Réessaie dans un instant.'); });
+  }
+  /* VALIDATION AUTOMATIQUE : la page demande au domaine « mon message est-il arrivé ? » toutes les 4 s (en pause quand
+     l'écran est caché, arrêt à l'expiration). Dès qu'il est arrivé, le domaine rend la preuve et le compte se crée tout seul. */
+  function telArreterEcoute() { clearInterval(_telEcoute); _telEcoute = null; }
+  function telEcouter() {
+    telArreterEcoute();
+    if (!_telJeton) return;
+    var enCours = false;
+    _telEcoute = setInterval(function () {
+      if (enCours || document.hidden) return;
+      if (Date.now() > _telFin || _telPreuve) { telArreterEcoute(); return; }
+      enCours = true;
+      fetch('/__sso/tel/statut', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ r: _telDemande, jeton: _telJeton }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok && j.confirme && j.preuve) { telArreterEcoute(); telReussi(j); return; }
+          if (j && j.reason === 'tel_plein') { telArreterEcoute(); _tDit(j.message); }
+          if (j && j.ok && j.encore === false && !j.confirme) telArreterEcoute();
+        })
+        .catch(function () { /* réseau : on réessaie au prochain tour */ })
+        .then(function () { enCours = false; });
+    }, 4000);
+  }
+  function telReussi(j) {
+    _telPreuve = j.preuve; clearInterval(_telHorloge);
+    _tDit(''); document.getElementById('t-box').hidden = true;
+    document.getElementById('f-err').textContent = 'Téléphone confirmé ✓ ' + (j.tel_masque || '');
+    doCreate();
+  }
+  function telValider() {
+    var code6 = _tSaisi(), go = document.getElementById('t-go');
+    if (code6.length !== 6 || go.disabled) return;
+    go.disabled = true;
+    fetch('/__sso/tel/verifie', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ r: _telDemande, code: code6 }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.ok && j.preuve) { telArreterEcoute(); telReussi(j); return; }
+        if (j && j.reason === 'code_faux') {
+          var n = j.essais_restants;
+          _tDit('Code incorrect. ' + n + ' essai' + (n > 1 ? 's' : '') + ' restant' + (n > 1 ? 's' : '') + '.');
+          document.getElementById('t-ess').textContent = n + ' essai' + (n > 1 ? 's' : '');
+          _tCases().forEach(function (c) { c.value = ''; }); _tCases()[0].focus(); go.disabled = false; return;
+        }
+        _tDit((j && j.message) || 'Ça n\'a pas marché.');
+        if (j && (j.reason === 'trop_essais' || j.reason === 'expire')) { clearInterval(_telHorloge); document.getElementById('t-new').hidden = false; }
+        else go.disabled = false;
+      })
+      .catch(function () { go.disabled = false; _tDit('Le domaine ne répond pas. Réessaie.'); });
+  }
+  function wireTel() {
+    var cs = _tCases(); if (!cs.length) return;
+    cs.forEach(function (c, i) {
+      c.addEventListener('input', function () {
+        var ch = String(c.value || '').replace(/\D/g, '');
+        if (ch.length > 1) {   /* collage, ou code proposé par iOS : 6 chiffres = depuis la 1re case, où qu'on ait collé */
+          var depart = ch.length >= 6 ? 0 : i;
+          ch.slice(0, 6).split('').forEach(function (d, k) { if (cs[depart + k]) cs[depart + k].value = d; });
+        } else c.value = ch;
+        var vide = cs.filter(function (x) { return !x.value; })[0];
+        if (vide && c.value) vide.focus();
+        if (_tSaisi().length === 6) telValider();
+      });
+      c.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !c.value && i > 0) { cs[i - 1].value = ''; cs[i - 1].focus(); } });
+    });
+    document.getElementById('t-go').addEventListener('click', telValider);
+    document.getElementById('t-new').addEventListener('click', telDemarrer);
+    var ta = document.getElementById('t-admin');
+    if (ta) ta.addEventListener('click', function () {
+      telArreterEcoute(); clearInterval(_telHorloge); _tDit('');
+      _validation = 'admin';
+      document.getElementById('t-box').hidden = true;
+      doCreate();
+    });
+  }
+
   function doCreate() {
     var prenom = (document.getElementById('f-prenom').value || '').trim();
     var nom = (document.getElementById('f-nom').value || '').trim();
@@ -538,6 +713,20 @@
     if (code.length < 6) { err.textContent = 'Code trop court (6 chiffres minimum).'; return; }
     if (code !== code2) { err.textContent = 'Les deux codes ne correspondent pas.'; return; }
     if (!cgu) { err.textContent = 'Merci d\'accepter les conditions pour continuer.'; return; }
+    /* Téléphone d'abord (9.10, Kevin « OTP pour toutes inscriptions ») — seulement si le domaine l'exige (WhatsApp branché). */
+    if (!_telPreuve && _validation !== 'admin') {
+      var btn0 = document.getElementById('f-create'); btn0.disabled = true;
+      return telExige().then(function (oblig) {
+        btn0.disabled = false;
+        if (oblig) { telDemarrer(); return; }
+        creerCompte(prenom, nom, code);
+      });
+    }
+    creerCompte(prenom, nom, code);
+  }
+
+  function creerCompte(prenom, nom, code) {
+    var err = document.getElementById('f-err');
     var name = prenom + ' ' + nom;
     var uid = slug(name) || ('u-' + Date.now());
     var salt = rndSalt();
@@ -551,11 +740,13 @@
       /* Le CODE part au domaine (27.09) : il en garde l'empreinte, et le même nom + code
          marchera sur tous les appareils et dans toutes les apps. */
       if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) return acc;
-      return window.kdmcSSO.issueDetail(uid, name, true, safeReturnUrl(), code).then(function (j) {
+      return window.kdmcSSO.issueDetail(uid, name, true, safeReturnUrl(), code, _telPreuve, _telPreuve ? '' : _validation).then(function (j) {
         if (j && !j.ok && (j.reason === 'code_requis' || j.reason === 'code_incorrect')) {
           localStorage.removeItem(LS_ACCOUNT);
           throw { deja: true };
         }
+        /* le domaine exige le téléphone (ou la preuve a expiré) : on ouvre l'étape, rien n'est créé */
+        if (j && !j.ok && j.reason === 'tel_requis') { localStorage.removeItem(LS_ACCOUNT); _telPreuve = ''; _validation = ''; throw { tel: true }; }
         if (j && !j.ok && j.message) throw { message: j.message };
         if (j && j.ok && j.admin_requis) { localStorage.removeItem(LS_ACCOUNT); throw { admin: true }; }
         /* 7.10 (Kevin : « aucune connexion au domaine ou app sans inscription complète et accord ») : plus de compte « local » quand le
@@ -568,6 +759,7 @@
       _postLogin(acc);
     }).catch(function (e) {
       if (e && e.admin) { btn.disabled = false; btn.textContent = 'Créer mon compte'; montrerAdmin('Tu es l\'administrateur : entre ton code admin, tu seras reconnu partout.'); return; }
+      if (e && e.tel) { btn.disabled = false; btn.textContent = 'Créer mon compte'; telDemarrer(); return; }
       err.textContent = (e && e.deja) ? 'Ce nom a déjà un compte. Touche « J\'ai déjà un compte — nom + code » ci-dessus.'
         : ((e && e.message) || 'Erreur, réessaie.');
       btn.disabled = false; btn.textContent = 'Créer mon compte';
@@ -587,8 +779,10 @@
       + '</div>';
   }
   function wireAdmin() {
-    var b = document.getElementById('f-admin'); if (!b) return;
-    b.addEventListener('click', function () { montrerAdmin(); });
+    /* le bouton visible n'existe plus (10.10) : le champ caché doit rester branché, il s'ouvre quand le domaine le demande */
+    var b = document.getElementById('f-admin');
+    if (b) b.addEventListener('click', function () { montrerAdmin(); });
+    if (!document.getElementById('a-go')) return;
     document.getElementById('a-go').addEventListener('click', doAdminCode);
     document.getElementById('a-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doAdminCode(); });
   }
@@ -628,6 +822,15 @@
     if (code.length < 6) { err.textContent = 'Ton code (6 caractères minimum).'; return; }
     var b = document.getElementById('l-go'); b.disabled = true; b.textContent = '…';
     window.kdmcSSO.login(nom, code).then(function (j) {
+      /* 10.10 : le domaine reconnaît le nom de l'administrateur → le code tapé part comme code ADMIN, jugé par le domaine
+         (une seule étape sur un appareil neuf, plus de bouton « Je suis l'administrateur »). */
+      if (j && !j.ok && j.reason === 'admin_requis' && window.kdmcSSO.adminCode) {
+        return window.kdmcSSO.adminCode(code).then(function (a) {
+          document.getElementById('l-code').value = '';
+          if (!a || !a.ok) { err.textContent = 'Nom ou code incorrect.'; b.disabled = false; b.textContent = 'Me connecter'; return; }
+          _postLogin({ uid: a.uid || 'kdmc_admin', name: a.name || nom });
+        });
+      }
       /* 8.10 : compte sans code, appareil inconnu → le code proposé attend l'administrateur (le message vient du domaine) */
       if (!j || !j.ok) { err.textContent = (j && j.message) || 'Nom ou code incorrect.'; b.disabled = false; b.textContent = 'Me connecter'; return; }
       var salt = rndSalt();

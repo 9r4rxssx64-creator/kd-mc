@@ -21,6 +21,7 @@
  *
  * Diagnostic exact partout (règle Kevin) : chaque échec renvoie {ok:false, detail, step}.
  */
+import { whatsappPret, telDemande, telWebhook, telWebhookAbonnement, telVerifie, telStatut } from './tel.js';
 
 const ALLOW_ORIGINS = [
   'https://kd-mc.com', 'https://www.kd-mc.com',
@@ -839,6 +840,7 @@ export default {
         moyens: MOYENS.filter((m) => m !== 'virement' || Boolean(banque.iban)),
         paypal_recherche: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET),
         paypal_webhook: Boolean(env.PAYPAL_WEBHOOK_ID),
+        whatsapp_confirmation: whatsappPret(env),   // confirmation d'identité par WhatsApp (tel.js)
         produits: Object.keys(PRODUITS),
       }, 200, origin);
     }
@@ -1080,7 +1082,8 @@ export default {
       let f; try { f = JSON.parse(brut); } catch (_) { f = null; }
       if (!f || !PRODUITS[f.produit]) return json({ ok: false, error: 'invalide', detail: 'fiche illisible', step: 'acces_fiche' }, 500, origin);
       const prod = PRODUITS[f.produit];
-      return json({ ok: true, produit: f.produit, nom: prod.nom, livre: prod.livre, depuis: f.ts_iso }, 200, origin);
+      return json({ ok: true, produit: f.produit, nom: prod.nom, livre: prod.livre, depuis: f.ts_iso,
+        tel_confirme: Boolean(f.tel), tel_masque: f.tel ? f.tel.masque : null, whatsapp_confirmation: whatsappPret(env) }, 200, origin);
     }
 
     /* --- Contenu payant : servi UNIQUEMENT contre un code valide ---------- */
@@ -1166,6 +1169,24 @@ export default {
       }
       await env.VENTES.delete('demande:' + id);
       return json({ ok: true, code: dd.code, livre: dd.livre, produit: produitId, email_envoye: !!dd.email_envoye }, 200, origin);
+    }
+
+    /* --- Admin : INVITER GRATUITEMENT (Kevin 10.10 : « je peux inviter gratuit qui je veux, n'importe où ») ---
+       Un code d'accès offert, exactement comme un achat (même fiche, même durée, même page de livraison), marqué
+       « invitation » ; Kevin reçoit le lien prêt à envoyer (WhatsApp, SMS, e-mail). Admin VÉRIFIÉ seulement. */
+    if (p === '/admin/inviter' && req.method === 'POST') {
+      const g = await requireAdmin(req);
+      if (!g.ok) return json({ ok: false, error: 'forbidden', detail: g.detail, step: g.step }, g.status, origin);
+      let b; try { b = await req.json(); } catch (e) { return json({ ok: false, error: 'json', detail: String(e.message || e), step: 'inviter_body' }, 400, origin); }
+      const produitId = String((b && b.produit) || '');
+      const produit = PRODUITS[produitId];
+      if (!produit) return json({ ok: false, error: 'produit_inconnu', detail: produitId, step: 'inviter_produit' }, 400, origin);
+      const pour = String((b && b.pour) || '').replace(/[<>"'`]/g, '').trim().slice(0, 60);
+      const dd = await delivre(env, { produitId, email: null, source: 'invitation:' + g.name + (pour ? ' → ' + pour : ''), txId: null });
+      if (!dd.ok) return json(dd, dd.status || 500, origin);
+      const lien = produit.livre + (produit.livre.includes('?') ? '&' : '?') + 'c=' + encodeURIComponent(dd.code);
+      const message = (pour ? 'Bonjour ' + pour + ' ! ' : 'Bonjour ! ') + 'Je t\'offre l\'accès complet à « ' + produit.nom.split(' — ')[0] + ' ». Ouvre ce lien : ' + lien;
+      return json({ ok: true, code: dd.code, lien, message, produit: produitId, pour: pour || null }, 200, origin);
     }
 
     /* --- Admin : relancer les paniers abandonnés -------------------------- */
@@ -1304,6 +1325,32 @@ export default {
       } catch (e) {
         return json({ ok: false, error: 'reseau', detail: String((e && e.message) || e).slice(0, 120), step: 'lancer_reseau' }, 502, origin);
       }
+    }
+
+    /* --- Confirmation d'identité par WhatsApp (tel.js) : le WORKER juge ---- */
+    if (p === '/tel/demande' && req.method === 'POST') {
+      let b; try { b = await req.json(); } catch (e) { return json({ ok: false, error: 'json', detail: String(e.message || e), step: 'tel_body' }, 400, origin); }
+      const r = await telDemande(env, b);
+      return json(r.corps, r.status, origin);
+    }
+    if (p === '/tel/statut' && req.method === 'POST') {
+      let b; try { b = await req.json(); } catch (e) { return json({ ok: false, error: 'json', detail: String(e.message || e), step: 'tel_body' }, 400, origin); }
+      const r = await telStatut(env, b);
+      return json(r.corps, r.status, origin);
+    }
+    if (p === '/tel/verifie' && req.method === 'POST') {
+      let b; try { b = await req.json(); } catch (e) { return json({ ok: false, error: 'json', detail: String(e.message || e), step: 'tel_body' }, 400, origin); }
+      const r = await telVerifie(env, b);
+      return json(r.corps, r.status, origin);
+    }
+    if (p === '/webhook/whatsapp' && req.method === 'GET') {
+      const r = telWebhookAbonnement(env, url);
+      return new Response(r.texte, { status: r.status, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+    }
+    if (p === '/webhook/whatsapp' && req.method === 'POST') {
+      const brut = await req.text();
+      const r = await telWebhook(env, brut, req.headers.get('X-Hub-Signature-256'));
+      return json({ ok: true, ...r }, 200, origin);
     }
 
     return json({ ok: false, error: 'not_found', detail: 'route inconnue: ' + p, step: 'routage' }, 404, origin);

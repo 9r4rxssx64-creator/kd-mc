@@ -111,18 +111,20 @@ try {
   await pd.waitForTimeout(800); const finale = await pd.evaluate(() => location.href).catch(() => pd.url()); const corps = await pd.locator('body').textContent().catch(() => '');
   ok(finale === 'https://cmcteams.kd-mc.com/index.html?v=9#plan' && /kdmc_sso=/.test(corps), '5 bis. l\'app reçoit son cookie et s\'ouvre sur la page demandée, adresse propre (pas de jeton dans l\'adresse)', finale + ' | ' + corps.slice(0, 40));
 
-  /* 6. Téléphone E = le PC de Kevin (aucun passkey) : « 👑 Je suis l'administrateur » + code admin
-        → reconnu ADMIN, zone privée visible. Puis Kevin qui tape son nom dans « Créer mon compte »
-        est renvoyé vers le code admin (jamais un « code de compte » pour l'admin). */
+  /* 6. Téléphone E = le PC de Kevin (aucun passkey). Plus de bouton « 👑 Je suis l'administrateur » (Kevin 10.10 :
+        « inutile si je suis reconnu auto ») : il tape son NOM + son code admin dans « J'ai déjà un compte » ; le domaine
+        reconnaît le nom (admin_requis) et juge le code admin → reconnu ADMIN, zone privée visible. Puis Kevin qui tape son
+        nom dans « Créer mon compte » est renvoyé vers le code admin (jamais un « code de compte » pour l'admin). */
   const E = await browser.newContext({ serviceWorkers: 'block' }); await brancher(E);
   const pe = await E.newPage(); await pe.goto('https://kd-mc.com/');
-  await pe.click('#f-admin'); await pe.fill('#a-code', '000000'); await pe.click('#a-go'); await pe.waitForTimeout(800);
-  const errA = (await pe.locator('#a-err').textContent({ timeout: 2000 }).catch(() => '')) || '';
-  ok(!(await accueilVisible(pe)) && /incorrect/i.test(errA), '6. PC : mauvais code admin → refusé', errA);
-  await pe.fill('#a-code', '424242'); await pe.click('#a-go'); await pe.waitForTimeout(1500); await fermerOffreFaceId(pe); await pe.waitForTimeout(600);
+  ok(!(await pe.locator('#f-admin').count()) && !/Je suis l.administrateur/.test(await pe.locator('body').innerText()), '6 a. aucun bouton « Je suis l\'administrateur » sur le portail');
+  await pe.click('#f-deja'); await pe.fill('#l-nom', 'Kevin Desarzens'); await pe.fill('#l-code', '000000'); await pe.click('#l-go'); await pe.waitForTimeout(800);
+  const errA = (await pe.locator('#l-err').textContent({ timeout: 2000 }).catch(() => '')) || '';
+  ok(!(await accueilVisible(pe)) && /incorrect/i.test(errA), '6. PC : son nom + mauvais code admin → refusé', errA);
+  await pe.fill('#l-code', '424242'); await pe.click('#l-go'); await pe.waitForTimeout(1500); await fermerOffreFaceId(pe); await pe.waitForTimeout(600);
   const priv = await pe.locator('#priv-zone').isVisible().catch(() => false);
   const helloE = (await pe.locator('#hello').textContent().catch(() => '')) || '';
-  ok(await accueilVisible(pe) && priv && /Kevin/.test(helloE), '6 bis. PC : bon code admin → accueil admin (zone privée visible), identité vérifiée sans Face ID', helloE + ' priv=' + priv);
+  ok(await accueilVisible(pe) && priv && /Kevin/.test(helloE), '6 bis. PC : son nom + bon code admin (« J\'ai déjà un compte ») → accueil admin (zone privée visible), sans Face ID ni bouton spécial', helloE + ' priv=' + priv);
   const F = await browser.newContext({ serviceWorkers: 'block' }); await brancher(F);
   const pf = await F.newPage(); await pf.goto('https://kd-mc.com/');
   await pf.fill('#f-prenom', 'Kevin'); await pf.fill('#f-nom', 'Desarzens'); await pf.fill('#f-code', '111111'); await pf.fill('#f-code2', '111111');

@@ -56,7 +56,7 @@ function mesurer() {
   m.workflows_ranges = compte('ls .github/workflows-desactives/ 2>/dev/null | wc -l');
   m.tests = compte('ls tests/ 2>/dev/null | wc -l');
   m.workers = compte("find services messaging-app shops tools -name wrangler.toml 2>/dev/null | wc -l");
-  m.pages = compte("find . -maxdepth 3 -name index.html -not -path '*/node_modules/*' -not -path './vendor/*' -not -path './coverage/*' -not -path './dist/*' 2>/dev/null | wc -l");
+  m.pages = compte("find . -maxdepth 3 -name index.html -not -path '*/node_modules/*' -not -path './vendor/*' -not -path '*/coverage/*' -not -path './dist/*' 2>/dev/null | wc -l");
   try { m.scripts_npm = Object.keys(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts || {}).length; } catch { m.scripts_npm = 0; }
   const wf = '.github/workflows';
   const noms = new Set();

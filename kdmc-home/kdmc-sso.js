@@ -48,7 +48,7 @@
       .then(function (r) {
         if (!r.ok) return { state: 'neterr' };
         return r.json().then(function (j) {
-          if (j && j.ok) return { state: 'session', session: { uid: j.uid, name: j.name, cgu: !!j.cgu, admin: !!j.admin, verified: !!j.verified, app: j.app || '', portee: j.portee || '' } };
+          if (j && j.ok) return { state: 'session', session: { uid: j.uid, name: j.name, cgu: !!j.cgu, admin: !!j.admin, verified: !!j.verified, app: j.app || '', portee: j.portee || '', attente_admin: j.attente_admin || '' } };
           /* 4e état — 'hors_perimetre' : la session est VALIDE, mais cette personne
              n'existe pas dans CETTE app (périmètre décidé par l'admin, 2026-09-15).
              Ce n'est PAS un pass invalide : le jeter déconnecterait la personne de
@@ -160,12 +160,16 @@
   /* Même chose qu'issue(), mais avec le CODE du compte (vérifié par le domaine depuis le 27.09)
      et la réponse complète (raison + message en français) au lieu d'un simple oui/non.
      → objet {ok, reason, message, code, …}, ou null si le domaine ne répond pas. */
-  function issueDetail(uid, name, cgu, returnUrl, code) {
+  /* `telPreuve` (9.10) : la preuve signée par le domaine que le téléphone est confirmé (/__sso/tel/verifie) — exigée à la
+     création quand WhatsApp est branché. La page la transporte, elle ne la fabrique ni ne la juge. */
+  /* `validation` (10.10, Kevin « si pas de WhatsApp, validation admin. Au choix ») : 'admin' = la personne choisit d'attendre Kevin
+     au lieu de WhatsApp. Le domaine crée le compte FERMÉ partout sauf le portail, jusqu'à ce que Kevin l'ouvre. */
+  function issueDetail(uid, name, cgu, returnUrl, code, telPreuve, validation) {
     var pour = '';
     try { if (returnUrl) pour = new URL(String(returnUrl), location.origin).hostname; } catch (e) { pour = ''; }
     return fetch(BASE + '/issue', {
       method: 'POST', credentials: 'include', headers: authHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify({ uid: uid, name: name, cgu: !!cgu, pour: pour, code: code ? String(code) : undefined }),
+      body: JSON.stringify({ uid: uid, name: name, cgu: !!cgu, pour: pour, code: code ? String(code) : undefined, tel_preuve: telPreuve ? String(telPreuve) : undefined, validation: validation === 'admin' ? 'admin' : undefined }),
     })
       .then(function (r) { return r.json().catch(function () { return null; }); })
       .then(function (j) {

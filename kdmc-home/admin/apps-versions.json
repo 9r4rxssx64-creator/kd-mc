@@ -1,0 +1,134 @@
+{
+ "_doc": "Généré par tools/admin/apps-versions.mjs — relevé dans le dépôt, pas en direct.",
+ "genere": "2026-10-09",
+ "apps": {
+  "kd-mc.com": {
+   "page": "kdmc-home/index.html",
+   "version": "v1.0.50"
+  },
+  "www.kd-mc.com": {
+   "page": "kdmc-home/index.html",
+   "version": "v1.0.50"
+  },
+  "cmcteams.kd-mc.com": {
+   "page": "index.html",
+   "version": "v9.955"
+  },
+  "apex-ai.kd-mc.com": {
+   "page": "apex-ai-v13/index.html",
+   "version": "v13.4.368"
+  },
+  "apex-chat.kd-mc.com": {
+   "page": "messaging-app/index.html",
+   "version": "v1.1.299"
+  },
+  "la-detente.kd-mc.com": {
+   "page": "la-detente/index.html",
+   "version": "v1.0.5"
+  },
+  "chez-lolo.kd-mc.com": {
+   "page": "shops/chez-lolo/index.html",
+   "version": "v2.0.16"
+  },
+  "dashboard.kd-mc.com": {
+   "page": "shops/dashboard/index.html",
+   "version": "v2.0.4"
+  },
+  "sourcing.kd-mc.com": {
+   "page": "shops/sourcing/index.html",
+   "version": "v1.0.3"
+  },
+  "coffre.kd-mc.com": {
+   "page": "coffre-fort/index.html",
+   "version": "v1.0.2"
+  },
+  "departs.kd-mc.com": {
+   "page": "tools/departs/index.html",
+   "version": "v1.82"
+  },
+  "cmcteams-light.kd-mc.com": {
+   "page": "tools/departs/index.html",
+   "version": "v1.82"
+  },
+  "bot.kd-mc.com": {
+   "page": "tools/crypto-bot-dashboard/index.html",
+   "version": "v1.5.2"
+  },
+  "beatbot.kd-mc.com": {
+   "page": "tools/poolrobot/index.html",
+   "version": "v0.11.15"
+  },
+  "autorisations.kd-mc.com": {
+   "page": "tools/approvals/index.html",
+   "version": "v1.3.1"
+  },
+  "arbre.kd-mc.com": {
+   "page": "arbre/index.html",
+   "version": "v3.73"
+  },
+  "lingua.kd-mc.com": {
+   "page": "lingua/index.html",
+   "version": "v2.138.0"
+  },
+  "studio.kd-mc.com": {
+   "page": "tools/crea-studio/index.html",
+   "version": "v9.18.4"
+  },
+  "cuisine.kd-mc.com": {
+   "page": "tools/cuisine/index.html",
+   "version": "v1.0.1"
+  },
+  "cocina.kd-mc.com": {
+   "page": "tools/cuisine/index.html",
+   "version": "v1.0.1"
+  },
+  "cujina.kd-mc.com": {
+   "page": "tools/cuisine/index.html",
+   "version": "v1.0.1"
+  },
+  "worldmonitor.kd-mc.com": {
+   "page": "kdmc-home/worldmonitor/index.html",
+   "version": "v2.43"
+  },
+  "osint.kd-mc.com": {
+   "page": "kdmc-home/osint/index.html",
+   "version": "v2.6"
+  },
+  "ia.kd-mc.com": {
+   "page": "kdmc-home/ia/index.html",
+   "version": "v1.0.1"
+  },
+  "outils.kd-mc.com": {
+   "page": "kdmc-home/outils/index.html",
+   "version": "v1.0.1"
+  },
+  "javis.kd-mc.com": {
+   "page": "javis/index.html",
+   "version": "v1.18"
+  },
+  "tor.kd-mc.com": {
+   "page": "tools/tor/index.html",
+   "version": "v1.8"
+  },
+  "rotaplan.kd-mc.com": {
+   "page": "shops/rotaplan/index.html",
+   "version": null
+  },
+  "kit.kd-mc.com": {
+   "page": "shops/kit-ia/index.html",
+   "version": null
+  },
+  "dossiers.kd-mc.com": {
+   "page": "dossiers/index.html",
+   "version": "v1.0.1"
+  },
+  "croupier.kd-mc.com": {
+   "page": "shops/croupier/index.html",
+   "version": null
+  },
+  "shops.kd-mc.com": {
+   "page": "shops/index.html",
+   "version": "v1.0.3"
+  }
+ }
+}

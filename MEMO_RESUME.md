@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-10 (17h) — « Vérifie les info réel, comme moi » : les deux PDF renvoyés sont vérifiés sur le vrai domaine, en admin
+
+- **Les fichiers** : `NOVEMBRE_2026.pdf` et `OCTOBRE_2026_V2.pdf` renvoyés par Kevin sont IDENTIQUES aux fixtures du dépôt (sha256
+  `4b78324b161cc4aa…` et `7264c7f91c37324a…`) ; détecteur : 0 personne manquante sur les 5 mois.
+- **Vérifié EN RÉEL, connecté en admin comme Kevin** (`verif-live-equipes.yml`, 3 runs sur le vrai domaine, light **v1.82** + CMCteams
+  **v9.955** servies) : planning servi = PDF (empreinte `d2233b20c40133cb`) ; 196 tableaux, 38 129 jours-personnes, **18 503 passages**
+  de départs conformes aux séries ; **23 378 cases** app ⇄ light identiques ; collègue non-admin : mêmes départs, ni carte ni pointage pour
+  un autre. Runs : 38068377199 (16h37 UTC) **2 ❌** — « admin non reconnu dans la light » + « unsafe-eval refusé » ; 38069161101 (16h49)
+  **26/26 ✅** ; 38069453066 (16h53) **26/26 ✅**. Le code servi n'a pas changé entre les trois. Rien dans le dépôt ne fait d'`eval`
+  (light, scripts partagés, scripts posés par le routeur) ; l'essai local avec la MÊME light et le MÊME Playwright 1.49.1 que la CI
+  est vert. **Cause du premier rouge : non reproduite** — je ne l'appelle pas « corrigée ».
+- **Ce que j'ai fait pour qu'un prochain rouge ait sa cause** (`tests/verif-live-equipes.mjs`) : le robot écrit toujours un journal de
+  référence (statuts HTTP de whoami/grant/Bee/boards-gen, ok/admin/verified, cadres posés, rechargements, pile des erreurs — jamais de
+  jeton) et re-mesure 8 s plus tard quand l'admin manque. **Trouvé par ce journal** : Cloudflare pose `static.cloudflareinsights.com/
+  beacon.min.js` (Web Analytics) sur chaque page HTML du domaine, et la CSP de la light (comme celle de CMCteams) le refuse → une erreur
+  console à chaque ouverture, sans effet sur l'app. À trancher : couper l'injection côté Cloudflare, ou l'autoriser dans les CSP.
+- **Sabotage réparé** : `SABOTAGE=1` cherchait une ancre disparue depuis la light v1.74 (« +minRang ») → il ne sabotait rien et restait
+  vert. Ancre à jour + arrêt net si elle manque ; preuve `tests/verif-live-robot-sabotage.mjs` (`test:verif-live-robot-sabotage`, dans
+  `test:ci`) : D rougit avec les séries fausses, F1 rougit avec « admin pour tous ». Leçon #490.
+
 ## 2026-10-10 (midi) — #4460 fusionnée et déployée ; 3 robots publics rouges réparés
 
 - Fusion #4460 (squash 9888eb927). Déployés : routeur du domaine ✅, site (Pages) ✅, caisse kdmc-vente (en ligne, `/health` porte

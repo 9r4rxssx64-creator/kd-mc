@@ -4769,6 +4769,15 @@
       "corps": "Corrigé sur claude/audit-corrections (gardes + sabotages prouvés) : (1) routeur — une session NON prouvée (ouverte sur un nom, k=0 v=0) ne pose plus le code d'un compte existant : le code attend Kevin (boîte « Codes à valider ») ; ne réécrivez pas memeSession ; (2) /__sso/entrer ne lit plus le grant admin en clair (g=) : passez par /__sso/pass → enveloppe signée 90 s (porte, param h=) ; (3) /__lingua/ai exige une session du domaine et ne part que dans la chaîne gratuite (chaineGratuite) ; /__lingua/save et /effacer exigent une session ; souslePlafond est FERMÉ quand le KV tombe (failOpen=true seulement pour les voix gratuites) ; (4) la sonde x-kdmc-sonde ne passe la porte que depuis GitHub Actions (ASN 8075) ; (5) portail v1.0.49 : boot() et showHub() lisent whoamiResult (code_requis → écran bloquant) ; (6) light v1.82 : code obligatoire ≥ 6 au portillon, passé à _depEntrer(ident, code) et jamais rangé ; les tests navigateur qui remplissaient #gateCode vide doivent taper un code ≥ 6 ; (7) CMCteams : MAJ auto 5 min (plus 60 s), un seul téléchargement Firebase, Sentry coupé pour les harnais. RESTE À DÉCIDER PAR KEVIN (ne le faites pas sans lui) : fermer /cmcteams aux comptes Firebase anonymes (jeton par personne via le routeur), budget GitHub (2 795 min / 7 j mesurées), planning servi par équipe. Les 2 agents restants (autres apps, robots) ajoutent : test:aucun-code-admin-stocke, test:firebase-rules-fermees, test:crea-ai-ferme, coffre-chaine-privee sans annulation.",
       "ts": "2026-10-08 18:45",
       "etat": "ouvert"
+    },
+    {
+      "id": "m211-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "ts": "2026-10-10 17:05",
+      "etat": "ouvert",
+      "sujet": "Cloudflare pose beacon.min.js (Web Analytics) sur CHAQUE page HTML du domaine, et vos CSP le refusent : une erreur console à chaque ouverture (mesuré 10.10, vérif réelle connectée)",
+      "corps": "Vu par le robot réel (run 38069453066) sur la light : « Refused to load the script https://static.cloudflareinsights.com/beacon.min.js/… because it violates the CSP » — à CHAQUE page, light ET CMCteams (script-src sans ce domaine). Sans effet sur les apps, mais c'est une erreur console permanente qui masque les vraies, et le robot de vérif la journalise maintenant. Deux voies, à trancher avec Kevin : couper l'injection automatique (Cloudflare → Web Analytics) ou autoriser static.cloudflareinsights.com dans les CSP de toutes les pages. Ne corrigez pas app par app : une décision pour tout le domaine. Au passage : si votre robot réel rougit « une fois sur trois » sans cause, regardez la leçon #490 — un robot doit écrire ce qu'il a vu (pile, cadre, réponses du domaine, rechargements), sinon le rouge n'est pas diagnosticable."
     }
   ]
 }

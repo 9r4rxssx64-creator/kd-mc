@@ -19,6 +19,10 @@
 - **Sabotage réparé** : `SABOTAGE=1` cherchait une ancre disparue depuis la light v1.74 (« +minRang ») → il ne sabotait rien et restait
   vert. Ancre à jour + arrêt net si elle manque ; preuve `tests/verif-live-robot-sabotage.mjs` (`test:verif-live-robot-sabotage`, dans
   `test:ci`) : D rougit avec les séries fausses, F1 rougit avec « admin pour tous ». Leçon #490.
+- **Kevin : « Coupe »** (le compteur Cloudflare) → `tools/cloudflare/analytics-couper.mjs` + robot `coffre-cloudflare-analytics-couper.yml`
+  (à la main, 5 min, jeton du coffre) : voie A compte (`auto_install:false` sur chaque site Web Analytics de kd-mc.com), sinon voie B
+  règle de zone `disable_rum`, puis preuve sur la vraie page (balise absente). Garde `test:cloudflare-analytics-couper` (15/0). Leçon #491.
+  **Résultat du robot : voir plus bas (ajouté après le lancement).**
 
 ## 2026-10-10 (midi) — #4460 fusionnée et déployée ; 3 robots publics rouges réparés
 

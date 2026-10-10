@@ -24,6 +24,7 @@
     "auto-backup.yml",
     "cmc-runtime-audit.yml",
     "coffre-chaine-privee.yml",
+    "coffre-cloudflare-analytics-couper.yml",
     "coffre-ecritures-cmc.yml",
     "coffre-fiches-privees.yml",
     "coffre-secrets-cmc.yml",

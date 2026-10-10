@@ -20,14 +20,21 @@ import { setTimeout as dormir } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 export const HOTE = 'kd-mc.com';
+/* L'origine Pages que le routeur sert derrière le domaine (UPSTREAM_BASE du routeur) : le compteur d'un projet Pages est un
+   « site » Web Analytics à CET hôte-là, et sa balise suit la page jusque sur kd-mc.com. Mesuré le 10.10 (run 38075122744) :
+   kd-mc.com seul → « 1 site, 0 à couper » alors que la light la servait encore. */
+export const ORIGINE_PAGES = new URL(process.env.UPSTREAM_BASE ?? 'https://kdmc-site-bj5.pages.dev').hostname;
+export const HOTES = [HOTE, ORIGINE_PAGES];
+/* Les pages mesurées avant/après : le portail, la light, CMCteams (derrière le domaine) et l'origine Pages en direct. */
+export const PAGES = [`https://${HOTE}/`, `https://cmcteams-light.${HOTE}/`, `https://cmcteams.${HOTE}/`, `https://${ORIGINE_PAGES}/CMCteams/tools/departs/`];
 export const BALISE = /static\.cloudflareinsights\.com\/beacon\.min\.js/;
 export const DESCRIPTION = 'KDMC — compteur Web Analytics coupé (Kevin 10.10.2026)';
 
 /* La page servie porte-t-elle la balise posée par Cloudflare ? */
 export const beaconPresent = (html) => BALISE.test(String(html ?? ''));
 /* Les « sites » Web Analytics de l'hôte (et de ses sous-domaines) encore en injection automatique. */
-export const sitesACouper = (sites, hote = HOTE) => (sites ?? []).filter((s) => s?.auto_install === true
-  && (s.host === hote || String(s.host ?? '').endsWith('.' + hote)));
+export const sitesACouper = (sites, hotes = HOTES) => (sites ?? []).filter((s) => s?.auto_install === true
+  && hotes.some((h) => s.host === h || String(s.host ?? '').endsWith('.' + h)));
 /* Une règle de configuration qui coupe déjà le RUM est-elle posée (et active) ? */
 export const regleDejaPosee = (regles) => (regles ?? []).some((r) => r?.enabled !== false && r?.action === 'set_config'
   && r?.action_parameters?.disable_rum === true);
@@ -56,11 +63,17 @@ async function cf(methode, chemin, corps) {
   const j = await r.json().catch(() => ({}));
   return { status: r.status, ok: r.ok && j.success !== false, result: j.result, erreurs: propre((j.errors ?? []).map((e) => `${e.code} ${e.message}`).join(' ; ')) };
 }
-/* La vraie page, depuis le vrai domaine (sonde déclarée au routeur, jamais mise en cache). */
-export async function pageServie() {
-  const r = await fetch(`https://${HOTE}/`, { headers: { 'x-kdmc-sonde': 'cloudflare-analytics-couper', 'cache-control': 'no-cache' } });
-  return { status: r.status, beacon: beaconPresent(await r.text()) };
+/* Les vraies pages, depuis le vrai domaine (sonde déclarée au routeur, jamais mises en cache). */
+export async function pagesServies() {
+  return Promise.all(PAGES.map(async (url) => {
+    try {
+      const r = await fetch(url, { headers: { 'x-kdmc-sonde': 'cloudflare-analytics-couper', 'cache-control': 'no-cache' } });
+      return { url, status: r.status, beacon: beaconPresent(await r.text()) };
+    } catch (e) { return { url, status: 0, beacon: false, erreur: e?.message ?? String(e) }; }
+  }));
 }
+const resume = (etats) => etats.map((e) => `${e.url.replace(/^https:\/\//, '')} → HTTP ${e.status}${e.erreur ? ' (' + e.erreur + ')' : ''}, balise ${e.beacon ? 'PRÉSENTE' : 'absente'}`).join(' · ');
+const encoreUne = (etats) => etats.some((e) => e.beacon);
 /* Le compte, tel que l'API le connaît (l'identifiant de l'environnement ne sert qu'à choisir parmi ceux du jeton). */
 async function compte() {
   const l = await cf('GET', '/accounts?per_page=50');
@@ -75,7 +88,11 @@ async function voieCompte(idCompte) {
   const l = await cf('GET', `/accounts/${idCompte}/rum/site_info/list?per_page=100`);
   if (!l.ok) return { fait: false, erreur: `liste des sites Web Analytics refusée : HTTP ${l.status} ${l.erreurs}` };
   const sites = sitesACouper(l.result);
-  dire(`   compte : ${(l.result ?? []).length} site(s) Web Analytics, ${sites.length} en injection automatique sur ${HOTE}`);
+  const tous = l.result ?? [];
+  const etatSite = (s) => (s?.auto_install ? 'OUI' : 'non');
+  const liste = tous.map((s) => s?.host + ' (injection auto : ' + etatSite(s) + ')').join(', ');
+  dire(`   compte : ${tous.length} site(s) Web Analytics — ${liste || 'aucun'}`);
+  dire(`   à couper (hôtes ${HOTES.join(', ')} et sous-domaines) : ${sites.length}`);
   if (!sites.length) return { fait: false, rien: true };
   const reponses = await Promise.all(sites.map((s) => cf('PUT', `/accounts/${idCompte}/rum/site_info/${identifiant(s.site_tag)}`,
     { host: s.host, zone_tag: s.zone_tag, auto_install: false })));
@@ -105,17 +122,21 @@ async function voieZone() {
 }
 /* Jusqu'à une minute pour que la balise disparaisse de la vraie page. */
 async function attendreDisparition(essais = 6) {
-  const etat = await pageServie();
-  if (!etat.beacon || essais <= 0) return etat;
+  const etats = await pagesServies();
+  if (!encoreUne(etats) || essais <= 0) return etats;
   await dormir(10000);
   return attendreDisparition(essais - 1);
 }
-const nomVoie = (a, b) => { if (a.fait) return 'voie A : compte'; if (b.fait) return 'voie B : règle de zone'; return 'déjà coupé'; };
+function nomVoie(a, b) {
+  if (a.fait) return 'voie A : compte';
+  if (b.fait) return 'voie B : règle de zone';
+  return 'déjà coupé';
+}
 
 async function principal() {
   if (!JETON) { dire('❌ CLOUDFLARE_API_TOKEN absent — rien tenté.'); process.exit(1); }
-  const avant = await pageServie();
-  dire(`Avant : https://${HOTE}/ → HTTP ${avant.status}, balise Cloudflare ${avant.beacon ? 'PRÉSENTE' : 'absente'}`);
+  const avant = await pagesServies();
+  dire(`Avant : ${resume(avant)}`);
   const c = await compte();
   let a = { fait: false, erreur: c.erreur };
   if (!c.erreur) a = await voieCompte(c.id);
@@ -126,13 +147,13 @@ async function principal() {
     if (b.erreur) dire(`   voie B (zone) : ${b.erreur}`);
   }
   const apres = await attendreDisparition();
-  dire(`Après : https://${HOTE}/ → HTTP ${apres.status}, balise Cloudflare ${apres.beacon ? 'TOUJOURS PRÉSENTE' : 'absente'}`);
-  if (!apres.beacon) {
+  dire(`Après : ${resume(apres)}`);
+  if (!encoreUne(apres)) {
     dire(`✅ Compteur Cloudflare coupé sur ${HOTE} (${nomVoie(a, b)}).`);
     return;
   }
   dire('❌ La balise est toujours servie. Ce que le jeton n\'a pas pu faire est écrit ci-dessus, mot pour mot.');
-  dire('   Un seul interrupteur chez Cloudflare : Web Analytics → kd-mc.com → Manage site → désactiver « Automatic setup ».');
+  dire('   Un seul interrupteur chez Cloudflare : Web Analytics → le site concerné → Manage site → désactiver « Automatic setup » (pour un projet Pages : Workers & Pages → le projet → Metrics → Web Analytics → Disable).');
   process.exit(1);
 }
 

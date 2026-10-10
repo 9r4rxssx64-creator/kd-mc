@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy kdmc-vente Worker — 10/10/2026 11:12 UTC
+
+- **Branche** : `main` · **Commit** : `508bd830` · **Run** : `38047553053`
+- **Ce qui a lâché** : deploy › Preuve live — santé + catalogue + refus d'un webhook non signé
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38047553053
+- **Ce que la machine a dit** :
+
+```
+^[[36;1mgrep -q '"error":"email"' /tmp/c2.json || { echo "DANGER : on peut commander sans e-mail"; exit 1; }^[[0m
+^[[36;1mecho "— la caisse refuse un produit inventé —"^[[0m
+^[[36;1mgrep -q '"error":"produit_inconnu"' /tmp/c3.json || { echo "DANGER : un produit hors catalogue est accepté"; exit 1; }^[[0m
+^[[36;1mgrep -q '"error":"commande_inconnue"' /tmp/c4.json || { echo "DANGER : une référence inventée passe la caisse"; exit 1; }^[[0m
+^[[36;1m      console.log("ÉCHEC : la caisse ne rend pas de lien de paiement PayPal :", JSON.stringify(j).slice(0,200)); process.exit(1);^[[0m
+^[[36;1m  grep -q '"error":"caisse_absente"' <(curl -sS -X POST "$URL/caisse/commande" -H 'content-type: application/json' -d '{"produit":"kit-ia","email":"p@example.com","consentement":true}') \^[[0m
+^[[36;1m    || { echo "ÉCHEC : sans clés PayPal, la caisse doit le DIRE (caisse_absente) pour que la page retombe sur paypal.me"; exit 1; }^[[0m
+^[[36;1mecho "— le panier refuse un e-mail absent, un produit inventé, un consentement manquant —"^[[0m
+^[[36;1mgrep -q '"error":"email"' /tmp/i1.json || { echo "DANGER : un panier sans e-mail ne serait livrable par personne"; exit 1; }^[[0m
+^[[36;1mgrep -q '"error":"produit_inconnu"' /tmp/i2.json || { echo "DANGER : un produit hors catalogue ouvre un panier"; exit 1; }^[[0m
+^[[36;1mgrep -q '"error":"consentement"' /tmp/i3.json || { echo "DANGER : panier ouvert sans consentement horodaté"; exit 1; }^[[0m
+^[[36;1m  if (!j.ok || !/^K[A-Z0-9]{8}$/.test(j.ref || "")) { console.log("ÉCHEC : pas de référence de panier"); process.exit(1); }^[[0m
+^[[36;1m  if (j.lien !== "https://paypal.me/kdmc/17EUR") { console.log("ÉCHEC : lien PayPal inattendu :", j.lien); process.exit(1); }^[[0m
+^[[36;1m  if (j.montant !== 17) { console.log("ÉCHEC : montant hors catalogue :", j.montant); process.exit(1); }^[[0m
+^[[36;1mecho "— « j'ai payé » sur une référence inventée est refusé —"^[[0m
+^[[36;1mgrep -q '"en_attente":true' /tmp/i6.json || { echo "ÉCHEC : l'acheteur qui dit avoir payé n'arrive pas chez Kevin"; exit 1; }^[[0m
+^[[36;1m  if (!j.ok || j.lien !== "https://revolut.me/kdmc/17eur") { console.log("ECHEC : lien Revolut inattendu :", j.lien || JSON.stringify(j).slice(0,160)); process.exit(1); }^[[0m
+^[[36;1m  if (j.moyen !== "revolut" || j.libelle !== j.ref) { console.log("ECHEC : le libelle doit etre la reference"); process.exit(1); }^[[0m
+^[[36;1mecho "— un moyen invente est refuse —"^[[0m
+^[[36;1mgrep -q '"error":"moyen_inconnu"' /tmp/r2.json || { echo "DANGER : un moyen de paiement invente est accepte"; exit 1; }^[[0m
+^[[36;1m  grep -q '"error":"moyen_indisponible"' /tmp/r3.json || { echo "DANGER : un virement est propose SANS IBAN — l acheteur paierait dans le vide"; exit 1; }^[[0m
+— la caisse refuse une commande sans consentement —
+{"ok":false,"error":"consentement","detail":"consentement à la livraison immédiate requis","step":"cmd_consentement"}
+— la caisse refuse une commande sans e-mail (accès non livrable) —
+{"ok":false,"error":"email","detail":"e-mail requis pour recevoir l'accès","step":"cmd_email"}
+— la caisse refuse un produit inventé —
+{"ok":false,"error":"produit_inconnu","detail":"gratuit-ia","step":"cmd_produit"}
+{"ok":false,"error":"commande_inconnue","detail":"référence KZZZZZZZZ","step":"cap_ref"}
+ÉCHEC : sans clés PayPal, la caisse doit le DIRE (caisse_absente) pour que la page retombe sur paypal.me
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

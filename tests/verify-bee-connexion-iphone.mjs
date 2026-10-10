@@ -174,8 +174,13 @@ try {
     ok(!!fort && fort !== faible, 'Kevin a bien un laissez-passer Face ID rangé (étape 3)');
     await page.goto('about:blank');
     await page.goto('https://javis.kd-mc.com/#kdmc_sso=' + encodeURIComponent(faible));
-    await page.waitForSelector('#javis-launcher, #bee-connexion, #bee-faceid', { timeout: 8000 }).catch(() => {});
-    const r4a = await page.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher'), jeton: localStorage.getItem('kdmc_sso_token') || '', url: location.href }));
+    /* 10.10 : on attend l'état FINAL (Bee ouverte, ou un écran de verrou AVEC son titre), plus le premier élément venu —
+       sur la machine GitHub ce test était rouge alors qu'il passe ici à l'identique (même commit, Node, Chromium). */
+    await page.waitForFunction(() => !!document.querySelector('#javis-launcher')
+      || (document.querySelector('[role=alert]') && /\S/.test((document.querySelector('[role=alert] b') || {}).textContent || '')), null, { timeout: 15000 }).catch(() => {});
+    const r4a = await page.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher'), jeton: localStorage.getItem('kdmc_sso_token') || '', url: location.href,
+      ecran: ((document.querySelector('[role=alert]') || {}).innerText || '').slice(0, 160) }));
+    if (!r4a.bee) console.log('    ↳ écran affiché à la place de Bee : ' + JSON.stringify(r4a.ecran) + ' · adresse : ' + r4a.url.replace(/kdmc_sso=[^&]+/, 'kdmc_sso=…'));
     ok(r4a.bee, 'un lien portant une AUTRE session n\'enferme plus Kevin : Bee reste ouverte');
     ok(r4a.jeton === fort, 'et le laissez-passer Face ID de Kevin est TOUJOURS celui rangé (pas écrasé)');
     ok(!/kdmc_sso=/.test(r4a.url), 'le laissez-passer du lien est quand même retiré de l\'adresse');
@@ -187,9 +192,10 @@ try {
        d'avant. On quitte donc la page d'abord : c'est un vrai nouveau chargement. */
     await page.goto('about:blank');
     await page.goto('https://javis.kd-mc.com/#kdmc_sso=' + encodeURIComponent(faible));
-    await page.waitForSelector('#bee-connexion', { timeout: 8000 }).catch(() => {});
+    await page.waitForFunction(() => /Il manque Face ID|ne te reconnaît pas|personnelle à Kevin|ne répond pas|a un souci/.test(document.body.innerText) || !!document.querySelector('#javis-launcher'), null, { timeout: 15000 }).catch(() => {});
     const r4 = await page.evaluate(() => ({ bee: !!document.querySelector('#javis-launcher'), texte: document.body.innerText,
       bouton: (document.getElementById('bee-connexion') || {}).textContent || '' }));
+    if (!/Il manque Face ID/.test(r4.texte)) console.log('    ↳ écran affiché : ' + JSON.stringify(r4.texte.slice(0, 200)));
     ok(!r4.bee, 'sans Face ID, Bee reste FERMÉE même au nom de Kevin');
     ok(/Il manque Face ID/.test(r4.texte) && /Face ID/.test(r4.texte), 'et l\'écran dit exactement ce qui manque (« Il manque Face ID »)  [bouton : ' + r4.bouton + ']');
   }

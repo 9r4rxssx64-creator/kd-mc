@@ -8,6 +8,10 @@
 - Rouges du public, causes rejouées en vrai : `deploy-kdmc-vente` (commandes du robot sans la fiche obligatoire depuis le 27.09),
   `lingua-truth` (badge privé absent de la copie publique, servi 200 par le domaine), `bee-gardes` (arbre privé → 1 page porteuse au
   public). Corrigés + gardes `preuve-caisse-fiche`, `assets-prive` ; seuil adapté dans `javis-bee` (strict au coffre). Leçon #489.
+- Après #4462 : caisse ✅ (robot vert), Bee statique ✅. Reste `bee-iphone` étape 4 rouge sur GitHub (3 contrôles, 2 passages), vert
+  ici à l'identique (même commit 73f310f, Node 22, Chromium 141 ; suite complète du robot rejouée ; charge ×4 ; appels externes ralentis :
+  aucun). Test rendu robuste (attend l'état FINAL) + diagnostic : il écrit l'écran exact de Bee en cas d'échec. `deploy-kdmc-crea-ai`
+  public : 0 tâche lancée depuis le 9.10 (avant ce lot), à examiner à part.
 
 ## 2026-10-10 (nuit) — Les 4 rouges de la chaîne complète : causes trouvées
 

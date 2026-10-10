@@ -27,7 +27,10 @@
   hôte = zone) : **balise PRÉSENTE** sur kd-mc.com, light, CMCteams ; absente sur l'origine Pages ; 1 site = zone kd-mc.com, injection
   auto ON ; **écriture refusée : HTTP 403** (`rum/site_info` PUT et règles de configuration de zone) — le jeton du coffre lit mais n'écrit
   pas ces réglages. **Sans clic** : la FAQ Cloudflare dit qu'une page servie avec `Cache-Control … no-transform` n'est pas modifiée →
-  le routeur l'ajoute sur chaque page HTML (`durcirReponse`, `test:routeur-durci` 9-11). À mesurer après déploiement (robot relancé).
+  le routeur l'ajoute sur chaque page HTML (`durcirReponse`, `test:routeur-durci` 9-11, PR #4469). **MESURÉ après déploiement
+  (run 38077032430, 18h45 UTC, même sonde navigateur qu'à 18h33) : balise ABSENTE sur kd-mc.com, la light, CMCteams et l'origine
+  Pages — avant : PRÉSENTE sur les trois premières.** Le réglage Cloudflare reste ON (le jeton ne peut pas l'écrire) mais il n'a plus
+  d'effet ; Cloudflare ne minifie plus les pages HTML et ne brouille plus les adresses mail (m212 envoyé).
 
 ## 2026-10-10 (midi) — #4460 fusionnée et déployée ; 3 robots publics rouges réparés
 

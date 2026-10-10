@@ -66,6 +66,7 @@
   "tests/arbre-admin-reconnu.test.mjs",
   "tests/arbre-audit-liens.test.mjs",
   "tests/arbre-cadrage.test.mjs",
+  "tests/arbre-connectes.test.mjs",
   "tests/arbre-corrections.test.mjs",
   "tests/arbre-dates-visuel.test.mjs",
   "tests/arbre-familles-noms.test.mjs",

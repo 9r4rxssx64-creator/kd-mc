@@ -5139,26 +5139,36 @@ async function handleMail(request, url, env) {
   const path = url.pathname;
   if (path === '/__mail/scan' && request.method === 'GET') {
     const CAP = 120;   // vide plus vite (gros arriéré) ; l'app boucle en plus jusqu'à file vide
-    const items = []; let cursor;
+    /* 11.10.2026 — Kevin : « Récupérer mes factures » → HTTP 503. Une pièce pèse jusqu'à 15 Mo (≈ 20 Mo encodée) et le scan en renvoyait
+       jusqu'à 120 D'UN COUP : très au-delà des 128 Mo d'un Worker (« Worker exceeded resource limits » = 503). Et rien n'étant jamais acquitté
+       quand le scan échoue, l'arriéré ne pouvait que GROSSIR. Un lot est donc plafonné en POIDS : le reste attend le lot suivant (l'app boucle
+       déjà, et acquitte chaque lot). Une pièce seule, même énorme, part toujours (sinon elle bloquerait la file). Garde : mail-arriere.test.mjs. */
+    const BUDGET = 8 * 1024 * 1024;
+    const parts = []; let octets = 0, restant = false, cursor;
     // Le plan KV gratuit plafonne list() à ~1000/jour (namespace PARTAGÉ). Si le budget est
     // épuisé, list() lève → on renvoie la CAUSE EXACTE (leçon #97) au lieu d'un http_500 opaque,
     // pour que l'app affiche « budget du jour atteint, ça reprend demain » au lieu d'une erreur.
     try {
-      do {
+      boucle: do {
         const l = await env.ACCOUNTS.list({ prefix: 'mail:p:', cursor });
         for (const k of l.keys) {
-          if (items.length >= CAP) break;
+          if (parts.length >= CAP) { restant = true; break boucle; }
           const raw = await env.ACCOUNTS.get(k.name); if (!raw) continue;
-          try { const it = JSON.parse(raw); it.id = k.name.slice('mail:p:'.length); items.push(it); } catch { /* */ }
+          if (parts.length && octets + raw.length > BUDGET) { restant = true; break boucle; }
+          const s = String(raw).trim();
+          if (s[0] !== '{' || s[s.length - 1] !== '}') continue;   // pièce illisible : on la laisse (l'ack n'y touche pas), jamais de plantage
+          /* pas de JSON.parse puis JSON.stringify (deux copies de 20 Mo) : on ajoute l'identifiant au texte déjà prêt */
+          parts.push(s.slice(0, -1) + ',"id":' + JSON.stringify(k.name.slice('mail:p:'.length)) + '}');
+          octets += s.length;
         }
         cursor = l.list_complete ? null : l.cursor;
-      } while (cursor && items.length < CAP);
+      } while (cursor);
     } catch (e) {
       const detail = String(e && e.message || e);
       const quota = /limit exceeded|rate limit|429|quota/i.test(detail);
       return J({ ok: false, reason: quota ? 'kv_quota_jour' : 'scan_error', detail }, null, 200);
     }
-    return J({ ok: true, items });
+    return new Response('{"ok":true,"restant":' + restant + ',"octets":' + octets + ',"items":[' + parts.join(',') + ']}', { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-sso': '1', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' } });
   }
   if (path === '/__mail/ack' && request.method === 'POST') {
     let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'bad_json' }); }

@@ -196,6 +196,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/reactivite-plus` | 10.10 | Branche de travail **contenue dans** `claude/reactivite-tout` — rien à fusionner séparément (suppression refusée par le dépôt le 10.10) | `reactivite-plus` |
 | `claude/finances-lien` | 11.10 | **Tuiles Finances et Messages employés** : dossiers ajoutés au paquet Pages + garde `liens-portail-paquet` | `finances-lien` |
 | `claude/finances-verif` | 11.10 | **Finances vérifiée de bout en bout** : garde `finances-parcours` (coffre, chiffrement, sauvegarde en ligne) | `finances-verif` |
+| `claude/finances-503` | 11.10 | **Finances « Récupérer mes factures » 503** : scan des mails par lots de 8 Mo + garde `mail-arriere` | `finances-503` |
 
 6 autres branches en avance sont fabriquées par des **workflows** (`printify-order-config-…`,
 `worker-config-…`, nom terminé par l'identifiant du run) : aucune session à inscrire.

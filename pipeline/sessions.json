@@ -1415,6 +1415,16 @@
       "maj": "2026-10-11",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "finances-503": {
+      "titre": "Finances : Récupérer mes factures renvoyait 503",
+      "branche": "claude/finances-503",
+      "sujet": "scan des mails par lots plafonnés en poids + garde mail-arriere",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-11",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

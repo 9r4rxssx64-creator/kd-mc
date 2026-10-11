@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-11 (nuit) — « Récupérer mes factures » → HTTP 503 (captures de Kevin, Finances v0.15.1)
+- Finances s'ouvre bien sur SA page (le correctif des tuiles marche). Le 503 vient de `/__mail/scan` : le code ne renvoie jamais 503 lui-même ; il chargeait jusqu'à 120 pièces (15 Mo chacune) d'un coup → au-delà de la mémoire d'un Worker (503 de la plateforme), et rien n'étant acquitté l'arriéré grossissait.
+- Corrigé : lots plafonnés à 8 Mo (`restant:true` si la file continue), identifiant ajouté sans re-parser. Garde `test:mail-arriere` (11 contrôles ; sabotage « tout d'un coup » → 40 Mo en une réponse, 3 rouges). `fin.test` 16 et `finances-parcours` 33 toujours verts. Leçon #498.
+- À vérifier chez Kevin après déploiement du routeur : « Récupérer mes factures maintenant » ne doit plus afficher 503. Cause établie par le code, pas par un journal.
+
 ## 2026-10-11 (nuit) — « Vérifie que finance fonctionne correctement »
 - Vrai Chromium 390 px sur le paquet publié, domaine simulé (jamais de vrai code) : création du coffre (code court / confirmation différente refusés), 14 onglets sans erreur JS, saisie manuelle, **rien de lisible au repos** (ni libellé ni code), sauvegarde en ligne **désactivée par défaut** puis activée avec un code JUGÉ PAR LE DOMAINE (mauvais code → « code incorrect », rien ne part), bloc envoyé **chiffré** (1 443 o, libellé absent), verrouillage, mauvais code refusé, bon code rouvre, rechargement : données retrouvées, 0 erreur JS, 0 appel extérieur. 33/33.
 - Serveur réel : `/__fin/vault` (GET/PUT) et `/__mail/scan` sans accès → 403 `need_admin_code` (faux grant aussi) ; la porte garde `data-return=/tools/finances/`.

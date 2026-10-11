@@ -12101,3 +12101,22 @@ Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas p
 ### 3. OBLIGATIONS
 - Gardes : **`test:departs-cycle`** (l'exemple de Kevin mot pour mot, vraie page), `test:departs-render` et `test:verif-live-robot` (oracle indépendant `tests/lib/series-departs.mjs`), `test:departs-compare` (app = light).
 - Avant de toucher à cette règle : reproduire la ligne réelle de Kevin en chiffres et la lui faire valider (LESSONS #441, #446).
+
+## 👶 RÈGLE MÉTIER ABSOLUE — PRT = CONGÉ PARENTAL, PAS « PRÊT » (Kevin 2026-10-11, ABSOLUE)
+
+**« PRT congé parental. Note le. Tout est écrit dans tes documents »** — Kevin 2026-10-11, après que j'eus écrit que PRT était « Prêt, la personne est prêtée à un autre service »
+
+### 1. La règle
+- **`PRT` = congé parental.** Ce n'est PAS « Prêt » (mis à disposition d'un autre service) : le mot « Prêt » était une lecture fausse, recopiée de document en document (NOTES_USER.md ×3, index.html, tools/departs/index.html, tests, leçon #140).
+- Conséquence métier : une personne en `PRT` n'est **pas au travail** ce jour-là. Elle relève des absences (comme CP, M, AF) : **aucun numéro de départ ce jour-là**, et la règle d'absence ordinaire s'applique (1 à 3 jours = numéro mort ; ≥ 4 jours = l'équipe se recompacte).
+- Dans l'analyse « départs équitables » (simulation, 11.10), PRT n'est donc **jamais un service** ni un jour de travail à équilibrer : c'est une absence.
+
+### 2. Ce qui est encore FAUX dans le code (constaté le 11.10, NON modifié : Kevin a dit « ne change rien tant que je n'ai pas dit go »)
+- `index.html` (`DEP_ABS`, ligne ~18311) et `tools/departs/index.html` (`DEP_ABS`, ~l.848) **ne contiennent pas PRT** : la personne en congé parental reçoit aujourd'hui un numéro de départ et prend la place d'un collègue.
+- Garde `tests/departs-abs-parity.test.mjs` (« PRT = TRAVAIL, GARDE son numéro — décision Kevin 2026-07-10 ») et `tests/verify-departs-integrity.mjs` : ils **enregistrent l'ancienne lecture** (la décision du 10.07 avait été prise sur la question « PRT = Prêt, il garde son numéro ? »). À retourner dans le même commit que le correctif, quand Kevin dit « go ».
+- Mesuré (plannings réels juillet → novembre 2026, 23 378 jours de travail) : si PRT devient une absence, **173 numéros changent** — 102 sont les jours PRT eux-mêmes (ils n'auront plus de numéro), **71 sont chez des collègues** (88 personnes, 52 tableaux) dont le numéro était décalé par la présence d'un PRT.
+
+### 3. OBLIGATIONS
+- Une légende de code du PDF se **demande à Kevin** (ou se lit dans le PDF) ; elle ne se devine pas à partir d'un nom de couleur ou d'un mot proche. Un code opaque reste « code opaque » tant qu'il n'est pas confirmé.
+- Quand une décision métier de Kevin repose sur le SENS d'un code, l'écrire avec ce sens (« PRT = congé parental ») et non avec le nom de la case.
+- Avant tout « go » sur les départs : retourner `DEP_ABS` dans les DEUX apps, les deux gardes ci-dessus, et refaire la mesure avant/après sur les vraies données.

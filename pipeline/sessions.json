@@ -1405,6 +1405,16 @@
       "maj": "2026-10-11",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "finances-verif": {
+      "titre": "Finances : parcours complet vérifié, garde permanente",
+      "branche": "claude/finances-verif",
+      "sujet": "garde test:finances-parcours (coffre de bout en bout, rien de lisible au repos, sauvegarde chiffrée)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-11",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

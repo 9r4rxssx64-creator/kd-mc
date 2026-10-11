@@ -195,6 +195,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/reactivite-tout` | 10.10 | **Réactivité de tout le domaine** (portail, admin, CMCteams, light, apps), boutons morts réparés, robots publics crea-ai et Bee | `reactivite-tout` |
 | `claude/reactivite-plus` | 10.10 | Branche de travail **contenue dans** `claude/reactivite-tout` — rien à fusionner séparément (suppression refusée par le dépôt le 10.10) | `reactivite-plus` |
 | `claude/finances-lien` | 11.10 | **Tuiles Finances et Messages employés** : dossiers ajoutés au paquet Pages + garde `liens-portail-paquet` | `finances-lien` |
+| `claude/finances-verif` | 11.10 | **Finances vérifiée de bout en bout** : garde `finances-parcours` (coffre, chiffrement, sauvegarde en ligne) | `finances-verif` |
 
 6 autres branches en avance sont fabriquées par des **workflows** (`printify-order-config-…`,
 `worker-config-…`, nom terminé par l'identifiant du run) : aucune session à inscrire.

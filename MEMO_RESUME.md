@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-11 (nuit) — « Vérifie que finance fonctionne correctement »
+- Vrai Chromium 390 px sur le paquet publié, domaine simulé (jamais de vrai code) : création du coffre (code court / confirmation différente refusés), 14 onglets sans erreur JS, saisie manuelle, **rien de lisible au repos** (ni libellé ni code), sauvegarde en ligne **désactivée par défaut** puis activée avec un code JUGÉ PAR LE DOMAINE (mauvais code → « code incorrect », rien ne part), bloc envoyé **chiffré** (1 443 o, libellé absent), verrouillage, mauvais code refusé, bon code rouvre, rechargement : données retrouvées, 0 erreur JS, 0 appel extérieur. 33/33.
+- Serveur réel : `/__fin/vault` (GET/PUT) et `/__mail/scan` sans accès → 403 `need_admin_code` (faux grant aussi) ; la porte garde `data-return=/tools/finances/`.
+- Les 5 gardes existantes de Finances (as-kevin, docfiche, statement, engins, fin.test routeur 16) rejouées : vertes. Nouvelle garde `test:finances-parcours` (sabotage « écriture en clair » → 32/33, rouge sur le point 7).
+- Pas testé : l'analyse IA des factures et le scan des mails (réseau externe réel), ni Face ID.
+
 ## 2026-10-11 — « Finances m'envoie sur CMCteams » (capture du portail v1.0.52)
 - Cause MESURÉE : `tools/finances` et `tools/messages` n'étaient pas dans le paquet Cloudflare (`prepare-secours.mjs`) ; l'hébergeur répondait la page d'accueil de CMCteams en 200 (`kdmc-site-bj5.pages.dev/tools/finances/` → titre « CMCteams — Planning… »). Même défaut sur la tuile « Messages employés ».
 - Corrigé : les deux dossiers ajoutés au paquet (ouverts dans un vrai Chromium depuis le paquet : « 💰 Finances — KDMC » et « 📨 Messages — Apex », 0 erreur JS). Garde `test:liens-portail-paquet` (7 contrôles, sabotage rouge, dans `test:ci`). Leçon #497.

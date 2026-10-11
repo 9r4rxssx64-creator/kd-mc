@@ -111,6 +111,12 @@ const PARTAGES = [
      où le dépôt passe en privé. On copie CE fichier, pas tout le dossier. */
   { chemin: 'tools', fichiers: ['codes-decoder.html'], quoi: 'décodeur de codes (lien Apex)' },
   { chemin: 'shops/_shared', quoi: 'briques communes des boutiques — 10 pages' },
+  /* 11.10.2026 — Kevin : « Finances m'envoie sur CMCteams ». MESURÉ : les tuiles « Finances » et « Messages employés » du portail
+     (cmcteams.kd-mc.com/tools/finances/ et /tools/messages/) pointaient vers deux dossiers ABSENTS du paquet. L'hébergeur, ne les trouvant
+     pas, répond par /index.html — CMCteams — avec un code 200 : aucune erreur nulle part, la tuile « marchait » et ouvrait la mauvaise app.
+     Ce sont des pages (le coffre finances chiffre tout dans le navigateur ; rien de lisible n'est publié). Garde : test:liens-portail-paquet. */
+  { chemin: 'tools/finances', quoi: 'coffre finances (tuile du portail)' },
+  { chemin: 'tools/messages', quoi: 'messages employés (tuile du portail)' },
 ];
 /* Lourds en photos : on peut les remettre dans un second temps. */
 const MEDIAS = [

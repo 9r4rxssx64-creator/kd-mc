@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-11 — « Finances m'envoie sur CMCteams » (capture du portail v1.0.52)
+- Cause MESURÉE : `tools/finances` et `tools/messages` n'étaient pas dans le paquet Cloudflare (`prepare-secours.mjs`) ; l'hébergeur répondait la page d'accueil de CMCteams en 200 (`kdmc-site-bj5.pages.dev/tools/finances/` → titre « CMCteams — Planning… »). Même défaut sur la tuile « Messages employés ».
+- Corrigé : les deux dossiers ajoutés au paquet (ouverts dans un vrai Chromium depuis le paquet : « 💰 Finances — KDMC » et « 📨 Messages — Apex », 0 erreur JS). Garde `test:liens-portail-paquet` (7 contrôles, sabotage rouge, dans `test:ci`). Leçon #497.
+- Pas encore en ligne avant fusion + publication du paquet (robot « Publie le site sur Cloudflare Pages »).
+- Même soir : `test:messages-suivis` rouge sur main (règle datée : 8 messages du 8.10 passés à 3 jours sans suivi, rouge d'horloge, pas de régression). Chacun relu et vérifié dans main avant d'écrire son suivi (`pipeline.mjs suivi`).
+
 ## 2026-10-10 (soir) — robots publics : crea-ai et Bee
 - `deploy-kdmc-crea-ai` (public, 0 tâche depuis le 9.10) : `secrets.` dans un `if:` → GitHub refusait le fichier. Corrigé (test du secret dans l'étape) + garde `test:workflows-if-secrets`.
 - Bee public après #4464 : le test iPhone passe (62/62) ; la dernière étape `sw-identite` rougissait (18 service workers au public < 20). Seuil = 20 moins les privés absents (14 au public). Leçon #495.

@@ -25,6 +25,7 @@
     "cmc-runtime-audit.yml",
     "coffre-chaine-privee.yml",
     "coffre-cloudflare-analytics-couper.yml",
+    "coffre-cadres-planning.yml",
     "coffre-ecritures-cmc.yml",
     "coffre-fiches-privees.yml",
     "coffre-secrets-cmc.yml",

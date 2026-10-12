@@ -23,6 +23,7 @@
   "cmc-runtime-audit.yml",
   "coffre-archiver-firebase.yml",
   "coffre-arme-sauvegarde.yml",
+  "coffre-cadres-planning.yml",
   "coffre-chaine-privee.yml",
   "coffre-cloudflare-analytics-couper.yml",
   "coffre-docs-migrer.yml",

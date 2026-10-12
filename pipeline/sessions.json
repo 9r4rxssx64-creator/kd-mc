@@ -1445,6 +1445,16 @@
       "maj": "2026-10-12",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "finances-garde": {
+      "titre": "Finances : la sauvegarde pleine ne peut plus être écrasée par une vide",
+      "branche": "claude/finances-garde",
+      "sujet": "garde serveur 409 plus_petit + page v0.15.2 + test fin-garde",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-12",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

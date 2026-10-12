@@ -148,7 +148,7 @@
 <div id="app"></div>
 <div id="toast"></div>
 
-<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.1" data-color="#e8b830" defer></script>
+<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.2" data-color="#e8b830" defer></script>
 <script>
 (function(){
   'use strict';
@@ -394,6 +394,8 @@
 
   async function persist(){
     if(!KEY||!VAULT)return;
+    /* 12.10 : on DEMANDE au navigateur de ne pas purger ce stockage en cas de manque de place (le coffre vit ici) */
+    try{ if(navigator.storage&&navigator.storage.persist&&!window.__persistAsked){ window.__persistAsked=1; navigator.storage.persist(); } }catch(e){}
     VAULT.savedAt=Date.now();
     var salt = VAULT._salt; /* garde le sel courant */
     var pack=await encWith(KEY,VAULT);
@@ -1258,8 +1260,9 @@
     try{ var pack=JSON.parse(raw);
       var r=await fetch('/__fin/vault',{ method:'PUT', credentials:'include',
         headers:{'content-type':'application/json','x-kdmc-admin':grant},
-        body:JSON.stringify({ blob:pack, savedAt:VAULT.savedAt||Date.now(), tx:(VAULT.tx||[]).length }) });
-      _backupState=r.ok?'ok':('http_'+r.status);
+        body:JSON.stringify({ blob:pack, savedAt:VAULT.savedAt||Date.now(), tx:(VAULT.tx||[]).length, docs:(VAULT.docs||[]).length }) });
+      /* 409 = le serveur garde une sauvegarde PLUS RICHE : il refuse de l'écraser (garde du 12.10) → on le dit, on n'insiste pas */
+      if(r.ok) _backupState='ok'; else if(r.status===409) _backupState='plus_riche'; else _backupState='http_'+r.status;
     }catch(e){ _backupState='neterr'; }
     updateBackupBadge();
   }
@@ -1291,7 +1294,11 @@
     localStorage.setItem(LS_VAULT, JSON.stringify({salt:pack.salt, iv:pack.iv, ct:pack.ct, ver:1}));
     audit('restore_cloud',''); await persist(); return data;
   }
-  function updateBackupBadge(){ var b=$('bk-state'); if(b)b.textContent=_backupState==='ok'?'🟢 synchronisé':(_backupState==='no_grant'?'🔒 code requis':(_backupState?('🟡 '+_backupState):'…')); }
+  function updateBackupBadge(){
+    var b=$('bk-state'); if(!b)return;
+    var TXT={ ok:'🟢 synchronisé', plus_riche:'🟠 sauvegarde en ligne plus riche — non écrasée', no_grant:'🔒 code requis' };
+    b.textContent=TXT[_backupState] || (_backupState?('🟡 '+_backupState):'…');
+  }
 
   /* ============================ Vérification par Claude (export redacté) ============================ */
   function buildReviewText(){

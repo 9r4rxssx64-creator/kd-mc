@@ -5117,8 +5117,18 @@ async function handleFin(request, url, env) {
     const s = JSON.stringify(b.blob);
     if (s.length > 20 * 1024 * 1024) return J({ ok: false, reason: 'trop_gros' });
     const savedAt = b.savedAt || Date.now();
+    /* 12.10.2026 — Kevin : « Plus d'historique. Plus rien nulle part ». Le serveur acceptait N'IMPORTE QUEL bloc, même un coffre vide, par-dessus une
+       sauvegarde pleine, sans garder de version précédente. Garde : un envoi qui contient MOINS de la moitié (opérations + documents) de ce que le
+       serveur garde est REFUSÉ (409, rien n'est écrit) — sauf `force:true`, jamais envoyé automatiquement. Garde : fin-garde-verif.mjs. */
+    let meta0 = null; try { meta0 = JSON.parse((await env.ACCOUNTS.get('fin:meta:main')) || 'null'); } catch { /* */ }
+    const avant = (Number(meta0?.tx) || 0) + (Number(meta0?.docs) || 0);
+    const apres = (Number(b.tx) || 0) + (Number(b.docs) || 0);
+    if (b.force !== true && avant >= 3 && apres * 2 < avant) {
+      await audLog(env, { ev: 'fin_backup_refuse', size: s.length, n: apres });
+      return J({ ok: false, reason: 'plus_petit', gardee: { tx: meta0?.tx || 0, docs: meta0?.docs || 0, savedAt: meta0?.savedAt || 0 } }, undefined, 409);
+    }
     await env.ACCOUNTS.put('fin:vault:main', s);
-    await env.ACCOUNTS.put('fin:meta:main', JSON.stringify({ savedAt, size: s.length, tx: b.tx || 0 }));
+    await env.ACCOUNTS.put('fin:meta:main', JSON.stringify({ savedAt, size: s.length, tx: b.tx || 0, docs: b.docs || 0 }));
     await audLog(env, { ev: 'fin_backup', size: s.length });
     return J({ ok: true, savedAt });
   }

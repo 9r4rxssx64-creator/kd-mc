@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ) — 12/10/2026 17:47 UTC
+
+- **Branche** : `main` · **Commit** : `e50f0306` · **Run** : `38286366815`
+- **Ce qui a lâché** : publier › Sonder les 26 adresses sur le site publié
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38286366815
+- **Ce que la machine a dit** :
+
+```
+##[error]✅ dashboard.kd-mc.com          200    35472 car.
+##[error]…
+##[error]✅ departs.kd-mc.com            200   294427 car.
+##[error]✅ cmcteams-light.kd-mc.com     200   294427 car.
+##[error]✅ bot.kd-mc.com                200    54663 car.
+##[error]✅ beatbot.kd-mc.com            200   156883 car.
+##[error]✅ autorisations.kd-mc.com      200    40481 car.
+##[error]✅ arbre.kd-mc.com              200   469649 car.
+##[error]✅ lingua.kd-mc.com             200    87452 car.
+##[error]✅ studio.kd-mc.com             200   424366 car.
+##[error]✅ cuisine.kd-mc.com            200   318336 car.
+##[error]✅ cocina.kd-mc.com             200   318336 car.
+##[error]✅ cujina.kd-mc.com             200   318336 car.
+##[error]✅ worldmonitor.kd-mc.com       200   187779 car.
+##[error]✅ osint.kd-mc.com              200    27718 car.
+##[error]✅ ia.kd-mc.com                 200    15577 car.
+##[error]✅ outils.kd-mc.com             200     6704 car.
+##[error]✅ javis.kd-mc.com              200     4399 car.
+##[error]✅ tor.kd-mc.com                200    58794 car.
+##[error]✅ rotaplan.kd-mc.com           200    34073 car.
+##[error]✅ kit.kd-mc.com                200    14842 car.
+##[error]✅ dossiers.kd-mc.com           200     8221 car.
+##[error]✅ croupier.kd-mc.com           200    22681 car.
+##[error]✅ shops.kd-mc.com              200    18032 car.
+##[error]=== 31 servies / 1 en échec ===
+##[error]ℹ️  1 page(s) sans <!doctype html> — elles s'affichent, mais en « mode bizarre » :
+##[error]   tools/cuisine  (à corriger quand l'occasion se présente, ce n'est pas bloquant)
+##[error]Ce qui ne répond pas — à régler AVANT de couper l'ancien hébergeur :
+##[error]  · cmcteams.kd-mc.com → https://f0966b7a.kdmc-site-bj5.pages.dev/  (HTTP 0, The operation was aborted due to timeout)
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

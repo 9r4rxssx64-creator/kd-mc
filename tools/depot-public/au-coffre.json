@@ -249,6 +249,7 @@
   "tests/verify-maj-partout.mjs",
   "tests/verify-marionnette.mjs",
   "tests/verify-matricule-fiche.mjs",
+  "tests/verify-membres-ajoutes.mjs",
   "tests/verify-menage-branches.mjs",
   "tests/verify-messages-kevin.mjs",
   "tests/verify-mois-ouverture.mjs",

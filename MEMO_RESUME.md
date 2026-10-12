@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-12 (après-midi) — « Ajoute Landau Jonathan U09733 pit boss pour qu'il se connecte »
+- **Cause (lue dans le code, vérifiée sur le vrai planning)** : le domaine (`/__dep/membre`) ne laisse s'inscrire que les noms du planning importé (`boards-gen.js`, 36 équipes BJ / Roulettes / CMC). Les Pit Boss ne sont dans AUCUN planning d'équipe → « hors_planning », refus. Jonathan (`‹employé›`, fiche `P00003` côté app) était donc bloqué ; son frère Ben (`‹employé›`, chef BJ, `U00062`) passait, lui.
+- **Fait (code + tests, PAS encore en ligne)** : `tools/departs/membres-ajoutes.json` (privé) = la liste des personnes ajoutées par Kevin ; `_gen-boards.mjs` la range dans `boards-gen.js` (clé `ajoutes`, seulement id + nom, aucune case de planning) ; le domaine la lit sans changement de code. Garde `test:membres-ajoutes` (12 contrôles, vrai planning + vrai code du domaine, sabotage → 4 rouges ; Ben ≠ Jonathan ; un autre prénom Landau reste refusé).
+- **Mis en ligne** : à la fusion sur `main`, la publication redépose `boards-gen.js` dans le KV du domaine (1 écriture).
+- **Constaté, NON corrigé (hors demande)** : régénérer `boards-gen.js` depuis les PDF donne 11 tableaux « absences » (maladie / congés / formation) différents de ceux livrés — déterministe (2 générations identiques) ; la garde `test:donnees-a-jour` ne le voit pas (elle compare des empreintes). J'ai donc ajouté `ajoutes` au fichier livré SANS le régénérer, pour ne pas changer les données des autres.
+
 ## 2026-10-12 (matin) — « Plus d'historique. Plus rien nulle part » (Finances : 0 opération, 1 document, « Restauré (0 op.) »)
 - Constat dans le code : la page refuse de restaurer une sauvegarde plus pauvre que l'appareil, MAIS le serveur (`PUT /__fin/vault`) accepte n'importe quel bloc, même vide, par-dessus une sauvegarde pleine, et ne garde AUCUNE version précédente.
 - Robot LECTURE SEULE `diag-finances.yml` (métadonnées : date, taille, nombre d'opérations, événements `fin_backup` ; jamais le contenu chiffré) pour savoir quand et comment la sauvegarde a été écrasée.

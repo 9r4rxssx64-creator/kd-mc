@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-11",
+  "maj": "2026-10-12",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -1423,6 +1423,16 @@
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-11",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "finances-0recup": {
+      "titre": "Finances : 0 facture récupérée — diagnostic de la réception",
+      "branche": "claude/finances-0recup",
+      "sujet": "robot diag-mail lecture seule (Email Routing, règle factures@, appels du worker)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-12",
       "attend_kevin": null,
       "attend_session": null
     }

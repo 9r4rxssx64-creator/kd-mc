@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-12 — « Tjs 0 récup » (Finances → Récupérer mes factures) : on MESURE avant de corriger
+- Le 503 a disparu (le scan répond), mais il ne trouve rien en attente. Mesuré (robot `mesure-kv.yml`, 3 jours) : **le plafond KV n'est PAS en cause** (80 / 107 / 16 écritures par jour pour 1 000 permises). Le worker de réception `kdmc-mail` a reçu **10 puis 8 appels par jour** ; `kdmc-uptime` en envoie 12 par jour à chaque worker voisin (`kdmc-outlook` : 12) → ce sont très probablement ses pings de santé, pas des mails.
+- Hypothèse à confirmer : aucun mail n'arrive jusqu'au worker (règle Email Routing `factures@` absente / désactivée, ou le transfert depuis la boîte Monaco a cessé). Nouveau robot LECTURE SEULE `diag-mail.yml` (`tools/audit/diag-mail.mjs`) : état d'Email Routing, règles `factures@`, appels du worker par jour et par issue, `/health`. Aucun contenu de mail lu, aucune écriture.
+
 ## 2026-10-11 (nuit) — « Récupérer mes factures » → HTTP 503 (captures de Kevin, Finances v0.15.1)
 - Finances s'ouvre bien sur SA page (le correctif des tuiles marche). Le 503 vient de `/__mail/scan` : le code ne renvoie jamais 503 lui-même ; il chargeait jusqu'à 120 pièces (15 Mo chacune) d'un coup → au-delà de la mémoire d'un Worker (503 de la plateforme), et rien n'étant acquitté l'arriéré grossissait.
 - Corrigé : lots plafonnés à 8 Mo (`restant:true` si la file continue), identifiant ajouté sans re-parser. Garde `test:mail-arriere` (11 contrôles ; sabotage « tout d'un coup » → 40 Mo en une réponse, 3 rouges). `fin.test` 16 et `finances-parcours` 33 toujours verts. Leçon #498.

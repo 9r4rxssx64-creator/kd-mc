@@ -3530,6 +3530,8 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-09 | `messaging-app/tests/unit/_support/groupe-e2e-harness.js` | Apex Chat : banc de test « groupe à plusieurs téléphones + serveur tricheur » |
 | 2026-10-09 | `messaging-app/d1-migrations/0013_users_signing_key.sql` | Apex Chat : colonne dédiée pour la clé de signature des groupes |
 | 2026-10-09 | `messaging-app/d1-migrations/0014_prekey_signed_libere.sql` | Apex Chat : l'ancien emplacement de la clé de signature est libéré (clés éventuelles déplacées) |
+| 2026-10-12 | [`.github/workflows/diag-mail.yml`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/.github/workflows/diag-mail.yml) | Robot MANUEL en lecture seule : « Tjs 0 récup » — Email Routing actif ? règle `factures@` ? appels du worker par jour et par issue ? |
+| 2026-10-12 | [`tools/audit/diag-mail.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/audit/diag-mail.mjs) | Le script du robot ci-dessus (API Cloudflare : configuration + compteurs, aucun contenu de mail) |
 | 2026-10-11 | [`services/kdmc-router/mail-arriere.test.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/mail-arriere.test.mjs) | Garde : « Récupérer mes factures » ne renvoie plus tout l'arriéré d'un coup (lots de 8 Mo, 40 pièces de 1 Mo, pièce énorme seule, entrée illisible) |
 | 2026-10-09 | `messaging-app/tests/unit/api-cle-signature-colonne.test.js` | Apex Chat : le serveur range et renvoie la clé de signature dans sa colonne |
 | 2026-10-09 | `messaging-app/tests/unit/client-groupe-cle-signature-colonne.test.js` | Apex Chat : le téléphone publie et lit la clé de signature dans sa colonne |

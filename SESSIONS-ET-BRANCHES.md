@@ -197,6 +197,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/finances-lien` | 11.10 | **Tuiles Finances et Messages employés** : dossiers ajoutés au paquet Pages + garde `liens-portail-paquet` | `finances-lien` |
 | `claude/finances-verif` | 11.10 | **Finances vérifiée de bout en bout** : garde `finances-parcours` (coffre, chiffrement, sauvegarde en ligne) | `finances-verif` |
 | `claude/finances-503` | 11.10 | **Finances « Récupérer mes factures » 503** : scan des mails par lots de 8 Mo + garde `mail-arriere` | `finances-503` |
+| `claude/finances-0recup` | 12.10 | **Finances « 0 récupérée »** : robot de diagnostic `diag-mail` (Email Routing, règle factures@, appels du worker) | `finances-0recup` |
 
 6 autres branches en avance sont fabriquées par des **workflows** (`printify-order-config-…`,
 `worker-config-…`, nom terminé par l'identifiant du run) : aucune session à inscrire.

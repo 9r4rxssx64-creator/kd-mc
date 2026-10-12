@@ -1455,6 +1455,36 @@
       "maj": "2026-10-12",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "finances-effacement": {
+      "titre": "Finances : tout effacer de CMCteams épargne le coffre",
+      "branche": "claude/finances-effacement",
+      "sujet": "cmcViderSaufFin() : les 3 localStorage.clear() de CMCteams gardent les clés fin_* ; garde test:reset-garde-finances",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-12",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "modeles-retires": {
+      "titre": "Relais Anthropic : modèles retirés remplacés",
+      "branche": "claude/modeles-retires",
+      "sujet": "modeleActuel() dans le relais, ia-route et chat-svc ; garde test:modeles-retires",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-12",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "finances-telechargements": {
+      "titre": "Finances : plus de re-téléchargement en boucle",
+      "branche": "claude/finances-telechargements",
+      "sujet": "pièce illisible écartée après 3 essais, arrêt si rien n'avance ; garde test:finances-telechargements",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-12",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -202,6 +202,7 @@
     ".github/workflows/coffre-sonde-voix.yml",
     ".github/workflows/coffre-cloudflare-analytics-couper.yml",
     ".github/workflows/coffre-cadres-planning.yml",
+    ".github/workflows/verif-live-cadres.yml",
     ".github/workflows/coffre-docs-migrer.yml",
     ".github/workflows/coffre-sonde-ia-gratuites.yml",
     ".github/workflows/coffre-kv-inventaire.yml"

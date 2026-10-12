@@ -412,8 +412,10 @@ async function callGemini(key, messages, o) {
   } finally { t.done(); }
 }
 
+function modeleActuel(m) { if (typeof m !== 'string') return m; var s = m.toLowerCase(); if (/^claude-(instant|2)/.test(s) || /^claude-3(-[57])?-haiku/.test(s)) return 'claude-haiku-4-5-20251001'; if (/^claude-3(-[57])?-sonnet/.test(s)) return 'claude-sonnet-4-6'; if (/^claude-3-opus/.test(s)) return 'claude-opus-4-7'; return m; }
+
 async function callAnthropic(key, messages, o) {
-  const model = o.model || DEFAULT_MODELS.anthropic;
+  const model = modeleActuel(o.model || DEFAULT_MODELS.anthropic);
   const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
   const msgs = messages.filter((m) => m.role !== 'system').map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') }));
   const body = { model, max_tokens: o.maxTokens, messages: msgs };

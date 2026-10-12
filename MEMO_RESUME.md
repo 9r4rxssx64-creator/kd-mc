@@ -1,5 +1,51 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-12 (nuit) — « Il re-télécharge tout » (Finances) : cause trouvée et corrigée (page v0.15.3)
+- Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
+- Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
+- Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-12 (nuit, suite) — inscription qui bloquait, redemandes, lien entre les deux apps (CMCteams v9.963 + light v1.88)
+- **Fait (code + tests, PAS encore en ligne)** : cause du blocage mesurée (ancienneté facultative ⇒ pas de validation auto ⇒ code e-mail jamais envoyé ⇒ « attente admin ») corrigée ; fiche et conditions cherchées au domaine avant de redemander (les deux apps) ; refus de position retenu ; lien « 🔗 » connecté dans les deux apps ; atterrissage sur SON équipe. `test:passerelle` 25/0, 20 gardes voisines vertes.
+- **Pas vérifié (honnête)** : le vrai domaine (kd-mc.com refuse toute lecture sans compte ; Actions fermées) — le test simule les réponses du domaine ; la porte `/__sso/entrer` est celle des tuiles du portail, déjà éprouvée. Les fenêtres natives de l'iPhone (géolocalisation, notifications) ne se contrôlent pas d'ici.
+
+## 2026-10-12 (nuit) — « Quand on cherche on doit atterrir directement sur la bonne équipe, au bon mois, au bon jour » (CMCteams v9.962 + light v1.87)
+- **Fait (code + tests, PAS encore en ligne)** : light = champ « équipe » supprimé, recherche de PERSONNE (choix sous le champ ou accès direct), arrivée sur son équipe / le mois en cours / aujourd'hui / sa ligne cerclée ; CMCteams = le clic sur un résultat fait la même chose. Captures réelles vues. `test:recherche-noms` 46/0.
+- **Rappel blocage** : la publication attend le dépôt public `kd-mc` (Actions fermées).
+
+## 2026-10-12 (soir, fin) — « Je cherche tanna kaoutar dans rechercher. J'ai pas son équipe. Va plus loin » (CMCteams v9.961 + light v1.86)
+- **Mesuré** : « tanna kaoutar » → RIEN (11 variantes testées : toutes vides sauf « tanna » / « tanna k »). **Corrigé** dans CMCteams ET la light par un module commun `recherche-noms.js` : ordre libre, initiale ou prénom complet, accents/tirets, faute d'une lettre, sans inventer (DUPONT J ≠ DUPONT JM). Résultat CMCteams : équipe du mois + des mois voisins. `test:recherche-noms` 33/0, sabotage rouge, `test:recherche-nom` vert. PAS encore en ligne (Actions bloquées).
+
+## 2026-10-12 (soir, suite) — 4 images de Monaco → fond de la connexion CMCteams (v9.960)
+- **Fait (code + tests, PAS encore en ligne)** : « Intègre dans CMCteams » : les 4 images sont le fond de l'écran de connexion (une par ouverture, légende, voile pour la lisibilité), fond admin prioritaire. `test:monaco-fonds` 15/0, sabotage rouge, captures réelles vues. Light non modifiée.
+- **Bloqué** : tout ce qui précède (v9.958 → v9.960) est fusionné/prêt mais PAS publié : le budget GitHub Actions est fermé ; chemin gratuit documenté = publier par le dépôt public `kd-mc` (ETAT-DU-MOMENT.md, « Publier sans robot du coffre »).
+
+## 2026-10-12 (soir) — « Contrôle » (inscription de Jonathan LANDAU U09733) — CMCteams v9.959 + light v1.85
+- **Mesuré** : inscrit avec U09733, il gardait sa fiche (Pit Boss, cadres) mais son planning restait sous P00003 (31 + 30 cases, 0 sous U09733) et il perdait son rôle. **Corrigé** par `_cmcCadreRenumerote` (inscription, synchro, seed) ; `test:cadre-matricule` 12/0, sabotage rouge. Light inchangée (elle lit par le nom).
+- **Reste** : la mise en ligne (budget Actions fermé), puis `verif-live-cadres`. PRT et départs : Kevin a dit « le reste attend ».
+
+## 2026-10-12 (soir) — E-mail Anthropic « Claude Haiku 3 failing » : le relais remplace les modèles retirés
+- Mesuré : `claude-3-haiku-20240307` n'est dans aucun fichier du dépôt ; le relais d'Apex transmettait le corps tel quel (1 appel raté le 10.10, client d'origine inconnu : app en cache ou réglage ancien).
+- `modeleActuel()` : relais en ligne (robot `sync-apex-secrets-to-cf-worker`), `ia-route.js`, `chat-svc`. Garde `test:modeles-retires` (17 ; `SABOTAGE=1` → rouge), dans `test:ci`. Leçon #501.
+- Le relais ne se met à jour en ligne qu'après fusion (le robot redéploie le worker).
+
+## 2026-10-12 (midi) — Finances : plus aucun « tout effacer » de CMCteams n'emporte le coffre
+- Kevin : il utilisait Finances « par le Domaine » → même origine que CMCteams (`cmcteams.kd-mc.com`), donc même stockage. Trois boutons de CMCteams (`hardReset`, « Reset total », écran d'erreur) faisaient `localStorage.clear()` : ils épargnent maintenant toutes les clés `fin_*`. La page light n'a aucun `clear()`.
+- Garde `test:reset-garde-finances` (8 ; exécute le bouton sur un faux stockage ; `SABOTAGE=1` → 3 rouges), câblée dans `test:ci`. Leçon #500.
+- Cause exacte de la perte de Kevin : toujours non établie (le serveur n'a jamais tenu l'historique). Ancien coffre non restaurable depuis le serveur.
+## 2026-10-12 (nuit, fin) — « Intègre dans light et CMCteams les plannings cadres vérifiés » (CMCteams v9.958 + light v1.84)
+- **Fait (code + tests, PAS encore en ligne)** : les plannings des cadres (Pit Boss 15 + Superviseurs, octobre + novembre 2026, lus par le vrai importeur dans les deux PDF, 0 écart) sont dans le seed de CMCteams (`ov`, `meta`, `team`) et dans un tableau « 👔 Pit Boss / Superviseurs » par mois de la light (`2026-10-cadres`, `2026-11-cadres`, kind `abs`, fam `cadres`, **sans numéro de départ**, ordre du PDF). Outil : `tools/shared/_cadres-fusion.mjs` (générateurs + `_ajouter-cadres.mjs` sur les fichiers livrés, sans régénérer). La règle du 9.07 « plus de cadre dans les plannings » est retournée et écrite (CLAUDE-HISTOIRE, règle 👔) ; `test:no-cadres` réécrite : cadres seulement dans leur planning vérifié.
+- **Défauts trouvés en vérifiant** : le démarrage supprimait les codes de cadres finissant par « : » (19/2:, 15/19: → 58 cases perdues en octobre, 30 en novembre sur un téléphone neuf) → corrigé dans `_cmcBootRegisterCode` ; `_cmcSeedPoseEquipes` excluait les cadres (garde « chaque personne a son équipe » rouge) → ils reçoivent leur groupe (pit15 / sup).
+- **Light v1.84** : groupe « 👔 Pit Boss / Superviseurs » dans le sélecteur, en-tête et note dédiés, aucun numéro de départ, cases sans grisé.
+- Mesuré en navigateur (`test:cadres-planning-livre`, 24 contrôles) : téléphone neuf CMCteams = 19 cadres × 2 mois identiques au fichier vérifié, gardés après redémarrage ; light = 19 personnes dans l'ordre du PDF, 0 numéro de départ, 0 erreur JS ; sabotage → rouge.
+- **À faire après la mise en ligne** : `coffre-cadres-planning` (écriture en base, optionnelle maintenant que le seed porte les cadres : à décider) puis `verif-live-cadres` (vrai domaine).
+
+## 2026-10-12 (nuit, suite) — « Vérifie tout réellement ensuite » (cadres)
+- **Lecture réelle de la base (robot, run 38286285209)** : `cmc_ecritures_actif = true` ; `cmc_e` : 320 personnes dont les 19 cadres attendus ; `cmc_ov` octobre (282 personnes) et novembre (293) : **0 cadre** ; `cmc_ov_meta` : pas de mois 9/10.
+- **Défaut trouvé en vérifiant (réel, navigateur)** : même une fois les cadres en base, un téléphone neuf d'employé les EFFAÇAIT (le seed remplace le mois et ne contient pas les cadres) : 19 → 0 pour les deux mois. Corrigé dans CMCteams v9.958 (cadres + couleurs gardés au remplacement), garde `test:cadres-seed`. Le robot d'écriture n'est donc lancé qu'APRÈS cette mise en ligne.
+- **Vérification réelle après mise en ligne** : robot `verif-live-cadres.yml` (navigateur neuf, admin, vrai domaine) — résultat dans la section suivante de ce mémo.
+- **Rectificatif sur #4486** : la v9.957 avait laissé `planning-seed.js` à `parser: v9.956` → `test:seed-remplace` rouge (« le seed porte la version de son parseur = celle de l'app »). Corrigé ici (champ `parser` = v9.958, empreintes recalculées ; données du seed inchangées).
+- **Constaté, NON corrigé** : à l'inscription, l'app remplace la fiche de la base (ex. `P00003`, ‹employé›) par une fiche au matricule tapé (`U09733`) sans déplacer le planning ni le rôle (mesuré en local : 0 case sous `U09733`, 31 sous `P00003`) ; même comportement pour un collègue d'équipe qui tape un matricule différent de son numéro interne (‹employé›, 31 cases gardées sous l'ancien numéro). Je n'ai pas pu reproduire la session complète (domaine) : à vérifier avec Jonathan lors de sa première connexion avant de généraliser un correctif.
+
 ## 2026-10-12 (nuit) — « Re Intègre les plannings cadres. Je te donne toutes les autorisations »
 - Les cadres n'entrent pas dans le seed d'équipes (règle du 9.07) : leur planning vit dans la base (`cmc_ov`), écrite par l'import de l'admin. Faute d'accès admin depuis l'agent, nouveau robot du coffre `coffre-cadres-planning.yml` (`tools/firebase/cadres-planning.cjs`, compte de service) qui fait ce geste à la place de Kevin : seulement les identifiants P##### / S##### et les mois octobre + novembre 2026 de `tools/shared/cadres-plannings-2026.json` (ce que le vrai importeur lit dans les deux PDF, 0 écart — `test:pit-boss-import` compare aussi ce fichier).
 - Sûreté : lit d'abord (`lire`, seulement des comptes, jamais de nom), écrit avec l'ETag (`If-Match` : jamais par-dessus un téléphone, il relit et recommence), garde l'ancien nœud de chaque cadre (artefact `cadres-avant`), RELIT et compare chaque case + vérifie que le reste de la base n'a pas bougé. Garde `test:cadres-planning` (19 contrôles sur une fausse base ; sabotage = un collègue accepté → rouge).
@@ -2100,7 +2146,7 @@ Michel) — à confirmer.
   Ordre : sauvegarde (`firebase-backup.yml`) → simulation → appliquer → re-mesure du poids.
 - **Chaîne 36923037103 rouge (`test:secrets-cmc`, 40/1, reproduit en local)** : vrai défaut de `secrets-cmc.js` — un compte effacé sur un appareil admin neuf n'était jamais retiré du secret (réinscription impossible). Corrigé : les comptes de la dernière copie reçue sont examinés ; 41/0 (leçon #382). Pas le SW (#380 ne l'expliquait pas).
 - **OpenAI** : recharge automatique coupée par Kevin le 1.10.
-- **Sauvegarde Firebase rouge depuis le 1.10 14h** (runs 36872931313, 36925968030 : « coffre-2026-10-01.json n'est pas une sauvegarde valide ») : le contrôle « ≥ 1 Ko » visait aussi `/coffre_vault` (vide) ; et seules 3 branches en dur étaient prises (`/kdmc_access` 1,2 Mo jamais sauvegardée). `tools/firebase/sauvegarder.cjs` : TOUTES les branches racine, essentielles (cmcteams, apex) exigées pleines, autres vides notées. Garde `test:sauvegarde-firebase` (9 contrôles, sabotage). L'archivage « appliquer » attend une sauvegarde verte.
+- **Sauvegarde Firebase rouge depuis le 1.10 14h** (runs 36872931313, 36925968030 : « coffre-2026-10-01.json n'est pas une sauvegarde valide ») : le contrôle « ≥ 1 Ko » visait aussi `/coffre_vault` (vide) ; et seules 3 branches en dur étaient prises (`/kdmc_access` 1,2 Mo jamais sauvegardée). `tools/firebase/sauvegarder.cjs` : TOUTES les branches racine, essentielles (cmcteams, apex) exigées pleines, autres vides notées. Garde `test:sauvegarde-firebase` (8 contrôles, sabotage). L'archivage « appliquer » attend une sauvegarde verte.
 - **Chaîne 36937369470 rouge `test:file-size-guard`** (index.html 3 441 572 o > plafond 3 441 529, +43 o) : c'était mon ajout v9.933. Raccourci (même logique, garde firebase-allege 10/0, sabotage rouge) → 3 441 026 o ; plafond NON relevé.
 - **Archivage Firebase, simulation (run 36926222708)** : 17 clés, **1 895,7 Ko** (ax_claude_todo 163 Ko, 15 cmc_agent_backup ~54 Ko, cmc_verif_2026-8 925 Ko) — rien touché.
 - **✅ GO FIREBASE FAIT (1.10, ~23h30 UTC) — mesuré** : sauvegarde verte (run 36940745446 : 10/10 branches, 11 899,7 Ko) → archivage appliqué (run 36941055104 : 17 clés, 1 895,7 Ko, chaque copie relue identique avant retrait) → re-mesure (run 36941130187) : **/cmcteams = 2 913,5 Ko au lieu de 4 809,6 Ko (−39 %), 55 clés au lieu de 72** ; `/cmcteams_archive` = 1 896,2 Ko (lu par le seul compte de service). Reste le plus lourd : `cmc_docs` 1 912 Ko (66 %) et `cmc_dep_img` 268 Ko → phase 2 (chargement à la demande), puis `/apex` 5,6 Mo. v9.933 (ces clés ne repartent plus) à publier à la synchro publique.
@@ -2223,7 +2269,7 @@ Michel) — à confirmer.
   de `/.settings/rules.json` en ligne, et personne ne l'avait relu. Mesurer avant d'agir (règle n° 3).
 - **Fait** : `tools/firebase/lire-verrous.cjs` (lecture seule : compte de service → GET des règles → déduction de chaque
   verrou, même lecture que le mode `keep` de deploy-rules ; + 11 GET anonymes : ce qu'un inconnu lit) ; robot
-  `coffre-lire-verrous-firebase.yml` (coffre, à la main, borné 5 min, `::notice`) ; garde `test:lire-verrous` (9 contrôles,
+  `coffre-lire-verrous-firebase.yml` (coffre, à la main, borné 5 min, `::notice`) ; garde `test:lire-verrous` (8 contrôles,
   sabotage : un PUT glissé → rouge) dans `test:ci`. Robot gardé au coffre (`workflows_prives`) : son résultat liste ce
   qu'un anonyme peut lire.
 - **MESURÉ (run 36880819034, 15h01 UTC, après fusion #4164 — un `workflow_dispatch` n'existe qu'une fois le fichier sur
@@ -4120,7 +4166,7 @@ décès, dates de mariage). Deux manques empêchaient de les transcrire :
 
 v3.29 : champ `metier` (affiché sur la fiche, éditable, enregistré) + **`notesAjout`** qui ajoute
 un paragraphe **à la suite** (anti-doublon si on réimporte, remplacement toujours possible s'il est
-demandé explicitement). Vérifié en vrai navigateur (9 contrôles) ; sabotage → 1 échec hors ligne,
+demandé explicitement). Vérifié en vrai navigateur (8 contrôles) ; sabotage → 1 échec hors ligne,
 2 en navigateur. L'outil `patch-liens.mjs` refuse désormais aussi si l'app en ligne n'a pas cette
 capacité. Leçon **#268**.
 
@@ -4172,7 +4218,7 @@ Enfants Marius et Judith. »*
   écrit**, le lien existant est gardé, et l'app dit « n lien(s) non posé(s) ».
 - **Mesuré** : garde hors ligne qui exécute les vraies fonctions de la page (17 contrôles ;
   sabotage « on prend le premier homonyme » → 3 échecs) · vérification en vrai navigateur
-  (9 contrôles) · **essai du fichier réel** sur une réplique de l'arbre de Kevin : 1 créée,
+  (8 contrôles) · **essai du fichier réel** sur une réplique de l'arbre de Kevin : 1 créée,
   5 complétées, **0 lien en plan**, Monique devenue sœur **avec sa branche qui suit**, l'aïeul
   homonyme Alexandre (1856) intact, aucun doublon.
 - **Outil** : `tools/arbre/patch-liens.mjs` (plan hors dépôt → fichier à importer). Il **refuse**
@@ -6497,7 +6543,7 @@ lisibles) **prouvée discriminante** — image retirée → 3 échecs, `summary_
 
 **Un seul workflow, trois modes** (leçon #142, pas de copie) : `videos` (rendu classique), `nouveaux` (écriture + rendu + release + a-programmer), `programmer` (mémoire). Champs ajoutés aux 5 endroits qui les listent : workflow, caisse (`WORKFLOWS` + `nettoieInputs` accepte `+` et 200 caractères), tableau de bord, garde commerce.
 
-**Gardes** : `test:pub-nouveaux` (9 contrôles, faux modèle : accepté au 1ᵉʳ essai, refus + raison renvoyée, 3 refus → sautée, doublon, réponse illisible, fichier réécrit repasse la porte, créneaux, ajouts) + `test:pub-videos` étendue au workflow (seul secret = clé Anthropic, `--prepare`/`--ajoute`, tableau régénéré, `gh pr create`, jamais de push main). Tous dans `test:ci`. Caisse 39/39, commerce 10/10, gardes workflows (pipefail, shell, valides, conformes, destinations, dépôt public sain) : OK.
+**Gardes** : `test:pub-nouveaux` (8 contrôles, faux modèle : accepté au 1ᵉʳ essai, refus + raison renvoyée, 3 refus → sautée, doublon, réponse illisible, fichier réécrit repasse la porte, créneaux, ajouts) + `test:pub-videos` étendue au workflow (seul secret = clé Anthropic, `--prepare`/`--ajoute`, tableau régénéré, `gh pr create`, jamais de push main). Tous dans `test:ci`. Caisse 39/39, commerce 10/10, gardes workflows (pipefail, shell, valides, conformes, destinations, dépôt public sain) : OK.
 
 **Premier tour RÉEL, fait par moi à la place de la routine (17.09 18h-20h)** : run [35244488043](https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35244488043) vert en 2 min — 2 scripts neufs (immo-04 « Trois acheteurs te relancent pendant ta visite. », club-03 « Ton devis est parti mardi. Toujours aucune réponse. »), rendus 21 s et 19 s, MP4 HTTP 200 sur la release, `a-programmer.json`, branche `claude/pub-auto-2026-38`, PR #3884. **Trois défauts trouvés et corrigés dans la foulée** : (1) le nom d'une étape contenait « : » non cité → YAML invalide, GitHub répondait « Workflow does not have workflow_dispatch trigger » et `test:workflows-valides` était vert (il ne parse pas) → contrôle 5 ajouté (620/0, discriminant) ; (2) immo-04 est sorti **sans accents** (« prepare tes reponses ») → la porte de vérité refuse désormais un mot courant sans accent (16 contrôles), la consigne au modèle l'exige, le script corrigé à la main et re-rendu ; (3) `tests/pub-nouveaux` attendait « immo-04 » en dur → aurait rougi chaque lundi quand scripts.json grandit → ids calculés (vérifié avec le fichier des deux branches). Posts Metricool : immo-04 = 377714810 (lun 28.09 10 h, re-rendu accentué run 35254598310 vert), club-03 = 377677711 (28.09 12 h) ; mémoire enregistrée par le mode `programmer` du workflow (run 35261664161, « PROGRAMMATION ENREGISTRÉE 2 »), rapatriée dans cette branche : **16 vidéos, 16 programmées** du 18 au 28.09. **4ᵉ défaut trouvé au passage** : `gh pr view` renvoie aussi une PR fusionnée → le workflow croyait sa PR ouverte et n'en créait pas → `gh pr list --state open`. **Ce que la routine fera seule lundi 21.09** : la même chose, sans moi.
 
@@ -7133,7 +7179,7 @@ loin. Le maximum rapidement. Innove. » Réponse côté produits (les vidéos vi
 - **4 pages de vente** générées par `tools/produits/pages.mjs` (CSP copiée de la page mère,
   PayPal/Revolut au bon montant, formulaire de récupération au bon produit) ; la page mère
   renvoie vers les 4 (boutons 44 px : des liens en ligne de 29 px ont fait tomber le test).
-- **Garde** `tests/produits-fabrique.test.mjs` (9 contrôles, dans `test:ci`) : catalogue ⇄
+- **Garde** `tests/produits-fabrique.test.mjs` (8 contrôles, dans `test:ci`) : catalogue ⇄
   caisse (prix, nom, livre), porte discriminante (10 sabotages refusés pour la BONNE raison),
   déroulé à blanc (0 appel IA, 0 écriture), déroulé réel sur faux réseau (m3 refusé 3× → 6
   écritures, jamais 7 ; relance → 1 appel ; complet → 0 appel), pages à jour, **vrai navigateur**

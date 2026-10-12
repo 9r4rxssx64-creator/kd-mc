@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 212 règles — le texte de Kevin, une par une
+## 📜 Les 213 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -935,6 +935,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 👶 RÈGLE MÉTIER ABSOLUE — PRT = CONGÉ PARENTAL, PAS « PRÊT » (Kevin 2026-10-11, ABSOLUE)
 **« PRT congé parental. Note le. Tout est écrit dans tes documents »** — Kevin 2026-10-11, après que j'eus écrit que PRT était « Prêt, la personne est prêtée à un autre service »
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-prt-congé-parental-pas-prêt-kevin-2026-10-11-absolue)
+
+### 👔 RÈGLE MÉTIER ABSOLUE — LES PLANNINGS DES CADRES (PIT BOSS, SUPERVISEURS) SONT DANS CMCteams ET DANS LA LIGHT, SANS ORDRE DE DÉPART (Kevin 2026-10-12, ABSOLUE)
+**« Intègre dans light et CMCteams les plannings cadres vérifiés »** — Kevin 2026-10-12 (après « Intègre » puis « Re Intègre les plannings cadres. Je te donne toutes les autorisations »). […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-les-plannings-des-cadres-pit-boss-superviseurs-sont-dans-cmcteams-et-dans-la-light-sans-ordre-de-départ-kevin-2026-10-12-absolue)
 
 ---
 

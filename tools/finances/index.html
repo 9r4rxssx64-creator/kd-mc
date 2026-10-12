@@ -148,11 +148,11 @@
 <div id="app"></div>
 <div id="toast"></div>
 
-<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.2" data-color="#e8b830" defer></script>
+<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.3" data-color="#e8b830" defer></script>
 <script>
 (function(){
   'use strict';
-  var APP_VER = 'v0.15.1';
+  var APP_VER = 'v0.15.3';
   var PROXY = 'https://apex-secrets-proxy.9r4rxssx64.workers.dev';
 
   /* ============================ Utils ============================ */
@@ -1026,10 +1026,16 @@
      BURST-DRAIN (gros arriéré) : on BOUCLE — on avale page après page jusqu'à ce que la file
      soit vide (ou 12 pages max ~1440), au lieu de 40 puis attendre 5 min. Tu ouvres l'app une
      fois et elle vide tout d'un coup. Persiste après chaque pièce (rien n'est perdu si coupure). */
+  /* Une pièce qui échoue n'était JAMAIS acquittée : le serveur la renvoyait en entier (jusqu'à 8 Mo) à chaque scan — ouverture, retour sur l'app,
+     toutes les 5 min, et jusqu'à 12 fois dans le même scan. Désormais : 3 échecs → écartée (acquittée, comptée), et un tour sans aucun
+     acquittement s'arrête au lieu de redemander la même file. Le compteur vit sous fin_ (jamais effacé par un reset de CMCteams). */
+  var MAIL_ESSAIS=3, LS_MAILFAIL='fin_mailfail_v1';
+  function _mfLoad(){ try{ var o=JSON.parse(localStorage.getItem(LS_MAILFAIL)||'{}'); return (o&&typeof o==='object')?o:{}; }catch(e){ return {}; } }
+  function _mfSave(o){ try{ var k=Object.keys(o); if(k.length>200) k.slice(0,k.length-200).forEach(function(x){ delete o[x]; }); localStorage.setItem(LS_MAILFAIL,JSON.stringify(o)); }catch(e){} }
   async function _mailPull(onProgress){
     if(!VAULT||!VAULT.aiPinHash) return {ok:false,reason:'no_ai'};
     var grant=await ensureGrant(); if(!grant) return {ok:false,reason:'no_grant'};
-    var okc=0,devc=0,dupc=0,pubc=0,avc=0,err=0,ecc=0,total=0;
+    var okc=0,devc=0,dupc=0,pubc=0,avc=0,err=0,ecc=0,total=0,ecartes=0,fails=_mfLoad();
     var MAX_PAGES=12;
     for(var pg=0; pg<MAX_PAGES; pg++){
       var list;
@@ -1043,14 +1049,16 @@
         try{ var res=await importBytes(it.b64, it.mime||'application/pdf', it.filename||('mail-'+(it.id||i)), {src:'mail:'+(it.from||'')});
           if(res.dup)dupc++; else if(res.pub)pubc++; else if(res.aVerifier)avc++; else { okc+=res.added; if(res.devis)devc+=res.devis;
             if(res.docId){ var _dr=(VAULT.docs||[]).filter(function(x){return x.id===res.docId;})[0]; if(_dr&&_dr.kind==='releve'&&_dr.reconc&&!_dr.reconc.ok)ecc++; } }
-          ackIds.push(it.id); await persist();
-        }catch(e){ err++; }
+          ackIds.push(it.id); delete fails[it.id]; await persist();
+        }catch(e){ err++; fails[it.id]=(fails[it.id]||0)+1; if(fails[it.id]>=MAIL_ESSAIS){ ackIds.push(it.id); delete fails[it.id]; ecartes++; } }
       }
+      _mfSave(fails);
       if(ackIds.length){ try{ await fetch('/__mail/ack',{ method:'POST', headers:{'content-type':'application/json','x-kdmc-admin':grant}, body:JSON.stringify({ids:ackIds}) }); }catch(e){} }
       total+=list.length;
+      if(!ackIds.length) break;   /* rien d'acquitté : le serveur renverrait exactement la même file */
     }
     dedupeAll(); await persist();
-    return {ok:true,okc:okc,devc:devc,dupc:dupc,pubc:pubc,avc:avc,err:err,ecc:ecc,count:total};
+    return {ok:true,okc:okc,devc:devc,dupc:dupc,pubc:pubc,avc:avc,err:err,ecc:ecc,ecartes:ecartes,count:total};
   }
   async function mailScan(statEl){
     if(!VAULT.aiPinHash){ toast('Active d\'abord le classement IA',true); STATE.tab='set'; render(); return; }
@@ -1060,7 +1068,7 @@
     var res=await _mailPull(function(i,n,it){ say('⏳ '+i+'/'+n+' — '+(it.filename||'pièce jointe')); });
     if(!res.ok){ say('❌ '+(res.reason==='network'?'réseau':res.reason)); return; }
     if(!res.count){ say('✅ Aucune nouvelle pièce jointe (rien à importer).'); return; }
-    say('✅ Mails importés : '+res.okc+' op.'+(res.devc?(' · '+res.devc+' devis'):'')+(res.ecc?(' · ⚠️ '+res.ecc+' relevé(s) avec écart'):'')+(res.pubc?(' · 📣 '+res.pubc+' pub(s) écartée(s)'):'')+(res.avc?(' · 🔎 '+res.avc+' à vérifier'):'')+(res.dupc?(' · '+res.dupc+' doublon(s) ignoré(s)'):'')+(res.err?(' · '+res.err+' échec'):''));
+    say('✅ Mails importés : '+res.okc+' op.'+(res.devc?(' · '+res.devc+' devis'):'')+(res.ecc?(' · ⚠️ '+res.ecc+' relevé(s) avec écart'):'')+(res.pubc?(' · 📣 '+res.pubc+' pub(s) écartée(s)'):'')+(res.avc?(' · 🔎 '+res.avc+' à vérifier'):'')+(res.dupc?(' · '+res.dupc+' doublon(s) ignoré(s)'):'')+(res.ecartes?(' · 🗑 '+res.ecartes+' illisible(s) écartée(s) après '+MAIL_ESSAIS+' essais'):(res.err?(' · '+res.err+' échec (nouvel essai plus tard)'):'')));
     toast('📧 '+res.okc+' opérations + '+res.devc+' devis depuis tes mails'+(res.ecc?(' · ⚠️ '+res.ecc+' relevé(s) : écart, à vérifier'):''), !!res.ecc);
     setTimeout(function(){ STATE.tab=(res.okc===0&&res.devc>0)?'devis':'dash'; render(); }, 1200);
   }

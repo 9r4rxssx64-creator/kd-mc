@@ -12120,3 +12120,17 @@ Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas p
 - Une légende de code du PDF se **demande à Kevin** (ou se lit dans le PDF) ; elle ne se devine pas à partir d'un nom de couleur ou d'un mot proche. Un code opaque reste « code opaque » tant qu'il n'est pas confirmé.
 - Quand une décision métier de Kevin repose sur le SENS d'un code, l'écrire avec ce sens (« PRT = congé parental ») et non avec le nom de la case.
 - Avant tout « go » sur les départs : retourner `DEP_ABS` dans les DEUX apps, les deux gardes ci-dessus, et refaire la mesure avant/après sur les vraies données.
+
+## 👔 RÈGLE MÉTIER ABSOLUE — LES PLANNINGS DES CADRES (PIT BOSS, SUPERVISEURS) SONT DANS CMCteams ET DANS LA LIGHT, SANS ORDRE DE DÉPART (Kevin 2026-10-12, ABSOLUE)
+
+**« Intègre dans light et CMCteams les plannings cadres vérifiés »** — Kevin 2026-10-12 (après « Intègre » puis « Re Intègre les plannings cadres. Je te donne toutes les autorisations »). **Retourne la règle du 9.07** (« il ne peut plus y avoir de cadre présent dans les plannings »).
+
+### 1. La règle
+- Le planning des **Pit Boss 15 et des Superviseurs** (PDF « Planning Pit Boss Superviseur », un par mois) est **dans le seed de CMCteams** (`planning-seed.js`, `ov` + `meta` seulement) et dans **un tableau « Pit Boss / Superviseurs » par mois côté light** (`boards-gen.js`, `2026-10-cadres`, `2026-11-cadres`, kind `abs`, fam `cadres`).
+- **Aucun numéro de départ** pour les cadres (ils n'ont pas d'équipe, NOTES_USER : « assignés individuellement »). La light les range sous « 👔 Pit Boss / Superviseurs », jamais sous « Absences ».
+- Rien d'autre qu'eux : aucun cadre dans `emps` du seed, aucun cadre dans un tableau d'ÉQUIPE (garde `test:no-cadres`, réécrite : « seulement dans leur planning vérifié »).
+- Source unique : `tools/shared/cadres-plannings-2026.json` (privé) = ce que le vrai importeur lit dans les deux PDF (garde `test:pit-boss-import`, 0 écart). Appliqué par `tools/shared/_cadres-fusion.mjs` (générateurs + `_ajouter-cadres.mjs`) : une régénération ne les efface pas.
+- Un mois de cadres de plus = le PDF en fixture (`tests/fixtures/pit-boss-<mois>-2026.pdf`), une entrée dans le JSON (import réel), et on relance `node tools/shared/_ajouter-cadres.mjs`.
+
+### 2. Gardes
+`test:cadres-planning-livre` (vrai navigateur : téléphone neuf CMCteams + light, sabotage → rouge), `test:cadres-seed` (le seed ne perd pas les cadres au remplacement d'un mois), `test:pit-boss-import`, `test:no-cadres`, robot `verif-live-cadres` (vrai domaine).

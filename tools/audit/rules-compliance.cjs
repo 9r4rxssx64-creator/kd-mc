@@ -58,6 +58,10 @@ const REGISTRE = [
   // de 2 jours doit porter un suivi daté (réveil, relance, prise en charge, vérification).
   [/PRÉVENIR NE SUFFIT PAS/i, ['npm:test:messages-suivis', 'npm:test:pipeline-sessions']],
   [/TOUT LE MONDE A UN PLANNING/i, ['npm:test:everyone-has-planning']],
+  // Règle « PRT = congé parental » (Kevin 11.10.2026) : aucun fichier ne redit « Prêt » (le comportement des départs attend son « go »).
+  [/PRT = CONGÉ PARENTAL/i, ['npm:test:prt-lecture', 'file:tests/verify-prt-lecture.mjs']],
+  // Règle « les plannings des cadres sont dans CMCteams et la light » (Kevin 12.10.2026) : import fidèle au PDF, seed, tableaux light, inscription au vrai matricule.
+  [/PLANNINGS DES CADRES/i, ['npm:test:pit-boss-import', 'npm:test:cadres-planning', 'npm:test:cadres-seed', 'npm:test:cadres-planning-livre', 'npm:test:cadre-matricule', 'npm:test:no-cadres']],
   // Regle « chaque app distincte, toutes liees dans le domaine » (CLAUDE.md, Kevin 15.09.2026) :
   // ses DEUX gardes existent et tournent dans test:ci (parite ROUTES/APPS + reglage au doigt
   // prouve en vrai navigateur), mais l'entree manquait ICI -> le ratchet comptait la regle

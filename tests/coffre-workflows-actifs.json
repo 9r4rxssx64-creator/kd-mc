@@ -26,6 +26,7 @@
     "coffre-chaine-privee.yml",
     "coffre-cloudflare-analytics-couper.yml",
     "coffre-cadres-planning.yml",
+    "verif-live-cadres.yml",
     "coffre-ecritures-cmc.yml",
     "coffre-fiches-privees.yml",
     "coffre-secrets-cmc.yml",

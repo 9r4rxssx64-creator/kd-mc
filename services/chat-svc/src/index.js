@@ -119,10 +119,12 @@ async function callProvider(provider, key, body, env) {
   return { ok: true, body: text, contentType: resp.headers.get("Content-Type") };
 }
 
+function modeleActuel(m) { if (typeof m !== 'string') return m; var s = m.toLowerCase(); if (/^claude-(instant|2)/.test(s) || /^claude-3(-[57])?-haiku/.test(s)) return 'claude-haiku-4-5-20251001'; if (/^claude-3(-[57])?-sonnet/.test(s)) return 'claude-sonnet-4-6'; if (/^claude-3-opus/.test(s)) return 'claude-opus-4-7'; return m; }
+
 function transformPayload(provider, body) {
   if (provider === "anthropic") {
     return {
-      model: body.model || "claude-sonnet-4-6",
+      model: modeleActuel(body.model || "claude-sonnet-4-6"),
       messages: body.messages,
       system: body.system,
       max_tokens: body.max_tokens || 4096,

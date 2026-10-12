@@ -263,6 +263,7 @@
   "tests/verify-pdf-equipes.mjs",
   "tests/verify-pdf-vs-surfaces.mjs",
   "tests/verify-perimetre-page.mjs",
+  "tests/verify-pit-boss-import.mjs",
   "tests/verify-planning-guarantee.test.mjs",
   "tests/verify-reactivite.mjs",
   "tests/verify-real-departs-render.mjs",

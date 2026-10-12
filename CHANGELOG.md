@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.957 (2026-10-12 — planning Pit Boss / Superviseurs octobre + novembre : import fidèle case par case)
+
+- **Les deux PDF Pit Boss / Superviseurs (octobre et novembre 2026)** sont importés par le vrai importeur : 19 personnes chacun, **589 cases (octobre) et 570 cases (novembre) identiques au PDF**, relues par un oracle indépendant (la géométrie du PDF).
+- **Défaut trouvé et corrigé** : une ligne « NOM * 11 30 » (astérisque SBM seul entre le nom et DU AU, sans code de poste) — ‹employé› en novembre — voyait « 11 30 » pris pour une sous-période : ses 10 jours de CP étaient comptés deux fois et **tout son mois décalé de 10 jours**. L'astérisque est maintenant sauté (comme dans le format avec poste).
+- Fixtures : `tests/fixtures/pit-boss-octobre-2026.pdf`, `pit-boss-novembre-2026.pdf`. Garde `test:pit-boss-import` (13 contrôles, sabotage → 2 rouges).
+
 ## CMCteams v9.956 + light v1.83 (2026-10-10 — réactivité : « on attend bcp trop avant l'exécution »)
 
 - **Ouverture** : les ~300 identités apprises s'écrivent en UNE fois (avant : une compression LZ du magasin entier par nom). Écran

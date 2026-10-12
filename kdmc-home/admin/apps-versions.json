@@ -1,6 +1,6 @@
 {
  "_doc": "Généré par tools/admin/apps-versions.mjs — relevé dans le dépôt, pas en direct.",
- "genere": "2026-10-10",
+ "genere": "2026-10-12",
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",
@@ -12,7 +12,7 @@
   },
   "cmcteams.kd-mc.com": {
    "page": "index.html",
-   "version": "v9.956"
+   "version": "v9.957"
   },
   "apex-ai.kd-mc.com": {
    "page": "apex-ai-v13/index.html",

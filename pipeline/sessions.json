@@ -1435,6 +1435,16 @@
       "maj": "2026-10-12",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "finances-historique": {
+      "titre": "Finances : plus d'historique, diagnostic puis protection de la sauvegarde",
+      "branche": "claude/finances-historique",
+      "sujet": "robot diag-finances lecture seule, garde serveur anti-ecrasement a suivre",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-12",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

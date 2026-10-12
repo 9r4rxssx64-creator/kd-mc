@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-12 (matin) — « Plus d'historique. Plus rien nulle part » (Finances : 0 opération, 1 document, « Restauré (0 op.) »)
+- Constat dans le code : la page refuse de restaurer une sauvegarde plus pauvre que l'appareil, MAIS le serveur (`PUT /__fin/vault`) accepte n'importe quel bloc, même vide, par-dessus une sauvegarde pleine, et ne garde AUCUNE version précédente.
+- Robot LECTURE SEULE `diag-finances.yml` (métadonnées : date, taille, nombre d'opérations, événements `fin_backup` ; jamais le contenu chiffré) pour savoir quand et comment la sauvegarde a été écrasée.
+
 ## 2026-10-12 — « Tjs 0 récup » (Finances → Récupérer mes factures) : on MESURE avant de corriger
 - Le 503 a disparu (le scan répond), mais il ne trouve rien en attente. Mesuré (robot `mesure-kv.yml`, 3 jours) : **le plafond KV n'est PAS en cause** (80 / 107 / 16 écritures par jour pour 1 000 permises). Le worker de réception `kdmc-mail` a reçu **10 puis 8 appels par jour** ; `kdmc-uptime` en envoie 12 par jour à chaque worker voisin (`kdmc-outlook` : 12) → ce sont très probablement ses pings de santé, pas des mails.
 - Hypothèse à confirmer : aucun mail n'arrive jusqu'au worker (règle Email Routing `factures@` absente / désactivée, ou le transfert depuis la boîte Monaco a cessé). Nouveau robot LECTURE SEULE `diag-mail.yml` (`tools/audit/diag-mail.mjs`) : état d'Email Routing, règles `factures@`, appels du worker par jour et par issue, `/health`. Aucun contenu de mail lu, aucune écriture.

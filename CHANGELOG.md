@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.95 (2026-10-13 soir — mise à jour forcée dès le démarrage)
+
+- **Kevin : « Normalement il y a une mise à jour force auto au démarrage de chaque app du domaine et du domaine aussi. »** MESURÉ : elle existe partout (28 apps de la carte du routeur, `test:maj-partout` 10/10 ; portail : aide partagée `version-badge-pwa.js`, 2 s ; CMCteams : 1,5 s). La light seule attendait 4 s avant de sonder `version.txt` : une ancienne version restait affichée plus longtemps que les autres. Alignée sur 1,5 s. `verify-maj-forcee-reelle` exige maintenant le rechargement en ≤ 3,5 s après l'ouverture (**sabotage à 4 s : échec**). Plus de « ferme et rouvre l'app » demandé à Kevin : c'est automatique.
+
 ## light v1.94 (2026-10-13 soir — règle « pas d'infos inutiles, nulle part »)
 
 - **Kevin : « Pas d'infos inutiles nulle part. Note-le. »** Nouvelle règle absolue (CLAUDE-HISTOIRE.md, relayée à toutes les sessions). Appliquée : la phrase sœur sous le tableau des absents (« 🛌 Absents tout le mois… Chacun a bien son planning ») est retirée aussi. Garde : `tools/shared/infos-retirees.json` + `test:pas-d-infos-inutiles` (4, **sabotage : 1 échec**), câblé dans `test:ci`.

@@ -239,6 +239,7 @@
   "tests/verify-fiche-premiere-connexion.mjs",
   "tests/verify-fiches-privees.mjs",
   "tests/verify-firebase-allege.mjs",
+  "tests/verify-heures-convention.mjs",
   "tests/verify-heures.mjs",
   "tests/verify-hygiene-depot.mjs",
   "tests/verify-identite-domaine.mjs",

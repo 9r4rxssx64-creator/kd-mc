@@ -46,9 +46,9 @@
 <!-- MAJ-AUTO:debut etat-live -->
 | Ce qui bouge | État au 2026-10-13 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **638** | `git ls-remote` |
+| Branches dans le dépôt | **639** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
-| État de la CI | 🟢 **elle tourne** — 13/30 échecs immédiats | API GitHub |
+| État de la CI | 🟢 **elle tourne** — 12/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
 
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)

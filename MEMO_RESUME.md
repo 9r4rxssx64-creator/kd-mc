@@ -1,5 +1,30 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-13 (14h) — Budget Actions relevé à 30 $ : « le train du soir »
+- **Kevin** : budget Actions 20 → 30 $ (10 $ restants jusqu'au 31.10 ; remise à zéro du quota le 1.11). « Minimise, groupe au maximum, en attente pour que tout le monde puisse poser dessus ; respecte les abonnements et les règles. »
+- **Fait** : la chaîne privée et l'audit runtime ne partent plus à la fusion (`workflow_dispatch` seulement) ; une seule vérification par jour, le soir, lancée par la session qui parle à Kevin ; garde `test:coffre-sobre` adapté (un `push:` reste interdit sans filtre `paths`). Règles écrites dans `ETAT-DU-MOMENT.md` (servi à toutes les sessions) + message `toutes` du pipeline.
+- **Ration** ≤ 60 min/jour ; au 31.10 au soir : bilan des minutes (méthode : somme des durées des exécutions depuis le 13.10).
+
+
+## 2026-10-13 — « Crée ce dont tu as besoin pour récupérer toutes les infos, autonome » : boîte à outils `tools/arbre/session/`
+- **Fait** : navigateur de session (confiance au proxy par empreinte SPKI), pièces jointes Gmail (RAW → fichier), images d'actes depuis PDF/JPG locaux, liste « qui manque quoi », INSEE, écriture sans Actions. Mode d'emploi : `tools/arbre/session/README.md`. Garde `test:arbre-session` (11, données fictives), câblé à la fin de `test:ci`.
+- **Limites dites** : Archives des Alpes-Maritimes (fermées hors de France), Geneanet/Cloudflare, Ariège : refusés, rien de contourné ; les e-mails restent des brouillons.
+
+
+## 2026-10-13 — Quota Actions épuisé (12.10 ~20 h) : consommation réduite
+- **Mesure** (3 au 13.10, 3 020 min pour un forfait de 3 000) : chaîne du coffre 1 730 min (121 exéc.), dont 865 min / 55 exéc. déclenchées par l'ARBRE seul ; écritures de l'arbre (arbre-nuage) 450 min ; audit runtime 420 min (218 exéc.).
+- **Corrigé** : la chaîne privée ne se relance plus sur `arbre/**` ni `tools/arbre/**` (arbre vérifié et écrit EN LOCAL ; chaîne complète à la main si besoin) ; l'audit runtime ne se relance plus sur `tests/**` ni `package.json` à la fusion. Écrire dans l'arbre depuis la session ne consomme aucune minute.
+- **Reste** : attendre la remise à zéro (date à lire dans GitHub → Billing and plans, ligne Actions) ou régler le plafond — décision de Kevin.
+
+
+## 2026-10-13 — Arbre : écrire dans le nuage SANS GitHub, nouvelle règle vivants/mineurs, infos de contact (pour les autres branches)
+- **Écriture sans Actions** : `tools/arbre/appliquer-nuage.mjs` marche depuis une session (Firebase joignable) si on lui passe `ARBRE_CODEHASH` ; l'empreinte se lit par le connecteur Cloudflare (D1 `kdmc-arbre`, table `kv`, clé `codehash`), jamais écrite ni affichée. Mêmes sauvegardes avant écriture, mêmes gardes (`pertes()`), rejouer = 0. Vaut tant que les Actions sont fermées.
+- **Règle de Kevin (13.10)** : vivants et mineurs, toutes les infos comme les autres (« ça reste en famille ») ; consignes `tools/arbre/consignes/` mises à jour (PR #4500). Toujours : un fait = un document, rien de ces données dans le dépôt.
+- **À venir (v3.87, branche `arbre-infos-contact`)** : champ `infos` sur chaque fiche (tél, e-mail, adresse, réseaux, champ libre), fusion sans perte, ajout par patch idempotent. Ne pas toucher `completerChamps` / `pertes()` en parallèle.
+- **Fait aujourd'hui** : 20 actes vaudois (DAVEL) + acte DONATI (Cannes) + 15 actes de Beaulieu rangés avec leurs images ; 233 personnes. Ne pas refaire ces lectures.
+- **Reste** : Archives des Alpes-Maritimes fermées hors de France (outil PR #4490 non essayé) ; relances en brouillon chez Kevin.
+
+
 ## 2026-10-12 (nuit) — « Go tout » : les rouges hérités de `main`
 - Revérifié sur `main` frais : `entetes-light`, `file-size-guard`, `improvements-guard` sont redevenus VERTS (corrigés par d'autres sessions, rien à faire ; la règle PRT n'est plus comptée sans garde).
 - Reste `test:cuisine-lecture` : cause = délai fixe de 9 ms avant un re-rendu, pas un flake → on attend le surlignage. 10 passages (dont 4 en parallèle) sans échec. Leçon ajoutée.
@@ -1598,6 +1623,7 @@ Kevin (« les liens ne sont pas clairs », « corrige tout en temps réel », «
 - v3.84 (10.10) : « un visuel des personnes connectées » — chaque appareil ouvert signale sa présence chaque minute (nom signé, appareil, onglet) dans un tiroir à part (empreinte « presence ») ; l'admin seul voit la pastille « 👥 N en ligne » (en bas à gauche) et la liste : en ligne (< 3 min), vus ces 7 jours ; nettoyage > 30 j. Garde arbre-connectes 7/7 (sabotage 6/7), dans test:ci.
 - v3.85 (10.10) : « On a son nom car il s'est inscrit » — le nom d'inscription au domaine (/__sso/whoami) signe les changements et apparaît dans « Qui est connecté », à la place d'un prénom tapé ; un appareil pas encore à jour apparaît « Pas encore reconnu ».
 - v3.86 (10.10) : le libellé « Pas encore reconnu » n'était pas passé dans la v3.85 (test arbre-connectes en échec sur main pendant quelques minutes) — corrigé ; LESSONS 478.
+- v3.87 (11.10) : « Pour tout le monde, toutes les infos possibles : tél, réseaux, adresses mail, postale, etc. Chacun peut ajouter une info, un champ » — chaque fiche porte une liste libre `infos` [{type, libelle, valeur, par, le}] (Téléphone, E-mail, Adresse postale, Réseau social, Site web, Anniversaire/Fête, Profession détaillée, Loisir, Santé, Autre + Champ libre = libellé tapé). Formulaire « ➕ Ajouter une info » (boutons ≥ 44 px), affichage sous les dates avec icône, liens tel:/mailto:/http(s) seulement (esc partout). Rien ne se perd : fusion par union (type+libellé+valeur) à la synchro, au cloudPush, à l'import et aux doublons ; un retrait volontaire passe par `_retires.infos` ; pertes() de l'outil refuse qu'une info disparaisse ; historique (admin) « Informations » ; `--voir !notes` exporte `infos` ; recherche de la liste par téléphone/e-mail. Patch de l'outil : `meta.fusion:true` + `persons.<clé>.infosAjout` (ou `infos`), ajout idempotent. Garde arbre-infos 44/44 (sabotage : échoue sans le code), dans test:ci.
 - Contrôle réel (9.10 soir) : le rapport « 🔎 synchro réelle » dépassait les 20 lignes du résumé avec 28 familles — les lignes familles/Lignée/cartes superposées sont coupées par 6 et le workflow publie TOUTES les lignes 🔎 en avis de < 3,8 Ko (8 au plus).
 - Originaux de Monaco d'avant 1900 (9.10 soir) : l'outil ouvre l'adresse stable ARK (archives.mairie.mc/ark:/63956/…) et accepte la licence de réutilisation au nom de Kevin (« Accepte pour moi », 9.10) seulement si ORIGINAUX_LICENCE=acceptee, posé par le workflow ; sans elle, il s'arrête et le dit. Garde arbre-originaux 19/19 (sabotage prouvé : 17/19). Mesuré en CI : la navigation vers l'ARK était abandonnée (net::ERR_ABORTED) parce qu'après l'acceptation le site ouvre LUI-MÊME la visionneuse — on le laisse faire ; 1er acte rangé (naissance n° 101, Monaco 1880).
 - Originaux vaudois (9.10 soir) : les PDF de davel-vd.ch passent d'abord par une page JavaScript (302 → js_challenge.html, mesuré) ; un « PDF » qui n'en est pas un repart par telecharger-navigateur.mjs (vrai navigateur, aucun captcha). Testé en CI : naissance n° 46 (Ed 43/1, 1822) rangée. Garde arbre-originaux 22/22.

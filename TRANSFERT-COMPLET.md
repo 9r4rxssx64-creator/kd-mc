@@ -36,9 +36,9 @@
 | Automatisations actives | **148** (+ 37 rangées) | `.github/workflows/` |
 | Gardes / tests | **182** fichiers, **279** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **114** | `grep secrets.` sur les workflows |
-| Discussions entre sessions | **214** dont **105** ouvertes | `pipeline/sessions.json` |
+| Discussions entre sessions | **215** dont **106** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **83 498 o ≈ 23 857 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **713 490 o** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **713 555 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)

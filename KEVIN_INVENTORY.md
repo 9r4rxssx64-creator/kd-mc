@@ -1009,6 +1009,14 @@ le **03** pour ce qui était cassé, le **05** pour ce que je n'ai pas pu voir.
 | `tools/arbre/originaux.py` | **Les originaux dans la fiche (v3.68, 8.10.2026)** : va chercher la page source (Journal de Monaco, PDF, image), la rend en image avec le nom surligné, pour qu'elle s'ouvre dans la fiche sans lien à cliquer. Via la CI : entrée « originaux » du workflow arbre-nuage. Garde : `tests/arbre-originaux.test.mjs`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/originaux.py) |
 - `tools/arbre/visionneuse-image.mjs` — l'image intégrale d'un acte affiché dans la visionneuse des archives de Monaco (pour ranger l'original dans la fiche).
 - `tools/arbre/telecharger-navigateur.mjs` — télécharger le PDF d'un registre d'archives (Vaud, davel-vd.ch) avec un vrai navigateur, quand le site fait d'abord passer une petite page JavaScript (aucun captcha résolu).
+- `tools/arbre/session/README.md` — la boîte à outils « depuis la session » (sans Actions, donc sans minutes GitHub) : mode d'emploi de tous les outils ci-dessous.
+- `tools/arbre/session/navigateur.mjs` — un vrai navigateur depuis la session (Chromium fait confiance au proxy par l'empreinte de son certificat, jamais « ignorer les erreurs »).
+- `tools/arbre/session/pj-gmail.py` — sortir les pièces jointes d'un courrier Gmail brut, sans cliquer.
+- `tools/arbre/session/rendre-originaux.py` — fabriquer les images d'actes depuis des PDF/JPG locaux (page à l'envers remise à l'endroit, rejouer = 0).
+- `tools/arbre/session/manques.py` — qui manque quoi : la liste de recherche priorisée depuis l'export de l'arbre.
+- `tools/arbre/session/insee.py` — le fichier INSEE des décès (public, sans compte) en une ligne par résultat.
+- `tools/arbre/session/ecrire.sh` — écrire dans l'arbre depuis la session (sauvegarde avant, relecture après, rejouer = 0).
+- `tests/arbre-session.test.mjs` — le garde de cette boîte à outils (11 contrôles, données fictives).
 - [`tools/arbre/consignes/`](https://github.com/9r4rxssx64-creator/CMCteams/tree/main/tools/arbre/consignes) — consignes de travail de l'arbre : RECHERCHES.md (chercher pour chaque personne, accepter les conditions des sites au nom de Kevin, jamais de captcha), HISTOIRES.md (les notes sont de belles histoires), valider-histoires.py (rien de perdu, rien de privé, pas de répétition).
 | `tools/arbre/audit-arbre.mjs` | **Contrôle de cohérence de l'arbre** : liens qui pointent dans le vide, couples déclarés d'un seul côté, dates impossibles, boucles d'ancêtres, doublons de nom, personnes seules, groupes à part. Lecture seule. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/audit-arbre.mjs) |
 | `tools/arbre/verify-doublons-sans-perte.mjs` | Preuve en vrai navigateur : supprimer un doublon ne perd plus la date saisie à la main. `npm run arbre:verif-doublons`. | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/verify-doublons-sans-perte.mjs) |

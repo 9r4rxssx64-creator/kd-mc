@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-12",
+  "maj": "2026-10-13",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -4975,6 +4975,15 @@
           "action": "Relu le 13.10 : le correctif no-transform est sur main et sa garde passe ; aucune session n'a signalé de test cassé par le Cache-Control. Revue en ligne à faire au prochain robot réel (domaine illisible depuis l'agent)."
         }
       ]
+    },
+    {
+      "id": "m215-arbre",
+      "de": "arbre",
+      "a": "toutes",
+      "sujet": "Budget Actions : 10 $ restants jusqu'au 31.10 — chaîne privée et audit runtime ne partent plus à la fusion (le train du soir, 1 fois par jour)",
+      "corps": "Kevin a relevé le budget Actions à 30 $ (10 $ restants ; quota remis à zéro le 1.11). Ration : 60 min/jour max. Règles (détail dans ETAT-DU-MOMENT.md, 1re ligne) : tests EN LOCAL puis fusion ; la chaîne privée (17 min) et l'audit runtime (10 min) sont en workflow_dispatch seulement, lancés UNE fois par jour le soir par la session qui parle à Kevin (n'en lance pas) ; regroupe tes PR ; un changement de masse des workflows se pousse seul ; l'arbre s'écrit depuis la session (tools/arbre/session/). Un run qui meurt en 5 s sans étape = budget, ne pas relancer.",
+      "ts": "2026-10-13 12:12",
+      "etat": "ouvert"
     }
   ]
 }

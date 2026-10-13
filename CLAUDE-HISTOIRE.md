@@ -4014,7 +4014,7 @@ refuse un navigateur honnête depuis tous les réseaux, je passe directement aux
 - **Chaque information est confirmée par un document** : une donnée sans source reste marquée « probable » ou « piste », jamais
   présentée comme sûre. Une contradiction entre deux documents s'écrit (ex. l'ordonnance de 1953 contre l'acte de 1950) avec celui
   qu'on retient et pourquoi.
-- Toujours sans contournement (aucun captcha, aucun déguisement, rien de payant) et sans rien de privé sur les vivants.
+- Toujours sans contournement (aucun captcha, aucun déguisement, rien de payant). Vivants et mineurs : toutes les infos comme les autres (Kevin 13.10.2026 : « Ça reste en famille »).
 
 ---
 

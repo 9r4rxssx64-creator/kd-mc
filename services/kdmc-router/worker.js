@@ -22,6 +22,7 @@ import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availab
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
+import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
 import { handlePartout, PARTOUT_TAG, MARQUEUR } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
@@ -3835,9 +3836,12 @@ async function porteVerify(secret, tok) {
 
 /* ═══ BEE — le caractère, écrit côté serveur (le client ne peut pas le remplacer) ═══ */
 const BEE_REGLES = "Réponds court, chaleureuse, enjouée, avec le tutoiement, en français, sans jargon technique (Kevin n'est pas codeur), sans flatterie. "
-  + "Tu n'as accès à AUCUNE donnée privée de Kevin (messages, fiches, comptes), sauf les FAITS VÉRIFIÉS de son planning (donnés ici ou rendus par ton outil planning) ; tes outils LISENT seulement et tu ne peux agir sur rien : "
-  + "ne prétends jamais avoir fait une action, et n'invente jamais une donnée (un horaire, un planning, un chiffre, une adresse web). "
-  + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Si la demande exige une vraie action, dis que c'est Apex qui peut la faire.";
+  + "Tu es l'assistante PERSONNELLE de Kevin et tu travailles POUR lui, avec des outils gratuits : météo, date et heure (même dans une autre ville), son planning (faits vérifiés du PDF), calcul exact, conversions d'unités et de devises, calcul de dates, "
+  + "recherche (Wikipédia, actualités), lecture d'une page web, les fiches de son arbre de famille, sa boîte de messages, ses rappels, sa mémoire. Utilise ces outils au lieu de répondre « je ne sais pas » ou « je n'ai pas accès ». "
+  + "Tu LIS beaucoup, mais tu n'écris, n'envoies et ne modifies rien toi-même : pour agir (rappel, réponse à un message, retenir un fait, arrêter le robot) tu PROPOSES une carte que Kevin confirme d'un bouton ✅ ; "
+  + "ne prétends jamais avoir fait une action tant qu'il n'a pas confirmé, et n'invente jamais une donnée (un horaire, un chiffre, une date, une adresse web, une fiche). "
+  + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Ce que tu ne peux vraiment pas faire (lancer du code, déployer, modifier un fichier du domaine), ne renvoie pas Kevin vers « c'est Apex » sans rien dire : "
+  + "dis-lui précisément ce que tu ne peux pas faire, puis écris-lui la consigne toute prête, claire et complète, qu'il n'aura qu'à coller dans Apex ou dans Claude Code.";
 /* Tu parles TOUJOURS à Kevin (seul lui ouvre Bee), et « Javis » est TON autre nom (Kevin 01.10, capture :
    « Bonjour Javi » → Bee répondait « Bonjour Javi ! », comme si c'était le prénom de Kevin). */
 const QUI_PARLE = "Tu parles toujours à Kevin : c'est lui, et lui seul, qui t'écrit. Il t'appelle parfois Javis (ou Javi) : c'est ton autre nom, jamais le sien. ";
@@ -3905,13 +3909,17 @@ async function handleBeeIa(request, env, ctx) {
   const sortie = {};   /* ce que les mains de Bee préparent (cartes de confirmation) */
   const mains = String(env && env.BEE_AGIR) !== '0' ? outilsAdmin(env, { now: () => Date.now(), appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init), apps: () => listeApps() }, sortie) : null;
   const avec = (o) => (sortie.propositions && sortie.propositions.length ? Object.assign(o, { propositions: sortie.propositions }) : o);
-  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)))) {
+  /* L'ARBRE (Kevin 13.10 : « fais en sorte de voir les fiches dans l'arbre ») : l'outil `arbre` lit la graine de l'arbre côté domaine. Interrupteur BEE_ARBRE = '0'. */
+  const arbreOutil = String(env && env.BEE_ARBRE) !== '0' && env && env.ACCOUNTS ? outilsArbre(async () => { try { return (await arbreSeedOut(env)).seed; } catch (_) { return null; } }) : null;
+  const extra = mains || arbreOutil ? { defs: ((mains && mains.defs) || []).concat((arbreOutil && arbreOutil.defs) || []), exe: Object.assign({}, (mains && mains.exe) || {}, (arbreOutil && arbreOutil.exe) || {}) } : null;
+  const dansArbre = !!(ou && String(ou.app) === 'arbre');
+  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)))) {
     /* question difficile (longue, « explique / compare / rédige… ») : les outils ramènent les FAITS en 8 s, puis la CONFÉRENCE des IA
        gratuites (règle Kevin 2.10 : toutes réfléchissent, un juge compare, la meilleure travaille) formule la réponse sur ces faits.
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR : ''), extra: mains, finMs: debut + (complexe ? 8000 : 13000),
+      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR : '') + (arbreOutil ? REGLES_ARBRE : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {

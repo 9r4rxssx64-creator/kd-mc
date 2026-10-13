@@ -1242,6 +1242,10 @@ test:voix-chirp 16/0, voisins verts ; 8 sabotages rouges. **À vérifier en vrai
 
 Après la fusion #4316, « Coffre → dépôt public : synchroniser le CODE » s'est arrêté (6 « téléphone » = une constante sRGB de three.js dans `perso3d.js`) : routeur et Lingua non déployés. Corrigé à la source (`tools/3d/build-runtime.mjs` écrit la constante en notation scientifique) + garde dans `test:perso3d`. Leçon 417.
 
+## 2026-10-13 — BEE À PARITÉ AVEC APEX ET CLAUDE CODE (gratuit)
+
+**Fait** (code + tests, PAS encore vu en vrai sur le domaine) : caractère de Bee à jour (plus de « c'est Apex » vague) ; outil `arbre` (fiches de la famille, lecture, Kevin seul, `BEE_ARBRE=0`) ; outils `convertir`, `heure_ailleurs`, `dates` partagés avec Apex (`/ai`) ; ℹ️ du widget mis à jour. Garde `test:bee-parite` (70, 6 sabotages). Leçon 521. **Reste à Kevin** : tester sur son iPhone (arbre → « quand est née Laurence ? »).
+
 ## 2026-10-04 (matin) — BEE PARTOUT + ACTIONS AVEC BOUTON ✅ + LUI SEUL (Bee v1.17, routeur)
 
 Kevin : « Oui marionnette partout. Fais le bouton confirmation et donne-lui tous les accès, outils, liens… Vérifie que je sois le seul à pouvoir m'en servir. Partout, chaque app du domaine. Mon assistant personnel qui me suit. »

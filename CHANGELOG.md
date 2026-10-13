@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.969 · light v1.97 (2026-10-13 soir — l'horloge du bouton de pointage défile)
+
+- **Kevin : « J'arrive et l'horloge reste figée sur l'écran. »** Après « J'arrive », le bouton ne montrait que l'heure d'entrée, immobile. Maintenant **l'horloge vit** : avant l'arrivée, l'heure qu'il est défile à la seconde (« 🕒 20:12:08 ») ; après, le temps écoulé défile (« entré à 20:12 · 0:00:03 »). Seul le texte change : le bouton n'est pas refait sous le doigt. `verify-pointage-bouton` (17) contrôle que les deux horloges avancent (**sabotage sans le minuteur : 3 échecs**). Module `pointage-bouton.js` (copies identiques CMCteams / light).
+
 ## CMCteams v9.968 · light v1.96 (2026-10-13 soir — bouton de pointage toujours visible ; « Oublier cet appareil » retiré)
 
 - **Kevin : « Pour les pointages entre sortie horaire journalière, fais quelque chose de simple, plus visible, bouton dans la page. Va plus loin. »** Avant, « J'arrive / Je pars » étaient cachés dans la fiche ⏱ (il fallait toucher une colonne). Nouveau module `tools/shared/pointage-bouton.js` (copie identique `tools/departs/`), dans CMCteams ET la light : un **bouton fixe en bas de l'écran** (56 px) qui sait où en est la personne — « 🟢 J'arrive » puis « 🔴 Je pars · entré à hh:mm » ; confirmation « ✅ Arrivée hh:mm » avec **« Annuler »** pendant 10 s ; réel du jour sous le bouton ; **« ⚠ Une sortie manque » si une sortie est oubliée** (touche : la fiche s'ouvre) ; ⏱ à côté ouvre les heures. Même moteur que `heures.js` (même mémoire, position facultative, alerte « loin du casino »). Sans identité : pas de bouton. Test `verify-pointage-bouton` (15, vrai navigateur light + CMCteams ; **sabotage : échec**), câblé dans `test:ci`.

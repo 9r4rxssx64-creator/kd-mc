@@ -77,6 +77,9 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-13 (soir, fin 4) — CMCteams v9.969 + light v1.97 : l'horloge du pointage défile
+- **Fait** : l'heure défile avant l'arrivée, le temps écoulé après (bouton fixe). Test 17 vérifs, sabotage 3 échecs.
+
 ## 2026-10-13 (soir, fin 3) — CMCteams v9.968 + light v1.96 : bouton de pointage
 - **Fait** : bouton fixe « J'arrive / Je pars » (annuler 10 s, sortie oubliée signalée, ⏱ heures) dans les deux apps ; « Oublier cet appareil » retiré de la light. Test `verify-pointage-bouton` (15, sabotage échec). Captures envoyées à Kevin.
 

@@ -48,7 +48,7 @@
 |---|---|---|
 | Branches dans le dépôt | **638** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
-| État de la CI | 🟢 **elle tourne** — 15/30 échecs immédiats | API GitHub |
+| État de la CI | 🟢 **elle tourne** — 13/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
 
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)

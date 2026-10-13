@@ -4,6 +4,21 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.966 (2026-10-13 — « Ni dans CMCteams » : les cadres sont enfin À L'ÉCRAN)
+
+- **Kevin : « Ni dans CMCteams. »** Les 19 cadres d'octobre et de novembre étaient bien posés dans les données (seed, test vert) mais **jamais affichés** : le planning équipe les écartait encore avec la règle du 9.07 (v9.863 : « jamais de cadre dans les plannings », `_planHasWork` et `_planAbsenceTeam` rendaient faux/null pour tout id `P#####`) — règle que Kevin a RETOURNÉE le 12.10 (« Intègre dans light et CMCteams les plannings cadres vérifiés »). Retirée : le groupe « Cadres (Pit Boss / Superviseurs) » liste maintenant JANEL, GARELLI, LANDAU… avec leurs vraies cases. Les cadres restent HORS de la page Départs (pas d'équipe ni d'ordre de départ ; `test:no-cadres` vert).
+- Test `verify-cadres-dans-planning` (29) : nouveau contrôle « à l'écran » (le groupe « Cadres » et 3 noms dans `#planGrid`, octobre ET novembre) — **prouvé discriminant** : en remettant l'ancien filtre, 2 échecs. L'ancien contrôle ne regardait que les données : c'est pour ça qu'il restait vert.
+
+---
+
+## light v1.90 (2026-10-13 — « Tjs pas de cadre dans light » : cause trouvée et corrigée)
+
+- **Kevin : « Tjs pas de cadre dans light. »** Les tableaux « 👔 Pit Boss / Superviseurs » étaient bien livrés dans `boards-gen.js`, et le test les voyait… mais **sans Firebase**. **Cause mesurée** : dès que Firebase répond, `applyBoards` (light) traite octobre et novembre comme mois « live » et **supprime TOUS les plannings committés du mois** — cadres compris — alors que le live n'en construit aucun. Les cadres disparaissaient donc à chaque ouverture normale.
+- **Correctif** : le tableau des cadres committé est **gardé** tant que le live n'en apporte pas un pour le même mois (le PDF reste la vérité). Aucune écriture Firebase nécessaire.
+- Test `verify-cadres-dans-planning` (27) : nouveau cas « le live arrive » (78 tableaux d'équipes remplacés, les 2 tableaux de cadres survivent, 19 personnes affichées) — **prouvé discriminant** : sans le correctif, 2 échecs. Avant, le test coupait le réseau : il ne pouvait pas voir ce cas (même piège que le live non simulé).
+
+---
+
 ## Portail v1.0.53 + domaine (2026-10-13, suite — « Redemande » + fermer pour une ou plusieurs personnes)
 
 - **Kevin : « Redemande. Fermer peut seulement fermer une app au choix ou plusieurs, pour une seule personne comme plusieurs. »**

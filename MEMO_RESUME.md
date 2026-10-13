@@ -33,6 +33,12 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-13 (soir, suite) — cadres à l'écran dans CMCteams (v9.966) + light (v1.90)
+- **Fait (code + tests, PAS encore en ligne)** : CMCteams v9.966 : l'ancien filtre « jamais de cadre dans le planning » retiré (les cadres s'affichent dans le groupe « Cadres ») ; light v1.90 : les tableaux de cadres survivent au live Firebase.
+
+## 2026-10-13 (soir) — cadres de nouveau visibles dans la light (v1.90)
+- **Fait (code + test, PAS encore en ligne)** : cause = le live Firebase supprimait les tableaux committés des cadres ; ils sont désormais gardés. Light v1.90.
+
 ## 2026-10-13 (suite) — « Redemande » le téléphone + fermer pour une ou plusieurs personnes (portail v1.0.53 + routeur + admin)
 - **Fait (code + tests, PAS encore déployé)** : carte « Ajoute ton téléphone » au portail pour les comptes sans numéro (`whoami.tel_pose`) ; `/__admin/acces-lot` + bloc admin pour fermer/rouvrir plusieurs apps à plusieurs personnes.
 - **Reste** : publier + déployer le routeur (nouvelle route) ; PRT et algorithme (attendent Kevin).

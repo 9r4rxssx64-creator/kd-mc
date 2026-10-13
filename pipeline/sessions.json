@@ -1485,6 +1485,16 @@
       "maj": "2026-10-12",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "rouges-main": {
+      "titre": "Rouge intermittent cuisine-lecture",
+      "branche": "claude/rouges-main",
+      "sujet": "le test attend le surlignage au lieu d'un délai fixe de 9 ms",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-12",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

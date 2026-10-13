@@ -4,6 +4,15 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.964 (2026-10-12 — le téléphone est demandé dès l'inscription)
+
+- **Kevin : « Demande le téléphone aussi. »** Le formulaire d'inscription de CMCteams a maintenant un champ **Téléphone** (obligatoire, clavier numérique sur iPhone, même contrôle que la fiche SBM : chiffres, ex. +377 06 12 34 56). Il est rangé sur la fiche (`cmc_reg/<uid>.telephone`) et repris dans l'alerte « nouvelle inscription » envoyée à Kevin.
+- **Plus de fenêtre en double** : le téléphone étant déjà donné, la fiche SBM ne se rouvre plus après l'inscription. Pour que la **light** ne la redemande pas non plus, `tools/shared/fiche-auto.js` dépose désormais la fiche complète au domaine (`/__sso/fiche`) **une seule fois** (marque `ficheDomaineAt` posée seulement si le domaine a répondu ; sinon nouvel essai une minute plus tard).
+- **Light** : rien à changer — elle n'a pas de formulaire d'inscription propre, sa fiche demande déjà le téléphone (obligatoire) et reprend celle du domaine.
+- Test `tests/verify-inscription-sans-validation.mjs` (14 vérifications, section C neuve ; déjà dans `test:ci`), **prouvé discriminant** : sans le rangement du téléphone → 4 échecs ; sans le dépôt au domaine → 1 échec. Les trois autres tests qui remplissent le formulaire (cadre-matricule, passerelle, recréer-mot-de-passe) fournissent le téléphone. Plafond `index.html` respecté sans le relever (vieux commentaires raccourcis).
+
+---
+
 ## CMCteams v9.963 + light v1.88 (2026-10-12 — le domaine se souvient, les apps ne redemandent plus, l'inscription ne bloque plus, lien vers l'autre app connecté)
 
 - **Kevin : « À l'inscription on sait les informations pour atterrir au bon endroit directement. Sur CMCteams il demande à chaque fois d'accepter ce que l'on a déjà accepté. Les autorisations. Vérifie et corrige. Vérifie l'inscription car beaucoup de personnes bloquent CMCteams et light. Mets un lien dans les deux pour aller sur l'autre directement connecté avec son compte »**.

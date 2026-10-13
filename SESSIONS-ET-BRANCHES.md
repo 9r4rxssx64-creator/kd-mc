@@ -194,6 +194,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/worker-config-34459553323` | +1 | **branche écrite par un workflow** (La Détente) : URL du worker `ld-gemini-proxy`. Aucune session humaine derrière — à fusionner ou supprimer par `la-detente` | `shops/la-detente/` |
 | `claude/reactivite-tout` | 10.10 | **Réactivité de tout le domaine** (portail, admin, CMCteams, light, apps), boutons morts réparés, robots publics crea-ai et Bee | `reactivite-tout` |
 | `claude/reactivite-plus` | 10.10 | Branche de travail **contenue dans** `claude/reactivite-tout` — rien à fusionner séparément (suppression refusée par le dépôt le 10.10) | `reactivite-plus` |
+| `claude/rouges-main` | 12.10 | `test:cuisine-lecture` : attend le surlignage au lieu d'un délai fixe (fin du rouge intermittent) | `rouges-main` |
 | `claude/finances-telechargements` | 12.10 | Finances v0.15.3 : une pièce jointe illisible n'est plus re-téléchargée en boucle (3 essais puis écartée) ; garde `test:finances-telechargements` | `finances-telechargements` |
 | `claude/modeles-retires` | 12.10 | Relais Anthropic : un modèle Claude retiré (Haiku 3…) est remplacé par l'actuel ; garde `test:modeles-retires` | `modeles-retires` |
 | `claude/finances-effacement` | 12.10 | Finances : les 3 « tout effacer » de CMCteams épargnent le coffre (clés `fin_*`), garde `test:reset-garde-finances` | `finances-effacement` |

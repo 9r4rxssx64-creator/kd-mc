@@ -29,7 +29,7 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **136** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **137** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **32** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
@@ -44,11 +44,11 @@
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
 
 <!-- MAJ-AUTO:debut etat-live -->
-| Ce qui bouge | État au 2026-10-12 | Mesuré par |
+| Ce qui bouge | État au 2026-10-13 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **625** | `git ls-remote` |
+| Branches dans le dépôt | **626** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
-| État de la CI | 🟢 **elle tourne** — 13/30 échecs immédiats | API GitHub |
+| État de la CI | 🟢 **elle tourne** — 17/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
 
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)

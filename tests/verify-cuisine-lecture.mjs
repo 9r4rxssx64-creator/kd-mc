@@ -194,7 +194,8 @@ async function openPage(init) {
     go('recipe', { id: 3, _from: "go('home')", _portions: null });
     if (!document.querySelector('[data-tts]')) return { err: 'pas de bouton' };
     document.querySelector('[data-tts]').click();
-    await new Promise(r => setTimeout(r, 9));
+    /* on attend que la lecture soit VRAIMENT en cours (surlignage allumé) avant de re-rendre : un délai fixe de 9 ms échouait sous charge */
+    for (let i = 0; i < 300 && !document.querySelector('.steps li.reading'); i++) await new Promise(r => setTimeout(r, 10));
     chPort(1); /* re-rend toute la fiche */
     const btn = document.querySelector('[data-tts]');
     const out = { label: btn.textContent, pressed: btn.getAttribute('aria-pressed'), lit: document.querySelectorAll('.steps li.reading').length, active: window.TTS.active };

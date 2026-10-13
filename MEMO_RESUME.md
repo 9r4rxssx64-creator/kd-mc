@@ -1,9 +1,17 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-12 (nuit) — « Go tout » : les rouges hérités de `main`
+- Revérifié sur `main` frais : `entetes-light`, `file-size-guard`, `improvements-guard` sont redevenus VERTS (corrigés par d'autres sessions, rien à faire ; la règle PRT n'est plus comptée sans garde).
+- Reste `test:cuisine-lecture` : cause = délai fixe de 9 ms avant un re-rendu, pas un flake → on attend le surlignage. 10 passages (dont 4 en parallèle) sans échec. Leçon ajoutée.
+
 ## 2026-10-12 (nuit) — « Il re-télécharge tout » (Finances) : cause trouvée et corrigée (page v0.15.3)
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-12 (soir) — téléphone demandé à l'inscription (CMCteams v9.964)
+- **Fait (code + tests, PAS encore en ligne)** : champ Téléphone obligatoire dans l'inscription CMCteams, rangé sur la fiche et dans l'alerte à Kevin ; la fiche n'est plus redemandée ; la fiche complète est déposée une fois au domaine pour que la light la reprenne. Light inchangée (sa fiche le demande déjà).
+- **Reste** : publier (voie dépôt public), puis voir sur l'iPhone de Kevin ; PRT (173 numéros) et choix de l'algorithme de départs attendent Kevin.
+
 ## 2026-10-12 (nuit, suite) — inscription qui bloquait, redemandes, lien entre les deux apps (CMCteams v9.963 + light v1.88)
 - **Fait (code + tests, PAS encore en ligne)** : cause du blocage mesurée (ancienneté facultative ⇒ pas de validation auto ⇒ code e-mail jamais envoyé ⇒ « attente admin ») corrigée ; fiche et conditions cherchées au domaine avant de redemander (les deux apps) ; refus de position retenu ; lien « 🔗 » connecté dans les deux apps ; atterrissage sur SON équipe. `test:passerelle` 25/0, 20 gardes voisines vertes.
 - **Pas vérifié (honnête)** : le vrai domaine (kd-mc.com refuse toute lecture sans compte ; Actions fermées) — le test simule les réponses du domaine ; la porte `/__sso/entrer` est celle des tuiles du portail, déjà éprouvée. Les fenêtres natives de l'iPhone (géolocalisation, notifications) ne se contrôlent pas d'ici.

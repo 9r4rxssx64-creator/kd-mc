@@ -3215,7 +3215,7 @@ async function handleSso(request, url, env) {
       /* `roles` (8.10, revue extérieure) : les droits que Kevin pose sur la fiche (ex. ['shops'] = boutiques/sourcing/dashboard) — plus jamais une
          regex sur le nom dans les pages. Posés par /__admin/perimetre (champ roles), lus ici par toutes les apps. */
       /* `attente_admin` : le portail montre « en attente de l'administrateur » au lieu des apps (elles le refuseraient une à une). */
-      const rep = { attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
+      const rep = { attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), tel_pose: estAdmin ? true : (acc ? !!(acc.fiche && acc.fiche.telephone) : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
@@ -4367,6 +4367,32 @@ async function handleAdmin(request, url, env) {
     await accPut(env, acc, true);
     await audLog(env, { ev: 'perimetre', uid, portee: acc.portee, acces: acc.acces, bloque: acc.bloque, roles: acc.roles || [] });
     return J({ ok: true, uid, portee: acc.portee, acces: acc.acces || [], bloque: acc.bloque || [], roles: acc.roles || [] });
+  }
+  /* ── FERMER / ROUVRIR PLUSIEURS APPS À UNE OU PLUSIEURS PERSONNES D'UN COUP (Kevin 13.10 : « fermer peut fermer une app au choix ou plusieurs,
+     pour une seule personne comme plusieurs ») — POST { uids:[…], apps:[…], action:'fermer'|'rouvrir' } : on AJOUTE aux fermetures de chaque
+     personne (`bloque`) ou on les RETIRE, sans toucher à ses autres réglages ni à ses autres fermetures. L'admin n'est jamais fermé. */
+  if (path === '/__admin/acces-lot' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const connues = new Set(Object.values(APPS)); connues.delete('portail');
+    const apps = [...new Set((Array.isArray(b.apps) ? b.apps : []).map((x) => String(x || '').trim()))].filter((x) => connues.has(x)).slice(0, 60);
+    const uids = [...new Set((Array.isArray(b.uids) ? b.uids : []).map((x) => String(x || '').slice(0, 80).trim()))].filter(Boolean).slice(0, 300);
+    const action = b.action === 'rouvrir' ? 'rouvrir' : (b.action === 'fermer' ? 'fermer' : '');
+    if (!action) return J({ ok: false, reason: 'action requise (fermer ou rouvrir)' });
+    if (!apps.length) return J({ ok: false, reason: 'choisis au moins une application' });
+    if (!uids.length) return J({ ok: false, reason: 'choisis au moins une personne' });
+    const faits = [], absents = [], admin = [];
+    for (const uid of uids) {
+      const acc = await accGet(env, uid);
+      if (!acc) { absents.push(uid); continue; }
+      if (acc.uid === CANON_UID) { admin.push(uid); continue; }
+      const cur = Array.isArray(acc.bloque) ? acc.bloque : [];
+      acc.bloque = action === 'fermer' ? [...new Set([...cur, ...apps])].slice(0, 60) : cur.filter((x) => apps.indexOf(x) < 0);
+      /* on ne touche NI à la portée NI à acces_at : fermer une app ne doit jamais OUVRIR les apps privées (arbre, coffre…) à quelqu'un qui ne les avait pas */
+      await accPut(env, acc, true);
+      faits.push(uid);
+    }
+    await audLog(env, { ev: 'perimetre', detail: (action === 'fermer' ? 'fermé' : 'rouvert') + ' pour ' + faits.length + ' personne(s) : ' + apps.join(', '), apps, uids: faits });
+    return J({ ok: true, action, apps, faits, absents, admin });
   }
   /* ── FERMER UNE OU PLUSIEURS APPS POUR TOUT LE MONDE (Kevin 13.10) ── GET → { apps, fermees } · POST { apps:[…] } → la liste complète des apps fermées.
      L'individuel reste /__admin/acces (`bloque`). Le portail est la réception : jamais fermable. L'admin entre toujours (voir perimetre). */

@@ -152,6 +152,7 @@
       var javisZone = document.getElementById('javis-zone');
       if (javisZone) javisZone.hidden = !(!!(s && s.admin) || estKevin);
       renderSelfService(s); /* « Mes appareils / connexions » — pour TOUT connecté */
+      renderTelNudge(s);    /* 13.10 (Kevin « Redemande ») : un compte d'AVANT le téléphone obligatoire → on le redemande, une fois, jusqu'à ce qu'il soit donné */
       renderCodeNudge(s);   /* 8.10 : un compte sans code au domaine s'ouvre sur son seul nom → on propose d'en choisir un, ici, sur son appareil */
     };
     /* 8.10 : « compte sans code » n'est pas « aucune session » — l'écran du code s'affiche, bloquant, et rien d'autre ne s'ouvre. */
@@ -253,6 +254,33 @@
      domaine, un nom suffisait. Le domaine le dit (whoami.code_pose === false) ; ici on propose de choisir le code TOUT DE SUITE,
      sur l'appareil de la personne (le domaine n'accepte de poser le code d'un compte existant que depuis sa propre session).
      Un compte qui a déjà un code (posé avant le 8.10, fiche sans `code_at`) le confirme une fois : le domaine le reconnaît. */
+  /* ===== « Ajoute ton téléphone » (13.10, Kevin : « Redemande ») =====
+     Les comptes créés AVANT que le téléphone devienne obligatoire n'ont pas de numéro sur la fiche du domaine. whoami le dit
+     (tel_pose === false) ; ici on le redemande, en haut de l'accueil, jusqu'à ce qu'il soit donné. Le numéro va sur la fiche du domaine
+     (POST /__sso/fiche, la personne n'écrit que la sienne) : toutes les apps le lisent ensuite au lieu de le redemander. */
+  function renderTelNudge(s) {
+    var old = document.getElementById('tel-nudge'); if (old) old.remove();
+    if (!s || !s.uid || s.admin || s.tel_pose !== false) return;
+    var box = document.createElement('div'); box.id = 'tel-nudge'; box.className = 'g-sub'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Ajouter mon téléphone');
+    box.innerHTML = '<p>📱 <b>Ajoute ton numéro de téléphone.</b> Il est demandé à tous les comptes du domaine, une seule fois : toutes les apps le retrouveront.</p>'
+      + '<input class="fld" id="tn-tel" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="Téléphone (ex. +377 06 12 34 56)" aria-label="Mon téléphone">'
+      + '<button class="btn" id="tn-go" type="button">Enregistrer mon numéro</button>'
+      + '<p class="g-err" id="tn-err" role="alert" aria-live="polite"></p>';
+    if (hub) hub.insertBefore(box, hub.firstChild);
+    document.getElementById('tn-go').addEventListener('click', function () {
+      var tel = (document.getElementById('tn-tel').value || '').trim(), err = document.getElementById('tn-err'), b = document.getElementById('tn-go');
+      if (!/^\+?[0-9 .()-]{6,24}$/.test(tel) || tel.replace(/\D/g, '').length < 6) { err.textContent = 'Ton numéro de téléphone est obligatoire (ex. +377 06 12 34 56).'; return; }
+      b.disabled = true; b.textContent = '…';
+      var h = { 'content-type': 'application/json' }, t = ''; try { t = localStorage.getItem('kdmc_sso_token') || ''; } catch (e) { /* */ } if (t) h.Authorization = 'Bearer ' + t;
+      fetch('/__sso/fiche', { method: 'POST', credentials: 'include', headers: h, body: JSON.stringify({ telephone: tel }) })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) {
+          if (j && j.ok && (j.champs || []).indexOf('telephone') >= 0) { box.innerHTML = '<p>✅ Merci ! Ton numéro est enregistré pour tout le domaine.</p>'; setTimeout(function () { if (box.parentNode) box.remove(); }, 2500); return; }
+          err.textContent = 'Le domaine n\'a pas pu enregistrer le numéro, réessaie.'; b.disabled = false; b.textContent = 'Enregistrer mon numéro';
+        }).catch(function () { err.textContent = 'Erreur réseau, réessaie.'; b.disabled = false; b.textContent = 'Enregistrer mon numéro'; });
+    });
+  }
+
   function renderCodeNudge(s) {
     var old = document.getElementById('code-nudge'); if (old) old.remove();
     if (!s || !s.uid || s.admin || s.code_pose !== false || !window.kdmcSSO || !window.kdmcSSO.issueDetail) return;

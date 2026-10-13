@@ -4,6 +4,15 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Portail v1.0.53 + domaine (2026-10-13, suite — « Redemande » + fermer pour une ou plusieurs personnes)
+
+- **Kevin : « Redemande. Fermer peut seulement fermer une app au choix ou plusieurs, pour une seule personne comme plusieurs. »**
+- **Téléphone redemandé aux comptes d'avant** : `/__sso/whoami` dit maintenant `tel_pose` (le domaine a-t-il le numéro ?). Quand c'est `false`, le portail affiche en haut de l'accueil la carte « 📱 Ajoute ton numéro de téléphone » (champ ≥ 44 px, même contrôle que partout) jusqu'à ce qu'il soit donné ; il va sur la fiche du domaine (`POST /__sso/fiche`, chacun n'écrit que le sien) et toutes les apps le lisent. Pas de blocage des apps (260 personnes) : CMCteams et la light le demandent déjà dans leur fiche, pré-remplie depuis le domaine. L'admin n'est jamais concerné.
+- **Fermer / rouvrir en lot** : `POST /__admin/acces-lot { uids[], apps[], action: fermer|rouvrir }` — on AJOUTE (ou retire) ces apps aux fermetures (`bloque`) de chaque personne choisie, sans toucher à sa portée ni à ses autres réglages (fermer ne peut donc JAMAIS ouvrir `arbre`/`coffre`… à quelqu'un) ; admin jamais fermé ; inconnus signalés ; portail et apps inventées ignorés ; sans app, sans personne ou sans action : refusé en clair. Page admin : bloc « 🚫 Fermer ou rouvrir des applications à une ou plusieurs personnes » (cases d'apps, liste des personnes avec recherche, boutons ≥ 44 px, résultat « pour N personnes »). Les trois échelles existent donc : une personne (sa fiche), plusieurs personnes (ce bloc), tout le monde (bloc « 🚧 »).
+- Tests : `telephone-domaine` 12 (tel_pose), `apps-fermees` 24 (lot : 14-21), `verify-tel-inscription-portail` 21 (carte redemandée 8-8d), `verify-perimetre-page` (bloc en lot au doigt). Sabotages prouvés : carte retirée → rouge ; `tel_pose` retiré → 3 échecs ; portée posée par le lot → 19 rouge.
+
+---
+
 ## CMCteams v9.965 + light v1.89 + Lingua v2.140.0 + domaine (2026-10-13 — le téléphone fait partie de l'inscription du domaine ; fermer des apps pour tout le monde)
 
 - **Kevin : « Ajoute le téléphone à l'inscription du domaine entier, la fiche principale d'inscription, pas que CMCteams, chaque app, l'inscription au domaine. Une inscription donne accès à tout le domaine sauf bien sûr la partie admin. Je peux bloquer un ou plusieurs sites, général et individuel. Toutes les apps du domaine savent. »**

@@ -4,7 +4,7 @@
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.51"
+   "version": "v1.0.53"
   },
   "www.kd-mc.com": {
    "page": "kdmc-home/index.html",

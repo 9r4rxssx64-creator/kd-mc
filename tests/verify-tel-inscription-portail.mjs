@@ -151,6 +151,26 @@ try {
   await pd.click('#aa-go').catch(() => {});
   await pd.waitForFunction(() => !document.getElementById('attente-admin'), null, { timeout: 6000 }).catch(() => {});
   ok(!(await pd.locator('#attente-admin').count()) && await pd.locator('#hub').isVisible(), '7d. une fois accepté par Kevin, l\'écran d\'attente laisse place à l\'accueil');
+
+  /* 8. « Redemande » (Kevin 13.10) : un compte d'AVANT le téléphone obligatoire (pas de numéro sur sa fiche) → le portail le redemande, une fois */
+  env = { ...BASE };
+  const vieux = await (await mod.fetch(new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' },
+    body: JSON.stringify({ uid: 'vieux-compte', name: 'Vieux Compte', cgu: true, code: '246810' }) }), { ...BASE, KDMC_TELEPHONE_OBLIGATOIRE: '0' }, { waitUntil() {} })).json();
+  await mod.fetch(new Request('https://kd-mc.com/__sso/cgu', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com', authorization: 'Bearer ' + vieux.token }, body: '{}' }), BASE, { waitUntil() {} });   /* un vrai ancien compte a déjà accepté les conditions */
+  const E = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 375, height: 812 } }); await brancher(E);
+  await E.addInitScript((t) => { try { localStorage.setItem('kdmc_sso_token', t); } catch (e) { /* */ } }, vieux.token);
+  const pe = await E.newPage(); await pe.goto('https://kd-mc.com/');
+  await pe.waitForSelector('#pk-skip', { state: 'visible', timeout: 5000 }).catch(() => {}); await fermerOffreFaceId(pe);
+  await pe.waitForSelector('#tel-nudge', { timeout: 8000 }).catch(() => {});
+  const nu = await pe.evaluate(() => { const n = document.getElementById('tel-nudge'), i = document.getElementById('tn-tel'), b = document.getElementById('tn-go'); return n ? { texte: n.textContent, hi: Math.round(i.getBoundingClientRect().height), hb: Math.round(b.getBoundingClientRect().height), debord: document.documentElement.scrollWidth > window.innerWidth + 1 } : null; });
+  ok(nu && /numéro de téléphone/.test(nu.texte) && nu.hi >= 44 && nu.hb >= 44 && !nu.debord, '8. un compte sans numéro : le portail le REDEMANDE (carte en haut, cibles ≥ 44 px, sans débord à 375 px)', JSON.stringify(nu));
+  await pe.click('#tn-go');
+  ok(/obligatoire/.test(await pe.locator('#tn-err').innerText()) && !JSON.parse(kv.get('acc:vieux-compte')).fiche?.telephone, '8b. sans numéro : refusé en clair, rien d\'enregistré');
+  await pe.fill('#tn-tel', '+377 06 77 88 99'); await pe.click('#tn-go');
+  await pe.waitForFunction(() => !document.getElementById('tn-go'), null, { timeout: 6000 }).catch(() => {});
+  ok(JSON.parse(kv.get('acc:vieux-compte')).fiche?.telephone === '+377 06 77 88 99', '8c. le numéro est enregistré sur la fiche du domaine (toutes les apps le liront)');
+  await pe.reload(); await pe.waitForSelector('#pk-skip', { state: 'visible', timeout: 4000 }).catch(() => {}); await fermerOffreFaceId(pe); await pe.waitForSelector('#hub', { state: 'visible', timeout: 8000 }).catch(() => {}); await pe.waitForTimeout(800);
+  ok((await pe.locator('#tel-nudge').count()) === 0, '8d. une fois donné, on ne le redemande plus (carte absente à la visite suivante)');
 } finally { await browser.close(); globalThis.fetch = vraiFetch; }
 console.log(`\nINSCRIPTION AVEC TÉLÉPHONE (portail) — ${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

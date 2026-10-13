@@ -63,7 +63,7 @@
       .then(function (r) {
         if (!r.ok) return { state: 'neterr' };
         return r.json().then(function (j) {
-          if (j && j.ok) return { state: 'session', session: { uid: j.uid, name: j.name, cgu: !!j.cgu, admin: !!j.admin, verified: !!j.verified, app: j.app || '', portee: j.portee || '', attente_admin: j.attente_admin || '' } };
+          if (j && j.ok) return { state: 'session', session: { uid: j.uid, name: j.name, cgu: !!j.cgu, admin: !!j.admin, verified: !!j.verified, app: j.app || '', portee: j.portee || '', attente_admin: j.attente_admin || '', tel_pose: j.tel_pose } };   /* tel_pose === false : le domaine n'a pas encore son numéro */
           /* 4e état — 'hors_perimetre' : la session est VALIDE, mais cette personne
              n'existe pas dans CETTE app (périmètre décidé par l'admin, 2026-09-15).
              Ce n'est PAS un pass invalide : le jeter déconnecterait la personne de

@@ -46,5 +46,15 @@ ok(f2.fiche && f2.fiche.telephone === '+377 06 12 34 56', '8. et son numéro est
 r = await issue({ uid: 'paul-durand', name: 'Paul Durand', cgu: true, code: '135790' }, { ...env, KDMC_TELEPHONE_OBLIGATOIRE: '0' });
 ok(r.st === 200 && r.j.ok === true, '9. interrupteur KDMC_TELEPHONE_OBLIGATOIRE=0 : l\'exigence se coupe d\'un coup (ON/OFF)');
 
+/* « Redemande » (Kevin 13.10) : un compte d'AVANT le téléphone obligatoire (créé ici sans numéro, interrupteur coupé) est reconnu comme « sans numéro » */
+const whoami = async (token) => (await (await mod.fetch(new Request('https://kd-mc.com/__sso/whoami', { headers: { authorization: 'Bearer ' + token } }), env, { waitUntil() {} })).json());
+const sansTel = r.j.token;   /* paul-durand, créé sans numéro au contrôle 9 */
+let w = await whoami(sansTel);
+ok(w.ok === true && w.tel_pose === false, '10. un compte sans numéro est signalé aux apps (whoami.tel_pose === false)', JSON.stringify(w).slice(0, 160));
+w = await whoami(r2.j.token);
+ok(w.tel_pose === true, '11. un compte qui a donné son numéro : tel_pose === true (rien à redemander)');
+const dep = await (await mod.fetch(new Request('https://kd-mc.com/__sso/fiche', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com', authorization: 'Bearer ' + sansTel }, body: JSON.stringify({ telephone: '+377 06 55 44 33' }) }), env, { waitUntil() {} })).json();
+ok(dep.ok === true && dep.champs.indexOf('telephone') >= 0 && (await whoami(sansTel)).tel_pose === true, '12. il donne son numéro (fiche du domaine) → on ne le redemande plus');
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

@@ -8,6 +8,10 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-13 (suite) — « Redemande » le téléphone + fermer pour une ou plusieurs personnes (portail v1.0.53 + routeur + admin)
+- **Fait (code + tests, PAS encore déployé)** : carte « Ajoute ton téléphone » au portail pour les comptes sans numéro (`whoami.tel_pose`) ; `/__admin/acces-lot` + bloc admin pour fermer/rouvrir plusieurs apps à plusieurs personnes.
+- **Reste** : publier + déployer le routeur (nouvelle route) ; PRT et algorithme (attendent Kevin).
+
 ## 2026-10-13 — téléphone à l'inscription du domaine + fermer des apps pour tout le monde (CMCteams v9.965 + light v1.89 + Lingua v2.140.0 + routeur + portail + admin)
 - **Fait (code + tests, PAS encore en ligne)** : champ Téléphone obligatoire dans le formulaire du portail et exigé par `/__sso/issue` pour un nouveau compte ; rangé dans la fiche du domaine ; CMCteams et la light le reprennent. Bloc admin « Fermer des applications pour tout le monde » (`/__admin/apps-fermees`) + individuel par fiche (déjà là).
 - **Visuel envoyé** : la « mémoire douce » des départs (tes départs réels juillet→novembre, aujourd'hui contre douce). **Rien n'est modifié** ; Kevin dira plus tard.

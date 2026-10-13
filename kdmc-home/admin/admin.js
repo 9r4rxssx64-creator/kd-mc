@@ -377,6 +377,47 @@
       + '<div class="chips">' + apps.map(function (x) { return chip('gen', 'ferme', x, FERMEES_GEN.indexOf(x) >= 0); }).join('') + '</div>'
       + '<button class="savacc" id="fermgen-save" type="button">💾 Enregistrer</button><span class="accmsg" id="fermgen-msg"></span></div></details>';
   }
+  /* ---- Fermer / rouvrir des apps à UNE ou PLUSIEURS personnes d'un coup (Kevin 13.10 : « pour une seule personne comme plusieurs ») ---- */
+  function blocLot(accounts) {
+    if (!APPS_LISTE.length || !accounts || !accounts.length) return '';
+    var apps = APPS_LISTE.filter(function (x) { return x !== 'portail'; });
+    var pers = accounts.filter(function (a) { return a && a.uid && a.uid !== 'kdmc_admin'; }).sort(function (x, y) { return String(x.name || x.uid).localeCompare(String(y.name || y.uid), 'fr'); });
+    return '<details class="fermgen" id="fermlot">'
+      + '<summary>🚫 Fermer ou rouvrir des applications à une ou plusieurs personnes</summary>'
+      + '<div class="accbody"><div class="d">1) Coche les applications · 2) Coche les personnes · 3) Ferme ou rouvre. On ajoute (ou on retire) seulement ces apps : le reste de leurs réglages ne bouge pas.</div>'
+      + '<div class="chips">' + apps.map(function (x) { return chip('lot', 'lotapp', x, false); }).join('') + '</div>'
+      + '<input class="search" id="lot-q" placeholder="🔎 Chercher une personne…" autocomplete="off" autocapitalize="off">'
+      + '<div id="lot-pers" style="max-height:260px;overflow:auto;-webkit-overflow-scrolling:touch">'
+      + pers.map(function (a) { var id = 'lotp-' + a.uid; return '<label class="chipacc" for="' + esc(id) + '" data-nom="' + esc(String(a.name || a.uid).toLowerCase()) + '" style="display:flex;margin:4px 0"><input type="checkbox" id="' + esc(id) + '" data-grp="lotpers" data-uid="' + esc(a.uid) + '"> ' + esc(a.name || a.uid) + '</label>'; }).join('')
+      + '</div>'
+      + '<div><button class="savacc" id="lot-fermer" type="button">🚫 Fermer ces apps à ces personnes</button> <button class="savacc" id="lot-rouvrir" type="button">✅ Rouvrir</button></div>'
+      + '<span class="accmsg" id="lot-msg"></span></div></details>';
+  }
+  function wireLot() {
+    var q = document.getElementById('lot-q'), fer = document.getElementById('lot-fermer'), rou = document.getElementById('lot-rouvrir');
+    if (!fer) return;
+    if (q) q.addEventListener('input', function () {
+      var v = q.value.toLowerCase(), ls = document.querySelectorAll('#lot-pers label');
+      for (var i = 0; i < ls.length; i++) ls[i].style.display = ls[i].getAttribute('data-nom').indexOf(v) >= 0 ? 'flex' : 'none';
+    });
+    function coches(sel, attr) { var out = [], ins = document.querySelectorAll(sel); for (var i = 0; i < ins.length; i++) if (ins[i].checked) out.push(ins[i].getAttribute(attr)); return out; }
+    function agir(action) {
+      var apps = coches('#fermlot input[data-grp="lotapp"]', 'data-app'), uids = coches('#fermlot input[data-grp="lotpers"]', 'data-uid'), msg = document.getElementById('lot-msg');
+      if (!apps.length) { msg.textContent = '⚠️ Coche au moins une application.'; return; }
+      if (!uids.length) { msg.textContent = '⚠️ Coche au moins une personne.'; return; }
+      fer.disabled = rou.disabled = true; msg.textContent = '…';
+      fetch('/__admin/acces-lot', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uids: uids, apps: apps, action: action }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          fer.disabled = rou.disabled = false;
+          if (j && j.ok) msg.textContent = '✅ ' + (action === 'fermer' ? 'Fermé' : 'Rouvert') + ' : ' + apps.join(', ') + ' pour ' + j.faits.length + ' personne' + (j.faits.length > 1 ? 's' : '') + (j.absents && j.absents.length ? ' · ' + j.absents.length + ' introuvable(s)' : '');
+          else msg.textContent = '⚠️ ' + ((j && (j.reason || j.message)) || 'refusé');
+        })
+        .catch(function () { fer.disabled = rou.disabled = false; msg.textContent = '⚠️ Réseau — réessaie'; });
+    }
+    fer.addEventListener('click', function () { agir('fermer'); });
+    rou.addEventListener('click', function () { agir('rouvrir'); });
+  }
   function wireFermees() {
     var b = document.getElementById('fermgen-save');
     if (!b) return;
@@ -452,6 +493,7 @@
       '<div id="presence">' + presence(accounts) + '</div>'
       + (kv ? '' : '<div class="note">⚙️ Le registre central (KV) s\'activera au prochain déploiement du router : les fiches apparaîtront alors automatiquement. Les fonctions communes ci-dessous marchent déjà.</div>')
       + blocFermees()
+      + blocLot(accounts)
       + '<h2 class="cat">📊 Tous les comptes</h2>'
       + '<div class="stat" id="gstat">' + globalPills(accounts) + '</div>'
       + histSection(accounts)
@@ -466,6 +508,7 @@
     wireRevoke();
     wireAcces();
     wireFermees();
+    wireLot();
     var q = document.getElementById('q');
     if (q) q.addEventListener('input', function () {
       var v = q.value.toLowerCase();

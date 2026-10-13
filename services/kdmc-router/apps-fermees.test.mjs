@@ -59,5 +59,20 @@ ok(r.ok === true && (await vu(tok, 'lingua.kd-mc.com')).reason === 'bloque_ici' 
 const autre = await appel('kd-mc.com', '/__sso/issue', { method: 'POST', body: JSON.stringify({ uid: 'paul-durand', name: 'Paul Durand', cgu: true, code: '135790', telephone: '+377 06 98 76 54' }) });
 ok((await vu(autre.token, 'lingua.kd-mc.com')).ok === true, '13b. et les autres personnes y entrent toujours');
 
+/* PLUSIEURS PERSONNES D'UN COUP (Kevin 13.10 : « fermer … pour une seule personne comme plusieurs ») */
+const zoe = await appel('kd-mc.com', '/__sso/issue', { method: 'POST', body: JSON.stringify({ uid: 'zoe-bernard', name: 'Zoé Bernard', cgu: true, code: '112233', telephone: '+377 06 11 22 33' }) });
+const lot = (corps, h = H) => appel('kd-mc.com', '/__admin/acces-lot', { method: 'POST', headers: h, body: JSON.stringify(corps) });
+ok((await lot({ uids: ['lea-martin'], apps: ['lingua'], action: 'fermer' }, {})).ok !== true, '14. sans preuve admin, la fermeture en lot est refusée');
+r = await lot({ uids: ['lea-martin', 'paul-durand', 'inconnu-total', 'kdmc_admin'], apps: ['lingua', 'cuisine', 'portail', 'app-inventee'], action: 'fermer' });
+ok(r.ok === true && JSON.stringify(r.apps) === '["lingua","cuisine"]' && r.faits.length === 2 && r.absents[0] === 'inconnu-total' && r.admin.length === 1, '15. fermer 2 apps à 2 personnes d\'un coup ; inconnu signalé, admin jamais fermé, portail et app inventée ignorés', JSON.stringify(r));
+ok((await vu(tok, 'lingua.kd-mc.com')).reason === 'bloque_ici' && (await vu(tok, 'cuisine.kd-mc.com')).reason === 'bloque_ici' && (await vu(autre.token, 'lingua.kd-mc.com')).reason === 'bloque_ici', '16. les deux personnes sont bien fermées sur les deux apps');
+ok((await vu(zoe.token, 'lingua.kd-mc.com')).ok === true, '17. une troisième personne, non choisie, n\'est pas touchée');
+ok((await vu(tok, 'chez-lolo.kd-mc.com')).reason === 'bloque_ici', '18. on AJOUTE : la fermeture individuelle de chez-lolo posée avant est gardée');
+await lot({ uids: ['zoe-bernard'], apps: ['cuisine'], action: 'fermer' });
+ok((await vu(zoe.token, 'cuisine.kd-mc.com')).reason === 'bloque_ici' && (await vu(zoe.token, 'arbre.kd-mc.com')).ok === false, '19. fermer une app à quelqu\'un qui n\'a jamais été rangé n\'OUVRE pas les apps privées (arbre reste fermé)');
+r = await lot({ uids: ['paul-durand'], apps: ['lingua'], action: 'rouvrir' });
+ok(r.ok === true && (await vu(autre.token, 'lingua.kd-mc.com')).ok === true && (await vu(autre.token, 'cuisine.kd-mc.com')).reason === 'bloque_ici' && (await vu(tok, 'lingua.kd-mc.com')).reason === 'bloque_ici', '20. rouvrir UNE app à UNE personne : les autres fermetures et les autres personnes ne bougent pas');
+ok((await lot({ uids: ['lea-martin'], apps: [], action: 'fermer' })).ok === false && (await lot({ uids: [], apps: ['lingua'], action: 'fermer' })).ok === false && (await lot({ uids: ['lea-martin'], apps: ['lingua'] })).ok === false, '21. sans app, sans personne ou sans action : refusé en clair (jamais « à moitié »)');
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-13 (nuit) — « Prévient toutes tes branches de privilégier le gratuit, même pour les actions » (carte + ration + message)
+- **Carte unique** des 7 règles « gratuit » dans `CLAUDE-HISTOIRE.md` (§ « TOUJOURS LE GRATUIT D'ABORD ») et son index `CLAUDE.md` ; **5 questions** avant tout robot/appel/outil.
+- **Outil** `tools/ci/ration-actions.mjs` (+ garde `test:ration-actions`, 9 contrôles, sabotage prouvé) : minutes Actions du jour vs ration 60 min, verdict 🟢/🟠/🔴, code 3 si mangée. Ligne en tête d'`ETAT-DU-MOMENT.md` (lue par chaque session à chaque réveil).
+- **Message à toutes les sessions** (pipeline) : même réflexe, avec suivi (« prévenir ne suffit pas : faire rectifier, puis vérifier »).
+- Mesuré aujourd'hui sur ce lot : tests EN LOCAL (aucun robot du coffre lancé par moi).
+
 ## 2026-10-13 (nuit) — WhatsApp MIS DE CÔTÉ (Kevin : « tu l'enlèves du visuel de l'inscription, on fait confiance aux numéros tapés »)
 - Rien de WhatsApp à l'écran tant que le domaine n'est pas branché : l'inscription ne montre que le champ téléphone (numéro tapé, cru) ; dans « Créer un compte » (invité), le choix « confirme par WhatsApp » n'apparaît que si WhatsApp est branché. La tâche « brancher WhatsApp (3 copier-coller chez Meta) » reste dans `KEVIN_ACTIONS_TODO.md`, marquée « mis de côté ».
 - Garde `test:tel-invite-portail` (13 ; `SABOTAGE=signup` = le portail montre WhatsApp sans qu'il soit branché → rouge) et `test:creer-invite-page` (16).

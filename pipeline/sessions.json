@@ -1505,6 +1505,16 @@
       "maj": "2026-10-13",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "gratuit-partout": {
+      "titre": "Gratuit d'abord partout, même Actions",
+      "branche": "claude/gratuit-partout",
+      "sujet": "carte des règles gratuit, outil ration-actions, message à toutes",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-13",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -4993,6 +5003,15 @@
       "sujet": "Budget Actions : 10 $ restants jusqu'au 31.10 — chaîne privée et audit runtime ne partent plus à la fusion (le train du soir, 1 fois par jour)",
       "corps": "Kevin a relevé le budget Actions à 30 $ (10 $ restants ; quota remis à zéro le 1.11). Ration : 60 min/jour max. Règles (détail dans ETAT-DU-MOMENT.md, 1re ligne) : tests EN LOCAL puis fusion ; la chaîne privée (17 min) et l'audit runtime (10 min) sont en workflow_dispatch seulement, lancés UNE fois par jour le soir par la session qui parle à Kevin (n'en lance pas) ; regroupe tes PR ; un changement de masse des workflows se pousse seul ; l'arbre s'écrit depuis la session (tools/arbre/session/). Un run qui meurt en 5 s sans étape = budget, ne pas relancer.",
       "ts": "2026-10-13 12:12",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m216-gratuit-partout",
+      "de": "gratuit-partout",
+      "a": "toutes",
+      "sujet": "Kevin 13.10 : GRATUIT D'ABORD, MÊME POUR LES ACTIONS GITHUB — ration lue AVANT tout robot, tests en local",
+      "corps": "Kevin : « Prévient toutes tes branches de privilégier le gratuit. Même pour action. Pour respecter les règles et les forfaits… toujours. » La carte des 7 règles « gratuit » est groupée dans CLAUDE-HISTOIRE.md (§ TOUJOURS LE GRATUIT D'ABORD, index CLAUDE.md). Réflexe en 5 questions avant tout robot/appel/outil : (1) un chemin gratuit existe ? (local, dépôt public aux minutes illimitées, Workers AI, cache) ; (2) combien me reste-t-il aujourd'hui ? — gh api \"repos/9r4rxssx64-creator/CMCteams/actions/runs?created=>=$(date -u +%F)&per_page=100\" > /tmp/runs.json && node tools/ci/ration-actions.mjs --runs /tmp/runs.json (sort avec le code 3 si la ration de 60 min est mangée : n'en lance AUCUN) ; (3) je regroupe (un robot pour plusieurs changements) ; (4) je ne lance pas ce que le train du soir lance déjà (chaîne privée + audit runtime = 1 fois/jour, par la session qui parle à Kevin) ; (5) j'écris ce que ça a coûté dans le MEMO. À faire par chaque session : relire cette carte, vérifier tes propres robots/appels en cours (workflow_dispatch seulement, timeout-minutes, paths, pas de cron, IA gratuite en tête), corriger ce qui ne l'est pas, puis répondre par « suivi » avec ce que tu as vérifié ou changé. Mesuré : le quota gratuit du coffre est parti le 12.10 (3 020 min en 9 jours).",
+      "ts": "2026-10-13 13:33",
       "etat": "ouvert"
     }
   ]

@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 213 règles — le texte de Kevin, une par une
+## 📜 Les 214 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -939,6 +939,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 👔 RÈGLE MÉTIER ABSOLUE — LES PLANNINGS DES CADRES (PIT BOSS, SUPERVISEURS) SONT DANS CMCteams ET DANS LA LIGHT, SANS ORDRE DE DÉPART (Kevin 2026-10-12, ABSOLUE)
 **« Intègre dans light et CMCteams les plannings cadres vérifiés »** — Kevin 2026-10-12 (après « Intègre » puis « Re Intègre les plannings cadres. Je te donne toutes les autorisations »). […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-les-plannings-des-cadres-pit-boss-superviseurs-sont-dans-cmcteams-et-dans-la-light-sans-ordre-de-départ-kevin-2026-10-12-absolue)
+
+### 🆓 RÈGLE ABSOLUE — TOUJOURS LE GRATUIT D'ABORD, MÊME POUR LES ACTIONS GITHUB ET LES OUTILS À CRÉDITS : UNE SEULE CARTE QUI GROUPE TOUTES LES RÈGLES « GRATUIT » (Kevin 2026-10-13, ABSOLUE)
+**« Prévient toutes tes branches de privilégier le gratuit. Même pour action. Pour respecter les règles et les forfaits… toujours. Note-le. Groupe au besoin. Va plus loin »** — Kevin 2026-10-13
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-toujours-le-gratuit-dabord-même-pour-les-actions-github-et-les-outils-à-crédits-une-seule-carte-qui-groupe-toutes-les-règles-gratuit-kevin-2026-10-13-absolue)
 
 ---
 

@@ -12134,3 +12134,32 @@ Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas p
 
 ### 2. Gardes
 `test:cadres-planning-livre` (vrai navigateur : téléphone neuf CMCteams + light, sabotage → rouge), `test:cadres-seed` (le seed ne perd pas les cadres au remplacement d'un mois), `test:pit-boss-import`, `test:no-cadres`, robot `verif-live-cadres` (vrai domaine).
+
+## 🆓 RÈGLE ABSOLUE — TOUJOURS LE GRATUIT D'ABORD, MÊME POUR LES ACTIONS GITHUB ET LES OUTILS À CRÉDITS : UNE SEULE CARTE QUI GROUPE TOUTES LES RÈGLES « GRATUIT » (Kevin 2026-10-13, ABSOLUE)
+
+> **« Prévient toutes tes branches de privilégier le gratuit. Même pour action. Pour respecter les règles et les forfaits… toujours. Note-le. Groupe au besoin. Va plus loin »** — Kevin 2026-10-13
+
+Ce n'est pas une règle nouvelle : c'est la **carte unique** des règles « gratuit » déjà écrites (elles étaient éparpillées en sept entrées), avec ce que Kevin ajoute : **les minutes GitHub Actions comptent comme n'importe quel forfait**.
+
+### 1. La carte (sept règles, un seul réflexe)
+| Besoin | Règle d'origine (même fichier) | Le réflexe |
+|---|---|---|
+| Tout le travail, toutes les branches | « GRATUIT PAR DÉFAUT » (30.09) | borne `timeout-minutes`, `paths`, pas de cron ; la chaîne privée se lance **en local** avant de fusionner |
+| IA | « TOUT GRATUIT, PARTOUT, TOUJOURS » (2.10), « QWEN GRATUIT EN IA PRINCIPALE » (5.09), « LA CONFÉRENCE DES IA GRATUITES » (2.10) | un moteur gratuit en tête ; le payant n'est qu'un secours (`test:tout-gratuit`) |
+| Quand un gratuit s'épuise | « QUAND UN GRATUIT S'ÉPUISE, LE RELAIS EST GRATUIT » (2.10) | le relais est prévu d'avance, de même niveau |
+| Requêtes du domaine | « TOUT GRATUIT, ET TOUT MARCHE COMME AVANT » (8.10) | le robot regarde le budget avant de frapper ; le navigateur garde les fichiers |
+| **Minutes GitHub Actions (13.10)** | « TRAIN DU SOIR » (ETAT-DU-MOMENT, 13.10) | ration **60 min/jour** ; tests **en local** ; la chaîne privée et l'audit runtime partent **une fois par jour, le soir, par la session qui parle à Kevin** |
+| Outils à crédits (Firecrawl, MCP payants…) | « GRATUIT PAR DÉFAUT » § 2 | en dernier ; on écrit ce que ça a coûté |
+| Le forfait Claude lui-même | « LE FICHIER DE RÈGLES SE LIT À CHAQUE MESSAGE » (17.09) | mémoire compacte, pas de relecture inutile |
+
+### 2. Avant TOUT geste qui consomme (robot, appel, outil) — cinq questions
+1. **Un chemin gratuit existe-t-il ?** (en local, dans le dépôt public aux minutes illimitées, Workers AI, cache navigateur) → je le prends.
+2. **Combien me reste-t-il aujourd'hui ?** Pour les Actions du coffre : `gh api "repos/9r4rxssx64-creator/CMCteams/actions/runs?created=>=$(date -u +%F)&per_page=100" > /tmp/runs.json && node tools/ci/ration-actions.mjs --runs /tmp/runs.json` (🟢 / 🟠 / 🔴 ; code 3 si la ration est mangée → je n'en lance aucun).
+3. **Est-ce que je regroupe ?** Un seul robot pour plusieurs changements ; un changement de masse des workflows se pousse seul.
+4. **Est-ce que je lance quelque chose que quelqu'un d'autre lance déjà ?** (le train du soir appartient à la session qui parle à Kevin).
+5. **Ai-je écrit ce que ça coûte ?** (minutes, crédits, requêtes) dans le MEMO — sans mesure, pas de « ça passe ».
+
+### 3. Mis en place le 13.10 (branche `claude/gratuit-partout`)
+- **Message à TOUTES les sessions** (pipeline, « prévenir ne suffit pas : faire rectifier, puis vérifier ») avec le réflexe ci-dessus, et le suivi à clore.
+- **`tools/ci/ration-actions.mjs`** : lit la ration du jour (minutes bord à bord, jour UTC, runs refusés par le budget à 0, top des plus gourmands, verdict, code de sortie 3 quand c'est mangé). Garde `test:ration-actions` (9 contrôles, sabotage prouvé).
+- **Une ligne en tête d'ETAT-DU-MOMENT** (lue par chaque session à chaque réveil) et cette carte dans l'index de `CLAUDE.md`.

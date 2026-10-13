@@ -248,6 +248,7 @@
   "tests/verify-liens-portail-paquet.mjs",
   "tests/verify-lieu-live.mjs",
   "tests/verify-lieux-parite.mjs",
+  "tests/verify-light-admin-reentrer.mjs",
   "tests/verify-light-audit-8-10.mjs",
   "tests/verify-light-equipes-firebase.mjs",
   "tests/verify-light-faceid-code.mjs",

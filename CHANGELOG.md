@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.93 (2026-10-13 soir — « Admin » ne redemande plus le code à Kevin)
+
+- **Kevin : « Dans light, quand je passe de admin à quitter et que je refais admin il me demande un code alors que c'est toujours moi. »** CAUSE : « Quitter admin » ne retire que l'affichage, mais « 🔒 Admin » ouvrait toujours l'écran du code sans demander au domaine (la reconnaissance automatique ne tournait qu'au démarrage). Corrigé : `toggleAdmin` interroge d'abord le domaine (`_depAdminSansCode` → session vérifiée ou laissez-passer `/__admin/grant`, comme au démarrage) ; l'écran du code ne s'ouvre que sur refus (un collègue) ou domaine muet. Test `verify-light-admin-reentrer` (7, vrai navigateur, domaine simulé ; **sabotage : 2 échecs**), câblé dans `test:ci`.
+
 ## light v1.92 (2026-10-13 soir — phrase inutile retirée)
 
 - **Kevin (capture du tableau Pit Boss / Superviseurs) : « Efface l'info inutile : planning pitboss… tel quel… »** La ligne « 👔 Planning des Pit Boss et des Superviseurs, lu tel quel dans le PDF — pas d'ordre de départ (les cadres n'ont pas d'équipe). » sous le tableau est retirée (l'en-tête du tableau dit déjà qui est affiché). `verify-cadres-dans-planning` contrôle que la zone est vide (**prouvé discriminant** : avec l'ancienne ligne, 2 échecs).

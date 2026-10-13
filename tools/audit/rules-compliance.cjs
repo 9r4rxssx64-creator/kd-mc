@@ -95,6 +95,8 @@ const REGISTRE = [
   [/GRATUIT PAR DÉFAUT/i, ['npm:test:gratuit']],
   // Règle « TOUJOURS LE GRATUIT D'ABORD, MÊME POUR LES ACTIONS GITHUB » (Kevin 13.10.2026) : garde = test:ration-actions (outil de ration tools/ci/ration-actions.mjs).
   [/TOUJOURS LE GRATUIT D.ABORD/i, ['npm:test:ration-actions']],
+  // Règle « PAS D'INFOS INUTILES, NULLE PART » (Kevin 13.10.2026) : garde = test:pas-d-infos-inutiles (l'écran ne montre que ce qui aide Kevin à agir ou à comprendre).
+  [/PAS D.INFOS INUTILES/i, ['npm:test:pas-d-infos-inutiles']],
   // Règle « CONFÉRENCE DES IA GRATUITES … POUR TOUTES LES APPS » (Kevin 2.10.2026 soir) : garde = test:conference-partout
   // (chaque app entre par routeSmart / /ai, balayage des workers, sabotage) + test:ia-route (3 tours, compétence durable).
   // L'entrée avait été PERDUE à la fusion #4242 (résolution « version de main » du fichier) → ratchet 19 → 21 (3.10 00h23).

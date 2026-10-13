@@ -84,6 +84,7 @@
   "tests/arbre-prive.test.mjs",
   "tests/arbre-relier.test.mjs",
   "tests/arbre-session.test.mjs",
+  "tests/arbre-voix.test.mjs",
   "tests/audit-fidelity-cell-by-cell.mjs",
   "tests/audit-fidelity-doimport-juin.mjs",
   "tests/bg-url-guard.test.mjs",

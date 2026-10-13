@@ -67,6 +67,9 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-13 (soir) — light v1.92
+- **Fait** : phrase « Planning des Pit Boss et des Superviseurs, lu tel quel dans le PDF… » retirée sous le tableau des cadres (light). Test `verify-cadres-dans-planning` (31, sabotage 2 échecs).
+
 ## 2026-10-13 (nuit) — Carpinelli bloqué : 59 personnes introuvables au planning + « U » d'office (CMCteams v9.967, light v1.91, routeur)
 - **Suite (même nuit)** : n° USM annoncé « facultatif » (fiche light + CMCteams) ; **lien CMCteams ⇄ light = entrée automatique** (`entree-domaine.js` : code prouvé + conditions + fiche avec matricule + « oui » du planning ; test `verify-entree-domaine` 18, sabotage 3 échecs).
 - **Fait (code + tests, PAS encore en ligne)** : la vérification du domaine ne voyait que les numéros `U00123` ; 40 personnes en `U_TMP_…`, 15 cadres `P…`, 4 `S…` étaient refusées (« pas dans le planning ») — dont Davy CARPINELLI. Un seul motif d'identifiant dans `membre-planning.js` ; `‹employé›` (P00003 = U09733) reste une personne. Le « U » est écrit d'office dans tous les champs matricule (`tools/shared/matricule-u.js` + copie light). Tests : membre (6), connexion-tout-le-monde (315 personnes), matricule-u (11, sabotage 2/9).

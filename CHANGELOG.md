@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.92 (2026-10-13 soir — phrase inutile retirée)
+
+- **Kevin (capture du tableau Pit Boss / Superviseurs) : « Efface l'info inutile : planning pitboss… tel quel… »** La ligne « 👔 Planning des Pit Boss et des Superviseurs, lu tel quel dans le PDF — pas d'ordre de départ (les cadres n'ont pas d'équipe). » sous le tableau est retirée (l'en-tête du tableau dit déjà qui est affiché). `verify-cadres-dans-planning` contrôle que la zone est vide (**prouvé discriminant** : avec l'ancienne ligne, 2 échecs).
+
 ## CMCteams v9.967 · light v1.91 · routeur (2026-10-13 — Carpinelli ne pouvait pas s'inscrire : 59 personnes étaient INTROUVABLES au planning + le « U » déjà écrit)
 
 - **Kevin : « CARPINELLI n'arrive pas lui non plus à se connecter, créer un compte. Ce n'est pas la première fois ce problème. »** CAUSE MESURÉE : le domaine (`/__dep/membre`, `services/kdmc-router/membre-planning.js`) ne lisait que les numéros « U + chiffres » du planning publié. Or **59 personnes** sont rangées autrement : **40 sous un numéro provisoire `U_TMP_…`** (arrivées par un import avant d'avoir leur numéro — dont « CARPINELLI D » = `U_TMP_MLVOMU`), **15 cadres `P…`** (pit boss) et **4 `S…`** (superviseurs). Pour elles, la vérification répondait « pas dans le planning » quel que soit le nom tapé : elles ne pouvaient ni créer de compte ni se connecter. Corrigé : un seul motif d'identifiant (`[PSU][0-9A-Z_]{2,19}`) pour la recherche, le rangement du matricule (`matsbm:<numéro>`), la correction par Kevin et la banque des noms. Un cadre ajouté sous son vrai numéro (« ‹employé› » = `P00003` ET `U09733`) reste UNE personne (le numéro réel l'emporte) : pas de faux homonyme.

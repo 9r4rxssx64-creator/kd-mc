@@ -48,7 +48,7 @@
 |---|---|---|
 | Branches dans le dépôt | **634** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
-| État de la CI | 🔴 **à l'arrêt** — 26/30 runs échouent en moins de 15 s | API GitHub |
+| État de la CI | 🔴 **à l'arrêt** — 25/30 runs échouent en moins de 15 s | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
 
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)

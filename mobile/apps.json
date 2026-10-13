@@ -34,6 +34,8 @@
         "tools/shared/monaco-fonds.js",
         "tools/shared/recherche-noms.js",
         "tools/shared/passerelle.js",
+        "tools/shared/matricule-u.js",
+        "tools/shared/entree-domaine.js",
         "tools/shared/accord-unique.js",
         "tools/shared/secrets-cmc.js",
         "tools/shared/docs-cmc.js",

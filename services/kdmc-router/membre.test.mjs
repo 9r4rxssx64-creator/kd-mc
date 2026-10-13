@@ -49,7 +49,7 @@ test('le domaine reconnaît un collègue du planning, et lui seul', async () => 
 /* LE MATRICULE SBM RANGÉ SUR LA FICHE (Kevin 6.10 : « on sauvegarde sur chaque fiche au fur et à mesure des inscriptions »).
    Un KV en mémoire, le vrai routeur. SABOTAGE=1 : le registre ne range rien → les contrôles « rangé », « autre », « pris » rougissent. */
 import { createHash, createHmac } from 'node:crypto';
-import { verifierEtRanger, corrigerMatricule } from './membre-planning.js';
+import { verifierEtRanger, corrigerMatricule, personnesDuPlanning } from './membre-planning.js';
 const SAB = process.env.SABOTAGE === '1';
 function kvMemoire(depart) {
   const m = new Map(Object.entries(depart || {}));
@@ -138,3 +138,27 @@ test('la banque des noms grossit import après import et ne perd personne', asyn
   _videCachePlanning();
 });
 
+
+/* 13.10 (Kevin, capture d'un collègue : « n'arrive pas à se connecter… ce n'est pas la première fois ») — le planning range aussi des
+   gens sous un numéro PROVISOIRE (U_TMP_…), et les cadres sous P… / S… : l'ancienne lecture ne voyait que « U + chiffres ». Noms inventés. */
+test('les gens au numéro provisoire (U_TMP_…) et les cadres (P…, S…) entrent aussi, et leur matricule est rangé', async () => {
+  _videCachePlanning();
+  const PLAN3 = '{"id":"U00015","name":"DUPONT M"},{"id":"U_TMP_AB12CD","name":"LEFEBVRE D"},{"id":"P00007","name":"GIRARD A"},{"id":"S00002","name":"BLANC V"}';
+  assert.equal(membreDansPlanning(PLAN3, 'U30001', 'Lefebvre', 'Davy'), true, 'numéro provisoire : accepté');
+  assert.equal(membreDansPlanning(PLAN3, 'U30001', 'Girard', 'Alain'), true, 'pit boss (P…) : accepté');
+  assert.equal(membreDansPlanning(PLAN3, 'U30001', 'Blanc', 'Valérie'), true, 'superviseur (S…) : accepté');
+  assert.equal(membreDansPlanning(PLAN3, 'U30001', 'Lefebvre', 'Paul'), false, 'mauvaise initiale : toujours refusé');
+  const kv = new Map();
+  const e = { ACCOUNTS: { get: async (k) => kv.get(k) ?? null, put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } } };
+  assert.deepEqual(await verifierEtRanger(e, PLAN3, 'U30001', 'Lefebvre', 'Davy', 'cmcteams-light.kd-mc.com'), { ok: true, range: 'U_TMP_AB12CD' }, 'rangé sur la personne au numéro provisoire');
+  assert.deepEqual(await verifierEtRanger(e, PLAN3, 'U30001', 'Lefebvre', 'Davy'), { ok: true }, 'deuxième connexion : oui');
+  assert.deepEqual(await verifierEtRanger(e, PLAN3, 'U30001', 'Girard', 'Alain'), { ok: false, reason: 'matricule_pris' }, 'ce matricule est déjà celui de quelqu\'un d\'autre');
+  assert.equal((await corrigerMatricule(e, 'U_TMP_AB12CD', 'U29553')).ok, true, 'Kevin peut corriger la fiche d\'un numéro provisoire');
+  assert.equal((await corrigerMatricule(e, 'x"; DROP', 'U29553')).ok, false, 'un numéro mal formé est refusé');
+});
+
+test('un cadre ajouté sous son vrai numéro n\'est pas un faux homonyme (DURAND J = P… et U…)', () => {
+  const P = '{"id":"P00003","name":"DURAND J"},{"id":"U09733","name":"DURAND J"},{"id":"U00062","name":"DURAND B"}';
+  assert.deepEqual(personnesDuPlanning(P, 'Durand', 'Jonathan'), ['U09733'], 'une seule personne, son numéro réel');
+  assert.deepEqual(personnesDuPlanning(P, 'Durand', 'Ben'), ['U00062'], 'le frère reste à part');
+});

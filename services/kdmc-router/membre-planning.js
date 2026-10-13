@@ -6,6 +6,12 @@
  * session du domaine, même simplement déclarée.
  * Ici le DOMAINE vérifie : le matricule existe dans le planning publié (boards-gen.js) avec CE nom
  * de famille, et l'initiale du prénom correspond. La page ne voit jamais la liste. Réponse : oui / non, rien d'autre. */
+/* 13.10 (Kevin : « un collègue n'arrive pas à se connecter… ce n'est pas la première fois ») — MESURÉ : 59 personnes du planning
+   n'ont PAS un numéro « U00123 » : 40 ont un numéro provisoire « U_TMP_… » (arrivées par un import avant d'avoir leur numéro),
+   15 cadres « P… » (pit boss) et 4 « S… » (superviseurs). L'ancienne lecture ne voyait que « U + chiffres » : ces 59 personnes
+   étaient INTROUVABLES → « Ce prénom et ce nom ne sont pas dans le planning ». Un seul motif pour tout le monde : */
+const ID_PERSONNE = '[PSU][0-9A-Z_]{2,19}';
+const RE_PERSONNE = () => new RegExp('"id":"(' + ID_PERSONNE + ')","name":"([^"]{1,80})"', 'g');
 const CHEMIN = '/cmcteams/tools/departs/boards-gen.js';
 let _cache = { t: 0, txt: '' };
 
@@ -40,11 +46,14 @@ export function membreDansPlanning(txt, matricule, nom, prenom) {
 }
 /* PURE : les numéros internes des personnes du planning qui portent ce nom (homonymes compris). */
 export function personnesDuPlanning(txt, nom, prenom) {
-  const ids = new Set();
-  for (const x of String(txt || '').matchAll(/"id":"(U\d+)","name":"([^"]{1,80})"/g)) {
-    if (memeNom(x[2], nom, prenom) || memeNom(x[2], prenom, nom)) ids.add(x[1]);
+  const ids = new Set(), parNom = new Map();
+  for (const x of String(txt || '').matchAll(RE_PERSONNE())) {
+    if (memeNom(x[2], nom, prenom) || memeNom(x[2], prenom, nom)) { ids.add(x[1]); parNom.set(x[1], x[2]); }
   }
-  return [...ids];
+  /* Un cadre ajouté sous son vrai numéro (« DUPONT J » = P00003 ET U09733, NOTES_USER 12.10) ou un provisoire devenu numéro
+     réel est UNE personne : sous le même libellé, le numéro « U + chiffres » l'emporte (sinon : faux homonyme, rien de rangé). */
+  const reels = new Set([...ids].filter((i) => /^U\d+$/.test(i)).map((i) => parNom.get(i)));
+  return [...ids].filter((i) => /^U\d+$/.test(i) || !reels.has(parNom.get(i)));
 }
 /* LE MATRICULE SBM RANGÉ SUR LA FICHE (Kevin 6.10.2026 : « Pour les matricules, on sauvegarde sur chaque fiche au fur et à
    mesure des inscriptions »). Le planning ne connaît pas les vrais matricules : la PREMIÈRE inscription range celui qui a été
@@ -65,7 +74,7 @@ export async function verifierEtRanger(env, txt, matricule, nom, prenom, app) {
   if (!/^U\d{3,6}$/.test(m)) return { ok: false, reason: 'matricule_format' };
   const ids = personnesDuPlanning(txt, nom, prenom);
   if (!ids.length) return { ok: false, reason: 'hors_planning' };
-  const internes = new Set([...String(txt || '').matchAll(/"id":"(U\d+)"/g)].map((x) => x[1]));
+  const internes = new Set([...String(txt || '').matchAll(new RegExp('"id":"(' + ID_PERSONNE + ')"', 'g'))].map((x) => x[1]));
   if (internes.has(m)) return ids.includes(m) ? { ok: true } : { ok: false, reason: 'matricule_autre' };
   const kv = env?.ACCOUNTS;
   if (!kv?.get) return { ok: true };
@@ -85,7 +94,7 @@ export async function verifierEtRanger(env, txt, matricule, nom, prenom, app) {
 /* Kevin corrige (ou efface, m vide) le matricule rangé sur une personne. Le matricule pris ailleurs est libéré de l'autre. */
 export async function corrigerMatricule(env, id, matricule) {
   const kv = env?.ACCOUNTS, m = String(matricule || '').trim().toUpperCase();
-  if (!kv?.put || !/^U\d{1,6}$/.test(String(id || '')) || (m && !/^U\d{3,6}$/.test(m))) return { ok: false, reason: 'invalide' };
+  if (!kv?.put || !new RegExp('^' + ID_PERSONNE + '$').test(String(id || '')) || (m && !/^U\d{3,6}$/.test(m))) return { ok: false, reason: 'invalide' };
   const avant = await lireFiche(kv, cleMatricule(id));
   if (avant?.m && avant.m !== m) await kv.delete(cleProprietaire(avant.m));
   if (!m) { await kv.delete(cleMatricule(id)); return { ok: true }; }
@@ -98,7 +107,7 @@ export async function corrigerMatricule(env, id, matricule) {
 /* La liste pour Kevin : numéro interne, nom du planning, matricule, date, app. */
 export async function listeMatricules(env, txt) {
   const kv = env?.ACCOUNTS, noms = {};
-  for (const x of String(txt || '').matchAll(/"id":"(U\d+)","name":"([^"]{1,80})"/g)) noms[x[1]] = x[2];
+  for (const x of String(txt || '').matchAll(RE_PERSONNE())) noms[x[1]] = x[2];
   if (!kv?.list) return [];
   const out = [];
   let curseur;
@@ -124,12 +133,12 @@ export async function enrichirBanque(env, txt) {
   if (!kv?.get || !txt) return '';
   let b = {};
   try { b = JSON.parse((await kv.get(CLE_BANQUE)) || '{}') || {}; } catch { b = {}; }
-  const vus = [...String(txt).matchAll(/"id":"(U\d+)","name":"([^"]{1,80})"/g)].map((x) => x[1] + '|' + x[2]);
+  const vus = [...String(txt).matchAll(RE_PERSONNE())].map((x) => x[1] + '|' + x[2]);
   let neuf = 0, taille = Object.keys(b).length;
   for (const c of vus) if (!b[c] && taille < BANQUE_MAX) { b[c] = Date.now(); neuf++; taille++; }
   if (neuf && kv.put) { try { await kv.put(CLE_BANQUE, JSON.stringify(b)); } catch { /* relu au prochain rafraîchissement */ } }
   const dans = new Set(vus);
-  return Object.keys(b).filter((c) => !dans.has(c) && /^U\d+\|[^"\\]{1,80}$/.test(c))
+  return Object.keys(b).filter((c) => !dans.has(c) && new RegExp('^' + ID_PERSONNE + '\\|[^"\\\\]{1,80}$').test(c))
     .map((c) => { const i = c.indexOf('|'); return '{"id":"' + c.slice(0, i) + '","name":"' + c.slice(i + 1) + '"}'; }).join(',');
 }
 /* Le planning publié : la copie du KV (déposée par la publication), sinon l'hébergeur — plus la banque des noms. 10 min en mémoire. */

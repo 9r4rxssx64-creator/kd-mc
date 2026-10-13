@@ -166,9 +166,9 @@ try {
   ok(nu && /numéro de téléphone/.test(nu.texte) && nu.hi >= 44 && nu.hb >= 44 && !nu.debord, '8. un compte sans numéro : le portail le REDEMANDE (carte en haut, cibles ≥ 44 px, sans débord à 375 px)', JSON.stringify(nu));
   await pe.click('#tn-go');
   ok(/obligatoire/.test(await pe.locator('#tn-err').innerText()) && !JSON.parse(kv.get('acc:vieux-compte')).fiche?.telephone, '8b. sans numéro : refusé en clair, rien d\'enregistré');
-  await pe.fill('#tn-tel', '+377 06 77 88 99'); await pe.click('#tn-go');
+  await pe.fill('#tn-tel', '+377 06 12 34 56'); await pe.click('#tn-go');
   await pe.waitForFunction(() => !document.getElementById('tn-go'), null, { timeout: 6000 }).catch(() => {});
-  ok(JSON.parse(kv.get('acc:vieux-compte')).fiche?.telephone === '+377 06 77 88 99', '8c. le numéro est enregistré sur la fiche du domaine (toutes les apps le liront)');
+  ok(JSON.parse(kv.get('acc:vieux-compte')).fiche?.telephone === '+377 06 12 34 56', '8c. le numéro est enregistré sur la fiche du domaine (toutes les apps le liront)');
   await pe.reload(); await pe.waitForSelector('#pk-skip', { state: 'visible', timeout: 4000 }).catch(() => {}); await fermerOffreFaceId(pe); await pe.waitForSelector('#hub', { state: 'visible', timeout: 8000 }).catch(() => {}); await pe.waitForTimeout(800);
   ok((await pe.locator('#tel-nudge').count()) === 0, '8d. une fois donné, on ne le redemande plus (carte absente à la visite suivante)');
 } finally { await browser.close(); globalThis.fetch = vraiFetch; }

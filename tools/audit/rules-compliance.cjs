@@ -93,6 +93,8 @@ const REGISTRE = [
   // dans test:ci (ou le workflow réel), mais pas leur entrée ici → ratchet 19 → 22, test:ci rouge
   // pour tout le monde. Cinquième fois : règle nouvelle = entrée ICI dans le même commit.
   [/GRATUIT PAR DÉFAUT/i, ['npm:test:gratuit']],
+  // Règle « TOUJOURS LE GRATUIT D'ABORD, MÊME POUR LES ACTIONS GITHUB » (Kevin 13.10.2026) : garde = test:ration-actions (outil de ration tools/ci/ration-actions.mjs).
+  [/TOUJOURS LE GRATUIT D.ABORD/i, ['npm:test:ration-actions']],
   // Règle « CONFÉRENCE DES IA GRATUITES … POUR TOUTES LES APPS » (Kevin 2.10.2026 soir) : garde = test:conference-partout
   // (chaque app entre par routeSmart / /ai, balayage des workers, sabotage) + test:ia-route (3 tours, compétence durable).
   // L'entrée avait été PERDUE à la fusion #4242 (résolution « version de main » du fichier) → ratchet 19 → 21 (3.10 00h23).

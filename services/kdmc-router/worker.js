@@ -868,13 +868,17 @@ export function estPageCmcteams(texte) {
 }
 /* Garde appliquée à une page HTML de l'hébergeur avant de la servir (hors cmcteams.kd-mc.com). */
 async function sansCmcteamsParAccident(res, host, chemin, request) {
-  if (host === 'cmcteams.kd-mc.com') return res;
   if (!res || res.status !== 200 || request.method !== 'GET') return res;
   if (!/text\/html/i.test(res.headers.get('content-type') || '')) return res;
-  const texte = await res.text();
-  if (!estPageCmcteams(texte)) { const h = new Headers(res.headers); h.delete('content-length'); return new Response(texte, { status: res.status, statusText: res.statusText, headers: h }); }
+  /* Fuite mesurée le 13.10 : sur cmcteams.kd-mc.com, /favicon.ico, /icon.svg et /apple-touch-icon.png (laissés sans fiche par libreSansFiche
+     car ce sont des fichiers d'installation) n'existent pas — l'hébergeur répond alors par la PAGE D'ACCUEIL (3,4 Mo de code privé) à
+     n'importe qui, sans compte. Une « icône » qui revient en HTML n'est jamais une icône : on la refuse (404) ; les vraies icônes (image) passent. */
+  const iconeFausse = host === 'cmcteams.kd-mc.com' && /\/(apple-touch-icon|favicon|icon)[^/]*\.(png|svg|ico)$/.test(cheminNormal(chemin));
+  if (host === 'cmcteams.kd-mc.com' && !iconeFausse) return res;
+  const texte = iconeFausse ? '' : await res.text();
+  if (!iconeFausse && !estPageCmcteams(texte)) { const h = new Headers(res.headers); h.delete('content-length'); return new Response(texte, { status: res.status, statusText: res.statusText, headers: h }); }
   const c = cheminNormal(chemin);
-  if (/^\/cmcteams\/?(index\.html)?$/.test(c)) {
+  if (!iconeFausse && /^\/cmcteams\/?(index\.html)?$/.test(c)) {
     return new Response(null, { status: 301, headers: { location: 'https://cmcteams.kd-mc.com/', 'cache-control': 'no-store', 'x-kdmc-router': host + ' (CMCteams à sa belle adresse)' } });
   }
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>Page introuvable — kd-mc.com</title>'

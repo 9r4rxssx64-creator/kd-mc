@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-13 (nuit) — « Je ne trouve rien » : le formulaire de création de compte devient un gros bouton en tête de « Personnes »
+- Kevin n'a rien vu là où je l'avais indiqué. Causes probables, corrigées ensemble : (1) le formulaire était replié tout en bas de la liste des comptes ; (2) le navigateur gardait l'ancien `admin.js?v=2.0.0`.
+- Fait : bouton « ➕ Créer un compte pour une personne » en tête de la section Personnes (`tableau.js`), il ouvre le formulaire et y amène ; `admin.js` et `tableau.js` passent en `?v=2.0.1` pour forcer le rechargement. Garde : étape 1a de `verify-creer-invite-page` (17/17 ; `SABOTAGE=bouton` rougit).
+- Coût : 0 (tout en local, aucun robot).
+## 2026-10-13 (nuit) — FUITE trouvée par l'audit de fluidité : /favicon.ico de cmcteams.kd-mc.com rendait toute l'app, sans compte
+- Mesuré (GET anonyme) : `cmcteams.kd-mc.com/favicon.ico` → 200, 3 444 118 o, `text/html`, la page d'accueil de l'app (code privé du coffre). Cause : ces icônes n'existent pas, `libreSansFiche` les laisse passer sans porte (fichiers d'installation) et l'hébergeur répond par sa page d'accueil ; la garde `sansCmcteamsParAccident` sortait d'emblée pour cet hôte.
+- Corrigé dans le routeur : sur `cmcteams.kd-mc.com`, une « icône » (favicon / icon / apple-touch-icon en png/svg/ico) qui revient en HTML est refusée (404 court). Une vraie image passe ; le manifeste et `sw.js` restent servis. Garde : section E de `jamais-cmcteams.test.mjs` (22/22 ; sans le correctif : 4 rouges).
+- À re-mesurer après le déploiement du routeur : `curl -s -o /dev/null -w '%{http_code} %{size_download}' https://cmcteams.kd-mc.com/favicon.ico` doit donner 404 et moins de 5 000 o.
+- Aussi trouvé (non corrigé, noté pour le lot suivant) : tous les HTML sortent sans compression (`no-transform`, CMCteams 3,4 Mo au lieu de ~0,96 Mo), `whoami` sans délai maximum, scripts CMCteams sans `?v=`, `accGet` sans mémo. Coût de ce lot : 0 (tout en local).
+
 ## 2026-10-13 (soir) — Le relais Anthropic (modèles retirés remplacés) est DÉPLOYÉ en ligne
 - Cause du retard : le robot `sync-apex-secrets-to-cf-worker` était **désactivé à la main depuis le 26.09** (mise en pause des 134 robots du coffre) ; son dernier succès datait du 23.09. Fusionner #4491 ne le relançait donc pas.
 - Fait, à la procédure connue « enable → dispatch → disable » : activé, lancé UNE fois (run 38436927596, ~3 min, succès), remis en pause (`disabled_manually`). Ration lue avant (`tools/ci/ration-actions.mjs` : 7 min / 60).

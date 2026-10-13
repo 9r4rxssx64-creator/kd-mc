@@ -126,7 +126,7 @@
     app.innerHTML = h;
     /* une section absente ne doit jamais emporter les autres : chaque corps est posé seulement s'il existe */
     var C = function (id) { return document.getElementById('corps-' + id) || document.createElement('div'); };
-    C('personnes').innerHTML = '<h2 class="cat">✋ À trancher</h2><div class="bb" id="tb-attente"><p class="info">Lecture de la boîte…</p></div>'
+    C('personnes').innerHTML = '<button class="grosbtn" id="tb-creer" type="button">➕ Créer un compte pour une personne</button><h2 class="cat">✋ À trancher</h2><div class="bb" id="tb-attente"><p class="info">Lecture de la boîte…</p></div>'
       + '<h2 class="cat">🔎 Qui se connecte</h2><div class="grid" id="tuiles-personnes"></div><div id="admin-comptes"></div>';
     C('messages').innerHTML = '<div id="tb-messages"><p class="info">Lecture de la boîte…</p></div><button class="grosbtn" id="tb-boite" type="button">📬 Ouvrir la boîte — lire et répondre</button>';
     C('commerce').innerHTML = '<div id="commerce-app"></div><h2 class="cat">🔗 Mes pages de vente & boutiques</h2><div class="grid" id="tuiles-commerce"></div>';
@@ -287,6 +287,14 @@
     dessinerCompteurs();
     brancherRecherche();
     document.getElementById('tb-boite').onclick = function () { aller('boite'); };
+    /* Kevin 13.10 : « je ne trouve rien » — le formulaire de création est en bas de la liste des comptes, replié : ce bouton en tête de « Personnes » l'ouvre et y amène */
+    document.getElementById('tb-creer').onclick = function () {
+      var d = document.getElementById('creer-invite');
+      if (!d) return;
+      d.open = true;
+      d.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var f = document.getElementById('cinv-prenom'); if (f) f.focus({ preventScroll: true });
+    };
     document.addEventListener('kdmc-commerce-live', function (e) { LIVE = e.detail || null; LIVE_LU = true; dessinerCompteurs(); });
     if (global.kdmcAdmin) global.kdmcAdmin.monter(document.getElementById('admin-comptes'));
     /* 10.10 (réactivité) : la session DÉJÀ vérifiée ici (admin + Face ID) est passée au commerce — il ne redemande plus whoami

@@ -1525,6 +1525,26 @@
       "maj": "2026-10-13",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "creer-bouton-fuite": {
+      "titre": "Bouton « Créer un compte » + fuite des icônes CMCteams + audits du domaine",
+      "branche": "claude/creer-compte-bouton",
+      "sujet": "Admin : bouton de création de compte en tête de Personnes ; routeur : favicon/icon de cmcteams ne rendent plus l'app ; suite : reconnaissance entre apps, boutons de retour, fluidité",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-13",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "fuite-icones": {
+      "titre": "Fuite des icônes CMCteams (doublon, contenu repris dans creer-compte-bouton)",
+      "branche": "claude/fuite-icones-cmcteams",
+      "sujet": "Branche de travail du correctif de fuite, déjà repris dans claude/creer-compte-bouton ; à supprimer à la main",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-13",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

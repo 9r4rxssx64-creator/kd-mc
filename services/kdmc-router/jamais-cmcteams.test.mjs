@@ -93,5 +93,13 @@ console.log('\n=== D. Les vraies pages passent intactes ===');
 { const r = await va('https://kd-mc.com/cujina/');
   ok(r.status === 200 && !r.cmc, 'le livre sur le chemin du portail : servi'); }
 
+console.log('\n=== E. Les « icônes » de cmcteams.kd-mc.com ne rendent JAMAIS la page de l\'app (fuite mesurée 13.10 : /favicon.ico = 3,4 Mo de code, sans compte) ===');
+for (const ch of ['/favicon.ico', '/icon.svg', '/apple-touch-icon.png', '/apple-touch-icon-180.png']) {
+  const r = await va('https://cmcteams.kd-mc.com' + ch, {});
+  ok(r.status === 404 && !r.cmc && r.texte.length < 5000, 'cmcteams.kd-mc.com' + ch + ' → 404 court, PAS la page de l\'app  [' + r.status + ', ' + r.texte.length + ' o]');
+}
+{ const r = await va('https://cmcteams.kd-mc.com/manifest.json', {});
+  ok(r.status === 200, 'le manifeste (fichier d\'installation) reste servi  [' + r.status + ']'); }
+
 console.log(`\nJamais CMCteams par accident : ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

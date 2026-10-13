@@ -5023,6 +5023,15 @@
       "corps": "Kevin : « Prévient toutes tes branches de privilégier le gratuit. Même pour action. Pour respecter les règles et les forfaits… toujours. » La carte des 7 règles « gratuit » est groupée dans CLAUDE-HISTOIRE.md (§ TOUJOURS LE GRATUIT D'ABORD, index CLAUDE.md). Réflexe en 5 questions avant tout robot/appel/outil : (1) un chemin gratuit existe ? (local, dépôt public aux minutes illimitées, Workers AI, cache) ; (2) combien me reste-t-il aujourd'hui ? — gh api \"repos/9r4rxssx64-creator/CMCteams/actions/runs?created=>=$(date -u +%F)&per_page=100\" > /tmp/runs.json && node tools/ci/ration-actions.mjs --runs /tmp/runs.json (sort avec le code 3 si la ration de 60 min est mangée : n'en lance AUCUN) ; (3) je regroupe (un robot pour plusieurs changements) ; (4) je ne lance pas ce que le train du soir lance déjà (chaîne privée + audit runtime = 1 fois/jour, par la session qui parle à Kevin) ; (5) j'écris ce que ça a coûté dans le MEMO. À faire par chaque session : relire cette carte, vérifier tes propres robots/appels en cours (workflow_dispatch seulement, timeout-minutes, paths, pas de cron, IA gratuite en tête), corriger ce qui ne l'est pas, puis répondre par « suivi » avec ce que tu as vérifié ou changé. Mesuré : le quota gratuit du coffre est parti le 12.10 (3 020 min en 9 jours).",
       "ts": "2026-10-13 13:33",
       "etat": "ouvert"
+    },
+    {
+      "id": "m217-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "sujet": "Kevin 13.10 : PAS D'INFOS INUTILES, NULLE PART — avant d'écrire une phrase à l'écran, demande-toi si Kevin en a besoin pour agir ou comprendre",
+      "corps": "Règle absolue (CLAUDE-HISTOIRE.md, dernière entrée). Une phrase qui décrit seulement comment l'app marche, d'où vient la donnée, ou répète ce que l'écran montre : on ne l'écrit pas. Les phrases déjà retirées sont dans tools/shared/infos-retirees.json (garde test:pas-d-infos-inutiles) : si Kevin t'en fait retirer une, ajoute-la à la liste dans le même commit. A faire : relis les textes de TON app (bandeaux, légendes, états vides, aides) et retire ceux qui n'aident pas ; garde les erreurs qui disent quoi faire et les légendes de codes.",
+      "ts": "2026-10-13 18:33",
+      "etat": "ouvert"
     }
   ]
 }

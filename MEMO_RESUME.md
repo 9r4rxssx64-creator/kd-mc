@@ -67,6 +67,9 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-13 (soir, fin) — light v1.94 : règle « pas d'infos inutiles »
+- **Fait** : nouvelle règle absolue (CLAUDE-HISTOIRE.md, message m217 à toutes les sessions) ; phrase sous le tableau des absents retirée (light v1.94) ; liste `tools/shared/infos-retirees.json` + garde `test:pas-d-infos-inutiles` (4, sabotage 1 échec).
+
 ## 2026-10-13 (soir, suite) — light v1.93
 - **Fait** : « Admin » après « Quitter admin » ne redemande plus le code (le domaine décide d'abord). Test `verify-light-admin-reentrer` (7, sabotage 2 échecs). CMCteams non touché (pas de bouton « Quitter admin » équivalent mesuré).
 

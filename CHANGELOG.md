@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.94 (2026-10-13 soir — règle « pas d'infos inutiles, nulle part »)
+
+- **Kevin : « Pas d'infos inutiles nulle part. Note-le. »** Nouvelle règle absolue (CLAUDE-HISTOIRE.md, relayée à toutes les sessions). Appliquée : la phrase sœur sous le tableau des absents (« 🛌 Absents tout le mois… Chacun a bien son planning ») est retirée aussi. Garde : `tools/shared/infos-retirees.json` + `test:pas-d-infos-inutiles` (4, **sabotage : 1 échec**), câblé dans `test:ci`.
+
 ## light v1.93 (2026-10-13 soir — « Admin » ne redemande plus le code à Kevin)
 
 - **Kevin : « Dans light, quand je passe de admin à quitter et que je refais admin il me demande un code alors que c'est toujours moi. »** CAUSE : « Quitter admin » ne retire que l'affichage, mais « 🔒 Admin » ouvrait toujours l'écran du code sans demander au domaine (la reconnaissance automatique ne tournait qu'au démarrage). Corrigé : `toggleAdmin` interroge d'abord le domaine (`_depAdminSansCode` → session vérifiée ou laissez-passer `/__admin/grant`, comme au démarrage) ; l'écran du code ne s'ouvre que sur refus (un collègue) ou domaine muet. Test `verify-light-admin-reentrer` (7, vrai navigateur, domaine simulé ; **sabotage : 2 échecs**), câblé dans `test:ci`.

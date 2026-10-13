@@ -274,6 +274,7 @@
   "tests/verify-nr5e.mjs",
   "tests/verify-paquet-pages.mjs",
   "tests/verify-parite-cmcteams-light.mjs",
+  "tests/verify-pas-d-infos-inutiles.mjs",
   "tests/verify-passerelle.mjs",
   "tests/verify-patrimoine-prive.mjs",
   "tests/verify-pdf-equipes.mjs",

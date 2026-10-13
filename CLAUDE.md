@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 214 règles — le texte de Kevin, une par une
+## 📜 Les 215 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -943,6 +943,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🆓 RÈGLE ABSOLUE — TOUJOURS LE GRATUIT D'ABORD, MÊME POUR LES ACTIONS GITHUB ET LES OUTILS À CRÉDITS : UNE SEULE CARTE QUI GROUPE TOUTES LES RÈGLES « GRATUIT » (Kevin 2026-10-13, ABSOLUE)
 **« Prévient toutes tes branches de privilégier le gratuit. Même pour action. Pour respecter les règles et les forfaits… toujours. Note-le. Groupe au besoin. Va plus loin »** — Kevin 2026-10-13
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-toujours-le-gratuit-dabord-même-pour-les-actions-github-et-les-outils-à-crédits-une-seule-carte-qui-groupe-toutes-les-règles-gratuit-kevin-2026-10-13-absolue)
+
+### 🧹 RÈGLE ABSOLUE — PAS D'INFOS INUTILES, NULLE PART : CE QUI N'AIDE PAS KEVIN À AGIR OU À COMPRENDRE NE S'AFFICHE PAS (Kevin 2026-10-13, ABSOLUE)
+**« Efface l'info inutile : planning pitboss… tel quel… »** puis **« Pas d'infos inutiles nulle part. Note-le. »** — Kevin 2026-10-13 (capture du tableau Pit Boss / Superviseurs de la light, […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-pas-dinfos-inutiles-nulle-part-ce-qui-naide-pas-kevin-à-agir-ou-à-comprendre-ne-saffiche-pas-kevin-2026-10-13-absolue)
 
 ---
 

@@ -12163,3 +12163,15 @@ Ce n'est pas une règle nouvelle : c'est la **carte unique** des règles « grat
 - **Message à TOUTES les sessions** (pipeline, « prévenir ne suffit pas : faire rectifier, puis vérifier ») avec le réflexe ci-dessus, et le suivi à clore.
 - **`tools/ci/ration-actions.mjs`** : lit la ration du jour (minutes bord à bord, jour UTC, runs refusés par le budget à 0, top des plus gourmands, verdict, code de sortie 3 quand c'est mangé). Garde `test:ration-actions` (9 contrôles, sabotage prouvé).
 - **Une ligne en tête d'ETAT-DU-MOMENT** (lue par chaque session à chaque réveil) et cette carte dans l'index de `CLAUDE.md`.
+
+---
+
+## 🧹 RÈGLE ABSOLUE — PAS D'INFOS INUTILES, NULLE PART : CE QUI N'AIDE PAS KEVIN À AGIR OU À COMPRENDRE NE S'AFFICHE PAS (Kevin 2026-10-13, ABSOLUE)
+
+> **« Efface l'info inutile : planning pitboss… tel quel… »** puis **« Pas d'infos inutiles nulle part. Note-le. »** — Kevin 2026-10-13 (capture du tableau Pit Boss / Superviseurs de la light, sous lequel s'affichait « 👔 Planning des Pit Boss et des Superviseurs, lu tel quel dans le PDF — pas d'ordre de départ (les cadres n'ont pas d'équipe). »)
+
+**Le réflexe, avant d'écrire une phrase à l'écran (page, bandeau, légende, message vide, aide) :** *est-ce que Kevin ou un collègue en a BESOIN pour agir ou pour comprendre ce qu'il voit ?* Si la phrase décrit seulement comment l'app fonctionne, d'où vient la donnée (« lu tel quel dans le PDF »), ou répète ce que l'écran montre déjà : **on ne l'écrit pas.** L'information utile reste : l'erreur qui dit quoi faire, la légende d'un code, l'alerte d'un vrai problème.
+
+**Appliqué le 13.10** : phrase sous le tableau des cadres retirée (light v1.92), puis la phrase sœur sous le tableau des absents (« Absents tout le mois… Chacun a bien son planning », light v1.94).
+
+**Le garde (une règle qui ne vit que dans un document finit sautée)** : `tools/shared/infos-retirees.json` liste les phrases que Kevin a fait retirer ; `npm run test:pas-d-infos-inutiles` (câblé dans `test:ci`, prouvé discriminant) refuse qu'elles reviennent dans une page ou un module visible. **Quand Kevin fait retirer une autre phrase, on l'ajoute à cette liste dans le même commit.** Toutes les sessions (CMCteams, light, portail, Lingua, arbre, Bee…) appliquent le réflexe aux textes qu'elles écrivent.

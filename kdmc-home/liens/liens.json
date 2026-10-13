@@ -1,0 +1,701 @@
+{
+ "_doc": "GÉNÉRÉ par tools/liens/exporter.mjs depuis liens.js — ne pas éditer à la main (npm run test:liens-json). Aucun secret : seulement des adresses.",
+ "familles": [
+  {
+   "titre": "🎰 Mes apps",
+   "sous": "Ouvrir une app en 1 clic",
+   "items": [
+    {
+     "icone": "📅",
+     "nom": "CMCteams",
+     "desc": "Plannings & équipes — Casino de Monaco",
+     "url": "https://cmcteams.kd-mc.com/"
+    },
+    {
+     "icone": "🤖",
+     "nom": "Apex AI",
+     "desc": "Assistant IA — chat, studios, coffre",
+     "url": "https://apex-ai.kd-mc.com/"
+    },
+    {
+     "icone": "💬",
+     "nom": "Apex Chat",
+     "desc": "Messagerie chiffrée de bout en bout",
+     "url": "https://apex-chat.kd-mc.com/"
+    },
+    {
+     "icone": "🎬",
+     "nom": "Créa Studio",
+     "desc": "Montage vidéo, retouche photo, cartoon & photo→vidéo",
+     "url": "https://studio.kd-mc.com/"
+    },
+    {
+     "icone": "🏠",
+     "nom": "Portail KDMC",
+     "desc": "Page d’accueil du domaine",
+     "url": "https://kd-mc.com/"
+    }
+   ]
+  },
+  {
+   "titre": "🛍️ Boutiques & back-office",
+   "sous": "Vitrines, studios & administration",
+   "items": [
+    {
+     "icone": "🏬",
+     "nom": "Portail boutiques",
+     "desc": "Toutes les boutiques",
+     "url": "https://shops.kd-mc.com/"
+    },
+    {
+     "icone": "📊",
+     "nom": "Dashboard boutiques",
+     "desc": "Commandes · produits · stats · finances",
+     "url": "https://dashboard.kd-mc.com/"
+    },
+    {
+     "icone": "📦",
+     "nom": "Sourcing fournisseurs",
+     "desc": "Catalogues — choisir quoi vendre",
+     "url": "https://sourcing.kd-mc.com/"
+    },
+    {
+     "icone": "🎨",
+     "nom": "Chez Lolo",
+     "desc": "Boutique & studio de création",
+     "liens": [
+      {
+       "l": "Boutique",
+       "u": "https://chez-lolo.kd-mc.com/"
+      },
+      {
+       "l": "Studio",
+       "u": "https://chez-lolo.kd-mc.com/studio.html"
+      }
+     ]
+    },
+    {
+     "icone": "🌿",
+     "nom": "La Détente",
+     "desc": "Boutique & studio (POD)",
+     "liens": [
+      {
+       "l": "Boutique",
+       "u": "https://la-detente.kd-mc.com/"
+      },
+      {
+       "l": "Studio",
+       "u": "https://la-detente.kd-mc.com/studio.html"
+      }
+     ]
+    },
+    {
+     "icone": "🚧",
+     "nom": "Boutiques en construction",
+     "desc": "Aperçu des prochaines boutiques",
+     "liens": [
+      {
+       "l": "Tech Hub",
+       "u": "https://shops.kd-mc.com/tech-hub/"
+      },
+      {
+       "l": "EcoCraft",
+       "u": "https://shops.kd-mc.com/ecocraft/"
+      },
+      {
+       "l": "Digital Vault",
+       "u": "https://shops.kd-mc.com/digital-vault/"
+      },
+      {
+       "l": "Pawsome",
+       "u": "https://shops.kd-mc.com/pawsome/"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "titre": "🔑 Clés API & IA",
+   "sous": "Pour chaque service : clés · solde/usage · recharger",
+   "items": [
+    {
+     "icone": "🟣",
+     "nom": "Anthropic (Claude)",
+     "desc": "ANTHROPIC_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://console.anthropic.com/settings/keys"
+      },
+      {
+       "l": "Solde/Usage",
+       "u": "https://console.anthropic.com/settings/usage"
+      },
+      {
+       "l": "Recharger",
+       "u": "https://console.anthropic.com/settings/billing"
+      }
+     ]
+    },
+    {
+     "icone": "🟢",
+     "nom": "OpenAI",
+     "desc": "OPEN_AI_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://platform.openai.com/api-keys"
+      },
+      {
+       "l": "Usage",
+       "u": "https://platform.openai.com/usage"
+      },
+      {
+       "l": "Recharger",
+       "u": "https://platform.openai.com/settings/organization/billing/overview"
+      }
+     ]
+    },
+    {
+     "icone": "🔵",
+     "nom": "Google Gemini",
+     "desc": "GEMINI_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://aistudio.google.com/app/apikey"
+      },
+      {
+       "l": "Facturation",
+       "u": "https://console.cloud.google.com/billing"
+      }
+     ]
+    },
+    {
+     "icone": "🟠",
+     "nom": "Mistral",
+     "desc": "MISTRAL_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://console.mistral.ai/api-keys"
+      },
+      {
+       "l": "Facturation",
+       "u": "https://console.mistral.ai/billing"
+      }
+     ]
+    },
+    {
+     "icone": "⚡",
+     "nom": "Groq",
+     "desc": "GROQ_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://console.groq.com/keys"
+      },
+      {
+       "l": "Facturation",
+       "u": "https://console.groq.com/settings/billing"
+      }
+     ]
+    },
+    {
+     "icone": "🐋",
+     "nom": "DeepSeek",
+     "desc": "DEEPSEEK_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://platform.deepseek.com/api_keys"
+      },
+      {
+       "l": "Solde",
+       "u": "https://platform.deepseek.com/usage"
+      },
+      {
+       "l": "Recharger",
+       "u": "https://platform.deepseek.com/top_up"
+      }
+     ]
+    },
+    {
+     "icone": "🔎",
+     "nom": "Perplexity",
+     "desc": "PERPLEXITI_API_KEY",
+     "liens": [
+      {
+       "l": "Clés & solde",
+       "u": "https://www.perplexity.ai/settings/api"
+      }
+     ]
+    },
+    {
+     "icone": "✖️",
+     "nom": "xAI (Grok)",
+     "desc": "XAI_API_KEY",
+     "liens": [
+      {
+       "l": "Console",
+       "u": "https://console.x.ai/"
+      }
+     ]
+    },
+    {
+     "icone": "🟤",
+     "nom": "Cohere",
+     "desc": "COHERE_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://dashboard.cohere.com/api-keys"
+      },
+      {
+       "l": "Facturation",
+       "u": "https://dashboard.cohere.com/billing/usage"
+      }
+     ]
+    },
+    {
+     "icone": "🤝",
+     "nom": "Together AI",
+     "desc": "TOGETHER_API_KEY",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://api.together.xyz/settings/api-keys"
+      },
+      {
+       "l": "Facturation",
+       "u": "https://api.together.xyz/settings/billing"
+      }
+     ]
+    },
+    {
+     "icone": "🎬",
+     "nom": "Replicate",
+     "desc": "AX_REPLICATE_KEY (image/vidéo)",
+     "liens": [
+      {
+       "l": "Clés",
+       "u": "https://replicate.com/account/api-tokens"
+      },
+      {
+       "l": "Facturation",
+       "u": "https://replicate.com/account/billing"
+      }
+     ]
+    },
+    {
+     "icone": "🔭",
+     "nom": "Tavily",
+     "desc": "TAVILY_API_KEY (recherche)",
+     "liens": [
+      {
+       "l": "Tableau de bord",
+       "u": "https://app.tavily.com/home"
+      }
+     ]
+    },
+    {
+     "icone": "🌲",
+     "nom": "Pinecone",
+     "desc": "PINECONE_API_KEY (vecteurs)",
+     "liens": [
+      {
+       "l": "Tableau de bord",
+       "u": "https://app.pinecone.io/"
+      }
+     ]
+    },
+    {
+     "icone": "📈",
+     "nom": "Finnhub",
+     "desc": "FINNHUB_API_KEY (bourse)",
+     "liens": [
+      {
+       "l": "Tableau de bord",
+       "u": "https://finnhub.io/dashboard"
+      }
+     ]
+    },
+    {
+     "icone": "🖼️",
+     "nom": "Pexels",
+     "desc": "PEXELS_API_KEY (photos)",
+     "liens": [
+      {
+       "l": "API",
+       "u": "https://www.pexels.com/api/"
+      }
+     ]
+    },
+    {
+     "icone": "🖨️",
+     "nom": "Printify",
+     "desc": "PRINTIFY_API_KEY (POD)",
+     "liens": [
+      {
+       "l": "Clés API",
+       "u": "https://printify.com/app/account/api"
+      },
+      {
+       "l": "Commandes",
+       "u": "https://printify.com/app/orders"
+      }
+     ]
+    },
+    {
+     "icone": "📱",
+     "nom": "Vonage",
+     "desc": "VONAGE_API_KEY (SMS)",
+     "liens": [
+      {
+       "l": "Tableau de bord",
+       "u": "https://dashboard.vonage.com/"
+      }
+     ]
+    },
+    {
+     "icone": "✉️",
+     "nom": "EmailJS",
+     "desc": "EMAILJS_PRIVATE_KEY",
+     "liens": [
+      {
+       "l": "Admin",
+       "u": "https://dashboard.emailjs.com/admin"
+      }
+     ]
+    },
+    {
+     "icone": "💬",
+     "nom": "Telegram",
+     "desc": "TELEGRAM_API_KEY (bot)",
+     "liens": [
+      {
+       "l": "BotFather",
+       "u": "https://t.me/BotFather"
+      }
+     ]
+    },
+    {
+     "icone": "📺",
+     "nom": "YouTube / Google",
+     "desc": "YOUTUBE_CLIENT_ID · SECRET · REFRESH_TOKEN",
+     "liens": [
+      {
+       "l": "YouTube Studio",
+       "u": "https://studio.youtube.com/"
+      },
+      {
+       "l": "Identifiants Google",
+       "u": "https://console.cloud.google.com/apis/credentials"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "titre": "☁️ Cloudflare — Workers & infra",
+   "sous": "Tableau de bord + santé des workers",
+   "items": [
+    {
+     "icone": "☁️",
+     "nom": "Cloudflare",
+     "desc": "Tableau de bord principal",
+     "liens": [
+      {
+       "l": "Accueil",
+       "u": "https://dash.cloudflare.com/"
+      },
+      {
+       "l": "Workers",
+       "u": "https://dash.cloudflare.com/?to=/:account/workers/services"
+      },
+      {
+       "l": "KV",
+       "u": "https://dash.cloudflare.com/?to=/:account/workers/kv/namespaces"
+      },
+      {
+       "l": "R2",
+       "u": "https://dash.cloudflare.com/?to=/:account/r2/overview"
+      },
+      {
+       "l": "D1",
+       "u": "https://dash.cloudflare.com/?to=/:account/workers/d1"
+      },
+      {
+       "l": "Queues",
+       "u": "https://dash.cloudflare.com/?to=/:account/workers/queues"
+      }
+     ]
+    },
+    {
+     "icone": "🫀",
+     "nom": "Santé des workers",
+     "desc": "Pastille = dernier contrôle quotidien · clic = /health en direct",
+     "liens": [
+      {
+       "l": "kdmc-router",
+       "u": "https://kd-mc.com/"
+      },
+      {
+       "l": "apex-auth",
+       "u": "https://apex-auth-worker.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "apex-v13-backend",
+       "u": "https://apex-v13-backend.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "apex-chat-api",
+       "u": "https://apex-chat-api.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "apex-vault-svc",
+       "u": "https://apex-vault-svc.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "apex-sentinels",
+       "u": "https://apex-sentinels-svc.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "apex-push",
+       "u": "https://apex-push-worker.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "apex-secrets-proxy",
+       "u": "https://apex-secrets-proxy.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "coffre-r2",
+       "u": "https://coffre-r2.9r4rxssx64.workers.dev/health"
+      },
+      {
+       "l": "cmc-parser-proxy",
+       "u": "https://cmc-parser-proxy.9r4rxssx64.workers.dev/healthz"
+      },
+      {
+       "l": "ld-gemini-proxy",
+       "u": "https://ld-gemini-proxy.9r4rxssx64.workers.dev/"
+      },
+      {
+       "l": "ld-printify-order",
+       "u": "https://ld-printify-order.9r4rxssx64.workers.dev/"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "titre": "🔥 Firebase",
+   "sous": "Bases temps réel & consommation",
+   "items": [
+    {
+     "icone": "🔥",
+     "nom": "cmcteams-c16ab",
+     "desc": "CMCteams (planning, chat) · europe-west1",
+     "liens": [
+      {
+       "l": "Données",
+       "u": "https://console.firebase.google.com/project/cmcteams-c16ab/database/cmcteams-c16ab-default-rtdb/data"
+      },
+      {
+       "l": "Usage",
+       "u": "https://console.firebase.google.com/project/cmcteams-c16ab/usage"
+      }
+     ]
+    },
+    {
+     "icone": "🔥",
+     "nom": "kdmc-clients",
+     "desc": "Apex AI (chat, coffre, clients) · europe-west1",
+     "liens": [
+      {
+       "l": "Données",
+       "u": "https://console.firebase.google.com/project/kdmc-clients/database/kdmc-clients-default-rtdb/data"
+      },
+      {
+       "l": "Usage",
+       "u": "https://console.firebase.google.com/project/kdmc-clients/usage"
+      }
+     ]
+    },
+    {
+     "icone": "🧰",
+     "nom": "Console Firebase",
+     "desc": "Tous les projets",
+     "url": "https://console.firebase.google.com/"
+    }
+   ]
+  },
+  {
+   "titre": "🚀 Code, déploiements & CI",
+   "sous": "GitHub : repo, Actions, secrets",
+   "items": [
+    {
+     "icone": "🐙",
+     "nom": "Dépôt GitHub",
+     "desc": "cmcteams (code source)",
+     "url": "https://github.com/9r4rxssx64-creator/cmcteams"
+    },
+    {
+     "icone": "⚙️",
+     "nom": "Actions (déploiements)",
+     "desc": "Tous les workflows & runs",
+     "liens": [
+      {
+       "l": "Tous les runs",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions"
+      },
+      {
+       "l": "router",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-kdmc-router.yml"
+      },
+      {
+       "l": "apex-chat",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-apex-chat.yml"
+      },
+      {
+       "l": "v13-backend",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-apex-v13-backend.yml"
+      },
+      {
+       "l": "auth",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-apex-auth-worker.yml"
+      },
+      {
+       "l": "push",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-push-worker.yml"
+      },
+      {
+       "l": "coffre-r2",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-coffre-r2.yml"
+      },
+      {
+       "l": "soldes",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-kdmc-balances.yml"
+      },
+      {
+       "l": "santé workers",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/workers-health-check.yml"
+      },
+      {
+       "l": "social-publish",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/social-publish.yml"
+      },
+      {
+       "l": "social-scheduler",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/social-scheduler.yml"
+      },
+      {
+       "l": "agent 24/7",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/agent-cron.yml"
+      }
+     ]
+    },
+    {
+     "icone": "🔐",
+     "nom": "Secrets & Pages",
+     "desc": "Réglages du dépôt",
+     "liens": [
+      {
+       "l": "Secrets Actions",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/settings/secrets/actions"
+      },
+      {
+       "l": "GitHub Pages",
+       "u": "https://github.com/9r4rxssx64-creator/cmcteams/settings/pages"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "titre": "🌐 Domaine & DNS",
+   "sous": "kd-mc.com (Cloudflare Registrar)",
+   "items": [
+    {
+     "icone": "🌐",
+     "nom": "kd-mc.com",
+     "desc": "Domaine, DNS & SSL",
+     "liens": [
+      {
+       "l": "Domaine",
+       "u": "https://dash.cloudflare.com/?to=/:account/domains"
+      },
+      {
+       "l": "DNS",
+       "u": "https://dash.cloudflare.com/?to=/:account/kd-mc.com/dns/records"
+      },
+      {
+       "l": "SSL/TLS",
+       "u": "https://dash.cloudflare.com/?to=/:account/kd-mc.com/ssl-tls"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "titre": "💳 Paiements & services",
+   "sous": "Encaissements & outils",
+   "items": [
+    {
+     "icone": "💳",
+     "nom": "Stripe",
+     "desc": "Paiements & abonnements",
+     "url": "https://dashboard.stripe.com/"
+    },
+    {
+     "icone": "🅿️",
+     "nom": "PayPal",
+     "desc": "Compte marchand",
+     "url": "https://www.paypal.com/businessprofile/"
+    },
+    {
+     "icone": "🖨️",
+     "nom": "Printify",
+     "desc": "Commandes POD",
+     "url": "https://printify.com/app/orders"
+    },
+    {
+     "icone": "▲",
+     "nom": "Vercel",
+     "desc": "Fonctions (webhooks, factures)",
+     "url": "https://vercel.com/dashboard"
+    },
+    {
+     "icone": "🚂",
+     "nom": "Railway",
+     "desc": "Hébergement agent",
+     "url": "https://railway.app/dashboard"
+    },
+    {
+     "icone": "📧",
+     "nom": "Brevo",
+     "desc": "Emails transactionnels",
+     "url": "https://app.brevo.com/"
+    }
+   ]
+  },
+  {
+   "titre": "🔒 Admin & coffre",
+   "sous": "Espace privé du domaine",
+   "items": [
+    {
+     "icone": "👥",
+     "nom": "Admin domaine",
+     "desc": "Fiches clients (code admin requis)",
+     "url": "https://kd-mc.com/admin/"
+    },
+    {
+     "icone": "🔐",
+     "nom": "Coffre-fort",
+     "desc": "Documents & accès sécurisés",
+     "url": "https://coffre.kd-mc.com/"
+    }
+   ]
+  }
+ ]
+}

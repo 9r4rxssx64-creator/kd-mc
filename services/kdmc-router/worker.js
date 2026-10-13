@@ -22,16 +22,17 @@ import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availab
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
+import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
-import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
+import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
 import { handlePartout, PARTOUT_TAG, MARQUEUR } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
 export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wrangler.toml)   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
 import { lirePlanning, verifierEtRanger, corrigerMatricule, listeMatricules } from './membre-planning.js';
 import { KEVIN_MATRICULE, RE_PLANNING, lireSeed, prochainsJours, faitsPlanning } from './bee-planning.js';
-import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe } from '../_shared/outils-lecture.js';   // les mains de Bee : météo, date, planning, calcul, recherche, lecture de page (gratuits, lecture seule)
+import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe, DEFINITIONS } from '../_shared/outils-lecture.js';   // les mains de Bee : météo, date, planning, calcul, recherche, lecture de page (gratuits, lecture seule)
 
 /* D'où viennent les pages. Historiquement GitHub Pages — mais le dépôt est
    PRIVÉ depuis le 23/09/2026 (« que personne ne voie mon code ») et GitHub
@@ -3907,19 +3908,30 @@ async function handleBeeIa(request, env, ctx) {
   const debut = Date.now();
   let repliOutils = null, faitsOutils = '';
   const sortie = {};   /* ce que les mains de Bee préparent (cartes de confirmation) */
-  const mains = String(env && env.BEE_AGIR) !== '0' ? outilsAdmin(env, { now: () => Date.now(), appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init), apps: () => listeApps() }, sortie) : null;
+  const mains = String(env && env.BEE_AGIR) !== '0' ? outilsAdmin(env, { now: () => Date.now(), appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init), apps: async () => listeApps(await chargerFermees(env, true).catch(() => [])) }, sortie) : null;
   const avec = (o) => (sortie.propositions && sortie.propositions.length ? Object.assign(o, { propositions: sortie.propositions }) : o);
   /* L'ARBRE (Kevin 13.10 : « fais en sorte de voir les fiches dans l'arbre ») : l'outil `arbre` lit la graine de l'arbre côté domaine. Interrupteur BEE_ARBRE = '0'. */
   const arbreOutil = String(env && env.BEE_ARBRE) !== '0' && env && env.ACCOUNTS ? outilsArbre(async () => { try { return (await arbreSeedOut(env)).seed; } catch (_) { return null; } }) : null;
-  const extra = mains || arbreOutil ? { defs: ((mains && mains.defs) || []).concat((arbreOutil && arbreOutil.defs) || []), exe: Object.assign({}, (mains && mains.exe) || {}, (arbreOutil && arbreOutil.exe) || {}) } : null;
+  /* VOIR le domaine (Kevin 13.10 : « qu'ils puissent voir les sites, apps, liens, outils, accès comme toi et Apex ») : pages, liens, documentation, ses pouvoirs. BEE_VOIR = '0' coupe. */
+  const voirOutil = String(env && env.BEE_VOIR) !== '0' ? (() => {
+    const base = outilsBee(env, ctx);
+    const v = outilsVoir({
+      voir: (url) => base.voir(request, url), hotes: () => new Set(Object.keys(ROUTES)), doc: (nom) => lireDoc(nom),
+      pouvoirs: () => decrirePouvoirs(extraTout),
+    });
+    return v;
+  })() : null;
+  const extraTout = { defs: [] };
+  const extra = mains || arbreOutil || voirOutil ? { defs: ((mains && mains.defs) || []).concat((arbreOutil && arbreOutil.defs) || [], (voirOutil && voirOutil.defs) || []), exe: Object.assign({}, (mains && mains.exe) || {}, (arbreOutil && arbreOutil.exe) || {}, (voirOutil && voirOutil.exe) || {}) } : null;
+  if (extra) extraTout.defs = extra.defs;
   const dansArbre = !!(ou && String(ou.app) === 'arbre');
-  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)))) {
+  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)) || (voirOutil && RE_VOIR.test(messages[messages.length - 1].content)))) {
     /* question difficile (longue, « explique / compare / rédige… ») : les outils ramènent les FAITS en 8 s, puis la CONFÉRENCE des IA
        gratuites (règle Kevin 2.10 : toutes réfléchissent, un juge compare, la meilleure travaille) formule la réponse sur ces faits.
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR : '') + (arbreOutil ? REGLES_ARBRE : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
+      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR : '') + (arbreOutil ? REGLES_ARBRE : '') + (voirOutil ? REGLES_VOIR : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {
@@ -4080,6 +4092,19 @@ function outilsBee(env, ctx) {
     now: () => Date.now(),
     armer: () => armerHorloge(env),
     journal: (e) => audLog(env, e),
+    /* VOIR (lecture seule) : une PAGE du domaine, lue avec la session de Kevin. Jamais une porte (/__…), jamais hors du domaine. */
+    voir: async (request, url) => {
+      let u; try { u = new URL(url); } catch (_) { return { ok: false, status: 0, reason: 'adresse' }; }
+      if (u.protocol !== 'https:' || !ROUTES[u.hostname.toLowerCase()] || /^\/__/.test(u.pathname)) return { ok: false, status: 0, reason: 'hors_domaine' };
+      const h = new Headers();
+      for (const k of ['cookie', 'authorization', 'x-kdmc-sso', 'x-kdmc-admin']) { const v = request.headers.get(k); if (v) h.set(k, v); }
+      h.set('accept', 'text/html,application/json;q=0.9,*/*;q=0.5'); h.set('sec-fetch-dest', 'document');
+      try {
+        const res = await ROUTEUR.fetch(new Request(u.toString(), { method: 'GET', headers: h }), env, ctx || { waitUntil() {}, passThroughOnException() {} });
+        const texte = (await res.text()).slice(0, 700000);
+        return { ok: res.ok, status: res.status, type: res.headers.get('content-type') || '', porte: res.headers.get('x-kdmc-porte') || '', texte };
+      } catch (e) { return { ok: false, status: 0, reason: 'erreur' }; }
+    },
     appeler: async (request, chemin, init) => {
       if (PORTES_BEE.indexOf(String(chemin).split('?')[0]) < 0) return { ok: false, status: 0, reason: 'porte_non_autorisee' };
       const h = new Headers();
@@ -4094,9 +4119,20 @@ function outilsBee(env, ctx) {
   };
 }
 /* Les apps du domaine avec leur adresse (pour qu'elle donne un lien). */
-function listeApps() {
+/** « Qu'est-ce que tu sais faire ? » : la liste EXACTE, fabriquée à partir des outils réellement offerts à l'IA (elle ne peut pas mentir sur elle-même). */
+function decrirePouvoirs(ex) {
+  const defs = (ex && ex.defs) || [];
+  const lect = defs.filter((d) => d.name !== 'proposer_action');
+  const L = ['Mes outils de LECTURE (gratuits, que je lance moi-même) :'];
+  for (const d of DEFINITIONS.concat(lect.filter((x) => !DEFINITIONS.some((y) => y.name === x.name)))) L.push('• ' + d.name + ' — ' + String(d.description).split(/\.\s/)[0].slice(0, 150));
+  L.push('', 'Mes ACTIONS (je les prépare, tu les confirmes avec ✅ — rien ne part avant) :');
+  for (const k of ACTIONS_BEE) L.push('• ' + k + ' — ' + CATALOGUE_BEE[k].titre + (CATALOGUE_BEE[k].risque === 'eleve' ? ' (risque élevé)' : ''));
+  L.push('', 'Fermé par tes règles : le coffre et les clés, le code admin, créer un compte avec un code, l\'argent réel du robot, modifier l\'arbre, déployer du code (je t\'écris alors la consigne pour Claude Code).');
+  return L.join('\n');
+}
+function listeApps(fermees) {
   const vu = new Set(), l = [];
-  for (const [h, nom] of Object.entries(APPS)) { if (h === 'www.kd-mc.com' || vu.has(nom)) continue; vu.add(nom); l.push('• ' + nom + ' → https://' + h + '/'); }
+  for (const [h, nom] of Object.entries(APPS)) { if (h === 'www.kd-mc.com' || vu.has(nom)) continue; vu.add(nom); l.push('• ' + nom + ' → https://' + h + '/' + (APPS_PRIVEES.indexOf(nom) >= 0 ? ' (privée : toi seul)' : '') + (fermees && fermees.indexOf(nom) >= 0 ? ' (FERMÉE pour tout le monde)' : '')); }
   l.push('• javis (ton assistante) → https://javis.kd-mc.com/');
   return l.join('\n');
 }

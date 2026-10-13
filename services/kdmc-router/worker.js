@@ -11,7 +11,7 @@
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken } from './fb-token.js';
 import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer } from './boite.js';
-import { handleTel, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
+import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
 import * as cptD1 from './compteurs-d1.js';
 /* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
@@ -1668,6 +1668,8 @@ async function compteConnu(request, env) {
   const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request), request);
   if (!(s && s.uid && !faibleAdmin(s))) return false;
   const acc = await accGet(env, s.uid);
+  /* invité dont le téléphone n'est pas encore confirmé par WhatsApp (13.10) : aucune page, aucun fichier — seulement le portail, où il le confirme */
+  if (acc && acc.tel_requis && !acc.tel) return false;
   return !revoked(acc, s) && !(await codeManquant(env, s, acc));
 }
 /* Une session FAIBLE (nom seul, sans Face ID ni code admin) au nom de l'admin n'ouvre aucune porte : jusqu'au 8.10, /__sso/issue
@@ -3116,6 +3118,27 @@ async function handleSso(request, url, env) {
     const rTel = await handleTel(request, url, env, secret, { J, originOk: ssoOriginOk });
     if (rTel) return rTel;
   }
+  /* LIER SON TÉLÉPHONE À SON COMPTE (13.10) — { preuve } : la preuve signée que rend /__sso/tel/statut|verifie. Seul le compte de la session ET seulement
+     s'il l'attend (`tel_requis`) ; une preuve ne sert qu'une fois, et un téléphone n'ouvre pas plus de comptes que /__sso/issue ne le permet. */
+  if (path === '/__sso/tel/lier' && request.method === 'POST') {
+    if (!ssoOriginOk(request.headers.get('origin'), url.host)) return J({ ok: false, reason: 'origine refusée' }, undefined, 403);
+    const sess = await ssoVerify(secret, ssoToken(request));
+    if (!sess) return J({ ok: false, reason: 'session' }, undefined, 401);
+    const acc = await accGet(env, sess.uid);
+    if (!acc || revoked(acc, sess) || !acc.tel_requis || acc.tel) return J({ ok: false, reason: 'rien_a_confirmer' }, undefined, 409);
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const pt = await verifiePreuve(secret, b.preuve);
+    if (!pt.ok) return J({ ok: false, reason: 'preuve_invalide', message: 'Confirmation absente ou expirée. Recommence.' }, undefined, 400);
+    if (await preuveDejaUtilisee(env, pt)) return J({ ok: false, reason: 'preuve_invalide', message: 'Cette confirmation a déjà servi. Recommence.' }, undefined, 400);
+    if ((await comptesDuTel(env, pt.empreinte)).length >= MAX_COMPTES_PAR_TEL) return J({ ok: false, reason: 'tel_plein', message: 'Ce téléphone a déjà ouvert ' + MAX_COMPTES_PAR_TEL + ' comptes. Demande à l’administrateur.' }, undefined, 409);
+    await bruleePreuve(env, pt);
+    acc.tel = { empreinte: pt.empreinte, masque: pt.masque, at: Date.now() };
+    delete acc.tel_requis;
+    await accPut(env, acc, true);
+    await lierTel(env, acc.uid, pt);
+    await audLog(env, { ev: 'tel_lie', uid: acc.uid, name: acc.name, detail: pt.masque });
+    return J({ ok: true, tel_masque: pt.masque });
+  }
   if (path === '/__sso/porte.js' && request.method === 'GET') {
     return new Response(PORTE_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' } });
   }
@@ -3185,6 +3208,12 @@ async function handleSso(request, url, env) {
         return J({ ok: false, reason: 'code_requis', code_requis: true, uid: s.uid, name: s.name, code_pose: false, app,
           message: 'Ton compte n\'a pas encore de code. Choisis ton code sur kd-mc.com pour continuer : il te servira dans toutes les apps KDMC.' });
       }
+      /* COMPTE INVITÉ SANS TÉLÉPHONE CONFIRMÉ (13.10) : session valide, mais rien ne s'ouvre tant que le numéro n'est pas prouvé par WhatsApp. On GARDE le pass :
+         c'est lui qui autorise la personne à lier SON numéro (/__sso/tel/lier). */
+      if (!estAdmin && acc && acc.tel_requis && !acc.tel) {
+        return J({ ok: false, reason: 'tel_a_confirmer', tel_a_confirmer: true, uid: s.uid, name: s.name, app,
+          message: 'Pour ouvrir ton compte, confirme ton numéro de téléphone par WhatsApp (gratuit).' });
+      }
       const per = perimetre(acc, app);
       if (!per.ok && !estAdmin) {
         return J({
@@ -3215,7 +3244,7 @@ async function handleSso(request, url, env) {
       /* `roles` (8.10, revue extérieure) : les droits que Kevin pose sur la fiche (ex. ['shops'] = boutiques/sourcing/dashboard) — plus jamais une
          regex sur le nom dans les pages. Posés par /__admin/perimetre (champ roles), lus ici par toutes les apps. */
       /* `attente_admin` : le portail montre « en attente de l'administrateur » au lieu des apps (elles le refuseraient une à une). */
-      const rep = { attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), tel_pose: estAdmin ? true : (acc ? !!(acc.fiche && acc.fiche.telephone) : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
+      const rep = { externe: (!estAdmin && acc && acc.externe) ? true : undefined, attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), tel_pose: estAdmin ? true : (acc ? !!(acc.fiche && acc.fiche.telephone) : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
@@ -3945,6 +3974,16 @@ async function handleMembre(request, env) {
   if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
   if (!ssoOriginOk(request.headers.get('origin'), new URL(request.url).host)) return JM({ ok: false, reason: 'origine refusée' }, 403);
   let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
+  /* COMPTE INVITÉ (Kevin 13.10 : « un compte pour une personne qui ne fait peut-être pas partie du casino ») : créé par Kevin seul
+     (/__admin/compte-invite), il n'a ni matricule SBM ni nom dans le planning. Le DOMAINE le reconnaît à sa session (jamais la page) :
+     session valide, non révoquée, fiche `externe` → admis sans contrôle du planning. Tout autre cas passe par le planning comme avant. */
+  try {
+    const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoToken(request));
+    if (sess && !sess.admin) {
+      const fiche = await accGet(env, sess.uid);
+      if (fiche && fiche.externe === true && !revoked(fiche, sess) && !fiche.attente_admin && !(fiche.tel_requis && !fiche.tel)) return JM({ ok: true, externe: true });
+    }
+  } catch { /* session illisible : on retombe sur le contrôle du planning */ }
   const txt = await lirePlanning(env, cleKV, fichierHebergeur(env, '/tools/departs/boards-gen.js'));
   if (!txt) return JM({ ok: false, reason: 'planning_indisponible' }, 503);
   const app = appDeLaDemande(request) || 'auth';
@@ -4325,6 +4364,43 @@ async function handleAdmin(request, url, env) {
      via /__admin/login, ou session Face ID d'un uid admin). Aucun second mot de
      passe inventé pour l'occasion : un secret par app est un secret qu'on oublie
      de changer.  */
+  /* ── COMPTE INVITÉ (Kevin 13.10 : « créer un compte pour une personne qui ne fera peut-être pas partie du casino, à qui je donne accès au
+     planning, aux départs, à MC Lite, à CMC Teams… tout le domaine public, sauf les admins ») ── POST { prenom, nom, code, telephone? }.
+     Kevin seul (barrière admin plus haut). La fiche est celle d'un compte ordinaire SANS `acces_at` : le périmètre « compte unique » ouvre tout le
+     domaine public et ferme les apps personnelles de Kevin (arbre, coffre, bot, dashboard) ; jamais d'admin (non `verified`). `externe:true` la dispense du
+     contrôle matricule + planning (/__dep/membre). Le code est posé tel que Kevin l'a choisi (empreinte salée seulement) ; les conditions (`cgu_at:0`, pas de
+     `cgu_v`) restent à accepter UNE fois, à la première page vue, puis valent partout. Le code n'est jamais écrit dans le journal. */
+  if (path === '/__admin/compte-invite' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const net = (v, n) => String(v || '').replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+    const prenom = net(b.prenom, 40), nom = net(b.nom, 50), code = typeof b.code === 'string' ? b.code : '';
+    const name = (prenom + ' ' + nom).trim();
+    if (!renseignementsComplets(name, true) || !/\p{L}.*\p{L}/u.test(prenom) || !/\p{L}.*\p{L}/u.test(nom)) return J({ ok: false, reason: 'prenom_nom_requis' }, undefined, 400);
+    if (isAdminName(name)) return J({ ok: false, reason: 'nom_reserve' }, undefined, 400);
+    if (!CODE_VALIDE(code)) return J({ ok: false, reason: 'code_invalide' }, undefined, 400);
+    /* TÉLÉPHONE OBLIGATOIRE (Kevin 13.10 : « Tel obligatoire, 2 options possibles ») : (1) `tel_mode:'saisi'` (défaut) — Kevin tape le numéro ici ;
+       (2) `tel_mode:'whatsapp'` — la personne le confirme elle-même par WhatsApp à sa première connexion (rien ne s'ouvre avant). */
+    const mode = b.tel_mode === 'whatsapp' ? 'whatsapp' : 'saisi';
+    const tel = b.telephone ? String(b.telephone).trim().slice(0, 24) : '';
+    if (mode === 'saisi' && !tel) return J({ ok: false, reason: 'telephone_requis' }, undefined, 400);
+    if (tel && !telephoneValide(tel)) return J({ ok: false, reason: 'telephone_invalide' }, undefined, 400);
+    if (mode === 'whatsapp' && !telPret(env)) return J({ ok: false, reason: 'whatsapp_pas_pret' }, undefined, 400);
+    if (!env.ACCOUNTS) return J({ ok: false, reason: 'indisponible' }, undefined, 503);
+    const n = normName(name);
+    if (await env.ACCOUNTS.get('nm:' + n)) return J({ ok: false, reason: 'deja_existe' }, undefined, 409);
+    const uid = n.replace(/\s+/g, '-').slice(0, 60);
+    if (await accGet(env, uid)) return J({ ok: false, reason: 'deja_existe' }, undefined, 409);
+    const maintenant = Date.now();
+    const acc = { uid, name, created: maintenant, cgu_at: 0, hits: 0, devices: [], places: [], apps: {}, history: [],
+      portee: 'domaine', acces: [], bloque: [], externe: true, cree_admin_at: maintenant, code_at: maintenant };
+    if (mode === 'saisi') acc.fiche = { telephone: tel, maj: maintenant, app: 'admin' };
+    else acc.tel_requis = true;   /* rien ne s'ouvre tant que la personne n'a pas confirmé son numéro par WhatsApp (whoami → tel_a_confirmer) */
+    await env.ACCOUNTS.put('nm:' + n, uid);
+    await accPut(env, acc);
+    await credSet(env, uid, code);
+    await audLog(env, { ev: 'compte_invite_cree', uid, name, detail: mode === 'whatsapp' ? 'téléphone à confirmer par WhatsApp' : 'téléphone saisi par l\'admin' });
+    return J({ ok: true, uid, name });
+  }
   if (path === '/__admin/acces' && request.method === 'GET') {
     const uid = url.searchParams.get('uid') || '';
     const apps = [...new Set(Object.values(APPS))].sort();

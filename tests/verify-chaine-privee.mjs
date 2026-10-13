@@ -57,8 +57,13 @@ for (const f of lanceurs) {
   ok(/if:[^\n]*github\.repository\s*==\s*'9r4rxssx64-creator\/CMCteams'/.test(code),
     `${f} : doit être limité au coffre (github.repository) — ailleurs il n'a pas les fichiers privés`);
   /* 6. Il se déclenche sur une vraie occasion (PR ou main), pas seulement à la main. */
-  ok(/^on:/m.test(code) && /pull_request|push:/.test(code),
-    `${f} : doit partir sur une pull_request ou un push (un contrôle qu'il faut penser à lancer ne protège personne)`);
+  /* 13.10 (budget Actions : 10 $ restants, ration 60 min/jour) : « LE TRAIN DU SOIR » — la chaîne ne part plus toute seule ; elle est lancée UNE fois par jour par la
+     session qui parle à Kevin. C'est permis SEULEMENT si le robot le dit dans son en-tête ET que l'état du moment le porte : sinon on retombe sur la règle d'origine
+     (un contrôle qu'il faut penser à lancer ne protège personne). */
+  const train = /^on:\s*\n\s+workflow_dispatch:\s*\n(?!\s+(?:push|pull_request))/m.test(code) && /TRAIN DU SOIR/.test(t)
+    && /TRAIN DU SOIR/i.test(readFileSync(join(ROOT, 'ETAT-DU-MOMENT.md'), 'utf8'));
+  ok(/^on:/m.test(code) && (/pull_request|push:/.test(code) || train),
+    `${f} : doit partir sur une pull_request ou un push — ou être le « train du soir » documenté (un contrôle qu'il faut penser à lancer ne protège personne)`);
   /* 7. Réflexe ci-no-stampede. */
   const grp = (code.match(/group:\s*([^\n]+)/) || [])[1] || '';
   ok(!/cancel-in-progress:\s*true/.test(code) || /github\.ref/.test(grp),

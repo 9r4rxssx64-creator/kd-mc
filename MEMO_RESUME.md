@@ -1,5 +1,25 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-13 (nuit) — WhatsApp MIS DE CÔTÉ (Kevin : « tu l'enlèves du visuel de l'inscription, on fait confiance aux numéros tapés »)
+- Rien de WhatsApp à l'écran tant que le domaine n'est pas branché : l'inscription ne montre que le champ téléphone (numéro tapé, cru) ; dans « Créer un compte » (invité), le choix « confirme par WhatsApp » n'apparaît que si WhatsApp est branché. La tâche « brancher WhatsApp (3 copier-coller chez Meta) » reste dans `KEVIN_ACTIONS_TODO.md`, marquée « mis de côté ».
+- Garde `test:tel-invite-portail` (13 ; `SABOTAGE=signup` = le portail montre WhatsApp sans qu'il soit branché → rouge) et `test:creer-invite-page` (16).
+
+## 2026-10-13 (soir) — Compte invité : téléphone OBLIGATOIRE, 2 options (Kevin : « Tel obligatoire, 2 options possibles »)
+- Dans « ➕ Créer un compte pour une personne » : (1) « Je tape le numéro maintenant » (obligatoire dans ce cas) ou (2) « La personne le confirme elle-même par WhatsApp » — l'option 2 est grisée tant que WhatsApp n'est pas branché sur le domaine (les 3 secrets Meta de ta liste « à faire »).
+- Option 2 : à sa première connexion, la personne voit « Confirme ton téléphone » (écran bloquant du portail) ; rien ne s'ouvre avant ; dès le message WhatsApp reçu, le compte s'ouvre tout seul. Le numéro n'est gardé que sous forme d'empreinte.
+- Portail v1.0.54 ; routeur : `tel_requis`, `tel_a_confirmer`, `/__sso/tel/lier`. 58 contrôles (34 + 16 + 8) sur ce volet, sabotages prouvés.
+
+## 2026-10-13 (nuit) — Rouges de `main` réglés avec le compte invité
+- `test:chaine-privee` exigeait une chaîne qui part sur PR/push ; le « train du soir » (13.10) l'a passée en lancement manuel → accepté SEULEMENT si le robot porte « TRAIN DU SOIR » dans son en-tête ET que `ETAT-DU-MOMENT.md` le porte (sabotage : sans la mention → rouge).
+- `test:arbre-session` rouge sur la machine de session = module Python `pymupdf` absent (pas un défaut du dépôt) : `pip3 install pymupdf` → 11/11.
+- `test:javis-bee-reelle` (mouvement de bouche, WebGL logiciel) rouge seulement quand d'autres tests tournent en même temps ; seul, 68/68 deux fois.
+
+## 2026-10-13 — Compte INVITÉ : « créer un compte pour une personne hors casino » (portail admin, Light v1.91, CMCteams v9.967)
+- Kevin : créer, depuis son espace admin, un compte (prénom, nom, code) pour quelqu'un qui n'est peut-être pas du casino ; accès au planning, aux départs, à MC Lite, à CMC Teams et au domaine public, jamais l'admin ; la personne se connecte, accepte UNE fois, puis entre dans l'app de son choix.
+- Comment l'utiliser : kd-mc.com/admin → « ➕ Créer un compte pour une personne (invitée) » → prénom, nom, code (🎲 pour en tirer un), téléphone facultatif → « Créer ». Le code s'affiche une seule fois : donne-le avec le nom complet. La personne ouvre kd-mc.com (ou n'importe quelle app), tape son nom et son code, accepte les conditions, remplit ce qu'on lui demande, puis ouvre CMCteams, Light, etc.
+- Techniquement : `/__admin/compte-invite` (routeur), `externe` dans `/__sso/whoami`, dispense dans `/__dep/membre`, formulaire dans `kdmc-home/admin/admin.js`, entrée Light (`_depEntrerInvite`) et CMCteams (`tools/shared/matricule-sbm.js`, qui évite d'alourdir `index.html`). 46 contrôles, sabotages prouvés.
+- À savoir : l'invité voit les noms et plannings des collègues (c'est ce que Kevin demande) ; pas de chat ni d'assistant ; fermer une app à une personne se fait comme d'habitude (« Fermer ou rouvrir »). Le routeur ne change en ligne qu'après son déploiement (robots du coffre bloqués par le budget Actions).
+- Pas fait : confirmation du téléphone par WhatsApp pour l'invité (le numéro peut être saisi à la création) ; question posée à Kevin : numéro obligatoire ou facultatif.
 ## 2026-10-13 (14h) — Budget Actions relevé à 30 $ : « le train du soir »
 - **Kevin** : budget Actions 20 → 30 $ (10 $ restants jusqu'au 31.10 ; remise à zéro du quota le 1.11). « Minimise, groupe au maximum, en attente pour que tout le monde puisse poser dessus ; respecte les abonnements et les règles. »
 - **Fait** : la chaîne privée et l'audit runtime ne partent plus à la fusion (`workflow_dispatch` seulement) ; une seule vérification par jour, le soir, lancée par la session qui parle à Kevin ; garde `test:coffre-sobre` adapté (un `push:` reste interdit sans filtre `paths`). Règles écrites dans `ETAT-DU-MOMENT.md` (servi à toutes les sessions) + message `toutes` du pipeline.
@@ -34,11 +54,11 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
-## 2026-10-13 (soir, suite) — cadres à l'écran dans CMCteams (v9.966) + light (v1.90)
-- **Fait (code + tests, PAS encore en ligne)** : CMCteams v9.966 : l'ancien filtre « jamais de cadre dans le planning » retiré (les cadres s'affichent dans le groupe « Cadres ») ; light v1.90 : les tableaux de cadres survivent au live Firebase.
+## 2026-10-13 (soir, suite) — cadres à l'écran dans CMCteams (v9.967) + light (v1.90)
+- **Fait (code + tests, PAS encore en ligne)** : CMCteams v9.967 : l'ancien filtre « jamais de cadre dans le planning » retiré (les cadres s'affichent dans le groupe « Cadres ») ; light v1.91 : les tableaux de cadres survivent au live Firebase.
 
 ## 2026-10-13 (soir) — cadres de nouveau visibles dans la light (v1.90)
-- **Fait (code + test, PAS encore en ligne)** : cause = le live Firebase supprimait les tableaux committés des cadres ; ils sont désormais gardés. Light v1.90.
+- **Fait (code + test, PAS encore en ligne)** : cause = le live Firebase supprimait les tableaux committés des cadres ; ils sont désormais gardés. Light v1.91.
 
 ## 2026-10-13 (suite) — « Redemande » le téléphone + fermer pour une ou plusieurs personnes (portail v1.0.53 + routeur + admin)
 - **Fait (code + tests, PAS encore déployé)** : carte « Ajoute ton téléphone » au portail pour les comptes sans numéro (`whoami.tel_pose`) ; `/__admin/acces-lot` + bloc admin pour fermer/rouvrir plusieurs apps à plusieurs personnes.

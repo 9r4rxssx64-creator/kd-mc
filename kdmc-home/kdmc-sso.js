@@ -78,6 +78,9 @@
              domaine → plus rien ne s'ouvre tant que la personne n'a pas créé son code. On GARDE le pass : c'est lui qui prouve, au
              portail, que c'est bien elle qui pose SON code (memeSession côté routeur), sans attendre l'administrateur. */
           if (j && j.code_requis) return { state: 'code_requis', session: { uid: j.uid || '', name: j.name || '', code_pose: false, message: j.message || '' } };
+          /* 6e état — 'tel_a_confirmer' (13.10, compte invité créé par Kevin avec « la personne confirme son téléphone par WhatsApp ») : session VALIDE,
+             rien ne s'ouvre tant que le numéro n'est pas prouvé. On GARDE le pass (il autorise à lier SON numéro). */
+          if (j && j.tel_a_confirmer) return { state: 'tel_a_confirmer', session: { uid: j.uid || '', name: j.name || '', message: j.message || '' } };
           return { state: 'invalid' };
         }).catch(function () { return { state: 'neterr' }; });
       })
@@ -289,6 +292,11 @@
       /* compte sans code (8.10) : on GARDE le pass et on envoie au portail, qui affiche l'écran « Crée ton code » et ramène ici. */
       if (r.state === 'code_requis') {
         try { location.replace('https://kd-mc.com/?code=1&return=' + encodeURIComponent(returnUrl || location.href)); } catch (e) { /* ignore */ }
+        return null;
+      }
+      /* invité sans téléphone confirmé (13.10) : on GARDE le pass et on envoie au portail, qui affiche l'écran « Confirme ton téléphone » et ramène ici. */
+      if (r.state === 'tel_a_confirmer') {
+        try { location.replace('https://kd-mc.com/?tel=1&return=' + encodeURIComponent(returnUrl || location.href)); } catch (e) { /* ignore */ }
         return null;
       }
       /* serveur a dit explicitement « pas de session » : si on avait déjà un pass,

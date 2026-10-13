@@ -4,7 +4,7 @@
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.53"
+   "version": "v1.0.54"
   },
   "www.kd-mc.com": {
    "page": "kdmc-home/index.html",
@@ -12,7 +12,7 @@
   },
   "cmcteams.kd-mc.com": {
    "page": "index.html",
-   "version": "v9.966"
+   "version": "v9.967"
   },
   "apex-ai.kd-mc.com": {
    "page": "apex-ai-v13/index.html",
@@ -44,11 +44,11 @@
   },
   "departs.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.90"
+   "version": "v1.91"
   },
   "cmcteams-light.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.90"
+   "version": "v1.91"
   },
   "bot.kd-mc.com": {
    "page": "tools/crypto-bot-dashboard/index.html",

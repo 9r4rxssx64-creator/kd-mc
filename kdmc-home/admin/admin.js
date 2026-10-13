@@ -377,6 +377,64 @@
       + '<div class="chips">' + apps.map(function (x) { return chip('gen', 'ferme', x, FERMEES_GEN.indexOf(x) >= 0); }).join('') + '</div>'
       + '<button class="savacc" id="fermgen-save" type="button">💾 Enregistrer</button><span class="accmsg" id="fermgen-msg"></span></div></details>';
   }
+  /* ---- Créer un compte INVITÉ (Kevin 13.10 : « un compte pour une personne qui ne fera peut-être pas partie du casino… accès au planning, aux départs, à MC Lite, à CMC Teams, et tout le domaine public sauf les admins ») ----
+     Prénom + nom + code (+ téléphone facultatif) → POST /__admin/compte-invite. Le code n'est jamais gardé ici : on le voit UNE fois pour le donner à la personne. */
+  var MSG_INVITE = { prenom_nom_requis: 'Il faut un prénom ET un nom (au moins 2 lettres chacun).', nom_reserve: 'Ce nom est réservé à l\'administrateur.',
+    code_invalide: 'Le code doit faire au moins 6 caractères.', telephone_invalide: 'Numéro de téléphone mal écrit (ex. +377 06 12 34 56).',
+    deja_existe: 'Ce prénom et ce nom ont déjà un compte.', telephone_requis: 'Le téléphone est obligatoire : tape le numéro (ex. +377 06 12 34 56).', whatsapp_pas_pret: 'WhatsApp n\'est pas encore branché sur le domaine : tape le numéro toi-même.', indisponible: 'Le registre est indisponible, réessaie dans un instant.', need_admin_code: 'Reconnecte-toi en admin puis réessaie.' };
+  function blocCreer() {
+    return '<details class="fermgen" id="creer-invite">'
+      + '<summary>➕ Créer un compte pour une personne (invitée, même hors casino)</summary>'
+      + '<div class="accbody"><div class="d">La personne n\'a pas besoin d\'être dans le planning ni d\'avoir un matricule SBM. Elle aura le planning, les départs, MC Lite, CMC Teams et tout le domaine public — jamais ta partie admin. Elle se connecte avec ce nom et ce code, accepte les conditions une seule fois, puis entre dans l\'app de son choix.</div>'
+      + '<input class="search" id="cinv-prenom" placeholder="Prénom" autocomplete="off" autocapitalize="words">'
+      + '<input class="search" id="cinv-nom" placeholder="Nom" autocomplete="off" autocapitalize="words">'
+      + '<input class="search" id="cinv-code" placeholder="Code (6 caractères ou plus)" autocomplete="off" autocapitalize="off">'
+      + '<div class="d" style="margin-top:8px"><b>📱 Téléphone obligatoire</b></div>'
+      /* WhatsApp mis de côté (Kevin 13.10 : « mets de côté la validation WhatsApp tant que je l'ai pas faite, enlève-la du visuel ») : le choix n'apparaît QUE quand le domaine a WhatsApp branché */
+      + '<div id="cinv-modes" hidden>'
+      + '<label class="chipacc" for="cinv-mode-saisi" style="display:flex;margin:4px 0"><input type="radio" name="cinv-mode" id="cinv-mode-saisi" value="saisi" checked> <span>📝 Je tape le numéro maintenant</span></label>'
+      + '<label class="chipacc" for="cinv-mode-wa" id="cinv-wa-lbl" style="display:flex;margin:4px 0"><input type="radio" name="cinv-mode" id="cinv-mode-wa" value="whatsapp"> <span>💬 La personne le confirme elle-même par WhatsApp (rien ne s\'ouvre avant)</span></label>'
+      + '</div>'
+      + '<input class="search" id="cinv-tel" placeholder="Téléphone (ex. +377 06 12 34 56)" autocomplete="off" inputmode="tel">'
+      + '<div><button class="savacc" id="cinv-gen" type="button">🎲 Choisir un code</button> <button class="savacc" id="cinv-go" type="button">➕ Créer le compte</button></div>'
+      + '<span class="accmsg" id="cinv-msg"></span></div></details>';
+  }
+  function wireCreer() {
+    var go = document.getElementById('cinv-go'), gen = document.getElementById('cinv-gen');
+    if (!go) return;
+    function val(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+    /* WhatsApp branché sur le domaine ? sinon l'option est grisée (le domaine la refuserait de toute façon) */
+    function modeWa() { var e = document.getElementById('cinv-mode-wa'); return !!(e && e.checked); }
+    function majMode() { var t = document.getElementById('cinv-tel'); if (t) t.style.display = modeWa() ? 'none' : ''; }
+    [document.getElementById('cinv-mode-saisi'), document.getElementById('cinv-mode-wa')].forEach(function (e) { if (e) e.addEventListener('change', majMode); });
+    fetch('/__sso/tel/etat', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+      var m = document.getElementById('cinv-modes');
+      if (j && j.pret && m) m.hidden = false;   /* WhatsApp branché : le 2e choix apparaît ; sinon rien de WhatsApp à l'écran, le numéro tapé est cru */
+    }).catch(function () { /* domaine muet : pas de choix WhatsApp */ });
+    gen.addEventListener('click', function () {
+      var t = new Uint32Array(1); (window.crypto || window.msCrypto).getRandomValues(t);
+      document.getElementById('cinv-code').value = String(10000000 + (t[0] % 90000000));
+    });
+    go.addEventListener('click', function () {
+      var msg = document.getElementById('cinv-msg'), code = val('cinv-code'), prenom = val('cinv-prenom'), nom = val('cinv-nom');
+      if (!prenom || !nom) { msg.textContent = '⚠️ ' + MSG_INVITE.prenom_nom_requis; return; }
+      if (code.length < 6) { msg.textContent = '⚠️ ' + MSG_INVITE.code_invalide; return; }
+      if (!modeWa() && !val('cinv-tel')) { msg.textContent = '⚠️ ' + MSG_INVITE.telephone_requis; return; }
+      go.disabled = true; msg.textContent = '…';
+      fetch('/__admin/compte-invite', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()),
+        body: JSON.stringify({ prenom: prenom, nom: nom, code: code, tel_mode: modeWa() ? 'whatsapp' : 'saisi', telephone: modeWa() ? '' : val('cinv-tel') }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          go.disabled = false;
+          if (j && j.ok) {
+            msg.textContent = '✅ Compte créé pour ' + (j.name || prenom + ' ' + nom) + '. Donne-lui son nom complet et ce code : ' + code + ' — il ne sera plus affiché.' + (modeWa() ? ' À sa première connexion elle confirmera son téléphone par WhatsApp.' : '');
+            ['cinv-prenom', 'cinv-nom', 'cinv-code', 'cinv-tel'].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ''; });
+            /* pas de rechargement de la liste ici : il reconstruirait l'écran et effacerait le code à transmettre ; la fiche apparaît au prochain « ↻ Rafraîchir » */
+          } else msg.textContent = '⚠️ ' + ((j && MSG_INVITE[j.reason]) || 'Impossible de créer le compte pour le moment.');
+        })
+        .catch(function () { go.disabled = false; msg.textContent = '⚠️ Réseau — réessaie'; });
+    });
+  }
   /* ---- Fermer / rouvrir des apps à UNE ou PLUSIEURS personnes d'un coup (Kevin 13.10 : « pour une seule personne comme plusieurs ») ---- */
   function blocLot(accounts) {
     if (!APPS_LISTE.length || !accounts || !accounts.length) return '';
@@ -442,7 +500,7 @@
     revoke_sessions: '🚪 Déconnexion forcée', new_device: '📱 Nouvel appareil', fbtoken_mint: '🔥 Jeton Firebase admin émis',
     perimetre: '🔐 Périmètre modifié', apps_fermees: '🚧 Apps fermées pour tout le monde', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)',
     geo_anomaly: '⚠️ Connexion suspecte', nouvelle_connexion: '🆕 Nouvelle connexion', quota_inscriptions_atteint: '🛑 Inscriptions suspendues',
-    matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé'
+    matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé', compte_invite_cree: '➕ Compte invité créé'
   };
   function audRow(e) {
     return '<div class="tlrow">' + esc(dt(e.ts)) + ' · <b>' + esc(AUD_EV[e.ev] || e.ev) + '</b>'
@@ -493,6 +551,7 @@
       '<div id="presence">' + presence(accounts) + '</div>'
       + (kv ? '' : '<div class="note">⚙️ Le registre central (KV) s\'activera au prochain déploiement du router : les fiches apparaîtront alors automatiquement. Les fonctions communes ci-dessous marchent déjà.</div>')
       + blocFermees()
+      + blocCreer()
       + blocLot(accounts)
       + '<h2 class="cat">📊 Tous les comptes</h2>'
       + '<div class="stat" id="gstat">' + globalPills(accounts) + '</div>'
@@ -508,6 +567,7 @@
     wireRevoke();
     wireAcces();
     wireFermees();
+    wireCreer();
     wireLot();
     var q = document.getElementById('q');
     if (q) q.addEventListener('input', function () {

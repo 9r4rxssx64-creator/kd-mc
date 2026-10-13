@@ -158,6 +158,7 @@
     /* 8.10 : « compte sans code » n'est pas « aucune session » — l'écran du code s'affiche, bloquant, et rien d'autre ne s'ouvre. */
     var lu = function (r) {
       if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); done(null); return; }
+      if (r && r.state === 'tel_a_confirmer') { renderTelObligatoire(r.session); done(null); return; }   /* 13.10 : compte invité — le téléphone se confirme par WhatsApp, rien d'autre ne s'ouvre */
       done(r && r.state === 'session' ? r.session : null);
     };
     if (deja && deja.state) { lu(deja); }
@@ -213,6 +214,79 @@
      sortie est de choisir son code (2 fois). Le domaine n'accepte de poser le code d'un compte existant que depuis sa propre session
      (memeSession) : ici, c'est le cas. Un compte qui a déjà un code (posé avant le 8.10) l'entre une fois : le domaine le reconnaît.
      Ensuite : retour à l'app d'où l'on vient (?return=), sinon le portail se recharge, connecté. */
+  /* ===== « CONFIRME TON TÉLÉPHONE » (13.10, Kevin : « Tel obligatoire, 2 options possibles ») =====
+     Compte invité créé par Kevin avec l'option « la personne confirme elle-même » : le domaine ne rouvre rien (whoami → tel_a_confirmer) tant que le
+     numéro n'est pas PROUVÉ par WhatsApp (gratuit, le message envoyé depuis le numéro prouve le numéro). Même mécanique que l'inscription
+     (/__sso/tel/demande → statut → verifie) ; la preuve signée est ensuite liée à CE compte (/__sso/tel/lier). La page ne juge rien. */
+  function renderTelObligatoire(s) {
+    var old = document.getElementById('tel-oblig'); if (old) old.remove();
+    if (!s || !s.uid) return;
+    var box = document.createElement('div'); box.id = 'tel-oblig'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Confirme ton téléphone');
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0b1409;color:#f3f0e6;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
+    var cases = ''; for (var i = 1; i <= 6; i++) cases += '<input class="fld to-case" type="text" inputmode="numeric" maxlength="6" aria-label="Chiffre ' + i + '" style="min-height:48px;text-align:center;font-size:20px;width:100%">';
+    box.innerHTML = '<div style="max-width:360px;width:100%"><div style="font-size:44px;text-align:center">📱</div>'
+      + '<h1 style="font-size:19px;color:#f6d97a;margin:8px 0 6px;text-align:center">Confirme ton téléphone</h1>'
+      + '<p style="color:#cfd8cc;margin:0 0 14px"><b>' + esc(s.name || 'Ton compte') + '</b>, pour ouvrir ton compte, confirme ton numéro par WhatsApp (gratuit) : ouvre WhatsApp et envoie le message déjà écrit. <b>C\'est tout</b> — cette page se valide toute seule. (Sinon, tape le code à 6 chiffres reçu en réponse.)</p>'
+      + '<a class="btn" id="to-wa" href="#" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:50px">Ouvrir WhatsApp</a>'
+      + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:12px 0 4px" role="group" aria-label="Code à 6 chiffres">' + cases + '</div>'
+      + '<p id="to-attente" style="text-align:center;color:#93a58f;margin:6px 0" aria-live="polite">⏳ En attente de ton message WhatsApp…</p>'
+      + '<button class="btn" id="to-new" type="button" hidden style="min-height:50px;width:100%">Recevoir un nouveau code</button>'
+      + '<p class="g-err" id="to-err" role="alert" aria-live="polite" style="min-height:22px"></p></div>';
+    document.body.appendChild(box);
+    var dem = '', jeton = '', fin = 0, timer = null, fini = false;
+    var err = function (t) { var e = document.getElementById('to-err'); if (e) e.textContent = t || ''; };
+    var cs = [].slice.call(box.querySelectorAll('.to-case'));
+    function lier(preuve) {
+      if (fini) return; fini = true; clearInterval(timer); err('');
+      var h = { 'content-type': 'application/json' }, t = ''; try { t = localStorage.getItem('kdmc_sso_token') || ''; } catch (e) { /* */ } if (t) h.Authorization = 'Bearer ' + t;
+      fetch('/__sso/tel/lier', { method: 'POST', credentials: 'include', headers: h, body: JSON.stringify({ preuve: preuve }) })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) {
+          if (j && j.ok) { box.querySelector('div').innerHTML = '<p style="text-align:center;font-size:17px">✅ Téléphone confirmé. Ton compte s\'ouvre…</p>'; setTimeout(function () { if (!gotoReturnIfAny()) location.reload(); }, 700); return; }
+          fini = false; err((j && j.message) || 'Le domaine n\'a pas pu lier ton numéro. Recommence.'); document.getElementById('to-new').hidden = false;
+        }).catch(function () { fini = false; err('Erreur réseau, réessaie.'); document.getElementById('to-new').hidden = false; });
+    }
+    function demarrer() {
+      err(''); fini = false; document.getElementById('to-new').hidden = true; cs.forEach(function (c) { c.value = ''; });
+      fetch('/__sso/tel/demande', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: '{}' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { err((j && j.message) || 'Ça n\'a pas marché. Réessaie.'); document.getElementById('to-new').hidden = false; return; }
+          dem = j.demande; jeton = j.jeton || ''; fin = Date.now() + j.validite_s * 1000;
+          document.getElementById('to-wa').href = j.lien;
+          clearInterval(timer); var enCours = false;
+          timer = setInterval(function () {
+            if (enCours || document.hidden || fini) return;
+            if (Date.now() > fin) { clearInterval(timer); err('Demande expirée.'); document.getElementById('to-new').hidden = false; return; }
+            enCours = true;
+            fetch('/__sso/tel/statut', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ r: dem, jeton: jeton }) })
+              .then(function (r) { return r.json(); })
+              .then(function (x) { if (x && x.ok && x.confirme && x.preuve) lier(x.preuve); else if (x && x.reason === 'tel_plein') { clearInterval(timer); err(x.message); } })
+              .catch(function () { /* réseau : au prochain tour */ })
+              .then(function () { enCours = false; });
+          }, 4000);
+        }).catch(function () { err('Le domaine ne répond pas. Réessaie dans un instant.'); document.getElementById('to-new').hidden = false; });
+    }
+    function valider() {
+      var code6 = cs.map(function (c) { return c.value; }).join(''); if (code6.length !== 6 || !dem) return;
+      fetch('/__sso/tel/verifie', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ r: dem, code: code6 }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok && j.preuve) { lier(j.preuve); return; }
+          err((j && j.message) || 'Code incorrect.'); cs.forEach(function (c) { c.value = ''; }); cs[0].focus();
+        }).catch(function () { err('Le domaine ne répond pas. Réessaie.'); });
+    }
+    cs.forEach(function (c, i) {
+      c.addEventListener('input', function () {
+        var ch = String(c.value || '').replace(/\D/g, '');
+        if (ch.length > 1) { var depart = ch.length >= 6 ? 0 : i; ch.slice(0, 6).split('').forEach(function (d, k) { if (cs[depart + k]) cs[depart + k].value = d; }); } else c.value = ch;
+        var vide = cs.filter(function (x) { return !x.value; })[0]; if (vide && c.value) vide.focus();
+        if (cs.every(function (x) { return x.value; })) valider();
+      });
+    });
+    document.getElementById('to-new').addEventListener('click', demarrer);
+    demarrer();
+  }
   function renderCodeObligatoire(s) {
     var old = document.getElementById('code-oblig'); if (old) old.remove();
     if (!s || !s.uid || !window.kdmcSSO || !window.kdmcSSO.issueDetail) return;
@@ -489,6 +563,7 @@
       /* 8.10 (revue extérieure) : un compte sans code renvoyé vers l'app AVANT l'écran du code = ping-pong app ⇄ portail.
          Le domaine a le dernier mot : code_requis → l'écran bloquant, et on ne repart pas. */
       if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
+      if (r && r.state === 'tel_a_confirmer') { renderTelObligatoire(r.session); return; }   /* 13.10 : invité — téléphone à confirmer par WhatsApp */
       /* 10.10 : inscrit sans WhatsApp, pas encore ouvert par l'administrateur → l'écran d'attente, et on ne repart PAS vers l'app
          (elle refuserait : ping-pong). Le domaine a le dernier mot (whoami.attente_admin). */
       if (r && r.state === 'session' && r.session && r.session.attente_admin) { renderAttenteAdmin(r.session); return; }
@@ -1105,6 +1180,7 @@
     if (window.kdmcSSO && window.kdmcSSO.whoamiResult) {
       window.kdmcSSO.whoamiResult().then(function (r) {
         if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
+        if (r && r.state === 'tel_a_confirmer') { renderTelObligatoire(r.session); return; }   /* 13.10 */
         done(r && r.state === 'session' ? r.session : null, r);
       }).catch(function () { done(null); });
     } else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done); } else { done(null); }

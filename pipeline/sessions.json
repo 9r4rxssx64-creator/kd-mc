@@ -1495,6 +1495,16 @@
       "maj": "2026-10-12",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "compte-externe": {
+      "titre": "Compte invité créé par l'admin",
+      "branche": "claude/compte-externe",
+      "sujet": "invité hors casino : routeur, formulaire admin, Light v1.90, CMCteams v9.966 ; 4 gardes",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-13",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

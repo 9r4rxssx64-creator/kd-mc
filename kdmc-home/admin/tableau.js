@@ -80,69 +80,29 @@
 
   /* Les compteurs du bandeau « À traiter maintenant ». `null` = pas encore lu (affiché « … » ou « — »), jamais un faux 0.
      inscriptionsAdmin ABSENT (routeur pas encore à jour) → compteur caché, aucune erreur. */
-  /* L'INSTANTANÉ DU DERNIER RELEVÉ (13.10, Kevin : « la zone du haut apparaît tard ») : des NOMBRES seulement (jamais un nom, jamais un message),
-     gardés sur l'appareil par surBoite() et redessinés dès que le domaine a dit « admin vérifié ». Il a une date : on ne le présente jamais comme neuf. */
-  var CLE_CPTS = 'kdmc_tb_cpts', INST_MAX = 864e5;
-  function nb(x) { return typeof x === 'number' && isFinite(x) && x >= 0 && x < 1e6 ? Math.floor(x) : null; }
-  function instantane(D, livrer) {
-    var o = { ts: Date.now() };
-    o.nonLus = nb(D && D.nonLus) || 0; o.nonLusAlertes = nb(D && D.nonLusAlertes) || 0; o.connectes = nb(D && D.connectes) || 0;
-    o.inscriptions = ((D && D.inscriptions) || []).length; o.codes = ((D && D.codes) || []).length;
-    o.sansWhatsapp = D && Array.isArray(D.inscriptionsAdmin) ? D.inscriptionsAdmin.length : null;
-    o.livrer = nb(livrer);
-    return o;
-  }
-  function instantaneValide(j) {
-    if (!j || typeof j !== 'object' || typeof j.ts !== 'number' || !isFinite(j.ts) || Date.now() - j.ts > INST_MAX || j.ts > Date.now() + 6e4) return null;
-    var o = { ts: j.ts };
-    ['nonLus', 'nonLusAlertes', 'connectes', 'inscriptions', 'codes', 'sansWhatsapp', 'livrer'].forEach(function (k) { o[k] = nb(j[k]); });
-    return o.nonLus == null && o.inscriptions == null && o.livrer == null ? null : o;
-  }
-  /* un faux « relevé de la boîte » fait des seuls nombres : compteurs() n'a ainsi qu'UN chemin de calcul (le même, vrai ou en cache) */
-  function depuisInstantane(inst) {
-    if (!inst) return null;
-    var tab = function (n) { return new Array(n || 0); };
-    return { nonLus: inst.nonLus || 0, nonLusAlertes: inst.nonLusAlertes || 0, connectes: inst.connectes || 0, inscriptions: tab(inst.inscriptions), codes: tab(inst.codes),
-      inscriptionsAdmin: inst.sansWhatsapp == null ? undefined : tab(inst.sansWhatsapp) };
-  }
-  function ilYa(ts) {
-    var m = Math.max(0, Math.round((Date.now() - ts) / 60000));
-    return m < 1 ? 'à l\'instant' : m < 60 ? 'il y a ' + m + ' min' : 'il y a ' + Math.floor(m / 60) + ' h';
-  }
-
-  function compteurs(boite, live, liveLu, inst) {
-    var b = boite || depuisInstantane(inst);
+  function compteurs(boite, live, liveLu) {
+    var b = boite || null;
     var lAdmin = b && Array.isArray(b.inscriptionsAdmin) ? b.inscriptionsAdmin.length : null;
     return [
       { id: 'messages', l: 'Messages non lus', n: b ? (b.nonLus || 0) : null, s: b && b.nonLusAlertes ? '+ ' + b.nonLusAlertes + ' alerte(s)' : 'toutes les apps' },
       { id: 'inscriptions', l: 'Inscriptions en attente', n: b ? (b.inscriptions || []).length : null, s: 'CMCteams' },
       { id: 'codes', l: 'Codes à valider', n: b ? (b.codes || []).length : null, s: 'appareil inconnu' },
       { id: 'sansWhatsapp', l: 'Inscriptions sans WhatsApp', n: lAdmin, s: 'à accepter ou refuser', cache: !b || lAdmin === null },
-      { id: 'livrer', l: 'Ventes à livrer', n: live && live.file ? (live.file.n || 0) : (!liveLu && inst && inst.livrer != null ? inst.livrer : null),
+      { id: 'livrer', l: 'Ventes à livrer', n: live && live.file ? (live.file.n || 0) : null,
         s: live ? (live.intentions && live.intentions.n ? live.intentions.n + ' panier(s) ouvert(s)' : 'file à valider') : (liveLu ? 'caisse injoignable' : 'lecture de la caisse…') }
     ];
   }
 
-  var API = { esc: esc, ranger: ranger, filtrer: filtrer, compteurs: compteurs, instantane: instantane, instantaneValide: instantaneValide, SECTIONS: SECTIONS, ACTIONS: ACTIONS };
+  var API = { esc: esc, ranger: ranger, filtrer: filtrer, compteurs: compteurs, SECTIONS: SECTIONS, ACTIONS: ACTIONS };
   global.kdmcTableau = API;
   if (typeof module === 'object' && module && module.exports) module.exports = API;
   if (typeof document === 'undefined') return;
 
   /* ── DOM ─────────────────────────────────────────────────────────────────────────────────────────── */
   var app = document.getElementById('app');
-  var BOITE = null, LIVE = null, LIVE_LU = false, empAttente = '', empMess = '', INST = null;
-
-  /* L'instantané ne vit que dans le stockage de CET appareil, en try/catch partout (mode privé, stockage plein, accès refusé : la page marche sans). */
-  function lireInstantane() { try { return instantaneValide(JSON.parse(localStorage.getItem(CLE_CPTS) || 'null')); } catch (e) { return null; } }
-  function garderInstantane(o) { try { localStorage.setItem(CLE_CPTS, JSON.stringify(o)); } catch (e) { /* */ } }
-  function oublierInstantane() {
-    INST = null;
-    try { localStorage.removeItem(CLE_CPTS); } catch (e) { /* */ }
-    try { if (global.kdmcBoite && global.kdmcBoite.oublier) global.kdmcBoite.oublier(); } catch (e) { /* */ }
-  }
+  var BOITE = null, LIVE = null, LIVE_LU = false, empAttente = '', empMess = '';
 
   function deny(s) {
-    oublierInstantane();   /* pas (ou plus) admin vérifié : on ne garde rien du dernier relevé */
     /* Même verrou, mêmes mots que commerce.js : sans session / pas admin / admin sans Face ID. */
     var diag = !s ? 'Aucune <b>session du domaine</b> sur cet appareil.'
       : (!s.admin ? 'Connecté en tant que <b>' + esc(s.name || '?') + '</b>, mais ce compte n\'est pas administrateur.'
@@ -211,43 +171,28 @@
   function ouvrirParents(el) { for (var p = el; p; p = p.parentElement) if (p.tagName === 'DETAILS') p.open = true; }
 
   function dessinerCompteurs() {
-    var vieux = !BOITE && !!INST;   /* chiffres d'un relevé précédent, en attendant la boîte : jamais présentés comme neufs */
-    var cs = compteurs(BOITE, LIVE, LIVE_LU, INST), z = document.getElementById('tb-cpts'); if (!z) return;
+    var cs = compteurs(BOITE, LIVE, LIVE_LU), z = document.getElementById('tb-cpts'); if (!z) return;
     var total = 0;
     z.textContent = '';
     cs.forEach(function (c) {
       var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-compteur', c.id);
-      var perime = vieux && c.n != null && !(c.id === 'livrer' && LIVE);
-      b.className = 'cpt' + (c.n == null ? ' inconnu' : c.n > 0 ? ' urgent' : '') + (perime ? ' perime' : '');
-      if (perime) b.setAttribute('data-releve', String(INST.ts));
+      b.className = 'cpt' + (c.n == null ? ' inconnu' : c.n > 0 ? ' urgent' : '');
       if (c.cache) b.hidden = true;
       var n = document.createElement('span'); n.className = 'n'; n.textContent = c.n == null ? (c.id === 'livrer' && LIVE_LU ? '—' : '…') : String(c.n);
       var l = document.createElement('span'); l.className = 'l'; l.textContent = c.l;
-      var s = document.createElement('span'); s.className = 's'; s.textContent = perime ? 'dernier relevé · ' + ilYa(INST.ts) : c.s;
+      var s = document.createElement('span'); s.className = 's'; s.textContent = c.s;
       b.appendChild(n); b.appendChild(l); b.appendChild(s);
       b.onclick = function () { aller(c.id === 'messages' ? 'boite' : c.id === 'livrer' ? 'livrer' : '#tb-attente'); };
       if (!c.cache && c.n) total += c.n;
       z.appendChild(b);
     });
     var sous = document.getElementById('tb-sous');
-    if (sous) sous.textContent = !BOITE
-      ? (INST ? 'Dernier relevé ' + ilYa(INST.ts) + (total ? ' : ' + total + ' chose' + (total > 1 ? 's' : '') + '.' : ' : rien en attente.') + ' Mise à jour en cours…' : 'Lecture en cours…')
-      : total ? total + ' chose' + (total > 1 ? 's' : '') + ' t\'attend' + (total > 1 ? 'ent' : '') + '. Touche un chiffre pour y aller.' : '✅ Rien en attente pour l\'instant.';
-    try { document.title = (BOITE && total ? '(' + total + ') ' : '') + 'KDMC — Tableau de bord admin'; } catch (e) { /* */ }
+    if (sous) sous.textContent = !BOITE ? 'Lecture en cours…' : total ? total + ' chose' + (total > 1 ? 's' : '') + ' t\'attend' + (total > 1 ? 'ent' : '') + '. Touche un chiffre pour y aller.' : '✅ Rien en attente pour l\'instant.';
+    try { document.title = (total ? '(' + total + ') ' : '') + 'KDMC — Tableau de bord admin'; } catch (e) { /* */ }
     var nav = document.querySelector('[data-nav="personnes"]');
-    if (nav) { var x = nav.querySelector('b'); var np = cs.filter(function (c) { return /inscriptions|codes|sansWhatsapp/.test(c.id) && !c.cache; }).reduce(function (t, c) { return t + (c.n || 0); }, 0); if (np && BOITE) { if (!x) { x = document.createElement('b'); nav.appendChild(x); } x.textContent = String(np); } else if (x) x.remove(); }
+    if (nav) { var x = nav.querySelector('b'); var np = cs.filter(function (c) { return /inscriptions|codes|sansWhatsapp/.test(c.id) && !c.cache; }).reduce(function (t, c) { return t + (c.n || 0); }, 0); if (np) { if (!x) { x = document.createElement('b'); nav.appendChild(x); } x.textContent = String(np); } else if (x) x.remove(); }
     var nm = document.querySelector('[data-nav="messages"]');
     if (nm) { var y = nm.querySelector('b'); var nn = BOITE ? BOITE.nonLus || 0 : 0; if (nn) { if (!y) { y = document.createElement('b'); nm.appendChild(y); } y.textContent = String(nn); } else if (y) y.remove(); }
-  }
-
-  /* En attendant la boîte : le dernier relevé en NOMBRES (jamais un nom ni un message), daté — sinon le petit « Lecture… » d'avant. */
-  function dessinerEnAttendant() {
-    if (!INST) return;
-    var quand = ilYa(INST.ts);
-    var ph = function (id, t) { var z = document.getElementById(id); if (!z) return; z.textContent = ''; var p = document.createElement('p'); p.className = 'info attend'; p.textContent = t; z.appendChild(p); };
-    var aTrancher = (INST.inscriptions || 0) + (INST.codes || 0) + (INST.sansWhatsapp || 0);
-    ph('tb-attente', 'Dernier relevé ' + quand + ' : ' + (aTrancher ? aTrancher + ' à trancher' : 'rien à trancher') + '. Mise à jour en cours…');
-    ph('tb-messages', 'Dernier relevé ' + quand + ' : ' + (INST.nonLus ? INST.nonLus + ' message(s) non lu(s)' : 'aucun message non lu') + '. Mise à jour en cours…');
   }
 
   function dessinerAttente(D) {
@@ -286,7 +231,7 @@
     if (liste.childNodes.length) z.appendChild(liste);
   }
 
-  function surBoite(D) { BOITE = D; INST = instantane(D, LIVE && LIVE.file ? LIVE.file.n || 0 : null); garderInstantane(INST); dessinerCompteurs(); dessinerAttente(D); dessinerMessages(D); }
+  function surBoite(D) { BOITE = D; dessinerCompteurs(); dessinerAttente(D); dessinerMessages(D); }
 
   function brancherRecherche() {
     var q = document.getElementById('tb-q'), r = document.getElementById('tb-res');
@@ -339,12 +284,7 @@
 
   function demarrer(s) {
     coquille();
-    /* 13.10 (Kevin : « la zone du haut apparaît un petit moment après ») : le domaine vient de dire « admin vérifié » — SEULEMENT maintenant on
-       dessine le dernier relevé (des nombres, datés) et la boîte part TOUT DE SUITE, avant les comptes et le commerce (qui ont chacun leurs
-       propres lectures). Avant ce « oui », rien n'est dessiné ni demandé : verify-admin-unique le prouve. */
-    INST = lireInstantane();
     dessinerCompteurs();
-    dessinerEnAttendant();
     brancherRecherche();
     document.getElementById('tb-boite').onclick = function () { aller('boite'); };
     /* Kevin 13.10 : « je ne trouve rien » — le formulaire de création est en bas de la liste des comptes, replié : ce bouton en tête de « Personnes » l'ouvre et y amène */
@@ -355,17 +295,17 @@
       d.scrollIntoView({ behavior: 'smooth', block: 'start' });
       var f = document.getElementById('cinv-prenom'); if (f) f.focus({ preventScroll: true });
     };
-    document.addEventListener('kdmc-commerce-live', function (e) { LIVE = e.detail || null; LIVE_LU = true; if (BOITE && INST) { INST.livrer = nb(LIVE && LIVE.file ? LIVE.file.n || 0 : null); garderInstantane(INST); } dessinerCompteurs(); });
+    document.addEventListener('kdmc-commerce-live', function (e) { LIVE = e.detail || null; LIVE_LU = true; dessinerCompteurs(); });
+    if (global.kdmcAdmin) global.kdmcAdmin.monter(document.getElementById('admin-comptes'));
+    /* 10.10 (réactivité) : la session DÉJÀ vérifiée ici (admin + Face ID) est passée au commerce — il ne redemande plus whoami
+       (mesuré : un 2e whoami en série avant même de lire ses données, 1,5 s de plus sur réseau mobile). Le serveur garde son verrou. */
+    if (global.kdmcCommerce && global.kdmcCommerce.monter) global.kdmcCommerce.monter(document.getElementById('commerce-app'), s);
     if (global.kdmcBoite) {
       global.kdmcBoite.surMaj(surBoite);
       global.kdmcBoite.rafraichir();
       setInterval(function () { if (document.visibilityState === 'visible') global.kdmcBoite.rafraichir(); }, 30000);
       document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') global.kdmcBoite.rafraichir(); });
     }
-    if (global.kdmcAdmin) global.kdmcAdmin.monter(document.getElementById('admin-comptes'));
-    /* 10.10 (réactivité) : la session DÉJÀ vérifiée ici (admin + Face ID) est passée au commerce — il ne redemande plus whoami
-       (mesuré : un 2e whoami en série avant même de lire ses données, 1,5 s de plus sur réseau mobile). Le serveur garde son verrou. */
-    if (global.kdmcCommerce && global.kdmcCommerce.monter) global.kdmcCommerce.monter(document.getElementById('commerce-app'), s);
     lireAnnexes();
     window.addEventListener('hashchange', versHash);
   }

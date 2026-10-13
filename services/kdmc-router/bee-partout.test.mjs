@@ -159,7 +159,7 @@ ok(FERMEES.every((f) => !PORTES.includes(f)), '7c. RESTENT FERMÉS, une par une 
 
 /* ───────── 8. câblage ───────── */
 ok(/if \(url\.pathname === '\/__javis\/agir'\) return handleAgir\(request, env, outilsBee\(env, ctx\)\)/.test(W) && /handlePartout\(request, url, env, outilsBee\(env, ctx\)\)/.test(W), '8. le routeur sert /__javis/agir et /__javis/{partout.js,cadre,qui} avec les gardiens de Kevin');
-ok(/return injecterBouton\(new Response\(res\.body[^;]*PARTOUT_TAG[^;]*\)/.test(W), '8b. le chemin de réponse du routeur pose bien le script de Bee');
+ok(/return injecterBouton\(new Response\(res\.body[^;]*PARTOUT_TAG\)/.test(W), '8b. le chemin de réponse du routeur pose bien le script de Bee');
 ok(/qui: \(request\) => adminSession\(request, env\)/.test(W), '8c. « qui » = la session admin PROUVÉE par le domaine (Face ID ou code), jamais ce que dit la page');
 ok(/if \(!\(await adminSession\(request, env\)\)\) return JB\(\{ ok: false, reason: 'kevin_seulement' \}, 403\);/.test(W.slice(W.indexOf('async function handleBeeIa'), W.indexOf('async function handleBeeIa') + 1800)), '8d. le cerveau de Bee exige toujours Kevin avant de lire quoi que ce soit');
 

@@ -198,22 +198,13 @@ async function domainSessionName(): Promise<string | null> {
 }
 /* Compte unique kd-mc.com : si le domaine prouve l'identité par Face ID (session FORTE
    verified) ET que c'est le propriétaire → connecte AUTO en admin (politique « Admin auto,
-   toi seul »). Si le domaine a prouvé le CODE d'un non-admin et qu'un compte Apex lui est lié
-   → connecte AUTO sans PIN (13.10). Sinon → simple pré-remplissage du nom (PIN requis).
-   Fail-open total : toute erreur laisse l'écran de connexion normal. */
+   toi seul »). Sinon → simple pré-remplissage du nom (PIN requis). Fail-open total :
+   toute erreur laisse l'écran de connexion normal. */
 function domainAutoLoginOrPrefill(rootEl: HTMLElement): void {
   consumeDomainHashToken();
-  void auth.loginVerifiedDomain().then(async (res) => {
+  void auth.loginVerifiedDomain().then((res) => {
     if (res.ok) {
       toast.success('🔓 Connecté via Face ID (kd-mc.com)');
-      router.navigate('chat');
-      return;
-    }
-    /* Règle de Kevin 13.10 : une personne dont le domaine a prouvé le CODE est reconnue sans PIN
-       (compte lié, jamais l'admin). Sinon → simple pré-remplissage du nom. */
-    const r2 = await auth.loginDomainCode();
-    if (r2.ok) {
-      toast.success('🔓 Reconnu automatiquement (kd-mc.com)');
       router.navigate('chat');
       return;
     }

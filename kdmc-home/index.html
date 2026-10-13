@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.55 -->
+<!-- v1.0.54 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -63,7 +63,6 @@
   #cercle-alerte[hidden]{display:none}
   #cercle-alerte .n{background:#dc2626;color:#fff;border-radius:999px;padding:2px 9px;font-size:.9em}
   #cercle-alerte.calme{border-color:rgba(127,127,127,.35);background:transparent;font-weight:500}
-  #cercle-alerte.perime{border-style:dashed;opacity:.85}   /* dernier relevé gardé, pas encore remis à jour */
   #cercle-alerte{position:sticky;top:6px;z-index:20;flex-wrap:wrap;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);min-height:48px}
   #cercle-alerte .bt{font-weight:700}
   #cercle-alerte .qui{font-size:.82em;font-weight:500;opacity:.9}
@@ -296,10 +295,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.55"></script>
-  <script src="kdmc-boite.js?v=1.0.55"></script>
-  <script src="kdmc-portal.js?v=1.0.55"></script>
+  <script src="kdmc-sso.js?v=1.0.54"></script>
+  <script src="kdmc-boite.js?v=1.0.54"></script>
+  <script src="kdmc-portal.js?v=1.0.54"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.55" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.54" data-color="#c9a227" defer></script>
 </body>
 </html>

@@ -5,16 +5,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://*.workers.dev https://api.openverse.org; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<script>/* Garde-fou : Studio réservé à l'admin connecté (clients/non-connectés redirigés). Aucun code en clair.
-   13.10 : sans la mémoire locale de la gestion, on demande au DOMAINE avant de renvoyer à la boutique — admin prouvé par Face ID, ou rôle « shops » avec
-   son code prouvé : la page reste (la porte du studio s'ouvre toute seule) ; sinon, comme avant, retour à la boutique. La page reste cachée le temps de la réponse. */(function(){try{var t=localStorage.getItem("ld_admin_trust")==="1"||localStorage.getItem("ld_admin")==="1";if(t){localStorage.setItem("ld_admin_trust","1");return;}
-var non=function(){location.replace("index.html?ld_admin=1");},de=document.documentElement,fini=false;de.style.visibility="hidden";
-setTimeout(function(){if(!fini){fini=true;non();}},4000);
-var h={};try{var k=localStorage.getItem("kdmc_sso_token")||"";if(k)h.Authorization="Bearer "+k;}catch(e){}
-fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:h}).then(function(r){return r.ok?r.json():null;}).then(function(w){if(fini)return;fini=true;
-var adm=!!(w&&w.ok&&w.admin===true&&w.verified===true),rol=!!(w&&w.ok&&w.admin!==true&&Array.isArray(w.roles)&&w.roles.indexOf("shops")>=0&&(w.code===true||w.verified===true));
-if(adm||rol)de.style.visibility="";else non();}).catch(function(){if(!fini){fini=true;non();}});
-}catch(e){location.replace("index.html");}})();</script>
+<script>/* Garde-fou : Studio réservé à l'admin connecté (clients/non-connectés redirigés). Aucun code en clair. */(function(){try{var t=localStorage.getItem("ld_admin_trust")==="1"||localStorage.getItem("ld_admin")==="1";if(t){localStorage.setItem("ld_admin_trust","1");}else{location.replace("index.html?ld_admin=1");}}catch(e){location.replace("index.html");}})();</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Studio — Chez Lolo (admin)</title>
 <meta name="robots" content="noindex,nofollow">
@@ -932,7 +923,7 @@ var Gate=(function(){
  function lockLeft(){var f=lg(FAILS,{n:0,until:0});return Math.min(300000,Math.max(0,(f.until||0)-Date.now()))}
  function bumpFail(){var f=lg(FAILS,{n:0,until:0});f.n=(f.n||0)+1;var w=[0,0,0,0,0,30,60,120,300,300];var s=w[Math.min(f.n,w.length-1)]||300;f.until=Date.now()+s*1000;ls(FAILS,f);return f}
  function clearFail(){ls(FAILS,{n:0,until:0})}
- function grant(uid,sansMemoire){if(!sansMemoire)ls(TRUST,{uid:uid,ts:Date.now(),dev:devHash()});clearFail();var g=document.getElementById("studioGate");if(g)g.style.display="none";document.body.style.overflow="";try{if(typeof Studio!=="undefined"&&Studio.render)Studio.render()}catch(e){}}
+ function grant(uid){ls(TRUST,{uid:uid,ts:Date.now(),dev:devHash()});clearFail();var g=document.getElementById("studioGate");if(g)g.style.display="none";document.body.style.overflow="";try{if(typeof Studio!=="undefined"&&Studio.render)Studio.render()}catch(e){}}
  function msg(m,ok){var e=document.getElementById("sgMsg");if(e){e.textContent=m||"";e.style.color=ok?"#7ee08a":"#ff7a7a"}}
  function trusted(){var t=lg(TRUST,null);if(!t)return null;if(Date.now()-t.ts>TTL)return null;if(t.dev&&t.dev!==devHash())return null;return t.uid}
  async function go(){
@@ -955,15 +946,12 @@ var Gate=(function(){
    try{var tk=localStorage.getItem("kdmc_sso_token")||"";var hd={};if(tk)hd.Authorization="Bearer "+tk;
      fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hd}).then(function(r){return r.ok?r.json():null}).then(function(w){
        if(w&&w.ok&&w.admin===true&&w.verified===true){msg("Bienvenue "+((w.name||"Kevin").split(" ")[0])+" 👋",true);grant("kevin");}
-       /* 13.10 : une personne à qui Kevin a donné le rôle « shops » (ex. Laurence) est reconnue par le DOMAINE (code prouvé) : plus de PIN de la page, et le rôle vient
-          du domaine (whoami.roles), plus d'une devinette sur le nom. Rien n'est gardé sur l'appareil : le domaine est redemandé à chaque ouverture. */
-       else if(w&&w.ok&&w.admin!==true&&Array.isArray(w.roles)&&w.roles.indexOf("shops")>=0&&(w.code===true||w.verified===true)){msg("Bienvenue "+((w.name||"").split(" ")[0])+" 👋",true);grant(whoIs(w.name)||"createur",true);}
      }).catch(function(){});}catch(e){}
    var c=lg(CRED,null);if(c){var b=document.getElementById("sgBio");if(b)b.style.display="block";try{bio()}catch(e){}}
    var n=document.getElementById("sgName");if(n)setTimeout(function(){n.focus()},200);
  }
  // expose enroll on grant via button
- var _grant=grant;grant=function(uid,sans){_grant(uid,sans);};
+ var _grant=grant;grant=function(uid){_grant(uid);};
  document.addEventListener("DOMContentLoaded",boot); if(document.readyState!=="loading")boot();
  return {go:go,bio:bio,enroll:enrollBio};
 })();
@@ -971,6 +959,6 @@ var Gate=(function(){
 document.addEventListener("click",function(e){},false);
 </script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="chez-lolo-studio" data-version="v2.0.18" data-auto-update="false" data-color="#e8b830" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="chez-lolo-studio" data-version="v2.0.17" data-auto-update="false" data-color="#e8b830" defer></script>
 </body>
 </html>

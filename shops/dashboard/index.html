@@ -195,14 +195,11 @@ function shopFromId(id){for(var i=0;i<SHOPS.length;i++)if(SHOPS[i].id===id)retur
 
 /* --- auth : le DOMAINE décide, jamais cette page --- */
 function autorise(j){
-  if(!j||!j.ok)return false;
-  /* 13.10 : l'admin garde l'exigence Face ID (verified) ; un compte à qui Kevin a donné le rôle « shops » entre avec son CODE prouvé
-     (avant : refusé faute de Face ID, avec « Me connecter sur kd-mc.com » alors qu'il l'était déjà). Le nom seul ne suffit jamais. */
-  if(j.admin===true)return j.verified===true;
-  return Array.isArray(j.roles)&&j.roles.indexOf("shops")>=0&&(j.code===true||j.verified===true);
+  if(!j||!j.ok||j.verified!==true)return false;
+  return j.admin===true||(Array.isArray(j.roles)&&j.roles.indexOf("shops")>=0);
 }
 async function initAuth(){
-  // Compte unique kd-mc.com : entrée AUTO si le domaine PROUVE l'identité (admin : Face ID ; rôle : code prouvé) ET
+  // Compte unique kd-mc.com : entrée AUTO si le domaine PROUVE l'identité (verified) ET
   // l'autorise (admin, ou rôle « shops » donné par Kevin). Jamais le nom seul (leçon #99).
   try{
     var hsh=location.hash||"";var mm=hsh.match(/[#&]kdmc_sso=([^&]+)/);
@@ -213,7 +210,7 @@ async function initAuth(){
     var rs=await fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hdr});
     var j=rs&&rs.ok?await rs.json():null;
     if(autorise(j)){enterApp();return}
-    showLocked(j&&j.ok?(Array.isArray(j.roles)&&j.roles.indexOf("shops")>=0?"Ton compte a bien accès aux boutiques, mais ton code n'est pas encore prouvé sur cet appareil : connecte-toi une fois avec ton code sur kd-mc.com.":"Ton compte n'a pas accès aux boutiques (admin ou rôle boutiques requis)."):"");
+    showLocked(j&&j.ok?"Ton compte n'a pas accès aux boutiques (admin ou rôle boutiques requis).":"");
   }catch(_){showLocked("Le domaine ne répond pas — réessaie dans un instant.");}
 }
 function showLocked(msg){
@@ -537,6 +534,6 @@ initAuth();
   tick(); start();
 })();
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-dashboard" data-version="v2.0.6" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-dashboard" data-version="v2.0.5" data-color="#c9a227" defer></script>
 </body>
 </html>

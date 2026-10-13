@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.300",
+  "softwareVersion": "v1.1.299",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.300';
+const __APEX_CHAT_VERSION__ = 'v1.1.299';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.300" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.299</div>
+  <div id="splash-version" data-ver="v1.1.299" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.299</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.300</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.299</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1187,7 +1187,6 @@ async function _authSsoFromKdmc(){
     _kdmcConsumeHashPass(); // consomme #kdmc_sso= si présent
     var t = null;
     try{ t = localStorage.getItem('kdmc_sso_token'); }catch(_){ t = null; }
-    if(!t && K._domainePass) t = await K._domainePass();   // v1.1.300 : appareil connu du domaine, stockage vide
     if(!t) return null;
     const r = await fetch(API_BASE + '/api/auth/sso-from-kdmc', {
       method: 'POST',
@@ -1272,87 +1271,6 @@ K._grantPerms = async function(){
   try{ if(typeof toast === 'function') toast('✅ Autorisations enregistrées', 'ok', 1500); }catch(_){}
 };
 
-/* v1.1.300 (Kevin 13.10) — « une personne inscrite au domaine, sur son appareil connu, est reconnue
-   AUTOMATIQUEMENT dans toutes les apps, sans redemander code / connexion / autorisations / conditions ;
-   seule exception : Face ID automatique à la première ouverture. »
-   La page ne juge JAMAIS un code : elle lit ce que le domaine répond (/__sso/whoami) et s'y fie.
-   Reconnu = ok:true ET (Face ID prouvé, OU code prouvé pour un non-admin). Un visiteur sans session,
-   ou dont le code n'est pas prouvé, n'est PAS reconnu : rien ne change pour lui (SMS, case, PIN). */
-K._domaine = null;
-K._domaineLu = 0;
-K._domaineWhoami = async function(force){
-  try{
-    if(!force && K._domaine && Date.now() - K._domaineLu < 30000) return K._domaine;
-    var h = {}; var t = '';
-    try{ t = localStorage.getItem('kdmc_sso_token') || ''; }catch(_){}
-    if(t) h['Authorization'] = 'Bearer ' + t;
-    var opt = { credentials: 'include', cache: 'no-store', headers: h };
-    try{ if(typeof AbortSignal !== 'undefined' && AbortSignal.timeout) opt.signal = AbortSignal.timeout(2500); }catch(_){}
-    var r = await fetch('/__sso/whoami', opt);
-    var j = r.ok ? await r.json().catch(function(){ return null; }) : null;
-    K._domaine = (j && j.ok === true) ? j : null;
-    K._domaineLu = Date.now();
-    if(K._domaine){
-      try{ localStorage.setItem('kdmc_domain_seen', '1'); }catch(_){}
-      K._domaineMarque();
-    }
-    return K._domaine;
-  }catch(_){ return K._domaine; }
-};
-K._domaineReconnu = function(){
-  var d = K._domaine;
-  return !!(d && d.ok === true && (d.verified === true || (d.code === true && d.admin !== true)));
-};
-// La personne reconnue par le domaine est-elle BIEN celle de ce compte local ? (jamais le compte d'autrui)
-K._domaineMemeUtilisateur = function(){
-  var d = K._domaine, u = K.user;
-  return !!(K._domaineReconnu() && u && d.uid && u.kdmc_uid && String(u.kdmc_uid) === String(d.uid));
-};
-// Les conditions du domaine sont acceptées → on ne redemande NI la case, NI la fenêtre « Autorisations ».
-K._domaineMarque = function(){
-  try{
-    var d = K._domaine;
-    if(!K._domaineReconnu() || d.cgu !== true) return;
-    if(!K._cguAccepted()){
-      localStorage.setItem('apex_chat_cgu_v1', JSON.stringify({ accepted_at: Date.now(), version: __APEX_CHAT_VERSION__, cgu: K.CGU_VERSION, via: 'domaine' }));
-    }
-    if(!localStorage.getItem('apex_chat_perms_v1')){
-      localStorage.setItem('apex_chat_perms_v1', JSON.stringify({ ts: Date.now(), granted: false, via: 'domaine' }));
-    }
-    localStorage.setItem('apex_chat_perms_bulk_done_v1', 'true');
-  }catch(_){}
-};
-K._domaineAccepte = function(){ return !!(K._domaineReconnu() && K._domaine.cgu === true); };
-// Laissez-passer du domaine pour un appareil dont le stockage est vide (cookie du domaine seul).
-K._domainePass = async function(){
-  try{
-    var opt = { credentials: 'include', cache: 'no-store' };
-    try{ if(typeof AbortSignal !== 'undefined' && AbortSignal.timeout) opt.signal = AbortSignal.timeout(4000); }catch(_){}
-    var r = await fetch('/__sso/pass', opt);
-    var j = r.ok ? await r.json().catch(function(){ return null; }) : null;
-    if(j && j.ok === true && j.token){
-      try{ localStorage.setItem('kdmc_sso_token', j.token); localStorage.setItem('kdmc_domain_seen', '1'); }catch(_){}
-      return j.token;
-    }
-  }catch(_){}
-  return null;
-};
-// Entrer directement (sans SMS ni code) quand le domaine reconnaît la personne.
-K._domaineEntrer = async function(){
-  if(K._domaineEntrerEnCours || (K.token && !String(K.token).startsWith('local-'))) return false;
-  K._domaineEntrerEnCours = true;
-  try{
-    var sso = await _authSsoFromKdmc();
-    if(sso && sso.token && sso.user){
-      await K.login(sso.user, sso.token);
-      try{ toast('🔓 Reconnu automatiquement (kd-mc.com)', 'ok', 2500); }catch(_){}
-      return true;
-    }
-  }catch(_){}
-  finally{ K._domaineEntrerEnCours = false; }
-  return false;
-};
-
 /* v1.1.281 — Journal unifié domaine « qui se connecte » (worker kdmc-access).
    Fail-open, throttlé : n'affecte JAMAIS l'app. Métadonnées seulement. */
 K._accessSeen = {};
@@ -1393,7 +1311,7 @@ K.login = async function(user, token){
   // Additif + fail-open : si le domaine SSO n'est pas joignable, la connexion de
   // l'app marche exactement comme avant. Ne tourne que sur *.kd-mc.com.
   try{
-    if(location.hostname.indexOf('kd-mc.com') >= 0 && !(user && user.kdmc_uid)){   // v1.1.300 : venue du domaine → il nous connaît déjà (ré-émettre rétrograderait son code prouvé)
+    if(location.hostname.indexOf('kd-mc.com') >= 0){
       var _kdmcUid = user.id || user.uid || ('apex-chat:' + (user.phone || user.pseudo || ''));
       var _kdmcName = (user.real_name || ((user.first_name || user.pseudo || 'Utilisateur') + ' ' + (user.last_name || ''))).trim();
       /* Le domaine exige, pour un NOUVEAU compte, prénom + nom + conditions acceptées (27.09) :
@@ -1429,8 +1347,6 @@ K.login = async function(user, token){
 
   K.render();
 
-  // v1.1.300 — le domaine dit-il que les conditions sont déjà acceptées ? alors ni case ni fenêtre « Autorisations ».
-  try{ await K._domaineWhoami(true); }catch(_){}
   // v1.1.174 — Consentement unique (toutes autorisations, une fois, jamais plus)
   try{ K._ensurePermsOnce(); }catch(_){}
 
@@ -8194,16 +8110,6 @@ function _kdmcPrefillName(){
         try{ localStorage.setItem('kdmc_domain_seen','1'); }catch(_){} // whoami a reconnu (cookie/Bearer) → device connu du domaine
         var nm=document.getElementById('auth-name');
         if(nm && !nm.value.trim()){ nm.value=j.name; }
-        // v1.1.300 : reconnu par le domaine → conditions déjà acceptées = case masquée ; et on entre SANS SMS.
-        try{
-          K._domaine=j; K._domaineLu=Date.now(); K._domaineMarque();
-          if(K._cguAccepted()){
-            var row=document.getElementById('auth-cgu-row'); if(row) row.style.display='none';
-            var cb=document.getElementById('auth-cgu'); if(cb) cb.checked=true;
-            var bt=document.getElementById('btn-auth-phone'); if(bt){ bt.disabled=false; bt.style.opacity=''; bt.style.pointerEvents=''; }
-          }
-          if(K._domaineReconnu()) K._domaineEntrer();
-        }catch(_){}
       }).catch(function(){});
   }catch(e){}
 }
@@ -8216,7 +8122,7 @@ function renderAuthStep(){
       <label class="label" style="margin-top:14px">Ton prénom + nom <span style="color:#e63946">*</span></label>
       <input id="auth-name" type="text" class="input" placeholder="Ex: Marc Dupont (ou Dupont Marc)" autocomplete="name">
       <p style="font-size:.72em;color:var(--ax-text-3);margin-top:4px">🔒 Les deux sont obligatoires (n'importe quel ordre, casse libre)</p>
-      <label id="auth-cgu-row" style="display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:.8em;color:var(--ax-text-2);cursor:pointer;line-height:1.45">
+      <label style="display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:.8em;color:var(--ax-text-2);cursor:pointer;line-height:1.45">
         <input id="auth-cgu" type="checkbox" style="margin-top:2px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--ax-gold)">
         <span>J'accepte les <a href="./cgu.html" target="_blank" style="color:var(--ax-gold)">conditions d'utilisation</a> et la politique de confidentialité.</span>
       </label>
@@ -8276,7 +8182,6 @@ function renderAuthStep(){
       };
       const cguBox = $('#auth-cgu');
       const cguDone = K._cguAccepted();
-      if(cguDone){ const _row = $('#auth-cgu-row'); if(_row) _row.style.display = 'none'; }   // v1.1.300 : déjà acceptées (ici ou au domaine) → plus de case
       const setSendEnabled = (on) => {
         const b = $('#btn-auth-phone'); if(!b) return;
         b.disabled = !on; b.style.opacity = on ? '' : '.5'; b.style.pointerEvents = on ? '' : 'none';
@@ -16454,7 +16359,7 @@ K._postLogin = function(){
       // complet MAIS pas de PIN (cas admin/fallback local qui a sauté l'onboarding)
       // → proposer la création du PIN (onboarding n'affiche que le champ PIN car
       // le nom est déjà rempli). Une seule fois : dès qu'un PIN existe, plus jamais.
-      if(!K._userPinExists() && typeof K._showOnboarding === 'function' && !(K._domaineMemeUtilisateur && K._domaineMemeUtilisateur())){
+      if(!K._userPinExists() && typeof K._showOnboarding === 'function'){
         K._showOnboarding({ reason: 'Crée ton code PIN pour sécuriser et déverrouiller Apex Chat.' });
         return;
       }
@@ -16586,7 +16491,7 @@ K._showOnboarding = function(opts){
   const currentName = u.real_name || u.display_name || '';
   const currentPseudo = (u.pseudo && typeof K._isAutoPseudo === 'function' && !K._isAutoPseudo(u.pseudo)) ? u.pseudo : '';
   const hasName = !K._profileIncomplete(u);
-  const hasPin = K._userPinExists() || !!(K._domaineMemeUtilisateur && K._domaineMemeUtilisateur());   // v1.1.300 : reconnue par le domaine → pas de PIN à créer
+  const hasPin = K._userPinExists();
   const showName = !hasName;
   const showPin = !hasPin;
   K._showModal('Bienvenue sur Apex Chat 👋', `
@@ -16763,7 +16668,7 @@ K._submitOnboarding = async function(inviterUserId){
   // Étape suivante : propose Face ID — puis enchaîne sur autos en bloc — puis conv.
   setTimeout(async () => {
     try{
-      if(!(await K._biometricSupported()) || K._biometricEnrolled() || K._domaineReconnu()){
+      if(!(await K._biometricSupported()) || K._biometricEnrolled()){
         // Pas de Face ID dispo / déjà enrôlé → passe directement aux autos
         return K._requestAllPermissions ? K._requestAllPermissions(true) : K._postOnboardingFinish();
       }
@@ -16807,8 +16712,6 @@ K._enrollBiometricFromOnboarding = async function(){
 // toutes les autorisations système nécessaires en une seule fois. L'utilisateur
 // clique 1 fois → iOS/Android prompt chaque autorisation en séquence rapide.
 K._requestAllPermissions = async function(forceShow){
-  // v1.1.300 : les conditions du domaine sont acceptées → on ne redemande pas la fenêtre « Autorisations ».
-  if(K._domaineAccepte && K._domaineAccepte()){ if(forceShow && K._postOnboardingFinish) K._postOnboardingFinish(); return; }
   if(!forceShow && lg('perms_bulk_done_v1', false)) return;
   if(!K._showModal) return;
   K._showModal('🔐 Activer les autorisations', `
@@ -16883,10 +16786,6 @@ K._doRequestAllPermissions = async function(){
 // Lockscreen PIN : barrière à l'ouverture de l'app si > 10 min d'inactivité.
 K._needsLockscreen = function(){
   if(!K.user) return false;
-  // v1.1.300 (Kevin 13.10) : le PIN de verrouillage était un verrou LOCAL choisi sur cet appareil. Quand le domaine
-  // reconnaît CETTE personne sur cet appareil (Face ID prouvé, ou code prouvé), on ne le redemande plus : la
-  // reconnaissance du domaine le remplace. Pas reconnue par le domaine → le PIN reste exactement comme avant.
-  if(K._domaineMemeUtilisateur && K._domaineMemeUtilisateur()) return false;
   if(!K._userPinExists()) return false;
   const lastUnlock = lg('user_unlock_ts', 0);
   return !lastUnlock || (Date.now() - lastUnlock) > 10 * 60 * 1000;
@@ -16894,7 +16793,6 @@ K._needsLockscreen = function(){
 
 K._showLockscreen = function(){
   if(!K.user || !K._userPinExists() || K._lockScreenOpen) return;
-  if(K._domaineMemeUtilisateur && K._domaineMemeUtilisateur()) return;   // v1.1.300 : reconnue par le domaine → pas de PIN
   K._lockScreenOpen = true;
   const host = document.getElementById('modal-host') || document.body;
   const firstName = (K.user.real_name || K.user.pseudo || '').split(/\s+/)[0];
@@ -17017,15 +16915,11 @@ K._touchUnlock = function(){
   if(K._userPinExists()) ls('user_unlock_ts', Date.now());
 };
 document.addEventListener('visibilitychange', () => {
-  if(document.hidden) return;
-  // v1.1.300 : on demande d'abord au domaine s'il reconnaît la personne (réponse gardée 30 s) avant de poser le PIN.
-  Promise.resolve(K.user && K._domaineWhoami ? K._domaineWhoami() : null).catch(() => null).then(() => {
-    if(K.user && typeof K._needsLockscreen === 'function' && K._needsLockscreen()){
-      K._showLockscreen();
-    } else {
-      K._touchUnlock && K._touchUnlock();
-    }
-  });
+  if(!document.hidden && K.user && typeof K._needsLockscreen === 'function' && K._needsLockscreen()){
+    K._showLockscreen();
+  } else if(!document.hidden){
+    K._touchUnlock && K._touchUnlock();
+  }
 });
 // Touch heartbeat sur interaction
 ['click','keydown','touchstart'].forEach(ev => {
@@ -17723,8 +17617,7 @@ async function _boot(){
     $('#topbar').classList.remove('h');
     $('#security-banner').classList.remove('h');
     // v1.1.170 : lockscreen PIN si configuré et inactivité > 10 min
-    setTimeout(async () => {
-      try{ if(K._domaineWhoami) await K._domaineWhoami(true); }catch(_){}   // v1.1.300 : le domaine reconnaît-il la personne ? alors pas de PIN
+    setTimeout(() => {
       if(K._needsLockscreen && K._needsLockscreen()) K._showLockscreen();
     }, 500);
     $('#bnav').classList.remove('h');
@@ -17974,6 +17867,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.300", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.299", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

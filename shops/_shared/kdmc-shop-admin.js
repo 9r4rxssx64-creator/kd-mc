@@ -188,10 +188,8 @@
      (leçon #99), jamais une liste de prénoms dans le code, jamais de code vérifié ici.
      Domaine injoignable → pas admin (rien de cassé pour les clients : la boutique s'affiche). */
   function autorise(j) {
-    if (!j || !j.ok) return false;
-    /* 13.10 : l'admin garde l'exigence Face ID ; un compte au rôle « shops » entre avec son CODE prouvé (le nom seul ne suffit jamais) */
-    if (j.admin === true) return j.verified === true;
-    return Array.isArray(j.roles) && j.roles.indexOf('shops') >= 0 && (j.code === true || j.verified === true);
+    if (!j || !j.ok || j.verified !== true) return false;
+    return j.admin === true || (Array.isArray(j.roles) && j.roles.indexOf('shops') >= 0);
   }
   async function ssoAutoAdmin() {
     if (isAdmin()) return true;

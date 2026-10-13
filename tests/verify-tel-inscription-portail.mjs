@@ -15,7 +15,6 @@ import { readFileSync, existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { createHash, createHmac } from 'node:crypto';
 import mod from '../services/kdmc-router/worker.js';
-import { ficheOubliee } from '../services/kdmc-router/acc-memo.js';   // mémo de 15 s de la fiche (13.10) : la décision de Kevin est écrite ici « de l'extérieur », on l'oublie pour simuler les 15 s écoulées
 
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
@@ -148,7 +147,7 @@ try {
   ok(ficheD && ficheD.attente_admin === true && !ficheD.tel, '7b. le compte est créé, marqué « en attente de l\'administrateur », sans téléphone', JSON.stringify(ficheD && { a: ficheD.attente_admin, tel: ficheD.tel }));
   ok(att && /attend l.administrateur/.test(att.texte) && !att.debord, '7c. l\'écran « Ton compte attend l\'administrateur » s\'affiche (pas l\'accueil), sans débord sur 375 px', JSON.stringify(att));
   /* Kevin accepte (la fiche s'ouvre) → « Vérifier maintenant » ouvre l'accueil tout seul */
-  if (ficheD) { delete ficheD.attente_admin; ficheD.valide_admin_at = Date.now(); kv.set('acc:denise-essai', JSON.stringify(ficheD)); ficheOubliee(env, 'denise-essai'); }
+  if (ficheD) { delete ficheD.attente_admin; ficheD.valide_admin_at = Date.now(); kv.set('acc:denise-essai', JSON.stringify(ficheD)); }
   await pd.click('#aa-go').catch(() => {});
   await pd.waitForFunction(() => !document.getElementById('attente-admin'), null, { timeout: 6000 }).catch(() => {});
   ok(!(await pd.locator('#attente-admin').count()) && await pd.locator('#hub').isVisible(), '7d. une fois accepté par Kevin, l\'écran d\'attente laisse place à l\'accueil');

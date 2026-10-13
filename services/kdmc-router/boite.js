@@ -21,7 +21,6 @@
 import { ADMIN, LIMITES as LIM_CERCLE, texteOk, schema as schemaCercle } from './cercle.js';
 import * as activite from './activite.js';
 import { BOUTON_JS } from './boite-bouton.js';
-import { ficheOubliee } from './acc-memo.js';
 
 export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 5000, memoKvMs: 60000 };
 export const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/cmcteams';
@@ -74,7 +73,6 @@ export async function inscriptionAdminDecider(env, db, outils, uid, accepter, no
   if (a) {
     if (accepter) { delete a.attente_admin; a.valide_admin_at = now; } else { a.attente_admin = 'refuse'; a.refuse_admin_at = now; }
     await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a));
-    ficheOubliee(env, uid);   /* la décision de l'admin vaut tout de suite dans cet isolat (acc-memo.js) */
   }
   await db.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(uid).run();
   if (outils && outils.journal) { try { await outils.journal({ ev: accepter ? 'inscription_admin_validee' : 'inscription_admin_refusee', uid, name: r.nom, detail: (accepter ? 'inscription sans WhatsApp ouverte par l\'admin' : 'inscription sans WhatsApp refusée par l\'admin') + ' · ' + (r.appareil || '?') + ' · ' + (r.lieu || '?') }); } catch { /* */ } }
@@ -101,7 +99,7 @@ export async function codeDecider(env, db, outils, uid, accepter, now) {
   if (!r) return { ok: false, reason: 'demande_introuvable' };
   if (accepter) {
     await env.ACCOUNTS.put('cred:' + uid, r.rec);
-    try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); if (a) { a.code_at = now; delete a.revoked_at_code; await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a)); ficheOubliee(env, uid); } } catch { /* fiche illisible : le code vaut quand même */ }
+    try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); if (a) { a.code_at = now; delete a.revoked_at_code; await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a)); } } catch { /* fiche illisible : le code vaut quand même */ }
   }
   await db.prepare('DELETE FROM code_attente WHERE uid = ?').bind(uid).run();
   if (outils && outils.journal) { try { await outils.journal({ ev: accepter ? 'code_valide' : 'code_refuse', uid, name: r.nom, detail: (accepter ? 'code accepté par l\'admin' : 'code refusé par l\'admin') + ' · ' + (r.appareil || '?') + ' · ' + (r.lieu || '?') + ' · ' + (r.reseau || '?') }); } catch { /* */ } }

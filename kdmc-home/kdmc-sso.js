@@ -16,22 +16,6 @@
      lisible par l'app via kdmcSSO.refus() pour l'expliquer en français. */
   var _refus = null;
 
-  /* DÉLAI MAXIMUM (13.10, Kevin : « #gate vide et #hub caché tant que la réponse n'arrive pas ») : une demande qui BLOQUE un écran (whoami,
-     laissez-passer) ne peut plus attendre sans fin sur un réseau mobile qui traîne. Au bout de `ms`, la demande est coupée (AbortController)
-     et l'appelant reçoit `repli` — pour whoami : { state: 'neterr' }, déjà traité partout comme « le domaine ne répond pas » (on GARDE le pass,
-     on n'accorde RIEN par défaut, on ne jette personne). `faire(signal)` rend la promesse de la demande. */
-  var DELAI_MS = 6000;
-  function avecDelai(ms, faire, repli) {
-    return new Promise(function (resolve) {
-      var fini = false, ctl = null, t = null;
-      var clore = function (v) { if (fini) return; fini = true; if (t) clearTimeout(t); resolve(v); };
-      try { ctl = new AbortController(); } catch (e) { ctl = null; }
-      t = setTimeout(function () { try { if (ctl) ctl.abort(); } catch (e) { /* */ } clore(repli); }, ms);
-      var p; try { p = Promise.resolve(faire(ctl ? ctl.signal : undefined)); } catch (e) { p = Promise.reject(e); }
-      p.then(clore, function () { clore(repli); });
-    });
-  }
-
   function storedToken() { try { return localStorage.getItem(LS_TOK) || ''; } catch (e) { return ''; } }
   /* RÉACTIVITÉ (10.10.2026, Kevin : « on attend bcp trop avant l'exécution ») : `_gen` change à CHAQUE changement de session
      (pass posé, retiré, connexion, déconnexion) → une réponse lue AVANT ne sert jamais APRÈS (whoami partagé, laissez-passer d'avance). */
@@ -75,10 +59,7 @@
     return p;
   }
   function _whoamiReseau() {
-    return avecDelai(DELAI_MS, function (signal) { return _whoamiLire(signal); }, { state: 'neterr' });
-  }
-  function _whoamiLire(signal) {
-    return fetch(BASE + '/whoami', { method: 'GET', credentials: 'include', cache: 'no-store', headers: authHeaders(), signal: signal })
+    return fetch(BASE + '/whoami', { method: 'GET', credentials: 'include', cache: 'no-store', headers: authHeaders() })
       .then(function (r) {
         if (!r.ok) return { state: 'neterr' };
         return r.json().then(function (j) {
@@ -238,7 +219,7 @@
   function _lirePass() {
     if (_passP && _passGen === _gen && Date.now() - _passAt < PASS_MS) return _passP;
     _passAt = Date.now(); _passGen = _gen;
-    var p = avecDelai(DELAI_MS, function (signal) { return fetch(BASE + '/pass', { credentials: 'include', cache: 'no-store', headers: authHeaders(), signal: signal }).then(function (r) { return r.json(); }); }, null);   /* 13.10 : 6 s au plus — la tuile part alors sans laissez-passer d'avance (porte() retombe sur le pass local) */
+    var p = fetch(BASE + '/pass', { credentials: 'include', cache: 'no-store', headers: authHeaders() }).then(function (r) { return r.json(); }).catch(function () { return null; });
     p.then(function (j) { if (_passP === p && !(j && j.ok)) _passP = null; });   /* pas de session : on ne garde pas le « non » */
     _passP = p;
     return p;
@@ -413,14 +394,12 @@
   };
   /* fetch self-service : joint le pass Bearer (PWA iOS cookie isolé) + cookie. */
   function _selfFetch(path, method, body) {
-    return avecDelai(8000, function (signal) {
-      return fetch(path, {
-        method: method || 'GET', credentials: 'include', cache: 'no-store',
-        headers: authHeaders({ 'content-type': 'application/json' }),
-        body: body ? JSON.stringify(body) : undefined,
-        signal: signal,
-      }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
-    }, { ok: false, reason: 'neterr' });
+    return fetch(path, {
+      method: method || 'GET', credentials: 'include', cache: 'no-store',
+      headers: authHeaders({ 'content-type': 'application/json' }),
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .catch(function () { return { ok: false, reason: 'neterr' }; });
   }
 
   /* Auto-démarrage : toute page qui charge kdmc-sso.js garde sa présence à jour.

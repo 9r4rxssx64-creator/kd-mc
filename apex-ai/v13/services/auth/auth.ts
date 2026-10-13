@@ -296,7 +296,7 @@ class Auth {
     }
 
     events.emit('auth:login', { uid: user.id, isAdmin: user.isAdmin });
-    this.kdmcDomainRegister(user.id, user.name, user.isAdmin ? undefined : pin);
+    this.kdmcDomainRegister(user.id, user.name);
     logger.info('auth', `Login ${user.name} (admin=${user.isAdmin})`);
     this.audit('login_success', { actor: user.id, details: { admin: user.isAdmin, method: 'pin' } });
     return { ok: true };
@@ -307,87 +307,22 @@ class Auth {
    * transverse — Kevin "quand un compte est créé par une app, enregistrement
    * auto dans le domaine"). Additif + fail-open : ne tourne que sur *.kd-mc.com,
    * échec ignoré → le login de l'app reste identique.
-   *
-   * Comme le portail, on dit au domaine tout ce qu'il faut pour CONNAÎTRE la personne :
-   *  - `cgu`  : les conditions ont été acceptées (inscription Apex : CGU + RGPD obligatoires) ;
-   *  - `pour` : l'adresse de l'app d'où elle vient ;
-   *  - `code` : son code, SEULEMENT s'il est valable au domaine (6 caractères ou plus), jamais
-   *             celui de l'admin, et UNE seule fois par appareil et par compte (sinon un code
-   *             Apex différent du code du domaine multiplierait les échecs). Il part en HTTPS vers
-   *             le domaine, qui le juge ; il n'est jamais écrit ni gardé ici.
-   * Si le domaine reconnaît DÉJÀ la personne (Face ID ou code prouvé), on n'émet rien : ré-émettre
-   * sans code remplacerait sa session par une session « sans code » valable pour toutes les apps.
    */
-  private kdmcDomainRegister(uid: string, name: string, code?: string): void {
+  private kdmcDomainRegister(uid: string, name: string): void {
     try {
-      if (typeof location === 'undefined' || location.hostname.indexOf('kd-mc.com') < 0) return;
-      void (async () => {
-        try {
-          const deja = await this.lireWhoamiDomaine();
-          if (deja && deja.ok === true && (deja.verified === true || deja.code === true)) return;
-          const body: Record<string, unknown> = {
-            uid,
-            name,
-            app: 'apex-ai',
-            pour: location.host,
-            cgu: this.conditionsAcceptees(uid),
-          };
-          if (code && code.length >= 6 && uid !== ADMIN_ID) {
-            const flag = `apex_v13_domain_code_sent_${uid}`;
-            try {
-              if (!localStorage.getItem(flag)) {
-                localStorage.setItem(flag, '1');
-                body['code'] = code;
-              }
-            } catch { /* ignore */ }
-          }
-          await fetch('/__sso/issue', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(body),
-          });
-        } catch { /* fail-open */ }
-      })();
+      if (typeof location !== 'undefined' && location.hostname.indexOf('kd-mc.com') >= 0) {
+        void fetch('/__sso/issue', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ uid, name, app: 'apex-ai' }),
+        }).catch(() => {
+          /* fail-open */
+        });
+      }
     } catch {
       /* ignore */
     }
-  }
-
-  /** Les conditions ont-elles été acceptées ? Vrai pour un compte créé par inscription (CGU + RGPD exigées). */
-  private conditionsAcceptees(uid: string): boolean {
-    try {
-      const dyn = JSON.parse(localStorage.getItem('apex_v13_users') ?? '[]') as Array<{ id: string }>;
-      return dyn.some((u) => u.id === uid);
-    } catch {
-      return false;
-    }
-  }
-
-  /** Ce que le domaine répond à /__sso/whoami (lui seul juge : ni code ni Face ID ne sont vérifiés ici). */
-  private async lireWhoamiDomaine(): Promise<{
-    ok?: boolean; uid?: string; name?: string; verified?: boolean; admin?: boolean; code?: boolean; cgu?: boolean;
-  } | null> {
-    try {
-      const headers: Record<string, string> = {};
-      let tok = '';
-      try { tok = localStorage.getItem('kdmc_sso_token') || ''; } catch { /* ignore */ }
-      if (tok) headers['Authorization'] = 'Bearer ' + tok;
-      const r = await fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store', headers });
-      if (!r.ok) return null;
-      return (await r.json()) as {
-        ok?: boolean; uid?: string; name?: string; verified?: boolean; admin?: boolean; code?: boolean; cgu?: boolean;
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  /** Même personne ? Mêmes mots (prénom + nom), dans n'importe quel ordre, sans accents ni casse. */
-  private memeNomComplet(a: string, b: string): boolean {
-    const ta = [...new Set(normalize(a).split(/\s+/).filter((t) => t.length >= 2))].sort();
-    const tb = [...new Set(normalize(b).split(/\s+/).filter((t) => t.length >= 2))].sort();
-    return ta.length >= 2 && ta.length === tb.length && ta.every((t, i) => t === tb[i]);
   }
 
   /**
@@ -503,62 +438,6 @@ class Auth {
       return { ok: true, admin: user.isAdmin };
     } catch (err: unknown) {
       logger.warn('auth', 'loginVerifiedDomain failed', { err });
-      return { ok: false, reason: 'erreur' };
-    }
-  }
-
-  /**
-   * Règle de Kevin (13.10) : « une personne inscrite au domaine, sur son appareil connu, est reconnue
-   * AUTOMATIQUEMENT dans toutes les apps, sans redemander le code ». Quand le domaine a prouvé le CODE de
-   * la personne (whoami : ok:true, code:true), on ouvre son compte Apex LIÉ sans redemander le PIN.
-   *
-   * SÉCURITÉ (jamais d'accès à un compte d'autrui) :
-   *  - on ne juge rien ici : ni code, ni Face ID — on lit ce que le domaine répond ;
-   *  - jamais l'admin : le compte admin ne s'ouvre que par Face ID (`loginVerifiedDomain`) ;
-   *  - le compte lié doit porter EXACTEMENT les mêmes prénom + nom que la personne reconnue
-   *    (pas « contient » : un homonyme plus long ne doit pas ouvrir le compte d'une autre) ;
-   *  - whoami pas ok / code non prouvé / aucune session → rien ne s'ouvre (le PIN reste demandé).
-   * Fail-open total : toute erreur laisse l'écran de connexion normal.
-   */
-  async loginDomainCode(): Promise<{ ok: boolean; reason?: string }> {
-    try {
-      if (store.get('user')) return { ok: false, reason: 'déjà connecté' };
-      const j = await this.lireWhoamiDomaine();
-      if (!j || j.ok !== true) return { ok: false, reason: 'no session' };
-      if (j.code !== true) return { ok: false, reason: 'code non prouvé au domaine' };
-      const nom = String(j.name || '').trim();
-      if (!nom) return { ok: false, reason: 'nom manquant' };
-      if (j.admin === true || this.isKevinAdmin(nom)) {
-        return { ok: false, reason: 'admin : Face ID requis' };
-      }
-      let user: PreconfiguredUser | undefined = PRECONFIGURED.find((u) => !u.isAdmin && this.memeNomComplet(u.name, nom));
-      if (!user) {
-        try {
-          const dyn = JSON.parse(localStorage.getItem('apex_v13_users') ?? '[]') as Array<{
-            id: string; name: string; email: string; activated?: boolean;
-          }>;
-          const f = dyn.find((u) => u.activated && this.memeNomComplet(u.name, nom));
-          if (f) user = { id: f.id, name: f.name, email: f.email, isAdmin: false };
-        } catch { /* ignore */ }
-      }
-      if (!user || user.isAdmin) return { ok: false, reason: 'aucun compte Apex lié à cette personne' };
-      if (store.get('user')) return { ok: false, reason: 'déjà connecté' };
-      store.set('user', { id: user.id, name: user.name, email: user.email });
-      store.set('isAdmin', false);
-      try {
-        localStorage.setItem('apex_v13_user', JSON.stringify({ id: user.id, name: user.name }));
-        localStorage.setItem('apex_v13_uid', user.id);
-        localStorage.setItem('apex_v13_lastact', String(Date.now()));
-        localStorage.setItem('apex_v13_last_known_uid', user.id);
-        localStorage.setItem('apex_v13_last_known_name', user.name);
-      } catch { /* ignore */ }
-      await this.trustCurrentDevice(user.id); /* boots suivants : reconnu sans rien redemander */
-      events.emit('auth:login', { uid: user.id, isAdmin: false });
-      logger.info('auth', `loginDomainCode ${user.name}`);
-      this.audit('login_success', { actor: user.id, details: { admin: false, method: 'kdmc_code' } });
-      return { ok: true };
-    } catch (err: unknown) {
-      logger.warn('auth', 'loginDomainCode failed', { err });
       return { ok: false, reason: 'erreur' };
     }
   }

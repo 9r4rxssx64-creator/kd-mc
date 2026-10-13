@@ -36,7 +36,6 @@
   a{color:inherit}
   .wrap{max-width:1220px; margin:0 auto; padding:14px}
   header.top{display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:6px 4px 14px}
-  a.retour{display:inline-flex; align-items:center; min-height:44px; padding:0 14px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.04); color:var(--txt); font-size:13px; text-decoration:none}
   .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.14em; font-size:18px}
   .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2.4s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
@@ -174,7 +173,6 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="retour" href="https://kd-mc.com/">← Portail</a>
     <div class="logo"><span class="dot"></span> 🌍 WORLD&nbsp;MONITOR</div>
     <div style="display:flex;align-items:center;gap:10px"><button id="btnInstall" class="tg" style="min-height:38px" title="Ajouter World Monitor à ton écran d'accueil">📲 Installer</button><button id="btnBrief" class="tg" style="min-height:38px" title="Résumé IA de la situation mondiale (généré toutes les 6 h : conflits, catastrophes, à surveiller)">🧠 Brief IA</button><div class="clock"><b id="utc">—</b><span id="local">—</span></div></div>
   </header>
@@ -377,7 +375,7 @@
 
 <script>
 "use strict";
-var VER="v2.44";
+var VER="v2.43";
 document.getElementById("ver").textContent="World Monitor "+VER;
 document.getElementById("ver").onclick=function(){ try{location.replace(location.pathname+"?_v="+Date.now());}catch(e){location.reload();} };
 
@@ -1887,6 +1885,6 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)fast
   })();
 })();
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.44" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.43" data-color="#c9a227" defer></script>
 </body>
 </html>

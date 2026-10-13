@@ -16,7 +16,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,san
 h1{font-size:21px;margin:0;display:flex;align-items:center;gap:8px}
 .livedot{width:9px;height:9px;border-radius:50%;background:var(--live);box-shadow:0 0 8px var(--live);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-a.back{color:var(--blue);font-size:13px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 13px;background:#0a1220;min-height:44px;display:inline-flex;align-items:center}
+a.back{color:var(--blue);font-size:13px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 13px;background:#0a1220;min-height:34px;display:inline-flex;align-items:center}
 .sub{color:var(--dim);font-size:13px;margin:8px 0 14px;line-height:1.5}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
 .card h2{font-size:14px;margin:0;padding:13px 15px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);letter-spacing:.02em}
@@ -60,7 +60,7 @@ a.tool .no{font-size:11px;color:var(--warn);margin-top:4px;line-height:1.35}
   <div class="top">
     <h1><span class="livedot"></span>🔎 OSINT</h1>
     <a class="back" href="/worldmonitor/">🌍 World Monitor</a>
-    <a class="back" href="https://kd-mc.com/">← Portail</a>
+    <a class="back" href="/">← Accueil</a>
   </div>
   <p class="sub">Centre d'investigation en sources ouvertes — <b>données live</b> (vols, séismes, cyber, ISS), carte temps réel, météo/webcams, et boîte à outils curée (134 outils).</p>
 
@@ -353,6 +353,6 @@ document.addEventListener("visibilitychange",function(){if(document.visibilitySt
 /* MAJ auto force (leçon #102) : badge cliquable = échappatoire garantie */
 $("ver").onclick=function(){if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});});if(window.caches&&caches.keys)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});location.replace(location.pathname+"?_force_upd_"+Date.now());};
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="osint" data-version="v2.7" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="osint" data-version="v2.6" data-color="#c9a227" defer></script>
 </body>
 </html>

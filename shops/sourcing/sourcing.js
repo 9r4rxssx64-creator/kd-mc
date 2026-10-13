@@ -41,12 +41,8 @@
     }
     global.kdmcSSO.whoamiResult().then(function (r) {
       if (r.state === 'session') {
-        /* 13.10 : la session de kdmc-sso.js ne porte NI `code` NI `roles` (le rôle « shops » donné par Kevin n'arrivait donc jamais ici) :
-           on complète avec la réponse complète du domaine. Échec réseau : on garde la session telle quelle (un non-admin reste refusé). */
-        return whoamiComplet(r.session).then(function (u) {
-          _user = u; try { localStorage.setItem(LS_USER, _user.name || ''); } catch (e) { /* */ }
-          onReady(_user);
-        });
+        _user = r.session; try { localStorage.setItem(LS_USER, _user.name || ''); } catch (e) { /* */ }
+        onReady(_user);
       } else if (r.state === 'neterr') {
         // réseau KO → fail-open
         _user = { uid: '', name: (function () { try { return localStorage.getItem(LS_USER) || 'Invité'; } catch (e) { return 'Invité'; } })(), open: true };
@@ -57,17 +53,6 @@
     }).catch(function () {
       _user = { uid: '', name: 'Invité', open: true }; onReady(_user);
     });
-  }
-  function whoamiComplet(base) {
-    var h = {};
-    try { var t = localStorage.getItem('kdmc_sso_token') || ''; if (t) h.Authorization = 'Bearer ' + t; } catch (e) { /* cookie seul */ }
-    return fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store', headers: h })
-      .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
-      .then(function (j) {
-        var u = {}; Object.keys(base || {}).forEach(function (k) { u[k] = base[k]; });
-        if (j && j.ok) { u.code = j.code === true; u.roles = Array.isArray(j.roles) ? j.roles : []; }
-        return u;
-      });
   }
   function loginRedirect() {
     var ret = encodeURIComponent(location.href);
@@ -176,8 +161,8 @@
        (re-connexion Face ID), ce n'est pas un lockout (aucun secret à taper). */
     isAllowed: function (u) {
       if (!u) return false;
-      if (u.admin === true) return u.verified === true;     // admin = Face ID exigé (le domaine ne dit admin qu'à une identité prouvée)
-      if (u.verified !== true && u.code !== true) return false;   // nom seul = zéro accès ; le CODE prouvé suffit (13.10 : plus de Face ID exigé d'un non-admin)
+      if (u.verified !== true) return false;    // nom seul = zéro accès
+      if (u.admin === true) return true;        // admin prouvé serveur (verified)
       return Array.isArray(u.roles) && u.roles.indexOf('shops') >= 0;
     },
     fetchSelection: fetchSelection, addToSelection: addToSelection, removeFromSelection: removeFromSelection,

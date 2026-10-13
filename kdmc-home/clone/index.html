@@ -27,13 +27,11 @@ a{color:var(--blue);word-break:break-all}
 .empty{color:var(--dim);text-align:center;padding:24px;font-size:14px}
 .err{color:#ff8a8a;background:#2a1114;border:1px solid #5a2a2a;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:12px}
 .row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.retour{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;margin:0 0 8px;border:1px solid var(--line);border-radius:10px;background:#12203a;color:var(--txt);font-size:14px;font-weight:600;text-decoration:none}
 .ver{position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);font-size:10px;color:#6b7fa6;background:#0a1220cc;border:1px solid var(--line);border-radius:8px;padding:3px 7px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <a class="retour" href="https://kd-mc.com/">← Portail</a>
   <h1>🧬 Cloneur de sites</h1>
   <p class="sub">Lire, extraire ou cloner n'importe quelle page publique. Moteur côté serveur (aucun blocage), rien n'est stocké.</p>
 
@@ -50,7 +48,7 @@ a{color:var(--blue);word-break:break-all}
     <div class="out" id="out"></div>
   </div>
 </div>
-<span class="ver" id="ver" title="Forcer la mise à jour">Cloneur v1.1</span>
+<span class="ver" id="ver" title="Forcer la mise à jour">Cloneur v1.0</span>
 <script>
 var WORKER="https://kdmc-clone.9r4rxssx64.workers.dev";
 function $(id){return document.getElementById(id);}

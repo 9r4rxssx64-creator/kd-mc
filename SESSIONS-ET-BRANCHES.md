@@ -196,7 +196,6 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/reactivite-plus` | 10.10 | Branche de travail **contenue dans** `claude/reactivite-tout` — rien à fusionner séparément (suppression refusée par le dépôt le 10.10) | `reactivite-plus` |
 | `claude/relais-deploye` | 13.10 | Mémoire : le relais Anthropic (modèles retirés remplacés) est déployé en ligne, robot remis en pause | `relais-deploye` |
 | `claude/creer-compte-bouton` | 13.10 | Admin : bouton « Créer un compte » en tête de Personnes ; routeur : fuite des icônes de CMCteams corrigée ; suite : reconnaissance entre apps, retours, fluidité | `creer-bouton-fuite` |
-| `claude/lot-reconnu-partout` | 13.10 | Lot : reconnu partout, retours partout, fluidité (pastille « ← Portail », mémo KV, SW lie-fi, zone admin instantanée, Apex Chat/AI, CMCteams/light/Arbre/boutiques reconnus, User-Agent des services) | `lot-reconnu-partout` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |
 | `claude/compte-externe` | 13.10 | Compte invité créé par l'admin (hors casino) : routeur, formulaire admin, Light v1.91, CMCteams v9.967 ; gardes `test:invite-externe`, `test:creer-invite-page`, `test:light-invite`, `test:cmcteams-invite` | `compte-externe` |

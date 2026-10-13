@@ -5,8 +5,6 @@
 (function () {
   'use strict';
   var URL_BOITE = '/__boite/admin', PAS_BANDEAU = 30000, PAS_OUVERT = 12000;   /* quasi temps réel : relu aussi au retour sur l'onglet et dès qu'une notification ouvre #messages */
-  var CLE_CACHE = 'kdmc_boite_cpts', CACHE_MAX = 864e5;
-  var C = null;   /* le DERNIER RELEVÉ en nombres (jamais un nom ni un message), dessiné par le bandeau en attendant la vraie lecture */
   var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false, HIST = {}, REV = {}, ECOUTE = [];
 
   function entetes(json) {
@@ -24,28 +22,12 @@
     var j = Math.floor(s / 86400); if (j < 7) return 'il y a ' + j + ' j';
     var d = new Date(ts); return d.getDate() + '/' + (d.getMonth() + 1);
   }
-  /* Le dernier relevé : des NOMBRES seulement, en try/catch partout (mode privé, stockage plein). Lu et dessiné SEULEMENT après que le domaine
-     a dit « admin » (demarrer() n'est appelée que pour la session admin) ; effacé dès que la session n'est plus admin (oublier). */
-  function nb(x) { return typeof x === 'number' && isFinite(x) && x >= 0 && x < 1e6 ? Math.floor(x) : null; }
-  function releveDe(j) {
-    return { ts: Date.now(), nonLus: nb(j.nonLus) || 0, nonLusAlertes: nb(j.nonLusAlertes) || 0, connectes: nb(j.connectes) || 0,
-      ni: (j.inscriptions || []).length + (j.codes || []).length + (j.inscriptionsAdmin || []).length };
-  }
-  function cacheLire() {
-    try {
-      var j = JSON.parse(localStorage.getItem(CLE_CACHE) || 'null');
-      if (!j || typeof j.ts !== 'number' || !isFinite(j.ts) || Date.now() - j.ts > CACHE_MAX || j.ts > Date.now() + 6e4) return null;
-      return { ts: j.ts, nonLus: nb(j.nonLus) || 0, nonLusAlertes: nb(j.nonLusAlertes) || 0, connectes: nb(j.connectes) || 0, ni: nb(j.ni) || 0 };
-    } catch (e) { return null; }
-  }
-  function cacheGarder(o) { try { localStorage.setItem(CLE_CACHE, JSON.stringify(o)); } catch (e) { /* */ } }
-  function oublier() { C = null; try { localStorage.removeItem(CLE_CACHE); } catch (e) { /* */ } }
   function lire() {
     /* 8.10 (Kevin : « rafraîchir ne fonctionne pas ») : une lecture qui traîne (Firebase, D1, KV) bloquait `enCours` et chaque ↻ était ignoré
        en silence. Bornée à 15 s : au-delà on rend la main (le prochain ↻ repart). */
     var ctl = null; try { ctl = new AbortController(); setTimeout(function () { ctl.abort(); }, 15000); } catch (e) { ctl = null; }
     return fetch(URL_BOITE, { credentials: 'include', cache: 'no-store', headers: entetes(false), signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { if (r.status === 401 || r.status === 403) oublier(); return r.ok ? r.json() : null; })
+      .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { return j && j.ok ? j : null; })
       .catch(function () { return null; });
   }
@@ -68,25 +50,22 @@
   /* ── le bandeau permanent (toujours en haut, collant) ─────────────────────────────────────────────────── */
   function bandeau() {
     var a = document.getElementById('cercle-alerte'); if (!a) return;
-    if (!D && !C) { a.hidden = true; return; }
-    /* D = la lecture du domaine ; sinon C = le dernier relevé (nombres), daté, jamais présenté comme neuf */
-    var n = D ? D.nonLus || 0 : C.nonLus, ni = D ? (D.inscriptions || []).length + (D.codes || []).length + (D.inscriptionsAdmin || []).length : C.ni;   /* les codes à valider et les inscriptions sans WhatsApp comptent comme une inscription : Kevin doit trancher */
-    var nAl = D ? D.nonLusAlertes : C.nonLusAlertes, nCo = D ? D.connectes || 0 : C.connectes;
+    if (!D) { a.hidden = true; return; }
+    var n = D.nonLus || 0, ni = (D.inscriptions || []).length + (D.codes || []).length + (D.inscriptionsAdmin || []).length;   /* les codes à valider et les inscriptions sans WhatsApp comptent comme une inscription : Kevin doit trancher */
     a.textContent = '';
     var t = el('span', 'bt', n ? '📬 ' + (n > 1 ? n + ' nouveaux messages' : '1 nouveau message') : ni ? '📬 Rien de nouveau dans les messages' : '📬 Aucun message en attente');
     a.appendChild(t);
     if (n + ni) a.appendChild(el('span', 'n', String(n + ni)));
     /* 7.10 (Kevin : « je dois voir les inscriptions en attente dans le domaine, en dessous des messages ») : comptées dans l'alerte. */
     if (ni) a.appendChild(el('span', 'qui', '📝 ' + ni + ' inscription' + (ni > 1 ? 's' : '') + ' à valider'));
-    var qui = D ? (D.sources || []).filter(function (s) { return s.nonLus && s.id !== 'alertes'; }).map(function (s) { return s.icone + ' ' + s.nom.split(' · ')[0] + ' ' + s.nonLus; }) : [];
+    var qui = (D.sources || []).filter(function (s) { return s.nonLus && s.id !== 'alertes'; }).map(function (s) { return s.icone + ' ' + s.nom.split(' · ')[0] + ' ' + s.nonLus; });
     if (qui.length) a.appendChild(el('span', 'qui', qui.join(' · ')));
-    if (nAl) a.appendChild(el('span', 'qui', '🔔 ' + nAl + ' alerte' + (nAl > 1 ? 's' : '')));
-    a.appendChild(el('span', 'qui', '· ' + nCo + ' connecté(s)'));
-    var hs = D ? (D.sources || []).filter(function (s) { return s.etat !== 'ok'; }) : [];
+    if (D.nonLusAlertes) a.appendChild(el('span', 'qui', '🔔 ' + D.nonLusAlertes + ' alerte' + (D.nonLusAlertes > 1 ? 's' : '')));
+    a.appendChild(el('span', 'qui', '· ' + (D.connectes || 0) + ' connecté(s)'));
+    var hs = (D.sources || []).filter(function (s) { return s.etat !== 'ok'; });
     if (hs.length) a.appendChild(el('span', 'qui warn', '⚠️ ' + hs.map(function (s) { return s.nom.split(' · ')[0]; }).join(', ') + ' indisponible'));
-    if (!D) a.appendChild(el('span', 'qui', '· dernier relevé ' + quand(C.ts) + ' — mise à jour…'));
-    a.className = (n + ni ? '' : 'calme') + (D ? '' : ' perime'); a.hidden = false;
-    try { document.title = (D && n + ni ? '(' + (n + ni) + ') ' : '') + document.title.replace(/^\(\d+\)\s*/, ''); } catch (e) { /* */ }
+    a.className = n + ni ? '' : 'calme'; a.hidden = false;
+    try { document.title = (n + ni ? '(' + (n + ni) + ') ' : '') + document.title.replace(/^\(\d+\)\s*/, ''); } catch (e) { /* */ }
   }
 
   /* ── la fenêtre ───────────────────────────────────────────────────────────────────────────────────────── */
@@ -106,7 +85,7 @@
     var b = document.querySelector('#boite-fen .bf-r'); if (b && manuel) { b.classList.add('tourne'); b.disabled = true; }
     return lire().then(function (j) {
       enCours = false; var relancer = enCoursManuel; enCoursManuel = false;
-      if (j) { D = j; cacheGarder(C = releveDe(j)); bandeau(); ECOUTE.forEach(function (f) { try { f(D); } catch (e) { /* un abonné en panne ne casse pas la boîte */ } }); }
+      if (j) { D = j; bandeau(); ECOUTE.forEach(function (f) { try { f(D); } catch (e) { /* un abonné en panne ne casse pas la boîte */ } }); }
       if (ouverte) {
         /* on ne redessine que si quelque chose a changé (ou sur ↻ : au moins le pied « mis à jour » bouge) */
         var e = empreinte(D);
@@ -339,9 +318,6 @@
     a.onclick = function (e) { e.preventDefault(); ouvrir(); };
     a.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ouvrir(); } };
     a.tabIndex = 0;
-    /* 13.10 (Kevin : « la zone du haut apparaît tard ») : le domaine a déjà dit « admin » (c'est lui qui appelle demarrer) — le dernier relevé
-       s'affiche tout de suite, daté, pendant que la vraie lecture part. Sans relevé gardé : rien, comme avant. */
-    if (!D) { C = cacheLire(); if (C) bandeau(); }
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ouverte) fermer(); });
     var surHash = function () { if (/[#&]messages\b/.test(location.hash)) { if (!ouverte) ouvrir(); else rafraichir(); } };
     if (/[#&]messages\b/.test(location.hash)) setTimeout(ouvrir, 400);
@@ -359,5 +335,5 @@
     return o;
   }
   function surMaj(f) { if (typeof f === 'function') { ECOUTE.push(f); if (D) { try { f(D); } catch (e) { /* */ } } } }
-  window.kdmcBoite = { oublier: oublier, demarrer: demarrer, rafraichir: rafraichir, ouvrir: ouvrir, fermer: fermer, surMaj: surMaj, blocs: blocs, donnees: function () { return D; } };
+  window.kdmcBoite = { demarrer: demarrer, rafraichir: rafraichir, ouvrir: ouvrir, fermer: fermer, surMaj: surMaj, blocs: blocs, donnees: function () { return D; } };
 })();

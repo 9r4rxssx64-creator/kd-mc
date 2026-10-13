@@ -1515,6 +1515,16 @@
       "maj": "2026-10-13",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "relais-deploye": {
+      "titre": "Relais Anthropic déployé en ligne",
+      "branche": "claude/relais-deploye",
+      "sujet": "mémoire du déploiement du relais (robot réactivé une fois puis remis en pause)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-13",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-13 (soir) — Le relais Anthropic (modèles retirés remplacés) est DÉPLOYÉ en ligne
+- Cause du retard : le robot `sync-apex-secrets-to-cf-worker` était **désactivé à la main depuis le 26.09** (mise en pause des 134 robots du coffre) ; son dernier succès datait du 23.09. Fusionner #4491 ne le relançait donc pas.
+- Fait, à la procédure connue « enable → dispatch → disable » : activé, lancé UNE fois (run 38436927596, ~3 min, succès), remis en pause (`disabled_manually`). Ration lue avant (`tools/ci/ration-actions.mjs` : 7 min / 60).
+- Contrôle en ligne (sans code admin) : `/health` du relais OK (21 fournisseurs, Qwen gratuit présent), sans PIN → 401. Le remplacement lui-même (Haiku 3 → Haiku 4.5) n'est PAS rejoué en ligne (il exigerait le code d'accès) : il est prouvé par `test:modeles-retires` (17).
+- À savoir : tout changement du relais exige de relancer ce robot (il ne repart pas tout seul).
+
 ## 2026-10-13 (nuit) — « Prévient toutes tes branches de privilégier le gratuit, même pour les actions » (carte + ration + message)
 - **Carte unique** des 7 règles « gratuit » dans `CLAUDE-HISTOIRE.md` (§ « TOUJOURS LE GRATUIT D'ABORD ») et son index `CLAUDE.md` ; **5 questions** avant tout robot/appel/outil.
 - **Outil** `tools/ci/ration-actions.mjs` (+ garde `test:ration-actions`, 9 contrôles, sabotage prouvé) : minutes Actions du jour vs ration 60 min, verdict 🟢/🟠/🔴, code 3 si mangée. Ligne en tête d'`ETAT-DU-MOMENT.md` (lue par chaque session à chaque réveil).

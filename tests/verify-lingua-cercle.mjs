@@ -79,7 +79,7 @@ try {
   await T.p.evaluate(() => { document.querySelector('#acCgu').checked = true; });
   await T.p.waitForTimeout(600); await clicDessus(T.p, 'Créer mon compte'); await T.p.waitForTimeout(500);
   ok(/6 chiffres/.test(await T.p.evaluate(() => [...document.querySelectorAll('.toast')].map((x) => x.textContent).join(' '))), '2c. invité sans code → on lui demande son code KDMC (fiche d\'inscription domaine + Lingua)');
-  await T.p.fill('#acCode', '864213'); await clicDessus(T.p, 'Créer mon compte'); await T.p.waitForTimeout(3500);
+  await T.p.fill('#acTel', '+377 06 12 34 56'); await T.p.fill('#acCode', '864213'); await clicDessus(T.p, 'Créer mon compte'); await T.p.waitForTimeout(3500);
   await T.p.evaluate(() => document.querySelectorAll('.overlay,.modal').forEach((x) => x.remove()));
   await T.p.evaluate(() => { const c = document.querySelector('.course-card'); if (c) c.click(); }); await T.p.waitForTimeout(800);
   await T.p.evaluate(() => document.querySelectorAll('.overlay,.modal').forEach((x) => x.remove()));

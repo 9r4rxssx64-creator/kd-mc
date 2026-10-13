@@ -43,7 +43,7 @@ const boite = async (path, body) => { const r = await handleBoite(req('/__boite'
 
 console.log('\n== Un compte sans code ne s\'ouvre plus sur son nom ; le code proposé attend Kevin ==');
 /* le compte de Laurence tel qu'il était : créé par le vrai chemin (registre, nom canonique), puis son code retiré = compte d'avant le 27.09 */
-{ const c = await appel('/__sso/issue', { method: 'POST', body: { uid: 'laurence-saint-polit', name: 'Laurence Saint-Polit', cgu: true, code: '111111' }, ua: UA.iphone });
+{ const c = await appel('/__sso/issue', { method: 'POST', body: { uid: 'laurence-saint-polit', name: 'Laurence Saint-Polit', cgu: true, code: '111111', telephone: '+377 06 12 34 56' }, ua: UA.iphone });
   ok(c.j.ok === true && kv.has('cred:laurence-saint-polit'), '0. (décor) le compte existe, créé avec un code', c);
   kv.delete('cred:laurence-saint-polit'); const a0 = JSON.parse(kv.get('acc:laurence-saint-polit')); delete a0.code_at; kv.set('acc:laurence-saint-polit', JSON.stringify(a0)); }
 let r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'laurence-saint-polit', name: 'Laurence Saint-Polit', cgu: true }, ua: UA.windows, cf: STOCKHOLM });

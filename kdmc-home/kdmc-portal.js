@@ -522,6 +522,7 @@
       + '<p class="g-sub">Première connexion. Un seul compte pour tout ton univers.</p>'
       + '<input class="fld" id="f-prenom" type="text" autocomplete="given-name" placeholder="Prénom" inputmode="text">'
       + '<input class="fld" id="f-nom" type="text" autocomplete="family-name" placeholder="Nom">'
+      + '<input class="fld" id="f-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Téléphone (ex. +377 06 12 34 56)">'
       + '<input class="fld" id="f-code" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Code secret (6 chiffres min.)">'
       + '<input class="fld" id="f-code2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Confirme le code">'
       + cguBlock()
@@ -718,6 +719,7 @@
     });
   }
 
+  var _telephone = '';   /* numéro saisi à l'inscription (envoyé au domaine avec la création) */
   function doCreate() {
     var prenom = (document.getElementById('f-prenom').value || '').trim();
     var nom = (document.getElementById('f-nom').value || '').trim();
@@ -727,6 +729,10 @@
     var err = document.getElementById('f-err');
     err.textContent = '';
     if (prenom.length < 2 || nom.length < 2) { err.textContent = 'Prénom ET nom requis (sécurité).'; return; }
+    /* 13.10 (Kevin : « le téléphone à l'inscription du domaine entier ») : demandé UNE fois ici, rangé sur la fiche du domaine, lu par toutes les apps */
+    var tel = ((document.getElementById('f-tel') || {}).value || '').trim();
+    if (!/^\+?[0-9 .()-]{6,24}$/.test(tel) || tel.replace(/\D/g, '').length < 6) { err.textContent = 'Ton numéro de téléphone est obligatoire (ex. +377 06 12 34 56).'; return; }
+    _telephone = tel;
     if (code.length < 6) { err.textContent = 'Code trop court (6 chiffres minimum).'; return; }
     if (code !== code2) { err.textContent = 'Les deux codes ne correspondent pas.'; return; }
     if (!cgu) { err.textContent = 'Merci d\'accepter les conditions pour continuer.'; return; }
@@ -757,7 +763,7 @@
       /* Le CODE part au domaine (27.09) : il en garde l'empreinte, et le même nom + code
          marchera sur tous les appareils et dans toutes les apps. */
       if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) return acc;
-      return window.kdmcSSO.issueDetail(uid, name, true, safeReturnUrl(), code, _telPreuve, _telPreuve ? '' : _validation).then(function (j) {
+      return window.kdmcSSO.issueDetail(uid, name, true, safeReturnUrl(), code, _telPreuve, _telPreuve ? '' : _validation, _telephone).then(function (j) {
         if (j && !j.ok && (j.reason === 'code_requis' || j.reason === 'code_incorrect')) {
           localStorage.removeItem(LS_ACCOUNT);
           throw { deja: true };

@@ -41,13 +41,13 @@ const boite = async (path, body) => { const r = await handleBoite(req('kd-mc.com
 const fiche = (uid) => JSON.parse(kv.get('acc:' + uid) || 'null');
 
 console.log('\n== 1. Sans preuve ni choix : rien ne change ==');
-let r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sanswa', name: 'Paul Sanswa', cgu: true, code: '246810' } });
+let r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sanswa', name: 'Paul Sanswa', cgu: true, code: '246810', telephone: '+377 06 12 34 56' } });
 ok(r.st === 400 && r.j.reason === 'tel_requis' && r.j.validation_admin === true && !r.j.token && !kv.has('acc:paul-sanswa'), '1. tel_requis, aucune fiche, et le domaine signale l\'autre chemin (validation admin)', r);
-r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sanswa', name: 'Paul Sanswa', cgu: true, code: '246810', validation: 'n-importe' } });
+r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sanswa', name: 'Paul Sanswa', cgu: true, code: '246810', telephone: '+377 06 12 34 56', validation: 'n-importe' } });
 ok(r.st === 400 && r.j.reason === 'tel_requis' && !kv.has('acc:paul-sanswa'), '1b. une valeur inventée n\'ouvre rien', r);
 
 console.log('\n== 2. Le choix « validation admin » : compte créé, mais fermé ==');
-r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sanswa', name: 'Paul Sanswa', cgu: true, code: '246810', validation: 'admin' } });
+r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sanswa', name: 'Paul Sanswa', cgu: true, code: '246810', telephone: '+377 06 12 34 56', validation: 'admin' } });
 const T = r.j.token;
 ok(r.j.ok === true && r.j.attente_admin === true && T && /administrateur/.test(r.j.message || ''), '2. compte créé, la réponse dit « en attente de l\'administrateur »', r);
 ok(fiche('paul-sanswa') && fiche('paul-sanswa').attente_admin === true && kv.has('cred:paul-sanswa'), '2b. la fiche porte attente_admin, le code est posé (nom + code marcheront après validation)', fiche('paul-sanswa'));
@@ -78,7 +78,7 @@ ok(!(b.inscriptionsAdmin || []).some((x) => x.uid === 'paul-sanswa'), '3d. la de
 d = await boite('/admin/inscription-admin', { uid: 'paul-sanswa', accepter: true });
 ok(d.ok === false && d.reason === 'demande_introuvable', '3e. pas de 2e décision sur une demande déjà tranchée', d);
 
-r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'rose-sanswa', name: 'Rose Sanswa', cgu: true, code: '135790', validation: 'admin' } });
+r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'rose-sanswa', name: 'Rose Sanswa', cgu: true, code: '135790', telephone: '+377 06 12 34 56', validation: 'admin' } });
 const T2 = r.j.token;
 d = await boite('/admin/inscription-admin', { uid: 'rose-sanswa', accepter: true });
 ok(d.ok === true && d.accepte === true && fiche('rose-sanswa').attente_admin === undefined && fiche('rose-sanswa').valide_admin_at, '3f. accepter → la fiche s\'ouvre', d);
@@ -89,7 +89,7 @@ ok(w.j.ok === true && !w.j.attente_admin, '3h. le portail l\'ouvre normalement',
 ok(journal.some((e) => e.ev === 'inscription_admin_validee' && e.uid === 'rose-sanswa') && journal.some((e) => e.ev === 'inscription_admin_refusee' && e.uid === 'paul-sanswa'), '3i. chaque décision est journalisée');
 
 console.log('\n== 4. Jamais un compte déjà inscrit ==');
-r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'rose-sanswa', name: 'Rose Sanswa', cgu: true, code: '135790', validation: 'admin' } });
+r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'rose-sanswa', name: 'Rose Sanswa', cgu: true, code: '135790', telephone: '+377 06 12 34 56', validation: 'admin' } });
 ok(r.j.ok === true && !r.j.attente_admin && fiche('rose-sanswa').attente_admin === undefined, '4. reconnexion d\'un compte ouvert avec validation:admin → rien ne se referme', r.j);
 
 console.log('\n== 5. Le portail ==');

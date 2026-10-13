@@ -115,7 +115,7 @@ try {
   console.log('— 1. Kevin se connecte sur kd-mc.com AVEC Face ID —');
   await page.goto('https://kd-mc.com/');
   await page.waitForSelector('#f-create', { timeout: 8000 });
-  await page.fill('#f-prenom', 'Kevin'); await page.fill('#f-nom', 'Desarzens');
+  await page.fill('#f-prenom', 'Kevin'); await page.fill('#f-nom', 'Desarzens'); await page.fill('#f-tel', '+377 06 12 34 56');
   await page.fill('#f-code', CODE); await page.fill('#f-code2', CODE);
   await page.check('#cgu-ok'); await page.click('#f-create');
   /* (27.09.2026) Kevin n'a plus de « compte faible » : son nom → le portail demande le code ADMIN,
@@ -161,7 +161,7 @@ try {
   const rIssue = await worker.fetch(new Request('https://kd-mc.com/__sso/issue', { method: 'POST',
     headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' },
     /* 8.10 : le domaine ne délivre plus de session au nom de Kevin sans preuve → la session faible est celle d'un autre compte. */
-    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159' } /* code obligatoire à la création (8.10) */) }), env);
+    body: JSON.stringify({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159', telephone: '+377 06 12 34 56' } /* code obligatoire à la création (8.10) */) }), env);
   const jIssue = await rIssue.json().catch(() => ({}));
   const faible = jIssue && (jIssue.token || jIssue.t || '');
   ok(!!faible, 'le domaine émet bien une session SANS Face ID (auto-déclarée) pour le test');

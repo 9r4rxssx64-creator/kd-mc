@@ -64,7 +64,7 @@ try {
   const pc = await C.newPage(); await pc.goto('https://lingua.kd-mc.com/'); await pc.waitForTimeout(1500);
   await pc.evaluate(() => { const b = [...document.querySelectorAll('button')].find((x) => /Nouveau compte/i.test(x.textContent)); if (b) b.click(); });
   await pc.waitForSelector('#acPrenom', { timeout: 8000 });
-  await pc.fill('#acPrenom', 'Hugo'); await pc.fill('#acNom', 'Blanc'); await pc.fill('#acCode', '135790');
+  await pc.fill('#acPrenom', 'Hugo'); await pc.fill('#acNom', 'Blanc'); await pc.fill('#acTel', '+377 06 12 34 56'); await pc.fill('#acCode', '135790');
   await pc.evaluate(() => { const c = document.querySelector('#acCgu'); if (c) c.checked = true; });
   appels.length = 0;
   await pc.evaluate(() => { const b = [...document.querySelectorAll('button')].find((x) => /Créer mon compte/i.test(x.textContent)); if (b) b.click(); });

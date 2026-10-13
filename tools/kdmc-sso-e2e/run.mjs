@@ -102,7 +102,7 @@ try {
   await page.goto(ORIGIN + '/');
   await page.waitForFunction(() => !!document.getElementById('f-create'), { timeout: 5000 }).catch(() => {});
   await page.fill('#f-prenom', 'Kevin');
-  await page.fill('#f-nom', 'Desarzens');
+  await page.fill('#f-nom', 'Desarzens'); await page.fill('#f-tel', '+377 06 12 34 56');
   await page.fill('#f-code', ADMIN_CODE);
   await page.fill('#f-code2', ADMIN_CODE);
   await page.check('#cgu-ok');
@@ -137,7 +137,7 @@ try {
   await page.goto(ORIGIN + '/');
   await page.waitForFunction(() => !!document.getElementById('f-create'), { timeout: 5000 }).catch(() => {});
   await page.fill('#f-prenom', 'Sandrine');
-  await page.fill('#f-nom', 'Client');
+  await page.fill('#f-nom', 'Client'); await page.fill('#f-tel', '+377 06 12 34 56');
   await page.fill('#f-code', '123456');
   await page.fill('#f-code2', '123456');
   await page.check('#cgu-ok');
@@ -157,7 +157,7 @@ try {
      #kdmc_sso=<token> (comme le ferait le retour depuis le domaine). */
   const ctx3 = await browser.newContext();
   page = await ctx3.newPage();
-  const issued = await page.request.post(ORIGIN + '/__sso/issue', { data: { uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159' } /* code obligatoire à la création (8.10) */ });
+  const issued = await page.request.post(ORIGIN + '/__sso/issue', { data: { uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159', telephone: '+377 06 12 34 56' } /* code obligatoire à la création (8.10) */ });
   const ij = await issued.json();
   ok(ij.ok && typeof ij.token === 'string', 'Worker : /__sso/issue renvoie le token signé dans le corps');
   await page.goto(ORIGIN + '/app.html#kdmc_sso=' + encodeURIComponent(ij.token));

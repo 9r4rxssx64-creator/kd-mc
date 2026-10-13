@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.139.0";
+var APP_VER="v2.140.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -158,7 +158,7 @@ function kdmcToken(){ try{ var h=location.hash||"",m=h.match(/[#&]kdmc_sso=([^&]
 function kdmcHeaders(extra){ var h=extra||{}; var t=kdmcToken(); if(t)h.Authorization="Bearer "+t; return h; }
 function kdmcWhoami(){ return fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:kdmcHeaders()}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ return (j&&j.ok)?j:null; }).catch(function(){ return null; }); }
 function kdmcLogin(name,code){ return fetch("/__sso/login",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({name:name,code:String(code||"")})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
-function kdmcIssue(uid,name,code,cgu){ return fetch("/__sso/issue",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({uid:uid,name:name,cgu:!!cgu,pour:location.host,code:(code&&String(code).length>=6)?String(code):undefined})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
+function kdmcIssue(uid,name,code,cgu,tel){ return fetch("/__sso/issue",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({uid:uid,name:name,cgu:!!cgu,pour:location.host,code:(code&&String(code).length>=6)?String(code):undefined,telephone:tel?String(tel):undefined})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
 function kdmcSlug(name){ return norm(name).replace(/\s+/g,"-").slice(0,60); }
 /* 🔐 FACE ID SUR PLACE (2.10, Kevin : « reconnu par Face ID ») : le passkey du trousseau (domaine kd-mc.com) se
    présente ici même, le domaine vérifie la signature et rend une session FORTE — pour Kevin, l'admin s'ouvre. */
@@ -1126,6 +1126,7 @@ function openCreate(){
   m.body.innerHTML='<h3>Nouveau compte</h3>'+
     '<input id="acPrenom" class="txt" placeholder="Ton prénom" maxlength="18" autocomplete="off">'+
     '<input id="acNom" class="txt" placeholder="Ton nom" maxlength="24" autocomplete="off">'+
+    '<input id="acTel" class="txt" type="tel" inputmode="tel" placeholder="Téléphone (obligatoire avec un code)" maxlength="24" autocomplete="tel">'+
     '<input id="acCode" class="txt" placeholder="Code secret, 6 chiffres (facultatif)" inputmode="numeric" maxlength="10" autocomplete="off">'+
     '<p class="mini">🔒 <b>Un seul compte par personne</b> : avec un code (6 chiffres min.), c\'est ton <b>compte KDMC</b> — le même nom + code te reconnaît dans toutes les apps du domaine et sur n\'importe quel téléphone. Tu peux commencer <b>sans</b>, et l\'ajouter plus tard.</p>'+
     '<label class="mini" id="acCguWrap" style="display:block"><input type="checkbox" id="acCgu"> J\'accepte les <a href="#" id="acCguLink">conditions</a>.</label><div class="mini" id="acCguText" hidden>Un seul compte pour toutes les apps KDMC. Tes informations restent privées et ne servent qu\'à te reconnaître. Tu peux te déconnecter ou demander l\'effacement quand tu veux.</div>'+
@@ -1140,6 +1141,7 @@ function openCreate(){
   ok.onclick=function(){
     var n=((m.body.querySelector("#acPrenom").value||"")+" "+(m.body.querySelector("#acNom").value||"")).trim().replace(/\s+/g," ");
     var c=(m.body.querySelector("#acCode").value||"").trim();
+    var tel=(m.body.querySelector("#acTel").value||"").trim();
     /* Prénom + nom obligatoires dès la création : sans nom, deux homonymes se
        partageraient le même compte en ligne (Kevin 2026-09-05). */
     if(!fullNameOk(n)){ toast("Entre ton prénom ET ton nom 🙂"); return; }
@@ -1148,6 +1150,8 @@ function openCreate(){
        continuent de marcher à la connexion (« J'ai déjà un compte »). */
     if(!c && gg("inviteEnAttente","")){ toast("Pour rejoindre le cercle qui t'invite, choisis un code de 6 chiffres (ton compte KDMC) 🔑"); return; }
     if(c && c.length<6){ toast("Ton code doit faire au moins 6 chiffres — c'est celui de ton compte KDMC (ou laisse-le vide) 🔒"); return; }
+    /* 13.10 (Kevin : « le téléphone à l'inscription du domaine entier, chaque app ») : un compte KDMC (avec un code) a son numéro, rangé sur la fiche du domaine */
+    if(c && (!/^\+?[0-9 .()-]{6,24}$/.test(tel)||tel.replace(/\D/g,"").length<6)){ toast("Ton numéro de téléphone est obligatoire pour un compte KDMC (ex. +377 06 12 34 56) 📱"); return; }
     var cguOk=!!(m.body.querySelector("#acCgu")&&m.body.querySelector("#acCgu").checked);
     if(!cguOk){ toast("Coche les conditions pour continuer 🙂"); return; }
     ok.disabled=true; ok.textContent="…";
@@ -1155,7 +1159,7 @@ function openCreate(){
     /* Avec un code (6+ chiffres) : c'est un compte KDMC — le domaine garde l'empreinte du code, et le
        même nom + code marche partout. Un code Lingua court (4-5 chiffres) reste un compte Lingua seul. */
     var suite=function(res){ m.close(); VIEW="home"; render(); if(res&&res.restored) toast("👋 Compte retrouvé — bienvenue "+esc(n)+" !"); };
-    if(c.length>=6){ kdmcIssue(kdmcSlug(n),n,c,true).then(function(j){
+    if(c.length>=6){ kdmcIssue(kdmcSlug(n),n,c,true,tel).then(function(j){
         if(j&&!j.ok&&(j.reason==="code_requis"||j.reason==="code_incorrect")){ ok.disabled=false; ok.textContent="Créer mon compte"; toast("Ce nom a déjà un compte KDMC avec un autre code — touche « J'ai déjà un compte » 🔑"); return; }
         if(j&&j.ok){ var idD=createAccount(n,av,c,j.uid); switchAccount(idD); cloudSaveNow(); suite({ok:true}); return; }
         enterWithCredentials(n,av,c,true).then(suite); }); return; }
@@ -1244,13 +1248,16 @@ function openChangeCode(id){
     m.body.innerHTML='<h3>🔒 Ton code KDMC</h3><p class="mini">Ton compte Lingua <b>est</b> ton compte KDMC : un seul compte, un seul code, le même dans toutes les apps du domaine. Pour le changer, demande à l\'administrateur — il le change pour toutes les apps d\'un coup.</p>';
     var fe=el("button","btn-main"); fe.textContent="Compris"; fe.onclick=function(){ m.close(); }; m.body.appendChild(fe); return; }
   m.body.innerHTML='<h3>🔒 Relier à mon compte KDMC</h3><p class="mini">Choisis un code de <b>6 chiffres</b> : ce compte devient ton <b>compte KDMC</b>, le même dans toutes les apps du domaine et sur n\'importe quel téléphone. Ta progression te suit. <b>L\'ancien code ne te reconnectera plus</b>.</p>'+
+    '<input id="ccTel" class="txt" type="tel" inputmode="tel" placeholder="Téléphone (obligatoire)" maxlength="24" autocomplete="tel">'+
     '<input id="ccCode" class="txt" placeholder="Code, 6 chiffres min." inputmode="numeric" maxlength="10" autocomplete="off">';
   var ok=el("button","btn-main"); ok.textContent="Relier mon compte";
   ok.onclick=function(){ var c=(m.body.querySelector("#ccCode").value||"").trim();
     if(c.length<6){ toast("6 chiffres minimum — c'est le code de ton compte KDMC 🔒"); return; }
+    var tel=(m.body.querySelector("#ccTel").value||"").trim();   /* 13.10 : le compte KDMC a son numéro (fiche du domaine, lue par toutes les apps) */
+    if(!/^\+?[0-9 .()-]{6,24}$/.test(tel)||tel.replace(/\D/g,"").length<6){ toast("Ton numéro de téléphone est obligatoire (ex. +377 06 12 34 56) 📱"); return; }
     ok.disabled=true; ok.textContent="…";
     var rendre=function(t){ ok.disabled=false; ok.textContent="Relier mon compte"; toast(t); };
-    kdmcIssue(kdmcSlug(a.name||""),a.name||"",c,true).then(function(j){
+    kdmcIssue(kdmcSlug(a.name||""),a.name||"",c,true,tel).then(function(j){
       /* `code:false` = le domaine connaît déjà ce nom sans nous laisser poser de code : ce compte
          KDMC n'est pas prouvé à nous → on ne relie rien (sinon deux personnes partageraient un compte). */
       if(j&&j.ok&&!j.code) return rendre("Ce nom a déjà un compte KDMC — touche « J'ai déjà un compte » pour y entrer 🔑");

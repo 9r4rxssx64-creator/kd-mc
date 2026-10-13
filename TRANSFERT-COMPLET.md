@@ -34,7 +34,7 @@
 | Adresses du domaine kd-mc.com | **32** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
 | Automatisations actives | **148** (+ 37 rangées) | `.github/workflows/` |
-| Gardes / tests | **182** fichiers, **277** commandes `npm run` | `tests/` + `package.json` |
+| Gardes / tests | **182** fichiers, **279** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **114** | `grep secrets.` sur les workflows |
 | Discussions entre sessions | **214** dont **105** ouvertes | `pipeline/sessions.json` |
 | `CLAUDE.md` rechargé à chaque message | **83 498 o ≈ 23 857 tokens** | `wc -c` |
@@ -48,7 +48,7 @@
 |---|---|---|
 | Branches dans le dépôt | **626** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
-| État de la CI | 🟢 **elle tourne** — 17/30 échecs immédiats | API GitHub |
+| État de la CI | 🔴 **à l'arrêt** — 20/30 runs échouent en moins de 15 s | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
 
 ### 👤 Ce qui attend Kevin (régénéré depuis le registre des sessions)

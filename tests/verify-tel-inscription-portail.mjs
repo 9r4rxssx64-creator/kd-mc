@@ -52,7 +52,7 @@ async function envoyerWhatsApp(lien, tel) {
   return (envoyes[envoyes.length - 1].text.body.match(/\b(\d{6})\b/) || [])[1];
 }
 async function remplir(page, prenom) {
-  await page.fill('#f-prenom', prenom); await page.fill('#f-nom', 'Essai');
+  await page.fill('#f-prenom', prenom); await page.fill('#f-nom', 'Essai'); await page.fill('#f-tel', '+377 06 12 34 56');
   await page.fill('#f-code', '271828'); await page.fill('#f-code2', '271828');
   await page.check('#cgu-ok'); await page.click('#f-create');
 }
@@ -67,6 +67,15 @@ try {
   await remplir(pa, 'Albert'); await pa.waitForTimeout(1500); await fermerOffreFaceId(pa); await pa.waitForTimeout(300);
   ok(await pa.locator('#hub').isVisible() && kv.has('acc:albert-essai') && !(await pa.locator('#t-box').isVisible()),
     '1. WhatsApp pas branché : le compte est créé directement, aucune étape téléphone (rien ne change)');
+
+  ok(JSON.parse(kv.get('acc:albert-essai') || '{}').fiche?.telephone === '+377 06 12 34 56',
+    '1b. le numéro saisi dans le portail est rangé sur la fiche du domaine (toutes les apps le lisent)');
+  { const Z = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 375, height: 812 } }); await brancher(Z);
+    const pz = await Z.newPage(); await pz.goto('https://kd-mc.com/');
+    await pz.fill('#f-prenom', 'Zoe'); await pz.fill('#f-nom', 'Essai'); await pz.fill('#f-code', '271828'); await pz.fill('#f-code2', '271828'); await pz.check('#cgu-ok'); await pz.click('#f-create');
+    await pz.waitForTimeout(600);
+    const e = await pz.evaluate(() => ({ err: document.getElementById('f-err').textContent, champ: !!document.getElementById('f-tel'), h: (document.getElementById('f-tel') || { getBoundingClientRect: () => ({ height: 0 }) }).getBoundingClientRect().height }));
+    ok(e.champ && e.h >= 44 && /téléphone est obligatoire/i.test(e.err) && !kv.has('acc:zoe-essai'), '1c. le formulaire a un champ Téléphone (≥ 44 px) ; sans numéro : refusé en clair, aucun compte créé', JSON.stringify(e)); await Z.close(); }
 
   /* 2. branché */
   env = { ...BASE, ...WA };

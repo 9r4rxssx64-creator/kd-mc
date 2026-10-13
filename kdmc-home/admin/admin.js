@@ -354,17 +354,52 @@
   }
   /* → une promesse qui ne rejette jamais (section optionnelle : sans la liste, le bloc ne s'affiche pas). */
   function chargerApps() {
+    /* les deux lectures partent ENSEMBLE (réactivité : jamais une file d'attente de plus) */
+    var fermees = fetch('/__admin/apps-fermees', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (j && j.ok) FERMEES_GEN = j.fermees || []; })
+      .catch(function () { /* fail-open */ });
     return fetch('/__admin/acces', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
       .then(function (r) { return r.json(); })
       .then(function (j) { if (j && j.apps) APPS_LISTE = j.apps; })
+      .then(function () { return fermees; })
       .catch(function () { /* fail-open */ });
+  }
+  /* ---- Fermer une ou plusieurs apps POUR TOUT LE MONDE (Kevin 13.10 : « je peux bloquer un ou plusieurs sites, général et individuel »).
+     Général = ici (une liste pour tout le domaine, l'admin entre toujours) ; individuel = « 🚫 Fermer une application précise » sur chaque fiche. */
+  var FERMEES_GEN = [];
+  function blocFermees() {
+    if (!APPS_LISTE.length) return '';
+    var apps = APPS_LISTE.filter(function (x) { return x !== 'portail'; });
+    return '<details class="fermgen" id="fermgen"' + (FERMEES_GEN.length ? ' open' : '') + '>'
+      + '<summary>🚧 Fermer des applications pour tout le monde <b>' + (FERMEES_GEN.length ? esc(FERMEES_GEN.join(', ')) : 'aucune') + '</b></summary>'
+      + '<div class="accbody"><div class="d">Coche une ou plusieurs apps : plus personne n\'y entre, sauf toi. Pour fermer une app à UNE personne seulement, ouvre sa fiche ci-dessous.</div>'
+      + '<div class="chips">' + apps.map(function (x) { return chip('gen', 'ferme', x, FERMEES_GEN.indexOf(x) >= 0); }).join('') + '</div>'
+      + '<button class="savacc" id="fermgen-save" type="button">💾 Enregistrer</button><span class="accmsg" id="fermgen-msg"></span></div></details>';
+  }
+  function wireFermees() {
+    var b = document.getElementById('fermgen-save');
+    if (!b) return;
+    b.addEventListener('click', function () {
+      var liste = [], ins = document.querySelectorAll('#fermgen input[data-grp="ferme"]'), msg = document.getElementById('fermgen-msg');
+      for (var i = 0; i < ins.length; i++) if (ins[i].checked) liste.push(ins[i].getAttribute('data-app'));
+      b.disabled = true; msg.textContent = '…';
+      fetch('/__admin/apps-fermees', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ apps: liste }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          b.disabled = false;
+          if (j && j.ok) { FERMEES_GEN = j.fermees || []; msg.textContent = '✅ Enregistré'; var sb = document.querySelector('#fermgen summary b'); if (sb) sb.textContent = FERMEES_GEN.length ? FERMEES_GEN.join(', ') : 'aucune'; }
+          else msg.textContent = '⚠️ ' + ((j && (j.reason || j.message)) || 'refusé');
+        })
+        .catch(function () { b.disabled = false; msg.textContent = '⚠️ Réseau — réessaie'; });
+    });
   }
 
   /* ---- Journal admin (événements sensibles, tracés côté serveur) ---- */
   var AUD_EV = {
     admin_login_ok: '🔓 Connexion admin réussie', admin_login_verif: '🤖 Vérification automatique (robot, lecture seule)', admin_login_fail: '⛔️ Code admin refusé',
     revoke_sessions: '🚪 Déconnexion forcée', new_device: '📱 Nouvel appareil', fbtoken_mint: '🔥 Jeton Firebase admin émis',
-    perimetre: '🔐 Périmètre modifié', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)',
+    perimetre: '🔐 Périmètre modifié', apps_fermees: '🚧 Apps fermées pour tout le monde', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)',
     geo_anomaly: '⚠️ Connexion suspecte', nouvelle_connexion: '🆕 Nouvelle connexion', quota_inscriptions_atteint: '🛑 Inscriptions suspendues',
     matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé'
   };
@@ -416,6 +451,7 @@
     app.innerHTML =
       '<div id="presence">' + presence(accounts) + '</div>'
       + (kv ? '' : '<div class="note">⚙️ Le registre central (KV) s\'activera au prochain déploiement du router : les fiches apparaîtront alors automatiquement. Les fonctions communes ci-dessous marchent déjà.</div>')
+      + blocFermees()
       + '<h2 class="cat">📊 Tous les comptes</h2>'
       + '<div class="stat" id="gstat">' + globalPills(accounts) + '</div>'
       + histSection(accounts)
@@ -429,6 +465,7 @@
     wireHist();
     wireRevoke();
     wireAcces();
+    wireFermees();
     var q = document.getElementById('q');
     if (q) q.addEventListener('input', function () {
       var v = q.value.toLowerCase();

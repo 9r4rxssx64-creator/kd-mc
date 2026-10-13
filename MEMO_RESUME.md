@@ -8,6 +8,11 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-13 — téléphone à l'inscription du domaine + fermer des apps pour tout le monde (CMCteams v9.965 + light v1.89 + Lingua v2.140.0 + routeur + portail + admin)
+- **Fait (code + tests, PAS encore en ligne)** : champ Téléphone obligatoire dans le formulaire du portail et exigé par `/__sso/issue` pour un nouveau compte ; rangé dans la fiche du domaine ; CMCteams et la light le reprennent. Bloc admin « Fermer des applications pour tout le monde » (`/__admin/apps-fermees`) + individuel par fiche (déjà là).
+- **Visuel envoyé** : la « mémoire douce » des départs (tes départs réels juillet→novembre, aujourd'hui contre douce). **Rien n'est modifié** ; Kevin dira plus tard.
+- **Reste** : publier (voie dépôt public) puis déployer le routeur (nouvelle route admin) ; PRT (173 numéros) et choix de l'algorithme attendent Kevin.
+
 ## 2026-10-12 (soir) — téléphone demandé à l'inscription (CMCteams v9.964)
 - **Fait (code + tests, PAS encore en ligne)** : champ Téléphone obligatoire dans l'inscription CMCteams, rangé sur la fiche et dans l'alerte à Kevin ; la fiche n'est plus redemandée ; la fiche complète est déposée une fois au domaine pour que la light la reprenne. Light inchangée (sa fiche le demande déjà).
 - **Reste** : publier (voie dépôt public), puis voir sur l'iPhone de Kevin ; PRT (173 numéros) et choix de l'algorithme de départs attendent Kevin.

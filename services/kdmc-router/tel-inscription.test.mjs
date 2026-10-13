@@ -55,7 +55,7 @@ async function preuvePour(tel, ip = '192.0.2.' + (ipN++)) {   /* une connexion p
   const v = await appel('/__sso/tel/verifie', { method: 'POST', body: { r: d.j.demande, code } });
   return { d, w, code, v, kvPendant };
 }
-const nouveau = (prenom, extra = {}) => ({ uid: prenom.toLowerCase() + '-essai', name: prenom + ' Essai', cgu: true, code: '246810', ...extra });
+const nouveau = (prenom, extra = {}) => ({ uid: prenom.toLowerCase() + '-essai', name: prenom + ' Essai', cgu: true, code: '246810', telephone: '+377 06 12 34 56', ...extra });
 
 console.log('\n== 1. WhatsApp pas branché : rien n\'est exigé ==');
 let r = await appel('/__sso/tel/etat', {}, envSans);

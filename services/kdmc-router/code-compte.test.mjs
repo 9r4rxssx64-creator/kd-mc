@@ -29,7 +29,7 @@ const login = async (body, host) => { const r = await post(host || 'kd-mc.com', 
 console.log('\nCompte unique : un nom + un code, vérifiés par le domaine, reconnus partout\n');
 
 /* 1-2. Création d'un compte avec son code */
-let r = await issue({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159' });
+let r = await issue({ uid: 'marie-curie', name: 'Marie Curie', cgu: true, code: '314159', telephone: '+377 06 12 34 56' });
 ok(r.j.ok === true && r.j.code === true, '1. création d\'un compte avec son code → session + code enregistré au domaine', JSON.stringify(r.j));
 const tokMarie = r.j.token, j1 = r.j;
 const cred = kv.get('cred:marie-curie') || '';
@@ -50,9 +50,9 @@ ok(j1.code_pose === true, '4b. un compte protégé : la réponse dit code_pose:t
   const wp = await whoami('kd-mc.com', signe('paul-martin', 0));
   ok(wp.ok === false && wp.reason === 'code_requis' && wp.code_requis === true && wp.code_pose === false && wp.uid && wp.name, '4d. whoami ne reconnaît PLUS un compte sans code (8.10 soir : « sinon pas d\'accès ») : code_requis + uid + nom → le portail affiche l\'écran bloquant « Crée ton code »', wp);
   /* 8.10 (revue extérieure, P0) : une session ouverte sur le seul nom (v=0, k=0) ne pose PAS le code → attente Kevin ; une session PROUVÉE (Face ID) le pose */
-  const p1 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 0) });
+  const p1 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828', telephone: '+377 06 12 34 56' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 0) });
   ok(p1.st === 202 && p1.j.reason === 'code_en_attente' && !kv.has('cred:paul-martin'), '4e. depuis une session NON prouvée (ouverte sur le nom), le code proposé attend Kevin (un inconnu avec une vieille session ne prend pas le compte)', JSON.stringify(p1.j).slice(0, 120));
-  const p2 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 1) });
+  const p2 = await issue({ uid: 'paul-martin', name: 'Paul Martin', cgu: true, code: '271828', telephone: '+377 06 12 34 56' }, { cookie: 'kdmc_sso=' + signe('paul-martin', 1) });
   const wp2 = await whoami('kd-mc.com', p2.j.token);
   ok(p2.j.ok === true && p2.j.code === true && p2.j.code_pose === true && wp2.code_pose === true, '4e bis. depuis SA session PROUVÉE (Face ID), Paul pose son code → code_pose:true partout', JSON.stringify([p2.j, wp2]));
   const wm = await whoami('kd-mc.com', tokMarie);

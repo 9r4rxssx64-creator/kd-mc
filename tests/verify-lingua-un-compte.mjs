@@ -100,7 +100,11 @@ try {
   await pb.fill('#ccCode', '12'); await clicM(pb, 'Relier mon compte'); await pb.waitForTimeout(400);
   ok(/6 chiffres/.test(await toastTexte(pb)), '3b. moins de 6 chiffres → refusé');
   appels.length = 0;
-  await pb.fill('#ccCode', '246810'); await clicM(pb, 'Relier mon compte'); await pb.waitForTimeout(1500);
+  /* 13.10 (Kevin : le téléphone à l'inscription du domaine, chaque app) : un compte KDMC a son numéro — sans lui, rien n'est déclaré au domaine */
+  await pb.fill('#ccCode', '246810'); await pb.fill('#ccTel', ''); await clicM(pb, 'Relier mon compte'); await pb.waitForTimeout(500);
+  ok(/téléphone/i.test(await toastTexte(pb)) && !appels.find((x) => x.p === '/__sso/issue'), '3b2. sans téléphone → refusé, et rien n\'est envoyé au domaine');
+  appels.length = 0;
+  await pb.fill('#ccTel', '+377 06 12 34 56'); await pb.fill('#ccCode', '246810'); await clicM(pb, 'Relier mon compte'); await pb.waitForTimeout(1500);
   const e3 = await etat(pb); const paul = e3.comptes.find((a) => a.id === 'acc_paul');
   const issue = appels.find((a) => a.p === '/__sso/issue');
   ok(!!issue && /246810/.test(issue.b), '3c. le code est déclaré AU DOMAINE (compte KDMC, valable partout)');

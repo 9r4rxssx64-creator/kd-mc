@@ -136,7 +136,7 @@ const texte = (page) => page.evaluate(() => document.body.innerText || '');
   await page.waitForTimeout(400);
   chk(await clicM(page, /Changer mon code/), '17. on peut changer son code depuis son propre profil');
   await page.waitForTimeout(500);
-  try { await page.fill('#ccCode', NOUVEAU, { timeout: 5000 }); await clicM(page, /Relier mon compte/); } catch (e) { /* signalé par 18/19 */ }
+  try { await page.fill('#ccTel', '+377 06 12 34 56', { timeout: 5000 }); await page.fill('#ccCode', NOUVEAU, { timeout: 5000 }); await clicM(page, /Relier mon compte/); } catch (e) { /* signalé par 18/19 */ }
   await page.waitForTimeout(800);
   const enregistre = await page.evaluate(() => JSON.parse(localStorage.getItem('lingua_g_accounts'))[0].code);
   chk(enregistre === NOUVEAU, '18. le nouveau code remplace vraiment l\'ancien dans le compte');

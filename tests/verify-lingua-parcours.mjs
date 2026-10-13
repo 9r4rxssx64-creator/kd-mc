@@ -51,7 +51,7 @@ const erreurs = [];
     await page.waitForSelector('#acPrenom', { timeout: 8000 });
     await page.fill('#acPrenom', 'Kevin');
     await page.fill('#acNom', 'Desarzens');
-    await page.fill('#acCode', '200807');
+    await page.fill('#acTel', '+377 06 12 34 56'); await page.fill('#acCode', '200807');
     /* (27.09) conditions : une case, une fois — acceptée ici (hors ligne, le domaine ne peut pas dire « déjà accepté ») */
     await page.evaluate(() => { const c = document.querySelector('#acCgu'); if (c) c.checked = true; });
   } catch (e) { remplissable = false; }

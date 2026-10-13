@@ -53,9 +53,9 @@ a.home{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var
 .revoke{margin-top:12px;padding:9px 14px;border:1px solid rgba(255,107,107,.4);border-radius:10px;background:transparent;color:#ff8a8a;font-size:13px;cursor:pointer;min-height:44px;font-weight:600}
 /* « Où cette personne peut aller » — Kevin 2026-09-15. Cibles tactiles >= 44 px
    (règle Apple HIG), lisible à 375 px, aucune couleur en dur hors palette. */
-.acces{margin-top:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden}
-.acces>summary{padding:12px 14px;min-height:44px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.acces>summary b{font-weight:700}
+.acces,.fermgen{margin-top:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden}
+.acces>summary,.fermgen>summary{padding:12px 14px;min-height:44px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.acces>summary b,.fermgen>summary b{font-weight:700}
 .accbody{padding:4px 14px 14px}
 .accradio{display:flex;align-items:center;gap:10px;min-height:44px;font-size:13px;cursor:pointer}
 .accradio input{width:20px;height:20px;flex:0 0 auto}

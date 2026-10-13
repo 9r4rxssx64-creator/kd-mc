@@ -203,7 +203,20 @@ const SURFACES_JUMELLES = [['cmcteams', 'departs']];
    rangeant la personne en « domaine » depuis /admin → `acces_at`). Liste fermée, gardée par
    test:perimetre-apps : l'allonger se décide avec Kevin. */
 const APPS_PRIVEES = ['arbre', 'coffre', 'bot', 'dashboard'];
-function perimetre(acc, app) {
+/* Apps fermées pour tout le monde (cfg:apps_fermees) : relue au plus toutes les 30 s par isolat — une lecture KV, jamais une écriture. */
+const CLE_FERMEES = 'cfg:apps_fermees';
+const MSG_FERME_GENERAL = 'Cette application est fermée pour le moment par l\'administrateur. Elle rouvrira dès qu\'il l\'aura décidé.';
+let FERMEES = { liste: [], t: 0, kv: null };
+async function chargerFermees(env, force) {
+  const kv = env && env.ACCOUNTS;
+  if (!kv) { FERMEES = { liste: [], t: 0, kv: null }; return FERMEES.liste; }
+  if (!force && FERMEES.kv === kv && Date.now() - FERMEES.t < 30000) return FERMEES.liste;
+  let liste = [];
+  try { const v = JSON.parse((await kv.get(CLE_FERMEES)) || '[]'); if (Array.isArray(v)) liste = v.map((x) => String(x || '')).filter(Boolean).slice(0, 60); } catch { liste = FERMEES.kv === kv ? FERMEES.liste : []; }
+  FERMEES = { liste, t: Date.now(), kv };
+  return liste;
+}
+function perimetre(acc, app, fermees) {
   if (!app) return { ok: true, raison: 'adresse_hors_domaine' };
   /* LE PORTAIL EST LA RÉCEPTION : toujours ouvert, à tout le monde. C'est par lui
      que CHAQUE app fait passer l'inscription et la connexion (`ensureSession`
@@ -212,6 +225,9 @@ function perimetre(acc, app) {
      en suivant le VRAI parcours d'un nouvel inscrit, pas par les tests : ils
      inscrivaient chacun directement sur son app, ce que le domaine ne fait jamais. */
   if (app === 'portail') return { ok: true, raison: 'portail' };
+  /* FERMETURE GÉNÉRALE (Kevin 13.10 : « je peux bloquer un ou plusieurs sites, général et individuel ») : l'admin ferme UNE ou PLUSIEURS apps pour
+     TOUT LE MONDE d'un coup (liste `cfg:apps_fermees`, page admin). Seul l'admin y entre encore. Le portail ne peut jamais être fermé (réception). */
+  if ((fermees || FERMEES.liste).indexOf(app) >= 0 && !(acc && acc.uid === CANON_UID)) return { ok: false, raison: 'ferme_general' };
   if (!acc) return { ok: true, raison: 'sans_fiche' };
   /* Inscrit SANS WhatsApp (Kevin 10.10 « validation admin, au choix ») : fermé partout sauf le portail tant que Kevin n'a pas ouvert. */
   if (acc.attente_admin) return { ok: false, raison: acc.attente_admin === 'refuse' ? 'refuse_admin' : 'attente_admin' };
@@ -928,6 +944,7 @@ export default {
       u.protocol = 'https:';
       return durcirReponse(new Response(null, { status: 301, headers: { location: u.toString() } }));
     }
+    try { await chargerFermees(env); } catch { /* jamais bloquant : sans la liste, rien n'est fermé en général */ }
     return durcirReponse(await ROUTEUR.fetch(request, env, ctx));
   },
   scheduled(event, env, ctx) { return ROUTEUR.scheduled(event, env, ctx); },
@@ -1083,6 +1100,11 @@ async function credSet(env, uid, code) {
 }
 /* Code obligatoire (Kevin 8.10) : à la création, et pour tout compte existant qui n'en a pas. Coupe-circuit KDMC_CODE_OBLIGATOIRE=0 (tests seulement). */
 const codeObligatoire = (env) => String((env && env.KDMC_CODE_OBLIGATOIRE) || '1') !== '0';
+/* Téléphone obligatoire à la CRÉATION d'un compte (Kevin 13.10 : « Ajoute le téléphone à l'inscription du domaine entier, la fiche principale d'inscription »).
+   Toutes les apps passent par cette porte : le numéro est donc demandé une fois, rangé dans la fiche du domaine (`acc.fiche.telephone`),
+   et chaque app le lit au lieu de le redemander. Suit le coupe-circuit du code (tests) + son propre interrupteur KDMC_TELEPHONE_OBLIGATOIRE=0. */
+const telephoneObligatoire = (env) => codeObligatoire(env) && String((env && env.KDMC_TELEPHONE_OBLIGATOIRE) || '1') !== '0';
+const telephoneValide = (t) => { const s = String(t || '').trim(); return /^\+?[0-9 .()-]{6,24}$/.test(s) && s.replace(/\D/g, '').length >= 6; };
 async function credOk(rec, code) {
   if (!rec || !rec.s || !rec.h) return false;
   return hexEq(await credHash(code, rec.s), rec.h);
@@ -1880,7 +1902,7 @@ essaiPass().then(function(j){
 })();`;
 function ficheRefusee(g, raison) {
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const msg = raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.'
+  const msg = raison === 'ferme_general' ? MSG_FERME_GENERAL : raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.'
     : 'Ton compte n\'est pas encore ouvert sur cette application. Demande à l\'administrateur de l\'ouvrir.';
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>' + esc(g.nom) + ' — accès</title>'
     + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
@@ -3116,7 +3138,7 @@ async function handleSso(request, url, env) {
     const per = perimetre(acc, app);
     if (!per.ok && !estAdmin) {
       return J({ ok: false, reason: per.raison, hors_perimetre: true, app,
-        message: per.raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.' : 'Ton compte n\'est pas ouvert sur cette application.' });
+        message: per.raison === 'ferme_general' ? MSG_FERME_GENERAL : per.raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.' : 'Ton compte n\'est pas ouvert sur cette application.' });
     }
     const restant = Math.max(60, Math.floor(((s.exp || 0) - Date.now()) / 1000));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${restant}; Secure; HttpOnly; SameSite=Lax`;
@@ -3167,7 +3189,7 @@ async function handleSso(request, url, env) {
       if (!per.ok && !estAdmin) {
         return J({
           ok: false, reason: per.raison, hors_perimetre: true, app,
-          message: per.raison === 'bloque_ici'
+          message: per.raison === 'ferme_general' ? MSG_FERME_GENERAL : per.raison === 'bloque_ici'
             ? 'Ton accès à cette application a été fermé par l\'administrateur.'
             : per.raison === 'attente_admin' ? 'Ton compte attend la validation de l\'administrateur. Tu seras ouvert dès qu\'il l\'accepte.'
             : per.raison === 'refuse_admin' ? 'L\'administrateur n\'a pas validé ce compte.'
@@ -3327,6 +3349,7 @@ async function handleSso(request, url, env) {
        pas un sous-domaine servi, on l'ignore (jamais d'app inventée). */
     const origine = appDe(String(b.pour || '').replace(/^https?:\/\//, '').split('/')[0]);
     let telCreation = null;   // preuve de téléphone vérifiée, à ranger sur la fiche une fois créée
+    let telephoneNouveau = '';   // numéro saisi à l'inscription d'un NOUVEAU compte, rangé sur la fiche du domaine une fois créée
     let attenteAdmin = false; // inscription sans WhatsApp : le compte attend la validation de Kevin
     {
       const app = appDe(request.headers.get('host'));
@@ -3337,7 +3360,7 @@ async function handleSso(request, url, env) {
       if (!per.ok) {
         return J({
           ok: false, reason: per.raison, hors_perimetre: true, app,
-          message: per.raison === 'bloque_ici'
+          message: per.raison === 'ferme_general' ? MSG_FERME_GENERAL : per.raison === 'bloque_ici'
             ? 'Ton accès à cette application a été fermé par l\'administrateur.'
             : 'Ton compte n\'est pas ouvert sur cette application.',
         });
@@ -3355,6 +3378,10 @@ async function handleSso(request, url, env) {
          sur leur seul nom (vécu : le compte de Laurence). Plus de compte neuf sans code. Coupe-circuit KDMC_CODE_OBLIGATOIRE=0 (tests). */
       if (!accCanon && codeObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !CODE_VALIDE(typeof b.code === 'string' ? b.code : '')) {
         return J({ ok: false, reason: 'code_requis_creation', message: 'Pour créer ton compte, choisis un code (6 caractères ou plus) : il te servira dans toutes les apps KDMC.' }, undefined, 400);
+      }
+      if (!accCanon && telephoneObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid)) {
+        if (!telephoneValide(b.telephone)) return J({ ok: false, reason: 'telephone_requis', message: 'Pour créer ton compte, indique ton numéro de téléphone (ex. +377 06 12 34 56).' }, undefined, 400);
+        telephoneNouveau = String(b.telephone).trim().slice(0, 24);
       }
       /* TÉLÉPHONE CONFIRMÉ À LA CRÉATION (Kevin 9.10 : « OTP pour toutes inscriptions au domaine, app etc ») : toutes les apps créent
          leurs comptes ici, donc l'exiger ici le fait partout. La page apporte une PREUVE signée par le domaine (/__sso/tel/verifie) ;
@@ -3466,6 +3493,12 @@ async function handleSso(request, url, env) {
       }
     }
     await enrich(env, request, uid, name, cgu, undefined, { origine });
+    if (telephoneNouveau) {   /* le numéro rejoint la fiche du domaine : toutes les apps le lisent (/__sso/fiche) au lieu de le redemander */
+      try {
+        const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));
+        if (a) { a.fiche = { ...a.fiche, telephone: telephoneNouveau, maj: Date.now(), app: origine || appDe(request.headers.get('host')) || 'portail' }; await accPut(env, a, true); }
+      } catch { /* fail-open : le compte existe, l'app demandera le numéro */ }
+    }
     if (attenteAdmin) {
       let marque = false;
       try {
@@ -4334,6 +4367,22 @@ async function handleAdmin(request, url, env) {
     await accPut(env, acc, true);
     await audLog(env, { ev: 'perimetre', uid, portee: acc.portee, acces: acc.acces, bloque: acc.bloque, roles: acc.roles || [] });
     return J({ ok: true, uid, portee: acc.portee, acces: acc.acces || [], bloque: acc.bloque || [], roles: acc.roles || [] });
+  }
+  /* ── FERMER UNE OU PLUSIEURS APPS POUR TOUT LE MONDE (Kevin 13.10) ── GET → { apps, fermees } · POST { apps:[…] } → la liste complète des apps fermées.
+     L'individuel reste /__admin/acces (`bloque`). Le portail est la réception : jamais fermable. L'admin entre toujours (voir perimetre). */
+  if (path === '/__admin/apps-fermees' && request.method === 'GET') {
+    const apps = [...new Set(Object.values(APPS))].filter((x) => x !== 'portail').sort();
+    return J({ ok: true, apps, fermees: await chargerFermees(env, true) });
+  }
+  if (path === '/__admin/apps-fermees' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const connues = new Set(Object.values(APPS)); connues.delete('portail');
+    const liste = [...new Set((Array.isArray(b.apps) ? b.apps : []).map((x) => String(x || '').trim()))].filter((x) => connues.has(x)).slice(0, 60);
+    if (!env.ACCOUNTS) return J({ ok: false, reason: 'registre indisponible' });
+    try { await env.ACCOUNTS.put(CLE_FERMEES, JSON.stringify(liste)); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
+    FERMEES = { liste, t: Date.now(), kv: env.ACCOUNTS };
+    await audLog(env, { ev: 'apps_fermees', fermees: liste, detail: liste.length ? 'fermées pour tout le monde : ' + liste.join(', ') : 'aucune app fermée en général' });
+    return J({ ok: true, fermees: liste });
   }
   /* Code oublié : l'admin efface le code enregistré au domaine ; la personne en choisit un
      nouveau à sa prochaine connexion depuis son appareil (ou en recréant son compte). */

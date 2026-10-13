@@ -81,6 +81,7 @@ try {
      Face ID de l'admin a ses propres gardes (admin-partout, grant-faceid) ; ici on prouve le passkey de tous. */
   await page.fill('#f-prenom', 'Lucie');
   await page.fill('#f-nom', 'Martin');
+  await page.fill('#f-tel', '+377 06 12 34 56');
   await page.fill('#f-code', ADMIN_CODE);
   await page.fill('#f-code2', ADMIN_CODE);
   await page.check('#cgu-ok');

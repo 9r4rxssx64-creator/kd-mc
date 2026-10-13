@@ -232,7 +232,10 @@ async function requireAdmin(req) {
   const auth = req.headers.get('Authorization') || '';
   if (!/^Bearer\s+\S/.test(auth)) return { ok: false, status: 401, detail: 'pass SSO manquant', step: 'auth_header' };
   try {
-    const r = await fetch('https://kd-mc.com/__sso/whoami', { headers: { Authorization: auth }, cache: 'no-store' });
+    /* 13.10 : le routeur lie le pass à la FAMILLE D'APPAREIL de la personne (iPhone, PC…) et refuse un pass présenté depuis une autre famille. Cet appel part du
+       worker (« autre » famille) : sans le User-Agent de la personne, un pass émis sur son iPhone était refusé. On transmet CE SEUL en-tête, rien d'autre. */
+    const entetes = { Authorization: auth }; const ua = req.headers.get('user-agent'); if (ua) entetes['user-agent'] = ua;
+    const r = await fetch('https://kd-mc.com/__sso/whoami', { headers: entetes, cache: 'no-store' });
     if (!r.ok) return { ok: false, status: 502, detail: 'whoami HTTP ' + r.status, step: 'whoami_fetch' };
     const j = await r.json();
     if (!j || !j.ok) return { ok: false, status: 401, detail: 'session invalide', step: 'whoami_session' };

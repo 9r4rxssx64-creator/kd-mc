@@ -11,6 +11,7 @@
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken } from './fb-token.js';
 import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer } from './boite.js';
+import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
 import * as cptD1 from './compteurs-d1.js';
@@ -788,7 +789,7 @@ const ROUTEUR = {
     /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
        depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
     if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
-      return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG);
+      return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG, { hote: host, dest: request.headers.get('sec-fetch-dest') || '' });
     }
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders });
   },
@@ -903,24 +904,56 @@ export function cspAccepteNosScripts(csp) {
   /* 'strict-dynamic' (Apex) : 'self' y est IGNORÉ par le navigateur — seuls les scripts portant le nonce passent. */
   return !/\s'none'\s/.test(v) && !/\s'strict-dynamic'\s/.test(v) && /\s'self'\s/.test(v);
 }
-export async function injecterBouton(res, extra) {
+/* Une page qui REFUSE nos scripts mais ACCEPTE le style en ligne (attribut `style=`) peut tout de même recevoir la sortie « ← Portail » : un simple
+   lien, sans une ligne de script (Rotaplan, Empreinte, Apex — mesurés 13.10). `style-src-attr` prime, puis `style-src`, puis `default-src` ;
+   un nonce ou une empreinte dans la directive désactive 'unsafe-inline' (CSP niveau 2) — dans ce cas on ne force rien. Sans directive : permis. */
+export function cspAccepteStyleEnLigne(csp) {
+  const c = String(csp || '').toLowerCase();
+  if (!c) return true;
+  const dir = (n) => { const m = c.match(new RegExp('(?:^|;)\\s*' + n + '\\s+([^;]*)')); return m ? ' ' + m[1].trim() + ' ' : ''; };
+  const v = dir('style-src-attr') || dir('style-src') || dir('default-src');
+  if (!v) return true;
+  return /\s'unsafe-inline'\s/.test(v) && !/\s'(?:nonce-|sha(?:256|384|512)-)/.test(v) && !/\s'none'\s/.test(v);
+}
+export const PASTILLE_SANS_SCRIPT = '<a href="https://kd-mc.com/" data-kdmc-pastille="routeur" aria-label="Retour au portail kd-mc.com" title="Retour au portail kd-mc.com" '
+  + 'style="position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 14px;box-sizing:border-box;'
+  + 'border-radius:22px;border:1px solid #e8b830;background:#0b110d;color:#eaf3e2;font:700 15px/1 -apple-system,BlinkMacSystemFont,sans-serif;text-decoration:none;z-index:2147483000;box-shadow:0 4px 18px rgba(0,0,0,.45)">&larr; Portail</a>';
+/* `opts.hote` : le portail (kd-mc.com) n'a pas de pastille ; `opts.dest` : jamais dans un cadre (iframe, embed…). */
+export async function injecterBouton(res, extra, opts) {
   try {
-    if (!cspAccepteNosScripts(res.headers.get('content-security-policy'))) return res;
+    const sansPastille = !!(opts && (/^(?:www\.)?kd-mc\.com$/i.test(String(opts.hote || '')) || /^(?:iframe|frame|embed|object)$/i.test(String(opts.dest || ''))));
+    const cspEntete = res.headers.get('content-security-policy');
     const h = new Headers(res.headers); h.delete('content-length');
     const ajout = BOUTON_TAG + (extra || '');
     if (typeof HTMLRewriter !== 'undefined') {
-      let refuse = false;
+      let refuse = !cspAccepteNosScripts(cspEntete), styleOk = cspAccepteStyleEnLigne(cspEntete), lien = false;
       return new HTMLRewriter()
-        .on('meta[http-equiv]', { element(e) { if (/content-security-policy/i.test(e.getAttribute('http-equiv') || '') && !cspAccepteNosScripts(e.getAttribute('content'))) refuse = true; } })
-        .on('body', { element(e) { if (!refuse) e.append(ajout, { html: true }); } })
+        .on('meta[http-equiv]', { element(e) {
+          if (!/content-security-policy/i.test(e.getAttribute('http-equiv') || '')) return;
+          const c = e.getAttribute('content');
+          if (!cspAccepteNosScripts(c)) refuse = true;
+          if (!cspAccepteStyleEnLigne(c)) styleOk = false;
+        } })
+        .on('meta[name="kdmc-retour"]', { element(e) { if (/^own$/i.test(e.getAttribute('content') || '')) lien = true; } })
+        .on('a[href^="https://kd-mc.com"], [data-kdmc-retour]', { element() { lien = true; } })
+        .on('body', { element(e) {
+          if (!refuse) { e.append(ajout, { html: true }); return; }
+          /* scripts refusés : pas de bouton ✉️ ni de Bee, mais la sortie reste, en simple lien, si la page n'a pas déjà la sienne */
+          if (!sansPastille && styleOk) e.onEndTag((fin) => { if (!lien) fin.before(PASTILLE_SANS_SCRIPT, { html: true }); });
+        } })
         .transform(new Response(res.body, { status: res.status, statusText: res.statusText, headers: h }));
     }
     const t = await res.text();
     const balise = (t.match(/<meta[^>]*http-equiv=["']?content-security-policy[^>]*>/i) || [''])[0];
     const contenu = (balise.match(/content="([^"]*)"/i) || balise.match(/content='([^']*)'/i) || [])[1];
-    if (contenu && !cspAccepteNosScripts(contenu)) return new Response(t, { status: res.status, statusText: res.statusText, headers: h });
     const i = t.toLowerCase().lastIndexOf('</body>');
-    return new Response(i >= 0 ? t.slice(0, i) + ajout + t.slice(i) : t + ajout, { status: res.status, statusText: res.statusText, headers: h });
+    const pose = (txt) => new Response(i >= 0 ? t.slice(0, i) + txt + t.slice(i) : t + txt, { status: res.status, statusText: res.statusText, headers: h });
+    if (!cspAccepteNosScripts(cspEntete) || (contenu && !cspAccepteNosScripts(contenu))) {
+      const styleOk = cspAccepteStyleEnLigne(cspEntete) && (!contenu || cspAccepteStyleEnLigne(contenu));
+      const deja = /href=["']https:\/\/kd-mc\.com/i.test(t) || /data-kdmc-retour/i.test(t) || /<meta[^>]*name=["']kdmc-retour["'][^>]*content=["']own["']/i.test(t);
+      return !sansPastille && styleOk && !deja ? pose(PASTILLE_SANS_SCRIPT) : new Response(t, { status: res.status, statusText: res.statusText, headers: h });
+    }
+    return pose(ajout);
   } catch (e) { return res; }   /* un bouton ne doit JAMAIS empêcher une page de s'afficher */
 }
 export function durcirReponse(res) {
@@ -2665,12 +2698,14 @@ async function canonFor(env, uid, name, opts) {
 /* Registre des fiches clients (Cloudflare KV ACCOUNTS). Fail-open si absent. */
 async function accGet(env, uid) {
   if (!env || !env.ACCOUNTS) return null;
-  try { return JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); } catch { return null; }
+  try { return await ficheLue(env, uid); } catch { return null; }
 }
 async function accPut(env, acc, knownExisting) {
   if (!env || !env.ACCOUNTS || !acc || !acc.uid) return;
   try {
+    ficheOubliee(env, acc.uid);   /* avant ET après l'écriture : un blocage écrit ici s'applique tout de suite dans cet isolat */
     await env.ACCOUNTS.put('acc:' + acc.uid, JSON.stringify(acc));
+    ficheOubliee(env, acc.uid);
     if (knownExisting) return; /* fiche déjà indexée → pas de relecture idx (chemin chaud) */
     const idx = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
     if (idx.indexOf(acc.uid) < 0) { idx.push(acc.uid); await env.ACCOUNTS.put('idx:uids', JSON.stringify(idx.slice(-5000))); }
@@ -3109,6 +3144,7 @@ async function mergeIntoCanon(env, acc) {
     acc.aliases = Array.from(new Set([...(acc.aliases || []), o.uid])).slice(-20);
     /* L'ancienne fiche devient un RENVOI (jamais supprimée : traçabilité + réversible). */
     await env.ACCOUNTS.put('acc:' + o.uid, JSON.stringify({ uid: o.uid, name: o.name, merged_into: acc.uid, merged_at: Date.now() }));
+    ficheOubliee(env, o.uid);
   }
   await stamp();
   await audLog(env, { ev: 'accounts_merged', uid: acc.uid, detail: others.map((o) => o.uid).join(', ') + ' → ' + acc.uid });
@@ -5578,41 +5614,55 @@ async function handleBot(request, url, env) {
   return J({ ok: false, reason: 'not_found' });
 }
 
-function beatbotLock() {
-  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#08131f"><title>PoolPilot — privé</title>'
-  + '<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#08131f,#050c14);color:#e8f1fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px}'
-  + '.c{width:100%;max-width:340px;text-align:center}.lg{font-size:44px}h1{font-size:19px;margin:10px 0 4px}p{color:#93b0c8;font-size:13px;margin:0 0 18px}'
-  + 'input{width:100%;background:#0d1c2c;border:1px solid #1f3d5a;color:#e8f1fa;border-radius:12px;padding:14px;font-size:20px;text-align:center;letter-spacing:6px}'
-  + 'button{width:100%;margin-top:12px;background:linear-gradient(135deg,#39c2ff,#0e88c9);color:#052034;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700}'
-  + '.e{color:#f2b632;font-size:12.5px;margin-top:10px;min-height:16px}a{color:#39c2ff}</style></head><body>'
-  + '<div class="c"><div class="lg">🔒🌊</div><h1>PoolPilot — espace privé</h1><p>Réservé à l\'administrateur. Déverrouille avec ton code (Face ID te reconnaît ensuite automatiquement).</p>'
-  + '<input id="pin" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="12">'
-  + '<button id="go">Déverrouiller</button><div class="e" id="err"></div>'
-  + '<p style="margin-top:18px;font-size:11.5px">Déjà connecté sur <a href="https://kd-mc.com">kd-mc.com</a> ? Recharge cette page.</p></div>'
-  + '<script>var b=document.getElementById("go"),pin=document.getElementById("pin"),err=document.getElementById("err");'
+/* ÉCRAN VERROUILLÉ DES DEUX ESPACES ADMIN (PoolPilot, Coffre d'autorisations) — une seule construction pour les deux.
+   Kevin 13.10.2026 : « il y ait TOUJOURS un bouton pour sortir d'une page/app et revenir au portail ». Avant : un lien de 11,5 px en bas
+   et un texte qui promettait « Face ID te reconnaît » alors qu'aucun Face ID ne se lançait. Maintenant :
+     · « ← Retour au portail » : un VRAI bouton (≥ 48 px) vers https://kd-mc.com/ (jamais '/', qui resterait ici) ;
+     · Face ID : lancé tout seul à l'ouverture (même mécanisme que la porte des apps : /__sso/webauthn/auth/options puis /auth/verify, la
+       signature est jugée par le domaine) ; Safari exige parfois un geste → le gros bouton « Entrer avec Face ID » est toujours là ;
+     · le code reste possible (le domaine le juge, la page ne vérifie jamais rien). */
+function verrouAdminPage(o) {
+  const js = 'var b=document.getElementById("go"),pin=document.getElementById("pin"),err=document.getElementById("err"),fid=document.getElementById("fid");'
   + 'function sub(){var c=(pin.value||"").trim();if(!c){err.textContent="Entre ton code.";return;}b.disabled=true;err.textContent="Vérification…";'
   + 'fetch("/__admin/login",{method:"POST",headers:{"content-type":"application/json"},credentials:"include",body:JSON.stringify({code:c})}).then(function(r){return r.json();}).then(function(j){'
   + 'if(j.ok){location.reload();}else{b.disabled=false;err.textContent=j.reason==="rate_limited"?("Trop d\'essais, attends "+Math.ceil((j.wait||0)/1000)+"s"):(j.reason==="code_invalide"?"Code incorrect.":"Erreur : "+(j.reason||"?"));}}).catch(function(e){b.disabled=false;err.textContent="Réseau : "+e;});}'
-  + 'b.onclick=sub;pin.addEventListener("keydown",function(e){if(e.key==="Enter")sub();});pin.focus();</script></body></html>';
+  + 'b.onclick=sub;pin.addEventListener("keydown",function(e){if(e.key==="Enter")sub();});'
+  /* Face ID : le passkey du trousseau (clé « découvrable »), le domaine vérifie la signature et pose la session forte ; puis on recharge. */
+  + 'function u8(s){s=String(s||"").replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";var x=atob(s),a=new Uint8Array(x.length);for(var i=0;i<x.length;i++)a[i]=x.charCodeAt(i);return a.buffer;}'
+  + 'function b64(b){var a=new Uint8Array(b),s="";for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]);return btoa(s).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");}'
+  + 'var pkOk=!!(window.PublicKeyCredential&&navigator.credentials&&navigator.credentials.get),enCours=false;'
+  + 'function faceId(auto){if(!pkOk||enCours)return;enCours=true;fid.disabled=true;err.textContent="Face ID…";'
+  + 'fetch("/__sso/webauthn/auth/options",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:"{\\"uid\\":\\"\\"}"}).then(function(r){return r.json();}).then(function(op){'
+  + 'if(!op||!op.ok)throw new Error((op&&op.reason)||"options");'
+  + 'return navigator.credentials.get({publicKey:{challenge:u8(op.challenge),rpId:op.rpId,userVerification:"required",timeout:60000}});}).then(function(c){'
+  + 'var a=c.response,uid="";try{uid=new TextDecoder().decode(a.userHandle);}catch(e){}if(!uid)throw new Error("passkey sans compte");'
+  + 'return fetch("/__sso/webauthn/auth/verify",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({uid:uid,credId:c.id,clientDataJSON:b64(a.clientDataJSON),authenticatorData:b64(a.authenticatorData),signature:b64(a.signature)})});}).then(function(r){return r.json();}).then(function(j){'
+  + 'if(j&&j.ok){err.textContent="Bonjour — ouverture…";location.reload();}else{throw new Error((j&&j.reason)||"refusé");}}).catch(function(e){enCours=false;fid.disabled=false;'
+  + 'err.textContent=auto?"Touche « Entrer avec Face ID », ou tape ton code.":"Face ID refusé ("+String((e&&e.message)||e).slice(0,80)+"). Réessaie ou tape ton code.";});}'
+  + 'if(pkOk){fid.onclick=function(){faceId(false);};faceId(true);}else{fid.hidden=true;pin.focus();}';
+  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="' + o.theme + '"><title>' + o.titre + '</title>'
+  + '<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:' + o.fond + ';color:' + o.texte + ';font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px}'
+  + '.c{width:100%;max-width:340px;text-align:center}.lg{font-size:44px}h1{font-size:19px;margin:10px 0 4px}p{color:' + o.doux + ';font-size:14px;margin:0 0 18px}'
+  + 'input{width:100%;background:' + o.champ + ';border:1px solid ' + o.bord + ';color:' + o.texte + ';border-radius:12px;padding:14px;font-size:20px;text-align:center;letter-spacing:6px}'
+  + 'button,a.r{display:block;width:100%;min-height:50px;margin-top:12px;border-radius:12px;font-size:16px;font-weight:700;text-align:center;text-decoration:none;cursor:pointer}'
+  + 'button{background:' + o.bouton + ';color:' + o.surBouton + ';border:none;padding:14px}button.f{background:' + o.bouton + '}button.k{background:transparent;color:' + o.lien + ';border:1px solid ' + o.bord + '}button:disabled{opacity:.6}'
+  + 'a.r{line-height:50px;color:' + o.texte + ';border:1px solid ' + o.bord + ';margin-top:18px}'
+  + '.e{color:' + o.alerte + ';font-size:13.5px;margin-top:10px;min-height:18px}</style></head><body>'
+  + '<div class="c"><div class="lg">' + o.emoji + '</div><h1>' + o.h1 + '</h1><p>Réservé à l\'administrateur. Entre avec Face ID, ou avec ton code.</p>'
+  + '<button id="fid" class="f" type="button">🔓 Entrer avec Face ID</button>'
+  + '<input id="pin" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="12" style="margin-top:12px" aria-label="Ton code">'
+  + '<button id="go" class="k" type="button">Déverrouiller avec mon code</button><div class="e" id="err" role="status"></div>'
+  + '<a class="r" href="https://kd-mc.com/" data-kdmc-retour="1">← Retour au portail</a></div>'
+  + '<script>' + js + '</script></body></html>';
   return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' } });
 }
+function beatbotLock() {
+  return verrouAdminPage({ titre: 'PoolPilot — privé', theme: '#08131f', fond: 'linear-gradient(180deg,#08131f,#050c14)', texte: '#e8f1fa', doux: '#93b0c8', champ: '#0d1c2c', bord: '#1f3d5a',
+    bouton: 'linear-gradient(135deg,#39c2ff,#0e88c9)', surBouton: '#052034', lien: '#39c2ff', alerte: '#f2b632', emoji: '🔒🌊', h1: 'PoolPilot — espace privé' });
+}
 function approvalsLock() {
-  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0f0a"><title>Coffre d\'autorisations — privé</title>'
-  + '<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0b0f0a,#05070a);color:#f2efe0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px}'
-  + '.c{width:100%;max-width:340px;text-align:center}.lg{font-size:44px}h1{font-size:19px;margin:10px 0 4px}p{color:#a9b39a;font-size:13px;margin:0 0 18px}'
-  + 'input{width:100%;background:#0b1108;border:1px solid #2a331f;color:#f2efe0;border-radius:12px;padding:14px;font-size:20px;text-align:center;letter-spacing:6px}'
-  + 'button{width:100%;margin-top:12px;background:linear-gradient(135deg,#e8c766,#c9a94a);color:#0b0f0a;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700}'
-  + '.e{color:#e0a83a;font-size:12.5px;margin-top:10px;min-height:16px}a{color:#e8c766}</style></head><body>'
-  + '<div class="c"><div class="lg">🔐🆔</div><h1>Coffre d\'autorisations — espace privé</h1><p>Réservé à l\'administrateur. Déverrouille avec ton code (Face ID te reconnaît ensuite automatiquement).</p>'
-  + '<input id="pin" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="12">'
-  + '<button id="go">Déverrouiller</button><div class="e" id="err"></div>'
-  + '<p style="margin-top:18px;font-size:11.5px">Déjà connecté sur <a href="https://kd-mc.com">kd-mc.com</a> ? Recharge cette page.</p></div>'
-  + '<script>var b=document.getElementById("go"),pin=document.getElementById("pin"),err=document.getElementById("err");'
-  + 'function sub(){var c=(pin.value||"").trim();if(!c){err.textContent="Entre ton code.";return;}b.disabled=true;err.textContent="Vérification…";'
-  + 'fetch("/__admin/login",{method:"POST",headers:{"content-type":"application/json"},credentials:"include",body:JSON.stringify({code:c})}).then(function(r){return r.json();}).then(function(j){'
-  + 'if(j.ok){location.reload();}else{b.disabled=false;err.textContent=j.reason==="rate_limited"?("Trop d\'essais, attends "+Math.ceil((j.wait||0)/1000)+"s"):(j.reason==="code_invalide"?"Code incorrect.":"Erreur : "+(j.reason||"?"));}}).catch(function(e){b.disabled=false;err.textContent="Réseau : "+e;});}'
-  + 'b.onclick=sub;pin.addEventListener("keydown",function(e){if(e.key==="Enter")sub();});pin.focus();</script></body></html>';
-  return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' } });
+  return verrouAdminPage({ titre: 'Coffre d\'autorisations — privé', theme: '#0b0f0a', fond: 'linear-gradient(180deg,#0b0f0a,#05070a)', texte: '#f2efe0', doux: '#a9b39a', champ: '#0b1108', bord: '#2a331f',
+    bouton: 'linear-gradient(135deg,#e8c766,#c9a94a)', surBouton: '#0b0f0a', lien: '#e8c766', alerte: '#e0a83a', emoji: '🔐🆔', h1: 'Coffre d\'autorisations — espace privé' });
 }
 /* ---- Relais Beatbot : contrôle réel du robot piscine (PoolPilot / beatbot.kd-mc.com) ----
    L'app découvre l'API cloud Beatbot depuis une CAPTURE que Kevin exporte de SON iPhone

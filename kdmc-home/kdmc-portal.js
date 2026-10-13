@@ -99,6 +99,7 @@
   var _alerteT = null;
   function alerteCercle() {
     var a = document.getElementById('cercle-alerte'); if (!a) return;
+    if (document.hidden) return;   /* 13.10 : onglet / app en arrière-plan → aucune lecture (batterie, quota) ; la suivante part quand l'écran est visible */
     fetch('/__cercle/admin/boite', { credentials: 'include', cache: 'no-store', headers: window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token() ? { authorization: 'Bearer ' + window.kdmcSSO.token() } : {} })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
@@ -142,7 +143,8 @@
       /* Tor : même logique que le bot (sinon invisible sur l'iPhone de Kevin, Face ID non
          prouvé = fonction inexistante). Mais réservé à KEVIN seul : la page n'a rien de
          sensible, c'est un choix de discrétion, pas une protection. */
-      if (s && s.admin) { if (window.kdmcBoite) window.kdmcBoite.demarrer(); else alerteCercle(); }   /* 3.10 : la boîte unique (toutes les apps) ; l'ancien bandeau Lingua reste en secours */
+      if (s && s.admin) { if (window.kdmcBoite) window.kdmcBoite.demarrer(); else alerteCercle(); }
+      else if (window.kdmcBoite && window.kdmcBoite.oublier) { try { window.kdmcBoite.oublier(); } catch (e) { /* */ } }   /* 13.10 : pas admin (ou plus) → aucun relevé gardé */   /* 3.10 : la boîte unique (toutes les apps) ; l'ancien bandeau Lingua reste en secours */
       var torZone = document.getElementById('tor-zone');
       var estKevin = /kevin|desarzens/.test(norm(s && s.name || ''));
       if (torZone) torZone.hidden = !(!!(s && s.admin) || estKevin);
@@ -166,6 +168,30 @@
     else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done).catch(function () { done(null); }); } else { done(null); }
   }
 
+  /* ===== SORTIES DES ÉCRANS OBLIGATOIRES (13.10, Kevin : « boutons de retour partout, on doit pouvoir sortir d'une fenêtre ») =====
+     Ces écrans restent OBLIGATOIRES (jamais de « Passer » ni de « Plus tard » : le domaine ne rouvre rien tant que ce n'est pas fait), mais on
+     peut toujours en SORTIR : se déconnecter (le compte reste, rien n'est ouvert), ou revenir à l'app d'où l'on vient (?return=). */
+  var STYLE_SORTIE = 'display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:48px;width:100%;box-sizing:border-box;margin-top:8px';
+  function sortiesHtml(avecDeconnexion) {
+    var r = safeReturnUrl();
+    return '<div class="ob-sorties">'
+      + (r ? '<a class="btn ghost" id="ob-retour" href="' + esc(r) + '" style="' + STYLE_SORTIE + '">← Retour à l\'app</a>' : '')
+      + (avecDeconnexion ? '<button class="btn ghost" id="ob-out" type="button" style="' + STYLE_SORTIE + '">Me déconnecter</button>' : '')
+      + '</div>';
+  }
+  /* Se déconnecter depuis un écran obligatoire : même geste que « Me déconnecter » de l'attente (le pass tombe, l'écran d'accueil revient). */
+  function sortirDeconnecte(box, avant) {
+    var b = document.getElementById('ob-out'); if (!b) return;
+    b.addEventListener('click', function () {
+      b.disabled = true;
+      try { if (avant) avant(); } catch (e) { /* */ }
+      box.remove();
+      if (window.kdmcSSO) window.kdmcSSO.logout();
+      try { localStorage.removeItem(LS_ACCOUNT); } catch (e) { /* */ }
+      hide(hub); renderCreate(); show(gate);
+    });
+  }
+
   /* ===== « EN ATTENTE DE L'ADMINISTRATEUR » (10.10, Kevin : « Si pas de WhatsApp, validation admin. Au choix ») =====
      Le compte existe (nom + code) mais le domaine le garde fermé partout sauf ici tant que Kevin ne l'a pas ouvert. L'écran
      redemande au domaine toutes les 30 s (en pause quand l'écran est caché) et s'ouvre tout seul dès que c'est accepté. */
@@ -183,6 +209,7 @@
         : 'ton compte est bien créé. Tu n\'as pas confirmé par WhatsApp : l\'administrateur le valide lui-même. Cette page s\'ouvrira toute seule dès qu\'il l\'aura accepté.') + '</p>'
       + (refuse ? '' : '<p id="aa-etat" aria-live="polite" style="color:#93a58f;font-size:13px;margin:0 0 12px">Je vérifie toutes les 30 secondes…</p>'
         + '<button class="btn" id="aa-go" type="button" style="min-height:50px;width:100%">Vérifier maintenant</button>')
+      + (safeReturnUrl() ? '<a class="btn ghost" id="ob-retour" href="' + esc(safeReturnUrl()) + '" style="' + STYLE_SORTIE + '">← Retour à l\'app</a>' : '')
       + '<button class="btn ghost" id="aa-out" type="button" style="min-height:48px;width:100%;margin-top:8px">Me déconnecter</button></div>';
     document.body.appendChild(box);
     /* 10.10 (réactivité) : « Vérifier maintenant » réagit tout de suite (texte + bouton grisé), et demande une réponse NEUVE au domaine. */
@@ -231,9 +258,11 @@
       + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:12px 0 4px" role="group" aria-label="Code à 6 chiffres">' + cases + '</div>'
       + '<p id="to-attente" style="text-align:center;color:#93a58f;margin:6px 0" aria-live="polite">⏳ En attente de ton message WhatsApp…</p>'
       + '<button class="btn" id="to-new" type="button" hidden style="min-height:50px;width:100%">Recevoir un nouveau code</button>'
-      + '<p class="g-err" id="to-err" role="alert" aria-live="polite" style="min-height:22px"></p></div>';
+      + '<p class="g-err" id="to-err" role="alert" aria-live="polite" style="min-height:22px"></p>'
+      + sortiesHtml(true) + '</div>';
     document.body.appendChild(box);
     var dem = '', jeton = '', fin = 0, timer = null, fini = false;
+    sortirDeconnecte(box, function () { fini = true; clearInterval(timer); });
     var err = function (t) { var e = document.getElementById('to-err'); if (e) e.textContent = t || ''; };
     var cs = [].slice.call(box.querySelectorAll('.to-case'));
     function lier(preuve) {
@@ -299,8 +328,10 @@
       + '<input class="fld" id="co-code2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Le même code, une 2e fois" aria-label="Confirme ton code" style="min-height:48px;font-size:18px;width:100%;box-sizing:border-box;margin-bottom:10px">'
       + '<button class="btn" id="co-go" type="button" style="min-height:50px;width:100%">Créer mon code</button>'
       + '<p class="g-err" id="co-err" role="alert" aria-live="polite" style="min-height:22px"></p>'
-      + '<p style="font-size:12.5px;color:#93a58f;text-align:center">Tu as déjà un code ? Entre-le ici (2 fois) : le domaine le reconnaît.</p></div>';
+      + '<p style="font-size:12.5px;color:#93a58f;text-align:center">Tu as déjà un code ? Entre-le ici (2 fois) : le domaine le reconnaît.</p>'
+      + sortiesHtml(true) + '</div>';
     document.body.appendChild(box);
+    sortirDeconnecte(box);
     var go = function () {
       var c1 = (document.getElementById('co-code').value || '').trim(), c2 = (document.getElementById('co-code2').value || '').trim();
       var err = document.getElementById('co-err'), b = document.getElementById('co-go');
@@ -1167,7 +1198,36 @@
   _decorateAppLinks();
 
   /* ---------------------------- Boot ---------------------------- */
+  /* 13.10 (Kevin : « #gate vide et #hub caché tant que la réponse n'arrive pas ») : (1) l'écran n'est jamais vide pendant l'attente ;
+     (2) le domaine qui ne répond pas ('neterr', 6 s au plus) ou qui dit « pas ouvert ici » ('hors_perimetre') n'est PAS « personne » : on ne
+     montre plus l'écran du code à tort, mais un message clair avec « Réessayer ». Rien n'est accordé par défaut : sans réponse du domaine,
+     l'accueil ne s'ouvre pas tout seul ; la personne qui a un compte sur cet appareil peut toujours l'ouvrir avec son code (hors ligne). */
+  function renderIndisponible(r, acc) {
+    var hp = !!(r && r.state === 'hors_perimetre');
+    var msg = hp ? ((r.refus && r.refus.message) || 'Ton compte n\'est pas ouvert sur cette application.')
+      : 'Je n\'arrive pas à joindre le domaine pour l\'instant (réseau faible ou coupé). Rien n\'est perdu : réessaie dans un instant.';
+    hide(hub);
+    gate.innerHTML = '<h2 class="g-title">' + (hp ? 'Compte pas ouvert ici' : 'Le domaine ne répond pas') + '</h2>'
+      + '<p class="g-sub" id="ind-msg">' + esc(msg) + '</p>'
+      + '<button class="btn" id="ind-retry" type="button" style="min-height:50px">Réessayer</button>'
+      + (!hp && acc ? '<button class="btn ghost" id="ind-code" type="button" style="min-height:48px">Ouvrir avec mon code (sur cet appareil)</button>' : '')
+      + (hp ? '<button class="btn ghost" id="ind-out" type="button" style="min-height:48px">Me déconnecter</button>' : '')
+      + (safeReturnUrl() ? '<a class="btn ghost" id="ob-retour" href="' + esc(safeReturnUrl()) + '" style="' + STYLE_SORTIE + '">← Retour à l\'app</a>' : '')
+      + '<p class="g-err" id="ind-err" role="alert" aria-live="polite"></p>';
+    show(gate);
+    var rt = document.getElementById('ind-retry');
+    rt.addEventListener('click', function () { rt.disabled = true; rt.textContent = 'Je vérifie…'; boot(true); });
+    var bc = document.getElementById('ind-code');
+    if (bc) bc.addEventListener('click', function () { renderUnlock(acc); show(gate); });
+    var bo = document.getElementById('ind-out');
+    if (bo) bo.addEventListener('click', function () {
+      if (window.kdmcSSO) window.kdmcSSO.logout();
+      try { localStorage.removeItem(LS_ACCOUNT); } catch (e) { /* */ }
+      renderCreate(); show(gate);
+    });
+  }
   function boot() {
+    var frais = arguments[0];   /* true = « Réessayer » : une réponse NEUVE du domaine */
     var acc = lg(LS_ACCOUNT, null);
     var done = function (sess, r) {
       if (_kevinNonProuve(sess)) { renderPreuveAdmin(); show(gate); return; }
@@ -1175,14 +1235,16 @@
       if (acc) renderUnlock(acc); else renderCreate();
       show(gate);
     };
+    if (gate && !gate.firstChild) { gate.innerHTML = '<p class="g-sub" id="g-attente" style="text-align:center">⏳ Connexion au domaine…</p>'; show(gate); }
     /* 8.10 (revue extérieure) : au démarrage, whoami() aplatissait « compte sans code » en « aucune session » → l'écran bloquant
        « Crée ton code » n'était jamais atteint depuis une app (?code=1&return=…). On lit l'état détaillé : code_requis → l'écran. */
     if (window.kdmcSSO && window.kdmcSSO.whoamiResult) {
-      window.kdmcSSO.whoamiResult().then(function (r) {
+      (frais ? window.kdmcSSO.whoamiResult({ frais: true }) : window.kdmcSSO.whoamiResult()).then(function (r) {
         if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
         if (r && r.state === 'tel_a_confirmer') { renderTelObligatoire(r.session); return; }   /* 13.10 */
+        if (r && (r.state === 'neterr' || r.state === 'hors_perimetre')) { renderIndisponible(r, acc); return; }
         done(r && r.state === 'session' ? r.session : null, r);
-      }).catch(function () { done(null); });
+      }).catch(function () { renderIndisponible({ state: 'neterr' }, acc); });
     } else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done); } else { done(null); }
   }
   boot();

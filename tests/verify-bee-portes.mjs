@@ -8,6 +8,8 @@ import vm from 'node:vm';
 const ROOT = process.env.BEE_ROOT || new URL('..', import.meta.url).pathname;
 const { default: routeur, BEE_CARACTERE } = await import('file://' + ROOT + '/services/kdmc-router/worker.js');
 const apis = await import('file://' + ROOT + '/services/kdmc-apis/worker.js');
+/* mémo de 15 s de la fiche de compte (13.10) : ce test change le KV « de l'extérieur » (comme un autre isolat) — on l'oublie pour simuler les 15 s écoulées */
+const { ficheOubliee } = await import('file://' + ROOT + '/services/kdmc-router/acc-memo.js').catch(() => ({ ficheOubliee() {} }));
 
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ❌ ' + m); } };
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -30,7 +32,7 @@ const KEVIN = signe('kdmc_admin', 1);
 { const vieux = signe('kdmc_admin', 1, Date.now() - 1000);
   kv.set('acc:kdmc_admin', JSON.stringify({ uid: 'kdmc_admin', revoked_at: Date.now() }));
   const j = await whoami(vieux); ok(j.ok === false && j.reason === 'session_revoquee', 'whoami : jeton révoqué → ok:false ' + JSON.stringify(j));
-  kv.delete('acc:kdmc_admin'); }
+  kv.delete('acc:kdmc_admin'); ficheOubliee(env, 'kdmc_admin'); }
 /* 2. whoami : jamais admin sans Face ID, même avec l'uid de Kevin (mutant R16) */
 { const j = await whoami(signe('kdmc_admin', 0)); ok(j.admin !== true, 'whoami : uid admin SANS Face ID → admin:true refusé ' + JSON.stringify(j)); }
 /* 3. un jeton ordinaire (Bob, Face ID) glissé dans x-kdmc-admin n'est PAS un grant admin (mutant R17) */

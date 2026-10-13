@@ -13,8 +13,10 @@
 <style>
   .wrap{max-width:820px;margin:0 auto}
   .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 14px}
+  .liens{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .logo{font-weight:800;font-size:22px;letter-spacing:1px;background:linear-gradient(135deg,var(--gold2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
   a.home{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 13px;min-height:44px;display:inline-flex;align-items:center}
+  a.sortie{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px 13px;min-height:44px;display:inline-flex;align-items:center}
   .cat{margin:22px 0 10px;color:var(--gold);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:10px}
   .cat::after{content:"";flex:1;height:1px;background:var(--line)}
   .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -41,12 +43,12 @@
 <div class="wrap">
   <div class="top">
     <div class="logo">KDMC<b> ADMIN</b></div>
-    <a class="home" href="/admin/#couts">← Tableau de bord</a>
+    <span class="liens"><a class="home" href="/admin/#couts">← Tableau de bord</a> <a class="sortie" href="https://kd-mc.com/">Portail</a></span>
   </div>
   <div id="app"><div class="etat">Vérification de l'accès…</div></div>
 </div>
 <script src="openai.js"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin-openai" data-version="v1.1.0" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin-openai" data-version="v1.1.1" data-color="#c9a227" defer></script>
 </body>
 </html>

@@ -252,7 +252,9 @@ const rb = await handleBoite(new Request('https://shops.kd-mc.com/__boite/bouton
 const jsb = await rb.text();
 let parse = true; try { new Function(jsb); } catch { parse = false; }
 ok(rb.status === 200 && /javascript/.test(rb.headers.get('content-type')) && parse && jsb === BOUTON_JS, '11a. /__boite/bouton.js est servi et c\'est du JavaScript valide');
-ok(!/innerHTML|document\.write|eval\(|<style|setAttribute\('style'|https?:\/\//.test(jsb), '11b. le bouton est autonome : aucun innerHTML, aucun <style>, aucun attribut style, aucune adresse extérieure', (jsb.match(/innerHTML|<style|setAttribute\('style'|https?:\/\/[^'" ]+/g) || []));
+/* la seule adresse permise : la sortie vers le portail (https://kd-mc.com/, pastille « ← Portail » et porte des conditions) */
+const jsbSansPortail = jsb.replace(/https:\/\/kd-mc\.com\/?/g, '');
+ok(!/innerHTML|document\.write|eval\(|<style|setAttribute\('style'|https?:\/\//.test(jsbSansPortail), '11b. le bouton est autonome : aucun innerHTML, aucun <style>, aucun attribut style, aucune adresse extérieure', (jsbSansPortail.match(/innerHTML|<style|setAttribute\('style'|https?:\/\/[^'" ]+/g) || []));
 
 /* 12. le routeur pose le bouton sur TOUTE page HTML (vrai routeur, pas une lecture de texte) */
 const page = '<!doctype html><html><body><h1>Boutique</h1></body></html>';

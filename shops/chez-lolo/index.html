@@ -987,20 +987,28 @@ function clSaveNewProduct(){
       retour anticipé du mode admin. Avant, il n'était jamais retiré (et jamais lu en mode admin) :
       une session restait visible dans la barre d'adresse, l'historique, un lien partagé. */
    try{var h0=location.hash||"";var m0=h0.match(/[#&]kdmc_sso=([^&]+)/);if(m0){localStorage.setItem("kdmc_sso_token",decodeURIComponent(m0[1]));var r0=h0.replace(/([#&])kdmc_sso=[^&]*/,"$1").replace(/[#&]+$/,"");history.replaceState(null,"",location.pathname+location.search+r0);}}catch(_){}
-   if(LD_ADMIN)return;
    try{var h=location.hash||"";var m=h.match(/[#&]kdmc_sso=([^&]+)/);if(m){localStorage.setItem("kdmc_sso_token",decodeURIComponent(m[1]));}}catch(_){}
    var tok="";try{tok=localStorage.getItem("kdmc_sso_token")||"";}catch(_){}
    var hdr={};if(tok)hdr.Authorization="Bearer "+tok;
    fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:hdr})
      .then(function(r){return r.ok?r.json():null;})
      .catch(function(){return null;}).then(function(j){window._kdmcWhoamiFini=true;
-       if(!j||!j.ok||j.verified!==true||j.admin!==true)return; /* jamais sans preuve Face ID + proprio */
+       /* 13.10 (Kevin : « reconnue AUTOMATIQUEMENT… sans redemander code / conditions ») : une personne que le DOMAINE reconnaît et dont les conditions du domaine
+          sont acceptées n'a plus à cliquer « Tout accepter » ici (les CGV d'une COMMANDE, elles, restent cochées à chaque commande : acte distinct). */
+       try{if(j&&j.ok&&j.cgu===true){var c0=null;try{c0=JSON.parse(localStorage.getItem(STORE_ID+"_consent")||"null")}catch(_){}
+         if(!(c0&&c0.v===SHOP_CONSENT_V)){localStorage.setItem("kdmc_cookie_ok","1");localStorage.setItem(STORE_ID+"_consent",JSON.stringify({v:SHOP_CONSENT_V,ts:Date.now(),accepted:true,via:"domaine",scope:["cgv","confidentialite","mentions","cookies"]}));}
+         var bk=document.querySelector(".cookie");if(bk&&bk.parentNode)bk.parentNode.removeChild(bk);}}catch(_){}
+       /* L'ADMIN : propriétaire prouvé par Face ID. Une personne à qui Kevin a donné le rôle « shops » (ex. Laurence) : reconnue par son CODE prouvé,
+          sans mot de passe de la page — le domaine juge, la page ne vérifie rien. */
+       var _adm=!!(j&&j.ok&&j.admin===true&&j.verified===true);
+       var _rol=!!(j&&j.ok&&j.admin!==true&&Array.isArray(j.roles)&&j.roles.indexOf("shops")>=0&&(j.code===true||j.verified===true));
+       if(!_adm&&!_rol)return; /* jamais sans preuve : Face ID + proprio, ou rôle boutiques + code prouvé */
        if(LD_ADMIN)return;
-       try{localStorage.setItem("ld_admin_trust","1");localStorage.setItem("ld_admin_who",j.name||"Kevin");}catch(_){}
+       try{if(_adm)localStorage.setItem("ld_admin_trust","1");localStorage.setItem("ld_admin_who",j.name||"Kevin");}catch(_){}   /* le rôle n'est PAS mémorisé : le domaine est redemandé à chaque ouverture */
        LD_ADMIN=true;
        try{var sf=document.getElementById("studioFab");if(sf)sf.style.display="block";}catch(_){}
        try{clInstallAdminUI();}catch(_){}
-       try{if(typeof toast==="function")toast("🔓 Admin boutique déverrouillé via Face ID (kd-mc.com)");}catch(_){}
+       try{if(typeof toast==="function")toast(_adm?"🔓 Admin boutique déverrouillé via Face ID (kd-mc.com)":"🔓 Reconnue par le domaine (kd-mc.com)");}catch(_){}
        try{if(typeof dc==="function")dc();}catch(_){}
      })
      .catch(function(){/* fail-open : boutique publique normale, admin par mot de passe */});
@@ -1013,7 +1021,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.17"
+        data-version="v2.0.18"
         data-color="#e8b830"
         defer></script>
 

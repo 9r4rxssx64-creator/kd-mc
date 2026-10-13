@@ -1410,8 +1410,15 @@ export async function handleSsoFromKdmc(request, env) {
   }
 
   if (!who || who.ok !== true) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide');
-  // SÉCURITÉ : on ne connecte JAMAIS sans preuve Face ID (passkey ES256).
-  if (who.verified !== true) return err('Face ID requis', 401, 'face_id_requis');
+  // RÈGLE DU DOMAINE (Kevin 13.10) : une personne inscrite, sur son appareil connu, est reconnue
+  // automatiquement dans toutes les apps. Deux preuves sont acceptées, et le domaine seul les juge :
+  //  - verified === true : Face ID prouvé (passkey ES256) — seule preuve valable pour un ADMIN ;
+  //  - code === true (et pas admin) : la personne a prouvé SON code au domaine (session « code prouvé »,
+  //    whoami renvoie ok:true, code:true, verified:false). Une identité juste tapée (code:false) → REFUS.
+  // Le worker ne vérifie JAMAIS un code lui-même : il lit ce que le domaine répond.
+  const faceIdProuve = who.verified === true;
+  const codeProuveNonAdmin = who.code === true && who.admin !== true;
+  if (!faceIdProuve && !codeProuveNonAdmin) return err('Face ID requis', 401, 'face_id_requis');
 
   const uid = String(who.uid || '').trim();
   if (!uid) return err('uid kd-mc.com manquant', 401, 'kdmc_uid_manquant');
@@ -1457,6 +1464,10 @@ export async function handleSsoFromKdmc(request, env) {
     user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
   }
   if (!user || user.status === 'deleted') return err('User kd-mc.com introuvable après création', 500, 'kdmc_user_missing');
+
+  // GARDE ADMIN : un compte déjà marqué admin ne s'ouvre JAMAIS sur un simple code — Face ID prouvé
+  // exigé, même si la session « code prouvé » porte le même uid (sinon le jeton sortirait avec is_admin).
+  if (!faceIdProuve && (user.is_admin || user.is_kevin_alias)) return err('Face ID requis', 401, 'face_id_requis');
 
   const iatKdmc = await _claimInvitedAccount(env, user);
   const jwt = await signJWT({

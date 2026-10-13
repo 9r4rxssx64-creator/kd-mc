@@ -9,6 +9,7 @@
    node bee-ia.test.mjs */
 import mod, { BEE_CARACTERE, BOURRICOT_CARACTERE } from './worker.js';
 import { createHash, createHmac } from 'crypto';
+import { ficheOubliee } from './acc-memo.js';
 
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const signe = (uid, v, secret) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', secret || 'sec').update(p).digest()); };
@@ -22,6 +23,10 @@ const AI = { run: async (model, input) => {
   appels.push(m); return { response: 'Coucou Kevin, c\'est Bee !' };
 } };
 const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, AI };
+/* Mémo de 15 s de la fiche de compte (13.10) : ce test change le KV « de l'extérieur » (comme un autre isolat) — on l'oublie à chaque changement d'une fiche, pour simuler les 15 s écoulées. */
+{ const _set = kv.set.bind(kv), _del = kv.delete.bind(kv);
+  kv.set = (k, v) => { _set(k, v); if (/^acc:/.test(k)) ficheOubliee(env, k.slice(4)); return kv; };
+  kv.delete = (k) => { const r = _del(k); if (/^acc:/.test(k)) ficheOubliee(env, k.slice(4)); return r; }; }
 
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m); } };
 const Q = { messages: [{ role: 'user', content: 'Salut Bee, ça va ?' }] };

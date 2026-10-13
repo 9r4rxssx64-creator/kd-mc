@@ -26,6 +26,40 @@ export function bouton() {
     var etat = { connecte: false, nom: '', messages: [], ouvert: false, confirme: '' };
     var panneau = null, pastille = null;
 
+    /* ← PORTAIL : UNE SORTIE TOUJOURS VISIBLE (Kevin 13.10.2026 : « il y ait TOUJOURS un bouton pour sortir d'une page/app et revenir au portail »).
+       Posée par le routeur sur chaque page HTML, SANS attendre la connexion (avant toute requête réseau) : même un écran de porte, un jeu
+       plein écran ou une app sans menu a sa sortie. Un LIEN https://kd-mc.com/ (jamais '/', qui resterait dans l'app) — aucun pushState :
+       le balayage-retour de l'iPhone n'est pas piégé. Masquée : sur le portail lui-même, dans un cadre (déjà exclu plus haut), si la page a
+       déjà son propre retour (lien visible vers kd-mc.com, [data-kdmc-retour], ou <meta name="kdmc-retour" content="own">). */
+    var retourDomaine = function () {
+      try {
+        var hote = String(location.hostname).toLowerCase();
+        if (hote === 'kd-mc.com' || hote === 'www.kd-mc.com') return;
+        var mr = document.querySelector('meta[name="kdmc-retour"]');
+        if (mr && /^own$/i.test(mr.getAttribute('content') || '')) return;
+        var pr = null;
+        var visible = function (el) { try { return el.getClientRects().length > 0 && window.getComputedStyle(el).visibility !== 'hidden'; } catch (e) { return false; } };
+        var dejaLa = function () {
+          var q = document.querySelectorAll('a[href^="https://kd-mc.com"], [data-kdmc-retour]');
+          for (var i = 0; i < q.length; i++) {
+            var el = q[i];
+            if (el === pr || el.hasAttribute('data-kdmc-pastille')) continue;
+            if (el.hasAttribute('data-kdmc-retour') || visible(el)) return true;
+          }
+          return false;
+        };
+        if (dejaLa()) return;
+        pr = E('a', '\u2190 Portail', { position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 8px)', left: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          minHeight: '44px', minWidth: '44px', padding: '0 14px', boxSizing: 'border-box', borderRadius: '22px', border: '1px solid ' + OR, background: FOND, color: TXT, fontSize: '15px', fontWeight: '700',
+          lineHeight: '1', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif', textDecoration: 'none', cursor: 'pointer', zIndex: '2147483000', boxShadow: '0 4px 18px rgba(0,0,0,.45)' });
+        pr.href = 'https://kd-mc.com/'; pr.setAttribute('aria-label', 'Retour au portail kd-mc.com'); pr.title = 'Retour au portail kd-mc.com'; pr.setAttribute('data-kdmc-pastille', '1');
+        (document.body || document.documentElement).appendChild(pr);
+        /* une app qui dessine son propre retour APRÈS le chargement (application monopage) : on s'efface, jamais deux sorties côte à côte */
+        [1500, 5000].forEach(function (ms) { setTimeout(function () { try { if (pr && pr.parentNode && dejaLa()) { pr.parentNode.removeChild(pr); pr = null; } } catch (e) { /* */ } }, ms); });
+      } catch (e) { /* une pastille de retour ne doit JAMAIS casser une page */ }
+    };
+    retourDomaine();
+
     var btn = E('button', '✉️', { position: 'fixed', right: '14px', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)', width: '52px', height: '52px', borderRadius: '26px',
       border: '1px solid ' + OR, background: FOND, color: TXT, fontSize: '24px', lineHeight: '1', cursor: 'pointer', zIndex: '2147483000', boxShadow: '0 4px 18px rgba(0,0,0,.45)', padding: '0' });
     btn.type = 'button'; btn.setAttribute('aria-label', "Écrire à l'admin"); btn.title = "Écrire à l'admin";
@@ -72,6 +106,14 @@ export function bouton() {
       var oui = E('button', 'Accepter et continuer', { width: '100%', minHeight: '48px', borderRadius: '12px', border: 'none', background: OR, color: '#111', fontSize: '17px', fontWeight: '800', cursor: 'pointer', marginBottom: '10px' });
       var non = E('button', 'Je refuse (me déconnecter)', { width: '100%', minHeight: '44px', borderRadius: '12px', border: '1px solid ' + LIG, background: 'transparent', color: MUT, fontSize: '15px', cursor: 'pointer' });
       oui.type = 'button'; non.type = 'button';
+      /* Une porte obligatoire n'offre JAMAIS de contournement — seulement la sortie : revenir au portail (ou se déconnecter). */
+      var retour = null;
+      var hp = String(location.hostname).toLowerCase();
+      if (hp !== 'kd-mc.com' && hp !== 'www.kd-mc.com') {
+        retour = E('a', '\u2190 Retour au portail kd-mc.com', { display: 'block', boxSizing: 'border-box', width: '100%', textAlign: 'center', minHeight: '48px', lineHeight: '48px', marginTop: '10px', borderRadius: '12px',
+          border: '1px solid ' + LIG, color: TXT, fontSize: '15px', fontWeight: '700', textDecoration: 'none' });
+        retour.href = 'https://kd-mc.com/'; retour.setAttribute('data-kdmc-pastille', 'cgu');
+      }
       oui.onclick = function () {
         if (!cb.checked) { err.textContent = 'Coche la case pour accepter.'; return; }
         oui.disabled = true; err.textContent = '';
@@ -84,7 +126,7 @@ export function bouton() {
       non.onclick = function () {
         void requete('/__sso/logout', {}).then(function () { try { localStorage.removeItem('kdmc_sso_token'); } catch (e) { /* */ } location.reload(); });
       };
-      boite.appendChild(err); boite.appendChild(oui); boite.appendChild(non);
+      boite.appendChild(err); boite.appendChild(oui); boite.appendChild(non); if (retour) boite.appendChild(retour);
       porte.appendChild(boite);
       document.documentElement.style.overflow = 'hidden';
       document.body.appendChild(porte);

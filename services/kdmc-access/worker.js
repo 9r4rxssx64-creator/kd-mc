@@ -193,7 +193,10 @@ async function sessionDomaine(request, env) {
     const c = (request.headers.get('cookie') || '').match(/(?:^|;\s*)kdmc_sso=([^;]+)/);
     const token = m ? m[1].trim() : (c ? decodeURIComponent(c[1]) : '');
     if (!token) return null;
-    const r = await fetch(((env && env.KDMC_SSO_URL) || 'https://kd-mc.com') + '/__sso/whoami', { headers: { authorization: 'Bearer ' + token } });
+    /* 13.10 : le routeur lie le pass à la FAMILLE D'APPAREIL de la personne (iPhone, PC…) et refuse un pass présenté depuis une autre famille. Cet appel part du
+       worker (« autre » famille) : sans le User-Agent de la personne, un pass émis sur son iPhone était refusé. On transmet CE SEUL en-tête, rien d'autre. */
+    const entetes = { authorization: 'Bearer ' + token }; const ua = request.headers.get('user-agent'); if (ua) entetes['user-agent'] = ua;
+    const r = await fetch(((env && env.KDMC_SSO_URL) || 'https://kd-mc.com') + '/__sso/whoami', { headers: entetes });
     const j = await r.json();
     if (!j || !j.ok || !j.uid) return null;
     return { uid: String(j.uid), name: String(j.name || ''), admin: j.admin === true, verified: j.verified === true };

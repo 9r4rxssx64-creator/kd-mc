@@ -1,5 +1,5 @@
 /* KDMC Sourcing — Service Worker (network-first, anti-cache-bloqué iOS). */
-var CACHE_VERSION = 'kdmc-sourcing-v1.0.3';
+var CACHE_VERSION = 'kdmc-sourcing-v1.0.4';
 var ASSETS = ['index.html', 'supplier.html', 'sourcing.js', 'suppliers.json', 'manifest.json'];
 
 self.addEventListener('install', function (e) {

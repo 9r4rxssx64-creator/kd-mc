@@ -13,6 +13,7 @@
    node services/kdmc-router/porte-parallele.test.mjs */
 import mod from './worker.js';
 import { createHmac } from 'crypto';
+import { ficheOubliee } from './acc-memo.js';   // le mémo de 15 s de la fiche (13.10) supprimerait la lecture qu'on chronomètre ici : on l'oublie avant chaque cas
 
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const signe = (uid) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
@@ -36,7 +37,7 @@ globalThis.fetch = async (input, init) => {
 let pass = 0, fail = 0;
 const ok = (c, m, d) => { c ? (pass++, console.log('  ✅ ' + m)) : (fail++, console.log('  ❌ ' + m + (d ? '  → ' + d : ''))); };
 const va = async (url, { methode = 'GET', cookie = '', dest = 'document' } = {}) => {
-  journal.length = 0;
+  journal.length = 0; ficheOubliee(env, 'anne-martin');
   const attente = [];
   const h = { 'sec-fetch-dest': dest, accept: dest === 'document' ? 'text/html' : '*/*', 'user-agent': 'Mozilla/5.0 (iPhone)' };
   if (cookie) h.cookie = cookie;

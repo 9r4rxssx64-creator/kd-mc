@@ -1,5 +1,14 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🧭 Reconnu partout, retour partout, écran du haut instantané (13.10.2026 — portail v1.0.55, admin v2.0.2, CMCteams v9.971, light v1.99, Arbre v3.95)
+
+- **Retour** : une pastille « ← Portail » en haut à gauche de chaque page du domaine ; « Me déconnecter » et « Retour à l'app » sur les écrans obligatoires (jamais de « Passer »)
+- **Reconnu partout** : Apex Chat, Apex AI, CMCteams, la light, Arbre, boutiques — une personne inscrite au domaine n'a plus à retaper code, conditions ou autorisations (Face ID automatique seulement pour toi, admin)
+- **Écran admin** : le dernier relevé (nombres seulement) s'affiche dès que le domaine confirme que tu es admin ; plus de « … » vide
+- **Fichiers créés** : [`services/kdmc-router/acc-memo.js`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/acc-memo.js) · [`services/kdmc-router/acc-memo.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/acc-memo.test.mjs)
+- **Tests** : `npm run test:acc-memo` · `test:retour-pastille` · `test:sw-lie-fi` · `test:entete-instantane` · `test:portail-delai-sorties` · `test:retour-kdmc-home` · `test:sw-portail` · `test:reconnu-domaine-apps` · `test:reconnu-auto-apps` · `test:ua-famille-appareil`
+- **Tes apps** : https://kd-mc.com · https://admin.kd-mc.com (après fusion et mise en ligne)
+
 ### ⚡ Les apps répondent plus vite au doigt (10.10.2026 — Lingua v2.139.0)
 
 - **Partout** : le domaine demande le fichier pendant qu'il vérifie ton compte (avant : l'un après l'autre) — chaque page et chaque fichier arrive plus tôt

@@ -149,9 +149,13 @@ ok((await AGIR(KEVIN, { jeton: pr.jeton.replace(/\.[0-9a-f]{64}$/, '.' + '0'.rep
 ok(!kvEcrit.some((k) => /bee|agir|rappel|memoire/i.test(k)), '6i. 0 écriture KV par Bee (tout est en D1 gratuit)', kvEcrit.join(','));
 
 /* ───────── 7. la liste blanche des portes ───────── */
-ok(/const PORTES_BEE = \['\/__boite\/admin', '\/__boite\/admin\/lu', '\/__boite\/admin\/repondre', '\/__bot\/kill', '\/__bot\/status'\];/.test(W), '7. une action ne peut appeler que 5 portes (boîte : lire / marquer lu / répondre ; robot : arrêt, état)');
-ok(/if \(PORTES_BEE\.indexOf\(chemin\) < 0\) return \{ ok: false, status: 0, reason: 'porte_non_autorisee' \}/.test(W), '7b. toute autre porte est refusée avant l\'appel');
-ok(!/'\/__bot\/start'|'\/__admin\/|'\/__fin\/|'\/__mail\/|'\/__beatbot\/relay'/.test(W.match(/const PORTES_BEE[^;]*;/)[0]), '7c. ni démarrage du robot, ni coffre, ni code admin, ni relais ne sont dans la liste');
+/* Kevin 13.10 : « donne-lui tous les droits » (liste confirmée par lui). La liste blanche est EXACTE : en ouvrir une de plus ou de moins fait échouer ce contrôle. */
+const PORTES = ((W.match(/const PORTES_BEE = \[([^\]]*)\]/) || [])[1] || '').split(',').map((x) => x.replace(/['\s]|\/\/.*$/g, '')).filter(Boolean).sort();
+const PORTES_ATTENDUES = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__bot/kill', '/__bot/start', '/__bot/status', '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke'].sort();
+ok(PORTES.join() === PORTES_ATTENDUES.join(), '7. une action ne peut appeler que ces ' + PORTES_ATTENDUES.length + ' portes (boîte ; robot : arrêt, redémarrage, état ; gestion du domaine : apps fermées, périmètre, comptes, journal, code oublié, déconnexion)', PORTES.join(' '));
+ok(/if \(PORTES_BEE\.indexOf\(String\(chemin\)\.split\('\?'\)\[0\]\) < 0\) return \{ ok: false, status: 0, reason: 'porte_non_autorisee' \}/.test(W), '7b. toute autre porte est refusée avant l\'appel (la requête ?uid=… ne contourne pas la liste)');
+const FERMEES = ['/__fin/vault', '/__fin/meta', '/__admin/login', '/__admin/grant', '/__admin/me', '/__admin/logout', '/__admin/fbtoken', '/__admin/compte-invite', '/__admin/domain-log', '/__admin/account', '/__bot/reel', '/__bot/config', '/__bot/ia', '/__bot/ia/mode', '/__arbre/seed', '/__arbre/code', '/__arbre/correction', '/__mail/scan', '/__beatbot/relay', '/__sso/issue', '/__sso/me/revoke', '/__sso/passkeys/delete'];
+ok(FERMEES.every((f) => !PORTES.includes(f)), '7c. RESTENT FERMÉS, une par une : coffre et clés, connexion et code admin, création de compte avec code, journal détaillé (IP), mode réel du robot, arbre, relais, sessions — ' + FERMEES.filter((f) => PORTES.includes(f)).join(' '));
 
 /* ───────── 8. câblage ───────── */
 ok(/if \(url\.pathname === '\/__javis\/agir'\) return handleAgir\(request, env, outilsBee\(env, ctx\)\)/.test(W) && /handlePartout\(request, url, env, outilsBee\(env, ctx\)\)/.test(W), '8. le routeur sert /__javis/agir et /__javis/{partout.js,cadre,qui} avec les gardiens de Kevin');

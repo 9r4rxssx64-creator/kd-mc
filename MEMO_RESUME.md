@@ -1244,6 +1244,10 @@ test:voix-chirp 16/0, voisins verts ; 8 sabotages rouges. **À vérifier en vrai
 
 Après la fusion #4316, « Coffre → dépôt public : synchroniser le CODE » s'est arrêté (6 « téléphone » = une constante sRGB de three.js dans `perso3d.js`) : routeur et Lingua non déployés. Corrigé à la source (`tools/3d/build-runtime.mjs` écrit la constante en notation scientifique) + garde dans `test:perso3d`. Leçon 417.
 
+## 2026-10-13 (soir) — BEE : TOUS LES DROITS DE GESTION, DERRIÈRE LE BOUTON ✅
+
+**Fait** (code + tests, PAS encore vu en vrai) : `bee-droits.js` — fermer/rouvrir des apps (tous ou une personne), périmètre, code oublié, déconnexion, redémarrer le robot + lire comptes / apps fermées / journal ; `PORTES_BEE` 5 → 13 ; fermés et nommés : coffre, code admin, création de compte, argent réel, arbre. `test:bee-droits` (61, 6 sabotages). Leçon 523. **Reste à Kevin** : tester sur iPhone (« ferme lingua pour tout le monde » → carte ✅).
+
 ## 2026-10-13 — BEE À PARITÉ AVEC APEX ET CLAUDE CODE (gratuit)
 
 **Fait** (code + tests, PAS encore vu en vrai sur le domaine) : caractère de Bee à jour (plus de « c'est Apex » vague) ; outil `arbre` (fiches de la famille, lecture, Kevin seul, `BEE_ARBRE=0`) ; outils `convertir`, `heure_ailleurs`, `dates` partagés avec Apex (`/ai`) ; ℹ️ du widget mis à jour. Garde `test:bee-parite` (70, 6 sabotages). Leçon 521. **Reste à Kevin** : tester sur son iPhone (arbre → « quand est née Laurence ? »).

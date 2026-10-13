@@ -162,7 +162,7 @@ const REGISTRE = [
   // jouée dans Chromium + WebGL (chaque membre, 15 dessins sans pli, humeurs, replis, sobriété).
   [/CHAQUE SESSION VÉRIFIE SON PROPRE TRAVAIL/i, ['npm:test:hygiene-depot', 'file:tests/verify-hygiene-depot.mjs']],
   [/PAS D'INFOS INUTILES, NULLE PART/i, ['npm:test:pas-d-infos-inutiles', 'file:tests/verify-pas-d-infos-inutiles.mjs']],   // Kevin 13.10 : garde déjà là, entrée du registre oubliée (test:improvements-guard rouge)
-  [/ASSISTANTE PERSONNELLE DE KEVIN/i, ['npm:test:bee-partout', 'npm:test:bee-agir', 'npm:test:bee-partout-navigateur', 'npm:test:bee-fil', 'npm:test:bee-fil-navigateur', 'file:services/kdmc-router/bee-agir.js', 'file:services/kdmc-router/bee-fil.js']],
+  [/ASSISTANTE PERSONNELLE DE KEVIN/i, ['npm:test:bee-partout', 'npm:test:bee-agir', 'npm:test:bee-partout-navigateur', 'npm:test:bee-fil', 'npm:test:bee-fil-navigateur', 'npm:test:bee-droits', 'file:services/kdmc-router/bee-droits.js', 'file:services/kdmc-router/bee-agir.js', 'file:services/kdmc-router/bee-fil.js']],
   [/BEE ET BOURRICOT SONT COMPÉTENTS/i, ['npm:test:bee-outils', 'npm:test:bee-parite', 'file:services/_shared/outils-lecture.js', 'file:services/kdmc-router/bee-arbre.js']],
   [/VRAIS PETITS PERSONNAGES ANIMÉS/i, ['npm:test:marionnette', 'file:tools/javis/marionnette.js', 'npm:test:3d', 'file:javis/3d.html']],
   [/RÉEL TOUJOURS : RIEN N'EST/i, ['wf:verif-reelle.yml', 'wf:audit-lingua.yml', 'file:tools/ci/plafond-verifs.mjs']],

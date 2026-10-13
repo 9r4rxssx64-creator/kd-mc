@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.968 · light v1.96 (2026-10-13 soir — bouton de pointage toujours visible ; « Oublier cet appareil » retiré)
+
+- **Kevin : « Pour les pointages entre sortie horaire journalière, fais quelque chose de simple, plus visible, bouton dans la page. Va plus loin. »** Avant, « J'arrive / Je pars » étaient cachés dans la fiche ⏱ (il fallait toucher une colonne). Nouveau module `tools/shared/pointage-bouton.js` (copie identique `tools/departs/`), dans CMCteams ET la light : un **bouton fixe en bas de l'écran** (56 px) qui sait où en est la personne — « 🟢 J'arrive » puis « 🔴 Je pars · entré à hh:mm » ; confirmation « ✅ Arrivée hh:mm » avec **« Annuler »** pendant 10 s ; réel du jour sous le bouton ; **« ⚠ Une sortie manque » si une sortie est oubliée** (touche : la fiche s'ouvre) ; ⏱ à côté ouvre les heures. Même moteur que `heures.js` (même mémoire, position facultative, alerte « loin du casino »). Sans identité : pas de bouton. Test `verify-pointage-bouton` (15, vrai navigateur light + CMCteams ; **sabotage : échec**), câblé dans `test:ci`.
+- **Kevin : « Enlève aussi : oublier cet appareil. »** Bouton et fonction retirés de la light ; ajouté à `tools/shared/infos-retirees.json` pour que le garde l'empêche de revenir (`verify-light-audit-8-10` mis à jour).
+
 ## light v1.95 (2026-10-13 soir — mise à jour forcée dès le démarrage)
 
 - **Kevin : « Normalement il y a une mise à jour force auto au démarrage de chaque app du domaine et du domaine aussi. »** MESURÉ : elle existe partout (28 apps de la carte du routeur, `test:maj-partout` 10/10 ; portail : aide partagée `version-badge-pwa.js`, 2 s ; CMCteams : 1,5 s). La light seule attendait 4 s avant de sonder `version.txt` : une ancienne version restait affichée plus longtemps que les autres. Alignée sur 1,5 s. `verify-maj-forcee-reelle` exige maintenant le rechargement en ≤ 3,5 s après l'ouverture (**sabotage à 4 s : échec**). Plus de « ferme et rouvre l'app » demandé à Kevin : c'est automatique.

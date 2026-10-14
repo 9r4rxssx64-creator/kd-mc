@@ -9,6 +9,9 @@ html.boite-ouverte,html.boite-ouverte body{overflow:hidden}
 #boite-fen h2{flex:1;margin:0;font-size:19px;color:var(--gold2)}
 #boite-fen .bf-x,#boite-fen .bf-r{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--txt);font-size:20px;cursor:pointer}
 #boite-fen .bf-r.tourne{animation:bf-spin 1s linear infinite;opacity:.7}@keyframes bf-spin{to{transform:rotate(360deg)}}
+#boite-fen .bf-live{margin:6px 14px 0;padding:8px 12px;border-radius:10px;background:rgba(53,208,106,.08);border:1px solid rgba(53,208,106,.3);color:#cfeedd;font-size:14px;line-height:1.5}
+#boite-fen .bf-live b{color:#9fe8b4}
+#boite-fen .bf-livel{margin-top:4px;word-break:break-word}
 #boite-fen .bf-puces{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;-webkit-overflow-scrolling:touch}
 #boite-fen .bf-p{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:14px;cursor:pointer;white-space:nowrap}
 #boite-fen .bf-p.on{background:rgba(232,184,48,.16);border-color:rgba(232,184,48,.55);color:var(--gold2);font-weight:700}

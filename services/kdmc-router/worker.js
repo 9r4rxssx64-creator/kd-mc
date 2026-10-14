@@ -10,7 +10,7 @@
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken } from './fb-token.js';
-import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer } from './boite.js';
+import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre } from './boite.js';
 import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
@@ -2815,6 +2815,21 @@ async function handleNotifyKevin(request, env) {
       await audLog(env, { type: 'pointage_loin', app, name, text });
       return J({ ok: true, alerte: true });
     }
+    /* DEMANDE DE CHANGEMENT DE CHEF D'ÉQUIPE (Kevin 14.10 « il peut envoyer un message à l'admin pour changer ») : le chef (ou un membre)
+       écrit depuis la light ou CMCteams ; seul l'admin décide. Une demande par personne et par app sur 5 min (un double-clic = une carte). */
+    if (b && b.kind === 'demande_chef') {
+      const app = appDe(host) || host;
+      if (env && env.ACCOUNTS) {
+        try {
+          const cle = 'push:chef:' + app + ':' + name.toLowerCase().replace(/[^a-z0-9àâäçéèêëîïôöùûüÿ]+/g, '_').slice(0, 60);
+          if (await env.ACCOUNTS.get(cle)) return J({ ok: true, deja: true });
+          await env.ACCOUNTS.put(cle, '1', { expirationTtl: 300 });
+        } catch { /* fail-open */ }
+      }
+      await notifyPush(env, '⭐ Demande de changement de chef — ' + name, text, { tag: 'kdmc-chef', url: 'https://kd-mc.com/#messages' });
+      await audLog(env, { type: 'demande_chef', app, name, text });
+      return J({ ok: true, alerte: true });
+    }
     if (env && env.ACCOUNTS) {
       try {
         const last = parseInt((await env.ACCOUNTS.get('push:kevin_last')) || '0', 10) || 0;
@@ -3268,6 +3283,7 @@ async function handleSso(request, url, env) {
         });
       }
       await enrich(env, request, s.uid, s.name, s.cgu, acc);
+      try { await presenceBattre(env.CERCLE_DB, s.uid, s.name, app, Date.now()); } catch { /* fail-open : la présence n'a jamais cassé une connexion */ }   /* 14.10 : qui est en ligne, dans toutes les apps (boîte admin) */
       /* CONNECTÉ EN PERMANENCE, DANS CHAQUE APP (Kevin 2.10 : « comme tout mon domaine, chaque application, je
          reste connecté en permanence »). Toutes les apps demandent whoami : quand il reste moins de 15 jours, la
          session est re-signée (30 jours) et le cookie commun à *.kd-mc.com repart — 0 écriture KV, 0 ligne à

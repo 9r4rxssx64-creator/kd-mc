@@ -91,6 +91,16 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-14 (soir) — CMCteams v9.974 + light v1.102 : un chef d'équipe désigné d'office par équipe
+- **Fait** : `tools/shared/chefs-equipe.js` (règle : le plus ancien, provisoire par matricule, jamais d'écrasement) + `chefs-cmc.js` ; ⭐ expliquée (légende + ligne sous le tableau) ; bilan de toutes les équipes ; demande de changement → domaine (`demande_chef`) ; le chef écrit les NR/5e dans CMCteams aussi. 52 vérifs, deux sabotages.
+- **Aussi (Kevin « pas de visuel des connectés live dans la light »)** : point vert devant les connectés + « 🟢 N en ligne » (`cmc_dep_presence`, battement 60 s) ; `test:presence-live`. **Fait aussi** : CMCteams voit les connectés de la light (`presence-cmc.js`) ; toutes les apps du domaine : présence D1 `presence_domaine` rangée par `/__sso/whoami`, liste « 🟢 en ligne » dans « Mes messages » (portail v1.0.56).
+- **Message « qui est le chef »** (Kevin 14.10) : une fois par personne, de nouveau seulement si le chef change (`CHEFS.annoncer`).
+- **À faire par Kevin** : saisir les anciennetés manquantes dans les fiches (le bilan « 🗒 Bilan des chefs d'équipe » dit qui) — le plus ancien prendra alors la place du chef provisoire.
+
+## 2026-10-14 (soir) — CMCteams v9.973 + light v1.101 : entrée automatique à l'horaire prévu
+- **Fait** : l'entrée se pose toute seule à l'heure de début du service (id fixe `aAAAAMMJJ`), la barre ne sert qu'à la sortie (« Je pars » / ✍ heure de départ), « Service à … » avant le début ; réel sans la pause du 16/3 ; sortie rattachée à son entrée. 31 + 36 vérifs, sabotage.
+- **À confirmer par Kevin** : les 20 min d'avance de la GTA (`AVANCE_ENTREE_MIN` dans `tools/shared/heures.js`, 0 aujourd'hui).
+
 ## 2026-10-14 — CMCteams v9.972 + light v1.100 : heures = UN nombre par personne ; formations novembre
 - **Fait** : colonne « ⏱ Mois » = un nombre + « prévu » / « avec réel » (réel remplace le prévu du jour) ; rien dans les cases ni sous les jours ; total d'équipe « pour info » tout au bout de la ligne du bas (Kevin 14.10) ; fiche = calendrier journalier avec cumul ; formations comptées (art. 17.2). CMS_Novembre_V1 intégré (+ bug colonne 15 corrigé, créneau 15h-16h), vérifié chaque personne / chaque jour en vrai navigateur (light + CMCteams, octobre + novembre).
 - **16/3 = pause 20h-22h** : déjà 9 h (4 + 5) ; formation = seulement les heures hors travail.

@@ -55,7 +55,7 @@
     if (!j) return '';
     try {
       return JSON.stringify([(j.messages || []).map(function (m) { return [m.cle, m.ts, m.nonLus, m.lu, (m.fil || []).length, m.texte, (m.infos || []).length]; }),
-        (j.inscriptions || []).map(function (i) { return [i.id, i.code]; }), (j.codes || []).map(function (c) { return [c.uid, c.ts]; }), (j.inscriptionsAdmin || []).map(function (c) { return [c.uid, c.ts]; }), (j.sources || []).map(function (s) { return [s.id, s.nonLus, s.total, s.etat]; }), j.nonLus, j.nonLusAlertes, j.inscriptionsEtat]);
+        (j.inscriptions || []).map(function (i) { return [i.id, i.code]; }), (j.codes || []).map(function (c) { return [c.uid, c.ts]; }), (j.inscriptionsAdmin || []).map(function (c) { return [c.uid, c.ts]; }), (j.sources || []).map(function (s) { return [s.id, s.nonLus, s.total, s.etat]; }), (j.enLigne || []).map(function (x) { return [x.nom, x.app]; }), j.nonLus, j.nonLusAlertes, j.inscriptionsEtat]);
     } catch (e) { return String(Date.now()); }
   }
   var dessine = '';   /* l'empreinte du dernier dessin */
@@ -133,6 +133,14 @@
     tete.appendChild(act); tete.appendChild(fer); r.appendChild(tete);
     dessine = empreinte(D);
     if (!D) { r.appendChild(el('p', 'bf-vide', 'Chargement… (si ça dure : ta session admin a peut-être expiré, reconnecte-toi).')); return; }
+    /* 14.10 (Kevin « CMCteams et light en même temps, aussi les autres apps du domaine ») : qui est en ligne MAINTENANT, dans quelle app */
+    var live = D.enLigne || [];
+    if (live.length) {
+      var lv = el('div', 'bf-live'); lv.setAttribute('data-enligne', String(live.length));
+      lv.appendChild(el('b', null, '🟢 ' + live.length + ' en ligne maintenant'));
+      lv.appendChild(el('div', 'bf-livel', live.map(function (x) { return x.nom + (x.app ? ' · ' + String(x.app).replace(/-/g, ' ') : ''); }).join('  —  ')));
+      r.appendChild(lv);
+    }
     /* puces : un clic = les messages d'une seule app */
     var puces = el('div', 'bf-puces');
     function puce(id, lib, n) { var b = el('button', 'bf-p' + (filtre === id ? ' on' : ''), lib + (n ? ' · ' + n : '')); b.type = 'button'; b.onclick = function () { filtre = id; dessiner(); }; puces.appendChild(b); }

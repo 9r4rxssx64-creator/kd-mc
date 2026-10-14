@@ -241,7 +241,7 @@ async function lireArbre(env, db) {
 }
 const EV_ALERTES = { nouvelle_connexion: '🆕 Nouvelle connexion', nouvel_inscrit: '🆕 Nouvel inscrit', new_device: '🔐 Nouvel appareil', geo_anomaly: '⚠️ Connexion suspecte',
   quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé', matricule_refuse: '🪪 Matricule SBM refusé',
-  pointage_loin: '📍 Pointage loin du casino', inscription_refusee: '🚫 Inscription refusée' };
+  pointage_loin: '📍 Pointage loin du casino', inscription_refusee: '🚫 Inscription refusée', demande_chef: '⭐ Demande de changement de chef' };
 /* « TOUTES LES INFOS POSSIBLES » (Kevin 4.10) : une alerte se déplie en lignes lisibles — qui, où, quel appareil, quel réseau, pourquoi. */
 export function infosAlerte(e) {
   const l = [];
@@ -457,6 +457,32 @@ async function validerInscription(outils, id, now) {
   return { ok: true, nom: propre(((r.prenom || '') + ' ' + (r.nom || '')).trim(), 80) || id };
 }
 
+/* ── QUI EST EN LIGNE MAINTENANT, dans TOUTES les apps du domaine (Kevin 14.10 : « CMCteams et light en même temps, aussi les autres apps du domaine »).
+ * Aucune requête de plus : chaque app ouverte envoie déjà /__sso/whoami toutes les 60 s ; ce battement est rangé en D1 (gratuite), une ligne par
+ * personne, jamais le KV. Une écriture seulement si le dernier battement a plus de 45 s ou si la personne change d'app (sinon l'UPSERT ne change rien
+ * et ne coûte aucune ligne). « En ligne » = battement de moins de 2 min 30. Lu par l'admin seul (la boîte). */
+export const PRESENCE_MS = 150000, PRESENCE_PAS = 45000;
+const presencePret = new WeakSet();
+async function presenceSchema(db) {
+  if (presencePret.has(db)) return;
+  await db.prepare('CREATE TABLE IF NOT EXISTS presence_domaine (uid TEXT PRIMARY KEY, nom TEXT, app TEXT, ts INTEGER)').run();
+  presencePret.add(db);
+}
+const net1 = (v, n) => propre(String(v == null ? '' : v).replace(/\s+/g, ' '), n);   // une ligne, sans saut de ligne
+export async function presenceBattre(db, uid, nom, app, now) {
+  if (!db || !uid) return false;
+  await presenceSchema(db);
+  const r = await db.prepare('INSERT INTO presence_domaine (uid, nom, app, ts) VALUES (?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET nom = excluded.nom, app = excluded.app, ts = excluded.ts WHERE excluded.ts - presence_domaine.ts >= ? OR presence_domaine.app != excluded.app')
+    .bind(propre(uid, 80), net1(nom, 80), net1(app, 60), now, PRESENCE_PAS).run();
+  return !!(r && r.meta && r.meta.changes);
+}
+export async function presenceListe(db, now) {
+  if (!db) return [];
+  await presenceSchema(db);
+  return (await tous(db, 'SELECT nom, app, ts FROM presence_domaine WHERE ts > ? AND uid != ? ORDER BY ts DESC LIMIT 100', now - PRESENCE_MS, ADMIN))
+    .map((x) => ({ nom: propre(x.nom, 80) || 'Quelqu\'un', app: propre(x.app, 60), ts: x.ts }));
+}
+
 /* ── la réponse unique ────────────────────────────────────────────────────────────────────────────────────── */
 export async function lireBoite(env, outils, now) {
   const db = env.CERCLE_DB;
@@ -478,10 +504,12 @@ export async function lireBoite(env, outils, now) {
   const nonLus = SOURCES_MESSAGES.reduce((s, n) => s + sources[n].nonLus, 0);
   let inscriptions = [], inscriptionsEtat = 'ok';
   try { inscriptions = await memoise('inscriptions', now, () => lireInscriptions(outils, now)); } catch (e) { inscriptionsEtat = 'indisponible'; }
-  const connectes = db ? ((await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) || {}).n || 0 : 0;
+  const connectesCercle = db ? ((await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) || {}).n || 0 : 0;
+  const enLigne = await presenceListe(db, now).catch(() => []);
+  const connectes = Math.max(connectesCercle, enLigne.length);
   let codes = []; try { codes = await codesAttente(db); } catch { codes = []; }
   let inscrAdmin = []; try { inscrAdmin = await inscriptionsAdmin(db); } catch { inscrAdmin = []; }
-  return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
+  return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, enLigne, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
     inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, inscriptionsAdmin: inscrAdmin, maj: now };
 }
 

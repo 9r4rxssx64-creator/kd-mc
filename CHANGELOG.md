@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.976 · light v1.104 (2026-10-14 soir — sous le tableau : seulement le nom du chef)
+
+- **Kevin : « Enlève les infos : choisi par l'admin et le reste. »** (règle « pas d'infos inutiles nulle part »). Sous le titre de la light et sous chaque tableau de CMCteams : **« ⭐ Chef d'équipe : NOM »**, rien d'autre — plus « choisi par l'admin », plus « provisoire », plus « ancienneté inconnue », plus la phrase de règle. Ces explications restent là où elles servent : le **bilan des chefs** (origine, anciennetés à renseigner, règle) et la **légende du bas** de la light. Garde `test:chefs-equipe` (70 ; sabotage : remettre l'ancienne ligne fait rougir 4 vérifs).
+
 ## CMCteams v9.975 · light v1.103 (2026-10-14 soir — UN SEUL chef par équipe, et dans l'équipe de l'admin c'est toujours lui)
 
 - **Kevin : « Il ne peut y avoir qu'un seul chef d'équipe par équipe. Dans la mienne c'est toujours moi. »** Cause mesurée : la light comptait aussi l'ancienne liste de chefs (`cmc_dep_chefs`, plusieurs noms par équipe, posés à la main avant la règle) → plusieurs ⭐ dans une équipe. Maintenant :

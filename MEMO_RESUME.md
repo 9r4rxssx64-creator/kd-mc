@@ -91,6 +91,9 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-14 (soir, 14h11 UTC) — ROUTEUR DÉPLOYÉ (Kevin « Go »)
+- **Fait** : `deploy-kdmc-router` lancé à la main depuis `main` ac5ea902 (run 38577919056, test SSO live vert), puis remis à l'arrêt. En ligne : présence du domaine (« Mes messages » → 🟢 en ligne), demande de changement de chef, et tout ce que d'autres sessions avaient posé sans déployer (téléphone obligatoire, fermer des apps, favicon, lot reconnu partout, Bee). **À re-mesurer en vrai** (la vérif réelle du soir).
+
 ## 2026-10-14 (soir) — CMCteams v9.974 + light v1.102 : un chef d'équipe désigné d'office par équipe
 - **Fait** : `tools/shared/chefs-equipe.js` (règle : le plus ancien, provisoire par matricule, jamais d'écrasement) + `chefs-cmc.js` ; ⭐ expliquée (légende + ligne sous le tableau) ; bilan de toutes les équipes ; demande de changement → domaine (`demande_chef`) ; le chef écrit les NR/5e dans CMCteams aussi. 52 vérifs, deux sabotages.
 - **Aussi (Kevin « pas de visuel des connectés live dans la light »)** : point vert devant les connectés + « 🟢 N en ligne » (`cmc_dep_presence`, battement 60 s) ; `test:presence-live`. **Fait aussi** : CMCteams voit les connectés de la light (`presence-cmc.js`) ; toutes les apps du domaine : présence D1 `presence_domaine` rangée par `/__sso/whoami`, liste « 🟢 en ligne » dans « Mes messages » (portail v1.0.56).

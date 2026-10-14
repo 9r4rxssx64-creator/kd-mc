@@ -91,6 +91,9 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-14 (soir, v9.975 / v1.103) — UN SEUL chef par équipe ; l'admin est toujours le chef de la sienne
+- **Fait** : la vieille liste de chefs (plusieurs par équipe) ne met plus d'étoiles (cause des étoiles multiples) ; l'admin imposé chef de son équipe (module `chefs-equipe.js` : `imposes`, `fixe`) ; bilan sans menu pour son équipe. `test:chefs-equipe` 70 vérifs, 2 sabotages.
+
 ## 2026-10-14 (soir, 14h11 UTC) — ROUTEUR DÉPLOYÉ (Kevin « Go »)
 - **Fait** : `deploy-kdmc-router` lancé à la main depuis `main` ac5ea902 (run 38577919056, test SSO live vert), puis remis à l'arrêt. En ligne : présence du domaine (« Mes messages » → 🟢 en ligne), demande de changement de chef, et tout ce que d'autres sessions avaient posé sans déployer (téléphone obligatoire, fermer des apps, favicon, lot reconnu partout, Bee). **À re-mesurer en vrai** (la vérif réelle du soir).
 

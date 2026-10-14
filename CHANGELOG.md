@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.975 · light v1.103 (2026-10-14 soir — UN SEUL chef par équipe, et dans l'équipe de l'admin c'est toujours lui)
+
+- **Kevin : « Il ne peut y avoir qu'un seul chef d'équipe par équipe. Dans la mienne c'est toujours moi. »** Cause mesurée : la light comptait aussi l'ancienne liste de chefs (`cmc_dep_chefs`, plusieurs noms par équipe, posés à la main avant la règle) → plusieurs ⭐ dans une équipe. Maintenant :
+  - **UNE étoile par équipe, jamais plus** : seule la carte `cmc_chef_eq` compte (un nom par équipe). Les chefs de l'ancienne liste ne sont pas perdus : pour une équipe sans chef, on garde UN nom de cette liste, puis elle ne sert plus.
+  - **L'admin est toujours le chef de son équipe** (imposé : ni l'ancienneté, ni le matricule, ni l'ancienne liste n'y changent rien ; toucher un autre nom dans son équipe ne le change pas ; le bilan n'offre pas de changer cette équipe et dit « Toujours l'admin dans son équipe »). Les autres équipes restent « le plus ancien » ou « choisi par l'admin ».
+  - Garde : `test:chefs-equipe` (70 vérifs : l'étoile unique, l'admin imposé en vrai navigateur sur la light ET CMCteams ; deux sabotages prouvés — retirer l'imposition fait rougir 7 vérifs, remettre la vieille liste refait apparaître plusieurs étoiles).
+
 ## CMCteams v9.974 · light v1.102 (2026-10-14 — un chef d'équipe désigné d'office par équipe, l'étoile expliquée, demande de changement à l'admin)
 
 - **Kevin : « Il faut un chef d'équipe désigné d'office par équipe, que je peux changer au besoin, pour la gestion des NR et 5e. Indique que l'étoile correspond au chef d'équipe et son rôle. Il peut envoyer un message à l'admin pour changer. Dans l'idée le plus ancien, une fois l'ancienneté connue, sera désigné chef d'équipe. Il ne connaît encore pas tout le monde. Davy par exemple. Vérifie pour tous. »**

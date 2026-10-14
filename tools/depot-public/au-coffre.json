@@ -74,6 +74,7 @@
   "tests/arbre-corrections.test.mjs",
   "tests/arbre-dates-visuel.test.mjs",
   "tests/arbre-familles-noms.test.mjs",
+  "tests/arbre-garde-concurrence.test.mjs",
   "tests/arbre-infos.test.mjs",
   "tests/arbre-liens-par-nom.test.mjs",
   "tests/arbre-maj-auto.test.mjs",

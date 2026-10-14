@@ -1022,6 +1022,8 @@ le **03** pour ce qui était cassé, le **05** pour ce que je n'ai pas pu voir.
 - `tools/arbre/session/navigateur.mjs` — un vrai navigateur depuis la session (Chromium fait confiance au proxy par l'empreinte de son certificat, jamais « ignorer les erreurs »).
 - `tools/arbre/session/pj-gmail.py` — sortir les pièces jointes d'un courrier Gmail brut, sans cliquer.
 - `tools/arbre/session/rendre-originaux.py` — fabriquer les images d'actes depuis des PDF/JPG locaux (page à l'envers remise à l'endroit, rejouer = 0).
+- [`tools/arbre/session/garde-concurrence.py`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/session/garde-concurrence.py) — « ne rien perdre » quand la famille modifie pendant qu'on écrit : `avant` (une fiche du patch a-t-elle bougé depuis le départ ?) et `apres` (rien n'a disparu) ; enchaîné par `ecrire.sh --appliquer`.
+- [`tests/arbre-garde-concurrence.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/arbre-garde-concurrence.test.mjs) — sa garde (8 contrôles).
 - `tools/arbre/session/manques.py` — qui manque quoi : la liste de recherche priorisée depuis l'export de l'arbre.
 - `tools/arbre/session/insee.py` — le fichier INSEE des décès (public, sans compte) en une ligne par résultat.
 - `tools/arbre/session/ecrire.sh` — écrire dans l'arbre depuis la session (sauvegarde avant, relecture après, rejouer = 0).

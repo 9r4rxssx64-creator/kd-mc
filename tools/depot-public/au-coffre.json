@@ -67,6 +67,7 @@
   "tests/_debug-v1-team-diag.mjs",
   "tests/arbre-actes-commune.test.mjs",
   "tests/arbre-admin-reconnu.test.mjs",
+  "tests/arbre-affichage-mobile.test.mjs",
   "tests/arbre-audit-liens.test.mjs",
   "tests/arbre-cadrage.test.mjs",
   "tests/arbre-connectes.test.mjs",

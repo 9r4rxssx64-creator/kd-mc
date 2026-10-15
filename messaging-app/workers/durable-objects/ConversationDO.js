@@ -23,11 +23,30 @@ const MAX_REF_ID = 128;                 // reply_to.id / thread_root
 const MAX_EMOJI = 16;                   // une réaction = un emoji (ZWJ inclus)
 const MAX_REACTIONS_PER_MSG = 20;       // emojis DISTINCTS par message
 const MEMBER_RECHECK_MS = 45000;        // re-vérif membership/ban/force-logout par socket
-const FLUSH_MAX_ATTEMPTS = 100;         // au-delà, une ligne qui échoue encore est abandonnée (journalisée)
+// Lot A (audit A2, 15.10.2026) — durabilité AVANT l'accusé, rattrapage, révocation.
+// A2-01/A2-01c : chaque message accepté est écrit dans le stockage du DO (clé `pend:`) AVANT
+// l'accusé, rechargé à la construction, et effacé seulement une fois en D1. Plus d'abandon
+// après N essais : une panne D1 transitoire espace les essais (recul exponentiel borné) ;
+// seule une erreur SQLite PERMANENTE met la ligne en quarantaine (`quar:`, journalisée).
+const FLUSH_DELAY_MS = 5000;            // flush au plus 5 s après un message
+const FLUSH_BACKOFF_MAX_MS = 5 * 60000; // recul maximal entre deux essais pendant une panne D1
+const PEND_PREFIX = 'pend:';            // messages acquittés, pas encore en D1
+const QUAR_PREFIX = 'quar:';            // lignes refusées définitivement par SQLite (jamais effacées en silence)
+const MAX_PENDING = 5000;               // contre-pression : au-delà, refus SANS accusé (le client garde son envoi)
+const MAX_PENDING_BYTES = 16 * 1024 * 1024;
+const RECENT_IDS_MAX = 2000;            // A2-08 : accusés récents gardés pour dédupliquer un renvoi
+// A2-03 : rattrapage paginé (trame `history_since`).
+const CATCHUP_PAGE_DEFAULT = 100;
+const CATCHUP_PAGE_MAX = 200;
+const CATCHUP_CHANGES_MAX = 500;        // A2-16 : éditions/suppressions d'anciens messages renvoyées au rattrapage
+// A2-02 : filet périodique (alarme) tant que des sockets restent ouvertes — lent, pour rester gratuit :
+// la vraie garantie est la re-vérification des sessions périmées AVANT chaque diffusion + la révocation interne.
+const RECHECK_TIMER_MS = 5 * 60000;
+const REVOKE_TYP = 'dorevoke';          // jeton interne signé par l'api-worker (même clé que `wsfwd`)
 // Débits par socket et par minute (généreux : un humain n'atteint jamais ça).
 const RATE_LIMITS = {
   message: 100, reaction: 120, edit_message: 30, delete_message: 30,
-  read: 300, typing: 120, signaling: 600, poll_vote: 60, other: 120,
+  read: 300, typing: 120, signaling: 600, poll_vote: 60, history_since: 60, other: 120,
 };
 const SIGNALING_TYPES = new Set(['webrtc-offer', 'webrtc-answer', 'webrtc-candidate', 'call-end', 'call-busy']);
 const E2E_TAG_RE = /^E2E\d+:/;
@@ -39,6 +58,29 @@ const MIMES_SILENCIEUX = new Set(['application/x-apex-grpkey']);
 function isPermanentDbError(e) {
   return /constraint|NOT NULL|datatype mismatch|SQLITE_MISMATCH|SQLITE_TOOBIG|too big|no such column/i
     .test(String((e && e.message) || e));
+}
+
+/** Clé de stockage d'un message en attente : ordonnée par seq (rechargement dans l'ordre). */
+function pendKey(m) {
+  return PEND_PREFIX + String(Number(m.seq) || 0).padStart(12, '0') + ':' + m.id;
+}
+
+/** Ordre total du rattrapage : (ts, id). */
+function afterCursor(r, ts, id) {
+  return r.ts > ts || (r.ts === ts && String(r.id) > id);
+}
+function byTsId(a, b) {
+  return (a.ts - b.ts) || (String(a.id) < String(b.id) ? -1 : 1);
+}
+
+/** Ligne renvoyée au client (historique, rattrapage) : champs publics, tombstone sans contenu. */
+function publicRow(r) {
+  return {
+    id: r.id, sender_id: r.sender_id, ciphertext: r.deleted_at ? '' : r.ciphertext,
+    mime: r.mime, ts: r.ts, reply_to: r.reply_to || null,
+    view_once: r.view_once || 0, expires_at: r.expires_at || null,
+    edited_at: r.edited_at || null, deleted_at: r.deleted_at || null,
+  };
 }
 
 /**
@@ -105,12 +147,90 @@ export class ConversationDO {
     // "rien n'apparaît hors conversation". Le serveur ne voit aucun média (SDP only).
     this.pendingCall = null;      // { fromUserId, callType, offer, candidates:[], ts }
     this.config = null;
+    this._inflight = [];          // lot en cours d'écriture D1 (visible par l'historique et l'édition)
+    this._flushing = null;        // promesse du flush en cours (un seul à la fois)
+    this._flushFailStreak = 0;    // échecs transitoires consécutifs (recul exponentiel)
+    this._flushRetryAt = 0;       // pas de nouvel essai avant cet instant
+    this._recent = new Map();     // id → { seq, ts } : accusés récents (A2-08, renvoi idempotent)
+    this._recheckTimer = false;   // A2-02 : filet périodique démarré par une connexion WebSocket
 
-    // Hibernation : restore seq depuis storage
+    // Hibernation / redémarrage : restore seq + messages acquittés pas encore en D1 (A2-01).
     state.blockConcurrencyWhile(async () => {
       this.seq = (await state.storage.get('seq')) || 0;
       this.config = await this.loadConfig();
+      await this._restorePending();
     });
+  }
+
+  /** A2-01 : recharge les messages acquittés (clé `pend:`) qu'une instance précédente n'a pas écrits en D1. */
+  async _restorePending() {
+    const st = this.state.storage;
+    if (typeof st.list !== 'function') return;
+    try {
+      const saved = await st.list({ prefix: PEND_PREFIX });
+      const known = new Set([...this.pendingMessages, ...this._inflight].map((m) => m.id));
+      const restored = [];
+      for (const [, rec] of saved) {
+        if (rec && rec.id && !known.has(rec.id)) { known.add(rec.id); restored.push(rec); }
+      }
+      if (restored.length) {
+        this.pendingMessages = [...restored, ...this.pendingMessages].sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0));
+        console.warn('[ConversationDO] reprise de', restored.length, 'message(s) acquitté(s) non écrits en D1');
+        this._armFlushAlarm();
+      }
+    } catch (e) {
+      console.error('[ConversationDO] reprise du stockage impossible:', String(e));
+    }
+  }
+
+  /** Écrit (durable) un message en attente de D1. Lève en cas d'échec : l'appelant ne doit PAS acquitter. */
+  async _persistPending(rec) {
+    await this.state.storage.put(pendKey(rec), rec);
+  }
+
+  /** Efface les clés `pend:` des messages désormais en D1 (best-effort : une clé restante est rejouée sans doublon). */
+  async _forgetPending(recs) {
+    const st = this.state.storage;
+    if (!recs.length || typeof st.delete !== 'function') return;
+    await Promise.all(recs.map(async (m) => {
+      try { await st.delete(pendKey(m)); } catch (e) { console.warn('[ConversationDO] effacement pend:', String(e)); }
+    }));
+  }
+
+  /** A2-01c : une ligne refusée DÉFINITIVEMENT par SQLite n'est jamais jetée en silence : quarantaine journalisée. */
+  async _quarantine(m, err, report) {
+    const why = String(err.message || err);
+    console.error('[ConversationDO] quarantaine', m.id, why);
+    report('quarantine ' + m.id + ': ' + why);
+    const st = this.state.storage;
+    try {
+      await st.put(QUAR_PREFIX + pendKey(m).slice(PEND_PREFIX.length), { rec: m, error: why, at: Date.now() });
+      if (typeof st.delete === 'function') await st.delete(pendKey(m));
+    } catch (e) {
+      // La clé `pend:` reste : la ligne sera rechargée au prochain démarrage (jamais perdue).
+      console.error('[ConversationDO] quarantaine non écrite', m.id, String(e));
+    }
+  }
+
+  /** Contre-pression : le buffer en RAM est borné (une panne D1 longue ne fait pas exploser la mémoire). */
+  _pendingFull() {
+    if (this.pendingMessages.length + this._inflight.length >= MAX_PENDING) return true;
+    let bytes = 0;
+    for (const m of this.pendingMessages) bytes += String(m.ciphertext).length;
+    return bytes >= MAX_PENDING_BYTES;
+  }
+
+  /** A2-08 : identifiant serveur STABLE pour un identifiant client donné (même auteur, même conversation). */
+  async _stableId(session, clientId) {
+    const data = new TextEncoder().encode(session.convId + '\u0000' + session.userId + '\u0000' + clientId);
+    const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', data))]
+      .slice(0, 16).map((b) => b.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+  }
+
+  _remember(rec) {
+    this._recent.set(rec.id, { seq: rec.seq, ts: rec.ts });
+    if (this._recent.size > RECENT_IDS_MAX) this._recent.delete(this._recent.keys().next().value);
   }
 
   /** Politique e2e_strict (system_config.FEATURE_E2E_STRICT), rechargée au plus toutes les 60 s. */
@@ -217,6 +337,11 @@ export class ConversationDO {
         });
       }
       try {
+        if (this._pendingFull()) {
+          return new Response(JSON.stringify({ ok: false, error: 'busy' }), {
+            status: 503, headers: { 'Content-Type': 'application/json' }
+          });
+        }
         await this.state.blockConcurrencyWhile(async () => {
           this.seq++;
           await this.state.storage.put('seq', this.seq);
@@ -232,10 +357,16 @@ export class ConversationDO {
           expires_at: v.fields.expires_at,
           seq: this.seq
         };
+        // A2-07 : « ok » seulement une fois DURABLE (stockage du DO). Avant, flushToD1 avalait
+        // la panne D1 et l'on répondait 200 avec la lettre en RAM seulement. Un échec du stockage
+        // lève → 500 → le cron relâche la réclamation et réessaie.
+        await this._persistPending(rec);
         this.pendingMessages.push(rec);
+        this._armFlushAlarm();
+        await this._recheckStale(null);
         this.broadcast({ type: 'message', ...rec });
         await this.notifyOfflineMembers(rec);
-        await this.flushToD1();   // durable AVANT d'acquitter
+        await this.flushToD1();   // au mieux tout de suite en D1 ; sinon l'alarme réessaie (rien n'est perdu)
         return new Response(JSON.stringify({ ok: true, id: rec.id }), {
           headers: { 'Content-Type': 'application/json' }
         });
@@ -244,6 +375,22 @@ export class ConversationDO {
           status: 500, headers: { 'Content-Type': 'application/json' }
         });
       }
+    }
+
+    // A2-02 : révocation IMMÉDIATE des sockets d'un utilisateur (retrait du groupe, exclusion,
+    // suspension, déconnexion forcée, suppression de compte / de conversation). Appel interne de
+    // l'api-worker, authentifié par un jeton court signé (typ 'dorevoke', même clé que 'wsfwd') ;
+    // le routeur public n'atteint le DO que par `/api/conversations/:id/ws` (chemin en /ws).
+    if (url.pathname.endsWith('/internal/revoke')) {
+      const auth = request.headers.get('Authorization') || '';
+      const claims = request.method === 'POST' ? await this.verifyJWT(auth.replace(/^Bearer\s+/i, '')) : null;
+      if (!claims || claims.typ !== REVOKE_TYP || !claims.sub || !claims.conv) {
+        return new Response(JSON.stringify({ ok: false, error: 'forbidden' }), {
+          status: 403, headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const closed = this._closeUserSessions(claims.sub, claims.conv);
+      return new Response(JSON.stringify({ ok: true, closed }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     // WebSocket upgrade
@@ -301,7 +448,7 @@ export class ConversationDO {
       const acct = await this.env.APEX_CHAT_DB.prepare(
         'SELECT is_banned, status, last_force_logout_at FROM users WHERE id=?'
       ).bind(userId).first();
-      if (acct && (acct.is_banned || acct.status === 'deleted' ||
+      if (acct && (acct.is_banned || acct.status === 'deleted' || acct.status === 'suspended' ||
           (acct.last_force_logout_at && jwtPayload.iat &&
            acct.last_force_logout_at > jwtPayload.iat * 1000))) {
         server.accept();
@@ -330,6 +477,11 @@ export class ConversationDO {
       messageCount: 0,           // pour rate limit
       lastReset: Date.now()
     });
+    // A2-02 : filet périodique (une socket muette — ni trame ni ping — est quand même re-vérifiée).
+    // Pas d'alarme de re-vérification si un flush est en attente : son alarme passe en premier et
+    // réarme ce filet ensuite (sinon on retarderait l'écriture D1).
+    this._recheckTimer = true;
+    if (!this.pendingMessages.length && !this._inflight.length) this._armAlarmAt(connectedAt + RECHECK_TIMER_MS);
 
     // Send hello
     server.send(JSON.stringify({
@@ -362,8 +514,9 @@ export class ConversationDO {
       const rows = [...(hist.results || []), ...(cles.results || [])]
         .filter(r => (seen.has(r.id) ? false : (seen.add(r.id), true)))
         .sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));
-      // Ajouter les messages encore en buffer (pas encore flushés en D1)
-      for (const pm of this.pendingMessages) {
+      // Ajouter les messages encore en buffer (pas encore flushés en D1) — y compris le lot en cours
+      // d'écriture (A2-05 : une connexion pendant le flush ne voyait ni D1 ni buffer).
+      for (const pm of [...this._inflight, ...this.pendingMessages]) {
         if (pm.conv_id === convId && !seen.has(pm.id)) {
           rows.push({ id: pm.id, sender_id: pm.sender_id, ciphertext: pm.ciphertext,
             mime: pm.mime, ts: pm.ts, reply_to: pm.reply_to || null,
@@ -507,7 +660,8 @@ export class ConversationDO {
           'SELECT is_banned, status, last_force_logout_at FROM users WHERE id=?'
         ).bind(session.userId).first();
         const authAt = session.authAt || session.connectedAt || 0;
-        if (acct && (acct.is_banned || acct.status === 'deleted' ||
+        // A2-02 : 'suspended' (banUser admin) est refusé comme côté REST (getAuthUser).
+        if (acct && (acct.is_banned || acct.status === 'deleted' || acct.status === 'suspended' ||
             (acct.last_force_logout_at && acct.last_force_logout_at > authAt))) {
           reason = 'Session révoquée';
         }
@@ -518,16 +672,113 @@ export class ConversationDO {
     }
     session.lastMemberCheck = now;
     if (!reason) return true;
+    this._dropSession(ws, session, reason);
+    return false;
+  }
+
+  _dropSession(ws, session, reason) {
+    const now = Date.now();
     this.sessions.delete(ws);
     this.broadcast({ type: 'presence', userId: session.userId, action: 'leave', status: 'offline', last_seen: now, ts: now });
     try { ws.close(1008, reason); } catch (_) {}
-    return false;
+  }
+
+  /**
+   * A2-02 : avant toute diffusion, les AUTRES sockets dont la dernière vérification date de plus de
+   * MEMBER_RECHECK_MS sont re-vérifiées. Un membre retiré qui se contente d'écouter (ou n'envoie rien)
+   * ne reçoit donc plus rien au-delà de cette fenêtre. Requêtes D1 seulement pour les sessions périmées.
+   */
+  async _recheckStale(exclude) {
+    // _recheckMembership ne touche D1 que pour une session dont la dernière vérification est périmée.
+    await Promise.all([...this.sessions].filter(([w]) => w !== exclude).map(([w, s]) => this._recheckMembership(w, s)));
+  }
+
+  /** Révocation interne : ferme en 1008 toutes les sockets de `userId` sur cette conversation. */
+  _closeUserSessions(userId, convId) {
+    let n = 0;
+    for (const [w, s] of [...this.sessions]) {
+      if (s.userId !== userId || s.convId !== convId) continue;
+      this._dropSession(w, s, 'Accès retiré');
+      n++;
+    }
+    return n;
   }
 
   /** Message encore en mémoire (buffer ou flush en cours) — pour l'autorisation edit/delete. */
   _findBuffered(id) {
     return this.pendingMessages.find(m => m.id === id) ||
-      (this._inflight || []).find(m => m.id === id) || null;
+      this._inflight.find(m => m.id === id) || null;
+  }
+
+  /** Ré-enregistre une copie en attente modifiée (édition/suppression). false = erreur envoyée, pas d'accusé. */
+  async _persistEdit(ws, pend, clientId) {
+    try {
+      await this._persistPending(pend);
+      return true;
+    } catch (e) {
+      console.error('[ConversationDO] stockage de la modification impossible:', String(e));
+      ws.send(JSON.stringify({ type: 'error', code: 'not_durable', client_id: clientId, id: pend.id, message: 'Modification non enregistrée, réessaie' }));
+      return false;
+    }
+  }
+
+  /**
+   * A2-03 / A2-16 : une page de rattrapage. Curseur (after_ts, after_id) exclusif, ordre (ts, id).
+   * Fusionne D1 et les messages pas encore écrits (buffer + lot en cours) ; page bornée.
+   * `changed_since` (1re page) : renvoie aussi les messages PLUS ANCIENS que le curseur édités ou
+   * supprimés depuis — sinon un appareil absent gardait l'ancien texte d'un message « supprimé pour tous ».
+   */
+  async _historySince(ws, session, msg) {
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+    const afterTs = num(msg.after_ts);
+    const afterId = (typeof msg.after_id === 'string' && msg.after_id.length <= MAX_REF_ID) ? msg.after_id : '';
+    const limit = Math.min(CATCHUP_PAGE_MAX, num(msg.limit) || CATCHUP_PAGE_DEFAULT);
+    const joinedAt = Number(session.joinedAt) || 0;
+    const cols = 'SELECT id, sender_id, ciphertext, mime, ts, reply_to, view_once, expires_at, edited_at, deleted_at FROM messages';
+    const db = this.env.APEX_CHAT_DB;
+    let page;
+    let changes = null;
+    try {
+      const res = await db.prepare(
+        cols + ' WHERE conv_id=? AND ts >= ? AND (ts > ? OR (ts = ? AND id > ?)) ORDER BY ts ASC, id ASC LIMIT ?'
+      ).bind(session.convId, joinedAt, afterTs, afterTs, afterId, limit + 1).all();
+      const merged = new Map();
+      for (const r of res.results) merged.set(r.id, r);
+      const buffered = [...this._inflight, ...this.pendingMessages].filter((m) => m.conv_id === session.convId);
+      for (const m of buffered) {
+        if (m.ts >= joinedAt && afterCursor(m, afterTs, afterId)) merged.set(m.id, m);   // la copie en RAM est la plus récente
+      }
+      page = [...merged.values()].sort(byTsId);
+      if (msg.changed_since != null) {
+        const since = num(msg.changed_since);
+        const ch = await db.prepare(
+          cols + ' WHERE conv_id=? AND ts >= ? AND (edited_at > ? OR deleted_at > ?) ORDER BY ts ASC LIMIT ?'
+        ).bind(session.convId, joinedAt, since, since, CATCHUP_CHANGES_MAX).all();
+        const cm = new Map();
+        for (const r of ch.results) cm.set(r.id, r);
+        for (const m of buffered) {
+          if (m.ts >= joinedAt && (m.edited_at > since || m.deleted_at > since)) cm.set(m.id, m);
+        }
+        changes = [...cm.values()].sort(byTsId);
+      }
+    } catch (e) {
+      console.error('[ConversationDO] rattrapage impossible:', String(e));
+      return ws.send(JSON.stringify({ type: 'error', code: 'history_failed', message: 'Rattrapage indisponible, nouvel essai à la reconnexion' }));
+    }
+    const more = page.length > limit;
+    if (more) page = page.slice(0, limit);
+    const last = page[page.length - 1];
+    const now = Date.now();
+    const visible = (r) => !r.expires_at || r.expires_at > now;
+    ws.send(JSON.stringify({
+      type: 'history_page', conv_id: session.convId,
+      messages: page.filter(visible).map(publicRow),
+      ...(changes ? { changes: changes.filter(visible).map(publicRow) } : {}),
+      more,
+      // Le curseur avance aussi sur les messages expirés (filtrés) : la pagination progresse toujours.
+      cursor: last ? { ts: last.ts, id: String(last.id) } : { ts: afterTs, id: afterId },
+      server_ts: now,
+    }));
   }
 
   /** Nombre de lignes modifiées par un UPDATE D1 (null si le driver ne le dit pas). */
@@ -558,24 +809,44 @@ export class ConversationDO {
 
     // P0 FIX (audit) : rate limit 100 messages/min/session — étendu (revue 08.10.2026)
     // à reaction/edit/delete/read/typing/signaling (seuils généreux, cf. RATE_LIMITS).
+    // A2-08 : l'identifiant client (message ou édition) est renvoyé dans l'accusé ET dans les erreurs,
+    // pour que l'app retire de sa boîte d'envoi exactement ce qui a été traité (ou refusé pour de bon).
+    const clientId = (typeof msg.id === 'string' && msg.id && msg.id.length <= MAX_REF_ID) ? msg.id : undefined;
+
     if (this._rateLimited(session, msg)) {
-      return ws.send(JSON.stringify({ type: 'error', code: 'rate_limit',
+      return ws.send(JSON.stringify({ type: 'error', code: 'rate_limit', client_id: clientId,
         message: msg.type === 'message' ? 'Trop de messages, attends 1 minute' : 'Trop de requêtes, attends 1 minute' }));
     }
 
-    // Re-vérification périodique membership / ban / force_logout (sauf ping).
-    if (msg.type !== 'ping' && !(await this._recheckMembership(ws, session))) return;
+    // Re-vérification périodique membership / ban / suspension / force_logout — y compris sur un
+    // simple ping (A2-02 : un membre retiré qui ne fait qu'écouter restait connecté indéfiniment).
+    if (!(await this._recheckMembership(ws, session))) return;
+    // A2-02 : et les AUTRES sockets périmées sont re-vérifiées avant qu'une trame ne leur soit diffusée.
+    if (msg.type !== 'ping') await this._recheckStale(ws);
 
     switch (msg.type) {
       case 'message': {
         // Nouveau message chiffré (ciphertext). Revue 08.10.2026 : TOUS les champs sont
         // validés à la réception — une ligne invalide bloquait flushToD1 pour toujours.
         const v = validateMessageFields(msg);
-        if (!v.ok) return ws.send(JSON.stringify({ type: 'error', code: 'invalid_message', message: v.error }));
+        if (!v.ok) return ws.send(JSON.stringify({ type: 'error', code: 'invalid_message', client_id: clientId, message: v.error }));
         // Audit 17/09/2026 (P1) : l'interrupteur admin « e2e_strict » n'était lu nulle part.
         // Quand il est ON, un message non chiffré de bout en bout (préfixe E2E1:/E2E2:) est refusé.
         if (!E2E_TAG_RE.test(v.fields.ciphertext) && await this.e2eStrictFor(session.convId)) {
-          return ws.send(JSON.stringify({ type: 'error', code: 'e2e_required', message: 'Chiffrement de bout en bout obligatoire : la clé de ton contact doit être établie avant d\'envoyer' }));
+          return ws.send(JSON.stringify({ type: 'error', code: 'e2e_required', client_id: clientId, message: 'Chiffrement de bout en bout obligatoire : la clé de ton contact doit être établie avant d\'envoyer' }));
+        }
+
+        // A2-08 : un renvoi (même identifiant client) reçoit le MÊME identifiant serveur → ni
+        // deuxième diffusion, ni deuxième ligne (ON CONFLICT(id) en D1 si l'instance a redémarré).
+        const messageId = clientId ? await this._stableId(session, clientId) : crypto.randomUUID();
+        const already = this._findBuffered(messageId) || this._recent.get(messageId);
+        if (already) {
+          ws.send(JSON.stringify({ type: 'ack', id: messageId, seq: already.seq, ts: already.ts, client_id: clientId, dup: true }));
+          break;
+        }
+        if (this._pendingFull()) {
+          // Contre-pression : refus SANS accusé — l'app garde le message dans sa boîte d'envoi.
+          return ws.send(JSON.stringify({ type: 'error', code: 'busy', client_id: clientId, message: 'Serveur occupé, nouvel essai automatique' }));
         }
 
         // P0 FIX (audit) : utiliser blockConcurrencyWhile pour seq atomic
@@ -584,7 +855,6 @@ export class ConversationDO {
           await this.state.storage.put('seq', this.seq);
         });
 
-        const messageId = crypto.randomUUID();
         const ts = Date.now();
 
         const messageRecord = {
@@ -601,11 +871,19 @@ export class ConversationDO {
           seq: this.seq
         };
 
+        // A2-01 : DURABLE AVANT l'accusé et avant la diffusion (stockage du DO, rechargé au
+        // redémarrage). Échec du stockage → ni accusé ni diffusion : l'app renverra.
+        try {
+          await this._persistPending(messageRecord);
+        } catch (e) {
+          console.error('[ConversationDO] stockage du message impossible:', String(e));
+          return ws.send(JSON.stringify({ type: 'error', code: 'not_durable', client_id: clientId, message: 'Message non enregistré, nouvel essai automatique' }));
+        }
         this.pendingMessages.push(messageRecord);
+        this._remember(messageRecord);
         // Audit 17/09/2026 (P1) : le buffer n'était vidé qu'au 10e message ou au message
         // SUIVANT après 5 s — jamais par une alarme (alarm() existait, setAlarm n'était
-        // appelé nulle part) ni à la fermeture. Un DO évincé emportait jusqu'à 9 messages
-        // déjà ACQUITTÉS au client. L'alarme garantit un flush ≤ 5 s après le dernier message.
+        // appelé nulle part) ni à la fermeture. L'alarme garantit un flush ≤ 5 s après le dernier message.
         this._armFlushAlarm();
 
         // Fan-out aux AUTRES clients (pas au sender — il reçoit déjà son ack
@@ -618,15 +896,24 @@ export class ConversationDO {
         // Push notif aux déconnectés (best-effort)
         await this.notifyOfflineMembers(messageRecord);
 
-        // Flush D1 si > 10 messages OU > 5s
-        if (this.pendingMessages.length >= 10 || Date.now() - this.lastFlush > 5000) {
+        // Flush D1 si > 10 messages OU > 5s — mais pas pendant le recul d'une panne D1 (A2-01c :
+        // chaque message relançait un flush voué à l'échec ; les messages sont déjà durables).
+        if ((this.pendingMessages.length >= 10 || Date.now() - this.lastFlush > FLUSH_DELAY_MS) &&
+            Date.now() >= this._flushRetryAt) {
           await this.flushToD1();
         }
 
         // client_id : l'id local du message envoyé — l'app associe l'accusé au BON message (revue 08.10).
-        ws.send(JSON.stringify({ type: 'ack', id: messageId, seq: this.seq, ts, client_id: (typeof msg.id === 'string' && msg.id.length <= 128) ? msg.id : undefined }));
+        ws.send(JSON.stringify({ type: 'ack', id: messageId, seq: messageRecord.seq, ts, client_id: clientId }));
         break;
       }
+
+      // A2-03 : rattrapage paginé — tout ce qui a été écrit APRÈS un curseur (ts, id), dans la
+      // limite de joined_at, sans contenu supprimé, sans message expiré. Le client pagine
+      // (`more`) jusqu'à être à jour : plus aucun message n'est perdu au-delà des 50 de l'historique.
+      case 'history_since':
+        await this._historySince(ws, session, msg);
+        break;
 
       case 'typing':
         this.broadcast({
@@ -739,14 +1026,19 @@ export class ConversationDO {
           return ws.send(JSON.stringify({ type: 'error', code: 'e2e_required', message: 'Chiffrement de bout en bout obligatoire : modification en clair refusée' }));
         }
         const editedAt = Date.now();
-        const res = await this.env.APEX_CHAT_DB.prepare(
-          'UPDATE messages SET ciphertext=?, edited_at=? WHERE id=? AND conv_id=? AND sender_id=? AND deleted_at IS NULL'
-        ).bind(editContent, editedAt, msg.message_id, session.convId, session.userId).run();
-        // Met aussi à jour un éventuel message encore en attente de flush.
+        // A2-05 : la copie en attente (buffer OU lot en cours d'écriture) est modifiée AVANT tout
+        // appel D1, versionnée (le flush rejoue une ligne modifiée pendant son écriture) et
+        // ré-enregistrée dans le stockage du DO avant l'accusé (survit à un redémarrage).
         const buf = this._findBuffered(msg.message_id);
         const pend = (buf && buf.sender_id === session.userId && !buf.deleted_at &&
           (buf.conv_id == null || buf.conv_id === session.convId)) ? buf : null;
-        if (pend) { pend.ciphertext = editContent; pend.edited_at = editedAt; }
+        if (pend) {
+          pend.ciphertext = editContent; pend.edited_at = editedAt; pend._v = (pend._v || 0) + 1;
+          if (!(await this._persistEdit(ws, pend, clientId))) return;
+        }
+        const res = await this.env.APEX_CHAT_DB.prepare(
+          'UPDATE messages SET ciphertext=?, edited_at=? WHERE id=? AND conv_id=? AND sender_id=? AND deleted_at IS NULL'
+        ).bind(editContent, editedAt, msg.message_id, session.convId, session.userId).run();
         // Revue 08.10.2026 : on ne diffuse QUE si l'appelant est bien l'auteur
         // (une ligne D1 modifiée, ou son message encore en buffer). Avant, un UPDATE
         // qui ne matchait rien (pas l'auteur) était quand même diffusé à tous.
@@ -766,7 +1058,7 @@ export class ConversationDO {
           userId: session.userId,
           ts: editedAt,
         });
-        ws.send(JSON.stringify({ type: 'ack', id: msg.message_id, edited_at: editedAt }));
+        ws.send(JSON.stringify({ type: 'ack', id: msg.message_id, edited_at: editedAt, client_id: clientId }));
         break;
       }
 
@@ -779,13 +1071,17 @@ export class ConversationDO {
           return ws.send(JSON.stringify({ type: 'error', message: 'delete: message_id requis' }));
         }
         const deletedAt = Date.now();
-        const res = await this.env.APEX_CHAT_DB.prepare(
-          "UPDATE messages SET deleted_at=?, ciphertext='' WHERE id=? AND conv_id=? AND sender_id=?"
-        ).bind(deletedAt, msg.message_id, session.convId, session.userId).run();
+        // A2-05 : même règle que l'édition — copie en attente modifiée d'abord, versionnée, durable.
         const buf = this._findBuffered(msg.message_id);
         const pend = (buf && buf.sender_id === session.userId &&
           (buf.conv_id == null || buf.conv_id === session.convId)) ? buf : null;
-        if (pend) { pend.deleted_at = deletedAt; pend.ciphertext = ''; }
+        if (pend) {
+          pend.deleted_at = deletedAt; pend.ciphertext = ''; pend._v = (pend._v || 0) + 1;
+          if (!(await this._persistEdit(ws, pend, clientId))) return;
+        }
+        const res = await this.env.APEX_CHAT_DB.prepare(
+          "UPDATE messages SET deleted_at=?, ciphertext='' WHERE id=? AND conv_id=? AND sender_id=?"
+        ).bind(deletedAt, msg.message_id, session.convId, session.userId).run();
         const ch = ConversationDO._changes(res);
         const authorized = !!pend || (ch != null ? ch > 0 : await this._isAuthorInDb(session, msg.message_id, true));
         if (!authorized) {
@@ -798,7 +1094,7 @@ export class ConversationDO {
           userId: session.userId,
           ts: deletedAt,
         });
-        ws.send(JSON.stringify({ type: 'ack', id: msg.message_id, deleted_at: deletedAt }));
+        ws.send(JSON.stringify({ type: 'ack', id: msg.message_id, deleted_at: deletedAt, client_id: clientId }));
         break;
       }
 
@@ -1064,40 +1360,61 @@ export class ConversationDO {
     }
   }
 
-  /** Programme une alarme 5 s (idempotent, best-effort : un mock sans setAlarm ne casse rien). */
-  _armFlushAlarm() {
+  /** Programme l'alarme du DO à `at` (best-effort : un mock sans setAlarm ne casse rien). */
+  _armAlarmAt(at) {
     try {
       const st = this.state && this.state.storage;
       if (st && typeof st.setAlarm === 'function') {
-        const p = st.setAlarm(Date.now() + 5000);
+        const p = st.setAlarm(at);
         if (p && typeof p.catch === 'function') p.catch(() => {});
       }
     } catch (_) { /* best-effort */ }
   }
 
-  async flushToD1() {
-    if (this.pendingMessages.length === 0) return;
+  /** Alarme de flush à +5 s — ou à la fin du recul en cours si D1 est en panne (A2-01c). */
+  _armFlushAlarm() {
+    this._armAlarmAt(Math.max(Date.now() + FLUSH_DELAY_MS, this._flushRetryAt));
+  }
 
-    const toFlush = [...this.pendingMessages];
+  /**
+   * Un seul flush à la fois : un appel concurrent attend celui en cours. Avant, un second flush
+   * écrasait puis vidait `_inflight` (A2-05) : les éditions sur le premier lot étaient perdues.
+   */
+  async flushToD1() {
+    if (this._flushing) return this._flushing;
+    if (this.pendingMessages.length === 0) return;
+    this._flushing = this._flushOnce();
+    try { await this._flushing; } finally { this._flushing = null; }
+  }
+
+  async _flushOnce() {
+    const toFlush = this.pendingMessages;
     this.pendingMessages = [];
     this._inflight = toFlush;
     this.lastFlush = Date.now();
+    const db = this.env.APEX_CHAT_DB;
 
-    // Revue 08.10.2026 : insertion IDEMPOTENTE (ON CONFLICT(id) DO NOTHING) — un flush
-    // partiellement réussi ne peut plus boucler sur une clé dupliquée. edited_at/deleted_at
-    // sont persistés (un message édité/supprimé avant le flush reste édité/supprimé).
-    const stmt = this.env.APEX_CHAT_DB.prepare(
+    // Revue 08.10.2026 : insertion IDEMPOTENTE. Lot A (A2-05) : une ligne déjà présente n'est mise
+    // à jour QUE pour rejouer une édition/suppression (jamais pour ressusciter une ligne supprimée
+    // entre-temps — compte supprimé —, ni pour réécrire une ligne inchangée).
+    const stmt = db.prepare(
       `INSERT INTO messages (id, conv_id, sender_id, ciphertext, mime, ts, reply_to, thread_root, view_once, expires_at, edited_at, deleted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET ciphertext=excluded.ciphertext, edited_at=excluded.edited_at, deleted_at=excluded.deleted_at
+       WHERE messages.deleted_at IS NULL AND (excluded.edited_at IS NOT NULL OR excluded.deleted_at IS NOT NULL)`
     );
     const bindRow = (m) => stmt.bind(m.id, m.conv_id, m.sender_id,
       (m.ciphertext == null ? '' : m.ciphertext), m.mime == null ? null : m.mime, m.ts,
       m.reply_to == null ? null : m.reply_to, m.thread_root == null ? null : m.thread_root,
       m.view_once ? 1 : 0, m.expires_at == null ? null : m.expires_at,
       m.edited_at == null ? null : m.edited_at, m.deleted_at == null ? null : m.deleted_at);
+    // Version de chaque ligne au moment où ses valeurs sont liées (A2-05).
+    const written = new Map(toFlush.map((m) => [m, m._v || 0]));
 
     const persisted = [];
     const requeue = [];
+    const poisoned = [];
+    let transient = false;
     const fails = this._flushFails || (this._flushFails = new Map());
     // Un lot qui a déjà échoué une fois est rejoué LIGNE PAR LIGNE : une ligne
     // empoisonnée ne peut plus bloquer toute la conversation.
@@ -1113,12 +1430,13 @@ export class ConversationDO {
     try {
       if (!rowMode) {
         try {
-          await this.env.APEX_CHAT_DB.batch(toFlush.map(bindRow));
+          await db.batch(toFlush.map(bindRow));
           persisted.push(...toFlush);
         } catch (e) {
           console.error('flushToD1 error', e.message);
           // Re-queue : le prochain flush passera en mode ligne par ligne.
           for (const m of toFlush) { fails.set(m.id, (fails.get(m.id) || 0) + 1); requeue.push(m); }
+          transient = true;
           report(e.message);
         }
       } else {
@@ -1127,15 +1445,15 @@ export class ConversationDO {
             await bindRow(m).run();
             persisted.push(m);
           } catch (e) {
-            const n = (fails.get(m.id) || 0) + 1;
-            if (isPermanentDbError(e) || n >= FLUSH_MAX_ATTEMPTS) {
-              // Ligne définitivement invalide : on l'abandonne (journalisée) au lieu de bloquer.
-              console.error('flushToD1 drop row', m.id, e.message);
+            if (isPermanentDbError(e)) {
+              // A2-01c : ligne refusée pour de bon → quarantaine (stockage + journal), jamais effacée en silence.
               fails.delete(m.id);
-              report('drop ' + m.id + ': ' + e.message);
+              poisoned.push([m, e]);
             } else {
-              fails.set(m.id, n);
+              // A2-01c : une erreur TRANSITOIRE n'abandonne plus jamais un message acquitté.
+              fails.set(m.id, (fails.get(m.id) || 0) + 1);
               requeue.push(m);
+              transient = true;
             }
           }
         }
@@ -1144,31 +1462,64 @@ export class ConversationDO {
 
       for (const m of persisted) fails.delete(m.id);
 
+      // A2-05 : une ligne éditée/supprimée PENDANT son écriture a été écrite avec ses anciennes
+      // valeurs : on la réécrit aussitôt (upsert). Si ça échoue, elle reste en file (et en stockage).
+      const stale = persisted.filter((m) => (m._v || 0) !== written.get(m));
+      if (stale.length) {
+        const snap = stale.map((m) => m._v);
+        try {
+          await db.batch(stale.map(bindRow));
+          stale.forEach((m, i) => written.set(m, snap[i]));
+        } catch (e) {
+          console.error('flushToD1 replay error', e.message);
+          report('replay: ' + e.message);
+        }
+      }
+      const done = [];
+      for (const m of persisted) ((m._v || 0) === written.get(m) ? done : requeue).push(m);
+      await this._forgetPending(done);
+      for (const [m, e] of poisoned) await this._quarantine(m, e, report);
+
       // Update conv last_msg_ts (un échec ici ne remet PAS les messages en file).
       // Une distribution de clés ne fait pas remonter la conversation : dernier message VISIBLE seulement.
-      const visibles = persisted.filter((m) => !MIMES_SILENCIEUX.has(m.mime));
+      // A2-13 : jamais en arrière (un message rejoué après un plus récent ne redescend pas la conversation).
+      const visibles = done.filter((m) => !MIMES_SILENCIEUX.has(m.mime));
       if (visibles.length) {
-        const lastMsg = visibles[visibles.length - 1];
+        const lastMsg = visibles.reduce((a, b) => (b.ts >= a.ts ? b : a));
         try {
-          await this.env.APEX_CHAT_DB.prepare(
-            'UPDATE conversations SET last_msg_id=?, last_msg_ts=? WHERE id=?'
+          await db.prepare(
+            'UPDATE conversations SET last_msg_id=?1, last_msg_ts=?2 WHERE id=?3 AND (last_msg_ts IS NULL OR last_msg_ts <= ?2)'
           ).bind(lastMsg.id, lastMsg.ts, lastMsg.conv_id).run();
         } catch (e) {
           console.error('flushToD1 last_msg update error', e.message);
         }
       }
     } finally {
-      // Re-queue les messages non persistés (en tête, ordre conservé).
-      if (requeue.length) this.pendingMessages.unshift(...requeue);
+      // Re-queue les messages non persistés (en tête, ordre de seq conservé).
+      if (requeue.length) {
+        requeue.sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0));
+        this.pendingMessages.unshift(...requeue);
+      }
       this._inflight = [];
+      // A2-01c : recul exponentiel borné pendant une panne D1 (5 s, 10 s, 20 s… ≤ 5 min).
+      if (transient) {
+        this._flushFailStreak++;
+        this._flushRetryAt = Date.now() + Math.min(FLUSH_BACKOFF_MAX_MS, FLUSH_DELAY_MS * 2 ** (this._flushFailStreak - 1));
+      } else {
+        this._flushFailStreak = 0;
+        this._flushRetryAt = 0;
+      }
     }
   }
 
   async alarm() {
     // Alarme armée par _armFlushAlarm() à chaque message : flush ≤ 5 s après le dernier.
     await this.flushToD1();
-    // Si le flush a échoué (re-queue), on réessaie plus tard plutôt que d'attendre le message suivant.
+    // A2-02 : filet périodique — les sockets sont re-vérifiées même si personne n'envoie rien.
+    if (this._recheckTimer) await this._recheckStale(null);
+    // Si le flush a échoué (re-queue), on réessaie plus tard (recul) plutôt que d'attendre le message suivant.
     if (this.pendingMessages.length > 0) this._armFlushAlarm();
+    else if (this._recheckTimer && this.sessions.size > 0) this._armAlarmAt(Date.now() + RECHECK_TIMER_MS);
   }
 }
 

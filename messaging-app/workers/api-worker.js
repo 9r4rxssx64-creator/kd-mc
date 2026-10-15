@@ -1605,7 +1605,9 @@ export async function handleDeleteMe(request, env) {
     // 2) Messages envoyés : contenu effacé (tombstone : les autres voient « message supprimé »)
     // Revue 08.10.2026 : ciphertext est NOT NULL → contenu remplacé par '' (NULL était refusé, rien n'était effacé).
     await run('messages', "UPDATE messages SET ciphertext='', deleted_at=? WHERE sender_id=? AND deleted_at IS NULL", now, uid);
-    // 3) Liens et appareils
+    // 3) Liens et appareils. Lot A (A2-02) : ses conversations sont lues AVANT de rompre les liens,
+    // pour fermer ensuite ses sockets temps réel encore ouvertes.
+    const convsToRevoke = await userConvIds(env, uid);
     await run('conversation_members', 'DELETE FROM conversation_members WHERE user_id=?', uid);
     await run('contacts', 'DELETE FROM contacts WHERE user_id=? OR contact_id=?', uid, uid);
     await run('push_subscriptions', 'DELETE FROM push_subscriptions WHERE user_id=?', uid);
@@ -1632,6 +1634,7 @@ export async function handleDeleteMe(request, env) {
       try { await auditLog(env, uid, 'rgpd_delete_failed', 'user', uid, done, null, request.headers.get('user-agent') || ''); } catch (_) {}
       return err('Suppression incomplète, réessaie ou contacte l\'assistance', 500, 'delete_failed', { details: done });
     }
+    await revokeUserSockets(env, uid, convsToRevoke);
     // 5) KV : quotas / demandes premium
     try { if (env.APEX_CHAT_KV) { const l = await env.APEX_CHAT_KV.list({ prefix: 'quota:' + uid }); for (const k of (l.keys || [])) await env.APEX_CHAT_KV.delete(k.name); } } catch (_) {}
   } catch (e) { return err('Suppression incomplète, réessaie ou contacte l\'assistance', 500, 'delete_failed', e); }
@@ -3611,11 +3614,13 @@ async function handleAdminCommand(request, env) {
     case 'kickUser':
       await env.APEX_CHAT_DB.prepare('DELETE FROM conversation_members WHERE conv_id=? AND user_id=?')
         .bind(params.convId, params.userId).run();
+      await revokeConvSockets(env, params.convId, params.userId);   // Lot A (A2-02)
       result = { ok: true };
       break;
 
     case 'banUser':
       await env.APEX_CHAT_DB.prepare("UPDATE users SET status='suspended' WHERE id=?").bind(params.userId).run();
+      await revokeUserSockets(env, params.userId);                  // Lot A (A2-02)
       result = { ok: true };
       break;
 
@@ -3653,6 +3658,7 @@ async function handleAdminCommand(request, env) {
       // (REST + WebSocket), plus seulement cosmétique (last_seen=0 ne révoquait rien).
       await env.APEX_CHAT_DB.prepare("UPDATE users SET last_seen=?, last_force_logout_at=? WHERE id=?")
         .bind(0, Date.now(), params.userId).run();
+      await revokeUserSockets(env, params.userId);                  // Lot A (A2-02)
       result = { ok: true };
       break;
 
@@ -4244,6 +4250,8 @@ async function handleAdminUserAction(userId, action, request, env) {
   } else {
     return err('Action inconnue: ' + action, 400);
   }
+  // Lot A (A2-02) : bloquer / déconnecter / supprimer coupe aussi les sockets temps réel ouvertes.
+  if (['block', 'ban', 'force_logout', 'delete'].includes(action)) await revokeUserSockets(env, userId);
 
   await auditLog(env, auth.sub, 'admin_user_' + action, 'user', userId,
     { action },
@@ -4585,6 +4593,46 @@ async function handleWsConversation(convId, request, env) {
   return doStub.fetch(new Request(fwd.toString(), request));
 }
 
+// Lot A (audit A2-02, 15.10.2026) — révocation IMMÉDIATE des sockets temps réel. Avant, un membre
+// retiré / exclu / suspendu gardait sa socket et RECEVAIT tout tant qu'il ne faisait qu'écouter.
+// Appel interne au ConversationDO (route /internal/revoke), authentifié par un jeton court signé
+// avec JWT_SIGN_KEY (typ 'dorevoke', 60 s) — même modèle que le relais 'wsfwd'. Le DO n'est
+// joignable par le public que via /api/conversations/:id/ws, donc cette route n'est pas exposée.
+// Best-effort : un échec n'empêche jamais l'action REST (le DO re-vérifie aussi de lui-même).
+const REVOKE_MAX_CONVS = 40;   // borne de sous-requêtes (offre gratuite) ; le DO re-vérifie le reste seul
+export async function revokeConvSockets(env, convId, userId) {
+  if (!env.CONVERSATION_DO) return false;
+  try {
+    const stub = env.CONVERSATION_DO.get(env.CONVERSATION_DO.idFromName('do_' + convId));
+    const now = Math.floor(Date.now() / 1000);
+    const tok = await signJWT({ sub: userId, conv: convId, typ: 'dorevoke', iat: now, exp: now + 60 }, env.JWT_SIGN_KEY);
+    const r = await stub.fetch(new Request('https://internal/internal/revoke', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + tok },
+    }));
+    return r.ok === true;
+  } catch (e) {
+    console.warn('[revoke-ws]', convId, String(e));
+    return false;
+  }
+}
+/** Conversations d'un utilisateur (les plus actives d'abord), lues AVANT qu'on ne supprime ses adhésions. */
+export async function userConvIds(env, userId) {
+  try {
+    const r = await env.APEX_CHAT_DB.prepare(
+      'SELECT m.conv_id FROM conversation_members m JOIN conversations c ON c.id = m.conv_id WHERE m.user_id=? ORDER BY c.last_msg_ts DESC LIMIT ?'
+    ).bind(userId, REVOKE_MAX_CONVS).all();
+    return ((r && r.results) || []).map((x) => x.conv_id);
+  } catch (e) {
+    console.warn('[revoke-ws] conversations de', userId, String(e));
+    return [];
+  }
+}
+export async function revokeUserSockets(env, userId, convIds) {
+  const ids = convIds || await userConvIds(env, userId);
+  const res = await Promise.all(ids.slice(0, REVOKE_MAX_CONVS).map((c) => revokeConvSockets(env, c, userId)));
+  return res.filter(Boolean).length;
+}
+
 // GET /api/conversations/:id/ws-diag — reproduit les checks du WS et renvoie
 // la cause EXACTE en JSON (le WebSocket ne révèle qu'un code 1006 opaque).
 // Le token peut venir du header OU de ?token= (comme le WS).
@@ -4733,6 +4781,8 @@ export async function handleRemoveMember(convId, userId, request, env) {
   await env.APEX_CHAT_DB.prepare(
     'DELETE FROM conversation_members WHERE conv_id=? AND user_id=?'
   ).bind(convId, userId).run();
+  // Lot A (A2-02) : ses sockets ouvertes sur cette conversation sont fermées tout de suite.
+  await revokeConvSockets(env, convId, userId);
 
   const recount = await env.APEX_CHAT_DB.prepare(
     'SELECT COUNT(*) as c FROM conversation_members WHERE conv_id=?'
@@ -4775,6 +4825,7 @@ export async function handleDeleteConversation(convId, request, env) {
     await env.APEX_CHAT_DB.prepare(
       'DELETE FROM conversation_members WHERE conv_id=? AND user_id=?'
     ).bind(convId, auth.sub).run();
+    await revokeConvSockets(env, convId, auth.sub);   // Lot A (A2-02)
 
     step = 'recount';
     const recount = await env.APEX_CHAT_DB.prepare(

@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Apex Chat v1.1.303 : ultra-audit, lot A (plus aucun message perdu)
+
+- Rattrapage paginé (`history_since`) : plus de limite à 50 messages manqués ; éditions/suppressions faites en ton absence appliquées.
+- ✓ = sauvegardé : stockage durable du serveur de conversation avant l'accusé, rechargé après redémarrage, jamais jeté.
+- Membre retiré / suspendu / banni : coupé tout de suite (révocation interne signée).
+- Messages éphémères, vue unique, citations : enfin envoyés et appliqués. Pas de doublon à la réémission.
+- Coût gratuit : +1 écriture et +1 effacement du stockage du DO par message ; minuterie de revérification 5 min (pas 45 s).
+- Non fait : A2-06 (résurrection du tampon après purge de conversation / suppression de compte) → lot C.
+- Mesuré : 112 fichiers / 1782 tests, couverture OK (DO 100 % / branches 99,15 %) ; 29/29 sabotages + 1 manuel. Leçon #543.
+
 ## 2026-10-15 (suite) — Mon lot « économie Actions » avait rendu 3 workflows invalides : corrigé deux fois, avec un détecteur général
 - Erreur de ma part : j'ai ajouté l'entrée `forcer` (puis `actions: read`) à 6 workflows ; 3 les avaient déjà → clé en double → fichier invalide pour GitHub → des runs rouges « workflow file issue » à chaque push sur main (0 min facturée). Mon contrôle YAML local (PyYAML) est trop tolérant pour voir ça.
 - Corrigé : mon entrée s'appelle `forcer_ration` ; le doublon de `permissions` est retiré (audit-lingua, voir-comme-kevin). Garde : `test:porte-ration` §8-10 — détecteur de clés sœurs en double dans TOUS les workflows, à tous les niveaux (blocs `run: |` sautés), prouvé sur un doublon recréé dans un vrai fichier. Leçons #531-#532.

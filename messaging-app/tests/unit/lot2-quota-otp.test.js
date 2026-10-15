@@ -136,8 +136,14 @@ describe('N — essais OTP réservés atomiquement', () => {
     DB.prepare = (sql) => {
       const st = prepare(sql);
       if (sql.startsWith('SELECT * FROM otp_pending')) {
-        const first = st.first;
-        st.first = async () => { const row = await first(); if (++readers >= 10) release(); await barrier; return row; };
+        // Lot A (A2-14) : bind() renvoie une NOUVELLE instruction (comme D1) → on piège l'instruction liée.
+        const bind = st.bind;
+        st.bind = (...a) => {
+          const b = bind(...a);
+          const first = b.first;
+          b.first = async () => { const row = await first(); if (++readers >= 10) release(); await barrier; return row; };
+          return b;
+        };
       }
       return st;
     };

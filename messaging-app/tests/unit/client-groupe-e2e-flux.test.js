@@ -16,7 +16,7 @@
 // lib/crypto-core.js via CLIENT_CRYPTO_PATH) : chaque comportement retiré fait échouer son test.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { pathToFileURL } from 'node:url';
-import { readIndex, extractDef, realEsc } from './client-extract.js';
+import { readIndex, extractDef, realEsc, LOT_A_WS_DEFS } from './client-extract.js';
 
 const CC = await import(process.env.CLIENT_CRYPTO_PATH
   ? pathToFileURL(process.env.CLIENT_CRYPTO_PATH).href
@@ -47,6 +47,7 @@ const DEFS = [
   'K._sendRefreshAt = ',
   'K._ensureFreshSession = async function(conv){',
   'K._encryptOutgoing = async function(conv, plaintext){',
+  'K._wireExtras = function(m){',   // Lot A (A2-15)
   'K._dispatchWire = function(convId, wire){',
   'K._sendSecure = async function(conv, plaintext, opts){',
   'K._pendingToastText = function(conv){',
@@ -63,6 +64,7 @@ const DEFS = [
   'K._markerFields = function(txt){',
   'K._chatHeaderSubtitle = function(conv){',
   'K._CRYPTO_CAPS = ',
+  ...LOT_A_WS_DEFS,   // Lot A : dépendances de _handleWsMessage
   { m: 'async function _handleWsMessage(data, convId){', end: '\n}\n' },
 ];
 

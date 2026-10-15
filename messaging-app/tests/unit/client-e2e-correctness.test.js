@@ -49,6 +49,7 @@ const DEFS = [
   'K._sendRefreshAt = ',
   'K._ensureFreshSession = async function(conv){',
   'K._encryptOutgoing = async function(conv, plaintext){',
+  'K._wireExtras = function(m){',   // Lot A (A2-15)
   'K._dispatchWire = function(convId, wire){',
   'K._sendSecure = async function(conv, plaintext, opts){',
   'K._pendingToastText = function(conv){',
@@ -453,8 +454,17 @@ describe('4. clair reçu dans un DM chiffré → marqueur visible « non chiffr�
   it('4c. les chemins de réception (live + historique) et la bulle utilisent ce décodage', () => {
     const html = readIndex();
     const handler = extractDef(html, { m: 'async function _handleWsMessage(data, convId){', end: '\n}\n' });
-    expect(handler.match(/K\._decodeIncoming\(convId/g) || []).toHaveLength(2);
+    // Lot A : le chemin « historique » (et le rattrapage) passe par K._mergeServerHistory.
+    expect(handler.match(/K\._decodeIncoming\(convId/g) || []).toHaveLength(1);           // live
     expect(handler).toContain('unencrypted: true');
+    expect(handler).toContain('K._onHistoryFrame(convId, data)');
+    expect(handler).toContain('K._onHistoryPage(convId, data)');
+    expect(extractDef(html, 'K._onHistoryFrame = async function(convId, data){')).toContain('K._mergeServerHistory(convId');
+    expect(extractDef(html, 'K._onHistoryPage = async function(convId, data){')).toContain('K._mergeServerHistory(convId');
+    const merge = extractDef(html, 'K._mergeServerHistory = async function(convId, list){');
+    expect(merge.match(/K\._decodeIncoming\(convId/g) || []).toHaveLength(1);             // historique
+    expect(merge).toContain('unencrypted: true');
+    expect(extractDef(html, 'K._applyServerUpdate = async function(convId, m, sm){')).toContain('K._decodeIncoming(convId');
     expect(extractDef(html, 'K._renderBubble = function(m, conv, msgs){')).toContain('K._unencryptedBadge(m)');
   });
 });

@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.302",
+  "softwareVersion": "v1.1.303",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.302';
+const __APEX_CHAT_VERSION__ = 'v1.1.303';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.302" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.302</div>
+  <div id="splash-version" data-ver="v1.1.303" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.303</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.302</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.303</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -9234,17 +9234,31 @@ K._encryptOutgoing = async function(conv, plaintext){
   const keyChangedNow = e2e && K._keyChangePending(conv);
   return { mode: d.mode, wire: d.wire, encrypted: d.mode === 'cipher', reason: (d.mode === 'pending' && keyChangedNow) ? 'key_changed' : (d.mode === 'pending' ? 'no_key' : null) };
 };
-// Met une trame sur le WS de SA conversation, sinon dans l'outbox (rejouée à la
-// reconnexion). Renvoie 'sent' ou 'queued' — jamais de perte silencieuse.
+// Lot A (A2-15) : champs d'un message que le SERVEUR doit connaître pour les appliquer à tous —
+// échéance d'un message éphémère, message cité, vue unique. Avant, ils restaient sur l'objet local :
+// un message « éphémère » était gardé pour toujours en base et la citation perdue chez les autres.
+K._wireExtras = function(m){
+  const o = {};
+  if(!m) return o;
+  if(typeof m.expires_at === 'number' && m.expires_at > 0) o.expires_at = m.expires_at;
+  const rid = (m.reply_to && typeof m.reply_to === 'object') ? m.reply_to.id : m.reply_to;
+  if(typeof rid === 'string' && rid) o.reply_to = rid;
+  if(m.view_once) o.view_once = 1;
+  return o;
+};
+// Met une trame sur le WS de SA conversation ET dans l'outbox. Renvoie 'sent' ou 'queued'.
+// Lot A (A2-08) : l'outbox garde l'envoi jusqu'à l'ACCUSÉ du serveur (client_id, cf. K._onWsAck) ;
+// avant, un envoi sur une socket à moitié morte ne levait rien et le message était perdu. Un
+// renvoi (reconnexion) est dédupliqué côté serveur par son identifiant.
 K._dispatchWire = function(convId, wire){
   const item = (wire.type === 'edit_message')
     ? { conv_id: convId, kind: 'edit', id: 'edit_' + wire.message_id + '_' + (wire.edited_at || Date.now()), message_id: wire.message_id, ciphertext: (wire.ciphertext != null ? wire.ciphertext : null), new_text: (wire.new_text != null ? wire.new_text : null), edited_at: wire.edited_at, ts: wire.edited_at || Date.now() }
-    : { conv_id: convId, ciphertext: wire.ciphertext, mime: wire.mime || 'text/plain', ts: wire.ts, id: wire.id };
+    : { conv_id: convId, ciphertext: wire.ciphertext, mime: wire.mime || 'text/plain', ts: wire.ts, id: wire.id, ...K._wireExtras(wire) };
+  K._outboxAdd(item);
   if(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === convId){
-    try{ K.ws.send(JSON.stringify(wire)); return 'sent'; }
+    try{ K.ws.send(JSON.stringify(wire.type === 'edit_message' ? { ...wire, id: item.id } : wire)); return 'sent'; }
     catch(e){ _safeCatch('ws-send', e); }
   }
-  K._outboxAdd(item);
   return 'queued';
 };
 // Envoie un contenu (texte / marqueur) dans une conversation selon la décision
@@ -9379,24 +9393,18 @@ K._sendMsg = async function(){
     // Pas de clé pair → on ne met RIEN en clair. Marque + file pending-encrypt.
     msg.pending_encrypt = true;
     ls('messages_' + conv.id, K.messages[conv.id]);
-    K._queuePendingEncrypt({ conv_id: conv.id, id: msg.id, text, mime: 'text/plain', ts: msg.ts, ...(grpDecision ? { grp_e2e: true } : {}) });
+    K._queuePendingEncrypt({ conv_id: conv.id, id: msg.id, text, mime: 'text/plain', ts: msg.ts, ...K._wireExtras(msg), ...(grpDecision ? { grp_e2e: true } : {}) });
     K.render();
     toast(K._pendingToastText(conv), 'info', 2200);
     return;
   }
-  const wire = { type: 'message', ciphertext: decision.wire, mime: 'text/plain', ts: msg.ts, id: msg.id };
-  if(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === conv.id){
-    try{
-      K.ws.send(JSON.stringify(wire));
-      toast((ciphertext || (grpDecision && grpDecision.encrypted)) ? '🛡 Envoyé chiffré E2E'
-        : ((grpDecision && grpDecision.reason === 'member_without_key') ? '🔓 Envoyé chiffré en transit seulement : un membre n\'a pas encore de clé de chiffrement' : '📨 Envoyé'), 'ok', 1000);
-    }catch(e){
-      _safeCatch('ws-send', e);
-      K._outboxAdd({ conv_id: conv.id, ciphertext: wire.ciphertext, mime: 'text/plain', ts: msg.ts, id: msg.id });
-      toast('📭 En attente — partira à la reconnexion', 'warn', 1800);
-    }
+  // Lot A : expires_at / reply_to / view_once partent avec la trame (A2-15) ; l'envoi passe par
+  // l'outbox jusqu'à l'accusé du serveur (A2-08).
+  const wire = { type: 'message', ciphertext: decision.wire, mime: 'text/plain', ts: msg.ts, id: msg.id, ...K._wireExtras(msg) };
+  if(K._dispatchWire(conv.id, wire) === 'sent'){
+    toast((ciphertext || (grpDecision && grpDecision.encrypted)) ? '🛡 Envoyé chiffré E2E'
+      : ((grpDecision && grpDecision.reason === 'member_without_key') ? '🔓 Envoyé chiffré en transit seulement : un membre n\'a pas encore de clé de chiffrement' : '📨 Envoyé'), 'ok', 1000);
   } else {
-    K._outboxAdd({ conv_id: conv.id, ciphertext: wire.ciphertext, mime: 'text/plain', ts: msg.ts, id: msg.id });
     toast('📭 Hors-ligne — message en attente d\'envoi', 'info', 1800);
   }
 };
@@ -9441,7 +9449,7 @@ K._flushPendingEncrypt = async function(convId){
             ? (d.mode === 'cipher'
                 ? { type: 'edit_message', message_id: item.message_id, ciphertext: d.wire, edited_at: item.edited_at }
                 : { type: 'edit_message', message_id: item.message_id, new_text: d.wire, edited_at: item.edited_at })
-            : { type: 'message', ciphertext: d.wire, mime: item.mime || 'text/plain', ts: item.ts, id: item.id };
+            : { type: 'message', ciphertext: d.wire, mime: item.mime || 'text/plain', ts: item.ts, id: item.id, ...K._wireExtras(item) };
           K._dispatchWire(item.conv_id, wire); sent = true;   // WS ouvert → envoyé ; sinon outbox
           // Retire le marqueur pending du message affiché
           const arr = K.messages[item.conv_id] || [];
@@ -9477,6 +9485,7 @@ K._outboxCountFor = function(convId){
   try{ return lg('outbox', []).filter(x => x.conv_id === convId).length; }catch(_){ return 0; }
 };
 // Rejoue les items d'une conv si son WS est ouvert. Renvoie le nb envoyé.
+// Lot A (A2-08) : un item n'est RETIRÉ qu'à l'accusé du serveur (K._onWsAck) — jamais à l'envoi.
 K._flushOutboxFor = function(convId){
   if(!(K.ws && K.ws.readyState === WebSocket.OPEN && K._wsConvId === convId)) return 0;
   const box = lg('outbox', []);
@@ -9488,11 +9497,10 @@ K._flushOutboxFor = function(convId){
       // v1.1.294 : l'outbox porte aussi les ÉDITIONS hors-ligne (avant : perdues).
       const w = (it.kind === 'edit')
         ? (it.ciphertext != null
-            ? { type: 'edit_message', message_id: it.message_id, ciphertext: it.ciphertext, edited_at: it.edited_at }
-            : { type: 'edit_message', message_id: it.message_id, new_text: it.new_text, edited_at: it.edited_at })
-        : { type: 'message', ciphertext: it.ciphertext, mime: it.mime || 'text/plain', ts: it.ts, id: it.id };
+            ? { type: 'edit_message', message_id: it.message_id, ciphertext: it.ciphertext, edited_at: it.edited_at, id: it.id }
+            : { type: 'edit_message', message_id: it.message_id, new_text: it.new_text, edited_at: it.edited_at, id: it.id })
+        : { type: 'message', ciphertext: it.ciphertext, mime: it.mime || 'text/plain', ts: it.ts, id: it.id, ...K._wireExtras(it) };
       K.ws.send(JSON.stringify(w));
-      K._outboxRemove(it.id);
       sent++;
     }catch(e){ _safeCatch('outbox-flush', e); break; }  // garde le reste pour la prochaine fois
   }
@@ -9713,6 +9721,7 @@ K._wsTicket = async function(){
 
 K._openWs = async function(convId){
   if(K.ws){ try{K.ws.close()}catch(_e){_safeCatch('silent',_e)}; K.ws = null; }
+  K._wsSync = null;   // Lot A : le repère « à jour » ne vaut que pour la socket qui a rattrapé
   if(K.wsPing){ clearInterval(K.wsPing); K.wsPing = null; }
   if(!K.user || !K.token) return;
 
@@ -9740,6 +9749,8 @@ K._openWs = async function(convId){
       try{ K._flushOutboxFor(convId); }catch(_e){_safeCatch('silent',_e)}
       // v1.1.262 — retente d'envoyer chiffrés les messages « en attente de clé ».
       try{ K._flushPendingEncrypt && K._flushPendingEncrypt(convId); }catch(_e){_safeCatch('silent',_e)}
+      // Lot A (A2-03) : rattrape TOUT ce qui a été écrit depuis le dernier passage (plus de limite à 50).
+      try{ K._startCatchUp(convId); }catch(_e){_safeCatch('catch-up',_e)}
       if(K.view === 'chat' && K.viewData?.id === convId && typeof K._updatePresenceHeader === 'function'){
         try{ K._updatePresenceHeader(); }catch(_e){_safeCatch('silent',_e)}
       }
@@ -9925,6 +9936,196 @@ K._unencryptedBadge = function(m){
   return '<div class="unenc-mark" title="Ce message est arrivé sans chiffrement de bout en bout alors que cette conversation est chiffrée. Il a pu être lu ou modifié en route." style="font-size:.72em;color:#e63946;font-weight:600;margin-top:2px">🔓 non chiffré</div>';
 };
 
+// ============================================================================
+//  Lot A (audit A2, 15.10.2026) — historique, rattrapage et accusés fiables
+// ============================================================================
+// Référence de citation reçue du serveur (un id) → objet affichable {id, text, from_name}.
+K._replyRef = function(convId, raw){
+  if(!raw) return undefined;
+  if(typeof raw === 'object') return raw;
+  try{ const o = JSON.parse(raw); if(o && typeof o === 'object' && o.id) return o; }catch(_e){ /* simple id */ }
+  const t = (K.messages[convId] || []).find(x => x && x.id === raw);
+  const conv = (K.conversations || []).find(c => c && c.id === convId) || {};
+  return { id: String(raw), text: t ? String(t.text || '').slice(0, 200) : '', from_name: t ? (t.from === K.user?.id ? 'Toi' : (conv.name || conv.pseudo || '')) : '' };
+};
+// A2-16 : un message DÉJÀ connu dont la version serveur est plus récente (supprimé pour tous, ou
+// édité après notre version) est mis à jour — avant, l'historique l'ignorait (« seen ») et
+// l'appareil absent gardait l'ancien texte d'un message « supprimé pour tous ». true = modifié.
+K._applyServerUpdate = async function(convId, m, sm){
+  if(sm.deleted_at || !sm.ciphertext){
+    if(m.deleted) return false;
+    m.deleted = true;
+    m.text = '🗑 Message supprimé';
+    for(const k of ['image_data', 'alt', 'voice_data', 'voice_text', 'media_url', 'media_type', 'media_name', 'media_size', 'media_enc', 'media_gk', 'location', 'contact_card', 'poll', 'reply_to']) delete m[k];
+    return true;
+  }
+  if(!sm.edited_at || (m.edited_at && m.edited_at >= sm.edited_at)) return false;
+  const dec = await K._decodeIncoming(convId, sm.ciphertext, { sender: sm.sender_id, id: sm.id, edit: sm.id });
+  if(dec.control || dec.undecryptable) return false;   // illisible : on garde la version locale
+  if(!m.edit_history) m.edit_history = [];
+  if(m.edit_history.length === 0) m.edit_history.push({ text: m.text, ts: m.ts });
+  Object.assign(m, K._markerFields(dec.text));
+  m.edited_at = sm.edited_at;
+  if(dec.unencrypted) m.unencrypted = true;
+  return true;
+};
+// Fusion d'une liste de messages serveur (historique ou rattrapage) dans la conversation locale.
+K._mergeServerHistory = async function(convId, list){
+  const out = { added: 0, merged: 0, updated: 0 };
+  if(!Array.isArray(list) || list.length === 0) return out;
+  if(!K.messages[convId]) K.messages[convId] = [];
+  const seen = new Set(K.messages[convId].map(m => m && m.id));
+  const myId = K.user?.id;
+  for(const sm of list){
+    if(!sm || !sm.id) continue;
+    if(seen.has(sm.id)){
+      const known = K.messages[convId].find(m => m && m.id === sm.id);
+      if(known && await K._applyServerUpdate(convId, known, sm)) out.updated++;
+      continue;
+    }
+    if(K._isDeletedLocal(convId, sm.id)) continue; // v1.1.269 : supprimé pour moi → ne pas ressusciter
+    const _tomb = !sm.ciphertext;                   // v1.1.269 : contenu effacé serveur (suppr. pour tout le monde)
+    let txt = '';
+    let _dec = { encrypted: false, unencrypted: false };
+    if(_tomb){
+      txt = '🗑 Message supprimé';
+    } else {
+      // v1.1.294 — décodage unique (déchiffrement auto-réparant, groupes,
+      // marqueur « non chiffré » pour un clair reçu dans un DM chiffré).
+      _dec = await K._decodeIncoming(convId, sm.ciphertext, { sender: sm.sender_id, id: sm.id });
+      txt = _dec.text;
+      if(_dec.control){ seen.add(sm.id); continue; }   // v1.1.296 : distribution / demande de clé de groupe
+    }
+    // v1.1.170 : dédup mes propres messages — l'historique serveur les
+    // renvoie avec l'id officiel alors que je les ai en local avec id m_…
+    // → on adopte l'id serveur sur le message local au lieu de doubler.
+    if(sm.sender_id === myId){
+      const localMatch = K.messages[convId].find(m =>
+        m && m.from === myId && String(m.id || '').startsWith('m_') &&
+        Math.abs((m.ts || 0) - (sm.ts || 0)) < 60000 &&
+        // v1.1.246 : matche aussi mes positions/médias (texte local vide) → pas de doublon en historique
+        (m.text === txt || m.text === sm.ciphertext || m.ciphertext === sm.ciphertext ||
+         (m.location && K._parseLocationMarker(txt)) || (m.media_url && K._parseMediaMarker(txt)) ||
+         (m.contact_card && K._parseContactMarker(txt)) || (m.poll && K._parsePollMarker(txt)))
+      );
+      if(localMatch){
+        seen.delete(localMatch.id);
+        localMatch.id = sm.id;
+        localMatch.ts = sm.ts || localMatch.ts;
+        seen.add(sm.id);
+        out.merged++;
+        continue;
+      }
+    }
+    const replyTo = K._replyRef(convId, sm.reply_to);
+    // v1.1.186 média · v1.1.246 position · v1.1.294 contact / sondage
+    const hfields = _tomb ? { text: txt } : K._markerFields(txt);
+    K.messages[convId].push({
+      id: sm.id, from: sm.sender_id, ...hfields,
+      ts: sm.ts || Date.now(), mime: sm.mime || 'text/plain',
+      reply_to: replyTo,
+      ...(sm.expires_at ? { expires_at: sm.expires_at } : {}),   // Lot A (A2-15) : éphémère aussi chez le destinataire
+      encrypted: !!_dec.encrypted, from_history: true,
+      ...(_dec.unencrypted ? { unencrypted: true } : {}),
+      ...(_dec.grp_pending ? { grp_pending: _dec.grp_pending } : {}),   // v1.1.296 : re-déchiffré à l'arrivée de la clé
+      ...(_tomb ? { deleted: true } : {})   // v1.1.269 : tombstone (supprimé pour tout le monde)
+    });
+    seen.add(sm.id); out.added++;
+  }
+  if(out.added) K.messages[convId].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  if(out.added || out.merged || out.updated){
+    ls('messages_' + convId, K.messages[convId]);
+    if((out.added || out.updated) && K.view === 'chat' && K.viewData?.id === convId) K.render();
+  }
+  if(out.added && K._updateUnreadBadge) K._updateUnreadBadge();
+  return out;
+};
+// A2-03 : rattrapage. Repère persistant par conversation { ts, id, chg } : dernier message serveur
+// reçu SANS trou, et instant serveur du dernier rattrapage complet (éditions / suppressions).
+K._SYNC_MARGIN_MS = 5000;   // on repart un peu avant le repère (doublons fusionnés par id)
+K._syncCursorGet = function(convId){
+  const c = lg('sync_' + convId, null);
+  if(c && typeof c.ts === 'number') return c;
+  // Pas encore de repère (mise à jour de l'app) : dernier message SERVEUR connu localement.
+  let ts = 0;
+  for(const m of (K.messages[convId] || [])){
+    if(m && m.id && !String(m.id).startsWith('m_') && !m.pending_encrypt && typeof m.ts === 'number' && m.ts > ts) ts = m.ts;
+  }
+  return ts ? { ts, id: '', chg: ts } : null;
+};
+// Avance le repère (jamais en arrière, ordre (ts, id)) ; chg remplacé s'il est fourni.
+K._syncAdvance = function(convId, ts, id, chg){
+  const cur = lg('sync_' + convId, null) || { ts: 0, id: '', chg: 0 };
+  const next = { ...cur };
+  if(ts > cur.ts || (ts === cur.ts && String(id) > String(cur.id))){ next.ts = ts; next.id = String(id); }
+  if(typeof chg === 'number') next.chg = chg;
+  if(next.ts !== cur.ts || next.id !== cur.id || next.chg !== cur.chg) ls('sync_' + convId, next);
+  return next;
+};
+// Message reçu en direct / accusé : il fait avancer le repère seulement si la socket est à jour.
+K._noteLive = function(convId, sm){
+  const s = K._wsSync;
+  if(!s || s.convId !== convId || !s.synced || !sm || !sm.id || typeof sm.ts !== 'number') return false;
+  K._syncAdvance(convId, sm.ts, sm.id);
+  return true;
+};
+// À l'ouverture du WS d'une conversation : demande tout ce qui a été écrit depuis le repère.
+K._startCatchUp = function(convId){
+  const ws = K.ws;
+  if(!ws || ws.readyState !== WebSocket.OPEN || K._wsConvId !== convId) return false;
+  const cur = K._syncCursorGet(convId);
+  K._wsSync = { convId, ws, synced: !cur, baseline: !cur, pages: 0, chg: null };
+  // Conversation jamais synchronisée sur cet appareil : l'historique récent sert de base.
+  if(!cur) return false;
+  ws.send(JSON.stringify({ type: 'history_since', after_ts: Math.max(0, cur.ts - K._SYNC_MARGIN_MS), after_id: '',
+    changed_since: Math.max(0, (cur.chg || cur.ts) - K._SYNC_MARGIN_MS), limit: 200 }));
+  return true;
+};
+K._onHistoryFrame = async function(convId, data){
+  const list = (data && Array.isArray(data.messages)) ? data.messages : [];
+  const r = await K._mergeServerHistory(convId, list);
+  const s = K._wsSync;
+  if(s && s.baseline && s.convId === convId){
+    for(const sm of list) if(sm && sm.id && typeof sm.ts === 'number') K._syncAdvance(convId, sm.ts, sm.id, sm.ts);
+  }
+  return r;
+};
+K._onHistoryPage = async function(convId, data){
+  const s = K._wsSync;
+  if(!s || s.convId !== convId || s.synced || !data) return false;
+  if(s.chg == null && typeof data.server_ts === 'number') s.chg = data.server_ts;
+  await K._mergeServerHistory(convId, [...(Array.isArray(data.messages) ? data.messages : []), ...(Array.isArray(data.changes) ? data.changes : [])]);
+  const c = data.cursor;
+  if(c && typeof c.ts === 'number') K._syncAdvance(convId, c.ts, c.id || '');
+  s.pages++;
+  if(data.more && c && s.pages < 100){
+    if(K.ws === s.ws && s.ws.readyState === WebSocket.OPEN){
+      s.ws.send(JSON.stringify({ type: 'history_since', after_ts: c.ts, after_id: c.id || '', limit: 200 }));
+    }
+    return true;
+  }
+  // À jour : le repère d'édition devient l'instant serveur du début de ce rattrapage.
+  s.synced = !data.more;
+  if(s.synced && s.chg != null) K._syncAdvance(convId, 0, '', s.chg);
+  return true;
+};
+// A2-08 : accusé du serveur → l'envoi quitte l'outbox (et seulement là) ; id serveur adopté.
+K._onWsAck = function(convId, data){
+  if(!data) return false;
+  if(data.client_id) K._outboxRemove(data.client_id);
+  if(!data.edited_at && !data.deleted_at) K._noteLive(convId, data);
+  return K._applyWsAck(convId, data);
+};
+// Refus DÉFINITIF d'un envoi (contenu invalide, E2E obligatoire, interdit) → retiré de l'outbox
+// (sinon renvoyé à chaque reconnexion) ; un refus passager (débit, serveur occupé) le garde.
+K._WS_FATAL_CODES = ['invalid_message', 'e2e_required', 'forbidden'];
+K._onWsError = function(convId, data){
+  if(!data || !data.client_id || K._WS_FATAL_CODES.indexOf(data.code) < 0) return false;
+  K._outboxRemove(data.client_id);
+  toast('⚠️ Message refusé par le serveur : ' + (data.message || data.code), 'warn', 4000);
+  return true;
+};
+
 async function _handleWsMessage(data, convId){
   switch(data.type){
     case 'hello':
@@ -9933,69 +10134,14 @@ async function _handleWsMessage(data, convId){
     case 'history': {
       // v1.1.170 : historique des messages envoyé par le serveur à la connexion.
       // Permet de retrouver ses conversations sur un nouvel appareil / après reset.
-      if(!Array.isArray(data.messages) || data.messages.length === 0) break;
-      if(!K.messages[convId]) K.messages[convId] = [];
-      const seen = new Set(K.messages[convId].map(m => m.id));
-      const myId = K.user?.id;
-      let added = 0, merged = 0;
-      for(const sm of data.messages){
-        if(!sm || !sm.id || seen.has(sm.id)) continue;
-        if(K._isDeletedLocal(convId, sm.id)) continue; // v1.1.269 : supprimé pour moi → ne pas ressusciter
-        const _tomb = !sm.ciphertext;                   // v1.1.269 : contenu effacé serveur (suppr. pour tout le monde)
-        let txt = '';
-        let _dec = { encrypted: false, unencrypted: false };
-        if(_tomb){
-          txt = '🗑 Message supprimé';
-        } else {
-          // v1.1.294 — décodage unique (déchiffrement auto-réparant, groupes,
-          // marqueur « non chiffré » pour un clair reçu dans un DM chiffré).
-          _dec = await K._decodeIncoming(convId, sm.ciphertext, { sender: sm.sender_id, id: sm.id });
-          txt = _dec.text;
-          if(_dec.control){ seen.add(sm.id); continue; }   // v1.1.296 : distribution / demande de clé de groupe
-        }
-        // v1.1.170 : dédup mes propres messages — l'historique serveur les
-        // renvoie avec l'id officiel alors que je les ai en local avec id m_…
-        // → on adopte l'id serveur sur le message local au lieu de doubler.
-        if(sm.sender_id === myId){
-          const localMatch = K.messages[convId].find(m =>
-            m && m.from === myId && String(m.id || '').startsWith('m_') &&
-            Math.abs((m.ts || 0) - (sm.ts || 0)) < 60000 &&
-            // v1.1.246 : matche aussi mes positions/médias (texte local vide) → pas de doublon en historique
-            (m.text === txt || m.text === sm.ciphertext || m.ciphertext === sm.ciphertext ||
-             (m.location && K._parseLocationMarker(txt)) || (m.media_url && K._parseMediaMarker(txt)) ||
-             (m.contact_card && K._parseContactMarker(txt)) || (m.poll && K._parsePollMarker(txt)))
-          );
-          if(localMatch){
-            seen.delete(localMatch.id);
-            localMatch.id = sm.id;
-            localMatch.ts = sm.ts || localMatch.ts;
-            seen.add(sm.id);
-            merged++;
-            continue;
-          }
-        }
-        let replyTo = sm.reply_to;
-        if(typeof replyTo === 'string' && replyTo){ try{ replyTo = JSON.parse(replyTo); }catch(_e){_safeCatch('silent',_e)} }
-        // v1.1.186 média · v1.1.246 position · v1.1.294 contact / sondage
-        const hfields = _tomb ? { text: txt } : K._markerFields(txt);
-        K.messages[convId].push({
-          id: sm.id, from: sm.sender_id, ...hfields,
-          ts: sm.ts || Date.now(), mime: sm.mime || 'text/plain',
-          reply_to: replyTo || undefined,
-          encrypted: !!_dec.encrypted, from_history: true,
-          ...(_dec.unencrypted ? { unencrypted: true } : {}),
-          ...(_dec.grp_pending ? { grp_pending: _dec.grp_pending } : {}),   // v1.1.296 : re-déchiffré à l'arrivée de la clé
-          ...(_tomb ? { deleted: true } : {})   // v1.1.269 : tombstone (supprimé pour tout le monde)
-        });
-        seen.add(sm.id); added++;
-      }
-      if(merged && !added) ls('messages_' + convId, K.messages[convId]);
-      if(added){
-        K.messages[convId].sort((a, b) => (a.ts || 0) - (b.ts || 0));
-        ls('messages_' + convId, K.messages[convId]);
-        if(K.view === 'chat' && K.viewData?.id === convId) K.render();
-        K._updateUnreadBadge && K._updateUnreadBadge();
-      }
+      // Lot A : fusion commune avec le rattrapage (K._mergeServerHistory, applique aussi les
+      // éditions / suppressions faites pendant l'absence — A2-16).
+      await K._onHistoryFrame(convId, data);
+      break;
+    }
+    case 'history_page': {
+      // Lot A (A2-03) : page de rattrapage (history_since) → fusion + page suivante jusqu'à être à jour.
+      await K._onHistoryPage(convId, data);
       break;
     }
     case 'message':
@@ -10020,9 +10166,13 @@ async function _handleWsMessage(data, convId){
         ts: data.ts || Date.now(),
         encrypted: !!ldec.encrypted,
         ...(ldec.unencrypted ? { unencrypted: true } : {}),
-        ...(ldec.grp_pending ? { grp_pending: ldec.grp_pending } : {})
+        ...(ldec.grp_pending ? { grp_pending: ldec.grp_pending } : {}),
+        // Lot A (A2-15) : échéance éphémère et citation transmises par le serveur.
+        ...(data.expires_at ? { expires_at: data.expires_at } : {}),
+        ...(data.reply_to ? { reply_to: K._replyRef(convId, data.reply_to) } : {})
       };
       if(!K.messages[convId]) K.messages[convId] = [];
+      K._noteLive(convId, data);   // Lot A (A2-03) : repère de rattrapage
       // v1.1.246 : dédup de MON propre message renvoyé (broadcast vers une 2e session
       // OU course avec l'ack) → adopter l'id officiel sur le message local m_ au lieu
       // de doubler. Même logique que la dédup de l'historique (case 'history').
@@ -10056,7 +10206,7 @@ async function _handleWsMessage(data, convId){
       }
       break;
     case 'ack': {
-      K._applyWsAck(convId, data);
+      K._onWsAck(convId, data);
       break;
     }
     case 'typing':
@@ -10223,6 +10373,7 @@ async function _handleWsMessage(data, convId){
       break;
     case 'error':
       _logTelemetry('warn', 'ws-server-error', data);
+      K._onWsError(convId, data);
       break;
     // Visio : signaling WebRTC relayé par ConversationDO
     case 'webrtc-offer': {
@@ -18042,6 +18193,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.302", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.303", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

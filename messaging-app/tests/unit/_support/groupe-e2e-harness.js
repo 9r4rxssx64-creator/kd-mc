@@ -11,7 +11,7 @@
 // CLIENT_INDEX_PATH (copie sabotée d'index.html) et CLIENT_CRYPTO_PATH (copie sabotée de
 // lib/crypto-core.js) sont honorés : c'est ainsi qu'on prouve que chaque test est discriminant.
 import { pathToFileURL } from 'node:url';
-import { readIndex, extractDef, realEsc } from '../client-extract.js';
+import { readIndex, extractDef, realEsc, LOT_A_WS_DEFS } from '../client-extract.js';
 
 export const CC = await import(process.env.CLIENT_CRYPTO_PATH
   ? pathToFileURL(process.env.CLIENT_CRYPTO_PATH).href
@@ -42,6 +42,7 @@ const DEFS = [
   'K._sendRefreshAt = ',
   'K._ensureFreshSession = async function(conv){',
   'K._encryptOutgoing = async function(conv, plaintext){',
+  'K._wireExtras = function(m){',   // Lot A (A2-15)
   'K._dispatchWire = function(convId, wire){',
   'K._sendSecure = async function(conv, plaintext, opts){',
   'K._pendingToastText = function(conv){',
@@ -69,6 +70,7 @@ const DEFS = [
   'K._uploadMedia = async function(file){',
   'K._sendMediaMessage = async function(media, captionOverride){',
   'K._sendVoiceMessage = async function(){',
+  ...LOT_A_WS_DEFS,   // Lot A : dépendances de _handleWsMessage
   { m: 'async function _handleWsMessage(data, convId){', end: '\n}\n' },
 ];
 

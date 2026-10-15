@@ -47,3 +47,22 @@ export function realEsc() {
   // eslint-disable-next-line no-new-func
   return new Function(line.replace('const esc =', 'return'))();
 }
+
+// Lot A (audit A2, 15.10.2026) : définitions dont dépend `_handleWsMessage` (historique commun,
+// rattrapage paginé, accusés retirant l'outbox). À inclure AVANT lui dans les harnais qui l'exécutent.
+export const LOT_A_WS_DEFS = [
+  'K._outboxRemove = function(id){',
+  'K._replyRef = function(convId, raw){',
+  'K._applyServerUpdate = async function(convId, m, sm){',
+  'K._mergeServerHistory = async function(convId, list){',
+  'K._SYNC_MARGIN_MS = ',
+  'K._syncCursorGet = function(convId){',
+  'K._syncAdvance = function(convId, ts, id, chg){',
+  'K._noteLive = function(convId, sm){',
+  'K._startCatchUp = function(convId){',
+  'K._onHistoryFrame = async function(convId, data){',
+  'K._onHistoryPage = async function(convId, data){',
+  'K._onWsAck = function(convId, data){',
+  'K._WS_FATAL_CODES = ',
+  'K._onWsError = function(convId, data){',
+];

@@ -69,11 +69,17 @@ describe('C — votes de sondage', () => {
     DB.prepare = (sql) => {
       const st = prepare(sql);
       if (!injected && /^UPDATE polls SET votes=/.test(sql)) {
-        const run = st.run;
-        st.run = async () => {
-          injected = true;
-          DB.raw.prepare("UPDATE polls SET votes=? WHERE id='p1'").run(JSON.stringify({ 1: ['u2'] }));
-          return run();
+        // Lot A (A2-14) : bind() renvoie une NOUVELLE instruction (comme D1) → on piège l'instruction liée.
+        const bind = st.bind;
+        st.bind = (...a) => {
+          const b = bind(...a);
+          const run = b.run;
+          b.run = async () => {
+            injected = true;
+            DB.raw.prepare("UPDATE polls SET votes=? WHERE id='p1'").run(JSON.stringify({ 1: ['u2'] }));
+            return run();
+          };
+          return b;
         };
       }
       return st;

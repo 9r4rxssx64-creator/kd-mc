@@ -3593,6 +3593,10 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-15 | `messaging-app/tests/unit/lot-b-charte-verite.test.js` | Apex Chat (vie privée) : la charte dit ce que fait vraiment le code |
 | 2026-10-15 | `messaging-app/tests/unit/lot-b-admin-moderation-sondage.test.js` | Apex Chat (vie privée) : journal admin, signalements, sondages anonymes |
 | 2026-10-15 | `messaging-app/d1-migrations/0015_lot_b_vie_privee.sql` | Apex Chat : nettoyage du cache des résumés IA |
+| 2026-10-15 | `messaging-app/tests/unit/lot-a-temps-reel-do.test.js` | Apex Chat (messages perdus) : rattrapage, sauvegarde avant ✓, rien n'est jeté |
+| 2026-10-15 | `messaging-app/tests/unit/lot-a-revocation-api.test.js` | Apex Chat (messages perdus) : un membre retiré est coupé tout de suite |
+| 2026-10-15 | `messaging-app/tests/unit/lot-a-client.test.js` | Apex Chat (messages perdus) : le téléphone rattrape 120 messages manqués |
+| 2026-10-15 | `messaging-app/d1-migrations/0016_lot_a_rattrapage.sql` | Apex Chat (messages perdus) : index pour le rattrapage des messages |
 | 2026-10-12 | [`services/kdmc-router/fin-garde-verif.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/fin-garde-verif.mjs) | Garde : une sauvegarde en ligne plus pauvre (moins de la moitié) ne peut plus écraser une sauvegarde pleine (409), `force` explicite seulement |
 | 2026-10-13 | [`tests/verify-ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-ration-actions.mjs) | Garde : la ration Actions se lit correctement (jour UTC, runs refusés à 0, verdicts, code de sortie) |
 | 2026-10-13 | [`tools/ci/ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/ci/ration-actions.mjs) | Outil : lit la ration du jour des minutes GitHub Actions du coffre (🟢/🟠/🔴) avant de lancer un robot |

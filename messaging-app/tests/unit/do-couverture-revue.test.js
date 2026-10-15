@@ -482,16 +482,21 @@ describe('H. flushToD1 — normalisation, mode ligne par ligne, abandon après N
     expect(_do._flushFails.size).toBe(0);
   });
 
-  it('erreur transitoire au 100e essai → ligne abandonnée et journalisée (ne bloque plus la conv)', async () => {
+  // Lot A (audit A2-01c, 15.10.2026) : ce test constatait l'ABANDON d'un message acquitté au
+  // 100e essai transitoire. Comportement exigé désormais : une erreur transitoire ne jette jamais
+  // la ligne (elle reste en file, sans bloquer les autres) ; seule une erreur permanente est mise
+  // en quarantaine (cf. lot-a-durabilite-do.test.js).
+  it('erreur transitoire au 100e essai → ligne GARDÉE en file (jamais abandonnée), les autres passent', async () => {
     const { _do, db, env } = await makeDO({ insertFail: (id) => (id === 'z' ? new Error('D1_ERROR: timeout') : undefined) });
     _do._flushFails.set('z', 99);
     _do.pendingMessages.push({ id: 'z', conv_id: CONV, sender_id: 'alice', ciphertext: 'Z', mime: 'text/plain', ts: 1 },
       { id: 'ok', conv_id: CONV, sender_id: 'alice', ciphertext: 'K', mime: 'text/plain', ts: 2 });
     await _do.flushToD1();
-    expect(_do.pendingMessages).toHaveLength(0);
-    expect(_do._flushFails.has('z')).toBe(false);
+    expect(_do.pendingMessages.map((m) => m.id)).toEqual(['z']);
+    expect(_do._flushFails.get('z')).toBe(100);
     expect(db._st.messages.map((m) => m.id)).toEqual(['ok']);
-    expect(telemetryMsgs(env)).toContain('drop z: D1_ERROR: timeout');
+    expect(telemetryMsgs(env)).toContain('row retry pending: 1');
+    expect(telemetryMsgs(env).some((t) => /^drop /.test(t))).toBe(false);
   });
 
   it('erreur levée comme simple chaîne : permanente → abandonnée ; transitoire → remise en file', async () => {

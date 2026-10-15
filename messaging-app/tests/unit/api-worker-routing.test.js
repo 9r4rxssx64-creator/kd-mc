@@ -38,14 +38,17 @@ describe('api-worker — CORS + routing', () => {
 
   it('Exception dans handler → 500 (avec ctx.waitUntil mocked)', async () => {
     const env = ENV();
-    env.APEX_CHAT_DB.prepare = vi.fn(() => ({
+    // v1.1.304 : /api/system/config exige un compte connecté → la ligne d'auth répond, la lecture
+    // de la config (all) plante → c'est bien l'exception DANS le handler qui donne 500.
+    env.APEX_CHAT_DB.prepare = vi.fn((sql) => ({
       bind: function () { return this; },
-      first: async () => { throw new Error('db sql crash'); },
+      first: async () => { if (sql.includes('last_force_logout_at')) return { status: 'active', is_banned: 0 }; throw new Error('db sql crash'); },
       all: async () => { throw new Error('db sql crash'); },
       run: async () => ({}),
     }));
     const ctx = { waitUntil: vi.fn() };
-    const r = await worker.fetch(makeRequest({ method: 'GET', path: '/api/system/config' }), env, ctx);
+    const token = await makeJWT({ sub: 'u_route', iat: Math.floor(Date.now() / 1000) });
+    const r = await worker.fetch(makeRequest({ method: 'GET', path: '/api/system/config', token }), env, ctx);
     expect(r.status).toBe(500);
     expect(ctx.waitUntil).toHaveBeenCalled();
   });

@@ -579,16 +579,20 @@ describe('Features endpoints', () => {
     expect([200, 400, 500]).toContain(r.status);
   });
 
-  it('GET /api/system/config → ok', async () => {
+  it('GET /api/system/config → ok (compte connecté, v1.1.304) ; sans jeton → 401', async () => {
     const env = ENV();
-    env.APEX_CHAT_DB.prepare = vi.fn(() => ({
+    env.APEX_CHAT_DB.prepare = vi.fn((sql) => ({
       bind: function () { return this; },
-      first: async () => null,
+      first: async () => (sql.includes('last_force_logout_at') ? { status: 'active', is_banned: 0 } : null),
       all: async () => ({ results: [{ key: 'KEVIN_INVISIBLE_ADMIN', value: 'false' }] }),
       run: async () => ({}),
     }));
-    const r = await worker.fetch(makeRequest({ method: 'GET', path: '/api/system/config' }), env);
-    expect([200, 500]).toContain(r.status);
+    const token = await makeJWT({ sub: 'u_cfg', iat: Math.floor(Date.now() / 1000) });
+    const r = await worker.fetch(makeRequest({ method: 'GET', path: '/api/system/config', token }), env);
+    expect(r.status).toBe(200);
+    expect((await r.json()).config).toBeTruthy();
+    const anon = await worker.fetch(makeRequest({ method: 'GET', path: '/api/system/config' }), env);
+    expect(anon.status).toBe(401);
   });
 });
 

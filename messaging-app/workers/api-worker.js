@@ -22,7 +22,7 @@
  *   GET    /api/invitations/:code    → résoudre code invitation
  *   POST   /api/signalements         → signaler user/message
  *   POST   /api/admin/commands       → admin Kevin only (kickUser/banUser/etc.)
- *   GET    /api/system/config        → flags MODE_CONFIG runtime
+ *   GET    /api/system/config        → flags MODE_CONFIG runtime (compte connecté, v1.1.304)
  *
  * Architecture A→B→C : flag KEVIN_INVISIBLE_ADMIN lu depuis D1.system_config
  */
@@ -1615,6 +1615,19 @@ export async function handleDeleteMe(request, env) {
     await run('user_activity', 'DELETE FROM user_activity WHERE user_id=?', uid);
     await run('ai_summary_cache', 'DELETE FROM ai_summary_cache WHERE user_id=?', uid);   // Lot B (A6-06)
     await run('invitations', 'DELETE FROM invitations WHERE inviter_id=? AND accepted_at IS NULL', uid);
+    // v1.1.304 (audit A6-20 §7) : modules oubliés par l'effacement — contenus et dérivés du compte.
+    await run('stories', 'DELETE FROM stories WHERE author_id=?', uid);
+    // Ses vues dans les stories des autres (liste JSON {user_id, viewed_at}) : retirées.
+    await run('story_views', `UPDATE stories SET views=(SELECT json_group_array(json(value)) FROM json_each(stories.views)
+      WHERE json_extract(value, '$.user_id') IS NOT ?) WHERE json_valid(views) AND EXISTS (SELECT 1 FROM json_each(stories.views) WHERE json_extract(value, '$.user_id') = ?)`, uid, uid);
+    await run('time_capsules', 'DELETE FROM time_capsules WHERE sender_id=? OR recipient_id=?', uid, uid);
+    await run('letters_queue', 'DELETE FROM letters_queue WHERE sender_id=?', uid);
+    await run('memory_lane_index', 'DELETE FROM memory_lane_index WHERE user_id=?', uid);
+    await run('ai_quota', 'DELETE FROM ai_quota WHERE user_id=?', uid);
+    await run('voice_prints', 'DELETE FROM voice_prints WHERE user_id=?', uid);
+    await run('streaks', 'DELETE FROM streaks WHERE user_id=? OR contact_id=?', uid, uid);
+    await run('device_trust', 'DELETE FROM device_trust WHERE user_id=?', uid);
+    await run('user_feature_overrides', 'DELETE FROM user_feature_overrides WHERE user_id=?', uid);
     // 4) Compte : anonymisé (l'id reste pour l'intégrité des références), numéro libéré
     // Revue 08.10.2026 : phone, phone_hash, real_name et les clés sont NOT NULL (0001_init.sql) —
     // les mettre à NULL faisait ÉCHOUER toute la ligne en silence (rien d'anonymisé, compte
@@ -1635,6 +1648,11 @@ export async function handleDeleteMe(request, env) {
       return err('Suppression incomplète, réessaie ou contacte l\'assistance', 500, 'delete_failed', { details: done });
     }
     await revokeUserSockets(env, uid, convsToRevoke);
+    // v1.1.304 (audit A2-06) : ses messages encore dans le buffer des DO (acquittés, pas encore en D1)
+    // sont retirés — sinon le flush suivant les écrivait EN CLAIR et non supprimés, après l'effacement.
+    // Puis le tombstone est rejoué : couvre un lot qui partait vers D1 pendant la purge.
+    done.do_pending = (await Promise.all(convsToRevoke.map((c) => purgeConvPending(env, c, uid)))).reduce((a, n) => a + Math.max(0, n), 0);
+    await run('messages_after_purge', "UPDATE messages SET ciphertext='', deleted_at=? WHERE sender_id=? AND deleted_at IS NULL", now, uid);
     // 5) KV : quotas / demandes premium
     try { if (env.APEX_CHAT_KV) { const l = await env.APEX_CHAT_KV.list({ prefix: 'quota:' + uid }); for (const k of (l.keys || [])) await env.APEX_CHAT_KV.delete(k.name); } } catch (_) {}
   } catch (e) { return err('Suppression incomplète, réessaie ou contacte l\'assistance', 500, 'delete_failed', e); }
@@ -1689,6 +1707,12 @@ export async function purgeLocationHistory(env, now = Date.now()) {
   try { out.ai_summary_cache = ((await _purgeAiSummaryCache(env, now)) || {}).meta?.changes ?? 0; }
   catch (e) { out.ai_summary_cache = 'erreur: ' + (e && e.message); }
   return out;
+}
+
+// v1.1.304 (audit A6) : stories expirées (24 h) réellement effacées (avant : jamais aucun DELETE).
+export async function purgeExpiredStories(env, now = Date.now()) {
+  try { return ((await env.APEX_CHAT_DB.prepare('DELETE FROM stories WHERE expires_at < ?').bind(now).run()) || {}).meta?.changes ?? 0; }
+  catch (e) { return 'erreur: ' + (e && e.message); }
 }
 
 // Heartbeat user — last_seen + geoloc/device si consenti par toggle
@@ -2176,6 +2200,8 @@ async function handleLocationHistory(userId, request, env) {
 //  GET  /api/media/:id : sert le fichier depuis R2 (auth via ?token=)
 //  Avant : seules les images ≤5 Mo en base64. Maintenant : R2 (jusqu'à 100 Mo).
 // ============================================================================
+const MEDIA_DAY_MAX_FILES = 300;                 // v1.1.304 (A6-20 §6) : quota par compte / 24 h
+const MEDIA_DAY_MAX_BYTES = 1024 * 1024 * 1024;  // 1 Go / 24 h
 const MEDIA_MAX = 100 * 1024 * 1024;   // 100 Mo
 
 export async function handleMediaUpload(request, env) {
@@ -2202,6 +2228,17 @@ export async function handleMediaUpload(request, env) {
   const size = buf.byteLength;
   if (!size) return err('Fichier vide', 400, 'empty');
   if (size > MEDIA_MAX) return err('Fichier trop lourd (max 100 Mo)', 413, 'too_large', { size });
+  // v1.1.304 (audit A6-20 §6) : quota PAR COMPTE sur 24 h glissantes (nombre + volume), lu dans la
+  // table media (aucune donnée nouvelle). Lecture en panne → fail-open (l'insertion dira la vérité).
+  try {
+    const q = await env.APEX_CHAT_DB.prepare(
+      'SELECT COUNT(*) AS c, COALESCE(SUM(size), 0) AS b FROM media WHERE owner_id=? AND uploaded_at > ?'
+    ).bind(auth.sub, Date.now() - 86400000).first();
+    const c = Number(q && q.c) || 0, b = Number(q && q.b) || 0;
+    if (c + 1 > MEDIA_DAY_MAX_FILES || b + size > MEDIA_DAY_MAX_BYTES) {
+      return err('Limite d\'envoi de fichiers atteinte pour aujourd\'hui (' + MEDIA_DAY_MAX_FILES + ' fichiers ou 1 Go par 24 h) — réessaie demain', 429, 'upload_quota', { files: c, bytes: b });
+    }
+  } catch (e) { console.warn('[media-quota]', String(e)); }
   const id = crypto.randomUUID();
   const ext = (name.match(/\.([a-z0-9]{1,8})$/i) || [, ''])[1];
   const r2key = `media/${auth.sub}/${id}${ext ? '.' + ext : ''}`;
@@ -3745,7 +3782,12 @@ async function handleAdminCommand(request, env) {
 //  Route system config (lit MODE_CONFIG)
 // ============================================================================
 
+// v1.1.304 (audit A1 P3) : réservée aux comptes connectés (règle « aucune consultation sans
+// compte »). Le client ne l'appelle qu'avec un jeton (K._loadSystemConfig, après connexion) ;
+// aucun écran d'avant connexion n'en a besoin.
 async function handleSystemConfig(request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401, 'unauthorized');
   const config = await getModeConfig(env);
   // Filtrer flags publics (pas de secrets)
   const publicConfig = {
@@ -4633,6 +4675,29 @@ export async function revokeUserSockets(env, userId, convIds) {
   return res.filter(Boolean).length;
 }
 
+// v1.1.304 (audit A2-06) — purge du BUFFER du ConversationDO (route interne sœur de /internal/revoke,
+// jeton court typ 'dopurge'). Sans elle, les messages acquittés mais pas encore écrits en D1 étaient
+// réécrits APRÈS la purge d'une conversation ou la suppression d'un compte (orphelins, ou en clair).
+// sender = null → toute la conversation ; sinon les seuls messages en attente de cet expéditeur.
+// Renvoie le nombre de messages retirés du buffer, ou -1 si le DO n'a pas confirmé (best-effort).
+export async function purgeConvPending(env, convId, sender) {
+  if (!env.CONVERSATION_DO) return -1;
+  try {
+    const stub = env.CONVERSATION_DO.get(env.CONVERSATION_DO.idFromName('do_' + convId));
+    const now = Math.floor(Date.now() / 1000);
+    const claims = { sub: sender || 'system', conv: convId, typ: 'dopurge', iat: now, exp: now + 60, ...(sender ? { sender } : {}) };
+    const r = await stub.fetch(new Request('https://internal/internal/purge', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + await signJWT(claims, env.JWT_SIGN_KEY) },
+    }));
+    if (!r.ok) return -1;
+    const j = await r.json().catch(() => ({}));
+    return Number.isInteger(j.dropped) ? j.dropped : -1;
+  } catch (e) {
+    console.warn('[purge-do]', convId, String(e));
+    return -1;
+  }
+}
+
 // GET /api/conversations/:id/ws-diag — reproduit les checks du WS et renvoie
 // la cause EXACTE en JSON (le WebSocket ne révèle qu'un code 1006 opaque).
 // Le token peut venir du header OU de ?token= (comme le WS).
@@ -4834,6 +4899,10 @@ export async function handleDeleteConversation(convId, request, env) {
     const remaining = recount ? recount.c : 0;
 
     if (remaining === 0) {
+      // v1.1.304 (audit A2-06) : buffer du DO vidé AVANT D1 (le DO attend son flush en cours) —
+      // sinon les messages en attente étaient réécrits ensuite, orphelins d'une conversation supprimée.
+      step = 'purge_do';
+      await purgeConvPending(env, convId, null);
       step = 'purge_messages';
       await env.APEX_CHAT_DB.prepare('DELETE FROM messages WHERE conv_id=?').bind(convId).run();
       step = 'purge_conv';
@@ -6560,6 +6629,13 @@ async function resolveTurnCreds(env) {
   return { keyId, token };
 }
 
+// v1.1.304 (audit A6-18) : identifiants TURN valables 4 h (au lieu de 24 h), RÉUTILISÉS 30 min par
+// compte (cache KV) et au plus TURN_DAY_MAX générations par compte et par jour : un compte ne peut
+// plus s'en servir comme relais réseau illimité aux frais du service. 4 h (et pas 10 min) : un appel
+// en cours renouvelle son allocation avec ces identifiants ; le client les garde lui-même 50 min.
+export const TURN_TTL_S = 4 * 3600;
+export const TURN_CACHE_S = 30 * 60;
+export const TURN_DAY_MAX = 48;
 async function handleTurnCredentials(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401, 'unauthorized');
@@ -6570,13 +6646,25 @@ async function handleTurnCredentials(request, env) {
     // Pas encore provisionné (le workflow le fait au déploiement). STUN seul.
     return json({ iceServers: stun, turn: false, reason: 'turn_not_provisioned' });
   }
+  const KV = env.APEX_CHAT_KV;
+  const cacheKey = 'turn:' + auth.sub;
+  const dayKey = 'turnday:' + auth.sub + ':' + new Date().toISOString().slice(0, 10);
+  if (KV) {
+    try {
+      const hit = await KV.get(cacheKey);
+      if (hit) { const c = JSON.parse(hit); if (Array.isArray(c.ice) && c.ice.length) return json({ iceServers: stun.concat(c.ice), turn: true, cached: true }); }
+      const used = parseInt((await KV.get(dayKey)) || '0', 10) || 0;
+      if (used >= TURN_DAY_MAX) return json({ iceServers: stun, turn: false, reason: 'turn_daily_limit' });
+      await KV.put(dayKey, String(used + 1), { expirationTtl: 2 * 86400 });
+    } catch (e) { console.warn('[turn-cache]', String(e)); }
+  }
   try {
     const r = await fetch(
       'https://rtc.live.cloudflare.com/v1/turn/keys/' + encodeURIComponent(keyId) + '/credentials/generate-ice-servers',
       {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ttl: 86400 })
+        body: JSON.stringify({ ttl: TURN_TTL_S })
       }
     );
     const data = await r.json().catch(() => null);
@@ -6588,6 +6676,7 @@ async function handleTurnCredentials(request, env) {
     let ice = [];
     if (Array.isArray(data.iceServers)) ice = data.iceServers;
     else if (data.iceServers && typeof data.iceServers === 'object') ice = [data.iceServers];
+    if (KV && ice.length) { try { await KV.put(cacheKey, JSON.stringify({ ice, at: Date.now() }), { expirationTtl: TURN_CACHE_S }); } catch (e) { console.warn('[turn-cache]', String(e)); } }
     return json({ iceServers: stun.concat(ice), turn: ice.length > 0 });
   } catch (e) {
     return json({ iceServers: stun, turn: false, reason: 'exception', detail: String((e && e.message) || e).slice(0, 200) });
@@ -7062,6 +7151,7 @@ const _workerHandler = {
     if (cron === '0 3 * * *') {
       ctx.waitUntil(performDailyBackup(env));
       await purgeLocationHistory(env);   // Lot B : positions > 30 j + cache des résumés IA > 7 j (jamais bloquant)
+      await purgeExpiredStories(env);    // v1.1.304 : stories expirées (jamais bloquant)
       await env.APEX_CHAT_DB.prepare(
         'DELETE FROM audit_log WHERE ts < ?'
       ).bind(Date.now() - 90 * 86400000).run();

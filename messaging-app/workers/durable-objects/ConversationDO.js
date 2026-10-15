@@ -43,6 +43,7 @@ const CATCHUP_CHANGES_MAX = 500;        // A2-16 : éditions/suppressions d'anci
 // la vraie garantie est la re-vérification des sessions périmées AVANT chaque diffusion + la révocation interne.
 const RECHECK_TIMER_MS = 5 * 60000;
 const REVOKE_TYP = 'dorevoke';          // jeton interne signé par l'api-worker (même clé que `wsfwd`)
+const PURGE_TYP = 'dopurge';            // v1.1.304 (A2-06) : purge interne du buffer (conversation / expéditeur)
 // Débits par socket et par minute (généreux : un humain n'atteint jamais ça).
 const RATE_LIMITS = {
   message: 100, reaction: 120, edit_message: 30, delete_message: 30,
@@ -393,6 +394,24 @@ export class ConversationDO {
       return new Response(JSON.stringify({ ok: true, closed }), { headers: { 'Content-Type': 'application/json' } });
     }
 
+    // v1.1.304 (audit A2-06) : purge INTERNE du buffer. Avant, l'api-worker effaçait D1 (conversation
+    // purgée, compte supprimé) sans prévenir le DO : le flush suivant RÉÉCRIVAIT les messages encore en
+    // attente (orphelins, ou en clair et non marqués supprimés). Même modèle que /internal/revoke :
+    // jeton court signé (typ 'dopurge'), jamais atteignable par le routeur public.
+    //  - { conv, sender } : messages en attente de CET expéditeur (compte supprimé) ;
+    //  - { conv } seul    : TOUT le buffer et tout le stockage de la conversation (conversation purgée).
+    if (url.pathname.endsWith('/internal/purge')) {
+      const auth = request.headers.get('Authorization') || '';
+      const claims = request.method === 'POST' ? await this.verifyJWT(auth.replace(/^Bearer\s+/i, '')) : null;
+      if (!claims || claims.typ !== PURGE_TYP || !claims.conv) {
+        return new Response(JSON.stringify({ ok: false, error: 'forbidden' }), {
+          status: 403, headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const dropped = await this._purgePending(claims.conv, claims.sender || null);
+      return new Response(JSON.stringify({ ok: true, dropped }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
     // WebSocket upgrade
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('WebSocket required', { status: 426 });
@@ -691,6 +710,33 @@ export class ConversationDO {
   async _recheckStale(exclude) {
     // _recheckMembership ne touche D1 que pour une session dont la dernière vérification est périmée.
     await Promise.all([...this.sessions].filter(([w]) => w !== exclude).map(([w, s]) => this._recheckMembership(w, s)));
+  }
+
+  /**
+   * A2-06 : retire du buffer (RAM + stockage `pend:` / `quar:`) les messages qui ne doivent plus jamais
+   * atteindre D1. Attend d'abord le flush en cours (sinon un lot déjà parti serait écrit APRÈS la purge
+   * de D1 faite par l'appelant). sender = null → conversation entière : stockage vidé, sockets fermées.
+   */
+  async _purgePending(convId, sender) {
+    if (this._flushing) await this._flushing.catch(() => {});
+    const hit = (m) => m.conv_id === convId && (!sender || m.sender_id === sender);
+    const dropped = this.pendingMessages.filter(hit);
+    this.pendingMessages = this.pendingMessages.filter((m) => !hit(m));
+    for (const m of dropped) this._recent.delete(m.id);
+    const st = this.state.storage;
+    if (!sender) {
+      for (const [w, s] of [...this.sessions]) this._dropSession(w, s, 'Conversation supprimée');
+      if (typeof st.deleteAll === 'function') { await st.deleteAll(); return dropped.length; }
+    }
+    // Clés `pend:` et `quar:` de ce périmètre (la quarantaine garde sinon le contenu indéfiniment).
+    await this._forgetPending(dropped);
+    if (typeof st.list === 'function' && typeof st.delete === 'function') {
+      const quar = await st.list({ prefix: QUAR_PREFIX });
+      for (const [k, v] of quar) {
+        if (v && v.rec && hit(v.rec)) await st.delete(k);
+      }
+    }
+    return dropped.length;
   }
 
   /** Révocation interne : ferme en 1008 toutes les sockets de `userId` sur cette conversation. */

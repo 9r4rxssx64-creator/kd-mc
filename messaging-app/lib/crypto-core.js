@@ -12,7 +12,8 @@
  *   - ECDH P-256 → derive shared secret
  *   - HKDF SHA-256 → stretch
  *   - AES-GCM 256 → encrypt messages (IV 12 bytes random, auth tag inclus)
- *   - PBKDF2 SHA-256 100k iterations → derive key from PIN
+ *   - PBKDF2 SHA-256 600k iterations → derive key from PIN (v1.1.304 ; anciens wraps 100k relus
+ *     puis ré-emballés à 600k au déverrouillage suivant, cf. lib/key-vault.js)
  *
  * Le serveur ne déchiffre RIEN — seul le client possède les clés privées.
  */
@@ -160,10 +161,19 @@ export async function decryptMessage(ciphertextB64, aesKey) {
 }
 
 // ----------------------------------------------------------------------------
-//  PIN wrap (PBKDF2 100k → AES-GCM)
+//  PIN wrap (PBKDF2-SHA256 → AES-GCM)
+//  v1.1.304 (audit A3 P3) : 100 000 itérations (2010) → 600 000 (recommandation OWASP 2023 pour
+//  PBKDF2-HMAC-SHA256). Le nombre d'itérations voyage AVEC le wrap ; un wrap sans ce champ est un
+//  ancien wrap à 100 000 (relu tel quel, puis ré-emballé à 600 000 par l'appelant au déverrouillage).
+//  Mesuré sous Node 22 (WebCrypto natif) : ~60 ms à 100k, ~350 ms à 600k par dérivation.
 // ----------------------------------------------------------------------------
 
-async function deriveKeyFromPin(pin, saltB64) {
+export const PIN_KDF_ITERATIONS = 600000;
+export const PIN_KDF_LEGACY_ITERATIONS = 100000;
+
+async function deriveKeyFromPin(pin, saltB64, iterations = PIN_KDF_ITERATIONS) {
+  // Jamais MOINS que l'ancien réglage : un wrap altéré ne peut pas faire baisser le coût.
+  if (!Number.isInteger(iterations) || iterations < PIN_KDF_LEGACY_ITERATIONS) throw new Error('pin-kdf-iterations');
   const salt = saltB64 ? new Uint8Array(b64ToBuf(saltB64)) : randomBytes(16);
 
   const pinKey = await crypto.subtle.importKey(
@@ -175,7 +185,7 @@ async function deriveKeyFromPin(pin, saltB64) {
   );
 
   const aesKey = await crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
     pinKey,
     { name: 'AES-GCM', length: 256 },
     false,
@@ -188,11 +198,12 @@ async function deriveKeyFromPin(pin, saltB64) {
 export async function wrapWithPin(payload, pin) {
   const { aesKey, salt } = await deriveKeyFromPin(pin);
   const ciphertext = await encryptMessage(JSON.stringify(payload), aesKey);
-  return { ciphertext, salt };
+  return { ciphertext, salt, iterations: PIN_KDF_ITERATIONS };
 }
 
-export async function unwrapWithPin(ciphertext, salt, pin) {
-  const { aesKey } = await deriveKeyFromPin(pin, salt);
+// iterations : celui enregistré avec le wrap (key-vault passe 100 000 pour un ancien wrap sans champ).
+export async function unwrapWithPin(ciphertext, salt, pin, iterations = PIN_KDF_ITERATIONS) {
+  const { aesKey } = await deriveKeyFromPin(pin, salt, iterations);
   const plaintext = await decryptMessage(ciphertext, aesKey);
   return JSON.parse(plaintext);
 }
@@ -649,14 +660,21 @@ export function buildGroupKeyRequest({ from, sender, epoch, kid }) {
 //   - 'pending' → clé changée NON acceptée : ne reçoit PAS la clé (jamais adoptée en silence) ;
 //   - autre     → aucune clé utilisable (pas publiée, appli trop ancienne) → le groupe
 //                 n'est PAS prêt : chemin honnête « chiffré en transit » pour ce message.
-export function groupReadiness(statuses) {
+// v1.1.304 (audit A3 P2) — opts.wasE2e : le groupe a DÉJÀ été chiffré de bout en bout (preuve
+// LOCALE : ma clé d'envoi existe, ou un message de groupe chiffré a été lu sur cet appareil). Un
+// membre sans clé ne fait alors JAMAIS redescendre tout le groupe en clair (ce serait une décision
+// du serveur, qui choisit ce que contient le bundle) : il est EXCLU de la distribution, comme une
+// clé changée non acceptée, et l'appelant le dit à l'expéditeur (`excluded`).
+export function groupReadiness(statuses, opts) {
   const recipients = []; const pending = []; const missing = [];
   for (const s of statuses) {
     if (s.status === 'ok') recipients.push(s.uid);
     else if (s.status === 'pending') pending.push(s.uid);
     else missing.push(s.uid);
   }
-  return { ready: missing.length === 0, recipients, pending, missing };
+  const base = { ready: missing.length === 0, recipients, pending, missing };
+  if (missing.length && opts && opts.wasE2e === true) return { ...base, ready: true, excluded: missing.slice() };
+  return base;
 }
 
 // Nouvelle époque nécessaire ? (1ᵉʳ envoi, ou liste des membres changée : ajout/retrait)
@@ -740,7 +758,7 @@ export async function selfTest(__deps = {}) {
 
     const exported = await exportPrivateKey(alice.privateKey);
     const wrapped = await wrapWithPin({ key: exported }, 'autotest-pin-0000');
-    const unwrapped = await _unwrap(wrapped.ciphertext, wrapped.salt, 'autotest-pin-0000');
+    const unwrapped = await _unwrap(wrapped.ciphertext, wrapped.salt, 'autotest-pin-0000', wrapped.iterations);
     if (unwrapped.key !== exported) return { ok: false, reason: 'pin-wrap-mismatch' };
 
     const fp1 = await _fp(alice.publicKey, bob.publicKey);
@@ -785,6 +803,8 @@ if (typeof window !== 'undefined') {
     decryptMessage,
     wrapWithPin,
     unwrapWithPin,
+    PIN_KDF_ITERATIONS,
+    PIN_KDF_LEGACY_ITERATIONS,
     computeFingerprint,
     GROUP_MSG_TAG,
     GROUP_KEY_TAG,

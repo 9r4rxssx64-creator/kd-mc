@@ -518,7 +518,14 @@ describe('5. membre sans clé : chemin honnête, jamais de clair silencieux quan
     A.K._grpMembersCache = {};
     await A.K._flushPendingEncrypt(CONV);
     expect(srv.frames.slice(before).some((f) => /secret/.test(f.ciphertext))).toBe(false);
-    expect(A.store.pending_encrypt.map((x) => x.id)).toEqual(['p1']);
+    // v1.1.304 (audit A3 P2) — AVANT : le message restait en file (le groupe déjà chiffré était « pas prêt »
+    // à cause d'eve). MAINTENANT : eve (sans clé) est EXCLUE et le message part CHIFFRÉ pour les autres ;
+    // jamais en clair dans les deux cas.
+    expect(A.store.pending_encrypt).toEqual([]);
+    const sent = srv.frames.slice(before).filter((f) => f.type === 'message');
+    expect(sent.at(-1).ciphertext.startsWith('E2EG1:')).toBe(true);
+    for (const f of sent.filter((x) => x.ciphertext.startsWith('E2EGK1:'))) expect(parse(f.ciphertext).body.keys.map((e) => e.to)).not.toContain('eve');
+    expect(A.K._grpState[CONV]).toMatchObject({ ready: true, excluded: ['eve'] });
   });
 
   it('5e. la file envoie chiffré dès que le groupe redevient prêt', async () => {

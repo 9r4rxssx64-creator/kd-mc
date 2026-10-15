@@ -1,5 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Apex Chat v1.1.304 : ultra-audit, lot C1 (le serveur ne peut plus affaiblir le chiffrement)
+
+- DM : photos, fichiers ET vocaux toujours chiffrés ; si impossible, rien ne part (message clair).
+- Groupe déjà chiffré : un membre sans clé est exclu (« ⚠️ 1 membre ne peut pas lire les messages chiffrés »), jamais de clair.
+- Signatures : clé publiée suffit (drapeau non requis), épinglée → toujours exigée. PIN 600 000 itérations (+0,3 s).
+- WebSocket par ticket seulement (le serveur accepte encore ?token= pour les vieux clients : à retirer à la prochaine version).
+- Purge / suppression de compte : serveur de conversation vidé d'abord ; 10 tables oubliées désormais effacées.
+- /api/system/config derrière connexion ; TURN 4 h + 48/jour ; envoi de fichiers 300/jour ou 1 Go. Migration 0017.
+- Reste : jeton encore dans l'adresse des médias tant que le ticket média n'est pas prêt ; sel fixe du PIN ; vote de sondage et signalements gardés à la suppression.
+- Mesuré : 114 fichiers / 1821 tests, couverture OK ; 24/24 sabotages + 1 manuel. Leçon #544.
+
 ## 2026-10-15 — E2E prod Apex Chat : attend la fin du déploiement serveur du même commit
 
 - Après v1.1.303, run 38711451541 : 1 test « instable » (temps réel par ticket : 1er essai sans message). 3 relances

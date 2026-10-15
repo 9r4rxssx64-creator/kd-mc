@@ -15,7 +15,8 @@ describe('key-vault — wrap/unwrap', () => {
     const wrapped = await wrapPrivKey(PRIV, '424242');
     expect(wrapped.ct).toBeTruthy();
     expect(wrapped.salt).toBeTruthy();
-    expect(wrapped.v).toBe(1);
+    expect(wrapped.v).toBe(2);              // v1.1.304 : format v:2 (PBKDF2 600k, champ `it`) — avant : v:1 (100k)
+    expect(wrapped.it).toBe(600000);
     const back = await unwrapPrivKey(wrapped, '424242');
     expect(back).toBe(PRIV);
   });
@@ -55,7 +56,7 @@ describe('key-vault — wrap/unwrap', () => {
   it('payload déchiffré sans champ priv → bad-payload', async () => {
     // Crée un blob wrappé valide MAIS sans `priv` (déchiffrement réussit, contenu KO).
     const bogus = await wrapWithPin({ foo: 1 }, '424242');
-    await expect(unwrapPrivKey({ ct: bogus.ciphertext, salt: bogus.salt }, '424242'))
+    await expect(unwrapPrivKey({ ct: bogus.ciphertext, salt: bogus.salt, it: bogus.iterations }, '424242'))
       .rejects.toThrow('bad-payload');
   });
 });

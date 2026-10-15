@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.303",
+  "softwareVersion": "v1.1.304",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.303';
+const __APEX_CHAT_VERSION__ = 'v1.1.304';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.303" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.303</div>
+  <div id="splash-version" data-ver="v1.1.304" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.304</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.303</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.304</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1383,6 +1383,14 @@ K._accessLog = function(event, meta){
 };
 try{ document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') K._accessLog('ouvre'); }); }catch(_){}
 
+// v1.1.304 (audit A1 P3) — /api/system/config exige un compte connecté (règle « aucune
+// consultation sans compte ») : jeton en en-tête, et rien sans jeton (valeurs par défaut).
+K._loadSystemConfig = function(){
+  if(!K.token || String(K.token).startsWith('local-')) return Promise.resolve(false);
+  return fetch(API_BASE + '/api/system/config', { headers: { 'Authorization': 'Bearer ' + K.token } })
+    .then(r => r.json()).then(d => { if(d && d.config){ K.config = d.config; return true; } return false; })
+    .catch(() => { K.config = { ADMIN_MODE: 'A', KEVIN_INVISIBLE_ADMIN: 'true', AUTH_PROVIDER: 'firebase' }; return false; });
+};
 K.login = async function(user, token){
   K.user = user;
   K.token = token;
@@ -1405,6 +1413,7 @@ K.login = async function(user, token){
   }catch(_){}
   // Préchauffe les credentials TURN en arrière-plan → le 1er appel se connecte vite (v1.1.229)
   try{ if(K._ensureIceServers) K._ensureIceServers(); }catch(_){}
+  try{ K._loadSystemConfig(); }catch(_){}   // v1.1.304 : config réservée aux comptes connectés
   // v1.1.289 (audit P2c) : demande le ticket média DÈS la connexion, pour que
   // les premières photos affichées portent déjà un ticket et non le jeton.
   try{ if(K._ensureMediaTicket) K._ensureMediaTicket(); }catch(_){}
@@ -5957,14 +5966,29 @@ K._CRYPTO_CAPS = 'media,grp1';   // v1.1.296 : 'grp1' = sait déchiffrer l'E2E d
 K._peerSupports = function(conv, cap){
   try{ return !!(conv && typeof conv._peer_caps === 'string' && conv._peer_caps.split(',').indexOf(cap) >= 0); }catch(_){ return false; }
 };
-// Média-E2E : ON forcé ('1'), OFF forcé ('0'), sinon AUTO = ON si le pair sait
-// le déchiffrer (négociation de capacités → sécurité par défaut, zéro casse).
+// Média-E2E d'un DM. v1.1.304 (audit A3 P2) : TOUJOURS chiffré dès que l'E2E s'applique au DM.
+// Avant : AUTO = « le pair annonce 'media' » — or cette annonce (crypto_caps) vient du SERVEUR,
+// qui pouvait donc faire partir photos/vocaux EN CLAIR sous un en-tête « 🛡 E2E ». Un réglage
+// local '0' ne l'éteint plus non plus. Un contact sur une très vieille appli (< v1.1.262) verra
+// « média chiffré » : repli honnête, jamais de clair silencieux (même règle que decideWire).
 K._mediaE2eOn = function(conv){
-  if(!K._e2eAppliesTo(conv)) return false;   // v1.1.294 : jamais pour un groupe (clé 1:1)
-  let v = null; try{ v = localStorage.getItem('apex_chat_media_e2e'); }catch(_){}
-  if(v === '1') return true;
-  if(v === '0') return false;
-  return K._peerSupports(conv, 'media');
+  return K._e2eAppliesTo(conv);   // v1.1.294 : jamais pour un groupe (clé 1:1, cf. _grpFileForUpload)
+};
+K._DM_MEDIA_BLOCKED = '🔒 Pièce jointe NON envoyée : chiffrement impossible pour l\'instant (clé de ton contact pas encore disponible). Rien n\'est envoyé en clair — réessaie dans un instant.';
+// v1.1.304 — octets d'un média de DM chiffrés par la session 1:1 AVANT l'upload.
+//  → {} : pas un DM E2E (groupe ou E2E coupé sur l'appareil) ;
+//    { body, enc:true } : chiffré ;
+//    { block:true } : E2E revendiqué mais chiffrement impossible → l'appelant N'UPLOADE RIEN.
+K._dmMediaEncrypt = async function(conv, blob){
+  if(!K._mediaE2eOn(conv)) return {};
+  try{
+    await K._ensureSession(conv);
+    if(window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id)){
+      const encBuf = await ApexCrypto.encryptBytes(conv.id, await blob.arrayBuffer());
+      return { body: new Blob([encBuf], { type: 'application/octet-stream' }), enc: true };
+    }
+  }catch(e){ _safeCatch('media-bytes-encrypt', e); }
+  return { block: true };
 };
 // v1.1.262 — forward secrecy (ratchet). Format de payload « E2E2:<n>:<ct> ».
 // v1.1.267 — DÉSACTIVÉ (bug « impossible à lire sur cet appareil », capture Kevin).
@@ -7315,8 +7339,15 @@ K._loadCryptoKeys = async function(){
     try{
       const privB64    = await ApexVault.unwrapPrivKey(storedWrapped, pin);
       const publicKey  = await ApexCrypto.importPublicKey(storedPub);
-      const privateKey = (await K._migratePrivToIdb(privB64, storedPub)) || await ApexCrypto.importPrivateKey(privB64);
+      const idbKey     = await K._migratePrivToIdb(privB64, storedPub);
+      const privateKey = idbKey || await ApexCrypto.importPrivateKey(privB64);
       K._cryptoKeys = { publicKey, privateKey };
+      // v1.1.304 (audit A3 P3) : le wrap reste (pas d'IndexedDB) et date des 100 000 itérations →
+      // ré-emballé à 600 000 maintenant que le PIN est connu. Échec = l'ancien wrap reste (zéro lockout).
+      if(!idbKey && ApexVault.vaultNeedsRewrap && ApexVault.vaultNeedsRewrap(storedWrapped)){
+        try{ ls('crypto_priv_wrapped', await ApexVault.wrapPrivKey(privB64, pin)); _logTelemetry('ok', 'crypto-key-rewrapped', {}); }
+        catch(e){ _safeCatch('crypto-rewrap', e); }
+      }
       _logTelemetry('ok', 'crypto-keys-unwrapped', {});
       return;
     }catch(e){ _safeCatch('crypto-unwrap', e); /* échec → régénère plus bas (zéro lockout) */ }
@@ -7624,6 +7655,20 @@ K._grpSigRefreshAt = K._grpSigRefreshAt || {};   // v1.1.297
 K._grpApplies = function(conv){
   return !!conv && !!conv.id && !K._convIsDm(conv) && K._e2eOn() && !!(window.ApexCrypto && ApexCrypto.groupEncrypt);
 };
+// v1.1.304 (audit A3 P2) — le groupe a-t-il DÉJÀ été chiffré de bout en bout ? Preuve LOCALE
+// uniquement (jamais une donnée du serveur) : ma clé d'envoi existe, ou un message de groupe
+// chiffré a été lu sur cet appareil. Une fois vrai, un membre sans clé n'est plus jamais une
+// raison de repasser TOUT le groupe en clair : il est exclu de la distribution (et on le dit).
+K._grpWasE2e = async function(convId){
+  try{ if(lg('grp_e2e_' + convId, 0)) return true; }catch(_){}
+  try{ return !!(await K._grpOwnLoad(convId)); }catch(_){ return false; }
+};
+K._grpMarkE2e = function(convId){
+  try{ if(!lg('grp_e2e_' + convId, 0)) ls('grp_e2e_' + convId, 1); }catch(e){ _safeCatch('grp-mark-e2e', e); }
+};
+K._grpExcludedText = function(n){
+  return '⚠️ ' + n + ' membre' + (n > 1 ? 's ne peuvent' : ' ne peut') + ' pas lire les messages chiffrés';
+};
 // En-tête : le groupe est-il chiffré de bout en bout (tous les membres ont une clé) ?
 K._grpReady = function(conv){
   const st = conv && conv.id ? K._grpState[conv.id] : null;
@@ -7754,8 +7799,11 @@ K._grpMemberKey = async function(uid, force){
         b.caps = (typeof r.bundle.crypto_caps === 'string') ? r.bundle.crypto_caps : '';
         // v1.1.297 : clé publique de signature (champ prekey_signed, préfixe GSIG1:) + capacité gsig1.
         // v1.1.299 : lue UNIQUEMENT dans sa colonne (signing_key_pub) ; prekey_signed appartient à PQXDH.
+        // v1.1.304 (audit A3 P2) : la clé publiée SUFFIT (la capacité « gsig1 » n'est plus exigée en
+        // plus) — un serveur qui retire le drapeau de capacité ne peut plus éteindre la vérification.
+        // Une fois épinglée, la clé reste exigée même si le bundle ne sert plus NI la clé NI le drapeau.
         const sg = r.bundle.signing_key_pub;
-        if(typeof sg === 'string' && sg.indexOf('GSIG1:') === 0 && b.caps.split(',').indexOf(K._GRP_SIG_CAP) >= 0) b.sig = sg;
+        if(typeof sg === 'string' && sg.indexOf('GSIG1:') === 0) b.sig = sg;
       }
     }catch(_){ /* 409 key_pending : le membre n'a pas encore publié sa clé */ }
     K._grpBundleCache[uid] = b;
@@ -7857,9 +7905,13 @@ K._grpPrepare = async function(conv, opts){
       keys[uid] = await K._grpMemberKey(uid);
       statuses.push({ uid, status: keys[uid].status });
     }
-    const rd = ApexCrypto.groupReadiness(statuses);
+    // v1.1.304 (audit A3 P2) : groupe déjà chiffré de bout en bout → un membre sans clé (bundle
+    // 409, capacité « grp1 » absente…) est EXCLU, il ne fait plus redescendre tout le groupe en clair.
+    const wasE2e = statuses.some(x => x.status !== 'ok' && x.status !== 'pending') ? await K._grpWasE2e(conv.id) : false;
+    const rd = ApexCrypto.groupReadiness(statuses, { wasE2e });
+    const excluded = rd.excluded || [];
     if(!rd.ready) return done({ reason: 'member_without_key', missing: rd.missing, pendingKey: rd.pending });
-    if(opts.check) return done({ ready: true, pendingKey: rd.pending });
+    if(opts.check) return done({ ready: true, pendingKey: rd.pending, excluded });
     let own = await K._grpOwnLoad(conv.id);
     let raw = null;
     const sk = await K._grpSigKeys();   // v1.1.297
@@ -7882,7 +7934,8 @@ K._grpPrepare = async function(conv, opts){
       }
     } finally { if(raw) raw.fill(0); }
     await K._grpOwnSave(conv.id, own);
-    return done({ ready: true, pendingKey: rd.pending, epoch: own.epoch, kid: own.kid, own });
+    K._grpMarkE2e(conv.id);
+    return done({ ready: true, pendingKey: rd.pending, excluded, epoch: own.epoch, kid: own.kid, own });
   };
   const p = run();
   K._grpLocks[lockK] = p;
@@ -7918,14 +7971,13 @@ K._grpEncryptOutgoing = async function(conv, plaintext, opts){
     catch(e){ _safeCatch('grp-encrypt', e); payload = null; }
   }
   let claimed = !!prep.ready;
-  if(!claimed && prep.reason !== 'member_without_key'){
-    try{ claimed = !!(await K._grpOwnLoad(conv.id)); }catch(_){ claimed = false; }
-  }
+  if(!claimed && prep.reason !== 'member_without_key') claimed = await K._grpWasE2e(conv.id);
   const d = ApexCrypto.decideWire({ ciphertextPayload: payload, plaintext, e2eOn: claimed });
   return {
     mode: d.mode, wire: d.wire, encrypted: d.mode === 'cipher',
     reason: d.mode === 'pending' ? 'group_key' : ((d.mode === 'clear' && prep.reason === 'member_without_key') ? 'member_without_key' : null),
     missing: prep.missing || [],
+    excluded: (d.mode === 'cipher' && Array.isArray(prep.excluded)) ? prep.excluded : [],   // v1.1.304
   };
 };
 // ---- v1.1.297 — pièce jointe de GROUPE : octets chiffrés AVANT l'upload.
@@ -7938,9 +7990,7 @@ K._grpFileForUpload = async function(conv, blob){
   try{ prep = await K._grpPrepare(conv); }catch(_){ prep = { ready: false, reason: 'error' }; }
   if(!prep.ready){
     if(prep.reason === 'member_without_key') return {};
-    let claimed = false;
-    try{ claimed = !!(await K._grpOwnLoad(conv.id)); }catch(_){ claimed = false; }
-    return claimed ? { block: true } : {};
+    return (await K._grpWasE2e(conv.id)) ? { block: true } : {};
   }
   try{
     const ef = await ApexCrypto.encryptGroupFile(await blob.arrayBuffer());
@@ -8113,7 +8163,9 @@ K._grpDecode = async function(conv, raw, meta){
     }
   }
   try{
-    return { text: await ApexCrypto.groupDecrypt(key, pw.body, { conv: conv.id, from: sender, ctxId }), encrypted: true, unencrypted: false };
+    const text = await ApexCrypto.groupDecrypt(key, pw.body, { conv: conv.id, from: sender, ctxId });
+    K._grpMarkE2e(conv.id);   // v1.1.304 : preuve locale que ce groupe est chiffré de bout en bout
+    return { text, encrypted: true, unencrypted: false };
   }catch(e){
     _safeCatch('grp-decrypt', e);
     if(meta.edit) return { text: K._GROUP_EDIT_REFUSED, encrypted: false, unencrypted: false, undecryptable: true, refused: true };
@@ -9034,7 +9086,8 @@ K._chatHeaderSubtitle = function(conv){
     if(typeof K._grpReady === 'function' && K._grpReady(conv)){
       const st = K._grpState[conv.id] || {};
       const pend = Array.isArray(st.pendingKey) ? st.pendingKey.length : 0;
-      return `${n ? `👥 ${esc(String(n))} membres · ` : ''}<span class="group-e2e-on" title="Chaque message est chiffré sur ton appareil avec une clé que seuls les membres actuels du groupe possèdent : le serveur ne peut pas le lire. Pièces jointes : le lien et la légende sont chiffrés, le contenu du fichier pas encore.">${esc(K._GROUP_E2E_ON_NOTICE)}</span>${pend ? ` · <span style="color:#e63946">⚠️ ${esc(String(pend))} clé${pend > 1 ? 's' : ''} à vérifier</span>` : ''}`;
+      const excl = Array.isArray(st.excluded) ? st.excluded.length : 0;   // v1.1.304
+      return `${n ? `👥 ${esc(String(n))} membres · ` : ''}${excl ? `<span class="grp-excluded" style="color:#e63946">${esc(K._grpExcludedText(excl))}</span> · ` : ''}<span class="group-e2e-on" title="Chaque message est chiffré sur ton appareil avec une clé que seuls les membres actuels du groupe possèdent : le serveur ne peut pas le lire. Pièces jointes : le lien et la légende sont chiffrés, le contenu du fichier pas encore.">${esc(K._GROUP_E2E_ON_NOTICE)}</span>${pend ? ` · <span style="color:#e63946">⚠️ ${esc(String(pend))} clé${pend > 1 ? 's' : ''} à vérifier</span>` : ''}`;
     }
     return `${n ? `👥 ${esc(String(n))} membres · ` : ''}<span class="group-e2e-notice" style="color:var(--ax-warn, #ffa500)" title="Les messages de groupe sont protégés pendant le transport (HTTPS/WSS) mais le serveur peut techniquement les lire.">${esc(K._GROUP_E2E_NOTICE)}</span>`;
   }
@@ -9402,7 +9455,9 @@ K._sendMsg = async function(){
   // l'outbox jusqu'à l'accusé du serveur (A2-08).
   const wire = { type: 'message', ciphertext: decision.wire, mime: 'text/plain', ts: msg.ts, id: msg.id, ...K._wireExtras(msg) };
   if(K._dispatchWire(conv.id, wire) === 'sent'){
-    toast((ciphertext || (grpDecision && grpDecision.encrypted)) ? '🛡 Envoyé chiffré E2E'
+    const nExcl = (grpDecision && grpDecision.encrypted && Array.isArray(grpDecision.excluded)) ? grpDecision.excluded.length : 0;   // v1.1.304
+    if(nExcl) toast('🛡 Envoyé chiffré E2E · ' + K._grpExcludedText(nExcl) + ' (pas de clé de chiffrement)', 'warn', 4000);
+    else toast((ciphertext || (grpDecision && grpDecision.encrypted)) ? '🛡 Envoyé chiffré E2E'
       : ((grpDecision && grpDecision.reason === 'member_without_key') ? '🔓 Envoyé chiffré en transit seulement : un membre n\'a pas encore de clé de chiffrement' : '📨 Envoyé'), 'ok', 1000);
   } else {
     toast('📭 Hors-ligne — message en attente d\'envoi', 'info', 1800);
@@ -9634,12 +9689,12 @@ K._wsDiagnose = async function(convId){
   try{
     const base = API_BASE + '/api/conversations/' + encodeURIComponent(convId) + '/ws-diag';
     // 1) Test du chemin EXACT du WebSocket : identité dans l'URL, sans en-tête.
-    //    v1.1.286 : ticket à usage unique (repli ?token= si serveur pas à jour).
+    //    v1.1.286 : ticket à usage unique. v1.1.304 (audit A4 P3-9) : plus de repli ?token= —
+    //    sans ticket, le diagnostic passe le jeton en EN-TÊTE (jamais dans une URL).
     const diagTicket = await K._wsTicket();
-    const diagCred = diagTicket
-      ? '?ticket=' + encodeURIComponent(diagTicket)
-      : '?token=' + encodeURIComponent(K.token);
-    const r = await fetch(base + diagCred, { cache: 'no-store' });
+    const r = diagTicket
+      ? await fetch(base + '?ticket=' + encodeURIComponent(diagTicket), { cache: 'no-store' })
+      : await fetch(base, { headers: { 'Authorization': 'Bearer ' + K.token }, cache: 'no-store' });
     const d = await r.json().catch(() => ({}));
     console.log('[ws-diag]', JSON.stringify(d));
 
@@ -9705,7 +9760,8 @@ K._wsDiagnose = async function(convId){
 // jeton de SESSION revient à y écrire le mot de passe. On échange donc le jeton
 // (envoyé en en-tête, jamais dans une URL) contre un TICKET à usage unique
 // valable 60 s. Un ticket qui fuite est déjà mort.
-// Repli sur ?token= si le serveur n'a pas encore la route (jamais couper le WS).
+// v1.1.304 (audit A4 P3-9) : plus AUCUN repli ?token= — sans ticket, K._openWs réessaie plus
+// tard (délai croissant) au lieu d'écrire le jeton de session dans l'URL.
 K._wsTicket = async function(){
   try{
     const r = await fetch(API_BASE + '/api/auth/ws-ticket', {
@@ -9727,12 +9783,20 @@ K._openWs = async function(convId){
 
   try{
     const ticket = await K._wsTicket();
-    const cred = ticket
-      ? 'ticket=' + encodeURIComponent(ticket)
-      : 'token=' + encodeURIComponent(K.token);   // repli : serveur pas à jour
+    if(!ticket){
+      // v1.1.304 (audit A4 P3-9) : ticket indisponible (réseau, serveur) → nouvel essai à délai
+      // croissant (1 s, 2 s, 4 s… plafond 30 s) tant que la conversation est ouverte. JAMAIS le
+      // jeton de session dans l'URL (journaux serveur, historique, Referer).
+      K._wsRetry = (K._wsRetry || 0) + 1;
+      const delay = Math.min(1000 * Math.pow(2, K._wsRetry - 1), 30000);
+      _logTelemetry('warn', 'ws-ticket-unavailable', { convId, retry: K._wsRetry });
+      if(K._wsRetry === 4) toast('⚠️ Temps réel en attente de connexion sécurisée — nouvel essai automatique', 'warn', 4000);
+      setTimeout(() => { if(K.view === 'chat' && K.viewData?.id === convId && !K.ws) K._openWs(convId); }, delay);
+      return;
+    }
     const wsUrl = API_BASE.replace(/^https?/, 'wss') +
       `/api/conversations/${encodeURIComponent(convId)}/ws` +
-      `?${cred}&uid=${encodeURIComponent(K.user.id)}&conv=${encodeURIComponent(convId)}`;
+      `?ticket=${encodeURIComponent(ticket)}&uid=${encodeURIComponent(K.user.id)}&conv=${encodeURIComponent(convId)}`;
 
     // Correctif (audit client 10/2026) : chaque écouteur vise SA socket. Avant,
     // la fermeture (tardive) d'une ANCIENNE socket remettait K.ws à null alors
@@ -11809,8 +11873,8 @@ K.openPrivacyPrefs = function(){
       <span style="font-size:.85em;line-height:1.45"><strong>🛡 Chiffrement bout-en-bout (activé)</strong><br><span style="color:var(--ax-text-3);font-size:.92em">Activé par défaut. Vérifie le « numéro de sécurité » (icône 🛡 en haut d'une conversation) : il doit être <strong>identique</strong> chez ton correspondant. Décoche uniquement en cas de souci d'affichage (secours).</span></span>
     </label>
     <label style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;padding:12px;background:rgba(232,184,48,.08);border:1px solid rgba(232,184,48,.25);border-radius:10px;cursor:pointer">
-      <input type="checkbox" id="pv-media-e2e" ${(function(){try{return localStorage.getItem('apex_chat_media_e2e')==='1'}catch(_){return false}})()?'checked':''} onchange="K._toggleMediaE2e(this.checked)" style="width:20px;height:20px;flex:0 0 auto;margin-top:2px">
-      <span style="font-size:.85em;line-height:1.45"><strong>🖼 Chiffrer aussi les photos/fichiers</strong><br><span style="color:var(--ax-text-3);font-size:.92em">Chiffre le <strong>contenu</strong> des médias (pas seulement leur nom) : le serveur ne voit jamais l'image. <strong>Auto</strong> dès que le contact est à jour ; sans effet sur un contact en ancienne version (aucune casse). Coche pour forcer, décoche pour désactiver.</span></span>
+      <input type="checkbox" id="pv-media-e2e" checked disabled style="width:20px;height:20px;flex:0 0 auto;margin-top:2px">
+      <span style="font-size:.85em;line-height:1.45"><strong>🖼 Photos, fichiers et vocaux chiffrés aussi</strong><br><span style="color:var(--ax-text-3);font-size:.92em">Toujours activé dans une conversation chiffrée de bout en bout : le serveur ne voit jamais le <strong>contenu</strong> d'un média. Si le chiffrement est impossible, le média n'est <strong>pas envoyé</strong> (jamais en clair).</span></span>
     </label>
     <label style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;padding:12px;background:rgba(120,90,255,.06);border:1px solid rgba(120,90,255,.18);border-radius:10px;opacity:.6">
       <input type="checkbox" id="pv-ratchet" disabled style="width:20px;height:20px;flex:0 0 auto;margin-top:2px">
@@ -13374,18 +13438,11 @@ K._uploadMedia = async function(file){
       if(gf.block){ toast('🔒 Chiffrement de groupe en préparation — pièce jointe NON envoyée (rien n\'est envoyé en clair), réessaie dans un instant', 'warn', 4000); return; }
       if(gf.file){ body = gf.body; ctype = 'application/octet-stream'; grpFile = gf.file; }
     }
-    if(K._mediaE2eOn(conv)){
-      try{
-        await K._ensureSession(conv);
-        if(window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id)){
-          const buf = await body.arrayBuffer();
-          const encBuf = await ApexCrypto.encryptBytes(conv.id, buf);
-          body = new Blob([encBuf], { type:'application/octet-stream' });
-          ctype = 'application/octet-stream';
-          mediaEnc = true;
-        }
-      }catch(e){ _safeCatch('media-bytes-encrypt', e); /* fail-open → clair */ }
-    }
+    // v1.1.304 (audit A3 P2) : DM chiffré de bout en bout → octets chiffrés, sinon RIEN n'est
+    // uploadé (avant : « fail-open → clair » sous un en-tête 🛡 E2E).
+    const dmEnc = await K._dmMediaEncrypt(conv, body);
+    if(dmEnc.block){ toast(K._DM_MEDIA_BLOCKED, 'warn', 5000); return; }
+    if(dmEnc.enc){ body = dmEnc.body; ctype = 'application/octet-stream'; mediaEnc = true; }
     const r = await fetch(API_BASE + '/api/media', {
       method:'POST',
       headers:{ 'Authorization':'Bearer ' + (K.token||''), 'Content-Type': ctype, 'x-file-name': encodeURIComponent(file.name || 'fichier') },
@@ -13565,17 +13622,21 @@ K._sendVoiceMessage = async function(){
     // FIX audit 2026-07-08 : avant, le vocal n'était JAMAIS envoyé (push local +
     // toast « envoyé » mensonger). Maintenant : upload de l'audio → pipeline média
     // éprouvé (_sendMediaMessage : marqueur APXMEDIA1, E2E si session, outbox).
-    let sent = false;
+    let sent = false, voiceBlocked = false;
     if(pending.blob && K.token){
       try{
         // v1.1.297 — groupe chiffré de bout en bout : l'audio est chiffré par une clé propre au
         // fichier AVANT l'upload (même règle que les pièces jointes ; jamais de repli en clair).
-        let vBody = pending.blob, vType = pending.blob.type || 'audio/webm', vGk = null;
+        let vBody = pending.blob, vType = pending.blob.type || 'audio/webm', vGk = null, vEnc = false;
         if(!K._convIsDm(conv) && typeof K._grpFileForUpload === 'function'){
           const gf = await K._grpFileForUpload(conv, pending.blob);
           if(gf.block) throw new Error('chiffrement de groupe pas prêt');
           if(gf.file){ vBody = gf.body; vType = 'application/octet-stream'; vGk = gf.file; }
         }
+        // v1.1.304 (audit A3 P2) : le vocal d'un DM chiffré partait EN CLAIR vers le stockage.
+        const dmEnc = await K._dmMediaEncrypt(conv, pending.blob);
+        if(dmEnc.block){ voiceBlocked = true; throw new Error('chiffrement du vocal impossible'); }
+        if(dmEnc.enc){ vBody = dmEnc.body; vType = 'application/octet-stream'; vEnc = true; }
         const up = await fetch(API_BASE + '/api/media', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + (K.token || ''), 'Content-Type': vType, 'x-file-name': encodeURIComponent('vocal-' + Date.now() + '.webm') },
@@ -13583,7 +13644,7 @@ K._sendVoiceMessage = async function(){
         });
         const d = await up.json().catch(() => ({}));
         if(up.ok && d.ok){
-          await K._sendMediaMessage({ url: d.url, mime: vGk ? (pending.blob.type || 'audio/webm') : (d.mime || pending.blob.type || 'audio/webm'), name: d.name || 'vocal.webm', size: d.size || pending.blob.size, ...(vGk ? { gk: vGk } : {}) }, caption);
+          await K._sendMediaMessage({ url: d.url, mime: (vGk || vEnc) ? (pending.blob.type || 'audio/webm') : (d.mime || pending.blob.type || 'audio/webm'), name: d.name || 'vocal.webm', size: d.size || pending.blob.size, enc: vEnc, ...(vGk ? { gk: vGk } : {}) }, caption);
           sent = true;
         }
       }catch(e){ _safeCatch('voice-upload', e); }
@@ -13613,7 +13674,7 @@ K._sendVoiceMessage = async function(){
       K.messages[conv.id].push(msg);
       ls('messages_' + conv.id, K.messages[conv.id]);
       K.render();
-      toast('⚠️ Réseau indisponible — vocal gardé sur cet appareil, renvoie-le quand la connexion revient', 'warn', 4000);
+      toast(voiceBlocked ? '🔒 Vocal NON envoyé : chiffrement impossible pour l\'instant (rien n\'est envoyé en clair) — gardé sur cet appareil' : '⚠️ Réseau indisponible — vocal gardé sur cet appareil, renvoie-le quand la connexion revient', 'warn', 4000);
     }
     if(pending.audioUrl){
       try { URL.revokeObjectURL(pending.audioUrl); } catch(_e){_safeCatch('silent',_e)}
@@ -14426,9 +14487,9 @@ K._runDiag = async function(){
         const cid = convs[0] && convs[0].id;
         if(cid){
           const tkt = await K._wsTicket();   // v1.1.286 : ticket à usage unique
-          const wsRes = await new Promise((resolve)=>{
+          const wsRes = !tkt ? { ok:false, detail:'ticket WebSocket indisponible (jeton jamais mis dans l\'URL)' } : await new Promise((resolve)=>{
             let done=false; const to=setTimeout(()=>{ if(!done){done=true;try{ws.close()}catch(_){}; resolve({ok:false, detail:'timeout 6s (WS ne s\'ouvre pas)'});} },6000);
-            const wsUrl = API_BASE.replace(/^https?/,'wss')+'/api/conversations/'+encodeURIComponent(cid)+'/ws?'+(tkt?('ticket='+encodeURIComponent(tkt)):('token='+encodeURIComponent(K.token)))+'&uid='+encodeURIComponent(K.user.id);
+            const wsUrl = API_BASE.replace(/^https?/,'wss')+'/api/conversations/'+encodeURIComponent(cid)+'/ws?ticket='+encodeURIComponent(tkt)+'&uid='+encodeURIComponent(K.user.id);
             let ws; try{ ws=new WebSocket(wsUrl); }catch(e){ clearTimeout(to); return resolve({ok:false, detail:e.message}); }
             ws.addEventListener('open', ()=>{ if(!done){done=true;clearTimeout(to);try{ws.close()}catch(_){}; resolve({ok:true, detail:'connexion temps réel OK'});} });
             ws.addEventListener('close', (e)=>{ if(!done){done=true;clearTimeout(to); resolve({ok:false, detail:'fermé code '+e.code+' '+(e.reason||'')}); } });
@@ -16578,15 +16639,21 @@ K._adminSetupSaveKey = function(){
   if(K._adminKeySet(v)){ if(el) el.value=''; if(K._closeModal) K._closeModal(); }
 };
 
-K._hashPin = async function(pin){
+// v1.1.304 (audit A3 P3) — PBKDF2-SHA256 à 600 000 itérations (OWASP 2023), au lieu de 100 000.
+// Format : « p2$<itérations>$<hex> » ; un ancien hash (hex nu) = 100 000 itérations, relu tel
+// quel puis RECALCULÉ à 600 000 au déverrouillage réussi suivant (K._userPinVerify).
+K._PIN_HASH_ITER = 600000;
+K._hashPin = async function(pin, iterations){
+  const it = iterations || K._PIN_HASH_ITER;
   const enc = new TextEncoder();
   const salt = 'apex-chat-user-pin-v1';
   const key = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: enc.encode(salt), iterations: it, hash: 'SHA-256' },
     key, 256
   );
-  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return it === 100000 ? hex : ('p2$' + it + '$' + hex);
 };
 
 K._userPinExists = function(uid){
@@ -16597,8 +16664,13 @@ K._userPinVerify = async function(uid, pin){
   const stored = lg('user_pin_' + uid, null);
   if(!stored) return false;
   try{
-    const candidate = await K._hashPin(pin);
-    return candidate === stored;
+    const m = /^p2\$(\d+)\$[0-9a-f]{64}$/.exec(String(stored));
+    const it = m ? Math.max(100000, parseInt(m[1], 10)) : 100000;
+    const candidate = await K._hashPin(pin, it);
+    if(candidate !== stored) return false;
+    // v1.1.304 : ancien hash (100 000) → recalculé au réglage courant, le PIN étant connu ici.
+    if(it < K._PIN_HASH_ITER){ try{ ls('user_pin_' + uid, await K._hashPin(pin)); }catch(e){ _safeCatch('pin-rehash', e); } }
+    return true;
   }catch(_){ return false; }
 };
 
@@ -16951,7 +17023,7 @@ K._submitOnboarding = async function(inviterUserId){
     }
   }
 
-  // 2) PIN local hashé (PBKDF2 100k)
+  // 2) PIN local hashé (PBKDF2 600k depuis v1.1.304)
   if(needsPin){
     try{
       const hash = await K._hashPin(pinEl.value.replace(/\D/g, ''));
@@ -18004,12 +18076,10 @@ async function _boot(){
   _runSentinelsEnriched();
   setInterval(_runSentinelsEnriched, 30000);
 
-  // Charger config depuis API (best-effort)
-  fetch(API_BASE + '/api/system/config').then(r => r.json()).then(d => {
-    if(d.config) K.config = d.config;
-  }).catch(() => {
-    K.config = { ADMIN_MODE: 'A', KEVIN_INVISIBLE_ADMIN: 'true', AUTH_PROVIDER: 'firebase' };
-  });
+  // Charger config depuis API (best-effort). v1.1.304 (audit A1 P3) : route réservée aux comptes
+  // connectés → appelée avec le jeton, et seulement si on en a un (aucun écran d'avant connexion
+  // n'utilise K.config ; K.login la recharge après connexion).
+  K._loadSystemConfig();
 
   // Cross-app : détecter SSO depuis Apex
   const params = new URLSearchParams(location.search);
@@ -18193,6 +18263,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.303", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.304", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

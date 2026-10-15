@@ -1406,7 +1406,7 @@ describe('routeur / queue / scheduled — files qui refusent (rappels `.catch(()
     const env = mkEnv([['FROM system_config', { all: boom('D1 down') }]]);
     env.TELEMETRY_QUEUE = { send: vi.fn(async () => { throw new Error('queue full'); }) };
     const ctx = { waitUntil: vi.fn() };
-    const r = await worker.fetch(jreq('GET', '/api/system/config'), env, ctx);
+    const r = await worker.fetch(jreq('GET', '/api/system/config', undefined, await userTok()), env, ctx);   // v1.1.304 : route réservée aux comptes connectés
     expect(r.status).toBe(500);
     const j = await r.json();
     expect(j.error).toBe('internal');

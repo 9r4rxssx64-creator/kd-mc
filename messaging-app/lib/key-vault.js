@@ -1,8 +1,10 @@
 /**
  * Apex Chat — Key Vault (Étape A du plan E2E staged).
  *
- * Wrappe/déwrappe la clé privée ECDH avec le PIN utilisateur (PBKDF2 100k →
- * AES-GCM 256, via crypto-core). Objectif : ne plus stocker la clé privée EN
+ * Wrappe/déwrappe la clé privée ECDH avec le PIN utilisateur (PBKDF2-SHA256 →
+ * AES-GCM 256, via crypto-core). v1.1.304 (audit A3 P3) : 600 000 itérations (format v:2, champ
+ * `it`) ; un ancien wrap (v:1, 100 000) reste lisible et `vaultNeedsRewrap` dit à l'appelant de le
+ * ré-emballer au déverrouillage (le PIN n'est connu qu'à ce moment-là). Objectif : ne plus stocker la clé privée EN
  * CLAIR dans localStorage (audit 2026-06-01 P0-1).
  *
  * Conçu PUR + testable (aucun accès DOM/localStorage ici — l'orchestration
@@ -11,20 +13,30 @@
  *
  * Source de vérité crypto : ./crypto-core.js
  */
-import { wrapWithPin, unwrapWithPin } from './crypto-core.js';
+import { wrapWithPin, unwrapWithPin, PIN_KDF_ITERATIONS, PIN_KDF_LEGACY_ITERATIONS } from './crypto-core.js';
 
-/** Wrappe une clé privée (base64 JWK) avec le PIN. Retourne {ct, salt, v}. */
+/** Wrappe une clé privée (base64 JWK) avec le PIN. Retourne {ct, salt, v:2, it}. */
 export async function wrapPrivKey(privB64, pin) {
   if (!privB64) throw new Error('no-priv');
   if (!pin || String(pin).length < 4) throw new Error('pin-too-short');
-  const { ciphertext, salt } = await wrapWithPin({ priv: privB64 }, String(pin));
-  return { ct: ciphertext, salt, v: 1 };
+  const { ciphertext, salt, iterations } = await wrapWithPin({ priv: privB64 }, String(pin));
+  return { ct: ciphertext, salt, v: 2, it: iterations };
+}
+
+/** Itérations PBKDF2 d'un wrap : champ `it`, sinon ancien format v:1 (100 000). */
+export function vaultIterations(wrapped) {
+  return (wrapped && Number.isInteger(wrapped.it)) ? wrapped.it : PIN_KDF_LEGACY_ITERATIONS;
+}
+
+/** Wrap plus faible que le réglage courant → à ré-emballer dès que le PIN est connu (déverrouillage). */
+export function vaultNeedsRewrap(wrapped) {
+  return !!wrapped && vaultIterations(wrapped) < PIN_KDF_ITERATIONS;
 }
 
 /** Déwrappe. Throw si PIN faux / données corrompues (le caller gère le fallback). */
 export async function unwrapPrivKey(wrapped, pin) {
   if (!wrapped || !wrapped.ct || !wrapped.salt) throw new Error('no-wrapped-key');
-  const payload = await unwrapWithPin(wrapped.ct, wrapped.salt, String(pin));
+  const payload = await unwrapWithPin(wrapped.ct, wrapped.salt, String(pin), vaultIterations(wrapped));
   if (!payload || !payload.priv) throw new Error('bad-payload');
   return payload.priv;
 }
@@ -53,5 +65,5 @@ export function planKeyMigration({ hasCleartext, hasWrapped, pinAvailable, keysL
 }
 
 if (typeof window !== 'undefined') {
-  window.ApexVault = { wrapPrivKey, unwrapPrivKey, planKeyMigration };
+  window.ApexVault = { wrapPrivKey, unwrapPrivKey, planKeyMigration, vaultNeedsRewrap, vaultIterations };
 }

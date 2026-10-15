@@ -203,6 +203,7 @@ describe('Lot B — A6-03 : une note vocale est toujours envoyable', () => {
     const K = { token: 't', viewData: conv, user: { id: 'u1' }, messages: {}, _convIsDm: () => true, render() {} };
     K._voicePending = { blob: new Blob([new Uint8Array(2000)], { type: 'audio/webm' }), text: '', audioUrl: 'blob:x' };
     K._sendMediaMessage = vi.fn(async () => {});
+    K._dmMediaEncrypt = async () => ({});   // v1.1.304 : DM sans E2E sur l'appareil (le chiffrement du vocal E2E est prouvé dans lot-c1-chiffrement)
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true, url: '/api/media/v1', mime: 'audio/webm', name: 'vocal.webm', size: 2000 })));
     const toasts = [];
     loadDefs(['K._sendVoiceMessage = async function'], {

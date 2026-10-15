@@ -37,6 +37,7 @@ on:
       - 'tests/uptime-couverture.test.mjs'
       - 'tests/uptime-porte-compte.test.mjs'
       - 'tests/uptime-push-binding.test.mjs'
+      - 'tests/uptime-workflow-chemins.test.mjs'
       - '.github/workflows/deploy-kdmc-uptime.yml'
 
 concurrency:
@@ -89,6 +90,10 @@ jobs:
       - name: Vérifier que le push passe par le lien interne (erreur 1042 sinon)
         working-directory: .
         run: node tests/uptime-push-binding.test.mjs
+
+      - name: Vérifier que chaque étape lit ses fichiers depuis le bon dossier
+        working-directory: .
+        run: node tests/uptime-workflow-chemins.test.mjs
 
       - name: Installer wrangler (version épinglée, sans scripts d'installation)
         # Sonar 05/09 : « dépendance non verrouillée » + « lifecycle scripts ». Épinglé sur la
@@ -224,6 +229,9 @@ jobs:
         # Outlook). Six fausses pannes à chaque passage = des alertes qu'on cesse de lire.
         # Le runner GitHub a un vrai réseau : c'est LUI qui sonde, et la sortie ci-dessous
         # dit lequel des deux avait raison. Observation seulement : jamais bloquant.
+        # 15.10.2026 : `working-directory: .` — le dossier par défaut du job est services/kdmc-uptime,
+        # le chemin ci-dessous partait de la racine → « Impossible de lire la liste » : l'étape ne sondait RIEN.
+        working-directory: .
         shell: bash {0}
         run: |
           LISTE=$(node -e "

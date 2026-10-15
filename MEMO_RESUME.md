@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Sonde : le contrôle des 7 workers critiques ne tournait jamais (mauvais dossier)
+
+- Déploiement sonde 38751126105 : 33/33 OK, battement healthchecks « HTTP 200 — tout va bien ». Mais l'étape « Santé des
+  workers » affichait « Impossible de lire la liste » : chemin depuis la racine, dossier par défaut services/kdmc-uptime →
+  kdmc-vente, apex-auth-worker… sondés par personne. Correctif `working-directory: .` ; garde `test:uptime-workflow-chemins` (8),
+  sabotage (correctif retiré) rouge.
+
 ## 2026-10-15 — « Vérifie tout » : sonde — notifications réparées, battement vérifié à chaque déploiement
 
 - Déploiement sonde 38750076367 : 33/33 cibles en bonne santé (porte compte corrigée), MAIS « push NON envoyé :

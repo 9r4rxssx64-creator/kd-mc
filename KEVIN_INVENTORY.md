@@ -3630,6 +3630,7 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-15 | `audit/prive/APEX-CHAT-ULTRA-AUDIT-2-2026-10-15.md` | Apex Chat : bilan de l'ultra-audit n° 2 (7 lots, mesures en prod, ce qui attend Kevin) — privé |
 | 2026-10-15 | `tests/uptime-porte-compte.test.mjs` | Garde : la sonde de surveillance ne prend pas « connexion requise » pour une panne (sinon alerte toutes les 2 h pour rien) |
 | 2026-10-15 | `tests/uptime-push-binding.test.mjs` | Garde : les notifications de la sonde passent par le lien interne (sinon erreur 1042, rien n'arrive sur l'iPhone) |
+| 2026-10-15 | `tests/uptime-workflow-chemins.test.mjs` | Garde : chaque étape du robot de surveillance lit ses fichiers depuis le bon dossier (sinon le contrôle des 7 services internes ne tourne pas) |
 | 2026-10-15 | `messaging-app/d1-migrations/0022_ws_tickets.sql` | Apex Chat (rester gratuit) : la table des tickets de connexion existe une fois pour toutes |
 | 2026-10-15 | `messaging-app/tests/unit/lot-e1-ticket-ws-sobre.test.js` | Apex Chat (rester gratuit) : une connexion au chat = 1 requête à la base au lieu de 3 |
 | 2026-10-15 | `messaging-app/tests/unit/lot-e2-sante-alertes.test.js` | Apex Chat (sauvegarde, fiabilité) : santé réelle du serveur et alertes |

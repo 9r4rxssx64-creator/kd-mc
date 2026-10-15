@@ -16834,3 +16834,4 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
 ## 2026-10-15 (10h30) — compte obligatoire : passerelle FERMÉE en ligne (PR #4566 apps, #4567 passerelle)
 - Mesuré après mise en ligne (10h15 UTC) : 401 `compte_requis` sur `/`, `/holidays`, `/geo`, `/time`, `/fx`, `/ai` (même avec `Origin` falsifié) ; `/health` → `{ok:true}` ; préflight 204 avec origine exacte + credentials.
 - À faire / en attente : page `admin.kd-mc.com` (branche `claude/admin-page-compte`, accord de Kevin demandé) ; leçon de cette branche à renuméroter (549) ; chemin « compte valide » non prouvé en ligne.
+- **Prouvé en vrai (11h UTC, Kevin sur iPhone : « Apex répond »)** : avec la passerelle fermée, un compte du domaine ouvert obtient bien sa réponse. Page `admin.kd-mc.com` : refonte en cours (entrée minimale + page par appel authentifié) parce que Kevin l'ouvre depuis l'icône de l'écran d'accueil (cookies à part) — voir leçons 343 et 351.

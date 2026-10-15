@@ -16,6 +16,13 @@
 - Kevin : connecté sur kd-mc.com (Face ID ou code) → la page s'ouvre comme avant ; l'écran de code de la page reste pour qui a un compte.
 - Retour arrière sans code : ACCES_PAGE_COMPTE = "0" dans services/kdmc-access/wrangler.toml. /health, /log, /history inchangés.
 - Mesuré : test:kdmc-access 19/19 ; 2 sabotages rouges. Pas encore en ligne (branche claude/admin-page-compte, déploiement à la fusion). Leçon #546.
+## 2026-10-15 — Apex Chat : connexion au chat plus sobre (ticket WebSocket)
+
+- Chaque connexion lançait 3 requêtes D1 (CREATE TABLE + INSERT + ménage). Maintenant : table créée par la
+  migration 0022, 1 INSERT ; recréation seulement si « no such table » ; ménage 1 fois sur 20 (mesuré : 20–80 sur 1 000).
+- Garde `lot-e1-ticket-ws-sobre` (8, vrai SQLite) ; 3 sabotages rouges (CREATE remis, ménage à chaque fois, migration retirée).
+  Suite complète : 2031 OK, couverture tenue.
+
 ## 2026-10-15 — Déploiements Apex Chat débloqués : un test lisait un robot privé
 
 - La porte « tests avant déploiement » (kd-mc, run 38724012761) échouait : `lot-e2-sauvegarde-restauration` lisait

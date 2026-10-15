@@ -3626,6 +3626,8 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-15 | `messaging-app/d1-migrations/0021_lot_e2_journal_migrations.sql` | Apex Chat (sauvegarde, fiabilité) : registre des mises à jour de la base |
 | 2026-10-15 | `messaging-app/e2e/login-test-politique.js` | Apex Chat (sauvegarde, fiabilité) : un test sur la prod ne passe plus au vert quand le login de test est en panne |
 | 2026-10-15 | `messaging-app/tests/unit/lot-e2-sauvegarde-restauration.test.js` | Apex Chat (sauvegarde, fiabilité) : sauvegarde → restauration vérifiées table par table |
+| 2026-10-15 | `messaging-app/d1-migrations/0022_ws_tickets.sql` | Apex Chat (rester gratuit) : la table des tickets de connexion existe une fois pour toutes |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e1-ticket-ws-sobre.test.js` | Apex Chat (rester gratuit) : une connexion au chat = 1 requête à la base au lieu de 3 |
 | 2026-10-15 | `messaging-app/tests/unit/lot-e2-sante-alertes.test.js` | Apex Chat (sauvegarde, fiabilité) : santé réelle du serveur et alertes |
 | 2026-10-15 | `messaging-app/tests/unit/lot-e2-attendre-ci.test.js` | Apex Chat (sauvegarde, fiabilité) : attente des tests avant la mise à jour forcée |
 | 2026-10-15 | `messaging-app/tests/unit/lot-e2-migrations-journal.test.js` | Apex Chat (sauvegarde, fiabilité) : registre des migrations |

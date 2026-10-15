@@ -247,20 +247,30 @@ function _safeDecode(s) {
 // Un ticket WS est à USAGE UNIQUE : son jti est consommé en base. La clé
 // primaire rend la consommation atomique — un rejeu insère 0 ligne et est
 // refusé, même si deux requêtes arrivent en même temps (audit P2a, v1.1.286).
-async function consumeWsTicket(env, payload) {
+// Lot E1 (sobriété) : la table vient de la migration 0022 — plus de CREATE TABLE à chaque connexion ;
+// recréée seulement si elle manque vraiment, et le ménage des tickets expirés passe 1 fois sur
+// WS_TICKET_MENAGE connexions (2 requêtes D1 par connexion au lieu de 4).
+const WS_TICKET_MENAGE = 20;
+const WS_TICKET_INSERT = 'INSERT OR IGNORE INTO ws_tickets (jti, expires_at) VALUES (?, ?)';
+export async function consumeWsTicket(env, payload, alea = Math.random) {
   if (!payload || payload.typ !== 'wstkt' || !payload.jti) return false;
   const DB = env.APEX_CHAT_DB;
+  const exp = (payload.exp || 0) * 1000;
   try {
-    await DB.prepare(
-      'CREATE TABLE IF NOT EXISTS ws_tickets (jti TEXT PRIMARY KEY, expires_at INTEGER NOT NULL)'
-    ).run();
-    const r = await DB.prepare(
-      'INSERT OR IGNORE INTO ws_tickets (jti, expires_at) VALUES (?, ?)'
-    ).bind(payload.jti, (payload.exp || 0) * 1000).run();
+    let r;
+    try {
+      r = await DB.prepare(WS_TICKET_INSERT).bind(payload.jti, exp).run();
+    } catch (e) {
+      if (!/no such table/i.test(String(e && e.message))) throw e;
+      await DB.prepare('CREATE TABLE IF NOT EXISTS ws_tickets (jti TEXT PRIMARY KEY, expires_at INTEGER NOT NULL)').run();
+      r = await DB.prepare(WS_TICKET_INSERT).bind(payload.jti, exp).run();
+    }
     // 0 ligne insérée = jti déjà présent = REJEU → refusé.
     if (!r || !r.meta || r.meta.changes !== 1) return false;
-    // Ménage opportuniste (la table ne doit pas grossir indéfiniment).
-    try { await DB.prepare('DELETE FROM ws_tickets WHERE expires_at < ?').bind(Date.now() - 60000).run(); } catch (_) {}
+    // Ménage opportuniste (la table ne doit pas grossir indéfiniment), pas à chaque connexion.
+    if (alea() < 1 / WS_TICKET_MENAGE) {
+      try { await DB.prepare('DELETE FROM ws_tickets WHERE expires_at < ?').bind(Date.now() - 60000).run(); } catch (_) {}
+    }
     return true;
   } catch (_) {
     // Base indisponible : on REFUSE (fail-closed) — un ticket non consommable

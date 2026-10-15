@@ -118,10 +118,17 @@ describe('Médias : ticket de portée limitée au lieu du jeton de session (v1.1
     expect((await worker.fetch(media('mt=' + encodeURIComponent(wsTicket)), E, {})).status).toBe(401);
   });
 
-  it('5. le jeton de session, lui, sert toujours un média (repli, une version)', async () => {
+  // v1.1.306 (lot D) — ce test affirmait le REPLI « jeton de session dans l'adresse » (accepté une
+  // version, v1.1.288 → v1.1.305). Le repli est retiré : il est désormais REFUSÉ, avec un code clair,
+  // et le même jeton reste valable en en-tête (chemin utilisé par les médias chiffrés).
+  it('5. le jeton de session dans l\'adresse (?token=) est REFUSÉ (code url_token_refused) ; en en-tête il sert', async () => {
     const E = env();
     const s = await session(E);
-    expect((await worker.fetch(media('token=' + encodeURIComponent(s)), E, {})).status).toBe(200);
+    const r = await worker.fetch(media('token=' + encodeURIComponent(s)), E, {});
+    expect(r.status).toBe(401);
+    expect((await r.json()).error).toBe('url_token_refused');
+    const h = await worker.fetch(new Request('https://api.apex/api/media/m1', { headers: { Authorization: 'Bearer ' + s } }), E, {});
+    expect(h.status).toBe(200);
   });
 
   it('6. le client demande un ticket média au lieu de coller le jeton', () => {

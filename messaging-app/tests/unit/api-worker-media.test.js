@@ -96,7 +96,7 @@ describe('Médias R2', () => {
     }), env);
     const key = db._store.media.r2_key;
     // get
-    const res = await worker.fetch(new Request('https://api.apex/api/media/abc123?token=' + token, { method: 'GET' }), env);
+    const res = await worker.fetch(new Request('https://api.apex/api/media/abc123', { method: 'GET', headers: { Authorization: 'Bearer ' + token } }), env);
     expect(res.status).toBe(200); // le propriétaire (kevin) accède à son propre média
     expect(res.headers.get('Content-Type')).toBe('image/png');
     expect(r2._store.has(key)).toBe(true);
@@ -115,11 +115,11 @@ describe('Médias R2', () => {
     // un AUTRE utilisateur (mallory) sans conversation partagée → 403
     db._store.shared = false;
     const otherTok = await makeJWT({ sub: 'mallory', iat: Math.floor(Date.now() / 1000) });
-    const res403 = await worker.fetch(new Request('https://api.apex/api/media/abc123?token=' + otherTok, { method: 'GET' }), env);
+    const res403 = await worker.fetch(new Request('https://api.apex/api/media/abc123', { method: 'GET', headers: { Authorization: 'Bearer ' + otherTok } }), env);
     expect(res403.status).toBe(403);
     // mais s'il PARTAGE une conversation avec le propriétaire → 200
     db._store.shared = true;
-    const res200 = await worker.fetch(new Request('https://api.apex/api/media/abc123?token=' + otherTok, { method: 'GET' }), env);
+    const res200 = await worker.fetch(new Request('https://api.apex/api/media/abc123', { method: 'GET', headers: { Authorization: 'Bearer ' + otherTok } }), env);
     expect(res200.status).toBe(200);
   });
 });

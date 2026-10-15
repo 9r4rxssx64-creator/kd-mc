@@ -16,6 +16,10 @@ test.describe('Média plus grand + GIF/photo auto-réparés (v1.1.275)', () => {
     const maxW = await page.evaluate(() => {
       const K = window.K;
       K.viewData = { id: 'cv' };
+      // v1.1.306 (lot D) : sans ticket média, plus d'adresse avec le jeton de session — un espace
+      // « Chargement… » attend le ticket. Ce test mesure la taille de l'image : on lui donne un ticket.
+      const attente = K._renderMediaEl({ media_url: API_BASE + '/api/media/y', media_type: 'image/gif', media_name: 'g' });
+      K._mediaTicket = { v: 'TICKET-E2E', exp: Date.now() + 600000 };
       // 08.10.2026 : un média ne s'affiche que s'il vient de l'API d'Apex Chat (les GIF sont
       // re-téléversés par K._pickGif) — une adresse externe n'est jamais chargée (jeton protégé).
       const html = K._renderMediaEl({ media_url: API_BASE + '/api/media/y', media_type: 'image/gif', media_name: 'g' });
@@ -24,10 +28,13 @@ test.describe('Média plus grand + GIF/photo auto-réparés (v1.1.275)', () => {
       const img = box.querySelector('img');
       const ext = document.createElement('div'); document.body.appendChild(ext);
       ext.innerHTML = K._renderMediaEl({ media_url: 'https://x/y.gif', media_type: 'image/gif', media_name: 'g' });
-      return { maxW: parseFloat(getComputedStyle(img).maxWidth), externeSansImage: !ext.querySelector('img') }; // min(76vw,340px) → ~296px
+      return { maxW: parseFloat(getComputedStyle(img).maxWidth), externeSansImage: !ext.querySelector('img'), // min(76vw,340px) → ~296px
+        attenteSansJeton: /media-wait/.test(attente) && !/token=/.test(attente), src: img.getAttribute('src') };
     });
     expect(maxW.maxW).toBeGreaterThan(280); // avant : 260px → maintenant ~296px, moins de place perdue
     expect(maxW.externeSansImage).toBe(true);
+    expect(maxW.attenteSansJeton).toBe(true);
+    expect(maxW.src).toContain('mt=TICKET-E2E');
   });
 
   test('GIF/photo chiffré : clé du pair tournée → déchiffré après re-fetch (heal)', async ({ page }) => {

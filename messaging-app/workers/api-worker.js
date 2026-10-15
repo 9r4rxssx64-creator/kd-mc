@@ -263,9 +263,21 @@ async function consumeWsTicket(env, payload) {
     return true;
   } catch (_) {
     // Base indisponible : on REFUSE (fail-closed) — un ticket non consommable
-    // ne doit jamais valoir session. Le client retombe sur ?token= (legacy).
+    // ne doit jamais valoir session. Le client réessaie plus tard (jamais de jeton dans l'URL).
     return false;
   }
+}
+
+// v1.1.306 (lot D) — une très vieille app (< v1.1.286 pour le WebSocket, < v1.1.289 pour les médias)
+// met encore le jeton de SESSION dans l'adresse (?token=). Il est refusé ; on répond un code clair
+// pour qu'on sache tout de suite que c'est « mettre l'app à jour », pas une panne.
+export const URL_TOKEN_REFUSED = 'url_token_refused';
+const URL_TOKEN_MSG = 'Ancienne version de l\'app : mets Apex Chat à jour (ferme-la puis rouvre-la)';
+function urlTokenRefused(request) {
+  try { return new URL(request.url).searchParams.has('token'); } catch (_) { return false; }
+}
+function unauthorized(request) {
+  return urlTokenRefused(request) ? err(URL_TOKEN_MSG, 401, URL_TOKEN_REFUSED) : err('Non authentifié', 401);
 }
 
 // `opts.allowMediaTicket` : autorise en plus un TICKET MÉDIA (`?mt=`) — activé
@@ -278,8 +290,10 @@ async function getAuthUser(request, env, opts) {
   // upgrade WS → l'identité arrive dans l'URL. Depuis v1.1.286 c'est un TICKET
   // à usage unique valable 60 s (?ticket=), plus le jeton de session lui-même :
   // une URL fuite (journaux serveur, historique, Referer) — un ticket qui fuite
-  // est déjà mort. ?token= reste accepté UNE version pour ne pas couper les
-  // apps encore en cache (règle : jamais casser la connexion).
+  // est déjà mort.
+  // v1.1.306 (lot D) : ?token= n'est PLUS accepté nulle part (WebSocket, /ws-diag, médias,
+  // toute route). Toutes les apps ≥ v1.1.304 passent par des tickets et la mise à jour est
+  // forcée ; une app plus ancienne reçoit le code clair `url_token_refused` (voir urlTokenRefused).
   let mode = 'session';
   if (!token) {
     try {
@@ -288,7 +302,6 @@ async function getAuthUser(request, env, opts) {
       const mt = opts && opts.allowMediaTicket ? qs.get('mt') : null;
       if (tkt) { token = tkt; mode = 'ws'; }
       else if (mt) { token = mt; mode = 'media'; }
-      else token = qs.get('token');
     } catch (_) {}
   }
   if (!token) return null;
@@ -2202,7 +2215,8 @@ async function handleLocationHistory(userId, request, env) {
 // ============================================================================
 //  Médias R2 — photos / vidéos / fichiers TOUS FORMATS, toutes tailles. v1.1.186
 //  POST /api/media   : upload binaire (header x-file-name, content-type) → R2
-//  GET  /api/media/:id : sert le fichier depuis R2 (auth via ?token=)
+//  GET  /api/media/:id : sert le fichier depuis R2 (auth : ticket média ?mt= ou en-tête Bearer ;
+//                        v1.1.306 : plus jamais ?token=)
 //  Avant : seules les images ≤5 Mo en base64. Maintenant : R2 (jusqu'à 100 Mo).
 // ============================================================================
 const MEDIA_DAY_MAX_FILES = 300;                 // v1.1.304 (A6-20 §6) : quota par compte / 24 h
@@ -2271,7 +2285,7 @@ async function handleMediaGet(id, request, env) {
   // Seule route à accepter un ticket média (?mt=) : le jeton de session n'a
   // plus à voyager dans l'attribut `src` de chaque image (audit P2c).
   const auth = await getAuthUser(request, env, { allowMediaTicket: true });
-  if (!auth) return err('Non authentifié', 401);
+  if (!auth) return unauthorized(request);
   if (!env.APEX_CHAT_MEDIA) return err('Stockage média indisponible', 503, 'no_r2');
   // Lot 2 (V) : conv_id (migration 0011) — repli sans la colonne pendant la fenêtre de déploiement.
   let row;
@@ -4612,8 +4626,9 @@ async function handleWsConversation(convId, request, env) {
   const upgradeHeader = request.headers.get('Upgrade');
   if (upgradeHeader !== 'websocket') return err('Upgrade WebSocket requis', 426);
 
+  // v1.1.306 (lot D) : ticket seulement (?ticket=) — ?token= refusé avec un code clair.
   const auth = await getAuthUser(request, env);
-  if (!auth) return err('Non authentifié', 401);
+  if (!auth) return unauthorized(request);
 
   // Vérifier membership
   const member = await env.APEX_CHAT_DB.prepare(
@@ -4705,15 +4720,20 @@ export async function purgeConvPending(env, convId, sender) {
 
 // GET /api/conversations/:id/ws-diag — reproduit les checks du WS et renvoie
 // la cause EXACTE en JSON (le WebSocket ne révèle qu'un code 1006 opaque).
-// Le token peut venir du header OU de ?token= (comme le WS).
+// L'identité vient de l'en-tête Bearer OU d'un ticket ?ticket= (comme le WS). v1.1.306 : plus de ?token=.
 async function handleWsDiag(convId, request, env) {
   const result = { ok: false, convId, step: 'auth' };
   try {
     const auth = await getAuthUser(request, env);
     result.authenticated = !!auth;
     if (!auth) {
+      if (urlTokenRefused(request)) {
+        result.cause = URL_TOKEN_REFUSED;
+        result.detail = URL_TOKEN_MSG;
+        return json(result, 200);
+      }
       result.cause = 'auth_failed';
-      result.detail = 'Token rejeté (getAuthUser=null). JWT périmé, signature invalide, ou ?token= absent.';
+      result.detail = 'Identité refusée : session périmée, signature invalide, ou ticket absent / déjà utilisé.';
       return json(result, 200);
     }
     result.userId = auth.sub;

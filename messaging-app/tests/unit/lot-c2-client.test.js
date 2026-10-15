@@ -26,7 +26,7 @@ describe('A4 P1-2 — le muet part au serveur', () => {
       _api: vi.fn(apiImpl),
     };
     const ls = (k, v) => { store[k] = JSON.parse(JSON.stringify(v)); return true; };
-    loadDefs(['K._toggleConvMuted = function(convId){', 'K._syncConvMute = async function(conv, silent){', 'K._mergeMuted = function(serverConv, localConv){'],
+    loadDefs(['K._toggleConvMuted = function(convId){', 'K._muteServerState = function(conv){' /* v1.1.306 */, 'K._syncConvMute = async function(conv, silent){', 'K._mergeMuted = function(serverConv, localConv){'],
       { K, ls, toast: (m) => toasts.push(m), _safeCatch() {} });
     return { K, store, toasts };
   }

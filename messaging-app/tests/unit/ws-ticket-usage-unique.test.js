@@ -12,8 +12,8 @@
  *   2. Le ticket délivré ouvre bien le chemin WS (?ticket=).
  *   3. Le MÊME ticket une 2ᵉ fois est REFUSÉ (usage unique, anti-rejeu).
  *   4. Un ticket ne vaut JAMAIS session : refusé en Bearer et en ?token=.
- *   5. Le jeton de session reste accepté en ?token= (repli d'une version, pour
- *      ne pas couper les apps encore en cache — jamais casser la connexion).
+ *   5. v1.1.306 (lot D) : le jeton de session en ?token= est REFUSÉ (le repli d'une
+ *      version, v1.1.286 → v1.1.305, est retiré) avec la cause claire url_token_refused.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import worker, { signJWT } from '../../workers/api-worker.js';
@@ -135,10 +135,18 @@ describe('WebSocket : ticket à usage unique au lieu du jeton de session (v1.1.2
     expect(await wsAuth(E, 'ticket=' + encodeURIComponent(body.ticket))).toBe(true);
   });
 
-  it('5. repli : le jeton de session reste accepté en ?token= (une version)', async () => {
+  // v1.1.306 (lot D) : ce test affirmait l'ancien repli (accepté) ; il prouve maintenant le refus.
+  it('5. le jeton de session en ?token= est REFUSÉ, avec une cause claire (url_token_refused)', async () => {
     const E = env();
     const session = await signJWT({ sub: UID, exp: Math.floor(Date.now() / 1000) + 3600 }, E.JWT_SIGN_KEY);
-    expect(await wsAuth(E, 'token=' + encodeURIComponent(session))).toBe(true);
+    expect(await wsAuth(E, 'token=' + encodeURIComponent(session))).toBe(false);
+    const r = await worker.fetch(new Request('https://api.apex/api/conversations/c1/ws-diag?token=' + encodeURIComponent(session)), E, {});
+    const d = await r.json();
+    expect(d.cause).toBe('url_token_refused');
+    expect(d.detail).toMatch(/mets Apex Chat à jour/);
+    // le même jeton en EN-TÊTE reste valable (le diagnostic de l'app l'utilise)
+    const h = await worker.fetch(new Request('https://api.apex/api/conversations/c1/ws-diag', { headers: { Authorization: 'Bearer ' + session } }), E, {});
+    expect((await h.json()).authenticated).toBe(true);
   });
 
   it('6. le client demande un ticket et ne met plus le jeton dans l\'URL du WS', () => {

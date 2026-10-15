@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Apex Chat v1.1.306 : lot D (finitions) — Kevin « Go tout » + « position obligatoire »
+
+- Position OBLIGATOIRE (décision Kevin 15.10) : CGU + charte + app alignées ; bandeau permanent non bloquant si coupée ensuite.
+- Clavier iPhone : la zone de saisie reste visible, conversation plein écran. Guide d'installation AVANT le SMS (iPhone Safari).
+- Jeton de session : plus jamais dans une adresse (serveur refuse ?token= partout ; médias attendent leur ticket).
+- Sel PIN par personne ; « snooze » côté serveur.
+- Mesuré : 120 fichiers / 1935 tests, couverture OK ; navigateur 62/63 (échec SW = environnement local) ; mise en page 40/40 ; 10/10 sabotages + 1 manuel. Leçon #549.
+- Kevin peut demander le BLOCAGE total sans position (non fait : le bandeau seul a été choisi pour ne pas bloquer un proche).
+
 ## 2026-10-15 — apis.kd-mc.com : plus aucune réponse sans compte (règle « aucune consultation sans compte nulle part »)
 
 - Avant (mesuré sans compte) : météo, traduction, IBAN… répondaient à n'importe qui ; `/` montrait la configuration IA ; un faux `Origin` suffisait pour l'IA.

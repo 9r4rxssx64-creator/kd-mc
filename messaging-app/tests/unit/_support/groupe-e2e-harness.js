@@ -250,6 +250,8 @@ export async function makeMember(srv, uid, { identity, idb, localStorage, publis
     _presenceLabel: () => 'LIBELLE-DM', _isDeletedLocal: () => false, _notifyIncoming() {},
     _appendBubble: () => true, _applyWsAck() {}, _onMediaLoad() {},
     _mediaSrc: (u) => (typeof u === 'string' && u[0] === '/' ? API_BASE + u : ''),
+    // v1.1.306 (lot D) : le média chiffré est lu par son adresse NUE (en-tête Bearer seulement).
+    _mediaUrlAllowed: (u) => (typeof u === 'string' && u[0] === '/' ? API_BASE + u : ''),
     _compressMessageImage: async (x) => x, _cancelVoicePreview() {},
   };
   K.ws = { readyState: 1, send: (s) => srv.receive(uid, JSON.parse(s)) };

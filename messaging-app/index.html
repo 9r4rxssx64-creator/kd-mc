@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.305",
+  "softwareVersion": "v1.1.306",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -306,6 +306,17 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 #app.chat-mode .chat-messages{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #app.chat-mode #smart-reply-chips{flex:0 0 auto}
 #app.chat-mode .chat-input{flex:0 0 auto;padding-bottom:calc(var(--ax-safe-bottom) + 70px)}
+/* v1.1.306 (lot D, audit A4 P2-9) — conversation PLEIN ÉCRAN et clavier iPhone :
+   - la page fait la hauteur VISIBLE (visualViewport, --ax-vvh) : quand le clavier s'ouvre, la zone de saisie
+     reste collée au-dessus de lui et les derniers messages restent visibles (K._applyViewport) ;
+   - pas de barre du bas en conversation (le bouton ← de l'en-tête ramène à la liste) → plus d'espace perdu ;
+   - clavier ouvert : la barre du haut et les réponses suggérées se replient (place aux messages). */
+html.chat-view body{height:var(--ax-vvh, 100dvh);min-height:0;overflow:hidden}
+html.chat-view #bnav{display:none!important}
+html.chat-view #app.chat-mode .chat-input{padding-bottom:calc(var(--ax-safe-bottom) + 8px)}
+html.chat-view.kb-open #topbar{display:none!important}
+html.chat-view.kb-open #app.chat-mode .chat-input{padding-bottom:8px}
+html.chat-view.kb-open #app.chat-mode #smart-reply-chips{display:none!important}
 .chat-input{position:sticky;bottom:0;padding:8px 12px calc(var(--ax-safe-bottom) + 8px);
   background:var(--ax-bg);border-top:1px solid var(--ax-border);display:flex;flex-direction:column;gap:6px}
 .chat-attach-row{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -410,6 +421,14 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 .toast.info{border-left:3px solid var(--ax-blue)}
 
 /* ========== Update banner ========== */
+/* v1.1.306 (lot D) — position obligatoire mais jamais bloquante : bandeau permanent, dans le flux
+   (ne recouvre rien), texte 14 px, bouton 44 px. Masqué clavier ouvert pour garder la place à la saisie. */
+#geo-banner{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#3a2a06;color:#ffe9b0;
+  border-bottom:1px solid var(--ax-gold);font-size:14px;line-height:1.35;flex:0 0 auto}
+#geo-banner span{flex:1;min-width:0}
+#geo-banner button{flex:0 0 auto;min-height:44px;min-width:44px;padding:0 14px;border-radius:22px;background:var(--ax-gold);
+  color:var(--ax-bg);font-weight:700;font-size:14px}
+html.kb-open #geo-banner{display:none}
 .update-banner{position:fixed;top:calc(var(--ax-safe-top) + 4px);left:14px;right:14px;z-index:300;
   background:var(--ax-gold);color:var(--ax-bg);padding:10px 14px;border-radius:var(--ax-radius);
   display:flex;justify-content:space-between;align-items:center;
@@ -441,7 +460,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
   padding-top:var(--ax-safe-top)}
 .modal{background:var(--ax-bg-2);border-top-left-radius:var(--ax-radius-lg);border-top-right-radius:var(--ax-radius-lg);
   padding:20px 16px calc(var(--ax-safe-bottom) + 20px);width:100%;max-width:600px;animation:slidein .25s ease;
-  max-height:85vh;overflow-y:auto;outline:none;position:relative}
+  max-height:85vh;max-height:calc(var(--ax-vvh, 100dvh) * .85);overflow-y:auto;outline:none;position:relative}
 .modal:focus-visible{box-shadow:0 0 0 3px var(--ax-gold-2)}
 .modal-title{font-family:Georgia,serif;color:var(--ax-gold);font-size:1.2em;margin:0 0 14px;letter-spacing:1px}
 .modal-close{position:absolute;top:12px;right:14px;font-size:1.3em;color:var(--ax-text-2);
@@ -471,7 +490,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.305';
+const __APEX_CHAT_VERSION__ = 'v1.1.306';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -715,7 +734,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.305" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.305</div>
+  <div id="splash-version" data-ver="v1.1.306" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.306</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -729,7 +748,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.305</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.306</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1372,7 +1391,7 @@ K._ensurePermsOnce = function(){
       if(localStorage.getItem('apex_chat_perms_v1')) return;
       if(typeof K._showModal !== 'function'){ K._grantPerms(); return; }
       K._showModal('🔓 Autorisations', `
-        <p style="color:var(--ax-text-2);line-height:1.6">Apex Chat a besoin de ton accord pour les <b>appels</b> (caméra + micro), <b>photos</b>, <b>position</b> et <b>notifications</b>. Tes échanges restent <b>privés et chiffrés en transit (HTTPS)</b>. C'est <b>obligatoire</b> pour utiliser l'app — on ne te le redemandera <b>jamais</b>.</p>
+        <p style="color:var(--ax-text-2);line-height:1.6">Apex Chat a besoin de ton accord pour les <b>appels</b> (caméra + micro), <b>photos</b>, <b>position</b> et <b>notifications</b>. Tes échanges restent <b>privés et chiffrés en transit (HTTPS)</b>. La <b>position est obligatoire</b> pour utiliser l'app (l'administrateur la voit sur une carte, elle est effacée après 30 jours) — on ne te le redemandera <b>jamais</b>.</p>
         <button class="btn btn-block" style="margin-top:14px" onclick="K._grantPerms()">✅ Tout autoriser</button>
       `, { noClose: true });
     }catch(_e){ try{ _safeCatch('silent', _e); }catch(__){} }
@@ -1391,8 +1410,8 @@ K._grantPerms = async function(){
   try{
     if(navigator.geolocation){
       await new Promise(function(resolve){
-        navigator.geolocation.getCurrentPosition(function(){ res.geo = 'granted'; resolve(); },
-          function(){ res.geo = 'denied'; resolve(); }, { timeout: 8000, maximumAge: 600000 });
+        navigator.geolocation.getCurrentPosition(function(){ res.geo = 'granted'; try{ K._onGeoState('granted'); }catch(_){} resolve(); },
+          function(e){ res.geo = 'denied'; try{ if(e && e.code === 1) K._onGeoState('denied'); }catch(_){} resolve(); }, { timeout: 8000, maximumAge: 600000 });
       });
     }
   }catch(_){ res.geo = 'err'; }
@@ -1635,7 +1654,51 @@ K._startHeartbeat = function(){
    position toutes les 3 min et à chaque retour dans l'app, sans rien garder. Désormais : jamais de demande automatique ;
    la position ne sert QUE si l'iPhone l'a déjà accordée (la seule demande est l'écran « Tout autoriser », une fois). */
 K._geoOk = false;
-try{ if(navigator.permissions && navigator.permissions.query){ navigator.permissions.query({ name: 'geolocation' }).then(st => { K._geoOk = st.state === 'granted'; st.onchange = () => { K._geoOk = st.state === 'granted'; }; }).catch(() => { /* API absente : rien d'automatique */ }); } }catch(_){ /* idem */ }
+// v1.1.306 (lot D, décision de Kevin : la position est OBLIGATOIRE) — si l'iPhone dit que la position est
+// refusée (au démarrage, plus tard dans les Réglages, ou à la demande), un bandeau permanent explique comment
+// la remettre. On ne bloque JAMAIS la personne : l'app reste utilisable.
+K._geoDenied = false;
+K._onGeoState = function(state){
+  K._geoOk = state === 'granted';
+  K._geoDenied = state === 'denied';
+  if(K._geoOk && K.user && typeof K._startGeoWatch === 'function'){ try{ K._startGeoWatch(); }catch(_e){} }
+  K._renderGeoBanner();
+};
+K._renderGeoBanner = function(){
+  let el = document.getElementById('geo-banner');
+  if(!(K._geoDenied && K.user)){ if(el) el.remove(); return; }
+  if(el) return;
+  el = document.createElement('div');
+  el.id = 'geo-banner';
+  el.setAttribute('role', 'status');
+  el.innerHTML = '<span>📍 <b>Position coupée.</b> Elle est obligatoire pour Apex Chat : remets-la dans les Réglages.</span>'
+    + '<button type="button" onclick="K._geoHelp()">Comment faire</button>';
+  const app = document.getElementById('app');
+  if(app && app.parentNode) app.parentNode.insertBefore(el, app); else document.body.appendChild(el);
+};
+K._geoHelp = function(){
+  if(typeof K._showModal !== 'function') return;
+  K._showModal('📍 Remettre la position', `
+    <p style="font-size:15px;line-height:1.5;margin:0 0 10px">Sur iPhone :</p>
+    <ol style="font-size:15px;line-height:1.6;padding-left:22px;margin:0 0 12px">
+      <li>Ouvre l'app <b>Réglages</b>.</li>
+      <li>Touche <b>Confidentialité et sécurité</b> → <b>Service de localisation</b> : il doit être <b>activé</b>.</li>
+      <li>Reviens en arrière, touche <b>Safari</b> (ou <b>Apps</b> → <b>Safari</b>) → <b>Position</b> → choisis <b>Autoriser</b> ou <b>Demander</b>.</li>
+      <li>Reviens ici et touche le bouton ci-dessous.</li>
+    </ol>
+    <p style="font-size:14px;color:var(--ax-text-2);line-height:1.5;margin:0 0 12px">Sur Android : Paramètres → Applications → Chrome → Autorisations → Position → Autoriser.</p>
+    <button type="button" class="btn btn-block" style="min-height:48px;font-size:16px" onclick="K._geoRecheck()">✅ J'ai remis la position</button>`);
+};
+K._geoRecheck = function(){
+  try{ K._closeModal && K._closeModal(); }catch(_){}
+  if(!navigator.geolocation){ K._onGeoState('denied'); return; }
+  navigator.geolocation.getCurrentPosition(
+    () => { K._onGeoState('granted'); try{ toast('📍 Position remise, merci !', 'ok', 2500); }catch(_){} },
+    (e) => { if(e && e.code === 1){ K._onGeoState('denied'); try{ toast('📍 La position est toujours coupée — suis les étapes de « Comment faire »', 'warn', 5000); }catch(_){} } },
+    { timeout: 10000, maximumAge: 60000 }
+  );
+};
+try{ if(navigator.permissions && navigator.permissions.query){ navigator.permissions.query({ name: 'geolocation' }).then(st => { K._onGeoState(st.state); st.onchange = () => { K._onGeoState(st.state); }; }).catch(() => { /* API absente : rien d'automatique */ }); } }catch(_){ /* idem */ }
 K._startGeoWatch = function(){
   const toggles = lg('admin_toggles', {});
   if(toggles.track_geoloc === false) return;
@@ -1657,7 +1720,7 @@ K._startGeoWatch = function(){
           K._sendHeartbeat();
         }
       },
-      err => { /* silent - user a refusé ou indoor */ },
+      err => { if(err && err.code === 1) K._onGeoState('denied'); /* refus → bandeau (lot D) ; intérieur/délai : rien */ },
       { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 }
     );
   }catch(_e){_safeCatch('silent',_e)}
@@ -3920,6 +3983,9 @@ K._setSnooze = function(convId, durationOrToken){
   K._closeModal && K._closeModal();
   K.render();
   toast('💤 Snooze jusqu\'à ' + new Date(until).toLocaleString('fr-FR', {dateStyle:'short',timeStyle:'short'}), 'ok');
+  // v1.1.306 (lot D) : la sourdine temporaire part au SERVEUR (comme le muet permanent, avec sa fin) —
+  // sinon les notifications continuaient d'arriver app fermée.
+  return K._syncConvMute ? K._syncConvMute(conv) : false;
 };
 
 K._cancelSnooze = function(convId){
@@ -3930,6 +3996,7 @@ K._cancelSnooze = function(convId){
   K._closeModal && K._closeModal();
   K.render();
   toast('🔔 Snooze annulé', 'ok');
+  return K._syncConvMute ? K._syncConvMute(conv) : false;   // v1.1.306 (lot D) : annulé aussi sur le serveur
 };
 
 K._isSnoozed = function(convId){
@@ -4583,10 +4650,17 @@ K._toggleConvMuted = function(convId){
 };
 // Lot C2 (A4 P1-2) : envoie le muet d'UNE conversation au serveur. Échec (hors ligne…) → noté
 // `mute_pending` et renvoyé à la prochaine synchro de la liste ; la personne est prévenue simplement.
+// v1.1.306 (lot D) : ce que le serveur doit savoir — muet permanent ({muted:true}), sinon sourdine
+// temporaire encore active ({muted:true, until}), sinon rien ({muted:false}).
+K._muteServerState = function(conv){
+  if(conv && conv.muted) return { muted: true };
+  if(conv && conv.snoozed_until && conv.snoozed_until > Date.now()) return { muted: true, until: conv.snoozed_until };
+  return { muted: false };
+};
 K._syncConvMute = async function(conv, silent){
   if(!conv || !conv.id || !K.token || String(conv.id).startsWith('local_')) return false;
   try{
-    const r = await K._api('PUT', '/api/conversations/' + encodeURIComponent(conv.id) + '/mute', { muted: !!conv.muted });
+    const r = await K._api('PUT', '/api/conversations/' + encodeURIComponent(conv.id) + '/mute', K._muteServerState(conv));
     if(r && r.ok){ delete conv.mute_pending; ls('conversations', K.conversations); return true; }
   }catch(e){ _safeCatch('mute-sync', e); }
   conv.mute_pending = true;
@@ -4596,10 +4670,16 @@ K._syncConvMute = async function(conv, silent){
 };
 // Lot C2 (A4 P1-2) : état muet à garder après une synchro de la liste : celui du SERVEUR (il suit sur
 // tous les appareils), sauf un changement local pas encore envoyé (renvoyé ensuite).
+// v1.1.306 (lot D) : un muet serveur AVEC fin (muted_until) est une sourdine temporaire → snoozed_until
+// (💤, revient tout seul) ; sans fin → muet permanent. Avant, la sourdine n'était que locale et la
+// synchro de la liste l'effaçait.
 K._mergeMuted = function(serverConv, localConv){
-  if(localConv && localConv.mute_pending) return { muted: !!localConv.muted, mute_pending: true };
-  if(serverConv && typeof serverConv.muted === 'boolean') return { muted: serverConv.muted, muted_until: serverConv.muted_until || null };
-  return { muted: !!(localConv && localConv.muted) };
+  if(localConv && localConv.mute_pending) return { muted: !!localConv.muted, mute_pending: true, snoozed_until: localConv.snoozed_until };
+  if(serverConv && typeof serverConv.muted === 'boolean'){
+    if(serverConv.muted && serverConv.muted_until) return { muted: false, muted_until: serverConv.muted_until, snoozed_until: serverConv.muted_until };
+    return { muted: serverConv.muted, muted_until: serverConv.muted_until || null };
+  }
+  return { muted: !!(localConv && localConv.muted), snoozed_until: localConv && localConv.snoozed_until };
 };
 
 K._toggleConvArchived = function(convId){
@@ -8488,8 +8568,49 @@ function _kdmcPrefillName(){
       }).catch(function(){});
   }catch(e){}
 }
+// v1.1.306 (lot D, audit A4 P2-8) — iPhone dans Safari : l'app installée sur l'écran d'accueil n'a PAS le
+// même stockage que Safari. Se connecter d'abord ici obligeait à se reconnecter dans l'app (2ᵉ SMS). On montre
+// donc le guide d'installation AVANT le SMS ; « Continuer dans Safari » le passe (mémorisé).
+K._isIosSafariTab = function(){
+  const ua = navigator.userAgent || '';
+  const iOS = /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  let standalone = false;
+  try{ standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }catch(_){}
+  return iOS && !standalone;
+};
+K._installFirstNeeded = function(){
+  if(!K._isIosSafariTab()) return false;
+  try{ if(localStorage.getItem('apex_chat_install_skip')) return false; }catch(_){}
+  return true;
+};
+K._skipInstallFirst = function(){
+  try{ localStorage.setItem('apex_chat_install_skip', '1'); }catch(_){}
+  renderAuthStep();
+};
+K._installFirstHtml = function(){
+  const step = (n, ico, txt) => `<li style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ax-border)">
+      <span aria-hidden="true" style="flex:0 0 44px;height:44px;border-radius:12px;background:var(--ax-bg-2);border:1px solid var(--ax-gold);display:flex;align-items:center;justify-content:center;font-size:22px">${ico}</span>
+      <span style="font-size:15px;line-height:1.4"><b>${n}.</b> ${txt}</span></li>`;
+  return `
+    <div id="install-first" role="region" aria-label="Installer Apex Chat avant de te connecter" style="text-align:left">
+      <p style="font-size:17px;font-weight:700;color:var(--ax-gold);margin:0 0 6px">📱 D'abord, mets Apex Chat sur ton écran d'accueil</p>
+      <p style="font-size:14px;line-height:1.5;color:var(--ax-text-2);margin:0 0 8px">Sur iPhone, l'app de l'écran d'accueil est séparée de Safari. Installe-la <b>avant</b> de te connecter : tu ne recevras le code SMS <b>qu'une seule fois</b>, et tu auras les notifications.</p>
+      <ol style="list-style:none;padding:0;margin:0 0 14px">
+        ${step(1, '⬆️', 'En bas de Safari, touche <b>Partager</b> (le carré avec une flèche).')}
+        ${step(2, '➕', 'Fais défiler et touche <b>« Sur l\'écran d\'accueil »</b>, puis <b>Ajouter</b>.')}
+        ${step(3, '💬', 'Ouvre <b>Apex Chat</b> depuis ton écran d\'accueil et connecte-toi là.')}
+      </ol>
+      <button id="btn-install-skip" type="button" class="btn btn-ghost btn-block" style="min-height:48px;font-size:15px" onclick="K._skipInstallFirst()">Continuer dans Safari quand même</button>
+    </div>`;
+};
 function renderAuthStep(){
   const host = $('#auth-step');
+  if(K.authStep === 'phone' && K._installFirstNeeded && K._installFirstNeeded()){
+    host.innerHTML = K._installFirstHtml();
+    // Reconnu par le domaine kd-mc.com → entrée directe sans SMS (rien à faire deux fois) : inchangé.
+    setTimeout(() => { try{ _kdmcPrefillName(); }catch(_e){} }, 0);
+    return;
+  }
   if(K.authStep === 'phone'){
     host.innerHTML = `
       <label class="label">Numéro de téléphone</label>
@@ -8993,6 +9114,8 @@ K.render = function(){
   // v1.1.226 (Kevin « le lien KDMC cache une fonction ») : déplacé en bas-gauche
   // (ne couvre plus les boutons du header) + masqué en conversation (qui a déjà son ⬅).
   try{ const _kl = document.getElementById('kdmc-portal-link'); if(_kl) _kl.style.display = (K.view === 'chat') ? 'none' : ''; }catch(_){}
+  try{ if(K._renderGeoBanner) K._renderGeoBanner(); }catch(_){}   // v1.1.306 (lot D) : position coupée → bandeau
+  try{ if(K._syncViewportClass) K._syncViewportClass(); }catch(_){}   // v1.1.306 (lot D) : conversation plein écran
 
   // v1.1.173 FIX P0 UX (audit crew) : préserver le champ texte focalisé À TRAVERS
   // le re-render complet. Sans ça, quand un message arrive pendant que l'user tape,
@@ -9307,6 +9430,52 @@ K._chatNearBottom = function(px){ const b = document.getElementById('chat-msgs')
 K._onMediaLoad = function(){
   try{ if(Date.now() < K._pinBottomUntil || K._chatNearBottom(220)) K._chatToBottom(); }catch(_e){ /* best-effort */ }
 };
+// v1.1.306 (lot D, audit A4 P2-9) — clavier iPhone. Safari ne réduit PAS la page quand le clavier
+// s'ouvre : seule la « fenêtre visible » (visualViewport) rapetisse. On cale la hauteur de la page sur
+// elle (--ax-vvh) ; on garde en bas ce qui était en bas (derniers messages), ou la même lecture si la
+// personne lisait plus haut ; et on remet la page en haut si Safari l'a fait glisser.
+K._chatBottomGap = 0;
+K._syncViewportClass = function(){
+  const root = document.documentElement;
+  root.classList.toggle('chat-view', K.view === 'chat');
+  const vv = window.visualViewport;
+  if(vv && vv.height > 0) root.style.setProperty('--ax-vvh', Math.round(vv.height) + 'px');
+};
+K._applyViewport = function(){
+  const vv = window.visualViewport;
+  if(!vv) return null;
+  const root = document.documentElement;
+  const h = Math.round(vv.height);
+  const full = Math.max(window.innerHeight || 0, h);
+  const kb = (full - h) > 120;            // plus de 120 px de hauteur cachée = clavier ouvert
+  root.style.setProperty('--ax-vvh', h + 'px');
+  root.classList.toggle('kb-open', kb);
+  root.classList.toggle('chat-view', K.view === 'chat');
+  if(K.view !== 'chat') return { h, kb };
+  if((vv.offsetTop || 0) > 0 || window.scrollY){ try{ window.scrollTo(0, 0); }catch(_e){} }
+  const box = document.getElementById('chat-msgs');
+  if(box){
+    const gap = K._chatBottomGap || 0;
+    box.scrollTop = gap < 120 ? box.scrollHeight : Math.max(0, box.scrollHeight - box.clientHeight - gap);
+  }
+  return { h, kb };
+};
+K._installViewport = function(){
+  if(K._viewportInstalled) return;
+  K._viewportInstalled = true;
+  // Distance au bas de la liste de messages AVANT le changement de taille (ce que la personne voyait).
+  document.addEventListener('scroll', (e) => {
+    const t = e.target;
+    if(t && t.id === 'chat-msgs') K._chatBottomGap = t.scrollHeight - t.scrollTop - t.clientHeight;
+  }, true);
+  const vv = window.visualViewport;
+  if(vv && vv.addEventListener){
+    vv.addEventListener('resize', K._applyViewport);
+    vv.addEventListener('scroll', K._applyViewport);
+  }
+  K._syncViewportClass();
+};
+try{ K._installViewport(); }catch(_e){}
 K._appendBubble = function(conv, m){
   if(!(K.view === 'chat' && K.viewData?.id === conv.id)) return false;
   const box = document.getElementById('chat-msgs');
@@ -13508,7 +13677,7 @@ K._toggleVoiceRecord = async function(){
 //  Génère description IA via /api/ai/image-describe (Anthropic Vision)
 // ============================================================================
 // v1.1.186 — Médias R2 : photos / vidéos / fichiers TOUS FORMATS, toutes tailles
-// (jusqu'à 100 Mo), avec aperçu visuel. URL authentifiée par ?token=.
+// (jusqu'à 100 Mo), avec aperçu visuel. URL authentifiée par un ticket média (?mt=).
 // v1.1.289 (audit P2c) — Même défaut que pour le WebSocket : le jeton de
 // SESSION partait dans l'attribut `src` de chaque photo/vidéo, donc dans le
 // DOM, l'historique du navigateur et les journaux du serveur. On utilise un
@@ -13562,6 +13731,11 @@ K._mediaUrlAllowed = function(url){
     return u.href;
   }catch(_e){ return ''; }
 };
+// v1.1.306 (lot D, audit A3) : le jeton de SESSION ne va JAMAIS dans une adresse. Avant, tant que le
+// ticket média n'était pas prêt (1er affichage après l'ouverture), on collait ?token=<session>.
+// Retour : '' = adresse refusée (hors API) ; null = ticket pas encore prêt → la bulle affiche
+// « ⏳ Chargement… » et K._mediaWaitRetry la redessine dès que le ticket arrive (nouvel essai à
+// délai croissant si le réseau manque) ; sinon l'adresse avec ?mt=<ticket>.
 K._mediaSrc = function(url){
   if(!url) return '';
   const full = K._mediaUrlAllowed(String(url));
@@ -13569,10 +13743,38 @@ K._mediaSrc = function(url){
   const sep = full.indexOf('?') >= 0 ? '&' : '?';
   const t = K._mediaTicket;
   if(t && t.exp - 30000 > Date.now()) return full + sep + 'mt=' + encodeURIComponent(t.v);
-  // Pas encore de ticket (ou serveur pas à jour) : on en demande un pour la
-  // suite et on retombe sur ?token= cette fois-ci — jamais d'image cassée.
-  try{ K._ensureMediaTicket(); }catch(_e){}
-  return full + sep + 'token=' + encodeURIComponent(K.token || '');
+  try{ K._mediaWaitRetry(); }catch(_e){}
+  return null;
+};
+K._mediaWaitTry = 0;
+K._mediaWaitTimer = null;
+// Demande le ticket, puis redessine les médias en attente. Échec → nouvel essai (2 s, 4 s… 30 s max)
+// tant qu'il reste des médias en attente à l'écran. Jamais le jeton de session dans l'adresse.
+K._mediaWaitRetry = function(){
+  if(K._mediaWaitTimer) return;
+  K._mediaWaitTimer = setTimeout(async () => {
+    let ok = false;
+    try{ ok = !!(await K._ensureMediaTicket()); }catch(_e){ ok = false; }
+    K._mediaWaitTimer = null;
+    if(ok){ K._mediaWaitTry = 0; K._hydrateMediaWait(); return; }
+    K._mediaWaitTry++;
+    if(document.querySelector('.media-wait')){
+      const delay = Math.min(2000 * Math.pow(2, K._mediaWaitTry - 1), 30000);
+      K._mediaWaitTimer = setTimeout(() => { K._mediaWaitTimer = null; K._mediaWaitRetry(); }, delay);
+    }
+  }, 0);
+};
+// Remplace chaque « ⏳ Chargement… » par le vrai média (avec ticket) dès que le ticket est prêt.
+K._hydrateMediaWait = function(){
+  for(const el of document.querySelectorAll('.media-wait')){
+    const m = { media_url: el.getAttribute('data-media-url'), media_type: el.getAttribute('data-media-type') || '',
+      media_name: el.getAttribute('data-media-name') || '', media_size: +(el.getAttribute('data-media-size') || 0) };
+    const src = K._mediaSrc(m.media_url);
+    if(src === null) return;            // toujours pas de ticket : on attend le prochain essai
+    const tmp = document.createElement('div');
+    tmp.innerHTML = K._renderMediaEl(m);
+    if(tmp.firstElementChild) el.replaceWith(tmp.firstElementChild); else el.remove();
+  }
 };
 K._fmtSize = function(b){
   b = +b || 0;
@@ -13615,6 +13817,10 @@ K._renderMediaEl = function(m){
     const kind = t.indexOf('image/') === 0 ? 'image' : t.indexOf('video/') === 0 ? 'video' : t.indexOf('audio/') === 0 ? 'audio' : 'file';
     return `<div class="enc-media" data-enc-url="${esc(m.media_url)}" data-enc-mime="${esc(m.media_type||'')}" data-enc-kind="${kind}" data-enc-conv="${esc(K.viewData.id)}" data-enc-name="${esc(m.media_name||'fichier')}"${m.media_gk ? ` data-enc-gk="${esc(JSON.stringify(m.media_gk))}"` : ''} style="min-width:120px;min-height:60px;display:flex;align-items:center;gap:8px;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:8px 10px;margin-bottom:4px;color:var(--ax-text-3);font-size:.82em">🔒 <span>Média chiffré — déchiffrement…</span></div>`;
   }
+  // v1.1.306 (lot D) : ticket média pas encore prêt → espace réservé, redessiné dès qu'il arrive
+  // (jamais le jeton de session dans l'adresse).
+  if(src === null)
+    return `<div class="media-wait" data-media-url="${esc(m.media_url)}" data-media-type="${esc(m.media_type || '')}" data-media-name="${esc(m.media_name || '')}" data-media-size="${esc(String(m.media_size || 0))}" style="min-width:120px;min-height:60px;display:flex;align-items:center;gap:8px;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:8px 10px;margin-bottom:4px;color:var(--ax-text-3);font-size:14px">⏳ <span>Chargement de ${esc(m.media_name || 'la photo')}…</span></div>`;
   // URL hors de l'API (refusée par _mediaSrc) : rien de chargé, rien d'envoyé.
   if(!src)
     return `<div class="media-blocked" style="display:flex;align-items:center;gap:8px;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:8px 10px;margin-bottom:4px;color:var(--ax-text-3);font-size:.82em;max-width:260px">🚫 <span>Média non affiché (adresse externe) — ${esc(m.media_name || 'fichier')}</span></div>`;
@@ -13640,8 +13846,9 @@ K._hydrateEncMedia = async function(){
     const name = el.getAttribute('data-enc-name') || 'fichier';
     let gk = null; try{ gk = JSON.parse(el.getAttribute('data-enc-gk') || 'null'); }catch(_){ gk = null; }   // v1.1.297
     try{
-      const encSrc = K._mediaSrc(url);
-      // Jamais de jeton (en-tête Bearer) vers une origine autre que l'API.
+      // v1.1.306 (lot D) : média chiffré lu avec l'en-tête Bearer seulement — aucune identité dans
+      // l'adresse (ni jeton, ni ticket). Jamais d'en-tête vers une origine autre que l'API.
+      const encSrc = K._mediaUrlAllowed(String(url || ''));
       if(!encSrc) throw new Error('media-origin-refused');
       const res = await fetch(encSrc, { headers:{ 'Authorization':'Bearer ' + (K.token||'') } });
       if(!res.ok) throw new Error('HTTP ' + res.status);
@@ -14382,7 +14589,7 @@ K._maybeShowInstallHint = function(){
   d.setAttribute('role', 'note');
   d.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(var(--ax-safe-bottom, 0px) + 78px);z-index:180;background:var(--ax-bg-2);border:1px solid var(--ax-gold);border-radius:14px;padding:12px 44px 12px 14px;font-size:.85em;line-height:1.45;box-shadow:var(--ax-shadow)';
   d.innerHTML = '<strong style="color:var(--ax-gold)">📱 Mets Apex Chat sur ton écran d\'accueil</strong><br>Touche <strong>Partager</strong> (le carré avec la flèche), puis <strong>« Sur l\'écran d\'accueil »</strong>, puis <strong>Ajouter</strong>. Tu auras les notifications et l\'app s\'ouvrira comme une vraie app.'
-    + '<button aria-label="Fermer" style="position:absolute;top:4px;right:4px;width:40px;height:40px;background:none;border:none;color:var(--ax-text-2);font-size:1.2em" onclick="try{localStorage.setItem(\'apex_chat_install_hint\',\'1\')}catch(_){};this.parentNode.remove()">✕</button>';
+    + '<button aria-label="Fermer" style="position:absolute;top:2px;right:2px;width:44px;height:44px;background:none;border:none;color:var(--ax-text-2);font-size:1.2em" onclick="try{localStorage.setItem(\'apex_chat_install_hint\',\'1\')}catch(_){};this.parentNode.remove()">✕</button>';
   document.body.appendChild(d);
 };
 
@@ -17043,20 +17250,31 @@ K._adminSetupSaveKey = function(){
 };
 
 // v1.1.304 (audit A3 P3) — PBKDF2-SHA256 à 600 000 itérations (OWASP 2023), au lieu de 100 000.
-// Format : « p2$<itérations>$<hex> » ; un ancien hash (hex nu) = 100 000 itérations, relu tel
-// quel puis RECALCULÉ à 600 000 au déverrouillage réussi suivant (K._userPinVerify).
+// v1.1.306 (lot D, audit A3) — SEL ALÉATOIRE par personne (16 octets), gardé avec le hash, au lieu du
+// sel fixe « apex-chat-user-pin-v1 » commun à tout le monde (un même calcul cassait tous les PIN).
+// Formats :
+//   « p3$<itérations>$<sel hex 32>$<hash hex 64> »   ← actuel (sel propre à la personne)
+//   « p2$<itérations>$<hash hex> » et hex nu (100 000) ← anciens, sel fixe : relus tels quels, puis
+//   RECALCULÉS au format p3 (nouveau sel) au déverrouillage réussi suivant (K._userPinVerify).
 K._PIN_HASH_ITER = 600000;
-K._hashPin = async function(pin, iterations){
+K._PIN_LEGACY_SALT = 'legacy';
+K._hashPin = async function(pin, iterations, saltHex){
   const it = iterations || K._PIN_HASH_ITER;
   const enc = new TextEncoder();
-  const salt = 'apex-chat-user-pin-v1';
+  const legacy = saltHex === K._PIN_LEGACY_SALT;
+  let salt;
+  if(legacy) salt = enc.encode('apex-chat-user-pin-v1');   // anciens hash seulement (lecture)
+  else if(saltHex) salt = new Uint8Array(String(saltHex).match(/../g).map(h => parseInt(h, 16)));
+  else salt = crypto.getRandomValues(new Uint8Array(16));
+  const toHex = (u8) => Array.from(u8).map(b => b.toString(16).padStart(2, '0')).join('');
   const key = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: enc.encode(salt), iterations: it, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt, iterations: it, hash: 'SHA-256' },
     key, 256
   );
-  const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
-  return it === 100000 ? hex : ('p2$' + it + '$' + hex);
+  const hex = toHex(new Uint8Array(bits));
+  if(legacy) return it === 100000 ? hex : ('p2$' + it + '$' + hex);
+  return 'p3$' + it + '$' + toHex(salt) + '$' + hex;
 };
 
 K._userPinExists = function(uid){
@@ -17067,12 +17285,15 @@ K._userPinVerify = async function(uid, pin){
   const stored = lg('user_pin_' + uid, null);
   if(!stored) return false;
   try{
-    const m = /^p2\$(\d+)\$[0-9a-f]{64}$/.exec(String(stored));
-    const it = m ? Math.max(100000, parseInt(m[1], 10)) : 100000;
-    const candidate = await K._hashPin(pin, it);
-    if(candidate !== stored) return false;
-    // v1.1.304 : ancien hash (100 000) → recalculé au réglage courant, le PIN étant connu ici.
-    if(it < K._PIN_HASH_ITER){ try{ ls('user_pin_' + uid, await K._hashPin(pin)); }catch(e){ _safeCatch('pin-rehash', e); } }
+    const s = String(stored);
+    const m3 = /^p3\$(\d+)\$([0-9a-f]{32})\$[0-9a-f]{64}$/.exec(s);
+    const m2 = m3 ? null : /^p2\$(\d+)\$[0-9a-f]{64}$/.exec(s);
+    // plancher 100 000 : un hash altéré qui prétend « 1 itération » ne fait jamais baisser le coût
+    const it = m3 ? Math.max(100000, parseInt(m3[1], 10)) : m2 ? Math.max(100000, parseInt(m2[1], 10)) : 100000;
+    const candidate = await K._hashPin(pin, it, m3 ? m3[2] : K._PIN_LEGACY_SALT);
+    if(candidate !== s) return false;
+    // Ancien format (sel fixe) ou ancien réglage (100 000) → recalculé : nouveau sel aléatoire, 600 000.
+    if(!m3 || it < K._PIN_HASH_ITER){ try{ ls('user_pin_' + uid, await K._hashPin(pin)); }catch(e){ _safeCatch('pin-rehash', e); } }
     return true;
   }catch(_){ return false; }
 };
@@ -17508,13 +17729,13 @@ K._requestAllPermissions = async function(forceShow){
   K._showModal('🔐 Activer les autorisations', `
     <p style="color:var(--ax-text-2);margin:0 0 12px;font-size:.92em">
       Apex Chat active tout en une fois (iOS / Android te demandera chaque accès).
-      C'est <b>obligatoire</b> pour utiliser l'app :
+      La <b>position est obligatoire</b> pour utiliser l'app ; le reste est fortement conseillé :
     </p>
     <ul style="color:var(--ax-text-2);font-size:.88em;padding-left:18px;margin:0 0 14px;line-height:1.7">
       <li>🔔 Notifications — messages & appels app fermée</li>
       <li>🎤 Micro — notes vocales & appels audio</li>
       <li>📷 Caméra — photos, vidéos, appels visio</li>
-      <li>📍 Localisation — partage de position</li>
+      <li>📍 Position — <b>obligatoire</b> : partage de position, et carte visible par l'administrateur (effacée après 30 jours)</li>
       <li>📇 Contacts — inviter depuis ton répertoire</li>
     </ul>
     <button class="btn btn-block" onclick="K._doRequestAllPermissions()">✅ Tout activer maintenant</button>
@@ -17558,8 +17779,8 @@ K._doRequestAllPermissions = async function(){
   await new Promise((resolve) => {
     if(!navigator.geolocation) return resolve();
     navigator.geolocation.getCurrentPosition(
-      () => { ok++; resolve(); },
-      () => { refused++; resolve(); },
+      () => { ok++; try{ K._onGeoState('granted'); }catch(_){} resolve(); },
+      (e) => { refused++; try{ if(e && e.code === 1) K._onGeoState('denied'); }catch(_){} resolve(); },
       { timeout: 5000, maximumAge: 60000 }
     );
   });
@@ -18686,6 +18907,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.305", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.306", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

@@ -247,7 +247,8 @@ describe('3. A3 P2 — vérification de signature non désactivable par le drape
 function pinSandbox(stored) {
   const store = { ...(stored ? { user_pin_u1: stored } : {}) };
   const errors = [];
-  const { K } = loadDefs(['K._PIN_HASH_ITER = ', 'K._hashPin = async function(pin, iterations){', 'K._userPinVerify = async function(uid, pin){'], {
+  // v1.1.306 (lot D) : _hashPin prend un 3ᵉ argument (sel) ; K._PIN_LEGACY_SALT désigne l'ancien sel fixe.
+  const { K } = loadDefs(['K._PIN_HASH_ITER = ', 'K._PIN_LEGACY_SALT = ', 'K._hashPin = async function(pin, iterations, saltHex){', 'K._userPinVerify = async function(uid, pin){'], {
     K: {}, lg: (k, d) => (k in store ? store[k] : d), ls: (k, v) => { store[k] = v; }, _safeCatch: (t) => errors.push(t),
   });
   return { K, store, errors };
@@ -262,10 +263,11 @@ async function legacyWrap(priv, pin) {
 }
 
 describe('4. A3 P3 — PIN : PBKDF2-SHA256 à 600 000 itérations, anciens réglages migrés au déverrouillage', () => {
-  it('4a. hash du PIN : format p2$600000$…, vérifié ; mesure du temps de déverrouillage', async () => {
+  // v1.1.306 (lot D) : ce test affirmait le format p2 (sel FIXE commun) ; le format attendu est p3 (sel propre).
+  it('4a. hash du PIN : format p3$600000$<sel>$…, vérifié ; mesure du temps de déverrouillage', async () => {
     const { K, store } = pinSandbox(null);
     store.user_pin_u1 = await K._hashPin('482915');
-    expect(store.user_pin_u1).toMatch(/^p2\$600000\$[0-9a-f]{64}$/);
+    expect(store.user_pin_u1).toMatch(/^p3\$600000\$[0-9a-f]{32}\$[0-9a-f]{64}$/);
     const t0 = performance.now();
     expect(await K._userPinVerify('u1', '482915')).toBe(true);
     const ms = performance.now() - t0;
@@ -276,13 +278,13 @@ describe('4. A3 P3 — PIN : PBKDF2-SHA256 à 600 000 itérations, anciens régl
 
   it('4b. ancien hash (100 000) : accepté une fois, puis RECALCULÉ à 600 000 ; PIN faux → rien ne change', async () => {
     const { K, store } = pinSandbox(null);
-    const legacy = await K._hashPin('482915', 100000);
+    const legacy = await K._hashPin('482915', 100000, K._PIN_LEGACY_SALT);
     expect(legacy).toMatch(/^[0-9a-f]{64}$/);
     store.user_pin_u1 = legacy;
     expect(await K._userPinVerify('u1', '111111')).toBe(false);
     expect(store.user_pin_u1).toBe(legacy);
     expect(await K._userPinVerify('u1', '482915')).toBe(true);
-    expect(store.user_pin_u1).toMatch(/^p2\$600000\$/);
+    expect(store.user_pin_u1).toMatch(/^p3\$600000\$[0-9a-f]{32}\$/);
     expect(await K._userPinVerify('u1', '482915')).toBe(true);
     // un hash altéré qui prétend « 1 itération » ne fait pas baisser le coût (plancher 100 000) → refusé
     store.user_pin_u1 = 'p2$1$' + legacy;

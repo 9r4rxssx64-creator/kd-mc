@@ -56,9 +56,11 @@ describe('K._mediaSrc : identifiants uniquement vers l\'API (audit client 10/202
     }
   });
 
-  it('4. comportement conservé : chemin relatif /api/media/… → API + ticket/jeton', () => {
+  // v1.1.306 (lot D) : ce test affirmait l'ancien repli « ?token=<session> tant que le ticket n'est pas
+  // prêt ». Corrigé : sans ticket → null (attente), jamais le jeton (voir lot-d-client.test.js).
+  it('4. chemin relatif /api/media/… → API + ticket ; sans ticket : attente (null), jamais le jeton', () => {
     const K = setup();
-    expect(K._mediaSrc('/api/media/abc')).toBe(API_BASE + '/api/media/abc?token=SECRET-SESSION');
+    expect(K._mediaSrc('/api/media/abc')).toBeNull();
     const K2 = setup({ ticket: 'TICKET-123' });
     expect(K2._mediaSrc('/api/media/abc')).toBe(API_BASE + '/api/media/abc?mt=TICKET-123');
     expect(K2._mediaSrc(API_BASE + '/api/media/abc')).toBe(API_BASE + '/api/media/abc?mt=TICKET-123');
@@ -70,8 +72,8 @@ describe('K._mediaSrc : identifiants uniquement vers l\'API (audit client 10/202
     expect(html).not.toMatch(/<img|<video|<audio|<a /);
     expect(html).not.toContain('evil.example');
     expect(html).not.toContain('SECRET-SESSION');
-    const ok = K._renderMediaEl({ media_url: '/api/media/abc', media_type: 'image/png', media_name: 'x.png' });
-    expect(ok).toContain('<img src="' + API_BASE + '/api/media/abc?token=SECRET-SESSION"');
+    const ok = setup({ ticket: 'TICKET-123' })._renderMediaEl({ media_url: '/api/media/abc', media_type: 'image/png', media_name: 'x.png' });
+    expect(ok).toContain('<img src="' + API_BASE + '/api/media/abc?mt=TICKET-123"');
     // Le tap ne passe plus par un onclick="window.open('…')" (cf. kcall)
     expect(ok).not.toContain("window.open(");
   });

@@ -16895,3 +16895,4 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
 ## 2026-10-15 (11h30) — admin.kd-mc.com v2 fusionnée MAIS déploiement raté (#4579) → correctif du déploiement
 - **Cause** (journal d'échecs du dépôt public, run 38725543701) : `node --test` du déploiement a trouvé `entree-navigateur.test.mjs` qui importe `playwright`, absent de la machine → rien déployé ; l'ancienne page est restée en ligne (aucun enfermement).
 - **Correctif** : le test navigateur déplacé dans `tests/kdmc-access-navigateur.test.mjs` ; garde `test:services-sans-navigateur` ; dossier du serveur rejoué avec `env -i node --test` : 32 tests verts sans navigateur.
+- **Prouvé en vrai (13h41 Paris, capture de Kevin)** : `admin.kd-mc.com` v2 en ligne (11h25 UTC) s'ouvre avec son compte (35 personnes, 790 connexions, messages) depuis le navigateur intégré de l'app Claude. À confirmer : l'ouverture depuis l'icône de l'écran d'accueil.

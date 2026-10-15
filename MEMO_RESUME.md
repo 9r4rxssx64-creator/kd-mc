@@ -212,6 +212,11 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
 
+## 2026-10-15 — AUDIT EXTÉRIEUR TOTAL (4 relecteurs indépendants, sans compte, lecture seule, 0 minute Actions)
+- Demande de Kevin : « l'audit d'amélioration extrême total extérieur ». Synthèse : `audit/prive/AUDIT-EXTERIEUR-2026-10-15.md` ; rapports complets (sécurité, performance, UX, architecture) dans `audit/prive/AUDIT-EXTERIEUR-2026-10-15/`.
+- **3 points graves** : (1) le site se lit SANS compte par l'adresse Cloudflare Pages `kdmc-site-bj5.pages.dev` (plannings des cadres, `commerce-data.json`, généalogie — revérifié, en-têtes 200) ; (2) règles Firebase `/cmcteams`, `/apex`, `/coffre_vault` ouvertes à tout compte anonyme (dans le dépôt ; en ligne non confirmé) ; (3) redirection ouverte `/__sso/entrer?to=/\example.org/x` (revérifiée, 302). Puis P1 : sonde ouverte aux réseaux Azure, écritures KV épuisables, secret absent = porte ouverte, empreinte admin comme porteur, `?t=` dans l'adresse, sauvegardes (KV et D1 non sauvegardés), badge de version qui relit la page toutes les 60 s, HTML non compressé, premier écran muet.
+- **Rien n'est corrigé par cet audit** (document seul). Les corrections demandent des décisions de Kevin : Cloudflare Access / suppression du projet Pages, console Firebase, Workers Paid.
+
 ## 2026-10-15 — Rouge de main : « clique chaque bouton » (`_cmcApisInit is not defined`, 7 boutons de l'IA)
 - Posé par 844f9a933 (CMCteams v9.978) : `index.html` appelait `_cmcApisInit` (défini dans `tools/shared/fiche-privee.js`) sans filet. Si ce script n'est pas chargé, le clic levait une erreur au lieu de retomber sur le repli. Corrigé : `_cmcApisInitSure()` (index.html, une ligne, 3 444 211 o sous le plafond de la garde mono-fichier) présente le compte quand `_cmcApisInit` existe, sinon la requête part sans compte (401 → repli). `test:clicks` repasse vert. Pas de montée de version (même v9.978). Coût : 0.
 

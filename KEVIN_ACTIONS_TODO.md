@@ -20,6 +20,9 @@ et ton code admin dans « J'ai déjà un compte — nom + code ».
 
 ---
 
+## 🚨 (15.10, audit extérieur) À TOI : l'adresse de secours Cloudflare Pages laisse lire le site sans compte
+> `https://kdmc-site-bj5.pages.dev/` répond 200 SANS compte (plannings des cadres, données de la boutique, généalogie). Dans **Cloudflare → Workers & Pages → kdmc-site-bj5** : mets **Cloudflare Access** devant (ou supprime le projet et ses anciens déploiements quand le routeur servira ses propres fichiers). Dis-moi laquelle des deux : je prépare la bascule du routeur (fichiers embarqués) avant que tu coupes Pages. Détail : `audit/prive/AUDIT-EXTERIEUR-2026-10-15.md`. Aussi à toi : **console Firebase** (règles `/cmcteams`, `/apex`, `/coffre_vault` ouvertes aux comptes anonymes — je prépare le code, tu publies les règles).
+
 ## 👆 (10.10) WhatsApp pour TOUTES les inscriptions : 3 copier-coller chez Meta, le robot fait le reste
 
 > ⏸ **MIS DE CÔTÉ (13.10, Kevin : « mets de côté la validation WhatsApp tant que je l'ai pas faite, enlève-la du visuel de l'inscription, on fait confiance aux personnes qui mettent leur vrai numéro »)** : tant que ces 3 choses ne sont pas faites, **rien de WhatsApp n'apparaît** (ni à l'inscription, ni dans « Créer un compte » côté admin) et le numéro tapé est cru. **Reste à faire par toi quand tu veux** : les 3 copier-coller ci-dessous. L'écran apparaîtra tout seul ensuite, et l'option « la personne confirme son téléphone par WhatsApp » se débloquera pour les comptes invités.

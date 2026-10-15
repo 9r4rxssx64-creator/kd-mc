@@ -1636,6 +1636,16 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "audit-exterieur": {
+      "titre": "Audit extérieur total",
+      "branche": "claude/audit-exterieur",
+      "sujet": "4 relecteurs, rapports + synthèse",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

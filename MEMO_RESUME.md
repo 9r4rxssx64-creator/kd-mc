@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 (soir) — PASSATION ARBRE : famille maternelle de Yann (Imbert « Sachet » · Revel · Buchet) — À LIRE PAR LA SESSION « ARBRE »
+
+Kevin a donné ce travail à la mauvaise session et demande de le transmettre à la session de l'arbre (aucune autre session n'était joignable le 15.10 au soir). RIEN de familial dans git : tout est DANS l'arbre (nuage), lisible par `node tools/arbre/appliquer-nuage.mjs --voir "Marie-France Buchet"` (ARBRE_CODEHASH lu dans D1 `kdmc-arbre`, jamais écrit).
+- **État** : 59 fiches ajoutées (ids `imbert_*`, `revel_*`, `buchet_*`, `garacio_*`, `veran_*`, `gaudo_*`, `gastaut_*`, `magliano_*`, `tibert_*`) + fiches existantes complétées (`seed_mariefrance`, `seed_yann`, `seed_emile`, `lorenzi_kim`) ; arbre à 328 fiches, 0 lien cassé. Le PDF source (5 pages) est joint à la fiche de Marie-France (Documents) ; **toute la liste de ce que Kevin a donné/demandé est dans les notes de `seed_mariefrance`** (bloc « 📋 CE QUE KEVIN A DONNÉ ET DEMANDÉ ») ; son résumé collé, non sourcé et contradictoire, est dans les notes de `imbert_etienne_sachet`.
+- **Vérifié (INSEE + Journal de Monaco)** : Albert Antoine Buchet (30.10.1911 Bourges – 20.03.1998 Monaco), Mathilde Jeannette Revel, Robert Revel, Antoine Revel, Joseph Félix Revel, divorce / métier / remariage de Marie-France (Journal de Monaco 1972-1975, PDF liés dans ses sources).
+- **Envoyé le 15.10 (Gmail de Kevin, à sa demande explicite « envoie »)** : demandes d'actes à la mairie de Sainte-Agnès (naissance 1922, mariage 1922, naissance 1903 + 2 facultatifs), à la mairie de Beausoleil (décès 2001) et à l'état civil de Monaco (décès 1998 + mariage). **Prête, non envoyée** : Bourges (naissance 1911) — pas d'e-mail public, formulaire en ligne, texte dans un brouillon Gmail. **Réponses à lire dans Gmail** puis intégrer chaque acte avec sa source.
+- **À demander à Kevin/Yann** : naissance de Marie-France (≈ 12.08.1948, approximative), son mariage avec Émile, « Kim » ou « Patrick » LORENZI (Journal 1975).
+- **Pièges rencontrés** : (1) l'app fusionne seule deux fiches de mêmes prénom + nom + dates (ou sans date) → un « François Imbert » avait disparu ; distinguer les homonymes par une date ; (2) Kevin crée des fiches sur son téléphone pendant que la session écrit (ids `pmv9…`) : refaire un export frais avant d'écrire, fusionner (`{"fusionner":[…]}`) au lieu de supprimer ; l'alerte « ❌ fiche disparue » de `ecrire.sh` après une fusion voulue est attendue ; (3) `vivant` passe à vrai par défaut sur une fiche créée à la main : le corriger pour un défunt.
+
 ## 2026-10-15 — Arbre : la famille maternelle de Yann (document « Imbert dite Sachet · Revel · Buchet ») intégrée
 
 - 59 fiches ajoutées + 2 complétées (la mère de Yann et Yann), 268 → 327 fiches, 0 lien cassé, rejouer = 0, sauvegarde « o-2026-10-15T15-56-03 » prise avant écriture.

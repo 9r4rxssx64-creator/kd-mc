@@ -24,6 +24,8 @@ et ton code admin dans « J'ai déjà un compte — nom + code ».
 
 > ⏸ **MIS DE CÔTÉ (13.10, Kevin : « mets de côté la validation WhatsApp tant que je l'ai pas faite, enlève-la du visuel de l'inscription, on fait confiance aux personnes qui mettent leur vrai numéro »)** : tant que ces 3 choses ne sont pas faites, **rien de WhatsApp n'apparaît** (ni à l'inscription, ni dans « Créer un compte » côté admin) et le numéro tapé est cru. **Reste à faire par toi quand tu veux** : les 3 copier-coller ci-dessous. L'écran apparaîtra tout seul ensuite, et l'option « la personne confirme son téléphone par WhatsApp » se débloquera pour les comptes invités.
 
+> 🖐 **EN ATTENDANT (15.10)** : tu valides à la main. Chaque nouvelle inscription arrive en « attente » (alerte sur ton iPhone) ; tu l'ouvres ou la refuses dans **Mes messages**. Actif dès que le routeur est redéployé (`KDMC_VALIDATION_MANUELLE="1"`).
+
 **Ce que ça fait une fois ouvert** : sur kd-mc.com, « Créer mon compte » → « Ouvrir WhatsApp » (le message est déjà écrit) →
 la personne l'envoie → **la page se valide toute seule**, sans code à taper. C'est gratuit (la personne écrit en premier).
 Ça vaut pour toutes les apps du domaine, et aussi pour un code d'accès croupier. Les comptes existants ne sont pas touchés.

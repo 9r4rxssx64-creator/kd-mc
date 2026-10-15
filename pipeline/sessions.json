@@ -1626,6 +1626,16 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "valid-manuelle": {
+      "titre": "Validation manuelle des inscriptions",
+      "branche": "claude/valid-manuelle",
+      "sujet": "KDMC_VALIDATION_MANUELLE",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

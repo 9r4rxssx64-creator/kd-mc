@@ -139,6 +139,9 @@ simple = { limit = 8, period = 60 }
 
 [vars]
 KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
+# 15.10 (Kevin : « En attendant WhatsApp je valide manuellement ») : toute NOUVELLE inscription attend ton accord dans « Mes messages ».
+# Pour revenir à l'inscription libre (numéro cru) : "0" puis redéployer le routeur.
+KDMC_VALIDATION_MANUELLE = "1"
 
 # ── OÙ LE ROUTEUR VA CHERCHER LES PAGES (bascule du 18.09.2026) ──────────────
 # Kevin 2026-09-15 : « passe tout en privé ». GitHub Pages depuis un dépôt PRIVÉ

@@ -168,6 +168,17 @@
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
 
+## 2026-10-15 — Rouge de main : « clique chaque bouton » (`_cmcApisInit is not defined`, 7 boutons de l'IA)
+- Posé par 844f9a933 (CMCteams v9.978) : `index.html` appelait `_cmcApisInit` (défini dans `tools/shared/fiche-privee.js`) sans filet. Si ce script n'est pas chargé, le clic levait une erreur au lieu de retomber sur le repli. Corrigé : `_cmcApisInitSure()` (index.html, une ligne, 3 444 211 o sous le plafond de la garde mono-fichier) présente le compte quand `_cmcApisInit` existe, sinon la requête part sans compte (401 → repli). `test:clicks` repasse vert. Pas de montée de version (même v9.978). Coût : 0.
+
+## 2026-10-15 — Rouge de main : `arbre-message-kevin.test.mjs` sans `serviceWorkers: 'block'` (garde tests-isoles-sw)
+- Posé par #4538 (Arbre v3.97), rouge sur main pour tout le monde. Corrigé : `newContext({ serviceWorkers: 'block', … })`. Coût : 0.
+
+## 2026-10-15 — « En attendant WhatsApp je valide manuellement » : interrupteur serveur `KDMC_VALIDATION_MANUELLE` (code + tests, PAS déployé)
+- Kevin : « En attendant WhatsApp je valide manuellement ». Le mécanisme existait (`validation:'admin'`, boîte de Kevin, #17) mais seulement au CHOIX de la personne, et WhatsApp étant caché depuis le 13.10 plus personne ne le choisissait. Désormais `/__sso/issue` met d'office en attente (`attente_admin`) toute NOUVELLE inscription tant que `KDMC_VALIDATION_MANUELLE=1` (posé dans `wrangler.toml`) : compte créé (nom + code), fermé partout sauf le portail (écran d'attente, revérifie toutes les 30 s), alerte push + demande dans « Mes messages » où Kevin accepte ou refuse. Décidé côté serveur : un script ne peut pas s'ouvrir seul. Un compte déjà inscrit n'est jamais refermé ; WhatsApp branché + interrupteur = plus de refus `tel_requis`.
+- Garde `test:validation-manuelle` (11 contrôles ; sabotage = décision retirée du serveur → 8 rouges). `validation-admin` 24/24 et `tel-inscription` 40/40 inchangés.
+- **Pour revenir à l'inscription libre** : `KDMC_VALIDATION_MANUELLE = "0"` dans `wrangler.toml` puis redéployer le routeur. **Pas en ligne** tant que le routeur n'est pas redéployé (déploiement manuel, ration du jour — décision de Kevin). Coût Actions : 0.
+
 ## 2026-10-15 — Rouge de main corrigé : le seed du planning portait v9.977 alors que l'app est en v9.978
 - Cause : le commit 844f9a933 « compte obligatoire (côté apps) » (CMCteams v9.978) a changé `APP_VER` sans mettre `"parser"` à jour dans `tools/shared/planning-seed.js`. `verify-seed-remplace-import-perime` (« le seed porte la version de son parseur = celle de l'app ») était rouge sur main pour tout le monde. Corrigé : `"parser":"v9.978"`. **OBLIGATION** (déjà dans #4555) : toute montée de `APP_VER` change aussi ce champ.
 - Coût Actions : 0 (local).

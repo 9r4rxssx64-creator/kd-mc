@@ -1167,6 +1167,8 @@ const codeObligatoire = (env) => String((env && env.KDMC_CODE_OBLIGATOIRE) || '1
 /* Téléphone obligatoire à la CRÉATION d'un compte (Kevin 13.10 : « Ajoute le téléphone à l'inscription du domaine entier, la fiche principale d'inscription »).
    Toutes les apps passent par cette porte : le numéro est donc demandé une fois, rangé dans la fiche du domaine (`acc.fiche.telephone`),
    et chaque app le lit au lieu de le redemander. Suit le coupe-circuit du code (tests) + son propre interrupteur KDMC_TELEPHONE_OBLIGATOIRE=0. */
+/* Interrupteur « je valide à la main » (15.10) : '1' = les nouvelles inscriptions attendent Kevin. Absent/autre = fermé. */
+const validationManuelle = (env) => String((env && env.KDMC_VALIDATION_MANUELLE) || '') === '1';
 const telephoneObligatoire = (env) => codeObligatoire(env) && String((env && env.KDMC_TELEPHONE_OBLIGATOIRE) || '1') !== '0';
 const telephoneValide = (t) => { const s = String(t || '').trim(); return /^\+?[0-9 .()-]{6,24}$/.test(s) && s.replace(/\D/g, '').length >= 6; };
 async function credOk(rec, code) {
@@ -3499,7 +3501,12 @@ async function handleSso(request, url, env) {
          leurs comptes ici, donc l'exiger ici le fait partout. La page apporte une PREUVE signée par le domaine (/__sso/tel/verifie) ;
          elle ne juge rien. Exigé seulement quand WhatsApp est branché (secrets WA_*) et que l'interrupteur n'est pas coupé
          (KDMC_TEL_OBLIGATOIRE=0) — jamais de porte fermée par une fonction pas prête. Quelqu'un de déjà inscrit n'est jamais touché. */
-      if (!accCanon && telObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid)) {
+      /* VALIDATION MANUELLE EN ATTENDANT WHATSAPP (Kevin 15.10 : « En attendant WhatsApp je valide manuellement ») : tant que
+         KDMC_VALIDATION_MANUELLE=1, TOUTE nouvelle inscription est créée (nom + code) mais fermée partout sauf le portail, jusqu'à ce que
+         Kevin l'ouvre dans sa boîte — décidé ICI, pas par le navigateur (un script ne peut pas s'ouvrir seul). Un compte déjà inscrit n'est
+         jamais touché. Coupé (par défaut) = comportement d'avant. */
+      if (!accCanon && validationManuelle(env) && !UID_ROBOTS_SANS_FICHE.has(uid)) attenteAdmin = true;
+      if (!accCanon && telObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !attenteAdmin) {
         const pt = await verifiePreuve(secret, b.tel_preuve);
         /* « Si pas de WhatsApp, validation admin. Au choix » (Kevin 10.10) : la personne CHOISIT d'attendre Kevin au lieu de WhatsApp.
            Le compte est créé (nom + code) mais fermé partout sauf le portail, jusqu'à ce que Kevin l'ouvre dans sa boîte. */

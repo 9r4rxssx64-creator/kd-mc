@@ -36,6 +36,13 @@ export function ration(runs, jour, max = RATION_MIN_PAR_JOUR) {
   return { jour, minutes, max, reste, top, comptes: liste.length - ignores, ignores, verdict };
 }
 
+/* Peut-on lancer un robot qui coûtera `besoin` minutes ? Oui seulement s'il reste au moins `besoin` minutes de ration aujourd'hui.
+   Utilisée par la PORTE de ration des gros robots (chaîne privée, audit runtime…) : un robot de 27 min ne démarre pas quand il n'en reste que 10. */
+export function peutDepenser(r, besoin) {
+  const b = Math.max(0, Number(besoin) || 0);
+  return r.minutes + b <= r.max;
+}
+
 export function texte(r) {
   const tete = { vert: '🟢 il reste de la ration', orange: '🟠 plus de la moitié de la ration est mangée : regroupe tes changements, un seul robot', rouge: '🔴 ration du jour MANGÉE : ne lance AUCUN robot du coffre, teste en local et fusionne' }[r.verdict];
   return [`Ration Actions du coffre — ${r.jour} (UTC)`, `${r.minutes} min consommées sur ${r.max} (${r.reste} restantes) · ${r.comptes} run(s) comptés, ${r.ignores} refusé(s)/sauté(s) à 0 min`, tete,
@@ -49,5 +56,13 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const jour = jourArg > 0 ? process.argv[jourArg + 1] : new Date().toISOString().slice(0, 10);
   const r = ration(JSON.parse(readFileSync(process.argv[i + 1], 'utf8')), jour);
   console.log(texte(r));
+  /* --besoin N : « ce robot coûtera N minutes » → code 3 s'il n'en reste pas assez (la porte des gros robots) */
+  const bi = process.argv.indexOf('--besoin');
+  if (bi > 0) {
+    const besoin = Number(process.argv[bi + 1]);
+    if (!peutDepenser(r, besoin)) { console.log(`⛔ ce robot coûterait ~${besoin} min, il n'en reste que ${r.reste} aujourd'hui : refusé (relance-le demain, ou en local, ou avec « forcer »).`); process.exit(3); }
+    console.log(`✅ ce robot (~${besoin} min) tient dans la ration : il peut partir.`);
+    process.exit(0);
+  }
   process.exit(r.verdict === 'rouge' ? 3 : 0);
 }

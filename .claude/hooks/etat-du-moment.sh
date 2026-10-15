@@ -24,7 +24,20 @@ RET=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo '?')
 AV=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo '?')
 QUI=$(git for-each-ref --sort=-committerdate --format='%(committerdate:short) %(refname:short) — %(subject)' refs/remotes/origin 2>/dev/null \
       | awk '$2 != "origin" && $2 != "origin/main"' | head -8 | cut -c1-120 | sed 's/^/  /')
+# RATION DES MINUTES ACTIONS DU JOUR (Kevin 15.10 : « Économise le forfait action… ne jamais plus être bloqué ») : chaque session, sur n'importe
+# quelle branche, voit dès l'ouverture ce qui est DÉJÀ consommé aujourd'hui. L'outil est lu sur origin/main (comme la page), pas sur la copie
+# locale. Fail-ouvert : sans gh, sans réseau, sans outil → simplement pas de ligne (jamais bloquant, jamais plus de ~20 s).
+RATION=""
+if command -v gh >/dev/null 2>&1 && git show origin/main:tools/ci/ration-actions.mjs > "${TMPDIR:-/tmp}/ration-actions-hook.mjs" 2>/dev/null; then
+  if timeout 12 gh api "repos/9r4rxssx64-creator/CMCteams/actions/runs?created=%3E%3D$(date -u +%F)&per_page=100" > "${TMPDIR:-/tmp}/ration-hook.json" 2>/dev/null; then
+    RATION=$(timeout 8 node "${TMPDIR:-/tmp}/ration-actions-hook.mjs" --runs "${TMPDIR:-/tmp}/ration-hook.json" 2>/dev/null | sed -n '2,3p')
+  fi
+fi
+[ -n "$RATION" ] && RATION="
+── Minutes GitHub Actions du coffre, AUJOURD'HUI (avant tout robot : bash tools/ci/porte-ration.sh <minutes>) :
+${RATION}"
 CTX="$PAGE
+${RATION}
 
 ── Ta branche : ${BR} · ${RET} commit(s) DERRIÈRE main, ${AV} devant. ${NOTE}
 ── Qui fait quoi — les 8 branches les plus actives (git, à l'instant) :

@@ -12178,6 +12178,14 @@ Ce n'est pas une règle nouvelle : c'est la **carte unique** des règles « grat
 
 ---
 
+
+### 4. 15.10 — « Économise le forfait action… ne jamais plus être bloqué, n'importe où, partout » (Kevin 2026-10-15)
+Mesuré (API GitHub, 6→15.10, 700 runs) : **2 170 min** — chaîne privée 1 104 min (61 runs), Arbre-corrections 540 (212 runs), audit runtime 207, synchronisation du code 181 (178 runs à 1 min). Le quota a sauté le 12.10 : un quota épuisé bloque TOUS les robots, donc aussi la mise en ligne.
+- **Porte de ration** (`tools/ci/porte-ration.sh`, `tools/ci/ration-actions.mjs --besoin N`) : les 6 gros robots lisent la ration du jour avant d'installer quoi que ce soit et ne démarrent pas si elle ne les couvre pas (`forcer` = accord de Kevin ; fail-ouvert si illisible). Garde `test:porte-ration`.
+- **La ration à l'ouverture de chaque session** (hook `etat-du-moment.sh`, lu sur `main`). Garde `test:ration-hook`.
+- **Publier sans Actions** (`tools/depot-public/publier-local.mjs`) : même export + même vérificateur + même plancher de 80 % que le robot, depuis une session ; à blanc par défaut. Garde `test:publier-local`.
+- **Le tableau de tous les plafonds et secours** : `PLAFONDS-ET-SECOURS.md` (10 trous classés, correctif gratuit le plus petit).
+
 ## 🧹 RÈGLE ABSOLUE — PAS D'INFOS INUTILES, NULLE PART : CE QUI N'AIDE PAS KEVIN À AGIR OU À COMPRENDRE NE S'AFFICHE PAS (Kevin 2026-10-13, ABSOLUE)
 
 > **« Efface l'info inutile : planning pitboss… tel quel… »** puis **« Pas d'infos inutiles nulle part. Note-le. »** — Kevin 2026-10-13 (capture du tableau Pit Boss / Superviseurs de la light, sous lequel s'affichait « 👔 Planning des Pit Boss et des Superviseurs, lu tel quel dans le PDF — pas d'ordre de départ (les cadres n'ont pas d'équipe). »)

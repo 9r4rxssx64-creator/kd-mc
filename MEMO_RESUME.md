@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — « Économise le forfait action… ne jamais plus être bloqué » : porte de ration, ration en tête de session, publier sans Actions, tableau des plafonds
+- Mesure (API GitHub, 6→15.10) : 2 170 min / 700 runs ; chaîne privée 1 104 (61 runs), Arbre-corrections 540 (212), audit runtime 207, synchro 181 (178 × 1 min). Depuis le 13.10 tout est à la main sauf la synchro (1 min par fusion, déjà regroupée par GitHub : 82 runs sur 249 à 0 min).
+- Fait : **porte de ration** sur 6 gros robots (`porte-ration.sh`, `--besoin`, entrée `forcer`) ; **ration dans le hook de début de session** ; **`publier-local.mjs`** (secours sans Actions, à blanc par défaut, jamais de `--force`) ; **`PLAFONDS-ET-SECOURS.md`** (inventaire de tous les plafonds + 10 trous). Gardes : `test:porte-ration` (22), `test:ration-hook` (4), `test:publier-local` (8), `test:ration-actions` (13), tous prouvés par sabotage.
+- À décider par Kevin (rien n'est fait sans lui) : Workers Paid 5 $/mois (bascule auto du plafond de 100 000 req/jour) ; jeton « Plan : lecture » pour lire la facture ; lancer les gros robots sur le Lenovo (`KDMC_RUNNER`).
+- Coût Actions de ce lot : 0 avant la fusion.
 ## 2026-10-15 — Ultra-audit Apex Chat (6 auditeurs) : P0 SSO corrigé en premier
 
 - P0 (auditeur sécurité serveur, prouvé par test) : un compte du domaine d'uid « admin » obtenait un jeton administrateur

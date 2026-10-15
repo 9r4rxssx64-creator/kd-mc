@@ -1,7 +1,7 @@
 /* GARDE — la ration des minutes Actions se lit avant de lancer un robot (Kevin 13.10.2026 : « Prévient toutes tes branches de privilégier le gratuit. Même pour les actions »)
    node tests/verify-ration-actions.mjs      (SABOTAGE=1 : un run refusé par le budget est compté comme du vrai temps → la garde doit rougir)
    La fonction est exécutée pour de vrai sur des runs fictifs (jamais l'API) : minutes bord à bord, jour UTC, refusés à 0, verdicts, top des gourmands. */
-import { ration, texte, RATION_MIN_PAR_JOUR, MORT_NE_COUTE_RIEN_S } from '../tools/ci/ration-actions.mjs';
+import { ration, texte, peutDepenser, RATION_MIN_PAR_JOUR, MORT_NE_COUTE_RIEN_S } from '../tools/ci/ration-actions.mjs';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -31,4 +31,13 @@ const dossier = mkdtempSync(join(tmpdir(), 'ration-')); const f = join(dossier, 
 writeFileSync(f, JSON.stringify({ workflow_runs: [run('Chaîne privée', '19:00:00', 61 * 60)] }));
 let code = 0; try { execFileSync(process.execPath, ['tools/ci/ration-actions.mjs', '--runs', f, '--jour', J], { stdio: 'pipe' }); } catch (e) { code = e.status; }
 ok(code === 3, '9. en ligne de commande, la ration mangée sort avec le code 3 (une suite de commandes s\'arrête toute seule)', String(code));
+/* 10-13. LA PORTE DES GROS ROBOTS (--besoin) : un robot de N min ne part que s'il en reste N */
+{
+  const u = ration([run('Chaîne privée', '19:00:00', 40 * 60)], J);                       /* 40 min mangées, 20 restantes */
+  ok(peutDepenser(u, 20) === (SAB ? false : true) && peutDepenser(u, 21) === false, '10. 40 min mangées : un robot de 20 min part, un de 21 min est refusé', JSON.stringify(u));
+  ok(peutDepenser(ration([], J), 60) === true && peutDepenser(ration([], J), 61) === false, '11. ration neuve : 60 min tiennent, 61 non');
+  const ec = (besoin, mangees) => { const g = join(dossier, 'b.json'); writeFileSync(g, JSON.stringify({ workflow_runs: mangees ? [run('X', '01:00:00', mangees * 60)] : [] })); try { execFileSync(process.execPath, ['tools/ci/ration-actions.mjs', '--runs', g, '--jour', J, '--besoin', String(besoin)], { stdio: 'pipe' }); return 0; } catch (e) { return e.status; } };
+  ok(ec(27, 30) === 0 && ec(27, 40) === 3, '12. en ligne de commande : 27 min tiennent avec 30 mangées, refusés avec 40 mangées (code 3)', ec(27, 30) + ' / ' + ec(27, 40));
+  ok(ec(0, 59) === 0 && ec(1, 60) === 3, '13. besoin 0 passe toujours tant que la ration n\'est pas dépassée ; 1 min de plus quand tout est mangé est refusé');
+}
 console.log(`\n${fail ? '❌' : '✅'} ration-actions : ${pass}/${pass + fail}`); process.exit(fail ? 1 : 0);

@@ -1,5 +1,13 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🛡 Économiser les minutes GitHub et ne plus être bloqué (15.10.2026)
+
+- **Les gros robots regardent d'abord ce qu'il te reste** : ils ne démarrent pas si la ration du jour ne les couvre pas (case « forcer » pour passer outre, avec ton accord)
+- **Chaque session voit la ration du jour** dès son ouverture
+- **Publier même sans minutes** : un outil local pousse la production vers le dépôt public avec les mêmes vérifications que le robot
+- **Fichiers créés** : [`PLAFONDS-ET-SECOURS.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/PLAFONDS-ET-SECOURS.md) · [`tools/ci/porte-ration.sh`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/ci/porte-ration.sh) · [`tools/depot-public/publier-local.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/depot-public/publier-local.mjs) · [`tests/verify-porte-ration.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-porte-ration.mjs) · [`tests/verify-ration-hook.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-ration-hook.mjs) · [`tests/verify-publier-local.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-publier-local.mjs)
+- **Tests** : `npm run test:porte-ration` · `test:ration-hook` · `test:publier-local` · `test:ration-actions`
+
 ### 🎚 Le bon modèle pour chaque travail (15.10.2026)
 
 - **Règle** : les aides que je lance prennent le modèle adapté à la difficulté (petit pour lire, moyen pour le courant, fort pour la sécurité et la revue finale) ; je te dis quand un modèle plus fort est mérité

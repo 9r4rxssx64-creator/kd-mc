@@ -1565,6 +1565,27 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "eco-actions": {
+      "titre": "Économie du forfait Actions + ne jamais être bloqué",
+      "branche": "claude/eco-actions",
+      "sujet": "Porte de ration, ration en tête de session, publier sans Actions, PLAFONDS-ET-SECOURS.md",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "suite2-rouges": {
+      "titre": "Rouges hérités (doublon, déjà corrigés sur main par 25ee6dd66)",
+      "branche": "claude/suite2",
+      "sujet": "Branche abandonnée : le même correctif est arrivé sur main avant moi",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "remplacée par 25ee6dd66 sur main (CMCteams v9.977)"
     }
   },
   "messages": [

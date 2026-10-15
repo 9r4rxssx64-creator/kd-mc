@@ -1952,6 +1952,7 @@
         allRigs(wrap).forEach(function (r) { react(r, 'coucou', 1400); });
         tone([620, 820], .16);
         var b = document.querySelector('.javis-bubble'); if (b) b.remove();
+        suggestions(wrap);   /* Bee flottante dans une app : elle montre d'emblée ce qu'on peut lui demander ICI (Kevin 15.10) */
       }
     });
     wrap.querySelector('#javis-close').addEventListener('click', function () {
@@ -2002,7 +2003,7 @@
         'Ton planning : ton domaine lit le PDF importé dans CMCteams, et c\'est lui qui me donne tes horaires ; « avec qui » est calculé chez toi, sans IA, et aucun nom de collègue n\'est jamais envoyé à une IA. ' +
         'La météo envoie ta position arrondie à 1 km à open-meteo (le bonjour du matin, lui, utilise Monaco). ' +
         'Quand je cherche pour toi : le nom d\'une ville part à open-meteo, tes mots de recherche partent à Wikipédia ou à Google Actualités, et l\'adresse d\'un lien que tu me donnes part à r.jina.ai (un lecteur de pages gratuit) — je ne fais que LIRE, je n\'écris nulle part. La dictée passe par le service vocal de ton téléphone. ' +
-        'Ta famille : quand tu me parles d\'une personne de ton arbre, je lis ses fiches sur ton domaine (4 au plus, du texte, jamais les photos) et celles qui répondent à ta question partent à l\'IA gratuite qui formule la réponse ; je ne modifie jamais l\'arbre. Une conversion de devises envoie seulement les deux devises à frankfurter.dev (Banque centrale européenne). Quand tu me demandes de regarder un site ou une app, j\'ouvre les pages de tes apps avec ta session (seulement celles du domaine), je retrouve tes liens et je lis la documentation publique du domaine : ce que je lis là part à l\'IA gratuite qui rédige la réponse. ' +
+        'Ta famille : quand tu me parles d\'une personne de ton arbre, je lis ses fiches sur ton domaine (4 au plus, du texte, jamais les photos) et celles qui répondent à ta question partent à l\'IA gratuite qui formule la réponse ; je ne modifie une fiche que si tu touches mon bouton ✅ : j\'ajoute et je complète, je ne supprime jamais rien, et une copie de sauvegarde est faite avant. Une conversion de devises envoie seulement les deux devises à frankfurter.dev (Banque centrale européenne). Quand tu me demandes de regarder un site ou une app, j\'ouvre les pages de tes apps avec ta session (seulement celles du domaine), je retrouve tes liens et je lis la documentation publique du domaine : ce que je lis là part à l\'IA gratuite qui rédige la réponse. ' +
         'Pour AGIR (programmer un rappel, répondre à un message, retenir un fait, arrêter ou redémarrer le robot, fermer ou rouvrir des apps, régler ce qu\'une personne peut ouvrir, effacer un code oublié, déconnecter quelqu\'un), je prépare une carte : rien ne part tant que tu n\'as pas touché ✅ Confirmer, et seul toi peux le faire. Je ne touche jamais au coffre, au code admin, à l\'argent réel du robot ni à l\'arbre. Ce que tu me demandes de retenir est gardé sur ton domaine ; tu peux me demander de l\'oublier. ' +
         'Pour que je te suive d\'une app à l\'autre, ta conversation (les 40 derniers messages) est gardée sur ton domaine, visible par toi seul, et sur ce téléphone : Effacer la supprime PARTOUT, dans toutes les apps.');
     });
@@ -2145,12 +2146,18 @@
 
   /* SUGGESTIONS (audit externe 02.10 : 45 % de l'écran vide sous le bonjour, et tout passait par le clavier) :
      trois boutons de 44 px qui posent la question à ta place ; ils partent dès que la conversation commence. */
+  /* Les boutons changent selon L'APP où est Kevin (Kevin 15.10 : « dans les apps, comment je le fais travailler ? ») : dans l'arbre, ce
+     sont les actions de l'arbre ; ailleurs, la semaine, la météo et « qu'est-ce que tu sais faire ». Chaque bouton envoie la phrase à sa place. */
+  var CHIPS_ARBRE = [['🔎 Ce qui manque', 'Fais le bilan de l\'arbre : qu\'est-ce qui manque dans les fiches ?'], ['➕ Ajouter une info', 'Je veux ajouter une info (téléphone, e-mail, adresse…) à une fiche de l\'arbre. Demande-moi pour qui.'],
+    ['🔗 Relier un proche', 'Je veux relier ou ajouter un proche dans l\'arbre. Demande-moi qui et comment il est lié.'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.']];
+  var CHIPS_DEFAUT = [['🗓 Ma semaine', 'Je travaille quand cette semaine ?'], ['☀️ La météo', 'Quel temps fait-il ?'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.'], ['🧸 En 3D', 'Montre-toi en 3D']];
   function suggestions(root) {
     var list = root.querySelector('#javis-msgs');
-    if (!list || list.querySelector('.javis-chips')) return;
+    if (!list || list.querySelector('.javis-chips') || list.querySelector('.javis-bub.me')) return;
     var box = document.createElement('div');
     box.className = 'javis-chips'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Suggestions');
-    [['🗓 Ma semaine', 'Je travaille quand cette semaine ?'], ['☀️ La météo', 'Quel temps fait-il ?'], ['🐝 Ma journée demain', 'Je travaille demain ?'], ['🧸 En 3D', 'Montre-toi en 3D']]
+    var app = PAGE_CTX && PAGE_CTX.app ? PAGE_CTX.app : '';
+    (app === 'arbre' ? CHIPS_ARBRE : CHIPS_DEFAUT)
       .forEach(function (s) {
         var b = document.createElement('button');
         b.type = 'button'; b.textContent = s[0];

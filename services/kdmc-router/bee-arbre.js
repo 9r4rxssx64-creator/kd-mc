@@ -23,7 +23,7 @@ export const RE_ARBRE = /\b(?:arbre|fiches?|famille|g[ée]n[ée]alog\w*|anc[êe]
 
 export const REGLES_ARBRE = ' Tu vois aussi l\'ARBRE DE FAMILLE de Kevin avec l\'outil arbre : pour toute question sur une personne de la famille (qui est-ce, nés quand et où, parents, conjoints, enfants, métier, notes), '
   + 'appelle arbre avec le nom ou le prénom demandé, puis réponds avec CE QU\'IL RENVOIE. Ne dis jamais « je ne vois pas les fiches » : cherche. Si la personne n\'y est pas, dis-le simplement et n\'invente rien (ni date, ni lien de parenté). '
-  + 'Tu LIS l\'arbre, tu ne le modifies pas : pour ajouter ou corriger une fiche, Kevin le fait dans l\'app de l\'arbre (arbre.kd-mc.com) — dis-lui où toucher.';
+  + 'Chaque fiche porte son identifiant « [id : …] » : c\'est lui que tu donnes à proposer_action quand Kevin veut modifier une fiche (voir plus bas). Si les outils de modification ne sont pas disponibles, dis-lui où toucher dans l\'app de l\'arbre (arbre.kd-mc.com).';
 
 /* ───────────────────────── recherche ───────────────────────── */
 const norm = (t) => String(t == null ? '' : t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-_'’.,;:!?()«»"]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -70,7 +70,7 @@ export function fiche(seed, id) {
   const enfants = Object.keys(P).filter((k) => P[k] && (P[k].pere === id || P[k].mere === id)).map((k) => nomComplet(P[k]));
   const fratrie = Object.keys(P).filter((k) => k !== id && P[k] && ((p.pere && P[k].pere === p.pere) || (p.mere && P[k].mere === p.mere))).map((k) => nomComplet(P[k]));
   const L = [];
-  L.push('• ' + nomComplet(p) + (p.sexe === 'F' ? ' (femme)' : p.sexe === 'M' ? ' (homme)' : '') + (p.vivant === false ? ' — décédé(e)' : p.vivant === true ? ' — vivant(e)' : ''));
+  L.push('• ' + nomComplet(p) + ' [id : ' + id + ']' + (p.sexe === 'F' ? ' (femme)' : p.sexe === 'M' ? ' (homme)' : '') + (p.vivant === false ? ' — décédé(e)' : p.vivant === true ? ' — vivant(e)' : ''));
   const n = evt(p.naissance); if (n) L.push('  né(e) : ' + n);
   const d = evt(p.deces); if (d) L.push('  décès : ' + d);
   if (p.metier) L.push('  métier : ' + propre(p.metier, 80));

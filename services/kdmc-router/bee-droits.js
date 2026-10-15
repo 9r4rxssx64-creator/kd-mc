@@ -15,7 +15,7 @@
  *   · le code admin et la connexion admin : « le code admin ne s'écrit nulle part » ;
  *   · créer un compte avec un code (/__admin/compte-invite) : le code taperait dans la conversation, donc serait écrit ; reste au formulaire de l'admin ;
  *   · l'ARGENT RÉEL du robot (/__bot/reel, /__bot/config) : le bouton d'une IA ne passe pas du papier au réel ;
- *   · publier ou modifier l'arbre (/__arbre/*) : ses écritures passent par l'app de l'arbre et son code famille ;
+ *   · publier l'arbre (/__arbre/*) : cette porte reste fermée ; Bee ne modifie l'arbre que par SA propre voie (bee-arbre-ecrire.js : ajouter / compléter une fiche champ par champ, copie avant, jamais de suppression) ;
  *   · déployer, modifier du code : le domaine n'a aucun jeton GitHub — Bee écrit la consigne pour Claude Code.
  * Ces portes restent hors de PORTES_BEE (worker.js) et le test les nomme une à une : en ouvrir une est une décision de Kevin, pas un oubli.
  * node services/kdmc-router/bee-droits.test.mjs */

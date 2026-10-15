@@ -83,12 +83,12 @@ ok(trouver(SEED, 'qui sont les enfants de nobody').length === 0 && trouver(SEED,
 { const gros = { persons: {} }; for (let i = 0; i < 30; i++) gros.persons['g' + i] = { prenom: 'Jean', nom: 'DUMMY' + i };
   ok(trouver(gros, 'Jean').length === MAX_FICHES, '2f. au plus ' + MAX_FICHES + ' fiches : jamais l\'arbre entier'); }
 { const f = fiche(SEED, 'p1');
-  ok(/Zélie TESTARD \(femme\) — vivant\(e\)/.test(f) && /né\(e\) : 1981-10-02 à Valmont-sur-Mer/.test(f) && /métier : vendeuse/.test(f), '2g. fiche : identité, naissance, métier');
+  ok(/Zélie TESTARD \[id : p1\] \(femme\) — vivant\(e\)/.test(f) && /né\(e\) : 1981-10-02 à Valmont-sur-Mer/.test(f) && /métier : vendeuse/.test(f), '2g. fiche : identité, naissance, métier');
   ok(/père : Octave TESTARD/.test(f) && /mère : Capucine VALMONT/.test(f) && /conjoint\(s\) : Barnabé LEFICTIF/.test(f), '2h. fiche : parents et conjoint (noms, jamais des identifiants)');
   ok(/enfants : Léonie LEFICTIF, Lucien LEFICTIF/.test(f) && /frères et sœurs : Octavie TESTARD/.test(f), '2i. fiche : enfants (retrouvés par leurs parents) et fratrie');
   const notes = (f.match(/notes : (.*)$/m) || [])[1] || '';
   ok(/Aime les arbres/.test(notes) && /\[…\]/.test(notes) && notes.length <= MAX_NOTES + 6, '2j. notes coupées à ' + MAX_NOTES + ' signes (' + notes.length + ')');
-  ok(!/\bp[1-8]\b/.test(f), '2k. aucun identifiant interne dans la fiche (que des noms)'); }
+  ok(/\[id : p1\]/.test(f) && !/(père|mère|conjoint|enfants|frères)[^\n]*\bp[1-8]\b/.test(f), '2k. la fiche porte son identifiant UNE fois « [id : …] » (pour proposer une modification) ; les liens de parenté restent des noms'); }
 { const t = chercherDansArbre(SEED, 'Nobody Existe');
   ok(/Aucune personne de l'arbre ne correspond/.test(t) && /Ne l'invente pas/.test(t) && /8 personnes/.test(t), '2l. personne introuvable : le dit, avec le total, et interdit d\'inventer'); }
 ok(await refuse(() => chercherDansArbre(null, 'Zélie'), /pas disponible/), '2m. arbre non publié : échec clair');
@@ -152,7 +152,7 @@ ok(/consigne toute prête/.test(REGLES_AGIR) && !/dis que c'est Apex\.'/.test(RE
 
 import { readFileSync, existsSync } from 'node:fs';
 { const wd = readFileSync(new URL('../../tools/javis/javis-widget.js', import.meta.url), 'utf8');
-  ok(/je lis ses fiches sur ton domaine/.test(wd) && /je ne modifie jamais l.{0,2}arbre/.test(wd) && /frankfurter\.dev/.test(wd), '4e. le ℹ️ du widget DIT que les fiches qui répondent partent à l\'IA gratuite et que les devises passent par frankfurter.dev');
+  ok(/je lis ses fiches sur ton domaine/.test(wd) && /je ne modifie une fiche que si tu touches mon bouton ✅/.test(wd) && /je ne supprime jamais rien/.test(wd) && /frankfurter\.dev/.test(wd), '4e. le ℹ️ du widget DIT que les fiches qui répondent partent à l\'IA gratuite et que les devises passent par frankfurter.dev');
   for (const f of ['javis', 'arbre']) { const u = new URL('../../' + f + '/javis-widget.js', import.meta.url); if (existsSync(u)) ok(readFileSync(u, 'utf8') === wd, '4f. copie ' + f + '/ identique à la source'); } }
 
 /* ───────── 5. Apex reçoit les nouveaux outils, pas les données de Kevin ───────── */

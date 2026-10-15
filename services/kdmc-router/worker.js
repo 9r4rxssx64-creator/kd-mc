@@ -24,7 +24,8 @@ import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
 import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
-import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
+import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';
+import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
 import { handlePartout, PARTOUT_TAG, MARQUEUR } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
@@ -3891,7 +3892,7 @@ async function porteVerify(secret, tok) {
 const BEE_REGLES = "Réponds court, chaleureuse, enjouée, avec le tutoiement, en français, sans jargon technique (Kevin n'est pas codeur), sans flatterie. "
   + "Tu es l'assistante PERSONNELLE de Kevin et tu travailles POUR lui, avec des outils gratuits : météo, date et heure (même dans une autre ville), son planning (faits vérifiés du PDF), calcul exact, conversions d'unités et de devises, calcul de dates, "
   + "recherche (Wikipédia, actualités), lecture d'une page web, les fiches de son arbre de famille, sa boîte de messages, ses rappels, sa mémoire. Utilise ces outils au lieu de répondre « je ne sais pas » ou « je n'ai pas accès ». "
-  + "Tu LIS beaucoup, mais tu n'écris, n'envoies et ne modifies rien toi-même : pour agir (rappel, réponse à un message, retenir un fait, robot, fermer ou rouvrir des apps, périmètre d'une personne, code oublié, déconnexion) tu PROPOSES une carte que Kevin confirme d'un bouton ✅ ; "
+  + "Tu LIS beaucoup, mais tu n'écris, n'envoies et ne modifies rien toi-même : pour agir (rappel, réponse à un message, retenir un fait, robot, fermer ou rouvrir des apps, périmètre d'une personne, code oublié, ajouter une info / une date / un commentaire à une fiche de l'arbre ou relier deux proches, déconnexion) tu PROPOSES une carte que Kevin confirme d'un bouton ✅ ; "
   + "ne prétends jamais avoir fait une action tant qu'il n'a pas confirmé, et n'invente jamais une donnée (un horaire, un chiffre, une date, une adresse web, une fiche). "
   + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Ce que tu ne peux vraiment pas faire (lancer du code, déployer, modifier un fichier du domaine), ne renvoie pas Kevin vers « c'est Apex » sans rien dire : "
   + "dis-lui précisément ce que tu ne peux pas faire, puis écris-lui la consigne toute prête, claire et complète, qu'il n'aura qu'à coller dans Apex ou dans Claude Code.";
@@ -3960,10 +3961,11 @@ async function handleBeeIa(request, env, ctx) {
   const debut = Date.now();
   let repliOutils = null, faitsOutils = '';
   const sortie = {};   /* ce que les mains de Bee préparent (cartes de confirmation) */
-  const mains = String(env && env.BEE_AGIR) !== '0' ? outilsAdmin(env, { now: () => Date.now(), appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init), apps: async () => listeApps(await chargerFermees(env, true).catch(() => [])) }, sortie) : null;
+  const mains = String(env && env.BEE_AGIR) !== '0' ? outilsAdmin(env, { now: () => Date.now(), arbre: () => outilsBee(env, ctx).arbre(), doublon: (p, n) => outilsBee(env, ctx).doublon(p, n), appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init), apps: async () => listeApps(await chargerFermees(env, true).catch(() => [])) }, sortie) : null;
   const avec = (o) => (sortie.propositions && sortie.propositions.length ? Object.assign(o, { propositions: sortie.propositions }) : o);
   /* L'ARBRE (Kevin 13.10 : « fais en sorte de voir les fiches dans l'arbre ») : l'outil `arbre` lit la graine de l'arbre côté domaine. Interrupteur BEE_ARBRE = '0'. */
   const arbreOutil = String(env && env.BEE_ARBRE) !== '0' && env && env.ACCOUNTS ? outilsArbre(async () => { try { return (await arbreSeedOut(env)).seed; } catch (_) { return null; } }) : null;
+  const bilanOutil = arbreOutil && mains && String(env && env.BEE_ARBRE_ECRIRE) !== '0' ? outilsBilan(async () => { try { return (await arbreSeedOut(env)).seed; } catch (_) { return null; } }) : null;
   /* VOIR le domaine (Kevin 13.10 : « qu'ils puissent voir les sites, apps, liens, outils, accès comme toi et Apex ») : pages, liens, documentation, ses pouvoirs. BEE_VOIR = '0' coupe. */
   const voirOutil = String(env && env.BEE_VOIR) !== '0' ? (() => {
     const base = outilsBee(env, ctx);
@@ -3974,7 +3976,7 @@ async function handleBeeIa(request, env, ctx) {
     return v;
   })() : null;
   const extraTout = { defs: [] };
-  const extra = mains || arbreOutil || voirOutil ? { defs: ((mains && mains.defs) || []).concat((arbreOutil && arbreOutil.defs) || [], (voirOutil && voirOutil.defs) || []), exe: Object.assign({}, (mains && mains.exe) || {}, (arbreOutil && arbreOutil.exe) || {}, (voirOutil && voirOutil.exe) || {}) } : null;
+  const extra = mains || arbreOutil || voirOutil ? { defs: ((mains && mains.defs) || []).concat((arbreOutil && arbreOutil.defs) || [], (bilanOutil && bilanOutil.defs) || [], (voirOutil && voirOutil.defs) || []), exe: Object.assign({}, (mains && mains.exe) || {}, (arbreOutil && arbreOutil.exe) || {}, (bilanOutil && bilanOutil.exe) || {}, (voirOutil && voirOutil.exe) || {}) } : null;
   if (extra) extraTout.defs = extra.defs;
   const dansArbre = !!(ou && String(ou.app) === 'arbre');
   if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)) || (voirOutil && RE_VOIR.test(messages[messages.length - 1].content)))) {
@@ -3983,7 +3985,7 @@ async function handleBeeIa(request, env, ctx) {
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR : '') + (arbreOutil ? REGLES_ARBRE : '') + (voirOutil ? REGLES_VOIR : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
+      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR : '') + (arbreOutil ? REGLES_ARBRE : '') + (bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (voirOutil ? REGLES_VOIR : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {
@@ -4144,6 +4146,9 @@ function outilsBee(env, ctx) {
     now: () => Date.now(),
     armer: () => armerHorloge(env),
     journal: (e) => audLog(env, e),
+    /* L'ARBRE, en écriture (BEE_ARBRE_ECRIRE = '0' coupe) : le nuage de l'arbre, joint avec l'empreinte du code famille lue chez le domaine (jamais écrite ni affichée). */
+    arbre: () => (String(env && env.BEE_ARBRE_ECRIRE) !== '0' && env && env.ACCOUNTS ? nuageArbre({ fetchFn: (u, o) => fetch(u, o), codehash: () => arbreCodehash(env) }) : null),
+    doublon: async (prenom, nom) => { try { return chercherDoublon((await arbreSeedOut(env)).seed, prenom, nom); } catch (_) { return ''; } },
     /* VOIR (lecture seule) : une PAGE du domaine, lue avec la session de Kevin. Jamais une porte (/__…), jamais hors du domaine. */
     voir: async (request, url) => {
       let u; try { u = new URL(url); } catch (_) { return { ok: false, status: 0, reason: 'adresse' }; }

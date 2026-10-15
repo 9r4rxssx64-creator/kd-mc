@@ -250,6 +250,8 @@
       + '</div>'
       + ficheRens(a.fiche)
       + blocAcces(a)
+      + '<button class="etatcompte" data-uid="' + esc(a.uid) + '" type="button" title="Dit pourquoi cette personne est bloquée (ou pas), et permet de l\'ouvrir.">🔎 État du compte</button>'
+      + '<div class="etatbox" data-uid="' + esc(a.uid) + '" hidden></div>'
       + '<button class="revoke" data-uid="' + esc(a.uid) + '" type="button" '
       + 'title="Coupe toutes ses sessions ouvertes (appareil perdu/volé). Il pourra se reconnecter normalement.">🚪 Déconnecter partout</button>'
       + '</div>';
@@ -527,6 +529,54 @@
       .catch(function () { /* silencieux : section optionnelle */ });
   }
 
+  /* ---- ÉTAT DU COMPTE (Kevin 15.10 : « Yann reste bloqué… trouve des solutions pour voir son compte… ajoute le bouton ») ----------------
+     PURE : ce que la fiche dit de la personne, en phrases simples. Elle répond à « pourquoi est-elle bloquée ? » avec ce que le domaine
+     lit vraiment sur la fiche (jamais un code, jamais un numéro). */
+  function etatCompte(a) {
+    a = a || {};
+    var f = a.fiche || {}, L = [], verdict = '✅ Rien ne bloque cette personne côté domaine.', probleme = false;
+    if (a.attente_admin === 'refuse') { L.push('🚫 Inscription REFUSÉE par toi.'); verdict = '🚫 Compte refusé : elle reste fermée tant que tu ne l\'ouvres pas.'; probleme = true; }
+    else if (a.attente_admin) { L.push('⏳ En attente de ton accord (fiche marquée « attente_admin »).'); verdict = '⏳ Elle voit « ton compte attend l\'administrateur ». Touche « Ouvrir ce compte ».'; probleme = true; }
+    else L.push('✅ Pas en attente de ton accord' + (a.valide_admin_at ? ' (ouverte par toi ' + dt(a.valide_admin_at) + ')' : '') + '.');
+    if (a.revoked_at) L.push('🚪 Sessions coupées ' + dt(a.revoked_at) + ' : elle doit se reconnecter.');
+    if (!a.cgu_at) { L.push('📜 Conditions pas encore acceptées : elle les verra à sa prochaine page.'); }
+    if (!a.code_at) { L.push('🔑 Pas encore de code posé : le portail lui demandera d\'en choisir un.'); }
+    if (a.tel_requis && !a.tel) { L.push('📱 Numéro à confirmer par WhatsApp : tant que c\'est fait, rien d\'autre ne s\'ouvre.'); if (!probleme) verdict = '📱 Elle doit confirmer son numéro par WhatsApp.'; probleme = true; }
+    else L.push('📱 Numéro : ' + (a.tel || f.telephone ? 'confirmé' : 'non demandé') + '.');
+    var bq = a.bloque || [];
+    L.push('🔐 Portée : ' + (a.portee === 'app' ? 'seulement ' + ((a.acces || []).join(', ') || '⚠️ aucune app') : 'tout le domaine') + (bq.length ? ' · fermé : ' + bq.join(', ') : ''));
+    if (a.portee === 'app' && !(a.acces || []).length) { verdict = '⚠️ Portée « une app » sans aucune app cochée : elle n\'a accès à rien.'; probleme = true; }
+    if (bq.indexOf('arbre') >= 0) { L.push('🌳 L\'arbre lui est FERMÉ (case « Fermer une application précise »).'); verdict = '🌳 L\'arbre est fermé pour elle : décoche « arbre » dans « Où elle peut aller ».'; probleme = true; }
+    L.push('🕓 Dernière connexion ' + dt(a.last_seen) + ' · ' + String(a.hits || 0) + ' connexion(s).');
+    return { lignes: L, verdict: verdict, attente: !!a.attente_admin, probleme: probleme };
+  }
+  var _comptes = [];   /* les comptes de la DERNIÈRE lecture (la liste se rafraîchit toute seule : le bouton lit toujours les plus récents) */
+  function wireEtat() {
+    var list = document.getElementById('list');
+    if (!list || list._etat) return; list._etat = true;
+    list.addEventListener('click', function (e) {
+      var ouvrir = e.target && e.target.closest ? e.target.closest('.ouvrir-compte') : null;
+      if (ouvrir) {
+        var u = ouvrir.getAttribute('data-uid') || ''; ouvrir.disabled = true; ouvrir.textContent = '…';
+        fetch('/__admin/compte-ouvrir', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: u }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) { ouvrir.textContent = j && j.ok ? '✅ Compte ouvert — demande-lui de rouvrir la page' : '⚠️ Échec — réessaie'; if (!(j && j.ok)) ouvrir.disabled = false; })
+          .catch(function () { ouvrir.disabled = false; ouvrir.textContent = '⚠️ Échec — réessaie'; });
+        return;
+      }
+      var b = e.target && e.target.closest ? e.target.closest('.etatcompte') : null;
+      if (!b) return;
+      var uid = b.getAttribute('data-uid') || '', box = b.parentNode.querySelector('.etatbox[data-uid="' + uid.replace(/"/g, '') + '"]');
+      if (!box) return;
+      var a = (_comptes || []).filter(function (x) { return x.uid === uid; })[0];
+      if (!a) { box.hidden = false; box.textContent = 'Compte introuvable dans la liste : recharge la page.'; return; }
+      var r = etatCompte(a);
+      box.hidden = false;
+      box.innerHTML = '<div><b>' + esc(r.verdict) + '</b></div>' + r.lignes.map(function (l) { return '<div class="d">' + esc(l) + '</div>'; }).join('')
+        + (r.attente ? '<button class="savacc ouvrir-compte" data-uid="' + esc(uid) + '" type="button">✅ Ouvrir ce compte</button>' : '');
+    });
+  }
+
   function wireRevoke() {
     var list = document.getElementById('list');
     if (!list) return;
@@ -564,7 +614,9 @@
       + (SANS_HUB ? '' : hub());   /* dans le tableau unique, les tuiles sont rangées par thème ailleurs (tableau.js) */
     wirePresence();
     wireHist();
+    _comptes = accounts || [];
     wireRevoke();
+    wireEtat();
     wireAcces();
     wireFermees();
     wireCreer();

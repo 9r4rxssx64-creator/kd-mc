@@ -4510,6 +4510,22 @@ async function handleAdmin(request, url, env) {
     await audLog(env, { ev: 'revoke_sessions', uid });
     return J({ ok: true, uid, revoked_at: acc.revoked_at });
   }
+  /* ── OUVRIR UN COMPTE EN ATTENTE (Kevin 15.10.2026 : « Yann reste bloqué alors que j'ai accepté… Ajoute le bouton ») ──
+     POST { uid } : retire `attente_admin` de la fiche (même geste que « Valider » de « Inscriptions sans WhatsApp », mais SANS dépendre de la
+     ligne de la file : si la demande n'a jamais été déposée, ou si Kevin l'a déjà traitée sans que la fiche suive, le bouton marche quand même),
+     et vide la demande restante. Ne touche NI au code, NI au périmètre, NI aux sessions. Derrière la même barrière admin que tout /__admin/*. */
+  if (path === '/__admin/compte-ouvrir' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const uid = String(b.uid || '').slice(0, 80).trim();
+    if (!uid) return J({ ok: false, reason: 'uid requis' });
+    const acc = await accGet(env, uid);
+    if (!acc) return J({ ok: false, reason: 'not_found' });
+    const etait = acc.attente_admin ? String(acc.attente_admin) : '';
+    if (etait) { delete acc.attente_admin; acc.valide_admin_at = Date.now(); await accPut(env, acc, true); }
+    try { if (env.CERCLE_DB) await env.CERCLE_DB.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(uid).run(); } catch { /* table absente : rien à vider */ }
+    await audLog(env, { ev: 'compte_ouvert_admin', uid, etait: etait || 'ouvert' });
+    return J({ ok: true, uid, etait: etait || 'ouvert', attente_admin: false });
+  }
   /* ── PÉRIMÈTRE : qui a le droit d'exister dans quelle app (Kevin 2026-09-15) ──
      GET  ?uid=…                       → l'état de cette personne + la liste des apps
      POST {uid, portee, acces, bloque} → range la personne

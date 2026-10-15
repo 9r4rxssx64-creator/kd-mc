@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 (soir) — Admin du domaine : bouton « 🔎 État du compte » + « ✅ Ouvrir ce compte » (Yann bloqué sur « en attente »)
+
+- **Livré (code, tests verts ; v1.0.58 du portail, routeur à déployer)** : sur chaque fiche de l'admin, « 🔎 État du compte » dit en phrases simples pourquoi la personne est bloquée (en attente de Kevin, refusée, sessions coupées, conditions/code/téléphone, app fermée, périmètre vide) ; si elle attend, « ✅ Ouvrir ce compte » (route `POST /__admin/compte-ouvrir`) retire `attente_admin` SANS dépendre de la ligne de la file « Inscriptions sans WhatsApp ». Le portail : l'écran d'attente passe la main (code à choisir / téléphone à confirmer) au lieu de rester figé.
+- **Cause mesurée** : la file `inscription_admin` (base kdmc-cercle) ne contenait plus la demande de Yann alors que la fiche portait encore `attente_admin` : « Valider » n'avait rien à décider. Une ligne a été remise à la main dans la file le 15.10 (déjà consommée depuis). Non prouvé : l'état réel de la fiche (KV illisible depuis la session).
+- **Garde** : `services/kdmc-router/compte-ouvrir.test.mjs` (24), 3 sabotages rouges.
+
 ## 2026-10-15 (soir) — PASSATION ARBRE : famille maternelle de Yann (Imbert « Sachet » · Revel · Buchet) — À LIRE PAR LA SESSION « ARBRE »
 
 Kevin a donné ce travail à la mauvaise session et demande de le transmettre à la session de l'arbre (aucune autre session n'était joignable le 15.10 au soir). RIEN de familial dans git : tout est DANS l'arbre (nuage), lisible par `node tools/arbre/appliquer-nuage.mjs --voir "Marie-France Buchet"` (ARBRE_CODEHASH lu dans D1 `kdmc-arbre`, jamais écrit).

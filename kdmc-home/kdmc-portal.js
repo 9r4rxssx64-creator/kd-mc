@@ -221,6 +221,9 @@
       window.kdmcSSO.whoamiResult({ frais: !!manuel }).then(function (r) {
         if (r && r.state === 'session' && r.session && !r.session.attente_admin) { clearInterval(_attenteTimer); box.remove(); showHub(r.session.name, r); return; }
         if (r && r.state === 'session' && r.session && r.session.attente_admin === 'refuse') { renderAttenteAdmin(r.session); return; }
+        /* 15.10 (Yann bloqué sur « en attente » alors que Kevin l'avait ouvert) : si le domaine répond AUTRE CHOSE (code à choisir, téléphone à confirmer),
+           l'écran d'attente restait figé. On passe la main au bon écran. */
+        if (r && (r.state === 'code_requis' || r.state === 'tel_a_confirmer')) { clearInterval(_attenteTimer); box.remove(); showHub((r.session && r.session.name) || '', r); return; }
         rendre();
         var e = document.getElementById('aa-etat'); if (e) e.textContent = 'Pas encore validé — je revérifie dans 30 secondes.';
       }).catch(function () { rendre(); /* réseau : prochain tour */ });

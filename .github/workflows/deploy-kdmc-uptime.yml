@@ -121,7 +121,16 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
           PUSHT: ${{ secrets.PUSH_ADMIN_TOKEN }}
+          BATTEMENT: ${{ secrets.UPTIME_HEARTBEAT_URL }}
         run: |
+          # Lot E2 : battement vers un service EXTERNE (healthchecks.io…) → alerte même si le compte
+          # Cloudflare entier est muet (quota 1027, panne). Facultatif, jamais généré ici.
+          if [ -n "$BATTEMENT" ]; then
+            printf '%s' "$BATTEMENT" | wrangler secret put HEARTBEAT_URL
+            echo "HEARTBEAT_URL posé"
+          else
+            echo "::warning::Secret UPTIME_HEARTBEAT_URL absent : aucune alerte hors Cloudflare (voir messaging-app/docs/SAUVEGARDE-RESTAURATION.md, « Être prévenu »)"
+          fi
           # /run n'est plus public : clé dérivée de ce secret (jamais le secret sur le fil).
           printf '%s' "$PINSHA" | wrangler secret put UPTIME_RUN_KEY
           echo "UPTIME_RUN_KEY posé"

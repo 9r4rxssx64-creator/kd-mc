@@ -84,6 +84,8 @@ export default defineConfig({
         'workers/durable-objects/PresenceDO.js': { statements: 100, branches: 100, functions: 100, lines: 100, perFile: true },
         'workers/lib/cors.js': { statements: 100, branches: 100, functions: 100, lines: 100, perFile: true },
         'workers/lib/push-send.js': { statements: 100, branches: 100, functions: 100, lines: 100, perFile: true },
+        // 15/10/2026 (lot E2) : sauvegarde D1 → R2 par pages. Mesuré 96.59 / 85.88 / 100 / 98.46.
+        'workers/lib/backup.js': { statements: 96.5, branches: 85.8, functions: 100, lines: 98.4, perFile: true },
       },
     },
   },

@@ -182,6 +182,7 @@
     ".github/workflows/verif-reelle.yml",
     ".github/workflows/voir-comme-kevin.yml",
     ".github/workflows/apex-chat-d1-backup.yml",
+    ".github/workflows/apex-chat-exercice-restauration.yml",
     ".github/workflows/auto-backup.yml",
     ".github/workflows/firebase-backup.yml",
     ".github/workflows/depot-public-bascule.yml",

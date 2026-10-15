@@ -9,10 +9,11 @@
 //  l'autre — dans les DEUX sens — sur l'infra déployée (Worker + Durable Object).
 //
 //  Non destructif : numéros de test FIXES réutilisés (le serveur dédoublonne en
-//  1 compte + 1 conversation). Si l'OTP de test est désactivé (ALLOW_TEST_OTP
-//  off), le test se SKIP proprement (CI reste verte).
+//  1 compte + 1 conversation). Sans le secret E2E_TEST_SECRET, le test est sauté
+//  ET annoncé ; avec le secret, un login de test en panne fait ÉCHOUER (lot E2).
 // ════════════════════════════════════════════════════════════════════════
 import { test, expect, pwRequest, marquer } from './fixtures.js';
+import { exigerLoginTest } from './login-test-politique.js';
 
 const API = 'https://apex-chat-api.9r4rxssx64.workers.dev';
 const WS_BASE = API.replace(/^https?/, 'wss');
@@ -99,10 +100,8 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
     // 1) Auth des 2 clients de test
     const aAuth = await auth(request, A);
     const bAuth = await auth(request, B);
-    if (!aAuth.ok || !bAuth.ok) {
-      test.skip(true, `login de test indisponible — A:${aAuth.status} B:${bAuth.status} (${JSON.stringify(aAuth.body)})`);
-      return;
-    }
+    // Lot E2 : secret absent → sauté ET annoncé ; secret présent mais login en panne → ÉCHEC (jamais vert).
+    exigerLoginTest(test, TEST_SECRET, aAuth, bAuth);
     const aTok = aAuth.body.token, aId = aAuth.body.user.id;
     const bTok = bAuth.body.token, bId = bAuth.body.user.id;
     expect(aTok && bTok, 'tokens présents').toBeTruthy();
@@ -184,10 +183,8 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
     test.skip(browserName === 'webkit', 'WebSocket-from-page instable sur WebKit CI');
     const aAuth = await auth(request, A);
     const bAuth = await auth(request, B);
-    if (!aAuth.ok || !bAuth.ok) {
-      test.skip(true, `login de test indisponible — A:${aAuth.status} B:${bAuth.status}`);
-      return;
-    }
+    // Lot E2 : secret absent → sauté ET annoncé ; secret présent mais login en panne → ÉCHEC (jamais vert).
+    exigerLoginTest(test, TEST_SECRET, aAuth, bAuth);
     const aTok = aAuth.body.token, aId = aAuth.body.user.id;
     const bTok = bAuth.body.token, bId = bAuth.body.user.id;
     const convR = await request.post(API + '/api/conversations', {
@@ -230,10 +227,8 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
     test.skip(browserName === 'webkit', 'WebSocket-from-page instable sur WebKit CI');
     const bAuth = await auth(request, B);
     const aAuth = await auth(request, A);
-    if (!aAuth.ok || !bAuth.ok) {
-      test.skip(true, `login de test indisponible — A:${aAuth.status} B:${bAuth.status}`);
-      return;
-    }
+    // Lot E2 : secret absent → sauté ET annoncé ; secret présent mais login en panne → ÉCHEC (jamais vert).
+    exigerLoginTest(test, TEST_SECRET, aAuth, bAuth);
     const bTok = bAuth.body.token, bId = bAuth.body.user.id;
     const convR = await request.post(API + '/api/conversations', {
       headers: { Authorization: 'Bearer ' + bTok },

@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Apex Chat : lot E2 (sauvegarde restaurable, santé, porte qualité, migrations)
+
+- Sauvegarde : clé dédiée BACKUP_ENCRYPTION_KEY (repli JWT avec alerte), par pages via la file, manifeste, purge 14 j ;
+  outil de restauration + exercice manuel « Apex Chat — Exercice de restauration ». Doc : messaging-app/docs/SAUVEGARDE-RESTAURATION.md.
+- /api/health teste D1 + DO + fraîcheur de sauvegarde ; alertes DO réellement traitées ; sonde externe (HEARTBEAT) prête.
+- Déploiement seulement si les tests du même commit passent ; mise à jour forcée attend tests + déploiement.
+- Migrations : registre `_migrations` (0021), une seule fois, dans l'ordre, arrêt au premier échec réel.
+- Fuite du début du jeton Cloudflare dans les journaux publics : étape supprimée. ⚠️ À FAIRE PAR KEVIN : changer le jeton Cloudflare.
+- Mesuré : 128 fichiers / 2023 tests, couverture OK ; 24 gardes racine vertes ; sabotages rouges + 1 manuel. Leçon #552.
+
 ## 2026-10-15 — Apex Chat v1.1.307 : lot E1 (rester dans le gratuit)
 
 - Chat en direct en VEILLE entre deux messages (API d'hibernation Cloudflare) : fini le quota de durée mangé par un onglet ouvert.

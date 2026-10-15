@@ -17,6 +17,7 @@ import {
   fetchFirebasePublicKeys,
   verifyFirebaseIdToken,
 } from '../../workers/api-worker.js';
+import { decryptBlob } from '../../workers/lib/backup.js';
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -216,7 +217,7 @@ describe('sendPushToUser', () => {
   });
 });
 
-describe('performDailyBackup — chiffrée, complète, vérifiée, avec rotation (audit 17/09/2026)', () => {
+describe('performDailyBackup — chiffrée, complète, vérifiée, avec rotation (audit 17/09/2026, format v2 lot E2)', () => {
   const SECRET = 'jwt-test-secret';
   function makeR2(existing = []) {
     const store = new Map(existing.map((k) => [k, 'ancien']));
@@ -224,10 +225,11 @@ describe('performDailyBackup — chiffrée, complète, vérifiée, avec rotation
       store,
       put: vi.fn(async (k, body) => { store.set(k, body); }),
       get: vi.fn(async (k) => (store.has(k) ? { text: async () => store.get(k) } : null)),
-      list: vi.fn(async () => ({ objects: [...store.keys()].map((key) => ({ key })) })),
-      delete: vi.fn(async (k) => { store.delete(k); }),
+      list: vi.fn(async ({ prefix = '' } = {}) => ({ objects: [...store.keys()].filter((key) => key.startsWith(prefix)).map((key) => ({ key })) })),
+      delete: vi.fn(async (k) => { for (const x of [].concat(k)) store.delete(x); }),
     };
   }
+  // Fausse D1 : deux lignes par table, lues par rowid croissant (le curseur de la sauvegarde par pages).
   function makeDB(tables = ['users', 'messages']) {
     const written = [];
     return {
@@ -235,34 +237,31 @@ describe('performDailyBackup — chiffrée, complète, vérifiée, avec rotation
       prepare: (sql) => ({
         _args: [],
         bind: function (...a) { this._args = a; return this; },
-        all: async () => (sql.includes('sqlite_master') ? { results: tables.map((name) => ({ name })) } : { results: [{ id: 'x' }, { id: 'y' }] }),
+        all: async function () {
+          if (sql.includes("type='table'")) return { results: tables.map((name) => ({ name })) };
+          if (sql.includes('sqlite_master')) return { results: [] };
+          return { results: Number(this._args[0]) ? [] : [{ __rk: 1, id: 'x' }, { __rk: 2, id: 'y' }] };
+        },
         run: async function () { written.push({ sql, args: this._args }); return { success: true }; },
         first: async () => null,
       }),
     };
   }
-  async function decrypt(enc) {
-    const blob = JSON.parse(enc);
-    const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-    const ikm = await crypto.subtle.importKey('raw', new TextEncoder().encode(SECRET), 'HKDF', false, ['deriveKey']);
-    const key = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('apex-chat-backup'), info: new TextEncoder().encode('d1-backup-v1') }, ikm, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(blob.iv) }, key, b64(blob.ct))));
-  }
 
-  it('écrit UN fichier .json.enc chiffré, avec TOUTES les tables du schéma, et note backup_last_ok', async () => {
+  it('écrit des pages chiffrées + un manifeste écrit en dernier, TOUTES les tables du schéma, et note backup_last_ok', async () => {
     const env = { APEX_CHAT_DB: makeDB(['users', 'messages', 'contacts']), APEX_CHAT_MEDIA: makeR2(), JWT_SIGN_KEY: SECRET };
     const r = await performDailyBackup(env, new Date('2026-09-17T03:00:00Z'));
     expect(r.ok).toBe(true);
-    expect(env.APEX_CHAT_MEDIA.put).toHaveBeenCalledTimes(1);
-    const [key, body] = env.APEX_CHAT_MEDIA.put.mock.calls[0];
-    expect(key).toBe('backups/d1-2026-09-17.json.enc');
-    expect(body).not.toContain('"users"');                 // rien en clair
-    const clair = await decrypt(body);
-    expect(Object.keys(clair.tables)).toEqual(['users', 'messages', 'contacts']);
-    expect(clair.tables.contacts).toEqual([{ id: 'x' }, { id: 'y' }]);
+    const keys = env.APEX_CHAT_MEDIA.put.mock.calls.map((c) => c[0]);
+    expect(keys).toEqual(['backups/d1-2026-09-17/p00000.enc', 'backups/d1-2026-09-17/p00001.enc', 'backups/d1-2026-09-17/p00002.enc', 'backups/d1-2026-09-17/manifest.enc']);
+    for (const [, body] of env.APEX_CHAT_MEDIA.put.mock.calls) expect(body).not.toMatch(/"users"|"x"/);   // rien en clair
+    const manifest = await decryptBlob(env.APEX_CHAT_MEDIA.store.get('backups/d1-2026-09-17/manifest.enc'), { jwt: SECRET });
+    expect(Object.keys(manifest.tables)).toEqual(['users', 'messages', 'contacts']);
+    const page = await decryptBlob(env.APEX_CHAT_MEDIA.store.get('backups/d1-2026-09-17/p00002.enc'), { jwt: SECRET });
+    expect(page).toMatchObject({ table: 'contacts', cols: ['id'], rows: [['x'], ['y']] });
     const note = env.APEX_CHAT_DB.written.find((w) => w.args[0] === 'backup_last_ok');
     expect(note).toBeTruthy();
-    expect(JSON.parse(note.args[1])).toMatchObject({ key, tables: 3, rows: 6 });
+    expect(JSON.parse(note.args[1])).toMatchObject({ key: 'backups/d1-2026-09-17/manifest.enc', tables: 3, rows: 6, parts: 3 });
   });
 
   it('rotation : les fichiers de plus de 14 jours (chiffrés OU anciens en clair) sont supprimés', async () => {
@@ -274,7 +273,7 @@ describe('performDailyBackup — chiffrée, complète, vérifiée, avec rotation
     expect(r2.store.has('backups/d1-2026-09-16.json.enc')).toBe(true);
   });
 
-  it('sans JWT_SIGN_KEY : REFUSE d\'écrire en clair, note backup_last_error, prévient la télémétrie', async () => {
+  it('sans aucun secret : REFUSE d\'écrire en clair, note backup_last_error, prévient la télémétrie', async () => {
     const env = { APEX_CHAT_DB: makeDB(), APEX_CHAT_MEDIA: makeR2(), TELEMETRY_QUEUE: { send: vi.fn(async () => {}) } };
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const r = await performDailyBackup(env);

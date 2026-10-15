@@ -33,6 +33,8 @@
  * ENDPOINTS
  *   GET  /         → état du dernier passage (JSON, public, sans URL internes)
  *   GET  /health   → {ok:true} (pour être soi-même surveillé)
+ *   (lot E2) + santé profonde d'apex-chat-api par service binding, et battement vers un
+ *   service EXTERNE (HEARTBEAT_URL) qui alerte Kevin même si tout le compte Cloudflare tombe.
  *   POST /run      → force un passage. Réservé : en-tête x-uptime-key =
  *                    sha256(UPTIME_RUN_KEY + ':uptime-run'), 1 passage / 5 min.
  *                    Public, c'était un amplificateur ×33 sur le quota gratuit
@@ -181,6 +183,66 @@ async function probe(t) {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * APEX CHAT : la santé PROFONDE de l'API (lot E2, audit A5 F6, 15.10.2026)
+ *
+ * Avant : seule la PAGE apex-chat.kd-mc.com était sondée (servie par le routeur) — l'API, D1 et
+ * les Durable Objects pouvaient être en panne sans que rien ne le dise. Une URL *.workers.dev du
+ * même compte n'est pas joignable d'ici (voir WORKERS) : on passe par un SERVICE BINDING
+ * (APEX_CHAT_API → apex-chat-api, voie supportée, comme Outlook → uptime). /api/health vérifie
+ * D1 + Durable Object et dit si la sauvegarde a plus de 26 h : « stale » compte comme une panne
+ * (une sauvegarde qui ne se fait plus est une panne silencieuse). Sans le binding : non sondé.
+ * ------------------------------------------------------------------ */
+export const APEX_API_ID = 'apex-chat-api (santé D1 + DO + sauvegarde)';
+export async function probeApexApi(env) {
+  const started = Date.now();
+  const t = { id: APEX_API_ID, url: 'service:apex-chat-api/api/health', kind: 'service' };
+  try {
+    const res = await Promise.race([
+      env.APEX_CHAT_API.fetch('https://apex-chat-api/api/health'),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), TIMEOUT_MS)),
+    ]);
+    const body = await res.json().catch(() => null);
+    const checks = (body && body.checks) || {};
+    const ko = Object.entries(checks).filter(([k, v]) => v === 'ko' || (k === 'backup' && v === 'stale')).map(([k, v]) => k + ':' + v);
+    const ok = res.status === 200 && !!body && body.ok === true && ko.length === 0;
+    const r = { ...t, code: String(res.status), ms: Date.now() - started, ok };
+    if (!ok) r.detail = ko.length ? ko.join(' ') : 'réponse inattendue';
+    return r;
+  } catch (e) {
+    return { ...t, code: /timeout/.test(String(e && e.message)) ? 'timeout' : 'erreur', ms: Date.now() - started, ok: false, detail: String((e && e.message) || e).slice(0, 200) };
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * BATTEMENT HORS CLOUDFLARE (lot E2, audit A5 F6)
+ *
+ * Toutes les alertes passaient par apex-push-worker, sur le MÊME compte Cloudflare : le jour où
+ * le compte dépasse son quota (erreur 1027, vécu le 27.09) ou tombe, la sonde, le push et l'app
+ * se taisent ENSEMBLE — et le silence ressemble à « tout va bien ».
+ * Parade gratuite, sans cron GitHub : un « interrupteur de l'homme mort » externe (ex.
+ * healthchecks.io, offre gratuite). À chaque passage (toutes les 2 h), on l'appelle :
+ *   - tout va bien → HEARTBEAT_URL ;   - une panne → HEARTBEAT_URL + '/fail' (alerte immédiate) ;
+ *   - plus rien (Cloudflare en panne, quota épuisé, cron mort) → le service externe ne reçoit plus
+ *     rien et PRÉVIENT KEVIN PAR E-MAIL après le délai de grâce. Aucune dépendance au compte.
+ * Le corps n'envoie que des nombres et des noms d'adresses publiques, jamais un secret.
+ * ------------------------------------------------------------------ */
+export async function battement(env, state) {
+  const url = env && env.HEARTBEAT_URL;
+  if (!url) return { envoye: false, pourquoi: 'HEARTBEAT_URL non configuré' };
+  const panne = state.down.length > 0;
+  try {
+    const r = await fetch(url.replace(/\/+$/, '') + (panne ? '/fail' : ''), {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+      body: `${state.ok}/${state.total} cibles en bonne santé` + (panne ? ` — en panne : ${state.down.join(', ')}` : ''),
+    });
+    return { envoye: r.ok, code: r.status, panne };
+  } catch (e) {
+    return { envoye: false, pourquoi: String((e && e.message) || e).slice(0, 120), panne };
+  }
+}
+
 async function readState(env) {
   try {
     if (env && env.ACCOUNTS) {
@@ -244,7 +306,7 @@ async function notify(env, title, body) {
   }
 }
 
-async function runPass(env) {
+export async function runPass(env) {
   const list = targets();
   const results = [];
   // Par paquets de 6 = la limite de connexions simultanées d'un worker : au-delà,
@@ -253,6 +315,7 @@ async function runPass(env) {
     const chunk = list.slice(i, i + 6);
     results.push(...(await Promise.all(chunk.map(probe))));
   }
+  if (env && env.APEX_CHAT_API && typeof env.APEX_CHAT_API.fetch === 'function') results.push(await probeApexApi(env));
 
   const prev = await readState(env);
   const prevDown = new Set((prev && prev.down) || []);
@@ -286,7 +349,8 @@ async function runPass(env) {
     push = await notify(env, `✅ ${revenues.length} adresse(s) de nouveau en ligne`, revenues.join('\n'));
   }
 
-  return { ...state, tombees, revenues, push };
+  const hors = await battement(env, state);
+  return { ...state, tombees, revenues, push, battement: hors };
 }
 
 function json(obj, status, opts) {

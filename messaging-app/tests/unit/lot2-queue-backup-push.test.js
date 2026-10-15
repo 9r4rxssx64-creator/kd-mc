@@ -165,13 +165,16 @@ describe('K — sauvegarde tronquée', () => {
         _a: [],
         bind(...a) { this._a = a; return this; },
         async all() {
-          if (sql.includes('sqlite_master')) return { results: [{ name: 'grosse' }, { name: 'petite' }] };
+          if (sql.includes("type='table'")) return { results: [{ name: 'grosse' }, { name: 'petite' }] };
+          if (sql.includes('sqlite_master')) return { results: [] };
+          // Lot E2 : lecture par pages (curseur rowid). « grosse » a toujours une page pleine de plus.
           const lim = Number((/LIMIT (\d+)/.exec(sql) || [])[1] || 0);
-          if (sql.includes('FROM grosse')) return { results: Array.from({ length: lim }, (_, i) => ({ i })) };   // table plus grande que la limite
-          return { results: [{ a: 1 }] };
+          const apres = Number(this._a[0]) || 0;
+          if (sql.includes('FROM "grosse"')) return { results: Array.from({ length: lim }, (_, i) => ({ __rk: apres + i + 1, i })) };   // table plus grande que la limite
+          return { results: apres ? [] : [{ __rk: 1, a: 1 }] };
         },
         async run() { if (sql.includes('system_config')) notes[this._a[0]] = this._a[1]; return { success: true, meta: { changes: 1 } }; },
-        async first() { return null; },
+        async first() { return sql.includes('FROM "grosse"') ? { x: 1 } : null; },   // « reste-t-il des lignes ? » → oui
       }),
     };
     const res = await performDailyBackup({ APEX_CHAT_DB: DB, APEX_CHAT_MEDIA: makeR2(), JWT_SIGN_KEY: 'k', TELEMETRY_QUEUE: makeQueue() }, new Date('2026-10-08T03:00:00Z'));

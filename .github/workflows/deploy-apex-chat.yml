@@ -30,8 +30,41 @@ on:
         default: 'yes'
 
 jobs:
+  # Lot E2 (audit A5, F4, 15.10.2026) : PORTE QUALITÉ. Mesuré : le déploiement partait EN
+  # PARALLÈLE des tests (aucun `needs`) — main rouge du 09 au 13.10 pendant que la prod se
+  # déployait ; le 15.10, tests ✗ et déploiement ✓ sur le même commit. Désormais la suite unitaire
+  # complète (avec ses seuils de couverture) tourne ICI, sur CE commit, et `deploy` en dépend :
+  # un commit dont les tests échouent n'atteint jamais la production. Dépôt public : minutes
+  # gratuites ; borne 15 min (règle « gratuit par défaut »). Garde : tests/verify-apex-chat-fiabilite.mjs.
+  tests:
+    name: Tests unitaires du commit (porte avant déploiement)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: messaging-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'messaging-app/package.json'
+
+      - name: Install deps
+        run: npm install
+
+      - name: Tests + seuils de couverture (vitest.config.js)
+        run: npx vitest run --coverage
+
   deploy:
     name: Deploy Cloudflare Workers + Infra
+    needs: tests   # porte qualité : jamais de déploiement d'un commit dont les tests échouent
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     permissions:
@@ -95,31 +128,11 @@ jobs:
           echo "id=$ACC" >> $GITHUB_OUTPUT
           echo "CLOUDFLARE_ACCOUNT_ID=$ACC" >> $GITHUB_ENV
 
-      - name: DIAG token + account match
-        run: |
-          echo "=== Token prefix ==="
-          echo "Token prefix: ${CLOUDFLARE_API_TOKEN:0:10}..."
-          echo "Account ID: $CLOUDFLARE_ACCOUNT_ID"
-          echo ""
-          echo "=== Verify token ==="
-          VERIFY=$(curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/verify" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-          echo "$VERIFY" | jq . || echo "$VERIFY"
-          TOKEN_ID=$(echo "$VERIFY" | jq -r '.result.id // empty')
-          echo "Token ID: $TOKEN_ID"
-          echo ""
-          echo "=== Full token policies (DEFINITIVE proof of permissions) ==="
-          # 10/09/2026 : jq à la place de `| python3 -m json.tool` (Semgrep gha-curl-pipe-shell).
-          curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/$TOKEN_ID" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq . || true
-          echo ""
-          echo "=== Test list Workers (le token a Workers Scripts:Edit?) ==="
-          curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | python3 -m json.tool || true
-          echo ""
-          echo "=== Test D1 list ==="
-          curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | python3 -m json.tool || true
+      # Lot E2 (audit A5, F8) : l'étape « DIAG token + account match » est RETIRÉE. Dans ce dépôt
+      # PUBLIC, elle imprimait à chaque déploiement les 10 premiers caractères du jeton Cloudflare
+      # (GitHub ne masque que la valeur entière), les politiques complètes du jeton, et la liste des
+      # workers et des bases D1 du compte. Son rôle (diagnostic v1.1.131) est terminé depuis
+      # longtemps. Garde : tests/verify-apex-chat-fiabilite.mjs (aucun préfixe de jeton imprimé).
 
       - name: Verify D1 database (hardcoded in wrangler.toml)
         working-directory: messaging-app/workers
@@ -129,41 +142,24 @@ jobs:
           echo "::notice::D1 ID hardcoded:"
           grep "database_id" wrangler.toml | head -1
 
-      - name: Apply D1 migrations (toutes — glob auto)
+      - name: Apply D1 migrations (journal _migrations — chaque fichier une seule fois)
         if: github.event.inputs.apply_migrations != 'no'
         working-directory: messaging-app/workers
         run: |
-          # v1.1.135 : glob auto de TOUTES les migrations (toute nouvelle 000N reprise auto).
-          # Audit 17/09/2026 (P1) : `wrangler … | tail -8 || warning` sans pipefail = le code de
-          # retour était celui de `tail` → un échec de migration ne se voyait JAMAIS. Désormais :
-          # « colonne/table déjà là » = normal (ALTER TABLE n'est pas idempotent en SQLite),
-          # toute AUTRE erreur fait échouer le déploiement, avec la sortie complète.
+          # Lot E2 (audit A5, F7, 15.10.2026). Avant : les 25 fichiers rejoués à CHAQUE déploiement,
+          # « duplicate column » classé « ok » pour le FICHIER entier (or D1 annule un fichier en
+          # échec : ses autres instructions n'étaient jamais appliquées), migrations de données
+          # rejouées, et un échec n'arrêtait pas les suivantes. Désormais le moteur
+          # tools/d1-migrations-runner.mjs tient le journal `_migrations` (nom + empreinte) :
+          # chaque fichier UNE fois, dans l'ordre, arrêt au premier vrai échec (le worker n'est
+          # alors pas déployé), « déjà là » toléré pour la seule instruction concernée.
           set -o pipefail
-          echec=0
-          for mig in $(ls ../d1-migrations/0*.sql | sort); do
-            [ -f "$mig" ] || continue
-            echo "=== Migration: $mig ==="
-            # 08.10.2026 : des échecs PASSAGERS de l'API D1 (0006f au 1er essai, 0009 au 2e — jamais la
-            # même) bloquaient tout le déploiement. 3 essais espacés ; la cause exacte part en annotation
-            # (seul canal lisible sans télécharger les journaux).
-            ok=0; essai=1
-            while [ $essai -le 3 ]; do
-              if out=$(wrangler d1 execute apex-chat-main --file="$mig" --remote 2>&1); then
-                echo "$out" | tail -4; ok=1; break
-              elif echo "$out" | grep -qiE "duplicate column|already exists"; then
-                echo "déjà appliquée (colonne/table existante) — ok"; ok=1; break
-              fi
-              cause=$(echo "$out" | grep -iE "error|✘|failed|code:" | tail -3 | tr '\n' ' ' | cut -c1-350)
-              echo "::warning title=Migration $mig essai $essai/3::${cause:-aucune ligne erreur dans la sortie}"
-              essai=$((essai+1)); sleep $((essai*10))
-            done
-            if [ "$ok" != "1" ]; then
-              echo "$out" | tail -40
-              echo "::error::Migration $mig ÉCHOUÉE après 3 essais : ${cause:-voir la sortie}"
-              echec=1
-            fi
-          done
-          [ "$echec" = "0" ] || exit 1
+          # Signet Time Travel AVANT toute migration : de quoi revenir en arrière
+          # (`wrangler d1 time-travel restore apex-chat-main --bookmark=<signet>`).
+          signet=$(wrangler d1 time-travel info apex-chat-main 2>&1 | grep -oE "[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{32}" | head -1 || true)
+          echo "signet Time Travel avant migrations : ${signet:-indisponible}"
+          echo "- Signet D1 avant migrations : \`${signet:-indisponible}\`" >> "$GITHUB_STEP_SUMMARY"
+          node ../tools/d1-migrations-runner.mjs --remote apex-chat-main --dir ../d1-migrations
           echo "=== Vérif tables créées ==="
           wrangler d1 execute apex-chat-main --remote --command "SELECT name FROM sqlite_master WHERE type='table'" 2>&1 | tail -20
           echo "::notice::Migrations D1 appliquées"
@@ -197,6 +193,12 @@ jobs:
 
       - name: Generate + put secrets (after Worker exists)
         working-directory: messaging-app/workers
+        env:
+          # Lot E2 (audit A5, F3) : clé DÉDIÉE au chiffrement des sauvegardes D1 → R2. Elle vit dans
+          # le secret GitHub BACKUP_ENCRYPTION_KEY du coffre (recopié vers ce dépôt par la bascule)
+          # ET hors ligne chez Kevin : c'est ce qui rend une sauvegarde relisible sans le Worker.
+          # Jamais générée ici : une clé que personne ne possède ne restaure rien.
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
         run: |
           # Liste des secrets déjà présents sur le Worker (évite régénération destructrice)
           EXISTING=$(wrangler secret list 2>/dev/null || echo '[]')
@@ -226,6 +228,12 @@ jobs:
           else
             put_secret "APEX_CHAT_ADMIN_TOKEN" "$(openssl rand -hex 32)"
             echo "::notice::APEX_CHAT_ADMIN_TOKEN auto-généré (1ère fois)"
+          fi
+          if [ -n "$BACKUP_ENCRYPTION_KEY" ]; then
+            put_secret "BACKUP_ENCRYPTION_KEY" "$BACKUP_ENCRYPTION_KEY"
+            echo "::notice::BACKUP_ENCRYPTION_KEY aligné depuis le secret GitHub (sauvegardes restaurables)"
+          else
+            echo "::warning::Secret GitHub BACKUP_ENCRYPTION_KEY absent : la sauvegarde quotidienne reste chiffrée avec JWT_SIGN_KEY, que personne ne peut relire hors du Worker (voir messaging-app/docs/SAUVEGARDE-RESTAURATION.md)."
           fi
           if has_secret "APEX_HANDOFF_TOKEN"; then
             echo "::notice::APEX_HANDOFF_TOKEN déjà présent — conservé"
@@ -343,8 +351,11 @@ jobs:
             if [ "$code" = "200" ]; then ok=1; break; fi
             echo "tentative $i : HTTP $code — nouvel essai dans 10 s"; sleep 10
           done
-          [ "$ok" = "1" ] || { echo "::error::/api/health ne répond pas 200 après déploiement"; exit 1; }
+          [ "$ok" = "1" ] || { echo "::error::/api/health ne répond pas 200 après déploiement : $(cat /tmp/health.json 2>/dev/null)"; exit 1; }
+          # Lot E2 : /api/health vérifie D1 et les Durable Objects (503 sinon) ; la sauvegarde y est
+          # dite « ok », « stale » (plus de 26 h) ou « unknown ».
           echo "santé : $(cat /tmp/health.json)"
+          if jq -e '.checks.backup == "stale"' /tmp/health.json >/dev/null 2>&1; then echo "::warning::La dernière sauvegarde D1 réussie a plus de 26 h"; fi
           live=$(curl -s "$BASE/api/system/config" | jq -r '.version // .config.version // empty' 2>/dev/null || true)
           if [ -n "$live" ]; then
             echo "version annoncée par le worker : $live (dépôt : $VERSION)"

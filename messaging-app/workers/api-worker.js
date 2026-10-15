@@ -39,6 +39,7 @@ const ADMIN_KEVIN_ALIASES = [
 ];
 
 import { corsHeaders, makeJson, applyCors } from './lib/cors.js';
+import { performDailyBackup, handleBackupStep } from './lib/backup.js';
 import { giphySearchUrl, giphyTrendingUrl, mapGiphyResults } from '../lib/gif.js';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    routage IA commun du domaine (Qwen Workers AI 0 clé d'abord, bascule par type de demande). */
@@ -7045,7 +7046,9 @@ const _workerHandler = {
       if (path === '/api/system/config' && method === 'GET') return await handleSystemConfig(request, env);
 
       // Health
-      if (path === '/health' || path === '/api/health') return json({ ok: true, ts: Date.now() });
+      // Lot E2 (audit A5, F6) : la santé VÉRIFIE (D1, Durable Objects, fraîcheur de la sauvegarde)
+      // au lieu de répondre ok:true quoi qu'il arrive. Aucun détail interne dans la réponse.
+      if (path === '/health' || path === '/api/health') return await handleHealth(env);
 
       return err('Route inconnue', 404);
     } catch (e) {
@@ -7082,6 +7085,13 @@ const _workerHandler = {
           case 'telemetry':
             // Sentinelle a remonté un événement → push vers Apex
             await pushToApexTelemetry(body, env);
+            break;
+
+          case 'backup-step':
+            // Lot E2 : sauvegarde D1 → R2 page par page (une invocation par page, CPU borné).
+            // Les erreurs sont gérées DEDANS (nouvel essai différé, puis backup_last_error + alerte) :
+            // un `throw` ici rejouerait aussi les autres messages du lot.
+            await handleBackupStep(body, env);
             break;
 
           case 'pipeline-fix':
@@ -7275,6 +7285,62 @@ const _workerHandler = {
 };
 
 // ============================================================================
+//  Santé (lot E2, 15.10.2026 — audit A5, F6)
+//  Avant : `{ok:true}` sans rien vérifier → le contrôle LIVE du déploiement, la sentinelle du
+//  client et la sonde ne prouvaient pas que D1 ou les Durable Objects marchaient.
+//  Maintenant : 1 lecture D1 (une ligne, par clé primaire), 1 appel à un Durable Object léger
+//  (BroadcastDO : une lecture de stockage), chacun borné à 2 s. 503 si l'un des deux tombe.
+//  La sauvegarde du jour est signalée « stale » si la dernière réussie a plus de 26 h.
+//  Réponse publique : des mots (ok / ko / stale / unknown), JAMAIS un message d'erreur, un nom
+//  de table, un identifiant ou une trace. Un résultat « tout va bien » est gardé 15 s dans
+//  l'isolate : la sentinelle client (≈ 12 appels/h par client) ne coûte pas une lecture D1 + un
+//  appel DO à chaque fois. Un échec n'est jamais gardé (on revérifie au prochain appel).
+// ============================================================================
+export const HEALTH_CACHE_MS = 15000;
+export const HEALTH_TIMEOUT_MS = 2000;
+export const BACKUP_STALE_MS = 26 * 3600 * 1000;
+let _healthCache = null;
+export function _resetHealthCache() { _healthCache = null; }
+
+function _withTimeout(p, ms) {
+  let t;
+  return Promise.race([
+    Promise.resolve().then(() => p).finally(() => clearTimeout(t)),
+    new Promise((_, rej) => { t = setTimeout(() => rej(new Error('timeout')), ms); }),
+  ]);
+}
+
+export async function checkHealth(env, now = Date.now()) {
+  if (_healthCache && now - _healthCache.at < HEALTH_CACHE_MS) return _healthCache.body;
+  const checks = { d1: 'ko', do: 'ko', backup: 'unknown' };
+  try {
+    const row = await _withTimeout(env.APEX_CHAT_DB.prepare(
+      "SELECT value FROM system_config WHERE key='backup_last_ok'").first(), HEALTH_TIMEOUT_MS);
+    checks.d1 = 'ok';
+    if (row && row.value) {
+      let ts = 0;
+      try { ts = Number(JSON.parse(row.value).ts) || 0; } catch (_) { ts = 0; }
+      if (ts) checks.backup = now - ts > BACKUP_STALE_MS ? 'stale' : 'ok';
+    }
+  } catch (_) { checks.d1 = 'ko'; }
+  try {
+    const ns = env.BROADCAST_DO;
+    const r = await _withTimeout(ns.get(ns.idFromName('health')).fetch('https://do.internal/health'), HEALTH_TIMEOUT_MS);
+    const j = r && r.ok ? await r.json().catch(() => null) : null;
+    checks.do = j && j.ok === true ? 'ok' : 'ko';
+  } catch (_) { checks.do = 'ko'; }
+  const ok = checks.d1 === 'ok' && checks.do === 'ok';
+  const body = { ok, ts: now, checks };
+  _healthCache = ok ? { at: now, body } : null;
+  return body;
+}
+
+async function handleHealth(env) {
+  const body = await checkHealth(env);
+  return json(body, body.ok ? 200 : 503);
+}
+
+// ============================================================================
 //  Helpers Queue consumer
 // ============================================================================
 
@@ -7359,122 +7425,15 @@ export async function sendPushToUser(userId, payload, env) {
 }
 
 // ----------------------------------------------------------------------------
-//  Sauvegarde quotidienne D1 → R2 (audit 17/09/2026, P1)
-//  Avant : 5 tables sur 27, JSON EN CLAIR (téléphones, noms, e-mails) dans le bucket des
-//  médias, jamais vérifiée, jamais purgée (un fichier de plus par jour, pour toujours),
-//  échec avalé par console.error. Maintenant : toutes les tables, chiffrement AES-GCM-256
-//  (clé dérivée du secret JWT_SIGN_KEY, aucun nouveau secret à créer), refus d'écrire en
-//  clair, rotation 14 jours, résultat écrit dans system_config (backup_last_ok /
-//  backup_last_error) et visible dans /api/admin/diag. Déchiffrement : tools/backup-decrypt.mjs.
+//  Sauvegarde quotidienne D1 → R2 : voir ./lib/backup.js (lot E2, 15.10.2026).
+//  Clé DÉDIÉE (BACKUP_ENCRYPTION_KEY, gardée par Kevin hors du Worker), une page par
+//  invocation (plan gratuit : 10 ms de CPU), manifeste chiffré écrit en dernier.
+//  Restauration : tools/backup-restore.mjs. Réexporté ici pour les appelants historiques.
 // ----------------------------------------------------------------------------
-export const BACKUP_RETENTION_DAYS = 14;
-export const BACKUP_ROW_LIMIT = 100000;
-export const BACKUP_TABLES_FALLBACK = ['users', 'conversations', 'conversation_members', 'messages', 'audit_log',
-  'contacts', 'invitations', 'push_subscriptions', 'system_config', 'connections', 'media', 'cgu_acceptances'];
-
-/** Clé AES-GCM-256 dérivée (HKDF-SHA256) du secret JWT — même dérivation dans tools/backup-decrypt.mjs. */
-export async function backupKeyFromSecret(secret) {
-  const ikm = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), 'HKDF', false, ['deriveKey']);
-  return crypto.subtle.deriveKey(
-    { name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('apex-chat-backup'), info: new TextEncoder().encode('d1-backup-v1') },
-    ikm, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-}
-
-function _b64(bytes) {
-  let s = ''; const u = new Uint8Array(bytes);
-  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
-  return btoa(s);
-}
-
-export async function encryptBackup(json, secret) {
-  const key = await backupKeyFromSecret(secret);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(json));
-  return JSON.stringify({ v: 1, alg: 'AES-GCM-256/HKDF-SHA256', iv: _b64(iv), ct: _b64(ct) });
-}
-
-async function _noteBackup(env, key, value) {
-  try {
-    await env.APEX_CHAT_DB.prepare(
-      'INSERT OR REPLACE INTO system_config (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)'
-    ).bind(key, String(value).slice(0, 2000), Date.now(), 'cron-backup').run();
-  } catch (e) { console.warn('[backup] system_config non écrit :', e && e.message); }
-}
-
-export async function performDailyBackup(env, now = new Date()) {
-  const dateKey = now.toISOString().slice(0, 10);
-  try {
-    if (!env.APEX_CHAT_MEDIA) throw new Error('bucket R2 absent (APEX_CHAT_MEDIA)');
-    if (!env.JWT_SIGN_KEY) throw new Error('JWT_SIGN_KEY absent : refus d\'écrire une sauvegarde en clair');
-    // 1) Toutes les tables (lues dans le schéma réel ; repli sur la liste connue)
-    let tables = [];
-    try {
-      const rows = await env.APEX_CHAT_DB.prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name <> 'd1_migrations'"
-      ).all();
-      tables = (rows.results || []).map(r => r.name).filter(Boolean);
-    } catch (_) { /* repli ci-dessous */ }
-    if (!tables.length) tables = BACKUP_TABLES_FALLBACK;
-    const backup = { ts: now.getTime(), version: 2, tables: {} };
-    let rowsTotal = 0;
-    // Lot 2 (K) : une table qui atteint la limite est COUPÉE — la sauvegarde était
-    // pourtant notée « réussie ». On lit LIMIT+1 lignes pour le détecter, on garde
-    // LIMIT lignes, et la sauvegarde est signalée tronquée (jamais « complète »).
-    const truncated = [];
-    const failedTables = [];
-    for (const t of tables) {
-      if (!/^[a-z_][a-z0-9_]*$/i.test(t)) continue;
-      try {
-        const stmt = await env.APEX_CHAT_DB.prepare(`SELECT * FROM ${t} LIMIT ${BACKUP_ROW_LIMIT + 1}`).all();
-        let rows = stmt.results || [];
-        if (rows.length > BACKUP_ROW_LIMIT) { rows = rows.slice(0, BACKUP_ROW_LIMIT); truncated.push(t); }
-        backup.tables[t] = rows;
-        rowsTotal += rows.length;
-      } catch (e) { backup.tables[t] = { error: e && e.message }; failedTables.push(t); }
-    }
-    if (truncated.length) backup.truncated = truncated;
-    // 2) Chiffrement avant toute écriture
-    const enc = await encryptBackup(JSON.stringify(backup), env.JWT_SIGN_KEY);
-    const key = `backups/d1-${dateKey}.json.enc`;
-    await env.APEX_CHAT_MEDIA.put(key, enc, { httpMetadata: { contentType: 'application/json' } });
-    // 3) Vérification : relire et contrôler la taille
-    const back = await env.APEX_CHAT_MEDIA.get(key);
-    const backText = back ? await back.text() : '';
-    if (!back || backText.length !== enc.length) throw new Error(`relecture R2 incohérente (${backText.length}/${enc.length} octets)`);
-    // 4) Rotation : tout fichier backups/d1-<date>.* plus vieux que 14 jours est supprimé
-    //    (y compris les anciens .json EN CLAIR : ils disparaissent en 14 jours au plus)
-    const purged = [];
-    try {
-      const listed = await env.APEX_CHAT_MEDIA.list({ prefix: 'backups/d1-' });
-      const limit = now.getTime() - BACKUP_RETENTION_DAYS * 86400000;
-      for (const o of (listed && listed.objects) || []) {
-        const m = /^backups\/d1-(\d{4}-\d{2}-\d{2})\./.exec(o.key);
-        if (m && Date.parse(m[1]) < limit) { await env.APEX_CHAT_MEDIA.delete(o.key); purged.push(o.key); }
-      }
-    } catch (e) { console.warn('[backup] rotation partielle :', e && e.message); }
-    if (truncated.length) {
-      // Fichier écrit (mieux que rien) mais INCOMPLET : jamais noté backup_last_ok.
-      const info = { ts: now.getTime(), date: dateKey, key, truncated, limit: BACKUP_ROW_LIMIT, rows: rowsTotal,
-        error: 'sauvegarde tronquée : ' + truncated.join(', ') + ' dépasse ' + BACKUP_ROW_LIMIT + ' lignes' };
-      await _noteBackup(env, 'backup_last_error', JSON.stringify(info));
-      try {
-        await env.TELEMETRY_QUEUE?.send({ queue_type: 'telemetry', sentinel: 'backup-truncated', severity: 'err', msg: info.error, ts: Date.now() });
-      } catch (_) {}
-      console.error('Daily backup TRUNCATED', key, truncated);
-      return { ok: false, truncated, key, tables: tables.length, rows: rowsTotal, purged };
-    }
-    await _noteBackup(env, 'backup_last_ok', JSON.stringify({ ts: now.getTime(), key, tables: Object.keys(backup.tables).length, rows: rowsTotal, bytes: enc.length, purged: purged.length, failed_tables: failedTables }));
-    console.log('Daily backup done', key, tables.length, 'tables', rowsTotal, 'rows');
-    return { ok: true, key, tables: tables.length, rows: rowsTotal, purged };
-  } catch (e) {
-    console.error('Daily backup failed', e && e.message);
-    await _noteBackup(env, 'backup_last_error', JSON.stringify({ ts: now.getTime(), date: dateKey, error: e && e.message }));
-    try {
-      await env.TELEMETRY_QUEUE?.send({ queue_type: 'telemetry', sentinel: 'backup-failed', severity: 'err', msg: e && e.message, ts: Date.now() });
-    } catch (_) {}
-    return { ok: false, error: e && e.message };
-  }
-}
+export {
+  BACKUP_RETENTION_DAYS, BACKUP_ROW_LIMIT, BACKUP_TABLES_FALLBACK,
+  backupKeyFromSecret, encryptBackup, performDailyBackup,
+} from './lib/backup.js';
 
 // ============================================================================
 //  Durable Objects (re-exporté depuis ./durable-objects/)

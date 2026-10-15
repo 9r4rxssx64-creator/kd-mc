@@ -20,6 +20,16 @@ id = "8cfa33a28ac045adb7b7a9556ca8a073"
 #   KDMC_PUSH_TOKEN (depuis PUSH_ADMIN_TOKEN, optionnel) → notifications iPhone.
 #     Sans lui, le worker sonde et sert son état, mais n'envoie pas de notification.
 
+# Lot E2 (audit A5, F6) : santé PROFONDE d'Apex Chat (D1 + Durable Object + âge de la sauvegarde)
+# par SERVICE BINDING — une URL *.workers.dev du même compte n'est pas joignable d'un Worker.
+[[services]]
+binding = "APEX_CHAT_API"
+service = "apex-chat-api"
+
+# Secret facultatif HEARTBEAT_URL (depuis le secret GitHub UPTIME_HEARTBEAT_URL) : adresse de
+# « battement » d'un service EXTERNE gratuit (ex. healthchecks.io). Sans battement pendant le délai
+# de grâce, ce service prévient Kevin par e-mail — même si tout le compte Cloudflare est tombé.
+
 [vars]
 KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 

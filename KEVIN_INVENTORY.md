@@ -3615,6 +3615,21 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-15 | `messaging-app/tests/unit/lot-e1-verrou-soins-index.test.js` | Apex Chat (gratuit) : plus d'écritures KV pour les soins ; index de la base |
 | 2026-10-15 | `messaging-app/tests/unit/_support/do-hibernation.js` | Apex Chat (gratuit) : outil de test : simule la mise en veille du serveur de conversation |
 | 2026-10-15 | `messaging-app/d1-migrations/0020_lot_e1_index.sql` | Apex Chat (gratuit) : index doublons retirés, index manquants ajoutés |
+| 2026-10-15 | `messaging-app/docs/SAUVEGARDE-RESTAURATION.md` | Apex Chat (sauvegarde, fiabilité) : mode d'emploi de la sauvegarde et de la restauration |
+| 2026-10-15 | `messaging-app/tools/backup-restore.mjs` | Apex Chat (sauvegarde, fiabilité) : outil pour restaurer la base depuis une sauvegarde |
+| 2026-10-15 | `messaging-app/tools/d1-migrations-runner.mjs` | Apex Chat (sauvegarde, fiabilité) : applique les mises à jour de la base une seule fois, dans l'ordre |
+| 2026-10-15 | `messaging-app/tools/attendre-ci.mjs` | Apex Chat (sauvegarde, fiabilité) : la mise à jour forcée attend les tests et le déploiement |
+| 2026-10-15 | `messaging-app/workers/lib/backup.js` | Apex Chat (sauvegarde, fiabilité) : sauvegarde par pages, chiffrée avec sa propre clé |
+| 2026-10-15 | `.github/workflows/apex-chat-exercice-restauration.yml` | Apex Chat (sauvegarde, fiabilité) : bouton « exercice de restauration » (manuel) |
+| 2026-10-15 | `messaging-app/d1-migrations/0021_lot_e2_journal_migrations.sql` | Apex Chat (sauvegarde, fiabilité) : registre des mises à jour de la base |
+| 2026-10-15 | `messaging-app/e2e/login-test-politique.js` | Apex Chat (sauvegarde, fiabilité) : un test sur la prod ne passe plus au vert quand le login de test est en panne |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e2-sauvegarde-restauration.test.js` | Apex Chat (sauvegarde, fiabilité) : sauvegarde → restauration vérifiées table par table |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e2-sante-alertes.test.js` | Apex Chat (sauvegarde, fiabilité) : santé réelle du serveur et alertes |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e2-attendre-ci.test.js` | Apex Chat (sauvegarde, fiabilité) : attente des tests avant la mise à jour forcée |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e2-migrations-journal.test.js` | Apex Chat (sauvegarde, fiabilité) : registre des migrations |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e2-login-test-politique.test.js` | Apex Chat (sauvegarde, fiabilité) : règle du login de test |
+| 2026-10-15 | `messaging-app/tests/unit/_support/faux-wrangler.mjs` | Apex Chat (sauvegarde, fiabilité) : outil de test : faux wrangler |
+| 2026-10-15 | `tests/verify-apex-chat-fiabilite.mjs` | Apex Chat (sauvegarde, fiabilité) : garde : pas de mise en ligne sans tests, pas de jeton dans les journaux |
 | 2026-10-12 | [`services/kdmc-router/fin-garde-verif.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/fin-garde-verif.mjs) | Garde : une sauvegarde en ligne plus pauvre (moins de la moitié) ne peut plus écraser une sauvegarde pleine (409), `force` explicite seulement |
 | 2026-10-13 | [`tests/verify-ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-ration-actions.mjs) | Garde : la ration Actions se lit correctement (jour UTC, runs refusés à 0, verdicts, code de sortie) |
 | 2026-10-13 | [`tools/ci/ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/ci/ration-actions.mjs) | Outil : lit la ration du jour des minutes GitHub Actions du coffre (🟢/🟠/🔴) avant de lancer un robot |

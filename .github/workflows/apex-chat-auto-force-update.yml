@@ -38,7 +38,32 @@ jobs:
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     permissions:
       contents: read
+      actions: read   # lot E2 : lire l'état des tests et du déploiement du MÊME commit
     steps:
+      - name: Checkout (outil d'attente)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      # Lot E2 (audit A5, F4, 15.10.2026) : la mise à jour forcée de TOUS les téléphones partait sur
+      # `push` sans rien attendre — mesuré le 15.10 : POST à 09:52:52, nouveau worker en ligne à
+      # 09:54:10 (78 s après), et même quand les tests du commit échouaient. On attend donc :
+      #  1. le job `tests` de messaging-app-tests.yml du même commit (vert obligatoire) ;
+      #  2. le déploiement du serveur du même commit, s'il y en a un (vert obligatoire ; aucun =
+      #     commit sans changement serveur → rien à attendre). Borné à 12 min chacun, annoncé.
+      # Garde : tests/unit/lot-e2-attendre-ci.test.js.
+      - name: Attendre les tests unitaires du même commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: node messaging-app/tools/attendre-ci.mjs --workflow messaging-app-tests.yml --job tests
+
+      - name: Attendre le déploiement du serveur du même commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: node messaging-app/tools/attendre-ci.mjs --workflow deploy-apex-chat.yml --absent-ok
+
       - name: Detect API base URL
         id: api
         env:

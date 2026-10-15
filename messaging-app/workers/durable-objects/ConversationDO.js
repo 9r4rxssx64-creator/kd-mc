@@ -1608,7 +1608,9 @@ export class ConversationDO {
 
     const report = (msgText) => {
       try {
-        const p = this.env.TELEMETRY_QUEUE?.send({ sentinel: 'do-flush-error', severity: 'err', msg: msgText, ts: Date.now() });
+        // Lot E2 (audit A5, F5) : sans queue_type, le consommateur classait l'alerte « unknown » et la
+        // jetait (même défaut que l'api-worker, corrigé au lot 2 H) — aucune panne D1 ne remontait.
+        const p = this.env.TELEMETRY_QUEUE?.send({ queue_type: 'telemetry', sentinel: 'do-flush-error', severity: 'err', msg: msgText, ts: Date.now() });
         if (p && typeof p.catch === 'function') p.catch(() => {});
       } catch (_) {}
     };

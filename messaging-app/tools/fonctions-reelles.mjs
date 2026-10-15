@@ -377,22 +377,23 @@ async function voletWorker() {
     }
     return { ok: true, detail: out.join(' · ') };
   });
-  await sonde('F84', async () => { // sauvegarde chiffrée : écrite en R2, re-déchiffrée avec la même dérivation que tools/backup-decrypt.mjs, rotation 14 j
-    const env = envFor();
+  await sonde('F84', async () => { // sauvegarde chiffrée par pages (lot E2) : manifeste + pages en R2, relues avec tools/backup-restore.mjs (même lib), rotation 14 j
+    const env = envFor({ BACKUP_ENCRYPTION_KEY: 'cle-de-sauvegarde-test' });
+    const del = env.APEX_CHAT_MEDIA.delete;   // le vrai R2 accepte une LISTE de clés (suppression groupée)
+    env.APEX_CHAT_MEDIA.delete = async (k) => { for (const x of [].concat(k)) await del(x); };
     const old = 'backups/d1-2020-01-01.json.enc'; await env.APEX_CHAT_MEDIA.put(old, '{}');
     const c = { _w: [], waitUntil: (p) => c._w.push(Promise.resolve(p).catch((e) => e)) };
     await worker.scheduled({ cron: '0 3 * * *' }, env, c); await Promise.all(c._w);
     const keys = [...env.APEX_CHAT_MEDIA._store.keys()].filter((k) => k.startsWith('backups/d1-'));
-    const today = keys.find((k) => k !== old);
-    if (!today) return { ok: false, detail: 'aucune sauvegarde écrite dans R2 (clés : ' + keys.join(',') + ')' };
-    const blob = JSON.parse(env.APEX_CHAT_MEDIA._store.get(today));
-    const b64 = (s) => Uint8Array.from(Buffer.from(s, 'base64'));
-    const ikm = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.JWT_SIGN_KEY), 'HKDF', false, ['deriveKey']);
-    const key = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('apex-chat-backup'), info: new TextEncoder().encode('d1-backup-v1') }, ikm, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-    const pt = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(blob.iv) }, key, b64(blob.ct))));
+    const man = keys.find((k) => k.endsWith('/manifest.enc'));
+    if (!man) return { ok: false, detail: 'aucun manifeste de sauvegarde écrit dans R2 (clés : ' + keys.join(',') + ')' };
+    const { decryptBlob } = await import(join(APP, 'workers', 'lib', 'backup.js'));
+    const m = await decryptBlob(env.APEX_CHAT_MEDIA._store.get(man), { bk: env.BACKUP_ENCRYPTION_KEY });
+    const pages = keys.filter((k) => /\/p\d{5}\.enc$/.test(k));
     const rotated = !env.APEX_CHAT_MEDIA._store.has(old);
-    const clair = env.APEX_CHAT_MEDIA._store.get(today).includes('kevin') || env.APEX_CHAT_MEDIA._store.get(today).includes('+336');
-    return { ok: blob.v === 1 && !!pt && rotated && !clair, detail: `${today} : v=${blob.v}, déchiffré (${Object.keys(pt).length} clés), ancienne sauvegarde 2020 purgée=${rotated}, aucune donnée en clair dans le blob=${!clair}` };
+    const clair = keys.some((k) => /kevin|\+336/.test(env.APEX_CHAT_MEDIA._store.get(k)));
+    return { ok: m.kind === 'manifest' && m.kid === 'bk' && m.parts === pages.length && rotated && !clair,
+      detail: `${man} : clé dédiée=${m.kid === 'bk'}, ${m.parts} page(s) (${pages.length} en R2), ${Object.keys(m.tables).length} tables, ancienne sauvegarde 2020 purgée=${rotated}, aucune donnée en clair=${!clair}` };
   });
   await sonde('F69', async () => {
     const P = await import(join(APP, 'workers', 'lib', 'push-send.js'));

@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Ultra-audit Apex Chat (6 auditeurs) : P0 SSO corrigé en premier
+
+- P0 (auditeur sécurité serveur, prouvé par test) : un compte du domaine d'uid « admin » obtenait un jeton administrateur
+  d'Apex Chat (collision d'id avec la ligne admin). Corrigé sur le SSO domaine ET le SSO Apex. Leçon #541.
+- Mesuré : 104 fichiers / 1654 tests, couverture sans ERROR ; ancien serveur → 5 échecs sur 7.
+- `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
+- Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
+
 ## 2026-10-15 — Règle « le bon modèle pour chaque travail, partout » (Kevin : « Utilise auto le model adapté au travail demandé toujours partout »)
 - Écrite dans `.claude/rules/modeles.md` (chargée par chaque session) et dans CLAUDE-HISTOIRE (index régénéré). Une session ne peut pas changer son propre modèle : l'automatique, c'est le choix du modèle des aides (haiku lecture/mesure, sonnet courant, opus/fable sécurité/architecture/revue finale), « le plus petit qui peut réussir », et la session principale prévient Kevin quand un modèle plus fort est mérité. Garde `test:modele-adapte` (7 contrôles, `SABOTAGE=1` rougit). Coût : 0.
 

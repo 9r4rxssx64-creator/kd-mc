@@ -198,10 +198,14 @@ export async function _claimInvitedAccount(env, user) {
 // Revue 08.10.2026 (F1) — id libre pour un compte SSO neuf : si l'id « naturel »
 // (apex_uid / kdmc_<uid>) est déjà tenu par une ligne SUPPRIMÉE (RGPD), on en
 // dérive un autre au lieu de ressusciter la ligne morte.
-async function _freshSsoId(env, base) {
+// Audit 15.10.2026 (P0) : l'id « naturel » pouvait COLLISIONNER avec une ligne existante qui n'appartient
+// PAS à la personne entrante (ex. uid domaine « admin » → 'kdmc_admin', la ligne admin seedée) ; l'upsert
+// ON CONFLICT retombait alors dessus. `owns(row)` dit si la ligne est bien celle de la personne : sinon,
+// id neuf. Seule une ancienne ligne SSO sans lien (champ de liaison vide), NON admin, peut être reprise.
+async function _freshSsoId(env, base, owns) {
   try {
-    const row = await env.APEX_CHAT_DB.prepare('SELECT id, status FROM users WHERE id=?').bind(base).first();
-    if (row && row.status === 'deleted') return base + '_' + _randomCode(6, 'abcdefghijkmnpqrstuvwxyz23456789');
+    const row = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(base).first();
+    if (row && (row.status === 'deleted' || !owns(row))) return base + '_' + _randomCode(6, 'abcdefghijkmnpqrstuvwxyz23456789');
   } catch (_) {}
   return base;
 }
@@ -1341,7 +1345,8 @@ export async function handleSsoFromApex(request, env) {
                     (apexPayload.phone === KEVIN_PHONE || phone === KEVIN_PHONE);
 
     const pseudo = String(name || apex_uid).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20) || 'user' + Date.now().toString(36).slice(-6);
-    const id = await _freshSsoId(env, apex_uid);
+    const id = await _freshSsoId(env, apex_uid,
+      (row) => row.source === 'apex-sso' && !row.apex_uid && !row.is_admin && !row.is_kevin_alias);
     // apex_uid est UNIQUE : une ligne supprimée AVANT ce correctif peut encore le tenir.
     try { await env.APEX_CHAT_DB.prepare("UPDATE users SET apex_uid=NULL WHERE apex_uid=? AND status='deleted'").bind(apex_uid).run(); } catch (_) {}
 
@@ -1360,12 +1365,19 @@ export async function handleSsoFromApex(request, env) {
     }
   }
   if (!user || user.status === 'deleted') return err('Compte SSO indisponible', 500, 'sso_user_missing');
+  // Audit 15.10.2026 (P0, même classe que le SSO domaine) : un compte admin ne s'ouvre que si le jeton Apex
+  // lui-même dit « admin » — jamais sur la seule foi de la ligne relue.
+  const apexAdmin = apexPayload.is_admin === true;
+  if ((user.is_admin || user.is_kevin_alias) && !apexAdmin) {
+    await auditLog(env, user.id, 'sso_apex_admin_refuse', 'user', user.id, { apex_uid }, '', request.headers.get('User-Agent'));
+    return err('Compte administrateur : confirmation requise', 403, 'admin_non_confirme');
+  }
 
   const iatSso = await _claimInvitedAccount(env, user);
   const jwt = await signJWT({
     sub: user.id,
     pseudo: user.pseudo,
-    is_admin: !!user.is_admin,
+    is_admin: !!user.is_admin && apexAdmin,
     apex_uid: user.apex_uid,
     sso: true,
     iat: iatSso,
@@ -1434,7 +1446,8 @@ export async function handleSsoFromKdmc(request, env) {
   // ressuscitée par l'upsert — on repart sur un compte neuf (id libre).
   let user = await env.APEX_CHAT_DB.prepare("SELECT * FROM users WHERE kdmc_uid=? AND status != 'deleted'").bind(uid).first();
   if (!user) {
-    const id = await _freshSsoId(env, 'kdmc_' + uid);
+    const id = await _freshSsoId(env, 'kdmc_' + uid,
+      (row) => row.source === 'kdmc-sso' && !row.kdmc_uid && !row.is_admin && !row.is_kevin_alias);
     const basePseudo = name.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20)
       || ('user' + Date.now().toString(36).slice(-6));
     // Lot 2 (X) : pseudo UNIQUE — un homonyme déjà inscrit faisait échouer
@@ -1468,12 +1481,18 @@ export async function handleSsoFromKdmc(request, env) {
   // GARDE ADMIN : un compte déjà marqué admin ne s'ouvre JAMAIS sur un simple code — Face ID prouvé
   // exigé, même si la session « code prouvé » porte le même uid (sinon le jeton sortirait avec is_admin).
   if (!faceIdProuve && (user.is_admin || user.is_kevin_alias)) return err('Face ID requis', 401, 'face_id_requis');
+  // Audit 15.10.2026 (P0) : un compte admin ne s'ouvre QUE si le domaine dit lui-même « admin » — jamais sur
+  // la seule foi d'une ligne relue (une collision d'id ou une liaison erronée ne donne aucun pouvoir).
+  if ((user.is_admin || user.is_kevin_alias) && !isAdmin) {
+    await auditLog(env, user.id, 'sso_kdmc_admin_refuse', 'user', user.id, { kdmc_uid: uid }, '', request.headers.get('User-Agent'));
+    return err('Compte administrateur : confirmation du domaine requise', 403, 'admin_non_confirme');
+  }
 
   const iatKdmc = await _claimInvitedAccount(env, user);
   const jwt = await signJWT({
     sub: user.id,
     pseudo: user.pseudo,
-    is_admin: !!user.is_admin,
+    is_admin: !!user.is_admin && isAdmin,
     kdmc_uid: uid,
     sso: true,
     iat: iatKdmc,

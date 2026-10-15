@@ -23,6 +23,8 @@ const DEFS = [
   { m: 'function ls(key, value){', end: '\n}' },
   { m: 'async function idbOpen(){', end: '\n}' },
   { m: 'async function idbSet(key, value){', end: '\n}' },
+  // 15.10.2026 : la déconnexion (#4434) efface aussi l'ombre 'user'/'token' via idbDel — sans lui, ReferenceError.
+  { m: 'async function idbDel(key){', end: '\n}' },
   'K._PRIV_IDB_KEY = ',
   'K._keyStoreWarned = ',
   'K._keyStoreWarnOnce = function(e){',

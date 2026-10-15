@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Arbre : la famille maternelle de Yann (document « Imbert dite Sachet · Revel · Buchet ») intégrée
+
+- 59 fiches ajoutées + 2 complétées (la mère de Yann et Yann), 268 → 327 fiches, 0 lien cassé, rejouer = 0, sauvegarde « o-2026-10-15T15-56-03 » prise avant écriture.
+- Source unique : le PDF du 11.10.2026 fourni par Kevin (Geneanet + INSEE + schéma manuscrit). Chaque fiche dit si le fait est confirmé ou issu du schéma seul. Rien d'inventé : les « frères et sœurs supposés » du schéma sont dans les notes, pas en fiches.
+- Le résumé collé par Kevin dans le message (10 « branches » d'enfants d'Étienne dit Sachet, ancêtres « 1644-1711 ») CONTREDIT le PDF (impossible en dates : Philippe, né en 1838, ne peut pas être fils d'Étienne mort en 1825) : non intégré ; à demander à Kevin d'où il vient.
+- Lien Marie-France ↔ Albert Buchet × Mathilde Revel : d'après le PDF + l'instruction de Kevin ; à confirmer par l'acte de naissance de Marie-France (noté dans sa fiche).
+- Les données familiales n'entrent pas dans le dépôt (outil : `tools/arbre/session/ecrire.sh`, patch gardé dans la session).
+
 ## 2026-10-15 — Sonde : le contrôle des 7 workers critiques ne tournait jamais (mauvais dossier)
 
 - Déploiement sonde 38751126105 : 33/33 OK, battement healthchecks « HTTP 200 — tout va bien ». Mais l'étape « Santé des

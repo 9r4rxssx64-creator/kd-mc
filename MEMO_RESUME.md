@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — CI Apex Chat remise au vert (test GIF en vrai navigateur)
+
+- v1.1.305 en ligne : E2E prod 18/0/0 sur la NOUVELLE version. Mais `messaging-app-tests.yml` rouge (run 38716180919) :
+  `tests/e2e/gif-picker.spec.js` utilisait une fausse adresse que le nouveau contrôle d'hôte Giphy refuse (l'app est juste).
+- Test corrigé (vraie adresse) + cas inverse ajouté ; local Chromium 3/3 ; sabotage → échec. Leçon #546.
+
 ## 2026-10-15 — Apex Chat v1.1.305 : ultra-audit, lot C2 (l'appli au quotidien)
 
 - Muet géré par le serveur (même app fermée) ; mise à jour qui attend la fin de la saisie / de l'appel / de l'envoi.

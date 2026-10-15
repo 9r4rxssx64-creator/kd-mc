@@ -35,10 +35,10 @@ test.describe('Apex Chat — sélecteur de GIF (navigateur réel)', () => {
         const url = String(u);
         if (url.includes('/api/gif')) {
           return new Response(JSON.stringify({ disabled: false, results: [
-            { id: 'g1', title: 'Bonjour', preview: 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=', full: 'https://giphy/full.gif' },
+            { id: 'g1', title: 'Bonjour', preview: 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=', full: 'https://media.giphy.com/media/g1/giphy.gif' },
           ] }), { status: 200 });
         }
-        if (url === 'https://giphy/full.gif') {
+        if (url === 'https://media.giphy.com/media/g1/giphy.gif') {
           return new Response(new Blob([new Uint8Array([71, 73, 70, 56, 57, 97])], { type: 'image/gif' }), { status: 200 });
         }
         return of(u, o);
@@ -61,6 +61,37 @@ test.describe('Apex Chat — sélecteur de GIF (navigateur réel)', () => {
     expect(r.uploaded.name).toMatch(/\.gif$/);
     expect(r.uploaded.size).toBeGreaterThan(0);
     expect(r.pickerHidden).toBe(true);
+  });
+
+  // 15.10.2026 (v1.1.305) : seuls les hôtes Giphy listés (K._GIF_MEDIA_HOSTS, et la CSP) sont téléchargés.
+  // Le test utilisait une adresse inventée « https://giphy/… » : le contrôle d'hôte l'a refusée, à raison.
+  test('GIF venant d\'un hôte NON Giphy → rien n\'est téléchargé ni envoyé', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      const K = window.K;
+      K.token = 'tok'; K.viewData = { id: 'cvG' };
+      let uploaded = null; let fetched = false;
+      K._uploadMedia = async (file) => { uploaded = { name: file.name }; };
+      const of = window.fetch;
+      window.fetch = async (u, o) => {
+        const url = String(u);
+        if (url.includes('/api/gif')) {
+          return new Response(JSON.stringify({ disabled: false, results: [
+            { id: 'g2', title: 'Piège', preview: 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=', full: 'https://exemple-piege.test/x.gif' },
+          ] }), { status: 200 });
+        }
+        if (url.startsWith('https://exemple-piege.test/')) { fetched = true; return new Response(new Blob([new Uint8Array([71, 73, 70])]), { status: 200 }); }
+        return of(u, o);
+      };
+      K._toggleGifPicker();
+      K._loadGifs('piege');
+      await new Promise(res => setTimeout(res, 120));
+      const cell = document.querySelector('#gif-grid .gif-cell');
+      if (cell) cell.click();
+      await new Promise(res => setTimeout(res, 120));
+      return { uploaded, fetched };
+    });
+    expect(r.fetched).toBe(false);
+    expect(r.uploaded).toBeNull();
   });
 
   test('clé absente → panneau désactivé (fail-open, message clair)', async ({ page }) => {

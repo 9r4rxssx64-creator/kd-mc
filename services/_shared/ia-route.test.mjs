@@ -557,3 +557,15 @@ test('Qwen au format chat (choices) → texte lu', async () => {
   const r = await routeText(env, { prompt: 'salut', chain: ['qwen'] });
   assert.equal(r.text, 'bonjour');
 });
+
+/* Audit Apex Chat A6-05 (15.10.2026) : un payant passait AVANT un gratuit encore disponible (code, admin, raisonnement). */
+test('PAYANTS EN DERNIER : dans CHAQUE domaine, aucun payant avant un gratuit (sauf premium explicite)', () => {
+  const prod = ['qwen', 'anthropic', 'groq', 'gemini', 'deepseek', 'openrouter', 'openai', 'perplexity', 'together', 'cerebras', 'mistral'];
+  for (const d of Object.keys(DOMAIN_PREFERENCES)) {
+    const c = planChain(d, prod);
+    const dernierGratuit = Math.max(...c.map((p, i) => (FREE_PROVIDERS.includes(p) ? i : -1)));
+    const premierPayant = c.findIndex((p) => !FREE_PROVIDERS.includes(p));
+    assert.ok(premierPayant === -1 || premierPayant > dernierGratuit, d + ' : ' + c.join(' > '));
+  }
+  assert.equal(planChain('code', prod, { premium: true })[0], 'anthropic', 'premium explicite : Anthropic reste en tête');
+});

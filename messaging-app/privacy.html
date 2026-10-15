@@ -38,7 +38,7 @@
 <body>
 <div class="wrap">
 <h1>🔒 Charte Privée</h1>
-<p class="meta">Apex Chat — Charte vie privée — version du 17 septembre 2026 (remplace celle du 27 avril 2026)</p>
+<p class="meta">Apex Chat — Charte vie privée — version du 15 octobre 2026 (remplace celle du 17 septembre 2026)</p>
 
 <div class="ok">
 <strong>🔒 Notre promesse</strong> : tes échanges sont chiffrés en transit (HTTPS/TLS) et stockés sur un serveur privé sous accès restreint. Nous ne prétendons pas être un « serveur aveugle » aujourd'hui — cette page t'explique <strong>exactement</strong> quelles données existent, où elles sont, et qui peut y accéder.
@@ -49,11 +49,13 @@
 <tr><th>Donnée</th><th>Pourquoi</th><th>Combien de temps</th></tr>
 <tr><td>Numéro de téléphone</td><td>Authentification + invitations</td><td>Tant que ton compte existe</td></tr>
 <tr><td>Pseudo</td><td>Identité publique dans l'app</td><td>Tant que ton compte existe</td></tr>
-<tr><td>Prénom + nom</td><td>Identité administrateur</td><td>Tant que ton compte existe</td></tr>
+<tr><td>Prénom + nom</td><td>Identité : affichés à l'administrateur, aux membres de tes conversations et dans leurs notifications (voir §3)</td><td>Tant que ton compte existe</td></tr>
 <tr><td>Date dernière connexion</td><td>Présence "en ligne"</td><td>Tant que ton compte existe</td></tr>
 <tr><td>Liste de tes contacts (uid only)</td><td>Notifier "X est sur Apex Chat"</td><td>Tant que les liens existent</td></tr>
 <tr><td>Métadonnées messages (qui→qui, quand, taille)</td><td>Routage technique</td><td>30 jours</td></tr>
-<tr><td>Adresses IP (hashées), appareil, ville approximative</td><td>Sécurité, anti-fraude, « mes appareils »</td><td>Tant que ton compte existe (effacé avec lui)</td></tr>
+<tr><td>Adresses IP (hashées), appareil, ville approximative</td><td>Sécurité, anti-fraude, « mes appareils »</td><td>Dernière valeur : tant que ton compte existe (effacée avec lui). Historique : 30 jours</td></tr>
+<tr><td>Position GPS précise (à environ 10 m près)</td><td>Si tu as autorisé la localisation, ton téléphone l'envoie <strong>régulièrement, même sans partage de position</strong> (à chaque connexion et à chaque déplacement de plus de 500 m, tant que l'app est ouverte). L'administrateur la voit sur une carte (dernière position et trajet). Elle n'est <strong>pas enregistrée</strong> quand l'administrateur coupe la géolocalisation (pour tous, ou pour ton compte). Pour l'arrêter toi-même : retire l'accès à la position dans les réglages de ton téléphone</td><td>Historique : 30 jours. Dernière position : effacée 30 jours après ta dernière connexion, et avec ton compte</td></tr>
+<tr><td>Résumés IA que tu demandes</td><td>Éviter de refaire le même résumé (cache lié à ton compte, jamais partagé avec un autre compte)</td><td>7 jours (effacés avec ton compte)</td></tr>
 <tr><td>Sauvegarde quotidienne de la base</td><td>Restauration en cas de panne</td><td>14 jours, chiffrée</td></tr>
 <tr><td>Type de device + OS + version app</td><td>Compatibilité, push notif</td><td>Tant que le device est enregistré</td></tr>
 </table>
@@ -71,18 +73,24 @@ Tes messages sont chiffrés <strong>de bout en bout</strong> (WebCrypto ECDH P-2
 <p>Tout. Tu as accès à 100% de tes données via Réglages → Mes données + Exporter.</p>
 
 <h3>Tes contacts</h3>
-<p>Uniquement ce que tu choisis de partager : pseudo, photo, bio, statut "en ligne" (toggle par contact). Vrai nom <strong>jamais</strong> révélé.</p>
+<p>Ce que tu choisis de partager : pseudo, photo, bio, statut "en ligne" (toggle par contact). <strong>Ton prénom et ton nom</strong> (tels qu'ils figurent sur ton compte) s'affichent aussi chez les membres de tes conversations, y compris dans les <strong>notifications</strong> de message et d'appel sur leur écran (même verrouillé). Le <strong>contenu</strong> de tes messages n'apparaît jamais dans une notification.</p>
 
 <h3>L'administrateur (Kevin DESARZENS)</h3>
 <p>
-Pour des raisons de modération et de sécurité du service privé, l'administrateur peut accéder aux données de gestion (numéros, pseudos, vrais noms, devices, signalements, géoloc partagée). Le contenu des messages chiffrés de bout en bout ne lui est <strong>pas</strong> lisible ; seuls les messages retombés en chiffrement de transit (repli, voir §2) restent techniquement accessibles, et il s'engage à ne les consulter qu'en cas de signalement justifié ou d'obligation légale.
+Pour des raisons de modération et de sécurité du service privé, l'administrateur peut accéder aux données de gestion (numéros, pseudos, vrais noms, devices, signalements, position GPS — voir §1). Le contenu des messages chiffrés de bout en bout ne lui est <strong>pas</strong> lisible ; seuls les messages retombés en chiffrement de transit (repli, voir §2) restent techniquement accessibles, et il s'engage à ne les consulter qu'en cas de signalement justifié ou d'obligation légale.
 </p>
 
 <h3>Sous-traitants techniques</h3>
 <ul>
   <li><strong>Cloudflare Inc.</strong> (hébergement) : voit le trafic technique chiffré, sans contenu</li>
   <li><strong>Vonage</strong> (SMS) : voit ton numéro pour envoyer le code de vérification et les invitations</li>
-  <li><strong>Cloudflare Workers AI (modèles Qwen)</strong>, <strong>Anthropic</strong>, <strong>Groq</strong> : voient uniquement le texte des fonctions IA que TU déclenches (résumé, traduction, réponses suggérées). Les réponses suggérées se calculent sur le dernier message reçu quand la conversation est ouverte ; tu peux les désactiver dans les réglages IA.</li>
+  <li><strong>Intelligence artificielle</strong> — elle ne reçoit du contenu que quand <strong>tu</strong> touches un bouton IA (résumé, traduction, reformulation, recherche, description d'image, « 💡 Suggestions », assistant Apex). Seule exception : la <strong>transcription des notes vocales</strong>, automatique dans une conversation <em>non</em> chiffrée de bout en bout ; dans une conversation chiffrée de bout en bout, rien ne part sans ton geste (bouton « Transcrire » avec confirmation), et le vocal s'envoie toujours, avec ou sans texte. Avant d'envoyer à une IA le contenu d'une conversation chiffrée de bout en bout, l'app te prévient que ce texte sort de ce chiffrement. Tu peux cacher le bouton « 💡 Suggestions » : Réglages → Confidentialité. Les IA <strong>gratuites</strong> sont toujours essayées d'abord, les <strong>payantes</strong> seulement en dernier secours :
+    <ul>
+      <li>Gratuites : <strong>Cloudflare Workers AI</strong> (modèles Qwen pour le texte, Whisper pour la voix — même hébergeur que l'app), <strong>Groq</strong> (États-Unis — texte et voix), <strong>Google Gemini</strong> (États-Unis — texte et description d'image), <strong>OpenRouter</strong> (États-Unis — modèles gratuits ; il transmet la demande à l'éditeur du modèle choisi)</li>
+      <li>Payantes (dernier secours) : <strong>Anthropic</strong> (États-Unis), <strong>OpenAI</strong> (États-Unis), <strong>DeepSeek</strong> (Chine), <strong>Perplexity</strong> (États-Unis)</li>
+      <li>Pour une question longue ou difficile posée à l'assistant Apex, <strong>plusieurs IA gratuites</strong> peuvent recevoir la même question en même temps pour comparer leurs réponses.</li>
+    </ul>
+  </li>
   <li><strong>GitHub, Inc.</strong> (GitHub Pages) : héberge les fichiers de la page, ne voit aucune donnée de compte</li>
 </ul>
 
@@ -103,7 +111,7 @@ Pour des raisons de modération et de sécurité du service privé, l'administra
 
 <h2>7. Transferts internationaux</h2>
 <p>
-Les données (gestion et contenu) peuvent transiter par les serveurs Cloudflare (UE + US) et Firebase (UE). Cloudflare est certifié RGPD avec clauses contractuelles types (SCCs). Les échanges sont chiffrés en transit (HTTPS/TLS) ; le contenu est stocké côté serveur sous accès restreint (voir §2).
+Les données (gestion et contenu) peuvent transiter par les serveurs Cloudflare (UE + US) et Firebase (UE). Cloudflare est certifié RGPD avec clauses contractuelles types (SCCs). Le texte (ou la voix, ou l'image) envoyé à une IA peut être traité aux États-Unis (Groq, Google, OpenRouter, Anthropic, OpenAI, Perplexity) ou, en tout dernier secours, en Chine (DeepSeek) — voir §3. Les échanges sont chiffrés en transit (HTTPS/TLS) ; le contenu est stocké côté serveur sous accès restreint (voir §2).
 </p>
 
 <h2>8. Failles de sécurité</h2>

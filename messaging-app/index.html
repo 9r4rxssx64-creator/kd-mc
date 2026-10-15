@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.300",
+  "softwareVersion": "v1.1.302",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -463,7 +463,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.300';
+const __APEX_CHAT_VERSION__ = 'v1.1.302';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
@@ -668,7 +668,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.300" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.299</div>
+  <div id="splash-version" data-ver="v1.1.302" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.302</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -682,7 +682,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.300</span></div>
+  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.302</span></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -5615,7 +5615,7 @@ K._sendPoll = function(){
     .map(i => i.value.trim()).filter(v => v.length > 0);
   if(options.length < 2){ toast('Min 2 options', 'warn'); return; }
   const multi = document.getElementById('poll-multi')?.checked || false;
-  const anon = document.getElementById('poll-anon')?.checked || true;
+  const anon = document.getElementById('poll-anon')?.checked === true;   // Lot B (A6-13) : « || true » empêchait de décocher
 
   const msg = {
     id: 'm_poll_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -5670,7 +5670,8 @@ K._votePoll = function(msgId, optIdx){
   K.render();
   // WS broadcast vote
   if(K.ws && K.ws.readyState === 1){
-    try { K.ws.send(JSON.stringify({ type: 'poll_vote', poll_id: msgId, voter: uid, votes: m.poll.votes[uid] || [] })); } catch(_e){_safeCatch('silent',_e)}
+    // Lot B (A6-13) : sondage anonyme → le serveur relaie le vote sous un pseudonyme, jamais l'identité du votant.
+    try { K.ws.send(JSON.stringify({ type: 'poll_vote', poll_id: msgId, votes: m.poll.votes[uid] || [], ...(m.poll.anon ? { anon: true } : { voter: uid }) })); } catch(_e){_safeCatch('silent',_e)}
   }
 };
 
@@ -11624,6 +11625,13 @@ K.openPrivacyPrefs = function(){
         </div>
         <input type="checkbox" id="pv-typingIndicator" ${prefs.typingIndicator?'checked':''} style="width:44px;height:26px;cursor:pointer">
       </label>
+      <label class="card-row" style="cursor:pointer">
+        <div style="flex:1">
+          <div style="font-weight:600">💡 Réponses suggérées par IA</div>
+          <div style="color:var(--ax-text-3);font-size:.78em;margin-top:2px">Affiche le bouton « 💡 Suggestions » sous un message reçu. Rien ne part tant que tu ne le touches pas ; si tu le touches, le message reçu est envoyé à une IA extérieure. Décoche pour cacher le bouton.</div>
+        </div>
+        <input type="checkbox" id="pv-smartReply" ${prefs.smartReply!==false?'checked':''} style="width:44px;height:26px;cursor:pointer">
+      </label>
     </div>
     <div style="margin-top:14px">
       <label class="label">🖼 Qui peut voir ta photo de profil ?</label>
@@ -11667,8 +11675,10 @@ K._savePrivacyPrefs = function(){
     typingIndicator: !!$('#pv-typingIndicator')?.checked,
     profilePhotoVisibility: $('#pv-profilePhotoVisibility')?.value || 'contacts',
     autoDeleteAfter: parseInt($('#pv-autoDeleteAfter')?.value || '0', 10) || 0,
+    smartReply: !!$('#pv-smartReply')?.checked,
   };
   ls('privacy_prefs', prefs);
+  if(!prefs.smartReply){ try{ const h = $('#smart-reply-chips'); if(h) h.innerHTML = ''; }catch(_e){ _safeCatch('silent', _e); } }
   toast('Confidentialité sauvegardée', 'ok');
   K._closeModal();
 };
@@ -12290,6 +12300,28 @@ K._loadSmartReplies = async function(lastMsgText, contextText){
   }catch(e){ return null; }
 };
 
+// Lot B vie privée (audit A6-02 / A3 P1) : AVANT, chaque message reçu partait tout seul
+// vers une IA extérieure (même chiffré de bout en bout, même sans réglage). MAINTENANT :
+//  - rien ne part sans un TOUCHER sur le bouton « 💡 Suggestions » ;
+//  - interrupteur utilisateur (Réglages → Confidentialité → Réponses suggérées) + interrupteur admin ai_assistant ;
+//  - conversation chiffrée de bout en bout : une confirmation claire, une fois par conversation.
+K._smartReplyAllowed = function(){
+  const prefs = lg('privacy_prefs', {}) || {};
+  if(prefs.smartReply === false) return false;
+  if(typeof K._featureEnabledForUser === 'function' && !K._featureEnabledForUser('ai_assistant', K.user && K.user.id)) return false;
+  return true;
+};
+// Vrai quand le contenu de CETTE conversation est protégé de bout en bout (DM E2E ou groupe E2E) :
+// l'envoyer à une IA extérieure le fait sortir de cette protection.
+K._aiLeavesE2e = function(conv){
+  if(!conv) return false;
+  try{
+    if(K._e2eAppliesTo(conv)) return true;
+    if(typeof K._grpApplies === 'function' && K._grpApplies(conv)) return true;
+  }catch(_e){ return true; }   // doute → on considère la conversation protégée (on demande)
+  return false;
+};
+K._SMART_REPLY_E2E_CONFIRM = 'Suggestions de réponse par IA\n\nCette conversation est chiffrée de bout en bout. Pour te proposer des réponses, le dernier message reçu sera envoyé à une IA extérieure (hors de ce chiffrement).\n\nOn ne te reposera plus la question pour cette conversation.\n\nContinuer ?';
 K._renderSmartReplyChips = async function(convId, lastMsg){
   const host = $('#smart-reply-chips');
   if(!host || !lastMsg?.text) return;
@@ -12298,20 +12330,34 @@ K._renderSmartReplyChips = async function(convId, lastMsg){
     host.innerHTML = '';
     return;
   }
-  // Audit 17/09/2026 (P1 coût) : un appel LLM à chaque ouverture de la conversation et à
-  // chaque message reçu, sans cache. Réponses gardées par message (50 derniers) ; rien
-  // n'est demandé quand l'onglet n'est pas visible.
-  if(document.hidden){ host.innerHTML = ''; return; }
+  if(document.hidden || !K._smartReplyAllowed()){ host.innerHTML = ''; return; }
   K._smartReplyCache = K._smartReplyCache || new Map();
   const ck = String(lastMsg.id || lastMsg.ts);
-  let replies;
-  if(K._smartReplyCache.has(ck)) replies = K._smartReplyCache.get(ck);
-  else {
-    host.innerHTML = '<div style="color:var(--ax-text-3);font-size:.72em;padding:2px 8px">💡</div>';
-    replies = await K._loadSmartReplies(lastMsg.text);
-    K._smartReplyCache.set(ck, replies || []);
-    if(K._smartReplyCache.size > 50) K._smartReplyCache.delete(K._smartReplyCache.keys().next().value);
+  // Déjà demandé par un toucher → on réaffiche ; sinon SEULEMENT le bouton (aucun envoi).
+  if(K._smartReplyCache.has(ck)) return K._showSmartReplyChips(host, K._smartReplyCache.get(ck));
+  K._smartReplyPending = { convId, msg: lastMsg };
+  host.innerHTML = '<button class="btn btn-out smart-ask" style="margin:1px;border-radius:12px;padding:2px 9px;font-size:.74em;line-height:1.3;white-space:nowrap;flex:0 0 auto" title="Envoie le message reçu à une IA pour proposer des réponses">💡 Suggestions</button>';
+  const b = host.querySelector && host.querySelector('.smart-ask');
+  if(b) b.addEventListener('click', () => { void K._askSmartReplies(convId, lastMsg); });
+};
+// Appelé UNIQUEMENT par le toucher sur « 💡 Suggestions ».
+K._askSmartReplies = async function(convId, lastMsg){
+  const host = $('#smart-reply-chips');
+  if(!host || !lastMsg?.text || !K._smartReplyAllowed()) return;
+  const conv = (K.conversations || []).find(c => c && c.id === convId) || (K.viewData && K.viewData.id === convId ? K.viewData : null);
+  if(K._aiLeavesE2e(conv) && !lg('smart_reply_e2e_ok_' + convId, false)){
+    if(!confirm(K._SMART_REPLY_E2E_CONFIRM)) return;
+    ls('smart_reply_e2e_ok_' + convId, true);
   }
+  K._smartReplyCache = K._smartReplyCache || new Map();
+  const ck = String(lastMsg.id || lastMsg.ts);
+  host.innerHTML = '<div style="color:var(--ax-text-3);font-size:.72em;padding:2px 8px">💡…</div>';
+  const replies = await K._loadSmartReplies(lastMsg.text);
+  K._smartReplyCache.set(ck, replies || []);
+  if(K._smartReplyCache.size > 50) K._smartReplyCache.delete(K._smartReplyCache.keys().next().value);
+  K._showSmartReplyChips(host, replies);
+};
+K._showSmartReplyChips = function(host, replies){
   if(!replies || replies.length === 0){
     host.innerHTML = '';
     return;
@@ -12787,7 +12833,7 @@ K._suggestTranslate = function(msgId){
 
 // ============================================================================
 //  v1.1.28 — Voice transcribe : tap pour enregistrer, retap pour stop+envoyer
-//  Utilise MediaRecorder + /api/ai/voice-transcribe (Whisper Groq)
+//  Utilise MediaRecorder ; transcription FACULTATIVE via /api/ai/voice-transcribe (Lot B : jamais bloquante)
 // ============================================================================
 K._voiceRecorder = null;
 K._voiceChunks = [];
@@ -12950,36 +12996,14 @@ K._toggleVoiceRecord = async function(){
       K._voiceChunks = [];
       if(blob.size < 800){ toast('Enregistrement trop court', 'warn'); return; }
       if(blob.size > 24 * 1024 * 1024){ toast('Audio > 24MB, trop long', 'err'); return; }
-      toast('🎙️ Transcription en cours...', 'info');
-      try{
-        const fd = new FormData();
-        fd.append('audio', blob, 'voice.webm');
-        fd.append('lang', 'fr');
-        const r = await fetch(API_BASE + '/api/ai/voice-transcribe', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + (K.token || '') },
-          body: fd
-        });
-        if(r.status === 429){
-          const e429 = await r.json().catch(() => ({}));
-          toast(e429.message || 'Limite gratuite atteinte. Premium = illimité.', 'warn');
-          return;
-        }
-        if(!r.ok){
-          const err = await r.json().catch(() => ({}));
-          toast('Transcription : ' + (err.error || 'erreur'), 'err');
-          return;
-        }
-        const data = await r.json();
-        const text = (data && data.text || '').trim();
-        if(!text){ toast('Aucun texte détecté', 'warn'); return; }
-        // v1.1.33 : preview modal — l'user édite/envoie/annule (1 tap user-friendly)
-        const audioUrl = URL.createObjectURL(blob);
-        K._showVoicePreview({ text, audioUrl, blob });
-      } catch(e){
-        _safeCatch('voice-transcribe', e);
-        toast('Transcription échouée', 'err');
-      }
+      // Lot B (audit A6-03) : le vocal est TOUJOURS envoyable. Avant, on attendait la transcription
+      // (Groq) et un refus (quota 5/jour, panne, clé absente) faisait `return` → vocal perdu.
+      // Maintenant l'aperçu s'ouvre tout de suite ; la transcription est facultative et ne bloque jamais.
+      // Conversation chiffrée de bout en bout : l'audio ne part PAS tout seul à l'IA (bouton + confirmation).
+      const conv = K.viewData || null;
+      const payload = { text: '', audioUrl: URL.createObjectURL(blob), blob, convId: conv && conv.id, e2e: K._aiLeavesE2e(conv) };
+      K._showVoicePreview(payload);
+      if(!payload.e2e) void K._transcribeVoice(payload);
     };
     K._voiceRecorder.start();
     if(btn) btn.classList.add('recording');
@@ -13316,14 +13340,57 @@ K._showVoicePreview = function(payload){
     <div style="text-align:center;padding:6px 0">
       <audio id="voice-preview-audio" src="${payload.audioUrl}" controls style="width:100%;margin-bottom:12px;border-radius:10px"></audio>
     </div>
-    <label style="display:block;color:var(--ax-text-2);font-size:.85em;margin-bottom:4px">Transcription (modifiable) :</label>
-    <textarea id="voice-preview-text" rows="3" style="width:100%;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:10px;color:var(--ax-text);font-size:16px;resize:vertical">${esc(payload.text)}</textarea>
+    <label style="display:block;color:var(--ax-text-2);font-size:.85em;margin-bottom:4px">Texte (facultatif, modifiable) :</label>
+    <textarea id="voice-preview-text" rows="3" placeholder="Tu peux envoyer le vocal sans texte." style="width:100%;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:10px;color:var(--ax-text);font-size:16px;resize:vertical">${esc(payload.text || '')}</textarea>
+    <div id="voice-transcribe-status" style="color:var(--ax-text-3);font-size:.78em;margin-top:4px">${payload.e2e ? '' : '📝 Transcription automatique en cours… (facultative)'}</div>
+    ${payload.e2e ? '<button class="btn btn-out btn-block" style="margin-top:8px" onclick="K._transcribeVoiceAsk()">📝 Transcrire en texte (IA extérieure)</button>' : ''}
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-out" style="flex:1" onclick="K._cancelVoicePreview()">↩ Annuler</button>
       <button class="btn" style="flex:2" onclick="K._sendVoiceMessage()">📤 Envoyer message vocal</button>
     </div>
-    <p style="text-align:center;color:var(--ax-text-3);font-size:.72em;margin-top:8px">L'audio + le texte seront envoyés ensemble.</p>
+    <p style="text-align:center;color:var(--ax-text-3);font-size:.72em;margin-top:8px">${payload.e2e ? 'Conversation chiffrée de bout en bout : ta voix n\'est envoyée à aucune IA, sauf si tu touches « Transcrire ».' : 'L\'audio (et le texte s\'il y en a un) seront envoyés ensemble.'}</p>
   `);
+};
+// Transcription FACULTATIVE (Lot B, audit A6-03) : n'empêche jamais l'envoi du vocal.
+// Échec, quota atteint, IA absente → simple message ; le bouton « Envoyer » marche toujours.
+K._transcribeVoice = async function(payload){
+  const status = (t) => { try{ const el = document.getElementById('voice-transcribe-status'); if(el) el.textContent = t; }catch(_e){ _safeCatch('silent', _e); } };
+  if(!payload || !payload.blob) return null;
+  try{
+    const fd = new FormData();
+    fd.append('audio', payload.blob, 'voice.webm');
+    const r = await fetch(API_BASE + '/api/ai/voice-transcribe?lang=fr', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + (K.token || '') },
+      body: fd
+    });
+    if(!r.ok){
+      status(r.status === 429 ? 'Pas de transcription aujourd\'hui (limite atteinte). Tu peux envoyer le vocal sans texte.' : 'Transcription indisponible. Tu peux envoyer le vocal sans texte.');
+      return null;
+    }
+    const data = await r.json().catch(() => ({}));
+    const text = String((data && data.text) || '').trim();
+    if(K._voicePending !== payload) return text || null;   // aperçu fermé ou autre vocal entre-temps
+    if(!text){ status('Aucun texte détecté. Tu peux envoyer le vocal tel quel.'); return null; }
+    payload.text = text;
+    const ta = document.getElementById('voice-preview-text');
+    if(ta && !String(ta.value || '').trim()) ta.value = text;
+    status('📝 Transcription ajoutée (modifiable).');
+    return text;
+  }catch(e){
+    _safeCatch('voice-transcribe', e);
+    status('Transcription indisponible. Tu peux envoyer le vocal sans texte.');
+    return null;
+  }
+};
+K._VOICE_E2E_CONFIRM = 'Transcrire le vocal\n\nCette conversation est chiffrée de bout en bout. Pour écrire le texte, ton enregistrement sera envoyé à une IA extérieure (hors de ce chiffrement).\n\nContinuer ?';
+// Bouton « Transcrire » (conversation chiffrée de bout en bout) : confirmation à chaque fois.
+K._transcribeVoiceAsk = async function(){
+  const p = K._voicePending;
+  if(!p) return null;
+  if(p.e2e && !confirm(K._VOICE_E2E_CONFIRM)) return null;
+  try{ const el = document.getElementById('voice-transcribe-status'); if(el) el.textContent = '📝 Transcription en cours…'; }catch(_e){ _safeCatch('silent', _e); }
+  return K._transcribeVoice(p);
 };
 
 K._cancelVoicePreview = function(){
@@ -13341,7 +13408,8 @@ K._sendVoiceMessage = async function(){
   if(!conv){ toast('Pas de conversation active', 'warn'); return; }
   const ta = document.getElementById('voice-preview-text');
   const finalText = (ta?.value || pending.text || '').trim();
-  if(!finalText){ toast('Texte vide, annulé', 'warn'); K._cancelVoicePreview(); return; }
+  // Lot B (A6-03) : un vocal SANS texte s'envoie quand même (avant : « Texte vide, annulé »).
+  const caption = finalText ? '🎙️ ' + finalText : '🎙️ Message vocal';
   try {
     // FIX audit 2026-07-08 : avant, le vocal n'était JAMAIS envoyé (push local +
     // toast « envoyé » mensonger). Maintenant : upload de l'audio → pipeline média
@@ -13364,7 +13432,7 @@ K._sendVoiceMessage = async function(){
         });
         const d = await up.json().catch(() => ({}));
         if(up.ok && d.ok){
-          await K._sendMediaMessage({ url: d.url, mime: vGk ? (pending.blob.type || 'audio/webm') : (d.mime || pending.blob.type || 'audio/webm'), name: d.name || 'vocal.webm', size: d.size || pending.blob.size, ...(vGk ? { gk: vGk } : {}) }, '🎙️ ' + finalText);
+          await K._sendMediaMessage({ url: d.url, mime: vGk ? (pending.blob.type || 'audio/webm') : (d.mime || pending.blob.type || 'audio/webm'), name: d.name || 'vocal.webm', size: d.size || pending.blob.size, ...(vGk ? { gk: vGk } : {}) }, caption);
           sent = true;
         }
       }catch(e){ _safeCatch('voice-upload', e); }
@@ -13383,7 +13451,7 @@ K._sendVoiceMessage = async function(){
       const msg = {
         id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
         from: K.user.id,
-        text: '🎙️ ' + finalText,
+        text: caption,
         voice_text: finalText,
         voice_data: audioData,
         voice_too_large: !audioData,
@@ -17974,6 +18042,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.300", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.302", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

@@ -424,8 +424,9 @@ export class ConversationDO {
         const polls = await this.state.storage.list({ prefix: 'pollvotes:', limit: 200 });
         for (const [k, all] of polls) {
           const pollId = k.slice('pollvotes:'.length);
+          const mine = await this._pollPseudonym(pollId, userId);   // Lot B : son propre vote anonyme lui revient sous son id
           for (const [voter, votes] of Object.entries(all || {})) {
-            if (Array.isArray(votes)) server.send(JSON.stringify({ type: 'poll_vote', poll_id: pollId, voter, votes, convId, replayed: true }));
+            if (Array.isArray(votes)) server.send(JSON.stringify({ type: 'poll_vote', poll_id: pollId, voter: voter === mine ? userId : voter, votes, convId, replayed: true }));
           }
         }
       }
@@ -883,9 +884,22 @@ export class ConversationDO {
         let all = {};
         try { all = (await this.state.storage.get(key)) || {}; } catch (_) { all = {}; }
         if (typeof all !== 'object' || Array.isArray(all)) all = {};
-        if (votes.length) all[session.userId] = votes; else delete all[session.userId];
+        // Lot B (A6-13) : sondage ANONYME → le vote est gardé et relayé sous un pseudonyme stable (même votant, même
+        // sondage = même pseudonyme, non devinable sans la clé du serveur). Les autres membres ne voient que des comptes ;
+        // seuls les appareils du votant lui-même reçoivent son identifiant (pour cocher « mon vote »).
+        const anon = msg.anon === true;
+        const voterKey = anon ? await this._pollPseudonym(pollId, session.userId) : session.userId;
+        if (votes.length) all[voterKey] = votes; else delete all[voterKey];
         try { await this.state.storage.put(key, all); } catch (e) { console.warn('[poll_vote] stockage:', e && e.message); }
-        this.broadcast({ type: 'poll_vote', poll_id: pollId, voter: session.userId, votes, convId: session.convId, ts: Date.now() }, ws);
+        if (!anon) {
+          this.broadcast({ type: 'poll_vote', poll_id: pollId, voter: session.userId, votes, convId: session.convId, ts: Date.now() }, ws);
+          break;
+        }
+        const frame = { type: 'poll_vote', poll_id: pollId, votes, convId: session.convId, ts: Date.now(), anon: true };
+        for (const [sock, s] of this.sessions) {
+          if (sock === ws) continue;
+          try { sock.send(JSON.stringify({ ...frame, voter: s.userId === session.userId ? session.userId : voterKey })); } catch (_) { /* client mort */ }
+        }
         break;
       }
 
@@ -901,6 +915,14 @@ export class ConversationDO {
       if (ws === exclude || !session || session.userId !== userId) continue;
       try { ws.send(data); } catch (e) { /* client mort */ }
     }
+  }
+
+  // Lot B (A6-13) : pseudonyme d'un votant pour UN sondage anonyme (HMAC-SHA-256, clé dérivée du secret serveur).
+  async _pollPseudonym(pollId, userId) {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', enc.encode('apex-poll-anon-v1|' + String(this.env.JWT_SIGN_KEY)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(pollId + '|' + userId)));
+    return 'anon_' + Array.from(sig.slice(0, 12), (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   broadcast(payload, exclude = null) {

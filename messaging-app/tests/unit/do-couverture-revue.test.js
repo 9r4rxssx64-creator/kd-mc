@@ -566,6 +566,19 @@ describe('Sondages : votes relayés, votant imposé, gardés et rejoués (08.10.
     expect(ws.frames('poll_vote')[0]).toMatchObject({ poll_id: 'p3', voter: 'alice', votes: [2], replayed: true });
   });
 
+  it('Lot B (A6-13) : sondage anonyme rejoué — MON vote me revient sous mon id, celui des autres reste un pseudonyme', async () => {
+    const { _do } = await makeDO();
+    const pBob = await _do._pollPseudonym('p4', 'bob');
+    const pAlice = await _do._pollPseudonym('p4', 'alice');
+    await _do.state.storage.put('pollvotes:p4', { [pBob]: [1], [pAlice]: [0] });
+    _do.state.storage.list = async ({ prefix }) => new Map([['pollvotes:p4', await _do.state.storage.get('pollvotes:p4')]].filter(([k]) => k.startsWith(prefix)));
+    const ws = await connect(_do, 'bob');
+    const f = ws.frames('poll_vote');
+    expect(f.find((x) => x.votes[0] === 1).voter).toBe('bob');
+    expect(f.find((x) => x.votes[0] === 0).voter).toBe(pAlice);
+    expect(JSON.stringify(f)).not.toContain('alice');
+  });
+
   it('stockage en panne (lecture, écriture) ou valeur corrompue : le vote est quand même diffusé', async () => {
     const { _do } = await makeDO();
     const alice = new MockWS(); const bob = new MockWS();

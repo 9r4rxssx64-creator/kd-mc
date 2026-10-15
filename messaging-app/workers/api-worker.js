@@ -488,6 +488,28 @@ async function auditLog(env, actor_id, action, target_type, target_id, details, 
   ).bind(String(actor_id || 'system'), action, s(target_type), target_id == null ? null : String(target_id), d, Date.now(), s(ipHash), s(ua)).run();
 }
 
+// Lot B (audit A6-11) : l'admin consultait carte, trajets et listes d'utilisateurs SANS aucune trace. Chaque lecture
+// réussie de données personnelles par l'admin (ou par un compte qui regarde un AUTRE compte) est maintenant
+// journalisée : qui, quoi, quel compte visé, combien de lignes. Ne bloque jamais la réponse.
+export async function _auditAdminRead(request, env, action, targetId, res) {
+  try {
+    if (!res || res.status !== 200) return res;
+    const auth = await getAuthUser(request, env);
+    if (!auth) return res;
+    if (targetId && !auth.is_admin && (auth.sub === targetId)) return res;   // on consulte SES propres données : rien à tracer
+    let rows = null;
+    try {
+      const j = await res.clone().json();
+      const arr = j && Object.values(j).find((v) => Array.isArray(v));
+      if (arr) rows = arr.length;
+    } catch (_) { /* corps non JSON */ }
+    const u = new URL(request.url);
+    await auditLog(env, auth.sub, action, targetId ? 'user' : 'users', targetId || null,
+      { path: u.pathname, query: u.search.slice(0, 200), rows }, null, request.headers.get('user-agent') || '');
+  } catch (_) { /* journal en panne : la consultation reste servie */ }
+  return res;
+}
+
 // ============================================================================
 //  Connexion-tracking (migration 0007)
 //  Kevin "être au courant de chaque connexion + capturer max de données :
@@ -1527,7 +1549,8 @@ async function handleGetMe(request, env) {
 // ----------------------------------------------------------------------------
 const RGPD_USER_PUBLIC_COLS = ['id', 'pseudo', 'real_name', 'display_name', 'first_name', 'last_name', 'phone', 'email',
   'bio', 'avatar_url', 'created_at', 'last_seen', 'premium_until', 'premium_plan', 'language', 'timezone', 'address',
-  'city', 'country', 'job', 'birth_date', 'status', 'source', 'invited_by', 'last_geo_label', 'last_device_label'];
+  'city', 'country', 'job', 'birth_date', 'status', 'source', 'invited_by', 'last_geo_label', 'last_device_label',
+  'last_lat', 'last_lng'];
 
 export async function handleExportMe(request, env) {
   const auth = await getAuthUser(request, env);
@@ -1549,6 +1572,9 @@ export async function handleExportMe(request, env) {
     out.connections = await q('SELECT device, os, browser, country, city, first_seen, last_seen FROM connections WHERE user_id=?', uid);
     out.cgu_acceptances = await q('SELECT version, accepted_at, implicit FROM cgu_acceptances WHERE user_id=?', uid);
     out.reports_made = await q('SELECT id, target_user_id, reason, ts, status FROM signalements WHERE reporter_id=?', uid);
+    // Lot B (A6-01 / A6-06) : historique de position (30 derniers jours) et résumés IA gardés en cache (7 jours).
+    out.activity = await q('SELECT ts, action, lat, lng, geo_label, user_agent FROM user_activity WHERE user_id=? ORDER BY ts', uid);
+    out.ai_summaries = await q('SELECT text, provider, ts FROM ai_summary_cache WHERE user_id=? ORDER BY ts', uid);
   } catch (e) { return err('Export impossible pour le moment', 500, 'export_failed', e); }
   try { await auditLog(env, uid, 'rgpd_export', 'user', uid, {}, null, request.headers.get('user-agent') || ''); } catch (_) {}
   return new Response(JSON.stringify(out, null, 2), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="apex-chat-mes-donnees-${new Date().toISOString().slice(0, 10)}.json"` } });
@@ -1585,6 +1611,7 @@ export async function handleDeleteMe(request, env) {
     await run('push_subscriptions', 'DELETE FROM push_subscriptions WHERE user_id=?', uid);
     await run('connections', 'DELETE FROM connections WHERE user_id=?', uid);
     await run('user_activity', 'DELETE FROM user_activity WHERE user_id=?', uid);
+    await run('ai_summary_cache', 'DELETE FROM ai_summary_cache WHERE user_id=?', uid);   // Lot B (A6-06)
     await run('invitations', 'DELETE FROM invitations WHERE inviter_id=? AND accepted_at IS NULL', uid);
     // 4) Compte : anonymisé (l'id reste pour l'intégrité des références), numéro libéré
     // Revue 08.10.2026 : phone, phone_hash, real_name et les clés sont NOT NULL (0001_init.sql) —
@@ -1628,6 +1655,39 @@ async function handleCguAccept(request, env) {
   return json({ ok: true });
 }
 
+// Lot B vie privée (audit A6-01) : l'interrupteur admin « Géoloc users » (track_geoloc) n'était lu par PERSONNE
+// (il ne vivait que dans le téléphone de l'admin). Le serveur le lit maintenant : coupé (global, ou pour ce compte)
+// → aucune coordonnée GPS n'est enregistrée. Par défaut (jamais réglé) : actif, comme l'affiche l'écran admin.
+// Base illisible → on n'enregistre PAS les coordonnées (dans le doute, la vie privée gagne).
+export const LOCATION_RETENTION_MS = 30 * 86400000;
+export async function _geolocTrackingOn(env, uid) {
+  try {
+    const rows = ((await env.APEX_CHAT_DB.prepare('SELECT key, value FROM system_config WHERE key=? OR key=?')
+      .bind('FEATURE_TRACK_GEOLOC', 'user_toggle:' + uid + ':track_geoloc').all()) || {}).results || [];
+    const m = {}; for (const r of rows) m[r.key] = String(r.value);
+    const perUser = m['user_toggle:' + uid + ':track_geoloc'];
+    if (perUser === 'false' || perUser === '0') return false;
+    if (perUser === 'true' || perUser === '1') return true;
+    const g = m.FEATURE_TRACK_GEOLOC;
+    return !(g === 'false' || g === '0');
+  } catch (_) { return false; }
+}
+
+// Purge quotidienne (cron 03:00) des positions : historique user_activity de plus de 30 jours, et dernière position
+// connue (users.last_lat/last_lng) d'un compte inactif depuis plus de 30 jours. Avant Lot B : « TTL 30j via cleanup
+// futur » n'existait qu'en commentaire, rien n'était jamais effacé.
+export async function purgeLocationHistory(env, now = Date.now()) {
+  const cutoff = now - LOCATION_RETENTION_MS;
+  const out = {};
+  try { out.activity = ((await env.APEX_CHAT_DB.prepare('DELETE FROM user_activity WHERE ts < ?').bind(cutoff).run()) || {}).meta?.changes ?? 0; }
+  catch (e) { out.activity = 'erreur: ' + (e && e.message); }
+  try { out.last_position = ((await env.APEX_CHAT_DB.prepare('UPDATE users SET last_lat=NULL, last_lng=NULL WHERE last_lat IS NOT NULL AND (last_seen IS NULL OR last_seen < ?)').bind(cutoff).run()) || {}).meta?.changes ?? 0; }
+  catch (e) { out.last_position = 'erreur: ' + (e && e.message); }
+  try { out.ai_summary_cache = ((await _purgeAiSummaryCache(env, now)) || {}).meta?.changes ?? 0; }
+  catch (e) { out.ai_summary_cache = 'erreur: ' + (e && e.message); }
+  return out;
+}
+
 // Heartbeat user — last_seen + geoloc/device si consenti par toggle
 async function handleUserHeartbeat(request, env) {
   const auth = await getAuthUser(request, env);
@@ -1648,9 +1708,11 @@ async function handleUserHeartbeat(request, env) {
   else if (/Windows/i.test(ua)) deviceLabel = 'Windows';
   else if (/Linux/i.test(ua)) deviceLabel = 'Linux';
 
-  // Geoloc client (si fournie) — sinon Cloudflare CF-IPCity headers
-  const lat = typeof body.lat === 'number' ? body.lat : null;
-  const lng = typeof body.lng === 'number' ? body.lng : null;
+  // Geoloc client (si fournie ET si l'interrupteur « Géoloc users » est actif) — sinon Cloudflare CF-IPCity headers
+  const wantsGeo = typeof body.lat === 'number' && typeof body.lng === 'number';
+  const geoOn = wantsGeo ? await _geolocTrackingOn(env, auth.sub) : false;
+  const lat = geoOn ? body.lat : null;
+  const lng = geoOn ? body.lng : null;
   let geoLabel = null;
   if (lat !== null && lng !== null) {
     geoLabel = (cfCity ? cfCity + ', ' : '') + (cfCountry || '');
@@ -1665,7 +1727,7 @@ async function handleUserHeartbeat(request, env) {
      WHERE id=?`
   ).bind(Date.now(), ipHash, ua, deviceLabel, lat, lng, geoLabel, Date.now(), auth.sub).run().catch(() => {});
 
-  // Activity log (TTL 30j via cleanup futur)
+  // Activity log — purgé à 30 jours (purgeLocationHistory, cron 03:00)
   await env.APEX_CHAT_DB.prepare(
     `INSERT INTO user_activity (user_id, ts, ip_hash, user_agent, lat, lng, geo_label, action)
      VALUES (?, ?, ?, ?, ?, ?, ?, 'heartbeat')`
@@ -3620,6 +3682,35 @@ async function handleAdminCommand(request, env) {
       result = { signalements: signRows.results || [] };
       break;
 
+    // Lot B (audit A6-12) : les boutons « bannir / ignorer / avertir » d'un signalement appelaient cette commande,
+    // qui n'existait pas (« Commande inconnue ») → les signalements restaient « pending » pour toujours.
+    case 'resolveSignalement': {
+      const sigId = String((params && params.id) || '');
+      const action = String((params && params.action) || '');
+      if (!sigId || !['ban', 'dismiss', 'warn'].includes(action)) {
+        return err('Paramètres invalides (id + action = ban | dismiss | warn)', 400, 'bad_params');
+      }
+      const sig = await env.APEX_CHAT_DB.prepare('SELECT id, reporter_id, target_user_id, status FROM signalements WHERE id=?').bind(sigId).first();
+      if (!sig) return err('Signalement introuvable', 404, 'not_found');
+      if (action === 'ban' && sig.target_user_id === auth.sub) return err('Impossible de bannir ton propre compte admin', 400, 'self_ban');
+      const now = Date.now();
+      const status = action === 'dismiss' ? 'dismissed' : 'resolved';
+      await env.APEX_CHAT_DB.prepare('UPDATE signalements SET status=?, resolution=?, resolved_at=?, resolved_by=? WHERE id=?')
+        .bind(status, action, now, auth.sub, sigId).run();
+      if (action === 'ban') {
+        // Même effet que le bouton « bannir » de la fiche (handleAdminUserAction) : REST + temps réel coupés.
+        await env.APEX_CHAT_DB.prepare('UPDATE users SET is_banned=1, status=?, updated_at=? WHERE id=?')
+          .bind('suspended', now, sig.target_user_id).run();
+      }
+      const notified = { target: null, reporter: null };   // bilan d'envoi push { total, ok, failed } (null = rien tenté / échec)
+      if (action === 'warn') {
+        try { notified.target = await sendPushToUser(sig.target_user_id, { title: '⚠️ Avertissement', body: 'Un de tes messages a été signalé. Merci de respecter les règles d\'Apex Chat.', data: { type: 'moderation_warn' } }, env); } catch (_) { /* best-effort */ }
+      }
+      try { notified.reporter = await sendPushToUser(sig.reporter_id, { title: '✅ Signalement traité', body: 'Merci : ton signalement a été examiné par la modération.', data: { type: 'report_resolved' } }, env); } catch (_) { /* best-effort */ }
+      result = { ok: true, id: sigId, status, action, target_user_id: sig.target_user_id, notified };
+      break;
+    }
+
     case 'globalStats':
       const totalUsers = await env.APEX_CHAT_DB.prepare("SELECT COUNT(*) as c FROM users WHERE status='active'").first();
       const totalConvs = await env.APEX_CHAT_DB.prepare('SELECT COUNT(*) as c FROM conversations WHERE archived_at IS NULL').first();
@@ -5363,6 +5454,11 @@ Francais, tutoiement, concis (max 200 mots), pas d'erreur technique brute.`;
 //  - Cache D1 par hash(prompt) 7 jours TTL (évite re-payer même prompt)
 //  - SSE streaming optionnel (?stream=1) pour UX progressive
 // ============================================================================
+export const AI_SUMMARY_CACHE_TTL_MS = 7 * 86400 * 1000;
+/** Purge du cache des résumés IA : lignes de plus de 7 jours, et anciennes lignes SANS propriétaire (avant Lot B). */
+export async function _purgeAiSummaryCache(env, now = Date.now()) {
+  return env.APEX_CHAT_DB.prepare('DELETE FROM ai_summary_cache WHERE ts < ? OR user_id IS NULL').bind(now - AI_SUMMARY_CACHE_TTL_MS).run();
+}
 export async function handleAiSummarize(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
@@ -5383,12 +5479,14 @@ export async function handleAiSummarize(request, env) {
   if (!prompt || prompt.length < 10) return err('prompt required (min 10 chars)');
   if (prompt.length > 50000) return err('prompt too long (max 50k chars)');
 
-  // Cache D1 par hash(prompt + maxTokens) 7 jours
-  const cacheKey = await _sha256Hex(prompt + ':' + maxTokens);
+  // Cache D1 7 jours, PROPRE À CHAQUE COMPTE (Lot B, audit A6-06) : avant, la clé ne dépendait que du texte →
+  // un autre compte qui envoyait le même texte recevait le résumé du premier (« oracle »), et les lignes n'avaient
+  // pas de propriétaire (impossible à effacer avec le compte). Purge quotidienne : cron 03:00 (_purgeAiSummaryCache).
+  const cacheKey = await _sha256Hex(auth.sub + '\u0000' + prompt + ':' + maxTokens);
   try {
     const cached = await env.APEX_CHAT_DB?.prepare(
-      'SELECT text, ts FROM ai_summary_cache WHERE cache_key=? AND ts > ?'
-    ).bind(cacheKey, Date.now() - 7 * 86400 * 1000).first();
+      'SELECT text, ts FROM ai_summary_cache WHERE cache_key=? AND user_id=? AND ts > ?'
+    ).bind(cacheKey, auth.sub, Date.now() - AI_SUMMARY_CACHE_TTL_MS).first();
     if (cached?.text) {
       return json({ ok: true, text: cached.text, cached: true, provider: 'd1-cache', premium: quota.premium });
     }
@@ -5414,8 +5512,8 @@ export async function handleAiSummarize(request, env) {
         // Cache result D1 (best-effort)
         try {
           await env.APEX_CHAT_DB?.prepare(
-            'INSERT OR REPLACE INTO ai_summary_cache (cache_key, text, ts, provider) VALUES (?, ?, ?, ?)'
-          ).bind(cacheKey, text, Date.now(), p.name).run();
+            'INSERT OR REPLACE INTO ai_summary_cache (cache_key, text, ts, provider, user_id) VALUES (?, ?, ?, ?, ?)'
+          ).bind(cacheKey, text, Date.now(), p.name, auth.sub).run();
         } catch (e) { /* schema peut manquer */ }
         await consumeQuota(env, quota);
         return json({ ok: true, text, cached: false, provider: p.name, premium: quota.premium });
@@ -5643,8 +5741,9 @@ export async function handleAiSmartReply(request, env) {
   const userPrompt = `Message reçu: "${lastMessage}"${context ? `\nContexte: ${context}` : ''}`;
   const messages = [{ role: 'user', content: userPrompt }];
 
-  /* Réponses rapides = « speed » → Groq puis Qwen (gratuits), Anthropic en secours */
-  const providers = _iaOrdered(env, 'speed', { qwen: _callQwenIA, anthropic: _callAnthropicIASummarize, groq: _callGroqIA });
+  /* Lot B vie privée (A6-02) : Qwen (Workers AI, MÊME hébergeur Cloudflare, gratuit) d'abord, puis Groq (gratuit),
+     Anthropic (payant) en tout dernier secours. Avant : « speed » → Groq (tiers américain) en premier. */
+  const providers = _iaOrdered(env, 'general', { qwen: _callQwenIA, anthropic: _callAnthropicIASummarize, groq: _callGroqIA });
   for (const p of providers) {
     try {
       const ctrl = new AbortController();
@@ -5735,7 +5834,10 @@ export async function handleAiTranslate(request, env) {
 export async function handleAiVoiceTranscribe(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
-  if (!env.GROQ_API_KEY) return err('Groq Whisper non configuré (GROQ_API_KEY manquant)', 503);
+  /* Lot B (A6-03/A6-05) : GRATUIT d'abord — Whisper sur Workers AI (même hébergeur Cloudflare, aucun tiers), puis
+     Groq Whisper (gratuit, tiers) en secours. Aucun payant. Essais EN SÉQUENCE (jamais en parallèle), 1 seule unité
+     de quota consommée, seulement en cas de succès. Le client n'attend plus cette route pour envoyer un vocal. */
+  if (!env.AI && !env.GROQ_API_KEY) return err('Transcription non configurée (ni Workers AI ni GROQ_API_KEY)', 503);
 
   // v1.1.30 : quota daily si non-premium
   const quota = await checkPremiumOrQuota(env, auth.sub, 'voice-transcribe', request);
@@ -5772,16 +5874,41 @@ export async function handleAiVoiceTranscribe(request, env) {
   if (!audioBlob || audioBlob.size === 0) return err('Audio vide');
   if (audioBlob.size > 25 * 1024 * 1024) return err('Audio trop gros (max 25 MB)');
 
-  // Forward vers Groq Whisper API (audio/transcriptions, modèle whisper-large-v3)
+  const url = new URL(request.url);
+  const langParam = url.searchParams.get('lang');
+  const lang = langParam && /^[a-z]{2}$/.test(langParam) ? langParam : null;
+  const tried = [];
+
+  // 1) Workers AI Whisper (gratuit, même hébergeur)
+  if (env.AI) {
+    try {
+      const bytes = new Uint8Array(await audioBlob.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      const input = { audio: btoa(bin) };
+      if (lang) input.language = lang;
+      const r = await env.AI.run('@cf/openai/whisper-large-v3-turbo', input);
+      const text = String((r && r.text) || '').trim();
+      if (text) {
+        await consumeQuota(env, quota);
+        const info = (r && r.transcription_info) || {};
+        return json({ ok: true, text, language: info.language || lang, duration_s: info.duration || null,
+          provider: 'workers-ai-whisper-large-v3-turbo', premium: quota.premium });
+      }
+      tried.push('workers-ai: vide');
+    } catch (e) {
+      tried.push('workers-ai: ' + String((e && e.message) || e).slice(0, 80));
+    }
+  }
+  if (!env.GROQ_API_KEY) return err('Transcription indisponible', 502, 'transcribe_failed', { tried });
+
+  // 2) Groq Whisper (gratuit, tiers) — audio/transcriptions, modèle whisper-large-v3-turbo
   try {
     const groqForm = new FormData();
     groqForm.append('file', audioBlob, audioFilename);
     groqForm.append('model', 'whisper-large-v3-turbo');
     groqForm.append('response_format', 'verbose_json');
-    // Heuristique langue : si user a paramétré language, le passer (sinon auto-detect)
-    const url = new URL(request.url);
-    const lang = url.searchParams.get('lang');
-    if (lang && /^[a-z]{2}$/.test(lang)) groqForm.append('language', lang);
+    if (lang) groqForm.append('language', lang);
 
     const ctrl = new AbortController();
     const timeoutId = setTimeout(() => ctrl.abort(), 30_000);
@@ -5815,7 +5942,7 @@ export async function handleAiVoiceTranscribe(request, env) {
 }
 
 // ============================================================================
-//  v1.1.28 — POST /api/ai/image-describe : image → description (Anthropic Vision)
+//  v1.1.28 — POST /api/ai/image-describe : image → description (Gemini gratuit, Anthropic en secours)
 //  Input : { image_base64, prompt (optional) }
 //  Output : { ok, description, provider }
 //  Use case : alt-text accessibilité, OCR léger, modération
@@ -5823,7 +5950,11 @@ export async function handleAiVoiceTranscribe(request, env) {
 export async function handleAiImageDescribe(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
-  if (!env.ANTHROPIC_API_KEY) return err('Anthropic Vision non configuré', 503);
+  /* Lot B (A6-05) : GRATUIT d'abord — Gemini 2.0 Flash (vision gratuite) quand sa clé existe, Anthropic (payant)
+     seulement en secours. Workers AI n'est pas branché ici : son modèle vision (llama-3.2-11b-vision) exige une
+     acceptation de licence manuelle sur le compte Cloudflare, et llava-1.5-7b décrit mal en français ; à ajouter
+     devant Gemini dès que la licence est acceptée. Essais en SÉQUENCE, 1 unité de quota, seulement en cas de succès. */
+  if (!env.GEMINI_API_KEY && !env.ANTHROPIC_API_KEY) return err('Description d\'image non configurée', 503);
 
   // v1.1.30 : quota daily si non-premium
   const quota = await checkPremiumOrQuota(env, auth.sub, 'image-describe', request);
@@ -5850,6 +5981,36 @@ export async function handleAiImageDescribe(request, env) {
   else if (imageBase64.startsWith('data:image/webp')) mediaType = 'image/webp';
   else if (imageBase64.startsWith('data:image/gif')) mediaType = 'image/gif';
 
+  // 1) Gemini (gratuit)
+  if (env.GEMINI_API_KEY) {
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 20_000);
+    try {
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mediaType, data: cleanB64 } }, { text: customPrompt }] }],
+          generationConfig: { maxOutputTokens: 500 } }),
+        signal: ctrl.signal,
+      });
+      if (r.ok) {
+        const d = await r.json().catch(() => ({}));
+        const parts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
+        const description = parts.map((x) => x.text || '').join('').trim();
+        if (description) {
+          await consumeQuota(env, quota);
+          return json({ ok: true, description, provider: 'gemini-2.0-flash-vision', premium: quota.premium });
+        }
+      } else {
+        console.warn('[image-describe] Gemini HTTP', r.status);
+      }
+    } catch (e) {
+      console.warn('[image-describe] Gemini :', e && e.message);
+    } finally { clearTimeout(timeoutId); }
+    if (!env.ANTHROPIC_API_KEY) return err('Description d\'image indisponible', 502);
+  }
+
+  // 2) Anthropic (payant, dernier secours)
   try {
     const ctrl = new AbortController();
     const timeoutId = setTimeout(() => ctrl.abort(), 20_000);
@@ -6475,7 +6636,7 @@ const _workerHandler = {
 
       // Localisation — historique / trajet (v1.1.187)
       const locMatch = path.match(/^\/api\/location\/([a-zA-Z0-9_-]+)$/);
-      if (locMatch && method === 'GET') return await handleLocationHistory(locMatch[1], request, env);
+      if (locMatch && method === 'GET') return await _auditAdminRead(request, env, 'admin_view_location_history', locMatch[1], await handleLocationHistory(locMatch[1], request, env));
 
       // Médias R2 (photos/vidéos/fichiers tous formats) — v1.1.186
       if (path === '/api/media' && method === 'POST') return await handleMediaUpload(request, env);
@@ -6600,10 +6761,10 @@ const _workerHandler = {
       if (path === '/api/admin/invite-magic' && method === 'POST') return await handleAdminInviteMagic(request, env);
       if (path === '/api/admin/whitelist-bulk' && method === 'POST') return await handleAdminWhitelistBulk(request, env);
       if (path === '/api/auth/magic-login' && method === 'POST') return await handleMagicLogin(request, env);
-      if (path === '/api/admin/live-users' && method === 'GET') return await handleAdminLiveUsers(request, env);
-      if (path === '/api/admin/map' && method === 'GET') return await handleAdminMap(request, env);
+      if (path === '/api/admin/live-users' && method === 'GET') return await _auditAdminRead(request, env, 'admin_view_live_users', null, await handleAdminLiveUsers(request, env));
+      if (path === '/api/admin/map' && method === 'GET') return await _auditAdminRead(request, env, 'admin_view_map', null, await handleAdminMap(request, env));
       const adminGeoMatch = path.match(/^\/api\/admin\/users\/([^\/]+)\/geo-history$/);
-      if (adminGeoMatch && method === 'GET') return await handleAdminUserGeoHistory(adminGeoMatch[1], request, env);
+      if (adminGeoMatch && method === 'GET') return await _auditAdminRead(request, env, 'admin_view_geo_history', adminGeoMatch[1], await handleAdminUserGeoHistory(adminGeoMatch[1], request, env));
       if (path === '/api/test/login' && method === 'POST') return await handleTestLogin(request, env);
       if (path === '/api/test/cleanup' && method === 'POST') return await handleTestCleanup(request, env);
       if (path === '/api/contacts' && method === 'GET') return await handleContacts(request, env);
@@ -6617,13 +6778,13 @@ const _workerHandler = {
       if (contactMatch && method === 'PATCH') return await handleUpdateContact(contactSeg, request, env);
       if (contactMatch && method === 'DELETE') return await handleDeleteContact(contactSeg, request, env);
       if (nickMatch && method === 'PUT') return await handleSetNickname(contactSeg, request, env);
-      if (path === '/api/admin/all-users' && method === 'GET') return await handleAdminAllUsers(request, env);
+      if (path === '/api/admin/all-users' && method === 'GET') return await _auditAdminRead(request, env, 'admin_view_all_users', null, await handleAdminAllUsers(request, env));
       const adminUserActionMatch = path.match(/^\/api\/admin\/users\/([^\/]+)\/(block|unblock|ban|unban|authorize|revoke|force_logout|delete)$/);
       if (adminUserActionMatch && method === 'POST') return await handleAdminUserAction(adminUserActionMatch[1], adminUserActionMatch[2], request, env);
       const adminTimelineMatch = path.match(/^\/api\/admin\/users\/([^\/]+)\/timeline$/);
       if (adminTimelineMatch && method === 'GET') return await handleAdminUserTimeline(adminTimelineMatch[1], request, env);
       const adminConvsMatch = path.match(/^\/api\/admin\/users\/([^\/]+)\/conversations$/);
-      if (adminConvsMatch && method === 'GET') return await handleAdminUserConvs(adminConvsMatch[1], request, env);
+      if (adminConvsMatch && method === 'GET') return await _auditAdminRead(request, env, 'admin_view_user_conversations', adminConvsMatch[1], await handleAdminUserConvs(adminConvsMatch[1], request, env));
       if (path === '/api/admin/connections' && method === 'GET') return await handleAdminConnections(request, env);
       if (path === '/api/admin/search' && method === 'GET') return await handleAdminSearch(request, env);
       if (path === '/api/admin/toggles' && method === 'GET') return await handleAdminGetToggles(request, env);
@@ -6849,6 +7010,7 @@ const _workerHandler = {
     // Cron 0 3 * * * (03:00 quotidien) — Backup R2 + cleanup audit log > 90j
     if (cron === '0 3 * * *') {
       ctx.waitUntil(performDailyBackup(env));
+      await purgeLocationHistory(env);   // Lot B : positions > 30 j + cache des résumés IA > 7 j (jamais bloquant)
       await env.APEX_CHAT_DB.prepare(
         'DELETE FROM audit_log WHERE ts < ?'
       ).bind(Date.now() - 90 * 86400000).run();

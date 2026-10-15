@@ -321,6 +321,11 @@ export function planChain(domain, available, opts) {
   const libres = chain.slice(1).filter((p) => FREE_PROVIDERS.includes(p)).sort(parNiveau);
   let i = 0;
   chain = chain.map((p, k) => (k > 0 && FREE_PROVIDERS.includes(p) ? libres[i++] : p));
+  /* PAYANTS EN DERNIER, TOUJOURS (règle de Kevin ; audit Apex Chat A6-05, 15.10.2026) : les préférences de domaine
+     plaçaient des payants AVANT des gratuits encore disponibles (code : deepseek/anthropic/openai avant gemini ;
+     admin : anthropic/openai avant gemini). Tri stable : tous les gratuits d'abord (dans l'ordre ci-dessus), puis les
+     payants dans leur ordre. Seul un choix PREMIUM explicite de l'app garde Anthropic en tête. */
+  if (!(opts && opts.premium)) chain = chain.filter((p) => FREE_PROVIDERS.includes(p)).concat(chain.filter((p) => !FREE_PROVIDERS.includes(p)));
   /* Une image ne va jamais à une IA texte seul ; un domaine vision sans Gemini/Anthropic → vide. */
   if (dom === 'vision') chain = chain.filter((p) => ['gemini', 'qwen', 'anthropic', 'openai'].includes(p));   // qwen : texte seul (Workers AI vision à brancher)
   return chain;

@@ -3587,6 +3587,12 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-09 | `messaging-app/d1-migrations/0013_users_signing_key.sql` | Apex Chat : colonne dédiée pour la clé de signature des groupes |
 | 2026-10-09 | `messaging-app/d1-migrations/0014_prekey_signed_libere.sql` | Apex Chat : l'ancien emplacement de la clé de signature est libéré (clés éventuelles déplacées) |
 | 2026-10-15 | `messaging-app/tests/unit/audit2-p0-sso-collision-admin.test.js` | Apex Chat : personne ne peut prendre le compte administrateur par la connexion du domaine |
+| 2026-10-15 | `messaging-app/tests/unit/lot-b-client-ia-vocal.test.js` | Apex Chat (vie privée) : rien ne part vers une IA sans toucher ; vocal toujours envoyable |
+| 2026-10-15 | `messaging-app/tests/unit/lot-b-ia-gratuit-dabord.test.js` | Apex Chat (vie privée) : IA gratuites d'abord, payantes en dernier |
+| 2026-10-15 | `messaging-app/tests/unit/lot-b-serveur-vie-privee.test.js` | Apex Chat (vie privée) : purge position 30 j, export, interrupteur géoloc, cache résumés |
+| 2026-10-15 | `messaging-app/tests/unit/lot-b-charte-verite.test.js` | Apex Chat (vie privée) : la charte dit ce que fait vraiment le code |
+| 2026-10-15 | `messaging-app/tests/unit/lot-b-admin-moderation-sondage.test.js` | Apex Chat (vie privée) : journal admin, signalements, sondages anonymes |
+| 2026-10-15 | `messaging-app/d1-migrations/0015_lot_b_vie_privee.sql` | Apex Chat : nettoyage du cache des résumés IA |
 | 2026-10-12 | [`services/kdmc-router/fin-garde-verif.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/fin-garde-verif.mjs) | Garde : une sauvegarde en ligne plus pauvre (moins de la moitié) ne peut plus écraser une sauvegarde pleine (409), `force` explicite seulement |
 | 2026-10-13 | [`tests/verify-ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-ration-actions.mjs) | Garde : la ration Actions se lit correctement (jour UTC, runs refusés à 0, verdicts, code de sortie) |
 | 2026-10-13 | [`tools/ci/ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/ci/ration-actions.mjs) | Outil : lit la ration du jour des minutes GitHub Actions du coffre (🟢/🟠/🔴) avant de lancer un robot |

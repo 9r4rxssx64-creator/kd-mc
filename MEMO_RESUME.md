@@ -10,6 +10,16 @@
 - Fait : **porte de ration** sur 6 gros robots (`porte-ration.sh`, `--besoin`, entrée `forcer_ration`) ; **ration dans le hook de début de session** ; **`publier-local.mjs`** (secours sans Actions, à blanc par défaut, jamais de `--force`) ; **`PLAFONDS-ET-SECOURS.md`** (inventaire de tous les plafonds + 10 trous). Gardes : `test:porte-ration` (22), `test:ration-hook` (4), `test:publier-local` (8), `test:ration-actions` (13), tous prouvés par sabotage.
 - À décider par Kevin (rien n'est fait sans lui) : Workers Paid 5 $/mois (bascule auto du plafond de 100 000 req/jour) ; jeton « Plan : lecture » pour lire la facture ; lancer les gros robots sur le Lenovo (`KDMC_RUNNER`).
 - Coût Actions de ce lot : 0 avant la fusion.
+## 2026-10-15 — Apex Chat v1.1.302 : ultra-audit, lot B (vie privée et IA)
+
+- Suggestions IA : plus aucun envoi automatique (bouton « 💡 Suggestions », confirmation en conversation chiffrée, interrupteur).
+- Vocal toujours envoyable ; transcription facultative (jamais automatique en chiffré).
+- Gratuit d'abord partout (routeur partagé `services/_shared/ia-route.js` : concerne aussi Bee, routeur, apis — leurs gardes relancées : vertes).
+- Position : purge réelle 30 j, export RGPD, interrupteur admin appliqué côté serveur ; carte admin GARDÉE (décision de Kevin à prendre).
+- Cache résumés IA par compte (7 j) ; journal des 6 routes admin ; signalements traitables ; sondages anonymes vraiment anonymes.
+- Charte + CGU disent la vérité. Migration 0015. Mesuré : 109 fichiers / 1721 tests, couverture OK ; 22/22 sabotages + 1 manuel. Leçon #542.
+- Reste ouvert : la fenêtre d'autorisation dit « obligatoire » pour la position alors que les CGU disent refusable (à trancher avec Kevin).
+
 ## 2026-10-15 — Ultra-audit Apex Chat (6 auditeurs) : P0 SSO corrigé en premier
 
 - P0 (auditeur sécurité serveur, prouvé par test) : un compte du domaine d'uid « admin » obtenait un jeton administrateur

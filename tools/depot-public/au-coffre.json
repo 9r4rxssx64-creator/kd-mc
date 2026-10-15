@@ -1,6 +1,7 @@
 {
  "_lire_moi": "Robots (workflows) et scripts (tests/, tools/) restés au dépôt privé. Des noms de fichiers uniquement.",
  "workflows": [
+  "apex-chat-cle-sauvegarde.yml",
   "apex-chat-d1-backup.yml",
   "apex-chat-exercice-restauration.yml",
   "arbre-actes-images.yml",

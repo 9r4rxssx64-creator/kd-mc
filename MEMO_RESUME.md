@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Robot « Apex Chat — créer la clé des sauvegardes » (au lieu de le demander à Kevin)
+
+- `.github/workflows/apex-chat-cle-sauvegarde.yml` (coffre, privé, manuel) : crée BACKUP_ENCRYPTION_KEY si absente (jamais affichée),
+  la pose dans les secrets du coffre ET de kd-mc (poser-secrets.mjs + APEX_GITHUB_PAT), relance le déploiement d'Apex Chat.
+  Simulé : clé présente → rien ; absente → posée aux 2 endroits, jamais affichée ; sans PAT → erreur claire. Gardes workflows vertes.
+- Copie hors ligne chez Kevin : facultative (l'exercice de restauration lit la clé depuis le coffre).
+
 ## 2026-10-15 — Apex Chat : lot E2 (sauvegarde restaurable, santé, porte qualité, migrations)
 
 - Sauvegarde : clé dédiée BACKUP_ENCRYPTION_KEY (repli JWT avec alerte), par pages via la file, manifeste, purge 14 j ;

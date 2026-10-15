@@ -3621,6 +3621,7 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-15 | `messaging-app/tools/attendre-ci.mjs` | Apex Chat (sauvegarde, fiabilité) : la mise à jour forcée attend les tests et le déploiement |
 | 2026-10-15 | `messaging-app/workers/lib/backup.js` | Apex Chat (sauvegarde, fiabilité) : sauvegarde par pages, chiffrée avec sa propre clé |
 | 2026-10-15 | `.github/workflows/apex-chat-exercice-restauration.yml` | Apex Chat (sauvegarde, fiabilité) : bouton « exercice de restauration » (manuel) |
+| 2026-10-15 | `.github/workflows/apex-chat-cle-sauvegarde.yml` | Apex Chat : bouton qui crée la clé des sauvegardes (une fois, jamais affichée) |
 | 2026-10-15 | `messaging-app/d1-migrations/0021_lot_e2_journal_migrations.sql` | Apex Chat (sauvegarde, fiabilité) : registre des mises à jour de la base |
 | 2026-10-15 | `messaging-app/e2e/login-test-politique.js` | Apex Chat (sauvegarde, fiabilité) : un test sur la prod ne passe plus au vert quand le login de test est en panne |
 | 2026-10-15 | `messaging-app/tests/unit/lot-e2-sauvegarde-restauration.test.js` | Apex Chat (sauvegarde, fiabilité) : sauvegarde → restauration vérifiées table par table |

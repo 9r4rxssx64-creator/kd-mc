@@ -686,6 +686,7 @@
     });
   }
 
+  var _pkAuto = false; /* Face ID automatique : une seule fois par chargement de page */
   function renderUnlock(acc) {
     var hasPk = _hasPasskey(acc.uid) && _pkSupported();
     gate.innerHTML =
@@ -696,13 +697,24 @@
       + '<button class="btn' + (hasPk ? ' ghost' : '') + '" id="u-go">' + (hasPk ? 'Utiliser mon code' : 'Se connecter') + '</button>'
       + '<button class="btn ghost" id="u-other">Ce n\'est pas moi</button>'
       + '<p class="g-err" id="u-err" role="alert" aria-live="polite"></p>';
-    if (hasPk) document.getElementById('u-pk').addEventListener('click', function () {
-      var b = document.getElementById('u-pk'); b.disabled = true; b.textContent = '…';
+    /* Face ID AUTOMATIQUE à la 1re ouverture (Kevin 13.10 : « Face ID automatique seulement à la 1re ouverture »).
+       Une seule tentative par chargement de page (_pkAuto) : si iOS la refuse faute de geste, ou si la personne
+       annule, on n'écrit AUCUNE erreur et le bouton + le code restent là — jamais de boucle de Face ID. */
+    function tenterPk(auto) {
+      var b = document.getElementById('u-pk'); if (!b || b.disabled) return;
+      b.disabled = true; b.textContent = '…';
       window.kdmcSSO.loginPasskey(acc.uid).then(function (j) {
-        if (j && j.ok) { showHub(acc.name); }
-        else { document.getElementById('u-err').textContent = 'Face ID : ' + ((j && j.reason) || 'échec') + ' — utilise ton code.'; b.disabled = false; b.textContent = '🔓 Se connecter avec Face ID'; }
+        if (j && j.ok) { showHub(acc.name); return; }
+        var raison = String((j && j.reason) || '');
+        var silence = auto && /NotAllowed|abort|cancel|timed out|not allowed/i.test(raison);
+        if (!silence) document.getElementById('u-err').textContent = 'Face ID : ' + (raison || 'échec') + ' — utilise ton code.';
+        b.disabled = false; b.textContent = '🔓 Se connecter avec Face ID';
       });
-    });
+    }
+    if (hasPk) {
+      document.getElementById('u-pk').addEventListener('click', function () { tenterPk(false); });
+      if (!_pkAuto) { _pkAuto = true; setTimeout(function () { tenterPk(true); }, 0); }
+    }
     document.getElementById('u-go').addEventListener('click', function () { doUnlock(acc); });
     document.getElementById('u-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doUnlock(acc); });
     document.getElementById('u-other').addEventListener('click', function () {

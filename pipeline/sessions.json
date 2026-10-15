@@ -1606,6 +1606,16 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "lot19": {
+      "titre": "Lot reconnu partout : Face ID auto du portail",
+      "branche": "claude/lot19",
+      "sujet": "portail v1.0.57, Face ID automatique à la 1re ouverture",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

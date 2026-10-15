@@ -4,23 +4,23 @@
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.56"
+   "version": "v1.0.57"
   },
   "www.kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.56"
+   "version": "v1.0.57"
   },
   "cmcteams.kd-mc.com": {
    "page": "index.html",
-   "version": "v9.977"
+   "version": "v9.978"
   },
   "apex-ai.kd-mc.com": {
    "page": "apex-ai-v13/index.html",
-   "version": "v13.4.369"
+   "version": "v13.4.371"
   },
   "apex-chat.kd-mc.com": {
    "page": "messaging-app/index.html",
-   "version": "v1.1.300"
+   "version": "v1.1.307"
   },
   "la-detente.kd-mc.com": {
    "page": "la-detente/index.html",

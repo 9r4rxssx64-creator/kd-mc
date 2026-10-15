@@ -36,6 +36,7 @@ on:
       - 'services/kdmc-uptime/**'
       - 'tests/uptime-couverture.test.mjs'
       - 'tests/uptime-porte-compte.test.mjs'
+      - 'tests/uptime-push-binding.test.mjs'
       - '.github/workflows/deploy-kdmc-uptime.yml'
 
 concurrency:
@@ -84,6 +85,10 @@ jobs:
       - name: Vérifier que la porte « compte obligatoire » n'est pas prise pour une panne
         working-directory: .
         run: node tests/uptime-porte-compte.test.mjs
+
+      - name: Vérifier que le push passe par le lien interne (erreur 1042 sinon)
+        working-directory: .
+        run: node tests/uptime-push-binding.test.mjs
 
       - name: Installer wrangler (version épinglée, sans scripts d'installation)
         # Sonar 05/09 : « dépendance non verrouillée » + « lifecycle scripts ». Épinglé sur la
@@ -151,6 +156,7 @@ jobs:
         env:
           PINSHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
           PUSHT: ${{ secrets.PUSH_ADMIN_TOKEN }}
+          BATTEMENT_POSE: ${{ secrets.UPTIME_HEARTBEAT_URL != '' }}
         run: |
           URL=$(cat /tmp/url.txt); [ -z "$URL" ] && URL="https://kdmc-uptime.9r4rxssx64.workers.dev"
           KEY=$(printf '%s:uptime-run' "$PINSHA" | sha256sum | cut -d' ' -f1)
@@ -195,6 +201,14 @@ jobs:
             if(!d.tombees.length && !d.revenues.length){ console.log('::notice::push : rien à signaler ce passage → non testé'); process.exit(0); }
             if(p.sent){ console.log('::notice::push envoyé (HTTP ' + p.code + ')'); process.exit(0); }
             console.log('::error::push NON envoyé : HTTP ' + p.code + ' ' + (p.why||'')); process.exit(1);
+          "
+          # 15.10.2026 : le battement externe est-il VRAIMENT parti ? (même leçon que le push : un envoi
+          # que personne ne relit peut échouer des mois en silence). Jamais l'adresse, seulement le verdict.
+          node -e "
+            const d=require('/tmp/run.json'); const b=d.battement||{};
+            if(process.env.BATTEMENT_POSE!=='true'){ console.log('::notice::battement : secret absent → non testé'); process.exit(0); }
+            if(b.envoye){ console.log('::notice::battement externe envoyé (HTTP ' + b.code + ')' + (b.panne ? ' — signal de PANNE' : ' — tout va bien')); process.exit(0); }
+            console.log('::error::battement externe NON envoyé : ' + (b.code ? 'HTTP ' + b.code : '') + ' ' + (b.pourquoi||'')); process.exit(1);
           "
           echo "--- / : l'état a-t-il survécu au passage (KV partagé) ? ---"
           curl -sS "$URL/" | tee /tmp/state.json | head -c 400; echo

@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — « Vérifie tout » : sonde — notifications réparées, battement vérifié à chaque déploiement
+
+- Déploiement sonde 38750076367 : 33/33 cibles en bonne santé (porte compte corrigée), MAIS « push NON envoyé :
+  HTTP 404 error code: 1042 » : la sonde (workers.dev seulement) appelait apex-push-worker par son URL workers.dev.
+  Correctif : Service Binding APEX_PUSH (comme Apex Chat PUSH_WORKER). Garde `test:uptime-push-binding` (8), 2 sabotages rouges.
+- Le smoke test lit maintenant le verdict du battement externe (jamais l'adresse) : échec si non envoyé.
+- Alertes du routeur (nouvel appareil, codes, inscriptions) : chemin vérifié en direct (`/__lingua/appel-cle` joint apex-push-worker).
+- Exercice de restauration lancé par Kevin à 14:13 UTC : « aucun manifeste » — normal, la sauvegarde au nouveau format
+  (lot E2, déployé cet après-midi) tourne à 03:00 UTC. Vérification automatique programmée le 16.10 à 03:45 UTC.
+
 ## 2026-10-15 — Alarme externe branchée (healthchecks.io) + sonde : la porte « compte » n'est plus une panne
 
 - Kevin a renouvelé le jeton Cloudflare « Edit Cloudflare Workers » (déploiement Apex Chat 38748155641 vert avec le nouveau)

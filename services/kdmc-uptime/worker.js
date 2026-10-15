@@ -288,15 +288,20 @@ async function writeState(env, state) {
  * Notifie l'iPhone via apex-push-worker. Best-effort et silencieux :
  * pas de jeton → on ne notifie pas, mais on continue de sonder.
  */
-async function notify(env, title, body) {
+export async function notify(env, title, body) {
   const url = env && env.KDMC_PUSH_URL;
   const token = env && env.KDMC_PUSH_TOKEN;
-  if (!url || !token) return { sent: false, why: 'push non configuré' };
+  // 15.10.2026 : par le Service Binding APEX_PUSH en priorité. Mesuré (run kd-mc 38750076367) : la
+  // sonde, qui ne vit que sur *.workers.dev, recevait « 404 error code: 1042 » en appelant
+  // apex-push-worker par son URL workers.dev (même compte) → aucune notification ne partait.
+  const lien = env && env.APEX_PUSH && typeof env.APEX_PUSH.fetch === 'function' ? env.APEX_PUSH : null;
+  if ((!url && !lien) || !token) return { sent: false, why: 'push non configuré' };
   try {
     // /send-all + {payload:{…}} : c'est le contrat réel d'apex-push-worker (le routeur fait
     // pareil, kdmc-router/worker.js). Relecture 05/09 : /send + {title, body} répondait
     // 400 « no_userIds » → aucune notification n'était jamais partie.
-    const r = await fetch(url.replace(/\/+$/, '') + '/send-all', {
+    const cible = lien ? 'https://apex-push-worker/send-all' : url.replace(/\/+$/, '') + '/send-all';
+    const r = await (lien ? lien.fetch.bind(lien) : fetch)(cible, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

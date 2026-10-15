@@ -30,6 +30,12 @@ service = "apex-chat-api"
 # « battement » d'un service EXTERNE gratuit (ex. healthchecks.io). Sans battement pendant le délai
 # de grâce, ce service prévient Kevin par e-mail — même si tout le compte Cloudflare est tombé.
 
+# 15.10.2026 : le push passe par ce lien interne. Par l'URL workers.dev, un Worker du même compte
+# reçoit « 404 error code: 1042 » (mesuré au déploiement 38750076367) → aucune notification.
+[[services]]
+binding = "APEX_PUSH"
+service = "apex-push-worker"
+
 [vars]
 KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 

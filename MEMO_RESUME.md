@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 (soir) — WhatsApp masqué partout où il se voit, tant qu'il ne fonctionne pas (Kevin : « Enlève où il y a marqué WhatsApp tant qu'il ne fonctionne pas »)
+
+- **Constat honnête** : la confirmation WhatsApp n'est PAS branchée chez Meta (3 copier-coller restants, KEVIN_ACTIONS_TODO.md 10.10) ; le code n'a jamais tourné pour de vrai.
+- **Livré (portail v1.0.62)** : plus de « WhatsApp » dans l'écran « en attente de l'administrateur », la boîte (bloc renommé « Comptes du domaine à valider »), les tuiles/compteurs de l'admin et « État du compte ». Les écrans de confirmation WhatsApp restent, derrière leur interrupteur (invisibles tant que le domaine ne se déclare pas prêt). Pour les rallumer : brancher Meta, puis texte d'origine dans l'historique git.
+- **Garde** : `tests/whatsapp-masque.test.mjs` (7), 2 sabotages rouges ; `tests/verify-admin-unique.mjs` mis à jour (nouveaux libellés).
+
 ## 2026-10-15 (soir) — Admin du domaine : option « 🚫 Bannir aussi » à la suppression (Kevin : « pour que la personne ne puisse pas se réinscrire, si besoin »)
 
 - **Livré (code + tests, portail v1.0.61, routeur à déployer)** : case « Bannir aussi » avec « Supprimer ce compte » ; le domaine retient le nom normalisé, l'identifiant et l'EMPREINTE du téléphone confirmé (jamais le numéro) ; toute inscription NEUVE qui retombe sur l'un des trois est refusée (403 `banni`, message neutre). Liste « 🚫 Personnes bannies » + « Autoriser de nouveau » (`/__admin/bannis`, `/__admin/debannir`). Jamais l'admin.

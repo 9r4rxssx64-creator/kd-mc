@@ -286,8 +286,8 @@
     var z = el('div', 'bf-ins'), L = D.inscriptionsAdmin;
     z.id = 'bf-inscriptions-admin';
     if (!Array.isArray(L) || !L.length) { z.hidden = true; return z; }
-    z.appendChild(el('h3', 'bf-ins-t', '🪪 Inscriptions sans WhatsApp (' + L.length + ')'));
-    z.appendChild(el('p', 'bf-vide', 'Ces personnes n\'ont pas pu confirmer leur téléphone par WhatsApp. Si tu reconnais la personne (son appareil, sa ville, son opérateur), accepte : son compte s\'ouvre. Sinon refuse.'));
+    z.appendChild(el('h3', 'bf-ins-t', '🪪 Comptes du domaine à valider (' + L.length + ')'));
+    z.appendChild(el('p', 'bf-vide', 'Ces personnes attendent ton accord pour ouvrir leur compte. Si tu reconnais la personne (son appareil, sa ville, son opérateur), accepte : son compte s\'ouvre. Sinon refuse.'));
     L.forEach(function (c) {
       var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
       h.appendChild(el('div', 'bf-de', (c.nom || '?') + ' (' + (c.uid || '?') + ')'));
@@ -304,7 +304,7 @@
         });
       };
       /* Accepter ouvre un compte : jamais sur un tap par erreur (même règle que les codes). */
-      oui.onclick = function () { if (window.confirm('Accepter l\'inscription de « ' + (c.nom || c.uid) + ' » sans WhatsApp ? (' + [c.appareil, c.lieu].filter(Boolean).join(', ') + ')')) decider(true); };
+      oui.onclick = function () { if (window.confirm('Accepter l\'inscription de « ' + (c.nom || c.uid) + ' » ? (' + [c.appareil, c.lieu].filter(Boolean).join(', ') + ')')) decider(true); };
       non.onclick = function () { if (window.confirm('Refuser l\'inscription de « ' + (c.nom || c.uid) + ' » ?')) decider(false); };
       bas.appendChild(oui); bas.appendChild(non); k.appendChild(bas); z.appendChild(k);
     });

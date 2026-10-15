@@ -552,7 +552,7 @@
     if (a.revoked_at) L.push('🚪 Sessions coupées ' + dt(a.revoked_at) + ' : elle doit se reconnecter.');
     if (!a.cgu_at) { L.push('📜 Conditions pas encore acceptées : elle les verra à sa prochaine page.'); }
     if (!a.code_at) { L.push('🔑 Pas encore de code posé : le portail lui demandera d\'en choisir un.'); }
-    if (a.tel_requis && !a.tel) { L.push('📱 Numéro à confirmer par WhatsApp : tant que c\'est fait, rien d\'autre ne s\'ouvre.'); if (!probleme) verdict = '📱 Elle doit confirmer son numéro par WhatsApp.'; probleme = true; }
+    if (a.tel_requis && !a.tel) { L.push('📱 Numéro à confirmer : tant que ce n\'est pas fait, rien d\'autre ne s\'ouvre.'); if (!probleme) verdict = '📱 Elle doit confirmer son numéro.'; probleme = true; }
     else L.push('📱 Numéro : ' + (a.tel || f.telephone ? 'confirmé' : 'non demandé') + '.');
     var bq = a.bloque || [];
     L.push('🔐 Portée : ' + (a.portee === 'app' ? 'seulement ' + ((a.acces || []).join(', ') || '⚠️ aucune app') : 'tout le domaine') + (bq.length ? ' · fermé : ' + bq.join(', ') : ''));

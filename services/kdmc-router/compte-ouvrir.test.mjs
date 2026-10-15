@@ -94,7 +94,7 @@ ok(e3.attente === false && /arbre/.test(e3.verdict) && e3.probleme === true, '4d
 const e4 = ctx.etatCompte({ uid: 'a', cgu_at: 1, code_at: 1, portee: 'domaine', tel: { at: 1 } });
 ok(e4.probleme === false && /Rien ne bloque/.test(e4.verdict), '4e. compte sain → « rien ne bloque »', e4);
 const e5 = ctx.etatCompte({ uid: 'a', cgu_at: 1, portee: 'domaine', tel_requis: true });
-ok(e5.probleme === true && /WhatsApp/.test(e5.lignes.join(' ')) && /code/.test(e5.lignes.join(' ')), '4f. code manquant et téléphone à confirmer sont dits', e5);
+ok(e5.probleme === true && /confirmer/.test(e5.lignes.join(' ')) && /code/.test(e5.lignes.join(' ')), '4f. code manquant et téléphone à confirmer sont dits', e5);
 const e6 = ctx.etatCompte({ uid: 'a', portee: 'app', acces: [] });
 ok(/aucune app/.test(e6.verdict), '4g. portée « une app » vide : dit qu\'elle n\'a accès à rien', e6);
 

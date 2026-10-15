@@ -205,8 +205,8 @@
     box.innerHTML = '<div style="max-width:360px;width:100%;text-align:center"><div style="font-size:44px">' + (refuse ? '🚫' : '⏳') + '</div>'
       + '<h1 style="font-size:19px;color:#f6d97a;margin:8px 0 6px">' + (refuse ? 'Compte non validé' : 'Ton compte attend l\'administrateur') + '</h1>'
       + '<p style="color:#cfd8cc;margin:0 0 14px"><b>' + esc((s && s.name) || 'Ton compte') + '</b>, '
-      + (refuse ? 'l\'administrateur n\'a pas validé ce compte. Tu peux te déconnecter, ou recréer un compte en confirmant ton téléphone par WhatsApp.'
-        : 'ton compte est bien créé. Tu n\'as pas confirmé par WhatsApp : l\'administrateur le valide lui-même. Cette page s\'ouvrira toute seule dès qu\'il l\'aura accepté.') + '</p>'
+      + (refuse ? 'l\'administrateur n\'a pas validé ce compte. Tu peux te déconnecter, ou demander à l\'administrateur de te l\'ouvrir.'
+        : 'ton compte est bien créé. L\'administrateur doit l\'ouvrir lui-même. Cette page s\'ouvrira toute seule dès qu\'il l\'aura accepté.') + '</p>'
       + (refuse ? '' : '<p id="aa-etat" aria-live="polite" style="color:#93a58f;font-size:13px;margin:0 0 12px">Je vérifie toutes les 30 secondes…</p>'
         + '<button class="btn" id="aa-go" type="button" style="min-height:50px;width:100%">Vérifier maintenant</button>')
       + (safeReturnUrl() ? '<a class="btn ghost" id="ob-retour" href="' + esc(safeReturnUrl()) + '" style="' + STYLE_SORTIE + '">← Retour à l\'app</a>' : '')

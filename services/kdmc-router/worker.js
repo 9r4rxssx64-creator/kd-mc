@@ -56,6 +56,33 @@ import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe, 
    l'hébergeur RÉEL : une branche en retard ne peut plus éteindre le domaine. */
 const UPSTREAM_DEFAUT = 'https://kdmc-site-bj5.pages.dev';
 const PAGES_PREFIX_DEFAUT = '/CMCteams';
+/* SOURCE DES PAGES = LES FICHIERS EMBARQUÉS DU ROUTEUR (15.10, audit extérieur, P0) : l'hébergeur Cloudflare Pages
+   (`kdmc-site-bj5.pages.dev`) servait TOUT le site sans compte, en contournant les portes du routeur (plannings des cadres,
+   données de la boutique, généalogie — mesuré en ligne). Avec SOURCE_PAGES="assets" (wrangler.toml), le routeur lit ses pages dans
+   sa propre copie embarquée (binding ASSETS, rangée en /CMCteams/…, fabriquée par prepare-secours.mjs au déploiement) : plus aucune
+   adresse publique d'hébergeur, donc le projet Pages peut être supprimé. Les ASSETS ne sont joignables QUE par ce code
+   (run_worker_first = true) : les portes s'appliquent exactement comme avant. Sans la variable : comportement d'avant (hébergeur). */
+const HOTE_ASSETS = 'https://kdmc-assets.local';
+export const viaAssets = (env) => !!(env && env.ASSETS && typeof env.ASSETS.fetch === 'function' && String(env.SOURCE_PAGES || '').trim() === 'assets');
+/* Demande un fichier à la source des pages. En mode « assets », reproduit l'hébergeur d'avant (GitHub Pages) : un dossier « …/ » sert son
+   index.html ; « …/dossier » sans extension, s'il a un index.html, répond 301 vers « …/dossier/ » ; sinon 404 honnête (html_handling = "none"
+   dans wrangler.toml : la copie ne réécrit ni ne redirige rien d'elle-même). */
+export async function amont(env, req) {
+  if (!viaAssets(env)) return fetch(req);
+  const u = new URL(req.url);
+  if (u.origin !== HOTE_ASSETS) return fetch(req);
+  if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('méthode non permise', { status: 405, headers: { allow: 'GET, HEAD' } });
+  const lire = (chemin) => env.ASSETS.fetch(new Request(HOTE_ASSETS + chemin + u.search, { method: req.method, headers: req.headers }));
+  const chemin = u.pathname;
+  const r = await lire(chemin);
+  if (r.status !== 404) return r;
+  if (chemin.endsWith('/')) return lire(chemin + 'index.html');
+  if (!/\.[a-z0-9]{1,8}$/i.test(chemin.split('/').pop() || '')) {
+    const idx = await lire(chemin + '/index.html');
+    if (idx.ok) { try { if (idx.body) await idx.body.cancel(); } catch { /* rien */ } return new Response(null, { status: 301, headers: { location: chemin + '/' + u.search } }); }
+  }
+  return r;
+}
 
 /* La règle du préfixe de sortie, SORTIE du corps de `fetch` pour être TESTABLE
    en l'exécutant (un test qui relit le source à coups d'expressions régulières
@@ -478,7 +505,8 @@ const ROUTEUR = {
     const url = new URL(request.url);
     const host = url.hostname.toLowerCase();
     /* Source des pages : réglable sans redéploiement (cf. commentaire en tête). */
-    const UPSTREAM = ((env && env.UPSTREAM_BASE) || UPSTREAM_DEFAUT).trim().replace(/\/+$/, '');
+    const VIA_ASSETS = viaAssets(env);
+    const UPSTREAM = VIA_ASSETS ? HOTE_ASSETS : ((env && env.UPSTREAM_BASE) || UPSTREAM_DEFAUT).trim().replace(/\/+$/, '');
     /* ⚠️ Deux usages DIFFÉRENTS du préfixe, à ne pas confondre :
        - à l'ENTRÉE, les pages contiennent des liens en /CMCteams/… (c'est ainsi
          que GitHub Pages les a construites) → on reconnaît toujours
@@ -497,7 +525,7 @@ const ROUTEUR = {
        site sous /CMCteams, Cloudflare Pages le sert à la RACINE. Supposer
        « /CMCteams » sur un hébergeur qui sert à la racine, c'est demander
        kdmc-site.pages.dev/CMCteams/… → 404 sur tout le domaine. */
-    const PREFIX_SORTIE = prefixeSortie(UPSTREAM, env && env.UPSTREAM_PREFIX);
+    const PREFIX_SORTIE = VIA_ASSETS ? PAGES_PREFIX_DEFAUT : prefixeSortie(UPSTREAM, env && env.UPSTREAM_PREFIX);   /* la copie embarquée garde le rangement /CMCteams/… */
 
     // Recherche décès INSEE (proxy same-origin, public read-only) — pour l'arbre.
     if (url.pathname === '/__deces') {
@@ -634,7 +662,7 @@ const ROUTEUR = {
       if (PREFIX_SORTIE !== PAGES_PREFIX_DEFAUT && cheminP.startsWith(PAGES_PREFIX_DEFAUT + '/')) cheminP = PREFIX_SORTIE + cheminP.slice(PAGES_PREFIX_DEFAUT.length);
       const urlP = UPSTREAM + cheminP + url.search;
       const hP = new Headers(request.headers); hP.delete('host');
-      prechargeAmont = { url: urlP, rep: fetch(new Request(urlP, { method: request.method, headers: hP, redirect: 'manual' })).catch(() => new Response('upstream injoignable', { status: 502 })) };
+      prechargeAmont = { url: urlP, rep: amont(env, new Request(urlP, { method: request.method, headers: hP, redirect: 'manual' })).catch(() => new Response('upstream injoignable', { status: 502 })) };
     }
     const jeterPrecharge = () => { if (prechargeAmont) prechargeAmont.rep.then((r) => (r && r.body ? r.body.cancel() : null)).catch(() => { /* rien */ }); };
     {
@@ -670,7 +698,7 @@ const ROUTEUR = {
         }
         const upstreamUrl2 = UPSTREAM + chemin2 + url.search;
         const rh2 = new Headers(request.headers); rh2.delete('host');
-        const res2 = await fetch(new Request(upstreamUrl2, {
+        const res2 = await amont(env, new Request(upstreamUrl2, {
           method: request.method, headers: rh2,
           body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
           redirect: 'manual',
@@ -723,7 +751,7 @@ const ROUTEUR = {
     } else {
       jeterPrecharge();
       try {
-        res = await fetch(upstreamReq);
+        res = await amont(env, upstreamReq);
       } catch (e) {
         res = new Response('upstream injoignable', { status: 502 });
       }
@@ -735,7 +763,7 @@ const ROUTEUR = {
        cf. prepare-secours.mjs), on la sert au lieu de la page morte.
        Ce repli ne se déclenche QUE sur échec de l'amont : dès que GitHub
        revient, le comportement est identique à avant, sans rien remettre. */
-    if (env && env.ASSETS && (res.status === 404 || res.status === 403 || res.status >= 500)) {
+    if (!VIA_ASSETS && env && env.ASSETS && (res.status === 404 || res.status === 403 || res.status >= 500)) {
       try {
         /* Deux rangements possibles pour la copie : celui de l'amont du jour
            (après bascule) ET celui d'origine (/CMCteams/…). On essaie les
@@ -794,6 +822,11 @@ const ROUTEUR = {
     }
     /* Jamais CMCteams par accident (repli de l'hébergeur) hors de cmcteams.kd-mc.com — voir sansCmcteamsParAccident. */
     res = await sansCmcteamsParAccident(res, host, p, request);
+    /* Copie embarquée : une adresse absente répond 404 sans corps ; une PAGE reçoit la page « introuvable » du domaine (jamais un écran blanc). */
+    if (VIA_ASSETS && res.status === 404 && estUnePage(request) && !/repli/.test(res.headers.get('x-kdmc-router') || '')) {
+      try { if (res.body) await res.body.cancel(); } catch { /* rien */ }
+      return new Response(PAGE_INTROUVABLE, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-router': host + ' (absent de la copie embarquée)' } });
+    }
     if (res.status === 301 || res.status === 404 && /repli/.test(res.headers.get('x-kdmc-router') || '')) return res;
     const outHeaders = new Headers(res.headers);
     outHeaders.delete('content-security-policy-report-only');
@@ -895,6 +928,10 @@ export function estPageCmcteams(texte) {
   return /<title>\s*CMCteams\s*[—–-]\s*Planning/i.test(debut) || /var APP_VER="v9\.\d+"/.test(String(texte || ''));
 }
 /* Garde appliquée à une page HTML de l'hébergeur avant de la servir (hors cmcteams.kd-mc.com). */
+/* Page « introuvable » du domaine (en français, bouton vers l'espace) : repli d'hébergeur refusé, et adresse absente de la copie embarquée. */
+const PAGE_INTROUVABLE = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>Page introuvable — kd-mc.com</title>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
+    + '<body><div class="c"><div style="font-size:44px">🧭</div><h1>Cette page n’existe pas ici</h1><p>L’adresse ouverte ne correspond à aucune page. Si c’est une icône de ton écran d’accueil, supprime-la et repose-la depuis l’app.</p><a href="https://kd-mc.com/">Aller à mon espace</a></div></body></html>';
 async function sansCmcteamsParAccident(res, host, chemin, request) {
   if (!res || res.status !== 200 || request.method !== 'GET') return res;
   if (!/text\/html/i.test(res.headers.get('content-type') || '')) return res;
@@ -909,9 +946,7 @@ async function sansCmcteamsParAccident(res, host, chemin, request) {
   if (!iconeFausse && /^\/cmcteams\/?(index\.html)?$/.test(c)) {
     return new Response(null, { status: 301, headers: { location: 'https://cmcteams.kd-mc.com/', 'cache-control': 'no-store', 'x-kdmc-router': host + ' (CMCteams à sa belle adresse)' } });
   }
-  const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>Page introuvable — kd-mc.com</title>'
-    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
-    + '<body><div class="c"><div style="font-size:44px">🧭</div><h1>Cette page n’existe pas ici</h1><p>L’adresse ouverte ne correspond à aucune page. Si c’est une icône de ton écran d’accueil, supprime-la et repose-la depuis l’app.</p><a href="https://kd-mc.com/">Aller à mon espace</a></div></body></html>';
+  const html = PAGE_INTROUVABLE;
   return new Response(html, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-kdmc-router': host + ' (repli de l\'hébergeur refusé)' } });
 }
 
@@ -4184,6 +4219,7 @@ async function handleMatricules(request, env) {
 }
 /* L'adresse d'un fichier chez l'hébergeur (même calcul que pour les pages). */
 function fichierHebergeur(env, chemin) {
+  if (viaAssets(env)) return '';   /* pages embarquées : ces fichiers se lisent dans le KV (déposés à la publication), il n'y a plus d'hébergeur à joindre */
   let up = (env?.UPSTREAM_BASE || UPSTREAM_DEFAUT).trim();
   while (up.endsWith('/')) up = up.slice(0, -1);
   return up + prefixeSortie(up, env?.UPSTREAM_PREFIX) + chemin;

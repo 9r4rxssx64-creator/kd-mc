@@ -73,6 +73,9 @@ routes = [
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
+# 15.10 : la copie embarquée devient LA source des pages (SOURCE_PAGES = "assets") ; elle ne réécrit ni ne redirige rien
+# d'elle-même — le routeur reproduit l'hébergeur d'avant (dossier/ → index.html, dossier → 301 dossier/), voir `amont` dans worker.js.
+html_handling = "none"
 
 [[kv_namespaces]]
 binding = "ACCOUNTS"
@@ -142,6 +145,10 @@ KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 # 15.10 (Kevin : « En attendant WhatsApp je valide manuellement ») : toute NOUVELLE inscription attend ton accord dans « Mes messages ».
 # Pour revenir à l'inscription libre (numéro cru) : "0" puis redéployer le routeur.
 KDMC_VALIDATION_MANUELLE = "1"
+# 15.10 (audit extérieur, P0) : les pages viennent de la copie EMBARQUÉE du routeur, plus de l'hébergeur public
+# kdmc-site-bj5.pages.dev (qui servait tout le site sans compte). Retour arrière : supprimer cette ligne et redéployer
+# (UPSTREAM_BASE ci-dessous reprend la main, tant que le projet Pages existe).
+SOURCE_PAGES = "assets"
 
 # ── OÙ LE ROUTEUR VA CHERCHER LES PAGES (bascule du 18.09.2026) ──────────────
 # Kevin 2026-09-15 : « passe tout en privé ». GitHub Pages depuis un dépôt PRIVÉ

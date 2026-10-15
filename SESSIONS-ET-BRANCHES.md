@@ -206,6 +206,8 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/valid-manuelle` | 15.10 | « En attendant WhatsApp je valide manuellement » : toute nouvelle inscription attend l'accord de Kevin (interrupteur serveur) | `valid-manuelle` |
 | `claude/audit-exterieur` | 15.10 | Audit d'amélioration extérieur total (sécurité, performance, UX, architecture) : synthèse + 4 rapports | `audit-exterieur` |
 | `claude/fix-audit-ext` | 15.10 | Corrections de l'audit extérieur : redirection ouverte fermée, plannings des cadres et généalogie hors du paquet Pages | `fix-audit-ext` |
+| `claude/routeur-assets` | 15.10 | Le routeur sert ses pages depuis sa copie embarquée (SOURCE_PAGES = assets) pour pouvoir supprimer le projet Pages | `routeur-assets` |
+| `claude/note-deploy` | 15.10 | Note MEMO sur le déploiement ab3e4a0 (runs en échec, code en ligne) — reprise dans claude/routeur-assets | `note-deploy` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

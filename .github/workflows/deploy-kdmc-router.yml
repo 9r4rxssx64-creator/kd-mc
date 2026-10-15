@@ -68,7 +68,9 @@ jobs:
         working-directory: services/kdmc-router
         shell: bash -eo pipefail {0}
         run: |
-          node prepare-secours.mjs --leger
+          # 15.10 : copie COMPLÈTE (photos comprises) — elle est désormais LA source des pages (SOURCE_PAGES = "assets"),
+          # plus seulement une bouée de secours. Sans médias, la-détente / chez-lolo / cuisine / arbre perdraient leurs images.
+          if grep -qE '^SOURCE_PAGES *= *"assets"' wrangler.toml; then node prepare-secours.mjs; else node prepare-secours.mjs --leger; fi
           test -d public || { echo "::error::public/ absent après prepare-secours"; exit 1; }
           echo "public/ : $(find public -type f | wc -l) fichiers, $(du -sh public | cut -f1)"
 
@@ -429,6 +431,10 @@ jobs:
       - name: D'où viennent vraiment les pages ? (preuve par repère)
         shell: bash -eo pipefail {0}
         run: |
+          if grep -qE '^SOURCE_PAGES *= *"assets"' services/kdmc-router/wrangler.toml; then
+            echo "  pages servies par la copie EMBARQUÉE du routeur (SOURCE_PAGES = assets) : aucun hébergeur à prouver"
+            exit 0
+          fi
           ATTENDU=$(grep -oE 'UPSTREAM_BASE *= *"[^"]+"' services/kdmc-router/wrangler.toml | sed 's/.*"\(.*\)"/\1/' || true)
           if [ -z "$ATTENDU" ]; then
             echo "  (aucune bascule configurée — rien à prouver ici)"

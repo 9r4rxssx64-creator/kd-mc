@@ -1656,6 +1656,27 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "routeur-assets": {
+      "titre": "Routeur sur sa copie embarquée",
+      "branche": "claude/routeur-assets",
+      "sujet": "SOURCE_PAGES=assets, suppression du projet Pages ensuite",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "note-deploy": {
+      "titre": "Note : déploiement ab3e4a0 en échec mais en ligne",
+      "branche": "claude/note-deploy",
+      "sujet": "note MEMO, reprise dans claude/routeur-assets",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "contenu repris dans claude/routeur-assets"
     }
   },
   "messages": [

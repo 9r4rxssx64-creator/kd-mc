@@ -28,6 +28,15 @@ const tok = signe('marie-curie', 0);
 { const r = await entrer('cuisine.kd-mc.com', 'to=' + encodeURIComponent('https://attaquant.example/') + '&t=' + encodeURIComponent(tok));
   const r2 = await entrer('cuisine.kd-mc.com', 'to=' + encodeURIComponent('//attaquant.example/') + '&t=' + encodeURIComponent(tok));
   ok(r.headers.get('location') === '/' && r2.headers.get('location') === '/', '4. `to` vers une autre adresse → ignoré (jamais de redirection ouverte)', r.headers.get('location') + ' ' + r2.headers.get('location')); }
+{ /* 15.10 (audit extérieur) : « /\\example.org » (un navigateur lit « \\ » comme « / ») et les caractères de contrôle passaient */
+  const mauvais = ['/\\example.org/x', '/\\\\example.org', '/\texample.org', '/\u0001/x', '/\u007f'];
+  const out = [];
+  for (const m of mauvais) { const r = await entrer('cuisine.kd-mc.com', 'to=' + encodeURIComponent(m) + '&t=' + encodeURIComponent(tok)); out.push(r.headers.get('location')); }
+  ok(out.every((l) => l === '/'), '4b. `to` avec « \\ » ou caractère de contrôle → ignoré (redirection ouverte de l\'audit extérieur)', out);
+  const bons = ['/', '/tools/x?y=1', '/a?r=https%3A%2F%2Fkd-mc.com%2F#z'];
+  const ok2 = [];
+  for (const m of bons) { const r = await entrer('cuisine.kd-mc.com', 'to=' + encodeURIComponent(m) + '&t=' + encodeURIComponent(tok)); ok2.push(r.headers.get('location')); }
+  ok(ok2.every((l, i) => l === bons[i]), '4c. les vrais chemins du site passent intacts (requête encodée comprise)', ok2); }
 { const grant = signe('__kdmc_admin__', 1);
   /* 8.10 (revue extérieure) : le grant ne voyage plus en clair (`g=`) mais dans l'enveloppe signée `h` (90 s) rendue par /__sso/pass */
   const env_ = (() => { const p = b64u(JSON.stringify({ t: signe('kdmc_admin', 1), g: grant, exp: Date.now() + 90000 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); })();

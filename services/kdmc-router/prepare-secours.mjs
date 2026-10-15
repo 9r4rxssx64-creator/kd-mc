@@ -162,7 +162,7 @@ const IGNORER = new Set(['node_modules', '.git', 'coverage', '.DS_Store', 'tests
    ⚠️ `arbre/research/actesimg/` reste, lui : l'app arbre s'en sert vraiment
    (19 références dans arbre/index.html) — même exception que les deux autres. */
 const TRAVAIL = new Set([
-  'arbre/research/actes.json', 'coffre-fort/memo', 'CLAUDE_HANDOFF.json',
+  'arbre/research/actes.json', 'arbre/research', 'tools/shared/cadres-plannings-2026.json', 'coffre-fort/memo', 'CLAUDE_HANDOFF.json',
   /* CODE SERVEUR ET SCRIPTS DE FABRICATION — mesuré le 19.09.2026 : le paquet
      publiait le code de DEUX workers Cloudflare de La Détente (avec leurs
      `wrangler.toml`, qui nomment les liaisons et les secrets attendus), sept

@@ -3791,7 +3791,9 @@ async function handleSso(request, url, env) {
     const t = env_ ? env_.t : (url.searchParams.get('t') || '');
     const g = env_ ? (env_.g || '') : '';
     let to = url.searchParams.get('to') || '/';
-    if (!/^\/(?!\/)/.test(to) || /[\r\n]/.test(to)) to = '/';
+    /* 15.10 (audit extérieur) : `/\example.org` passait (un navigateur lit « \ » comme « / » → `//example.org`), tabulations comprises.
+       Un chemin du site seulement : « / » puis ni « / » ni « \ », et aucun caractère de contrôle ou « \ » brut (les formes encodées ne sont pas décodées par le navigateur : inoffensives). */
+    if (!/^\/(?![\/\\])/.test(to) || /[\u0000-\u001f\u007f\\]/.test(to)) to = '/';
     const h = new Headers({ location: to, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
     const s = await ssoVerify(secret, t);
     if (s && !revoked(await accGet(env, s.uid), s)) {

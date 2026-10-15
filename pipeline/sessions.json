@@ -1646,6 +1646,16 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "fix-audit-ext": {
+      "titre": "Corrections audit extérieur : redirection, paquet Pages",
+      "branche": "claude/fix-audit-ext",
+      "sujet": "to= du /__sso/entrer, TRAVAIL du paquet",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

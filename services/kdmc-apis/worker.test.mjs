@@ -16,14 +16,35 @@ import worker, {
 
 const ENV = {}; // aucune clé → teste le comportement fail-open
 
+/* Depuis le 15.10 (« aucune consultation sans compte ») toute route exige un compte du domaine.
+   Ces tests portent sur le reste du comportement : `call` ajoute donc par défaut le laissez-passer d'un compte
+   ordinaire (non admin, code prouvé k=1), le secret et un KV vide — sauf si le test donne déjà son propre jeton.
+   Le contrôle du compte lui-même est prouvé dans compte-obligatoire.test.mjs. */
+const { createHmac: hmacCompte } = await import('node:crypto');
+const b64uC = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const COMPTE = (() => { const p = b64uC(JSON.stringify({ u: 'marie-dupont', n: 'Marie Dupont', c: 1, v: 0, k: 1, iat: Date.now(), exp: Date.now() + 1e9 }));
+  return p + '.' + b64uC(hmacCompte('sha256', 'sec').update(p).digest()); })();
+const KV_COMPTE = { get: async () => null, put: async () => {}, delete: async () => {} };
 async function call(pathAndQuery, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  const aJeton = Object.keys(headers).some((k) => /^(authorization|x-kdmc-sso|cookie)$/i.test(k));
+  if (!aJeton && !opts.anonyme) headers.Authorization = 'Bearer ' + COMPTE;
   const req = new Request('https://apis.kd-mc.com' + pathAndQuery, {
     method: opts.method || 'GET',
-    headers: opts.headers || {},
+    headers,
     body: opts.body,
   });
-  return worker.fetch(req, opts.env || ENV);
+  return worker.fetch(req, Object.assign({ KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_COMPTE }, opts.env || ENV));
 }
+
+/* Laissez-passer du domaine, même format que le routeur (ssoSign) — parité prouvée plus bas. */
+const b64uT = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const { createHmac } = await import('node:crypto');
+const jeton = (uid, v, secret) => { const p = b64uT(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: Date.now(), exp: Date.now() + 1e9 }));
+  return p + '.' + b64uT(createHmac('sha256', secret || 'sec').update(p).digest()); };
+const KEVIN = jeton('kdmc_admin', 1);
+/* Le KV des comptes (le même que le routeur), vide = aucune révocation. */
+const KV_VIDE = { get: async () => null, put: async () => {}, delete: async () => {} };
 
 test('isTrustedOrigin : *.kd-mc.com + Pages + localhost OK, reste KO', () => {
   assert.equal(isTrustedOrigin('https://cmcteams.kd-mc.com'), true);
@@ -35,9 +56,11 @@ test('isTrustedOrigin : *.kd-mc.com + Pages + localhost OK, reste KO', () => {
   assert.equal(isTrustedOrigin(''), false);
 });
 
-test('corsHeaders : origine de confiance renvoyée telle quelle, sinon *', () => {
+test('corsHeaders : origine de confiance renvoyée telle quelle + credentials, sinon AUCUNE autorisation (jamais *)', () => {
   assert.equal(corsHeaders('https://apex-ai.kd-mc.com')['Access-Control-Allow-Origin'], 'https://apex-ai.kd-mc.com');
-  assert.equal(corsHeaders('https://evil.com')['Access-Control-Allow-Origin'], '*');
+  assert.equal(corsHeaders('https://apex-ai.kd-mc.com')['Access-Control-Allow-Credentials'], 'true');
+  assert.equal(corsHeaders('https://evil.com')['Access-Control-Allow-Origin'], undefined);
+  assert.equal(corsHeaders('')['Access-Control-Allow-Origin'], undefined);
 });
 
 test('OPTIONS préflight → 204 avec CORS (avant toute auth)', async () => {
@@ -46,8 +69,11 @@ test('OPTIONS préflight → 204 avec CORS (avant toute auth)', async () => {
   assert.ok(r.headers.get('Access-Control-Allow-Methods').includes('POST'));
 });
 
-test('/health : ok + liste routes + statut clés (aucune auth)', async () => {
-  const r = await call('/health');
+test('/health : sans compte {ok:true} seulement ; Kevin voit routes + statut clés', async () => {
+  const anon = await call('/health', { anonyme: true });
+  assert.equal(anon.status, 200);
+  assert.deepEqual(await anon.json(), { ok: true }, 'un inconnu ne lit plus la configuration');
+  const r = await call('/health', { headers: { 'x-kdmc-sso': KEVIN } });
   assert.equal(r.status, 200);
   const b = await r.json();
   assert.equal(b.ok, true);
@@ -170,8 +196,8 @@ test('/vat : country/number manquants → 400', async () => {
   assert.equal(r.status, 400);
 });
 
-test('/health : liste iban/vat/entreprise + flag workers_ai', async () => {
-  const r = await call('/health');
+test('/health (Kevin) : liste iban/vat/entreprise + flag workers_ai', async () => {
+  const r = await call('/health', { headers: { 'x-kdmc-sso': KEVIN } });
   const b = await r.json();
   assert.ok(b.keyless.includes('iban'));
   assert.ok(b.keyless.includes('vat'));
@@ -219,14 +245,6 @@ test('/ai : fallback Workers AI SANS clé externe (env.AI mock) → 200', async 
   assert.ok(b.text.includes('Workers AI'));
 });
 
-/* Laissez-passer du domaine, même format que le routeur (ssoSign) — parité prouvée plus bas. */
-const b64uT = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const { createHmac } = await import('node:crypto');
-const jeton = (uid, v, secret) => { const p = b64uT(JSON.stringify({ u: uid, n: uid, c: 1, v: v ? 1 : 0, iat: Date.now(), exp: Date.now() + 1e9 }));
-  return p + '.' + b64uT(createHmac('sha256', secret || 'sec').update(p).digest()); };
-const KEVIN = jeton('kdmc_admin', 1);
-/* Le KV des comptes (le même que le routeur), vide = aucune révocation. */
-const KV_VIDE = { get: async () => null, put: async () => {}, delete: async () => {} };
 
 test('/ai : une ACTION (domaine admin) commence par Qwen GRATUIT, même pour Kevin — tout gratuit, partout (2.10) ; Anthropic en secours', async () => {
   const calls = [];
@@ -376,19 +394,24 @@ test('/ai : les moteurs PAYANTS sont réservés à Kevin — sans son laissez-pa
     headers: Object.assign({ Origin: 'https://javis.kd-mc.com', 'Content-Type': 'application/json' }, entetes),
     body: JSON.stringify(Object.assign({ messages: [{ role: 'user', content: 'déploie le worker maintenant' }] }, corps || {})) });
   try {
-    for (const [nom, h, c] of [
-      ['anonyme (Origin écrite à la main)', {}, { premium: true }],
-      ['compte vérifié qui n\'est pas Kevin', { 'x-kdmc-sso': jeton('bob', 1) }, { premium: true }],
-      ['Kevin SANS Face ID', { 'x-kdmc-sso': jeton('kdmc_admin', 0) }, { premium: true }],
-      ['« Kevin » signé avec un faux secret', { 'x-kdmc-sso': jeton('kdmc_admin', 1, 'faux') }, { premium: true }],
-      ['jeton de Kevin EXPIRÉ', { Authorization: 'Bearer ' + (() => { const p = b64uT(JSON.stringify({ u: 'kdmc_admin', v: 1, exp: Date.now() - 1000 })); return p + '.' + b64uT(createHmac('sha256', 'sec').update(p).digest()); })() }, { premium: true }],
+    /* 15.10 : un jeton qui n'est pas un compte ouvert est refusé (401) AVANT l'IA ; un vrai compte qui n'est pas Kevin
+       répond en gratuit. Dans les deux cas : aucun moteur payant. */
+    const bobAvecCode = (() => { const p = b64uT(JSON.stringify({ u: 'bob', n: 'bob', c: 1, v: 1, k: 1, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64uT(createHmac('sha256', 'sec').update(p).digest()); })();
+    for (const [nom, h, c, attendu] of [
+      ['compte ordinaire (Origin écrite à la main)', {}, { premium: true }, 200],
+      ['compte vérifié avec code, qui n\'est pas Kevin', { 'x-kdmc-sso': bobAvecCode }, { premium: true }, 200],
+      ['compte vérifié SANS code (code obligatoire)', { 'x-kdmc-sso': jeton('bob', 1) }, { premium: true }, 401],
+      ['Kevin SANS Face ID', { 'x-kdmc-sso': jeton('kdmc_admin', 0) }, { premium: true }, 401],
+      ['« Kevin » signé avec un faux secret', { 'x-kdmc-sso': jeton('kdmc_admin', 1, 'faux') }, { premium: true }, 401],
+      ['jeton de Kevin EXPIRÉ', { Authorization: 'Bearer ' + (() => { const p = b64uT(JSON.stringify({ u: 'kdmc_admin', v: 1, exp: Date.now() - 1000 })); return p + '.' + b64uT(createHmac('sha256', 'sec').update(p).digest()); })() }, { premium: true }, 401],
     ]) {
       payes.length = 0;
       const r = await q(h, c);
       const b = await r.json();
       assert.equal(payes.length, 0, nom + ' : aucun moteur payant appelé');
-      assert.equal(r.status, 200, nom + ' : répond quand même (en gratuit)');
-      assert.equal(b.provider, 'qwen', nom + ' : c\'est Qwen, gratuit, qui répond');
+      assert.equal(r.status, attendu, nom + ' : statut ' + attendu);
+      if (attendu === 200) assert.equal(b.provider, 'qwen', nom + ' : c\'est Qwen, gratuit, qui répond');
+      else assert.equal(b.error, 'compte_requis', nom + ' : refus clair');
     }
     payes.length = 0;
     const f = await q({}, { provider: 'anthropic' });
@@ -442,7 +465,7 @@ test('sans le laissez-passer de Kevin, le MODÈLE demandé est ignoré (openrout
     const env = { OPENROUTER_API_KEY: 'k', GEMINI_API_KEY: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV_VIDE };
     for (const [provider, model] of [['openrouter', 'anthropic/claude-opus-4'], ['gemini', 'gemini-2.5-pro']]) {
       vus.length = 0;
-      await worker.fetch(new Request('https://apis.kd-mc.com/ai', { method: 'POST', headers: { 'content-type': 'application/json', Origin: 'https://javis.kd-mc.com' },
+      await worker.fetch(new Request('https://apis.kd-mc.com/ai', { method: 'POST', headers: { 'content-type': 'application/json', Origin: 'https://javis.kd-mc.com', Authorization: 'Bearer ' + COMPTE },
         body: JSON.stringify({ provider, model, models: { [provider]: model }, messages: [{ role: 'user', content: 'bonjour' }] }) }), env, { waitUntil() {} });
       assert.ok(vus.length >= 1, provider + ' appelé');
       assert.ok(vus.every((v) => !v.url.includes(model) && !v.body.includes(model)), provider + ' : le modèle « ' + model + ' » n\'est jamais parti');

@@ -11919,6 +11919,10 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
   cookie pour installer/mettre à jour l'app — aucun secret dedans). Limite connue : le dépôt GitHub public contient le code ; seul un dépôt privé règle ça (décision de Kevin).
 - **Où c'est fait** : `porteGenerale` (services/kdmc-router/worker.js), appelée par `porteFermee` pour toute adresse sans porte propre. Sans en-tête de navigateur,
   l'adresse décide (`demandeDePage`) : `curl` n'est pas un contournement.
+  **La passerelle apis.kd-mc.com aussi (15.10.2026)** : `compteVerifie` (services/kdmc-apis/worker.js) — même vérification que le routeur (signature, expiration,
+  appareil, révocation, Face ID de Kevin, code obligatoire), cookie `kdmc_sso` / `Authorization: Bearer` / `x-kdmc-sso`, lecture seule. Refus : 401 `compte_requis`.
+  Ouverts : `OPTIONS` et `GET /health` (`{ok:true}` seulement ; le détail pour Kevin). L'en-tête `Origin` ne vaut plus rien comme preuve (il se falsifie).
+  Garde : `npm run test:apis-compte` (toutes les routes lues dans le code, 0 écriture KV, sabotages rouges).
 - **Plus aucun visiteur anonyme** : plus de compteur `anon:`/`anonv:` (un inconnu ne consulte rien, donc ne se compte pas — et ça économise l'écriture KV),
   plus de message anonyme à l'admin (`/__boite/deposer` et `/reponse` exigent le compte ; le bouton ✉️ n'apparaît que connecté).
 - **Les robots de vérification** passent par `x-kdmc-sonde` SEULEMENT depuis un centre de données (GitHub Actions = Azure) ; l'en-tête posé depuis un téléphone n'ouvre rien.

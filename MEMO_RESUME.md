@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — apis.kd-mc.com : plus aucune réponse sans compte (règle « aucune consultation sans compte nulle part »)
+
+- Avant (mesuré sans compte) : météo, traduction, IBAN… répondaient à n'importe qui ; `/` montrait la configuration IA ; un faux `Origin` suffisait pour l'IA.
+- Maintenant : chaque route demande un compte du domaine ouvert et non révoqué (même vérification que le routeur, lecture seule). Refus = 401 `compte_requis`.
+- Restent ouverts : le préflight `OPTIONS` et `GET /health` (`{ok:true}`, le détail pour Kevin seul). CORS : l'adresse exacte + cookies, jamais `*`.
+- Garde `npm run test:apis-compte` (225 contrôles, 4 sabotages rouges) ; `test:apis-worker` et `test:apis-paliers` mis à jour. Leçon #548.
+- Pas fait ici : les apps clientes (envoi du cookie + `Authorization: Bearer`) — chantier parallèle ; la « preuve live » de `deploy-kdmc-apis.yml` interroge `/ai` et `/health` sans laissez-passer : après mise en ligne elle affichera des 401 et un `/health` sans détail (étape non bloquante, à adapter). PAS encore déployé.
 ## 2026-10-15 — CI Apex Chat remise au vert (test GIF en vrai navigateur)
 
 - v1.1.305 en ligne : E2E prod 18/0/0 sur la NOUVELLE version. Mais `messaging-app-tests.yml` rouge (run 38716180919) :

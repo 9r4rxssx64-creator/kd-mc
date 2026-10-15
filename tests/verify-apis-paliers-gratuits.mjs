@@ -71,11 +71,16 @@ global.fetch = async (u) => {
   }
   return new Response(JSON.stringify({ error: { message: 'rate limit' } }), { status: 429 });
 };
-const env = {};
+/* 15.10 : la passerelle exige un compte du domaine (compte-obligatoire.test.mjs) — un compte ordinaire pour /ai, Kevin pour le détail de /health. */
+const { createHmac } = await import('node:crypto');
+const b64u = (x) => Buffer.from(x).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const pass = (u, v) => { const p = b64u(JSON.stringify({ u, n: u, c: 1, v: v ? 1 : 0, k: 1, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
+const KV = { get: async () => null, put: async () => {}, delete: async () => {} };
+const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV };
 ANCIENS.forEach((p) => { env[secretName(p)] = 'k'; });
 env[secretName('cerebras')] = 'k';
 let r = await worker.fetch(new Request('https://w/ai', {
-  method: 'POST', headers: { 'content-type': 'application/json', Origin: 'https://kd-mc.com' },
+  method: 'POST', headers: { 'content-type': 'application/json', Origin: 'https://kd-mc.com', Authorization: 'Bearer ' + pass('marie-dupont', 0) },
   body: JSON.stringify({ messages: [{ role: 'user', content: 'salut' }] }) }), env);
 let j = await r.json().catch(() => ({}));
 chk(r.status === 200, '4. les 8 premiers tombent → la réponse arrive quand même (' + r.status + ')');
@@ -85,8 +90,8 @@ chk(!appeles.some((u) => /nvidia|sambanova|nebius/.test(u)),
   '5. les moteurs SANS clé ne sont jamais appelés (aucune erreur inventée)');
 
 /* --- 6. /health honnête --- */
-r = await worker.fetch(new Request('https://w/health', { headers: { Origin: 'https://kd-mc.com' } }),
-  { [secretName('cerebras')]: 'k' });
+r = await worker.fetch(new Request('https://w/health', { headers: { Origin: 'https://kd-mc.com', 'x-kdmc-sso': pass('kdmc_admin', 1) } }),
+  { [secretName('cerebras')]: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV });
 j = await r.json().catch(() => ({}));
 const ks = j.keys || j.providers || {};
 chk(ks.cerebras === true, '6. /health annonce un moteur réellement branché');

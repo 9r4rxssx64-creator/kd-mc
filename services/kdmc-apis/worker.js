@@ -7,19 +7,19 @@
 // Règles Kevin respectées :
 //  - Isolation max : chaque appel scopé par `?app=<nom>` (rate-limit + logs par app).
 //  - Autonomie : 0 saisie par app. Config committée (free-apis-config.json) chargée au boot.
-//  - Sécurité : Origin allowlist (le navigateur FORCE l'en-tête Origin, non falsifiable en JS).
-//    Clés jamais exposées. Fail-open : une route sans clé renvoie 501 clair, ne casse jamais.
+//  - Sécurité (15.10.2026) : COMPTE DU DOMAINE OBLIGATOIRE sur toute route (compteVerifie, même
+//    vérification que le routeur) ; l'Origin seul ne suffit plus (il se falsifie hors navigateur).
+//    Clés jamais exposées. Une route sans clé renvoie 501 clair, ne casse jamais.
 //  - Erreurs détaillées : chaque échec renvoie {error, detail, status} (leçon "cause exacte").
 //  - Reproduction fidèle : keyless = simple relais CORS de l'upstream, aucune invention.
 //
 // Déploiement : .github/workflows/deploy-kdmc-apis.yml (wrangler + secrets GitHub).
-// Health : GET https://apis.kd-mc.com/health (aucune auth).
+// Health : GET https://apis.kd-mc.com/health → {ok:true} sans compte (sonde) ; le détail, pour Kevin seul.
 // -----------------------------------------------------------------------------
 
 // ---------- Origines de confiance ----------
-// Le navigateur impose l'en-tête Origin (impossible à forger en JS front) → sert de
-// contrôle d'accès pour les apps browser. Server-to-server = pas d'Origin → refusé sur
-// les routes sensibles, toléré sur les keyless publiques (déjà gratuites/anonymes).
+// L'Origin ne sert plus QU'AU CORS et à une défense en plus sur les routes à clé : hors navigateur
+// il se falsifie (mesuré 15.10). Le contrôle d'accès, c'est le compte (compteVerifie).
 export function isTrustedOrigin(origin) {
   if (!origin) return false;
   try {
@@ -36,16 +36,21 @@ export function isTrustedOrigin(origin) {
   }
 }
 
+/* CORS (Kevin 15.10.2026, « aucune consultation sans compte ») : une origine de confiance reçoit SON adresse exacte
+   + Allow-Credentials (le cookie du domaine `kdmc_sso` doit pouvoir voyager avec `credentials:'include'`).
+   Une origine inconnue ne reçoit AUCUNE autorisation : jamais '*' (avant : '*' sur les routes « keyless »). */
 export function corsHeaders(origin) {
-  // Origin explicite si de confiance, sinon '*' pour les keyless publiques (lecture seule).
-  const allow = isTrustedOrigin(origin) ? origin : '*';
-  return {
-    'Access-Control-Allow-Origin': allow,
+  const h = {
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type,x-apex-pin,x-kdmc-app,x-kdmc-sso,Authorization',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
+  if (isTrustedOrigin(origin)) {
+    h['Access-Control-Allow-Origin'] = origin;
+    h['Access-Control-Allow-Credentials'] = 'true';
+  }
+  return h;
 }
 
 function json(body, status, origin, extra) {
@@ -59,6 +64,108 @@ function json(body, status, origin, extra) {
   });
 }
 
+/* ═══ AUCUNE CONSULTATION SANS COMPTE, NULLE PART (Kevin 3.10 et 8.10.2026) ═══
+   Mesuré le 15.10 depuis l'extérieur, sans compte : les routes « keyless » répondaient 200 à n'importe qui, le `/`
+   listait la configuration IA, et les routes « keyed » ne regardaient que l'en-tête Origin — qui se falsifie d'une
+   ligne de curl (réponse d'IA obtenue avec `Origin: https://kd-mc.com`). Désormais TOUTE route exige le laissez-passer
+   du domaine, vérifié EXACTEMENT comme le routeur (services/kdmc-router/worker.js : ssoVerify, ssoToken, ssoCookie,
+   revoked, appareilDe, faibleAdmin, codeManquant, compteConnu) — en LECTURE SEULE sur le même KV ACCOUNTS.
+   Sans secret ou sans KV : refus (fermé), jamais l'accès. Seuls restent ouverts : OPTIONS (préflight) et GET /health {ok:true}. */
+export const SSO_COOKIE = 'kdmc_sso';   /* même nom que SSO_COOKIE du routeur */
+const UID_ROBOTS_SANS_FICHE = ['ci_smoke'];   /* robot de déploiement du routeur : exempté du code, comme là-bas */
+/* Famille d'appareil — copie EXACTE de empreinteAppareil (routeur) : un pass émis sur un iPhone ne vaut rien sur un PC Windows. */
+export function empreinteAppareil(ua) {
+  const u = String(ua || '');
+  return /iPhone|iPod/.test(u) ? 'iphone' : /iPad|Macintosh.*Mobile/.test(u) ? 'ipad' : /Android/.test(u) ? 'android' : /Windows/.test(u) ? 'windows' : /Macintosh|Mac OS/.test(u) ? 'mac' : /Linux|X11/.test(u) ? 'linux' : 'autre';
+}
+const appareilDe = (request) => empreinteAppareil(request && request.headers && request.headers.get ? request.headers.get('user-agent') : '');
+function ssoCookie(request, name) {
+  const c = request.headers.get('cookie') || '';
+  const m = c.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+  if (!m) return '';
+  try { return decodeURIComponent(m[1]); } catch (_) { return ''; }
+}
+/* Les canaux du laissez-passer, dans l'ordre du routeur : Authorization: Bearer, x-kdmc-sso, cookie kdmc_sso.
+   (Pas de `?t=` : un jeton dans l'adresse finit dans les journaux.) Chaque candidat est vérifié en entier ; un vieux
+   jeton d'app expiré n'empêche pas le cookie valide de parler. */
+export function jetonsDe(request) {
+  const out = [];
+  const m = (request.headers.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+  if (m) out.push(m[1].trim());
+  const x = (request.headers.get('x-kdmc-sso') || '').trim();
+  if (x) out.push(x);
+  const c = ssoCookie(request, SSO_COOKIE);
+  if (c) out.push(c);
+  return out.filter((t, i) => t && out.indexOf(t) === i);
+}
+/* Copie de ssoVerify (routeur) : HMAC-SHA256 avec KDMC_SSO_SECRET, comparaison à temps constant, UTF-8, exp, uid, appareil. */
+async function ssoVerifie(secret, token, request) {
+  if (!token || token.indexOf('.') < 0) return null;
+  const dot = token.indexOf('.'); const p = token.slice(0, dot); const sig = token.slice(dot + 1);
+  const expect = await hmacB64u(secret, p);
+  if (sig.length !== expect.length) return null;
+  let diff = 0; for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expect.charCodeAt(i);
+  if (diff !== 0) return null;
+  let d; try { const bin = b64uVersTexte(p); d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))); } catch (_) { return null; }
+  if (!d || !d.u || !d.exp || d.exp < Date.now()) return null;
+  if (request && d.d && d.d !== appareilDe(request)) return null;
+  return { uid: d.u, name: d.n || '', verified: d.v === 1, code: d.k === 1, iat: d.iat || 0, exp: d.exp };
+}
+const revoque = (acc, s) => !!(acc && acc.revoked_at && (s.iat || 0) < acc.revoked_at);
+/* Mémo de 15 s des lectures KV (comme acc-memo.js du routeur) : une app qui pose 10 questions ne coûte pas 20 lectures.
+   Rangé PAR KV (WeakMap) ; LECTURE seule — aucune écriture KV ici. */
+const MEMO_MS = 15000;
+const memos = new WeakMap();
+async function kvLu(kv, cle) {
+  let m = memos.get(kv);
+  if (!m) { m = new Map(); memos.set(kv, m); }
+  const e = m.get(cle);
+  if (e && e.t > Date.now()) return e.v;
+  const v = await kv.get(cle);   /* une erreur KV remonte → refus (fermé) */
+  if (m.size > 500) m.clear();
+  m.set(cle, { v, t: Date.now() + MEMO_MS });
+  return v;
+}
+async function compteDuJeton(env, token, request) {
+  const s = await ssoVerifie(env.KDMC_SSO_SECRET, token, request);
+  if (!s) return null;
+  const admin = ADMIN_UIDS_IA.indexOf(s.uid) >= 0;
+  if (admin && !s.verified) return null;   /* faibleAdmin : « Kevin » déclaré sans Face ID n'ouvre rien */
+  const acc = JSON.parse((await kvLu(env.ACCOUNTS, 'acc:' + s.uid)) || 'null');
+  if (revoque(acc, s)) return null;
+  if (admin) {   /* « Déconnecter partout » posé sur l'un des uid de Kevin coupe l'autre (même règle que kevinVerifie) */
+    for (const u of ADMIN_UIDS_IA) {
+      if (u === s.uid) continue;
+      if (revoque(JSON.parse((await kvLu(env.ACCOUNTS, 'acc:' + u)) || 'null'), s)) return null;
+    }
+  }
+  if (acc && acc.tel_requis && !acc.tel) return null;   /* invité au téléphone non confirmé : rien (compteConnu du routeur) */
+  if (acc && acc.attente_admin) return null;            /* inscrit pas encore ouvert par Kevin (ou refusé) : rien */
+  /* Code obligatoire pour tous (Kevin 8.10) — codeManquant du routeur, en lecture seule */
+  const codeObligatoire = String(env.KDMC_CODE_OBLIGATOIRE || '1') !== '0';
+  if (codeObligatoire && !admin && UID_ROBOTS_SANS_FICHE.indexOf(s.uid) < 0 && !s.code && !(acc && acc.code_at)) {
+    const cle = (acc && (acc.merged_into || acc.uid)) || s.uid;
+    if (!(await kvLu(env.ACCOUNTS, 'cred:' + cle))) return null;
+  }
+  return { uid: s.uid, name: s.name, verified: s.verified, admin: admin && s.verified };
+}
+/* Le contrôle de la passerelle : un compte du domaine ouvert et non révoqué, ou null (→ 401). Jamais d'exception. */
+export async function compteVerifie(request, env) {
+  try {
+    if (!env || !env.KDMC_SSO_SECRET) return null;
+    if (!env.ACCOUNTS || typeof env.ACCOUNTS.get !== 'function') return null;
+    for (const t of jetonsDe(request)) {
+      const c = await compteDuJeton(env, t, request);
+      if (c) return c;
+    }
+    return null;
+  } catch (_) { return null; }
+}
+export const REFUS_COMPTE = { ok: false, error: 'compte_requis', detail: 'Connecte-toi à ton compte kd-mc.com pour utiliser ce service.' };
+function refusCompte(origin) {
+  return json(REFUS_COMPTE, 401, origin, { 'Cache-Control': 'no-store' });
+}
+
 function err(message, status, origin, detail) {
   return json(
     { ok: false, error: message, detail: detail || null, status: status || 500 },
@@ -69,7 +176,7 @@ function err(message, status, origin, detail) {
 
 // ---------- KEYLESS : APIs gratuites sans clé (relais CORS) ----------
 // Chaque entrée construit l'URL upstream depuis les query params. AUCUNE invention de
-// données : on relaie l'upstream tel quel. Gratuit + anonyme → accessible aux origines '*'.
+// données : on relaie l'upstream tel quel. Depuis le 15.10 : derrière le compte du domaine, comme tout le reste.
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal… pareil dans mes autres projets » :
    le routage IA commun du domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { repondreAvecOutils, REGLES_OUTILS_APPS, SANS_PLANNING, RE_BESOIN_OUTILS, questionComplexe } from '../_shared/outils-lecture.js';
@@ -660,6 +767,8 @@ function keyStatus(env) {
 }
 
 // ---------- Routeur principal ----------
+export const ROUTES_KEYLESS = Object.keys(KEYLESS).concat(['geoip', 'pwned', 'iban', 'vat', 'rss']);
+export const ROUTES_KEYED = ['ai', 'search', 'finance', 'images', 'printify', 'reputation'];
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -672,30 +781,40 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
 
-    // Health — aucune auth (utilisé par external-apis-health.yml + diagnostics apps).
-    if (path === '/health' || path === '/') {
+    /* /health : la sonde d'uptime (deploy-kdmc-apis.yml) n'a besoin que de {ok:true}. Le détail (fournisseurs d'IA,
+       clés présentes, modèles) n'est montré QU'À Kevin (laissez-passer Face ID) : un inconnu ne lit plus la configuration. */
+    const detail = async () => {
       await Promise.all([chargerPauses(), chargerModelesRetires()]);   // épuisements et modèles retirés durables, montrés même par un isolat neuf
-      return json(
-        {
-          ok: true,
-          service: 'kdmc-apis',
-          keyless: Object.keys(KEYLESS).concat(['geoip', 'pwned', 'iban', 'vat', 'rss']),
-          keyed: ['ai', 'search', 'finance', 'images', 'printify', 'reputation'],
-          workers_ai: !!env.AI,
-          /* Kevin 2026-09-05 : qui répond en premier pour chaque type de question (Qwen gratuit
-             en principal, Anthropic code/raisonnement/actions, Gemini vision…) — honnête, mesuré. */
-          ia_routing: routingStatus(env),
-          keys: keyStatus(env),
-          ts: Date.now(),
-        },
-        200,
-        origin
-      );
+      return json({
+        ok: true,
+        service: 'kdmc-apis',
+        keyless: ROUTES_KEYLESS.slice(),
+        keyed: ROUTES_KEYED.slice(),
+        workers_ai: !!env.AI,
+        /* Kevin 2026-09-05 : qui répond en premier pour chaque type de question (Qwen gratuit
+           en principal, Anthropic code/raisonnement/actions, Gemini vision…) — honnête, mesuré. */
+        ia_routing: routingStatus(env),
+        keys: keyStatus(env),
+        ts: Date.now(),
+      }, 200, origin, { 'Cache-Control': 'no-store' });
+    };
+    if (path === '/health' && (request.method === 'GET' || request.method === 'HEAD')) {
+      if (await kevinVerifie(request, env)) return detail();
+      return json({ ok: true }, 200, origin, { 'Cache-Control': 'no-store' });
+    }
+
+    /* AUCUNE CONSULTATION SANS COMPTE : tout ce qui suit exige un compte du domaine ouvert et non révoqué. */
+    const compte = await compteVerifie(request, env);
+    if (!compte) return refusCompte(origin);
+
+    if (path === '/') {
+      if (compte.admin && (await kevinVerifie(request, env))) return detail();
+      return json({ ok: true, service: 'kdmc-apis' }, 200, origin, { 'Cache-Control': 'no-store' });
     }
 
     const routeName = path.slice(1).split('/')[0];
 
-    // Routes keyless publiques (relais simple, origines '*' tolérées car déjà gratuites/anonymes).
+    // Routes keyless (relais simple) — derrière le compte depuis le 15.10.
     if (KEYLESS[routeName]) {
       return relay(KEYLESS[routeName](p), routeName === 'geo' ? {} : {}, origin, routeName);
     }
@@ -705,9 +824,8 @@ export default {
     if (routeName === 'vat') return handleVat(p, origin);
     if (routeName === 'rss') return handleRss(p, origin);
 
-    // Routes keyed (clé serveur) : Origin de confiance OBLIGATOIRE (anti-abus).
-    const keyed = ['ai', 'search', 'finance', 'images', 'printify', 'reputation'];
-    if (keyed.includes(routeName)) {
+    // Routes keyed (clé serveur) : compte vérifié (plus haut) ET Origin de confiance (défense en plus, pas à la place).
+    if (ROUTES_KEYED.includes(routeName)) {
       if (!isTrustedOrigin(origin)) {
         return err('origine non autorisée', 403, origin, 'Origin doit être *.kd-mc.com, Pages ou localhost');
       }

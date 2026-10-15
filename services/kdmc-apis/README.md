@@ -2,9 +2,9 @@
 
 **Une passerelle → toutes les apps (présentes + futures) héritent des mêmes capacités
 gratuites, sans recâbler chaque app.** Clés côté serveur (jamais dans le navigateur),
-origines de confiance uniquement.
+**compte du domaine obligatoire sur toute route** (15.10.2026, règle « aucune consultation sans compte »).
 
-- Worker : [`worker.js`](./worker.js) · Config : [`wrangler.toml`](./wrangler.toml) · Tests : [`worker.test.mjs`](./worker.test.mjs)
+- Worker : [`worker.js`](./worker.js) · Config : [`wrangler.toml`](./wrangler.toml) · Tests : [`worker.test.mjs`](./worker.test.mjs), [`compte-obligatoire.test.mjs`](./compte-obligatoire.test.mjs)
 - URL domaine : `https://apis.kd-mc.com` · Fallback : `https://kdmc-apis.9r4rxssx64.workers.dev`
 - Déploiement : [`.github/workflows/deploy-kdmc-apis.yml`](../../.github/workflows/deploy-kdmc-apis.yml)
 - Client apps : [`tools/shared/free-apis-client.js`](../../tools/shared/free-apis-client.js)
@@ -14,30 +14,34 @@ origines de confiance uniquement.
 
 | Route | Auth | Clé requise | Fait |
 |---|---|---|---|
-| `GET /health` | aucune | — | État + quelles clés sont chargées |
-| `GET /weather?lat&lon&days` | publique | — | Météo Open-Meteo (affluence casino) |
-| `GET /holidays?year&country` | publique | — | Jours fériés Nager.Date (FL/CFL auto) |
-| `GET /fx?from&to&amount` | publique | — | Taux de change BCE Frankfurter |
-| `GET /geo?q&limit` | publique | — | Géocodage Nominatim (OSM) |
-| `GET /geoip` | publique | — | Géoloc par IP (ipwho.is) |
-| `GET /time?tz` | publique | — | Heure/fuseau timeapi.io |
-| `GET /translate?q&from&to` | publique | — | Traduction MyMemory (RGPD) |
-| `GET /wiki?title&lang` | publique | — | Résumé Wikipedia |
-| `GET /pwned?prefix` | publique | — | Pwned Passwords (k-anonymity) |
-| `GET /entreprise?q` | publique | — | Recherche entreprise FR (SIREN/SIRET) |
-| `GET /adresse?q` | publique | — | Autocomplete adresse FR (BAN) |
-| `GET /iban?value` | publique | — | Validation IBAN (openiban) |
-| `GET /vat?country&number` | publique | — | Validation TVA UE (VIES) |
-| `GET /crypto?ids&vs` | publique | — | Prix crypto CoinGecko (keyless) |
-| `POST /ai` | origine | aucune requise* | Chat IA failover + **Workers AI** |
-| `GET\|POST /search?q` | origine | TAVILY / BRAVE | Recherche web |
-| `GET /finance?symbol` | origine | FINNHUB | Cours bourse |
-| `GET /images?q` | origine | PEXELS | Photos |
-| `GET /printify/<path>` | origine | PRINTIFY | Catalogue print-on-demand |
+| `OPTIONS *` | aucune | — | Préflight CORS |
+| `GET /health` | aucune | — | `{ok:true}` (sonde) ; le détail (clés, routage IA) pour Kevin seul |
+| `GET /weather?lat&lon&days` | compte | — | Météo Open-Meteo (affluence casino) |
+| `GET /holidays?year&country` | compte | — | Jours fériés Nager.Date (FL/CFL auto) |
+| `GET /fx?from&to&amount` | compte | — | Taux de change BCE Frankfurter |
+| `GET /geo?q&limit` | compte | — | Géocodage Nominatim (OSM) |
+| `GET /geoip` | compte | — | Géoloc par IP (ipwho.is) |
+| `GET /time?tz` | compte | — | Heure/fuseau timeapi.io |
+| `GET /translate?q&from&to` | compte | — | Traduction MyMemory (RGPD) |
+| `GET /wiki?title&lang` | compte | — | Résumé Wikipedia |
+| `GET /pwned?prefix` | compte | — | Pwned Passwords (k-anonymity) |
+| `GET /entreprise?q` | compte | — | Recherche entreprise FR (SIREN/SIRET) |
+| `GET /adresse?q` | compte | — | Autocomplete adresse FR (BAN) |
+| `GET /iban?value` | compte | — | Validation IBAN (openiban) |
+| `GET /vat?country&number` | compte | — | Validation TVA UE (VIES) |
+| `GET /crypto?ids&vs` | compte | — | Prix crypto CoinGecko (keyless) |
+| `POST /ai` | compte + origine | aucune requise* | Chat IA failover + **Workers AI** |
+| `GET\|POST /search?q` | compte + origine | TAVILY / BRAVE | Recherche web |
+| `GET /finance?symbol` | compte + origine | FINNHUB | Cours bourse |
+| `GET /images?q` | compte + origine | PEXELS | Photos |
+| `GET /printify/<path>` | compte + origine | PRINTIFY | Catalogue print-on-demand |
 
-**Auth "origine"** = l'en-tête `Origin` doit être `*.kd-mc.com`, `9r4rxssx64.github.io`
-ou `localhost` (le navigateur force cet en-tête, non falsifiable en JS front). Les routes
-publiques (déjà gratuites/anonymes) tolèrent `*`.
+**Auth "compte"** = le laissez-passer du domaine (le même que le routeur), lu dans
+`Authorization: Bearer <jeton>`, `x-kdmc-sso` ou le cookie `kdmc_sso` (envoyer `credentials:'include'`).
+Vérifié par `compteVerifie` : signature, expiration, appareil, révocation, Face ID de Kevin, code obligatoire.
+Sans compte : `401 {ok:false, error:'compte_requis', detail}`. **"origine"** en plus sur les routes à clé :
+`Origin` = `*.kd-mc.com`, Pages ou `localhost` (défense en plus — seul, il se falsifie hors navigateur).
+CORS : l'origine exacte + `Access-Control-Allow-Credentials: true`, jamais `*`.
 
 **Fail-open** : une route dont la clé manque renvoie `501` clair — jamais de crash.
 
@@ -55,4 +59,4 @@ Chaîne complète : GEMINI → GROQ → OPENROUTER → MISTRAL → COHERE → �
 ## Ajouter une nouvelle app
 
 Rien à recâbler côté passerelle : l'app charge `free-apis-client.js` + appelle `KdmcApis.*`.
-Son `Origin` `*.kd-mc.com` est déjà de confiance → elle hérite de tout immédiatement.
+Elle envoie le laissez-passer du domaine (cookie + Bearer) : son utilisateur connecté hérite de tout immédiatement.

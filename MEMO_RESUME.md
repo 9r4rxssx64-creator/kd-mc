@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Alarme externe branchée (healthchecks.io) + sonde : la porte « compte » n'est plus une panne
+
+- Kevin a renouvelé le jeton Cloudflare « Edit Cloudflare Workers » (déploiement Apex Chat 38748155641 vert avec le nouveau)
+  et créé le contrôle healthchecks.io « Apex Chat » (2 h, grâce 1 h) ; secret `UPTIME_HEARTBEAT_URL` posé dans kd-mc,
+  sonde redéployée (38749364709) : HEARTBEAT_URL posé.
+- Ce run montrait 9 apps « en panne » : 401 « Connexion au domaine requise » (`x-kdmc-porte`) = la porte compte, pas une panne.
+  Avec le battement, ça aurait envoyé /fail toutes les 2 h. Correctif : la sonde demande la page (`accept: text/html` → 200
+  mesuré sur osint/tor/cuisine/ia) ; 401/403 marqué `x-kdmc-porte` = verrou qui marche ; sans marque = panne.
+  Garde `test:uptime-porte-compte` (7, dans test:ci et avant déploiement de la sonde) ; 2 sabotages rouges.
+
 ## 2026-10-15 — admin.kd-mc.com : ouverture plus rapide (branche claude/admin-ouverture-rapide)
 
 - Kevin : « l'ouverture est très longue ». Cause : la page attendait 4 appels à la suite (historique, journal, boîte, boîte de secours) avant d'afficher, et le worker redemandait la même vérification au domaine 3-4 fois par ouverture.

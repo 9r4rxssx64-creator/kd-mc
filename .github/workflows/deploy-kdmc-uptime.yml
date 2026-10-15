@@ -35,6 +35,7 @@ on:
     paths:
       - 'services/kdmc-uptime/**'
       - 'tests/uptime-couverture.test.mjs'
+      - 'tests/uptime-porte-compte.test.mjs'
       - '.github/workflows/deploy-kdmc-uptime.yml'
 
 concurrency:
@@ -79,6 +80,10 @@ jobs:
       - name: Vérifier la couverture (aucun sous-domaine du routeur oublié)
         working-directory: .
         run: node tests/uptime-couverture.test.mjs
+
+      - name: Vérifier que la porte « compte obligatoire » n'est pas prise pour une panne
+        working-directory: .
+        run: node tests/uptime-porte-compte.test.mjs
 
       - name: Installer wrangler (version épinglée, sans scripts d'installation)
         # Sonar 05/09 : « dépendance non verrouillée » + « lifecycle scripts ». Épinglé sur la

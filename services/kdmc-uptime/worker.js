@@ -145,7 +145,7 @@ function targets() {
 }
 
 /** Sonde une cible. Ne jette jamais : une exception ici tuerait tout le passage. */
-async function probe(t) {
+export async function probe(t) {
   const started = Date.now();
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
@@ -154,7 +154,10 @@ async function probe(t) {
       method: 'GET',
       redirect: 'follow',
       signal: ctl.signal,
-      headers: { 'user-agent': 'kdmc-uptime/1.0 (+https://kd-mc.com)' },
+      // 15.10.2026 : demander la PAGE comme un navigateur. Sans `accept: text/html`, la porte du
+      // domaine (« aucune consultation sans compte ») répond 401 texte aux 9 apps protégées → 9 fausses
+      // pannes à chaque passage, et le battement externe aurait envoyé /fail toutes les 2 h.
+      headers: { 'user-agent': 'kdmc-uptime/1.0 (+https://kd-mc.com)', accept: 'text/html,application/xhtml+xml' },
       cf: { cacheTtl: 0, cacheEverything: false },
     });
     const ms = Date.now() - started;
@@ -163,7 +166,10 @@ async function probe(t) {
     // 401/403 sur une page admin = verrou qui fonctionne, donc en bonne santé.
     // 429 sur un worker = il est VIVANT et se protège (apex-v13-backend limite par IP
     // avant /health) : ce n'est pas une panne.
-    const ok = code < 400 || (t.adminGated && (code === 401 || code === 403)) || (t.kind === 'worker' && code === 429);
+    // 401/403 marqué `x-kdmc-porte` = la porte du ROUTEUR qui demande un compte : le domaine répond,
+    // le verrou marche. Un 401 SANS cette marque (l'app elle-même qui casse) reste une panne.
+    const porte = (code === 401 || code === 403) && !!(res.headers && res.headers.get && res.headers.get('x-kdmc-porte'));
+    const ok = code < 400 || porte || (t.adminGated && (code === 401 || code === 403)) || (t.kind === 'worker' && code === 429);
     return { id: t.id, url: t.url, kind: t.kind, code: String(code), ms, ok };
   } catch (e) {
     const ms = Date.now() - started;

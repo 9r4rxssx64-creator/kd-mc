@@ -1992,6 +1992,37 @@ async function handleAdminGetFullUser(pseudo, request, env) {
 //  Routes Conversations
 // ============================================================================
 
+// Lot E1 (audit A5 F9, 15.10.2026) : verrou des « soins » de la liste, en D1 et non plus en KV.
+// Avant : 2 écritures KV toutes les 10 min par personne active (+ le verrou global), sur un plafond de
+// 1 000 écritures/jour pour TOUT le compte kd-mc ; et une panne KV faisait tourner les soins (≥ 18 requêtes
+// D1) à CHAQUE appel. Désormais : UPSERT conditionnel dans heal_locks (0020) — une écriture D1 seulement
+// quand le verrou est pris — et un mémo par isolate (par base) qui évite même la lecture. Panne D1 ou table
+// absente → PAS de soins, et pas de nouvel essai avant 10 min dans cet isolate (jamais « à chaque appel »).
+export const HEAL_EVERY_MS = 10 * 60000;
+const HEAL_NOT_DUE_RECHECK_MS = 60000;
+const _healMemo = new WeakMap();   // base D1 → Map(clé → instant avant lequel on sait que ce n'est pas dû)
+export async function _healDue(env, key, now = Date.now()) {
+  const db = env.APEX_CHAT_DB;
+  if (!db) return false;
+  let memo = _healMemo.get(db);
+  if (!memo) { memo = new Map(); _healMemo.set(db, memo); }
+  if ((memo.get(key) || 0) > now) return false;
+  try {
+    const r = await db.prepare(
+      'INSERT INTO heal_locks (key, ts) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET ts = excluded.ts WHERE heal_locks.ts <= ?3'
+    ).bind(key, now, now - HEAL_EVERY_MS).run();
+    const changes = r && r.meta && r.meta.changes;
+    if (typeof changes !== 'number') return true;          // faux D1 sans compteur (tests) : comportement d'avant
+    if (changes > 0) { memo.set(key, now + HEAL_EVERY_MS); return true; }
+    memo.set(key, now + HEAL_NOT_DUE_RECHECK_MS);           // pris par un autre appel : on redemandera dans 1 min
+    return false;
+  } catch (e) {
+    console.warn('[heal-lock]', key, e && e.message);
+    memo.set(key, now + HEAL_EVERY_MS);
+    return false;
+  }
+}
+
 async function handleListConversations(request, env) {
   const auth = await getAuthUser(request, env);
   if (!auth) return err('Non authentifié', 401);
@@ -2001,23 +2032,16 @@ async function handleListConversations(request, env) {
   // les exclut → no-op. Best-effort, ne bloque jamais la liste. v1.1.179.
   // Audit 17/09/2026 (P1 perf) : ces 6 « soins » (≥ 18 requêtes D1, boucles N+1) tournaient
   // à CHAQUE appel — et chaque client appelle cette route toutes les 60 s. Ils restent
-  // automatiques mais au plus une fois toutes les 10 minutes (verrou KV), sinon on sert la
-  // liste directement. Sans KV (tests, panne) : comportement d'avant.
+  // automatiques mais au plus une fois toutes les 10 minutes (verrou D1 heal_locks depuis le lot E1),
+  // sinon on sert la liste directement.
   // Lot 2 (W) : UN SEUL verrou global « heal:convlist » faisait que le premier
   // utilisateur de la fenêtre de 10 min était le seul soigné — les réparations
   // PROPRES à chaque compte (fusion de ses doublons, ses DM surpeuplés, rattrapage
   // admin) ne tournaient jamais pour les autres. Deux verrous désormais : un
   // global pour les purges communes, un par utilisateur pour ses soins à lui.
-  const _due = async (key) => {
-    try {
-      if (!env.APEX_CHAT_KV) return true;
-      if (await env.APEX_CHAT_KV.get(key)) return false;
-      await env.APEX_CHAT_KV.put(key, String(Date.now()), { expirationTtl: 600 });
-      return true;
-    } catch (_) { return true; }
-  };
-  const userHealDue = await _due('heal:convlist:u:' + auth.sub);
-  const globalHealDue = await _due('heal:convlist');
+  // Lot E1 : verrous en D1 (heal_locks), plus aucune écriture KV — voir _healDue.
+  const userHealDue = await _healDue(env, 'heal:convlist:u:' + auth.sub);
+  const globalHealDue = await _healDue(env, 'heal:convlist');
   if (userHealDue) try {
     // v1.1.195 — si c'est Kevin (admin) et que kdmc_admin n'a pas encore son VRAI
     // numéro (placeholder), on le lui donne MAINTENANT depuis sa session existante

@@ -7,6 +7,7 @@
 // est une promesse : « si ça casse, ça ne casse rien d'autre ». Ici on le prouve, cas par cas.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 
 class MockWebSocket extends EventTarget {
   constructor() { super(); this.sent = []; }

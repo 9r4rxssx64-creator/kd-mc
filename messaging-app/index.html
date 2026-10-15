@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.306",
+  "softwareVersion": "v1.1.307",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,11 +490,53 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.306';
+const __APEX_CHAT_VERSION__ = 'v1.1.307';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
+// Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
+// Cloudflare n'a que 100 000 requêtes/jour pour TOUS les sites kd-mc (erreur 1027 vécue le 27.09) ; l'app en
+// envoyait ~394/h au premier plan et ~214/h dans un onglet CACHÉ. Règles : aucune minuterie quand l'onglet est
+// caché (les notifications passent par le push) ; au retour, un sondage en retard part tout de suite ; après
+// 5 min sans geste, l'intervalle est multiplié (`idle`). Tout nouveau sondage réseau passe par ici
+// (garde : tests/unit/lot-e1-sondages-client.test.js, budget plafonné).
+window._apexPollInstall = function(win, doc){
+  const polls = win._apexPolls = win._apexPolls || {};
+  const IDLE_MS = 5 * 60000;
+  let lastAct = Date.now();
+  const idle = () => Date.now() - lastAct > IDLE_MS;
+  const arm = (p) => {
+    clearTimeout(p.t); p.t = null;
+    if(doc.hidden) return;                                   // onglet caché : AUCUNE minuterie
+    const ms = p.ms * (idle() ? p.idle : 1);
+    p.t = setTimeout(() => run(p), Math.max(0, p.last + ms - Date.now()));
+  };
+  const run = (p) => {
+    p.t = null;
+    if(doc.hidden) return;
+    p.last = Date.now();
+    try{ const r = p.fn('interval'); if(r && typeof r.catch === 'function') r.catch(() => {}); }catch(_){}
+    arm(p);
+  };
+  const armAll = () => { for(const k in polls) arm(polls[k]); };
+  // opts.idle : multiplicateur après 5 min sans geste ; opts.first : délai du 1er passage (défaut : ms).
+  win._apexPoll = function(name, ms, fn, opts){
+    const o = opts || {};
+    if(polls[name]) clearTimeout(polls[name].t);
+    const p = polls[name] = { name, ms, fn, idle: o.idle || 1, last: Date.now() - ms + (o.first != null ? o.first : ms), t: null };
+    arm(p);
+    return p;
+  };
+  // Un appel fait ailleurs (bouton, retour à la liste…) compte comme un passage : pas de doublon juste après.
+  win._apexPollTouch = function(name){ const p = polls[name]; if(p){ p.last = Date.now(); arm(p); } };
+  win._apexPollStop = function(name){ const p = polls[name]; if(p){ clearTimeout(p.t); delete polls[name]; } };
+  doc.addEventListener('visibilitychange', armAll);
+  for(const t of ['pointerdown', 'keydown', 'touchstart', 'wheel']){
+    doc.addEventListener(t, () => { const was = idle(); lastAct = Date.now(); if(was) armAll(); }, { passive: true, capture: true });
+  }
+};
+window._apexPollInstall(window, document);
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
-// Triple stratégie : SW updatefound + heartbeat 60s + remote version check 60s (HEAD/ETag)
+// Triple stratégie : SW updatefound + contrôle SW 30 min + remote version check 5 min (HEAD/ETag) — Lot E1 : jamais onglet caché
 // Lot C2 (audit A4 P1-3) : UN SEUL chemin de rechargement pour les 4 déclencheurs (nouveau service
 // worker, message SW_UPDATED, contrôle de la page, mise à jour forcée admin). Avant, deux d'entre eux
 // rechargeaient SANS condition : la personne était sortie de sa conversation en pleine écriture, et
@@ -552,6 +594,10 @@ if('serviceWorker' in navigator){
         console.log('[App] SW mis à jour vers', e.data.version);
         window._apexSafeReload(() => location.reload(), 'sw-updated');
       }
+      // Lot E1 : un message arrivé par push pendant que l'app est visible → liste relancée (au plus 1 fois / 5 s).
+      if(e.data?.type === 'push-received'){
+        if(typeof K !== 'undefined' && K._refreshConvsSoon) K._refreshConvsSoon(5000);
+      }
       if(e.data?.type === 'PERIODIC_HEARTBEAT'){
         if(typeof K !== 'undefined' && K._sendHeartbeat) K._sendHeartbeat();
       }
@@ -595,8 +641,9 @@ if('serviceWorker' in navigator){
         }
       }
     });
-    // Heartbeat SW (toutes les 60s)
-    setInterval(() => reg.update().catch(_=>{}), 60000);
+    // Lot E1 : contrôle du service worker toutes les 30 min (avant : 60 s, même onglet caché = 60 req/h au
+    // routeur) — la détection de version (_checkRemoteVersion, 5 min) couvre déjà les mises à jour.
+    window._apexPoll('sw-update', 30 * 60000, () => reg.update().catch(_=>{}));
   }).catch(_=>{});
 
   /* Semi-auto Premium (Kevin « notif, 1 clic ») — cas app FERMÉE : la notif a ouvert
@@ -608,7 +655,7 @@ if('serviceWorker' in navigator){
       if(!guid)return;
       var gplan=qp.get('plan')||'monthly';
       var tries=0;
-      var iv=setInterval(function(){
+      var iv=setInterval(function(){ /* E1:locale premium-lien (≤ 20 s, aucune requête) */
         tries++;
         if(typeof K!=='undefined' && K._adminGrantPremium && K.user && K.user.is_admin){
           clearInterval(iv);
@@ -631,9 +678,12 @@ if('serviceWorker' in navigator){
   let _lastVersionCheckTs = 0;
   let _pageEtag = null;          // empreinte (ETag/Last-Modified) de la page servie
   let _lastFullFetchTs = 0;
+  // Lot E1 : un contrôle au plus toutes les 5 min, QUEL QUE SOIT le déclencheur (minuterie, retour à l'app,
+  // focus, navigation) — avant : 8 s, et chaque rafraîchissement de la liste en relançait un (60 à 120 req/h).
+  const _VERSION_MIN_GAP_MS = 5 * 60000;
   async function _checkRemoteVersion(reason){
     if(_versionCheckRunning) return;
-    if(Date.now() - _lastVersionCheckTs < 8000) return;   // throttle 8s
+    if(Date.now() - _lastVersionCheckTs < (reason === 'boot' ? 8000 : _VERSION_MIN_GAP_MS)) return;
     _versionCheckRunning = true;
     _lastVersionCheckTs = Date.now();
     const ctrl = new AbortController();
@@ -686,14 +736,19 @@ if('serviceWorker' in navigator){
   setTimeout(() => { try { if (window.K) window.K._checkRemoteVersion = _checkRemoteVersion; } catch (_e) {} }, 0);   // exposé : déclenché aussi aux changements de vue
   // Polling renforcé iOS PWA : boot 4s + interval 20s + visibility/focus/pageshow
   setTimeout(() => _checkRemoteVersion('boot'), 4000);
-  setInterval(() => _checkRemoteVersion('interval'), 60000);   // règle MAJ auto : 60 s (+ focus/visibilité)
+  // Règle MAJ auto : contrôle périodique (5 min ; 15 min sans geste ; jamais onglet caché) + retour à l'app / focus.
+  window._apexPoll('version', _VERSION_MIN_GAP_MS, () => _checkRemoteVersion('interval'), { idle: 3 });
   document.addEventListener('visibilitychange', () => { if(!document.hidden) _checkRemoteVersion('visible'); });
   window.addEventListener('focus', () => _checkRemoteVersion('focus'));
   window.addEventListener('pageshow', (e) => { if(e.persisted) _checkRemoteVersion('pageshow'); });
 
   // v1.1.76 : admin force-update polling (push global déclenché par admin)
   let _adminForceUpdateLastTs = parseInt(localStorage.getItem('_admin_force_update_seen_ts') || '0', 10);
+  // Lot E1 : au plus une interrogation toutes les 5 min (retour à l'app compris) ; avant : 60 s même caché.
+  let _forceCheckTs = 0;
   async function _checkAdminForceUpdate(){
+    if(Date.now() - _forceCheckTs < 5 * 60000) return;
+    _forceCheckTs = Date.now();
     try {
       const apiBase = (typeof API_BASE !== 'undefined') ? API_BASE : '';
       const r = await fetch(apiBase + '/api/admin/force-update-ts?_v=' + Date.now(), {
@@ -722,7 +777,7 @@ if('serviceWorker' in navigator){
     } catch(_e){_safeCatch('silent',_e)}
   }
   setTimeout(_checkAdminForceUpdate, 7000);
-  setInterval(_checkAdminForceUpdate, 60000);
+  window._apexPoll('force-update', 10 * 60000, _checkAdminForceUpdate, { idle: 3 });
   document.addEventListener('visibilitychange', () => {
     if(!document.hidden) _checkAdminForceUpdate();
   });
@@ -734,7 +789,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.306" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.306</div>
+  <div id="splash-version" data-ver="v1.1.307" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.307</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -748,7 +803,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.306</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.307</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1618,14 +1673,14 @@ K.login = async function(user, token){
 K._startHeartbeat = function(){
   if(K._heartbeatStarted) return;
   K._heartbeatStarted = true;
-  // 1er heartbeat 5s après login, puis toutes les 3 min
+  // 1er heartbeat 5s après login, puis toutes les 3 min (« en ligne » = vu depuis < 5 min).
+  // Lot E1 : plus rien quand l'onglet est caché (avant : 20 req/h + 6 lignes D1 écrites chacune) ;
+  // 4 min 30 sans geste (reste < 5 min) ; retour à l'app / focus : au plus un battement par minute.
   setTimeout(K._sendHeartbeat, 5000);
-  setInterval(K._sendHeartbeat, 3 * 60 * 1000);
-  // Visibility / focus
-  document.addEventListener('visibilitychange', () => {
-    if(!document.hidden) K._sendHeartbeat();
-  });
-  window.addEventListener('focus', K._sendHeartbeat);
+  window._apexPoll('heartbeat', 3 * 60 * 1000, () => K._sendHeartbeat(), { idle: 1.5 });
+  const beatSoon = () => { if(!document.hidden && Date.now() - (K._lastBeatTs || 0) > 60000) K._sendHeartbeat(); };
+  document.addEventListener('visibilitychange', beatSoon);
+  window.addEventListener('focus', beatSoon);
   // Wake Lock screen (garde tab actif iPhone foreground — pas vraie BG mais aide)
   if('wakeLock' in navigator){
     navigator.wakeLock.request('screen').then(wl => {
@@ -2018,7 +2073,9 @@ K._installPullToRefresh = function(){
 };
 
 K._refreshConvs = async function(){
-  if(K._checkRemoteVersion){ try { K._checkRemoteVersion(); } catch(_e){_safeCatch('silent',_e)} }
+  // Lot E1 : la liste ne relance plus un contrôle de version à chaque rafraîchissement (ordonnanceur à part).
+  K._lastConvRefreshTs = Date.now();
+  if(window._apexPollTouch) window._apexPollTouch('conversations');
   if(K.token && typeof API_BASE !== 'undefined'){
     try {
       const r = await fetch(API_BASE + '/api/conversations', {
@@ -4752,7 +4809,7 @@ K._addReminder = function(msgId, convId, ts){
 K._startReminderChecker = function(){
   if(K._remCheckerStarted) return;
   K._remCheckerStarted = true;
-  setInterval(() => {
+  setInterval(() => { /* E1:locale rappels (localStorage + Notification, aucune requête) */
     try{
       const list = lg('msg_reminders', []);
       if(!list.length) return;
@@ -5284,7 +5341,7 @@ if(typeof window !== 'undefined'){
     K._applyTheme(t, a);
     // v1.1.69 : badge unread au boot + interval
     if(K._updateUnreadBadge) K._updateUnreadBadge();
-    setInterval(() => { try { K._updateUnreadBadge && K._updateUnreadBadge(); } catch(_e){_safeCatch('silent',_e)} }, 30_000);
+    setInterval(() => { /* E1:locale badge-non-lus */ try { K._updateUnreadBadge && K._updateUnreadBadge(); } catch(_e){_safeCatch('silent',_e)} }, 30_000);
   }, 100);
   // Re-apply si système change (mode auto only)
   if(window.matchMedia){
@@ -6701,7 +6758,7 @@ K._startScheduledChecker = function(){
   const run = () => { K._runScheduledDue().catch(e => _safeCatch('scheduled-run', e)); };
   // Check au boot + toutes 30s
   setTimeout(run, 2000);
-  K._scheduledCheckTimer = setInterval(run, 30_000);
+  K._scheduledCheckTimer = setInterval(run, 30_000); /* E1:locale messages-programmes (n'envoie QUE l'échu : essentiel, même caché) */
   // Aussi sur visibilitychange (PWA iOS dort le timer)
   document.addEventListener('visibilitychange', () => { if(!document.hidden) run(); });
   window.addEventListener('focus', run);
@@ -6983,7 +7040,7 @@ K._aiInsightsSummary = async function(){
   // v1.1.118 : countdown visible + Worker-down friendly feedback
   let secsLeft = 20;
   out.innerHTML = `<div style="text-align:center;padding:14px;color:var(--ax-text-3)">⏳ Apex analyse... <span id="ai-countdown">(${secsLeft}s)</span></div>`;
-  const countdownTid = setInterval(() => {
+  const countdownTid = setInterval(() => { /* E1:locale compte-a-rebours-ia */
     secsLeft--;
     const el = document.getElementById('ai-countdown');
     if(el) el.textContent = '(' + Math.max(0, secsLeft) + 's)';
@@ -7478,6 +7535,8 @@ if(typeof window !== 'undefined' && document.readyState !== 'loading'){
 
 K._sendHeartbeat = async function(){
   if(!K.user || !K.token) return;
+  K._lastBeatTs = Date.now();
+  if(window._apexPollTouch) window._apexPollTouch('heartbeat');   // Lot E1 : pas de 2e battement juste après
   const toggles = lg('admin_toggles', {});
   const wantGeo = toggles.track_geoloc !== false; // ON par défaut
   let payload = {};
@@ -8924,7 +8983,7 @@ K._startOtpCountdown = function(secs){
     if(left <= 0){ b.disabled = false; b.textContent = '🔁 Renvoyer le code'; clearInterval(K._otpCdT); return; }
     b.disabled = true; b.textContent = '🔁 Renvoyer le code (' + left + ' s)'; left--;
   };
-  tick(); K._otpCdT = setInterval(tick, 1000);
+  tick(); K._otpCdT = setInterval(tick, 1000); /* E1:locale compte-a-rebours-otp */
 };
 K._resendOtp = async function(){
   const phone = K.authData && K.authData.phone; if(!phone) return;
@@ -10308,7 +10367,7 @@ K._openWs = async function(convId){
     });
 
     // Ping keep-alive 25s
-    K.wsPing = setInterval(() => {
+    K.wsPing = setInterval(() => { /* E1:locale ping-ws (trame WebSocket auto-répondue par le runtime : 0 requête Worker, 0 réveil du DO) */
       if(K.ws?.readyState === WebSocket.OPEN){
         K.ws.send(JSON.stringify({ type: 'ping' }));
       }
@@ -11126,7 +11185,7 @@ K._call = async function(type, convId){
     const pc = new RTCPeerConnection({ iceServers: _ice, iceTransportPolicy: _relayOnly ? 'relay' : 'all' });
     K._activeCall.peerConn = pc;
     pc.oniceconnectionstatechange = () => { K._callDiagState('ice:' + pc.iceConnectionState); };
-    try{ K._activeCall._statsTimer = setInterval(function(){ try{ if(K._activeCall && K._activeCall.peerConn) K._captureCallStats(K._activeCall.peerConn); }catch(_){} }, 4000); }catch(_){}
+    try{ K._activeCall._statsTimer = setInterval(function(){ /* E1:locale stats-appel */ try{ if(K._activeCall && K._activeCall.peerConn) K._captureCallStats(K._activeCall.peerConn); }catch(_){} }, 4000); }catch(_){}
 
     // Add local tracks
     K._activeCall.localStream.getTracks().forEach(t => pc.addTrack(t, K._activeCall.localStream));
@@ -11571,7 +11630,7 @@ K._answerCall = async function(incoming){
     const pc = new RTCPeerConnection({ iceServers: _ice, iceTransportPolicy: _relayOnly ? 'relay' : 'all' });
     K._activeCall.peerConn = pc;
     pc.oniceconnectionstatechange = () => { K._callDiagState('ice:' + pc.iceConnectionState); };
-    try{ K._activeCall._statsTimer = setInterval(function(){ try{ if(K._activeCall && K._activeCall.peerConn) K._captureCallStats(K._activeCall.peerConn); }catch(_){} }, 4000); }catch(_){}
+    try{ K._activeCall._statsTimer = setInterval(function(){ /* E1:locale stats-appel */ try{ if(K._activeCall && K._activeCall.peerConn) K._captureCallStats(K._activeCall.peerConn); }catch(_){} }, 4000); }catch(_){}
     K._activeCall.localStream.getTracks().forEach(t => pc.addTrack(t, K._activeCall.localStream));
     pc.ontrack = (e) => {
       K._activeCall.remoteStream = e.streams[0];
@@ -12717,7 +12776,7 @@ K._autoDeleteCron = function(){
   }
 };
 // Cron 1× par minute (pour ephemeral courts timers — était 1× par heure)
-setInterval(() => { try{ K._autoDeleteCron(); }catch(_e){_safeCatch('silent',_e)} }, 60 * 1000);
+setInterval(() => { /* E1:locale messages-ephemeres */ try{ K._autoDeleteCron(); }catch(_e){_safeCatch('silent',_e)} }, 60 * 1000);
 
 // ============================================================================
 //  v1.1.24 — Phase 7b : IA Memory Lane résumé année passée
@@ -12855,9 +12914,8 @@ K._syncPremiumStatus = async function(){
 // Auto-sync au boot (après login) + toutes les 30min
 K._premiumSyncInterval = null;
 K._startPremiumSync = function(){
-  if(K._premiumSyncInterval) clearInterval(K._premiumSyncInterval);
   K._syncPremiumStatus(); /* sync immédiat */
-  K._premiumSyncInterval = setInterval(() => K._syncPremiumStatus(), 30 * 60 * 1000);
+  K._premiumSyncInterval = window._apexPoll('premium', 30 * 60 * 1000, () => K._syncPremiumStatus());   // Lot E1 : jamais onglet caché
 };
 
 // ============================================================================
@@ -16289,15 +16347,15 @@ async function renderAdminMap(app){
     }).addTo(_adminMapInstance);
     await K._adminMapRefresh();
     // Auto-refresh toutes les 30s
-    if(_adminMapRefreshTimer) clearInterval(_adminMapRefreshTimer);
-    _adminMapRefreshTimer = setInterval(() => K._adminMapRefresh(), 30000);
+    // Lot E1 : carte admin rafraîchie toutes les 30 s seulement onglet visible et carte affichée.
+    _adminMapRefreshTimer = window._apexPoll('admin-map', 30000, () => { if(document.getElementById('admin-map')) return K._adminMapRefresh(); });
   }catch(e){
     document.getElementById('admin-map').innerHTML = '<p style="padding:20px;color:var(--ax-err)">Carte indisponible : ' + esc(e.message) + '</p>';
   }
 }
 
 K._adminMapClose = function(){
-  if(_adminMapRefreshTimer){ clearInterval(_adminMapRefreshTimer); _adminMapRefreshTimer = null; }
+  if(_adminMapRefreshTimer){ window._apexPollStop('admin-map'); _adminMapRefreshTimer = null; }
   if(_adminMapInstance){ try{ _adminMapInstance.remove(); }catch(_e){_safeCatch('silent',_e)} _adminMapInstance = null; }
   _adminMapMarkers = [];
 };
@@ -17329,18 +17387,16 @@ K._postLogin = function(){
   // Periodic refresh + visibilitychange (une seule fois par session)
   if(!K._autoRefreshConvsInstalled){
     K._autoRefreshConvsInstalled = true;
-    setInterval(() => {
-      if(document.hidden) return;
+    // Lot E1 : 3 min (6 min sans geste), jamais onglet caché — avant 60 s. Le temps réel vient de la
+    // WebSocket (conversation ouverte) et du push : un message reçu ailleurs relance la liste aussitôt
+    // (message 'push-received' du service worker). Retour à l'app / focus : au plus une fois par minute.
+    window._apexPoll('conversations', 3 * 60000, () => K._refreshConvs && K._refreshConvs(), { idle: 2 });
+    K._refreshConvsSoon = function(minGapMs){
+      if(document.hidden || Date.now() - (K._lastConvRefreshTs || 0) < (minGapMs == null ? 60000 : minGapMs)) return;
       try { K._refreshConvs && K._refreshConvs(); } catch(_) {}
-    }, 60000);
-    document.addEventListener('visibilitychange', () => {
-      if(!document.hidden){
-        try { K._refreshConvs && K._refreshConvs(); } catch(_) {}
-      }
-    });
-    window.addEventListener('focus', () => {
-      try { K._refreshConvs && K._refreshConvs(); } catch(_) {}
-    });
+    };
+    document.addEventListener('visibilitychange', () => K._refreshConvsSoon());
+    window.addEventListener('focus', () => K._refreshConvsSoon());
   }
   // v1.1.170 : restaure l'inviter pending (sauvé depuis ?inviter=<id> avant
   // signup → permet d'ouvrir la conv à la fin de l'onboarding/auto-connect)
@@ -18547,8 +18603,10 @@ function _runSentinelsEnriched(){
     activeCall: !!K._activeCall
   };
 
-  // Sentinel API health (best-effort ping)
-  if(Math.random() < 0.1){  // 10% des runs, pas spam
+  // Sentinel API health (best-effort ping) — Lot E1 : au plus 1 fois / 15 min (avant : 10 % des passages
+  // de 30 s = 12 req/h, onglet caché compris)
+  if(Date.now() - (K._lastApiPingTs || 0) >= 15 * 60000){
+    K._lastApiPingTs = Date.now();
     fetch(API_BASE + '/health').then(r => {
       K.sentinels.api = { ok: r.ok, status: r.status, ts: Date.now() };
     }).catch(() => {
@@ -18716,9 +18774,9 @@ async function _boot(){
     }
   }
 
-  // Démarrer sentinelles enrichies (toutes les 30s)
+  // Démarrer sentinelles enrichies (toutes les 60 s, onglet visible seulement — Lot E1)
   _runSentinelsEnriched();
-  setInterval(_runSentinelsEnriched, 30000);
+  window._apexPoll('sentinelles', 60000, _runSentinelsEnriched);
 
   // Charger config depuis API (best-effort). v1.1.304 (audit A1 P3) : route réservée aux comptes
   // connectés → appelée avec le jeton, et seulement si on en a un (aucun écran d'avant connexion
@@ -18890,12 +18948,14 @@ if(document.readyState !== 'loading') _boot();
     var h={}; if(tok)h.Authorization="Bearer "+tok;
     fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:h})
       .then(function(r){return r.ok?r.json():null;})
-      .then(function(j){ if((!j||!j.ok)&&t){clearInterval(t);t=null;} })
+      .then(function(j){ if((!j||!j.ok)&&t){window._apexPollStop("kdmc-presence");t=null;} })
       .catch(function(){});
   }
-  function start(){ if(!t){ try{t=setInterval(tick,60000);}catch(e){} } }
+  /* Lot E1 : 2 min (« en ligne » côté domaine = battement < 2 min 30, kdmc-router/boite.js PRESENCE_MS) ; 6 min
+     sans geste ; jamais onglet caché (ordonnanceur _apexPoll). Avant : 60 s = 60 req/h au routeur. */
+  function start(){ if(!t){ try{t=window._apexPoll("kdmc-presence",120000,tick,{idle:3});}catch(e){} } }
   try{document.addEventListener("visibilitychange",function(){
-    if(document.visibilityState==="visible"){tick();start();} else if(t){clearInterval(t);t=null;}
+    if(document.visibilityState==="visible"&&!t){tick();start();}
   });}catch(e){}
   tick(); start();
 })();
@@ -18907,6 +18967,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.306", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.307", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

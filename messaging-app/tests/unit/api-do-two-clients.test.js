@@ -21,6 +21,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 
 // ── D1 en mémoire (sous-ensemble SQL utilisé par le moteur) ────────────────
 function makeDB() {

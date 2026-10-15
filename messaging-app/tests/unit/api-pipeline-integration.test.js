@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import { handleVerifyOtp, handleCreateConversation, handleMediaUpload } from '../../workers/api-worker.js';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 import { ENV, makeRequest } from './api-worker-helpers.js';
 
 // ── D1 EN MÉMOIRE, STATEFUL, partagé handlers + Durable Object ──────────────

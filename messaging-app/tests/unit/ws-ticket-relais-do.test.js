@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import worker, { signJWT } from '../../workers/api-worker.js';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 import { ENV } from './api-worker-helpers.js';
 
 beforeEach(() => { vi.restoreAllMocks(); globalThis.fetch = vi.fn(async () => new Response('{"ok":true}')); });

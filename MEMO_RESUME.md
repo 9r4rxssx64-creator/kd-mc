@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Apex Chat v1.1.307 : lot E1 (rester dans le gratuit)
+
+- Chat en direct en VEILLE entre deux messages (API d'hibernation Cloudflare) : fini le quota de durée mangé par un onglet ouvert.
+- Requêtes : 334–394/h visible et 214/h caché AVANT → 96/h actif, 47/h sans geste, 0/h caché APRÈS (20 pers. onglet 24 h : ≈ 110 000/j → ≈ 3 840/j).
+- Verrou « soins » en D1 (KV : 0 écriture) ; index doublons retirés, index manquants ajoutés (migration 0020).
+- Visible : présence « hors ligne » 5 min après avoir caché l'app ; mise à jour forcée sous 10 min ; la liste compte sur les notifications push entre deux rafraîchissements (3 min).
+- Mesuré : 123 fichiers / 1973 tests, couverture OK (DO 100 % / branches ≥ 99 %) ; navigateur 62/63 (échec SW local habituel) ; 25/25 sabotages + 1 manuel. Leçon #551.
+- Reste : `consumeWsTicket` crée sa table à chaque connexion ; boucles setTimeout auto-relancées non couvertes par la garde.
+
 ## 2026-10-15 — E2E prod : le test deux clients passe aux tickets (v1.1.306 refuse ?token=)
 
 - v1.1.306 en ligne (déploiement + couverture verts) mais E2E prod 17/1 : `two-clients.spec.js` (aller/retour) ouvrait le temps

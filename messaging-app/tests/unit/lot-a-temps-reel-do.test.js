@@ -5,6 +5,7 @@
 // avec l'assertion INVERSÉE : le test échoue si le correctif est retiré (prouvé par sabotage).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 import { signJWT } from '../../workers/api-worker.js';
 import { d1Reel } from './_support/d1-sqlite.js';
 

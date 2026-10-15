@@ -65,6 +65,16 @@ const E2E_TAG_RE = /^E2E\d+:/;
 // Messages techniques du chiffrement de groupe (clés E2EGK1 / demandes E2EGR1) : relayés et gardés, mais
 // ni notification push ni remontée de la conversation (last_msg_ts) — ce ne sont pas des messages lus par un humain.
 const MIMES_SILENCIEUX = new Set(['application/x-apex-grpkey']);
+// Lot E1 (audit A5 F1, 15.10.2026) — API d'HIBERNATION des WebSockets. Avec `server.accept()` le DO restait en
+// mémoire (et facturé en durée, 128 Mo) TANT QU'UNE socket était ouverte : 1 onglet ouvert 24 h = 83 % du quota
+// gratuit de durée du compte. Avec `state.acceptWebSocket()`, le DO s'endort entre deux trames ; les sockets
+// restent ouvertes, l'état de chaque session voyage dans son « attachment » (≤ 2 Ko) et la carte `sessions`
+// est reconstruite au réveil depuis `state.getWebSockets()`. Le ping du client (25 s, trame EXACTE ci-dessous)
+// reçoit son pong du runtime SANS réveiller l'objet.
+export const PING_FRAME = '{"type":"ping"}';
+export const PONG_FRAME = '{"type":"pong"}';
+const CALL_PENDING_MS = 45000;          // fenêtre de rejeu d'un appel entrant (déjà 45 s avant le lot E1)
+const CALL_PUSH_KEY = 'callpushlog';    // journal des notifications d'appel (survit à l'hibernation)
 
 /** Erreur SQLite qui ne se résoudra jamais en réessayant (ligne invalide). */
 function isPermanentDbError(e) {
@@ -172,7 +182,32 @@ export class ConversationDO {
       this.seq = (await state.storage.get('seq')) || 0;
       this.config = await this.loadConfig();
       await this._restorePending();
+      // Lot E1 : le plafond des notifications d'appel (10 min) ne doit pas retomber à zéro à chaque sommeil.
+      const log = await state.storage.get(CALL_PUSH_KEY);
+      if (Array.isArray(log)) this._callPushLog = new Map(log);
     });
+
+    // Lot E1 : réveil après hibernation → sessions reconstruites depuis les sockets toujours ouvertes.
+    state.setWebSocketAutoResponse(new WebSocketRequestResponsePair(PING_FRAME, PONG_FRAME));
+    for (const ws of state.getWebSockets()) {
+      let s = null;
+      try { s = ws.deserializeAttachment(); } catch (_) { s = null; }
+      if (s && s.userId) this.sessions.set(ws, s);
+    }
+    // Le filet de re-vérification (A2-02) reste actif tant que des sockets survivent au sommeil.
+    if (this.sessions.size) this._recheckTimer = true;
+  }
+
+  /** Lot E1 : l'état de la session voyage avec la socket (survit à l'hibernation). Best-effort. */
+  _saveSession(ws, session) {
+    try { ws.serializeAttachment(session); } catch (e) { console.warn('[ConversationDO] attachment:', String(e)); }
+  }
+
+  /** Lot E1 : refus d'une connexion (code + motif lus par l'app), sans `accept()` classique. */
+  _reject(server, client, code, reason) {
+    this.state.acceptWebSocket(server);
+    server.close(code, reason);
+    return new Response(null, { status: 101, webSocket: client });
   }
 
   /** A2-01 : recharge les messages acquittés (clé `pend:`) qu'une instance précédente n'a pas écrits en D1. */
@@ -438,25 +473,19 @@ export class ConversationDO {
     const deviceId = url.searchParams.get('did') || crypto.randomUUID();
 
     if (!token || !claimedUserId) {
-      server.accept();
-      server.close(1008, 'Auth required');
-      return new Response(null, { status: 101, webSocket: client });
+      return this._reject(server, client, 1008, 'Auth required');
     }
 
     // Vérifier JWT signature (HS256)
     const jwtPayload = await this.verifyJWT(token);
     if (!jwtPayload) {
-      server.accept();
-      server.close(1008, 'Invalid token');
-      return new Response(null, { status: 101, webSocket: client });
+      return this._reject(server, client, 1008, 'Invalid token');
     }
 
     // Le claimed userId DOIT correspondre au sub du JWT
     const userId = jwtPayload.sub;
     if (claimedUserId !== userId) {
-      server.accept();
-      server.close(1008, 'UID mismatch');
-      return new Response(null, { status: 101, webSocket: client });
+      return this._reject(server, client, 1008, 'UID mismatch');
     }
 
     // Vérifier que le user est bien membre de cette conv (D1 query)
@@ -467,9 +496,7 @@ export class ConversationDO {
         'SELECT user_id, role, joined_at FROM conversation_members WHERE conv_id=? AND user_id=?'
       ).bind(convId, userId).first();
       if (!member) {
-        server.accept();
-        server.close(1008, 'Not a member');
-        return new Response(null, { status: 101, webSocket: client });
+        return this._reject(server, client, 1008, 'Not a member');
       }
       // v1.1.172 FIX P1 (audit crew) : honorer la révocation côté WebSocket.
       // Avant, force_logout/ban n'avait AUCUN effet sur une session WS active
@@ -482,20 +509,17 @@ export class ConversationDO {
       if (acct && (acct.is_banned || acct.status === 'deleted' || acct.status === 'suspended' ||
           (acct.last_force_logout_at && jwtPayload.iat &&
            acct.last_force_logout_at > jwtPayload.iat * 1000))) {
-        server.accept();
-        server.close(1008, 'Session révoquée');
-        return new Response(null, { status: 101, webSocket: client });
+        return this._reject(server, client, 1008, 'Session révoquée');
       }
       joinedAt = Number(member.joined_at) || 0;   // ms (api-worker écrit Date.now())
     } catch (e) {
-      server.accept();
-      server.close(1011, 'DB error');
-      return new Response(null, { status: 101, webSocket: client });
+      return this._reject(server, client, 1011, 'DB error');
     }
 
-    server.accept();
+    // Lot E1 : hibernation (étiquette = utilisateur) au lieu de `accept()` classique.
+    this.state.acceptWebSocket(server, [String(userId).slice(0, 256)]);
     const connectedAt = Date.now();
-    this.sessions.set(server, {
+    const session = {
       userId,
       deviceId,
       convId,                    // P0 FIX : convId D1 réel (pas DO id)
@@ -507,7 +531,9 @@ export class ConversationDO {
       joinedAt,
       messageCount: 0,           // pour rate limit
       lastReset: Date.now()
-    });
+    };
+    this.sessions.set(server, session);
+    this._saveSession(server, session);
     // A2-02 : filet périodique (une socket muette — ni trame ni ping — est quand même re-vérifiée).
     // Pas d'alarme de re-vérification si un flush est en attente : son alarme passe en premier et
     // réarme ce filet ensuite (sinon on retarderait l'écriture D1).
@@ -618,34 +644,55 @@ export class ConversationDO {
       console.warn('[poll replay] failed:', e && e.message);
     }
 
-    server.addEventListener('message', async (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        await this.handleMessage(server, msg);
-      } catch (e) {
-        server.send(JSON.stringify({ type: 'error', message: e.message }));
-      }
-    });
-
-    server.addEventListener('close', async () => {
-      const session = this.sessions.get(server);
-      this.sessions.delete(server);
-      if (session) {
-        this.broadcast({
-          type: 'presence',
-          userId: session.userId,
-          action: 'leave',
-          status: 'offline',
-          last_seen: Date.now(),
-          ts: Date.now()
-        });
-      }
-      // Audit 17/09/2026 (P1) : une fermeture (app tuée, réseau coupé) rend durable ce qui a
-      // été acquitté — sinon l'éviction du DO peut suivre et emporter le buffer.
-      try { await this.flushToD1(); } catch (_) { /* journalisé + re-queue dans flushToD1 */ }
-    });
-
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /**
+   * Lot E1 : trame reçue (API d'hibernation — le runtime réveille l'objet si besoin). Une socket SANS
+   * session (attachment perdu) est fermée en 1011 : l'app se reconnecte au lieu de parler dans le vide.
+   */
+  async webSocketMessage(ws, data) {
+    const session = this.sessions.get(ws);
+    if (!session) {
+      try { ws.close(1011, 'Session perdue, reconnexion'); } catch (_) { /* déjà fermée */ }
+      return;
+    }
+    try {
+      await this.handleMessage(ws, JSON.parse(data));
+    } catch (e) {
+      ws.send(JSON.stringify({ type: 'error', message: e.message }));
+    }
+    // Compteurs de débit + dernière re-vérification : gardés pour le prochain réveil.
+    if (this.sessions.get(ws) === session) this._saveSession(ws, session);
+  }
+
+  /** Lot E1 : fermeture côté client (app tuée, réseau coupé, conversation quittée). */
+  async webSocketClose(ws, code) {
+    // Poignée de main de fermeture : selon la date de compatibilité, le runtime ne répond pas tout seul à la
+    // fermeture du client → on la renvoie (1005/1006 et codes invalides ne peuvent pas être renvoyés → 1000).
+    const okCode = Number.isInteger(code) && code >= 1000 && code < 5000 && code !== 1005 && code !== 1006 && code !== 1015;
+    try { ws.close(okCode ? code : 1000, 'Fermeture'); } catch (_) { /* déjà fermée */ }
+    const session = this.sessions.get(ws);
+    this.sessions.delete(ws);
+    if (session) {
+      this.broadcast({
+        type: 'presence',
+        userId: session.userId,
+        action: 'leave',
+        status: 'offline',
+        last_seen: Date.now(),
+        ts: Date.now()
+      });
+    }
+    // Audit 17/09/2026 (P1) : une fermeture (app tuée, réseau coupé) rend durable ce qui a
+    // été acquitté — sinon l'éviction du DO peut suivre et emporter le buffer.
+    try { await this.flushToD1(); } catch (_) { /* journalisé + re-queue dans flushToD1 */ }
+  }
+
+  /** Lot E1 : erreur de socket = fermeture (même nettoyage, même flush). */
+  async webSocketError(ws, err) {
+    console.warn('[ConversationDO] erreur WebSocket:', String(err));
+    await this.webSocketClose(ws);
   }
 
   /** Débit par socket et par type de trame (fenêtre glissante d'1 minute). true = refusé. */
@@ -706,7 +753,7 @@ export class ConversationDO {
       return true;
     }
     session.lastMemberCheck = now;
-    if (!reason) return true;
+    if (!reason) { this._saveSession(ws, session); return true; }
     this._dropSession(ws, session, reason);
     return false;
   }
@@ -1202,7 +1249,7 @@ export class ConversationDO {
           // v1.1.242 : mémorise l'appel en cours pour le REJOUER au destinataire
           // quand il rejoindra la conv (cf. join handler). Sans ça l'offer envoyé
           // une seule fois est perdu si le destinataire n'était pas connecté.
-          this.pendingCall = {
+          const pc = this.pendingCall = {
             fromUserId: session.userId,
             fromDevice: session.deviceId,
             to: msg.to || null,
@@ -1211,6 +1258,13 @@ export class ConversationDO {
             candidates: [],
             ts: Date.now(),
           };
+          // Lot E1 : une minuterie en cours EMPÊCHE l'hibernation — l'appel en attente (offre + ICE, en
+          // mémoire seulement) survit donc toute la fenêtre de rejeu, puis l'objet peut s'endormir.
+          clearTimeout(this._pendingCallTimer);
+          this._pendingCallTimer = setTimeout(() => {
+            this._pendingCallTimer = null;
+            if (this.pendingCall === pc) this.pendingCall = null;
+          }, CALL_PENDING_MS);
           if (this._callPushAllowed(session.userId)) {
             this.notifyOfflineCall(session.userId, session.convId, msg.callType || 'audio')
               .catch((e) => console.warn('[call push] failed:', e && e.message));
@@ -1222,8 +1276,10 @@ export class ConversationDO {
             this.pendingCall.candidates.push(msg.candidate);
           }
         } else if (msg.type === 'webrtc-answer' || msg.type === 'call-end' || msg.type === 'call-busy') {
-          // appel décroché ou terminé → plus rien à rejouer
+          // appel décroché ou terminé → plus rien à rejouer (et l'objet peut s'endormir)
           this.pendingCall = null;
+          clearTimeout(this._pendingCallTimer);
+          this._pendingCallTimer = null;
         }
         break;
 
@@ -1405,6 +1461,14 @@ export class ConversationDO {
     const ok = now - last >= CALL_PUSH_MIN_GAP_MS && log.length < CALL_PUSH_MAX_PER_WINDOW;
     if (ok) log.push(now);
     this._callPushLog.set(callerId, log);
+    // Lot E1 : journal gardé dans le stockage (rare : ≤ 3 écritures / 10 min / appelant) — sinon chaque
+    // sommeil de l'objet remettait le plafond à zéro et un téléphone verrouillé resonnait en boucle.
+    if (ok) {
+      try {
+        Promise.resolve(this.state.storage.put(CALL_PUSH_KEY, [...this._callPushLog]))
+          .catch((e) => console.warn('[call push] journal:', String(e)));
+      } catch (e) { console.warn('[call push] journal:', String(e)); }
+    }
     return ok;
   }
 

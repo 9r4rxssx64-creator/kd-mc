@@ -12,6 +12,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import worker, { signJWT } from '../../workers/api-worker.js';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 import { ENV, makeJWT, makeRequest } from './api-worker-helpers.js';
 import { d1Reel } from './_support/d1-sqlite.js';
 import { loadDefs } from './client-extract.js';

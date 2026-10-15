@@ -5,6 +5,7 @@
 // et vérifie le COMPORTEMENT (trames émises, état D1, buffer), pas seulement l'appel.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 
 class MockWS {
   constructor() { this.sent = []; this.closed = null; this._l = {}; }

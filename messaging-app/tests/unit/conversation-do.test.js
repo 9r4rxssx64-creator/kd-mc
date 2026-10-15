@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConversationDO, BroadcastDO, PresenceDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 
 // ----------------------------------------------------------------------------
 // Mocks Cloudflare Durable Object runtime

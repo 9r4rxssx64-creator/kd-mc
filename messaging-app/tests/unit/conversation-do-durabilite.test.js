@@ -9,6 +9,7 @@
 // Prouvé discriminant : sans `_armFlushAlarm()` → 2 échecs ; sans le flush au close → 1 échec.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 
 class MockWebSocket extends EventTarget {
   constructor() { super(); this.sent = []; this._l = {}; }

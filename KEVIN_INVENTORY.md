@@ -3610,6 +3610,11 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-15 | `messaging-app/tests/unit/lot-d-serveur.test.js` | Apex Chat (finitions) : le jeton de connexion n'est accepté dans aucune adresse ; sourdine côté serveur |
 | 2026-10-15 | `messaging-app/tests/unit/lot-d-client.test.js` | Apex Chat (finitions) : position obligatoire, médias par ticket, sel PIN, sourdine |
 | 2026-10-15 | `messaging-app/tests/layout-d-clavier-install.mjs` | Apex Chat (finitions) : clavier iPhone et guide d'installation (vrai navigateur, 2 tailles) |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e1-hibernation-do.test.js` | Apex Chat (gratuit) : le chat en direct se met en veille entre deux messages |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e1-sondages-client.test.js` | Apex Chat (gratuit) : budget de requêtes de l'appli, rien quand elle est cachée |
+| 2026-10-15 | `messaging-app/tests/unit/lot-e1-verrou-soins-index.test.js` | Apex Chat (gratuit) : plus d'écritures KV pour les soins ; index de la base |
+| 2026-10-15 | `messaging-app/tests/unit/_support/do-hibernation.js` | Apex Chat (gratuit) : outil de test : simule la mise en veille du serveur de conversation |
+| 2026-10-15 | `messaging-app/d1-migrations/0020_lot_e1_index.sql` | Apex Chat (gratuit) : index doublons retirés, index manquants ajoutés |
 | 2026-10-12 | [`services/kdmc-router/fin-garde-verif.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/fin-garde-verif.mjs) | Garde : une sauvegarde en ligne plus pauvre (moins de la moitié) ne peut plus écraser une sauvegarde pleine (409), `force` explicite seulement |
 | 2026-10-13 | [`tests/verify-ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-ration-actions.mjs) | Garde : la ration Actions se lit correctement (jour UTC, runs refusés à 0, verdicts, code de sortie) |
 | 2026-10-13 | [`tools/ci/ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/ci/ration-actions.mjs) | Outil : lit la ration du jour des minutes GitHub Actions du coffre (🟢/🟠/🔴) avant de lancer un robot |

@@ -11,6 +11,7 @@
 //  8. e2e_strict appliqué à edit_message
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConversationDO } from '../../workers/durable-objects/ConversationDO.js';
+import './_support/do-hibernation.js'; // Lot E1 : API d'hibernation du runtime (acceptWebSocket, attachments, réveil)
 
 class MockWS {
   constructor() { this.sent = []; this.closed = null; this._l = {}; }

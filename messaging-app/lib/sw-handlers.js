@@ -13,7 +13,7 @@
  *   - OFFLINE_CACHE  : fallback HTML hors-ligne
  */
 
-export const CACHE_VERSION = 'apex-chat-v1.1.306';
+export const CACHE_VERSION = 'apex-chat-v1.1.307';
 export const STATIC_CACHE = `${CACHE_VERSION}-static`;
 export const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 export const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
@@ -205,11 +205,13 @@ export async function handlePush(event, { registration, clients, caches }) {
   // vue), iPhone masque souvent la bannière → on fait sonner l'app DE L'INTÉRIEUR :
   // on ouvre la conv → le serveur rejoue l'offre → la modale d'appel s'affiche.
   // (En arrière-plan / fermée : la bannière notif reste le canal pour décrocher.)
-  if (isCall && data.payload?.convId && clients) {
+  // Lot E1 (audit A5 F2) : un MESSAGE reçu pendant que l'app est visible (autre conversation, liste) relance
+  // la liste tout de suite — c'est ce qui permet de ne plus la sonder qu'une fois toutes les 3 min.
+  if (data.payload?.convId && clients) {
     try {
       const wins = await clients.matchAll({ type: 'window', includeUncontrolled: true });
       const focused = wins.find((c) => c.focused || c.visibilityState === 'visible');
-      if (focused) focused.postMessage({ type: 'open-conv', convId: data.payload.convId });
+      if (focused) focused.postMessage({ type: isCall ? 'open-conv' : 'push-received', convId: data.payload.convId });
     } catch { /* best-effort */ }
   }
   const defaultActions = data.payload?.convId

@@ -15,6 +15,6 @@ CREATE TABLE IF NOT EXISTS cgu_acceptances (
 CREATE INDEX IF NOT EXISTS idx_cgu_user ON cgu_acceptances(user_id);
 CREATE INDEX IF NOT EXISTS idx_cgu_phone ON cgu_acceptances(phone_hash);
 
--- Index user_activity pour pagination par user/ts
-CREATE INDEX IF NOT EXISTS idx_activity_user_ts2 ON user_activity(user_id, ts DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_actor_ts2 ON audit_log(actor_id, ts DESC);
+-- Index user_activity pour pagination par user/ts : déjà couvert par idx_activity_user_ts (0002) et
+-- idx_audit_actor_ts (0001). Lot E1 (15.10.2026) : les doublons « …_ts2 » sont supprimés par 0020 et ne sont
+-- plus créés ici (ce fichier est rejoué à chaque déploiement : il les aurait reconstruits à chaque fois).

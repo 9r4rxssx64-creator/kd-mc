@@ -2703,6 +2703,31 @@ function isAdminName(name) {
    complet devient le dossier de cette personne ; tous les suivants y sont rattachés.
    EXIGE 2 mots (prénom + nom) — même règle que la connexion : un prénom seul ne
    regroupe rien (sinon tous les « Marie » finiraient dans le même dossier). */
+/* ── BANNIR (Kevin 15.10.2026 : « Ajoute l'option bannir pour que la personne ne puisse pas se réinscrire, si besoin ») ──
+   Au moment de supprimer un compte, l'admin peut le BANNIR : on garde ce qui permettrait de se réinscrire — le nom (prénom + nom normalisés),
+   l'identifiant et l'empreinte du téléphone confirmé (jamais le numéro). Une inscription NEUVE qui retombe sur l'un des trois est refusée,
+   sans dire lequel. `ban:idx` liste les bannis (pour les voir et les autoriser de nouveau). Jamais l'admin. */
+function banCles(acc) {
+  const cles = [];
+  if (!acc) return cles;
+  const n = normName(acc.name || '');
+  if (n && n.split(' ').filter(Boolean).length >= 2) cles.push('ban:nom:' + n);
+  if (acc.uid) cles.push('ban:uid:' + acc.uid);
+  const emp = acc.tel && acc.tel.empreinte;
+  if (emp) cles.push('ban:tel:' + emp);
+  return cles;
+}
+async function estBanni(env, uid, name, empreinteTel) {
+  if (!env || !env.ACCOUNTS) return false;
+  try {
+    const n = normName(name || '');
+    if (uid && await env.ACCOUNTS.get('ban:uid:' + uid)) return true;
+    if (n && n.split(' ').filter(Boolean).length >= 2 && await env.ACCOUNTS.get('ban:nom:' + n)) return true;
+    if (empreinteTel && await env.ACCOUNTS.get('ban:tel:' + empreinteTel)) return true;
+  } catch { /* fail-open : le contrôle ne casse jamais une inscription légitime */ }
+  return false;
+}
+const MSG_BANNI = 'Cette inscription n\'est pas possible. Demande à l\'administrateur.';
 /* `opts.sansCreer` = SIMPLE LECTURE : on cherche le dossier de cette personne sans
    réserver le nom. Indispensable devant le quota d'inscriptions ci-dessous : une
    demande qu'on s'apprête à refuser ne doit RIEN écrire, sinon le refus coûte lui
@@ -3505,6 +3530,7 @@ async function handleSso(request, url, env) {
          KDMC_VALIDATION_MANUELLE=1, TOUTE nouvelle inscription est créée (nom + code) mais fermée partout sauf le portail, jusqu'à ce que
          Kevin l'ouvre dans sa boîte — décidé ICI, pas par le navigateur (un script ne peut pas s'ouvrir seul). Un compte déjà inscrit n'est
          jamais touché. Coupé (par défaut) = comportement d'avant. */
+      if (!accCanon && !UID_ROBOTS_SANS_FICHE.has(uid) && await estBanni(env, uid, name)) return J({ ok: false, reason: 'banni', message: MSG_BANNI }, undefined, 403);
       if (!accCanon && validationManuelle(env) && !UID_ROBOTS_SANS_FICHE.has(uid)) attenteAdmin = true;
       if (!accCanon && telObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !attenteAdmin) {
         const pt = await verifiePreuve(secret, b.tel_preuve);
@@ -3516,6 +3542,7 @@ async function handleSso(request, url, env) {
       if (!accCanon && telObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !attenteAdmin) {
         const pt = await verifiePreuve(secret, b.tel_preuve);
         /* usage unique : une preuve déjà servie ne crée pas un 2e compte (relecture 9.10) */
+        if (pt.ok && await estBanni(env, '', '', pt.empreinte)) return J({ ok: false, reason: 'banni', message: MSG_BANNI }, undefined, 403);
         if (await preuveDejaUtilisee(env, pt)) return J({ ok: false, reason: 'tel_requis', message: 'Cette confirmation a déjà servi. Confirme ton téléphone à nouveau.' }, undefined, 400);
         if ((await comptesDuTel(env, pt.empreinte)).length >= MAX_COMPTES_PAR_TEL) {
           return J({ ok: false, reason: 'tel_plein', message: 'Ce téléphone a déjà ouvert ' + MAX_COMPTES_PAR_TEL + ' comptes. Demande à l’administrateur.' }, undefined, 409);
@@ -4551,8 +4578,35 @@ async function handleAdmin(request, url, env) {
       ficheOubliee(env, uid);
     } catch { return J({ ok: false, reason: 'registre indisponible' }, undefined, 503); }
     try { if (env.CERCLE_DB) { for (const t of ['inscription_admin', 'code_attente', 'presence_domaine']) { try { await env.CERCLE_DB.prepare('DELETE FROM ' + t + ' WHERE uid = ?').bind(uid).run(); } catch { /* table absente */ } } } } catch { /* rien à vider */ }
-    await audLog(env, { ev: 'compte_supprime', uid, name: acc.name || '' });
-    return J({ ok: true, uid, supprime: true });
+    let banni = false;
+    if (b.bannir === true) {
+      try {
+        const cles = banCles(acc), at = Date.now();
+        for (const k of cles) await env.ACCOUNTS.put(k, JSON.stringify({ at, uid, nom: acc.name || '' }));
+        const bidx = JSON.parse((await env.ACCOUNTS.get('ban:idx')) || '[]');
+        bidx.unshift({ id: uid + '@' + at, uid, nom: String(acc.name || uid).slice(0, 80), at, cles });
+        await env.ACCOUNTS.put('ban:idx', JSON.stringify(bidx.slice(0, 500)));
+        banni = true;
+      } catch { /* le compte est déjà supprimé : on le dit, la personne pourra se réinscrire */ }
+    }
+    await audLog(env, { ev: 'compte_supprime', uid, name: acc.name || '', banni });
+    return J({ ok: true, uid, supprime: true, banni: b.bannir === true ? banni : undefined });
+  }
+  /* Les bannis : les voir, et les autoriser de nouveau (Kevin 15.10 : « si besoin »). */
+  if (path === '/__admin/bannis' && request.method === 'GET') {
+    let l = []; try { l = JSON.parse((await env.ACCOUNTS.get('ban:idx')) || '[]'); } catch { l = []; }
+    return J({ ok: true, bannis: l.map((x) => ({ id: x.id, uid: x.uid, nom: x.nom, at: x.at })) });
+  }
+  if (path === '/__admin/debannir' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const id = String(b.id || '').slice(0, 120);
+    let l = []; try { l = JSON.parse((await env.ACCOUNTS.get('ban:idx')) || '[]'); } catch { l = []; }
+    const e = l.find((x) => x.id === id);
+    if (!e) return J({ ok: false, reason: 'not_found' });
+    for (const k of (e.cles || [])) { try { await env.ACCOUNTS.delete(k); } catch { /* clé déjà partie */ } }
+    await env.ACCOUNTS.put('ban:idx', JSON.stringify(l.filter((x) => x.id !== id)));
+    await audLog(env, { ev: 'debanni', uid: e.uid, name: e.nom });
+    return J({ ok: true, id });
   }
   /* ── PÉRIMÈTRE : qui a le droit d'exister dans quelle app (Kevin 2026-09-15) ──
      GET  ?uid=…                       → l'état de cette personne + la liste des apps

@@ -562,6 +562,36 @@
     return { lignes: L, verdict: verdict, attente: !!a.attente_admin, probleme: probleme };
   }
   var _comptes = [];   /* les comptes de la DERNIÈRE lecture (la liste se rafraîchit toute seule : le bouton lit toujours les plus récents) */
+  /* ---- PERSONNES BANNIES (Kevin 15.10 : « l'option bannir… si besoin ») : la liste, et « Autoriser de nouveau ». ---- */
+  function blocBannis() {
+    return '<details class="fermgen" id="bannis"><summary>🚫 Personnes bannies <span class="d">(ne peuvent pas se réinscrire)</span></summary>'
+      + '<div id="bannis-liste" class="d">Touche pour charger…</div></details>';
+  }
+  function wireBannis() {
+    var det = document.getElementById('bannis');
+    if (!det || det._ok) return; det._ok = true;
+    var liste = document.getElementById('bannis-liste');
+    function charger() {
+      liste.textContent = 'Je lis la liste…';
+      fetch('/__admin/bannis', { credentials: 'include', headers: adminHeaders() }).then(function (r) { return r.json(); }).then(function (j) {
+        var l = (j && j.bannis) || [];
+        liste.innerHTML = l.length ? l.map(function (x) {
+          return '<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span style="flex:1">' + esc(x.nom || x.uid) + ' <span class="d">· ' + esc(dt(x.at)) + '</span></span>'
+            + '<button class="savacc debannir" data-id="' + esc(x.id) + '" type="button">✅ Autoriser de nouveau</button></div>';
+        }).join('') : 'Personne n\'est banni.';
+      }).catch(function () { liste.textContent = '⚠️ Liste illisible — réessaie.'; });
+    }
+    det.addEventListener('toggle', function () { if (det.open) charger(); });
+    det.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.debannir') : null;
+      if (!b) return;
+      if (!confirm('Autoriser de nouveau cette personne à s\'inscrire ?')) return;
+      b.disabled = true; b.textContent = '…';
+      fetch('/__admin/debannir', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ id: b.getAttribute('data-id') }) })
+        .then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) charger(); else { b.disabled = false; b.textContent = '⚠️ Échec — réessaie'; } })
+        .catch(function () { b.disabled = false; b.textContent = '⚠️ Échec — réessaie'; });
+    });
+  }
   /* PURE : un compte supprimable depuis l'écran = jamais l'admin (Kevin) ; le domaine refuse aussi, quoi qu'on envoie. */
   function peutSupprimer(a) {
     if (!a || !a.uid || a.uid === 'kdmc_admin') return false;
@@ -585,12 +615,13 @@
       if (suppr) {
         var su = suppr.getAttribute('data-uid') || '', sa = (_comptes || []).filter(function (x) { return x.uid === su; })[0];
         if (!sa || !peutSupprimer(sa)) return;
-        if (!confirm('SUPPRIMER le compte « ' + (sa.name || su) + ' » ?\n\nSa fiche et son code sont effacés. Elle pourra se réinscrire plus tard (son nom redevient libre).\nOn ne peut pas annuler depuis l\'écran.')) return;
+        var bannir = !!(suppr.parentNode.querySelector('.bannir-aussi') || {}).checked;
+        if (!confirm('SUPPRIMER le compte « ' + (sa.name || su) + ' » ?\n\nSa fiche et son code sont effacés. ' + (bannir ? 'BANNI : elle ne pourra PAS se réinscrire (même nom, même téléphone confirmé). Tu pourras l\'autoriser de nouveau dans « Personnes bannies ».' : 'Elle pourra se réinscrire plus tard (son nom redevient libre).') + '\nOn ne peut pas annuler depuis l\'écran.')) return;
         suppr.disabled = true; suppr.textContent = '…';
-        fetch('/__admin/compte-supprimer', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: su, confirmer: true }) })
+        fetch('/__admin/compte-supprimer', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: su, confirmer: true, bannir: bannir }) })
           .then(function (r) { return r.json(); })
           .then(function (j) {
-            if (j && j.ok) { suppr.textContent = '✅ Compte supprimé'; var f = document.getElementById('fiche-' + su); if (f) f.style.opacity = '.45'; }
+            if (j && j.ok) { suppr.textContent = j.banni ? '✅ Supprimé et banni' : '✅ Compte supprimé'; var f = document.getElementById('fiche-' + su); if (f) f.style.opacity = '.45'; }
             else { suppr.disabled = false; suppr.textContent = j && j.reason === 'admin_protege' ? '🔒 Compte admin : jamais supprimé' : '⚠️ Échec — réessaie'; }
           })
           .catch(function () { suppr.disabled = false; suppr.textContent = '⚠️ Échec — réessaie'; });
@@ -606,7 +637,7 @@
       box.hidden = false;
       box.innerHTML = '<div><b>' + esc(r.verdict) + '</b></div>' + r.lignes.map(function (l) { return '<div class="d">' + esc(l) + '</div>'; }).join('')
         + (r.attente ? '<button class="savacc ouvrir-compte" data-uid="' + esc(uid) + '" type="button">✅ Ouvrir ce compte</button>' : '')
-        + (peutSupprimer(a) ? ' <button class="savacc supprimer-compte" data-uid="' + esc(uid) + '" type="button" style="background:#5a1d1d;color:#ffd9d9">🗑️ Supprimer ce compte</button>' : '');
+        + (peutSupprimer(a) ? ' <label class="chipacc" style="display:flex;margin:8px 0"><input type="checkbox" class="bannir-aussi"> 🚫 Bannir aussi : ne pourra pas se réinscrire (même nom, même téléphone confirmé)</label><button class="savacc supprimer-compte" data-uid="' + esc(uid) + '" type="button" style="background:#5a1d1d;color:#ffd9d9">🗑️ Supprimer ce compte</button>' : '');
     });
   }
 
@@ -636,6 +667,7 @@
       + blocFermees()
       + blocCreer()
       + blocLot(accounts)
+      + blocBannis()
       + '<h2 class="cat">📊 Tous les comptes</h2>'
       + '<div class="stat" id="gstat">' + globalPills(accounts) + '</div>'
       + histSection(accounts)
@@ -655,6 +687,7 @@
     }
     wireRevoke();
     wireEtat();
+    wireBannis();
     wireAcces();
     wireFermees();
     wireCreer();

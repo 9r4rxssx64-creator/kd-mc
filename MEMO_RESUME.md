@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 (soir) — Admin du domaine : option « 🚫 Bannir aussi » à la suppression (Kevin : « pour que la personne ne puisse pas se réinscrire, si besoin »)
+
+- **Livré (code + tests, portail v1.0.61, routeur à déployer)** : case « Bannir aussi » avec « Supprimer ce compte » ; le domaine retient le nom normalisé, l'identifiant et l'EMPREINTE du téléphone confirmé (jamais le numéro) ; toute inscription NEUVE qui retombe sur l'un des trois est refusée (403 `banni`, message neutre). Liste « 🚫 Personnes bannies » + « Autoriser de nouveau » (`/__admin/bannis`, `/__admin/debannir`). Jamais l'admin.
+- **Limite honnête** : le ban par téléphone est codé mais pas rejoué de bout en bout (il faudrait une vraie preuve WhatsApp) ; nom et identifiant sont prouvés. Un homonyme exact (même prénom + nom) est refusé aussi : c'est voulu, l'admin peut autoriser de nouveau.
+- **Garde** : `services/kdmc-router/bannir.test.mjs`.
+
 ## 2026-10-15 (soir) — Admin du domaine : section « ⚡ Raccourcis du domaine » (Kevin : « Ajoute les tuiles qu'il manque dans le domaine » → « Raccourcis admin du domaine »)
 
 - **Livré (code + tests, portail v1.0.60)** : 6 tuiles en tête de l'accueil admin, une destination chacune : Mes messages · inscriptions à valider, Qui est en ligne, Un compte (état / ouvrir / supprimer), Créer un compte invité, Fermer des applications, Journal admin. Les sections repliées s'ouvrent à l'arrivée (hashchange).

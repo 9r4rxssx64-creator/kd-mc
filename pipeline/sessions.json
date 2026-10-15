@@ -1687,6 +1687,16 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "token-cf": {
+      "titre": "Clé Cloudflare refusée : à remplacer",
+      "branche": "claude/token-cf",
+      "sujet": "docs : action Kevin + état",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

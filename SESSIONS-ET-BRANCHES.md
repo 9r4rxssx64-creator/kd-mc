@@ -209,6 +209,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/routeur-assets` | 15.10 | Le routeur sert ses pages depuis sa copie embarquée (SOURCE_PAGES = assets) pour pouvoir supprimer le projet Pages | `routeur-assets` |
 | `claude/note-deploy` | 15.10 | Note MEMO sur le déploiement ab3e4a0 (runs en échec, code en ligne) — reprise dans claude/routeur-assets | `note-deploy` |
 | `claude/deploy-diag` | 15.10 | Déploiement du routeur : l'erreur de wrangler part en annotation (3 échecs en 1 s sans journal lisible) | `deploy-diag` |
+| `claude/token-cf` | 15.10 | Clé Cloudflare de GitHub refusée (code 10000) : action de Kevin documentée, déploiements bloqués | `token-cf` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

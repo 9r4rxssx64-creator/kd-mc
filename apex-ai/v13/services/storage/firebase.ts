@@ -151,12 +151,6 @@ export const FB_LOCAL: readonly string[] = [
   'apex_v13_session',
 ];
 
-/* v13.4.370 (mesuré 15.10 sur la vraie base, compte connecté) : la RACINE est fermée par les règles → le ping
- * `/.json?shallow=true` répondait 401 À CHAQUE FOIS (Firebase « hors ligne » à vie, reconnexions en boucle,
- * erreurs rouges dans la console). `/apex/apex_v13_ping` est lisible par un compte connecté (200, vide) :
- * il prouve la connexion ET le droit de lecture, sans rien télécharger. */
-const PING_PATH = 'apex/apex_v13_ping';
-
 class Firebase {
   private url = FB_DEFAULT;
   private connected = false;
@@ -228,7 +222,7 @@ class Firebase {
      * en respectant le backoff. */
     try {
       await firebaseAuthBridge.ensureFreshToken();
-      const ping = await fetch(`${this.url}/${PING_PATH}.json${this.authSuffix(false)}`, {
+      const ping = await fetch(`${this.url}/.json?shallow=true${this.authSuffix(true)}`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       });
@@ -352,7 +346,7 @@ class Firebase {
       /* v13.4.336 : token frais (THROTTLÉ côté bridge) avant le ping. Pas de
        * clear()+retry forcé sur 401 → ne martèle plus le worker /login. */
       await firebaseAuthBridge.ensureFreshToken();
-      const ping = await fetch(`${this.url}/${PING_PATH}.json${this.authSuffix(false)}`, {
+      const ping = await fetch(`${this.url}/.json?shallow=true${this.authSuffix(true)}`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       });
@@ -525,7 +519,7 @@ class Firebase {
       const stale = Date.now() - this.lastEventTs > STALE_EVENT_THRESHOLD_MS;
       if (!stale) return;
       /* Stale event → ping de vérification. Si fail, reconnect. */
-      void fetch(`${this.url}/${PING_PATH}.json${this.authSuffix(false)}`, {
+      void fetch(`${this.url}/.json?shallow=true${this.authSuffix(true)}`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       })

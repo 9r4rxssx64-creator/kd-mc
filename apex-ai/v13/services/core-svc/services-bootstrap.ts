@@ -742,12 +742,17 @@ export async function bootstrapServices(uid: string | null): Promise<readonly In
       const { apexRuntimeDiagnostic } = await import('../admin/apex-runtime-diagnostic.js');
       /* Différé 3s après le boot pour laisser Firebase + SW + auto-restore tourner */
       setTimeout(() => {
-        void apexRuntimeDiagnostic.runAll().then((result) => {
-          /* v13.4.370 (capture iPhone 15.10, règle Kevin 13.10 « pas d'infos inutiles nulle part ») : le bandeau
-           * « 🔬 Diagnostic · 4/12 ✓ (tap pour détail) » recouvrait le message d'accueil à CHAQUE ouverture,
-           * en jargon, sans rien à faire pour Kevin. Le résultat reste dans le journal et la vue Admin. */
-          const echecs = result.checks.filter((c) => !c.ok).map((c) => c.label + ' : ' + c.detail);
-          logger.info('runtime-diagnostic', `v${result.version} · ${result.okCount}/${result.checks.length} contrôles OK${echecs.length ? ' — à revoir : ' + echecs.join(' | ') : ''}`);
+        void apexRuntimeDiagnostic.runAll().then(async (result) => {
+          try {
+            const { toast } = await import('../../ui/toast.js');
+            /* v13.4.227 (Kevin UX "diagnostic moche") : compacté durée + texte court.
+             * 6-10s → 2-4s, message lisible vite, dismissable au tap. */
+            if (result.failCount === 0) {
+              toast.success(`🔬 v${result.version} · ${result.okCount}/${result.checks.length} ✓`, { duration: 2000 });
+            } else {
+              toast.info(`🔬 Diagnostic v${result.version} · ${result.okCount}/${result.checks.length} ✓ (tap pour détail)`, { duration: 4000 });
+            }
+          } catch { /* toast non dispo : silencieux */ }
         }).catch((err: unknown) => {
           logger.warn('runtime-diagnostic', 'boot run failed', { err });
         });

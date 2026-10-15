@@ -14,7 +14,6 @@
  * - Queue messages : Kevin peut envoyer 5 messages d'affilée, tous traités
  */
 
-import { gatewayEnabled } from '../../services/ai/kdmc-gateway.js';
 import { logger } from '../../core/logger.js';
 import { store } from '../../core/store.js';
 import { aiRouter } from '../../services/ai/ai-router.js';
@@ -470,8 +469,7 @@ export function render(rootEl: HTMLElement): void {
   const greeting = user ? `Bonjour ${user.name}, qu'est-ce que je peux faire pour toi ?` : 'Bienvenue dans Apex.';
 
   const isAdmin = store.get('isAdmin');
-  /* v13.4.370 : sans clé, les IA gratuites du domaine répondent → pas de bandeau « Pas de clé API » (info fausse). */
-  const hasKey = aiRouter.hasAnyKey() || gatewayEnabled();
+  const hasKey = aiRouter.hasAnyKey();
 
   rootEl.innerHTML = cspStyleHelper.withNonce(buildChatShellHtml({ greeting, conversationEmpty: conversation.length === 0, hasKey, isAdmin: !!isAdmin }));
 

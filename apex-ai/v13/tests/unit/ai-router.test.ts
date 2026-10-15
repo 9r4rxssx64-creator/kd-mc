@@ -4,8 +4,6 @@ import { aiRouter } from '../../services/ai/ai-router.js';
 describe('ai-router service (tests réels Jet 6.5)', () => {
   beforeEach(() => {
     localStorage.clear();
-    /* v13.4.370 : ces tests vérifient le chemin « sans passerelle » (interrupteur OFF) ; la passerelle a ses propres tests. */
-    localStorage.setItem('apex_v13_passerelle', '0');
   });
 
   describe('getApiKey + hasAnyKey', () => {

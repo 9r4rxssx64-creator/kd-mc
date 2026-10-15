@@ -15,7 +15,6 @@
 import { events } from '../../core/events.js';
 import { logger } from '../../core/logger.js';
 import { toast } from '../../ui/toast.js';
-import { gatewayEnabled } from '../ai/kdmc-gateway.js';
 
 const OVERLAY_ID = 'apex-pin-activate';
 const ADMIN_UID = 'kdmc_admin';
@@ -30,11 +29,6 @@ function ls(k: string): string {
  */
 export function needsProxyPinActivation(): boolean {
   try {
-    /* v13.4.370 (Kevin 15.10) : les IA gratuites du domaine (apis.kd-mc.com/ai) répondent SANS code.
-     * Cet écran recouvrait le chat après chaque connexion et rangeait le code admin dans le téléphone
-     * (règles « aucun code à qui le domaine connaît » et « le code admin ne s'écrit nulle part »).
-     * Il ne revient que si Kevin coupe la passerelle (interrupteur apex_v13_passerelle = '0'). */
-    if (gatewayEnabled()) return false;
     const isAdmin = ls('apex_v13_uid') === ADMIN_UID;
     const proxyFlag = ls('apex_v13_use_secrets_proxy');
     const proxyOn = proxyFlag === 'true' || proxyFlag === '1';

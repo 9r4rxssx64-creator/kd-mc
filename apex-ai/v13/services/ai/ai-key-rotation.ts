@@ -24,7 +24,6 @@
  *   cette couche orchestre par dessus sans casser les interfaces existantes.
  */
 
-import { gatewayEnabled } from './kdmc-gateway.js';
 import { logger } from '../../core/logger.js';
 import { auditLog } from '../observability/audit-log.js';
 import { detectCredential, type CredentialPattern } from '../vault/credential-patterns.js';
@@ -519,12 +518,6 @@ class AIKeyRotation {
           .map(([svc]) => svc),
       },
     });
-    /* v13.4.370 : les IA gratuites du domaine prennent le relais sans clé → pas d'alerte rouge
-     * ni d'écran de code (fausse alarme : Apex répond quand même). */
-    if (gatewayEnabled()) {
-      logger.info('ai-key-rotation', 'clés locales indisponibles — les IA gratuites du domaine prennent le relais');
-      return;
-    }
     logger.error('ai-key-rotation', '🚨 TOUS providers IA DEAD ou sans clés — recharge nécessaire');
     /* Best-effort toast UI (non bloquant si module absent en SSR / tests).
        toast.show(text, 'warn') ou toast.error/info — l'API selon ui/toast.ts. */

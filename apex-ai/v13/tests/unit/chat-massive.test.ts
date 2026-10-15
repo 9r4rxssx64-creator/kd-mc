@@ -32,8 +32,6 @@ describe('chat features massive coverage Jet 8 final', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    /* v13.4.370 : ces tests vérifient le chemin « sans passerelle » (interrupteur OFF) ; la passerelle a ses propres tests. */
-    localStorage.setItem('apex_v13_passerelle', '0');
     document.body.innerHTML = '<div id="apex-root"></div>';
     root = document.getElementById('apex-root')!;
     store.init({ appVer: 'v13.0.0' });

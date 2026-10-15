@@ -73,17 +73,10 @@ describe('chat features deep tests', () => {
   });
 
   describe('paste key handler', () => {
-    it('bouton paste key card affiché si pas de clé ET passerelle coupée', async () => {
-      localStorage.setItem('apex_v13_passerelle', '0');
+    it('bouton paste key card affiché si pas de clé', async () => {
       const { render } = await import('../../features/chat/index.js');
       render(root);
       expect(root.querySelector('#ax-paste-key')).not.toBeNull();
-    });
-
-    it('v13.4.370 : pas de bandeau « Pas de clé API » quand les IA gratuites du domaine répondent', async () => {
-      const { render } = await import('../../features/chat/index.js');
-      render(root);
-      expect(root.querySelector('#ax-paste-key')).toBeNull();
     });
 
     it('card paste key cachée si Anthropic configurée', async () => {

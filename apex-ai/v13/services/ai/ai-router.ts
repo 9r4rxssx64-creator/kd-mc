@@ -13,7 +13,6 @@
  * AbortController sur chaque fetch (pas de zombie).
  */
 
-import { askKdmcGateway, gatewayEnabled, gatewayReasonFr, isTextOnly, type GatewayMessage } from './kdmc-gateway.js';
 import { errors } from '../../core/errors.js';
 import { logger } from '../../core/logger.js';
 import { MAX_SYSTEM_PROMPT_CHARS } from '../../core/prompt-budget.js';
@@ -936,9 +935,6 @@ export function auditProviderChain(): {
   };
 }
 
-/** Fournisseurs que la passerelle peut nommer et qu'Apex connaît (sinon : 'qwen', le gratuit par défaut). */
-const GATEWAY_PROVIDERS = ['anthropic', 'openai', 'openrouter', 'groq', 'gemini', 'mistral', 'cerebras', 'qwen'] as const;
-
 class AIRouter {
   private currentAbort: AbortController | null = null;
 
@@ -1029,30 +1025,6 @@ class AIRouter {
   }
 
   /**
-   * Une réponse des IA gratuites du domaine (apis.kd-mc.com/ai), rendue d'un bloc dans le chat.
-   * Rend 'ok', 'aborted', ou la phrase simple à montrer à Kevin.
-   */
-  private async askGateway(
-    messages: ChatMessage[],
-    system: string,
-    signal: AbortSignal,
-    emit: (chunk: StreamChunk) => void,
-  ): Promise<string> {
-    const r = await askKdmcGateway(messages as GatewayMessage[], system, { signal });
-    if (signal.aborted) return 'aborted';
-    if (!r.ok) {
-      logger.warn('ai-router', 'passerelle du domaine : échec', { raison: r.reason });
-      return gatewayReasonFr(r);
-    }
-    const provider: Provider = (GATEWAY_PROVIDERS as readonly string[]).includes(r.provider) ? (r.provider as Provider) : 'qwen';
-    try { tokensDashboard.record(provider, Math.ceil(JSON.stringify(messages).length / 4), Math.ceil(r.text.length / 4), 'kdmc-passerelle'); } catch { /* ignore */ }
-    logger.info('ai-router', `passerelle du domaine : réponse de ${r.provider}`);
-    emit({ text: r.text, done: false, provider });
-    emit({ text: '', done: true, provider });
-    return 'ok';
-  }
-
-  /**
    * Stream une réponse IA avec failover automatique.
    * Callbacks : onChunk pour rendu progressif, onError pour catch final.
    */
@@ -1062,10 +1034,7 @@ class AIRouter {
     onChunk: (chunk: StreamChunk) => void,
     onError?: (err: Error) => void,
   ): Promise<void> {
-    /* v13.4.370 (Kevin 15.10 « Apex ne fonctionne plus ») : sans clé dans le téléphone, les IA
-     * GRATUITES du domaine répondent (passerelle apis.kd-mc.com/ai) au lieu de « Aucune clé ». */
-    const noLocalKey = !this.hasAnyKey();
-    if (noLocalKey && !gatewayEnabled()) {
+    if (!this.hasAnyKey()) {
       onError?.(new Error('Aucune clé API configurée. Va dans le Coffre pour ajouter.'));
       return;
     }
@@ -1202,21 +1171,6 @@ class AIRouter {
        1. Stream le provider (avec tools si Anthropic)
        2. Si tool_uses détectés → exécute via apexToolsDispatch + ajoute aux messages
        3. Si pas de tool_use → end_turn, sortie boucle */
-    /* Pas de clé locale : la passerelle du domaine répond seule (texte), sans toucher à la cascade. */
-    const textOnly = isTextOnly(filteredMessages);
-    if (noLocalKey) {
-      if (!textOnly) {
-        this.currentAbort = null;
-        onError?.(new Error('Pour analyser une photo ou un document, il faut une clé IA dans le Coffre. Le texte, lui, marche sans clé.'));
-        return;
-      }
-      const g = await this.askGateway(filteredMessages, system, ctrl.signal, wrappedOnChunk);
-      if (g === 'aborted' || g === 'ok') { this.currentAbort = null; return; }
-      this.currentAbort = null;
-      onError?.(new Error(g));
-      return;
-    }
-
     const currentMessages: ChatMessage[] = [...truncatedMessages];
     let lastErr: Error | null = null;
     let lastProvider: Provider = 'anthropic';
@@ -1354,14 +1308,6 @@ class AIRouter {
       this.currentAbort = null;
       wrappedOnChunk({ text: '', done: true, provider: lastProvider });
       return;
-    }
-
-    /* Toutes les clés ont échoué (expirées, quota, réseau) : dernier recours, les IA gratuites
-     * du domaine — avant de baisser les bras (règle « jamais bloqué dans Apex »). */
-    if (gatewayEnabled() && textOnly && !ctrl.signal.aborted) {
-      const g = await this.askGateway(filteredMessages, system, ctrl.signal, wrappedOnChunk);
-      if (g === 'ok' || g === 'aborted') { this.currentAbort = null; return; }
-      logger.warn('ai-router', 'passerelle du domaine indisponible après la cascade', { raison: g });
     }
 
     this.currentAbort = null;

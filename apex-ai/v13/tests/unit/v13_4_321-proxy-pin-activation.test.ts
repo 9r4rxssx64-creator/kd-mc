@@ -12,8 +12,6 @@ import { activateWithCode, needsProxyPinActivation, promptProxyPinActivation } f
 describe('v13.4.321 — activation IA 1-tap', () => {
   beforeEach(() => {
     localStorage.clear();
-    /* v13.4.370 : ces tests vérifient le chemin « sans passerelle » (interrupteur OFF) ; la passerelle a ses propres tests. */
-    localStorage.setItem('apex_v13_passerelle', '0');
     localStorage.setItem('apex_v13_uid', 'kdmc_admin');
   });
   afterEach(() => localStorage.clear());

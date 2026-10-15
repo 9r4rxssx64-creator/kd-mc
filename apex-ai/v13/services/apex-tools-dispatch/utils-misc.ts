@@ -781,41 +781,36 @@ export function osintTools(category?: string): {
 export function detectIntent(text: string): { intent: string; confidence: number; suggested_tool?: string } {
   if (!text) return { intent: 'unknown', confidence: 0 };
   const lc = text.toLowerCase();
-  /* v13.4.370 (mesuré 15.10 dans Apex) : « Rédige un message pour PRÉVENIR mon équipe » ouvrait Finances —
-   * la règle cherchait « ir » N'IMPORTE OÙ (prévenir, dire, voir…). Idem « va » dans « travail », « loi » dans
-   * « emploi », « plan » dans « planning », « hi » dans « machine », « eth » dans « méthode »… Désormais des MOTS
-   * ENTIERS (accents compris : \b de JS ignore « é »). `\p{L}*` = le mot peut continuer (actualité, rappelle-toi). */
-  const W = (...mots: string[]): string => `(?<![\\p{L}\\p{N}])(?:${mots.join('|')})(?![\\p{L}\\p{N}])`;
-  const R = (src: string): RegExp => new RegExp(src, 'iu');
+  /* Patterns ordonnés par spécificité */
   const PATTERNS: Array<{ regex: RegExp; intent: string; tool?: string }> = [
     /* Kevin règle "1-clic ouverture URL" : extract domaine si URL/site mentionné */
-    { regex: R(W('ouvre', 'va', 'navigue', 'ouvrir', 'aller', 'montre') + '.*(https?:\\/\\/[^\\s]+)'), intent: 'open_url', tool: 'open_url' },
-    { regex: R(W('ouvre', 'va', 'navigue', 'ouvrir', 'aller', 'montre') + '.*\\b([a-z0-9-]+\\.(com|fr|io|net|org|app|dev|ai|co))\\b'), intent: 'open_url', tool: 'open_url' },
-    { regex: R(W('ouvre', 'lance', 'montre') + '.*' + W('navigateur', 'browser', 'google', 'chrome', 'safari')), intent: 'open_browser', tool: 'open_url' },
-    { regex: R(W('va', 'navigue') + '\\s+sur\\s+(.+)'), intent: 'open_url', tool: 'open_url' },
-    { regex: R(W('traduis', 'traduit', 'traduire', 'translate')), intent: 'translate', tool: 'translate' },
-    { regex: R(W('m[ée]t[ée]o', 'pluie', 'pleuvoir', 'pleut', 'temp[ée]rature', 'quel temps')), intent: 'weather', tool: 'weather' },
-    { regex: R(W('news', 'actualit\\p{L}*', 'actus?')), intent: 'news', tool: 'news_headlines' },
-    { regex: R(W('crypto\\p{L}*', 'bitcoin', 'ethereum', 'btc', 'eth')), intent: 'crypto_price', tool: 'market_data' },
-    { regex: R(W('actions?', 'stocks?', 'bourse', 'cours de bourse', 'cours')), intent: 'stock_price', tool: 'market_data' },
-    { regex: R(W('cherche', 'cherches', 'recherche', 'recherches', 'trouve', 'trouver', 'google')), intent: 'web_search', tool: 'web_search' },
-    { regex: R(W('scanne', 'scanner', 'scan', 'ocr')), intent: 'ocr', tool: 'ocr_scan' },
-    { regex: R(W('qr', 'qr\\s*code', 'code\\s+qr')), intent: 'qr_generate', tool: 'qr_generate' },
-    { regex: R(W('factures?', 'invoices?')), intent: 'studio_facture' },
-    { regex: R(W('cv', 'curriculum', 'resume')), intent: 'studio_cv' },
-    { regex: R(W('musiques?', 'mix', 'mixer', 'track', 'chansons?')), intent: 'studio_music' },
-    { regex: R(W('vid[ée]os?', 'montage', 'clips?')), intent: 'studio_video' },
-    { regex: R(W('plans? de maison', 'plan', 'architecture', 'maison')), intent: 'studio_archi' },
-    { regex: R(W('loi', 'lois', 'article de loi', 'article', 'code\\s+civil', 'jurisprudence')), intent: 'legal_kb' },
-    { regex: R(W('imp[ôo]ts?', 'fiscal\\p{L}*')), intent: 'finance_calc', tool: 'finance_calculate' },
-    { regex: R(W('iban', 'virements?', 'paiements?')), intent: 'finance_iban', tool: 'finance_calculate' },
-    { regex: R(W('rdv', 'rendez-vous', 'calendrier', 'agenda')), intent: 'calendar', tool: 'create_calendar_event' },
-    { regex: R(W('envoie', 'envoyer') + '.*' + W('e-?mails?', 'mails?') + '|' + W('e-?mails?', 'mails?')), intent: 'send_email', tool: 'send_email' },
-    { regex: R(W('audit', 'v[ée]rifie', 'check')), intent: 'audit_self', tool: 'audit_self' },
-    { regex: R(W('m[ée]moire', 'rappelle\\p{L}*', 'souviens')), intent: 'memory_recall', tool: 'memory_recall' },
-    { regex: R(W('d[ée]connexion', 'logout', 'd[ée]connecte\\p{L}*')), intent: 'logout' },
-    { regex: R(W('bonjour', 'salut', 'hello', 'hi')), intent: 'greeting' },
-    { regex: R(W('aide', 'help', 'sos')), intent: 'help' },
+    { regex: /(ouvre|va|navigue|ouvrir|aller|montre).*(https?:\/\/[^\s]+)/i, intent: 'open_url', tool: 'open_url' },
+    { regex: /(ouvre|va|navigue|ouvrir|aller|montre).*\b([a-z0-9-]+\.(com|fr|io|net|org|app|dev|ai|co))\b/i, intent: 'open_url', tool: 'open_url' },
+    { regex: /(ouvre|lance|montre).*(navigateur|browser|google|chrome|safari)/i, intent: 'open_browser', tool: 'open_url' },
+    { regex: /(va|navigue)\s+sur\s+(.+)/i, intent: 'open_url', tool: 'open_url' },
+    { regex: /(traduis|traduit|translate)\s+(?:en\s+)?(\w+)/, intent: 'translate', tool: 'translate' },
+    { regex: /(meteo|météo|pluie|temperature|temps)/, intent: 'weather', tool: 'weather' },
+    { regex: /(news|actualit|actu)/, intent: 'news', tool: 'news_headlines' },
+    { regex: /(crypto|bitcoin|ethereum|btc|eth)/, intent: 'crypto_price', tool: 'market_data' },
+    { regex: /(action|stock|bourse|cours)/, intent: 'stock_price', tool: 'market_data' },
+    { regex: /(cherche|recherche|trouve|google)/, intent: 'web_search', tool: 'web_search' },
+    { regex: /(scanne|scan|ocr)/, intent: 'ocr', tool: 'ocr_scan' },
+    { regex: /(qr|code\s+qr)/, intent: 'qr_generate', tool: 'qr_generate' },
+    { regex: /(facture|invoice)/, intent: 'studio_facture' },
+    { regex: /(cv|curriculum|resume)/, intent: 'studio_cv' },
+    { regex: /(musique|mix|track|chanson)/, intent: 'studio_music' },
+    { regex: /(video|montage|clip)/, intent: 'studio_video' },
+    { regex: /(plan|architecture|maison)/, intent: 'studio_archi' },
+    { regex: /(loi|article|code\s+civil|jurisprudence)/, intent: 'legal_kb' },
+    { regex: /(impot|impôt|ir|fiscal)/, intent: 'finance_calc', tool: 'finance_calculate' },
+    { regex: /(iban|virement|paiement)/, intent: 'finance_iban', tool: 'finance_calculate' },
+    { regex: /(rdv|rendez-vous|calendrier|agenda)/, intent: 'calendar', tool: 'create_calendar_event' },
+    { regex: /(envoie.*email|mail|message)/, intent: 'send_email', tool: 'send_email' },
+    { regex: /(audit|verifie|check)/, intent: 'audit_self', tool: 'audit_self' },
+    { regex: /(memoire|rappelle|souviens)/, intent: 'memory_recall', tool: 'memory_recall' },
+    { regex: /(deconnexion|logout|déconnecte)/, intent: 'logout' },
+    { regex: /(bonjour|salut|hello|hi)/, intent: 'greeting' },
+    { regex: /(aide|help|sos)/, intent: 'help' },
   ];
   for (const p of PATTERNS) {
     if (p.regex.test(lc)) {

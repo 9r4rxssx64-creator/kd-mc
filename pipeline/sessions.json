@@ -1616,6 +1616,16 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "seed-version": {
+      "titre": "Seed planning aligné sur v9.978",
+      "branche": "claude/seed-version",
+      "sujet": "rouge verify-seed-remplace-import-perime",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

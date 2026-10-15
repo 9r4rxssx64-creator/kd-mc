@@ -202,6 +202,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/eco-fix` | 15.10 | Correctif : l'entrée `forcer` ajoutée en double dans 3 workflows (fichier invalide) → `forcer_ration` + garde contre les clés dupliquées | `eco-fix` |
 | `claude/eco-fix2` | 15.10 | Correctif 2 : `actions: read` en double dans `permissions` de 2 workflows + détecteur général de clés en double (tous workflows) | `eco-fix2` |
 | `claude/lot19` | 15.10 | Fin du lot « reconnu partout » : Face ID automatique du portail à la 1re ouverture (v1.0.57) | `lot19` |
+| `claude/seed-version` | 15.10 | Rouge de main : le seed du planning porte la version de l'app (v9.978) | `seed-version` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

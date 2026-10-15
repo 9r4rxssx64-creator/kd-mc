@@ -149,6 +149,10 @@
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
 
+## 2026-10-15 — Rouge de main corrigé : le seed du planning portait v9.977 alors que l'app est en v9.978
+- Cause : le commit 844f9a933 « compte obligatoire (côté apps) » (CMCteams v9.978) a changé `APP_VER` sans mettre `"parser"` à jour dans `tools/shared/planning-seed.js`. `verify-seed-remplace-import-perime` (« le seed porte la version de son parseur = celle de l'app ») était rouge sur main pour tout le monde. Corrigé : `"parser":"v9.978"`. **OBLIGATION** (déjà dans #4555) : toute montée de `APP_VER` change aussi ce champ.
+- Coût Actions : 0 (local).
+
 ## 2026-10-15 — Fin du lot « reconnu partout » : Face ID automatique du portail à la 1re ouverture (code + tests, PAS encore déployé)
 - `kdmc-portal.js` (portail v1.0.57) : l'écran « Bonjour … » lance Face ID tout seul quand la personne a un passkey, UNE seule fois par chargement de page (`_pkAuto`). Si iOS refuse faute de geste ou si la personne annule : aucune erreur écrite, le bouton « Se connecter avec Face ID » et le code restent. Garde `test:portail-faceid-auto` (5 contrôles ; `SABOTAGE=boucle|erreur|bouton` rougit chacun).
 - Reste du lot, décisions non prises : compression des HTML (hors portée du jeton Cloudflare), retrait des hash `LD_ADMIN_HASH` de Chez Lolo (après le rôle `shops` des gérantes). **Non vérifié en vrai** : le Face ID sans geste sur un vrai iPhone (WebAuthn peut l'exiger ; le repli est prévu). Le déploiement du routeur (`/__arbre/cle`, `/__sso/issue` garde `code`) + du portail attend la ration du jour (lancement manuel, Kevin).

@@ -819,6 +819,20 @@
       });
     } catch (_) {}
   }
+  /* Bee posée DIRECTEMENT dans une app (l'arbre, Lingua… : le widget est chargé par la page, pas par le cadre) : elle sait aussi où elle est, par le nom
+     de l'adresse (arbre.kd-mc.com → « arbre ») — sinon ses boutons « arbre » n'apparaissent jamais et le domaine ignore que Kevin est dans l'arbre
+     (Kevin 15.10, vérifié en vrai : l'arbre charge le widget en direct). Le titre de la page est lu au moment d'envoyer. */
+  if (!CADRE && !APP_MODE) {
+    try {
+      var hoteApp = location.hostname.toLowerCase();
+      if (/^[a-z0-9-]{1,30}\.kd-mc\.com$/.test(hoteApp)) PAGE_CTX = { app: hoteApp.split('.')[0], titre: '', direct: true };
+    } catch (_) {}
+  }
+  function contexteBee() {
+    if (!PAGE_CTX) return undefined;
+    if (PAGE_CTX.direct) { try { PAGE_CTX.titre = String(document.title || '').slice(0, 120); } catch (_) {} }
+    return { app: PAGE_CTX.app, titre: PAGE_CTX.titre };
+  }
   /* Le MARQUEUR (cookie sans secret, posé aussi par le domaine) : « cet appareil est celui de Kevin » — évite de demander à chaque visiteur de
      chaque app s'il est Kevin. Ce n'est qu'un indice ; la vérité reste celle du domaine. */
   function marqueur(poser) {
@@ -1706,7 +1720,7 @@
       credentials: 'include',
       headers: hdrs,
       signal: ctrlIa ? ctrlIa.signal : undefined,
-      body: JSON.stringify({ messages: messages, mascotte: mascCfg().id, contexte: PAGE_CTX || undefined }),   /* Bourricot répond en Bourricot ; elle sait dans quelle app tu es */
+      body: JSON.stringify({ messages: messages, mascotte: mascCfg().id, contexte: contexteBee() }),   /* Bourricot répond en Bourricot ; elle sait dans quelle app tu es */
     })
       .then(function (r) { statut = r.status; return r.json().catch(function () { return null; }); })
       .then(function (j) {

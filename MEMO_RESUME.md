@@ -1449,6 +1449,10 @@ test:voix-chirp 16/0, voisins verts ; 8 sabotages rouges. **À vérifier en vrai
 
 Après la fusion #4316, « Coffre → dépôt public : synchroniser le CODE » s'est arrêté (6 « téléphone » = une constante sRGB de three.js dans `perso3d.js`) : routeur et Lingua non déployés. Corrigé à la source (`tools/3d/build-runtime.mjs` écrit la constante en notation scientifique) + garde dans `test:perso3d`. Leçon 417.
 
+## 2026-10-15 (midi) — BEE DANS L'ARBRE : VÉRIFIÉ EN VRAI NAVIGATEUR, UN DÉFAUT TROUVÉ ET CORRIGÉ
+
+**Fait** : Kevin demande « vérifie dans l'arbre le fonctionnement de Bee ». Le VRAI `arbre/index.html` (widget chargé en direct) testé dans Chromium : le chat s'ouvre au toucher, mais les boutons de l'arbre n'apparaissaient jamais et le domaine ne savait pas que Kevin était dans l'arbre → Bee déduit maintenant l'app depuis l'adresse. `test:bee-arbre-navigateur` (15, ancien widget = 2 échecs). Leçon 554. **Toujours pas vu** : l'écriture dans le vrai nuage, et l'iPhone (Face ID).
+
 ## 2026-10-15 — BEE MODIFIE, CHERCHE ET ARRANGE L'ARBRE (derrière ✅)
 
 **Fait** (code + tests, PAS encore vu en vrai sur le nuage ni l'iPhone) : `bee-arbre-ecrire.js` — `arbre_info`, `arbre_champ`, `arbre_commentaire`, `arbre_lien` (relier/créer), outil `arbre_bilan` ; copie de sauvegarde relue avant d'écrire, écriture champ par champ, relecture, rien ne se supprime ; l'outil `arbre` rend l'identifiant des fiches ; Bee flottante montre des boutons par app (« Ce que tu sais faire »). `test:bee-arbre-ecrire` (83, faux Firebase, 9 sabotages). Leçon 540. **Reste à Kevin** : dans l'arbre, toucher Bee → « Ajouter une info » → vérifier la carte puis ✅ ; regarder la fiche sur un autre appareil.

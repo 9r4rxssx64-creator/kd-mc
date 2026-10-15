@@ -203,6 +203,7 @@
   "tests/verify-aucun-code-admin-stocke.mjs",
   "tests/verify-audit-cmcteams-8-10.mjs",
   "tests/verify-background-sync-benin.mjs",
+  "tests/verify-bee-arbre.mjs",
   "tests/verify-boite-personnes.mjs",
   "tests/verify-boite-portail.mjs",
   "tests/verify-boite-temps-reel.mjs",

@@ -25,6 +25,8 @@ const SYNC_DEFS = [
   'K._onHistoryPage = async function(convId, data){',
 ];
 const OUTBOX_DEFS = [
+  // Lot C2 (A4 P1-5) : _onWsError affiche le refus via K._humanError (français simple).
+  'K._HTTP_ERRORS = ', 'K._httpError = function(status){', 'K._humanError = function(e, fallback){',
   'K._wireExtras = function(m){',
   'K._dispatchWire = function(convId, wire){',
   'K._outboxAdd = function(item){',

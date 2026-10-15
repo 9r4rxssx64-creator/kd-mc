@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Apex Chat v1.1.305 : ultra-audit, lot C2 (l'appli au quotidien)
+
+- Muet géré par le serveur (même app fermée) ; mise à jour qui attend la fin de la saisie / de l'appel / de l'envoi.
+- Version dans la barre du haut (fini la pastille sur les boutons) ; erreurs en français simple ; connexion qui explique.
+- Boîte d'envoi jamais tronquée ; GIF, position en direct et statuts 24 h remarchent ; rafales d'appels limitées.
+- Photos/GIF/vidéos sans position GPS ; notifications « Nom · Groupe ». Migration 0018.
+- Pas fait : clavier iPhone (visualViewport), guide d'installation avant le SMS ; le « snooze » reste local ; statuts protégés en transit seulement.
+- Mesuré : 118 fichiers / 1904 tests, couverture OK ; 23/23 sabotages + 1 manuel ; mise en page 37/37 (Chromium 375 et 390). Leçon #545.
+
 ## 2026-10-15 — Apex Chat v1.1.304 : ultra-audit, lot C1 (le serveur ne peut plus affaiblir le chiffrement)
 
 - DM : photos, fichiers ET vocaux toujours chiffrés ; si impossible, rien ne part (message clair).

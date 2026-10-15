@@ -32,7 +32,8 @@ describe('Conversations endpoints', () => {
     const r = await worker.fetch(makeRequest({ method: 'GET', path: '/api/conversations', token }), env);
     expect(r.status).toBe(200);
     const b = await r.json();
-    expect(b.conversations).toEqual([{ id: 'c1', name: 'X' }]);
+    // Lot C2 (A4 P1-2) : chaque conversation dit aussi si l'utilisateur l'a mise en muet (gardé par le serveur).
+    expect(b.conversations).toEqual([{ id: 'c1', name: 'X', muted: false, muted_until: null }]);
   });
 
   it('POST /api/conversations sans token → 401', async () => {

@@ -51,6 +51,8 @@ export function realEsc() {
 // Lot A (audit A2, 15.10.2026) : définitions dont dépend `_handleWsMessage` (historique commun,
 // rattrapage paginé, accusés retirant l'outbox). À inclure AVANT lui dans les harnais qui l'exécutent.
 export const LOT_A_WS_DEFS = [
+  // Lot C2 (A4 P1-5) : les refus du serveur sont affichés via K._humanError (français simple).
+  'K._HTTP_ERRORS = ', 'K._httpError = function(status){', 'K._humanError = function(e, fallback){',
   'K._outboxRemove = function(id){',
   'K._replyRef = function(convId, raw){',
   'K._applyServerUpdate = async function(convId, m, sm){',

@@ -1614,6 +1614,7 @@ export async function handleDeleteMe(request, env) {
     await run('connections', 'DELETE FROM connections WHERE user_id=?', uid);
     await run('user_activity', 'DELETE FROM user_activity WHERE user_id=?', uid);
     await run('ai_summary_cache', 'DELETE FROM ai_summary_cache WHERE user_id=?', uid);   // Lot B (A6-06)
+    await run('conv_mutes', 'DELETE FROM conv_mutes WHERE user_id=?', uid);               // Lot C2 (A4 P1-2)
     await run('invitations', 'DELETE FROM invitations WHERE inviter_id=? AND accepted_at IS NULL', uid);
     // v1.1.304 (audit A6-20 §7) : modules oubliés par l'effacement — contenus et dérivés du compte.
     await run('stories', 'DELETE FROM stories WHERE author_id=?', uid);
@@ -2059,8 +2060,12 @@ async function handleListConversations(request, env) {
   ).bind(auth.sub, auth.sub, auth.sub).all();
 
   // Ne pas exposer le placeholder comme une vraie clé.
+  // Lot C2 (A4 P1-2) : le muet est gardé par le serveur → l'app le retrouve sur tous ses appareils.
+  const mutes = await _myActiveMutes(env, auth.sub);
   const rows = (convs.results || []).map((c) => {
     if (c.peer_pubkey === 'PENDING_PQXDH' || c.peer_pubkey === 'PENDING') c.peer_pubkey = null;
+    c.muted = Object.prototype.hasOwnProperty.call(mutes, c.id);
+    c.muted_until = c.muted ? mutes[c.id] : null;
     return c;
   });
   return json({ ok: true, conversations: rows });
@@ -4997,6 +5002,54 @@ async function handleUpdateConv(convId, request, env) {
   return json({ ok: true });
 }
 
+// ----- Lot C2 (audit A4 P1-2) : muet côté serveur -----
+// « Mettre en muet » n'existait que sur le téléphone : app fermée, le serveur poussait quand même
+// chaque notification. Le muet de CHAQUE membre (le sien seulement) est gardé dans conv_mutes
+// (migration 0018) et ConversationDO.notifyOfflineMembers ne pousse plus rien à un membre muet.
+const MUTE_MAX_MS = 366 * 86400000;
+export async function handleSetConvMute(convId, request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401, 'unauthorized');
+  if (!convId || convId.length > 128) return err('Conversation invalide', 400, 'bad_conv_id');
+  const body = await readJson(request);
+  if (!body || typeof body !== 'object' || Array.isArray(body) || typeof body.muted !== 'boolean') {
+    return err('Indique muet oui ou non', 400, 'bad_body');
+  }
+  const now = Date.now();
+  let until = null;
+  if (body.muted && body.until !== undefined && body.until !== null) {
+    if (typeof body.until !== 'number' || !Number.isFinite(body.until) || body.until <= now || body.until > now + MUTE_MAX_MS) {
+      return err('Durée du muet invalide', 400, 'bad_until');
+    }
+    until = Math.floor(body.until);
+  }
+  const DB = env.APEX_CHAT_DB;
+  const member = await DB.prepare('SELECT 1 FROM conversation_members WHERE conv_id=? AND user_id=?').bind(convId, auth.sub).first();
+  if (!member) return err('Conversation introuvable', 404, 'not_member');
+  if (body.muted) {
+    await DB.prepare(
+      `INSERT INTO conv_mutes (conv_id, user_id, muted_until, updated_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT(conv_id, user_id) DO UPDATE SET muted_until=excluded.muted_until, updated_at=excluded.updated_at`
+    ).bind(convId, auth.sub, until, now).run();
+  } else {
+    await DB.prepare('DELETE FROM conv_mutes WHERE conv_id=? AND user_id=?').bind(convId, auth.sub).run();
+  }
+  return json({ ok: true, conv_id: convId, muted: body.muted, muted_until: body.muted ? until : null });
+}
+
+// Muets ACTIFS de l'utilisateur (map conv_id → muted_until|null). Table absente (fenêtre de
+// déploiement avant la migration 0018) → {} : la liste des conversations ne casse jamais.
+async function _myActiveMutes(env, uid, now = Date.now()) {
+  try {
+    const r = await env.APEX_CHAT_DB.prepare(
+      'SELECT conv_id, muted_until FROM conv_mutes WHERE user_id=? AND (muted_until IS NULL OR muted_until > ?)'
+    ).bind(uid, now).all();
+    const out = {};
+    for (const row of ((r && r.results) || [])) out[row.conv_id] = row.muted_until == null ? null : row.muted_until;
+    return out;
+  } catch (_) { return {}; }
+}
+
 // ----- Stories 24h -----
 
 export async function handleCreateStory(request, env) {
@@ -5049,6 +5102,16 @@ async function handleListStories(request, env) {
     return rest;
   });
   return json({ ok: true, stories: list });
+}
+
+// Lot C2 (A6-16) : l'auteur retire son statut avant les 24 h (« 🗑 Supprimer » dans l'app).
+export async function handleDeleteStory(storyId, request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401);
+  const r = await env.APEX_CHAT_DB.prepare('DELETE FROM stories WHERE id=? AND author_id=?').bind(storyId, auth.sub).run();
+  const n = r && r.meta && typeof r.meta.changes === 'number' ? r.meta.changes : 0;
+  if (!n) return err('Statut introuvable', 404, 'no_story');
+  return json({ ok: true, deleted: storyId });
 }
 
 // Lot 2 (F) : même audience que la liste — l'auteur, ou un contact MUTUEL de l'auteur.
@@ -6827,12 +6890,16 @@ const _workerHandler = {
       const convUpdateMatch = path.match(/^\/api\/conversations\/([^\/]+)$/);
       if (convUpdateMatch && method === 'PATCH') return await handleUpdateConv(convUpdateMatch[1], request, env);
       if (convUpdateMatch && method === 'DELETE') return await handleDeleteConversation(convUpdateMatch[1], request, env);
+      // Lot C2 (A4 P1-2) : muet gardé par le serveur (plus de notification app fermée)
+      const convMuteMatch = path.match(/^\/api\/conversations\/([^\/]+)\/mute$/);
+      if (convMuteMatch && method === 'PUT') return await handleSetConvMute(convMuteMatch[1], request, env);
 
       // Phase 4 — Stories
       if (path === '/api/stories' && method === 'POST') return await handleCreateStory(request, env);
       if (path === '/api/stories' && method === 'GET') return await handleListStories(request, env);
       const storyMatch = path.match(/^\/api\/stories\/([^\/]+)$/);
       if (storyMatch && method === 'GET') return await handleViewStory(storyMatch[1], request, env);
+      if (storyMatch && method === 'DELETE') return await handleDeleteStory(storyMatch[1], request, env);   // Lot C2 (A6-16)
 
       // Phase 4 — Polls
       if (path === '/api/polls' && method === 'POST') return await handleCreatePoll(request, env);
@@ -7119,6 +7186,7 @@ const _workerHandler = {
     if (cron === '0 */1 * * *') {
       ctx.waitUntil(env.LETTERS_QUEUE?.send({ queue_type: 'purge-expired-messages' }).catch(() => {}));
       ctx.waitUntil(env.LETTERS_QUEUE?.send({ queue_type: 'lifecycle-r2' }).catch(() => {}));
+      await purgeExpiredStories(env);   // Lot C2 (A6-16) : statuts expirés effacés dans l'heure (en plus de la purge de 03:00, v1.1.304)
     }
 
     // Cron */5 * * * * (5 min) — Letters delivery + Time capsules

@@ -19,7 +19,7 @@
 <meta property="og:image" content="./og-image.svg">
 <meta property="og:url" content="https://apex-chat.kd-mc.com/">
 <!-- Sécurité : CSP + Referrer-Policy + X-Content-Type-Options + Permissions-Policy défense en profondeur -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https:; connect-src 'self' https://apex-chat-api.9r4rxssx64.workers.dev wss://apex-chat-api.9r4rxssx64.workers.dev https://apex-push-worker.9r4rxssx64.workers.dev https://kd-mc.com https://*.kd-mc.com wss://*.kd-mc.com https://api.giphy.com https://api.qrserver.com https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app https://unpkg.com; media-src 'self' blob: data: https:; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https:; connect-src 'self' https://apex-chat-api.9r4rxssx64.workers.dev wss://apex-chat-api.9r4rxssx64.workers.dev https://apex-push-worker.9r4rxssx64.workers.dev https://kd-mc.com https://*.kd-mc.com wss://*.kd-mc.com https://api.giphy.com https://media.giphy.com https://media0.giphy.com https://media1.giphy.com https://media2.giphy.com https://media3.giphy.com https://media4.giphy.com https://i.giphy.com https://api.qrserver.com https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app https://unpkg.com; media-src 'self' blob: data: https:; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(self), geolocation=(self), display-capture=(self), interest-cohort=(), payment=(), usb=(), bluetooth=(), accelerometer=(), gyroscope=()">
@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.304",
+  "softwareVersion": "v1.1.305",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -144,6 +144,14 @@ input,textarea,select{font-family:inherit;font-size:16px;border:none;outline:non
   padding:calc(var(--ax-safe-top) + 8px) 14px 8px;
   border-bottom:1px solid var(--ax-border);display:flex;align-items:center;gap:10px}
 .topbar-title{font-family:Georgia,serif;color:var(--ax-gold);font-weight:700;font-size:1.15em;letter-spacing:2px;flex:1}
+/* Lot C2 (audit A4 P1-4) : la version vit dans la barre du haut (touchable, ≥ 44 px) ; la bulle flottante du module
+   partagé ne s'affiche plus que sur l'écran de connexion, EN HAUT À DROITE — elle recouvrait la saisie du message
+   (Safari), l'onglet « Chats » (app installée), « Mon compte kd-mc.com » et « ← KDMC ». */
+.topbar-ver{background:none;border:0;color:var(--ax-text-3);font:400 14px/1 ui-monospace,SF Mono,Menlo,monospace;letter-spacing:0;
+  min-height:44px;padding:0 6px;margin-left:4px;cursor:pointer;vertical-align:middle;-webkit-tap-highlight-color:transparent}
+#kdmc-version-badge{top:calc(env(safe-area-inset-top,0px) + 8px)!important;bottom:auto!important;left:auto!important;right:8px!important;
+  min-height:44px!important;min-width:44px!important;font-size:14px!important;padding:0 12px!important}
+#topbar:not(.h) ~ #kdmc-version-badge{display:none!important}
 .topbar-btn{min-width:44px;min-height:44px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:1.1em;color:var(--ax-text-2);background:transparent;border:1px solid var(--ax-border);
   transition:background .15s ease, transform .1s ease, border-color .15s ease}
@@ -463,11 +471,50 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.304';
+const __APEX_CHAT_VERSION__ = 'v1.1.305';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // === MISE À JOUR FORCÉE AUTO TOTALE (zéro action user — règle Kevin permanente) ===
 // Triple stratégie : SW updatefound + heartbeat 60s + remote version check 60s (HEAD/ETag)
+// Lot C2 (audit A4 P1-3) : UN SEUL chemin de rechargement pour les 4 déclencheurs (nouveau service
+// worker, message SW_UPDATED, contrôle de la page, mise à jour forcée admin). Avant, deux d'entre eux
+// rechargeaient SANS condition : la personne était sortie de sa conversation en pleine écriture, et
+// un appel en cours était coupé net. Désormais on attend : aucun appel, aucun vocal en cours
+// d'enregistrement, aucun envoi de fichier, et pas de texte en cours de frappe (champ vide, ou rien
+// tapé depuis 20 s — le brouillon est gardé). Sinon un bandeau « Mise à jour prête » s'affiche.
+window._apexReloadBlocker = function(){
+  const K = window.K;
+  if(K){
+    if(K._activeCall || K._meshSession) return 'appel';
+    if(K._voiceRecorder && K._voiceRecorder.state === 'recording') return 'vocal';
+    if((K._uploadsInFlight || 0) > 0) return 'envoi';
+  }
+  const ti = document.getElementById('msg-input');
+  const typing = ti && String(ti.value || '').trim() && (Date.now() - (window._apexLastKeyTs || 0) < 20000);
+  if(typing) return 'frappe';
+  return null;
+};
+window._apexSafeReload = function(doReload, reason){
+  if(window._apexReloadPending) return 'deja';
+  window._apexReloadPending = { doReload, reason: reason || '?' };
+  const tryNow = function(){
+    const p = window._apexReloadPending;
+    if(!p) return;
+    const why = window._apexReloadBlocker();
+    if(why){
+      try{ const b = document.getElementById('update-banner'); if(b) b.classList.remove('h'); }catch(_){ }
+      console.log('[MAJ] prête — reportée (' + why + ') [' + p.reason + ']');
+      window._apexReloadTimer = setTimeout(tryNow, 5000);
+      return;
+    }
+    window._apexReloadPending = null;
+    console.log('[MAJ] application [' + p.reason + ']');
+    p.doReload();
+  };
+  tryNow();
+  return window._apexReloadPending ? 'reportee' : 'appliquee';
+};
+document.addEventListener('input', function(e){ if(e && e.target && e.target.id === 'msg-input') window._apexLastKeyTs = Date.now(); }, true);
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js?v=' + __APEX_CHAT_VERSION__, {scope:'./', type:'module'}).then(reg=>{
     reg.update().catch(_=>{});
@@ -475,16 +522,16 @@ if('serviceWorker' in navigator){
       const nw=reg.installing;
       nw.addEventListener('statechange',()=>{
         if(nw.state==='installed' && navigator.serviceWorker.controller){
-          // AUTO-RELOAD immédiat (pas de clic user)
-          console.log('[App] Nouvelle version SW détectée — reload auto');
-          setTimeout(() => location.reload(), 800);
+          // Lot C2 (A4 P1-3) : par le chemin unique (jamais pendant une frappe, un appel, un envoi)
+          console.log('[App] Nouvelle version SW détectée');
+          setTimeout(() => window._apexSafeReload(() => location.reload(), 'sw-updatefound'), 800);
         }
       });
     });
     navigator.serviceWorker.addEventListener('message', (e) => {
       if(e.data?.type === 'SW_UPDATED' && e.data.version && !e.data.version.includes(__APEX_CHAT_VERSION__)){
-        console.log('[App] SW mis à jour vers', e.data.version, '— reload auto');
-        location.reload();
+        console.log('[App] SW mis à jour vers', e.data.version);
+        window._apexSafeReload(() => location.reload(), 'sw-updated');
       }
       if(e.data?.type === 'PERIODIC_HEARTBEAT'){
         if(typeof K !== 'undefined' && K._sendHeartbeat) K._sendHeartbeat();
@@ -590,23 +637,20 @@ if('serviceWorker' in navigator){
       const html = await r.text();
       const m = html.match(/__APEX_CHAT_VERSION__\s*=\s*['"]([^'"]+)['"]/);
       if(m && m[1] && m[1] !== __APEX_CHAT_VERSION__){
-        // Sécurité minimale : ne pas couper l'utilisateur en plein message
-        const ti = document.getElementById('msg-input');
-        if(ti && document.activeElement === ti && ti.value.trim()){
-          console.log('[MAJ] v' + m[1] + ' prête — reportée (message en cours)');
-          return;   // retentera au prochain cycle
-        }
-        console.log('[MAJ] Nouvelle version', m[1], '(local', __APEX_CHAT_VERSION__ + ') — reload force [' + (reason||'?') + ']');
-        try{ if(typeof toast === 'function') toast('🔄 Mise à jour ' + m[1] + '…', 'info', 2500); }catch(_e){_safeCatch('silent',_e)}
-        try{
-          if('caches' in window){
-            const keys = await caches.keys();
-            await Promise.all(keys.map(k => caches.delete(k)));
-          }
-          const regs = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(regs.map(rg => rg.unregister()));
-        }catch(e){ console.warn('[MAJ] nettoyage partiel :', e && e.message); }
-        setTimeout(() => location.replace(location.pathname + '?_forceupd=' + Date.now()), 600);
+        console.log('[MAJ] Nouvelle version', m[1], '(local', __APEX_CHAT_VERSION__ + ') [' + (reason||'?') + ']');
+        // Lot C2 (A4 P1-3) : même chemin unique que le service worker (attend la fin de la frappe / de l'appel).
+        window._apexSafeReload(async () => {
+          try{ if(typeof toast === 'function') toast('🔄 Mise à jour ' + m[1] + '…', 'info', 2500); }catch(_e){_safeCatch('silent',_e)}
+          try{
+            if('caches' in window){
+              const keys = await caches.keys();
+              await Promise.all(keys.map(k => caches.delete(k)));
+            }
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(rg => rg.unregister()));
+          }catch(e){ console.warn('[MAJ] nettoyage partiel :', e && e.message); }
+          setTimeout(() => location.replace(location.pathname + '?_forceupd=' + Date.now()), 600);
+        }, 'version-' + m[1]);
       }
     }catch(e){
       // règle CLAUDE.md : jamais de catch silencieux — tracer la cause exacte
@@ -643,15 +687,18 @@ if('serviceWorker' in navigator){
         console.log('[App] Admin force-update ts=' + data.ts);
         localStorage.setItem('_admin_force_update_seen_ts', String(data.ts));
         _adminForceUpdateLastTs = data.ts;
-        try{
-          if('caches' in window){
-            const keys = await caches.keys();
-            await Promise.all(keys.map(k => caches.delete(k)));
-          }
-          const regs = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(regs.map(r => r.unregister()));
-        }catch(_e){_safeCatch('silent',_e)}
-        location.replace(location.pathname + '?_admin_force=' + data.ts);
+        // Lot C2 (A4 P1-3) : la mise à jour forcée par l'admin passe aussi par le chemin unique.
+        window._apexSafeReload(async () => {
+          try{
+            if('caches' in window){
+              const keys = await caches.keys();
+              await Promise.all(keys.map(k => caches.delete(k)));
+            }
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+          }catch(_e){_safeCatch('silent',_e)}
+          location.replace(location.pathname + '?_admin_force=' + data.ts);
+        }, 'admin-force');
       }
     } catch(_e){_safeCatch('silent',_e)}
   }
@@ -668,7 +715,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.304" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.304</div>
+  <div id="splash-version" data-ver="v1.1.305" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.305</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -676,13 +723,13 @@ if('serviceWorker' in navigator){
 </div>
 
 <div id="update-banner" class="update-banner h">
-  <span>📦 Nouvelle version disponible</span>
-  <button onclick="K._reload()">Recharger</button>
+  <span>📦 Mise à jour prête — elle s'installera dès que tu auras fini</span>
+  <button onclick="K._applyUpdateNow()">Installer</button>
 </div>
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <span style="font-size:.55em;color:var(--ax-text-3);letter-spacing:0;margin-left:6px;font-weight:400" id="topbar-version">v1.1.304</span></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.305</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -876,23 +923,70 @@ function formatTime(ts){
 // ============================================================================
 const PERSIST_PREFIX = 'apex_chat_';
 
+// Lot C2 (audit A4 P2-6) : valeurs que la mémoire pleine a refusées. Elles restent lisibles (lg) pendant la
+// session, sont copiées dans IndexedDB (bien plus grand), et la personne est prévenue — plus de perte muette.
+var _lsMem = {};
+var _lsFullWarnTs = 0;
 function lg(key, fallback){
+  if(typeof _lsMem !== 'undefined' && _lsMem && Object.prototype.hasOwnProperty.call(_lsMem, key)){
+    try{ return JSON.parse(JSON.stringify(_lsMem[key])); }catch(_){ return _lsMem[key]; }
+  }
   try{
     const v = localStorage.getItem(PERSIST_PREFIX + key);
     return v !== null ? JSON.parse(v) : fallback;
   }catch(e){ return fallback; }
 }
 
+// (Les `typeof` protègent les bancs d'essai qui n'extraient que lg/ls.)
+// Renvoie true si la valeur est écrite dans le stockage local, false si la mémoire est pleine (elle est alors
+// gardée en mémoire + IndexedDB, et la personne est prévenue).
 function ls(key, value){
+  // Copie IndexedDB (ombre) TOUJOURS — avant, elle n'était faite que si localStorage avait accepté.
+  try{ idbSet(key, value).catch(()=>{}); }catch(_){}
+  const raw = JSON.stringify(value);
   try{
-    localStorage.setItem(PERSIST_PREFIX + key, JSON.stringify(value));
-    // Shadow IndexedDB best-effort
-    idbSet(key, value).catch(()=>{});
+    localStorage.setItem(PERSIST_PREFIX + key, raw);
+    if(typeof _lsMem !== 'undefined' && _lsMem) delete _lsMem[key];
+    return true;
   }catch(e){
-    // Quota exceeded — cleanup auto
-    _safeCatch('localStorage', e);
-    _cleanupStorage();
+    // Quota dépassé : on fait de la place (sans jamais toucher aux messages en attente), puis on réessaie.
+    if(key !== 'telemetry') _safeCatch('localStorage', e);
+    _cleanupStorage(key);
+    try{
+      localStorage.setItem(PERSIST_PREFIX + key, raw);
+      if(typeof _lsMem !== 'undefined' && _lsMem) delete _lsMem[key];
+      return true;
+    }catch(_e2){}
+    if(typeof _lsMem !== 'undefined' && _lsMem) _lsMem[key] = value;
+    try{ idbSet('lsfull:' + key, Date.now()).catch(()=>{}); }catch(_){}
+    if(typeof _lsStorageFull === 'function') _lsStorageFull(key);
+    return false;
   }
+}
+function _lsStorageFull(key){
+  if(key === 'telemetry') return;
+  const now = Date.now();
+  if(now - _lsFullWarnTs < 10 * 60000) return;
+  _lsFullWarnTs = now;
+  try{
+    toast((key === 'outbox' || key === 'pending_encrypt')
+      ? '📦 Mémoire du téléphone pleine : tes messages en attente sont gardés et partiront dès que possible. Libère de la place (photos, vidéos).'
+      : '📦 Mémoire du téléphone pleine : libère de la place (photos, vidéos) pour que l\'app garde tout.', 'warn', 8000);
+  }catch(_){}
+}
+// Lot C2 (A4 P2-6) : au démarrage, des messages en attente gardés seulement dans IndexedDB (mémoire pleine lors
+// d'une session précédente) sont remis dans la boîte d'envoi — ajoutés, jamais d'écrasement, dans l'ordre d'écriture.
+async function _outboxRestoreFromIdb(){
+  try{
+    if(!(await idbGet('lsfull:outbox'))) return 0;
+    const fromIdb = await idbGet('outbox');
+    const cur = lg('outbox', []);
+    const ids = new Set(cur.map(x => x && x.id));
+    const add = Array.isArray(fromIdb) ? fromIdb.filter(x => x && x.id && !ids.has(x.id)) : [];
+    if(add.length) ls('outbox', cur.concat(add).sort((a, b) => (a.ts || 0) - (b.ts || 0)));
+    if(lg('outbox', null) !== null && !(_lsMem && _lsMem.outbox)) await idbSet('lsfull:outbox', 0);
+    return add.length;
+  }catch(e){ _safeCatch('outbox-restore', e); return 0; }
 }
 
 // IndexedDB shadow store
@@ -971,10 +1065,12 @@ async function idbDel(key){
   }catch(e){ _idbNoteError('idbDel', e); }
 }
 
-function _cleanupStorage(){
+function _cleanupStorage(writing){
   // Garde whitelist + supprime entries volumineuses
+  // Lot C2 (A4 P2-6) : la boîte d'envoi (messages pas encore partis), les messages à chiffrer, la liste des
+  // conversations et la clé en cours d'écriture ne sont JAMAIS tronquées (avant : `outbox` coupée à 150, en silence).
   try{
-    const keep = ['user','token','config','contacts'];
+    const keep = ['user','token','config','contacts','outbox','pending_encrypt','conversations', writing];
     const all = Object.keys(localStorage).filter(k => k.startsWith(PERSIST_PREFIX));
     for(const k of all){
       const short = k.replace(PERSIST_PREFIX, '');
@@ -1111,12 +1207,45 @@ K._cguAccepted = function(){
 };
 
 // Audit 17/09/2026 : jamais « Failed to fetch » à l'écran (règle « langage simple »).
+// Lot C2 (audit A4 P1-5) : TOUTE erreur montrée à la personne passe par ici — plus jamais le texte
+// technique brut (souvent en anglais sur iPhone : « Load failed », « NotAllowedError… », « HTTP 500 »).
+// Un message déjà en français simple (ex. renvoyé par notre serveur) est gardé tel quel.
+K._HTTP_ERRORS = { 400: 'Demande refusée, vérifie ce que tu as saisi', 401: 'Ta session a expiré — reconnecte-toi', 403: 'Action non autorisée pour ton compte',
+  404: 'Introuvable — c\'est peut-être déjà supprimé', 409: 'Déjà fait ou en conflit, recharge puis réessaie', 413: 'Fichier trop lourd',
+  429: 'Trop d\'essais d\'affilée, attends une minute' };
+K._httpError = function(status){
+  const n = Number(status) || 0;
+  if(K._HTTP_ERRORS[n]) return K._HTTP_ERRORS[n];
+  if(n >= 500) return 'Le serveur a un souci passager, réessaie dans un instant';
+  return 'Le serveur n\'a pas répondu correctement, réessaie';
+};
 K._humanError = function(e, fallback){
-  const m = String((e && e.message) || e || '');
-  if(/failed to fetch|networkerror|load failed|network request failed|fetch failed/i.test(m)) return 'Réseau indisponible — vérifie le Wi-Fi ou la 4G, puis réessaie';
-  if(/aborterror|timeout|timed out/i.test(m)) return 'Pas de réponse du serveur, réessaie dans un instant';
+  const fb = fallback || 'Une erreur est survenue, réessaie';
+  // Erreur de position (GPS) : code 1/2/3 (GeolocationPositionError), message anglais du navigateur.
+  if(e && typeof e === 'object' && typeof e.code === 'number' && 'PERMISSION_DENIED' in e){
+    if(e.code === 1) return 'Position refusée — autorise-la dans Réglages > Confidentialité > Service de localisation';
+    if(e.code === 3) return 'La position met trop de temps à arriver, réessaie dehors ou près d\'une fenêtre';
+    return 'Position introuvable pour l\'instant, réessaie dans un moment';
+  }
+  const name = String((e && e.name) || '');
+  const m = String((e && e.message) || (typeof e === 'string' ? e : '') || '');
+  const all = name + ' ' + m;
+  if(/failed to fetch|networkerror|load failed|network request failed|fetch failed|network connection was lost|internet connection appears to be offline/i.test(all)) return 'Réseau indisponible — vérifie le Wi-Fi ou la 4G, puis réessaie';
+  if(/the operation either timed out or was not allowed|webauthn|publickeycredential|credential/i.test(all)) return 'Face ID annulé ou trop long';
+  if(/notallowederror|permission denied|not allowed by the user agent|denied permission|user denied|permission dismissed/i.test(all)) return 'Accès refusé — autorise le micro, la caméra ou la position dans Réglages > Apex Chat, puis réessaie';
+  if(/notfounderror|requested device not found|device not found|no audio|no video/i.test(all)) return 'Micro ou caméra introuvable sur ce téléphone';
+  if(/notreadableerror|could not start|trackstarterror|device in use|already in use/i.test(all)) return 'Micro ou caméra déjà utilisé par une autre app — ferme-la et réessaie';
+  if(/overconstrainederror/i.test(all)) return 'La caméra ne gère pas ce réglage';
+  if(/quotaexceeded|quota exceeded|storage is full|disk full/i.test(all)) return 'Mémoire du téléphone pleine — libère de la place, puis réessaie';
+  if(/securityerror|insecure/i.test(all)) return 'Action bloquée par la sécurité du navigateur';
+  if(/aborterror|timeout|timed out/i.test(all)) return 'Pas de réponse du serveur, réessaie dans un instant';
   if(/json/i.test(m) && /unexpected|parse|token/i.test(m)) return 'Réponse du serveur illisible, réessaie';
-  return m || fallback || 'Erreur inconnue';
+  const http = m.match(/\b(?:http|erreur|error|status|code)\s*:?\s*([1-5]\d\d)\b/i);
+  if(http) return K._httpError(http[1]);
+  if(!m) return fb;
+  // Texte technique (anglais, nom d'exception, identifiant de code, adresse) → jamais montré tel quel.
+  if(/[A-Z][a-z]+Error\b|\b(error|failed|failure|undefined|null|exception|cannot|could not|unable|invalid|unexpected|not supported|is not|denied|refused|see:|stack)\b|https?:\/\/|^[a-z0-9]+(?:_[a-z0-9]+)+$|\bD1_|SQLITE|\bR2\b|VAPID|WebSocket|worker/i.test(m)) return fb;
+  return m;
 };
 
 // ============================================================================
@@ -1615,7 +1744,7 @@ K._openReactionStats = function(convId){
     `);
   }catch(err){
     console.error('[stats-reactions]', err);
-    toast('Stats indisponibles : ' + (err && err.message ? err.message : 'erreur'), 'warn');
+    toast('Stats indisponibles : ' + K._humanError(err), 'warn');
   }
 };
 
@@ -1892,7 +2021,7 @@ K._refreshConvs = async function(){
             pseudo: c.pseudo || localById[c.id]?.pseudo,
             peer_id: c.peer_id || localById[c.id]?.peer_id,
             pinned: localById[c.id]?.pinned,
-            muted: localById[c.id]?.muted,
+            ...K._mergeMuted(c, localById[c.id]),
             archived: localById[c.id]?.archived,
             label_ids: localById[c.id]?.label_ids,
             bg_id: localById[c.id]?.bg_id,
@@ -1917,6 +2046,8 @@ K._refreshConvs = async function(){
           try{ K._tofuCheckConvList && K._tofuCheckConvList(K.conversations); }catch(_e){ _safeCatch('tofu-list', _e); }
           try{ K._grpOnConvsRefreshed && K._grpOnConvsRefreshed(K.conversations); }catch(_e){ _safeCatch('grp-list', _e); }   // v1.1.296
           ls('conversations', K.conversations);
+          // Lot C2 (A4 P1-2) : un muet changé hors ligne est renvoyé au serveur (sans toast répété).
+          for(const pc of K.conversations){ if(pc.mute_pending) K._syncConvMute(pc, true); }
           // v1.1.188 : une fois les conversations chargées, fusionner les contacts
           // (ajoute le pair de chaque conv) → le contact ne se perd plus au login.
           try{ K._fetchContacts && K._fetchContacts(true); }catch(_e){_safeCatch('silent',_e)}
@@ -2257,8 +2388,8 @@ K._setConvBgImage = function(convId, file){
         const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
         cv.getContext('2d').drawImage(im, 0, 0, w, h);
         const dataUrl = cv.toDataURL('image/jpeg', 0.82);
-        try{ ls('conv_bgimg_' + convId, dataUrl); }
-        catch(e){ if(typeof toast==='function') toast('Photo trop lourde — réessaie avec une plus petite','err'); return; }
+        // Lot C2 (A4 P2-6) : ls() ne lève jamais ; il dit si la mémoire a accepté (avant : catch jamais atteint, fond perdu en silence).
+        if(!ls('conv_bgimg_' + convId, dataUrl)){ if(typeof toast==='function') toast('Photo trop lourde pour la mémoire du téléphone — réessaie avec une plus petite','err'); return; }
         conv.bg_id = '__photo__';
         ls('conversations', K.conversations);
         K._closeModal();
@@ -2581,7 +2712,7 @@ K._restoreBackup = function(){
         K.render();
         toast(`📥 Restauré : ${added} nouv. conv`, 'ok');
       } catch(err){
-        toast('Erreur backup : ' + err.message, 'err');
+        toast('Erreur backup : ' + K._humanError(err), 'err');
       }
     };
     reader.readAsText(file);
@@ -3023,7 +3154,7 @@ K._subscribePush = async function(){
     const K_ = (typeof window !== 'undefined' && window.ApexPushKey) ? window.ApexPushKey : null;
     const useKey = K_ ? K_.effectiveVapidKey(serverKey, VAPID_PUBLIC) : (serverKey || VAPID_PUBLIC);
     if(!useKey){
-      toast('VAPID key manquante (config admin)', 'err');
+      toast('Notifications pas encore configurées sur le serveur — réessaie plus tard', 'err');
       return false;
     }
     let sub = await reg.pushManager.getSubscription();
@@ -3064,7 +3195,7 @@ K._subscribePush = async function(){
     toast('🔔 Notifications activées', 'ok');
     return true;
   } catch(e){
-    toast('Échec abonnement push : ' + e.message, 'err');
+    toast('Notifications non activées : ' + K._humanError(e), 'err');
     return false;
   }
 };
@@ -3485,7 +3616,7 @@ K._healConversations = async function(){
     }
     K.render && K.render();
   } catch (e) {
-    toast('❌ Réparation échouée : ' + (e?.message || '?'), 'err', 6000);
+    toast('❌ Réparation échouée : ' + K._humanError(e), 'err', 6000);
   }
 };
 
@@ -3579,7 +3710,7 @@ K._submitConfigureCorePair = async function(){
     }
     K.render && K.render();
   } catch (e) {
-    toast('❌ Réseau : ' + (e?.message || '?'), 'err', 6000);
+    toast('❌ Réseau : ' + K._humanError(e), 'err', 6000);
   }
 };
 
@@ -3608,7 +3739,7 @@ K._healDmServer = async function(){
     const { http, data } = await call(body);            // dry_run
     if(http === 403){ toast('❌ Réservé admin', 'err', 5000); return; }
     if(!data || !data.ok){
-      toast('❌ ' + (data?.detail || data?.cause || ('HTTP '+http)), 'err', 7000); return;
+      toast('❌ ' + K._humanError((data && (data.message || data.detail)) || '', K._httpError(http)), 'err', 7000); return;
     }
     const causes = {
       no_dm: "Aucune conversation entre vous côté serveur — écris-lui un 1er message d'abord.",
@@ -3641,12 +3772,12 @@ K._healDmServer = async function(){
     if(!confirm('Diagnostic pour ' + peerName + ' :\n\n' + explain + acctMsg + '\n\n✅ Réparation sûre (rien n\'est supprimé définitivement : fusion dans une seule conversation + un seul compte).\n\nAppliquer maintenant ?')) return;
     toast('🩹 Réparation…', 'info', 2000);
     const res2 = await call({ ...body, apply: true });
-    if(!res2.data || !res2.data.ok){ toast('❌ ' + (res2.data?.detail || 'échec'), 'err', 7000); return; }
+    if(!res2.data || !res2.data.ok){ toast('❌ ' + K._humanError((res2.data && (res2.data.message || res2.data.detail)) || '', 'Échec, réessaie'), 'err', 7000); return; }
     toast('✅ Réparé. ' + peerName + ' et toi devez ROUVRIR l\'app pour recharger.', 'ok', 8000);
     try { if(typeof K._refreshConvs === 'function') await K._refreshConvs(); } catch(_) {}
     K.render && K.render();
   } catch (e) {
-    toast('❌ Réseau : ' + (e?.message || '?'), 'err', 7000);
+    toast('❌ Réseau : ' + K._humanError(e), 'err', 7000);
   }
 };
 
@@ -3665,7 +3796,7 @@ K._adminForceUpdateAll = async function(){
     if(r.status === 403){ toast('Pas admin', 'err'); return; }
     if(!r.ok){
       const e = await r.json().catch(() => ({}));
-      toast('Erreur : ' + (e.message || r.status), 'err');
+      toast('Erreur : ' + K._humanError(e, K._httpError(r.status)), 'err');
       return;
     }
     const data = await r.json();
@@ -3676,7 +3807,7 @@ K._adminForceUpdateAll = async function(){
       location.replace(location.pathname + '?_admin_force=' + data.ts);
     }, 2000);
   } catch(e){
-    toast('Erreur réseau force-update : ' + e.message, 'err');
+    toast('Mise à jour forcée impossible : ' + K._humanError(e), 'err');
   }
 };
 
@@ -3992,7 +4123,8 @@ K._compressAvatar = function(dataUrl){
 // long, JPEG qualité 0.8 → ~5-10× moins de stockage localStorage et de réseau.
 // FAIL-OPEN : toute erreur → on renvoie l'original (jamais d'envoi bloqué).
 // Les GIF ne sont PAS recompressés (ça tuerait l'animation).
-K._compressMessageImage = function(dataUrl){
+// Lot C2 (A6-10) : `always` = ré-encoder MÊME une petite photo (retire Exif/GPS), fond blanc si transparente.
+K._compressMessageImage = function(dataUrl, always){
   return new Promise((resolve) => {
     try {
       if (typeof dataUrl !== 'string' || dataUrl.startsWith('data:image/gif')) return resolve(dataUrl);
@@ -4005,16 +4137,18 @@ K._compressMessageImage = function(dataUrl){
           const MAX = 1600;
           const scale = Math.min(1, MAX / Math.max(w, h));
           // Déjà petite ET déjà compacte → garder telle quelle
-          if (scale === 1 && dataUrl.length < 300 * 1024) return resolve(dataUrl);
+          if (!always && scale === 1 && dataUrl.length < 300 * 1024) return resolve(dataUrl);
           const c = document.createElement('canvas');
           c.width = Math.round(w * scale);
           c.height = Math.round(h * scale);
           const ctx = c.getContext('2d');
           if (!ctx) return resolve(dataUrl);
+          if (always) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); }
           ctx.drawImage(img, 0, 0, c.width, c.height);
           const out = c.toDataURL('image/jpeg', 0.8);
           // Garde-fou : si la "compression" grossit le fichier (rare, ex PNG plat), garder l'original
-          resolve(out.length < dataUrl.length ? out : dataUrl);
+          // — sauf en mode `always` : la vie privée (métadonnées retirées) passe avant quelques Ko.
+          resolve((always || out.length < dataUrl.length) ? out : dataUrl);
         } catch (e) { resolve(dataUrl); }
       };
       img.onerror = () => resolve(dataUrl);
@@ -4059,7 +4193,7 @@ K._previewAvatar = async function(file){
     K._pendingAvatar = null;
     if(hint) hint.textContent = '❌ ' + (e?.message || 'Erreur traitement image');
     if(btn){ btn.disabled = true; btn.textContent = '💾 Enregistrer'; }
-    toast('Échec préparation image : ' + (e?.message || '?'), 'err', 5000);
+    toast('Échec préparation image : ' + K._humanError(e), 'err', 5000);
   }
 };
 
@@ -4443,6 +4577,29 @@ K._toggleConvMuted = function(convId){
   K._closeModal && K._closeModal();
   K.render();
   toast(conv.muted ? '🔕 Conversation muette' : '🔔 Notifications réactivées', 'ok');
+  // Lot C2 (A4 P1-2) : le muet est envoyé au SERVEUR — sinon les notifications continuaient
+  // d'arriver app fermée (le serveur ne savait rien du muet).
+  return K._syncConvMute(conv);
+};
+// Lot C2 (A4 P1-2) : envoie le muet d'UNE conversation au serveur. Échec (hors ligne…) → noté
+// `mute_pending` et renvoyé à la prochaine synchro de la liste ; la personne est prévenue simplement.
+K._syncConvMute = async function(conv, silent){
+  if(!conv || !conv.id || !K.token || String(conv.id).startsWith('local_')) return false;
+  try{
+    const r = await K._api('PUT', '/api/conversations/' + encodeURIComponent(conv.id) + '/mute', { muted: !!conv.muted });
+    if(r && r.ok){ delete conv.mute_pending; ls('conversations', K.conversations); return true; }
+  }catch(e){ _safeCatch('mute-sync', e); }
+  conv.mute_pending = true;
+  ls('conversations', K.conversations);
+  if(!silent) toast('📵 Pas de réseau : le muet est gardé sur ce téléphone et sera envoyé dès que possible', 'info', 4000);
+  return false;
+};
+// Lot C2 (A4 P1-2) : état muet à garder après une synchro de la liste : celui du SERVEUR (il suit sur
+// tous les appareils), sauf un changement local pas encore envoyé (renvoyé ensuite).
+K._mergeMuted = function(serverConv, localConv){
+  if(localConv && localConv.mute_pending) return { muted: !!localConv.muted, mute_pending: true };
+  if(serverConv && typeof serverConv.muted === 'boolean') return { muted: serverConv.muted, muted_until: serverConv.muted_until || null };
+  return { muted: !!(localConv && localConv.muted) };
 };
 
 K._toggleConvArchived = function(convId){
@@ -4663,7 +4820,7 @@ K._openConvInfo = function(convId){
   `);
   }catch(err){
     console.error('[conv-info]', err);
-    toast('Infos indisponibles : ' + (err && err.message ? err.message : 'erreur'), 'warn');
+    toast('Infos indisponibles : ' + K._humanError(err), 'warn');
   }
 };
 
@@ -5146,7 +5303,7 @@ K._doImportData = function(){
       K.render();
       toast(`✅ Backup importé (${data.conversations?.length || 0} conv, ${Object.keys(data.messages || {}).length} msg threads)`, 'ok');
     } catch(err) {
-      toast('Erreur parsing JSON : ' + err.message, 'err');
+      toast('Fichier de sauvegarde illisible — choisis un fichier exporté par Apex Chat', 'err');
     }
   };
   reader.onerror = () => toast('Erreur lecture fichier', 'err');
@@ -5457,7 +5614,7 @@ K._shareLocationOnce = function(){
       K._sendLocationMsg(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, null);
       K._closeModal && K._closeModal();
     },
-    (err) => { toast('GPS refusé : ' + err.message, 'err'); },
+    (err) => { toast(K._humanError(err, 'Position indisponible'), 'err'); },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
   );
 };
@@ -5504,7 +5661,7 @@ K._shareLocationLive = function(minutes){
       K._closeModal && K._closeModal();
       toast('🔴 Position live ' + minutes + ' min activée', 'ok');
     },
-    (err) => { toast('GPS refusé : ' + err.message, 'err'); }
+    (err) => { toast(K._humanError(err, 'Position indisponible'), 'err'); }
   );
 };
 
@@ -5722,7 +5879,7 @@ K._storyPendingImg = null;
 
 K._publishStory = function(){
   K._showModal('📸 Publier un statut', `
-    <p style="color:var(--ax-text-2);font-size:.88em;margin:0 0 10px">Visible 24h. S'auto-supprime après.</p>
+    <p style="color:var(--ax-text-2);font-size:14px;margin:0 0 10px">Visible 24 h par tes contacts (ceux qui t'ont aussi dans leurs contacts), puis effacé. Il passe par le serveur : protégé pendant le transport, mais pas chiffré de bout en bout.</p>
     <textarea id="story-text" rows="3" placeholder="Quoi de neuf ?" maxlength="500" style="width:100%;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:10px;color:var(--ax-text);font-size:16px;resize:vertical"></textarea>
     <input type="file" id="story-img-input" accept="image/*" style="display:none" onchange="K._storyImageSelected(this.files[0])">
     <div style="display:flex;gap:8px;margin-top:10px">
@@ -5735,30 +5892,64 @@ K._publishStory = function(){
 
 K._storyImageSelected = function(file){
   if(!file || !file.type?.startsWith('image/')){ toast('Pas une image', 'warn'); return; }
-  if(file.size > 2 * 1024 * 1024){ toast('Image > 2MB, trop lourde', 'warn'); return; }
+  if(file.size > 15 * 1024 * 1024){ toast('Image trop lourde (15 Mo au plus)', 'warn'); return; }
   const reader = new FileReader();
-  reader.onload = (e) => {
-    K._storyPendingImg = e.target.result;
+  reader.onload = async (e) => {
+    // Lot C2 (A6-16) : photo réduite (720 px) et SANS métadonnées (lieu, appareil) avant de partir au serveur.
+    K._storyPendingImg = await K._storyShrink(e.target.result);
     const prev = document.getElementById('story-preview');
     if(prev) prev.innerHTML = `<img src="${esc(K._storyPendingImg)}" style="max-width:100%;max-height:200px;border-radius:10px;display:block;margin:auto">`;
   };
   reader.readAsDataURL(file);
 };
+// Réduit une photo de statut (≤ 720 px, JPEG) : métadonnées retirées et taille compatible avec le serveur (200 Ko).
+K._storyShrink = function(dataUrl){
+  return new Promise((resolve) => {
+    try{
+      const img = new Image();
+      img.onload = () => {
+        try{
+          const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+          const sc = Math.min(1, 720 / Math.max(w || 1, h || 1));
+          const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+          const ctx = c.getContext('2d'); if(!ctx) return resolve(null);
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/jpeg', 0.7));
+        }catch(_){ resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    }catch(_){ resolve(null); }
+  });
+};
 
-K._saveStory = function(){
-  const text = document.getElementById('story-text')?.value.trim() || '';
-  if(!text && !K._storyPendingImg){ toast('Texte ou photo requis', 'warn'); return; }
+K._STORY_MIME = 'application/x-apex-story';
+K._STORY_MAX = 190000;
+// Lot C2 (A6-16) : le statut est ENVOYÉ au serveur (POST /api/stories) — avant, il ne quittait jamais le
+// téléphone alors que l'app affichait « ✨ Statut publié 24h ». Échec = rien n'est annoncé comme publié.
+K._saveStory = async function(){
+  const text = (document.getElementById('story-text')?.value || '').trim();
+  const img = K._storyPendingImg || null;
+  if(!text && !img){ toast('Texte ou photo requis', 'warn'); return false; }
+  const payload = JSON.stringify({ t: text, ...(img ? { i: img } : {}) });
+  if(payload.length > K._STORY_MAX){ toast('Photo trop lourde pour un statut — choisis-en une plus simple', 'warn', 5000); return false; }
+  let r;
+  try{
+    r = await K._api('POST', '/api/stories', { ciphertext: payload, mime: K._STORY_MIME });
+  }catch(e){ toast('Statut non publié : ' + K._humanError(e), 'err', 6000); return false; }
+  if(!r || !r.ok || !r.story){ toast('Statut non publié : ' + K._humanError((r && r.message) || '', 'réessaie dans un instant'), 'err', 6000); return false; }
   const stories = lg('my_stories', []);
   stories.push({
-    id: 'st_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    text, img: K._storyPendingImg,
-    ts: Date.now(), expires_at: Date.now() + K._STORY_TTL_MS,
+    id: r.story.id, server_id: r.story.id,
+    text, img,
+    ts: r.story.ts || Date.now(), expires_at: r.story.expires_at || (Date.now() + K._STORY_TTL_MS),
     views: []
   });
   ls('my_stories', stories);
   K._storyPendingImg = null;
   K._closeModal && K._closeModal();
-  toast('✨ Statut publié 24h', 'ok');
+  toast('✨ Statut publié pour 24 h — tes contacts peuvent le voir', 'ok');
+  return true;
 };
 
 K._viewMyStories = function(){
@@ -5769,31 +5960,68 @@ K._viewMyStories = function(){
   K._showModal('📸 Mes statuts', active.length === 0 ? `
     <p style="text-align:center;color:var(--ax-text-3);padding:20px">Aucun statut actif. Publie pour partager 24h.</p>
     <button class="btn btn-block" onclick="K._closeModal();K._publishStory()">+ Nouveau statut</button>
+    <button class="btn btn-out btn-block" style="margin-top:8px" onclick="K._viewContactStories()">👀 Statuts de mes contacts</button>
   ` : `
     <div style="max-height:60vh;overflow-y:auto">
       ${active.map(s => `
         <div style="background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:10px;margin-bottom:8px">
           ${s.img ? `<img src="${esc(s.img)}" style="max-width:100%;max-height:120px;border-radius:8px;display:block;margin-bottom:6px">` : ''}
           ${s.text ? `<div style="color:var(--ax-text);margin-bottom:6px">${K._renderMarkdown(s.text)}</div>` : ''}
-          <div style="display:flex;justify-content:space-between;font-size:.75em;color:var(--ax-text-3)">
+          <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--ax-text-3)">
             <span>📅 ${esc(new Date(s.ts).toLocaleString('fr-FR', {dateStyle:'short',timeStyle:'short'}))}</span>
-            <span>👁 ${esc(String(s.views?.length || 0))} vue(s)</span>
+            <span>${s.server_id ? '' : '📵 pas envoyé'}</span>
           </div>
-          <button class="btn btn-out btn-sm" style="width:100%;margin-top:8px" onclick="K._deleteStory('${esc(s.id)}')">🗑 Supprimer</button>
+          <button class="btn btn-out btn-sm" style="width:100%;margin-top:8px;min-height:44px" onclick="K._deleteStory('${esc(s.id)}')">🗑 Supprimer</button>
         </div>
       `).join('')}
     </div>
     <button class="btn btn-block" style="margin-top:12px" onclick="K._closeModal();K._publishStory()">+ Nouveau statut</button>
+    <button class="btn btn-out btn-block" style="margin-top:8px" onclick="K._viewContactStories()">👀 Statuts de mes contacts</button>
   `);
 };
 
-K._deleteStory = function(id){
+// Lot C2 (A6-16) : supprimer = aussi sur le serveur (plus personne ne le voit).
+K._deleteStory = async function(id){
   const all = lg('my_stories', []);
-  const remaining = all.filter(s => s.id !== id);
-  ls('my_stories', remaining);
+  const st = all.find(s => s.id === id);
+  if(st && st.server_id){
+    try{ await K._api('DELETE', '/api/stories/' + encodeURIComponent(st.server_id)); }
+    catch(e){ if(!(e && e.httpStatus === 404)){ toast('Statut non supprimé : ' + K._humanError(e), 'err', 5000); return false; } }
+  }
+  ls('my_stories', all.filter(s => s.id !== id));
   K._closeModal && K._closeModal();
   K._viewMyStories();
   toast('🗑 Statut supprimé', 'info');
+  return true;
+};
+
+// Lot C2 (A6-16) : les statuts de mes contacts (mutuels), lus sur le serveur.
+K._viewContactStories = async function(){
+  let r;
+  try{ r = await K._api('GET', '/api/stories'); }
+  catch(e){ toast('Statuts indisponibles : ' + K._humanError(e), 'warn', 5000); return []; }
+  const mine = K.user && K.user.id;
+  const list = ((r && r.stories) || []).filter(s => s && s.author_id !== mine);
+  K._showModal('👀 Statuts de mes contacts', list.length === 0
+    ? `<p style="text-align:center;color:var(--ax-text-3);padding:20px;font-size:14px">Aucun statut de tes contacts en ce moment.</p>`
+    : `<div style="max-height:60vh;overflow-y:auto">${list.map(s => `
+        <button class="btn btn-out btn-block" style="margin-bottom:8px;min-height:44px;text-align:left"${kcall('_openContactStory', [String(s.id)])}>
+          📸 ${esc(s.pseudo || 'Contact')} · ${esc(new Date(s.ts).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}))}
+        </button>`).join('')}</div>`);
+  return list;
+};
+K._openContactStory = async function(id){
+  let r;
+  try{ r = await K._api('GET', '/api/stories/' + encodeURIComponent(id)); }
+  catch(e){ toast('Statut indisponible : ' + K._humanError(e), 'warn', 5000); return null; }
+  let p = {};
+  try{ p = JSON.parse((r && r.story && r.story.ciphertext) || '{}') || {}; }catch(_){ p = { t: String((r && r.story && r.story.ciphertext) || '') }; }
+  const img = (typeof p.i === 'string' && p.i.indexOf('data:image/jpeg;base64,') === 0) ? p.i : '';
+  K._showModal('📸 Statut', `
+    ${img ? `<img src="${esc(img)}" style="max-width:100%;max-height:50vh;border-radius:10px;display:block;margin:0 auto 10px">` : ''}
+    ${p.t ? `<div style="color:var(--ax-text);font-size:16px">${K._renderMarkdown(String(p.t))}</div>` : ''}
+    <button class="btn btn-out btn-block" style="margin-top:12px" onclick="K._viewContactStories()">← Autres statuts</button>`);
+  return p;
 };
 
 // ============================================================================
@@ -6665,7 +6893,7 @@ K._openInsightsModal = function(){
   `);
   }catch(err){
     console.error('[insights]', err);
-    toast('Insights indisponibles : ' + (err && err.message ? err.message : 'erreur'), 'warn');
+    toast('Insights indisponibles : ' + K._humanError(err), 'warn');
   }
 };
 
@@ -8273,13 +8501,13 @@ function renderAuthStep(){
         <input id="auth-cgu" type="checkbox" style="margin-top:2px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--ax-gold)">
         <span>J'accepte les <a href="./cgu.html" target="_blank" style="color:var(--ax-gold)">conditions d'utilisation</a> et la politique de confidentialité.</span>
       </label>
-      <button id="btn-auth-phone" type="button" class="btn btn-block" style="margin-top:14px" disabled>
+      <button id="btn-auth-phone" type="button" class="btn btn-block" style="margin-top:14px">
         📱 Recevoir le code SMS
       </button>
       <a id="btn-kdmc-login" href="https://kd-mc.com/" class="btn btn-block" style="margin-top:10px;background:transparent;border:1px solid var(--ax-gold);color:var(--ax-gold);display:block;text-align:center;text-decoration:none;box-sizing:border-box;padding:14px;line-height:1.25">
         🔓 Mon compte kd-mc.com (Face ID, sans SMS)
       </a>
-      <div id="auth-debug" style="margin-top:8px;color:var(--ax-text-3);font-size:.75em;text-align:center"></div>`;
+      <div id="auth-debug" role="status" aria-live="polite" style="margin-top:8px;color:var(--ax-text-2);font-size:14px;line-height:1.4;text-align:center"></div>`;
     setTimeout(()=>{
       $('#auth-phone')?.focus();
       _kdmcPrefillName(); // compte unique kd-mc.com : pré-remplit le nom (sans privilège ; SMS reste requis)
@@ -8330,9 +8558,14 @@ function renderAuthStep(){
       const cguBox = $('#auth-cgu');
       const cguDone = K._cguAccepted();
       if(cguDone){ const _row = $('#auth-cgu-row'); if(_row) _row.style.display = 'none'; }   // v1.1.300 : déjà acceptées (ici ou au domaine) → plus de case
+      // Lot C2 (audit A4 P2-1) : le bouton n'est plus grisé EN SILENCE (désactivé + insensible au toucher) :
+      // il reste touchable et dit ce qui manque. Seule l'apparence rappelle que la case n'est pas cochée.
       const setSendEnabled = (on) => {
         const b = $('#btn-auth-phone'); if(!b) return;
-        b.disabled = !on; b.style.opacity = on ? '' : '.5'; b.style.pointerEvents = on ? '' : 'none';
+        b.disabled = false; b.style.opacity = on ? '' : '.6'; b.style.pointerEvents = '';
+        const d = $('#auth-debug');
+        if(d && !on && !d.textContent) d.textContent = '☝ Coche « J\'accepte les conditions » pour recevoir le code';
+        else if(d && on && /^☝/.test(d.textContent)) d.textContent = '';
       };
       if(cguBox){
         cguBox.checked = cguDone;           // déjà accepté → pré-coché (demandé 1 fois)
@@ -8348,19 +8581,31 @@ function renderAuthStep(){
         btn.addEventListener('click', async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          if(!localStorage.getItem('apex_chat_cgu_v1')){
-            $('#auth-debug').textContent = '☝ Coche « J\'accepte les conditions » pour continuer';
+          // Lot C2 (A4 P2-1) : on dit EXACTEMENT ce qui manque (numéro, nom, case), au lieu d'un bouton muet.
+          const manque = K._authPhoneMissing();
+          if(manque){
+            $('#auth-debug').textContent = '☝ ' + manque;
+            toast(manque, 'warn', 4000);
             return;
           }
+          if(btn.dataset.busy === '1') return;
           acceptCgu(true);
-          $('#auth-debug').textContent = '⏳ Envoi en cours...';
+          btn.dataset.busy = '1';
+          $('#auth-debug').textContent = '⏳ Envoi en cours…';
+          let reussi = false;
+          K._authPhoneError = '';
           try{
-            await K._handleAuthPhone();
+            reussi = (await K._handleAuthPhone()) === true;
           }catch(err){
-            $('#auth-debug').textContent = '❌ ' + K._humanError(err, 'Erreur inconnue');
+            K._authPhoneError = K._humanError(err, 'Envoi impossible, réessaie');
+          }finally{
+            // Lot C2 (A4 P2-1) : « Envoi en cours… » ne reste JAMAIS affiché après un échec.
+            btn.dataset.busy = '';
+            const d = document.getElementById('auth-debug');
+            if(!reussi && d && d.isConnected) d.textContent = K._authPhoneError ? '❌ ' + K._authPhoneError + ' — tu peux réessayer' : '';
           }
         });
-        $('#auth-debug').textContent = '';
+        if(!/^☝/.test($('#auth-debug').textContent)) $('#auth-debug').textContent = '';
       } else {
         // Fallback ultime : le bouton n'existe pas, recharge
         location.reload();
@@ -8409,15 +8654,27 @@ function renderAuthStep(){
   }
 }
 
+// Lot C2 (A4 P2-1) : ce qui manque pour recevoir le code (null = tout est bon).
+K._authPhoneMissing = function(){
+  const phone = (($('#auth-phone') || {}).value || '').replace(/[^\d+]/g,'');
+  const name = (($('#auth-name') || {}).value || '').trim();
+  if(!phone) return 'Écris ton numéro de téléphone';
+  if(!/^\+?\d{8,15}$/.test(phone)) return 'Numéro incomplet : écris-le en entier, par exemple +33 6 12 34 56 78';
+  if(name.split(/\s+/).filter(t => t.length >= 2).length < 2) return 'Écris ton prénom et ton nom (par exemple Marie Dupont)';
+  const row = $('#auth-cgu-row'), box = $('#auth-cgu');
+  if(box && !box.checked && !(row && row.style.display === 'none') && !K._cguAccepted()) return 'Coche « J\'accepte les conditions » juste au-dessus du bouton';
+  return null;
+};
+K._authFail = function(msg, type, dur){ K._authPhoneError = msg; toast(msg, type || 'err', dur || 4000); return false; };
 K._handleAuthPhone = async function(){
   const phone = $('#auth-phone').value.replace(/[^\d+]/g,'');
   const name = $('#auth-name').value.trim();
-  if(!phone || !/^\+?\d{8,15}$/.test(phone)) return toast('Numéro invalide', 'err');
+  if(!phone || !/^\+?\d{8,15}$/.test(phone)) return K._authFail('Numéro invalide', 'err');
   // RÈGLE KEVIN ABSOLUE v1.1.123 : prénom + nom OBLIGATOIRES (n'importe quel ordre, n'importe quelle casse).
   // Sécurité : empêche impersonation avec juste un prénom ou un nom seul.
   const tokens = name.split(/\s+/).filter(t => t.length >= 2);
-  if(tokens.length < 2) return toast('🔒 Prénom ET nom obligatoires (ex: "Marie Dupont" OU "Dupont Marie" — majuscule ou minuscule peu importe)', 'err', 5000);
-  if(name.length < 4) return toast('Nom complet trop court (min 4 caractères)', 'err');
+  if(tokens.length < 2) return K._authFail('🔒 Prénom ET nom obligatoires (ex: "Marie Dupont" OU "Dupont Marie" — majuscule ou minuscule peu importe)', 'err', 5000);
+  if(name.length < 4) return K._authFail('Nom complet trop court (min 4 caractères)', 'err');
 
   // === BYPASS ADMIN KEVIN CÔTÉ CLIENT (immédiat, pas de fetch) ===
   // v1.1.282 SÉCU : le numéro admin n'est PLUS écrit en clair ici (il était
@@ -8431,7 +8688,7 @@ K._handleAuthPhone = async function(){
     toast('👑 Admin Kevin reconnu — connexion directe', 'ok', 2000);
     K.authStep = 'pseudo';
     renderAuthStep();
-    return;
+    return true;
   }
 
   // === BYPASS INVITATION (lien magique envoyé par Kevin) ===
@@ -8441,7 +8698,7 @@ K._handleAuthPhone = async function(){
     toast('📨 Bienvenue ami de Kevin — connexion sans SMS', 'ok', 2500);
     K.authStep = 'pseudo';
     renderAuthStep();
-    return;
+    return true;
   }
 
   // v1.1.173 (audit crew) — OTP SMS RÉEL. send-otp tente Vonage → TextBelt.
@@ -8466,7 +8723,7 @@ K._handleAuthPhone = async function(){
       toast('🔓 Cercle de confiance — connexion sans SMS', 'ok', 2500);
       K.authStep = 'pseudo';
       renderAuthStep();
-      return;
+      return true;
     }
     if(result._dev_otp){
       K.authData._dev_otp = result._dev_otp;
@@ -8477,10 +8734,10 @@ K._handleAuthPhone = async function(){
     }
     K.authStep = 'otp';
     renderAuthStep();
+    return true;
   }catch(e){
-    toast(K._humanError(e, 'Envoi impossible, réessaie'), 'err', 4000);
+    return K._authFail(K._humanError(e, 'Envoi impossible, réessaie'), 'err', 4000);
   }
-  return;
 
   // === [LEGACY OTP — désactivé v1.1.170] Tentative worker avec timeout 8s ===
   try{
@@ -8531,7 +8788,7 @@ K._handleAuthPhone = async function(){
     K.authStep = 'otp';
     renderAuthStep();
   }catch(e){
-    toast(e.message || 'Erreur, réessaie', 'err');
+    toast(K._humanError(e, 'Erreur, réessaie'), 'err');
     const dbg = $('#auth-debug');
     if(dbg) dbg.textContent = '❌ ' + (e.message || 'Erreur');
   }
@@ -9527,10 +9784,17 @@ K._flushPendingEncrypt = async function(convId){
 K._outboxAdd = function(item){
   try{
     const box = lg('outbox', []);
-    if(box.some(x => x.id === item.id)) return;   // dédup par id stable
+    if(box.some(x => x.id === item.id)) return true;   // dédup par id stable
+    // Lot C2 (A4 P2-6) : plus jamais de message en attente jeté en silence (avant : au-delà de 300, le plus
+    // ANCIEN partait sans prévenir). Règle claire : on garde tout ce qui attend déjà ; au-delà de 1000, le
+    // NOUVEAU message n'est pas mis en attente et la personne est prévenue.
+    if(box.length >= 1000){
+      toast('⚠️ 1000 messages attendent déjà le réseau : celui-ci n\'est PAS gardé. Reconnecte-toi pour envoyer les autres.', 'err', 8000);
+      return false;
+    }
     box.push(item);
-    while(box.length > 300) box.shift();           // cap mémoire
     ls('outbox', box);
+    return true;
   }catch(e){ _safeCatch('outbox-add', e); }
 };
 K._outboxRemove = function(id){
@@ -9637,7 +9901,7 @@ K._reauthAny = async function(reopenConvId, cause){
     K._reauthFailCount++;
     if(K._reauthFailCount >= 3 && (!K._lastSessionExpiredToast || (now - K._lastSessionExpiredToast) > 300000)){
       K._lastSessionExpiredToast = now;
-      toast('⚠️ Reconnexion impossible : ' + ((e && e.name === 'AbortError') ? 'timeout' : ((e && e.message) || 'réseau')), 'warn', 7000);
+      toast('⚠️ Reconnexion impossible : ' + K._humanError(e), 'warn', 7000);
     }
   }finally{
     K._reauthInProgress = false;
@@ -9704,7 +9968,7 @@ K._wsDiagnose = async function(convId){
       const d2 = await r2.json().catch(() => ({}));
       if(d2 && d2.authenticated){
         // Token valide via header mais pas via ?token= → Worker pas à jour
-        toast('⚠️ Serveur : auth WebSocket pas encore déployée (redéploiement en cours)', 'warn', 8000);
+        toast('⚠️ Le serveur est en cours de mise à jour — les messages arriveront dans un instant', 'warn', 8000);
       } else {
         // Token réellement périmé → ré-auth pour TOUT user qui a un phone stocké (v1.1.170)
         if(K.user && K.user.phone && K._reauthAny){
@@ -9733,11 +9997,11 @@ K._wsDiagnose = async function(convId){
       return;
     }
     if(d.cause === 'not_member'){
-      toast('⚠️ ' + (d.detail || 'Pas membre de cette conversation'), 'warn', 9000);
+      toast('⚠️ ' + K._humanError(d.detail || '', 'Tu ne fais plus partie de cette conversation'), 'warn', 9000);
       return;
     }
     if(d.cause === 'exception'){
-      toast('⚠️ Serveur : ' + (d.detail || 'erreur interne'), 'err', 9000);
+      toast('⚠️ ' + K._humanError(d.detail || '', 'Le serveur a un souci passager, réessaie dans un instant'), 'err', 9000);
       return;
     }
     if(d.ok){
@@ -9747,7 +10011,7 @@ K._wsDiagnose = async function(convId){
       // recouvraient l'en-tête (le bouton Retour ne répondait plus).
       return;
     }
-    toast('Temps réel indisponible : ' + (d.detail || d.cause || 'cause inconnue'), 'warn', 7000);
+    toast('Connexion en direct coupée — les messages arriveront dès qu\'elle revient', 'warn', 7000);
   }catch(e){
     console.warn('[ws-diag] échoué :', (e && e.message) || e);
   }finally{
@@ -9869,7 +10133,7 @@ K._openWs = async function(convId){
           setTimeout(() => { if(K.view === 'chat' && K.viewData?.id === convId && !K.ws) K._openWs(convId); }, delay);
         } else {
           console.warn('[WS] reconnexion abandonnée après 8 essais (code ' + e.code + ')');
-          toast('⚠️ Temps réel indisponible (code ' + e.code + ') — messages en mode local', 'warn', 6000);
+          toast('⚠️ Connexion en direct impossible pour l\'instant — tes messages partiront dès qu\'elle revient', 'warn', 6000);
         }
       }
     });
@@ -9931,6 +10195,9 @@ K._applyLocationUpdate = function(convId, data){
   if(!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return false;
   const m = K.messages[convId].find(x => x && x.id === lMsgId);
   if(!m || !m.location) return false;
+  // Lot C2 (A6-15) : le serveur relaie désormais la trame avec l'émetteur imposé (`from`) — seul l'auteur
+  // du partage peut déplacer SA position (un autre membre ne peut pas la falsifier).
+  if(data.from !== undefined && m.from && data.from !== m.from) return false;
   m.location.lat = lat;
   m.location.lng = lng;
   if(typeof data.accuracy === 'number' && Number.isFinite(data.accuracy) && data.accuracy >= 0) m.location.accuracy = data.accuracy;
@@ -10186,7 +10453,7 @@ K._WS_FATAL_CODES = ['invalid_message', 'e2e_required', 'forbidden'];
 K._onWsError = function(convId, data){
   if(!data || !data.client_id || K._WS_FATAL_CODES.indexOf(data.code) < 0) return false;
   K._outboxRemove(data.client_id);
-  toast('⚠️ Message refusé par le serveur : ' + (data.message || data.code), 'warn', 4000);
+  toast('⚠️ Message refusé par le serveur : ' + K._humanError(data.message || '', 'réessaie dans un instant'), 'warn', 4000);
   return true;
 };
 
@@ -10775,7 +11042,7 @@ K._explainCallError = function(e, type){
   } else if(nm === 'NotReadableError' || nm === 'TrackStartError'){
     toast('Micro/caméra déjà utilisé par une autre app — ferme-la et réessaie', 'err', 5000);
   } else {
-    toast('Impossible de démarrer l\'appel : ' + ((e && e.message) || nm || '?'), 'err', 5000);
+    toast('Impossible de démarrer l\'appel : ' + K._humanError(e), 'err', 5000);
   }
 };
 
@@ -10803,7 +11070,7 @@ K._callContact = async function(userId, type){
     }
     if(!conv){ toast('Impossible de démarrer l\'appel (reconnecte-toi)', 'err', 4000); return; }
     K._startCall(conv.id, type || 'audio');
-  }catch(e){ toast('Erreur appel : ' + ((e && e.message) || '?'), 'err', 4000); }
+  }catch(e){ toast('Erreur appel : ' + K._humanError(e), 'err', 4000); }
 };
 // Journalise un appel dans l'historique (onglet Appels). {type, peer, direction:'in'|'out', duration}
 K._logCall = function(entry){
@@ -10933,7 +11200,7 @@ K._callGroup = async function(type, conv){
       if(m && m !== K.user.id){ try{ await s.inviteUser(m); }catch(e){ _safeCatch('mesh-invite', e); } }
     }
   }catch(e){
-    toast('❌ Appel de groupe : ' + ((e && e.message) || 'micro/caméra refusé'), 'err', 6000);
+    toast('❌ Appel de groupe : ' + K._humanError(e), 'err', 6000);
     K._endGroupCall(false);
   }
 };
@@ -10968,7 +11235,7 @@ K._answerGroupCall = async function(){
     const s = await K._meshCreate(msg.callType === 'video' ? 'video' : 'audio', conv);
     await s.onOffer(msg.from, msg.offer);
   }catch(e){
-    toast('❌ Réponse impossible : ' + ((e && e.message) || 'micro/caméra refusé'), 'err', 6000);
+    toast('❌ Réponse impossible : ' + K._humanError(e), 'err', 6000);
     K._endGroupCall(false);
   }
 };
@@ -11578,7 +11845,7 @@ K._saveProfile = async function(){
             toast('⚠️ Pseudo "' + pseudo + '" déjà pris — change-le et resauvegarde', 'warn', 7000);
             return;
           }
-          toast('⚠️ Sauvegarde partielle : ' + (data.detail || data.message || ('HTTP ' + r.status)), 'warn', 6000);
+          toast('⚠️ Sauvegarde partielle : ' + K._humanError(data.message || data.detail || '', K._httpError(r.status)), 'warn', 6000);
           return;
         }
       } finally { clearTimeout(tid); }
@@ -11681,7 +11948,7 @@ K._saveNickname = async function(id){
     const c = (K.contacts||[]).find(x => x.id === id); if(c){ c.nickname = nickname || undefined; ls('contacts', K.contacts); }
     toast(nickname ? '✅ Alias enregistré' : '✅ Alias retiré', 'ok');
     if(K.view === 'contacts') K.sv('contacts');
-  } catch(e){ toast('⚠️ ' + (e.message||'échec alias'), 'err'); }
+  } catch(e){ toast('⚠️ ' + K._humanError(e, 'Alias non créé'), 'err'); }
 };
 
 // v1.1.219 (Kevin « depuis la fiche, inviter direct dans Apex Chat + ouvrir auto
@@ -11705,7 +11972,7 @@ K._inviteAndOpen = async function(id){
   }catch(_e){ /* best-effort : on ouvre la conversation quand même */ }
   K._closeModal();
   try{ await K._startConvWithUser(invitedId, nm); }
-  catch(e){ toast('Conversation : ' + ((e&&e.message)||'erreur'), 'err', 4000); return; }
+  catch(e){ toast('Conversation : ' + K._humanError(e), 'err', 4000); return; }
   if(magic && phone){
     setTimeout(() => { try{ K._adminShareInvite(phone, nm, magic); }catch(_){ K._adminCopyMagic && K._adminCopyMagic(magic); } }, 600);
   } else {
@@ -11729,7 +11996,7 @@ K._saveContactSheet = async function(id){
     K._closeModal();
     if(K.view === 'contacts') K.sv('contacts'); else K._fetchContacts && K._fetchContacts(true);
   } catch(e){
-    toast('⚠️ ' + (e.message || 'échec'), 'err', 6000);
+    toast('⚠️ ' + K._humanError(e), 'err', 6000);
   }
 };
 
@@ -11741,7 +12008,7 @@ K._deleteContact = async function(id, name){
     toast('🗑 Contact supprimé', 'ok');
     K._closeModal();
     if(K.view === 'contacts') K.sv('contacts');
-  } catch(e){ toast('⚠️ ' + (e.message || 'échec suppression'), 'err'); }
+  } catch(e){ toast('⚠️ ' + K._humanError(e, 'Suppression impossible'), 'err'); }
 };
 
 // ============================================================================
@@ -12377,17 +12644,17 @@ K._requestPremium = async function(planId){
     });
     if(!res.ok){
       const e = await res.json().catch(() => ({}));
-      return toast(e.message || ('Erreur HTTP ' + res.status), 'err', 4000);
+      return toast(K._humanError(e.message || '', K._httpError(res.status)), 'err', 4000);
     }
     const data = await res.json();
     if(data.ok){
       toast('Demande envoyée ✅ — Premium activé après vérification du paiement par l\'admin', 'ok', 6000);
       if(typeof K._syncPremiumStatus === 'function') K._syncPremiumStatus();
     } else {
-      toast(data.message || 'Demande non enregistrée', 'err', 4000);
+      toast(K._humanError(data.message || '', 'Demande non enregistrée'), 'err', 4000);
     }
   }catch(e){
-    toast('Erreur réseau: ' + (e.message || ''), 'err', 4000);
+    toast('Erreur réseau: ' + K._humanError(e), 'err', 4000);
   }
 };
 
@@ -13134,10 +13401,17 @@ K._loadGifs = async function(q){
   }
 };
 
+K._GIF_MEDIA_HOSTS = ['media.giphy.com', 'media0.giphy.com', 'media1.giphy.com', 'media2.giphy.com', 'media3.giphy.com', 'media4.giphy.com', 'i.giphy.com'];
+K._gifHostAllowed = function(u){
+  try{ const x = new URL(u); return x.protocol === 'https:' && K._GIF_MEDIA_HOSTS.includes(x.hostname); }catch(_){ return false; }
+};
 K._pickGif = async function(fullUrl, title){
   const picker = document.getElementById('gif-picker');
   if(picker) picker.style.display = 'none';
   if(!fullUrl){ return; }
+  // Lot C2 (A6-14) : le fichier GIF est téléchargé depuis les serveurs d'images de Giphy, autorisés
+  // un par un dans la CSP (connect-src) — avant, seul api.giphy.com l'était : tout envoi échouait.
+  if(!K._gifHostAllowed(fullUrl)){ toast('GIF non envoyé : adresse d\'image inattendue', 'err', 4000); return; }
   toast('📤 Envoi du GIF…', 'info', 2500);
   try{
     const r = await fetch(fullUrl);
@@ -13146,7 +13420,7 @@ K._pickGif = async function(fullUrl, title){
     const file = new File([blob], (String(title || 'gif').replace(/[^\w-]+/g,'_').slice(0,40) || 'gif') + '.gif', { type: 'image/gif' });
     await K._uploadMedia(file); // pipeline média existant (chiffré si média E2E actif)
   }catch(e){
-    toast('GIF : échec envoi — ' + ((e && e.message) || 'erreur'), 'err', 4000);
+    toast('GIF non envoyé : ' + K._humanError(e), 'err', 4000);
     console.error('[gif] send failed', e && e.message);
   }
 };
@@ -13401,6 +13675,143 @@ K._parseMediaMarker = function(txt){
   }
   catch(_){ return null; }
 };
+// ============================================================================
+//  Lot C2 (audit A6-10) — métadonnées retirées de TOUTES les photos, GIF et vidéos avant l'envoi.
+//  Avant : seules les grandes photos (> 1600 px ou > 300 Ko) étaient ré-encodées ; une petite photo,
+//  un GIF ou une vidéo d'iPhone partaient avec le lieu de prise de vue (GPS) et le modèle du téléphone.
+//  Photos : ré-encodage systématique (canvas) ; s'il échoue, retrait octet par octet (JPEG : segments
+//  APP1-APP15 et commentaires ; PNG : blocs eXIf/tEXt/iTXt/zTXt/tIME). GIF : extensions commentaire et
+//  application (sauf la boucle d'animation). Vidéos MP4/MOV : boîtes `udta` et `meta` (où l'iPhone range
+//  la position ©xyz et le modèle) neutralisées en `free` et vidées — la vidéo reste lisible.
+// ============================================================================
+K._stripJpegMeta = function(u8){
+  if(!(u8 && u8.length > 4 && u8[0] === 0xFF && u8[1] === 0xD8)) return null;
+  const out = [u8.subarray(0, 2)];
+  let i = 2;
+  while(i + 4 <= u8.length){
+    if(u8[i] !== 0xFF) return null;
+    const mk = u8[i + 1];
+    if(mk === 0xDA){ out.push(u8.subarray(i)); break; }          // début des données image : tout le reste
+    const len = (u8[i + 2] << 8) | u8[i + 3];
+    if(len < 2 || i + 2 + len > u8.length) return null;
+    // On garde APP0 (JFIF), APP2 (profil couleur ICC), APP14 (Adobe) ; on retire APP1 (Exif/XMP), APP3-APP13, APP15, COM.
+    const drop = (mk >= 0xE1 && mk <= 0xEF && mk !== 0xE2 && mk !== 0xEE) || mk === 0xFE;
+    if(!drop) out.push(u8.subarray(i, i + 2 + len));
+    i += 2 + len;
+  }
+  const n = out.reduce((a, b) => a + b.length, 0);
+  const r = new Uint8Array(n); let o = 0;
+  for(const b of out){ r.set(b, o); o += b.length; }
+  return r;
+};
+K._stripPngMeta = function(u8){
+  const SIG = [137, 80, 78, 71, 13, 10, 26, 10];
+  if(!(u8 && u8.length > 8 && SIG.every((b, k) => u8[k] === b))) return null;
+  const out = [u8.subarray(0, 8)];
+  let i = 8;
+  while(i + 12 <= u8.length){
+    const len = ((u8[i] << 24) >>> 0) + (u8[i + 1] << 16) + (u8[i + 2] << 8) + u8[i + 3];
+    const type = String.fromCharCode(u8[i + 4], u8[i + 5], u8[i + 6], u8[i + 7]);
+    const end = i + 12 + len;
+    if(end > u8.length) return null;
+    if(!['eXIf', 'tEXt', 'iTXt', 'zTXt', 'tIME'].includes(type)) out.push(u8.subarray(i, end));
+    i = end;
+    if(type === 'IEND') break;
+  }
+  const r = new Uint8Array(out.reduce((a, b) => a + b.length, 0)); let o = 0;
+  for(const b of out){ r.set(b, o); o += b.length; }
+  return r;
+};
+K._stripGifMeta = function(u8){
+  if(!(u8 && u8.length > 13 && u8[0] === 0x47 && u8[1] === 0x49 && u8[2] === 0x46)) return null;
+  const subBlocksEnd = (k) => { while(k < u8.length && u8[k] !== 0){ k += u8[k] + 1; } return k + 1; };
+  let i = 13;
+  if(u8[10] & 0x80) i += 3 * (1 << ((u8[10] & 7) + 1));          // table de couleurs globale
+  const out = [u8.subarray(0, i)];
+  while(i < u8.length){
+    const b = u8[i];
+    if(b === 0x3B){ out.push(u8.subarray(i, i + 1)); break; }      // fin du fichier
+    if(b === 0x2C){                                                 // image : descripteur (+ table locale) + données
+      let k = i + 10;
+      if(u8[i + 9] & 0x80) k += 3 * (1 << ((u8[i + 9] & 7) + 1));
+      k = subBlocksEnd(k + 1);
+      out.push(u8.subarray(i, k)); i = k; continue;
+    }
+    if(b !== 0x21) return null;
+    const label = u8[i + 1];
+    const end = subBlocksEnd(i + 2);
+    if(end > u8.length + 1) return null;
+    let keep = label === 0xF9 || label === 0x01;                    // contrôle graphique / texte affiché
+    if(label === 0xFF){                                              // application : seule la boucle d'animation reste
+      const id = String.fromCharCode(...u8.subarray(i + 3, i + 3 + 11));
+      keep = id === 'NETSCAPE2.0' || id === 'ANIMEXTS1.0';
+    }
+    if(keep) out.push(u8.subarray(i, end));
+    i = end;
+  }
+  const r = new Uint8Array(out.reduce((a, c) => a + c.length, 0)); let o = 0;
+  for(const c of out){ r.set(c, o); o += c.length; }
+  return r;
+};
+K._stripMp4Meta = function(u8){
+  if(!(u8 && u8.length >= 8)) return null;
+  const typ = (k) => String.fromCharCode(u8[k + 4], u8[k + 5], u8[k + 6], u8[k + 7]);
+  const size = (k, end) => {
+    const s32 = ((u8[k] << 24) >>> 0) + (u8[k + 1] << 16) + (u8[k + 2] << 8) + u8[k + 3];
+    if(s32 === 1){ let v = 0; for(let j = 8; j < 16; j++) v = v * 256 + u8[k + j]; return v; }
+    return s32 === 0 ? end - k : s32;
+  };
+  let changed = 0;
+  const walk = (start, end, depth) => {
+    let k = start;
+    while(k + 8 <= end){
+      const sz = size(k, end), t = typ(k);
+      if(sz < 8 || k + sz > end) return false;
+      if(depth > 0 && (t === 'udta' || t === 'meta')){
+        u8[k + 4] = 0x66; u8[k + 5] = 0x72; u8[k + 6] = 0x65; u8[k + 7] = 0x65;   // → 'free'
+        u8.fill(0, k + 8, k + sz); changed++;
+      } else if(t === 'moov' || t === 'trak'){
+        if(!walk(k + 8, k + sz, depth + 1)) return false;
+      }
+      k += sz;
+    }
+    return true;
+  };
+  if(!['ftyp', 'wide', 'moov', 'mdat', 'free', 'skip', 'pnot'].includes(typ(0))) return null;
+  return walk(0, u8.length, 0) ? { bytes: u8, changed } : null;
+};
+// Renvoie { body, ctype, cleaned } : le fichier à envoyer, sans métadonnées quand c'est possible.
+K._stripMediaMeta = async function(file){
+  const t = String(file.type || '').toLowerCase();
+  const name = String(file.name || '').toLowerCase();
+  try{
+    if(t.startsWith('image/') && t !== 'image/gif' && t !== 'image/svg+xml'){
+      const raw = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error); fr.readAsDataURL(file); });
+      const comp = await K._compressMessageImage(raw, true);
+      if(typeof comp === 'string' && comp !== raw && comp.indexOf('data:image/jpeg') === 0){
+        const bin = atob(comp.split(',')[1]);
+        const arr = new Uint8Array(bin.length);
+        for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return { body: new Blob([arr], { type: 'image/jpeg' }), ctype: 'image/jpeg', cleaned: true };
+      }
+      const u8 = new Uint8Array(await file.arrayBuffer());
+      const clean = (t === 'image/png') ? K._stripPngMeta(u8) : K._stripJpegMeta(u8);
+      if(clean) return { body: new Blob([clean], { type: t }), ctype: t, cleaned: true };
+      return { body: file, ctype: t, cleaned: false };
+    }
+    if(t === 'image/gif'){
+      const clean = K._stripGifMeta(new Uint8Array(await file.arrayBuffer()));
+      return clean ? { body: new Blob([clean], { type: t }), ctype: t, cleaned: true } : { body: file, ctype: t, cleaned: false };
+    }
+    if(t === 'video/mp4' || t === 'video/quicktime' || t === 'video/x-m4v' || /\.(mov|mp4|m4v)$/.test(name)){
+      const r = K._stripMp4Meta(new Uint8Array(await file.arrayBuffer()));
+      const vt = t || 'video/mp4';
+      return r ? { body: new Blob([r.bytes], { type: vt }), ctype: vt, cleaned: true } : { body: file, ctype: vt, cleaned: false };
+    }
+  }catch(e){ _safeCatch('media-strip-meta', e); }
+  return { body: file, ctype: t || 'application/octet-stream', cleaned: !(t.startsWith('image/') || t.startsWith('video/')) };
+};
+K._uploadsInFlight = 0;   // Lot C2 (A4 P1-3) : la mise à jour attend la fin des envois de fichiers
 K._uploadMedia = async function(file){
   if(!file) return;
   const conv = K.viewData; if(!conv){ toast('Pas de conversation active', 'warn'); return; }
@@ -13410,23 +13821,13 @@ K._uploadMedia = async function(file){
   if(K._keyChangePending(conv)){ toast(K._pendingToastText(conv), 'warn', 4000); return; }
   const kind = (file.type||'').startsWith('video/') ? 'vidéo' : (file.type||'').startsWith('image/') ? 'image' : (file.type||'').startsWith('audio/') ? 'audio' : 'fichier';
   toast('📤 Envoi ' + kind + ' (' + K._fmtSize(file.size) + ')…', 'info', 3000);
+  K._uploadsInFlight = (K._uploadsInFlight || 0) + 1;
   try{
-    /* v1.1.252 : les photos (caméra iPhone = plusieurs Mo) sont compressées AVANT
-       l'upload serveur (downscale 1600px JPEG 0.8, GIF exclus, fail-open → original). */
-    let body = file, ctype = file.type || 'application/octet-stream';
-    if ((file.type||'').startsWith('image/') && file.type !== 'image/gif') {
-      try {
-        const raw = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error); fr.readAsDataURL(file); });
-        const comp = await K._compressMessageImage(raw);
-        if (typeof comp === 'string' && comp.length < raw.length) {
-          const bin = atob(comp.split(',')[1]);
-          const arr = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-          body = new Blob([arr], { type: 'image/jpeg' });
-          ctype = 'image/jpeg';
-        }
-      } catch(e) { _safeCatch('media-compress', e); }
-    }
+    /* v1.1.252 : les photos (caméra iPhone = plusieurs Mo) sont compressées AVANT l'upload.
+       Lot C2 (A6-10) : et TOUTES les photos, GIF et vidéos perdent leurs métadonnées (lieu, appareil). */
+    const sm = await K._stripMediaMeta(file);
+    let body = sm.body, ctype = sm.ctype || file.type || 'application/octet-stream';
+    if(!sm.cleaned) toast('ℹ️ Les infos cachées de ce fichier (lieu, appareil) n\'ont pas pu être retirées', 'info', 4000);
     // v1.1.262 — chiffrement des octets (flag OFF par défaut). Si ON + session :
     // on upload iv‖ct (octet-stream) → R2 ne voit jamais le contenu réel. Le vrai
     // mime + le flag `e:1` voyagent dans le marqueur APXMEDIA (lui-même chiffré).
@@ -13443,15 +13844,17 @@ K._uploadMedia = async function(file){
     const dmEnc = await K._dmMediaEncrypt(conv, body);
     if(dmEnc.block){ toast(K._DM_MEDIA_BLOCKED, 'warn', 5000); return; }
     if(dmEnc.enc){ body = dmEnc.body; ctype = 'application/octet-stream'; mediaEnc = true; }
-    const r = await fetch(API_BASE + '/api/media', {
+    // Lot C2 (A6-09) : le fichier est rattaché à SA conversation → seuls ses membres peuvent le lire.
+    const r = await fetch(API_BASE + '/api/media?conv_id=' + encodeURIComponent(conv.id), {
       method:'POST',
       headers:{ 'Authorization':'Bearer ' + (K.token||''), 'Content-Type': ctype, 'x-file-name': encodeURIComponent(file.name || 'fichier') },
       body: body,
     });
     const d = await r.json().catch(()=>({}));
-    if(!r.ok || !d.ok){ toast('❌ ' + (d.detail || d.message || d.error || ('HTTP ' + r.status)), 'err', 7000); return; }
-    await K._sendMediaMessage({ url:d.url, mime:((mediaEnc || grpFile) ? realMime : (d.mime || file.type)), name:d.name || file.name, size:d.size || file.size, enc:mediaEnc, ...(grpFile ? { gk: grpFile } : {}) });
-  }catch(e){ toast('❌ Envoi média : ' + ((e && e.message) || 'réseau'), 'err', 7000); }
+    if(!r.ok || !d.ok){ toast('❌ ' + K._humanError(d.message || d.detail || '', K._httpError(r.status)), 'err', 7000); return; }
+    await K._sendMediaMessage({ url:d.url, mime:((mediaEnc || grpFile) ? realMime : (d.mime || ctype)), name:d.name || file.name, size:d.size || file.size, enc:mediaEnc, ...(grpFile ? { gk: grpFile } : {}) });
+  }catch(e){ toast('❌ Envoi média : ' + K._humanError(e), 'err', 7000); }
+  finally{ K._uploadsInFlight = Math.max(0, (K._uploadsInFlight || 1) - 1); }
 };
 K._sendMediaMessage = async function(media, captionOverride){
   const conv = K.viewData; if(!conv) return;
@@ -13495,7 +13898,7 @@ K._uploadImage = async function(file){
       reader.readAsDataURL(file);
     });
     // v1.1.252 : compression AVANT tout (IA + stockage + envoi) — fail-open
-    const b64 = await K._compressMessageImage(b64raw);
+    const b64 = await K._compressMessageImage(b64raw, true);   // Lot C2 (A6-10) : métadonnées retirées
     // Appel IA pour alt-text
     let altText = '';
     try{
@@ -13509,7 +13912,7 @@ K._uploadImage = async function(file){
       });
       if(r.status === 429){
         const e429 = await r.json().catch(() => ({}));
-        toast(e429.message || 'Alt-text Premium uniquement aujourd\'hui', 'warn');
+        toast(K._humanError(e429.message || '', 'Alt-text Premium uniquement aujourd\'hui'), 'warn');
       } else if(r.ok){
         const data = await r.json();
         altText = (data && data.description || '').trim();
@@ -13821,7 +14224,7 @@ K._fetchContacts = async function(silent){
     if(K.view === 'contacts' && typeof K.render === 'function') K.render();
     return users;
   }catch(e){
-    if(!silent) toast('❌ Erreur contacts : ' + (e?.message || e?.name || 'inconnu'), 'warn', 6000);
+    if(!silent) toast('❌ Erreur contacts : ' + K._humanError(e), 'warn', 6000);
     return K.contacts || [];
   }
 };
@@ -13991,7 +14394,7 @@ K._contactSupport = async function(){
   try{
     await K._startConvWithUser('kdmc_admin', 'Assistance KDMC');
     toast('🆘 Conversation avec l\'assistance ouverte', 'ok', 2500);
-  }catch(e){ toast('Impossible d\'ouvrir l\'assistance : ' + ((e && e.message) || 'erreur'), 'err', 5000); }
+  }catch(e){ toast('Impossible d\'ouvrir l\'assistance : ' + K._humanError(e), 'err', 5000); }
 };
 
 K._startConvWithUser = async function(userId, displayName){
@@ -14056,9 +14459,9 @@ K._promoteConvToServer = async function(localConvId){
       if(K.viewData && K.viewData.id === localConvId) K.viewData = conv;
       return newId;
     }
-    toast('Synchro conversation échouée : ' + ((r && (r.detail || r.message)) || 'réponse serveur'), 'warn', 7000);
+    toast('Synchro conversation échouée : ' + K._humanError((r && (r.message || r.detail)) || '', 'le serveur n\'a pas répondu'), 'warn', 7000);
   }catch(e){
-    toast('Synchro conversation impossible : ' + ((e && (e.apiDetail || e.message)) || 'réseau'), 'warn', 7000);
+    toast('Synchro conversation impossible : ' + (K._humanError((e && e.apiDetail) || e)), 'warn', 7000);
   }
   return null;
 };
@@ -14767,7 +15170,7 @@ K._adminGrantPremium = async function(userId, plan){
       toast('Activation échouée', 'err');
     }
   }catch(e){
-    toast('Erreur: ' + (e.message || ''), 'err', 4000);
+    toast('Erreur: ' + K._humanError(e), 'err', 4000);
   }
 };
 
@@ -14948,7 +15351,7 @@ K._adminCmd_user = async function(userId, action){
         setTimeout(() => K.openConv(r.conversation.id), 100);
         toast('DM ouverte', 'ok');
       } else {
-        toast((r && r.message) || 'DM impossible, réessaye', 'err');
+        toast(K._humanError((r && r.message) || '', 'DM impossible, réessaye'), 'err');
       }
     }catch(e){
       toast('Réseau indisponible, réessaye', 'err');
@@ -15194,7 +15597,7 @@ K._tcAdd = async function(){
 };
 K._tcRemove = async function(phone){
   try{ await K._api('POST', '/api/admin/trusted-circle', { phone, action: 'remove' }); K._tcRefresh(); }
-  catch(e){ toast('Retrait impossible : ' + ((e&&e.message)||''), 'err', 4000); }
+  catch(e){ toast('Retrait impossible : ' + K._humanError(e), 'err', 4000); }
 };
 
 function renderAdminInviteBook(app){
@@ -15332,12 +15735,12 @@ K._adminInviteBulkRun = async function(){
       toast(`✅ ${ok.length} autorisé(s) ${fail.length ? '· ' + fail.length + ' échec' : ''}`, 'ok', 4000);
       K._adminShowBulkResults(ok, fail);
     } else {
-      toast('Erreur serveur — fallback local', 'warn');
+      toast('Serveur injoignable — affichage des données du téléphone', 'warn');
       K._adminFallbackLocalInvites(entries);
     }
   } catch (e) {
     console.warn('whitelist-bulk fail', e);
-    toast('Worker offline — fallback local', 'warn');
+    toast('Serveur injoignable — affichage des données du téléphone', 'warn');
     K._adminFallbackLocalInvites(entries);
   }
 };
@@ -15475,7 +15878,7 @@ K._adminPickContactsNative = async function(){
     $('#invite-bulk-input').value = txt;
     toast(`✅ ${contacts.length} contact(s) sélectionnés`, 'ok', 3000);
   }catch(e){
-    if(e.name !== 'AbortError') toast('Erreur : ' + esc(e.message), 'err');
+    if(e.name !== 'AbortError') toast('Erreur : ' + K._humanError(e), 'err');
   }
 };
 
@@ -15890,10 +16293,10 @@ K._adminUserAction = async function(userId, action){
   try {
     const r = await K._api('POST', '/api/admin/users/' + encodeURIComponent(userId) + '/' + action);
     if(r && r.ok){
-      toast(r.message || '✅ Fait', 'ok');
+      toast(K._humanError((r && r.message) || '', '✅ Fait'), 'ok');
       K.render();
-    } else toast(r?.message || 'Erreur', 'err');
-  } catch(e){ toast('Worker offline', 'warn'); }
+    } else toast(K._humanError((r && r.message) || '', 'Erreur'), 'err');
+  } catch(e){ toast('Serveur injoignable, réessaie dans un instant', 'warn'); }
 };
 
 function renderAdminAudit(app){
@@ -15930,8 +16333,8 @@ K._adminCmd = async function(cmd){
             <div class="card-row"><span style="flex:1">🟢 En ligne maintenant</span><strong style="color:var(--ax-ok)">${s.online_now}</strong></div>
           </div>
         `);
-      } else toast(r.message || 'Erreur', 'err');
-    }catch(e){ toast('Worker offline', 'warn'); }
+      } else toast(K._humanError(r.message || '', 'Erreur'), 'err');
+    }catch(e){ toast('Serveur injoignable, réessaie dans un instant', 'warn'); }
   }
   else if(cmd === 'search'){
     K._showModal('🔍 Rechercher messages', `
@@ -15994,8 +16397,8 @@ K._adminBroadcast = async function(){
     if(r.ok){
       toast(`✓ Envoyé à ${r.result.sent}/${r.result.total} users`, 'ok', 4000);
       K._closeModal();
-    } else toast(r.message || 'Erreur', 'err');
-  }catch(e){ toast('Worker offline', 'warn'); }
+    } else toast(K._humanError(r.message || '', 'Erreur'), 'err');
+  }catch(e){ toast('Serveur injoignable, réessaie dans un instant', 'warn'); }
 };
 
 K._adminLoadSignalements = async function(){
@@ -16033,8 +16436,8 @@ K._adminResolveSignal = async function(id, action){
       toast('✅ Signalement traité (' + action + ')', 'ok');
       K._closeModal();
       K._adminLoadSignalements();
-    } else toast(r?.message || 'Erreur', 'err');
-  }catch(e){ toast('Worker offline', 'warn'); }
+    } else toast(K._humanError((r && r.message) || '', 'Erreur'), 'err');
+  }catch(e){ toast('Serveur injoignable, réessaie dans un instant', 'warn'); }
 };
 
 K._adminAiAsk = async function(){
@@ -16159,7 +16562,7 @@ K._testServerPush = async function(){
     // s'il n'y arrive pas → message CLAIR + actionnable (règle langage simple), pas
     // le bandeau technique "Non authentifié".
     if(e && e.httpStatus === 401){ toast('Session expirée — reconnecte-toi (ferme et rouvre l\'app), puis refais le test', 'warn', 6000); }
-    else { toast('Erreur test : ' + ((e && e.message) || '?'), 'err', 5000); }
+    else { toast('Erreur test : ' + K._humanError(e), 'err', 5000); }
   }
 };
 K._api = async function(method, path, body, timeoutMs, _retry401){
@@ -16323,7 +16726,7 @@ K._createTimeCapsule = async function(){
       K._closeModal();
       toast('Capsule programmée pour le ' + new Date(openAt).toLocaleDateString('fr-FR'), 'ok', 4000);
     } else {
-      toast(r.message || 'Erreur', 'err');
+      toast(K._humanError(r.message || '', 'Erreur'), 'err');
     }
   }catch(e){
     // Fallback local
@@ -16369,7 +16772,7 @@ K._createLetter = async function(){
       K._closeModal();
       toast(`Lettre programmée pour ${delay}h (annulable avant)`, 'ok', 4000);
     } else {
-      toast(r.message || 'Erreur', 'err');
+      toast(K._humanError(r.message || '', 'Erreur'), 'err');
     }
   }catch(e){
     K._closeModal();
@@ -16630,7 +17033,7 @@ K._adminSetupFaceId = async function(){
     await K._biometricRegister();
     toast('🆔 Face ID activé ✅', 'ok', 2500);
     if(K.view==='settings') K.sv('settings');
-  }catch(e){ toast('Face ID : ' + ((e&&e.message)||'échec'), 'err', 6000); }
+  }catch(e){ toast(K._humanError(e, 'Face ID indisponible'), 'err', 6000); }
 };
 K._adminSetupSaveKey = function(){
   const el = document.getElementById('admin-key-input');
@@ -16814,7 +17217,7 @@ K._submitInviteFastLogin = async function(inviterUserId){
       return;
     }
   } catch (e) {
-    toast('❌ Réseau (check-phone) : ' + (e?.message || '?'), 'err', 5000);
+    toast('❌ ' + K._humanError(e), 'err', 5000);
     return;
   }
   if(check.blocked){
@@ -16863,7 +17266,7 @@ K._submitInviteFastLogin = async function(inviterUserId){
       }, 800);
     }
   } catch (e) {
-    toast('❌ Réseau (verify-otp) : ' + (e?.message || '?'), 'err', 6000);
+    toast('❌ ' + K._humanError(e), 'err', 6000);
   }
 };
 
@@ -17086,7 +17489,7 @@ K._enrollBiometricFromOnboarding = async function(){
     await K._biometricRegister();
     toast('🆔 Face ID / Touch ID activé', 'ok', 2500);
   }catch(e){
-    toast('Activation refusée : ' + ((e && e.message) || 'erreur'), 'warn', 5000);
+    toast('Activation refusée : ' + K._humanError(e), 'warn', 5000);
   }finally{
     K._closeModal();
     // Enchaîne avec la demande groupée des autres autorisations
@@ -17250,7 +17653,7 @@ K._unlockWithBiometric = async function(silent){
       toast('Face ID refusé — utilise ton PIN', 'warn', 3000);
     }
   }catch(e){
-    if(!silent) toast('Face ID : ' + ((e && e.message) || 'erreur') + ' — utilise ton PIN', 'warn', 4000);
+    if(!silent) toast(K._humanError(e, 'Face ID indisponible') + ' — utilise ton code', 'warn', 4000);
   }
 };
 
@@ -17391,7 +17794,7 @@ async function _consumeInviteToken(token){
       toast('Lien invitation : ' + cause, 'warn', 7000);
     }
   }catch(e){
-    toast('Lien invitation : erreur réseau — ' + ((e && e.message) || '?'), 'warn', 6000);
+    toast('Lien invitation : erreur réseau — ' + K._humanError(e), 'warn', 6000);
     _safeCatch('invite-magic-login', e);
   }
 }
@@ -17505,7 +17908,7 @@ K._invitePickContactSend = async function(){
     }
     toast('✅ Invitation pour ' + fullName + ' partagée', 'ok', 3000);
   }catch(e){
-    if(e.name !== 'AbortError') toast('Répertoire : ' + ((e && e.message) || 'erreur'), 'warn', 4000);
+    if(e.name !== 'AbortError') toast('Répertoire : ' + K._humanError(e), 'warn', 4000);
   }
 };
 
@@ -17526,7 +17929,7 @@ K._invitePickContact = async function(){
     toast('✓ ' + fullName + ' sélectionné', 'ok', 2000);
   }catch(e){
     if(e.name !== 'AbortError'){
-      toast('Erreur répertoire : ' + ((e && e.message) || 'inconnue'), 'warn', 4000);
+      toast('Erreur répertoire : ' + K._humanError(e), 'warn', 4000);
     }
   }
 };
@@ -17548,7 +17951,7 @@ K._sendInvite1Click = async function(){
     /* Revue 08.10.2026 (A1) : plus de lien magique remis à l'inviteur → lien d'accueil (code court). */
     if(r && r.ok && (r.invite_url || r.magic_url)) inv = r;
   }catch(e){
-    toast('Création invitation : ' + ((e && (e.apiDetail || e.message)) || 'serveur indispo'), 'warn', 5000);
+    toast('Création invitation : ' + (K._humanError((e && e.apiDetail) || e)), 'warn', 5000);
   }
   if(!inv){
     // Fallback : pas de lien d'invitation, mais on partage quand même un lien d'accueil
@@ -17738,6 +18141,23 @@ K._showNewMenu = function(){
   `);
 };
 
+// Lot C2 (A4 P1-4) : toucher la version (barre du haut) = forcer la mise à jour, comme la bulle du module.
+K._askForceUpdate = function(){
+  if(!confirm('Apex Chat ' + __APEX_CHAT_VERSION__ + '\n\nForcer la mise à jour maintenant ?\n(recharge la dernière version ; tes messages restent sur le téléphone)')) return;
+  window._apexSafeReload(async () => {
+    try{
+      if('caches' in window){ const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); }
+      if('serviceWorker' in navigator){ const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); }
+    }catch(_e){ _safeCatch('force-update', _e); }
+    location.replace(location.pathname + '?_forceupd=' + Date.now());
+  }, 'manuel');
+};
+// Lot C2 (A4 P1-3) : « Installer » sur le bandeau = choix de la personne → appliquée tout de suite.
+K._applyUpdateNow = function(){
+  const p = window._apexReloadPending;
+  if(p){ window._apexReloadPending = null; clearTimeout(window._apexReloadTimer); p.doReload(); return; }
+  K._reload();
+};
 K._reload = function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.getRegistration().then(r => {
@@ -17928,6 +18348,9 @@ async function _boot(){
     if(splashV) splashV.textContent = __APEX_CHAT_VERSION__;
     if(topbarV) topbarV.textContent = __APEX_CHAT_VERSION__;
   }catch(_e){_safeCatch('silent',_e)}
+
+  // Lot C2 (A4 P2-6) : messages en attente restés dans IndexedDB (mémoire pleine) → remis dans la boîte d'envoi.
+  _outboxRestoreFromIdb().then((n) => { if(n){ toast('📤 ' + n + ' message(s) en attente retrouvé(s), ils partiront dès que possible', 'info', 4000); } });
 
   // SW update banner listener
   window.addEventListener('sw-update-available', () => {
@@ -18263,6 +18686,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.304", "data-version-el": "#splash-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.305", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

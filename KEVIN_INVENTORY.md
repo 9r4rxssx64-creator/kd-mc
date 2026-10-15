@@ -3600,6 +3600,13 @@ officiels les retirent eux-mêmes avant publication.
 | 2026-10-15 | `messaging-app/tests/unit/lot-c1-chiffrement-client.test.js` | Apex Chat (chiffrement) : le serveur ne peut plus faire repasser photos, vocaux ou groupes en clair |
 | 2026-10-15 | `messaging-app/tests/unit/lot-c1-serveur.test.js` | Apex Chat (chiffrement) : purge, suppression de compte complète, quotas, config derrière connexion |
 | 2026-10-15 | `messaging-app/d1-migrations/0017_lot_c1_effacement_quotas.sql` | Apex Chat (chiffrement) : index pour l'effacement et les quotas |
+| 2026-10-15 | `messaging-app/tests/unit/lot-c2-api.test.js` | Apex Chat (appli au quotidien) : muet côté serveur, statuts 24 h |
+| 2026-10-15 | `messaging-app/tests/unit/lot-c2-do.test.js` | Apex Chat (appli au quotidien) : position en direct, rafales d'appels |
+| 2026-10-15 | `messaging-app/tests/unit/lot-c2-client.test.js` | Apex Chat (appli au quotidien) : mise à jour sûre, boîte d'envoi, photos sans GPS |
+| 2026-10-15 | `messaging-app/tests/unit/lot-c2-erreurs-simples.test.js` | Apex Chat (appli au quotidien) : aucune erreur technique brute à l'écran |
+| 2026-10-15 | `messaging-app/tests/unit/csp-connect-src.test.js` | Apex Chat (appli au quotidien) : les GIF ne sont plus bloqués |
+| 2026-10-15 | `messaging-app/tests/layout-c2-badge-clavier.mjs` | Apex Chat (appli au quotidien) : la version ne recouvre aucun bouton (vrai navigateur, 2 tailles d'iPhone) |
+| 2026-10-15 | `messaging-app/d1-migrations/0018_lot_c2_muet_serveur.sql` | Apex Chat (appli au quotidien) : table du muet côté serveur |
 | 2026-10-12 | [`services/kdmc-router/fin-garde-verif.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/fin-garde-verif.mjs) | Garde : une sauvegarde en ligne plus pauvre (moins de la moitié) ne peut plus écraser une sauvegarde pleine (409), `force` explicite seulement |
 | 2026-10-13 | [`tests/verify-ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tests/verify-ration-actions.mjs) | Garde : la ration Actions se lit correctement (jour UTC, runs refusés à 0, verdicts, code de sortie) |
 | 2026-10-13 | [`tools/ci/ration-actions.mjs`](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/ci/ration-actions.mjs) | Outil : lit la ration du jour des minutes GitHub Actions du coffre (🟢/🟠/🔴) avant de lancer un robot |

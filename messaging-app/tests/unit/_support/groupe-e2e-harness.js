@@ -69,6 +69,12 @@ const DEFS = [
   'K._decryptBytesHeal = async function(convId, encBuf){',
   'K._renderMediaEl = function(m){',
   'K._hydrateEncMedia = async function(){',
+  // Lot C2 (A4 P1-5) : erreurs en français simple
+  'K._HTTP_ERRORS = ', 'K._httpError = function(status){', 'K._humanError = function(e, fallback){',
+  // Lot C2 (A6-10) : _uploadMedia retire d'abord les métadonnées (lieu, appareil) — vraies définitions.
+  'K._compressMessageImage = function(dataUrl, always){',
+  'K._stripJpegMeta = function(u8){', 'K._stripPngMeta = function(u8){', 'K._stripGifMeta = function(u8){', 'K._stripMp4Meta = function(u8){',
+  'K._stripMediaMeta = async function(file){',
   'K._uploadMedia = async function(file){',
   'K._sendMediaMessage = async function(media, captionOverride){',
   'K._sendVoiceMessage = async function(){',
@@ -172,11 +178,12 @@ export function makeServer() {
     // Ce que fait R2 / GET /api/media/:id : renvoie les octets tels quels.
     async fetch(url, init) {
       init = init || {};
-      if (init.method === 'POST' && url === API_BASE + '/api/media') {
+      // Lot C2 (A6-09) : l'envoi porte sa conversation (?conv_id=…), comme le vrai serveur l'attend.
+      if (init.method === 'POST' && url.split('?')[0] === API_BASE + '/api/media') {
         const bytes = new Uint8Array(await init.body.arrayBuffer());
         const id = 'f' + (srv.storage.size + 1);
         srv.storage.set('/api/media/' + id, bytes);
-        srv.uploads.push({ ctype: init.headers['Content-Type'], bytes });
+        srv.uploads.push({ ctype: init.headers['Content-Type'], bytes, conv_id: new URL(url).searchParams.get('conv_id') });
         return { ok: true, status: 200, json: async () => ({ ok: true, url: '/api/media/' + id, name: decodeURIComponent(init.headers['x-file-name']), size: bytes.length }) };
       }
       const path = url.startsWith(API_BASE) ? url.slice(API_BASE.length).split('?')[0] : url.split('?')[0];

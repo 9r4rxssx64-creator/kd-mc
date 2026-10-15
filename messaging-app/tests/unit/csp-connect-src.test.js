@@ -72,3 +72,23 @@ describe('CSP connect-src = liste blanche des hôtes réellement appelés', () =
     expect(couvert('wss://apex-chat.kd-mc.com', liste)).toBe(true);
   });
 });
+
+// Lot C2 (audit A6-14, 15.10.2026) : l'envoi d'un GIF télécharge le fichier depuis les serveurs d'images
+// de Giphy (media*.giphy.com, i.giphy.com — URL DYNAMIQUES renvoyées par mapGiphyResults, invisibles pour
+// la garde ci-dessus). Seul api.giphy.com était autorisé → « GIF non envoyé — Load failed » à chaque fois.
+// Sabotage : retirer ces hôtes de connect-src → échec.
+describe('CSP : hôtes des fichiers GIF (A6-14)', () => {
+  const liste = connectSrc();
+  const giphyHosts = (html.match(/K\._GIF_MEDIA_HOSTS = \[([^\]]+)\]/) || [, ''])[1].match(/[a-z0-9.]+\.giphy\.com/g) || [];
+  it('la page déclare la liste des hôtes GIF qu\'elle accepte de télécharger', () => {
+    expect(giphyHosts).toEqual(expect.arrayContaining(['media0.giphy.com', 'media2.giphy.com', 'i.giphy.com']));
+  });
+  it.each(['media.giphy.com', 'media0.giphy.com', 'media1.giphy.com', 'media2.giphy.com', 'media3.giphy.com', 'media4.giphy.com', 'i.giphy.com'])('%s autorisé par connect-src', (h) => {
+    expect(couvert('https://' + h, liste)).toBe(true);
+    expect(giphyHosts).toContain(h);
+  });
+  it('minimal : pas de joker *.giphy.com, et un autre hôte reste refusé', () => {
+    expect(liste).not.toContain('https://*.giphy.com');
+    expect(couvert('https://evil.giphy.com.example.org', liste)).toBe(false);
+  });
+});

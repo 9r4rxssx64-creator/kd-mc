@@ -48,7 +48,18 @@ const PURGE_TYP = 'dopurge';            // v1.1.304 (A2-06) : purge interne du b
 const RATE_LIMITS = {
   message: 100, reaction: 120, edit_message: 30, delete_message: 30,
   read: 300, typing: 120, signaling: 600, poll_vote: 60, history_since: 60, other: 120,
+  // Lot C2 (A6-15) : position live — une mise à jour toutes les 2 s au plus, par socket.
+  location_update: 30,
+  // Lot C2 (A6-08) : offres d'appel (en plus du plafond « signaling ») — un appel de groupe maillé
+  // envoie une offre par participant ; 20/min laisse passer un vrai appel, pas une rafale.
+  call_offer: 20,
 };
+// Lot C2 (A6-08) : notifications d'APPEL par appelant (toutes sockets confondues, mémoire du DO) :
+// au plus 1 toutes les 45 s, et au plus 3 par fenêtre de 10 minutes. Au-delà : l'appel est relayé
+// aux appareils connectés, mais le téléphone verrouillé ne sonne plus en boucle.
+const CALL_PUSH_MIN_GAP_MS = 45000;
+const CALL_PUSH_WINDOW_MS = 10 * 60000;
+const CALL_PUSH_MAX_PER_WINDOW = 3;
 const SIGNALING_TYPES = new Set(['webrtc-offer', 'webrtc-answer', 'webrtc-candidate', 'call-end', 'call-busy']);
 const E2E_TAG_RE = /^E2E\d+:/;
 // Messages techniques du chiffrement de groupe (clés E2EGK1 / demandes E2EGR1) : relayés et gardés, mais
@@ -154,6 +165,7 @@ export class ConversationDO {
     this._flushRetryAt = 0;       // pas de nouvel essai avant cet instant
     this._recent = new Map();     // id → { seq, ts } : accusés récents (A2-08, renvoi idempotent)
     this._recheckTimer = false;   // A2-02 : filet périodique démarré par une connexion WebSocket
+    this._callPushLog = new Map(); // Lot C2 (A6-08) : appelant → horodatages des notifications d'appel envoyées
 
     // Hibernation / redémarrage : restore seq + messages acquittés pas encore en D1 (A2-01).
     state.blockConcurrencyWhile(async () => {
@@ -653,6 +665,10 @@ export class ConversationDO {
       : (RATE_LIMITS[msg.type] != null ? msg.type : 'other');
     if (!session.rl) session.rl = {};
     session.rl[bucket] = (session.rl[bucket] || 0) + 1;
+    if (msg.type === 'webrtc-offer') {
+      session.rl.call_offer = (session.rl.call_offer || 0) + 1;
+      if (session.rl.call_offer > RATE_LIMITS.call_offer) return true;
+    }
     return session.rl[bucket] > RATE_LIMITS[bucket];
   }
 
@@ -1195,8 +1211,10 @@ export class ConversationDO {
             candidates: [],
             ts: Date.now(),
           };
-          this.notifyOfflineCall(session.userId, session.convId, msg.callType || 'audio')
-            .catch((e) => console.warn('[call push] failed:', e && e.message));
+          if (this._callPushAllowed(session.userId)) {
+            this.notifyOfflineCall(session.userId, session.convId, msg.callType || 'audio')
+              .catch((e) => console.warn('[call push] failed:', e && e.message));
+          }
         } else if (msg.type === 'webrtc-candidate') {
           // bufferise les premiers ICE du caller (≤30) pour les rejouer au join
           if (this.pendingCall && this.pendingCall.fromUserId === session.userId
@@ -1245,6 +1263,23 @@ export class ConversationDO {
         break;
       }
 
+      // Lot C2 (A6-15) : position « live » — rejetée avant (« Type inconnu »), le pair ne voyait que la
+      // 1re position. Relayée aux autres membres connectés (la socket est déjà celle d'un MEMBRE,
+      // re-vérifié ci-dessus), jamais stockée ; l'émetteur est imposé par la session (pas d'usurpation).
+      // L'app ne l'envoie que hors chiffrement de bout en bout (groupe assumé transit, ou E2E coupé).
+      case 'location_update': {
+        const lat = msg.lat, lng = msg.lng;
+        if (typeof msg.msg_id !== 'string' || !msg.msg_id || msg.msg_id.length > MAX_REF_ID ||
+            typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng) ||
+            Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+          return ws.send(JSON.stringify({ type: 'error', message: 'location_update: position invalide' }));
+        }
+        const acc = (typeof msg.accuracy === 'number' && Number.isFinite(msg.accuracy) && msg.accuracy >= 0) ? msg.accuracy : null;
+        this.broadcast({ type: 'location_update', from: session.userId, msg_id: msg.msg_id, lat, lng, accuracy: acc,
+          updated_at: Date.now(), convId: session.convId }, ws);
+        break;
+      }
+
       default:
         ws.send(JSON.stringify({ type: 'error', message: 'Type inconnu: ' + msg.type }));
     }
@@ -1283,10 +1318,8 @@ export class ConversationDO {
     // Distribution de clés de groupe (E2EGK1/E2EGR1) : technique, jamais affichée → pas de « 💬 Nouveau message ».
     if (MIMES_SILENCIEUX.has(messageRecord.mime)) return;
     try {
-      // Récupérer tous les members de la conv
-      const members = await this.env.APEX_CHAT_DB.prepare(
-        'SELECT user_id FROM conversation_members WHERE conv_id=?'
-      ).bind(messageRecord.conv_id).all();
+      // Récupérer les members de la conv — Lot C2 (A4 P1-2) : SAUF ceux qui l'ont mise en muet.
+      const members = await this._notifiableMembers(messageRecord.conv_id);
 
       // Identifier ceux qui ne sont PAS connectés ici
       const connectedUsers = new Set([...this.sessions.values()].map(s => s.userId));
@@ -1297,16 +1330,12 @@ export class ConversationDO {
       if (offline.length === 0) return;
 
       // v1.1.150 : nom de l'expéditeur dans la notif (titre plus parlant que "Apex Chat")
-      let senderName = 'Quelqu\'un';
-      try {
-        const u = await this.env.APEX_CHAT_DB.prepare(
-          'SELECT pseudo, real_name FROM users WHERE id=?'
-        ).bind(messageRecord.sender_id).first();
-        if (u) senderName = u.real_name || u.pseudo || senderName;
-      } catch (_) {}
+      // Lot C2 (A4 P3-7) : « Nom · Groupe » — dans un groupe, le nom du groupe suit celui de l'expéditeur.
+      const senderName = await this._senderLabel(messageRecord.sender_id);
+      const groupName = await this._groupLabel(messageRecord.conv_id);
 
       const pushPayload = {
-        title: senderName,
+        title: groupName ? senderName + ' · ' + groupName : senderName,
         body: '💬 Nouveau message',
         tag: `conv-${messageRecord.conv_id}`,
         renotify: true,
@@ -1316,6 +1345,7 @@ export class ConversationDO {
           messageId: messageRecord.id,
           senderId: messageRecord.sender_id,
           senderName,
+          groupName: groupName || null,
           ts: messageRecord.ts
         }
       };
@@ -1324,6 +1354,58 @@ export class ConversationDO {
     } catch (e) {
       console.error('notifyOfflineMembers error', e.message);
     }
+  }
+
+  /**
+   * Lot C2 (A4 P1-2) : membres à notifier d'un MESSAGE = membres sans muet actif (muet sans fin, ou
+   * pas encore échu) dans conv_mutes (migration 0018). Table absente (fenêtre de déploiement avant la
+   * migration) → requête d'avant : on notifie comme avant plutôt que de perdre une notification.
+   */
+  async _notifiableMembers(convId) {
+    const DB = this.env.APEX_CHAT_DB;
+    try {
+      return await DB.prepare(
+        `SELECT user_id FROM conversation_members WHERE conv_id=? AND NOT EXISTS (
+           SELECT 1 FROM conv_mutes x WHERE x.conv_id=conversation_members.conv_id AND x.user_id=conversation_members.user_id
+             AND (x.muted_until IS NULL OR x.muted_until > ?))`
+      ).bind(convId, Date.now()).all();
+    } catch (_) {
+      return DB.prepare('SELECT user_id FROM conversation_members WHERE conv_id=?').bind(convId).all();
+    }
+  }
+
+  /**
+   * Lot C2 (A4 P3-7) : nom affiché dans une notification. Comportement voulu par le produit et annoncé dans la
+   * charte (Lot B, A6-07) : le prénom + nom du compte (real_name), sinon le pseudo.
+   */
+  async _senderLabel(userId) {
+    try {
+      const u = await this.env.APEX_CHAT_DB.prepare(
+        'SELECT pseudo, real_name FROM users WHERE id=?'
+      ).bind(userId).first();
+      const n = u && String(u.real_name || u.pseudo || '').trim();
+      if (n) return n.slice(0, 60);
+    } catch (_) { /* nom générique */ }
+    return 'Quelqu\'un';
+  }
+
+  /** Lot C2 (A4 P3-7) : nom du GROUPE (null pour une conversation à deux, ou sans nom). */
+  async _groupLabel(convId) {
+    try {
+      const c = await this.env.APEX_CHAT_DB.prepare('SELECT type, name FROM conversations WHERE id=?').bind(convId).first();
+      if (c && c.type && c.type !== 'dm' && c.name) return String(c.name).slice(0, 60);
+    } catch (_) { /* pas de nom de groupe */ }
+    return null;
+  }
+
+  /** Lot C2 (A6-08) : une notification d'appel de plus est-elle permise pour cet appelant ? (et la note) */
+  _callPushAllowed(callerId, now = Date.now()) {
+    const log = (this._callPushLog.get(callerId) || []).filter((t) => now - t < CALL_PUSH_WINDOW_MS);
+    const last = log.length ? log[log.length - 1] : -Infinity;
+    const ok = now - last >= CALL_PUSH_MIN_GAP_MS && log.length < CALL_PUSH_MAX_PER_WINDOW;
+    if (ok) log.push(now);
+    this._callPushLog.set(callerId, log);
+    return ok;
   }
 
   // v1.1.150 : push d'appel entrant. Quand un offer WebRTC arrive et que
@@ -1341,13 +1423,7 @@ export class ConversationDO {
       );
       if (offline.length === 0) return;
 
-      let callerName = 'Quelqu\'un';
-      try {
-        const u = await this.env.APEX_CHAT_DB.prepare(
-          'SELECT pseudo, real_name FROM users WHERE id=?'
-        ).bind(callerUserId).first();
-        if (u) callerName = u.real_name || u.pseudo || callerName;
-      } catch (_) {}
+      const callerName = await this._senderLabel(callerUserId);
 
       const isVideo = callType === 'video';
       const pushPayload = {

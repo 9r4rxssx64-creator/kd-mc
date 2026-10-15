@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 (soir) — Admin du domaine : section « ⚡ Raccourcis du domaine » (Kevin : « Ajoute les tuiles qu'il manque dans le domaine » → « Raccourcis admin du domaine »)
+
+- **Livré (code + tests, portail v1.0.60)** : 6 tuiles en tête de l'accueil admin, une destination chacune : Mes messages · inscriptions à valider, Qui est en ligne, Un compte (état / ouvrir / supprimer), Créer un compte invité, Fermer des applications, Journal admin. Les sections repliées s'ouvrent à l'arrivée (hashchange).
+- **Garde** : `tests/admin-tuiles.test.mjs` (9, dont 2 nouveaux), 2 sabotages rouges.
+- **Pas fait (non demandé)** : ClayScore et les apps privées regroupées (réponses non choisies).
+
 ## 2026-10-15 (soir) — Admin du domaine : bouton « 🗑️ Supprimer ce compte » (Kevin : « Comment je supprime un compte ? » → « Ajoute »)
 
 - **Livré (code + tests, portail v1.0.59, routeur à déployer)** : dans « 🔎 État du compte », bouton « 🗑️ Supprimer ce compte » (confirmation en clair) → `POST /__admin/compte-supprimer {uid, confirmer:true}` : efface fiche, code, compteur, nom réservé, index et demandes en attente ; le nom redevient libre. Jamais l'admin ni un compte au nom de Kevin (refusé côté domaine ET pas de bouton). Copie de la fiche 30 jours en `del:<uid>` (filet), journal `compte_supprime`.

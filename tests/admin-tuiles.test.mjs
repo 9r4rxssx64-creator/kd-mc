@@ -89,3 +89,22 @@ test('aucune app du registre n\'est orpheline de l\'admin', () => {
     orphelines.length + ' app(s) du domaine sont INTROUVABLES depuis l\'admin : '
     + orphelines.join(' · ') + '. Une app qu\'on ne voit pas n\'existe pas.');
 });
+
+/* Kevin 15.10.2026 : « Ajoute les tuiles qu'il manque dans le domaine » → « Raccourcis admin du domaine ». */
+test('les 6 raccourcis du domaine sont rendus, en premier, une fois chacun', () => {
+  assert.ok(html.indexOf('Raccourcis du domaine') >= 0 && html.indexOf('Raccourcis du domaine') < html.indexOf('Mon business'), 'la section « Raccourcis du domaine » doit passer avant « Mon business »');
+  for (const [lib, href] of [['Mes messages', 'https://kd-mc.com/#messages'], ['Qui est en ligne', '#presence'], ['Un compte : état, ouvrir, supprimer', '#list'],
+    ['Créer un compte invité', '#creer-invite'], ['Fermer des applications', '#fermgen'], ['Journal admin', '#journal']]) {
+    assert.ok(html.indexOf(lib) >= 0, 'tuile « ' + lib + ' » absente');
+    assert.equal(compte(new RegExp('href="' + href.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '"', 'g')), 1, 'la destination ' + href + ' doit avoir UNE seule tuile');
+  }
+});
+
+test('chaque raccourci interne vise une section qui existe vraiment dans la page', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../kdmc-home/admin/admin.js', import.meta.url), 'utf8');
+  for (const id of ['presence', 'list', 'creer-invite', 'fermgen', 'journal']) {
+    assert.ok(new RegExp('id="' + id + '"').test(src), 'aucune section id="' + id + '" : la tuile mènerait nulle part');
+  }
+  assert.ok(/hashchange/.test(src) && /el\.open = true/.test(src), 'les sections repliées doivent se déplier quand on arrive par une tuile');
+});

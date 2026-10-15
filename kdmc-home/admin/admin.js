@@ -37,7 +37,18 @@
        VOIENT. Le tableau de bord Commerce a été retiré de la section commune
        juste en dessous : une seule tuile par destination, jamais deux (règle
        « zéro doublon UX »). */
-    return '<h2 class="cat">🚀 Mon business</h2><div class="grid">'
+    return '<h2 class="cat">⚡ Raccourcis du domaine</h2><div class="grid">'
+      /* Kevin 15.10.2026 : « Ajoute les tuiles qu'il manque dans le domaine » → « Raccourcis admin du domaine ». Ce que Kevin fait CHAQUE jour
+         dans l'admin (valider, voir qui est là, ouvrir ou supprimer un compte, créer un invité, fermer des apps, lire le journal) avait des boutons
+         enfouis plus bas : une fonction qu'on ne voit pas n'existe pas. Une destination, une tuile (zéro doublon). */
+      + card('📬', 'Mes messages · inscriptions à valider', 'Messages de toutes les apps, inscriptions et codes à accepter', 'https://kd-mc.com/#messages')
+      + card('🟢', 'Qui est en ligne', 'Connectés et récents, dans toutes les apps', '#presence')
+      + card('🔎', 'Un compte : état, ouvrir, supprimer', 'Fiches clients : pourquoi quelqu\'un est bloqué, l\'ouvrir, le supprimer', '#list')
+      + card('➕', 'Créer un compte invité', 'Un accès pour quelqu\'un, avec son code', '#creer-invite')
+      + card('🚫', 'Fermer des applications', 'Pour tout le monde, ou pour des personnes précises', '#fermgen')
+      + card('🛡', 'Journal admin', 'Connexions, validations, suppressions, appareils', '#journal')
+      + '</div>'
+      + '<h2 class="cat">🚀 Mon business</h2><div class="grid">'
       + card('🛒', 'Commerce — Tableau de bord', 'Ventes, file à valider, produits, vidéos, commandes', '/admin/commerce.html')
       + card('🛍', 'Kit IA — ma page de vente', 'Ce que voient mes clients — kit.kd-mc.com', 'https://kit.kd-mc.com/')
       /* Les deux autres produits en vente manquaient ici alors que Kit y etait :
@@ -637,6 +648,11 @@
     wirePresence();
     wireHist();
     _comptes = accounts || [];
+    /* Les tuiles « Raccourcis » pointent vers des sections repliées : on les déplie quand on y arrive (une seule écoute pour toute la vie de la page). */
+    if (!window._ancreEcoutee) {
+      window._ancreEcoutee = true;
+      window.addEventListener('hashchange', function () { var el = document.getElementById(String(location.hash || '').slice(1)); if (el && el.tagName === 'DETAILS') el.open = true; });
+    }
     wireRevoke();
     wireEtat();
     wireAcces();

@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.977 (2026-10-15 — les deux rouges de `main` corrigés : les cadres gardent leur groupe d'octobre, la ligne « TOTAL équipe » n'est plus prise pour une personne)
+
+- **Kevin : « Corrige l'erreur que l'autre branche a trouvée »** → `test:equipes-mois-suivant` et `test:departs-groupes` étaient rouges sur `main` (je les avais notés « déjà rouges avant moi » SANS le vérifier sur `origin/main` : l'un des deux venait de moi).
+  - **Octobre : 19 cadres (Pit Boss / Superviseurs) sans équipe (293/312)** — cause mesurée : au démarrage le seed leur pose bien `pit15` / `sup`, puis `_cmcSyncChefsTFromBoards` (« les tableaux du PDF font autorité ») effaçait tout groupe qui n'est pas un tableau d'équipe du PDF — or le tableau des cadres s'appelle `cadres`, pas `pit15`. Corrigé : cette purge saute les cadres (`P…` / `S…`). Résultat mesuré : 312/312.
+  - **`departs-groupes`** : la ligne « TOTAL équipe » des heures (v9.971, `<tr data-h-total>`) était comptée comme une 11ᵉ personne « ? » dans le tableau de CMC Éq.3 ; le test l'ignore (ce n'est pas une personne). 44/44.
+
 ## CMCteams v9.976 · light v1.104 (2026-10-14 soir — sous le tableau : seulement le nom du chef)
 
 - **Kevin : « Enlève les infos : choisi par l'admin et le reste. »** (règle « pas d'infos inutiles nulle part »). Sous le titre de la light et sous chaque tableau de CMCteams : **« ⭐ Chef d'équipe : NOM »**, rien d'autre — plus « choisi par l'admin », plus « provisoire », plus « ancienneté inconnue », plus la phrase de règle. Ces explications restent là où elles servent : le **bilan des chefs** (origine, anciennetés à renseigner, règle) et la **légende du bas** de la light. Garde `test:chefs-equipe` (70 ; sabotage : remettre l'ancienne ligne fait rougir 4 vérifs).

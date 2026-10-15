@@ -123,6 +123,9 @@
 - Cause lue dans le code, prouvée en vrai navigateur : une pièce jointe qui ne s'importe pas n'était jamais acquittée → le serveur la renvoyait entière à chaque scan (ouverture, retour sur l'app, toutes les 5 min) et 12 fois de suite dans le même scan.
 - Corrigé : 3 essais puis la pièce est écartée (dit à l'écran), un tour sans acquittement s'arrête. Garde `test:finances-telechargements` (7 ; sabotage 3/7 : 12 appels), dans `test:ci`. Leçon ajoutée.
 - Pas d'historique revenu côté Kevin ; la page se met à jour toute seule à l'ouverture.
+## 2026-10-15 (matin, v9.977) — deux rouges de `main` corrigés
+- **Fait** : `test:equipes-mois-suivant` (cadres sans équipe en octobre : la purge « le PDF fait autorité » les effaçait, le tableau s'appelle `cadres` ≠ `pit15`) et `test:departs-groupes` (la ligne TOTAL équipe comptée comme une personne). **Leçon** : je ne dois plus écrire « déjà rouge avant moi » sans l'avoir mesuré sur `origin/main`.
+
 ## 2026-10-14 (soir, v9.976 / v1.104) — sous le tableau : seulement « ⭐ Chef d'équipe : NOM »
 - **Fait** : l'origine (« choisi par l'admin »), « provisoire », les anciennetés inconnues et la phrase de règle ne s'affichent plus sous les tableaux ; elles restent dans le bilan et la légende (`CHEFS.ligneCourte`). Kevin : « enlève les infos ».
 

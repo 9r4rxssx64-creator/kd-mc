@@ -119,8 +119,17 @@ try {
 
   /* Déconnexion → écran de déverrouillage avec bouton Face ID */
   await page.click('#logout');
-  const pkBtn = await page.waitForSelector('#u-pk', { timeout: 5000 }).then(() => true).catch(() => false);
-  ok(pkBtn, 'Au retour → bouton "Se connecter avec Face ID" présent');
+  /* Portail v1.0.57 (Kevin 13.10 : « Face ID automatique seulement à la 1re ouverture ») : à la 1re ouverture de l'écran de déverrouillage,
+     Face ID part TOUT SEUL (une seule tentative par chargement de page) — le test ne clique plus, il constate. */
+  const auto = await page.waitForFunction(() => { var h = document.getElementById('hub'); return h && !h.hidden; }, { timeout: 8000 }).then(() => true).catch(() => false);
+  ok(auto, 'Au retour (1re ouverture) → Face ID part tout seul, hub affiché sans toucher');
+  const whoAuto = await page.evaluate(() => window.kdmcSSO.whoami());
+  ok(whoAuto && whoAuto.verified === true && whoAuto.uid === 'lucie-martin', 'Face ID automatique → session FORTE (verified:true) + bonne identité');
+
+  /* 2e retour sur la même page : plus de tentative automatique (jamais de boucle) → le bouton est là, actif, et c'est lui qu'on touche */
+  await page.click('#logout');
+  const pkBtn = await page.waitForSelector('#u-pk:not([disabled])', { timeout: 5000 }).then(() => true).catch(() => false);
+  ok(pkBtn, 'Au 2e retour → plus de Face ID automatique : bouton "Se connecter avec Face ID" présent et actif');
 
   /* Connexion par Face ID (sans code) */
   await page.click('#u-pk');

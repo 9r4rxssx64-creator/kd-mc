@@ -1469,6 +1469,10 @@ test:voix-chirp 16/0, voisins verts ; 8 sabotages rouges. **À vérifier en vrai
 
 Après la fusion #4316, « Coffre → dépôt public : synchroniser le CODE » s'est arrêté (6 « téléphone » = une constante sRGB de three.js dans `perso3d.js`) : routeur et Lingua non déployés. Corrigé à la source (`tools/3d/build-runtime.mjs` écrit la constante en notation scientifique) + garde dans `test:perso3d`. Leçon 417.
 
+## 2026-10-15 (après-midi) — CORRIGE TOUT : LE TEST FACE ID NAVIGATEUR REMIS AU VERT
+
+**Fait** : le robot « KDMC SSO — test navigateur réel » du dépôt public était rouge depuis la fusion #4577 (Face ID automatique à la 1re ouverture) : `tools/kdmc-passkey-e2e/run.mjs` cliquait un bouton déjà grisé. Le test constate maintenant la connexion automatique (session forte), puis vérifie qu'au 2e retour il n'y a plus de tentative automatique et que le bouton marche. 17/0 en local, sabotage → rouge. Leçon 556. Le rouge « Deploy kdmc-access » est déjà corrigé par #4580.
+
 ## 2026-10-15 (midi) — BEE DANS L'ARBRE : VÉRIFIÉ EN VRAI NAVIGATEUR, UN DÉFAUT TROUVÉ ET CORRIGÉ
 
 **Fait** : Kevin demande « vérifie dans l'arbre le fonctionnement de Bee ». Le VRAI `arbre/index.html` (widget chargé en direct) testé dans Chromium : le chat s'ouvre au toucher, mais les boutons de l'arbre n'apparaissaient jamais et le domaine ne savait pas que Kevin était dans l'arbre → Bee déduit maintenant l'app depuis l'adresse. `test:bee-arbre-navigateur` (15, ancien widget = 2 échecs). Leçon 554. **Toujours pas vu** : l'écriture dans le vrai nuage, et l'iPhone (Face ID).

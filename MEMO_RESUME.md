@@ -6,6 +6,11 @@
 - Réparé : appels en parallèle, affichage dès l'historique reçu (la boîte et le journal complètent ensuite) ; le worker garde 15 s un « oui » du domaine (jamais un refus).
 - Mesuré en local : test:kdmc-access 35/35 (faux réseau lent, sabotages rouges) ; test:kdmc-access-navigateur 10/10. Leçon #557.
 - Pas vérifié : le temps réel sur le vrai iPhone avec le vrai compte (non mesurable depuis ici) ; à confirmer par Kevin après la mise en ligne.
+## 2026-10-15 — Apex Chat : ultra-audit n° 2 terminé, rapport consolidé
+
+- Rapport privé : `audit/prive/APEX-CHAT-ULTRA-AUDIT-2-2026-10-15.md` (7 lots, mesures prod, reste à faire, actions de Kevin).
+- Prod : déploiement kd-mc 38728327255 OK (clé des sauvegardes alignée) ; E2E 4 passages × 19/0/0/0.
+- Attend Kevin : renouveler le token Cloudflare, sonde healthchecks.io, test iPhone (groupe 3 comptes, photo, 🔒).
 
 ## 2026-10-15 — admin.kd-mc.com v2 : la porte n'enferme plus l'app installée (branche claude/admin-page-compte-v2)
 

@@ -218,9 +218,13 @@ async function detectAndSuggestTool(text: string, rootEl: HTMLElement): Promise<
     const recentToolIds = conversation.slice(-10).filter(m => m.role === 'tool_card').map(m => (m as DisplayMessage & { toolId?: string }).toolId);
     if (recentToolIds.includes(tool.id)) return;
 
-    /* Toast non-intrusif "🎯 Outil détecté : Studio Mix" — TOUJOURS affiché */
-    const { toast } = await import('../../ui/toast.js');
-    toast.info(`${tool.emoji} ${tool.name} disponible — tape pour ouvrir`, { duration: 5000 });
+    /* v13.4.370 (vu le 15.10 sur la capture iPhone) : la bulle flottante ET la carte du même outil
+     * s'affichaient ensemble — la bulle recouvrait la réponse. Un seul signal : la carte dans le chat,
+     * la bulle seulement si Kevin a coupé les cartes (Réglages). */
+    if (!autoEmbed) {
+      const { toast } = await import('../../ui/toast.js');
+      toast.info(`${tool.emoji} ${tool.name} disponible — tape pour ouvrir`, { duration: 5000 });
+    }
 
     /* Track usage potentiel */
     const user = store.get('user');

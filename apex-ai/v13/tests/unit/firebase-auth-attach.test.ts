@@ -39,7 +39,7 @@ describe('firebase — attache token RTDB ?auth= (sécu Phase 5)', () => {
     const f = mockFetchOk();
     await firebase.init();
     const urls = f.mock.calls.map((c) => String(c[0]));
-    const pinged = urls.find((u) => u.includes('shallow=true'));
+    const pinged = urls.find((u) => u.includes('/apex/apex_v13_ping.json')); /* v13.4.370 : ping sur un chemin lisible (la racine répond 401) */
     expect(pinged).toBeDefined();
     expect(pinged).toContain('auth=TESTTOKEN123');
   });
@@ -49,7 +49,7 @@ describe('firebase — attache token RTDB ?auth= (sécu Phase 5)', () => {
     const f = mockFetchOk();
     await firebase.init();
     const urls = f.mock.calls.map((c) => String(c[0]));
-    const pinged = urls.find((u) => u.includes('shallow=true'));
+    const pinged = urls.find((u) => u.includes('/apex/apex_v13_ping.json')); /* v13.4.370 : ping sur un chemin lisible (la racine répond 401) */
     expect(pinged).toBeDefined();
     expect(pinged).not.toContain('auth=');
   });
@@ -59,7 +59,15 @@ describe('firebase — attache token RTDB ?auth= (sécu Phase 5)', () => {
     const f = mockFetchOk();
     await firebase.init();
     const urls = f.mock.calls.map((c) => String(c[0]));
-    const pinged = urls.find((u) => u.includes('shallow=true'));
+    const pinged = urls.find((u) => u.includes('/apex/apex_v13_ping.json')); /* v13.4.370 : ping sur un chemin lisible (la racine répond 401) */
     expect(pinged).toContain('auth=a%2Fb%2Bc%3Dd');
+  });
+
+  it('v13.4.370 : le ping ne vise plus la racine fermée (401 mesuré sur la vraie base)', async () => {
+    vi.spyOn(firebaseAuthBridge, 'getToken').mockReturnValue('T');
+    const f = mockFetchOk();
+    await firebase.init();
+    const urls = f.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => /firebasedatabase\.app\/\.json/.test(u))).toBe(false);
   });
 });

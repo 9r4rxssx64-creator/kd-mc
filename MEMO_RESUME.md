@@ -16742,3 +16742,21 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
 - **Ménage fait (coffre, run 37803292187)** : les 11 fiches d'attaque de l'audit Strix retirées (corbeille `corbeille:comptes:2026-10-08-15-45-44`,
   90 j) — **registre 26 → 15** (Kevin + 7 personnes sans code + 7 avec code). Piège du robot : la 1re exécution lancée juste après `enable`
   reste « queued » pour toujours (3 fois vécu) → attendre 30 s après `enable`, et relancer si la file ne bouge pas en 3 min.
+
+## 2026-10-15 — « Apex ne fonctionne plus » → Apex v13.4.370 répond à nouveau, gratuite, en 1 à 4 s
+
+- **Constaté en vrai** (Chromium, Apex ouverte comme Kevin, fichiers de la version en ligne) : « Bonjour Apex » → « ⚠ Aucune clé API configurée ».
+  Cause : Apex ne savait répondre qu'avec des clés rangées dans le téléphone ; sa route serveur exigeait l'empreinte du code admin (401).
+- **Réparé** : sans clé (ou si toutes les clés échouent), la question part à la passerelle du domaine `apis.kd-mc.com/ai` — IA gratuites,
+  conférence pour les demandes longues, outils (météo, web, calcul) quand le jeton du domaine de Kevin est là. Date de Monaco jointe à chaque question.
+  Mesuré après réparation : date 1,5 s (« jeudi 15 octobre 2026 », juste), 3 recettes 2,0 s, message d'équipe 3,5 s — Groq gpt-oss-120b, gratuit.
+- **Aussi corrigé** (vu sur les captures iPhone) : l'écran « tape ton code » qui recouvrait le chat (et rangeait le code admin) ; l'alerte rouge
+  « toutes les IA KO » ; le bandeau « Pas de clé API » ; le bandeau « Diagnostic 4/12 » à chaque ouverture ; la bulle « Finance Pro » en double
+  (et fausse : « prévenir » contenait « ir ») ; le badge de version posé sur l'onglet Chat ; le ping Firebase sur la racine fermée (401 en boucle).
+- **Interrupteur** : `apex_v13_passerelle = '0'` (stockage du téléphone) rend l'ancien comportement.
+- **À savoir** : `/apex` de la base est lisible par tout compte anonyme (inscription anonyme ouverte) — signalé à Kevin, pas modifié (risque de casser Apex et le coffre-fort).
+- **Barrière `test:ci` jouée en entier en local (477 étapes, 15.10)** : 1 rouge à moi, corrigé — `test:reconnu-domaine-apps` exécutait le code
+  compressé d'Apex en devinant les lettres (`T`, `S`…) ; il lit maintenant les vrais noms dans le fichier (vert sur l'ancienne ET la nouvelle construction,
+  4 sabotages rouges). **7 rouges DÉJÀ présents sur `main` avant moi** (reproduits sur une copie de main 6cbd228) : `departs-groupes` (CMC Éq.3, groupe GR1 CRAPS),
+  `entetes-light`, `tests-isoles-sw` (arbre-message-kevin.test.mjs sans `serviceWorkers:'block'`), `equipes-mois-suivant`, `pipeline-sessions`,
+  `arbre-ordi`, `marionnette` — à reprendre par les sessions light / arbre / Bee.

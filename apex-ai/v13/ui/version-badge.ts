@@ -24,41 +24,32 @@ const STYLE_INJECTOR_ID = 'apex-version-badge';
  * AVANT : right:8px masqué par SOS bouton (right:16px, z-index 2147483647).
  * APRÈS : bottom-LEFT (loin du SOS) + z-index élevé pour rester au-dessus
  * de tout sauf modals. opacity 0.85 (vs 0.6) pour lisibilité immédiate. */
+/* v13.4.370 (mesuré 15.10 en vrai navigateur, iPhone 390 px) : en bas à gauche, le badge (74×44 px) était posé
+ * SUR l'onglet « Chat » de la barre du bas et captait ses appuis. Il passe en haut à droite, sous l'en-tête,
+ * petit, et ne capte plus aucun appui (il ne cache plus ni onglet ni bouton « copier » des messages).
+ * La version reste visible en permanence (règle Kevin « badge version visible toujours »). */
 const BADGE_CSS = `
   #${BADGE_ID} {
     position: fixed;
-    bottom: max(8px, env(safe-area-inset-bottom, 8px));
-    left: 8px;
+    top: calc(env(safe-area-inset-top, 0px) + 54px);
+    right: 8px;
     z-index: 2147483646;
-    padding: 5px 10px;
-    background: linear-gradient(135deg, rgba(232, 184, 48, 0.22), rgba(232, 184, 48, 0.12));
-    border: 1px solid rgba(232, 184, 48, 0.55);
+    padding: 2px 6px;
+    min-height: 0;
+    min-width: 0;
+    background: rgba(232, 184, 48, 0.12);
+    border: 1px solid rgba(232, 184, 48, 0.35);
     color: #c9a227;
-    font-size: 11px;
+    font-size: 10px;
     font-family: 'SF Mono', Menlo, monospace;
     font-weight: 700;
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    cursor: pointer;
+    border-radius: 8px;
     user-select: none;
     -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    opacity: 0.85;
-    transition: opacity 200ms ease;
-    pointer-events: auto;
-    line-height: 1;
+    opacity: 0.7;
+    pointer-events: none;
+    line-height: 1.2;
     letter-spacing: 0.02em;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-  #${BADGE_ID}:hover, #${BADGE_ID}:active {
-    opacity: 1;
-  }
-  @media (max-width: 480px) {
-    #${BADGE_ID} {
-      font-size: 10px;
-      padding: 4px 8px;
-    }
   }
 `;
 

@@ -16807,3 +16807,7 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
 - **Mesuré sans compte** : 32 pages sur 32 = porte ✅ ; MAIS `apis.kd-mc.com` répondait à tout le monde et `admin.kd-mc.com` montrait sa page (voir leçon 547).
 - **Côté apps (ce commit)** : CMCteams **v9.978** + Apex **v13.4.371** (jours fériés + assistant gratuit via `_cmcApisInit`, dans `tools/shared/fiche-privee.js`), client partagé `free-apis-client.js`, Apex (`kdmc-gateway.ts`) : cookie du domaine + laissez-passer. Garde `test:apis-clients-compte`.
 - **Côté serveur** : branches `claude/apis-compte-obligatoire` (passerelle, 225 contrôles) puis `claude/admin-page-compte` (page admin, en attente de l'accord de Kevin : sur iPhone, l'app installée n'a pas les cookies de Safari). **Ordre : apps → passerelle → admin.**
+
+## 2026-10-15 (10h30) — compte obligatoire : passerelle FERMÉE en ligne (PR #4566 apps, #4567 passerelle)
+- Mesuré après mise en ligne (10h15 UTC) : 401 `compte_requis` sur `/`, `/holidays`, `/geo`, `/time`, `/fx`, `/ai` (même avec `Origin` falsifié) ; `/health` → `{ok:true}` ; préflight 204 avec origine exacte + credentials.
+- À faire / en attente : page `admin.kd-mc.com` (branche `claude/admin-page-compte`, accord de Kevin demandé) ; leçon de cette branche à renuméroter (549) ; chemin « compte valide » non prouvé en ligne.

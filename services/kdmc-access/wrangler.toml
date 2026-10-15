@@ -10,3 +10,14 @@ workers_dev = true
 routes = [
   { pattern = "admin.kd-mc.com", custom_domain = true },
 ]
+
+# 🔒 « Aucune consultation sans compte, nulle part » (Kevin 3.10 ; appliqué ici le 15.10.2026).
+# keep_vars : un déploiement n'efface pas une variable posée à la main dans Cloudflare.
+keep_vars = true
+
+[vars]
+# "1" = la page « Qui se connecte » n'est servie qu'à un compte du domaine ouvert et non révoqué
+#       (sinon la porte 401 « Cette page est réservée »). "0" = retour à l'ancien comportement
+#       (la page s'affiche à tous ; ses données restent protégées par la session admin ou le code).
+#       Variable absente = porte active (fail-closed).
+ACCES_PAGE_COMPTE = "1"

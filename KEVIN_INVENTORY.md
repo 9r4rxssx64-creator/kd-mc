@@ -3247,6 +3247,7 @@ Les 6 dépôts : [skills](https://github.com/anthropics/skills) (Ingénieur) · 
 | services/kdmc-router/domain-log.test.mjs | 7 tests : lecture protégée par ton code, aucune donnée privée exposée | [Voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-router/domain-log.test.mjs) |
 | services/kdmc-access/page.js | La page « Qui se connecte » (admin.kd-mc.com) | [Voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-access/page.js) |
 | services/kdmc-access/page-logic.test.mjs | 4 tests : robots exclus, deux comptes du même nom additionnés | [Voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/main/services/kdmc-access/page-logic.test.mjs) |
+| services/kdmc-access/entree-navigateur.test.mjs | (15.10) Vrai navigateur, comme ton iPhone avec l'app installée : la page s'ouvre avec ton laissez-passer, un inconnu ne voit que la porte (10 scénarios) | [Voir](https://github.com/9r4rxssx64-creator/cmcteams/blob/claude/admin-page-compte-v2/services/kdmc-access/entree-navigateur.test.mjs) |
 
 Page live : **[admin.kd-mc.com](https://admin.kd-mc.com/)** (code ‹code admin›) · Déploiements : [routeur](https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-kdmc-router.yml) · [page admin](https://github.com/9r4rxssx64-creator/cmcteams/actions/workflows/deploy-kdmc-access.yml)
 

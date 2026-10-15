@@ -677,6 +677,25 @@
      sa section « Personnes & comptes ». Le serveur garde son propre verrou (/__admin/* → 403 sans preuve). */
   var SANS_HUB = false;
   if (typeof window !== 'undefined') window.kdmcAdmin = { hub: hub, monter: function (el) { if (!el) return; app = el; SANS_HUB = true; boot(); } };
+  /* « Qui se connecte » (admin.kd-mc.com) — 15.10.2026. Cette page n'est plus servie sans compte du domaine, et une app
+     installée sur l'écran d'accueil a ses cookies à part : un lien nu y arrivait SANS session (porte). Les tuiles de cet
+     admin étaient des liens nus, contrairement à celles du portail. On passe donc par kdmcSSO.porte() (comme le portail) :
+     admin.kd-mc.com/__sso/entrer remet le pass à la page par le lien (#kdmc_sso=), et le domaine le vérifie. */
+  function ouvrirAvecPass(href) {
+    var S = window.kdmcSSO;
+    if (!(S && S.porte)) { location.href = href; return; }
+    S.porte(href).then(function (dest) { location.href = dest; }, function () { location.href = href; });
+  }
+  if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+    window.kdmcOuvrirAvecPass = ouvrirAvecPass;
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href^="https://admin.kd-mc.com"]') : null;
+      if (!a || a.target === '_blank') return;
+      e.preventDefault();
+      ouvrirAvecPass(a.href);
+    }, true);
+  }
   /* On ne démarre que dans un navigateur : chargée par sa garde (node), la page
      n'a ni #app ni réseau — seul hub() est appelé, et il doit l'être sans effet de bord. */
   if (app && !document.documentElement.hasAttribute('data-tableau-unique')) boot();

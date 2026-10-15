@@ -201,6 +201,8 @@
       cible = f ? null : '#commerce';
       if (f) { ouvrirParents(f); f.closest('.tile').scrollIntoView({ block: 'start' }); return; }
     }
+    /* admin.kd-mc.com : le pass du domaine voyage avec (app installée, cookies à part — voir admin.js ouvrirAvecPass) */
+    if (/^https:\/\/admin\.kd-mc\.com\//.test(cible) && global.kdmcOuvrirAvecPass) { global.kdmcOuvrirAvecPass(cible); return; }
     if (/^(https?:)?\//.test(cible)) { location.href = cible; return; }
     var el = document.querySelector(cible);
     if (!el) { el = document.getElementById('commerce'); }

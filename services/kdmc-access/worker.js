@@ -6,7 +6,12 @@
  * La lecture (historique agrégé par personne) est réservée au PIN admin de Kevin.
  *
  * Endpoints :
- *   GET  /              → sert la page admin (entrée par la session du domaine, sinon code → /history)
+ *   GET  /              → sert la page admin À UN COMPTE DU DOMAINE ouvert et non révoqué (cookie ou Authorization) ;
+ *                         sinon l'ENTRÉE (401, < 2 Ko, aucun octet de la page) dont le script demande GET /page avec le
+ *                         pass rangé (app installée : cookies à part) ; refus → la porte « Cette page est réservée ».
+ *                         Interrupteur ACCES_PAGE_COMPTE (wrangler.toml) : "0" = ancien comportement.
+ *   GET  /page          → la page (text/html) à un compte du domaine vérifié, sinon 401 JSON ; même origine seulement.
+ *   GET  /__sso/entrer  → (tuile du portail) 302 vers ?to= + #kdmc_sso=<pass> ; ne vérifie rien, ne pose aucun cookie.
  *   POST /log           → apps: {app,event,device,meta} + porteur de session du domaine
  *                         (Authorization: Bearer <pass> ou cookie kdmc_sso, vérifié par
  *                         kd-mc.com/__sso/whoami) → append Firebase ; l'uid et le nom sont
@@ -254,6 +259,96 @@ async function handleHistory(request, env, origin) {
   return json({ ok: true, people: list, totalPeople: list.length, totalEvents: events.length, ts: now }, 200, origin);
 }
 
+/* 🔒 AUCUNE CONSULTATION SANS COMPTE, NULLE PART (Kevin 3.10.2026) — appliquée ICI le 15.10.2026.
+   Mesuré le 15.10 depuis l'extérieur, sans compte : https://admin.kd-mc.com/ répondait 200 avec la page
+   « Qui se connecte » complète (32 Ko : tout son code), alors que les 31 autres adresses du domaine montraient
+   la porte du routeur (porteGenerale). admin.kd-mc.com est un worker à part : la porte du routeur ne le couvre pas.
+   Désormais une PAGE n'est servie qu'à un compte du domaine ouvert et non révoqué — la vérification passe par le
+   MÊME canal que /log et /history (sessionDomaine → kd-mc.com/__sso/whoami, qui seul connaît le secret et la
+   révocation). Fail-CLOSED : domaine muet, erreur, pass falsifié ou révoqué → la porte, jamais la page.
+   L'écran de code DE la page reste pour qui a déjà un compte (la page entre seule pour Kevin reconnu).
+   Retour arrière sans toucher au code : ACCES_PAGE_COMPTE = "0" dans wrangler.toml (vars). */
+export function accesPageCompteActif(env) { return !(env && String(env.ACCES_PAGE_COMPTE) === '0'); }
+const ENTETES_PAGE = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+  'X-Frame-Options': 'DENY', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains', 'Content-Security-Policy': "frame-ancestors 'none'" };
+/* La porte : aucun code de la page admin, aucune donnée, aucun écran de saisie de code. Un seul geste.
+   `script` (optionnel) : le petit script de l'ENTRÉE (voir entreeCompte) — la porte y est alors cachée pendant l'essai. */
+function porteHtml(url, script) {
+  const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const portail = 'https://kd-mc.com/?return=' + encodeURIComponent(url.href);
+  return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+    + '<meta name="robots" content="noindex"><title>Page réservée</title>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:16px/1.5 sans-serif;padding:24px 16px;box-sizing:border-box;text-align:center}'
+    + '.c{max-width:340px;width:100%}h1{font-size:20px;color:#f6d97a}[hidden]{display:none}'
+    + 'a{display:block;min-height:50px;line-height:50px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
+    + '<body>' + (script ? '<p id="o">Ouverture…</p>' : '')
+    + '<div class="c" id="p"' + (script ? ' hidden' : '') + '><div style="font-size:44px">🔒</div><h1>Cette page est réservée.</h1>'
+    + '<p>Ouvre d&#39;abord ton compte sur kd-mc.com. Ensuite, reviens ici : la page s&#39;ouvrira.</p>'
+    + '<a href="' + esc(portail) + '">Ouvrir mon compte sur kd-mc.com</a></div>'
+    + (script ? '<noscript><style>#o{display:none}#p{display:block!important}</style></noscript><script>' + script + '</script>' : '')
+    + '</body></html>';
+}
+export function porteCompte(url) {
+  return new Response(porteHtml(url), { status: 401, headers: { ...ENTETES_PAGE, 'x-kdmc-porte': 'compte',
+    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
+}
+
+/* 🚪 L'ENTRÉE (15.10.2026, v2) — Kevin ouvre l'admin « depuis l'écran d'accueil (app installée), le domaine, et des fois Safari ».
+   Une app installée sur l'écran d'accueil de l'iPhone a ses cookies À PART de Safari (leçons 98, 343) et une NAVIGATION ne
+   pose jamais d'en-tête Authorization : une porte posée côté serveur sur la navigation l'enfermait dehors (1er correctif).
+   Donc : une navigation SANS session lisible reçoit seulement cette entrée (≈ 2 Ko, aucun octet de PAGE_HTML, aucun champ de
+   code). Son script : (a) range un `#kdmc_sso=<pass>` du lien dans localStorage.kdmc_sso_token SI aucun pass n'y est déjà
+   (un lien ne remplace pas un pass rangé — lien piégé), et nettoie l'adresse ; (b) demande GET /page avec le cookie ET
+   « Authorization: Bearer <pass rangé> » ; (c) 200 → la page reçue remplace le document ; (d) refus → si le lien portait un
+   AUTRE pass, un seul essai avec lui (rangé seulement s'il est accepté : un pass rangé mais mort ne doit pas enfermer) ;
+   sinon la porte. Le domaine reste seul juge (/page → sessionDomaine → kd-mc.com/__sso/whoami). La CSP de l'entrée est
+   celle de la page (frame-ancestors) : le document garde sa CSP après document.open(), une CSP plus stricte bloquerait
+   les scripts de la page écrite. */
+const ENTREE_JS = "(function(){var K='kdmc_sso_token',L=null,r='',l='';try{L=window.localStorage}catch(e){}"
+  + "try{var h=location.hash||'',m=h.match(/[#&]kdmc_sso=([^&]+)/);if(m){l=decodeURIComponent(m[1]);var c=h.replace(/([#&])kdmc_sso=[^&]*/,'$1').replace(/[#&]+$/,'');history.replaceState(null,'',location.pathname+location.search+(c&&c!=='#'?c:''))}}catch(e){}"
+  + "try{r=L&&L.getItem(K)||''}catch(e){}"
+  + "if(!r&&l){try{L.setItem(K,l)}catch(e){}r=l;l=''}"
+  + "function e(t){var o={credentials:'include',headers:{}};if(t)o.headers.Authorization='Bearer '+t;return fetch('/page',o).then(function(x){return x.ok?x.text():null},function(){return null})}"
+  + "var D=document;function v(x){D.open();D.write(x);D.close()}"
+  + "function p(){D.getElementById('o').hidden=true;D.getElementById('p').hidden=false}"
+  + "e(r).then(function(x){if(x)return v(x);if(l&&l!==r)return e(l).then(function(y){if(!y)return p();try{L.setItem(K,l)}catch(e){}v(y)});p()})})();";
+export function entreeCompte(url) {
+  return new Response(porteHtml(url, ENTREE_JS), { status: 401, headers: { ...ENTETES_PAGE, 'x-kdmc-porte': 'entree', Vary: 'Cookie, Authorization' } });
+}
+
+/* GET /page — la page, et SEULEMENT à un compte du domaine ouvert et non révoqué (cookie kdmc_sso OU Bearer), vérifié
+   par le domaine. Sinon 401 JSON, sans le moindre morceau de la page. Même origine seulement : aucun en-tête CORS, et un
+   appel venu d'un autre site (Sec-Fetch-Site / Origin) est refusé avant même de demander au domaine. */
+async function handlePage(request, env) {
+  const refus = (raison) => new Response(JSON.stringify({ ok: false, error: raison }), { status: 401,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', Vary: 'Cookie, Authorization' } });
+  const site = request.headers.get('sec-fetch-site');
+  const origine = request.headers.get('origin');
+  if ((site && site !== 'same-origin' && site !== 'none') || (origine && origine !== new URL(request.url).origin)) return refus('origine');
+  if (accesPageCompteActif(env) && !(await sessionDomaine(request, env))) return refus('compte_requis');
+  return new Response(PAGE_HTML, { status: 200, headers: { ...ENTETES_PAGE, Vary: 'Cookie, Authorization' } });
+}
+
+/* /__sso/entrer — la porte d'entrée du portail (kdmc-sso.js `porte()`), qui part vers `<app>/__sso/entrer?to=…&h=…` pour
+   déposer la session dans l'app installée. Sur les 32 adresses du routeur, c'est le routeur qui répond ; admin.kd-mc.com
+   est un worker à part : sans cette route, la tuile « Qui se connecte » du portail arrivait ici sans rien déposer. Ce worker
+   n'a pas le secret du domaine : il ne VÉRIFIE rien ici et ne pose aucun cookie — il remet le pass à l'entrée par le lien
+   (`#kdmc_sso=`, jamais envoyé au serveur) et c'est /page qui le fait vérifier par le domaine. Le grant admin de l'enveloppe
+   est ignoré (il ne sert pas ici). `to` = chemin du MÊME hôte. */
+function handleEntrer(url) {
+  let to = url.searchParams.get('to') || '/';
+  if (!/^\/(?!\/)/.test(to) || /[\r\n\\]/.test(to) || /^\/__sso\//.test(to)) to = '/';
+  let t = url.searchParams.get('t') || '';
+  const h = url.searchParams.get('h') || '';
+  if (h && h.indexOf('.') > 0) {
+    try { const d = JSON.parse(atob(h.slice(0, h.indexOf('.')).replace(/-/g, '+').replace(/_/g, '/'))); if (d && typeof d.t === 'string' && d.t) t = d.t; } catch (_) { /* enveloppe illisible : rien */ }
+  }
+  t = String(t).slice(0, 4096);
+  const dest = t ? to + (to.indexOf('#') >= 0 ? '&' : '#') + 'kdmc_sso=' + encodeURIComponent(t) : to;
+  return new Response(null, { status: 302, headers: { location: dest, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' } });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -268,13 +363,16 @@ export default {
        seul « / » servait la page ; tout autre chemin ouvert à la main ou depuis un raccourci (/index.html, /qui, /?x…)
        tombait sur l'erreur brute. Une PAGE demandée (GET/HEAD, hors API) montre donc toujours la page ; seules les
        API inconnues (JSON) gardent le 404. */
-    const estApi = /^\/(health|log|history)\b/.test(url.pathname) || /\.(js|json|css|map|png|svg|ico|txt|xml)$/i.test(url.pathname);
+    if (url.pathname === '/page' && request.method === 'GET') return handlePage(request, env);
+    if (url.pathname === '/__sso/entrer' && request.method === 'GET') return handleEntrer(url);
+    const estApi = /^\/(health|log|history|page|__sso)\b/.test(url.pathname) || /\.(js|json|css|map|png|svg|ico|txt|xml)$/i.test(url.pathname);
     if (url.pathname === '/' || url.pathname === '' || ((request.method === 'GET' || request.method === 'HEAD') && !estApi)) {
+      /* 15.10.2026 (v2) : une navigation SANS session lisible (app installée : ni cookie de Safari, ni en-tête) reçoit
+         l'ENTRÉE, qui demande la page par /page avec le pass rangé ; une navigation AVEC session valide reçoit la page. */
+      if (accesPageCompteActif(env) && !(await sessionDomaine(request, env))) return entreeCompte(url);
       /* Audit du domaine 27.09.2026 : cette page (admin.kd-mc.com) partait sans aucun en-tête de
          sécurité (note 0/100). Page admin → jamais encadrable, jamais de référent, HTTPS forcé. */
-      return new Response(PAGE_HTML, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
-        'X-Frame-Options': 'DENY', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
-        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains', 'Content-Security-Policy': "frame-ancestors 'none'" } });
+      return new Response(PAGE_HTML, { status: 200, headers: ENTETES_PAGE });
     }
     return json({ ok: false, error: 'not_found' }, 404, origin);
   },

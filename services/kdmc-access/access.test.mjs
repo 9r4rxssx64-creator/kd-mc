@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import worker from './worker.js';
+import { PAGE_HTML } from './page.js';
+import { readFileSync } from 'node:fs';
 
 const { privateKey } = crypto.generateKeyPairSync('rsa', {
   modulusLength: 2048,
@@ -166,29 +168,262 @@ test('GET /history bon PIN → 200 + agrégé par personne', async () => {
   } finally { globalThis.fetch = orig; }
 });
 
-test('GET / → sert la page admin HTML', async () => {
-  const r = await worker.fetch(req('/'), ENV);
-  assert.equal(r.status, 200);
-  assert.match(r.headers.get('content-type') || '', /text\/html/);
-  const html = await r.text();
-  assert.match(html, /Qui se connecte/);
-  assert.match(html, /x-apex-pin/);
-  /* Audit 2026-10-08 : plus de « se souvenir » ni d'empreinte du code gardée sur l'appareil. */
-  assert.ok(!/localStorage\.setItem\(\s*['"]?kdmc_access_pinhash/.test(html) && !/setItem\(KEY/.test(html), 'la page ne mémorise plus l\'empreinte du code');
-  assert.ok(!/Se souvenir de cet appareil/.test(html), 'plus de case « se souvenir »');
+/* 15.10.2026 — « Aucune consultation sans compte, nulle part » : la page n'est servie qu'à un compte du domaine
+   ouvert et non révoqué. Avant, ce test servait la page à un ANONYME : il décrivait l'ancien comportement. */
+test('GET / avec session du domaine (cookie kdmc_sso) → sert la page admin HTML', async () => {
+  const orig = globalThis.fetch; globalThis.fetch = mockFetch({});
+  try {
+    const r = await worker.fetch(req('/', { headers: { cookie: 'autre=1; kdmc_sso=pass-kevin' } }), ENV);
+    assert.equal(r.status, 200);
+    assert.match(r.headers.get('content-type') || '', /text\/html/);
+    const html = await r.text();
+    assert.match(html, /Qui se connecte/);
+    assert.match(html, /x-apex-pin/);
+    /* Audit 2026-10-08 : plus de « se souvenir » ni d'empreinte du code gardée sur l'appareil. */
+    assert.ok(!/localStorage\.setItem\(\s*['"]?kdmc_access_pinhash/.test(html) && !/setItem\(KEY/.test(html), 'la page ne mémorise plus l\'empreinte du code');
+    assert.ok(!/Se souvenir de cet appareil/.test(html), 'plus de case « se souvenir »');
+    /* une session simple (non admin) ouvre la PAGE ; les DONNÉES restent derrière la session admin ou le code */
+    const r2 = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-marie' } }), ENV);
+    assert.equal(r2.status, 200, 'compte du domaine non admin → la page (son écran de code)');
+    const r3 = await worker.fetch(req('/', { headers: { authorization: 'Bearer pass-kevin' } }), ENV);
+    assert.equal(r3.status, 200, 'pass en Authorization → la page');
+  } finally { globalThis.fetch = orig; }
 });
 
-/* « Qui se connecte ne fonctionne pas » (6.10) : tout chemin de PAGE montre la page, jamais l'erreur brute. */
-{
-  const mod2 = (await import('./worker.js')).default;
+const ENTETES_SECU = ['x-frame-options', 'x-content-type-options', 'referrer-policy', 'strict-transport-security', 'content-security-policy', 'cache-control'];
+/* Morceaux qui n'existent QUE dans la page admin : aucun ne doit fuiter dans la porte ni dans l'entrée. */
+const MORCEAUX_PAGE = ['Qui se connecte', 'x-apex-pin', '/history', 'Déverrouiller', 'type="password"', 'submitPin', '<input', '<form', 'kdmc_access'];
+function sansPage(html, quoi) {
+  for (const m of MORCEAUX_PAGE) assert.ok(!html.includes(m), quoi + ' : ne contient pas « ' + m + ' »');
+  for (let i = 0; i + 120 <= PAGE_HTML.length; i += 400) assert.ok(!html.includes(PAGE_HTML.slice(i, i + 120)), quoi + ' : aucun morceau du code de la page (octet ' + i + ')');
+}
+function assertPorteTexte(html, quoi) {
+  assert.match(html, /Cette page est réservée/, quoi);
+  assert.match(html, /Ouvre d&#39;abord ton compte sur kd-mc\.com/, quoi);
+}
+/* La porte « sèche » (sans script) — gardée pour qui l'appelle directement. */
+function assertPorte(r, html, quoi) {
+  assert.equal(r.status, 401, quoi + ' : porte 401');
+  assert.equal(r.headers.get('x-kdmc-porte'), 'compte', quoi + ' : marquée porte');
+  for (const h of ENTETES_SECU) assert.ok(r.headers.get(h), quoi + ' : en-tête de sécurité ' + h);
+  assertPorteTexte(html, quoi);
+  assert.ok(!html.includes('<script'), quoi + ' : aucune ligne de script');
+  sansPage(html, quoi);
+}
+/* L'ENTRÉE (v2) : ce que reçoit une navigation sans session lisible (app installée, anonyme, session révoquée…). */
+function assertEntree(r, html, quoi) {
+  assert.equal(r.status, 401, quoi + ' : entrée 401 (jamais 200 sans compte)');
+  assert.equal(r.headers.get('x-kdmc-porte'), 'entree', quoi + ' : marquée entrée');
+  for (const h of ENTETES_SECU) assert.ok(r.headers.get(h), quoi + ' : en-tête de sécurité ' + h);
+  assert.match(r.headers.get('content-security-policy'), /frame-ancestors 'none'/);
+  assert.equal(r.headers.get('access-control-allow-origin'), null, quoi + ' : aucun CORS');
+  assertPorteTexte(html, quoi + ' (porte écrite dans l\'entrée, cachée pendant l\'essai)');
+  assert.ok(/fetch\('\/page'/.test(html), quoi + ' : l\'entrée demande /page');
+  assert.ok(/Authorization='Bearer '/.test(html) && /credentials:'include'/.test(html), quoi + ' : cookie + Bearer');
+  assert.ok(Buffer.byteLength(html) <= 2100, quoi + ' : entrée légère (' + Buffer.byteLength(html) + ' octets)');
+  sansPage(html, quoi);
+}
+
+test('GET / inconnu (sans compte) → l\'ENTRÉE (≤ 2 Ko), aucun octet de la page, lien de retour vers le portail', async () => {
+  const orig = globalThis.fetch; let appels = 0; const m = mockFetch({});
+  globalThis.fetch = async (u, o) => { appels++; return m(u, o); };
+  try {
+    const r = await worker.fetch(req('/'), ENV);
+    const html = await r.text();
+    assertEntree(r, html, 'anonyme');
+    assert.ok(Buffer.byteLength(html) <= 2048, 'entrée de « / » ≤ 2048 octets (' + Buffer.byteLength(html) + ')');
+    assert.equal(appels, 0, 'sans cookie ni en-tête : aucune question au domaine (gratuit)');
+    assert.ok(html.includes('href="https://kd-mc.com/?return=' + encodeURIComponent('https://admin.kd-mc.com/') + '"'), 'lien kd-mc.com/?return=<cette page encodée>');
+    const r2 = await worker.fetch(req('/qui?x=1'), ENV);
+    const h2 = await r2.text();
+    assertEntree(r2, h2, 'autre chemin');
+    assert.ok(h2.includes(encodeURIComponent('https://admin.kd-mc.com/qui?x=1')), 'retour = l\'adresse exacte demandée');
+    const r3 = await worker.fetch(req('/', { method: 'HEAD' }), ENV);
+    assert.equal(r3.status, 401, 'HEAD anonyme → 401 aussi');
+  } finally { globalThis.fetch = orig; }
+});
+
+test('session révoquée / pass falsifié / domaine muet ou en panne → l\'entrée, jamais la page (fail-closed)', async () => {
+  const orig = globalThis.fetch;
+  try {
+    globalThis.fetch = async (u) => String(u).includes('/__sso/whoami') ? new Response(JSON.stringify({ ok: false, reason: 'session_revoquee' }), { status: 200 }) : new Response('{}');
+    let r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-kevin' } }), ENV);
+    assertEntree(r, await r.text(), 'révoquée');
+    globalThis.fetch = mockFetch({});
+    r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-falsifie', authorization: 'Bearer faux' } }), ENV);
+    assertEntree(r, await r.text(), 'falsifié');
+    globalThis.fetch = async () => { throw new Error('réseau coupé'); };
+    r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-kevin' } }), ENV);
+    assertEntree(r, await r.text(), 'domaine muet');
+    globalThis.fetch = async () => new Response('Bad gateway', { status: 502 });
+    r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-kevin' } }), ENV);
+    assertEntree(r, await r.text(), 'domaine en erreur');
+    globalThis.fetch = async () => new Response(JSON.stringify({ ok: true }), { status: 200 });
+    r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=x' } }), ENV);
+    assertEntree(r, await r.text(), 'réponse sans uid');
+  } finally { globalThis.fetch = orig; }
+});
+
+test('porteCompte (porte sèche) : 401, aucun script, aucun octet de la page', async () => {
+  const { porteCompte } = await import('./worker.js');
+  const r = porteCompte(new URL('https://admin.kd-mc.com/'));
+  assertPorte(r, await r.text(), 'porte sèche');
+});
+
+/* ── GET /page : la seule route qui rend la page à l'entrée ── */
+test('GET /page : la page à un compte du domaine (cookie OU Bearer), relayée au domaine avec le User-Agent', async () => {
+  const orig = globalThis.fetch; const vus = [];
+  const m = mockFetch({});
+  globalThis.fetch = async (u, o) => { if (String(u).includes('/__sso/whoami')) vus.push(o && o.headers); return m(u, o); };
+  try {
+    for (const [quoi, headers] of [['Bearer (app installée)', { authorization: 'Bearer pass-kevin', 'user-agent': 'iPhone UA', 'sec-fetch-site': 'same-origin' }],
+      ['cookie (Safari)', { cookie: 'kdmc_sso=pass-kevin', 'sec-fetch-site': 'same-origin' }],
+      ['compte non admin', { authorization: 'Bearer pass-marie' }],
+      ['Origin = même site', { authorization: 'Bearer pass-kevin', origin: 'https://admin.kd-mc.com' }]]) {
+      const r = await worker.fetch(req('/page', { headers }), ENV);
+      assert.equal(r.status, 200, quoi);
+      assert.match(r.headers.get('content-type'), /text\/html/, quoi);
+      assert.equal(r.headers.get('cache-control'), 'no-store', quoi);
+      assert.equal(r.headers.get('access-control-allow-origin'), null, quoi + ' : aucun CORS');
+      for (const h of ENTETES_SECU) assert.ok(r.headers.get(h), quoi + ' : ' + h);
+      assert.equal(await r.text(), PAGE_HTML, quoi + ' : exactement la page');
+    }
+    assert.equal(vus[0]['user-agent'], 'iPhone UA', 'le User-Agent de la personne est relayé (famille d\'appareil)');
+  } finally { globalThis.fetch = orig; }
+});
+
+test('GET /page SANS compte valide → 401 JSON, aucun morceau de la page (anonyme, révoqué, falsifié, domaine muet)', async () => {
+  const orig = globalThis.fetch;
+  try {
+    const cas = [
+      ['anonyme', mockFetch({}), {}],
+      ['falsifié', mockFetch({}), { authorization: 'Bearer pass-falsifie' }],
+      ['révoqué', async () => new Response(JSON.stringify({ ok: false, reason: 'session_revoquee' })), { cookie: 'kdmc_sso=pass-kevin' }],
+      ['domaine muet', async () => { throw new Error('coupé'); }, { authorization: 'Bearer pass-kevin' }],
+      ['domaine 502', async () => new Response('x', { status: 502 }), { authorization: 'Bearer pass-kevin' }],
+    ];
+    for (const [quoi, f, headers] of cas) {
+      globalThis.fetch = f;
+      const r = await worker.fetch(req('/page', { headers }), ENV);
+      const t = await r.text();
+      assert.equal(r.status, 401, quoi);
+      assert.match(r.headers.get('content-type'), /application\/json/, quoi);
+      assert.equal(JSON.parse(t).error, 'compte_requis', quoi);
+      assert.equal(r.headers.get('access-control-allow-origin'), null, quoi + ' : aucun CORS');
+      sansPage(t, '/page ' + quoi);
+    }
+  } finally { globalThis.fetch = orig; }
+});
+
+test('GET /page appelé depuis UN AUTRE SITE → 401 même avec un pass valide (même origine seulement)', async () => {
+  const orig = globalThis.fetch; let appels = 0; const m = mockFetch({});
+  globalThis.fetch = async (u, o) => { appels++; return m(u, o); };
+  try {
+    for (const headers of [{ cookie: 'kdmc_sso=pass-kevin', 'sec-fetch-site': 'cross-site' }, { cookie: 'kdmc_sso=pass-kevin', 'sec-fetch-site': 'same-site' },
+      { authorization: 'Bearer pass-kevin', origin: 'https://evil.example.com' }, { authorization: 'Bearer pass-kevin', origin: 'https://kd-mc.com' }]) {
+      const r = await worker.fetch(req('/page', { headers }), ENV);
+      const t = await r.text();
+      assert.equal(r.status, 401, JSON.stringify(headers));
+      assert.equal(JSON.parse(t).error, 'origine');
+      assert.equal(r.headers.get('access-control-allow-origin'), null);
+      sansPage(t, 'cross-site');
+    }
+    assert.equal(appels, 0, 'refusé avant même de demander au domaine');
+    const p = await worker.fetch(req('/page', { method: 'POST', headers: { authorization: 'Bearer pass-kevin' } }), ENV);
+    assert.notEqual(p.status, 200, 'POST /page ne rend pas la page');
+  } finally { globalThis.fetch = orig; }
+});
+
+/* ── /__sso/entrer : la tuile du portail (kdmc-sso.js porte()) arrive ici ── */
+test('/__sso/entrer : remet le pass à l\'entrée par le lien (#kdmc_sso=), ne pose aucun cookie, reste sur ce site', async () => {
+  const orig = globalThis.fetch; let appels = 0;
+  globalThis.fetch = async () => { appels++; return new Response('{}'); };
+  try {
+    const env_ = Buffer.from(JSON.stringify({ t: 'pass-kevin', g: 'grant-secret', exp: Date.now() + 90000 })).toString('base64url') + '.signature';
+    let r = await worker.fetch(req('/__sso/entrer?to=' + encodeURIComponent('/') + '&h=' + encodeURIComponent(env_)), ENV);
+    assert.equal(r.status, 302);
+    assert.equal(r.headers.get('location'), '/#kdmc_sso=pass-kevin');
+    assert.equal(r.headers.get('set-cookie'), null, 'aucun cookie posé');
+    assert.ok(!r.headers.get('location').includes('grant'), 'le grant admin ne voyage pas');
+    r = await worker.fetch(req('/__sso/entrer?to=' + encodeURIComponent('/qui?x=1#a') + '&t=pass-marie'), ENV);
+    assert.equal(r.headers.get('location'), '/qui?x=1#a&kdmc_sso=pass-marie');
+    for (const to of ['//evil.example.com/', 'https://evil.example.com/', '/\\evil', '/__sso/entrer?to=/']) {
+      r = await worker.fetch(req('/__sso/entrer?to=' + encodeURIComponent(to) + '&t=p'), ENV);
+      assert.equal(r.headers.get('location'), '/#kdmc_sso=p', 'to=' + to + ' → reste sur /');
+    }
+    r = await worker.fetch(req('/__sso/entrer?to=/'), ENV);
+    assert.equal(r.headers.get('location'), '/', 'sans pass : l\'adresse propre');
+    r = await worker.fetch(req('/__sso/entrer?h=illisible.x'), ENV);
+    assert.equal(r.headers.get('location'), '/', 'enveloppe illisible : rien');
+    assert.equal(appels, 0, 'aucune question au domaine ici : c\'est /page qui vérifie');
+  } finally { globalThis.fetch = orig; }
+});
+
+test('interrupteur ACCES_PAGE_COMPTE="0" → ancien comportement (page servie, sans demander au domaine)', async () => {
+  const orig = globalThis.fetch; let appels = 0;
+  globalThis.fetch = async () => { appels++; return new Response('{}'); };
+  try {
+    const r = await worker.fetch(req('/'), { ...ENV, ACCES_PAGE_COMPTE: '0' });
+    assert.equal(r.status, 200);
+    assert.match(await r.text(), /Qui se connecte/);
+    const p = await worker.fetch(req('/page'), { ...ENV, ACCES_PAGE_COMPTE: '0' });
+    assert.equal(p.status, 200, '/page aussi');
+    assert.equal(appels, 0, 'aucune question au domaine quand la porte est coupée');
+    for (const v of [undefined, '1', 'oui', '']) {
+      const e = { ...ENV }; if (v !== undefined) e.ACCES_PAGE_COMPTE = v;
+      const r2 = await worker.fetch(req('/'), e);
+      assert.equal(r2.status, 401, 'ACCES_PAGE_COMPTE=' + JSON.stringify(v) + ' → entrée (seul "0" la coupe)');
+      assert.equal(r2.headers.get('x-kdmc-porte'), 'entree');
+      const p2 = await worker.fetch(req('/page'), e);
+      assert.equal(p2.status, 401, '/page sans compte, ACCES_PAGE_COMPTE=' + JSON.stringify(v));
+    }
+  } finally { globalThis.fetch = orig; }
+});
+
+test('wrangler.toml : interrupteur ACCES_PAGE_COMPTE = "1" posé dans [vars]', () => {
+  const toml = readFileSync(new URL('./wrangler.toml', import.meta.url), 'utf8');
+  const vars = toml.split(/^\[vars\]\s*$/m)[1] || '';
+  assert.match(vars, /^ACCES_PAGE_COMPTE\s*=\s*"1"\s*$/m);
+  assert.ok(toml.indexOf('routes = [') < toml.indexOf('[vars]'), '`routes` reste avant toute [table]');
+});
+
+test('/health, /log, /history : comportement inchangé par la porte (aucune page, aucune porte)', async () => {
+  const orig = globalThis.fetch; globalThis.fetch = mockFetch({});
+  try {
+    const h = await worker.fetch(req('/health'), ENV);
+    assert.equal(h.status, 200); assert.deepEqual(await h.json(), { ok: true, service: 'kdmc-access' });
+    const l = await worker.fetch(req('/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }), ENV);
+    assert.equal(l.status, 401); assert.equal((await l.json()).error, 'unauthorized');
+    assert.equal(l.headers.get('x-kdmc-porte'), null);
+    const hi = await worker.fetch(req('/history'), ENV);
+    assert.equal(hi.status, 401); assert.equal((await hi.json()).error, 'unauthorized');
+    const hk = await worker.fetch(req('/history', { headers: { 'x-apex-pin': PIN_SHA } }), ENV);
+    assert.equal(hk.status, 200, 'le code admin ouvre toujours /history');
+    const api = await worker.fetch(req('/inconnu.json'), ENV);
+    assert.equal(api.status, 404, 'API inconnue → 404 JSON, pas la porte');
+  } finally { globalThis.fetch = orig; }
+});
+
+/* « Qui se connecte ne fonctionne pas » (6.10) : tout chemin de PAGE montre la page (à un compte du domaine), jamais
+   l'erreur brute ; et depuis le 15.10, la porte à un anonyme. */
+/* Dans un test() : node:test lance les tests pendant que le module finit de se charger ; un bloc de haut niveau qui
+   remplace globalThis.fetch courrait en même temps qu'eux (mesuré : « POST /log » perdait son fetch simulé). */
+test('chemins de page : la page à un compte, la porte à un anonyme, 404 aux API inconnues', async () => {
+  const mod2 = worker;
+  const orig = globalThis.fetch; globalThis.fetch = mockFetch({});
   let pass2 = 0, fail2 = 0;
   for (const chemin of ['/index.html', '/qui', '/admin', '/?x=1', '/personnes/']) {
-    const r = await mod2.fetch(new Request('https://admin.kd-mc.com' + chemin), {});
+    const r = await mod2.fetch(new Request('https://admin.kd-mc.com' + chemin, { headers: { cookie: 'kdmc_sso=pass-kevin' } }), {});
     const t = await r.text();
     if (r.status === 200 && /Qui se connecte/.test(t)) pass2++; else { fail2++; console.log('  ❌ ' + chemin + ' → ' + r.status + ' ' + t.slice(0, 40)); }
+    const a = await mod2.fetch(new Request('https://admin.kd-mc.com' + chemin), {});
+    const ta = await a.text();
+    if (a.status === 401 && !/Qui se connecte/.test(ta)) pass2++; else { fail2++; console.log('  ❌ anonyme ' + chemin + ' → ' + a.status); }
   }
   const api = await mod2.fetch(new Request('https://admin.kd-mc.com/inconnu.json'), {});
   if (api.status === 404) pass2++; else { fail2++; console.log('  ❌ API inconnue : ' + api.status); }
+  globalThis.fetch = orig;
   console.log(`  chemins de page : ${pass2} OK · ${fail2} échec(s)`);
-  if (fail2) process.exit(1);
-}
+  assert.equal(fail2, 0, 'chemins de page en échec');
+  assert.equal(pass2, 11);
+});

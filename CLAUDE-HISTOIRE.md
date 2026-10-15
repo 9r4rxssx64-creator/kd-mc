@@ -11919,6 +11919,19 @@ S'applique : Claude Code (priorité absolue), Apex, tous projets présents et fu
   cookie pour installer/mettre à jour l'app — aucun secret dedans). Limite connue : le dépôt GitHub public contient le code ; seul un dépôt privé règle ça (décision de Kevin).
 - **Où c'est fait** : `porteGenerale` (services/kdmc-router/worker.js), appelée par `porteFermee` pour toute adresse sans porte propre. Sans en-tête de navigateur,
   l'adresse décide (`demandeDePage`) : `curl` n'est pas un contournement.
+  **Et `admin.kd-mc.com` (15.10.2026)** : ce sous-domaine est servi par un worker À PART (`services/kdmc-access/worker.js`), que la porte du routeur ne
+  couvre PAS. Mesuré le 15.10 depuis l'extérieur, sans compte : 200 + la page « Qui se connecte » complète (32 Ko). Corrigé : une page n'y est servie
+  qu'à un compte du domaine ouvert et non révoqué, vérifié par le domaine (`sessionDomaine` → `kd-mc.com/__sso/whoami`, le même canal que `/log` et
+  `/history`) ; sinon `porteCompte` (401, « Cette page est réservée. Ouvre d'abord ton compte sur kd-mc.com », lien `kd-mc.com/?return=…`, aucun code
+  de la page). Fail-closed (domaine muet → porte). `/health`, `/log`, `/history` inchangés. Retour arrière sans code : `ACCES_PAGE_COMPTE = "0"`
+  dans `services/kdmc-access/wrangler.toml`. Garde : `npm run test:kdmc-access`. **Leçon** : tout NOUVEAU worker sur un sous-domaine (custom_domain)
+  échappe au routeur — il doit poser sa propre porte (leçon 546).
+  **v2, même jour (branche `claude/admin-page-compte-v2`, la v1 n'est PAS mise en ligne)** : Kevin ouvre l'admin depuis l'app installée (cookies à part,
+  aucun en-tête sur une navigation) — la v1 l'aurait enfermé. Navigation sans session lisible → `entreeCompte` (401, ≤ 2 Ko, aucun octet de la page) :
+  son script range `#kdmc_sso=` s'il n'y a pas déjà un pass, appelle `GET /page` (cookie + `Authorization: Bearer <kdmc_sso_token>`) et écrit la page
+  reçue ; refus → la porte. `/page` = la page seulement à un compte vérifié par le domaine, même origine seulement. `/__sso/entrer` (tuiles du portail)
+  remet le pass par le lien. Tuiles de `kd-mc.com/admin/` : `kdmcSSO.porte()` (`kdmc-home/admin/admin.js`). Gardes : `test:kdmc-access`,
+  `test:kdmc-access-navigateur` (Chromium, contexte neuf = iPhone installé). Leçon 552.
   **La passerelle apis.kd-mc.com aussi (15.10.2026)** : `compteVerifie` (services/kdmc-apis/worker.js) — même vérification que le routeur (signature, expiration,
   appareil, révocation, Face ID de Kevin, code obligatoire), cookie `kdmc_sso` / `Authorization: Bearer` / `x-kdmc-sso`, lecture seule. Refus : 401 `compte_requis`.
   Ouverts : `OPTIONS` et `GET /health` (`{ok:true}` seulement ; le détail pour Kevin). L'en-tête `Origin` ne vaut plus rien comme preuve (il se falsifie).

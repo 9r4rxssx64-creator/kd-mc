@@ -1,5 +1,21 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — admin.kd-mc.com v2 : la porte n'enferme plus l'app installée (branche claude/admin-page-compte-v2)
+
+- Kevin ouvre l'admin depuis l'app de l'écran d'accueil (cookies à part de Safari, aucun en-tête) : la v1 ci-dessous l'aurait laissé dehors → v1 NON mise en ligne.
+- v2 : sans session lisible, la navigation reçoit une « entrée » (2 Ko, aucun octet de la page) qui demande GET /page avec le pass rangé (Bearer) ;
+  #kdmc_sso= rangé s'il n'y a pas déjà un pass ; /__sso/entrer (tuile du portail) remet le pass ; tuiles de kd-mc.com/admin/ passent par kdmcSSO.porte().
+- Mesuré en local : test:kdmc-access 24/24 ; test:kdmc-access-navigateur 10/10 (Chromium, contexte neuf = iPhone installé) ; sabotages rouges (4).
+- Pas vérifié : le vrai iPhone, le vrai /__sso/whoami. Retour arrière : ACCES_PAGE_COMPTE = "0". Leçon #554.
+
+## 2026-10-15 — admin.kd-mc.com : plus aucune consultation sans compte
+
+- Mesuré avant (extérieur, sans compte) : 200 + la page « Qui se connecte » complète (32 Ko). Le routeur ne couvre pas ce sous-domaine (worker à part).
+- Maintenant : la page n'est servie qu'à un compte du domaine ouvert et non révoqué (demande à kd-mc.com/__sso/whoami) ; sinon porte 401
+  « Cette page est réservée. Ouvre d'abord ton compte sur kd-mc.com » (lien de retour, aucun code de la page). Domaine muet → porte.
+- Kevin : connecté sur kd-mc.com (Face ID ou code) → la page s'ouvre comme avant ; l'écran de code de la page reste pour qui a un compte.
+- Retour arrière sans code : ACCES_PAGE_COMPTE = "0" dans services/kdmc-access/wrangler.toml. /health, /log, /history inchangés.
+- Mesuré : test:kdmc-access 19/19 ; 2 sabotages rouges. Pas encore en ligne (branche claude/admin-page-compte, déploiement à la fusion). Leçon #546.
 ## 2026-10-15 — Déploiements Apex Chat débloqués : un test lisait un robot privé
 
 - La porte « tests avant déploiement » (kd-mc, run 38724012761) échouait : `lot-e2-sauvegarde-restauration` lisait
@@ -29,7 +45,7 @@
 - Déploiement seulement si les tests du même commit passent ; mise à jour forcée attend tests + déploiement.
 - Migrations : registre `_migrations` (0021), une seule fois, dans l'ordre, arrêt au premier échec réel.
 - Fuite du début du jeton Cloudflare dans les journaux publics : étape supprimée. ⚠️ À FAIRE PAR KEVIN : changer le jeton Cloudflare.
-- Mesuré : 128 fichiers / 2023 tests, couverture OK ; 24 gardes racine vertes ; sabotages rouges + 1 manuel. Leçon #552.
+- Mesuré : 128 fichiers / 2023 tests, couverture OK ; 24 gardes racine vertes ; sabotages rouges + 1 manuel. Leçon #554.
 
 ## 2026-10-15 — Apex Chat v1.1.307 : lot E1 (rester dans le gratuit)
 

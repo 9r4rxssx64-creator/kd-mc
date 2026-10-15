@@ -4526,6 +4526,34 @@ async function handleAdmin(request, url, env) {
     await audLog(env, { ev: 'compte_ouvert_admin', uid, etait: etait || 'ouvert' });
     return J({ ok: true, uid, etait: etait || 'ouvert', attente_admin: false });
   }
+  /* ── SUPPRIMER UN COMPTE (Kevin 15.10.2026 : « Comment je supprime un compte ? » → « Ajoute ») ──
+     POST { uid, confirmer: true } : efface la fiche `acc:`, le code `cred:`, le compteur `rlc:`, le nom réservé `nm:` (s'il pointe vers ce compte)
+     et la sort de l'index `idx:uids` ; vide ses demandes en attente (inscription, code). Le NOM redevient libre : la personne peut se réinscrire.
+     Jamais l'admin (Kevin) : refusé quoi qu'on envoie. Une copie de la fiche (sans code) reste 30 jours en `del:<uid>` pour qu'une erreur se répare ;
+     le journal garde « compte_supprime » (qui, quand). Derrière la même barrière admin que tout /__admin/*. */
+  if (path === '/__admin/compte-supprimer' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const uid = String(b.uid || '').slice(0, 80).trim();
+    if (!uid) return J({ ok: false, reason: 'uid requis' });
+    if (b.confirmer !== true) return J({ ok: false, reason: 'confirmation_requise' }, undefined, 400);
+    const acc = await accGet(env, uid);
+    if (!acc) return J({ ok: false, reason: 'not_found' });
+    if (uid === CANON_UID || acc.uid === CANON_UID || isAdminName(acc.name)) return J({ ok: false, reason: 'admin_protege' }, undefined, 403);
+    try {
+      try { await env.ACCOUNTS.put('del:' + uid, JSON.stringify(acc), { expirationTtl: 30 * 86400 }); } catch { /* la copie est un filet, pas une condition */ }
+      await env.ACCOUNTS.delete('acc:' + uid);
+      await env.ACCOUNTS.delete('cred:' + uid);
+      await env.ACCOUNTS.delete('rlc:' + uid);
+      const n = normName(acc.name || '');
+      if (n && (await env.ACCOUNTS.get('nm:' + n)) === uid) await env.ACCOUNTS.delete('nm:' + n);
+      const idx = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
+      if (idx.indexOf(uid) >= 0) await env.ACCOUNTS.put('idx:uids', JSON.stringify(idx.filter((x) => x !== uid)));
+      ficheOubliee(env, uid);
+    } catch { return J({ ok: false, reason: 'registre indisponible' }, undefined, 503); }
+    try { if (env.CERCLE_DB) { for (const t of ['inscription_admin', 'code_attente', 'presence_domaine']) { try { await env.CERCLE_DB.prepare('DELETE FROM ' + t + ' WHERE uid = ?').bind(uid).run(); } catch { /* table absente */ } } } } catch { /* rien à vider */ }
+    await audLog(env, { ev: 'compte_supprime', uid, name: acc.name || '' });
+    return J({ ok: true, uid, supprime: true });
+  }
   /* ── PÉRIMÈTRE : qui a le droit d'exister dans quelle app (Kevin 2026-09-15) ──
      GET  ?uid=…                       → l'état de cette personne + la liste des apps
      POST {uid, portee, acces, bloque} → range la personne

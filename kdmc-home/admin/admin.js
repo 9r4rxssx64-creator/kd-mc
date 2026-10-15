@@ -551,6 +551,12 @@
     return { lignes: L, verdict: verdict, attente: !!a.attente_admin, probleme: probleme };
   }
   var _comptes = [];   /* les comptes de la DERNIÈRE lecture (la liste se rafraîchit toute seule : le bouton lit toujours les plus récents) */
+  /* PURE : un compte supprimable depuis l'écran = jamais l'admin (Kevin) ; le domaine refuse aussi, quoi qu'on envoie. */
+  function peutSupprimer(a) {
+    if (!a || !a.uid || a.uid === 'kdmc_admin') return false;
+    var t = String(a.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ');
+    return !(t.indexOf('desarzens') >= 0 && (t.indexOf('kevin') >= 0 || t.indexOf('k') >= 0));
+  }
   function wireEtat() {
     var list = document.getElementById('list');
     if (!list || list._etat) return; list._etat = true;
@@ -564,6 +570,21 @@
           .catch(function () { ouvrir.disabled = false; ouvrir.textContent = '⚠️ Échec — réessaie'; });
         return;
       }
+      var suppr = e.target && e.target.closest ? e.target.closest('.supprimer-compte') : null;
+      if (suppr) {
+        var su = suppr.getAttribute('data-uid') || '', sa = (_comptes || []).filter(function (x) { return x.uid === su; })[0];
+        if (!sa || !peutSupprimer(sa)) return;
+        if (!confirm('SUPPRIMER le compte « ' + (sa.name || su) + ' » ?\n\nSa fiche et son code sont effacés. Elle pourra se réinscrire plus tard (son nom redevient libre).\nOn ne peut pas annuler depuis l\'écran.')) return;
+        suppr.disabled = true; suppr.textContent = '…';
+        fetch('/__admin/compte-supprimer', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: su, confirmer: true }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j && j.ok) { suppr.textContent = '✅ Compte supprimé'; var f = document.getElementById('fiche-' + su); if (f) f.style.opacity = '.45'; }
+            else { suppr.disabled = false; suppr.textContent = j && j.reason === 'admin_protege' ? '🔒 Compte admin : jamais supprimé' : '⚠️ Échec — réessaie'; }
+          })
+          .catch(function () { suppr.disabled = false; suppr.textContent = '⚠️ Échec — réessaie'; });
+        return;
+      }
       var b = e.target && e.target.closest ? e.target.closest('.etatcompte') : null;
       if (!b) return;
       var uid = b.getAttribute('data-uid') || '', box = b.parentNode.querySelector('.etatbox[data-uid="' + uid.replace(/"/g, '') + '"]');
@@ -573,7 +594,8 @@
       var r = etatCompte(a);
       box.hidden = false;
       box.innerHTML = '<div><b>' + esc(r.verdict) + '</b></div>' + r.lignes.map(function (l) { return '<div class="d">' + esc(l) + '</div>'; }).join('')
-        + (r.attente ? '<button class="savacc ouvrir-compte" data-uid="' + esc(uid) + '" type="button">✅ Ouvrir ce compte</button>' : '');
+        + (r.attente ? '<button class="savacc ouvrir-compte" data-uid="' + esc(uid) + '" type="button">✅ Ouvrir ce compte</button>' : '')
+        + (peutSupprimer(a) ? ' <button class="savacc supprimer-compte" data-uid="' + esc(uid) + '" type="button" style="background:#5a1d1d;color:#ffd9d9">🗑️ Supprimer ce compte</button>' : '');
     });
   }
 

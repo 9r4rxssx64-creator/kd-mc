@@ -3690,3 +3690,4 @@ officiels les retirent eux-mêmes avant publication.
 | Fichier | À quoi il sert |
 |---|---|
 | [`services/kdmc-router/compte-ouvrir.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/compte-ouvrir.test.mjs) **(nouveau)** | Garde : le bouton « Ouvrir ce compte » (route `/__admin/compte-ouvrir`) rouvre un compte en attente ou refusé sans la ligne de la file ; « État du compte » dit la cause ; l'écran d'attente du portail ne reste plus figé. |
+| [`services/kdmc-router/compte-supprimer.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/compte-supprimer.test.mjs) **(nouveau)** | Garde : « 🗑️ Supprimer ce compte » (route `/__admin/compte-supprimer`) efface tout ce qui retient la personne, jamais l'admin, copie 30 jours, nom libéré. |

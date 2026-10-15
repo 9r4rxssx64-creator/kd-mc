@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 (soir) — Admin du domaine : bouton « 🗑️ Supprimer ce compte » (Kevin : « Comment je supprime un compte ? » → « Ajoute »)
+
+- **Livré (code + tests, portail v1.0.59, routeur à déployer)** : dans « 🔎 État du compte », bouton « 🗑️ Supprimer ce compte » (confirmation en clair) → `POST /__admin/compte-supprimer {uid, confirmer:true}` : efface fiche, code, compteur, nom réservé, index et demandes en attente ; le nom redevient libre. Jamais l'admin ni un compte au nom de Kevin (refusé côté domaine ET pas de bouton). Copie de la fiche 30 jours en `del:<uid>` (filet), journal `compte_supprime`.
+- **Garde** : `services/kdmc-router/compte-supprimer.test.mjs` (20), 3 sabotages rouges.
+
 ## 2026-10-15 (soir) — Admin du domaine : bouton « 🔎 État du compte » + « ✅ Ouvrir ce compte » (Yann bloqué sur « en attente »)
 
 - **Livré (code, tests verts ; v1.0.58 du portail, routeur à déployer)** : sur chaque fiche de l'admin, « 🔎 État du compte » dit en phrases simples pourquoi la personne est bloquée (en attente de Kevin, refusée, sessions coupées, conditions/code/téléphone, app fermée, périmètre vide) ; si elle attend, « ✅ Ouvrir ce compte » (route `POST /__admin/compte-ouvrir`) retire `attente_admin` SANS dépendre de la ligne de la file « Inscriptions sans WhatsApp ». Le portail : l'écran d'attente passe la main (code à choisir / téléphone à confirmer) au lieu de rester figé.

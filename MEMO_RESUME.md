@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — E2E prod Apex Chat : attend la fin du déploiement serveur du même commit
+
+- Après v1.1.303, run 38711451541 : 1 test « instable » (temps réel par ticket : 1er essai sans message). 3 relances
+  manuelles : 18/0/0 à chaque fois → défaut de la CI, pas de l'app : l'E2E partait 2 min après le push sans attendre
+  `deploy-apex-chat.yml` → il pouvait tester l'ANCIENNE version, ou tomber pendant le redémarrage du serveur de conversation.
+- `apex-chat-e2e.yml` : attend le déploiement du même commit (≤ 12 min, annoncé) ; déploiement en échec → E2E arrêté ;
+  pas de déploiement serveur → E2E sur la version en ligne. Simulé : 4 cas conformes. Gardes workflows vertes.
+
 ## 2026-10-15 — Apex Chat v1.1.303 : ultra-audit, lot A (plus aucun message perdu)
 
 - Rattrapage paginé (`history_since`) : plus de limite à 50 messages manqués ; éditions/suppressions faites en ton absence appliquées.

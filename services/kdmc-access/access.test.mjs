@@ -245,20 +245,26 @@ test('GET / inconnu (sans compte) → l\'ENTRÉE (≤ 2 Ko), aucun octet de la p
 
 test('session révoquée / pass falsifié / domaine muet ou en panne → l\'entrée, jamais la page (fail-closed)', async () => {
   const orig = globalThis.fetch;
+  const { oublierSessions } = await import('./worker.js');
   try {
     globalThis.fetch = async (u) => String(u).includes('/__sso/whoami') ? new Response(JSON.stringify({ ok: false, reason: 'session_revoquee' }), { status: 200 }) : new Response('{}');
+    oublierSessions();
     let r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-kevin' } }), ENV);
     assertEntree(r, await r.text(), 'révoquée');
     globalThis.fetch = mockFetch({});
+    oublierSessions();
     r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-falsifie', authorization: 'Bearer faux' } }), ENV);
     assertEntree(r, await r.text(), 'falsifié');
     globalThis.fetch = async () => { throw new Error('réseau coupé'); };
+    oublierSessions();
     r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-kevin' } }), ENV);
     assertEntree(r, await r.text(), 'domaine muet');
     globalThis.fetch = async () => new Response('Bad gateway', { status: 502 });
+    oublierSessions();
     r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=pass-kevin' } }), ENV);
     assertEntree(r, await r.text(), 'domaine en erreur');
     globalThis.fetch = async () => new Response(JSON.stringify({ ok: true }), { status: 200 });
+    oublierSessions();
     r = await worker.fetch(req('/', { headers: { cookie: 'kdmc_sso=x' } }), ENV);
     assertEntree(r, await r.text(), 'réponse sans uid');
   } finally { globalThis.fetch = orig; }
@@ -294,6 +300,7 @@ test('GET /page : la page à un compte du domaine (cookie OU Bearer), relayée a
 
 test('GET /page SANS compte valide → 401 JSON, aucun morceau de la page (anonyme, révoqué, falsifié, domaine muet)', async () => {
   const orig = globalThis.fetch;
+  const { oublierSessions } = await import('./worker.js');
   try {
     const cas = [
       ['anonyme', mockFetch({}), {}],
@@ -303,7 +310,7 @@ test('GET /page SANS compte valide → 401 JSON, aucun morceau de la page (anony
       ['domaine 502', async () => new Response('x', { status: 502 }), { authorization: 'Bearer pass-kevin' }],
     ];
     for (const [quoi, f, headers] of cas) {
-      globalThis.fetch = f;
+      globalThis.fetch = f; oublierSessions();
       const r = await worker.fetch(req('/page', { headers }), ENV);
       const t = await r.text();
       assert.equal(r.status, 401, quoi);
@@ -426,4 +433,19 @@ test('chemins de page : la page à un compte, la porte à un anonyme, 404 aux AP
   console.log(`  chemins de page : ${pass2} OK · ${fail2} échec(s)`);
   assert.equal(fail2, 0, 'chemins de page en échec');
   assert.equal(pass2, 11);
+});
+
+/* 15.10 (« l'ouverture est très longue ») : la même vérification n'est plus redemandée 3-4 fois par ouverture. */
+test('vérification de session : un oui est gardé 15 s (1 appel au domaine pour 3 requêtes), un refus JAMAIS', async () => {
+  const orig = globalThis.fetch; let appels = 0; const m = mockFetch({});
+  const { oublierSessions } = await import('./worker.js');
+  globalThis.fetch = async (u, o) => { if (String(u).includes('/__sso/whoami')) appels++; return m(u, o); };
+  try {
+    oublierSessions();
+    for (let i = 0; i < 3; i++) assert.equal((await worker.fetch(req('/page', { headers: { authorization: 'Bearer pass-kevin' } }), ENV)).status, 200);
+    assert.equal(appels, 1, 'entrée + page + historique = une seule vérification');
+    appels = 0; oublierSessions();
+    for (let i = 0; i < 3; i++) assert.equal((await worker.fetch(req('/page', { headers: { authorization: 'Bearer pass-faux' } }), ENV)).status, 401);
+    assert.equal(appels, 3, 'un refus est redemandé à chaque fois (jamais gardé)');
+  } finally { globalThis.fetch = orig; oublierSessions(); }
 });

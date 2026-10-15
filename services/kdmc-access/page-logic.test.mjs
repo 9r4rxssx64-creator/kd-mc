@@ -122,3 +122,34 @@ test('les 32 adresses du domaine ont toutes un nom lisible', () => {
   assert.deepEqual(sansNom, [], 'adresses affichées en brut à Kevin : ' + sansNom.join(', '));
   assert.ok(hosts.length >= 30, 'adresses trouvées : ' + hosts.length);
 });
+
+/* 15.10.2026 (Kevin : « l'ouverture est très longue ») — la page attendait 4 appels l'un derrière l'autre (historique,
+   journal, boîte unifiée, boîte de secours) AVANT d'afficher quoi que ce soit. Maintenant : tout part ensemble, la page
+   s'affiche dès l'historique reçu et se complète quand le reste arrive. Test sur le code LIVRÉ, avec un faux réseau lent. */
+async function ouverture(sourceChargement) {
+  const lent = (ms, corps) => new Promise((ok) => setTimeout(() => ok({ ok: true, status: 200, json: async () => corps }), ms));
+  const t0 = Date.now(); const rendus = [];
+  const c = vm.createContext({
+    DOMAIN_LOG: '/log-domaine', localStorage: { getItem: () => 'jeton' }, window: {}, setInterval: () => 1, clearInterval: () => {},
+    document: { visibilityState: 'visible' }, TIMER: 0, DATA: null, CONN: null,
+    fetch: (u) => (/history/.test(u) ? lent(80, { people: [] }) : lent(80, { ok: true, messages: [], nonLus: 0 })),
+    renderMain: () => rendus.push(Date.now() - t0), renderLock: () => {}, startAuto: () => {},
+  });
+  vm.runInContext(sourceChargement + '\nvar BOITE=null;', c);
+  await vm.runInContext("load('')", c);
+  const premier = rendus[0];
+  await new Promise((ok) => setTimeout(ok, 160));
+  return { premier, total: Date.now() - t0, rendus: rendus.length };
+}
+const chargement = () => 'async ' + grab('loadConn') + '\nasync ' + grab('load');
+test('ouverture rapide : appels en parallèle, page affichée dès l\'historique, complétée ensuite', async () => {
+  const m = await ouverture(chargement());
+  assert.ok(m.premier < 200, 'premier affichage ' + m.premier + ' ms (4 appels à la suite = 320 ms et plus)');
+  assert.equal(m.rendus, 2, 'un affichage dès l\'historique + un quand le journal et la boîte sont arrivés');
+});
+test('sabotage : si le chargement redevient séquentiel, le test rougit', async () => {
+  const seq = chargement().replace('var connP=loadConn(hash);', '').replace('renderMain();startAuto();connP.then(function(){renderMain(true)});', 'await loadConn(hash);renderMain();startAuto();');
+  assert.notEqual(seq, chargement());
+  const m = await ouverture(seq);
+  assert.ok(m.premier >= 150, 'séquentiel mesuré : ' + m.premier + ' ms');
+});

@@ -240,21 +240,33 @@ export const PAGE_HTML = `<!doctype html>
   async function load(hash){
     try{
       var tk='';try{tk=localStorage.getItem('kdmc_sso_token')||''}catch(e){}   /* (27.09) app installée : le pass du domaine vaut le code */
+      /* 15.10 (Kevin : « l'ouverture est très longue ») : les connexions et la boîte partent EN MÊME TEMPS que l'historique
+         (avant : 4 appels l'un derrière l'autre avant le moindre affichage) ; la page s'affiche dès l'historique reçu,
+         et se complète toute seule quand le reste arrive. */
+      var connP=loadConn(hash);
       var r=await fetch('/history',{headers:hash?{'x-apex-pin':hash}:(tk?{'Authorization':'Bearer '+tk}:{}),credentials:'include'});
       if(r.status===401){if(hash)renderLock('Code incorrect.');return false}   /* sans code = simple essai de session : silencieux */
       if(!r.ok){renderLock('Souci serveur ('+r.status+'), réessaie.');return false}
-      DATA=await r.json();window._pinhash=hash;await loadConn(hash);renderMain();startAuto();return true;
+      DATA=await r.json();window._pinhash=hash;renderMain();startAuto();connP.then(function(){renderMain(true)});return true;
     }catch(e){renderLock('Réseau indisponible, réessaie.');return false}
   }
   /* Vraies connexions du domaine — fail-open : si indisponible, on affiche quand même
      les actions (ne JAMAIS montrer une page vide à cause d'une source secondaire). */
   async function loadConn(hash){
-    try{var r=await fetch(DOMAIN_LOG,{headers:hash?{'x-apex-pin':hash}:{},credentials:'include'});if(r.ok)CONN=await r.json()}catch(e){}
+    /* en parallèle : le journal du domaine et la boîte ne dépendent pas l'un de l'autre (15.10) */
+    await Promise.all([
+      (async function(){
+      try{var r=await fetch(DOMAIN_LOG,{headers:hash?{'x-apex-pin':hash}:{},credentials:'include'});if(r.ok)CONN=await r.json()}catch(e){}
+      })(),
+      (async function(){
     /* 💬 Messages reçus dans Lingua (Cercle, Kevin 2.10 : « une notification visible pour ne pas la rater »). */
     /* 📬 3.10 : la boîte UNIQUE (toutes les apps) ; l'ancienne boîte Lingua reste en secours si le routeur n'a pas encore la nouvelle. */
-    BOITE=null;
-    try{var u=await fetch('https://kd-mc.com/__boite/admin',{credentials:'include'});if(u.ok){var uj=await u.json();if(uj&&uj.ok)BOITE={unifie:true,nonLus:uj.nonLus||0,connectes:uj.connectes||0,alertes:uj.nonLusAlertes||0,derniers:(uj.messages||[]).filter(function(m){return m.source!=='alertes'}).slice(0,3).map(function(m){return{nom:m.de,corps:m.texte,lu:!m.nonLus,app:String(m.app||'').replace('.kd-mc.com','')}})}}}catch(e){}
-    if(!BOITE){try{var b=await fetch('https://kd-mc.com/__cercle/admin/boite',{credentials:'include'});if(b.ok){var bj=await b.json();BOITE=bj&&bj.ok?bj:null}}catch(e){}}
+      var NB=null;
+      try{var u=await fetch('https://kd-mc.com/__boite/admin',{credentials:'include'});if(u.ok){var uj=await u.json();if(uj&&uj.ok)NB={unifie:true,nonLus:uj.nonLus||0,connectes:uj.connectes||0,alertes:uj.nonLusAlertes||0,derniers:(uj.messages||[]).filter(function(m){return m.source!=='alertes'}).slice(0,3).map(function(m){return{nom:m.de,corps:m.texte,lu:!m.nonLus,app:String(m.app||'').replace('.kd-mc.com','')}})}}}catch(e){}
+      if(!NB){try{var b=await fetch('https://kd-mc.com/__cercle/admin/boite',{credentials:'include'});if(b.ok){var bj=await b.json();NB=bj&&bj.ok?bj:null}}catch(e){}}
+      BOITE=NB;
+      })()
+    ]);
   }
   var BOITE=null;
   function boiteBloc(){

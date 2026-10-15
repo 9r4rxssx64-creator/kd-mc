@@ -191,6 +191,11 @@ async function handleLog(request, env, origin) {
    du domaine, envoyé à admin.kd-mc.com aussi, ou Bearer) vaut le code admin. Ce worker n'a pas le
    secret du domaine : il demande au domaine lui-même (/__sso/whoami), qui est la seule vérité. */
 /* La session du domaine (Bearer ou cookie kdmc_sso), vérifiée par le domaine : { uid, name, admin, verified } ou null. */
+/* 15.10 (« l'ouverture est très longue ») : une ouverture demande 3 à 4 fois la même vérification au domaine (entrée,
+   /page, /history). Une réponse POSITIVE est gardée 15 s par pass + appareil — la même durée que la mémoire du routeur
+   pour la révocation. Un refus n'est jamais gardé. */
+const _memoSession = new Map();
+export function oublierSessions() { _memoSession.clear(); }
 async function sessionDomaine(request, env) {
   try {
     const auth = request.headers.get('authorization') || '';
@@ -201,10 +206,16 @@ async function sessionDomaine(request, env) {
     /* 13.10 : le routeur lie le pass à la FAMILLE D'APPAREIL de la personne (iPhone, PC…) et refuse un pass présenté depuis une autre famille. Cet appel part du
        worker (« autre » famille) : sans le User-Agent de la personne, un pass émis sur son iPhone était refusé. On transmet CE SEUL en-tête, rien d'autre. */
     const entetes = { authorization: 'Bearer ' + token }; const ua = request.headers.get('user-agent'); if (ua) entetes['user-agent'] = ua;
+    const cle = token + '|' + (ua || '');
+    const vu = _memoSession.get(cle);
+    if (vu && vu.exp > Date.now()) return vu.s;
     const r = await fetch(((env && env.KDMC_SSO_URL) || 'https://kd-mc.com') + '/__sso/whoami', { headers: entetes });
     const j = await r.json();
     if (!j || !j.ok || !j.uid) return null;
-    return { uid: String(j.uid), name: String(j.name || ''), admin: j.admin === true, verified: j.verified === true };
+    const res = { uid: String(j.uid), name: String(j.name || ''), admin: j.admin === true, verified: j.verified === true };
+    if (_memoSession.size > 50) _memoSession.clear();
+    _memoSession.set(cle, { s: res, exp: Date.now() + 15000 });
+    return res;
   } catch (_) { return null; }
 }
 async function sessionAdmin(request, env) {

@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — admin.kd-mc.com : ouverture plus rapide (branche claude/admin-ouverture-rapide)
+
+- Kevin : « l'ouverture est très longue ». Cause : la page attendait 4 appels à la suite (historique, journal, boîte, boîte de secours) avant d'afficher, et le worker redemandait la même vérification au domaine 3-4 fois par ouverture.
+- Réparé : appels en parallèle, affichage dès l'historique reçu (la boîte et le journal complètent ensuite) ; le worker garde 15 s un « oui » du domaine (jamais un refus).
+- Mesuré en local : test:kdmc-access 35/35 (faux réseau lent, sabotages rouges) ; test:kdmc-access-navigateur 10/10. Leçon #557.
+- Pas vérifié : le temps réel sur le vrai iPhone avec le vrai compte (non mesurable depuis ici) ; à confirmer par Kevin après la mise en ligne.
+
 ## 2026-10-15 — admin.kd-mc.com v2 : la porte n'enferme plus l'app installée (branche claude/admin-page-compte-v2)
 
 - Kevin ouvre l'admin depuis l'app de l'écran d'accueil (cookies à part de Safari, aucun en-tête) : la v1 ci-dessous l'aurait laissé dehors → v1 NON mise en ligne.

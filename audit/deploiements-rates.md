@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy Apex Chat (Cloudflare Workers) — 15/10/2026 10:59 UTC
+
+- **Branche** : `main` · **Commit** : `590d0702` · **Run** : `38723972327`
+- **Ce qui a lâché** : Tests unitaires du commit (porte avant déploiement) › Tests + seuils de couverture (vitest.config.js)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38723972327
+- **Ce que la machine a dit** :
+
+```
+^[[90mstderr^[[2m | tests/unit/api-worker-otp.test.js^[[2m > ^[[22m^[[2mhandleSendOtp — validation^[[2m > ^[[22m^[[2mTextBelt fail → inline OTP fallback
+^[[22m^[[39m[sendPushToUser] web-push failed: HTTP error
+^[[22m^[[39mQueue consumer error Error: timecapsule push failed (1 envoi(s))
+^[[22m^[[39mAPI error /api/stories GET no such table: stories Error: no such table: stories
+^[[22m^[[39mDaily backup failed ni BACKUP_ENCRYPTION_KEY ni JWT_SIGN_KEY : refus d'écrire une sauvegarde en clair
+^[[22m^[[39mAPI error /api/system/config GET db sql crash Error: db sql crash
+^[[22m^[[39m::warning::wrangler d1 essai 1/3 : ✘ [ERROR] D1_ERROR: Internal error, please try again (code 7500)
+     ^[[33m^[[2m✓^[[22m^[[39m l'étape « Apply D1 migrations » du workflow, jouée en bash : journal posé, rejeu à vide, échec = sortie ≠ 0^[[33m 6056^[[2mms^[[22m^[[39m
+^[[22m^[[39mQueue consumer error Error: DB fail
+^[[22m^[[39mDaily backup failed env.APEX_CHAT_MEDIA.put is not a function
+^[[22m^[[39mDaily backup failed env.APEX_CHAT_MEDIA.put is not a function
+^[[22m^[[39m[summarize] groq failed: Groq 500
+^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
+^[[22m^[[39m[summarize] groq failed: Groq 500
+^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
+^[[22m^[[39m[summarize] groq failed: Groq 500
+^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
+^[[22m^[[39m[summarize] groq failed: Groq 500
+^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
+^[[22m^[[39m[sendPushToUser] web-push failed: push down
+^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+^[[41m^[[1m FAIL ^[[22m^[[49m tests/unit/lot-e2-sauvegarde-restauration.test.js^[[2m > ^[[22mexercice de restauration : les étapes shell du workflow, jouées avec un faux wrangler^[[2m > ^[[22mtélécharger (jour le plus récent) → reconstruire → rapport : OK ; clé absente ou sauvegarde incomplète → échec
+^[[41m^[[1m FAIL ^[[22m^[[49m tests/unit/lot-e2-sauvegarde-restauration.test.js^[[2m > ^[[22mexercice de restauration : les étapes shell du workflow, jouées avec un faux wrangler^[[2m > ^[[22mtélécharger (jour le plus récent) → reconstruire → rapport : OK ; clé absente ou sauvegarde incomplète → échec
+^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m127 passed^[[39m^[[22m^[[90m (128)^[[39m
+^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m2022 passed^[[39m^[[22m^[[90m (2023)^[[39m
+##[error]Error: ENOENT: no such file or directory, open '/home/runner/work/kd-mc/kd-mc/.github/workflows/apex-chat-exercice-restauration.yml'
+Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { errno: -2, code: 'ENOENT', syscall: 'open', path: '/home/runner/work/kd-mc/kd-mc/.github/workflows/apex-chat-exercice-restauration.yml' }
+##[error]Error: ENOENT: no such file or directory, open '/home/runner/work/kd-mc/kd-mc/.github/workflows/apex-chat-exercice-restauration.yml'
+Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { errno: -2, code: 'ENOENT', syscall: 'open', path: '/home/runner/work/kd-mc/kd-mc/.github/workflows/apex-chat-exercice-restauration.yml' }
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

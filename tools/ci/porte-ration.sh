@@ -5,7 +5,7 @@
 # basculer le dépôt dans le « quota épuisé » qui bloque TOUS les autres, comme le 12.10).
 #   usage : bash tools/ci/porte-ration.sh <minutes que ce robot coûte>
 # Fail-OUVERT : si la ration ne peut pas être lue (API muette), on laisse partir — la porte ne doit jamais bloquer à tort.
-# Contournement explicite : l'entrée « forcer » du robot (à n'utiliser qu'avec l'accord de Kevin).
+# Contournement explicite : l'entrée « forcer_ration » du robot (à n'utiliser qu'avec l'accord de Kevin).
 set -uo pipefail
 besoin="${1:-10}"
 jour=$(date -u +%F)
@@ -17,6 +17,6 @@ fi
 node tools/ci/ration-actions.mjs --runs "$dest" --besoin "$besoin"
 code=$?
 if [ "$code" -ne 0 ]; then
-  echo "::error title=Ration du jour insuffisante::ce robot coûte ~${besoin} min et la ration du jour ne les couvre pas. Il ne démarre pas. Relance-le demain (jour UTC), lance-le en LOCAL, ou coche « forcer » avec l'accord de Kevin."
+  echo "::error title=Ration du jour insuffisante::ce robot coûte ~${besoin} min et la ration du jour ne les couvre pas. Il ne démarre pas. Relance-le demain (jour UTC), lance-le en LOCAL, ou coche « forcer_ration » avec l'accord de Kevin."
 fi
 exit "$code"

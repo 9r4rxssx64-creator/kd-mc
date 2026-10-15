@@ -199,6 +199,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/lot-reconnu-partout` | 13.10 | Lot : reconnu partout, retours partout, fluidité (pastille « ← Portail », mémo KV, SW lie-fi, zone admin instantanée, Apex Chat/AI, CMCteams/light/Arbre/boutiques reconnus, User-Agent des services) | `lot-reconnu-partout` |
 | `claude/suite-reconnu` | 15.10 | Suite du lot : `/__arbre/cle` (clé d'Arbre remise aux sessions reconnues) et `/__sso/issue` sans rétrogradation | `suite-reconnu` |
 | `claude/eco-actions` | 15.10 | Économie du forfait Actions : porte de ration sur 6 gros robots, ration en tête de session, `publier-local.mjs`, `PLAFONDS-ET-SECOURS.md` | `eco-actions` |
+| `claude/eco-fix` | 15.10 | Correctif : l'entrée `forcer` ajoutée en double dans 3 workflows (fichier invalide) → `forcer_ration` + garde contre les clés dupliquées | `eco-fix` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

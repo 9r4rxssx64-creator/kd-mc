@@ -5,7 +5,7 @@
    node tests/verify-porte-ration.mjs      (SABOTAGE=1 : la chaîne privée perd sa porte → la garde doit rougir) */
 import { execFileSync } from 'node:child_process';
 import { rmSync } from 'node:fs';
-import { mkdtempSync, writeFileSync, mkdirSync, chmodSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, chmodSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d ? '  → ' + String(d).slice(0, 200) : ''}`); };
@@ -32,8 +32,21 @@ for (const [nom, besoin] of Object.entries(ROBOTS)) {
   const porteAt = y.indexOf('bash tools/ci/porte-ration.sh ' + besoin);
   const install = y.search(/npm (install|ci)\b/);
   ok(porteAt > 0 && (install < 0 || porteAt < install), `5.${nom} : la porte (${besoin} min) existe et passe avant l'installation des paquets`);
-  ok(/forcer:\s*\n\s*description:[^\n]*\n\s*type: boolean/.test(y) && /if: \$\{\{ !inputs\.forcer \}\}/.test(y), `6.${nom} : l'entrée « forcer » (accord de Kevin) contourne la porte`);
+  ok(/forcer_ration:\s*\n\s*description:[^\n]*\n\s*type: boolean/.test(y) && /if: \$\{\{ !inputs\.forcer_ration \}\}/.test(y), `6.${nom} : l'entrée « forcer_ration » (accord de Kevin) contourne la porte`);
   ok(/actions: read/.test(y), `7.${nom} : le robot a le droit de lire la liste des runs du jour`);
 }
 process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
+/* 8. AUCUNE entrée en double dans AUCUN workflow : une clé dupliquée rend le fichier invalide pour GitHub (PyYAML, plus tolérant, ne le voit pas) —
+   mesuré le 15.10 : « forcer » ajouté en double dans 3 workflows → 3 runs rouges « workflow file issue » à chaque push sur main */
+{
+  const dossier = '.github/workflows'; let doubles = [];
+  for (const f of readdirSync(dossier).filter((x) => /\.ya?ml$/.test(x))) {
+    const L = readFileSync(join(dossier, f), 'utf8').split('\n'); let dedans = false; const vus = new Set();
+    for (const l of L) {
+      if (/^    inputs:\s*$/.test(l)) { dedans = true; vus.clear(); continue; }
+      if (dedans) { if (l.trim() && !/^\s{5,}/.test(l)) dedans = false; else { const m = /^      ([A-Za-z0-9_-]+):\s*$/.exec(l); if (m) { if (vus.has(m[1])) doubles.push(f + ' → ' + m[1]); vus.add(m[1]); } } }
+    }
+  }
+  ok(doubles.length === 0, '8. aucune entrée dupliquée dans les entrées de workflow_dispatch (clé en double = fichier invalide pour GitHub)', doubles.join(' ; '));
+}
 console.log(`\n${fail ? '❌' : '✅'} porte-ration : ${pass}/${pass + fail}`); process.exit(fail ? 1 : 0);

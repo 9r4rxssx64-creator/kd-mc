@@ -2,7 +2,7 @@
 
 ## 2026-10-15 — « Économise le forfait action… ne jamais plus être bloqué » : porte de ration, ration en tête de session, publier sans Actions, tableau des plafonds
 - Mesure (API GitHub, 6→15.10) : 2 170 min / 700 runs ; chaîne privée 1 104 (61 runs), Arbre-corrections 540 (212), audit runtime 207, synchro 181 (178 × 1 min). Depuis le 13.10 tout est à la main sauf la synchro (1 min par fusion, déjà regroupée par GitHub : 82 runs sur 249 à 0 min).
-- Fait : **porte de ration** sur 6 gros robots (`porte-ration.sh`, `--besoin`, entrée `forcer`) ; **ration dans le hook de début de session** ; **`publier-local.mjs`** (secours sans Actions, à blanc par défaut, jamais de `--force`) ; **`PLAFONDS-ET-SECOURS.md`** (inventaire de tous les plafonds + 10 trous). Gardes : `test:porte-ration` (22), `test:ration-hook` (4), `test:publier-local` (8), `test:ration-actions` (13), tous prouvés par sabotage.
+- Fait : **porte de ration** sur 6 gros robots (`porte-ration.sh`, `--besoin`, entrée `forcer_ration`) ; **ration dans le hook de début de session** ; **`publier-local.mjs`** (secours sans Actions, à blanc par défaut, jamais de `--force`) ; **`PLAFONDS-ET-SECOURS.md`** (inventaire de tous les plafonds + 10 trous). Gardes : `test:porte-ration` (22), `test:ration-hook` (4), `test:publier-local` (8), `test:ration-actions` (13), tous prouvés par sabotage.
 - À décider par Kevin (rien n'est fait sans lui) : Workers Paid 5 $/mois (bascule auto du plafond de 100 000 req/jour) ; jeton « Plan : lecture » pour lire la facture ; lancer les gros robots sur le Lenovo (`KDMC_RUNNER`).
 - Coût Actions de ce lot : 0 avant la fusion.
 ## 2026-10-15 — Ultra-audit Apex Chat (6 auditeurs) : P0 SSO corrigé en premier
@@ -3262,12 +3262,12 @@ GitHub — jeton du robot, `actions: read`, **sans écrire nulle part** (le plaf
 qu'il protège). Au-delà de **2**, toutes familles confondues, le run reste vert, **ne frappe rien** et
 le dit (avertissement « Plafond atteint », résumé d'étape). Ne comptent que les runs qui ont vraiment
 frappé (en cours, ou ≥ 90 s) : un run plafonné ne mange pas le budget. Seul Kevin passe outre
-(entrée `forcer`, journalisée). Les étapes qui portaient déjà un `if: always()` le gardent, combiné.
+(entrée `forcer_ration`, journalisée). Les étapes qui portaient déjà un `if: always()` le gardent, combiné.
 
 **Garde** `test:plafond-verifs` (dans `test:ci`) : 11 cas sur la décision (jour UTC, soi-même exclu,
 runs courts non comptés, en cours comptés, annulés ignorés, autre robot ignoré, hier ignoré) + pour
 chacun des 6 fichiers : étape présente, placée AVANT le navigateur, étapes conditionnées,
-`actions: read`, entrée `forcer` transmise ; et la liste VERIFS ↔ fichiers.
+`actions: read`, entrée `forcer_ration` transmise ; et la liste VERIFS ↔ fichiers.
 
 **Docs mis à jour** : ETAT-DU-MOMENT (ligne PLAFOND), ETAT-INFRA (fait n°24 : la journée où les
 robots ont mis le domaine à terre), KEVIN_ACTIONS_TODO (fait ; Workers Paid reste une option),

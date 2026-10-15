@@ -3787,7 +3787,7 @@ Vérifier en réel coûte au domaine ce qu'un visiteur lui coûte, en centaines 
 plan gratuit : 48 surfaces en HTTP 429 pour tout le monde. Le budget est écrit dans le code
 (`tools/ci/plafond-verifs.mjs`, dans les 6 workflows qui frappent le domaine) : **2 par jour UTC,
 toutes familles confondues** ; au-delà, le run est vert et le dit — il ne vérifie rien. On lit le
-rapport existant avant d'en relancer un. Kevin seul passe outre (entrée `forcer`).
+rapport existant avant d'en relancer un. Kevin seul passe outre (entrée `forcer_ration`).
 
 ### 3. Ce que ça a déjà rapporté (27.09)
 
@@ -12181,7 +12181,7 @@ Ce n'est pas une règle nouvelle : c'est la **carte unique** des règles « grat
 
 ### 4. 15.10 — « Économise le forfait action… ne jamais plus être bloqué, n'importe où, partout » (Kevin 2026-10-15)
 Mesuré (API GitHub, 6→15.10, 700 runs) : **2 170 min** — chaîne privée 1 104 min (61 runs), Arbre-corrections 540 (212 runs), audit runtime 207, synchronisation du code 181 (178 runs à 1 min). Le quota a sauté le 12.10 : un quota épuisé bloque TOUS les robots, donc aussi la mise en ligne.
-- **Porte de ration** (`tools/ci/porte-ration.sh`, `tools/ci/ration-actions.mjs --besoin N`) : les 6 gros robots lisent la ration du jour avant d'installer quoi que ce soit et ne démarrent pas si elle ne les couvre pas (`forcer` = accord de Kevin ; fail-ouvert si illisible). Garde `test:porte-ration`.
+- **Porte de ration** (`tools/ci/porte-ration.sh`, `tools/ci/ration-actions.mjs --besoin N`) : les 6 gros robots lisent la ration du jour avant d'installer quoi que ce soit et ne démarrent pas si elle ne les couvre pas (`forcer_ration` = accord de Kevin ; fail-ouvert si illisible). Garde `test:porte-ration`.
 - **La ration à l'ouverture de chaque session** (hook `etat-du-moment.sh`, lu sur `main`). Garde `test:ration-hook`.
 - **Publier sans Actions** (`tools/depot-public/publier-local.mjs`) : même export + même vérificateur + même plancher de 80 % que le robot, depuis une session ; à blanc par défaut. Garde `test:publier-local`.
 - **Le tableau de tous les plafonds et secours** : `PLAFONDS-ET-SECOURS.md` (10 trous classés, correctif gratuit le plus petit).

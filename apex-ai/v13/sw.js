@@ -10,7 +10,7 @@
  * APP_VER dans bootstrap.js. Workflow `sw-cache-sync.yml` synchronise auto.
  */
 
-const CACHE_VERSION  = 'apex-v13.4.370';   /* 15.10 : Apex répond sans clé — IA gratuites du domaine (apis.kd-mc.com/ai), date de Monaco, plus d'écran de code */
+const CACHE_VERSION  = 'apex-v13.4.371';   /* 15.10 : Apex répond sans clé — IA gratuites du domaine (apis.kd-mc.com/ai), date de Monaco, plus d'écran de code */
 const STATIC_CACHE   = CACHE_VERSION + '-static';
 const RUNTIME_CACHE  = CACHE_VERSION + '-runtime';
 const OFFLINE_CACHE  = CACHE_VERSION + '-offline';

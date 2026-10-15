@@ -16794,3 +16794,9 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
   4 sabotages rouges). **7 rouges DÉJÀ présents sur `main` avant moi** (reproduits sur une copie de main 6cbd228) : `departs-groupes` (CMC Éq.3, groupe GR1 CRAPS),
   `entetes-light`, `tests-isoles-sw` (arbre-message-kevin.test.mjs sans `serviceWorkers:'block'`), `equipes-mois-suivant`, `pipeline-sessions`,
   `arbre-ordi`, `marionnette` — à reprendre par les sessions light / arbre / Bee.
+
+## 2026-10-15 (matin) — « Connexion inscription obligatoire pour toute app du domaine et le domaine » → les apps présentent leur compte à la passerelle
+
+- **Mesuré sans compte** : 32 pages sur 32 = porte ✅ ; MAIS `apis.kd-mc.com` répondait à tout le monde et `admin.kd-mc.com` montrait sa page (voir leçon 547).
+- **Côté apps (ce commit)** : CMCteams **v9.978** + Apex **v13.4.371** (jours fériés + assistant gratuit via `_cmcApisInit`, dans `tools/shared/fiche-privee.js`), client partagé `free-apis-client.js`, Apex (`kdmc-gateway.ts`) : cookie du domaine + laissez-passer. Garde `test:apis-clients-compte`.
+- **Côté serveur** : branches `claude/apis-compte-obligatoire` (passerelle, 225 contrôles) puis `claude/admin-page-compte` (page admin, en attente de l'accord de Kevin : sur iPhone, l'app installée n'a pas les cookies de Safari). **Ordre : apps → passerelle → admin.**

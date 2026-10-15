@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — E2E prod : le test deux clients passe aux tickets (v1.1.306 refuse ?token=)
+
+- v1.1.306 en ligne (déploiement + couverture verts) mais E2E prod 17/1 : `two-clients.spec.js` (aller/retour) ouvrait le temps
+  réel avec `?token=`, désormais refusé — l'app est juste, le test était périmé. Corrigé + test prod du refus. Leçon #550.
+
 ## 2026-10-15 — Apex Chat v1.1.306 : lot D (finitions) — Kevin « Go tout » + « position obligatoire »
 
 - Position OBLIGATOIRE (décision Kevin 15.10) : CGU + charte + app alignées ; bandeau permanent non bloquant si coupée ensuite.

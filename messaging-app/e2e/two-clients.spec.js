@@ -41,11 +41,13 @@ async function auth(request, u) {
 }
 
 // Ouvre un WebSocket DANS la page (origine prod valide) et collecte les frames.
-// `cred` = 'token=…' (ancien repli) ou 'ticket=…' (ce que fait l'app à jour
-// depuis v1.1.286 : ticket à usage unique obtenu par POST /api/auth/ws-ticket).
+// `cred` = 'ticket=…' (ce que fait l'app depuis v1.1.286 : ticket à usage unique obtenu par
+// POST /api/auth/ws-ticket). 15.10.2026 (v1.1.306) : le serveur REFUSE désormais le jeton de session
+// dans l'adresse (?token=) — ce repli par défaut faisait échouer ce test sur la prod (« ws error »).
+// `cred` est donc OBLIGATOIRE ; le refus de ?token= est lui-même vérifié plus bas.
 async function openWs(page, convId, token, uid, cred) {
   await page.goto('./', { waitUntil: 'domcontentloaded', timeout: 45000 });
-  cred = cred || ('token=' + encodeURIComponent(token));
+  if (!cred) throw new Error('openWs : passer un ticket (cred) — ?token= est refusé par le serveur depuis v1.1.306');
   await page.evaluate(({ WS_BASE, convId, cred, uid }) => {
     return new Promise((resolve, reject) => {
       const url = WS_BASE + '/api/conversations/' + encodeURIComponent(convId) + '/ws'
@@ -138,8 +140,12 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
     const pageA = await ctxA.newPage();
     const pageB = await ctxB.newPage();
     try {
-      await openWs(pageA, convId, aTok, aId);
-      await openWs(pageB, convId, bTok, bId);
+      const tka = await wsTicket(request, aTok);
+      const tkb = await wsTicket(request, bTok);
+      expect(tka.status, 'ticket Alice HTTP').toBe(200);
+      expect(tkb.status, 'ticket Bob HTTP').toBe(200);
+      await openWs(pageA, convId, aTok, aId, 'ticket=' + encodeURIComponent(tka.ticket));
+      await openWs(pageB, convId, bTok, bId, 'ticket=' + encodeURIComponent(tkb.ticket));
 
       // 4) TEXTE Bob → Alice
       const t1 = 'E2E hello ' + Date.now();
@@ -217,6 +223,37 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
     } finally {
       await ctxA.close();
       await ctxB.close();
+    }
+  });
+  // 15.10.2026 (v1.1.306) : la prod REFUSE le jeton de session dans l'adresse du temps réel.
+  test('temps réel : le jeton de session dans l\'adresse (?token=) est REFUSÉ', async ({ browser, request, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebSocket-from-page instable sur WebKit CI');
+    const bAuth = await auth(request, B);
+    const aAuth = await auth(request, A);
+    if (!aAuth.ok || !bAuth.ok) {
+      test.skip(true, `login de test indisponible — A:${aAuth.status} B:${bAuth.status}`);
+      return;
+    }
+    const bTok = bAuth.body.token, bId = bAuth.body.user.id;
+    const convR = await request.post(API + '/api/conversations', {
+      headers: { Authorization: 'Bearer ' + bTok },
+      data: { type: 'dm', members: [aAuth.body.user.id] },
+    });
+    expect(convR.ok(), 'create conv HTTP ' + convR.status()).toBeTruthy();
+    const conv = await convR.json();
+    const convId = conv.id || conv.conv_id || (conv.conversation && conv.conversation.id);
+    const ctx = await browser.newContext();
+    await marquer(ctx);
+    const page = await ctx.newPage();
+    try {
+      let ouvert = false;
+      try { await openWs(page, convId, bTok, bId, 'token=' + encodeURIComponent(bTok)); ouvert = true; } catch (_) { ouvert = false; }
+      if (ouvert) {
+        await page.waitForTimeout(1500);
+        expect(await wsClosed(page), 'si la prise est acceptée, le serveur doit la fermer aussitôt').not.toBeNull();
+      }
+    } finally {
+      await ctx.close();
     }
   });
 });

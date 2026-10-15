@@ -11,7 +11,7 @@
  * fichier SQL pour D1, rotation 14 jours, plafond par table, nouvel essai d'une étape ratée.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { mkdtempSync, writeFileSync, rmSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
@@ -492,8 +492,21 @@ describe('valeurs : encodage et littéraux SQL', () => {
   });
 });
 
-describe('exercice de restauration : les étapes shell du workflow, jouées avec un faux wrangler', () => {
-  const RACINE = join(import.meta.dirname, '..', '..', '..');
+// 15.10.2026 : ce workflow est PRIVÉ (tools/depot-public/regles.json) → absent du dépôt public kd-mc, où ce test
+// tourne aussi (porte qualité du déploiement). Là-bas : on vérifie qu'il est absent PARCE QU'il est privé, puis on saute.
+const RACINE_DEPOT = join(import.meta.dirname, '..', '..', '..');
+const WF_EXERCICE = '.github/workflows/apex-chat-exercice-restauration.yml';
+const EXERCICE_PRESENT = existsSync(join(RACINE_DEPOT, WF_EXERCICE));
+
+describe('exercice de restauration : absent seulement du dépôt public, parce qu\'il est privé', () => {
+  it.skipIf(EXERCICE_PRESENT)('copie publique : le workflow manque car il est listé privé (jamais par oubli)', () => {
+    const regles = readFileSync(join(RACINE_DEPOT, 'tools/depot-public/regles.json'), 'utf8');
+    expect(regles).toContain(WF_EXERCICE);
+  });
+});
+
+describe.skipIf(!EXERCICE_PRESENT)('exercice de restauration : les étapes shell du workflow, jouées avec un faux wrangler', () => {
+  const RACINE = RACINE_DEPOT;
   function etape(nom) {
     const lignes = readFileSync(join(RACINE, '.github/workflows/apex-chat-exercice-restauration.yml'), 'utf8').split('\n');
     const i = lignes.findIndex((l) => l.includes('- name: ' + nom));

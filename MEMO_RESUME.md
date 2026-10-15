@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Déploiements Apex Chat débloqués : un test lisait un robot privé
+
+- La porte « tests avant déploiement » (kd-mc, run 38724012761) échouait : `lot-e2-sauvegarde-restauration` lisait
+  `.github/workflows/apex-chat-exercice-restauration.yml`, qui est privé donc absent de la copie publique (ENOENT).
+- Correctif : dans la copie publique, le test vérifie que ce fichier est bien listé privé dans `tools/depot-public/regles.json`
+  (jamais absent par oubli) ; dans le coffre, les étapes shell restent jouées. Mesuré : 21 OK + 1 sauté dans les deux cas ;
+  sabotage (fichier retiré de la liste privée) → rouge.
+
 ## 2026-10-15 — Enquête : la photo du test « deux clients » n'arrive pas toujours (prod)
 
 - 2 runs sur ~6 : « Alice doit recevoir la photo de Bob » (les 2 textes passent). Pistes écartées en lisant le code :

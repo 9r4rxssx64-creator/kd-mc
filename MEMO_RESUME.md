@@ -16891,3 +16891,7 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
 - Mesuré après mise en ligne (10h15 UTC) : 401 `compte_requis` sur `/`, `/holidays`, `/geo`, `/time`, `/fx`, `/ai` (même avec `Origin` falsifié) ; `/health` → `{ok:true}` ; préflight 204 avec origine exacte + credentials.
 - À faire / en attente : page `admin.kd-mc.com` (branche `claude/admin-page-compte`, accord de Kevin demandé) ; leçon de cette branche à renuméroter (549) ; chemin « compte valide » non prouvé en ligne.
 - **Prouvé en vrai (11h UTC, Kevin sur iPhone : « Apex répond »)** : avec la passerelle fermée, un compte du domaine ouvert obtient bien sa réponse. Page `admin.kd-mc.com` : refonte en cours (entrée minimale + page par appel authentifié) parce que Kevin l'ouvre depuis l'icône de l'écran d'accueil (cookies à part) — voir leçons 343 et 351.
+
+## 2026-10-15 (11h30) — admin.kd-mc.com v2 fusionnée MAIS déploiement raté (#4579) → correctif du déploiement
+- **Cause** (journal d'échecs du dépôt public, run 38725543701) : `node --test` du déploiement a trouvé `entree-navigateur.test.mjs` qui importe `playwright`, absent de la machine → rien déployé ; l'ancienne page est restée en ligne (aucun enfermement).
+- **Correctif** : le test navigateur déplacé dans `tests/kdmc-access-navigateur.test.mjs` ; garde `test:services-sans-navigateur` ; dossier du serveur rejoué avec `env -i node --test` : 32 tests verts sans navigateur.

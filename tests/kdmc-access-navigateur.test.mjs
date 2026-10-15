@@ -17,10 +17,10 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
-import vrai from './worker.js';
-import { PAGE_HTML } from './page.js';
+import vrai from '../services/kdmc-access/worker.js';
+import { PAGE_HTML } from '../services/kdmc-access/page.js';
 
-const ICI = dirname(fileURLToPath(import.meta.url));
+const ICI = join(dirname(fileURLToPath(import.meta.url)), '..', 'services', 'kdmc-access');   /* ce test vit ICI (tests/), pas dans le dossier du serveur : le déploiement y lance `node --test` sur une machine SANS navigateur de test (15.10 : playwright introuvable → déploiement raté) */
 const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const ORIGINE = 'https://admin.kd-mc.com';
 const UA_IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';

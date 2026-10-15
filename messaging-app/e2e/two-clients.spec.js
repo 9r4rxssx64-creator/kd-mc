@@ -145,6 +145,7 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
       expect(tkb.status, 'ticket Bob HTTP').toBe(200);
       await openWs(pageA, convId, aTok, aId, 'ticket=' + encodeURIComponent(tka.ticket));
       await openWs(pageB, convId, bTok, bId, 'ticket=' + encodeURIComponent(tkb.ticket));
+      const tConnexion = Date.now();
 
       // 4) TEXTE Bob → Alice
       const t1 = 'E2E hello ' + Date.now();
@@ -168,8 +169,18 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
       expect(media.url, 'url média').toBeTruthy();
       const marker = 'APXMEDIA1:' + JSON.stringify({ u: media.url, m: 'image/png', n: 'photo.png', s: media.size || PNG_1x1.length, c: 'ma photo' });
       await wsSend(pageB, { type: 'message', ciphertext: marker, mime: 'image/png' });
-      await expect.poll(async () => (await wsFrames(pageA)).some(f => f.type === 'message' && typeof f.ciphertext === 'string' && f.ciphertext.includes('APXMEDIA1:') && f.ciphertext.includes(media.url)),
-        { timeout: 15000, message: 'Alice doit recevoir la photo de Bob' }).toBe(true);
+      // 15.10.2026 : la photo n'arrivait pas toujours (2 runs sur ~6). Si elle n'arrive pas, le message
+      // d'échec dit POURQUOI (erreur renvoyée à Bob, fermeture de la prise d'Alice ou de Bob, trames reçues)
+      // au lieu d'un simple « non reçu ».
+      const recue = async () => (await wsFrames(pageA)).some(f => f.type === 'message' && typeof f.ciphertext === 'string' && f.ciphertext.includes('APXMEDIA1:') && f.ciphertext.includes(media.url));
+      const t0 = Date.now();
+      while (!(await recue()) && Date.now() - t0 < 15000) await pageA.waitForTimeout(250);
+      if (!(await recue())) {
+        const fb = (await wsFrames(pageB)).filter(f => f.type !== 'presence' && f.type !== 'pong').slice(-6);
+        const fa = (await wsFrames(pageA)).filter(f => f.type !== 'presence' && f.type !== 'pong').slice(-6).map(f => ({ type: f.type, code: f.code, message: f.message, mime: f.mime }));
+        const diag = { aFermee: await wsClosed(pageA), bFermee: await wsClosed(pageB), bDernieresTrames: fb.map(f => ({ type: f.type, code: f.code, message: f.message, client_id: f.client_id })), aDernieresTrames: fa, secondesDepuisConnexion: Math.round((Date.now() - tConnexion) / 1000) };
+        throw new Error('Alice doit recevoir la photo de Bob — diagnostic : ' + JSON.stringify(diag).slice(0, 700));
+      }
     } finally {
       await ctxA.close();
       await ctxB.close();

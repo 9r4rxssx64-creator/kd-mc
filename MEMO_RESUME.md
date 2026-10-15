@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 — Enquête : la photo du test « deux clients » n'arrive pas toujours (prod)
+
+- 2 runs sur ~6 : « Alice doit recevoir la photo de Bob » (les 2 textes passent). Pistes écartées en lisant le code :
+  effacement des comptes en parallèle (workers: 1), réclamation de compte invité (source e2e-test non concernée).
+- Le test dit maintenant POURQUOI (erreur reçue par Bob, fermeture des prises, trames, secondes depuis la connexion).
+
 ## 2026-10-15 — Robot « Apex Chat — créer la clé des sauvegardes » (au lieu de le demander à Kevin)
 
 - `.github/workflows/apex-chat-cle-sauvegarde.yml` (coffre, privé, manuel) : crée BACKUP_ENCRYPTION_KEY si absente (jamais affichée),

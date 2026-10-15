@@ -227,6 +227,8 @@ const REGISTRE = [
   /* 26.09 : la règle « une seule vérité du moment » a son garde depuis sa création
      (test:etat-du-moment, dans test:ci) ; il manquait seulement son entrée ici. */
   [/SEULE VÉRITÉ DU MOMENT/i, ['npm:test:etat-du-moment']],
+  /* 15.10 : « le bon modèle pour chaque travail » a sa garde dès sa création (règle chargée + tableau des modèles + branchement dans test:ci). */
+  [/BON MODÈLE POUR CHAQUE TRAVAIL/i, ['npm:test:modele-adapte']],
 ];
 
 /* ─── 2-bis. Règles COMPORTEMENTALES : elles portent sur MA façon de travailler (ton, autonomie,

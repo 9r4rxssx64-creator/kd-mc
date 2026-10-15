@@ -12187,3 +12187,11 @@ Ce n'est pas une règle nouvelle : c'est la **carte unique** des règles « grat
 **Appliqué le 13.10** : phrase sous le tableau des cadres retirée (light v1.92), puis la phrase sœur sous le tableau des absents (« Absents tout le mois… Chacun a bien son planning », light v1.94).
 
 **Le garde (une règle qui ne vit que dans un document finit sautée)** : `tools/shared/infos-retirees.json` liste les phrases que Kevin a fait retirer ; `npm run test:pas-d-infos-inutiles` (câblé dans `test:ci`, prouvé discriminant) refuse qu'elles reviennent dans une page ou un module visible. **Quand Kevin fait retirer une autre phrase, on l'ajoute à cette liste dans le même commit.** Toutes les sessions (CMCteams, light, portail, Lingua, arbre, Bee…) appliquent le réflexe aux textes qu'elles écrivent.
+
+## 🎚 RÈGLE ABSOLUE — LE BON MODÈLE POUR CHAQUE TRAVAIL, TOUJOURS, PARTOUT (Kevin 2026-10-15, ABSOLUE)
+
+> **« Utilise auto le model adapté au travail demandé toujours partout »** — Kevin 2026-10-15 (après « quand le travail est compliqué, tu changes de modèle automatiquement ? »).
+
+Honnêtement : une session ne peut pas changer son propre modèle. Ce qui peut être automatique, et qui l'est maintenant : **le modèle des aides** (sous-agents, workflows) que je lance, choisi par la difficulté — `haiku` pour lire/chercher/mesurer, `sonnet` pour le travail courant, `opus`/`fable` pour l'architecture, la sécurité, le bug sans cause connue et la revue finale. On commence par le plus petit qui peut réussir, on monte d'un cran si le résultat est flou, on ne descend jamais pour de la sécurité. Si la session principale atteint ses limites, elle le dit à Kevin en une phrase et délègue la partie dure. Dans les apps du domaine, la conférence des IA gratuites choisit déjà la plus compétente ; rien de payant sans accord.
+- **Où c'est écrit** : `.claude/rules/modeles.md` (chargé par toute session du dépôt).
+- **Garde** : `npm run test:modele-adapte` (dans `test:ci`, prouvé discriminant : `SABOTAGE=1`).

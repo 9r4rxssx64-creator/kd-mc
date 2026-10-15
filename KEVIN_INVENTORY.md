@@ -1,5 +1,19 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 🎚 Le bon modèle pour chaque travail (15.10.2026)
+
+- **Règle** : les aides que je lance prennent le modèle adapté à la difficulté (petit pour lire, moyen pour le courant, fort pour la sécurité et la revue finale) ; je te dis quand un modèle plus fort est mérité
+- **Fichiers créés** : [`.claude/rules/modeles.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/modeles.md) · [`tests/verify-modele-adapte.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-modele-adapte.mjs)
+- **Test** : `npm run test:modele-adapte`
+
+### 🔑 Arbre s'ouvre tout seul pour qui le domaine reconnaît ; une app ne fait plus « oublier » ton code (15.10.2026 — routeur)
+
+- **Arbre** : sur un appareil neuf ou une icône d'écran d'accueil neuve, le domaine remet lui-même la clé à une personne reconnue à qui tu as ouvert l'arbre (fini le « code famille » retapé)
+- **Toutes les apps** : en ouvrir une ne retire plus le code prouvé de ta session pour le reste du domaine
+- **Fichiers créés** : [`services/kdmc-router/arbre-cle.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/arbre-cle.test.mjs) · [`services/kdmc-router/issue-garde-code.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/issue-garde-code.test.mjs)
+- **Tests** : `npm run test:arbre-cle` · `test:issue-garde-code`
+- **Tes apps** : https://arbre.kd-mc.com (après fusion et mise en ligne)
+
 ### 🧭 Reconnu partout, retour partout, écran du haut instantané (13.10.2026 — portail v1.0.55, admin v2.0.2, CMCteams v9.971, light v1.99, Arbre v3.95)
 
 - **Retour** : une pastille « ← Portail » en haut à gauche de chaque page du domaine ; « Me déconnecter » et « Retour à l'app » sur les écrans obligatoires (jamais de « Passer »)

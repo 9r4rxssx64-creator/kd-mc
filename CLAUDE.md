@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 215 règles — le texte de Kevin, une par une
+## 📜 Les 216 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -947,6 +947,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🧹 RÈGLE ABSOLUE — PAS D'INFOS INUTILES, NULLE PART : CE QUI N'AIDE PAS KEVIN À AGIR OU À COMPRENDRE NE S'AFFICHE PAS (Kevin 2026-10-13, ABSOLUE)
 **« Efface l'info inutile : planning pitboss… tel quel… »** puis **« Pas d'infos inutiles nulle part. Note-le. »** — Kevin 2026-10-13 (capture du tableau Pit Boss / Superviseurs de la light, […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-pas-dinfos-inutiles-nulle-part-ce-qui-naide-pas-kevin-à-agir-ou-à-comprendre-ne-saffiche-pas-kevin-2026-10-13-absolue)
+
+### 🎚 RÈGLE ABSOLUE — LE BON MODÈLE POUR CHAQUE TRAVAIL, TOUJOURS, PARTOUT (Kevin 2026-10-15, ABSOLUE)
+**« Utilise auto le model adapté au travail demandé toujours partout »** — Kevin 2026-10-15 (après « quand le travail est compliqué, tu changes de modèle automatiquement ? »).
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-le-bon-modèle-pour-chaque-travail-toujours-partout-kevin-2026-10-15-absolue)
 
 ---
 

@@ -337,6 +337,30 @@ async function handleArbre(request, url, env) {
   if (!env || !env.ACCOUNTS) return J({ ok: false, reason: 'kv_absent' });
   const stored = await arbreCodehash(env);
 
+  /* RECONNU PAR LE DOMAINE = PAS DE « CODE FAMILLE » (Kevin 13.10 : « une personne inscrite au domaine est reconnue partout, sans redemander »).
+     Le code famille reste la clé du nuage ; ici le domaine, qui a reconnu la personne, la REMET — seulement à une session :
+       · valide, non révoquée, du même appareil ; au code PROUVÉ (ou Face ID) ; l'admin, lui, seulement avec Face ID ;
+       · dont le compte a accepté les conditions et dont le périmètre ouvre l'arbre (app privée : Kevin l'a donnée à cette fiche).
+     Sans session : 401, rien. Journalisé. Aucun CORS : une page tierce n'y lit rien. */
+  if (path === '/__arbre/cle' && request.method === 'GET') {
+    const org = request.headers.get('origin');
+    if (org && !ssoOriginOk(org, url.host)) return J({ ok: false, reason: 'origine refusée' }, null, 403);
+    const sec = env.KDMC_SSO_SECRET;
+    const ses = sec ? await ssoVerify(sec, ssoToken(request), request) : null;
+    if (!ses) return J({ ok: false, reason: 'session' }, null, 401);
+    if (!stored) return J({ ok: false, reason: 'code_non_publie' });
+    const fiche = await accGet(env, ses.uid);
+    if (!fiche || revoked(fiche, ses)) return J({ ok: false, reason: 'compte' }, null, 403);
+    const estAdmin = ses.uid === CANON_UID || ADMIN_UIDS.indexOf(ses.uid) >= 0;
+    if (estAdmin ? !ses.verified : !(ses.code || ses.verified)) return J({ ok: false, reason: estAdmin ? 'face_id_requis' : 'code_requis' }, null, 403);
+    if (!cguAcceptees(fiche) && !estAdmin) return J({ ok: false, reason: 'cgu' }, null, 403);
+    const per = perimetre(fiche, 'arbre');
+    if (!per.ok) return J({ ok: false, reason: per.raison || 'perimetre' }, null, 403);
+    await audLog(env, { ev: 'arbre_cle', uid: ses.uid, name: fiche.name || ses.name || '' });
+    const m = await arbreSeedOut(env);
+    return J({ ok: true, hash: stored, seed: m.seed, savedAt: m.savedAt, seedVersion: m.seedVersion });
+  }
+
   if (path === '/__arbre/status' && request.method === 'GET') {
     const m = await arbreSeedOut(env);
     return J({ ok: true, code: !!stored, seed: !!m.seed, count: m.count, savedAt: m.savedAt, seedVersion: m.seedVersion, source: m.source });
@@ -3613,7 +3637,23 @@ async function handleSso(request, url, env) {
     /* La fiche retient qu'un code existe (`code_at`) : whoami peut alors le dire SANS lire `cred:` à chaque battement (lecture KV
        économisée sur le chemin chaud). Une seule écriture, la première fois que le code est prouvé. */
     if (codeProuve) { try { const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true })); if (a && !a.code_at) { a.code_at = Date.now(); await accPut(env, a, true); } } catch { /* fail-open */ } }
-    const token = await ssoSign(secret, uid, name, cgu, false, codeProuve, appareilDe(request));
+    /* 13.10 (audit Apex Chat) : une app qui re-déclare la personne SANS code (cgu, téléphone…) ne doit pas RÉTROGRADER sa session :
+       si la requête porte déjà une session au code prouvé, de la même personne, du même appareil et non révoquée, le nouveau pass garde
+       k=1. Sans cela, ouvrir une app suffisait à faire « oublier » le code à tout le domaine (la personne se retrouvait redemandée partout).
+       Jamais pour l'admin (Face ID seul), jamais pour un compte révoqué, jamais pour une autre personne. Ne donne rien de plus que ce que
+       la session présentée prouvait déjà. */
+    let codeFinal = codeProuve;
+    if (!codeFinal) {
+      try {
+        const s0 = await ssoVerify(secret, ssoToken(request), request);
+        if (s0 && s0.code) {
+          const cleD = await canonFor(env, uid, name, { sansCreer: true });
+          const acc0 = cleD ? await accGet(env, cleD) : null;
+          if (cleD && cleD !== CANON_UID && (s0.uid === cleD || s0.uid === uid) && !revoked(acc0, s0)) codeFinal = true;
+        }
+      } catch { /* fail-closed : sans preuve lisible, on ne garde rien */ }
+    }
+    const token = await ssoSign(secret, uid, name, cgu, false, codeFinal, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     /* token renvoyé dans le corps : le portail le met dans le lien de retour
        (#kdmc_sso=) pour les apps installées (où le cookie ne traverse pas). */
@@ -3622,7 +3662,7 @@ async function handleSso(request, url, env) {
     /* L'identité admin ne se prouve pas par un code de compte : on le dit au portail, qui propose
        alors le code ADMIN (→ session vérifiée) au lieu de laisser Kevin « auto-déclaré ». */
     const adminRequis = (await canonFor(env, uid, name, { sansCreer: true })) === CANON_UID;
-    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeProuve, code_pose: codePose, admin_requis: adminRequis,
+    return J({ ok: true, uid, name, cgu, token, admin: false, code: codeFinal, code_pose: codePose, admin_requis: adminRequis,
       attente_admin: attenteAdmin || undefined,
       message: attenteAdmin ? 'Ton compte est créé. L\'administrateur va le valider : tu pourras entrer dans les apps dès qu\'il l\'aura accepté.' : undefined }, cookie);
   }

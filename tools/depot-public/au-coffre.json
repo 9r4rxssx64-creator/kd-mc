@@ -194,7 +194,6 @@
   "tests/verify-admin-unique.mjs",
   "tests/verify-adresse-officielle.mjs",
   "tests/verify-anciennete-fiche.mjs",
-  "tests/verify-apis-clients-compte.mjs",
   "tests/verify-app-as-kevin.mjs",
   "tests/verify-assets-prive.mjs",
   "tests/verify-attente-partout.mjs",

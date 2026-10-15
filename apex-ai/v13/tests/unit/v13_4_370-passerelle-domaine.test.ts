@@ -74,7 +74,6 @@ describe('v13.4.370 — passerelle IA du domaine', () => {
     expect(url).toBe(KDMC_AI_URL);
     const h = init.headers as Record<string, string>;
     expect(h['x-kdmc-sso']).toBe('jeton.signe');
-    expect(init.credentials).toBe('include'); /* le cookie du domaine voyage : la passerelle ne répond qu'à un compte ouvert (15.10) */
     const body = JSON.parse(String(init.body)) as { system: string; domain?: string; analyse: string; messages: unknown[] };
     expect(body.system.startsWith('Nous sommes le ' + dateMonaco().slice(0, 6))).toBe(true);
     expect(body.system).toContain('Tu es Apex.');

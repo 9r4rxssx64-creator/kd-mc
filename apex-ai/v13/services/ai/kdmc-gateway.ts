@@ -148,7 +148,6 @@ export async function askKdmcGateway(
       body: JSON.stringify({ system: ('Nous sommes le ' + dateMonaco() + ' (heure de Monaco). ' + system).slice(0, 8000), messages: turns, max_tokens: opts.maxTokens ?? 1500, ...gatewayMode(turns[turns.length - 1]?.content ?? '') }),
       signal: ctrl.signal,
       cache: 'no-store',
-      credentials: 'include', /* cookie du domaine : la passerelle ne répond qu'à un compte ouvert (15.10) */
     });
     const j = (await r.json().catch(() => null)) as { ok?: boolean; text?: string; provider?: string; model?: string; outils?: unknown } | null;
     if (r.ok && j && j.ok && typeof j.text === 'string' && j.text.trim()) {

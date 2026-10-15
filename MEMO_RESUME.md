@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-15 (suite) — Mon lot « économie Actions » avait rendu 3 workflows invalides : corrigé deux fois, avec un détecteur général
+- Erreur de ma part : j'ai ajouté l'entrée `forcer` (puis `actions: read`) à 6 workflows ; 3 les avaient déjà → clé en double → fichier invalide pour GitHub → des runs rouges « workflow file issue » à chaque push sur main (0 min facturée). Mon contrôle YAML local (PyYAML) est trop tolérant pour voir ça.
+- Corrigé : mon entrée s'appelle `forcer_ration` ; le doublon de `permissions` est retiré (audit-lingua, voir-comme-kevin). Garde : `test:porte-ration` §8-10 — détecteur de clés sœurs en double dans TOUS les workflows, à tous les niveaux (blocs `run: |` sautés), prouvé sur un doublon recréé dans un vrai fichier. Leçons #531-#532.
+- À vérifier au prochain push sur main : plus aucun run « .github/workflows/….yml » en échec.
+
 ## 2026-10-15 — « Économise le forfait action… ne jamais plus être bloqué » : porte de ration, ration en tête de session, publier sans Actions, tableau des plafonds
 - Mesure (API GitHub, 6→15.10) : 2 170 min / 700 runs ; chaîne privée 1 104 (61 runs), Arbre-corrections 540 (212), audit runtime 207, synchro 181 (178 × 1 min). Depuis le 13.10 tout est à la main sauf la synchro (1 min par fusion, déjà regroupée par GitHub : 82 runs sur 249 à 0 min).
 - Fait : **porte de ration** sur 6 gros robots (`porte-ration.sh`, `--besoin`, entrée `forcer_ration`) ; **ration dans le hook de début de session** ; **`publier-local.mjs`** (secours sans Actions, à blanc par défaut, jamais de `--force`) ; **`PLAFONDS-ET-SECOURS.md`** (inventaire de tous les plafonds + 10 trous). Gardes : `test:porte-ration` (22), `test:ration-hook` (4), `test:publier-local` (8), `test:ration-actions` (13), tous prouvés par sabotage.

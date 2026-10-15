@@ -1596,6 +1596,16 @@
       "maj": "2026-10-15",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "eco-fix2": {
+      "titre": "Correctif 2 : actions: read en double dans 2 workflows",
+      "branche": "claude/eco-fix2",
+      "sujet": "doublon dans permissions + détecteur général de clés en double",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

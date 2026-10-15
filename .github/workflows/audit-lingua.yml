@@ -35,9 +35,7 @@ on:
         default: "https://lingua.kd-mc.com"
 
 permissions:
-  actions: read   # la porte de ration lit la liste des runs du jour
-
-  actions: read   # le plafond compte les exécutions du jour par l'API
+  actions: read   # le plafond compte les exécutions du jour par l'API ET la porte de ration lit la liste des runs du jour
   contents: read
 
 concurrency:

@@ -36,17 +36,34 @@ for (const [nom, besoin] of Object.entries(ROBOTS)) {
   ok(/actions: read/.test(y), `7.${nom} : le robot a le droit de lire la liste des runs du jour`);
 }
 process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
-/* 8. AUCUNE entrée en double dans AUCUN workflow : une clé dupliquée rend le fichier invalide pour GitHub (PyYAML, plus tolérant, ne le voit pas) —
-   mesuré le 15.10 : « forcer » ajouté en double dans 3 workflows → 3 runs rouges « workflow file issue » à chaque push sur main */
-{
-  const dossier = '.github/workflows'; let doubles = [];
-  for (const f of readdirSync(dossier).filter((x) => /\.ya?ml$/.test(x))) {
-    const L = readFileSync(join(dossier, f), 'utf8').split('\n'); let dedans = false; const vus = new Set();
-    for (const l of L) {
-      if (/^    inputs:\s*$/.test(l)) { dedans = true; vus.clear(); continue; }
-      if (dedans) { if (l.trim() && !/^\s{5,}/.test(l)) dedans = false; else { const m = /^      ([A-Za-z0-9_-]+):\s*$/.exec(l); if (m) { if (vus.has(m[1])) doubles.push(f + ' → ' + m[1]); vus.add(m[1]); } } }
+/* 8. AUCUNE clé en double, NULLE PART, dans AUCUN workflow : une clé dupliquée rend le fichier invalide pour GitHub (PyYAML, plus tolérant, ne le voit pas).
+   Mesuré le 15.10 : « forcer » (inputs) puis « actions: read » (permissions) ajoutés en double dans 3 workflows → des runs rouges « workflow file issue » à
+   CHAQUE push sur main. La détection lit l'indentation (les blocs `run: |` sont sautés) et compare les clés sœurs sous un même parent. */
+export function clesEnDouble(texte) {
+  const L = texte.split('\n'), pile = [], doubles = []; let sautJusqua = -1;
+  for (let i = 0; i < L.length; i++) {
+    let l = L[i]; if (!l.trim() || /^\s*#/.test(l)) continue;
+    let ind = l.length - l.trimStart().length;
+    if (sautJusqua >= 0) { if (ind > sautJusqua) continue; sautJusqua = -1; }
+    if (/^\s*-\s/.test(l)) {   /* nouvel élément de liste : son dictionnaire est NEUF ; ses clés sont alignées après « - » */
+      while (pile.length && pile[pile.length - 1].ind > ind) pile.pop();
+      const reste = l.trimStart().replace(/^-\s+/, ''); const dec = l.length - reste.length;
+      l = ' '.repeat(dec) + reste; ind = dec;
     }
+    const m = /^(\s*)([A-Za-z0-9_.\/-]+|"[^"]+"|'[^']+'):(\s|$)/.exec(l); if (!m) continue;
+    while (pile.length && pile[pile.length - 1].ind > ind) pile.pop();
+    if (!pile.length || pile[pile.length - 1].ind < ind) pile.push({ ind, cles: new Set() });
+    const niveau = pile[pile.length - 1]; const cle = m[2];
+    if (niveau.cles.has(cle)) doubles.push(cle + ' (ligne ' + (i + 1) + ')'); niveau.cles.add(cle);
+    if (/:\s*[|>][+-]?\s*(#.*)?$/.test(l)) sautJusqua = ind;
   }
-  ok(doubles.length === 0, '8. aucune entrée dupliquée dans les entrées de workflow_dispatch (clé en double = fichier invalide pour GitHub)', doubles.join(' ; '));
+  return doubles;
+}
+{
+  const dossier = '.github/workflows'; const doubles = [];
+  for (const f of readdirSync(dossier).filter((x) => /\.ya?ml$/.test(x))) for (const d of clesEnDouble(readFileSync(join(dossier, f), 'utf8'))) doubles.push(f + ' → ' + d);
+  ok(doubles.length === 0, '8. aucune clé en double dans aucun workflow (fichier invalide pour GitHub sinon)', doubles.slice(0, 6).join(' ; '));
+  ok(clesEnDouble('on:\n  workflow_dispatch:\n    inputs:\n      a:\n        x: 1\n      a:\n        x: 2\n').length === 1 && clesEnDouble('permissions:\n  actions: read\n\n  actions: read\n  contents: read\n').length === 1, '9. le détecteur voit les doublons (inputs ET permissions) et ne crie pas sur un fichier sain');
+  ok(clesEnDouble('jobs:\n  a:\n    steps:\n      - run: |\n          x: 1\n          x: 2\n      - name: z\n').length === 0, '10. et il saute le contenu des blocs `run: |`');
 }
 console.log(`\n${fail ? '❌' : '✅'} porte-ration : ${pass}/${pass + fail}`); process.exit(fail ? 1 : 0);

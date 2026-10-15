@@ -114,7 +114,12 @@ jobs:
         run: |
           set -e
           echo "Deploy kdmc-router…"
-          wrangler deploy 2>&1 | tee deploy.log
+          # 15.10 : trois déploiements de suite ont échoué en 1 s sans que personne puisse lire pourquoi (journaux hors de portée des
+          # sessions). La cause part maintenant en ANNOTATION (lisible par l'API des contrôles), sans secret : wrangler n'en écrit pas.
+          if ! wrangler deploy 2>&1 | tee deploy.log; then
+            echo "::error title=wrangler deploy::$(tail -c 1500 deploy.log | tr '\n\r' '  ' | sed 's/%/%25/g')"
+            exit 1
+          fi
           echo "----"
           echo "== VARIABLES RÉELLEMENT APPLIQUÉES (ce que le worker voit) =="
           grep -iA8 'vars' deploy.log || echo "  (wrangler n'a pas listé de Vars — à vérifier)"

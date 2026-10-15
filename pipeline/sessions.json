@@ -1677,6 +1677,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "contenu repris dans claude/routeur-assets"
+    },
+    "deploy-diag": {
+      "titre": "Diagnostic du déploiement du routeur",
+      "branche": "claude/deploy-diag",
+      "sujet": "erreur wrangler en annotation",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-15",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

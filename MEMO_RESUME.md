@@ -6,6 +6,9 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Firebase étape 1 ANNULÉE (Kevin : « plus aucune app ne fonctionne »)
+- Revert de #4620 : CMCteams / light reviennent à la connexion Firebase anonyme de ce matin ; route `/__sso/fbtoken` scope cmc retirée. Mesuré au vrai navigateur (session de test) : lectures Firebase en 401 après la mise en ligne. À refaire SEULEMENT avec un test de bout en bout sur un vrai compte (jeton relu par Firebase) avant de livrer.
+
 ## 2026-10-16 — Routeur : 6 apps en 404 derrière la porte selon les en-têtes du navigateur (corrigé)
 - **Mesuré en CI (run sur AS8075, même machine)** : curl → cmcteams.kd-mc.com/ 200 (3 444 308 o), arbre 200 ; la sonde Node (en-têtes de navigateur) → 404 « absent de la copie embarquée » pour cmcteams, light, départs, coffre, apex-ai, arbre. Les pages SONT dans le paquet (tailles relues en CI). Cause : `amont()` transmettait les en-têtes du visiteur à `env.ASSETS.fetch`.
 - **Corrigé** : la copie ne reçoit plus que `range`. Garde : `test:source-assets` 14/14 (n°8, sabotage rouge prouvé). Diagnostic permanent dans le déploiement : réseau du runner + 5 adresses demandées comme un iPhone.
@@ -275,11 +278,6 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - Mesuré : 104 fichiers / 1654 tests, couverture sans ERROR ; ancien serveur → 5 échecs sur 7.
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
-
-## 2026-10-16 — Firebase fermé aux comptes anonymes, ÉTAPE 1 : jeton du domaine « scope cmc » (code + tests ; règles INCHANGÉES)
-- Constat (audit extérieur P0-1, confirmé en ligne par la capture de Kevin) : `/cmcteams` `.read: "auth != null"` → tout compte ANONYME (créé par n'importe qui avec la clé Web publique) lit les plannings.
-- Fait : routeur `POST /__sso/fbtoken {scope:'cmc'}` → jeton Firebase signé par le domaine (uid `cmc_<uid>`, claim `scope: 'cmc'`) pour une session valide, non révoquée, ouverte sur l'app qui demande, code prouvé ; 20/h/personne ; adoption comptée en D1 (`fbcmc_jour:<date>`), 0 écriture KV. CMCteams : `cmcFbAnonAuth` essaie d'abord `cmcFbDomaine` (tools/shared/fiche-privee.js), repli anonyme sinon (10 min sans redemander après un refus). La light : `_fbAuth` idem. Gardes : `test:fbtoken-cmc` (9), `test:fb-domaine-cmc` (6, joue le vrai code client) ; sabotages rouges.
-- **ÉTAPE 2 (plus tard, après mesure)** : quand `fbcmc_jour` montre que les appareils prennent le jeton du domaine, règles `/cmcteams` : `auth.token.scope === 'cmc' || auth.token.role === 'admin'` — collées par Kevin. Avant : passer aussi `tools/messages`, `tools/approvals` (encore en anonyme) au jeton du domaine.
 
 ## 2026-10-16 — Publication des apps : désormais par le déploiement du routeur (automatique sur main, porte de ration)
 - Conséquence de la copie embarquée : une app modifiée (CMCteams, portail, Lingua…) n'est plus publiée par Pages (supprimé) mais par `deploy-kdmc-router.yml`. Ce robot part maintenant tout seul à chaque fusion sur main qui touche les surfaces servies (mêmes chemins que l'ancienne publication), un seul à la fois (concurrency), et sa PORTE DE RATION l'arrête si le jour est mangé (`porte-ration.sh 4`). Workflow réactivé. Coût : ≈ 3 min par fusion d'app (au lieu d'≈ 1 min Pages) — regroupe les fusions d'apps.

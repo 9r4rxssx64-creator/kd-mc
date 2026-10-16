@@ -1767,16 +1767,6 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
-    },
-    "firebase-cmc": {
-      "titre": "Firebase : jeton du domaine scope cmc",
-      "branche": "claude/firebase-cmc",
-      "sujet": "étape 1 avant fermeture des règles",
-      "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-10-16",
-      "attend_kevin": null,
-      "attend_session": null
     }
   },
   "messages": [

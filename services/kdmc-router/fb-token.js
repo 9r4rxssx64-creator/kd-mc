@@ -86,21 +86,6 @@ export async function fbExchangeForIdToken(customToken, env) {
 export async function mintShopsAdminIdToken(env) { return mintShopsIdToken(env, 'kdmc_admin', 'admin'); }
 /* 8.10 (revue extérieure) : le rôle « shops » (Laurence : boutiques, sourcing, dashboard) reçoit un jeton `role:'shops'` — les règles
    des nœuds shops_* l'acceptent, et RIEN d'autre (cmcteams_prive, secrets… restent au rôle admin). Jamais un rôle admin pour un non-admin. */
-/* JETON « cmc » (16.10, audit extérieur P0-1) : une personne reconnue par le domaine, ouverte sur CMCteams/light, reçoit un jeton
-   Firebase qui porte `scope: 'cmc'` — l'app s'en sert À LA PLACE du compte anonyme. Étape 2 (règles) : /cmcteams exigera ce scope,
-   et un compte anonyme créé par n'importe qui ne lira plus les plannings. Même mécanique que les boutiques (signé ici, échangé ici). */
-export async function mintCmcIdToken(env, uid) {
-  if (!env || !env.FIREBASE_PRIVATE_KEY || !env.FIREBASE_CLIENT_EMAIL) return { ok: false, reason: 'fb_not_configured' };
-  let customToken;
-  try {
-    customToken = await fbSignCustomToken(env, 'cmc_' + String(uid || 'x').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 60), { scope: 'cmc' });
-  } catch (e) {
-    return { ok: false, reason: 'sign_failed', detail: (e && e.message) || String(e) };
-  }
-  const idt = await fbExchangeForIdToken(customToken, env);
-  if (!idt || !idt.idToken) return { ok: true, custom_token: customToken, id_token: null, expires_in: 3600, exchanged: false };
-  return { ok: true, id_token: idt.idToken, refresh_token: idt.refreshToken, expires_in: idt.expiresIn, exchanged: true };
-}
 export async function mintShopsIdToken(env, uid, role) {
   if (!env || !env.FIREBASE_PRIVATE_KEY || !env.FIREBASE_CLIENT_EMAIL) {
     return { ok: false, reason: 'fb_not_configured' };

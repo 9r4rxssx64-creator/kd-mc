@@ -217,7 +217,6 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/sonde-assets` | 16.10 | Sonde du déploiement : derrière la porte, lit le paquet envoyé (Pages supprimé → 13 faux rouges) | `sonde-assets` |
 | `claude/admin-rangee` | 16.10 | Tableau admin rangé : accueil en tuiles, une section à la fois, onglets Personnes, raccourcis, adresses #section/onglet | `admin-rangee` |
 | `claude/publication-auto` | 16.10 | Les apps partent en ligne par deploy-kdmc-router (automatique sur main, porte de ration) | `publication-auto` |
-| `claude/firebase-cmc` | 16.10 | Firebase étape 1 : jeton du domaine « scope cmc » (routeur + CMCteams + light), règles inchangées | `firebase-cmc` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

@@ -19,7 +19,7 @@
 
 ## 2026-10-16 — Audit sécurité du domaine (mesuré) : 2 P0 ouverts
 - Rapport : `audit/prive/AUDIT-SECURITE-DOMAINE-2026-10-16.md`. Le domaine lui-même tient (33 hôtes : porte ou 401, chemins détournés compris). **P0-1** : `kdmc-site.pages.dev`, `kdmc0.pages.dev` (et `kdmc-javis.pages.dev`) servent CMCteams / light / arbre / planning-seed (285 fiches) SANS compte → robot `pages-nettoyage.yml` (public : lister puis supprimer, liste blanche). **P0-2** : Firebase lisible avec une connexion ANONYME (règles `auth != null`) → à refaire : jeton du domaine pour toutes les apps + règles + coupure de l'anonyme, avec test de bout en bout sur un vrai compte (la 1re tentative a été annulée ce midi).
-- 1er inventaire Pages (run public) en échec sans message : l'erreur partait dans le fichier de sortie → corrigé (annotations lisibles, secrets vérifiés).
+- 1er inventaire Pages (run public) en échec sans message : l'erreur partait dans le fichier de sortie → corrigé (annotations lisibles, secrets vérifiés) ; puis `per_page=50` refusé par Cloudflare (8000024) → lecture page par page.
 - P1 corrigé : agent Vercel `/api/health` ne montre plus de morceau de clé ni l'identifiant Telegram ; `outputDirectory: public` (le code n'est plus servi). P1 restants : proxy Gemini La Détente, Printify /cost, code admin (approvals, dashboard) et Croupier Pro dans le dépôt public (13 tests à adapter avant de les passer en privé).
 
 ## 2026-10-16 — Portail kd-mc.com v1.0.66 rangé (Kevin : « fais-moi le tri… sans rien perdre »)

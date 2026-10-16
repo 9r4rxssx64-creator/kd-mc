@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Apex Chat : retour arrière automatique du déploiement (lot N)
+- `.github/workflows/deploy-apex-chat.yml` : si `/api/health` ne répond pas (000/500) après déploiement, `wrangler rollback` est demandé (étape `continue-on-error`, ne bloque rien) ; un 503 avec détail (panne d'infrastructure) ne déclenche PAS de retour arrière. Garde `lot-n-retour-arriere` (4, exécute le vrai bash), sabotage rouge ; `vitest --coverage` sans erreur ; gardes de workflows verts (1 007 contrôles).
+- **Non éprouvé en vrai** : le `wrangler rollback` lui-même n'a pas été joué (il faudrait casser exprès la production) ; seul son déclenchement est prouvé.
+
 ## 2026-10-16 (22h56) — Capture de Kevin sur Apex 376 → v13.4.377 : plus de bulle « Cloudflare ralenti » pour un travail de fond ; badge de version dans la barre du haut
 - **Vu sur l'iPhone de Kevin** : Apex 376 ouverte, sans écran de code, réponse en 3,3 s (groq, gratuit) ✅. Deux défauts : une bulle orange « Cloudflare ralenti · pas ta clé » recouvrait l'en-tête (le diagnostic Cloudflare lancé tout seul 2 s après l'ouverture a reçu un 503 de l'API Cloudflare — un travail de fond qui ne demande rien à Kevin) ; le badge de version, sous l'en-tête, recouvrait son premier message « Test ».
 - **Livré (377)** : `runDiagnostic({ silencieux: true })` au démarrage — noté, aucune bulle ; seul le diagnostic lancé par Kevin (Réglages) la garde. Badge déplacé DANS la barre du haut, à gauche de « ← KDMC » (rien n'y défile). Test `v13_4_377-bulle-cloudflare-fond` (2, sabotage prouvé ; le Coffre est doublé dans le test car le vrai garde un état entre deux lectures).

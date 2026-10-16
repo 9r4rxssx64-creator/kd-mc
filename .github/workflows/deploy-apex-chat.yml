@@ -338,6 +338,7 @@ jobs:
           fi
 
       - name: Vérification LIVE après déploiement (santé + version)
+        id: live
         env:
           ATTENDU: ${{ github.sha }}
         run: |
@@ -351,7 +352,18 @@ jobs:
             if [ "$code" = "200" ]; then ok=1; break; fi
             echo "tentative $i : HTTP $code — nouvel essai dans 10 s"; sleep 10
           done
-          [ "$ok" = "1" ] || { echo "::error::/api/health ne répond pas 200 après déploiement : $(cat /tmp/health.json 2>/dev/null)"; exit 1; }
+          if [ "$ok" != "1" ]; then
+            echo "::error::/api/health ne répond pas 200 après déploiement : $(cat /tmp/health.json 2>/dev/null)"
+            # Retour arrière SEULEMENT si le NOUVEAU CODE lui-même est en cause (le serveur ne répond pas, ou plante).
+            # Une base ou un serveur de conversation momentanément KO répond 503 AVEC son détail {checks:…} : c'est
+            # une panne d'infrastructure, que l'ancien code subirait aussi — on ne défait pas un bon déploiement pour ça.
+            if [ "$code" = "503" ] && jq -e '.checks' /tmp/health.json >/dev/null 2>&1; then
+              echo "::warning::Panne d'infrastructure (503 avec détail) — pas de retour arrière"
+            else
+              echo "rollback=1" >> "$GITHUB_OUTPUT"
+            fi
+            exit 1
+          fi
           # Lot E2 : /api/health vérifie D1 et les Durable Objects (503 sinon) ; la sauvegarde y est
           # dite « ok », « stale » (plus de 26 h) ou « unknown ».
           echo "santé : $(cat /tmp/health.json)"
@@ -371,6 +383,19 @@ jobs:
             echo "::error::Le serveur en ligne annonce '$live' alors que le dépôt est en $VERSION — le déploiement n'a pas pris effet"
             exit 1
           fi
+
+      - name: Retour arrière automatique (le nouveau code ne répond plus)
+        if: ${{ failure() && steps.live.outputs.rollback == '1' }}
+        continue-on-error: true
+        working-directory: messaging-app/workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Audit 16.10.2026 : avant, un déploiement dont /api/health ne répondait plus restait en ligne tel quel.
+          # Les migrations D1 sont additives (CREATE IF NOT EXISTS) : l'ancien code tourne avec les nouvelles tables.
+          npx --yes wrangler@4 rollback --message "retour arrière automatique : santé KO après ${{ github.sha }}" -y
+          echo "::warning::Retour arrière demandé à Cloudflare — vérifier /api/health et la version"
 
       - name: Summary
         run: |

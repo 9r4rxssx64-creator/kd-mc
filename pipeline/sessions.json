@@ -1847,7 +1847,7 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "5e rappel docs (20h40) : CHANGELOG Apex 372→376, 8 branches sur la carte + registre, action 0b pour Kevin, leçons 584/585, gardes docs-frais R9 et lessons-numeros, règle docs-temps-reel 11–14. Apex 376 EN LIGNE. Reste : LCP mobile bridé, plan #559 étape 2 (ration de demain), iPhone à confirmer."
+      "note": "Capture Kevin 22h56 : Apex 376 OK (3,3 s groq). v13.4.377 construite : diagnostic Cloudflare de fond silencieux, badge dans la barre du haut. À publier par le public puis Kevin rouvre (action 0b)."
     },
     "firebase-cmc2": {
       "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",
@@ -2027,6 +2027,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "admin-live": {
+      "titre": "Admin v2.6.0 : En ligne maintenant (connectés en direct)",
+      "branche": "claude/admin-live",
+      "sujet": "bande live sous À traiter, relue 15 s",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -196,7 +196,11 @@ export interface CloudflareDiagnostic {
  * Teste reellement l'API Cloudflare en runtime et retourne diagnostic detaille.
  * Affiche toast Kevin avec status precis + URL fix si necessaire.
  */
-async function runDiagnostic(): Promise<CloudflareDiagnostic> {
+/* v13.4.377 (capture de Kevin, 16.10 22h56) : le diagnostic tourne tout seul 2 s après l'ouverture ; quand l'API Cloudflare
+ * répond 503 à ce travail de fond, une bulle orange « Cloudflare ralenti · pas ta clé » recouvrait l'en-tête — une info qui
+ * ne demande rien à Kevin (règle « pas d'infos inutiles »). `silencieux` : on note le diagnostic, on ne montre rien ; seul le
+ * diagnostic LANCÉ PAR KEVIN (Réglages) garde la bulle. */
+async function runDiagnostic(opts: { silencieux?: boolean } = {}): Promise<CloudflareDiagnostic> {
   const diag: CloudflareDiagnostic = {
     token_present: false,
     token_valid: false,
@@ -232,9 +236,11 @@ async function runDiagnostic(): Promise<CloudflareDiagnostic> {
       diag.error_reason = `Cloudflare API erreur HTTP ${verifyResp.status}`;
       if ([502, 503, 504].includes(verifyResp.status)) {
         diag.error_reason += ' (infra Cloudflare dégradée, pas ton token — voir cloudflarestatus.com)';
-        void import('../observability/cloudflare-status.js').then(({ cloudflareStatus }) => {
-          cloudflareStatus.recordHttp503();
-        }).catch(() => { /* skip */ });
+        if (!opts.silencieux) {
+          void import('../observability/cloudflare-status.js').then(({ cloudflareStatus }) => {
+            cloudflareStatus.recordHttp503();
+          }).catch(() => { /* skip */ });
+        }
       }
       return diag;
     }

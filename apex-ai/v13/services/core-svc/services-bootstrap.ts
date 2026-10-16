@@ -518,7 +518,7 @@ export async function bootstrapServices(uid: string | null): Promise<readonly In
         void (async () => {
           try {
             /* v13.4.119 : diagnostic complet RUNTIME avant init */
-            const diag = await apexCloudflareVaultDeploy.runDiagnostic();
+            const diag = await apexCloudflareVaultDeploy.runDiagnostic({ silencieux: true }); /* v13.4.377 : travail de fond, aucune bulle */
             const { toast } = await import('../../ui/toast.js');
 
             if (!diag.token_present) {

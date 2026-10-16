@@ -1,11 +1,18 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (22h56) — Capture de Kevin sur Apex 376 → v13.4.377 : plus de bulle « Cloudflare ralenti » pour un travail de fond ; badge de version dans la barre du haut
+- **Vu sur l'iPhone de Kevin** : Apex 376 ouverte, sans écran de code, réponse en 3,3 s (groq, gratuit) ✅. Deux défauts : une bulle orange « Cloudflare ralenti · pas ta clé » recouvrait l'en-tête (le diagnostic Cloudflare lancé tout seul 2 s après l'ouverture a reçu un 503 de l'API Cloudflare — un travail de fond qui ne demande rien à Kevin) ; le badge de version, sous l'en-tête, recouvrait son premier message « Test ».
+- **Livré (377)** : `runDiagnostic({ silencieux: true })` au démarrage — noté, aucune bulle ; seul le diagnostic lancé par Kevin (Réglages) la garde. Badge déplacé DANS la barre du haut, à gauche de « ← KDMC » (rien n'y défile). Test `v13_4_377-bulle-cloudflare-fond` (2, sabotage prouvé ; le Coffre est doublé dans le test car le vrai garde un état entre deux lectures).
+- **Non vérifié** : Apex 377 sur le vrai iPhone (action 0b de Kevin). Leçon #587.
 ## 2026-10-16 (21h UTC) — Mails relus : Toulouse a accusé réception (réf. A 26030437)
 - Noté sur 5 fiches de l'arbre (irle_rene, irle_jeanjacques, ponsolle_anne, irle_louise, irle_paule), sauvegarde o-2026-10-16T20-56-21, rejouer = 0. Rien de nouveau de Groix, Millour, Sainte-Agnès, Bourges.
 ## 2026-10-16 — Apex Chat v1.1.312 : confort iPhone (lot M) + alarmes du serveur de conversation MESURÉES (pas changées)
 - `index.html` : mode clair lisible (or, bleu, avertissement, gris ≥ 4,5:1 mesuré), boutons d'envoi 44 px, liste de messages `role="log"`, photo au choix (photothèque / appareil), textes en français simple (session expirée, notifications → « ajoute l'app à l'écran d'accueil »). Garde `client-confort-iphone` (12), sabotage rouge, `vitest --coverage` sans erreur (2 108 verts). Version 1.1.312 (+ `API_VERSION`).
 - **Alarmes du serveur de conversation (audit « 288 réveils/jour »)** : relues dans le code — une alarme de filet toutes les 5 min SEULEMENT pour une conversation qui a une socket ouverte ; elle relit D1 (2 lectures) au plus toutes les 45 s par socket ; la configuration n'est PAS relue à chaque alarme (seulement toutes les 60 s sur un message). Pire cas mesuré ≈ 30 conversations ouvertes × 288 = 8 640 réveils/jour sur 100 000 : **non changé** (les passer à 30 min retarderait de 25 min la coupure d'un membre retiré qui se contente d'écouter — sécurité d'abord).
 - **Non vérifié sur iPhone réel** : rendu du mode clair en plein jour, choix photothèque / appareil.
+
+## 2026-10-16 (soir) — Admin v2.6.0 : « 🟢 En ligne maintenant » sous « À traiter » (Kevin : « Affiche ici un visuel des connectés live »)
+- `kdmc-home/admin/tableau.js` `dessinerLive` : une pastille par connecté (initiales + point vert, nom, app, « il y a X min »), toucher → `fiche:<uid>`, nombre en vert + point qui pulse quand il y a du monde ; « Personne d'autre que toi » sinon. Données : `enLigne` de la boîte (présence D1, robots exclus) ; la boîte se relit toutes les 15 s (au lieu de 30) quand la page est visible. Masquée dans les rubriques (accueil seulement). Garde `verify-admin-unique` (78/78, sabotage prouvé).
 
 ## 2026-10-16 (20h40) — Kevin : « Mets TOUS les documents à jour en temps réel toujours sans rien oublier note le » (5ᵉ rappel)
 - **Mesuré tout de suite** (garde `docs-frais` vert, donc muet) : CHANGELOG sans aucune version d'Apex 13.4.3xx (5 versions du jour) ; SESSIONS-ET-BRANCHES sans les 8 branches de la session ; KEVIN_ACTIONS_TODO sans « vérifie Apex 376 sur l'iPhone » ; LESSONS : 582 écrit 3 fois, 583 cinq fois (757 leçons, 135 numéros non croissants).

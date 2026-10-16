@@ -233,6 +233,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/securite-p2` | 16.10 | Verrou d'échecs du code admin (Monaco, Outlook, relais IA), kdmc-uptime réduit aux comptes, /health Monaco muet | `securite-p2` |
 | `claude/firebase-etape2` | 16.10 | Firebase étape 2 : boîte des messages et autorisations au jeton admin du domaine (anonyme en secours) | `firebase-etape2` |
 | `claude/kevin-todo-pages` | 16.10 | Action Kevin urgente : supprimer kdmc-site et kdmc0 (copies Pages de l'autre compte, encore ouvertes) | `kevin-todo-pages` |
+| `claude/admin-live` | 16.10 | Admin v2.6.0 : bande « 🟢 En ligne maintenant » sous « À traiter » (connectés en direct, toucher = fiche) | `admin-live` |
 | `claude/docs-complets` | 16.10 | Arbre v3.108→v3.116 + domaine (autre session) | `arbre-session-1610` |
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
 | `claude/apex-public-1610` | 16.10 | Apex 372→373 publiés par le dépôt public (0 minute du coffre) ; règles Firebase `ax_pin_` fermées ; guichet `/pin/init` — fusionnée | `audit-apex-1610` |

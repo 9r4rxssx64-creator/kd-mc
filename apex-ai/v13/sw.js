@@ -10,7 +10,7 @@
  * APP_VER dans bootstrap.js. Workflow `sw-cache-sync.yml` synchronise auto.
  */
 
-const CACHE_VERSION  = 'apex-v13.4.376';   /* 16.10 : veille et client MCP respectent la CSP (0 violation connect-src au démarrage), badge de version lisible */
+const CACHE_VERSION  = 'apex-v13.4.377';   /* 16.10 : plus de bulle « Cloudflare ralenti » pour un travail de fond ; badge de version dans la barre du haut */
 const STATIC_CACHE   = CACHE_VERSION + '-static';
 const RUNTIME_CACHE  = CACHE_VERSION + '-runtime';
 const OFFLINE_CACHE  = CACHE_VERSION + '-offline';

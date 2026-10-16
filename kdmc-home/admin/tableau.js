@@ -199,6 +199,9 @@
     var h = '<section class="traiter" id="a-traiter" aria-label="À traiter maintenant">'
       + '<h1>⚡ À traiter maintenant</h1><p class="sous" id="tb-sous">Lecture en cours…</p>'
       + '<div class="cpts" id="tb-cpts"></div></section>'
+      /* 16.10 soir (Kevin : « Affiche ici un visuel des connectés live ») : qui est sur le domaine EN CE MOMENT, sous « À traiter ».
+         Données : la boîte (présence D1, robots exclus), relue toutes les 15 s quand la page est visible. Toucher une personne → sa fiche. */
+      + '<section class="live" id="tb-live" aria-label="En ligne maintenant" aria-live="polite"><h2><span class="pt" aria-hidden="true"></span>En ligne maintenant <b id="tb-live-n">…</b></h2><div class="live-l" id="tb-live-l"><p class="live-vide">Lecture…</p></div></section>'
       + '<nav class="tbnav" id="tb-nav" aria-label="Sections"><a class="retour-tb" href="#" id="tb-retour">← Tableau de bord</a>' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
       + '<div class="cherche"><input id="tb-q" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" placeholder="🔎 Que veux-tu faire ?" aria-label="Que veux-tu faire ?"><div class="res" id="tb-res" hidden></div></div>'
       /* 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien ») : un ACCUEIL de 7 grandes tuiles, puis une seule
@@ -409,7 +412,35 @@
     if (liste.childNodes.length) z.appendChild(liste);
   }
 
-  function surBoite(D) { BOITE = D; INST = instantane(D, LIVE && LIVE.file ? LIVE.file.n || 0 : null); garderInstantane(INST); dessinerCompteurs(); dessinerAttente(D); dessinerMessages(D); }
+  function surBoite(D) { BOITE = D; INST = instantane(D, LIVE && LIVE.file ? LIVE.file.n || 0 : null); garderInstantane(INST); dessinerCompteurs(); dessinerAttente(D); dessinerMessages(D); dessinerLive(D); }
+
+  /* LES CONNECTÉS EN DIRECT : une pastille par personne (initiales, nom, l'app où elle est, depuis quand). Construit en DOM (textContent),
+     jamais en innerHTML : un nom vient d'un visiteur. Le « il y a » se recalcule toutes les 15 s sans relire le domaine. */
+  var NOMS_APPS = { cmcteams: 'CMCteams', 'cmcteams-light': 'CMCteams light', departs: 'Light', lingua: 'Lingua', arbre: 'Arbre', apex: 'Apex', 'apex-ai': 'Apex', 'apex-chat': 'Apex Chat', kit: 'Kit', croupier: 'Croupier', shops: 'Boutiques', 'la-detente': 'La Détente', 'chez-lolo': 'Chez Lolo', rotaplan: 'Rotaplan', portail: 'Portail', 'kd-mc.com': 'Portail' };
+  function nomApp(a) { a = String(a || '').replace(/\.kd-mc\.com$/, ''); return NOMS_APPS[a] || (a ? a.charAt(0).toUpperCase() + a.slice(1) : 'le domaine'); }
+  function initiales(n) { var m = String(n || '?').trim().split(/\s+/).filter(Boolean); return ((m[0] || '?').charAt(0) + (m.length > 1 ? m[m.length - 1].charAt(0) : '')).toUpperCase(); }
+  var empLive = '';
+  function dessinerLive(D) {
+    var l = Array.isArray(D && D.enLigne) ? D.enLigne : [];
+    var n = document.getElementById('tb-live-n'), z = document.getElementById('tb-live-l'), sec = document.getElementById('tb-live');
+    if (!z || !n) return;
+    n.textContent = String(l.length);
+    if (sec) sec.classList.toggle('a-du-monde', l.length > 0);
+    var e = JSON.stringify(l.map(function (x) { return [x.uid, x.app, Math.floor((Date.now() - x.ts) / 60000)]; }));
+    if (e === empLive) return; empLive = e;
+    z.textContent = '';
+    if (!l.length) { var v = document.createElement('p'); v.className = 'live-vide'; v.textContent = 'Personne d\'autre que toi pour le moment.'; z.appendChild(v); return; }
+    l.forEach(function (x) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'live-p'; b.setAttribute('data-va', 'fiche:' + x.uid);
+      var av = document.createElement('span'); av.className = 'av'; av.textContent = initiales(x.nom); av.setAttribute('aria-hidden', 'true');
+      var t = document.createElement('span'); t.className = 'tx';
+      var nm = document.createElement('b'); nm.textContent = x.nom || 'Quelqu\'un';
+      var o = document.createElement('span'); o.className = 'ou'; o.textContent = nomApp(x.app) + ' · ' + ilYa(x.ts);
+      t.appendChild(nm); t.appendChild(o); b.appendChild(av); b.appendChild(t);
+      b.setAttribute('aria-label', (x.nom || 'Quelqu\'un') + ', sur ' + nomApp(x.app) + ', ' + ilYa(x.ts) + ' — ouvrir sa fiche');
+      z.appendChild(b);
+    });
+  }
 
   function brancherRecherche() {
     var q = document.getElementById('tb-q'), r = document.getElementById('tb-res');
@@ -533,7 +564,8 @@
     if (global.kdmcBoite) {
       global.kdmcBoite.surMaj(surBoite);
       global.kdmcBoite.rafraichir();
-      setInterval(function () { if (document.visibilityState === 'visible') global.kdmcBoite.rafraichir(); }, 30000);
+      setInterval(function () { if (document.visibilityState === 'visible') global.kdmcBoite.rafraichir(); }, 15000);   /* 16.10 : 15 s pour les connectés en direct */
+      setInterval(function () { if (BOITE) { empLive = ''; dessinerLive(BOITE); } }, 15000);
       document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') global.kdmcBoite.rafraichir(); });
     }
     if (global.kdmcAdmin) global.kdmcAdmin.monter(document.getElementById('admin-comptes'));

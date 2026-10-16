@@ -106,6 +106,8 @@ async function sonder(r) {
     let rep = await fetch(url, { redirect: 'follow', headers: ENTETES, signal: AbortSignal.timeout(TEMPS) });
     let texte = await rep.text();
     const porte = rep.status === 200 ? (rep.headers.get('x-kdmc-porte') || '') : '';
+    /* 16.10 : ce que le routeur DIT de sa réponse (copie embarquée absente, repli refusé…) — imprimé en cas d'échec. */
+    const routeur = [rep.headers.get('x-kdmc-router'), rep.headers.get('x-kdmc-secours')].filter(Boolean).join(' · ');
     let derriere = '';
     if (porte) {
       /* Porte fermée = le routeur connaît l'adresse et son dossier. Reste à
@@ -138,7 +140,7 @@ async function sonder(r) {
     const assez = texte.length >= 500;
     const doctype = /^\s*<!doctype/i.test(texte);
     return {
-      ...r, url, http: rep.status, octets: texte.length, html, assez, doctype, porte, derriere,
+      ...r, url, http: rep.status, octets: texte.length, html, assez, doctype, porte, derriere, routeur,
       /* Empreinte du contenu : sert à repérer deux adresses qui servent la
          MÊME page alors qu'elles ne devraient pas (cf. contrôle plus bas). */
       tete: texte.slice(0, 2000),
@@ -209,7 +211,7 @@ if (jumeaux.length) {
 
 if (ko.length) {
   console.log('\nCe qui ne répond pas — à régler AVANT de couper l\'ancien hébergeur :');
-  for (const r of ko) console.log(`  · ${r.hote} → ${r.url}  (HTTP ${r.http}${r.erreur ? ', ' + r.erreur : ''})`);
+  for (const r of ko) console.log(`  · ${r.hote} → ${r.url}  (HTTP ${r.http}${r.erreur ? ', ' + r.erreur : ''}${r.routeur ? ', routeur : ' + r.routeur : ''})`);
 }
 
 /* Un réseau coupé donnerait « tout en échec » : on le DIT au lieu de conclure

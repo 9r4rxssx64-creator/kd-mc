@@ -408,7 +408,10 @@ jobs:
           # 16.10 : les journaux ne sont pas lisibles depuis une session (hôte blob refusé) → en cas
           # d'échec, les lignes ❌ deviennent des annotations, lisibles par l'API check-runs.
           node tools/audit/sonde-site-publie.mjs "https://kd-mc.com" | tee /tmp/sonde.txt || {
-            grep -E "❌|^  · |MESURE|paire|réseau" /tmp/sonde.txt | head -25 | sed 's/^/::error::sonde — /'; exit 1; }
+            grep -E "^  · |MESURE|paire|réseau" /tmp/sonde.txt | head -25 | sed 's/^/::error::sonde — /'
+            for f in index.html tools/departs/index.html arbre/index.html coffre-fort/index.html apex-ai-v13/index.html; do
+              echo "::error::paquet — $f : $(wc -c < services/kdmc-router/public/CMCteams/$f 2>/dev/null || echo ABSENT)"; done
+            exit 1; }
 
       # ── LA BOÎTE UNIQUE DE L'ADMIN est-elle servie, et fermée ? (3.10, Kevin : tous les messages de toutes les apps) ──
       # Deux contrôles SANS écriture : sans session admin la boîte répond 401 « admin_requis » (si c'était 404, le routeur

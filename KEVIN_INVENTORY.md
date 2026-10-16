@@ -14,6 +14,11 @@
 - **Fichiers créés** : [`.claude/rules/modeles.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/modeles.md) · [`tests/verify-modele-adapte.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-modele-adapte.mjs)
 - **Test** : `npm run test:modele-adapte`
 
+### 🌳 Arbre « Ma vue » v3.109 (16.10.2026)
+
+- L'arbre s'ouvre sur TA famille (nom + parents), « Combiner » propose les dérivés de ta famille, « 📌 » épingle une autre vue, « ↩ Ma vue » revient. Tes apps : https://arbre.kd-mc.com
+- **Tests** : `npm run test:arbre-ma-vue`
+
 ### 🔑 Arbre s'ouvre tout seul pour qui le domaine reconnaît ; une app ne fait plus « oublier » ton code (15.10.2026 — routeur)
 
 - **Arbre** : sur un appareil neuf ou une icône d'écran d'accueil neuve, le domaine remet lui-même la clé à une personne reconnue à qui tu as ouvert l'arbre (fini le « code famille » retapé)

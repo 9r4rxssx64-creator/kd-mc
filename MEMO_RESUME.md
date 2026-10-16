@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Arbre v3.109 « Ma vue » (Kevin : « toujours la vue de la personne connectée »)
+- **Livré (v3.109)** : l'arbre retrouve tout seul QUI est connecté (nom du domaine ↔ fiche vivante, accents/ordre ignorés) et ouvre sur SA famille de base (nom, parents) ; plan/arbre = sa famille d'abord ; « Toutes » s'ouvre sur son bloc. « ➕ Combiner » propose tous les dérivés de sa famille (père, mère, grands-parents, conjoint de…) avec « 🧩 Tout ajouter ». « 🔎 Autres » = les autres branches. « 📌 » épingle une autre vue par défaut ; « ↩ Ma vue » revient.
+- **Garde** : `tests/arbre-ma-vue.test.mjs` (27), sabotage rouge prouvé ; pins de version mis à v3.109.
+
 ## 2026-10-16 — Arbre v3.108 : la vue ne saute plus (Kevin : « l'arbre n'est pas stable »)
 
 - **Cause mesurée** (vrai Chromium, vraies données 334 fiches) : chaque nouveau dessin (`renderTree` → `drawStage(true)`) — synchro avec la famille, modification, barre de Safari qui se replie (« resize ») — remettait pan et zoom au cadrage de départ : on glissait vers un bloc, l'arbre revenait au début.

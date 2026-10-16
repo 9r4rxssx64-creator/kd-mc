@@ -4,11 +4,6 @@ import { aiRouter } from '../../services/ai/ai-router.js';
 describe('ai-router deep tests (Jet 7.9)', () => {
   beforeEach(() => {
     localStorage.clear();
-    /* 16.10.2026 : la règle de Kevin est « gratuit d'abord » (Qwen/Groq avant Anthropic). Ces tests vérifient le CORPS Anthropic :
-       on force Anthropic explicitement (mode « forced » de l'admin), comme le ferait Kevin avec le bouton ⚡. */
-    localStorage.setItem('apex_v13_routing_mode', 'forced');
-    localStorage.setItem('apex_v13_routing_mode_explicit', '1');
-    localStorage.setItem('apex_v13_routing_forced_provider', 'anthropic');
     /* v13.4.370 : ces tests vérifient le chemin « sans passerelle » (interrupteur OFF) ; la passerelle a ses propres tests. */
     localStorage.setItem('apex_v13_passerelle', '0');
     vi.restoreAllMocks();

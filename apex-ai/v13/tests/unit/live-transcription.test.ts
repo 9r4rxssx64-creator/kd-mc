@@ -294,7 +294,7 @@ describe('live-transcription service', () => {
     it('utilise position par défaut si pas d\'input trouvé', () => {
       liveTranscription.showOverlay({ position: 'bottom-center' });
       const ov = document.getElementById('apex-live-transcription-overlay');
-      expect(ov?.style.bottom).toBe('calc(env(safe-area-inset-bottom, 0px) + 12px)'); /* iPhone : au-dessus de la barre du bas (safe-area) */
+      expect(ov?.style.bottom).toBe('12px');
     });
 
     it('résout selector string vers HTMLElement', () => {

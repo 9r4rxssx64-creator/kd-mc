@@ -1,10 +1,5 @@
 # MEMO_RESUME — état de session
 
-## 2026-10-16 (nuit) — Apex v13.4.374 : les 46 tests rouges de `main` remis au vert (branche claude/apex-public-1610)
-
-- Les rouges n'étaient pas des bugs d'Apex mais des tests figés sur d'anciennes règles : « Anthropic en premier » (36 tests ; la règle de Kevin est « gratuit d'abord » → ces tests forcent maintenant Anthropic explicitement, mode `forced`, comme le bouton ⚡), relais du dépôt par défaut depuis le 22.09 (4), position safe-area de la transcription (1), projets en chantier sans adresse en ligne (1), sentinelles qui pendaient sans réseau (1 → réseau simulé, on teste la forme), et 2 boutons de pub croisée sans adresse (code : `kd-mc.com`, `shops.kd-mc.com`, mesurés 200).
-- Garde ajoutée : `test:apex-passerelle` 5b — la copie servie `apex-ai-v13/` doit être celle de la source (version, un seul `CACHE_VERSION`, aucun marqueur de conflit ; sabotage prouvé). Leçon #561.
-- Pas vérifié : le vrai iPhone (Apex 374 à publier par le routeur public après fusion).
 ## 2026-10-16 — `test:admin-tuiles-reel` réparé (7 rouges depuis le « tableau unique »)
 - Les tuiles vivent désormais dans leur rubrique (et leur onglet) : le test y va par l'adresse (`#commerce/<onglet>`, `#apps`), comme Kevin, puis exige toujours la tuile visible et ≥ 44 px. 19/19.
 ## 2026-10-16 — Apex Chat v1.1.310 : lot J (fiabilité)
@@ -41,7 +36,6 @@
 - **Voie gratuite trouvée et câblée** : (a) Apex se publie par le robot du dépôt PUBLIC « Déploie le routeur » (il copie `apex-ai-v13` depuis le coffre) → lancé à la main (`workflow_dispatch`, 0 minute du coffre) ; le robot public « Auto-deploy Apex v13 build » est **rouge depuis le 27.09** (fichiers privés absents du public : apex-identity, never-forget-watch, cmc-vision-validator) — il ne sert à rien là-bas, ne pas s'y fier ; (b) les règles Firebase : le robot « Deploy CMCteams Firebase Rules » reçoit l'action `coffre` → publiable depuis le dépôt public, 0 minute du coffre. Le robot public « Deploy kdmc-access » est rouge depuis le 15.10 à l'étape santé seulement (le déploiement passe ; `workers.dev/health` répond 200 mesuré à 18h) — à régler.
 - **Ordre de mise en ligne (après fusion → sync automatique du coffre)** : 1) worker apex-auth-worker (robot public auto sur `services/apex-auth-worker/**`) ; 2) routeur public (dispatch) pour Apex v13.4.373 ; 3) règles : dispatch « Deploy CMCteams Firebase Rules » au public (défauts `keep`) ; 4) preuve : `deploy-rules.cjs` sonde anonyme `/apex` → 401, puis `GET /apex/ax_pin_kdmc_admin.json?auth=<jeton anonyme>` → refusé (à mesurer par le robot, pas d'ici).
 - **EN LIGNE (prouvé)** : règles publiées à 17h43 UTC par le robot du dépôt public (run 38941898501) — vérif live `/apex/$key .read = auth != null && !$key.matches(/^ax_pin_/)`, sonde anonyme 401 ; worker `/pin/init` déployé 17h41 (400 sur corps vide mesuré) ; Apex v13.4.372 puis 373 par le routeur public. **Incident corrigé** : la copie servie `apex-ai-v13/sw.js` est partie sur main avec des marqueurs de conflit (leçon #560) → recopiée, garde `sw-identite` compile chaque sw.
-- **Mesure « avant » du reste du plan** : le robot `coffre-lire-verrous-firebase.yml` (lecture seule, ~1 min) reste AU COFFRE à dessein — son journal liste ce qu'un inconnu peut lire, un mode d'emploi s'il était public (c'est l'exception légitime à « passe par le public ») → à lancer avec la ration de demain, PAS au public.
 - Reste du plan #559 (pas fait, à mesurer d'abord) : `vault_backup/$uid` et `users` par personne, `/cmcteams` et `/coffre_vault` (verrous déjà posés par les robots `coffre-*` : l'état LIVE n'est pas le fichier, lire avant d'écrire).
 
 ## 2026-10-16 — Apex v13.4.372 : « vérifie tout en détail » (branche claude/admin-ouverture-rapide)

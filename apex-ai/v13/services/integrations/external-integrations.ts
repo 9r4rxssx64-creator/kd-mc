@@ -62,7 +62,7 @@ const CROSS_PROMO_ADS: readonly CrossPromoAd[] = [
     target_project: 'kdmc',
     title: '🏢 Découvre les boutiques KDMC',
     cta_label: 'Visiter KDMC',
-    cta_url: 'https://kd-mc.com/', /* 16.10 : adresse réelle du portail (le bouton était vide) */
+    cta_url: '',
     position: 'sidebar',
   },
   {
@@ -71,7 +71,7 @@ const CROSS_PROMO_ADS: readonly CrossPromoAd[] = [
     target_project: 'ekdmc',
     title: '🛒 Marketplace e-KDMC',
     cta_label: 'Boutique en ligne',
-    cta_url: 'https://shops.kd-mc.com/', /* 16.10 : les boutiques du domaine (le bouton était vide) */
+    cta_url: '',
     position: 'inline',
   },
   {

@@ -66,11 +66,6 @@ async function runStreamCaptureBody(messages: ChatMessage[], system: string): Pr
 describe('ai-router — cache_control Anthropic prompt caching', () => {
   beforeEach(() => {
     localStorage.clear();
-    /* 16.10.2026 : la règle de Kevin est « gratuit d'abord » (Qwen/Groq avant Anthropic). Ces tests vérifient le CORPS Anthropic :
-       on force Anthropic explicitement (mode « forced » de l'admin), comme le ferait Kevin avec le bouton ⚡. */
-    localStorage.setItem('apex_v13_routing_mode', 'forced');
-    localStorage.setItem('apex_v13_routing_mode_explicit', '1');
-    localStorage.setItem('apex_v13_routing_forced_provider', 'anthropic');
     /* Force chain Anthropic-only pour stabilité */
     localStorage.setItem('apex_v13_failover_chain', JSON.stringify(['anthropic']));
     localStorage.setItem('ax_anthropic_key', 'sk-ant-api03-test-cache');

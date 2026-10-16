@@ -218,11 +218,10 @@ describe('crew-experts (v13.4.142 coverage)', () => {
   });
 
   describe('defaultMembers (v13.4.364 : TOUTES les IA dispo, Kevin « Utilise toutes les ia dispo »)', () => {
-    it('mode specialized = tous les providers dispo, une IA GRATUITE en tête (Kevin 2.10 « tout gratuit »), rôles assignés', () => {
+    it('mode specialized = tous les providers dispo, anthropic en tête, rôles assignés', () => {
       const m: CrewMember[] = crewExperts.defaultMembers('specialized');
       expect(m.length).toBeGreaterThanOrEqual(2);
-      expect(['qwen', 'groq', 'cerebras', 'gemini']).toContain(m[0]?.provider);
-      expect(m.map((x) => x.provider)).toContain('anthropic'); /* toujours dans l'équipe, jamais en tête */
+      expect(m[0]?.provider).toBe('anthropic');
       expect(m[0]?.expertise).toBe('security');
       /* providers tous DISTINCTS (le crew n'appelle jamais 2× la même IA) */
       expect(new Set(m.map((x) => x.provider)).size).toBe(m.length);

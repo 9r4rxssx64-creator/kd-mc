@@ -250,6 +250,7 @@
       + '<div class="fhead"><div><h3>' + esc(a.name || a.uid) + '</h3><div class="uid">' + esc(a.uid) + '</div></div>'
       + '<div class="when"><span class="kdmc-dot"></span>' + ago(a.last_seen) + '</div></div>'
       + anom
+      + (a.uid === 'kdmc_admin' ? '' : '<button class="savacc ouvrir-compte" data-uid="' + esc(a.uid) + '" type="button" style="margin:6px 0 10px" title="Ouvre ce compte : la personne n\'attend plus ton accord.">✅ Ouvrir ce compte</button>')
       + '<div class="kv">'
       + kvp('Compte créé', dt(a.created))
       + kvp('CGU acceptée', a.cgu_at ? dt(a.cgu_at) : '—')

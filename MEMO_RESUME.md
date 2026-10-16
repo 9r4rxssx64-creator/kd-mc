@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Admin : « ✅ Ouvrir ce compte » en HAUT de chaque carte (Kevin : « Yann tjs bloqué, pas de loupe »)
+- `kdmc-home/admin/admin.js` : bouton visible sans ouvrir « État du compte » ; `admin/index.html` ?v=2.3.0 + portail v1.0.63 pour forcer le rafraîchissement du cache de l'iPhone.
+
 ## 2026-10-16 — Arbre v3.112 : menu des familles masquable (Kevin : « pouvoir enlever le menu qui prend toute la place »)
 - `arbre/index.html` : « ✕ » réduit la barre à une pastille, mémorisé (`arbre_barre_masquee`) ; la pastille la remet. Test `test:arbre-ma-vue` 4m/4n.
 

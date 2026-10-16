@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (01h30 UTC) — Publication vers le dépôt public 100 % automatique, sans webhook ni minute du coffre (décision (b) de Kevin)
+
+- **Le train toutes les 2 h** : le cron du worker `kdmc-outlook` (seule place de cron gratuite) lit le commit de `main` du coffre (jeton GitHub déjà en secret Cloudflare), le compare à la marque KV `publication:sha` ; s'il a changé, il lance au dépôt PUBLIC le robot `publier-depuis-coffre.yml` (workflow_dispatch). Ce robot ouvre le coffre (clé lecture seule, 3 essais), exporte + vérifie (fail-fermé) + pousse (publier-local du coffre, jeton du job ou `APEX_GITHUB_PAT` s'il existe au public), puis **relance lui-même les déploiements** que ce push aurait déclenchés (GitHub ne lance rien après un push du jeton du job) : `tools/depot-public/robots-a-relancer.mjs`, mêmes règles que GitHub (`**`, `*`, `!`, branches, paths-ignore), déploiements seulement (`deploy-*.yml`, jamais `deploy.yml` ni lint/tests).
+- **Gardes** : `test:robots-a-relancer` (20, sabotage « ** » prouvé, câblé dans test:ci) ; tests du worker outlook (4 cas : jeton absent, changement → lancement + marque, même commit → rien, refus GitHub → pas de marque) ; robots-public, public-autonome, workflows-shell/valides/if-secrets/pipefail verts.
+- **Ce que ça change** : une fusion oubliée par une session part en ligne au plus tard 2 h après, 0 minute du coffre. Les sessions continuent de publier tout de suite (`publier-local --envoyer`). Le webhook GitHub (clic d'admin) n'est plus nécessaire.
+- **Réel** : le worker se redéploie au public (push de `services/kdmc-outlook/**`) ; premier tick utile à 02h00 UTC — preuve à lire : un run de `publier-depuis-coffre.yml` au public avec l'origine « kdmc-outlook cron » (ligne « Vérifié réel » ci-dessous).
+- **Leçon #608** : une automatisation « impossible sans webhook » se refait avec ce qu'on a déjà (un cron gratuit + un jeton déjà posé + un dépôt public qui travaille gratis).
+
 ## 2026-10-17 (01h UTC) — « Fais toutes les actions auto » : robot « ouvrir un compte » (Yann), mesure Firebase, tri de la liste
 
 - **Robot `coffre-compte-ouvrir.yml`** (+ `tools/smoke/compte-ouvrir.mjs`) : même voie que « déconnecter un compte » (session admin par le domaine, secret du coffre), retrouve la fiche par nom ou uid, `POST /__admin/compte-ouvrir`, relit la fiche pour prouver. Essai à blanc par défaut ; jamais le compte de Kevin. Résultat pour Yann : ci-dessous après le run.

@@ -2,7 +2,7 @@
 // node --test services/kdmc-outlook/worker.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchesInvoice, keepAttachment, buildAuthorizeUrl, pkceChallenge, b64url, REDIRECT_URI } from './worker.js';
+import { matchesInvoice, keepAttachment, buildAuthorizeUrl, pkceChallenge, b64url, REDIRECT_URI, declencherPublication, PUBLICATION_CLE_KV } from './worker.js';
 
 test('matchesInvoice : reconnaît factures/devis, ignore le reste', () => {
   assert.equal(matchesInvoice('Votre facture Orange', '', 'no-reply@orange.fr'), true);
@@ -54,4 +54,41 @@ test('buildAuthorizeUrl : contient client_id, PKCE S256, scope Mail.Read, redire
 test('REDIRECT_URI = sous-domaine du COMPTE (lesson #85), jamais desarzens-kevin', () => {
   assert.match(REDIRECT_URI, /kdmc-outlook\.9r4rxssx64\.workers\.dev\/auth\/callback/);
   assert.equal(/desarzens-kevin/.test(REDIRECT_URI), false);
+});
+
+/* ---- publication automatique vers le dépôt public (17.10.2026, décision (b) de Kevin) ---- */
+const kvMem = () => { const m = new Map(); return { get: async (k) => (m.has(k) ? m.get(k) : null), put: async (k, v) => { m.set(k, v); }, m }; };
+const faux = (reponses) => { const appels = []; const f = async (url, init = {}) => { appels.push({ url, method: init.method || 'GET', body: init.body }); const r = reponses(url, init); return r; }; f.appels = appels; return f; };
+const rep = (status, json) => ({ status, json: async () => json });
+
+test('publication : jeton absent → rien, aucun appel', async () => {
+  const f = faux(() => rep(200, {}));
+  const r = await declencherPublication({ ACCOUNTS: kvMem() }, f);
+  assert.equal(r.fait, false); assert.equal(f.appels.length, 0);
+});
+
+test('publication : main du coffre a changé → le robot public est lancé, la marque est posée', async () => {
+  const kv = kvMem();
+  const f = faux((url, init) => (init.method === 'POST' ? rep(204, {}) : rep(200, { sha: 'abc1234def' })));
+  const r = await declencherPublication({ GITHUB_SAUVEGARDE_TOKEN: 't', ACCOUNTS: kv }, f);
+  assert.equal(r.fait, true); assert.equal(r.sha, 'abc1234def');
+  assert.equal(f.appels.length, 2);
+  assert.match(f.appels[0].url, /repos\/9r4rxssx64-creator\/CMCteams\/commits\/main$/);
+  assert.match(f.appels[1].url, /repos\/9r4rxssx64-creator\/kd-mc\/actions\/workflows\/publier-depuis-coffre\.yml\/dispatches$/);
+  assert.equal(JSON.parse(f.appels[1].body).ref, 'main');
+  assert.equal(kv.m.get(PUBLICATION_CLE_KV), 'abc1234def');
+});
+
+test('publication : même commit que la dernière fois → aucun lancement (1 lecture, 0 écriture)', async () => {
+  const kv = kvMem(); await kv.put(PUBLICATION_CLE_KV, 'abc1234def');
+  const f = faux(() => rep(200, { sha: 'abc1234def' }));
+  const r = await declencherPublication({ GITHUB_SAUVEGARDE_TOKEN: 't', ACCOUNTS: kv }, f);
+  assert.equal(r.fait, false); assert.equal(r.raison, 'déjà publié'); assert.equal(f.appels.length, 1);
+});
+
+test('publication : GitHub refuse le lancement → la marque n\'est PAS posée (nouvel essai au tick suivant)', async () => {
+  const kv = kvMem();
+  const f = faux((url, init) => (init.method === 'POST' ? rep(403, {}) : rep(200, { sha: 'abc1234def' })));
+  const r = await declencherPublication({ GITHUB_SAUVEGARDE_TOKEN: 't', ACCOUNTS: kv }, f);
+  assert.equal(r.fait, false); assert.equal(kv.m.has(PUBLICATION_CLE_KV), false);
 });

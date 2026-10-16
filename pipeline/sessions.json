@@ -2151,6 +2151,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "publication-auto-cron": {
+      "titre": "Publication automatique vers le dépôt public (décision b, cron outlook)",
+      "branche": "claude/publication-auto-cron",
+      "sujet": "cron kdmc-outlook → publier-depuis-coffre.yml au public + robots-a-relancer ; 0 minute du coffre",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

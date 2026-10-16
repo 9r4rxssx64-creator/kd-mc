@@ -270,6 +270,11 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
 
+## 2026-10-16 — Firebase fermé aux comptes anonymes, ÉTAPE 1 : jeton du domaine « scope cmc » (code + tests ; règles INCHANGÉES)
+- Constat (audit extérieur P0-1, confirmé en ligne par la capture de Kevin) : `/cmcteams` `.read: "auth != null"` → tout compte ANONYME (créé par n'importe qui avec la clé Web publique) lit les plannings.
+- Fait : routeur `POST /__sso/fbtoken {scope:'cmc'}` → jeton Firebase signé par le domaine (uid `cmc_<uid>`, claim `scope: 'cmc'`) pour une session valide, non révoquée, ouverte sur l'app qui demande, code prouvé ; 20/h/personne ; adoption comptée en D1 (`fbcmc_jour:<date>`), 0 écriture KV. CMCteams : `cmcFbAnonAuth` essaie d'abord `cmcFbDomaine` (tools/shared/fiche-privee.js), repli anonyme sinon (10 min sans redemander après un refus). La light : `_fbAuth` idem. Gardes : `test:fbtoken-cmc` (9), `test:fb-domaine-cmc` (6, joue le vrai code client) ; sabotages rouges.
+- **ÉTAPE 2 (plus tard, après mesure)** : quand `fbcmc_jour` montre que les appareils prennent le jeton du domaine, règles `/cmcteams` : `auth.token.scope === 'cmc' || auth.token.role === 'admin'` — collées par Kevin. Avant : passer aussi `tools/messages`, `tools/approvals` (encore en anonyme) au jeton du domaine.
+
 ## 2026-10-16 — Publication des apps : désormais par le déploiement du routeur (automatique sur main, porte de ration)
 - Conséquence de la copie embarquée : une app modifiée (CMCteams, portail, Lingua…) n'est plus publiée par Pages (supprimé) mais par `deploy-kdmc-router.yml`. Ce robot part maintenant tout seul à chaque fusion sur main qui touche les surfaces servies (mêmes chemins que l'ancienne publication), un seul à la fois (concurrency), et sa PORTE DE RATION l'arrête si le jour est mangé (`porte-ration.sh 4`). Workflow réactivé. Coût : ≈ 3 min par fusion d'app (au lieu d'≈ 1 min Pages) — regroupe les fusions d'apps.
 

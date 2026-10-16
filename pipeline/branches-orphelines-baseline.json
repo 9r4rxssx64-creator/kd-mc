@@ -1,11 +1,15 @@
 {
   "_pourquoi": "Cliquet du contrôle 6 de tests/verify-pipeline-sessions.mjs : les branches ACTIVES, non inscrites au registre, et qui portent du travail NON fusionné. Le contrôle ne signale qu'un vrai risque : du travail que personne ne suit et qui disparaît si le conteneur est recyclé.",
-  "_mesure": "10.09.2026 : LISTE VIDE. Les 7 branches figées ici depuis le 6.09 avaient en réalité **0 commit hors de main** — entièrement fusionnées, donc plus rien à perdre : le contrôle criait au loup sur du travail terminé et le cliquet ne servait qu'à taire ce bruit. Depuis, le contrôle exclut les branches fusionnées et les branches fabriquées par un workflow ; il ne reste aucune orpheline. Une entrée ici doit donc être RARE et justifiée : si la liste regrossit sans raison, c'est le contrôle qu'il faut relire, pas la liste qu'il faut allonger.",
-  "_date": "2026-09-10",
+  "_mesure": "10.09.2026 : LISTE VIDE. Les 7 branches figées ici depuis le 6.09 avaient en réalité **0 commit hors de main** — entièrement fusionnées, donc plus rien à perdre : le contrôle criait au loup sur du travail terminé et le cliquet ne servait qu'à taire ce bruit. Depuis, le contrôle exclut les branches fusionnées et les branches fabriquées par un workflow ; il ne reste aucune orpheline. Une entrée ici doit donc être RARE et justifiée : si la liste regrossit sans raison, c'est le contrôle qu'il faut relire, pas la liste qu'il faut allonger. — 16.10.2026 : deux branches FUSIONNÉES par PR (#4659, #4581) ajoutées : le contrôle de contenu rate une fusion squash dès que la branche touche un fichier partagé (pipeline/sessions.json, MEMO) réécrit ensuite par d'autres ; à relire dans le contrôle si le cas se répète.",
+  "_date": "2026-10-16",
   "orphelines": [
-    "claude/voir-34600331412"
+    "claude/voir-34600331412",
+    "claude/apex-suite-1610",
+    "claude/etat-admin-prouve"
   ],
   "notes": {
-    "claude/voir-34600331412": "branche de relecture (captures « voir comme Kevin », run 34600331412, déjà lue) créée AVANT le passage en orpheline (v9.901) : elle porte les commits non fusionnés de claude/verify-cmcteams-light-data-rzlvau jusqu'à la fusion de la PR #3765, puis ne contient plus qu'un commit robot. Suppression git refusée par le proxy (send-pack hung up) — à supprimer par le ménage."
+    "claude/voir-34600331412": "branche de relecture (captures « voir comme Kevin », run 34600331412, déjà lue) créée AVANT le passage en orpheline (v9.901) : elle porte les commits non fusionnés de claude/verify-cmcteams-light-data-rzlvau jusqu'à la fusion de la PR #3765, puis ne contient plus qu'un commit robot. Suppression git refusée par le proxy (send-pack hung up) — à supprimer par le ménage.",
+    "claude/apex-suite-1610": "FUSIONNÉE par la PR #4659 (squash, 16.10 19:02 UTC). Le contrôle « contenu identique à un état de main » ne la reconnaît pas parce que la branche touchait pipeline/sessions.json et MEMO_RESUME.md, fichiers que d'autres sessions ont modifiés entre la branche et la fusion : aucun état de main n'est identique à l'ensemble. Rien à perdre : tout est dans main (7a34336 et suivants).",
+    "claude/etat-admin-prouve": "FUSIONNÉE par la PR #4581 (squash, 15.10 11:42 UTC, documents page admin v2). Même cause : fichiers partagés (TRANSFERT-COMPLET.md, compteurs) réécrits par d'autres sessions après la fusion. Rien à perdre."
   }
 }

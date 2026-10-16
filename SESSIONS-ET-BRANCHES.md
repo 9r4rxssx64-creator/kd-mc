@@ -231,6 +231,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/securite-suite` | 16.10 | Code admin + Croupier Pro hors du dépôt public, routeur sans repli vers un hébergeur public, règle « va au bout » | `securite-suite` |
 | `claude/docs-complets` | 16.10 | Arbre v3.108→v3.116 + domaine (autre session) | `arbre-session-1610` |
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
+| `claude/docs-complets` | 16.10 | **Arbre + domaine (session 15-16.10)** : arbre v3.108→v3.116, admin « comptes bloqués / Personnes attendues », recherches Le Dren + famille de Yann ; en ligne v3.116 (routeur déployé par le dépôt public) | `arbre-session-1610` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
+- `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
+
 ## 2026-10-16 — Routeur : 6 apps en 404 derrière la porte selon les en-têtes du navigateur (corrigé)
 - **Mesuré en CI (run sur AS8075, même machine)** : curl → cmcteams.kd-mc.com/ 200 (3 444 308 o), arbre 200 ; la sonde Node (en-têtes de navigateur) → 404 « absent de la copie embarquée » pour cmcteams, light, départs, coffre, apex-ai, arbre. Les pages SONT dans le paquet (tailles relues en CI). Cause : `amont()` transmettait les en-têtes du visiteur à `env.ASSETS.fetch`.
 - **Corrigé** : la copie ne reçoit plus que `range`. Garde : `test:source-assets` 14/14 (n°8, sabotage rouge prouvé). Diagnostic permanent dans le déploiement : réseau du runner + 5 adresses demandées comme un iPhone.

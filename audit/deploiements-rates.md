@@ -7,6 +7,36 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 16/10/2026 10:32 UTC
+
+- **Branche** : `main` · **Commit** : `77e95017` · **Run** : `38887674136`
+- **Ce qui a lâché** : deploy › Le domaine sert-il vraiment les 31 adresses ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38887674136
+- **Ce que la machine a dit** :
+
+```
+❌ cuisine.kd-mc.com              0        0 car.  fetch failed
+❌ cocina.kd-mc.com               0        0 car.  fetch failed
+❌ cujina.kd-mc.com               0        0 car.  fetch failed
+❌ worldmonitor.kd-mc.com         0        0 car.  fetch failed
+❌ osint.kd-mc.com                0        0 car.  fetch failed
+❌ ia.kd-mc.com                   0        0 car.  fetch failed
+❌ outils.kd-mc.com               0        0 car.  fetch failed
+❌ tor.kd-mc.com                  0        0 car.  fetch failed
+❌ dossiers.kd-mc.com             0        0 car.  fetch failed
+=== 17 servies / 15 en échec ===
+  · cuisine.kd-mc.com → https://cuisine.kd-mc.com/  (HTTP 0, fetch failed)
+  · cocina.kd-mc.com → https://cocina.kd-mc.com/  (HTTP 0, fetch failed)
+  · cujina.kd-mc.com → https://cujina.kd-mc.com/  (HTTP 0, fetch failed)
+  · worldmonitor.kd-mc.com → https://worldmonitor.kd-mc.com/  (HTTP 0, fetch failed)
+  · osint.kd-mc.com → https://osint.kd-mc.com/  (HTTP 0, fetch failed)
+  · ia.kd-mc.com → https://ia.kd-mc.com/  (HTTP 0, fetch failed)
+  · outils.kd-mc.com → https://outils.kd-mc.com/  (HTTP 0, fetch failed)
+  · tor.kd-mc.com → https://tor.kd-mc.com/  (HTTP 0, fetch failed)
+  · dossiers.kd-mc.com → https://dossiers.kd-mc.com/  (HTTP 0, fetch failed)
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +558,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

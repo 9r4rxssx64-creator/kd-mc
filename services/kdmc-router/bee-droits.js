@@ -17,6 +17,7 @@
  *   · l'ARGENT RÉEL du robot (/__bot/reel, /__bot/config) : le bouton d'une IA ne passe pas du papier au réel ;
  *   · publier l'arbre (/__arbre/*) : cette porte reste fermée ; Bee ne modifie l'arbre que par SA propre voie (bee-arbre-ecrire.js : ajouter / compléter une fiche champ par champ, copie avant, jamais de suppression) ;
  *   · déployer, modifier du code : le domaine n'a aucun jeton GitHub — Bee écrit la consigne pour Claude Code.
+ * (16.10 : Kevin a ouvert « lire plus », « gérer les comptes » et « régler le robot » — voir bee-droits-plus.js ; la liste ci-dessus des portes FERMÉES est inchangée, sauf la création de compte avec un code qui reste fermée.)
  * Ces portes restent hors de PORTES_BEE (worker.js) et le test les nomme une à une : en ouvrir une est une décision de Kevin, pas un oubli.
  * node services/kdmc-router/bee-droits.test.mjs */
 

@@ -4039,7 +4039,7 @@ async function porteVerify(secret, tok) {
 const BEE_REGLES = "Réponds court, chaleureuse, enjouée, avec le tutoiement, en français, sans jargon technique (Kevin n'est pas codeur), sans flatterie. "
   + "Tu es l'assistante PERSONNELLE de Kevin et tu travailles POUR lui, avec des outils gratuits : météo, date et heure (même dans une autre ville), son planning (faits vérifiés du PDF), calcul exact, conversions d'unités et de devises, calcul de dates, "
   + "recherche (Wikipédia, actualités), lecture d'une page web, les fiches de son arbre de famille, sa boîte de messages, ses rappels, sa mémoire. Utilise ces outils au lieu de répondre « je ne sais pas » ou « je n'ai pas accès ». "
-  + "Tu LIS beaucoup, mais tu n'écris, n'envoies et ne modifies rien toi-même : pour agir (rappel, réponse à un message, retenir un fait, robot, fermer ou rouvrir des apps, périmètre d'une personne, code oublié, ajouter une info / une date / un commentaire à une fiche de l'arbre ou relier deux proches, déconnexion) tu PROPOSES une carte que Kevin confirme d'un bouton ✅ ; "
+  + "Tu LIS beaucoup, mais tu n'écris, n'envoies et ne modifies rien toi-même : pour agir (rappel, réponse à un message, retenir un fait, robot, fermer ou rouvrir des apps, périmètre d'une personne, code oublié, ouvrir ou supprimer un compte, lever un bannissement, personnes attendues, IA pilote du robot (auto, à l'arrêt, lancer, annuler l'essai), ajouter une info / une date / un commentaire à une fiche de l'arbre ou relier deux proches, déconnexion) tu PROPOSES une carte que Kevin confirme d'un bouton ✅ ; "
   + "ne prétends jamais avoir fait une action tant qu'il n'a pas confirmé, et n'invente jamais une donnée (un horaire, un chiffre, une date, une adresse web, une fiche). "
   + "Si tu ne sais pas ou si tu n'es pas sûre, dis-le simplement. Ce que tu ne peux vraiment pas faire (lancer du code, déployer, modifier un fichier du domaine), ne renvoie pas Kevin vers « c'est Apex » sans rien dire : "
   + "dis-lui précisément ce que tu ne peux pas faire, puis écris-lui la consigne toute prête, claire et complète, qu'il n'aura qu'à coller dans Apex ou dans Claude Code.";
@@ -4288,8 +4288,11 @@ let _fbJeton = { v: '', exp: 0 };
    · qui : la session admin PROUVÉE (Face ID ou code), jamais ce que dit la page ;
    · appeler : une action ne fait QUE rappeler une porte admin déjà en place, avec la session de Kevin (une porte qui lui est fermée reste fermée),
      et seulement celles de cette liste blanche. */
+/* 16.10 (Kevin : « il doit pouvoir tout faire… » ; réponses à un choix : lire plus, gérer les comptes, régler le robot ; le reste RESTE FERMÉ) — voir bee-droits-plus.js */
 const PORTES_BEE = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__bot/kill', '/__bot/start', '/__bot/status',
-  '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke'];   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre, création de compte restent FERMÉS (bee-droits.js)
+  '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke',
+  '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/bannis', '/__admin/debannir', '/__admin/attendus', '/__demandes',
+  '/__bot/ia', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/ia/annuler', '/__bot/scan', '/__bot/marche', '/__bot/liens', '/__bot/fleet', '/__bot/history', '/__bot/analysis'];   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre, création de compte restent FERMÉS (bee-droits.js)
 async function diagBee(request, env, session) {
   const pingIA = async () => {
     const t = Date.now();

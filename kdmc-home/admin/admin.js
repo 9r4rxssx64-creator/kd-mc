@@ -564,6 +564,69 @@
   }
   var _comptes = [];   /* les comptes de la DERNIÈRE lecture (la liste se rafraîchit toute seule : le bouton lit toujours les plus récents) */
   /* ---- PERSONNES BANNIES (Kevin 15.10 : « l'option bannir… si besoin ») : la liste, et « Autoriser de nouveau ». ---- */
+  /* PURE : les comptes FERMÉS « en attente / refusé » d'après les fiches elles-mêmes (pas d'après la file de demandes, qui peut les avoir perdus). */
+  function comptesBloques(list) {
+    return (list || []).filter(function (a) { return a && a.uid && a.attente_admin && a.uid !== 'kdmc_admin'; })
+      .map(function (a) { return { uid: a.uid, nom: a.name || a.uid, refuse: a.attente_admin === 'refuse', vu: a.last_seen || a.created || 0 }; })
+      .sort(function (x, y) { return (x.refuse - y.refuse) || (y.vu - x.vu); });
+  }
+  function blocBloques(accounts) {
+    var L = comptesBloques(accounts);
+    if (!L.length) return '<div class="note" id="bloques">✅ Personne n\'est bloqué : tous les comptes sont ouverts.</div>';
+    return '<div class="note" id="bloques" style="border-color:#c9a227"><b>⏳ ' + L.length + ' compte' + (L.length > 1 ? 's' : '') + ' fermé' + (L.length > 1 ? 's' : '') + ' — ils attendent ton accord</b>'
+      + L.map(function (x) {
+        return '<div style="display:flex;gap:8px;align-items:center;margin:8px 0"><span style="flex:1">' + esc(x.nom) + (x.refuse ? ' <span class="d">· refusé</span>' : '') + '</span>'
+          + '<button class="savacc ouvrir-bloque" data-uid="' + esc(x.uid) + '" type="button">✅ Ouvrir</button></div>';
+      }).join('') + '</div>';
+  }
+  function wireBloques() {
+    var z = document.getElementById('bloques');
+    if (!z || z._ok) return; z._ok = true;
+    z.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.ouvrir-bloque') : null;
+      if (!b) return;
+      b.disabled = true; b.textContent = '…';
+      fetch('/__admin/compte-ouvrir', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: b.getAttribute('data-uid') }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { if (j && j.ok) { b.textContent = '✅ Ouvert'; b.parentNode.style.opacity = '.6'; } else { b.disabled = false; b.textContent = '⚠️ Échec — réessaie'; } })
+        .catch(function () { b.disabled = false; b.textContent = '⚠️ Échec — réessaie'; });
+    });
+  }
+  /* PERSONNES ATTENDUES : un nom inscrit d'avance entre sans attendre (usage unique ; code toujours exigé ; jamais un banni). */
+  function blocAttendus() {
+    return '<details class="fermgen" id="attendus"><summary>👋 Personnes attendues <span class="d">(un nom connu entre sans attendre ton accord)</span></summary>'
+      + '<div style="display:flex;gap:8px;margin:8px 0"><input id="attendu-nom" class="search" style="margin:0;flex:1" placeholder="Prénom et nom (ex. Yann Lorenzi)" autocomplete="off">'
+      + '<button class="savacc" id="attendu-ajout" type="button">➕ Ajouter</button></div>'
+      + '<div id="attendus-liste" class="d">Touche pour charger…</div></details>';
+  }
+  function wireAttendus() {
+    var det = document.getElementById('attendus');
+    if (!det || det._ok) return; det._ok = true;
+    var liste = document.getElementById('attendus-liste');
+    function dessiner(l) {
+      liste.innerHTML = l.length ? l.map(function (x) {
+        return '<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span style="flex:1">' + esc(x.nom) + ' <span class="d">· ajouté ' + esc(dt(x.at)) + '</span></span>'
+          + '<button class="savacc attendu-retirer" data-nom="' + esc(x.nom) + '" type="button">✖ Retirer</button></div>';
+      }).join('') : 'Personne n\'est attendu pour l\'instant.';
+    }
+    function appeler(corps) {
+      var opt = corps ? { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify(corps) } : { credentials: 'include', headers: adminHeaders() };
+      return fetch('/__admin/attendus', opt).then(function (r) { return r.json(); });
+    }
+    function charger() { liste.textContent = 'Je lis la liste…'; appeler(null).then(function (j) { dessiner((j && j.attendus) || []); }).catch(function () { liste.textContent = '⚠️ Liste illisible — réessaie.'; }); }
+    det.addEventListener('toggle', function () { if (det.open) charger(); });
+    det.addEventListener('click', function (e) {
+      var t = e.target; if (!t || !t.closest) return;
+      var aj = t.closest('#attendu-ajout'), re = t.closest('.attendu-retirer');
+      if (aj) {
+        var inp = document.getElementById('attendu-nom'), nom = (inp.value || '').trim();
+        if (nom.split(/\s+/).length < 2) { liste.textContent = 'Écris le prénom ET le nom.'; return; }
+        appeler({ nom: nom }).then(function (j) { if (j && j.ok) { inp.value = ''; dessiner(j.attendus || []); } else liste.textContent = '⚠️ ' + ((j && j.reason) || 'échec') + ' — réessaie.'; }).catch(function () { liste.textContent = '⚠️ Échec — réessaie.'; });
+      } else if (re) {
+        appeler({ nom: re.getAttribute('data-nom'), retirer: true }).then(function (j) { if (j && j.ok) dessiner(j.attendus || []); }).catch(function () { liste.textContent = '⚠️ Échec — réessaie.'; });
+      }
+    });
+  }
   function blocBannis() {
     return '<details class="fermgen" id="bannis"><summary>🚫 Personnes bannies <span class="d">(ne peuvent pas se réinscrire)</span></summary>'
       + '<div id="bannis-liste" class="d">Touche pour charger…</div></details>';
@@ -665,6 +728,8 @@
     app.innerHTML =
       '<div id="presence">' + presence(accounts) + '</div>'
       + (kv ? '' : '<div class="note">⚙️ Le registre central (KV) s\'activera au prochain déploiement du router : les fiches apparaîtront alors automatiquement. Les fonctions communes ci-dessous marchent déjà.</div>')
+      + blocBloques(accounts)
+      + blocAttendus()
       + blocFermees()
       + blocCreer()
       + blocLot(accounts)
@@ -689,6 +754,8 @@
     wireRevoke();
     wireEtat();
     wireBannis();
+    wireBloques();
+    wireAttendus();
     wireAcces();
     wireFermees();
     wireCreer();

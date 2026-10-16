@@ -4,8 +4,8 @@
    13.10 : (1) './apps.json' RETIRÉ du préchargement — il répond 401 sans compte, et un seul fichier refusé faisait rejeter tout `addAll`
    (erreur avalée) : aucune coque hors ligne n'était gardée. (2) Une navigation avec une copie en cache n'attend plus le réseau plus de 4 s :
    réseau faible = la copie s'affiche, la page neuve se range en cache pour la fois suivante. */
-var CACHE_VERSION = 'kdmc-apex-v1.0.63';
-var SHELL = ['./', './index.html', './kdmc-sso.js?v=1.0.63', './kdmc-boite.js?v=1.0.63', './kdmc-portal.js?v=1.0.63', './manifest.json', './icon.svg'];
+var CACHE_VERSION = 'kdmc-apex-v1.0.64';
+var SHELL = ['./', './index.html', './kdmc-sso.js?v=1.0.64', './kdmc-boite.js?v=1.0.64', './kdmc-portal.js?v=1.0.64', './manifest.json', './icon.svg'];
 var COURSE_MS = 4000;
 
 self.addEventListener('install', function (e) {

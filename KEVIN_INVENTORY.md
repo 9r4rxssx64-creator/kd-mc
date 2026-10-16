@@ -14,6 +14,13 @@
 - **Fichiers créés** : [`.claude/rules/modeles.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/modeles.md) · [`tests/verify-modele-adapte.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-modele-adapte.mjs)
 - **Test** : `npm run test:modele-adapte`
 
+### 🔓 Comptes bloqués : plus jamais invisibles (16.10.2026 — routeur + admin)
+
+- **Pour toi** : en haut de l'admin, une bannière liste les comptes fermés avec un bouton **✅ Ouvrir** ; « 👋 Personnes attendues » : tu écris d'avance le nom d'une personne connue, elle entre sans attendre (usage unique, code toujours exigé). Accepter un code ouvre aussi le compte ; une personne fermée qui réessaie te revient dans Mes messages.
+- **Fichiers créés** : [`services/kdmc-router/debloquer-connus.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/debloquer-connus.test.mjs)
+- **Tests** : `npm run test:debloquer-connus`
+- **Tes apps** : https://admin.kd-mc.com (après fusion et mise en ligne)
+
 ### 🌳 Arbre « Ma vue » v3.109 (16.10.2026)
 
 - L'arbre s'ouvre sur TA famille (nom + parents), « Combiner » propose les dérivés de ta famille, « 📌 » épingle une autre vue, « ↩ Ma vue » revient. Tes apps : https://arbre.kd-mc.com

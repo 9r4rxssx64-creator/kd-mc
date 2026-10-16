@@ -10,7 +10,7 @@
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken } from './fb-token.js';
-import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre } from './boite.js';
+import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre, INSCR_ADMIN_SCHEMA } from './boite.js';
 import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
@@ -2758,6 +2758,30 @@ function banCles(acc) {
   if (emp) cles.push('ban:tel:' + emp);
   return cles;
 }
+/* PERSONNES ATTENDUES (Kevin 16.10.2026 : « c'est quelqu'un de connu, il ne devrait pas être bloqué ; simplifier l'inscription, en gardant la sécurité »).
+   L'admin inscrit à l'avance le NOM d'une personne qu'il connaît (liste `cfg:attendus`, ≤ 50). Quand cette personne crée son compte, elle entre
+   tout de suite — sans attendre Kevin. Ce qui NE change PAS : le code de compte reste obligatoire, un banni reste banni, la liste est écrite
+   par l'admin seul (barrière /__admin/*), l'entrée est CONSOMMÉE à la première inscription (usage unique), le nom reste réservé ensuite. */
+async function attendusLire(env) { try { const l = JSON.parse((await env.ACCOUNTS.get('cfg:attendus')) || '[]'); return Array.isArray(l) ? l : []; } catch { return []; } }
+async function estAttendu(env, name) { const n = normName(name); if (!n || n.split(' ').filter(Boolean).length < 2) return false; return (await attendusLire(env)).some((x) => x && x.n === n); }
+async function attenduConsomme(env, name) {
+  const n = normName(name); const l = await attendusLire(env); const reste = l.filter((x) => !(x && x.n === n));
+  if (reste.length !== l.length) { try { await env.ACCOUNTS.put('cfg:attendus', JSON.stringify(reste)); } catch { /* l'entrée sera consommée à la prochaine */ } }
+}
+/* Quelqu'un de fermé « en attente » qui RÉESSAIE : sa demande revient dans la boîte de Kevin (elle pouvait en être sortie) et Kevin est prévenu,
+   au plus une fois toutes les 6 h par personne (la file D1 sert de mémoire : aucune écriture KV de plus). */
+async function redeposerAttente(env, request, acc, app) {
+  try {
+    if (!env.CERCLE_DB || !acc || !acc.uid || acc.attente_admin === 'refuse') return;
+    await env.CERCLE_DB.prepare(INSCR_ADMIN_SCHEMA).run();
+    const dej = await env.CERCLE_DB.prepare('SELECT ts FROM inscription_admin WHERE uid = ?').bind(acc.uid).first();
+    if (dej && Date.now() - Number(dej.ts || 0) < 6 * 3600 * 1000) return;
+    const cf = request.cf || {}, NET = ispInfo(cf);
+    await inscriptionAdminDeposer(env.CERCLE_DB, { uid: acc.uid, nom: acc.name || acc.uid, appareil: appareilLabel(request.headers.get('user-agent') || ''),
+      lieu: [cf.city, cf.country].filter(Boolean).join(', '), reseau: (NET.isp || '') + (cf.asn ? ' (AS' + cf.asn + ')' : ''), app: app || 'portail' });
+    await notifyPush(env, '⏳ KDMC — quelqu\'un attend ton accord', (acc.name || acc.uid) + ' essaie d\'entrer : ouvre son compte dans Mes messages.');
+  } catch { /* la porte reste fermée de toute façon */ }
+}
 async function estBanni(env, uid, name, empreinteTel) {
   if (!env || !env.ACCOUNTS) return false;
   try {
@@ -3366,6 +3390,7 @@ async function handleSso(request, url, env) {
       }
       const per = perimetre(acc, app);
       if (!per.ok && !estAdmin) {
+        if (per.raison === 'attente_admin') await redeposerAttente(env, request, acc, app);
         return J({
           ok: false, reason: per.raison, hors_perimetre: true, app,
           message: per.raison === 'ferme_general' ? MSG_FERME_GENERAL : per.raison === 'bloque_ici'
@@ -3530,6 +3555,7 @@ async function handleSso(request, url, env) {
     const origine = appDe(String(b.pour || '').replace(/^https?:\/\//, '').split('/')[0]);
     let telCreation = null;   // preuve de téléphone vérifiée, à ranger sur la fiche une fois créée
     let telephoneNouveau = '';   // numéro saisi à l'inscription d'un NOUVEAU compte, rangé sur la fiche du domaine une fois créée
+    let attenduOuvert = false; // nom inscrit d'avance par l'admin : pas d'attente
     let attenteAdmin = false; // inscription sans WhatsApp : le compte attend la validation de Kevin
     {
       const app = appDe(request.headers.get('host'));
@@ -3572,7 +3598,9 @@ async function handleSso(request, url, env) {
          Kevin l'ouvre dans sa boîte — décidé ICI, pas par le navigateur (un script ne peut pas s'ouvrir seul). Un compte déjà inscrit n'est
          jamais touché. Coupé (par défaut) = comportement d'avant. */
       if (!accCanon && !UID_ROBOTS_SANS_FICHE.has(uid) && await estBanni(env, uid, name)) return J({ ok: false, reason: 'banni', message: MSG_BANNI }, undefined, 403);
-      if (!accCanon && validationManuelle(env) && !UID_ROBOTS_SANS_FICHE.has(uid)) attenteAdmin = true;
+      if (!accCanon && validationManuelle(env) && !UID_ROBOTS_SANS_FICHE.has(uid)) {
+        if (await estAttendu(env, name)) { attenduOuvert = true; } else attenteAdmin = true;
+      }
       if (!accCanon && telObligatoire(env) && !UID_ROBOTS_SANS_FICHE.has(uid) && !attenteAdmin) {
         const pt = await verifiePreuve(secret, b.tel_preuve);
         /* « Si pas de WhatsApp, validation admin. Au choix » (Kevin 10.10) : la personne CHOISIT d'attendre Kevin au lieu de WhatsApp.
@@ -3686,6 +3714,7 @@ async function handleSso(request, url, env) {
         if (a) { a.fiche = { ...a.fiche, telephone: telephoneNouveau, maj: Date.now(), app: origine || appDe(request.headers.get('host')) || 'portail' }; await accPut(env, a, true); }
       } catch { /* fail-open : le compte existe, l'app demandera le numéro */ }
     }
+    if (attenduOuvert) { try { await attenduConsomme(env, name); await audLog(env, { ev: 'inscription_attendue_ouverte', uid, name, detail: 'nom inscrit d\'avance par l\'admin : ouvert sans attente' }); } catch { /* fail-open : l'entrée sera consommée plus tard */ } }
     if (attenteAdmin) {
       let marque = false;
       try {
@@ -4637,6 +4666,21 @@ async function handleAdmin(request, url, env) {
     return J({ ok: true, uid, supprime: true, banni: b.bannir === true ? banni : undefined });
   }
   /* Les bannis : les voir, et les autoriser de nouveau (Kevin 15.10 : « si besoin »). */
+  /* PERSONNES ATTENDUES : GET = la liste ; POST { nom } = ajoute ; POST { nom, retirer: true } = retire. Barrière admin comme tout /__admin/*. */
+  if (path === '/__admin/attendus' && request.method === 'GET') {
+    return J({ ok: true, attendus: (await attendusLire(env)).map((x) => ({ nom: x.nom, at: x.at })) });
+  }
+  if (path === '/__admin/attendus' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const nom = String(b.nom || '').replace(/\s+/g, ' ').trim().slice(0, 80), n = normName(nom);
+    if (!n || n.split(' ').filter(Boolean).length < 2) return J({ ok: false, reason: 'prenom_et_nom_requis' }, undefined, 400);
+    let l = await attendusLire(env);
+    if (b.retirer === true) { l = l.filter((x) => x.n !== n); }
+    else { if (l.length >= 50 && !l.some((x) => x.n === n)) return J({ ok: false, reason: 'liste_pleine' }, undefined, 400); if (!l.some((x) => x.n === n)) l.push({ n, nom, at: Date.now() }); }
+    try { await env.ACCOUNTS.put('cfg:attendus', JSON.stringify(l)); } catch { return J({ ok: false, reason: 'registre indisponible' }, undefined, 503); }
+    await audLog(env, { ev: b.retirer === true ? 'attendu_retire' : 'attendu_ajoute', name: nom });
+    return J({ ok: true, attendus: l.map((x) => ({ nom: x.nom, at: x.at })) });
+  }
   if (path === '/__admin/bannis' && request.method === 'GET') {
     let l = []; try { l = JSON.parse((await env.ACCOUNTS.get('ban:idx')) || '[]'); } catch { l = []; }
     return J({ ok: true, bannis: l.map((x) => ({ id: x.id, uid: x.uid, nom: x.nom, at: x.at })) });

@@ -101,9 +101,13 @@ export async function codeDecider(env, db, outils, uid, accepter, now) {
   if (!r) return { ok: false, reason: 'demande_introuvable' };
   if (accepter) {
     await env.ACCOUNTS.put('cred:' + uid, r.rec);
-    try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); if (a) { a.code_at = now; delete a.revoked_at_code; await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a)); ficheOubliee(env, uid); } } catch { /* fiche illisible : le code vaut quand même */ }
+    /* « J'ai validé son code et il reste bloqué » (Kevin 16.10) : accepter le CODE d'une personne que l'admin a sous les yeux (nom, appareil, lieu) vaut
+       aussi ouverture du compte — sinon `attente_admin` restait posé, la demande d'inscription avait déjà quitté la file, et la personne ne
+       pouvait plus jamais entrer. Un compte refusé par l'admin puis dont il accepte le code est rouvert : le dernier geste de Kevin gagne. */
+    try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); if (a) { a.code_at = now; delete a.revoked_at_code; if (a.attente_admin) { delete a.attente_admin; a.valide_admin_at = now; } await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a)); ficheOubliee(env, uid); } } catch { /* fiche illisible : le code vaut quand même */ }
   }
   await db.prepare('DELETE FROM code_attente WHERE uid = ?').bind(uid).run();
+  if (accepter) { try { await db.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(uid).run(); } catch { /* table absente */ } }
   if (outils && outils.journal) { try { await outils.journal({ ev: accepter ? 'code_valide' : 'code_refuse', uid, name: r.nom, detail: (accepter ? 'code accepté par l\'admin' : 'code refusé par l\'admin') + ' · ' + (r.appareil || '?') + ' · ' + (r.lieu || '?') + ' · ' + (r.reseau || '?') }); } catch { /* */ } }
   return { ok: true, uid, nom: r.nom, accepte: !!accepter };
 }

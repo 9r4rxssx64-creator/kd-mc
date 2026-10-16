@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.315",
+  "softwareVersion": "v1.1.316",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.315';
+const __APEX_CHAT_VERSION__ = 'v1.1.316';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -796,7 +796,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.315" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.315</div>
+  <div id="splash-version" data-ver="v1.1.316" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.316</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -810,7 +810,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.315</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.316</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -8586,8 +8586,12 @@ K.logout = function(){
   if(!confirm('Te déconnecter ? Tes messages chiffrés restent sur ton téléphone.')) return;
   // Déconnexion CÔTÉ SERVEUR de cet appareil (le jeton copié ailleurs ne marche plus). Sans attendre la réponse :
   // le téléphone se déconnecte dans tous les cas, même hors ligne.
+  // Mesuré sur WebKit iPhone (16.10.2026) : avec `keepalive` et sans attendre, Safari ANNULE la requête quand la page se
+  // recharge aussitôt → le jeton restait valable côté serveur. On attend donc la réponse (bornée par le plafond de 1,5 s
+  // plus bas : hors ligne, la déconnexion locale se fait quand même).
+  let _srvLogout = Promise.resolve();
   try{
-    if(K.token) fetch(API_BASE + '/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + K.token }, keepalive: true }).catch(() => {});
+    if(K.token) _srvLogout = Promise.resolve(fetch(API_BASE + '/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + K.token } })).catch(() => {});
   }catch(_e){ _safeCatch('logout-serveur', _e); }
   // Whitelist-based clear (jamais clear() complet)
   const keep = ['theme','lang'];
@@ -8611,7 +8615,7 @@ K.logout = function(){
   let _rechargee = false;
   const recharger = () => { if(_rechargee) return; _rechargee = true; location.reload(); };
   const plafond = setTimeout(recharger, 1500);
-  Promise.all(['user', 'token'].map((k) => Promise.resolve(idbDel(k)).catch(() => {})).concat([Promise.resolve().then(() => K._keyStoreDelete()).catch(() => {})]))
+  Promise.all(['user', 'token'].map((k) => Promise.resolve(idbDel(k)).catch(() => {})).concat([Promise.resolve().then(() => K._keyStoreDelete()).catch(() => {}), _srvLogout]))
     .then(() => { clearTimeout(plafond); recharger(); }, () => { clearTimeout(plafond); recharger(); });
 };
 
@@ -19073,6 +19077,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.315", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.316", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

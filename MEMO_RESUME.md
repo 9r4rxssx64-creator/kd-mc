@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — 9e passage RÉEL (run 38978305391, v1.1.315) → v1.1.316 : la déconnexion attend le serveur (Safari annulait la requête)
+- **Prouvé** : A, B1, B2 (Chromium + WebKit) ✅ · C ✅ Chromium · D ✅ Chromium · jeton unique par connexion (aucun faux « autre appareil » refusé) · lot P déployé (file de rebut créée, déploiement réussi). **Écart réel (iPhone/Safari)** : C ❌ WebKit — le jeton déconnecté restait valable (200) : la requête `keepalive` était annulée par le rechargement immédiat. Corrigé : on attend la réponse (≤ 1,5 s). Version 1.1.316 (+ `API_VERSION`). Leçon 592 ; `vitest --coverage` sans erreur.
+
 ## 2026-10-17 (nuit) — « Vérifie réel comme moi, teste toutes les fonctions d'Apex Chat »
 - **Rejoué en entier** (`npm run test:fonctions-reelles`, Chromium réel + worker réel en base simulée, 173 s) : **84 ✅ · 1 ❌ · 0 ⚪ / 85**. 19 vues, 0 exception JS, 106 routes du serveur sans erreur 500, tous les boutons cliqués ont un effet. Rapport : `audit/apex-chat/06-FONCTIONS-REELLES.md`.
 - **2 faux rouges venaient du harnais, corrigés** (leçon 599) : F45 (hôte GIF de test refusé par la liste blanche) et les 5 Durable Objects (globaux Cloudflare absents). **Un seul vrai rouge : F36** — `lib/key-vault.js` n'est chargé par aucune balise, donc la clé privée E2E reste en clair dans le téléphone (constat P1 de `audit/apex-chat/03-FINDINGS.md`, « EN COURS », import commenté dans `crypto.js:18`). Je ne l'active pas moi-même : 7 utilisateurs réels, `index.html` en mouvement (v1.1.314, lot P) — signalé à la session Apex Chat.

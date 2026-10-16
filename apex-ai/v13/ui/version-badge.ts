@@ -46,7 +46,7 @@ const BADGE_CSS = `
     border-radius: 8px;
     user-select: none;
     -webkit-user-select: none;
-    opacity: 0.7;
+    opacity: 1; /* 16.10 (axe, run public 38958462209) : à 0,7 le doré #c9a227 tombait à 4,16 de contraste (< 4,5) ; à 1 → 7,37 */
     pointer-events: none;
     line-height: 1.2;
     letter-spacing: 0.02em;

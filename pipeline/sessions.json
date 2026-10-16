@@ -1847,7 +1847,7 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "Apex v13.4.375 construite et vérifiée en local (veille technologique sans violation CSP, journal CSP lisible, Axe borné, Lighthouse calibré sur la mesure) ; à publier par le dépôt public puis lire Axe/Lighthouse. Reste : LCP 8 s mobile bridé (chantier), plan #559 étape 2 (ration de demain)."
+      "note": "Apex v13.4.376 construite et vérifiée en local : veille + client MCP respectent la CSP (0 violation connect-src attendue), badge de version lisible (axe). À publier par le dépôt public puis lire Axe et le compte CSP. Reste : LCP ~8 s mobile bridé (chantier), plan #559 étape 2 (ration de demain)."
     },
     "firebase-cmc2": {
       "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",
@@ -1914,6 +1914,16 @@
       "titre": "Hygiène P2 : verrou d'échecs du code admin, pages d'état muettes",
       "branche": "claude/securite-p2",
       "sujet": "monaco/outlook/apex-secrets-proxy verrou ; uptime comptes ; monaco health",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "firebase-etape2": {
+      "titre": "Firebase étape 2 : pages admin au jeton admin du domaine",
+      "branche": "claude/firebase-etape2",
+      "sujet": "tools/messages + tools/approvals : /__admin/fbtoken avant l'anonyme",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",

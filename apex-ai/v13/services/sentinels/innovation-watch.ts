@@ -197,32 +197,9 @@ function compareSemver(current: string, latest: string): 'newer' | 'same' | 'old
 /**
  * Fetch wrapper avec timeout strict + signal AbortController.
  */
-/* 16.10.2026 (v13.4.375) — LA CSP DE LA PAGE DÉCIDE. Mesuré au dépôt public (Lighthouse, run 38955866488) et en vrai
- * Chromium : à CHAQUE ouverture, la veille appelait registry.npmjs.org, huggingface.co et api.github.com, trois hôtes
- * absents de « connect-src » dans index.html → 16 violations CSP par ouverture, la veille échouait en silence et la
- * console était illisible. Un hôte que la CSP interdit n'est pas appelé : le scan est sauté, et dit pourquoi, une fois. */
-export function cspAutorise(url: string): boolean {
-  if (typeof document === 'undefined' || typeof location === 'undefined') return true;
-  const meta = document.querySelector('meta[http-equiv="Content-Security-Policy" i]');
-  const politique = meta?.getAttribute('content') ?? '';
-  const m = /(?:^|;)\s*connect-src\s+([^;]+)/i.exec(politique);
-  if (!m) return true; /* pas de connect-src : rien n'interdit */
-  let cible: URL;
-  try { cible = new URL(url, location.href); } catch { return false; }
-  for (const brut of (m[1] ?? '').trim().split(/\s+/)) {
-    const src = brut.replace(/^'|'$/g, '');
-    if (src === '*') return true;
-    if (src === 'self') { if (cible.origin === location.origin) return true; continue; }
-    if (/^[a-z]+:$/i.test(src)) { if (cible.protocol === src.toLowerCase()) return true; continue; }
-    const hote = (src.replace(/^[a-z]+:\/\//i, '').split('/')[0] ?? '').split(':')[0] ?? '';
-    if (!hote) continue;
-    if (hote.startsWith('*.')) {
-      const dom = hote.slice(2);
-      if (cible.hostname === dom || cible.hostname.endsWith('.' + dom)) return true;
-    } else if (cible.hostname === hote) return true;
-  }
-  return false;
-}
+import { cspAutorise } from '../core-svc/csp-autorise.js';
+/* ré-exporté : les tests de la veille (v13.4.375) l'importent d'ici */
+export { cspAutorise };
 
 async function fetchWithTimeout(
   url: string,

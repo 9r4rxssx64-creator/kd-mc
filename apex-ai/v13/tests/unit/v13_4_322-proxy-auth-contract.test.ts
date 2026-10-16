@@ -34,11 +34,14 @@ function loadWorkerVerifyPin(): (
   env: Record<string, string | undefined>,
 ) => Promise<boolean> {
   const yaml = readFileSync(WORKFLOW, 'utf8');
-  const m = yaml.match(/async function verifyPin\(req, env\) \{\n([\s\S]*?)\n {10}\}/);
-  if (!m) throw new Error('verifyPin introuvable dans le workflow worker');
+  /* 16.10.2026 (#4676) : verifyPin s'appuie désormais sur le verrou d'échecs (pinBloque / pinEchec, _echecsPin) et sur
+     verifyPinBrut — on charge TOUT le bloc, du verrou à la fin de verifyPinBrut, sinon « pinBloque is not defined »
+     (4 rouges sur main mesurés le 16.10 au soir). Le contrat testé reste le vrai code du worker. */
+  const m = yaml.match(/(const _echecsPin = new Map\(\);[\s\S]*?async function verifyPinBrut\(req, env\) \{[\s\S]*?\n {10}\})/);
+  if (!m) throw new Error('verrou + verifyPin + verifyPinBrut introuvables dans le workflow worker');
   const body = m[1];
   /* eslint-disable-next-line no-new-func -- on exécute le VRAI verifyPin du worker (test de contrat). */
-  const fn = new Function('req', 'env', `return (async () => {\n${body}\n})();`);
+  const fn = new Function('req', 'env', `${body}\nreturn verifyPin(req, env);`);
   return fn as ReturnType<typeof loadWorkerVerifyPin>;
 }
 

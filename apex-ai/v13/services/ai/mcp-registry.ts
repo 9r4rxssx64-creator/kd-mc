@@ -13,6 +13,7 @@
  */
 
 import { logger } from '../../core/logger.js';
+import { cspAutorise } from '../core-svc/csp-autorise.js';
 import { auditLog } from '../observability/audit-log.js';
 
 import { mcpClient, type McpServer } from './mcp-client.js';
@@ -420,10 +421,15 @@ class McpRegistry {
 
   async discoverAll(): Promise<void> {
     const list = this.list();
+    /* v13.4.376 : la CSP de la page décide — un serveur dont l'hôte est absent de connect-src n'est pas sondé
+       (mesuré : 29 serveurs mcp.* sondés à chaque ouverture, tous bloqués → 58 violations CSP, run 38958462368). */
+    const nonSondes: string[] = [];
     for (const server of list) {
       if (server.status === 'dead' && server.errorCount > 5) continue; /* skip dead */
+      if (!cspAutorise(server.url)) { nonSondes.push(server.id); continue; }
       void this.discoverTools(server.id);
     }
+    if (nonSondes.length) logger.info('mcp.registry', `${nonSondes.length} serveur(s) MCP non sondé(s) : hôte absent de la CSP connect-src de la page`);
   }
 
   async discoverTools(serverId: string): Promise<McpServer | null> {

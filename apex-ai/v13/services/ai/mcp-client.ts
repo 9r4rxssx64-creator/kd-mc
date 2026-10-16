@@ -15,6 +15,7 @@
  */
 
 import { logger } from '../../core/logger.js';
+import { cspAutorise } from '../core-svc/csp-autorise.js';
 import { auditLog } from '../observability/audit-log.js';
 
 export interface McpServer {
@@ -75,6 +76,9 @@ class McpClient {
     /* Rate limit */
     if (!this.checkRateLimit(input.serverId)) {
       return { success: false, error: 'Rate limit exceeded (30/min)', durationMs: 0 };
+    }
+    if (this.cspInterdit(server)) {
+      return { success: false, error: 'Hôte absent de la CSP connect-src de la page', durationMs: 0 };
     }
 
     /* Cache lookup */
@@ -160,6 +164,7 @@ class McpClient {
   async listTools(serverId: string): Promise<McpToolDescriptor[]> {
     const server = await this.getServer(serverId);
     if (!server) return [];
+    if (this.cspInterdit(server)) return [];
 
     try {
       const token = server.tokenKey ? await this.getToken(server.tokenKey) : '';
@@ -194,6 +199,8 @@ class McpClient {
    */
   async healthCheck(serverId: string): Promise<{ alive: boolean; latencyMs: number }> {
     const t0 = Date.now();
+    const server = await this.getServer(serverId);
+    if (server && this.cspInterdit(server)) return { alive: false, latencyMs: 0 };
     try {
       const tools = await this.listTools(serverId);
       const alive = tools.length > 0 || true; /* Even empty list = server répond */
@@ -201,6 +208,19 @@ class McpClient {
     } catch {
       return { alive: false, latencyMs: Date.now() - t0 };
     }
+  }
+
+  /* v13.4.376 — LA CSP DE LA PAGE DÉCIDE AVANT LE FETCH. Mesuré (Lighthouse au dépôt public, run 38958462368) :
+     la sentinelle skills-watch sondait les 29 serveurs mcp.* à chaque ouverture, tous absents de connect-src dans
+     index.html → 58 violations CSP par ouverture, pour rien. Un hôte interdit n'est pas appelé ; dit une fois par serveur. */
+  private cspDits = new Set<string>();
+  private cspInterdit(server: McpServer): boolean {
+    if (cspAutorise(server.url)) return false;
+    if (!this.cspDits.has(server.id)) {
+      this.cspDits.add(server.id);
+      logger.info('mcp.client', `${server.id} : non appelé — hôte absent de la CSP connect-src de la page`);
+    }
+    return true;
   }
 
   private async getServer(serverId: string): Promise<McpServer | null> {

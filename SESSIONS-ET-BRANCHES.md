@@ -231,6 +231,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/detente-gardes` | 16.10 | La Détente : /validate exige le jeton signé de la notification, /cost et /push-test gardés, studio Gemini plafonné par jour (D1) | `detente-gardes` |
 | `claude/securite-suite` | 16.10 | Code admin + Croupier Pro hors du dépôt public, routeur sans repli vers un hébergeur public, règle « va au bout » | `securite-suite` |
 | `claude/securite-p2` | 16.10 | Verrou d'échecs du code admin (Monaco, Outlook, relais IA), kdmc-uptime réduit aux comptes, /health Monaco muet | `securite-p2` |
+| `claude/firebase-etape2` | 16.10 | Firebase étape 2 : boîte des messages et autorisations au jeton admin du domaine (anonyme en secours) | `firebase-etape2` |
 | `claude/docs-complets` | 16.10 | Arbre v3.108→v3.116 + domaine (autre session) | `arbre-session-1610` |
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
 | `claude/docs-complets` | 16.10 | **Arbre + domaine (session 15-16.10)** : arbre v3.108→v3.116, admin « comptes bloqués / Personnes attendues », recherches Le Dren + famille de Yann ; en ligne v3.116 (routeur déployé par le dépôt public) | `arbre-session-1610` |

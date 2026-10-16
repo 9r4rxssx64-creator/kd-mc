@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (nuit) — Apex v13.4.376 : après 375, le client MCP respecte aussi la CSP (58 violations → 0 attendu) ; badge de version lisible (axe)
+- **Lu au public après 375 (commit e65a05a)** : Lighthouse bureau ✅ et mobile ✅ (perf 0,63, TBT 440 ms, LCP 7,9 s), npm audit ✅, Semgrep ✅, SW sync ✅, Tests E2E ✅, Apex 375 servie. Restaient : **58 violations CSP** (la sentinelle skills-watch sonde les 29 serveurs `mcp.*` à chaque ouverture, tous absents de connect-src) et **Axe rouge pour de vrai** : badge de version `#c9a227` à opacité 0,7 → contraste 4,16 < 4,5 (routes admin et coffre).
+- **Livré (376)** : `services/core-svc/csp-autorise.ts` partagé ; `mcp-client` (call / listTools / healthCheck) n'appelle pas un hôte interdit, le dit une fois par serveur ; `mcp-registry.discoverAll` idem ; badge à opacité 1 (contraste 7,37). Tests `v13_4_376-mcp-csp` (2, sabotage prouvé).
+- **Rouge de main réparé** (4 tests, `v13_4_322-proxy-auth-contract`) : #4676 a ajouté le verrou d'échecs (`pinBloque`) dans `verifyPin` du worker ; le test n'extrayait que `verifyPin` → « pinBloque is not defined ». Il charge maintenant tout le bloc (verrou + verifyPin + verifyPinBrut) : le contrat reste le vrai code du worker. Suite complète 376 : 640 fichiers, 12 538 verts.
+- **Non vérifié** : Axe et le compte de violations CSP au prochain run public ; Apex 376 sur le vrai iPhone.
 ## 2026-10-16 — Apex Chat v1.1.311 : « Te déconnecter » coupe vraiment l'appareil, côté serveur (lot L)
 - `POST /api/auth/logout` enregistre l'empreinte du jeton (table `revoked_tokens`, migration 0024, purgée à 03:00) ; `getAuthUser` la refuse jusqu'à l'expiration naturelle ; les autres appareils du même compte continuent. Le bouton de la page prévient le serveur sans attendre (hors ligne : il se déconnecte quand même). Version 1.1.311 (+ `API_VERSION`). Garde `lot-l-deconnexion-serveur` (7), sabotage rouge, `vitest --coverage` sans erreur (2 096 verts). Leçon 583.
 - **Non vérifié sur iPhone** : se déconnecter puis réutiliser l'ancien jeton (impossible sans compte) — prouvé sur le vrai schéma SQLite.
@@ -464,6 +469,11 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - Mesuré : 104 fichiers / 1654 tests, couverture sans ERROR ; ancien serveur → 5 échecs sur 7.
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
+
+## 2026-10-16 — Firebase étape 2 (début) : les pages admin prennent le jeton admin du domaine
+- `tools/messages` (Apex Messages v1.5, lit `/cmcteams/cmc_kevin_inbox`, `cmc_dep_reply`) et `tools/approvals` (autorisations v1.3.2, nœud `apex_approvals`) : `POST /__admin/fbtoken` (cookie du grant admin) AVANT le compte anonyme, l'anonyme ne reste qu'en secours. Garde `test:fb-admin-pages` (6). Test `verify-maj-partout` A2 : version d'autorisations lue sans valeur figée.
+- Lecteurs de `/cmcteams` désormais : CMCteams + light (jeton cmc du domaine, étape 1) et la boîte admin (jeton admin). Restent en anonyme hors `/cmcteams` : worldmonitor (`/apex/ax_wm_brief`), coffre-fort (`/coffre_vault`), arbre (`/arbre`) — à migrer avant de couper l'anonyme dans la console.
+- Mesure d'adoption (D1 `compteurs` / `fbcmc_jour`) : table pas encore créée à 20h15 UTC = aucun appareil n'a encore demandé le jeton cmc depuis la mise en ligne (19h). À relire demain avant de fermer les règles `/cmcteams` aux anonymes.
 
 ## 2026-10-16 — Hygiène P2 de l'audit : verrou d'échecs du code admin, pages d'état muettes
 - kdmc-monaco (`lib.js adminOk`), kdmc-outlook (`adminOk`), apex-secrets-proxy (`verifyPin`, code dans `sync-apex-secrets-to-cf-worker.yml`) : 5 échecs/adresse ou 30/isolat en 15 min → refus même avec le bon code (mémoire, 0 écriture KV).

@@ -260,6 +260,7 @@
   "tests/verify-equipes-mois-suivant.mjs",
   "tests/verify-equite-departs.mjs",
   "tests/verify-erreurs-cmc.mjs",
+  "tests/verify-fb-admin-pages.mjs",
   "tests/verify-fb-domaine-cmc.mjs",
   "tests/verify-fiche-premiere-connexion.mjs",
   "tests/verify-fiches-privees.mjs",

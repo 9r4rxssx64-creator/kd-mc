@@ -85,7 +85,7 @@
 
 <div class="wrap" id="view"></div>
 
-<div class="ver" id="ver" title="Toucher pour forcer la mise à jour">Apex Messages v1.4</div>
+<div class="ver" id="ver" title="Toucher pour forcer la mise à jour">Apex Messages v1.5</div>
 
 <div class="imgov" id="imgov"><span class="x" id="imgx">✕</span><img id="imgel" alt="photo"></div>
 
@@ -114,7 +114,17 @@
   function _qs(){ return _tok?("?auth="+encodeURIComponent(_tok)):""; }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 
+  /* 16.10 (Firebase étape 2) : page ADMIN → d'abord le jeton `role:admin` du domaine (/__admin/fbtoken, derrière le grant
+     admin, même origine) ; le compte anonyme ne reste qu'en secours, le temps de fermer les règles aux anonymes. */
+  function _planifier(sec){ if(_timer)clearTimeout(_timer); _timer=setTimeout(function(){_auth(function(){_sse();});},Math.max(60000,(sec*1000)-120000)); }
   function _auth(cb){
+    var ADM=/^https?:$/.test(location.protocol)?"/__admin/fbtoken":"https://kd-mc.com/__admin/fbtoken";
+    fetch(ADM,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:"{}"})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(j){ if(j&&j.ok&&j.id_token){ _tok=String(j.id_token); _planifier(parseInt(j.expires_in||"3600",10)||3600); if(cb)cb(); return; } _authAnonyme(cb); })
+      .catch(function(){ _authAnonyme(cb); });
+  }
+  function _authAnonyme(cb){
     fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+encodeURIComponent(FBKEY),
       {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({returnSecureToken:true})})
       .then(function(r){return r.json();})
@@ -311,7 +321,7 @@
   window.addEventListener("focus",pullAll);
 
   // ---- MAJ auto force (règle « toujours partout ») + 1-tap (lesson #102) ----
-  var APP_VER="v1.4";
+  var APP_VER="v1.5";
   function forceUpd(){
     try{ if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});}); }catch(_){}
     try{ if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}); }catch(_){}

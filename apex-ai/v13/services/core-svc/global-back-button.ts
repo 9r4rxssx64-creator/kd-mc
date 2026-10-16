@@ -15,6 +15,7 @@
  */
 
 import { logger } from '../../core/logger.js';
+import { styleInjector } from './style-injector.js';
 
 const BTN_ID = 'apex-global-back-btn';
 const STYLE_ID = 'apex-global-back-style';
@@ -32,7 +33,7 @@ class GlobalBackButton {
   }
 
   private injectStyle(): void {
-    if (document.getElementById(STYLE_ID)) return;
+    if (styleInjector.has(STYLE_ID) || document.getElementById(STYLE_ID)) return;
     const css = `
       #${BTN_ID} {
         position: fixed;
@@ -71,10 +72,10 @@ class GlobalBackButton {
         #${BTN_ID}:active { transform: none; }
       }
     `;
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.textContent = css;
-    document.head.appendChild(style);
+    /* 16.10.2026 (mesuré dans un vrai Chromium, CSP de production `style-src 'self' 'nonce-…'`) : un <style> posé à la
+       main est REFUSÉ par le navigateur (« Refused to apply inline style ») → le bouton s'affichait nu, en texte « ← Chat »
+       par-dessus le logo. styleInjector porte le nonce (ou une feuille construite) : même chemin que le badge de version. */
+    styleInjector.inject(STYLE_ID, css);
   }
 
   private mountButton(): void {

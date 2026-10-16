@@ -2,6 +2,7 @@
  * global-back-button — couverture branches restantes (campagne 100% réel, 2026-06-02).
  * Cible : injectStyle/mountButton déjà présents (return), updateVisibility (routes + no-btn).
  */
+import { styleInjector } from '../../services/core-svc/style-injector.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { globalBackButton } from '../../services/core-svc/global-back-button.js';
@@ -17,7 +18,7 @@ const gbb = globalBackButton as unknown as {
 
 function cleanDom(): void {
   document.getElementById(BTN_ID)?.remove();
-  document.getElementById(STYLE_ID)?.remove();
+  styleInjector.remove(STYLE_ID);
 }
 
 beforeEach(() => { cleanDom(); location.hash = ''; });
@@ -25,9 +26,9 @@ beforeEach(() => { cleanDom(); location.hash = ''; });
 describe('global-back-button — injectStyle / mountButton idempotents', () => {
   it('injectStyle 2× → 2e fois style déjà présent → return', () => {
     gbb.injectStyle();
-    expect(document.getElementById(STYLE_ID)).toBeTruthy();
+    expect(styleInjector.has(STYLE_ID)).toBe(true);
     expect(() => gbb.injectStyle()).not.toThrow(); // branche "déjà présent"
-    expect(document.querySelectorAll('#' + STYLE_ID).length).toBe(1);
+    expect(styleInjector.list().filter((x) => x === STYLE_ID).length).toBe(1); /* une seule feuille, pas de doublon */
   });
 
   it('mountButton 2× → 2e fois bouton déjà présent → return', () => {

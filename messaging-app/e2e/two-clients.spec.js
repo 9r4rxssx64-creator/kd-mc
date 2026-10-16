@@ -160,7 +160,13 @@ test.describe('Échange réel 2 clients (Alice ↔ Bob) sur la prod', () => {
         { timeout: 15000, message: 'Bob doit recevoir la réponse d\'Alice' }).toBe(true);
 
       // 6) PHOTO : Bob upload une image (R2) puis envoie le marqueur média
-      const up = await request.post(API + '/api/media', {
+      // 16.10.2026 (v1.1.309) : tout envoi de fichier nomme SA conversation (comme le fait l'app) ; sans elle → 400.
+      const sansConv = await request.post(API + '/api/media', {
+        headers: { Authorization: 'Bearer ' + bTok, 'content-type': 'image/png', 'x-file-name': 'photo.png' },
+        data: PNG_1x1,
+      });
+      expect(sansConv.status(), 'upload SANS conversation').toBe(400);
+      const up = await request.post(API + '/api/media?conv_id=' + encodeURIComponent(convId), {
         headers: { Authorization: 'Bearer ' + bTok, 'content-type': 'image/png', 'x-file-name': 'photo.png' },
         data: PNG_1x1,
       });

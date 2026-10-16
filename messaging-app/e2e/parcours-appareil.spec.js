@@ -94,7 +94,7 @@ test.describe('Parcours d\'un appareil (comptes de test) sur la prod', () => {
       probe.remove(); return r;
     });
     for (const v of ['--ax-text', '--ax-text-2', '--ax-text-3', '--ax-gold', '--ax-blue', '--ax-warn', '--ax-ok', '--ax-err']) {
-      expect(ratio(mesure[v], mesure['--ax-bg']), v + ' sur le fond clair, couleurs ' + JSON.stringify(mesure[v])).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(mesure[v], mesure['--ax-bg']), v + ' ' + JSON.stringify(mesure[v]) + ' sur le fond ' + JSON.stringify(mesure['--ax-bg']) + ' (toutes les mesures : ' + JSON.stringify(mesure) + ')').toBeGreaterThanOrEqual(4.5);
     }
     await ctx.close();
   });
@@ -121,7 +121,8 @@ test.describe('Parcours d\'un appareil (comptes de test) sur la prod', () => {
     const page = await ctx.newPage(); await injecter(page, aTok2, aUser);
     await page.goto('./', { waitUntil: 'domcontentloaded', timeout: 45000 });
     await prete(page);
-    await page.evaluate((id) => K.openConv(id), convId);
+    // La liste de l'appareil se remplit depuis le serveur : on la rafraîchit, PUIS on ouvre (comme un toucher dans la liste).
+    await page.evaluate(async (id) => { try { await K._refreshConvs(); } catch (_) {} await K.openConv(id); }, convId);
     try { await page.waitForSelector('#msg-input', { timeout: 20000 }); } catch (e) { throw new Error('la conversation ne s\'est pas ouverte. Écran vu : « ' + await ecran(page) + ' »'); }
     await page.waitForTimeout(2500);   // laisse le temps réel s'ouvrir
     await ctx.setOffline(true);

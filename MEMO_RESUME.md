@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — 1er passage RÉEL du parcours d'appareil sur la prod (run 38968805234) : 2 gestes prouvés, 3 écarts corrigés
+- **Prouvé en vrai navigateur (Chromium + WebKit iPhone)** : A version affichée = `v1.1.312` = version du serveur ✅ ; C « Te déconnecter » → jeton refusé par le serveur, jeton d'un autre appareil intact ✅.
+- **Écarts trouvés** : (1) l'E2E « deux clients » envoyait sa photo sans conversation (refusé 400 depuis v1.1.309) → corrigé + vérifie le refus ; (2) D hors ligne : la liste de conversations de l'appareil était vide au moment d'ouvrir → le parcours la rafraîchit d'abord ; (3) B mode clair : `--ax-blue` mesuré à 2,88:1 sur le rendu RÉEL alors que le test unitaire (lecture du CSS) dit ≥ 4,5 → le message d'échec affiche maintenant toutes les couleurs rendues pour trancher au passage suivant (suspect : un fond différent du CSS lu, ou une règle de la page qui l'écrase). Leçon 587.
+
 ## 2026-10-16 — « Trouve une solution pour te connecter comme moi et vérifier à la place » : le parcours d'un appareil, joué par le robot (lot O)
 - **Décision honnête** : je ne me connecte pas en tant que Kevin (code admin / Face ID = jamais hors de son téléphone). Le robot se connecte avec **Alice et Bob, comptes de TEST** (login de test réservé au robot, effacés après chaque passage), dans un vrai navigateur (Chromium + WebKit iPhone 14 Pro) sur la PRODUCTION.
 - `messaging-app/e2e/parcours-appareil.spec.js` : A version affichée = version du serveur ; B mode clair, contrastes WCAG MESURÉS sur les couleurs rendues ; C « Te déconnecter » → le jeton est refusé par le serveur, celui d'un autre appareil continue ; D message écrit hors ligne → 🕓 puis ✓ au retour du réseau (Chromium seulement : WebSocket instable sur WebKit CI).

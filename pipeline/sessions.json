@@ -2068,6 +2068,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "access-ux": {
+      "titre": "Qui se connecte v1.2.0 : la page défile, rangée",
+      "branche": "claude/access-ux",
+      "sujet": "en-tête compact, filtres, en ligne maintenant, liste par fraîcheur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -57,7 +57,9 @@ const SERVICES = [
   { nom: 'kdmc-vente', f: 'services/kdmc-vente/worker.js', fn: ['requireAdmin'], appel: 'requireAdmin', args: (req) => [req], reconnu: (r) => r && r.ok === true },
   { nom: 'kdmc-social', f: 'services/kdmc-social/worker.js', fn: ['requireAdmin'], appel: 'requireAdmin', args: (req) => [req], reconnu: (r) => r && r.ok === true },
   { nom: 'kdmc-crea-ai', f: 'services/kdmc-crea-ai/worker.js', fn: ['porteurDe', 'requireCompte'], appel: 'requireCompte', args: (req) => [req, {}], reconnu: (r) => r && r.ok === true },
-  { nom: 'kdmc-access', f: 'services/kdmc-access/worker.js', fn: ['sessionDomaine'], appel: 'sessionDomaine', args: (req) => [req, {}], reconnu: (r) => !!(r && r.uid && r.admin && r.verified) },
+  /* 16.10 : sessionDomaine garde sa vérification 15 s dans `_memoSession` (#4585) — la mémoire est recréée ici, sinon la fonction extraite
+     tombait sur une variable absente et répondait « personne » (faux rouge). */
+  { nom: 'kdmc-access', f: 'services/kdmc-access/worker.js', avant: 'const _memoSession = new Map();', fn: ['sessionDomaine'], appel: 'sessionDomaine', args: (req) => [req, {}], reconnu: (r) => !!(r && r.uid && r.admin && r.verified) },
   { nom: 'kdmc-crea-famille', f: 'services/kdmc-crea-famille/worker.js', fn: ['estAdminSSO'], appel: 'estAdminSSO', args: (req) => [req], reconnu: (r) => r === true },
 ];
 const requete = (tok, ua, plus) => { const h = { authorization: 'Bearer ' + tok, ...(plus || {}) }; if (ua) h['user-agent'] = ua; return new Request('https://worker.exemple/x', { headers: h }); };
@@ -65,7 +67,7 @@ const requete = (tok, ua, plus) => { const h = { authorization: 'Bearer ' + tok,
 const TOK_IPHONE = pass('kevin-desarzens', 'Kevin Desarzens', 'iphone', true);
 for (const s of SERVICES) {
   const src = source(s.f);
-  const corps = s.fn.map((n) => fonction(src, n)).join('\n');
+  const corps = (s.avant ? s.avant + '\n' : '') + s.fn.map((n) => fonction(src, n)).join('\n');
   const f = fabrique(corps, s.appel);
   console.log(`\n${s.nom}\n`);
   vus.length = 0;

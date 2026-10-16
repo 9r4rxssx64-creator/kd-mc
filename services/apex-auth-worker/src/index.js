@@ -108,18 +108,6 @@ export default {
         return jsonResp(out, corsHeaders);
       }
 
-      // --- /pin/init (16.10.2026, leçon #559) : création du PREMIER code d'une personne, côté serveur ---
-      // Avant, l'app écrivait elle-même /apex/ax_pin_<uid> (PUT direct, règles ouvertes). Les règles refusent
-      // désormais cette clé à tout client : c'est ici, au compte de service, que le premier arrivé pose son
-      // empreinte — UNE fois. Une empreinte déjà présente n'est jamais remplacée (409) : changer de code passe
-      // par une session vérifiée, pas par ce guichet. Même rate-limit par IP que /login.
-      if (url.pathname === "/pin/init" && request.method === "POST") {
-        const body = await request.json().catch(() => ({}));
-        const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-        const r = await pinInit(body, env, ctx, ip);
-        return jsonResp(r.body, corsHeaders, r.status);
-      }
-
       // --- /login-cmc (CMCteams : valide cmc_pw via service account) ---
       if (url.pathname === "/login-cmc" && request.method === "POST") {
         const body = await request.json().catch(() => ({}));
@@ -296,30 +284,6 @@ async function generateCustomToken(uid, env, scope = "apex") {
  * Fallback : lecture anonyme (compat Phase 4 où /apex est encore lisible).
  * RTDB renvoie le corps `null` (200) quand le path n'existe pas → traité user_not_found.
  */
-/** /pin/init (16.10.2026, leçon #559) : pose le PREMIER code d'une personne au compte de service — une fois, jamais remplacé.
- *  Pur et testable : rend { status, body }. `deps` permet d'injecter lecture/écriture RTDB et le rate-limit dans les tests. */
-export async function pinInit(body, env, ctx, ip, deps = {}) {
-  const lire = deps.readPinHash || readPinHash;
-  const ecrire = deps.rtdb || rtdb;
-  const kv = deps.kv || env.AUTH_KV;
-  const uid = String((body && body.uid) || "").trim();
-  const pin_hash = String((body && body.pin_hash) || "").trim();
-  if (!uid || !/^[A-Za-z0-9_\-]{1,80}$/.test(uid) || !/^[a-f0-9]{64}$/i.test(pin_hash)) {
-    return { status: 400, body: { ok: false, error: "missing_uid_or_pin_hash" } };
-  }
-  const rateKey = `rl:init:${ip || "unknown"}`;
-  const attempts = parseInt((await kv.get(rateKey)) || "0");
-  if (attempts >= 5) return { status: 429, body: { ok: false, error: "rate_limited", retry_after: 900 } };
-  await kv.put(rateKey, String(attempts + 1), { expirationTtl: 900 });
-  const existant = await lire(uid, env, ctx);
-  if (existant.ok) return { status: 409, body: { ok: false, error: "pin_already_set" } };
-  if (existant.status !== 404) return { status: 502, body: { ok: false, error: existant.detail || "rtdb_unavailable" } };
-  const w = await ecrire(env, ctx, "PUT", `apex/ax_pin_${encodeURIComponent(uid)}`, pin_hash);
-  if (!w.ok) return { status: 502, body: { ok: false, error: w.detail || "rtdb_write_failed" } };
-  if (ctx && ctx.waitUntil) ctx.waitUntil(auditLog(env, uid, "pin_init", ip));
-  return { status: 201, body: { ok: true, uid } };
-}
-
 async function readPinHash(uid, env, ctx) {
   const base = `https://${env.FIREBASE_PROJECT_ID}-default-rtdb.europe-west1.firebasedatabase.app/apex/ax_pin_${encodeURIComponent(uid)}.json`;
 

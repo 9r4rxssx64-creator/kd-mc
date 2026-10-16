@@ -20,6 +20,7 @@ import { events } from '../../core/events.js';
 import { logger } from '../../core/logger.js';
 
 const DEFAULT_WORKER_URL = 'https://apex-auth-worker.9r4rxssx64.workers.dev';
+const FB_DEFAULT = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app';
 /* Clé Web API PUBLIQUE du projet cmcteams-c16ab (même clé que CMCteams v9.792 —
  * une clé Web Firebase est publique par design, elle n'autorise que les flux
  * Identity Toolkit ; la sécurité vient des règles RTDB). Sert au repli anonyme. */
@@ -171,6 +172,11 @@ class FirebaseAuthBridge {
     catch { return DEFAULT_WORKER_URL; }
   }
 
+  private fbUrl(): string {
+    try { return localStorage.getItem('apex_v13_fb_url') || FB_DEFAULT; }
+    catch { return FB_DEFAULT; }
+  }
+
   private setStatus(s: Record<string, unknown>): void {
     try { localStorage.setItem(STATUS_KEY, JSON.stringify({ ...s, ts: Date.now() })); }
     catch { /* ignore */ }
@@ -252,18 +258,15 @@ class FirebaseAuthBridge {
     }
   }
 
-  /** Premier code d'une personne : posé par le worker (`POST /pin/init`, compte de service, premier arrivé, jamais
-   *  remplacé). 16.10.2026 (leçon #559) : l'ancien PUT direct dans /apex/ax_pin_<uid> est refusé par les règles —
-   *  cette clé n'est plus ni lisible ni écrivable depuis un client (un jeton anonyme pouvait écraser celle de l'admin). */
+  /** PUT direct du hash dans /apex/ax_pin_<uid> (règles ouvertes phase 4). Best-effort. */
   private async bootstrapFirebasePin(uid: string, pinHash: string): Promise<void> {
     try {
-      const r = await fetch(this.workerUrl() + '/pin/init', {
-        method: 'POST',
+      await fetch(`${this.fbUrl()}/apex/ax_pin_${encodeURIComponent(uid)}.json${this.authQS(false)}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, pin_hash: pinHash }),
+        body: JSON.stringify(pinHash),
         signal: AbortSignal.timeout(8_000),
       });
-      if (!r.ok && r.status !== 409) logger.warn('fb-auth-bridge', 'pin/init refusé (fail-open)', { status: r.status });
     } catch (e) {
       logger.warn('fb-auth-bridge', 'bootstrap pin failed (fail-open)', { err: e });
     }

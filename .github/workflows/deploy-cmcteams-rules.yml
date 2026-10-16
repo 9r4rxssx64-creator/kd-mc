@@ -70,15 +70,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      # 16.10.2026 (leçon #559, voie GRATUITE) : lancé depuis le dépôt PUBLIC (minutes illimitées), ce robot n'a pas
-      # firebase-rules-apex.json (gardé au coffre). L'action « coffre » le dépose (clé en lecture seule) ; dans le coffre
-      # elle ne fait rien. Zéro minute du coffre pour publier les règles.
-      - name: Récupérer les règles gardées au coffre (dépôt public seulement)
-        uses: ./.github/actions/coffre
-        with:
-          cle: ${{ secrets.COFFRE_CLE_LECTURE }}
-      - name: Les règles sont-elles là ?
-        run: test -s firebase-rules-apex.json && echo "firebase-rules-apex.json présent" || { echo "::error::firebase-rules-apex.json absent (coffre non lu)"; exit 1; }
       # Kevin 26.09.2026 (« fermé ») : avant de fermer l'écriture des boutiques (shops_lock=on),
       # vérifier que le guichet qui donne le jeton admin existe VRAIMENT sur le domaine.
       # Sinon Kevin/Lolo ne pourraient plus publier un produit ni un logo (les clients, eux,

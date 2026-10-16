@@ -40,7 +40,7 @@ describe('firebaseAuthBridge (Phase 5, fail-open)', () => {
     expect(firebaseAuthBridge.getToken()).toBe('ID_TOK');
   });
 
-  it('user_not_found → bootstrap par le guichet /pin/init → retry ok', async () => {
+  it('user_not_found → bootstrap PUT → retry ok', async () => {
     localStorage.setItem('apex_v13_pin_emp1', 'HASH_EMP');
     const calls: string[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
@@ -58,9 +58,7 @@ describe('firebaseAuthBridge (Phase 5, fail-open)', () => {
     const ok = await firebaseAuthBridge.activate('emp1', false);
     expect(ok).toBe(true);
     expect(firebaseAuthBridge.getToken()).toBe('ID2');
-    /* 16.10 (leçon #559) : le premier code se pose par le guichet du worker, plus par un PUT direct dans la base */
-    expect(calls.some((c) => c.includes('/pin/init'))).toBe(true);
-    expect(calls.some((c) => c.includes('/apex/ax_pin_emp1.json'))).toBe(false);
+    expect(calls.some((c) => c.includes('/apex/ax_pin_emp1.json'))).toBe(true); // bootstrap a bien eu lieu
   });
 
   it('erreur worker → fail-open (false, pas de token)', async () => {

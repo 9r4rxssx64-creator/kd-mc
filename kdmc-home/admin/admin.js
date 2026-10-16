@@ -636,7 +636,7 @@
       var r = etatCompte(a);
       box.hidden = false;
       box.innerHTML = '<div><b>' + esc(r.verdict) + '</b></div>' + r.lignes.map(function (l) { return '<div class="d">' + esc(l) + '</div>'; }).join('')
-        + (r.attente ? '<button class="savacc ouvrir-compte" data-uid="' + esc(uid) + '" type="button">✅ Ouvrir ce compte</button>' : '')
+        + '<button class="savacc ouvrir-compte" data-uid="' + esc(uid) + '" type="button">' + (r.attente ? '✅ Ouvrir ce compte' : '✅ Ouvrir ce compte quand même') + '</button>'
         + (peutSupprimer(a) ? ' <label class="chipacc" style="display:flex;margin:8px 0"><input type="checkbox" class="bannir-aussi"> 🚫 Bannir aussi : ne pourra pas se réinscrire (même nom, même téléphone confirmé)</label><button class="savacc supprimer-compte" data-uid="' + esc(uid) + '" type="button" style="background:#5a1d1d;color:#ffd9d9">🗑️ Supprimer ce compte</button>' : '');
     });
   }

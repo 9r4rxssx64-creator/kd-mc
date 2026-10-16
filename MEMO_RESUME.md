@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Arbre v3.110 : menus déroulants + admin : « Ouvrir ce compte » toujours là
+- **Livré** : barre des familles allégée — « ☰ Menu ▾ » déroule les sous-menus (↩ Ma vue, 📌 Épingler, propositions de Combiner, 🔎 Autres familles) ; il se déroule seul en mode Combiner. Admin (`kdmc-home/admin/admin.js`) : dans « 🔎 État du compte », le bouton « ✅ Ouvrir ce compte » est TOUJOURS proposé (« quand même » si la fiche n'est pas en attente). Tests : `test:arbre-ma-vue` (30), `test:compte-ouvrir`.
+
 ## 2026-10-16 — Arbre v3.109 « Ma vue » (Kevin : « toujours la vue de la personne connectée »)
 - **Livré (v3.109)** : l'arbre retrouve tout seul QUI est connecté (nom du domaine ↔ fiche vivante, accents/ordre ignorés) et ouvre sur SA famille de base (nom, parents) ; plan/arbre = sa famille d'abord ; « Toutes » s'ouvre sur son bloc. « ➕ Combiner » propose tous les dérivés de sa famille (père, mère, grands-parents, conjoint de…) avec « 🧩 Tout ajouter ». « 🔎 Autres » = les autres branches. « 📌 » épingle une autre vue par défaut ; « ↩ Ma vue » revient.
 - **Garde** : `tests/arbre-ma-vue.test.mjs` (27), sabotage rouge prouvé ; pins de version mis à v3.109.

@@ -1362,6 +1362,13 @@ class AIRouter {
       const g = await this.askGateway(filteredMessages, system, ctrl.signal, wrappedOnChunk);
       if (g === 'ok' || g === 'aborted') { this.currentAbort = null; return; }
       logger.warn('ai-router', 'passerelle du domaine indisponible après la cascade', { raison: g });
+      /* v13.4.378 (capture de Kevin 16.10 23h32) : sa clé Anthropic du Coffre était refusée (401) ET les IA gratuites du
+         domaine n'ont pas répondu au même instant (incident Cloudflare) → Apex lui disait « clé invalide, va au Coffre »,
+         une erreur de clé non récupérable, alors que la vraie cause était passagère. On dit la vérité (les gratuites n'ont
+         pas répondu, la clé est refusée en plus) et l'erreur devient RÉCUPÉRABLE (le chat réessaie tout seul dans 3 s). */
+      if (/401|403|unauthor|invalid.api.key|forbidden|no key|aucune clé/i.test(lastErr.message)) {
+        lastErr = new Error(`HTTP 503 passerelle du domaine : ${g} (ta clé Anthropic du Coffre est refusée en plus)`);
+      }
     }
 
     this.currentAbort = null;

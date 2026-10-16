@@ -10,7 +10,7 @@
  * APP_VER dans bootstrap.js. Workflow `sw-cache-sync.yml` synchronise auto.
  */
 
-const CACHE_VERSION  = 'apex-v13.4.377';   /* 16.10 : plus de bulle « Cloudflare ralenti » pour un travail de fond ; badge de version dans la barre du haut */
+const CACHE_VERSION  = 'apex-v13.4.378';   /* 16.10 : version écrite dans l'en-tête du chat ; clé refusée + gratuites muettes = erreur récupérable, pas « clé invalide » */
 const STATIC_CACHE   = CACHE_VERSION + '-static';
 const RUNTIME_CACHE  = CACHE_VERSION + '-runtime';
 const OFFLINE_CACHE  = CACHE_VERSION + '-offline';

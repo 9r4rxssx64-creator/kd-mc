@@ -107,6 +107,9 @@ class Errors {
     if (/tool.not.found|unknown.tool/i.test(msg)) return '🔧 Outil indisponible. Reformule ou tape la fonction direct.';
     /* Not found 404 — ressource introuvable (après tool.not.found pour priorité) */
     if (/404|not.found/i.test(msg)) return '🔍 Ressource introuvable. Vérifie l\'URL ou réessaie.';
+    /* v13.4.378 : la passerelle gratuite du domaine a déjà écrit la phrase pour Kevin (kdmc-gateway.gatewayReasonFr) :
+       on la rend telle quelle — pas « Serveur Anthropic en panne » quand ce sont les IA gratuites qui n'ont pas répondu. */
+    if (/passerelle du domaine/i.test(msg)) return '🆓 ' + msg.replace(/^HTTP \d{3} passerelle du domaine : /, '');
     /* Server errors */
     if (/5\d{2}|internal.server|bad.gateway|service.unavailable/i.test(msg)) return '🛠 Serveur Anthropic en panne, je bascule failover OpenRouter/Groq…';
     if (/parse|json|syntax/i.test(msg)) return '📝 Format réponse cassé. Je réessaie immédiatement…';

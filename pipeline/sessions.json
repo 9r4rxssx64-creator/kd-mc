@@ -1847,7 +1847,7 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "Capture Kevin 22h56 : Apex 376 OK (3,3 s groq). v13.4.377 construite : diagnostic Cloudflare de fond silencieux, badge dans la barre du haut. À publier par le public puis Kevin rouvre (action 0b)."
+      "note": "2e capture Kevin 23h32 → v13.4.378 construite : version dans l'en-tête du chat (le badge recouvrait 4 boutons), clé refusée + gratuites muettes = erreur vraie et récupérable. À publier puis Kevin rouvre (0b)."
     },
     "firebase-cmc2": {
       "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",
@@ -2037,6 +2037,17 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "apex-378-capture": {
+      "titre": "Apex 378 : capture 2 de Kevin (version, clé refusée)",
+      "branche": "claude/apex-378-capture-kevin",
+      "sujet": "Apex v13.4.378 : étiquette de version dans la rangée de saisie, erreur récupérable quand clé refusée + passerelle muette ; PR #4693",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "PR #4693 fusionnée, publication publique"
     },
     "public-autonome": {
       "titre": "Dépôt public autonome quand on met plus au privé",

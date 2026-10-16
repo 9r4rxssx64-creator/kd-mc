@@ -255,7 +255,7 @@ export function buildChatShellHtml(opts: ChatShellOpts): string {
     <div class="ax-chat ax-modernized-card">
       <header class="ax-chat-header">
         <h1 id="ax-chat-logo" title="Long-press 3s pour Diagnostic admin" style="cursor:pointer;-webkit-tap-highlight-color:transparent">APEX</h1>
-        <div style="display:flex;gap:4px;align-items:center;margin-right:84px">
+        <div style="display:flex;gap:4px;align-items:center;margin-right:100px"><!-- v13.4.378 : le bouton « ← KDMC » (fixe, ≈ 78 px + marge 8) mordait le menu ☰ à 84 px (mesuré en Chromium iPhone 13 et sur la capture de Kevin) -->
           <button class="ax-btn ax-btn-icon" id="ax-chat-mode-toggle" aria-label="Mode routing IA" title="Mode routing IA (clic pour basculer auto/eco/premium)" style="font-size:14px;min-width:36px;padding:4px 6px">⚡</button>
           <button class="ax-btn ax-btn-icon" id="ax-chat-memory" aria-label="Mémoire & historique" title="📜 Mémoire : conversations archivées + journal permanent de tout ce que tu déposes">📜</button>
           <button class="ax-btn ax-btn-icon" id="ax-chat-clear" aria-label="Effacer chat" title="Effacer le chat (conversation courante)">🗑</button>
@@ -308,7 +308,7 @@ export function buildChatShellHtml(opts: ChatShellOpts): string {
         ></textarea>
         <button type="button" class="ax-btn ax-btn-icon ax-icon-compact ax-gs-358" id="ax-chat-mic" aria-label="Dictée vocale" title="Dictée vocale (Web Speech)">🎙</button>
         <button type="button" class="ax-btn ax-btn-icon ax-icon-compact ax-gs-358" id="ax-chat-wake" aria-label="Activer Dis Apex" title="Wake word 'Dis Apex' actif/inactif">👂</button>
-        <button type="button" class="ax-btn ax-btn-icon ax-icon-compact ax-gs-358" id="ax-chat-attach" aria-label="Joindre fichier" title="Photo, vidéo, document, archive">📎</button>
+        <button type="button" class="ax-btn ax-btn-icon ax-icon-compact ax-gs-358" id="ax-chat-attach" aria-label="Joindre fichier" title="Photo, vidéo, document, archive">📎</button><span id="apex-version-inline" aria-label="Version Apex ${APP_VER}" title="Version Apex" style="display:inline-flex;align-items:center;align-self:center;margin-left:2px;padding:2px 6px;border-radius:8px;border:1px solid rgba(232,184,48,0.35);background:rgba(232,184,48,0.12);color:#c9a227;font:700 10px/1.2 'SF Mono',Menlo,monospace;letter-spacing:0.02em;white-space:nowrap;pointer-events:none;user-select:none">${APP_VER}</span>
         <button type="button" class="ax-btn ax-btn-icon ax-icon-compact" id="ax-chat-camera" aria-label="Ouvrir caméra" title="Caméra (photo, scan, QR, vidéo)" style="display:none;min-width:36px;width:36px;flex:0 0 36px">📷</button>
         <button type="submit" class="ax-btn ax-btn-primary ax-chat-send" aria-label="Envoyer" style="flex:0 0 56px;width:56px;min-width:56px;height:44px;padding:0;margin-left:auto">↑</button>
         <input type="file" id="ax-chat-file-input" aria-label="Joindre fichiers au message" multiple

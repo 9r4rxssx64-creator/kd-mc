@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (23h32) — 2e capture de Kevin (Apex 377) → v13.4.378 : version dans la rangée de saisie du chat ; clé refusée + gratuites muettes = erreur vraie et récupérable
+- **Vu** : le badge « à gauche de ← KDMC » recouvrait les 4 boutons de l'en-tête du chat (mode IA 🆓, mémoire, effacer, menu — je ne les avais pas vus). Et le premier « Test » a répondu « La clé API IA n'est plus valide… (anthropic, 1,0 s) » puis le second « groq, gratuit » : sa clé Anthropic du Coffre est refusée (401) et, au même instant, les IA gratuites du domaine n'ont pas répondu (même minute que le 503 Cloudflare) → Apex concluait « clé invalide », erreur non récupérable, au lieu de réessayer.
+- **Livré (378)** : la version est écrite dans la RANGÉE DE SAISIE du chat, juste après le trombone (`#apex-version-inline`, gabarit) ; le badge fixe se cache sur le chat et reste sous l'en-tête ailleurs. Essai intermédiaire mesuré puis rejeté : collée au mot APEX dans l'en-tête, l'étiquette poussait « ← KDMC » sous le bouton menu (KDMC x 294–380 vs menu 238–282 sur 390 px). Mesuré en Chromium iPhone 13 : étiquette x 130–200, y 552, aucun chevauchement ; marge droite de l'en-tête 100 px pour que les 4 boutons ne touchent plus « ← KDMC ». Routeur : cascade épuisée ET passerelle muette → erreur « HTTP 503 passerelle du domaine : … (ta clé Anthropic du Coffre est refusée en plus) » = récupérable (le chat réessaie en 3 s), et `errors.toUserMessage` montre la phrase des gratuites, pas « Serveur Anthropic en panne ». Test `v13_4_378-cascade-puis-passerelle` (2, sabotage prouvé).
+- **Non vérifié** : Apex 378 sur le vrai iPhone (action 0b). Leçon #595.
+- **Au passage (fusion de main)** : les numéros de leçons se sont télescopés entre trois sessions (585–588 pris deux fois, puis #4696 a remis de l'ordre sur `main`) → je garde la numérotation de `main` (590–594) et ma leçon prend le 595 ; `test:lessons-numeros` vert.
 ## 2026-10-16 — 3e passage RÉEL du robot (run 38970973973, v1.1.313) : 4 gestes sur 5 prouvés dans 2 navigateurs
 - **Prouvé en vrai navigateur sur la prod, Chromium ET WebKit iPhone 14 Pro** : A version affichée = version du serveur ✅ · B1 téléphone en mode clair + thème Auto, couleurs rendues ≥ 4,5:1 ✅ · B2 téléphone en mode clair + thème par défaut, couleurs rendues ≥ 4,5:1 ✅ (la régression de 1.1.312 est corrigée) · C « Te déconnecter » coupe CET appareil côté serveur, l'autre appareil continue ✅. L'E2E « deux clients » (photo avec conversation) repasse aussi.
 - **Écart restant (D, hors ligne, Chromium)** : le 🕓 est bien affiché sans réseau, la file d'attente est vidée au retour du réseau (message accusé), MAIS l'app revient à la liste des conversations au retour du réseau (vue `chats`) — le test s'appuyait sur l'écran. Réécrit : il attend la file vide, rouvre la conversation et relit le statut. À confirmer au passage suivant ; si l'app change de vue toute seule au retour du réseau, c'est un défaut d'usage à corriger.
@@ -91,7 +96,7 @@ Trou mesuré : Lingua **v2.141.0** sur main, écrite nulle part (ni mémo ni ét
 R4 = toute version d'app (cache `sw.js` changé, tout `version.txt`, hors dist/archives) écrite au mémo + **R7** = version ⇒
 `ETAT-DU-MOMENT.md` bouge (test 27/0, 6 sabotages). `maj-tout.mjs` : bloc `versions` (22 apps) dans ETAT + TRANSFERT, comparé
 par `test:maj-tout`. Règle notée : `CLAUDE-HISTOIRE.md` → `CLAUDE.md` (index 219 règles). ETAT : 3 lignes Lingua fusionnées
-en une synthèse. Piège : ma copie hors du dossier projet ne lance pas le hook Stop → `maj-tout --rapide` à la main. Leçon #585.
+en une synthèse. Piège : ma copie hors du dossier projet ne lance pas le hook Stop → `maj-tout --rapide` à la main. Leçon #583.
 
 ---
 ## 2026-10-16 (soir) — « Mets TOUS les documents à jour » (5ᵉ rappel) : complété, pas dupliqué

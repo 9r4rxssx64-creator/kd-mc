@@ -31,10 +31,12 @@ const STYLE_INJECTOR_ID = 'apex-version-badge';
 const BADGE_CSS = `
   #${BADGE_ID} {
     position: fixed;
-    /* v13.4.377 (capture de Kevin, 16.10) : sous l'en-tête, il recouvrait le premier message (« Test »). Il vit maintenant
-       DANS la barre du haut, à gauche du bouton « ← KDMC » (largeur ≈ 80 px + marge 8 px), là où rien ne défile. */
-    top: calc(env(safe-area-inset-top, 0px) + 14px);
-    right: calc(max(env(safe-area-inset-right, 8px), 8px) + 92px);
+    /* v13.4.378 (2e capture de Kevin, 16.10 23h32) : « à gauche de ← KDMC » recouvrait les boutons de l'en-tête du chat
+       (mode IA, mémoire, effacer, menu). Sur le CHAT la version est maintenant écrite dans la rangée de saisie
+       (#apex-version-inline, dans la rangée de saisie après le trombone : l'en-tête n'a pas la place, logo + 4 boutons + « ← KDMC » > 390 px)
+       et ce badge fixe se cache ; ailleurs (admin, coffre…) il reste sous l'en-tête à droite. */
+    top: calc(env(safe-area-inset-top, 0px) + 54px);
+    right: 8px;
     z-index: 2147483646;
     padding: 2px 6px;
     min-height: 0;
@@ -53,6 +55,7 @@ const BADGE_CSS = `
     line-height: 1.2;
     letter-spacing: 0.02em;
   }
+  body:has(#apex-version-inline) #${BADGE_ID} { display: none; }
 `;
 
 export function installVersionBadge(): void {

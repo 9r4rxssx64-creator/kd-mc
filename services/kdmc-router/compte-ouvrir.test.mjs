@@ -79,6 +79,16 @@ r = await adm('/__admin/compte-ouvrir', { uid: 'zoe-test' });
 ok(r.j.ok === true && r.j.etait === 'refuse' && fiche('zoe-test').attente_admin === undefined, '3b. refusé → rouvert', r.j);
 ok(!(await db.prepare('SELECT uid FROM inscription_admin WHERE uid = ?').bind('zoe-test').first()), '3c. la demande a quitté la file');
 
+console.log('\n== 3 bis. « Ouvrir » sur un compte qui n\'était PAS marqué en attente : il ne se referme pas à la connexion suivante ==');
+/* 16.10 (Kevin : « J'avais déjà ouvert le compte de Yann et j'ai dû le refaire ») : « Ouvrir quand même » ne posait pas valide_admin_at
+   quand la fiche n'avait pas attente_admin à cet instant → à sa connexion suivante sans WhatsApp, /__sso/issue le remettait en attente. */
+r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'yan-retour', name: 'Yan Retour', cgu: true, code: '975310', telephone: '+377 06 12 34 56', validation: 'admin' } });
+const fr = fiche('yan-retour'); delete fr.attente_admin; delete fr.valide_admin_at; kv.set('acc:yan-retour', JSON.stringify(fr));
+r = await adm('/__admin/compte-ouvrir', { uid: 'yan-retour' });
+ok(r.j.ok === true && fiche('yan-retour').valide_admin_at > 0, '3d. « Ouvrir » pose TOUJOURS la marque « validé par l\'admin », même si le compte n\'était pas marqué en attente', fiche('yan-retour'));
+r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'yan-retour', name: 'Yan Retour', cgu: true, code: '975310', validation: 'admin' } });
+ok(!r.j.attente_admin && !fiche('yan-retour').attente_admin, '3e. sa connexion suivante (sans WhatsApp) ne le remet PAS en attente', { rep: r.j.attente_admin, fiche: fiche('yan-retour').attente_admin });
+
 console.log('\n== 4. L\'écran admin ==');
 const src = readFileSync(new URL('../../kdmc-home/admin/admin.js', import.meta.url), 'utf8');
 ok(/class="etatcompte"/.test(src) && /État du compte/.test(src) && /\/__admin\/compte-ouvrir/.test(src) && /ouvrir-compte/.test(src), '4. bouton « État du compte » + « Ouvrir ce compte » présents');

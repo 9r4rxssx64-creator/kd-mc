@@ -17,6 +17,9 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Yann rouvert deux fois (Kevin) : « Ouvrir » pose toujours la marque
+- D1 réelle : dernière connexion de Yann 16.10 07h43 UTC (Private Relay), rien en file maintenant. Deux causes possibles, toutes deux fermées : (1) « Accepter le code » n'ouvrait pas le compte — corrigé par l'autre session (#4626) mais resté HORS LIGNE de 13h08 à 16h18 à cause de ma porte de ration ; (2) « Ouvrir ce compte » ne posait `valide_admin_at` que si la fiche portait `attente_admin` → désormais toujours. Garde `compte-ouvrir.test.mjs` (26, n°3d rouge sans le correctif). Fiche KV de Yann non lisible d'ici : cause exacte non prouvée sur sa fiche.
+
 ## 2026-10-16 — Portail v1.0.67 : « Mon tableau de bord » tout en haut (Kevin)
 - `#tdb-haut` = première chose de la page (avant « Bienvenue »), révélé par `applyAdminVisibility` avec la même règle que « Mon espace ». Garde `test:portail-range` (12).
 

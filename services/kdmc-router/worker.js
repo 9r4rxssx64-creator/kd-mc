@@ -4621,7 +4621,10 @@ async function handleAdmin(request, url, env) {
     const acc = await accGet(env, uid);
     if (!acc) return J({ ok: false, reason: 'not_found' });
     const etait = acc.attente_admin ? String(acc.attente_admin) : '';
-    if (etait) { delete acc.attente_admin; acc.valide_admin_at = Date.now(); await accPut(env, acc, true); }
+    /* 16.10 (Kevin : « j'avais déjà ouvert le compte de Yann et j'ai dû le refaire ») : la marque « validé par l'admin » est posée À CHAQUE
+       ouverture — même quand la fiche n'était pas marquée en attente à cet instant — pour qu'aucun chemin de connexion ne la referme ensuite. */
+    if (etait) delete acc.attente_admin;
+    acc.valide_admin_at = Date.now(); await accPut(env, acc, true);
     try { if (env.CERCLE_DB) await env.CERCLE_DB.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(uid).run(); } catch { /* table absente : rien à vider */ }
     await audLog(env, { ev: 'compte_ouvert_admin', uid, etait: etait || 'ouvert' });
     return J({ ok: true, uid, etait: etait || 'ouvert', attente_admin: false });

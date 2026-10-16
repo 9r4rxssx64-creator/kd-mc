@@ -1827,6 +1827,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "yann-ouvert": {
+      "titre": "Ouvrir un compte pose toujours la marque « validé par l'admin »",
+      "branche": "claude/yann-ouvert",
+      "sujet": "Kevin : j'avais déjà ouvert le compte de Yann et j'ai dû le refaire",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

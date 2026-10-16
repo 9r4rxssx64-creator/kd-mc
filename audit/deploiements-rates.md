@@ -7,6 +7,23 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 16/10/2026 20:26 UTC
+
+- **Branche** : `main` · **Commit** : `76daae8c` · **Run** : `38961876371`
+- **Ce qui a lâché** : deploy › Déploiement du routeur (+ custom domains kd-mc.com)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38961876371
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error title=wrangler deploy::$(tail -c 1500 deploy.log | tr '\n\r' '  ' | sed 's/%/%25/g')"^[[0m
+^[[36;1m    echo "::error::wrangler n'a PAS appliqué UPSTREAM_BASE — les variables du wrangler.toml ne sont pas parties, la bascule ne peut pas prendre"^[[0m
+  Please update to the latest version to prevent critical errors.
+^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/workers/scripts/kdmc-router/schedules) failed.^[[0m
+  Internal authentication error: internal server error [code: 10500]
+##[error]oad... No files to upload. Proceeding with deployment... Total Upload: 711.85 KiB / gzip: 193.90 KiB Worker Startup Time: 2 ms Your worker has access to the following bindings: - Durable Objects:   - APPEL_REVEIL: AppelReveil - KV Namespaces:   - ACCOUNTS: 8cfa33a28ac045adb7b7a9556ca8a073 - D1 Databases:   - ARBRE_DB: kdmc-arbre (a10e750d-de49-47b5-b1d8-0e937eccbec8)   - CERCLE_DB: kdmc-cercle (0b49b8eb-8df8-49fe-93f7-1e385bf98b34)   - BOT_DB: kdmc-bot (a3743498-54bb-45b1-a47a-8fc00ddd32d9) - AI:   - Name: AI - Unsafe Metadata:   - ratelimit: LIMITE_VOIX   - ratelimit: LIMITE_APPEL   - ratelimit: LIMITE_BEE - Vars:   - KDMC_PUSH_URL: "https://apex-push-worker.9r4rxssx64.w..."   - KDMC_VALIDATION_MANUELLE: "1"   - SOURCE_PAGES: "assets"   - UPSTREAM_BASE: "https://kdmc-site-bj5.pages.dev"   - UPSTREAM_PREFIX: "" Uploaded kdmc-router (5.82 sec)  ^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/workers/scripts/kdmc-router/schedules) failed.^[[0m    Internal authentication error: internal server error [code: 10500]      If you think this is a bug, please open an issue at: ^[[4mhttps://github.com/cloudflare/workers-sdk/issues/new/choose^[[0m    Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md 🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-10-16_20-26-02_802.log"
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +545,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

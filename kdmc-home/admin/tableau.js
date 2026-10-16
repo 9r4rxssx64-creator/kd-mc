@@ -44,6 +44,39 @@
     reglages: [['🔑', 'Changer mon code admin', 'Calcule l\'empreinte sur ton téléphone, rien n\'est envoyé', '/empreinte/']]
   };
 
+  /* Raccourcis de l'accueil : les gestes les plus fréquents, un toucher chacun. */
+  var RACCOURCIS = [
+    ['➕ Créer un compte', '#creer-invite'], ['🚫 Bannir ou supprimer quelqu\'un', '#list'], ['⛔ Fermer une app pour tous', '#fermgen'],
+    ['📬 Lire les messages', 'boite'], ['📦 Livrer une commande', 'livrer'], ['🎁 Inviter gratuitement', '#inviter']
+  ];
+  /* SOUS-CATÉGORIES (onglets) de « Personnes & comptes » : on range les blocs déjà construits par admin.js et la boîte, sans les refaire.
+     id du bloc → onglet ; un titre (h2.cat) → l'onglet des blocs qui le suivent. Les autres rubriques sont découpées par leurs titres. */
+  var ONGLETS_PERSONNES = [['trancher', '✋ À trancher'], ['comptes', '👤 Comptes'], ['connectes', '🟢 Connectés'], ['bloquer', '🚫 Bloquer & bannir'], ['creer', '➕ Créer'], ['journal', '🕘 Historique']];
+  var PAR_ID = { 'tb-creer': 'creer', 'creer-invite': 'creer', presence: 'connectes', fermgen: 'bloquer', fermlot: 'bloquer', bannis: 'bloquer', audsec: 'journal' };
+  function ongletDuTitre(sec, txt) {
+    var t = sansAccent(txt);
+    if (sec !== 'personnes') return 'o-' + t.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+    if (/trancher/.test(t)) return 'trancher';
+    if (/historique|qui se connecte|journal/.test(t)) return 'journal';
+    if (/connect/.test(t)) return 'connectes';
+    return 'comptes';
+  }
+  /* PUR (testé) : la liste des blocs d'une rubrique → [{el, onglet}] et les onglets dans l'ordre. `blocs` : [{id, cls, titre}]. */
+  function classerBlocs(sec, blocs) {
+    var cur = sec === 'personnes' ? 'trancher' : 'o-apercu', out = [], vus = [], noms = {};
+    if (sec !== 'personnes') noms['o-apercu'] = 'Aperçu';
+    blocs.forEach(function (b) {
+      var o = sec === 'personnes' && b.id && PAR_ID[b.id] ? PAR_ID[b.id] : null;
+      if (!o && sec === 'personnes' && /\bnote\b/.test(b.cls || '')) o = 'comptes';
+      if (!o && b.titre != null) { cur = ongletDuTitre(sec, b.titre); o = cur; if (sec !== 'personnes') noms[cur] = String(b.titre).trim(); }
+      if (!o) o = cur;
+      out.push(o); if (vus.indexOf(o) < 0) vus.push(o);
+    });
+    var ordre = sec === 'personnes' ? ONGLETS_PERSONNES.map(function (x) { return x[0]; }).filter(function (k) { return vus.indexOf(k) >= 0; }) : vus;
+    var lib = {}; ONGLETS_PERSONNES.forEach(function (x) { lib[x[0]] = x[1]; });
+    return { par: out, onglets: ordre.map(function (k) { return { id: k, t: sec === 'personnes' ? lib[k] : noms[k] || k }; }) };
+  }
+
   /* « Que veux-tu faire ? » — chaque action mène quelque part de précis. */
   var ACTIONS = [
     { t: 'Lire et répondre aux messages', k: 'message boite repondre lire mail whatsapp', go: 'boite' },
@@ -54,6 +87,14 @@
     { t: 'Fiche d\'une personne', k: 'fiche client compte personne appareil lieu', go: '#list' },
     { t: 'Où une personne peut aller (périmètre)', k: 'perimetre acces app bloquer fermer autoriser', go: '#list' },
     { t: 'Déconnecter quelqu\'un partout', k: 'deconnecter revoquer session vole perdu', go: '#list' },
+    { t: 'Supprimer un compte', k: 'supprimer effacer compte personne retirer', go: '#list' },
+    { t: 'Bannir quelqu\'un (ne pourra plus se réinscrire)', k: 'bannir ban interdire reinscrire supprimer', go: '#list' },
+    { t: 'Personnes bannies (réautoriser)', k: 'bannis bannir liste reautoriser debannir', go: '#bannis' },
+    { t: 'Pourquoi une personne est bloquée (état du compte)', k: 'etat compte bloque pourquoi ouvrir attente', go: '#list' },
+    { t: 'Bloquer une personne sur une app', k: 'bloquer personne app fermer acces perimetre', go: '#list' },
+    { t: 'Fermer une app pour tout le monde', k: 'fermer app tout le monde general bloquer site', go: '#fermgen' },
+    { t: 'Fermer ou rouvrir des apps à plusieurs personnes', k: 'fermer rouvrir plusieurs personnes lot apps', go: '#fermlot' },
+    { t: 'Créer un compte pour une personne', k: 'creer compte invite nouvelle personne inscrire', go: '#creer-invite' },
     { t: 'Historique des connexions', k: 'historique connexion journal qui se connecte', go: '#hq' },
     { t: 'Journal admin (alertes)', k: 'journal alerte securite evenement', go: '#audsec' },
     { t: 'Qui se connecte (admin.kd-mc.com)', k: 'qui se connecte domaine journal', go: 'https://admin.kd-mc.com/' },
@@ -123,7 +164,7 @@
     ];
   }
 
-  var API = { esc: esc, ranger: ranger, filtrer: filtrer, compteurs: compteurs, instantane: instantane, instantaneValide: instantaneValide, SECTIONS: SECTIONS, ACTIONS: ACTIONS };
+  var API = { esc: esc, ranger: ranger, filtrer: filtrer, compteurs: compteurs, instantane: instantane, instantaneValide: instantaneValide, classerBlocs: classerBlocs, SECTIONS: SECTIONS, ACTIONS: ACTIONS, RACCOURCIS: RACCOURCIS };
   global.kdmcTableau = API;
   if (typeof module === 'object' && module && module.exports) module.exports = API;
   if (typeof document === 'undefined') return;
@@ -158,10 +199,16 @@
     var h = '<section class="traiter" id="a-traiter" aria-label="À traiter maintenant">'
       + '<h1>⚡ À traiter maintenant</h1><p class="sous" id="tb-sous">Lecture en cours…</p>'
       + '<div class="cpts" id="tb-cpts"></div></section>'
-      + '<nav class="tbnav" id="tb-nav" aria-label="Sections">' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
-      + '<div class="cherche"><input id="tb-q" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" placeholder="🔎 Que veux-tu faire ?" aria-label="Que veux-tu faire ?"><div class="res" id="tb-res" hidden></div></div>';
+      + '<nav class="tbnav" id="tb-nav" aria-label="Sections"><a class="retour-tb" href="#" id="tb-retour">← Tableau de bord</a>' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
+      + '<div class="cherche"><input id="tb-q" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" placeholder="🔎 Que veux-tu faire ?" aria-label="Que veux-tu faire ?"><div class="res" id="tb-res" hidden></div></div>'
+      /* 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien ») : un ACCUEIL de 7 grandes tuiles, puis une seule
+         rubrique à la fois, découpée en onglets (sous-catégories). Plus de longue page à descendre. */
+      + '<section class="accueil" id="tb-accueil" aria-label="Rubriques"><div class="tuiles-sec">' + SECTIONS.map(function (s) {
+        return '<a class="tuile-sec" href="#' + s.id + '" data-tuile="' + s.id + '"><span class="ic">' + s.ic + '</span><span class="tt"><b>' + esc(s.t) + '</b><span class="r" data-resume="' + s.id + '">' + esc(s.s) + '</span></span><span class="bd" data-badge="' + s.id + '" hidden></span></a>';
+      }).join('') + '</div>'
+      + '<h2 class="cat">⚡ Raccourcis</h2><div class="raccourcis">' + RACCOURCIS.map(function (r, i) { return '<button type="button" class="racc" data-racc="' + i + '">' + esc(r[0]) + '</button>'; }).join('') + '</div></section>';
     SECTIONS.forEach(function (s) {
-      h += '<details class="sec" id="' + s.id + '" open><summary><span class="ic">' + s.ic + '</span><span class="tt"><b>' + esc(s.t) + '</b><span>' + esc(s.s) + '</span></span></summary><div class="corps" id="corps-' + s.id + '"></div></details>';
+      h += '<details class="sec hors-vue" id="' + s.id + '" open><summary><span class="ic">' + s.ic + '</span><span class="tt"><b>' + esc(s.t) + '</b><span>' + esc(s.s) + '</span></span></summary><div class="corps" id="corps-' + s.id + '"></div></details>';
     });
     app.innerHTML = h;
     /* une section absente ne doit jamais emporter les autres : chaque corps est posé seulement s'il existe */
@@ -194,18 +241,75 @@
     });
   }
 
+  /* ── VUES : l'accueil (tuiles) OU une rubrique, et dans la rubrique UN onglet à la fois. L'adresse le dit (#personnes/bloquer) :
+     le bouton retour du téléphone marche, et chaque endroit a son lien direct. */
+  var VUE = 'accueil', ONGLET = {};
+  /* Le libellé d'onglet = le texte du titre SANS ses boutons (« ↻ Relire la caisse » n'est pas un nom). */
+  function titreSeul(h) { var c = h.cloneNode(true); Array.prototype.forEach.call(c.querySelectorAll('button,a,.btn'), function (x) { x.remove(); }); return c.textContent.replace(/\s+/g, ' ').trim(); }
+  function blocsDe(sec) {
+    var corps = document.getElementById('corps-' + sec); if (!corps) return [];
+    var l = [];
+    for (var i = 0; i < corps.children.length; i++) {
+      var c = corps.children[i];
+      if (c.classList.contains('onglets')) continue;
+      if (c.id === 'admin-comptes' || c.id === 'commerce-app') { for (var j = 0; j < c.children.length; j++) l.push(c.children[j]); continue; }
+      l.push(c);
+    }
+    return l;
+  }
+  function appliquerOnglets(sec) {
+    var corps = document.getElementById('corps-' + sec); if (!corps) return;
+    var els = blocsDe(sec);
+    var r = classerBlocs(sec, els.map(function (e) { return { id: e.id || '', cls: e.className || '', titre: e.matches && e.matches('h2.cat') ? titreSeul(e) : null }; }));
+    var barre = corps.querySelector(':scope > .onglets');
+    if (r.onglets.length < 2) { if (barre) barre.remove(); els.forEach(function (e) { e.classList.remove('hors-onglet'); }); return; }
+    var actif = ONGLET[sec] && r.onglets.some(function (o) { return o.id === ONGLET[sec]; }) ? ONGLET[sec] : r.onglets[0].id;
+    ONGLET[sec] = actif;
+    if (!barre) { barre = document.createElement('div'); barre.className = 'onglets'; barre.setAttribute('role', 'tablist'); corps.insertBefore(barre, corps.firstChild); }
+    var sig = r.onglets.map(function (o) { return o.id; }).join('|') + '#' + actif;
+    if (barre.getAttribute('data-sig') !== sig) {
+      barre.setAttribute('data-sig', sig); barre.textContent = '';
+      r.onglets.forEach(function (o) {
+        var a = document.createElement('a'); a.href = '#' + sec + '/' + o.id; a.setAttribute('role', 'tab'); a.setAttribute('data-onglet-btn', o.id);
+        a.setAttribute('aria-selected', o.id === actif ? 'true' : 'false'); a.textContent = o.t;
+        barre.appendChild(a);
+      });
+    }
+    els.forEach(function (e, i) { e.setAttribute('data-onglet', r.par[i]); e.classList.toggle('hors-onglet', r.par[i] !== actif); });
+    badgesOnglets();
+  }
+  function montrerVue(sec, onglet) {
+    VUE = SECTIONS.some(function (x) { return x.id === sec; }) ? sec : 'accueil';
+    if (onglet && VUE !== 'accueil') ONGLET[VUE] = onglet;
+    document.body.setAttribute('data-vue', VUE);
+    SECTIONS.forEach(function (x) { var d = document.getElementById(x.id); if (!d) return; d.classList.toggle('hors-vue', x.id !== VUE); if (x.id === VUE) d.open = true; });
+    var t = document.getElementById('tb-vue-titre'), S = SECTIONS.filter(function (x) { return x.id === VUE; })[0];
+    if (t) t.textContent = S ? S.ic + ' ' + S.t : '';
+    var navs = document.querySelectorAll('[data-nav]');
+    for (var i = 0; i < navs.length; i++) navs[i].setAttribute('aria-current', navs[i].getAttribute('data-nav') === VUE ? 'page' : 'false');
+    if (VUE !== 'accueil') appliquerOnglets(VUE);
+  }
+  function ongletDe(el) { for (var p = el; p; p = p.parentElement) { var o = p.getAttribute && p.getAttribute('data-onglet'); if (o) return o; } return null; }
   function aller(cible) {
     if (cible === 'boite') { if (global.kdmcBoite) global.kdmcBoite.ouvrir(); return; }
+    var el = null;
     if (cible === 'livrer') {
-      var f = document.querySelector('#commerce-app [data-valider], #commerce-app [data-refuser]');
-      cible = f ? null : '#commerce';
-      if (f) { ouvrirParents(f); f.closest('.tile').scrollIntoView({ block: 'start' }); return; }
+      el = document.querySelector('#commerce-app [data-valider], #commerce-app [data-refuser]');
+      if (el) el = el.closest('.tile') || el; else cible = '#commerce';
     }
     /* admin.kd-mc.com : le pass du domaine voyage avec (app installée, cookies à part — voir admin.js ouvrirAvecPass) */
-    if (/^https:\/\/admin\.kd-mc\.com\//.test(cible) && global.kdmcOuvrirAvecPass) { global.kdmcOuvrirAvecPass(cible); return; }
-    if (/^(https?:)?\//.test(cible)) { location.href = cible; return; }
-    var el = document.querySelector(cible);
-    if (!el) { el = document.getElementById('commerce'); }
+    if (!el && /^https:\/\/admin\.kd-mc\.com\//.test(cible) && global.kdmcOuvrirAvecPass) { global.kdmcOuvrirAvecPass(cible); return; }
+    if (!el && /^(https?:)?\//.test(cible)) { location.href = cible; return; }
+    if (!el) { try { el = document.querySelector(cible); } catch (e) { el = null; } }
+    if (!el) el = document.getElementById('commerce');
+    var sec = el.closest && el.closest('details.sec');
+    if (!sec) return;
+    if (el === sec) { if (location.hash !== '#' + sec.id) location.hash = '#' + sec.id; else montrerVue(sec.id); try { window.scrollTo(0, 0); } catch (e) { /* */ } return; }
+    montrerVue(sec.id);                       /* classe les blocs, puis trouve l'onglet du bloc visé */
+    var o = ongletDe(el);
+    var h = '#' + sec.id + (o ? '/' + o : '');
+    if (location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) { /* */ } }
+    montrerVue(sec.id, o);
     ouvrirParents(el);
     try { el.scrollIntoView({ block: 'start' }); } catch (e) { /* */ }
     if (/^(INPUT|SELECT)$/.test(el.tagName)) { try { el.focus({ preventScroll: true }); } catch (e) { /* */ } }
@@ -236,6 +340,7 @@
       ? (INST ? 'Dernier relevé ' + ilYa(INST.ts) + (total ? ' : ' + total + ' chose' + (total > 1 ? 's' : '') + '.' : ' : rien en attente.') + ' Mise à jour en cours…' : 'Lecture en cours…')
       : total ? total + ' chose' + (total > 1 ? 's' : '') + ' t\'attend' + (total > 1 ? 'ent' : '') + '. Touche un chiffre pour y aller.' : '✅ Rien en attente pour l\'instant.';
     try { document.title = (BOITE && total ? '(' + total + ') ' : '') + 'KDMC — Tableau de bord admin'; } catch (e) { /* */ }
+    resumes(cs); badgesOnglets();
     var nav = document.querySelector('[data-nav="personnes"]');
     if (nav) { var x = nav.querySelector('b'); var np = cs.filter(function (c) { return /inscriptions|codes|sansWhatsapp/.test(c.id) && !c.cache; }).reduce(function (t, c) { return t + (c.n || 0); }, 0); if (np && BOITE) { if (!x) { x = document.createElement('b'); nav.appendChild(x); } x.textContent = String(np); } else if (x) x.remove(); }
     var nm = document.querySelector('[data-nav="messages"]');
@@ -335,8 +440,33 @@
 
   /* Les anciennes adresses mènent ici (commerce.html → /admin/#commerce, openai.html → /admin/#couts) : on amène la section à l'écran. */
   function versHash() {
-    var h = (location.hash || '').slice(1);
-    if (h && SECTIONS.some(function (s) { return s.id === h; })) { var el = document.getElementById(h); if (el) { el.open = true; try { el.scrollIntoView({ block: 'start' }); } catch (e) { /* */ } } }
+    var h = decodeURIComponent((location.hash || '').slice(1)), m = h.split('/');
+    if (!h) { montrerVue('accueil'); return; }
+    if (SECTIONS.some(function (s) { return s.id === m[0]; })) { montrerVue(m[0], m[1] || null); try { window.scrollTo(0, 0); } catch (e) { /* */ } return; }
+    /* une ancre d'avant (#list, #presence, #inviter…) : on va au bon endroit, dans la bonne rubrique et le bon onglet */
+    if (/^[A-Za-z][\w-]*$/.test(h) && document.getElementById(h)) aller('#' + h); else montrerVue('accueil');
+  }
+  function badgesOnglets() {
+    var b = BOITE, n = b ? (b.inscriptions || []).length + (b.codes || []).length + (Array.isArray(b.inscriptionsAdmin) ? b.inscriptionsAdmin.length : 0) : 0;
+    var vals = { trancher: n, connectes: b ? b.connectes || 0 : 0 };
+    Object.keys(vals).forEach(function (k) {
+      var a = document.querySelector('#corps-personnes .onglets [data-onglet-btn="' + k + '"]'); if (!a) return;
+      var x = a.querySelector('b'); if (vals[k]) { if (!x) { x = document.createElement('b'); a.appendChild(x); } x.textContent = String(vals[k]); } else if (x) x.remove();
+    });
+  }
+  function resumes(cs) {
+    var b = BOITE, val = function (id) { var c = cs.filter(function (x) { return x.id === id; })[0]; return c && !c.cache ? c.n : null; };
+    var trancher = (val('inscriptions') || 0) + (val('codes') || 0) + (val('sansWhatsapp') || 0);
+    var badge = { personnes: trancher, messages: val('messages') || 0, commerce: val('livrer') || 0 };
+    var txt = {
+      personnes: b ? (trancher ? trancher + ' à trancher · ' : '') + (b.connectes || 0) + ' connecté(s)' : null,
+      messages: b ? (b.nonLus ? b.nonLus + ' non lu(s)' : 'Tout est lu') : null,
+      commerce: val('livrer') != null ? (val('livrer') ? val('livrer') + ' vente(s) à livrer' : 'Rien à livrer') : null
+    };
+    SECTIONS.forEach(function (s) {
+      var bd = document.querySelector('[data-badge="' + s.id + '"]'); if (bd) { bd.hidden = !badge[s.id]; bd.textContent = badge[s.id] ? String(badge[s.id]) : ''; }
+      var r = document.querySelector('[data-resume="' + s.id + '"]'); if (r && txt[s.id]) r.textContent = txt[s.id];
+    });
   }
 
   function demarrer(s) {
@@ -348,11 +478,19 @@
     dessinerCompteurs();
     dessinerEnAttendant();
     brancherRecherche();
+    var rac = document.querySelectorAll('[data-racc]');
+    for (var ri = 0; ri < rac.length; ri++) (function (b) { b.onclick = function () { var r = RACCOURCIS[+b.getAttribute('data-racc')]; if (!r) return; if (r[1] === '#creer-invite') { var t = document.getElementById('tb-creer'); if (t) { t.click(); return; } } aller(r[1]); }; })(rac[ri]);
+    /* admin.js et commerce.js redessinent leurs blocs (actualisation) : on les reclasse dans leurs onglets, sans boucle */
+    if (typeof MutationObserver === 'function') ['admin-comptes', 'commerce-app'].forEach(function (id) {
+      var z = document.getElementById(id); if (!z) return;
+      new MutationObserver(function () { var sec = z.closest('details.sec'); if (sec && sec.id === VUE) appliquerOnglets(VUE); }).observe(z, { childList: true });
+    });
     document.getElementById('tb-boite').onclick = function () { aller('boite'); };
     /* Kevin 13.10 : « je ne trouve rien » — le formulaire de création est en bas de la liste des comptes, replié : ce bouton en tête de « Personnes » l'ouvre et y amène */
     document.getElementById('tb-creer').onclick = function () {
       var d = document.getElementById('creer-invite');
       if (!d) return;
+      aller('#creer-invite');
       d.open = true;
       d.scrollIntoView({ behavior: 'smooth', block: 'start' });
       var f = document.getElementById('cinv-prenom'); if (f) f.focus({ preventScroll: true });
@@ -370,6 +508,7 @@
     if (global.kdmcCommerce && global.kdmcCommerce.monter) global.kdmcCommerce.monter(document.getElementById('commerce-app'), s);
     lireAnnexes();
     window.addEventListener('hashchange', versHash);
+    versHash();
   }
 
   function boot() {

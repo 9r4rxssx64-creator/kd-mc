@@ -213,6 +213,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/assets-en-ligne` | 16.10 | Routeur en ligne sur sa copie embarquée (run 38827591604) : go à Kevin pour supprimer kdmc-site | `assets-en-ligne` |
 | `claude/suppr-pages` | 16.10 | Projet Pages kdmc-site : republication automatique coupée + robot qui efface ses déploiements puis le supprime | `suppr-pages` |
 | `claude/pages-supprime` | 16.10 | Docs : projet Pages kdmc-site supprimé (run 38879024853), fuite fermée | `pages-supprime` |
+| `claude/admin-rangee` | 16.10 | Tableau admin rangé : accueil en tuiles, une section à la fois, onglets Personnes, raccourcis, adresses #section/onglet | `admin-rangee` |
 | `claude/publication-auto` | 16.10 | Les apps partent en ligne par deploy-kdmc-router (automatique sur main, porte de ration) | `publication-auto` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |

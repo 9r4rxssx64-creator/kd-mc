@@ -10,8 +10,8 @@
 <meta name="theme-color" content="#0b1409" />
 <link rel="stylesheet" href="/design-system.css" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.2" />
-<link rel="stylesheet" href="commerce.css?v=2.0.2" />
-<link rel="stylesheet" href="tableau.css?v=2.0.2" />
+<link rel="stylesheet" href="commerce.css?v=2.1.0" />
+<link rel="stylesheet" href="tableau.css?v=2.1.0" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -70,6 +70,34 @@
   .cardrow .ver{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--gold2);font-size:11px}
   .info{font-size:13px;color:var(--mut);margin:10px 2px;line-height:1.5}
   .info b{color:var(--txt)}
+  /* ── 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien… range, classe, organise ») : ACCUEIL à tuiles, puis UNE
+     rubrique à la fois, découpée en onglets. L'adresse suit (#personnes/bloquer) : retour du téléphone et liens directs marchent. */
+  .hors-vue,.hors-onglet{display:none!important}
+  body[data-vue="accueil"] #tb-nav{display:none}
+  body:not([data-vue="accueil"]) #tb-accueil,body:not([data-vue="accueil"]) #a-traiter,body:not([data-vue="accueil"]) .cherche{display:none}
+  body:not([data-vue="accueil"]) details.sec>summary{display:none}
+  body:not([data-vue="accueil"]) details.sec{border:0;background:none}
+  body:not([data-vue="accueil"]) .corps{padding:0 0 16px}
+  .tbnav .retour-tb{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);color:var(--gold2);text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap}
+  .tbnav a[aria-current="page"]{border-color:var(--gold);color:var(--gold2);background:var(--gold-glow)}
+  .tuiles-sec{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(min-width:640px){.tuiles-sec{grid-template-columns:repeat(3,1fr)}}
+  .tuile-sec{position:relative;display:flex;flex-direction:column;gap:6px;min-height:104px;padding:12px;border-radius:16px;border:1px solid var(--line);background:rgba(17,28,20,.6);color:var(--txt);text-decoration:none}
+  .tuile-sec:active{transform:scale(.98)}
+  .tuile-sec .ic{font-size:24px}
+  .tuile-sec .tt{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .tuile-sec .tt b{font-size:15px;line-height:1.2}
+  .tuile-sec .tt .r{font-size:12px;color:var(--mut);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tuile-sec .bd{position:absolute;top:10px;right:10px;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#dc2626;color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center}
+  .tuile-sec .bd[hidden]{display:none}
+  .raccourcis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}
+  .racc{min-height:52px;padding:10px 12px;border-radius:14px;border:1px solid var(--line2);background:rgba(10,18,12,.7);color:var(--txt);font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer}
+  .racc:active{transform:scale(.98)}
+  .onglets{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:2px 0 12px;padding:2px 0}
+  .onglets::-webkit-scrollbar{display:none}
+  .onglets a{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:14px;white-space:nowrap;background:rgba(10,18,12,.55)}
+  .onglets a[aria-selected="true"]{border-color:var(--gold);color:#11160c;background:linear-gradient(135deg,var(--gold2),var(--gold));font-weight:700}
+  .onglets a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:12px}
 </style>
 </head>
 <body>
@@ -82,10 +110,10 @@
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.2"></script>
-  <script src="admin.js?v=2.0.2"></script>
-  <script src="commerce.js?v=2.0.2"></script>
-  <script src="tableau.js?v=2.0.2"></script>
+  <script src="admin.js?v=2.1.0"></script>
+  <script src="commerce.js?v=2.1.0"></script>
+  <script src="tableau.js?v=2.1.0"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.0.2" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.1.0" data-color="#c9a227" defer></script>
 </body>
 </html>

@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Admin v2.1.0 : un tableau de bord rangé (Kevin : « je passe mon temps à tout descendre »)
+- **Livré** : `kd-mc.com/admin/` ouvre sur « À traiter maintenant » + 6 raccourcis (Bannir, Effacer, Bloquer sur une app, Fermer pour tous, Créer, Codes) + une tuile par section (chiffre et pastille rouge). Une tuile ouvre SA section seule (plus de grand défilé) ; « ← Tableau de bord » revient. Personnes a des onglets : À trancher · Comptes · Connectés · Bloquer & bannir · Créer · Historique ; Commerce/IA/Apps ont des onglets tirés de leurs titres. Chaque vue a son adresse (`#personnes/bloquer`, `#commerce`…), retour arrière du téléphone compris. Code : `kdmc-home/admin/tableau.js` (`classerBlocs` pur, testé), CSS dans `index.html`.
+- **Gardes** : `test:admin-unique` (60, accueil/onglets/lien profond/retour/raccourci), `test:perimetre-page` passe par les onglets comme Kevin.
+
 ## 2026-10-16 — Règle absolue : vérifier dans le réel (Kevin)
 - `CLAUDE-HISTOIRE.md` + `.claude/rules/verifier-reel.md` + LESSONS 566 : chaque livraison finit par « Vérifié réel / Non vérifié » ; si le réel m'est fermé, je le dis.
 

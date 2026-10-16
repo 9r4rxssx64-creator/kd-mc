@@ -1,6 +1,6 @@
 {
  "_doc": "Généré par tools/admin/apps-versions.mjs — relevé dans le dépôt, pas en direct.",
- "genere": "2026-10-15",
+ "genere": "2026-10-16",
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",

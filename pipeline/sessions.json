@@ -1737,6 +1737,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "admin-rangee": {
+      "titre": "Tableau admin rangé : accueil en tuiles, onglets, raccourcis",
+      "branche": "claude/admin-rangee",
+      "sujet": "Kevin : je passe mon temps à tout descendre, je trouve jamais rien",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

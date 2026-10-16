@@ -18,8 +18,6 @@
 import { logger } from '../../core/logger.js';
 
 const FLAG_KEY = 'apex_v13_use_secrets_proxy';
-/** Une seule bulle « proxy activé » par ouverture de la page. */
-let bulleProxyMontree = false;
 const ADMIN_UID = 'kdmc_admin';
 
 /* v13.4.323/333 (Kevin « il n'est pas sur Anthropic de base » / « encore openai ») :
@@ -90,15 +88,10 @@ async function autoEnableIfReady(): Promise<{ enabled: boolean; reason: string }
   logger.info('proxy-auto-enable', '🔒 Proxy Cloudflare activé automatiquement (admin Kevin + health OK)');
   void clearStaleDeadOnce();
   /* Toast info non-bloquant */
-  /* 16.10.2026 (vrai Chromium) : trois appels de démarrage passaient le contrôle du drapeau en même temps → la même bulle
-     trois fois, par-dessus la réponse. Une seule bulle par ouverture de la page. */
-  if (!bulleProxyMontree) {
-    bulleProxyMontree = true;
-    try {
-      const { toast } = await import('../../ui/toast.js');
-      toast.info('🔒 Proxy Cloudflare activé : tes clés API restent server-side', { duration: 6000 });
-    } catch { /* toast indispo en test env */ }
-  }
+  try {
+    const { toast } = await import('../../ui/toast.js');
+    toast.info('🔒 Proxy Cloudflare activé : tes clés API restent server-side', { duration: 6000 });
+  } catch { /* toast indispo en test env */ }
   return { enabled: true, reason: 'auto_enabled' };
 }
 

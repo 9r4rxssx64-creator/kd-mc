@@ -42,11 +42,9 @@ describe('REGRESSION ai-router — hasAnyKey silencieux (no key)', () => {
 
     /* Au moins 1 onError ou chunks vide (selon implémentation, l'important est pas de throw) */
     expect(errors.length + chunks.length).toBeGreaterThan(0);
-    /* Le message d'erreur doit être actionnable : depuis v13.4.370, sans clé la question part aux IA gratuites du
-       domaine (passerelle) ; si elle ne répond pas, la phrase le dit en clair (« IA gratuites … redemande ») ;
-       passerelle coupée → l'ancien « Coffre / clé API ». Jamais une erreur technique brute. */
+    /* Le message d'erreur doit être actionnable (mention Coffre) */
     if (errors[0]) {
-      expect(errors[0].message).toMatch(/Coffre|clé|API|IA gratuites/i);
+      expect(errors[0].message).toMatch(/Coffre|clé|API/i);
     }
   });
 });
@@ -142,7 +140,7 @@ describe('TEST MENTAL OBLIGATOIRE — Apex sans clé ne bloque jamais Kevin', ()
     if (errorReceived) {
       const msg = (errorReceived as Error).message;
       /* Message guide Kevin vers solution (Coffre) au lieu de jargon technique */
-      expect(msg).toMatch(/Coffre|clé|API|configurée|IA gratuites/i); /* v13.4.370 : sans clé → IA gratuites du domaine */
+      expect(msg).toMatch(/Coffre|clé|API|configurée/i);
     }
   });
 });

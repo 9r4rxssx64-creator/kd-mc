@@ -42,9 +42,6 @@ import {
 } from './credential-categories.js';
 import { detectCredential, CREDENTIAL_PATTERNS } from './credential-patterns.js';
 
-/** Une seule bulle « clés restaurées » par ouverture de la page (voir restoreAutomatically). */
-let bulleRestaurationMontree = false;
-
 /* ============================================================
    Notification throttling (Kevin règle 2026-05-08 : pas de spam)
    ============================================================ */
@@ -373,10 +370,7 @@ class AutoRestoreCredentials {
     }
 
     /* Toast info user-friendly (best-effort) */
-    /* 16.10.2026 (capture iPhone, vrai Chromium) : restoreAutomatically() est appelé par le boot, l'auto-correction et la
-       récupération profonde → la MÊME bulle s'empilait 2 fois et cachait la réponse d'Apex. Une seule bulle par ouverture. */
-    if (restored > 0 && !bulleRestaurationMontree) {
-      bulleRestaurationMontree = true;
+    if (restored > 0) {
       try {
         const { toast } = await import('../../ui/toast.js');
         toast.show(`🔓 ${restored} clés restaurées automatiquement`, 'info');

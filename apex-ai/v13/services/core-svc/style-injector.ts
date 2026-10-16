@@ -104,7 +104,6 @@ class StyleInjector {
       return id;
     }
     const el = document.createElement('style');
-    el.id = id; /* 16.10 : retrouvable par id (le bouton « ← Chat » et ses tests passent par ici) */
     el.dataset['styleInjectorId'] = id;
     el.textContent = css;
     const nonce = this.getNonce();
@@ -162,12 +161,6 @@ class StyleInjector {
   /**
    * Vérifie si un sheet est injecté.
    */
-  /** Le CSS gardé pour cet id (null si inconnu) — pour les tests et le diagnostic. */
-  get(id: string): string | null {
-    const e = this.sheets.get(id);
-    return e ? e.css : null;
-  }
-
   has(id: string): boolean {
     return this.sheets.has(id);
   }

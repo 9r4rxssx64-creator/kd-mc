@@ -3,7 +3,6 @@
  *
  * Couvre install + visibilité conditionnelle selon route hash.
  */
-import { styleInjector } from '../../services/core-svc/style-injector.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../core/logger.js', () => ({
@@ -24,7 +23,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  styleInjector.remove(STYLE_ID);
   document.head.innerHTML = '';
   document.body.innerHTML = '';
   (globalBackButton as unknown as { installed: boolean }).installed = false;
@@ -33,7 +31,7 @@ afterEach(() => {
 describe('global-back-button — install()', () => {
   it('install injecte le style + le bouton', () => {
     globalBackButton.install();
-    expect(styleInjector.has(STYLE_ID)).toBe(true); /* 16.10 : CSS posé par styleInjector (CSP nonce), plus un <style> nu */
+    expect(document.getElementById(STYLE_ID)).not.toBeNull();
     expect(document.getElementById(BTN_ID)).not.toBeNull();
   });
 
@@ -56,7 +54,8 @@ describe('global-back-button — install()', () => {
 
   it('CSS style contient z-index, safe-area, touch target ≥ 44px', () => {
     globalBackButton.install();
-    const css = styleInjector.get(STYLE_ID) ?? '';
+    const style = document.getElementById(STYLE_ID);
+    const css = style?.textContent ?? '';
     expect(css).toContain('z-index');
     expect(css).toContain('safe-area-inset');
     expect(css).toContain('min-width: 44px');
@@ -65,7 +64,7 @@ describe('global-back-button — install()', () => {
 
   it('CSS contient prefers-reduced-motion respect', () => {
     globalBackButton.install();
-    const css = styleInjector.get(STYLE_ID) ?? '';
+    const css = document.getElementById(STYLE_ID)?.textContent ?? '';
     expect(css).toContain('prefers-reduced-motion');
   });
 });

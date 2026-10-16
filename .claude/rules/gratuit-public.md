@@ -19,3 +19,4 @@ Le coffre privé `CMCteams` a 2 000 min/mois (ration 60 min/jour) ; le dépôt p
 - Nouveau robot : public d'abord (ou le Lenovo, `KDMC_RUNNER`) ; un journal public n'affiche jamais un contenu privé (des nombres, pas des noms).
 - Le robot public « Auto-deploy Apex v13 build » est rouge depuis le 27.09 (fichiers privés absents du public) : c'est le routeur qui publie Apex, pas lui.
 - Garde : `npm run test:robots-public`.
+- Quota Actions du coffre mangé : `node tools/depot-public/publier-et-verifier.mjs` (publie + prouve). « En ligne » = le déploiement du commit PUBLIC publié a réussi, jamais « un déploiement vert ».

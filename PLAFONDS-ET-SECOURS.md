@@ -16,6 +16,7 @@ Depuis le 13.10 : tout est à la main sauf la synchronisation (1 min par fusion,
 1. **Porte de ration** (`tools/ci/porte-ration.sh`, garde `test:porte-ration`) : les 6 gros robots (chaîne privée 30 min, audit runtime 10, Arbre 4, vérif réelle 15, audit Lingua 10, voir-comme-Kevin 8) lisent la ration du jour AVANT d'installer quoi que ce soit et ne démarrent pas si elle ne les couvre pas. Contournement : l'entrée « forcer_ration », avec l'accord de Kevin. Fail-ouvert si la ration est illisible.
 2. **La ration à l'ouverture de chaque session** (hook `etat-du-moment.sh`, garde `test:ration-hook`) : toutes les branches la voient.
 3. **Publier sans Actions** (`tools/depot-public/publier-local.mjs`, garde `test:publier-local`) : même export, même vérificateur, même plancher de 80 % que le robot, depuis une session ; à blanc par défaut, `--envoyer` pour pousser. Quota mangé = on publie quand même. Jeton : `KDMC_PUBLIC_PAT` ou dépôt public attaché en écriture.
+   **Puis prouver** : `node tools/depot-public/publier-et-verifier.mjs` (publie, attend le déploiement DU commit public publié, lance le déploiement à la main si rien ne démarre seul, et ne dit « en ligne » qu'après succès sur ce commit — garde `test:publier-et-verifier`, leçon 579).
 4. Option déjà prévue : `KDMC_RUNNER=kdmc-lenovo` envoie les robots lourds sur le Lenovo de Kevin (illimité, gratuit) — demande que l'ordinateur soit allumé.
 
 ## 2. Les autres plafonds (source dans le dépôt)

@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (soir) — Mettre en ligne GRATUITEMENT : par le dépôt public `kd-mc`
+- Le routeur se déploie depuis le dépôt PUBLIC `9r4rxssx64-creator/kd-mc` (Actions illimitées et gratuites pour un dépôt public) : synchro du coffre → `deploy-kdmc-router.yml` du dépôt public. Le robot du coffre, lui, est coupé par la ration du jour (ce n'est pas lui qui compte).
+- Vérifié réel le 16.10 à 19h UTC : runs du dépôt public en succès (17h42 → 18h57), et le code SERVI par Cloudflare contient `cfg:attendus`, `redeposerAttente`, « accepter un code ouvre le compte ». Le rappel de 7h15 est supprimé.
+- Pour vérifier/relancer : `gh api repos/9r4rxssx64-creator/kd-mc/actions/workflows/deploy-kdmc-router.yml/runs` (la session doit avoir `kd-mc` attaché, accès push) ; `workflow_dispatch` sur le dépôt public = gratuit.
+## 2026-10-16 — « Passe par le dépôt public, demande à tes autres branches comment elles font » : publier ET prouver en une commande
+- **Constaté** : les autres sessions publient toutes avec `tools/depot-public/publier-local.mjs` (commits « Synchronisation LOCALE depuis le coffre » dans `kd-mc`) ; le robot Actions du coffre a cessé après 17:40 (quota). Le dépôt public lit déjà tout le coffre en lecture seule (secret `COFFRE_CLE_LECTURE`), mais rien ne peut le DÉCLENCHER sans minute du coffre : un webhook GitHub (réglage du dépôt, bloqué pour une session) vers un petit worker serait la seule voie 100 % automatique.
+- **Livré** : `tools/depot-public/publier-et-verifier.mjs` (publie, attend le déploiement du commit PUBLIC publié, lance à la main si rien ne démarre, dit « en ligne » seulement après succès sur CE commit). Garde `test:publier-et-verifier` (6, sabotage rouge prouvé), câblée dans `test:ci`.
+
 ## 2026-10-16 — Apex Chat : lots G à J réellement en ligne (correction d'une annonce trop tôt)
 - Les déploiements précédents tournaient sur un dépôt public pas encore à jour (quota Actions du coffre épuisé, aucune synchronisation automatique). Publication faite par `publier-local.mjs --envoyer` → commit public 40adf1c ; déploiement réussi ; le code des lots G, H, I, J y est (marqueurs `ctEq`, `conv_id_required`, `purgeHistoriqueConnexions`). Leçon 579.
 

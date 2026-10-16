@@ -19,7 +19,7 @@
 3. **Monaco** : demander en ligne l'acte de décès d'Albert Antoine BUCHET (20.03.1998) sur https://actes-en-ligne.mairie.mc/fr/ (MConnect) et me dire ce que le site demande.
 4. **Courrier de Beausoleil** : un acte de naissance arrive par la poste → le photographier et me l'envoyer.
 5. **Famille de Yann** : la date et le lieu de naissance de Marie-France BUCHET (≈ 12.08.1948) ; les adresses mail de la famille pour leur envoyer l'invitation à l'arbre (brouillon prêt dans Gmail) ; leur ouvrir l'arbre dans l'admin.
-6. **En attente de réponse (rien à faire)** : mairie de Groix et Philippe Millour (Le Dren, 16.10) · mairies de Sainte-Agnès et de Bourges (famille de Yann, 15.10 ; relance prévue vers le 25.10).
+6. **En attente de réponse (rien à faire)** : mairie de Groix et Philippe Millour (Le Dren, 16.10) · mairies de Sainte-Agnès et de Bourges (famille de Yann, 15.10 ; relance prévue vers le 25.10). · Archives municipales de Toulouse (famille IRLE / PONSOLLE de Laurence, accusé de réception 16.10, réf. A 26030437).
 7. **Chefs d'équipe (CMCteams + light)** : chaque équipe a déjà un chef provisoire (le plus ancien d'après le matricule). Pour qu'il devienne **définitif**, entre la **date d'entrée SBM** dans les fiches (l'écran « bilan des chefs » liste qui manque) — 16 personnes n'ont pas encore de vrai matricule (dont Davy CARPINELLI, équipe c9). Rien à cliquer d'autre : tu peux changer un chef à la main, ton choix n'est jamais écrasé.
 8. **Départs (GTA)** : confirme-moi si le casino demande d'être à l'entrée **20 minutes avant** l'heure de départ (aujourd'hui réglé à 0 minute) — une seule phrase suffit.
 

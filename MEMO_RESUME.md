@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (21h UTC) — Mails relus : Toulouse a accusé réception (réf. A 26030437)
+- Noté sur 5 fiches de l'arbre (irle_rene, irle_jeanjacques, ponsolle_anne, irle_louise, irle_paule), sauvegarde o-2026-10-16T20-56-21, rejouer = 0. Rien de nouveau de Groix, Millour, Sainte-Agnès, Bourges.
+## 2026-10-16 — Apex Chat v1.1.312 : confort iPhone (lot M) + alarmes du serveur de conversation MESURÉES (pas changées)
+- `index.html` : mode clair lisible (or, bleu, avertissement, gris ≥ 4,5:1 mesuré), boutons d'envoi 44 px, liste de messages `role="log"`, photo au choix (photothèque / appareil), textes en français simple (session expirée, notifications → « ajoute l'app à l'écran d'accueil »). Garde `client-confort-iphone` (12), sabotage rouge, `vitest --coverage` sans erreur (2 108 verts). Version 1.1.312 (+ `API_VERSION`).
+- **Alarmes du serveur de conversation (audit « 288 réveils/jour »)** : relues dans le code — une alarme de filet toutes les 5 min SEULEMENT pour une conversation qui a une socket ouverte ; elle relit D1 (2 lectures) au plus toutes les 45 s par socket ; la configuration n'est PAS relue à chaque alarme (seulement toutes les 60 s sur un message). Pire cas mesuré ≈ 30 conversations ouvertes × 288 = 8 640 réveils/jour sur 100 000 : **non changé** (les passer à 30 min retarderait de 25 min la coupure d'un membre retiré qui se contente d'écouter — sécurité d'abord).
+- **Non vérifié sur iPhone réel** : rendu du mode clair en plein jour, choix photothèque / appareil.
+
 ## 2026-10-16 (20h40) — Kevin : « Mets TOUS les documents à jour en temps réel toujours sans rien oublier note le » (5ᵉ rappel)
 - **Mesuré tout de suite** (garde `docs-frais` vert, donc muet) : CHANGELOG sans aucune version d'Apex 13.4.3xx (5 versions du jour) ; SESSIONS-ET-BRANCHES sans les 8 branches de la session ; KEVIN_ACTIONS_TODO sans « vérifie Apex 376 sur l'iPhone » ; LESSONS : 582 écrit 3 fois, 583 cinq fois (757 leçons, 135 numéros non croissants).
 - **Réparé** : entrée CHANGELOG « Apex AI v13.4.372 → 376 » ; 8 lignes de branches + 8 fiches au registre (état termine) ; ligne 0b pour Kevin ; mes leçons renumérotées 584 / 585.

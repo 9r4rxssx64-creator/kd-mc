@@ -17,6 +17,10 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Les mises en ligne passent par le dépôt PUBLIC (gratuit) — règle absolue (Kevin)
+- **Mesuré** : public `kd-mc` = 81 déploiements du routeur réussis jusqu'au 15.10 ; le 16.10 tous bloqués par MA porte de ration (runs 38894881785…38907646497), qui tournait aussi dans le public. Le robot n'allait pas chercher le coffre : depuis le public il aurait publié le domaine sans CMCteams.
+- **Corrigé** (`deploy-kdmc-router.yml`) : privé → push = tâche sautée (0 min), bouton manuel gardé ; public → récupère le coffre (`.github/actions/coffre`, clé lecture seule) puis garde BLOQUANTE « les 5 apps privées sont dans le paquet » ; porte de ration seulement dans le privé. Règle écrite (CLAUDE-HISTOIRE, `.claude/rules/gratuit-public.md`), garde `test:robots-public` (10, sabotage prouvé).
+
 ## 2026-10-16 — Boîte « Mes messages » cliquable + robots invisibles (capture de Kevin, 13h19)
 - Capture : « 🟢 1 en ligne maintenant — CI Smoke · apex chat » = le compte robot des vérifications (créé par le smoke test du déploiement et mes contrôles). Corrigé dans `boite.js` : `estRobot` (uid ci_…) → jamais écrit en présence, jamais listé (même une vieille ligne).
 - Cliquable : chaque nom « en ligne » ouvre SA carte ; la carte a « 👤 Sa fiche admin » (`/admin/#fiche-<uid>`, l'admin attend les fiches 8 s) ; dans l'historique complet, une app citée (arbre.kd-mc.com…) a « ↗ ouvrir ». Portail v1.0.65 (cache), boîte 2.0.3 dans l'admin.

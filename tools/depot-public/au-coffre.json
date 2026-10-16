@@ -314,6 +314,7 @@
   "tests/verify-retour-kdmc-home.mjs",
   "tests/verify-retraite-manuelle.mjs",
   "tests/verify-rien-de-public.mjs",
+  "tests/verify-robots-public.mjs",
   "tests/verify-router-secours.mjs",
   "tests/verify-seances-individuel.mjs",
   "tests/verify-seances.mjs",

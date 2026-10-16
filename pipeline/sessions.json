@@ -1797,6 +1797,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "robots-public": {
+      "titre": "Déploiement par le dépôt public (gratuit), coffre récupéré, privé à 0 minute par fusion",
+      "branche": "claude/robots-public",
+      "sujet": "Kevin : ne pas consommer, privilégier toujours le public",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -48,14 +48,27 @@ permissions:
 
 jobs:
   deploy:
+    # GRATUIT D'ABORD (Kevin 16.10 : « privilégie toujours le public ») : à chaque fusion, c'est le dépôt PUBLIC
+    # (kd-mc, minutes Actions gratuites et illimitées) qui déploie — il reçoit la copie de main quelques secondes après.
+    # Dans le coffre privé (2 000 min/mois), un push ne lance RIEN (tâche sautée = 0 minute) ; seul le bouton
+    # manuel (workflow_dispatch) reste, en secours. Garde : tests/verify-robots-public.mjs.
+    if: ${{ github.event_name != 'push' || !github.event.repository.private }}
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 1 }   # on NE fige PAS la branche : un push sur claude/** deploie CETTE branche
 
+      # Dépôt PUBLIC : CMCteams, la light, l'arbre, apex-ai, le coffre… vivent dans le coffre privé — on les récupère
+      # (clé en LECTURE SEULE) AVANT de fabriquer le paquet, sinon le domaine serait publié sans eux. Dans le coffre : ne fait rien.
+      - name: Récupérer les fichiers privés (CMCteams, Light, données)
+        uses: ./.github/actions/coffre
+        with:
+          cle: ${{ secrets.COFFRE_CLE_LECTURE }}
+
+      # La ration ne concerne QUE le coffre privé (2 000 min/mois) ; le dépôt public est gratuit et illimité.
       - name: Porte de ration (le jour n'est-il pas déjà mangé ?)
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && github.event.repository.private }}
         shell: bash -eo pipefail {0}
         env: { GH_TOKEN: "${{ github.token }}" }
         run: bash tools/ci/porte-ration.sh 4
@@ -93,6 +106,11 @@ jobs:
           # plus seulement une bouée de secours. Sans médias, la-détente / chez-lolo / cuisine / arbre perdraient leurs images.
           if grep -qE '^SOURCE_PAGES *= *"assets"' wrangler.toml; then node prepare-secours.mjs; else node prepare-secours.mjs --leger; fi
           test -d public || { echo "::error::public/ absent après prepare-secours"; exit 1; }
+          # GARDE BLOQUANTE (16.10) : les apps privées DOIVENT être dans le paquet — sinon on ne déploie pas (domaine sans CMCteams).
+          for f in index.html tools/departs/index.html arbre/index.html coffre-fort/index.html apex-ai-v13/index.html; do
+            T=$(wc -c < "public/CMCteams/$f" 2>/dev/null || echo 0)
+            [ "$T" -ge 2000 ] || { echo "::error::paquet incomplet — $f absent ou vide ($T octets) : coffre non récupéré ? Déploiement ANNULÉ."; exit 1; }
+          done
           echo "public/ : $(find public -type f | wc -l) fichiers, $(du -sh public | cut -f1)"
 
       # KV ACCOUNTS : binding FIGÉ dans wrangler.toml (id du namespace existant).

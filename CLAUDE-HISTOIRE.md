@@ -12229,3 +12229,12 @@ Kevin : « Vérifie toujours tout réel. Note-le et rappelle-toi. »
 - **Si je ne peux pas voir le réel** (arbre derrière le code famille, admin derrière la connexion → 401/404 pour moi) : je le DIS (« non vérifié en ligne, voici ce que j'ai vu à la place »), je n'écris jamais « fait » à la place.
 - **Chaque livraison finit par une ligne « Vérifié réel : … / Non vérifié : … ».**
 - Écrit aussi dans `.claude/rules/verifier-reel.md` (chargé par toute session du dépôt).
+
+## 🆓 RÈGLE ABSOLUE — LES ROBOTS PASSENT PAR LE DÉPÔT PUBLIC : GRATUIT ET ILLIMITÉ D'ABORD, LE PRIVÉ SEULEMENT EN SECOURS (Kevin 2026-10-16, ABSOLUE)
+
+Kevin : « Trouve des solutions pour ne pas consommer. Tu avais mis en place de passer par le public avec un robot… Privilégie toujours le public. Enfin, en tout cas, toujours le gratuit. Note-le, rappelle-toi-en. »
+
+- **Mesuré le 16.10** : la ration de 60 min/jour du coffre privé (2 000 min/mois) a été mangée à midi, et les mises en ligne de l'après-midi sont restées bloquées — alors que le dépôt public `kd-mc` (minutes gratuites, illimitées) a déployé le routeur 81 fois avant ce jour-là. Cause : la porte de ration tournait AUSSI dans le public et y bloquait tout.
+- **Désormais** : à chaque fusion, c'est le dépôt PUBLIC qui déploie (il va chercher CMCteams, la light, l'arbre, apex-ai et le coffre dans le coffre privé avec une clé en lecture seule) ; dans le privé, un push ne lance aucune tâche ; le bouton manuel du privé reste pour les urgences. Garde bloquante : un paquet sans les apps privées n'est jamais envoyé.
+- **Pour tout nouveau robot** : d'abord le public (ou le Lenovo de Kevin, `KDMC_RUNNER`), jamais le privé par défaut ; aucun journal public n'affiche un contenu privé (seulement des nombres).
+- **Garde** : `npm run test:robots-public` (dans `test:ci`, sabotage prouvé).

@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.18';
+  var JAVIS_VER = 'v1.19';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -1686,9 +1686,48 @@
     });
   }
 
+  /* 🩺 TESTER BEE (Kevin 16.10 : « je ne peux rien lui faire faire ») : un test de bout en bout, dit en mots simples — ce que ce téléphone envoie, ce que le domaine
+     répond (reconnu ? IA gratuite ? arbre ?). Rien n'est gardé dans la conversation. Sans accès au domaine, il dit LA cause, pas un message vague. */
+  var RE_DIAG = /^\s*(?:@diagnostic|diagnostic|teste[- ]?toi|test(?:er)? bee|tester bee)\s*[.!?]*\s*$/i;
+  function diagnostiquer(root) {
+    if (root._attente) return false;
+    root._attente = true; setThinking(root, true); showTyping(root, true);
+    var tok = ssoToken(), L = ['🩺 Test de Bee'];
+    var installee = false; try { installee = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); } catch (_) {}
+    var marq = /(?:^|;\s*)kdmc_k=1(?:;|$)/.test(document.cookie || '');
+    L.push('• Ici : ' + ((PAGE_CTX && PAGE_CTX.app) || location.hostname.split('.')[0]) + (installee ? ' (app installée)' : ' (navigateur)') + ' · Bee ' + JAVIS_VER);
+    L.push('• Ce téléphone envoie : jeton ' + (tok ? 'oui' : 'non') + ', marqueur « Kevin » ' + (marq ? 'oui' : 'non'));
+    var fini = function (res, w) {
+      root._attente = false; setThinking(root, false); showTyping(root, false);
+      L.push('• Le domaine te reconnaît : ' + (w && w.ok ? 'oui' + (w.verified === true ? ' (Face ID prouvé)' : ' (mais SANS Face ID)') + (w.admin === true ? ', admin' : '') : 'non'));
+      var j = res && res.j, st = res ? res.st : 0;
+      if (j && j.ok && j.texte) L.push(j.texte);
+      else if (st === 403) L.push('❌ Le domaine refuse de me laisser parler : il ne te reconnaît pas comme Kevin prouvé par Face ID. Touche le bouton Face ID ci-dessous.');
+      else if (st === 429) L.push('⏳ Trop de questions d\'un coup : attends une minute.');
+      else if (st >= 500) L.push('❌ Le domaine a un souci (erreur ' + st + ').');
+      else L.push('❌ Le domaine n\'a pas répondu (' + (st || 'réseau coupé') + ').');
+      var b = addBubble(root, 'javis', L.join('\n'));
+      if (st === 403) boutonFaceId(root, b);
+      allRigs(root).forEach(function (r) { react(r, st === 200 ? 'joie' : 'triste', 1400); });
+    };
+    var hdrs = { 'Content-Type': 'application/json' }; if (tok) hdrs['x-kdmc-sso'] = tok;
+    var ctrl = null; try { ctrl = new AbortController(); } catch (_) {}
+    var minuteur = setTimeout(function () { try { if (ctrl) ctrl.abort(); } catch (_) {} }, 22000);
+    fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store', headers: tok ? { Authorization: 'Bearer ' + tok } : {} })
+      .then(function (r) { return r.ok ? r.json() : null; }, function () { return null; })
+      .then(function (w) {
+        return fetch(AI_ENDPOINT, { method: 'POST', credentials: 'include', headers: hdrs, signal: ctrl ? ctrl.signal : undefined, body: JSON.stringify({ diag: true, contexte: contexteBee() }) })
+          .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { st: r.status, j: j }; }); })
+          .catch(function () { return { st: 0, j: null }; })
+          .then(function (res) { clearTimeout(minuteur); fini(res, w); });
+      });
+    return true;
+  }
+
   function askJavis(root, text) {
     if (root._attente) return false;          /* une réponse est déjà attendue : on ne mélange pas */
     addBubble(root, 'user', text);
+    if (RE_DIAG.test(text)) return diagnostiquer(root);
     var hist = loadHistory();
     hist.push({ role: 'user', content: text });
     saveHistory(hist);
@@ -1776,11 +1815,11 @@
   /* Où sommes-nous ? (pour qu'elle commente la page où elle apparaît) */
   function lieu() {
     var h = (location.hostname || '').toLowerCase();
-    if (h.indexOf('arbre') === 0) return { nom: 'ton arbre de famille', quoi: 'Une question ? Je ne vois pas les fiches de l\'arbre, mais je peux t\'aider à chercher des idées.' };
+    if (h.indexOf('arbre') === 0) return { nom: 'ton arbre de famille', quoi: 'Je cherche une personne, je te dis ce qui manque, j\'ajoute une info ou je relie un proche — toujours après ton ✅. Touche un bouton.' };
     if (h.indexOf('lingua') === 0) return { nom: 'Lingua', quoi: 'Ma maison ! On révise un peu ?' };
-    if (h.indexOf('cmcteams') === 0) return { nom: 'tes plannings', quoi: 'Besoin d\'un coup d\'oeil sur une équipe ?' };
-    if (h.indexOf('apex') === 0) return { nom: 'Apex', quoi: 'Je te laisse la main, il fait les grosses actions.' };
-    return { nom: 'ton domaine', quoi: 'Demande-moi ce que tu veux.' };
+    if (h.indexOf('cmcteams') === 0) return { nom: 'tes plannings', quoi: 'Je te dis quand tu travailles et avec qui. Demande-moi !' };
+    if (h.indexOf('apex') === 0) return { nom: 'Apex', quoi: 'Je cherche, je lis tes apps et je te prépare des actions à confirmer.' };
+    return { nom: 'ton domaine', quoi: 'Demande-moi ce que tu veux, ou touche « Ce que tu sais faire ».' };
   }
 
   function salut() {
@@ -1956,19 +1995,34 @@
     if (APP_MODE && QUESTION_ADRESSE) setTimeout(function () { askJavis(wrap, QUESTION_ADRESSE); }, 300);
     if (APP_MODE && !QUESTION_ADRESSE) { suggestions(wrap); bonjourDuJour(wrap); }
 
-    wrap.querySelector('#javis-launcher').addEventListener('click', function () {
+    /* OUVRIR AU DOIGT (Kevin 16.10 : « quand je le touche il bouge mais c'est tout ») : Bee saute dès que le doigt se pose ; sur iPhone le « clic »
+       qui suit peut se perdre. On ouvre donc AUSSI quand le doigt se lève (bouge < 12 px, < 1 s) ; le clic qui suit ne referme pas (dédoublonné). */
+    var lanceur0 = wrap.querySelector('#javis-launcher'), _dep = null, _ouvertDoigt = 0;
+    function basculer(par) {
       /* dans l'app, le panneau est toujours là : toucher Bee ne doit pas ouvrir le clavier */
       if (APP_MODE) return;
+      if (par === 'clic' && Date.now() - _ouvertDoigt < 700) return;   /* le doigt vient déjà d'ouvrir : ce clic est le même geste */
+      if (par === 'doigt' && panel.classList.contains('javis-open')) return;   /* le doigt n'ouvre que ; fermer reste au clic */
+      if (par === 'doigt') _ouvertDoigt = Date.now();
       panel.classList.toggle('javis-open');
       var ouvert = panel.classList.contains('javis-open');
       if (ouvert) {
-        setTimeout(function () { input.focus(); }, 150);
+        /* clavier : pas d'ouverture automatique sur téléphone quand des boutons sont proposés (il les cacherait) */
+        var tactile = false; try { tactile = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches); } catch (_) {}
+        setTimeout(function () { if (!tactile) input.focus(); }, 150);
         allRigs(wrap).forEach(function (r) { react(r, 'coucou', 1400); });
         tone([620, 820], .16);
         var b = document.querySelector('.javis-bubble'); if (b) b.remove();
         suggestions(wrap);   /* Bee flottante dans une app : elle montre d'emblée ce qu'on peut lui demander ICI (Kevin 15.10) */
       }
-    });
+    }
+    lanceur0.addEventListener('pointerdown', function (e) { _dep = { x: e.clientX, y: e.clientY, t: Date.now() }; }, { passive: true });
+    lanceur0.addEventListener('pointerup', function (e) {
+      var d = _dep; _dep = null;
+      if (!d || e.pointerType === 'mouse') return;      /* la souris a un vrai clic : rien à doubler */
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 12 && Date.now() - d.t < 1000) basculer('doigt');
+    }, { passive: true });
+    lanceur0.addEventListener('click', function () { basculer('clic'); });
     wrap.querySelector('#javis-close').addEventListener('click', function () {
       panel.classList.remove('javis-open');
     });
@@ -2163,8 +2217,8 @@
   /* Les boutons changent selon L'APP où est Kevin (Kevin 15.10 : « dans les apps, comment je le fais travailler ? ») : dans l'arbre, ce
      sont les actions de l'arbre ; ailleurs, la semaine, la météo et « qu'est-ce que tu sais faire ». Chaque bouton envoie la phrase à sa place. */
   var CHIPS_ARBRE = [['🔎 Ce qui manque', 'Fais le bilan de l\'arbre : qu\'est-ce qui manque dans les fiches ?'], ['➕ Ajouter une info', 'Je veux ajouter une info (téléphone, e-mail, adresse…) à une fiche de l\'arbre. Demande-moi pour qui.'],
-    ['🔗 Relier un proche', 'Je veux relier ou ajouter un proche dans l\'arbre. Demande-moi qui et comment il est lié.'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.']];
-  var CHIPS_DEFAUT = [['🗓 Ma semaine', 'Je travaille quand cette semaine ?'], ['☀️ La météo', 'Quel temps fait-il ?'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.'], ['🧸 En 3D', 'Montre-toi en 3D']];
+    ['🔗 Relier un proche', 'Je veux relier ou ajouter un proche dans l\'arbre. Demande-moi qui et comment il est lié.'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.'], ['🩺 Tester Bee', '@diagnostic']];
+  var CHIPS_DEFAUT = [['🗓 Ma semaine', 'Je travaille quand cette semaine ?'], ['☀️ La météo', 'Quel temps fait-il ?'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.'], ['🧸 En 3D', 'Montre-toi en 3D'], ['🩺 Tester Bee', '@diagnostic']];
   function suggestions(root) {
     var list = root.querySelector('#javis-msgs');
     if (!list || list.querySelector('.javis-chips') || list.querySelector('.javis-bub.me')) return;
@@ -2175,7 +2229,7 @@
       .forEach(function (s) {
         var b = document.createElement('button');
         b.type = 'button'; b.textContent = s[0];
-        b.addEventListener('click', function () { box.remove(); vibrate(10); askJavis(root, s[1]); });
+        b.addEventListener('click', function () { box.remove(); vibrate(10); if (s[1] === '@diagnostic') { addBubble(root, 'user', '🩺 Tester Bee'); diagnostiquer(root); } else askJavis(root, s[1]); });
         box.appendChild(b);
       });
     list.appendChild(box);

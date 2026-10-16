@@ -19,13 +19,14 @@ import * as cptD1 from './compteurs-d1.js';
 const URL_MESSAGES = 'https://kd-mc.com/#messages';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
-import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders } from '../_shared/ia-route.js';
+import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders, SECRET_NAMES as IA_SECRETS } from '../_shared/ia-route.js';
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
 import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
+import { avecJournal, bilanDiag } from './bee-diag.js';   // le journal des demandes à Bee + son test de bout en bout (Kevin 16.10 : « je ne peux rien lui faire faire »)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
 import { handlePartout, PARTOUT_TAG, MARQUEUR } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
@@ -34,7 +35,7 @@ export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wra
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
 import { lirePlanning, verifierEtRanger, corrigerMatricule, listeMatricules } from './membre-planning.js';
 import { KEVIN_MATRICULE, RE_PLANNING, lireSeed, prochainsJours, faitsPlanning } from './bee-planning.js';
-import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe, DEFINITIONS } from '../_shared/outils-lecture.js';   // les mains de Bee : météo, date, planning, calcul, recherche, lecture de page (gratuits, lecture seule)
+import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe, DEFINITIONS, FOURNISSEURS_OUTILS } from '../_shared/outils-lecture.js';   // les mains de Bee : météo, date, planning, calcul, recherche, lecture de page (gratuits, lecture seule)
 
 /* D'où viennent les pages. Historiquement GitHub Pages — mais le dépôt est
    PRIVÉ depuis le 23/09/2026 (« que personne ne voie mon code ») et GitHub
@@ -583,11 +584,11 @@ const ROUTEUR = {
        et le serveur JETAIT le caractère de Bee (« ne prétends pas avoir agi »). Ici : la session
        admin est vérifiée PAR LE DOMAINE (Face ID ou code), le caractère est fixé côté serveur,
        et le client ne peut envoyer que des messages « user » / « assistant ». */
-    if (url.pathname === '/__javis/ai') return handleBeeIa(request, env, ctx);
+    if (url.pathname === '/__javis/ai') return avecJournal(env, ctx, request, 'ai', () => handleBeeIa(request, env, ctx));
     if (url.pathname === '/__javis/moi') return handleBeeMoi(request, env);
-    if (url.pathname === '/__javis/fil') return handleFil(request, env, outilsBee(env, ctx));
+    if (url.pathname === '/__javis/fil') return avecJournal(env, ctx, request, 'fil', () => handleFil(request, env, outilsBee(env, ctx)));
     /* 🖐 BEE AGIT — seulement après le bouton ✅ de Kevin (proposition signée, session admin prouvée) ; 🐝 BEE PARTOUT : le script posé sur chaque page, son cadre, et « est-ce Kevin ? ». */
-    if (url.pathname === '/__javis/agir') return handleAgir(request, env, outilsBee(env, ctx));
+    if (url.pathname === '/__javis/agir') return avecJournal(env, ctx, request, 'agir', () => handleAgir(request, env, outilsBee(env, ctx)));
     if (url.pathname === '/__javis/partout.js' || url.pathname === '/__javis/cadre' || url.pathname === '/__javis/qui') {
       const rp = await handlePartout(request, url, env, outilsBee(env, ctx)); if (rp) return rp;
     }
@@ -4074,9 +4075,12 @@ async function handleBeeIa(request, env, ctx) {
   if (!/^application\/json/i.test(request.headers.get('content-type') || '')) return JB({ ok: false, reason: 'json_requis' }, 415);
   const origine = request.headers.get('origin');
   if (origine && !/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i.test(origine)) return JB({ ok: false, reason: 'hors_domaine' }, 403);
-  if (!(await adminSession(request, env))) return JB({ ok: false, reason: 'kevin_seulement' }, 403);
+  const sessionBee = await adminSession(request, env);
+  if (!sessionBee) return JB({ ok: false, reason: 'kevin_seulement' }, 403);
   if (!(await limiteTous(env && env.LIMITE_BEE, 'bee'))) return JB({ ok: false, reason: 'trop_vite' }, 429);
   let b = {}; try { b = await request.json(); } catch (_) { return JB({ ok: false, reason: 'json_invalide' }, 400); }
+  /* 🩺 LE TEST DE BEE (bouton « Tester Bee ») : la session est reconnue ici (sinon on n'est pas arrivé jusque-là) ; on dit quelle IA gratuite répond VRAIMENT et l'état de l'arbre. */
+  if (b && b.diag === true) return JB(Object.assign({ ok: true }, await diagBee(request, env, sessionBee)));
   /* Tours alternés user/assistant (Gemini et Anthropic l'exigent) : deux tours de suite du même rôle
      sont fusionnés, et la conversation commence par Kevin. */
   const messages = [];
@@ -4286,6 +4290,28 @@ let _fbJeton = { v: '', exp: 0 };
      et seulement celles de cette liste blanche. */
 const PORTES_BEE = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__bot/kill', '/__bot/start', '/__bot/status',
   '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke'];   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre, création de compte restent FERMÉS (bee-droits.js)
+async function diagBee(request, env, session) {
+  const pingIA = async () => {
+    const t = Date.now();
+    const r = await repondreAvecOutils(env, { messages: [{ role: 'user', content: 'Réponds seulement le mot ok.' }], system: 'Tu réponds uniquement par le mot ok.', finMs: Date.now() + 7000, ctx: {} });
+    return r && r.text ? { provider: r.provider, ms: Date.now() - t } : null;
+  };
+  const etatArbre = async () => {
+    const o = { seed: 0, codehash: false, nuage: null };
+    let seed = null; try { seed = (await arbreSeedOut(env)).seed; } catch (_) { seed = null; }
+    o.seed = seed && seed.persons ? Object.keys(seed.persons).length : 0;
+    let ch = null; try { ch = await arbreCodehash(env); } catch (_) { ch = null; }
+    o.codehash = !!(ch && ARBRE_HEX64.test(String(ch).trim().toLowerCase()));
+    if (o.codehash && o.seed && String(env && env.BEE_ARBRE_ECRIRE) !== '0') {
+      try { const cl = nuageArbre({ fetchFn: (u, i) => fetch(u, i), codehash: async () => ch }); await cl.lire(Object.keys(seed.persons)[0]); o.nuage = true; }
+      catch (e) { o.nuage = false; o.erreur = 'le nuage dit : ' + String(e && e.message || e).slice(0, 70); }
+    }
+    return o;
+  };
+  return bilanDiag(env, { session, canal: canalDiag(request), fournisseurs: FOURNISSEURS_OUTILS.map((p) => ({ nom: p, secret: IA_SECRETS[p] })), ia: pingIA, arbre: etatArbre,
+    interrupteurs: { BEE_OUTILS: env && env.BEE_OUTILS, BEE_AGIR: env && env.BEE_AGIR, BEE_ARBRE: env && env.BEE_ARBRE, BEE_ARBRE_ECRIRE: env && env.BEE_ARBRE_ECRIRE, BEE_VOIR: env && env.BEE_VOIR } });
+}
+function canalDiag(request) { const h = (k) => (request.headers.get(k) || '').trim(); return 'arrivée par ' + (h('x-kdmc-sso') ? 'jeton' : '') + (h('x-kdmc-sso') && /kdmc_sso=/.test(h('cookie')) ? ' + ' : '') + (/kdmc_sso=/.test(h('cookie')) ? 'cookie' : '') + (!h('x-kdmc-sso') && !/kdmc_sso=/.test(h('cookie')) ? 'code admin' : ''); }
 function outilsBee(env, ctx) {
   return {
     qui: (request) => adminSession(request, env),

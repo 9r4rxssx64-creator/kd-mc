@@ -1707,6 +1707,10 @@ test:voix-chirp 16/0, voisins verts ; 8 sabotages rouges. **À vérifier en vrai
 
 Après la fusion #4316, « Coffre → dépôt public : synchroniser le CODE » s'est arrêté (6 « téléphone » = une constante sRGB de three.js dans `perso3d.js`) : routeur et Lingua non déployés. Corrigé à la source (`tools/3d/build-runtime.mjs` écrit la constante en notation scientifique) + garde dans `test:perso3d`. Leçon 417.
 
+## 2026-10-16 — BEE « NE FONCTIONNE TOUJOURS PAS » DANS L'ARBRE : JOURNAL + TEST + OUVERTURE AU DOIGT (Bee v1.19)
+
+**Fait** (code + tests, PAS encore vu chez Kevin) : (1) `bee-diag.js` — journal D1 `bee_journal` (300 lignes ; route, résultat, raison, canal en oui/non, IA, outils, durée, appareil ; jamais de message ni de jeton ; `BEE_JOURNAL=0`) lisible par l'agent via `d1_database_query` sur `kdmc-cercle` ; test `POST /__javis/ai {diag:true}` (session prouvée ? IA gratuite qui répond VRAIMENT ? arbre publié ? nuage ? interrupteurs) ; (2) widget v1.19 : bouton « 🩺 Tester Bee » partout, l'accueil n'affirme plus « je ne vois pas les fiches », le chat s'ouvre AUSSI au `pointerup` tactile (le « clic » iPhone peut se perdre), pas de clavier d'office sur téléphone. `test:bee-diag` (33, 7 sabotages) + `test:bee-arbre-navigateur` (24). Leçon 575. **À faire par l'agent après le prochain essai de Kevin** : lire `SELECT * FROM bee_journal ORDER BY id DESC LIMIT 30` (base `kdmc-cercle`) — la cause exacte y est.
+
 ## 2026-10-15 (après-midi) — CORRIGE TOUT : LE TEST FACE ID NAVIGATEUR REMIS AU VERT
 
 **Fait** : le robot « KDMC SSO — test navigateur réel » du dépôt public était rouge depuis la fusion #4577 (Face ID automatique à la 1re ouverture) : `tools/kdmc-passkey-e2e/run.mjs` cliquait un bouton déjà grisé. Le test constate maintenant la connexion automatique (session forte), puis vérifie qu'au 2e retour il n'y a plus de tentative automatique et que le bouton marche. 17/0 en local, sabotage → rouge. Leçon 556. Le rouge « Deploy kdmc-access » est déjà corrigé par #4580.

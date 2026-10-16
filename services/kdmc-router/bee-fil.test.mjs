@@ -115,7 +115,7 @@ ok(r.status === 503 && (await r.json()).reason === 'base_indisponible', '5g. bas
 ok(!kvEcrit.some((k) => /bee|fil|conversation/i.test(k)), '5h. 0 écriture KV (tout est en D1 gratuit)', kvEcrit.join(','));
 
 /* ───────── 6. câblage ───────── */
-ok(/if \(url\.pathname === '\/__javis\/fil'\) return handleFil\(request, env, outilsBee\(env, ctx\)\)/.test(W), '6. le routeur sert /__javis/fil avec le gardien de Kevin (session admin prouvée)');
+ok(/if \(url\.pathname === '\/__javis\/fil'\) return avecJournal\(env, ctx, request, 'fil', \(\) => handleFil\(request, env, outilsBee\(env, ctx\)\)\)/.test(W), '6. le routeur sert /__javis/fil avec le gardien de Kevin (session admin prouvée)');
 const bee = readFileSync(new URL('./bee-fil.js', import.meta.url), 'utf8');
 ok(/if \(!\(await outils\.qui\(request\)\)\) return J\(\{ ok: false, reason: 'kevin_seulement' \}, 403\)/.test(bee) && bee.indexOf('outils.qui') < bee.indexOf('CERCLE_DB') && bee.indexOf('outils.qui') < bee.indexOf('request.json'), '6b. la session de Kevin est vérifiée AVANT de toucher à la base ou de lire le corps');
 const wd = readFileSync(new URL('../../tools/javis/javis-widget.js', import.meta.url), 'utf8');

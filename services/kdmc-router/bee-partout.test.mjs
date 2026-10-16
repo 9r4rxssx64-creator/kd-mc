@@ -158,10 +158,10 @@ const FERMEES = ['/__fin/vault', '/__fin/meta', '/__admin/login', '/__admin/gran
 ok(FERMEES.every((f) => !PORTES.includes(f)), '7c. RESTENT FERMÉS, une par une : coffre et clés, connexion et code admin, création de compte avec code, journal détaillé (IP), mode réel du robot, arbre, relais, sessions — ' + FERMEES.filter((f) => PORTES.includes(f)).join(' '));
 
 /* ───────── 8. câblage ───────── */
-ok(/if \(url\.pathname === '\/__javis\/agir'\) return handleAgir\(request, env, outilsBee\(env, ctx\)\)/.test(W) && /handlePartout\(request, url, env, outilsBee\(env, ctx\)\)/.test(W), '8. le routeur sert /__javis/agir et /__javis/{partout.js,cadre,qui} avec les gardiens de Kevin');
+ok(/if \(url\.pathname === '\/__javis\/agir'\) return avecJournal\(env, ctx, request, 'agir', \(\) => handleAgir\(request, env, outilsBee\(env, ctx\)\)\)/.test(W) && /handlePartout\(request, url, env, outilsBee\(env, ctx\)\)/.test(W), '8. le routeur sert /__javis/agir et /__javis/{partout.js,cadre,qui} avec les gardiens de Kevin');
 ok(/return injecterBouton\(new Response\(res\.body[^;]*PARTOUT_TAG[^;]*\)/.test(W), '8b. le chemin de réponse du routeur pose bien le script de Bee');
 ok(/qui: \(request\) => adminSession\(request, env\)/.test(W), '8c. « qui » = la session admin PROUVÉE par le domaine (Face ID ou code), jamais ce que dit la page');
-ok(/if \(!\(await adminSession\(request, env\)\)\) return JB\(\{ ok: false, reason: 'kevin_seulement' \}, 403\);/.test(W.slice(W.indexOf('async function handleBeeIa'), W.indexOf('async function handleBeeIa') + 1800)), '8d. le cerveau de Bee exige toujours Kevin avant de lire quoi que ce soit');
+ok(/const sessionBee = await adminSession\(request, env\);\s+if \(!sessionBee\) return JB\(\{ ok: false, reason: 'kevin_seulement' \}, 403\);/.test(W.slice(W.indexOf('async function handleBeeIa'), W.indexOf('async function handleBeeIa') + 1800)), '8d. le cerveau de Bee exige toujours Kevin avant de lire quoi que ce soit');
 
 console.log(`\n${pass} ✓ / ${fail} ✗`);
 process.exit(fail ? 1 : 0);

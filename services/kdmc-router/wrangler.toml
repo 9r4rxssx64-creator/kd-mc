@@ -146,8 +146,9 @@ KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 # Pour revenir à l'inscription libre (numéro cru) : "0" puis redéployer le routeur.
 KDMC_VALIDATION_MANUELLE = "1"
 # 15.10 (audit extérieur, P0) : les pages viennent de la copie EMBARQUÉE du routeur, plus de l'hébergeur public
-# kdmc-site-bj5.pages.dev (qui servait tout le site sans compte). Retour arrière : supprimer cette ligne et redéployer
-# (UPSTREAM_BASE ci-dessous reprend la main, tant que le projet Pages existe).
+# kdmc-site-bj5.pages.dev (qui servait tout le site sans compte).
+# 16.10 : le projet Pages est SUPPRIMÉ ; dès que la copie (ASSETS) est liée, elle sert même si cette ligne se perd —
+# revenir à un hébergeur exige SOURCE_PAGES = "hebergeur" posé exprès (audit sécurité 16.10).
 SOURCE_PAGES = "assets"
 
 # ── OÙ LE ROUTEUR VA CHERCHER LES PAGES (bascule du 18.09.2026) ──────────────

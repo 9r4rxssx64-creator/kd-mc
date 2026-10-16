@@ -43,7 +43,14 @@
     "audit/prive/",
     "livrables/",
     "COUTS-ET-ABONNEMENTS.md",
-    "tools/couts/"
+    "tools/couts/",
+    "tools/approvals/",
+    "shops/dashboard/",
+    "shops/croupier/entrainement.js",
+    "shops/croupier/entrainement-lecons.js",
+    "shops/croupier/entrainement-visuels.js",
+    "audit/facture-github-2026-09.tsv",
+    "audit/2026-09-26/"
   ],
   "_prive_toujours_pourquoi": {
     "index.html / sw.js / app 2.js / manifest.json / version.txt": "l'application CMCteams elle-même (la liste des 260 employés est écrite dedans)",
@@ -55,7 +62,10 @@
     "patches/": "anciens correctifs d'Apex v12 : inutiles au public, et ils citent des numéros d'établissements",
     "tools/audit/sonde-domaine.mjs, audit/prive/": "audit du domaine (27.09.2026) : la sonde mesure des failles pas encore toutes corrigées (lecture Firebase anonyme, relais) et le rapport les décrit — les publier serait un mode d'emploi",
     "livrables/": "dossiers PDF / Excel faits pour Kevin (ses coûts, ses reçus) : données personnelles",
-    "COUTS-ET-ABONNEMENTS.md, tools/couts/": "l'inventaire de ce que Kevin paie (reçus, montants, banques, adresses de ses boîtes mail) et les scripts qui fabriquent ses tableaux : données personnelles (verifier.mjs l'a arrêté le 2.10 : adresse e-mail personnelle l.33)"
+    "COUTS-ET-ABONNEMENTS.md, tools/couts/": "l'inventaire de ce que Kevin paie (reçus, montants, banques, adresses de ses boîtes mail) et les scripts qui fabriquent ses tableaux : données personnelles (verifier.mjs l'a arrêté le 2.10 : adresse e-mail personnelle l.33)",
+    "tools/approvals/, shops/dashboard/": "outils d'ADMIN (coffre d'autorisations, tableau des commandes) : leur code n'a rien à faire dans un dépôt lisible par tous (audit sécurité 16.10, P1-5) ; servis tels quels par le routeur, derrière la porte",
+    "shops/croupier/entrainement*.js": "contenu PAYANT de Croupier Pro (l'entraîneur complet) : public = gratuit pour tous (audit 16.10, P1-6)",
+    "audit/facture-github-2026-09.tsv, audit/2026-09-26/": "facture et rapport d'audit : rien à faire au public (audit 16.10, P2-6)"
   },
   "chemins_qui_rendent_un_test_prive": [
     "tools/departs",
@@ -65,7 +75,8 @@
     "planning-parser-tester",
     "tests/fixtures",
     "arbre/",
-    "app 2.js"
+    "app 2.js",
+    "shops/croupier/entrainement"
   ],
   "documents_caviardes": {
     "extensions": [

@@ -1,13 +1,13 @@
 /* GARDE — les pages viennent de la COPIE EMBARQUÉE du routeur (SOURCE_PAGES = "assets"), plus de l'hébergeur public (15.10, audit
    extérieur, P0 : kdmc-site-bj5.pages.dev servait tout le site sans compte, en contournant les portes).
-   node services/kdmc-router/source-assets.test.mjs   ·   SABOTAGE=1 : le routeur ignore SOURCE_PAGES → rouge
+   node services/kdmc-router/source-assets.test.mjs   ·   SABOTAGE=1 : SOURCE_PAGES = "hebergeur" → rouge
    Prouve, avec le VRAI routeur et une copie embarquée simulée (rangement /CMCteams/…, html_handling = "none") :
      1. aucune requête réseau vers un hébergeur : tout vient de env.ASSETS ;
      2. « / » et « …/dossier/ » servent l'index.html du dossier ; un fichier exact est servi tel quel ;
      3. « …/dossier » (sans « / ») répond 301 vers la belle adresse avec « / » ; une redirection ne sort jamais du domaine ;
      4. une page absente répond 404 avec la page « introuvable » en français (jamais un écran blanc), un fichier absent 404 ;
      5. un POST vers une page statique n'atteint jamais la copie (405) ;
-     6. sans SOURCE_PAGES, le routeur revient à l'hébergeur (retour arrière) ;
+     6. SOURCE_PAGES = "hebergeur" posé à la main : retour à l'hébergeur ; SOURCE_PAGES perdu + copie liée : la copie sert (16.10) ;
      7. wrangler.toml pose SOURCE_PAGES = "assets" et html_handling = "none", et le déploiement fabrique la copie COMPLÈTE. */
 import { readFileSync } from 'node:fs';
 import mod, { viaAssets } from './worker.js';
@@ -32,7 +32,7 @@ const ASSETS = { fetch: async (req) => {
 let reseau = [];
 globalThis.fetch = async (req) => { reseau.push(typeof req === 'string' ? req : req.url); return new Response('<html>HEBERGEUR</html>', { status: 200, headers: { 'content-type': 'text/html' } }); };
 
-const env = { ASSETS, SOURCE_PAGES: process.env.SABOTAGE ? '' : 'assets', UPSTREAM_BASE: 'https://kdmc-site-bj5.pages.dev', UPSTREAM_PREFIX: '' };
+const env = { ASSETS, SOURCE_PAGES: process.env.SABOTAGE ? 'hebergeur' : 'assets', UPSTREAM_BASE: 'https://kdmc-site-bj5.pages.dev', UPSTREAM_PREFIX: '' };
 const page = (url, o = {}) => mod.fetch(new Request(url, Object.assign({ headers: { accept: 'text/html', 'sec-fetch-dest': 'document', 'sec-fetch-mode': 'navigate' } }, o)), env, { waitUntil() {} });
 
 ok(viaAssets(env), '0. SOURCE_PAGES = "assets" + binding ASSETS → mode copie embarquée');
@@ -65,9 +65,13 @@ ok(!['sec-fetch-mode', 'sec-fetch-dest', 'cache-control', 'accept-encoding', 'us
   '8. la copie embarquée ne reçoit AUCUN en-tête du visiteur, sauf range', [...transmis]);
 ok(reseau.length === 0, '1. aucune requête réseau vers un hébergeur (tout vient de la copie embarquée)', reseau);
 
-{ const env2 = { ASSETS, UPSTREAM_BASE: 'https://kdmc-site-bj5.pages.dev', UPSTREAM_PREFIX: '' }; reseau = [];
+{ const env2 = { ASSETS, SOURCE_PAGES: 'hebergeur', UPSTREAM_BASE: 'https://hebergeur.test', UPSTREAM_PREFIX: '' }; reseau = [];
   const r6 = await mod.fetch(new Request('https://kit.kd-mc.com/bureau.html', { headers: { accept: 'text/html' } }), env2, { waitUntil() {} });
-  ok(!viaAssets(env2) && reseau.some((u) => u.startsWith('https://kdmc-site-bj5.pages.dev/')) && r6.status === 200, '6. sans SOURCE_PAGES : retour à l\'hébergeur (retour arrière possible)', reseau); }
+  ok(!viaAssets(env2) && reseau.some((u) => u.startsWith('https://hebergeur.test/')) && r6.status === 200, '6. SOURCE_PAGES = "hebergeur" posé à la main : retour à l\'hébergeur (retour arrière possible)', reseau); }
+/* 16.10 (audit sécurité) : la variable SOURCE_PAGES perdue (branche en retard) ne fait plus retomber sur un hébergeur public. */
+{ const env3 = { ASSETS }; reseau = [];
+  const r6b = await mod.fetch(new Request('https://kit.kd-mc.com/bureau.html', { headers: { accept: 'text/html' } }), env3, { waitUntil() {} });
+  ok(viaAssets(env3) && reseau.length === 0 && r6b.status === 200, '6b. SOURCE_PAGES absent mais copie liée : la copie sert, aucun hébergeur contacté', reseau); }
 
 const wr = readFileSync(new URL('./wrangler.toml', import.meta.url), 'utf8');
 const wf = readFileSync(new URL('../../.github/workflows/deploy-kdmc-router.yml', import.meta.url), 'utf8');

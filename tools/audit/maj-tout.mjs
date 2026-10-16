@@ -86,6 +86,11 @@ function mesurer() {
   m.apex_tests = (() => { try { return arrondi(fs.readdirSync('messaging-app/tests/unit').filter((x) => x.endsWith('.test.js')).length, 10); } catch { return 0; } })();
   m.branches_locales = compte("git branch -r 2>/dev/null | grep -c 'origin/' ");
 
+  /* les VERSIONS des apps (Kevin 16.10 : « tous les documents à jour, sans rien oublier ») : lues dans les
+     fichiers de l'arbre (nom du cache de chaque service worker, tout version.txt) — stables tant qu'aucun
+     commit ne les change, donc comparables par le garde ; jamais recopiées à la main. */
+  m.versions = versionsApps();
+
   /* réseau — mode complet seulement */
   if (!RAPIDE) {
     m.branches = compte('git ls-remote --heads origin 2>/dev/null | wc -l') || m.branches_locales;
@@ -106,6 +111,36 @@ function mesurer() {
     m.branches = m.branches_locales;
   }
   return m;
+}
+
+const NOMS_APPS = [
+  ['lingua/', 'Lingua'], ['javis/', 'Bee'], ['version.txt', 'CMCteams'], ['tools/departs/version.txt', 'CMCteams light'],
+  ['arbre/', 'Arbre'], ['kdmc-home/worldmonitor/', 'World Monitor'], ['kdmc-home/', 'Portail'], ['apex-ai/v13/', 'Apex'],
+  ['coffre-fort/', 'Coffre-fort'], ['tools/poolrobot/', 'PoolPilot'], ['tools/approvals/', 'Approbations'],
+  ['tools/crea-studio/', 'Créa Studio'], ['tools/social/app/', 'Social'], ['clayscore/webapp/', 'ClayScore'],
+  ['iRemoteHub/', 'iRemoteHub'], ['shops/la-detente/', 'La Détente'], ['shops/chez-lolo/', 'Chez Lolo'],
+];
+function versionsApps() {
+  const fichiers = sh('git ls-files', '').split('\n')
+    .filter((f) => /(^|\/)(sw\.js|version\.txt)$/.test(f) && !/^(dist|_?archives?[^/]*|apex-ai-v13)\//.test(f) && f !== 'apex-ai/sw.js');
+  const par = new Map();
+  for (const f of fichiers.sort((a, b) => (a.endsWith('version.txt') ? -1 : 1) - (b.endsWith('version.txt') ? -1 : 1))) {
+    let v = '';
+    try {
+      const t = fs.readFileSync(f, 'utf8');
+      v = f.endsWith('version.txt') ? t.trim().split('\n')[0].trim()
+        : ((t.match(/(?:CACHE(?:_NAME)?|VERSION)\s*=\s*["'`][^"'`]*?(v?\d+(?:\.\d+)+)/) || [])[1] || '');
+    } catch {}
+    if (!v) continue;
+    if (!/^v/.test(v)) v = 'v' + v;
+    const dossier = f.replace(/(sw\.js|version\.txt)$/, '');
+    const nom = (NOMS_APPS.find(([p]) => (p.endsWith('/') ? dossier === p : f === p)) || [])[1]
+      || (dossier.startsWith('shops/') ? 'boutique ' + dossier.split('/')[1] : dossier.replace(/\/$/, '') || 'racine');
+    if (f === 'sw.js') continue;                       /* même version que version.txt (CMCteams) */
+    if (!par.has(nom)) par.set(nom, v);
+  }
+  const rang = (n) => { const i = NOMS_APPS.findIndex(([, x]) => x === n); return i < 0 ? 999 : i; };
+  return [...par.entries()].sort((a, b) => rang(a[0]) - rang(b[0]) || a[0].localeCompare(b[0], 'fr'));
 }
 
 /* ─────────── 2. les blocs régénérés ─────────── */
@@ -152,6 +187,8 @@ function blocs(m) {
             : `| État de la CI | non vérifié | — |`,
       ].join('\n');
 
+  b['versions'] = '**Versions sur `main`** (remesurées à chaque fin de tour — `maj-tout`) : ' + (m.versions || []).map(([n, v]) => `${n} **${v}**`).join(' · ');
+
   b['attentes-kevin'] = m.attentes.length
     ? m.attentes.map((a) => `- 👤 **${a.quoi}**  \`${a.id}\``).join('\n')
     : '- ✅ Rien n\'attend Kevin pour l\'instant.';
@@ -166,6 +203,8 @@ const CIBLES = [
   ['TRANSFERT-COMPLET.md', 'attentes-kevin'],
   ['KEVIN_ACTIONS_TODO.md', 'attentes-kevin'],
   ['messaging-app/README.md', 'apex-chat'],
+  ['ETAT-DU-MOMENT.md', 'versions'],
+  ['TRANSFERT-COMPLET.md', 'versions'],
 ];
 
 function appliquer(b) {

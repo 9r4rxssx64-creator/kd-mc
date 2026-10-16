@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (soir) — « Tous les documents, en temps réel, sans rien oublier » (Kevin, 4ᵉ demande)
+
+Trou mesuré : Lingua **v2.141.0** sur main, écrite nulle part (ni mémo ni état), idem ~12 apps. `docs-fraicheur.cjs` :
+R4 = toute version d'app (cache `sw.js` changé, tout `version.txt`, hors dist/archives) écrite au mémo + **R7** = version ⇒
+`ETAT-DU-MOMENT.md` bouge (test 27/0, 6 sabotages). `maj-tout.mjs` : bloc `versions` (22 apps) dans ETAT + TRANSFERT, comparé
+par `test:maj-tout`. Règle notée : `CLAUDE-HISTOIRE.md` → `CLAUDE.md` (index 219 règles). ETAT : 3 lignes Lingua fusionnées
+en une synthèse. Piège : ma copie hors du dossier projet ne lance pas le hook Stop → `maj-tout --rapide` à la main. Leçon #583.
+
+---
 ## 2026-10-16 (soir) — « Mets TOUS les documents à jour » (5ᵉ rappel) : complété, pas dupliqué
 - **Mesuré avant d'écrire** : `main` portait déjà le rattrapage du 16.10 et la règle `.claude/rules/docs-temps-reel.md` (PR #4666) ; chefs d'équipe v9.974→v9.977, présence live, relais `demande_chef` étaient déjà dans CHANGELOG, MEMO, KEVIN_INVENTORY, NOTES_USER, ETAT-DU-MOMENT, LESSONS. Rien recopié une seconde fois.
 - **Ce qui manquait et a été ajouté** : KEVIN_ACTIONS_TODO points 7 (dates d'entrée SBM pour rendre les chefs définitifs ; 16 personnes sans vrai matricule dont Davy CARPINELLI) et 8 (avance de 20 min à l'entrée des départs, réglée à 0) ; chiffres remesurés par `npm run maj-tout`.
@@ -425,6 +434,11 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - Mesuré : 104 fichiers / 1654 tests, couverture sans ERROR ; ancien serveur → 5 échecs sur 7.
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
+
+## 2026-10-16 — Suite sécurité : code admin hors du public, routeur sans repli public (Kevin « Va au bout de tout le travail auto, sans t'arrêter jamais »)
+- Nouvelle règle absolue notée (CLAUDE-HISTOIRE + `.claude/rules/au-bout.md`) : enchaîner seul jusqu'au bout, ce qui exige Kevin → KEVIN_ACTIONS_TODO + une phrase, puis tâche suivante.
+- `regles.json` → `prive_toujours` : `tools/approvals/`, `shops/dashboard/`, `shops/croupier/entrainement*.js`, `audit/facture-github-2026-09.tsv`, `audit/2026-09-26/` ; tests de l'entraîneur → coffre (`chemins_qui_rendent_un_test_prive`). Le site reste identique (action `coffre` du déploiement public). L'HISTORIQUE git du dépôt public contient encore les anciennes versions (réécrire l'historique public = action lourde, non faite).
+- Routeur : `viaAssets` = copie liée sauf `SOURCE_PAGES = "hebergeur"` explicite → plus de repli possible vers `kdmc-site-bj5.pages.dev` en production. `UPSTREAM_DEFAUT` reste seulement pour un worker sans copie (tests) ; tests « secours » passés en `SOURCE_PAGES: 'hebergeur'` explicite.
 
 ## 2026-10-16 — La Détente : robots protégés (audit sécurité P1, Kevin « Go »)
 - `/validate` (bouton « ✅ Valider & produire » de la notification = VRAI paiement Printify) n'était gardé que par Origin + `x-ld-app` (recopiables). Désormais : jeton signé (HMAC de l'order_id, clé dérivée de `PRINTIFY_API_KEY`) glissé par `/order` dans la notification chiffrée ; les `sw.js` des 2 boutiques le renvoient. Les notifications d'avant ce changement ne valident plus depuis le bouton → valider dans Printify (le lien de la notif y mène).

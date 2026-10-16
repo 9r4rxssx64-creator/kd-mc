@@ -32,6 +32,13 @@
      R6  le ROUTEUR du domaine a changé (services/kdmc-router/worker.js)
                                                ⇒ ETAT-DU-MOMENT.md a changé (la vérité du jour,
                                                   servie à chaque réveil de chaque branche)
+     R4 étendue + R7 (16.10.2026 — Kevin : « Mets TOUS les documents à jour en temps réel toujours sans rien
+         oublier, note-le ») : R4 ne regardait que 2 fichiers de version — une nouvelle version de Lingua, Bee,
+         l'arbre, une boutique… (nom du cache du service worker sw.js de chaque app, tous les version.txt)
+         passait sans être notée. Désormais TOUTE version d'app qui bouge
+                                               ⇒ écrite dans MEMO_RESUME.md (R4) ET ETAT-DU-MOMENT.md
+                                                  a changé (R7 : la vérité du jour dit quelle version
+                                                  est livrée)
 
    FAIL-OPEN VOLONTAIRE (ne bloque jamais à tort) : pas de git, pas de `main`, aucune
    différence, ou rien qui déclenche une règle → on passe.
@@ -50,7 +57,12 @@ const DOC_FICHIERS = 'KEVIN_INVENTORY.md';
 const DOC_LECONS = 'LESSONS.md';
 const DOC_IMPORTS = 'IMPORTS-KEVIN.md';
 const DOC_ETAT = 'ETAT-DU-MOMENT.md';
-const FICHIERS_VERSION = ['version.txt', 'tools/departs/version.txt'];
+/* Une VERSION d'app : tout `version.txt`, et le numéro dans le nom du cache de chaque service worker
+   (« var CACHE = "lingua-v2.138.0" ») — sauf les copies figées de dist/ et des archives. */
+const EST_VERSION_TXT = (f) => /(^|\/)version\.txt$/.test(f) && !/^(dist|_?archives?[^/]*)\//.test(f);
+const EST_SW = (f) => /(^|\/)sw\.js$/.test(f) && !/^(dist|_?archives?[^/]*)\//.test(f);
+const RX_VERSION_SW = /(?:CACHE(?:_NAME)?|VERSION)\s*=\s*["'`][^"'`]*?(v?\d+(?:\.\d+)+)/;
+const versionSw = (txt) => { const m = String(txt || '').match(RX_VERSION_SW); return m ? m[1] : ''; };
 const ROUTEUR = 'services/kdmc-router/worker.js';
 /* Docs et tests ne "comptent" pas comme du code : les modifier seuls n'oblige à rien (R1/R2). */
 const NEUTRES = [
@@ -102,7 +114,12 @@ const code = modifies.filter((f) => !estNeutre(f));
 const codeCree = crees.filter((f) => !estNeutre(f));
 const testsCrees = crees.filter(EST_TEST);
 const planningsAjoutes = crees.filter(EST_PLANNING);
-const versionsBougees = FICHIERS_VERSION.filter((f) => modifies.includes(f) && existsSync(f));
+const versionsBougees = [];   /* [{ f, v }] : fichier → nouvelle version */
+for (const f of modifies) {
+  if (!existsSync(f)) continue;
+  if (EST_VERSION_TXT(f)) { const v = lire(f).trim(); if (v) versionsBougees.push({ f, v }); }
+  else if (EST_SW(f)) { const v = versionSw(lire(f)), avant = versionSw(sh(`git show ${base}:${f}`)); if (v && v !== avant) versionsBougees.push({ f, v }); }
+}
 const routeurBouge = modifies.includes(ROUTEUR);
 
 /* Chaque manque = [document, pourquoi]. */
@@ -115,12 +132,12 @@ if (testsCrees.length && !touche(DOC_LECONS)) manque.push([DOC_LECONS, 'R3 : un 
 const versionsNonEcrites = [];
 if (versionsBougees.length) {
   const memo = lire(DOC_SESSION);
-  for (const f of versionsBougees) {
-    const v = lire(f).trim();
-    if (v && !memo.includes(v)) versionsNonEcrites.push(`${f} = ${v}`);
+  for (const { f, v } of versionsBougees) {
+    if (!memo.includes(v)) versionsNonEcrites.push(`${f} = ${v}`);
   }
   if (versionsNonEcrites.length) manque.push([DOC_SESSION, `R4 : version(s) livrée(s) mais pas ÉCRITE(S) dans ${DOC_SESSION} : ${versionsNonEcrites.join(', ')}`]);
 }
+if (versionsBougees.length && !touche(DOC_ETAT)) manque.push([DOC_ETAT, `R7 : version(s) livrée(s) (${versionsBougees.map((x) => x.v).join(', ')}) → la vérité du jour dit quelle version est en ligne`]);
 if (planningsAjoutes.length && !touche(DOC_IMPORTS)) manque.push([DOC_IMPORTS, `R5 : planning(s) de Kevin ajouté(s) (${planningsAjoutes.join(', ')}) → ligne avec verdict (✅/🛠️/⏭️/🏠)`]);
 if (routeurBouge && !touche(DOC_ETAT)) manque.push([DOC_ETAT, 'R6 : le routeur du domaine a changé → la vérité du jour (date en tête + ligne du tableau)']);
 
@@ -132,7 +149,7 @@ if (!manque.length) {
   if (codeCree.length) suivent.push(DOC_FICHIERS);
   if (testsCrees.length) suivent.push(DOC_LECONS);
   if (planningsAjoutes.length) suivent.push(DOC_IMPORTS);
-  if (routeurBouge) suivent.push(DOC_ETAT);
+  if (routeurBouge || versionsBougees.length) suivent.push(DOC_ETAT);
   ok(`docs à jour : ${code.length} fichier(s) de code, ${testsCrees.length} test(s) créé(s), ${versionsBougees.length} version(s), ` +
      `${planningsAjoutes.length} planning(s), routeur ${routeurBouge ? 'touché' : 'intact'} — ${[...new Set(suivent)].join(' + ')} suivent.`);
   process.exit(0);
@@ -152,7 +169,7 @@ if (testsCrees.length) {
   console.log(`\nTests / gardes CRÉÉS (${testsCrees.length}) — chacun a une leçon :`);
   testsCrees.slice(0, 10).forEach((f) => info('· ' + f));
 }
-if (versionsBougees.length) console.log(`\nVersions livrées : ${versionsBougees.map((f) => f + ' = ' + lire(f).trim()).join(', ')}`);
+if (versionsBougees.length) console.log(`\nVersions livrées : ${versionsBougees.map((x) => x.f + ' = ' + x.v).join(', ')}`);
 if (planningsAjoutes.length) console.log(`\nPlannings de Kevin ajoutés : ${planningsAjoutes.join(', ')}`);
 if (routeurBouge) console.log(`\nRouteur du domaine modifié : ${ROUTEUR}`);
 console.log('\nÀ mettre à jour AVANT de pousser :');

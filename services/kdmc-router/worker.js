@@ -65,7 +65,11 @@ const PAGES_PREFIX_DEFAUT = '/CMCteams';
    adresse publique d'hébergeur, donc le projet Pages peut être supprimé. Les ASSETS ne sont joignables QUE par ce code
    (run_worker_first = true) : les portes s'appliquent exactement comme avant. Sans la variable : comportement d'avant (hébergeur). */
 const HOTE_ASSETS = 'https://kdmc-assets.local';
-export const viaAssets = (env) => !!(env && env.ASSETS && typeof env.ASSETS.fetch === 'function' && String(env.SOURCE_PAGES || '').trim() === 'assets');
+/* 16.10 (audit sécurité, P1) : dès que la copie embarquée est liée (ASSETS), c'est ELLE qui sert — même si la variable
+   SOURCE_PAGES se perd (branche en retard, tableau de bord vidé) : le routeur de production ne peut plus retomber sur un
+   hébergeur public (le projet Pages est supprimé). Retour à l'hébergeur : SOURCE_PAGES = "hebergeur" ET UPSTREAM_BASE posés
+   à la main. Sans ASSETS (tests, ancien déploiement) : UPSTREAM_BASE / UPSTREAM_DEFAUT comme avant. */
+export const viaAssets = (env) => !!(env && env.ASSETS && typeof env.ASSETS.fetch === 'function' && String(env.SOURCE_PAGES || '').trim() !== 'hebergeur');
 /* Demande un fichier à la source des pages. En mode « assets », reproduit l'hébergeur d'avant (GitHub Pages) : un dossier « …/ » sert son
    index.html ; « …/dossier » sans extension, s'il a un index.html, répond 301 vers « …/dossier/ » ; sinon 404 honnête (html_handling = "none"
    dans wrangler.toml : la copie ne réécrit ni ne redirige rien d'elle-même). */

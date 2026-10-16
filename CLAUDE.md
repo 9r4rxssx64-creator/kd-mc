@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 219 règles — le texte de Kevin, une par une
+## 📜 Les 220 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -963,6 +963,10 @@ Kevin : « Trouve des solutions pour ne pas consommer. Tu avais mis en place de 
 ### 📚 RÈGLE ABSOLUE — TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER (Kevin 2026-10-16, 4ᵉ rappel : 16.05, 12.08, 8.10, 16.10)
 **« Mets TOUS les documents à jour en temps réel toujours sans rien oublier, note-le. »** — Kevin 2026-10-16
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tous-les-documents-à-jour-en-temps-réel-sans-rien-oublier-kevin-2026-10-16-4ᵉ-rappel-1605-1208-810-1610)
+
+### 🏁 RÈGLE ABSOLUE — VA AU BOUT DE TOUT LE TRAVAIL, EN AUTO, SANS JAMAIS T'ARRÊTER (Kevin 2026-10-16, ABSOLUE)
+Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. »
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-va-au-bout-de-tout-le-travail-en-auto-sans-jamais-tarrêter-kevin-2026-10-16-absolue)
 
 ---
 

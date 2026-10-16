@@ -12260,3 +12260,49 @@ touchant presque que `MEMO_RESUME.md` (assez pour le garde) ; `KEVIN_ACTIONS_TOD
 7. `pipeline/sessions.json` via `node tools/pipeline/pipeline.mjs maj --id <moi> …` (et lire les messages des autres sessions) ;
 8. les données vivantes hors dépôt : notes des fiches de l'arbre (réponses des mairies, actes), fiches PDF de recherche.
 9. **Ce qui se mesure ne s'écrit pas à la main** : `npm run maj-tout` (hook Stop, à chaque fin de tour) réécrit les chiffres entre marqueurs `<!-- MAJ-AUTO:debut … -->` — depuis le 16.10 aussi l'état d'Apex Chat dans `messaging-app/README.md` (version, tailles arrondies au palier, jamais de faux rouge) ; `test:maj-tout` échoue si un bloc est périmé. Un document daté (`messaging-app/docs/ARCHITECTURE.md`, `ROADMAP.md`) porte un bandeau « daté » + renvoi vers la source vivante.
+
+### Complément mécanique (même jour, session `lingua-cercle`) — le trou que le garde ne voyait pas
+
+#### 1. Pourquoi une quatrième fois — le trou mesuré ce jour-là
+
+Le garde `test:docs-frais` vérifiait six règles, mais la règle « une version livrée est ÉCRITE au
+mémo » ne regardait que **2 fichiers** (`version.txt`, `tools/departs/version.txt`). Toutes les
+autres apps — Lingua, Bee, l'arbre, le portail, les boutiques… — portent leur version dans le nom
+du cache de leur service worker (`var CACHE = "lingua-v2.138.0"`), et d'autres `version.txt`
+existent (PoolPilot, approbations). Une nouvelle version de Lingua pouvait donc partir **sans être
+notée nulle part** : le garde restait vert. Un garde vert qui ne couvre pas la règle rassure à tort.
+
+#### 2. Ce qui est désormais MÉCANIQUE (garde `test:docs-frais`, dans `test:ci`, prouvé par sabotage)
+
+| Ce qui change | Document qui DOIT bouger dans le même commit |
+|---|---|
+| du code | `MEMO_RESUME.md` (R1) |
+| un fichier créé | `KEVIN_INVENTORY.md`, lien cliquable (R2) |
+| un test / garde créé | `LESSONS.md`, la leçon qui dit pourquoi (R3) |
+| **la version de N'IMPORTE QUELLE app** (cache du `sw.js`, tout `version.txt`) | le numéro **écrit** dans `MEMO_RESUME.md` (R4) **et** `ETAT-DU-MOMENT.md` (R7) |
+| un planning de Kevin | `IMPORTS-KEVIN.md` (R5) |
+| le routeur du domaine | `ETAT-DU-MOMENT.md` (R6) |
+| une session / branche | `pipeline/sessions.json` + `SESSIONS-ET-BRANCHES.md` (`test:pipeline-sessions`) |
+| les chiffres (tests, workflows, attentes Kevin) | blocs `MAJ-AUTO` régénérés à chaque fin de tour (`maj-tout`) |
+
+#### 3. Ce qu'aucun garde ne peut deviner — à faire à chaque tour, sans qu'il le redise
+
+- **un résultat RÉEL** (audit, vérif sur le vrai domaine, déploiement) → `ETAT-DU-MOMENT.md` + `MEMO_RESUME.md`, avec le n° du run ;
+- **une info métier** apprise de Kevin → `NOTES_USER.md` ;
+- **une attente de Kevin** (clic, décision, compte) → `KEVIN_ACTIONS_TODO.md` / registre des sessions ;
+- **une nouvelle règle de Kevin** → ici (`CLAUDE-HISTOIRE.md`) puis `npm run claude-md:index`.
+
+#### 4. Test mental avant de dire « fini »
+
+> *« Qu'est-ce qui a changé dans ce tour — code, version, résultat réel, info de Kevin, attente ?
+> Pour chacun : quel document le dit maintenant ? Si la réponse est « aucun », ce n'est pas fini. »*
+
+## 🏁 RÈGLE ABSOLUE — VA AU BOUT DE TOUT LE TRAVAIL, EN AUTO, SANS JAMAIS T'ARRÊTER (Kevin 2026-10-16, ABSOLUE)
+
+Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. »
+
+- **Ne t'arrête pas après une livraison** pour demander « continu ? » : enchaîne toi-même la tâche suivante de la liste en cours (audit, MEMO, KEVIN_ACTIONS_TODO), par ordre de risque, jusqu'à ce qu'il ne reste plus rien que tu puisses faire seul.
+- Chaque livraison reste complète (tests, docs, fusion, mise en ligne gratuite par le dépôt public, « Vérifié réel / Non vérifié ») — mais le compte rendu à Kevin se fait **en continuant**, pas en attendant sa réponse.
+- Tu ne t'arrêtes que pour ce qui EXIGE Kevin (un clic dans une console à laquelle tu n'as pas accès, un paiement, une décision irréversible sur ses données) : tu l'écris dans `KEVIN_ACTIONS_TODO.md`, tu le lui dis en une phrase, et **tu passes à la tâche suivante** au lieu d'attendre.
+- Les règles d'avant restent : gratuit d'abord (dépôt public), vérifier dans le réel, rien de payant sans son accord.
+- Écrit aussi dans `.claude/rules/au-bout.md` (chargé par toute session du dépôt).

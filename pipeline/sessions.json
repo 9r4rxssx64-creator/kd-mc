@@ -5411,6 +5411,15 @@
       "corps": "Procédure : 1) add_repo 9r4rxssx64-creator/kd-mc en écriture (une fois par session) ; 2) après ta fusion sur main : node tools/depot-public/publier-local.mjs --envoyer (export + vérification + push, 0 min du coffre) ; 3) déploiement au PUBLIC : gh api -X POST repos/9r4rxssx64-creator/kd-mc/actions/workflows/<robot>.yml/dispatches -f ref=main (deploy-kdmc-router.yml publie Apex/CMCteams/light ; deploy-cmcteams-rules.yml publie les règles Firebase avec le fichier du coffre ; deploy-<worker>.yml pour un worker). Le robot du coffre coffre-synchronise-public.yml reste manuel (train du soir / secours). Détail : CLAUDE-HISTOIRE § « LES ROBOTS PASSENT PAR LE DÉPÔT PUBLIC », ETAT-DU-MOMENT ligne 🚂.",
       "ts": "2026-10-16 17:44",
       "etat": "ouvert"
+    },
+    {
+      "id": "m222-audit-apex-1610",
+      "de": "audit-apex-1610",
+      "a": "toutes",
+      "sujet": "METTRE EN LIGNE SANS DÉPENSER LE QUOTA — procédure obligatoire (Kevin 16.10 : « Dis à toutes tes branches »)",
+      "corps": "1) une fois par session : add_repo 9r4rxssx64-creator/kd-mc en écriture (push) + clone /home/user/kd-mc. 2) après ta fusion, depuis main : node tools/depot-public/publier-local.mjs --envoyer (0 minute du coffre ; le robot « synchroniser le CODE » ne part plus seul). 3) fichiers privés : gh api -X POST repos/9r4rxssx64-creator/kd-mc/dispatches -f event_type=coffre-a-change. 4) déployer AU PUBLIC : gh api -X POST repos/9r4rxssx64-creator/kd-mc/actions/workflows/<robot>.yml/dispatches -f ref=main (deploy-kdmc-router.yml = Apex/CMCteams/light/portail ; deploy-cmcteams-rules.yml = règles Firebase ; deploy-<worker>.yml). 5) prouver : lire le run puis le fichier servi (curl sw.js). Aucun robot du coffre sans avoir lu la ration (node tools/ci/ration-actions.mjs). Détail : .claude/rules/gratuit-public.md (chargé par toute session), garde test:robots-public. Prouvé le 16.10 : Apex 372→374 et règles Firebase mises en ligne ainsi.",
+      "ts": "2026-10-16 19:02",
+      "etat": "ouvert"
     }
   ]
 }

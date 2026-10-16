@@ -1,10 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Apex Chat : lots G à J réellement en ligne (correction d'une annonce trop tôt)
+- Les déploiements précédents tournaient sur un dépôt public pas encore à jour (quota Actions du coffre épuisé, aucune synchronisation automatique). Publication faite par `publier-local.mjs --envoyer` → commit public 40adf1c ; déploiement réussi ; le code des lots G, H, I, J y est (marqueurs `ctEq`, `conv_id_required`, `purgeHistoriqueConnexions`). Leçon 579.
+
 ## 2026-10-16 (nuit) — Apex v13.4.374 : les 46 tests rouges de `main` remis au vert (branche claude/apex-public-1610)
 
 - Les rouges n'étaient pas des bugs d'Apex mais des tests figés sur d'anciennes règles : « Anthropic en premier » (36 tests ; la règle de Kevin est « gratuit d'abord » → ces tests forcent maintenant Anthropic explicitement, mode `forced`, comme le bouton ⚡), relais du dépôt par défaut depuis le 22.09 (4), position safe-area de la transcription (1), projets en chantier sans adresse en ligne (1), sentinelles qui pendaient sans réseau (1 → réseau simulé, on teste la forme), et 2 boutons de pub croisée sans adresse (code : `kd-mc.com`, `shops.kd-mc.com`, mesurés 200).
 - Garde ajoutée : `test:apex-passerelle` 5b — la copie servie `apex-ai-v13/` doit être celle de la source (version, un seul `CACHE_VERSION`, aucun marqueur de conflit ; sabotage prouvé). Leçon #561.
 - Pas vérifié : le vrai iPhone (Apex 374 à publier par le routeur public après fusion).
+- **Procédure « mettre en ligne sans quota » dite à toutes les branches** (Kevin : « Dis à toutes tes branches… ») : `.claude/rules/gratuit-public.md` récrit en 5 pas (chargé par toute session, garde `test:robots-public` 15/15 avec sabotage), message pipeline m222, ETAT 🚂. Aucune autre session n'était en cours (ListAgents vide) : le canal, ce sont les fichiers.
 ## 2026-10-16 — `test:admin-tuiles-reel` réparé (7 rouges depuis le « tableau unique »)
 - Les tuiles vivent désormais dans leur rubrique (et leur onglet) : le test y va par l'adresse (`#commerce/<onglet>`, `#apps`), comme Kevin, puis exige toujours la tuile visible et ≥ 44 px. 19/19.
 ## 2026-10-16 — Apex Chat v1.1.310 : lot J (fiabilité)

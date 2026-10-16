@@ -248,9 +248,14 @@
     var anom = a.anomaly && a.anomaly.at
       ? '<div class="anom">⚠️ Connexion suspecte — <b>' + esc(a.anomaly.from || '?') + ' → ' + esc(a.anomaly.to || '?') + '</b> en ' + esc(String(a.anomaly.mins || '?')) + ' min · ' + esc(ago(a.anomaly.at)) + '</div>'
       : '';
-    return '<div class="kdmc-card kdmc-in fiche" id="fiche-' + esc(a.uid) + '">'
-      + '<div class="fhead"><div><h3>' + esc(a.name || a.uid) + '</h3><div class="uid">' + esc(a.uid) + '</div></div>'
-      + '<div class="when" data-va="journal:' + esc(a.uid) + '"><span class="kdmc-dot"></span>' + ago(a.last_seen) + '</div></div>'
+    /* 16.10 nuit (Kevin : « Ferme les fiches par défaut, ça prend trop de place, et fais plus lisible ») : une fiche est une ligne
+       (nom · dernière connexion · nombre de connexions · ⚠️ si suspecte) ; tout le détail s'ouvre d'un toucher. Une fiche visée
+       (#fiche-<uid>, « Sa fiche admin ») s'ouvre toute seule (tableau.js, aller()). */
+    return '<details class="kdmc-card kdmc-in fiche" id="fiche-' + esc(a.uid) + '">'
+      + '<summary class="fhead"><span class="fqui"><h3>' + esc(a.name || a.uid) + '</h3>'
+      + '<span class="fres">' + esc(ago(a.last_seen)) + ' · ' + (a.hits || 0) + ' connexion' + ((a.hits || 0) > 1 ? 's' : '') + (a.anomaly && a.anomaly.at ? ' · <b class="fsusp">⚠️ suspecte</b>' : '') + '</span></span>'
+      + '<span class="fchev" aria-hidden="true">›</span></summary>'
+      + '<div class="fcorps"><div class="uid">' + esc(a.uid) + ' · <span class="lien-info" data-va="journal:' + esc(a.uid) + '">journal</span></div>'
       + anom
       + (a.uid === 'kdmc_admin' ? '' : '<button class="savacc ouvrir-compte" data-uid="' + esc(a.uid) + '" type="button" style="margin:6px 0 10px" title="Ouvre ce compte : la personne n\'attend plus ton accord.">✅ Ouvrir ce compte</button>')
       + '<div class="kv">'
@@ -268,7 +273,7 @@
       + '<div class="etatbox" data-uid="' + esc(a.uid) + '" hidden></div>'
       + '<button class="revoke" data-uid="' + esc(a.uid) + '" type="button" '
       + 'title="Coupe toutes ses sessions ouvertes (appareil perdu/volé). Il pourra se reconnecter normalement.">🚪 Déconnecter partout</button>'
-      + '</div>';
+      + '</div></details>';
   }
 
   /* ---- Où cette personne a le droit d'aller (Kevin 2026-09-15) -------------

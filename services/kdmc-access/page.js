@@ -13,7 +13,7 @@ export const PAGE_HTML = `<!doctype html>
 <meta name="theme-color" content="#0a0f0a">
 <title>Qui se connecte — kd-mc.com</title>
 <style>
-  :root{--bg:#080c08;--bg2:#0f150f;--card:#121a12;--bd:#1e2c1e;--gold:#c9a227;--txt:#e7f0e0;--txt2:#9db08e;--txt3:#68785e;--on:#3ad06a;--off:#57604f}
+  :root{--bg:#080c08;--bg2:#0f150f;--card:#121a12;--bd:#243424;--gold:#d8b23a;--txt:#eef5e8;--txt2:#b8caa9;--txt3:#8fa083;--on:#3ad06a;--off:#57604f}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{margin:0;background:radial-gradient(120% 80% at 50% 0,#0e160e,var(--bg));color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 40px)}
   .wrap{max-width:760px;margin:0 auto;padding:0 14px}
@@ -65,9 +65,9 @@ export const PAGE_HTML = `<!doctype html>
   .pers .qui{flex:1;min-width:0;display:flex;flex-direction:column}
   .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(0,0,0,.25)}
   .nm{font-weight:700;font-size:15.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .when{color:var(--txt3);font-size:12px;white-space:nowrap}
+  .when{color:var(--txt2);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-  .chip{font-size:11.5px;padding:3px 9px;border-radius:20px;background:var(--bg2);border:1px solid var(--bd);color:var(--txt2)}
+  .chip{font-size:13px;padding:4px 10px;border-radius:20px;background:var(--bg2);border:1px solid var(--bd);color:var(--txt2)}
   .chip.app{color:#dfe9d6;border-color:#2a3d29}
   .chip.g{color:var(--gold);border-color:#3a3216}
   .tier{font-size:10.5px;padding:2px 7px;border-radius:6px;background:#1a2416;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px}
@@ -76,10 +76,10 @@ export const PAGE_HTML = `<!doctype html>
   .fold>summary::-webkit-details-marker{display:none}
   .fold>summary::before{content:'▸';margin-right:7px;color:var(--txt2)}
   .fold[open]>summary::before{content:'▾'}
-  .sect{margin-top:10px;font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em}
-  .tl{margin-top:11px;border-top:1px solid var(--bd);padding-top:9px;display:none}
+  .sect{margin-top:12px;font-size:12.5px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em}
+  .tl{margin-top:10px;border-top:1px solid var(--bd);padding-top:10px;display:none}
   .tl.open{display:block}
-  .ev{display:flex;gap:9px;font-size:12.5px;padding:5px 0;color:var(--txt2);border-bottom:1px solid rgba(255,255,255,.03)}
+  .ev{display:flex;gap:9px;font-size:13.5px;padding:5px 0;color:var(--txt2);border-bottom:1px solid rgba(255,255,255,.03)}
   .ev .t{color:var(--txt3);white-space:nowrap;font-variant-numeric:tabular-nums}
   .ev .e{color:var(--txt);flex:1}
   .empty{text-align:center;color:var(--txt3);padding:50px 20px}
@@ -101,7 +101,7 @@ export const PAGE_HTML = `<!doctype html>
 </style></head>
 <body>
 <div id="app"></div>
-<div class="badge" id="vbadge" role="button" tabindex="0" title="Toucher = forcer la mise à jour" style="cursor:pointer;min-height:24px">kdmc-access v1.2.0</div>
+<div class="badge" id="vbadge" role="button" tabindex="0" title="Toucher = forcer la mise à jour" style="cursor:pointer;min-height:24px">kdmc-access v1.3.0</div>
 <script>
 (function(){
   var $=function(s,r){return (r||document).querySelector(s)};
@@ -456,16 +456,18 @@ export const PAGE_HTML = `<!doctype html>
       h+='<div class="card'+(isOn?' on':'')+(opened?' ouvert':'')+'" id="c-'+esc(p.key)+'"><div class="pers" data-k="'+esc(p.key)+'" role="button" aria-expanded="'+(opened?'true':'false')+'">'
         +'<span class="av'+(isOn?' on':'')+'" aria-hidden="true">'+esc(initiales(p.name))+'</span>'
         +'<span class="qui"><span class="nm">'+esc(p.name||'—')+' '+tiers+'</span>'
-        +'<span class="when">'+(isOn?'🟢 en ligne':esc(ago(p.lastSeen)))+(lieu?' · 📍 '+esc(lieu):'')+(p.conns?' · '+p.conns+' connexions':'')+'</span></span>'
+        +'<span class="when">'+(isOn?'🟢 en ligne':esc(ago(p.lastSeen)))+(lieu?' · 📍 '+esc(lieu):'')+(p.conns?' · '+p.conns+' connexions':'')+(p.anomaly?' · <b style="color:#f5c26b">⚠️</b>':'')+'</span></span>'
         +'<span class="chev" aria-hidden="true">›</span></div>'
-        +'<div class="chips">'
+        /* 16.10 nuit (Kevin : « Ferme les fiches par défaut, ça prend trop de place ») : une carte = UNE ligne ; appareil, apps,
+           VPN, alerte et tout le détail s'ouvrent d'un toucher. */
+        +'<div class="tl'+(opened?' open':'')+'" data-tl="'+esc(p.key)+'">'
+        +'<div class="chips" style="margin-top:0">'
         +(p.dev?'<span class="chip">📱 '+esc(p.dev)+'</span>':dev)
         +apps
         +(p.vpn?'<span class="chip" style="border-color:#7a5b12;color:#f5c26b">🕵️ VPN / serveur</span>':'')
         +'</div>'
         +(p.anomaly?'<div class="alerte">⚠️ Déplacement impossible : '+esc(p.anomaly.from)+' → '+esc(p.anomaly.to)+' en '+esc(String(p.anomaly.mins))+' min — compte partagé ou VPN ?</div>':'')
-        +'<div class="tl'+(opened?' open':'')+'" data-tl="'+esc(p.key)+'">'
-        +'<div class="chips" style="margin-top:0">'
+        +'<div class="chips">'
         +(p.isp?'<span class="chip">'+(p.vpn?'🕵️ ':'📶 ')+esc(p.isp)+'</span>':'')
         +(p.tz?'<span class="chip">🕓 '+esc(p.tz)+'</span>':'')
         +(p.totalMs?'<span class="chip g">⏱ '+esc(dur(p.totalMs))+' au total</span>':'')

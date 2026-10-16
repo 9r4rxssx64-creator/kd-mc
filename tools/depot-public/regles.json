@@ -191,7 +191,7 @@
   "workflows_prives": [
     ".github/workflows/audit-live.yml",
     ".github/workflows/verif-reelle.yml",
-    ".github/workflows/voir-comme-kevin.yml",
+    ".github/workflows/voir-comme-kevin.yml", ".github/workflows/lingua-comme-kevin.yml",
     ".github/workflows/apex-chat-d1-backup.yml",
     ".github/workflows/apex-chat-exercice-restauration.yml",
     ".github/workflows/apex-chat-cle-sauvegarde.yml",

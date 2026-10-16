@@ -9,12 +9,22 @@ description: >
 
 # Vérifier en réel, connecté en tant que Kevin
 
-## Le problème que ça résout
+## D'abord, depuis la session elle-même (16.10.2026 — le plus rapide, 0 minute de quota)
 
-Depuis l'agent, **kd-mc.com est injoignable** (egress bloqué : seuls anthropic.com et les
-registres de paquets passent — vérifiable via `curl -sS "$HTTPS_PROXY/__agentproxy/status"`).
-Et même depuis la CI, les pages utiles sont **derrière une connexion** → on ne voyait que des
-écrans de login. Résultat : je déduisais « à la lecture » au lieu de constater (leçons #131/#135).
+Mesuré le 16.10 : la session **atteint kd-mc.com** (curl 200). L'ancienne phrase « kd-mc.com est injoignable
+depuis l'agent » n'est plus vraie. Seul le vrai navigateur échouait (`ERR_CERT_AUTHORITY_INVALID`) : il ne
+connaissait pas l'autorité du proxy de la session. **`npm run reel`** (`node tools/smoke/reel.mjs [url…]`)
+l'inscrit dans le magasin du navigateur (une fois, aucune vérification TLS coupée), prend le pass du robot
+`ci_smoke`, ouvre chaque page en Chromium iPhone, photographie (`audit/captures-reel/*.png` → ouvrir avec Read),
+relève la version servie, l'écran de connexion, les erreurs JS et les requêtes en échec. 🔒 401/403 = zone
+réservée (le robot n'est ni l'admin ni un membre CMC), pas une panne. Garde : `npm run test:reel-outil`.
+
+Ce que le robot ne voit pas (admin prouvé, arbre, CMCteams connecté) → le workflow ci-dessous, au dépôt PUBLIC.
+
+## Le problème que résout le workflow
+
+Les pages utiles sont **derrière une connexion de Kevin** → le robot `ci_smoke` ne voit que des écrans de login
+pour elles. Le workflow pose la marque de session de Kevin (secret CI) — leçons #131/#135.
 
 ## La commande
 

@@ -73,3 +73,5 @@ tor-iphone.png
 /node_modules
 # 09.10.2026 : rebelote dans messaging-app/ (v1.1.297) — « node_modules » SANS barre couvre le lien à TOUTE profondeur.
 node_modules
+# vérification réelle depuis la session (tools/smoke/reel.mjs) : captures du domaine vivant, jamais committées
+audit/captures-reel/

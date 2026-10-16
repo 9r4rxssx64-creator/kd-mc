@@ -1,5 +1,12 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 👀 Fiches repliées + voir le domaine pour de vrai depuis chaque session (16.10.2026 nuit)
+
+- **Admin v2.7.0** (https://kd-mc.com/admin/#personnes/comptes) et **Qui se connecte v1.3.0** (https://admin.kd-mc.com) : une ligne par personne, le détail s'ouvre au toucher, textes plus gros et plus contrastés.
+- **Vérifier en vrai** : `npm run reel` ouvre les vraies pages dans un vrai navigateur (format iPhone) et les photographie.
+- **Fichiers créés** : [`tools/smoke/reel.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/smoke/reel.mjs) · [`tests/verify-reel-outil.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-reel-outil.mjs) · [`.claude/rules/verifier-reel.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/verifier-reel.md)
+- **Tests** : `npm run test:reel-outil` · `test:access-ux` · `test:admin-unique`
+
 ### 🛡 Économiser les minutes GitHub et ne plus être bloqué (15.10.2026)
 
 - **Les gros robots regardent d'abord ce qu'il te reste** : ils ne démarrent pas si la ration du jour ne les couvre pas (case « forcer_ration » pour passer outre, avec ton accord)
@@ -3766,3 +3773,6 @@ officiels les retirent eux-mêmes avant publication.
 | [`messaging-app/tests/unit/client-reouvrir-apres-maj.test.js`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/messaging-app/tests/unit/client-reouvrir-apres-maj.test.js) **(nouveau, 16.10)** | Garde Apex Chat iPhone : après une mise à jour automatique, la conversation ouverte se rouvre (2 min au plus) | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/messaging-app/tests/unit/client-reouvrir-apres-maj.test.js) |
 | [`messaging-app/tests/unit/lot-p-file-de-rebut.test.js`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/messaging-app/tests/unit/lot-p-file-de-rebut.test.js) **(nouveau, 16.10)** | Garde Apex Chat : 5 essais puis file de rebut consignée au journal d'audit (jamais le contenu), file créée avant le déploiement | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/messaging-app/tests/unit/lot-p-file-de-rebut.test.js) |
 | [`messaging-app/tests/unit/client-deconnexion-attend-serveur.test.js`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/messaging-app/tests/unit/client-deconnexion-attend-serveur.test.js) **(nouveau, 16.10)** | Garde Apex Chat iPhone : « Te déconnecter » attend le serveur (1,5 s au plus) avant de recharger — Safari annulait la requête | [voir](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/messaging-app/tests/unit/client-deconnexion-attend-serveur.test.js) |
+| [`tools/smoke/lingua-comme-kevin.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/smoke/lingua-comme-kevin.mjs) **(nouveau, 16.10)** | Sonde « Lingua comme Kevin » : ta session, iPhone, tout essayé (leçon jusqu'au bout, appel de Bee + bilan, cercle, profil, traducteur), ton compte ne bouge pas (écritures coupées et comptées), captures |
+| [`tests/verify-lingua-comme-kevin.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-lingua-comme-kevin.mjs) **(nouveau, 16.10)** | Garde : la sonde contre une copie fidèle (vrai routeur) — OK, 0 écriture, journal sans nom, sabotage prouvé |
+| [`.github/workflows/lingua-comme-kevin.yml`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/lingua-comme-kevin.yml) **(nouveau, 16.10)** | Robot à la main, au coffre, sous le plafond de 2 vérifications réelles/jour : lance la sonde sur le vrai domaine, captures sur `claude/lingua-kevin-<run>` |

@@ -12,8 +12,16 @@ a.home{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var
 .search{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--txt);font-size:16px;margin:8px 0 12px}
 .search:focus{outline:none;border-color:var(--line2)}
 .fiche{padding:14px 16px;margin-bottom:10px}
-.fhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.fiche h3{margin:0 0 2px;font-size:16px}
+.fhead{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;min-height:48px}
+.fhead::-webkit-details-marker{display:none}
+.fqui{display:flex;flex-direction:column;min-width:0}
+.fres{color:var(--muted,#b9c4b0);font-size:14px}
+.fsusp{color:#f5c26b}
+.fchev{font-size:22px;color:var(--subtle);transition:transform .2s;flex:none}
+.fiche[open] .fchev{transform:rotate(90deg)}
+.fiche:not([open]){padding-top:8px;padding-bottom:8px}
+.fcorps{margin-top:8px}
+.fiche h3{margin:0 0 2px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fiche .uid{color:var(--subtle);font-size:12px;font-family:var(--mono)}
 .when{color:var(--mut);font-size:12px;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:12px;font-size:13px}

@@ -9,7 +9,7 @@
      4. la liste est rangée par fraîcheur (En ligne · Aujourd'hui · Cette semaine · Plus ancien) ;
      5. les filtres marchent (En ligne → 1 carte) ; le déplacement impossible est en alerte visible ;
      6. cibles tactiles ≥ 44 px, aucune exception JS. Capture : audit/captures-access-ux/.
-   Sabotage : remettre boiteBloc() dans l'en-tête → rouge (cas 1 et 2). */
+   Sabotage : remettre boiteBloc() dans l'en-tête → rouge (cas 1 et 2) ; sortir les puces de la fiche → rouge (5d). */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -63,9 +63,11 @@ const m = await page.evaluate(() => {
     boite: !!document.querySelector('.msgbox'), scrollH: document.documentElement.scrollHeight };
 });
 chk(m.h <= m.vh * 0.38 && !m.boiteDansEnTete && !m.anonDansEnTete && m.boite, `1. en-tête collé compact (${Math.round(m.h)} px sur ${m.vh}) ; messages et passages hors de l'en-tête`);
+/* fiches repliées = page courte : on mesure que la boîte remonte d'autant que la page défile (elle n'est pas collée) */
+const avant = await page.evaluate(() => document.querySelector('.msgbox').getBoundingClientRect().top);
 await page.evaluate(() => window.scrollTo(0, 700)); await page.waitForTimeout(250);
-const apres = await page.evaluate(() => { const b = document.querySelector('.msgbox').getBoundingClientRect(); return { bas: b.bottom, y: scrollY }; });
-chk(apres.y > 300 && apres.bas < 0 + 200, `2. la page défile (scroll ${Math.round(apres.y)} px) et la boîte de messages défile avec elle (bas à ${Math.round(apres.bas)} px)`);
+const apres = await page.evaluate(() => { const b = document.querySelector('.msgbox').getBoundingClientRect(); return { haut: b.top, y: scrollY }; });
+chk(apres.y > 100 && Math.abs((avant - apres.haut) - apres.y) <= 2, `2. la page défile (scroll ${Math.round(apres.y)} px) et la boîte de messages défile avec elle (remontée de ${Math.round(avant - apres.haut)} px)`);
 await page.screenshot({ path: path.join(R, 'audit/captures-access-ux/2-defile.png') });
 await page.evaluate(() => window.scrollTo(0, 0));
 
@@ -77,7 +79,12 @@ chk(ouverte, '3b. toucher la personne en ligne ouvre SA carte');
 
 const grps = await page.$$eval('.grp', (g) => g.map((x) => x.textContent.trim()));
 chk(JSON.stringify(grps) === JSON.stringify(['🟢 En ligne', "Aujourd'hui", 'Cette semaine', 'Plus ancien']), `4. liste rangée par fraîcheur : ${grps.join(' · ')}`);
-chk(await page.locator('.alerte').filter({ hasText: 'Déplacement impossible' }).count() === 1, '5. le déplacement impossible est une alerte visible');
+chk(await page.locator('.alerte').filter({ hasText: 'Déplacement impossible' }).count() === 1 && await page.locator('.card .when').filter({ hasText: '⚠️' }).count() === 1, '5. le déplacement impossible : ⚠️ sur la ligne de la carte, alerte détaillée dans la fiche');
+/* 16.10 nuit (Kevin : « Ferme les fiches par défaut ») : une carte fermée = une ligne */
+const hauteurs = await page.$$eval('.card:not(.ouvert)', (c) => c.map((x) => Math.round(x.getBoundingClientRect().height)));
+chk(hauteurs.length >= 3 && hauteurs.every((h) => h <= 80), `5d. fiches fermées par défaut, une ligne chacune (${hauteurs.join('/')} px)`);
+const lisible = await page.evaluate(() => Math.min(...[...document.querySelectorAll('.when,.chip,.kp span')].filter((e) => e.offsetParent).map((e) => parseFloat(getComputedStyle(e).fontSize))));
+chk(lisible >= 11, `5e. texte lisible : plus petite taille affichée ${lisible} px`);
 await page.click('.fl[data-f="ligne"]'); await page.waitForTimeout(250);
 chk(await page.locator('.card').count() === 1, '5b. filtre « En ligne » → 1 carte');
 await page.click('.kp[data-f="tous"]'); await page.waitForTimeout(250);

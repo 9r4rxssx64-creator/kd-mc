@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+
+## 2026-10-16 (nuit) — Lingua « comme Kevin » : un robot qui se connecte avec SA session et essaie tout, sans rien écrire
+- **Demande** : « Connecte-toi comme moi et teste tout dans Lingua réel, comme moi ».
+- **Livré** : `tools/smoke/lingua-comme-kevin.mjs` (iPhone 13, session de Kevin par le vrai chemin `/__admin/login`) : arrivée sur SON compte, 7 cartes d'accueil, phrase du jour, 6 onglets, profil (« Compte KDMC »), traducteur, cercle (vue admin), « La vraie vie » + **une leçon jouée jusqu'au bout** (la sonde retient les corrections comme une personne), **un appel de Bee avec la vraie IA** (3 répliques + bilan). Toute écriture vers le domaine est coupée et comptée ; le battement du cercle est remplacé par `GET /__cercle/etat`.
+- **Garde** `tests/verify-lingua-comme-kevin.mjs` (`test:lingua-comme-kevin`, dans `test:ci`) : copie fidèle (vrai routeur, IA simulée) → sonde OK, **0 écriture reçue**, journal sans nom ni jeton, sabotage `--sans-garde` → écritures vues, refus de `--sans-garde` sur le vrai domaine.
+- **Robot** `.github/workflows/lingua-comme-kevin.yml` — au COFFRE (`workflows_prives`, captures = écran de Kevin), à la main, dans VERIFS du plafond. **Lancement réel : sans forcer, dans le plafond du jour.**
+
 ## 2026-10-16 — 9e passage RÉEL (run 38978305391, v1.1.315) → v1.1.316 : la déconnexion attend le serveur (Safari annulait la requête)
 - **Prouvé** : A, B1, B2 (Chromium + WebKit) ✅ · C ✅ Chromium · D ✅ Chromium · jeton unique par connexion (aucun faux « autre appareil » refusé) · lot P déployé (file de rebut créée, déploiement réussi). **Écart réel (iPhone/Safari)** : C ❌ WebKit — le jeton déconnecté restait valable (200) : la requête `keepalive` était annulée par le rechargement immédiat. Corrigé : on attend la réponse (≤ 1,5 s). Version 1.1.316 (+ `API_VERSION`). Leçon 592 ; `vitest --coverage` sans erreur.
 
@@ -25,6 +32,13 @@
 
 ## 2026-10-16 — Apex Chat v1.1.314 : après une mise à jour automatique, la conversation ouverte se rouvre
 - `_apexSafeReload` note la conversation ouverte (`apex_chat_reopen`, 2 min) avant de recharger ; `K._reopenAfterUpdate` la rouvre au démarrage (identifiant contrôlé, jamais par-dessus une conversation déjà ouverte). Brouillon : déjà conservé par `_saveDraft`. Version 1.1.314 (+ `API_VERSION`). Garde `client-reouvrir-apres-maj` (6), sabotage rouge, `vitest --coverage` sans erreur (2 118) ; geste D du robot : la conversation doit se rouvrir après un rechargement. Leçon 589.
+## 2026-10-16 (nuit) — Fiches fermées par défaut + plus lisible ; TOUTES les sessions voient le domaine pour de vrai (`npm run reel`)
+- Kevin : « Ferme les fiches par défaut, ça prend trop de place, et fais plus lisible, visible pour tout partout » + « dis à toutes tes branches de se connecter réel partout, même le domaine ».
+- **Admin v2.7.0** (`kdmc-home/admin/admin.js`, `tableau.css`, `tableau.js`) : chaque fiche est un `<details>` replié = une ligne (nom 17 px, « il y a … · N connexions · ⚠️ suspecte », chevron) ; le lien « Sa fiche admin » / `#fiche-<uid>` l'ouvre tout seul. Garde `test:admin-unique` (79/0, + fiche repliée ≤ 90 px, + ouverte par le lien).
+- **Qui se connecte v1.3.0** (`services/kdmc-access/page.js`) : carte fermée = une ligne (70 px), puces appareil/apps/VPN et alerte dans le détail, ⚠️ sur la ligne ; textes plus gros (13–13,5 px) et plus contrastés. Garde `test:access-ux` 12/0 (5d fiches ≤ 80 px, 5e texte ≥ 11 px).
+- **Vérification réelle depuis la session** : mesuré, la session atteint kd-mc.com ; le navigateur refusait seulement l'autorité du proxy. `tools/smoke/reel.mjs` (`npm run reel`) l'inscrit (certutil, aucune vérif TLS coupée), prend le pass `ci_smoke`, photographie chaque page en Chromium iPhone. 1er passage : 7 pages réelles vues (kdmc-access v1.2.0 en ligne avant cette fusion, CMCteams v9.978, Lingua v2.141.0, Apex v13.4.378 🔒). Garde `test:reel-outil` 8/0 (sabotage ignoreHTTPSErrors → rouge). Règle `.claude/rules/verifier-reel.md` + compétence `verif-reelle` + CLAUDE-HISTOIRE.
+- Échecs DÉJÀ présents avant ce travail (mesurés en retirant mes changements) : `verify-creer-invite-page` (1/2), `verify-reactivite-portail` R5b/R8, `admin-tuiles.test` (`window is not defined`). À reprendre.
+
 
 ## 2026-10-16 — 6e passage RÉEL (run 38974418099, prod v1.1.313) : LES 5 GESTES PASSENT dans de vrais navigateurs
 - **Prouvé** (comptes de test Alice/Bob, jamais Kevin) : A version affichée = version du serveur (Chromium + WebKit iPhone) · B1 / B2 couleurs rendues ≥ 4,5:1 téléphone en mode clair, thème Auto ET thème par défaut (Chromium + WebKit) · C « Te déconnecter » coupe l'appareil côté serveur, l'autre continue (Chromium + WebKit) · D message écrit hors ligne : 🕓, puis accusé au retour du réseau (Chromium ; WebKit sauté : WebSocket instable en CI).

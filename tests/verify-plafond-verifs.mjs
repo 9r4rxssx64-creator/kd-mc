@@ -48,7 +48,7 @@ dit(!budgetDuJour(B(61000), '2026-10-08', 60).ok, 'budget : 61 000 requêtes (61
 dit(budgetDuJour({ ok: false, erreur: 'not authorized' }, '2026-10-08', 60).ok && !budgetDuJour({ ok: false, erreur: 'not authorized' }, '2026-10-08', 60).mesurable, 'budget : API en refus → laisse passer (non mesurable), jamais un faux plafond');
 
 /* ---------- 2 + 3 + 4. les fichiers ---------- */
-const FICHIERS = ['verif-reelle', 'audit-lingua', 'verif-live-rapport', 'audit-live', 'voir-comme-kevin', 'audit-domaine', 'mesure-worker', 'verif-appareils'];
+const FICHIERS = ['verif-reelle', 'audit-lingua', 'verif-live-rapport', 'audit-live', 'voir-comme-kevin', 'audit-domaine', 'mesure-worker', 'verif-appareils', 'lingua-comme-kevin'];
 const noms = [];
 for (const f of FICHIERS) {
   const p = `.github/workflows/${f}.yml`;

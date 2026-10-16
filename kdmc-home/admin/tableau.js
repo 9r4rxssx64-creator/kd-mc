@@ -304,6 +304,7 @@
     return null;
   }
   function aller(cible) {
+    if (cible && cible.nodeType === 1 && cible.tagName === 'DETAILS' && cible.classList.contains('fiche')) cible.open = true;   /* fiche repliée par défaut : celle qu'on vise s'ouvre */
     if (cible === 'boite') { if (global.kdmcBoite) global.kdmcBoite.ouvrir(); return; }
     var el = cible && cible.nodeType === 1 ? cible : null;
     if (el) cible = '';

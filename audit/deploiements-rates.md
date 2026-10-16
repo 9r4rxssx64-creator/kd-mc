@@ -7,6 +7,19 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy kdmc-access (journal « qui se connecte ») — 16/10/2026 13:20 UTC
+
+- **Branche** : `main` · **Commit** : `b2a75576` · **Run** : `38906951911`
+- **Ce qui a lâché** : deploy › Preuve réelle — le journal enregistre et relit
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38906951911
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::LE JOURNAL N'ENREGISTRE RIEN (écriture Firebase perdue en silence) — c'est la cause d'un historique vide"; exit 1^[[0m
+##[error]LE JOURNAL N'ENREGISTRE RIEN (écriture Firebase perdue en silence) — c'est la cause d'un historique vide
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 16/10/2026 13:19 UTC
 
 - **Branche** : `main` · **Commit** : `b2a75576` · **Run** : `38906951761`
@@ -529,17 +542,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

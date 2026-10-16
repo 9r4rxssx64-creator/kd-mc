@@ -96,6 +96,20 @@ function _dbErr(e) {
   return 'Erreur de base de données';
 }
 
+// Comparaison de secrets à temps constant (audit 16.10.2026) : le temps de réponse ne révèle pas
+// combien de caractères du secret sont justes. Parcourt toujours la longueur du plus long.
+export function ctEq(a, b) {
+  const x = String(a), y = String(b);
+  let diff = x.length ^ y.length;
+  const n = Math.max(x.length, y.length);
+  for (let i = 0; i < n; i++) diff |= (x.charCodeAt(i) || 0) ^ (y.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
+// Codes SMS : au plus 3 par heure et 10 par jour pour un même numéro (audit 16.10.2026).
+export const OTP_PAR_NUMERO_HEURE = 3;
+export const OTP_PAR_NUMERO_JOUR = 10;
+
 export function normalizeName(s) {
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[\s\-_.@]+/g, ' ').trim();
@@ -785,6 +799,24 @@ export async function handleSendOtp(request, env) {
   const max = parseInt((await getModeConfig(env)).OTP_RATE_LIMIT_PER_HOUR || '5');
   if (rl && rl.count >= max) return err('Trop de tentatives, réessaie dans 1h', 429, 'rate_limit');
 
+  // Audit 16.10.2026 : plafond PAR NUMÉRO VISÉ (et pas seulement par adresse). Sans lui, des adresses
+  // différentes pouvaient bombarder un même numéro de SMS (coût réel) et multiplier les essais de code.
+  // Mêmes lignes de la table que le plafond par adresse, avec un préfixe (« n: » heure, « d: » jour).
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const nKey = 'n:' + phoneHash, dKey = 'd:' + phoneHash;
+  const [rn, rd] = await Promise.all([
+    env.APEX_CHAT_DB.prepare('SELECT count FROM ratelimit_otp WHERE ip_hash=? AND hour_key=?').bind(nKey, hourKey).first(),
+    env.APEX_CHAT_DB.prepare('SELECT count FROM ratelimit_otp WHERE ip_hash=? AND hour_key=?').bind(dKey, dayKey).first(),
+  ]);
+  if ((rn && rn.count >= OTP_PAR_NUMERO_HEURE) || (rd && rd.count >= OTP_PAR_NUMERO_JOUR)) {
+    return err('Trop de codes demandés pour ce numéro, réessaie plus tard', 429, 'rate_limit_phone');
+  }
+  const bump = (k, h) => env.APEX_CHAT_DB.prepare(
+    'INSERT INTO ratelimit_otp (ip_hash, hour_key, count) VALUES (?, ?, 1) ON CONFLICT(ip_hash, hour_key) DO UPDATE SET count = count + 1'
+  ).bind(k, h).run();
+  await bump(nKey, hourKey);
+  await bump(dKey, dayKey);
+
   await env.APEX_CHAT_DB.prepare(
     'INSERT OR REPLACE INTO ratelimit_otp (ip_hash, hour_key, count) VALUES (?, ?, COALESCE((SELECT count FROM ratelimit_otp WHERE ip_hash=? AND hour_key=?),0)+1)'
   ).bind(ipHash, hourKey, ipHash, hourKey).run();
@@ -825,7 +857,11 @@ export async function handleSendOtp(request, env) {
      )`
   ).run();
   await env.APEX_CHAT_DB.prepare(
-    'INSERT OR REPLACE INTO otp_pending (phone_hash, otp_hash, attempts, created_at, expires_at) VALUES (?, ?, 0, ?, ?)'
+    // Les essais déjà faits sur un code ENCORE valable se conservent : renvoyer un code ne remet plus le
+    // compteur à zéro (audit 16.10.2026 — sinon on devine le code en demandant sans cesse un nouvel envoi).
+    `INSERT INTO otp_pending (phone_hash, otp_hash, attempts, created_at, expires_at) VALUES (?, ?, 0, ?, ?)
+     ON CONFLICT(phone_hash) DO UPDATE SET otp_hash=excluded.otp_hash, created_at=excluded.created_at, expires_at=excluded.expires_at,
+       attempts = CASE WHEN otp_pending.expires_at > excluded.created_at THEN otp_pending.attempts ELSE 0 END`
   ).bind(phoneHash, otpHash, Date.now(), Date.now() + 300000).run();
 
   // ============ Envoi SMS — chaîne failover ============
@@ -1291,7 +1327,7 @@ export async function handleTestLogin(request, env) {
   const secret = (env.APEX_CHAT_ADMIN_TOKEN || '').trim();
   const hdr = (request.headers.get('X-Test-Auth') || '').trim();
   if (env.ALLOW_E2E_TEST_LOGIN === 'false') return err('E2E login désactivé', 403, 'disabled');
-  if (!secret || hdr !== secret) return err('Réservé tests CI', 403, 'forbidden');
+  if (!secret || !ctEq(hdr, secret)) return err('Réservé tests CI', 403, 'forbidden');
   let body = {};
   try { body = await request.json(); } catch (_) {}
   const cleanPhone = normPhone(body.phone || '');
@@ -1328,7 +1364,7 @@ export async function handleTestLogin(request, env) {
 export async function handleTestCleanup(request, env) {
   const secret = (env.APEX_CHAT_ADMIN_TOKEN || '').trim();
   const hdr = (request.headers.get('X-Test-Auth') || '').trim();
-  if (!secret || hdr !== secret) return err('Réservé tests CI', 403, 'forbidden');
+  if (!secret || !ctEq(hdr, secret)) return err('Réservé tests CI', 403, 'forbidden');
   const DB = env.APEX_CHAT_DB;
   const removed = [];
   try {
@@ -1362,7 +1398,7 @@ export async function handleTestCleanup(request, env) {
 export async function handleSsoFromApex(request, env) {
   // P0 FIX (audit) : SSO avec vérification réelle JWT Apex
   // Kevin doit signer avec APEX_SSO_SIGN_KEY (HMAC HS256 partagée Apex ↔ Apex Chat)
-  const { apex_token, apex_uid, name, phone } = await readJson(request);
+  const { apex_token, apex_uid, name } = await readJson(request);
   if (!apex_token || !apex_uid) return err('Token Apex manquant', 400);
 
   // Vérification HMAC HS256 du token Apex
@@ -1389,6 +1425,10 @@ export async function handleSsoFromApex(request, env) {
   // Revue 08.10.2026 (F1) : un compte SUPPRIMÉ (RGPD) ne se retrouve ni ne se
   // ressuscite jamais par SSO — sinon jeton émis sur une ligne 'deleted' que
   // getAuthUser refuse → 401 permanent.
+  // Audit 16.10.2026 : le numéro vient UNIQUEMENT du jeton signé par Apex. Celui du corps de la requête
+  // n'était pas prouvé : n'importe qui pouvait enregistrer le numéro d'une autre personne (unique en base),
+  // qui se retrouvait ensuite dans le compte d'un autre à sa première connexion par SMS.
+  const phone = (typeof apexPayload.phone === 'string' && /^\+\d{8,15}$/.test(apexPayload.phone)) ? apexPayload.phone : '';
   let user = await env.APEX_CHAT_DB.prepare("SELECT * FROM users WHERE apex_uid=? AND status != 'deleted'").bind(apex_uid).first();
   if (!user) {
     // P0 FIX : isKevin via phone E.164 secret env (jamais via name string)
@@ -1737,6 +1777,18 @@ export async function purgeLocationHistory(env, now = Date.now()) {
   catch (e) { out.last_position = 'erreur: ' + (e && e.message); }
   try { out.ai_summary_cache = ((await _purgeAiSummaryCache(env, now)) || {}).meta?.changes ?? 0; }
   catch (e) { out.ai_summary_cache = 'erreur: ' + (e && e.message); }
+  return out;
+}
+
+// Audit 16.10.2026 : la charte promet « historique des connexions : 30 jours » et rien ne l'effaçait (la table
+// `connections`, avec appareil et ville approximative, grossissait sans fin). La ligne la plus récente de chaque
+// appareil reste tant qu'elle date de moins de 30 jours ; les codes SMS expirés disparaissent aussi.
+export async function purgeHistoriqueConnexions(env, now = Date.now()) {
+  const out = {};
+  try { out.connexions = ((await env.APEX_CHAT_DB.prepare('DELETE FROM connections WHERE last_seen < ?').bind(now - LOCATION_RETENTION_MS).run()) || {}).meta?.changes ?? 0; }
+  catch (e) { out.connexions = 'erreur: ' + (e && e.message); }
+  try { out.codes_sms = ((await env.APEX_CHAT_DB.prepare('DELETE FROM otp_pending WHERE expires_at < ?').bind(now).run()) || {}).meta?.changes ?? 0; }
+  catch (e) { out.codes_sms = 'erreur: ' + (e && e.message); }
   return out;
 }
 
@@ -2263,6 +2315,8 @@ async function handleLocationHistory(userId, request, env) {
 const MEDIA_DAY_MAX_FILES = 300;                 // v1.1.304 (A6-20 §6) : quota par compte / 24 h
 const MEDIA_DAY_MAX_BYTES = 1024 * 1024 * 1024;  // 1 Go / 24 h
 const MEDIA_MAX = 100 * 1024 * 1024;   // 100 Mo
+const MEDIA_MAX_SANS_LONGUEUR = 25 * 1024 * 1024;   // sans en-tête de taille : lecture en mémoire, plus petit
+const MEDIA_STOCKAGE_MAX = 8 * 1024 * 1024 * 1024; // 8 Go sur 10 Go gratuits (marge)
 
 export async function handleMediaUpload(request, env) {
   const auth = await getAuthUser(request, env);
@@ -2277,6 +2331,9 @@ export async function handleMediaUpload(request, env) {
   // pour que seuls les membres de CETTE conversation puissent le lire.
   let convId = null;
   try { convId = new URL(request.url).searchParams.get('conv_id') || null; } catch (_) {}
+  // Audit 16.10.2026 : un fichier sans conversation n'était lisible que par son auteur mais occupait le
+  // stockage (10 Go gratuits) sans propriétaire de conversation : tout envoi nomme désormais sa conversation.
+  if (convId === null) return err('conv_id requis', 400, 'conv_id_required');
   if (convId !== null) {
     if (convId.length > 128) return err('conv_id invalide', 400, 'bad_conv_id');
     const member = await env.APEX_CHAT_DB.prepare(
@@ -2284,10 +2341,16 @@ export async function handleMediaUpload(request, env) {
     ).bind(convId, auth.sub).first();
     if (!member) return err('Pas membre de cette conversation', 403, 'not_member');
   }
-  const buf = await request.arrayBuffer();
-  const size = buf.byteLength;
+  // Audit 16.10.2026 : le fichier n'est plus chargé en entier en mémoire (128 Mo seulement, 100 Mo de
+  // fichier + copie = arrêt du serveur). La taille annoncée par l'en-tête est contrôlée par le serveur
+  // d'entrée ; sans elle, on relit en mémoire mais plus petit (25 Mo).
+  const declared = Number(request.headers.get('content-length'));
+  const stream = Number.isFinite(declared) && declared > 0 && request.body ? request.body : null;
+  const buf = stream ? null : await request.arrayBuffer();
+  const size = stream ? declared : buf.byteLength;
   if (!size) return err('Fichier vide', 400, 'empty');
   if (size > MEDIA_MAX) return err('Fichier trop lourd (max 100 Mo)', 413, 'too_large', { size });
+  if (!stream && size > MEDIA_MAX_SANS_LONGUEUR) return err('Fichier trop lourd (max 25 Mo sans taille annoncée)', 413, 'too_large', { size });
   // v1.1.304 (audit A6-20 §6) : quota PAR COMPTE sur 24 h glissantes (nombre + volume), lu dans la
   // table media (aucune donnée nouvelle). Lecture en panne → fail-open (l'insertion dira la vérité).
   try {
@@ -2299,6 +2362,14 @@ export async function handleMediaUpload(request, env) {
       return err('Limite d\'envoi de fichiers atteinte pour aujourd\'hui (' + MEDIA_DAY_MAX_FILES + ' fichiers ou 1 Go par 24 h) — réessaie demain', 429, 'upload_quota', { files: c, bytes: b });
     }
   } catch (e) { console.warn('[media-quota]', String(e)); }
+  // Audit 16.10.2026 : plafond GLOBAL du stockage (R2 gratuit = 10 Go) : au-delà de 8 Go gardés (30 jours),
+  // plus d'envoi de fichier pour personne, avec un message clair, plutôt que de franchir le forfait.
+  try {
+    const g = await env.APEX_CHAT_DB.prepare('SELECT COALESCE(SUM(size), 0) AS b FROM media WHERE expires_at > ?').bind(Date.now()).first();
+    if ((Number(g && g.b) || 0) + size > MEDIA_STOCKAGE_MAX) {
+      return err('Stockage des fichiers plein pour le moment — réessaie plus tard', 507, 'storage_full');
+    }
+  } catch (e) { console.warn('[media-global]', String(e)); }
   const id = crypto.randomUUID();
   const ext = (name.match(/\.([a-z0-9]{1,8})$/i) || [, ''])[1];
   const r2key = `media/${auth.sub}/${id}${ext ? '.' + ext : ''}`;
@@ -2306,7 +2377,7 @@ export async function handleMediaUpload(request, env) {
   const isPremium = false; // lifecycle 30j (étendu si premium plus tard)
   const expires = now + (isPremium ? 90 : 30) * 86400000;
   try {
-    await env.APEX_CHAT_MEDIA.put(r2key, buf, { httpMetadata: { contentType: mime } });
+    await env.APEX_CHAT_MEDIA.put(r2key, stream || buf, { httpMetadata: { contentType: mime } });
     if (convId) {
       await env.APEX_CHAT_DB.prepare(
         `INSERT INTO media (id, owner_id, r2_key, size, mime, uploaded_at, expires_at, conv_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
@@ -2957,7 +3028,7 @@ export async function consolidateUserDms(DB, userId, now) {
 // (le placeholder qu'elle absorbe était membre de la conv de Kevin).
 export async function autoHealPerson(env, caller) {
   const DB = env.APEX_CHAT_DB;
-  const STUB_SOURCES = ['core_pair', 'apex-sso', 'user-invitation'];
+  const STUB_SOURCES_SURS = ['core_pair', 'apex-sso'];
   const summary = { merged: 0, dms_merged: 0, keeper: null };
   if (!caller || !caller.id) return summary;
   const now = Date.now();
@@ -3039,9 +3110,11 @@ export async function autoHealPerson(env, caller) {
   const dups = group.filter(g => g.id !== keeper.id).filter(g => {
     const gp = realPhone(g.phone);
     if (gp) return !!kp && gp === kp;
-    const empty = g._msgs === 0 && (g.last_seen || 0) === 0;
-    const stubSrc = STUB_SOURCES.includes(g.source);
-    return empty || stubSrc;
+    // Audit 16.10.2026 : un brouillon sans numéro n'est absorbé QUE par son nom ET seulement s'il vient d'un
+    // circuit interne de confiance (appairage, SSO Apex). Avant, tout compte « vide » ou issu d'une invitation
+    // (nom saisi par l'inviteur) était absorbé par quiconque portait le même nom : le jeton de la vraie
+    // personne, à sa première connexion, menait alors vers le compte d'un autre.
+    return STUB_SOURCES_SURS.includes(g.source);
   });
   if (dups.length) {
     await mergeDupAccountsInto(DB, keeper.id, dups.map(d => ({ id: d.id, pseudo: d.pseudo })), now);
@@ -7185,7 +7258,10 @@ const _workerHandler = {
                 tag: 'capsule-' + capsule.id,
                 payload: { capsuleId: capsule.id, senderId: capsule.sender_id }
               }, env);
-              if (res && res.total > 0 && res.ok === 0) {
+              // Audit 16.10.2026 : une capsule échue depuis plus de 24 h dont AUCUN envoi n'aboutit (abonnement mort)
+              // ne se réessaie plus à l'infini (toutes les 5 min pendant des semaines) : on la clôt, son contenu reste
+              // lisible dans l'app.
+              if (res && res.total > 0 && res.ok === 0 && Date.now() - capsule.open_at < 86400000) {
                 throw new Error('timecapsule push failed (' + res.failed + ' envoi(s))');
               }
               // v1.1.172 FIX P1 (audit crew) : poser opened_at → stoppe le
@@ -7204,8 +7280,8 @@ const _workerHandler = {
             const day = new Date(yearAgo).toISOString().slice(0, 10);
             const messages = await env.APEX_CHAT_DB.prepare(
               `SELECT m.id, m.sender_id, m.conv_id, m.ts FROM messages m
-               WHERE m.sender_id=? AND date(m.ts/1000, 'unixepoch')=? LIMIT 10`
-            ).bind(body.user_id, day).all();
+               WHERE m.sender_id=? AND m.ts >= ? AND m.ts < ? LIMIT 10`
+            ).bind(body.user_id, Date.parse(day + 'T00:00:00Z'), Date.parse(day + 'T00:00:00Z') + 86400000).all();
             if ((messages.results || []).length > 0) {
               await sendPushToUser(body.user_id, {
                 title: 'Apex Chat',
@@ -7290,6 +7366,7 @@ const _workerHandler = {
       ctx.waitUntil(performDailyBackup(env));
       await purgeLocationHistory(env);   // Lot B : positions > 30 j + cache des résumés IA > 7 j (jamais bloquant)
       await purgeExpiredStories(env);    // v1.1.304 : stories expirées (jamais bloquant)
+      await purgeHistoriqueConnexions(env);   // 16.10.2026 : connexions > 30 j et codes SMS expirés (jamais bloquant)
       await env.APEX_CHAT_DB.prepare(
         'DELETE FROM audit_log WHERE ts < ?'
       ).bind(Date.now() - 90 * 86400000).run();

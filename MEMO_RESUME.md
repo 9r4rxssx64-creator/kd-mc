@@ -1,5 +1,34 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — `test:admin-tuiles-reel` réparé (7 rouges depuis le « tableau unique »)
+- Les tuiles vivent désormais dans leur rubrique (et leur onglet) : le test y va par l'adresse (`#commerce/<onglet>`, `#apps`), comme Kevin, puis exige toujours la tuile visible et ≥ 44 px. 19/19.
+## 2026-10-16 — Apex Chat v1.1.310 : lot J (fiabilité)
+- Mise à jour forcée de l'admin : l'en-tête refusé par le serveur est retiré (elle ne marchait jamais) ; capsule temporelle échue depuis > 24 h sans appareil joignable : close au lieu d'être réessayée sans fin ; « Il y a 1 an » lu par plage de temps (index). Garde `lot-j-fiabilite-file` (4), sabotages rouges, `vitest --coverage` sans erreur (2 085 verts).
+- **Reste de l'audit (non fait)** : alarmes du serveur de conversation toutes les 5 min, files sans file de rebut, sauvegarde en pages de 100 lignes, retour arrière automatique si le contrôle en ligne échoue, messages directs imposés / annuaire, sessions sans déconnexion serveur.
+
+## 2026-10-16 — `test:arbre-ordi` réparé (rouge sur main depuis v3.96)
+- Le contrôle « rien hors du bloc ordinateur » ignorait le bloc voulu de v3.96 (iPhone couché, `max-height:520px`) : il l'écarte désormais ; le téléphone debout reste vérifié.
+
+## 2026-10-16 — Arbre v3.116 : choisir une famille montre d'où elle vient (Kevin : « Fais pareil pour toutes les familles et remonte au plus haut »)
+- `vueFamilleHaute(k)` : pour les porteurs du nom au SOMMET de la famille (ni père ni mère dans la famille), toutes les familles de leurs ancêtres, jusqu'au plus haut (≤ 10) ; jamais les familles des conjoints des descendants. Réel : Lorenzi → Lorenzi + Desarzens + Buchet + Dejean + Revel… ; Desarzens/Sauvaigo/Maiffret/Saint-Polit sont déjà à leur sommet connu (aucun parent connu au-dessus). Garde `test:arbre-ma-vue` 4s (sabotage rouge).
+## 2026-10-16 — Apex Chat v1.1.309 : lot I (fichiers et vocaux sobres)
+- `workers/api-worker.js` : `/api/media` exige `conv_id`, passe le fichier en flux vers R2 quand sa taille est annoncée (sinon 25 Mo max), refuse (507) au-delà de 8 Go de stockage gardé. `index.html` : vocal avec `conv_id`, délai 60 s, marqué ⚠️ s'il reste sur l'appareil. Version 1.1.309. Tests : `api-worker-media` (+4), `client-vocal-honnete` (3), 5 anciens tests adaptés ; `vitest --coverage` sans erreur, sabotages rouges.
+- **Non vérifié sur iPhone** : envoi d'un vocal en mode avion (⚠️ « Non envoyé »), puis retour réseau.
+
+## 2026-10-16 — Arbre v3.115 : Ma vue jusqu'au plus haut + toucher = la famille de la personne (Kevin : « remonte au plus haut… quand je clique sur une personne, toute sa famille reste, le reste transparent »)
+- `maVueComplete` : toutes les familles des ancêtres, génération par génération (≤ 12 familles ; Kevin : 12 familles, 202 cartes). `familleDe(id)` = ancêtres (toutes branches) + leurs descendants + conjoints ; dans toute vue dessinée (Arbre, Plan, Paysage, Toutes), 1er toucher = sa famille en clair, le reste transparent ; 2e toucher ou « 📂 Fiche » = la fiche. Gardes `test:arbre-ma-vue` 4p-4r (sabotage rouge). `test:arbre-ordi` échoue déjà sur main (règle CSS hors bloc), pas lié.
+## 2026-10-16 — Apex Chat lot H : la charte dit vrai (purge des connexions à 30 jours, sous-traitants complétés)
+- `workers/api-worker.js` : `purgeHistoriqueConnexions` (connexions > 30 j, codes SMS expirés) dans le travail de 03:00. `privacy.html` : messages conservés jusqu'à suppression/expiration/effacement du compte (et non « 30 jours »), ajout de Google (STUN des appels), Giphy, Firebase (journal d'erreurs) ; la phrase « tes données ne quittent jamais ton téléphone » est corrigée. Garde `lot-h-purge-connexions` (5), `vitest --coverage` sans erreur.
+
+## 2026-10-16 — Arbre v3.114 : « Ma vue » montre toutes les branches proches (Kevin : « Dans les vues d'arbres remets toutes les branches de la même famille »)
+- `maVueComplete()` : à l'ouverture, ma famille + celles de mes parents et grands-parents réunies (Kevin : c+s+Dejean+m, 193 cartes ; Laurence : Saint-Polit+Toursel+Irle+Filiposi ; Yann : Lorenzi+Desarzens+Buchet+Dejean+Revel). Le bandeau porte leurs noms. Combiner propose le reste (conjoint, arrière-grands-parents…). Garde `test:arbre-ma-vue` (sabotage rouge).
+## 2026-10-16 — Apex Chat : lot G (comptes et codes SMS) — suite de l'audit, décisions de Kevin « fais tout auto »
+- `workers/api-worker.js` : (1) fusion automatique de comptes par NOM limitée aux brouillons d'appairage / SSO Apex (plus les comptes « vides » ni ceux nés d'une invitation) ; (2) code SMS plafonné **par numéro** (3/heure, 10/jour) en plus de l'adresse, et renvoyer un code garde les essais d'un code encore valable ; (3) le numéro d'une connexion Apex vient du jeton signé, jamais du corps de la requête ; (4) `ctEq` : comparaison de secrets à temps constant sur les routes de test CI.
+- Gardes : `lot-g-otp-par-numero` (11). `vitest --coverage` : aucune erreur. **Reste** : secret de test CI partagé avec la preuve admin (impact limité aux numéros de test, le login de test reste actif car l'E2E de production l'utilise).
+
+## 2026-10-16 — Arbre v3.113 : l'ex d'un conjoint n'entre plus dans la famille (Kevin : « Enlève Pascale de l'arbre de Laurence, laisse Ronan en dessous de moi »)
+- `membresFamille` : les enfants d'une personne entrée par mariage restent (sous elle), leur autre parent n'est plus ajouté. Vérifié sur données réelles : vue Laurence = Pascale absente, Ronan sous Kevin. Aussi : la barre n'affiche plus deux fois la même famille. Gardes : `test:arbre-toutes-blocs` (sabotage rouge), `test:arbre-ma-vue` 4o.
+
 ## 2026-10-16 (soir) — Apex v13.4.373 : empreintes de code fermées + voie gratuite pour publier les règles (branche claude/admin-ouverture-rapide)
 
 - Kevin : « Fais tout ça dès que le quota revient et trouve des solutions (gratuites), crée, pour le faire avant. »
@@ -350,6 +379,12 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - Mesuré : 104 fichiers / 1654 tests, couverture sans ERROR ; ancien serveur → 5 échecs sur 7.
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
+
+## 2026-10-16 — Firebase fermé aux comptes anonymes, ÉTAPE 1 : jeton du domaine « scope cmc » (code + tests ; règles INCHANGÉES)
+- Constat (audit extérieur P0-1, confirmé en ligne par la capture de Kevin) : `/cmcteams` `.read: "auth != null"` → tout compte ANONYME (créé par n'importe qui avec la clé Web publique) lit les plannings.
+- Fait : routeur `POST /__sso/fbtoken {scope:'cmc'}` → jeton Firebase signé par le domaine (uid `cmc_<uid>`, claim `scope: 'cmc'`) pour une session valide, non révoquée, ouverte sur l'app qui demande, code prouvé ; 20/h/personne ; adoption comptée en D1 (`fbcmc_jour:<date>`), 0 écriture KV. CMCteams : `cmcFbAnonAuth` essaie d'abord `cmcFbDomaine` (tools/shared/fiche-privee.js), repli anonyme sinon (10 min sans redemander après un refus). La light : `_fbAuth` idem. Gardes : `test:fbtoken-cmc` (9), `test:fb-domaine-cmc` (6, joue le vrai code client) ; sabotages rouges.
+- **Réappliqué (branche `firebase-cmc2`)** après le retrait de précaution (la panne « plus aucune app » venait des 6 apps en 404 derrière la porte, pas de Firebase). Ajout : sonde réelle `GET /__sso/fbtoken-sonde` (réservée au robot AS8075 + en-tête) → fabrique un jeton cmc et lit `/cmc_motd` avec ; le déploiement public l'affiche en annotation « jeton Firebase cmc (sonde) ». Jeton jamais renvoyé. Repli anonyme gardé.
+- **ÉTAPE 2 (plus tard, après mesure)** : quand `fbcmc_jour` montre que les appareils prennent le jeton du domaine, règles `/cmcteams` : `auth.token.scope === 'cmc' || auth.token.role === 'admin'` — collées par Kevin. Avant : passer aussi `tools/messages`, `tools/approvals` (encore en anonyme) au jeton du domaine.
 
 ## 2026-10-16 — Publication des apps : désormais par le déploiement du routeur (automatique sur main, porte de ration)
 - Conséquence de la copie embarquée : une app modifiée (CMCteams, portail, Lingua…) n'est plus publiée par Pages (supprimé) mais par `deploy-kdmc-router.yml`. Ce robot part maintenant tout seul à chaque fusion sur main qui touche les surfaces servies (mêmes chemins que l'ancienne publication), un seul à la fois (concurrency), et sa PORTE DE RATION l'arrête si le jour est mangé (`porte-ration.sh 4`). Workflow réactivé. Coût : ≈ 3 min par fusion d'app (au lieu d'≈ 1 min Pages) — regroupe les fusions d'apps.

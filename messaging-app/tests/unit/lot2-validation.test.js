@@ -83,8 +83,9 @@ describe('P — jeton et « % » mal formés', () => {
   it('x-file-name et identifiant de contact avec « % » mal formé → jamais 500', async () => {
     const DB = d1Reel();
     seedUser(DB, 'u1');
+    seedConv(DB, 'cx', 'group', [['u1', 'owner']]);
     const env = ENV({ APEX_CHAT_DB: DB, APEX_CHAT_MEDIA: makeR2() });
-    const up = await worker.fetch(new Request('https://api.apex/api/media', {
+    const up = await worker.fetch(new Request('https://api.apex/api/media?conv_id=cx', {
       method: 'POST', body: new Uint8Array([1, 2, 3]),
       headers: { Authorization: 'Bearer ' + await tok('u1'), 'content-type': 'image/png', 'x-file-name': 'photo%E0%A4%A.png' },
     }), env, CTX);
@@ -184,8 +185,11 @@ describe('V — média lisible seulement par les membres de SA conversation', ()
     // on ne rattache pas un média à une conversation dont on n'est pas membre
     expect((await upload('carol', 'dm1')).status).toBe(403);
     // ancien média sans conv_id : ancienne règle (conversation partagée avec l'auteur)
-    const legacy = await upload('alice', null);
-    const lid = (await legacy.json()).id;
+    // (un envoi SANS conversation est maintenant refusé : audit 16.10.2026 ; l'ancienne ligne est posée à la main)
+    expect((await upload('alice', null)).status).toBe(400);
+    const lid = 'legacy1';
+    DB.raw.prepare("INSERT INTO media (id,owner_id,r2_key,size,mime,uploaded_at,expires_at) VALUES (?,?,?,?,?,?,?)").run(lid, 'alice', 'media/alice/legacy1.png', 3, 'image/png', Date.now(), Date.now() + 86400000);
+    await env.APEX_CHAT_MEDIA.put('media/alice/legacy1.png', new Uint8Array([9, 9, 9]), {});
     expect((await call(env, 'GET', '/api/media/' + lid, 'carol')).status).toBe(200);
   });
 });

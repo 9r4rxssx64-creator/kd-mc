@@ -352,11 +352,17 @@ describe('A6-18 — identifiants TURN : 4 h, réutilisés par compte, plafond qu
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('A6-20 §6 — quota d\'envoi de fichiers par compte sur 24 h', () => {
-  const up = async (env, sub, bytes = 10) => worker.fetch(new Request('https://api.apex/api/media', {
+  // Tout envoi nomme sa conversation (audit 16.10.2026) : alice et bob sont membres de « cq ».
+  const seedQ = (DB) => {
+    DB.raw.prepare("INSERT OR IGNORE INTO conversations (id,type,created_by,created_at,sharded_to_do) VALUES ('cq','group','alice',1,0)").run();
+    for (const u of ['alice', 'bob']) DB.raw.prepare("INSERT OR IGNORE INTO conversation_members (conv_id,user_id,role,joined_at) VALUES ('cq',?, 'member', 1)").run(u);
+  };
+  const up = async (env, sub, bytes = 10) => worker.fetch(new Request('https://api.apex/api/media?conv_id=cq', {
     method: 'POST', headers: { Authorization: 'Bearer ' + await tok(sub), 'Content-Type': 'image/png', 'x-file-name': 'a.png' }, body: new Uint8Array(bytes),
   }), env, CTX);
   it('300 fichiers en 24 h → le 301e est refusé (429) ; un autre compte passe ; hier ne compte plus', async () => {
     const { DB, env } = setup({ withDO: false });
+    seedQ(DB);
     const ins = DB.raw.prepare('INSERT INTO media (id,owner_id,r2_key,size,mime,uploaded_at) VALUES (?,?,?,?,?,?)');
     for (let i = 0; i < 300; i++) ins.run('m' + i, 'alice', 'k' + i, 10, 'image/png', Date.now() - 1000);
     ins.run('old', 'bob', 'kold', 10, 'image/png', Date.now() - 2 * 86400000);
@@ -367,6 +373,7 @@ describe('A6-20 §6 — quota d\'envoi de fichiers par compte sur 24 h', () => {
   });
   it('volume : 1 Go déjà envoyé → refusé ; lecture du quota en panne → fail-open', async () => {
     const { DB, env } = setup({ withDO: false });
+    seedQ(DB);
     DB.raw.prepare('INSERT INTO media (id,owner_id,r2_key,size,mime,uploaded_at) VALUES (?,?,?,?,?,?)').run('big', 'alice', 'kb', 1024 * 1024 * 1024, 'video/mp4', Date.now());
     expect((await up(env, 'alice')).status).toBe(429);
     const prep = DB.prepare;

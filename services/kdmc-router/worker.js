@@ -9,8 +9,8 @@
  */
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
-import { mintShopsAdminIdToken, mintShopsIdToken } from './fb-token.js';
-import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre, INSCR_ADMIN_SCHEMA } from './boite.js';
+import { mintShopsAdminIdToken, mintShopsIdToken, mintCmcIdToken } from './fb-token.js';
+import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre, INSCR_ADMIN_SCHEMA, FB_URL } from './boite.js';
 import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
@@ -3880,11 +3880,42 @@ async function handleSso(request, url, env) {
   /* JETON FIREBASE « shops » (8.10, revue extérieure) : les nœuds des boutiques (catalogue, logos, sélection, commandes) ne sont plus ouverts
      sans rôle. L'admin passe par /__admin/fbtoken (rôle admin) ; une personne à qui Kevin a donné le rôle « shops » (fiche : roles)
      reçoit ici un jeton `role:'shops'` — session PROUVÉE exigée (Face ID ou code), jamais sur un nom. Les autres : 403. */
+  /* SONDE DE BOUT EN BOUT du jeton « scope cmc » (16.10, avant de fermer Firebase aux anonymes) : SEUL le robot de déploiement
+     (en-tête x-kdmc-sonde + réseau GitHub AS8075, comme la porte) peut l'appeler. Le domaine fabrique un jeton cmc pour l'uid « sonde »,
+     le présente à Firebase sur une petite clé, et ne renvoie QUE le code HTTP de Firebase — jamais le jeton, jamais une donnée. */
+  if (path === '/__sso/fbtoken-sonde' && request.method === 'GET') {
+    if (!(request.headers.get('x-kdmc-sonde') && ASN_SONDE.has(Number(request.cf && request.cf.asn) || 0))) return J({ ok: false }, undefined, 404);
+    const o = await mintCmcIdToken(env, 'sonde');
+    if (!o || !o.ok || !o.id_token) return J({ ok: false, etape: 'jeton', raison: (o && o.reason) || 'echange_impossible' });
+    let http = 0;
+    try { const r = await fetch(FB_URL + '/cmc_motd.json?shallow=true&auth=' + encodeURIComponent(o.id_token)); http = r.status; try { await r.body?.cancel(); } catch { /* rien */ } } catch { http = 0; }
+    return J({ ok: http === 200, etape: 'firebase', http });
+  }
   if (path === '/__sso/fbtoken' && request.method === 'POST') {
     const s = await ssoVerify(secret, ssoToken(request), request);
     const acc = s ? await accGet(env, s.uid) : null;
     if (!s || !acc || revoked(acc, s)) return J({ ok: false, reason: 'session requise' }, undefined, 401);
     const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
+    /* 16.10 (audit extérieur P0-1) : `{ scope: 'cmc' }` — le jeton Firebase de CMCteams / la light, à la place du compte anonyme.
+       Mêmes conditions que les données RH : session valide, non révoquée, ouverte sur l'app QUI DEMANDE, code prouvé (sauf l'admin).
+       L'admin garde son jeton `role: admin` (les règles l'acceptent partout). Compté en D1 (adoption, avant de fermer les règles),
+       20 jetons par personne et par heure au plus. Aucune écriture KV. */
+    let corpsFb = {}; try { corpsFb = await request.clone().json(); } catch { corpsFb = {}; }
+    if (corpsFb && corpsFb.scope === 'cmc' && !estAdmin) {
+      let appDemande = 'cmcteams'; try { appDemande = appDe(new URL(request.url).hostname) || 'cmcteams'; } catch { /* */ }
+      if (!perimetre(acc, appDemande).ok) return J({ ok: false, reason: 'hors_perimetre' }, undefined, 403);
+      if (await codeManquant(env, s, acc)) return J({ ok: false, reason: 'code_requis' }, undefined, 403);
+      const maintenant = Date.now();
+      if (cptD1.dispo(env)) {
+        const trancheCmc = new Date(maintenant).toISOString().slice(0, 13);
+        if (!(await cptD1.ajouterSiSous(env.CERCLE_DB, 'fbcmc_u:' + s.uid + ':' + trancheCmc, 1, 20, maintenant + 2 * 3600e3, maintenant).catch(() => true))) {
+          return J({ ok: false, reason: 'trop_de_demandes' }, undefined, 429);
+        }
+      }
+      const outC = await mintCmcIdToken(env, s.uid);
+      if (outC.ok && cptD1.dispo(env)) await cptD1.ajouterSiSous(env.CERCLE_DB, 'fbcmc_jour:' + new Date(maintenant).toISOString().slice(0, 10), 1, 1e9, maintenant + 40 * 864e5, maintenant).catch(() => false);
+      return outC.ok ? J(outC) : J(outC, null, 503);
+    }
     const roleShops = Array.isArray(acc.roles) && acc.roles.indexOf('shops') >= 0 && !!(s.verified || s.code);
     if (!estAdmin && !roleShops) return J({ ok: false, reason: 'role_requis' }, undefined, 403);
     const out = await mintShopsIdToken(env, s.uid, estAdmin ? 'admin' : 'shops');

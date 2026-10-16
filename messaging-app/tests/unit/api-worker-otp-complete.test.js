@@ -307,7 +307,7 @@ describe('handleSendOtp — paths complets', () => {
     env.APEX_CHAT_DB.prepare = vi.fn((sql) => ({
       bind: function () { return this; },
       first: async () => {
-        if (sql.includes('ratelimit_otp')) return { count: 3 };
+        if (sql.includes('ratelimit_otp')) return { count: 2 };
         return null;
       },
       all: async () => ({ results: [{ key: 'OTP_RATE_LIMIT_PER_HOUR', value: '5' }] }),

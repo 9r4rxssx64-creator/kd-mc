@@ -1848,6 +1848,26 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "Apex v13.4.372 construite et vérifiée en local ; règles Firebase ouvertes = leçon #559, plan dans MEMO, pas corrigé (ration Actions épuisée)."
+    },
+    "firebase-cmc2": {
+      "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",
+      "branche": "claude/firebase-cmc2",
+      "sujet": "routeur /__sso/fbtoken scope cmc + sonde /__sso/fbtoken-sonde ; CMCteams/light jeton du domaine, repli anonyme",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "firebase-cmc": {
+      "titre": "Firebase étape 1 (première version, retirée par précaution puis reprise dans firebase-cmc2)",
+      "branche": "claude/firebase-cmc",
+      "sujet": "jeton du domaine scope cmc",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

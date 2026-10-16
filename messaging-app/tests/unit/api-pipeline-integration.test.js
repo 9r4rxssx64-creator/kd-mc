@@ -74,6 +74,7 @@ function makeStatefulDB() {
       }
       return null;
     }
+    if (sql.includes('FROM conversation_members WHERE conv_id=? AND user_id=?')) return s.members.some(m => m.conv_id === a[0] && m.user_id === a[1]) ? { 1: 1 } : null;
     if (sql.includes('FROM connections WHERE user_id=?')) return null;
     return null;
   }
@@ -169,7 +170,7 @@ describe('Pipeline complet en process (auth → conv → message + photo) — vr
 
     // 5) PHOTO : Bob upload (vrai handleMediaUpload → R2) puis envoie le marqueur
     const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
-    const upReq = new Request('https://api.apex/api/media', {
+    const upReq = new Request('https://api.apex/api/media?conv_id=' + encodeURIComponent(convId), {
       method: 'POST',
       headers: { 'content-type': 'image/png', 'x-file-name': 'photo.png', Authorization: 'Bearer ' + B.token },
       body: png,

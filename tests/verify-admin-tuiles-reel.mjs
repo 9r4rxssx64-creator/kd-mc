@@ -78,6 +78,15 @@ chk(await page.locator('a.cardrow').count() === 0, 'admin non vérifié : toujou
 SESSION = { ok: true, uid: 'kdmc_admin', name: 'Kevin DESARZENS', admin: true, verified: true };
 await ouvre();
 
+/* Depuis le « tableau unique » (16.10), l'accueil montre des rubriques : chaque tuile vit dans SA rubrique (Commerce, Apps…).
+   On y va comme Kevin, par l'adresse de la rubrique, puis on exige la tuile visible et tactile. */
+const rubrique = async (id, sel) => {
+  await page.evaluate((h) => { location.hash = '#' + h; }, id); await page.waitForTimeout(400);
+  /* la tuile peut être rangée dans un ONGLET de la rubrique : on ouvre cet onglet, comme Kevin le toucherait */
+  const o = sel ? await page.evaluate((q) => { const t = document.querySelector(q); for (let x = t; x; x = x.parentElement) { const v = x.getAttribute && x.getAttribute('data-onglet'); if (v) return v; } return null; }, sel) : null;
+  if (o) { await page.evaluate(([h, v]) => { location.hash = '#' + h + '/' + v; }, [id, o]); await page.waitForTimeout(400); }
+};
+await rubrique('commerce', 'a.cardrow[href="/admin/commerce.html"]');
 const commerce = page.locator('a.cardrow[href="/admin/commerce.html"]');
 const vente = page.locator('a.cardrow[href="https://kit.kd-mc.com/"]');
 chk(await commerce.count() === 1, 'tuile Commerce : exactement une');
@@ -109,6 +118,7 @@ chk((await texte(vente.locator('.d'))).includes('kit.kd-mc.com'), 'tuile page de
    Il cherchait Tor. Le HTML ne suffit pas à le prouver : une tuile peut être
    dans le source et invisible à l'écran (masquée, hors cadre, hauteur nulle).
    On l'exige donc VISIBLE, tactile (≥ 44 px) et à la bonne adresse. */
+await rubrique('apps');
 const tor = page.locator('a.cardrow[href="https://tor.kd-mc.com/"]');
 chk(await tor.count() === 1, 'tuile « Tor en clair » : exactement une');
 chk(await tor.isVisible().catch(() => false), 'tuile Tor VISIBLE à l\'écran');

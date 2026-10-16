@@ -1,9 +1,16 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (nuit) — « Vérifie réel comme moi, teste toutes les fonctions d'Apex Chat »
+- **Rejoué en entier** (`npm run test:fonctions-reelles`, Chromium réel + worker réel en base simulée, 173 s) : **84 ✅ · 1 ❌ · 0 ⚪ / 85**. 19 vues, 0 exception JS, 106 routes du serveur sans erreur 500, tous les boutons cliqués ont un effet. Rapport : `audit/apex-chat/06-FONCTIONS-REELLES.md`.
+- **2 faux rouges venaient du harnais, corrigés** (leçon 599) : F45 (hôte GIF de test refusé par la liste blanche) et les 5 Durable Objects (globaux Cloudflare absents). **Un seul vrai rouge : F36** — `lib/key-vault.js` n'est chargé par aucune balise, donc la clé privée E2E reste en clair dans le téléphone (constat P1 de `audit/apex-chat/03-FINDINGS.md`, « EN COURS », import commenté dans `crypto.js:18`). Je ne l'active pas moi-même : 7 utilisateurs réels, `index.html` en mouvement (v1.1.314, lot P) — signalé à la session Apex Chat.
+- **Sur le vrai domaine, sans compte** : pages publiques 200 (aide, CGU, confidentialité, mentions, manifeste, icônes), `/health` du serveur `ok` (D1, DO, sauvegarde), routes protégées 401 sans jeton. **Passage navigateur réel avec comptes de test** : 5 gestes verts sur la prod v1.1.313 (run public 38974418099).
+- **Pourquoi pas « connecté comme Kevin » dans Apex Chat** : le serveur n'accepte une session ADMIN que prouvée par Face ID (`handleSsoFromKdmc` : `verified === true`) ; le code seul (voie du robot Apex v13) est refusé (`face_id_requis`) — c'est voulu, et je ne le contourne pas. Le test à l'iPhone reste les 3 gestes de `KEVIN_ACTIONS_TODO.md`.
+
 ## 2026-10-17 (00h50 UTC) — Apex v13.4.379 : la bulle « Proxy Cloudflare activé » ne s'affiche plus (vue par le robot)
 
 - **Pourquoi** : la capture du robot « Apex comme Kevin » (run 38975685928) montrait la bulle « 🔒 Proxy Cloudflare activé : tes clés API restent server-side » PAR-DESSUS la première ligne de la réponse, à la première ouverture sur un appareil neuf. Info inutile pour Kevin (règle du 13.10). Retirée ; l'activation reste dans le journal.
 - **Garde** : `v13_4_379-proxy-sans-bulle` (sabotage : remettre la bulle → rouge, prouvé).
+- **✅ VÉRIFIÉ RÉEL** : PR #4708 fusionnée, publiée au dépôt public, routeur run 38978305428 ✅, `sw.js` servi = `apex-v13.4.379` ; robot « Apex comme Kevin » run 38978540793 **vert 8/8** sur le vrai domaine (v13.4.379 affichée, aucun chevauchement, pas de bulle orange, « Test » → « Test reçu, tout fonctionne. 🚀 » ⚡ groq 0,9 s gratuit) et, dans les bulles vues, **plus de « Proxy Cloudflare activé »** (seule reste « Connecté via Face ID »).
 - **Réel** : ligne « Vérifié réel » ci-dessous après publication + robot.
 ## 2026-10-16 — 8e passage RÉEL (run 38977375436, v1.1.314) → v1.1.315 : jeton unique par connexion
 - **Prouvé** : A, B1, B2 (2 navigateurs) ✅ · C ✅ Chromium · D ✅ Chromium **et la conversation se rouvre après la mise à jour automatique** (nouveau). **Écart** : C ❌ WebKit — le jeton « d'un autre appareil » était refusé : deux connexions du même compte dans la même seconde donnaient le MÊME jeton. Corrigé : identifiant aléatoire `jti` sur les jetons de session (typés exclus). Version 1.1.315 (+ `API_VERSION`). Leçon 591 ; garde `lot-l-deconnexion-serveur` (9) ; `vitest --coverage` sans erreur (2 124).

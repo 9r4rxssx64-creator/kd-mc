@@ -406,8 +406,9 @@ async function voletWorker() {
   });
   await sonde('DO', async () => { // F31/F32/F33/F81/F85 : instanciation réelle + requête HTTP + alarme
     const D = await import(join(APP, 'workers', 'durable-objects', 'ConversationDO.js'));
+    globalThis.WebSocketRequestResponsePair = globalThis.WebSocketRequestResponsePair || class { constructor(request, response) { this.request = request; this.response = response; } }; // global du runtime Cloudflare, lu par ConversationDO (auto-réponse ping)
     globalThis.WebSocketPair = class { constructor() { this[0] = { accept() {}, send() {}, close() {}, addEventListener() {} }; this[1] = { accept() {}, send() {}, close() {}, addEventListener() {} }; } };
-    const mkState = (id) => { const data = new Map(); return { id: { toString: () => id }, storage: { get: async (k) => data.get(k), put: async (k, v) => { data.set(k, v); }, setAlarm: async () => {}, deleteAlarm: async () => {} }, blockConcurrencyWhile: async (fn) => { await fn(); } }; };
+    const mkState = (id) => { const data = new Map(); return { id: { toString: () => id }, storage: { get: async (k) => data.get(k), put: async (k, v) => { data.set(k, v); }, setAlarm: async () => {}, deleteAlarm: async () => {} }, blockConcurrencyWhile: async (fn) => { await fn(); }, setWebSocketAutoResponse() {}, getWebSockets: () => [], acceptWebSocket() {} }; };
     const out = {};
     const env = envFor();
     const conv = new D.ConversationDO(mkState('cv1'), env);
@@ -511,7 +512,7 @@ function mockApi(method, path, bodyText, page) {
   if (p === '/api/auth/verify-otp') return ok({ user: ADMIN, token: 'eyJ.test.jwt' });
   if (/^\/api\/keys\/[^/]+\/bundle$/.test(p)) return { status: 200, body: { ok: true, bundle: { identity_key_pub: page.__peerPub || null, crypto_caps: 'media' } } };
   if (p === '/api/keys/prekeys') return ok({});
-  if (p === '/api/gif') return { status: 200, body: { disabled: false, results: [{ id: 'g1', title: 'Bonjour', preview: 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=', full: 'https://giphy.test/full.gif' }] } };
+  if (p === '/api/gif') return { status: 200, body: { disabled: false, results: [{ id: 'g1', title: 'Bonjour', preview: 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=', full: 'https://media.giphy.com/full.gif' }] } };
   if (p === '/api/signalements') return ok({ id: 's1' });
   if (p === '/api/invitations' && method === 'POST') return ok({ invitation: { code: 'ABC123', magic_token: 'mt', url: BASE + '/?i=ABC123' }, code: 'ABC123', link: BASE + '/?i=ABC123' });
   if (/^\/api\/ai\//.test(p)) return ok({ summary: 'Résumé simulé', text: 'Texte simulé', translation: 'Simulated', result: 'Simulé', suggestions: ['Oui', 'Non', 'Plus tard'], replies: ['Oui', 'Non'], results: [], description: 'Image simulée', transcript: 'transcription simulée' });
@@ -818,7 +819,7 @@ async function voletFront() {
   await probe('F45', async () => {
     await prep('chat', VUES[1][2]); await page.waitForTimeout(300);
     return page.evaluate(async () => { const K = window.K; let uploaded = null; K._uploadMedia = async (f) => { uploaded = { name: f.name, type: f.type, size: f.size }; };
-      const of = window.fetch; window.fetch = async (u, o) => (String(u) === 'https://giphy.test/full.gif' ? new Response(new Blob([new Uint8Array([71, 73, 70, 56, 57, 97])], { type: 'image/gif' })) : of(u, o));
+      const of = window.fetch; window.fetch = async (u, o) => (String(u) === 'https://media.giphy.com/full.gif' ? new Response(new Blob([new Uint8Array([71, 73, 70, 56, 57, 97])], { type: 'image/gif' })) : of(u, o));
       if (!document.getElementById('gif-picker')) { const d = document.createElement('div'); d.id = 'gif-picker'; d.style.display = 'none'; document.body.appendChild(d); }
       K._toggleGifPicker(); await K._loadGifs('bonjour'); await new Promise((r) => setTimeout(r, 300));
       const cells = document.querySelectorAll('#gif-grid .gif-cell').length; const c = document.querySelector('#gif-grid .gif-cell'); if (c) c.click(); await new Promise((r) => setTimeout(r, 300)); window.fetch = of;

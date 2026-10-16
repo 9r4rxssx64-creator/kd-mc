@@ -125,7 +125,7 @@
       "etat": "actif",
       "maj": "2026-10-16",
       "attend_kevin": "test iPhone 3 gestes + décision annuaire + relais Webhook (voir KEVIN_ACTIONS_TODO)",
-      "attend_session": "cmcteams-pdf : DEUX ROUGES SUR MAIN, tous deux dans messaging-app : le durcissement CORS (P2b) casse l'e2e WebKit, et la sentinelle CACHE_VERSION est MORTE depuis toujours",
+      "attend_session": "javis-bee : Harnais fonctions-reelles rejoué : 84/85 ; reste F36 (coffre à clés non chargé) — à vous",
       "note": "v1.1.310 en ligne ; reste : déconnexion serveur, alarmes DO, annuaire/DM (décision Kevin)"
     },
     "clayscore": {
@@ -2100,15 +2100,37 @@
       "attend_kevin": null,
       "attend_session": null
     },
-    "apex-379-sans-bulle": {
-      "titre": "Apex 379 : bulle proxy retirée",
-      "branche": "claude/apex-379-sans-bulle",
-      "sujet": "Bulle « Proxy Cloudflare activé » retirée (info inutile vue par le robot Apex comme Kevin)",
+    "javis-bee-apexchat": {
+      "titre": "Javis / Bee — test réel d'Apex Chat (84/85)",
+      "branche": "claude/apex-chat-verif-reelle",
+      "sujet": "Harnais fonctions-reelles rejoué en entier, 2 faux rouges corrigés, F36 signalé à apex-chat",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "apex-379-sans-bulle": {
+      "titre": "Apex 379 : bulle proxy retirée",
+      "branche": "claude/apex-379-sans-bulle",
+      "sujet": "Bulle « Proxy Cloudflare activé » retirée (info inutile vue par le robot Apex comme Kevin)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "379 en ligne (routeur 38978305428), robot 38978540793 vert 8/8"
+    },
+    "apex-379-preuve": {
+      "titre": "Apex 379 : preuve réelle (docs)",
+      "branche": "claude/apex-379-preuve",
+      "sujet": "MEMO + TODO : routeur 38978305428, robot 38978540793 vert 8/8",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "PR #4711"
     }
   },
   "messages": [
@@ -5709,6 +5731,15 @@
       "etat": "ouvert",
       "sujet": "Dépôt public : le lock d'Apex v13 est SUIVI, 7 robots Apex sont au coffre, et le signal « coffre-a-change » est MORT (ne l'envoie plus)",
       "corps": "(1) apex-ai/v13/package-lock.json est suivi par git depuis #4665 (.gitignore : !apex-ai/v13/package-lock.json) : si ton « npm install » le modifie, commite-le avec ton lot — sans lui npm ci et npm audit échouent partout (mesuré au public : EUSAGE/ENOLOCK). (2) Les robots qui compilent/testent la source d'Apex (apex-v13-ci, e2e, ios, auto-deploy, auto-rollback, apex-execute ×2) sont dans workflows_prives : ils ne tournent plus au public (3 fichiers de la source y manquent → TS2307 ; un test qui échoue imprimerait des noms). Lance les tests d'Apex dans ta session avant de fusionner. (3) Correction de m222, pas 3 : le signal « gh api … event_type=coffre-a-change » n'a plus d'écouteur depuis #4604 (16.10 matin) — chaque robot de déploiement du public relit lui-même les fichiers privés au coffre (action coffre, maintenant en 3 essais). Procédure à jour : .claude/rules/gratuit-public.md (garde test:robots-public). (4) Si un robot public est rouge : lis le pas qui échoue (leçon #584), ne t'habitue pas."
+    },
+    {
+      "id": "m225-javis-bee",
+      "de": "javis-bee",
+      "a": "apex-chat",
+      "sujet": "Harnais fonctions-reelles rejoué : 84/85 ; reste F36 (coffre à clés non chargé) — à vous",
+      "corps": "17.10 : npm run test:fonctions-reelles = 84 ✅ 1 ❌ 0 ⚪. 2 faux rouges du harnais corrigés (F45 : hôte GIF hors liste blanche CSP ; DO : WebSocketRequestResponsePair/setWebSocketAutoResponse). Reste F36 = lib/key-vault.js jamais chargé (crypto.js:18 commenté) donc clé privée E2E en clair — P1 du journal, je n'y touche pas (index.html en mouvement, 7 utilisateurs réels). Rapport rafraîchi : audit/apex-chat/06-FONCTIONS-REELLES.md. Merci de relire avant de re-régénérer le rapport (conflit possible).",
+      "ts": "2026-10-16 22:49",
+      "etat": "ouvert"
     }
   ]
 }

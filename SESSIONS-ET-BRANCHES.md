@@ -45,6 +45,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 
 | Session | Branche | État au 2.09 |
 | Fiche par personne : une carte par compte, fil d'activité, historique complet | `claude/fiche-activite` | 🟢 4.10 : D1, 90 jours ; empilée sur alertes-utiles ; PR en cours |
+| Test réel d'Apex Chat : harnais F01–F85 rejoué (84 ✅), faux rouges corrigés | `claude/apex-chat-verif-reelle` | 🟢 17.10 : PR en cours |
 | Documents à jour de la partie Bee + garde R8 (le code de Bee change ⇒ CLAUDE-HISTOIRE) | `claude/docs-bee-r7` | 🟢 16.10 : PR en cours |
 | Arbre + domaine (session 15-16.10) | `claude/docs-complets` | 🟢 16.10 : Arbre v3.108→v3.116, tous les documents à jour + règle « docs en temps réel » (ligne ajoutée par la session lingua-cercle : inscrite au registre mais absente de la carte) |
 | Alertes utiles seulement, avec toutes les infos | `claude/alertes-utiles` | 🟢 4.10 : Relais privé / VPN ignorés, alertes riches ; PR en cours |
@@ -245,6 +246,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/apex-378-capture-kevin` | 16.10 | Apex 378 : étiquette de version dans la rangée de saisie du chat, erreur récupérable quand la clé est refusée et la passerelle gratuite muette (PR #4693) — fusionnée | `apex-378-capture` |
 | `claude/apex-robot-comme-kevin` | 17.10 | Robot « Apex comme Kevin » (connecté en admin par le domaine, iPhone, « Test ») + sabotages prouvés | `apex-robot-comme-kevin` |
 | `claude/apex-379-sans-bulle` | 17.10 | Apex 379 : plus de bulle « Proxy Cloudflare activé » (vue par le robot) | `apex-379-sans-bulle` |
+| `claude/apex-379-preuve` | 17.10 | Apex 379 : preuve réelle écrite (docs seulement) — fusionnée | `apex-379-preuve` |
 | `claude/regle-publique-1610` | 16.10 | Règle « mettre en ligne sans quota » (gratuit-public.md) ; puis robots publics verts : lock Apex suivi, 7 robots au coffre, semgrep scan, clone en 3 essais, suivis m215→m219 (#4659, #4665) — fusionnée | `audit-apex-1610` |
 | `claude/robots-publics-1610-b` | 16.10 | Lighthouse lit sa config, Axe sert son paquet, signal « coffre-a-change » mort retiré ; m223 (#4669) — fusionnée | `audit-apex-1610` |
 | `claude/pipeline-garde-1610` | 16.10 | Garde pipeline-sessions : `claude/docs-complets` inscrite ; 2 branches fusionnées justifiées (#4675) — fusionnée | `audit-apex-1610` |

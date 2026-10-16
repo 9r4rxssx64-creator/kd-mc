@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import worker, { handleLogout } from '../../workers/api-worker.js';
+import worker, { handleLogout, signJWT } from '../../workers/api-worker.js';
 import { ENV, makeJWT, makeRequest } from './api-worker-helpers.js';
 import { d1Reel } from './_support/d1-sqlite.js';
 
@@ -70,5 +70,23 @@ describe('déconnexion côté serveur', () => {
     const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
     const i = html.indexOf('K.logout = function(){');
     expect(html.slice(i, i + 900)).toContain("'/api/auth/logout'");
+  });
+
+  it('deux connexions du MÊME compte dans la MÊME seconde donnent deux jetons différents ; en déconnecter un laisse l\'autre', async () => {
+    const { env } = setup();
+    const iat = Math.floor(Date.now() / 1000) - 5;
+    const a = await signJWT({ sub: 'u1', iat, exp: iat + 3600 }, env.JWT_SIGN_KEY);
+    const b = await signJWT({ sub: 'u1', iat, exp: iat + 3600 }, env.JWT_SIGN_KEY);
+    expect(a).not.toBe(b);
+    expect((await logout(env, a)).status).toBe(200);
+    expect((await me(env, a)).status).toBe(401);
+    expect((await me(env, b)).status).toBe(200);
+  });
+  it('les jetons TYPÉS (ticket, média, invitation) n\'ont pas d\'identifiant : ils restent identiques et courts', async () => {
+    const { env } = setup();
+    const iat = Math.floor(Date.now() / 1000);
+    const x = await signJWT({ sub: 'u1', typ: 'mtkt', iat, exp: iat + 300 }, env.JWT_SIGN_KEY);
+    const y = await signJWT({ sub: 'u1', typ: 'mtkt', iat, exp: iat + 300 }, env.JWT_SIGN_KEY);
+    expect(x).toBe(y);
   });
 });

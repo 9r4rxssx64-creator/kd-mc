@@ -5,6 +5,10 @@
 - **Pourquoi** : la capture du robot « Apex comme Kevin » (run 38975685928) montrait la bulle « 🔒 Proxy Cloudflare activé : tes clés API restent server-side » PAR-DESSUS la première ligne de la réponse, à la première ouverture sur un appareil neuf. Info inutile pour Kevin (règle du 13.10). Retirée ; l'activation reste dans le journal.
 - **Garde** : `v13_4_379-proxy-sans-bulle` (sabotage : remettre la bulle → rouge, prouvé).
 - **Réel** : ligne « Vérifié réel » ci-dessous après publication + robot.
+## 2026-10-16 — 8e passage RÉEL (run 38977375436, v1.1.314) → v1.1.315 : jeton unique par connexion
+- **Prouvé** : A, B1, B2 (2 navigateurs) ✅ · C ✅ Chromium · D ✅ Chromium **et la conversation se rouvre après la mise à jour automatique** (nouveau). **Écart** : C ❌ WebKit — le jeton « d'un autre appareil » était refusé : deux connexions du même compte dans la même seconde donnaient le MÊME jeton. Corrigé : identifiant aléatoire `jti` sur les jetons de session (typés exclus). Version 1.1.315 (+ `API_VERSION`). Leçon 591 ; garde `lot-l-deconnexion-serveur` (9) ; `vitest --coverage` sans erreur (2 124).
+- Lot P (file de rebut `apex-chat-dlq`) fusionné dans le même envoi : **à vérifier au déploiement** que la file est bien créée et que le déploiement passe (sinon le retour arrière automatique s'applique).
+
 ## 2026-10-16 — Apex Chat : file de rebut (lot P)
 - `wrangler.toml` : 5 files de travail avec `max_retries = 5` + `dead_letter_queue = "apex-chat-dlq"` + consommateur de la file de rebut ; `deploy-apex-chat.yml` crée `apex-chat-dlq` avant le déploiement ; `api-worker.js` : un message mort est consigné au journal d'audit (`queue_dead_letter`) puis acquitté. Configuration validée par `wrangler deploy --dry-run`. Garde `lot-p-file-de-rebut` (4), sabotage rouge, `vitest --coverage` sans erreur. Leçon 590.
 - **À regarder après le déploiement** : que la file `apex-chat-dlq` soit bien créée (étape « Create Cloudflare Queues ») ; le journal d'audit se lit côté admin (`queue_dead_letter`).

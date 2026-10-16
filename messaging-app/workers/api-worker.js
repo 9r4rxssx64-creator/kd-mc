@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.314';
+export const API_VERSION = '1.1.315';
 
 // File de rebut des files d'attente (wrangler.toml : dead_letter_queue).
 export const DLQ_NAME = 'apex-chat-dlq';
@@ -155,6 +155,12 @@ function normPhone(p) {
 }
 
 export async function signJWT(payload, secret) {
+  // Identifiant UNIQUE par jeton de session (mesuré en vrai navigateur, 16.10.2026) : deux connexions du même compte dans la
+  // même seconde produisaient exactement le même jeton, donc « Te déconnecter » sur un appareil coupait aussi l'autre.
+  // Les jetons typés (ticket WebSocket, média, invitation…) n'en ont pas besoin : ils sont à usage unique ou très courts.
+  if (payload && payload.sub && !payload.typ && !payload.jti) {
+    payload = { ...payload, jti: Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(16).padStart(2, '0')).join('') };
+  }
   const header = { alg: 'HS256', typ: 'JWT' };
   const enc = (o) => btoa(JSON.stringify(o)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   const data = `${enc(header)}.${enc(payload)}`;

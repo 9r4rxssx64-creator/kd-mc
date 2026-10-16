@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Arbre v3.108 : la vue ne saute plus (Kevin : « l'arbre n'est pas stable »)
+
+- **Cause mesurée** (vrai Chromium, vraies données 334 fiches) : chaque nouveau dessin (`renderTree` → `drawStage(true)`) — synchro avec la famille, modification, barre de Safari qui se replie (« resize ») — remettait pan et zoom au cadrage de départ : on glissait vers un bloc, l'arbre revenait au début.
+- **Livré (v3.108)** : le cadrage de départ ne se refait que si la vue a changé de nature (famille / style), de largeur (rotation), ou si l'on n'a pas bougé. Sinon la vue reste (zoom compris). Vérifié sur les vraies données : glissé → redessin → barre Safari = même vue.
+- **Garde** : `tests/arbre-vue-stable.test.mjs` (6), sabotage rouge ; pins de version des 3 tests mis à v3.108.
+- **Pas touché** : la lisibilité des étiquettes de génération à gauche (coupées sur iPhone) — non demandé.
+
 ## 2026-10-15 (soir) — WhatsApp masqué partout où il se voit, tant qu'il ne fonctionne pas (Kevin : « Enlève où il y a marqué WhatsApp tant qu'il ne fonctionne pas »)
 
 - **Constat honnête** : la confirmation WhatsApp n'est PAS branchée chez Meta (3 copier-coller restants, KEVIN_ACTIONS_TODO.md 10.10) ; le code n'a jamais tourné pour de vrai.

@@ -93,6 +93,7 @@
   "tests/arbre-toutes-blocs.test.mjs",
   "tests/arbre-unions.test.mjs",
   "tests/arbre-voix.test.mjs",
+  "tests/arbre-vue-stable.test.mjs",
   "tests/audit-fidelity-cell-by-cell.mjs",
   "tests/audit-fidelity-doimport-juin.mjs",
   "tests/bg-url-guard.test.mjs",

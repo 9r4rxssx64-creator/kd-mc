@@ -1807,6 +1807,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "portail-range": {
+      "titre": "Portail kd-mc.com rangé : Mon espace en tête, menus déroulants, rien de perdu",
+      "branche": "claude/portail-range",
+      "sujet": "Kevin : tri du domaine, regrouper les boutiques, sans rien perdre",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

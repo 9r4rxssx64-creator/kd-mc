@@ -17,6 +17,10 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Portail kd-mc.com v1.0.66 rangé (Kevin : « fais-moi le tri… sans rien perdre »)
+- En tête : « 🔒 Mon espace » (Kevin/Lolo) avec la grande tuile **Mon tableau de bord** (/admin/) puis « 🧰 Mes outils privés » (9, menu déroulant) ; « ⭐ Mes raccourcis » (Javis, Bot, Qui se connecte, Tor) sous un seul titre qui s'efface si rien n'est révélé. Public : Pro & métier (3), IA (3 + « Recherche & création » ▾ 5), Boutiques (portail + « Les boutiques » ▾ 5, dont « En construction » ▾ 4), Famille & loisirs (Arbre, Lingua, Cüjina, livre).
+- Les 39 adresses d'avant sont toutes là (`<details>` sans JS). Garde `test:portail-range` (11, sabotage prouvé : une tuile retirée → rouge).
+
 ## 2026-10-16 — Les mises en ligne passent par le dépôt PUBLIC (gratuit) — règle absolue (Kevin)
 - **Mesuré** : public `kd-mc` = 81 déploiements du routeur réussis jusqu'au 15.10 ; le 16.10 tous bloqués par MA porte de ration (runs 38894881785…38907646497), qui tournait aussi dans le public. Le robot n'allait pas chercher le coffre : depuis le public il aurait publié le domaine sans CMCteams.
 - **Corrigé** (`deploy-kdmc-router.yml`) : privé → push = tâche sautée (0 min), bouton manuel gardé ; public → récupère le coffre (`.github/actions/coffre`, clé lecture seule) puis garde BLOQUANTE « les 5 apps privées sont dans le paquet » ; porte de ration seulement dans le privé. Règle écrite (CLAUDE-HISTOIRE, `.claude/rules/gratuit-public.md`), garde `test:robots-public` (10, sabotage prouvé).

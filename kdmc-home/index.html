@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.65 -->
+<!-- v1.0.66 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -159,6 +159,18 @@
   .ss-fold[open]>summary::before{transform:rotate(90deg)}
   @media(prefers-reduced-motion:reduce){.ss-fold>summary::before{transition:none}}
   .ss-dur{color:var(--gold2,#f6d97a);font-weight:600}
+  /* 16.10 : menus déroulants du portail (tri, sans rien perdre) — même allure qu'une tuile, ≥ 44 px, sans JS */
+  details.grp{margin:13px 0 0;border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,var(--card),#0c150f)}
+  details.grp>summary{list-style:none;display:flex;align-items:center;gap:14px;padding:16px 18px;min-height:72px;cursor:pointer;border-radius:18px}
+  details.grp>summary::-webkit-details-marker{display:none}
+  details.grp>summary::after{content:'▾';margin-left:10px;color:var(--gold);font-size:20px;transition:transform .2s}
+  details.grp[open]>summary::after{transform:rotate(180deg)}
+  details.grp>summary .nb{margin-left:auto;background:rgba(232,184,48,.16);color:var(--gold);border-radius:999px;padding:2px 10px;font-size:14px}
+  details.grp>.grid{padding:0 12px 12px}
+  details.grp.sous{margin:0 12px 12px}
+  a.card.big{border-color:rgba(232,184,48,.5);box-shadow:0 0 0 1px rgba(232,184,48,.15) inset}
+  #perso-zones:not(:has(> nav > div:not([hidden]))){display:none}
+  #perso-zones .grid>div>a.card{height:100%}
 </style>
 </head>
 <body>
@@ -177,56 +189,16 @@
       <div id="install" hidden></div>
       <a id="cercle-alerte" href="https://lingua.kd-mc.com/#admin" hidden></a>
 
-      <h2 class="cat">🎰 Pro &amp; métier</h2>
-      <nav class="grid" aria-label="Projets pro">
-        <a class="card" href="https://cmcteams.kd-mc.com/"><span class="ic">📅</span><span class="ct"><span class="nm">CMCteams <span class="badge" style="background:rgba(232,184,48,.16);color:var(--gold)">+ Matricule SBM</span></span><span class="ds">Plannings &amp; équipes — Casino de Monaco</span><span class="url">cmcteams.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://cmcteams-light.kd-mc.com/"><span class="ic">🎯</span><span class="ct"><span class="nm">CMCteams light</span><span class="ds">Ordres de départ &amp; équipes — vue rapide (sans ouvrir l'app)</span><span class="url">cmcteams-light.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://cmcteams.kd-mc.com/tools/messages/"><span class="ic">📨</span><span class="ct"><span class="nm">Messages employés</span><span class="ds">Les messages que les employés t'envoient — répondre, effacer</span><span class="url">cmcteams.kd-mc.com → messages</span></span><span class="arr">›</span></a>
-      </nav>
-
-      <h2 class="cat">🤖 Intelligence artificielle</h2>
-      <nav class="grid" aria-label="Projets IA">
-        <a class="card" href="https://apex-ai.kd-mc.com/"><span class="ic">🤖</span><span class="ct"><span class="nm">Apex AI</span><span class="ds">Assistant IA personnel — chat, studios, coffre</span><span class="url">apex-ai.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://apex-chat.kd-mc.com/"><span class="ic">💬</span><span class="ct"><span class="nm">Apex Chat</span><span class="ds">Messagerie chiffrée de bout en bout</span><span class="url">apex-chat.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://worldmonitor.kd-mc.com/"><span class="ic">🌍</span><span class="ct"><span class="nm">World Monitor</span><span class="ds">Le monde en direct — séismes, news, caméras live, Monaco</span><span class="url">worldmonitor.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://osint.kd-mc.com/"><span class="ic">🔎</span><span class="ct"><span class="nm">OSINT</span><span class="ds">Boîte à outils investigation — cartes, vols, navires, personnes, fuites</span><span class="url">osint.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://dossiers.kd-mc.com/"><span class="ic">🗂️</span><span class="ct"><span class="nm">Dossiers publics</span><span class="ds">Les documents publics de l’affaire Epstein, rangés et renvoyés vers leur source officielle — 53 295 pages recensées, 7 collections. Aucun document hébergé ici</span><span class="url">dossiers.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://studio.kd-mc.com/"><span class="ic">🎬</span><span class="ct"><span class="nm">Créa Studio</span><span class="ds">Studio créatif tout-en-un — montage vidéo, retouche photo, cartoon &amp; photo→vidéo qui danse</span><span class="url">studio.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://ia.kd-mc.com/"><span class="ic">🧠</span><span class="ct"><span class="nm">Outils IA <span class="badge" style="background:rgba(232,184,48,.16);color:var(--gold)">100+</span></span><span class="ds">Lanceur curé : génération, voix, image, vidéo, code, SEO, scraping…</span><span class="url">ia.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://outils.kd-mc.com/"><span class="ic">🧰</span><span class="ct"><span class="nm">Mes outils gratuits</span><span class="ds">Outils open-source gratuits, avec le chemin qui marche vraiment sur iPhone</span><span class="url">outils.kd-mc.com</span></span><span class="arr">›</span></a>
-      </nav>
-
-      <h2 class="cat">🛍️ Boutiques</h2>
-      <nav class="grid" aria-label="Boutiques">
-        <a class="card" href="https://shops.kd-mc.com/"><span class="ic">🏬</span><span class="ct"><span class="nm">Portail boutiques</span><span class="ds">Toutes les boutiques en un coup d'œil</span><span class="url">shops.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://chez-lolo.kd-mc.com/"><span class="ic">🎨</span><span class="ct"><span class="nm">Chez Lolo</span><span class="ds">Créations &amp; impression à la demande</span><span class="url">chez-lolo.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://la-detente.kd-mc.com/"><span class="ic">🌿</span><span class="ct"><span class="nm">La Détente</span><span class="ds">Boutique lifestyle &amp; détente</span><span class="url">la-detente.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://rotaplan.kd-mc.com/"><span class="ic">🗓️</span><span class="ct"><span class="nm">Rotaplan</span><span class="ds">Le planning des équipes qui tournent : équipes miroir, cycles variables, ordres de passage, repos légaux. Prix fixe, utilisateurs illimités</span><span class="url">rotaplan.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://kit.kd-mc.com/"><span class="ic">🧰</span><span class="ct"><span class="nm">Kit IA de l’indépendant</span><span class="ds">7 modules et 57 consignes prêtes à copier pour que l’IA écrive tes devis, relances, posts et courriers — depuis ton téléphone, sans coder</span><span class="url">kit.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://croupier.kd-mc.com/"><span class="ic">🃏</span><span class="ct"><span class="nm">Devenir croupier</span><span class="ds">Le métier sans le folklore : une nuit heure par heure, les jeux à apprendre et dans quel ordre, comment on entre</span><span class="url">croupier.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/tech-hub/"><span class="ic">📱</span><span class="ct"><span class="nm">Tech Hub <span class="badge soon">🚧 En construction</span></span><span class="ds">Gadgets &amp; accessoires tech</span><span class="url">shops.kd-mc.com → tech-hub</span></span><span class="arr">›</span></a>
-        <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/ecocraft/"><span class="ic">♻️</span><span class="ct"><span class="nm">EcoCraft <span class="badge soon">🚧 En construction</span></span><span class="ds">Éco-responsable, zéro déchet</span><span class="url">shops.kd-mc.com → ecocraft</span></span><span class="arr">›</span></a>
-        <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/digital-vault/"><span class="ic">💾</span><span class="ct"><span class="nm">Digital Vault <span class="badge soon">🚧 En construction</span></span><span class="ds">Produits numériques &amp; formations</span><span class="url">shops.kd-mc.com → digital-vault</span></span><span class="arr">›</span></a>
-        <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/pawsome/"><span class="ic">🐾</span><span class="ct"><span class="nm">Pawsome <span class="badge soon">🚧 En construction</span></span><span class="ds">Tout pour les animaux</span><span class="url">shops.kd-mc.com → pawsome</span></span><span class="arr">›</span></a>
-      </nav>
-
-      <h2 class="cat">👨‍👩‍👧 Famille</h2>
-      <nav class="grid" aria-label="Famille">
-        <a class="card" href="https://arbre.kd-mc.com/"><span class="ic">🌳</span><span class="ct"><span class="nm">Arbre généalogique</span><span class="ds">L’arbre de la famille — photos, actes officiels scannés, 7 générations. Protégé par le code famille</span><span class="url">arbre.kd-mc.com</span></span><span class="arr">›</span></a>
-        <a class="card" href="https://lingua.kd-mc.com/"><span class="ic">🐝</span><span class="ct"><span class="nm">KDMC Lingua</span><span class="ds">Apprendre les langues avec Bee — leçons, examens, prof IA, mode discussion</span><span class="url">lingua.kd-mc.com</span></span><span class="arr">›</span></a>
-      </nav>
-
-      <h2 class="cat">🍽️ Cuisine</h2>
-      <nav class="grid" aria-label="Cuisine">
-        <a class="card" href="/cujina"><span class="ic">🍽️</span><span class="ct"><span class="nm">A Cüjina de Mùnegu</span><span class="ds">« La cuisine de Monaco » — 128 recettes de la Riviera illustrées, noms en munegascu, origines 🇲🇨 Monaco / 🇮🇹 Ligurie</span><span class="url">kd-mc.com → cujina</span></span><span class="arr">›</span></a>
-        <a class="card" href="/cujina/livre.pdf"><span class="ic">🖨️</span><span class="ct"><span class="nm">Livre papier</span><span class="ds">Le livre entier en PDF (8 Mo) — ouvre, enregistre dans Fichiers ou imprime</span><span class="url">kd-mc.com → cujina/livre.pdf</span></span><span class="arr">›</span></a>
-      </nav>
-
-      <!-- TOUT l'espace réservé Kevin + Lolo regroupé ici : révélé par kdmc-portal.js (admin OU Kevin/Laurence).
-           Les autres clients ne le voient jamais. /admin/ reste protégé par le code admin (Lolo voit la tuile mais n'entre pas sans le code). -->
+      <!-- TOUT l'espace réservé Kevin + Lolo : révélé par kdmc-portal.js (admin OU Kevin/Laurence). 16.10 : le tableau de bord
+           unique en tête (tout le domaine y est rangé) ; les outils privés dans un menu déroulant — rien n'est perdu. -->
       <div id="priv-zone" hidden>
-        <h2 class="cat">🔒 Espace privé — Kevin &amp; Lolo</h2>
-        <nav class="grid" aria-label="Espace privé Kevin et Lolo">
+        <h2 class="cat">🔒 Mon espace</h2>
+        <nav class="grid" aria-label="Tableau de bord">
+          <a class="card adm big" href="/admin/"><span class="ic">🛡</span><span class="ct"><span class="nm">Mon tableau de bord <span class="badge">Admin</span></span><span class="ds">Tout le domaine : personnes, messages, boutiques, apps, coûts</span><span class="url">kd-mc.com → admin</span></span><span class="arr">›</span></a>
+        </nav>
+        <details class="grp">
+          <summary><span class="ic">🧰</span><span class="ct"><span class="nm">Mes outils privés</span><span class="ds">PoolPilot, Sourcing, Coffre, Finances, Autorisations…</span></span><b class="nb">9</b></summary>
+          <nav class="grid" aria-label="Outils privés Kevin et Lolo">
           <a class="card adm" href="https://beatbot.kd-mc.com/"><span class="ic">🌊</span><span class="ct"><span class="nm">PoolPilot <span class="badge">Privé</span></span><span class="ds">Robot piscine Beatbot — plan 3D, mesures, pilotage réel, live</span><span class="url">beatbot.kd-mc.com</span></span><span class="arr">›</span></a>
           <a class="card adm" href="https://sourcing.kd-mc.com/"><span class="ic">📦</span><span class="ct"><span class="nm">Sourcing fournisseurs <span class="badge">Privé</span></span><span class="ds">Catalogues fournisseurs — choisir quoi vendre</span><span class="url">sourcing.kd-mc.com</span></span><span class="arr">›</span></a>
           <a class="card adm" href="/clone/"><span class="ic">🧬</span><span class="ct"><span class="nm">Cloneur de sites <span class="badge">Privé</span></span><span class="ds">Lire, extraire ou cloner n'importe quelle page web</span><span class="url">kd-mc.com → clone</span></span><span class="arr">›</span></a>
@@ -236,57 +208,80 @@
           <a class="card adm" href="https://autorisations.kd-mc.com/"><span class="ic">🆔</span><span class="ct"><span class="nm">Autorisations <span class="badge">Privé</span></span><span class="ds">Apex fait tout à ta place — tu valides d'un Face ID (connexion, paiement, signature, KYC)</span><span class="url">autorisations.kd-mc.com</span></span><span class="arr">›</span></a>
           <a class="card adm" href="https://dashboard.kd-mc.com/"><span class="ic">📊</span><span class="ct"><span class="nm">Dashboard boutiques <span class="badge">Privé</span></span><span class="ds">Commandes, produits, stats, finances</span><span class="url">dashboard.kd-mc.com</span></span><span class="arr">›</span></a>
           <a class="card adm" href="/empreinte/"><span class="ic">🔑</span><span class="ct"><span class="nm">Changer mon code admin <span class="badge">Privé</span></span><span class="ds">Tape ton nouveau code : la page calcule son empreinte SUR TON TÉLÉPHONE (rien n’est envoyé, rien n’est gardé) — c’est elle qu’on publie ensuite</span><span class="url">kd-mc.com → empreinte</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="/admin/"><span class="ic">👥</span><span class="ct"><span class="nm">Admin domaine <span class="badge">Admin</span></span><span class="ds">Fiches clients &amp; fonctions communes (code admin requis)</span><span class="url">kd-mc.com → admin</span></span><span class="arr">›</span></a>
+          </nav>
+        </details>
+      </div>
+
+      <!-- Raccourcis personnels de Kevin : chacun révélé par sa propre règle (kdmc-portal.js : access / tor / javis / bot), rangés
+           sous UN seul titre qui ne s'affiche que si l'un d'eux est visible. -->
+      <div id="perso-zones">
+        <h2 class="cat">⭐ Mes raccourcis</h2>
+        <nav class="grid" aria-label="Raccourcis personnels">
+          <div id="javis-zone" hidden><a class="card adm" href="https://javis.kd-mc.com/"><span class="ic">🐝</span><span class="ct"><span class="nm">Javis <span class="badge">Privé</span></span><span class="ds">Bee en grand — elle parle, elle t'écoute, elle ouvre tes apps. À installer sur l'écran d'accueil</span><span class="url">javis.kd-mc.com</span></span><span class="arr">›</span></a></div>
+          <div id="bot-zone" hidden><a class="card adm" href="https://bot.kd-mc.com/"><span class="ic">🤖</span><span class="ct"><span class="nm">Bot Crypto <span class="badge">Privé</span></span><span class="ds">Trading auto — état, cryptos, garde-fous, marche/arrêt</span><span class="url">bot.kd-mc.com</span></span><span class="arr">›</span></a></div>
+          <div id="access-zone" hidden><a class="card adm" href="https://admin.kd-mc.com/"><span class="ic">🗂️</span><span class="ct"><span class="nm">Qui se connecte <span class="badge">Admin</span></span><span class="ds">Historique de chaque personne qui se connecte à ton domaine — apps, appareils, en ligne, actions. Code admin requis</span><span class="url">admin.kd-mc.com</span></span><span class="arr">›</span></a></div>
+          <div id="tor-zone" hidden><a class="card adm" href="https://tor.kd-mc.com/"><span class="ic">🧅</span><span class="ct"><span class="nm">Tor en clair <span class="badge">Privé</span></span><span class="ds">Comprendre le web .onion, y aller en sécurité, catalogue vérifié, identité dédiée à générer</span><span class="url">tor.kd-mc.com</span></span><span class="arr">›</span></a></div>
         </nav>
       </div>
 
-      <!-- « Qui se connecte » : MÊME logique que le bot crypto — révélé dès que la session porte
-           ton nom (Kevin/Laurence), SANS exiger le Face ID. La page admin.kd-mc.com est verrouillée
-           par son PROPRE code (vérifié serveur en temps constant) → afficher le raccourci
-           ne donne AUCUN accès (leçon #99 vise l'ACCÈS, pas l'affichage d'un lien vers une page
-           déjà verrouillée). Vécu 2026-08-05 : dans #priv-zone (Face ID obligatoire), Kevin ne
-           voyait RIEN sur son iPhone → une tuile invisible = une fonction qui n'existe pas. -->
-      <div id="access-zone" hidden>
-        <h2 class="cat">🗂️ Qui se connecte</h2>
-        <nav class="grid" aria-label="Journal des connexions du domaine">
-          <a class="card adm" href="https://admin.kd-mc.com/"><span class="ic">🗂️</span><span class="ct"><span class="nm">Qui se connecte <span class="badge">Admin</span></span><span class="ds">Historique de chaque personne qui se connecte à ton domaine — apps, appareils, en ligne, actions. Code admin requis</span><span class="url">admin.kd-mc.com</span></span><span class="arr">›</span></a>
-        </nav>
-      </div>
+      <!-- 16.10 (Kevin : « fais-moi le tri… allège sans rien perdre… regroupe les boutiques avec un menu déroulant ») :
+           les tuiles du quotidien restent à plat ; le reste est rangé dans des menus déroulants (<details>, sans JS).
+           AUCUNE adresse n'a été retirée : garde tests/verify-portail-range.mjs (toutes les anciennes tuiles présentes). -->
+      <h2 class="cat">🎰 Pro &amp; métier</h2>
+      <nav class="grid" aria-label="Projets pro">
+          <a class="card" href="https://cmcteams.kd-mc.com/"><span class="ic">📅</span><span class="ct"><span class="nm">CMCteams <span class="badge" style="background:rgba(232,184,48,.16);color:var(--gold)">+ Matricule SBM</span></span><span class="ds">Plannings &amp; équipes — Casino de Monaco</span><span class="url">cmcteams.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://cmcteams-light.kd-mc.com/"><span class="ic">🎯</span><span class="ct"><span class="nm">CMCteams light</span><span class="ds">Ordres de départ &amp; équipes — vue rapide (sans ouvrir l'app)</span><span class="url">cmcteams-light.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://cmcteams.kd-mc.com/tools/messages/"><span class="ic">📨</span><span class="ct"><span class="nm">Messages employés</span><span class="ds">Les messages que les employés t'envoient — répondre, effacer</span><span class="url">cmcteams.kd-mc.com → messages</span></span><span class="arr">›</span></a>
+      </nav>
 
-      <!-- Tor : même règle d'affichage que le bot crypto — révélé dès que la session porte
-           le nom de Kevin (ou admin prouvé). Réservé à Kevin : ni les clients, ni la famille
-           n'ont à voir cette tuile. La page elle-même ne donne accès à rien de sensible
-           (aucun compte, aucune donnée) — c'est le portail qui la garde discrète. -->
-      <div id="tor-zone" hidden>
-        <h2 class="cat">🧅 Exploration</h2>
-        <nav class="grid" aria-label="Tor">
-          <a class="card adm" href="https://tor.kd-mc.com/"><span class="ic">🧅</span><span class="ct"><span class="nm">Tor en clair <span class="badge">Privé</span></span><span class="ds">Comprendre le web .onion, y aller en sécurité, catalogue vérifié, identité dédiée à générer</span><span class="url">tor.kd-mc.com</span></span><span class="arr">›</span></a>
+      <h2 class="cat">🤖 Intelligence artificielle</h2>
+      <nav class="grid" aria-label="Projets IA">
+          <a class="card" href="https://apex-ai.kd-mc.com/"><span class="ic">🤖</span><span class="ct"><span class="nm">Apex AI</span><span class="ds">Assistant IA personnel — chat, studios, coffre</span><span class="url">apex-ai.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://apex-chat.kd-mc.com/"><span class="ic">💬</span><span class="ct"><span class="nm">Apex Chat</span><span class="ds">Messagerie chiffrée de bout en bout</span><span class="url">apex-chat.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://ia.kd-mc.com/"><span class="ic">🧠</span><span class="ct"><span class="nm">Outils IA <span class="badge" style="background:rgba(232,184,48,.16);color:var(--gold)">100+</span></span><span class="ds">Lanceur curé : génération, voix, image, vidéo, code, SEO, scraping…</span><span class="url">ia.kd-mc.com</span></span><span class="arr">›</span></a>
+      </nav>
+      <details class="grp">
+        <summary><span class="ic">🧭</span><span class="ct"><span class="nm">Recherche &amp; création</span><span class="ds">World Monitor, OSINT, Dossiers, Créa Studio, outils gratuits</span></span><b class="nb">5</b></summary>
+        <nav class="grid" aria-label="Recherche et création">
+          <a class="card" href="https://worldmonitor.kd-mc.com/"><span class="ic">🌍</span><span class="ct"><span class="nm">World Monitor</span><span class="ds">Le monde en direct — séismes, news, caméras live, Monaco</span><span class="url">worldmonitor.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://osint.kd-mc.com/"><span class="ic">🔎</span><span class="ct"><span class="nm">OSINT</span><span class="ds">Boîte à outils investigation — cartes, vols, navires, personnes, fuites</span><span class="url">osint.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://dossiers.kd-mc.com/"><span class="ic">🗂️</span><span class="ct"><span class="nm">Dossiers publics</span><span class="ds">Les documents publics de l’affaire Epstein, rangés et renvoyés vers leur source officielle — 53 295 pages recensées, 7 collections. Aucun document hébergé ici</span><span class="url">dossiers.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://studio.kd-mc.com/"><span class="ic">🎬</span><span class="ct"><span class="nm">Créa Studio</span><span class="ds">Studio créatif tout-en-un — montage vidéo, retouche photo, cartoon &amp; photo→vidéo qui danse</span><span class="url">studio.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://outils.kd-mc.com/"><span class="ic">🧰</span><span class="ct"><span class="nm">Mes outils gratuits</span><span class="ds">Outils open-source gratuits, avec le chemin qui marche vraiment sur iPhone</span><span class="url">outils.kd-mc.com</span></span><span class="arr">›</span></a>
         </nav>
-      </div>
+      </details>
 
-      <!-- Bee (Javis) : l'assistante de Kevin. Elle est déjà FAIL-CLOSED côté app
-           (javis-widget.js demande /__sso/whoami et ne s'affiche que pour Kevin admin
-           vérifié) — la tuile ne donne donc AUCUN accès de plus. Même règle d'affichage
-           que Tor : révélée si la session est admin prouvé OU porte le nom de Kevin.
-           Vécu 2026-09-17 : l'app existait, l'adresse existait, le nom existait dans
-           apps.json… mais AUCUNE tuile ne la montrait → « il manque la tuile dans mon
-           domaine ». Une tuile absente = une app qui n'existe pas pour Kevin. -->
-      <div id="javis-zone" hidden>
-        <h2 class="cat">🐝 Mon assistante</h2>
-        <nav class="grid" aria-label="Javis">
-          <a class="card adm" href="https://javis.kd-mc.com/"><span class="ic">🐝</span><span class="ct"><span class="nm">Javis <span class="badge">Privé</span></span><span class="ds">Bee en grand — elle parle, elle t'écoute, elle ouvre tes apps. À installer sur l'écran d'accueil</span><span class="url">javis.kd-mc.com</span></span><span class="arr">›</span></a>
+      <h2 class="cat">🛍️ Boutiques</h2>
+      <nav class="grid" aria-label="Portail boutiques">
+          <a class="card" href="https://shops.kd-mc.com/"><span class="ic">🏬</span><span class="ct"><span class="nm">Portail boutiques</span><span class="ds">Toutes les boutiques en un coup d'œil</span><span class="url">shops.kd-mc.com</span></span><span class="arr">›</span></a>
+      </nav>
+      <details class="grp">
+        <summary><span class="ic">🛍️</span><span class="ct"><span class="nm">Les boutiques</span><span class="ds">Chez Lolo, La Détente, Rotaplan, Kit IA, Devenir croupier</span></span><b class="nb">5</b></summary>
+        <nav class="grid" aria-label="Boutiques">
+          <a class="card" href="https://chez-lolo.kd-mc.com/"><span class="ic">🎨</span><span class="ct"><span class="nm">Chez Lolo</span><span class="ds">Créations &amp; impression à la demande</span><span class="url">chez-lolo.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://la-detente.kd-mc.com/"><span class="ic">🌿</span><span class="ct"><span class="nm">La Détente</span><span class="ds">Boutique lifestyle &amp; détente</span><span class="url">la-detente.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://rotaplan.kd-mc.com/"><span class="ic">🗓️</span><span class="ct"><span class="nm">Rotaplan</span><span class="ds">Le planning des équipes qui tournent : équipes miroir, cycles variables, ordres de passage, repos légaux. Prix fixe, utilisateurs illimités</span><span class="url">rotaplan.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://kit.kd-mc.com/"><span class="ic">🧰</span><span class="ct"><span class="nm">Kit IA de l’indépendant</span><span class="ds">7 modules et 57 consignes prêtes à copier pour que l’IA écrive tes devis, relances, posts et courriers — depuis ton téléphone, sans coder</span><span class="url">kit.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://croupier.kd-mc.com/"><span class="ic">🃏</span><span class="ct"><span class="nm">Devenir croupier</span><span class="ds">Le métier sans le folklore : une nuit heure par heure, les jeux à apprendre et dans quel ordre, comment on entre</span><span class="url">croupier.kd-mc.com</span></span><span class="arr">›</span></a>
         </nav>
-      </div>
+        <details class="grp sous">
+          <summary><span class="ic">🚧</span><span class="ct"><span class="nm">En construction</span><span class="ds">pas encore ouvertes</span></span><b class="nb">4</b></summary>
+          <nav class="grid" aria-label="Boutiques en construction">
+          <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/tech-hub/"><span class="ic">📱</span><span class="ct"><span class="nm">Tech Hub <span class="badge soon">🚧 En construction</span></span><span class="ds">Gadgets &amp; accessoires tech</span><span class="url">shops.kd-mc.com → tech-hub</span></span><span class="arr">›</span></a>
+          <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/ecocraft/"><span class="ic">♻️</span><span class="ct"><span class="nm">EcoCraft <span class="badge soon">🚧 En construction</span></span><span class="ds">Éco-responsable, zéro déchet</span><span class="url">shops.kd-mc.com → ecocraft</span></span><span class="arr">›</span></a>
+          <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/digital-vault/"><span class="ic">💾</span><span class="ct"><span class="nm">Digital Vault <span class="badge soon">🚧 En construction</span></span><span class="ds">Produits numériques &amp; formations</span><span class="url">shops.kd-mc.com → digital-vault</span></span><span class="arr">›</span></a>
+          <a class="card soon" aria-disabled="true" tabindex="-1" href="https://shops.kd-mc.com/pawsome/"><span class="ic">🐾</span><span class="ct"><span class="nm">Pawsome <span class="badge soon">🚧 En construction</span></span><span class="ds">Tout pour les animaux</span><span class="url">shops.kd-mc.com → pawsome</span></span><span class="arr">›</span></a>
+          </nav>
+        </details>
+      </details>
 
-      <!-- Bot crypto : révélé dès que tu es connecté sous ton nom (Kevin/Laurence), SANS exiger
-           le Face ID — la page bot.kd-mc.com est protégée par son propre code admin, donc
-           afficher la tuile ne donne AUCUN accès. Caché pour les autres clients. -->
-      <div id="bot-zone" hidden>
-        <h2 class="cat">🤖 Mon bot</h2>
-        <nav class="grid" aria-label="Bot crypto">
-          <a class="card adm" href="https://bot.kd-mc.com/"><span class="ic">🤖</span><span class="ct"><span class="nm">Bot Crypto <span class="badge">Privé</span></span><span class="ds">Trading auto — état, cryptos, garde-fous, marche/arrêt</span><span class="url">bot.kd-mc.com</span></span><span class="arr">›</span></a>
-        </nav>
-      </div>
+      <h2 class="cat">👨‍👩‍👧 Famille &amp; loisirs</h2>
+      <nav class="grid" aria-label="Famille et loisirs">
+          <a class="card" href="https://arbre.kd-mc.com/"><span class="ic">🌳</span><span class="ct"><span class="nm">Arbre généalogique</span><span class="ds">L’arbre de la famille — photos, actes officiels scannés, 7 générations. Protégé par le code famille</span><span class="url">arbre.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="https://lingua.kd-mc.com/"><span class="ic">🐝</span><span class="ct"><span class="nm">KDMC Lingua</span><span class="ds">Apprendre les langues avec Bee — leçons, examens, prof IA, mode discussion</span><span class="url">lingua.kd-mc.com</span></span><span class="arr">›</span></a>
+          <a class="card" href="/cujina"><span class="ic">🍽️</span><span class="ct"><span class="nm">A Cüjina de Mùnegu</span><span class="ds">« La cuisine de Monaco » — 128 recettes de la Riviera illustrées, noms en munegascu, origines 🇲🇨 Monaco / 🇮🇹 Ligurie</span><span class="url">kd-mc.com → cujina</span></span><span class="arr">›</span></a>
+          <a class="card" href="/cujina/livre.pdf"><span class="ic">🖨️</span><span class="ct"><span class="nm">Livre papier</span><span class="ds">Le livre entier en PDF (8 Mo) — ouvre, enregistre dans Fichiers ou imprime</span><span class="url">kd-mc.com → cujina/livre.pdf</span></span><span class="arr">›</span></a>
+      </nav>
 
       <section id="self-svc" hidden aria-label="Mes appareils et connexions"></section>
     </main>
@@ -299,10 +294,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.65"></script>
-  <script src="kdmc-boite.js?v=1.0.65"></script>
-  <script src="kdmc-portal.js?v=1.0.65"></script>
+  <script src="kdmc-sso.js?v=1.0.66"></script>
+  <script src="kdmc-boite.js?v=1.0.66"></script>
+  <script src="kdmc-portal.js?v=1.0.66"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.65" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.66" data-color="#c9a227" defer></script>
 </body>
 </html>

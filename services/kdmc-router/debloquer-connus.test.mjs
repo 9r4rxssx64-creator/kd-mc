@@ -115,5 +115,11 @@ ok(L.length === 2 && L[0].uid === 'a' && L[1].refuse === true, '4. la liste vien
 ok(/\+ blocBloques\(accounts\)\s*\n\s*\+ blocAttendus\(\)/.test(src) && /wireBloques\(\);\s*\n\s*wireAttendus\(\);/.test(src), '4b. la bannière et « Personnes attendues » sont en HAUT de l\'écran et câblées');
 ok(/'\/__admin\/compte-ouvrir'[\s\S]{0,200}ouvrir-bloque|ouvrir-bloque[\s\S]{0,600}'\/__admin\/compte-ouvrir'/.test(src), '4c. le bouton « Ouvrir » de la bannière appelle /__admin/compte-ouvrir');
 
+
+console.log('\n== 5. L\'admin se met à jour tout seul : la bulle suit admin.js ==');
+const idx = readFileSync(new URL('../../kdmc-home/admin/index.html', import.meta.url), 'utf8');
+const vJs = (/admin\.js\?v=([0-9.]+)/.exec(idx) || [])[1], vBulle = (/data-project="admin" data-version="v([0-9.]+)"/.exec(idx) || [])[1];
+ok(vJs && vJs === vBulle, '5. la bulle « admin vX » = admin.js?v=X (sinon la page ne se rafraîchit jamais toute seule : le 16.10 elle restait en v2.2.0)', { vJs, vBulle });
+
 console.log(`\n${fail ? '❌' : '✅'} debloquer-connus : ${pass}/${pass + fail}`);
 process.exit(fail ? 1 : 0);

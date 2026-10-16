@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Mise à jour forcée auto : « Qui se connecte » (kdmc-access) et l'admin (Kevin : « v1.0, pas de mise à jour force auto »)
+- `services/kdmc-access/page.js` : la bulle « v1.0 » figée devient « v1.1.0 », cliquable (= recharger), et la page se relit seule (retour d'écran + chaque minute) et se recharge si la version servie change. `kdmc-home/admin/index.html` : la bulle « admin » passe à v2.4.0 = `admin.js?v=` (elle restait à v2.2.0, donc aucune MAJ auto). Gardes : `test:kdmc-access`, `test:debloquer-connus` (5).
+
 ## 2026-10-16 — Yann bloqué : cause trouvée, 3 verrous ajoutés (Kevin : « débloque, vérifie les autres, simplifie, sécurité plus »)
 - **Constaté (D1 réelle)** : Yann (`yann-lorenzi`) est bien entré (1re connexion 15.10 20h39, Arbre ouvert), aucune demande en file (`inscription_admin` et `code_attente` vides). Cause probable : « Accepter le CODE » n'ouvrait PAS le compte (`attente_admin` restait) et la demande d'inscription avait déjà quitté la file → bloqué ET invisible. Le KV n'est pas lisible depuis ici : cause **non prouvée sur sa fiche**.
 - **Livré** (`services/kdmc-router/{worker,boite}.js`, `kdmc-home/admin/admin.js`, portail v1.0.64) : (1) accepter un code ouvre aussi le compte ; (2) un compte fermé qui réessaie revient dans la file de Kevin + push (1 fois / 6 h) ; (3) **Personnes attendues** : nom inscrit d'avance par l'admin = entre sans attendre (usage unique, code toujours exigé, banni jamais) ; (4) admin : bannière « comptes fermés » (d'après les fiches) avec **Ouvrir** en haut.

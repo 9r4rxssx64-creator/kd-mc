@@ -449,3 +449,11 @@ test('vérification de session : un oui est gardé 15 s (1 appel au domaine pour
     assert.equal(appels, 3, 'un refus est redemandé à chaque fois (jamais gardé)');
   } finally { globalThis.fetch = orig; oublierSessions(); }
 });
+
+test('la bulle de version est VRAIE (plus « v1.0 » figé) et la page se met à jour toute seule (Kevin 16.10 : « pas de mise à jour force auto »)', () => {
+  const m = /id="vbadge"[^>]*>\s*(kdmc-access v[0-9.]+)/.exec(PAGE_HTML);
+  assert.ok(m && m[1] !== 'kdmc-access v1.0', 'la bulle porte un vrai numéro, pas v1.0');
+  assert.ok(/addEventListener\('click',recharger\)/.test(PAGE_HTML), 'toucher la bulle recharge tout de suite');
+  assert.ok(/visibilitychange/.test(PAGE_HTML) && /setInterval\(verifier,60000\)/.test(PAGE_HTML), 'relecture au retour sur l\'écran et chaque minute');
+  assert.ok(/m\[1\]!==ICI\) recharger\(\)/.test(PAGE_HTML), 'recharge seulement si la version servie a changé');
+});

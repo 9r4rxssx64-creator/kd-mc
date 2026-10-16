@@ -70,11 +70,28 @@ export const PAGE_HTML = `<!doctype html>
 </style></head>
 <body>
 <div id="app"></div>
-<div class="badge">kdmc-access v1.0</div>
+<div class="badge" id="vbadge" role="button" tabindex="0" title="Toucher = forcer la mise à jour" style="cursor:pointer;min-height:24px">kdmc-access v1.1.0</div>
 <script>
 (function(){
   var $=function(s,r){return (r||document).querySelector(s)};
   var app=$('#app');var DATA=null;var CONN=null;var TIMER=null;
+  /* MISE À JOUR FORCÉE AUTO (règle Kevin « MAJ auto forcée, toujours, tous projets » — 16.10.2026 : la bulle restait figée sur « v1.0 »).
+     La page est servie en no-store : on la relit toute seule (au retour sur l'écran, puis chaque minute) et, si la bulle de la
+     version servie n'est plus la nôtre, on recharge. Toucher la bulle = recharger tout de suite. */
+  (function(){
+    var VB=$('#vbadge'); if(!VB) return; var ICI=VB.textContent.trim();
+    function recharger(){ try{var u=new URL(location.href);u.searchParams.set('_v',String(Date.now()));location.replace(u.toString());}catch(e){location.reload();} }
+    function verifier(){
+      try{ var u=new URL(location.href);u.searchParams.set('_v',String(Date.now()));
+        fetch(u.toString(),{cache:'no-store',credentials:'include'}).then(function(r){return r.text();}).then(function(t){
+          var m=/id="vbadge"[^>]*>\s*(kdmc-access v[0-9.]+)/.exec(t); if(m && m[1]!==ICI) recharger();
+        }).catch(function(){});
+      }catch(e){}
+    }
+    VB.addEventListener('click',recharger);
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) verifier(); });
+    setInterval(verifier,60000); setTimeout(verifier,4000);
+  })();
   /* Ménage : une ancienne version mémorisait l'empreinte du code ici — on l'efface. */
   try{localStorage.removeItem('kdmc_access_pinhash')}catch(e){}
   /* CONN = les VRAIES connexions du domaine (source unique : KV du routeur, déjà peuplée).

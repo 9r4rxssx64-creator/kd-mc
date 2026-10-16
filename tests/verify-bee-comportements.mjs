@@ -517,13 +517,13 @@ try {
     const o = await page.evaluate(() => window.__ouvertes);
     chk(MOI_APPELS === 0 && o.some((u) => /apex-ai\.kd-mc\.com/.test(u)), `« échange mon planning » reste une ACTION pour Apex (planning lu ${MOI_APPELS}×, ouvert : ${o.join(', ')})`);
     await ctx.close(); }
-  /* (l) SUGGESTIONS : 4 boutons de 44 px (dont « 🧸 En 3D », 3.10) sous le bonjour, qui posent la question, puis s'effacent */
+  /* (l) SUGGESTIONS : 5 boutons de 44 px (dont « 🧸 En 3D », 3.10, et « 🩺 Tester Bee », v1.19 16.10) sous le bonjour, qui posent la question, puis s'effacent */
   { MOI_APPELS = 0; IA_CORPS.length = 0;
     const { ctx, page } = await ouvre(); await page.waitForSelector('.javis-chips button');
     const r = await page.evaluate(() => [...document.querySelectorAll('.javis-chips button')].map((b) => ({ t: b.textContent, h: b.getBoundingClientRect().height })));
     await page.click('.javis-chips button'); await dors(700);
     const apres = await page.evaluate(() => ({ chips: !!document.querySelector('.javis-chips'), t: [...document.querySelectorAll('.javis-bub.js')].map((b) => b.textContent).pop() || '' }));
-    chk(r.length === 4 && r.some((b) => /En 3D/.test(b.t)) && r.every((b) => b.h >= 44) && !apres.chips && MOI_APPELS === 1 && /^Cette semaine tu travailles aujourd'hui vendredi 2 octobre de 14 h à 19 h et lundi 5 octobre/.test(apres.t),
+    chk(r.length === 5 && r.some((b) => /En 3D/.test(b.t)) && r.some((b) => /Tester Bee/.test(b.t)) && r.every((b) => b.h >= 44) && !apres.chips && MOI_APPELS === 1 && /^Cette semaine tu travailles aujourd'hui vendredi 2 octobre de 14 h à 19 h et lundi 5 octobre/.test(apres.t),
       `suggestions : ${r.length} boutons (${r.map((b) => Math.round(b.h)).join('/')} px), « Ma semaine » → « ${apres.t.slice(0, 70)} », puis effacées`);
     await ctx.close(); }
   /* (m) MISE À JOUR FORCÉE (Kevin 3.10 : « l'indicateur de version n'est pas cliquable pour mettre à jour. Maj auto forcée

@@ -225,9 +225,16 @@
     ".github/workflows/auto-rollback.yml",
     ".github/workflows/auto-deploy-apex-v13-build.yml",
     ".github/workflows/apex-execute.yml",
-    ".github/workflows/apex-execute-auto-trigger.yml"
+    ".github/workflows/apex-execute-auto-trigger.yml",
+    ".github/workflows/deploy.yml",
+    ".github/workflows/clayscore-diag-jeton.yml",
+    ".github/workflows/clayscore-extract-private.yml",
+    ".github/workflows/clayscore-verif-prix.yml",
+    ".github/workflows/coffre-pdf-refresh.yml",
+    ".github/workflows/deploy-coffre-r2.yml",
+    ".github/workflows/pilote-pages-javis.yml"
   ],
-  "_workflows_prives_pourquoi": "16.10.2026 — mesuré au dépôt public (runs 38951700250/375/291/437/337/399) : la source d’Apex y est incomplète (apex-identity.ts, never-forget-watch.ts, cmc-vision-validator.ts restent au coffre : ils portent des noms et l’adresse de Kevin) → TS2307 à chaque poussée ; et un test qui échoue imprime ses attendus (des noms) dans un journal public. Les 12 542 tests d’Apex tournent dans la session avant la fusion ; la copie construite apex-ai-v13/ est faite au coffre et publiée par le routeur. apex-execute(-auto-trigger) modifie le dépôt : jamais depuis le public (403 mesuré).",
+  "_workflows_prives_pourquoi": "16.10.2026 — mesuré au dépôt public (runs 38951700250/375/291/437/337/399) : la source d’Apex y est incomplète (apex-identity.ts, never-forget-watch.ts, cmc-vision-validator.ts restent au coffre : ils portent des noms et l’adresse de Kevin) → TS2307 à chaque poussée ; et un test qui échoue imprime ses attendus (des noms) dans un journal public. Les 12 542 tests d’Apex tournent dans la session avant la fusion ; la copie construite apex-ai-v13/ est faite au coffre et publiée par le routeur. apex-execute(-auto-trigger) modifie le dépôt : jamais depuis le public (403 mesuré). 16.10 soir (Kevin : « garde une solution du dépôt public ») — inventaire des robots publics qui lisent ou ÉCRIVENT des fichiers du coffre : deploy.yml (ancien GitHub Pages : il publierait l'arbre public sans porte — désactivé, et désormais absent du public), clayscore-* et coffre-pdf-refresh / deploy-coffre-r2 (ils écrivent clayscore/ ou coffre-fort/ : un « git add » au public y ferait fuir des fichiers privés), pilote-pages-javis (recréerait le projet Pages kdmc-javis supprimé, qui contournait la porte). Les robots qui ne font que LIRE un fichier privé prennent l'action coffre (garde test:public-autonome).",
   "_test_prive_index_racine": "Un test est aussi privé s'il lit la page RACINE index.html (CMCteams) : « 'index.html' » seul, « ../index.html », « /CMCteams/index.html ». Pas « apex-ai/index.html » ni « tools/x/index.html » (autres applications).",
   "scripts_npm_prives": [
     {

@@ -6,8 +6,15 @@
 
 ## 2026-10-16 — Apex Chat v1.1.313 : régression de couleurs de la v1.1.312 trouvée par le robot et corrigée
 - **Trouvé en vrai navigateur (run 38969793276)** : en v1.1.312, téléphone en mode clair + thème par défaut (sombre) → bleu/avertissement/ok/erreur FONCÉS sur fond noir (2,9:1). Cause : mes valeurs étaient dans le bloc CSS du mode du téléphone, alors que le thème de l'app est posé en JavaScript (inline) et ne couvre pas ces quatre couleurs.
-- **Corrigé** : chaque thème (`K._THEMES`) porte toutes ses couleurs ; accents foncés sur thème clair (`K._ACCENTS_CLAIR`) ; bloc CSS du mode du téléphone remis comme avant. Gardes : `client-confort-iphone` (8 : 3 thèmes calculés + « pas de fuite »), `parcours-appareil` B1/B2 (rendu réel), sabotage rouge. `vitest --coverage` sans erreur (2 112). Leçon 588.
+- **Corrigé** : chaque thème (`K._THEMES`) porte toutes ses couleurs ; accents foncés sur thème clair (`K._ACCENTS_CLAIR`) ; bloc CSS du mode du téléphone remis comme avant. Gardes : `client-confort-iphone` (8 : 3 thèmes calculés + « pas de fuite »), `parcours-appareil` B1/B2 (rendu réel), sabotage rouge. `vitest --coverage` sans erreur (2 112). Leçon 594.
 - À relire au passage suivant : D (hors ligne) — le message n'est plus trouvé après le retour du réseau ; diagnostic détaillé ajouté (vue, WebSocket, messages en attente, écran).
+
+## 2026-10-16 (nuit) — Le dépôt public reste autonome quand on met plus au privé (Kevin : « garde une solution du dépôt public… sans dépendre du quota »)
+- Inventaire : 135 robots publics, 66 au coffre (avant : 59). Ajoutés au coffre (ils écrivent du privé ou recréent un hébergeur hors porte) : `deploy.yml` (ancien GitHub Pages, désactivé), `clayscore-*` (3), `coffre-pdf-refresh`, `deploy-coffre-r2`, `pilote-pages-javis` (plus de départ au push : il recréait le projet Pages kdmc-javis supprimé).
+- Action `coffre` ajoutée à 4 robots publics qui lisaient un fichier privé : `verifier-maj-auto`, `cross-app-preservation` (rouges depuis le 27.09), `apex-v13-deploy-drift-watch`, `cmc-parser-proxy-deploy`.
+- `bee-gardes` (rouge à chaque poussée le 16.10) : test périmé corrigé (Bee a 5 boutons depuis « 🩺 Tester Bee », v1.19).
+- `depot-public.test` : le robot vital est désormais `deploy-kdmc-router.yml` (plus `deploy.yml`).
+- Échelle de secours écrite dans `.claude/rules/gratuit-public.md` ; règle étendue dans CLAUDE-HISTOIRE. Garde `test:public-autonome` (8) dans `test:ci`.
 
 ## 2026-10-16 — 1er passage RÉEL du parcours d'appareil sur la prod (run 38968805234) : 2 gestes prouvés, 3 écarts corrigés
 - **Prouvé en vrai navigateur (Chromium + WebKit iPhone)** : A version affichée = `v1.1.312` = version du serveur ✅ ; C « Te déconnecter » → jeton refusé par le serveur, jeton d'un autre appareil intact ✅.

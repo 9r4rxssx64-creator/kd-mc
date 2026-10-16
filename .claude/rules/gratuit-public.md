@@ -21,3 +21,14 @@ Le coffre privé `CMCteams` a 2 000 min/mois (ration 60 min/jour) ; le dépôt p
 - Un clone du coffre coupé en plein transfert (« early EOF », 16.10) ne laisse plus le site sans déploiement : l'action `coffre` recommence 3 fois. Si un déploiement public est rouge, lis le pas qui a échoué avant de relancer.
 - Garde : `npm run test:robots-public`.
 - Quota Actions du coffre mangé : `node tools/depot-public/publier-et-verifier.mjs` (publie + prouve). « En ligne » = le déploiement du commit PUBLIC publié a réussi, jamais « un déploiement vert ».
+
+## Mettre plus au privé SANS perdre la voie gratuite (Kevin 16.10 nuit : « garde une solution du dépôt public… sans dépendre du quota »)
+- Avant d'ajouter un chemin à `prive_toujours` : `npm run test:public-autonome`. Rouge = un robot public lisait ce chemin → ajoute-lui l'étape
+  `uses: ./.github/actions/coffre` (avec `cle: ${{ secrets.COFFRE_CLE_LECTURE }}`), juste après le checkout. Un robot qui ÉCRIT dans un chemin privé → `workflows_prives`.
+- Jamais un robot public qui recrée un hébergeur hors porte (GitHub Pages, projet Pages) : `deploy.yml` et `pilote-pages-javis.yml` restent au coffre.
+
+## L'échelle de secours (du gratuit au payant, dans cet ordre)
+1. **Normal** : fusion → `node tools/depot-public/publier-local.mjs --envoyer` → les robots publics déploient (0 minute du coffre).
+2. **Le déploiement public dit « Clé du coffre absente » ou le clone du coffre échoue 3 fois** : le site reste sur sa version d'avant (la garde bloque un paquet vide, rien ne casse). Réparer la clé : `node tools/depot-public/poser-secrets.mjs` si un jeton le permet, sinon action Kevin (KEVIN_ACTIONS_TODO, 1 clic : clé de déploiement en lecture seule du coffre → secret `COFFRE_CLE_LECTURE` du dépôt public).
+3. **Les Actions publiques ne partent plus** (panne GitHub, dépôt public bloqué) : variable `KDMC_RUNNER=kdmc-lenovo` → les robots tournent sur le Lenovo de Kevin (gratuit, illimité).
+4. **En dernier** : le bouton manuel du coffre (`workflow_dispatch`), dans la ration du jour (`node tools/ci/ration-actions.mjs`).

@@ -48,6 +48,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 1 }
+      # 16.10 (Kevin : « garde une solution du dépôt public… sans dépendre du quota ») : au dépôt PUBLIC, ce robot lit des fichiers
+      # restés au coffre — l'action les dépose (clé en lecture seule, n'affiche que des nombres). Au coffre : ne fait rien.
+      - name: Fichiers privés du coffre (dépôt public seulement)
+        uses: ./.github/actions/coffre
+        with:
+          cle: ${{ secrets.COFFRE_CLE_LECTURE }}
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 

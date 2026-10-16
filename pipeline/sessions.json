@@ -2037,6 +2037,26 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "public-autonome": {
+      "titre": "Dépôt public autonome quand on met plus au privé",
+      "branche": "claude/public-autonome",
+      "sujet": "action coffre pour les lecteurs, workflows_prives pour les écrivains, garde test:public-autonome, échelle de secours",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "lecons-numeros": {
+      "titre": "Leçons : doublon retiré, numéros uniques",
+      "branche": "claude/lecons-numeros",
+      "sujet": "587 doublon de 592 retiré, couleur → 594",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

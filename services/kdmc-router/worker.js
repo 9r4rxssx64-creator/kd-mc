@@ -26,6 +26,7 @@ import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-pus
 import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
+import { REGLES_TACHES } from './bee-taches.js';   // Bee dépose les tâches de code pour Claude Code (derrière ✅)
 import { avecJournal, bilanDiag } from './bee-diag.js';   // le journal des demandes à Bee + son test de bout en bout (Kevin 16.10 : « je ne peux rien lui faire faire »)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
@@ -4135,7 +4136,7 @@ async function handleBeeIa(request, env, ctx) {
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR : '') + (arbreOutil ? REGLES_ARBRE : '') + (bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (voirOutil ? REGLES_VOIR : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
+      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR + REGLES_TACHES : '') + (arbreOutil ? REGLES_ARBRE : '') + (bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (voirOutil ? REGLES_VOIR : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {

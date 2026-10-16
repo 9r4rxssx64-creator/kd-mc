@@ -152,6 +152,7 @@ L.push('▸ CE QUE JE DOIS');
 if (!attendKevin.length && !courrier.length && !jeBloque.length) L.push('   rien en attente. ✓');
 attendKevin.forEach(([id, s]) => L.push(`   👤 Kevin doit : ${s.attend_kevin}   [${id}]`));
 jeBloque.forEach(([id, s]) => L.push(`   🔗 ${id} m'attend : ${String(s.attend_session).replace(/^[^:]*:\s*/, '')}`));
+if (!COURT) L.push('   🐝 Tâches déposées par Bee (Kevin les a validées d\'un ✅) : d1_database_query sur kdmc-cercle (0b49b8eb-8df8-49fe-93f7-1e385bf98b34) → SELECT id,titre,consigne FROM bee_taches WHERE statut=\'attente\' ; après : UPDATE bee_taches SET statut=\'fait\', note=\'…\', fait_le=<ms> WHERE id=…');
 courrier.forEach((m) => L.push(`   ✉  ${m.id} de ${m.de} : ${m.sujet}`));
 
 /* CE QUE J'AI */

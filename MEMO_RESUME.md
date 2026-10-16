@@ -241,6 +241,10 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
 
+## 2026-10-16 (00h) — EN LIGNE : le routeur sert ses pages depuis sa copie embarquée ; Kevin peut supprimer le projet Pages `kdmc-site`
+- Clé Cloudflare remplacée par Kevin (« Fait ✅ ») ; déploiement relancé après la remise à zéro de la ration : run 38827591604 VERT (147 s, toutes les étapes de santé passées), depuis main e73a2c6.
+- Preuve en ligne que le domaine ne lit plus Pages : un fichier absent (`kit.kd-mc.com/favicon-nexiste.ico`) répond 404 vide sur le domaine, alors que `kdmc-site-bj5.pages.dev` répond 200 + page HTML pour le même chemin (son repli « répond à tout ») ; les 32 adresses répondent (200/301/302/401). → « go » donné à Kevin pour supprimer le projet Pages **kdmc-site** (Workers & Pages → kdmc-site → Settings → Delete project).
+
 ## 2026-10-15 (nuit) — Déploiement du routeur : 3e échec en 1 s (223dc9f) → l'erreur de wrangler part désormais en annotation
 - Runs 38802856648, 38803279105, 38813594931 : « Déploiement du routeur » échoue en 1 s, les annotations ne disent que « exit code 1 », journaux hors de portée des sessions. Le mode copie embarquée N'EST PAS en ligne (une page absente répond encore 200 via Pages). L'étape écrit maintenant la fin du journal de wrangler dans une annotation `::error title=wrangler deploy::` (lisible via l'API des contrôles), sans secret. **CAUSE TROUVÉE (run 38813906235)** : « Authentication error [code: 10000] » — le secret `CLOUDFLARE_API_TOKEN` est refusé par Cloudflare depuis l'après-midi du 15.10 ; à remplacer par Kevin (KEVIN_ACTIONS_TODO, en tête). Kevin : « On attend demain ». Constat à part (capture de Kevin) : Cloudflare construit aussi `kdmc-router` depuis GitHub (« Latest build failed ») — 2e chemin de déploiement à éclaircir.
 

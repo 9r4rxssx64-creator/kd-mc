@@ -20,11 +20,8 @@ et ton code admin dans « J'ai déjà un compte — nom + code ».
 
 ---
 
-## 🔑 (15.10 nuit) À TOI, DEMAIN : la clé Cloudflare de GitHub est refusée → plus aucun déploiement du routeur
-> Mesuré (annotation du run 38813906235) : `wrangler deploy` → « Authentication error [code: 10000] » sur le secret `CLOUDFLARE_API_TOKEN`.
-> 1. https://dash.cloudflare.com/profile/api-tokens → **Create Token** → modèle **Edit Cloudflare Workers** → Account : ton compte ; Zone : **kd-mc.com** ; **+ Add more** : Zone → DNS → Edit, Zone → Workers Routes → Edit → **Create Token** → copie.
-> 2. https://github.com/9r4rxssx64-creator/CMCteams/settings/secrets/actions/CLOUDFLARE_API_TOKEN → colle → **Update secret**.
-> 3. Dis « fait » : la session redéploie (routeur sur sa copie embarquée), vérifie les 32 adresses, PUIS te dit de supprimer le projet Pages **kdmc-site** (adresse kdmc-site-bj5.pages.dev). **Pas avant.**
+## ✅→🗑 (16.10) GO : supprime le projet Pages **kdmc-site** (il fuyait, le routeur ne s'en sert plus)
+> Clé remplacée ✅, routeur redéployé et vérifié (32 adresses). https://dash.cloudflare.com/?to=/:account/workers-and-pages → **kdmc-site** (adresse kdmc-site-bj5.pages.dev) → **Settings** → tout en bas **Delete project** → tape `kdmc-site` → confirme. Ensuite dis « supprimé » : la session vérifie que le domaine répond toujours et que l'adresse pages.dev ne sert plus rien.
 
 ## 🚨 (15.10, audit extérieur) À TOI : l'adresse de secours Cloudflare Pages laisse lire le site sans compte
 > `https://kdmc-site-bj5.pages.dev/` répond 200 SANS compte (plannings des cadres, données de la boutique, généalogie). Dans **Cloudflare → Workers & Pages → kdmc-site-bj5** : mets **Cloudflare Access** devant (ou supprime le projet et ses anciens déploiements quand le routeur servira ses propres fichiers). Dis-moi laquelle des deux : je prépare la bascule du routeur (fichiers embarqués) avant que tu coupes Pages. Détail : `audit/prive/AUDIT-EXTERIEUR-2026-10-15.md`. Aussi à toi : **console Firebase** (règles `/cmcteams`, `/apex`, `/coffre_vault` ouvertes aux comptes anonymes — je prépare le code, tu publies les règles).

@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.313';
+export const API_VERSION = '1.1.314';
 
 // Codes SMS : au plus 3 par heure et 10 par jour pour un même numéro (audit 16.10.2026).
 export const OTP_PAR_NUMERO_HEURE = 3;

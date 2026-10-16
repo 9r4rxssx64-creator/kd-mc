@@ -148,6 +148,10 @@ test.describe('Parcours d\'un appareil (comptes de test) sur la prod', () => {
       vues.push(await page.evaluate(() => K.view).catch(() => '(page rechargée)'));
       await page.waitForTimeout(400);
     }
+    // Si la page s'est rechargée (mise à jour automatique), elle doit ROUVRIR la conversation qui était ouverte.
+    if (vues.some((v) => v === '(page rechargée)' || v === 'splash')) {
+      await expect.poll(() => page.evaluate(() => K.view).catch(() => '?'), { timeout: 20000, message: 'après une mise à jour automatique, la conversation ouverte doit se rouvrir. Vues : ' + [...new Set(vues)].join(' → ') }).toBe('chat');
+    }
     if (journal.length) test.info().annotations.push({ type: 'journal', description: journal.join(' | ') });
     if (process.env.GITHUB_ACTIONS && journal.length) console.log('::notice title=E2E journal de la page au retour du réseau::' + journal.join(' | ').slice(0, 400));
     await page.waitForLoadState('domcontentloaded').catch(() => {});

@@ -2077,7 +2077,8 @@
       "etat": "actif",
       "maj": "2026-10-16",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "run 1 réel : 6/7, défaut d'attente du robot corrigé (sondage Node)"
     },
     "access-ux": {
       "titre": "Qui se connecte v1.2.0 : la page défile, rangée",

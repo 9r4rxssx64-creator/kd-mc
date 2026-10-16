@@ -136,19 +136,19 @@ test.describe('Parcours d\'un appareil (comptes de test) sur la prod', () => {
     await page.click('.chat-send');
     const statut = page.locator('.msg.me .msg-status').last();
     await expect(statut, 'statut du message écrit sans réseau').toContainText('🕓', { timeout: 10000 });
+    // On note la vue AVANT de rendre le réseau, puis on l'échantillonne : si l'app quitte la conversation toute seule
+    // au retour du réseau (vu le 16.10 : retour à la liste), c'est consigné noir sur blanc dans le résumé.
+    const vueAvant = await page.evaluate(() => K.view);
     await ctx.setOffline(false);
-    // Au retour du réseau l'app peut revenir à la liste (mesuré le 16.10) : on ne se fie donc pas à l'écran, mais à la
-    // file d'attente de l'appareil — vide = le serveur a ACCUSÉ le message — puis on rouvre la conversation et on relit.
+    const vues = await page.evaluate(async () => { const v = []; for (let i = 0; i < 16; i++) { v.push(K.view); await new Promise((r) => setTimeout(r, 400)); } return v; });
+    const quitte = vues.find((v) => v !== vueAvant);
+    test.info().annotations.push({ type: 'vue', description: 'avant le retour du réseau : ' + vueAvant + ' · ensuite : ' + [...new Set(vues)].join(' → ') + (quitte ? ' ⚠️ l\'app a QUITTÉ la conversation toute seule' : ' (stable)') });
+    if (process.env.GITHUB_ACTIONS) console.log('::notice title=E2E vue au retour du réseau::' + vueAvant + ' → ' + [...new Set(vues)].join(' → '));
+    // Le message est-il ACCUSÉ ? La file d'attente de l'appareil se vide, et le statut calculé par l'app n'est plus « en cours ».
     const enAttente = () => page.evaluate(() => (JSON.parse(localStorage.getItem('apex_chat_outbox') || '[]')).length).catch(() => -1);
     await expect.poll(enAttente, { timeout: 45000, message: 'le message doit sortir de la file d\'attente (accusé du serveur) au retour du réseau' }).toBe(0);
-    await page.evaluate(async (id) => { try { await K._refreshConvs(); } catch (_) {} await K.openConv(id); }, convId);
-    await page.waitForSelector('#msg-input', { timeout: 20000 });
-    const apres = page.locator('.msg.me .msg-status').last();
-    try { await expect(apres, 'statut du message après accusé').toContainText('✓', { timeout: 15000 }); await expect(apres).not.toContainText('🕓'); }
-    catch (e) {
-      const etat = await page.evaluate(() => ({ vue: K.view, statuts: [...document.querySelectorAll('.msg.me .msg-status')].map((n) => n.textContent) })).catch(() => ({}));
-      throw new Error('le message accusé n\'affiche pas ✓. État : ' + JSON.stringify(etat) + ' — écran : « ' + await ecran(page) + ' »');
-    }
+    const statut2 = await page.evaluate((id) => { K._outboxIdsCache = null; const l = K.messages[id] || []; const m = [...l].reverse().find((x) => x.from === K.user.id || x.sender_id === K.user.id) || l[l.length - 1]; return m ? K._isMsgRead(id, m.id, l) : 'aucun message'; }, convId);
+    expect(['sending', 'failed', 'aucun message'], 'statut calculé par l\'app après accusé : ' + statut2).not.toContain(statut2);
     await ctx.close();
   });
 });

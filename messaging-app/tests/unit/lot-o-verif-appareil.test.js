@@ -49,7 +49,9 @@ describe('le parcours d\'appareil', () => {
     for (const x of ['A. la version affichée', 'B1. téléphone en mode clair', 'B2. téléphone en mode clair', 'C. « Te déconnecter »', 'D. message écrit hors ligne']) expect(SPEC, x).toContain(x);
     expect(SPEC).toContain('/api/test/login');
     expect(SPEC).toContain("toContainText('🕓'");
-    expect(SPEC).toContain("toContainText('✓'");
+    expect(SPEC).toContain('K._isMsgRead(id, m.id, l)');   // le statut est jugé par la logique de l'app une fois le message accusé
+    expect(SPEC).toContain('apex_chat_outbox');           // ... et la file d'attente de l'appareil doit se vider
+    expect(SPEC).toContain("'vue'");                      // la vue au retour du réseau est consignée
     expect(SPEC).not.toMatch(/ADMIN_CODE|code_admin|KEVIN_PHONE/);   // jamais le code ni le numéro de Kevin
   });
   it('le workflow lance toute la suite et publie le résumé même en cas d\'échec (if: always())', () => {

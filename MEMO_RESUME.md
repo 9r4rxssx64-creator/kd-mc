@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Règle absolue : vérifier dans le réel (Kevin)
+- `CLAUDE-HISTOIRE.md` + `.claude/rules/verifier-reel.md` + LESSONS 566 : chaque livraison finit par « Vérifié réel / Non vérifié » ; si le réel m'est fermé, je le dis.
+
 ## 2026-10-16 — Arbre v3.110 : menus déroulants + admin : « Ouvrir ce compte » toujours là
 - **Livré** : barre des familles allégée — « ☰ Menu ▾ » déroule les sous-menus (↩ Ma vue, 📌 Épingler, propositions de Combiner, 🔎 Autres familles) ; il se déroule seul en mode Combiner. Admin (`kdmc-home/admin/admin.js`) : dans « 🔎 État du compte », le bouton « ✅ Ouvrir ce compte » est TOUJOURS proposé (« quand même » si la fiche n'est pas en attente). Tests : `test:arbre-ma-vue` (30), `test:compte-ouvrir`.
 

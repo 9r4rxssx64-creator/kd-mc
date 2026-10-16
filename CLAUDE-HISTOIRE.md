@@ -12220,3 +12220,12 @@ Mesuré (API GitHub, 6→15.10, 700 runs) : **2 170 min** — chaîne privée 1 
 Honnêtement : une session ne peut pas changer son propre modèle. Ce qui peut être automatique, et qui l'est maintenant : **le modèle des aides** (sous-agents, workflows) que je lance, choisi par la difficulté — `haiku` pour lire/chercher/mesurer, `sonnet` pour le travail courant, `opus`/`fable` pour l'architecture, la sécurité, le bug sans cause connue et la revue finale. On commence par le plus petit qui peut réussir, on monte d'un cran si le résultat est flou, on ne descend jamais pour de la sécurité. Si la session principale atteint ses limites, elle le dit à Kevin en une phrase et délègue la partie dure. Dans les apps du domaine, la conférence des IA gratuites choisit déjà la plus compétente ; rien de payant sans accord.
 - **Où c'est écrit** : `.claude/rules/modeles.md` (chargé par toute session du dépôt).
 - **Garde** : `npm run test:modele-adapte` (dans `test:ci`, prouvé discriminant : `SABOTAGE=1`).
+
+## ✅ RÈGLE ABSOLUE — VÉRIFIER TOUJOURS DANS LE RÉEL, PUIS LE DIRE HONNÊTEMENT (Kevin 2026-10-16, ABSOLUE)
+
+Kevin : « Vérifie toujours tout réel. Note-le et rappelle-toi. »
+
+- **Vert en test ≠ vrai pour Kevin.** Avant de dire « c'est en ligne / ça marche », je regarde la chose RÉELLE : le fichier servi par le domaine ou le dépôt public (`raw.githubusercontent.com/9r4rxssx64-creator/kd-mc/main/…`), le déploiement terminé (`gh api …/actions/runs`), la fiche dans le nuage, la capture d'un vrai navigateur sur les vraies données.
+- **Si je ne peux pas voir le réel** (arbre derrière le code famille, admin derrière la connexion → 401/404 pour moi) : je le DIS (« non vérifié en ligne, voici ce que j'ai vu à la place »), je n'écris jamais « fait » à la place.
+- **Chaque livraison finit par une ligne « Vérifié réel : … / Non vérifié : … ».**
+- Écrit aussi dans `.claude/rules/verifier-reel.md` (chargé par toute session du dépôt).

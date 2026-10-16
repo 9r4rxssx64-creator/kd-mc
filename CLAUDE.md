@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 216 règles — le texte de Kevin, une par une
+## 📜 Les 217 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -951,6 +951,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🎚 RÈGLE ABSOLUE — LE BON MODÈLE POUR CHAQUE TRAVAIL, TOUJOURS, PARTOUT (Kevin 2026-10-15, ABSOLUE)
 **« Utilise auto le model adapté au travail demandé toujours partout »** — Kevin 2026-10-15 (après « quand le travail est compliqué, tu changes de modèle automatiquement ? »).
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-le-bon-modèle-pour-chaque-travail-toujours-partout-kevin-2026-10-15-absolue)
+
+### ✅ RÈGLE ABSOLUE — VÉRIFIER TOUJOURS DANS LE RÉEL, PUIS LE DIRE HONNÊTEMENT (Kevin 2026-10-16, ABSOLUE)
+Kevin : « Vérifie toujours tout réel. Note-le et rappelle-toi. »
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-vérifier-toujours-dans-le-réel-puis-le-dire-honnêtement-kevin-2026-10-16-absolue)
 
 ---
 

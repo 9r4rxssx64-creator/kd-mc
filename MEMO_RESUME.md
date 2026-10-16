@@ -17,6 +17,10 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Audit sécurité du domaine (mesuré) : 2 P0 ouverts
+- Rapport : `audit/prive/AUDIT-SECURITE-DOMAINE-2026-10-16.md`. Le domaine lui-même tient (33 hôtes : porte ou 401, chemins détournés compris). **P0-1** : `kdmc-site.pages.dev`, `kdmc0.pages.dev` (et `kdmc-javis.pages.dev`) servent CMCteams / light / arbre / planning-seed (285 fiches) SANS compte → robot `pages-nettoyage.yml` (public : lister puis supprimer, liste blanche). **P0-2** : Firebase lisible avec une connexion ANONYME (règles `auth != null`) → à refaire : jeton du domaine pour toutes les apps + règles + coupure de l'anonyme, avec test de bout en bout sur un vrai compte (la 1re tentative a été annulée ce midi).
+- P1 corrigé : agent Vercel `/api/health` ne montre plus de morceau de clé ni l'identifiant Telegram ; `outputDirectory: public` (le code n'est plus servi). P1 restants : proxy Gemini La Détente, Printify /cost, code admin (approvals, dashboard) et Croupier Pro dans le dépôt public (13 tests à adapter avant de les passer en privé).
+
 ## 2026-10-16 — Portail kd-mc.com v1.0.66 rangé (Kevin : « fais-moi le tri… sans rien perdre »)
 - En tête : « 🔒 Mon espace » (Kevin/Lolo) avec la grande tuile **Mon tableau de bord** (/admin/) puis « 🧰 Mes outils privés » (9, menu déroulant) ; « ⭐ Mes raccourcis » (Javis, Bot, Qui se connecte, Tor) sous un seul titre qui s'efface si rien n'est révélé. Public : Pro & métier (3), IA (3 + « Recherche & création » ▾ 5), Boutiques (portail + « Les boutiques » ▾ 5, dont « En construction » ▾ 4), Famille & loisirs (Arbre, Lingua, Cüjina, livre).
 - Les 39 adresses d'avant sont toutes là (`<details>` sans JS). Garde `test:portail-range` (11, sabotage prouvé : une tuile retirée → rouge).

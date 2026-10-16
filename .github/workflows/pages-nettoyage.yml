@@ -1,0 +1,100 @@
+name: Cloudflare — inventaire et nettoyage des vieux projets Pages (manuel)
+
+# 16.10.2026 (audit sécurité, P0) : de vieux projets Pages servaient encore CMCteams, la light, l'arbre et le planning
+# de 285 employés SANS compte (kdmc-site.pages.dev, kdmc0.pages.dev, kdmc-javis.pages.dev). Le domaine ne lit plus
+# aucun hébergeur Pages (SOURCE_PAGES = "assets"). Ce robot liste les projets du compte, puis supprime UNIQUEMENT
+# ceux de la liste blanche, après les gardes. À lancer dans le dépôt PUBLIC (minutes gratuites) — les journaux ne
+# montrent que des noms de projets et des codes HTTP, jamais un contenu.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "lister ou supprimer"
+        required: true
+        default: lister
+        type: choice
+        options: [lister, supprimer]
+      projet:
+        description: "Pour supprimer : nom exact du projet (kdmc0, kdmc-javis ou kdmc-site)"
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20   # gratuit d'abord : borné
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventaire — tous les projets Pages du compte, et ce qu'ils servent sans compte
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects?per_page=50" -o /tmp/l.json
+          node -e 'const j=require("/tmp/l.json");if(!j.success){console.log("::error::lecture refusée "+JSON.stringify(j.errors));process.exit(1)}for(const p of j.result)console.log(p.name+" "+p.subdomain)' > /tmp/projets.txt
+          echo "::notice::$(wc -l < /tmp/projets.txt) projet(s) Pages sur ce compte"
+          while read -r nom sous; do
+            c=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$sous/" || echo 000)
+            s=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$sous/tools/shared/planning-seed.js" || echo 000)
+            echo "::notice::Pages — $nom ($sous) : / → $c · planning-seed.js → $s"
+          done < /tmp/projets.txt
+          for sous in kdmc-site.pages.dev kdmc0.pages.dev kdmc-javis.pages.dev; do
+            grep -q " $sous\$" /tmp/projets.txt || echo "::warning::$sous n'est PAS sur ce compte Cloudflare (réponse : $(curl -s -o /dev/null -w '%{http_code}' -m 20 https://$sous/ || echo 000)) — il faut le supprimer depuis l'autre compte"
+          done
+
+      - name: Gardes avant suppression
+        if: ${{ inputs.action == 'supprimer' }}
+        shell: bash -eo pipefail {0}
+        env:
+          PROJET: ${{ inputs.projet }}
+        run: |
+          [[ "$PROJET" =~ ^(kdmc0|kdmc-javis|kdmc-site)$ ]] || { echo "::error::« $PROJET » n'est pas dans la liste blanche — rien n'est supprimé"; exit 1; }
+          grep -qE '^SOURCE_PAGES *= *"assets"' services/kdmc-router/wrangler.toml || { echo "::error::le routeur lit encore un hébergeur Pages"; exit 1; }
+          SOUS=$(awk -v n="$PROJET" '$1==n{print $2}' /tmp/projets.txt)
+          [ -n "$SOUS" ] || { echo "::error::projet $PROJET absent de ce compte"; exit 1; }
+          ! grep -rqs "$SOUS" services/kdmc-router/worker.js kdmc-home/index.html kdmc-home/kdmc-portal.js javis/ \
+            || { echo "::error::$SOUS est encore cité par le domaine — on ne supprime pas"; exit 1; }
+          [ "$(curl -s -o /dev/null -w '%{http_code}' https://kd-mc.com/)" = "200" ] || { echo "::error::kd-mc.com ne répond pas 200"; exit 1; }
+          echo "SOUS=$SOUS" >> "$GITHUB_ENV"
+
+      - name: Effacer les déploiements puis le projet
+        if: ${{ inputs.action == 'supprimer' }}
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJET: ${{ inputs.projet }}
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET"
+          H=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          total=0
+          for tour in $(seq 1 200); do
+            curl -sS "${H[@]}" "$API/deployments?per_page=25&page=1" -o /tmp/d.json
+            ids=$(node -e 'const j=require("/tmp/d.json");if(!j.success){process.exit(2)}for(const d of j.result||[])console.log(d.id)')
+            [ -n "$ids" ] || break
+            printf '%s\n' "$ids" | xargs -P 8 -I{} curl -sS -o /dev/null -w '%{http_code}\n' -X DELETE "${H[@]}" "$API/deployments/{}?force=true" > /tmp/codes.txt || true
+            ok=$(grep -c '^200$' /tmp/codes.txt || true); total=$((total + ok))
+            [ "$ok" -gt 0 ] || break   # la production active part avec le projet (constaté le 16.10)
+          done
+          code=$(curl -sS -o /tmp/del.json -w '%{http_code}' -X DELETE "${H[@]}" "$API")
+          [ "$code" = "200" ] || { echo "::error::suppression refusée (HTTP $code) : $(head -c 300 /tmp/del.json)"; exit 1; }
+          echo "::notice::✅ projet $PROJET supprimé ($total déploiements effacés avant)"
+
+      - name: Preuve — l'ancienne adresse ne sert plus rien, le domaine répond
+        if: ${{ inputs.action == 'supprimer' }}
+        shell: bash -eo pipefail {0}
+        run: |
+          sleep 30
+          p=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$SOUS/" || echo 000)
+          d=$(curl -s -o /dev/null -w '%{http_code}' https://kd-mc.com/)
+          echo "::notice::$SOUS → $p ; kd-mc.com → $d"
+          [ "$d" = "200" ] || { echo "::error::kd-mc.com ne répond plus 200 ($d)"; exit 1; }

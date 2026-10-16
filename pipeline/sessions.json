@@ -1817,6 +1817,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "securite-fuites": {
+      "titre": "Sécurité : robot de nettoyage des vieux projets Pages (public), agent Vercel sans fuite",
+      "branche": "claude/securite-fuites",
+      "sujet": "Audit 16.10 : kdmc-site/kdmc0/kdmc-javis.pages.dev servent CMCteams sans compte",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

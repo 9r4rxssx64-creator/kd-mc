@@ -29,5 +29,6 @@
     "api/cron.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "outputDirectory": "public"
 }

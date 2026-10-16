@@ -213,6 +213,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/assets-en-ligne` | 16.10 | Routeur en ligne sur sa copie embarquée (run 38827591604) : go à Kevin pour supprimer kdmc-site | `assets-en-ligne` |
 | `claude/suppr-pages` | 16.10 | Projet Pages kdmc-site : republication automatique coupée + robot qui efface ses déploiements puis le supprime | `suppr-pages` |
 | `claude/pages-supprime` | 16.10 | Docs : projet Pages kdmc-site supprimé (run 38879024853), fuite fermée | `pages-supprime` |
+| `claude/securite-fuites` | 16.10 | Robot « inventaire et nettoyage des vieux projets Pages » (public, liste blanche, gardes) ; agent Vercel : /api/health sans morceau de clé, code plus servi | `securite-fuites` |
 | `claude/portail-range` | 16.10 | Portail v1.0.66 : Mon espace + tableau de bord en tête, boutiques / recherche / outils privés en menus déroulants, 39 adresses gardées | `portail-range` |
 | `claude/robots-public` | 16.10 | Le dépôt public déploie le routeur à chaque fusion (gratuit), récupère le coffre, garde « paquet complet » ; privé : 0 minute par fusion | `robots-public` |
 | `claude/activite-cliquable` | 16.10 | Boîte « Mes messages » : noms en ligne → carte → fiche admin, apps des historiques en lien ; robots (ci_…) jamais présents | `activite-cliquable` |

@@ -135,16 +135,11 @@ export default async function handler(req, res) {
     message:
       "Agent KDMC en ligne. Utilise /api/cron?secret=...&trigger=manual pour lancer les tâches.",
     env_check: {
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
-        ? "set (" + process.env.ANTHROPIC_API_KEY.slice(0, 8) + "...)"
-        : "MISSING",
+      /* 16.10 (audit sécurité) : une page publique ne montre JAMAIS un morceau de clé ni un identifiant — seulement présent / absent */
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? "set" : "MISSING",
       TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ? "set" : "MISSING",
-      TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID
-        ? "set (" + process.env.TELEGRAM_CHAT_ID + ")"
-        : "MISSING",
-      AGENT_SECRET: process.env.AGENT_SECRET
-        ? "set (" + process.env.AGENT_SECRET.length + " chars)"
-        : "NOT SET (auth disabled)",
+      TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID ? "set" : "MISSING",
+      AGENT_SECRET: process.env.AGENT_SECRET ? "set" : "NOT SET (auth disabled)",
       FIREBASE_CLIENT_EMAIL: hasClientEmail ? "set" : "MISSING",
       FIREBASE_PRIVATE_KEY: hasPrivateKey ? "set" : "MISSING",
     },

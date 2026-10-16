@@ -72,3 +72,9 @@ html.boite-ouverte,html.boite-ouverte body{overflow:hidden}
 .bb .bf-ins .bf-env{margin:0;width:auto}
 .bb .bf-ins .bf-c>.bf-env{margin:0 14px 14px;width:calc(100% - 28px)}
 .bb .bf-ins .bf-vide{text-align:left;padding:4px 2px 8px;font-size:13.5px}
+/* 16.10 : noms « en ligne » et apps des historiques cliquables (Kevin : « toutes infos cliquables ») */
+#boite-fen .bf-livel{display:flex;flex-wrap:wrap;gap:6px}
+#boite-fen button.bf-qui{background:transparent;border:1px solid var(--line);border-radius:999px;color:inherit;font:inherit;min-height:44px;padding:0 14px;cursor:pointer}
+#boite-fen button.bf-qui::after{content:' ›';color:var(--gold)}
+#boite-fen a.bf-ouvrir{border:1px solid var(--line);border-radius:12px;margin-top:8px}
+#boite-fen a.bf-app{color:var(--gold);text-decoration:none;display:inline-block;min-height:32px;padding:0 6px}

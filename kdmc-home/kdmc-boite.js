@@ -138,7 +138,16 @@
     if (live.length) {
       var lv = el('div', 'bf-live'); lv.setAttribute('data-enligne', String(live.length));
       lv.appendChild(el('b', null, '🟢 ' + live.length + ' en ligne maintenant'));
-      lv.appendChild(el('div', 'bf-livel', live.map(function (x) { return x.nom + (x.app ? ' · ' + String(x.app).replace(/-/g, ' ') : ''); }).join('  —  ')));
+      /* 16.10 (Kevin : « toutes infos cliquables ») : un nom en ligne ouvre SA carte (historique, déconnecter, fiche) */
+      var lvl = el('div', 'bf-livel');
+      live.forEach(function (x) {
+        var lib = x.nom + (x.app ? ' · ' + String(x.app).replace(/-/g, ' ') : '');
+        if (!x.uid) { lvl.appendChild(el('span', 'bf-qui', lib)); return; }
+        var bq = el('button', 'bf-qui', lib); bq.type = 'button';
+        bq.onclick = function () { filtre = 'tous'; ouvert = 'perso:u:' + x.uid; dessiner(); setTimeout(function () { var c = document.querySelector('#boite-fen .bf-c.ouv'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'start' }); }, 30); };
+        lvl.appendChild(bq);
+      });
+      lv.appendChild(lvl);
       r.appendChild(lv);
     }
     /* puces : un clic = les messages d'une seule app */
@@ -203,6 +212,10 @@
             .catch(function () { HIST[uidP[1]] = { erreur: true }; dessiner(); });
         };
         corps.appendChild(hb);
+        /* sa fiche dans l'admin (périmètre, état du compte, supprimer, bannir) — un toucher */
+        var fa = el('a', 'bf-ouvrir', '👤 Sa fiche admin'); fa.href = '/admin/#fiche-' + encodeURIComponent(uidP[1]);
+        fa.onclick = function () { if (/\/admin\/?$/.test(location.pathname)) { fermer(); } };
+        corps.appendChild(fa);
         /* 🚫 DÉCONNECTER PARTOUT (Kevin 8.10, « sécurité +++ » : un Windows inconnu à Stockholm sur le compte de Laurence) : d'un geste, toutes les
            sessions de ce compte tombent (/__admin/revoke, porte admin du domaine) ; le compte reste intact, la personne se reconnecte avec
            Face ID ou nom + code. Jamais sur le compte de Kevin lui-même (il se déconnecterait de sa propre boîte). */
@@ -223,7 +236,7 @@
           var box = el('div', 'bf-hist');
           if (H.chargement) box.appendChild(el('div', 'bf-info', 'Chargement…'));
           else if (H.erreur) box.appendChild(el('div', 'bf-info', '❌ Historique indisponible pour le moment.'));
-          else (H.evenements || []).forEach(function (e) { var l = el('div', 'bf-hl'); l.appendChild(el('span', 'bf-hq', quand(e.ts))); l.appendChild(el('span', null, ' ' + e.texte)); if (e.appareil) l.appendChild(el('span', 'bf-hq', ' · 📲 ' + e.appareil)); box.appendChild(l); });
+          else (H.evenements || []).forEach(function (e) { var l = el('div', 'bf-hl'); l.appendChild(el('span', 'bf-hq', quand(e.ts))); l.appendChild(el('span', null, ' ' + e.texte)); var hh = /\b((?:[a-z0-9-]+\.)?kd-mc\.com)\b/.exec(String(e.texte || '')); if (hh) { var la = el('a', 'bf-app', ' ↗ ouvrir'); la.href = 'https://' + hh[1] + '/'; la.target = '_blank'; la.rel = 'noopener'; l.appendChild(la); } if (e.appareil) l.appendChild(el('span', 'bf-hq', ' · 📲 ' + e.appareil)); box.appendChild(l); });
           corps.appendChild(box);
         }
       }

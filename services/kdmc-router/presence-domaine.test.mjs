@@ -37,6 +37,13 @@ const sale = await presenceBattre(db, 'x-y', 'N\u0000om\n\tbizarre' + 'z'.repeat
 const r = await db.prepare('SELECT nom, app FROM presence_domaine WHERE uid = ?').bind('x-y').first();
 ok(sale && r.nom.length <= 80 && r.app.length <= 60 && !/[\u0000\n\t]/.test(r.nom), '9. nom et app sont nettoyés et bornés');
 
+/* 16.10 (Kevin, capture « 1 en ligne maintenant — CI Smoke · apex chat ») : un robot (uid ci_…) n'est jamais une personne présente */
+ok(await presenceBattre(db, 'ci_smoke', 'CI Smoke', 'apex-chat', T0 + 50000) === false, '10. le robot des vérifications (ci_smoke) n\'écrit aucune présence');
+await db.prepare('INSERT INTO presence_domaine (uid, nom, app, ts) VALUES (?, ?, ?, ?)').bind('ci_vieux', 'CI Vieux', 'lingua', T0 + 50000).run();
+const l2 = await presenceListe(db, T0 + 60000);
+ok(!l2.some((x) => /^ci_/.test(x.uid) || /^CI /.test(x.nom)), '11. même une ancienne ligne de robot n\'apparaît pas dans « en ligne »', l2.map((x) => x.nom));
+ok(l2.every((x) => x.uid), '12. chaque personne en ligne porte son identifiant (le nom devient cliquable vers sa carte)');
+
 /* la boîte rend la liste */
 let kvEcrit = 0;
 const env = { CERCLE_DB: db, ACCOUNTS: { get: async () => null, put: async () => { kvEcrit++; } } };

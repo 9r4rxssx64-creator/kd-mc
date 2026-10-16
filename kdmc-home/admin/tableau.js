@@ -460,7 +460,10 @@
     if (!h) { montrerVue('accueil'); return; }
     if (SECTIONS.some(function (s) { return s.id === m[0]; })) { montrerVue(m[0], m[1] || null); try { window.scrollTo(0, 0); } catch (e) { /* */ } return; }
     /* une ancre d'avant (#list, #presence, #inviter…) : on va au bon endroit, dans la bonne rubrique et le bon onglet */
-    if (/^[A-Za-z][\w-]*$/.test(h) && document.getElementById(h)) aller('#' + h); else montrerVue('accueil');
+    if (/^[A-Za-z][\w-]*$/.test(h) && document.getElementById(h)) { aller('#' + h); return; }
+    /* #fiche-<uid> (depuis la boîte « Sa fiche admin ») : les fiches arrivent après — on les attend 8 s au plus */
+    if (/^fiche-/.test(h)) { montrerVue('personnes', 'comptes'); var t0 = Date.now(); (function attendre() { var f = document.getElementById(h); if (f) { aller(f); return; } if (Date.now() - t0 < 8000) setTimeout(attendre, 200); })(); return; }
+    montrerVue('accueil');
   }
   function badgesOnglets() {
     var b = BOITE, n = b ? (b.inscriptions || []).length + (b.codes || []).length + (Array.isArray(b.inscriptionsAdmin) ? b.inscriptionsAdmin.length : 0) : 0;

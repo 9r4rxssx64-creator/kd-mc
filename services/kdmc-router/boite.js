@@ -473,8 +473,11 @@ async function presenceSchema(db) {
   presencePret.add(db);
 }
 const net1 = (v, n) => propre(String(v == null ? '' : v).replace(/\s+/g, ' '), n);   // une ligne, sans saut de ligne
+/* 16.10 (Kevin, capture : « 1 en ligne maintenant — CI Smoke · apex chat ») : un compte de ROBOT (vérifications du déploiement, uid ci_…)
+   n'est pas une personne — jamais compté présent, jamais écrit. */
+export const estRobot = (uid) => /^ci_/.test(String(uid || ''));
 export async function presenceBattre(db, uid, nom, app, now) {
-  if (!db || !uid) return false;
+  if (!db || !uid || estRobot(uid)) return false;
   await presenceSchema(db);
   const r = await db.prepare('INSERT INTO presence_domaine (uid, nom, app, ts) VALUES (?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET nom = excluded.nom, app = excluded.app, ts = excluded.ts WHERE excluded.ts - presence_domaine.ts >= ? OR presence_domaine.app != excluded.app')
     .bind(propre(uid, 80), net1(nom, 80), net1(app, 60), now, PRESENCE_PAS).run();
@@ -483,8 +486,9 @@ export async function presenceBattre(db, uid, nom, app, now) {
 export async function presenceListe(db, now) {
   if (!db) return [];
   await presenceSchema(db);
-  return (await tous(db, 'SELECT nom, app, ts FROM presence_domaine WHERE ts > ? AND uid != ? ORDER BY ts DESC LIMIT 100', now - PRESENCE_MS, ADMIN))
-    .map((x) => ({ nom: propre(x.nom, 80) || 'Quelqu\'un', app: propre(x.app, 60), ts: x.ts }));
+  return (await tous(db, 'SELECT uid, nom, app, ts FROM presence_domaine WHERE ts > ? AND uid != ? ORDER BY ts DESC LIMIT 100', now - PRESENCE_MS, ADMIN))
+    .filter((x) => !estRobot(x.uid))
+    .map((x) => ({ uid: propre(x.uid, 80), nom: propre(x.nom, 80) || 'Quelqu\'un', app: propre(x.app, 60), ts: x.ts }));
 }
 
 /* ── la réponse unique ────────────────────────────────────────────────────────────────────────────────────── */

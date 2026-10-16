@@ -17,6 +17,11 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Boîte « Mes messages » cliquable + robots invisibles (capture de Kevin, 13h19)
+- Capture : « 🟢 1 en ligne maintenant — CI Smoke · apex chat » = le compte robot des vérifications (créé par le smoke test du déploiement et mes contrôles). Corrigé dans `boite.js` : `estRobot` (uid ci_…) → jamais écrit en présence, jamais listé (même une vieille ligne).
+- Cliquable : chaque nom « en ligne » ouvre SA carte ; la carte a « 👤 Sa fiche admin » (`/admin/#fiche-<uid>`, l'admin attend les fiches 8 s) ; dans l'historique complet, une app citée (arbre.kd-mc.com…) a « ↗ ouvrir ». Portail v1.0.65 (cache), boîte 2.0.3 dans l'admin.
+- Gardes : `test:presence-domaine` 17/17 (n°10-12, sabotage prouvé), `test:admin-unique` 75/75. Mise en ligne : cette nuit avec le reste (ration).
+
 ## 2026-10-16 — Admin v2.5.0 : plus aucune info chiffrée inerte (Kevin : « va plus loin »)
 - Fiche : Compte créé / CGU / Connexions / Appareils / Lieux / Dernière connexion / « il y a … » → **journal filtré sur cette personne** (`kdmcFiltreJournal`, bandeau « ✕ Tout voir ») ; « Sites utilisés » : chaque app est un lien ; lignes du journal et de l'historique d'une personne → sa fiche.
 - **Garde permanente** dans `test:admin-unique` (72/72) : inventaire des 15 vues, échoue si une info chiffrée n'a ni lien ni destination (sabotage prouvé : « Connexions » sans lien → rouge). `SCAN=1` imprime l'inventaire complet. Mise en ligne avec la v2.2.0 après 00h UTC (ration).

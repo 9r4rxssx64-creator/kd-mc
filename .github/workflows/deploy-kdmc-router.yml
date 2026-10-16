@@ -411,6 +411,11 @@ jobs:
             grep -E "^  · |MESURE|paire|réseau" /tmp/sonde.txt | head -25 | sed 's/^/::error::sonde — /'
             for f in index.html tools/departs/index.html arbre/index.html coffre-fort/index.html apex-ai-v13/index.html; do
               echo "::error::paquet — $f : $(wc -c < services/kdmc-router/public/CMCteams/$f 2>/dev/null || echo ABSENT)"; done
+            # Ce que le domaine sert vraiment pour d'autres fichiers des mêmes apps (sonde déclarée, réseau GitHub)
+            for u in cmcteams.kd-mc.com/index.html cmcteams.kd-mc.com/version.txt cmcteams.kd-mc.com/manifest.json arbre.kd-mc.com/index.html \
+                     lingua.kd-mc.com/ lingua.kd-mc.com/index.html la-detente.kd-mc.com/ kd-mc.com/CMCteams/index.html; do
+              R=$(curl -s -o /tmp/r.bin -D /tmp/r.h -m 20 -H 'x-kdmc-sonde: diag' -H 'accept: */*' -w '%{http_code} %{size_download}' "https://$u" || echo ERR)
+              echo "::error::domaine — $u : $R · $(grep -i '^x-kdmc-router\|^x-kdmc-secours\|^x-kdmc-porte' /tmp/r.h | tr -d '\r' | tr '\n' ' ' | cut -c1-120)"; done
             exit 1; }
 
       # ── LA BOÎTE UNIQUE DE L'ADMIN est-elle servie, et fermée ? (3.10, Kevin : tous les messages de toutes les apps) ──

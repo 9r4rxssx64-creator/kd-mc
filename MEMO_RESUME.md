@@ -1,5 +1,13 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (soir) — Apex v13.4.373 : empreintes de code fermées + voie gratuite pour publier les règles (branche claude/admin-ouverture-rapide)
+
+- Kevin : « Fais tout ça dès que le quota revient et trouve des solutions (gratuites), crée, pour le faire avant. »
+- **Fait (code, tests verts en local)** : règles `/apex` par clé (`$key` lecture/écriture `auth != null && !$key.matches(/^ax_pin_/)`, plus de `.read` au parent) ; worker `apex-auth-worker` : guichet `POST /pin/init` (premier code, jamais remplacé, 5 tests) ; Apex : `bootstrapFirebasePin` passe par le guichet (test du pont adapté) ; `deploy-rules.cjs` : garde-fou + vérif live sur `$key` ; `tests/verify-firebase-regles-pin.mjs` (14 OK, 7 sabotages) câblé dans `test:ci` ; Apex **v13.4.373** reconstruite (copie servie `apex-ai-v13/`).
+- **Voie gratuite trouvée et câblée** : (a) Apex se publie par le robot du dépôt PUBLIC « Déploie le routeur » (il copie `apex-ai-v13` depuis le coffre) → lancé à la main (`workflow_dispatch`, 0 minute du coffre) ; le robot public « Auto-deploy Apex v13 build » est **rouge depuis le 27.09** (fichiers privés absents du public : apex-identity, never-forget-watch, cmc-vision-validator) — il ne sert à rien là-bas, ne pas s'y fier ; (b) les règles Firebase : le robot « Deploy CMCteams Firebase Rules » reçoit l'action `coffre` → publiable depuis le dépôt public, 0 minute du coffre. Le robot public « Deploy kdmc-access » est rouge depuis le 15.10 à l'étape santé seulement (le déploiement passe ; `workers.dev/health` répond 200 mesuré à 18h) — à régler.
+- **Ordre de mise en ligne (après fusion → sync automatique du coffre)** : 1) worker apex-auth-worker (robot public auto sur `services/apex-auth-worker/**`) ; 2) routeur public (dispatch) pour Apex v13.4.373 ; 3) règles : dispatch « Deploy CMCteams Firebase Rules » au public (défauts `keep`) ; 4) preuve : `deploy-rules.cjs` sonde anonyme `/apex` → 401, puis `GET /apex/ax_pin_kdmc_admin.json?auth=<jeton anonyme>` → refusé (à mesurer par le robot, pas d'ici).
+- Reste du plan #559 (pas fait, à mesurer d'abord) : `vault_backup/$uid` et `users` par personne, `/cmcteams` et `/coffre_vault` (verrous déjà posés par les robots `coffre-*` : l'état LIVE n'est pas le fichier, lire avant d'écrire).
+
 ## 2026-10-16 — Apex v13.4.372 : « vérifie tout en détail » (branche claude/admin-ouverture-rapide)
 
 - Kevin : « Apex fonctionne optimalement et en sécurité, tu ne peux rien améliorer » → mesuré au lieu de répondre.

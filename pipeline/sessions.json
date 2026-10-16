@@ -1841,7 +1841,7 @@
     "audit-apex-1610": {
       "titre": "Audit Apex 16.10 (vérifie tout en détail)",
       "branche": "claude/admin-ouverture-rapide",
-      "sujet": "Apex v13.4.372 : bulles, bouton CSP, règles Firebase ouvertes",
+      "sujet": "Apex v13.4.373 : bulles, bouton CSP, règles Firebase ax_pin fermées",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",

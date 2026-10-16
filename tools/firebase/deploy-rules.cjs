@@ -222,7 +222,12 @@ const VERROU = require('./verrou-ecritures.cjs');
     rules.coffre_vault['.write'] = true;
     console.log('⏪ ROLLBACK APEX : /apex + /coffre_vault .read/.write = true');
   } else {
-    if (JSON.stringify(rules.apex['.read']) !== '"auth != null"') throw new Error('SECURITÉ : /apex .read attendu "auth != null" dans le fichier, abort');
+    /* 16.10.2026 (leçon #559) : la lecture de /apex est donnée PAR CLÉ ($key), jamais au parent, et les empreintes de code
+       ax_pin_<uid> sont exclues (un jeton anonyme = n'importe qui). Le parent ne doit porter AUCUN .read. */
+    const lectureApex = rules.apex && rules.apex.$key && rules.apex.$key['.read'];
+    if (rules.apex['.read'] !== undefined) throw new Error('SECURITÉ : /apex ne doit plus porter de .read au parent (leçon #559), abort');
+    if (!/^auth != null && !\$key\.matches\(\/\^ax_pin_\/\)$/.test(String(lectureApex))) throw new Error('SECURITÉ : /apex/$key .read attendu "auth != null && !$key.matches(/^ax_pin_/)", abort');
+    if (String(rules.apex.$key['.write']) !== String(lectureApex)) throw new Error('SECURITÉ : /apex/$key .write doit exclure ax_pin_ comme la lecture, abort');
     if (JSON.stringify(rules.coffre_vault['.read']) !== '"auth != null"') throw new Error('SECURITÉ : /coffre_vault .read attendu "auth != null" dans le fichier, abort');
     console.log('🔒 HARDEN : /apex + /coffre_vault .read/.write = auth != null');
   }
@@ -278,11 +283,12 @@ const VERROU = require('./verrou-ecritures.cjs');
   console.log('🔎 Vérif live : /cmcteams .read = ' + JSON.stringify(cr));
   const expect = STATE === 'open' ? true : 'auth != null';
   if (JSON.stringify(cr) !== JSON.stringify(expect)) throw new Error('Vérif KO : attendu ' + JSON.stringify(expect) + ', live ' + JSON.stringify(cr));
-  const ar = live && live.rules && live.rules.apex && live.rules.apex['.read'];
+  const ar = live && live.rules && live.rules.apex && (APEX_STATE === 'open' ? live.rules.apex['.read'] : (live.rules.apex.$key && live.rules.apex.$key['.read']));
   const vr = live && live.rules && live.rules.coffre_vault && live.rules.coffre_vault['.read'];
   console.log('🔎 Vérif live : /apex .read = ' + JSON.stringify(ar) + ' · /coffre_vault .read = ' + JSON.stringify(vr));
   const expectApex = APEX_STATE === 'open' ? true : 'auth != null';
-  if (JSON.stringify(ar) !== JSON.stringify(expectApex)) throw new Error('Vérif KO /apex : attendu ' + JSON.stringify(expectApex) + ', live ' + JSON.stringify(ar));
+  const expectApexCle = APEX_STATE === 'open' ? true : 'auth != null && !$key.matches(/^ax_pin_/)';
+  if (JSON.stringify(ar) !== JSON.stringify(expectApexCle)) throw new Error('Vérif KO /apex : attendu ' + JSON.stringify(expectApexCle) + ', live ' + JSON.stringify(ar));
   if (JSON.stringify(vr) !== JSON.stringify(expectApex)) throw new Error('Vérif KO /coffre_vault : attendu ' + JSON.stringify(expectApex) + ', live ' + JSON.stringify(vr));
 
   // Vérif COMPORTEMENTALE (lesson #95 : un état de règles ne prouve rien — tester

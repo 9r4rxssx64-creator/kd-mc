@@ -2069,6 +2069,16 @@
       "attend_kevin": null,
       "attend_session": null
     },
+    "apex-robot-comme-kevin": {
+      "titre": "Robot Apex comme Kevin (connecté en admin, iPhone)",
+      "branche": "claude/apex-robot-comme-kevin",
+      "sujet": "Kevin 16.10 : connecte-toi comme moi et vérifie à la place → tests/verif-live-apex.mjs + workflow coffre verif-live-apex.yml, sabotages prouvés",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
     "access-ux": {
       "titre": "Qui se connecte v1.2.0 : la page défile, rangée",
       "branche": "claude/access-ux",

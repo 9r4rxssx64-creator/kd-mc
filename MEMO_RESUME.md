@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Apex Chat : le déploiement prouve la VERSION en ligne (lot K)
+- `/api/health` annonce `version` (constante `API_VERSION`, gardée = `package.json`) ; `deploy-apex-chat.yml` compare et ÉCHOUE si le serveur en ligne n'est pas à la version du dépôt (avant : comparaison impossible, simple notice). Garde `lot-k-version-sante` (3), sabotage rouge. **À chaque changement de version : mettre aussi `API_VERSION`** (le test le rappelle).
+
+## 2026-10-16 — publier-et-verifier : prend en compte une publication faite par une autre session entre-temps
+- Mesuré en vrai : une autre session a publié juste après moi ; mon commit public n'a donc pas eu son propre déploiement. L'outil accepte maintenant un déploiement réussi sur un commit PLUS RÉCENT qui contient le mien (API de comparaison). Garde `test:publier-et-verifier` (7).
+
 ## 2026-10-16 (soir) — Mettre en ligne GRATUITEMENT : par le dépôt public `kd-mc`
 - Le routeur se déploie depuis le dépôt PUBLIC `9r4rxssx64-creator/kd-mc` (Actions illimitées et gratuites pour un dépôt public) : synchro du coffre → `deploy-kdmc-router.yml` du dépôt public. Le robot du coffre, lui, est coupé par la ration du jour (ce n'est pas lui qui compte).
 - Vérifié réel le 16.10 à 19h UTC : runs du dépôt public en succès (17h42 → 18h57), et le code SERVI par Cloudflare contient `cfg:attendus`, `redeposerAttente`, « accepter un code ouvre le compte ». Le rappel de 7h15 est supprimé.
@@ -397,6 +403,12 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - Mesuré : 104 fichiers / 1654 tests, couverture sans ERROR ; ancien serveur → 5 échecs sur 7.
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
+
+## 2026-10-16 — La Détente : robots protégés (audit sécurité P1, Kevin « Go »)
+- `/validate` (bouton « ✅ Valider & produire » de la notification = VRAI paiement Printify) n'était gardé que par Origin + `x-ld-app` (recopiables). Désormais : jeton signé (HMAC de l'order_id, clé dérivée de `PRINTIFY_API_KEY`) glissé par `/order` dans la notification chiffrée ; les `sw.js` des 2 boutiques le renvoient. Les notifications d'avant ce changement ne valident plus depuis le bouton → valider dans Printify (le lien de la notif y mène).
+- `/cost` (crée/supprime un produit-sonde) et `/push-test` : Origin + tag + plafonds horaires globaux ; l'admin envoie le tag.
+- Studio Gemini : plafond du jour en D1 (binding `LD_DB` → kdmc-cercle, table `ld_gemini_jour`) 150/jour au total, 20/jour par IP hachée ; mémoire 5/min/IP, 30/min global ; sans D1 → 20/h.
+- Déploiements : un push sur main ne lance plus ces 2 robots dans le coffre privé (dépôt public seulement) ; l'étape « publier la config » ne tourne qu'au coffre. Versions : La Détente v1.53.25, Chez Lolo v2.0.19. Garde `test:ld-gardes` (19).
 
 ## 2026-10-16 — Firebase fermé aux comptes anonymes, ÉTAPE 1 : jeton du domaine « scope cmc » (code + tests ; règles INCHANGÉES)
 - Constat (audit extérieur P0-1, confirmé en ligne par la capture de Kevin) : `/cmcteams` `.read: "auth != null"` → tout compte ANONYME (créé par n'importe qui avec la clé Web publique) lit les plannings.

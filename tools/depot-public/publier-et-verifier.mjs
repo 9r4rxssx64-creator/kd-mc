@@ -26,6 +26,9 @@ export function runDuCommit(runs, sha) {
   if (!court) return null;
   return (runs || []).find((r) => String(r.head_sha || '').startsWith(court)) || null;
 }
+/** Un commit public plus récent contient-il le mien ? (une autre session a publié entre-temps : mon commit est DANS le sien).
+ *  `statut` = le champ « status » de l'API de comparaison (mon commit ... le leur). */
+export function estCouvert(statut) { return statut === 'ahead' || statut === 'identical'; }
 /** Le verdict à dire à voix haute : 'attente' (rien ou en cours), 'ok', 'echec'. */
 export function verdict(run) {
   if (!run) return 'attente';
@@ -59,7 +62,16 @@ async function principal() {
   while ((Date.now() - debut) / 60000 < delai) {
     let runs = [];
     try { runs = JSON.parse(gh(`repos/${PUBLIC}/actions/workflows/${wf}/runs?per_page=10`, '--jq', '[.workflow_runs[]|{status,conclusion,head_sha,html_url}]')); } catch (e) { log('   (lecture impossible : ' + String(e.message).slice(0, 80) + ')'); }
-    const run = runDuCommit(runs, sha);
+    let run = runDuCommit(runs, sha);
+    if (!run) {
+      // Une autre session a pu publier APRÈS moi : le dépôt public est alors plus loin, et mon commit est dedans.
+      for (const r of runs) {
+        try {
+          const st = gh(`repos/${PUBLIC}/compare/${sha}...${r.head_sha}`, '--jq', '.status').trim();
+          if (estCouvert(st)) { run = r; log(`   (mon commit est inclus dans ${String(r.head_sha).slice(0, 8)}, publié ensuite par une autre session)`); break; }
+        } catch { /* comparaison impossible : on garde l'attente */ }
+      }
+    }
     const v = verdict(run);
     if (v === 'ok') { log(`✅ ${wf} a réussi sur le commit public ${sha.slice(0, 8)} : ${run.html_url}`); process.exit(0); }
     if (v === 'echec') { console.error(`⛔ ${wf} a ÉCHOUÉ sur ${sha.slice(0, 8)} (${run.conclusion}) : ${run.html_url}`); process.exit(1); }

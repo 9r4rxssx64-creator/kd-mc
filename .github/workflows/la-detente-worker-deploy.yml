@@ -23,6 +23,9 @@ permissions:
 
 jobs:
   deploy:
+    # Gratuit (Kevin 16.10 « privilégie toujours le public ») : un push sur main se déploie
+    # depuis le dépôt PUBLIC kd-mc (minutes illimitées) ; le coffre privé ne part qu'à la main.
+    if: ${{ github.event_name != 'push' || !github.event.repository.private }}
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
@@ -70,6 +73,9 @@ jobs:
           cat shops/la-detente/proxy-config.json
 
       - name: Publier proxy-config.json dans main (PR fusionnée par le robot)
+        # Le miroir public ne peut pas écrire dans son main (sa copie vient du coffre) : l'URL du worker
+        # ne change pas d'un déploiement à l'autre, la config reste valable.
+        if: ${{ github.event.repository.private }}
         # Jusqu'au 10.09.2026 : `git push` d'une branche claude/worker-config-<run_id> avec
         # « (auto-merge) » écrit dans le journal — sauf qu'un push signé par GITHUB_TOKEN ne
         # réveille JAMAIS l'auto-merge, et le message portait [skip ci]. Résultat mesuré :

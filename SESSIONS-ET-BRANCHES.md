@@ -226,6 +226,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/publication-auto` | 16.10 | Les apps partent en ligne par deploy-kdmc-router (automatique sur main, porte de ration) | `publication-auto` |
 | `claude/firebase-cmc` | 16.10 | Firebase étape 1 : jeton du domaine « scope cmc » (routeur + CMCteams + light), règles inchangées | `firebase-cmc` |
 | `claude/firebase-cmc2` | 16.10 | Firebase étape 1 réappliquée + sonde réelle `/__sso/fbtoken-sonde` lue par le déploiement public | `firebase-cmc2` |
+| `claude/detente-gardes` | 16.10 | La Détente : /validate exige le jeton signé de la notification, /cost et /push-test gardés, studio Gemini plafonné par jour (D1) | `detente-gardes` |
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |

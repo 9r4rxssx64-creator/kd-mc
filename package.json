@@ -322,7 +322,8 @@
     "test:publier-local": "node tests/verify-publier-local.mjs",
     "test:publier-et-verifier": "node tests/verify-publier-et-verifier.mjs",
     "test:portail-range": "node tests/verify-portail-range.mjs",
-    "test:fbtoken-cmc": "node services/kdmc-router/fbtoken-cmc.test.mjs"
+    "test:fbtoken-cmc": "node services/kdmc-router/fbtoken-cmc.test.mjs",
+    "test:ld-gardes": "node tests/verify-ld-gardes.mjs"
   },
   "repository": {
     "type": "git",

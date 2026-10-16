@@ -356,12 +356,20 @@ jobs:
           # dite « ok », « stale » (plus de 26 h) ou « unknown ».
           echo "santé : $(cat /tmp/health.json)"
           if jq -e '.checks.backup == "stale"' /tmp/health.json >/dev/null 2>&1; then echo "::warning::La dernière sauvegarde D1 réussie a plus de 26 h"; fi
-          live=$(curl -s "$BASE/api/system/config" | jq -r '.version // .config.version // empty' 2>/dev/null || true)
-          if [ -n "$live" ]; then
-            echo "version annoncée par le worker : $live (dépôt : $VERSION)"
-            [ "$live" = "$VERSION" ] || echo "::warning::Le worker annonce $live, le dépôt est en $VERSION"
+          # Audit 16.10.2026 : /api/system/config exige un compte (la comparaison ne se faisait jamais).
+          # /api/health annonce la version du serveur : on la compare à package.json, avec quelques essais
+          # (le code met quelques secondes à se propager sur tous les points d'entrée).
+          live=""
+          for i in 1 2 3 4 5 6; do
+            live=$(curl -s "$BASE/api/health" | jq -r '.version // empty' 2>/dev/null || true)
+            [ "$live" = "$VERSION" ] && break
+            echo "version annoncée : '$live' (attendue $VERSION) — nouvel essai dans 10 s"; sleep 10
+          done
+          if [ "$live" = "$VERSION" ]; then
+            echo "✅ version en ligne : $live = dépôt"
           else
-            echo "::notice::Le worker n'expose pas de version dans /api/system/config — comparaison impossible (santé OK)"
+            echo "::error::Le serveur en ligne annonce '$live' alors que le dépôt est en $VERSION — le déploiement n'a pas pris effet"
+            exit 1
           fi
 
       - name: Summary

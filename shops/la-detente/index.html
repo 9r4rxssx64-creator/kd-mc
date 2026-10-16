@@ -1069,7 +1069,7 @@ function ldPushConfig(cb){if(window._ldPushCfg)return cb(window._ldPushCfg);fetc
 function _urlB64ToU8(b){var p="=".repeat((4-b.length%4)%4);var s=(b+p).replace(/-/g,"+").replace(/_/g,"/");var raw=atob(s);var arr=new Uint8Array(raw.length);for(var i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);return arr;}
 var _LD_FB_SUB="https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/ld_detente/push_sub.json";
 /* Auto-test alerte (/push-test) → cb(ok, detail) */
-function ldAutoTest(cb){var oc=window._ldOrderCfg,url=oc&&oc.worker_url;if(!url){cb(false,"worker non déployé");return;}fetch(url.replace(/\/$/,"")+"/push-test").then(function(r){return r.json()}).then(function(j){cb(!!(j&&j.ok),(j&&j.detail)||"")}).catch(function(e){cb(false,(e&&e.message)||"réseau")});}
+function ldAutoTest(cb){var oc=window._ldOrderCfg,url=oc&&oc.worker_url;if(!url){cb(false,"worker non déployé");return;}fetch(url.replace(/\/$/,"")+"/push-test",{headers:{"x-ld-app":(oc&&oc.app_tag)||"ld-order-v1"}}).then(function(r){return r.json()}).then(function(j){cb(!!(j&&j.ok),(j&&j.detail)||"")}).catch(function(e){cb(false,(e&&e.message)||"réseau")});}
 /* Abonne ce device au push admin (PUT unique) → cb(ok, detail) */
 function _ldSubscribePush(cfg,cb){try{navigator.serviceWorker.ready.then(function(reg){reg.pushManager.getSubscription().then(function(ex){(ex?Promise.resolve(ex):reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_urlB64ToU8(cfg.vapid_public)})).then(function(sub){fetch(_LD_FB_SUB,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)}).then(function(){localStorage.setItem("ld_alerts","1");cb(true)}).catch(function(){cb(false,"save KO")})}).catch(function(e){cb(false,(e&&e.message)||"subscribe KO")})})});}catch(e){cb(false,(e&&e.message)||"err")}}
 /* AUTO-RÉPARATION : désabonne + ré-abonne + re-teste une fois */
@@ -1108,7 +1108,7 @@ function ldEnableAlerts(){
   });
  });
 }
-function ldTestAlert(){var oc=window._ldOrderCfg;var url=oc&&oc.worker_url;if(!url){toast("Worker non déployé — déploie d'abord","error");return;}toast("Envoi du test…");fetch(url.replace(/\/$/,"")+"/push-test").then(function(r){return r.json()}).then(function(j){if(j&&j.ok){localStorage.setItem("ld_alerts_verified","1");toast("Test envoyé ✅ — regarde tes notifs");setTimeout(function(){try{dc()}catch(_){}},60);}else{toast("Test: "+((j&&j.detail)||"échec"),"error");}}).catch(function(e){toast("Test KO: "+(e&&e.message||e),"error");});}
+function ldTestAlert(){var oc=window._ldOrderCfg;var url=oc&&oc.worker_url;if(!url){toast("Worker non déployé — déploie d'abord","error");return;}toast("Envoi du test…");fetch(url.replace(/\/$/,"")+"/push-test",{headers:{"x-ld-app":(oc&&oc.app_tag)||"ld-order-v1"}}).then(function(r){return r.json()}).then(function(j){if(j&&j.ok){localStorage.setItem("ld_alerts_verified","1");toast("Test envoyé ✅ — regarde tes notifs");setTimeout(function(){try{dc()}catch(_){}},60);}else{toast("Test: "+((j&&j.detail)||"échec"),"error");}}).catch(function(e){toast("Test KO: "+(e&&e.message||e),"error");});}
 /* Kevin « auto pour recevoir toutes les notifs » : ré-abonnement push AUTO et SILENCIEUX
    au boot admin, dès que l'autorisation est déjà accordée (la 1ʳᵉ autorisation reste 1 tap
    — règle navigateur incontournable, surtout iOS PWA). ADMIN-ONLY : seul l'appareil de Kevin
@@ -1325,7 +1325,7 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.24"
+        data-version="v1.53.25"
         data-color="#e8b830"
         defer></script>
 

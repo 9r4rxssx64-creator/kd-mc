@@ -27,6 +27,28 @@ function rl(key, max, windowMs) {
   return false;
 }
 
+/* Gardes (audit sécurité 16.10, P1) : Origin + x-ld-app se recopient avec un simple curl,
+   ce n'est PAS une preuve. /validate déclenche un VRAI paiement Printify → il exige en plus
+   un jeton signé (HMAC de l'order_id, clé dérivée de PRINTIFY_API_KEY : 0 secret de plus)
+   que le worker ne met QUE dans la notification chiffrée envoyée au téléphone admin.
+   /cost (crée puis supprime un produit dans la boutique) et /push-test : Origin + tag +
+   plafonds globaux par heure. */
+function garde(request, origin) {
+  if (!ALLOW.includes(origin)) return 'origin refusée';
+  if (request.headers.get('x-ld-app') !== APP_TAG) return 'app tag invalide';
+  return '';
+}
+async function jetonValider(env, oid) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode('ld-validate|' + env.PRINTIFY_API_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return base64urlEncode(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(String(oid)))));
+}
+function egalConstant(a, b) {
+  a = String(a || ''); b = String(b || '');
+  if (!a.length || a.length !== b.length) return false;
+  let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+
 const GARMENT_BP = { tee: 6, hoodie: 77, cap: 5383, polo: null, tote: 1313 };
 const COLOR_FR2EN = { 'Noir': 'Black', 'Blanc': 'White', 'Marine': 'Navy', 'Kaki': 'Military Green', 'Ardoise': 'Dark Heather', 'Bordeaux': 'Maroon', 'Anthracite': 'Black', 'Sable': 'Sand', 'Vert': 'Forest Green' };
 const COUNTRY_ISO = { 'france': 'FR', 'monaco': 'MC', 'belgique': 'BE', 'belgium': 'BE', 'suisse': 'CH', 'switzerland': 'CH', 'luxembourg': 'LU', 'espagne': 'ES', 'spain': 'ES', 'italie': 'IT', 'italy': 'IT', 'allemagne': 'DE', 'germany': 'DE', 'royaume-uni': 'GB', 'uk': 'GB' };
@@ -54,7 +76,8 @@ export default {
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     // COÛT RÉEL : crée un produit-sonde, lit le cost réel, le supprime (appel Printify coûteux)
     if (request.method === 'GET' && url.pathname === '/cost') {
-      if (rl('cost:' + ip, 10, 60000)) return J({ ok: false, detail: 'Trop de requêtes, patiente une minute', retryAfter: 60 }, 429, origin);
+      const g = garde(request, origin); if (g) return J({ ok: false, detail: g }, 403, origin);
+      if (rl('cost:' + ip, 10, 60000) || rl('cost:global', 20, 3600000)) return J({ ok: false, detail: 'Trop de requêtes, patiente une minute', retryAfter: 60 }, 429, origin);
       const KEY = env.PRINTIFY_API_KEY;
       if (!KEY) return J({ ok: false, detail: 'clé serveur absente' }, 500, origin);
       const bp = parseInt(url.searchParams.get('bp') || '0', 10);
@@ -119,6 +142,8 @@ export default {
     }
     // TEST ALERTE : envoie une notif push de test à l'admin abonné
     if (request.method === 'GET' && url.pathname === '/push-test') {
+      const g = garde(request, origin); if (g) return J({ ok: false, detail: g }, 403, origin);
+      if (rl('push:' + ip, 3, 600000) || rl('push:global', 10, 3600000)) return J({ ok: false, detail: 'trop de tests, patiente', retryAfter: 600 }, 429, origin);
       try {
         const n = await sendOrderPush(env, '🔔 Test alerte La Détente', 'Si tu vois cette notification, les alertes commande fonctionnent ✅');
         return J({ ok: n > 0, sent: n, detail: n > 0 ? 'push envoyé' : 'aucun abonnement (active les alertes d\'abord) ou clés VAPID manquantes' }, 200, origin);
@@ -150,6 +175,7 @@ export default {
       let vb; try { vb = await request.json(); } catch (_) { return J({ ok: false, detail: 'json invalide' }, 400, origin); }
       const oid = String(vb.order_id || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
       if (!oid) return J({ ok: false, detail: 'order_id manquant' }, 400, origin);
+      if (!egalConstant(vb.t, await jetonValider(env, oid))) return J({ ok: false, detail: 'jeton de validation invalide — valide depuis Printify' }, 403, origin);
       const H = { 'Authorization': 'Bearer ' + KEY, 'User-Agent': 'LaDetente-KDMC/1.0', 'Content-Type': 'application/json' };
       try {
         const r = await fetch(`${API}/shops/${SHOP_ID}/orders/${oid}/send_to_production.json`, { method: 'POST', headers: H });
@@ -287,6 +313,7 @@ export default {
         admin_url: body.pushUrl || 'https://9r4rxssx64-creator.github.io/CMCteams/shops/la-detente/index.html?ld_admin=1',
         validate_url: validateUrl,
         printify_order_id: pj.id || null,
+        validate_token: pj.id ? await jetonValider(env, String(pj.id).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64)) : null,
         actions: pj.id
           ? [{ action: 'validate', title: '✅ Valider & produire' }, { action: 'admin', title: '🏪 Boutique' }]
           : [{ action: 'admin', title: '🏪 Boutique' }],

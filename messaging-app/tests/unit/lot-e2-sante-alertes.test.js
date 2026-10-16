@@ -35,8 +35,8 @@ describe('F6 — /api/health vérifie vraiment', () => {
     noteBackup(DB, Date.now() - 3600000);
     const { status, body } = await sante({ APEX_CHAT_DB: DB, BROADCAST_DO: vraiBroadcast() });
     expect(status).toBe(200);
-    expect(body).toEqual({ ok: true, ts: expect.any(Number), checks: { d1: 'ok', do: 'ok', backup: 'ok' } });
-    expect(Object.keys(body).sort()).toEqual(['checks', 'ok', 'ts']);
+    expect(body).toEqual({ ok: true, ts: expect.any(Number), version: expect.stringMatching(/^\d+\.\d+\.\d+$/), checks: { d1: 'ok', do: 'ok', backup: 'ok' } });
+    expect(Object.keys(body).sort()).toEqual(['checks', 'ok', 'ts', 'version']);   // la version n'est pas un secret : elle prouve le déploiement
   });
 
   it('D1 en panne → 503 « d1: ko », et le message d\'erreur ne sort PAS', async () => {

@@ -2,3 +2,9 @@ name = "ld-gemini-proxy"
 main = "worker.js"
 compatibility_date = "2024-11-01"
 workers_dev = true
+
+# Plafond du jour du studio (audit sécurité 16.10) : compteur gratuit dans la base D1 du domaine.
+[[d1_databases]]
+binding = "LD_DB"
+database_name = "kdmc-cercle"
+database_id = "0b49b8eb-8df8-49fe-93f7-1e385bf98b34"

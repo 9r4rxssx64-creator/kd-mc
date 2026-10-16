@@ -23,6 +23,9 @@ permissions:
 
 jobs:
   deploy:
+    # Gratuit (Kevin 16.10 « privilégie toujours le public ») : un push sur main se déploie
+    # depuis le dépôt PUBLIC kd-mc (minutes illimitées) ; le coffre privé ne part qu'à la main.
+    if: ${{ github.event_name != 'push' || !github.event.repository.private }}
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
@@ -90,6 +93,9 @@ jobs:
           cat shops/la-detente/printify-order-config.json shops/la-detente/push-config.json
 
       - name: Publier les configs dans main (PR fusionnée par le robot)
+        # Le miroir public ne peut pas écrire dans son main (sa copie vient du coffre) : l'URL du worker
+        # ne change pas d'un déploiement à l'autre, la config reste valable.
+        if: ${{ github.event.repository.private }}
         # Jusqu'au 10.09.2026 : 18 branches claude/printify-order-config-<run_id> poussées « pour
         # auto-merge » — jamais fusionnées (push GITHUB_TOKEN + [skip ci] = invisible pour le
         # robot). Conséquence réelle : la boutique lit push-config.json (index.html, ldPushConfig)

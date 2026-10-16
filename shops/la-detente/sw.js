@@ -1,6 +1,6 @@
 /* KDMC Shops — Service Worker La Détente. MAJ auto forcée : network-first pour les
    pages (toujours la dernière version en ligne), cache-first pour les assets, fallback offline. */
-var CACHE='kdmc-la-detente-v1.53.24';
+var CACHE='kdmc-la-detente-v1.53.25';
 var PRE=['./','studio.html','bibliotheque.html','/CMCteams/shops/legal/cgv.html'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRE).catch(function(){})}));self.skipWaiting()});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE&&(k.indexOf('kdmc-la-detente-')===0||k==='kdmc-v1')}).map(function(k){return caches.delete(k)}))}));self.clients.claim()});
@@ -17,7 +17,7 @@ self.addEventListener('notificationclick',function(e){
   e.notification.close();
   var dd=e.notification.data||{};
   if(e.action==='validate'&&dd.validate_url&&dd.printify_order_id){
-    e.waitUntil(fetch(dd.validate_url,{method:'POST',headers:{'Content-Type':'application/json','x-ld-app':'ld-order-v1'},body:JSON.stringify({order_id:dd.printify_order_id})})
+    e.waitUntil(fetch(dd.validate_url,{method:'POST',headers:{'Content-Type':'application/json','x-ld-app':'ld-order-v1'},body:JSON.stringify({order_id:dd.printify_order_id,t:dd.validate_token||''})})
       .then(function(r){return r.json().catch(function(){return{ok:r.ok}});})
       .then(function(j){return self.registration.showNotification(j&&j.ok?'✅ Commande validée':'❌ Échec validation',{body:j&&j.ok?'Envoyée en production Printify.':((j&&j.detail)||'Réessaie depuis Printify.'),icon:'img/og.png',tag:'ld-validate'});})
       .catch(function(){return self.registration.showNotification('❌ Échec validation',{body:'Réseau indisponible — valide depuis Printify.',icon:'img/og.png',tag:'ld-validate'});}));

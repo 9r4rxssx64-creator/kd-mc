@@ -106,6 +106,11 @@ export function ctEq(a, b) {
   return diff === 0;
 }
 
+// Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
+// en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
+// Un test garde cette constante égale à la version de package.json.
+export const API_VERSION = '1.1.310';
+
 // Codes SMS : au plus 3 par heure et 10 par jour pour un même numéro (audit 16.10.2026).
 export const OTP_PAR_NUMERO_HEURE = 3;
 export const OTP_PAR_NUMERO_JOUR = 10;
@@ -7423,7 +7428,7 @@ export async function checkHealth(env, now = Date.now()) {
     checks.do = j && j.ok === true ? 'ok' : 'ko';
   } catch (_) { checks.do = 'ko'; }
   const ok = checks.d1 === 'ok' && checks.do === 'ok';
-  const body = { ok, ts: now, checks };
+  const body = { ok, ts: now, version: API_VERSION, checks };
   _healthCache = ok ? { at: now, body } : null;
   return body;
 }

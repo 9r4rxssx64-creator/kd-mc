@@ -1868,6 +1868,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "detente-gardes": {
+      "titre": "La Détente : robots Printify/Gemini protégés",
+      "branche": "claude/detente-gardes",
+      "sujet": "/validate jeton signé, /cost et /push-test gardés, plafond Gemini du jour en D1",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

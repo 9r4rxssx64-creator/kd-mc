@@ -7,6 +7,20 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 16/10/2026 11:36 UTC
+
+- **Branche** : `main` · **Commit** : `eba1db58` · **Run** : `38894881785`
+- **Ce qui a lâché** : deploy › Porte de ration (le jour n'est-il pas déjà mangé ?)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38894881785
+- **Ce que la machine a dit** :
+
+```
+93 min consommées sur 60 (0 restantes) · 98 run(s) comptés, 2 refusé(s)/sauté(s) à 0 min
+⛔ ce robot coûterait ~4 min, il n'en reste que 0 aujourd'hui : refusé (relance-le demain, ou en local, ou avec « forcer »).
+##[error]ce robot coûte ~4 min et la ration du jour ne les couvre pas. Il ne démarre pas. Relance-le demain (jour UTC), lance-le en LOCAL, ou coche « forcer_ration » avec l'accord de Kevin.
+##[error]Process completed with exit code 3.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +542,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

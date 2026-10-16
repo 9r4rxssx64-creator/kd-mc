@@ -111,7 +111,7 @@
   }
   if (typeof module === 'object' && module && module.exports) module.exports = { hub: hub };
 
-  function kvp(k, v) { return '<div><span>' + k + '</span><br>' + v + '</div>'; }
+  function kvp(k, v, va) { return '<div' + (va ? ' data-va="' + esc(va) + '"' : '') + '><span>' + k + '</span><br>' + v + '</div>'; }
   /* ---- Présence : qui est connecté, combien, cliquable → fiche ---- */
   /* « En ligne » = vu depuis moins de 13 min : le routeur n'écrit la présence que toutes les 10 min
      (ENRICH_CADENCE, services/kdmc-router/worker.js — plafond KV 1 000 écritures/jour, mesuré 1.10.2026). */
@@ -188,7 +188,7 @@
     var hist = a.history || [];
     var tl = hist.length
       ? hist.slice(0, 40).map(function (e) {
-        return '<div class="tlrow">' + esc(dt(e.ts)) + ' · <b>' + esc(appName(e.app)) + '</b>'
+        return '<div class="tlrow"' + (a.uid ? ' data-va="fiche:' + esc(a.uid) + '"' : '') + '>' + esc(dt(e.ts)) + ' · <b>' + esc(appName(e.app)) + '</b>'
           + ' · <span class="tdur">⏱ ' + esc(dur((e.end || e.ts) - e.ts)) + '</span>'
           + (e.device ? ' · ' + esc(e.device) : '') + (e.place ? ' · ' + esc(e.place) : '') + '</div>';
       }).join('')
@@ -223,7 +223,9 @@
     var keys = Object.keys(apps).sort(function (x, y) { return (apps[y].last || 0) - (apps[x].last || 0); });
     if (!keys.length) return '—';
     return keys.map(function (h) {
-      return esc(appName(h)) + ' ×' + (apps[h].sessions || 1)
+      /* 16.10 (Kevin : « toutes infos cliquables ») : le nom de l'app ouvre l'app */
+      var nom = /^[a-z0-9-]+(\.[a-z0-9-]+)*\.kd-mc\.com$|^kd-mc\.com$/.test(String(h)) ? '<a href="https://' + esc(h) + '/" target="_blank" rel="noopener">' + esc(appName(h)) + '</a>' : esc(appName(h));
+      return nom + ' ×' + (apps[h].sessions || 1)
         + ' <span style="color:var(--subtle)">— vu ' + esc(ago(apps[h].last)) + '</span>';
     }).join('<br>');
   }
@@ -248,17 +250,17 @@
       : '';
     return '<div class="kdmc-card kdmc-in fiche" id="fiche-' + esc(a.uid) + '">'
       + '<div class="fhead"><div><h3>' + esc(a.name || a.uid) + '</h3><div class="uid">' + esc(a.uid) + '</div></div>'
-      + '<div class="when"><span class="kdmc-dot"></span>' + ago(a.last_seen) + '</div></div>'
+      + '<div class="when" data-va="journal:' + esc(a.uid) + '"><span class="kdmc-dot"></span>' + ago(a.last_seen) + '</div></div>'
       + anom
       + (a.uid === 'kdmc_admin' ? '' : '<button class="savacc ouvrir-compte" data-uid="' + esc(a.uid) + '" type="button" style="margin:6px 0 10px" title="Ouvre ce compte : la personne n\'attend plus ton accord.">✅ Ouvrir ce compte</button>')
       + '<div class="kv">'
-      + kvp('Compte créé', dt(a.created))
-      + kvp('CGU acceptée', a.cgu_at ? dt(a.cgu_at) : '—')
-      + kvp('Connexions', String(a.hits || 0))
+      + kvp('Compte créé', dt(a.created), 'journal:' + a.uid)
+      + kvp('CGU acceptée', a.cgu_at ? dt(a.cgu_at) : '—', 'journal:' + a.uid)
+      + kvp('Connexions', String(a.hits || 0), 'journal:' + a.uid)
       + kvp('Sites utilisés', appsDetail(a.apps))
-      + kvp('Appareils', devs)
-      + kvp('Lieux', places)
-      + kvp('Dernière connexion', dt(a.last_seen))
+      + kvp('Appareils', devs, 'journal:' + a.uid)
+      + kvp('Lieux', places, 'journal:' + a.uid)
+      + kvp('Dernière connexion', dt(a.last_seen), 'journal:' + a.uid)
       + '</div>'
       + ficheRens(a.fiche)
       + blocAcces(a)
@@ -516,8 +518,28 @@
     geo_anomaly: '⚠️ Connexion suspecte', nouvelle_connexion: '🆕 Nouvelle connexion', quota_inscriptions_atteint: '🛑 Inscriptions suspendues',
     matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé', compte_invite_cree: '➕ Compte invité créé'
   };
+  /* 16.10 (Kevin : « toutes infos cliquables, au bon endroit ») : depuis une fiche, « Connexions », « Appareils »… ouvrent le journal
+     de CETTE personne ; « ✕ Tout voir » rend la liste entière. Rien n'est relu : on masque les lignes des autres. */
+  var FILTRE_JOURNAL = '';
+  function filtrerJournal(uid) {
+    FILTRE_JOURNAL = uid || '';
+    var el2 = document.getElementById('audsec'); if (!el2) return;
+    var d = el2.querySelector('details'); if (d && uid) d.open = true;
+    var n = 0;
+    Array.prototype.forEach.call(el2.querySelectorAll('.tlrow'), function (r) {
+      var garde = !uid || r.getAttribute('data-uid') === uid; r.hidden = !garde; if (garde && r.getAttribute('data-uid')) n++;
+    });
+    var b = el2.querySelector('.filtre-journal');
+    if (!uid) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('div'); b.className = 'filtre-journal'; el2.insertBefore(b, el2.firstChild.nextSibling); }
+    b.textContent = '';
+    var t = document.createElement('span'); t.textContent = 'Journal de ' + uid + ' — ' + (n ? n + ' événement(s)' : 'aucun événement sensible pour cette personne') + ' ';
+    var x = document.createElement('button'); x.type = 'button'; x.textContent = '✕ Tout voir'; x.onclick = function () { filtrerJournal(''); };
+    b.appendChild(t); b.appendChild(x);
+  }
+  window.kdmcFiltreJournal = filtrerJournal;
   function audRow(e) {
-    return '<div class="tlrow">' + esc(dt(e.ts)) + ' · <b>' + esc(AUD_EV[e.ev] || e.ev) + '</b>'
+    return '<div class="tlrow"' + (e.uid ? ' data-uid="' + esc(e.uid) + '" data-va="fiche:' + esc(e.uid) + '"' : '') + '>' + esc(dt(e.ts)) + ' · <b>' + esc(AUD_EV[e.ev] || e.ev) + '</b>'
       + (e.uid ? ' · ' + esc(e.uid) : '') + (e.detail ? ' · ' + esc(e.detail) : '') + (e.text ? ' · ' + esc(e.text) : '')
       + (e.app ? ' · depuis ' + esc(e.app) : '') + (e.pays ? ' · ' + esc(e.pays) : '')
       + (e.ip ? ' · <span style="color:var(--subtle)">ip ' + esc(e.ip) + '</span>' : '') + '</div>';
@@ -537,6 +559,7 @@
           + '<span class="d">' + log.length + ' entrée' + (log.length > 1 ? 's' : '') + ' — connexions admin, nouveaux appareils, déconnexions forcées</span></span></summary>'
           + '<div class="timeline">' + (log.length ? log.slice(0, 60).map(audRow).join('') : '<div class="tlrow" style="color:var(--subtle)">Rien pour l\'instant.</div>') + '</div></details>';
         if (viens) { try { el2.scrollIntoView({ block: 'start' }); } catch (_) { /* vieux navigateur : la section est dépliée quand même */ } }
+        if (FILTRE_JOURNAL) filtrerJournal(FILTRE_JOURNAL);
       })
       .catch(function () { /* silencieux : section optionnelle */ });
   }

@@ -7,33 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ Deploy kdmc-access (journal « qui se connecte ») — 16/10/2026 13:20 UTC
-
-- **Branche** : `main` · **Commit** : `b2a75576` · **Run** : `38906951911`
-- **Ce qui a lâché** : deploy › Preuve réelle — le journal enregistre et relit
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38906951911
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::LE JOURNAL N'ENREGISTRE RIEN (écriture Firebase perdue en silence) — c'est la cause d'un historique vide"; exit 1^[[0m
-##[error]LE JOURNAL N'ENREGISTRE RIEN (écriture Firebase perdue en silence) — c'est la cause d'un historique vide
-##[error]Process completed with exit code 1.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 16/10/2026 13:19 UTC
-
-- **Branche** : `main` · **Commit** : `b2a75576` · **Run** : `38906951761`
-- **Ce qui a lâché** : deploy › Porte de ration (le jour n'est-il pas déjà mangé ?)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38906951761
-- **Ce que la machine a dit** :
-
-```
-94 min consommées sur 60 (0 restantes) · 98 run(s) comptés, 2 refusé(s)/sauté(s) à 0 min
-⛔ ce robot coûterait ~4 min, il n'en reste que 0 aujourd'hui : refusé (relance-le demain, ou en local, ou avec « forcer »).
-##[error]ce robot coûte ~4 min et la ration du jour ne les couvre pas. Il ne démarre pas. Relance-le demain (jour UTC), lance-le en LOCAL, ou coche « forcer_ration » avec l'accord de Kevin.
-##[error]Process completed with exit code 3.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -541,5 +514,31 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cuisine.kd-mc.com            200   310280 car.
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
+##[error]Process completed with exit code 1.
+```
+
+## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
+- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
 ##[error]Process completed with exit code 1.
 ```

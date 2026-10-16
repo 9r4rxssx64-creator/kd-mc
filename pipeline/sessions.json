@@ -1777,6 +1777,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "admin-cliquable2": {
+      "titre": "Admin v2.3.0 : fiche → journal de la personne, journal → fiche, apps en lien, garde « rien d'inerte »",
+      "branche": "claude/admin-cliquable2",
+      "sujet": "Kevin : toutes infos cliquables, va plus loin",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

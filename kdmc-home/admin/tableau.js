@@ -293,6 +293,8 @@
   /* « cat:Mot » = le titre de rubrique (h2.cat) qui contient ce mot — une carte mène à SON onglet sans connaître son identifiant. */
   function cibleVa(v) {
     v = String(v || '');
+    if (v.indexOf('journal:') === 0) { if (global.kdmcFiltreJournal) global.kdmcFiltreJournal(v.slice(8)); return document.getElementById('audsec') || '#audsec'; }
+    if (v.indexOf('fiche:') === 0) { if (global.kdmcFiltreJournal) global.kdmcFiltreJournal(''); return document.getElementById('fiche-' + v.slice(6)); }
     if (v.indexOf('cat:') !== 0) return v;
     var mot = sansAccent(v.slice(4)), hs = document.querySelectorAll('h2.cat');
     for (var i = 0; i < hs.length; i++) if (sansAccent(titreSeul(hs[i])).indexOf(mot) >= 0) return hs[i];

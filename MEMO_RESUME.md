@@ -17,6 +17,10 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Admin v2.5.0 : plus aucune info chiffrée inerte (Kevin : « va plus loin »)
+- Fiche : Compte créé / CGU / Connexions / Appareils / Lieux / Dernière connexion / « il y a … » → **journal filtré sur cette personne** (`kdmcFiltreJournal`, bandeau « ✕ Tout voir ») ; « Sites utilisés » : chaque app est un lien ; lignes du journal et de l'historique d'une personne → sa fiche.
+- **Garde permanente** dans `test:admin-unique` (72/72) : inventaire des 15 vues, échoue si une info chiffrée n'a ni lien ni destination (sabotage prouvé : « Connexions » sans lien → rouge). `SCAN=1` imprime l'inventaire complet. Mise en ligne avec la v2.2.0 après 00h UTC (ration).
+
 ## 2026-10-16 — Admin v2.2.0 : chaque info est cliquable et atterrit au bon endroit (Kevin)
 - `data-va` sur : pastilles des comptes (→ fiches / historique / connectés), les 9 cartes de chiffres du Commerce (→ Ventes, Produits, Commandes, Pub, Caisse), « non lus » / « connectés » / puces d'app de Messages (→ boîte, Connectés), lignes Santé et Coûts. Un seul écouteur dans `tableau.js` (`cibleVa` : « cat:Mot » = l'onglet du titre), clavier + rôle lien, chevron ›. Garde `test:admin-unique` 67/67. Mise en ligne : après 00h UTC (ration du jour épuisée).
 

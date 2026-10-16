@@ -20,6 +20,7 @@ import {
   diagnostiquerAcces,
   CLE_RELAIS,
   DEPOT,
+  RELAIS_PAR_DEFAUT,
 } from '../../services/integrations/depot-github.js';
 
 describe('depot-github — choix de l’adresse', () => {
@@ -27,13 +28,10 @@ describe('depot-github — choix de l’adresse', () => {
     localStorage.clear();
   });
 
-  it('sans relais configuré, lit en public — donc rien ne change aujourd’hui', () => {
-    expect(urlLecture('CLAUDE.md')).toBe(
-      `https://raw.githubusercontent.com/${DEPOT}/main/CLAUDE.md`,
-    );
-    expect(urlListe('.claude/skills')).toBe(
-      `https://api.github.com/repos/${DEPOT}/contents/.claude/skills?ref=main`,
-    );
+  it('sans relais configuré, lit par le RELAIS PAR DÉFAUT (22.09 : le coffre est privé, une lecture directe renverrait 404 en silence)', () => {
+    expect(urlLecture('CLAUDE.md')).toBe(`${RELAIS_PAR_DEFAUT}?action=read&path=CLAUDE.md&branch=main`);
+    expect(urlListe('.claude/skills')).toBe(`${RELAIS_PAR_DEFAUT}?action=list&path=${encodeURIComponent('.claude/skills')}&branch=main`);
+    expect(DEPOT.length).toBeGreaterThan(0);
   });
 
   it('avec un relais configuré, TOUT passe par le relais (jeton côté serveur)', () => {
@@ -52,8 +50,8 @@ describe('depot-github — choix de l’adresse', () => {
        pas avoir de relais du tout. */
     for (const mauvaise of ['http://pas-https.example', 'nimporte quoi', ' ', 'javascript:alert(1)']) {
       localStorage.setItem(CLE_RELAIS, mauvaise);
-      expect(adresseRelais()).toBe('');
-      expect(urlLecture('CLAUDE.md')).toContain('raw.githubusercontent.com');
+      expect(adresseRelais()).toBe(RELAIS_PAR_DEFAUT); /* on retombe sur le relais par défaut, jamais sur l'adresse douteuse */
+      expect(urlLecture('CLAUDE.md').startsWith(RELAIS_PAR_DEFAUT)).toBe(true);
     }
   });
 
@@ -63,9 +61,7 @@ describe('depot-github — choix de l’adresse', () => {
   });
 
   it('un chemin commençant par une barre ne casse pas l’adresse', () => {
-    expect(urlLecture('/CLAUDE.md')).toBe(
-      `https://raw.githubusercontent.com/${DEPOT}/main/CLAUDE.md`,
-    );
+    expect(urlLecture('/CLAUDE.md')).toBe(`${RELAIS_PAR_DEFAUT}?action=read&path=CLAUDE.md&branch=main`);
   });
 });
 
@@ -99,9 +95,9 @@ describe('depot-github — la lecture ne fait jamais planter Apex', () => {
     globalThis.fetch = vi.fn(async () => new Response('', { status: 404 })) as never;
     const d = await diagnostiquerAcces();
     expect(d.ok).toBe(false);
-    expect(d.via).toBe('public');
+    expect(d.via).toBe('relais'); /* relais par défaut depuis le 22.09 */
     /* Message en français, sans jargon : Kevin doit comprendre. */
-    expect(d.detail).toContain('privé');
+    expect(d.detail).toMatch(/relais|privé/); /* via le relais par défaut : la phrase parle du relais */
   });
 });
 

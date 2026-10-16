@@ -2,7 +2,7 @@
  * Tests services/sentinels-registry.ts (Boost MAX 18+ sentinelles).
  * ≥40 tests : registry shape, start/stop, run, autoFix, escalation, metrics, meta.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import {
   sentinelsRegistry,
@@ -225,7 +225,12 @@ describe('services/sentinels-registry — Boost MAX 18+', () => {
 
     it('runAll execute toutes les enabled', { timeout: 30_000 }, async () => {
       /* v13.4.125 : timeout 30s (au lieu de 5s default) car 35+ sentinels enabled
-       * avec checks réseau Firebase/GitHub raw → 5s pas suffisant en CI. */
+       * avec checks réseau Firebase/GitHub raw → 5s pas suffisant en CI.
+       * 16.10.2026 : sans réseau (bac à sable, CI fermée) ces appels PENDENT jusqu'au délai → faux rouge depuis des semaines.
+       * Ce test vérifie la FORME des résultats, pas le réseau : on répond vite à chaque appel. */
+      const vraiFetch = globalThis.fetch;
+      vi.stubGlobal('fetch', async () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }));
+      try {
       sentinelsRegistry.startAll();
       const results = await sentinelsRegistry.runAll();
       expect(results.length).toBeGreaterThanOrEqual(15);
@@ -233,6 +238,7 @@ describe('services/sentinels-registry — Boost MAX 18+', () => {
         expect(typeof r.id).toBe('string');
         expect(['ok', 'warn', 'error']).toContain(r.result.status);
       }
+      } finally { vi.unstubAllGlobals(); globalThis.fetch = vraiFetch; }
     });
 
     it('runAll skip les disabled', async () => {

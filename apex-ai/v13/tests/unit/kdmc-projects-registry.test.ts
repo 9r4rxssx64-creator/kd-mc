@@ -42,7 +42,9 @@ describe('kdmc-projects-registry', () => {
         expect(p.version).toBeTruthy();
         expect(['active', 'wip', 'archived']).toContain(p.status);
         expect(p.repo_url).toMatch(/^https?:\/\//);
-        expect(p.deploy_url).toMatch(/^https?:\/\//);
+        /* 16.10 : un projet en chantier ou archivé n'a pas d'adresse en ligne ; un projet ACTIF en a toujours une */
+        if (p.status === 'active') expect(p.deploy_url).toMatch(/^https?:\/\//);
+        else expect(p.deploy_url === '' || /^https?:\/\//.test(p.deploy_url)).toBe(true);
         expect(Array.isArray(p.tech_stack)).toBe(true);
         expect(p.created_at).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       }

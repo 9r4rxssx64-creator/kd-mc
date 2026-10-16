@@ -77,9 +77,10 @@ describe('v13.4.75 ai-routing-policy — decide()', () => {
     expect(typeof r.estimated_cost_eur).toBe('number');
   });
 
-  it("decide('admin') → TOUJOURS anthropic (règle Kevin priorité absolue)", () => {
+  it("decide('admin') → GRATUIT d'abord (Kevin 5.09 / 2.10 : « tout gratuit »), Anthropic reste dans la chaîne (filet, jamais de blocage)", () => {
     const r = aiRoutingPolicy.decide('admin', 1000);
-    expect(r.primary).toBe('anthropic');
+    expect(['qwen', 'groq', 'cerebras']).toContain(r.primary);
+    expect([r.primary, ...r.fallback_chain]).toContain('anthropic');
   });
 
   it("decide() accepte les 11 TaskDomain sans throw", () => {
@@ -109,7 +110,7 @@ describe('v13.4.75 ai-routing-policy — decide()', () => {
 describe('v13.4.75 ai-routing-policy — getMode / setMode / override', () => {
   it("getMode() retourne RoutingMode valide", () => {
     const m = aiRoutingPolicy.getMode();
-    expect(['auto', 'economy', 'premium', 'forced']).toContain(m);
+    expect(['auto', 'economy', 'premium', 'forced', 'free-smart']).toContain(m);
   });
 
   it("setMode(auto) puis getMode === 'auto'", () => {
@@ -141,7 +142,7 @@ describe('v13.4.75 ai-routing-policy — getStatus + recommendActions', () => {
   it("getStatus() retourne objet 5 champs", () => {
     const s = aiRoutingPolicy.getStatus();
     expect(s).toBeDefined();
-    expect(['auto', 'economy', 'premium', 'forced']).toContain(s.mode);
+    expect(['auto', 'economy', 'premium', 'forced', 'free-smart']).toContain(s.mode);
     expect(s.forced === null || typeof s.forced === 'string').toBe(true);
     expect(['ok', 'warn', 'critical']).toContain(s.anthropic_health);
     expect(Array.isArray(s.free_providers_available)).toBe(true);

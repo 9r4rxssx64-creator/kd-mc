@@ -1,5 +1,6 @@
 /**
- * iPhone (audit 16.10.2026) : mode clair lisible (contraste WCAG ≥ 4,5:1 MESURÉ sur les vraies couleurs de la page),
+ * iPhone (audit 16.10.2026) : thèmes lisibles (contraste WCAG ≥ 4,5:1 CALCULÉ sur les vraies couleurs des thèmes de la page ;
+ * le premier correctif, qui lisait le CSS du mode clair, avait recoloré les états en foncé sur fond noir — vu en vrai navigateur),
  * cibles tactiles de 44 px, liste de messages annoncée aux lecteurs d'écran, appareil photo AU CHOIX, et plus de
  * textes techniques affichés à Kevin.
  */
@@ -12,17 +13,27 @@ const lum = (hex) => {
 };
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 const html = readIndex();
-const clair = html.slice(html.indexOf('@media (prefers-color-scheme:light){'), html.indexOf('/* v1.1.147 selection'));
-const tok = (n) => (clair.match(new RegExp('--ax-' + n + ':(#[0-9a-fA-F]{6})')) || [])[1];
+// Les VRAIS thèmes de la page (K._THEMES + accents), pas une copie : chacun doit être lisible sur SON fond.
+const themes = new Function('K', html.slice(html.indexOf('K._THEMES = {'), html.indexOf('K._applyTheme = function')) + '; return K;')({});
+const hexOf = (v) => v;
 
-describe('mode clair : contrastes mesurés', () => {
-  for (const [nom, min] of [['text', 4.5], ['text-2', 4.5], ['text-3', 4.5], ['gold', 4.5], ['blue', 4.5], ['warn', 4.5], ['ok', 4.5], ['err', 4.5]]) {
-    it(`--ax-${nom} ≥ ${min}:1 sur le fond clair et sur le blanc`, () => {
-      const c = tok(nom); expect(c, 'couleur définie en mode clair').toBeTruthy();
-      expect(ratio(c, tok('bg'))).toBeGreaterThanOrEqual(min);
-      expect(ratio(c, tok('bg-2'))).toBeGreaterThanOrEqual(min);
+describe('chaque thème est lisible sur son propre fond (WCAG ≥ 4,5:1, calculé)', () => {
+  for (const nom of ['dark', 'light', 'midnight']) {
+    it(`thème « ${nom} » : texte, états et accents`, () => {
+      const t = themes._THEMES[nom];
+      const accents = nom === 'light' ? themes._ACCENTS_CLAIR : themes._ACCENTS;
+      const paires = [['--ax-text'], ['--ax-text-2'], ['--ax-text-3'], ['--ax-blue'], ['--ax-warn'], ['--ax-ok'], ['--ax-err']];
+      for (const [v] of paires) {
+        expect(t[v], `${nom} ${v} défini`).toBeTruthy();
+        expect(ratio(hexOf(t[v]), t['--ax-bg']), `${nom} ${v} ${t[v]} sur ${t['--ax-bg']}`).toBeGreaterThanOrEqual(4.5);
+      }
+      for (const a of ['gold', 'blue']) expect(ratio(accents[a], t['--ax-bg']), `${nom} accent ${a} ${accents[a]}`).toBeGreaterThanOrEqual(4.5);
     });
   }
+  it('le mode du TÉLÉPHONE ne recolore plus les états sous un autre thème (fuite mesurée en vrai navigateur)', () => {
+    const clair = html.slice(html.indexOf('@media (prefers-color-scheme:light){'), html.indexOf('/* v1.1.147 selection'));
+    for (const v of ['--ax-blue', '--ax-warn', '--ax-ok', '--ax-err', '--ax-gold:']) expect(clair, v).not.toContain(v);
+  });
 });
 
 describe('confort iPhone', () => {

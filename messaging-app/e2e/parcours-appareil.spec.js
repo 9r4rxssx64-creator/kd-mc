@@ -7,7 +7,7 @@
 //  (Chromium et WebKit « iPhone 14 Pro »), sur la PRODUCTION, avec la vraie page. Il rejoue les gestes que
 //  Kevin devait faire à la main :
 //    A. la version affichée = la version annoncée par le serveur ;
-//    B. mode clair : les couleurs réellement affichées sont lisibles (contraste WCAG ≥ 4,5:1, MESURÉ) ;
+//    B. téléphone en mode clair (thème Auto ET thème par défaut) : les couleurs réellement affichées sont lisibles (WCAG ≥ 4,5:1, MESURÉ) ;
 //    C. « Te déconnecter » : le jeton de CET appareil est refusé ensuite, celui d'un autre appareil continue ;
 //    D. message écrit HORS LIGNE : 🕓, puis ✓ au retour du réseau (jamais « livré » à tort).
 //  Sans le secret E2E_TEST_SECRET : sauté ET annoncé ; avec le secret, une panne du login de test = ÉCHEC.
@@ -81,23 +81,29 @@ test.describe('Parcours d\'un appareil (comptes de test) sur la prod', () => {
     await ctx.close();
   });
 
-  test('B. mode clair : les couleurs affichées sont lisibles (≥ 4,5:1 mesuré)', async ({ browser }) => {
-    pret();
-    const ctx = await browser.newContext({ colorScheme: 'light' }); await marquer(ctx);
-    const page = await ctx.newPage(); await injecter(page, aTok, aUser);
-    await page.goto('./', { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await prete(page);
-    const mesure = await page.evaluate(() => {
-      const probe = document.createElement('i'); document.body.appendChild(probe);
-      const lire = (v) => { probe.style.color = 'var(' + v + ')'; const m = getComputedStyle(probe).color.match(/\d+(\.\d+)?/g) || []; return m.slice(0, 3).map(Number); };
-      const r = {}; for (const v of ['--ax-bg', '--ax-bg-2', '--ax-text', '--ax-text-2', '--ax-text-3', '--ax-gold', '--ax-blue', '--ax-warn', '--ax-ok', '--ax-err']) r[v] = lire(v);
-      probe.remove(); return r;
+  // Le téléphone en mode CLAIR, deux réglages de l'app : « Auto » (l'app devient claire) et le thème par DÉFAUT (sombre).
+  // Le 2e est le cas qui avait régressé (états foncés sur fond noir, 2,9:1) : mesuré sur les couleurs RENDUES.
+  for (const [titre, pref] of [['B1. téléphone en mode clair + thème Auto', 'auto'], ['B2. téléphone en mode clair + thème par défaut (sombre)', null]]) {
+    test(titre + ' : couleurs affichées lisibles (≥ 4,5:1 mesuré)', async ({ browser }) => {
+      pret();
+      const ctx = await browser.newContext({ colorScheme: 'light' }); await marquer(ctx);
+      const page = await ctx.newPage(); await injecter(page, aTok, aUser);
+      if (pref) await page.addInitScript((p) => { try { localStorage.setItem('apex_chat_theme_pref', JSON.stringify(p)); } catch (_) {} }, pref);
+      await page.goto('./', { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await prete(page);
+      await page.waitForTimeout(800);   // le thème s'applique ~100 ms après le démarrage
+      const mesure = await page.evaluate(() => {
+        const probe = document.createElement('i'); document.body.appendChild(probe);
+        const lire = (v) => { probe.style.color = 'var(' + v + ')'; const m = getComputedStyle(probe).color.match(/\d+(\.\d+)?/g) || []; return m.slice(0, 3).map(Number); };
+        const r = {}; for (const v of ['--ax-bg', '--ax-bg-2', '--ax-text', '--ax-text-2', '--ax-text-3', '--ax-gold', '--ax-blue', '--ax-warn', '--ax-ok', '--ax-err']) r[v] = lire(v);
+        probe.remove(); return r;
+      });
+      for (const v of ['--ax-text', '--ax-text-2', '--ax-text-3', '--ax-gold', '--ax-blue', '--ax-warn', '--ax-ok', '--ax-err']) {
+        expect(ratio(mesure[v], mesure['--ax-bg']), v + ' ' + JSON.stringify(mesure[v]) + ' sur le fond ' + JSON.stringify(mesure['--ax-bg'])).toBeGreaterThanOrEqual(4.5);
+      }
+      await ctx.close();
     });
-    for (const v of ['--ax-text', '--ax-text-2', '--ax-text-3', '--ax-gold', '--ax-blue', '--ax-warn', '--ax-ok', '--ax-err']) {
-      expect(ratio(mesure[v], mesure['--ax-bg']), v + ' ' + JSON.stringify(mesure[v]) + ' sur le fond ' + JSON.stringify(mesure['--ax-bg']) + ' (toutes les mesures : ' + JSON.stringify(mesure) + ')').toBeGreaterThanOrEqual(4.5);
-    }
-    await ctx.close();
-  });
+  }
 
   test('C. « Te déconnecter » coupe CET appareil côté serveur, pas les autres', async ({ browser, request }) => {
     pret();
@@ -131,7 +137,11 @@ test.describe('Parcours d\'un appareil (comptes de test) sur la prod', () => {
     const statut = page.locator('.msg.me .msg-status').last();
     await expect(statut, 'statut du message écrit sans réseau').toContainText('🕓', { timeout: 10000 });
     await ctx.setOffline(false);
-    await expect(statut, 'statut après le retour du réseau').toContainText('✓', { timeout: 45000 });
+    try { await expect(statut, 'statut après le retour du réseau').toContainText('✓', { timeout: 45000 }); }
+    catch (e) {
+      const etat = await page.evaluate(() => ({ vue: K.view, ws: K.ws ? K.ws.readyState : null, enAttente: (JSON.parse(localStorage.getItem('apex_chat_outbox') || '[]')).length, statuts: [...document.querySelectorAll('.msg.me .msg-status')].map((n) => n.textContent) })).catch(() => ({}));
+      throw new Error('après le retour du réseau le message n\'est pas passé à ✓. État : ' + JSON.stringify(etat) + ' — écran : « ' + await ecran(page) + ' »');
+    }
     await ctx.close();
   });
 });

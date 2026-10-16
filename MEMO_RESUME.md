@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Apex Chat v1.1.313 : régression de couleurs de la v1.1.312 trouvée par le robot et corrigée
+- **Trouvé en vrai navigateur (run 38969793276)** : en v1.1.312, téléphone en mode clair + thème par défaut (sombre) → bleu/avertissement/ok/erreur FONCÉS sur fond noir (2,9:1). Cause : mes valeurs étaient dans le bloc CSS du mode du téléphone, alors que le thème de l'app est posé en JavaScript (inline) et ne couvre pas ces quatre couleurs.
+- **Corrigé** : chaque thème (`K._THEMES`) porte toutes ses couleurs ; accents foncés sur thème clair (`K._ACCENTS_CLAIR`) ; bloc CSS du mode du téléphone remis comme avant. Gardes : `client-confort-iphone` (8 : 3 thèmes calculés + « pas de fuite »), `parcours-appareil` B1/B2 (rendu réel), sabotage rouge. `vitest --coverage` sans erreur (2 112). Leçon 588.
+- À relire au passage suivant : D (hors ligne) — le message n'est plus trouvé après le retour du réseau ; diagnostic détaillé ajouté (vue, WebSocket, messages en attente, écran).
+
 ## 2026-10-16 — 1er passage RÉEL du parcours d'appareil sur la prod (run 38968805234) : 2 gestes prouvés, 3 écarts corrigés
 - **Prouvé en vrai navigateur (Chromium + WebKit iPhone)** : A version affichée = `v1.1.312` = version du serveur ✅ ; C « Te déconnecter » → jeton refusé par le serveur, jeton d'un autre appareil intact ✅.
 - **Écarts trouvés** : (1) l'E2E « deux clients » envoyait sa photo sans conversation (refusé 400 depuis v1.1.309) → corrigé + vérifie le refus ; (2) D hors ligne : la liste de conversations de l'appareil était vide au moment d'ouvrir → le parcours la rafraîchit d'abord ; (3) B mode clair : `--ax-blue` mesuré à 2,88:1 sur le rendu RÉEL alors que le test unitaire (lecture du CSS) dit ≥ 4,5 → le message d'échec affiche maintenant toutes les couleurs rendues pour trancher au passage suivant (suspect : un fond différent du CSS lu, ou une règle de la page qui l'écrase). Leçon 587.

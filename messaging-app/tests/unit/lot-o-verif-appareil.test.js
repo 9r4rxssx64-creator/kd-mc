@@ -46,7 +46,7 @@ describe('résumé lisible du passage', () => {
 
 describe('le parcours d\'appareil', () => {
   it('rejoue les 4 gestes (version, mode clair mesuré, déconnexion serveur, hors ligne 🕓→✓) avec des comptes de test', () => {
-    for (const x of ['A. la version affichée', 'B. mode clair', 'C. « Te déconnecter »', 'D. message écrit hors ligne']) expect(SPEC, x).toContain(x);
+    for (const x of ['A. la version affichée', 'B1. téléphone en mode clair', 'B2. téléphone en mode clair', 'C. « Te déconnecter »', 'D. message écrit hors ligne']) expect(SPEC, x).toContain(x);
     expect(SPEC).toContain('/api/test/login');
     expect(SPEC).toContain("toContainText('🕓'");
     expect(SPEC).toContain("toContainText('✓'");

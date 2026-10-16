@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.312",
+  "softwareVersion": "v1.1.313",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -477,9 +477,7 @@ html.kb-open #geo-banner{display:none}
   #app{max-width:900px;margin:0 auto}
 }
 @media (prefers-color-scheme:light){
-  :root{--ax-bg:#f8f8f0;--ax-bg-2:#ffffff;--ax-bg-3:#f0f0e8;--ax-text:#1a1a1f;--ax-text-2:#444454;--ax-text-3:#5c5c6a;--ax-border:#d0d0d8;--ax-border-2:#c0c0c8;
-    /* audit iPhone 16.10.2026 : en mode clair l'or (2,3:1), l'avertissement (1,4:1) et le gris clair n'étaient pas lisibles — valeurs ≥ 4,5:1 */
-    --ax-gold:#8a6a00;--ax-blue:#2d4fd0;--ax-warn:#8a5600;--ax-ok:#1f7a1f;--ax-err:#b3261e}
+  :root{--ax-bg:#f8f8f0;--ax-bg-2:#ffffff;--ax-bg-3:#f0f0e8;--ax-text:#1a1a1f;--ax-text-2:#444454;--ax-text-3:#888898;--ax-border:#d0d0d8;--ax-border-2:#c0c0c8}
 }
 /* v1.1.147 selection texte couleurs de marque (skill apex-taste) */
 ::selection{background:color-mix(in srgb,var(--ax-gold) 25%,transparent)}
@@ -492,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.312';
+const __APEX_CHAT_VERSION__ = 'v1.1.313';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -792,7 +790,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.312" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.312</div>
+  <div id="splash-version" data-ver="v1.1.313" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.313</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -806,7 +804,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.312</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.313</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -5256,11 +5254,16 @@ K._renderContactCard = function(m){
 //  v1.1.63 — Theme switcher (dark/light/auto/midnight + 6 accents)
 // ============================================================================
 K._THEMES = {
-  dark: { '--ax-bg':'#0e0e10','--ax-bg-2':'#1a1a1f','--ax-bg-3':'#26262d','--ax-text':'#f5e9c2','--ax-text-2':'#bdb89a','--ax-text-3':'#8a8a8a','--ax-border':'#26262d' },
-  light: { '--ax-bg':'#ffffff','--ax-bg-2':'#f7f5ed','--ax-bg-3':'#e8e3d0','--ax-text':'#1a1a1f','--ax-text-2':'#4a4a4a','--ax-text-3':'#7a7a7a','--ax-border':'#d8d2bd' },
-  midnight: { '--ax-bg':'#000000','--ax-bg-2':'#0a0a0f','--ax-bg-3':'#15151c','--ax-text':'#e8e8f0','--ax-text-2':'#a8a8b0','--ax-text-3':'#606068','--ax-border':'#1a1a22' }
+  // Audit iPhone 16.10.2026 (mesuré en vrai navigateur) : les couleurs d'état (bleu, avertissement, ok, erreur) suivaient
+  // le mode du TÉLÉPHONE et non le thème de l'app : en mode clair avec le thème sombre par défaut, elles devenaient
+  // foncées sur fond noir (2,9:1). Chaque thème porte donc TOUTES ses couleurs, lisibles (≥ 4,5:1) sur son propre fond.
+  dark: { '--ax-bg':'#0e0e10','--ax-bg-2':'#1a1a1f','--ax-bg-3':'#26262d','--ax-text':'#f5e9c2','--ax-text-2':'#bdb89a','--ax-text-3':'#8a8a8a','--ax-border':'#26262d','--ax-blue':'#6a8aff','--ax-warn':'#f4d97a','--ax-ok':'#5fcf5f','--ax-err':'#cf5f5f' },
+  light: { '--ax-bg':'#ffffff','--ax-bg-2':'#f7f5ed','--ax-bg-3':'#e8e3d0','--ax-text':'#1a1a1f','--ax-text-2':'#4a4a4a','--ax-text-3':'#5c5c6a','--ax-border':'#d8d2bd','--ax-blue':'#2d4fd0','--ax-warn':'#8a5600','--ax-ok':'#1f7a1f','--ax-err':'#b3261e' },
+  midnight: { '--ax-bg':'#000000','--ax-bg-2':'#0a0a0f','--ax-bg-3':'#15151c','--ax-text':'#e8e8f0','--ax-text-2':'#a8a8b0','--ax-text-3':'#8a8a98','--ax-border':'#1a1a22','--ax-blue':'#6a8aff','--ax-warn':'#f4d97a','--ax-ok':'#5fcf5f','--ax-err':'#cf5f5f' }
 };
 K._ACCENTS = { gold: '#e8b830', blue: '#6a8aff', green: '#2ed573', purple: '#a78bfa', pink: '#ec4899', red: '#e63946' };
+// Sur fond CLAIR les accents vifs ne se lisent pas (l'or #e8b830 sur blanc = 1,9:1) : variantes foncées (≥ 4,5:1 sur blanc).
+K._ACCENTS_CLAIR = { gold: '#8a6a00', blue: '#2d4fd0', green: '#1a7a3f', purple: '#6d4fd0', pink: '#b3166b', red: '#b3261e' };
 
 K._applyTheme = function(themeName, accent){
   if(themeName === 'auto'){
@@ -5275,7 +5278,7 @@ K._applyTheme = function(themeName, accent){
   if(accent === 'custom'){
     accentColor = lg('accent_custom_hex', '#c9a227');
   } else {
-    accentColor = K._ACCENTS[accent] || K._ACCENTS.gold;
+    accentColor = (themeName === 'light' ? K._ACCENTS_CLAIR[accent] : K._ACCENTS[accent]) || K._ACCENTS[accent] || K._ACCENTS.gold;
   }
   const root = document.documentElement;
   for(const [k, v] of Object.entries(theme)){
@@ -19045,6 +19048,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.312", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.313", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

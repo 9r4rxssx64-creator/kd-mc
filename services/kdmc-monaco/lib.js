@@ -219,10 +219,27 @@ export async function sha256Hex(str) {
 }
 
 // Garde admin (leçon #95 : accepte le hash client OU le code en clair). Pur/testable.
+/* Verrou d'échecs (audit sécurité 16.10, P2-3/P2-5) : le code admin est court ; sans limite, un robot pouvait l'essayer
+   en boucle. 5 échecs par adresse en 15 min, 30 par isolat → refus, même avec le bon code, jusqu'à la fin de la fenêtre.
+   En mémoire (0 écriture KV : un attaquant ne doit pas pouvoir vider le quota d'écritures du domaine). */
+export const _echecsPin = new Map();
+function pinBloque(ip) {
+  const t = Date.now(), f = (k) => (_echecsPin.get(k) || []).filter((x) => t - x < 900000);
+  return f('ip:' + ip).length >= 5 || f('*').length >= 30;
+}
+function pinEchec(ip) {
+  const t = Date.now();
+  for (const k of ['ip:' + ip, '*']) { const a = (_echecsPin.get(k) || []).filter((x) => t - x < 900000); a.push(t); _echecsPin.set(k, a); }
+  if (_echecsPin.size > 5000) _echecsPin.clear();
+}
 export async function adminOk(request, env) {
   if (!env || !env.KDMC_ADMIN_PIN_SHA256) return false;
   const h = (request.headers.get('x-apex-pin') || request.headers.get('x-kdmc-pin') || '').toLowerCase().trim();
   if (!h) return false;
-  if (h === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase()) return true;
-  try { return (await sha256Hex(h)) === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase(); } catch { return false; }
+  const ip = request.headers.get('cf-connecting-ip') || '?';
+  if (pinBloque(ip)) return false;
+  let ok = h === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase();
+  if (!ok) { try { ok = (await sha256Hex(h)) === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase(); } catch { ok = false; } }
+  if (!ok) pinEchec(ip);
+  return ok;
 }

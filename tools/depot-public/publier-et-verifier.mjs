@@ -29,6 +29,15 @@ export function runDuCommit(runs, sha) {
 /** Un commit public plus récent contient-il le mien ? (une autre session a publié entre-temps : mon commit est DANS le sien).
  *  `statut` = le champ « status » de l'API de comparaison (mon commit ... le leur). */
 export function estCouvert(statut) { return statut === 'ahead' || statut === 'identical'; }
+/** Fichiers que les outils réécrivent tout seuls à chaque tour (hook Stop, maj-tout) : une modification locale de ceux-là ne doit
+ *  jamais empêcher de rattraper `main` (vécu le 16.10 : « git pull » avortait, l'outil a publié un main en RETARD de 2 fusions). */
+export const FICHIERS_GENERES = ['TRANSFERT-COMPLET.md', 'BILAN-BRANCHES.md', 'KEVIN_ACTIONS_TODO.md', 'ETAT-DU-MOMENT.md', 'pipeline/sessions.json', '.claude_journal.md'];
+/** Parmi les fichiers modifiés localement, ceux qu'on peut rendre sans perte (générés) et ceux qui bloquent (vrai travail). */
+export function triModifies(modifies) {
+  const gen = [], bloquants = [];
+  for (const f of modifies || []) (FICHIERS_GENERES.includes(f) ? gen : bloquants).push(f);
+  return { gen, bloquants };
+}
 /** Le verdict à dire à voix haute : 'attente' (rien ou en cours), 'ok', 'echec'. */
 export function verdict(run) {
   if (!run) return 'attente';
@@ -52,6 +61,16 @@ async function principal() {
   const log = (m) => console.log(m);
 
   if (!args.includes('--sans-publier')) {
+    // Le code publié est celui du dossier local : il DOIT être exactement `origin/main` (sinon on publie un main en retard).
+    sh('git', ['fetch', '-q', 'origin', 'main'], { cwd: RACINE });
+    const modifies = sh('git', ['status', '--porcelain'], { cwd: RACINE }).split('\n').filter(Boolean).map((l) => l.slice(3));
+    const { gen, bloquants } = triModifies(modifies);
+    if (bloquants.length) { console.error('⛔ des fichiers modifiés à la main empêchent de rattraper main : ' + bloquants.join(', ') + ' — range-les (commit ou stash) puis relance.'); process.exit(1); }
+    if (gen.length) sh('git', ['checkout', '--', ...gen], { cwd: RACINE });
+    try { sh('git', ['merge', '--ff-only', 'origin/main'], { cwd: RACINE }); } catch (e) { console.error('⛔ impossible de rattraper origin/main : ' + String(e.stderr || e.message).slice(0, 200)); process.exit(1); }
+    const tete = sh('git', ['rev-parse', 'HEAD'], { cwd: RACINE }).trim(), dist = sh('git', ['rev-parse', 'origin/main'], { cwd: RACINE }).trim();
+    if (tete !== dist) { console.error('⛔ ton dossier n\'est pas à origin/main (' + tete.slice(0, 8) + ' ≠ ' + dist.slice(0, 8) + ') : rien n\'est publié.'); process.exit(1); }
+    log('Dossier aligné sur origin/main ' + dist.slice(0, 8));
     const r = spawnSync(process.execPath, [join(RACINE, 'tools/depot-public/publier-local.mjs'), '--envoyer'], { stdio: 'inherit', cwd: RACINE });
     if (r.status !== 0) { console.error('⛔ la publication a échoué — rien à vérifier.'); process.exit(1); }
   }

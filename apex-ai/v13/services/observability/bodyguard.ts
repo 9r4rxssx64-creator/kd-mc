@@ -75,7 +75,9 @@ class Bodyguard {
 
     /* CSP violations — toute tentative d'injection de script externe */
     document.addEventListener('securitypolicyviolation', (e) => {
-      logger.error('bodyguard', `CSP violation: ${e.violatedDirective}`, {
+      /* 16.10.2026 : l'adresse bloquée dans le MESSAGE — dans la console, l'objet joint s'affichait « [object Object] »
+         (10 lignes « connect-src [object Object] » dans Lighthouse, run public 38955866488, sans dire quoi). */
+      logger.error('bodyguard', `CSP violation: ${e.violatedDirective} ← ${String(e.blockedURI).slice(0, 160)}`, {
         blockedURI: e.blockedURI,
         sourceFile: e.sourceFile,
         lineNumber: e.lineNumber,

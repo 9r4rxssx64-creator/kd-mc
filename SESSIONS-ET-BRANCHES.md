@@ -45,6 +45,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 
 | Session | Branche | État au 2.09 |
 | Fiche par personne : une carte par compte, fil d'activité, historique complet | `claude/fiche-activite` | 🟢 4.10 : D1, 90 jours ; empilée sur alertes-utiles ; PR en cours |
+| Documents à jour de la partie Bee + garde R8 (le code de Bee change ⇒ CLAUDE-HISTOIRE) | `claude/docs-bee-r7` | 🟢 16.10 : PR en cours |
 | Arbre + domaine (session 15-16.10) | `claude/docs-complets` | 🟢 16.10 : Arbre v3.108→v3.116, tous les documents à jour + règle « docs en temps réel » (ligne ajoutée par la session lingua-cercle : inscrite au registre mais absente de la carte) |
 | Alertes utiles seulement, avec toutes les infos | `claude/alertes-utiles` | 🟢 4.10 : Relais privé / VPN ignorés, alertes riches ; PR en cours |
 | Alertes utiles seulement, avec toutes les infos | `claude/alertes-utiles` | 🟢 4.10 : Relais privé / VPN ignorés, alertes riches ; PR en cours |
@@ -229,8 +230,10 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/firebase-cmc2` | 16.10 | Firebase étape 1 réappliquée + sonde réelle `/__sso/fbtoken-sonde` lue par le déploiement public | `firebase-cmc2` |
 | `claude/detente-gardes` | 16.10 | La Détente : /validate exige le jeton signé de la notification, /cost et /push-test gardés, studio Gemini plafonné par jour (D1) | `detente-gardes` |
 | `claude/securite-suite` | 16.10 | Code admin + Croupier Pro hors du dépôt public, routeur sans repli vers un hébergeur public, règle « va au bout » | `securite-suite` |
+| `claude/securite-p2` | 16.10 | Verrou d'échecs du code admin (Monaco, Outlook, relais IA), kdmc-uptime réduit aux comptes, /health Monaco muet | `securite-p2` |
 | `claude/docs-complets` | 16.10 | Arbre v3.108→v3.116 + domaine (autre session) | `arbre-session-1610` |
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
+| `claude/docs-complets` | 16.10 | **Arbre + domaine (session 15-16.10)** : arbre v3.108→v3.116, admin « comptes bloqués / Personnes attendues », recherches Le Dren + famille de Yann ; en ligne v3.116 (routeur déployé par le dépôt public) | `arbre-session-1610` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

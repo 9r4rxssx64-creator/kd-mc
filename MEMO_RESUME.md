@@ -1,5 +1,30 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (nuit) — Apex v13.4.375 : la veille respecte la CSP ; Axe et Lighthouse mesurent enfin pour de vrai
+- **Mesuré** (Lighthouse au public, run 38955866488, mobile bridé, localhost ; puis vrai Chromium) : perf 0,50 (LCP 8,0 s, TBT 1 120 ms), bonnes pratiques 0,89, a11y 1, SEO 1 ; 74 erreurs console « bodyguard CSP violation : connect-src [object Object] » = la sentinelle **veille technologique** appelait registry.npmjs.org, huggingface.co, api.github.com à chaque ouverture — hôtes absents de la CSP d'index.html (16 violations/ouverture, veille muette depuis toujours). Axe : 30 s de `networkidle` jamais atteint (relais, sentinelles) → tests morts avant d'injecter axe.
+- **Livré (v13.4.375)** : `cspAutorise(url)` lit la CSP de la page ; un scan dont l'hôte est interdit est sauté et le dit une fois (plus aucune violation) ; le message CSP de bodyguard porte l'adresse bloquée ; test `v13_4_375-veille-csp` (3, sabotage prouvé). Axe : `networkidle` borné à 8 s. Lighthouse : config enfin lue (`--config`), seuils = cliquet sur la mesure (perf 0,45, BP 0,85 ; objectif 0,9/0,95 inchangé), 3 audits en erreur dans LH 12.1 coupés, notification-on-start / unused-css / erreurs console en avertissement (justifié dans le fichier).
+- **Chantier ouvert** : LCP 8 s sur mobile bridé (Kevin a un iPhone rapide, mais « performance optimale partout ») — à mesurer en vrai avant d'optimiser le démarrage.
+- **Non vérifié** : scores Axe / Lighthouse du run public après cette publication (je les lis après la fusion) ; Apex 375 sur le vrai iPhone.
+
+## 2026-10-16 — publier-et-verifier s'aligne sur origin/main avant de publier
+- Défaut trouvé en vrai (un `git pull` avorté → main local en retard de 2 fusions publié) ; corrigé : `fetch`, fichiers générés rendus sans perte, refus si vrai travail modifié, `merge --ff-only`, contrôle `HEAD == origin/main`. Garde 9/9. Leçon 582.
+- Constaté aussi : un déploiement du dépôt public a échoué à l'étape `Deploy api-worker (official Cloudflare action)` (run 38956740874, commit 94a76510) alors que seuls des documents avaient changé depuis le dernier succès ; relancé (voir ci-dessous le résultat).
+
+## 2026-10-16 (nuit) — DOCS BEE À JOUR + GARDE R8 (« le code de Bee change ⇒ CLAUDE-HISTOIRE »)
+
+**Fait** : l'autre session avait rattrapé l'arbre/admin ; il manquait la partie Bee : `NOTES_USER.md` (décisions de Kevin : ouvert/fermé, tâches de code, symptôme sans cause), `KEVIN_ACTIONS_TODO.md` (test « 🩺 Tester Bee » en tête), `ETAT-DU-MOMENT.md` (ligne Bee v1.19, 29 portes, journal), registre `pipeline/sessions.json` (javis-bee remis à jour). Garde **R8** dans `tools/audit/docs-fraicheur.cjs` : code de Bee (`bee-*.js` hors tests, `javis-widget.js`) modifié sans `CLAUDE-HISTOIRE.md` ⇒ rouge ; preuve par dépôt jetable (`test:docs-frais-garde` 26/0) + la règle `.claude/rules/docs-temps-reel.md` cite 8 documents qui existent. **Non vérifié** : Bee chez Kevin (iPhone).
+
+## 2026-10-16 (nuit) — BEE DÉPOSE LES TÂCHES DE CODE POUR CLAUDE CODE
+
+**Fait** (code + tests, PAS encore vu chez Kevin) : `bee-taches.js` — action `tache_code` (carte ✅ avec la consigne en entier, ≤ 1 200 signes, plafond 20 en attente) → boîte D1 `bee_taches` (base `kdmc-cercle`) ; outil `taches_code` ; le rappel de démarrage (`tools/pipeline/rappel.mjs`) dit à Claude Code de la lire : `SELECT id,titre,consigne FROM bee_taches WHERE statut='attente'` puis `UPDATE … statut='fait', note=…`. Aucun jeton GitHub dans le domaine. `test:bee-taches` (29, 6 sabotages). Leçon 577. **À faire par l'agent à CHAQUE début de session** : lire la boîte et faire les tâches validées par Kevin. **Reste à Kevin (facultatif)** : un jeton GitHub limité aux Issues du dépôt si il veut le lancement 100 % automatique.
+
+## 2026-10-16 (soir) — BEE : LA SUITE DES DROITS (lire plus, gérer les comptes, régler le robot)
+
+**Fait** (code + tests, PAS encore vu chez Kevin) : `bee-droits-plus.js` — Kevin a coché « Lire plus », « Gérer les comptes », « Régler le robot » et gardé fermé le coffre, le code admin, la création de compte avec code, l'argent réel, l'arbre publié. +10 outils de lecture (`robot_ia/flotte/bilan/marche/liens/scan/analyse`, `demandes_rotaplan` sans e-mail, `personnes_attendues`, `personnes_bannies`), +7 actions derrière ✅ (`compte_ouvrir`, `compte_supprimer` [risque élevé, ban facultatif, jamais l'admin], `compte_debannir`, `personne_attendue`, `robot_ia_mode`, `robot_ia_lancer`, `robot_ia_annuler`), `PORTES_BEE` 13 → 29 (liste exacte dans le test). `test:bee-droits-plus` (75, 10 sabotages). Leçon 576. **Pas fait** : « Bee lance Claude Code elle-même » (Kevin l'a choisi) — il faut qu'il crée un jeton GitHub limité aux « Issues » du dépôt ; voir la question posée à Kevin.
+
+## 2026-10-16 — BEE « NE FONCTIONNE TOUJOURS PAS » DANS L'ARBRE : JOURNAL + TEST + OUVERTURE AU DOIGT (Bee v1.19)
+
+**Fait** (code + tests, PAS encore vu chez Kevin) : (1) `bee-diag.js` — journal D1 `bee_journal` (300 lignes ; route, résultat, raison, canal en oui/non, IA, outils, durée, appareil ; jamais de message ni de jeton ; `BEE_JOURNAL=0`) lisible par l'agent via `d1_database_query` sur `kdmc-cercle` ; test `POST /__javis/ai {diag:true}` (session prouvée ? IA gratuite qui répond VRAIMENT ? arbre publié ? nuage ? interrupteurs) ; (2) widget v1.19 : bouton « 🩺 Tester Bee » partout, l'accueil n'affirme plus « je ne vois pas les fiches », le chat s'ouvre AUSSI au `pointerup` tactile (le « clic » iPhone peut se perdre), pas de clavier d'office sur téléphone. `test:bee-diag` (33, 7 sabotages) + `test:bee-arbre-navigateur` (24). Leçon 575. **À faire par l'agent après le prochain essai de Kevin** : lire `SELECT * FROM bee_journal ORDER BY id DESC LIMIT 30` (base `kdmc-cercle`) — la cause exacte y est.
 ## 2026-10-16 (soir) — « Tous les documents, en temps réel, sans rien oublier » (Kevin, 4ᵉ demande)
 
 Trou mesuré : Lingua **v2.141.0** sur main, écrite nulle part (ni mémo ni état), idem ~12 apps. `docs-fraicheur.cjs` :
@@ -30,6 +55,7 @@ en une synthèse. Piège : ma copie hors du dossier projet ne lance pas le hook 
 - **Lu après publication (commit public e509030)** : Bundle Size ✅, Tests E2E + Validation ✅, routeur ✅ ; Lighthouse mobile ✗ (TS2307 : `lighthouse-ci.yml` n'avait pas l'étape coffre → ajoutée) ; Axe ✗ (ERR_CONNECTION_REFUSED : avec CI=true Playwright ne lance aucun serveur → étape `vite preview --port 4173` ajoutée, comme e2e). Garde `test:robots-public` 29 OK.
 - **Lighthouse (bureau)** : construit enfin, puis « Configuration file not found » — `lhci` ne lit pas un fichier nommé `lighthouse.config.json` ; il jugeait avec les règles par défaut (8 ✘ dont 3 audits sans valeur). Script `lighthouse` → `lhci autorun --config=lighthouse.config.json`. L'artefact du run ne contenait que les rapports de mai (v13.3.73, a11y 0,93 < seuil 0,95) : les vrais scores d'aujourd'hui se liront au prochain run.
 - **Non vérifié** : Axe, Lighthouse bureau et mobile après la publication suivante (les seuils calibrés peuvent encore rougir : a11y 0,95).
+- **Garde `pipeline-sessions`** (rouge au public après #4666 : `claude/docs-complets` absente de SESSIONS-ET-BRANCHES.md) : ligne ajoutée ; en local, deux branches fusionnées par PR (#4659, #4581) encore vues « orphelines » (fusion squash + fichiers partagés réécrits) → baseline justifiée ; ma fiche de session remise sur sa vraie branche.
 
 ## 2026-10-16 — Apex Chat : le déploiement prouve la VERSION en ligne (lot K)
 - `/api/health` annonce `version` (constante `API_VERSION`, gardée = `package.json`) ; `deploy-apex-chat.yml` compare et ÉCHOUE si le serveur en ligne n'est pas à la version du dépôt (avant : comparaison impossible, simple notice). Garde `lot-k-version-sante` (3), sabotage rouge. **À chaque changement de version : mettre aussi `API_VERSION`** (le test le rappelle).
@@ -434,6 +460,12 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - Mesuré : 104 fichiers / 1654 tests, couverture sans ERROR ; ancien serveur → 5 échecs sur 7.
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
+
+## 2026-10-16 — Hygiène P2 de l'audit : verrou d'échecs du code admin, pages d'état muettes
+- kdmc-monaco (`lib.js adminOk`), kdmc-outlook (`adminOk`), apex-secrets-proxy (`verifyPin`, code dans `sync-apex-secrets-to-cf-worker.yml`) : 5 échecs/adresse ou 30/isolat en 15 min → refus même avec le bon code (mémoire, 0 écriture KV).
+- Monaco `/health` : sans code → `{ok, worker, connected}` ; la page de réglage envoie le code pour le détail. kdmc-uptime `/` : sans `x-uptime-key` → seulement `total / en_ligne / en_panne`.
+- Non fait (choix) : `/ld_detente/push_sub` reste lisible (le worker le lit sans jeton ; sans la clé VAPID privée l'abonnement ne sert à rien) ; `sw.js`/`manifest.json` restent libres (installation PWA) ; `workers_dev = false` non posé sur monaco/outlook/uptime (ils n'ont pas de domaine : ce serait les éteindre).
+- Garde `test:pin-verrou` (11).
 
 ## 2026-10-16 — Suite sécurité : code admin hors du public, routeur sans repli public (Kevin « Va au bout de tout le travail auto, sans t'arrêter jamais »)
 - Nouvelle règle absolue notée (CLAUDE-HISTOIRE + `.claude/rules/au-bout.md`) : enchaîner seul jusqu'au bout, ce qui exige Kevin → KEVIN_ACTIONS_TODO + une phrase, puis tâche suivante.
@@ -1824,18 +1856,6 @@ test:voix-chirp 16/0, voisins verts ; 8 sabotages rouges. **À vérifier en vrai
 ## 2026-10-04 (matin, suite) — la publication du domaine était bloquée par une constante de three.js
 
 Après la fusion #4316, « Coffre → dépôt public : synchroniser le CODE » s'est arrêté (6 « téléphone » = une constante sRGB de three.js dans `perso3d.js`) : routeur et Lingua non déployés. Corrigé à la source (`tools/3d/build-runtime.mjs` écrit la constante en notation scientifique) + garde dans `test:perso3d`. Leçon 417.
-
-## 2026-10-16 (nuit) — BEE DÉPOSE LES TÂCHES DE CODE POUR CLAUDE CODE
-
-**Fait** (code + tests, PAS encore vu chez Kevin) : `bee-taches.js` — action `tache_code` (carte ✅ avec la consigne en entier, ≤ 1 200 signes, plafond 20 en attente) → boîte D1 `bee_taches` (base `kdmc-cercle`) ; outil `taches_code` ; le rappel de démarrage (`tools/pipeline/rappel.mjs`) dit à Claude Code de la lire : `SELECT id,titre,consigne FROM bee_taches WHERE statut='attente'` puis `UPDATE … statut='fait', note=…`. Aucun jeton GitHub dans le domaine. `test:bee-taches` (29, 6 sabotages). Leçon 577. **À faire par l'agent à CHAQUE début de session** : lire la boîte et faire les tâches validées par Kevin. **Reste à Kevin (facultatif)** : un jeton GitHub limité aux Issues du dépôt si il veut le lancement 100 % automatique.
-
-## 2026-10-16 (soir) — BEE : LA SUITE DES DROITS (lire plus, gérer les comptes, régler le robot)
-
-**Fait** (code + tests, PAS encore vu chez Kevin) : `bee-droits-plus.js` — Kevin a coché « Lire plus », « Gérer les comptes », « Régler le robot » et gardé fermé le coffre, le code admin, la création de compte avec code, l'argent réel, l'arbre publié. +10 outils de lecture (`robot_ia/flotte/bilan/marche/liens/scan/analyse`, `demandes_rotaplan` sans e-mail, `personnes_attendues`, `personnes_bannies`), +7 actions derrière ✅ (`compte_ouvrir`, `compte_supprimer` [risque élevé, ban facultatif, jamais l'admin], `compte_debannir`, `personne_attendue`, `robot_ia_mode`, `robot_ia_lancer`, `robot_ia_annuler`), `PORTES_BEE` 13 → 29 (liste exacte dans le test). `test:bee-droits-plus` (75, 10 sabotages). Leçon 576. **Pas fait** : « Bee lance Claude Code elle-même » (Kevin l'a choisi) — il faut qu'il crée un jeton GitHub limité aux « Issues » du dépôt ; voir la question posée à Kevin.
-
-## 2026-10-16 — BEE « NE FONCTIONNE TOUJOURS PAS » DANS L'ARBRE : JOURNAL + TEST + OUVERTURE AU DOIGT (Bee v1.19)
-
-**Fait** (code + tests, PAS encore vu chez Kevin) : (1) `bee-diag.js` — journal D1 `bee_journal` (300 lignes ; route, résultat, raison, canal en oui/non, IA, outils, durée, appareil ; jamais de message ni de jeton ; `BEE_JOURNAL=0`) lisible par l'agent via `d1_database_query` sur `kdmc-cercle` ; test `POST /__javis/ai {diag:true}` (session prouvée ? IA gratuite qui répond VRAIMENT ? arbre publié ? nuage ? interrupteurs) ; (2) widget v1.19 : bouton « 🩺 Tester Bee » partout, l'accueil n'affirme plus « je ne vois pas les fiches », le chat s'ouvre AUSSI au `pointerup` tactile (le « clic » iPhone peut se perdre), pas de clavier d'office sur téléphone. `test:bee-diag` (33, 7 sabotages) + `test:bee-arbre-navigateur` (24). Leçon 575. **À faire par l'agent après le prochain essai de Kevin** : lire `SELECT * FROM bee_journal ORDER BY id DESC LIMIT 30` (base `kdmc-cercle`) — la cause exacte y est.
 
 ## 2026-10-15 (après-midi) — CORRIGE TOUT : LE TEST FACE ID NAVIGATEUR REMIS AU VERT
 
@@ -17272,3 +17292,4 @@ Règle CLAUDE-HISTOIRE « CODE OBLIGATOIRE POUR TOUS », leçon #454.
 - **Cause** (journal d'échecs du dépôt public, run 38725543701) : `node --test` du déploiement a trouvé `entree-navigateur.test.mjs` qui importe `playwright`, absent de la machine → rien déployé ; l'ancienne page est restée en ligne (aucun enfermement).
 - **Correctif** : le test navigateur déplacé dans `tests/kdmc-access-navigateur.test.mjs` ; garde `test:services-sans-navigateur` ; dossier du serveur rejoué avec `env -i node --test` : 32 tests verts sans navigateur.
 - **Prouvé en vrai (13h41 Paris, capture de Kevin)** : `admin.kd-mc.com` v2 en ligne (11h25 UTC) s'ouvre avec son compte (35 personnes, 790 connexions, messages) depuis le navigateur intégré de l'app Claude. À confirmer : l'ouverture depuis l'icône de l'écran d'accueil.
+

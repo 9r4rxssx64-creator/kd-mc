@@ -78,7 +78,9 @@ test.describe('Apex v13 — A11y baseline (axe-core WCAG 2.1 AA)', () => {
     test(`route ${r.label}`, async ({ page }) => {
       /* Stabilise la page — boot Apex initial, premier rendu */
       await page.goto('/' + r.route);
-      await page.waitForLoadState('networkidle').catch(() => undefined);
+      /* 16.10.2026 (run public 38955865945) : Apex ne devient jamais « networkidle » (relais, sentinelles) — sans borne,
+         cette attente mangeait les 30 s du test avant même d'injecter axe. 8 s suffisent pour le premier rendu. */
+      await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => undefined);
       await page.waitForTimeout(500);
 
       /* Inject axe-core IIFE bundle dans la page courante */

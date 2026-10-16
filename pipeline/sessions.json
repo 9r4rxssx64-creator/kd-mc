@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-16 19:30",
+  "maj": "2026-10-16",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -462,10 +462,10 @@
       "sujet": "Bee (mascotte Lingua) comme assistant de Kevin : widget, app installable javis.kd-mc.com, voix + lip-sync",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-10-03",
-      "attend_kevin": null,
+      "maj": "2026-10-16",
+      "attend_kevin": "Tester Bee dans l'arbre sur iPhone (🩺 Tester Bee) et envoyer la capture",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
-      "note": "3.10 nuit : visage vivant (yeux, regard, tête qui tourne) + Bee/Bourricot en vraie 3D (javis/3d.html, glb+usdz, AR iPhone, réactions au toucher), test:3d 60/0. En attente : chaîne privée puis fusion. Lingua v2.133.0 / Bee v1.17 pas encore en ligne."
+      "note": "16.10 : Bee v1.19 (arbre modifiable, 29 portes, tâches de code → bee_taches, journal bee_journal + 🩺 Tester Bee), fusionné et déployé, PAS vu chez Kevin. Docs rattrapés + garde R7."
     },
     "ld-config-printify": {
       "titre": "La Détente — config worker Printify (branche écrite par un workflow)",
@@ -1841,13 +1841,13 @@
     "audit-apex-1610": {
       "titre": "Audit Apex 16.10 (vérifie tout en détail)",
       "branche": "claude/admin-ouverture-rapide",
-      "sujet": "Apex v13.4.373 : bulles, bouton CSP, règles Firebase ax_pin fermées",
+      "sujet": "Apex v13.4.374 en ligne ; règles Firebase ax_pin fermées ; robots du dépôt public verts pour de vraies raisons",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "Apex v13.4.372 construite et vérifiée en local ; règles Firebase ouvertes = leçon #559, plan dans MEMO, pas corrigé (ration Actions épuisée)."
+      "note": "Apex v13.4.375 construite et vérifiée en local (veille technologique sans violation CSP, journal CSP lisible, Axe borné, Lighthouse calibré sur la mesure) ; à publier par le dépôt public puis lire Axe/Lighthouse. Reste : LCP 8 s mobile bridé (chantier), plan #559 étape 2 (ration de demain)."
     },
     "firebase-cmc2": {
       "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",
@@ -1890,10 +1890,30 @@
       "attend_session": null,
       "note": "Arbre en ligne v3.116 ; routeur avec correctifs Yann déployé par le dépôt public (vérifié 19h UTC)"
     },
+    "javis-bee-docs": {
+      "titre": "Javis / Bee — documents à jour + garde R8",
+      "branche": "claude/docs-bee-r7",
+      "sujet": "Rattrapage documentaire de la partie Bee (16.10) et garde : le code de Bee change ⇒ CLAUDE-HISTOIRE",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
     "securite-suite": {
       "titre": "Suite sécurité : code admin hors public, routeur sans repli public, règle « au bout »",
       "branche": "claude/securite-suite",
       "sujet": "regles.json prive_toujours admin/croupier ; viaAssets par défaut ; règle au-bout",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "securite-p2": {
+      "titre": "Hygiène P2 : verrou d'échecs du code admin, pages d'état muettes",
+      "branche": "claude/securite-p2",
+      "sujet": "monaco/outlook/apex-secrets-proxy verrou ; uptime comptes ; monaco health",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",

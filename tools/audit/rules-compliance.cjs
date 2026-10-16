@@ -116,6 +116,8 @@ const REGISTRE = [
   // 735ad3ab8) : l'extracteur garde le texte après le DERNIER « RÈGLE » du titre → titre lu = « ENTIÈRE) ».
   // Elle comptait comme règle sans garde (ratchet 19 → 20). Son garde est celui qu'elle décrit : test:docs-frais.
   [/^ENTIÈRE\)$/, ['npm:test:docs-frais', 'file:tools/audit/docs-fraicheur.cjs']],
+  // Règle « TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER » (Kevin 16.10.2026, 4ᵉ rappel) : garde R1→R8 + sa preuve par sabotage.
+  [/TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER/i, ['npm:test:docs-frais', 'npm:test:docs-frais-garde', 'file:tools/audit/docs-fraicheur.cjs']],
   // Règle « SEUL KEVIN AJOUTE OU MODIFIE : PLANNING, ÉQUIPES, PERSONNES, COMPTES, CODES » (Kevin 8.10.2026) : gardes citées
   // par la règle elle-même — écritures CMCteams verrouillées côté serveur, verrous relus, codes en attente de Kevin.
   [/SEUL KEVIN AJOUTE OU MODIFIE/i, ['npm:test:ecritures-cmc', 'npm:test:lire-verrous', 'npm:test:code-attente', 'npm:test:code-compte']],
@@ -238,6 +240,8 @@ const REGISTRE = [
 const COMPORTEMENTAL = [
   /* « JE PARLE FRANÇAIS À KEVIN, TOUJOURS » (Kevin 9.10.2026, #4446) : la langue de mes réponses, pas un état du code. */
   /PARLE FRANÇAIS À KEVIN/i,
+  /* « VA AU BOUT DE TOUT LE TRAVAIL, EN AUTO, SANS JAMAIS T'ARRÊTER » (Kevin 16.10.2026, #4670) : enchaîner sans demander « continu ? » = conduite de travail. */
+  /VA AU BOUT DE TOUT LE TRAVAIL/i,
   /* « ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE » (Kevin 9.10.2026, #4439, ajoutée sans entrée → ratchet 19 → 20 vu à la
      fusion) : relire ce qu'on a et aller chercher le document AVANT d'écrire une question = conduite de recherche, pas un état
      du code. Sa part mécanisable (« donnée sans source = probable/piste ») mérite un garde sur les fiches : à faire par la branche arbre. */

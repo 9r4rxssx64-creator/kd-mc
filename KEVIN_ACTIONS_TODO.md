@@ -11,6 +11,7 @@
 
 ## 👆 (16.10 soir) CE QUI T'ATTEND — à jour
 
+0. **Tester Bee (iPhone, 1 minute)** : https://arbre.kd-mc.com → touche la pastille 🐝 → touche **🩺 Tester Bee** → envoie-moi la capture (ou dis-moi ce que tu vois). Si Bee ne répond toujours pas, j'ai son journal et je trouve la cause. *(Optionnel, plus tard : un jeton GitHub limité aux « Issues » pour que Bee lance Claude Code toute seule.)*
 1. **Yann** : https://admin.kd-mc.com → bannière « ⏳ comptes fermés » en haut → **✅ Ouvrir** sur Yann (ou « 👋 Personnes attendues » → « Yann Lorenzi »). Puis Yann ferme et rouvre l'appli. Envoie une capture si ça bloque.
 2. **Le Dren (pour Rémi)** : ouvrir l'acte de naissance de Groix 1905 en ligne (Archives du Morbihan, registre **4 E 69 32**, vers le 11.12.1905) et m'envoyer une capture avec la marge · remplir le formulaire du SHD de Caen https://demarche.numerique.gouv.fr/commencer/demande-shd-davcc (texte prêt dans la fiche PDF, partie 6).
 3. **Monaco** : demander en ligne l'acte de décès d'Albert Antoine BUCHET (20.03.1998) sur https://actes-en-ligne.mairie.mc/fr/ (MConnect) et me dire ce que le site demande.
@@ -524,6 +525,7 @@ Seules les **automatisations** sont bloquées.
 - 👤 **test iPhone 3 gestes + décision annuaire + relais Webhook (voir KEVIN_ACTIONS_TODO)**  `apex-chat`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
+- 👤 **Tester Bee dans l'arbre sur iPhone (🩺 Tester Bee) et envoyer la capture**  `javis-bee`
 - 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
 - 👤 **5 questions famille (Honora père/mère, mère de Laure, Judith/Marie-Judith, doublons Jean et Alexandre, Eleonore fille ou sœur) + un choix d'affichage sur le couple Guy/Yvette**  `arbre-visuel`
 - 👤 **Yann : Ouvrir dans l'admin ; actes Le Dren/Monaco/Beausoleil (KEVIN_ACTIONS_TODO 16.10)**  `arbre-session-1610`

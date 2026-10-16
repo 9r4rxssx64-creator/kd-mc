@@ -197,11 +197,39 @@ function compareSemver(current: string, latest: string): 'newer' | 'same' | 'old
 /**
  * Fetch wrapper avec timeout strict + signal AbortController.
  */
+/* 16.10.2026 (v13.4.375) — LA CSP DE LA PAGE DÉCIDE. Mesuré au dépôt public (Lighthouse, run 38955866488) et en vrai
+ * Chromium : à CHAQUE ouverture, la veille appelait registry.npmjs.org, huggingface.co et api.github.com, trois hôtes
+ * absents de « connect-src » dans index.html → 16 violations CSP par ouverture, la veille échouait en silence et la
+ * console était illisible. Un hôte que la CSP interdit n'est pas appelé : le scan est sauté, et dit pourquoi, une fois. */
+export function cspAutorise(url: string): boolean {
+  if (typeof document === 'undefined' || typeof location === 'undefined') return true;
+  const meta = document.querySelector('meta[http-equiv="Content-Security-Policy" i]');
+  const politique = meta?.getAttribute('content') ?? '';
+  const m = /(?:^|;)\s*connect-src\s+([^;]+)/i.exec(politique);
+  if (!m) return true; /* pas de connect-src : rien n'interdit */
+  let cible: URL;
+  try { cible = new URL(url, location.href); } catch { return false; }
+  for (const brut of (m[1] ?? '').trim().split(/\s+/)) {
+    const src = brut.replace(/^'|'$/g, '');
+    if (src === '*') return true;
+    if (src === 'self') { if (cible.origin === location.origin) return true; continue; }
+    if (/^[a-z]+:$/i.test(src)) { if (cible.protocol === src.toLowerCase()) return true; continue; }
+    const hote = (src.replace(/^[a-z]+:\/\//i, '').split('/')[0] ?? '').split(':')[0] ?? '';
+    if (!hote) continue;
+    if (hote.startsWith('*.')) {
+      const dom = hote.slice(2);
+      if (cible.hostname === dom || cible.hostname.endsWith('.' + dom)) return true;
+    } else if (cible.hostname === hote) return true;
+  }
+  return false;
+}
+
 async function fetchWithTimeout(
   url: string,
   init?: RequestInit,
   timeoutMs = FETCH_TIMEOUT_MS,
 ): Promise<Response> {
+  if (!cspAutorise(url)) throw new Error('CSP connect-src interdit : ' + new URL(url, location.href).hostname);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -223,13 +251,21 @@ class InnovationWatch {
     const startedAt = Date.now();
     const collected: TechUpdate[] = [];
 
-    /* Lance tous les scans en parallèle pour minimiser durée totale */
+    /* Lance tous les scans en parallèle pour minimiser durée totale — sauf ceux dont l'hôte est interdit par la CSP
+       de la page (v13.4.375) : sautés, dits une fois, zéro violation. */
+    const sautes: string[] = [];
+    const siPermis = (nom: string, url: string, scan: () => Promise<TechUpdate[]>): Promise<TechUpdate[]> => {
+      if (cspAutorise(url)) return scan();
+      sautes.push(nom);
+      return Promise.resolve([]);
+    };
     const [npmResults, aiResults, hfResults, ghResults] = await Promise.allSettled([
-      this.scanNpm(),
+      siPermis('npm', 'https://registry.npmjs.org/', () => this.scanNpm()),
       this.scanAIProviders(),
-      this.scanHuggingFace(),
-      this.scanGitHubTrending(GH_TRENDING_TAGS.map((t) => t.tag)),
+      siPermis('huggingface', 'https://huggingface.co/', () => this.scanHuggingFace()),
+      siPermis('github', 'https://api.github.com/', () => this.scanGitHubTrending(GH_TRENDING_TAGS.map((t) => t.tag))),
     ]);
+    if (sautes.length) logger.info('innovation-watch', `scans sautés (hôte absent de la CSP connect-src de la page) : ${sautes.join(', ')}`);
 
     if (npmResults.status === 'fulfilled') collected.push(...npmResults.value);
     if (aiResults.status === 'fulfilled') collected.push(...aiResults.value);

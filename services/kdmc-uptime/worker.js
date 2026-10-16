@@ -424,6 +424,13 @@ export default {
           cibles: targets().length,
         }, 200, { cors: true });
       }
+      /* 16.10 (audit sécurité, P2-2) : sans la clé, seulement les COMPTES (combien vont bien, combien en panne) — plus la
+         liste des 33 services, leurs temps de réponse ni lequel est tombé (une carte pour qui veut attaquer). Le détail :
+         en-tête x-uptime-key (même clé que POST /run). Les alertes push disent déjà quel service est tombé. */
+      const cle = await expectedRunKey(env);
+      if (!cle || (request.headers.get('x-uptime-key') || '') !== cle) {
+        return json({ ok: true, ts: state.ts, total: state.total, en_ligne: state.ok, en_panne: Array.isArray(state.down) ? state.down.length : 0 }, 200, { cors: true });
+      }
       return json({ ok: true, ...publicView(state) }, 200, { cors: true });
     }
 

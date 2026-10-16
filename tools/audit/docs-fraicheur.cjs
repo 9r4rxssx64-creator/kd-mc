@@ -32,6 +32,11 @@
      R6  le ROUTEUR du domaine a changé (services/kdmc-router/worker.js)
                                                ⇒ ETAT-DU-MOMENT.md a changé (la vérité du jour,
                                                   servie à chaque réveil de chaque branche)
+     R8  le CODE DE BEE a changé (services/kdmc-router/bee-*.js, tools/javis/javis-widget.js)
+                                               ⇒ CLAUDE-HISTOIRE.md a changé (ce que Bee sait faire, ce
+                                                  qu'elle ne fait PAS, ce que Kevin a ouvert/fermé : sinon
+                                                  la session suivante ne le sait pas — vécu le 16.10.2026,
+                                                  29 portes ouvertes sans une ligne dans NOTES_USER)
      R4 étendue + R7 (16.10.2026 — Kevin : « Mets TOUS les documents à jour en temps réel toujours sans rien
          oublier, note-le ») : R4 ne regardait que 2 fichiers de version — une nouvelle version de Lingua, Bee,
          l'arbre, une boutique… (nom du cache du service worker sw.js de chaque app, tous les version.txt)
@@ -64,6 +69,9 @@ const EST_SW = (f) => /(^|\/)sw\.js$/.test(f) && !/^(dist|_?archives?[^/]*)\//.t
 const RX_VERSION_SW = /(?:CACHE(?:_NAME)?|VERSION)\s*=\s*["'`][^"'`]*?(v?\d+(?:\.\d+)+)/;
 const versionSw = (txt) => { const m = String(txt || '').match(RX_VERSION_SW); return m ? m[1] : ''; };
 const ROUTEUR = 'services/kdmc-router/worker.js';
+const DOC_REGLES = 'CLAUDE-HISTOIRE.md';
+/* Le code de Bee (hors tests) : routeur (bee-*.js) et widget. */
+const EST_CODE_BEE = (f) => (/^services\/kdmc-router\/bee-[^/]+\.js$/.test(f) && !/\.test\./.test(f)) || f === 'tools/javis/javis-widget.js';
 /* Docs et tests ne "comptent" pas comme du code : les modifier seuls n'oblige à rien (R1/R2). */
 const NEUTRES = [
   /^[A-Z_]+\.md$/, /^docs\//, /^audit\//, /^tests?\//, /^tools\/audit\//,
@@ -121,6 +129,7 @@ for (const f of modifies) {
   else if (EST_SW(f)) { const v = versionSw(lire(f)), avant = versionSw(sh(`git show ${base}:${f}`)); if (v && v !== avant) versionsBougees.push({ f, v }); }
 }
 const routeurBouge = modifies.includes(ROUTEUR);
+const beeBouge = modifies.filter(EST_CODE_BEE);
 
 /* Chaque manque = [document, pourquoi]. */
 const manque = [];
@@ -140,8 +149,9 @@ if (versionsBougees.length) {
 if (versionsBougees.length && !touche(DOC_ETAT)) manque.push([DOC_ETAT, `R7 : version(s) livrée(s) (${versionsBougees.map((x) => x.v).join(', ')}) → la vérité du jour dit quelle version est en ligne`]);
 if (planningsAjoutes.length && !touche(DOC_IMPORTS)) manque.push([DOC_IMPORTS, `R5 : planning(s) de Kevin ajouté(s) (${planningsAjoutes.join(', ')}) → ligne avec verdict (✅/🛠️/⏭️/🏠)`]);
 if (routeurBouge && !touche(DOC_ETAT)) manque.push([DOC_ETAT, 'R6 : le routeur du domaine a changé → la vérité du jour (date en tête + ligne du tableau)']);
+if (beeBouge.length && !touche(DOC_REGLES)) manque.push([DOC_REGLES, `R8 : le code de Bee a changé (${beeBouge.join(', ')}) → écrire ce qu'elle sait faire / ne fait pas / ce que Kevin a ouvert ou fermé`]);
 
-const rien = !code.length && !testsCrees.length && !versionsBougees.length && !planningsAjoutes.length && !routeurBouge;
+const rien = !code.length && !testsCrees.length && !versionsBougees.length && !planningsAjoutes.length && !routeurBouge && !beeBouge.length;
 if (rien) { ok('docs : seuls des documents ont changé → rien à documenter.'); process.exit(0); }
 
 if (!manque.length) {
@@ -150,6 +160,7 @@ if (!manque.length) {
   if (testsCrees.length) suivent.push(DOC_LECONS);
   if (planningsAjoutes.length) suivent.push(DOC_IMPORTS);
   if (routeurBouge || versionsBougees.length) suivent.push(DOC_ETAT);
+  if (beeBouge.length) suivent.push(DOC_REGLES);
   ok(`docs à jour : ${code.length} fichier(s) de code, ${testsCrees.length} test(s) créé(s), ${versionsBougees.length} version(s), ` +
      `${planningsAjoutes.length} planning(s), routeur ${routeurBouge ? 'touché' : 'intact'} — ${[...new Set(suivent)].join(' + ')} suivent.`);
   process.exit(0);
@@ -172,6 +183,7 @@ if (testsCrees.length) {
 if (versionsBougees.length) console.log(`\nVersions livrées : ${versionsBougees.map((x) => x.f + ' = ' + x.v).join(', ')}`);
 if (planningsAjoutes.length) console.log(`\nPlannings de Kevin ajoutés : ${planningsAjoutes.join(', ')}`);
 if (routeurBouge) console.log(`\nRouteur du domaine modifié : ${ROUTEUR}`);
+if (beeBouge.length) console.log(`\nCode de Bee modifié : ${beeBouge.join(', ')}`);
 console.log('\nÀ mettre à jour AVANT de pousser :');
 manque.forEach(([d, pourquoi]) => info('→ ' + d + '  (' + pourquoi + ')'));
 console.log('\n(Rappel : une nouvelle règle Kevin → CLAUDE-HISTOIRE.md puis `npm run claude-md:index` · une info métier → NOTES_USER.md ·');

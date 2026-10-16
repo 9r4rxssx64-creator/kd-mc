@@ -12261,6 +12261,8 @@ touchant presque que `MEMO_RESUME.md` (assez pour le garde) ; `KEVIN_ACTIONS_TOD
 8. les données vivantes hors dépôt : notes des fiches de l'arbre (réponses des mairies, actes), fiches PDF de recherche.
 9. **Ce qui se mesure ne s'écrit pas à la main** : `npm run maj-tout` (hook Stop, à chaque fin de tour) réécrit les chiffres entre marqueurs `<!-- MAJ-AUTO:debut … -->` — depuis le 16.10 aussi l'état d'Apex Chat dans `messaging-app/README.md` (version, tailles arrondies au palier, jamais de faux rouge) ; `test:maj-tout` échoue si un bloc est périmé. Un document daté (`messaging-app/docs/ARCHITECTURE.md`, `ROADMAP.md`) porte un bandeau « daté » + renvoi vers la source vivante.
 
+**Garde mécanique (16.10, R8)** : `tools/audit/docs-fraicheur.cjs` exige `CLAUDE-HISTOIRE.md` dès que le code de Bee change (`services/kdmc-router/bee-*.js` hors tests, `tools/javis/javis-widget.js`) — ce que Bee sait faire, ne fait pas, et ce que Kevin a ouvert ou fermé. Prouvé par `test:docs-frais-garde` (26/0, dépôt jetable). Les autres cases de la liste restent à ta charge : relis-la avant de dire « fini ».
+
 ### Complément mécanique (même jour, session `lingua-cercle`) — le trou que le garde ne voyait pas
 
 #### 1. Pourquoi une quatrième fois — le trou mesuré ce jour-là

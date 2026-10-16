@@ -226,5 +226,22 @@ console.log('\nF. Le jour où un vrai groupe s\'inscrit ensemble, on ouvre sans 
   }
 }
 
+/* ── H. (16.10 nuit) le robot de contrôle sans fiche (ci_smoke) ne mange JAMAIS une place d'inscription ── */
+console.log('\nH. Le robot de contrôle ci_smoke ne consomme pas le quota du jour');
+{
+  const env = faireEnv();
+  for (let i = 0; i < 80; i++) {
+    await mod.fetch(new Request('https://kd-mc.com/__sso/issue', {
+      method: 'POST', headers: { host: 'kd-mc.com', 'content-type': 'application/json', 'CF-Connecting-IP': '198.51.100.' + (i % 200) },
+      body: JSON.stringify({ uid: 'ci_smoke', name: 'CI Smoke', cgu: true }),
+    }), env, { waitUntil() {} });
+  }
+  const total = [...env._kv.keys()].filter((k) => /^qi:.*:_total$/.test(k)).map((k) => parseInt(env._kv.get(k), 10) || 0).reduce((a, b) => a + b, 0);
+  ok(total === 0, '80 contrôles ci_smoke → 0 place d\'inscription consommée', 'total=' + total);
+  const r = await inscrire(env, { nom: 'Vraie Personne', ip: '203.0.113.99' });
+  const j = await r.json();
+  ok(j.ok === true, 'après 80 contrôles, une VRAIE personne peut encore s\'inscrire', JSON.stringify(j).slice(0, 120));
+}
+
 console.log('\n' + (ko ? `❌ ${ko} contrôle(s) en échec` : '✅ Quota d\'inscriptions : tout est vérifié'));
 process.exit(ko ? 1 : 0);

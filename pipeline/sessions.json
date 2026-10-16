@@ -2078,6 +2078,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "access-preuve": {
+      "titre": "Quota d'inscriptions : le robot ci_smoke ne compte plus ; preuve admin.kd-mc.com réparée",
+      "branche": "claude/access-preuve",
+      "sujet": "routeur quota + deploy-kdmc-access preuve",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -121,8 +121,14 @@ jobs:
           PIN_SHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
         run: |
           MARK="verif-auto-$GITHUB_RUN_ID"
+          # 16.10 : depuis l'audit du 8.10, /log exige une SESSION du domaine (le corps ne peut plus se faire passer pour quelqu'un).
+          # Cette preuve postait sans session → 401 → « le journal n'enregistre rien » à chaque déploiement depuis le 15.10 (faux rouge).
+          # Elle prend donc le pass du ROBOT de contrôle ci_smoke (sans fiche, jamais compté parmi les personnes ni dans le quota d’inscriptions).
+          TOK=$(curl -m 15 -s -X POST "https://kd-mc.com/__sso/issue" -H 'Content-Type: application/json' -H 'Origin: https://kd-mc.com' \
+            -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}' | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{process.stdout.write(JSON.parse(s).token||'')}catch(e){}})")
+          [ -n "$TOK" ] || echo "::warning::pass de robot non émis par le domaine"
           CODE=$(curl -m 15 -s -o /dev/null -w '%{http_code}' -X POST "https://admin.kd-mc.com/log" \
-            -H 'Content-Type: application/json' -H 'Origin: https://kd-mc.com' \
+            -H 'Content-Type: application/json' -H 'Origin: https://kd-mc.com' -H "Authorization: Bearer $TOK" \
             -d "{\"app\":\"verification\",\"uid\":\"__verif__\",\"name\":\"Vérification automatique\",\"event\":\"$MARK\",\"device\":\"CI\",\"tier\":\"test\"}")
           echo "POST /log → HTTP $CODE"
           OK=false

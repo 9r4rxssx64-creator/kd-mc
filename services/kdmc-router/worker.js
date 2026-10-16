@@ -3628,7 +3628,10 @@ async function handleSso(request, url, env) {
       /* QUOTA — seulement pour une fiche NEUVE. Quelqu'un de déjà inscrit passe
          toujours, autant de fois qu'il veut : `accCanon` existe, on ne compte rien.
          Une SONDE déclarée d'un centre de données ne crée pas de fiche (enrich) : elle ne compte pas non plus (0 écriture, 8.10). */
-      if (!accCanon && !(request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0))) {
+      /* 16.10 nuit (mesuré : « inscriptions momentanément suspendues » sur le domaine) : le robot de contrôle `ci_smoke` ne crée JAMAIS de
+         fiche (UID_ROBOTS_SANS_FICHE) → `accCanon` n'existe jamais → chaque contrôle automatique (déploiements, sondes, sessions) prenait une
+         des 50 places d'inscription du jour, et les VRAIES personnes étaient refusées le soir. Un uid sans fiche ne compte pas. */
+      if (!accCanon && !UID_ROBOTS_SANS_FICHE.has(uid) && !(request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0))) {
         const ipHash = await sha256Hex((request.headers.get('CF-Connecting-IP') || '') + '|kdmc');
         const q = await quotaInscription(env, ipHash);
         if (!q.ok) {

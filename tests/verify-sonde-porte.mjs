@@ -19,7 +19,9 @@
  * ========================================================================== */
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const src = readFileSync('services/kdmc-router/worker.js', 'utf8');
 const bloc = src.slice(src.indexOf('const ROUTES'), src.indexOf('// Proxy MÊME ORIGINE'));
@@ -59,10 +61,10 @@ const base = 'http://127.0.0.1:' + serveur.address().port;
 
 /* spawn ASYNCHRONE : avec spawnSync, la boucle d'événements du test est bloquée et le
    faux routeur (dans ce même processus) ne répond jamais → la sonde attend 25 s par adresse. */
-function sonde() {
+function sonde(extra = {}) {
   return new Promise((resolve) => {
     const p = spawn(process.execPath, ['tools/audit/sonde-site-publie.mjs', 'https://kd-mc.com'], {
-      env: { ...process.env, SONDE_HOTE_BASE: base, SONDE_UPSTREAM: base + '/up' },
+      env: { ...process.env, SONDE_HOTE_BASE: base, SONDE_UPSTREAM: base + '/up', ...extra },
     });
     let out = '';
     p.stdout.on('data', (d) => { out += d; });
@@ -87,6 +89,23 @@ const b = await sonde();
 test('la sonde sort en 1', b.code === 1, 'code ' + b.code);
 test('les 3 adresses du livre sont en ❌ (HTTP 404 derrière la porte)', (b.out.match(/❌ (cuisine|cocina|cujina)\.kd-mc\.com\s+404/g) || []).length === 3, b.out.slice(-500));
 test('les autres adresses restent ✅', /=== \d+ servies \/ 3 en échec ===/.test(b.out));
+
+/* 16.10 : projet Pages supprimé → derrière la porte, on lit le PAQUET envoyé (SOURCE_PAGES = "assets"),
+   plus l'hébergeur disparu (run 38886288617 : 13 faux rouges sur kdmc-site-bj5.pages.dev). */
+console.log('D. source « assets » : contenu présent dans le paquet → servi, sans appeler l’hébergeur');
+const paq = mkdtempSync(join(tmpdir(), 'paquet-'));
+mkdirSync(join(paq, DOSSIER_CUISINE), { recursive: true });
+writeFileSync(join(paq, DOSSIER_CUISINE, 'index.html'), page('paquet cuisine'));
+const d = await sonde({ SONDE_PAQUET: paq });
+test('la sonde sort en 0 (hébergeur en 404, mais le paquet a la page)', d.code === 0, 'code ' + d.code + '\n' + d.out.slice(-500));
+test('les 3 lignes du livre nomment le fichier du paquet', (d.out.match(/contenu vérifié derrière \(.*tools\/cuisine\/index\.html\)/g) || []).length === 3, d.out.slice(-500));
+test('le résumé dit « vérifié dans le paquet envoyé »', /vérifié dans le paquet envoyé/.test(d.out));
+console.log('E. source « assets » : page ABSENTE du paquet → rouge');
+rmSync(join(paq, DOSSIER_CUISINE, 'index.html'));
+const e = await sonde({ SONDE_PAQUET: paq });
+test('la sonde sort en 1', e.code === 1, 'code ' + e.code);
+test('les 3 adresses du livre disent « absent du paquet »', (e.out.match(/absent du paquet/g) || []).length >= 3, e.out.slice(-500));
+rmSync(paq, { recursive: true, force: true });
 
 serveur.close();
 console.log(`\n${ok} OK / ${ko} FAIL`);

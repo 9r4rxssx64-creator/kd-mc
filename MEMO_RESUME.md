@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Déploiement du routeur : la sonde ne regarde plus chez Pages supprimé
+- **Mesuré** : runs 38886288617 et 38887600022 → le routeur EST déployé (étape « Déploiement » verte, 10:31 UTC), mais « Le domaine sert-il vraiment les 31 adresses ? » rouge : les 13 adresses derrière la porte « fiche » étaient vérifiées chez `kdmc-site-bj5.pages.dev`, supprimé le matin même. Les étapes suivantes (boîte, plannings, fuite) étaient sautées.
+- **Corrigé** : `tools/audit/sonde-site-publie.mjs` lit, en SOURCE_PAGES = "assets", `services/kdmc-router/public/CMCteams/<dossier>/index.html` (le paquet de CE déploiement) ; l'étape « L'hébergeur ne sert-il que les applications ? » ne sonde plus l'ancien hébergeur. Garde : `test:sonde-porte` (15, cas D/E paquet présent/absent). Les 32 routes ont leur page dans le paquet (vérifié localement).
+
 ## 2026-10-16 — Admin v2.1.0 : un tableau de bord rangé (Kevin : « je passe mon temps à tout descendre »)
 - **Livré** : `kd-mc.com/admin/` ouvre sur « À traiter maintenant » + 6 raccourcis (Bannir, Effacer, Bloquer sur une app, Fermer pour tous, Créer, Codes) + une tuile par section (chiffre et pastille rouge). Une tuile ouvre SA section seule (plus de grand défilé) ; « ← Tableau de bord » revient. Personnes a des onglets : À trancher · Comptes · Connectés · Bloquer & bannir · Créer · Historique ; Commerce/IA/Apps ont des onglets tirés de leurs titres. Chaque vue a son adresse (`#personnes/bloquer`, `#commerce`…), retour arrière du téléphone compris. Code : `kdmc-home/admin/tableau.js` (`classerBlocs` pur, testé), CSS dans `index.html`.
 - **Gardes** : `test:admin-unique` (60, accueil/onglets/lien profond/retour/raccourci), `test:perimetre-page` passe par les onglets comme Kevin.

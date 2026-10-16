@@ -26,7 +26,7 @@
  *   (sans)   : on interroge le domaine lui-même, chaque sous-domaine à son nom.
  * ========================================================================== */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 
 const base = (process.argv[2] || '').replace(/\/+$/, '');
 const RACINE = process.argv.includes('--racine');
@@ -77,6 +77,15 @@ function upstreamBase() {
   } catch { return ''; }
 }
 const UPSTREAM = RACINE ? '' : upstreamBase();
+/* 16.10 : le projet Pages est SUPPRIMÉ, le routeur sert sa copie embarquée (SOURCE_PAGES = "assets").
+   Regarder « derrière la porte » chez kdmc-site-bj5.pages.dev donnait 13 faux rouges (run 38886288617) :
+   l'hébergeur n'existe plus. Derrière une porte, on ouvre alors le fichier DU PAQUET que ce même
+   déploiement vient d'envoyer (services/kdmc-router/public/CMCteams/<dossier>/index.html). */
+const PAQUET = (() => {
+  if (process.env.SONDE_PAQUET) return process.env.SONDE_PAQUET.replace(/\/+$/, '');   /* test de la sonde */
+  if (RACINE || process.env.SONDE_UPSTREAM) return '';
+  try { return /^\s*SOURCE_PAGES\s*=\s*"assets"/m.test(readFileSync('services/kdmc-router/wrangler.toml', 'utf8')) ? 'services/kdmc-router/public/CMCteams' : ''; } catch { return ''; }
+})();
 
 /* --- la sonde ------------------------------------------------------------- */
 const TEMPS = 25000;
@@ -101,13 +110,22 @@ async function sonder(r) {
     if (porte) {
       /* Porte fermée = le routeur connaît l'adresse et son dossier. Reste à
          prouver que le contenu existe DERRIÈRE : on l'ouvre chez l'hébergeur. */
-      if (!UPSTREAM) {
+      if (PAQUET) {
+        derriere = `${PAQUET}/${r.dossier ? r.dossier.replace(/\/+$/, '') + '/' : ''}index.html`;
+        if (!existsSync(derriere)) {
+          return { ...r, url, http: rep.status, octets: texte.length, ok: false, porte, derriere, ms: Date.now() - t0,
+            erreur: 'porte « ' + porte + ' » mais ' + derriere + ' absent du paquet (lancer prepare-secours.mjs)' };
+        }
+        texte = readFileSync(derriere, 'utf8');
+        rep = { status: 200 };
+      } else if (!UPSTREAM) {
         return { ...r, url, http: rep.status, octets: texte.length, ok: false, porte, ms: Date.now() - t0,
           erreur: 'porte « ' + porte + ' » mais hébergeur inconnu (UPSTREAM_BASE absent de wrangler.toml)' };
+      } else {
+        derriere = `${UPSTREAM}/${r.dossier ? r.dossier + '/' : ''}`;
+        rep = await fetch(derriere, { redirect: 'follow', headers: ENTETES, signal: AbortSignal.timeout(TEMPS) });
+        texte = await rep.text();
       }
-      derriere = `${UPSTREAM}/${r.dossier ? r.dossier + '/' : ''}`;
-      rep = await fetch(derriere, { redirect: 'follow', headers: ENTETES, signal: AbortSignal.timeout(TEMPS) });
-      texte = await rep.text();
     }
     /* Une page vide ou un 404 déguisé en 200 ne compte pas comme « servie ».
        On exige un vrai document HTML avec du contenu.
@@ -150,7 +168,7 @@ const ko = res.filter((r) => !r.ok);
 const fermees = res.filter((r) => r.porte);
 console.log(`\n=== ${res.length - ko.length} servies / ${ko.length} en échec ===`);
 if (fermees.length) {
-  console.log(`🔒 ${fermees.length} adresse(s) derrière une porte du routeur (fiche obligatoire) — le contenu a été vérifié chez l'hébergeur : ` +
+  console.log(`🔒 ${fermees.length} adresse(s) derrière une porte du routeur (fiche obligatoire) — le contenu a été vérifié ${PAQUET ? 'dans le paquet envoyé' : "chez l'hébergeur"} : ` +
     [...new Set(fermees.map((r) => r.hote))].join(', '));
 }
 

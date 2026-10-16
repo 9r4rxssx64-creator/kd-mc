@@ -1747,6 +1747,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "sonde-assets": {
+      "titre": "Sonde du déploiement : vérifie derrière la porte dans le paquet, plus chez Pages supprimé",
+      "branche": "claude/sonde-assets",
+      "sujet": "Déploiements du routeur rouges depuis la suppression de kdmc-site (13 faux rouges)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

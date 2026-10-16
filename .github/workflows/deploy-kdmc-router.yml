@@ -487,6 +487,11 @@ jobs:
         shell: bash -eo pipefail {0}
         run: |
           node tools/audit/sonde-fuite-hebergeur.mjs "https://cmcteams.kd-mc.com"
+          # 16.10 : projet Pages supprimé, pages servies par la copie embarquée → plus d'hébergeur à sonder.
+          if grep -qE '^SOURCE_PAGES *= *"assets"' services/kdmc-router/wrangler.toml; then
+            echo "  copie EMBARQUÉE (SOURCE_PAGES = assets) : l'ancien hébergeur n'existe plus, seul le domaine compte"
+            exit 0
+          fi
           ATTENDU=$(grep -oE 'UPSTREAM_BASE *= *"[^"]+"' services/kdmc-router/wrangler.toml | sed 's/.*"\(.*\)"/\1/' || true)
           if [ -n "$ATTENDU" ]; then
             node tools/audit/sonde-fuite-hebergeur.mjs "$ATTENDU"

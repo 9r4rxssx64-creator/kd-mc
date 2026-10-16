@@ -218,8 +218,8 @@
     C('messages').innerHTML = '<div id="tb-messages"><p class="info">Lecture de la boîte…</p></div><button class="grosbtn" id="tb-boite" type="button">📬 Ouvrir la boîte — lire et répondre</button>';
     C('commerce').innerHTML = '<div id="commerce-app"></div><h2 class="cat">🔗 Mes pages de vente & boutiques</h2><div class="grid" id="tuiles-commerce"></div>';
     C('apps').innerHTML = '<p class="info" id="tb-versions-info">Toutes les apps du domaine. La version affichée est celle du dépôt.</p><div class="grid" id="tuiles-apps"></div>';
-    C('ia').innerHTML = '<p class="info" id="tb-sante">Santé des services : lecture…</p><div class="grid" id="tuiles-ia"></div>';
-    C('couts').innerHTML = '<p class="info" id="tb-openai">OpenAI : lecture…</p><p class="info">Règle : tout reste <b>gratuit</b> ; rien de payant ne s\'allume sans ton accord.</p><div class="grid" id="tuiles-couts"></div>';
+    C('ia').innerHTML = '<p class="info lien-info" id="tb-sante" data-va="https://github.com/9r4rxssx64-creator/cmcteams/actions">Santé des services : lecture…</p><div class="grid" id="tuiles-ia"></div>';
+    C('couts').innerHTML = '<p class="info lien-info" id="tb-openai" data-va="/admin/openai.html">OpenAI : lecture…</p><p class="info">Règle : tout reste <b>gratuit</b> ; rien de payant ne s\'allume sans ton accord.</p><div class="grid" id="tuiles-couts"></div>';
     C('reglages').innerHTML = '<div class="grid" id="tuiles-reglages"></div>';
   }
 
@@ -290,9 +290,18 @@
     if (VUE !== 'accueil') appliquerOnglets(VUE);
   }
   function ongletDe(el) { for (var p = el; p; p = p.parentElement) { var o = p.getAttribute && p.getAttribute('data-onglet'); if (o) return o; } return null; }
+  /* « cat:Mot » = le titre de rubrique (h2.cat) qui contient ce mot — une carte mène à SON onglet sans connaître son identifiant. */
+  function cibleVa(v) {
+    v = String(v || '');
+    if (v.indexOf('cat:') !== 0) return v;
+    var mot = sansAccent(v.slice(4)), hs = document.querySelectorAll('h2.cat');
+    for (var i = 0; i < hs.length; i++) if (sansAccent(titreSeul(hs[i])).indexOf(mot) >= 0) return hs[i];
+    return null;
+  }
   function aller(cible) {
     if (cible === 'boite') { if (global.kdmcBoite) global.kdmcBoite.ouvrir(); return; }
-    var el = null;
+    var el = cible && cible.nodeType === 1 ? cible : null;
+    if (el) cible = '';
     if (cible === 'livrer') {
       el = document.querySelector('#commerce-app [data-valider], #commerce-app [data-refuser]');
       if (el) el = el.closest('.tile') || el; else cible = '#commerce';
@@ -300,7 +309,7 @@
     /* admin.kd-mc.com : le pass du domaine voyage avec (app installée, cookies à part — voir admin.js ouvrirAvecPass) */
     if (!el && /^https:\/\/admin\.kd-mc\.com\//.test(cible) && global.kdmcOuvrirAvecPass) { global.kdmcOuvrirAvecPass(cible); return; }
     if (!el && /^(https?:)?\//.test(cible)) { location.href = cible; return; }
-    if (!el) { try { el = document.querySelector(cible); } catch (e) { el = null; } }
+    if (!el && cible) { try { el = document.querySelector(cible); } catch (e) { el = null; } }
     if (!el) el = document.getElementById('commerce');
     var sec = el.closest && el.closest('details.sec');
     if (!sec) return;
@@ -372,12 +381,17 @@
     var z = document.getElementById('tb-messages'); if (!z) return;
     z.textContent = '';
     var p = document.createElement('p'); p.className = 'info';
-    p.textContent = (D.nonLus ? D.nonLus + ' message(s) non lu(s)' : 'Aucun message non lu') + ' · ' + (D.connectes || 0) + ' personne(s) connectée(s)';
+    /* chaque morceau de la phrase mène à sa page : les non-lus → la boîte, les connectés → « Connectés » */
+    var pNl = document.createElement('span'); pNl.setAttribute('data-va', 'boite'); pNl.className = 'lien-info';
+    pNl.textContent = D.nonLus ? D.nonLus + ' message(s) non lu(s)' : 'Aucun message non lu';
+    var pCo = document.createElement('span'); pCo.setAttribute('data-va', '#presence'); pCo.className = 'lien-info';
+    pCo.textContent = (D.connectes || 0) + ' personne(s) connectée(s)';
+    p.textContent = ''; p.appendChild(pNl); p.appendChild(document.createTextNode(' · ')); p.appendChild(pCo);
     z.appendChild(p);
     var srcs = document.createElement('div'); srcs.className = 'srcs';
     (D.sources || []).forEach(function (s) {
       if (!s.total && s.etat === 'ok') return;
-      var c = document.createElement('span'); c.className = 'chip ' + (s.etat !== 'ok' ? 'err' : s.nonLus ? 'warn' : '');
+      var c = document.createElement('span'); c.className = 'chip ' + (s.etat !== 'ok' ? 'err' : s.nonLus ? 'warn' : ''); c.setAttribute('data-va', 'boite');
       c.textContent = (s.icone || '📨') + ' ' + String(s.nom || s.id).split(' · ')[0] + (s.etat !== 'ok' ? ' · indisponible' : s.nonLus ? ' · ' + s.nonLus : '');
       srcs.appendChild(c);
     });
@@ -471,6 +485,21 @@
 
   function demarrer(s) {
     coquille();
+    /* 16.10 (Kevin : « toutes infos doit être cliquable et atterrir au bon endroit ») : tout ce qui porte data-va (pastilles, cartes de chiffres)
+       mène à son bloc et à son onglet, au doigt comme au clavier. Un seul écouteur : les cartes redessinées restent cliquables. */
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest && e.target.closest('[data-va]');
+      if (!t || (e.target.closest('a,button,input,select,textarea,summary') && !e.target.closest('a,button,input,select,textarea,summary').hasAttribute('data-va'))) return;
+      var c = cibleVa(t.getAttribute('data-va')); if (!c) return;
+      e.preventDefault(); aller(c);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var t = e.target && e.target.closest && e.target.closest('[data-va]'); if (!t || t !== e.target) return;
+      var c = cibleVa(t.getAttribute('data-va')); if (c) { e.preventDefault(); aller(c); }
+    });
+    new MutationObserver(function () { Array.prototype.forEach.call(document.querySelectorAll('[data-va]:not([tabindex])'), function (x) { x.setAttribute('tabindex', '0'); x.setAttribute('role', 'link'); }); })
+      .observe(document.body, { childList: true, subtree: true });
     /* 13.10 (Kevin : « la zone du haut apparaît un petit moment après ») : le domaine vient de dire « admin vérifié » — SEULEMENT maintenant on
        dessine le dernier relevé (des nombres, datés) et la boîte part TOUT DE SUITE, avant les comptes et le commerce (qui ont chacun leurs
        propres lectures). Avant ce « oui », rien n'est dessiné ni demandé : verify-admin-unique le prouve. */

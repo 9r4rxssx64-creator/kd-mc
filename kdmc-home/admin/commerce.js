@@ -60,19 +60,19 @@
     var ea = etatRun(audit && audit.run);
     var livraisonsKo = live ? live.produits.filter(function (p) { return p.livre_http != null && (p.livre_http < 200 || p.livre_http >= 400); }).length : 0;
     return [
-      { l: 'Chiffre d\'affaires', v: v ? euro(v.ca) : '—', s: v ? (v.n + ' vente' + (v.n > 1 ? 's' : '') + (v.tronque ? ' (tronqué)' : '')) : 'caisse injoignable', cls: v && v.n ? 'ok' : '' },
-      { l: 'À valider (file)', v: live ? String(live.file.n) : '—', s: live ? (live.file.n ? 'Revolut / virement / PayPal non vu' : 'rien en attente') : '', cls: live && live.file.n ? 'warn' : '' },
+      { va: 'cat:Ventes', l: 'Chiffre d\'affaires', v: v ? euro(v.ca) : '—', s: v ? (v.n + ' vente' + (v.n > 1 ? 's' : '') + (v.tronque ? ' (tronqué)' : '')) : 'caisse injoignable', cls: v && v.n ? 'ok' : '' },
+      { va: 'cat:Ventes', l: 'À valider (file)', v: live ? String(live.file.n) : '—', s: live ? (live.file.n ? 'Revolut / virement / PayPal non vu' : 'rien en attente') : '', cls: live && live.file.n ? 'warn' : '' },
       /* Paniers ouverts : avec le PayPal perso de Kevin (pas de capture auto),
          c'est LA tuile qui dit qui a voulu acheter, même sans jamais revenir. */
-      { l: 'Paniers en attente', v: live && live.intentions ? String(live.intentions.n) : '—',
+      { va: 'cat:Ventes', l: 'Paniers en attente', v: live && live.intentions ? String(live.intentions.n) : '—',
         s: live && live.intentions ? (live.intentions.n ? euro(live.intentions.ca_potentiel) + ' possible · ' + live.intentions.dit_paye + ' disent avoir payé' : 'aucun panier ouvert') : '',
         cls: live && live.intentions && live.intentions.dit_paye ? 'warn' : '' },
-      { l: 'Club — abonnés actifs', v: live && live.club ? String(live.club.actifs) : '—', s: live && live.club ? (live.club.expirent14j + ' expirent sous 14 j') : (live ? 'base non lue' : ''), cls: '' },
-      { l: 'Produits en vente', v: String((data.produits || []).filter(function (p) { return !p.gele; }).length), s: (data.produits || []).filter(function (p) { return p.gele; }).length + ' gelé(s) par Kevin', cls: '' },
-      { l: 'Vidéos programmées', v: prog + '/' + (data.videos || []).length, s: '4 réseaux · 18→25.09', cls: prog ? 'ok' : '' },
-      { l: 'Audit live', v: ea.label.split(' ')[0], s: ea.label, cls: ea.cls },
-      { l: 'Livraisons', v: live ? (livraisonsKo ? livraisonsKo + ' KO' : 'OK') : '—', s: live ? 'pages de livraison sondées' : '', cls: live ? (livraisonsKo ? 'err' : 'ok') : '' },
-      { l: 'Commandes', v: live ? (live.config.commandes ? 'ON' : 'liens') : '—', s: live ? (live.config.commandes ? 'boutons actifs' : 'jeton absent : liens GitHub') : '', cls: live && live.config.commandes ? 'ok' : 'warn' },
+      { va: 'cat:Caisse', l: 'Club — abonnés actifs', v: live && live.club ? String(live.club.actifs) : '—', s: live && live.club ? (live.club.expirent14j + ' expirent sous 14 j') : (live ? 'base non lue' : ''), cls: '' },
+      { va: 'cat:Produits', l: 'Produits en vente', v: String((data.produits || []).filter(function (p) { return !p.gele; }).length), s: (data.produits || []).filter(function (p) { return p.gele; }).length + ' gelé(s) par Kevin', cls: '' },
+      { va: 'cat:vidéos', l: 'Vidéos programmées', v: prog + '/' + (data.videos || []).length, s: '4 réseaux · 18→25.09', cls: prog ? 'ok' : '' },
+      { va: 'cat:Commandes', l: 'Audit live', v: ea.label.split(' ')[0], s: ea.label, cls: ea.cls },
+      { va: 'cat:Produits', l: 'Livraisons', v: live ? (livraisonsKo ? livraisonsKo + ' KO' : 'OK') : '—', s: live ? 'pages de livraison sondées' : '', cls: live ? (livraisonsKo ? 'err' : 'ok') : '' },
+      { va: 'cat:Commandes', l: 'Commandes', v: live ? (live.config.commandes ? 'ON' : 'liens') : '—', s: live ? (live.config.commandes ? 'boutons actifs' : 'jeton absent : liens GitHub') : '', cls: live && live.config.commandes ? 'ok' : 'warn' },
     ];
   }
 
@@ -90,7 +90,7 @@
 
   /* ── Rendu (chaînes HTML, données déjà échappées) ─────────────────────── */
   function chip(e) { return '<span class="chip ' + e.cls + '">' + esc(e.label) + '</span>'; }
-  function tuileKpi(k) { return '<div class="kdmc-card kdmc-in kpi ' + k.cls + '"><div class="l">' + esc(k.l) + '</div><div><div class="v">' + esc(k.v) + '</div><div class="s">' + esc(k.s) + '</div></div></div>'; }
+  function tuileKpi(k) { return '<div class="kdmc-card kdmc-in kpi ' + k.cls + '"' + (k.va ? ' data-va="' + esc(k.va) + '"' : '') + '><div class="l">' + esc(k.l) + '</div><div><div class="v">' + esc(k.v) + '</div><div class="s">' + esc(k.s) + '</div></div></div>'; }
 
   function sectionVentes(live) {
     if (!live) return '<div class="note err">Caisse injoignable : les ventes ne peuvent pas être lues pour l\'instant.</div>';

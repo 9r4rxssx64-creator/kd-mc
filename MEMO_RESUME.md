@@ -6,6 +6,9 @@
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 
+## 2026-10-16 — Admin v2.2.0 : chaque info est cliquable et atterrit au bon endroit (Kevin)
+- `data-va` sur : pastilles des comptes (→ fiches / historique / connectés), les 9 cartes de chiffres du Commerce (→ Ventes, Produits, Commandes, Pub, Caisse), « non lus » / « connectés » / puces d'app de Messages (→ boîte, Connectés), lignes Santé et Coûts. Un seul écouteur dans `tableau.js` (`cibleVa` : « cat:Mot » = l'onglet du titre), clavier + rôle lien, chevron ›. Garde `test:admin-unique` 67/67. Mise en ligne : après 00h UTC (ration du jour épuisée).
+
 ## 2026-10-16 — Firebase étape 1 ANNULÉE (Kevin : « plus aucune app ne fonctionne »)
 - Revert de #4620 : CMCteams / light reviennent à la connexion Firebase anonyme de ce matin ; route `/__sso/fbtoken` scope cmc retirée. Mesuré au vrai navigateur (session de test) : lectures Firebase en 401 après la mise en ligne. À refaire SEULEMENT avec un test de bout en bout sur un vrai compte (jeton relu par Firebase) avant de livrer.
 

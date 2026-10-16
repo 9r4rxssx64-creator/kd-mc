@@ -213,6 +213,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/assets-en-ligne` | 16.10 | Routeur en ligne sur sa copie embarquée (run 38827591604) : go à Kevin pour supprimer kdmc-site | `assets-en-ligne` |
 | `claude/suppr-pages` | 16.10 | Projet Pages kdmc-site : republication automatique coupée + robot qui efface ses déploiements puis le supprime | `suppr-pages` |
 | `claude/pages-supprime` | 16.10 | Docs : projet Pages kdmc-site supprimé (run 38879024853), fuite fermée | `pages-supprime` |
+| `claude/admin-cliquable` | 16.10 | Admin v2.2.0 : pastilles, cartes de chiffres, puces et lignes de résumé cliquables vers leur onglet | `admin-cliquable` |
 | `claude/assets-entetes` | 16.10 | Routeur : la copie embarquée ne reçoit plus les en-têtes du visiteur (6 apps en 404 derrière la porte) | `assets-entetes` |
 | `claude/sonde-assets` | 16.10 | Sonde du déploiement : derrière la porte, lit le paquet envoyé (Pages supprimé → 13 faux rouges) | `sonde-assets` |
 | `claude/admin-rangee` | 16.10 | Tableau admin rangé : accueil en tuiles, une section à la fois, onglets Personnes, raccourcis, adresses #section/onglet | `admin-rangee` |

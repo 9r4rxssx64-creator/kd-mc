@@ -10,8 +10,8 @@
 <meta name="theme-color" content="#0b1409" />
 <link rel="stylesheet" href="/design-system.css" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.2" />
-<link rel="stylesheet" href="commerce.css?v=2.1.0" />
-<link rel="stylesheet" href="tableau.css?v=2.1.0" />
+<link rel="stylesheet" href="commerce.css?v=2.2.0" />
+<link rel="stylesheet" href="tableau.css?v=2.2.0" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -72,7 +72,7 @@
   .info b{color:var(--txt)}
   /* ── 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien… range, classe, organise ») : ACCUEIL à tuiles, puis UNE
      rubrique à la fois, découpée en onglets. L'adresse suit (#personnes/bloquer) : retour du téléphone et liens directs marchent. */
-  .hors-vue,.hors-onglet{display:none!important}
+  .hors-vue,.hors-onglet{display:none!important}[data-va]{cursor:pointer;position:relative}.lien-info{text-decoration:underline;text-decoration-color:rgba(201,162,39,.5);text-underline-offset:3px;min-height:44px}span.lien-info{display:inline-block;line-height:44px}[data-va]:active{transform:scale(.98)}.kpi[data-va]::after,.pill[data-va]::after{content:'›';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gold,#c9a227);font-size:20px;opacity:.7}.pill[data-va]{padding-right:26px}
   body[data-vue="accueil"] #tb-nav{display:none}
   body:not([data-vue="accueil"]) #tb-accueil,body:not([data-vue="accueil"]) #a-traiter,body:not([data-vue="accueil"]) .cherche{display:none}
   body:not([data-vue="accueil"]) details.sec>summary{display:none}
@@ -110,10 +110,10 @@
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.2"></script>
-  <script src="admin.js?v=2.1.0"></script>
-  <script src="commerce.js?v=2.1.0"></script>
-  <script src="tableau.js?v=2.1.0"></script>
+  <script src="admin.js?v=2.2.0"></script>
+  <script src="commerce.js?v=2.2.0"></script>
+  <script src="tableau.js?v=2.2.0"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.1.0" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.2.0" data-color="#c9a227" defer></script>
 </body>
 </html>

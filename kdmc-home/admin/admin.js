@@ -132,10 +132,10 @@
     /* Combien sont limités à une app : c'est la file de ce que Kevin a à décider
        (chaque nouvel inscrit y entre). Visible d'un coup d'œil, sans dérouler. */
     var limites = accounts.filter(function (a) { return a.portee === 'app'; }).length;
-    return '<div class="pill kdmc-in"><b>' + accounts.length + '</b> comptes clients</div>'
-      + '<div class="pill kdmc-in" id="pill-limites" title="Personnes qui n\'ont accès qu\'aux applications cochées sur leur fiche"><b>' + limites + '</b> limité' + (limites > 1 ? 's' : '') + ' à une app</div>'
-      + '<div class="pill kdmc-in"><b>' + withCgu + '</b> CGU acceptées</div>'
-      + '<div class="pill kdmc-in"><b>' + hits + '</b> connexions cumulées</div>';
+    return '<div class="pill kdmc-in" data-va="#list"><b>' + accounts.length + '</b> comptes clients</div>'
+      + '<div class="pill kdmc-in" id="pill-limites" data-va="#list" title="Personnes qui n\'ont accès qu\'aux applications cochées sur leur fiche"><b>' + limites + '</b> limité' + (limites > 1 ? 's' : '') + ' à une app</div>'
+      + '<div class="pill kdmc-in" data-va="#list"><b>' + withCgu + '</b> CGU acceptées</div>'
+      + '<div class="pill kdmc-in" data-va="#audsec"><b>' + hits + '</b> connexions cumulées</div>';
   }
   function presence(accounts) {
     var now = Date.now();
@@ -143,8 +143,8 @@
     var rec = accounts.filter(function (a) { return a.last_seen && now - a.last_seen >= ONLINE_MS && now - a.last_seen < RECENT_MS; });
     var h = '<h2 class="cat">🟢 Connectés <button class="refresh" id="prefresh" type="button">↻ Rafraîchir</button></h2>'
       + '<div class="stat">'
-      + '<div class="pill kdmc-in"><b>' + on.length + '</b> en ligne <span style="color:var(--subtle)">vus &lt; 13 min</span></div>'
-      + '<div class="pill kdmc-in"><b>' + rec.length + '</b> récents <span style="color:var(--subtle)">&lt; 1 h</span></div>'
+      + '<div class="pill kdmc-in" data-va="#presence"><b>' + on.length + '</b> en ligne <span style="color:var(--subtle)">vus &lt; 13 min</span></div>'
+      + '<div class="pill kdmc-in" data-va="#presence"><b>' + rec.length + '</b> récents <span style="color:var(--subtle)">&lt; 1 h</span></div>'
       + '</div>'
       + (on.length ? '<div>' + on.map(prow).join('') + '</div>'
         : '<div class="msg" style="padding:18px 16px">Personne en ligne à l\'instant.</div>');

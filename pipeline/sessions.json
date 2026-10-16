@@ -1767,6 +1767,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "admin-cliquable": {
+      "titre": "Admin v2.2.0 : chaque info cliquable vers son onglet",
+      "branche": "claude/admin-cliquable",
+      "sujet": "Kevin : toutes infos doit être cliquable et atterrir au bon endroit",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

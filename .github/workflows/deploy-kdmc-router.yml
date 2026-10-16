@@ -405,7 +405,10 @@ jobs:
         run: |
           # Laisser le temps au worker de se propager au bord Cloudflare.
           sleep 20
-          node tools/audit/sonde-site-publie.mjs "https://kd-mc.com"
+          # 16.10 : les journaux ne sont pas lisibles depuis une session (hôte blob refusé) → en cas
+          # d'échec, les lignes ❌ deviennent des annotations, lisibles par l'API check-runs.
+          node tools/audit/sonde-site-publie.mjs "https://kd-mc.com" | tee /tmp/sonde.txt || {
+            grep -E "❌|^  · |MESURE|paire|réseau" /tmp/sonde.txt | head -25 | sed 's/^/::error::sonde — /'; exit 1; }
 
       # ── LA BOÎTE UNIQUE DE L'ADMIN est-elle servie, et fermée ? (3.10, Kevin : tous les messages de toutes les apps) ──
       # Deux contrôles SANS écriture : sans session admin la boîte répond 401 « admin_requis » (si c'était 404, le routeur

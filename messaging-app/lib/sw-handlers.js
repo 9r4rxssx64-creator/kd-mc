@@ -13,7 +13,7 @@
  *   - OFFLINE_CACHE  : fallback HTML hors-ligne
  */
 
-export const CACHE_VERSION = 'apex-chat-v1.1.307';
+export const CACHE_VERSION = 'apex-chat-v1.1.308';
 export const STATIC_CACHE = `${CACHE_VERSION}-static`;
 export const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 export const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
@@ -313,7 +313,9 @@ export async function handleNotificationClick(event, { clients }) {
     return null;
   }
 
-  const targetUrl = event.notification.data?.url || './';
+  // App fermée : sans adresse précise, on ouvre quand même LA bonne conversation (?conv=, lu au démarrage).
+  const targetUrl = event.notification.data?.url
+    || (event.notification.data?.convId ? './?conv=' + encodeURIComponent(event.notification.data.convId) : './');
   const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
   for (const client of list) {
     if (client.url.includes('/messaging-app/')) {

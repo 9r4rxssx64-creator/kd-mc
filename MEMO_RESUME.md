@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Apex Chat v1.1.308 : lot iPhone (faux « livré », temps réel qui revient, notification qui ouvre la bonne conversation)
+- `messaging-app/index.html` + `lib/sw-handlers.js` : (1) un message pas encore accusé par le serveur affiche 🕓, un refus définitif ⚠️ (avant : ✓✓ « livré ») ; (2) le temps réel de la conversation affichée se rouvre au retour d'écran, de réseau et de page restaurée (`K._wsRevive`) ; (3) toucher une notification app fermée ouvre `?conv=<id>` (`K._openFromUrl`), un appel décroche tout seul. Version 1.1.308 (mise à jour auto des iPhone).
+- Gardes : `client-statut-envoi` (4), `client-ws-reveil` (5), `client-notification-ouvre-conv` (6), sabotages rouges prouvés. Suite complète : 2 057 verts.
+- **Non vérifié sur un vrai iPhone** : à tester par Kevin (mode avion → écrire → 🕓 puis ✓ au retour du réseau ; notification app fermée → bonne conversation).
+
 ## 2026-10-16 — Apex Chat : audit à 4 regards (sécurité, iPhone, quota gratuit, tests) puis lot F1
 - **Audits** (lecture seule, 4 agents) : 1 faille sérieuse, 4 importantes côté serveur ; 5 défauts P0 côté iPhone ; 2 requêtes qui peuvent épuiser le quota D1 ; 2 031 tests verts (97,4 % de lignes).
 - **Livré (lot F1)** : (1) en-têtes `nosniff` / HSTS / `no-store` (JSON) posés en un point (`workers/lib/cors.js`) ; (2) trois requêtes qui relisaient des conversations entières corrigées (EXISTS au lieu de COUNT ; index partiel `0023` ; rattrapage coupé en deux, `INDEXED BY`) ; (3) la clé Gemini ne voyage plus dans l'adresse ; (4) une panne de base ne renvoie plus son détail au client. Gardes : `api-entetes-securite` (7), `lot-f1-quota-lectures` (4), sabotages rouges prouvés.

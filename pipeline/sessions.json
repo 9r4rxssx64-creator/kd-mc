@@ -1841,13 +1841,13 @@
     "audit-apex-1610": {
       "titre": "Audit Apex 16.10 (vérifie tout en détail)",
       "branche": "claude/admin-ouverture-rapide",
-      "sujet": "Apex v13.4.374 en ligne ; règles Firebase ax_pin fermées ; robots du dépôt public verts pour de vraies raisons",
+      "sujet": "Apex v13.4.373 : bulles, bouton CSP, règles Firebase ax_pin fermées",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "Fait et vérifié : Apex 374 servie (sw.js), règles /apex/$key fermées sur ax_pin_ (run public 38941898501), lock Apex suivi, 7 robots Apex au coffre, action coffre en 3 essais, signal coffre-a-change retiré (mort depuis #4604). Reste : scores Axe/Lighthouse au prochain run public ; plan #559 étape 2 (verrous Firebase par uid) avec la ration de demain. Lots fusionnés depuis cette session : #4585, #4659, #4665, #4669 (branches admin-ouverture-rapide, apex-public-1610, apex-suite-1610, regle-publique-1610, robots-publics-1610-b)."
+      "note": "Apex v13.4.372 construite et vérifiée en local ; règles Firebase ouvertes = leçon #559, plan dans MEMO, pas corrigé (ration Actions épuisée)."
     },
     "firebase-cmc2": {
       "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",

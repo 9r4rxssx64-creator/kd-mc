@@ -16,8 +16,8 @@
  *   --sortie <dossier>     (défaut : /tmp/kdmc-publier-local)
  * Jeton : variable KDMC_PUBLIC_PAT (jeton du dépôt public) — ou, en session, le dépôt public attaché avec le droit d'écriture (add_repo).
  * Sans l'un ni l'autre : l'envoi échoue proprement (le contrôle à blanc marche toujours). Destination : GitHub, dépôt public — ZÉRO cron.
- * Ce robot n'est PAS fait pour tourner à chaque fusion (le robot Actions le fait pour 1 min) : il sert quand le quota est mangé, ou pour
- * grouper UN envoi par jour et économiser les minutes. */
+ * 16.10.2026 (Kevin : « Passe par le dépôt ouvert si possible. Toujours. ») : c'est désormais LA voie normale après chaque fusion —
+ * la session lance `--envoyer` elle-même (0 minute du coffre) ; le robot du coffre n'est plus que le train du soir / le secours. */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync, readdirSync, statSync, copyFileSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve, relative } from 'node:path';

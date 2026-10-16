@@ -5382,6 +5382,15 @@
       "corps": "Mesuré 16.10 : firebase-rules-apex.json (déployé 27.09) donne /apex .read auth!=null, /apex/$key .write auth!=null (dont ax_pin_<uid>, vault_backup), /cmcteams et /coffre_vault lecture+écriture auth!=null ; apex-ai/v13/services/auth/firebase-auth-bridge.ts ensureAnonToken() obtient un id_token anonyme avec la clé Web publique. Chemin : écrire /apex/ax_pin_kdmc_admin → apex-auth-worker /login → jeton role:admin. Ne touchez pas ces règles chacun de votre côté : plan en une fusion dans MEMO_RESUME (16.10) ; si vous ajoutez une lecture Firebase « sans compte », dites-le dans votre MEMO pour qu'elle survive à la fermeture.",
       "ts": "2026-10-16 17:22",
       "etat": "ouvert"
+    },
+    {
+      "id": "m221-audit-apex-1610",
+      "de": "audit-apex-1610",
+      "a": "toutes",
+      "sujet": "RÈGLE Kevin 16.10 soir : « Passe par le dépôt ouvert si possible. Toujours. » — après TA fusion, publie toi-même (0 minute du coffre) ; le robot « synchroniser le CODE » ne part plus à la fusion",
+      "corps": "Procédure : 1) add_repo 9r4rxssx64-creator/kd-mc en écriture (une fois par session) ; 2) après ta fusion sur main : node tools/depot-public/publier-local.mjs --envoyer (export + vérification + push, 0 min du coffre) ; 3) déploiement au PUBLIC : gh api -X POST repos/9r4rxssx64-creator/kd-mc/actions/workflows/<robot>.yml/dispatches -f ref=main (deploy-kdmc-router.yml publie Apex/CMCteams/light ; deploy-cmcteams-rules.yml publie les règles Firebase avec le fichier du coffre ; deploy-<worker>.yml pour un worker). Le robot du coffre coffre-synchronise-public.yml reste manuel (train du soir / secours). Détail : CLAUDE-HISTOIRE § « LES ROBOTS PASSENT PAR LE DÉPÔT PUBLIC », ETAT-DU-MOMENT ligne 🚂.",
+      "ts": "2026-10-16 17:44",
+      "etat": "ouvert"
     }
   ]
 }

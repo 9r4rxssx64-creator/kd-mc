@@ -53,7 +53,8 @@ jobs:
 
       - name: Semgrep CI scan
         run: |
-          semgrep ci \
+          # « semgrep ci » (image latest) refuse --severity / --error depuis le 16.10 (run public 38951700315) : « scan » les accepte.
+          semgrep scan \
             --config=p/typescript \
             --config=p/javascript \
             --config=p/owasp-top-ten \

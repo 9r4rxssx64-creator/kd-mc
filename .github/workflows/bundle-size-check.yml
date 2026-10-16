@@ -46,6 +46,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: "Récupérer la source privée d’Apex (3 fichiers au coffre ; dans le coffre, rien à faire)"
+        # 16.10.2026 : au dépôt public ces fichiers manquent → la construction échouait (TS2307). Ce robot ne mesure
+        # que des tailles / scores : son journal n’imprime rien de la source.
+        uses: ./.github/actions/coffre
+        with:
+          cle: ${{ secrets.COFFRE_CLE_LECTURE }}
 
       - name: Setup Node 22
         uses: actions/setup-node@v5

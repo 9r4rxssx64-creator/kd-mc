@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (nuit) — « Continu » : les robots du dépôt public verts pour de vraies raisons, 5 signalements suivis
+- **Mesuré** : au public, 16 robots rouges à chaque poussée (runs 38951700xxx). Causes : lock npm ignoré partout (`npm ci` EUSAGE, `npm audit` ENOLOCK) ; source d'Apex incomplète au public (3 fichiers au coffre → TS2307) ; `semgrep ci` refuse `--severity` ; job « Sync v12 » mort ; `apex-execute-auto-trigger` 403 au public ; `messages-suivis` : 5 signalements du 13.10 sans suivi.
+- **Livré** : lock `apex-ai/v13/package-lock.json` suivi ; 7 robots Apex (CI, e2e, iOS, auto-deploy, auto-rollback, apex-execute ×2) classés `workflows_prives` + conformes à `test:gratuit` (files, 10 min en PR, jamais d'annulation) ; bundle/axe/lighthouse récupèrent la source par l'action `coffre` ; `semgrep scan` ; job v12 retiré ; action `coffre` : 3 essais de clone (run 38952536692 « early EOF » = site non déployé ; relancé à la main 19:14 UTC, succès 38953422641) ; suivis m215→m219 (m218/m219 clos : les 3 tests départs re-mesurés verts sur main f45f411).
+- **Garde** : `test:robots-public` 6 contrôles + 6 sabotages (27 OK). Leçon #582.
+- **Non vérifié** : les robots publics après la prochaine synchronisation (à lire : `gh api repos/9r4rxssx64-creator/kd-mc/actions/runs?per_page=20`).
+
 ## 2026-10-16 — Apex Chat : le déploiement prouve la VERSION en ligne (lot K)
 - `/api/health` annonce `version` (constante `API_VERSION`, gardée = `package.json`) ; `deploy-apex-chat.yml` compare et ÉCHOUE si le serveur en ligne n'est pas à la version du dépôt (avant : comparaison impossible, simple notice). Garde `lot-k-version-sante` (3), sabotage rouge. **À chaque changement de version : mettre aussi `API_VERSION`** (le test le rappelle).
 

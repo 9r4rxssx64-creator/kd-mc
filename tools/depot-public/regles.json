@@ -207,9 +207,16 @@
     ".github/workflows/verif-live-cadres.yml",
     ".github/workflows/coffre-docs-migrer.yml",
     ".github/workflows/coffre-sonde-ia-gratuites.yml",
-    ".github/workflows/coffre-kv-inventaire.yml"
+    ".github/workflows/coffre-kv-inventaire.yml",
+    ".github/workflows/apex-v13-ci.yml",
+    ".github/workflows/apex-v13-e2e.yml",
+    ".github/workflows/apex-ios-simulator.yml",
+    ".github/workflows/auto-rollback.yml",
+    ".github/workflows/auto-deploy-apex-v13-build.yml",
+    ".github/workflows/apex-execute.yml",
+    ".github/workflows/apex-execute-auto-trigger.yml"
   ],
-  "_workflows_prives_pourquoi": "Dans un dépôt public, les journaux ET les artefacts d'un robot sont lisibles par tous. Ces robots se connectent en tant que Kevin et prennent des captures des vraies pages (plannings), ou manipulent des sauvegardes de données : ils restent au coffre. Règle automatique en plus : un robot qui lance un test ou un fichier resté au coffre reste au coffre. coffre-chaine-privee.yml : il lance les etapes de test:ci qui ont besoin des fichiers PRIVES (CMCteams, Light, plannings, arbre) — au public elles ne peuvent pas tourner, et depuis la bascule du 26.09 elles ne tournaient plus nulle part (109 etapes sur 221, mesure). audit-domaine.yml : ses résultats (check-run) listent ce qu'un inconnu peut lire — au public, ce serait un mode d'emploi.",
+  "_workflows_prives_pourquoi": "16.10.2026 — mesuré au dépôt public (runs 38951700250/375/291/437/337/399) : la source d’Apex y est incomplète (apex-identity.ts, never-forget-watch.ts, cmc-vision-validator.ts restent au coffre : ils portent des noms et l’adresse de Kevin) → TS2307 à chaque poussée ; et un test qui échoue imprime ses attendus (des noms) dans un journal public. Les 12 542 tests d’Apex tournent dans la session avant la fusion ; la copie construite apex-ai-v13/ est faite au coffre et publiée par le routeur. apex-execute(-auto-trigger) modifie le dépôt : jamais depuis le public (403 mesuré).",
   "_test_prive_index_racine": "Un test est aussi privé s'il lit la page RACINE index.html (CMCteams) : « 'index.html' » seul, « ../index.html », « /CMCteams/index.html ». Pas « apex-ai/index.html » ni « tools/x/index.html » (autres applications).",
   "scripts_npm_prives": [
     {

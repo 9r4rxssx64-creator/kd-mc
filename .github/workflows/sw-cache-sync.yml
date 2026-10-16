@@ -27,59 +27,12 @@ permissions:
   contents: write
 
 jobs:
-  sync-v12:
-    name: Sync v12 (apex-ai/sw.js <-> apex-ai/index.html)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 1
-
-      - name: Verifier sync v12
-        id: check
-        run: |
-          APP_VER=$(grep -oE 'APP_VER\s*=\s*"v[0-9]+\.[0-9]+"' apex-ai/index.html | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
-          SW_VER=$(grep -oE "CACHE_VERSION\s*=\s*'apex-v[0-9]+\.[0-9]+'" apex-ai/sw.js | head -1 | grep -oE 'v[0-9]+\.[0-9]+')
-          echo "APP_VER=$APP_VER"
-          echo "SW_VER=$SW_VER"
-          echo "app_ver=$APP_VER" >> $GITHUB_OUTPUT
-          echo "sw_ver=$SW_VER" >> $GITHUB_OUTPUT
-          if [ -z "$APP_VER" ] || [ -z "$SW_VER" ]; then
-            echo "drift=false" >> $GITHUB_OUTPUT
-            echo "Pas de version detectee, skip"
-          elif [ "$APP_VER" != "$SW_VER" ]; then
-            echo "drift=true" >> $GITHUB_OUTPUT
-            echo "::warning::v12 drift: APP_VER=$APP_VER vs SW_VER=$SW_VER"
-          else
-            echo "drift=false" >> $GITHUB_OUTPUT
-            echo "v12 OK ($APP_VER)"
-          fi
-
-      - name: Auto-fix v12
-        if: steps.check.outputs.drift == 'true'
-        run: |
-          APP_VER="${{ steps.check.outputs.app_ver }}"
-          sed -i "s/CACHE_VERSION\s*=\s*'apex-v[0-9]\+\.[0-9]\+'/CACHE_VERSION  = 'apex-${APP_VER}'/" apex-ai/sw.js
-          echo "Fix v12 : sw.js -> apex-${APP_VER}"
-
-      - name: Commit + push v12
-        if: steps.check.outputs.drift == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-          git add apex-ai/sw.js
-          git commit -m "chore(v12): sync sw.js CACHE_VERSION -> ${{ steps.check.outputs.app_ver }} (auto) [skip ci]" || echo "Nothing to commit"
-          git push origin main
-
+  # 16.10.2026 : le job « Sync v12 » est retiré — Apex v12 (apex-ai/) est figé (CACHE_VERSION apex-v12.785,
+  # plus d'APP_VER "vX.Y" dans index.html) : il rougissait à chaque poussée au dépôt public sans rien protéger.
   sync-v13:
     name: Sync v13 (apex-ai/v13/ — bootstrap.ts <-> sw.js <-> index.html)
     runs-on: ubuntu-latest
     timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
-    needs: sync-v12
-    if: always()
     steps:
       - uses: actions/checkout@v6
         with:

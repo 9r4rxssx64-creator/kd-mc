@@ -34,8 +34,16 @@ runs:
         printf '%s\n' "$CLE" > ~/.ssh/coffre
         chmod 600 ~/.ssh/coffre
         ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
-        GIT_SSH_COMMAND="ssh -i $HOME/.ssh/coffre -o IdentitiesOnly=yes" \
-          git clone -q --depth 1 "git@github.com:${COFFRE}.git" /tmp/coffre
+        # 3 essais : le 16.10 (run public 38952536692) un seul clone coupé en plein transfert
+        # (« fatal: early EOF ») a laissé le site sans déploiement. Un transfert raté n'est pas
+        # une raison de ne pas publier : on recommence, en attendant 5 s puis 20 s.
+        essai=0
+        until GIT_SSH_COMMAND="ssh -i $HOME/.ssh/coffre -o IdentitiesOnly=yes" \
+          git clone -q --depth 1 "git@github.com:${COFFRE}.git" /tmp/coffre; do
+          essai=$((essai+1)); rm -rf /tmp/coffre
+          if [ "$essai" -ge 3 ]; then echo "::error::Le coffre n'a pas pu être lu après 3 essais."; rm -f ~/.ssh/coffre; exit 1; fi
+          echo "clone du coffre coupé (essai $essai/3), nouvel essai dans $((essai*essai*5)) s"; sleep $((essai*essai*5))
+        done
         rm -f ~/.ssh/coffre
         ( cd /tmp/coffre && node tools/depot-public/exporter.mjs --copier-prives-vers "$GITHUB_WORKSPACE" | tail -1 )
         rm -rf /tmp/coffre

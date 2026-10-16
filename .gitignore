@@ -1,6 +1,8 @@
 # Dépendances Node.js
 node_modules/
 package-lock.json
+# 16.10.2026 : le lock d’Apex v13 est SUIVI — sans lui, « npm ci » et « npm audit » échouent partout (mesuré au public : EUSAGE / ENOLOCK)
+!apex-ai/v13/package-lock.json
 
 # Artefacts vidéo intermédiaires
 tools/video/frames/

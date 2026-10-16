@@ -4,6 +4,14 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI v13.4.372 → v13.4.376 (2026-10-16 — « Vérifie tout en détail », puis « Continu »)
+
+- **v13.4.372** : une seule bulle d'information par ouverture (« Proxy activé », « clés restaurées » ne s'empilent plus) ; le bouton « ← Chat » pose son style par `styleInjector` (CSP nonce) au lieu d'un `<style>` nu refusé par la page.
+- **v13.4.373** : `sw.js` servi recopié proprement (un marqueur de conflit et deux `CACHE_VERSION` avaient été publiés — leçon #560) ; garde `test:sw-identite` compile chaque `sw.js`.
+- **v13.4.374** : 46 tests figés sur « Anthropic en premier » remis à la règle « gratuit d'abord » ; empreinte du code admin : le premier code passe par le guichet `/pin/init` du worker, plus de PUT direct dans Firebase (règles `/apex/$key` fermées sur `ax_pin_`).
+- **v13.4.375** : la veille technologique ne contacte plus un hôte interdit par la CSP de la page (16 violations `connect-src` par ouverture → 0) ; le journal CSP dit l'adresse bloquée ; Axe borné à 8 s ; Lighthouse lit enfin `lighthouse.config.json`.
+- **v13.4.376** : le client MCP respecte aussi la CSP (29 serveurs `mcp.*` sondés à chaque ouverture → 0 violation) ; badge de version lisible (contraste 4,16 → 7,37, Axe vert). Mesuré au dépôt public : Axe ✅, Lighthouse bureau (bonnes pratiques 0,89 → 0,93) et mobile ✅.
+
 ## CMCteams v9.977 (2026-10-15 — les deux rouges de `main` corrigés : les cadres gardent leur groupe d'octobre, la ligne « TOTAL équipe » n'est plus prise pour une personne)
 
 - **Kevin : « Corrige l'erreur que l'autre branche a trouvée »** → `test:equipes-mois-suivant` et `test:departs-groupes` étaient rouges sur `main` (je les avais notés « déjà rouges avant moi » SANS le vérifier sur `origin/main` : l'un des deux venait de moi).

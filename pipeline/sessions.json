@@ -1847,7 +1847,7 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "Apex v13.4.376 EN LIGNE (sw.js) : 0 violation CSP (74→58→0), Axe vert, Lighthouse bureau/mobile verts, tous les robots publics Apex verts. Routeur : wrangler deploy réessayé sur 5xx Cloudflare. Reste : LCP mobile bridé (chantier), plan #559 étape 2 (ration de demain), vrai iPhone à confirmer par Kevin."
+      "note": "5e rappel docs (20h40) : CHANGELOG Apex 372→376, 8 branches sur la carte + registre, action 0b pour Kevin, leçons 584/585, gardes docs-frais R9 et lessons-numeros, règle docs-temps-reel 11–14. Apex 376 EN LIGNE. Reste : LCP mobile bridé, plan #559 étape 2 (ration de demain), iPhone à confirmer."
     },
     "firebase-cmc2": {
       "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",
@@ -1939,6 +1939,94 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "apex-1610-a": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-a",
+      "branche": "claude/apex-public-1610",
+      "sujet": "Apex 372→373 publiés par le dépôt public ; règles Firebase ax_pin fermées ; guichet /pin/init",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "apex-1610-b": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-b",
+      "branche": "claude/apex-suite-1610",
+      "sujet": "Apex 374 : 46 tests remis à la règle « gratuit d'abord » ; garde apex-passerelle 5b",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "apex-1610-c": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-c",
+      "branche": "claude/regle-publique-1610",
+      "sujet": "Règle gratuit-public + robots publics verts (#4659, #4665)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "apex-1610-d": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-d",
+      "branche": "claude/robots-publics-1610-b",
+      "sujet": "Lighthouse lit sa config, Axe sert son paquet, signal mort retiré (#4669)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "apex-1610-e": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-e",
+      "branche": "claude/pipeline-garde-1610",
+      "sujet": "Garde pipeline-sessions : docs-complets inscrite, baseline (#4675)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "apex-1610-f": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-f",
+      "branche": "claude/apex-375-veille-csp",
+      "sujet": "Apex 375 : la veille respecte la CSP, Lighthouse calibré (#4678)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "apex-1610-g": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-g",
+      "branche": "claude/apex-376-mcp-csp",
+      "sujet": "Apex 376 : client MCP et CSP, badge lisible, contrat proxy (#4681)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
+    },
+    "apex-1610-h": {
+      "titre": "Audit Apex 16.10 — lot apex-1610-h",
+      "branche": "claude/routeur-reessai-1610",
+      "sujet": "Routeur : wrangler deploy en 3 essais sur 5xx Cloudflare (#4683)",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "Fusionnée le 16.10 (session audit-apex-1610)."
     }
   },
   "messages": [
@@ -5538,7 +5626,7 @@
       "ts": "2026-10-16 19:30",
       "etat": "ouvert",
       "sujet": "Dépôt public : le lock d'Apex v13 est SUIVI, 7 robots Apex sont au coffre, et le signal « coffre-a-change » est MORT (ne l'envoie plus)",
-      "corps": "(1) apex-ai/v13/package-lock.json est suivi par git depuis #4665 (.gitignore : !apex-ai/v13/package-lock.json) : si ton « npm install » le modifie, commite-le avec ton lot — sans lui npm ci et npm audit échouent partout (mesuré au public : EUSAGE/ENOLOCK). (2) Les robots qui compilent/testent la source d'Apex (apex-v13-ci, e2e, ios, auto-deploy, auto-rollback, apex-execute ×2) sont dans workflows_prives : ils ne tournent plus au public (3 fichiers de la source y manquent → TS2307 ; un test qui échoue imprimerait des noms). Lance les tests d'Apex dans ta session avant de fusionner. (3) Correction de m222, pas 3 : le signal « gh api … event_type=coffre-a-change » n'a plus d'écouteur depuis #4604 (16.10 matin) — chaque robot de déploiement du public relit lui-même les fichiers privés au coffre (action coffre, maintenant en 3 essais). Procédure à jour : .claude/rules/gratuit-public.md (garde test:robots-public). (4) Si un robot public est rouge : lis le pas qui échoue (leçon #582), ne t'habitue pas."
+      "corps": "(1) apex-ai/v13/package-lock.json est suivi par git depuis #4665 (.gitignore : !apex-ai/v13/package-lock.json) : si ton « npm install » le modifie, commite-le avec ton lot — sans lui npm ci et npm audit échouent partout (mesuré au public : EUSAGE/ENOLOCK). (2) Les robots qui compilent/testent la source d'Apex (apex-v13-ci, e2e, ios, auto-deploy, auto-rollback, apex-execute ×2) sont dans workflows_prives : ils ne tournent plus au public (3 fichiers de la source y manquent → TS2307 ; un test qui échoue imprimerait des noms). Lance les tests d'Apex dans ta session avant de fusionner. (3) Correction de m222, pas 3 : le signal « gh api … event_type=coffre-a-change » n'a plus d'écouteur depuis #4604 (16.10 matin) — chaque robot de déploiement du public relit lui-même les fichiers privés au coffre (action coffre, maintenant en 3 essais). Procédure à jour : .claude/rules/gratuit-public.md (garde test:robots-public). (4) Si un robot public est rouge : lis le pas qui échoue (leçon #584), ne t'habitue pas."
     }
   ]
 }

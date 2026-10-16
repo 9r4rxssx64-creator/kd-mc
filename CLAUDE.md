@@ -960,9 +960,9 @@ Kevin : « Vérifie toujours tout réel. Note-le et rappelle-toi. »
 Kevin : « Trouve des solutions pour ne pas consommer. Tu avais mis en place de passer par le public avec un robot… Privilégie toujours le public. Enfin, en tout cas, toujours le gratuit. […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-les-robots-passent-par-le-dépôt-public-gratuit-et-illimité-dabord-le-privé-seulement-en-secours-kevin-2026-10-16-absolue)
 
-### 📚 RÈGLE ABSOLUE — TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER (Kevin 2026-10-16, 4ᵉ rappel : 16.05, 12.08, 8.10, 16.10)
+### 📚 RÈGLE ABSOLUE — TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER (Kevin 2026-10-16, 5ᵉ rappel : 16.05, 12.08, 8.10, 16.10 matin, 16.10 soir)
 **« Mets TOUS les documents à jour en temps réel toujours sans rien oublier, note-le. »** — Kevin 2026-10-16
-↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tous-les-documents-à-jour-en-temps-réel-sans-rien-oublier-kevin-2026-10-16-4ᵉ-rappel-1605-1208-810-1610)
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tous-les-documents-à-jour-en-temps-réel-sans-rien-oublier-kevin-2026-10-16-5ᵉ-rappel-1605-1208-810-1610-matin-1610-soir)
 
 ### 🏁 RÈGLE ABSOLUE — VA AU BOUT DE TOUT LE TRAVAIL, EN AUTO, SANS JAMAIS T'ARRÊTER (Kevin 2026-10-16, ABSOLUE)
 Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. »

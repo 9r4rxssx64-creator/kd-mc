@@ -148,6 +148,13 @@ if (versionsBougees.length) {
 }
 if (versionsBougees.length && !touche(DOC_ETAT)) manque.push([DOC_ETAT, `R7 : version(s) livrée(s) (${versionsBougees.map((x) => x.v).join(', ')}) → la vérité du jour dit quelle version est en ligne`]);
 if (planningsAjoutes.length && !touche(DOC_IMPORTS)) manque.push([DOC_IMPORTS, `R5 : planning(s) de Kevin ajouté(s) (${planningsAjoutes.join(', ')}) → ligne avec verdict (✅/🛠️/⏭️/🏠)`]);
+/* R9 (16.10 soir, 5e rappel de Kevin) : CHANGELOG.md s'annonce « CMCteams + Apex AI » et n'avait AUCUNE version d'Apex 13.4.3xx —
+   cinq versions livrées le même jour sans une ligne. Une version de CMCteams (version.txt), de la light (tools/departs/version.txt)
+   ou d'Apex AI (apex-ai/v13/sw.js) oblige une entrée dans CHANGELOG.md, dans le même commit. */
+const DOC_CHANGELOG = 'CHANGELOG.md';
+const EST_VERSION_CHANGELOG = (f) => f === 'version.txt' || f === 'tools/departs/version.txt' || f === 'apex-ai/v13/sw.js';
+const versionsChangelog = versionsBougees.filter((x) => EST_VERSION_CHANGELOG(x.f));
+if (versionsChangelog.length && !touche(DOC_CHANGELOG)) manque.push([DOC_CHANGELOG, `R9 : version(s) livrée(s) (${versionsChangelog.map((x) => x.v).join(', ')}) → une entrée dans ${DOC_CHANGELOG} (CMCteams, light, Apex AI)`]);
 if (routeurBouge && !touche(DOC_ETAT)) manque.push([DOC_ETAT, 'R6 : le routeur du domaine a changé → la vérité du jour (date en tête + ligne du tableau)']);
 if (beeBouge.length && !touche(DOC_REGLES)) manque.push([DOC_REGLES, `R8 : le code de Bee a changé (${beeBouge.join(', ')}) → écrire ce qu'elle sait faire / ne fait pas / ce que Kevin a ouvert ou fermé`]);
 

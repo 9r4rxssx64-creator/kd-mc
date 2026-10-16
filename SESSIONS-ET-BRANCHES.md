@@ -235,6 +235,14 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/kevin-todo-pages` | 16.10 | Action Kevin urgente : supprimer kdmc-site et kdmc0 (copies Pages de l'autre compte, encore ouvertes) | `kevin-todo-pages` |
 | `claude/docs-complets` | 16.10 | Arbre v3.108→v3.116 + domaine (autre session) | `arbre-session-1610` |
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
+| `claude/apex-public-1610` | 16.10 | Apex 372→373 publiés par le dépôt public (0 minute du coffre) ; règles Firebase `ax_pin_` fermées ; guichet `/pin/init` — fusionnée | `audit-apex-1610` |
+| `claude/apex-suite-1610` | 16.10 | Apex 374 : 46 tests figés remis à la règle « gratuit d'abord » ; garde apex-passerelle 5b (copie servie = source) — fusionnée | `audit-apex-1610` |
+| `claude/regle-publique-1610` | 16.10 | Règle « mettre en ligne sans quota » (gratuit-public.md) ; puis robots publics verts : lock Apex suivi, 7 robots au coffre, semgrep scan, clone en 3 essais, suivis m215→m219 (#4659, #4665) — fusionnée | `audit-apex-1610` |
+| `claude/robots-publics-1610-b` | 16.10 | Lighthouse lit sa config, Axe sert son paquet, signal « coffre-a-change » mort retiré ; m223 (#4669) — fusionnée | `audit-apex-1610` |
+| `claude/pipeline-garde-1610` | 16.10 | Garde pipeline-sessions : `claude/docs-complets` inscrite ; 2 branches fusionnées justifiées (#4675) — fusionnée | `audit-apex-1610` |
+| `claude/apex-375-veille-csp` | 16.10 | Apex 375 : la veille respecte la CSP, Lighthouse calibré sur la mesure (#4678) — fusionnée | `audit-apex-1610` |
+| `claude/apex-376-mcp-csp` | 16.10 | Apex 376 : client MCP et CSP, badge lisible, test de contrat proxy adapté au verrou (#4681) — fusionnée | `audit-apex-1610` |
+| `claude/routeur-reessai-1610` | 16.10 | Routeur : wrangler deploy en 3 essais sur 5xx Cloudflare (#4683) — fusionnée | `audit-apex-1610` |
 | `claude/docs-complets` | 16.10 | **Arbre + domaine (session 15-16.10)** : arbre v3.108→v3.116, admin « comptes bloqués / Personnes attendues », recherches Le Dren + famille de Yann ; en ligne v3.116 (routeur déployé par le dépôt public) | `arbre-session-1610` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |

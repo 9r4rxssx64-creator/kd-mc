@@ -12242,7 +12242,7 @@ Kevin : « Trouve des solutions pour ne pas consommer. Tu avais mis en place de 
 - **Garde** : `npm run test:robots-public` (dans `test:ci`, sabotage prouvé).
 - **Le soir même (Kevin : « Passe par le dépôt ouvert si possible. Réfléchis, cherche et trouve une solution. Toujours. Note-le, rappelle-toi. »)** — la règle s'étend au CODE lui-même, pas seulement aux déploiements : (1) après ta fusion, **publie toi-même** au dépôt public — `node tools/depot-public/publier-local.mjs --envoyer` (mêmes exporter/verifier, dépôt public attaché en écriture par `add_repo kd-mc`, **0 minute du coffre**) ; le robot « Coffre → dépôt public : synchroniser le CODE » ne part plus à la fusion (mesuré : 4 fusions le 16.10 = 26 min du coffre), il reste le train du soir et le secours ; (2) **chaque déploiement se lance au public** par `gh api -X POST repos/9r4rxssx64-creator/kd-mc/actions/workflows/<robot>.yml/dispatches -f ref=main` : le routeur (il copie Apex, CMCteams, la light depuis le coffre), les règles Firebase (le robot « Deploy CMCteams Firebase Rules » lit `firebase-rules-apex.json` au coffre par l'action `coffre`), les workers ; (3) **avant de dire « il faut attendre le quota »**, chercher le chemin public : prouvé le 16.10, Apex v13.4.372 mise en ligne par le routeur public alors que la ration du coffre était à 73/60 min. Le robot public « Auto-deploy Apex v13 build » est rouge depuis le 27.09 (fichiers privés absents du public) : ne pas s'y fier, c'est le routeur qui publie Apex.
 
-## 📚 RÈGLE ABSOLUE — TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER (Kevin 2026-10-16, 4ᵉ rappel : 16.05, 12.08, 8.10, 16.10)
+## 📚 RÈGLE ABSOLUE — TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER (Kevin 2026-10-16, 5ᵉ rappel : 16.05, 12.08, 8.10, 16.10 matin, 16.10 soir)
 
 > **« Mets TOUS les documents à jour en temps réel toujours sans rien oublier, note-le. »** — Kevin 2026-10-16
 
@@ -12262,6 +12262,20 @@ touchant presque que `MEMO_RESUME.md` (assez pour le garde) ; `KEVIN_ACTIONS_TOD
 9. **Ce qui se mesure ne s'écrit pas à la main** : `npm run maj-tout` (hook Stop, à chaque fin de tour) réécrit les chiffres entre marqueurs `<!-- MAJ-AUTO:debut … -->` — depuis le 16.10 aussi l'état d'Apex Chat dans `messaging-app/README.md` (version, tailles arrondies au palier, jamais de faux rouge) ; `test:maj-tout` échoue si un bloc est périmé. Un document daté (`messaging-app/docs/ARCHITECTURE.md`, `ROADMAP.md`) porte un bandeau « daté » + renvoi vers la source vivante.
 
 **Garde mécanique (16.10, R8)** : `tools/audit/docs-fraicheur.cjs` exige `CLAUDE-HISTOIRE.md` dès que le code de Bee change (`services/kdmc-router/bee-*.js` hors tests, `tools/javis/javis-widget.js`) — ce que Bee sait faire, ne fait pas, et ce que Kevin a ouvert ou fermé. Prouvé par `test:docs-frais-garde` (26/0, dépôt jetable). Les autres cases de la liste restent à ta charge : relis-la avant de dire « fini ».
+
+### 5ᵉ rappel, le soir même (session `audit-apex-1610`) — ce qui était encore en retard, et les gardes ajoutés
+
+> **« Mets TOUS les documents à jour en temps réel toujours sans rien oublier note le »** — Kevin 2026-10-16, 20h40 UTC
+
+**Mesuré tout de suite après** (garde `docs-frais` vert, donc rien ne le disait) :
+- `CHANGELOG.md` s'annonce « CMCteams + Apex AI » et n'avait **aucune** version d'Apex 13.4.3xx : cinq versions livrées ce jour (372→376) sans une ligne ;
+- `SESSIONS-ET-BRANCHES.md` ne listait **aucune** des 8 branches de la session (seule celle du registre y était) ;
+- `KEVIN_ACTIONS_TODO.md` ne disait pas à Kevin de vérifier Apex 376 sur son iPhone (c'était seulement dans la réponse de chat) ;
+- `LESSONS.md` : 757 leçons, **582 écrit 3 fois, 583 cinq fois** (chaque session devinait « le dernier + 1 » dans sa copie) — « leçon #583 » ne désignait plus rien.
+
+**Réparé dans le même commit** : entrée Apex 372→376 au CHANGELOG ; 8 lignes de branches ; ligne 0b pour Kevin ; mes deux leçons renumérotées 584 / 585 (l'histoire des autres reste telle quelle).
+
+**Gardes ajoutés (prouvés par sabotage)** : `test:docs-frais` **R9** — une version de CMCteams, de la light ou d'Apex AI oblige une entrée dans `CHANGELOG.md` ; `test:lessons-numeros` — toute leçon ajoutée porte un numéro strictement plus grand que tout ce qui précède (`node tools/docs/lecon-suivante.mjs` donne le prochain) ; `.claude/rules/docs-temps-reel.md` (chargée par toute session) : points 11 à 14 (numéro de leçon, ligne par branche, CHANGELOG, ce que Kevin doit vérifier sur l'iPhone va dans ses actions).
 
 ### Complément mécanique (même jour, session `lingua-cercle`) — le trou que le garde ne voyait pas
 

@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (20h40) — Kevin : « Mets TOUS les documents à jour en temps réel toujours sans rien oublier note le » (5ᵉ rappel)
+- **Mesuré tout de suite** (garde `docs-frais` vert, donc muet) : CHANGELOG sans aucune version d'Apex 13.4.3xx (5 versions du jour) ; SESSIONS-ET-BRANCHES sans les 8 branches de la session ; KEVIN_ACTIONS_TODO sans « vérifie Apex 376 sur l'iPhone » ; LESSONS : 582 écrit 3 fois, 583 cinq fois (757 leçons, 135 numéros non croissants).
+- **Réparé** : entrée CHANGELOG « Apex AI v13.4.372 → 376 » ; 8 lignes de branches + 8 fiches au registre (état termine) ; ligne 0b pour Kevin ; mes leçons renumérotées 584 / 585.
+- **Gardes (sabotage prouvé)** : `docs-frais` **R9** (version CMCteams / light / Apex AI ⇒ CHANGELOG, test du garde 36/36) ; `test:lessons-numeros` (numéro neuf et croissant, `tools/docs/lecon-suivante.mjs`) ; règle `.claude/rules/docs-temps-reel.md` points 11–14 ; CLAUDE-HISTOIRE (5ᵉ rappel) + index. Leçon #586.
+
 ## 2026-10-16 (nuit) — Apex v13.4.376 : après 375, le client MCP respecte aussi la CSP (58 violations → 0 attendu) ; badge de version lisible (axe)
 - **Lu au public après 375 (commit e65a05a)** : Lighthouse bureau ✅ et mobile ✅ (perf 0,63, TBT 440 ms, LCP 7,9 s), npm audit ✅, Semgrep ✅, SW sync ✅, Tests E2E ✅, Apex 375 servie. Restaient : **58 violations CSP** (la sentinelle skills-watch sonde les 29 serveurs `mcp.*` à chaque ouverture, tous absents de connect-src) et **Axe rouge pour de vrai** : badge de version `#c9a227` à opacité 0,7 → contraste 4,16 < 4,5 (routes admin et coffre).
 - **Livré (376)** : `services/core-svc/csp-autorise.ts` partagé ; `mcp-client` (call / listTools / healthCheck) n'appelle pas un hôte interdit, le dit une fois par serveur ; `mcp-registry.discoverAll` idem ; badge à opacité 1 (contraste 7,37). Tests `v13_4_376-mcp-csp` (2, sabotage prouvé).
@@ -42,7 +47,7 @@ Trou mesuré : Lingua **v2.141.0** sur main, écrite nulle part (ni mémo ni ét
 R4 = toute version d'app (cache `sw.js` changé, tout `version.txt`, hors dist/archives) écrite au mémo + **R7** = version ⇒
 `ETAT-DU-MOMENT.md` bouge (test 27/0, 6 sabotages). `maj-tout.mjs` : bloc `versions` (22 apps) dans ETAT + TRANSFERT, comparé
 par `test:maj-tout`. Règle notée : `CLAUDE-HISTOIRE.md` → `CLAUDE.md` (index 219 règles). ETAT : 3 lignes Lingua fusionnées
-en une synthèse. Piège : ma copie hors du dossier projet ne lance pas le hook Stop → `maj-tout --rapide` à la main. Leçon #583.
+en une synthèse. Piège : ma copie hors du dossier projet ne lance pas le hook Stop → `maj-tout --rapide` à la main. Leçon #585.
 
 ---
 ## 2026-10-16 (soir) — « Mets TOUS les documents à jour » (5ᵉ rappel) : complété, pas dupliqué
@@ -61,7 +66,7 @@ en une synthèse. Piège : ma copie hors du dossier projet ne lance pas le hook 
 ## 2026-10-16 (nuit) — « Continu » : les robots du dépôt public verts pour de vraies raisons, 5 signalements suivis
 - **Mesuré** : au public, 16 robots rouges à chaque poussée (runs 38951700xxx). Causes : lock npm ignoré partout (`npm ci` EUSAGE, `npm audit` ENOLOCK) ; source d'Apex incomplète au public (3 fichiers au coffre → TS2307) ; `semgrep ci` refuse `--severity` ; job « Sync v12 » mort ; `apex-execute-auto-trigger` 403 au public ; `messages-suivis` : 5 signalements du 13.10 sans suivi.
 - **Livré** : lock `apex-ai/v13/package-lock.json` suivi ; 7 robots Apex (CI, e2e, iOS, auto-deploy, auto-rollback, apex-execute ×2) classés `workflows_prives` + conformes à `test:gratuit` (files, 10 min en PR, jamais d'annulation) ; bundle/axe/lighthouse récupèrent la source par l'action `coffre` ; `semgrep scan` ; job v12 retiré ; action `coffre` : 3 essais de clone (run 38952536692 « early EOF » = site non déployé ; relancé à la main 19:14 UTC, succès 38953422641) ; suivis m215→m219 (m218/m219 clos : les 3 tests départs re-mesurés verts sur main f45f411).
-- **Garde** : `test:robots-public` 6 contrôles + 6 sabotages (27 OK). Leçon #582.
+- **Garde** : `test:robots-public` 6 contrôles + 6 sabotages (27 OK). Leçon #584.
 - **Signal mort retiré** : « coffre-a-change » n'a plus d'écouteur depuis #4604 (republication Pages arrêtée ce matin) — `publier-local.mjs`, la règle `gratuit-public.md`, ETAT, CLAUDE-HISTOIRE et le garde ne le commandent plus ; chaque robot de déploiement du public relit lui-même le coffre. Message m223 aux sessions (lock suivi, robots au coffre, signal mort).
 - **Lu après publication (commit public e509030)** : Bundle Size ✅, Tests E2E + Validation ✅, routeur ✅ ; Lighthouse mobile ✗ (TS2307 : `lighthouse-ci.yml` n'avait pas l'étape coffre → ajoutée) ; Axe ✗ (ERR_CONNECTION_REFUSED : avec CI=true Playwright ne lance aucun serveur → étape `vite preview --port 4173` ajoutée, comme e2e). Garde `test:robots-public` 29 OK.
 - **Lighthouse (bureau)** : construit enfin, puis « Configuration file not found » — `lhci` ne lit pas un fichier nommé `lighthouse.config.json` ; il jugeait avec les règles par défaut (8 ✘ dont 3 audits sans valeur). Script `lighthouse` → `lhci autorun --config=lighthouse.config.json`. L'artefact du run ne contenait que les rapports de mai (v13.3.73, a11y 0,93 < seuil 0,95) : les vrais scores d'aujourd'hui se liront au prochain run.

@@ -2132,6 +2132,16 @@
       "attend_session": null,
       "note": "PR #4711"
     },
+    "compte-ouvrir-robot": {
+      "titre": "Robot ouvrir un compte (Yann)",
+      "branche": "claude/compte-ouvrir-robot",
+      "sujet": "Kevin 17.10 « fais toutes les actions auto » : coffre-compte-ouvrir.yml + compte-ouvrir.mjs",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
     "fiches-fermees": {
       "titre": "Fiches repliées + vérification réelle depuis la session",
       "branche": "claude/fiches-fermees",

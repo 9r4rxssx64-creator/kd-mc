@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (01h UTC) — « Fais toutes les actions auto » : robot « ouvrir un compte » (Yann), mesure Firebase, tri de la liste
+
+- **Robot `coffre-compte-ouvrir.yml`** (+ `tools/smoke/compte-ouvrir.mjs`) : même voie que « déconnecter un compte » (session admin par le domaine, secret du coffre), retrouve la fiche par nom ou uid, `POST /__admin/compte-ouvrir`, relit la fiche pour prouver. Essai à blanc par défaut ; jamais le compte de Kevin. Résultat pour Yann : ci-dessous après le run.
+- **Firebase étape 2 (fermer `/cmcteams` aux anonymes) — PAS FAIT, mesuré** : à 23h10 UTC la table `compteurs` n'existe toujours pas dans D1 `kdmc-cercle` (lue par l'API Cloudflare) → **0 appareil** n'a demandé le jeton cmc du domaine depuis la mise en ligne de 19h ; et `connexions` ne montre aucune visite CMCteams ce soir (dernières lignes : lingua, robot ci_smoke). Fermer maintenant couperait le planning à tout appareil pas encore passé par le jeton. À relire après une journée de vrai usage (demain soir) ; si toujours 0 avec des visites → c'est le chemin du jeton qui ne part pas, pas l'usage.
+- **Reste à Kevin seul (mesuré, pas contournable)** : point 00 (deux copies Pages sur son AUTRE compte Cloudflare : 200 / 3 353 401 octets encore à 23h05 UTC ; mon accès Cloudflare ne voit que le compte des 28 workers), Meta/WhatsApp (son compte), budget GitHub 0 $ (sa facturation), formulaires d'état civil (son identité), dates SBM des chefs et la réponse « 20 minutes » (son métier).
 
 ## 2026-10-16 (nuit) — Lingua « comme Kevin » : un robot qui se connecte avec SA session et essaie tout, sans rien écrire
 - **Demande** : « Connecte-toi comme moi et teste tout dans Lingua réel, comme moi ».

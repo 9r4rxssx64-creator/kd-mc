@@ -26,9 +26,25 @@ on:
       - 'services/kdmc-router/**'
       - 'services/_shared/ia-route.js'   # routage IA commun : le worker l'importe → doit redéployer
       - '.github/workflows/deploy-kdmc-router.yml'
+      # 16.10 : les pages viennent de la COPIE EMBARQUÉE du routeur (SOURCE_PAGES = "assets") et l'hébergeur Pages est supprimé —
+      # une app modifiée ne part donc en ligne QUE par ce déploiement. Mêmes surfaces que l'ancienne publication Pages.
+      # Une rafale de fusions = un seul déploiement à la fois (concurrency) ; la porte de ration arrête le robot si le jour est mangé.
+      - 'index.html'
+      - 'sw.js'
+      - 'kdmc-home/**'
+      - 'apex-ai-v13/**'
+      - 'messaging-app/**'
+      - 'coffre-fort/**'
+      - 'lingua/**'
+      - 'arbre/**'
+      - 'javis/**'
+      - 'la-detente/**'
+      - 'shops/**'
+      - 'tools/**'
 
 permissions:
   contents: read
+  actions: read   # la porte de ration lit la liste des runs du jour
 
 jobs:
   deploy:
@@ -38,6 +54,11 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 1 }   # on NE fige PAS la branche : un push sur claude/** deploie CETTE branche
 
+      - name: Porte de ration (le jour n'est-il pas déjà mangé ?)
+        if: ${{ github.event_name == 'push' }}
+        shell: bash -eo pipefail {0}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: bash tools/ci/porte-ration.sh 4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 

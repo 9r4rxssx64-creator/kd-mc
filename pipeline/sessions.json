@@ -1727,6 +1727,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "publication-auto": {
+      "titre": "Apps publiées par le déploiement du routeur",
+      "branche": "claude/publication-auto",
+      "sujet": "push main + porte de ration",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

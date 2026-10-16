@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — 3e passage RÉEL du robot (run 38970973973, v1.1.313) : 4 gestes sur 5 prouvés dans 2 navigateurs
+- **Prouvé en vrai navigateur sur la prod, Chromium ET WebKit iPhone 14 Pro** : A version affichée = version du serveur ✅ · B1 téléphone en mode clair + thème Auto, couleurs rendues ≥ 4,5:1 ✅ · B2 téléphone en mode clair + thème par défaut, couleurs rendues ≥ 4,5:1 ✅ (la régression de 1.1.312 est corrigée) · C « Te déconnecter » coupe CET appareil côté serveur, l'autre appareil continue ✅. L'E2E « deux clients » (photo avec conversation) repasse aussi.
+- **Écart restant (D, hors ligne, Chromium)** : le 🕓 est bien affiché sans réseau, la file d'attente est vidée au retour du réseau (message accusé), MAIS l'app revient à la liste des conversations au retour du réseau (vue `chats`) — le test s'appuyait sur l'écran. Réécrit : il attend la file vide, rouvre la conversation et relit le statut. À confirmer au passage suivant ; si l'app change de vue toute seule au retour du réseau, c'est un défaut d'usage à corriger.
+
 ## 2026-10-16 — Apex Chat v1.1.313 : régression de couleurs de la v1.1.312 trouvée par le robot et corrigée
 - **Trouvé en vrai navigateur (run 38969793276)** : en v1.1.312, téléphone en mode clair + thème par défaut (sombre) → bleu/avertissement/ok/erreur FONCÉS sur fond noir (2,9:1). Cause : mes valeurs étaient dans le bloc CSS du mode du téléphone, alors que le thème de l'app est posé en JavaScript (inline) et ne couvre pas ces quatre couleurs.
 - **Corrigé** : chaque thème (`K._THEMES`) porte toutes ses couleurs ; accents foncés sur thème clair (`K._ACCENTS_CLAIR`) ; bloc CSS du mode du téléphone remis comme avant. Gardes : `client-confort-iphone` (8 : 3 thèmes calculés + « pas de fuite »), `parcours-appareil` B1/B2 (rendu réel), sabotage rouge. `vitest --coverage` sans erreur (2 112). Leçon 588.

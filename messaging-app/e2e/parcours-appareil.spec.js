@@ -137,10 +137,17 @@ test.describe('Parcours d\'un appareil (comptes de test) sur la prod', () => {
     const statut = page.locator('.msg.me .msg-status').last();
     await expect(statut, 'statut du message écrit sans réseau').toContainText('🕓', { timeout: 10000 });
     await ctx.setOffline(false);
-    try { await expect(statut, 'statut après le retour du réseau').toContainText('✓', { timeout: 45000 }); }
+    // Au retour du réseau l'app peut revenir à la liste (mesuré le 16.10) : on ne se fie donc pas à l'écran, mais à la
+    // file d'attente de l'appareil — vide = le serveur a ACCUSÉ le message — puis on rouvre la conversation et on relit.
+    const enAttente = () => page.evaluate(() => (JSON.parse(localStorage.getItem('apex_chat_outbox') || '[]')).length).catch(() => -1);
+    await expect.poll(enAttente, { timeout: 45000, message: 'le message doit sortir de la file d\'attente (accusé du serveur) au retour du réseau' }).toBe(0);
+    await page.evaluate(async (id) => { try { await K._refreshConvs(); } catch (_) {} await K.openConv(id); }, convId);
+    await page.waitForSelector('#msg-input', { timeout: 20000 });
+    const apres = page.locator('.msg.me .msg-status').last();
+    try { await expect(apres, 'statut du message après accusé').toContainText('✓', { timeout: 15000 }); await expect(apres).not.toContainText('🕓'); }
     catch (e) {
-      const etat = await page.evaluate(() => ({ vue: K.view, ws: K.ws ? K.ws.readyState : null, enAttente: (JSON.parse(localStorage.getItem('apex_chat_outbox') || '[]')).length, statuts: [...document.querySelectorAll('.msg.me .msg-status')].map((n) => n.textContent) })).catch(() => ({}));
-      throw new Error('après le retour du réseau le message n\'est pas passé à ✓. État : ' + JSON.stringify(etat) + ' — écran : « ' + await ecran(page) + ' »');
+      const etat = await page.evaluate(() => ({ vue: K.view, statuts: [...document.querySelectorAll('.msg.me .msg-status')].map((n) => n.textContent) })).catch(() => ({}));
+      throw new Error('le message accusé n\'affiche pas ✓. État : ' + JSON.stringify(etat) + ' — écran : « ' + await ecran(page) + ' »');
     }
     await ctx.close();
   });

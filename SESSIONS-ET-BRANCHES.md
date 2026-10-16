@@ -244,6 +244,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/apex-suite-1610` | 16.10 | Apex 374 : 46 tests figés remis à la règle « gratuit d'abord » ; garde apex-passerelle 5b (copie servie = source) — fusionnée | `audit-apex-1610` |
 | `claude/apex-378-capture-kevin` | 16.10 | Apex 378 : étiquette de version dans la rangée de saisie du chat, erreur récupérable quand la clé est refusée et la passerelle gratuite muette (PR #4693) — fusionnée | `apex-378-capture` |
 | `claude/apex-robot-comme-kevin` | 17.10 | Robot « Apex comme Kevin » (connecté en admin par le domaine, iPhone, « Test ») + sabotages prouvés | `apex-robot-comme-kevin` |
+| `claude/apex-379-sans-bulle` | 17.10 | Apex 379 : plus de bulle « Proxy Cloudflare activé » (vue par le robot) | `apex-379-sans-bulle` |
 | `claude/regle-publique-1610` | 16.10 | Règle « mettre en ligne sans quota » (gratuit-public.md) ; puis robots publics verts : lock Apex suivi, 7 robots au coffre, semgrep scan, clone en 3 essais, suivis m215→m219 (#4659, #4665) — fusionnée | `audit-apex-1610` |
 | `claude/robots-publics-1610-b` | 16.10 | Lighthouse lit sa config, Axe sert son paquet, signal « coffre-a-change » mort retiré ; m223 (#4669) — fusionnée | `audit-apex-1610` |
 | `claude/pipeline-garde-1610` | 16.10 | Garde pipeline-sessions : `claude/docs-complets` inscrite ; 2 branches fusionnées justifiées (#4675) — fusionnée | `audit-apex-1610` |

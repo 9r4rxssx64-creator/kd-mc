@@ -190,26 +190,43 @@ crons = [
 queue = "apex-chat-telemetry"
 max_batch_size = 25
 max_batch_timeout = 10
+max_retries = 5
+dead_letter_queue = "apex-chat-dlq"
 
 [[queues.consumers]]
 queue = "apex-chat-pipeline-fix"
 max_batch_size = 10
 max_batch_timeout = 30
+max_retries = 5
+dead_letter_queue = "apex-chat-dlq"
 
 [[queues.consumers]]
 queue = "apex-chat-letters-deliver"
 max_batch_size = 50
 max_batch_timeout = 60
+max_retries = 5
+dead_letter_queue = "apex-chat-dlq"
 
 [[queues.consumers]]
 queue = "apex-chat-timecapsule-open"
 max_batch_size = 50
 max_batch_timeout = 60
+max_retries = 5
+dead_letter_queue = "apex-chat-dlq"
 
 [[queues.consumers]]
 queue = "apex-chat-memory-lane"
 max_batch_size = 25
 max_batch_timeout = 60
+max_retries = 5
+dead_letter_queue = "apex-chat-dlq"
+
+# File de rebut (audit 16.10.2026) : un message qui échoue 5 fois n'est plus jeté en silence (défaut : 3 essais puis
+# disparition) — il arrive ici, et api-worker.js le consigne dans le journal d'audit (type + file d'origine, jamais le contenu).
+[[queues.consumers]]
+queue = "apex-chat-dlq"
+max_batch_size = 10
+max_batch_timeout = 30
 
 # Routes — DÉSACTIVÉ v1.1.122 (pattern cassé sans zone_name)
 # Le Worker est servi via workers_dev=true à :

@@ -111,6 +111,9 @@ export function ctEq(a, b) {
 // Un test garde cette constante égale à la version de package.json.
 export const API_VERSION = '1.1.314';
 
+// File de rebut des files d'attente (wrangler.toml : dead_letter_queue).
+export const DLQ_NAME = 'apex-chat-dlq';
+
 // Codes SMS : au plus 3 par heure et 10 par jour pour un même numéro (audit 16.10.2026).
 export const OTP_PAR_NUMERO_HEURE = 3;
 export const OTP_PAR_NUMERO_JOUR = 10;
@@ -7195,6 +7198,19 @@ const _workerHandler = {
 
   // P0 FIX (audit) : Consumer Cloudflare Queues réel (router par queue_type)
   async queue(batch, env) {
+    // File de rebut : les messages qui ont échoué 5 fois arrivent ici. On les CONSIGNE (type du message + file d'origine
+    // + nombre d'essais, jamais le contenu) dans le journal d'audit au lieu de les perdre, puis on les acquitte.
+    if (batch && batch.queue === DLQ_NAME) {
+      for (const msg of batch.messages) {
+        try {
+          const b = msg.body || {};
+          await auditLog(env, 'system', 'queue_dead_letter', 'queue', b.queue_type || 'inconnu',
+            { type: String(b.queue_type || 'inconnu').slice(0, 40), id: b.id || b.letter_id || b.capsule_id || b.user_id || null, essais: msg.attempts || null }, null);
+        } catch (e) { console.error('[dlq] journal impossible', e && e.message); }
+        msg.ack();
+      }
+      return;
+    }
     for (const msg of batch.messages) {
       try {
         const body = msg.body;

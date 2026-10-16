@@ -178,10 +178,10 @@ jobs:
 
       - name: Create Cloudflare Queues (idempotent)
         run: |
-          for queue in apex-chat-telemetry apex-chat-pipeline-fix apex-chat-letters-deliver apex-chat-timecapsule-open apex-chat-memory-lane; do
+          for queue in apex-chat-telemetry apex-chat-pipeline-fix apex-chat-letters-deliver apex-chat-timecapsule-open apex-chat-memory-lane apex-chat-dlq; do
             wrangler queues create "$queue" 2>&1 | tail -1 || echo "(  $queue existe déjà)"
           done
-          echo "::notice::5 Queues OK"
+          echo "::notice::6 Queues OK (dont la file de rebut)"
 
       - name: Deploy api-worker (official Cloudflare action)
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3

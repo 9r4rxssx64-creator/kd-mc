@@ -9,7 +9,7 @@
  *  2. Si user courant = admin Kevin (kdmc_admin)
  *  3. ET si proxy /health répond ok + ≥ 1 provider disponible
  *  4. ET si flag `apex_v13_use_secrets_proxy` pas explicitement à 'false'
- *  5. → set flag à 'true' + log info + toast info
+ *  5. → set flag à 'true' + log info (plus de bulle à l'écran depuis v13.4.379)
  *
  * Si admin Kevin a explicitement désactivé (flag='false') → respect, pas d'override.
  * Tests vitest : pas d'admin Kevin + pas de proxy live → ne s'active pas → zéro régression.
@@ -18,8 +18,6 @@
 import { logger } from '../../core/logger.js';
 
 const FLAG_KEY = 'apex_v13_use_secrets_proxy';
-/** Une seule bulle « proxy activé » par ouverture de la page. */
-let bulleProxyMontree = false;
 const ADMIN_UID = 'kdmc_admin';
 
 /* v13.4.323/333 (Kevin « il n'est pas sur Anthropic de base » / « encore openai ») :
@@ -89,16 +87,9 @@ async function autoEnableIfReady(): Promise<{ enabled: boolean; reason: string }
   }
   logger.info('proxy-auto-enable', '🔒 Proxy Cloudflare activé automatiquement (admin Kevin + health OK)');
   void clearStaleDeadOnce();
-  /* Toast info non-bloquant */
-  /* 16.10.2026 (vrai Chromium) : trois appels de démarrage passaient le contrôle du drapeau en même temps → la même bulle
-     trois fois, par-dessus la réponse. Une seule bulle par ouverture de la page. */
-  if (!bulleProxyMontree) {
-    bulleProxyMontree = true;
-    try {
-      const { toast } = await import('../../ui/toast.js');
-      toast.info('🔒 Proxy Cloudflare activé : tes clés API restent server-side', { duration: 6000 });
-    } catch { /* toast indispo en test env */ }
-  }
+  /* v13.4.379 (robot « Apex comme Kevin », run 38975685928, capture) : la bulle « 🔒 Proxy Cloudflare activé : tes clés API
+     restent server-side » recouvrait la première ligne de la réponse. Elle n'aide Kevin ni à agir ni à comprendre (règle du
+     13.10 « pas d'infos inutiles, nulle part ») : l'activation reste dans le journal, plus à l'écran. */
   return { enabled: true, reason: 'auto_enabled' };
 }
 

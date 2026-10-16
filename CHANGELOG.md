@@ -4,7 +4,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
-## Apex AI v13.4.372 → v13.4.378 (2026-10-16 — « Vérifie tout en détail », puis « Continu », puis les captures de Kevin)
+## Apex AI v13.4.372 → v13.4.379 (2026-10-16 — « Vérifie tout en détail », puis « Continu », puis les captures de Kevin)
 
 - **v13.4.372** : une seule bulle d'information par ouverture (« Proxy activé », « clés restaurées » ne s'empilent plus) ; le bouton « ← Chat » pose son style par `styleInjector` (CSP nonce) au lieu d'un `<style>` nu refusé par la page.
 - **v13.4.373** : `sw.js` servi recopié proprement (un marqueur de conflit et deux `CACHE_VERSION` avaient été publiés — leçon #560) ; garde `test:sw-identite` compile chaque `sw.js`.
@@ -13,6 +13,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - **v13.4.376** : le client MCP respecte aussi la CSP (29 serveurs `mcp.*` sondés à chaque ouverture → 0 violation) ; badge de version lisible (contraste 4,16 → 7,37, Axe vert). Mesuré au dépôt public : Axe ✅, Lighthouse bureau (bonnes pratiques 0,89 → 0,93) et mobile ✅.
 - **v13.4.377** (capture de Kevin 22h56) : le diagnostic Cloudflare lancé tout seul au démarrage ne montre plus de bulle orange « Cloudflare ralenti · pas ta clé » (seul celui lancé dans Réglages la garde) ; le badge de version vit dans la barre du haut, à gauche de « ← KDMC », et ne recouvre plus le premier message.
 - **v13.4.378** (2e capture 23h32) : la version est écrite dans la rangée de saisie du chat, juste après le trombone (le badge recouvrait les boutons mode / mémoire / effacer / menu ; dans l'en-tête elle poussait « ← KDMC » sous le menu) ; quand la clé Anthropic du Coffre est refusée ET que les IA gratuites du domaine ne répondent pas, Apex le dit tel quel et réessaie tout seul, au lieu d'annoncer « clé invalide ».
+- **v13.4.379** (17.10, vu par le robot « Apex comme Kevin ») : plus de bulle « Proxy Cloudflare activé : tes clés API restent server-side » à la première ouverture — elle recouvrait la réponse et n'aidait à rien (règle « pas d'infos inutiles »). L'activation reste dans le journal.
 
 ## CMCteams v9.977 (2026-10-15 — les deux rouges de `main` corrigés : les cadres gardent leur groupe d'octobre, la ligne « TOTAL équipe » n'est plus prise pour une personne)
 

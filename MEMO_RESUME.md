@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (00h50 UTC) — Apex v13.4.379 : la bulle « Proxy Cloudflare activé » ne s'affiche plus (vue par le robot)
+
+- **Pourquoi** : la capture du robot « Apex comme Kevin » (run 38975685928) montrait la bulle « 🔒 Proxy Cloudflare activé : tes clés API restent server-side » PAR-DESSUS la première ligne de la réponse, à la première ouverture sur un appareil neuf. Info inutile pour Kevin (règle du 13.10). Retirée ; l'activation reste dans le journal.
+- **Garde** : `v13_4_379-proxy-sans-bulle` (sabotage : remettre la bulle → rouge, prouvé).
+- **Réel** : ligne « Vérifié réel » ci-dessous après publication + robot.
+## 2026-10-16 — Apex Chat : file de rebut (lot P)
+- `wrangler.toml` : 5 files de travail avec `max_retries = 5` + `dead_letter_queue = "apex-chat-dlq"` + consommateur de la file de rebut ; `deploy-apex-chat.yml` crée `apex-chat-dlq` avant le déploiement ; `api-worker.js` : un message mort est consigné au journal d'audit (`queue_dead_letter`) puis acquitté. Configuration validée par `wrangler deploy --dry-run`. Garde `lot-p-file-de-rebut` (4), sabotage rouge, `vitest --coverage` sans erreur. Leçon 590.
+- **À regarder après le déploiement** : que la file `apex-chat-dlq` soit bien créée (étape « Create Cloudflare Queues ») ; le journal d'audit se lit côté admin (`queue_dead_letter`).
+
 ## 2026-10-16 — Apex Chat v1.1.314 : après une mise à jour automatique, la conversation ouverte se rouvre
 - `_apexSafeReload` note la conversation ouverte (`apex_chat_reopen`, 2 min) avant de recharger ; `K._reopenAfterUpdate` la rouvre au démarrage (identifiant contrôlé, jamais par-dessus une conversation déjà ouverte). Brouillon : déjà conservé par `_saveDraft`. Version 1.1.314 (+ `API_VERSION`). Garde `client-reouvrir-apres-maj` (6), sabotage rouge, `vitest --coverage` sans erreur (2 118) ; geste D du robot : la conversation doit se rouvrir après un rechargement. Leçon 589.
 

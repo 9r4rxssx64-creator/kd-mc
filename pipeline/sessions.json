@@ -2099,6 +2099,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "apex-379-sans-bulle": {
+      "titre": "Apex 379 : bulle proxy retirée",
+      "branche": "claude/apex-379-sans-bulle",
+      "sujet": "Bulle « Proxy Cloudflare activé » retirée (info inutile vue par le robot Apex comme Kevin)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

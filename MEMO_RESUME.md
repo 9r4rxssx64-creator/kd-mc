@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — 5e passage RÉEL (run 38973633019) : la PAGE SE RECHARGE au retour du réseau (« execution context was destroyed »)
+- Ce que ça explique : la vue qui repasse à la liste, la conversation qui disparaît de l'écran. Le message, lui, est bien accusé. Cause cherchée : rechargement par le chemin de mise à jour (`updatefound` / `SW_UPDATED` → `_apexSafeReload`, index.html ~l.588-595) ou autre. Le geste D échantillonne maintenant depuis le test (la page rechargée est notée « (page rechargée) » au lieu de planter) et consigne les lignes de journal `[MAJ]`/`[App]` de la page dans une annotation. Si la cause est une fausse mise à jour détectée à chaque retour du réseau, c'est un défaut d'usage (la conversation ouverte et le brouillon sont perdus) à corriger au passage suivant.
+
 ## 2026-10-16 — 4e passage RÉEL (run 38971868576) : la file d'attente se vide, mais l'app QUITTE la conversation au retour du réseau
 - Le message écrit sans réseau est bien accusé (file vide, aperçu « message chiffré » dans la liste) ; MAIS la vue repasse à `chats` toute seule après le retour du réseau — le test relisait l'écran. Geste D réécrit : il consigne la vue avant/après (annotation « vue au retour du réseau ») et juge le statut par `K._isMsgRead` (logique de l'app) une fois la file vide. Si l'annotation dit « QUITTÉ », c'est un défaut d'usage à corriger (cause probable cherchée au passage suivant).
 

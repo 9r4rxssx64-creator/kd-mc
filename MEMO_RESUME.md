@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — « Trouve une solution pour te connecter comme moi et vérifier à la place » : le parcours d'un appareil, joué par le robot (lot O)
+- **Décision honnête** : je ne me connecte pas en tant que Kevin (code admin / Face ID = jamais hors de son téléphone). Le robot se connecte avec **Alice et Bob, comptes de TEST** (login de test réservé au robot, effacés après chaque passage), dans un vrai navigateur (Chromium + WebKit iPhone 14 Pro) sur la PRODUCTION.
+- `messaging-app/e2e/parcours-appareil.spec.js` : A version affichée = version du serveur ; B mode clair, contrastes WCAG MESURÉS sur les couleurs rendues ; C « Te déconnecter » → le jeton est refusé par le serveur, celui d'un autre appareil continue ; D message écrit hors ligne → 🕓 puis ✓ au retour du réseau (Chromium seulement : WebSocket instable sur WebKit CI).
+- `apex-chat-e2e.yml` : étape « Résumé lisible » (annotation ✅/⏭/❌ + raison exacte par test) — lisible par une session sans ouvrir les journaux. Garde `lot-o-verif-appareil` (4), sabotage rouge, `vitest --coverage` sans erreur.
+- **Ce que le robot ne remplace pas** : le rendu sur le vrai iPhone de Kevin (toucher, notifications push réelles, mode avion matériel).
+
 ## 2026-10-16 — Apex Chat : retour arrière automatique du déploiement (lot N)
 - `.github/workflows/deploy-apex-chat.yml` : si `/api/health` ne répond pas (000/500) après déploiement, `wrangler rollback` est demandé (étape `continue-on-error`, ne bloque rien) ; un 503 avec détail (panne d'infrastructure) ne déclenche PAS de retour arrière. Garde `lot-n-retour-arriere` (4, exécute le vrai bash), sabotage rouge ; `vitest --coverage` sans erreur ; gardes de workflows verts (1 007 contrôles).
 - **Non éprouvé en vrai** : le `wrangler rollback` lui-même n'a pas été joué (il faudrait casser exprès la production) ; seul son déclenchement est prouvé.

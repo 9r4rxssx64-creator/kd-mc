@@ -111,6 +111,22 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
         run: npx playwright test --reporter=list,json
 
+      # 16.10.2026 (Kevin : « connecte-toi comme moi et vérifie à ma place ») : un résumé lisible SANS ouvrir les journaux
+      # (qu'une session ne peut pas lire) — une annotation par test, avec la raison exacte d'un échec.
+      - name: Résumé lisible du passage (une ligne par test)
+        if: always()
+        working-directory: messaging-app/e2e
+        run: |
+          [ -f results.json ] || { echo "::warning title=E2E::results.json absent — aucun résumé"; exit 0; }
+          jq -r '.. | objects | select(has("specs")) | .specs[] | . as $s | $s.tests[] | "\(.projectName)|\($s.title)|\(.results[-1].status // "?")|\((.results[-1].error.message // "") | gsub("\u001b\\[[0-9;]*m"; "") | gsub("\n"; " ") | .[0:300])"' results.json \
+          | while IFS='|' read -r p t s e; do
+              case "$s" in
+                passed)  echo "::notice title=E2E $p::✅ $t" ;;
+                skipped) echo "::notice title=E2E $p::⏭ $t (sauté)" ;;
+                *)       echo "::error title=E2E $p::❌ $t — $e" ;;
+              esac
+            done
+
       - name: Efface les comptes de test Alice/Bob (déterministe)
         if: always()
         env:

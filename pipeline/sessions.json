@@ -2074,11 +2074,11 @@
       "branche": "claude/apex-robot-comme-kevin",
       "sujet": "Kevin 16.10 : connecte-toi comme moi et vérifie à la place → tests/verif-live-apex.mjs + workflow coffre verif-live-apex.yml, sabotages prouvés",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "run 1 réel : 6/7, défaut d'attente du robot corrigé (sondage Node)"
+      "note": "run 2 réel 38975685928 vert 8/8 ; Apex 378 vérifiée comme Kevin"
     },
     "access-ux": {
       "titre": "Qui se connecte v1.2.0 : la page défile, rangée",

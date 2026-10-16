@@ -21,6 +21,7 @@ function chargerLogout(idbDel) {
   const K = { user: { id: 'u1' }, token: 'tok', conversations: [1], messages: { a: 1 }, view: 'chats' };
   const { K: KK } = loadDefs(['K.logout = function(){'], {
     K, PERSIST_PREFIX: 'apex_chat_', confirm: () => true, location,
+    API_BASE: 'https://api.test', fetch: vi.fn(() => Promise.resolve({})), _safeCatch: () => {},   // la déconnexion prévient aussi le serveur (16.10.2026)
     idbDel: vi.fn(async (k) => { journal.push('idbDel:' + k); return idbDel ? idbDel(k) : undefined; }),
   });
   return { K: KK, journal, location };

@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.310';
+export const API_VERSION = '1.1.311';
 
 // Codes SMS : au plus 3 par heure et 10 par jour pour un même numéro (audit 16.10.2026).
 export const OTP_PAR_NUMERO_HEURE = 3;
@@ -359,6 +359,13 @@ async function getAuthUser(request, env, opts) {
   // Vérif SÛRE (colonnes toujours présentes) — JAMAIS contournée même si une
   // colonne récente manque (fenêtre de déploiement). Rejette banni/supprimé.
   const DB = env.APEX_CHAT_DB;
+  // Jeton de session déconnecté côté serveur (« Te déconnecter » sur cet appareil) : refusé jusqu'à son expiration.
+  if (mode === 'session') {
+    try {
+      const rev = await DB.prepare('SELECT 1 AS r FROM revoked_tokens WHERE token_hash=?').bind(await sha256(token)).first();
+      if (rev && rev.r === 1) return null;
+    } catch (_) { /* table pas encore migrée (fenêtre de déploiement) : on ne coupe personne */ }
+  }
   let u = null;
   try {
     u = await DB.prepare(
@@ -1398,6 +1405,23 @@ export async function handleTestCleanup(request, env) {
     return err('Échec cleanup', 500, 'cleanup_failed', { detail: String(e?.message || '') });
   }
   return json({ ok: true, removed_count: removed.length, removed });
+}
+
+// POST /api/auth/logout — déconnecte CET appareil : l'empreinte du jeton présenté est refusée jusqu'à son expiration.
+// Idempotent. Un jeton déjà invalide répond quand même ok (le client se déconnecte dans tous les cas).
+export async function handleLogout(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return json({ ok: true });
+  const payload = await verifyJWT(token, env.JWT_SIGN_KEY);
+  if (!payload || !payload.sub || payload.typ) return json({ ok: true });
+  const exp = Number(payload.exp) > 0 ? Number(payload.exp) * 1000 : Date.now() + 30 * 86400000;
+  try {
+    await env.APEX_CHAT_DB.prepare('INSERT OR IGNORE INTO revoked_tokens (token_hash, exp) VALUES (?, ?)').bind(await sha256(token), exp).run();
+  } catch (e) {
+    return err('Déconnexion non enregistrée', 503, 'logout_failed');
+  }
+  return json({ ok: true });
 }
 
 export async function handleSsoFromApex(request, env) {
@@ -6966,6 +6990,7 @@ const _workerHandler = {
       if (path === '/api/users/me' && method === 'GET') return await handleGetMe(request, env);
       if (path === '/api/users/me' && method === 'PATCH') return await handleUpdateMe(request, env);
       if (path === '/api/users/me' && method === 'DELETE') return await handleDeleteMe(request, env);
+      if (path === '/api/auth/logout' && method === 'POST') return await handleLogout(request, env);
       if (path === '/api/users/me/export' && method === 'GET') return await handleExportMe(request, env);
       if (path === '/api/users/me/avatar' && method === 'POST') return await handleUploadMyAvatar(request, env);
       if (path === '/api/admin/user-toggles' && method === 'POST') return await handleAdminSetUserToggle(request, env);
@@ -7372,6 +7397,7 @@ const _workerHandler = {
       await purgeLocationHistory(env);   // Lot B : positions > 30 j + cache des résumés IA > 7 j (jamais bloquant)
       await purgeExpiredStories(env);    // v1.1.304 : stories expirées (jamais bloquant)
       await purgeHistoriqueConnexions(env);   // 16.10.2026 : connexions > 30 j et codes SMS expirés (jamais bloquant)
+      try { await env.APEX_CHAT_DB.prepare('DELETE FROM revoked_tokens WHERE exp < ?').bind(Date.now()).run(); } catch (_) { /* jamais bloquant */ }
       await env.APEX_CHAT_DB.prepare(
         'DELETE FROM audit_log WHERE ts < ?'
       ).bind(Date.now() - 90 * 86400000).run();

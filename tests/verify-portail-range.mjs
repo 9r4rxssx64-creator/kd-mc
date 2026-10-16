@@ -10,9 +10,11 @@ const tuiles = new Set([...h.matchAll(/<a class="card[^"]*"[^>]*href="([^"]+)"/g
 console.log('\nPortail rangé\n');
 const perdues = AVANT.filter((x) => !tuiles.has(x));
 t(perdues.length === 0, 'aucune des ' + AVANT.length + ' adresses d\'avant le tri n\'a disparu' + (perdues.length ? ' — perdues : ' + perdues.join(', ') : ''));
-const iEspace = h.indexOf('id="priv-zone"'), iPro = h.indexOf('🎰 Pro &amp; métier'), iAdmin = h.indexOf('href="/admin/"', iEspace);
+const iEspace = h.indexOf('id="priv-zone"'), iPro = h.indexOf('🎰 Pro &amp; métier');
 t(iEspace > 0 && iEspace < iPro, '« Mon espace » est en tête du portail');
-t(iAdmin > iEspace && iAdmin < h.indexOf('<details', iEspace), 'le tableau de bord (/admin/) est la première tuile de « Mon espace »');
+const iHub = h.indexOf('<main id="hub" hidden>'), iTdb = h.indexOf('<nav id="tdb-haut"'), iBarre = h.indexOf('class="hubbar"');
+t(iTdb > iHub && iTdb < iBarre && h.indexOf('href="/admin/"', iTdb) < iBarre, 'le tableau de bord (/admin/) est la TOUTE PREMIÈRE chose de la page (avant « Bienvenue »)');
+t(/<nav id="tdb-haut"[^>]*hidden/.test(h) && /tdb-haut[\s\S]{0,80}hidden = !isPriv/.test(readFileSync('kdmc-home/kdmc-portal.js', 'utf8')), 'il reste caché aux autres : même règle que « Mon espace »');
 const boutiques = h.slice(h.indexOf('🛍️ Boutiques'), h.indexOf('Famille &amp; loisirs'));
 t(/<details class="grp">[\s\S]*chez-lolo\.kd-mc\.com[\s\S]*la-detente\.kd-mc\.com/.test(boutiques), 'les boutiques sont dans un menu déroulant');
 t(/<details class="grp sous">[\s\S]*tech-hub/.test(boutiques), 'les boutiques en construction sont rangées au fond du menu, pas en vitrine');

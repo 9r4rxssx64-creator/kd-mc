@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.66 -->
+<!-- v1.0.67 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -168,6 +168,8 @@
   details.grp>summary .nb{margin-left:auto;background:rgba(232,184,48,.16);color:var(--gold);border-radius:999px;padding:2px 10px;font-size:14px}
   details.grp>.grid{padding:0 12px 12px}
   details.grp.sous{margin:0 12px 12px}
+  #tdb-haut{margin:0 0 16px}
+  #tdb-haut a.card.big{min-height:88px;background:linear-gradient(160deg,rgba(232,184,48,.16),#0c150f)}
   a.card.big{border-color:rgba(232,184,48,.5);box-shadow:0 0 0 1px rgba(232,184,48,.15) inset}
   #perso-zones:not(:has(> nav > div:not([hidden]))){display:none}
   #perso-zones .grid>div>a.card{height:100%}
@@ -182,6 +184,11 @@
     <section id="gate" aria-live="polite"></section>
 
     <main id="hub" hidden>
+      <!-- 16.10 (Kevin : « mets mon tableau de bord tout en haut du domaine ») : la PREMIÈRE chose de la page, révélée par
+           kdmc-portal.js avec la même règle que « Mon espace » (admin prouvé, ou Kevin/Lolo vérifiés). -->
+      <nav id="tdb-haut" class="grid tdb" aria-label="Mon tableau de bord" hidden>
+        <a class="card adm big" href="/admin/"><span class="ic">🛡</span><span class="ct"><span class="nm">Mon tableau de bord <span class="badge">Admin</span></span><span class="ds">Tout le domaine : personnes, messages, boutiques, apps, coûts</span><span class="url">kd-mc.com → admin</span></span><span class="arr">›</span></a>
+      </nav>
       <div class="hubbar">
         <span id="hello">Bienvenue</span>
         <button id="logout" type="button">Se déconnecter</button>
@@ -193,9 +200,6 @@
            unique en tête (tout le domaine y est rangé) ; les outils privés dans un menu déroulant — rien n'est perdu. -->
       <div id="priv-zone" hidden>
         <h2 class="cat">🔒 Mon espace</h2>
-        <nav class="grid" aria-label="Tableau de bord">
-          <a class="card adm big" href="/admin/"><span class="ic">🛡</span><span class="ct"><span class="nm">Mon tableau de bord <span class="badge">Admin</span></span><span class="ds">Tout le domaine : personnes, messages, boutiques, apps, coûts</span><span class="url">kd-mc.com → admin</span></span><span class="arr">›</span></a>
-        </nav>
         <details class="grp">
           <summary><span class="ic">🧰</span><span class="ct"><span class="nm">Mes outils privés</span><span class="ds">PoolPilot, Sourcing, Coffre, Finances, Autorisations…</span></span><b class="nb">9</b></summary>
           <nav class="grid" aria-label="Outils privés Kevin et Lolo">
@@ -294,10 +298,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.66"></script>
-  <script src="kdmc-boite.js?v=1.0.66"></script>
-  <script src="kdmc-portal.js?v=1.0.66"></script>
+  <script src="kdmc-sso.js?v=1.0.67"></script>
+  <script src="kdmc-boite.js?v=1.0.67"></script>
+  <script src="kdmc-portal.js?v=1.0.67"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.66" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.67" data-color="#c9a227" defer></script>
 </body>
 </html>

@@ -129,6 +129,8 @@
          n'est PAS verified → ne voit rien (leçon #99 : un nom auto-déclaré n'accorde aucun droit). */
       var isPriv = !!(s && s.admin) || (!!(s && s.verified) && named);
       priv.hidden = !isPriv;
+      /* 16.10 : le tableau de bord, tout en haut de la page, suit la même règle que « Mon espace » */
+      var tdb = document.getElementById('tdb-haut'); if (tdb) tdb.hidden = !isPriv;
       /* Bot crypto : tuile visible dès que la session porte le nom Kevin/Laurence
          (OU admin/verified). Pas d'exigence Face ID car la page bot.kd-mc.com est
          protégée par son propre code admin — la tuile ne donne AUCUN accès (≠ leçon #99

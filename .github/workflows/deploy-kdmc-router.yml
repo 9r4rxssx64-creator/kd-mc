@@ -406,7 +406,7 @@ jobs:
           # 16.10 (diagnostic) : le réseau de cette machine décide si la sonde passe la porte générale (ASN 8075 seulement).
           echo "::notice::réseau du runner : $(curl -s -m 10 https://ipinfo.io/org || echo inconnu)"
           for u in cmcteams.kd-mc.com/ arbre.kd-mc.com/ lingua.kd-mc.com/ la-detente.kd-mc.com/ apex-chat.kd-mc.com/; do
-            R=$(curl -s -o /dev/null -D /tmp/r.h -m 20 -H 'x-kdmc-sonde: diag' -H 'sec-fetch-dest: document' -H 'accept: text/html' -w '%{http_code} %{size_download}' "https://$u" || echo ERR)
+            R=$(curl -s -o /dev/null -D /tmp/r.h -m 20 -H 'x-kdmc-sonde: diag' -H 'sec-fetch-dest: document' -H 'sec-fetch-mode: navigate' -H 'cache-control: no-cache' -H 'accept-encoding: gzip, br' -H 'user-agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Version/17.5 Mobile Safari/604.1' -H 'accept: text/html' -w '%{http_code} %{size_download}' "https://$u" || echo ERR)
             echo "::notice::domaine — $u : $R · $(grep -i '^x-kdmc-router\|^x-kdmc-secours\|^x-kdmc-porte' /tmp/r.h | tr -d '\r' | tr '\n' ' ' | cut -c1-120)"; done
           # Laisser le temps au worker de se propager au bord Cloudflare.
           sleep 20

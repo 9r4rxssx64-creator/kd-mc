@@ -1757,6 +1757,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "assets-entetes": {
+      "titre": "Routeur : la copie embarquée ne reçoit plus les en-têtes du visiteur",
+      "branche": "claude/assets-entetes",
+      "sujet": "6 apps (cmcteams, light, départs, coffre, apex-ai, arbre) en 404 derrière la porte selon les en-têtes",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

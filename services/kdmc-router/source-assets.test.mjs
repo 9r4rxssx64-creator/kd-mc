@@ -22,8 +22,9 @@ const FICHIERS = {
   '/CMCteams/shops/kit-ia/logo.svg': ['<svg xmlns="http://www.w3.org/2000/svg"/>', 'image/svg+xml'],
 };
 const vus = [];
+const entetesVus = [];
 const ASSETS = { fetch: async (req) => {
-  const u = new URL(req.url); vus.push(req.method + ' ' + u.pathname);
+  const u = new URL(req.url); vus.push(req.method + ' ' + u.pathname); entetesVus.push([...req.headers.keys()]);
   const f = FICHIERS[u.pathname];
   if (!f) return new Response(null, { status: 404 });
   return new Response(req.method === 'HEAD' ? null : f[0], { status: 200, headers: { 'content-type': f[1], etag: '"x"' } });
@@ -57,6 +58,11 @@ ok(r.status === 404, '4b. fichier absent → 404', { st: r.status });
 r = await page('https://kit.kd-mc.com/bureau.html', { method: 'POST' });
 ok(r.status !== 200 && !vus.some((v) => v.startsWith('POST')), '5. un POST vers une page statique n\'atteint jamais la copie', { st: r.status, vus: vus.filter((v) => v.startsWith('POST')) });
 
+/* 16.10 : la copie embarquée répondait 404 à 6 apps selon les en-têtes du navigateur → on ne lui transmet que `range`. */
+await page('https://kit.kd-mc.com/', { headers: { accept: 'text/html', 'sec-fetch-dest': 'document', 'sec-fetch-mode': 'navigate', 'cache-control': 'no-cache', 'accept-encoding': 'gzip, br', 'user-agent': 'Mozilla/5.0 (iPhone)', range: 'bytes=0-' } });
+const transmis = new Set(entetesVus.flat());
+ok(!['sec-fetch-mode', 'sec-fetch-dest', 'cache-control', 'accept-encoding', 'user-agent', 'accept', 'cookie'].some((h) => transmis.has(h)) && transmis.has('range'),
+  '8. la copie embarquée ne reçoit AUCUN en-tête du visiteur, sauf range', [...transmis]);
 ok(reseau.length === 0, '1. aucune requête réseau vers un hébergeur (tout vient de la copie embarquée)', reseau);
 
 { const env2 = { ASSETS, UPSTREAM_BASE: 'https://kdmc-site-bj5.pages.dev', UPSTREAM_PREFIX: '' }; reseau = [];

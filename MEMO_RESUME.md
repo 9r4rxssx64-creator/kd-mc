@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Routeur : 6 apps en 404 derrière la porte selon les en-têtes du navigateur (corrigé)
+- **Mesuré en CI (run sur AS8075, même machine)** : curl → cmcteams.kd-mc.com/ 200 (3 444 308 o), arbre 200 ; la sonde Node (en-têtes de navigateur) → 404 « absent de la copie embarquée » pour cmcteams, light, départs, coffre, apex-ai, arbre. Les pages SONT dans le paquet (tailles relues en CI). Cause : `amont()` transmettait les en-têtes du visiteur à `env.ASSETS.fetch`.
+- **Corrigé** : la copie ne reçoit plus que `range`. Garde : `test:source-assets` 14/14 (n°8, sabotage rouge prouvé). Diagnostic permanent dans le déploiement : réseau du runner + 5 adresses demandées comme un iPhone.
+
 ## 2026-10-16 — Déploiement du routeur : la sonde ne regarde plus chez Pages supprimé
 - **Mesuré** : runs 38886288617 et 38887600022 → le routeur EST déployé (étape « Déploiement » verte, 10:31 UTC), mais « Le domaine sert-il vraiment les 31 adresses ? » rouge : les 13 adresses derrière la porte « fiche » étaient vérifiées chez `kdmc-site-bj5.pages.dev`, supprimé le matin même. Les étapes suivantes (boîte, plannings, fuite) étaient sautées.
 - **Corrigé** : `tools/audit/sonde-site-publie.mjs` lit, en SOURCE_PAGES = "assets", `services/kdmc-router/public/CMCteams/<dossier>/index.html` (le paquet de CE déploiement) ; l'étape « L'hébergeur ne sert-il que les applications ? » ne sonde plus l'ancien hébergeur. Garde : `test:sonde-porte` (15, cas D/E paquet présent/absent). Les 32 routes ont leur page dans le paquet (vérifié localement).

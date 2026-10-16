@@ -72,7 +72,13 @@ export async function amont(env, req) {
   const u = new URL(req.url);
   if (u.origin !== HOTE_ASSETS) return fetch(req);
   if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('méthode non permise', { status: 405, headers: { allow: 'GET, HEAD' } });
-  const lire = (chemin) => env.ASSETS.fetch(new Request(HOTE_ASSETS + chemin + u.search, { method: req.method, headers: req.headers }));
+  /* 16.10 (mesuré, runs 38888460098 → 38890…) : sur la MÊME machine, curl recevait cmcteams.kd-mc.com/ en 200 (3,4 Mo) et la sonde
+     (en-têtes d'un navigateur : sec-fetch-mode navigate, accept-encoding, cache-control…) un 404 « absent de la copie embarquée »
+     pour 6 apps (cmcteams, light, départs, coffre, apex-ai, arbre). La copie répond selon les en-têtes qu'on lui transmet :
+     on ne lui passe plus ceux du visiteur — seulement `range` (lecture partielle d'une vidéo). Garde : source-assets.test.mjs. */
+  const entetesCopie = new Headers();
+  { const rg = req.headers.get('range'); if (rg) entetesCopie.set('range', rg); }
+  const lire = (chemin) => env.ASSETS.fetch(new Request(HOTE_ASSETS + chemin + u.search, { method: req.method, headers: entetesCopie }));
   const chemin = u.pathname;
   const r = await lire(chemin);
   if (r.status !== 404) return r;

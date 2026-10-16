@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Apex Chat : le déploiement du lot F1 s'était arrêté sur la couverture (cors.js < 100 %) — corrigé
+- Constaté sur le dépôt public (run « Tests unitaires du commit » rouge, déploiement sauté). Cause : 2 branches neuves de `durcirEntetes` non jouées. Ajout de 2 tests dans `api-entetes-securite` ; `vitest --coverage` en local : aucune erreur. Leçon 574.
+
 ## 2026-10-16 — Apex Chat v1.1.308 : lot iPhone (faux « livré », temps réel qui revient, notification qui ouvre la bonne conversation)
 - `messaging-app/index.html` + `lib/sw-handlers.js` : (1) un message pas encore accusé par le serveur affiche 🕓, un refus définitif ⚠️ (avant : ✓✓ « livré ») ; (2) le temps réel de la conversation affichée se rouvre au retour d'écran, de réseau et de page restaurée (`K._wsRevive`) ; (3) toucher une notification app fermée ouvre `?conv=<id>` (`K._openFromUrl`), un appel décroche tout seul. Version 1.1.308 (mise à jour auto des iPhone).
 - Gardes : `client-statut-envoi` (4), `client-ws-reveil` (5), `client-notification-ouvre-conv` (6), sabotages rouges prouvés. Suite complète : 2 057 verts.

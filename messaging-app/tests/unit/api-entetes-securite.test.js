@@ -30,6 +30,18 @@ describe('en-têtes de sécurité des workers', () => {
     expect(r.headers.get('Cache-Control')).toBe('public, max-age=60');
   });
 
+  it('une réponse sans type de contenu reçoit nosniff mais pas no-store', () => {
+    const h = new Headers();
+    durcirEntetes(h);
+    expect(h.get('Cache-Control')).toBeNull();
+  });
+
+  it('garde un HSTS déjà posé par la route', () => {
+    const h = new Headers({ 'Strict-Transport-Security': 'max-age=60' });
+    durcirEntetes(h);
+    expect(h.get('Strict-Transport-Security')).toBe('max-age=60');
+  });
+
   it('laisse passer un upgrade WebSocket (101) sans le reconstruire', () => {
     const ws = { status: 101, headers: new Headers() };
     expect(applyCors(req, ws)).toBe(ws);

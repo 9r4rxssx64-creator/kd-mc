@@ -75,6 +75,15 @@ function mesurer() {
     m.attentes = Object.entries(r.sessions || {})
       .filter(([, s]) => s.attend_kevin).map(([id, s]) => ({ id, quoi: s.attend_kevin }));
   } catch { m.sessions = 0; m.messages = 0; m.messages_ouverts = 0; m.attentes = []; }
+  /* Apex Chat — arrondis exprès (au millier / à la dizaine) : le bloc ne change qu'en franchissant un palier,
+     sinon chaque ligne ajoutée par n'importe qui rendrait test:maj-tout rouge pour tout le monde (leçon #94). */
+  const lignes = (f) => { try { return fs.readFileSync(f, 'utf8').split('\n').length; } catch { return 0; } };
+  const arrondi = (n, p) => Math.round(n / p) * p;
+  try { m.apex_version = JSON.parse(fs.readFileSync('messaging-app/package.json', 'utf8')).version; } catch { m.apex_version = '?'; }
+  m.apex_front = arrondi(lignes('messaging-app/index.html'), 1000);
+  m.apex_serveur = arrondi(lignes('messaging-app/workers/api-worker.js'), 500);
+  m.apex_salles = arrondi(lignes('messaging-app/workers/durable-objects/ConversationDO.js'), 500);
+  m.apex_tests = (() => { try { return arrondi(fs.readdirSync('messaging-app/tests/unit').filter((x) => x.endsWith('.test.js')).length, 10); } catch { return 0; } })();
   m.branches_locales = compte("git branch -r 2>/dev/null | grep -c 'origin/' ");
 
   /* réseau — mode complet seulement */
@@ -127,6 +136,8 @@ function blocs(m) {
 
   /* Bloc VOLATIL (réseau) : il change à chaque appel, donc il n'est JAMAIS comparé par le
      garde — sinon faux rouge permanent (piège de la valeur volatile, leçon #94). */
+  b['apex-chat'] = `> État mesuré (mis à jour tout seul) : **v${m.apex_version}** · page ≈ ${nb(m.apex_front)} lignes · serveur ≈ ${nb(m.apex_serveur)} · salles de conversation ≈ ${nb(m.apex_salles)} · ≈ ${m.apex_tests} fichiers de tests`;
+
   b['etat-live'] = RAPIDE
     ? null   // mode rapide : on ne touche pas à ce bloc, la dernière mesure reste affichée
     : [
@@ -154,6 +165,7 @@ const CIBLES = [
   ['TRANSFERT-COMPLET.md', 'etat-live'],
   ['TRANSFERT-COMPLET.md', 'attentes-kevin'],
   ['KEVIN_ACTIONS_TODO.md', 'attentes-kevin'],
+  ['messaging-app/README.md', 'apex-chat'],
 ];
 
 function appliquer(b) {

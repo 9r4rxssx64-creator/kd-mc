@@ -1127,3 +1127,14 @@ est **global**, pas par app.
 **compte** était à 0 $ et bloquait tout, même avec un budget **dépôt** à 20 $ ; **Kevin l'a monté à 20 $**.
 Run de test 17:05 UTC : 23 s, toutes les étapes exécutées. **Le plafond du fait n°19 reste en vigueur** : chaque minute
 compte jusqu'à la bascule du 1er octobre (dépôt public).
+
+## 🔴 Fait n°25 — QUOTA ACTIONS DU COFFRE ÉPUISÉ : plus aucune copie automatique du code vers le dépôt public (mesuré le 16.10.2026, vers 17:40 UTC)
+
+| Mesure | Résultat |
+|---|---|
+| Robot « Coffre → dépôt public : synchroniser le CODE » | dernier run réussi **17:40 UTC** ; plus de run ensuite malgré des fusions |
+| Commits du dépôt public après 17:40 | tous signés `kdmc-publier-local` : « Synchronisation LOCALE depuis le coffre — sans minutes Actions » (plusieurs sessions) |
+| Conséquence mesurée | un déploiement vert a tourné sur l'ANCIEN code (lots G et H annoncés « en ligne » à tort) |
+
+**Ce qui tient** : `node tools/depot-public/publier-et-verifier.mjs` publie via `publier-local.mjs`, attend le déploiement du commit PUBLIC publié (ou d'un commit plus récent qui le contient), lance le déploiement à la main si rien ne démarre. **Le dépôt public lit déjà le coffre** (secret `COFFRE_CLE_LECTURE`) mais rien ne peut le DÉCLENCHER sans minute du coffre. **Seule voie 100 % automatique** : un webhook du coffre vers un petit relais Cloudflare qui appelle le dépôt public (réglage « Webhooks » du coffre, hors de portée d'une session). Leçons 579/580.
+

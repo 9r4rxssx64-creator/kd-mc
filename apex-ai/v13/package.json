@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "lighthouse": "lhci autorun",
+    "lighthouse": "lhci autorun --config=lighthouse.config.json",
     "axe": "axe-core --include='./'",
     "size": "size-limit",
     "audit:all": "npm run typecheck && npm run lint && npm run test && npm run build && npm run size"

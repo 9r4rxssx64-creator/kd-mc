@@ -1,5 +1,8 @@
 # 🏗 Apex Chat — Architecture technique
 
+> ⚠️ **Document daté du 27.04.2026 (conception initiale).** L'état RÉEL (version, tailles, ce qui est livré) est dans `messaging-app/README.md` (bloc mesuré en haut), `MEMO_RESUME.md` (entrées du jour) et `LESSONS.md`. Les changements d'octobre 2026 : sécurité des comptes et codes SMS, quota gratuit (lectures D1, stockage R2), santé annonçant la version, publication par le dépôt public.
+
+
 > Version 1.0 — 2026-04-27
 > Branche : `claude/private-messaging-app-jpLl1`
 

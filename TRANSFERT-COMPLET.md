@@ -29,16 +29,16 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **175** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **176** | `pipeline/sessions.json` |
 | Applications / pages | **37** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **32** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |
 | Automatisations actives | **142** (+ 37 rangées) | `.github/workflows/` |
 | Gardes / tests | **203** fichiers, **320** commandes `npm run` | `tests/` + `package.json` |
 | Noms de secrets (jamais les valeurs) | **116** | `grep secrets.` sur les workflows |
-| Discussions entre sessions | **223** dont **112** ouvertes | `pipeline/sessions.json` |
-| `CLAUDE.md` rechargé à chaque message | **85 920 o ≈ 24 549 tokens** | `wc -c` |
-| `CLAUDE-HISTOIRE.md` (à la demande) | **740 037 o** | `wc -c` |
+| Discussions entre sessions | **224** dont **113** ouvertes | `pipeline/sessions.json` |
+| `CLAUDE.md` rechargé à chaque message | **86 341 o ≈ 24 669 tokens** | `wc -c` |
+| `CLAUDE-HISTOIRE.md` (à la demande) | **742 389 o** | `wc -c` |
 <!-- MAJ-AUTO:fin chiffres -->
 
 ### 📡 Ce qui bouge (remesuré quand la commande tourne avec le réseau)
@@ -46,7 +46,7 @@
 <!-- MAJ-AUTO:debut etat-live -->
 | Ce qui bouge | État au 2026-10-16 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **777** | `git ls-remote` |
+| Branches dans le dépôt | **780** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
 | État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->
@@ -55,10 +55,12 @@
 
 <!-- MAJ-AUTO:debut attentes-kevin -->
 - 👤 **changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…**  `arbre`
+- 👤 **test iPhone 3 gestes + décision annuaire + relais Webhook (voir KEVIN_ACTIONS_TODO)**  `apex-chat`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
 - 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
 - 👤 **5 questions famille (Honora père/mère, mère de Laure, Judith/Marie-Judith, doublons Jean et Alexandre, Eleonore fille ou sœur) + un choix d'affichage sur le couple Guy/Yvette**  `arbre-visuel`
+- 👤 **Yann : Ouvrir dans l'admin ; actes Le Dren/Monaco/Beausoleil (KEVIN_ACTIONS_TODO 16.10)**  `arbre-session-1610`
 <!-- MAJ-AUTO:fin attentes-kevin -->
 
 ⚠️ **Honnêteté sur l'historique git** : le dépôt est cloné en « superficiel » (*shallow*) dans

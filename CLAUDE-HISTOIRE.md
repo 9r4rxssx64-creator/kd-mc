@@ -3617,6 +3617,8 @@ dans `test:ci`.
 la session exporte le paquet public en local (`exporter.mjs` → `verifier.mjs`), le pousse au dépôt public
 (minutes illimitées) et déclenche `coffre-a-change` ; le robot public récupère les fichiers privés avec son
 PAT et déploie. **Prouvé le 30.09 à 13h58 UTC** : `cmcteams.kd-mc.com` en v9.929, 0 minute du coffre.
+> **16.10 soir** : le signal `coffre-a-change` n'a plus d'écouteur depuis #4604 (republication Pages arrêtée) — chaque robot de déploiement du public relit lui-même les fichiers privés au coffre (action `coffre`, 3 essais depuis #4665). Ne plus l'envoyer ; procédure à jour : `.claude/rules/gratuit-public.md`.
+
 Leçon #365 : un tel push ne doit porter QUE l'app — 115 workflows modifiés dans le même commit ont lancé
 65 robots publics d'un coup (19 rouges, aucun sur la production).
 
@@ -12239,3 +12241,22 @@ Kevin : « Trouve des solutions pour ne pas consommer. Tu avais mis en place de 
 - **Pour tout nouveau robot** : d'abord le public (ou le Lenovo de Kevin, `KDMC_RUNNER`), jamais le privé par défaut ; aucun journal public n'affiche un contenu privé (seulement des nombres).
 - **Garde** : `npm run test:robots-public` (dans `test:ci`, sabotage prouvé).
 - **Le soir même (Kevin : « Passe par le dépôt ouvert si possible. Réfléchis, cherche et trouve une solution. Toujours. Note-le, rappelle-toi. »)** — la règle s'étend au CODE lui-même, pas seulement aux déploiements : (1) après ta fusion, **publie toi-même** au dépôt public — `node tools/depot-public/publier-local.mjs --envoyer` (mêmes exporter/verifier, dépôt public attaché en écriture par `add_repo kd-mc`, **0 minute du coffre**) ; le robot « Coffre → dépôt public : synchroniser le CODE » ne part plus à la fusion (mesuré : 4 fusions le 16.10 = 26 min du coffre), il reste le train du soir et le secours ; (2) **chaque déploiement se lance au public** par `gh api -X POST repos/9r4rxssx64-creator/kd-mc/actions/workflows/<robot>.yml/dispatches -f ref=main` : le routeur (il copie Apex, CMCteams, la light depuis le coffre), les règles Firebase (le robot « Deploy CMCteams Firebase Rules » lit `firebase-rules-apex.json` au coffre par l'action `coffre`), les workers ; (3) **avant de dire « il faut attendre le quota »**, chercher le chemin public : prouvé le 16.10, Apex v13.4.372 mise en ligne par le routeur public alors que la ration du coffre était à 73/60 min. Le robot public « Auto-deploy Apex v13 build » est rouge depuis le 27.09 (fichiers privés absents du public) : ne pas s'y fier, c'est le routeur qui publie Apex.
+
+## 📚 RÈGLE ABSOLUE — TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER (Kevin 2026-10-16, 4ᵉ rappel : 16.05, 12.08, 8.10, 16.10)
+
+> **« Mets TOUS les documents à jour en temps réel toujours sans rien oublier, note-le. »** — Kevin 2026-10-16
+
+**Constat honnête (16.10)** : une session a livré 10 PR (arbre v3.108→v3.116, admin, kdmc-access, recherches) en ne
+touchant presque que `MEMO_RESUME.md` (assez pour le garde) ; `KEVIN_ACTIONS_TODO.md`, `NOTES_USER.md`, `ETAT-DU-MOMENT.md`,
+`KEVIN_INVENTORY.md` et `pipeline/sessions.json` étaient en retard. Le garde vert ne prouve pas que TOUT est à jour.
+
+**À CHAQUE livraison (même petite), dans le MÊME commit, la liste complète** — `.claude/rules/docs-temps-reel.md` :
+1. `MEMO_RESUME.md` (ce qui a été fait, vérifié réel / non vérifié) ;
+2. `KEVIN_INVENTORY.md` (ce que Kevin a, liens cliquables, tests) ;
+3. `KEVIN_ACTIONS_TODO.md` (ce qui attend Kevin, en tête, à jour — retirer ce qui est fait) ;
+4. `ETAT-DU-MOMENT.md` (date + la ligne du sujet, ≤ 90 lignes) ;
+5. `NOTES_USER.md` (toute info donnée par Kevin : famille, personnes, préférences) ;
+6. `LESSONS.md` (toute erreur ou découverte) ; `CLAUDE-HISTOIRE.md` + `npm run claude-md:index` (toute nouvelle règle) ;
+7. `pipeline/sessions.json` via `node tools/pipeline/pipeline.mjs maj --id <moi> …` (et lire les messages des autres sessions) ;
+8. les données vivantes hors dépôt : notes des fiches de l'arbre (réponses des mairies, actes), fiches PDF de recherche.
+9. **Ce qui se mesure ne s'écrit pas à la main** : `npm run maj-tout` (hook Stop, à chaque fin de tour) réécrit les chiffres entre marqueurs `<!-- MAJ-AUTO:debut … -->` — depuis le 16.10 aussi l'état d'Apex Chat dans `messaging-app/README.md` (version, tailles arrondies au palier, jamais de faux rouge) ; `test:maj-tout` échoue si un bloc est périmé. Un document daté (`messaging-app/docs/ARCHITECTURE.md`, `ROADMAP.md`) porte un bandeau « daté » + renvoi vers la source vivante.

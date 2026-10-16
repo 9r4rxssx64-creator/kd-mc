@@ -9,6 +9,23 @@
 
 ---
 
+## 👆 (16.10 soir) CE QUI T'ATTEND — à jour
+
+1. **Yann** : https://admin.kd-mc.com → bannière « ⏳ comptes fermés » en haut → **✅ Ouvrir** sur Yann (ou « 👋 Personnes attendues » → « Yann Lorenzi »). Puis Yann ferme et rouvre l'appli. Envoie une capture si ça bloque.
+2. **Le Dren (pour Rémi)** : ouvrir l'acte de naissance de Groix 1905 en ligne (Archives du Morbihan, registre **4 E 69 32**, vers le 11.12.1905) et m'envoyer une capture avec la marge · remplir le formulaire du SHD de Caen https://demarche.numerique.gouv.fr/commencer/demande-shd-davcc (texte prêt dans la fiche PDF, partie 6).
+3. **Monaco** : demander en ligne l'acte de décès d'Albert Antoine BUCHET (20.03.1998) sur https://actes-en-ligne.mairie.mc/fr/ (MConnect) et me dire ce que le site demande.
+4. **Courrier de Beausoleil** : un acte de naissance arrive par la poste → le photographier et me l'envoyer.
+5. **Famille de Yann** : la date et le lieu de naissance de Marie-France BUCHET (≈ 12.08.1948) ; les adresses mail de la famille pour leur envoyer l'invitation à l'arbre (brouillon prêt dans Gmail) ; leur ouvrir l'arbre dans l'admin.
+6. **En attente de réponse (rien à faire)** : mairie de Groix et Philippe Millour (Le Dren, 16.10) · mairies de Sainte-Agnès et de Bourges (famille de Yann, 15.10 ; relance prévue vers le 25.10).
+7. **Chefs d'équipe (CMCteams + light)** : chaque équipe a déjà un chef provisoire (le plus ancien d'après le matricule). Pour qu'il devienne **définitif**, entre la **date d'entrée SBM** dans les fiches (l'écran « bilan des chefs » liste qui manque) — 16 personnes n'ont pas encore de vrai matricule (dont Davy CARPINELLI, équipe c9). Rien à cliquer d'autre : tu peux changer un chef à la main, ton choix n'est jamais écrasé.
+8. **Départs (GTA)** : confirme-moi si le casino demande d'être à l'entrée **20 minutes avant** l'heure de départ (aujourd'hui réglé à 0 minute) — une seule phrase suffit.
+
+---
+## 🟠 (16.10) Apex Chat v1.1.310 — 2 minutes de test sur ton iPhone + 2 décisions
+
+Test : (1) mode avion → écris un message : il affiche 🕓, puis ✓ quand le réseau revient ; (2) enregistre un vocal en mode avion : ⚠️ « non envoyé » ; (3) ferme l'app, touche une notification : tu arrives dans la bonne conversation.
+Décisions (tu réponds, je fais) : (a) empêcher qu'un compte quelconque ouvre une conversation avec n'importe qui (annuaire des profils) — change la façon de retrouver les gens ; (b) relais Cloudflare + « Webhook » du coffre pour que la publication vers le dépôt public redevienne 100 % automatique (je te guide pas à pas).
+
 ## ✅ (10.10) Inviter gratuitement qui tu veux, n'importe où — prêt dès la mise en ligne
 
 [kd-mc.com/admin/commerce.html](https://kd-mc.com/admin/commerce.html) → **🎁 Inviter gratuitement** : choisis quoi offrir (l'entraîneur
@@ -504,10 +521,12 @@ Seules les **automatisations** sont bloquées.
 
 <!-- MAJ-AUTO:debut attentes-kevin -->
 - 👤 **changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…**  `arbre`
+- 👤 **test iPhone 3 gestes + décision annuaire + relais Webhook (voir KEVIN_ACTIONS_TODO)**  `apex-chat`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
 - 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
 - 👤 **5 questions famille (Honora père/mère, mère de Laure, Judith/Marie-Judith, doublons Jean et Alexandre, Eleonore fille ou sœur) + un choix d'affichage sur le couple Guy/Yvette**  `arbre-visuel`
+- 👤 **Yann : Ouvrir dans l'admin ; actes Le Dren/Monaco/Beausoleil (KEVIN_ACTIONS_TODO 16.10)**  `arbre-session-1610`
 <!-- MAJ-AUTO:fin attentes-kevin -->
 
 ---

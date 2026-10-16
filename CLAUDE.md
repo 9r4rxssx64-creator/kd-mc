@@ -80,7 +80,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 218 règles — le texte de Kevin, une par une
+## 📜 Les 219 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -959,6 +959,10 @@ Kevin : « Vérifie toujours tout réel. Note-le et rappelle-toi. »
 ### 🆓 RÈGLE ABSOLUE — LES ROBOTS PASSENT PAR LE DÉPÔT PUBLIC : GRATUIT ET ILLIMITÉ D'ABORD, LE PRIVÉ SEULEMENT EN SECOURS (Kevin 2026-10-16, ABSOLUE)
 Kevin : « Trouve des solutions pour ne pas consommer. Tu avais mis en place de passer par le public avec un robot… Privilégie toujours le public. Enfin, en tout cas, toujours le gratuit. […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-les-robots-passent-par-le-dépôt-public-gratuit-et-illimité-dabord-le-privé-seulement-en-secours-kevin-2026-10-16-absolue)
+
+### 📚 RÈGLE ABSOLUE — TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER (Kevin 2026-10-16, 4ᵉ rappel : 16.05, 12.08, 8.10, 16.10)
+**« Mets TOUS les documents à jour en temps réel toujours sans rien oublier, note-le. »** — Kevin 2026-10-16
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tous-les-documents-à-jour-en-temps-réel-sans-rien-oublier-kevin-2026-10-16-4ᵉ-rappel-1605-1208-810-1610)
 
 ---
 

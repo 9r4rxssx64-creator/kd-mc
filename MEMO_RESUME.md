@@ -1,10 +1,26 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 (soir) — « Mets TOUS les documents à jour » (5ᵉ rappel) : complété, pas dupliqué
+- **Mesuré avant d'écrire** : `main` portait déjà le rattrapage du 16.10 et la règle `.claude/rules/docs-temps-reel.md` (PR #4666) ; chefs d'équipe v9.974→v9.977, présence live, relais `demande_chef` étaient déjà dans CHANGELOG, MEMO, KEVIN_INVENTORY, NOTES_USER, ETAT-DU-MOMENT, LESSONS. Rien recopié une seconde fois.
+- **Ce qui manquait et a été ajouté** : KEVIN_ACTIONS_TODO points 7 (dates d'entrée SBM pour rendre les chefs définitifs ; 16 personnes sans vrai matricule dont Davy CARPINELLI) et 8 (avance de 20 min à l'entrée des départs, réglée à 0) ; chiffres remesurés par `npm run maj-tout`.
+- **Règle** : la demande « note le » est déjà portée par `docs-temps-reel.md` + leçon #569 — pas de règle en double.
+
+## 2026-10-16 (soir) — Règle : TOUS les documents à jour en temps réel (Kevin, 4ᵉ rappel)
+- Rattrapage fait : KEVIN_ACTIONS_TODO (section 16.10 en tête), KEVIN_INVENTORY (arbre v3.110→v3.116, admin, kdmc-access), ETAT-DU-MOMENT (déploiement gratuit par le dépôt public, vérifié), NOTES_USER (Pascale/Ronan, Ma vue, Rémi Le Dren, Yann), pipeline/sessions.json. Règle : `CLAUDE-HISTOIRE.md` + `.claude/rules/docs-temps-reel.md` (8 cases) + LESSONS 569.
+## 2026-10-16 — « Mets TOUS les documents à jour en temps réel, toujours, sans rien oublier. Note-le. »
+- **Noté** : règle ajoutée à `CLAUDE-HISTOIRE.md` (+ index `CLAUDE.md` régénéré) — elle existait deux fois, elle tient désormais par des mécanismes, pas par la mémoire.
+- **Mécanisme** : `maj-tout` réécrit aussi l'état d'Apex Chat dans `messaging-app/README.md` (version, tailles arrondies au palier) ; `test:maj-tout` le garde. Les documents datés (`ARCHITECTURE.md`, `ROADMAP.md`) portent un bandeau « daté » + renvoi vers la source vivante.
+- **État du moment** : ligne Apex Chat v1.1.310 ajoutée ; la ligne « Actions du coffre REPARTIES le 1.10 » (périmée : quota de nouveau épuisé, ETAT-INFRA n°25) retirée pour tenir en 90 lignes ; registre des sessions : `apex-chat` mis à jour (branche d'origine conservée).
+- **Mis à jour à la main** (faits que personne ne mesure) : `ETAT-INFRA.md` fait n°25 (quota Actions du coffre, publication par le dépôt public), `KEVIN_ACTIONS_TODO.md` (test iPhone + 2 décisions), `LESSONS.md`, `KEVIN_INVENTORY.md`.
+
 ## 2026-10-16 (nuit) — « Continu » : les robots du dépôt public verts pour de vraies raisons, 5 signalements suivis
 - **Mesuré** : au public, 16 robots rouges à chaque poussée (runs 38951700xxx). Causes : lock npm ignoré partout (`npm ci` EUSAGE, `npm audit` ENOLOCK) ; source d'Apex incomplète au public (3 fichiers au coffre → TS2307) ; `semgrep ci` refuse `--severity` ; job « Sync v12 » mort ; `apex-execute-auto-trigger` 403 au public ; `messages-suivis` : 5 signalements du 13.10 sans suivi.
 - **Livré** : lock `apex-ai/v13/package-lock.json` suivi ; 7 robots Apex (CI, e2e, iOS, auto-deploy, auto-rollback, apex-execute ×2) classés `workflows_prives` + conformes à `test:gratuit` (files, 10 min en PR, jamais d'annulation) ; bundle/axe/lighthouse récupèrent la source par l'action `coffre` ; `semgrep scan` ; job v12 retiré ; action `coffre` : 3 essais de clone (run 38952536692 « early EOF » = site non déployé ; relancé à la main 19:14 UTC, succès 38953422641) ; suivis m215→m219 (m218/m219 clos : les 3 tests départs re-mesurés verts sur main f45f411).
 - **Garde** : `test:robots-public` 6 contrôles + 6 sabotages (27 OK). Leçon #582.
-- **Non vérifié** : les robots publics après la prochaine synchronisation (à lire : `gh api repos/9r4rxssx64-creator/kd-mc/actions/runs?per_page=20`).
+- **Signal mort retiré** : « coffre-a-change » n'a plus d'écouteur depuis #4604 (republication Pages arrêtée ce matin) — `publier-local.mjs`, la règle `gratuit-public.md`, ETAT, CLAUDE-HISTOIRE et le garde ne le commandent plus ; chaque robot de déploiement du public relit lui-même le coffre. Message m223 aux sessions (lock suivi, robots au coffre, signal mort).
+- **Lu après publication (commit public e509030)** : Bundle Size ✅, Tests E2E + Validation ✅, routeur ✅ ; Lighthouse mobile ✗ (TS2307 : `lighthouse-ci.yml` n'avait pas l'étape coffre → ajoutée) ; Axe ✗ (ERR_CONNECTION_REFUSED : avec CI=true Playwright ne lance aucun serveur → étape `vite preview --port 4173` ajoutée, comme e2e). Garde `test:robots-public` 29 OK.
+- **Lighthouse (bureau)** : construit enfin, puis « Configuration file not found » — `lhci` ne lit pas un fichier nommé `lighthouse.config.json` ; il jugeait avec les règles par défaut (8 ✘ dont 3 audits sans valeur). Script `lighthouse` → `lhci autorun --config=lighthouse.config.json`. L'artefact du run ne contenait que les rapports de mai (v13.3.73, a11y 0,93 < seuil 0,95) : les vrais scores d'aujourd'hui se liront au prochain run.
+- **Non vérifié** : Axe, Lighthouse bureau et mobile après la publication suivante (les seuils calibrés peuvent encore rougir : a11y 0,95).
 
 ## 2026-10-16 — Apex Chat : le déploiement prouve la VERSION en ligne (lot K)
 - `/api/health` annonce `version` (constante `API_VERSION`, gardée = `package.json`) ; `deploy-apex-chat.yml` compare et ÉCHOUE si le serveur en ligne n'est pas à la version du dépôt (avant : comparaison impossible, simple notice). Garde `lot-k-version-sante` (3), sabotage rouge. **À chaque changement de version : mettre aussi `API_VERSION`** (le test le rappelle).

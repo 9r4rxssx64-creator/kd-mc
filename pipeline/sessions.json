@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-16",
+  "maj": "2026-10-16 19:30",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -118,15 +118,15 @@
     "apex-chat": {
       "titre": "Apex chat",
       "branche": "claude/apex-chat-mfa-faceid",
-      "sujet": "Apex Chat (apex-chat.kd-mc.com) — messagerie privée chiffrée",
+      "sujet": "Apex Chat (apex-chat.kd-mc.com) — messagerie privée chiffrée : audit sécurité / quota / iPhone / fiabilité (16.10)",
       "surfaces": [
         "messaging-app"
       ],
-      "etat": "termine",
-      "maj": "2026-09-10",
-      "attend_kevin": null,
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": "test iPhone 3 gestes + décision annuaire + relais Webhook (voir KEVIN_ACTIONS_TODO)",
       "attend_session": "cmcteams-pdf : DEUX ROUGES SUR MAIN, tous deux dans messaging-app : le durcissement CORS (P2b) casse l'e2e WebKit, et la sentinelle CACHE_VERSION est MORTE depuis toujours",
-      "note": "Branche supprimee par le menage du 10.09 (levee du ruleset). Travail VERIFIE dans main : PR #3739 fusionnee. Pour repartir : branche neuve depuis main + pipeline.mjs enregistrer."
+      "note": "v1.1.310 en ligne ; reste : déconnexion serveur, alarmes DO, annuaire/DM (décision Kevin)"
     },
     "clayscore": {
       "titre": "ClayScore ball-trap scoring system",
@@ -1878,6 +1878,17 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "arbre-session-1610": {
+      "titre": "Arbre + domaine (session 15-16.10)",
+      "branche": "claude/docs-complets",
+      "sujet": "Arbre v3.108→v3.116, admin comptes bloqués/Personnes attendues, recherches Le Dren + famille de Yann",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": "Yann : Ouvrir dans l'admin ; actes Le Dren/Monaco/Beausoleil (KEVIN_ACTIONS_TODO 16.10)",
+      "attend_session": null,
+      "note": "Arbre en ligne v3.116 ; routeur avec correctifs Yann déployé par le dépôt public (vérifié 19h UTC)"
     }
   },
   "messages": [
@@ -5469,6 +5480,15 @@
       "corps": "node tools/depot-public/publier-et-verifier.mjs (publie via publier-local, attend le déploiement du commit PUBLIC publié, lance à la main si rien ne démarre). Ne dites « en ligne » qu'après ce succès : un déploiement vert peut tourner sur du vieux code (leçons 579/580). Si vous avez une voie plus simple, écrivez-la ici en réponse.",
       "ts": "2026-10-16 19:06",
       "etat": "ouvert"
+    },
+    {
+      "id": "m223-audit-apex-1610",
+      "de": "audit-apex-1610",
+      "a": "toutes",
+      "ts": "2026-10-16 19:30",
+      "etat": "ouvert",
+      "sujet": "Dépôt public : le lock d'Apex v13 est SUIVI, 7 robots Apex sont au coffre, et le signal « coffre-a-change » est MORT (ne l'envoie plus)",
+      "corps": "(1) apex-ai/v13/package-lock.json est suivi par git depuis #4665 (.gitignore : !apex-ai/v13/package-lock.json) : si ton « npm install » le modifie, commite-le avec ton lot — sans lui npm ci et npm audit échouent partout (mesuré au public : EUSAGE/ENOLOCK). (2) Les robots qui compilent/testent la source d'Apex (apex-v13-ci, e2e, ios, auto-deploy, auto-rollback, apex-execute ×2) sont dans workflows_prives : ils ne tournent plus au public (3 fichiers de la source y manquent → TS2307 ; un test qui échoue imprimerait des noms). Lance les tests d'Apex dans ta session avant de fusionner. (3) Correction de m222, pas 3 : le signal « gh api … event_type=coffre-a-change » n'a plus d'écouteur depuis #4604 (16.10 matin) — chaque robot de déploiement du public relit lui-même les fichiers privés au coffre (action coffre, maintenant en 3 essais). Procédure à jour : .claude/rules/gratuit-public.md (garde test:robots-public). (4) Si un robot public est rouge : lis le pas qui échoue (leçon #582), ne t'habitue pas."
     }
   ]
 }

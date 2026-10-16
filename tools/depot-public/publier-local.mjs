@@ -90,8 +90,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   }
   if (!pousse) stop('le push sur le dépôt public a échoué 3 fois (droit d\'écriture ? jeton KDMC_PUBLIC_PAT ?). Rien n\'a été modifié là-bas.');
   log('4. poussé sur le dépôt public : il republie le site tout seul.');
-  if (PAT && /^https:\/\/github\.com\/9r4rxssx64-creator\/kd-mc/.test(DEPOT)) {
-    try { sh('curl', ['-sS', '-o', '/dev/null', '-w', '%{http_code}', '-X', 'POST', '-H', `Authorization: Bearer ${PAT}`, '-H', 'Accept: application/vnd.github+json', 'https://api.github.com/repos/9r4rxssx64-creator/kd-mc/dispatches', '-d', JSON.stringify({ event_type: 'coffre-a-change', client_payload: { sha } })]); log('   signal « coffre-a-change » envoyé (les fichiers privés suivent).'); }
-    catch { log('   ⚠️ signal non envoyé : lance-le à la main ou attends le prochain envoi.'); }
-  } else log('   (pas de jeton : pas de signal « coffre-a-change » ; les fichiers privés suivront au prochain envoi complet)');
+  /* 16.10 soir : plus de signal « coffre-a-change » — il n'a plus d'écouteur depuis #4604 (la republication Pages est arrêtée) ;
+     chaque robot de déploiement du public relit lui-même les fichiers privés au coffre (action .github/actions/coffre). */
+  log('   les fichiers privés (CMCteams, light, arbre…) sont relus au coffre par chaque déploiement public : rien d\'autre à envoyer.');
 }

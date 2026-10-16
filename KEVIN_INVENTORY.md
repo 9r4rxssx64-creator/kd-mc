@@ -14,6 +14,15 @@
 - **Fichiers créés** : [`.claude/rules/modeles.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/modeles.md) · [`tests/verify-modele-adapte.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-modele-adapte.mjs)
 - **Test** : `npm run test:modele-adapte`
 
+### 🌳 Arbre v3.110 → v3.116 + admin + « Qui se connecte » (16.10.2026)
+
+- **Arbre** (https://arbre.kd-mc.com) : menu des familles déroulant (☰ Menu) et masquable (✕ → pastille) · l'ex d'un conjoint n'entre plus dans la famille (Pascale hors de l'arbre de Laurence, Ronan sous Kevin) · « Ma vue » réunit toutes les familles de tes ancêtres jusqu'au plus haut · toucher une personne = toute sa famille en clair, le reste transparent (2e toucher = fiche) · choisir une famille montre aussi d'où elle vient.
+- **Admin** (https://admin.kd-mc.com) : « ✅ Ouvrir ce compte » en haut de chaque carte · bannière des comptes fermés · « 👋 Personnes attendues » · accepter un code ouvre aussi le compte.
+- **Qui se connecte** : vraie bulle de version (v1.1.0), cliquable, mise à jour automatique.
+- **Mise en ligne gratuite** : par le dépôt public `kd-mc` (leçon 568).
+- **Tests** : `npm run test:arbre-ma-vue` · `test:arbre-toutes-blocs` · `test:debloquer-connus` · `test:kdmc-access` · `test:admin-tuiles-reel` · `test:arbre-ordi`
+- **Recherche Le Dren (pour Rémi)** : fiche PDF mise à jour le 16.10 (envoyée dans la conversation) ; courriels à la mairie de Groix et à Philippe Millour.
+
 ### 🔓 Comptes bloqués : plus jamais invisibles (16.10.2026 — routeur + admin)
 
 - **Pour toi** : en haut de l'admin, une bannière liste les comptes fermés avec un bouton **✅ Ouvrir** ; « 👋 Personnes attendues » : tu écris d'avance le nom d'une personne connue, elle entre sans attendre (usage unique, code toujours exigé). Accepter un code ouvre aussi le compte ; une personne fermée qui réessaie te revient dans Mes messages.

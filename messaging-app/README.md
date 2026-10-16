@@ -17,7 +17,10 @@ dérivées en PBKDF2 100 000 itérations). Transport en HTTPS, serveur privé.
 > une allégation de sécurité que le code ne tient pas.
 
 > Repo : `9r4rxssx64-creator/cmcteams` — dossier `messaging-app/`
-> Status : **en production** (front ~16 000 lignes, worker ~5 900, DO ~820)
+> Status : **en production**
+<!-- MAJ-AUTO:debut apex-chat -->
+> État mesuré (mis à jour tout seul) : **v1.1.310** · page ≈ 19 000 lignes · serveur ≈ 7 500 · salles de conversation ≈ 2 000 · ≈ 140 fichiers de tests
+<!-- MAJ-AUTO:fin apex-chat -->
 > Live : `https://apex-chat.kd-mc.com/` (adresse officielle ; l'ancienne adresse github.io est un miroir technique)
 
 ---
@@ -26,7 +29,7 @@ dérivées en PBKDF2 100 000 itérations). Transport en HTTPS, serveur privé.
 
 ```
 messaging-app/
-├── index.html              # PWA monofichier (~16 300 lignes)
+├── index.html              # PWA monofichier (taille : voir l'état mesuré en haut)
 ├── sw.js                   # Service Worker (3 caches static/runtime/offline)
 ├── manifest.json           # PWA installable iOS/Android
 ├── cgu.html                # CGU variante A (cercle privé contractuel)

@@ -56,6 +56,26 @@ export function isAllowedOrigin(origin) {
 }
 
 /**
+ * En-têtes de sécurité posés en UN seul point sur chaque réponse des workers.
+ * Ils S'AJOUTENT seulement s'ils manquent : une route qui a choisi sa valeur
+ * (ex. la pièce jointe, qui pose déjà nosniff) garde la sienne.
+ *  - nosniff : le navigateur ne « devine » jamais un type (pas de JSON lu comme page).
+ *  - HSTS : l'API ne se parle qu'en HTTPS, même au premier appel suivant.
+ *  - no-store sur le JSON : une réponse privée (messages, comptes) ne reste ni
+ *    dans le cache du navigateur ni dans un cache intermédiaire.
+ */
+export function durcirEntetes(headers) {
+  if (!headers.has('X-Content-Type-Options')) headers.set('X-Content-Type-Options', 'nosniff');
+  if (!headers.has('Strict-Transport-Security')) {
+    headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  const type = headers.get('Content-Type') || '';
+  if (/^application\/json/i.test(type) && !headers.has('Cache-Control')) {
+    headers.set('Cache-Control', 'no-store');
+  }
+}
+
+/**
  * Remplace le `Access-Control-Allow-Origin: *` par l'origine demandeuse quand
  * elle est autorisée, et le RETIRE sinon. Appliqué en UN seul point par worker
  * (le `fetch` de tête) : aucun site d'appel n'est touché.
@@ -75,6 +95,7 @@ export function applyCors(request, response) {
   // `Vary` s'AJOUTE : écraser un `Vary: Accept-Encoding` existant casserait la
   // négociation de compression en amont.
   headers.append('Vary', 'Origin');
+  durcirEntetes(headers);
   if (isAllowedOrigin(origin)) headers.set('Access-Control-Allow-Origin', origin);
   else headers.delete('Access-Control-Allow-Origin');
   return new Response(response.body, {

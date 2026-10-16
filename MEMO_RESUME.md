@@ -1,5 +1,10 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Apex Chat : audit à 4 regards (sécurité, iPhone, quota gratuit, tests) puis lot F1
+- **Audits** (lecture seule, 4 agents) : 1 faille sérieuse, 4 importantes côté serveur ; 5 défauts P0 côté iPhone ; 2 requêtes qui peuvent épuiser le quota D1 ; 2 031 tests verts (97,4 % de lignes).
+- **Livré (lot F1)** : (1) en-têtes `nosniff` / HSTS / `no-store` (JSON) posés en un point (`workers/lib/cors.js`) ; (2) trois requêtes qui relisaient des conversations entières corrigées (EXISTS au lieu de COUNT ; index partiel `0023` ; rattrapage coupé en deux, `INDEXED BY`) ; (3) la clé Gemini ne voyage plus dans l'adresse ; (4) une panne de base ne renvoie plus son détail au client. Gardes : `api-entetes-securite` (7), `lot-f1-quota-lectures` (4), sabotages rouges prouvés.
+- **Reste (décisions/lots suivants)** : fusion de comptes par nom (décision produit), code SMS limité par numéro, numéro SSO non vérifié, secret de test partagé, côté iPhone : faux « livré », reconnexion du temps réel au retour du réseau, ouverture de la bonne conversation depuis une notification.
+
 ## 2026-10-16 — Mise à jour forcée auto : « Qui se connecte » (kdmc-access) et l'admin (Kevin : « v1.0, pas de mise à jour force auto »)
 - `services/kdmc-access/page.js` : la bulle « v1.0 » figée devient « v1.1.0 », cliquable (= recharger), et la page se relit seule (retour d'écran + chaque minute) et se recharge si la version servie change. `kdmc-home/admin/index.html` : la bulle « admin » passe à v2.4.0 = `admin.js?v=` (elle restait à v2.2.0, donc aucune MAJ auto). Gardes : `test:kdmc-access`, `test:debloquer-connus` (5).
 

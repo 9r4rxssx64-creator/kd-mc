@@ -564,8 +564,8 @@ export class ConversationDO {
           cols + ' WHERE conv_id=? AND ts >= ? AND (mime IS NULL OR mime NOT IN (' + marques + ')) ORDER BY ts DESC LIMIT 50'
         ).bind(convId, joinedAt, ...silencieux).all(),
         this.env.APEX_CHAT_DB.prepare(
-          cols + ' WHERE conv_id=? AND ts >= ? AND mime IN (' + marques + ') ORDER BY ts DESC LIMIT 50'
-        ).bind(convId, joinedAt, ...silencieux).all(),
+          cols + ' WHERE conv_id=? AND ts >= ? AND (' + silencieux.map((m) => "mime='" + m + "'").join(' OR ') + ') ORDER BY ts DESC LIMIT 50'
+        ).bind(convId, joinedAt).all(),
       ]);
       const seen = new Set();
       const rows = [...(hist.results || []), ...(cles.results || [])]
@@ -860,11 +860,18 @@ export class ConversationDO {
       page = [...merged.values()].sort(byTsId);
       if (msg.changed_since != null) {
         const since = num(msg.changed_since);
-        const ch = await db.prepare(
-          cols + ' WHERE conv_id=? AND ts >= ? AND (edited_at > ? OR deleted_at > ?) ORDER BY ts ASC LIMIT ?'
-        ).bind(session.convId, joinedAt, since, since, CATCHUP_CHANGES_MAX).all();
+        // Deux requêtes, une par index partiel : un « OR » forçait la relecture de toute la conversation
+        // (mesuré sur SQLite réel, 16.10.2026). INDEXED BY impose l'index fin.
+        const [chEd, chDel] = await Promise.all([
+          db.prepare(
+            cols.replace('FROM messages', 'FROM messages INDEXED BY idx_msgs_conv_edited') + ' WHERE conv_id=? AND ts >= ? AND edited_at > ? ORDER BY ts ASC LIMIT ?'
+          ).bind(session.convId, joinedAt, since, CATCHUP_CHANGES_MAX).all(),
+          db.prepare(
+            cols.replace('FROM messages', 'FROM messages INDEXED BY idx_msgs_conv_deleted') + ' WHERE conv_id=? AND ts >= ? AND deleted_at > ? ORDER BY ts ASC LIMIT ?'
+          ).bind(session.convId, joinedAt, since, CATCHUP_CHANGES_MAX).all(),
+        ]);
         const cm = new Map();
-        for (const r of ch.results) cm.set(r.id, r);
+        for (const r of [...(chEd.results || []), ...(chDel.results || [])]) cm.set(r.id, r);
         for (const m of buffered) {
           if (m.ts >= joinedAt && (m.edited_at > since || m.deleted_at > since)) cm.set(m.id, m);
         }

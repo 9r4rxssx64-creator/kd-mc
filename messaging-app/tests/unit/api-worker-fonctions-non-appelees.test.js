@@ -700,7 +700,7 @@ describe('/api/push/subscribe + /api/push/unsubscribe', () => {
     const env = mkEnv([['INSERT OR REPLACE INTO push_subscriptions', { run: boom('no such column: device_id') }]]);
     const r = await worker.fetch(jreq('POST', '/api/push/subscribe', { subscription: SUB }, await userTok()), env);
     expect(r.status).toBe(500);
-    expect((await r.json()).message).toBe('DB error: no such column: device_id');
+    expect((await r.json()).message).toBe('Erreur de base de données'); // détail interne jamais renvoyé (audit 16.10.2026);
   });
 
   it('unsubscribe : 401 / endpoint requis (JSON invalide) / nominal scopé au user / panne 500', async () => {
@@ -715,7 +715,7 @@ describe('/api/push/subscribe + /api/push/unsubscribe', () => {
     const env4 = mkEnv([['DELETE FROM push_subscriptions', { run: boom('locked') }]]);
     const r4 = await worker.fetch(jreq('POST', '/api/push/unsubscribe', { endpoint: 'e' }, await userTok()), env4);
     expect(r4.status).toBe(500);
-    expect((await r4.json()).message).toBe('DB error: locked');
+    expect((await r4.json()).message).toBe('Erreur de base de données'); // détail interne jamais renvoyé (audit 16.10.2026);
   });
 });
 
@@ -783,7 +783,7 @@ describe('force-update (handleAdminForceUpdate / ViaToken / Ts)', () => {
     expect((await r2.json()).message).toBe('Admin requis');
     const r3 = await worker.fetch(jreq('POST', '/api/admin/force-update', {}, await adminTok()), mkEnv([['SELECT is_admin FROM users WHERE id=?', { first: boom('D1 down') }]]));
     expect(r3.status).toBe(500);
-    expect((await r3.json()).message).toBe('DB error: D1 down');
+    expect((await r3.json()).message).toBe('Erreur de base de données'); // détail interne jamais renvoyé (audit 16.10.2026);
   });
 
   it('force-update admin → ts stocké dans system_config + audit ; audit en panne n\'empêche rien', async () => {

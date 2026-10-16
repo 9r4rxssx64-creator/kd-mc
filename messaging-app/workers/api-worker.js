@@ -90,6 +90,12 @@ function err(message, status = 400, code = 'error', detail) {
   return json(body, status);
 }
 
+// Erreur de base : le détail va dans le journal du serveur, jamais dans la réponse (audit 16.10.2026).
+function _dbErr(e) {
+  console.error('[db-error]', e && e.message);
+  return 'Erreur de base de données';
+}
+
 export function normalizeName(s) {
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[\s\-_.@]+/g, ' ').trim();
@@ -2832,7 +2838,7 @@ export async function cleanupEmptyConversations(DB) {
   try {
     const rows = (await DB.prepare(
       `SELECT c.id,
-              (SELECT COUNT(*) FROM messages mm WHERE mm.conv_id=c.id) AS msgs,
+              EXISTS(SELECT 1 FROM messages mm WHERE mm.conv_id=c.id) AS msgs,
               (SELECT COUNT(*) FROM conversation_members cm WHERE cm.conv_id=c.id) AS mem,
               c.archived_at
        FROM conversations c WHERE c.type='dm'`
@@ -5550,9 +5556,9 @@ export async function _callGroqIA(messages, systemPrompt, env, signal) {
 export async function _callGeminiIA(messages, systemPrompt, env, signal) {
   if (!env.GEMINI_API_KEY) throw new Error('Gemini missing');
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
     method: 'POST', signal,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
     body: JSON.stringify({ systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined, contents })
   });
   if (!r.ok) throw new Error('Gemini ' + r.status);
@@ -5914,7 +5920,7 @@ export async function handleAdminGrantPremium(request, env) {
     }
 
   } catch (e) {
-    return err('DB error: ' + e.message, 500, 'db', { detail: e.message, step: 'grant_premium' });
+    return err(_dbErr(e), 500, 'db', { step: 'grant_premium' });
   }
   // Lot 2 (A) : l'activation est FAITE à ce stade — un souci d'écriture du journal
   // ne doit plus transformer une activation réussie en « erreur 500 ».
@@ -6494,7 +6500,7 @@ export async function handlePushSubscribe(request, env) {
     ).run();
     return json({ ok: true });
   } catch (e) {
-    return err('DB error: ' + e.message, 500);
+    return err(_dbErr(e), 500);
   }
 }
 
@@ -6510,7 +6516,7 @@ export async function handlePushUnsubscribe(request, env) {
     ).bind(endpoint, auth.sub).run();
     return json({ ok: true });
   } catch (e) {
-    return err('DB error: ' + e.message, 500);
+    return err(_dbErr(e), 500);
   }
 }
 
@@ -6527,7 +6533,7 @@ export async function handleAdminForceUpdate(request, env) {
     const u = await env.APEX_CHAT_DB?.prepare('SELECT is_admin FROM users WHERE id=?').bind(auth.sub).first();
     if (!u || !u.is_admin) return err('Admin requis', 403);
   } catch (e) {
-    return err('DB error: ' + e.message, 500);
+    return err(_dbErr(e), 500);
   }
   const ts = Date.now();
   try {
@@ -6616,7 +6622,7 @@ export async function handlePremiumStatus(request, env) {
       lifetime: u.premium_plan === 'lifetime' || (u.premium_until > 9000000000000),
     });
   } catch (e) {
-    return err('DB error: ' + e.message, 500);
+    return err(_dbErr(e), 500);
   }
 }
 

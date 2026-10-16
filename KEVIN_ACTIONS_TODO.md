@@ -20,11 +20,7 @@ et ton code admin dans « J'ai déjà un compte — nom + code ».
 
 ---
 
-## 🗑 (16.10) Projet Pages **kdmc-site** : la session le supprime par robot (Cloudflare refusait « too many deployments »)
-> Rien à faire de ton côté. Si le robot `supprimer-projet-pages.yml` est refusé faute de droit, il faudra ajouter **Account → Cloudflare Pages → Edit** à ta clé (https://dash.cloudflare.com/profile/api-tokens → la clé → Edit).
-
-## 🚨 (15.10, audit extérieur) À TOI : l'adresse de secours Cloudflare Pages laisse lire le site sans compte
-> `https://kdmc-site-bj5.pages.dev/` répond 200 SANS compte (plannings des cadres, données de la boutique, généalogie). Dans **Cloudflare → Workers & Pages → kdmc-site-bj5** : mets **Cloudflare Access** devant (ou supprime le projet et ses anciens déploiements quand le routeur servira ses propres fichiers). Dis-moi laquelle des deux : je prépare la bascule du routeur (fichiers embarqués) avant que tu coupes Pages. Détail : `audit/prive/AUDIT-EXTERIEUR-2026-10-15.md`. Aussi à toi : **console Firebase** (règles `/cmcteams`, `/apex`, `/coffre_vault` ouvertes aux comptes anonymes — je prépare le code, tu publies les règles).
+## ✅ (16.10) Fuite Pages FERMÉE : le projet `kdmc-site` est supprimé, le routeur sert sa propre copie. Reste à toi : **console Firebase** (règles `/cmcteams`, `/apex`, `/coffre_vault` ouvertes aux comptes anonymes — la session prépare le code, puis te donne le texte à coller).
 
 ## 👆 (10.10) WhatsApp pour TOUTES les inscriptions : 3 copier-coller chez Meta, le robot fait le reste
 

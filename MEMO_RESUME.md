@@ -241,6 +241,10 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
 
+## 2026-10-16 — ✅ FUITE FERMÉE : projet Pages `kdmc-site` supprimé (run 38879024853), domaine intact
+- Robot `supprimer-projet-pages.yml` (2e lancement, après correctif) : déploiements effacés, projet supprimé. Mesuré ensuite : `kdmc-site-bj5.pages.dev` ne répond plus (aucune connexion, code 000 — plannings des cadres compris), kd-mc.com 200, les 32 adresses du routeur répondent (200/301/302/401). Ration : 10/60 min à cette heure.
+- Reste de l'audit extérieur : Firebase fermé aux comptes anonymes (code + règles, Kevin publie), puis le reste du plan (`audit/prive/AUDIT-EXTERIEUR-2026-10-15.md`).
+
 ## 2026-10-16 — Suppression du projet Pages `kdmc-site` : Cloudflare refuse (« too many deployments ») → robot qui efface les déploiements puis le projet
 - Kevin a tenté la suppression (capture 11:06) : refus de Cloudflare, trop de déploiements. Cause : `publier-site-prive.yml` (exporté au dépôt public `kd-mc`) republiait le projet à CHAQUE signal du coffre et à chaque envoi sur main ET sur claude/**.
 - Fait : `publier-site-prive.yml` n'a plus que `workflow_dispatch` (plus de republication automatique) ; nouveau `supprimer-projet-pages.yml` (manuel, confirmation « kdmc-site », gardes : SOURCE_PAGES = "assets" et kd-mc.com en 200) : efface chaque déploiement par l'API Cloudflare (8 en parallèle, `force=true`), puis le projet, puis vérifie que kd-mc.com répond. Si la clé n'a pas le droit « Cloudflare Pages : Edit », l'annotation le dira. 1er lancement (run 38878742402) : les déploiements s'effacent, mais le dernier (production active) répond 400 → le robot s'arrêtait en erreur ; corrigé : il passe alors à la suppression du projet.

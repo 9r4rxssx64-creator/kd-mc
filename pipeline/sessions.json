@@ -1717,6 +1717,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "pages-supprime": {
+      "titre": "Fuite Pages fermée",
+      "branche": "claude/pages-supprime",
+      "sujet": "docs : kdmc-site supprimé",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

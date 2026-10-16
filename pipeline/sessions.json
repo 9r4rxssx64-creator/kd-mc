@@ -1707,6 +1707,16 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "suppr-pages": {
+      "titre": "Suppression du projet Pages kdmc-site",
+      "branche": "claude/suppr-pages",
+      "sujet": "republication coupée + robot de suppression",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

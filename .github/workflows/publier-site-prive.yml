@@ -37,38 +37,17 @@ concurrency:
   cancel-in-progress: false      # une publication ne se coupe pas en plein vol
 
 on:
-  # Dépôt PUBLIC : quand CMCteams, Light ou les données changent au coffre, le coffre fait signe
-  # ici (dernière étape de coffre-synchronise-public.yml, depuis le 8.10) et on republie le site
-  # avec la dernière version.
-  repository_dispatch:
-    types: [coffre-a-change]
+  # 16.10 (audit extérieur, P0) : le routeur sert ses pages depuis sa COPIE EMBARQUÉE (SOURCE_PAGES = "assets", déployé le 16.10).
+  # L'hébergeur Pages `kdmc-site` (kdmc-site-bj5.pages.dev) servait tout le site SANS compte et ne sert plus à rien : il est
+  # supprimé (workflow `supprimer-projet-pages.yml`). Plus AUCUNE publication automatique (avant : à chaque signal du coffre
+  # et à chaque envoi sur main ET sur claude/** — d'où « trop de déploiements » pour pouvoir supprimer le projet).
+  # Manuel seulement, et à ne relancer que si on revient sur l'hébergeur (retirer SOURCE_PAGES du wrangler.toml du routeur).
   workflow_dispatch:
     inputs:
       complet:
         description: "Paquet complet (avec les photos : arbre, chez-lolo, la-détente, cuisine)"
         type: boolean
         default: true
-  push:
-    branches:
-      - main
-      - 'claude/**'              # une branche de travail publie un APERÇU, jamais la production
-    paths:
-      # Les surfaces réellement servies. Modifier un test ou un document ne
-      # déclenche pas une publication — inutile, et ça consomme des minutes.
-      - 'index.html'
-      - 'sw.js'
-      - 'kdmc-home/**'
-      - 'apex-ai-v13/**'
-      - 'messaging-app/**'
-      - 'coffre-fort/**'
-      - 'lingua/**'
-      - 'arbre/**'
-      - 'javis/**'
-      - 'la-detente/**'
-      - 'shops/**'
-      - 'tools/**'
-      - 'services/kdmc-router/prepare-secours.mjs'
-      - '.github/workflows/publier-site-prive.yml'
 
 permissions:
   contents: read

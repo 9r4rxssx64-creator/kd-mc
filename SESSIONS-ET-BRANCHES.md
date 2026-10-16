@@ -211,6 +211,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/deploy-diag` | 15.10 | Déploiement du routeur : l'erreur de wrangler part en annotation (3 échecs en 1 s sans journal lisible) | `deploy-diag` |
 | `claude/token-cf` | 15.10 | Clé Cloudflare de GitHub refusée (code 10000) : action de Kevin documentée, déploiements bloqués | `token-cf` |
 | `claude/assets-en-ligne` | 16.10 | Routeur en ligne sur sa copie embarquée (run 38827591604) : go à Kevin pour supprimer kdmc-site | `assets-en-ligne` |
+| `claude/suppr-pages` | 16.10 | Projet Pages kdmc-site : republication automatique coupée + robot qui efface ses déploiements puis le supprime | `suppr-pages` |
 | `claude/suite2` | 15.10 | Abandonnée : le même correctif (`equipes-mois-suivant`, `departs-groupes`) est arrivé sur main avant (25ee6dd66) | `suite2-rouges` |
 | `claude/fuite-icones-cmcteams` | 13.10 | Doublon du correctif de fuite (repris dans claude/creer-compte-bouton) — à supprimer à la main | `fuite-icones` |
 | `claude/gratuit-partout` | 13.10 | Carte unique des règles « gratuit » (même pour les Actions), message à toutes les sessions, outil `ration-actions.mjs` et sa garde | `gratuit-partout` |

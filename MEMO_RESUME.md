@@ -241,6 +241,10 @@ Kevin a donné ce travail à la mauvaise session et demande de le transmettre à
 - `client-f36` (rouge sur main depuis #4434, `idbDel` non extrait) réparé.
 - Suite de l'audit : rapports dans le scratchpad de session, corrections par priorité à venir (messages perdus, Smart Reply, …).
 
+## 2026-10-16 — Suppression du projet Pages `kdmc-site` : Cloudflare refuse (« too many deployments ») → robot qui efface les déploiements puis le projet
+- Kevin a tenté la suppression (capture 11:06) : refus de Cloudflare, trop de déploiements. Cause : `publier-site-prive.yml` (exporté au dépôt public `kd-mc`) republiait le projet à CHAQUE signal du coffre et à chaque envoi sur main ET sur claude/**.
+- Fait : `publier-site-prive.yml` n'a plus que `workflow_dispatch` (plus de republication automatique) ; nouveau `supprimer-projet-pages.yml` (manuel, confirmation « kdmc-site », gardes : SOURCE_PAGES = "assets" et kd-mc.com en 200) : efface chaque déploiement par l'API Cloudflare (8 en parallèle, `force=true`), puis le projet, puis vérifie que kd-mc.com répond. Si la clé n'a pas le droit « Cloudflare Pages : Edit », l'annotation le dira.
+
 ## 2026-10-16 (00h) — EN LIGNE : le routeur sert ses pages depuis sa copie embarquée ; Kevin peut supprimer le projet Pages `kdmc-site`
 - Clé Cloudflare remplacée par Kevin (« Fait ✅ ») ; déploiement relancé après la remise à zéro de la ration : run 38827591604 VERT (147 s, toutes les étapes de santé passées), depuis main e73a2c6.
 - Preuve en ligne que le domaine ne lit plus Pages : un fichier absent (`kit.kd-mc.com/favicon-nexiste.ico`) répond 404 vide sur le domaine, alors que `kdmc-site-bj5.pages.dev` répond 200 + page HTML pour le même chemin (son repli « répond à tout ») ; les 32 adresses répondent (200/301/302/401). → « go » donné à Kevin pour supprimer le projet Pages **kdmc-site** (Workers & Pages → kdmc-site → Settings → Delete project).

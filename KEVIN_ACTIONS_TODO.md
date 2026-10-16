@@ -20,8 +20,8 @@ et ton code admin dans « J'ai déjà un compte — nom + code ».
 
 ---
 
-## ✅→🗑 (16.10) GO : supprime le projet Pages **kdmc-site** (il fuyait, le routeur ne s'en sert plus)
-> Clé remplacée ✅, routeur redéployé et vérifié (32 adresses). https://dash.cloudflare.com/?to=/:account/workers-and-pages → **kdmc-site** (adresse kdmc-site-bj5.pages.dev) → **Settings** → tout en bas **Delete project** → tape `kdmc-site` → confirme. Ensuite dis « supprimé » : la session vérifie que le domaine répond toujours et que l'adresse pages.dev ne sert plus rien.
+## 🗑 (16.10) Projet Pages **kdmc-site** : la session le supprime par robot (Cloudflare refusait « too many deployments »)
+> Rien à faire de ton côté. Si le robot `supprimer-projet-pages.yml` est refusé faute de droit, il faudra ajouter **Account → Cloudflare Pages → Edit** à ta clé (https://dash.cloudflare.com/profile/api-tokens → la clé → Edit).
 
 ## 🚨 (15.10, audit extérieur) À TOI : l'adresse de secours Cloudflare Pages laisse lire le site sans compte
 > `https://kdmc-site-bj5.pages.dev/` répond 200 SANS compte (plannings des cadres, données de la boutique, généalogie). Dans **Cloudflare → Workers & Pages → kdmc-site-bj5** : mets **Cloudflare Access** devant (ou supprime le projet et ses anciens déploiements quand le routeur servira ses propres fichiers). Dis-moi laquelle des deux : je prépare la bascule du routeur (fichiers embarqués) avant que tu coupes Pages. Détail : `audit/prive/AUDIT-EXTERIEUR-2026-10-15.md`. Aussi à toi : **console Firebase** (règles `/cmcteams`, `/apex`, `/coffre_vault` ouvertes aux comptes anonymes — je prépare le code, tu publies les règles).

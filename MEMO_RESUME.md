@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-16 — Arbre v3.112 : menu des familles masquable (Kevin : « pouvoir enlever le menu qui prend toute la place »)
+- `arbre/index.html` : « ✕ » réduit la barre à une pastille, mémorisé (`arbre_barre_masquee`) ; la pastille la remet. Test `test:arbre-ma-vue` 4m/4n.
+
 ## 2026-10-16 — Arbre v3.111 : menu compact (capture réelle de Kevin : le menu couvrait l'arbre)
 - `arbre/index.html` : « ☰ Menu » sur UNE ligne défilante (Ma vue, Épingler, Autres, puis propositions). Vérifié sur capture iPhone 390 px, données réelles. Tests `test:arbre-ma-vue` etc.
 

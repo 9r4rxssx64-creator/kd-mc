@@ -7,6 +7,33 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 16/10/2026 10:40 UTC
+
+- **Branche** : `main` · **Commit** : `f937601a` · **Run** : `38888530854`
+- **Ce qui a lâché** : deploy › Le domaine sert-il vraiment les 31 adresses ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/38888530854
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m# 16.10 : les journaux ne sont pas lisibles depuis une session (hôte blob refusé) → en cas^[[0m
+^[[36;1m# d'échec, les lignes ❌ deviennent des annotations, lisibles par l'API check-runs.^[[0m
+^[[36;1m  grep -E "❌|^  · |MESURE|paire|réseau" /tmp/sonde.txt | head -25 | sed 's/^/::error::sonde — /'; exit 1; }^[[0m
+=== 26 servies / 6 en échec ===
+##[error]sonde — ❌ cmcteams.kd-mc.com           404      963 car.
+##[error]sonde — ❌ apex-ai.kd-mc.com            404      963 car.
+##[error]sonde — ❌ coffre.kd-mc.com             404      963 car.
+##[error]sonde — ❌ departs.kd-mc.com            404      963 car.
+##[error]sonde — ❌ cmcteams-light.kd-mc.com     404      963 car.
+##[error]sonde — ❌ arbre.kd-mc.com              404      963 car.
+##[error]sonde —   · cmcteams.kd-mc.com → https://cmcteams.kd-mc.com/  (HTTP 404)
+##[error]sonde —   · apex-ai.kd-mc.com → https://apex-ai.kd-mc.com/  (HTTP 404)
+##[error]sonde —   · coffre.kd-mc.com → https://coffre.kd-mc.com/  (HTTP 404)
+##[error]sonde —   · departs.kd-mc.com → https://departs.kd-mc.com/  (HTTP 404)
+##[error]sonde —   · cmcteams-light.kd-mc.com → https://cmcteams-light.kd-mc.com/  (HTTP 404)
+##[error]sonde —   · arbre.kd-mc.com → https://arbre.kd-mc.com/  (HTTP 404)
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +555,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

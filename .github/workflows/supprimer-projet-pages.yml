@@ -64,10 +64,12 @@ jobs:
             ok=$(grep -c '^200$' /tmp/codes.txt || true)
             total=$((total + ok))
             echo "tour $tour : $ok/$n déploiement(s) effacé(s) (total $total)"
-            [ "$ok" -gt 0 ] || { echo "::error title=Cloudflare::aucun déploiement effacé à ce tour (codes : $(sort /tmp/codes.txt | uniq -c | tr '\n' ' '))"; exit 1; }
+            # Le déploiement de PRODUCTION actif ne peut pas être effacé seul (HTTP 400, constaté le 16.10, run 38878742402) :
+            # il part avec le projet. On s'arrête donc dès qu'un tour n'efface plus rien, et on supprime le projet.
+            if [ "$ok" -eq 0 ]; then echo "reste $n déploiement(s) non effaçable(s) (production active) — suppression du projet"; break; fi
           done
           code=$(curl -sS -o /tmp/del.json -w '%{http_code}' -X DELETE "${H[@]}" "$API")
-          [ "$code" = "200" ] || { echo "::error title=Cloudflare::suppression du projet refusée (HTTP $code) : $(head -c 400 /tmp/del.json)"; exit 1; }
+          [ "$code" = "200" ] || { echo "::error title=Cloudflare::suppression du projet refusée (HTTP $code, $total déploiements effacés avant) : $(head -c 400 /tmp/del.json)"; exit 1; }
           echo "✅ projet kdmc-site supprimé ($total déploiements effacés avant)"
 
       - name: Preuve — l'ancienne adresse ne sert plus rien, le domaine répond

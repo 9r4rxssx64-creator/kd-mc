@@ -11,6 +11,7 @@
 
 ## 👆 (16.10 soir) CE QUI T'ATTEND — à jour
 
+00. 🔴 **URGENT — 2 anciens sites montrent encore CMCteams À TOUT LE MONDE (sans compte)** : `kdmc-site.pages.dev` et `kdmc0.pages.dev` répondent **200, 3 353 401 octets** (CMCteams complet, la light, les plannings, le coffre, les autorisations) — **mesuré le 16.10 à 20h20 UTC**. Ils sont sur ton **AUTRE compte Cloudflare** (celui que mes robots n'ont pas). Sur ton iPhone : https://dash.cloudflare.com → connecte-toi avec l'autre compte → **Workers & Pages** → touche **kdmc-site** → **Settings** (Paramètres) tout en bas → **Delete project** (Supprimer) → retape le nom → Supprimer. Refais pareil pour **kdmc0**. Rien d'autre ne casse : le domaine kd-mc.com ne passe plus du tout par eux. Dis-moi « fait », je vérifie qu'ils répondent 404.
 0. **Tester Bee (iPhone, 1 minute)** : https://arbre.kd-mc.com → touche la pastille 🐝 → touche **🩺 Tester Bee** → envoie-moi la capture (ou dis-moi ce que tu vois). Si Bee ne répond toujours pas, j'ai son journal et je trouve la cause. *(Optionnel, plus tard : un jeton GitHub limité aux « Issues » pour que Bee lance Claude Code toute seule.)*
 1. **Yann** : https://admin.kd-mc.com → bannière « ⏳ comptes fermés » en haut → **✅ Ouvrir** sur Yann (ou « 👋 Personnes attendues » → « Yann Lorenzi »). Puis Yann ferme et rouvre l'appli. Envoie une capture si ça bloque.
 2. **Le Dren (pour Rémi)** : ouvrir l'acte de naissance de Groix 1905 en ligne (Archives du Morbihan, registre **4 E 69 32**, vers le 11.12.1905) et m'envoyer une capture avec la marge · remplir le formulaire du SHD de Caen https://demarche.numerique.gouv.fr/commencer/demande-shd-davcc (texte prêt dans la fiche PDF, partie 6).
@@ -38,7 +39,7 @@ et ton code admin dans « J'ai déjà un compte — nom + code ».
 
 ---
 
-## ✅ (16.10) Fuite Pages FERMÉE : le projet `kdmc-site` est supprimé, le routeur sert sa propre copie. Reste à toi : **console Firebase** (règles `/cmcteams`, `/apex`, `/coffre_vault` ouvertes aux comptes anonymes — la session prépare le code, puis te donne le texte à coller).
+## ⚠️ (16.10, corrigé à 20h20 UTC : les DEUX copies de ton autre compte Cloudflare — kdmc-site.pages.dev et kdmc0.pages.dev — servent encore tout, voir point 00 en haut) Fuite Pages : le projet `kdmc-site-bj5` est supprimé, le routeur sert sa propre copie. Reste à toi : **console Firebase** (règles `/cmcteams`, `/apex`, `/coffre_vault` ouvertes aux comptes anonymes — la session prépare le code, puis te donne le texte à coller).
 
 ## 👆 (10.10) WhatsApp pour TOUTES les inscriptions : 3 copier-coller chez Meta, le robot fait le reste
 

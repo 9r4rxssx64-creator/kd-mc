@@ -155,10 +155,18 @@ jobs:
           echo "Deploy kdmc-router…"
           # 15.10 : trois déploiements de suite ont échoué en 1 s sans que personne puisse lire pourquoi (journaux hors de portée des
           # sessions). La cause part maintenant en ANNOTATION (lisible par l'API des contrôles), sans secret : wrangler n'en écrit pas.
-          if ! wrangler deploy 2>&1 | tee deploy.log; then
-            echo "::error title=wrangler deploy::$(tail -c 1500 deploy.log | tr '\n\r' '  ' | sed 's/%/%25/g')"
-            exit 1
-          fi
+          # 16.10 (run public 38961876371) : envoi réussi, puis « Internal authentication error: internal server error [code: 10500] »
+          # sur /schedules — un 5xx de Cloudflare, pas notre code (le déploiement du push, même commit, venait de réussir).
+          # Un déploiement est rejouable : on recommence (20 s, 40 s), seulement sur une erreur interne Cloudflare.
+          essai=0
+          until wrangler deploy 2>&1 | tee deploy.log; do
+            essai=$((essai+1))
+            if [ "$essai" -ge 3 ] || ! grep -qiE 'internal server error|code: 10500|internal authentication error|HTTP 5[0-9][0-9]' deploy.log; then
+              echo "::error title=wrangler deploy::$(tail -c 1500 deploy.log | tr '\n\r' '  ' | sed 's/%/%25/g')"
+              exit 1
+            fi
+            echo "déploiement coupé par une erreur interne Cloudflare (essai $essai/3), nouvel essai dans $((essai*20)) s"; sleep $((essai*20))
+          done
           echo "----"
           echo "== VARIABLES RÉELLEMENT APPLIQUÉES (ce que le worker voit) =="
           grep -iA8 'vars' deploy.log || echo "  (wrangler n'a pas listé de Vars — à vérifier)"

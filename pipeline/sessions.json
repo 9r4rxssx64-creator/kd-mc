@@ -1847,7 +1847,7 @@
       "maj": "2026-10-16",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "Apex v13.4.376 construite et vérifiée en local : veille + client MCP respectent la CSP (0 violation connect-src attendue), badge de version lisible (axe). À publier par le dépôt public puis lire Axe et le compte CSP. Reste : LCP ~8 s mobile bridé (chantier), plan #559 étape 2 (ration de demain)."
+      "note": "Apex v13.4.376 EN LIGNE (sw.js) : 0 violation CSP (74→58→0), Axe vert, Lighthouse bureau/mobile verts, tous les robots publics Apex verts. Routeur : wrangler deploy réessayé sur 5xx Cloudflare. Reste : LCP mobile bridé (chantier), plan #559 étape 2 (ration de demain), vrai iPhone à confirmer par Kevin."
     },
     "firebase-cmc2": {
       "titre": "Firebase étape 1 réappliquée + sonde réelle du jeton cmc",
@@ -1924,6 +1924,16 @@
       "titre": "Firebase étape 2 : pages admin au jeton admin du domaine",
       "branche": "claude/firebase-etape2",
       "sujet": "tools/messages + tools/approvals : /__admin/fbtoken avant l'anonyme",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "kevin-todo-pages": {
+      "titre": "Action Kevin urgente : supprimer kdmc-site et kdmc0 (autre compte Cloudflare)",
+      "branche": "claude/kevin-todo-pages",
+      "sujet": "mesure 200 sur les 2 copies Pages",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",

@@ -185,11 +185,27 @@ jobs:
 
       - name: Deploy api-worker (official Cloudflare action)
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        env:
+          # 17.10 : journal de wrangler écrit à un endroit connu, pour que l'étape suivante en tire la cause d'un échec.
+          WRANGLER_LOG_PATH: ${{ runner.temp }}/wrangler-logs
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: 'messaging-app/workers'
           command: deploy
+
+      - name: Cause lisible d'un déploiement refusé par Cloudflare
+        # 17.10 (run 39034604057 : « npx failed with exit code 1 », rien d'autre de lisible depuis une session) :
+        # les lignes d'erreur de wrangler deviennent des annotations. Dépôt public : identifiants hexadécimaux masqués.
+        if: failure()
+        shell: bash
+        run: |
+          set -u
+          f=$(ls -t "$RUNNER_TEMP"/wrangler-logs/*.log 2>/dev/null | head -1)
+          if [ -z "$f" ]; then echo "::error title=wrangler::aucun journal wrangler trouvé"; exit 0; fi
+          grep -iE '✘|\[ERROR\]|error:|code: ?[0-9]{4,}|exceed|limit' "$f" | grep -viE 'authorization|bearer|token' \
+            | sed -E 's/[0-9a-f]{32}/***/g' | cut -c1-300 | head -12 | while IFS= read -r l; do echo "::error title=wrangler::$l"; done
+          exit 0
 
       - name: Generate + put secrets (after Worker exists)
         working-directory: messaging-app/workers

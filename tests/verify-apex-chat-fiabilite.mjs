@@ -177,6 +177,21 @@ ok(st.journal[0].etat === 'panne' && st.journal[0].cause === '503 d1:ko', '5l. l
 st = await U.runPass(env(api(200, { ok: true, checks: { d1: 'ok', do: 'ok', backup: 'ok' } })));
 ok(st.journal[0].etat === 'retour' && st.journal.length >= 3 && st.journal.length <= U.JOURNAL_MAX, '5m. le retour est daté ; le journal est borné');
 
+
+/* 17.10 : la cause d'un déploiement refusé devient une annotation lisible (run 39034604057 illisible depuis une session). */
+{
+  const y = lire('deploy-apex-chat.yml');
+  const i = y.indexOf("- name: Cause lisible d'un déploiement refusé par Cloudflare");
+  const bloc = i < 0 ? '' : y.slice(y.indexOf('run: |', i) + 6, y.indexOf('\n\n', i)).split('\n').map((l) => l.replace(/^ {10}/, '')).join('\n');
+  const d = mkdtempSync(join(tmpdir(), 'wr-'));
+  mkdirSync(join(d, 'wrangler-logs'));
+  writeFileSync(join(d, 'wrangler-logs', 'wrangler-1.log'), 'debug ok\n✘ [ERROR] A request to the Cloudflare API (/accounts/0123456789abcdef0123456789abcdef/workers/scripts/apex-chat-api) failed. [code: 10021]\nAuthorization: Bearer secretXYZ error\n');
+  const r = spawnSync('bash', ['-c', bloc], { env: { ...process.env, RUNNER_TEMP: d }, encoding: 'utf8' });
+  ok(/deploy-apex-chat|wrangler-logs/.test(y) && /WRANGLER_LOG_PATH: \$\{\{ runner\.temp \}\}\/wrangler-logs/.test(y), '6a. le déploiement écrit le journal wrangler à un endroit connu');
+  ok(r.status === 0 && /::error title=wrangler::.*code: 10021/.test(r.stdout) && /\*\*\*/.test(r.stdout) && !/0123456789abcdef0123456789abcdef/.test(r.stdout) && !/secretXYZ/.test(r.stdout), '6b. échec → la cause Cloudflare devient une annotation, identifiant masqué, aucune ligne d\'autorisation');
+  rmSync(d, { recursive: true, force: true });
+}
+
 /* ───── --sabotage : chaque règle statique doit rougir sur un cas fabriqué ───── */
 if (process.argv.includes('--sabotage')) {
   console.log('SABOTAGE');

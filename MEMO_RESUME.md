@@ -13,7 +13,8 @@
 - Alerte « Apex Chat DOWN » 16.10 16:00→18:00 UTC : un seul passage raté ; mesuré : pas de déploiement (kd-mc ni coffre), pas d'incident Cloudflare D1/DO, `backup_last_ok` du jour présent → cause introuvable (la sonde ne gardait que le nom).
 - `services/kdmc-uptime/worker.js` : `probeApexApi` réessaie après `APEX_REESSAI_MS` (4 s) ; `causes()` met « code détail » dans le battement Healthchecks ; `state.journal` (30 max : panne / retour / raté rattrapé). Tests 5i–5m (`test:apex-chat-fiabilite`).
 - Corrigé au passage : `test:apex-chat-fiabilite` était rouge sur main (étape de retour arrière avec continue-on-error, lot K) → retiré, `lot-n-retour-arriere.test.js` adapté.
-- **À vérifier après déploiement** : `deploy-kdmc-uptime.yml` vert ; prochain battement 33/33.
+- **À vérifier après déploiement** : `deploy-kdmc-uptime.yml` vert ✅ (run 39034604179, sonde 33/33 à 12:58 UTC).
+- ⚠️ Le même envoi a relancé `deploy-apex-chat.yml` : **échec à l'étape « Deploy api-worker »** (run 39034604057, relancé → échec), code identique au déploiement réussi de 10:48 → cause côté Cloudflare, illisible (journal non lisible depuis une session). Ajout : `WRANGLER_LOG_PATH` + étape « Cause lisible… » qui transforme les erreurs wrangler en annotations (hex masqués, lignes d'autorisation exclues) ; tests 6a/6b. Production : la v1.1.317 d'avant reste en ligne.
 
 ## 2026-10-17 — ROBOT « BEE COMME KEVIN » (vérification réelle de l'ouverture des apps)
 

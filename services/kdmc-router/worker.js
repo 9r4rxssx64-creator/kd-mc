@@ -270,7 +270,9 @@ async function chargerFermees(env, force) {
    plus anciennes gardent le comportement d'avant. */
 const FICHE_EN_CREATION_MS = 120000;
 export function ficheEnCreation(acc, s, now) {
-  return !acc && !!(s && s.uid) && !UID_ROBOTS_SANS_FICHE.has(s.uid) && ADMIN_UIDS.indexOf(s.uid) < 0 && ((now || Date.now()) - (Number(s.iat) || 0)) < FICHE_EN_CREATION_MS;
+  if (acc || !(s && s.uid) || UID_ROBOTS_SANS_FICHE.has(s.uid) || ADMIN_UIDS.indexOf(s.uid) >= 0) return false;
+  if (s.attente) return true;   // pass d'un compte créé en attente du mail (w=1) : sans fiche lisible, fermé à tout âge
+  return ((now || Date.now()) - (Number(s.iat) || 0)) < FICHE_EN_CREATION_MS;
 }
 function perimetreS(acc, app, s) {
   if (app && app !== 'portail' && ficheEnCreation(acc, s)) return { ok: false, raison: 'en_creation' };
@@ -1204,7 +1206,7 @@ export function empreinteAppareil(ua) {
   return /iPhone|iPod/.test(u) ? 'iphone' : /iPad|Macintosh.*Mobile/.test(u) ? 'ipad' : /Android/.test(u) ? 'android' : /Windows/.test(u) ? 'windows' : /Macintosh|Mac OS/.test(u) ? 'mac' : /Linux|X11/.test(u) ? 'linux' : 'autre';
 }
 const appareilDe = (request) => empreinteAppareil(request && request.headers && request.headers.get ? request.headers.get('user-agent') : '');
-async function ssoSign(secret, uid, name, cgu, verified, codeProuve, appareil) {
+async function ssoSign(secret, uid, name, cgu, verified, codeProuve, appareil, extra) {
   /* v=1 → identité FORTE (prouvée par passkey/Face ID). v=0 → faible (nom+code
      auto-asserté). Les apps ne doivent accorder de confiance qu'à v=1. */
   /* k=1 → le CODE du compte a été prouvé au domaine (27.09) : plus que « auto-déclaré », moins
@@ -1214,6 +1216,9 @@ async function ssoSign(secret, uid, name, cgu, verified, codeProuve, appareil) {
   /* « autre » = pas de navigateur reconnu (script, robot de vérification qui prend le pass de Kevin par fetch) : on ne lie pas — un pass lié à
      « autre » serait refusé dès qu'un vrai navigateur le présente. Les pass des personnes (iPhone, Android, PC) sont tous liés. */
   if (appareil && appareil !== 'autre') corps.d = appareil;
+  /* w=1 → compte créé EN ATTENTE du mail (17.10.2026) : si la fiche n'a pas pu être écrite (KV en panne ou au plafond), le pass
+     lui-même dit « fermé » — sans lui, « pas de fiche » valait « ouvert » (voir ficheEnCreation). */
+  if (extra && extra.attente) corps.w = 1;
   const p = b64urlStr(JSON.stringify(corps));
   return p + '.' + (await ssoHmac(secret, p));
 }
@@ -1295,7 +1300,7 @@ async function ssoVerify(secret, token, request) {
   /* Pass lié à sa famille d'appareil (8.10) : présenté depuis une autre famille → il ne vaut rien (un lien volé, un pass copié).
      Un pass sans `d` (émis avant le 8.10) reste accepté jusqu'à son renouvellement, qui le lie. */
   if (request && d.d && d.d !== appareilDe(request)) return null;
-  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, code: d.k === 1, iat: d.iat || 0, exp: d.exp, appareil: d.d || '' };
+  return { uid: d.u, name: d.n || '', cgu: d.c === 1, verified: d.v === 1, code: d.k === 1, iat: d.iat || 0, exp: d.exp, appareil: d.d || '', attente: d.w === 1 };
 }
 /* Révocation à distance (« Déconnecter partout ») : un token émis AVANT
    acc.revoked_at est refusé. Le user peut se RE-connecter (nouveau token,
@@ -3371,7 +3376,11 @@ async function handleSso(request, url, env, ctx) {
      lot : chaque clé est écrite une seule fois, avec sa dernière valeur, juste avant la réponse. */
   if (path === '/__sso/issue' && request.method === 'POST' && env && env.ACCOUNTS && !env.__lotKV) {
     const lot = lotKV(env, { oublier: (u) => ficheOubliee(env, u) });
-    try { return await handleSso(request, url, lot.env, ctx); } finally { await lot.vider(); }
+    try { return await handleSso(request, url, lot.env, ctx); } finally {
+      const echecs = await lot.vider();
+      /* KV au plafond du jour ou en panne : rien de l'inscription n'est enregistré (le pass w=1 garde le compte fermé). Kevin le sait. */
+      if (echecs && echecs.length) enFond(ctx, notifyPush(env, '⚠️ KDMC — stockage des comptes refusé', echecs.length + ' écriture(s) refusée(s) pendant une inscription (' + echecs[0] + '). Le compte reste fermé ; la personne devra recommencer.'));
+    }
   }
   /* Confirmation par MAIL (17.10) : le bouton du mail « Confirme ton compte » ouvre le compte sans l'admin. */
   if (path.startsWith('/__sso/mail/')) {
@@ -3449,7 +3458,7 @@ async function handleSso(request, url, env, ctx) {
     if (s.verified && ADMIN_UIDS.indexOf(s.uid) >= 0) return J({ ok: true, prolonge: false, raison: 'admin_face_id_quotidien' });
     const reste = (s.exp || 0) - Date.now();
     if (reste > 15 * 24 * 3600e3) return J({ ok: true, prolonge: false, reste_jours: Math.floor(reste / 864e5) });
-    const neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request));
+    const neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request), { attente: s.attente });
     const cookie = `${SSO_COOKIE}=${neuf}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(neuf)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, prolonge: true, token: neuf }, cookie);
   }
@@ -3505,7 +3514,7 @@ async function handleSso(request, url, env, ctx) {
       const reste = (s.exp || 0) - Date.now();
       let neuf = null, cookieNeuf;
       if (!estAdmin && reste > 0 && reste < 15 * 24 * 3600e3) {
-        neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request));
+        neuf = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request), { attente: s.attente });
         cookieNeuf = `${SSO_COOKIE}=${neuf}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(neuf)}; Secure; HttpOnly; SameSite=Lax`;
       }
       const parEnTete = !!(request.headers.get('authorization') || request.headers.get('x-kdmc-sso'));
@@ -3913,7 +3922,7 @@ async function handleSso(request, url, env, ctx) {
         }
       } catch { /* fail-closed : sans preuve lisible, on ne garde rien */ }
     }
-    const token = await ssoSign(secret, uid, name, cgu, false, codeFinal, appareilDe(request));
+    const token = await ssoSign(secret, uid, name, cgu, false, codeFinal, appareilDe(request), { attente: attenteAdmin });
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     /* token renvoyé dans le corps : le portail le met dans le lien de retour
        (#kdmc_sso=) pour les apps installées (où le cookie ne traverse pas). */
@@ -4164,7 +4173,7 @@ async function handleSso(request, url, env, ctx) {
     acc.revoked_at = Date.now();
     await accPut(env, acc, true);
     /* token frais pour CE device (iat >= revoked_at → survit ; les autres non) */
-    const token = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request));
+    const token = await ssoSign(secret, s.uid, s.name, s.cgu, s.verified, s.code, appareilDe(request), { attente: s.attente });
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, token, revoked_at: acc.revoked_at }, cookie);
   }

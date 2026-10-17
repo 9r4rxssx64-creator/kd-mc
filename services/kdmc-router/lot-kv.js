@@ -44,13 +44,15 @@ export function lotKV(env, { oublier } = {}) {
     env: envLot,
     taille: () => tampon.size,
     async vider() {
-      if (vide) return; vide = true;
+      if (vide) return []; vide = true;
       const l = [...tampon.entries()]; tampon.clear();
-      await Promise.all(l.map(([k, e]) => (e === SUPPRIME ? direct.delete(k) : direct.put(k, e.v, e.o)).catch(() => { /* fail-open, comme accPut */ })));
+      const echecs = [];
+      await Promise.all(l.map(([k, e]) => (e === SUPPRIME ? direct.delete(k) : direct.put(k, e.v, e.o)).catch((err) => { echecs.push(k.split(':')[0] + ' : ' + String(err && err.message || err).slice(0, 120)); })));   // fail-open, comme accPut — mais compté
       /* 17.10.2026 (mesuré en réel) : la création a lu `acc:<uid>` AVANT d'écrire (absent) ; ce « absent » restait servi par le cache du lieu
          jusqu'à ~60 s après l'écriture groupée (whoami : fiche introuvable à +3 s et +20 s). L'ancien code relisait la fiche après chaque
          écriture, ce qui rafraîchissait ce cache : on relit donc une fois les clés que la page lit aussitôt (fiche, code, nom). */
       await Promise.all(l.filter(([k, e]) => e !== SUPPRIME && /^(acc|cred|nm):/.test(k)).map(([k]) => Promise.resolve().then(() => kv.get(k)).catch(() => null)));
+      return echecs;
     },
   };
 }

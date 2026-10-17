@@ -9,6 +9,7 @@
      3. VRAI routeur, inscription complète (e-mail + téléphone, validation par mail) : aucun 429, chaque clé écrite une fois,
         et la fiche contient TOUT (nom, cgu, téléphone, attente, mail_confirmation, e-mail) ;
      5. fiche pas encore lisible juste après la création (KV en retard) : pass tout neuf FERMÉ dans les apps (avant : « sans fiche » = ouvert) ;
+     6. KV qui refuse toute écriture (plafond du jour) : le pass d'un compte en attente porte w=1 → fermé à tout âge ;
      4. sabotage : sans le lot, le même parcours prend des 429 et la fiche perd des champs → la garde est discriminante. */
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
@@ -107,6 +108,27 @@ console.log('\n== 5. Fiche pas encore lisible (KV en retard) juste après la cr�
   await mod.fetch(new Request('https://kd-mc.com/', { headers: { host: 'kd-mc.com', authorization: 'Bearer ' + j.token, 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': UA } }), envR, { waitUntil() {} });
   ok(!ecritsRetard.some((k) => k.startsWith('acc:')), '5f. portail pendant le retard : AUCUNE fiche neuve écrite par-dessus la vraie (avant : fiche recréée sans attente → compte ouvert)', ecritsRetard);
   ok(ficheEnCreation(null, { uid: 'ci_smoke', iat: Date.now() }) === false && ficheEnCreation({ uid: 'x' }, { uid: 'x', iat: Date.now() }) === false, '5e. robot de contrôle et fiche lisible : non concernés');
+}
+console.log('\n== 6. KV qui refuse TOUTE écriture (plafond du jour) : le pass dit « en attente », fermé à tout âge ==');
+{
+  const db = d1(); await schemaCercle(db);
+  const plein = { get: async () => null, put: async () => { throw new Error('KV PUT failed: free usage limit for this operation for today [code: 10048]'); }, delete: async () => {}, list: async () => ({ keys: [], list_complete: true }) };
+  const envP = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'x', ACCOUNTS: plein, CERCLE_DB: db, KDMC_VALIDATION_MANUELLE: '1', EMAILJS_PRIVATE_KEY: 'cle' };
+  globalThis.fetch = async () => new Response('OK', { status: 200 });
+  const r = new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { host: 'kd-mc.com', 'content-type': 'application/json', origin: 'https://kd-mc.com', 'user-agent': UA, 'cf-connecting-ip': '203.0.113.9' },
+    body: JSON.stringify({ uid: 'zed-test', name: 'Zed Test', cgu: true, cgu_clic: true, code: '24681357', telephone: '+377 06 12 34 99', email: 'zed@example.com' }) });
+  Object.defineProperty(r, 'cf', { value: { asn: 6758, city: 'Monaco', country: 'MC' } });
+  const pushs = []; envP.KDMC_PUSH_URL = 'https://push.x'; envP.KDMC_PUSH_TOKEN = 't'; const fond = [];
+  globalThis.fetch = async (u, init) => { if (String(u).startsWith('https://push.x')) pushs.push(JSON.parse(init.body).payload); return new Response('OK', { status: 200 }); };
+  const j = await (await mod.fetch(r, envP, { waitUntil(p) { fond.push(p); } })).json(); await Promise.all(fond);
+  const pl = j.token ? JSON.parse(Buffer.from(j.token.split('.')[0], 'base64url').toString()) : {};
+  ok(j.attente_admin === true && pl.w === 1, '6. inscription en attente : le pass porte w=1', { attente: j.attente_admin, w: pl.w });
+  const w = await (await mod.fetch(new Request('https://cmcteams.kd-mc.com/__sso/whoami', { headers: { host: 'cmcteams.kd-mc.com', authorization: 'Bearer ' + j.token, 'user-agent': UA } }), envP, { waitUntil() {} })).json();
+  ok(w.ok === false && w.reason === 'en_creation', '6b. fiche jamais écrite : CMCteams fermé', w);
+  ok(pushs.some((x) => /stockage des comptes refusé/.test(x.title)), '6e. Kevin est prévenu que le stockage a refusé l\'inscription', pushs.map((x) => x.title));
+  const { ficheEnCreation } = await import('./worker.js');
+  ok(ficheEnCreation(null, { uid: pl.u, iat: pl.iat, attente: true }, pl.iat + 24 * 3600e3) === true, '6c. 24 h plus tard, toujours fermé (avant : ouvert après 2 min)');
+  ok(ficheEnCreation(null, { uid: pl.u, iat: pl.iat, attente: false }, pl.iat + 24 * 3600e3) === false, '6d. un pass SANS marque garde le comportement d\'avant');
 }
 console.log(`\n${pass} ✅ / ${fail} ❌\n`);
 process.exit(fail ? 1 : 0);

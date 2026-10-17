@@ -45,6 +45,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 
 | Session | Branche | État au 2.09 |
 | Fiche par personne : une carte par compte, fil d'activité, historique complet | `claude/fiche-activite` | 🟢 4.10 : D1, 90 jours ; empilée sur alertes-utiles ; PR en cours |
+| Preuve réelle : Bee ouvre l'arbre de Yann et les apps (run 39036149454 ✅) | `claude/bee-preuve-reelle` | 🟢 17.10 : PR en cours |
 | Routeur : repères de notification uniques (déploiement rouge = vrai défaut) | `claude/repere-notif` | 🟢 17.10 : PR en cours |
 | Bee ouvre en vrai : voie directe sans IA (mesuré par le robot réel) | `claude/bee-ouvre-direct` | 🟢 17.10 : PR en cours |
 | Robot réel « Bee comme Kevin » (ouvrir l'arbre de Yann, la light, apex chat) | `claude/bee-robot-reel` | 🟢 17.10 : PR en cours |

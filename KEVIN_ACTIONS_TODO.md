@@ -59,7 +59,7 @@ et ton code admin dans « J'ai déjà un compte — nom + code ».
 
 ## 👆 (10.10) WhatsApp pour TOUTES les inscriptions : 3 copier-coller chez Meta, le robot fait le reste
 
-> ✅ **REMPLACÉ par le MAIL (17.10, Kevin : « B »)** : pas de 2e numéro → pas de WhatsApp. À la place, la personne donne son e-mail à l'inscription, reçoit un lien « Confirmer mon compte » (48 h), et son compte s'ouvre tout seul — même résultat, 0 €, aucun compte chez Meta. Tu n'as rien à faire : tu restes prévenu (push) et tu peux toujours ouvrir/refuser à la main. Les 3 copier-coller Meta ci-dessous ne servent plus que si un jour tu as un 2e numéro.
+> ✅ **REMPLACÉ par le MAIL — EN LIGNE le 17.10 à 13:15 UTC, vérifié réel par mes robots (17.10, Kevin : « B »)** : pas de 2e numéro → pas de WhatsApp. À la place, la personne donne son e-mail à l'inscription, reçoit un lien « Confirmer mon compte » (48 h), et son compte s'ouvre tout seul — même résultat, 0 €, aucun compte chez Meta. Tu n'as rien à faire : tu restes prévenu (push) et tu peux toujours ouvrir/refuser à la main. Les 3 copier-coller Meta ci-dessous ne servent plus que si un jour tu as un 2e numéro.
 
 > ⏸ **MIS DE CÔTÉ (13.10, Kevin : « mets de côté la validation WhatsApp tant que je l'ai pas faite, enlève-la du visuel de l'inscription, on fait confiance aux personnes qui mettent leur vrai numéro »)** : tant que ces 3 choses ne sont pas faites, **rien de WhatsApp n'apparaît** (ni à l'inscription, ni dans « Créer un compte » côté admin) et le numéro tapé est cru. **Reste à faire par toi quand tu veux** : les 3 copier-coller ci-dessous. L'écran apparaîtra tout seul ensuite, et l'option « la personne confirme son téléphone par WhatsApp » se débloquera pour les comptes invités.
 

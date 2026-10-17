@@ -2320,10 +2320,11 @@
       "branche": "claude/mail-confirmation",
       "sujet": "mail-confirme.js + portail v1.0.69 + secret EmailJS au routeur",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-17",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "EN LIGNE 17.10 13:15 UTC (run 39035931700), vérifié réel : formulaire anonyme avec e-mail, faux lien → 410 ; non vérifié : réception d'un vrai mail"
     },
     "robots-verts-1710": {
       "titre": "Docs (fusionnée le 17.10)",
@@ -2351,6 +2352,16 @@
       "titre": "Routeur — repères de notification uniques",
       "branche": "claude/repere-notif",
       "sujet": "Deux messages dans la même ms partageaient un repère (déploiement rouge)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "javis-bee-preuve": {
+      "titre": "Javis / Bee — preuve réelle",
+      "branche": "claude/bee-preuve-reelle",
+      "sujet": "Preuve réelle de l'ouverture des apps",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",

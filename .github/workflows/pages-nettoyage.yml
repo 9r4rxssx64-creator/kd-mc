@@ -1,5 +1,6 @@
 name: Cloudflare — inventaire et nettoyage des vieux projets Pages (manuel)
 
+# 17.10.2026 : entrée « compte » + diagnostic de la clé (le secret voyait 0 projet Pages alors que le tableau de bord de Kevin en montre 2).
 # 16.10.2026 (audit sécurité, P0) : de vieux projets Pages servaient encore CMCteams, la light, l'arbre et le planning
 # de 285 employés SANS compte (kdmc-site.pages.dev, kdmc0.pages.dev, kdmc-javis.pages.dev). Le domaine ne lit plus
 # aucun hébergeur Pages (SOURCE_PAGES = "assets"). Ce robot liste les projets du compte, puis supprime UNIQUEMENT
@@ -18,6 +19,10 @@ on:
         description: "Pour supprimer : nom exact du projet (kdmc0, kdmc-javis ou kdmc-site)"
         required: false
         type: string
+      compte:
+        description: "Identifiant du compte Cloudflare à viser (vide = le secret du dépôt). 17.10 : le secret voyait 0 projet alors que le tableau de bord en montre"
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}
@@ -32,11 +37,22 @@ jobs:
     timeout-minutes: 20   # gratuit d'abord : borné
     steps:
       - uses: actions/checkout@v4
+      - name: Diagnostic — la clé est-elle valide, et quels comptes voit-elle ? (préfixes seulement, jamais un nom)
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.compte || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          COMPTE_DEMANDE: ${{ inputs.compte }}
+        run: |
+          v=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log(j.success?("clé "+j.result.status):("clé refusée : "+JSON.stringify(j.errors).slice(0,200)))})')
+          echo "::notice::$v"
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts" -o /tmp/a.json
+          node -e 'const j=require("/tmp/a.json");const cible=process.env.CLOUDFLARE_ACCOUNT_ID||"";if(!j.success){console.log("::warning::la clé ne peut pas lister les comptes : "+JSON.stringify(j.errors).slice(0,200));process.exit(0)}const ids=j.result.map(a=>a.id);console.log("::notice::la clé voit "+ids.length+" compte(s) : "+ids.map(i=>i.slice(0,8)+"…").join(", ")+" · compte visé : "+cible.slice(0,8)+"… ("+(process.env.COMPTE_DEMANDE?"entrée du formulaire":"secret du dépôt")+") → "+(ids.includes(cible)?"VU par la clé":"PAS vu par la clé"))'
       - name: Inventaire — tous les projets Pages du compte, et ce qu'ils servent sans compte
         shell: bash -eo pipefail {0}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.compte || secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents de ce dépôt"; exit 1; }
           : > /tmp/projets.txt
@@ -48,7 +64,7 @@ jobs:
             case "$n" in ''|*[!0-9]*) echo "$n"; exit 1;; esac
             [ "$n" -gt 0 ] || break
           done
-          echo "::notice::$(wc -l < /tmp/projets.txt) projet(s) Pages sur ce compte"
+          echo "::notice::$(wc -l < /tmp/projets.txt) projet(s) Pages sur ce compte ($(echo "$CLOUDFLARE_ACCOUNT_ID" | cut -c1-8)…)"
           while read -r nom sous; do
             c=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$sous/" || echo 000)
             s=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$sous/tools/shared/planning-seed.js" || echo 000)
@@ -78,7 +94,7 @@ jobs:
         shell: bash -eo pipefail {0}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.compte || secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROJET: ${{ inputs.projet }}
         run: |
           API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJET"

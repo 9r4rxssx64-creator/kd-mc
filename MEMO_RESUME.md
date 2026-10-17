@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (midi) — Kevin pas à pas, action 00 : Cloudflare refuse de supprimer `kdmc-site` (« too many deployments ») → le robot public `pages-nettoyage.yml` vise désormais le compte de sa capture
+- Kevin a suivi mes étapes sur son iPhone : `kdmc-site` est bien sur le compte `ffaca6f3…` (sa capture 13:57), mais la fenêtre de suppression répond « Your project has too many deployments to be deleted ».
+- Le robot public « inventaire et nettoyage des vieux projets Pages » (0 minute du coffre) existait déjà pour ça (vide les déploiements par 25 avec `force=true`, puis supprime le projet). Lancé en « lister » (run 39030731444, 11:59 UTC) : **0 projet Pages** vu avec le secret `CLOUDFLARE_ACCOUNT_ID` du dépôt public, alors que le tableau de bord de Kevin en montre 2 sur `ffaca6f3…`.
+- Correctif : entrée `compte` (identifiant du compte à viser, vide = secret) + étape « Diagnostic » (clé valide ? quels comptes la clé voit-elle, préfixes 8 caractères seulement, jamais un nom) ; les 3 étapes lisent `inputs.compte || secrets.CLOUDFLARE_ACCOUNT_ID`. Gardes workflows : 7/7 ok.
+- Suite mesurée dans l'entrée suivante : relance « lister » avec `compte=ffaca6f306a953f82834db0970f300f0` (identifiant déjà public dans KEVIN_INVENTORY) ; si la clé voit le compte → « supprimer kdmc-site » puis « supprimer kdmc0 » ; sinon la clé n'a pas le droit Pages sur ce compte → action Kevin (1 clic : jeton « Cloudflare Pages : Modifier » sur ce compte).
+- Vérifié réel : run 39030731444 vert, annotations lues (« 0 projet(s) Pages sur ce compte », `kdmc-site.pages.dev` → 200, `kdmc0.pages.dev` → 200 à 11:59 UTC). Non vérifié : la suppression elle-même (pas encore lancée).
+
 ## 2026-10-17 (soir) — « Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. » (3ᵉ demande)
 - Règle absolue dédiée « 🔌 SE CONNECTER RÉELLEMENT PARTOUT » dans CLAUDE-HISTOIRE → index CLAUDE.md (chargé à chaque message) + règle d'or n°4 (`npm run reel`, via `tools/audit/claude-md-entete.md`).
 - Écrite aussi dans : `AGENTS.md` (règle d'or 7, autres agents), compétences `voir` (le 403 du 10.09 marqué comme historique), `verif-reelle`, `apex-verif-reelle` (parité Apex), `.claude/rules/verifier-reel.md`, ETAT-DU-MOMENT, NOTES_USER ; tableau « outils » de CLAUDE-HISTOIRE corrigé (plus « egress bloqué »).

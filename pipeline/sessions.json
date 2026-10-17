@@ -2044,10 +2044,10 @@
       "sujet": "Apex v13.4.378 : étiquette de version dans la rangée de saisie, erreur récupérable quand clé refusée + passerelle muette ; PR #4693",
       "surfaces": [],
       "etat": "termine",
-      "maj": "2026-10-16",
+      "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "Apex 378 en ligne : run public 38972265382, sw.js servi = 378 ; reste 0b (Kevin regarde son iPhone)"
+      "note": "17.10 midi : action 00 (fuite Pages) — robot public pages-nettoyage reçoit une entrée compte + diagnostic clé ; branche claude/pages-nettoyage-compte"
     },
     "public-autonome": {
       "titre": "Dépôt public autonome quand on met plus au privé",
@@ -2197,6 +2197,16 @@
       "titre": "Règle « se connecter réellement partout » écrite partout",
       "branche": "claude/reel-partout-docs",
       "sujet": "CLAUDE.md, AGENTS.md, compétences, garde",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "pages-nettoyage-compte": {
+      "titre": "Fuite Pages : robot public pages-nettoyage vise le compte de Kevin",
+      "branche": "claude/pages-nettoyage-compte",
+      "sujet": "Supprimer kdmc-site et kdmc0 (too many deployments) sans un clic de Kevin",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",

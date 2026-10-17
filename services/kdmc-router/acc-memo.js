@@ -13,10 +13,13 @@
 export const MEMO_FICHE_MS = 15000;
 const PAR_KV = new WeakMap();
 const MAX_FICHES = 500;
-const table = (kv) => { let t = PAR_KV.get(kv); if (!t) { t = { m: new Map(), ecr: 0 }; PAR_KV.set(kv, t); } return t; };
+/* 17.10.2026 : le KV peut être enrobé (kv-secours.js) ; l'enveloppe donne son KV d'origine (`__brut`) pour qu'il n'y ait qu'UN mémo par
+   stockage — sinon une écriture faite par un chemin ne vidait pas le mémo de l'autre (fiche périmée jusqu'à 15 s). */
+const cleDe = (kv) => (kv && kv.__brut) || kv;
+const table = (kv) => { const c = cleDe(kv); let t = PAR_KV.get(c); if (!t) { t = { m: new Map(), ecr: 0 }; PAR_KV.set(c, t); } return t; };
 export function ficheOubliee(env, uid) {
   const kv = env && env.ACCOUNTS; if (!kv) return;
-  const t = PAR_KV.get(kv); if (t) { t.m.delete(String(uid)); t.ecr++; }   /* `ecr` : une lecture déjà partie AVANT cette écriture ne doit pas ranger sa vieille réponse */
+  const t = PAR_KV.get(cleDe(kv)); if (t) { t.m.delete(String(uid)); t.ecr++; }   /* `ecr` : une lecture déjà partie AVANT cette écriture ne doit pas ranger sa vieille réponse */
 }
 export async function ficheLue(env, uid) {
   const kv = env && env.ACCOUNTS; if (!kv) return null;

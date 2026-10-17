@@ -113,7 +113,7 @@ console.log('\n== 6. KV qui refuse TOUTE écriture (plafond du jour) : le pass d
 {
   const db = d1(); await schemaCercle(db);
   const plein = { get: async () => null, put: async () => { throw new Error('KV PUT failed: free usage limit for this operation for today [code: 10048]'); }, delete: async () => {}, list: async () => ({ keys: [], list_complete: true }) };
-  const envP = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'x', ACCOUNTS: plein, CERCLE_DB: db, KDMC_VALIDATION_MANUELLE: '1', EMAILJS_PRIVATE_KEY: 'cle' };
+  const envP = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'x', ACCOUNTS: plein, CERCLE_DB: db, KDMC_VALIDATION_MANUELLE: '1', EMAILJS_PRIVATE_KEY: 'cle', __kvSecours: true };   // le pire cas : KV ET secours D1 indisponibles (le secours a sa garde : kv-secours.test.mjs)
   globalThis.fetch = async () => new Response('OK', { status: 200 });
   const r = new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { host: 'kd-mc.com', 'content-type': 'application/json', origin: 'https://kd-mc.com', 'user-agent': UA, 'cf-connecting-ip': '203.0.113.9' },
     body: JSON.stringify({ uid: 'zed-test', name: 'Zed Test', cgu: true, cgu_clic: true, code: '24681357', telephone: '+377 06 12 34 99', email: 'zed@example.com' }) });

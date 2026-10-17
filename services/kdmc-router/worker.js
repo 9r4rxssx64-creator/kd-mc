@@ -11,7 +11,8 @@
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken, mintCmcIdToken } from './fb-token.js';
 import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre, INSCR_ADMIN_SCHEMA, FB_URL } from './boite.js';
-import { lotKV } from './lot-kv.js';   // création de compte : chaque clé KV écrite UNE fois (1 écriture/s/clé au KV) — voir lot-kv.js
+import { lotKV } from './lot-kv.js';
+import { envAvecSecours } from './kv-secours.js';   // KV ACCOUNTS au plafond / en panne → les écritures texte partent dans D1 (gratuit, 100 000/jour) — voir kv-secours.js   // création de compte : chaque clé KV écrite UNE fois (1 écriture/s/clé au KV) — voir lot-kv.js
 import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
 import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
@@ -1087,8 +1088,18 @@ export function durcirReponse(res) {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
+/* Une fois par heure au plus (par isolat) : Kevin apprend que le secours D1 a pris le relais du KV. */
+let secoursPrevenuA = 0;
+function journalSecours(env) {
+  return (k) => {
+    if (Date.now() - secoursPrevenuA < 3600e3) return;
+    secoursPrevenuA = Date.now();
+    notifyPush(env, '💾 KDMC — stockage de secours actif', 'Le stockage des comptes refuse les écritures (plafond du jour ?) : la base de secours prend le relais (' + String(k).split(':')[0] + '). Rien n\'est perdu, rien à faire.').catch(() => {});
+  };
+}
 export default {
   async fetch(request, env, ctx) {
+    env = envAvecSecours(env, journalSecours(env));
     const u = new URL(request.url);
     if (u.protocol === 'http:' && /(^|\.)kd-mc\.com$/i.test(u.hostname)) {
       u.protocol = 'https:';
@@ -1097,7 +1108,7 @@ export default {
     try { await chargerFermees(env); } catch { /* jamais bloquant : sans la liste, rien n'est fermé en général */ }
     return durcirReponse(await ROUTEUR.fetch(request, env, ctx));
   },
-  scheduled(event, env, ctx) { return ROUTEUR.scheduled(event, env, ctx); },
+  scheduled(event, env, ctx) { return ROUTEUR.scheduled(event, envAvecSecours(env, journalSecours(env)), ctx); },
 };
 
 /* Réécrit le « Location » d'une redirection de l'amont vers l'adresse publique.

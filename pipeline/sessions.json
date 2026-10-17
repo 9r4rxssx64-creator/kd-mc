@@ -2383,10 +2383,11 @@
       "branche": "claude/validation-par-mail-partout",
       "sujet": "règle + écrans/alertes + garde docs ; portail v1.0.70, admin v2.7.3",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-17",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "EN LIGNE 17.10 13:34 UTC (run 39037105705) ; portail v1.0.70 et boîte vérifiés servis ; admin (zone réservée) vu au dépôt public"
     },
     "mail-en-ligne": {
       "titre": "Docs : mail en ligne (fusionnée #4752)",

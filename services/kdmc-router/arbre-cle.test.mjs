@@ -3,7 +3,7 @@
    Passe par le VRAI routeur et un KV simulé (noms fictifs : Léa Martin, Paul Durand, Zoé Lambert, Nina Fictive).
      1. sans session → 401, aucune clé ;           2. nom seul (session non prouvée) → refusé ;
      3. au code prouvé + arbre ouvert par Kevin → la clé ;   4. au code prouvé mais arbre NON ouvert à cette fiche → refusé ;
-     5. compte révoqué → refusé ;                   6. l'admin sans Face ID → refusé, avec Face ID → la clé ;
+     4b. compte ordinaire du domaine (jamais rangé) → pas de clé : le code famille reste demandé ;   5. compte révoqué → refusé ;                   6. l'admin sans Face ID → refusé, avec Face ID → la clé ;
      7. code famille non publié → rien ;            8. origine étrangère → refusée ;   9. l'appel est journalisé (sans la clé).
    node services/kdmc-router/arbre-cle.test.mjs   (SABOTAGE=1 : la route rend la clé sans contrôle de périmètre → 4 doit rougir) */
 import mod from './worker.js';
@@ -48,6 +48,11 @@ r = await cle(signe('lea-martin', { k: 1 }));
 ok(r.st === 200 && r.j.ok === true && r.j.hash === HASH, '3. Léa (code prouvé, arbre ouvert par Kevin) : la clé est remise', r.st + ' ' + r.j.reason);
 r = await cle(signe('paul-durand', { k: 1 }));
 ok(r.st === 403 && !JSON.stringify(r.j).includes(HASH), '4. Paul (code prouvé mais arbre NON ouvert à sa fiche) : refusé', r.st + ' ' + r.j.reason);
+/* 17.10.2026 (Kevin : « débloque l'arbre dans le domaine, garde le code ») : la PAGE s'ouvre à tout compte du domaine, mais un compte ORDINAIRE
+   (jamais rangé par l'admin) ne reçoit PAS la clé : il tape le code famille. */
+fiche('marc-ordinaire', 'Marc Ordinaire', { portee: 'domaine', acces: [], acces_at: undefined });
+r = await cle(signe('marc-ordinaire', { k: 1 }));
+ok(r.st === 403 && r.j.reason === 'code_famille' && !JSON.stringify(r.j).includes(HASH), '4b. compte ordinaire du domaine (code prouvé, jamais rangé par Kevin) : PAS de clé, il tape le code famille', r.st + ' ' + r.j.reason);
 r = await cle(signe('zoe-lambert', { k: 1 }));
 ok(r.st >= 401 && !JSON.stringify(r.j).includes(HASH), '5. Zoé (compte révoqué) : refusé', r.st + ' ' + r.j.reason);
 r = await cle(signe('kdmc_admin', { k: 1 }));

@@ -111,7 +111,7 @@ ok(/kdmc_sso=/.test(KEVIN.cookie), '5. connexion de Kevin (code admin prouvé)')
   ok(r.st === 200 && /Tous les runs : https:\/\/github\.com\/x\/actions/.test(t), '5g. liens_kevin par le vrai serveur : le lien et son adresse complète');
   ok(/Passages de la documentation du domaine/.test(t) && /dépôt public/.test(t) && reseau.some((u) => u === DEPOT_DOCS + 'ETAT-DU-MOMENT.md'), '5h. docs_domaine : les passages du bon document, lu dans le dépôt public');
   ok(/Mes outils de LECTURE/.test(t) && /• voir_page/.test(t) && /• arbre/.test(t) && /• convertir/.test(t) && /Mes ACTIONS/.test(t) && /• apps_fermer_personne — .*\(risque élevé\)/.test(t) && /Fermé par tes règles : le coffre et les clés/.test(t), '5i. mes_pouvoirs : la liste vient des outils RÉELS (lecture, actions avec risque, fermés)');
-  ok(/arbre → https:\/\/arbre\.kd-mc\.com\/ \(privée : toi seul\)/.test(t) && /lingua → https:\/\/lingua\.kd-mc\.com\/ \(FERMÉE pour tout le monde\)/.test(t), '5j. apps_du_domaine marque les apps PRIVÉES et les apps FERMÉES'); }
+  ok(/coffre → https:\/\/coffre\.kd-mc\.com\/ \(privée : toi seul\)/.test(t) && /lingua → https:\/\/lingua\.kd-mc\.com\/ \(FERMÉE pour tout le monde\)/.test(t), '5j. apps_du_domaine marque les apps PRIVÉES et les apps FERMÉES'); }
 { reset(); const r = await bee('montre-moi la page arbre', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
   ok(r.st === 403 && IA_VUES.length === 0 && !reseau.some((u) => /arbre/.test(u)), '5k. un autre compte : 403, aucune page ouverte');
   const r2 = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'montre-moi la page arbre' }] }) }), env, ctx);

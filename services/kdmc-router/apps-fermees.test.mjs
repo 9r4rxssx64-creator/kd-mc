@@ -26,7 +26,7 @@ const tok = ins.token;
 ok(ins.ok === true && !!tok, '1. une inscription (nom + code + téléphone) donne une session');
 ok((await vu(tok, 'lingua.kd-mc.com')).ok === true && (await vu(tok, 'cmcteams.kd-mc.com')).ok === true && (await vu(tok, 'chez-lolo.kd-mc.com')).ok === true,
   '2. et elle ouvre TOUT le domaine (Lingua, CMCteams, Chez Lolo…) sans rien redemander');
-ok((await vu(tok, 'arbre.kd-mc.com')).ok === false, '2b. sauf les apps privées de Kevin (l\'arbre : la partie admin reste réservée)');
+ok((await vu(tok, 'coffre.kd-mc.com')).ok === false, '2b. sauf les apps privées de Kevin (le coffre : la partie admin reste réservée ; l\'arbre s\'ouvre depuis le 17.10, avec son code famille)');
 
 /* admin */
 const rl = await appel('kd-mc.com', '/__admin/login', { method: 'POST', body: JSON.stringify({ code: '424242' }) });
@@ -69,7 +69,7 @@ ok((await vu(tok, 'lingua.kd-mc.com')).reason === 'bloque_ici' && (await vu(tok,
 ok((await vu(zoe.token, 'lingua.kd-mc.com')).ok === true, '17. une troisième personne, non choisie, n\'est pas touchée');
 ok((await vu(tok, 'chez-lolo.kd-mc.com')).reason === 'bloque_ici', '18. on AJOUTE : la fermeture individuelle de chez-lolo posée avant est gardée');
 await lot({ uids: ['zoe-bernard'], apps: ['cuisine'], action: 'fermer' });
-ok((await vu(zoe.token, 'cuisine.kd-mc.com')).reason === 'bloque_ici' && (await vu(zoe.token, 'arbre.kd-mc.com')).ok === false, '19. fermer une app à quelqu\'un qui n\'a jamais été rangé n\'OUVRE pas les apps privées (arbre reste fermé)');
+ok((await vu(zoe.token, 'cuisine.kd-mc.com')).reason === 'bloque_ici' && (await vu(zoe.token, 'coffre.kd-mc.com')).ok === false, '19. fermer une app à quelqu\'un qui n\'a jamais été rangé n\'OUVRE pas les apps privées (le coffre reste fermé)');
 r = await lot({ uids: ['paul-durand'], apps: ['lingua'], action: 'rouvrir' });
 ok(r.ok === true && (await vu(autre.token, 'lingua.kd-mc.com')).ok === true && (await vu(autre.token, 'cuisine.kd-mc.com')).reason === 'bloque_ici' && (await vu(tok, 'lingua.kd-mc.com')).reason === 'bloque_ici', '20. rouvrir UNE app à UNE personne : les autres fermetures et les autres personnes ne bougent pas');
 ok((await lot({ uids: ['lea-martin'], apps: [], action: 'fermer' })).ok === false && (await lot({ uids: [], apps: ['lingua'], action: 'fermer' })).ok === false && (await lot({ uids: ['lea-martin'], apps: ['lingua'] })).ok === false, '21. sans app, sans personne ou sans action : refusé en clair (jamais « à moitié »)');

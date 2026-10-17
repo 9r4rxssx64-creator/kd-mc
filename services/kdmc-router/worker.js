@@ -251,7 +251,10 @@ const SURFACES_JUMELLES = [['cmcteams', 'departs']];
    « domaine entier, sauf partie admin »). L'admin les ouvre d'un geste (liste `acces`, ou en
    rangeant la personne en « domaine » depuis /admin → `acces_at`). Liste fermée, gardée par
    test:perimetre-apps : l'allonger se décide avec Kevin. */
-const APPS_PRIVEES = ['arbre', 'coffre', 'bot', 'dashboard'];
+/* 17.10.2026 (Kevin : « Débloque l'arbre dans le domaine, et garde le code pour se connecter à l'arbre ») : l'arbre n'est plus une app PRIVÉE — la page
+   s'ouvre à tout compte du domaine. Mais l'ouverture de la page ne remet PAS la clé : le CODE FAMILLE reste demandé (voir /__arbre/cle : la clé n'est
+   remise toute seule qu'aux personnes que l'admin a rangées lui-même ; un compte ordinaire, `compte_unique`, tape le code). */
+const APPS_PRIVEES = ['coffre', 'bot', 'dashboard'];
 /* Apps fermées pour tout le monde (cfg:apps_fermees) : relue au plus toutes les 30 s par isolat — une lecture KV, jamais une écriture. */
 const CLE_FERMEES = 'cfg:apps_fermees';
 const MSG_FERME_GENERAL = 'Cette application est fermée pour le moment par l\'administrateur. Elle rouvrira dès qu\'il l\'aura décidé.';
@@ -308,6 +311,8 @@ function perimetre(acc, app, fermees) {
     /* Compte jamais rangé (nouvel inscrit, OU enfermé par défaut entre le 15.09 et le 27.09) :
        reconnu partout, sauf les apps personnelles de Kevin. */
     if (APPS_PRIVEES.indexOf(app) >= 0) return { ok: false, raison: 'app_privee' };
+    /* 17.10 : l'arbre s'ouvre aux comptes du domaine, PAS aux invités externes (une personne invitée dans CMCteams seulement n'est pas de la famille). */
+    if (app === 'arbre' && acc.externe === true) return { ok: false, raison: 'app_privee' };
     return { ok: true, raison: 'compte_unique' };
   }
   /* DEUX SURFACES, UN SEUL OUTIL (Kevin 2026-09-22, choix explicite : « les deux
@@ -417,6 +422,8 @@ async function handleArbre(request, url, env) {
     if (!cguAcceptees(fiche) && !estAdmin) return J({ ok: false, reason: 'cgu' }, null, 403);
     const per = perimetre(fiche, 'arbre');
     if (!per.ok) return J({ ok: false, reason: per.raison || 'perimetre' }, null, 403);
+    /* Compte ordinaire du domaine (jamais rangé par l'admin) : la page s'ouvre, mais la clé ne lui est PAS remise — il tape le code famille. */
+    if (!estAdmin && per.raison === 'compte_unique') return J({ ok: false, reason: 'code_famille' }, null, 403);
     await audLog(env, { ev: 'arbre_cle', uid: ses.uid, name: fiche.name || ses.name || '' });
     const m = await arbreSeedOut(env);
     return J({ ok: true, hash: stored, seed: m.seed, savedAt: m.savedAt, seedVersion: m.seedVersion });

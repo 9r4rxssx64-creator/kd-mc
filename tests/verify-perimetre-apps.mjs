@@ -98,10 +98,12 @@ console.log('\nB quater. Compte unique : reconnu partout, sauf les apps personne
   const enfermee = { portee: 'app', acces: ['lingua'] };
   ok(perimetre(enfermee, 'cuisine').ok === true, 'enfermée par défaut sur Lingua → reconnue sur la cuisine');
   ok(perimetre(enfermee, 'cmcteams').ok === true && perimetre(enfermee, 'la-detente').ok === true, '…et sur les autres apps');
-  for (const p of ['arbre', 'coffre', 'bot', 'dashboard']) {
+  for (const p of ['coffre', 'bot', 'dashboard']) {
     const r = perimetre(enfermee, p);
     ok(r.ok === false && r.raison === 'app_privee', 'mais pas sur l\'app personnelle ' + p);
   }
+  /* 17.10 (Kevin : « débloque l'arbre dans le domaine, garde le code ») : la PAGE de l'arbre s'ouvre à tout compte du domaine. */
+  ok(perimetre(enfermee, 'arbre').ok === true && perimetre(enfermee, 'arbre').raison === 'compte_unique', 'l\'arbre n\'est plus une app privée : la page s\'ouvre (le code famille, lui, reste demandé)');
   ok(perimetre({ portee: 'app', acces: ['arbre'] }, 'arbre').ok === true, 'une app personnelle ouverte par l\'admin (liste acces) s\'ouvre');
   ok(perimetre({ portee: 'domaine', acces_at: 1 }, 'coffre').ok === true, 'rangée « domaine » par l\'admin → tout, apps perso comprises');
   ok(perimetre({ portee: 'app', acces: ['lingua'], acces_at: 1 }, 'cuisine').ok === false, 'rangée « une app » PAR L\'ADMIN → sa décision tient');
@@ -155,9 +157,10 @@ console.log('\nB bis. Inscription via le portail (le vrai parcours)');
   ok((await voir(jp.token, 'kd-mc.com')).ok === true, 'et le portail la reconnaît aussi (réception)');
   ok((await voir(jp.token, 'cuisine.kd-mc.com')).ok === true && (await voir(jp.token, 'lingua.kd-mc.com')).ok === true,
     'le MÊME compte est reconnu automatiquement sur les autres apps (cuisine, Lingua)');
-  for (const privee of ['arbre', 'coffre', 'bot', 'dashboard']) {
+  for (const privee of ['coffre', 'bot', 'dashboard']) {
     ok((await voir(jp.token, privee + '.kd-mc.com')).ok === false, 'mais pas l\'app personnelle de Kevin : ' + privee);
   }
+  ok((await voir(jp.token, 'arbre.kd-mc.com')).ok === true, 'l\'arbre s\'ouvre au compte du domaine (17.10) — le code famille reste la clé');
 
   jp = await inscrire('curieux', 'Marc Petit', '');
   f = JSON.parse(envP._kv.get('acc:curieux') || 'null');
@@ -250,7 +253,7 @@ ok((await wN.json()).ok === false, 'il n\'est PAS reconnu sur le coffre (app per
 /* ── D. L'admin : jamais enfermé dehors, et seul à pouvoir ranger ──────────── */
 console.log('\nD. L\'admin');
 const envAdmin = faireEnv({ kdmc_admin: { uid: 'kdmc_admin', name: 'Kevin Desarzens', portee: 'app', acces: ['cmcteams'] } });
-const rAdm = await mod.fetch(req('arbre.kd-mc.com', '/__sso/issue', {
+const rAdm = await mod.fetch(req('coffre.kd-mc.com', '/__sso/issue', {
   method: 'POST', headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ uid: 'kdmc_admin', name: 'Kevin Desarzens', cgu: true }),
 }), envAdmin);

@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — PREMIER PASSAGE RÉEL « BEE PARTOUT + TÂCHES » : WIDGET ABSENT SUR 27 APPS / 29 → MARQUEUR POSÉ PAR LE DOMAINE
+
+**Mesuré** (run 39037501793) : widget présent seulement sur javis et l'arbre (chargement direct) ; ailleurs ABSENT sur appareil neuf (le marqueur `kdmc_k` n'était posé que par le widget lui-même). **Corrigé** : `worker.js` pose le marqueur à `/__admin/login`, `/__admin/grant` et `/__sso/whoami` (admin prouvé seulement) ; `bee-partout.test.mjs` 48/0, 4 sabotages rouges. **Aussi mesuré (tâches)** : météo, calcul, heure, conversion, fait du monde répondent juste (IA : qwen, outils non listés → le robot exige désormais l'OUTIL utilisé) ; refus à examiner : « arbre (privé) » et « lire une page du domaine » (« je ne peux pas accéder directement »), et « ce qu'elle sait faire » (faux refus ?). Parité Apex : voir la matrice (Apex ≈ 200 outils, Bee ≈ 33). À relancer après déploiement.
 
 ## 2026-10-17 — Lingua v2.142.2 : pendant « Bee réfléchit… », ta réponse n'est plus avalée sans rien dire
 - **Vu** sur le run réel 39025704627 : robot « 3 répliques écrites », écran « 2 répliques ». Cause : `➤` ignorait en silence une réponse envoyée pendant la réflexion.

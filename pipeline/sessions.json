@@ -2409,6 +2409,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "javis-bee-marqueur": {
+      "titre": "Javis / Bee — marqueur posé par le domaine",
+      "branche": "claude/bee-marqueur",
+      "sujet": "Bee partout sur appareil neuf : marqueur kdmc_k à la connexion admin / grant / whoami",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

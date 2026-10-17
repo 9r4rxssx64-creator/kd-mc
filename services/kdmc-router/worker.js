@@ -3459,7 +3459,7 @@ async function handleSso(request, url, env) {
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
       else if (choix.cookie && parEnTete) { rep.token = choix.tok; rep.remplace = true; }
-      return J(rep, cookieNeuf);
+      return J(rep, estAdmin ? MARQUEUR : cookieNeuf);   /* admin prouvé : le marqueur « c'est Kevin » (Bee partout, 17.10) ; les autres comptes n'en reçoivent jamais */
     }
     return J({ ok: false });
   }
@@ -4607,6 +4607,7 @@ async function handleAdmin(request, url, env) {
       token = await ssoSign(secret, CANON_UID, nomA, true, true, false, appareilDe(request));
       cookies.push(`${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`);
     }
+    cookies.push(MARQUEUR);   /* Kevin est reconnu : Bee peut le suivre dans CHAQUE app, même sur un appareil neuf (17.10, mesuré : sans marqueur, 27 apps sur 29 sans Bee) */
     return J({ ok: true, grant, token, uid: CANON_UID, admin: true, verified: true }, cookies);
   }
   /* LE GRANT SANS CODE (Kevin 27.09 : « moi tout s'ouvre automatiquement : fiches privées, chaque app,
@@ -4620,7 +4621,7 @@ async function handleAdmin(request, url, env) {
     const grant = me.grant ? adminGrantTok(request) : await ssoSign(secret, '__kdmc_admin__', 'admin', 1);
     const cookie = `kdmc_admin=${grant}; Domain=.kd-mc.com; Path=/; Max-Age=43200; Secure; HttpOnly; SameSite=Lax`;
     if (!me.grant) await audLog(env, { ev: 'admin_grant_session', uid: me.uid });
-    return J({ ok: true, grant, via: me.grant ? 'grant' : 'session' }, cookie);
+    return J({ ok: true, grant, via: me.grant ? 'grant' : 'session' }, [cookie, MARQUEUR]);   /* idem : le marqueur « c'est Kevin » (un indice sans secret) */
   }
   if (path === '/__admin/logout' && request.method === 'POST') {
     return J({ ok: true }, 'kdmc_admin=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');

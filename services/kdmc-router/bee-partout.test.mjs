@@ -110,6 +110,16 @@ for (const [nom, h] of [['inconnu (rien)', {}], ['un autre compte reconnu et vé
 r = await req('lingua.kd-mc.com', '/__javis/qui', { headers: { cookie: 'kdmc_sso=' + signe('kdmc_admin', false) } });
 ok(r.status === 403, '4d. la session de l\'uid admin mais NON vérifiée (sans Face ID ni code) → 403');
 
+/* ── 4e. LE MARQUEUR SUIT KEVIN (17.10, mesuré en réel : sans lui, un appareil neuf n'avait Bee que sur javis et l'arbre — 27 apps sur 29 sans widget) ── */
+ok(sc.some((c) => /^kdmc_k=1;/.test(c)), '4e. la connexion admin pose le marqueur « c\'est Kevin » (domaine entier)', sc.join(' | ').slice(0, 160));
+{ const w = await req('lingua.kd-mc.com', '/__sso/whoami', { headers: KEVIN }); const c = w.headers.getSetCookie ? w.headers.getSetCookie() : [w.headers.get('set-cookie') || ''];
+  ok(c.some((x) => /^kdmc_k=1;/.test(x)), '4f. whoami d\'un admin prouvé (appelé par TOUTES les apps) pose le marqueur', c.join(' | ').slice(0, 160));
+  const g = await req('arbre.kd-mc.com', '/__admin/grant', { headers: KEVIN }); const cg = g.headers.getSetCookie ? g.headers.getSetCookie() : [g.headers.get('set-cookie') || ''];
+  ok(g.status === 200 && cg.some((x) => /^kdmc_k=1;/.test(x)) && cg.some((x) => /^kdmc_admin=/.test(x)), '4g. le laissez-passer admin pose le marqueur ET garde son cookie', cg.map((x) => x.split('=')[0]).join(','));
+  for (const [nom, h] of [['inconnu', {}], ['autre compte reconnu et vérifié', AUTRE], ['uid admin non vérifié', { cookie: 'kdmc_sso=' + signe('kdmc_admin', false) }]]) {
+    const o = await req('lingua.kd-mc.com', '/__sso/whoami', { headers: h }); const co = o.headers.getSetCookie ? o.headers.getSetCookie() : [o.headers.get('set-cookie') || ''];
+    ok(!co.some((x) => /kdmc_k=/.test(x)), '4h. whoami de « ' + nom + ' » : AUCUN marqueur', co.join(' | ').slice(0, 120)); } }
+
 /* ───────── 5. chaque adresse : les portes de Bee restent fermées aux autres ───────── */
 const JSON_ORIGINE = (h) => ({ 'content-type': 'application/json', origin: 'https://' + h });
 const ouvertes = []; let testees = 0;

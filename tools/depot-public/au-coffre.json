@@ -214,6 +214,7 @@
   "tests/session-kevin.test.mjs",
   "tests/smoke-apex-messages.mjs",
   "tests/verif-live-apex.mjs",
+  "tests/verif-live-bee-partout.mjs",
   "tests/verif-live-bee-sabotage.mjs",
   "tests/verif-live-bee.mjs",
   "tests/verif-live-cadres.mjs",

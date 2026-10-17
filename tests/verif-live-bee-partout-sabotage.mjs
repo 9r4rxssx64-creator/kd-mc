@@ -2,6 +2,7 @@
  *   sans sabotage      → vert ; la page qui se retire exprès est notée ⏭ (jamais ✅, jamais ❌)
  *   SABOTAGE=absent    → une page sans le widget : « le widget de Bee est ABSENT » rougit et NOMME l'adresse
  *   SABOTAGE=refus     → Bee répond « je n'ai pas accès… c'est Apex » : les contrôles de tâches rougissent
+ *   SABOTAGE=sansoutil → la bonne valeur mais SANS outil (IA qui invente) : les contrôles de faits rougissent et le disent
  * npm run test:verif-live-bee-partout-robot-sabotage */
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
@@ -17,5 +18,7 @@ const a = robot({ SABOTAGE: 'absent' });
 dis(a.code === 1 && /❌ b\.kd-mc\.com : le widget de Bee est ABSENT/.test(a.out), 'SABOTAGE=absent → « b.kd-mc.com : le widget de Bee est ABSENT » rougit et nomme l\'adresse');
 const b = robot({ SABOTAGE: 'refus' });
 dis(b.code === 1 && (b.out.match(/❌ (?:météo|calcul exact|heure ailleurs|conversion|fait du monde)/g) || []).length >= 4, 'SABOTAGE=refus → les contrôles de tâches objectives rougissent (« je n\'ai pas accès » n\'est jamais une réponse)');
+const c = robot({ SABOTAGE: 'sansoutil' });
+dis(c.code === 1 && /AUCUN outil utilisé/.test(c.out) && (c.out.match(/❌ (?:météo|calcul exact|heure ailleurs|conversion)/g) || []).length >= 3, 'SABOTAGE=sansoutil → une bonne réponse SANS outil rougit (« la réponse a pu être inventée »)');
 console.log(`\n${ok} ✅ / ${ko} ❌\n`);
 process.exit(ko ? 1 : 0);

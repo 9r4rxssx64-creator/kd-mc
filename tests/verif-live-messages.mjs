@@ -147,12 +147,19 @@ try {
   if (sonde.ms) dire(`ℹ️ où va le temps de la lecture (ms, mesuré côté routeur) : ${sonde.ms}`);
 
   /* C. le bandeau */
+  const appels = []; page.on('response', (r) => { try { const u = new URL(r.url()); if (u.pathname.startsWith('/__')) appels.push(u.pathname + ' ' + r.status()); } catch (_) { /* url illisible */ } });
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.evaluate(() => { const b = document.getElementById('pk-skip'); if (b) b.click(); }).catch(() => {});
   await page.waitForFunction(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden; }, null, { timeout: 75000 }).catch(() => {});
   const ban = await page.evaluate(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden ? { t: a.textContent.slice(0, 120), h: Math.round(a.getBoundingClientRect().height) } : null; });
   ok(!!ban && ban.h >= 44, 'le bandeau 📬 s\'affiche (connecté comme Kevin) et fait ≥ 44 px', ban ? `${ban.h} px` : 'bandeau absent : session non admin ? ' + (await page.evaluate(() => document.body.innerText.slice(0, 120))));
   await vue(page, '1-bandeau.png');
+  if (!ban) {
+    /* POURQUOI le portail n'affiche rien : des statuts et des noms de clés seulement (jamais une valeur) */
+    const diag = await page.evaluate(() => { let cles = ''; try { cles = Object.keys(localStorage).filter((k) => /kdmc|sso|admin/i.test(k)).join(','); } catch (_) { /* stockage interdit */ }
+      const b = window.kdmcBoite; return { chemin: location.pathname + location.hash.slice(0, 20), boite: typeof b, donnees: !!(b && b.donnees && b.donnees()), cles, texte: document.body.innerText.length, cookie: /kdmc_sso=/.test(document.cookie) }; }).catch((e) => ({ erreur: String(e && e.message).slice(0, 80) }));
+    dire('ℹ️ diagnostic du portail : ' + JSON.stringify(diag) + ' · appels du domaine : ' + (appels.slice(0, 25).join(' ; ') || 'aucun') + ' · erreurs de page : ' + (fautes.slice(0, 5).join(' | ') || 'aucune'));
+  }
   const D = await page.evaluate(() => (window.kdmcBoite && window.kdmcBoite.donnees && window.kdmcBoite.donnees()) || null);
   ok(!!D && Array.isArray(D.messages), 'le portail a LU la boîte (donnée présente) — sans elle, les contrôles suivants ne prouveraient rien', 'donnée absente : lecture lente, 401 ou panne');
   if (!D) { await vue(page, '9-sans-donnee.png'); await browser.close(); fin(1); }

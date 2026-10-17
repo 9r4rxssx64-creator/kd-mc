@@ -112,12 +112,19 @@ function fausseBase() {
       return { results: tout.slice(offset, offset + limit) };
     }
     if (/^DELETE FROM memoire WHERE id/i.test(q)) { table.delete(args[0]); return { results: [] }; }
+    /* 17.10 : le verrou global du code admin (services/_shared/verrou-code-admin.js) range ses échecs ici. */
+    if (/^CREATE TABLE IF NOT EXISTS verrou_code_admin/i.test(q)) return { results: [] };
+    if (/^SELECT n FROM verrou_code_admin WHERE cle/i.test(q)) return { results: verrou.has(args[0]) ? [{ n: verrou.get(args[0]) }] : [] };
+    if (/^INSERT INTO verrou_code_admin/i.test(q)) { verrou.set(args[0], (verrou.get(args[0]) || 0) + 1); return { results: [] }; }
     throw new Error('ordre SQL inattendu : ' + q.slice(0, 60));
   };
+  const verrou = new Map();
+  const premier = async (sql, args) => (exec(sql, args).results || [])[0] || null;
   const prepare = (sql) => ({
-    bind: (...args) => ({ run: async () => exec(sql, args), all: async () => exec(sql, args) }),
+    bind: (...args) => ({ run: async () => exec(sql, args), all: async () => exec(sql, args), first: () => premier(sql, args) }),
     run: async () => exec(sql, []),
     all: async () => exec(sql, []),
+    first: () => premier(sql, []),
   });
   return { prepare, batch: async (reqs) => Promise.all(reqs.map((r) => r.run())), _table: table };
 }

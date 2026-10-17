@@ -20,6 +20,7 @@ on:
     branches: [main]  # Kevin 26.09.2026 (« limité ») : la PRODUCTION ne se déploie que depuis main (incident m122 du 23.09). Manuel : workflow_dispatch.
     paths:
       - 'services/kdmc-outlook/**'
+      - 'services/_shared/verrou-code-admin.js'   # verrou global du code admin : le worker l'importe → doit redéployer
       - '.github/workflows/deploy-kdmc-outlook.yml'
 
 permissions:

@@ -24,6 +24,7 @@ on:
       - main
     paths:
       - 'services/kdmc-rag/**'
+      - 'services/_shared/verrou-code-admin.js'   # verrou global du code admin : le worker l'importe → doit redéployer
       - '.github/workflows/deploy-kdmc-rag.yml'
 
 concurrency:

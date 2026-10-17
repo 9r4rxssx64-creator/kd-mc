@@ -21,6 +21,8 @@
  * page /setup (protégée par le code admin) → « Connecter Outlook » → Autoriser.
  */
 
+import { verrouFerme, compterEchec, magasinKV, VERROU_MESSAGE } from '../_shared/verrou-code-admin.js';
+
 const REDIRECT_URI = 'https://kdmc-outlook.9r4rxssx64.workers.dev/auth/callback';
 const AUTHORIZE = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
 const TOKEN = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
@@ -96,16 +98,28 @@ function pinEchec(ip) {
   for (const k of ['ip:' + ip, '*']) { const a = (_echecsPin.get(k) || []).filter((x) => t - x < 900000); a.push(t); _echecsPin.set(k, a); }
   if (_echecsPin.size > 5000) _echecsPin.clear();
 }
-async function adminOk(request, env) {
-  if (!env || !env.KDMC_ADMIN_PIN_SHA256) return false;
+/* + VERROU GLOBAL (audit 17.10) : au-delà de 20 échecs dans l'heure, TOUTES adresses confondues (compteur dans le
+   KV ACCOUNTS, partagé avec le routeur et Monaco), plus aucun code n'est jugé jusqu'à l'heure suivante → 429.
+   Une écriture KV par échec, aucune sur un succès. Détail : services/_shared/verrou-code-admin.js. */
+async function adminVerdict(request, env) {
+  if (!env || !env.KDMC_ADMIN_PIN_SHA256) return 'non';
   const h = (request.headers.get('x-apex-pin') || request.headers.get('x-kdmc-pin') || '').toLowerCase().trim();
-  if (!h) return false;
+  if (!h) return 'non';
   const ip = request.headers.get('cf-connecting-ip') || '?';
-  if (pinBloque(ip)) return false;
+  if (pinBloque(ip)) return 'non';
+  const magasin = magasinKV(env.ACCOUNTS);
+  if (await verrouFerme(magasin)) return 'verrou';
   let ok = h === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase();
   if (!ok) { try { ok = (await sha256Hex(h)) === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase(); } catch { ok = false; } }
-  if (!ok) pinEchec(ip);
-  return ok;
+  if (!ok) { pinEchec(ip); await compterEchec(magasin); }
+  return ok ? 'ok' : 'non';
+}
+/* Réponse de refus prête à renvoyer (null si le code est bon). */
+async function adminRefus(request, env) {
+  const v = await adminVerdict(request, env);
+  if (v === 'ok') return null;
+  if (v === 'verrou') return J({ ok: false, reason: 'verrou_code_admin', message: VERROU_MESSAGE }, 429);
+  return J({ ok: false, reason: 'need_admin_code' }, 403);
 }
 
 function J(o, status) { return new Response(JSON.stringify(o), { status: status || 200, headers: { 'content-type': 'application/json' } }); }
@@ -265,7 +279,7 @@ export default {
       if (p === '/' || p === '/setup') return new Response(setupPage(), { headers: { 'content-type': 'text/html; charset=utf-8' } });
 
       if (p === '/config' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'bad_json' }); }
         const cid = String(b.client_id || '').trim();
         if (!/^[0-9a-f-]{30,40}$/i.test(cid)) return J({ ok: false, reason: 'client_id_invalide' });
@@ -274,7 +288,7 @@ export default {
       }
 
       if (p === '/connect/start' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         const cid = await env.ACCOUNTS.get('out:cid');
         if (!cid) return J({ ok: false, reason: 'client_id_manquant' });
         const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
@@ -306,13 +320,13 @@ export default {
       }
 
       if (p === '/sync' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         try { return J(await syncOnce(env, {})); }
         catch (e) { return J({ ok: false, reason: String(e && e.message || e) }); }
       }
 
       if (p === '/disconnect' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         try { await env.ACCOUNTS.delete('out:rt'); await env.ACCOUNTS.delete('out:since'); } catch { /* */ }
         return J({ ok: true });
       }

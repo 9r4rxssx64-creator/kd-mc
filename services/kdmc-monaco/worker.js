@@ -28,7 +28,7 @@ import { connect } from 'cloudflare:sockets';
 import {
   matchesInvoice, hasAmount, looksPromo, keepAttachment, parseMimeAttachments, extractBodyText, subjectOf, fromOf,
   imapDate, parseSearchUids, parseTaggedResponse, latin1, imapQuote,
-  sha256HexOfB64, sha256Hex, adminOk
+  sha256HexOfB64, sha256Hex, adminOk, adminRefus
 } from './lib.js';
 
 const DEFAULT_HOST = 'mails.monaco.mc';
@@ -459,7 +459,7 @@ export default {
         return new Response(setupPage(env && env.ACCOUNTS ? await env.ACCOUNTS.get('mon:host') : null), { headers: { 'content-type': 'text/html; charset=utf-8' } });
       }
       if (p === '/config' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'bad_json' }); }
         const user = String(b.user || '').trim(); const pass = String(b.pass || '');
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(user)) return J({ ok: false, reason: 'email_invalide' });
@@ -475,12 +475,12 @@ export default {
         return J({ ok: true, enc: !!(env && env.MONACO_ENC_KEY) });
       }
       if (p === '/test' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         try { return J(await testConnect(env)); }
         catch (e) { return J({ ok: false, reason: 'socket', detail: String(e && e.message || e) }); }
       }
       if (p === '/probe' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         let b = {}; try { b = await request.json(); } catch { /* body optionnel */ }
         const host = String(b.host || '').trim() || undefined;
         const port = parseInt(b.port, 10) || undefined;
@@ -488,7 +488,7 @@ export default {
         catch (e) { return J({ ok: false, reason: 'socket', detail: String(e && e.message || e), host: host || DEFAULT_HOST, port: port || DEFAULT_PORT }); }
       }
       if (p === '/sync' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         try {
           // Si un backfill est en cours → on l'avance ; sinon récup incrémentale.
           // Ancien backfill (v1, 61k du plus ancien) détecté → on le REDÉMARRE en mode ciblé récent (migration auto).
@@ -504,7 +504,7 @@ export default {
         }
       }
       if (p === '/backfill' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         try {
           // Déjà en cours ET file « v2 » (ciblée récent) → on avance d'un lot (re-tap = accélère).
           // Sinon (rien en cours OU ancienne file v1 de 61k) → on (re)démarre en mode ciblé récent + 1er lot.
@@ -520,7 +520,7 @@ export default {
         }
       }
       if (p === '/disconnect' && request.method === 'POST') {
-        if (!(await adminOk(request, env))) return J({ ok: false, reason: 'need_admin_code' }, 403);
+        { const refus = await adminRefus(request, env); if (refus) return refus; }
         try { for (const k of ['mon:user', 'mon:pass', 'mon:lastuid', 'mon:host', 'mon:port', 'mon:bf_active', 'mon:bf_queue', 'mon:bf_total', 'mon:bf_remaining', 'mon:bf_max', 'mon:bf_ver']) await env.ACCOUNTS.delete(k); } catch { /* */ }
         return J({ ok: true });
       }

@@ -38,6 +38,8 @@
  * URL prod : https://kdmc-rag.9r4rxssx64.workers.dev  (sous-domaine du COMPTE — leçon #85)
  */
 
+import { verrouFerme, compterEchec, magasinD1, VERROU_MESSAGE } from "../_shared/verrou-code-admin.js";
+
 const EMBED_MODEL = "@cf/baai/bge-m3"; // multilingue (FR), 1024 dims
 const EMBED_DIMS = 1024;
 
@@ -85,6 +87,20 @@ async function authOk(req, env) {
   if (!h) return false;
   if (h === secret) return true;
   try { return (await sha256Hex(h)) === secret; } catch { return false; }
+}
+
+/* VERROU GLOBAL DU CODE ADMIN (audit 17.10, mesuré : 30 faux codes → 30 × 401, jamais de frein).
+   Ce service n'a PAS de KV : le compteur vit dans la base D1 déjà liée (binding DB, gratuite), avec un
+   incrément atomique. Au-delà de 20 échecs dans l'heure, TOUTES adresses confondues, plus aucun code n'est
+   jugé jusqu'à l'heure suivante → 429. Une écriture par échec, aucune sur un succès.
+   Détail : services/_shared/verrou-code-admin.js. Renvoie 'ok' | 'non' | 'verrou'. */
+async function authVerdict(req, env) {
+  if (!(env.APEX_ADMIN_PIN_SHA256 || "") || !req.headers.get("x-apex-pin")) return "non"; // rien d'essayé : rien à compter
+  const magasin = magasinD1(env.DB);
+  if (await verrouFerme(magasin)) return "verrou";
+  if (await authOk(req, env)) return "ok";
+  await compterEchec(magasin);
+  return "non";
 }
 
 async function embed(env, texts) {
@@ -173,7 +189,11 @@ export default {
       }
 
       // toutes les routes de données exigent l'auth
-      if (!(await authOk(request, env))) {
+      const verdict = await authVerdict(request, env);
+      if (verdict === "verrou") {
+        return json({ ok: false, error: "verrou_code_admin", message: VERROU_MESSAGE, debug: { hint: "trop d'échecs du code admin cette heure-ci" } }, 429, origin);
+      }
+      if (verdict !== "ok") {
         return json({ ok: false, error: "unauthorized", debug: { hint: "x-apex-pin manquant/incorrect" } }, 401, origin);
       }
       if (!env.AI || !env.DB) {

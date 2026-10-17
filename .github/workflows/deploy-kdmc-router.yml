@@ -24,6 +24,7 @@ on:
       - main
     paths:
       - 'services/kdmc-router/**'
+      - 'services/_shared/verrou-code-admin.js'   # verrou global du code admin : le worker l'importe → doit redéployer
       - 'services/_shared/ia-route.js'   # routage IA commun : le worker l'importe → doit redéployer
       - '.github/workflows/deploy-kdmc-router.yml'
       # 16.10 : les pages viennent de la COPIE EMBARQUÉE du routeur (SOURCE_PAGES = "assets") et l'hébergeur Pages est supprimé —

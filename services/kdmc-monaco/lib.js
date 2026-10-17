@@ -3,6 +3,8 @@
  * testable en `node --test`). Le worker.js importe tout d'ici + `cloudflare:sockets`.
  */
 
+import { verrouFerme, compterEchec, magasinKV, VERROU_MESSAGE } from '../_shared/verrou-code-admin.js';
+
 /* ---------- filtre facture ---------- */
 export const INVOICE_RE = /(facture|invoice|devis|quote|re[çc]u|receipt|quittance|ticket|comm?ande|order|paiement|payment|abonnement|[ée]ch[ée]ance|note d.honoraire|bon de commande|bill|statement|relev[ée])/i;
 export function matchesInvoice(subject, filename, from) {
@@ -232,14 +234,27 @@ function pinEchec(ip) {
   for (const k of ['ip:' + ip, '*']) { const a = (_echecsPin.get(k) || []).filter((x) => t - x < 900000); a.push(t); _echecsPin.set(k, a); }
   if (_echecsPin.size > 5000) _echecsPin.clear();
 }
-export async function adminOk(request, env) {
-  if (!env || !env.KDMC_ADMIN_PIN_SHA256) return false;
+/* + VERROU GLOBAL (audit 17.10) : au-delà de 20 échecs dans l'heure, TOUTES adresses confondues (compteur dans le
+   KV ACCOUNTS, partagé avec le routeur et Outlook), plus aucun code n'est jugé jusqu'à l'heure suivante → 'verrou' (429).
+   Une écriture KV par échec, aucune sur un succès. Détail : services/_shared/verrou-code-admin.js. */
+export async function adminVerdict(request, env) {
+  if (!env || !env.KDMC_ADMIN_PIN_SHA256) return 'non';
   const h = (request.headers.get('x-apex-pin') || request.headers.get('x-kdmc-pin') || '').toLowerCase().trim();
-  if (!h) return false;
+  if (!h) return 'non';
   const ip = request.headers.get('cf-connecting-ip') || '?';
-  if (pinBloque(ip)) return false;
+  if (pinBloque(ip)) return 'non';
+  const magasin = magasinKV(env.ACCOUNTS);
+  if (await verrouFerme(magasin)) return 'verrou';
   let ok = h === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase();
   if (!ok) { try { ok = (await sha256Hex(h)) === String(env.KDMC_ADMIN_PIN_SHA256).toLowerCase(); } catch { ok = false; } }
-  if (!ok) pinEchec(ip);
-  return ok;
+  if (!ok) { pinEchec(ip); await compterEchec(magasin); }
+  return ok ? 'ok' : 'non';
+}
+export async function adminOk(request, env) { return (await adminVerdict(request, env)) === 'ok'; }
+/* Réponse de refus prête à renvoyer (null si le code est bon) : 429 + message simple si le verrou global est fermé. */
+export async function adminRefus(request, env) {
+  const v = await adminVerdict(request, env);
+  if (v === 'ok') return null;
+  const corps = v === 'verrou' ? { ok: false, reason: 'verrou_code_admin', message: VERROU_MESSAGE } : { ok: false, reason: 'need_admin_code' };
+  return new Response(JSON.stringify(corps), { status: v === 'verrou' ? 429 : 403, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' } });
 }

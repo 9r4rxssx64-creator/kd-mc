@@ -20,6 +20,7 @@ import * as cptD1 from './compteurs-d1.js';
 const URL_MESSAGES = 'https://kd-mc.com/#messages';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
+import { verrouFerme, compterEchec, magasinKV, VERROU_MESSAGE } from '../_shared/verrou-code-admin.js';   // verrou global du code admin (audit 17.10)
 import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders, SECRET_NAMES as IA_SECRETS } from '../_shared/ia-route.js';
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
@@ -4598,6 +4599,13 @@ async function handleAdmin(request, url, env) {
     try { if (env.ACCOUNTS) { await env.ACCOUNTS.get('al:' + ipHash); } wait = await rlBlocked(env, ipHash); }
     catch { return J({ ok: false, reason: 'rate_limited', wait: 900 }, undefined, 429); }
     if (wait) return J({ ok: false, reason: 'rate_limited', wait });
+    /* VERROU GLOBAL (audit 17.10) : le frein ci-dessus compte PAR ADRESSE — une session qui sort par ~8 adresses
+       qui tournent le contournait. Ici, au-delà de 20 échecs dans l'heure, TOUTES adresses confondues (compteur
+       `rl:codeadmin:<heure>` dans ACCOUNTS, partagé avec Outlook et Monaco), plus aucun code ni hash n'est jugé
+       jusqu'à l'heure suivante → 429. La session admin prouvée (Face ID / grant, /__admin/grant) ne passe pas
+       par ici et continue de marcher. Une écriture KV par échec, aucune sur un succès. */
+    const magasinVerrou = magasinKV(env.ACCOUNTS);
+    if (await verrouFerme(magasinVerrou)) return J({ ok: false, reason: 'verrou_code_admin', message: VERROU_MESSAGE }, undefined, 429);
     let b = {}; try { b = await request.json(); } catch { /* ignore */ }
     const code = String(b.code || '').trim();
     /* Accepte le CODE (sha256(code)===secret) OU directement le HASH (=== secret).
@@ -4611,7 +4619,7 @@ async function handleAdmin(request, url, env) {
     const okHash = !!hash && hash === String(adminHash).toLowerCase();
     const okCode = !!code && (await sha256Hex(code)) === adminHash;
     /* 6.10 (Kevin : « Code admin refusé » ×5, sans rien dire) : l'alerte note DEPUIS QUELLE APP et quel pays, pour qu'il sache si c'est lui. */
-    if (!okHash && !okCode) { await rlFail(env, ipHash); /* 8.10 : appareil, lieu et réseau (ASN) aussi — 16 refus « lieu US, appareil ? » au journal du 5 au 8.10 sans pouvoir dire
+    if (!okHash && !okCode) { await rlFail(env, ipHash); await compterEchec(magasinVerrou); /* 8.10 : appareil, lieu et réseau (ASN) aussi — 16 refus « lieu US, appareil ? » au journal du 5 au 8.10 sans pouvoir dire
          s'il s'agissait d'un robot GitHub (ASN de centre de données) ou d'une personne : le lecteur d'alertes le dira désormais. */
       const cfA = request.cf || {}, NETA = ispInfo(cfA);
       await audLog(env, { ev: 'admin_login_fail', ip: ipHash.slice(0, 12), app: appDeLaDemande(request), pays: String(cfA.country || '').slice(0, 2), device: appareilLabel(request.headers.get('user-agent') || ''), place: [cfA.city, cfA.country].filter(Boolean).join(', '), isp: NETA.isp, asn: String(cfA.asn || '') }); return J({ ok: false, reason: 'code_invalide' }); }

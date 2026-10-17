@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.979 · routeur (2026-10-17 — les années d'entrée données à l'inscription complètent les fiches toutes seules)
+- Nouveau `tools/shared/anciennetes-domaine.js` : à la connexion de l'admin, CMCteams relit `GET /__admin/anciennetes` (routeur, admin seulement : matricule + années, rien d'autre) et remplit `dateEntreeSbm` / `dateEntreeJeux` des fiches vides (1er janvier, source « domaine ») ; les chefs d'équipe se recalculent seuls, la light reçoit la carte par Firebase. Une date déjà saisie n'est jamais écrasée. Gardes `test:anciennetes-routeur` (11 ✅) et `test:anciennetes-domaine` (9 ✅).
+- Départs : avance à l'entrée confirmée à **0 minute** par Kevin (« Laisse 0 »).
+
 ## Portail v1.0.70 · Admin v2.7.3 · routeur (2026-10-17 — « la validation se fait par mail maintenant », marqué partout)
 - Alerte push et journal du routeur parlent du mail de confirmation (plus de « sans WhatsApp ») ; boîte admin : « dès qu'elles touchent le mail, leur compte s'ouvre tout seul, rien à faire » ; tableau admin : « Comptes en attente de leur mail ». Règle écrite dans tous les dossiers (CLAUDE-HISTOIRE, règle de session, AGENTS.md, NOTES_USER, ETAT-DU-MOMENT, mémoire, Apex). Garde `test:validation-par-mail-docs`.
 

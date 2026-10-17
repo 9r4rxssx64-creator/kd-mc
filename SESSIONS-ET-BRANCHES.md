@@ -249,6 +249,8 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/cf-portes-test-alerte` | 17.10 | Test `alerte-nouveau` du routeur avec pass signé (débloque le déploiement du lot 2) | `cf-portes-moyennes` |
 | `claude/clone-laissez-passer` | 17.10 | Lot 3 : kdmc-clone sous laissez-passer + limiteurs intégrés (routeur dep/membre, crea-famille) | `cf-portes-moyennes` |
 | `claude/apex-clone-laissez-passer` | 17.10 | Apex 13.4.380 : l'outil clone_site envoie le laissez-passer (aide) | `cf-portes-moyennes` |
+| `claude/crea-famille-sans-code` | 17.10 | Créa Famille : plus de code admin dans la requête (session du domaine seule) + leçon 632 corrigée | `cf-portes-moyennes` |
+| `claude/clone-smoke` | 17.10 | Contrôle d'après-déploiement de kdmc-clone : prouve le laissez-passer | `cf-portes-moyennes` |
 | `claude/cf-rapatrier` | 17.10 | 12 workers orphelins sur l'ancien compte Cloudflare : outil de suppression sûr + garde ; rien à déplacer | `cf-rapatrier` |
 | `claude/cf-preuves` | 17.10 | Docs : les 4 portes Cloudflare vérifiées fermées en ligne | `cf-preuves` |
 | `claude/deploy-coffre-r2-public` | 17.10 | Robot public de déploiement de coffre-r2 (+ preuve 401 anonyme) | `deploy-coffre-r2-public` |
@@ -264,6 +266,8 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
 | `claude/apex-public-1610` | 16.10 | Apex 372→373 publiés par le dépôt public (0 minute du coffre) ; règles Firebase `ax_pin_` fermées ; guichet `/pin/init` — fusionnée | `audit-apex-1610` |
 | `claude/apex-suite-1610` | 16.10 | Apex 374 : 46 tests figés remis à la règle « gratuit d'abord » ; garde apex-passerelle 5b (copie servie = source) — fusionnée | `audit-apex-1610` |
+| `claude/anciennetes-domaine` | 17.10 | Anciennetés de l'inscription → fiches CMCteams toutes seules (v9.979, porte admin routeur) ; départs : 0 min confirmé ; leçon #636 | `anciennetes-domaine` |
+| `claude/cf-portes-test-alerte` | 17.10 | (branche d'une autre session, trouvée sans registre : inscrite pour garder la CI verte — à compléter par elle) | `cf-portes-test-alerte` |
 | `claude/validation-par-mail-partout` | 17.10 | « La validation se fait par mail » écrit dans tous les dossiers + écrans/alertes admin (portail v1.0.70, admin v2.7.3), garde `test:validation-par-mail-docs`, message m233 à toutes | `validation-par-mail-partout` |
 | `claude/mail-en-ligne` | 17.10 | Documents : mail en ligne, vérifié réel — fusionnée (#4752) | `mail-en-ligne` |
 | `claude/apex-378-capture-kevin` | 16.10 | Apex 378 : étiquette de version dans la rangée de saisie du chat, erreur récupérable quand la clé est refusée et la passerelle gratuite muette (PR #4693) — fusionnée | `pages-nettoyage-compte` |

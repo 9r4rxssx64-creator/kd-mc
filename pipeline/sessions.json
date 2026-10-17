@@ -2419,6 +2419,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "anciennetes-domaine": {
+      "titre": "Anciennetés du domaine → CMCteams (v9.979)",
+      "branche": "claude/anciennetes-domaine",
+      "sujet": "/__admin/anciennetes + tools/shared/anciennetes-domaine.js ; départs 0 min confirmé",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

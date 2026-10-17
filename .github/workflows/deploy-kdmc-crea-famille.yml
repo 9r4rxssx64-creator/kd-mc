@@ -100,25 +100,19 @@ jobs:
               && echo "  ✅ secret posé" || echo "::warning::secret non posé — le service restera en attente"
           fi
 
-      - name: Code admin (REPLI seulement — l'admin principal = SSO central du domaine)
+      - name: Retire l'ancien code admin de repli (17.10.2026 — admin = session du domaine uniquement)
         working-directory: services/kdmc-crea-famille
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          ADMIN_CODE: ${{ secrets.CREA_FAMILLE_ADMIN_CODE }}
         run: |
           set +e
-          # 2026-08-09 : l'admin famille se décide désormais par le SSO CENTRAL du domaine
-          # (kd-mc.com/__sso/whoami — Kevin reconnu par Face ID). Kevin est donc admin ICI
-          # SANS aucun code à créer : rien à faire de son côté.
-          # Ce code secret n'est plus qu'un REPLI facultatif (si le SSO est injoignable).
-          # Audit 2026-08-09 : avant, taper « Kevin Desarzens » suffisait à tout lire → fermé.
-          if [ -n "${ADMIN_CODE:-}" ]; then
-            printf '%s' "$ADMIN_CODE" | wrangler secret put ADMIN_CODE 2>&1 | tail -2 \
-              && echo "  ✅ code admin de repli posé" \
-              || echo "::warning::code admin de repli non posé"
+          # Audit Cloudflare 17.10 : le « code_admin » envoyé dans la requête pouvait s'essayer en boucle et
+          # aucune app ne l'utilisait. Le worker ne le lit plus ; on retire aussi le secret s'il est posé.
+          if wrangler secret list 2>/dev/null | grep -q '"ADMIN_CODE"'; then
+            echo y | wrangler secret delete ADMIN_CODE 2>&1 | tail -1
           else
-            echo "  ℹ️ pas de code de repli (facultatif) — l'admin passe par le SSO central du domaine, aucune action Kevin requise."
+            echo "  ℹ️ aucun ancien code de repli posé."
           fi
 
       - name: Vérification (le service répond-il ?)

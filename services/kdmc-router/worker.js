@@ -4720,6 +4720,18 @@ async function handleAdmin(request, url, env) {
     accounts.sort((a, b) => (b.last_seen || 0) - (a.last_seen || 0));
     return J({ ok: true, accounts, kv: true, count: accounts.length });
   }
+  /* ANCIENNETÉS DU DOMAINE → CMCteams (Kevin 17.10 : « On connaîtra les dates au fur et à mesure des inscriptions et tu mettras tout à jour
+     toujours ») : la fiche SBM remplie à l'inscription (matricule + année d'entrée SBM / jeux) sert à désigner les chefs d'équipe. CMCteams
+     (admin) la relit ici et complète ses fiches sans rien écraser. Seulement ce qui sert : matricule + années ; jamais téléphone ni e-mail. */
+  if (path === '/__admin/anciennetes' && request.method === 'GET') {
+    if (!env.ACCOUNTS) return J({ ok: true, anciennetes: [], kv: false });
+    const idx = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
+    const comptes = (await Promise.all(idx.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
+    const anciennetes = comptes
+      .filter((a) => a.fiche && /^U\d{3,6}$/.test(String(a.fiche.matricule || '')) && (a.fiche.anneeSbm || a.fiche.anneeJeux))
+      .map((a) => ({ matricule: String(a.fiche.matricule).toUpperCase(), anneeSbm: a.fiche.anneeSbm || undefined, anneeJeux: a.fiche.anneeJeux || undefined, nom: String(a.name || '').slice(0, 80), maj: a.fiche.maj || 0 }));
+    return J({ ok: true, anciennetes, count: anciennetes.length });
+  }
   /* Journal d'audit admin : connexions admin ok/échec, déconnexions forcées,
      nouveaux appareils, mints Firebase. FIFO 200 en KV. */
   if (path === '/__admin/audit' && request.method === 'GET') {

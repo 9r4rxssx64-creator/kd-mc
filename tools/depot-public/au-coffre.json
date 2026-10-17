@@ -225,6 +225,7 @@
   "tests/verify-admin-unique.mjs",
   "tests/verify-adresse-officielle.mjs",
   "tests/verify-anciennete-fiche.mjs",
+  "tests/verify-anciennetes-domaine.mjs",
   "tests/verify-apex-passerelle.mjs",
   "tests/verify-apis-clients-compte.mjs",
   "tests/verify-app-as-kevin.mjs",

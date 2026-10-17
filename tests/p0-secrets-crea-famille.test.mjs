@@ -33,14 +33,10 @@ ok(/\n\s*anthropic:\s*\{/.test(proxy) && /\n\s*gemini:\s*\{/.test(proxy), '① l
 /* ② crea-famille */
 const worker = read('services/kdmc-crea-famille/worker.js');
 ok(!/desarzens/i.test(worker), '② l\'admin ne doit PLUS être déduit du nom (« desarzens »)');
-ok(/env\.ADMIN_CODE/.test(worker), '② l\'admin vient d\'un CODE secret (env.ADMIN_CODE)');
-ok(/function estAdmin\(env,\s*codeAdmin\)/.test(worker), '② estAdmin prend (env, codeAdmin), plus un nom');
-ok(/if \(!attendu \|\| !codeAdmin\) return false/.test(worker), '② fail-closed : sans secret ni code → personne admin');
-ok(/estAdmin\(env,\s*body\.code_admin\)/.test(worker), '② l\'appel passe le code fourni, pas le nom');
-/* le déploiement pose le secret (push_if_set) */
+/* 17.10.2026 (audit Cloudflare) : plus AUCUN code admin dans la requête (il pouvait s'essayer en boucle) */
+ok(!/ADMIN_CODE|code_admin|function estAdmin\(/.test(worker), '② plus aucun code admin lu dans la requête (ni env.ADMIN_CODE, ni body.code_admin)');
 const dep = read('.github/workflows/deploy-kdmc-crea-famille.yml');
-ok(/CREA_FAMILLE_ADMIN_CODE/.test(dep) && /wrangler secret put ADMIN_CODE/.test(dep),
-  '② le déploiement pose ADMIN_CODE depuis un secret GitHub (fail-closed si absent)');
+ok(!/wrangler secret put ADMIN_CODE/.test(dep) && /wrangler secret delete ADMIN_CODE/.test(dep), '② le déploiement ne pose plus le code de repli, il le retire');
 
 /* ③ ADMIN UNIVERSEL DU DOMAINE — Kevin est admin famille via le SSO central
  *   (kd-mc.com/__sso/whoami : admin = uid connu ET verified/Face ID), SANS code par app.
@@ -48,8 +44,8 @@ ok(/CREA_FAMILLE_ADMIN_CODE/.test(dep) && /wrangler secret put ADMIN_CODE/.test(
 ok(/async function estAdminSSO\(request\)/.test(worker), '③ le worker a estAdminSSO (admin via SSO central)');
 ok(/kd-mc\.com\/__sso\/whoami/.test(worker), '③ estAdminSSO interroge le SSO central kd-mc.com/__sso/whoami');
 ok(/j\.admin\s*&&\s*j\.verified/.test(worker), '③ admin EXIGE verified (Face ID), jamais le nom seul');
-ok(/let admin = await estAdminSSO\(req\)/.test(worker) && /admin = estAdmin\(env,\s*body\.code_admin\)/.test(worker) && /rl:admin:/.test(worker) && /rates >= 5/.test(worker),
-  '③ /rejoindre = admin par SSO central OU code local (repli), le code local freiné à 5 mauvais essais / heure / IP (17.10)');
+ok(/const admin = await estAdminSSO\(req\)/.test(worker),
+  '③ /rejoindre = admin par la session admin prouvée du domaine, et rien d\'autre (17.10)');
 /* le CLIENT transmet le pass du domaine au worker (sinon le SSO ne sert à rien) */
 const client = read('tools/crea-studio/index.html');
 ok(/crea_sso_token/.test(client) && /o\.headers\.Authorization\s*=\s*'Bearer '/.test(client),

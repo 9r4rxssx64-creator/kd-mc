@@ -70,10 +70,21 @@ jobs:
           echo "--- /health ---"
           curl -sS "$URL/health" | tee /tmp/h.json; echo
           grep -q '"ok":true' /tmp/h.json || { echo "::error::/health invalide : $(cat /tmp/h.json)"; exit 1; }
-          echo "--- /meta (avec Origin autorisée) ---"
-          curl -sS -H "Origin: https://kd-mc.com" "$URL/meta?url=https://example.com" | tee /tmp/m.json; echo
-          grep -q '"title"' /tmp/m.json || { echo "::error::/meta invalide : $(cat /tmp/m.json)"; exit 1; }
-          echo "--- open-proxy bloqué sans Origin ni token (doit être 403) ---"
+          # 17.10.2026 (audit Cloudflare) : une Origin se falsifie en une ligne → elle ne suffit plus, le laissez-passer
+          # du domaine est exigé. Le robot prend le pass du compte de contrôle ci_smoke (jamais une nouvelle uid).
+          echo "--- Origin seule, sans laissez-passer (doit être 401) ---"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Origin: https://kd-mc.com" "$URL/meta?url=https://example.com")
+          [ "$code" = "401" ] || { echo "::error::Attendu 401 avec une Origin seule, reçu $code (proxy ouvert ?)"; exit 1; }
+          echo "--- avec le laissez-passer du domaine (robot ci_smoke) ---"
+          PASS=$(curl -s -X POST https://kd-mc.com/__sso/issue -H 'content-type: application/json' -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}' | python3 -c 'import sys,json;print(json.load(sys.stdin).get("token",""))' || true)
+          if [ -n "$PASS" ]; then
+            echo "::add-mask::$PASS"
+            curl -sS -H "Authorization: Bearer $PASS" "$URL/meta?url=https://example.com" | tee /tmp/m.json; echo
+            grep -q '"title"' /tmp/m.json || { echo "::error::/meta invalide avec laissez-passer : $(cat /tmp/m.json)"; exit 1; }
+          else
+            echo "::warning::pass ci_smoke indisponible — lecture authentifiée non testée"
+          fi
+          echo "--- sans rien (doit être 401) ---"
           code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/meta?url=https://example.com")
-          [ "$code" = "403" ] || { echo "::error::Attendu 403 sans Origin, reçu $code"; exit 1; }
+          [ "$code" = "401" ] || { echo "::error::Attendu 401 sans laissez-passer, reçu $code"; exit 1; }
           echo "✅ kdmc-clone live, lecture OK, anti open-proxy OK"

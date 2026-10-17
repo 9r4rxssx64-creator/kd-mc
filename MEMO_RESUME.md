@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 — déploiement du routeur rouge après le marqueur : un test voisin comptait les cookies
+
+`admin-partout.test.mjs` (contrôle 6) exigeait 1 seul cookie à la connexion admin ; le marqueur `kdmc_k` en ajoute un (ce n'est pas une session). Test corrigé (compte les cookies de SESSION), sabotage rouge sur un vrai 2ᵉ cookie, TOUS les tests du routeur rejoués verts. Leçon : rejouer tout le routeur avant de fusionner.
+
 ## 2026-10-17 (soir) — PREMIER PASSAGE RÉEL « BEE PARTOUT + TÂCHES » : WIDGET ABSENT SUR 27 APPS / 29 → MARQUEUR POSÉ PAR LE DOMAINE
 
 **Mesuré** (run 39037501793) : widget présent seulement sur javis et l'arbre (chargement direct) ; ailleurs ABSENT sur appareil neuf (le marqueur `kdmc_k` n'était posé que par le widget lui-même). **Corrigé** : `worker.js` pose le marqueur à `/__admin/login`, `/__admin/grant` et `/__sso/whoami` (admin prouvé seulement) ; `bee-partout.test.mjs` 48/0, 4 sabotages rouges. **Aussi mesuré (tâches)** : météo, calcul, heure, conversion, fait du monde répondent juste (IA : qwen, outils non listés → le robot exige désormais l'OUTIL utilisé) ; refus à examiner : « arbre (privé) » et « lire une page du domaine » (« je ne peux pas accéder directement »), et « ce qu'elle sait faire » (faux refus ?). Parité Apex : voir la matrice (Apex ≈ 200 outils, Bee ≈ 33). À relancer après déploiement.

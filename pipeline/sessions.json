@@ -2429,6 +2429,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "javis-bee-marqueur-test": {
+      "titre": "Javis / Bee — test cookies admin",
+      "branche": "claude/bee-marqueur-test",
+      "sujet": "admin-partout : compter les cookies de session",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

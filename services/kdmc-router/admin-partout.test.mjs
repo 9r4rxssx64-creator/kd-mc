@@ -37,7 +37,7 @@ console.log('\nAdmin reconnu par n\'importe quel chemin\n');
     '5. Kevin qui tape son nom + un code de compte : session faible, AUCUN code enregistré, et le portail est prévenu (admin_requis) → il propose le code admin', JSON.stringify(j).slice(0, 120)); }
 { const deja = signe('kdmc_admin', 1);
   const r = await post('kd-mc.com', '/__admin/login', { code: '424242' }, { authorization: 'Bearer ' + deja }); const j = await r.json();
-  ok(j.ok === true && j.token === deja && cookies(r).length === 1, '6. une session vérifiée déjà présente est conservée (pas de second cookie de session)', String(cookies(r).length)); }
+  ok(j.ok === true && j.token === deja && cookies(r).filter((c) => /^kdmc_sso=/.test(c)).length === 0 && cookies(r).filter((c) => /^kdmc_admin=/.test(c)).length === 1, '6. une session vérifiée déjà présente est conservée (pas de second cookie de SESSION ; le cookie du laissez-passer et le marqueur « c\'est Kevin » suivent)', cookies(r).map((c) => c.split('=')[0]).join(','));  /* 17.10 : le marqueur kdmc_k (Bee partout) s'ajoute — ce n'est pas une session */ }
 /* 7-9. LE GRANT SANS CODE : « moi tout s'ouvre automatiquement » */
 { const r = await mod.fetch(new Request('https://cmcteams.kd-mc.com/__admin/grant', { headers: { authorization: 'Bearer ' + signe('kdmc_admin', 1) } }), env, { waitUntil() {} });
   const j = await r.json(); const c = cookies(r).join('|');

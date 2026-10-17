@@ -299,6 +299,7 @@
   "tests/verify-lingua-reactivite.mjs",
   "tests/verify-listes-repliees.mjs",
   "tests/verify-localisation-une-fois.mjs",
+  "tests/verify-maj-champ-vide.mjs",
   "tests/verify-maj-forcee-reelle.mjs",
   "tests/verify-maj-partout.mjs",
   "tests/verify-marionnette.mjs",

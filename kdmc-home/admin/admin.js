@@ -220,14 +220,25 @@
      déjà dans apps[host].last, elle n'était juste pas affichée). */
   function appsDetail(apps) {
     if (!apps) return '—';
-    var keys = Object.keys(apps).sort(function (x, y) { return (apps[y].last || 0) - (apps[x].last || 0); });
-    if (!keys.length) return '—';
-    return keys.map(function (h) {
+    /* 17.10 (capture de Kevin : « CMCteams light » ×2, « A Cüjina de Mùnegu » ×3 dans la même fiche) : une ligne par APP (les adresses
+       d'une même app sont regroupées, connexions additionnées, dernière visite gardée) ; les 5 plus récentes à l'écran, le reste replié. */
+    var parNom = {}, ordre = [];
+    Object.keys(apps).forEach(function (h) {
+      var n = appName(h), a = apps[h] || {};
+      if (!parNom[n]) { parNom[n] = { h: h, n: n, s: 0, last: 0 }; ordre.push(n); }
+      var g = parNom[n]; g.s += (a.sessions || 1);
+      if ((a.last || 0) > g.last) { g.last = a.last || 0; g.h = h; }
+    });
+    var L = ordre.map(function (n) { return parNom[n]; }).sort(function (x, y) { return y.last - x.last; });
+    if (!L.length) return '—';
+    var ligne = function (g) {
       /* 16.10 (Kevin : « toutes infos cliquables ») : le nom de l'app ouvre l'app */
-      var nom = /^[a-z0-9-]+(\.[a-z0-9-]+)*\.kd-mc\.com$|^kd-mc\.com$/.test(String(h)) ? '<a href="https://' + esc(h) + '/" target="_blank" rel="noopener">' + esc(appName(h)) + '</a>' : esc(appName(h));
-      return nom + ' ×' + (apps[h].sessions || 1)
-        + ' <span style="color:var(--subtle)">— vu ' + esc(ago(apps[h].last)) + '</span>';
-    }).join('<br>');
+      var nom = /^[a-z0-9-]+(\.[a-z0-9-]+)*\.kd-mc\.com$|^kd-mc\.com$/.test(String(g.h)) ? '<a href="https://' + esc(g.h) + '/" target="_blank" rel="noopener">' + esc(g.n) + '</a>' : esc(g.n);
+      return nom + ' ×' + g.s + ' <small class="vu">· ' + esc(ago(g.last)) + '</small>';
+    };
+    var h = L.slice(0, 5).map(ligne).join('<br>');
+    if (L.length > 5) h += '<details class="plus"><summary>+ ' + (L.length - 5) + ' autre' + (L.length - 5 > 1 ? 's' : '') + ' site' + (L.length - 5 > 1 ? 's' : '') + '</summary>' + L.slice(5).map(ligne).join('<br>') + '</details>';
+    return h;
   }
   /* Renseignements donnés par la personne à sa 1re connexion (light / CMCteams — Kevin
      2026-09-26). Rangés dans SON dossier du domaine, lisibles ici seulement. */

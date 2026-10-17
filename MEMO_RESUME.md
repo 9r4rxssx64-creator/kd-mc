@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — Capture de Kevin : admin restée en **v2.5.0** (fiche dépliée) alors que le domaine servait la v2.7.1
+- Mesuré : `/admin/` sert v2.7.1 (curl + vrai navigateur) ; dans Chromium, une page v2.5.0 passe seule en v2.7.1 (`[kdmc-auto-maj] admin v2.5.0 → v2.7.1`). Sur l'iPhone, la mise à jour ne partait pas.
+- Cause trouvée dans `tools/shared/version-badge-pwa.js` (partagé par TOUTES les apps) : un champ resté SÉLECTIONNÉ mais VIDE (la recherche touchée une fois) bloquait la mise à jour pour toujours ; et une page rendue par la mémoire de Safari ne relançait pas toujours la vérification. Correctif : seule une saisie réelle (champ avec du texte) bloque ; `pageshow` (page en mémoire) et `online` relancent la vérification. Garde `test:maj-champ-vide` (vrai Chromium, sabotage prouvé : l'ancien garde → rouge).
+- **Admin v2.7.2** : « Sites utilisés » d'une fiche ouverte = une ligne par APP (adresses d'une même app regroupées : plus de « CMCteams light » ×2 ni « A Cüjina » ×3), 5 à l'écran, le reste dans « + N autres sites », « vu il y a… » en minuscules. Garde `test:listes-repliees` cas 1c.
+
+
 ## 2026-10-17 — « Fiches fermées + lisible PARTOUT » et « connecté réel » automatique dans CHAQUE session
 - Kevin a redit : « Dis à toutes tes branches de se connecter réel partout… Ferme les fiches par défaut… plus lisible, visible pour tout partout ».
 - **Réel automatique** : `.claude/hooks/session-start.sh` lance `node tools/smoke/reel.mjs --confiance` → dès le démarrage, Chromium fait confiance à l'autorité du proxy (testé : certificat retiré → le hook le remet). `npm run reel` et tout Playwright sur kd-mc.com marchent sans rien découvrir. Garde `test:reel-outil` 9/0 (cas 6).

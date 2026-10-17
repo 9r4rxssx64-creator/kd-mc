@@ -2346,6 +2346,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "PR fusionnée le 17.10"
+    },
+    "javis-bee-repere": {
+      "titre": "Routeur — repères de notification uniques",
+      "branche": "claude/repere-notif",
+      "sujet": "Deux messages dans la même ms partageaient un repère (déploiement rouge)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

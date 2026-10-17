@@ -1,4 +1,4 @@
-# 🧭 ÉTAT DU MOMENT — la vérité d'aujourd'hui, en une page (MAJ : 17.10.2026, 13h05 UTC)
+# 🧭 ÉTAT DU MOMENT — la vérité d'aujourd'hui, en une page (MAJ : 17.10.2026, 14h UTC)
 
 > **LIS CECI EN PREMIER, quelle que soit ta branche et sa date.** Cette page est servie depuis
 > `main` à chaque démarrage ou réveil de session (hook `.claude/hooks/etat-du-moment.sh`) :

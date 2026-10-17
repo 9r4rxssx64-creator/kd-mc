@@ -2072,7 +2072,7 @@ async function handleDemande(request, env, host) {
     const idx = JSON.parse((await env.ACCOUNTS.get('demandes:idx')) || '[]'); idx.push(cle);
     await env.ACCOUNTS.put('demandes:idx', JSON.stringify(idx.slice(-500)));
   }
-  await notifyPush(env, '🗓️ Rotaplan — demande de démo', d.prenom + ' ' + d.nom + ' · ' + d.etablissement + ' · ' + d.email, { tag: 'rotaplan-demo-' + Date.now(), url: URL_MESSAGES });
+  await notifyPush(env, '🗓️ Rotaplan — demande de démo', d.prenom + ' ' + d.nom + ' · ' + d.etablissement + ' · ' + d.email, { tag: 'rotaplan-demo-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), url: URL_MESSAGES });
   return pageDemande('Demande bien reçue', 'Merci ' + d.prenom + '. On te répond sous 24 h ouvrées, à ' + d.email + '.', true);
 }
 function estUnePage(request) {
@@ -2974,7 +2974,7 @@ async function handleNotifyKevin(request, env) {
         await env.ACCOUNTS.put('push:kevin_last', String(Date.now()));
       } catch { /* fail-open */ }
     }
-    await notifyPush(env, '💬 ' + name, text, { tag: 'cmc-msg-' + Date.now(), url: URL_MESSAGES });
+    await notifyPush(env, '💬 ' + name, text, { tag: 'cmc-msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), url: URL_MESSAGES });
     return J({ ok: true });
   } catch { return J({ ok: false }, 200); }
 }

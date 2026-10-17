@@ -43,9 +43,11 @@ ok(new Set(pushes.map((p) => p.tag)).size === 2, '1b. repères DIFFÉRENTS : la 
 ok(/chez-lolo/.test(pushes[0].title) && /Commande 12/.test(pushes[0].body), '1c. la notification dit de quelle app et ce qui est écrit');
 /* 2. message d'un employé CMCteams */
 pushes.length = 0;
+const dateReelle = Date.now; Date.now = () => 1700000000000;   // l'horloge GELÉE : deux messages dans la même milliseconde (arrivé en CI le 17.10) ne doivent jamais partager un repère
 await post('cmcteams.kd-mc.com', '/__notify-kevin', { name: 'Jean DUPONT', text: 'Je peux échanger samedi ?' }, '198.51.100.3');
 kv.delete('push:kevin_last');   // le frein anti-rafale de 12 s est testé ailleurs : ici deux employés différents
 await post('cmcteams.kd-mc.com', '/__notify-kevin', { name: 'Sophie MARTIN', text: 'Bonjour' }, '198.51.100.4');
+Date.now = dateReelle;
 ok(pushes.length === 2 && pushes.every((p) => p.url === INBOX) && new Set(pushes.map((p) => p.tag)).size === 2, '2. un message d\'employé CMCteams : repère unique, ouvre la boîte (réponse directe)', pushes);
 /* 3. câblage : plus aucun repère commun ni lien vers l'app d'origine pour les messages */
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');

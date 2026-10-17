@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 — le déploiement du routeur rouge : repères de notification identiques dans la même milliseconde
+
+**Cause** (pas un flake) : `cmc-msg-` + `Date.now()` ; deux messages d'employés dans la même ms → même repère → la 2ᵉ notification remplace la 1ʳᵉ sur l'iPhone. **Corrigé** (`worker.js`, aussi `rotaplan-demo-`) : suffixe aléatoire ; `notifications-messages.test.mjs` gèle l'horloge, rougit sur l'ancien code (12/1), vert corrigé (13/0). **Non vérifié** : le déploiement après correction (à relancer par le dépôt public).
+
 ## 2026-10-17 (midi) — PREMIER PASSAGE RÉEL DE « BEE COMME KEVIN » : IL A REPRODUIT « JE N'AI PAS ACCÈS » ET LA CAUSE EST CORRIGÉE
 
 **Mesuré** (run 39034152527, vrai domaine, code admin du coffre, iPhone 13) : 🩺 Bee en état de travailler (IA à outils : groq, mistral ; arbre publié : 334 personnes ; nuage répond) ; MAIS « montre-moi l'arbre de Yann Lorenzi » → « Je n'ai pas accès… », pas de bouton, « va sur apex chat » → « je ne peux pas ouvrir d'applications ». **Cause** : l'IA gratuite n'appelle pas toujours `ouvrir`, et la conférence reformulait en refus. **Corrigé** : `intentionOuvrir` (demande nette comprise par le domaine, sans IA, provider `domaine`), `corrigerTexte` (remplace « pas accès » quand un lien est prêt), pas de conférence quand un lien est prêt ; test 86/0, 4 sabotages rouges. **Aussi mesuré** : l'arbre exige le code famille à ce robot (session code, pas Face ID : voulu) → l'étape « arbre centré sur Yann » est un ⚠️ informatif, à vérifier sur l'iPhone de Kevin. **À relancer après déploiement** : `verif-live-bee.yml`.

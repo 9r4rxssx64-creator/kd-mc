@@ -3129,6 +3129,10 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   let structural = isNew;
   if (name && name !== acc.name) { acc.name = name; structural = true; }
   if (cgu && !acc.cgu_at) { acc.cgu_at = now; structural = true; }
+  /* ACCORD RÉEL (17.10, « en un clic, une seule fois, valable partout ») : `cgu:true` seul ne prouve rien — des apps l'ont longtemps envoyé en dur,
+     pour une personne qui n'avait rien coché. Seule une app qui a montré UNE case et vu la personne la cocher ajoute `cgu_clic:true` : la version
+     COURANTE des conditions est alors gravée (cgu_v), et plus aucune app, ni la porte du domaine, ne la redemande. */
+  if (opts && opts.cguClic && (!acc.cgu_at || (acc.cgu_v || 1) < CGU_VERSION)) { acc.cgu_at = acc.cgu_at || now; acc.cgu_v = CGU_VERSION; structural = true; }
   acc.last_seen = now;
   acc.last_ip_hash = ipHash;
   acc.last_place = place;
@@ -3581,6 +3585,7 @@ async function handleSso(request, url, env) {
     const uid = String(b.uid || '').slice(0, 80).trim();
     const name = String(b.name || '').slice(0, 80).trim();
     const cgu = !!b.cgu;
+    const cguClic = cgu && b.cgu_clic === true;   // accord RÉEL (case cochée devant la personne) — voir enrich()
     /* E-MAIL DE CONFIRMATION (17.10) : donné à l'inscription, il sert UNE fois — le mail « Confirme ton compte » qui ouvre le compte sans Kevin. */
     const emailInscription = emailValide(b.email) ? normaliseEmail(b.email) : '';
     let mailEnvoye = '';
@@ -3764,7 +3769,7 @@ async function handleSso(request, url, env) {
         }
       }
     }
-    await enrich(env, request, uid, name, cgu, undefined, { origine });
+    await enrich(env, request, uid, name, cgu, undefined, { origine, cguClic });
     if (telephoneNouveau) {   /* le numéro rejoint la fiche du domaine : toutes les apps le lisent (/__sso/fiche) au lieu de le redemander */
       try {
         const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));

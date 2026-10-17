@@ -1,5 +1,5 @@
 /* KDMC Shops — Service Worker Pawsome. Cache nommé par boutique + nettoyage scopé. */
-var CACHE='kdmc-pawsome-v1.0.4';
+var CACHE='kdmc-pawsome-v1.0.5';
 var PRE=['./','/CMCteams/shops/legal/cgv.html'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRE)}));self.skipWaiting()});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE&&(k.indexOf('kdmc-pawsome-')===0||k==='kdmc-v1')}).map(function(k){return caches.delete(k)}))}));self.clients.claim()});

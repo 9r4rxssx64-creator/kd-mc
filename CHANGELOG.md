@@ -4,6 +4,15 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.980 + light v1.106 · Apex Chat v1.1.319 · Lingua v2.142.3 · Créa Studio v9.18.5 · boutiques (2026-10-17 — « toutes les conditions acceptées EN UN CLIC, en restant vague »)
+
+- **Règle de Kevin** (CLAUDE-HISTOIRE.md § « en un clic, en restant vague ») : UNE case « J'accepte les conditions. » (portail kdmc-home) ou la porte du routeur, une seule fois par compte, valable partout ; aucune app ne redemande un accord, une question déjà répondue ou une autorisation déjà donnée.
+- **Routeur** : `/__sso/issue` grave la VERSION courante des conditions (`cgu_v`) seulement quand l'app dit `cgu_clic:true` (case réellement cochée) ; un `cgu:true` seul ne la grave plus. Porte (`boite-bouton.js`) : une case au libellé court, le texte complet derrière le lien « conditions ». Test `cgu.test.mjs` 9/9.
+- **Apex Chat v1.1.319** : plus de case (`auth-cgu`, `onb-cgu`) ni de phrase « tu acceptes nos conditions » ; l'accord du domaine vaut accord (trace serveur `/api/cgu/accept` posée toute seule, une fois) ; UN seul écran d'autorisations ; la position est facultative (CGU, charte, bandeau mis d'accord). 148 fichiers / 2 139 tests verts.
+- **CMCteams v9.980** : la déclaration au domaine n'invente plus `cgu:true` ; l'inscription reprend e-mail / téléphone / matricule / nom de la fiche du domaine (`passerelle.js`, copie identique dans la light) — le matricule SBM et le nom du planning restent exigés.
+- **Light v1.106** : la case des conditions se masque d'après `whoami` (cgu:true) et ne prétend l'accord qu'après un vrai clic (`cgu_clic`). **Lingua v2.142.3** : téléphone non redemandé quand la fiche l'a (`tel_pose`). **Créa Studio v9.18.5** : plus de `cgu:true` en dur. **Boutiques** (digital-vault, ecocraft, pawsome, tech-hub 1.0.5 ; La Détente 1.53.26) : la bannière « Tout accepter » s'efface quand le domaine a l'accord.
+- Garde `test:cgu-un-clic` (dans `test:ci`) : 12 contrôles, 9 sabotages attrapés. Non traité : le formulaire d'inscription propre d'Apex AI v13 (2 cases) — dette plafonnée dans la garde.
+
 ## CMCteams v9.979 + light v1.105 (2026-10-17 — « Je veux voir les connectés des apps ouvertes avec leurs positions, avec historique, sur la map en live et historique »)
 
 - **Carte à deux onglets** (`tools/shared/lieu-live.js`, copie exacte dans la light) : **🟢 En direct** (ronds qui pulsent pour ceux dont l'app est ouverte, point vert au casino / orange dehors / gris si ancien, **connectés SANS position listés 📵**, toucher un point → « 🕘 Son historique ») et **🕘 Historique** (une personne + un jour : trait, curseur de temps, ▶ Rejouer, résumé heures / positions / km / temps sur site, entrées et sorties du casino à l'heure près ; « 👥 Tous ce jour » ; « 🗑 Effacer son historique »).

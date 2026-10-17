@@ -468,11 +468,20 @@ var SHOP_CONSENT_V="2026-06";
 function shopConsentAcceptAll(el){try{localStorage.setItem("kdmc_cookie_ok","1");localStorage.setItem(STORE_ID+"_consent",JSON.stringify({v:SHOP_CONSENT_V,ts:Date.now(),accepted:true,scope:["cgv","confidentialite","mentions","cookies"]}));if(el){var bb=el.closest(".cookie");if(bb)bb.remove();}if(typeof toast==="function")toast("✅ Merci — tout est accepté !");}catch(_){}}
 function shopConsentRefuse(el){try{localStorage.setItem(STORE_ID+"_consent",JSON.stringify({v:SHOP_CONSENT_V,ts:Date.now(),accepted:false}));if(el){var bb=el.closest(".cookie");if(bb)bb.remove();}}catch(_){}}
 (function(){var c=null;try{c=JSON.parse(localStorage.getItem(STORE_ID+"_consent")||"null")}catch(_){}if(c&&c.v===SHOP_CONSENT_V)return;var ck=document.createElement("div");ck.className="cookie";ck.innerHTML='<div style="flex:1;min-width:220px"><b style="color:var(--text)">Cookies &amp; conditions</b><div style="margin-top:3px">En cliquant « Tout accepter », vous acceptez nos <a href="../legal/cgv.html">CGV</a>, notre <a href="../legal/confidentialite.html">politique de confidentialité</a>, les <a href="../legal/mentions.html">mentions légales</a> et les cookies nécessaires au bon fonctionnement.</div></div><div class="cookie-btns"><button class="btn-accept" onclick="shopConsentAcceptAll(this)">✅ Tout accepter</button><button class="btn-refuse" onclick="shopConsentRefuse(this)">Refuser</button></div>';document.body.appendChild(ck);})();
+/* 17.10 (Kevin : « toutes les conditions en UN clic, une seule fois, valables partout ») : si le DOMAINE a déjà l'accord (whoami cgu:true), pas de bannière « Tout accepter ».
+   (Les CGV d'une COMMANDE restent cochées à chaque commande : acte distinct.) Même geste que chez-lolo. */
+(function(){try{var t="";try{t=localStorage.getItem("kdmc_sso_token")||""}catch(_){}var h={};if(t)h.Authorization="Bearer "+t;
+ fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:h}).then(function(r){return r.ok?r.json():null}).then(function(j){
+  if(!(j&&j.ok&&j.cgu===true))return;
+  var c0=null;try{c0=JSON.parse(localStorage.getItem(STORE_ID+"_consent")||"null")}catch(_){}
+  if(!(c0&&c0.v===SHOP_CONSENT_V)){localStorage.setItem("kdmc_cookie_ok","1");localStorage.setItem(STORE_ID+"_consent",JSON.stringify({v:SHOP_CONSENT_V,ts:Date.now(),accepted:true,via:"domaine",scope:["cgv","confidentialite","mentions","cookies"]}));}
+  var bk=document.querySelector(".cookie");if(bk&&bk.parentNode)bk.parentNode.removeChild(bk);
+ }).catch(function(){});}catch(_){}})();
 </script>
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="ekdmc-pawsome"
-        data-version="v1.0.4"
+        data-version="v1.0.5"
         data-color="#e8b830"
         defer></script>
 

@@ -1,6 +1,6 @@
 // Lot D (finitions de l'ultra-audit, 15.10.2026) — côté APP : la VRAIE page (index.html), définitions
 // extraites, jamais recopiées. Chaque bloc échoue si le correctif est retiré (sabotage via CLIENT_INDEX_PATH).
-//  Item 1  position OBLIGATOIRE (décision de Kevin) : refusée sur l'iPhone → bandeau permanent, non bloquant,
+//  Item 1  position FACULTATIVE (17.10, conditions du domaine) : refusée sur l'iPhone → bandeau permanent, non bloquant,
 //          « Comment faire » (44 px) qui explique Réglages → Safari → Position. Jamais d'écran bloquant.
 //  Item 2  clavier iPhone : la page suit la fenêtre visible (visualViewport) ; les derniers messages restent en bas.
 //  Item 3  iPhone dans Safari : le guide « écran d'accueil » AVANT le SMS (passable, mémorisé).
@@ -16,7 +16,7 @@ const FN_END = '\n}\n';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ───────────────────────────────────────────────────────────────────────────── Item 1
-describe('Item 1 — position obligatoire : bandeau permanent si l\'iPhone la refuse, jamais de blocage', () => {
+describe('Item 1 — position facultative : bandeau permanent si l\'iPhone la refuse, jamais de blocage', () => {
   let K;
   function setup(user = { id: 'u1' }) {
     document.body.innerHTML = '<header id="topbar"></header><main id="app"><p id="contenu">Chats</p></main><div id="modal-host"></div>';
@@ -37,7 +37,7 @@ describe('Item 1 — position obligatoire : bandeau permanent si l\'iPhone la re
     expect(b).not.toBeNull();
     expect(b.nextElementSibling.id).toBe('app');           // dans le flux, pas par-dessus l'app
     expect(b.textContent).toMatch(/Position coupée/);
-    expect(b.textContent).toMatch(/obligatoire/);
+    expect(b.textContent).toMatch(/facultative/);
     const btn = b.querySelector('button');
     expect(btn.textContent).toBe('Comment faire');
     // Pas de blocage : aucune fenêtre ouverte, l'app reste là et utilisable.

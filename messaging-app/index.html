@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.318",
+  "softwareVersion": "v1.1.319",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -421,7 +421,7 @@ html.chat-view.kb-open #app.chat-mode #smart-reply-chips{display:none!important}
 .toast.info{border-left:3px solid var(--ax-blue)}
 
 /* ========== Update banner ========== */
-/* v1.1.306 (lot D) — position obligatoire mais jamais bloquante : bandeau permanent, dans le flux
+/* v1.1.306 (lot D) — position facultative (17.10) et jamais bloquante : bandeau permanent, dans le flux
    (ne recouvre rien), texte 14 px, bouton 44 px. Masqué clavier ouvert pour garder la place à la saisie. */
 #geo-banner{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#3a2a06;color:#ffe9b0;
   border-bottom:1px solid var(--ax-gold);font-size:14px;line-height:1.35;flex:0 0 auto}
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.318';
+const __APEX_CHAT_VERSION__ = 'v1.1.319';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -806,11 +806,11 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.318" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.318</div>
+  <div id="splash-version" data-ver="v1.1.319" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.319</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
-  <p class="splash-cgu">🔒 Messagerie privée — Tes échanges sont chiffrés en transit (HTTPS).<br>En remplissant les champs, tu acceptes nos <a href="./cgu.html" target="_blank">conditions</a>.</p>
+  <p class="splash-cgu">🔒 Messagerie privée — Tes échanges sont chiffrés en transit (HTTPS).</p>
 </div>
 
 <div id="update-banner" class="update-banner h">
@@ -820,7 +820,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.318</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.319</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1290,11 +1290,25 @@ function toast(message, type='info', duration=3000){
 
 K.toast = toast;
 
-// Audit 17/09/2026 : version des CGU/charte. Un changement de version redemande l'accord
-// (avant : le drapeau local, une fois posé, ne redemandait jamais rien).
+// 17.10 (Kevin : « toutes les conditions en UN clic, au portail du domaine ; aucune app ne redemande ») :
+// Apex Chat n'a PLUS de case ni de phrase de conditions. L'accord du domaine (whoami cgu:true) est l'accord.
+// Ce drapeau local dit seulement « la trace serveur (RGPD) de cet accord est déjà posée » — jamais une question.
 K.CGU_VERSION = '2026-09-17';
 K._cguAccepted = function(){
   try{ const a = JSON.parse(localStorage.getItem('apex_chat_cgu_v1') || 'null'); return !!(a && a.cgu === K.CGU_VERSION); }catch(_){ return false; }
+};
+// Trace serveur de l'accord du domaine (table cgu_acceptances, export RGPD) : posée UNE fois, en silence, sans rien montrer.
+K._cguTrace = function(via){
+  try{
+    if(K._cguAccepted()) return;
+    const a = { accepted_at: Date.now(), version: __APEX_CHAT_VERSION__, cgu: K.CGU_VERSION, via: via || 'domaine', implicit: true };
+    localStorage.setItem('apex_chat_cgu_v1', JSON.stringify(a));
+    const phone = (K.user && K.user.phone) ? String(K.user.phone) : '';
+    fetch((window.__APEX_CHAT_API_URL__ || 'https://apex-chat-api.9r4rxssx64.workers.dev') + '/api/cgu/accept', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...a, ua: navigator.userAgent.slice(0, 200), phone })
+    }).catch(()=>{});
+  }catch(_e){ try{ _safeCatch('silent', _e); }catch(__){} }
 };
 
 // Audit 17/09/2026 : jamais « Failed to fetch » à l'écran (règle « langage simple »).
@@ -1457,13 +1471,16 @@ K._kdmcBounceToLogin = function(manual){
 // TOUTES les autorisations (notifications, caméra+micro pour appels, position),
 // affichée UNE SEULE FOIS, jamais redemandée (flag apex_chat_perms_v1).
 K._ensurePermsOnce = function(){
-  try{ if(localStorage.getItem('apex_chat_perms_v1')) return; }catch(_){ return; }
+  // 17.10 : UN SEUL écran d'autorisations (avant : celui-ci à 1,5 s PUIS « Activer les autorisations » après la fiche).
+  // Celui-ci ne s'ouvre plus que si l'autre n'a pas pris la main ; les deux partagent les mêmes drapeaux.
+  try{ if(localStorage.getItem('apex_chat_perms_v1') || localStorage.getItem('apex_chat_perms_bulk_done_v1') || K._permsEcran) return; }catch(_){ return; }
   setTimeout(function(){
     try{
-      if(localStorage.getItem('apex_chat_perms_v1')) return;
+      if(localStorage.getItem('apex_chat_perms_v1') || localStorage.getItem('apex_chat_perms_bulk_done_v1') || K._permsEcran) return;
       if(typeof K._showModal !== 'function'){ K._grantPerms(); return; }
+      K._permsEcran = true;
       K._showModal('🔓 Autorisations', `
-        <p style="color:var(--ax-text-2);line-height:1.6">Apex Chat a besoin de ton accord pour les <b>appels</b> (caméra + micro), <b>photos</b>, <b>position</b> et <b>notifications</b>. Tes échanges restent <b>privés et chiffrés en transit (HTTPS)</b>. La <b>position est obligatoire</b> pour utiliser l'app (l'administrateur la voit sur une carte, elle est effacée après 30 jours) — on ne te le redemandera <b>jamais</b>.</p>
+        <p style="color:var(--ax-text-2);line-height:1.6">Apex Chat a besoin de ton accord pour les <b>appels</b> (caméra + micro), <b>photos</b>, <b>position</b> et <b>notifications</b>. Tes échanges restent <b>privés et chiffrés en transit (HTTPS)</b>. La <b>position est facultative</b> (si tu la partages, l'administrateur la voit sur une carte, elle est effacée après 30 jours) — on ne te le redemandera <b>jamais</b>.</p>
         <button class="btn btn-block" style="margin-top:14px" onclick="K._grantPerms()">✅ Tout autoriser</button>
       `, { noClose: true });
     }catch(_e){ try{ _safeCatch('silent', _e); }catch(__){} }
@@ -1487,7 +1504,7 @@ K._grantPerms = async function(){
       });
     }
   }catch(_){ res.geo = 'err'; }
-  try{ localStorage.setItem('apex_chat_perms_v1', JSON.stringify({ ts: Date.now(), granted: true, res: res })); }catch(_){}
+  try{ localStorage.setItem('apex_chat_perms_v1', JSON.stringify({ ts: Date.now(), granted: true, res: res })); localStorage.setItem('apex_chat_perms_bulk_done_v1', 'true'); }catch(_){}
   try{ K._closeModal && K._closeModal(); }catch(_){}
   try{ if(typeof toast === 'function') toast('✅ Autorisations enregistrées', 'ok', 1500); }catch(_){}
 };
@@ -1533,9 +1550,7 @@ K._domaineMarque = function(){
   try{
     var d = K._domaine;
     if(!K._domaineReconnu() || d.cgu !== true) return;
-    if(!K._cguAccepted()){
-      localStorage.setItem('apex_chat_cgu_v1', JSON.stringify({ accepted_at: Date.now(), version: __APEX_CHAT_VERSION__, cgu: K.CGU_VERSION, via: 'domaine' }));
-    }
+    K._cguTrace('domaine');   // l'accord du domaine EST l'accord : trace serveur toute seule, rien à l'écran
     if(!localStorage.getItem('apex_chat_perms_v1')){
       localStorage.setItem('apex_chat_perms_v1', JSON.stringify({ ts: Date.now(), granted: false, via: 'domaine' }));
     }
@@ -1624,9 +1639,9 @@ K.login = async function(user, token){
     if(location.hostname.indexOf('kd-mc.com') >= 0 && !(user && user.kdmc_uid)){   // v1.1.300 : venue du domaine → il nous connaît déjà (ré-émettre rétrograderait son code prouvé)
       var _kdmcUid = user.id || user.uid || ('apex-chat:' + (user.phone || user.pseudo || ''));
       var _kdmcName = (user.real_name || ((user.first_name || user.pseudo || 'Utilisateur') + ' ' + (user.last_name || ''))).trim();
-      /* Le domaine exige, pour un NOUVEAU compte, prénom + nom + conditions acceptées (27.09) :
-         les conditions sont cochées dans CETTE app (#auth-cgu, obligatoire) → on le transmet. */
-      var _kdmcCgu = false; try { _kdmcCgu = !!localStorage.getItem('apex_chat_cgu_v1'); } catch(_){}
+      /* 17.10 : cette app ne montre plus aucune case — elle ne PRÉTEND donc jamais l'accord (cgu:false). Le domaine, lui, le sait
+         (fiche) et la porte du domaine le demande UNE fois, en un clic. */
+      var _kdmcCgu = false;
       fetch('/__sso/issue', { method:'POST', credentials:'include', headers:{ 'content-type':'application/json' },
         body: JSON.stringify({ uid: String(_kdmcUid), name: _kdmcName, cgu: _kdmcCgu, app: 'apex-chat' }) }).catch(function(){});
     }
@@ -1726,7 +1741,7 @@ K._startHeartbeat = function(){
    position toutes les 3 min et à chaque retour dans l'app, sans rien garder. Désormais : jamais de demande automatique ;
    la position ne sert QUE si l'iPhone l'a déjà accordée (la seule demande est l'écran « Tout autoriser », une fois). */
 K._geoOk = false;
-// v1.1.306 (lot D, décision de Kevin : la position est OBLIGATOIRE) — si l'iPhone dit que la position est
+// v1.1.306 (lot D) puis 17.10 (conditions du domaine : la position est FACULTATIVE) — si l'iPhone dit que la position est
 // refusée (au démarrage, plus tard dans les Réglages, ou à la demande), un bandeau permanent explique comment
 // la remettre. On ne bloque JAMAIS la personne : l'app reste utilisable.
 K._geoDenied = false;
@@ -1743,7 +1758,7 @@ K._renderGeoBanner = function(){
   el = document.createElement('div');
   el.id = 'geo-banner';
   el.setAttribute('role', 'status');
-  el.innerHTML = '<span>📍 <b>Position coupée.</b> Elle est obligatoire pour Apex Chat : remets-la dans les Réglages.</span>'
+  el.innerHTML = '<span>📍 <b>Position coupée.</b> Elle est facultative : remets-la dans les Réglages si tu veux la partager.</span>'
     + '<button type="button" onclick="K._geoHelp()">Comment faire</button>';
   const app = document.getElementById('app');
   if(app && app.parentNode) app.parentNode.insertBefore(el, app); else document.body.appendChild(el);
@@ -8658,14 +8673,9 @@ function _kdmcPrefillName(){
         try{ localStorage.setItem('kdmc_domain_seen','1'); }catch(_){} // whoami a reconnu (cookie/Bearer) → device connu du domaine
         var nm=document.getElementById('auth-name');
         if(nm && !nm.value.trim()){ nm.value=j.name; }
-        // v1.1.300 : reconnu par le domaine → conditions déjà acceptées = case masquée ; et on entre SANS SMS.
+        // reconnu par le domaine : aucune case à l'écran (jamais, dans cette app) ; et on entre SANS SMS.
         try{
           K._domaine=j; K._domaineLu=Date.now(); K._domaineMarque();
-          if(K._cguAccepted()){
-            var row=document.getElementById('auth-cgu-row'); if(row) row.style.display='none';
-            var cb=document.getElementById('auth-cgu'); if(cb) cb.checked=true;
-            var bt=document.getElementById('btn-auth-phone'); if(bt){ bt.disabled=false; bt.style.opacity=''; bt.style.pointerEvents=''; }
-          }
           if(K._domaineReconnu()) K._domaineEntrer();
         }catch(_){}
       }).catch(function(){});
@@ -8721,10 +8731,6 @@ function renderAuthStep(){
       <label class="label" style="margin-top:14px">Ton prénom + nom <span style="color:#e63946">*</span></label>
       <input id="auth-name" type="text" class="input" placeholder="Ex: Marc Dupont (ou Dupont Marc)" autocomplete="name">
       <p style="font-size:.72em;color:var(--ax-text-3);margin-top:4px">🔒 Les deux sont obligatoires (n'importe quel ordre, casse libre)</p>
-      <label id="auth-cgu-row" style="display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:.8em;color:var(--ax-text-2);cursor:pointer;line-height:1.45">
-        <input id="auth-cgu" type="checkbox" style="margin-top:2px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--ax-gold)">
-        <span>J'accepte les <a href="./cgu.html" target="_blank" style="color:var(--ax-gold)">conditions d'utilisation</a> et la politique de confidentialité.</span>
-      </label>
       <button id="btn-auth-phone" type="button" class="btn btn-block" style="margin-top:14px">
         📱 Recevoir le code SMS
       </button>
@@ -8760,45 +8766,9 @@ function renderAuthStep(){
         out.textContent='🔍 Diag kd-mc — jeton:'+(tok?'oui':'non')+' · domaine vu:'+seen+' · '+who;
         out.style.whiteSpace='pre-wrap'; out.style.textAlign='left';
       }catch(_e){} })();
-      // v1.1.206 (Kevin "pas de plus tard, ou accepté ou pas de connexion") — CGU
-      // en GATE EXPLICITE : case « J'accepte » OBLIGATOIRE, le bouton SMS reste
-      // DÉSACTIVÉ tant qu'elle n'est pas cochée → aucune connexion sans acceptation.
-      // Demandé 1 fois (flag apex_chat_cgu_v1) : si déjà accepté, pré-coché + débloqué.
-      const acceptCgu = (explicit) => {
-        try{
-          if(!K._cguAccepted()){
-            const accept = { accepted_at: Date.now(), version: __APEX_CHAT_VERSION__, cgu: K.CGU_VERSION, implicit: !explicit, ua: navigator.userAgent.slice(0, 200) };
-            localStorage.setItem('apex_chat_cgu_v1', JSON.stringify(accept));
-            // Push backend (RGPD trace immutable) — best-effort
-            const phone = (document.getElementById('auth-phone')?.value || '').replace(/[^\d+]/g, '');
-            fetch((window.__APEX_CHAT_API_URL__ || 'https://apex-chat-api.9r4rxssx64.workers.dev') + '/api/cgu/accept', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...accept, phone })
-            }).catch(_=>{});
-          }
-        }catch(_e){_safeCatch('silent',_e)}
-      };
-      const cguBox = $('#auth-cgu');
-      const cguDone = K._cguAccepted();
-      if(cguDone){ const _row = $('#auth-cgu-row'); if(_row) _row.style.display = 'none'; }   // v1.1.300 : déjà acceptées (ici ou au domaine) → plus de case
-      // Lot C2 (audit A4 P2-1) : le bouton n'est plus grisé EN SILENCE (désactivé + insensible au toucher) :
-      // il reste touchable et dit ce qui manque. Seule l'apparence rappelle que la case n'est pas cochée.
-      const setSendEnabled = (on) => {
-        const b = $('#btn-auth-phone'); if(!b) return;
-        b.disabled = false; b.style.opacity = on ? '' : '.6'; b.style.pointerEvents = '';
-        const d = $('#auth-debug');
-        if(d && !on && !d.textContent) d.textContent = '☝ Coche « J\'accepte les conditions » pour recevoir le code';
-        else if(d && on && /^☝/.test(d.textContent)) d.textContent = '';
-      };
-      if(cguBox){
-        cguBox.checked = cguDone;           // déjà accepté → pré-coché (demandé 1 fois)
-        setSendEnabled(cguDone);
-        cguBox.addEventListener('change', () => {
-          if(cguBox.checked){ acceptCgu(true); setSendEnabled(true); }
-          else { setSendEnabled(false); }   // décoché → re-bloque l'accès
-        });
-      }
+      // 17.10 (Kevin : « toutes les conditions en UN clic, au portail du domaine ; aucune app ne redemande ») —
+      // plus aucune case ici : l'accord du domaine vaut accord pour Apex Chat (trace serveur posée toute seule,
+      // voir K._cguTrace, dès que le domaine confirme l'accord).
       // Listener direct (ne dépend pas du onclick attribute)
       const btn = $('#btn-auth-phone');
       if(btn){
@@ -8813,7 +8783,6 @@ function renderAuthStep(){
             return;
           }
           if(btn.dataset.busy === '1') return;
-          acceptCgu(true);
           btn.dataset.busy = '1';
           $('#auth-debug').textContent = '⏳ Envoi en cours…';
           let reussi = false;
@@ -8885,8 +8854,6 @@ K._authPhoneMissing = function(){
   if(!phone) return 'Écris ton numéro de téléphone';
   if(!/^\+?\d{8,15}$/.test(phone)) return 'Numéro incomplet : écris-le en entier, par exemple +33 6 12 34 56 78';
   if(name.split(/\s+/).filter(t => t.length >= 2).length < 2) return 'Écris ton prénom et ton nom (par exemple Marie Dupont)';
-  const row = $('#auth-cgu-row'), box = $('#auth-cgu');
-  if(box && !box.checked && !(row && row.style.display === 'none') && !K._cguAccepted()) return 'Coche « J\'accepte les conditions » juste au-dessus du bouton';
   return null;
 };
 K._authFail = function(msg, type, dur){ K._authPhoneError = msg; toast(msg, type || 'err', dur || 4000); return false; };
@@ -17616,7 +17583,6 @@ K._showOnboarding = function(opts){
   if(!u) return;
   // v1.1.219 (Kevin « fiche info complète + accepter CGU ») — style commun des champs
   const fStyle = "width:100%;background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:10px;padding:10px;color:var(--ax-text);font-size:16px";
-  const cguDone = K._cguAccepted();
   const currentName = u.real_name || u.display_name || '';
   const currentPseudo = (u.pseudo && typeof K._isAutoPseudo === 'function' && !K._isAutoPseudo(u.pseudo)) ? u.pseudo : '';
   const hasName = !K._profileIncomplete(u);
@@ -17662,11 +17628,6 @@ K._showOnboarding = function(opts){
         🔒 Ton PIN sera demandé pour déverrouiller Apex Chat. Stocké chiffré sur ton appareil uniquement.
       </p>
     ` : ''}
-    ${!cguDone ? `
-      <label style="display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:.82em;color:var(--ax-text-2);cursor:pointer;line-height:1.45">
-        <input id="onb-cgu" type="checkbox" style="margin-top:2px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--ax-gold)">
-        <span>J'accepte les <a href="./cgu.html" target="_blank" style="color:var(--ax-gold)">conditions d'utilisation</a> et la politique de confidentialité.</span>
-      </label>` : ''}
     <button class="btn btn-block" style="margin-top:16px" ${kcall('_submitOnboarding', [opts.inviterUserId ? String(opts.inviterUserId) : null])}>✅ Démarrer</button>
   `, { noClose: true });
   setTimeout(() => {
@@ -17677,10 +17638,6 @@ K._showOnboarding = function(opts){
 
 K._submitOnboarding = async function(inviterUserId){
   const u = K.user || {};
-  // v1.1.219 (Kevin « accepter CGU ») — case CGU obligatoire si présente (couvre les
-  // invités qui n'ont pas vu la case du login).
-  const cguBox = document.getElementById('onb-cgu');
-  if(cguBox && !cguBox.checked) return toast('Merci d\'accepter les conditions pour continuer', 'err', 4000);
   const nameEl = document.getElementById('onb-name');
   const pseudoEl = document.getElementById('onb-pseudo');
   const pinEl  = document.getElementById('onb-pin');
@@ -17709,20 +17666,6 @@ K._submitOnboarding = async function(inviterUserId){
     const pin2 = (pin2El?.value || '').replace(/\D/g, '');
     if(pin.length !== 6) return toast('Le PIN doit faire 6 chiffres', 'err');
     if(pin !== pin2) return toast('Les deux codes PIN sont différents', 'err');
-  }
-
-  // v1.1.219 — enregistre l'acceptation CGU (couvre les invités) : local + serveur.
-  if(cguBox){
-    try{
-      if(!K._cguAccepted()){
-        const a = { accepted_at: Date.now(), version: __APEX_CHAT_VERSION__, cgu: K.CGU_VERSION, via: 'onboarding' };
-        localStorage.setItem('apex_chat_cgu_v1', JSON.stringify(a));
-        fetch((window.__APEX_CHAT_API_URL__ || 'https://apex-chat-api.9r4rxssx64.workers.dev') + '/api/cgu/accept', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...a, phone: (u.phone || '') })
-        }).catch(()=>{});
-      }
-    }catch(_e){ _safeCatch('silent', _e); }
   }
 
   // 1) PATCH profil (best-effort, si serveur lent on continue)
@@ -17843,18 +17786,23 @@ K._enrollBiometricFromOnboarding = async function(){
 K._requestAllPermissions = async function(forceShow){
   // v1.1.300 : les conditions du domaine sont acceptées → on ne redemande pas la fenêtre « Autorisations ».
   if(K._domaineAccepte && K._domaineAccepte()){ if(forceShow && K._postOnboardingFinish) K._postOnboardingFinish(); return; }
-  if(!forceShow && lg('perms_bulk_done_v1', false)) return;
+  // 17.10 : un seul écran d'autorisations — déjà montré (ou déjà répondu) → on ne le remontre pas, on enchaîne.
+  if((!forceShow && lg('perms_bulk_done_v1', false)) || K._permsEcran || lg('perms_bulk_done_v1', false) || (function(){ try{ return !!localStorage.getItem('apex_chat_perms_v1'); }catch(_){ return false; } })()){
+    if(forceShow && K._postOnboardingFinish) K._postOnboardingFinish();
+    return;
+  }
   if(!K._showModal) return;
+  K._permsEcran = true;
   K._showModal('🔐 Activer les autorisations', `
     <p style="color:var(--ax-text-2);margin:0 0 12px;font-size:.92em">
       Apex Chat active tout en une fois (iOS / Android te demandera chaque accès).
-      La <b>position est obligatoire</b> pour utiliser l'app ; le reste est fortement conseillé :
+      Une seule fois, tout en un : tu peux en refuser une, l'app continue de marcher. Ça sert à :
     </p>
     <ul style="color:var(--ax-text-2);font-size:.88em;padding-left:18px;margin:0 0 14px;line-height:1.7">
       <li>🔔 Notifications — messages & appels app fermée</li>
       <li>🎤 Micro — notes vocales & appels audio</li>
       <li>📷 Caméra — photos, vidéos, appels visio</li>
-      <li>📍 Position — <b>obligatoire</b> : partage de position, et carte visible par l'administrateur (effacée après 30 jours)</li>
+      <li>📍 Position — <b>facultative</b> : partage de position (effacée après 30 jours)</li>
       <li>📇 Contacts — inviter depuis ton répertoire</li>
     </ul>
     <button class="btn btn-block" onclick="K._doRequestAllPermissions()">✅ Tout activer maintenant</button>
@@ -17908,6 +17856,7 @@ K._doRequestAllPermissions = async function(){
   //    on note juste la dispo. Le picker s'ouvrira au moment d'inviter.
 
   ls('perms_bulk_done_v1', true);
+  try{ localStorage.setItem('apex_chat_perms_v1', JSON.stringify({ ts: Date.now(), granted: true, via: 'ecran-unique' })); }catch(_){}   // même drapeau que l'autre porte d'entrée : jamais deux écrans
   toast(`✅ ${ok} accordée(s)${refused ? ' · ' + refused + ' refusée(s)' : ''}`,
     refused ? 'warn' : 'ok', 4500);
   // v1.1.170 : fin du chaînage onboarding → ouvre la conv inviteur si pending
@@ -19087,6 +19036,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.318", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.319", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

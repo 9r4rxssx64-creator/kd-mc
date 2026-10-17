@@ -35,5 +35,17 @@ const sansCgu = signe('lea-noir', 0);
   ok(r.status === 403, '5. un site tiers ne peut pas « accepter » à la place de quelqu\'un'); }
 { const r = await req('kd-mc.com', '/__sso/cgu', { method: 'POST', headers: { origin: 'https://kd-mc.com' }, body: '{}' });
   ok((await json(r)).ok === false, '6. sans session → rien à graver'); }
+/* 17.10 — l'accord DONNÉ via /__sso/issue : seul un vrai clic (cgu_clic) grave la version courante ; un cgu:true « en dur » ne prouve rien. */
+kv.set('acc:max-vert', JSON.stringify({ uid: 'max-vert', name: 'Max Vert', cgu_at: 0 }));
+kv.set('acc:eva-bleu', JSON.stringify({ uid: 'eva-bleu', name: 'Eva Bleu', cgu_at: 0 }));
+const issue = (uid, name, extra) => req('lingua.kd-mc.com', '/__sso/issue', { method: 'POST', headers: { origin: 'https://lingua.kd-mc.com', 'content-type': 'application/json' }, body: JSON.stringify({ uid, name, cgu: true, ...extra }) });
+await issue('max-vert', 'Max Vert', { cgu_clic: true });
+{ const acc = JSON.parse(kv.get('acc:max-vert'));
+  ok(acc.cgu_at > 0 && acc.cgu_v === 3, '7. une app déclare avec cgu_clic (case cochée) → la version COURANTE des conditions est gravée', JSON.stringify(acc)); }
+{ const w = await json(await req('cuisine.kd-mc.com', '/__sso/whoami', { headers: { authorization: 'Bearer ' + signe('max-vert', 0) } }));
+  ok(w.ok && w.cgu === true, '8. Max, avec un vieux pass sans accord, est reconnu « accepté » partout : plus de mur'); }
+await issue('eva-bleu', 'Eva Bleu', {});
+{ const acc = JSON.parse(kv.get('acc:eva-bleu'));
+  ok(acc.cgu_at > 0 && !acc.cgu_v, '9. cgu:true « en dur » (sans cgu_clic) ne grave PAS la version : la porte du domaine demandera, une fois', JSON.stringify(acc)); }
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.2";
+var APP_VER="v2.142.3";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -158,7 +158,7 @@ function kdmcToken(){ try{ var h=location.hash||"",m=h.match(/[#&]kdmc_sso=([^&]
 function kdmcHeaders(extra){ var h=extra||{}; var t=kdmcToken(); if(t)h.Authorization="Bearer "+t; return h; }
 function kdmcWhoami(){ return fetch("/__sso/whoami",{credentials:"include",cache:"no-store",headers:kdmcHeaders()}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ return (j&&j.ok)?j:null; }).catch(function(){ return null; }); }
 function kdmcLogin(name,code){ return fetch("/__sso/login",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({name:name,code:String(code||"")})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
-function kdmcIssue(uid,name,code,cgu,tel){ return fetch("/__sso/issue",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({uid:uid,name:name,cgu:!!cgu,pour:location.host,code:(code&&String(code).length>=6)?String(code):undefined,telephone:tel?String(tel):undefined})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
+function kdmcIssue(uid,name,code,cgu,tel,clic){ return fetch("/__sso/issue",{method:"POST",credentials:"include",headers:kdmcHeaders({"content-type":"application/json"}),body:JSON.stringify({uid:uid,name:name,cgu:!!cgu,cgu_clic:clic===true?true:undefined,pour:location.host,code:(code&&String(code).length>=6)?String(code):undefined,telephone:tel?String(tel):undefined})}).then(function(r){ return r.json(); }).then(function(j){ if(j&&j.ok&&j.token){ try{ localStorage.setItem("kdmc_sso_token",j.token); }catch(e){} } return j; }).catch(function(){ return null; }); }
 function kdmcSlug(name){ return norm(name).replace(/\s+/g,"-").slice(0,60); }
 /* 🔐 FACE ID SUR PLACE (2.10, Kevin : « reconnu par Face ID ») : le passkey du trousseau (domaine kd-mc.com) se
    présente ici même, le domaine vérifie la signature et rend une session FORTE — pour Kevin, l'admin s'ouvre. */
@@ -1122,6 +1122,7 @@ function vAccounts(){
   return d;
 }
 function openCreate(){
+  var telPose=false;   /* vrai quand la fiche du domaine a déjà le téléphone */
   var m=modal(); var av=AVATARS[Math.floor(Math.random()*AVATARS.length)];
   m.body.innerHTML='<h3>Nouveau compte</h3>'+
     '<input id="acPrenom" class="txt" placeholder="Ton prénom" maxlength="18" autocomplete="off">'+
@@ -1133,6 +1134,8 @@ function openCreate(){
     '<p class="mini">Choisis ton avatar</p>';
   /* Conditions : UNE fois pour tout le domaine. Déjà acceptées (session KDMC) → pas de case. Texte servi par le domaine. */
   try{ var lk=m.body.querySelector("#acCguLink"); lk.onclick=function(ev){ ev.preventDefault(); var t=m.body.querySelector("#acCguText"); t.hidden=!t.hidden; };
+    /* 17.10 : si le DOMAINE a déjà le téléphone sur la fiche (whoami.tel_pose), on ne le redemande pas (une seule fois, valable partout). */
+    kdmcWhoami().then(function(w){ if(w&&w.tel_pose===true){ telPose=true; var tt=m.body.querySelector("#acTel"); if(tt)tt.style.display="none"; } });
     fetch("/__sso/cgu",{credentials:"include",cache:"no-store",headers:kdmcHeaders()}).then(function(r){return r.json();}).then(function(j){ if(!j||!j.ok)return; var t=m.body.querySelector("#acCguText"); if(t&&j.texte)t.textContent=j.texte; if(j.acceptees){ var w=m.body.querySelector("#acCguWrap"); if(w)w.style.display="none"; m.body.querySelector("#acCgu").checked=true; } }).catch(function(){}); }catch(e){}
   var g=el("div","av-pick");
   AVATARS.forEach(function(a){ var b=el("button","av-opt"+(a===av?" sel":"")); b.textContent=a; b.onclick=function(){ av=a; g.querySelectorAll(".av-opt").forEach(function(x){x.classList.remove("sel");}); b.classList.add("sel"); }; g.appendChild(b); });
@@ -1151,15 +1154,17 @@ function openCreate(){
     if(!c && gg("inviteEnAttente","")){ toast("Pour rejoindre le cercle qui t'invite, choisis un code de 6 chiffres (ton compte KDMC) 🔑"); return; }
     if(c && c.length<6){ toast("Ton code doit faire au moins 6 chiffres — c'est celui de ton compte KDMC (ou laisse-le vide) 🔒"); return; }
     /* 13.10 (Kevin : « le téléphone à l'inscription du domaine entier, chaque app ») : un compte KDMC (avec un code) a son numéro, rangé sur la fiche du domaine */
-    if(c && (!/^\+?[0-9 .()-]{6,24}$/.test(tel)||tel.replace(/\D/g,"").length<6)){ toast("Ton numéro de téléphone est obligatoire pour un compte KDMC (ex. +377 06 12 34 56) 📱"); return; }
+    if(c && !telPose && (!/^\+?[0-9 .()-]{6,24}$/.test(tel)||tel.replace(/\D/g,"").length<6)){ toast("Ton numéro de téléphone est obligatoire pour un compte KDMC (ex. +377 06 12 34 56) 📱"); return; }
     var cguOk=!!(m.body.querySelector("#acCgu")&&m.body.querySelector("#acCgu").checked);
+    var cguVisible=!!(m.body.querySelector("#acCguWrap")&&m.body.querySelector("#acCguWrap").style.display!=="none");   /* clic RÉEL = case visible ET cochée */
     if(!cguOk){ toast("Coche les conditions pour continuer 🙂"); return; }
     ok.disabled=true; ok.textContent="…";
     if(!c){ var id=createAccount(n,av,""); switchAccount(id); m.close(); VIEW="home"; render(); return; } // sans code = on démarre direct (mémoire cloud = bonus optionnel)
     /* Avec un code (6+ chiffres) : c'est un compte KDMC — le domaine garde l'empreinte du code, et le
        même nom + code marche partout. Un code Lingua court (4-5 chiffres) reste un compte Lingua seul. */
     var suite=function(res){ m.close(); VIEW="home"; render(); if(res&&res.restored) toast("👋 Compte retrouvé — bienvenue "+esc(n)+" !"); };
-    if(c.length>=6){ kdmcIssue(kdmcSlug(n),n,c,true,tel).then(function(j){
+    if(c.length>=6){ kdmcIssue(kdmcSlug(n),n,c,true,tel,cguOk&&cguVisible).then(function(j){
+        if(j&&!j.ok&&j.reason==="telephone_requis"&&telPose){ telPose=false; var t2=m.body.querySelector("#acTel"); if(t2)t2.style.display=""; ok.disabled=false; ok.textContent="Créer mon compte"; toast("Pour ce nom, indique ton numéro de téléphone 📱"); return; }
         if(j&&!j.ok&&(j.reason==="code_requis"||j.reason==="code_incorrect")){ ok.disabled=false; ok.textContent="Créer mon compte"; toast("Ce nom a déjà un compte KDMC avec un autre code — touche « J'ai déjà un compte » 🔑"); return; }
         if(j&&j.ok){ var idD=createAccount(n,av,c,j.uid); switchAccount(idD); cloudSaveNow(); suite({ok:true}); return; }
         enterWithCredentials(n,av,c,true).then(suite); }); return; }
@@ -1250,11 +1255,13 @@ function openChangeCode(id){
   m.body.innerHTML='<h3>🔒 Relier à mon compte KDMC</h3><p class="mini">Choisis un code de <b>6 chiffres</b> : ce compte devient ton <b>compte KDMC</b>, le même dans toutes les apps du domaine et sur n\'importe quel téléphone. Ta progression te suit. <b>L\'ancien code ne te reconnectera plus</b>.</p>'+
     '<input id="ccTel" class="txt" type="tel" inputmode="tel" placeholder="Téléphone (obligatoire)" maxlength="24" autocomplete="tel">'+
     '<input id="ccCode" class="txt" placeholder="Code, 6 chiffres min." inputmode="numeric" maxlength="10" autocomplete="off">';
+  var telPoseCc=false;   /* 17.10 : numéro déjà sur la fiche du domaine -> pas redemandé */
+  kdmcWhoami().then(function(w){ if(w&&w.tel_pose===true){ telPoseCc=true; var tc=m.body.querySelector("#ccTel"); if(tc)tc.style.display="none"; } });
   var ok=el("button","btn-main"); ok.textContent="Relier mon compte";
   ok.onclick=function(){ var c=(m.body.querySelector("#ccCode").value||"").trim();
     if(c.length<6){ toast("6 chiffres minimum — c'est le code de ton compte KDMC 🔒"); return; }
     var tel=(m.body.querySelector("#ccTel").value||"").trim();   /* 13.10 : le compte KDMC a son numéro (fiche du domaine, lue par toutes les apps) */
-    if(!/^\+?[0-9 .()-]{6,24}$/.test(tel)||tel.replace(/\D/g,"").length<6){ toast("Ton numéro de téléphone est obligatoire (ex. +377 06 12 34 56) 📱"); return; }
+    if(!telPoseCc&&(!/^\+?[0-9 .()-]{6,24}$/.test(tel)||tel.replace(/\D/g,"").length<6)){ toast("Ton numéro de téléphone est obligatoire (ex. +377 06 12 34 56) 📱"); return; }
     ok.disabled=true; ok.textContent="…";
     var rendre=function(t){ ok.disabled=false; ok.textContent="Relier mon compte"; toast(t); };
     kdmcIssue(kdmcSlug(a.name||""),a.name||"",c,true,tel).then(function(j){

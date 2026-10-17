@@ -94,14 +94,21 @@ export function bouton() {
       var boite = E('div', null, { maxWidth: '560px', margin: '0 auto' });
       boite.appendChild(E('div', '📜 Conditions du domaine KDMC', { fontSize: '20px', fontWeight: '800', color: OR, margin: '6px 0 6px' }));
       boite.appendChild(E('div', 'Une seule fois pour ton compte : elles valent dans toutes les apps du domaine.', { fontSize: '15px', color: MUT, marginBottom: '10px' }));
-      boite.appendChild(E('div', c.texte || '', { fontSize: '16px', lineHeight: '1.45', marginBottom: '10px' }));
+      /* 17.10 (Kevin : « toutes les conditions acceptées EN UN CLIC, en restant VAGUE ») : UNE case au libellé court ; le texte complet et la liste
+         ne s'affichent que si la personne touche « conditions » (plus d'écran à faire défiler jusqu'en bas). */
+      var detail = E('div', null, { display: 'none', margin: '0 0 10px' });
+      detail.appendChild(E('div', c.texte || '', { fontSize: '16px', lineHeight: '1.45', marginBottom: '10px' }));
       var ul = E('ul', null, { paddingLeft: '20px', margin: '0 0 12px', fontSize: '15px', lineHeight: '1.45' });
       (c.points || []).forEach(function (t) { ul.appendChild(E('li', t, { marginBottom: '6px' })); });
-      boite.appendChild(ul);
+      detail.appendChild(ul);
       var lab = E('label', null, { display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '16px', minHeight: '44px', cursor: 'pointer', marginBottom: '10px' });
       var cb = document.createElement('input'); cb.type = 'checkbox'; S(cb, { width: '24px', height: '24px', flexShrink: '0', marginTop: '2px' });
-      lab.appendChild(cb); lab.appendChild(E('span', "J'ai lu et j'accepte ces conditions (version " + (c.version || '') + ').'));
-      boite.appendChild(lab);
+      var lien = E('a', 'conditions', { color: OR, textDecoration: 'underline' }); lien.href = '#'; lien.setAttribute('data-kdmc-cgu-lien', '1');
+      lien.onclick = function (ev) { ev.preventDefault(); ev.stopPropagation(); detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; };
+      var phrase = E('span', "J'accepte les ");
+      phrase.appendChild(lien); phrase.appendChild(document.createTextNode('.'));
+      lab.appendChild(cb); lab.appendChild(phrase);
+      boite.appendChild(lab); boite.appendChild(detail);
       var err = E('div', '', { color: '#ffb0a0', fontSize: '15px', minHeight: '20px', marginBottom: '6px' });
       var oui = E('button', 'Accepter et continuer', { width: '100%', minHeight: '48px', borderRadius: '12px', border: 'none', background: OR, color: '#111', fontSize: '17px', fontWeight: '800', cursor: 'pointer', marginBottom: '10px' });
       var non = E('button', 'Je refuse (me déconnecter)', { width: '100%', minHeight: '44px', borderRadius: '12px', border: '1px solid ' + LIG, background: 'transparent', color: MUT, fontSize: '15px', cursor: 'pointer' });

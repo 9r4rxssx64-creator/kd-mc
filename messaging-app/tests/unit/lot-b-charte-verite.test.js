@@ -56,7 +56,7 @@ describe('Lot B — charte privée fidèle au code', () => {
   // Lot D (v1.1.306) — décision de Kevin : la position est OBLIGATOIRE. La charte, les CGU et l'app disent la même chose :
   // demandée une fois au début, à quoi elle sert, effacée après 30 jours, visible par l'administrateur sur une carte ;
   // si elle est coupée ensuite, l'app ne bloque pas mais affiche un bandeau qui explique comment la remettre.
-  it('Lot D : position obligatoire — CGU, charte et app concordent (plus de « refusable, l\'app continue »)', () => {
+  it('Lot D (17.10 : position FACULTATIVE) — CGU, charte et app concordent (plus de « refusable, l\'app continue »)', () => {
     const cgu = texte(CGU);
     const pr = texte(PRIVACY);
     // Plus aucune promesse « tu peux refuser la position et l'app continue » (ce que disaient les CGU l.96 et l.106).
@@ -65,23 +65,25 @@ describe('Lot B — charte privée fidèle au code', () => {
     const opt = CGU.slice(CGU.indexOf('<h3>Optionnelles'));
     expect(opt.slice(0, opt.indexOf('</ul>'))).not.toMatch(/Localisation|Position/);   // plus dans « optionnelles »
     // CGU : obligatoire, une fois au début, à quoi elle sert, carte admin, 30 jours, bandeau si coupée.
-    expect(cgu).toMatch(/La position est obligatoire/);
-    expect(cgu).toMatch(/Localisation — obligatoire , demandée une seule fois au début/);
+    expect(cgu).toMatch(/La position est facultative/);
+    expect(cgu).toMatch(/Localisation — facultative , demandée une seule fois au début/);
     expect(cgu).toMatch(/L'administrateur la voit sur une carte/);
     expect(cgu).toMatch(/effacée au bout de 30 jours/);
     expect(cgu).toMatch(/l'app ne te bloque pas, mais elle affiche un bandeau/);
     expect(cgu).toMatch(/Safari ou Apex Chat → Position/);
     // Charte : idem (et les promesses du lot B restent).
-    expect(pr).toMatch(/obligatoire pour utiliser Apex Chat/);
+    expect(pr).toMatch(/La position est facultative/);
+    expect(pr).not.toMatch(/obligatoire pour utiliser Apex Chat/);
     expect(pr).toMatch(/demandée une seule fois au début/);
     expect(pr).toMatch(/L'administrateur la voit sur une carte/);
     expect(pr).toMatch(/Historique : 30 jours/);
     expect(pr).toMatch(/ne te bloque pas mais affiche un bandeau/);
     // App : les écrans d'autorisation disent « position obligatoire » ; le bandeau existe et ne bloque pas.
-    expect(INDEX).toMatch(/La <b>position est obligatoire<\/b> pour utiliser l'app \(l'administrateur la voit sur une carte, elle est effacée après 30 jours\)/);
-    expect(INDEX).toMatch(/La <b>position est obligatoire<\/b> pour utiliser l'app ; le reste est fortement conseillé/);
-    expect(INDEX).toMatch(/📍 Position — <b>obligatoire<\/b>/);
-    expect(INDEX).toMatch(/Position coupée\.<\/b> Elle est obligatoire pour Apex Chat/);
+    expect(INDEX).toMatch(/La <b>position est facultative<\/b> \(si tu la partages, l'administrateur la voit sur une carte, elle est effacée après 30 jours\)/);
+    expect(INDEX).toMatch(/Une seule fois, tout en un : tu peux en refuser une, l'app continue de marcher/);
+    expect(INDEX).toMatch(/📍 Position — <b>facultative<\/b>/);
+    expect(INDEX).toMatch(/Position coupée\.<\/b> Elle est facultative/);
+    expect(INDEX).not.toMatch(/position est obligatoire/);
     expect(INDEX).toMatch(/>Comment faire<\/button>/);
     expect(INDEX).toMatch(/<b>Safari<\/b> \(ou <b>Apps<\/b> → <b>Safari<\/b>\) → <b>Position<\/b>/);
     // Le bandeau est rendu dans le flux de la page (insertBefore #app), jamais dans une fenêtre bloquante.

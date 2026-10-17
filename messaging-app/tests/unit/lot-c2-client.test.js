@@ -145,11 +145,12 @@ describe('A4 P2-1 — connexion : le bouton explique, et l\'état se remet aprè
     const { btn, dbg } = await ecran();
     expect(btn.disabled).toBe(false);
     expect(btn.style.pointerEvents).not.toBe('none');
-    expect(dbg.textContent).toMatch(/Coche « J'accepte les conditions »/);
+    expect(dbg.textContent).not.toMatch(/Coche|accepte/);   // 17.10 : plus aucune case de conditions dans Apex Chat
+    expect(document.getElementById('auth-cgu')).toBeNull();
     expect(dbg.getAttribute('aria-live')).toBe('polite');
     expect(parseFloat(dbg.style.fontSize)).toBeGreaterThanOrEqual(14);
   });
-  it('ce qui manque est dit précisément : numéro, nom, case', async () => {
+  it('ce qui manque est dit précisément : numéro, nom (plus de case de conditions)', async () => {
     const { btn, dbg, g } = await ecran();
     await clic(btn);
     expect(dbg.textContent).toMatch(/Écris ton numéro/);
@@ -161,8 +162,8 @@ describe('A4 P2-1 — connexion : le bouton explique, et l\'état se remet aprè
     expect(dbg.textContent).toMatch(/prénom et ton nom/);
     document.getElementById('auth-name').value = 'Marie Dupont';
     await clic(btn);
-    expect(dbg.textContent).toMatch(/Coche « J'accepte les conditions »/);
-    expect(g.fetch).not.toHaveBeenCalled();
+    expect(dbg.textContent).not.toMatch(/Coche|conditions/);   // plus de case : numéro + nom suffisent, le code part
+    expect(g.fetch).toHaveBeenCalled();
   });
   it('réseau coupé : « Envoi en cours… » disparaît, l\'erreur est dite en français simple, on peut réessayer', async () => {
     const { btn, dbg, g } = await ecran({ cguDeja: true });

@@ -12116,6 +12116,14 @@ Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas p
 - Toute nouvelle app du domaine a la porte **sans une ligne** (routeur) ; ne jamais y ajouter sa propre case de conditions.
 - Changer le texte des conditions = monter `CGU_VERSION` (l'accord est redemandé **une** fois, partout).
 
+### 4. EN UN CLIC, EN RESTANT VAGUE (Kevin 17.10.2026)
+**« Rappelle-toi que toutes les conditions doivent être acceptées en un clic en restant vague pour pouvoir accéder au domaine, valider l'inscription. »**
+- **Un seul clic** pour TOUT accepter (conditions + autorisations + données) : une case « J'accepte les conditions. » à l'inscription du domaine — jamais plusieurs cases, jamais une case par autorisation, jamais un écran à faire défiler jusqu'en bas.
+- **Formulation vague et courte** à l'écran (« J'accepte les conditions. ») ; le texte complet ne s'affiche que si la personne touche le lien.
+- **Aucune app ne repose un accord** : ni case, ni phrase « en remplissant les champs, tu acceptes… », ni charte propre. L'accord du domaine vaut partout.
+- Sans ce clic : pas d'accès au domaine, pas d'inscription validée.
+- Garde : `test:cgu-un-clic`.
+
 ## 🔢 RÈGLE MÉTIER ABSOLUE — DÉPARTS : LES SÉRIES (« 4235-2351-3514 ») (Kevin 2026-10-07, ABSOLUE)
 
 **« Toujours pas bon. 4235-4235… non. 4235-2351-3514-… »** — Kevin 2026-10-07 (soir), après « V1,70 algorithme n'est toujours pas bon »

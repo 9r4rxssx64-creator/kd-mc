@@ -1080,7 +1080,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.18.4';
+var APP_VER='v9.18.5';
 document.getElementById('vbadge').textContent=APP_VER;
 
 /* ---------- utils ---------- */
@@ -1354,7 +1354,7 @@ var Domaine=(function(){
     if(jeton)o.headers={'x-kdmc-sso':jeton};
     return fetch(url,o).then(function(r){return r.json();}).then(function(j){
       if(!j||!j.ok)return null;
-      dernier={uid:j.uid,name:j.name,admin:!!j.admin,verified:!!j.verified};
+      dernier={uid:j.uid,name:j.name,admin:!!j.admin,verified:!!j.verified,cgu:j.cgu===true};
       return dernier;
     }).catch(function(){return null;});
   }
@@ -1374,7 +1374,7 @@ var Domaine=(function(){
     if(toks.length<2)return Promise.resolve(null);      /* jamais un prénom seul */
     return fetch(BASE+'/__sso/issue',{method:'POST',credentials:'include',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({uid:uid||('crea_'+toks.join('-').toLowerCase()),name:nom,cgu:true,
+      body:JSON.stringify({uid:uid||('crea_'+toks.join('-').toLowerCase()),name:nom,cgu:!!(dernier&&dernier.cgu),
         code:(code&&String(code).length>=6)?String(code):undefined})})
       .then(function(r){return r.json();}).then(function(j){
         if(j&&j.ok&&j.token){try{localStorage.setItem(CLE,j.token);}catch(e){}}
@@ -7159,6 +7159,6 @@ try{ Account.init(); }
 catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)); }catch(_){} }
 </script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.18.4" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.18.5" data-color="#c9a227" defer></script>
 </body>
 </html>

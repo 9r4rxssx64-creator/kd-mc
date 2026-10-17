@@ -2512,6 +2512,26 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "cgu-un-clic": {
+      "titre": "Conditions en un clic, vagues, une seule fois",
+      "branche": "claude/cgu-un-clic",
+      "sujet": "Règle de Kevin écrite (CLAUDE-HISTOIRE, NOTES_USER) ; reprise dans claude/cgu-un-clic-apps",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "cgu-un-clic-apps": {
+      "titre": "Conditions en un clic dans toutes les apps",
+      "branche": "claude/cgu-un-clic-apps",
+      "sujet": "Apex Chat, boutiques, light, Lingua, CMCteams, Créa Studio, porte du routeur + garde test:cgu-un-clic",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.0";
+var APP_VER="v2.142.1";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -3149,8 +3149,11 @@ function appelTerminer(raccroche){ if(!APPEL||APPEL.fini)return; var A=APPEL; A.
 function appelARevoir(){ var c=(S.appels&&S.appels.corrections)||[]; return c.slice(0,2).map(function(x){ return "phrase à faire réutiliser : "+x.mieux; }); }
 function appelBilanBloc(A){ var b=el("div","ap-bilan"); var t=el("p","mini"); t.textContent="📝 "+MNAME()+" prépare ton bilan…"; b.appendChild(t);
   var c=COURSES[S.course];
-  fetch(SYNC_BASE+"/ai",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"appel-bilan",lang:c.id,langName:c.nom,level:diffLabel(),messages:A.msgs.slice(-24)})})
+  /* 17.10 (réel) : le bilan restait « prépare ton bilan… » sans fin quand l'IA traînait → 28 s au plus, puis « indisponible » */
+  var ctl=(typeof AbortController!=="undefined")?new AbortController():null, minuteur=setTimeout(function(){ if(ctl)ctl.abort(); },window.__apBilanMs||28000);
+  fetch(SYNC_BASE+"/ai",{method:"POST",headers:{"content-type":"application/json"},signal:ctl?ctl.signal:undefined,body:JSON.stringify({mode:"appel-bilan",lang:c.id,langName:c.nom,level:diffLabel(),messages:A.msgs.slice(-24)})})
     .then(function(r){ return r.json(); }).catch(function(){ return null; })
+    .then(function(j){ clearTimeout(minuteur); return j; })
     .then(function(j){ b.innerHTML="";
       if(!j||!j.ok){ var e=el("p","mini"); e.textContent="📝 Bilan indisponible pour l'instant — tes XP sont bien comptés."; b.appendChild(e); return; }
       var h=el("h4"); h.textContent="📝 Ton bilan"; b.appendChild(h);

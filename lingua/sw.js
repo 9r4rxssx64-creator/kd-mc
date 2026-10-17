@@ -3,7 +3,7 @@
    en ligne (plus jamais bloqué sur une ancienne page « collée » en mémoire), et on
    garde une copie en cache pour marcher hors-ligne. Aligné sur la règle « MAJ auto
    forcée toujours » : une nouvelle version publiée s'affiche dès la prochaine ouverture. */
-var CACHE = "lingua-v2.142.0";
+var CACHE = "lingua-v2.142.1";
 /* IMAGES : un cache À PART, au nom STABLE (13.10). Avant, les 12 images webp (1,9 Mo) étaient préchargées dans « lingua-<version> » : chaque
    nouvelle version rejetait le cache entier et retéléchargeait 1,9 Mo d'images qui n'avaient pas changé. Maintenant elles restent d'une version
    à l'autre. Une image qui CHANGE vraiment : la renommer (ou changer le nom ci-dessous) — l'ancien cache d'images est alors purgé. */

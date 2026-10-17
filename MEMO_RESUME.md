@@ -1,8 +1,19 @@
 # MEMO_RESUME — état de session
 
+
+## 2026-10-17 — Lingua v2.142.1 : le bilan ne reste plus « Bee prépare ton bilan… » sans fin
+- **Vu en réel** (2ᵉ run du robot « Lingua comme Kevin », 39032054956, v2.142.0 servie ✅) : 16 ✅ · 1 ❌ — le bilan n'était pas arrivé en 30 s (la requête était bien partie : 4 appels IA passés).
+- **Cause (lue dans le code)** : le bilan appelait `routeText` SANS `budgetMs` → `callQwen` ≥ 30 s par modèle Qwen, tous essayés. **Correctif** : `budgetMs: 20000` sur le bilan + écran coupé à 28 s (« Bilan indisponible »).
+- **Gardes** : `lingua-appel.test` 30/0 (9 : IA muette → 15 s ; sabotage → rouge), `verify-lingua-appel` 37/0, `lingua-comme-kevin` (local).
+- **Réel** : les 2 vérifications réelles du 17.10 sont faites → prochain passage du robot après 00h00 UTC le 18.10 (sans forcer). Non prouvé : quel fournisseur a traîné.
 ## 2026-10-17 — BEE OUVRE N'IMPORTE QUELLE APP + L'ARBRE S'OUVRE SUR UNE PERSONNE (Bee v1.20, arbre v3.118)
 
 **Fait** (code + tests, PAS encore vu chez Kevin) : Kevin : « Javis ne peut pas me montrer l'arbre de Yann Lorenzi ("pas accès"). Il doit pouvoir m'ouvrir les applications, peu importe laquelle… s'équiper en outils… toujours dans la sécurité ». **Cause** : Bee savait lire une page mais n'avait AUCUN outil pour l'ouvrir sur l'écran de Kevin ; le cerveau inventait un refus. **Livré** : (1) `services/kdmc-router/bee-ouvrir.js` — outil `ouvrir` (nom/surnom d'app ou adresse du domaine, page, et pour l'arbre `personne`/`famille`/`fiche`), branché dans `handleBeeIa` (réponse `ouvrir:[…]`, déclencheur `RE_OUVRIR`, interrupteur `BEE_OUVRIR`) ; (2) widget v1.20 : carte « ↗ Ouvrir » 44 px + ouverture seule après 2 s + « Rester ici », le widget revérifie https + kd-mc.com ; (3) arbre v3.118 : `ouvrirParLien()` (`#personne=`, `#famille=`, `#fiche=`), lecture seule, `hasOwnProperty` contre `__proto__` ; (4) consigne « jamais "je n'ai pas accès" » + outil manquant → `tache_code` ; (5) l'outil `arbre` renvoie vers `ouvrir` quand la personne n'est pas dans la graine du domaine. **Preuves** : `test:bee-ouvrir` 62/0, `test:arbre-lien-profond` 12/0, `test:bee-arbre-navigateur` 33/0 (bouton ≥ 44 px, ouverture à 2 s, « Rester ici », site extérieur refusé), 14 tests Bee du routeur verts, 5 sabotages rouges (hôte, chemin, nom piégé, consigne, widget). `test:javis-bee` garde 1 échec qui existe aussi sur main (« javis servi par Pages »). **Non vérifié** : sur iPhone réel ; la lecture des fiches par Bee dépend encore de la graine publiée du domaine (pas du nuage). **Aussi** : harnais d'Apex Chat rejoué en entier (84/85, PR #4710).
+## 2026-10-17 (12h40 UTC) — « Test tout toi réel toujours à la place » → règle écrite + robot « tester Bee comme Kevin »
+- Je venais de donner à Kevin « action 3 : touche 🐝 → 🩺 Tester Bee → envoie-moi la capture ». Faux réflexe : c'est un robot qui doit le faire. Règle ABSOLUE ajoutée (CLAUDE-HISTOIRE « JE TESTE TOUT MOI-MÊME, EN RÉEL, À LA PLACE DE KEVIN »), leçon #615.
+- `tools/smoke/bee-tester.mjs` + `coffre-bee-tester.yml` : session Kevin (secret), `POST /__javis/ai {diag:true}` (= le bouton 🩺) puis une vraie question ; lecture seule, appels marqués sonde, jeton jamais affiché. Garde `test:bee-tester` (8 ✅, test:ci).
+- KEVIN_ACTIONS_TODO : 0 (Bee) → le robot teste ; 0b (Apex 379) → ✅ déjà prouvé par le robot « Apex comme Kevin » + `sw.js` servi 13.4.379.
+- Résultat du premier run réel : voir l'entrée suivante (écrite après le run).
 
 ## 2026-10-17 (12h27 UTC) — Yann : « il a réussi à se connecter ce matin apparemment » → vérifié réel, fiche ouverte depuis le 16.10 21:07 UTC
 - Robot `coffre-compte-ouvrir.yml` en essai à blanc (run 39032470337, 1 min de ration ; 12/60 min consommées avant) : session Kevin obtenue, admin prouvé, fiche `yann-lorenzi` « déjà ouvert le 2026-10-16T21:07:59Z · 6 session(s) ». Rien n'a été modifié. KEVIN_ACTIONS_TODO point 1 → ✅.

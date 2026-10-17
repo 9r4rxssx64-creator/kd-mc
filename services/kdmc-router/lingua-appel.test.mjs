@@ -10,6 +10,7 @@
       prudence (JSON entouré de texte, 3 au plus, phrase réellement dite, « mieux » ≠ « dit », balises retirées).
    8. 🎯 (v2.142.0) réponse À CÔTÉ de la question : repérée, prudente (phrase dite, idée ≠ phrase, 2 au plus),
       et le bravo qui félicitait cette phrase-là est retiré (vu en réel le 17.10, robot « Lingua comme Kevin »).
+   9. ⏱ (v2.142.1) IA muette → réponse « indisponible » en moins de 21 s (toute la chaîne bornée).
    SABOTAGE prouvé à la main : retirer la consigne de phase → (2) rougit.
    node services/kdmc-router/lingua-appel.test.mjs */
 import mod, { lireBilanAppel } from './worker.js';
@@ -80,5 +81,16 @@ ok(j.bravo === '', '8e. le bravo qui félicitait la phrase À CÔTÉ de la quest
 const garde = lireBilanAppel('{"bravo":"Belle prononciation !","corrections":[],"a_cote":[{"dit":"I eat with my family","question":"sport ?","idee":"I like football"}]}', ['I eat with my family']);
 ok(garde.bravo === 'Belle prononciation !' && garde.a_cote.length === 1, '8f. un bravo sur autre chose reste affiché');
 ok(Array.isArray(lireBilanAppel('{"bravo":"x","corrections":[]}', ['a b']).a_cote), '8g. ancienne forme de réponse (sans a_cote) → liste vide, pas d\'erreur');
+
+/* 9. ⏱ (v2.142.1, vu en réel run 39032054956 : « Bee prépare ton bilan… » sans fin) : une IA MUETTE → le bilan répond
+   quand même en moins de 21 s (« indisponible »), au lieu d'attendre ≥ 30 s par modèle Qwen. */
+const muet = { run() { return new Promise(() => {}); } };
+const envMuet = Object.assign({}, env, { AI: muet });
+const t0 = Date.now();
+const rMuet = await Promise.race([
+  mod.fetch(new Request('https://lingua.kd-mc.com/__lingua/ai', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + SESSION, Referer: 'https://lingua.kd-mc.com/' },
+    body: JSON.stringify(Object.assign({}, base, { mode: 'appel-bilan', messages: [{ role: 'bot', text: 'What sport?' }, { role: 'user', text: 'I eat with my family' }] })) }), envMuet).then((r) => r.json()),
+  new Promise((res) => setTimeout(() => res({ attente: true }), 22000))]);
+ok(!rMuet.attente && rMuet.ok === false && Date.now() - t0 < 21000, `9. IA muette → le bilan répond quand même en ${Math.round((Date.now() - t0) / 1000)} s (« indisponible »), jamais d'attente sans fin`, JSON.stringify(rMuet));
 
 console.log(`Lingua appel test: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

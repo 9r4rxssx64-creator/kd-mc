@@ -12224,6 +12224,15 @@ Honnêtement : une session ne peut pas changer son propre modèle. Ce qui peut �
 - **Où c'est écrit** : `.claude/rules/modeles.md` (chargé par toute session du dépôt).
 - **Garde** : `npm run test:modele-adapte` (dans `test:ci`, prouvé discriminant : `SABOTAGE=1`).
 
+## 🧪 RÈGLE ABSOLUE — JE TESTE TOUT MOI-MÊME, EN RÉEL, À LA PLACE DE KEVIN : JAMAIS « TOUCHE ICI ET ENVOIE-MOI LA CAPTURE » (Kevin 2026-10-17, ABSOLUE)
+
+**« Test tout toi réel toujours à la place »** — Kevin 2026-10-17 (après que je lui ai donné, comme « action 3 », les étapes pour tester Bee sur son iPhone : « touche 🐝 → 🩺 Tester Bee → envoie-moi la capture »).
+
+- **La règle** : une action de la liste de Kevin qui consiste à VÉRIFIER quelque chose (une app répond ? une version est là ? un bouton marche ?) n'est jamais une action pour Kevin. C'est un robot qui la fait, connecté comme lui, et qui écrit le verdict. Kevin ne touche son téléphone que pour ce qu'un robot ne peut pas faire (payer, signer, un compte chez un tiers, une décision).
+- **Comment** : la session de Kevin s'obtient par le secret du coffre (`APEX_ADMIN_PIN_SHA256` → `/__admin/login`, `tools/smoke/session-kevin.mjs`) ; le robot refait EXACTEMENT les appels du widget ou de la page (pas une imitation), marque ses appels « sonde », n'écrit rien, et rend le verdict en annotations. Exemples vivants : `verif-live-apex.yml` (Apex comme Kevin, 8 contrôles), `coffre-compte-ouvrir.yml` (lire / ouvrir une fiche), `coffre-bee-tester.yml` (le bouton 🩺 Tester Bee + une vraie question, 17.10).
+- **Ce que Kevin voit** : « Vérifié réel : … (run, heure) » — plus jamais une liste d'étapes à faire pour me prouver que ça marche.
+- **Garde** : `test:bee-tester` (le robot fait les deux appels du widget, jamais le jeton dans le journal, lecture seule, pas de cron).
+
 ## 🔌 RÈGLE ABSOLUE — SE CONNECTER RÉELLEMENT PARTOUT : CHAQUE SESSION OUVRE LE VRAI DOMAINE ET VÉRIFIE ELLE-MÊME (Kevin 2026-10-17, ABSOLUE)
 
 **« Dis à toutes tes branches de se connecter réel partout, même le domaine, trouve des solutions, pour toujours tout vérifier réel partout. »** (16.10 nuit, redit le 17.10) puis **« Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. »** — Kevin 2026-10-17

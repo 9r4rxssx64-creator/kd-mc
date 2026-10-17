@@ -1,0 +1,37 @@
+name: Coffre — tester Bee à la place de Kevin (bouton 🩺 + une vraie question, lecture seule)
+
+# 17.10.2026 (Kevin : « Test tout toi réel toujours à la place ») : au lieu de lui demander « touche 🐝 puis 🩺 Tester Bee et envoie-moi
+# la capture », ce robot le fait avec SA session (code admin = empreinte, secret) : le bilan de Bee (/__javis/ai {diag:true}) puis une
+# vraie question. Verdict en annotations. Rien n'est écrit dans l'arbre. Reste au COFFRE (secret admin). À la main / API — jamais de cron.
+# branche-de-relecture : lecture seule, aucune branche créée.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Depuis quelle app ? (arbre, lingua, admin…)"
+        default: "arbre"
+      question:
+        description: "La question posée à Bee après le bilan"
+        default: "Quelle est la date d’aujourd’hui ? Réponds en une phrase."
+
+permissions:
+  contents: read
+
+jobs:
+  tester:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5   # gratuit par défaut (Kevin 30.09) : 3 appels au domaine, marqués sonde
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Tester Bee (porte admin, session de Kevin)
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          # les entrées passent par env:, jamais dans le shell (garde test:workflows-shell)
+          APP_DEMANDEE: ${{ inputs.app }}
+          QUESTION_DEMANDEE: ${{ inputs.question }}
+        shell: bash -eo pipefail {0}
+        run: node tools/smoke/bee-tester.mjs --app "$APP_DEMANDEE" --question "$QUESTION_DEMANDEE"

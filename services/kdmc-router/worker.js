@@ -2510,7 +2510,7 @@ async function handleLingua(request, url, env) {
           + "N'invente rien : si tout est juste, renvoie des listes vides. Ne corrige pas une phrase en français volontaire. "
           + 'Réponds UNIQUEMENT par un objet JSON, sans texte autour : {"bravo":"une phrase courte en français qui félicite pour une chose précise bien dite","corrections":[{"dit":"la phrase exacte dite","mieux":"la phrase corrigée et naturelle en ' + langName + '","pourquoi":"une phrase simple en français"}],"a_cote":[{"dit":"la phrase exacte dite","question":"ce que demandait la mascotte, en français, court","idee":"une réponse simple et correcte en ' + langName + ' qui répond vraiment à la question"}]}';
         const corps = t10.map((x, i) => (i + 1) + '. ' + (x.q ? 'Question de la mascotte : « ' + x.q + ' »\n   ' : '') + 'Phrase dite : ' + x.d).join('\n');
-        const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: corps }], domain: 'translation', chain: chaineGratuite(env, 'translation'), maxTokens: 650, temperature: 0.2, timeoutMs: 15000 });
+        const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: corps }], domain: 'translation', chain: chaineGratuite(env, 'translation'), maxTokens: 650, temperature: 0.2, timeoutMs: 12000, budgetMs: 20000 });   /* 17.10 (réel, run 39032054956) : TOUTE la chaîne tient en 20 s — l'écran ne reste plus « prépare ton bilan… » */
         if (!ai.ok) return JL({ ok: false, reason: 'ai_absent' });
         return JL(Object.assign({ ok: true, by: ai.provider }, lireBilanAppel(ai.text, dites)));
       }

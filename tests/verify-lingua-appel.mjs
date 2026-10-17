@@ -175,4 +175,8 @@ try {
   ok(!/Appeler Bee/.test(await texte(E.p)) && !(await E.p.$('.appel-ov')), '7. mode enfant : ni carte, ni appel (rien ne part vers une IA)');
   for (const [n, P] of [['A', A.p], ['B', B.p], ['C', C.p], ['D', D.p], ['E', E.p], ['F', F.p], ['G', G.p]]) ok(P._err.length === 0, `7b. aucune erreur JavaScript (${n})`, P._err.join(' | '));
 } finally { await nav.close(); }
+/* ⏱ (v2.142.1, vu en réel run 39032054956) : le bilan ne reste jamais « prépare ton bilan… » sans fin — contrôle du code de l'écran */
+{ const src = readFileSync('lingua/app.js', 'utf8'); const f = src.slice(src.indexOf('function appelBilanBloc('), src.indexOf('function appelTranscription('));
+  ok(/AbortController/.test(f) && /ctl\.abort\(\)/.test(f) && /__apBilanMs\|\|28000/.test(f) && /clearTimeout\(minuteur\)/.test(f) && /signal:ctl\?ctl\.signal/.test(f) && /Bilan indisponible/.test(f),
+    '4. bilan : 28 s au plus puis « indisponible » (la requête est coupée, le minuteur nettoyé)'); }
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`); process.exit(fail ? 1 : 0);

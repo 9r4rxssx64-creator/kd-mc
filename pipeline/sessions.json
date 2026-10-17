@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-16",
+  "maj": "2026-10-17",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -2157,10 +2157,11 @@
       "branche": "claude/publication-auto-cron",
       "sujet": "cron kdmc-outlook → publier-depuis-coffre.yml au public + robots-a-relancer ; 0 minute du coffre",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-17",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "prouvé réel : tick 00h00 UTC → run public 38984287765 (déjà à jour)"
     }
   },
   "messages": [

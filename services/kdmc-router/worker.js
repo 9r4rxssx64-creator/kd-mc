@@ -3433,7 +3433,7 @@ async function handleSso(request, url, env) {
           ok: false, reason: per.raison, hors_perimetre: true, app,
           message: per.raison === 'ferme_general' ? MSG_FERME_GENERAL : per.raison === 'bloque_ici'
             ? 'Ton accès à cette application a été fermé par l\'administrateur.'
-            : per.raison === 'attente_admin' ? 'Ton compte attend la validation de l\'administrateur. Tu seras ouvert dès qu\'il l\'accepte.'
+            : per.raison === 'attente_admin' ? 'Ton compte n\'est pas encore ouvert : touche le lien du mail « Confirme ton compte kd-mc.com » (regarde aussi dans les indésirables). Il s\'ouvre tout seul.'
             : per.raison === 'refuse_admin' ? 'L\'administrateur n\'a pas validé ce compte.'
             : 'Ton compte n\'est pas ouvert sur cette application.',
         });

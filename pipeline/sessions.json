@@ -2492,6 +2492,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-fiche-parite": {
+      "titre": "Fiche Bee ↔ Apex ↔ Claude Code",
+      "branche": "claude/bee-fiche-parite",
+      "sujet": "BEE-PARITE.md + mesure réelle du widget",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

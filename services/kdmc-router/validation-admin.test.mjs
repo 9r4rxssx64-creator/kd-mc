@@ -52,7 +52,7 @@ const T = r.j.token;
 ok(r.j.ok === true && r.j.attente_admin === true && T && /administrateur/.test(r.j.message || ''), '2. compte créé, la réponse dit « en attente de l\'administrateur »', r);
 ok(fiche('paul-sanswa') && fiche('paul-sanswa').attente_admin === true && kv.has('cred:paul-sanswa'), '2b. la fiche porte attente_admin, le code est posé (nom + code marcheront après validation)', fiche('paul-sanswa'));
 let w = await who(T, 'cmcteams.kd-mc.com');
-ok(w.j.ok === false && w.j.reason === 'attente_admin' && w.j.hors_perimetre === true && /validation/.test(w.j.message || ''), '2c. une app le refuse : attente_admin, message clair', w.j);
+ok(w.j.ok === false && w.j.reason === 'attente_admin' && w.j.hors_perimetre === true && /mail/.test(w.j.message || '') && !/validation de l/.test(w.j.message || ''), '2c. une app le refuse : attente_admin, message clair (17.10 : il dit d\'ouvrir le mail de confirmation)', w.j);
 w = await who(T, 'lingua.kd-mc.com');
 ok(w.j.ok === false && w.j.reason === 'attente_admin', '2d. … une autre aussi (fermé PARTOUT sauf le portail)', w.j);
 w = await who(T, 'kd-mc.com');

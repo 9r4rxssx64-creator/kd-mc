@@ -157,7 +157,11 @@ try {
   if (!ban) {
     /* POURQUOI le portail n'affiche rien : des statuts et des noms de clés seulement (jamais une valeur) */
     const diag = await page.evaluate(() => { let cles = ''; try { cles = Object.keys(localStorage).filter((k) => /kdmc|sso|admin/i.test(k)).join(','); } catch (_) { /* stockage interdit */ }
-      const b = window.kdmcBoite; return { chemin: location.pathname + location.hash.slice(0, 20), boite: typeof b, donnees: !!(b && b.donnees && b.donnees()), cles, texte: document.body.innerText.length, cookie: /kdmc_sso=/.test(document.cookie) }; }).catch((e) => ({ erreur: String(e && e.message).slice(0, 80) }));
+      const b = window.kdmcBoite, z = (id) => { const e = document.getElementById(id); return e ? (e.hidden ? 'caché' : 'visible') : 'absent'; };
+      return { chemin: location.pathname + location.hash.slice(0, 20), boite: typeof b, donnees: !!(b && b.donnees && b.donnees()), cles, texte: document.body.innerText.length, sso: typeof window.kdmcSSO, jeton: !!(window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token()), bandeau: z('cercle-alerte'), espacePrive: z('priv-zone'), tableau: z('tdb-haut'), sw: !!(navigator.serviceWorker && navigator.serviceWorker.controller) }; }).catch((e) => ({ erreur: String(e && e.message).slice(0, 80) }));
+    /* ce que le DOMAINE répond au portail sur « qui es-tu » : des booléens et un état, jamais un nom */
+    const qui = await page.evaluate(async () => { try { const t = localStorage.getItem('kdmc_sso_token') || ''; const x = await fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store', headers: t ? { authorization: 'Bearer ' + t } : {} }); const j = await x.json().catch(() => ({})); return { st: x.status, ok: !!j.ok, admin: !!j.admin, verified: !!j.verified, state: j.state || '', nom: !!j.name, code: !!j.code }; } catch (e) { return { erreur: String(e && e.message).slice(0, 60) }; } });
+    dire('ℹ️ whoami (ce que le domaine répond à la session du robot) : ' + JSON.stringify(qui));
     dire('ℹ️ diagnostic du portail : ' + JSON.stringify(diag) + ' · appels du domaine : ' + (appels.slice(0, 25).join(' ; ') || 'aucun') + ' · erreurs de page : ' + (fautes.slice(0, 5).join(' | ') || 'aucune'));
   }
   const D = await page.evaluate(() => (window.kdmcBoite && window.kdmcBoite.donnees && window.kdmcBoite.donnees()) || null);

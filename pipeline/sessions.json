@@ -290,10 +290,10 @@
       "sujet": "fidelite-pdf",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-09-10",
+      "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": "javis-bee : test:fiches-privees ROUGE 8 fois sur 12 sur main (mesuré 27.09) : « ce qu'un vieux téléphone republie est rangé au privé par l'appareil de l'admin » — il rend test:ci rouge pour tout le monde",
-      "note": "10.09 : équipes lues dans le récapitulatif page 1 (v9.897), octobre 2026 intégré, cellules+équipes 0 écart 4 mois × 2 surfaces, CASSINI A/MOREL F retrouvés"
+      "note": "17.10 : carte des connectés en direct + historique (CMCteams v9.979, light v1.105), règles Firebase cmcteams_lieux_hist à publier"
     },
     "secrets-guard": {
       "titre": "Garde anti-fuite de secrets (branche annexe de domaine-audit)",

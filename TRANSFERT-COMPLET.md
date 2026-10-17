@@ -50,7 +50,7 @@
 <!-- MAJ-AUTO:debut etat-live -->
 | Ce qui bouge | État au 2026-10-17 | Mesuré par |
 |---|---|---|
-| Branches dans le dépôt | **891** | `git ls-remote` |
+| Branches dans le dépôt | **893** | `git ls-remote` |
 | Visibilité du dépôt | **private** | API GitHub |
 | État de la CI | 🟢 **elle tourne** — 0/30 échecs immédiats | API GitHub |
 <!-- MAJ-AUTO:fin etat-live -->

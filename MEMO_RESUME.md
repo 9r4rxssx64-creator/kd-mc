@@ -1,5 +1,19 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (midi, v9.979 / v1.105) — carte des connectés : en direct + historique, CMCteams ET light
+- **Demande de Kevin** (capture de la light : « Personne en direct pour l'instant », « 1 en ligne ») : voir les connectés des apps ouvertes avec leurs positions, en direct et en historique, sur la carte.
+- **Mesuré** : la light n'a aucun code qui demande l'autorisation de position (seul CMCteams a « Tout autoriser ») → rien ne partait de la light ; et sans mouvement, `watchPosition` ne rappelle plus : une personne immobile devenait « il y a 40 min ».
+- **Livré** : carte à deux onglets (En direct / Historique), battement 45 s, bouton « Activer ma position » (secours admin), light : l'accord déjà enregistré au domaine suffit (aucun écran de la light, l'iPhone pose sa question native une fois par adresse, `lieu_live_natif`), historique 30 jours (`cmcteams_lieux_hist`, règles dans `firebase-rules-apex.json`), connectés sans position listés. Branché CMCteams (`heures-cmc.js` : connectes/nomDe) et light (copie exacte).
+- **À publier** : les règles Firebase (`deploy-cmcteams-rules.yml` au dépôt public) — sans elles les points d'historique sont refusés en silence (le direct, lui, marche déjà).
+- **Non vérifié** : le rendu sur le vrai iPhone de Kevin (admin protégé) ; tuiles OSM remplacées par un fond uni dans les tests.
+
+## 2026-10-17 (après-midi) — Les 9 incohérences de l'arbre : recherche sur documents (Kevin : « vérifie réel, mets de l'ordre »)
+- 5 recherches en parallèle (dossiers par question, brief `scratchpad/neuf/BRIEF-RECHERCHE.md`). **Écrit dans l'arbre** (sauvegardes o-2026-10-17T13-52-08 → 13-53-14, rejouer = 0, `--avant` = 0) :
+  Guy Gilbert MEZONNIAUD relié à Marcel + Suzanne (recensements Chevrainvilliers 1931/1936 lus, images rangées dans sa fiche) ; Olivier ‹employé› détaché de Jean Antoine Pierre (acte Beaulieu 1925 n° 12 : seul mariage, sans enfant ; Olivier = traiteur de La Trinité, même adresse au Journal de Monaco 2014 et au registre des entreprises) ;
+  « Rosa Germaine » = mélange de Germaine Léonie Lucienne et Léonie Rosa Désirée (actes lus) ; Denise FILIPOSI → FILIPOZZI (INSEE + avis de décès « veuve de Jacques TOURSEL »).
+- **Non tranché, documents demandés par mail** : Charles 1904 et les deux Jean ‹employé› (Beaulieu, Villefranche, Nice — AD06 refuse la session) ; Roger ‹employé› (Beaulieu : mariage 1941, décès 1990 n° 65) ; Monique ‹employé› (Nice 1935, demandé le 8.10) ; René/Renée IRLE (registres Toulouse en panne 503, acte demandé réf. A 26030437) ; Jacques VIGOUROUX (acte de décès Antibes 1981 n° 317, à demander par courrier : pas d'adresse mail).
+- Kevin demande de « forcer les captcha » : refusé (contournement) ; solutions légitimes proposées : Claude in Chrome sur son PC (il clique le captcha lui-même), le Lenovo comme poste de recherche, les mairies par mail.
+
 ## 2026-10-17 — 2e test voisin du marqueur : `sso-permanent` (admin jamais prolongé)
 
 Le déploiement du routeur est retombé rouge : `sso-permanent.test.mjs` 4b exigeait AUCUN `set-cookie` pour l'admin Face ID ; le marqueur « c'est Kevin » en est un (pas une session). Test corrigé (aucun cookie de SESSION `kdmc_sso=`). Le détecteur de ma boucle de tests ne voyait pas « 1 failed » → élargi (✗, échec, FAIL, failed, ❌). **Signalé** : `verify-bee-connexion-iphone` et `verify-compte-unique-portail` sont rouges AVANT mon marqueur (mesuré sur le commit 363913b0) — probablement l'inscription par mail du portail (autre session).

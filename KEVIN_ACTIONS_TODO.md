@@ -9,6 +9,8 @@
 
 ---
 
+## 🟡 (17.10) Pour que je cherche sur les sites d'archives qui bloquent ma session : installe « Claude in Chrome » sur ton ordinateur (https://claude.com/chrome) et dis-le-moi — je chercherai dans TON navigateur, tu cliqueras seulement les captcha.
+
 ## ✅ (17.10) L'alerte « Apex Chat DOWN » du 16.10 (18h → 20h) — rien à faire pour toi
 Un seul contrôle raté à 18h (heure de Monaco), réussi au suivant : le robot ne regarde que toutes les 2 h, d'où « 1 h 59 ». Les messages n'étaient pas perdus pour autant (rien n'a été effacé, sauvegarde du jour faite). Ce jour-là, il n'y a eu ni mise en ligne ni incident Cloudflare à l'heure du raté, et le robot ne gardait pas la cause : elle est introuvable après coup.
 **Changé** : (1) avant de crier « en panne », le robot réessaie 4 secondes plus tard — un raté isolé ne t'envoie plus d'e-mail ; (2) une vraie panne : l'e-mail Healthchecks dit maintenant POURQUOI (ex. « 503 d1:ko » = la base, « do:ko » = le serveur de conversation, « backup:stale » = sauvegarde en retard, « timeout ») ; (3) un journal des 30 dernières pannes et ratés. **Si tu reçois encore un e-mail DOWN** : transfère-le-moi, la cause sera dedans.
@@ -17,6 +19,7 @@ Un seul contrôle raté à 18h (heure de Monaco), réussi au suivant : le robot 
 
 ## 👆 (16.10 soir) CE QUI T'ATTEND — à jour
 
+0c. **Carte des connectés (17.10)** : ouvre la light → 🛰 Localisation en direct. Ton iPhone te pose **sa** question « Autoriser la localisation ? » une seule fois pour la light → Autoriser (c'est Apple, aucune page ne peut le faire à ta place). Si tu avais refusé avant : bouton jaune « 📍 Activer ma position » ou Réglages → Safari → Localisation. Ensuite plus rien : tu te vois en direct et l'onglet 🕘 Historique garde les trajets 30 jours.
 0. **Essayer « Bee ouvre » (iPhone, 1 minute)** : dans n'importe quelle app, touche 🐝 et écris « montre-moi l'arbre de Yann Lorenzi » → un bouton **↗ Ouvrir** apparaît et l'arbre s'ouvre sur Yann (2 s, ou « Rester ici »). Essaie aussi « ouvre la light » et « va sur apex chat ». Si ça ne s'ouvre pas, touche **🩺 Tester Bee** et envoie-moi la capture.
 0f'. **Lingua v2.142.2 (1 appel, 2 minutes)** : ouvre https://lingua.kd-mc.com → « Appeler Bee » → réponds exprès à côté d'une question (ex. elle demande ton sport, tu dis ce que tu manges). À la fin, « Ton bilan » doit montrer **« 🎯 À côté de la question »** avec une réponse proposée (🔊), et ne plus dire « impeccable ». Le bilan doit arriver en moins de 30 secondes (sinon il dit « Bilan indisponible » — dis-le-moi).
 00. ✅ **FAIT le 17.10 à 12:18 UTC — les 2 anciens sites ne montrent plus rien** : `kdmc-site.pages.dev` et `kdmc0.pages.dev` répondent **000 / 0 octet** (projets supprimés sur ton compte `ffaca6f3…`, 103 déploiements effacés avant). Il te reste **une touche facultative** : supprimer la clé `pages-nettoyage` (https://dash.cloudflare.com/profile/api-tokens → ⋯ → Supprimer) — sinon elle meurt toute seule le 18.10.

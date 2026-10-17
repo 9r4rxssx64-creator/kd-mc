@@ -4,6 +4,14 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.979 + light v1.105 (2026-10-17 — « Je veux voir les connectés des apps ouvertes avec leurs positions, avec historique, sur la map en live et historique »)
+
+- **Carte à deux onglets** (`tools/shared/lieu-live.js`, copie exacte dans la light) : **🟢 En direct** (ronds qui pulsent pour ceux dont l'app est ouverte, point vert au casino / orange dehors / gris si ancien, **connectés SANS position listés 📵**, toucher un point → « 🕘 Son historique ») et **🕘 Historique** (une personne + un jour : trait, curseur de temps, ▶ Rejouer, résumé heures / positions / km / temps sur site, entrées et sorties du casino à l'heure près ; « 👥 Tous ce jour » ; « 🗑 Effacer son historique »).
+- **Cause du « Personne en direct »** : la light ne demandait **jamais** l'autorisation de position (une autorisation iPhone est propre à chaque adresse), donc rien ne partait de la light. Désormais, **sans aucun écran de plus** (Kevin 17.10 : « les autorisations sont demandées à l'inscription et après plus jamais, valable pour toute l'app du domaine ») : quand le domaine a enregistré l'accord de la personne, la light laisse l'iPhone poser sa question native **une seule fois** par adresse (refus retenu, jamais redemandé) ; le bouton « 📍 Activer ma position » de l'admin n'est qu'un secours.
+- **Une personne immobile ne « disparaît » plus** : un battement renvoie sa position toutes les 45 s tant que l'app est ouverte.
+- **Historique** : `/cmcteams_lieux_hist/<numéro>/j/<jour>/<heure>` (un point par minute au plus quand on bouge ≥ 50 m, un toutes les 5 min à l'arrêt) ; règles Firebase : ajout seulement, lecture et effacement **admin seulement** ; jours de plus de 30 jours effacés tout seuls à l'ouverture.
+- Garde `test:lieu-live` : 44 vérifications (H1-H4 écriture, A1-A12 admin, I1-I3 invitation, R2-R3 règles), sabotage prouvé (12 rouges sans le module).
+
 ## CMCteams v9.979 · routeur (2026-10-17 — les années d'entrée données à l'inscription complètent les fiches toutes seules)
 - Nouveau `tools/shared/anciennetes-domaine.js` : à la connexion de l'admin, CMCteams relit `GET /__admin/anciennetes` (routeur, admin seulement : matricule + années, rien d'autre) et remplit `dateEntreeSbm` / `dateEntreeJeux` des fiches vides (1er janvier, source « domaine ») ; les chefs d'équipe se recalculent seuls, la light reçoit la carte par Firebase. Une date déjà saisie n'est jamais écrasée. Gardes `test:anciennetes-routeur` (11 ✅) et `test:anciennetes-domaine` (9 ✅).
 - Départs : avance à l'entrée confirmée à **0 minute** par Kevin (« Laisse 0 »).

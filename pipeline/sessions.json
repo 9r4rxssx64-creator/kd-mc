@@ -2425,10 +2425,11 @@
       "branche": "claude/anciennetes-domaine",
       "sujet": "/__admin/anciennetes + tools/shared/anciennetes-domaine.js ; départs 0 min confirmé",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-17",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "EN LIGNE 17.10 14:05 UTC (run 39039220443) : sw.js v9.979 servi, /__admin/anciennetes 403 anonyme"
     },
     "javis-bee-marqueur-test": {
       "titre": "Javis / Bee — test cookies admin",
@@ -2445,15 +2446,37 @@
       "branche": "claude/sso-permanent-marqueur",
       "sujet": "sso-permanent.test.mjs 4b précis",
       "surfaces": [],
-      "etat": "actif",
+      "etat": "termine",
       "maj": "2026-10-17",
       "attend_kevin": null,
-      "attend_session": null
+      "attend_session": null,
+      "note": "fusionnée #4770 ; déploiement routeur vert (run 39039220443)"
     },
     "javis-bee-marqueur-test2": {
       "titre": "Javis / Bee — test sso-permanent",
       "branche": "claude/bee-marqueur-test2",
       "sujet": "sso-permanent : cookie de session vs marqueur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "v9979-en-ligne-abandonnee": {
+      "titre": "Docs v9.979 (branche ABANDONNÉE : dédoublonnage fautif, PR #4772 fermée)",
+      "branche": "claude/v9979-en-ligne",
+      "sujet": "ne pas reprendre ; remplacée par claude/v9979-en-ligne-v2",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "abandonnée"
+    },
+    "v9979-en-ligne": {
+      "titre": "Docs : v9.979 en ligne, vérifié réel",
+      "branche": "claude/v9979-en-ligne-v2",
+      "sujet": "MEMO + doublon 635 bis déplacé",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",

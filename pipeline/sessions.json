@@ -2211,6 +2211,17 @@
       "etat": "actif",
       "maj": "2026-10-17",
       "attend_kevin": null,
+      "attend_session": null,
+      "note": "17.10 12:18 UTC : fuite Pages FERMÉE (kdmc-site 103 déploiements + kdmc0 supprimés sur ffaca6f3…, adresses → 000). Outil tools/cloudflare/pages-supprimer.mjs, branche claude/pages-supprimer-outil"
+    },
+    "pages-supprimer-outil": {
+      "titre": "Outil pages-supprimer : fuite Pages fermée",
+      "branche": "claude/pages-supprimer-outil",
+      "sujet": "kdmc-site et kdmc0 supprimés sur le compte de Kevin ; outil + garde + leçon #611",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
       "attend_session": null
     }
   },

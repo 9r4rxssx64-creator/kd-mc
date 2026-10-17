@@ -255,6 +255,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/compte-ouvrir-robot` | 17.10 | Robot « ouvrir un compte en attente » à la place de Kevin (Yann) | `compte-ouvrir-robot` |
 | `claude/publication-auto-cron` | 17.10 | Publication automatique vers le dépôt public (cron outlook → robot public), relanceur de déploiements | `publication-auto-cron` |
 | `claude/pages-nettoyage-compte` | 17.10 | Fuite Pages : le robot public `pages-nettoyage.yml` reçoit une entrée `compte` + diagnostic de la clé (le secret voyait 0 projet) | `pages-nettoyage-compte` |
+| `claude/pages-supprimer-outil` | 17.10 | Outil `pages-supprimer.mjs` + fuite Pages fermée (kdmc-site, kdmc0 supprimés, 12:18 UTC) ; leçon #613 | `pages-supprimer-outil` |
 | `claude/regle-publique-1610` | 16.10 | Règle « mettre en ligne sans quota » (gratuit-public.md) ; puis robots publics verts : lock Apex suivi, 7 robots au coffre, semgrep scan, clone en 3 essais, suivis m215→m219 (#4659, #4665) — fusionnée | `audit-apex-1610` |
 | `claude/robots-publics-1610-b` | 16.10 | Lighthouse lit sa config, Axe sert son paquet, signal « coffre-a-change » mort retiré ; m223 (#4669) — fusionnée | `audit-apex-1610` |
 | `claude/pipeline-garde-1610` | 16.10 | Garde pipeline-sessions : `claude/docs-complets` inscrite ; 2 branches fusionnées justifiées (#4675) — fusionnée | `audit-apex-1610` |

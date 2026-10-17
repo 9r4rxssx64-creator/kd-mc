@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (12h18 UTC) — ✅ FUITE PAGES FERMÉE POUR DE VRAI : `kdmc-site` (103 déploiements) et `kdmc0` supprimés sur le compte de Kevin
+- Diagnostic du robot (run 39031063480, dépôt public) : la clé du robot voit **1 compte : `425377ca…`** ; le compte visé `ffaca6f3…` est « PAS vu par la clé ». Ce n'est pas Kevin qui avait un autre compte, c'est le robot (correction de ce que les docs disaient depuis le 16.10).
+- Kevin a créé une clé `pages-nettoyage` (Tous les comptes · Cloudflare Pages : Modifier). 1er essai refusé (« Authentication error » malgré `active`) : la **date de début du TTL était le 19.10** ; corrigée au 17.10 → la clé passe.
+- Nouvel outil `tools/cloudflare/pages-supprimer.mjs` (liste blanche kdmc0/kdmc-javis/kdmc-site, essai à blanc par défaut, clé lue dans l'environnement, jamais écrite) : `kdmc-site` → 103 déploiements effacés puis projet supprimé ; `kdmc0` → 1 déploiement (la production, part avec le projet) puis supprimé.
+- Vérifié réel (12:18 UTC) : `https://kdmc-site.pages.dev/` → 000 / 0 octet, `https://kdmc0.pages.dev/` → 000 / 0 octet, `https://kd-mc.com/` → 200 / 34 780 octets. Le fichier temporaire de la clé est détruit ; la clé meurt le 18.10 (Kevin peut la supprimer avant).
+- Garde `test:pages-supprimer` (6 ✅, dans test:ci). Leçon #613.
+## 2026-10-17 — Arbre v3.118 : « 👪 L'histoire de sa famille » sur chaque fiche, à lire et écouter (Kevin)
+- `histoireFamille(id)` compose À L'OUVERTURE de la fiche le récit de toute sa famille (ancêtres génération par génération côté père puis mère, parents, la personne, frères et sœurs, couple, enfants, petits-enfants) à partir des premières phrases de l'histoire de chacun → toujours à jour des fiches ; phrases avec « probable/piste » écartées ; 🔊 `data-lire="famille"`. Vérifié sur données réelles (Yann 5,5 k car., Kevin, Laurence). Garde `test:arbre-ma-vue` (sabotage rouge).
+
 ## 2026-10-17 — Textes des fiches : réécriture complète, plus de « probable » (Kevin, absolue, pour tout le monde)
 - **Règle** : `CLAUDE-HISTOIRE.md` + `.claude/rules/textes-fiches.md` + LESSONS 612 (fait prouvé = sans réserve ; manque = « 🔎 À retrouver » neutre ; décès sobres ; récit « petite histoire » ; note RÉÉCRITE à chaque nouveau document).
 - **Constat** : 243 fiches sur 329 contenaient « probable / piste / à confirmer » ou une recherche négative sur un décès (ex. Marie-France « probablement divorcée » alors que le Journal de Monaco n° 5988 l'établit).

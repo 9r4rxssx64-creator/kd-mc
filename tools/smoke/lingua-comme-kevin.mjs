@@ -61,6 +61,9 @@ ok('session de Kevin ouverte pour de vrai (code admin → /__admin/login)' + (pp
 const domaineCookie = /kd-mc\.com$/.test(hoteBase) ? '.kd-mc.com' : hoteBase;
 const nav = await chromium.launch();
 const ctx = await nav.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', serviceWorkers: 'block' });
+/* comme l'iPhone de Kevin : Lingua ouverte depuis l'écran d'accueil (mode « installé ») — c'est là que la bulle de version se
+   posait sur les onglets (photo du 17.10). */
+await ctx.addInitScript(() => { try { Object.defineProperty(navigator, 'standalone', { get: () => true }); } catch (e) { /* */ } });
 await ctx.addCookies([{ name: 'kdmc_sso', value: pp.jeton, domain: domaineCookie, path: '/', secure: BASE.startsWith('https'), httpOnly: true, sameSite: 'Lax' }]);
 await marquerSonde(ctx, 'lingua-comme-kevin', [BASE, PORTAIL]);
 await ctx.route((u) => /\.(png|jpe?g|gif|webp|mp4|webm|woff2?|ttf|otf)($|\?)/i.test(u.pathname), (r) => r.abort());
@@ -137,6 +140,19 @@ try {
   const cartes = await page.evaluate(() => ['vie-link', 'appel-link', 'cercle-link', 'verbs-link', 'pron-link', 'hist-link', 'stats-link']
     .filter((c) => document.querySelector('.' + c))).catch(() => []);
   chk(cartes.length >= 6, `cartes de l'accueil : ${cartes.length}/7 (${cartes.join(', ')})`);
+  /* 17.10 (photo de Kevin) : rien de ce que le domaine pose par-dessus ne cache les onglets ni le haut de l'écran */
+  await attends(1800);
+  const dessus = await page.evaluate(() => {
+    const r = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return b.width && b.height ? { l: b.left, r: b.right, t: b.top, b: b.bottom } : null; };
+    const sur = (a, b) => !!(a && b && a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t);
+    const barre = r(document.querySelector('.tabbar')), haut = r(document.querySelector('.topbar'));
+    const poses = [['bulle de version', '#kdmc-version-badge'], ['✉️', 'button[aria-label="Écrire à l\'admin"]'], ['« ← Portail »', 'a[data-kdmc-pastille]']]
+      .map(([n, q]) => [n, r(document.querySelector(q))]).filter((x) => x[1]);
+    return { barre: !!barre, portail: !!document.querySelector('.tabbar a[data-kdmc-retour][href="https://kd-mc.com/"]'),
+      caches: poses.filter(([, x]) => sur(x, barre) || sur(x, haut)).map(([n]) => n) };
+  }).catch(() => ({ caches: ['(lecture impossible)'] }));
+  chk(dessus.barre && dessus.caches.length === 0, `rien ne cache tes onglets ni le haut de l'écran (iPhone « installé ») ${dessus.caches.length ? '— cachent : ' + dessus.caches.join(', ') : ''}`);
+  chk(dessus.portail, 'ta sortie « 🚪 Portail » est dans la barre du bas');
   const pod = await page.evaluate(() => { const p = document.querySelector('.plan-phrase'); if (!p) return null; return { t: (p.querySelector('b') || {}).textContent || '', fr: (p.querySelector('.pod-fr') || {}).textContent || '' }; }).catch(() => null);
   if (pod) chk(!!pod.t && pod.t.trim() !== pod.fr.trim(), 'phrase du jour : une vraie traduction (pas le français recopié)'); else gris('phrase du jour non affichée sur ce compte');
   await capture(page, 'accueil');

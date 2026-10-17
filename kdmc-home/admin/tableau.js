@@ -407,7 +407,7 @@
       var b = document.createElement('button'); b.type = 'button'; b.className = m.nonLus ? 'nv' : '';
       var q = document.createElement('div'); q.className = 'qui'; q.textContent = (m.nonLus ? '● ' : '') + (m.de || '?') + ' · ' + String(m.app || '').replace('.kd-mc.com', '');
       var t = document.createElement('div'); t.className = 'quoi'; t.textContent = m.texte || '';
-      b.appendChild(q); b.appendChild(t); b.onclick = function () { aller('boite'); };
+      b.appendChild(q); b.appendChild(t); b.onclick = function () { if (global.kdmcBoite) global.kdmcBoite.ouvrir(m.cle); else aller('boite'); };   /* la ligne touchée ouvre CE message */
       liste.appendChild(b);
     });
     if (liste.childNodes.length) z.appendChild(liste);

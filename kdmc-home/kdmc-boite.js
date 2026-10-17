@@ -100,7 +100,12 @@
     r = el('div'); r.id = 'boite-fen'; r.hidden = true; r.setAttribute('role', 'dialog'); r.setAttribute('aria-modal', 'true'); r.setAttribute('aria-label', 'Mes messages');
     document.body.appendChild(r); return r;
   }
-  function ouvrir(cle) { ouverte = true; atterrir = true; cibleCle = typeof cle === 'string' ? cle : ''; conv = ''; var r = racine(); r.hidden = false; document.documentElement.classList.add('boite-ouverte'); dessiner(); rafraichir(); armer(); }
+  function ouvrir(cle) {
+    ouverte = true; atterrir = true; cibleCle = typeof cle === 'string' ? cle : ''; conv = '';
+    /* 17.10 (capture de Kevin : « Coucou » de Davy dans le tableau de bord) : une LIGNE touchée ouvre CE message — une conversation à laquelle on peut
+       répondre en plein écran ; une alerte ou une demande par e-mail, sa carte dépliée dans la liste. Plus de « ouvrir la boîte » puis re-chercher. */
+    var cm = cibleCle && D ? trouver(cibleCle) : null;
+    if (cm && cm.repondre !== 'direct') { atterrir = false; cibleCle = ''; filtre = 'tous'; ouvert = cm.cle; if (cm.nonLus) ecrire('lu', { cles: [cm.cle] }).then(function () { return rafraichir(); }); setTimeout(function () { var c = document.querySelector('#boite-fen .bf-c.ouv'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'start' }); }, 60); } var r = racine(); r.hidden = false; document.documentElement.classList.add('boite-ouverte'); dessiner(); rafraichir(); armer(); }
   function fermer() { ouverte = false; atterrir = false; conv = ''; var r = racine(); r.hidden = true; r.style.height = ''; r.style.top = ''; r.style.bottom = ''; document.documentElement.classList.remove('boite-ouverte'); armer(); }
   function armer() {
     if (timer) clearInterval(timer);

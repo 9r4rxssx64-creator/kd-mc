@@ -134,5 +134,14 @@ async function scenario(nom, essai, refus, compteur, magasinPartage) {
   chk(r.status === 429 && j.reason === 'verrou_code_admin' && /session admin/.test(j.message || ''), 'kdmc-router : verrou fermé → le CODE en clair aussi refusé (429, message simple)');
 }
 
+/* apex-secrets-proxy (worker généré par le workflow) : même KV, même clé, vérifié AVANT de juger le code */
+{
+  const wf = (await import('node:fs')).readFileSync(new URL('../.github/workflows/sync-apex-secrets-to-cf-worker.yml', import.meta.url), 'utf8');
+  const vp = (wf.match(/async function verifyPin\(req, env\) \{[\s\S]*?\n          \}/) || [''])[0];
+  chk(/binding = "ACCOUNTS"/.test(wf) && /'rl:codeadmin:' \+ new Date\(\)\.toISOString\(\)\.slice\(0, 13\)/.test(wf)
+    && vp.indexOf('verrouFerme') >= 0 && vp.indexOf('verrouFerme') < vp.indexOf('verifyPinBrut') && /verrouEchec/.test(vp),
+    'apex-secrets-proxy : KV ACCOUNTS lié, même clé rl:codeadmin:<heure>, verrou lu AVANT de juger le code');
+}
+
 console.log(`\n=== ${ok} OK / ${ko} FAIL ===`);
 process.exit(ko ? 1 : 0);

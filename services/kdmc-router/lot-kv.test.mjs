@@ -4,6 +4,7 @@
    Le KV de Cloudflare refuse (429) une 2ᵉ écriture sur la même clé dans la même seconde ; `accPut` avale l'erreur → donnée PERDUE.
    Ici un faux KV FIDÈLE à cette règle (il jette « KV PUT failed: 429 » comme le vrai) :
      1. briques : tampon (dernière valeur gagne), lecture du tampon (texte / json), suppression, écriture unique au vider ;
+     1e. après vider : la fiche, le code et le nom sont relus une fois (le cache du lieu gardait « absent » ~60 s, mesuré en réel) ;
      2. après vider : une écriture en fond attend la fin de la seconde (jamais de 429) ;
      3. VRAI routeur, inscription complète (e-mail + téléphone, validation par mail) : aucun 429, chaque clé écrite une fois,
         et la fiche contient TOUT (nom, cgu, téléphone, attente, mail_confirmation, e-mail) ;
@@ -42,6 +43,12 @@ console.log('\n== 1. Les briques ==');
   ok((await lot.env.ACCOUNTS.get('a', 'json')).n === 2 && (await lot.env.ACCOUNTS.get('a')) === '{"n":2}' && (await lot.env.ACCOUNTS.get('b')) === null, '1c. les lectures voient le tampon (dernière valeur, json, suppression)');
   await lot.vider();
   ok(F.ecritures.join() === 'a' && F.m.get('a') === '{"n":2}' && !F.m.has('b') && F.refus.length === 0, '1d. vider : une seule écriture de « a », la dernière valeur', F.ecritures);
+  {
+    const G = kvFidele(); const lus = []; const get0 = G.kv.get; G.kv.get = async (k, t) => { lus.push(k); return get0(k, t); };
+    const lot2 = lotKV({ ACCOUNTS: G.kv }); await lot2.env.ACCOUNTS.put('acc:z', '{}'); await lot2.env.ACCOUNTS.put('cred:z', '{}'); await lot2.env.ACCOUNTS.put('aud:log', '[]');
+    await lot2.vider();
+    ok(lus.includes('acc:z') && lus.includes('cred:z') && !lus.includes('aud:log'), '1e. après vider : relecture de la fiche et du code (rafraîchit le cache du lieu), pas du journal', lus);
+  }
   console.log('\n== 2. Après vider : une écriture en fond attend la seconde ==');
   const t0 = Date.now(); await lot.env.ACCOUNTS.put('a', '3');
   ok(F.refus.length === 0 && F.m.get('a') === '3' && Date.now() - t0 >= 900, '2. écrite après la fin de la seconde, sans 429 (' + (Date.now() - t0) + ' ms)');

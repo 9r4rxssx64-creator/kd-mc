@@ -280,6 +280,7 @@ function perimetreS(acc, app, s) {
   return perimetre(acc, app);
 }
 const MSG_EN_CREATION = 'Ton compte se crée : réessaie dans quelques secondes.';
+const MSG_ATTENTE_MAIL = 'Ton compte n\'est pas encore ouvert : touche le lien du mail « Confirme ton compte kd-mc.com » (regarde aussi dans les indésirables). Il s\'ouvre tout seul.';
 function perimetre(acc, app, fermees) {
   if (!app) return { ok: true, raison: 'adresse_hors_domaine' };
   /* LE PORTAIL EST LA RÉCEPTION : toujours ouvert, à tout le monde. C'est par lui
@@ -2075,6 +2076,8 @@ function ficheRefusee(g, raison) {
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const msg = raison === 'ferme_general' ? MSG_FERME_GENERAL : raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.'
     : raison === 'en_creation' ? MSG_EN_CREATION
+    : raison === 'attente_admin' ? MSG_ATTENTE_MAIL
+    : raison === 'refuse_admin' ? 'L\'administrateur n\'a pas validé ce compte.'
     : 'Ton compte n\'est pas encore ouvert sur cette application. Demande à l\'administrateur de l\'ouvrir.';
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>' + esc(g.nom) + ' — accès</title>'
     + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
@@ -3509,7 +3512,7 @@ async function handleSso(request, url, env, ctx) {
           ok: false, reason: per.raison, hors_perimetre: true, app,
           message: per.raison === 'ferme_general' ? MSG_FERME_GENERAL : per.raison === 'bloque_ici'
             ? 'Ton accès à cette application a été fermé par l\'administrateur.'
-            : per.raison === 'attente_admin' ? 'Ton compte n\'est pas encore ouvert : touche le lien du mail « Confirme ton compte kd-mc.com » (regarde aussi dans les indésirables). Il s\'ouvre tout seul.'
+            : per.raison === 'attente_admin' ? MSG_ATTENTE_MAIL
             : per.raison === 'refuse_admin' ? 'L\'administrateur n\'a pas validé ce compte.'
             : per.raison === 'en_creation' ? MSG_EN_CREATION
             : 'Ton compte n\'est pas ouvert sur cette application.',

@@ -6,12 +6,12 @@
    - `put` : le KV d'abord ; s'il refuse (plafond, panne), la valeur texte part dans D1 (table kv_secours, avec son expiration).
      Une écriture KV réussie efface l'éventuelle copie de secours (sinon une vieille copie masquerait la nouvelle).
    - `get` : le KV d'abord ; s'il ne trouve rien ET que le secours a des lignes, D1. Le « le secours a-t-il des lignes ? » est
-     gardé 30 s par isolat : un jour sans panne, AUCUNE lecture D1 en plus.
+     gardé 5 s par isolat : un jour sans panne, AUCUNE lecture D1 en plus.
    - Retour au KV : une valeur lue dans le secours est recopiée dans le KV (sans attendre) ; si le KV l'accepte, la ligne D1 part.
    - `delete` : les deux. `list` / `getWithMetadata` / binaire : KV seul (inchangé).
    Un seul enrobage par KV (WeakMap) : le mémo des fiches (acc-memo.js, rangé par objet KV) reste valable d'une requête à l'autre. */
 const PAR_KV = new WeakMap();
-const VERIF_LIGNES_MS = 30000;
+const VERIF_LIGNES_MS = 5000;   // mesuré en réel 17.10 : à 30 s, une autre machine ne voyait la fiche du secours qu'après ~5 s+ ; 5 s = 1 petite lecture D1 au plus par isolat
 const TABLE_PRETE = new WeakMap();   // une création de table par base (pas par module)
 
 async function preparer(db) {

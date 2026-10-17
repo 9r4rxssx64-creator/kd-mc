@@ -73,14 +73,16 @@ async function parcours(sansSecours) {
   const j = await (await mod.fetch(r, env, ctx)).json(); await Promise.all(fond);
   const who = async (host) => (await mod.fetch(new Request('https://' + host + '/__sso/whoami', { headers: { host, authorization: 'Bearer ' + j.token, 'user-agent': UA } }), env, { waitUntil() {} })).json();
   const lu = await kvAvecSecours(kv, db).get('acc:eve-test', 'json');
-  return { j, fiche: lu, portail: await who('kd-mc.com'), app: await who('cmcteams.kd-mc.com') };
+  const pg = await mod.fetch(new Request('https://cmcteams.kd-mc.com/', { headers: { host: 'cmcteams.kd-mc.com', authorization: 'Bearer ' + j.token, 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': UA } }), env, { waitUntil() {} });
+  return { j, fiche: lu, portail: await who('kd-mc.com'), app: await who('cmcteams.kd-mc.com'), page: await pg.text() };
 }
 {
-  const { j, fiche, portail, app } = await parcours(false);
+  const { j, fiche, portail, app, page } = await parcours(false);
   ok(j.ok === true && j.attente_admin === true && j.mail_envoye, '5. inscription acceptée, mail parti', j);
   ok(fiche && fiche.attente_admin === true && fiche.mail_confirmation && fiche.name === 'Eve Test', '5b. la fiche EST enregistrée (dans le secours), avec l\'attente du mail', fiche && { a: fiche.attente_admin, mc: !!fiche.mail_confirmation });
   ok(portail.ok === true && portail.mail_attente, '5c. le portail voit le compte et l\'attente du mail', portail);
   ok(app.ok === false && app.reason === 'attente_admin', '5d. CMCteams : « confirme ton mail » (et plus « se crée »)', app);
+  ok(/touche le lien du mail/.test(page) && !/Demande à l.administrateur/.test(page), '5e. la PAGE CMCteams dit de toucher le lien du mail (avant : « demande à l\'administrateur »)', page.slice(0, 200));
 }
 console.log('\n== 6. Sabotage : sans secours, rien n\'est enregistré ==');
 {

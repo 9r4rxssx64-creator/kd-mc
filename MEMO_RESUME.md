@@ -1,10 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — CAUSE RÉELLE DE « BEE NE FAIT RIEN » TROUVÉE : LA CONSIGNE ÉTAIT TROP LOURDE POUR LES IA GRATUITES
+
+**Mesuré** (robot réel « Bee partout », 2 passages) : sur 11 sujets, AUCUN outil n'est utilisé (IA : qwen) — météo/heure/calcul « répondus » sans outil (peut-être inventés), planning idem, arbre et lecture de page = « je n'ai pas accès ». **Cause** : consigne + 36 outils ≈ 7 700 jetons/appel × 2-4 appels > palier gratuit de Groq (≈ 8 000 jetons/min) ; Mistral ensuite ; puis Qwen sans outils. **Corrigé** : lots d'outils par intention (1 815 jetons pour une question simple, −76 %), `mes_pouvoirs` liste tout, moteur de secours qui dit « je n'ai pas pu consulter » au lieu d'inventer. `test:bee-allege` 23/0 (rougit sans l'allègement), tous les tests du routeur verts. **À revérifier en réel après déploiement** : `verif-live-bee-partout`. **Reste** : widget absent sur 27 apps/29 malgré le marqueur (diagnostic réseau en cours).
+
 ## 2026-10-17 (midi, v9.979 / v1.105) — carte des connectés : en direct + historique, CMCteams ET light
 - **Demande de Kevin** (capture de la light : « Personne en direct pour l'instant », « 1 en ligne ») : voir les connectés des apps ouvertes avec leurs positions, en direct et en historique, sur la carte.
 - **Mesuré** : la light n'a aucun code qui demande l'autorisation de position (seul CMCteams a « Tout autoriser ») → rien ne partait de la light ; et sans mouvement, `watchPosition` ne rappelle plus : une personne immobile devenait « il y a 40 min ».
 - **Livré** : carte à deux onglets (En direct / Historique), battement 45 s, bouton « Activer ma position » (secours admin), light : l'accord déjà enregistré au domaine suffit (aucun écran de la light, l'iPhone pose sa question native une fois par adresse, `lieu_live_natif`), historique 30 jours (`cmcteams_lieux_hist`, règles dans `firebase-rules-apex.json`), connectés sans position listés. Branché CMCteams (`heures-cmc.js` : connectes/nomDe) et light (copie exacte).
-- **À publier** : les règles Firebase (`deploy-cmcteams-rules.yml` au dépôt public) — sans elles les points d'historique sont refusés en silence (le direct, lui, marche déjà).
+- **Publié et prouvé (17.10 ~14h30 UTC)** : fusion #4775 ; dépôt public ; routeur déployé (run vert) ; règles Firebase déployées (run 39040468550) — test réel : jeton anonyme = écriture de sa case acceptée (HTTP 200), lecture refusée (401), case de test effacée ; fichiers servis relus avec le pass `ci_smoke` : light v1.105 + module, `lieu-live.js` neuf, `sw.js` cmcteams-v9.979. Chaîne locale : 7 rouges restants reproduits IDENTIQUES sur `main` (perimetre-page, javis-bee, gratuit, sso-navigateur, apis-clients-compte, reactivite-portail, tel-invite-portail, improvements-guard) — pas les miens.
 - **Non vérifié** : le rendu sur le vrai iPhone de Kevin (admin protégé) ; tuiles OSM remplacées par un fond uni dans les tests.
 
 ## 2026-10-17 (après-midi) — Les 9 incohérences de l'arbre : recherche sur documents (Kevin : « vérifie réel, mets de l'ordre »)

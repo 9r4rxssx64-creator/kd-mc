@@ -119,7 +119,7 @@ const messagesOutil = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) =
   ok(r.st === 200 && r.j.ok && /1981/.test(r.j.text) && r.j.outils.join() === 'arbre' && r.j.gratuit === true && r.j.provider === 'cerebras', '3. l\'IA appelle l\'outil arbre et répond avec la fiche — ' + JSON.stringify(r.j));
   const tm = messagesOutil();
   ok(/DONNÉE D'OUTIL/.test(tm) && /né\(e\) : 1981-10-02 à Valmont-sur-Mer/.test(tm) && /père : Octave TESTARD/.test(tm), '3b. la fiche arrive à l\'IA encadrée comme une DONNÉE (jamais un ordre), avec les vrais faits');
-  ok(outilsVus().includes('arbre') && outilsVus().includes('convertir') && outilsVus().includes('proposer_action'), '3c. l\'outil arbre est offert avec les autres (mains et nouveaux outils)');
+  ok(outilsVus().includes('arbre') && outilsVus().includes('convertir') && !outilsVus().includes('proposer_action'), '3c. l\'outil arbre est offert avec les outils de base ; une simple QUESTION n\'envoie pas les outils d\'action (consigne allégée, 17.10)');
   const sys = IA_VUES[0].corps.messages[0].content;
   ok(/ARBRE DE FAMILLE/.test(sys) && /Ne dis jamais « je ne vois pas les fiches »/.test(sys), '3d. le caractère de Bee lui dit d\'utiliser l\'outil, pas de dire qu\'elle ne voit pas'); }
 { reset(); IA_SCRIPT.cerebras = [{ content: 'Tu es dans l\'arbre.' }];

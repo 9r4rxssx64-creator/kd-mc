@@ -45,6 +45,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 
 | Session | Branche | État au 2.09 |
 | Fiche par personne : une carte par compte, fil d'activité, historique complet | `claude/fiche-activite` | 🟢 4.10 : D1, 90 jours ; empilée sur alertes-utiles ; PR en cours |
+| Bee : consigne allégée par lots d'outils (palier gratuit), moteur de secours sans invention | `claude/bee-allege` | 🟢 17.10 : PR en cours |
 | Test sso-permanent : cookie de session vs marqueur Bee | `claude/bee-marqueur-test2` | 🟢 17.10 : PR en cours |
 | Test admin-partout : compter les cookies de session (marqueur Bee) | `claude/bee-marqueur-test` | 🟢 17.10 : PR en cours |
 | Bee partout sur appareil neuf : le domaine pose le marqueur « c'est Kevin » | `claude/bee-marqueur` | 🟢 17.10 : PR en cours |

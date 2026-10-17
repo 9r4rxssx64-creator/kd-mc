@@ -70,7 +70,7 @@ async function carte(texte, action, champs) {
 }
 
 
-const lireOutil = async (nom, args) => { reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', nom, args || {})] }, { content: 'Voilà.' }]; await bee('montre-moi ça'); return toolMsgs(); };
+const lireOutil = async (nom, args) => { reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', nom, args || {})] }, { content: 'Voilà.' }]; await bee('montre-moi les personnes attendues, les bannis, les demandes et le robot'); return toolMsgs(); };   /* une phrase réaliste : elle choisit le lot d'outils d'ADMINISTRATION (consigne allégée, 17.10) */
 const jeton = async (texte, action, champs) => (await carte(texte, action, champs)).p;
 const ack = async (p, h) => { const r = await AGIR(h || KEVIN, { jeton: p.jeton, confirme: true }); return { st: r.status, j: await r.json() }; };
 

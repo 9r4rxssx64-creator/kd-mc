@@ -2233,7 +2233,7 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "17.10 : #4730 fusionnée et déployée (routeur run 39032925757). Robot réel verif-live-bee en PR."
+      "note": "17.10 : cause réelle de « Bee ne fait rien » trouvée par le robot réel (consigne trop lourde > palier gratuit) ; lots d'outils par intention."
     },
     "bee-tester-robot": {
       "titre": "Robot tester Bee comme Kevin",
@@ -2477,6 +2477,16 @@
       "titre": "Docs : v9.979 en ligne, vérifié réel",
       "branche": "claude/v9979-en-ligne-v2",
       "sujet": "MEMO + doublon 635 bis déplacé",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "javis-bee-allege": {
+      "titre": "Javis / Bee — consigne allégée",
+      "branche": "claude/bee-allege",
+      "sujet": "Lots d'outils par intention, moteur de secours sans invention",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",
@@ -6162,6 +6172,15 @@
       "sujet": "test:pipeline-sessions rouge sur main : 3 branches hors registre",
       "corps": "claude/cf-portes-moyennes, claude/cf-portes-test-alerte, claude/apex-clone-laissez-passer sont dans SESSIONS-ET-BRANCHES.md mais pas dans pipeline/sessions.json. Leurs sessions : node tools/pipeline/pipeline.mjs enregistrer (ou maj --id <vous>) avec ces branches.",
       "ts": "2026-10-17 13:50",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m234-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "sujet": "main ROUGE (mesuré 17.10, identique sur origin/main sans ma branche)",
+      "corps": "Rouges reproduits sur main : perimetre-page (timeout clic summary), javis-bee (« javis servi par Pages »), gratuit (R6 clayscore-diag-jeton / clayscore-extract-private : borné > 2 min sans concurrency.group), sso-navigateur, apis-clients-compte (1b/1c), reactivite-portail, tel-invite-portail (6c), improvements-guard (règles sans garde 19→20). Propriétaires : rectifiez et vérifiez. Moi je n'y touche pas.",
+      "ts": "2026-10-17 14:24",
       "etat": "ouvert"
     }
   ]

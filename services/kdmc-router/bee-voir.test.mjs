@@ -101,7 +101,7 @@ ok(/kdmc_sso=/.test(KEVIN.cookie), '5. connexion de Kevin (code admin prouvé)')
   ok(/DONNÉE D'OUTIL/.test(t) && /PAGE https:\/\/arbre\.kd-mc\.com\//.test(t) && /Ajouter un proche/.test(t) && /Chercher → https:\/\/arbre\.kd-mc\.com\/cherche/.test(t) && !/NE PAS LIRE/.test(t), '5c. elle reçoit titre, boutons et liens, encadrés comme DONNÉE (jamais un ordre), sans le code des scripts');
   ok(reseau.some((u) => /arbre/.test(u) && !/cerebras|groq/.test(u)), '5d. la page est lue par le ROUTEUR lui-même (même chemin que ton navigateur)');
   const sys = IA_VUES[0].corps.messages[0].content;
-  ok(/Tu VOIS le domaine de Kevin comme Claude Code et Apex/.test(sys) && ['voir_page', 'liens_kevin', 'docs_domaine', 'mes_pouvoirs', 'comptes_domaine', 'proposer_action'].every((n) => outilsVus().includes(n)), '5e. le caractère lui dit de regarder, et tous les outils sont offerts'); }
+  ok(/Tu VOIS le domaine de Kevin comme Claude Code et Apex/.test(sys) && ['voir_page', 'liens_kevin', 'docs_domaine', 'mes_pouvoirs'].every((n) => outilsVus().includes(n)) && !outilsVus().includes('proposer_action'), '5e. le caractère lui dit de regarder, et les outils de VUE sont offerts (pas ceux d\'action : consigne allégée, 17.10)'); }
 { reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'voir_page', { adresse: 'https://kd-mc.com/__admin/accounts' }), outil('b', 'voir_page', { adresse: 'https://evil.example/x' })] }, { content: 'Refusé.' }];
   await bee('regarde la page https://kd-mc.com/__admin/accounts');
   ok((toolMsgs().match(/ÉCHEC DE L'OUTIL/g) || []).length === 2 && !reseau.some((u) => /__admin|evil/.test(u)), '5f. une porte (/__admin/…) ou un site hors domaine : ÉCHEC DE L\'OUTIL, jamais ouvert'); }

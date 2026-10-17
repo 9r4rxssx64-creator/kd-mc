@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.73 -->
+<!-- v1.0.74 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -132,6 +132,8 @@
   #boite-fen .bf-ok{color:#9fe8b4;font-weight:700;flex:1}
   #boite-fen .bf-suiv{min-height:44px;padding:6px 14px;text-align:left;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--gold);font-size:14px;cursor:pointer}
   #boite-fen .bf-suiv-bas{margin:6px 14px 0;width:calc(100% - 28px)}
+  /* 17.10 : intitulés de groupes du classement (À répondre / Répondus / Autres) */
+  #boite-fen .bf-grp{margin:14px 2px 2px;font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:var(--gold2)}
   .ios-tip{background:rgba(106,138,255,.1);border:1px solid rgba(106,138,255,.3);color:#cdd8ff;border-radius:13px;padding:12px 14px;font-size:13.5px}
   .cat{margin:24px 0 10px;display:flex;align-items:center;gap:10px;color:var(--gold);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
   .cat::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -315,10 +317,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.73"></script>
-  <script src="kdmc-boite.js?v=1.0.73"></script>
-  <script src="kdmc-portal.js?v=1.0.73"></script>
+  <script src="kdmc-sso.js?v=1.0.74"></script>
+  <script src="kdmc-boite.js?v=1.0.74"></script>
+  <script src="kdmc-portal.js?v=1.0.74"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.73" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.74" data-color="#c9a227" defer></script>
 </body>
 </html>

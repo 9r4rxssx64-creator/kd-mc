@@ -171,7 +171,7 @@
     var puces = el('div', 'bf-puces');
     function puce(id, lib, n) { var b = el('button', 'bf-p' + (filtre === id ? ' on' : ''), lib + (n ? ' · ' + n : '')); b.type = 'button'; b.onclick = function () { filtre = id; dessiner(); }; puces.appendChild(b); }
     puce('tous', 'Tous', D.nonLus || 0);
-    (D.sources || []).forEach(function (s) { if (s.total || s.etat !== 'ok') puce(s.id, s.icone + ' ' + s.nom.split(' · ')[0], s.nonLus); });
+    (D.sources || []).map(function (x, i) { return { s: x, i: i }; }).sort(function (a, b) { return (b.s.nonLus ? 1 : 0) - (a.s.nonLus ? 1 : 0) || (b.s.nonLus || 0) - (a.s.nonLus || 0) || a.i - b.i; }).forEach(function (o) { var s = o.s; if (s.total || s.etat !== 'ok') puce(s.id, s.icone + ' ' + s.nom.split(' · ')[0], s.nonLus); });   /* les apps où quelque chose attend passent en tête */
     r.appendChild(puces);
     var hs = (D.sources || []).filter(function (s) { return s.etat !== 'ok'; });
     if (hs.length) r.appendChild(el('p', 'bf-warn', '⚠️ ' + hs.map(function (s) { return s.nom; }).join(', ') + ' : indisponible pour le moment — ces messages ne sont pas affichés, réessaie avec ↻.'));
@@ -184,7 +184,12 @@
       liste.appendChild(tl);
     }
     if (!items.length) liste.appendChild(el('p', 'bf-vide', filtre === 'tous' ? 'Aucun message pour le moment. Cette fenêtre se met à jour toute seule.' : 'Rien dans cette app.'));
-    items.forEach(function (m) { liste.appendChild(carte(m, garderSaisie ? saisie : '')); });
+    items = trier(items);
+    var gar = GROUPES.map(function (g) { return { t: g[0], l: items.filter(function (m) { return g[1](rang(m)); }) }; }).filter(function (g) { return g.l.length; });
+    gar.forEach(function (g) {
+      if (gar.length > 1) liste.appendChild(el('h3', 'bf-grp', g.t + ' · ' + g.l.length));   /* un intitulé seulement s'il y a plusieurs groupes (pas d'info inutile) */
+      g.l.forEach(function (m) { liste.appendChild(carte(m, garderSaisie ? saisie : '')); });
+    });
     r.appendChild(liste); liste.scrollTop = pos;
     r.appendChild(codes());
     r.appendChild(inscriptionsAdmin());
@@ -192,6 +197,26 @@
     r.appendChild(el('p', 'bf-pied', 'Mis à jour ' + quand(D.maj) + ' · se rafraîchit toute seule'));
     try { r.scrollTop = posFen; if (posDoc) (document.scrollingElement || document.documentElement).scrollTop = posDoc; } catch (e) { /* */ }
   }
+
+  /* ── LE CLASSEMENT (Kevin 17.10 : « tri, classe le plus intelligemment possible ») ──────────────────────────────────────────────────
+     Ce qui attend une réponse de Kevin passe d'abord, puis ce qu'il a déjà traité ; dans un groupe, le plus récent en premier.
+       1 · non lu                                  → À répondre
+       2 · lu, mais le dernier mot est de l'autre   → À répondre (relance silencieuse : il l'a lu et n'a pas répondu)
+       3 · le dernier mot est de Kevin              → Répondus
+       4 · le reste (demandes par e-mail déjà lues…) → Autres
+     Une alerte n'est jamais ici (elle est sous 🔔) ; sans fil, le texte est un mot de l'autre. */
+  function rang(m) {
+    if (m.nonLus) return 1;
+    var f = m.fil || [];
+    if (f.length) return f[f.length - 1].moi ? 3 : (m.repondre === 'direct' ? 2 : 4);
+    return m.repondre === 'direct' ? 2 : 4;
+  }
+  function trier(L) {
+    return (L || []).map(function (m, i) { return { m: m, r: rang(m), i: i }; })
+      .sort(function (a, b) { return a.r - b.r || (b.m.ts || 0) - (a.m.ts || 0) || a.i - b.i; })
+      .map(function (x) { return x.m; });
+  }
+  var GROUPES = [['À répondre', function (r) { return r <= 2; }], ['Répondus', function (r) { return r === 3; }], ['Autres', function (r) { return r === 4; }]];
 
   /* ── LA CONVERSATION : plein écran, le fil, des réponses rapides, la zone d'écriture collée en bas (Kevin 17.10) ─────────────────────── */
   function trouver(cle) { return ((D && D.messages) || []).filter(function (x) { return x.cle === cle; })[0] || null; }
@@ -484,5 +509,5 @@
     return o;
   }
   function surMaj(f) { if (typeof f === 'function') { ECOUTE.push(f); if (D) { try { f(D); } catch (e) { /* */ } } } }
-  window.kdmcBoite = { oublier: oublier, demarrer: demarrer, rafraichir: rafraichir, ouvrir: ouvrir, fermer: fermer, surMaj: surMaj, blocs: blocs, donnees: function () { return D; } };
+  window.kdmcBoite = { trier: trier, oublier: oublier, demarrer: demarrer, rafraichir: rafraichir, ouvrir: ouvrir, fermer: fermer, surMaj: surMaj, blocs: blocs, donnees: function () { return D; } };
 })();

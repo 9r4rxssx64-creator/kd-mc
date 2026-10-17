@@ -97,3 +97,5 @@ html.boite-ouverte,html.boite-ouverte body{overflow:hidden}
 #boite-fen .bf-ok{color:#9fe8b4;font-weight:700;flex:1}
 #boite-fen .bf-suiv{min-height:44px;padding:6px 14px;text-align:left;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--gold);font-size:14px;cursor:pointer}
 #boite-fen .bf-suiv-bas{margin:6px 14px 0;width:calc(100% - 28px)}
+/* 17.10 : intitulés de groupes du classement (À répondre / Répondus / Autres) */
+#boite-fen .bf-grp{margin:14px 2px 2px;font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:var(--gold2)}

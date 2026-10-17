@@ -382,7 +382,8 @@
   }
 
   function dessinerMessages(D) {
-    var vrais = (D.messages || []).filter(function (m) { return m.source !== 'alertes'; });   /* 17.10 (Kevin : « il ne doit y avoir que des messages ici ») : les connexions et alertes ne sont pas des messages — elles restent dans la pastille 🔔 et dans la boîte */
+    var vrais = (D.messages || []).filter(function (m) { return m.source !== 'alertes'; });
+    if (global.kdmcBoite && global.kdmcBoite.trier) vrais = global.kdmcBoite.trier(vrais);   /* même classement que la boîte : ce qui attend une réponse d'abord */   /* 17.10 (Kevin : « il ne doit y avoir que des messages ici ») : les connexions et alertes ne sont pas des messages — elles restent dans la pastille 🔔 et dans la boîte */
     var e = JSON.stringify([D.nonLus, vrais.slice(0, 4).map(function (m) { return [m.cle, m.ts, m.nonLus]; }), (D.sources || []).map(function (s) { return [s.id, s.nonLus, s.etat]; })]);
     if (e === empMess) return; empMess = e;
     var z = document.getElementById('tb-messages'); if (!z) return;

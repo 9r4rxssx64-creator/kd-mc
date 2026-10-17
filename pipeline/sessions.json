@@ -2449,6 +2449,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "javis-bee-marqueur-test2": {
+      "titre": "Javis / Bee — test sso-permanent",
+      "branche": "claude/bee-marqueur-test2",
+      "sujet": "sso-permanent : cookie de session vs marqueur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 — 2e test voisin du marqueur : `sso-permanent` (admin jamais prolongé)
+
+Le déploiement du routeur est retombé rouge : `sso-permanent.test.mjs` 4b exigeait AUCUN `set-cookie` pour l'admin Face ID ; le marqueur « c'est Kevin » en est un (pas une session). Test corrigé (aucun cookie de SESSION `kdmc_sso=`). Le détecteur de ma boucle de tests ne voyait pas « 1 failed » → élargi (✗, échec, FAIL, failed, ❌). **Signalé** : `verify-bee-connexion-iphone` et `verify-compte-unique-portail` sont rouges AVANT mon marqueur (mesuré sur le commit 363913b0) — probablement l'inscription par mail du portail (autre session).
+
 ## 2026-10-17 — déploiement du routeur rouge après le marqueur : un test voisin comptait les cookies
 
 `admin-partout.test.mjs` (contrôle 6) exigeait 1 seul cookie à la connexion admin ; le marqueur `kdmc_k` en ajoute un (ce n'est pas une session). Test corrigé (compte les cookies de SESSION), sabotage rouge sur un vrai 2ᵉ cookie, TOUS les tests du routeur rejoués verts. Leçon : rejouer tout le routeur avant de fusionner.

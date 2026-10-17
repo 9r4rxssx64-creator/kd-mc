@@ -247,7 +247,6 @@
     ".github/workflows/verif-live-apex.yml",
     ".github/workflows/verif-live-bee.yml",
     ".github/workflows/verif-live-bee-partout.yml",
-    ".github/workflows/verif-live-messages.yml",
     ".github/workflows/coffre-compte-ouvrir.yml",
     ".github/workflows/auto-merge-claude.yml",
     ".github/workflows/whatsapp-brancher.yml"

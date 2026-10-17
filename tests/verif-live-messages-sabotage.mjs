@@ -8,7 +8,7 @@
  *   SABOTAGE=sansdonnee   → la boîte ne répond pas (401) : « la boîte de Kevin répond » ET « le portail a LU la boîte » rougissent (jamais de vert à vide)
  * npm run test:verif-live-messages-robot-sabotage */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, existsSync } from 'node:fs';
+import { mkdtempSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -31,5 +31,10 @@ const c = robot({ SABOTAGE: 'atterrissage' });
 dis(c.code === 1 && /❌ un toucher sur le bandeau ATTERRIT/.test(c.out), 'SABOTAGE=atterrissage → « ATTERRIT sur la conversation » rougit');
 const d = robot({ SABOTAGE: 'sansdonnee' });
 dis(d.code === 1 && /❌ la boîte de Kevin répond/.test(d.out) && /❌ le portail a LU la boîte/.test(d.out), 'SABOTAGE=sansdonnee → la boîte muette fait rougir « répond » ET « a LU la boîte » (pas de vert à vide)');
+/* Dépôt PUBLIC (SANS_NOMS=1) : le journal se lit par tout le monde → aucun nom de la boîte, aucune capture, et le robot reste vert */
+const dossier = mkdtempSync(join(tmpdir(), 'msg-pub-'));
+const pub = robot({ SANS_NOMS: '1', CAPTURES: dossier });
+dis(pub.code === 0 && !/Non Lu Ancien|Lu Sans R|Répondu Récent|lingua:nv|cmc:attente|alerte:1/.test(pub.out), 'SANS_NOMS=1 (dépôt public) : le robot reste vert ET le journal ne contient AUCUN nom ni clé de conversation');
+dis(readdirSync(dossier).length === 0, 'SANS_NOMS=1 : aucune capture écrite (une capture montrerait les messages de tes collègues)');
 console.log(`\n${ok} ✅ / ${ko} ❌\n`);
 process.exit(ko ? 1 : 0);

@@ -500,7 +500,19 @@ export async function lireBoite(env, outils, now) {
     rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lirePersonnes(env, db, now, outils),
   };
   const noms = Object.keys(essais);
-  const res = await Promise.allSettled(noms.map((n) => memoise(n, now, essais[n])));
+  /* 17.10 (« connecte-toi réel comme moi » : la lecture de la boîte a pris 11,3 s depuis le robot, le portail l'abandonnait à 15 s) : tout ce qui ne dépend de
+     rien d'autre part EN MÊME TEMPS (avant : les sources en parallèle, PUIS les inscriptions, la présence, les codes… l'un après l'autre → leurs durées
+     s'additionnaient). Chaque étape est chronométrée (`ms`, des nombres seulement) : on mesure où va le temps, on ne l'estime pas. */
+  const T0 = Date.now(), ms = {};
+  const chrono = (nom, p) => { const t = Date.now(); return Promise.resolve(p).finally(() => { ms[nom] = Date.now() - t; }); };
+  const [res, insc, cercle, enLigne, codes, inscrAdmin] = await Promise.all([
+    Promise.allSettled(noms.map((n) => chrono(n, memoise(n, now, essais[n])))),
+    chrono('inscriptions', memoise('inscriptions', now, () => lireInscriptions(outils, now)).then((v) => ({ v }), () => null)),
+    db ? chrono('cercle', un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) : Promise.resolve(null),
+    chrono('presence', presenceListe(db, now).catch(() => [])),
+    chrono('codes', Promise.resolve().then(() => codesAttente(db)).catch(() => [])),
+    chrono('inscriptionsAdmin', Promise.resolve().then(() => inscriptionsAdmin(db)).catch(() => [])),
+  ]);
   const sources = {}; let messages = [];
   noms.forEach((n, i) => {
     const r = res[i];
@@ -510,15 +522,11 @@ export async function lireBoite(env, outils, now) {
   const rang = (x) => (x.nonLus ? (x.source === 'alertes' ? 1 : 2) : 0);   // les vrais messages non lus d'abord, puis les alertes non lues
   messages.sort((a, b) => rang(b) - rang(a) || b.ts - a.ts);
   const nonLus = SOURCES_MESSAGES.reduce((s, n) => s + sources[n].nonLus, 0);
-  let inscriptions = [], inscriptionsEtat = 'ok';
-  try { inscriptions = await memoise('inscriptions', now, () => lireInscriptions(outils, now)); } catch (e) { inscriptionsEtat = 'indisponible'; }
-  const connectesCercle = db ? ((await un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) || {}).n || 0 : 0;
-  const enLigne = await presenceListe(db, now).catch(() => []);
+  const inscriptions = insc ? insc.v : [], inscriptionsEtat = insc ? 'ok' : 'indisponible';
+  const connectesCercle = (cercle || {}).n || 0;
   const connectes = Math.max(connectesCercle, enLigne.length);
-  let codes = []; try { codes = await codesAttente(db); } catch { codes = []; }
-  let inscrAdmin = []; try { inscrAdmin = await inscriptionsAdmin(db); } catch { inscrAdmin = []; }
   return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, enLigne, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
-    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, inscriptionsAdmin: inscrAdmin, maj: now };
+    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, inscriptionsAdmin: inscrAdmin, maj: now, ms: Object.assign({ total: Date.now() - T0 }, ms) };
 }
 
 /* ── marquer lu / répondre ────────────────────────────────────────────────────────────────────────────────── */

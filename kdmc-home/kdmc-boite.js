@@ -11,6 +11,7 @@
   /* 17.10 (Kevin : « je veux atterrir directement pour répondre ») : `conv` = la conversation ouverte plein écran ('' = la liste) ;
      `atterrir` = à l'ouverture (notification, bandeau), on saute direct sur le message non lu le plus récent auquel on peut répondre ;
      DRAFT = la réponse en cours d'écriture, gardée par conversation ; ENVOYE = « ✅ Envoyé » + message suivant après un envoi. */
+  var vides = 0;   /* lectures ratées de suite tant qu'on n'a encore RIEN affiché : on relit au bout de 4 s (8 fois), pas 30 s plus tard */
   var conv = '', atterrir = false, cibleCle = '', DRAFT = {}, ENVOYE = {}, BAS = false;
   var RAPIDES = ['👍 Bien reçu, merci', '🔎 Je regarde et je reviens', '✅ C\'est réglé', '❓ Plus de détails ?'];
 
@@ -48,7 +49,9 @@
   function lire() {
     /* 8.10 (Kevin : « rafraîchir ne fonctionne pas ») : une lecture qui traîne (Firebase, D1, KV) bloquait `enCours` et chaque ↻ était ignoré
        en silence. Bornée à 15 s : au-delà on rend la main (le prochain ↻ repart). */
-    var ctl = null; try { ctl = new AbortController(); setTimeout(function () { ctl.abort(); }, 15000); } catch (e) { ctl = null; }
+    /* 17.10 : 15 s → 30 s. Mesuré en réel (robot « comme Kevin ») : la lecture a pris 11,3 s depuis une machine lointaine ; abandonnée à 15 s sous la charge du
+       démarrage, elle laissait « Lecture de la boîte… » sans rien, et la suivante ne partait que 30 s plus tard. */
+    var ctl = null; try { ctl = new AbortController(); setTimeout(function () { ctl.abort(); }, 30000); } catch (e) { ctl = null; }
     return fetch(URL_BOITE, { credentials: 'include', cache: 'no-store', headers: entetes(false), signal: ctl ? ctl.signal : undefined })
       .then(function (r) { if (r.status === 401 || r.status === 403) oublier(); return r.ok ? r.json() : null; })
       .then(function (j) { return j && j.ok ? j : null; })
@@ -116,6 +119,7 @@
     var b = document.querySelector('#boite-fen .bf-r'); if (b && manuel) { b.classList.add('tourne'); b.disabled = true; }
     return lire().then(function (j) {
       enCours = false; var relancer = enCoursManuel; enCoursManuel = false;
+      if (!j && !D && vides < 8) { vides++; setTimeout(function () { rafraichir(); }, 4000); } else if (j) vides = 0;
       if (j) { D = j; cacheGarder(C = releveDe(j)); bandeau(); ECOUTE.forEach(function (f) { try { f(D); } catch (e) { /* un abonné en panne ne casse pas la boîte */ } }); }
       if (ouverte) {
         /* on ne redessine que si quelque chose a changé (ou sur ↻ : au moins le pied « mis à jour » bouge) */

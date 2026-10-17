@@ -140,15 +140,16 @@ try {
       const ctl = new AbortController(); const stop = setTimeout(() => ctl.abort(), 45000);
       const x = await fetch('/__boite/admin', { credentials: 'include', cache: 'no-store', headers: tok ? { authorization: 'Bearer ' + tok } : {}, signal: ctl.signal });
       const txt = await x.text(); clearTimeout(stop); let j = null; try { j = JSON.parse(txt); } catch (_) { /* pas du JSON */ }
-      return { st: x.status, ms: Math.round(performance.now() - t0), octets: txt.length, ok: !!(j && j.ok), raison: j && j.reason || '', msgs: j && Array.isArray(j.messages) ? j.messages.length : -1, sources: j && Array.isArray(j.sources) ? j.sources.map((z) => z.id + ':' + z.etat).join(',') : '' };
+      return { st: x.status, ms: Math.round(performance.now() - t0), octets: txt.length, ok: !!(j && j.ok), raison: j && j.reason || '', msgs: j && Array.isArray(j.messages) ? j.messages.length : -1, ms: j && j.ms ? Object.keys(j.ms).map((k) => k + ':' + j.ms[k]).join(' ') : '', sources: j && Array.isArray(j.sources) ? j.sources.map((z) => z.id + ':' + z.etat).join(',') : '' };
     } catch (e) { return { st: 0, ms: Math.round(performance.now() - t0), octets: 0, ok: false, raison: String(e && e.name || e) }; }
   });
   ok(sonde.st === 200 && sonde.ok, `la boîte de Kevin répond : HTTP ${sonde.st} en ${sonde.ms} ms, ${sonde.octets} octets, ${sonde.msgs} entrée(s)${sonde.sources ? ' · apps ' + sonde.sources : ''}`, `raison « ${sonde.raison} »`);
+  if (sonde.ms) dire(`ℹ️ où va le temps de la lecture (ms, mesuré côté routeur) : ${sonde.ms}`);
 
   /* C. le bandeau */
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.evaluate(() => { const b = document.getElementById('pk-skip'); if (b) b.click(); }).catch(() => {});
-  await page.waitForFunction(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden; }, null, { timeout: 45000 }).catch(() => {});
+  await page.waitForFunction(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden; }, null, { timeout: 75000 }).catch(() => {});
   const ban = await page.evaluate(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden ? { t: a.textContent.slice(0, 120), h: Math.round(a.getBoundingClientRect().height) } : null; });
   ok(!!ban && ban.h >= 44, 'le bandeau 📬 s\'affiche (connecté comme Kevin) et fait ≥ 44 px', ban ? `${ban.h} px` : 'bandeau absent : session non admin ? ' + (await page.evaluate(() => document.body.innerText.slice(0, 120))));
   await vue(page, '1-bandeau.png');

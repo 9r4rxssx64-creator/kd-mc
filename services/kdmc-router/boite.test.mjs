@@ -304,5 +304,17 @@ const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/url\.pathname\.startsWith\('\/__boite\/'\)\) return handleBoite\(request, url, env, outilsBoite\(env\)\)/.test(W) && /import \{ handleBoite[^}]*\} from '\.\/boite\.js'/.test(W), '9a. le routeur sert /__boite/ avec les outils de l\'admin prouvé');
 ok(/fbToken: async/.test(W) && /mintShopsAdminIdToken\(env\)/.test(W), '9b. le routeur donne à la boîte un jeton Firebase admin (gardé 50 min)');
 
+/* 12. LA LECTURE EST CHRONOMÉTRÉE ET SES ÉTAPES PARTENT ENSEMBLE (17.10 : mesurée en réel à 11,3 s depuis le robot « comme Kevin » ; avant, inscriptions, présence, codes… s'enchaînaient
+   après les sources). `ms` = des NOMBRES seulement (jamais un nom) : on mesure où va le temps. */
+{
+  _viderMemo();
+  const j = await lireBoite(env, outils, T);
+  const etapes = ['total', 'lingua', 'cmcteams', 'depots', 'rotaplan', 'arbre', 'alertes', 'inscriptions', 'cercle', 'presence', 'codes', 'inscriptionsAdmin'];
+  ok(j && j.ms && etapes.every((k) => Number.isFinite(j.ms[k]) && j.ms[k] >= 0), '12a. la lecture de la boîte rend `ms` : le total et la durée de chaque étape (des nombres)', j && j.ms);
+  ok(j.ms.total >= Math.max(...etapes.filter((k) => k !== 'total').map((k) => j.ms[k])), '12b. le total couvre au moins l\'étape la plus longue (les étapes se recouvrent, elles ne s\'additionnent plus)', j.ms);
+  ok(Object.values(j.ms).every((v) => typeof v === 'number') && !JSON.stringify(j.ms).match(/[a-z]+ [A-Z]/), '12c. `ms` ne contient que des nombres (aucun nom de personne)');
+  ok(Array.isArray(j.codes) && Array.isArray(j.inscriptionsAdmin) && typeof j.connectes === 'number' && Array.isArray(j.enLigne) && Array.isArray(j.inscriptions) && j.inscriptionsEtat === 'ok', '12d. rien d\'autre n\'a changé dans la réponse (codes, inscriptions, connectés, en ligne)');
+}
+
 console.log(`\n${pass} OK · ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

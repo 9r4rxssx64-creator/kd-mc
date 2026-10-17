@@ -2502,6 +2502,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-atelier": {
+      "titre": "Bee atelier : documents, agenda, mail, images",
+      "branche": "claude/bee-atelier",
+      "sujet": "Bee : fichier / agenda / brouillon_mail / image, gratuit, Kevin seul",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

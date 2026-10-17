@@ -24,11 +24,17 @@
 | Agir sur le domaine (bannir, valider, couper…) | ✅ **seulement** via carte ✅ de Kevin | ✅ | ✅ |
 | Mémoire et rappels | ✅ `ma_memoire`, `mes_rappels` | ✅ | ✅ (mémoire du dépôt) |
 | Modifier du code, lancer les tests, publier | ❌ → **délègue** (`tache_code`) | ⚠️ partiel | ✅ |
-| Documents (PDF, Excel, Word), images, vidéo | ❌ | ✅ | ✅ (via outils) |
-| Mails, agenda, contacts, réseaux sociaux | ❌ | ✅ | ✅ (connecteurs) |
+| Documents (texte, Markdown, CSV, JSON, HTML, contact .vcf) à télécharger | ✅ `fichier` (v1.21, test 55) | ✅ | ✅ |
+| Documents PDF / Word / Excel natifs | ❌ (CSV et HTML s'ouvrent dans Excel / Word / Pages) | ✅ | ✅ |
+| Images (logo, affiche, dessin) | ✅ `image` — Workers AI gratuit (FLUX) | ✅ | ✅ (via outils) |
+| Vidéo | ❌ | ⚠️ | ⚠️ |
+| Agenda : préparer un rendez-vous (.ics → « Ajouter au calendrier ») | ✅ `agenda` | ✅ | ✅ (connecteur) |
+| Mail : écrire un brouillon prêt à envoyer | ✅ `brouillon_mail` (Kevin envoie lui-même) | ✅ | ✅ (connecteur) |
+| Mail / agenda : LIRE la vraie boîte et le vrai calendrier | ❌ aucun accès Gmail/Outlook branché à Bee | ⚠️ | ✅ (connecteurs) |
+| Réseaux sociaux | ❌ | ✅ | ✅ (connecteur) |
 | Objets connectés (Tuya…) | ❌ | ✅ | ⚠️ |
 | Être là, en petit widget, dans **chaque** app | ⚠️ **voir ci-dessous** | ⚠️ propre page | n/a |
-| Réservé à Kevin (aucun autre compte) | ✅ session admin prouvée par le domaine (test) | ✅ | n/a |
+| Réservé à Kevin (aucun autre compte, aucune app) | ✅ session admin prouvée par le domaine — l'atelier aussi (autre compte, inconnu, simple marqueur : 403, test) | ✅ | n/a |
 
 ## Le widget « partout » — l'état exact
 - **Cause trouvée (17.10)** : le paquetage de wrangler mettait des `__name(…)` dans les scripts servis, absents de la page → Bee, le bouton ✉️ et « ← Portail » ne se lançaient pas, sans message. **Corrigé et en ligne**, garde `test:js-servis`.
@@ -38,11 +44,12 @@
 
 ## Ce qui n'est PAS vérifié
 - L'usage réel des outils par l'IA gratuite sur les 11 sujets du robot depuis l'allègement de la consigne (à remesurer).
-- Le comportement chez Kevin, sur iPhone (action « Essayer Bee » dans `KEVIN_ACTIONS_TODO.md`).
+- Le comportement chez Kevin, sur iPhone (action « Essayer Bee » dans `KEVIN_ACTIONS_TODO.md`) : téléchargement d'un fichier, « Ajouter au calendrier », ouverture de Mail.
+- La génération d'image réelle (Workers AI) sur le vrai domaine : testée avec une IA simulée ; le palier gratuit réel se mesure à la première image.
 
-## Comment combler les écarts, gratuitement
-1. **Documents** : outil `fichier` (Markdown / CSV / calendrier `.ics` / carte de contact `.vcf` générés dans le navigateur, bouton de téléchargement) — 0 €, à construire.
-2. **Passer la main à Apex** : `ouvrir` vers Apex Chat avec la demande préremplie — 0 €, à construire.
+## Ce qui reste à combler (gratuit)
+1. **Lire la vraie boîte mail / le vrai agenda** : demande un accès (OAuth) que SEUL Kevin peut donner, une fois (Gmail ou Outlook ; le service `kdmc-outlook` lit déjà les factures en lecture seule). Décision de Kevin.
+2. **PDF / Word / Excel natifs** : génération côté navigateur (bibliothèques gratuites) — à construire si Kevin en a besoin ; en attendant CSV et HTML s'ouvrent dans Excel / Word.
 3. **Code** : `tache_code` existe ; lancer Claude Code automatiquement demanderait un jeton GitHub limité aux tickets — **décision de Kevin**.
 
 _Mise à jour : à chaque évolution de Bee (garde R8 : le code de Bee change ⇒ `CLAUDE-HISTOIRE.md` aussi)._

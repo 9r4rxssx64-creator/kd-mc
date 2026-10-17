@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.20';
+  var JAVIS_VER = 'v1.21';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -402,6 +402,7 @@
       '.javis-carte-t{font-weight:700;margin-bottom:4px}.javis-carte-r{margin-bottom:8px;word-break:break-word}' +
       '.javis-carte-b{display:flex;gap:8px}.javis-carte-b button{flex:1;min-height:44px;border-radius:12px;border:0;font:inherit;font-weight:700;cursor:pointer}' +
       '.javis-ouvrir-go{background:#f6b73c;color:#1a1204}.javis-ouvrir-rester{background:#3a2c14;color:#f3f0e6}' +
+      '.javis-atelier-b{background:#f6b73c;color:#1a1204}.javis-atelier-img{display:block;max-width:100%;border-radius:10px;margin:6px 0}' +
       '.javis-carte-ok{background:#f6b73c;color:#1a1204}.javis-carte-non{background:#3a2c14;color:#f3f0e6}.javis-carte-b button:disabled{opacity:.6;cursor:default}.javis-carte-f{font-size:13px}' +
       /* DANS LE CADRE d'une autre app (Bee partout) : le parent règle la taille du cadre ; la pastille est dans son coin, le chat remplit le cadre ouvert */
       'html.javis-cadre #javis-launcher{right:12px;bottom:12px}' +
@@ -1720,6 +1721,49 @@
     if (auto) { fin.textContent = '\u23F3 Ouverture dans 2 secondes\u2026'; minuteur = setTimeout(ouvre, 2000); }
   }
 
+  /* 🧰 L'ATELIER (Kevin 17.10 : « qu'elle gère les mails, l'agenda, les documents, les images… ») : Bee a PRÉPARÉ une pièce (outils fichier / agenda / brouillon_mail / image) ; rien n'est envoyé,
+     rien n'est stocké. Le widget REVÉRIFIE tout ce qui vient de la réponse : un lien n'est ouvert que s'il commence par « mailto: », une image n'est affichée que si c'est une data:image
+     png/jpeg/webp en base64, un fichier est toujours TÉLÉCHARGÉ (octet-stream, jamais ouvert ni rendu). Textes posés avec textContent. */
+  function carteAtelier(root, c) {
+    var list = root.querySelector('#javis-msgs'); if (!list || !c || typeof c !== 'object') return;
+    var carte = document.createElement('div'); carte.className = 'javis-carte';
+    var t = document.createElement('div'); t.className = 'javis-carte-t';
+    var fin = document.createElement('div'); fin.className = 'javis-carte-f';
+    var bs = document.createElement('div'); bs.className = 'javis-carte-b';
+    var bouton = function (txt) { var b = document.createElement('button'); b.type = 'button'; b.className = 'javis-ouvrir-go javis-atelier-b'; b.textContent = txt; return b; };
+    var telecharger = function (nom, blob) {
+      try {
+        var u = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = u; a.download = String(nom || 'document').replace(/[^A-Za-z0-9._-]+/g, '-').slice(0, 80); a.rel = 'noopener'; a.style.display = 'none';
+        document.body.appendChild(a); a.click(); setTimeout(function () { try { document.body.removeChild(a); URL.revokeObjectURL(u); } catch (e) {} }, 4000);
+        return true;
+      } catch (e) { return false; }
+    };
+    if (c.t === 'fichier' && typeof c.texte === 'string' && c.texte.length <= 130000) {
+      t.textContent = (/\.ics$/i.test(c.nom || '') ? '📅 ' : /\.vcf$/i.test(c.nom || '') ? '👤 ' : '📄 ') + String(c.nom || 'document').slice(0, 70);
+      var go = bouton(/\.ics$/i.test(c.nom || '') ? '📅 Ajouter au calendrier' : /\.vcf$/i.test(c.nom || '') ? '👤 Ajouter aux contacts' : '⬇️ Télécharger');
+      go.addEventListener('click', function () { fin.textContent = telecharger(c.nom, new Blob([c.texte], { type: 'application/octet-stream' })) ? '✅ Fichier prêt — ouvre-le depuis tes téléchargements.' : 'Je n\'ai pas pu créer le fichier.'; });
+      bs.appendChild(go);
+    } else if (c.t === 'lien' && /^mailto:[^\s]{3,2200}$/i.test(String(c.url || ''))) {
+      t.textContent = '✉️ ' + String(c.libelle || 'Mail préparé').slice(0, 70);
+      var mail = bouton('✉️ Ouvrir dans Mail');
+      mail.addEventListener('click', function () { try { var a = document.createElement('a'); a.href = String(c.url); a.rel = 'noopener'; a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); fin.textContent = 'Relis, puis envoie toi-même : je n\'envoie rien.'; } catch (e) { fin.textContent = 'Je n\'ai pas pu ouvrir Mail.'; } });
+      bs.appendChild(mail);
+    } else if (c.t === 'image' && /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+\/=]{20,950000}$/.test(String(c.src || ''))) {
+      t.textContent = '🖼️ ' + String(c.alt || 'Image').slice(0, 70);
+      var im = document.createElement('img'); im.className = 'javis-atelier-img'; im.alt = String(c.alt || 'Image créée par Bee').slice(0, 120); im.src = String(c.src);
+      carte.appendChild(t); carte.appendChild(im);
+      var sv = bouton('⬇️ Enregistrer l\'image');
+      sv.addEventListener('click', function () {
+        try { var m = /^data:(image\/[a-z]+);base64,(.*)$/.exec(String(c.src)), bin = atob(m[2]), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+          fin.textContent = telecharger(c.nom || 'image.png', new Blob([u8], { type: 'application/octet-stream' })) ? '✅ Image prête.' : 'Je n\'ai pas pu l\'enregistrer.'; } catch (e) { fin.textContent = 'Je n\'ai pas pu l\'enregistrer.'; }
+      });
+      bs.appendChild(sv);
+      carte.appendChild(bs); carte.appendChild(fin); list.appendChild(carte); list.scrollTop = list.scrollHeight; return;
+    } else return;
+    carte.appendChild(t); carte.appendChild(bs); carte.appendChild(fin); list.appendChild(carte); list.scrollTop = list.scrollHeight;
+  }
+
   /* 🩺 TESTER BEE (Kevin 16.10 : « je ne peux rien lui faire faire ») : un test de bout en bout, dit en mots simples — ce que ce téléphone envoie, ce que le domaine
      répond (reconnu ? IA gratuite ? arbre ?). Rien n'est gardé dans la conversation. Sans accès au domaine, il dit LA cause, pas un message vague. */
   var RE_DIAG = /^\s*(?:@diagnostic|diagnostic|teste[- ]?toi|test(?:er)? bee|tester bee)\s*[.!?]*\s*$/i;
@@ -1813,6 +1857,7 @@
         if (statut === 403) boutonFaceId(root, bulle);
         if (ok && j.propositions && j.propositions.length) j.propositions.slice(0, 3).forEach(function (p) { carteAction(root, p); });
         if (ok && j.ouvrir && j.ouvrir.length) j.ouvrir.slice(0, 3).forEach(function (o) { carteOuvrir(root, o, j.ouvrir.length === 1); });
+        if (ok && j.cartes && j.cartes.length) j.cartes.slice(0, 4).forEach(function (c) { carteAtelier(root, c); });
         allRigs(root).forEach(function (r) { react(r, ok ? 'joie' : 'triste', ok ? 1200 : 1600); });
         if (ok) { tone([660, 880], .2); vibrate(8); }
         /* seule une VRAIE réponse entre dans la mémoire : un message d'erreur de Bee repartait à l'IA

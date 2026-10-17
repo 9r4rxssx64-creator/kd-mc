@@ -38,9 +38,9 @@
 
 ## Le widget « partout » — l'état exact
 - **Cause trouvée (17.10)** : le paquetage de wrangler mettait des `__name(…)` dans les scripts servis, absents de la page → Bee, le bouton ✉️ et « ← Portail » ne se lançaient pas, sans message. **Corrigé et en ligne**, garde `test:js-servis`.
-- **Reste volontairement sans widget** : les pages dont la sécurité interdit nos scripts (rotaplan, croupier, cuisine, apex-ai, admin). Décision du 8.10 : on ne force pas la règle de la page. À rouvrir avec Kevin (option : un nonce posé par le routeur).
-- **Mesuré en réel le 17.10 après correctif** (Chromium sur le vrai kd-mc.com, marqueur « c'est Kevin » posé) : le script de Bee SE LANCE (`__kdmcBee = 1`) et le cadre est posé — avant, `__kdmcBee` restait vide. Les écrans de connexion (« Lingua — connexion »…) n'ont pas Bee : voulu, personne n'est connecté.
-- **Pas encore rejoué pages connectées** : le robot `verif-live-bee-partout` (8 min) a été refusé par la ration d'Actions du jour (règle « gratuit par défaut », on ne force pas sans l'accord de Kevin). Relance programmée juste après minuit UTC.
+- **Mesuré en local, gratuit, sur le vrai routeur empaqueté et les vraies pages (Chromium connecté)** : 22 adresses sur 28 après ce correctif ; les 6 autres refusaient Bee par leur propre sécurité (CMCteams et Bot : aucun cadre ; Rotaplan, Croupier, Apex AI : scripts interdits ; Cuisine : page sans `<body>`). **Corrigé pour toi seul** (appareil au marqueur « Kevin ») : cadre `'self'` + nonce pour le seul script de Bee ; un visiteur ordinaire reçoit la page comme avant. Résultat : **28 sur 28**. Garde `test:bee-csp`.
+- **Hors périmètre, dit tel quel** : `admin.kd-mc.com` (autre worker, sans injection volontairement) et une page dont la sécurité mêle 'unsafe-inline' sans 'self' (aucune aujourd'hui).
+- **Pas encore rejoué avec le vrai code et les vrais comptes** : le robot `verif-live-bee-partout` (8 min du coffre) a été refusé par la ration du jour (règle « gratuit par défaut », on ne force pas sans l'accord de Kevin). Relance programmée juste après minuit UTC.
 
 ## Ce qui n'est PAS vérifié
 - L'usage réel des outils par l'IA gratuite sur les 11 sujets du robot depuis l'allègement de la consigne (à remesurer).

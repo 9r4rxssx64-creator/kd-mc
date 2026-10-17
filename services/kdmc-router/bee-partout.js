@@ -94,6 +94,50 @@ export function partout() {
 export const NOM_AIDE = 'var __name=function(f){return f};';
 export const PARTOUT_JS = '(function(){' + NOM_AIDE + '(' + partout.toString() + ')();})();';
 
+/* ───── LA SÉCURITÉ DES PAGES NE DOIT PAS CACHER BEE À KEVIN (Kevin 17.10 : « Bee dans TOUTES mes applications »), SANS AFFAIBLIR LES PAGES DES AUTRES ─────
+   Mesuré en réel en local (vrai routeur + vraies pages + Chromium) : Bee ne se montrait pas sur CMCteams et le Bot (leur CSP n'autorise pas de cadre : « Refused to frame »), ni sur
+   Rotaplan, Croupier, Cuisine et Apex AI (leur CSP interdit nos scripts). Pour un appareil qui porte le marqueur « Kevin » (cookie kdmc_k) SEULEMENT — jamais pour un visiteur
+   ordinaire, dont la page reste telle que son auteur l'a écrite — le routeur ajoute à la CSP de la page deux permissions minimales :
+     · `frame-src 'self'` (en gardant ce que la page autorisait déjà) : le cadre de Bee est une page du même domaine ;
+     · `'nonce-…'` aléatoire, propre à CETTE réponse, sur `script-src` quand la page refuse nos scripts : seul le script de Bee, portant ce nonce, s'exécute.
+   Une page qui a 'unsafe-inline' sans 'self' n'est pas touchée (un nonce couperait ses scripts en ligne) : elle reste sans Bee, dit tel quel. */
+export function nonceBee() {
+  const b = new Uint8Array(16); crypto.getRandomValues(b);
+  return btoa(String.fromCharCode.apply(null, b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+const minus = (v) => v.map((x) => String(x).toLowerCase());
+export function cspPourBee(csp, nonce) {
+  const un = (politique) => {
+    const dirs = [];
+    for (const brut of String(politique).split(';')) { const t = brut.trim(); if (!t) continue; const m = t.split(/\s+/); dirs.push([m[0].toLowerCase(), m.slice(1)]); }
+    const get = (n) => dirs.find((d) => d[0] === n);
+    const mettre = (n, v) => { const d = get(n); if (d) d[1] = v; else dirs.push([n, v]); };
+    const fb = get('frame-src') || get('child-src') || get('default-src');
+    if (fb) { const v = minus(fb[1]); if (!v.includes("'self'") && !v.includes('*')) mettre('frame-src', fb[1].filter((x) => x.toLowerCase() !== "'none'").concat("'self'")); }
+    const sb = get('script-src') || get('default-src');
+    if (sb && nonce) {
+      const v = minus(sb[1]);
+      const refuse = v.includes("'none'") || v.includes("'strict-dynamic'") || !v.includes("'self'");
+      const casserait = v.includes("'unsafe-inline'") && !v.includes("'strict-dynamic'");
+      if (refuse && !casserait && !v.includes("'nonce-" + String(nonce).toLowerCase() + "'")) mettre('script-src', sb[1].filter((x) => x.toLowerCase() !== "'none'").concat("'nonce-" + nonce + "'"));
+    }
+    return dirs.map((d) => [d[0]].concat(d[1]).join(' ')).join('; ');
+  };
+  return String(csp || '').split(',').map(un).join(', ');
+}
+/* Cette politique laisse-t-elle s'exécuter le script de Bee (balise /__javis/partout.js, avec ou sans le nonce) ? */
+export function cspAccepteBee(csp, nonce) {
+  const c = String(csp || '').trim(); if (!c) return true;
+  return c.split(',').every((p) => {
+    const m = p.toLowerCase().match(/(?:^|;)\s*script-src\s+([^;]*)/) || p.toLowerCase().match(/(?:^|;)\s*default-src\s+([^;]*)/);
+    if (!m) return true;
+    const v = ' ' + m[1].trim() + ' ';
+    if (nonce && v.includes("'nonce-" + String(nonce).toLowerCase() + "'")) return true;
+    return !/\s'none'\s/.test(v) && !/\s'strict-dynamic'\s/.test(v) && /\s'self'\s/.test(v);
+  });
+}
+export const marqueurKevin = (request) => /(?:^|;\s*)kdmc_k=1(?:;|$)/.test((request && request.headers && request.headers.get('cookie')) || '');
+
 /* La coquille du cadre : vide, publique, sans secret. Sa CSP est la sienne (celle de l'app ne s'y applique pas). */
 export const CADRE_CSP = "default-src 'none'; script-src 'self' https://javis.kd-mc.com; style-src 'unsafe-inline'; "
   + "img-src 'self' https://lingua.kd-mc.com https://javis.kd-mc.com data: blob:; media-src 'self' https://lingua.kd-mc.com https://javis.kd-mc.com blob: data:; "

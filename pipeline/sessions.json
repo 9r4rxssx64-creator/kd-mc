@@ -2542,6 +2542,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-csp": {
+      "titre": "Bee sur 28 adresses + vérif locale gratuite",
+      "branche": "claude/bee-csp",
+      "sujet": "CSP adaptée pour Kevin seul ; tools/local-reel (vrai routeur en local)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -34,7 +34,7 @@ import { REGLES_TACHES } from './bee-taches.js';   // Bee dépose les tâches de
 import { avecJournal, bilanDiag } from './bee-diag.js';   // le journal des demandes à Bee + son test de bout en bout (Kevin 16.10 : « je ne peux rien lui faire faire »)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
-import { handlePartout, PARTOUT_TAG, MARQUEUR } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
+import { handlePartout, PARTOUT_TAG, MARQUEUR, nonceBee, cspPourBee, cspAccepteBee, marqueurKevin } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
 export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wrangler.toml)   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
@@ -863,7 +863,7 @@ const ROUTEUR = {
     /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
        depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
     if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
-      return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG, { hote: host, dest: request.headers.get('sec-fetch-dest') || '' });
+      return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG, { hote: host, dest: request.headers.get('sec-fetch-dest') || '', nonce: String(env && env.BEE_PARTOUT) !== '0' && marqueurKevin(request) ? nonceBee() : '' });
     }
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders });
   },
@@ -998,36 +998,55 @@ export const PASTILLE_SANS_SCRIPT = '<a href="https://kd-mc.com/" data-kdmc-past
 export async function injecterBouton(res, extra, opts) {
   try {
     const sansPastille = !!(opts && (/^(?:www\.)?kd-mc\.com$/i.test(String(opts.hote || '')) || /^(?:iframe|frame|embed|object)$/i.test(String(opts.dest || ''))));
-    const cspEntete = res.headers.get('content-security-policy');
+    /* BEE CHEZ KEVIN SEULEMENT (opts.nonce = appareil au marqueur « Kevin ») : la CSP de la page reçoit un cadre autorisé et, si elle refuse nos scripts, un nonce pour le seul script de Bee
+       (cspPourBee). Un visiteur ordinaire n'a pas de nonce : sa page reste exactement telle que son auteur l'a écrite. */
+    const nonce = String((opts && opts.nonce) || '');
+    const cspOrig = res.headers.get('content-security-policy');
+    const cspEntete = nonce && cspOrig ? cspPourBee(cspOrig, nonce) : cspOrig;
     const h = new Headers(res.headers); h.delete('content-length');
+    if (nonce && cspEntete !== cspOrig) { h.set('content-security-policy', cspEntete); h.set('cache-control', 'no-store'); h.delete('etag'); }   // une page personnalisée par réponse ne se met pas en cache
     const ajout = BOUTON_TAG + (extra || '');
+    const avecNonce = (tag) => (nonce ? tag.replace('<script ', '<script nonce="' + nonce + '" ') : tag);
+    let ajoutBee = (extra || '') ? avecNonce(extra) : '';
     if (typeof HTMLRewriter !== 'undefined') {
-      let refuse = !cspAccepteNosScripts(cspEntete), styleOk = cspAccepteStyleEnLigne(cspEntete), lien = false;
+      let refuse = !cspAccepteNosScripts(cspOrig), styleOk = cspAccepteStyleEnLigne(cspOrig), lien = false, beeOk = cspAccepteBee(cspEntete, nonce), pose = false;
+      const poser = (e) => { if (!pose) { pose = true; e.append(ajout, { html: true }); } };
       return new HTMLRewriter()
         .on('meta[http-equiv]', { element(e) {
           if (!/content-security-policy/i.test(e.getAttribute('http-equiv') || '')) return;
           const c = e.getAttribute('content');
           if (!cspAccepteNosScripts(c)) refuse = true;
           if (!cspAccepteStyleEnLigne(c)) styleOk = false;
+          if (nonce && c) { const n = cspPourBee(c, nonce); if (n !== c) e.setAttribute('content', n); if (!cspAccepteBee(n, nonce)) beeOk = false; }
         } })
         .on('meta[name="kdmc-retour"]', { element(e) { if (/^own$/i.test(e.getAttribute('content') || '')) lien = true; } })
         .on('a[href^="https://kd-mc.com"], [data-kdmc-retour]', { element() { lien = true; } })
         .on('body', { element(e) {
-          if (!refuse) { e.append(ajout, { html: true }); return; }
-          /* scripts refusés : pas de bouton ✉️ ni de Bee, mais la sortie reste, en simple lien, si la page n'a pas déjà la sienne */
+          if (!refuse) { pose = true; e.append(ajout, { html: true }); return; }
+          /* scripts refusés : pas de bouton ✉️ ; Bee SEULE (son script porte le nonce de CETTE réponse) chez Kevin ; sinon la sortie reste, en simple lien */
+          if (nonce && beeOk && ajoutBee) { pose = true; e.append(ajoutBee, { html: true }); }
           if (!sansPastille && styleOk) e.onEndTag((fin) => { if (!lien) fin.before(PASTILLE_SANS_SCRIPT, { html: true }); });
+        } })
+        .onDocument({ end(fin) {   // une page sans balise <body> (Cuisine) : à la toute fin du document
+          if (pose) return;
+          if (!refuse) fin.append(ajout, { html: true });
+          else if (nonce && beeOk && ajoutBee) fin.append(ajoutBee, { html: true });
         } })
         .transform(new Response(res.body, { status: res.status, statusText: res.statusText, headers: h }));
     }
-    const t = await res.text();
+    let t = await res.text();
     const balise = (t.match(/<meta[^>]*http-equiv=["']?content-security-policy[^>]*>/i) || [''])[0];
     const contenu = (balise.match(/content="([^"]*)"/i) || balise.match(/content='([^']*)'/i) || [])[1];
+    let contenuBee = contenu;
+    if (nonce && contenu) { contenuBee = cspPourBee(contenu, nonce); if (contenuBee !== contenu) t = t.replace(balise, balise.replace(contenu, contenuBee)); }
     const i = t.toLowerCase().lastIndexOf('</body>');
     const pose = (txt) => new Response(i >= 0 ? t.slice(0, i) + txt + t.slice(i) : t + txt, { status: res.status, statusText: res.statusText, headers: h });
-    if (!cspAccepteNosScripts(cspEntete) || (contenu && !cspAccepteNosScripts(contenu))) {
-      const styleOk = cspAccepteStyleEnLigne(cspEntete) && (!contenu || cspAccepteStyleEnLigne(contenu));
+    if (!cspAccepteNosScripts(cspOrig) || (contenu && !cspAccepteNosScripts(contenu))) {
+      const styleOk = cspAccepteStyleEnLigne(cspOrig) && (!contenu || cspAccepteStyleEnLigne(contenu));
       const deja = /href=["']https:\/\/kd-mc\.com/i.test(t) || /data-kdmc-retour/i.test(t) || /<meta[^>]*name=["']kdmc-retour["'][^>]*content=["']own["']/i.test(t);
-      return !sansPastille && styleOk && !deja ? pose(PASTILLE_SANS_SCRIPT) : new Response(t, { status: res.status, statusText: res.statusText, headers: h });
+      const beeSeule = nonce && ajoutBee && cspAccepteBee(cspEntete, nonce) && (!contenuBee || cspAccepteBee(contenuBee, nonce));
+      const base = !sansPastille && styleOk && !deja ? PASTILLE_SANS_SCRIPT : '';
+      return beeSeule || base ? pose((beeSeule ? ajoutBee : '') + base) : new Response(t, { status: res.status, statusText: res.statusText, headers: h });
     }
     return pose(ajout);
   } catch (e) { return res; }   /* un bouton ne doit JAMAIS empêcher une page de s'afficher */

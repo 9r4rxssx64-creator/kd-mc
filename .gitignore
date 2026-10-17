@@ -75,3 +75,9 @@ tor-iphone.png
 node_modules
 # vérification réelle depuis la session (tools/smoke/reel.mjs) : captures du domaine vivant, jamais committées
 audit/captures-reel/
+
+# vérification locale gratuite (tools/local-reel/lancer.sh)
+services/kdmc-router/local-entree.mjs
+services/kdmc-router/wrangler.local.toml
+services/kdmc-router/.dev.vars
+services/kdmc-router/.wrangler/

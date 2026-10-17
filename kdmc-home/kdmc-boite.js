@@ -161,7 +161,7 @@
         var lib = x.nom + (x.app ? ' · ' + String(x.app).replace(/-/g, ' ') : '');
         if (!x.uid) { lvl.appendChild(el('span', 'bf-qui', lib)); return; }
         var bq = el('button', 'bf-qui', lib); bq.type = 'button';
-        bq.onclick = function () { filtre = 'tous'; ouvert = 'perso:u:' + x.uid; dessiner(); setTimeout(function () { var c = document.querySelector('#boite-fen .bf-c.ouv'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'start' }); }, 30); };
+        bq.onclick = function () { filtre = 'alertes'; ouvert = 'perso:u:' + x.uid; dessiner(); setTimeout(function () { var c = document.querySelector('#boite-fen .bf-c.ouv'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'start' }); }, 30); };
         lvl.appendChild(bq);
       });
       lv.appendChild(lvl);
@@ -176,7 +176,7 @@
     var hs = (D.sources || []).filter(function (s) { return s.etat !== 'ok'; });
     if (hs.length) r.appendChild(el('p', 'bf-warn', '⚠️ ' + hs.map(function (s) { return s.nom; }).join(', ') + ' : indisponible pour le moment — ces messages ne sont pas affichés, réessaie avec ↻.'));
     var liste = el('div', 'bf-liste');
-    var items = (D.messages || []).filter(function (m) { return filtre === 'tous' || m.source === filtre; });
+    var items = (D.messages || []).filter(function (m) { return filtre === 'tous' ? m.source !== 'alertes' : m.source === filtre; });   /* 17.10 (Kevin : « il ne doit y avoir que des messages ») : « Tous » = de vrais messages ; connexions et alertes sont dans la pastille 🔔 */
     var nonLus = items.filter(function (m) { return m.nonLus; });
     if (nonLus.length) {
       var tl = el('button', 'bf-tl', '✓ Tout marquer comme lu (' + nonLus.length + ')'); tl.type = 'button';

@@ -3817,20 +3817,38 @@ async function handleSso(request, url, env, ctx) {
     }
     if (attenduOuvert) { try { await attenduConsomme(env, name); await audLog(env, { ev: 'inscription_attendue_ouverte', uid, name, detail: 'nom inscrit d\'avance par l\'admin : ouvert sans attente' }); } catch { /* fail-open : l'entrée sera consommée plus tard */ } }
     if (attenteAdmin) {
-      let marque = false;
+      let marque = false, envoiFond = null;
       try {
-        const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));
+        const canonA = await canonFor(env, uid, name, { sansCreer: true });
+        const a = await accGet(env, canonA);
         if (a && !a.valide_admin_at) {
           a.attente_admin = true;
           /* CONFIRMATION PAR MAIL (17.10) : un lien signé (48 h) ; s'il arrive, le compte s'ouvre tout seul — sinon Kevin l'ouvre comme avant. */
           if (emailInscription && mailPret(env)) {
             const lien = 'https://kd-mc.com/__sso/mail/confirmer?t=' + encodeURIComponent(await jetonConfirmation(secret, a.uid, emailInscription));
-            const parti = await envoyerMailConfirmation(env, { email: emailInscription, name: a.name || name, lien });
-            a.mail_confirmation = { masque: masqueEmail(emailInscription), email_hash: await sha256HexMail(emailInscription), envoye_at: parti ? Date.now() : 0, echec: parti ? undefined : true };
+            const masque = masqueEmail(emailInscription), emailHash = await sha256HexMail(emailInscription), nomMail = a.name || name;
             a.fiche = { ...a.fiche, email: emailInscription, maj: Date.now() };
-            if (parti) mailEnvoye = a.mail_confirmation.masque;
+            if (ctx && typeof ctx.waitUntil === 'function') {
+              /* 17.10.2026 (mesuré en réel : la création répondait en 5,7 s côté serveur, dont l'attente d'EmailJS) : le mail part EN FOND,
+                 la personne a sa réponse tout de suite. Si l'envoi échoue, la fiche le note et Kevin reçoit « inscription à valider »
+                 (le secours d'avant, rien ne se perd). */
+              a.mail_confirmation = { masque, email_hash: emailHash, envoye_at: Date.now() };
+              mailEnvoye = masque;
+              envoiFond = async () => {
+                let parti = false;
+                try { parti = await envoyerMailConfirmation(env, { email: emailInscription, name: nomMail, lien }); } catch { parti = false; }
+                if (parti) return;
+                try { const b2 = await accGet(env, canonA); if (b2 && b2.mail_confirmation) { b2.mail_confirmation = { ...b2.mail_confirmation, envoye_at: 0, echec: true }; await accPut(env, b2, true); } } catch { /* la fiche garde l'envoi supposé */ }
+                await notifyPush(env, '🪪 KDMC — inscription à valider', nomMail + ' : le mail de confirmation n\'est pas parti. Ouvre ou refuse son compte dans Mes messages.');
+              };
+            } else {
+              const parti = await envoyerMailConfirmation(env, { email: emailInscription, name: nomMail, lien });
+              a.mail_confirmation = { masque, email_hash: emailHash, envoye_at: parti ? Date.now() : 0, echec: parti ? undefined : true };
+              if (parti) mailEnvoye = masque;
+            }
           }
           await accPut(env, a, true); marque = true;
+          if (envoiFond) ctx.waitUntil(envoiFond());   // après l'écriture : un échec relit la fiche qui porte mail_confirmation
           const cf = request.cf || {}, NET = ispInfo(cf);
           await inscriptionAdminDeposer(env.CERCLE_DB, { uid: a.uid, nom: a.name || name, appareil: appareilLabel(request.headers.get('user-agent') || ''),
             lieu: [cf.city, cf.country].filter(Boolean).join(', '), reseau: (NET.isp || '') + (cf.asn ? ' (AS' + cf.asn + ')' : ''), app: origine || appDe(request.headers.get('host')) || 'portail' }).catch(() => false);

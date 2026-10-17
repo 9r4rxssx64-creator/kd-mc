@@ -8,7 +8,8 @@
      3. un jeton forgé / tronqué / expiré / d'un autre compte n'ouvre rien ; rejouer un bon lien dit « déjà ouvert » sans rien changer ;
      4. un compte REFUSÉ par l'admin n'est pas rouvert par un mail ; sans clé EmailJS, rien ne part et la personne attend l'admin comme avant ;
      5. sans e-mail (ancienne page) : comportement d'avant, message d'avant ;
-     6. sabotage : une vérification qui ignore la signature laisserait passer un jeton forgé → le test 3 est discriminant (prouvé ici en le rejouant sans HMAC). */
+     6. sabotage : une vérification qui ignore la signature laisserait passer un jeton forgé → le test 3 est discriminant (prouvé ici en le rejouant sans HMAC).
+     7. le mail part EN FOND (ctx.waitUntil) : réponse immédiate même si EmailJS est lent ; en panne → fiche « echec » + push « inscription à valider ». */
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import mod from './worker.js';
@@ -126,6 +127,38 @@ r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'ana-test', name:
 ok(r.j.attente_admin === true && !r.j.mail_envoye && mails.length === 2 && /administrateur va le valider/.test(r.j.message), '5. sans e-mail : fermé, pas de mail, message d\'avant', r.j);
 r = await appel('/__sso/issue', { method: 'POST', body: { uid: 'bob-test', name: 'Bob Test', cgu: true, code: '667788', telephone: '+377 06 44 44 44', email: 'pas un mail' } });
 ok(r.j.attente_admin === true && !r.j.mail_envoye && mails.length === 2, '5b. e-mail invalide : ignoré, fermé, pas de mail');
+
+console.log('\n== 7. Le mail part EN FOND : réponse immédiate ; s\'il échoue, la fiche le note et Kevin est prévenu ==');
+{
+  const fond = []; const ctxFond = { waitUntil(p) { fond.push(p); } };
+  const pushs = []; const envPush = { ...env, KDMC_PUSH_URL: 'https://push.example', KDMC_PUSH_TOKEN: 'tk' };
+  const fetchAvant = globalThis.fetch; let mode = 'lent';
+  globalThis.fetch = async (u, init) => {
+    if (String(u).includes('api.emailjs.com')) {
+      if (mode === 'lent') { await new Promise((ok2) => setTimeout(ok2, 1500)); mails.push(JSON.parse(init.body)); return new Response('OK', { status: 200 }); }
+      return new Response('Service Unavailable', { status: 503 });
+    }
+    if (String(u).startsWith('https://push.example')) { pushs.push(JSON.parse(init.body)); return new Response('{}', { status: 200 }); }
+    return fetchAvant(u, init);
+  };
+  const avant = mails.length; const t0 = Date.now();
+  let rf = await mod.fetch(req('kd-mc.com', '/__sso/issue', { method: 'POST', body: { uid: 'ines-test', name: 'Ines Test', cgu: true, code: '102938', telephone: '+377 06 55 55 55', email: 'ines@example.com' } }), envPush, ctxFond);
+  let jf = await rf.json(); const duree = Date.now() - t0;
+  ok(jf.attente_admin === true && jf.mail_envoye === 'i…s@example.com' && duree < 1000, '7. EmailJS lent (1,5 s) : la réponse arrive sans l\'attendre (' + duree + ' ms), « un mail vient de partir »', { duree, jf });
+  ok(fond.length >= 1 && mails.length === avant, '7b. l\'envoi est confié à waitUntil (pas encore parti au moment de la réponse)');
+  await Promise.all(fond);
+  ok(mails.length === avant + 1 && mails[mails.length - 1].template_params.to_email === 'ines@example.com', '7c. une fois le fond terminé, le mail est bien parti');
+  ok(fiche('ines-test').mail_confirmation.envoye_at > 0 && !fiche('ines-test').mail_confirmation.echec, '7d. la fiche dit « envoyé »');
+  mode = 'panne'; fond.length = 0;
+  rf = await mod.fetch(req('kd-mc.com', '/__sso/issue', { method: 'POST', body: { uid: 'noe-test', name: 'Noe Test', cgu: true, code: '564738', telephone: '+377 06 66 66 66', email: 'noe@example.com' } }), envPush, ctxFond);
+  jf = await rf.json();
+  await Promise.all(fond);
+  const fn = fiche('noe-test');
+  ok(jf.attente_admin === true && fn.attente_admin === true, '7e. EmailJS en panne : le compte reste fermé');
+  ok(fn.mail_confirmation && fn.mail_confirmation.echec === true && fn.mail_confirmation.envoye_at === 0, '7f. la fiche note l\'échec (echec, envoye_at 0)', fn.mail_confirmation);
+  ok(pushs.some((x) => /inscription à valider/.test(x.payload.title) && /Noe Test/.test(x.payload.body) && /pas parti/.test(x.payload.body)), '7g. Kevin reçoit « inscription à valider » (le secours d\'avant)', pushs.map((x) => x.payload));
+  globalThis.fetch = fetchAvant;
+}
 
 console.log(`\n${pass} ✅ / ${fail} ❌\n`);
 process.exit(fail ? 1 : 0);

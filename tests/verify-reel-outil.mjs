@@ -33,5 +33,20 @@ chk(pkg.scripts.reel === 'node tools/smoke/reel.mjs', '5. npm run reel');
 chk(/tools\/smoke\/reel\.mjs --confiance/.test(lire('.claude/hooks/session-start.sh')) && /--confiance/.test(code), '6. CHAQUE session prépare le vrai navigateur dès son démarrage (hook session-start → reel.mjs --confiance)');
 chk(/tools\/smoke\/reel\.mjs|npm run reel/.test(lire('.claude/rules/verifier-reel.md')) && /npm run reel/.test(lire('.claude/skills/verif-reelle/SKILL.md')), '5b. la règle verifier-reel et la compétence verif-reelle le citent');
 
+/* 17.10 (Kevin : « Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. ») : la règle est écrite partout où
+   une session (ou un autre agent) regarde, et plus aucune fiche ne dit que le domaine est injoignable sans la correction. */
+const partout = {
+  'CLAUDE.md (index chargé à chaque message)': /SE CONNECTER RÉELLEMENT PARTOUT/.test(lire('CLAUDE.md')) && /npm run reel/.test(lire('CLAUDE.md')),
+  'AGENTS.md (autres agents)': /npm run reel/.test(lire('AGENTS.md')),
+  'compétence voir': /npm run reel/.test(lire('.claude/skills/voir/SKILL.md')),
+  'compétence apex-verif-reelle (parité Apex)': /npm run reel/.test(lire('.claude/skills/apex-verif-reelle.md')),
+  'ETAT-DU-MOMENT (servi au réveil de chaque branche)': /npm run reel/.test(lire('ETAT-DU-MOMENT.md')),
+};
+const manque = Object.keys(partout).filter((k) => !partout[k]);
+chk(!manque.length, '7. la règle « se connecter réellement partout » est écrite partout' + (manque.length ? ' — MANQUE : ' + manque.join(', ') : ''));
+const fiches = ['.claude/skills/voir/SKILL.md', '.claude/skills/verif-reelle/SKILL.md', '.claude/skills/apex-verif-reelle.md', '.claude/rules/verifier-reel.md', 'AGENTS.md'];
+const perime = fiches.filter((f) => /injoignable|EGRESS_BLOCKED|CONNECT refusé/i.test(lire(f)) && !/16\.10|17\.10/.test(lire(f)));
+chk(!perime.length, '7b. aucune fiche ne dit « domaine injoignable » sans la correction du 16-17.10' + (perime.length ? ' — ' + perime.join(', ') : ''));
+
 console.log(`\n=== ${ok} OK / ${ko} FAIL ===`);
 process.exit(ko ? 1 : 0);

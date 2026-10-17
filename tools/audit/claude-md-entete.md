@@ -25,7 +25,8 @@
 3. **Jamais estimer, toujours mesurer.** Interdits : « estimé », « projeté », « devrait ».
    Une affirmation sans sortie brute collée n'est pas une affirmation.
 4. **Vérifier de bout en bout avant de dire « c'est fait ».** Tests verts + vrai runtime.
-   Et pour le domaine : la page CHARGÉE dans un vrai navigateur, pas lue dans le code.
+   Et pour le domaine : la page CHARGÉE dans un vrai navigateur, pas lue dans le code :
+   **`npm run reel <pages>`** — chaque session atteint kd-mc.com (« se connecter réellement partout », Kevin 17.10).
 5. **Jamais régresser.** Chaque correctif porte son test de non-régression, câblé dans
    `test:ci`, et **prouvé discriminant** (sabotage : le test doit échouer sans le correctif).
 6. **Jamais dire « je ne peux pas ».** Quatre canaux à épuiser : page directe, recherche,

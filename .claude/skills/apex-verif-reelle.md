@@ -12,6 +12,12 @@ allowed_tools: [read_repo_file, search_repo_code]
 (réseau ouvert), pas sur l'appareil : workflow **`verif-reelle.yml`** (`connecte: true`) → captures
 d'écran par page dans l'artifact. 0 clic Kevin.
 
+## D'abord depuis la session de Claude Code (17.10.2026)
+
+`npm run reel <pages>` : vrai Chromium iPhone sur le vrai domaine, pass du robot `ci_smoke`, captures — préparé automatiquement au
+démarrage de chaque session. Côté Apex : même principe, l'outil de vérification ouvre la page servie et lit la version AVANT de
+dire « c'est en ligne ». Règle : « Se connecter réellement partout » (Kevin 17.10).
+
 ## Comment on « est Kevin » (aucune sécurité contournée)
 
 On repose la marque de session que **l'app écrit elle-même** à la connexion — relue dans son code :

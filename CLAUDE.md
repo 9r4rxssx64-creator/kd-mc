@@ -25,7 +25,8 @@
 3. **Jamais estimer, toujours mesurer.** Interdits : « estimé », « projeté », « devrait ».
    Une affirmation sans sortie brute collée n'est pas une affirmation.
 4. **Vérifier de bout en bout avant de dire « c'est fait ».** Tests verts + vrai runtime.
-   Et pour le domaine : la page CHARGÉE dans un vrai navigateur, pas lue dans le code.
+   Et pour le domaine : la page CHARGÉE dans un vrai navigateur, pas lue dans le code :
+   **`npm run reel <pages>`** — chaque session atteint kd-mc.com (« se connecter réellement partout », Kevin 17.10).
 5. **Jamais régresser.** Chaque correctif porte son test de non-régression, câblé dans
    `test:ci`, et **prouvé discriminant** (sabotage : le test doit échouer sans le correctif).
 6. **Jamais dire « je ne peux pas ».** Quatre canaux à épuiser : page directe, recherche,
@@ -80,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 220 règles — le texte de Kevin, une par une
+## 📜 Les 221 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -951,6 +952,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🎚 RÈGLE ABSOLUE — LE BON MODÈLE POUR CHAQUE TRAVAIL, TOUJOURS, PARTOUT (Kevin 2026-10-15, ABSOLUE)
 **« Utilise auto le model adapté au travail demandé toujours partout »** — Kevin 2026-10-15 (après « quand le travail est compliqué, tu changes de modèle automatiquement ? »).
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-le-bon-modèle-pour-chaque-travail-toujours-partout-kevin-2026-10-15-absolue)
+
+### 🔌 RÈGLE ABSOLUE — SE CONNECTER RÉELLEMENT PARTOUT : CHAQUE SESSION OUVRE LE VRAI DOMAINE ET VÉRIFIE ELLE-MÊME (Kevin 2026-10-17, ABSOLUE)
+**« Dis à toutes tes branches de se connecter réel partout, même le domaine, trouve des solutions, pour toujours tout vérifier réel partout. »** (16.10 nuit, redit le 17.10) puis **« Se […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-se-connecter-réellement-partout-chaque-session-ouvre-le-vrai-domaine-et-vérifie-elle-même-kevin-2026-10-17-absolue)
 
 ### ✅ RÈGLE ABSOLUE — VÉRIFIER TOUJOURS DANS LE RÉEL, PUIS LE DIRE HONNÊTEMENT (Kevin 2026-10-16, ABSOLUE)
 Kevin : « Vérifie toujours tout réel. Note-le et rappelle-toi. »

@@ -20,6 +20,9 @@ Dépôt = monorepo de plusieurs apps servies par sous-domaine.
    être compréhensible + actionnable (ex. « Session expirée — reconnecte-toi »), jamais
    « HTTP 401 » brut. Détail technique = dans les logs, pas à l'écran.
 5. **Mobile-first iPhone** : cibles tactiles ≥ 44px, tester à 375px, `safe-area-inset`.
+7. **Se connecter réellement partout (Kevin 17.10)** : avant de dire « en ligne » ou « ça marche », ouvrir le VRAI domaine :
+   `npm run reel <pages>` (Chromium iPhone, pass du robot `ci_smoke`, captures `audit/captures-reel/`), lire la version servie.
+   Jamais couper la vérification TLS ; jamais le code admin. Finir par « Vérifié réel / Non vérifié ».
 6. **Reproduire, ne pas inventer** (surtout parsing planning CMCteams) : chaque donnée
    affichée doit venir de la source ; jamais de valeur « devinée ».
 

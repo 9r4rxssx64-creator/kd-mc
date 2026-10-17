@@ -3389,7 +3389,7 @@ S'applique : Apex priorité absolue, CMCteams, tous projets futurs.
 |---|---|
 | Repo / PR / merge / lire main / fichiers | **GitHub MCP** (`create_pull_request`, `merge_pull_request` squash, `get_file_contents@ref`, `create_or_update_file`, `push_files`) — **confirmé opérationnel** cette session (leçon #92 ; remplace le proxy git peu fiable #78/#79). Merge autonome des branches `claude/*` → main. |
 | Lancer un workflow CI (build, deploy worker, smoke live, sécu, second avis) | **GitHub MCP** `actions_run_trigger` (workflow_dispatch) + `actions_list`/`get_job_logs` pour lire le résultat. C'est MA voie pour tout ce que le sandbox ne peut atteindre. |
-| Voir/charger les vraies pages kd-mc.com (egress agent bloqué, leçon #135) | Je déclenche `audit-live.yml` / `pages-smoke.yml` / e2e dédiés en CI (réseau ouvert) et je LIS le run (screenshots + DOM + console + réseau). Jamais « je ne peux pas voir ». |
+| Voir/charger les vraies pages kd-mc.com (depuis le 16.10 la session ATTEINT le domaine : `npm run reel` ; avant, egress bloqué, leçon #135) | `npm run reel <pages>` dans la session ; pour les zones réservées à Kevin, je déclenche `audit-live.yml` / `pages-smoke.yml` / e2e dédiés en CI (réseau ouvert) et je LIS le run (screenshots + DOM + console + réseau). Jamais « je ne peux pas voir ». |
 | Tester la logique sans réseau (sandbox) | Playwright local + libs du **registre npm autorisé** servies localement + APIs mockées (leçon #126). |
 | Donnée live à clé / WebSocket (AIS, secrets) | **worker-proxy Cloudflare** qui garde la clé serveur + fail-open (leçons #130/#133). Je code + déclenche le deploy en CI. |
 | Second avis indépendant (non-Claude) | Je déclenche `ai-review-independent.yml` (Qodo/GPT via clé OpenAI en secret) + `security-suite` — 0 clic Kevin. |
@@ -12222,6 +12222,19 @@ Mesuré (API GitHub, 6→15.10, 700 runs) : **2 170 min** — chaîne privée 1 
 Honnêtement : une session ne peut pas changer son propre modèle. Ce qui peut être automatique, et qui l'est maintenant : **le modèle des aides** (sous-agents, workflows) que je lance, choisi par la difficulté — `haiku` pour lire/chercher/mesurer, `sonnet` pour le travail courant, `opus`/`fable` pour l'architecture, la sécurité, le bug sans cause connue et la revue finale. On commence par le plus petit qui peut réussir, on monte d'un cran si le résultat est flou, on ne descend jamais pour de la sécurité. Si la session principale atteint ses limites, elle le dit à Kevin en une phrase et délègue la partie dure. Dans les apps du domaine, la conférence des IA gratuites choisit déjà la plus compétente ; rien de payant sans accord.
 - **Où c'est écrit** : `.claude/rules/modeles.md` (chargé par toute session du dépôt).
 - **Garde** : `npm run test:modele-adapte` (dans `test:ci`, prouvé discriminant : `SABOTAGE=1`).
+
+## 🔌 RÈGLE ABSOLUE — SE CONNECTER RÉELLEMENT PARTOUT : CHAQUE SESSION OUVRE LE VRAI DOMAINE ET VÉRIFIE ELLE-MÊME (Kevin 2026-10-17, ABSOLUE)
+
+**« Dis à toutes tes branches de se connecter réel partout, même le domaine, trouve des solutions, pour toujours tout vérifier réel partout. »** (16.10 nuit, redit le 17.10) puis **« Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. »** — Kevin 2026-10-17
+
+- **Fait mesuré (16.10)** : une session Claude Code ATTEINT kd-mc.com (curl 200). Toute phrase « le domaine est injoignable depuis l'agent » est FAUSSE et se corrige où qu'on la trouve.
+- **Automatique** : le hook de démarrage (`.claude/hooks/session-start.sh` → `node tools/smoke/reel.mjs --confiance`) fait confiance à l'autorité du proxy de la session dans le vrai navigateur. Aucune vérification TLS coupée, jamais `ignoreHTTPSErrors`.
+- **À chaque mise en ligne** : `npm run reel <pages touchées>` → Chromium iPhone, connecté avec le pass du robot `ci_smoke`, une capture par page (`audit/captures-reel/*.png`, à ouvrir avec Read), version servie, erreurs JS, requêtes en échec. La version servie doit être celle du commit.
+- **Appel d'API réel** : `POST https://kd-mc.com/__sso/issue {"uid":"ci_smoke","name":"CI Smoke","cgu":true}` → `Authorization: Bearer <token>` ou cookie `kdmc_sso`. Jamais une nouvelle uid (elle exige un code et crée une fiche). Jamais le code admin.
+- **Ce que le robot ne voit pas** (admin prouvé, arbre = code famille, CMCteams connecté) : `voir-comme-kevin.yml` / `verif-live-apex.yml` au dépôt PUBLIC, sinon « Non vérifié » + ce qui a été vu à la place.
+- **Devant une capture de Kevin** : lire d'abord la VERSION de la pastille (17.10 : il voyait l'admin v2.5.0, pas la v2.7.1 — leçon 610).
+- **Chaque livraison finit par « Vérifié réel : … / Non vérifié : … »**.
+- Écrit dans : `.claude/rules/verifier-reel.md` (chargé par toute session), compétences `verif-reelle`, `voir`, `apex-verif-reelle` (parité Apex), `AGENTS.md` (autres agents), `ETAT-DU-MOMENT.md` (servi à chaque réveil, même aux vieilles branches), `pipeline/sessions.json` (message à toutes les sessions). Gardes : `npm run test:reel-outil`, `test:maj-champ-vide`.
 
 ## ✅ RÈGLE ABSOLUE — VÉRIFIER TOUJOURS DANS LE RÉEL, PUIS LE DIRE HONNÊTEMENT (Kevin 2026-10-16, ABSOLUE)
 

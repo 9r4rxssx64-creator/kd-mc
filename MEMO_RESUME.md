@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — « Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. » (3ᵉ demande)
+- Règle absolue dédiée « 🔌 SE CONNECTER RÉELLEMENT PARTOUT » dans CLAUDE-HISTOIRE → index CLAUDE.md (chargé à chaque message) + règle d'or n°4 (`npm run reel`, via `tools/audit/claude-md-entete.md`).
+- Écrite aussi dans : `AGENTS.md` (règle d'or 7, autres agents), compétences `voir` (le 403 du 10.09 marqué comme historique), `verif-reelle`, `apex-verif-reelle` (parité Apex), `.claude/rules/verifier-reel.md`, ETAT-DU-MOMENT, NOTES_USER ; tableau « outils » de CLAUDE-HISTOIRE corrigé (plus « egress bloqué »).
+- Garde `test:reel-outil` 11/0 : cas 7 (la règle est présente dans CLAUDE.md, AGENTS.md, voir, apex-verif-reelle, ETAT ; sabotage AGENTS.md → rouge) et 7b (aucune fiche ne dit « injoignable » sans la correction).
+
+
 ## 2026-10-17 (soir) — Capture de Kevin : admin restée en **v2.5.0** (fiche dépliée) alors que le domaine servait la v2.7.1
 - Mesuré : `/admin/` sert v2.7.1 (curl + vrai navigateur) ; dans Chromium, une page v2.5.0 passe seule en v2.7.1 (`[kdmc-auto-maj] admin v2.5.0 → v2.7.1`). Sur l'iPhone, la mise à jour ne partait pas.
 - Cause trouvée dans `tools/shared/version-badge-pwa.js` (partagé par TOUTES les apps) : un champ resté SÉLECTIONNÉ mais VIDE (la recherche touchée une fois) bloquait la mise à jour pour toujours ; et une page rendue par la mémoire de Safari ne relançait pas toujours la vérification. Correctif : seule une saisie réelle (champ avec du texte) bloque ; `pageshow` (page en mémoire) et `online` relancent la vérification. Garde `test:maj-champ-vide` (vrai Chromium, sabotage prouvé : l'ancien garde → rouge).

@@ -3,11 +3,17 @@ name: voir
 description: Voir les vraies pages du domaine kd-mc.com « comme Kevin » (écran iPhone, connecté) depuis l'agent — canaux mesurés, outil câblé, marche à suivre.
 ---
 
-# Voir comme Kevin — ce qui marche VRAIMENT depuis l'agent (mesuré le 10.09.2026)
+# Voir comme Kevin — ce qui marche VRAIMENT depuis l'agent
+
+> **17.10.2026 — D'ABORD `npm run reel <pages>` dans la session.** La session atteint kd-mc.com (mesuré le 16.10) ; le hook de
+> démarrage prépare le vrai navigateur. Le tableau ci-dessous (10.09) est l'HISTOIRE : le 403 du proxy n'est plus vrai.
+> Le runner `voir-comme-kevin.yml` reste pour ce que le robot `ci_smoke` ne voit pas (admin prouvé, arbre, CMCteams connecté).
+
+## Mesures du 10.09.2026 (historique)
 
 | Canal | Résultat mesuré | Sert à |
 |---|---|---|
-| `curl` / Playwright local vers kd-mc.com | **403** (CONNECT refusé par le proxy d'organisation) | rien |
+| `curl` / Playwright local vers kd-mc.com | 10.09 : **403** · **16.10 : 200 → `npm run reel`** | **VOIR depuis la session** (robot `ci_smoke`) |
 | `WebFetch` | **EGRESS_BLOCKED** | rien |
 | Firecrawl (scrape, map, navigateur distant) | **403** (clé/plan) | rien |
 | Bac à sable Hugging Face | **402** (payant) | rien |

@@ -238,6 +238,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/public-autonome` | 16.10 | Dépôt public autonome : action coffre pour 4 robots lecteurs, 7 robots écrivains/hébergeurs au coffre, bee-gardes réparé, garde `test:public-autonome` | `public-autonome` |
 | `claude/lecons-numeros` | 16.10 | Leçons : doublon (587 = 592) retiré, leçon couleur → 594 ; garde lessons-numeros au vert | `lecons-numeros` |
 | `claude/access-ux` | 16.10 | admin.kd-mc.com « Qui se connecte » v1.2.0 : en-tête compact (la page défile), filtres, En ligne maintenant, liste par fraîcheur ; test UA remis au vert | `access-ux` |
+| `claude/reel-partout-docs` | 17.10 | Règle absolue « se connecter réellement partout » écrite partout (CLAUDE.md, AGENTS.md, compétences, ETAT, NOTES_USER) + garde | `reel-partout-docs` |
 | `claude/admin-maj-forcee` | 17.10 | MAJ auto bloquée par un champ vide sélectionné (iPhone) → réparée pour toutes les apps ; admin v2.7.2 sites regroupés | `admin-maj-forcee` |
 | `claude/fiches-partout` | 17.10 | Réel automatique dans chaque session (hook) ; arbre v3.117 listes repliées ; admin v2.7.1 / portail v1.0.68 plus lisibles ; garde listes-repliees | `fiches-partout` |
 | `claude/tests-admin-rouges` | 17.10 | Répare 3 tests rouges d'avant (invite, réactivité, tuiles) : éléments cachés par l'accueil sans rubriques, `window` hors navigateur | `fiches-fermees` |

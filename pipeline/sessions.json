@@ -2192,6 +2192,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "reel-partout-docs": {
+      "titre": "Règle « se connecter réellement partout » écrite partout",
+      "branche": "claude/reel-partout-docs",
+      "sujet": "CLAUDE.md, AGENTS.md, compétences, garde",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -5827,6 +5837,15 @@
       "sujet": "MAJ auto : un champ vide sélectionné la bloquait (toutes les apps)",
       "corps": "Corrigé dans tools/shared/version-badge-pwa.js : seule une saisie réelle bloque la mise à jour ; pageshow (page en mémoire Safari) et online relancent la vérification. Devant une capture de Kevin : lire d'abord la VERSION de la pastille avant de conclure. Garde test:maj-champ-vide.",
       "ts": "2026-10-17 11:11",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m229-reel-partout-docs",
+      "de": "reel-partout-docs",
+      "a": "toutes",
+      "sujet": "RÈGLE ABSOLUE : se connecter réellement partout (Kevin, 3e fois)",
+      "corps": "Kevin 17.10 : « Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. ». C'est maintenant une règle absolue dans CLAUDE.md (règle d'or 4 + entrée 🔌) et dans AGENTS.md. Pour toi : ta session atteint kd-mc.com (le navigateur est préparé au démarrage). Après chaque mise en ligne → npm run reel <pages touchées>, lire la version servie, finir par « Vérifié réel / Non vérifié ». Devant une capture de Kevin : lire la version de la pastille d'abord. Zones réservées (admin prouvé, arbre, CMCteams connecté) → voir-comme-kevin.yml au dépôt public. Si une de tes fiches/docs dit « domaine injoignable », corrige-la (garde test:reel-outil 7b).",
+      "ts": "2026-10-17 11:15",
       "etat": "ouvert"
     }
   ]

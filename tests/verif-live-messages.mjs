@@ -149,6 +149,9 @@ try {
   /* C. le bandeau */
   const appels = []; page.on('response', (r) => { try { const u = new URL(r.url()); if (u.pathname.startsWith('/__')) appels.push(u.pathname + ' ' + r.status()); } catch (_) { /* url illisible */ } });
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  /* 17.10 (diagnostic du run 39079117343) : le robot cliquait « Plus tard » de l'offre Face ID AVANT qu'elle existe (le portail attend la réponse du domaine) → il restait sur
+     cet écran et ne voyait jamais l'accueil. On ATTEND l'offre (ou l'accueil), puis on la passe — comme Kevin quand il touche « Plus tard ». */
+  await page.waitForSelector('#pk-skip, #cercle-alerte:not([hidden])', { state: 'attached', timeout: 30000 }).catch(() => {});
   await page.evaluate(() => { const b = document.getElementById('pk-skip'); if (b) b.click(); }).catch(() => {});
   await page.waitForFunction(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden; }, null, { timeout: 75000 }).catch(() => {});
   const ban = await page.evaluate(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden ? { t: a.textContent.slice(0, 120), h: Math.round(a.getBoundingClientRect().height) } : null; });

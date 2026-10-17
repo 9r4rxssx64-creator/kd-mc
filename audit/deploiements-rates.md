@@ -7,6 +7,20 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy Apex Chat (Cloudflare Workers) — 17/10/2026 13:07 UTC
+
+- **Branche** : `main` · **Commit** : `9c4a3271` · **Run** : `39035113466`
+- **Ce qui a lâché** : Deploy Cloudflare Workers + Infra › Deploy api-worker (official Cloudflare action)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39035113466
+- **Ce que la machine a dit** :
+
+```
+^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/queues/619cd5901fc249de9f16fbc313d7d063/consumers/2dddeef2f5dd485d8802775282aebd03) failed.^[[0m
+  An unknown error has occurred. If this error persists, please file a report in workers-sdk (^[[4mhttps://github.com/cloudflare/workers-sdk/issues^[[0m) or reach out to your account team. [code: 10013]
+##[error]The process '/opt/hostedtoolcache/node/20.20.2/x64/bin/npx' failed with exit code 1
+##[error]🚨 Action failed
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +542,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

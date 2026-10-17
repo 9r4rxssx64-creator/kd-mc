@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (12h27 UTC) — Yann : « il a réussi à se connecter ce matin apparemment » → vérifié réel, fiche ouverte depuis le 16.10 21:07 UTC
+- Robot `coffre-compte-ouvrir.yml` en essai à blanc (run 39032470337, 1 min de ration ; 12/60 min consommées avant) : session Kevin obtenue, admin prouvé, fiche `yann-lorenzi` « déjà ouvert le 2026-10-16T21:07:59Z · 6 session(s) ». Rien n'a été modifié. KEVIN_ACTIONS_TODO point 1 → ✅.
+
 ## 2026-10-17 (12h18 UTC) — ✅ FUITE PAGES FERMÉE POUR DE VRAI : `kdmc-site` (103 déploiements) et `kdmc0` supprimés sur le compte de Kevin
 - Diagnostic du robot (run 39031063480, dépôt public) : la clé du robot voit **1 compte : `425377ca…`** ; le compte visé `ffaca6f3…` est « PAS vu par la clé ». Ce n'est pas Kevin qui avait un autre compte, c'est le robot (correction de ce que les docs disaient depuis le 16.10).
 - Kevin a créé une clé `pages-nettoyage` (Tous les comptes · Cloudflare Pages : Modifier). 1er essai refusé (« Authentication error » malgré `active`) : la **date de début du TTL était le 19.10** ; corrigée au 17.10 → la clé passe.

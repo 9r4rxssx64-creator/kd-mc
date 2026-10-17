@@ -12,7 +12,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { kvAvecSecours, envAvecSecours } from './kv-secours.js';
 import { schema as schemaCercle } from './cercle.js';
-import mod from './worker.js';
+import mod, { ssoSign } from './worker.js';
 
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d !== undefined ? '  → ' + JSON.stringify(d).slice(0, 300) : ''}`); };
 function d1() {
@@ -88,6 +88,34 @@ console.log('\n== 6. Sabotage : sans secours, rien n\'est enregistré ==');
 {
   const { fiche, app } = await parcours(true);
   ok(!fiche && app.reason !== 'attente_admin', '6. sans le secours : aucune fiche, CMCteams ne sait pas pourquoi → la garde 5 est discriminante', { fiche: !!fiche, raison: app.reason });
+}
+console.log('\n== 7. Le KV garde une ANCIENNE valeur : le secours (plus récent) l\'emporte ==');
+{
+  const kv = kvFaux(), db = d1(); const S = kvAvecSecours(kv, db);
+  kv.m.set('aud:log', JSON.stringify([{ ts: 1, ev: 'vieux' }]));        /* copie d'avant le plafond, restée dans le KV */
+  kv.refuser(true);
+  await S.put('aud:log', JSON.stringify([{ ts: 2, ev: 'neuf' }, { ts: 1, ev: 'vieux' }]));
+  const lu = await S.get('aud:log', 'json');
+  ok(Array.isArray(lu) && lu[0].ev === 'neuf' && lu.length === 2, '7. KV refuse, vieille copie dans le KV : la lecture rend la valeur du SECOURS, pas la vieille', lu);
+  kv.refuser(false); await S.get('aud:log'); await attendre();
+  ok(JSON.parse(kv.m.get('aud:log'))[0].ev === 'neuf' && !db._s.prepare("SELECT 1 FROM kv_secours WHERE k = 'aud:log'").get(), '7b. le KV revenu reçoit la valeur récente et la ligne D1 part');
+}
+console.log('\n== 8. VRAI routeur, KV plein + vieux journal : chaque alerte s\'ajoute (Kevin 17.10 « Adelli m\'a envoyé un message, je ne reçois rien ») ==');
+{
+  const kv = kvFaux(), db = d1(); await schemaCercle(db);
+  kv.m.set('aud:log', JSON.stringify([{ ts: 1, ev: 'vieux_evenement' }]));
+  kv.refuser(true);
+  const env = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'x', ACCOUNTS: kv, CERCLE_DB: db, KDMC_VALIDATION_MANUELLE: '1', EMAILJS_PRIVATE_KEY: 'cle' };
+  globalThis.fetch = async () => new Response('OK', { status: 200 });
+  const ctx = () => ({ waitUntil() {} });
+  const sess = await ssoSign(env.KDMC_SSO_SECRET, 'adelli-test', 'Test Adelli', true, true, true);
+  for (const [nom, texte] of [['Alice T', 'demande 1'], ['Bruno T', 'demande 2'], ['Chloé T', 'demande 3']]) {
+    const r = await mod.fetch(new Request('https://cmcteams-light.kd-mc.com/__notify-kevin', { method: 'POST', headers: { host: 'cmcteams-light.kd-mc.com', 'content-type': 'application/json', authorization: 'Bearer ' + sess }, body: JSON.stringify({ kind: 'demande_chef', name: nom, text: texte }) }), env, ctx());
+    ok(r.status === 200, '8. demande de chef de ' + nom + ' acceptée (' + r.status + ')');
+  }
+  const log = await kvAvecSecours(kv, db).get('aud:log', 'json');
+  const noms = (log || []).filter((e) => e.type === 'demande_chef').map((e) => e.name).sort();
+  ok(noms.join() === 'Alice T,Bruno T,Chloé T' && log.some((e) => e.ev === 'vieux_evenement'), '8b. les TROIS demandes sont dans le journal (avant : seule la dernière survivait), l\'ancien événement aussi', log);
 }
 console.log(`\n${pass} ✅ / ${fail} ❌\n`);
 process.exit(fail ? 1 : 0);

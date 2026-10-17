@@ -5,8 +5,8 @@
 
    - `put` : le KV d'abord ; s'il refuse (plafond, panne), la valeur texte part dans D1 (table kv_secours, avec son expiration).
      Une écriture KV réussie efface l'éventuelle copie de secours (sinon une vieille copie masquerait la nouvelle).
-   - `get` : le KV d'abord ; s'il ne trouve rien ET que le secours a des lignes, D1. Le « le secours a-t-il des lignes ? » est
-     gardé 5 s par isolat : un jour sans panne, AUCUNE lecture D1 en plus.
+   - `get` : D1 d'abord SI le secours a des lignes (la ligne D1 est toujours plus récente que le KV : un KV qui accepte l'efface),
+     sinon le KV. Le « le secours a-t-il des lignes ? » est gardé 5 s par isolat : un jour sans panne, AUCUNE lecture D1 en plus.
    - Retour au KV : une valeur lue dans le secours est recopiée dans le KV (sans attendre) ; si le KV l'accepte, la ligne D1 part.
    - `delete` : les deux. `list` / `getWithMetadata` / binaire : KV seul (inchangé).
    Un seul enrobage par KV (WeakMap) : le mémo des fiches (acc-memo.js, rangé par objet KV) reste valable d'une requête à l'autre. */
@@ -46,16 +46,23 @@ export function kvAvecSecours(kv, db, journal) {
   const effacerSecours = async (k) => { if (lignes.n === 0 && Date.now() - lignes.t < VERIF_LIGNES_MS) return; try { await preparer(db); await db.prepare('DELETE FROM kv_secours WHERE k = ?').bind(k).run(); } catch { /* */ } };
   const enveloppe = {
     async get(k, opt) {
-      const v = opt === undefined ? await kv.get(k) : await kv.get(k, opt);
-      if (v !== null && v !== undefined) return v;
-      if (!(await aDesLignes())) return v;
-      let r = null;
-      try { r = await db.prepare('SELECT v, exp FROM kv_secours WHERE k = ?').bind(k).first(); } catch { return v; }
-      if (!r) return v;
-      if (r.exp && r.exp < Date.now()) { effacerSecours(k); return v; }
-      /* retour au KV dès qu'il accepte (sans attendre la réponse de la page) */
-      Promise.resolve().then(async () => { const o = r.exp ? { expiration: Math.ceil(r.exp / 1000) } : undefined; await (o ? kv.put(k, r.v, o) : kv.put(k, r.v)); await db.prepare('DELETE FROM kv_secours WHERE k = ?').bind(k).run(); }).catch(() => { /* le KV refuse encore : la ligne reste */ });
-      return lire(r.v, opt);
+      /* 17.10 soir (Kevin « Adelli m'a envoyé un message dans light, je ne reçois rien nulle part ») : le secours est TOUJOURS plus
+         récent que le KV pour une clé qu'il porte (un KV qui accepte une écriture efface la ligne D1, voir put). Lire le KV d'abord
+         rendait l'ANCIENNE valeur dès qu'elle existait encore dans le KV : le journal d'audit (aud:log) repartait d'une vieille copie
+         à chaque événement, donc seul le DERNIER événement survivait et la boîte de l'admin ne montrait plus rien de neuf. */
+      if (await aDesLignes()) {
+        let r = null;
+        try { r = await db.prepare('SELECT v, exp FROM kv_secours WHERE k = ?').bind(k).first(); } catch { r = null; }
+        if (r) {
+          if (r.exp && r.exp < Date.now()) effacerSecours(k);
+          else {
+            /* retour au KV dès qu'il accepte (sans attendre la réponse de la page) */
+            Promise.resolve().then(async () => { const o = r.exp ? { expiration: Math.ceil(r.exp / 1000) } : undefined; await (o ? kv.put(k, r.v, o) : kv.put(k, r.v)); await db.prepare('DELETE FROM kv_secours WHERE k = ? AND v = ?').bind(k, r.v).run(); }).catch(() => { /* le KV refuse encore : la ligne reste */ });
+            return lire(r.v, opt);
+          }
+        }
+      }
+      return opt === undefined ? kv.get(k) : kv.get(k, opt);
     },
     async put(k, v, o) {
       try {

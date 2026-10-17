@@ -343,13 +343,8 @@ export default {
        kdmc-router par le Service Binding ROUTER. Fail-open : ni la synchro mail ni le ping n'en dépendent. */
     const ia = reveillerIaBots(env).catch(() => ({ fait: false }));
     if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(ia);
-    /* PUBLICATION AUTOMATIQUE vers le dépôt public (Kevin 17.10, décision (b)) : si `main` du coffre a changé depuis la
-       dernière publication, demande au dépôt PUBLIC (minutes gratuites) de republier — 0 minute du coffre, pas de webhook.
-       Fail-open : ni la synchro mail ni le reste n'en dépendent. */
-    const publication = declencherPublication(env).catch(() => ({ fait: false, raison: 'erreur' }));
-    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(publication);
     try { await syncOnce(env, { backfill: false }); } catch { /* fail-safe */ }
-    if (!ctx || typeof ctx.waitUntil !== 'function') { await ping; await sauvegarde; await ia; await publication; }
+    if (!ctx || typeof ctx.waitUntil !== 'function') { await ping; await sauvegarde; await ia; }
   }
 };
 
@@ -379,41 +374,6 @@ export async function declencherSauvegarde(env, maintenant = new Date(), fetchFn
   if (!r || r.status !== 204) return { fait: false, raison: 'GitHub HTTP ' + (r && r.status) };
   if (kv) { try { await kv.put('sauvegarde:jour', jour, { expirationTtl: 86400 * 3 }); } catch { /* fail-open */ } }
   return { fait: true, jour };
-}
-
-/* ---------- PUBLICATION AUTOMATIQUE vers le dépôt public — déclencheur (17.10.2026) ---------------------
-   Décision (b) de Kevin : « que la publication vers le dépôt public redevienne 100 % automatique ». Sans webhook (créer un
-   webhook GitHub demande un clic d'admin) et sans minute du coffre : ce cron (2 h) lit le commit de `main` du coffre avec le
-   jeton GitHub déjà en secret (GITHUB_SAUVEGARDE_TOKEN, portée repo) ; s'il diffère de la dernière publication (KV
-   `publication:sha`, 1 écriture par changement), il lance au dépôt PUBLIC le robot `publier-depuis-coffre.yml`
-   (workflow_dispatch), qui exporte, vérifie et pousse — puis relance les déploiements. Une session qui a déjà publié ne
-   gêne pas (le robot public dit « déjà à jour »). Garde-fous : jeton absent → rien ; GitHub refuse → la marque n'est pas
-   posée (nouvel essai au tick suivant). Testable : `fetchFn`. */
-export const PUBLICATION_COFFRE = '9r4rxssx64-creator/CMCteams';
-export const PUBLICATION_PUBLIC = '9r4rxssx64-creator/kd-mc';
-export const PUBLICATION_WORKFLOW = 'publier-depuis-coffre.yml';
-export const PUBLICATION_CLE_KV = 'publication:sha';
-export async function declencherPublication(env, fetchFn = fetch) {
-  const jeton = env && env.GITHUB_SAUVEGARDE_TOKEN;
-  if (!jeton) return { fait: false, raison: 'jeton absent (coffre-arme-sauvegarde.yml pas encore passé)' };
-  const kv = env && env.ACCOUNTS;
-  const H = { authorization: 'Bearer ' + jeton, accept: 'application/vnd.github+json', 'user-agent': 'kdmc-outlook cron (publication automatique)' };
-  const r = await fetchFn('https://api.github.com/repos/' + PUBLICATION_COFFRE + '/commits/main', { headers: H });
-  if (!r || r.status !== 200) return { fait: false, raison: 'coffre : GitHub HTTP ' + (r && r.status) };
-  let sha = '';
-  try { sha = String(((await r.json()) || {}).sha || ''); } catch { sha = ''; }
-  if (!/^[0-9a-f]{7,64}$/.test(sha)) return { fait: false, raison: 'sha illisible' };
-  let deja = '';
-  if (kv) { try { deja = (await kv.get(PUBLICATION_CLE_KV)) || ''; } catch { /* fail-open */ } }
-  if (deja === sha) return { fait: false, raison: 'déjà publié', sha };
-  const d = await fetchFn('https://api.github.com/repos/' + PUBLICATION_PUBLIC + '/actions/workflows/' + PUBLICATION_WORKFLOW + '/dispatches', {
-    method: 'POST',
-    headers: { ...H, 'content-type': 'application/json' },
-    body: JSON.stringify({ ref: 'main', inputs: { coffre_sha: sha, origine: 'kdmc-outlook cron' } }),
-  });
-  if (!d || d.status !== 204) return { fait: false, raison: 'public : GitHub HTTP ' + (d && d.status), sha };
-  if (kv) { try { await kv.put(PUBLICATION_CLE_KV, sha); } catch { /* fail-open */ } }
-  return { fait: true, sha };
 }
 
 /* Surveillance du domaine — appelée par le cron ci-dessus (services/kdmc-uptime/wrangler.toml).

@@ -11,11 +11,6 @@ Le coffre privé `CMCteams` a 2 000 min/mois (ration 60 min/jour) ; le dépôt p
    `deploy-kdmc-router.yml` (= les pages : Apex, CMCteams, light, portail…), `deploy-cmcteams-rules.yml` (règles Firebase, il lit le fichier au coffre), `deploy-<worker>.yml` (un worker ; la plupart partent seuls sur push de leur dossier).
 5. **Prouver** : lire le run (`gh api repos/9r4rxssx64-creator/kd-mc/actions/runs?per_page=5`) puis le fichier servi (`curl https://<app>.kd-mc.com/sw.js`), jamais « ça devrait être en ligne ».
 
-## Le filet automatique (17.10) : une fusion jamais oubliée en ligne
-Toutes les 2 h, le cron du worker `kdmc-outlook` compare `main` du coffre à la dernière publication (KV `publication:sha`) et, s'il a changé,
-lance au PUBLIC `publier-depuis-coffre.yml` : export vérifié + push + relance des déploiements (`robots-a-relancer.mjs`). 0 minute du coffre,
-pas de webhook. Tu publies quand même toi-même après ta fusion (tout de suite > 2 h) ; le filet rattrape ce qu'une session a oublié.
-
 ## Ce qui reste au coffre (exceptions légitimes, 1 min, avec la ration du jour)
 - Un journal qui révélerait ce qu'un inconnu peut lire (`coffre-lire-verrous-firebase.yml`) ; le train du soir (`workflow_dispatch` de `coffre-synchronise-public.yml`) en secours si une session n'a pas pu publier.
 - Avant tout robot du coffre : lire la ration (`node tools/ci/ration-actions.mjs`, voir ETAT-DU-MOMENT 🚂). Ration mangée = aucun robot du coffre.

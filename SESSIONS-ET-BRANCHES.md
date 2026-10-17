@@ -248,8 +248,6 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/apex-robot-comme-kevin` | 17.10 | Robot « Apex comme Kevin » (connecté en admin par le domaine, iPhone, « Test ») + sabotages prouvés | `apex-robot-comme-kevin` |
 | `claude/apex-379-sans-bulle` | 17.10 | Apex 379 : plus de bulle « Proxy Cloudflare activé » (vue par le robot) | `apex-379-sans-bulle` |
 | `claude/apex-379-preuve` | 17.10 | Apex 379 : preuve réelle écrite (docs seulement) — fusionnée | `apex-379-preuve` |
-| `claude/compte-ouvrir-robot` | 17.10 | Robot « ouvrir un compte en attente » à la place de Kevin (Yann) | `compte-ouvrir-robot` |
-| `claude/publication-auto-cron` | 17.10 | Publication automatique vers le dépôt public (cron outlook → robot public), relanceur de déploiements | `publication-auto-cron` |
 | `claude/regle-publique-1610` | 16.10 | Règle « mettre en ligne sans quota » (gratuit-public.md) ; puis robots publics verts : lock Apex suivi, 7 robots au coffre, semgrep scan, clone en 3 essais, suivis m215→m219 (#4659, #4665) — fusionnée | `audit-apex-1610` |
 | `claude/robots-publics-1610-b` | 16.10 | Lighthouse lit sa config, Axe sert son paquet, signal « coffre-a-change » mort retiré ; m223 (#4669) — fusionnée | `audit-apex-1610` |
 | `claude/pipeline-garde-1610` | 16.10 | Garde pipeline-sessions : `claude/docs-complets` inscrite ; 2 branches fusionnées justifiées (#4675) — fusionnée | `audit-apex-1610` |

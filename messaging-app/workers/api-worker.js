@@ -109,10 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.317';
-
-// Nouvelles conversations par jour et par compte (hors admin).
-export const CONV_PAR_JOUR = 30;
+export const API_VERSION = '1.1.316';
 
 // File de rebut des files d'attente (wrangler.toml : dead_letter_queue).
 export const DLQ_NAME = 'apex-chat-dlq';
@@ -1989,25 +1986,6 @@ async function handleGetPublicUser(pseudoOrId, env, request) {
      WHERE (id=? OR pseudo=? COLLATE NOCASE) AND status=?`
   ).bind(pseudoOrId, pseudoOrId, 'active').first();
   if (!user) return err('User introuvable', 404, 'user_not_found', { lookup: pseudoOrId });
-  // Audit 16.10.2026 (annuaire ouvert) : n'importe quel compte pouvait lire le NOM RÉEL, la bio et l'heure de dernière
-  // connexion de n'importe quel inscrit par son pseudo. Désormais, sans conversation en commun (ni être soi-même, ni admin),
-  // on ne rend que le nécessaire pour ENTRER EN CONTACT : identifiant, pseudo, photo. Le reste arrive dès qu'on se parle.
-  let proche = !request;   // appel interne sans requête : comportement d'avant
-  if (request) {
-    const auth = await getAuthUser(request, env);
-    if (auth && (auth.is_admin || auth.sub === user.id)) proche = true;
-    else if (auth) {
-      try {
-        const lien = await env.APEX_CHAT_DB.prepare(
-          'SELECT 1 AS l FROM conversation_members a JOIN conversation_members b ON a.conv_id=b.conv_id WHERE a.user_id=? AND b.user_id=? LIMIT 1'
-        ).bind(auth.sub, user.id).first();
-        proche = !!(lien && lien.l === 1) || (lien && typeof lien === 'object' && !('l' in lien));   // bases simulées : présence = lien
-      } catch (_) { proche = false; }
-    }
-  }
-  if (!proche) {
-    return json({ ok: true, user: { id: user.id, pseudo: user.pseudo, display_name: user.pseudo, avatar_url: user.avatar_url, real_name: null, first_name: null, last_name: null, bio: null, last_seen: null }, limited: true });
-  }
   return json({ ok: true, user });
 }
 
@@ -2557,17 +2535,6 @@ export async function handleCreateConversation(request, env) {
       ).bind(selfId, peer).first();
       if (existing) return json({ ok: true, conversation: existing, deduped: true });
     } catch (e) { /* on crée ci-dessous */ }
-  }
-
-  // Audit 16.10.2026 : n'importe quel compte pouvait ouvrir des conversations sans limite avec n'importe qui (harcèlement,
-  // spam). Plafond par jour et par compte (l'admin en est exempt) ; une conversation déjà existante (dédup ci-dessus) ne compte pas.
-  if (!auth.is_admin) {
-    try {
-      const n = await DB.prepare('SELECT COUNT(*) AS n FROM conversations WHERE created_by=? AND created_at>?').bind(selfId, Date.now() - 86400000).first();
-      if ((Number(n && n.n) || 0) >= CONV_PAR_JOUR) {
-        return err('Trop de nouvelles conversations aujourd\'hui, réessaie demain', 429, 'conv_quota', { max: CONV_PAR_JOUR });
-      }
-    } catch (_) { /* lecture en panne : on ne bloque pas */ }
   }
 
   const id = crypto.randomUUID();

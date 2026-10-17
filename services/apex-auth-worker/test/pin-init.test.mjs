@@ -25,8 +25,8 @@ test("premier code : écrit /apex/ax_pin_<uid> au compte de service → 201", as
 });
 
 test("code déjà posé : refus 409, AUCUNE écriture (personne ne remplace le code d'un autre)", async () => {
-  const { d, ecrits } = deps({ kdmc_admin: "b".repeat(64) });
-  const r = await pinInit({ uid: "kdmc_admin", pin_hash: H }, {}, null, "1.2.3.4", d);
+  const { d, ecrits } = deps({ u_fictive: "b".repeat(64) });
+  const r = await pinInit({ uid: "u_fictive", pin_hash: H }, {}, null, "1.2.3.4", d);
   assert.equal(r.status, 409);
   assert.equal(r.body.error, "pin_already_set");
   assert.deepEqual(ecrits, []);
@@ -50,4 +50,13 @@ test("base injoignable (ni trouvé ni 404) → 502, pas d'écriture à l'aveugle
   d.readPinHash = async () => ({ ok: false, status: 503, detail: "rtdb_admin_read_503" });
   assert.equal((await pinInit({ uid: "u", pin_hash: H }, {}, null, "x", d)).status, 502);
   assert.deepEqual(ecrits, []);
+});
+
+test("17.10 : les identifiants admin ne se créent JAMAIS par ce guichet, même sans empreinte (prise de compte impossible)", async () => {
+  for (const uid of ["kdmc_admin", "U11804", "admin"]) {
+    const { d, ecrits } = deps({});
+    const r = await pinInit({ uid, pin_hash: H }, {}, null, "1.2.3.4", d);
+    assert.equal(r.status, 403, uid);
+    assert.deepEqual(ecrits, []);
+  }
 });

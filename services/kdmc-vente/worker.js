@@ -288,7 +288,11 @@ async function ecritRecu(env, { cmd, cap, produit, code }) {
     const cle = 'compteur:recu:' + an;
     const n = Number((await env.VENTES.get(cle)) || 0) + 1;
     await env.VENTES.put(cle, String(n));
-    const numero = 'KDMC-' + an + '-' + String(n).padStart(4, '0');
+    /* 17.10.2026 (audit sécurité Cloudflare) : le numéro seul (KDMC-AAAA-0001, 0002…) se devinait, et /recu rendait à qui le tapait
+       l'e-mail, le nom, la transaction PayPal et le CODE D'ACCÈS au contenu payant. Un suffixe aléatoire de 12 caractères rend
+       chaque reçu impossible à deviner ; seul l'acheteur (ou Kevin) le reçoit. */
+    const alea = Array.from(crypto.getRandomValues(new Uint8Array(6)), (x) => x.toString(16).padStart(2, '0')).join('');
+    const numero = 'KDMC-' + an + '-' + String(n).padStart(4, '0') + '-' + alea;
     const recu = {
       numero, date_iso: new Date().toISOString(),
       vendeur: VENDEUR,
@@ -977,6 +981,9 @@ export default {
     /* --- Reçu (justificatif d'achat, numéroté) ---------------------------- */
     if (p === '/recu') {
       const n = String(url.searchParams.get('n') || '');
+      /* 17.10.2026 : un reçu se lit seulement avec son numéro COMPLET (suffixe aléatoire), et les essais en rafale sont freinés. */
+      if (!/^KDMC-\d{4}-\d{4,}-[0-9a-f]{12}$/.test(n)) return json({ ok: false, error: 'recu_inconnu', detail: 'numéro incomplet', step: 'recu' }, 404, origin);
+      if (await tropDeTentatives(env, req.headers.get('CF-Connecting-IP') || 'inconnue')) return json({ ok: false, error: 'trop_de_tentatives', step: 'recu_debit' }, 429, origin);
       const brut = n ? await env.VENTES.get('recu:' + n) : null;
       if (!brut) return json({ ok: false, error: 'recu_inconnu', detail: n, step: 'recu' }, 404, origin);
       return json({ ok: true, recu: JSON.parse(brut) }, 200, origin);

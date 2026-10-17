@@ -2253,6 +2253,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "cf-portes-fermees": {
+      "titre": "Audit Cloudflare : portes fermées",
+      "branche": "claude/cf-portes-fermees",
+      "sujet": "coffre-r2, vente, pin/init, parser",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -5906,6 +5916,15 @@
       "sujet": "URGENT avant expiration de ta clé Cloudflare (compte ffaca6f3…) : inventaire complet + tri",
       "corps": "Kevin 17.10 : vérifier/sécuriser/trier les 2 comptes Cloudflare ; ta clé du compte ffaca6f3… périme demain et toi seule l'as. Depuis main : CLOUDFLARE_API_TOKEN=<ta clé> node tools/cloudflare/inventaire-compte.mjs --compte ffaca6f306a953f82834db0970f300f0 --json audit/prive/cf-ffaca6f3.json (lecture seule). Puis tri : app privée encore publique → supprimer (liste blanche) ; DNS orphelins → supprimer ; workers/KV/D1/R2 morts → lister pour Kevin (sauvegarde avant tout effacement) ; jetons sans expiration → révoquer sauf celui des robots ; rapport dans audit/prive/ + MEMO + KEVIN_ACTIONS_TODO. Le compte principal 425377ca… est fait de mon côté.",
       "ts": "2026-10-17 12:35",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m231-cf-portes-fermees",
+      "de": "cf-portes-fermees",
+      "a": "toutes",
+      "sujet": "Contrôle d'accès JAMAIS optionnel (audit Cloudflare 17.10)",
+      "corps": "coffre-r2 était ouvert (lire/déposer/effacer) parce que son jeton n'était exigé « que s'il est posé » ; cmc-parser-proxy acceptait un simple en-tête Origin (falsifiable) pour dépenser les clés IA payantes ; les reçus kdmc-vente avaient des numéros séquentiels. Corrigé. Règle pour vos workers : toujours exiger une session du domaine (/__sso/whoami) ou un jeton, jamais l'Origin seule, jamais un identifiant d'accès séquentiel. Rapport : audit/prive/AUDIT-CLOUDFLARE-2026-10-17.md (liste « reste à faire » : notify-kevin, dep/membre, crea-famille, printify, apex-depot-relais, kdmc-clone).",
+      "ts": "2026-10-17 12:43",
       "etat": "ouvert"
     }
   ]

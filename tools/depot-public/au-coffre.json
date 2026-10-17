@@ -240,6 +240,7 @@
   "tests/verify-cadre-matricule.mjs",
   "tests/verify-cadres-dans-planning.mjs",
   "tests/verify-cadres-seed.mjs",
+  "tests/verify-cf-portes.mjs",
   "tests/verify-chefs-equipe.mjs",
   "tests/verify-cloudflare-analytics-couper.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",

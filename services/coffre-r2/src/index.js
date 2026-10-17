@@ -44,6 +44,23 @@ function safeId(raw) {
   return /^[A-Za-z0-9_\-]{3,128}$/.test(id) ? id : null;
 }
 
+/* Laissez-passer du domaine : la page envoie `Authorization: Bearer <kdmc_sso_token>` ; on demande au routeur s'il est valide.
+   On transmet le User-Agent (le routeur lie le pass à la famille d'appareil, cf. kdmc-vente requireAdmin). */
+async function sessionDomaine(request) {
+  const auth = request.headers.get("Authorization") || "";
+  if (!/^Bearer\s+\S{16,}/.test(auth)) return { ok: false, status: 401, detail: "laissez-passer du domaine manquant", step: "auth_header" };
+  try {
+    const h = { Authorization: auth }; const ua = request.headers.get("user-agent"); if (ua) h["user-agent"] = ua;
+    const r = await fetch("https://kd-mc.com/__sso/whoami", { headers: h, cache: "no-store" });
+    if (!r.ok) return { ok: false, status: 401, detail: "session refusée (" + r.status + ")", step: "whoami_http" };
+    const j = await r.json();
+    if (!j || !j.ok) return { ok: false, status: 401, detail: "session invalide", step: "whoami_session" };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, status: 502, detail: "vérification impossible", step: "whoami_exc" };
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -61,12 +78,14 @@ export default {
     if (origin && !originAllowed(origin)) {
       return json({ error: "forbidden", detail: "origin not allowed: " + origin }, 403, origin);
     }
-    // Token d'app optionnel
-    if (env.COFFRE_PUBLIC_TOKEN) {
-      const auth = request.headers.get("Authorization") || "";
-      if (auth !== "Bearer " + env.COFFRE_PUBLIC_TOKEN) {
-        return json({ error: "unauthorized", detail: "missing/invalid bearer token" }, 401, origin);
-      }
+    /* 17.10.2026 (audit sécurité Cloudflare, mesuré) : sans COFFRE_PUBLIC_TOKEN posé, et sans en-tête Origin (curl), lire, DÉPOSER
+       et EFFACER les fichiers du coffre était ouvert à n'importe qui. Désormais chaque requête doit porter soit le jeton serveur,
+       soit le laissez-passer du domaine (kdmc_sso), vérifié auprès de https://kd-mc.com/__sso/whoami (session valide). */
+    const auth = request.headers.get("Authorization") || "";
+    const jetonServeur = env.COFFRE_PUBLIC_TOKEN && auth === "Bearer " + env.COFFRE_PUBLIC_TOKEN;
+    if (!jetonServeur) {
+      const s = await sessionDomaine(request);
+      if (!s.ok) return json({ error: "unauthorized", detail: s.detail, step: s.step }, s.status, origin);
     }
     if (!env.COFFRE_BUCKET) {
       return json({ error: "no_bucket", detail: "R2 binding COFFRE_BUCKET absent (déploiement)" }, 500, origin);

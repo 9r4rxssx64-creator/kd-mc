@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — Audit Cloudflare : 4 portes fermées (rapport `audit/prive/AUDIT-CLOUDFLARE-2026-10-17.md`)
+- Code déployé des 28 workers lu (aide, sans recopier aucune valeur) : **aucun secret en dur**.
+- **coffre-r2** (MESURÉ ouvert : lire / déposer / effacer sans rien) → laissez-passer du domaine exigé (`/__sso/whoami`) ou jeton serveur ; coffre-fort v1.0.3 l'envoie.
+- **kdmc-vente** `/recu` (numéro devinable → e-mail, nom, transaction, code payant ; aucun reçu encore émis) → suffixe aléatoire de 12 caractères + frein.
+- **apex-auth-worker** `/pin/init` → identifiants admin refusés (test 32/0).
+- **cmc-parser-proxy** : plus d'accès aux IA payantes par simple en-tête Origin, jeton exigé (le client l'envoyait déjà).
+- Garde `test:cf-portes` 9/0 (sabotage coffre-r2 → rouge). Reste classé dans le rapport (notify-kevin, dep/membre, crea-famille, printify, origin-only relais/clone, MONACO_ENC_KEY, workers.dev).
+
+
 ## 2026-10-17 (soir) — Cloudflare, les DEUX comptes : inventaire sécurité + tri (Kevin : « vérifie tout, sécurisé, confidentiel ; fais le tri ; la clé de l'autre compte périme demain »)
 - **Compte principal `425377ca…`** (connecteur + robots publics) : 28 workers, 6 KV, 6 D1, 4 R2, 0 projet Pages. 18 workers répondent aussi sur `*.9r4rxssx64.workers.dev` : tous refusent l'action sans accès (401/403/405) sauf les pages de santé ; fermer `workers.dev` casserait des appels encore câblés (Outlook/Monaco OAuth, boutiques La Détente, Apex → apex-secrets-proxy, kdmc-rag, kdmc-apis, crea). `apex-secrets-proxy` refuse tout appel sans jeton (401 sur 4 chemins testés) ; sa page de santé liste les NOMS des fournisseurs (Apex en a besoin pour choisir) — risque faible, accepté.
 - **Compte `ffaca6f3…`** (les vieux Pages kdmc-site / kdmc0, supprimés le 17.10 12:18 UTC par la session pages-nettoyage-compte) : la clé temporaire est dans CETTE session, pas ici (un secret ne transite pas). Message m230 : lancer l'inventaire avec sa clé avant expiration, puis le tri.

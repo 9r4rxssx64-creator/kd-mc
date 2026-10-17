@@ -307,6 +307,9 @@ export async function pinInit(body, env, ctx, ip, deps = {}) {
   if (!uid || !/^[A-Za-z0-9_\-]{1,80}$/.test(uid) || !/^[a-f0-9]{64}$/i.test(pin_hash)) {
     return { status: 400, body: { ok: false, error: "missing_uid_or_pin_hash" } };
   }
+  /* 17.10.2026 (audit sécurité Cloudflare) : « le premier arrivé pose le code » ne doit JAMAIS valoir pour les identifiants de
+     l'administrateur — sinon, le jour où son empreinte manque (purge, migration), un inconnu prendrait le compte admin. */
+  if (uid === "kdmc_admin" || uid === CMC_ADMIN_UID || /^admin$/i.test(uid)) return { status: 403, body: { ok: false, error: "refuse" } };
   const rateKey = `rl:init:${ip || "unknown"}`;
   const attempts = parseInt((await kv.get(rateKey)) || "0");
   if (attempts >= 5) return { status: 429, body: { ok: false, error: "rate_limited", retry_after: 900 } };

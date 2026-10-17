@@ -263,6 +263,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/tests-admin-rouges` | 17.10 | Répare 3 tests rouges d'avant (invite, réactivité, tuiles) : éléments cachés par l'accueil sans rubriques, `window` hors navigateur | `fiches-fermees` |
 | `claude/fiches-fermees` | 16.10 | Fiches repliées en une ligne (admin v2.7.0, Qui se connecte v1.3.0), plus lisible ; `npm run reel` = vrai navigateur sur le domaine depuis la session | `fiches-fermees` |
 | `claude/access-preuve` | 16.10 | Routeur : `ci_smoke` ne mange plus le quota d’inscriptions (bloquait les vraies inscriptions) ; preuve post-déploiement d’admin.kd-mc.com avec session | `access-preuve` |
+| `claude/sso-permanent-marqueur` | 17.10 | Déploiement routeur rouge depuis « Bee partout » : test 4b rendu précis (aucun kdmc_sso réémis, marqueur kdmc_k toléré) ; leçon #638 | `sso-permanent-marqueur` |
 | `claude/docs-complets` | 16.10 | Arbre v3.108→v3.116 + domaine (autre session) | `arbre-session-1610` |
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
 | `claude/apex-public-1610` | 16.10 | Apex 372→373 publiés par le dépôt public (0 minute du coffre) ; règles Firebase `ax_pin_` fermées ; guichet `/pin/init` — fusionnée | `audit-apex-1610` |

@@ -2439,6 +2439,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "sso-permanent-marqueur": {
+      "titre": "Déploiement routeur rouge (marqueur Bee) : test 4b précis",
+      "branche": "claude/sso-permanent-marqueur",
+      "sujet": "sso-permanent.test.mjs 4b précis",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -47,7 +47,10 @@ Date.now = () => vrai() + 20 * 3600e3;   /* 20 h plus tard : il reste ~4 h à la
 try {
   r = await qui({ authorization: 'Bearer ' + a.token }); j = await r.json();
 } finally { Date.now = vrai; }
-ok(j.ok && j.admin === true && !j.renouvelee && !r.headers.get('set-cookie'), '4b. session admin Face ID → JAMAIS prolongée', JSON.stringify(j).slice(0, 140));
+/* 17.10 : whoami pose aussi le marqueur « c'est Kevin » (kdmc_k=1, Bee partout : un indice sans secret, pas une session). « Jamais prolongée »
+   = aucun cookie de SESSION (kdmc_sso) réémis et pas de `renouvelee` ; le marqueur, lui, est toléré — et rien d'autre. */
+const sc4 = String(r.headers.get('set-cookie') || '');
+ok(j.ok && j.admin === true && !j.renouvelee && !/kdmc_sso=/.test(sc4) && sc4.split(/,(?=\s*\w+=)/).every((c) => !c.trim() || /^kdmc_k=1;/.test(c.trim())), '4b. session admin Face ID → JAMAIS prolongée (aucun kdmc_sso réémis ; seul le marqueur kdmc_k est toléré)', JSON.stringify(j).slice(0, 140) + ' · set-cookie=' + sc4.slice(0, 80));
 
 const rev = await emettre('lea-roux', 'Léa Roux', 20);
 const acc = JSON.parse(kv.get('acc:lea-roux') || '{}'); acc.revoked_at = vrai() + 1000; kv.set('acc:lea-roux', JSON.stringify(acc));

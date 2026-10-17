@@ -17,3 +17,8 @@ Mesuré le 16.10 : une session **atteint kd-mc.com** (curl 200). L'ancienne phra
 - Ce que le robot NE voit PAS : l'admin prouvé (code / Face ID de Kevin), l'arbre (code famille), CMCteams connecté (scope cmc).
   Pour ça : workflow `voir-comme-kevin.yml` / `verif-reelle.yml` au dépôt PUBLIC (secret CI, ration), sinon « Non vérifié » + ce qui a été vu.
 - Après chaque mise en ligne : `npm run reel <les pages touchées>` et la version servie doit être celle du commit.
+
+## « Comme moi » : se connecter en ADMIN, pour de vrai (Kevin 17.10.2026 nuit : « Connecte-toi réel comme moi. Tes autres branches le font déjà. Note-le et rappelle-toi toujours »)
+- Derrière la session de Kevin (admin, boîte, tableau de bord, Bee, Apex connecté) : **ne jamais écrire « non vérifié, c'est derrière ta session » sans avoir lancé le robot « X comme Kevin »** (coffre, secret `APEX_ADMIN_PIN_SHA256` → `/__admin/login`, Chromium iPhone, **lecture seule**).
+- Robots : `verif-live-bee.yml`, `verif-live-apex.yml`, `verif-live-bee-partout.yml`, `verif-live-messages.yml` (`tests/verif-live-messages.mjs` : atterrissage, tri, « Tous » sans alertes, aperçu admin). Surface sans robot → en créer un sur ce modèle, avec son essai local (`ESSAI_LOCAL=1`) et son test de sabotage.
+- Avant de lancer : `bash tools/ci/porte-ration.sh 5` (ration du coffre) et le plafond de 2 vérifs réelles/jour ; dispatch : `gh api -X POST repos/9r4rxssx64-creator/CMCteams/actions/workflows/<robot>.yml/dispatches -f ref=<branche>`.

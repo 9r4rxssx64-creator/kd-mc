@@ -1,5 +1,15 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 — Sonde kdmc-uptime : la cause dans l'alerte, 2e essai, journal (capture Healthchecks de Kevin)
+- Alerte « Apex Chat DOWN » 16.10 16:00→18:00 UTC : un seul passage raté ; mesuré : pas de déploiement (kd-mc ni coffre), pas d'incident Cloudflare D1/DO, `backup_last_ok` du jour présent → cause introuvable (la sonde ne gardait que le nom).
+- `services/kdmc-uptime/worker.js` : `probeApexApi` réessaie après `APEX_REESSAI_MS` (4 s) ; `causes()` met « code détail » dans le battement Healthchecks ; `state.journal` (30 max : panne / retour / raté rattrapé). Tests 5i–5m (`test:apex-chat-fiabilite`).
+- Corrigé au passage : `test:apex-chat-fiabilite` était rouge sur main (étape de retour arrière avec continue-on-error, lot K) → retiré, `lot-n-retour-arriere.test.js` adapté.
+- **À vérifier après déploiement** : `deploy-kdmc-uptime.yml` vert ; prochain battement 33/33.
+
+## 2026-10-17 — ROBOT « BEE COMME KEVIN » (vérification réelle de l'ouverture des apps)
+
+**Fait** (en local ; premier passage RÉEL à lancer) : `tests/verif-live-bee.mjs` + `.github/workflows/verif-live-bee.yml` (coffre, `workflows_prives`, à la main, porte de ration 5 min) — connexion admin par le domaine (secret du coffre), 🩺 test de Bee recopié dans le rapport, « montre-moi l'arbre de Yann Lorenzi » → lien `#personne=…`, bouton « Ouvrir » ≥ 44 px, ouverture de l'arbre SUR Yann, « ouvre la light », « va sur apex chat » depuis l'arbre. Lecture seule. `test:verif-live-bee-robot` (vert) + `-sabotage` (3 sabotages rouges), câblés dans `test:ci`. **Déployé en ligne (preuve réelle sans compte)** : `javis.kd-mc.com/sw.js` = `javis-v1.20`, `arbre.kd-mc.com/sw.js` = `arbre-v3.118`, routeur redéployé par le dépôt public (run 39032925757 ✅), `/__javis/ai` sans session = 403. **Non vérifié** : le contenu du widget (derrière la connexion) et le parcours complet — c'est ce que le robot réel dira.
+
 ## 2026-10-17 (soir) — Audit Cloudflare : 4 portes fermées (rapport `audit/prive/AUDIT-CLOUDFLARE-2026-10-17.md`)
 - Code déployé des 28 workers lu (aide, sans recopier aucune valeur) : **aucun secret en dur**.
 - **coffre-r2** (MESURÉ ouvert : lire / déposer / effacer sans rien) → laissez-passer du domaine exigé (`/__sso/whoami`) ou jeton serveur ; coffre-fort v1.0.3 l'envoie.

@@ -137,7 +137,7 @@ ok(/printf '%s' "\$BATTEMENT" \| wrangler secret put HEARTBEAT_URL/.test(lire('d
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? JSON.parse(kv.get(k)) : null), put: async (k, v) => { kv.set(k, v); } };
 const api = (status, body) => ({ fetch: async () => new Response(JSON.stringify(body), { status }) });
-const env = (apex, extra = {}) => ({ ACCOUNTS, HEARTBEAT_URL: 'https://hc-ping.example/uuid-test/', APEX_CHAT_API: apex, ...extra });
+const env = (apex, extra = {}) => ({ ACCOUNTS, HEARTBEAT_URL: 'https://hc-ping.example/uuid-test/', APEX_CHAT_API: apex, APEX_REESSAI_MS: 0, ...extra });
 const hb = () => appels.filter((a) => a.url.startsWith('https://hc-ping.example/'));
 
 appels.length = 0;
@@ -160,6 +160,22 @@ ok(hb().length === 0 && st.battement.envoye === false, '5g. sans HEARTBEAT_URL �
 appels.length = 0;
 st = await U.runPass({ ACCOUNTS });
 ok(!st.results.some((r) => r.id === U.APEX_API_ID), '5h. sans binding (ancien déploiement) → API non sondée plutôt qu\'une fausse panne');
+
+
+/* 17.10 (capture Healthchecks de Kevin : « DOWN » 2 h sans cause écrite) : un raté isolé ne sonne plus, la cause est écrite. */
+kv.clear(); appels.length = 0;
+let n = 0;
+const unRate = { fetch: async () => (++n === 1 ? new Response(JSON.stringify({ ok: false, checks: { d1: 'ok', do: 'ko' } }), { status: 503 }) : new Response(JSON.stringify({ ok: true, checks: { d1: 'ok', do: 'ok', backup: 'ok' } }), { status: 200 })) };
+st = await U.runPass(env(unRate));
+const rr = st.results.find((r) => r.id === U.APEX_API_ID);
+ok(n === 2 && rr.ok && rr.reessai === true && /503 do:ko/.test(rr.premier) && st.down.length === 0 && hb()[0].url === 'https://hc-ping.example/uuid-test', '5i. un raté isolé (503 do:ko puis 200) → 2e essai réussi, PAS d\'alerte, le raté est noté');
+ok(st.journal.some((j) => j.etat === 'raté rattrapé' && /do:ko/.test(j.cause)), '5j. le raté rattrapé est inscrit au journal des pannes');
+appels.length = 0;
+st = await U.runPass(env(api(503, { ok: false, checks: { d1: 'ko', do: 'ok' } })));
+ok(/en panne : apex-chat-api \(santé D1 \+ DO \+ sauvegarde\) \(503 d1:ko\)/.test(hb()[0].body), '5k. vraie panne → le battement externe dit la CAUSE (503 d1:ko), pas seulement le nom');
+ok(st.journal[0].etat === 'panne' && st.journal[0].cause === '503 d1:ko', '5l. la chute est datée au journal avec sa cause');
+st = await U.runPass(env(api(200, { ok: true, checks: { d1: 'ok', do: 'ok', backup: 'ok' } })));
+ok(st.journal[0].etat === 'retour' && st.journal.length >= 3 && st.journal.length <= U.JOURNAL_MAX, '5m. le retour est daté ; le journal est borné');
 
 /* ───── --sabotage : chaque règle statique doit rougir sur un cas fabriqué ───── */
 if (process.argv.includes('--sabotage')) {

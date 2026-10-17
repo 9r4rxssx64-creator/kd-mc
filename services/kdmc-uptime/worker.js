@@ -200,7 +200,13 @@ export async function probe(t) {
  * (une sauvegarde qui ne se fait plus est une panne silencieuse). Sans le binding : non sondé.
  * ------------------------------------------------------------------ */
 export const APEX_API_ID = 'apex-chat-api (santé D1 + DO + sauvegarde)';
-export async function probeApexApi(env) {
+/* 17.10.2026 (Kevin, capture Healthchecks : « Apex Chat DOWN » 16.10 18:00 → UP 20:00, sans cause écrite) : un seul raté
+ * de quelques secondes valait 2 h d'alerte (un passage toutes les 2 h), et l'alerte ne disait pas POURQUOI. Mesuré après coup :
+ * aucun déploiement, aucun incident Cloudflare D1/DO, sauvegarde du jour faite — cause introuvable faute de trace.
+ * Maintenant : (1) un DEUXIÈME essai quelques secondes plus tard avant de déclarer la panne (une vraie panne échoue deux fois) ;
+ * (2) la cause (d1:ko, do:ko, backup:stale, timeout, code HTTP) part dans le battement externe ; (3) journal des pannes en KV. */
+export const APEX_REESSAI_MS = 4000;
+async function probeApexApiUneFois(env) {
   const started = Date.now();
   const t = { id: APEX_API_ID, url: 'service:apex-chat-api/api/health', kind: 'service' };
   try {
@@ -219,6 +225,15 @@ export async function probeApexApi(env) {
     return { ...t, code: /timeout/.test(String(e && e.message)) ? 'timeout' : 'erreur', ms: Date.now() - started, ok: false, detail: String((e && e.message) || e).slice(0, 200) };
   }
 }
+export async function probeApexApi(env) {
+  const r1 = await probeApexApiUneFois(env);
+  if (r1.ok) return r1;
+  const attente = Number.isFinite(Number(env && env.APEX_REESSAI_MS)) ? Number(env.APEX_REESSAI_MS) : APEX_REESSAI_MS;
+  if (attente > 0) await new Promise((res) => setTimeout(res, attente));
+  const r2 = await probeApexApiUneFois(env);
+  const premier = `${r1.code}${r1.detail ? ' ' + r1.detail : ''}`.slice(0, 120);
+  return r2.ok ? { ...r2, reessai: true, premier } : { ...r2, premier };
+}
 
 /* ------------------------------------------------------------------ *
  * BATTEMENT HORS CLOUDFLARE (lot E2, audit A5 F6)
@@ -233,6 +248,17 @@ export async function probeApexApi(env) {
  *     rien et PRÉVIENT KEVIN PAR E-MAIL après le délai de grâce. Aucune dépendance au compte.
  * Le corps n'envoie que des nombres et des noms d'adresses publiques, jamais un secret.
  * ------------------------------------------------------------------ */
+/** « id (code cause) » pour chaque cible en panne : une alerte qui dit POURQUOI (jamais un secret : codes et noms de contrôles). */
+export function causes(state) {
+  const parId = new Map((state.results || []).map((r) => [r.id, r]));
+  return (state.down || []).map((id) => {
+    const r = parId.get(id);
+    const c = r ? [r.code, r.detail].filter(Boolean).join(' ').slice(0, 100) : '';
+    return c ? `${id} (${c})` : id;
+  });
+}
+export const JOURNAL_MAX = 30;
+
 export async function battement(env, state) {
   const url = env && env.HEARTBEAT_URL;
   if (!url) return { envoye: false, pourquoi: 'HEARTBEAT_URL non configuré' };
@@ -241,7 +267,7 @@ export async function battement(env, state) {
     const r = await fetch(url.replace(/\/+$/, '') + (panne ? '/fail' : ''), {
       method: 'POST',
       headers: { 'content-type': 'text/plain; charset=utf-8' },
-      body: `${state.ok}/${state.total} cibles en bonne santé` + (panne ? ` — en panne : ${state.down.join(', ')}` : ''),
+      body: `${state.ok}/${state.total} cibles en bonne santé` + (panne ? ` — en panne : ${causes(state).join(', ')}` : ''),
     });
     return { envoye: r.ok, code: r.status, panne };
   } catch (e) {
@@ -336,12 +362,21 @@ export async function runPass(env) {
   const tombees = down.filter((id) => !prevDown.has(id));
   const revenues = [...prevDown].filter((id) => !nowDown.has(id));
 
+  const ts = new Date().toISOString();
+  const parId = new Map(results.map((r) => [r.id, r]));
+  const journal = [
+    ...tombees.map((id) => ({ ts, id, etat: 'panne', cause: [parId.get(id).code, parId.get(id).detail].filter(Boolean).join(' ').slice(0, 120) })),
+    ...revenues.map((id) => ({ ts, id, etat: 'retour' })),
+    ...results.filter((r) => r.reessai).map((r) => ({ ts, id: r.id, etat: 'raté rattrapé', cause: r.premier })),
+    ...(((prev && prev.journal) || [])),
+  ].slice(0, JOURNAL_MAX);
   const state = {
-    ts: new Date().toISOString(),
+    ts,
     total: results.length,
     ok: results.filter((r) => r.ok).length,
     down,
     results,
+    journal,
   };
   await writeState(env, state);
 

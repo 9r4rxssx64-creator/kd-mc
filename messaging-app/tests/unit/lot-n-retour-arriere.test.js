@@ -29,10 +29,10 @@ describe('retour arrière automatique du déploiement', () => {
   it('503 AVEC le détail des vérifications (base KO) → panne d\'infrastructure : PAS de retour arrière', () => {
     expect(joue(503, '{"ok":false,"checks":{"d1":"ko","do":"ok"}}').flag).not.toContain('rollback=1');
   });
-  it('l\'étape de retour arrière ne s\'exécute que sur échec + drapeau, sans bloquer le reste', () => {
+  it('l\'étape de retour arrière ne s\'exécute que sur échec + drapeau, sans masquer son propre échec', () => {
     expect(Y).toContain("if: ${{ failure() && steps.live.outputs.rollback == '1' }}");
     const i = Y.indexOf('Retour arrière automatique');
-    expect(Y.slice(i, i + 400)).toContain('continue-on-error: true');
+    expect(Y.slice(i, i + 600)).not.toContain('continue-on-error');   // garde test:apex-chat-fiabilite (17.10)
     expect(Y).toContain('wrangler@4 rollback');
   });
 });

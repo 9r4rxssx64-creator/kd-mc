@@ -9,6 +9,10 @@
 
 ---
 
+## ✅ (17.10) L'alerte « Apex Chat DOWN » du 16.10 (18h → 20h) — rien à faire pour toi
+Un seul contrôle raté à 18h (heure de Monaco), réussi au suivant : le robot ne regarde que toutes les 2 h, d'où « 1 h 59 ». Les messages n'étaient pas perdus pour autant (rien n'a été effacé, sauvegarde du jour faite). Ce jour-là, il n'y a eu ni mise en ligne ni incident Cloudflare à l'heure du raté, et le robot ne gardait pas la cause : elle est introuvable après coup.
+**Changé** : (1) avant de crier « en panne », le robot réessaie 4 secondes plus tard — un raté isolé ne t'envoie plus d'e-mail ; (2) une vraie panne : l'e-mail Healthchecks dit maintenant POURQUOI (ex. « 503 d1:ko » = la base, « do:ko » = le serveur de conversation, « backup:stale » = sauvegarde en retard, « timeout ») ; (3) un journal des 30 dernières pannes et ratés. **Si tu reçois encore un e-mail DOWN** : transfère-le-moi, la cause sera dedans.
+
 ## ✅ (17.10) Textes de l'arbre : TOUS réécrits et en ligne (plus de « probable », histoires, décès sobres, aucun fait perdu) — à regarder sur ton iPhone : la fiche de Marie-France (divorce écrit sans « probablement ») et « 👪 L'histoire de sa famille » (🔊) sur n'importe quelle fiche. Dis-moi s'il reste un texte qui te gêne.
 
 ## 👆 (16.10 soir) CE QUI T'ATTEND — à jour

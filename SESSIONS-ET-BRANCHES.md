@@ -45,6 +45,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 
 | Session | Branche | État au 2.09 |
 | Fiche par personne : une carte par compte, fil d'activité, historique complet | `claude/fiche-activite` | 🟢 4.10 : D1, 90 jours ; empilée sur alertes-utiles ; PR en cours |
+| Robot réel « Bee comme Kevin » (ouvrir l'arbre de Yann, la light, apex chat) | `claude/bee-robot-reel` | 🟢 17.10 : PR en cours |
 | Bee ouvre n'importe quelle app du domaine (v1.20) + arbre v3.118 lien profond | `claude/bee-ouvre-les-apps` | 🟢 17.10 : PR en cours |
 | Test réel d'Apex Chat : harnais F01–F85 rejoué (84 ✅), faux rouges corrigés | `claude/apex-chat-verif-reelle` | 🟢 17.10 : PR en cours |
 | Documents à jour de la partie Bee + garde R8 (le code de Bee change ⇒ CLAUDE-HISTOIRE) | `claude/docs-bee-r7` | 🟢 16.10 : PR en cours |

@@ -385,8 +385,9 @@ jobs:
           fi
 
       - name: Retour arrière automatique (le nouveau code ne répond plus)
+        # 17.10 : l'échec de cette étape n'est plus masqué (garde test:apex-chat-fiabilite) — masquer était inutile : l'étape ne part que si le job
+        # est déjà rouge ; si le retour arrière échoue, elle est rouge aussi, et c'est honnête.
         if: ${{ failure() && steps.live.outputs.rollback == '1' }}
-        continue-on-error: true
         working-directory: messaging-app/workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

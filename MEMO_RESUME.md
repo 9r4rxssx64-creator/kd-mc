@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 13:05 UTC — Audit Cloudflare : les 4 portes VÉRIFIÉES FERMÉES EN LIGNE
+- Déploiements publics verts : coffre-r2 (nouveau robot public), kdmc-vente, apex-auth-worker, cmc-parser-proxy, routeur (coffre-fort v1.0.3).
+- Mesuré sur les vraies adresses : coffre-r2 GET/DELETE anonymes → **401** (avant : 404 = ouvert) · kdmc-vente `/recu?n=KDMC-2026-0001` → « numéro incomplet » · cmc-parser-proxy avec Origin kd-mc.com ou `localhost.evil.com` sans jeton → **401** · apex-auth `/pin/init` uid `kdmc_admin` → **refuse**.
+- Reste : inventaire du compte `ffaca6f3…` par la session qui détient sa clé (m230), et la liste « reste à faire » du rapport privé.
+
+
 ## 2026-10-17 (soir) — coffre-r2 : robot de déploiement PUBLIC (l'ancien est désactivé au coffre)
 - `deploy-coffre-r2.yml` (coffre) est désactivé et rouge depuis le 24.09 → le correctif de sécurité ne partait pas. Nouveau `.github/workflows/deploy-coffre-r2-public.yml` : `wrangler deploy` seul (aucun `git add`, secrets inchangés), sur push de `services/coffre-r2/**` + à la main, avec PREUVE : un appel anonyme doit répondre 401.
 

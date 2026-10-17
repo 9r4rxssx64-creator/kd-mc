@@ -29,7 +29,7 @@
 <!-- MAJ-AUTO:debut chiffres -->
 | Ce qu'on a | Combien | Mesuré par |
 |---|---|---|
-| Chantiers suivis (sessions) | **214** | `pipeline/sessions.json` |
+| Chantiers suivis (sessions) | **215** | `pipeline/sessions.json` |
 | Applications / pages | **35** | `find -maxdepth 3 -name index.html` |
 | Adresses du domaine kd-mc.com | **32** | `services/kdmc-router/worker.js` |
 | Serveurs Cloudflare (workers) | **27** | `find -name wrangler.toml` |

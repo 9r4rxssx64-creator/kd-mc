@@ -116,6 +116,8 @@ const REGISTRE = [
   // 735ad3ab8) : l'extracteur garde le texte après le DERNIER « RÈGLE » du titre → titre lu = « ENTIÈRE) ».
   // Elle comptait comme règle sans garde (ratchet 19 → 20). Son garde est celui qu'elle décrit : test:docs-frais.
   [/^ENTIÈRE\)$/, ['npm:test:docs-frais', 'file:tools/audit/docs-fraicheur.cjs']],
+  // Règle « LES TEXTES DES FICHES : À JOUR DES DOCUMENTS, EN HISTOIRES, SANS « PROBABLE » » (Kevin 17.10.2026) : son garde est tests/arbre-textes.test.mjs.
+  [/LES TEXTES DES FICHES/i, ['npm:test:arbre-textes', 'file:tests/arbre-textes.test.mjs']],
   // Règle « TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER » (Kevin 16.10.2026, 4ᵉ rappel) : garde R1→R8 + sa preuve par sabotage.
   [/TOUS LES DOCUMENTS À JOUR EN TEMPS RÉEL, SANS RIEN OUBLIER/i, ['npm:test:docs-frais', 'npm:test:docs-frais-garde', 'file:tools/audit/docs-fraicheur.cjs']],
   // Règle « SEUL KEVIN AJOUTE OU MODIFIE : PLANNING, ÉQUIPES, PERSONNES, COMPTES, CODES » (Kevin 8.10.2026) : gardes citées
@@ -244,6 +246,8 @@ const COMPORTEMENTAL = [
   /VA AU BOUT DE TOUT LE TRAVAIL/i,
   /* « SE CONNECTER RÉELLEMENT PARTOUT : CHAQUE SESSION OUVRE LE VRAI DOMAINE ET VÉRIFIE » (Kevin 17.10.2026, ajoutée sans entrée → ratchet 19 → 20 vu à la fusion) : conduite de travail de la session ; ses outils (robots « comme Kevin ») ont déjà leurs gardes. */
   /SE CONNECTER RÉELLEMENT PARTOUT/i,
+  /* « JE TESTE TOUT MOI-MÊME, EN RÉEL, À LA PLACE DE KEVIN » (Kevin 17.10.2026, ajoutée sans entrée) : conduite de la session ; ses outils (robots « comme Kevin », harnais réels) ont déjà leurs gardes. */
+  /JE TESTE TOUT MOI-MÊME/i,
   /* « ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE » (Kevin 9.10.2026, #4439, ajoutée sans entrée → ratchet 19 → 20 vu à la
      fusion) : relire ce qu'on a et aller chercher le document AVANT d'écrire une question = conduite de recherche, pas un état
      du code. Sa part mécanisable (« donnée sans source = probable/piste ») mérite un garde sur les fiches : à faire par la branche arbre. */

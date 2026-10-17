@@ -110,6 +110,47 @@ export function adresse(a, hotes, noms) {
   return { url, libelle: propre(a && a.libelle, 60) || libelle, hote: r.hote };
 }
 
+/* ───────── LA VOIE DIRECTE : « ouvre… », « montre-moi… », « va sur… » ne dépendent PAS de l'IA ─────────
+ * Mesuré en RÉEL le 17.10 (robot « Bee comme Kevin », run 39034152527) : « montre-moi l'arbre de Yann Lorenzi » → l'IA gratuite répondait « Je n'ai pas accès » et
+ * « va sur apex chat » → « je ne peux pas ouvrir d'applications » : un modèle gratuit n'appelle pas toujours l'outil. Une demande d'ouverture claire (verbe + app) est donc
+ * comprise ICI, sans IA : instantanée, gratuite, identique à chaque fois. Tout ce qui n'est pas net (question, phrase composée) continue d'aller à l'IA et à l'outil. */
+const FILLER = '(?:m|me|bee|javis|jarvis|bourricot|stp|svp|ok|alors|dis|maintenant|s il te plait|peux tu|pourrais tu|tu peux|voudrais tu|veux tu)';
+const RE_DIRECT = new RegExp('^(?:' + FILLER + '\\s+)*(ouvre|ouvrez|ouvrir|montre|montrez|affiche|affichez|emmene|amene|va|vas|aller|allons|lance|lancez|naviguer|fais moi voir|je veux voir|je voudrais voir|je veux aller|je voudrais aller|je veux ouvrir|je voudrais ouvrir|redirige|bascule)(?:\\s+(?:moi|nous))?\\s+(.+)$');
+const COMPOSEE = /\b(?:et|puis|ensuite|qui|que|quoi|combien|comment|pourquoi|quand|dis|explique|raconte|parle|cherche|compare)\b/;
+const titre = (t) => t.split(' ').filter(Boolean).map((w) => (/^(?:de|du|des|d|la|le|les|von|van|y)$/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
+
+/** Une demande d'ouverture NETTE → { url, libelle, texte } ; sinon null (l'IA s'en occupe). `hotes` / `noms` : ce que le routeur sert. */
+export function intentionOuvrir(message, hotes, noms) {
+  let n = sansAccent(message).replace(/[’'`´]/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!n || n.split(' ').length > 14) return null;
+  const m = n.match(RE_DIRECT); if (!m) return null;
+  let cible = m[2].replace(/\s+(?:s il te plait|stp|svp|maintenant|tout de suite|merci)$/, '').trim();
+  cible = cible.replace(/^(?:(?:sur|dans|vers|a|au|aux|en|le|la|les|l|un|une|mon|ma|mes|moi|nous|app|application|appli|site|page)\s+)+/, '').trim();
+  if (!cible) return null;
+  /* l'arbre : « l'arbre », « l'arbre de Yann Lorenzi », « la famille Lorenzi » */
+  const arbre = cible.match(/^(arbre(?:\s+genealogique)?(?:\s+de\s+famille)?|famille)(?:\s+(?:de|d|du|des|a|pour)\b)?\s*(.*)$/);
+  if (arbre) {
+    const reste = arbre[2].replace(/^(?:la|le|les|l)\s+/, '').trim();
+    const fam = arbre[1] === 'famille' ? reste : (reste.match(/^famille\s+(.+)$/) || [])[1];
+    if (COMPOSEE.test(reste)) return null;
+    const a = fam ? { app: 'arbre', famille: titre(fam).toUpperCase() } : reste ? { app: 'arbre', personne: titre(reste) } : { app: 'arbre' };
+    const r = adresse(a, hotes, noms); if (r.erreur) return null;
+    return { url: r.url, libelle: r.libelle, texte: a.personne ? 'Je t\'ouvre l\'arbre sur ' + a.personne + '.' : a.famille ? 'Je t\'ouvre l\'arbre sur la famille ' + a.famille + '.' : 'Je t\'ouvre l\'arbre.' };
+  }
+  if (COMPOSEE.test(cible)) return null;
+  const r0 = resoudreApp(cible, hotes, noms); if (r0.erreur || !r0.hote) return null;
+  const r = adresse({ app: r0.hote }, hotes, noms); if (r.erreur) return null;
+  return { url: r.url, libelle: r.libelle, texte: 'Je t\'ouvre « ' + r.libelle + ' ».' };
+}
+
+/** Quand un lien d'ouverture est prêt, la phrase de l'IA ne doit jamais dire « je n'ai pas accès » : on la remplace par la vérité. */
+export function corrigerTexte(texte, ouvrir) {
+  const liste = Array.isArray(ouvrir) ? ouvrir : [];
+  if (!liste.length) return texte;
+  if (!/n['’ ]ai pas (?:acc[eè]s|la possibilit|de moyen)|pas acc[eè]s|ne peux pas (?:ouvrir|acc[eé]der|afficher|naviguer)|impossible d['’ ]ouvrir|c['’ ]est apex qui/i.test(String(texte || ''))) return texte;
+  return liste.length === 1 ? 'Je t\'ouvre « ' + liste[0].libelle + ' ».' : 'Je t\'ouvre ça : ' + liste.map((x) => '« ' + x.libelle + ' »').join(', ') + '.';
+}
+
 /** L'outil du cerveau de Bee. `o.hotes()` / `o.noms()` : ce que le routeur sert ; `sortie.ouvrir` reçoit les boutons à montrer. */
 export function outilsOuvrir(o, sortie) {
   return {

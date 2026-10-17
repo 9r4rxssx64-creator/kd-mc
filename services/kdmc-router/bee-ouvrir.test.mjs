@@ -8,7 +8,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { createHash, createHmac } from 'node:crypto';
 import mod from './worker.js';
-import { resoudreApp, cheminSur, adresse, outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, ALIAS, MAX_OUVRIR } from './bee-ouvrir.js';
+import { resoudreApp, cheminSur, adresse, outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, ALIAS, MAX_OUVRIR, intentionOuvrir, corrigerTexte } from './bee-ouvrir.js';
 
 let pass = 0, fail = 0;
 const ok = (c, m, d) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m + (d !== undefined ? ' → ' + String(d).slice(0, 300) : '')); } };
@@ -87,27 +87,50 @@ async function bee(texte, e2, headers) {
   await Promise.allSettled(att.splice(0)); return { st: r.status, j: await r.json().catch(() => null) };
 }
 
+/* ───────── 4bis. la VOIE DIRECTE (sans IA) ───────── */
+const I = (q) => intentionOuvrir(q, HOTES, NOMS) || { url: null, texte: null };
+const Inull = (q) => intentionOuvrir(q, HOTES, NOMS);
+ok(I('montre-moi l\'arbre de Yann Lorenzi').url === 'https://arbre.kd-mc.com/#personne=Yann%20Lorenzi' && I('montre-moi l\'arbre de Yann Lorenzi').texte === 'Je t\'ouvre l\'arbre sur Yann Lorenzi.', '4d. « montre-moi l\'arbre de Yann Lorenzi » → l\'arbre SUR Yann Lorenzi, sans IA');
+ok(I('Ouvre l\'arbre').url === 'https://arbre.kd-mc.com/' && I('peux-tu m\'ouvrir l\'arbre s\'il te plaît').url === 'https://arbre.kd-mc.com/', '4e. « ouvre l\'arbre », « peux-tu m\'ouvrir l\'arbre s\'il te plaît »');
+ok(I('va sur apex chat').url === 'https://apex-chat.kd-mc.com/' && I('va sur apex').url === 'https://apex-ai.kd-mc.com/' && I('ouvre la light').url === 'https://departs.kd-mc.com/', '4f. « va sur apex chat » ≠ « va sur apex » ; « ouvre la light »');
+ok(I('emmène-moi sur lingua').url === 'https://lingua.kd-mc.com/' && I('affiche-moi le portail').url === 'https://kd-mc.com/' && I('lance cmcteams').url === 'https://cmcteams.kd-mc.com/' && I('je veux voir l\'admin').url === 'https://admin.kd-mc.com/', '4g. emmène-moi, affiche-moi, lance, je veux voir');
+ok(I('montre-moi la famille Lorenzi').url === 'https://arbre.kd-mc.com/#famille=LORENZI' && I('ouvre l\'arbre de la famille Buchet').url === 'https://arbre.kd-mc.com/#famille=BUCHET', '4h. la famille Lorenzi → #famille=LORENZI');
+ok(I('montre-moi l\'arbre d\'Émile Lorenzi').url === 'https://arbre.kd-mc.com/#personne=Emile%20Lorenzi', '4i. accents et apostrophes : « d\'Émile Lorenzi » → Emile Lorenzi (l\'app cherche sans accent)');
+for (const non of ['quel temps demain ?', 'comment ouvrir l\'arbre ?', 'ouvre l\'arbre et dis-moi qui est Yann', 'montre-moi comment faire une tarte', 'ouvre la porte', 'affiche la météo', 'va sur le site evil.example', 'raconte-moi une blague', 'ouvre https://evil.example/x', '', 'montre-moi ça'])
+  ok(Inull(non) === null, '4j. PAS de voie directe (l\'IA s\'en occupe) : « ' + non + ' »');
+ok(Inull('ouvre ' + 'mot '.repeat(20)) === null, '4k. une phrase de plus de 14 mots : pas de voie directe');
+ok(corrigerTexte('Je n\'ai pas accès à l\'arbre.', [{ libelle: 'L\'arbre — Yann' }]) === 'Je t\'ouvre « L\'arbre — Yann ».' && corrigerTexte('Je ne peux pas ouvrir d\'applications (c\'est Apex).', [{ libelle: 'A' }, { libelle: 'B' }]) === 'Je t\'ouvre ça : « A », « B ».', '4l. un lien prêt + « pas accès » dans la phrase de l\'IA → remplacée par la vérité');
+ok(corrigerTexte('Voilà, c\'est ouvert.', [{ libelle: 'A' }]) === 'Voilà, c\'est ouvert.' && corrigerTexte('Je n\'ai pas accès.', []) === 'Je n\'ai pas accès.', '4m. une phrase normale, ou sans lien : intacte');
+
 /* ───────── 5. par le VRAI serveur de Bee ───────── */
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'arbre', personne: 'Yann Lorenzi' })] }, { content: 'Je t\'ouvre l\'arbre sur Yann Lorenzi.' }];
+{ reset();
   const r = await bee('montre-moi l\'arbre de Yann Lorenzi');
-  ok(r.st === 200 && r.j.ok && r.j.outils.join() === 'ouvrir' && r.j.gratuit === true, '5. par le vrai serveur : l\'IA appelle ouvrir — ' + JSON.stringify(r.j).slice(0, 200));
-  ok(Array.isArray(r.j.ouvrir) && r.j.ouvrir.length === 1 && r.j.ouvrir[0].url === 'https://arbre.kd-mc.com/#personne=Yann%20Lorenzi', '5b. la réponse porte le bouton `ouvrir` avec le lien de l\'arbre');
+  ok(r.st === 200 && r.j.ok && r.j.provider === 'domaine' && r.j.gratuit === true && r.j.outils.join() === 'ouvrir', '5. par le vrai serveur : « montre-moi l\'arbre de Yann Lorenzi » est compris SANS IA — ' + JSON.stringify(r.j).slice(0, 200));
+  ok(IA_VUES.length === 0 && !reseau.some((u) => /cerebras|groq|mistral|anthropic|openai/.test(u)), '5b. aucune IA appelée (0 € et instantané)');
+  ok(Array.isArray(r.j.ouvrir) && r.j.ouvrir.length === 1 && r.j.ouvrir[0].url === 'https://arbre.kd-mc.com/#personne=Yann%20Lorenzi' && r.j.text === 'Je t\'ouvre l\'arbre sur Yann Lorenzi.', '5c. la réponse porte le bouton `ouvrir` et la phrase vraie'); }
+{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'arbre', personne: 'Yann Lorenzi' })] }, { content: 'Je n\'ai pas accès à l\'arbre, désolé.' }];
+  const r = await bee('ouvre l\'arbre et dis-moi qui est Yann Lorenzi');
+  ok(r.st === 200 && r.j.ok && r.j.outils.join() === 'ouvrir' && r.j.ouvrir && r.j.ouvrir.length === 1, '5d. phrase composée → l\'IA appelle ouvrir — ' + JSON.stringify(r.j).slice(0, 200));
+  ok(!/pas accès/.test(r.j.text) && /Je t'ouvre/.test(r.j.text), '5e. même si l\'IA dit « je n\'ai pas accès », le domaine corrige la phrase (un lien est prêt)', r.j.text);
   const sys = IA_VUES[0].corps.messages[0].content;
-  ok(/JAMAIS « je n'ai pas accès »/.test(sys) && outilsVus().includes('ouvrir'), '5c. le caractère interdit « je n\'ai pas accès » et l\'outil est offert'); }
+  ok(/JAMAIS « je n'ai pas accès »/.test(sys) && outilsVus().includes('ouvrir'), '5f. le caractère interdit « je n\'ai pas accès » et l\'outil est offert'); }
 { reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'https://evil.example/' })] }, { content: 'Je ne peux pas.' }];
-  const r = await bee('ouvre https://evil.example/');
+  const r = await bee('ouvre https://evil.example/ et dis-moi ce que tu vois');
   ok(r.st === 200 && !(r.j.ouvrir && r.j.ouvrir.length) && /ÉCHEC DE L'OUTIL/.test(toolMsgs()), '5d. un site extérieur : ÉCHEC DE L\'OUTIL, aucun bouton'); }
 { reset(); const r = await bee('ouvre l\'arbre', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
-  ok(r.st === 403 && IA_VUES.length === 0, '5e. un autre compte : 403, aucune ouverture');
+  ok(r.st === 403 && IA_VUES.length === 0, '5g. un autre compte : 403, aucune ouverture');
   const r2 = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'ouvre l\'arbre' }] }) }), env, ctx);
-  ok(r2.status === 403 && IA_VUES.length === 0, '5f. un inconnu : 403'); }
+  ok(r2.status === 403 && IA_VUES.length === 0, '5h. un inconnu : 403'); }
 { reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
-  await bee('ouvre l\'arbre', Object.assign({}, env, { BEE_OUVRIR: '0' }));
-  ok(!outilsVus().includes('ouvrir'), '5g. interrupteur BEE_OUVRIR=0 : l\'outil n\'existe plus'); }
+  const r0 = await bee('ouvre l\'arbre', Object.assign({}, env, { BEE_OUVRIR: '0' }));
+  ok(r0.j.provider !== 'domaine' && !(r0.j.ouvrir && r0.j.ouvrir.length), '5i0. interrupteur BEE_OUVRIR=0 : la voie directe est coupée aussi'); }
 { reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
-  await bee('ouvre l\'arbre', Object.assign({}, env, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
-  ok(reseau.every((u) => !/anthropic|openai/.test(u)), '5h. 0 € : aucun appel Anthropic / OpenAI'); }
-ok(!kvEcrit.some((k) => /^cfg:|^cred:|^bee|^fil|^arbre:/.test(k)), '5i. aucune écriture dans la configuration, les codes, la mémoire ni l\'arbre', kvEcrit.join());
+  await bee('ouvre l\'arbre et dis-moi qui est Yann', Object.assign({}, env, { BEE_OUVRIR: '0' }));
+  ok(!outilsVus().includes('ouvrir'), '5i. interrupteur BEE_OUVRIR=0 : l\'outil n\'existe plus'); }
+{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+  await bee('ouvre l\'arbre et dis-moi qui est Yann', Object.assign({}, env, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
+  ok(reseau.every((u) => !/anthropic|openai/.test(u)), '5j. 0 € : aucun appel Anthropic / OpenAI'); }
+ok(!kvEcrit.some((k) => /^cfg:|^cred:|^bee|^fil|^arbre:/.test(k)), '5k. aucune écriture dans la configuration, les codes, la mémoire ni l\'arbre', kvEcrit.join());
 
 /* ───────── 6. le widget ───────── */
 { const wd = readFileSync(new URL('../../tools/javis/javis-widget.js', import.meta.url), 'utf8');

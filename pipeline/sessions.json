@@ -2304,6 +2304,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "javis-bee-direct": {
+      "titre": "Javis / Bee — ouverture directe sans IA",
+      "branche": "claude/bee-ouvre-direct",
+      "sujet": "Mesuré en réel : voie directe pour ouvre/montre-moi/va sur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

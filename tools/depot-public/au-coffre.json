@@ -255,6 +255,7 @@
   "tests/verify-chaine-privee.mjs",
   "tests/verify-chefs-equipe.mjs",
   "tests/verify-chemins-domaine.mjs",
+  "tests/verify-chevauchements-iphone.mjs",
   "tests/verify-cloudflare-analytics-couper.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",
   "tests/verify-cmcteams-invite.mjs",

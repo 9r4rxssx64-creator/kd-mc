@@ -63,6 +63,25 @@ export function bouton() {
     var btn = E('button', '✉️', { position: 'fixed', right: '14px', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)', width: '52px', height: '52px', borderRadius: '26px',
       border: '1px solid ' + OR, background: FOND, color: TXT, fontSize: '24px', lineHeight: '1', cursor: 'pointer', zIndex: '2147483000', boxShadow: '0 4px 18px rgba(0,0,0,.45)', padding: '0' });
     btn.type = 'button'; btn.setAttribute('aria-label', "Écrire à l'admin"); btn.title = "Écrire à l'admin";
+    /* 17.10 (photo de Kevin, iPhone) : le ✉️ tombait SUR la barre d'onglets fixe de l'app (Lingua : « Profil » caché). Une barre fixe
+       collée en bas, large, peu haute → le bouton se pose au-dessus ; revu toutes les 1,5 s (une app monopage change d'écran). */
+    var barreBas = function () {
+      try {
+        var el = document.elementFromPoint(Math.round(window.innerWidth / 2), window.innerHeight - 2);
+        while (el && el !== document.body && el !== document.documentElement) {
+          if (el === btn || el === panneau) return 0;
+          var cs = window.getComputedStyle(el);
+          if (cs.position === 'fixed' || cs.position === 'sticky') {
+            var r = el.getBoundingClientRect();
+            return (r.bottom >= window.innerHeight - 4 && r.width >= window.innerWidth * 0.6 && r.height > 20 && r.height <= 160) ? r.height : 0;
+          }
+          el = el.parentElement;
+        }
+      } catch (e) { /* jamais casser la page */ }
+      return 0;
+    };
+    var placer = function () { if (etat.admin || !btn.parentNode) return; var hb = barreBas(); btn.style.bottom = hb ? (Math.round(hb) + 12) + 'px' : 'calc(env(safe-area-inset-bottom, 0px) + 14px)'; };
+    setInterval(placer, 1500); window.addEventListener('resize', placer);
     pastille = E('span', '', { position: 'absolute', top: '4px', right: '4px', width: '12px', height: '12px', borderRadius: '6px', background: '#dc2626', display: 'none' });
     btn.appendChild(pastille);
 
@@ -150,6 +169,7 @@ export function bouton() {
         /* Pas de compte, pas de bouton (Kevin 3.10 : aucune consultation ni message sans compte). */
         if (!etat.connecte) { if (btn.parentNode) btn.parentNode.removeChild(btn); if (panneau && panneau.parentNode) { panneau.parentNode.removeChild(panneau); panneau = null; } return; }
         if (!btn.parentNode) document.body.appendChild(btn);
+        placer();
         var vu = parseInt(lire(LV) || '0', 10) || 0;
         var neuf = etat.messages.some(function (x) { return x.repondu && x.repondu > vu; });
         pastille.style.display = neuf ? 'block' : 'none';

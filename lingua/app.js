@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.3";
+var APP_VER="v2.142.4";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -3555,7 +3555,11 @@ function vStoryPlay(){ var d=el("div","screen story"); if(!ST){ go("stories"); r
   setTimeout(function(){ var b=d.querySelector(".story-box"); if(b)b.scrollTop=b.scrollHeight; },40);
   return d;
 }
-function vTabbar(){ var t=el("div","tabbar"); [["home","🏠","Accueil"],["review","🧠","Réviser"],["coach","💬","Coach"],["translate","🌐","Traduire"],["league","🏆","Ligue"],["profile","🙂","Profil"]].forEach(function(x){ var b=el("button","tab"+(VIEW===x[0]||(x[0]==="review"&&VIEW==="dict")?" active":"")); b.innerHTML='<span>'+x[1]+'</span><i>'+x[2]+'</i>'; b.onclick=function(){go(x[0]);}; t.appendChild(b); }); return t; }
+function vTabbar(){ var t=el("div","tabbar"); [["home","🏠","Accueil"],["review","🧠","Réviser"],["coach","💬","Coach"],["translate","🌐","Traduire"],["league","🏆","Ligue"],["profile","🙂","Profil"]].forEach(function(x){ var b=el("button","tab"+(VIEW===x[0]||(x[0]==="review"&&VIEW==="dict")?" active":"")); b.innerHTML='<span>'+x[1]+'</span><i>'+x[2]+'</i>'; b.onclick=function(){go(x[0]);}; t.appendChild(b); });
+  /* 17.10 (photo de Kevin) : la pastille « ← Portail » du domaine se posait SUR le 🌍 et les compteurs du haut. Lingua a donc SA sortie,
+     dans la barre (règle du domaine : une sortie toujours visible ; [data-kdmc-retour] → le routeur ne pose plus la sienne). */
+  var po=el("a","tab tab-portail"); po.href="https://kd-mc.com/"; po.setAttribute("data-kdmc-retour",""); po.setAttribute("aria-label","Retour au portail kd-mc.com"); po.innerHTML='<span>🚪</span><i>Portail</i>'; t.appendChild(po);
+  return t; }
 
 /* ============ Traducteur multilingue (hors-ligne, basé sur le dictionnaire) ============ */
 var REV=null;

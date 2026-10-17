@@ -1,7 +1,7 @@
 /*
  * kdmc-monaco — connecteur IMAP Monaco Telecom → factures dans l'app Finances.
  *
- * Le mail perso de Kevin (Kevind@monaco.mc) est hébergé chez Monaco Telecom
+ * Le mail perso de Kevin (sa boîte monaco.mc — l'adresse ne s'écrit ni ici ni dans la page, 17.10.2026) est hébergé chez Monaco Telecom
  * (IMAP standard : mails.monaco.mc:993 SSL/TLS), PAS chez Microsoft. Ce worker
  * se connecte en IMAP (lecture seule), récupère les pièces jointes PDF/image des
  * mails qui ressemblent à une facture/devis, et les dépose dans le KV PARTAGÉ
@@ -404,7 +404,7 @@ function setupPage(host) {
 + 'details{margin-top:8px}summary{color:#9fb59a;font-size:13.5px}'
 + '</style></head><body>'
 + '<h1>📧 Connecter ta boîte Monaco Telecom</h1>'
-+ '<p class="muted">Tes factures/devis reçus sur <b>Kevind@monaco.mc</b> arriveront tout seuls dans l\'app Finances. Lecture seule, rien n\'est supprimé, rien ne passe par une IA. Le worker se relance seul toutes les 2 h.</p>'
++ '<p class="muted">Tes factures/devis reçus sur <b>ta boîte mail Monaco Telecom</b> arriveront tout seuls dans l\'app Finances. Lecture seule, rien n\'est supprimé, rien ne passe par une IA. Le worker se relance seul toutes les 2 h.</p>'
 + '<div class="card"><h2>Tes identifiants Monaco Telecom</h2>'
 + '<label>Ton code admin</label><input id="pin" type="password" inputmode="numeric" placeholder="Code admin">'
 + '<label>Adresse e-mail monaco.mc <span style="color:#8aa07f">(à écrire ici)</span></label><input id="user" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="ex : prenom@monaco.mc">'

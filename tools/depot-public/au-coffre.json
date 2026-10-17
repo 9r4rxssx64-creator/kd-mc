@@ -342,6 +342,7 @@
   "tests/verify-planning-guarantee.test.mjs",
   "tests/verify-pointage-bouton.mjs",
   "tests/verify-portail-delai-sorties.mjs",
+  "tests/verify-portes-anonymes.mjs",
   "tests/verify-presence-live.mjs",
   "tests/verify-prt-lecture.mjs",
   "tests/verify-public-autonome.mjs",

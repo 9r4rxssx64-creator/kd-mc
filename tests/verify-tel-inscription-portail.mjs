@@ -53,7 +53,7 @@ async function envoyerWhatsApp(lien, tel) {
   return (envoyes[envoyes.length - 1].text.body.match(/\b(\d{6})\b/) || [])[1];
 }
 async function remplir(page, prenom) {
-  await page.fill('#f-prenom', prenom); await page.fill('#f-nom', 'Essai'); await page.fill('#f-tel', '+377 06 12 34 56');
+  await page.fill('#f-prenom', prenom); await page.fill('#f-nom', 'Essai'); await page.fill('#f-tel', '+377 06 12 34 56'); await page.fill('#f-mail', 'essai@exemple.org').catch(() => {});
   await page.fill('#f-code', '271828'); await page.fill('#f-code2', '271828');
   await page.check('#cgu-ok'); await page.click('#f-create');
 }

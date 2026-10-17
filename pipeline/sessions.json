@@ -2532,6 +2532,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "portes-anonymes": {
+      "titre": "Audit Cloudflare lot 4 : portes anonymes",
+      "branche": "claude/portes-anonymes",
+      "sujet": "routeur /__dep/membre + passkeys, parser /test, ld_detente, monaco, CORS access",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

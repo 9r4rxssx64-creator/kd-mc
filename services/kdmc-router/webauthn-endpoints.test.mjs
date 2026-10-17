@@ -73,9 +73,15 @@ const run = async () => {
   ok(store.has('pk:kdmc_admin') && !store.has('pk:kevin-desarzens'), 'passkey stocké en KV sous la clé CANONIQUE de l\'admin (pk:kdmc_admin), jamais sous l\'uid de session');
 
   /* 4) auth/options */
+  /* 17.10.2026 (audit, lot 4) : SANS session, plus de liste des passkeys d'un uid (oracle : 5 pour l'admin) — challenge + liste vide,
+     le trousseau de l'appareil présente lui-même le passkey (userHandle = l'uid). AVEC la session de ce compte : la liste, inchangé. */
   r = await mod.fetch(POST('/__sso/webauthn/auth/options', { uid: 'kevin-desarzens' }), env);
   const ao = await r.json();
-  ok(ao.ok && ao.allowCredentials.length === 1 && ao.allowCredentials[0].id === b64uEnc(credId), 'auth/options → 1 credential du user');
+  ok(ao.ok && typeof ao.challenge === 'string' && Array.isArray(ao.allowCredentials) && ao.allowCredentials.length === 0, 'auth/options ANONYME avec l\'uid de l\'admin → challenge, liste VIDE (plus d\'oracle)');
+  const aoAutre = await (await mod.fetch(POST('/__sso/webauthn/auth/options', { uid: 'kevin-desarzens' }, { authorization: 'Bearer ' + passFaible('anne-martin', 'Anne Martin') }), env)).json();
+  ok(aoAutre.ok && aoAutre.allowCredentials.length === 0, 'auth/options avec la session d\'UN AUTRE compte → liste vide');
+  const aoSess = await (await mod.fetch(POST('/__sso/webauthn/auth/options', { uid: 'kevin-desarzens' }, { cookie }), env)).json();
+  ok(aoSess.ok && aoSess.allowCredentials.length === 1 && aoSess.allowCredentials[0].id === b64uEnc(credId), 'auth/options avec la session de CE compte → 1 credential (panneau « Mes appareils » inchangé)');
 
   /* 5) auth/verify (assertion signée) */
   async function assertion(challengeB64, tamper) {

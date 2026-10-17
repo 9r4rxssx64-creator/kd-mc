@@ -151,17 +151,20 @@
      qu'IL a enregistrée pour cet uid : annoncer un autre uid ne donne rien. */
   function loginPasskey(uid) {
     if (!supportsPasskey()) return Promise.resolve({ ok: false, reason: 'non supporté' });
-    return fetch(BASE + '/webauthn/auth/options', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: uid || '' }) })
+    return fetch(BASE + '/webauthn/auth/options', { method: 'POST', credentials: 'include', headers: authHeaders({ 'content-type': 'application/json' }), body: JSON.stringify({ uid: uid || '' }) })
       .then(function (r) { return r.json(); })
       .then(function (o) {
         if (!o || !o.ok) return { ok: false, reason: (o && o.reason) || 'options' };
-        if (uid && (!o.allowCredentials || !o.allowCredentials.length)) return { ok: false, reason: 'aucun passkey' };
+        /* 17.10.2026 (audit, lot 4) : sans session, le domaine ne donne plus la liste des passkeys d'un compte (c'était un oracle).
+           Liste vide → on ne s'arrête plus (« aucun passkey ») : Face ID présente lui-même le passkey du trousseau, et l'uid se lit
+           dans la réponse signée (userHandle), exactement comme l'entrée sans uid. Liste fournie (déjà connecté) → inchangé. */
+        var liste = (uid && o.allowCredentials && o.allowCredentials.length) ? o.allowCredentials : null;
         var pk = { challenge: _b64uToBuf(o.challenge), rpId: o.rpId, userVerification: 'required', timeout: 60000 };
-        if (uid) pk.allowCredentials = o.allowCredentials.map(function (c) { return { type: 'public-key', id: _b64uToBuf(c.id) }; });
+        if (liste) pk.allowCredentials = liste.map(function (c) { return { type: 'public-key', id: _b64uToBuf(c.id) }; });
         return navigator.credentials.get({ publicKey: pk }).then(function (cred) {
           var a = cred.response;
           var _cid = cred.id; /* id (b64u) du passkey utilisé sur CET appareil */
-          if (!uid) { try { uid = new TextDecoder().decode(a.userHandle); } catch (e) { uid = ''; } }
+          if (!liste) { var uh = ''; try { uh = a.userHandle ? new TextDecoder().decode(a.userHandle) : ''; } catch (e) { uh = ''; } if (uh) uid = uh; }
           if (!uid) return { ok: false, reason: 'passkey sans compte' };
           return fetch(BASE + '/webauthn/auth/verify', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: uid, credId: cred.id, clientDataJSON: _bufToB64u(a.clientDataJSON), authenticatorData: _bufToB64u(a.authenticatorData), signature: _bufToB64u(a.signature) }) })
             .then(function (r) { return r.json(); })

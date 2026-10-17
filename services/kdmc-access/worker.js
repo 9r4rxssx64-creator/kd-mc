@@ -51,12 +51,11 @@ const RETENTION_DAYS = 120;          // rétention (RGPD : minimisation) — pur
 const day = () => new Date().toISOString().slice(0, 10);
 
 // Allowlist CORS pour /log (les apps de Kevin uniquement).
+// 17.10.2026 (audit Cloudflare, lot 4) : la réponse porte Access-Control-Allow-Credentials — refléter « n'importe quel
+// *.workers.dev » (n'importe qui en crée un en 2 minutes), github.io ou localhost laissait un site tiers lire les réponses avec la
+// session de la personne. Seules les adresses du domaine kd-mc.com (en https) restent.
 const ORIGIN_OK = [
   /^https:\/\/([a-z0-9-]+\.)?kd-mc\.com$/i,
-  /^https:\/\/9r4rxssx64-creator\.github\.io$/i,
-  /^https:\/\/[a-z0-9-]+\.workers\.dev$/i,
-  /^http:\/\/localhost(:\d+)?$/i,
-  /^http:\/\/127\.0\.0\.1(:\d+)?$/i,
 ];
 
 function corsHeaders(origin) {

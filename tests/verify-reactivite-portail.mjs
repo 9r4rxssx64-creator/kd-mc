@@ -184,7 +184,7 @@ try {
   note('Portail sans compte : écran « Créer mon compte » visible', '—', p1, `whoami : ${ap1.filter((a) => /whoami/.test(a.u)).length}`);
 
   /* ── P2/R4. « Créer mon compte » : le domaine dit si le téléphone est exigé ─────────────────── */
-  await page.fill('#f-prenom', 'Albert'); await page.fill('#f-nom', 'Fictif'); await page.fill('#f-tel', '+377 06 12 34 56');
+  await page.fill('#f-prenom', 'Albert'); await page.fill('#f-nom', 'Fictif'); await page.fill('#f-tel', '+377 06 12 34 56'); await page.fill('#f-mail', 'essai@exemple.org').catch(() => {});
   await page.fill('#f-code', '271828'); await page.fill('#f-code2', '271828'); await page.check('#cgu-ok');
   const r4 = await toucher(page, '#f-create', () => { const h = document.getElementById('hub'); return (h && !h.hidden) || !!document.getElementById('pk-skip'); }, 15000);
   note('« Créer mon compte » (vérif. téléphone + création)', r4.premier, r4.fin, r4.quoi);

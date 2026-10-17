@@ -9,9 +9,15 @@ import { membreDansPlanning, _videCachePlanning, CLE_BANQUE } from './membre-pla
 /* Un planning FICTIF, du même format que le vrai (boards-gen.js) : ce test reste public et tourne à chaque
    déploiement du routeur (le vrai planning, lui, n'existe qu'au coffre). Noms inventés. */
 const PLANNING = 'window.DEPARTS_GEN={"boards":{"2026-10-1":{"people":[{"id":"U00015","name":"DUPONT M"},{"id":"U00016","name":"MARTIN-ROUX L"}]}}};';
-const env = { ACCOUNTS: { get: async (k) => (k === 'fichier:/cmcteams/tools/departs/boards-gen.js' ? PLANNING : null) } };
-const demander = async (corps, origin) => {
+const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: { get: async (k) => (k === 'fichier:/cmcteams/tools/departs/boards-gen.js' ? PLANNING : null) } };
+/* 17.10.2026 (audit, lot 4) : /__dep/membre exige une SESSION du domaine (ou la signature du serveur des codes). Un pass signé
+   au format du domaine : b64u(JSON{u,n,c,v,iat,exp}) + '.' + b64u(HMAC-SHA256(secret, partie1)). */
+import { createHmac as _hm } from 'node:crypto';
+const _b64 = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const passMembre = (uid = 'collegue-test', secret = 'sec') => { const p = _b64(JSON.stringify({ u: uid, n: 'Collègue Test', c: 1, v: 0, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + _b64(_hm('sha256', secret).update(p).digest()); };
+const demander = async (corps, origin, sansSession) => {
   const h = { 'content-type': 'application/json' };
+  if (!sansSession) h.authorization = 'Bearer ' + passMembre();
   if (origin) h.origin = origin;
   const r = await mod.fetch(new Request('https://cmcteams-light.kd-mc.com/__dep/membre', { method: 'POST', headers: h, body: JSON.stringify(corps) }), env, { waitUntil() {} });
   return { status: r.status, j: await r.json() };
@@ -44,6 +50,13 @@ test('le domaine reconnaît un collègue du planning, et lui seul', async () => 
   assert.equal(tiers.status, 403, 'un site tiers ne peut pas interroger le planning');
   const get = await mod.fetch(new Request('https://cmcteams-light.kd-mc.com/__dep/membre'), env, { waitUntil() {} });
   assert.equal(get.status, 405, 'GET refusé');
+  /* 17.10.2026 (audit, lot 4) : la porte n'est plus anonyme */
+  const anonyme = await demander({ matricule: 'U00015', nom: 'Dupont', prenom: 'Marc' }, 'https://cmcteams-light.kd-mc.com', true);
+  assert.deepEqual([anonyme.status, anonyme.j], [401, { ok: false, reason: 'session_requise' }], 'sans session : 401, AUCUNE réponse sur le planning');
+  const sansOrigine = await demander({ matricule: 'U00015', nom: 'Rossi', prenom: 'Marc' }, '', true);
+  assert.equal(sansOrigine.status, 401, 'sans session ni Origin (curl) : 401 — avant, c\'était la porte ouverte');
+  const faux = await mod.fetch(new Request('https://cmcteams-light.kd-mc.com/__dep/membre', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + passMembre('x', 'pas-le-bon-secret') }, body: '{"matricule":"U00015","nom":"Dupont","prenom":"Marc"}' }), env, { waitUntil() {} });
+  assert.equal(faux.status, 401, 'pass signé avec un autre secret : 401');
 });
 
 /* LE MATRICULE SBM RANGÉ SUR LA FICHE (Kevin 6.10 : « on sauvegarde sur chaque fiche au fur et à mesure des inscriptions »).
@@ -92,7 +105,11 @@ test('par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la
   const kv = kvMemoire({ 'fichier:/cmcteams/tools/departs/boards-gen.js': PLAN2 });
   const e = { ACCOUNTS: kv, KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('000000').digest('hex') };
   const appel = async (chemin, init) => { const r = await mod.fetch(new Request('https://cmcteams-light.kd-mc.com' + chemin, init), e, { waitUntil() {} }); return { status: r.status, j: await r.json() }; };
-  const post = (corps, h) => ({ method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://cmcteams-light.kd-mc.com' }, h || {}), body: JSON.stringify(corps) });
+  const post = (corps, h) => ({ method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://cmcteams-light.kd-mc.com', authorization: 'Bearer ' + passMembre() }, h || {}), body: JSON.stringify(corps) });
+  /* sans session : rien n'est rangé, aucune alerte, aucune notification */
+  const anon = await appel('/__dep/membre', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ matricule: 'U34924', nom: 'Dupont', prenom: 'Marc' }) });
+  assert.equal(anon.status, 401, 'anonyme : 401');
+  assert.equal([...kv.m.keys()].some((k) => /^matsbm|^aud:log|^push:refus/.test(k)), false, 'anonyme : AUCUNE écriture (ni matricule « réservé », ni journal, ni alerte)');
   assert.equal((await appel('/__dep/membre', post({ matricule: 'U34924', nom: 'Dupont', prenom: 'Marc' }))).j.ok, true, 'inscription : oui');
   const non = await appel('/__dep/membre', post({ matricule: 'U11111', nom: 'Dupont', prenom: 'Marc' }));
   assert.deepEqual(non.j, { ok: false, reason: 'matricule_autre' }, 'autre matricule : non, avec la raison');
@@ -118,10 +135,10 @@ test('par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la
 test('la banque des noms grossit import après import et ne perd personne', async () => {
   const m = new Map(), ecritures = [];
   let publie = PLANNING;
-  const envB = { ACCOUNTS: { get: async (k) => (k === 'fichier:/cmcteams/tools/departs/boards-gen.js' ? publie : m.get(k) ?? null),
+  const envB = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: { get: async (k) => (k === 'fichier:/cmcteams/tools/departs/boards-gen.js' ? publie : m.get(k) ?? null),
     put: async (k, v) => { ecritures.push(k); m.set(k, v); }, delete: async (k) => { m.delete(k); } } };
   const membre = async (corps) => (await (await mod.fetch(new Request('https://cmcteams-light.kd-mc.com/__dep/membre', { method: 'POST',
-    headers: { 'content-type': 'application/json' }, body: JSON.stringify(corps) }), envB, { waitUntil() {} })).json());
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + passMembre() }, body: JSON.stringify(corps) }), envB, { waitUntil() {} })).json());
   _videCachePlanning();
   assert.equal((await membre({ matricule: 'U40001', nom: 'Martin-Roux', prenom: 'Lea' })).ok, true, 'import 1 : la collègue est dans le planning');
   assert.equal(Object.keys(JSON.parse(m.get(CLE_BANQUE) || '{}')).length, 2, 'import 1 : les 2 noms entrent dans la banque');

@@ -49,7 +49,7 @@ try {
   /* 1. Téléphone A : création */
   const A = await browser.newContext({ serviceWorkers: 'block' }); await brancher(A);
   const pa = await A.newPage(); await pa.goto('https://kd-mc.com/');
-  await pa.fill('#f-prenom', 'Marie'); await pa.fill('#f-nom', 'Curie'); await pa.fill('#f-tel', '+377 06 12 34 56');
+  await pa.fill('#f-prenom', 'Marie'); await pa.fill('#f-nom', 'Curie'); await pa.fill('#f-tel', '+377 06 12 34 56'); await pa.fill('#f-mail', 'essai@exemple.org').catch(() => {});
   await pa.fill('#f-code', '314159'); await pa.fill('#f-code2', '314159');
   await pa.check('#cgu-ok'); await pa.click('#f-create');
   await pa.waitForTimeout(1500); await fermerOffreFaceId(pa); await pa.waitForTimeout(300);
@@ -74,7 +74,7 @@ try {
   /* 4. Téléphone C : tentative d'usurpation par recréation */
   const C = await browser.newContext({ serviceWorkers: 'block' }); await brancher(C);
   const pc = await C.newPage(); await pc.goto('https://kd-mc.com/');
-  await pc.fill('#f-prenom', 'Marie'); await pc.fill('#f-nom', 'Curie'); await pc.fill('#f-tel', '+377 06 12 34 56');
+  await pc.fill('#f-prenom', 'Marie'); await pc.fill('#f-nom', 'Curie'); await pc.fill('#f-tel', '+377 06 12 34 56'); await pc.fill('#f-mail', 'essai@exemple.org').catch(() => {});
   await pc.fill('#f-code', '999999'); await pc.fill('#f-code2', '999999');
   await pc.check('#cgu-ok'); await pc.click('#f-create');
   await pc.waitForTimeout(1500);
@@ -127,7 +127,7 @@ try {
   ok(await accueilVisible(pe) && priv && /Kevin/.test(helloE), '6 bis. PC : son nom + bon code admin (« J\'ai déjà un compte ») → accueil admin (zone privée visible), sans Face ID ni bouton spécial', helloE + ' priv=' + priv);
   const F = await browser.newContext({ serviceWorkers: 'block' }); await brancher(F);
   const pf = await F.newPage(); await pf.goto('https://kd-mc.com/');
-  await pf.fill('#f-prenom', 'Kevin'); await pf.fill('#f-nom', 'Desarzens'); await pf.fill('#f-tel', '+377 06 12 34 56'); await pf.fill('#f-code', '111111'); await pf.fill('#f-code2', '111111');
+  await pf.fill('#f-prenom', 'Kevin'); await pf.fill('#f-nom', 'Desarzens'); await pf.fill('#f-tel', '+377 06 12 34 56'); await pf.fill('#f-mail', 'essai@exemple.org').catch(() => {}); await pf.fill('#f-code', '111111'); await pf.fill('#f-code2', '111111');
   await pf.check('#cgu-ok'); await pf.click('#f-create'); await pf.waitForTimeout(1200);
   const boxVisible = await pf.locator('#f-admin-box').isVisible().catch(() => false);
   const errF = (await pf.locator('#a-err').textContent({ timeout: 2000 }).catch(() => '')) || '';

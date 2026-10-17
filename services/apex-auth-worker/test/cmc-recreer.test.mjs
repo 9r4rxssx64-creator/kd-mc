@@ -17,7 +17,7 @@ async function pem() {
 const PEM = await pem();
 const BANQUE = [{ id: "U00015", name: "DUPONT M", team: "1" }, { id: "U00016", name: "MARTIN-ROUX L", team: "2" }];
 
-function monde(donnees, planning, reponseDomaine) {
+function monde(donnees, planning, reponseDomaine, domaine) {
   const db = structuredClone(donnees || {});
   const kv = new Map([["gtoken", "jeton-sa"]]);
   const env = { FIREBASE_PROJECT_ID: "p", FIREBASE_CLIENT_EMAIL: "sa@p.iam", FIREBASE_PRIVATE_KEY: PEM,
@@ -41,6 +41,7 @@ function monde(donnees, planning, reponseDomaine) {
     }
     if (u.pathname === "/__dep/membre") {
       const b = JSON.parse(init.body || "{}"); membre.push(b);
+      if (domaine) return domaine(url, init);
       return { ok: true, status: 200, json: async () => (reponseDomaine || { ok: membreDansPlanning(planning || "", b.matricule, b.nom, b.prenom) }) };
     }
     return { ok: true, status: 200, json: async () => ({}), text: async () => "{}" };
@@ -127,4 +128,33 @@ test("présent dans la banque : le domaine est QUAND MÊME consulté (il range l
   const r = await w.appel({ uid: "U00015", nom: "Dupont", prenom: "Marc", password: "nouveau1" });
   assert.equal(r.status, 200);
   assert.equal(w.membre.length, 1, "un appel au domaine");
+});
+
+/* 17.10.2026 (audit Cloudflare, lot 4) : le domaine ne répond plus à une demande ANONYME sur /__dep/membre. Ce serveur n'a pas de session
+   (la personne recrée justement son mot de passe) : il SIGNE sa demande (clé dérivée de FIREBASE_PRIVATE_KEY, que le routeur reçoit aussi).
+   De bout en bout : le VRAI routeur (kdmc-router/worker.js) répond à la place du faux domaine. SABOTAGE=1 → l'en-tête n'est pas envoyé
+   → la personne présente seulement dans les IMPORTS est refusée (le contrôle rougit). */
+test("le serveur SIGNE sa demande au domaine : le VRAI routeur l'accepte ; sans la bonne clé, il refuse (la banque seule décide)", async () => {
+  const { default: routeur } = await import("../../kdmc-router/worker.js");
+  const PLAN = 'window.DEPARTS_GEN={"boards":{"b":{"people":[{"id":"U00020","name":"BLANC S"}]}}};';
+  const sab = process.env.SABOTAGE === "1";
+  const essai = async (pemRouteur) => {
+    const kvR = new Map([["fichier:/cmcteams/tools/departs/boards-gen.js", PLAN]]);
+    const envR = { KDMC_SSO_SECRET: "sec-routeur", FIREBASE_PRIVATE_KEY: pemRouteur, ACCOUNTS: { get: async (k) => kvR.get(k) ?? null, put: async (k, v) => { kvR.set(k, v); }, delete: async (k) => { kvR.delete(k); } } };
+    const statuts = [];
+    const domaine = async (url, init) => {
+      const h = Object.assign({}, init.headers);
+      if (sab) delete h["x-kdmc-membre-serveur"];
+      const r = await routeur.fetch(new Request("https://kd-mc.com/__dep/membre", { method: "POST", headers: h, body: init.body }), envR, { waitUntil() {} });
+      statuts.push(r.status);
+      return r;
+    };
+    const w = monde({ cmcteams: { cmc_e: [] } }, "", null, domaine);
+    return { r: await w.appel({ uid: "U00020", nom: "Blanc", prenom: "Sophie", password: "nouveau1" }), statuts };
+  };
+  const bon = await essai(PEM);
+  assert.equal(bon.statuts[0], 200, "le VRAI routeur accepte la demande signée par le serveur");
+  assert.equal(bon.r.status, 200, "présente seulement dans les imports : elle recrée son mot de passe (comme avant le lot 4)");
+  const autreCle = await essai(await pem());
+  assert.deepEqual([autreCle.statuts[0], autreCle.r.status], [401, 403], "clé différente côté routeur : demande refusée, la banque seule décide (absente → refus)");
 });

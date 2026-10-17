@@ -3540,7 +3540,20 @@ async function handleSso(request, url, env) {
     let b = {}; try { b = await request.json(); } catch { /* ignore */ }
     const uid = String(b.uid || '').slice(0, 80).trim();
     let allow = [];
-    if (env && env.ACCOUNTS && uid) {
+    /* ORACLE FERMÉ (audit Cloudflare 17.10.2026, lot 4) : sans compte, n'importe qui obtenait la liste des identifiants de passkeys
+       d'un uid (5 pour l'admin : combien d'appareils, lesquels changent). La liste ne part plus qu'à la SESSION de ce même compte
+       (panneau « Mes appareils » du portail, déjà connecté). Un appel anonyme reçoit un challenge et une liste vide : le trousseau
+       de l'appareil présente lui-même ses passkeys (passkeys résidentes : c'est déjà ainsi que la porte des apps, la light, Lingua,
+       la fiche privée et Bee font Face ID), et kdmc-sso.js lit l'uid dans la réponse signée (userHandle). /auth/verify vérifie
+       toujours la signature avec la clé que le DOMAINE a rangée pour cet uid : rien d'autre ne change. */
+    let sessionDuCompte = false;
+    if (uid) {
+      try {
+        const s = await ssoVerify(secret, ssoToken(request), request);
+        if (s && pkKey(s.uid) === pkKey(uid) && !revoked(await accGet(env, s.uid), s)) sessionDuCompte = true;
+      } catch { /* session illisible : liste vide */ }
+    }
+    if (env && env.ACCOUNTS && uid && sessionDuCompte) {
       const list = JSON.parse((await env.ACCOUNTS.get(pkKey(uid))) || '[]');
       allow = list.map((k) => ({ type: 'public-key', id: k.credId }));
     }
@@ -4327,10 +4340,52 @@ function appDeLaDemande(request) {
   }
   return '';
 }
+/* PORTE ANONYME FERMÉE (audit Cloudflare 17.10.2026, lot 4) : /__dep/membre répondait à N'IMPORTE QUI (sans Origin, ssoOriginOk dit oui).
+   Un inconnu pouvait donc (1) savoir si un nom est au planning et quel matricule va avec (hors_planning / matricule_autre /
+   matricule_pris), (2) RANGER le matricule d'un collègue sur sa fiche (verifierEtRanger écrit à la 1re demande) et lui bloquer son
+   inscription, (3) faire sonner le téléphone de Kevin à chaque refus. Désormais il faut :
+     · une SESSION du domaine valide et non révoquée — les pages CMCteams / light sont derrière la porte « compte obligatoire »
+       (3.10) : le cookie kdmc_sso part tout seul avec leur fetch même-origine (credentials:'include') ; ou
+     · le SERVEUR des codes (apex-auth-worker, recréation d'un mot de passe : la personne n'a pas encore de session) qui signe sa
+       demande : en-tête x-kdmc-membre-serveur = <ts>.<HMAC(clé, "membre|<ts>|<corps>")>, valable 2 minutes. La clé est DÉRIVÉE de
+       FIREBASE_PRIVATE_KEY, que les deux workers reçoivent déjà du même secret GitHub : aucun secret nouveau à poser, et jamais le
+       secret maître des sessions (qui forgerait un admin) dans un autre worker. Clé absente → cette voie est fermée (jamais ouverte). */
+const MEMBRE_SERVEUR_FENETRE_MS = 120000;
+async function membreCleServeur(env) {
+  const pk = String((env && env.FIREBASE_PRIVATE_KEY) || '').replace(/\\n/g, '').replace(/\s+/g, '');
+  return pk.length >= 200 ? 'kdmc-membre-serveur-v1|' + pk : '';
+}
+async function membreServeurOk(request, env, brut) {
+  const h = String(request.headers.get('x-kdmc-membre-serveur') || '');
+  const m = h.match(/^(\d{10,16})\.([A-Za-z0-9_-]{40,64})$/);
+  if (!m) return false;
+  if (Math.abs(Date.now() - Number(m[1])) > MEMBRE_SERVEUR_FENETRE_MS) return false;
+  const cle = await membreCleServeur(env);
+  if (!cle) return false;
+  const attendu = await ssoHmac(cle, 'membre|' + m[1] + '|' + brut);
+  if (attendu.length !== m[2].length) return false;
+  let d = 0; for (let i = 0; i < attendu.length; i++) d |= attendu.charCodeAt(i) ^ m[2].charCodeAt(i);
+  return d === 0;
+}
+/* La session du domaine qui accompagne la demande (vérifiée, liée à l'appareil, non révoquée), ou null. */
+async function membreSession(request, env) {
+  try {
+    const secret = env && env.KDMC_SSO_SECRET;
+    if (!secret) return null;
+    const s = await ssoVerify(secret, ssoToken(request), request);
+    if (!s) return null;
+    const fiche = await accGet(env, s.uid);
+    if (revoked(fiche, s)) return null;
+    return { s, fiche };
+  } catch { return null; }
+}
 async function handleMembre(request, env) {
   const JM = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
   if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
   if (!ssoOriginOk(request.headers.get('origin'), new URL(request.url).host)) return JM({ ok: false, reason: 'origine refusée' }, 403);
+  let brut = ''; try { brut = await request.text(); } catch { /* corps illisible : refus ci-dessous */ }
+  const sessionMembre = await membreSession(request, env);
+  if (!sessionMembre && !(await membreServeurOk(request, env, brut))) return JM({ ok: false, reason: 'session_requise' }, 401);
   /* 17.10.2026 (audit sécurité Cloudflare) : ce guichet confirme un couple nom + matricule — sans frein, on pouvait balayer le
      planning. 10 essais par minute et par adresse IP, par le limiteur intégré (binding LIMITE_MEMBRE, en mémoire, ZÉRO
      écriture KV : un compteur KV ne voit pas ses propres écritures en rafale — mesuré en ligne, 44 essais passés).
@@ -4342,17 +4397,14 @@ async function handleMembre(request, env) {
       if (r && r.success === false) return JM({ ok: false, reason: 'trop_d_essais', detail: 'trop d\'essais, réessaie dans une minute' }, 429);
     }
   } catch { /* limiteur en panne : on laisse passer */ }
-  let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
+  let b = {}; try { b = JSON.parse(brut || '{}') || {}; } catch { /* corps vide : refus ci-dessous */ }
   /* COMPTE INVITÉ (Kevin 13.10 : « un compte pour une personne qui ne fait peut-être pas partie du casino ») : créé par Kevin seul
      (/__admin/compte-invite), il n'a ni matricule SBM ni nom dans le planning. Le DOMAINE le reconnaît à sa session (jamais la page) :
      session valide, non révoquée, fiche `externe` → admis sans contrôle du planning. Tout autre cas passe par le planning comme avant. */
-  try {
-    const sess = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoToken(request));
-    if (sess && !sess.admin) {
-      const fiche = await accGet(env, sess.uid);
-      if (fiche && fiche.externe === true && !revoked(fiche, sess) && !fiche.attente_admin && !(fiche.tel_requis && !fiche.tel)) return JM({ ok: true, externe: true });
-    }
-  } catch { /* session illisible : on retombe sur le contrôle du planning */ }
+  if (sessionMembre && !sessionMembre.s.admin) {
+    const fiche = sessionMembre.fiche;
+    if (fiche && fiche.externe === true && !fiche.attente_admin && !(fiche.tel_requis && !fiche.tel)) return JM({ ok: true, externe: true });
+  }
   const txt = await lirePlanning(env, cleKV, fichierHebergeur(env, '/tools/departs/boards-gen.js'));
   if (!txt) return JM({ ok: false, reason: 'planning_indisponible' }, 503);
   const app = appDeLaDemande(request) || 'auth';

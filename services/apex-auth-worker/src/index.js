@@ -607,10 +607,27 @@ function refusRecreer(d) {
    TOUJOURS consulté — il range le matricule de la première inscription et refuse ensuite un autre matricule pour ce nom
    (« matricule_autre ») ou le matricule d'un autre collègue (« matricule_pris »). Ce refus l'emporte sur la banque.
    Rend true, false, ou la raison du refus. */
+/* 17.10.2026 (audit Cloudflare, lot 4) : le domaine ne répond plus à une demande ANONYME sur /__dep/membre. Ce serveur, lui, n'a pas
+   de session (la personne recrée justement son mot de passe) : il SIGNE sa demande — en-tête x-kdmc-membre-serveur =
+   <ts>.<HMAC-SHA256(clé, "membre|<ts>|<corps>")>, clé DÉRIVÉE de FIREBASE_PRIVATE_KEY (le routeur reçoit la même, du même secret
+   GitHub). Aucun secret nouveau ; jamais le secret des sessions ici. Sans clé → pas d'en-tête : le domaine refuse et la banque seule
+   décide (comme quand le domaine est muet). */
+async function signatureMembre(env, corps) {
+  const pk = String(env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "").replace(/\s+/g, "");
+  if (pk.length < 200) return "";
+  const ts = String(Date.now());
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode("kdmc-membre-serveur-v1|" + pk), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode("membre|" + ts + "|" + corps)));
+  return ts + "." + btoa(String.fromCharCode(...sig)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
 async function presentBanqueOuImports(env, ctx, d) {
   let dom = null;
   try {
-    const r = await fetch(env.CMC_MEMBRE_URL || "https://kd-mc.com/__dep/membre", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ matricule: d.uid, nom: d.nom, prenom: d.prenom }) });
+    const corps = JSON.stringify({ matricule: d.uid, nom: d.nom, prenom: d.prenom });
+    const h = { "Content-Type": "application/json" };
+    const sig = await signatureMembre(env, corps);
+    if (sig) h["x-kdmc-membre-serveur"] = sig;
+    const r = await fetch(env.CMC_MEMBRE_URL || "https://kd-mc.com/__dep/membre", { method: "POST", headers: h, body: corps });
     dom = await r.json().catch(() => null);
   } catch (_) {
     dom = null;   /* domaine muet : la banque seule décide */

@@ -208,7 +208,8 @@
       + '<h1 style="font-size:19px;color:#f6d97a;margin:8px 0 6px">' + (refuse ? 'Compte non validé' : 'Ton compte attend l\'administrateur') + '</h1>'
       + '<p style="color:#cfd8cc;margin:0 0 14px"><b>' + esc((s && s.name) || 'Ton compte') + '</b>, '
       + (refuse ? 'l\'administrateur n\'a pas validé ce compte. Tu peux te déconnecter, ou demander à l\'administrateur de te l\'ouvrir.'
-        : 'ton compte est bien créé. L\'administrateur doit l\'ouvrir lui-même. Cette page s\'ouvrira toute seule dès qu\'il l\'aura accepté.') + '</p>'
+        : (s && s.mail_attente ? 'ton compte est bien créé. Un mail est parti à <b>' + esc(s.mail_attente) + '</b> : touche le bouton <b>Confirmer</b> dedans et ton compte s\'ouvre tout seul (regarde aussi dans les indésirables). Cette page s\'ouvrira toute seule.'
+          : 'ton compte est bien créé. L\'administrateur doit l\'ouvrir lui-même. Cette page s\'ouvrira toute seule dès qu\'il l\'aura accepté.')) + '</p>'
       + (refuse ? '' : '<p id="aa-etat" aria-live="polite" style="color:#93a58f;font-size:13px;margin:0 0 12px">Je vérifie toutes les 30 secondes…</p>'
         + '<button class="btn" id="aa-go" type="button" style="min-height:50px;width:100%">Vérifier maintenant</button>')
       + (safeReturnUrl() ? '<a class="btn ghost" id="ob-retour" href="' + esc(safeReturnUrl()) + '" style="' + STYLE_SORTIE + '">← Retour à l\'app</a>' : '')
@@ -662,6 +663,7 @@
       + '<input class="fld" id="f-prenom" type="text" autocomplete="given-name" placeholder="Prénom" inputmode="text">'
       + '<input class="fld" id="f-nom" type="text" autocomplete="family-name" placeholder="Nom">'
       + '<input class="fld" id="f-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Téléphone (ex. +377 06 12 34 56)">'
+      + '<input class="fld" id="f-mail" type="email" inputmode="email" autocomplete="email" placeholder="E-mail (il confirme ton compte)">'
       + '<input class="fld" id="f-code" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Code secret (6 chiffres min.)">'
       + '<input class="fld" id="f-code2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Confirme le code">'
       + cguBlock()
@@ -871,6 +873,7 @@
   }
 
   var _telephone = '';   /* numéro saisi à l'inscription (envoyé au domaine avec la création) */
+  var _email = '';   /* 17.10 : l'e-mail reçoit le lien « Confirme ton compte » — le compte s'ouvre sans l'administrateur */
   function doCreate() {
     var prenom = (document.getElementById('f-prenom').value || '').trim();
     var nom = (document.getElementById('f-nom').value || '').trim();
@@ -884,6 +887,9 @@
     var tel = ((document.getElementById('f-tel') || {}).value || '').trim();
     if (!/^\+?[0-9 .()-]{6,24}$/.test(tel) || tel.replace(/\D/g, '').length < 6) { err.textContent = 'Ton numéro de téléphone est obligatoire (ex. +377 06 12 34 56).'; return; }
     _telephone = tel;
+    var mail = ((document.getElementById('f-mail') || {}).value || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail) || mail.length > 120) { err.textContent = 'Ton e-mail est obligatoire : il reçoit le lien qui ouvre ton compte.'; return; }
+    _email = mail;
     if (code.length < 6) { err.textContent = 'Code trop court (6 chiffres minimum).'; return; }
     if (code !== code2) { err.textContent = 'Les deux codes ne correspondent pas.'; return; }
     if (!cgu) { err.textContent = 'Merci d\'accepter les conditions pour continuer.'; return; }
@@ -914,7 +920,7 @@
       /* Le CODE part au domaine (27.09) : il en garde l'empreinte, et le même nom + code
          marchera sur tous les appareils et dans toutes les apps. */
       if (!window.kdmcSSO || !window.kdmcSSO.issueDetail) return acc;
-      return window.kdmcSSO.issueDetail(uid, name, true, safeReturnUrl(), code, _telPreuve, _telPreuve ? '' : _validation, _telephone).then(function (j) {
+      return window.kdmcSSO.issueDetail(uid, name, true, safeReturnUrl(), code, _telPreuve, _telPreuve ? '' : _validation, _telephone, _email).then(function (j) {
         if (j && !j.ok && (j.reason === 'code_requis' || j.reason === 'code_incorrect')) {
           localStorage.removeItem(LS_ACCOUNT);
           throw { deja: true };

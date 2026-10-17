@@ -2314,6 +2314,38 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "mail-confirmation": {
+      "titre": "Inscription confirmée par mail (Kevin « B »)",
+      "branche": "claude/mail-confirmation",
+      "sujet": "mail-confirme.js + portail v1.0.69 + secret EmailJS au routeur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "robots-verts-1710": {
+      "titre": "Docs (fusionnée le 17.10)",
+      "branche": "claude/robots-verts-1710",
+      "sujet": "documents seulement, PR fusionnée",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "PR fusionnée le 17.10"
+    },
+    "whatsapp-sans-numero": {
+      "titre": "Docs (fusionnée le 17.10)",
+      "branche": "claude/whatsapp-sans-numero",
+      "sujet": "documents seulement, PR fusionnée",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "PR fusionnée le 17.10"
     }
   },
   "messages": [

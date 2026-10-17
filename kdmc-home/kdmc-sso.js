@@ -201,12 +201,12 @@
      création quand WhatsApp est branché. La page la transporte, elle ne la fabrique ni ne la juge. */
   /* `validation` (10.10, Kevin « si pas de WhatsApp, validation admin. Au choix ») : 'admin' = la personne choisit d'attendre Kevin
      au lieu de WhatsApp. Le domaine crée le compte FERMÉ partout sauf le portail, jusqu'à ce que Kevin l'ouvre. */
-  function issueDetail(uid, name, cgu, returnUrl, code, telPreuve, validation, telephone) {
+  function issueDetail(uid, name, cgu, returnUrl, code, telPreuve, validation, telephone, email) {
     var pour = '';
     try { if (returnUrl) pour = new URL(String(returnUrl), location.origin).hostname; } catch (e) { pour = ''; }
     return fetch(BASE + '/issue', {
       method: 'POST', credentials: 'include', headers: authHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify({ uid: uid, name: name, cgu: !!cgu, pour: pour, code: code ? String(code) : undefined, tel_preuve: telPreuve ? String(telPreuve) : undefined, validation: validation === 'admin' ? 'admin' : undefined, telephone: telephone ? String(telephone) : undefined }),
+      body: JSON.stringify({ uid: uid, name: name, cgu: !!cgu, pour: pour, code: code ? String(code) : undefined, tel_preuve: telPreuve ? String(telPreuve) : undefined, validation: validation === 'admin' ? 'admin' : undefined, telephone: telephone ? String(telephone) : undefined, email: email ? String(email) : undefined }),
     })
       .then(function (r) { return r.json().catch(function () { return null; }); })
       .then(function (j) {

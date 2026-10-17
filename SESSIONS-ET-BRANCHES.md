@@ -263,6 +263,9 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/compte-ouvrir-robot` | 17.10 | Robot « ouvrir un compte en attente » à la place de Kevin (Yann) | `compte-ouvrir-robot` |
 | `claude/publication-auto-cron` | 17.10 | Publication automatique vers le dépôt public (cron outlook → robot public), relanceur de déploiements | `publication-auto-cron` |
 | `claude/pages-nettoyage-compte` | 17.10 | Fuite Pages : le robot public `pages-nettoyage.yml` reçoit une entrée `compte` + diagnostic de la clé (le secret voyait 0 projet) | `pages-nettoyage-compte` |
+| `claude/mail-confirmation` | 17.10 | Confirmation de l'inscription par MAIL (Kevin « B ») : module `mail-confirme.js`, portail v1.0.69, secret EmailJS au routeur ; leçon #623 | `mail-confirmation` |
+| `claude/robots-verts-1710` | 17.10 | Documents : Bee et Apex vérifiés par les robots comme Kevin — fusionnée (#4736) | `robots-verts-1710` |
+| `claude/whatsapp-sans-numero` | 17.10 | Documents : WhatsApp bloqué faute de 2e numéro, options — fusionnée | `whatsapp-sans-numero` |
 | `claude/pages-supprimer-outil` | 17.10 | Outil `pages-supprimer.mjs` + fuite Pages fermée (kdmc-site, kdmc0 supprimés, 12:18 UTC) ; leçon #613 | `pages-supprimer-outil` |
 | `claude/bee-tester-robot-v2` | 17.10 | Règle « je teste tout moi-même à la place de Kevin » + robot `coffre-bee-tester.yml` (🩺 Tester Bee + question, session Kevin) ; leçon #616 | `bee-tester-robot` |
 | `claude/regle-publique-1610` | 16.10 | Règle « mettre en ligne sans quota » (gratuit-public.md) ; puis robots publics verts : lock Apex suivi, 7 robots au coffre, semgrep scan, clone en 3 essais, suivis m215→m219 (#4659, #4665) — fusionnée | `audit-apex-1610` |

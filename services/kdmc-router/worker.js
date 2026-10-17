@@ -12,6 +12,7 @@ import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } f
 import { mintShopsAdminIdToken, mintShopsIdToken, mintCmcIdToken } from './fb-token.js';
 import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre, INSCR_ADMIN_SCHEMA, FB_URL } from './boite.js';
 import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
+import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
 import * as cptD1 from './compteurs-d1.js';
@@ -3306,6 +3307,14 @@ async function handleSso(request, url, env) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (!secret) return J({ ok: false, reason: 'sso_not_configured' });
   const path = url.pathname;
+  /* Confirmation par MAIL (17.10) : le bouton du mail « Confirme ton compte » ouvre le compte sans l'admin. */
+  if (path.startsWith('/__sso/mail/')) {
+    const rMail = await handleMailConfirme(request, url, env, secret, {
+      accGet: (u) => accGet(env, u), accPut: (a) => accPut(env, a, true), audLog: (e) => audLog(env, e), notifyPush: (t, c) => notifyPush(env, t, c),
+      estBanni: (u, n) => estBanni(env, u, n),
+      viderDemande: async (u) => { if (env.CERCLE_DB) await env.CERCLE_DB.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(u).run(); } });
+    if (rMail) return rMail;
+  }
   /* Confirmation par téléphone (WhatsApp, gratuite) : demande, webhook Meta, vérification, état. */
   if (path.startsWith('/__sso/tel/')) {
     const rTel = await handleTel(request, url, env, secret, { J, originOk: ssoOriginOk });
@@ -3439,7 +3448,8 @@ async function handleSso(request, url, env) {
       /* `roles` (8.10, revue extérieure) : les droits que Kevin pose sur la fiche (ex. ['shops'] = boutiques/sourcing/dashboard) — plus jamais une
          regex sur le nom dans les pages. Posés par /__admin/perimetre (champ roles), lus ici par toutes les apps. */
       /* `attente_admin` : le portail montre « en attente de l'administrateur » au lieu des apps (elles le refuseraient une à une). */
-      const rep = { externe: (!estAdmin && acc && acc.externe) ? true : undefined, attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), tel_pose: estAdmin ? true : (acc ? !!(acc.fiche && acc.fiche.telephone) : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [] };
+      const rep = { externe: (!estAdmin && acc && acc.externe) ? true : undefined, attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), tel_pose: estAdmin ? true : (acc ? !!(acc.fiche && acc.fiche.telephone) : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [],
+        mail_attente: (!estAdmin && acc && acc.attente_admin === true && acc.mail_confirmation && acc.mail_confirmation.envoye_at) ? acc.mail_confirmation.masque : undefined };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
@@ -3560,6 +3570,9 @@ async function handleSso(request, url, env) {
     const uid = String(b.uid || '').slice(0, 80).trim();
     const name = String(b.name || '').slice(0, 80).trim();
     const cgu = !!b.cgu;
+    /* E-MAIL DE CONFIRMATION (17.10) : donné à l'inscription, il sert UNE fois — le mail « Confirme ton compte » qui ouvre le compte sans Kevin. */
+    const emailInscription = emailValide(b.email) ? normaliseEmail(b.email) : '';
+    let mailEnvoye = '';
     if (!uid || !name) return J({ ok: false, reason: 'uid+name requis' });
     /* PÉRIMÈTRE : inutile de fabriquer une session que `whoami` refusera juste après
        (sinon la page boucle : « connecte-toi » → connecté → pas reconnu → « connecte-toi »).
@@ -3742,7 +3755,16 @@ async function handleSso(request, url, env) {
       try {
         const a = await accGet(env, await canonFor(env, uid, name, { sansCreer: true }));
         if (a && !a.valide_admin_at) {
-          a.attente_admin = true; await accPut(env, a, true); marque = true;
+          a.attente_admin = true;
+          /* CONFIRMATION PAR MAIL (17.10) : un lien signé (48 h) ; s'il arrive, le compte s'ouvre tout seul — sinon Kevin l'ouvre comme avant. */
+          if (emailInscription && mailPret(env)) {
+            const lien = 'https://kd-mc.com/__sso/mail/confirmer?t=' + encodeURIComponent(await jetonConfirmation(secret, a.uid, emailInscription));
+            const parti = await envoyerMailConfirmation(env, { email: emailInscription, name: a.name || name, lien });
+            a.mail_confirmation = { masque: masqueEmail(emailInscription), email_hash: await sha256HexMail(emailInscription), envoye_at: parti ? Date.now() : 0, echec: parti ? undefined : true };
+            a.fiche = { ...a.fiche, email: emailInscription, maj: Date.now() };
+            if (parti) mailEnvoye = a.mail_confirmation.masque;
+          }
+          await accPut(env, a, true); marque = true;
           const cf = request.cf || {}, NET = ispInfo(cf);
           await inscriptionAdminDeposer(env.CERCLE_DB, { uid: a.uid, nom: a.name || name, appareil: appareilLabel(request.headers.get('user-agent') || ''),
             lieu: [cf.city, cf.country].filter(Boolean).join(', '), reseau: (NET.isp || '') + (cf.asn ? ' (AS' + cf.asn + ')' : ''), app: origine || appDe(request.headers.get('host')) || 'portail' }).catch(() => false);
@@ -3789,8 +3811,8 @@ async function handleSso(request, url, env) {
        alors le code ADMIN (→ session vérifiée) au lieu de laisser Kevin « auto-déclaré ». */
     const adminRequis = (await canonFor(env, uid, name, { sansCreer: true })) === CANON_UID;
     return J({ ok: true, uid, name, cgu, token, admin: false, code: codeFinal, code_pose: codePose, admin_requis: adminRequis,
-      attente_admin: attenteAdmin || undefined,
-      message: attenteAdmin ? 'Ton compte est créé. L\'administrateur va le valider : tu pourras entrer dans les apps dès qu\'il l\'aura accepté.' : undefined }, cookie);
+      attente_admin: attenteAdmin || undefined, mail_envoye: mailEnvoye || undefined,
+      message: attenteAdmin ? (mailEnvoye ? 'Ton compte est créé. Un mail vient de partir à ' + mailEnvoye + ' : touche le bouton dedans et ton compte s\'ouvre tout seul (regarde aussi dans les indésirables).' : 'Ton compte est créé. L\'administrateur va le valider : tu pourras entrer dans les apps dès qu\'il l\'aura accepté.') : undefined }, cookie);
   }
   /* CONNEXION SUR UN APPAREIL NEUF (ou dans n'importe quelle app) : nom + code → la session du
      compte. Même message pour « nom inconnu » et « mauvais code » (on ne confirme pas qu'un nom

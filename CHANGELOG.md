@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Portail v1.0.69 · routeur (2026-10-17 — « B » : confirmation de l'inscription par MAIL, plus de WhatsApp ni d'attente de Kevin)
+- **Inscription** : un champ « E-mail (il confirme ton compte) » après le téléphone. Le domaine envoie UN mail (EmailJS, gratuit) avec un lien signé 48 h ; le lien `GET /__sso/mail/confirmer?t=…` ouvre le compte tout seul (fiche validée, file de Kevin vidée, journal `compte_ouvert_mail`, push à Kevin). L'écran « ton compte attend l'administrateur » dit à quelle adresse masquée le mail est parti et s'ouvre seul après le clic.
+- **Sécurité** : jeton HMAC (clé des sessions), expiré/forgé/tronqué/autre adresse → refus sans rien changer ; compte refusé ou banni jamais rouvert par un mail ; ni code ni session dans le mail. Sans clé EmailJS ou `KDMC_MAIL_CONFIRME=0` : comportement d'avant (Kevin valide). Garde `test:mail-confirme` (34 ✅).
+
 ## Apex AI v13.4.372 → v13.4.379 (2026-10-16 — « Vérifie tout en détail », puis « Continu », puis les captures de Kevin)
 
 - **v13.4.372** : une seule bulle d'information par ouverture (« Proxy activé », « clés restaurées » ne s'empilent plus) ; le bouton « ← Chat » pose son style par `styleInjector` (CSP nonce) au lieu d'un `<style>` nu refusé par la page.

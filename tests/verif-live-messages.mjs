@@ -116,7 +116,7 @@ const rangDe = (m) => (m.nonLus ? 1 : (m.fil && m.fil.length ? (m.fil[m.fil.leng
 
 try {
   const page = await ctx.newPage();
-  const fautes = []; page.on('pageerror', (e) => fautes.push(String(e && e.message).slice(0, 120)));
+  const fautes = []; page.on('pageerror', (e) => fautes.push(String(e && e.message).slice(0, 160) + ' @ ' + String(e && e.stack || '').split('\n').slice(1, 3).map((l) => l.trim().replace(/https?:\/\/[^/]+/, '')).join(' / ').slice(0, 220)));
 
   /* A. connexion */
   const c = await connecter(page);
@@ -161,7 +161,7 @@ try {
     /* POURQUOI le portail n'affiche rien : des statuts et des noms de clés seulement (jamais une valeur) */
     const diag = await page.evaluate(() => { let cles = ''; try { cles = Object.keys(localStorage).filter((k) => /kdmc|sso|admin/i.test(k)).join(','); } catch (_) { /* stockage interdit */ }
       const b = window.kdmcBoite, z = (id) => { const e = document.getElementById(id); return e ? (e.hidden ? 'caché' : 'visible') : 'absent'; };
-      return { chemin: location.pathname + location.hash.slice(0, 20), boite: typeof b, donnees: !!(b && b.donnees && b.donnees()), cles, texte: document.body.innerText.length, sso: typeof window.kdmcSSO, jeton: !!(window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token()), bandeau: z('cercle-alerte'), espacePrive: z('priv-zone'), tableau: z('tdb-haut'), sw: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
+      return { chemin: location.pathname + location.hash.slice(0, 20), boite: typeof b, donnees: !!(b && b.donnees && b.donnees()), cles, texte: document.body.innerText.length, sso: typeof window.kdmcSSO, jeton: !!(window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token()), bandeau: z('cercle-alerte'), espacePrive: z('priv-zone'), tableau: z('tdb-haut'), sw: !!(navigator.serviceWorker && navigator.serviceWorker.controller), passerOffre: (() => { try { return sessionStorage.getItem('kdmc_pk_skip') || ''; } catch (_) { return '?'; } })(), boutonOffre: !!document.getElementById('pk-skip'), hub: z('hub'), porte: z('gate'),
         ecran: Array.from(document.body.children).filter((e) => e.id && e.tagName !== 'SCRIPT').map((e) => e.id + (e.hidden || getComputedStyle(e).display === 'none' ? ':caché' : ':visible')).join(','), titre: (document.querySelector('h1, h2') || {}).textContent ? document.querySelector('h1, h2').textContent.slice(0, 50) : '' }; }).catch((e) => ({ erreur: String(e && e.message).slice(0, 80) }));
     /* ce que le DOMAINE répond au portail sur « qui es-tu » : des booléens et un état, jamais un nom */
     const qui = await page.evaluate(async () => { try { const t = localStorage.getItem('kdmc_sso_token') || ''; const x = await fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store', headers: t ? { authorization: 'Bearer ' + t } : {} }); const j = await x.json().catch(() => ({})); return { st: x.status, ok: !!j.ok, admin: !!j.admin, verified: !!j.verified, state: j.state || '', nom: !!j.name, code: !!j.code, cgu: !!j.cgu, portee: j.portee || '', attente: j.attente_admin || '', tel: j.tel_pose, codeRequis: !!j.code_requis, telAConfirmer: !!j.tel_a_confirmer, horsPerimetre: !!j.hors_perimetre }; } catch (e) { return { erreur: String(e && e.message).slice(0, 60) }; } });

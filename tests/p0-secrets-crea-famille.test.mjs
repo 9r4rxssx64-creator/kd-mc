@@ -48,8 +48,8 @@ ok(/CREA_FAMILLE_ADMIN_CODE/.test(dep) && /wrangler secret put ADMIN_CODE/.test(
 ok(/async function estAdminSSO\(request\)/.test(worker), '③ le worker a estAdminSSO (admin via SSO central)');
 ok(/kd-mc\.com\/__sso\/whoami/.test(worker), '③ estAdminSSO interroge le SSO central kd-mc.com/__sso/whoami');
 ok(/j\.admin\s*&&\s*j\.verified/.test(worker), '③ admin EXIGE verified (Face ID), jamais le nom seul');
-ok(/const admin = \(await estAdminSSO\(req\)\)\s*\|\|\s*estAdmin\(env,\s*body\.code_admin\)/.test(worker),
-  '③ /rejoindre = admin par SSO central OU code local (repli)');
+ok(/let admin = await estAdminSSO\(req\)/.test(worker) && /admin = estAdmin\(env,\s*body\.code_admin\)/.test(worker) && /rl:admin:/.test(worker) && /rates >= 5/.test(worker),
+  '③ /rejoindre = admin par SSO central OU code local (repli), le code local freiné à 5 mauvais essais / heure / IP (17.10)');
 /* le CLIENT transmet le pass du domaine au worker (sinon le SSO ne sert à rien) */
 const client = read('tools/crea-studio/index.html');
 ok(/crea_sso_token/.test(client) && /o\.headers\.Authorization\s*=\s*'Bearer '/.test(client),

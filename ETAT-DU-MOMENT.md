@@ -1,4 +1,4 @@
-# 🧭 ÉTAT DU MOMENT — la vérité d'aujourd'hui, en une page (MAJ : 17.10.2026, 14h30 UTC)
+# 🧭 ÉTAT DU MOMENT — la vérité d'aujourd'hui, en une page (MAJ : 17.10.2026, 15h UTC)
 
 > **LIS CECI EN PREMIER, quelle que soit ta branche et sa date.** Cette page est servie depuis
 > `main` à chaque démarrage ou réveil de session (hook `.claude/hooks/etat-du-moment.sh`) :
@@ -10,7 +10,7 @@
 ## ✅ Vrai aujourd'hui
 | Sujet | État (et date de la mesure) |
 |---|---|
-| ☁️ **CLOUDFLARE AUDITÉ (17.10)** | Compte principal : 28 workers, aucun secret en dur ; 4 portes fermées ET vérifiées en ligne (401) (coffre-r2, reçus vente, /pin/init admin, cmc-parser-proxy) — rapport `audit/prive/AUDIT-CLOUDFLARE-2026-10-17.md`. Compte `ffaca6f3…` : inventaire à faire par la session qui a sa clé (m230). Fuite Pages kdmc-site / kdmc0 FERMÉE le 17.10 12:18 UTC (adresses → 000). |
+| ☁️ **CLOUDFLARE AUDITÉ (17.10)** | Compte principal : 28 workers, aucun secret en dur ; 4 portes fermées ET vérifiées en ligne (401) (coffre-r2, reçus vente, /pin/init admin, cmc-parser-proxy) + lot 2 (routeur : notification à Kevin = session, nom+matricule freiné ; crea-famille : code admin freiné) — rapport `audit/prive/AUDIT-CLOUDFLARE-2026-10-17.md`. Compte `ffaca6f3…` : inventaire à faire par la session qui a sa clé (m230). Fuite Pages kdmc-site / kdmc0 FERMÉE le 17.10 12:18 UTC (adresses → 000). |
 | 📖 **Textes de l'arbre (17.10, 13h UTC)** | 329 fiches réécrites en histoires et écrites dans le nuage ; `textes-controle` = 0 signalement sur l'export frais ; faits disparus à la réécriture remis (46 fiches, sauvegardes `o-2026-10-17T12-35-08` / `12-36-28`). Avant toute réécriture : `textes-controle.mjs <neuf> --avant <base>` (LESSONS 617). |
 | ✉️ **INSCRIPTION CONFIRMÉE PAR MAIL (17.10, portail v1.0.69 + routeur — EN LIGNE 13:15 UTC, run 39035931700, vérifié réel : champ e-mail vu en anonyme, faux lien → 410)** | Pas de 2e numéro → pas de WhatsApp (Kevin : « B »). À l'inscription : e-mail obligatoire → lien signé 48 h → `GET /__sso/mail/confirmer?t=` ouvre le compte seul (comme « ✅ Ouvrir »). Secret `EMAILJS_PRIVATE_KEY` au routeur (déploiement, fail-open) ; interrupteur `KDMC_MAIL_CONFIRME=0`. La validation à la main reste le secours. Garde `test:mail-confirme`. |
 | 🔌 **SE CONNECTER RÉELLEMENT PARTOUT — RÈGLE ABSOLUE (Kevin 17.10, 3 fois)** | `npm run reel [url…]` : Chromium iPhone, pass `ci_smoke`, captures `audit/captures-reel/`. La session atteint kd-mc.com (mesuré) ; « injoignable » est périmé. Automatique dans chaque session (hook). Fiches repliées : admin v2.7.2 (MAJ auto réparée : un champ vide sélectionné la bloquait sur iPhone), Qui se connecte v1.3.0, arbre v3.117 ; portail v1.0.68 plus lisible. |

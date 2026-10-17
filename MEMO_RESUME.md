@@ -1,5 +1,11 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — Audit Cloudflare, lot 2 : 3 portes moyennes fermées (routeur + Créa Famille)
+- Routeur `/__notify-kevin` : n'importe qui pouvait t'envoyer une notification push au texte libre → laissez-passer du domaine obligatoire (les pages CMCteams / light / heures l'envoient déjà : cookie). 3 tests adaptés (heures, chefs-equipe, inscription-unique : ils présentent maintenant un pass de test signé).
+- Routeur `/__dep/membre` (oracle nom + matricule) → 20 essais / heure / IP (KV).
+- kdmc-crea-famille `/rejoindre` : le code admin s'essayait sans limite (→ admin de toutes les familles) → 5 mauvais essais / heure / IP.
+- Garde `test:cf-portes` 11/0 (cas 6 et 7 en vrai sur le worker du routeur). Reste : apex-depot-relais, kdmc-clone, ld-printify-order (protégés par l'Origin seule).
+
 ## 2026-10-17 (après-midi) — ✅ VÉRIFIÉ RÉEL : Bee ouvre l'arbre de Yann et les apps (robot « Bee comme Kevin », run 39036149454, vert)
 
 **Sur le vrai domaine, connecté comme Kevin, iPhone 13 simulé, routeur redéployé (run public 39035931700)** : 🩺 Bee en état de travailler (groq 430 ms ; arbre publié 334 personnes ; nuage répond) ; « montre-moi l'arbre de Yann Lorenzi » → lien `#personne=Yann%20Lorenzi`, sans « pas accès » ; bouton « Ouvrir » 44 px ; toucher Ouvrir change la fenêtre vers l'arbre ; « ouvre la light » et « va sur apex chat » → les bons liens ; 0 erreur JS. **⚠️ Non vérifié** : l'arbre CHARGÉ et centré sur Yann (le robot est reconnu par code, pas Face ID, donc l'arbre lui demande le code famille — voulu) : à voir sur l'iPhone de Kevin. Captures sur la branche de relecture `claude/voir-bee-39036149454`.

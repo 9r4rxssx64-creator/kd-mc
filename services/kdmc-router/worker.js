@@ -2902,6 +2902,11 @@ async function handleNotifyKevin(request, env) {
   try {
     const host = (request.headers.get('host') || '').toLowerCase().replace(/:.*$/, '');
     if (!ROUTES[host]) return J({ ok: false, reason: 'bad_host' }, 403);
+    /* 17.10.2026 (audit sécurité Cloudflare) : sans session, n'importe qui pouvait envoyer à Kevin une notification push au texte
+       libre (hameçonnage, harcèlement). Les pages qui appellent (CMCteams, light, compteur d'heures) sont derrière la porte du
+       domaine : leur laissez-passer part avec l'appel (cookie / Bearer). Sans laissez-passer valide → 401, rien n'est envoyé. */
+    const sessNotif = await ssoVerify(env && env.KDMC_SSO_SECRET, ssoToken(request), request).catch(() => null);
+    if (!sessNotif) return J({ ok: false, reason: 'session requise' }, 401);
     let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
     const name = String((b && b.name) || '').slice(0, 60).replace(/[\r\n]+/g, ' ').trim() || 'Employé';
     const text = String((b && b.text) || '').slice(0, 140).replace(/[\r\n]+/g, ' ').trim();
@@ -4286,6 +4291,17 @@ async function handleMembre(request, env) {
   const JM = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
   if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
   if (!ssoOriginOk(request.headers.get('origin'), new URL(request.url).host)) return JM({ ok: false, reason: 'origine refusée' }, 403);
+  /* 17.10.2026 (audit sécurité Cloudflare) : ce guichet confirme un couple nom + matricule — sans frein, on pouvait balayer le
+     planning. 20 essais par heure et par adresse IP (KV), largement assez pour une vraie inscription avec fautes de frappe. */
+  if (env && env.ACCOUNTS) {
+    try {
+      const ip = request.headers.get('CF-Connecting-IP') || 'inconnue';
+      const cle = 'rl:membre:' + ip + ':' + Math.floor(Date.now() / 36e5);
+      const n = Number((await env.ACCOUNTS.get(cle)) || 0);
+      if (n >= 20) return JM({ ok: false, reason: 'trop_d_essais', detail: 'trop d\'essais dans l\'heure, réessaie plus tard' }, 429);
+      await env.ACCOUNTS.put(cle, String(n + 1), { expirationTtl: 7200 });
+    } catch { /* KV indisponible : on laisse passer (le planning reste la vraie garde) */ }
+  }
   let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
   /* COMPTE INVITÉ (Kevin 13.10 : « un compte pour une personne qui ne fait peut-être pas partie du casino ») : créé par Kevin seul
      (/__admin/compte-invite), il n'a ni matricule SBM ni nom dans le planning. Le DOMAINE le reconnaît à sa session (jamais la page) :
@@ -4336,6 +4352,17 @@ async function handleMatricules(request, env) {
   }
   if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
   if (!ssoOriginOk(request.headers.get('origin'), new URL(request.url).host)) return JM({ ok: false, reason: 'origine refusée' }, 403);
+  /* 17.10.2026 (audit sécurité Cloudflare) : ce guichet confirme un couple nom + matricule — sans frein, on pouvait balayer le
+     planning. 20 essais par heure et par adresse IP (KV), largement assez pour une vraie inscription avec fautes de frappe. */
+  if (env && env.ACCOUNTS) {
+    try {
+      const ip = request.headers.get('CF-Connecting-IP') || 'inconnue';
+      const cle = 'rl:membre:' + ip + ':' + Math.floor(Date.now() / 36e5);
+      const n = Number((await env.ACCOUNTS.get(cle)) || 0);
+      if (n >= 20) return JM({ ok: false, reason: 'trop_d_essais', detail: 'trop d\'essais dans l\'heure, réessaie plus tard' }, 429);
+      await env.ACCOUNTS.put(cle, String(n + 1), { expirationTtl: 7200 });
+    } catch { /* KV indisponible : on laisse passer (le planning reste la vraie garde) */ }
+  }
   let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
   const r = await corrigerMatricule(env, b.id, b.m);
   if (r.ok) await audLog(env, { ev: 'matricule_corrige', detail: String(b.id || '').slice(0, 8) + ' → ' + (String(b.m || '').slice(0, 8).toUpperCase() || '(effacé)') });

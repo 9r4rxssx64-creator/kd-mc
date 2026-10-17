@@ -12339,3 +12339,14 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - Tu ne t'arrêtes que pour ce qui EXIGE Kevin (un clic dans une console à laquelle tu n'as pas accès, un paiement, une décision irréversible sur ses données) : tu l'écris dans `KEVIN_ACTIONS_TODO.md`, tu le lui dis en une phrase, et **tu passes à la tâche suivante** au lieu d'attendre.
 - Les règles d'avant restent : gratuit d'abord (dépôt public), vérifier dans le réel, rien de payant sans son accord.
 - Écrit aussi dans `.claude/rules/au-bout.md` (chargé par toute session du dépôt).
+
+## 📖 RÈGLE ABSOLUE — LES TEXTES DES FICHES : À JOUR DES DOCUMENTS, EN HISTOIRES, SANS « PROBABLE » (Kevin 2026-10-17, ABSOLUE, POUR TOUT LE MONDE, TOUJOURS)
+
+> **« Relis les textes : tu as vu dans le Journal officiel que Marie-France a divorcé d'Émile et tu écris quand même "probablement". Revérifie les textes de chaque fiche : tout d'actualité, mis à jour avec les documents au fur et à mesure. Il n'y a plus de "probable" : trop répétitif. Tu insistes sur les décès, ce n'est pas correct. Les textes sont très sympas avec le système de petite histoire : va plus loin dans ce sens. Pour tout le monde. Toujours. Note-le. »** — Kevin 2026-10-17
+
+À CHAQUE écriture ou mise à jour d'une fiche (nouvel acte, réponse de mairie, info de la famille) :
+1. **Un fait établi par un document s'écrit sans réserve** : jamais « probable / probablement / sans doute / peut-être / piste » pour ce qu'un acte, le Journal de Monaco ou l'INSEE établit. La note est relue en entier et RÉÉCRITE à partir de tous les documents rattachés (images d'actes, sources), pas seulement complétée par une ligne ajoutée au bout.
+2. **Plus aucun mot « probable »** dans les notes. Ce qui n'est vraiment pas établi : une phrase simple et neutre dans « 🔎 À retrouver » (« L'acte de mariage dira où et quand… »), jamais « probablement », « piste », « à confirmer » répétés.
+3. **Décès : une phrase sobre, une seule fois** (« Il s'éteint à Nice en 1990 »). Jamais de cause, d'insistance, de « recherche négative INSEE : décédée avant 1970 » — on n'écrit pas ce qui n'a pas été trouvé sur un décès.
+4. **Récit, façon petite histoire** (voir `tools/arbre/consignes/HISTOIRES.md`) : chaleureux, vivant, varié, sans répétition, neutre (jamais « tu »), sans bruit de travail.
+5. **Contrôle systématique** : `node tools/arbre/session/textes-controle.mjs <export.json>` liste les fiches qui contiennent encore « probabl… / piste / à confirmer », une recherche négative sur un décès, ou une réponse de mairie non intégrée ; à passer avant de dire « à jour ».

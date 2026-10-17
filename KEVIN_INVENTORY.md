@@ -27,6 +27,13 @@
 - **Fichiers créés** : [`.claude/rules/modeles.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/modeles.md) · [`tests/verify-modele-adapte.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-modele-adapte.mjs)
 - **Test** : `npm run test:modele-adapte`
 
+### 📖 Textes de l'arbre : histoires à jour, sans « probable » (17.10.2026)
+
+- Chaque fiche est relue et réécrite à partir de ses documents : un fait prouvé s'écrit sans réserve, ce qui manque tient en une ligne « 🔎 À retrouver », les décès restent sobres.
+- **Fichiers créés** : [`tools/arbre/session/textes-controle.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/session/textes-controle.mjs) · [`tests/arbre-textes.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/arbre-textes.test.mjs) · [`.claude/rules/textes-fiches.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/textes-fiches.md)
+- **Tests** : `npm run test:arbre-textes`
+- **Tes apps** : https://arbre.kd-mc.com
+
 ### 🌳 Arbre v3.110 → v3.116 + admin + « Qui se connecte » (16.10.2026)
 
 - **Arbre** (https://arbre.kd-mc.com) : menu des familles déroulant (☰ Menu) et masquable (✕ → pastille) · l'ex d'un conjoint n'entre plus dans la famille (Pascale hors de l'arbre de Laurence, Ronan sous Kevin) · « Ma vue » réunit toutes les familles de tes ancêtres jusqu'au plus haut · toucher une personne = toute sa famille en clair, le reste transparent (2e toucher = fiche) · choisir une famille montre aussi d'où elle vient.
@@ -3787,3 +3794,4 @@ officiels les retirent eux-mêmes avant publication.
 | [`tools/smoke/lingua-comme-kevin.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/smoke/lingua-comme-kevin.mjs) **(nouveau, 16.10)** | Sonde « Lingua comme Kevin » : ta session, iPhone, tout essayé (leçon jusqu'au bout, appel de Bee + bilan, cercle, profil, traducteur), ton compte ne bouge pas (écritures coupées et comptées), captures |
 | [`tests/verify-lingua-comme-kevin.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-lingua-comme-kevin.mjs) **(nouveau, 16.10)** | Garde : la sonde contre une copie fidèle (vrai routeur) — OK, 0 écriture, journal sans nom, sabotage prouvé |
 | [`.github/workflows/lingua-comme-kevin.yml`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/lingua-comme-kevin.yml) **(nouveau, 16.10)** | Robot à la main, au coffre, sous le plafond de 2 vérifications réelles/jour : lance la sonde sur le vrai domaine, captures sur `claude/lingua-kevin-<run>` |
+| [`services/kdmc-router/lingua-appel.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/services/kdmc-router/lingua-appel.test.mjs) **(17.10, v2.142.0)** | Garde du bilan d'appel : réponse « à côté de la question » repérée avec prudence, bravo contradictoire retiré (8–8g) |

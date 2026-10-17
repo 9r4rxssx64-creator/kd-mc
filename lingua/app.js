@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.141.0";
+var APP_VER="v2.142.0";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -3155,15 +3155,24 @@ function appelBilanBloc(A){ var b=el("div","ap-bilan"); var t=el("p","mini"); t.
       if(!j||!j.ok){ var e=el("p","mini"); e.textContent="📝 Bilan indisponible pour l'instant — tes XP sont bien comptés."; b.appendChild(e); return; }
       var h=el("h4"); h.textContent="📝 Ton bilan"; b.appendChild(h);
       if(j.bravo){ var br=el("p","ap-bravo"); br.textContent="👏 "+j.bravo; b.appendChild(br); }
-      var cs=Array.isArray(j.corrections)?j.corrections:[];
-      if(!cs.length){ var p=el("p","mini"); p.textContent="✨ Aucune faute repérée — impeccable !"; b.appendChild(p); return; }
+      var cs=Array.isArray(j.corrections)?j.corrections:[], ac=Array.isArray(j.a_cote)?j.a_cote:[];
+      /* 🎯 réponse à côté de la question (17.10) : dite AVANT les fautes, « impeccable » seulement si rien des deux */
+      ac.forEach(function(x){ var it=el("div","ap-corr ap-cote");
+        var q=el("div","ap-question"); q.textContent="🎯 À côté de la question"+(x.question?" : "+x.question:""); it.appendChild(q);
+        var d=el("div","ap-dit-cote"); d.textContent="🗣️ "+x.dit; it.appendChild(d);
+        var m=el("div","ap-mieux"); var mt=el("span"); mt.textContent="💬 Tu aurais pu dire : "+x.idee; m.appendChild(mt);
+        var ec=el("button","ap-ecoute"); ec.textContent="🔊"; ec.title="Écouter"; ec.setAttribute("aria-label","Écouter la réponse proposée"); ec.onclick=function(){ pronSay(x.idee); }; m.appendChild(ec); it.appendChild(m);
+        b.appendChild(it); });
+      if(!cs.length){ var p=el("p","mini"); p.textContent=ac.length?"✨ Aucune faute de langue — écoute bien la question la prochaine fois.":"✨ Aucune faute repérée — impeccable !"; b.appendChild(p);
+        if(ac.length){ var a0=S.appels; a0.corrections=ac.map(function(x){ return {mieux:x.idee, pourquoi:"répondre à la question", d:isoJour()}; }).concat(a0.corrections||[]).slice(0,12); save(); }
+        return; }
       cs.forEach(function(x){ var it=el("div","ap-corr");
         var d=el("div","ap-dit"); d.textContent="🗣️ "+x.dit; it.appendChild(d);
         var m=el("div","ap-mieux"); var mt=el("span"); mt.textContent="✅ "+x.mieux; m.appendChild(mt);
         var ec=el("button","ap-ecoute"); ec.textContent="🔊"; ec.title="Écouter"; ec.setAttribute("aria-label","Écouter la bonne phrase"); ec.onclick=function(){ pronSay(x.mieux); }; m.appendChild(ec); it.appendChild(m);
         if(x.pourquoi){ var w=el("div","ap-pourquoi mini"); w.textContent="💡 "+x.pourquoi; it.appendChild(w); }
         b.appendChild(it); });
-      var a=S.appels; a.corrections=cs.map(function(x){ return {mieux:x.mieux, pourquoi:x.pourquoi||"", d:isoJour()}; }).concat(a.corrections||[]).slice(0,12); save();
+      var a=S.appels; a.corrections=cs.map(function(x){ return {mieux:x.mieux, pourquoi:x.pourquoi||"", d:isoJour()}; }).concat(ac.map(function(x){ return {mieux:x.idee, pourquoi:"répondre à la question", d:isoJour()}; })).concat(a.corrections||[]).slice(0,12); save();
       var n=el("p","mini"); n.textContent="🔁 "+MNAME()+" te les fera redire au prochain appel."; b.appendChild(n); });
   return b; }
 function appelTranscription(A){ var m=modal(); m.body.parentNode.classList.add("ap-top"); var h=el("h3"); h.textContent="📜 L'appel, mot pour mot"; m.body.appendChild(h);

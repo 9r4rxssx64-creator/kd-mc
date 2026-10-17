@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 221 règles — le texte de Kevin, une par une
+## 📜 Les 222 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -972,6 +972,10 @@ Kevin : « Trouve des solutions pour ne pas consommer. Tu avais mis en place de 
 ### 🏁 RÈGLE ABSOLUE — VA AU BOUT DE TOUT LE TRAVAIL, EN AUTO, SANS JAMAIS T'ARRÊTER (Kevin 2026-10-16, ABSOLUE)
 Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. »
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-va-au-bout-de-tout-le-travail-en-auto-sans-jamais-tarrêter-kevin-2026-10-16-absolue)
+
+### 📖 RÈGLE ABSOLUE — LES TEXTES DES FICHES : À JOUR DES DOCUMENTS, EN HISTOIRES, SANS « PROBABLE » (Kevin 2026-10-17, ABSOLUE, POUR TOUT LE MONDE, TOUJOURS)
+**« Relis les textes : tu as vu dans le Journal officiel que Marie-France a divorcé d'Émile et tu écris quand même "probablement". Revérifie les textes de chaque fiche : tout d'actualité, mis à […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-les-textes-des-fiches-à-jour-des-documents-en-histoires-sans-probable-kevin-2026-10-17-absolue-pour-tout-le-monde-toujours)
 
 ---
 

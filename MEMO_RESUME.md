@@ -1,11 +1,22 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 — Textes des fiches : réécriture complète, plus de « probable » (Kevin, absolue, pour tout le monde)
+- **Règle** : `CLAUDE-HISTOIRE.md` + `.claude/rules/textes-fiches.md` + LESSONS 612 (fait prouvé = sans réserve ; manque = « 🔎 À retrouver » neutre ; décès sobres ; récit « petite histoire » ; note RÉÉCRITE à chaque nouveau document).
+- **Constat** : 243 fiches sur 329 contenaient « probable / piste / à confirmer » ou une recherche négative sur un décès (ex. Marie-France « probablement divorcée » alors que le Journal de Monaco n° 5988 l'établit).
+- **Outil** : `node tools/arbre/session/textes-controle.mjs <export.json>` (0 = rien à signaler) ; garde `npm run test:arbre-textes` (sabotage rouge). Réécriture par 9 lots (brief `scratchpad/textes/BRIEF.md`), intégration par `ecrire.sh` avec sauvegarde et garde-concurrence.
+
 ## 2026-10-17 (midi) — Kevin pas à pas, action 00 : Cloudflare refuse de supprimer `kdmc-site` (« too many deployments ») → le robot public `pages-nettoyage.yml` vise désormais le compte de sa capture
 - Kevin a suivi mes étapes sur son iPhone : `kdmc-site` est bien sur le compte `ffaca6f3…` (sa capture 13:57), mais la fenêtre de suppression répond « Your project has too many deployments to be deleted ».
 - Le robot public « inventaire et nettoyage des vieux projets Pages » (0 minute du coffre) existait déjà pour ça (vide les déploiements par 25 avec `force=true`, puis supprime le projet). Lancé en « lister » (run 39030731444, 11:59 UTC) : **0 projet Pages** vu avec le secret `CLOUDFLARE_ACCOUNT_ID` du dépôt public, alors que le tableau de bord de Kevin en montre 2 sur `ffaca6f3…`.
 - Correctif : entrée `compte` (identifiant du compte à viser, vide = secret) + étape « Diagnostic » (clé valide ? quels comptes la clé voit-elle, préfixes 8 caractères seulement, jamais un nom) ; les 3 étapes lisent `inputs.compte || secrets.CLOUDFLARE_ACCOUNT_ID`. Gardes workflows : 7/7 ok.
 - Suite mesurée dans l'entrée suivante : relance « lister » avec `compte=ffaca6f306a953f82834db0970f300f0` (identifiant déjà public dans KEVIN_INVENTORY) ; si la clé voit le compte → « supprimer kdmc-site » puis « supprimer kdmc0 » ; sinon la clé n'a pas le droit Pages sur ce compte → action Kevin (1 clic : jeton « Cloudflare Pages : Modifier » sur ce compte).
 - Vérifié réel : run 39030731444 vert, annotations lues (« 0 projet(s) Pages sur ce compte », `kdmc-site.pages.dev` → 200, `kdmc0.pages.dev` → 200 à 11:59 UTC). Non vérifié : la suppression elle-même (pas encore lancée).
+
+## 2026-10-17 — Lingua v2.142.0 : le bilan de l'appel voit une réponse « à côté de la question »
+- **Demande** : Kevin « Oui » à « que le bilan signale les réponses qui ne répondent pas à la question de Bee » (vu en réel par le robot « Lingua comme Kevin », run 39025704627 : « I eat with my family » à « quel sport aimes-tu ? » → « Aucune faute — impeccable »).
+- **Routeur** (`mode appel-bilan`) : chaque phrase dite part avec la question de la mascotte qui la précédait (contexte, jamais corrigée) ; l'IA renvoie aussi `a_cote` [{dit, question, idee}] ; `lireBilanAppel` le filtre (phrase réellement dite, idée ≠ phrase, 2 au plus, balises retirées) et **retire le bravo** qui félicitait une phrase à côté.
+- **Lingua** : bloc « 🎯 À côté de la question : … » → ce que tu as dit → « 💬 Tu aurais pu dire : … » (🔊) ; « impeccable » seulement si ni faute ni réponse à côté ; la bonne réponse est gardée pour le prochain appel.
+- **Gardes** : `test:lingua-appel-routeur` 29/0 (8–8g, sabotage prouvé), `test:lingua-appel` 36/0 (3j). **Réel** : à vérifier après publication (routeur + Lingua).
 
 ## 2026-10-17 (soir) — « Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. » (3ᵉ demande)
 - Règle absolue dédiée « 🔌 SE CONNECTER RÉELLEMENT PARTOUT » dans CLAUDE-HISTOIRE → index CLAUDE.md (chargé à chaque message) + règle d'or n°4 (`npm run reel`, via `tools/audit/claude-md-entete.md`).

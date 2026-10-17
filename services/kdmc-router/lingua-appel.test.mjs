@@ -8,6 +8,8 @@
    6. toujours : refus hors domaine ;
    7. 📝 bilan de fin d'appel (v2.137.0) : seules les phrases DITES partent à l'IA, la réponse est lue avec
       prudence (JSON entouré de texte, 3 au plus, phrase réellement dite, « mieux » ≠ « dit », balises retirées).
+   8. 🎯 (v2.142.0) réponse À CÔTÉ de la question : repérée, prudente (phrase dite, idée ≠ phrase, 2 au plus),
+      et le bravo qui félicitait cette phrase-là est retiré (vu en réel le 17.10, robot « Lingua comme Kevin »).
    SABOTAGE prouvé à la main : retirer la consigne de phase → (2) rougit.
    node services/kdmc-router/lingua-appel.test.mjs */
 import mod, { lireBilanAppel } from './worker.js';
@@ -58,7 +60,7 @@ ok(j.ok === false && j.reason === 'hors_domaine', '6. sans provenance du domaine
 rep = 'Voici : {"bravo":"Belle phrase sur ton week-end !","corrections":[{"dit":"I has a dog","mieux":"I have a dog","pourquoi":"Avec I, on dit have."},{"dit":"je n ai jamais dit ça","mieux":"inventé","pourquoi":"x"},{"dit":"yes","mieux":"yes","pourquoi":"rien"},{"dit":"she go <b>home</b>","mieux":"she goes <script>home</script>","pourquoi":"3e personne : -s."},{"dit":"I has a dog","mieux":"I have a dog","pourquoi":"bis"},{"dit":"I has a dog","mieux":"I have got a dog","pourquoi":"ter"}]} Fin.';
 j = await (await post(Object.assign({}, base, { mode: 'appel-bilan', messages: [{ role: 'bot', text: 'SECRET DE BEE' }, { role: 'user', text: 'I has a dog' }, { role: 'user', text: 'yes' }, { role: 'user', text: 'She go home' }] }))).json();
 const envoye = (vu || []).map((m) => m.content).join('\n');
-ok(/JSON/.test(sysDe()) && /I has a dog/.test(envoye) && /She go home/.test(envoye) && !/SECRET DE BEE/.test(envoye), '7. bilan : seules les phrases DITES par l\'apprenant partent à l\'IA', envoye.slice(0, 300));
+ok(/JSON/.test(sysDe()) && /Phrase dite : I has a dog/.test(envoye) && /Phrase dite : She go home/.test(envoye) && /Question de la mascotte : « SECRET DE BEE »/.test(envoye) && /ne la corrige jamais/.test(sysDe()), '7. bilan : les phrases DITES partent à l\'IA, la question de la mascotte seulement comme CONTEXTE (jamais à corriger)', envoye.slice(0, 300));
 ok(j.ok && j.bravo === 'Belle phrase sur ton week-end !' && j.corrections.length === 2 && new Set(j.corrections.map((c) => c.dit.toLowerCase())).size === 2, '7b. bravo + corrections sans doublon (une phrase dite = une correction)', JSON.stringify(j));
 ok(j.corrections[0].dit === 'I has a dog' && j.corrections[0].mieux === 'I have a dog', '7c. correction juste gardée telle quelle');
 ok(!j.corrections.some((c) => /jamais dit/.test(c.dit)) && !j.corrections.some((c) => c.dit === 'yes'), '7d. phrase jamais dite, ou « mieux » identique → jetée');
@@ -66,5 +68,17 @@ ok(!/[<>]/.test(JSON.stringify(j.corrections)), '7e. aucune balise ne remonte à
 ok(lireBilanAppel('pas de json du tout', ['x']).corrections.length === 0 && lireBilanAppel('{cassé', ['x']).bravo === '', '7f. réponse illisible → bilan vide, jamais d\'erreur');
 j = await (await post(Object.assign({}, base, { mode: 'appel-bilan', messages: [{ role: 'bot', text: 'Hello' }] }))).json();
 ok(j.ok && j.corrections.length === 0, '7g. rien dit → bilan vide sans appeler l\'IA');
+
+/* 8. 🎯 réponse à côté de la question */
+rep = '{"bravo":"Bravo pour avoir utilisé \'with my family\' de façon naturelle.","corrections":[],"a_cote":[{"dit":"I eat with my family","question":"quel sport aimes-tu ?","idee":"I like football"},{"dit":"jamais dit","question":"x","idee":"y"},{"dit":"yes","question":"tu as faim ?","idee":"yes"},{"dit":"I eat with my family","question":"bis","idee":"I like tennis"},{"dit":"she go home","question":"où vas-tu ?","idee":"<b>I go</b> to school"},{"dit":"I has a dog","question":"z","idee":"I play golf"}]}';
+j = await (await post(Object.assign({}, base, { mode: 'appel-bilan', messages: [{ role: 'bot', text: 'What sport do you like?' }, { role: 'user', text: 'I eat with my family' }, { role: 'bot', text: 'Are you hungry?' }, { role: 'user', text: 'yes' }, { role: 'user', text: 'She go home' }, { role: 'user', text: 'I has a dog' }] }))).json();
+ok(/Question de la mascotte : « What sport do you like\? »\n   Phrase dite : I eat with my family/.test((vu || []).map((m) => m.content).join('\n')), '8. chaque phrase part avec LA question qui la précédait');
+ok(j.ok && j.a_cote.length === 2 && j.a_cote[0].dit === 'I eat with my family' && j.a_cote[0].idee === 'I like football' && j.a_cote[0].question === 'quel sport aimes-tu ?', '8b. réponse à côté gardée (phrase, question, idée), 2 au plus, sans doublon', JSON.stringify(j.a_cote));
+ok(!j.a_cote.some((c) => /jamais dit/.test(c.dit)) && !j.a_cote.some((c) => c.dit === 'yes'), '8c. phrase jamais dite, ou idée identique à la phrase → jetée');
+ok(!/[<>]/.test(JSON.stringify(j.a_cote)), '8d. aucune balise ne remonte à l\'écran');
+ok(j.bravo === '', '8e. le bravo qui félicitait la phrase À CÔTÉ de la question est retiré', j.bravo);
+const garde = lireBilanAppel('{"bravo":"Belle prononciation !","corrections":[],"a_cote":[{"dit":"I eat with my family","question":"sport ?","idee":"I like football"}]}', ['I eat with my family']);
+ok(garde.bravo === 'Belle prononciation !' && garde.a_cote.length === 1, '8f. un bravo sur autre chose reste affiché');
+ok(Array.isArray(lireBilanAppel('{"bravo":"x","corrections":[]}', ['a b']).a_cote), '8g. ancienne forme de réponse (sans a_cote) → liste vide, pas d\'erreur');
 
 console.log(`Lingua appel test: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

@@ -2489,15 +2489,27 @@ async function handleLingua(request, url, env) {
          elles) reviennent corrigées — ce qu'il a dit, la forme naturelle, pourquoi en une phrase. Même IA
          gratuite. Réponse en JSON strict, vérifiée ici : rien d'inventé ne remonte à l'écran. */
       if (b && b.mode === 'appel-bilan') {
-        const dites = (Array.isArray(b.messages) ? b.messages : []).filter((m) => m && m.role === 'user')
-          .map((m) => String(m.text || '').replace(/\s+/g, ' ').trim().slice(0, 200)).filter((t) => t.length > 1).slice(-10);
-        if (!dites.length) return JL({ ok: true, bravo: '', corrections: [] });
+        /* 🎯 17.10 (robot « Lingua comme Kevin ») : chaque phrase dite part avec la question de la mascotte qui la
+           précédait — pour le CONTEXTE seulement (jamais corrigée) — afin de repérer une réponse à côté de la
+           question (« I eat with my family » à « quel sport aimes-tu ? » finissait en « aucune faute »). */
+        const tours = []; let derniere = '';
+        for (const m of (Array.isArray(b.messages) ? b.messages : [])) {
+          if (!m) continue;
+          const t = String(m.text || '').replace(/\s+/g, ' ').trim();
+          if (m.role === 'user') { if (t.length > 1) tours.push({ q: derniere, d: t.slice(0, 200) }); } else derniere = t.slice(0, 240);
+        }
+        const t10 = tours.slice(-10); const dites = t10.map((x) => x.d);
+        if (!dites.length) return JL({ ok: true, bravo: '', corrections: [], a_cote: [] });
         const sysB = 'Tu es un professeur de ' + langName + ' expert et bienveillant pour un francophone (niveau : ' + level + '). '
           + "Voici les phrases qu'il a DITES à l'oral pendant un appel (transcrites par reconnaissance vocale, donc sans tenir compte de la ponctuation ni des majuscules). "
+          + "Avant chaque phrase, la question de la mascotte qui la précédait est donnée pour le CONTEXTE : ne la corrige jamais. "
           + 'Choisis au plus 3 phrases qui contiennent une VRAIE faute de ' + langName + ' (grammaire, conjugaison, accord, genre, préposition, mot inexact, tournure non naturelle). '
-          + "N'invente rien : si tout est juste, renvoie une liste vide. Ne corrige pas une phrase en français volontaire. "
-          + 'Réponds UNIQUEMENT par un objet JSON, sans texte autour : {"bravo":"une phrase courte en français qui félicite pour une chose précise bien dite","corrections":[{"dit":"la phrase exacte dite","mieux":"la phrase corrigée et naturelle en ' + langName + '","pourquoi":"une phrase simple en français"}]}';
-        const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: dites.map((t, i) => (i + 1) + '. ' + t).join('\n') }], domain: 'translation', chain: chaineGratuite(env, 'translation'), maxTokens: 500, temperature: 0.2, timeoutMs: 15000 });
+          + "Repère aussi au plus 2 réponses À CÔTÉ de la question : la phrase parle d'autre chose que ce que la mascotte demandait (une réponse courte ou partielle mais sur le sujet n'est PAS à côté). "
+          + "Une phrase à côté de la question ne mérite pas le bravo. "
+          + "N'invente rien : si tout est juste, renvoie des listes vides. Ne corrige pas une phrase en français volontaire. "
+          + 'Réponds UNIQUEMENT par un objet JSON, sans texte autour : {"bravo":"une phrase courte en français qui félicite pour une chose précise bien dite","corrections":[{"dit":"la phrase exacte dite","mieux":"la phrase corrigée et naturelle en ' + langName + '","pourquoi":"une phrase simple en français"}],"a_cote":[{"dit":"la phrase exacte dite","question":"ce que demandait la mascotte, en français, court","idee":"une réponse simple et correcte en ' + langName + ' qui répond vraiment à la question"}]}';
+        const corps = t10.map((x, i) => (i + 1) + '. ' + (x.q ? 'Question de la mascotte : « ' + x.q + ' »\n   ' : '') + 'Phrase dite : ' + x.d).join('\n');
+        const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: corps }], domain: 'translation', chain: chaineGratuite(env, 'translation'), maxTokens: 650, temperature: 0.2, timeoutMs: 15000 });
         if (!ai.ok) return JL({ ok: false, reason: 'ai_absent' });
         return JL(Object.assign({ ok: true, by: ai.provider }, lireBilanAppel(ai.text, dites)));
       }
@@ -6481,12 +6493,21 @@ export function lireBilanAppel(texte, dites) {
   const cle = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   let j = null; const t = String(texte || ''); const a = t.indexOf('{'), z = t.lastIndexOf('}');
   if (a >= 0 && z > a) { try { j = JSON.parse(t.slice(a, z + 1)); } catch { j = null; } }
-  if (!j || typeof j !== 'object') return { bravo: '', corrections: [] };
+  if (!j || typeof j !== 'object') return { bravo: '', corrections: [], a_cote: [] };
   const vus = (dites || []).map(cle);
+  const dite = (x) => { const k = cle(x); return k.length > 1 && vus.some((v) => v === k || v.includes(k) || k.includes(v)); };
   const corrections = (Array.isArray(j.corrections) ? j.corrections : []).map((c) => ({ dit: net(c && c.dit, 200), mieux: net(c && c.mieux, 200), pourquoi: net(c && c.pourquoi, 220) }))
     .filter((c) => c.dit && c.mieux && cle(c.dit) !== cle(c.mieux))
-    .filter((c) => { const k = cle(c.dit); return k.length > 1 && vus.some((v) => v === k || v.includes(k) || k.includes(v)); })
+    .filter((c) => dite(c.dit))
     .filter((c, i, l) => l.findIndex((x) => cle(x.dit) === cle(c.dit)) === i)   /* une phrase dite = une seule correction */
     .slice(0, 3);
-  return { bravo: net(j.bravo, 200), corrections };
+  /* 🎯 réponses à côté de la question : même prudence (phrase réellement dite, idée ≠ phrase dite, 2 au plus) */
+  const a_cote = (Array.isArray(j.a_cote) ? j.a_cote : []).map((c) => ({ dit: net(c && c.dit, 200), question: net(c && c.question, 160), idee: net(c && c.idee, 200) }))
+    .filter((c) => c.dit && c.idee && cle(c.dit) !== cle(c.idee) && dite(c.dit))
+    .filter((c, i, l) => l.findIndex((x) => cle(x.dit) === cle(c.dit)) === i)
+    .slice(0, 2);
+  /* un bravo qui félicite une phrase à côté de la question ne s'affiche pas (vu le 17.10 : « Bravo pour 'with my family' ») */
+  let bravo = net(j.bravo, 200);
+  if (bravo && a_cote.some((c) => { const kb = cle(bravo), kd = cle(c.dit); return kb.includes(kd) || kd.split(' ').some((w, i, l) => i < l.length - 1 && (w + ' ' + l[i + 1]).length >= 6 && kb.includes(w + ' ' + l[i + 1])); })) bravo = '';
+  return { bravo, corrections, a_cote };
 }

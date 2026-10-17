@@ -21,7 +21,7 @@ const kv = new Map(); const appelsIA = [];
 const bilansIA = [];
 const AI = { run(model, input) { const sys = (input.messages || [])[0]?.content || '';
   if (/UNIQUEMENT par un objet JSON/.test(sys)) { bilansIA.push((input.messages || []).map((m) => m.content).join('\n'));
-    return { response: '{"bravo":"Super, « I cook every day » !","corrections":[{"dit":"I eat pasta","mieux":"I am eating pasta","pourquoi":"Action en cours : présent continu."},{"dit":"phrase jamais dite","mieux":"x y","pourquoi":"z"}]}' }; }
+    return { response: '{"bravo":"Super, « I cook every day » !","corrections":[{"dit":"I eat pasta","mieux":"I am eating pasta","pourquoi":"Action en cours : présent continu."},{"dit":"phrase jamais dite","mieux":"x y","pourquoi":"z"}],"a_cote":[{"dit":"My favourite is pizza","question":"quel sport aimes-tu ?","idee":"I like football"}]}' }; }
   const ph = (sys.match(/PHASE ([A-ZÀ-Ü-]+)/) || [])[1] || 'COACH';
   appelsIA.push({ sys, ph }); const r = { 'DÉBUT': 'Hi Kevin! Ready?', 'MINI-LEÇON': 'Say: delicious.', 'EXERCICE': 'Translate: I eat.', 'CONVERSATION': 'Nice! And you?', 'FIN': 'Great job. Bye!' }[ph] || 'Hello!';
   return { response: r }; } };
@@ -101,12 +101,13 @@ try {
   /* 📝 bilan de fin d'appel (v2.137.0) */
   await A.p.waitForFunction(() => /Ton bilan/.test((document.querySelector('.ap-bilan') || {}).innerText || ''), null, { timeout: 15000 }).catch(() => {});
   const bil = await A.p.evaluate(() => { const b = document.querySelector('.ap-bilan'); return b ? { t: b.innerText, ecoute: b.querySelectorAll('.ap-ecoute').length, corr: b.querySelectorAll('.ap-corr').length } : null; });
-  ok(bil && /I eat pasta/.test(bil.t) && /I am eating pasta/.test(bil.t) && /présent continu/.test(bil.t) && /I cook every day/.test(bil.t) && bil.ecoute === 1, '3d. bilan : ce que j\'ai dit → la bonne phrase (🔊 à écouter) → pourquoi, + un bravo précis', JSON.stringify(bil));
+  ok(bil && /I eat pasta/.test(bil.t) && /I am eating pasta/.test(bil.t) && /présent continu/.test(bil.t) && /I cook every day/.test(bil.t) && bil.ecoute === 2, '3d. bilan : ce que j\'ai dit → la bonne phrase (🔊 à écouter) → pourquoi, + un bravo précis', JSON.stringify(bil));
   if (process.env.CAPTURE) await A.p.screenshot({ path: process.env.CAPTURE.replace('.png', '-bilan.png') });
-  ok(bil && bil.corr === 1 && !/jamais dite/.test(bil.t), '3e. une « correction » d\'une phrase jamais dite n\'est pas affichée', JSON.stringify(bil));
-  ok(bilansIA.length === 1 && /I eat pasta/.test(bilansIA[0]) && !/Great job\. Bye!/.test(bilansIA[0]), '3f. seules MES phrases partent au bilan (pas celles de Bee)', (bilansIA[0] || '').slice(-300));
+  ok(bil && bil.corr === 2 && !/jamais dite/.test(bil.t), '3e. une « correction » d\'une phrase jamais dite n\'est pas affichée', JSON.stringify(bil));
+  ok(bilansIA.length === 1 && /I eat pasta/.test(bilansIA[0]) && !/Great job\. Bye!/.test(bilansIA[0]), '3f. mes phrases partent au bilan, la question de Bee seulement en contexte (sa dernière réplique sans réponse ne part pas)', (bilansIA[0] || '').slice(-300));
   const apB = await lire(A.p, 'appels');
-  ok(apB && Array.isArray(apB.corrections) && apB.corrections.length === 1 && apB.corrections[0].mieux === 'I am eating pasta', '3g. la correction est gardée pour le prochain appel', JSON.stringify(apB && apB.corrections));
+  ok(apB && Array.isArray(apB.corrections) && apB.corrections.length === 2 && apB.corrections[0].mieux === 'I am eating pasta' && apB.corrections[1].mieux === 'I like football', '3g. la correction ET la bonne réponse à la question sont gardées pour le prochain appel', JSON.stringify(apB && apB.corrections));
+  ok(bil && /À côté de la question : quel sport aimes-tu \?/.test(bil.t) && /My favourite is pizza/.test(bil.t) && /Tu aurais pu dire : I like football/.test(bil.t) && !/impeccable/.test(bil.t), '3j. 🎯 (v2.142.0) réponse à côté de la question : la question, ce que j\'ai dit, une vraie réponse (🔊) — jamais « impeccable »', JSON.stringify(bil));
   await A.p.click('.ap-fin .btn-ghost.small:has-text("Revoir")');
   await A.p.waitForTimeout(400);
   const tr = await A.p.evaluate(() => { const t = document.querySelector('.overlay.ap-top .ap-transcript'); if (!t) return null; const r = t.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + 10); return { t: t.innerText, dessus: !!(top && top.closest('.overlay.ap-top')) }; });

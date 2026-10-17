@@ -29,7 +29,7 @@ chk((await post('424242', '3.3.3.3')).status !== 403, 'Outlook : une autre adres
 
 const wf = fs.readFileSync(path.join(RACINE, '.github/workflows/sync-apex-secrets-to-cf-worker.yml'), 'utf8');
 chk(/async function verifyPin\(req, env\) \{\s*const ip = [^\n]+\n\s*if \(pinBloque\(ip\)\) return false;/.test(wf), 'Relais des clés IA : le verrou est vérifié AVANT le code');
-chk(/if \(!ok && req\.headers\.get\('x-apex-pin'\)\) pinEchec\(ip\);/.test(wf), 'Relais des clés IA : chaque échec est compté');
+chk(/if \(!ok && req\.headers\.get\('x-apex-pin'\)\) \{? ?pinEchec\(ip\);/.test(wf), 'Relais des clés IA : chaque échec est compté (isolat + verrou global du domaine, 17.10)');
 
 const mon = fs.readFileSync(path.join(RACINE, 'services/kdmc-monaco/worker.js'), 'utf8');
 chk(/if \(!\(await adminOk\(request, env\)\)\) return J\(\{ ok: true, worker: 'kdmc-monaco', connected \}\);/.test(mon), 'Monaco /health : sans code, seulement « vivant / connecté »');

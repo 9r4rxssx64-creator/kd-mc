@@ -556,7 +556,7 @@ const ROUTEUR = {
     }
 
     // SSO transverse (session unique + CGU). Même origine par sous-domaine.
-    if (url.pathname.startsWith('/__sso/')) return handleSso(request, url, env);
+    if (url.pathname.startsWith('/__sso/')) return handleSso(request, url, env, ctx);
     // Admin domaine (fiches clients + fonctions communes). Réservé admin.
     if (url.pathname.startsWith('/__admin/')) return handleAdmin(request, url, env);
     // Coffre Finances : sauvegarde EN LIGNE chiffrée de bout en bout. Réservé admin
@@ -3317,7 +3317,14 @@ async function mergeIntoCanon(env, acc) {
   await audLog(env, { ev: 'accounts_merged', uid: acc.uid, detail: others.map((o) => o.uid).join(', ') + ' → ' + acc.uid });
 }
 
-async function handleSso(request, url, env) {
+/* 17.10.2026 (mesuré : l'inscription répondait en 9,2 s) : ce qui ne change pas la réponse (journal, notification à Kevin)
+   part EN FOND quand le moteur le permet ; sans `ctx` (tests), on attend comme avant. */
+function enFond(ctx, p) {
+  const sur = Promise.resolve(p).catch(() => {});
+  if (ctx && typeof ctx.waitUntil === 'function') { ctx.waitUntil(sur); return Promise.resolve(); }
+  return sur;
+}
+async function handleSso(request, url, env, ctx) {
   const secret = env && env.KDMC_SSO_SECRET;
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (!secret) return J({ ok: false, reason: 'sso_not_configured' });
@@ -3808,8 +3815,8 @@ async function handleSso(request, url, env) {
           const cf = request.cf || {}, NET = ispInfo(cf);
           await inscriptionAdminDeposer(env.CERCLE_DB, { uid: a.uid, nom: a.name || name, appareil: appareilLabel(request.headers.get('user-agent') || ''),
             lieu: [cf.city, cf.country].filter(Boolean).join(', '), reseau: (NET.isp || '') + (cf.asn ? ' (AS' + cf.asn + ')' : ''), app: origine || appDe(request.headers.get('host')) || 'portail' }).catch(() => false);
-          await audLog(env, { ev: 'inscription_admin_attente', uid: a.uid, name: a.name || name, detail: mailEnvoye ? 'inscription en attente — mail de confirmation envoyé (' + mailEnvoye + ')' : 'inscription en attente sans e-mail confirmable — à valider' });
-          await notifyPush(env, mailEnvoye ? '🪪 KDMC — nouvelle inscription' : '🪪 KDMC — inscription à valider', mailEnvoye ? (a.name || name) + ' a reçu son mail de confirmation (' + mailEnvoye + ') : son compte s\'ouvrira tout seul. Rien à faire, sauf si tu veux l\'ouvrir ou le refuser dans Mes messages.' : (a.name || name) + ' s\'est inscrit sans e-mail confirmable : ouvre ou refuse son compte dans Mes messages.');
+          await enFond(ctx, audLog(env, { ev: 'inscription_admin_attente', uid: a.uid, name: a.name || name, detail: mailEnvoye ? 'inscription en attente — mail de confirmation envoyé (' + mailEnvoye + ')' : 'inscription en attente sans e-mail confirmable — à valider' }));
+          await enFond(ctx, notifyPush(env, mailEnvoye ? '🪪 KDMC — nouvelle inscription' : '🪪 KDMC — inscription à valider', mailEnvoye ? (a.name || name) + ' a reçu son mail de confirmation (' + mailEnvoye + ') : son compte s\'ouvrira tout seul. Rien à faire, sauf si tu veux l\'ouvrir ou le refuser dans Mes messages.' : (a.name || name) + ' s\'est inscrit sans e-mail confirmable : ouvre ou refuse son compte dans Mes messages.'));
         }
       } catch { /* on tranche juste après */ }
       /* fail-closed : un compte « sans WhatsApp » qu'on n'a pas pu marquer « en attente » ne repart JAMAIS ouvert. */

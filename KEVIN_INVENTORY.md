@@ -1,5 +1,11 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### 📂 Fiches repliées partout + réel automatique (17.10.2026)
+
+- **Arbre v3.117** (https://arbre.kd-mc.com) : listes d'actes et de sources repliées · **admin v2.7.1** et **portail v1.0.68** plus lisibles.
+- **Fichiers** : [`tests/verify-listes-repliees.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-listes-repliees.mjs) · [`.claude/hooks/session-start.sh`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/hooks/session-start.sh)
+- **Tests** : `npm run test:listes-repliees` · `test:reel-outil`
+
 ### 👀 Fiches repliées + voir le domaine pour de vrai depuis chaque session (16.10.2026 nuit)
 
 - **Admin v2.7.0** (https://kd-mc.com/admin/#personnes/comptes) et **Qui se connecte v1.3.0** (https://admin.kd-mc.com) : une ligne par personne, le détail s'ouvre au toucher, textes plus gros et plus contrastés.

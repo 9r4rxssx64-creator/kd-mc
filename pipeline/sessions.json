@@ -2172,6 +2172,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "fiches-partout": {
+      "titre": "Fiches repliées partout + réel automatique",
+      "branche": "claude/fiches-partout",
+      "sujet": "hook reel, arbre v3.117, admin v2.7.1, portail v1.0.68",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -5789,6 +5799,15 @@
       "sujet": "Se connecter RÉEL au domaine depuis ta session : npm run reel",
       "corps": "Kevin 16.10 nuit : « connecte-toi réel partout, même le domaine ». Mesuré : la session atteint kd-mc.com (curl 200) ; « injoignable depuis l'agent » est FAUX aujourd'hui. Seul Chromium refusait l'autorité du proxy. Après chaque mise en ligne : npm run reel <pages touchées> (Chromium iPhone, pass ci_smoke, captures audit/captures-reel/*.png à ouvrir avec Read, version servie). Jamais ignoreHTTPSErrors. Appel d'API réel : POST https://kd-mc.com/__sso/issue {uid:ci_smoke,name:'CI Smoke',cgu:true} → Bearer. Zones réservées (admin prouvé, arbre, CMCteams connecté) : voir-comme-kevin.yml au dépôt public, sinon « Non vérifié ». Règle : .claude/rules/verifier-reel.md. Garde : test:reel-outil.",
       "ts": "2026-10-16 23:41",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m227-fiches-partout",
+      "de": "fiches-partout",
+      "a": "toutes",
+      "sujet": "Réel automatique + fiches repliées partout",
+      "corps": "Kevin 17.10 (2e fois) : « connecte-toi réel partout » et « ferme les fiches par défaut, plus lisible partout ». (1) Ta session prépare désormais le vrai navigateur au démarrage (hook → reel.mjs --confiance) : après chaque mise en ligne, npm run reel <pages> ; jamais « je ne peux pas voir le domaine ». (2) Toute nouvelle LISTE de fiches s'affiche repliée (une ligne : nom + l'essentiel, détail au toucher) ; cartes de décision visibles, explication repliée ; aucun texte < 12,5 px. Garde test:listes-repliees.",
+      "ts": "2026-10-17 10:58",
       "etat": "ouvert"
     }
   ]

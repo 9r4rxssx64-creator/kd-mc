@@ -10,6 +10,7 @@ Mesuré le 16.10 : une session **atteint kd-mc.com** (curl 200). L'ancienne phra
 - **`npm run reel`** (= `node tools/smoke/reel.mjs [url…]`) : vrai Chromium au format iPhone, connecté avec le pass du robot `ci_smoke`,
   une capture par page (`audit/captures-reel/*.png`, à ouvrir avec Read = VOIR la page), version servie, écran de connexion, erreurs JS,
   requêtes en échec. 🔒 401/403 = la porte refuse le robot (zone réservée), pas une panne.
+- **Automatique dans chaque session depuis le 17.10** : le hook de démarrage lance `reel.mjs --confiance` → rien à faire, Playwright sur kd-mc.com marche tout de suite.
 - Le seul obstacle était le navigateur (`ERR_CERT_AUTHORITY_INVALID`) : le script inscrit l'autorité du proxy de la session dans le
   magasin du navigateur (`certutil`, une fois). **Jamais** `ignoreHTTPSErrors` ni couper TLS (garde `npm run test:reel-outil`).
 - Un appel d'API réel : `curl -X POST https://kd-mc.com/__sso/issue -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}'` → `Authorization: Bearer <token>`.

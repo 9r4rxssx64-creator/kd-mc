@@ -264,12 +264,17 @@
   /* 8.10 — LES CODES À VALIDER (Kevin : « la connexion inconnue sur le compte de Laurence ne doit plus jamais arriver ») : un compte sans code
      ne s'ouvre plus sur son nom ; quand quelqu'un propose un code depuis un appareil inconnu, c'est ICI que Kevin tranche, avec l'appareil, le
      lieu et le réseau sous les yeux. Accepter = ce code devient celui du compte ; refuser = rien ne change. Rien n'est affiché sans demande. */
+  /* 17.10 (Kevin : « ferme par défaut, ça prend trop de place ») : l'explication répétée au-dessus de chaque liste à trancher se replie
+     en « ℹ️ Comment décider ? » ; les cartes (nom, appareil, lieu, réseau, boutons) restent à l'écran : ce sont des décisions. */
+  function aide(texte) {
+    var d = el('details', 'bf-aide'); d.appendChild(el('summary', '', 'ℹ️ Comment décider ?')); d.appendChild(el('p', 'bf-vide', texte)); return d;
+  }
   function codes() {
     var z = el('div', 'bf-ins'), L = D.codes || [];
     z.id = 'bf-codes';
     if (!L.length) { z.hidden = true; return z; }
     z.appendChild(el('h3', 'bf-ins-t', '🔐 Codes à valider (' + L.length + ')'));
-    z.appendChild(el('p', 'bf-vide', 'Un compte sans code ne s\'ouvre plus sur son nom. Si c\'est bien la personne (son appareil, sa ville, son opérateur), accepte : ce code devient le sien. Sinon refuse.'));
+    z.appendChild(aide('Un compte sans code ne s\'ouvre plus sur son nom. Si c\'est bien la personne (son appareil, sa ville, son opérateur), accepte : ce code devient le sien. Sinon refuse.'));
     L.forEach(function (c) {
       var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
       h.appendChild(el('div', 'bf-de', c.nom + ' (' + c.uid + ')'));
@@ -300,7 +305,7 @@
     z.id = 'bf-inscriptions-admin';
     if (!Array.isArray(L) || !L.length) { z.hidden = true; return z; }
     z.appendChild(el('h3', 'bf-ins-t', '🪪 Comptes du domaine à valider (' + L.length + ')'));
-    z.appendChild(el('p', 'bf-vide', 'Ces personnes attendent ton accord pour ouvrir leur compte. Si tu reconnais la personne (son appareil, sa ville, son opérateur), accepte : son compte s\'ouvre. Sinon refuse.'));
+    z.appendChild(aide('Ces personnes attendent ton accord pour ouvrir leur compte. Si tu reconnais la personne (son appareil, sa ville, son opérateur), accepte : son compte s\'ouvre. Sinon refuse.'));
     L.forEach(function (c) {
       var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
       h.appendChild(el('div', 'bf-de', (c.nom || '?') + ' (' + (c.uid || '?') + ')'));

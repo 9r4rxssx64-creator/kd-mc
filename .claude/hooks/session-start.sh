@@ -81,4 +81,11 @@ setup_seo_google() {
 }
 setup_seo_google
 
+# 17.10 (Kevin : « dis à toutes tes branches de se connecter réel partout, même le domaine ») : dès le démarrage, le vrai
+# navigateur fait confiance à l'autorité du proxy de la session → `npm run reel` et tout Playwright sur kd-mc.com marchent
+# tout de suite, sans que la session ait à le découvrir. Aucune vérification TLS coupée (magasin NSS, certutil).
+if [ -f "$ROOT/tools/smoke/reel.mjs" ]; then
+  ( cd "$ROOT" && node tools/smoke/reel.mjs --confiance 2>&1 | tail -1 ) || echo "[hook] vrai navigateur : préparation échouée (npm run reel la refera)"
+fi
+
 echo "[hook] environnement prêt — tests (unit + E2E) / lint / build / typecheck disponibles"

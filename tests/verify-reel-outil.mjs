@@ -6,7 +6,8 @@
         il inscrit l'autorité du proxy de la session dans le magasin du navigateur, c'est tout ;
      3. aucun code admin : il ne lit ni KDMC_ADMIN_CODE ni un pinhash, il prend le pass du robot ci_smoke ;
      4. ses captures ne sont jamais committées (.gitignore) ;
-     5. la règle et la compétence le citent (les sessions le trouvent) et `npm run reel` existe.
+     5. la règle et la compétence le citent (les sessions le trouvent) et `npm run reel` existe ;
+     6. le hook de démarrage prépare le navigateur dans CHAQUE session (17.10) — sabotage : retirer l'appel du hook → rouge.
    Sabotage : ajouter `ignoreHTTPSErrors: true` au contexte → rouge (cas 2). */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,6 +30,7 @@ chk(/kd-mc\\\.com/.test(code), '3b. périmètre écrit dans le code (kd-mc.com e
 chk(/^audit\/captures-reel\/$/m.test(lire('.gitignore')), '4. captures hors dépôt (.gitignore)');
 const pkg = JSON.parse(lire('package.json'));
 chk(pkg.scripts.reel === 'node tools/smoke/reel.mjs', '5. npm run reel');
+chk(/tools\/smoke\/reel\.mjs --confiance/.test(lire('.claude/hooks/session-start.sh')) && /--confiance/.test(code), '6. CHAQUE session prépare le vrai navigateur dès son démarrage (hook session-start → reel.mjs --confiance)');
 chk(/tools\/smoke\/reel\.mjs|npm run reel/.test(lire('.claude/rules/verifier-reel.md')) && /npm run reel/.test(lire('.claude/skills/verif-reelle/SKILL.md')), '5b. la règle verifier-reel et la compétence verif-reelle le citent');
 
 console.log(`\n=== ${ok} OK / ${ko} FAIL ===`);

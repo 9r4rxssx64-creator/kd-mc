@@ -4,7 +4,7 @@
 :root {
   --bg-0:#050806; --bg-1:#080d07; --bg-2:#0d1510; --card:#111c14; --field:#0a120c; --surface:#131d16;
   --gold:#e8b830; --gold2:#f6d97a; --gold-glow:rgba(232,184,48,.10);
-  --txt:#f3f0e6; --mut:#9fb0a0; --subtle:#6e7d76;
+  --txt:#f3f0e6; --mut:#b0bfb1; --subtle:#8d9c93; /* 17.10 (Kevin : « plus lisible, visible partout ») : gris éclaircis, contraste ≥ 6:1 sur le fond */
   --admin:#6a8aff; --err:#ff6b6b; --ok:#51cf66;
   --line:rgba(232,184,48,.18); --line2:rgba(232,184,48,.38);
   --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s8:32px;--s10:40px;--s12:48px;

@@ -297,6 +297,7 @@
   "tests/verify-lingua-contenu-local.mjs",
   "tests/verify-lingua-maj.mjs",
   "tests/verify-lingua-reactivite.mjs",
+  "tests/verify-listes-repliees.mjs",
   "tests/verify-localisation-une-fois.mjs",
   "tests/verify-maj-forcee-reelle.mjs",
   "tests/verify-maj-partout.mjs",

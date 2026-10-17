@@ -1,5 +1,14 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 — « Fiches fermées + lisible PARTOUT » et « connecté réel » automatique dans CHAQUE session
+- Kevin a redit : « Dis à toutes tes branches de se connecter réel partout… Ferme les fiches par défaut… plus lisible, visible pour tout partout ».
+- **Réel automatique** : `.claude/hooks/session-start.sh` lance `node tools/smoke/reel.mjs --confiance` → dès le démarrage, Chromium fait confiance à l'autorité du proxy (testé : certificat retiré → le hook le remet). `npm run reel` et tout Playwright sur kd-mc.com marchent sans rien découvrir. Garde `test:reel-outil` 9/0 (cas 6).
+- **Arbre v3.117** : « Actes trouvés » / « Presse & sources » = une ligne par personne (nom · dates · nombre 📎), le toucher déplie ; recherche décès repliée (nom + dates sur la ligne, les 5 demandes d'actes au toucher) ; petits textes 10-11 px → 12-12,5 px (hors étiquettes de l'arbre dessiné et impression).
+- **Admin v2.7.1 + portail v1.0.68** : textes 11-12,5 px → 12,5-13,5 px (tableau, boîte, commerce), gris du design system éclaircis (`--mut #b0bfb1`, `--subtle #8d9c93`), explication des listes à trancher repliée en « ℹ️ Comment décider ? » (les cartes de décision restent visibles).
+- Inventaire (aide en lecture) : boîte des messages, listes de l'arbre, cuisine, portail déjà compacts ; Commerce gardé en 2 lignes (décisions) mais lisible.
+- Garde `test:listes-repliees` 8/0 (sabotages font-size 11px et `<div class="sec">` → rouge). Tests : admin-unique 79/0, access-ux 12/0, boite 83/0, boite-portail 32/0, portail-versions, sw-portail, arbre-* verts.
+
+
 ## 2026-10-17 (01h30 UTC) — Publication vers le dépôt public 100 % automatique, sans webhook ni minute du coffre (décision (b) de Kevin)
 
 - **Le train toutes les 2 h** : le cron du worker `kdmc-outlook` (seule place de cron gratuite) lit le commit de `main` du coffre (jeton GitHub déjà en secret Cloudflare), le compare à la marque KV `publication:sha` ; s'il a changé, il lance au dépôt PUBLIC le robot `publier-depuis-coffre.yml` (workflow_dispatch). Ce robot ouvre le coffre (clé lecture seule, 3 essais), exporte + vérifie (fail-fermé) + pousse (publier-local du coffre, jeton du job ou `APEX_GITHUB_PAT` s'il existe au public), puis **relance lui-même les déploiements** que ce push aurait déclenchés (GitHub ne lance rien après un push du jeton du job) : `tools/depot-public/robots-a-relancer.mjs`, mêmes règles que GitHub (`**`, `*`, `!`, branches, paths-ignore), déploiements seulement (`deploy-*.yml`, jamais `deploy.yml` ni lint/tests).

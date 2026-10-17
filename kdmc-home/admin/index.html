@@ -8,10 +8,10 @@
 <title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
-<link rel="stylesheet" href="/design-system.css" />
-<link rel="stylesheet" href="/kdmc-boite.css?v=2.0.3" />
-<link rel="stylesheet" href="commerce.css?v=2.7.0" />
-<link rel="stylesheet" href="tableau.css?v=2.7.0" />
+<link rel="stylesheet" href="/design-system.css?v=2.7.1" />
+<link rel="stylesheet" href="/kdmc-boite.css?v=2.0.4" />
+<link rel="stylesheet" href="commerce.css?v=2.7.1" />
+<link rel="stylesheet" href="tableau.css?v=2.7.1" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -36,14 +36,14 @@
   .live-p .av::after{content:"";position:absolute;right:0;bottom:0;width:10px;height:10px;border-radius:50%;background:#22c55e;border:2px solid #0b130d}
   .live-p .tx{display:flex;flex-direction:column;min-width:0}
   .live-p .tx b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .live-p .ou{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .live-p .ou{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .live-vide{margin:0;color:var(--mut);font-size:13px}
   @media(min-width:640px){.cpts{grid-template-columns:repeat(5,1fr)}}
   .cpt{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:4px;min-height:84px;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(10,18,12,.7);color:var(--txt);font:inherit;text-align:left;cursor:pointer}
   .cpt:active{transform:scale(.98)}
   .cpt .n{font-size:28px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--ok)}
   .cpt .l{font-size:13px;font-weight:600;line-height:1.25}
-  .cpt .s{font-size:11.5px;color:var(--subtle)}
+  .cpt .s{font-size:12.5px;color:var(--subtle)}
   .cpt.urgent{border-color:rgba(245,158,11,.75);box-shadow:0 0 0 1px rgba(245,158,11,.3);background:rgba(245,158,11,.10)}
   .cpt.urgent .n{color:#fbbf24}
   .cpt.inconnu .n{color:var(--mut)}
@@ -53,14 +53,14 @@
   .tbnav{position:sticky;top:0;z-index:30;margin:0 -18px 10px;padding:8px 18px;background:rgba(8,13,7,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .tbnav::-webkit-scrollbar{display:none}
   .tbnav a{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:14px;white-space:nowrap}
-  .tbnav a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:12px}
+  .tbnav a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:13px}
   .cherche{position:relative;margin:0 0 14px}
   .cherche input{width:100%;min-height:50px;padding:12px 14px;border-radius:14px;border:1px solid var(--line2);background:var(--field);color:var(--txt);font-size:16px}
   .cherche input:focus{outline:none;border-color:var(--gold)}
   .res{display:flex;flex-direction:column;gap:6px;margin-top:8px}
   .res[hidden]{display:none}
   .res button{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-size:15px;text-align:left;cursor:pointer}
-  .res button span{color:var(--subtle);font-size:12px;margin-left:auto;white-space:nowrap}
+  .res button span{color:var(--subtle);font-size:13px;margin-left:auto;white-space:nowrap}
   .res .rien{color:var(--mut);font-size:14px;padding:8px 2px}
   details.sec{margin:0 0 12px;border:1px solid var(--line);border-radius:18px;background:rgba(17,28,20,.45);scroll-margin-top:68px}
   details.sec>summary{display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 14px;cursor:pointer;list-style:none}
@@ -68,7 +68,7 @@
   details.sec>summary .ic{font-size:22px;width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:11px;background:var(--gold-glow)}
   details.sec>summary .tt{display:flex;flex-direction:column;min-width:0}
   details.sec>summary .tt b{font-size:16px}
-  details.sec>summary .tt span{font-size:12.5px;color:var(--mut)}
+  details.sec>summary .tt span{font-size:13.5px;color:var(--mut)}
   details.sec>summary::after{content:"▸";margin-left:auto;color:var(--gold);transition:transform .15s}
   .etatcompte{min-height:44px;padding:0 14px}   /* 15.10 : cible tactile ≥ 44 px (garde verify-admin-unique) */
   details.sec[open]>summary::after{transform:rotate(90deg)}
@@ -83,7 +83,7 @@
   .mess .quoi{font-size:13.5px;color:var(--mut);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
   .srcs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
   .grosbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#11160c;font-weight:700;font-size:16px;cursor:pointer;text-decoration:none}
-  .cardrow .ver{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--gold2);font-size:11px}
+  .cardrow .ver{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--gold2);font-size:12.5px}
   .info{font-size:13px;color:var(--mut);margin:10px 2px;line-height:1.5}
   .info b{color:var(--txt)}
   /* ── 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien… range, classe, organise ») : ACCUEIL à tuiles, puis UNE
@@ -103,7 +103,7 @@
   .tuile-sec .ic{font-size:24px}
   .tuile-sec .tt{display:flex;flex-direction:column;gap:2px;min-width:0}
   .tuile-sec .tt b{font-size:15px;line-height:1.2}
-  .tuile-sec .tt .r{font-size:12px;color:var(--mut);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tuile-sec .tt .r{font-size:13px;color:var(--mut);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .tuile-sec .bd{position:absolute;top:10px;right:10px;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#dc2626;color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center}
   .tuile-sec .bd[hidden]{display:none}
   .raccourcis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}
@@ -113,7 +113,7 @@
   .onglets::-webkit-scrollbar{display:none}
   .onglets a{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:14px;white-space:nowrap;background:rgba(10,18,12,.55)}
   .onglets a[aria-selected="true"]{border-color:var(--gold);color:#11160c;background:linear-gradient(135deg,var(--gold2),var(--gold));font-weight:700}
-  .onglets a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:12px}
+  .onglets a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:13px}
 </style>
 </head>
 <body>
@@ -125,11 +125,11 @@
     <div id="app"><div class="msg">Vérification de l'accès…</div></div>
   </div>
   <script src="/kdmc-sso.js"></script>
-  <script src="/kdmc-boite.js?v=2.0.3"></script>
-  <script src="admin.js?v=2.7.0"></script>
-  <script src="commerce.js?v=2.7.0"></script>
-  <script src="tableau.js?v=2.7.0"></script>
+  <script src="/kdmc-boite.js?v=2.0.4"></script>
+  <script src="admin.js?v=2.7.1"></script>
+  <script src="commerce.js?v=2.7.1"></script>
+  <script src="tableau.js?v=2.7.1"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.0" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.1" data-color="#c9a227" defer></script>
 </body>
 </html>

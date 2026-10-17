@@ -13,6 +13,7 @@
      4. photographie chaque page dans audit/captures-reel/ (hors dépôt) et écrit audit/captures-reel/rapport.json.
 
    Usage : node tools/smoke/reel.mjs [url…]      (défaut : les pages principales)      npm run reel
+           node tools/smoke/reel.mjs --confiance  (prépare seulement le navigateur ; le hook de démarrage le fait dans chaque session)
    Périmètre : kd-mc.com et ses sous-domaines UNIQUEMENT. Lecture seule. Aucun code admin (le robot n'est pas l'admin :
    les zones « admin prouvé » restent fermées, et le rapport le dit). */
 import fs from 'node:fs';
@@ -63,6 +64,8 @@ async function versionServie(origine) {
 }
 
 const confiance = confianceNavigateur();
+/* --confiance : seulement préparer le navigateur (appelé par le hook de démarrage de CHAQUE session, 17.10) */
+if (process.argv.includes('--confiance')) { console.log('[reel] navigateur ↔ proxy : ' + confiance); process.exit(0); }
 console.log('Navigateur ↔ proxy de la session : ' + confiance);
 const p = await pass();
 console.log('Pass ci_smoke : ' + (p.token ? 'obtenu' : 'REFUSÉ (' + p.http + ' ' + p.erreur + ') — les pages seront vues anonymes'));

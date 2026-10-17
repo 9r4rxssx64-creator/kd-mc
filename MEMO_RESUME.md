@@ -17,6 +17,10 @@
 - Aucun code ne les appelle (Apex corrige seul desarzens-kevin → 9r4rxssx64, `worker-url-heal.ts`) ; coffre-fort n'a JAMAIS pointé vers l'ancien coffre-r2 (historique de `coffre-fort/config.json`) → aucune donnée à rapatrier. Les 11 copies principales répondent (200/405).
 - Outil `tools/cloudflare/orphelins-supprimer.mjs` (`npm run cf:orphelins`) : liste fermée des 12, refuse toute clé qui ne voit pas l'ancien compte, garde un orphelin si sa copie principale ne répond pas, essai à blanc par défaut, liste KV/D1/R2 de l'ancien compte sans les toucher. Garde `test:cf-orphelins` 6/0 (sabotage prouvé). Exécution : par la session qui détient la clé du compte ancien (m232), sinon Kevin colle une clé d'un jour.
 
+## 2026-10-17 — Apex Chat v1.1.318 : un appareil neuf n'est plus rechargé 7 s après sa 1re ouverture
+- Vu par le robot e2e (run 39035781683, 27 ✅ / 6 sautés / 1 ❌ « photo de Bob non reçue » + « [MAJ] application [admin-force] ») : la mise à jour forcée de l'admin rechargeait tout navigateur neuf.
+- `index.html` : `_pageDuReseau` noté à l'ouverture ; vue = 0 et page du réseau → date notée, pas de rechargement. Test `client-premier-chargement.test.js` (5), sabotage prouvé ; suite complète 2139 verts. Leçon 627.
+- **À vérifier** : e2e vert après mise en ligne. ⚠️ Le déploiement du SERVEUR est bloqué par Cloudflare (file d'attente, code 10013) depuis 12:57 UTC : la page 1.1.318 part par le routeur, le serveur reste 1.1.317 tant que ce n'est pas réglé.
 
 ## 2026-10-17 13:05 UTC — Audit Cloudflare : les 4 portes VÉRIFIÉES FERMÉES EN LIGNE
 - Déploiements publics verts : coffre-r2 (nouveau robot public), kdmc-vente, apex-auth-worker, cmc-parser-proxy, routeur (coffre-fort v1.0.3).

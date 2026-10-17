@@ -8,6 +8,11 @@
   var CLE_CACHE = 'kdmc_boite_cpts', CACHE_MAX = 864e5;
   var C = null;   /* le DERNIER RELEVÉ en nombres (jamais un nom ni un message), dessiné par le bandeau en attendant la vraie lecture */
   var D = null, filtre = 'tous', ouvert = '', timer = null, ouverte = false, enCours = false, HIST = {}, REV = {}, ECOUTE = [];
+  /* 17.10 (Kevin : « je veux atterrir directement pour répondre ») : `conv` = la conversation ouverte plein écran ('' = la liste) ;
+     `atterrir` = à l'ouverture (notification, bandeau), on saute direct sur le message non lu le plus récent auquel on peut répondre ;
+     DRAFT = la réponse en cours d'écriture, gardée par conversation ; ENVOYE = « ✅ Envoyé » + message suivant après un envoi. */
+  var conv = '', atterrir = false, cibleCle = '', DRAFT = {}, ENVOYE = {}, BAS = false;
+  var RAPIDES = ['👍 Bien reçu, merci', '🔎 Je regarde et je reviens', '✅ C\'est réglé', '❓ Plus de détails ?'];
 
   function entetes(json) {
     var h = {}; try { var t = window.kdmcSSO && window.kdmcSSO.token && window.kdmcSSO.token(); if (t) h.authorization = 'Bearer ' + t; } catch (e) { /* */ }
@@ -95,8 +100,8 @@
     r = el('div'); r.id = 'boite-fen'; r.hidden = true; r.setAttribute('role', 'dialog'); r.setAttribute('aria-modal', 'true'); r.setAttribute('aria-label', 'Mes messages');
     document.body.appendChild(r); return r;
   }
-  function ouvrir() { ouverte = true; var r = racine(); r.hidden = false; document.documentElement.classList.add('boite-ouverte'); dessiner(); rafraichir(); armer(); }
-  function fermer() { ouverte = false; var r = racine(); r.hidden = true; document.documentElement.classList.remove('boite-ouverte'); armer(); }
+  function ouvrir(cle) { ouverte = true; atterrir = true; cibleCle = typeof cle === 'string' ? cle : ''; conv = ''; var r = racine(); r.hidden = false; document.documentElement.classList.add('boite-ouverte'); dessiner(); rafraichir(); armer(); }
+  function fermer() { ouverte = false; atterrir = false; conv = ''; var r = racine(); r.hidden = true; r.style.height = ''; r.style.top = ''; r.style.bottom = ''; document.documentElement.classList.remove('boite-ouverte'); armer(); }
   function armer() {
     if (timer) clearInterval(timer);
     timer = setInterval(function () { if (document.visibilityState === 'visible') rafraichir(); }, ouverte ? PAS_OUVERT : PAS_BANDEAU);
@@ -123,6 +128,13 @@
     /* jamais redessiner sous les doigts de Kevin : s'il écrit une réponse, on attend (le prochain rafraîchissement reprendra) */
     var actif = document.activeElement; if (garderSaisie && actif && actif.tagName === 'TEXTAREA' && r.contains(actif) && actif.value) return;
     var saisie = ''; if (garderSaisie) { var ta0 = r.querySelector('textarea'); if (ta0) saisie = ta0.value; }
+    if (D && atterrir) choisirAtterrissage();
+    if (conv) {
+      var mc = trouver(conv);
+      if (mc && mc.repondre === 'direct') { dessinerConv(r, mc, saisie); ajusterClavier(); return; }
+      conv = '';   /* la conversation a disparu du domaine : retour à la liste */
+    }
+    r.removeAttribute('data-conv'); ajusterClavier();
     /* le DÉFILEMENT se garde quel que soit l'élément qui défile (la fenêtre elle-même sur iPhone, la liste ailleurs) */
     var defil = r.querySelector('.bf-liste'); var pos = defil ? defil.scrollTop : 0, posFen = r.scrollTop, posDoc = (document.scrollingElement || document.documentElement).scrollTop;
     r.textContent = '';
@@ -176,6 +188,84 @@
     try { r.scrollTop = posFen; if (posDoc) (document.scrollingElement || document.documentElement).scrollTop = posDoc; } catch (e) { /* */ }
   }
 
+  /* ── LA CONVERSATION : plein écran, le fil, des réponses rapides, la zone d'écriture collée en bas (Kevin 17.10) ─────────────────────── */
+  function trouver(cle) { return ((D && D.messages) || []).filter(function (x) { return x.cle === cle; })[0] || null; }
+  function directsNonLus(sauf) { return ((D && D.messages) || []).filter(function (x) { return x.repondre === 'direct' && x.nonLus && x.cle !== sauf; }).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); }); }
+  /* le bouton « suivant » dit QUI écrit et QUOI (un nouveau message d'une autre personne arrive pendant qu'on répond : on le voit tout de suite) */
+  function libSuiv(autres) { var x = autres[0], t = String(x.texte || '').replace(/\s+/g, ' ').trim(); if (t.length > 46) t = t.slice(0, 45) + '…'; return 'Message suivant (' + autres.length + ') · ' + x.de + (t ? ' : ' + t : '') + ' ›'; }
+  function entrerConv(cle) {
+    var m = trouver(cle); conv = cle; BAS = true; delete ENVOYE[cle]; ouvert = '';
+    if (m && m.nonLus) ecrire('lu', { cles: [cle] }).then(function () { return rafraichir(); });
+  }
+  function choisirAtterrissage() {
+    atterrir = false;
+    var m = cibleCle ? trouver(cibleCle) : null; if (m && m.repondre !== 'direct') m = null;
+    if (!m) m = directsNonLus('')[0];
+    cibleCle = '';
+    if (m) { filtre = 'tous'; entrerConv(m.cle); }
+  }
+  function retourListe() { conv = ''; atterrir = false; dessine = ''; dessiner(); }
+  function envoyerRep(m, ta, en, st) {
+    var t = ta.value.trim(); if (!t) { st.textContent = 'Écris ta réponse.'; return; }
+    en.disabled = true; st.textContent = 'Envoi…';
+    ecrire('repondre', { cle: m.cle, texte: t }).then(function (j) {
+      if (j && j.ok) {
+        delete DRAFT[m.cle]; ENVOYE[m.cle] = true; BAS = true; ta.value = '';
+        m.fil = (m.fil || []).concat([{ moi: true, texte: t, ts: Date.now() }]);   /* la bulle apparaît tout de suite ; la vraie lecture la remplace */
+        dessine = ''; dessiner(); rafraichir(true);
+      } else { en.disabled = false; st.textContent = '❌ ' + raison(j && j.reason); }
+    });
+  }
+  function dessinerConv(r, m, saisie) {
+    var fil0 = r.querySelector('.bf-fil'), meme = !!fil0 && r.getAttribute('data-conv') === m.cle;
+    var enBas = !meme || BAS || (fil0.scrollHeight - fil0.scrollTop - fil0.clientHeight < 90), pos = meme ? fil0.scrollTop : 0;
+    r.textContent = ''; r.setAttribute('data-conv', m.cle); dessine = empreinte(D);
+    var tete = el('div', 'bf-tete');
+    var ret = el('button', 'bf-ret', '←'); ret.type = 'button'; ret.setAttribute('aria-label', 'Retour à tous les messages'); ret.onclick = retourListe;
+    var tt = el('div', 'bf-ct'); tt.appendChild(el('h2', null, m.de)); tt.appendChild(el('div', 'bf-cs', srcIcone(m.source) + ' ' + String(m.app || '').replace('.kd-mc.com', '') + (m.ts ? ' · ' + quand(m.ts) : '')));
+    var act = el('button', 'bf-r', '↻'); act.type = 'button'; act.setAttribute('aria-label', 'Actualiser'); act.onclick = function () { rafraichir(true); };
+    var fer = el('button', 'bf-x', '✕'); fer.type = 'button'; fer.setAttribute('aria-label', 'Fermer'); fer.onclick = fermer;
+    tete.appendChild(ret); tete.appendChild(tt); tete.appendChild(act); tete.appendChild(fer); r.appendChild(tete);
+    var fil = el('div', 'bf-fil'); fil.setAttribute('role', 'log'); fil.setAttribute('aria-live', 'polite');
+    (m.fil || []).forEach(function (x) { var b = el('div', 'bf-b ' + (x.moi ? 'moi' : 'eux')); b.appendChild(el('div', null, x.texte)); b.appendChild(el('div', 'bf-bt', (x.moi ? 'Toi · ' : '') + quand(x.ts))); fil.appendChild(b); });
+    if (!(m.fil || []).length && String(m.texte || '').trim()) fil.appendChild(el('div', 'bf-b eux', m.texte));
+    (m.infos || []).forEach(function (l) { fil.appendChild(el('div', 'bf-info', l)); });
+    var src = (D.sources || []).filter(function (s) { return s.id === m.source; })[0];
+    if (src && src.lien) { var o = el('a', 'bf-ouvrir', 'Ouvrir ' + src.nom.split(' · ')[0] + ' ↗'); o.href = src.lien; fil.appendChild(o); }
+    r.appendChild(fil);
+    var autres = directsNonLus(m.cle);
+    if (ENVOYE[m.cle]) {
+      var ap = el('div', 'bf-apres'); ap.appendChild(el('span', 'bf-ok', '✅ Envoyé'));
+      if (autres.length) { var sv = el('button', 'bf-suiv', libSuiv(autres)); sv.type = 'button'; sv.onclick = function () { entrerConv(autres[0].cle); dessine = ''; dessiner(); }; ap.appendChild(sv); }
+      else { var tl = el('button', 'bf-suiv', '← Tous les messages'); tl.type = 'button'; tl.onclick = retourListe; ap.appendChild(tl); }
+      r.appendChild(ap);
+    } else if (autres.length) {
+      var sv2 = el('button', 'bf-suiv bf-suiv-bas', libSuiv(autres)); sv2.type = 'button'; sv2.onclick = function () { entrerConv(autres[0].cle); dessine = ''; dessiner(); }; r.appendChild(sv2);
+    }
+    var ta = el('textarea'); ta.rows = 2; ta.maxLength = 2000; ta.placeholder = 'Ta réponse…'; ta.setAttribute('aria-label', 'Ta réponse'); ta.value = saisie || DRAFT[m.cle] || '';
+    var st = el('div', 'bf-st'), en = el('button', 'bf-env', 'Envoyer'); en.type = 'button';
+    ta.oninput = function () { DRAFT[m.cle] = ta.value; };
+    ta.onkeydown = function (e) { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); envoyerRep(m, ta, en, st); } };
+    en.onclick = function () { envoyerRep(m, ta, en, st); };
+    var rap = el('div', 'bf-rapides');
+    RAPIDES.forEach(function (t) {
+      var b = el('button', 'bf-rap', t); b.type = 'button';
+      b.onclick = function () { ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + ' ' + t : t; DRAFT[m.cle] = ta.value; try { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) { /* */ } };
+      rap.appendChild(b);
+    });
+    r.appendChild(rap);
+    var compo = el('div', 'bf-compo'); compo.appendChild(ta); compo.appendChild(en); r.appendChild(compo); r.appendChild(st);
+    try { fil.scrollTop = enBas ? fil.scrollHeight : pos; } catch (e) { /* */ }
+    BAS = false;
+  }
+  /* Le clavier de l'iPhone recouvre le bas de la page : en conversation, la fenêtre suit la partie VISIBLE de l'écran, la zone d'écriture reste au-dessus. */
+  function ajusterClavier(ev) {
+    var r = document.getElementById('boite-fen'); if (!r || r.hidden) return;
+    var vv = window.visualViewport;
+    if (vv && conv) { r.style.bottom = 'auto'; r.style.height = vv.height + 'px'; r.style.top = vv.offsetTop + 'px'; var f = ev && ev.type ? r.querySelector('.bf-fil') : null; if (f) { try { f.scrollTop = f.scrollHeight; } catch (e) { /* */ } } }
+    else { r.style.height = ''; r.style.top = ''; r.style.bottom = ''; }
+  }
+
   function carte(m, saisie) {
     var c = el('div', 'bf-c' + (m.nonLus ? ' nv' : '') + (ouvert === m.cle ? ' ouv' : ''));
     var tete = el('button', 'bf-ch'); tete.type = 'button'; tete.setAttribute('aria-expanded', ouvert === m.cle ? 'true' : 'false');
@@ -187,6 +277,7 @@
     tete.appendChild(el('div', 'bf-de', m.de));
     tete.appendChild(el('div', 'bf-ap', m.texte));
     tete.onclick = function () {
+      if (m.repondre === 'direct') { entrerConv(m.cle); dessiner(); return; }   /* une conversation à laquelle on répond s'ouvre plein écran, zone de réponse prête */
       ouvert = ouvert === m.cle ? '' : m.cle; dessiner();
       if (ouvert && m.nonLus) ecrire('lu', { cles: [m.cle] }).then(rafraichir);
     };
@@ -362,15 +453,18 @@
   function demarrer() {
     var a = document.getElementById('cercle-alerte'); if (!a || demarre) return; demarre = true;
     a.setAttribute('role', 'button'); a.removeAttribute('href');
-    a.onclick = function (e) { e.preventDefault(); ouvrir(); };
+    a.onclick = function (e) { e.preventDefault(); ouvrir(); };   /* le bandeau mène DIRECT au dernier message non lu */
     a.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ouvrir(); } };
     a.tabIndex = 0;
     /* 13.10 (Kevin : « la zone du haut apparaît tard ») : le domaine a déjà dit « admin » (c'est lui qui appelle demarrer) — le dernier relevé
        s'affiche tout de suite, daté, pendant que la vraie lecture part. Sans relevé gardé : rien, comme avant. */
     if (!D) { C = cacheLire(); if (C) bandeau(); }
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ouverte) fermer(); });
-    var surHash = function () { if (/[#&]messages\b/.test(location.hash)) { if (!ouverte) ouvrir(); else rafraichir(); } };
-    if (/[#&]messages\b/.test(location.hash)) setTimeout(ouvrir, 400);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ouverte) { if (conv) retourListe(); else fermer(); } });
+    if (window.visualViewport) { window.visualViewport.addEventListener('resize', ajusterClavier); window.visualViewport.addEventListener('scroll', ajusterClavier); }
+    /* `#messages` = le dernier message non lu auquel on peut répondre ; `#messages/<clé>` = cette conversation-là */
+    var cibleDe = function () { var m = /[#&]messages(?:\/([^&]+))?/.exec(location.hash); try { return m && m[1] ? decodeURIComponent(m[1]) : ''; } catch (e) { return ''; } };
+    var surHash = function () { if (/[#&]messages\b/.test(location.hash)) { if (!ouverte) ouvrir(cibleDe()); else { atterrir = true; cibleCle = cibleDe(); dessine = ''; rafraichir(true); } } };
+    if (/[#&]messages\b/.test(location.hash)) setTimeout(function () { ouvrir(cibleDe()); }, 400);
     window.addEventListener('hashchange', surHash);                                   // une notification touchée alors que le portail est déjà ouvert
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') rafraichir(); });
     window.addEventListener('focus', rafraichir); window.addEventListener('online', rafraichir); window.addEventListener('pageshow', rafraichir);

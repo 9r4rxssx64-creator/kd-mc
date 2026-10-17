@@ -80,3 +80,20 @@ html.boite-ouverte,html.boite-ouverte body{overflow:hidden}
 #boite-fen a.bf-app{color:var(--gold);text-decoration:none;display:inline-block;min-height:32px;padding:0 6px}
 /* 17.10 : explication repliée au-dessus des listes à trancher */
 #boite-fen .bf-aide,.bb .bf-aide{margin:2px 0 8px}#boite-fen .bf-aide>summary,.bb .bf-aide>summary{cursor:pointer;color:var(--mut);font-size:13.5px;min-height:44px;display:flex;align-items:center;list-style:none}#boite-fen .bf-aide>summary::-webkit-details-marker,.bb .bf-aide>summary::-webkit-details-marker{display:none}
+/* 17.10 : LA CONVERSATION plein écran (Kevin : « atterrir directement pour répondre ») — fil qui défile, réponses rapides, zone d'écriture collée en bas */
+#boite-fen .bf-ret{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--gold2);font-size:22px;cursor:pointer}
+#boite-fen .bf-ct{flex:1;min-width:0}
+#boite-fen .bf-ct h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#boite-fen .bf-cs{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#boite-fen .bf-fil{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 14px 12px;display:flex;flex-direction:column}
+#boite-fen .bf-fil .bf-b{font-size:16px}
+#boite-fen .bf-rapides{display:flex;gap:8px;overflow-x:auto;padding:8px 14px 0;-webkit-overflow-scrolling:touch;border-top:1px solid var(--line)}
+#boite-fen .bf-rap{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid rgba(232,184,48,.45);background:rgba(232,184,48,.08);color:var(--gold2);font-size:14px;cursor:pointer;white-space:nowrap}
+#boite-fen .bf-compo{display:flex;gap:8px;align-items:stretch;padding:8px 14px 6px}
+#boite-fen .bf-compo textarea{flex:1;min-height:56px;max-height:30vh;resize:none}
+#boite-fen .bf-compo .bf-env{flex:0 0 96px;min-height:56px}
+#boite-fen .bf-conv-st,#boite-fen>.bf-st{padding:0 14px 8px}
+#boite-fen .bf-apres{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line)}
+#boite-fen .bf-ok{color:#9fe8b4;font-weight:700;flex:1}
+#boite-fen .bf-suiv{min-height:44px;padding:6px 14px;text-align:left;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--gold);font-size:14px;cursor:pointer}
+#boite-fen .bf-suiv-bas{margin:6px 14px 0;width:calc(100% - 28px)}

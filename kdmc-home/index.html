@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.71 -->
+<!-- v1.0.72 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -115,6 +115,23 @@
   #boite-fen .bf-hist{margin:6px 0;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:#0a120c;max-height:42vh;overflow-y:auto}
   #boite-fen .bf-hl{font-size:13.5px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);word-break:break-word}
   #boite-fen .bf-hq{color:var(--mut);font-size:12px}
+  /* 17.10 : LA CONVERSATION plein écran (Kevin : « atterrir directement pour répondre ») — fil qui défile, réponses rapides, zone d'écriture collée en bas */
+  #boite-fen .bf-ret{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--gold2);font-size:22px;cursor:pointer}
+  #boite-fen .bf-ct{flex:1;min-width:0}
+  #boite-fen .bf-ct h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #boite-fen .bf-cs{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #boite-fen .bf-fil{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 14px 12px;display:flex;flex-direction:column}
+  #boite-fen .bf-fil .bf-b{font-size:16px}
+  #boite-fen .bf-rapides{display:flex;gap:8px;overflow-x:auto;padding:8px 14px 0;-webkit-overflow-scrolling:touch;border-top:1px solid var(--line)}
+  #boite-fen .bf-rap{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid rgba(232,184,48,.45);background:rgba(232,184,48,.08);color:var(--gold2);font-size:14px;cursor:pointer;white-space:nowrap}
+  #boite-fen .bf-compo{display:flex;gap:8px;align-items:stretch;padding:8px 14px 6px}
+  #boite-fen .bf-compo textarea{flex:1;min-height:56px;max-height:30vh;resize:none}
+  #boite-fen .bf-compo .bf-env{flex:0 0 96px;min-height:56px}
+  #boite-fen .bf-conv-st,#boite-fen>.bf-st{padding:0 14px 8px}
+  #boite-fen .bf-apres{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line)}
+  #boite-fen .bf-ok{color:#9fe8b4;font-weight:700;flex:1}
+  #boite-fen .bf-suiv{min-height:44px;padding:6px 14px;text-align:left;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--gold);font-size:14px;cursor:pointer}
+  #boite-fen .bf-suiv-bas{margin:6px 14px 0;width:calc(100% - 28px)}
   .ios-tip{background:rgba(106,138,255,.1);border:1px solid rgba(106,138,255,.3);color:#cdd8ff;border-radius:13px;padding:12px 14px;font-size:13.5px}
   .cat{margin:24px 0 10px;display:flex;align-items:center;gap:10px;color:var(--gold);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
   .cat::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -298,10 +315,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.71"></script>
-  <script src="kdmc-boite.js?v=1.0.71"></script>
-  <script src="kdmc-portal.js?v=1.0.71"></script>
+  <script src="kdmc-sso.js?v=1.0.72"></script>
+  <script src="kdmc-boite.js?v=1.0.72"></script>
+  <script src="kdmc-portal.js?v=1.0.72"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.71" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.72" data-color="#c9a227" defer></script>
 </body>
 </html>

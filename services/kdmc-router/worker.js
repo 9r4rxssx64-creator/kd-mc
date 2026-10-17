@@ -11,6 +11,7 @@
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken, mintCmcIdToken } from './fb-token.js';
 import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre, INSCR_ADMIN_SCHEMA, FB_URL } from './boite.js';
+import { lotKV } from './lot-kv.js';   // création de compte : chaque clé KV écrite UNE fois (1 écriture/s/clé au KV) — voir lot-kv.js
 import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
 import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
@@ -3348,6 +3349,13 @@ async function handleSso(request, url, env, ctx) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (!secret) return J({ ok: false, reason: 'sso_not_configured' });
   const path = url.pathname;
+  /* 17.10.2026 (mesuré en réel : 7,2 s pour créer un compte) : la création écrivait la fiche 5 fois en moins d'une seconde,
+     or le KV refuse (429) plus d'une écriture par seconde sur une même clé → écritures perdues ou retardées. On passe par un
+     lot : chaque clé est écrite une seule fois, avec sa dernière valeur, juste avant la réponse. */
+  if (path === '/__sso/issue' && request.method === 'POST' && env && env.ACCOUNTS && !env.__lotKV) {
+    const lot = lotKV(env, { oublier: (u) => ficheOubliee(env, u) });
+    try { return await handleSso(request, url, lot.env, ctx); } finally { await lot.vider(); }
+  }
   /* Confirmation par MAIL (17.10) : le bouton du mail « Confirme ton compte » ouvre le compte sans l'admin. */
   if (path.startsWith('/__sso/mail/')) {
     const rMail = await handleMailConfirme(request, url, env, secret, {

@@ -36,5 +36,9 @@ const dossier = mkdtempSync(join(tmpdir(), 'msg-pub-'));
 const pub = robot({ SANS_NOMS: '1', CAPTURES: dossier });
 dis(pub.code === 0 && !/Non Lu Ancien|Lu Sans R|Répondu Récent|lingua:nv|cmc:attente|alerte:1/.test(pub.out), 'SANS_NOMS=1 (dépôt public) : le robot reste vert ET le journal ne contient AUCUN nom ni clé de conversation');
 dis(readdirSync(dossier).length === 0, 'SANS_NOMS=1 : aucune capture écrite (une capture montrerait les messages de tes collègues)');
+/* 17.10 (leçon 661) : le portail interdit `unsafe-eval` ; Playwright compile `waitForFunction` avec eval → l'attente se rompt au même instant. Le robot attend par SONDAGE. */
+import { readFileSync as lire } from 'node:fs';
+const src = lire(new URL('./verif-live-messages.mjs', import.meta.url), 'utf8');
+dis(!/\.waitForFunction\(/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')), 'le robot n\'utilise pas waitForFunction (interdit par la CSP du portail : l\'attente se rompt aussitôt)');
 console.log(`\n${ok} ✅ / ${ko} ❌\n`);
 process.exit(ko ? 1 : 0);

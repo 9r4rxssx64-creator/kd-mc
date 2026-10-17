@@ -153,7 +153,11 @@ try {
      cet écran et ne voyait jamais l'accueil. On ATTEND l'offre (ou l'accueil), puis on la passe — comme Kevin quand il touche « Plus tard ». */
   await page.waitForSelector('#pk-skip, #cercle-alerte:not([hidden])', { state: 'attached', timeout: 30000 }).catch(() => {});
   await page.evaluate(() => { const b = document.getElementById('pk-skip'); if (b) b.click(); }).catch(() => {});
-  await page.waitForFunction(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden; }, null, { timeout: 75000 }).catch(() => {});
+  /* Attente par SONDAGE depuis Node, jamais par waitForFunction : la page du portail interdit `unsafe-eval` (CSP) et Playwright compile son test avec eval → l'attente
+     se rompait AU MÊME INSTANT (« Refused to evaluate a string as JavaScript », run 39079743306) et le bandeau était jugé absent sans avoir attendu. Leçon 661. */
+  for (let t0 = Date.now(); Date.now() - t0 < 75000; await page.waitForTimeout(500)) {
+    if (await page.evaluate(() => { const a = document.getElementById('cercle-alerte'); return !!(a && !a.hidden); }).catch(() => false)) break;
+  }
   const ban = await page.evaluate(() => { const a = document.getElementById('cercle-alerte'); return a && !a.hidden ? { t: a.textContent.slice(0, 120), h: Math.round(a.getBoundingClientRect().height) } : null; });
   ok(!!ban && ban.h >= 44, 'le bandeau 📬 s\'affiche (connecté comme Kevin) et fait ≥ 44 px', ban ? `${ban.h} px` : 'bandeau absent : session non admin ? ' + (await page.evaluate(() => document.body.innerText.slice(0, 120))));
   await vue(page, '1-bandeau.png');

@@ -1,0 +1,45 @@
+name: KDMC — Déploie le worker coffre-r2 (dépôt public, sans écrire dans le dépôt)
+
+# 17.10.2026 (audit sécurité Cloudflare) : coffre-r2 était ouvert (lire / déposer / effacer sans rien). Le correctif devait partir,
+# mais l'ancien robot `deploy-coffre-r2.yml` est désactivé et reste au coffre (il écrit dans coffre-fort/). Celui-ci ne fait QUE
+# `wrangler deploy` du worker (aucun `git add`, aucun secret posé — les secrets déjà posés restent). Destination : GitHub, dépôt
+# PUBLIC (minutes gratuites) ; part sur push de services/coffre-r2/** et à la main. Jamais de cron.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/coffre-r2/**'
+      - '.github/workflows/deploy-coffre-r2-public.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10   # gratuit d'abord : borné
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Déployer coffre-r2
+        working-directory: services/coffre-r2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::error::Clé Cloudflare absente"; exit 1; fi
+          npx --yes wrangler@3 deploy 2>&1 | tail -15
+      - name: Preuve — un appel anonyme est refusé
+        run: |
+          sleep 8
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://coffre-r2.9r4rxssx64.workers.dev/v1/chunk/sonde-preuve")
+          echo "appel anonyme : HTTP $CODE (attendu 401)"
+          [ "$CODE" = "401" ] || { echo "::error::coffre-r2 accepte encore un appel anonyme ($CODE)"; exit 1; }

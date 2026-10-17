@@ -1,5 +1,8 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — coffre-r2 : robot de déploiement PUBLIC (l'ancien est désactivé au coffre)
+- `deploy-coffre-r2.yml` (coffre) est désactivé et rouge depuis le 24.09 → le correctif de sécurité ne partait pas. Nouveau `.github/workflows/deploy-coffre-r2-public.yml` : `wrangler deploy` seul (aucun `git add`, secrets inchangés), sur push de `services/coffre-r2/**` + à la main, avec PREUVE : un appel anonyme doit répondre 401.
+
 ## 2026-10-17 — Sonde kdmc-uptime : la cause dans l'alerte, 2e essai, journal (capture Healthchecks de Kevin)
 - Alerte « Apex Chat DOWN » 16.10 16:00→18:00 UTC : un seul passage raté ; mesuré : pas de déploiement (kd-mc ni coffre), pas d'incident Cloudflare D1/DO, `backup_last_ok` du jour présent → cause introuvable (la sonde ne gardait que le nom).
 - `services/kdmc-uptime/worker.js` : `probeApexApi` réessaie après `APEX_REESSAI_MS` (4 s) ; `causes()` met « code détail » dans le battement Healthchecks ; `state.journal` (30 max : panne / retour / raté rattrapé). Tests 5i–5m (`test:apex-chat-fiabilite`).

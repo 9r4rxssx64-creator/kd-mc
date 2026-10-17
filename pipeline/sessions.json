@@ -2274,6 +2274,16 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "deploy-coffre-r2-public": {
+      "titre": "Déploiement public de coffre-r2",
+      "branche": "claude/deploy-coffre-r2-public",
+      "sujet": "robot public + preuve",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

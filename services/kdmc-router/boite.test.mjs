@@ -316,5 +316,24 @@ ok(/fbToken: async/.test(W) && /mintShopsAdminIdToken\(env\)/.test(W), '9b. le r
   ok(Array.isArray(j.codes) && Array.isArray(j.inscriptionsAdmin) && typeof j.connectes === 'number' && Array.isArray(j.enLigne) && Array.isArray(j.inscriptions) && j.inscriptionsEtat === 'ok', '12d. rien d\'autre n\'a changé dans la réponse (codes, inscriptions, connectés, en ligne)');
 }
 
+/* 12h. LA SOURCE « ALERTES » LIT SES PERSONNES EN MÊME TEMPS (17.10 : mesurée en réel à 11,2 s, toutes les autres sources < 0,8 s ; 20 personnes × 4 lectures s'enchaînaient).
+   Ici : D1 et KV mettent 25 ms par lecture, 16 personnes. En file ≈ 16 × 4 × 25 ms ≥ 1,6 s ; par lots de 8 ≈ 0,3 s. */
+{
+  const LENT = 25, dormir = () => new Promise((r) => setTimeout(r, LENT));
+  const stmtLent = (st) => ({ bind: (...x) => stmtLent(st.bind(...x)), first: async () => { await dormir(); return st.first(); }, all: async () => { await dormir(); return st.all(); }, run: async () => { await dormir(); return st.run(); }, _exec: () => st._exec() });
+  const dbLent = { prepare: (sql) => stmtLent(db.prepare(sql)), batch: (l) => db.batch(l), _s: db._s };
+  const envLent = { CERCLE_DB: dbLent, ACCOUNTS: { get: async (k) => { await dormir(); return kv.has(k) ? kv.get(k) : null; }, put: env.ACCOUNTS.put } };
+  const sauve = kv.get('aud:log');
+  const uids = Array.from({ length: 16 }, (_, i) => 'compte-lent-' + String.fromCharCode(97 + i));
+  kv.set('aud:log', JSON.stringify(uids.map((u, i) => ({ ts: T - 1000 - i * 40 * 6e4, ev: 'new_device', uid: u, name: 'Compte Lent ' + String.fromCharCode(65 + i), detail: 'iPhone · Nice', asn: '1', isp: 'X' }))));
+  uids.forEach((u) => kv.set('acc:' + u, JSON.stringify({ name: 'Compte Lent', created: T - 864e5, hits: 1, last_seen: T - 1000, apps: {}, devices: ['iPhone'], history: [] })));
+  _viderMemo();
+  const j = await lireBoite(envLent, outils, T);
+  const src = (j.sources || []).find((x) => x.id === 'alertes');
+  ok(j.ms.alertes < 1000, '12h. 16 personnes à 25 ms par lecture : la source « alertes » répond en moins d\'une seconde (en file, elle dépassait 1,6 s)', j.ms);
+  ok(src && src.etat === 'ok' && src.total === 16, '12i. et elle rend toujours ses 16 cartes (une par personne, lecture réussie)', src);
+  kv.set('aud:log', sauve); uids.forEach((u) => kv.delete('acc:' + u)); _viderMemo();
+}
+
 console.log(`\n${pass} OK · ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

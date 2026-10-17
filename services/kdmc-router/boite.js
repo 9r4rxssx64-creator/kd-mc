@@ -317,9 +317,11 @@ async function lirePersonnes(env, db, now, outils) {
     const ev = { ts: e.ts, texte: EV_ALERTES[e.ev || e.type] + x + (texteAlerte(e) ? ' — ' + texteAlerte(e) : ''), alerte: true, infos: infosAlerte(e), app: e.app || '' };
     p.evts.push(ev); p.alertes.push(ev);
   }
-  for (const a of await activite.actives(db, now - 3 * 864e5, 20).catch(() => [])) dossier('u:' + a.uid, a.uid, a.nom);
+  /* les deux lectures (comptes actifs, travail dans CMCteams) partent ENSEMBLE : mesuré le 17.10, la source « alertes » prenait 11 s parce que tout s'enchaînait */
+  const [actifs, travail] = await Promise.all([activite.actives(db, now - 3 * 864e5, 20).catch(() => []), outils ? lireTravailCmc(outils, now).catch(() => []) : []]);
+  for (const a of actifs) dossier('u:' + a.uid, a.uid, a.nom);
   /* le travail dans CMCteams : une carte par NOM (les identifiants de CMCteams ne sont pas ceux du domaine) */
-  for (const t of outils ? await lireTravailCmc(outils, now).catch(() => []) : []) { const p = dossier('n:' + t.nom.toLowerCase().slice(0, 40), '', t.nom); p.evts.push({ ts: t.ts, texte: t.texte, app: t.app }); }
+  for (const t of travail) { const p = dossier('n:' + t.nom.toLowerCase().slice(0, 40), '', t.nom); p.evts.push({ ts: t.ts, texte: t.texte, app: t.app }); }
   /* UNE SEULE CARTE PAR PERSONNE, même quand une alerte ne porte que le NOM (8.10, capture de Kevin : « Andrea CASELLA » en alerte
      « nouvelle connexion » ET « Andrea Casella » en carte de compte) : un dossier « par nom » rejoint le dossier « par compte » du même nom. */
   const cleNom = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -334,10 +336,10 @@ async function lirePersonnes(env, db, now, outils) {
   const ids = [...P.keys()].map((id) => 'perso:' + id);
   const marq = new Map();
   if (ids.length) for (const r of await tous(db, `SELECT cle, ts FROM boite_lu WHERE cle IN (${ids.map(() => '?').join(',')})`, ...ids)) marq.set(r.cle, r.ts);
-  const out = [];
-  for (const p of P.values()) {
+  /* UNE LECTURE PAR PERSONNE, TOUTES EN MÊME TEMPS (par lots de 8) : avant, 20 personnes × 4 lectures s'enchaînaient (≈ 11 s mesurées) */
+  const carte = async (p) => {
     if (p.uid) for (const a of await activite.fil(db, p.uid, activite.LIM.fil).catch(() => [])) p.evts.push({ ts: a.ts, texte: (activite.TYPES[a.type] || a.type) + (a.detail ? ' ' + a.detail : '') + (a.app && a.type !== 'visite' && a.type !== 'connexion' ? ' (' + a.app.split('.')[0] + ')' : '') + (a.appareil ? ' · 📲 ' + activite.appareilCourt(a.appareil) : ''), app: a.app });
-    if (!p.evts.length) continue;
+    if (!p.evts.length) return null;
     p.evts.sort((a, b) => a.ts - b.ts);
     const fil = p.evts.slice(-activite.LIM.fil), dernier = fil[fil.length - 1];
     const lu = marq.get('perso:' + p.id) || 0;
@@ -349,10 +351,12 @@ async function lirePersonnes(env, db, now, outils) {
     const fiche = p.uid ? await ficheLignes(env, db, p.uid, now) : [];
     /* les lignes de la DERNIÈRE alerte (réseau, d'où il venait, pourquoi) s'ajoutent à la fiche, sans répéter « qui » quand la fiche le dit déjà */
     const derniereAlerte = p.alertes.length ? p.alertes[p.alertes.length - 1].infos.filter((x) => !(fiche.length && x.startsWith('👤'))) : [];
-    out.push({ cle: 'perso:' + p.id, source: 'alertes', app: (dernier.app || 'domaine'), de: nom, ts: dernier.ts, texte: apercu(dernier.texte, 300), perso: true,
+    return { cle: 'perso:' + p.id, source: 'alertes', app: (dernier.app || 'domaine'), de: nom, ts: dernier.ts, texte: apercu(dernier.texte, 300), perso: true,
       infos: fiche.concat(derniereAlerte),
-      nonLus, lu: !nonLus, repondre: null, fil: fil.map((e) => ({ moi: false, texte: e.texte, ts: e.ts })) });
-  }
+      nonLus, lu: !nonLus, repondre: null, fil: fil.map((e) => ({ moi: false, texte: e.texte, ts: e.ts })) };
+  };
+  const dossiers = [...P.values()], out = [];
+  for (let i = 0; i < dossiers.length; i += 8) for (const c of await Promise.all(dossiers.slice(i, i + 8).map((p) => carte(p)))) if (c) out.push(c);
   return out.sort((a, b) => b.ts - a.ts).slice(0, 20);
 }
 /* « laurence-saint-polit » → « Laurence Saint-Polit (compte laurence-saint-polit) » : lisible, et le compte reste nommé tel quel. */

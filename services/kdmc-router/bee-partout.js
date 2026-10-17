@@ -86,9 +86,13 @@ export function partout() {
         try { localStorage.setItem(LS_NON, String(Date.now())); } catch (e) { /* tant pis */ }
       })
       .catch(function () { /* réseau muet : pas de Bee, la page est intacte */ });
-  } catch (e) { /* un assistant ne doit JAMAIS empêcher une page de s'afficher */ }
+  } catch (e) { try { window.__kdmcBeeErr = String(e && e.message || e).slice(0, 120); } catch (x) { /* la page reste intacte ; la trace sert au robot de contrôle */ } }
 }
-export const PARTOUT_JS = '(' + partout.toString() + ')();';
+/* ⚠ `toString()` rend le code APRÈS le paquetage de wrangler (esbuild « keep_names ») : il y ajoute des appels `__name(f, "f")` dont l'aide n'existe
+   que dans le Worker, pas dans la page → ReferenceError avalée par le try/catch → ni Bee ni rien, sans le moindre message (mesuré 17.10 : le vrai
+   partout.js servi contenait `__name(bas, "bas")`). On la définit donc ICI, en tête du script servi. */
+export const NOM_AIDE = 'var __name=function(f){return f};';
+export const PARTOUT_JS = '(function(){' + NOM_AIDE + '(' + partout.toString() + ')();})();';
 
 /* La coquille du cadre : vide, publique, sans secret. Sa CSP est la sienne (celle de l'app ne s'y applique pas). */
 export const CADRE_CSP = "default-src 'none'; script-src 'self' https://javis.kd-mc.com; style-src 'unsafe-inline'; "

@@ -251,4 +251,7 @@ export function bouton() {
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') void charger(); });   /* retour sur l'app : compteurs frais */
   } catch (e) { /* un bouton de contact ne doit JAMAIS casser une page */ }
 }
-export const BOUTON_JS = '(' + bouton.toString() + ')();';
+/* ⚠ `toString()` rend le code APRÈS le paquetage de wrangler (esbuild « keep_names ») : il y ajoute des appels `__name(f, "f")` dont l'aide n'existe
+   que dans le Worker → ReferenceError dans la page, avalée par le try/catch (mesuré 17.10 : le vrai bouton.js servi contenait 17 `__name(`).
+   On la définit donc ICI, en tête du script servi (même garde que PARTOUT_JS). */
+export const BOUTON_JS = '(function(){var __name=function(f){return f};(' + bouton.toString() + ')();})();';

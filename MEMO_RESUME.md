@@ -1,5 +1,9 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — BEE ABSENT PARTOUT : CAUSE RÉELLE = `__name` (le paquetage de wrangler), PAS la CSP
+- **Trouvé** en lisant le vrai `/__javis/partout.js` servi : `__name(bas, "bas")` — absent dans la page → ReferenceError avalée. Même panne sur `/__boite/bouton.js` (17 `__name(`) : le bouton ✉️, « ← Portail » et la porte des conditions étaient morts aussi.
+- **Corrigé** : aide `__name` définie en tête des deux scripts servis ; garde `test:js-servis` (14 ✓, rouge sans le correctif). À faire après publication : relancer `verif-live-bee-partout` (présence ✅ attendue partout sauf pages à CSP stricte : rotaplan, croupier, cuisine, apex-ai, admin — décision à reprendre avec Kevin).
+
 ## 2026-10-17 (soir) — 🚨 CRITIQUE fermé : le robot de contrôle ouvrait le domaine à n'importe qui
 - ✅ VÉRIFIÉ RÉEL (run 39042290533, fini 14:50 UTC) : `POST /__sso/issue {uid:ci_smoke}` sans preuve → 403 `robot_preuve`. Suite : tout pass robot émis avant 14:52 UTC (période où la porte était ouverte) est refusé par `ssoVerify` (`ROBOT_PREUVE_DEPUIS`).
 - Audit (aide) : `POST /__sso/issue {uid:"ci_smoke"}` donnait à TOUT LE MONDE une session sans code ni mail → CMCteams, light, `boards-gen.js` / `planning-seed.js` (noms) servis. Correctif : preuve `x-kdmc-robot` = HMAC(secret du domaine, "robot-issue|ci_smoke") exigée ; les 3 robots publics (routeur, access, clone) la calculent ; `npm run reel` passe en ANONYME sans le secret. Tests : code-attente 7.8 (sans preuve → 403) / 7.9, comptes-nettoyer, reel-outil. LESSONS 637.

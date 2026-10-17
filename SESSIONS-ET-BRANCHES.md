@@ -240,6 +240,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/public-autonome` | 16.10 | Dépôt public autonome : action coffre pour 4 robots lecteurs, 7 robots écrivains/hébergeurs au coffre, bee-gardes réparé, garde `test:public-autonome` | `public-autonome` |
 | `claude/lecons-numeros` | 16.10 | Leçons : doublon (587 = 592) retiré, leçon couleur → 594 ; garde lessons-numeros au vert | `lecons-numeros` |
 | `claude/access-ux` | 16.10 | admin.kd-mc.com « Qui se connecte » v1.2.0 : en-tête compact (la page défile), filtres, En ligne maintenant, liste par fraîcheur ; test UA remis au vert | `access-ux` |
+| `claude/cf-rapatrier` | 17.10 | 12 workers orphelins sur l'ancien compte Cloudflare : outil de suppression sûr + garde ; rien à déplacer | `cf-rapatrier` |
 | `claude/cf-preuves` | 17.10 | Docs : les 4 portes Cloudflare vérifiées fermées en ligne | `cf-preuves` |
 | `claude/deploy-coffre-r2-public` | 17.10 | Robot public de déploiement de coffre-r2 (+ preuve 401 anonyme) | `deploy-coffre-r2-public` |
 | `claude/cf-portes-fermees` | 17.10 | Audit Cloudflare : coffre-r2, reçus kdmc-vente, /pin/init admin, cmc-parser-proxy fermés + rapport privé | `cf-portes-fermees` |

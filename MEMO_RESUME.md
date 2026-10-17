@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+## 2026-10-17 (soir) — « Rapatrie tout sur la bonne adresse » : il n'y a RIEN à déplacer, il y a 12 copies orphelines à éteindre
+- Kevin : tout regrouper sur le compte principal `425377ca…` ; économiser les quotas (fait : 0 minute de robot, sondes HTTP gratuites).
+- Mesuré sans clé : l'ancien compte `ffaca6f3…` = adresse `*.desarzens-kevin.workers.dev` ; le principal = `*.9r4rxssx64.workers.dev`. Sur l'ancien vivent ENCORE 12 workers : apex-push-worker, apex-secrets-proxy (copie des clés Anthropic/Groq/Gemini/Telegram/Vonage/Railway, refuse sans jeton), coffre-r2 (OUVERT : lire/déposer/effacer), kdmc-apis, kdmc-balances, kdmc-crea-ai, kdmc-crea-famille, kdmc-live, kdmc-mail, kdmc-monaco, kdmc-outlook, kdmc-proxy (démo « Hello World »).
+- Aucun code ne les appelle (Apex corrige seul desarzens-kevin → 9r4rxssx64, `worker-url-heal.ts`) ; coffre-fort n'a JAMAIS pointé vers l'ancien coffre-r2 (historique de `coffre-fort/config.json`) → aucune donnée à rapatrier. Les 11 copies principales répondent (200/405).
+- Outil `tools/cloudflare/orphelins-supprimer.mjs` (`npm run cf:orphelins`) : liste fermée des 12, refuse toute clé qui ne voit pas l'ancien compte, garde un orphelin si sa copie principale ne répond pas, essai à blanc par défaut, liste KV/D1/R2 de l'ancien compte sans les toucher. Garde `test:cf-orphelins` 6/0 (sabotage prouvé). Exécution : par la session qui détient la clé du compte ancien (m232), sinon Kevin colle une clé d'un jour.
+
+
 ## 2026-10-17 13:05 UTC — Audit Cloudflare : les 4 portes VÉRIFIÉES FERMÉES EN LIGNE
 - Déploiements publics verts : coffre-r2 (nouveau robot public), kdmc-vente, apex-auth-worker, cmc-parser-proxy, routeur (coffre-fort v1.0.3).
 - Mesuré sur les vraies adresses : coffre-r2 GET/DELETE anonymes → **401** (avant : 404 = ouvert) · kdmc-vente `/recu?n=KDMC-2026-0001` → « numéro incomplet » · cmc-parser-proxy avec Origin kd-mc.com ou `localhost.evil.com` sans jeton → **401** · apex-auth `/pin/init` uid `kdmc_admin` → **refuse**.

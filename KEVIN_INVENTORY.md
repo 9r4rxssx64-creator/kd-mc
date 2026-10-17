@@ -2,6 +2,8 @@
 
 ### ☁️ Cloudflare, tes 2 comptes : inventaire sécurité (17.10.2026)
 
+- **Éteindre les vieilles copies de l'ancien compte** : [`tools/cloudflare/orphelins-supprimer.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/cloudflare/orphelins-supprimer.mjs) · test [`tests/verify-cf-orphelins.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-cf-orphelins.mjs) (`npm run test:cf-orphelins`)
+
 - **Audit + 4 portes fermées** : rapport privé `audit/prive/AUDIT-CLOUDFLARE-2026-10-17.md` · robot [`deploy-coffre-r2-public.yml`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/deploy-coffre-r2-public.yml) · test [`tests/verify-cf-portes.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-cf-portes.mjs) (`npm run test:cf-portes`)
 
 - **Ce que ça fait** : liste tout ce qui est sur un compte Cloudflare (sites, robots, bases, stockages, adresses, clés) sans jamais rien modifier, et signale ce qui fuit.

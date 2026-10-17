@@ -2211,7 +2211,7 @@
       "etat": "actif",
       "maj": "2026-10-17",
       "attend_kevin": null,
-      "attend_session": "cloudflare-inventaire : URGENT avant expiration de ta clé Cloudflare (compte ffaca6f3…) : inventaire complet + tri",
+      "attend_session": "cf-rapatrier : AVANT EXPIRATION DE TA CLÉ (ancien compte ffaca6f3…) : supprimer 12 workers orphelins",
       "note": "17.10 12:18 UTC : fuite Pages FERMÉE (kdmc-site 103 déploiements + kdmc0 supprimés sur ffaca6f3…, adresses → 000). Outil tools/cloudflare/pages-supprimer.mjs, branche claude/pages-supprimer-outil"
     },
     "pages-supprimer-outil": {
@@ -2289,6 +2289,16 @@
       "titre": "Preuves en ligne audit Cloudflare",
       "branche": "claude/cf-preuves",
       "sujet": "docs",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "cf-rapatrier": {
+      "titre": "Rapatriement Cloudflare : orphelins de l'ancien compte",
+      "branche": "claude/cf-rapatrier",
+      "sujet": "outil + garde",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",
@@ -5956,6 +5966,15 @@
       "sujet": "Contrôle d'accès JAMAIS optionnel (audit Cloudflare 17.10)",
       "corps": "coffre-r2 était ouvert (lire/déposer/effacer) parce que son jeton n'était exigé « que s'il est posé » ; cmc-parser-proxy acceptait un simple en-tête Origin (falsifiable) pour dépenser les clés IA payantes ; les reçus kdmc-vente avaient des numéros séquentiels. Corrigé. Règle pour vos workers : toujours exiger une session du domaine (/__sso/whoami) ou un jeton, jamais l'Origin seule, jamais un identifiant d'accès séquentiel. Rapport : audit/prive/AUDIT-CLOUDFLARE-2026-10-17.md (liste « reste à faire » : notify-kevin, dep/membre, crea-famille, printify, apex-depot-relais, kdmc-clone).",
       "ts": "2026-10-17 12:43",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m232-cf-rapatrier",
+      "de": "cf-rapatrier",
+      "a": "pages-nettoyage-compte",
+      "sujet": "AVANT EXPIRATION DE TA CLÉ (ancien compte ffaca6f3…) : supprimer 12 workers orphelins",
+      "corps": "Kevin veut tout sur le compte principal 425377ca…. Mesuré sans clé : 12 workers vivent encore sur l'ancien (*.desarzens-kevin.workers.dev) : apex-push-worker, apex-secrets-proxy (copie des clés !), coffre-r2 (OUVERT : effacer sans rien), kdmc-apis, kdmc-balances, kdmc-crea-ai, kdmc-crea-famille, kdmc-live, kdmc-mail, kdmc-monaco, kdmc-outlook, kdmc-proxy. Aucun appelant, aucune donnée à rapatrier, les copies principales répondent. Depuis main : CLOUDFLARE_API_TOKEN=<ta clé> node tools/cloudflare/orphelins-supprimer.mjs (essai à blanc) puis --confirmer=oui. Lis la ligne « Données restantes » (KV/D1/R2) et dis-la moi / mets-la au MEMO. Puis inventaire-compte.mjs sur ffaca6f3 pour vérifier qu'il ne reste rien.",
+      "ts": "2026-10-17 13:06",
       "etat": "ouvert"
     }
   ]

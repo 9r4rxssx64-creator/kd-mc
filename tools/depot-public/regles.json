@@ -50,7 +50,16 @@
     "shops/croupier/entrainement-lecons.js",
     "shops/croupier/entrainement-visuels.js",
     "audit/facture-github-2026-09.tsv",
-    "audit/2026-09-26/"
+    "audit/2026-09-26/",
+    "MEMO_RESUME.md",
+    "KEVIN_INVENTORY.md",
+    "LESSONS.md",
+    "MEMORY_PERSISTENT.md",
+    "CONNECTEURS.md",
+    "ETAT-DU-MOMENT.md",
+    "TRANSFERT-COMPLET.md",
+    "SESSIONS-ET-BRANCHES.md",
+    "KEVIN_ACTIONS_TODO.md"
   ],
   "_prive_toujours_pourquoi": {
     "index.html / sw.js / app 2.js / manifest.json / version.txt": "l'application CMCteams elle-même (la liste des 260 employés est écrite dedans)",
@@ -65,7 +74,8 @@
     "COUTS-ET-ABONNEMENTS.md, tools/couts/": "l'inventaire de ce que Kevin paie (reçus, montants, banques, adresses de ses boîtes mail) et les scripts qui fabriquent ses tableaux : données personnelles (verifier.mjs l'a arrêté le 2.10 : adresse e-mail personnelle l.33)",
     "tools/approvals/, shops/dashboard/": "outils d'ADMIN (coffre d'autorisations, tableau des commandes) : leur code n'a rien à faire dans un dépôt lisible par tous (audit sécurité 16.10, P1-5) ; servis tels quels par le routeur, derrière la porte",
     "shops/croupier/entrainement*.js": "contenu PAYANT de Croupier Pro (l'entraîneur complet) : public = gratuit pour tous (audit 16.10, P1-6)",
-    "audit/facture-github-2026-09.tsv, audit/2026-09-26/": "facture et rapport d'audit : rien à faire au public (audit 16.10, P2-6)"
+    "audit/facture-github-2026-09.tsv, audit/2026-09-26/": "facture et rapport d'audit : rien à faire au public (audit 16.10, P2-6)",
+    "MEMO_RESUME.md / KEVIN_INVENTORY.md / LESSONS.md / ETAT / TRANSFERT / SESSIONS / KEVIN_ACTIONS_TODO / MEMORY_PERSISTENT / CONNECTEURS": "documents de travail (17.10 audit) : noms d'employés + matricules SBM + e-mails de Kevin — lus par les sessions au coffre, jamais au public"
   },
   "chemins_qui_rendent_un_test_prive": [
     "tools/departs",
@@ -191,7 +201,8 @@
   "workflows_prives": [
     ".github/workflows/audit-live.yml",
     ".github/workflows/verif-reelle.yml",
-    ".github/workflows/voir-comme-kevin.yml", ".github/workflows/lingua-comme-kevin.yml",
+    ".github/workflows/voir-comme-kevin.yml",
+    ".github/workflows/lingua-comme-kevin.yml",
     ".github/workflows/apex-chat-d1-backup.yml",
     ".github/workflows/apex-chat-exercice-restauration.yml",
     ".github/workflows/apex-chat-cle-sauvegarde.yml",
@@ -236,7 +247,9 @@
     ".github/workflows/verif-live-apex.yml",
     ".github/workflows/verif-live-bee.yml",
     ".github/workflows/verif-live-bee-partout.yml",
-    ".github/workflows/coffre-compte-ouvrir.yml"
+    ".github/workflows/coffre-compte-ouvrir.yml",
+    ".github/workflows/auto-merge-claude.yml",
+    ".github/workflows/whatsapp-brancher.yml"
   ],
   "_workflows_prives_pourquoi": "16.10.2026 — mesuré au dépôt public (runs 38951700250/375/291/437/337/399) : la source d’Apex y est incomplète (apex-identity.ts, never-forget-watch.ts, cmc-vision-validator.ts restent au coffre : ils portent des noms et l’adresse de Kevin) → TS2307 à chaque poussée ; et un test qui échoue imprime ses attendus (des noms) dans un journal public. Les 12 542 tests d’Apex tournent dans la session avant la fusion ; la copie construite apex-ai-v13/ est faite au coffre et publiée par le routeur. apex-execute(-auto-trigger) modifie le dépôt : jamais depuis le public (403 mesuré). 16.10 soir (Kevin : « garde une solution du dépôt public ») — inventaire des robots publics qui lisent ou ÉCRIVENT des fichiers du coffre : deploy.yml (ancien GitHub Pages : il publierait l'arbre public sans porte — désactivé, et désormais absent du public), clayscore-* et coffre-pdf-refresh / deploy-coffre-r2 (ils écrivent clayscore/ ou coffre-fort/ : un « git add » au public y ferait fuir des fichiers privés), pilote-pages-javis (recréerait le projet Pages kdmc-javis supprimé, qui contournait la porte). Les robots qui ne font que LIRE un fichier privé prennent l'action coffre (garde test:public-autonome). · verif-live-apex.yml : robot « Apex comme Kevin » (secret du code admin, journal = conversation de l'admin) → coffre seulement (16.10) · coffre-compte-ouvrir.yml : ouvre un compte en attente avec le secret du code admin (17.10) → coffre seulement",
   "_test_prive_index_racine": "Un test est aussi privé s'il lit la page RACINE index.html (CMCteams) : « 'index.html' » seul, « ../index.html », « /CMCteams/index.html ». Pas « apex-ai/index.html » ni « tools/x/index.html » (autres applications).",
